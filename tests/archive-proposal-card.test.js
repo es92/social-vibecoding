@@ -137,14 +137,16 @@ test("someone else's merged proposal renders the Explore-in-dev-chat button", ()
 // #1045: the exception to "own cards have none". An imported proposal has no
 // platform-owned dev session, so #687 hides "Open session" on it — which
 // left the owner of a PR they imported with no AI affordance at all.
-test('my own IMPORTED proposal DOES render the Explore-in-dev-chat button (#1045)', () => {
+test('my own IMPORTED proposal DOES offer Explore in dev chat (#1045)', () => {
   const AppView = makeAppView(ME);
   const html = AppView._renderProposalCard(baseProposal({ source: 'imported' }));
-  assert.match(html, /gc-explore-chat-btn/, 'Explore pill present on my imported proposal');
-  assert.match(html, /data-proposal-id="7"/, 'wired to the proposal id');
-  assert.doesNotMatch(html, /openProposalSession/,
+  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+    'Explore offered from ⋯ on my imported proposal');
+  assert.equal(html.match(/data-card-menu="([^"]+)"/)[1], 'proposal:7',
+    'menu keyed by the proposal id');
+  assert.ok(!menuHas(AppView, html, /Open session/),
     'still no Open session — an imported PR has no dev session (#687)');
-  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw is unaffected');
+  assert.ok(menuHas(AppView, html, /^Withdraw$/), 'Withdraw is unaffected');
 });
 
 // #321/#827: the topic detail view (_renderTopicHead) shows exactly ONE AI

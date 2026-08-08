@@ -520,34 +520,50 @@ const MY_IMPORT = {
   created_at: '2026-06-01T00:00:00Z',
 };
 
-test('proposal card: my own IMPORTED proposal renders the pill and no Open session', () => {
+// Cards are pointers now: Explore / Open session / Withdraw are ⋯ rows, not
+// inline pills, so the rule below is read off the registered descriptors in
+// AppView._cardMenus keyed by the trigger's data-card-menu — same helpers the
+// archive-proposal-card and card-action-layout suites use.
+function menuLabels(AppView, html) {
+  const m = html.match(/data-card-menu="([^"]+)"/);
+  if (!m) return [];
+  return (AppView._cardMenus[m[1]] || []).map((it) => it.label);
+}
+function menuHas(AppView, html, re) {
+  return menuLabels(AppView, html).some((l) => re.test(l));
+}
+
+test('proposal card: my own IMPORTED proposal offers Explore and no Open session', () => {
   const AppView = cardHarness();
   const html = AppView._renderProposalCard(MY_IMPORT);
-  assert.match(html, /gc-explore-chat-btn/, 'the pill is the owner\'s only AI affordance here');
-  assert.match(html, /data-proposal-id="7"/, 'wired to the proposal id');
-  assert.doesNotMatch(html, /openProposalSession\(/,
+  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+    'Explore is the owner\'s only AI affordance here');
+  assert.equal(html.match(/data-card-menu="([^"]+)"/)[1], 'proposal:7',
+    'menu keyed by the proposal id');
+  assert.ok(!menuHas(AppView, html, /Open session/),
     'an imported PR has no dev session to open (#687) — that rule is untouched');
-  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw is untouched too');
+  assert.ok(menuHas(AppView, html, /^Withdraw$/), 'Withdraw is untouched too');
 });
 
-test('proposal card: my own NATIVE proposal is unchanged — Open session, no pill', () => {
+test('proposal card: my own NATIVE proposal is unchanged — Open session, no Explore', () => {
   const AppView = cardHarness();
   const html = AppView._renderProposalCard({ ...MY_IMPORT, source: undefined, imported_pr_author: undefined });
-  assert.doesNotMatch(html, /gc-explore-chat-btn/, 'no pill beside Open session');
-  assert.match(html, /openProposalSession\(7\)/);
+  assert.ok(!menuHas(AppView, html, /Explore in dev chat/), 'Open session covers the owner');
+  assert.ok(menuHas(AppView, html, /Open session/));
 });
 
-test('merged card: my own IMPORTED completed proposal renders the pill', () => {
+test('merged card: my own IMPORTED completed proposal offers Explore', () => {
   const AppView = cardHarness();
   const html = AppView._renderMergedCard({ ...MY_IMPORT, status: 'merged' }, 1);
-  assert.match(html, /gc-explore-chat-btn/);
-  assert.match(html, /data-proposal-id="7"/);
+  assert.ok(menuHas(AppView, html, /Explore in dev chat/));
+  assert.equal(html.match(/data-card-menu="([^"]+)"/)[1], 'merged:7',
+    'the Completed list keys its menu on the merged card, not the live proposal');
 });
 
-test('merged card: my own NATIVE completed proposal still renders no pill', () => {
+test('merged card: my own NATIVE completed proposal still offers no Explore', () => {
   const AppView = cardHarness();
   const html = AppView._renderMergedCard(
     { ...MY_IMPORT, source: undefined, imported_pr_author: undefined, status: 'merged' }, 1
   );
-  assert.doesNotMatch(html, /gc-explore-chat-btn/);
+  assert.ok(!menuHas(AppView, html, /Explore in dev chat/));
 });

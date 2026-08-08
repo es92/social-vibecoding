@@ -331,17 +331,17 @@ test('proposal card (author): Open session + Withdraw move to ⋯', () => {
   assertCardActionContract(AppView, html, { primary: 2, menu: true });
 });
 
-// #1045: the owner of an IMPORTED proposal gets Withdraw + Explore instead
-// of Withdraw + Open session (there is no dev session to open), and that
-// row must still lay out inline like every other.
-test('proposal card (author of an imported PR): Withdraw + Explore render inline', () => {
+// #1045/#1047: the owner of an IMPORTED proposal gets Withdraw + Explore
+// instead of Withdraw + Open session (there is no dev session to open). Both
+// are ⋯ rows now, so the rule is pinned on the descriptors rather than on the
+// card face — this is the one case where an owner DOES get an Explore row.
+test('proposal card (author of an imported PR): Withdraw + Explore in ⋯', () => {
   const AppView = makeAppView(ME);
   const html = AppView._renderProposalCard(baseProposal({ user_id: ME, source: 'imported' }));
-  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw present');
-  assert.match(html, /gc-explore-chat-btn/, 'Explore in dev chat present');
-  assert.doesNotMatch(html, /openProposalSession/, 'no dev session behind an imported PR');
-  assert.match(html, /gc-card-actions/, 'shared action row present');
-  assertNoOverflowMachinery(html);
+  assert.ok(menuHas(AppView, html, /Withdraw/), 'Withdraw in ⋯');
+  assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'Explore in dev chat in ⋯');
+  assert.ok(!menuHas(AppView, html, /Open session/), 'no dev session behind an imported PR');
+  assertCardActionContract(AppView, html, { primary: 2, menu: true });
 });
 
 // ── Governance card ──────────────────────────────────────────────────────
