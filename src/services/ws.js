@@ -931,6 +931,44 @@ function pushSessionUpdate(data) {
     { appId: data.appId, appSlug: data.appSlug });
 }
 
+// #1038: live working-state for one session (services/session-state.js).
+// Scoping is the whole point of having a dedicated helper rather than
+// reusing broadcastGlobal: the payload names an app and a session, so an
+// unscoped fan-out would tell every connected client that a private app
+// has activity.
+//
+//   shared  → broadcastGlobalScoped, i.e. everyone who may VIEW the app
+//             (which is exactly who already sees the shared session card
+//             or the auto-run's issue card).
+//   private → the owner's own sockets only. A session nobody else can see
+//             must not announce itself, not even as an anonymous id.
+//
+// A payload with no resolved owner AND no app (the row lookup failed) is
+// dropped rather than guessed at — failing closed matches
+// broadcastGlobalScoped's own stance.
+// Pure routing decision, exported so the privacy boundary is unit-testable
+// without stubbing the socket registry. 'app' | 'user' | 'none'.
+function sessionStateAudience(data) {
+  if (!data) return 'none';
+  if (data.shared && (data.appId != null || data.appSlug)) return 'app';
+  if (data.userId != null) return 'user';
+  return 'none';
+}
+
+function pushSessionState(data) {
+  const payload = { type: 'session_state', ...data };
+  switch (sessionStateAudience(data)) {
+    case 'app':
+      broadcastGlobalScoped(payload, { appId: data.appId, appSlug: data.appSlug });
+      break;
+    case 'user':
+      pushToUser(data.userId, payload);
+      break;
+    default:
+      log.debug('ws', 'session_state dropped: no audience', { sessionId: data.sessionId });
+  }
+}
+
 function pushVoteUpdate(data) {
   broadcastGlobalScoped({ type: 'vote_update', ...data },
     { appId: data.appId, appSlug: data.appSlug });
@@ -990,8 +1028,11 @@ function broadcastToAdmins(payload) {
 }
 
 // Send a payload to every /ws/events socket belonging to `userId`. Used for
-// @mention delivery — a single user may have multiple tabs open.
-function pushNotificationToUser(userId, payload) {
+// @mention delivery — a single user may have multiple tabs open — and, since
+// #1038, for the owner-only fan-out of a private session's working state.
+// `pushNotificationToUser` is kept as an alias so the notification call sites
+// above (and any external caller) read naturally and don't have to churn.
+function pushToUser(userId, payload) {
   const json = JSON.stringify(payload);
   let sent = 0;
   for (const client of globalClients) {
@@ -1003,4 +1044,6 @@ function pushNotificationToUser(userId, payload) {
   return sent;
 }
 
-module.exports = { attach, broadcast, broadcastGlobal, broadcastGlobalScoped, broadcastToAdmins, sendSystemMessage, getOnlineUsers, pushAppStatusUpdate, pushSessionUpdate, pushVoteUpdate, pushKudosUpdate, pushAppUpdate, pushIssueUpdate, pushBoardOrderUpdate, pushNotificationToUser, getReactionsForMessages, validateThread, handleMessage, MAX_CHAT_LEN };
+const pushNotificationToUser = pushToUser;
+
+module.exports = { attach, broadcast, broadcastGlobal, broadcastGlobalScoped, broadcastToAdmins, sendSystemMessage, getOnlineUsers, pushAppStatusUpdate, pushSessionUpdate, pushSessionState, sessionStateAudience, pushVoteUpdate, pushKudosUpdate, pushAppUpdate, pushIssueUpdate, pushBoardOrderUpdate, pushToUser, pushNotificationToUser, getReactionsForMessages, validateThread, handleMessage, MAX_CHAT_LEN };

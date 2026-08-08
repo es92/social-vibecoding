@@ -34,7 +34,7 @@ test('every recovery kind builds its documented pill set', () => {
   assert.deepEqual(buildRecoveryQuickReplies('code_done'),
     ['Propose it to the group', 'Make a tweak', 'What did it change?']);
   assert.deepEqual(buildRecoveryQuickReplies('spec_done'),
-    ['Build it', 'Revise the spec', 'What will this change?']);
+    ['Build the spec', 'Revise the spec', 'What will this change?']);
   assert.deepEqual(buildRecoveryQuickReplies('push_failed'),
     ['Try that again', 'What went wrong?']);
   assert.deepEqual(buildRecoveryQuickReplies('unrecoverable'),

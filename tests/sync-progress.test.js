@@ -583,7 +583,10 @@ test('GET /status: exposes the merge lifecycle status of the session', async () 
   // `resolving` field, as a cheap honest fact for admin/debug tooling,
   // and the poll must keep serving it.
   poolQueryHandler = async (sql) => {
-    if (/SELECT status FROM chat_sessions/.test(sql)) {
+    // #907 widened this read to fetch last_turn_runner/local_agent_label in
+    // the same round-trip (it is a 3s poll), so match the column list loosely
+    // — what this test is about is the `status` field reaching the payload.
+    if (/SELECT status[\s\S]*?FROM chat_sessions/.test(sql)) {
       return { rows: [{ status: 'promoted' }] };
     }
     return { rows: [] };

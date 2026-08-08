@@ -70,7 +70,12 @@ Ordered by how badly an agent working offline gets each one wrong.
    are not passing cannot merge even with a winning vote. The test route
    renders against an empty staging database, so seed what it needs.
    If the changed UI is only reachable by interacting, add a deep link
-   (a query param handled at boot) so a URL can reach it.
+   (a query param handled at boot) so a URL can reach it — and point the
+   testing route you report (`path:` in your final message, or
+   `testingPaths` when you submit through the connector) at THAT screen,
+   never at the home page. That route is what the before/after
+   screenshots the voters see are shot from, so a defaulted one shows
+   nothing of what you changed.
 6. **Auth is iframe token injection — do not roll your own login.** The
    shell mints an RS256 JWT per user per app and injects it as
    `?token=`; the app verifies it with `USERNODE_JWT_PUBLIC_KEY`,

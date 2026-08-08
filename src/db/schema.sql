@@ -112,6 +112,26 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS home_panel_positions JSONB NOT NULL D
 -- 35 chars is the RFC 5646 recommended buffer for BCP-47 tags.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS locale VARCHAR(35);
 
+-- Preferred development flow (issue #1049). NULL = "ask me every time", the
+-- default: the dev-chat picker renders and the user chooses per proposal.
+-- A non-NULL value is the "remember my option" checkbox — 'platform' builds
+-- here with the platform's own agent, 'claude-code' / 'codex' hand the work
+-- order to the user's own Claude Code / Codex web UI (the external-agent
+-- flow in services/external-agent-tasks.js).
+--
+-- Written by POST /api/me/dev-flow, echoed by GET /api/auth/me as
+-- `devFlowPreference`, and clearable back to NULL from Settings →
+-- Connections. The CHECK is the same allowlist the route enforces, so a
+-- direct DB write can never park an unrenderable value here.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS dev_flow_preference TEXT;
+DO $$
+BEGIN
+  ALTER TABLE users DROP CONSTRAINT IF EXISTS users_dev_flow_preference_chk;
+  ALTER TABLE users ADD CONSTRAINT users_dev_flow_preference_chk
+    CHECK (dev_flow_preference IS NULL
+           OR dev_flow_preference IN ('platform', 'claude-code', 'codex'));
+END $$;
+
 CREATE TABLE IF NOT EXISTS sessions (
   token      VARCHAR(64) PRIMARY KEY,
   user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -136,6 +156,7 @@ CREATE TABLE IF NOT EXISTS cli_device_authorizations (
     CHECK (
       scopes = ARRAY['rpc:identity:read']::TEXT[]
       OR scopes = ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+      OR scopes = ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
     ),
   request_ip INET NOT NULL,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -200,8 +221,8 @@ CREATE TABLE IF NOT EXISTS cli_access_tokens (
   scopes TEXT[] NOT NULL
     CONSTRAINT cli_access_tokens_scopes_check
     CHECK (
-      cardinality(scopes) <= 2
-      AND scopes <@ ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+      cardinality(scopes) <= 3
+      AND scopes <@ ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
     ),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_used_at TIMESTAMPTZ,
@@ -231,13 +252,14 @@ CREATE TABLE IF NOT EXISTS cli_auth_audit_events (
     CONSTRAINT cli_auth_audit_events_scopes_check
     CHECK (
       (event_type IN ('token_used', 'token_revoked')
-       AND cardinality(scopes) <= 2
-       AND scopes <@ ARRAY['rpc:identity:read', 'api:access']::TEXT[])
+       AND cardinality(scopes) <= 3
+       AND scopes <@ ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[])
       OR
       (event_type NOT IN ('token_used', 'token_revoked')
        AND (
          scopes = ARRAY['rpc:identity:read']::TEXT[]
          OR scopes = ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+         OR scopes = ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
        ))
     ),
   outcome TEXT NOT NULL DEFAULT 'success'
@@ -309,13 +331,14 @@ BEGIN
    WHERE conrelid = 'cli_device_authorizations'::regclass
      AND conname = 'cli_device_authorizations_scopes_check';
   IF constraint_def IS NOT NULL
-      AND position('api:access' IN constraint_def) = 0 THEN
+      AND position('agent:local' IN constraint_def) = 0 THEN
     ALTER TABLE cli_device_authorizations
       DROP CONSTRAINT cli_device_authorizations_scopes_check;
     ALTER TABLE cli_device_authorizations
       ADD CONSTRAINT cli_device_authorizations_scopes_check CHECK (
         scopes = ARRAY['rpc:identity:read']::TEXT[]
         OR scopes = ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+        OR scopes = ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
       );
   END IF;
 
@@ -324,13 +347,13 @@ BEGIN
    WHERE conrelid = 'cli_access_tokens'::regclass
      AND conname = 'cli_access_tokens_scopes_check';
   IF constraint_def IS NOT NULL
-      AND position('api:access' IN constraint_def) = 0 THEN
+      AND position('agent:local' IN constraint_def) = 0 THEN
     ALTER TABLE cli_access_tokens
       DROP CONSTRAINT cli_access_tokens_scopes_check;
     ALTER TABLE cli_access_tokens
       ADD CONSTRAINT cli_access_tokens_scopes_check CHECK (
-        cardinality(scopes) <= 2
-        AND scopes <@ ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+        cardinality(scopes) <= 3
+        AND scopes <@ ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
       );
   END IF;
 
@@ -347,7 +370,7 @@ BEGIN
    ORDER BY oid
    LIMIT 1;
   IF constraint_def IS NOT NULL
-      AND position('api:access' IN constraint_def) = 0 THEN
+      AND position('agent:local' IN constraint_def) = 0 THEN
     EXECUTE format(
       'ALTER TABLE cli_auth_audit_events DROP CONSTRAINT %I',
       constraint_name
@@ -355,13 +378,14 @@ BEGIN
     ALTER TABLE cli_auth_audit_events
       ADD CONSTRAINT cli_auth_audit_events_scopes_check CHECK (
         (event_type IN ('token_used', 'token_revoked')
-         AND cardinality(scopes) <= 2
-         AND scopes <@ ARRAY['rpc:identity:read', 'api:access']::TEXT[])
+         AND cardinality(scopes) <= 3
+         AND scopes <@ ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[])
         OR
         (event_type NOT IN ('token_used', 'token_revoked')
          AND (
            scopes = ARRAY['rpc:identity:read']::TEXT[]
            OR scopes = ARRAY['rpc:identity:read', 'api:access']::TEXT[]
+           OR scopes = ARRAY['rpc:identity:read', 'api:access', 'agent:local']::TEXT[]
          ))
       );
   END IF;
@@ -1029,6 +1053,186 @@ ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS handoff_upload_checked_sha VA
 CREATE UNIQUE INDEX IF NOT EXISTS chat_sessions_handoff_request_idx
   ON chat_sessions(user_id, handoff_request_id)
   WHERE handoff_request_id IS NOT NULL;
+
+-- ===================================================================
+-- #907: local coding agents.
+--
+-- A user can attach a coding agent running on their own machine to one of
+-- their dev sessions and have the Mayor dispatch that session's coding turns
+-- to it instead of to a platform worker container. Everything after the agent
+-- finishes — commit upload, staging, checks, visuals, PR metadata — is the
+-- SAME pipeline the platform worker and the MCP proposal handoff already use,
+-- so a local turn produces an ordinary proposal that anyone can review.
+--
+-- The platform never receives, stores, or proxies the user's own model
+-- credentials: the local runtime authenticates to Anthropic itself, out of
+-- band, exactly as it does when the user runs `claude` by hand.
+-- ===================================================================
+
+-- One machine's claim on one session. The unique partial index is the whole
+-- exclusivity story: at most one unreleased lease per session, so a second
+-- laptop attaching to the same chat is refused rather than racing.
+--
+-- `expires_at` is a hard TTL refreshed by heartbeat. A laptop that closes its
+-- lid, loses Wi-Fi, or is killed simply stops heartbeating; the lease lapses
+-- and the session falls back to the platform worker on its next turn without
+-- anyone having to click anything.
+CREATE TABLE IF NOT EXISTS session_agent_leases (
+  id BIGSERIAL PRIMARY KEY,
+  session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- Which credential this machine attached with. ON DELETE SET NULL rather
+  -- than CASCADE: revocation is a soft `revoked_at` (and detaches the lease
+  -- explicitly, in the same transaction), while the row itself is only ever
+  -- hard-deleted by the expiry prune long afterwards — which must not
+  -- retroactively erase the record of where a session's turns ran.
+  access_token_id BIGINT REFERENCES cli_access_tokens(id) ON DELETE SET NULL,
+  -- User-chosen, display-only ("Evan's laptop"). Never a hostname the
+  -- platform discovered by itself.
+  label TEXT NOT NULL CHECK (char_length(label) BETWEEN 1 AND 64),
+  -- Which local runtime is driving. Only 'claude-code' exists in phase 1;
+  -- the column is here so a second adapter does not need a migration.
+  runtime TEXT NOT NULL DEFAULT 'claude-code'
+    CHECK (runtime IN ('claude-code')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  released_at TIMESTAMPTZ,
+  -- 'detached' = the CLI left cleanly; 'revoked' = the owner clicked
+  -- "Hand back to Usernode" in the browser or Settings; 'expired' = the
+  -- heartbeat lapsed and a sweeper reaped it.
+  release_reason TEXT
+    CHECK (release_reason IN ('detached', 'revoked', 'expired')),
+  CHECK (released_at IS NULL OR released_at >= created_at),
+  CHECK ((released_at IS NULL) = (release_reason IS NULL)),
+  CHECK (last_seen_at >= created_at)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS session_agent_leases_active_uidx
+  ON session_agent_leases (session_id)
+  WHERE released_at IS NULL;
+CREATE INDEX IF NOT EXISTS session_agent_leases_user_idx
+  ON session_agent_leases (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS session_agent_leases_expiry_idx
+  ON session_agent_leases (expires_at) WHERE released_at IS NULL;
+
+-- One dispatched coding turn, offered to the lease that owns the session.
+--
+-- The lifecycle is deliberately explicit rather than a boolean pair: the
+-- platform must be able to tell "the laptop never picked this up" (queued →
+-- abandoned) apart from "the laptop picked it up and the run failed"
+-- (accepted → running → failed), because only the first is safe to silently
+-- re-route to a platform worker.
+CREATE TABLE IF NOT EXISTS local_agent_turns (
+  id BIGSERIAL PRIMARY KEY,
+  session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  lease_id BIGINT NOT NULL REFERENCES session_agent_leases(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'queued'
+    CHECK (status IN (
+      'queued', 'offered', 'accepted', 'declined',
+      'running', 'completed', 'failed', 'stopped', 'abandoned'
+    )),
+  -- Which KIND of turn this is. 'build' writes code and produces a commit;
+  -- 'scout' is read-only and produces the session's spec document instead.
+  -- The distinction is load-bearing rather than cosmetic: it drives the
+  -- read-only invariant below, the runtime's permission mode on the user's
+  -- machine, and whether the platform runs the staging/checks tail at all.
+  mode VARCHAR(16) NOT NULL DEFAULT 'build'
+    CHECK (mode IN ('build', 'scout')),
+  -- The Mayor's dispatch prompt plus the platform context blocks. Bounded so
+  -- a runaway spec cannot turn this table into a document store.
+  prompt TEXT NOT NULL CHECK (char_length(prompt) <= 262144),
+  -- The base the local checkout must be sitting on for this turn to be safe
+  -- to accept. The CLI refuses a turn whose base it cannot reproduce.
+  base_sha VARCHAR(40) CHECK (base_sha IS NULL OR base_sha ~ '^[0-9a-f]{40}$'),
+  branch_name TEXT,
+  -- Free-text progress the local runtime streams back, rendered in dev chat
+  -- exactly like worker progress lines. Capped by the route, not the column.
+  progress JSONB NOT NULL DEFAULT '[]'::JSONB
+    CHECK (jsonb_typeof(progress) = 'array'),
+  -- What the run produced: the local commit the CLI then uploads through the
+  -- existing exact-tree commit-upload endpoint, and the agent's own summary.
+  head_sha VARCHAR(40) CHECK (head_sha IS NULL OR head_sha ~ '^[0-9a-f]{40}$'),
+  summary TEXT CHECK (summary IS NULL OR char_length(summary) <= 32768),
+  -- A scout turn's actual product: the markdown spec document the local agent
+  -- drafted, which the platform writes to chat_sessions.spec_md exactly as it
+  -- does for a worker-container scout. Separate from `summary` because it is
+  -- the deliverable, not a description of one, and it is bounded like `prompt`
+  -- rather than like a summary.
+  spec_md TEXT CHECK (spec_md IS NULL OR char_length(spec_md) <= 262144),
+  error_detail TEXT CHECK (error_detail IS NULL OR char_length(error_detail) <= 4096),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  offered_at TIMESTAMPTZ,
+  accepted_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (offered_at IS NULL OR offered_at >= created_at),
+  CHECK (accepted_at IS NULL OR accepted_at >= created_at),
+  CHECK (finished_at IS NULL OR finished_at >= created_at),
+  -- A terminal row must say when it ended; a live one must not claim to have.
+  CHECK (
+    (status IN ('declined', 'completed', 'failed', 'stopped', 'abandoned')
+     AND finished_at IS NOT NULL)
+    OR (status IN ('queued', 'offered', 'accepted', 'running')
+     AND finished_at IS NULL)
+  ),
+  -- THE read-only invariant, in the schema rather than only in the route: a
+  -- scout turn can never carry a commit, and a build turn can never carry a
+  -- spec. The protocol validates both too, but a scout turn that smuggled a
+  -- head SHA would reach the staging/checks tail and put unreviewed code on
+  -- the managed branch — so the database refuses it as well.
+  CHECK (mode = 'build' OR head_sha IS NULL),
+  CHECK (mode = 'scout' OR spec_md IS NULL)
+);
+
+-- At most one live turn per session. Same reasoning as the lease index: the
+-- Mayor dispatching twice (a retry, a double-submit) must collide loudly
+-- here rather than have two laptops commit onto the same branch.
+CREATE UNIQUE INDEX IF NOT EXISTS local_agent_turns_live_uidx
+  ON local_agent_turns (session_id)
+  WHERE status IN ('queued', 'offered', 'accepted', 'running');
+CREATE INDEX IF NOT EXISTS local_agent_turns_lease_idx
+  ON local_agent_turns (lease_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS local_agent_turns_session_idx
+  ON local_agent_turns (session_id, created_at DESC);
+
+-- Scout support, added after the table already existed on some databases.
+-- CREATE TABLE IF NOT EXISTS skips the whole definition above once the table
+-- is there, so the two columns and their invariants need explicit migrations.
+ALTER TABLE local_agent_turns
+  ADD COLUMN IF NOT EXISTS mode VARCHAR(16) NOT NULL DEFAULT 'build';
+ALTER TABLE local_agent_turns ADD COLUMN IF NOT EXISTS spec_md TEXT;
+DO $$
+BEGIN
+  ALTER TABLE local_agent_turns DROP CONSTRAINT IF EXISTS local_agent_turns_mode_check;
+  ALTER TABLE local_agent_turns ADD CONSTRAINT local_agent_turns_mode_check
+    CHECK (mode IN ('build', 'scout'));
+  ALTER TABLE local_agent_turns DROP CONSTRAINT IF EXISTS local_agent_turns_spec_len_check;
+  ALTER TABLE local_agent_turns ADD CONSTRAINT local_agent_turns_spec_len_check
+    CHECK (spec_md IS NULL OR char_length(spec_md) <= 262144);
+  -- The read-only invariant again, for databases that predate it. Named so a
+  -- re-run replaces rather than duplicates it (an unnamed CHECK added by the
+  -- CREATE TABLE above gets a generated name and is left alone, which is
+  -- fine — the two express the same rule).
+  ALTER TABLE local_agent_turns DROP CONSTRAINT IF EXISTS local_agent_turns_readonly_check;
+  ALTER TABLE local_agent_turns ADD CONSTRAINT local_agent_turns_readonly_check
+    CHECK ((mode = 'build' OR head_sha IS NULL) AND (mode = 'scout' OR spec_md IS NULL));
+END $$;
+
+-- Both tables describe a specific person's machine and the prompts sent to
+-- it, so a staging clone must never carry them. See tools/clone-db.
+COMMENT ON TABLE session_agent_leases IS 'staging:private';
+COMMENT ON TABLE local_agent_turns IS 'staging:private';
+
+-- Where this session's LAST coding turn actually ran ('platform' | 'local'),
+-- and the label of the machine that ran it. Both are display state: the
+-- authoritative "can this session run locally right now" answer is always a
+-- live row in session_agent_leases. They exist so a reloaded dev chat can
+-- paint the "Ran on Evan's laptop" chip without waiting for a lease lookup,
+-- and so the chip survives the laptop detaching afterwards.
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS last_turn_runner  VARCHAR(16);
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS local_agent_label TEXT;
 
 -- Each local transcript item carries a stable handoffEventId in metadata.
 -- This partial expression index makes append/retry idempotent without

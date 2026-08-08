@@ -134,6 +134,19 @@ test("someone else's merged proposal renders the Explore-in-dev-chat button", ()
   assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'Explore offered from ⋯ on a foreign merged card');
 });
 
+// #1045: the exception to "own cards have none". An imported proposal has no
+// platform-owned dev session, so #687 hides "Open session" on it — which
+// left the owner of a PR they imported with no AI affordance at all.
+test('my own IMPORTED proposal DOES render the Explore-in-dev-chat button (#1045)', () => {
+  const AppView = makeAppView(ME);
+  const html = AppView._renderProposalCard(baseProposal({ source: 'imported' }));
+  assert.match(html, /gc-explore-chat-btn/, 'Explore pill present on my imported proposal');
+  assert.match(html, /data-proposal-id="7"/, 'wired to the proposal id');
+  assert.doesNotMatch(html, /openProposalSession/,
+    'still no Open session — an imported PR has no dev session (#687)');
+  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw is unaffected');
+});
+
 // #321/#827: the topic detail view (_renderTopicHead) shows exactly ONE AI
 // affordance — the card's gc-explore-chat-btn PILL, wired here because the
 // head has no delegated handler. The old standalone #proposal-ask-ai button
@@ -236,6 +249,26 @@ test("topic head for the viewer's OWN proposal shows no AI button", () => {
 
   assert.doesNotMatch(head._html, /id="proposal-ask-ai"/, 'no standalone button');
   assert.doesNotMatch(head._html, /gc-explore-chat-btn/, 'no card pill on own proposal');
+});
+
+test("topic head for the viewer's OWN IMPORTED proposal wires the pill (#1045)", () => {
+  // The head has no delegated handler, so it must both PAINT the pill and
+  // bind it — a head whose gate disagrees with the card leaves an inert
+  // button. This is the case that regressed: mine && imported.
+  const { AppView, els, opened } = makeTopicHarness(ME);
+  const head = fakeHead();
+  els['gc-thread-head'] = head;
+  AppView._devTopic = { kind: 'proposal', id: 7 };
+  AppView._findTopicItem = () => baseProposal({ user_id: ME, source: 'imported' });
+
+  AppView._renderTopicHead();
+
+  assert.match(head._html, /gc-explore-chat-btn/, 'the pill is present on my imported proposal');
+  assert.doesNotMatch(head._html, /openProposalSession/, 'still no Open session (#687)');
+  assert.ok(head._pill && typeof head._pill._click === 'function', 'pill click is wired');
+  head._pill._click();
+  assert.deepEqual(opened, [[7, head._pill]],
+    'pill click reaches exploreProposalInDevChat with the id and the button node');
 });
 
 test('topic head for a governance proposal has NO AI button at all (#827)', () => {

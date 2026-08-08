@@ -40,12 +40,14 @@ const ADDED_IDS = Object.create(null);
 test('the shell still carries every id it had before the React chassis swap', () => {
   const expected = idsOf(before);
   // The fixture tracks main's hand-written markup, so this count moves when
-  // main adds a screen — it was 422 at the chassis swap and 428 after merging
-  // main (the Seasons rename, the mail console). It is asserted anyway: a
-  // SILENT drop would otherwise make the comparison below vacuous.
+  // main adds a screen — it was 422 at the chassis swap, 428 after merging
+  // main (the Seasons rename, the mail console), and 431 after merging main
+  // again and folding in the #907 local-agents settings section. It is
+  // asserted anyway: a SILENT drop would otherwise make the comparison below
+  // vacuous.
   assert.equal(
-    expected.length, 428,
-    `the pre-migration fixture has ${expected.length} ids, not the expected 428. If you refreshed `
+    expected.length, 431,
+    `the pre-migration fixture has ${expected.length} ids, not the expected 431. If you refreshed `
     + 'the fixture from main, update this number in the same commit; if you did not, the fixture '
     + 'has been edited and should be a byte copy of main\'s public/index.html.',
   );

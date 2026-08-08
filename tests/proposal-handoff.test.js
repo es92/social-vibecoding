@@ -46,6 +46,12 @@ function makeHarness() {
     activeWorkers: require.resolve('../src/services/active-workers'),
     appAccess: require.resolve('../src/services/app-access'),
     events: require.resolve('../src/services/events'),
+    // #907: the staging/checks half of a handoff build now lives in a shared
+    // module so a locally-run coding turn goes through the very same pipeline.
+    // It has to be evicted alongside the route, or it keeps a closure over the
+    // real staging and github services and the stubs below quietly stop
+    // applying to everything the route delegates.
+    pipeline: require.resolve('../src/services/handoff-pipeline'),
     subject: require.resolve('../src/routes/proposal-handoff'),
   };
   const original = new Map(Object.values(ids).map((id) => [id, require.cache[id]]));
@@ -208,10 +214,17 @@ function makeHarness() {
         return { rows: [], rowCount: matched ? 1 : 0 };
       }
       if (/SET staging_container_id = \$1, staging_url = \$2/.test(text)) {
+        // #907: ownership is now an inline `source IS DISTINCT FROM 'imported'`
+        // clause rather than a bound `source = $n`, because the same pipeline
+        // also stages native sessions run by a local coding agent. Emulate the
+        // predicate, and assert the guard is actually still in the statement.
+        assert.match(text, /source IS DISTINCT FROM 'imported'/,
+          'the pipeline must never stage over an imported mirror');
         const row = state.sessions.find((s) => s.id === Number(params[2]));
+        const owned = row && row.source !== 'imported';
         if (/status <> 'active'/.test(text)) {
-          const matched = row && row.source === params[3]
-            && (row.status !== 'active' || row.checks_commit_sha === params[4]);
+          const matched = owned
+            && (row.status !== 'active' || row.checks_commit_sha === params[3]);
           if (matched) {
             row.staging_container_id = params[0];
             row.staging_url = params[1];
@@ -219,8 +232,7 @@ function makeHarness() {
           return { rows: [], rowCount: matched ? 1 : 0 };
         }
         if (state.persistStagingError) throw new Error('staging persistence unavailable');
-        const matched = row && row.checks_commit_sha === params[3]
-          && row.status === 'active' && row.source === params[4];
+        const matched = owned && row.checks_commit_sha === params[3] && row.status === 'active';
         if (matched) {
           row.staging_container_id = params[0];
           row.staging_url = params[1];
@@ -327,6 +339,7 @@ function makeHarness() {
     EVENT_TYPES: { DEV_SESSION_STARTED: 'dev_session_started' },
     record: () => {},
   });
+  delete require.cache[ids.pipeline];
   delete require.cache[ids.subject];
   const subject = require('../src/routes/proposal-handoff');
   const router = subject.proposalHandoffRoutes({ maxGlobalSessions: 100 });
@@ -337,6 +350,7 @@ function makeHarness() {
         if (entry) require.cache[id] = entry;
         else delete require.cache[id];
       }
+      delete require.cache[ids.pipeline];
       delete require.cache[ids.subject];
     },
   };

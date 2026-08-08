@@ -468,15 +468,12 @@ test('every repaint path re-anchors instead of dismissing', () => {
   }
 });
 
-// The other half of the same bug: the headless poll repainted the whole board
-// every 8 seconds whether or not anything had moved, so even one surviving
-// menu would have been re-filled on a timer for no reason.
-test('the headless poll only repaints when a run actually moved', () => {
-  const at = SRC.indexOf('_syncHeadlessPolling() {');
-  const poll = SRC.slice(at, at + 3000);
-  assert.match(poll, /if \(changed\) AppView\._repaintCards\(\);/,
-    'an unconditional repaint here churns the board on a timer');
-});
+// The other half of the same bug used to be tested here: the headless poll
+// repainted the whole board every 8 seconds whether or not anything had
+// moved. That test is gone because the poller is — #1038 deleted
+// `_syncHeadlessPolling` outright in favour of the pushed `session_state`
+// event, which supersedes the diff-before-repaint optimization it asserted.
+// tests/session-card-layout.test.js pins the poller's continued absence.
 
 // ── Presentation: dropdown vs action sheet ──────────────────────────────
 

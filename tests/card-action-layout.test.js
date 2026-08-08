@@ -331,6 +331,19 @@ test('proposal card (author): Open session + Withdraw move to ⋯', () => {
   assertCardActionContract(AppView, html, { primary: 2, menu: true });
 });
 
+// #1045: the owner of an IMPORTED proposal gets Withdraw + Explore instead
+// of Withdraw + Open session (there is no dev session to open), and that
+// row must still lay out inline like every other.
+test('proposal card (author of an imported PR): Withdraw + Explore render inline', () => {
+  const AppView = makeAppView(ME);
+  const html = AppView._renderProposalCard(baseProposal({ user_id: ME, source: 'imported' }));
+  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw present');
+  assert.match(html, /gc-explore-chat-btn/, 'Explore in dev chat present');
+  assert.doesNotMatch(html, /openProposalSession/, 'no dev session behind an imported PR');
+  assert.match(html, /gc-card-actions/, 'shared action row present');
+  assertNoOverflowMachinery(html);
+});
+
 // ── Governance card ──────────────────────────────────────────────────────
 
 const baseGov = (over) => ({

@@ -48,6 +48,8 @@ async function migrate(config) {
   await seedStagingActiveSessions(pool, config);
   await seedStagingStartScreenSession(pool, config);
   await seedStagingSavedDrafts(pool, config);
+  await seedStagingDevFlowPicker(pool, config);
+  await seedStagingDevFlowWizard(pool, config);
   await seedStagingSharedSession(pool, config);
   // #945: must run AFTER seedStagingSharedSession — the proposal-thread
   // half hangs off that fixture's session id.
@@ -2218,6 +2220,150 @@ async function seedStagingSavedDrafts(pool, config) {
     sessionId: STAGING_SAVED_DRAFTS_SESSION_ID,
     sessionInserted: rowCount,
     draftsInserted: drafts,
+  });
+}
+
+// #1049: the two states of the alternate-development-flow picker.
+//
+// Both are message-less `active` sessions with no PR, because that is the
+// ONLY state in which the picker renders (DevChat._devFlowTarget) — a
+// session with a typed message or a proposal is past the choice. They exist
+// for the same reason the drafts fixture does: external_agent_tasks is
+// staging:private and a staging clone has no GitHub OAuth app, so a
+// reviewer opening a fresh session sees the picker's unavailable branch and
+// can review nothing.
+//
+//   990403 — /#app/<self-slug>/dev/sessions/990403
+//            the picker itself: platform vs Claude Code vs Codex, plus
+//            "remember my choice".
+//   990404 — /#app/<self-slug>/dev/sessions/990404?demo=1
+//            the five-step walkthrough, resumed from a real open
+//            external_agent_tasks row. `?demo=1` is what unlocks
+//            GET /api/apps/:slug/dev-flow/status's staging fixture (the
+//            #555 convention), so the steps render against a linked
+//            account, a ready fork and a branch not yet pushed.
+//
+// Ids stay in the 99xxxx fake range beside their neighbours (990401,
+// 990402). Idempotent on both the session ids and the task's request_key;
+// a strict no-op outside staging.
+const STAGING_DEV_FLOW_PICKER_SESSION_ID = 990403;
+const STAGING_DEV_FLOW_WIZARD_SESSION_ID = 990404;
+const STAGING_DEV_FLOW_BRANCH = 'usernode/staging-fixture-1049';
+const STAGING_DEV_FLOW_BASE_SHA = '0123456789abcdef0123456789abcdef01234567';
+
+// Same self-app + first-admin resolution the sibling session fixtures use,
+// so GET /api/sessions/<id> (owner-scoped) resolves for the tester.
+async function devFlowFixtureContext(pool, config, label) {
+  const { rows: appRows } = await pool.query(
+    'SELECT id FROM apps WHERE slug = $1',
+    [config.selfAppSlug]
+  );
+  const appId = appRows[0]?.id;
+  if (!appId) {
+    log.warn('db', `${label} skipped: self-app row missing`, { slug: config.selfAppSlug });
+    return null;
+  }
+  const { rows: userRows } = await pool.query(
+    `SELECT id, username, is_admin
+       FROM users
+      ORDER BY is_admin DESC, id ASC
+      LIMIT 1`
+  );
+  if (!userRows.length) {
+    log.warn('db', `${label} skipped: no users`);
+    return null;
+  }
+  return { appId, owner: userRows[0] };
+}
+
+async function seedStagingDevFlowPicker(pool, config) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+
+  const ctx = await devFlowFixtureContext(pool, config, 'Staging dev-flow picker fixture');
+  if (!ctx) return;
+
+  const { rowCount } = await pool.query(
+    `INSERT INTO chat_sessions
+       (id, app_id, user_id, branch_name, pr_title, session_title, status, created_at, last_activity_at)
+     VALUES ($1, $2, $3, 'staging-fixture/dev-flow-picker', NULL,
+             '[staging fixture] Pick a development flow', 'active',
+             NOW() - INTERVAL '3 minutes', NOW() - INTERVAL '3 minutes')
+     ON CONFLICT (id) DO NOTHING`,
+    [STAGING_DEV_FLOW_PICKER_SESSION_ID, ctx.appId, ctx.owner.id]
+  );
+
+  // The picker only renders while the preference is unset — that null IS
+  // "ask me every time". A staging clone that had somehow saved one would
+  // hide the fixture, so clear it for the tester.
+  await pool.query(
+    'UPDATE users SET dev_flow_preference = NULL WHERE id = $1',
+    [ctx.owner.id]
+  );
+
+  log.info('db', 'Staging dev-flow picker fixture seeded', {
+    appId: ctx.appId,
+    owner: ctx.owner.username,
+    sessionId: STAGING_DEV_FLOW_PICKER_SESSION_ID,
+    inserted: rowCount,
+  });
+}
+
+async function seedStagingDevFlowWizard(pool, config) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+
+  const ctx = await devFlowFixtureContext(pool, config, 'Staging dev-flow wizard fixture');
+  if (!ctx) return;
+
+  const { rowCount } = await pool.query(
+    `INSERT INTO chat_sessions
+       (id, app_id, user_id, branch_name, pr_title, session_title, status, created_at, last_activity_at)
+     VALUES ($1, $2, $3, 'staging-fixture/dev-flow-wizard', NULL,
+             '[staging fixture] Claude Code walkthrough', 'active',
+             NOW() - INTERVAL '9 minutes', NOW() - INTERVAL '2 minutes')
+     ON CONFLICT (id) DO NOTHING`,
+    [STAGING_DEV_FLOW_WIZARD_SESSION_ID, ctx.appId, ctx.owner.id]
+  );
+
+  // One OPEN work order, matching demoStatus() in routes/dev-flow.js field
+  // for field — the branch, the base commit and the fake fork login — so
+  // the fixture row and the ?demo=1 status payload describe the same piece
+  // of work rather than two different ones. client_id carries the picked
+  // agent exactly as the browser flow records it.
+  //
+  // Keyed on request_key: that is the column prepare_work dedupes on, so a
+  // re-run adopts this row instead of minting a second.
+  let taskInserted = 0;
+  const { rows: existingTask } = await pool.query(
+    `SELECT id FROM external_agent_tasks
+      WHERE user_id = $1 AND app_id = $2 AND request_key = $3
+      LIMIT 1`,
+    [ctx.owner.id, ctx.appId, 'brief:stagingfixture']
+  );
+  if (!existingTask.length) {
+    const { rowCount: added } = await pool.query(
+      `INSERT INTO external_agent_tasks
+         (user_id, app_id, issue_number, fork_owner, fork_repo, branch_name,
+          base_sha, brief, client_id, status, request_key, session_id,
+          created_at, expires_at)
+       VALUES ($1, $2, NULL, 'octo-contributor', $3, $4, $5,
+               'Add a dark-mode toggle to the settings screen.',
+               'usernode-web:claude-code', 'open', 'brief:stagingfixture', $6,
+               NOW() - INTERVAL '8 minutes', NOW() + INTERVAL '14 days')
+       ON CONFLICT DO NOTHING`,
+      [
+        ctx.owner.id, ctx.appId, config.selfAppSlug, STAGING_DEV_FLOW_BRANCH,
+        STAGING_DEV_FLOW_BASE_SHA, STAGING_DEV_FLOW_WIZARD_SESSION_ID,
+      ]
+    );
+    taskInserted = added;
+  }
+
+  log.info('db', 'Staging dev-flow wizard fixture seeded', {
+    appId: ctx.appId,
+    owner: ctx.owner.username,
+    sessionId: STAGING_DEV_FLOW_WIZARD_SESSION_ID,
+    sessionInserted: rowCount,
+    taskInserted,
   });
 }
 
@@ -5529,8 +5675,8 @@ async function seedStagingCloneQuestionSuggestions(pool, config) {
 
 // #330: a cloned-from-auto session whose auto run ended in a SPEC outcome.
 // The appended follow-up message (the last row) carries metadata.quickReplies
-// so the above-box pill bar renders next-step pills ("Build it" / "Revise the
-// spec" / "What will this change?") — the bug this fixes was that bar being
+// so the above-box pill bar renders next-step pills (a whole-spec "Build the
+// spec" plus this run's own specifics) — the bug this fixes was that bar being
 // empty. Sibling of seedStagingCloneQuestionSuggestions (that one covers the
 // chips/question path; this one the pills/spec path). chat_sessions /
 // chat_session_messages are staging:private (schema-only in staging), hence
@@ -5600,8 +5746,12 @@ async function seedStagingCloneSpecPills(pool, config) {
   // now asks the Mayor to author them from the auto run's own output, with the
   // fixed set only as the fallback — so the fixture carries a set naming the
   // issue and the spec, matching what the live path now produces.
+  //
+  // #1046: the build pill names the WHOLE spec. It used to read "Build the
+  // nicer header" — a component out of a plan that covered more than that,
+  // which reads as "build only that bit". The other two stay specific.
   const quickReplies = [
-    'Build the nicer header',
+    'Build the spec',
     'What does the plan for #42 change?',
     'Revise the spec first',
   ];
@@ -5709,7 +5859,7 @@ async function seedStagingQuickReplyFallback(pool, config) {
       title: '[staging fixture] Staging demo: pills fall back after a spec',
       prNumber: null,
       specMd,
-      // Expect: 'Build it' / 'Revise the spec' / 'What will this change?'
+      // Expect: 'Build the spec' / 'Revise the spec' / 'What will this change?'
       rows: [
         ['user', 'Plan out a dark mode toggle before we build anything.', {}, 12],
         ['assistant', 'The scout drafted the spec — it\'s in the spec viewer.', {}, 10],
@@ -5788,7 +5938,10 @@ async function seedStagingQuickReplyFallback(pool, config) {
         ['user', 'Plan how avatar uploads should work before building anything.', {}, 14],
         ['assistant', 'The scout drafted a spec for avatar uploads — it adds a user_avatars '
           + 'table and a crop step, and it\'s in the spec viewer now.', {
-          quickReplies: ['Build the avatar upload flow', 'Drop the crop step from the plan', 'What does this add to the database?'],
+          // #1046: post-spec, so the build pill is the whole-spec literal
+          // and the other two carry this spec's specifics. Its dapp.json
+          // check asserts the 'Build the spec' pill renders.
+          quickReplies: ['Build the spec', 'Drop the crop step from the plan', 'What does this add to the database?'],
           quickRepliesSource: 'enforced',
         }, 12],
       ],
@@ -7074,7 +7227,7 @@ async function seedStagingHeadlessFixtures(pool, config) {
       spec: {
         text: '_Spec drafted — review it in the spec viewer after starting a session from this auto session._',
         kind: 'spec_done',
-        pills: ['Build it', 'Revise the spec', 'What will this change?'],
+        pills: ['Build the spec', 'Revise the spec', 'What will this change?'],
       },
       code: {
         text: '_Change committed and pushed — start a session from this auto session to open the PR._',

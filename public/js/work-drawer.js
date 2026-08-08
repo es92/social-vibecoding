@@ -25,11 +25,18 @@
 // of the /api/notifications fetch/pagination/mark-read plumbing; this
 // module reads window.Notifications.items at render time and is nudged
 // via WorkDrawer.onNotificationsChanged() whenever that store changes.
-// Sessions/proposals are fetched here, refreshed by the same WS paths
-// that used to refresh the home strips (App.refreshHomeProposals) plus
-// a 15s poll while work is in flight — turn start/finish doesn't
-// broadcast a session_update, so without the poll the spin state would
-// only flip on the next status change.
+// Sessions/proposals are fetched here and refreshed by the same WS paths
+// that used to refresh the home strips (App.refreshHomeProposals).
+//
+// #1038: the SPIN state no longer comes from that fetch cadence. It used
+// to be driven by a 15s poll that was only armed while isWorking() was
+// ALREADY true (or the drawer was open) — which is exactly why the cog
+// never started spinning when you began a turn: nothing was polling, and
+// turn start/finish broadcast no session_update. Now the server pushes a
+// `session_state` event on every transition, window.SessionState holds
+// them, and this module subscribes and repaints. The fetched rows' own
+// `busy` flags are seeded into that store so the first paint is right,
+// and a live entry always beats a stale fetch.
 
 // The four session-related notification kinds that live in the cog
 // drawer instead of the bell. notifications.js exposes the canonical
@@ -46,7 +53,6 @@ const WorkDrawer = {
   proposals: [],
   governance: [],
   open: false,
-  _pollTimer: null,
 
   _kinds() {
     return (typeof window !== 'undefined' && window.SESSION_NOTIF_KINDS)
@@ -71,6 +77,17 @@ const WorkDrawer = {
       if (panel.contains(e.target) || btnEl.contains(e.target)) return;
       WorkDrawer.hide();
     });
+
+    // #1038: repaint the cog (and the open drawer) whenever live session
+    // state moves, with no refetch. This is what makes the cog start
+    // spinning the moment a turn begins — in this tab, another tab, or on
+    // another device.
+    if (window.SessionState) {
+      SessionState.subscribe(() => {
+        WorkDrawer._renderCog();
+        if (WorkDrawer.open) WorkDrawer._renderList();
+      });
+    }
 
     // Anonymous SPA boot (fold-auth-pages-into-SPA): the initial fetch
     // waits for the authed boot stage instead of firing a guaranteed 401
@@ -108,6 +125,11 @@ const WorkDrawer = {
 
   async refresh() {
     const demoQS = WorkDrawer._demoQS();
+    // #1038: stamped BEFORE the request goes out — that's the moment this
+    // payload is a snapshot of. Using the arrival time instead would let a
+    // slow response outrank the idle event that overtook it mid-flight and
+    // put the spinner back.
+    const issuedAt = Date.now();
     const [sessionsRes, proposalsRes] = await Promise.all([
       fetch(`/api/me/active-sessions${demoQS}`).catch(() => null),
       fetch(`/api/me/proposals${demoQS}`).catch(() => null),
@@ -117,6 +139,10 @@ const WorkDrawer = {
         const data = await sessionsRes.json();
         WorkDrawer.sessions = Array.isArray(data.sessions) ? data.sessions : [];
         WorkDrawer.totals = data.totals || { active: 0, promoted: 0, paused: 0, busy: 0, total: 0 };
+        // Fold this payload's busy flags into the live store; a live event
+        // newer than `issuedAt` wins, so a slow fetch can't resurrect a
+        // finished turn's spinner.
+        if (window.SessionState) SessionState.seed(WorkDrawer.sessions, issuedAt);
       }
     } catch { /* keep the previous snapshot */ }
     try {
@@ -128,10 +154,20 @@ const WorkDrawer = {
     } catch { /* keep the previous snapshot */ }
     WorkDrawer._renderCog();
     if (WorkDrawer.open) WorkDrawer._renderList();
-    WorkDrawer._syncPolling();
     // After the first populated refresh, so the deep-linked drawer opens
     // onto real rows rather than an empty-state flash.
     WorkDrawer._maybeShotOpen();
+  },
+
+  // #1038: live-first busy read for one of the fetched session rows. The
+  // `busy` field on the row is only a fallback for a session the store has
+  // never heard about.
+  _busy(s) {
+    if (!s) return false;
+    if (typeof window !== 'undefined' && window.SessionState) {
+      return SessionState.isBusy(s.id, s.busy);
+    }
+    return !!s.busy;
   },
 
   // "The machine is doing something for you right now": an AI turn in
@@ -140,8 +176,13 @@ const WorkDrawer = {
   // carry spinner:true — merging / resolving / checks running). A
   // session that's merely open but waiting on the user does NOT spin.
   isWorking() {
-    if ((WorkDrawer.totals && WorkDrawer.totals.busy) > 0) return true;
-    if ((WorkDrawer.sessions || []).some((s) => s.busy)) return true;
+    // #1038: `totals.busy` is a snapshot from the last fetch, so it is only
+    // trusted when the live store has nothing to say about the session it
+    // counted. Reading the rows through _busy() covers both directions —
+    // a turn that started since the fetch, and one that finished.
+    if ((WorkDrawer.sessions || []).some(WorkDrawer._busy)) return true;
+    if (!(typeof window !== 'undefined' && window.SessionState)
+      && (WorkDrawer.totals && WorkDrawer.totals.busy) > 0) return true;
     if (typeof window !== 'undefined' && window.MergeStatus && MergeStatus.lifecycle) {
       return (WorkDrawer.proposals || []).some((p) => {
         const life = MergeStatus.lifecycle(p);
@@ -157,28 +198,13 @@ const WorkDrawer = {
     icon.classList.toggle('work-cog-spinning', WorkDrawer.isWorking());
   },
 
-  // Slow refresh tick while work is in flight (or the drawer is open —
-  // its busy spinners / lifecycle chips should stay fresh too). Same
-  // 15s cadence as dev-chat's Active Sessions panel; turn start/finish
-  // doesn't broadcast a session_update, so this is what flips the cog's
-  // spin on/off between status changes. Self-clears when idle+closed;
-  // any session_update / vote_update re-arms it via refresh().
-  _syncPolling() {
-    const shouldPoll = WorkDrawer.isWorking() || WorkDrawer.open;
-    if (shouldPoll && !WorkDrawer._pollTimer) {
-      WorkDrawer._pollTimer = setInterval(() => {
-        if (!WorkDrawer.isWorking() && !WorkDrawer.open) {
-          clearInterval(WorkDrawer._pollTimer);
-          WorkDrawer._pollTimer = null;
-          return;
-        }
-        WorkDrawer.refresh();
-      }, 15000);
-    } else if (!shouldPoll && WorkDrawer._pollTimer) {
-      clearInterval(WorkDrawer._pollTimer);
-      WorkDrawer._pollTimer = null;
-    }
-  },
+  // #1038: the 15s `_syncPolling` timer that used to live here is gone.
+  // It was the drawer's only path from "a turn started" to "the cog
+  // spins", and it was armed on exactly the wrong condition — only while
+  // isWorking() was already true — so a turn beginning on an idle account
+  // never woke it. window.SessionState's pushed events (subscribed in
+  // init) drive the spin now, with its own adaptive reconcile tick as the
+  // missed-push safety net.
 
   toggle() {
     if (WorkDrawer.open) WorkDrawer.hide();
@@ -210,7 +236,6 @@ const WorkDrawer = {
           document.body.appendChild(panel);
           WorkDrawer._sheet = null;
           WorkDrawer.open = false;
-          WorkDrawer._syncPolling();
         },
       });
       if (sheet) {
@@ -236,7 +261,6 @@ const WorkDrawer = {
     if (!panel) return;
     panel.classList.add('hidden');
     WorkDrawer.open = false;
-    WorkDrawer._syncPolling();
   },
 
   // Nudge from notifications.js whenever its items store changes (WS
@@ -365,20 +389,23 @@ const WorkDrawer = {
     // (stable sort preserves activity order within each bucket). Cap at
     // 10 — the per-user slot caps keep the real count small; this is
     // just a safety bound.
+    // #1038: busy comes from the live store, so the ordering re-sorts on a
+    // pushed transition rather than on the next fetch.
     const shown = [...all]
-      .sort((a, b) => (b.busy ? 1 : 0) - (a.busy ? 1 : 0))
+      .sort((a, b) => (WorkDrawer._busy(b) ? 1 : 0) - (WorkDrawer._busy(a) ? 1 : 0))
       .slice(0, 10);
 
     let rows = '';
     for (const s of shown) {
       const title = s.session_title || s.pr_title || s.branch_name || `Session #${s.id}`;
       const rel = wdRelativeTime(s.last_activity_at || s.created_at);
-      const busyTag = s.busy
+      const busy = WorkDrawer._busy(s);
+      const busyTag = busy
         ? '<span class="inline-flex items-center gap-1 text-xs text-emerald-500 shrink-0"><span class="dc-status-icon dc-status-spinner-arc" aria-hidden="true"></span>working…</span>'
         : '';
-      const statusTag = !s.busy && s.status === 'paused'
+      const statusTag = !busy && s.status === 'paused'
         ? '<span class="text-[0.65rem] font-medium text-zinc-400 dark:text-zinc-500 uppercase shrink-0">paused</span>'
-        : (!s.busy && s.status === 'promoted'
+        : (!busy && s.status === 'promoted'
           ? '<span class="text-[0.65rem] font-medium text-violet-400 uppercase shrink-0">in vote</span>'
           : '');
       const timeTag = rel
@@ -453,7 +480,7 @@ const WorkDrawer = {
     // (promoted sessions can be mid-turn; see /api/me/active-sessions).
     const busyIds = new Set(
       (Array.isArray(WorkDrawer.sessions) ? WorkDrawer.sessions : [])
-        .filter((s) => s.busy).map((s) => s.id)
+        .filter(WorkDrawer._busy).map((s) => s.id)
     );
     const busyTag = '<span class="inline-flex items-center gap-1 text-xs text-emerald-500 shrink-0"><span class="dc-status-icon dc-status-spinner-arc" aria-hidden="true"></span>working…</span>';
 

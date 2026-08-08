@@ -21,8 +21,18 @@ const {
 // capability this route advertises can never disagree with what that
 // surface actually serves.
 const { isCliSurfaceEnabled } = require('./cli-auth');
+// The external-agent hand-off needs the identity-only GitHub link, so
+// whether that link is configurable at all decides whether /api/auth/me
+// advertises the Claude Code / Codex flows (#1049).
+const githubLink = require('../services/github-link');
 
 const SESSION_DAYS = 7;
+
+// Preferred development flow (#1049). The SAME allowlist as the CHECK on
+// users.dev_flow_preference and as DevFlowSelect.FLOWS in
+// public/js/dev-flow-select.js; tests/dev-flow-preference.test.js pins all
+// three together so a new flow can't land in one place only.
+const DEV_FLOWS = ['platform', 'claude-code', 'codex'];
 
 // Staging mock data (#555): llm_usage is staging:private, so in a
 // prod-cloned staging DB every viewer's AI-credit row would render a
@@ -224,10 +234,16 @@ function authRoutes(config) {
     // the client contract a single boolean — the home screen reads only
     // `canCreateApps` and needs no change as the quota feature lands.
     let canCreateApps = !!req.user.isAdmin;
+    // Preferred development flow (#1049). Read here rather than in the
+    // per-request session hydration for the same reason as the profile
+    // block above: this endpoint already pays for one users lookup, and
+    // only this endpoint renders the value.
+    let devFlowPreference = null;
     try {
       const { rows } = await pool.query(
         `SELECT u.anthropic_key_enc, u.anthropic_key_last4, u.usernode_pubkey,
-                u.display_name, u.bio, u.github, u.x, av.id AS avatar_id
+                u.display_name, u.bio, u.github, u.x, u.dev_flow_preference,
+                av.id AS avatar_id
            FROM users u
            LEFT JOIN user_avatars av ON av.user_id = u.id
           WHERE u.id = $1`,
@@ -238,6 +254,9 @@ function authRoutes(config) {
         keyLast4 = rows[0].anthropic_key_last4 || null;
       }
       usernodePubkey = rows[0]?.usernode_pubkey || null;
+      devFlowPreference = DEV_FLOWS.includes(rows[0]?.dev_flow_preference)
+        ? rows[0].dev_flow_preference
+        : null;
       profile = shapeProfile(rows[0]);
     } catch {}
     if (!canCreateApps) {
@@ -302,6 +321,23 @@ function authRoutes(config) {
         // client renders what the server reports, it never sniffs the
         // environment itself.
         cliAuthEnabled: isCliSurfaceEnabled(config),
+        // Preferred development flow (#1049): 'platform' | 'claude-code' |
+        // 'codex', or null for "ask me every time" (the default — the
+        // dev-chat picker renders). Written by POST /api/me/dev-flow.
+        devFlowPreference,
+        // Whether the Claude Code / Codex hand-off is offerable AT ALL in
+        // this deployment. The external-agent flow needs the identity-only
+        // GitHub link to attribute the user's fork, so with no GitHub OAuth
+        // credentials configured there is nothing to guide anyone through.
+        // Same shape as walletLinkEnabled / cliAuthEnabled above: the client
+        // renders what the server reports and never sniffs the environment.
+        // A staging clone has no GitHub OAuth app, so this would be false
+        // there and the whole #1049 surface would be unreviewable. Saying
+        // "offerable" in staging unlocks nothing: the two writes answer 503
+        // (routes/dev-flow.js), and the status route still reports
+        // available:false unless the request carries the ?demo=1 fixture
+        // flag — so the card only appears where a reviewer asks for it.
+        externalFlowsAvailable: IS_STAGING || githubLink.isEnabled(config),
       },
     });
   });
@@ -464,6 +500,36 @@ function authRoutes(config) {
       res.json({ ok: true, enabled });
     } catch (err) {
       log.error('settings', 'Failed to toggle AI progress estimate', { userId: req.user.id, err: err.message });
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Preferred development flow (issue #1049). Written by the "remember my
+  // option" checkbox on the dev-chat flow picker and by Settings →
+  // Connections. Body { flow: 'platform' | 'claude-code' | 'codex' | null }
+  // — null (or "") clears it back to "ask me every time", which is what
+  // unticking the checkbox sends.
+  router.post('/api/me/dev-flow', async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+    const { flow } = req.body || {};
+
+    let normalized = null;
+    if (flow !== null && flow !== undefined && flow !== '') {
+      if (typeof flow !== 'string' || !DEV_FLOWS.includes(flow)) {
+        return res.status(400).json({ error: `flow must be one of ${DEV_FLOWS.join(', ')} or null` });
+      }
+      normalized = flow;
+    }
+
+    try {
+      await pool.query(
+        'UPDATE users SET dev_flow_preference = $1 WHERE id = $2',
+        [normalized, req.user.id]
+      );
+      log.info('settings', 'Dev flow preference saved', { userId: req.user.id, flow: normalized });
+      res.json({ ok: true, flow: normalized });
+    } catch (err) {
+      log.error('settings', 'Failed to save dev flow preference', { userId: req.user.id, err: err.message });
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -1021,4 +1087,4 @@ function authRoutes(config) {
   return router;
 }
 
-module.exports = { authRoutes };
+module.exports = { authRoutes, DEV_FLOWS };

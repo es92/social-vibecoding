@@ -6,7 +6,6 @@ const { getPool } = require('../db/pool');
 const appAccess = require('../services/app-access');
 const github = require('../services/github');
 const staging = require('../services/staging');
-const stagingRecovery = require('../services/staging-recovery');
 const visuals = require('../services/visuals');
 const sessionLifecycle = require('../services/session-lifecycle');
 const { beginSessionOperation, isSessionBusy } = require('../services/active-workers');
@@ -36,55 +35,18 @@ const MAX_TESTS = 50;
 const COMMIT_UPLOAD_JSON_LIMIT = '12mb';
 const RFC3339_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
-// A user can submit a newer local commit while an earlier HTTP request is
-// still proving ancestry/updating GitHub. Serialize that adoption per session
-// so an older request can never persist its SHA after the newer request and
-// regress the durable reviewed head. This matches staging.js's process model;
-// deployments run one platform process, while different sessions still move
-// independently.
-const handoffSubmissionTails = new Map();
-const handoffPipelines = new Set();
-
-function serializeHandoffSubmission(sessionId, fn) {
-  const key = String(sessionId);
-  const previous = handoffSubmissionTails.get(key) || Promise.resolve();
-  const run = previous.then(fn, fn);
-  const tail = run.then(() => {}, () => {});
-  handoffSubmissionTails.set(key, tail);
-  tail.then(() => {
-    if (handoffSubmissionTails.get(key) === tail) handoffSubmissionTails.delete(key);
-  });
-  return run;
-}
-
-function hasInFlightHandoffPipeline(sessionId) {
-  return handoffPipelines.has(String(sessionId));
-}
-
-function beginHandoffPipeline(sessionId) {
-  const key = String(sessionId);
-  handoffPipelines.add(key);
-  const releaseOperation = beginSessionOperation(sessionId);
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    handoffPipelines.delete(key);
-    releaseOperation();
-  };
-}
-
-function startHandoffPipeline(config, pool, session, app, headSha, releasePipeline) {
-  const run = runStaging(config, pool, session, app, headSha);
-  run.catch((err) => {
-    log.error('proposal-handoff', 'Unexpected handoff run rejection', {
-      sessionId: session.id, err: err.message,
-    });
-  }).finally(() => {
-    releasePipeline();
-  });
-  return run;
-}
+// The staging/visuals tail and its per-session serialization moved to
+// services/handoff-pipeline.js in #907, so a local coding agent attached to
+// an ordinary native session finishes through exactly the same code path this
+// route has always used. Re-exported below for existing importers and tests.
+const {
+  serializeHandoffSubmission,
+  hasInFlightHandoffPipeline,
+  beginHandoffPipeline,
+  startHandoffPipeline,
+  discardHandoffStaging,
+  runStaging,
+} = require('../services/handoff-pipeline');
 
 class ValidationError extends Error {}
 class HandoffConflictError extends Error {}
@@ -530,123 +492,6 @@ async function loadOwnedHandoff(pool, sessionId, userId) {
     [sessionId, userId, SOURCE]
   );
   return rows[0] || null;
-}
-
-async function discardHandoffStaging(pool, session, app, result, expectedHeadSha) {
-  try {
-    const removed = await staging.teardownStaging(
-      { ...session, staging_container_id: result.containerId, staging_url: result.stagingUrl },
-      { slug: app.slug }
-    );
-    if (removed?.leaked) {
-      // teardownStaging deliberately leaves a durable pointer on failure so
-      // the staging reaper can retry. This result was never attached to the
-      // row, so establish that pointer only after removal actually leaked.
-      await pool.query(
-        `UPDATE chat_sessions
-            SET staging_container_id = $1, staging_url = $2
-          WHERE id = $3 AND source = $4
-            AND (status <> 'active'
-                 OR checks_commit_sha IS NOT DISTINCT FROM $5)`,
-        [result.containerId, result.stagingUrl, session.id, SOURCE, expectedHeadSha]
-      ).catch((err) => log.warn('proposal-handoff', 'Failed to retain leaked staging pointer', {
-        sessionId: session.id, err: err.message,
-      }));
-    }
-  } catch (err) {
-    log.warn('proposal-handoff', 'Failed to discard superseded staging build', {
-      sessionId: session.id, err: err.message,
-    });
-  }
-}
-
-async function runStaging(config, pool, session, app, headSha) {
-  let result;
-  try {
-    result = await staging.buildAndDeployStaging(config, session, app, headSha);
-  } catch (err) {
-    // A newer submission may have queued while this build was running. Its
-    // pending verdict must not be overwritten by a late failure from the old
-    // head.
-    const { rows } = await pool.query(
-      `SELECT status, checks_commit_sha FROM chat_sessions WHERE id = $1`,
-      [session.id]
-    ).catch(() => ({ rows: [] }));
-    if (rows[0]?.status !== 'active' || rows[0]?.checks_commit_sha !== headSha) {
-      log.info('proposal-handoff', 'Ignoring stale staging failure', {
-        sessionId: session.id, headSha,
-      });
-      return;
-    }
-    log.error('proposal-handoff', 'Staging build failed', {
-      sessionId: session.id, headSha, err: err.message,
-    });
-    await stagingRecovery.recordStagingBootFailure({
-      config, pool, session, commitHash: headSha, err,
-    }).catch((recordErr) => log.warn('proposal-handoff', 'Failed to record staging failure', {
-      sessionId: session.id, err: recordErr.message,
-    }));
-    return;
-  }
-
-  try {
-    const persisted = await pool.query(
-      `UPDATE chat_sessions
-          SET staging_container_id = $1, staging_url = $2, last_activity_at = NOW()
-        WHERE id = $3 AND checks_commit_sha = $4
-          AND status = 'active' AND source = $5`,
-      [result.containerId, result.stagingUrl, session.id, headSha, SOURCE]
-    );
-    // A newer accepted head now owns the session. Its serialized build will
-    // replace this container; do not let the stale capture overwrite the
-    // newer head's pending check state in the meantime.
-    if (!persisted.rowCount) {
-      const { rows } = await pool.query(
-        `SELECT status, checks_commit_sha FROM chat_sessions WHERE id = $1`,
-        [session.id]
-      ).catch(() => ({ rows: [] }));
-      const current = rows[0];
-      if (!current || current.status !== 'active') {
-        await discardHandoffStaging(pool, session, app, result, headSha);
-      }
-      return;
-    }
-  } catch (err) {
-    log.error('proposal-handoff', 'Failed to persist staging result', {
-      sessionId: session.id, headSha, err: err.message,
-    });
-    // The container and cloned DB already exist, but no durable row points at
-    // them. Best-effort removal is safer than leaving an undiscoverable
-    // preview behind after a transient persistence failure.
-    await discardHandoffStaging(pool, session, app, result, headSha);
-    return;
-  }
-
-  await staging.warmStagingCert(session, result.hostname, result.stagingUrl)
-    .catch((err) => log.warn('proposal-handoff', 'Staging certificate warm failed (non-fatal)', {
-      sessionId: session.id, err: err.message,
-    }));
-  // The CLI has no open SSE response, so use the global/session buses to make
-  // an optionally-open web Dev page learn that its preview is live.
-  try {
-    const { broadcastGlobal, pushSessionUpdate } = require('../services/ws');
-    broadcastGlobal({
-      type: 'session_event', sessionId: session.id,
-      event: 'staging_ready', url: result.stagingUrl,
-    });
-    pushSessionUpdate({
-      action: 'staging_ready', sessionId: session.id, appSlug: app.slug,
-    });
-  } catch (err) {
-    log.warn('proposal-handoff', 'Staging-ready notify failed (non-fatal)', {
-      sessionId: session.id, err: err.message,
-    });
-  }
-
-  // captureForSession owns its terminal error verdict and never lets a test
-  // runner failure escape. Awaiting it here keeps status honest while still
-  // running entirely outside the original HTTP request.
-  await visuals.captureForSession(config, session, app, headSha, result);
 }
 
 function proposalHandoffRoutes(config) {
@@ -1245,5 +1090,6 @@ module.exports = {
   currentCheckedHead,
   serializeHandoffSubmission,
   hasInFlightHandoffPipeline,
+  ValidationError,
   SOURCE,
 };

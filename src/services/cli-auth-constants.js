@@ -4,7 +4,15 @@ const CLIENT_ID = 'social-vibecoding-cli';
 const CLIENT_NAME = 'Social Vibecoding CLI';
 const IDENTITY_SCOPE = 'rpc:identity:read';
 const API_SCOPE = 'api:access';
-const REQUIRED_SCOPES = Object.freeze([IDENTITY_SCOPE, API_SCOPE]);
+// #907: the local coding agent. Deliberately its own scope rather than a
+// reuse of api:access — the agent protocol lets a machine claim a session's
+// coding turn and stream its result back, which is a materially larger grant
+// than "read and write the user-facing JSON API". Credentials issued before
+// this scope existed keep working for everything else and get a plain
+// 403 insufficient_scope on /api/cli/agent/*, which the CLI turns into a
+// re-login prompt.
+const AGENT_SCOPE = 'agent:local';
+const REQUIRED_SCOPES = Object.freeze([IDENTITY_SCOPE, API_SCOPE, AGENT_SCOPE]);
 const REQUIRED_SCOPE_TEXT = REQUIRED_SCOPES.join(' ');
 const PRODUCTION_ORIGIN = 'https://social-vibecoding.usernodelabs.org';
 const LOCAL_ORIGIN = 'http://localhost:3000';
@@ -17,6 +25,7 @@ module.exports = {
   CLIENT_NAME,
   IDENTITY_SCOPE,
   API_SCOPE,
+  AGENT_SCOPE,
   REQUIRED_SCOPES,
   REQUIRED_SCOPE_TEXT,
   PRODUCTION_ORIGIN,

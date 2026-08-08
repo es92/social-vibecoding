@@ -169,3 +169,130 @@ test('the excerpt survives round-tripping through the work order intact', () => 
   assert.ok(!essentials.includes('```'), 'the excerpt carries no triple-backtick fence');
   assert.ok(!order.includes('```'));
 });
+
+// ── What the work order says beyond the appendix ──────────────────────────
+//
+// The excerpt is deliberately incomplete. Three things therefore have to be
+// said in the instructions themselves: that the rest of the handbook is one
+// connector call away, that a submission has to carry its own testing
+// routes, and that the checks it triggers gate merge and are fixable in the
+// same session.
+
+// The full-fat work order, as prepare_work builds it for a submittable task.
+function fullOrder(overrides = {}) {
+  return svc.buildWorkOrder({
+    appName: 'Recipe Box', appSlug: 'recipe-box',
+    upstreamUrl: 'https://github.com/usernode-bot/recipe-box',
+    upstreamSlug: 'usernode-bot/recipe-box',
+    forkUrl: 'https://github.com/someuser/recipe-box',
+    forkCloneUrl: 'https://github.com/someuser/recipe-box.git',
+    forkRepo: 'recipe-box',
+    forkPageUrl: 'https://github.com/usernode-bot/recipe-box/fork',
+    forkStatus: 'ready',
+    branch: 'usernode/recipe-box-issue-4-abc123',
+    baseSha: `ba5e${'0'.repeat(34)}fe`,
+    brief: 'x',
+    webPath: 'https://usernode.example/#app/recipe-box',
+    taskId: 31,
+    platformRules: prompts.getWorkOrderEssentials(),
+    ...overrides,
+  });
+}
+
+// Instruction text only. The appendix quotes the conventions verbatim and so
+// mentions several of the same terms; a match anywhere in the whole order
+// would pass on the appendix's wording rather than the instructions'.
+function instructions(order) {
+  const at = order.indexOf('\nPLATFORM RULES');
+  return at > 0 ? order.slice(0, at) : order;
+}
+
+test('the work order says the appendix is partial and names the lookup', () => {
+  const order = instructions(fullOrder());
+  // An agent that does not know the handbook is reachable guesses instead —
+  // and the guesses are what the excerpt exists to prevent.
+  assert.match(order, /EXCERPT/, 'it says so in as many words');
+  assert.match(order, /get_platform_conventions/);
+  assert.match(order, /index of every\s+section/, 'and how to use it: index first');
+  assert.match(order, /section slug for the full text/, 'then one section');
+  // The reason the call works when the site does not answer. Without this an
+  // agent that has already been refused by the host assumes the connector
+  // is down too and stops asking.
+  assert.match(order, /sandbox cannot reach the Usernode website/i);
+  assert.match(order, /connector traffic does not go through your container/i);
+});
+
+test('the work order asks for the testing routes, pointed at the changed screen', () => {
+  const order = instructions(fullOrder());
+  assert.match(order, /testingPaths/);
+  assert.match(order, /testingSteps/);
+  // Why it matters, in the terms the agent can act on: this is what the
+  // before/after screenshots the voters see are shot from.
+  assert.match(order, /before\/after screenshot/i);
+  assert.match(order, /THE SCREEN YOU\s+CHANGED/);
+  assert.match(order, /not the home page/);
+  // And the escape hatch for a screen no URL reaches, so "I cannot give a
+  // route" never becomes a reason to omit them.
+  assert.match(order, /deep link/i);
+  assert.match(order, /query param handled at boot/);
+});
+
+test('the work order says the checks gate merge and how to clear them', () => {
+  const order = instructions(fullOrder());
+  assert.match(order, /GATE MERGE/);
+  assert.match(order, /cannot merge however the vote goes/);
+  assert.match(order, /get_proposal/, 'it names the tool that reports them');
+  // The fix is another commit on the same branch. The two wrong moves are
+  // resubmitting and starting over, so both are named as prohibited.
+  assert.match(order, /push again to the SAME branch/);
+  assert.doesNotMatch(
+    order, /call `submit_work` again(?! with slug)/,
+    'resubmitting is not offered as the remedy'
+  );
+  const step7 = order.slice(order.indexOf('7. THEN CHECK THE CHECKS'));
+  assert.match(step7, /Do not call\s+`submit_work` again/);
+  assert.match(step7, /do not call `prepare_work`/);
+  // The one signal that says the testing routes were dropped on the way in.
+  assert.match(step7, /captureDefaultedToRoot/);
+});
+
+test('a task with nothing to submit gets none of the submission guidance', () => {
+  // The no-task work order ends at "push your branch and report it" — a
+  // reader with no proposal to check must not be told to check its checks.
+  const order = instructions(svc.buildWorkOrder({
+    appName: 'A', appSlug: 'a', upstreamUrl: 'u', upstreamSlug: 'o/a', forkUrl: 'f',
+    forkCloneUrl: 'f.git', forkRepo: 'a', forkPageUrl: 'p', forkStatus: 'ready',
+    branch: 'b', baseSha: 's', brief: 'x',
+    platformRules: prompts.getWorkOrderEssentials(),
+  }));
+  assert.doesNotMatch(order, /THEN CHECK THE CHECKS/);
+  assert.doesNotMatch(order, /testingPaths/);
+  // The handbook pointer is not submission guidance, so it stays.
+  assert.match(order, /get_platform_conventions/);
+});
+
+test('every addition sits above the appendix, and none brings a fence', () => {
+  const order = fullOrder();
+  const appendix = order.indexOf('\nPLATFORM RULES');
+  assert.ok(appendix > 0, 'the appendix is there to be above');
+  // The boundary marker is the heading ON ITS OWN LINE. The words also
+  // appear mid-sentence just above it ("The PLATFORM RULES below are the
+  // offline excerpt"), so a bare substring search finds the wrong place —
+  // which is exactly the trap a new pointer to the appendix falls into.
+  assert.equal(
+    order.split('\nPLATFORM RULES\n').length - 1, 1,
+    'the heading occurs once as a line of its own'
+  );
+  for (const marker of [
+    'get_platform_conventions',
+    'testingPaths',
+    '7. THEN CHECK THE CHECKS',
+  ]) {
+    const at = order.indexOf(marker);
+    assert.ok(at > 0, `${marker} is in the work order`);
+    assert.ok(at < appendix, `${marker} is instruction text, not appendix text`);
+  }
+  // The whole order is pasted inside one fence by the host. A nested fence
+  // closes it early and the rest arrives as prose.
+  assert.ok(!order.includes('```'), 'no triple-backtick fence anywhere');
+});

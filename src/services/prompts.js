@@ -56,6 +56,98 @@ function getWorkOrderEssentials() {
   return cachedEssentials;
 }
 
+// ── Section index — the connector's conventions lookup ──────────────────
+//
+// The offline excerpt above is ~4 KB of the document's 116 KB. It is what a
+// work order can afford to carry, and it is deliberately the nine rules an
+// agent working blind gets WORST. It is not the native UI kit's component
+// list, the LLM proxy's request shape, or the `secrets` declaration format —
+// and an agent that needs one of those still has nowhere to read it, because
+// its own container cannot reach this host.
+//
+// MCP connector traffic can: it egresses through the chat product's
+// infrastructure rather than the sandbox's. So the same document is also
+// served section by section over the connector (get_platform_conventions in
+// services/mcp-tools.js). These helpers do the slicing.
+//
+// The parse is one line of intent: the document's own `## ` headings ARE the
+// index, so there is no second table of contents to keep in step. Slugs are
+// kebab-cased heading text, computed once with the split and cached beside
+// the two caches above, so a tool call is a map lookup rather than a
+// re-parse of 116 KB.
+let cachedSections = null;
+
+// Heading text → slug. Backticks, emphasis markers and apostrophes are
+// dropped rather than turned into separators, so "Don't `git push` yourself"
+// is `dont-git-push-yourself` and not `don-t-git-push-yourself`; every other
+// run of non-alphanumerics collapses to a single dash.
+function slugifyHeading(title) {
+  return String(title)
+    .replace(/[`*’']/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function parseSections() {
+  if (cachedSections !== null) return cachedSections;
+  const doc = getAppConventions();
+  const sections = [];
+  if (!doc) {
+    // Same posture as the excerpt: an unreadable document costs the lookup
+    // tool its answer, never a whole turn.
+    cachedSections = sections;
+    return cachedSections;
+  }
+  const heads = [];
+  const re = /^## (.+)$/gm;
+  for (let m; (m = re.exec(doc)) !== null; ) {
+    heads.push({ title: m[1].trim(), start: m.index });
+  }
+  const used = new Set();
+  heads.forEach((head, i) => {
+    const end = i + 1 < heads.length ? heads[i + 1].start : doc.length;
+    // The heading line travels WITH its body: a section handed to an agent
+    // on its own should still say what it is.
+    const content = doc.slice(head.start, end).trim();
+    let slug = slugifyHeading(head.title) || `section-${i + 1}`;
+    if (used.has(slug)) {
+      let n = 2;
+      while (used.has(`${slug}-${n}`)) n += 1;
+      slug = `${slug}-${n}`;
+    }
+    used.add(slug);
+    sections.push({
+      slug,
+      title: head.title,
+      bytes: Buffer.byteLength(content, 'utf8'),
+      content,
+    });
+  });
+  cachedSections = sections;
+  return cachedSections;
+}
+
+// The index: one entry per H2 section, without the bodies. `bytes` lets the
+// caller (and the model) see what a section costs before asking for it.
+function getConventionSections() {
+  return parseSections().map(({ slug, title, bytes }) => ({ slug, title, bytes }));
+}
+
+// One section by slug, or null when the slug is unknown. Returns
+// { slug, title, bytes, content } — `content` includes the heading line.
+function getConventionSection(slug) {
+  const want = typeof slug === 'string' ? slug.trim().toLowerCase() : '';
+  if (!want) return null;
+  return parseSections().find((s) => s.slug === want) || null;
+}
+
+// Exported for the tests, which pin the slug list so a heading edit that
+// silently breaks a slug an agent has already learned shows up as a failure.
+function getConventionSlugs() {
+  return parseSections().map((s) => s.slug);
+}
+
 // SELF-HOSTING.md sub-step 2i: appended to the Mayor system prompt
 // only when the chat session's app is self_hosted=TRUE. The list
 // is the source of truth (originally derived from the design-phase
@@ -103,6 +195,9 @@ function getSelfHostedRefuseList() {
 module.exports = {
   getAppConventions,
   getWorkOrderEssentials,
+  getConventionSections,
+  getConventionSection,
+  getConventionSlugs,
   getSelfHostedRefuseList,
   WORK_ORDER_BEGIN,
   WORK_ORDER_END,

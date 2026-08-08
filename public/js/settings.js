@@ -39,7 +39,12 @@
   'use strict';
 
   const Settings = {
-    state: { hasApiKey: false, keyLast4: null, usernodePubkey: null, walletLinkEnabled: false, aiProgressEstimate: false, locale: null },
+    // `devFlowPreference` is the "remember my option" answer from the
+    // dev-chat flow picker (#1049): null = ask every time (the default),
+    // otherwise 'platform' | 'claude-code' | 'codex'. `externalFlowsAvailable`
+    // says whether this deployment can offer the Claude Code / Codex
+    // hand-off at all — the server decides, we only render what it reports.
+    state: { hasApiKey: false, keyLast4: null, usernodePubkey: null, walletLinkEnabled: false, aiProgressEstimate: false, locale: null, devFlowPreference: null, externalFlowsAvailable: false },
     _walletPollTimer: null,
     _alertsTestTimer: null,
     _walletExpiresAt: null,
@@ -48,6 +53,8 @@
     _cliTokenCursor: null,
     _cliTokensLoading: false,
     _cliTokenLoadId: 0,
+    // #907: machines currently attached to one of this account's sessions.
+    _localAgents: [],
     _connectors: [],
     _connectorLoadId: 0,
     _githubLink: null,
@@ -306,6 +313,8 @@
         this.state.walletLinkEnabled = !!j.user?.walletLinkEnabled;
         this.state.aiProgressEstimate = !!j.user?.aiProgressEstimate;
         this.state.locale = j.user?.locale || null;
+        this.state.devFlowPreference = j.user?.devFlowPreference || null;
+        this.state.externalFlowsAvailable = !!j.user?.externalFlowsAvailable;
         // Same payload the CLI-credentials gate needs, so prime its memo
         // rather than let it issue a second /api/auth/me. (It still
         // fetches on its own when it runs first — the two orders both
@@ -316,6 +325,10 @@
         // the menu at all, and it lands here — possibly AFTER a cold-boot
         // deep link has already painted. Re-resolve the menu.
         this._renderWalletSection();
+        // The preference lands here too, and Connections may already be
+        // painted (a cold-boot deep link to #settings/connectors renders
+        // before this resolves). Same reasoning as the wallet row above.
+        this._renderDevFlowSection();
         this._renderNavIfOpen();
       } catch {}
     },
@@ -345,6 +358,7 @@
       this._loadGithubLink();
       this._renderAgentFilesSection();
       this._renderWalletSection();
+      this._renderDevFlowSection();
       this._renderChangePasswordSection();
       this._renderDevConsoleSection();
       this._renderLanguageSection();
@@ -764,6 +778,115 @@
       if (toggle) toggle.checked = !!this.state.aiProgressEstimate;
       const status = document.getElementById('ai-progress-estimate-status');
       if (status) { status.classList.add('hidden'); status.textContent = ''; }
+      this._renderLocalAgentsSection();
+    },
+
+    // #907: the machines currently attached to one of this account's dev
+    // sessions. GET /api/me/local-agents is deliberately NOT part of the CLI
+    // token surface — a lease is routing state, not a credential — so unlike
+    // the token list above it answers on staging too.
+    //
+    // The block hides itself outright when nothing is attached. An empty
+    // "Local coding agent — none" panel would be noise on every account that
+    // has never used the CLI, which is nearly all of them.
+    async _renderLocalAgentsSection() {
+      const section = document.getElementById('settings-local-agents-section');
+      const list = document.getElementById('settings-local-agents-list');
+      const status = document.getElementById('settings-local-agents-status');
+      if (!section || !list) return;
+      if (status) { status.classList.add('hidden'); status.textContent = ''; }
+
+      let agents = [];
+      try {
+        const query = this._cliTokensDemo() ? '?demo=1' : '';
+        const r = await fetch(`/api/me/local-agents${query}`, { credentials: 'same-origin' });
+        if (r.ok) {
+          const j = await r.json();
+          if (Array.isArray(j.agents)) agents = j.agents;
+        }
+      } catch {}
+
+      this._localAgents = agents;
+      section.classList.toggle('hidden', agents.length === 0);
+      list.textContent = '';
+      for (const agent of agents) {
+        list.appendChild(this._localAgentCard(agent));
+      }
+      if (status && agents.some((a) => a.demo)) {
+        status.textContent = 'Demo data — changes are not saved.';
+        status.classList.remove('hidden', 'text-red-500', 'text-emerald-500');
+      }
+    },
+
+    // Built with DOM calls rather than innerHTML: the label is free text the
+    // user typed on their own machine and arrives here verbatim.
+    _localAgentCard(agent) {
+      const card = document.createElement('div');
+      card.className = 'rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-2';
+
+      const top = document.createElement('div');
+      top.className = 'flex items-start justify-between gap-3';
+      const text = document.createElement('div');
+      text.className = 'min-w-0';
+
+      const title = document.createElement('div');
+      title.className = 'text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate';
+      title.textContent = agent.label || 'Unnamed machine';
+
+      const where = document.createElement('div');
+      where.className = 'text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate';
+      const app = agent.appName || agent.appSlug || 'an app';
+      where.textContent = agent.sessionTitle
+        ? `${app} · ${agent.sessionTitle}` : String(app);
+
+      const detail = document.createElement('div');
+      detail.className = 'text-xs text-zinc-500 dark:text-zinc-400 mt-0.5';
+      const seen = Number.isFinite(Date.parse(agent.lastSeenAt))
+        ? new Date(agent.lastSeenAt).toLocaleTimeString() : 'unknown';
+      detail.textContent = `${agent.runtime || 'claude-code'} · last seen ${seen}`;
+
+      text.append(title, where, detail);
+      top.appendChild(text);
+
+      // Demo rows (staging ?demo=1) are fabricated per request and own no
+      // lease, so there is nothing for a button to release.
+      if (!agent.demo && agent.leaseId) {
+        const detach = document.createElement('button');
+        detach.type = 'button';
+        detach.className = 'shrink-0 rounded border border-zinc-400 dark:border-zinc-600 px-2 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors';
+        detach.textContent = 'Detach';
+        detach.addEventListener('click', () => this._detachLocalAgent(agent, detach));
+        top.appendChild(detach);
+      }
+      card.appendChild(top);
+      return card;
+    },
+
+    // Releasing from here must not need the machine to cooperate: the common
+    // case is a laptop that was closed or lost its network, and the whole
+    // point is to get the session's turns back without waiting out the lease.
+    async _detachLocalAgent(agent, button) {
+      const label = agent.label || 'this machine';
+      if (!window.confirm(`Detach ${label}?\n\nIts session's coding turns go back to running on Usernode. Anything it already committed stays on the branch.`)) return;
+      const status = document.getElementById('settings-local-agents-status');
+      button.disabled = true;
+      try {
+        const r = await fetch(`/api/me/local-agents/${encodeURIComponent(agent.leaseId)}`, {
+          method: 'DELETE',
+          credentials: 'same-origin',
+        });
+        // 404 means it already went away (it detached itself, or the sweeper
+        // expired it) — the user's intent is satisfied either way.
+        if (r.status !== 204 && r.status !== 404) throw new Error('Could not detach that machine.');
+        await this._renderLocalAgentsSection();
+      } catch (err) {
+        button.disabled = false;
+        if (status) {
+          status.textContent = err.message || 'Could not detach that machine.';
+          status.classList.remove('hidden', 'text-emerald-500');
+          status.classList.add('text-red-500');
+        }
+      }
     },
 
     // #911: one checkbox per home-screen panel, built from
@@ -859,6 +982,64 @@
       }
       select.value = value;
       const status = document.getElementById('settings-locale-status');
+      if (status) { status.classList.add('hidden'); status.textContent = ''; }
+    },
+
+    // "Preferred build flow" (#1049) — the escape hatch for the dev-chat
+    // picker's "remember my option" checkbox. Once a user ticks that box the
+    // picker stops rendering, so there has to be somewhere to change their
+    // mind; Connections is where the GitHub link and the connectors already
+    // live, which is exactly the machinery the external flows depend on.
+    //
+    // The markup is BUILT HERE rather than in frontend/src/Shell.tsx: the
+    // shell's body is frozen against tests/fixtures/pre-migration-index.html
+    // by tests/shell-markup-parity.test.js (no new elements, no attribute
+    // changes), so a new settings control has to be injected at runtime.
+    // Idempotent — _renderAllSections and refresh() both call it.
+    _renderDevFlowSection() {
+      const host = document.querySelector('[data-settings-section="connectors"]');
+      if (!host) return;
+      let block = document.getElementById('dev-flow-pref-section');
+      if (!block) {
+        block = document.createElement('div');
+        block.id = 'dev-flow-pref-section';
+        block.className = 'mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800';
+        block.innerHTML = `
+          <h3 class="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">Preferred build flow</h3>
+          <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-3 leading-relaxed">
+            When you start a proposal, Usernode can ask how you want to build it — here on the
+            platform with the Usernode agent, or by handing the work order to your own Claude Code
+            or Codex web session. Pick one here to skip the question; choose
+            <strong class="font-semibold text-zinc-600 dark:text-zinc-400">Ask me every time</strong>
+            to get the picker back.
+          </p>
+          <select id="settings-dev-flow"
+            class="w-full rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500">
+            <option value="">Ask me every time</option>
+            <option value="platform">Build on Usernode</option>
+            <option value="claude-code">Claude Code (claude.ai/code)</option>
+            <option value="codex">Codex (chatgpt.com/codex)</option>
+          </select>
+          <div id="settings-dev-flow-status" class="text-xs mt-2 hidden"></div>
+        `;
+        // Above the GitHub link block when it exists, so the preference reads
+        // as the question and the link below it as one of the answers.
+        const anchor = document.getElementById('github-link-section');
+        if (anchor) host.insertBefore(block, anchor);
+        else host.appendChild(block);
+      }
+      const select = block.querySelector('#settings-dev-flow');
+      if (select && !select.__devFlowWired) {
+        select.__devFlowWired = true;
+        select.addEventListener('change', (e) => this._saveDevFlow(e.target.value));
+      }
+      // A deployment without the external flows can still express "always
+      // build on Usernode" vs "ask me" — just not the two hand-offs.
+      block.querySelectorAll('option[value="claude-code"], option[value="codex"]').forEach((opt) => {
+        opt.disabled = !this.state.externalFlowsAvailable;
+      });
+      if (select) select.value = this.state.devFlowPreference || '';
+      const status = block.querySelector('#settings-dev-flow-status');
       if (status) { status.classList.add('hidden'); status.textContent = ''; }
     },
 
@@ -1347,6 +1528,41 @@
         if (window.AppView && typeof AppView.notifyLocaleChanged === 'function') {
           try { AppView.notifyLocaleChanged(this.state.locale); } catch {}
         }
+        if (status) {
+          status.textContent = '✓ Saved';
+          status.classList.remove('hidden', 'text-red-500', 'text-zinc-500');
+          status.classList.add('text-emerald-500');
+        }
+      } catch (err) {
+        fail(`Network error: ${err.message}`);
+      }
+    },
+
+    // Same shape as _saveLocale: POST on change, revert the select and paint
+    // the status line on failure, mirror onto App.user so anything reading
+    // the cached user (the dev-chat picker) sees the new value immediately.
+    async _saveDevFlow(value) {
+      const select = document.getElementById('settings-dev-flow');
+      const status = document.getElementById('settings-dev-flow-status');
+      const fail = (msg) => {
+        if (select) select.value = this.state.devFlowPreference || '';
+        if (status) {
+          status.textContent = msg;
+          status.classList.remove('hidden', 'text-emerald-500', 'text-zinc-500');
+          status.classList.add('text-red-500');
+        }
+      };
+      try {
+        const r = await fetch('/api/me/dev-flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ flow: value || null }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return fail(j.error || 'Failed to save.');
+        this.state.devFlowPreference = j.flow || null;
+        if (typeof App !== 'undefined' && App.user) App.user.devFlowPreference = this.state.devFlowPreference;
         if (status) {
           status.textContent = '✓ Saved';
           status.classList.remove('hidden', 'text-red-500', 'text-zinc-500');

@@ -242,3 +242,113 @@ test('a cross-fork no_commits error names the fork branch, not owner:branch', as
     cleanup();
   }
 });
+
+// ── maintainer_can_modify on cross-fork creates ────────────────────────
+//
+// GitHub treats `maintainer_can_modify` as TRUE when the parameter is
+// omitted. On a cross-fork head that is a request to grant the BASE
+// repo's maintainers push access to the HEAD branch, which only a
+// collaborator on the fork may grant — so GitHub 422s the whole create
+// with `field: "fork_collab"`. That implicit default is why every
+// cross-fork submission in production fell through to the mirror
+// (task 3, request ids C73C:… and A1D8:…, 2026-08-07).
+//
+// These assert on the body the GITHUB CLIENT received, not on what the
+// caller passed: createPR destructures a FIXED parameter list, so an
+// extra key handed in by a caller is silently dropped unless the
+// signature names it. That is the trap this pins.
+
+test('a cross-fork create sends maintainer_can_modify: false to GitHub', async () => {
+  const calls = [];
+  withScript([{ number: 52, html_url: 'https://example/pr/52' }], calls);
+  try {
+    await github.createPR('usernode-bot', 'todo-list', {
+      branch: 'usernode/x',
+      head: 'es92:usernode/x',
+      headRepo: 'es92/todo-list',
+      maintainerCanModify: false,
+      title: 't',
+      body: 'b',
+    });
+    assert.equal(calls.length, 1);
+    assert.equal(
+      calls[0].maintainer_can_modify, false,
+      'the parameter must reach the client body, not just the caller'
+    );
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(calls[0], 'maintainer_can_modify'),
+      'sent as a real key rather than dropped by the destructure'
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test('a same-repo create sends no maintainer_can_modify key at all', async () => {
+  const calls = [];
+  withScript([{ number: 13, html_url: 'https://example/pr/13' }], calls);
+  try {
+    await github.createPR('acme', 'app', { branch: 'feat/x', title: 't', body: 'b' });
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(calls[0], 'maintainer_can_modify'), false,
+      'same-repo callers keep GitHub’s default — five working call sites stay untouched'
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test('maintainerCanModify: true is forwarded too — the check is boolean, not truthy', async () => {
+  // `false` is the value that matters, so a truthy guard would drop the
+  // whole feature. Pin that the guard is a typeof check by proving the
+  // other boolean survives as well.
+  const calls = [];
+  withScript([{ number: 14, html_url: 'https://example/pr/14' }], calls);
+  try {
+    await github.createPR('acme', 'app', {
+      branch: 'feat/x', title: 't', body: 'b', maintainerCanModify: true,
+    });
+    assert.equal(calls[0].maintainer_can_modify, true);
+  } finally {
+    cleanup();
+  }
+});
+
+test('a fork_collab 422 becomes a typed, non-retried fork_collab_denied', async () => {
+  // The exact payload production logged, verbatim.
+  const calls = [];
+  withScript([
+    () => {
+      throw requestError(422, {
+        message: 'Validation Failed',
+        requestId: 'A1D8:13D72D:10DA701:FFBFB5:6A763044',
+        body: {
+          message: 'Validation Failed',
+          errors: [{
+            resource: 'PullRequest',
+            code: 'custom',
+            field: 'fork_collab',
+            message: "fork_collab Fork collab can't be granted by someone without permission",
+          }],
+        },
+      });
+    },
+  ], calls);
+  try {
+    await assert.rejects(
+      github.createPR('usernode-bot', 'todo-list', {
+        branch: 'usernode/x', head: 'es92:usernode/x', title: 't', body: 'b',
+      }),
+      (err) => {
+        assert.equal(err.code, 'fork_collab_denied');
+        assert.equal(err.status, 422);
+        assert.match(err.message, /maintainer/i, 'names the grant that was refused');
+        assert.match(err.message, /es92:usernode\/x/, 'names the head it was opening');
+        return true;
+      }
+    );
+    assert.equal(calls.length, 1, 'a deterministic 422 is never retried');
+  } finally {
+    cleanup();
+  }
+});

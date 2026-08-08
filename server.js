@@ -43,6 +43,7 @@ const { boardOrderRoutes } = require('./src/routes/board-order');
 const { homePanelRoutes } = require('./src/routes/home-panels');
 const { homeLayoutRoutes } = require('./src/routes/home-layout');
 const { chatDraftsRoutes } = require('./src/routes/chat-drafts');
+const { devFlowRoutes } = require('./src/routes/dev-flow');
 const { pmOrderRoutes } = require('./src/routes/pm-order');
 const { debugRoutes } = require('./src/routes/debug');
 const { galleryRoutes } = require('./src/routes/gallery');
@@ -541,6 +542,10 @@ app.use(profileRoutes(config));
 // across devices. Owner-scoped per session, like the /api/sessions/* family
 // in routes/sessions.js.
 app.use(chatDraftsRoutes(config));
+// #1049: the alternate development flows (Claude Code / Codex web UI) as
+// ordinary browser routes rather than MCP-only tools. App-scoped with the
+// same 'collab' bar as the other dev surfaces, so behind authMiddleware.
+app.use(devFlowRoutes(config));
 app.use(pmOrderRoutes(config));
 app.use(debugRoutes(config));
 app.use(galleryRoutes(config));
@@ -917,6 +922,10 @@ async function becomeLeader() {
   // period, and hard-purges archived CC volumes once their retention
   // window elapses. Day-scale, so it polls on its own slow interval.
   startStalePrSweeper(config);
+
+  // #907: release local coding-agent leases whose machine stopped
+  // heartbeating, and fail the turn they were holding.
+  startLocalAgentLeaseSweeper(config);
 
   // #1010: fast, gate-first governance applies (minute-scale). Complements
   // the hourly sweeper's Pass 0b, which keeps ownership of the close-issue
@@ -1563,6 +1572,33 @@ function startTitleHealSweeper(config) {
   };
   setTimeout(tick, 90 * 1000).unref?.();
   setInterval(tick, TITLE_HEAL_SWEEP_MS).unref?.();
+}
+
+// #907: how often expired local-agent leases are swept. A lease is a 120s
+// TTL refreshed by a 30s heartbeat, so a machine that goes to sleep is
+// already ignorable within two minutes on read (every query filters on
+// expires_at). The sweep exists to mark the row released and fail any turn
+// still sitting on it, so the dev chat stops saying "running on your
+// machine" about a laptop in a bag. One minute is well inside that TTL.
+const LOCAL_AGENT_SWEEP_MS = 60 * 1000;
+
+// Release leases whose machine stopped heartbeating. Same guard shape as the
+// sweepers above: never overlap a running pass, swallow every error, unref'd
+// timer so it can't hold the process open during shutdown.
+function startLocalAgentLeaseSweeper(config) {
+  const localAgent = require('./src/services/local-agent');
+  const { getPool } = require('./src/db/pool');
+  let running = false;
+  const tick = () => {
+    if (running) return;
+    running = true;
+    localAgent.sweepExpiredLeases(getPool(config))
+      .catch((err) => {
+        log.warn('server', 'Local-agent lease sweep tick failed', { err: err.message });
+      })
+      .finally(() => { running = false; });
+  };
+  setInterval(tick, LOCAL_AGENT_SWEEP_MS).unref?.();
 }
 
 // Resume post-merge issue-close watches for sessions merged shortly

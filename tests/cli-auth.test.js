@@ -244,3 +244,78 @@ test('Settings exposes only the hint-based CLI credential list and revocation AP
   );
   assert.doesNotMatch(script, /access_token|token_hash/);
 });
+
+// ── #907: the agent:local scope ────────────────────────────────────────────
+
+test('the CLI grant carries the local-agent scope, and it is not optional', () => {
+  assert.equal(constants.AGENT_SCOPE, 'agent:local');
+  assert.deepEqual(constants.REQUIRED_SCOPES, [
+    constants.IDENTITY_SCOPE, constants.API_SCOPE, constants.AGENT_SCOPE,
+  ]);
+  // hasExactScopes is what the device-code endpoint enforces, so a client
+  // asking for the pre-#907 pair is refused at request time rather than
+  // discovering the gap when it first tries to attach.
+  assert.equal(cliAuth.hasExactScopes([constants.IDENTITY_SCOPE, constants.API_SCOPE]), false);
+  assert.equal(cliAuth.hasExactScopes(constants.REQUIRED_SCOPES), true);
+  // Order is part of the contract: the CHECK constraints compare arrays.
+  assert.equal(
+    cliAuth.hasExactScopes([constants.API_SCOPE, constants.AGENT_SCOPE, constants.IDENTITY_SCOPE]),
+    false
+  );
+});
+
+test('the consent screen names what the new scope actually permits', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+  const authorize = fs.readFileSync(
+    path.join(__dirname, '../src/routes/cli-auth.js'), 'utf8'
+  );
+  // A scope the user cannot see described is a scope they cannot consent to.
+  assert.ok(/local coding agent|run coding turns/i.test(authorize + html),
+    'the authorize page must describe the local-agent grant in words');
+});
+
+test('every scope CHECK constraint is widened in place, not only on a fresh CREATE', () => {
+  const schema = fs.readFileSync(path.join(__dirname, '../src/db/schema.sql'), 'utf8');
+  // Three tables constrain the scope array. CREATE TABLE IF NOT EXISTS adds
+  // nothing to an existing deployment, so each needs a DO block that detects
+  // the pre-#907 definition and replaces it — otherwise the first device
+  // authorization after deploy fails its CHECK in production and nowhere else.
+  const migrations = schema.match(/position\('agent:local' IN constraint_def\) = 0/g) || [];
+  assert.equal(migrations.length, 3, 'one migration per constrained table');
+  for (const table of [
+    'cli_device_authorizations', 'cli_access_tokens', 'cli_auth_audit_events',
+  ]) {
+    assert.match(schema, new RegExp(`'${table}'::regclass`),
+      `${table} must be migrated, not just created`);
+  }
+});
+
+test('the local-agent tables are staging:private, like every other cli table', () => {
+  const schema = fs.readFileSync(path.join(__dirname, '../src/db/schema.sql'), 'utf8');
+  for (const table of ['session_agent_leases', 'local_agent_turns']) {
+    assert.match(schema, new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`));
+    assert.match(schema, new RegExp(`COMMENT ON TABLE ${table} IS 'staging:private'`));
+  }
+  // One live lease per session, enforced by the database rather than by a
+  // read-then-write race in the attach route.
+  assert.match(schema, /session_agent_leases[\s\S]*?UNIQUE INDEX[\s\S]*?WHERE released_at IS NULL/);
+  // A lease points at the credential it was minted against, so revocation can
+  // find and release it. Pruning that token months later must not delete the
+  // history of where a session's turns ran, hence SET NULL.
+  assert.match(schema,
+    /access_token_id BIGINT REFERENCES cli_access_tokens\(id\) ON DELETE SET NULL/);
+});
+
+test('revoking a credential detaches the machines that attached with it', () => {
+  const routes = fs.readFileSync(path.join(__dirname, '../src/routes/cli-auth.js'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../src/services/cli-auth.js'), 'utf8');
+  // All three revocation paths: the CLI revoking itself, Settings revoking a
+  // listed credential, and account recovery revoking everything.
+  assert.equal((routes.match(/releaseLeasesForTokens\(/g) || []).length, 2);
+  assert.match(service, /releaseLeasesForTokens\(\s*\n?\s*client, revoked\.map/);
+  // Inside the caller's transaction, so a rolled-back revocation cannot
+  // strand a machine that is in fact still authorized.
+  assert.match(routes, /releaseLeasesForTokens\(client,/);
+  // …but the wakeup happens after COMMIT.
+  assert.equal((routes.match(/localAgent\.notifyReleased\(/g) || []).length, 2);
+});

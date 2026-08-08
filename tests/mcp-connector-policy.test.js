@@ -37,6 +37,10 @@ test('the allowlist permits exactly the routes the tools need', () => {
     ['GET', '/api/apps'],
     ['GET', '/api/apps/recipe-box'],
     ['GET', '/api/apps/recipe-box/github-issues'],
+    // A request's GitHub comments — the half of its discussion that does not
+    // live in the platform's own thread. prepare_work reads it so the work
+    // order carries the requirements raised in the replies.
+    ['GET', '/api/apps/recipe-box/github-issues/12/comments'],
     ['GET', '/api/apps/recipe-box/promoted'],
     ['GET', '/api/apps/recipe-box/messages'],
     ['POST', '/api/apps/recipe-box/messages'],
@@ -96,6 +100,11 @@ test('fail-closed: anything not listed is refused', () => {
     ['POST', '/api/sessions/412'],
     ['GET', '/api/apps/recipe-box/pr-import'],
     ['POST', '/api/apps/recipe-box/pr-import/preview'],
+    // Reading an issue's comments does not imply writing one, and the
+    // allowlisted pattern is exactly one level deep.
+    ['POST', '/api/apps/recipe-box/github-issues/12/comments'],
+    ['GET', '/api/apps/recipe-box/github-issues/12/comments/3'],
+    ['GET', '/api/apps/recipe-box/github-issues//comments'],
     // Path-shape games.
     ['GET', '/api/apps/recipe-box/github-issues/12'],
     ['GET', '/api/apps'.concat('/')],

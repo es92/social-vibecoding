@@ -1026,7 +1026,13 @@ function _setCreatePrRetryDelaysForTests(delays) {
 // destructures a fixed list, so the parameter has to be named here or it is
 // silently dropped. Omitted entirely (not sent as undefined) when unset, so
 // every same-repo caller's request body is byte-identical to before.
-async function createPR(owner, repo, { branch, title, body, head, headRepo }) {
+//
+// `maintainerCanModify` is forwarded as `maintainer_can_modify` and carries
+// the same fixed-list caveat. Cross-fork callers must pass `false`; see the
+// note at the call below for why the default is not safe there.
+async function createPR(owner, repo, {
+  branch, title, body, head, headRepo, maintainerCanModify,
+}) {
   const octokit = await getOctokit(owner);
   const headRef = head || branch;
   const attempts = createPrRetryDelaysMs.length + 1;
@@ -1039,6 +1045,21 @@ async function createPR(owner, repo, { branch, title, body, head, headRepo }) {
         body: safeMention(body),
         head: headRef,
         ...(headRepo ? { head_repo: headRepo } : {}),
+        // Sent ONLY when a caller asks for it — every same-repo caller omits
+        // it and keeps GitHub's default, unchanged. A cross-fork caller
+        // passes `false`: GitHub treats the parameter as true when omitted,
+        // which for a fork head is a request to grant the BASE repo's
+        // maintainers push access to the HEAD branch, and only a
+        // collaborator on the head repo may grant that. `usernode-bot` is
+        // not a collaborator on anybody's fork and by design never will be
+        // (services/github-link.js is identity-only), so the implicit
+        // request made GitHub 422 the whole create with
+        // `field: "fork_collab"` — the failure that made every cross-fork
+        // submission fall through to the mirror. Boolean-checked rather
+        // than truthy-checked: `false` is the whole point.
+        ...(typeof maintainerCanModify === 'boolean'
+          ? { maintainer_can_modify: maintainerCanModify }
+          : {}),
         base: 'main',
       }));
       break;
@@ -1063,6 +1084,27 @@ async function createPR(owner, repo, { branch, title, body, head, headRepo }) {
       if (err && err.status === 422 && /pull request already exists/i.test(detail)) {
         const e = new Error(`A pull request already exists for ${head ? headRef : `${owner}:${branch}`}.`);
         e.code = 'pr_exists';
+        throw e;
+      }
+      // GitHub answers 422 `field: "fork_collab"` — "Fork collab can't be
+      // granted by someone without permission" — when the create asks to
+      // give the base repo's maintainers write access to a HEAD branch in
+      // somebody else's fork. That grant is only a head-repo collaborator's
+      // to make. It is a bug in the REQUEST, not a condition of the
+      // repository: the caller either sends `maintainerCanModify: false` or
+      // it must not open a cross-fork PR at all, so retrying, re-sending
+      // with `head_repo`, or mirroring around it all miss the point. Typed
+      // so `resolvePullRequest` stops the ladder and says what happened.
+      // Unreachable once every cross-fork caller sends `false`, which is
+      // exactly why it is worth naming if it ever comes back.
+      if (err && err.status === 422 && /fork_collab/i.test(detail)) {
+        const e = new Error(
+          `GitHub refused to open the pull request for ${headRef} because the request asked to grant `
+          + `${owner}/${repo}'s maintainers write access to that branch, and only a collaborator on the `
+          + 'fork can grant it. Open the pull request with maintainer edits disabled.'
+        );
+        e.code = 'fork_collab_denied';
+        e.status = 422;
         throw e;
       }
       // Transient: a GitHub 5xx or a status-less network failure. Retry on

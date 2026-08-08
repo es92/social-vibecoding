@@ -1900,6 +1900,212 @@ html, body {
   color: white;
 }
 
+/* ── Development-flow picker + walkthrough (#1049) ──────────────────────
+   Markup comes from public/js/dev-flow-select.js. Reuses the out-of-credits
+   card's geometry on purpose: both are "here are your routes forward"
+   cards in the message stream, and they render metres apart. */
+.dc-flow-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 12px 14px;
+  margin: 6px 0;
+}
+
+.dc-flow-card-lead {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dc-flow-card-detail,
+.dc-flow-card-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.dc-flow-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dc-flow-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.dc-flow-option-text { flex: 1 1 220px; min-width: 0; }
+
+.dc-flow-option-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dc-flow-option-blurb {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.dc-flow-go {
+  background: #7c3aed;
+  color: white;
+  flex: 0 0 auto;
+}
+.dc-flow-go:hover { background: #6d28d9; }
+
+.dc-flow-remember {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.dc-flow-remember-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Walkthrough. Exactly one step is 'current' at a time — the numbered mark
+   carries that state so the card is scannable without reading it. */
+.dc-flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+}
+
+.dc-flow-step {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.dc-flow-step:first-child { border-top: none; }
+
+.dc-flow-step-mark {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-primary);
+}
+
+.dc-flow-step-body { flex: 1 1 auto; min-width: 0; }
+
+.dc-flow-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dc-flow-step-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.dc-flow-step-done .dc-flow-step-mark {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+.dc-flow-step-done .dc-flow-step-title { color: var(--text-muted); }
+
+.dc-flow-step-current .dc-flow-step-mark {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+}
+
+.dc-flow-step-todo { opacity: 0.65; }
+
+.dc-flow-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.dc-flow-actions-footer { margin-top: 10px; }
+
+.dc-flow-action {
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.dc-flow-action:hover { background: var(--bg-tertiary); }
+.dc-flow-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.dc-flow-action-primary {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+}
+.dc-flow-action-primary:hover { background: #6d28d9; }
+
+.dc-flow-error {
+  font-size: 12px;
+  color: rgb(185 28 28);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.dark .dc-flow-error { color: rgb(252 165 165); }
+
+.dc-flow-notice {
+  font-size: 12px;
+  color: rgb(4 120 87);
+  margin-top: 6px;
+}
+.dark .dc-flow-notice { color: rgb(110 231 183); }
+
+.dc-flow-order { margin-top: 10px; }
+
+.dc-flow-order > summary {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dc-flow-order-text {
+  margin-top: 6px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
 /* Modal variant: the same three options rendered by the Generate-proposal
    flow when the headless route refuses for the same reason. */
 .dc-credits-modal-card .dc-credits-card {
@@ -6163,6 +6369,56 @@ html:not(.dark) #admin-node-root {
     transition: none;
   }
 }
+
+/* ── Dev-chat "Run on" runner controls (#907) ─────────────────────────────
+   The selector + chip that appear in the composer's status row when a
+   local coding agent has attached to this session. Painted by
+   DevChat._renderRunnerControls(); the host span is always in the markup
+   and is empty (and therefore invisible, no gap, no min-height) for every
+   session that has never had a machine attached. */
+.dc-runner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.dc-runner:empty { display: none; }
+
+/* Green so it reads as "connected", not as a warning: a turn running on
+   the user's own machine is the state they asked for. */
+.dc-runner-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.dc-runner-chip::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex: none;
+}
+
+/* The machine has gone. Same shape, drained of colour, and the dot stops
+   claiming something live is happening. */
+.dc-runner-chip-past {
+  border-color: var(--border);
+  background: var(--bg-code);
+  color: var(--text-muted);
+}
+.dc-runner-chip-past::before { background: var(--text-faint); }
 
 /* ── Offline mode: the visible state (#1021) ──────────────────────────
    `body.is-offline` is toggled by Offline._set() and is the single hook

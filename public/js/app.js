@@ -434,6 +434,11 @@ const App = {
     // the viewer's own daily allowance. Refreshes again on every drawer
     // open (App.HeaderMenu.open), throttled inside the module.
     if (!App._sessionFromSnapshot && window.AiCredit?.Budget?.init) AiCredit.Budget.init();
+    // #1038: seed the live session-state store and arm its adaptive
+    // reconcile tick. Same snapshot-boot guard as the meters above — the
+    // endpoint is session-gated, so firing it on an offline snapshot boot is
+    // a guaranteed 401.
+    if (!App._sessionFromSnapshot && window.SessionState) SessionState.start();
     // Session-gated boot fetches (notifications bell, work drawer)
     // defer to this event instead of firing a guaranteed 401 on an
     // anonymous document load.
@@ -893,6 +898,12 @@ const App = {
           case 'session_update':
             App.handleSessionUpdate(data);
             break;
+          case 'session_state':
+            // #1038: live working state for one session. The store repaints
+            // every surface that shows it (cog, board cards, session list)
+            // with no refetch at all.
+            App.handleSessionState(data);
+            break;
           case 'vote_update':
             App.handleVoteUpdate(data);
             break;
@@ -1024,6 +1035,12 @@ const App = {
     }
     if (window.Notifications) Notifications.refresh?.();
     if (window.WorkDrawer) WorkDrawer.refresh?.();
+    // #1038: `session_state` is fire-and-forget like every other broadcast,
+    // so anything that transitioned during the disconnect window was lost.
+    // The reconcile endpoint is the authority — it also clears overrides for
+    // sessions that finished while we were away, and detects a platform
+    // restart (new bootId) that invalidated all of them.
+    if (window.SessionState) SessionState.sync?.();
     // Admin console's container-rollover section: its live table is driven
     // by `admin_rollover_status`, so a dropped socket means missed
     // transitions. The loader no-ops unless that section is mounted.
@@ -1091,6 +1108,32 @@ const App = {
         AppView.renderAppTab();
       }
     }
+  },
+
+  // #1038: a pushed session working-state change. The spinner half needs no
+  // fetch — SessionState.applyEvent repaints every subscribed surface. The
+  // only thing that still warrants a refetch is a LIFECYCLE change
+  // (active → paused / promoted / archived), because that changes which rows
+  // exist on the board and in the drawer, not just how they're decorated.
+  // Debounced so a burst of transitions costs one reload.
+  _sessionStatusSeen: Object.create(null),
+  _sessionRowsTimer: null,
+  handleSessionState(data) {
+    if (!window.SessionState || data == null || data.sessionId == null) return;
+    const key = String(data.sessionId);
+    const prevStatus = App._sessionStatusSeen[key];
+    const nextStatus = data.status || null;
+    App._sessionStatusSeen[key] = nextStatus;
+    SessionState.applyEvent(data);
+    if (prevStatus === undefined || prevStatus === nextStatus) return;
+    if (App._sessionRowsTimer) return;
+    App._sessionRowsTimer = setTimeout(() => {
+      App._sessionRowsTimer = null;
+      App.refreshHomeProposals();
+      if (typeof AppView !== 'undefined' && AppView.refreshDevData) {
+        AppView.refreshDevData('session');
+      }
+    }, 500);
   },
 
   handleSessionUpdate(data) {
@@ -4457,4 +4500,29 @@ const App = {
 };
 
 window.App = App;
+
+// #1038: stale-tab recovery for live session state. A tab that was
+// backgrounded (or a laptop that slept, or a phone that locked) can have
+// missed every `session_state` push while its socket was frozen, and comes
+// back showing a spinner for a turn that finished an hour ago. Reconcile on
+// the way back in — throttled by SessionState.FOREGROUND_STALE_MS so
+// alt-tabbing doesn't spam the endpoint.
+//
+// Deliberately global rather than per-screen: the cog is in the header on
+// every route, so no single view owns this. Both events matter —
+// visibilitychange fires on browser-tab switches, focus on window-to-window
+// switches where the tab stays "visible" throughout.
+App._foregroundResync = () => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+  if (window.SessionState) SessionState.syncIfStale?.();
+};
+// Guarded: app.js is loaded into bare vm sandboxes by several unit tests,
+// which stub `document` / `window` with only the members they need.
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('visibilitychange', App._foregroundResync);
+}
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('focus', App._foregroundResync);
+}
+
 document.addEventListener('DOMContentLoaded', () => App.init());

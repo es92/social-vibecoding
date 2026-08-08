@@ -1924,6 +1924,29 @@ export function Shell() {
                     <div id="ai-progress-estimate-status" className="text-xs mt-2 hidden">
                     </div>
                   </div>
+                  {/*
+                      #907 Local coding agent. Lives inside Experimental (not the
+                      CLI section) because it is a preview of the same feature the
+                      dev chat's "Run on" selector exposes, and because a lease is
+                      NOT a credential: revoking a CLI token is a security action,
+                      detaching a machine is a routing one. Painted by
+                      settings.js _renderLocalAgentsSection() from
+                      GET /api/me/local-agents; the whole block hides itself when
+                      no machine has ever attached, so it costs nothing for the
+                      overwhelming majority who never run the CLI.
+                  */}
+                  <div id="settings-local-agents-section" className="hidden mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1">
+                      Local coding agent
+                    </h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-3">
+                      Machines running <span className="font-mono">social-vibecoding agent run</span>. While one is attached, that session's spec and coding turns run there on your own Claude subscription instead of on Usernode. Each turn asks in your terminal before it starts; spec turns are read-only, and after a coding turn Usernode still opens the pull request, builds the preview and runs the checks. Detaching sends the next turn back to Usernode.
+                    </p>
+                    <div id="settings-local-agents-list" className="space-y-2">
+                    </div>
+                    <div id="settings-local-agents-status" className="text-xs mt-2 hidden">
+                    </div>
+                  </div>
                 </div>
                 <div data-settings-section="usernode" className="hidden">
                   {/*
@@ -4629,6 +4652,12 @@ export function Shell() {
           the Generate-proposal modal. Loaded before its three consumers.
       */}
       <script src="/js/credit-options.js" />
+      {/*
+          #1049: the "how do you want to build this?" picker and its guided
+          Claude Code / Codex walkthrough. Pure render + wire, no fetching —
+          dev-chat.js owns the state and must load AFTER it.
+      */}
+      <script src="/js/dev-flow-select.js" />
       <script src="/js/settings.js" />
       <script src="/js/group-chat.js" />
       {/*

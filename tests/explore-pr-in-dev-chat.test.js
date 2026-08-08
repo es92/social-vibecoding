@@ -425,3 +425,129 @@ test('read-only viewers get no pill — the dev chat is collab-gated (#621)', ()
   AppView.appData = { slug: 'test-app', can_collaborate: false };
   assert.equal(AppView._exploreChatBtnHtml(PR), '');
 });
+
+// ── _showExplorePill — the one shared gate (#1045) ─────────────────────────
+//
+// Three render sites (the feed/board card, the Completed card, the topic
+// head) used to re-derive `!mine` independently. They now all call this, so
+// the truth table is pinned in one place. ME is the viewer (App.user.id is
+// 42 in the harness); 999 is somebody else.
+const ME_ID = 42;
+const OTHER_ID = 999;
+
+test('_showExplorePill: foreign proposals get the pill, native or imported', () => {
+  const { AppView } = makeHarness();
+  assert.equal(AppView._showExplorePill({ id: 1, user_id: OTHER_ID }), true,
+    "someone else's native proposal — unchanged from #313");
+  assert.equal(
+    AppView._showExplorePill({ id: 1, user_id: OTHER_ID, source: 'imported' }), true,
+    "someone else's imported proposal"
+  );
+});
+
+test('_showExplorePill: your own NATIVE proposal still gets none (#313/#348)', () => {
+  const { AppView } = makeHarness();
+  assert.equal(AppView._showExplorePill({ id: 1, user_id: ME_ID }), false,
+    'Open session is the better door to the same dev chat');
+  assert.equal(
+    AppView._showExplorePill({ id: 1, user_id: ME_ID, source: 'maintenance' }), false,
+    'a native provenance marker is not an import'
+  );
+});
+
+test('_showExplorePill: your own IMPORTED proposal DOES get one (#1045)', () => {
+  const { AppView } = makeHarness();
+  // The reported hole: sessionBtn is (mine && !imported) and the pill used
+  // to be (!mine), so an owner of an imported PR got neither.
+  assert.equal(
+    AppView._showExplorePill({ id: 1, user_id: ME_ID, source: 'imported' }), true,
+    'no dev session exists for it, so the pill is the only AI affordance'
+  );
+  assert.equal(
+    AppView._showExplorePill({
+      id: 1, user_id: ME_ID, source: 'imported', external_agent: 'claude-code',
+    }),
+    true,
+    'a connector-authored proposal is an imported row too'
+  );
+  assert.equal(
+    AppView._showExplorePill({ id: 1, user_id: ME_ID, source: 'imported', status: 'merged' }),
+    true,
+    'merged imported proposals stay explorable on the Completed list'
+  );
+});
+
+test('_showExplorePill: governance and close-issue rows never get one (#827)', () => {
+  const { AppView } = makeHarness();
+  // A dev chat cannot act on a rename / secret change / close-issue vote.
+  assert.equal(
+    AppView._showExplorePill({ id: 5, kind: 'secret_change', created_by: OTHER_ID }), false,
+    'governance rows carry `kind`; PR-proposal rows do not'
+  );
+  assert.equal(
+    AppView._showExplorePill({ id: 5, row_type: 'close_issue', kind: 'close_issue' }), false,
+    'an applied close-issue row in the Completed stream'
+  );
+  assert.equal(AppView._showExplorePill(null), false, 'a missing row is a quiet false');
+});
+
+test('_showExplorePill does NOT own the read-only rule — _exploreChatBtnHtml does', () => {
+  const { AppView } = makeHarness();
+  AppView.appData = { slug: 'test-app', can_collaborate: false };
+  // Deliberate: the collab gate stays in exactly one place (#621), so the
+  // predicate answers "does this ROW deserve a pill" and nothing else.
+  assert.equal(AppView._showExplorePill({ id: 1, user_id: OTHER_ID }), true);
+  assert.equal(AppView._exploreChatBtnHtml({ id: 1, user_id: OTHER_ID }), '',
+    'the rendered pill is still empty for a read-only viewer');
+});
+
+// ── The rule as the cards actually render it (#1045) ───────────────────────
+
+// _renderProposalCard / _renderMergedCard need the two render caches the
+// dev view normally fills.
+function cardHarness() {
+  const { AppView } = makeHarness();
+  AppView._proposalsCtx = { majority: 1 };
+  AppView._mergedCtx = { majority: 1 };
+  AppView._visualsOpen = new Set();
+  return AppView;
+}
+
+const MY_IMPORT = {
+  id: 7, pr_number: 9300, pr_url: 'https://github.com/acme/app/pull/9300',
+  pr_title: 'Adjust kanban breakpoint to 640px', username: 'me', user_id: ME_ID,
+  status: 'promoted', source: 'imported', imported_pr_author: 'octo-contributor',
+  created_at: '2026-06-01T00:00:00Z',
+};
+
+test('proposal card: my own IMPORTED proposal renders the pill and no Open session', () => {
+  const AppView = cardHarness();
+  const html = AppView._renderProposalCard(MY_IMPORT);
+  assert.match(html, /gc-explore-chat-btn/, 'the pill is the owner\'s only AI affordance here');
+  assert.match(html, /data-proposal-id="7"/, 'wired to the proposal id');
+  assert.doesNotMatch(html, /openProposalSession\(/,
+    'an imported PR has no dev session to open (#687) — that rule is untouched');
+  assert.match(html, /withdrawProposal\(7\)/, 'Withdraw is untouched too');
+});
+
+test('proposal card: my own NATIVE proposal is unchanged — Open session, no pill', () => {
+  const AppView = cardHarness();
+  const html = AppView._renderProposalCard({ ...MY_IMPORT, source: undefined, imported_pr_author: undefined });
+  assert.doesNotMatch(html, /gc-explore-chat-btn/, 'no pill beside Open session');
+  assert.match(html, /openProposalSession\(7\)/);
+});
+
+test('merged card: my own IMPORTED completed proposal renders the pill', () => {
+  const AppView = cardHarness();
+  const html = AppView._renderMergedCard({ ...MY_IMPORT, status: 'merged' }, 1);
+  assert.match(html, /gc-explore-chat-btn/);
+  assert.match(html, /data-proposal-id="7"/);
+});
+
+test('merged card: my own NATIVE completed proposal still renders no pill', () => {
+  const AppView = cardHarness();
+  const html = AppView._renderMergedCard(
+    { ...MY_IMPORT, source: undefined, imported_pr_author: undefined, status: 'merged' }, 1
+  );
+  assert.doesNotMatch(html, /gc-explore-chat-btn/);
+});

@@ -30,6 +30,8 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', 'public', 'js', f
 const MERGE_STATUS_SRC = read('merge-status.js');
 const WORK_DRAWER_SRC = read('work-drawer.js');
 const NOTIFICATIONS_SRC = read('notifications.js');
+// #1038: the live working-state store the cog now reads through.
+const SESSION_STATE_SRC = read('session-state.js');
 
 // Minimal escapeHtml-compatible element for notifications.js's div-based
 // escaper (set textContent, read innerHTML).
@@ -75,11 +77,11 @@ function makeSandbox() {
 }
 
 // The full page stack, in real load order: notifications.js →
-// merge-status.js → work-drawer.js.
+// merge-status.js → session-state.js → work-drawer.js.
 function loadAll() {
   const sandbox = makeSandbox();
   vm.runInContext(
-    `${NOTIFICATIONS_SRC}\n${MERGE_STATUS_SRC}\n${WORK_DRAWER_SRC}`,
+    `${NOTIFICATIONS_SRC}\n${MERGE_STATUS_SRC}\n${SESSION_STATE_SRC}\n${WORK_DRAWER_SRC}`,
     sandbox
   );
   return sandbox;
@@ -273,7 +275,11 @@ test('#971 the work-drawer check is declared and the reader keeps it', () => {
   assert.equal(meta.ceilingDropped, 0,
     `dapp.json declares more than ${appManifest.MAX_DECLARED_TESTS} valid checks — `
     + 'checks past the ceiling never run');
-  const check = meta.tests.find((t) => t.path === '/?shot=work-drawer&demo=1');
+  // #1038 added a second check on this same route (the live working
+  // spinner), so a bare path match is ambiguous — key on the expectText,
+  // which is what makes this the #971 title check.
+  const check = meta.tests.find((t) => t.path === '/?shot=work-drawer&demo=1'
+    && t.expectText);
   assert.ok(check,
     'the check must survive the manifest reader — a dropped check gates nothing');
   assert.match(check.expectSelector, /#work-drawer-panel:not\(\.hidden\)/,
@@ -316,6 +322,121 @@ test('isWorking: true while an AI turn is in flight', () => {
     sessions: [{ id: 1, status: 'active', busy: true }],
   });
   assert.equal(W.isWorking(), true);
+});
+
+// ── 1038: the cog spins from PUSHED state, with no refetch ──────────────
+//
+// This is the reported bug's core. The old `_syncPolling` timer was armed
+// only while isWorking() was ALREADY true (or the drawer was open), so a
+// turn beginning on an otherwise-idle account had nothing watching for it
+// and the cog simply never started spinning.
+
+test('a session_state event starts the cog spinning with no refetch', () => {
+  const sb = loadAll();
+  let fetches = 0;
+  sb.fetch = async () => { fetches += 1; return { ok: false }; };
+
+  const W = drawerWith(sb, {
+    totals: { active: 1, promoted: 0, paused: 0, busy: 0, total: 1 },
+    sessions: [{ id: 1, status: 'active', busy: false }],
+  });
+  assert.equal(W.isWorking(), false);
+
+  sb.window.SessionState.applyEvent({ sessionId: 1, busy: true, status: 'active' });
+
+  assert.equal(W.isWorking(), true, 'the cog spins the moment the turn starts');
+  assert.equal(fetches, 0, 'and does so without re-pulling any payload');
+});
+
+test('a session_state idle event stops the cog even though the fetched row still says busy', () => {
+  const sb = loadAll();
+  const W = drawerWith(sb, {
+    totals: { active: 1, promoted: 0, paused: 0, busy: 1, total: 1 },
+    // Exactly the stale snapshot that used to leave the cog spinning for a
+    // turn that had already finished.
+    sessions: [{ id: 1, status: 'active', busy: true }],
+  });
+  assert.equal(W.isWorking(), true);
+
+  sb.window.SessionState.applyEvent({ sessionId: 1, busy: false, status: 'active' });
+  assert.equal(W.isWorking(), false);
+});
+
+test('a busy PROMOTED session still spins the cog from live state', () => {
+  // #747: promoted sessions render under "Your proposals", but in-flight
+  // work on one must never become invisible.
+  const sb = loadAll();
+  const W = drawerWith(sb, {
+    sessions: [{ id: 5, status: 'promoted', busy: false }],
+    proposals: [{ id: 5, status: 'promoted', yes_count: 1, majority: 3, check_state: 'passing' }],
+  });
+  assert.equal(W.isWorking(), false);
+
+  sb.window.SessionState.applyEvent({ sessionId: 5, busy: true, status: 'promoted' });
+  assert.equal(W.isWorking(), true);
+});
+
+test('the 15s _syncPolling timer is gone', () => {
+  const sb = loadAll();
+  const W = sb.window.WorkDrawer;
+  assert.equal(W._syncPolling, undefined,
+    'replaced by SessionState pushes + its own adaptive reconcile tick');
+  assert.equal(W._pollTimer, undefined);
+});
+
+test('refresh seeds fetched busy flags into the live store', async () => {
+  const sb = loadAll();
+  sb.fetch = async (url) => {
+    if (String(url).startsWith('/api/me/active-sessions')) {
+      return {
+        ok: true,
+        json: async () => ({
+          sessions: [{ id: 3, status: 'active', busy: true }],
+          totals: { active: 1, promoted: 0, paused: 0, busy: 1, total: 1 },
+        }),
+      };
+    }
+    return { ok: true, json: async () => ({ proposals: [], governance: [] }) };
+  };
+
+  await sb.window.WorkDrawer.refresh();
+  assert.equal(sb.window.SessionState.isBusy(3, false), true,
+    'so every other surface sees it too, not just the drawer');
+});
+
+test('a refresh in flight when the turn ends does NOT put the spinner back', async () => {
+  // The precedence bug this guards: seed() must stamp rows with when the
+  // REQUEST went out. Stamped with the response's arrival instead, this
+  // stale payload would outrank the idle event that overtook it and the cog
+  // would start spinning again for a turn that had already finished.
+  const sb = loadAll();
+  let releaseResponse;
+  const held = new Promise((r) => { releaseResponse = r; });
+
+  sb.fetch = async (url) => {
+    if (String(url).startsWith('/api/me/active-sessions')) {
+      await held; // the slow response
+      return {
+        ok: true,
+        json: async () => ({
+          sessions: [{ id: 4, status: 'active', busy: true }],
+          totals: { active: 1, promoted: 0, paused: 0, busy: 1, total: 1 },
+        }),
+      };
+    }
+    return { ok: true, json: async () => ({ proposals: [], governance: [] }) };
+  };
+
+  const pending = sb.window.WorkDrawer.refresh();
+  // The turn finishes while that request is still open.
+  await new Promise((r) => setTimeout(r, 5));
+  sb.window.SessionState.applyEvent({ sessionId: 4, busy: false, status: 'active' });
+  releaseResponse();
+  await pending;
+
+  assert.equal(sb.window.SessionState.isBusy(4, true), false,
+    'the newer idle event wins over the older in-flight payload');
+  assert.equal(sb.window.WorkDrawer.isWorking(), false);
 });
 
 test('isWorking: true for each spinner-carrying merge-lifecycle state', () => {

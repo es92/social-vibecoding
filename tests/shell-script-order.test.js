@@ -53,6 +53,7 @@ const ENTRY_SRC = '/shell/assets/shell.js';
 // the nav-link.js check below); do not add one here without doing the same.
 const POST_MIGRATION_SRCS = [
   '/js/nav-link.js', // #1036 — the real-anchor / new-tab seam
+  '/js/dev-flow-select.js', // #1049 — the dev-flow picker + walkthrough
 ];
 
 test('every legacy script is loaded, in exactly the pre-migration order', () => {
@@ -71,16 +72,16 @@ test('every legacy script is loaded, in exactly the pre-migration order', () => 
 });
 
 test('the shell still loads the expected number of legacy scripts', () => {
-  // 52 /js/** tags in total: theme.js in the head (it applies the stored
-  // theme before first paint) plus 51 at the end of <body>. The count moves
+  // 53 /js/** tags in total: theme.js in the head (it applies the stored
+  // theme before first paint) plus 52 at the end of <body>. The count moves
   // whenever main adds a module — it was 48 at the chassis swap, main's
-  // mail console and credit-options screens brought it to 50, and #1036's
-  // nav-link.js (with its matching SHELL_ASSETS entry) makes 51.
+  // mail console and credit-options screens brought it to 50, #1036's
+  // nav-link.js made 51, and #1049's dev-flow-select.js makes 52.
   const bodyScripts = scriptsOf(after.slice(after.indexOf('</head>')))
     .filter((s) => s.src && s.src.startsWith('/js/'));
   assert.equal(
-    bodyScripts.length, 51,
-    `expected the 51 legacy /js/** scripts at the end of <body>, found ${bodyScripts.length}. `
+    bodyScripts.length, 52,
+    `expected the 52 legacy /js/** scripts at the end of <body>, found ${bodyScripts.length}. `
     + 'Adding or removing one is fine, but it also needs a matching SHELL_ASSETS entry in '
     + 'public/sw.js (tests/pwa-shell-wiring.test.js enforces that) — so update this count '
     + 'deliberately rather than loosening the check.',
@@ -109,6 +110,22 @@ test('nav-link.js loads ahead of every module that consumes it', () => {
     const idx = srcs.indexOf(consumer);
     assert.ok(idx === -1 || at < idx,
       `nav-link.js must load before ${consumer}, which reads window.NavLink`);
+  }
+});
+
+test('dev-flow-select.js loads ahead of the modules that consume it', () => {
+  // Excluded from the fixture comparison above for the same reason as
+  // nav-link.js, so its position is pinned here. #1049: dev-chat.js owns the
+  // state and calls DevFlowSelect.pickerHtml / wizardHtml / wire, and
+  // app-view.js pokes DevChat._devFlow from the "+" menu — the module itself
+  // has no dependencies at all.
+  const srcs = scriptsOf(after).filter((s) => s.src && s.src.startsWith('/js/')).map((s) => s.src);
+  const at = srcs.indexOf('/js/dev-flow-select.js');
+  assert.notEqual(at, -1, 'the shell must load /js/dev-flow-select.js');
+  for (const consumer of ['/js/dev-chat.js', '/js/app-view.js', '/js/app.js']) {
+    const idx = srcs.indexOf(consumer);
+    assert.ok(idx === -1 || at < idx,
+      `dev-flow-select.js must load before ${consumer}, which reads window.DevFlowSelect`);
   }
 });
 

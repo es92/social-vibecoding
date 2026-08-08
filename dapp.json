@@ -357,6 +357,11 @@
   ],
   "tests": [
     {
+      "name": "Dev board: session cards carry the live working spinner (#1038)",
+      "path": "/?demo=1#app/usernode-2d5619/dev",
+      "expectSelector": "#dev-body [data-session-chip=\"990102\"] .dc-status-spinner-arc, #dev-body [data-shared-session-row=\"990001\"] .dc-status-spinner-arc"
+    },
+    {
       "name": "Platform variables panel renders on the platform app (#826 folded into app secrets)",
       "path": "/?shot=secrets#app/usernode-2d5619/dev",
       "expectSelector": "#app-secrets-list code"
@@ -393,6 +398,11 @@
       "path": "/?shot=work-drawer&demo=1",
       "expectSelector": "#work-drawer-panel:not(.hidden) #work-drawer-list",
       "expectText": "[Mock] Session titled but not yet proposed"
+    },
+    {
+      "name": "Work drawer: a busy session row spins from live state (#1038)",
+      "path": "/?shot=work-drawer&demo=1",
+      "expectSelector": "#work-drawer-panel:not(.hidden) #work-drawer-list a[href$=\"/sessions/990102\"] .dc-status-spinner-arc"
     },
     {
       "name": "Send Feedback offers a kudos bounty, unchecked by default (#964)",
@@ -661,7 +671,7 @@
       "name": "Pills from a forced retry render identically (#1001)",
       "path": "/#app/usernode-2d5619/dev/sessions/900806",
       "expectSelector": "#dc-quick-replies.dc-quick-replies-active .dc-quick-pill",
-      "expectText": "Build the avatar upload flow"
+      "expectText": "Build the spec"
     },
     {
       "name": "A wrap-up's pills supersede the dispatch preamble's (#1001)",
@@ -1717,6 +1727,35 @@
       "name": "Inside an app's detail page the header arrow links back to the list (#1036)",
       "path": "/#apps/usernode-2d5619",
       "expectSelector": "a#back-btn[href=\"#apps\"]"
+    },
+    {
+      "name": "A new session asks how you want to build it, naming both hand-offs (#1049)",
+      "path": "/#app/usernode-2d5619/dev/sessions/990403",
+      "expectSelector": "[data-flow-card] [data-flow-option=\"claude-code\"] + [data-flow-option=\"codex\"]",
+      "expectText": "How do you want to build this change?"
+    },
+    {
+      "name": "The picker offers the platform itself and can be answered once for good (#1049)",
+      "path": "/#app/usernode-2d5619/dev/sessions/990403",
+      "expectSelector": "[data-flow-card] [data-flow-option=\"platform\"] button[data-flow-pick=\"platform\"], [data-flow-card] input[type=\"checkbox\"][data-flow-remember]",
+      "expectText": "Remember my choice"
+    },
+    {
+      "name": "Choosing Claude Code opens a five-step walkthrough with one step live (#1049)",
+      "path": "/?demo=1&flow=claude-code#app/usernode-2d5619/dev/sessions/990404",
+      "expectSelector": "[data-flow-wizard] [data-flow-step-state=\"current\"]",
+      "expectText": "Check again"
+    },
+    {
+      "name": "Settings can answer the build-flow question for good (#1049)",
+      "path": "/#settings/connectors",
+      "expectSelector": "#settings-dev-flow option[value=\"claude-code\"]",
+      "expectText": "Preferred build flow"
+    },
+    {
+      "name": "A connector-imported proposal names the coding agent that built it (#967)",
+      "path": "/?demo=1#app/usernode-2d5619/dev/proposals",
+      "expectText": "Built with Claude Code"
     }
   ],
   "governance": {

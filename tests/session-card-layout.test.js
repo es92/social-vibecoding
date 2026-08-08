@@ -459,3 +459,123 @@ test('list view pinned block: nothing to show → empty string', () => {
   AppView._archivedSessions = [];
   assert.equal(AppView._mySessionsBlockHtml(), '');
 });
+
+// ── #1038: the "working…" tag is driven by live state, not by the row ────
+//
+// The board used to re-pull three payloads every 15s just to notice this
+// tag had flipped. It now renders through window.SessionState, so a pushed
+// transition repaints it — in both directions.
+
+const SESSION_STATE_SRC = fs.readFileSync(
+  path.join(__dirname, '..', 'public', 'js', 'session-state.js'), 'utf8'
+);
+
+// app-view.js with the live store loaded alongside it, as index.html does.
+function makeAppViewWithStore() {
+  const sandbox = makeCtx();
+  vm.runInContext(SESSION_STATE_SRC, sandbox);
+  return { AppView: sandbox.__AppView, SessionState: sandbox.window.SessionState };
+}
+
+test('status tag: falls back to the fetched row when the store knows nothing', () => {
+  const AppView = makeAppView();
+  assert.match(AppView._sessionStatusTagHtml(mySess({ busy: true })), /working…/);
+  assert.doesNotMatch(AppView._sessionStatusTagHtml(mySess({ busy: false })), /working…/);
+});
+
+test('status tag: a live busy event beats a fetched row that said idle', () => {
+  const { AppView, SessionState } = makeAppViewWithStore();
+  const s = mySess({ id: 51, busy: false });
+  assert.doesNotMatch(AppView._sessionStatusTagHtml(s), /working…/);
+
+  SessionState.applyEvent({ sessionId: 51, busy: true, status: 'active' });
+  assert.match(AppView._sessionStatusTagHtml(s), /working…/,
+    'the card spins on the pushed transition, not on the next fetch');
+});
+
+test('status tag: a live idle event clears a spinner the fetched row still asserts', () => {
+  const { AppView, SessionState } = makeAppViewWithStore();
+  // The stale-snapshot case — this is the phantom spinner users report.
+  const s = mySess({ id: 51, busy: true });
+  assert.match(AppView._sessionStatusTagHtml(s), /working…/);
+
+  SessionState.applyEvent({ sessionId: 51, busy: false, status: 'paused' });
+  const html = AppView._sessionStatusTagHtml(s);
+  assert.doesNotMatch(html, /working…/);
+});
+
+test('status tag: a paused session with no live entry still shows "paused"', () => {
+  const { AppView } = makeAppViewWithStore();
+  const html = AppView._sessionStatusTagHtml(mySess({ busy: false, status: 'paused' }));
+  assert.match(html, /paused/);
+  assert.doesNotMatch(html, /working…/);
+});
+
+test('a shared session card picks up live busy state too', () => {
+  const { AppView, SessionState } = makeAppViewWithStore();
+  AppView._sharedById = {};
+  const s = sharedSess({ id: 71, busy: false });
+  assert.doesNotMatch(AppView._renderSharedSessionCard(s), /working…/);
+
+  SessionState.applyEvent({ sessionId: 71, busy: true, status: 'active' });
+  assert.match(AppView._renderSharedSessionCard(s), /working…/,
+    "another user's shared card updates for every viewer");
+});
+
+test('the 15s _stripTimer and the 8s headless poller are gone', () => {
+  const AppView = makeAppView();
+  assert.equal(AppView._syncSessionPolling, undefined,
+    'replaced by the SessionState subscription');
+  assert.equal(AppView._syncHeadlessPolling, undefined,
+    'replaced by _onSessionStateEvent patching the cached issue row');
+  assert.equal(AppView._stripTimer, undefined);
+  assert.equal(AppView._headlessPollTimer, undefined);
+});
+
+test('_onSessionStateEvent patches the cached issue row for an auto-run', () => {
+  const { AppView } = makeAppViewWithStore();
+  AppView.appData = { slug: 'demo-app' };
+  AppView._ghIssues = [
+    { number: 900003, headless: { sessionId: 5, status: 'generating' }, bounty: { local: 'edit' } },
+    { number: 900004, headless: null },
+  ];
+
+  AppView._onSessionStateEvent({
+    sessionId: 5, appSlug: 'demo-app',
+    headless: { status: 'ready', outcome: 'spec', issueNumber: 900003 },
+  });
+
+  // Spread into this realm before comparing — app-view.js built the object
+  // inside the vm context, so its prototype isn't ours and deepStrictEqual
+  // would fail on two structurally identical objects.
+  assert.deepEqual({ ...AppView._ghIssues[0].headless },
+    { sessionId: 5, status: 'ready', outcome: 'spec' });
+  // Field-scoped merge: optimistic local bounty edits must survive, exactly
+  // as they did under the poller this replaced.
+  assert.deepEqual({ ...AppView._ghIssues[0].bounty }, { local: 'edit' });
+  assert.equal(AppView._ghIssues[1].headless, null);
+});
+
+test('_onSessionStateEvent ignores events for another app', () => {
+  const { AppView } = makeAppViewWithStore();
+  AppView.appData = { slug: 'demo-app' };
+  AppView._ghIssues = [{ number: 900003, headless: { status: 'generating' } }];
+
+  AppView._onSessionStateEvent({
+    sessionId: 5, appSlug: 'other-app',
+    headless: { status: 'ready', outcome: 'spec', issueNumber: 900003 },
+  });
+  assert.equal(AppView._ghIssues[0].headless.status, 'generating',
+    'issue numbers are per-repo, so a cross-app event must not patch this row');
+});
+
+test('_onSessionStateChanged never repaints mid-drag', () => {
+  const { AppView } = makeAppViewWithStore();
+  let repaints = 0;
+  AppView._repaintDevBody = () => { repaints += 1; };
+  AppView.appData = { slug: 'demo-app' };
+  AppView._dragState = { dragging: true };
+
+  AppView._onSessionStateChanged();
+  assert.equal(repaints, 0, 'an innerHTML swap mid-drag would strand the card');
+});

@@ -583,6 +583,70 @@ test('guidance names the actual web UI of the client that called it', async () =
   assert.match(other.guidance[0], /GitHub CLI/);
 });
 
+test('an explicitly chosen agent beats sniffing the calling client', async () => {
+  // #1049: the in-platform flow picker KNOWS which agent the user chose —
+  // the browser is the calling client, so there is no client name to sniff
+  // and every prepared task would otherwise come back as 'external', with
+  // guidance that names no product and a badge that names no agent.
+  for (const agent of ['claude-code', 'codex']) {
+    const picked = await prepareWith({ agent, clientName: 'Usernode' }, FORK_MISSING);
+    assert.equal(picked.ok, true);
+    assert.equal(picked.agent, agent, 'the resolved agent comes back to the caller');
+    assert.equal(picked.guidance.length, 5, 'the hosted-web-UI guidance, not the generic four');
+  }
+  assert.match(
+    (await prepareWith({ agent: 'claude-code', clientName: 'Usernode' }, FORK_MISSING)).guidance[1],
+    /https:\/\/claude\.ai\/code/,
+  );
+  assert.match(
+    (await prepareWith({ agent: 'codex', clientName: 'Usernode' }, FORK_MISSING)).guidance[1],
+    /https:\/\/chatgpt\.com\/codex/,
+  );
+
+  // Explicit wins even when the client name says otherwise: an MCP client
+  // that offers its user a choice must be able to honour it.
+  const override = await prepareWith(
+    { agent: 'codex', clientName: 'Claude — claude.ai' }, FORK_MISSING
+  );
+  assert.equal(override.agent, 'codex');
+  assert.match(override.guidance[1], /chatgpt\.com\/codex/);
+
+  // And with nothing explicit, the inference is byte-for-byte what it was.
+  const sniffed = await prepareWith({ clientName: 'Claude — claude.ai' }, FORK_MISSING);
+  assert.equal(sniffed.agent, 'claude-code');
+  const garbage = await prepareWith({ agent: 'not-an-agent', clientName: 'x' }, FORK_MISSING);
+  assert.equal(garbage.agent, 'external', 'an unknown value falls back, it does not leak through');
+});
+
+test('the browser flow round-trips its agent through client_id', async () => {
+  // There is no `agent` column on external_agent_tasks, and #1049 did not
+  // add one: src/routes/dev-flow.js records the picked agent in client_id as
+  // 'usernode-web:<agent>', and normalizeAgent recovers it from that on a
+  // later read. This is what makes the walkthrough resumable — reload the
+  // page and the card still says "Building with Codex".
+  const ROUTE_SRC = fs.readFileSync(
+    path.join(__dirname, '../src/routes/dev-flow.js'), 'utf8'
+  );
+  assert.match(ROUTE_SRC, /usernode-web:/, 'the route stamps the agent into client_id');
+  assert.equal(svc.normalizeAgent(null, 'usernode-web:claude-code'), 'claude-code');
+  assert.equal(svc.normalizeAgent(null, 'usernode-web:codex'), 'codex');
+
+  // Proof of the whole loop: a task row whose only record of the agent is
+  // client_id renders with the right product name.
+  const rendered = svc.renderPreparedTask({
+    task: {
+      id: 77, fork_owner: 'someuser', fork_repo: 'recipe-box',
+      branch_name: 'usernode/x', base_sha: BASE_SHA, issue_number: null, brief: 'x',
+    },
+    app: APP, owner: 'usernode-bot', repo: 'recipe-box',
+    origin: 'https://usernode.example',
+    clientId: 'usernode-web:codex', clientName: null,
+    forkStatus: 'ready', reused: true,
+  });
+  assert.equal(rendered.agent, 'codex');
+  assert.match(rendered.guidance.join('\n'), /chatgpt\.com\/codex/);
+});
+
 test('the work order is addressed to the agent and to nobody else', async () => {
   const result = await prepareWith({ clientName: 'Claude — claude.ai' });
   for (const human of ['tell the assistant', 'paste', 'verbatim', 'come back']) {
@@ -2190,4 +2254,218 @@ test('slug + branch with no taskId finds the caller’s open work for that app',
   assert.equal(created[0].head, 'someuser:claude/harness-made-this');
   // The reservation it found is still closed out properly.
   assert.ok(queries.some((q) => q.sql.includes('UPDATE external_agent_tasks')));
+});
+
+// ── maintainer_can_modify, and the fork_collab refusal it prevents ─────
+//
+// Rung 1 failed on every production attempt for one reason, and it was
+// neither ambiguity nor scopes nor credential reach: `POST /pulls` treats
+// `maintainer_can_modify` as true when omitted, which on a cross-fork head
+// asks GitHub to grant the BASE repo's maintainers push access to the fork
+// branch. Only a collaborator on that fork may grant it, and `usernode-bot`
+// is a collaborator on nobody's fork by design. GitHub answered 422
+// `field: "fork_collab"` on both rungs, so the mirror ran every time
+// (task 3, 2026-08-07).
+
+test('every cross-fork rung declines the maintainer-edit grant', async () => {
+  const attempts = [];
+  const gh = ghWithDiagnostics({
+    findOpenPrByBranch: async () => null,
+    createPR: async (owner, repo, opts) => {
+      attempts.push(opts);
+      return { number: 52, html_url: 'x', head: { repo: { owner: { login: 'someuser' } } } };
+    },
+  });
+
+  const result = await withFetch(PUSHED_BRANCH, [], () => svc.submitWork(
+    { pool: submitPool([]), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
+    {
+      user: { id: 3 }, taskId: 31,
+      importProposal: async () => ({ ok: true, status: 200, body: { sessionId: 90 } }),
+    }
+  ));
+
+  assert.equal(result.ok, true);
+  assert.equal(attempts.length, 1, 'rung 1 now succeeds — no retry, no mirror');
+  assert.equal(attempts[0].maintainerCanModify, false,
+    'the platform never asks for write access to somebody else’s fork');
+});
+
+test('rung 1 succeeding is recorded as `branch`, and the mirror never runs', async () => {
+  // The acceptance signal for this fix: `submitted_via` moving off
+  // 'mirror' is how we know the parameter did its job in production.
+  const queries = [];
+  let mirrorCalled = false;
+  const gh = ghWithDiagnostics({
+    findOpenPrByBranch: async () => null,
+    createPR: async (owner, repo, opts) => {
+      // Refuse anything that still asks for the grant, exactly as GitHub does.
+      if (opts.maintainerCanModify !== false) throw forkCollabRefused();
+      return { number: 53, html_url: 'x', head: { repo: { owner: { login: 'someuser' } } } };
+    },
+  });
+
+  const result = await withStubbedMirror(
+    async () => { mirrorCalled = true; return { ok: false, code: 'unexpected' }; },
+    () => withFetch(PUSHED_BRANCH, [], () => svc.submitWork(
+      { pool: submitPool(queries), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
+      {
+        user: { id: 3 }, taskId: 31, source: 'work_order',
+        importProposal: async () => ({ ok: true, status: 200, body: { sessionId: 91 } }),
+      }
+    ))
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.submittedVia, 'branch');
+  assert.equal(mirrorCalled, false);
+
+  const close = queries.find((q) => q.sql.includes('UPDATE external_agent_tasks'));
+  assert.ok(close.params.includes('branch'),
+    'submitted_via records the rung that actually ran');
+});
+
+// GitHub's fork_collab 422, verbatim from the production log line that
+// finally named this failure.
+function forkCollabRefused() {
+  const err = new Error('Validation Failed');
+  err.status = 422;
+  err.code = 'fork_collab_denied';
+  err.response = {
+    status: 422,
+    headers: { 'x-github-request-id': 'A1D8:13D72D', 'x-oauth-scopes': 'repo, workflow' },
+    data: {
+      message: 'Validation Failed',
+      errors: [{
+        resource: 'PullRequest',
+        code: 'custom',
+        field: 'fork_collab',
+        message: "fork_collab Fork collab can't be granted by someone without permission",
+      }],
+    },
+  };
+  return err;
+}
+
+test('a fork_collab refusal STOPS the ladder — it is our bug, not a repo condition', async () => {
+  // Retrying with head_repo cannot help and mirroring would paper over a
+  // defect at the call site, so neither happens. Unreachable once every
+  // cross-fork caller sends `false` — which is exactly why it is named.
+  const attempts = [];
+  let mirrorCalled = false;
+  const gh = ghWithDiagnostics({
+    findOpenPrByBranch: async () => null,
+    createPR: async (owner, repo, opts) => {
+      attempts.push(opts);
+      throw forkCollabRefused();
+    },
+  });
+
+  const result = await withStubbedMirror(
+    async () => { mirrorCalled = true; return { ok: false, code: 'unexpected' }; },
+    () => withFetch(PUSHED_BRANCH, [], () => svc.submitWork(
+      { pool: submitPool([]), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
+      {
+        user: { id: 3 }, taskId: 31,
+        importProposal: async () => ({ ok: true, status: 200, body: { sessionId: 92 } }),
+      }
+    ))
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'fork_collab_denied');
+  assert.equal(result.retryable, false, 'retrying a deterministic refusal is not the answer');
+  assert.match(result.message, /only a collaborator on that fork can grant it/i);
+  assert.match(result.message, /bug on our side/i,
+    'says whose fault it is, so nobody re-audits their fork');
+  assert.equal(attempts.length, 1, 'no head_repo retry');
+  assert.equal(mirrorCalled, false, 'and no mirror');
+});
+
+test('an ordinary 422 still walks the whole ladder — only fork_collab short-circuits', async () => {
+  // Guard against the typed stop swallowing the fallback it sits beside.
+  const attempts = [];
+  let mirrorCalled = false;
+  const gh = ghWithDiagnostics({
+    findOpenPrByBranch: async () => null,
+    createPR: async (owner, repo, opts) => {
+      attempts.push(opts);
+      if (opts.head) throw validationFailed();
+      return { number: 98, html_url: 'x', head: { repo: { owner: { login: 'usernode-bot' } } } };
+    },
+  });
+
+  const result = await withStubbedMirror(
+    async () => {
+      mirrorCalled = true;
+      return {
+        ok: true,
+        branch: 'usernode/from-someuser-t31-cafe',
+        credential: 'pat',
+        cleanup: async () => {},
+      };
+    },
+    () => withFetch(PUSHED_BRANCH, [], () => svc.submitWork(
+      { pool: submitPool([]), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
+      {
+        user: { id: 3 }, taskId: 31,
+        importProposal: async () => ({ ok: true, status: 200, body: { sessionId: 93 } }),
+      }
+    ))
+  );
+
+  assert.equal(result.ok, true);
+  assert.equal(result.submittedVia, 'mirror');
+  assert.equal(mirrorCalled, true);
+  assert.equal(attempts.length, 3, 'cross-fork, cross-fork + head_repo, then same-repo');
+  assert.equal(attempts[0].maintainerCanModify, false);
+  assert.equal(attempts[1].maintainerCanModify, false, 'rung 2 declines the grant too');
+  assert.equal(attempts[2].maintainerCanModify, undefined,
+    'the same-repo mirror create keeps GitHub’s default — the grant is vacuous there');
+});
+
+test('the mirror announces which rung failed and why', async () => {
+  // Cross-fork creates now decline the grant, so rung 1 is expected to
+  // succeed and this line should stop appearing. Its presence in the log
+  // is the signal that something new is refusing the fork head — visible
+  // without anyone going and querying submitted_via.
+  const lines = [];
+  const realInfo = logger.info;
+  logger.info = (scope, msg, meta) => { lines.push({ scope, msg, meta }); };
+
+  const gh = ghWithDiagnostics({
+    findOpenPrByBranch: async () => null,
+    createPR: async (owner, repo, opts) => {
+      if (opts.head) throw validationFailed();
+      return { number: 99, html_url: 'x', head: { repo: { owner: { login: 'usernode-bot' } } } };
+    },
+  });
+
+  try {
+    await withStubbedMirror(
+      async () => ({
+        ok: true,
+        branch: 'usernode/from-someuser-t31-feed',
+        credential: 'pat',
+        cleanup: async () => {},
+      }),
+      () => withFetch(PUSHED_BRANCH, [], () => svc.submitWork(
+        { pool: submitPool([]), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
+        {
+          user: { id: 3 }, taskId: 31,
+          importProposal: async () => ({ ok: true, status: 200, body: { sessionId: 94 } }),
+        }
+      ))
+    );
+  } finally {
+    logger.info = realInfo;
+  }
+
+  const line = lines.find((l) => /falling back to the mirror/.test(l.msg));
+  assert.ok(line, 'the fallback is announced, not silent');
+  assert.equal(line.meta.failedRungs, 'branch, branch_head_repo');
+  assert.equal(line.meta.status, 422);
+  assert.equal(line.meta.githubField, 'head', 'names the field GitHub objected to');
+  assert.equal(line.meta.requestId, 'ABCD:1234:5678');
+  assert.equal(line.meta.head, 'someuser:usernode/recipe-box-issue-4-abc123');
 });

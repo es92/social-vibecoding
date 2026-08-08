@@ -192,7 +192,9 @@ test('the stop route still answers with a stopped flag the client can branch on'
 test('/status exposes stopping so a reload repaints the Stopping button', () => {
   assert.match(SRC, /const\s+stopping\s*=\s*!!stopRegistry\.get\(sessionId\)\?\.stopped;/,
     '/status derives stopping from the live stop registry');
-  const payload = SRC.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,200}?\}\);/);
+  // Window widened from 200 in #907, which added runner/runnerLabel/
+  // localAgent as siblings; the assertion below is key presence, not size.
+  const payload = SRC.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,400}?\}\);/);
   assert.ok(payload, 'found the /status res.json payload');
   assert.match(payload[0], /\bstopping\b/, 'stopping is included in the /status payload');
 });

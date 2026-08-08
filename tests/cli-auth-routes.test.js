@@ -261,3 +261,94 @@ test('unknown RPC paths terminate before cookie middleware fallthrough', async (
     server.close();
   }
 });
+
+// ── #907: the local-agent surfaces ─────────────────────────────────────────
+
+test('the agent protocol is behind the same staging gate as the rest of the CLI', async () => {
+  const previous = process.env.USERNODE_ENV;
+  process.env.USERNODE_ENV = 'staging';
+  queries.length = 0;
+  const server = await startApp();
+  try {
+    for (const pathname of [
+      '/api/cli/agent/attach',
+      '/api/cli/agent/heartbeat',
+      '/api/cli/agent/turns/next',
+      '/api/cli/agent/detach',
+    ]) {
+      const response = await fetch(`${base(server)}${pathname}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      assert.equal(response.status, 404, pathname);
+      assert.equal(response.headers.get('cache-control'), 'no-store', pathname);
+    }
+    assert.equal(queries.length, 0, 'the gate answers before any database work');
+  } finally {
+    server.close();
+    if (previous === undefined) delete process.env.USERNODE_ENV;
+    else process.env.USERNODE_ENV = previous;
+  }
+});
+
+test('the Settings machine list is deliberately not a CLI surface', async () => {
+  // A lease grants nothing — it only says which machine the next coding turn
+  // of one session goes to. Keeping it off isCliSurface() is what makes the
+  // Settings block reviewable on staging, where the credential surfaces 404.
+  const previous = process.env.USERNODE_ENV;
+  process.env.USERNODE_ENV = 'staging';
+  const server = await startApp();
+  try {
+    const response = await fetch(`${base(server)}/api/me/local-agents`);
+    // 418 is this harness's "nothing matched" fallback: the gate let it past
+    // rather than 404ing it, and the browser router (not mounted here) owns it.
+    assert.equal(response.status, 418);
+  } finally {
+    server.close();
+    if (previous === undefined) delete process.env.USERNODE_ENV;
+    else process.env.USERNODE_ENV = previous;
+  }
+});
+
+test('the agent protocol never falls through to browser cookie handling', async () => {
+  queries.length = 0;
+  const server = await startApp();
+  try {
+    // An unauthenticated request must get the bearer challenge, and an
+    // unknown agent path must terminate — never reach an ambient session.
+    const unknown = await fetch(`${base(server)}/api/cli/agent/not-a-route`, {
+      headers: { Cookie: 'session=ambient-browser-cookie' },
+    });
+    assert.equal(unknown.status, 404);
+    assert.deepEqual(await unknown.json(), { error: 'not_found' });
+
+    const attach = await fetch(`${base(server)}/api/cli/agent/attach`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: 'session=ambient-browser-cookie' },
+      body: JSON.stringify({ sessionId: 1, label: 'laptop' }),
+    });
+    assert.equal(attach.status, 401);
+    assert.match(attach.headers.get('www-authenticate') || '', /Bearer/);
+  } finally {
+    server.close();
+  }
+});
+
+test('both local-agent browser routes are no-store and terminate on a bad method', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../src/routes/cli-auth.js'), 'utf8');
+  // Lists a route can silently fall out of. The list membership IS the
+  // behaviour: miss the noStore entry and a machine list gets cached by a
+  // proxy; miss the router.all entry and a stray verb reaches the SPA shell.
+  for (const list of [/\], noStore\);/, /\], \(_req, res\) => \{\n\s+res\.status\(404\)/]) {
+    const at = source.search(list);
+    assert.ok(at > 0);
+  }
+  // Two list memberships (noStore, terminal 404) plus the GET handler itself.
+  assert.equal((source.match(/^\s+'\/api\/me\/local-agents',$/gm) || []).length, 2);
+  assert.equal((source.match(/^\s+'\/api\/me\/local-agents\/\*',$/gm) || []).length, 2);
+  assert.match(source, /router\.get\('\/api\/me\/local-agents', userRate/);
+  assert.match(source, /router\.delete\('\/api\/me\/local-agents\/:leaseId', userRate/);
+});

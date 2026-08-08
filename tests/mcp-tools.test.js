@@ -149,9 +149,9 @@ test('the registered tool surface is exactly this, and nothing more', () => {
   const registered = [...SRC.matchAll(/server\.registerTool\('([a-z_]+)'/g)].map((m) => m[1]);
   assert.deepEqual(registered.sort(), [
     'answer_questions', 'create_request', 'get_app', 'get_platform_build',
-    'get_proposal', 'list_apps', 'list_my_proposals', 'list_requests',
-    'prepare_work', 'start_platform_build', 'submit_platform_build',
-    'submit_work', 'whoami',
+    'get_platform_conventions', 'get_proposal', 'list_apps',
+    'list_my_proposals', 'list_requests', 'prepare_work',
+    'start_platform_build', 'submit_platform_build', 'submit_work', 'whoami',
   ]);
   // Nothing that decides an app's future. The connector hands work to the
   // user's own coding agent and puts the result to a vote; it does not vote,
@@ -272,9 +272,10 @@ test('every write tool checks its scope before it does anything', () => {
       }
     }
     // And the annotation matches the behaviour, so a host that trusts the
-    // hints is not misled about which calls change something.
-    const meta = SRC.slice(idx, idx + 4000);
-    assert.match(meta, /annotations: writeAnnotations/, `${name} is annotated as a write`);
+    // hints is not misled about which calls change something. Scoped to the
+    // registration, not a fixed byte window — a tool that gains an input
+    // field should not push its own annotation out of view.
+    assert.match(body, /annotations: writeAnnotations/, `${name} is annotated as a write`);
   }
 });
 
@@ -389,4 +390,200 @@ test('the proposal a connector opens is an ordinary imported proposal', () => {
   );
   assert.equal(shaped.externalAgent, 'claude-code');
   assert.equal(tools.shapeProposal({ id: 5 }, ORIGIN).externalAgent, null);
+});
+
+// ── What a proposal says about itself ─────────────────────────────────────
+//
+// After submit_work the connector's agent is still in session and can still
+// fix things. Whether it does depends entirely on what get_proposal tells it,
+// so these two fields are the difference between a proposal that gets
+// repaired and one that sits un-mergeable until a human notices.
+
+test('the checks a proposal reports name the tests that are failing', () => {
+  const shaped = tools.shapeChecks({
+    check_state: 'failing',
+    test_results: [
+      { name: 'Home loads', status: 'pass' },
+      { name: 'Board shows the snap toggle', status: 'fail' },
+      { name: 'Settings saves', status: 'error' },
+    ],
+  });
+  assert.equal(shaped.state, 'failing');
+  assert.equal(shaped.total, 3, 'the total counts every test, not just the failures');
+  assert.equal(shaped.failing.length, 2, 'anything not passing is a failure worth naming');
+  // The names come from the app's own dapp.json, which other people edit —
+  // so they arrive as untrusted content like every other borrowed string.
+  assert.ok(shaped.failing.every((n) => n.startsWith('<untrusted-content>')));
+  assert.ok(shaped.failing[0].includes('Board shows the snap toggle'));
+  assert.ok(shaped.failing[1].includes('Settings saves'));
+});
+
+test('checks degrade to a knowable nothing rather than a guess', () => {
+  // A proposal whose checks have not run yet must not read as passing.
+  const pending = tools.shapeChecks({});
+  assert.equal(pending.state, null);
+  assert.deepEqual(pending.failing, []);
+  assert.equal(pending.total, 0);
+  // A non-array test_results (older row, bad JSON) must not throw mid-tool.
+  assert.equal(tools.shapeChecks({ test_results: 'nope' }).total, 0);
+  assert.equal(tools.shapeChecks({ test_results: null }).total, 0);
+  // A failing test with no name still gets named something addressable.
+  const unnamed = tools.shapeChecks({ test_results: [{ status: 'fail', path: '/board' }] });
+  assert.ok(unnamed.failing[0].includes('/board'));
+  assert.ok(tools.shapeChecks({ test_results: [{ status: 'fail' }] }).failing[0].includes('unnamed'));
+  // The failing list is capped like every other list the connector returns.
+  const many = Array.from({ length: 50 }, (_, i) => ({ name: `t${i}`, status: 'fail' }));
+  const capped = tools.shapeChecks({ test_results: many });
+  assert.equal(capped.failing.length, tools.MAX_LIST_ITEMS);
+  assert.equal(capped.total, 50, 'but the total still tells the truth');
+});
+
+test('a proposal reports its checks and whether its capture route was lost', () => {
+  const shaped = tools.shapeProposal({
+    id: 7, app_slug: 'recipe-box', check_state: 'failing',
+    test_results: [{ name: 'Board shows the snap toggle', status: 'fail' }],
+    capture_detail: { pathDefaulted: true },
+  }, ORIGIN);
+  assert.equal(shaped.checks.state, 'failing');
+  assert.equal(shaped.checks.total, 1);
+  // pathDefaulted means the capture fell back to the app's home page, so the
+  // screenshots the voters see show nothing of the change. The agent that
+  // submitted it is the only party who can still fix that cheaply.
+  assert.equal(shaped.captureDefaultedToRoot, true);
+
+  // Absent means no — never undefined, which reads as "unknown" to a model.
+  const plain = tools.shapeProposal({ id: 8, app_slug: 'recipe-box' }, ORIGIN);
+  assert.equal(plain.captureDefaultedToRoot, false);
+  assert.equal(plain.checks.state, null);
+  // A capture_detail that is not an object must not throw.
+  assert.equal(
+    tools.shapeProposal({ id: 9, capture_detail: 'x' }, ORIGIN).captureDefaultedToRoot,
+    false
+  );
+});
+
+// ── Testing notes arriving over the connector ─────────────────────────────
+//
+// The in-platform path gets these from a `==== TESTING ====` block in the
+// build agent's final message. A connector agent has no final message the
+// platform ever sees, so submit_work takes them as arguments — and reuses the
+// same validator, the same caps and the same object shape, so both paths land
+// identically in chat_sessions.
+
+test('testing routes are validated and shaped like the block grammar', () => {
+  const notes = require('../src/services/testing-notes');
+  const shaped = tools.shapeTestingNotes({
+    testingPaths: ['/board?demo=1', '/settings @mobile', { path: '/inbox', viewport: 'mobile' }],
+    testingSteps: '1. Open the board\n2. Toggle snap',
+    description: 'Adds a snap toggle.',
+  });
+  assert.deepEqual(shaped.testingPaths, [
+    { path: '/board?demo=1', viewport: notes.VIEWPORT_DESKTOP },
+    { path: '/settings', viewport: notes.VIEWPORT_MOBILE },
+    { path: '/inbox', viewport: notes.VIEWPORT_MOBILE },
+  ]);
+  assert.equal(shaped.testingSteps, '1. Open the board\n2. Toggle snap');
+  assert.equal(shaped.description, 'Adds a snap toggle.');
+});
+
+test('a route the platform would refuse is dropped, not passed on', () => {
+  // The path is joined onto the staging origin and loaded in an iframe, so
+  // this validation is not politeness — and the connector is not trusted to
+  // have done it, because the pr-import route re-checks too.
+  const shaped = tools.shapeTestingNotes({
+    testingPaths: ['not-a-path', 'https://evil.example/x', '//evil.example', '/ok'],
+  });
+  assert.equal(shaped.testingPaths.length, 1);
+  assert.equal(shaped.testingPaths[0].path, '/ok');
+  // Non-strings and malformed objects go the same way.
+  assert.equal(
+    tools.shapeTestingNotes({ testingPaths: [null, 42, {}, { viewport: 'mobile' }] }).testingPaths,
+    undefined
+  );
+});
+
+test('duplicate routes collapse, and the list stops at the capture cap', () => {
+  const notes = require('../src/services/testing-notes');
+  const dupes = tools.shapeTestingNotes({
+    testingPaths: ['/board', '/board', '/board @mobile'],
+  });
+  // Same route, different viewport, is two different screenshots — so it is
+  // not a duplicate. The same route twice is.
+  assert.equal(dupes.testingPaths.length, 2);
+  const over = tools.shapeTestingNotes({
+    testingPaths: ['/a', '/b', '/c', '/d', '/e'],
+  });
+  assert.equal(over.testingPaths.length, notes.CAPTURE_MAX_PATHS);
+  assert.deepEqual(over.testingPaths.map((p) => p.path), ['/a', '/b', '/c']);
+});
+
+test('an agent that pastes its whole final message is understood, not punished', () => {
+  // A coding agent trained on the in-platform contract emits the block. If
+  // submit_work took the description literally, the markers would reach the
+  // people voting and the routes would be lost.
+  const shaped = tools.shapeTestingNotes({
+    description: [
+      'Adds a snap toggle to the board.',
+      '',
+      '==== TESTING ====',
+      'path: /board?demo=1',
+      'path: /settings @mobile',
+      '1. Open the board',
+      '2. Toggle snap and reload',
+      '==== END TESTING ====',
+    ].join('\n'),
+  });
+  assert.equal(shaped.description, 'Adds a snap toggle to the board.');
+  assert.ok(!shaped.description.includes('TESTING'), 'the markers never reach the proposal body');
+  assert.deepEqual(shaped.testingPaths.map((p) => p.path), ['/board?demo=1', '/settings']);
+  assert.match(shaped.testingSteps, /Toggle snap and reload/);
+});
+
+test('explicit arguments win over a block in the description', () => {
+  // The arguments are what the agent chose to say through the documented
+  // channel; a block in prose is a fallback for when it did not.
+  const shaped = tools.shapeTestingNotes({
+    testingPaths: ['/explicit'],
+    testingSteps: 'Click the thing',
+    description: 'Body.\n\n==== TESTING ====\npath: /from-block\nOther steps\n==== END TESTING ====',
+  });
+  assert.deepEqual(shaped.testingPaths.map((p) => p.path), ['/explicit']);
+  assert.equal(shaped.testingSteps, 'Click the thing');
+  // The block is still stripped, because it must not reach the voters.
+  assert.equal(shaped.description, 'Body.');
+});
+
+test('absent testing notes stay absent, so nothing overwrites a default', () => {
+  // Every new field on this path is absent-means-today's-behaviour: a
+  // submission that says nothing about testing must import exactly as it did
+  // before these arguments existed.
+  const shaped = tools.shapeTestingNotes({ description: 'Just a description.' });
+  assert.equal(shaped.description, 'Just a description.');
+  assert.equal('testingPaths' in shaped, false);
+  assert.equal('testingSteps' in shaped, false);
+  const empty = tools.shapeTestingNotes({});
+  assert.equal(empty.description, null);
+  assert.deepEqual(Object.keys(empty), ['description']);
+  assert.deepEqual(Object.keys(tools.shapeTestingNotes()), ['description']);
+});
+
+test('steps are clipped to the column that stores them', () => {
+  const notes = require('../src/services/testing-notes');
+  const shaped = tools.shapeTestingNotes({ testingSteps: 'x'.repeat(notes.TESTING_MD_MAX + 500) });
+  assert.equal(shaped.testingSteps.length, notes.TESTING_MD_MAX);
+});
+
+test('submit_work forwards the testing notes it was given, and only those', () => {
+  const body = SRC.slice(
+    SRC.indexOf("server.registerTool('submit_work'"),
+    SRC.indexOf("server.registerTool('start_platform_build'")
+  );
+  assert.ok(body.length > 0, 'the submit_work registration is findable');
+  // Shaped once, then spread conditionally — so an omitted field is omitted
+  // from the request body rather than sent as null.
+  assert.match(body, /shapeTestingNotes\(\{ testingPaths, testingSteps, description \}\)/);
+  assert.match(body, /\.\.\.\(testing\.testingPaths \? \{ testingPaths: testing\.testingPaths \} : \{\}\)/);
+  assert.match(body, /\.\.\.\(testing\.testingSteps \? \{ testingSteps: testing\.testingSteps \} : \{\}\)/);
+  // And the description that reaches the proposal is the CLEANED one.
+  assert.match(body, /body: testing\.description/);
 });

@@ -382,3 +382,126 @@ test('the dev-chat seed map matches src/services/models.js exactly', () => {
     );
   }
 });
+
+// ── #907: the "Run on" runner controls, in the same composer row ────
+
+test('the composer is byte-identical for a session with no machine attached', () => {
+  const { html, getEl } = render();
+  // The host span ships in the markup so nothing has to be inserted later,
+  // and stays empty — .dc-runner:empty is display:none, so no gap appears.
+  assert.ok(html.includes('id="dc-runner"'), 'the host span is in the composer');
+  const { DevChat } = makeHarness();
+  DevChat._renderRunnerControls();
+  assert.equal(getEl('dc-runner').innerHTML, '');
+  // Nobody who never runs the CLI sees the words.
+  assert.ok(!html.includes('Run on:'));
+  assert.ok(!html.includes('Running on your machine'));
+});
+
+test('an attached machine gets a selector and a live chip', () => {
+  const { DevChat, getEl } = makeHarness();
+  DevChat._applyRunnerState({
+    runner: 'local',
+    localAgent: { leaseId: '7', label: "Evan's laptop", runtime: 'claude-code' },
+  });
+  const html = getEl('dc-runner').innerHTML;
+  assert.match(html, /Run on:/);
+  assert.match(html, /<option value="local" selected>Evan&#39;s laptop|Evan's laptop/);
+  assert.match(html, /<option value="platform">Usernode<\/option>/);
+  assert.match(html, /Running on your machine/);
+  // The chip explains the division of labour, because "running on your
+  // machine" otherwise reads as "Usernode has stopped doing anything".
+  assert.match(html, /Usernode still opens the PR/);
+});
+
+test('a label the user typed on their own machine is escaped, not interpreted', () => {
+  const { DevChat, getEl } = makeHarness();
+  DevChat._applyRunnerState({
+    runner: 'local',
+    localAgent: { leaseId: '7', label: '<img src=x onerror=alert(1)>' },
+  });
+  const html = getEl('dc-runner').innerHTML;
+  assert.ok(!html.includes('<img'), 'the label reached innerHTML unescaped');
+  assert.match(html, /&lt;img/);
+});
+
+test('a machine that has gone leaves a past-tense chip, not a live one', () => {
+  const { DevChat, getEl } = makeHarness();
+  DevChat._applyRunnerState({
+    runner: 'local', runnerLabel: 'laptop', localAgent: { leaseId: '7', label: 'laptop' },
+  });
+  // The lease is gone but chat_sessions still remembers where the last turn
+  // ran, which is what /status sends as runnerLabel.
+  DevChat._applyRunnerState({ runner: 'local', runnerLabel: 'laptop', localAgent: null });
+  const html = getEl('dc-runner').innerHTML;
+  assert.match(html, /dc-runner-chip-past/);
+  assert.match(html, /Last turn: laptop/);
+  // No selector: there is nothing left to select between.
+  assert.ok(!html.includes('dc-runner-select'));
+  assert.match(html, /the next turn runs on Usernode/);
+});
+
+test('choosing Usernode hands the session back and never leaves a half-set select', async () => {
+  const { DevChat, getEl } = makeHarness();
+  const requests = [];
+  let confirmed = true;
+  DevChat._applyRunnerState({ runner: 'local', localAgent: { leaseId: '7', label: 'laptop' } });
+  globalThis.__runnerFetch = null;
+  DevChat._handBackToUsernode = async function patched() {
+    const agent = DevChat._localAgent;
+    if (!agent || agent.demo || !confirmed) return;
+    requests.push(`DELETE /api/me/local-agents/${agent.leaseId}`);
+    DevChat._localAgent = null;
+    DevChat._renderRunnerControls();
+  };
+  const select = getEl('dc-runner-select');
+  const event = { target: { value: 'platform' } };
+  select._fire('change', event);
+  await new Promise((resolve) => setImmediate(resolve));
+  // The select snaps back before the async work: a dropdown left reading
+  // "Usernode" while the lease is still held is a lie about where the next
+  // turn goes.
+  assert.equal(event.target.value, 'local');
+  assert.deepEqual(requests, ['DELETE /api/me/local-agents/7']);
+
+  // Selecting the machine that is already running it is a no-op.
+  requests.length = 0;
+  DevChat._applyRunnerState({ runner: 'local', localAgent: { leaseId: '8', label: 'desktop' } });
+  getEl('dc-runner-select')._fire('change', { target: { value: 'local' } });
+  assert.deepEqual(requests, []);
+});
+
+test('the hand-back is the browser-side escape hatch, and refuses demo rows', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', 'public', 'js', 'dev-chat.js'), 'utf8'
+  );
+  const fn = source.slice(
+    source.indexOf('  async _handBackToUsernode() {'),
+    source.indexOf('  _sanitizeStoredModel() {')
+  );
+  // It must not require the machine to cooperate — the whole point is the
+  // laptop that was closed without detaching.
+  assert.match(fn, /method: 'DELETE'/);
+  assert.match(fn, /res\.status !== 204 && res\.status !== 404/,
+    'an already-gone lease is success, not an error toast');
+  assert.match(fn, /agent\.demo/);
+  assert.match(fn, /confirm\(/, 'detaching is destructive enough to confirm');
+});
+
+test('runner state is per session and never bleeds across a switch', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', 'public', 'js', 'dev-chat.js'), 'utf8'
+  );
+  // openSession clears all three before the /status read re-establishes them.
+  assert.match(
+    source,
+    /DevChat\._runner = null;\n\s+DevChat\._runnerLabel = null;\n\s+DevChat\._localAgent = null;/
+  );
+  const { DevChat, getEl } = makeHarness();
+  DevChat._applyRunnerState({ runner: 'local', localAgent: { leaseId: '7', label: 'laptop' } });
+  DevChat._runner = null;
+  DevChat._runnerLabel = null;
+  DevChat._localAgent = null;
+  DevChat._renderRunnerControls();
+  assert.equal(getEl('dc-runner').innerHTML, '');
+});

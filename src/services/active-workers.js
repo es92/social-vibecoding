@@ -11,7 +11,37 @@
 // process-wide instance that both the route handlers and the service
 // share — server.js's graceful-shutdown drain (getActiveWorkerCount)
 // reads the same Set the chat handler and sync turns write to.
-const activeWorkers = new Set();
+// #1038: every mutation of this Set is a turn-boundary that some client
+// surface wants to know about (the header cog, the Dev board's session
+// cards). There are ~15 direct `.add()` / `.delete()` call sites across
+// routes/sessions.js and services/sync-main.js, so rather than sprinkle a
+// broadcast at each one — and miss the next one somebody adds — the Set
+// itself notifies. `session-state` coalesces and only publishes when the
+// derived state actually changed, so the add()/inFlight pair at a turn's
+// start is still one event. Lazy require: session-state pulls this module
+// back in for isSessionBusy.
+function notifySessionState(sessionId) {
+  try {
+    require('./session-state').touch(sessionId);
+  } catch { /* notifier is best-effort; never break turn bookkeeping */ }
+}
+
+class ActiveWorkerSet extends Set {
+  add(sessionId) {
+    const had = this.has(sessionId);
+    const out = super.add(sessionId);
+    if (!had) notifySessionState(sessionId);
+    return out;
+  }
+
+  delete(sessionId) {
+    const out = super.delete(sessionId);
+    if (out) notifySessionState(sessionId);
+    return out;
+  }
+}
+
+const activeWorkers = new ActiveWorkerSet();
 const activeSessionOperations = new Map();
 
 // Register non-worker operations that must not overlap a coding turn (for
@@ -20,14 +50,21 @@ const activeSessionOperations = new Map();
 // closure is idempotent so every owner can clean up in a finally block.
 function beginSessionOperation(sessionId) {
   const key = Number(sessionId);
-  activeSessionOperations.set(key, (activeSessionOperations.get(key) || 0) + 1);
+  const prior = activeSessionOperations.get(key) || 0;
+  activeSessionOperations.set(key, prior + 1);
+  // Only the 0→1 edge changes the session's observable busy state; nested
+  // operations on an already-busy session are invisible to clients.
+  if (prior === 0) notifySessionState(key);
   let released = false;
   return () => {
     if (released) return;
     released = true;
     const remaining = (activeSessionOperations.get(key) || 1) - 1;
     if (remaining > 0) activeSessionOperations.set(key, remaining);
-    else activeSessionOperations.delete(key);
+    else {
+      activeSessionOperations.delete(key);
+      notifySessionState(key);
+    }
   };
 }
 
@@ -62,4 +99,5 @@ module.exports = {
   hasSessionOperation,
   getActiveWorkerCount,
   isSessionBusy,
+  notifySessionState,
 };

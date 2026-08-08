@@ -40,6 +40,19 @@ const PINNED_HOOK_RUNNER = [
   '}',
 ].join('');
 
+// Options that take no value. Anything not listed here consumes the next
+// argument, so a new boolean flag that forgets to register lands as
+// "Missing value for --x" rather than doing nothing.
+const VALUELESS_OPTIONS = new Set([
+  '--no-browser',
+  '--local-only',
+  '--forward-env-token',
+  // #907 (agent run): stop after one turn, and opt into the worker's
+  // permission posture on a machine the user owns.
+  '--once',
+  '--dangerously-skip-permissions',
+]);
+
 function parseOptions(args, allowed) {
   const options = {};
   const positional = [];
@@ -54,7 +67,7 @@ function parseOptions(args, allowed) {
     if (Object.prototype.hasOwnProperty.call(options, key)) {
       throw new Error(`Duplicate option: ${arg}`);
     }
-    if (arg === '--no-browser' || arg === '--local-only' || arg === '--forward-env-token') {
+    if (VALUELESS_OPTIONS.has(arg)) {
       options[key] = true;
       continue;
     }
@@ -602,6 +615,44 @@ async function apiCommand(args, io) {
     body: response.data,
   }, null, 2)}\n`);
   return response.ok ? 0 : 1;
+}
+
+// #907: the one credential step every `agent` subcommand shares. The agent
+// protocol needs the `agent:local` scope, which credentials issued before this
+// feature do not carry — so a token that predates it comes back 403
+// insufficient_scope on the very first call, and the honest fix is a fresh
+// consent, not a silent downgrade. Resolved once, up front, so `agent run`
+// cannot discover a scope problem forty minutes into a long poll.
+async function authorizedToken(profile, io) {
+  if (!(await localProfileReady(profile))) {
+    throw new Error('The local Usernode stack is not running. Start it with make up, then retry.');
+  }
+  let credential = await resolvedCredential(profile);
+  let status = null;
+  if (credential) {
+    try {
+      status = await tokenStatus(profile.origin, credential.record.access_token);
+    } catch (err) {
+      if (!(err instanceof CliHttpError)) throw err;
+      throw new Error('Usernode is unreachable right now; could not check this credential.');
+    }
+  }
+  const usable = credential
+    && status
+    && status.status !== 'invalid'
+    && status.scopes.length === REQUIRED_SCOPES.length;
+  if (!usable) {
+    if (credential?.source === 'environment') {
+      throw new Error(
+        'The environment credential is missing local-agent access; replace it with one authorized for this machine and retry'
+      );
+    }
+    const loginCode = await login(['--profile', profile.name], io);
+    if (loginCode !== 0) throw new Error('Login did not complete');
+    credential = await resolvedCredential(profile);
+    if (!credential) throw new Error('Login completed without a usable credential');
+  }
+  return credential.record.access_token;
 }
 
 async function proposalPushCommand(args, io) {
@@ -2090,6 +2141,10 @@ function usage() {
     '  social-vibecoding auth server add|use|list|remove ...',
     '  social-vibecoding api <GET|POST|PUT|PATCH|DELETE> <path> [--profile <name>] [--data <json>]',
     '  social-vibecoding proposal push --session <id> --commit <sha> [--repo <path>] [--profile <name>]',
+    '  social-vibecoding agent run --session <id> [--repo <path>] [--label <name>] [--model <name>] [--once]',
+    '      takes both spec (read-only) and coding turns; each one asks in this terminal first',
+    '  social-vibecoding agent status [--profile <name>]',
+    '  social-vibecoding agent detach --lease <id> [--profile <name>]',
     '  social-vibecoding codex setup [--profile <name>] [--forward-env-token]',
     '  social-vibecoding claude setup [--profile <name>]',
     '  social-vibecoding mcp [--profile <name>]',
@@ -2104,6 +2159,22 @@ async function main(argv, {
   const io = {
     out: (text) => stdout.write(text),
     err: (text) => stderr.write(text),
+    // #907: one line read from the operator's own terminal. `agent run` uses
+    // it for the per-turn "Run this turn here? [y/N]" confirmation — the rule
+    // that Usernode can never start a process on someone's machine by itself
+    // is enforced here, at the keyboard, not by anything server-side.
+    //
+    // Resolves null when there is no interactive stdin, which the caller must
+    // treat as "no consent given" rather than as a default yes.
+    ask: (question) => new Promise((resolve) => {
+      if (!process.stdin.isTTY) { resolve(null); return; }
+      stdout.write(question);
+      // eslint-disable-next-line global-require
+      const readline = require('node:readline');
+      const rl = readline.createInterface({ input: process.stdin, output: stdout, terminal: true });
+      rl.once('line', (line) => { rl.close(); resolve(String(line)); });
+      rl.once('close', () => resolve(null));
+    }),
   };
   const [command, ...rest] = argv;
   try {
@@ -2118,6 +2189,15 @@ async function main(argv, {
     if (command === 'api') return await apiCommand(rest, io);
     if (command === 'proposal' && rest[0] === 'push') {
       return await proposalPushCommand(rest.slice(1), io);
+    }
+    if (command === 'agent') {
+      // Lazily required: agent-command.js pulls in the runtime adapters, and
+      // no other subcommand needs them.
+      // eslint-disable-next-line global-require
+      const { agentCommand } = require('./agent-command');
+      return await agentCommand(rest, io, {
+        parseOptions, state, authorizedToken,
+      });
     }
     if (command === 'codex' && rest[0] === 'setup') {
       return await codexSetup(rest.slice(1), io, launcherPath);
@@ -2140,7 +2220,9 @@ async function main(argv, {
 module.exports = {
   GENERATED_HEADER,
   PINNED_HOOK_RUNNER,
+  VALUELESS_OPTIONS,
   parseOptions,
+  authorizedToken,
   validateStatusResponse,
   validateDeviceResponse,
   validateTokenResponse,

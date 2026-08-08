@@ -82,6 +82,10 @@ function stagingMockProposals(viewer) {
     my_kudos: false,
     my_kudos_direct: false,
     revert_of_session_id: null,
+    // #967: which external coding agent wrote it, for the "built with …"
+    // chip. NULL on every native row — the connector-imported mock below is
+    // the one that sets it.
+    external_agent: null,
     original_pr_number: null,
     original_pr_title: null,
     chat_count: chat,
@@ -518,6 +522,38 @@ function stagingMockProposals(viewer) {
       check_error_detail: 'app failed to boot in its staging container: missing required secret DEMO_API_KEY',
       recheckable: true,
       test_results: [],
+    },
+    // A proposal submitted through the hosted MCP connector — Claude Code
+    // wrote it in the user's own fork, and submit_work carried the testing
+    // routes and steps with the import. THREE things only line up on one row:
+    // the "built with Claude Code" chip beside the imported badge, a "How to
+    // test" panel + "Test this change" deep link on an IMPORTED proposal, and
+    // failing checks on work the platform did not build itself.
+    //
+    // Seeded because a staging clone cannot have one: every imported row in
+    // production carries testing_md / testing_path NULL, since until this
+    // change nothing on the import path could set them.
+    {
+      ...mk(9000044, 900144,
+        '[Mock] Connector test: imported from Claude Code with testing notes, checks failing',
+        7, 2, 0, 2, { required: 3, windowEndsAt: hoursAhead(30) }),
+      source: 'imported',
+      imported_pr_author: 'staging-tester',
+      external_agent: 'claude-code',
+      testing_md: '1. Open the board — the new "Snap to grid" toggle sits above the columns.\n'
+        + '2. Turn it on and drag a card: it should snap to the nearest column.\n'
+        + '3. Reload the page — the toggle keeps its setting.',
+      testing_path: '/board?demo-pr=1',
+      check_state: 'failing',
+      recheckable: true,
+      test_results: [
+        { name: 'Home loads', path: '/', status: 'pass', consoleErrors: [], failureReason: '' },
+        {
+          name: 'Board shows the snap toggle', path: '/board?demo-pr=1', status: 'fail',
+          consoleErrors: [],
+          failureReason: 'Expected element ".snap-toggle" was not found',
+        },
+      ],
     },
     // ── Card-as-pointer revision fixtures ──
     // The composite status pill names ONE reason and its tooltip counts the
@@ -1211,6 +1247,53 @@ function voteMatchesReviewedRevision(expectedHeadSha, revision) {
   const expected = normalizedSha(expectedHeadSha);
   const current = normalizedSha(revision.headSha);
   return !!expected && expected === current;
+}
+
+// Optional testing metadata on a PR import. Returns the three column values
+// the imported session row is created with — all null when the request body
+// carries nothing, which is the browser import button's case and leaves that
+// path byte-identical to before.
+//
+// Every rule here is BORROWED, not restated: services/testing-notes.js owns
+// what a valid capture route is (validatePath), how many are shot
+// (CAPTURE_MAX_PATHS), how the viewport labels are spelled, and how long the
+// markdown may be (TESTING_MD_MAX). A second opinion about any of those is a
+// bug waiting to happen — the same routes then behave differently depending
+// on whether a build turn or a connector submitted them.
+function parseImportTesting(body) {
+  const none = { testingMd: null, testingPath: null, testingPaths: null };
+  if (!body || typeof body !== 'object') return none;
+  const notes = require('../services/testing-notes');
+
+  const paths = [];
+  const seen = new Set();
+  if (Array.isArray(body.testingPaths)) {
+    for (const entry of body.testingPaths) {
+      const normalized = notes.normalizeStoredPath(entry);
+      if (!normalized) continue;
+      // normalizeStoredPath deliberately does not re-validate (stored rows
+      // were validated at write time); this input never was, so it is.
+      const valid = notes.validatePath(normalized.path);
+      if (!valid) continue;
+      const key = `${normalized.viewport} ${valid}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (paths.length < notes.CAPTURE_MAX_PATHS) {
+        paths.push({ path: valid, viewport: normalized.viewport });
+      }
+    }
+  }
+
+  let md = typeof body.testingSteps === 'string' ? body.testingSteps.trim() : '';
+  if (md.length > notes.TESTING_MD_MAX) md = md.slice(0, notes.TESTING_MD_MAX);
+
+  if (!paths.length && !md) return none;
+  return {
+    testingMd: md || null,
+    // The PRIMARY path, same convention as the block parser: the first entry.
+    testingPath: paths.length ? paths[0].path : null,
+    testingPaths: paths.length ? paths : null,
+  };
 }
 
 function revisionChangedVoteResponse(res, headSha, message = null) {
@@ -2041,17 +2124,35 @@ function voteRoutes(config) {
         return res.status(409).json({ error: 'Could not determine the PR head branch.' });
       }
 
+      // Optional testing metadata (#945 follow-up). A connector submission
+      // can carry the same two things a build turn's "==== TESTING ===="
+      // block carries — the routes the change is visible on, and how to see
+      // it — so an imported proposal gets before/after screenshots of the
+      // screen that changed instead of the app's home page.
+      //
+      // Re-validated here rather than trusted from the caller: the route is
+      // reachable by any collaborator, and testing_path is joined onto the
+      // staging origin and loaded in the preview iframe. Same validator, same
+      // caps as the block parser — services/testing-notes.js owns both.
+      // Absent (the browser's import button never sends them) leaves all
+      // three columns NULL, exactly as before.
+      const importTesting = parseImportTesting(req.body);
+
       // Create the imported proposal row, promoted straight into voting.
       const { rows: inserted } = await pool.query(
         `INSERT INTO chat_sessions
            (app_id, user_id, branch_name, pr_number, pr_url, pr_title, status,
-            source, imported_pr_head_sha, imported_pr_author, promoted_at, created_at)
+            source, imported_pr_head_sha, imported_pr_author, promoted_at, created_at,
+            testing_md, testing_path, testing_paths)
          VALUES ($1, $2, $3, $4, $5, $6, 'promoted',
-            'imported', $7, $8, NOW(), NOW())
+            'imported', $7, $8, NOW(), NOW(),
+            $9, $10, $11::jsonb)
          RETURNING id`,
         [
           app.id, req.user.id, headBranch, prNumber, pr.html_url || null,
           pr.title || `PR #${prNumber}`, headSha, pr.user?.login || null,
+          importTesting.testingMd, importTesting.testingPath,
+          importTesting.testingPaths ? JSON.stringify(importTesting.testingPaths) : null,
         ]
       );
       const sessionId = inserted[0].id;
@@ -4918,5 +5019,7 @@ module.exports = {
   classifyNativeHeadMove,
   reviewedHeadForSession,
   voteMatchesReviewedRevision,
+  // Connector-submitted testing metadata on an import, unit-tested directly.
+  parseImportTesting,
   recordVote,
 };

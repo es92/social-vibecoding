@@ -67,7 +67,11 @@ const QR_MAX_REPLY_LEN = 80;
 //                    caller's semantics stay readable at the call site.
 const RECOVERY_PILLS = Object.freeze({
   code_done: Object.freeze(['Propose it to the group', 'Make a tweak', 'What did it change?']),
-  spec_done: Object.freeze(['Build it', 'Revise the spec', 'What will this change?']),
+  // #1046: the build pill says "Build the spec", not "Build it" — the
+  // whole plan gets built, and the wording has to say so. Same string the
+  // model is told to use, so the row reads identically whichever rung
+  // filled it.
+  spec_done: Object.freeze(['Build the spec', 'Revise the spec', 'What will this change?']),
   push_failed: Object.freeze(['Try that again', 'What went wrong?']),
   unrecoverable: Object.freeze(['Try that again', "What's the current state?"]),
   unanswered: Object.freeze(["What's the current state?"]),
@@ -95,15 +99,31 @@ const RECOVERY_PILLS = Object.freeze({
 // constant states the COMPOSITION RULE and names the copied strings as
 // forbidden output rather than offering a triple to imitate.
 //
+// #1046 — the ONE deliberate exception to "these are shapes, not strings".
+// The composition rule, read literally, told the model to name a concrete
+// subject in EVERY pill including the build one, and production shows it
+// obeying: "Build the collapsible left sidebar", "Build the seasons API
+// and CRUD", "Build the shared _showExplorePill predicate as specced".
+// Each of those specs covered far more than the component named, so the
+// pill reads as "build only that part" for a tap that builds the whole
+// plan. The POST-SPEC BUILD PILL is therefore pinned to a literal string
+// ("Build the spec") and occupies the one generic slot the rule already
+// allows — the arithmetic is unchanged, only which pill fills the slot on
+// a post-spec turn. The other 1-2 pills must still be specific, so the
+// anti-parroting pressure stays exactly where it was.
+//
 // Lives here (a pure, dependency-free service) rather than in the route so
 // both llm.js and routes/sessions.js can read it without a services→routes
 // cycle.
 const QUICK_REPLY_RULES_TEXT = `Each pill must be a complete first-person message the user could send verbatim, under 80 characters. 2-3 of them, most likely first.
 
-COMPOSITION RULE — at most ONE pill may be a generic platform action ("Propose it to the group", "Build it", "Preview the change"). EVERY other pill must name the concrete subject of THIS turn: the feature, screen, component, issue number, or the specific thing just built, planned or discussed. A set where every pill would fit any conversation is a failed set.
+COMPOSITION RULE — at most ONE pill may be a generic platform action ("Propose it to the group", "Build the spec", "Preview the change"). EVERY other pill must name the concrete subject of THIS turn: the feature, screen, component, issue number, or the specific thing just built, planned or discussed. A set where every pill would fit any conversation is a failed set.
 Good, because they name the subject: after a build that made a leaderboard default to Season 1 — "Preview the Season 1 default" / "Propose it to the group" / "Also fix the sub-event tabs". Note only the middle one is generic.
 These are shapes, not strings — never send these words verbatim.
-NEVER emit any of these exact sets, or a set made only of these phrases: "Preview the change" / "Propose it to the group" / "Make another tweak"; "Build it" / "Revise the spec" / "What will this change?"; "Propose it to the group" / "Make a tweak" / "What did it change?"; "Make a change" / "What issues are open right now?" / "What's the current state?"; "Try that again" / "What went wrong?".
+
+POST-SPEC BUILD PILL — the ONE exception to that, and the one place a literal string is required. When this turn just drafted or revised a spec and nothing has been built from it yet, the FIRST pill must refer to the WHOLE spec: write it as Build the spec (or exactly that meaning in the conversation's language). Do NOT name a single component, screen, file or feature as the build target — a pill like "Build the sidebar" or "Build the avatar flow as specced" reads as "build only that part", when the tap builds everything the spec describes. This pill IS the set's one generic slot, so the remaining 1-2 pills must still name something specific about THIS spec. A pill may additionally offer a NARROWER build, but only if it says so out loud ("Build only the read-only slice first", "Build slice 1 only — the retry path"); it is an extra option, never a replacement for the whole-spec pill.
+
+NEVER emit any of these exact sets, or a set made only of these phrases: "Preview the change" / "Propose it to the group" / "Make another tweak"; "Build the spec" / "Revise the spec" / "What will this change?"; "Build it" / "Revise the spec" / "What will this change?"; "Propose it to the group" / "Make a tweak" / "What did it change?"; "Make a change" / "What issues are open right now?" / "What's the current state?"; "Try that again" / "What went wrong?". That ban is on the whole SET, not on the required build pill — "Build the spec" is meant to be sent verbatim; what is forbidden is a set in which NOTHING is specific to this conversation.
 If you cannot make a pill specific, emit TWO pills instead of three — a short specific set beats a padded generic one.
 Write the pills in the SAME LANGUAGE the conversation is in, not always English.`;
 
@@ -324,7 +344,7 @@ function normalizePill(text) {
 const BANNED_GENERIC_PILLS = Object.freeze(new Set([
   // RECOVERY_PILLS, every kind.
   'propose it to the group', 'make a tweak', 'what did it change',
-  'build it', 'revise the spec', 'what will this change',
+  'build the spec', 'revise the spec', 'what will this change',
   'try that again', 'what went wrong',
   "what's the current state", 'make a change',
   "how's it going", 'stop this build',
@@ -338,6 +358,12 @@ const BANNED_GENERIC_PILLS = Object.freeze(new Set([
   'preview the change', 'make another tweak', 'preview the staging build',
   'make another adjustment', 'what will this change do',
   'what happens next', 'make a change to the app',
+  // #1046: 'build it' is no longer shipped anywhere (spec_done now says
+  // "Build the spec"), but it stays here — the model still parrots it out
+  // of transcript history, and this list is a detection heuristic, not an
+  // inventory. The near-variants keep three rephrasings of the required
+  // build pill from passing as a "specific" set.
+  'build it', 'build the whole spec', 'build the spec as written',
 ].map(normalizePill)));
 
 // True when a pill set is entirely boilerplate — i.e. NOT ONE entry names

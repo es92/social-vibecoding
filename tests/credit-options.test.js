@@ -1,5 +1,6 @@
-// Out-of-credits routes — the three ways to keep building when the daily
-// AI allowance is spent.
+// Out-of-credits routes — the ways to keep building when the daily AI
+// allowance is spent (three, or four where the #1049 Claude Code / Codex
+// hand-offs are available).
 //
 // The point of public/js/credit-options.js is that ONE module owns the copy
 // and the destinations, so the dev-chat card, the red credits banner and the
@@ -37,6 +38,8 @@ const INDEX_SRC = fs.readFileSync(
 );
 
 test('offers exactly three routes, in the documented order', () => {
+  // Without the #1049 hand-offs (a deployment with no GitHub-link support)
+  // this is the original list, unchanged.
   const options = CreditOptions.options({});
   assert.equal(options.length, 3);
   assert.deepEqual(options.map((o) => o.id), ['api-key', 'local-tool', 'connector']);
@@ -53,10 +56,47 @@ test('offers exactly three routes, in the documented order', () => {
   }
 });
 
+// #1049: running out of credits is the moment someone is most willing to try
+// another route, so the two that need no card and no new account — the Claude
+// or ChatGPT subscription they already pay for — lead, and each carries a
+// `flow` the surface can act on in place.
+test('with the external flows available, the hand-offs lead', () => {
+  const options = CreditOptions.options({ externalFlowsAvailable: true });
+  assert.deepEqual(
+    options.map((o) => o.id),
+    ['claude-code', 'codex', 'api-key', 'local-tool'],
+    'Claude Code and Codex first, then BYOK, then the local tool'
+  );
+  assert.deepEqual(
+    options.filter((o) => o.flow).map((o) => o.flow),
+    ['claude-code', 'codex'],
+    'only the two hand-offs carry a flow'
+  );
+  // Every entry keeps a hash: a surface that wires no flow handler still has
+  // somewhere to send the user (see the wire() test below).
+  for (const option of options) {
+    assert.match(option.hash, /^#settings\//, `${option.id} keeps a hash fallback`);
+    assert.ok(option.title.length > 0, `${option.id} has a title`);
+    assert.ok(option.blurb.length > 0, `${option.id} has a blurb`);
+    assert.ok(option.cta.length > 0, `${option.id} has a CTA`);
+  }
+  // The old "connector" plumbing entry is replaced by the two flows, not
+  // stacked on top of them.
+  assert.ok(!options.some((o) => o.id === 'connector'));
+});
+
+test('the intro sentence counts the routes actually offered', () => {
+  assert.match(CreditOptions.cardHtml({}), /Three ways to keep building/);
+  assert.match(
+    CreditOptions.cardHtml({ externalFlowsAvailable: true }),
+    /Four ways to keep building/
+  );
+});
+
 test('every destination is a section Settings actually declares', () => {
   // The guard this file exists for: renaming a Settings section without
   // updating the card would produce buttons that navigate nowhere.
-  for (const option of CreditOptions.options({})) {
+  for (const option of CreditOptions.options({ externalFlowsAvailable: true })) {
     const key = option.hash.replace('#settings/', '');
     assert.match(
       SETTINGS_SRC,
@@ -100,6 +140,20 @@ test('the platform error text is escaped, never injected', () => {
   assert.ok(!html.includes('onerror="'), 'no attribute injection');
 });
 
+test('the hand-off buttons carry the flow the surface acts on', () => {
+  const state = { externalFlowsAvailable: true };
+  const card = CreditOptions.cardHtml(state);
+  const banner = CreditOptions.bannerActionsHtml(state);
+  for (const flow of ['claude-code', 'codex']) {
+    assert.ok(card.includes(`data-credits-flow="${flow}"`), `card marks ${flow}`);
+    assert.ok(banner.includes(`data-credits-flow="${flow}"`), `banner marks ${flow}`);
+  }
+  // The BYOK and local-tool rows stay plain hash navigations — there is no
+  // in-place walkthrough for either.
+  assert.equal((card.match(/data-credits-flow="/g) || []).length, 2);
+  assert.equal((banner.match(/data-credits-flow="/g) || []).length, 2);
+});
+
 test('card and banner render one actionable control per route', () => {
   const card = CreditOptions.cardHtml({});
   const banner = CreditOptions.bannerActionsHtml({});
@@ -140,6 +194,44 @@ test('wire() navigates by hash and is idempotent per node', () => {
       preventDefault() {},
     });
     assert.equal(global.window.location.hash, '#settings/connectors');
+  } finally {
+    if (originalWindow === undefined) delete global.window;
+    else global.window = originalWindow;
+  }
+});
+
+test('a flow click is handled in place, or falls through to the hash', () => {
+  // #1049: the dev chat handles 'claude-code'/'codex' itself (it starts the
+  // walkthrough in the message list). A surface that wires no onFlow handler
+  // must still go somewhere — the option's hash.
+  function fireFlowClick(handlers) {
+    const listeners = [];
+    const node = {
+      addEventListener(type, fn) { listeners.push(fn); },
+      contains() { return true; },
+    };
+    CreditOptions.wire(node, handlers);
+    const attrs = { 'data-credits-flow': 'codex', 'data-credits-hash': '#settings/connectors' };
+    let prevented = false;
+    listeners[0]({
+      target: { closest: () => ({ getAttribute: (name) => attrs[name] || null }) },
+      preventDefault() { prevented = true; },
+    });
+    return prevented;
+  }
+
+  const picked = [];
+  assert.equal(fireFlowClick({ onFlow: (flow) => picked.push(flow) }), true);
+  assert.deepEqual(picked, ['codex'], 'the handler receives the flow id');
+
+  const originalWindow = global.window;
+  global.window = { location: { hash: '' } };
+  try {
+    fireFlowClick({});
+    assert.equal(
+      global.window.location.hash, '#settings/connectors',
+      'with no onFlow handler the button is an ordinary hash navigation'
+    );
   } finally {
     if (originalWindow === undefined) delete global.window;
     else global.window = originalWindow;

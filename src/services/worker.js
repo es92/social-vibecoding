@@ -619,7 +619,8 @@ function _registryGet(sessionId) {
 }
 
 function _registryUpsert(sessionId, patch) {
-  const prev = _warmRegistry.get(sessionId) || {
+  const existing = _warmRegistry.get(sessionId);
+  const prev = existing || {
     containerName: workerContainerName(sessionId),
     lastUsedMs: Date.now(),
     inFlight: false,
@@ -628,6 +629,15 @@ function _registryUpsert(sessionId, patch) {
   };
   const next = { ...prev, ...patch };
   _warmRegistry.set(sessionId, next);
+  // #1038: the inner docker-exec window is one of the two signals
+  // isSessionBusy() ORs together, so a change here can flip a session's
+  // working state for every client. Only the actual transition notifies —
+  // lastUsedMs bumps and bootstrap bookkeeping are invisible to clients.
+  if (!!prev.inFlight !== !!next.inFlight) {
+    try {
+      require('./active-workers').notifySessionState(sessionId);
+    } catch { /* notifier is best-effort */ }
+  }
   return next;
 }
 

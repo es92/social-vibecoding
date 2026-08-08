@@ -88,6 +88,11 @@ const CONNECTOR_ALLOWED_ROUTES = Object.freeze([
   { method: 'GET', pattern: '/api/apps' },
   { method: 'GET', pattern: '/api/apps/:slug' },
   { method: 'GET', pattern: '/api/apps/:slug/github-issues' },
+  // A request's GitHub comments — the other half of its discussion, read by
+  // prepare_work so a work order carries the requirements that landed in the
+  // replies rather than only the opening line. Read-only, and the route
+  // itself is already clipped and access-checked.
+  { method: 'GET', pattern: '/api/apps/:slug/github-issues/:number/comments' },
   { method: 'GET', pattern: '/api/apps/:slug/promoted' },
   { method: 'GET', pattern: '/api/apps/:slug/messages' },
   { method: 'POST', pattern: '/api/apps/:slug/messages' },

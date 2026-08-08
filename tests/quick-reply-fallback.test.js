@@ -242,6 +242,10 @@ test('no prompt surface lists a boilerplate pill triple verbatim', () => {
   // text in sessions.js and excludes the rules constant itself.
   const forbidden = [
     ['Preview the change', 'Propose it to the group', 'Make another tweak'],
+    // #1046: both the current spec triple and its pre-#1046 wording — the
+    // prompt must not offer either as a run to copy, even though the
+    // build pill alone IS a required literal now (see the next test).
+    ['Build the spec', 'Revise the spec', 'What will this change?'],
     ['Build it', 'Revise the spec', 'What will this change?'],
     ['Propose it to the group', 'Make a tweak', 'What did it change?'],
     ["How's it going?", 'Stop this build'],
@@ -278,6 +282,60 @@ test('QUICK_REPLY_RULES_TEXT is shared, not duplicated', () => {
     'both the forced call and the Haiku backstop are handed the same rules');
   assert.match(LLM_SRC, /\$\{rules \|\| ''\}/,
     'llm.js renders the rules it is handed rather than carrying its own copy');
+});
+
+// ── 2c. #1046: the post-spec build pill names the WHOLE spec ─────────
+//
+// The composition rule, read literally, asked for a concrete subject in
+// every pill — and production obliged with "Build the collapsible left
+// sidebar" / "Build the seasons API and CRUD" on specs that covered far
+// more than the component named. The rule now carves the build pill out
+// as a required literal occupying the one generic slot. These tests pin
+// both halves so a later prompt edit can't quietly undo either.
+
+test('the rules require a whole-spec build pill, not a component name', () => {
+  const defs = recoveryPills.QUICK_REPLY_RULES_TEXT;
+  assert.match(defs, /POST-SPEC BUILD PILL/,
+    'the rules carve the post-spec build pill out as its own clause');
+  assert.match(defs, /Build the spec/,
+    'the required literal is stated');
+  assert.match(defs, /WHOLE spec/,
+    'the clause says the pill refers to the whole spec');
+  assert.match(defs, /Do NOT name a single component/,
+    'naming one component as the build target is explicitly forbidden');
+  // The carve-out must not cancel the specificity pressure on the rest.
+  assert.match(defs, /remaining 1-2 pills must still name something specific/,
+    'the other pills still have to be specific to this spec');
+  // ...and the whole-set ban must not read as a ban on the pill itself.
+  assert.match(defs, /"Build the spec" is meant to be sent verbatim/,
+    'the set-level ban is reconciled with the required literal');
+});
+
+test('the Mayor prompt\'s post-spec guidance says the whole spec', () => {
+  const bullet = SESSIONS_SRC.match(/^- After a spec \(dispatch_scout\):.*$/m);
+  assert.ok(bullet, 'found the post-spec situational guidance bullet');
+  assert.match(bullet[0], /WHOLE spec/,
+    'the situational list agrees with the shared rule');
+  assert.doesNotMatch(bullet[0], /building it,/,
+    'the pre-#1046 "building it" wording is gone');
+});
+
+test('a whole-spec build pill still passes only alongside specific pills', () => {
+  const { isGenericPillSet } = recoveryPills;
+  assert.equal(
+    isGenericPillSet(['Build the spec', 'Drop the crop step from the plan',
+      'What does this add to the database?']),
+    false,
+    'the intended shape — required literal plus two specific pills — is accepted');
+  assert.equal(
+    isGenericPillSet(['Build the spec', 'Revise the spec', 'What will this change?']),
+    true,
+    'an all-boilerplate set still escalates, the literal notwithstanding');
+  // The near-variants must not be a loophole around that.
+  assert.equal(
+    isGenericPillSet(['Build the whole spec', 'Build the spec as written']),
+    true,
+    'rephrasing the required literal does not make a set specific');
 });
 
 test('BANNED_GENERIC_PILLS covers every static pill the platform ships', () => {
