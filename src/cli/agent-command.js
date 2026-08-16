@@ -34,6 +34,12 @@ const { spawnSync } = require('node:child_process');
 const { requestJson, CliHttpError } = require('./http');
 const { collectCommitUpload } = require('./git-upload');
 const claudeCode = require('./agent-runtimes/claude-code');
+// #1204: shared with the platform's own scout path — a runtime whose API
+// stream drops reports it as its FINAL message, not in its exit code, and a
+// read-only turn's final message is the spec we are about to upload.
+// Dependency-free on purpose, so requiring a src/services module from the CLI
+// pulls in nothing else.
+const { agentApiFailure, describeAgentApiFailure } = require('../services/agent-result-text');
 
 const RUNTIMES = new Map([[claudeCode.RUNTIME_ID, claudeCode]]);
 const HEARTBEAT_MS = 30 * 1000;
@@ -360,7 +366,13 @@ async function runOneTurn(api, turn, context, io) {
       }
     }
     const specMd = String(outcome.summary || '');
-    const failed = outcome.isError || !specMd.trim();
+    // #1204: `claude` exits 0 when its API stream dies mid-answer — the
+    // failure arrives as the closing message ("API Error: Connection lost
+    // mid-response…"). Uploading that would overwrite the session's spec doc
+    // with the notice, so it fails the turn instead and the platform keeps
+    // the previous draft.
+    const apiFailure = agentApiFailure(specMd);
+    const failed = outcome.isError || !specMd.trim() || !!apiFailure;
     const result = await api.call('POST', `/api/cli/agent/turns/${turn.turnId}/result`, {
       leaseId: context.leaseId,
       status: failed ? 'failed' : 'completed',
@@ -370,9 +382,11 @@ async function runOneTurn(api, turn, context, io) {
       summary: '',
       error: (outcome.isError
         ? (outcome.stderr || `claude exited ${outcome.exitCode}`)
-        : (specMd.trim() ? '' : 'The run produced no spec text.')
+        : (apiFailure
+          ? describeAgentApiFailure(apiFailure)
+          : (specMd.trim() ? '' : 'The run produced no spec text.'))
       ).slice(0, 400) + dirtyNote || null,
-      specMd: specMd.trim() ? specMd : null,
+      specMd: (specMd.trim() && !apiFailure) ? specMd : null,
     });
     if (!result.ok) io.err(`Could not report the turn result: ${describeError(result)}\n`);
     io.out(failed

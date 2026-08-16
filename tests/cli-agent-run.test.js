@@ -32,6 +32,15 @@ const runtimeSource = fs.readFileSync(
   path.join(root, 'src/cli/agent-runtimes/claude-code.js'), 'utf8'
 );
 
+// The checkout every runOneTurn() below is pointed at. `root` is for READING
+// source files and nothing else: a turn that reaches uploadTurnCommits runs
+// `git add -A && git commit` in whatever `repo` it was handed, so passing this
+// repository meant `npm test` silently swept a contributor's uncommitted work
+// into a commit titled "Changes via Usernode". It was invisible on a clean
+// tree — `git status --porcelain` empty, no commit — and bit exactly the
+// people who run the suite mid-change. See tempRepo() below.
+const turnRepo = tempRepo().dir;
+
 function fakeIo() {
   const out = [];
   const err = [];
@@ -150,7 +159,7 @@ test('a stopped turn posts no result — the platform already owns that row', as
     },
   };
   await agent.runOneTurn(api, { turnId: '11', prompt: 'go' }, {
-    repo: root, leaseId: '7', runtime, binary: 'claude', ask: async () => 'y',
+    repo: turnRepo, leaseId: '7', runtime, binary: 'claude', ask: async () => 'y',
   }, io);
   assert.equal(api.calls.some((c) => c.pathname.includes('/result')), false);
   assert.equal(api.calls.some((c) => c.pathname.includes('/commit')), false);
@@ -162,7 +171,7 @@ test('a turn the machine can no longer claim is skipped, not crashed on', async 
   const io = fakeIo();
   let ran = false;
   await agent.runOneTurn(api, { turnId: '11', prompt: 'go' }, {
-    repo: root, leaseId: '7', binary: 'claude', ask: async () => 'y',
+    repo: turnRepo, leaseId: '7', binary: 'claude', ask: async () => 'y',
     runtime: { RUNTIME_ID: 'claude-code', async run() { ran = true; return {}; } },
   }, io);
   assert.equal(ran, false, 'never spend the user\'s subscription on a turn we do not hold');
@@ -181,7 +190,7 @@ test('nothing runs until the operator says yes at their own keyboard', async () 
     api.calls.length = 0;
     // eslint-disable-next-line no-await-in-loop
     await agent.runOneTurn(api, { turnId: '11', prompt: 'go', mode: 'build' }, {
-      repo: root, leaseId: '7', runtime, binary: 'claude', ask: async () => answer,
+      repo: turnRepo, leaseId: '7', runtime, binary: 'claude', ask: async () => answer,
     }, io);
     assert.equal(ran, false, `"${answer}" must not start a turn`);
     // Not accepted, and the platform is told WHY so the chat can say
@@ -197,7 +206,7 @@ test('nothing runs until the operator says yes at their own keyboard', async () 
   // working on it".
   api.calls.length = 0;
   await agent.runOneTurn(api, { turnId: '11', prompt: 'go', mode: 'build' }, {
-    repo: root, leaseId: '7', runtime, binary: 'claude', ask: async () => ' YES \n',
+    repo: turnRepo, leaseId: '7', runtime, binary: 'claude', ask: async () => ' YES \n',
   }, io);
   assert.equal(ran, true);
   assert.match(api.calls[0].pathname, /\/accept$/);
@@ -211,7 +220,7 @@ test('a terminal with no interactive stdin is a decline, never an implied yes', 
   const io = fakeIo();
   let ran = false;
   await agent.runOneTurn(api, { turnId: '11', prompt: 'go', mode: 'build' }, {
-    repo: root, leaseId: '7', binary: 'claude', ask: async () => null,
+    repo: turnRepo, leaseId: '7', binary: 'claude', ask: async () => null,
     runtime: { RUNTIME_ID: 'claude-code', async run() { ran = true; return {}; } },
   }, io);
   assert.equal(ran, false);
@@ -223,7 +232,7 @@ test('a terminal with no interactive stdin is a decline, never an implied yes', 
   // …and so is a context with no `ask` wired at all.
   api.calls.length = 0;
   await agent.runOneTurn(api, { turnId: '11', prompt: 'go', mode: 'build' }, {
-    repo: root, leaseId: '7', binary: 'claude',
+    repo: turnRepo, leaseId: '7', binary: 'claude',
     runtime: { RUNTIME_ID: 'claude-code', async run() { ran = true; return {}; } },
   }, io);
   assert.equal(ran, false);
@@ -265,8 +274,9 @@ test('the confirmation says plainly which kind of turn it is', async () => {
 
 // ── Scout / read-only turns ────────────────────────────────────────────────
 
-// A read-only turn checks (and if necessary restores) the working tree, so it
-// must never be pointed at this repo. One throwaway git repo, shared.
+// A turn touches the working tree it is handed — a read-only turn checks (and
+// if necessary restores) it, a build turn commits it — so no turn may ever be
+// pointed at this repo. One throwaway git repo, shared.
 function tempRepo() {
   const os = require('node:os');
   const { execFileSync } = require('node:child_process');
