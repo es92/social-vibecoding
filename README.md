@@ -12,6 +12,10 @@ Mayor / Claude Code pipeline that produces real PRs.
   layout, URL conventions.
 - **[EXTRACT-PLAN.md](./EXTRACT-PLAN.md)** — phased plan for moving
   this repo from a monorepo subdirectory to a standalone deploy.
+- **[BUILD-METHODS.md](./BUILD-METHODS.md)** — inventory of the eight
+  ways to build (in-platform sessions through local agents), the
+  provider-policy constraints that shape them, and the direction for
+  the #1281 discovery/selection rework.
 - **[SELF-HOSTING.md](./SELF-HOSTING.md)** — operational reference
   for the shipped self-app: DB rename runbook, rollback procedure,
   flag-flip recipes, why each phase exists. The phase numbers here
