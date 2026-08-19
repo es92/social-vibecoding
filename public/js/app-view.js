@@ -1403,6 +1403,18 @@ const AppView = {
     // Set once here rather than per branch — they all replace #app-content.
     AppView._setSurface('platform');
 
+    // The chip / voting-help handlers are DOCUMENT-level and one-shot, so
+    // they belong here — before the sub-view branches — not in the card-list
+    // branch alone. Every branch below returns early, so installing them
+    // down there meant a direct deep link to a topic page
+    // (#app/<slug>/dev/proposals/<id> pasted, shared, or reloaded) never ran
+    // this, and the proposal's priority / category / assignee chips and its
+    // "How voting works" affordances were dead on click — while the SAME
+    // page reached by tapping a card from the board worked, because the card
+    // list had rendered first and installed them. Idempotent, so calling it
+    // on every Dev render costs nothing.
+    AppView._attrInit();
+
     // Capture the Dev list's scroll position before any branch below
     // overwrites #app-content. #dev-forum-scroll only exists when the
     // outgoing view was the card list, so this is a no-op for
@@ -1549,7 +1561,6 @@ const AppView = {
       PlatformUI.pullToRefresh(devScroll, () => AppView._loadDevFeed());
     }
     AppView._wireViewToggle(content);
-    AppView._attrInit();
     document.getElementById('dev-chat-card').addEventListener('click', () => {
       App.switchTab('dev', null, 'chat');
     });
@@ -7076,7 +7087,10 @@ const AppView = {
   },
 
   // Install the one-time document-level handlers that open / close the
-  // chip dropdown. Idempotent — safe to call on every renderDevView.
+  // chip dropdown (and the voting-help popover). Idempotent — safe to call
+  // on every renderDevView, which is exactly where it is called from: the
+  // TOP of it, ahead of the sub-view branches, so a topic page opened by
+  // direct URL is wired the same as one reached through the card list.
   _attrInit() {
     if (AppView._attrInited) return;
     AppView._attrInited = true;
