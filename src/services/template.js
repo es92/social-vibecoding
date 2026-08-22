@@ -114,12 +114,12 @@ function getConnectorScaffoldFiles() {
       // rules — so the platform ships them where every user of every app
       // picks them up with no setup: the repo it scaffolds.
       //
-      // Three entries, NOT `mcp__${CONNECTOR_SERVER_NAME}__*`. The
-      // `anthropic/requiresUserInteraction` marking that protects
-      // submit_work needs Claude Code >= 2.1.199, and an older client
-      // ignores it — so a whole-server allow would silently auto-approve a
-      // change reaching a group vote. Two globs plus one literal can only
-      // ever match reads, on every version.
+      // Three entries, NOT `mcp__${CONNECTOR_SERVER_NAME}__*`, and the
+      // reason is the scaffold rather than the tools: this file is committed
+      // into every app repo, and "every call this connector can make" is not
+      // something a repo should grant on a stranger's machine on their
+      // behalf. Reads are reviewable in the trust dialog; the rest is the
+      // user's own call, on their own account.
       //
       // JSON has no comments, so the reasoning lives in .claude/README.md
       // next to it.
@@ -146,12 +146,16 @@ a group vote — end up buried in that noise and approved by reflex.
 ${JSON.stringify({ permissions: { allow: CONNECTOR_ALLOW_RULES } }, null, 2)}
 \`\`\`
 
-Deliberately not \`mcp__${CONNECTOR_SERVER_NAME}__*\`. Usernode also marks its
-acting tools \`anthropic/requiresUserInteraction\`, which forces a prompt no
-allow rule can skip — but that needs Claude Code 2.1.199 or later, and older
-versions ignore it. A whole-server rule would therefore auto-approve
-\`submit_work\` on an older client. These three entries can only ever match
-reads, on every version.
+Deliberately not \`mcp__${CONNECTOR_SERVER_NAME}__*\`. This file is committed
+into the repo, so it grants on behalf of everyone who opens it — and "every
+call this connector can make" is not something one repo should decide for a
+stranger's machine. These three entries can only ever match reads.
+
+If you want the acting calls (\`submit_work\`, \`create_request\`,
+\`prepare_work\`, \`start_platform_build\`, \`submit_platform_build\`) allowed
+too, grant that on your own account rather than here — set the connector to
+allow-always in Claude's connector settings, or add the rules to your own
+\`~/.claude/settings.json\`, where the decision covers your machine only.
 
 ## You will still see one trust dialog
 

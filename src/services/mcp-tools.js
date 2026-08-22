@@ -94,35 +94,39 @@ const MAX_ANSWER_CHARS = 8000;          // MAX_CHAT_LEN in services/ws.js.
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
-// ── Acting tools: force a human confirmation ───────────────────────────
+// ── Acting tools ───────────────────────────────────────────────────────
 //
-// #1218. Claude Code reads `anthropic/requiresUserInteraction` off a tool's
-// `_meta` and, when it is true, shows that tool's permission prompt on EVERY
-// call — in `acceptEdits`, `auto` and `bypassPermissions` alike — with no
-// "don't ask again" option, and no allow rule can skip it. On Remote Control
-// and mobile it also withholds one-tap approval, so the confirmation comes
-// from somebody reading the prompt rather than from a tap.
+// The five calls that do something rather than read something. The list is
+// kept because the read-only naming contract cannot describe them by
+// inversion: `isHintEligibleTool` derives the reads from their prefixes, and
+// these are the remainder that has to stay out of the setup hint and out of
+// the shipped allow rules.
 //
-// It is DEFENCE IN DEPTH, not a control to lean on: it needs Claude Code
-// ≥ 2.1.199 and earlier versions ignore it and apply the standard permission
-// flow. That version gate is exactly why the allow rules Usernode ships
-// (READ_ONLY_ALLOW_RULES) enumerate the reads instead of allowing the whole
-// server — a blanket rule on an older client would auto-approve the tools
-// below.
-const ACTING_TOOL_META = Object.freeze({ 'anthropic/requiresUserInteraction': true });
-
-// The five that get it, and why each one deserves a person:
-//   submit_work            — opens or advances a proposal; starts a group vote
-//   create_request         — files publicly, on the app's board and GitHub
+// They no longer force a confirmation. #1218 marked them
+// `anthropic/requiresUserInteraction`, which makes Claude Code show that
+// tool's prompt on EVERY call — in `acceptEdits`, `auto` and
+// `bypassPermissions` alike — with no "don't ask again" and no allow rule
+// able to skip it. Claude Code checks the marking BEFORE it looks up allow
+// rules, so it also outranked the connector's own "always allow" in
+// Settings → Connectors: a user who granted it kept being asked anyway, with
+// nothing on either surface explaining why.
+//
+// It was the wrong control for THIS connector. Nothing here writes to an app.
+// Every one of these calls files a request — a proposal, an issue, a build —
+// and the platform merges none of it without a group vote. The vote is the
+// confirmation, and it is a better one than a prompt clicked through mid-loop
+// by the one person already driving the agent. #1218's reasoning holds for a
+// connector whose writes land directly; this connector's do not.
+//
+//   submit_work            — opens or advances a proposal, for the group to vote on
+//   create_request         — files on the app's board and as a GitHub issue
 //   prepare_work           — claims the request on the app's board; mints a
 //                            work order that dangles if it is never used
 //   start_platform_build   — spends the user's daily Usernode credits
 //   submit_platform_build  — puts that build to a group vote
 //
-// Everything else keeps normal behaviour. `answer_questions` is deliberately
-// NOT here: it is a write, but it only feeds text to a build the user already
-// started, and marking it would put an unskippable prompt in the middle of a
-// poll loop for no decision the user has not already made.
+// `answer_questions` is a write and is deliberately NOT here: it only feeds
+// text to a build the user already started.
 const ACTING_TOOLS = Object.freeze([
   'submit_work',
   'create_request',
@@ -1498,7 +1502,6 @@ function registerTools(server, ctx) {
       webPath: z.string(),
     },
     annotations: writeAnnotations,
-    _meta: ACTING_TOOL_META,
   }, async ({ slug, title, description }) => {
     const guard = scopeGuard(WRITE_SCOPE);
     if (guard) return guard;
@@ -1558,12 +1561,11 @@ function registerTools(server, ctx) {
   // the two things a connector caller actually does — start on something, and
   // say how it is going — rather than around the two HTTP verbs.
   //
-  // Neither carries ACTING_TOOL_META. The five tools that do either spend an
-  // allowance, file publicly on GitHub, or start a group vote; a claim is
-  // platform-local, names only the caller, expires by itself and is cleared by
-  // one call. Putting an unskippable prompt on it would mean an agent that
-  // announces its work costs the user a click every time, which is how a
-  // coordination signal stops being sent.
+  // Neither is in ACTING_TOOLS: a claim is platform-local, names only the
+  // caller, expires by itself and is cleared by one call, so it is not one of
+  // the five that file something for the group to act on. Nothing on this
+  // connector forces a prompt any more — see the ACTING_TOOLS note above —
+  // but the split still decides the setup hint and the shipped allow rules.
   //
   // `note` is the "note progress" half, and it is a normal chat message on the
   // request's thread — the same channel answer_questions posts to and the same
@@ -2068,7 +2070,6 @@ function registerTools(server, ctx) {
       nextStep: z.string(),
     },
     annotations: writeAnnotations,
-    _meta: ACTING_TOOL_META,
   }, async ({ slug, requestNumber, brief, restart, proposalId }) => {
     const guard = scopeGuard(WRITE_SCOPE);
     if (guard) return guard;
@@ -2301,7 +2302,6 @@ function registerTools(server, ctx) {
       nextStep: z.string(),
     },
     annotations: writeAnnotations,
-    _meta: ACTING_TOOL_META,
   }, async ({
     taskId, slug, prNumber, proposalId, branch, forkRepo, patch, source, title, description, agent,
     testingPaths, testingSteps, expectedHeadSha, propose, recheck,
@@ -2635,7 +2635,6 @@ function registerTools(server, ctx) {
       nextStep: z.string(),
     },
     annotations: writeAnnotations,
-    _meta: ACTING_TOOL_META,
   }, async ({ slug, requestNumber }) => {
     const guard = scopeGuard(WRITE_SCOPE);
     if (guard) return guard;
@@ -2797,7 +2796,6 @@ function registerTools(server, ctx) {
       nextStep: z.string(),
     },
     annotations: writeAnnotations,
-    _meta: ACTING_TOOL_META,
   }, async ({ buildId }) => {
     const guard = scopeGuard(WRITE_SCOPE);
     if (guard) return guard;
@@ -2861,7 +2859,6 @@ module.exports = {
   MAX_ANSWER_CHARS,
   MAX_CONVENTIONS_CHARS,
   PLATFORM_INTERNAL_URL,
-  ACTING_TOOL_META,
   ACTING_TOOLS,
   clip,
   checkWriteLength,

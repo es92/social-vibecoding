@@ -153,12 +153,17 @@ const ALLOW_RULE_SERVER_NAMES = Object.freeze([SERVER_NAME, 'Usernode']);
 
 // The read-only allow rules Usernode ships in the app scaffold and
 // documents. Two globs plus one literal per covered spelling, and
-// deliberately NOT the whole-server `mcp__usernode__*`: the
-// `requiresUserInteraction` marking on the acting tools is version-gated
-// (Claude Code ≥ 2.1.199), so a blanket rule would auto-approve `submit_work`
-// on an older client and put a change to a group vote with nobody having
-// confirmed it. These are safe on every version because they can only ever
-// match reads.
+// deliberately NOT the whole-server `mcp__usernode__*`.
+//
+// The reason is the SCAFFOLD, not the tools. These rules are committed into
+// every app repo Usernode creates, and a repo that grants a connector blanket
+// approval on a stranger's machine is exactly what the workspace trust dialog
+// exists to catch — the dialog lists what is being granted, and "every call
+// this connector can make" is not a reviewable thing to hand someone. Reads
+// are. A user who wants the acting tools allowed too can say so on their own
+// account, in Settings → Connectors or their own `~/.claude/settings.json`;
+// that is their call to make about their own machine, not the scaffold's to
+// make for them.
 //
 // They stay durable only while the naming contract below holds. Tests
 // enforce it against the registered tool surface.
@@ -184,8 +189,9 @@ const READ_ONLY_ALLOW_RULES = Object.freeze(
 //
 // Adding a read-only tool: name it `get_`/`list_` and it is allowed by the
 // rules already in every scaffolded repo, with no migration. Adding an
-// acting tool: give it any other name and mark it per ACTING_TOOL_META in
-// services/mcp-tools.js.
+// acting tool: give it any other name and add it to ACTING_TOOLS in
+// services/mcp-tools.js, which keeps it out of the setup hint and out of
+// these rules.
 const READ_ONLY_TOOL_PREFIXES = Object.freeze(['get_', 'list_']);
 const READ_ONLY_TOOL_EXCEPTIONS = Object.freeze(['whoami']);
 

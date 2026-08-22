@@ -860,7 +860,7 @@ test('get_request reads at the write limit, and says where that limit comes from
   assert.match(block, /bodyMax: MAX_REQUEST_BODY_CHARS/,
     'the full read is capped by what create_request can store, not by the display cap');
   assert.match(block, /annotations: readAnnotations/);
-  assert.ok(!/_meta: ACTING_TOOL_META/.test(block), 'reading a request acts on nothing');
+  assert.ok(!/_meta:/.test(block), 'reading a request acts on nothing');
   const desc = block.slice(block.indexOf('description:'), block.indexOf('inputSchema:'));
   assert.match(desc, /\$\{MAX_REQUEST_BODY_CHARS\}/, 'the description names both caps');
   assert.match(desc, /\$\{MAX_BODY_CHARS\}/);
@@ -1347,41 +1347,50 @@ test('the build tools delegate rather than reimplement', () => {
   assert.doesNotMatch(SRC, /api\.github\.com/);
 });
 
-// ── #1218: the acting tools force a human confirmation ─────────────────
+// ── No tool forces a prompt ────────────────────────────────────────────
 
-test('exactly the five acting tools carry requiresUserInteraction', () => {
-  assert.deepEqual(tools.ACTING_TOOL_META, { 'anthropic/requiresUserInteraction': true });
-  assert.deepEqual([...tools.ACTING_TOOLS].sort(), [
-    'create_request', 'prepare_work', 'start_platform_build',
-    'submit_platform_build', 'submit_work',
-  ]);
+test('no tool forces a prompt of its own', () => {
+  // #1218 marked the acting tools `anthropic/requiresUserInteraction`, which
+  // Claude Code checks BEFORE it looks up allow rules — so it overrode the
+  // connector's own allow-always setting and the setting looked broken. The
+  // marking is gone: what the acting tools file are requests, and the group
+  // vote is the confirmation. Asserted on the source rather than the export
+  // so that re-adding the metadata by hand on one tool fails too.
+  assert.equal(tools.ACTING_TOOL_META, undefined);
+  // The QUOTED key, so the note above ACTING_TOOLS that explains the history
+  // (and writes the key in backticks) does not trip this.
+  assert.doesNotMatch(SRC, /'anthropic\/requiresUserInteraction'/);
+  assert.doesNotMatch(SRC, /_meta:/, 'no tool definition carries _meta');
 
   const registered = [...SRC.matchAll(/server\.registerTool\('([a-z_]+)'/g)].map((m) => m[1]);
+  assert.ok(registered.length > 0, 'tools are registered');
   for (const name of registered) {
     const idx = SRC.indexOf(`server.registerTool('${name}'`);
     const next = SRC.indexOf('server.registerTool(', idx + 10);
     const body = SRC.slice(idx, next > 0 ? next : undefined);
-    const marked = /_meta: ACTING_TOOL_META/.test(body);
-    assert.equal(
-      marked, tools.ACTING_TOOLS.includes(name),
-      marked
-        ? `${name} forces a prompt but is not in ACTING_TOOLS`
-        : `${name} is in ACTING_TOOLS but does not carry the marking`
+    assert.doesNotMatch(
+      body, /requiresUserInteraction/,
+      `${name} forces a prompt that no allow rule can skip`
     );
   }
 });
 
-test('a tool that forces a prompt is a write, never a read', () => {
-  // The marking and the annotation have to agree: a read that forced a
-  // prompt would be noise, and an unmarked write is the failure #1218 is
-  // about. answer_questions is the deliberate exception — a write that is
-  // NOT marked, because it only feeds a build the user already started.
+test('ACTING_TOOLS still names the five, and every one is a write', () => {
+  // The list outlived the marking: it is what keeps the acting tools out of
+  // the setup hint and out of the shipped allow rules. A read in here would
+  // mean a read is being withheld from both for no reason, and a write left
+  // out of it would leak into the read-only globs.
+  assert.deepEqual([...tools.ACTING_TOOLS].sort(), [
+    'create_request', 'prepare_work', 'start_platform_build',
+    'submit_platform_build', 'submit_work',
+  ]);
   for (const name of tools.ACTING_TOOLS) {
     const idx = SRC.indexOf(`server.registerTool('${name}'`);
     const next = SRC.indexOf('server.registerTool(', idx + 10);
     const body = SRC.slice(idx, next > 0 ? next : undefined);
     assert.match(body, /annotations: writeAnnotations/, `${name} is a write`);
   }
+  // answer_questions is a write that is deliberately not one of the five.
   assert.ok(!tools.ACTING_TOOLS.includes('answer_questions'));
 });
 

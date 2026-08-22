@@ -14,9 +14,12 @@
 //      every rule hardcodes a name. If the scaffold's name and the server's
 //      own serverInfo.name ever diverge, the shipped rules match nothing —
 //      no error, the user just keeps being prompted.
-//   2. The acting tools are marked `anthropic/requiresUserInteraction`, but
-//      that needs Claude Code >= 2.1.199, so the shipped allowlist must stay
-//      narrow enough to be safe without it.
+//   2. The shipped allowlist covers reads and nothing else. It is committed
+//      into every scaffolded repo, so it grants for everyone who opens that
+//      repo — widening it to a whole-server wildcard would decide for them.
+//      (The acting tools used to carry `anthropic/requiresUserInteraction`
+//      as a second line of defence. That is gone: it overrode the user's own
+//      allow-always setting, which is not this connector's call to make.)
 //   3. Documentation has to name BOTH tool-name prefixes, because the
 //      `claude_ai_` segment is present on some surfaces and absent on
 //      others — guidance naming one is wrong for half of users.
@@ -133,10 +136,10 @@ test('the read-only allow rules are two globs and one literal, per spelling of t
   }
 });
 
-test('never a whole-server allow — the marking is version-gated', () => {
-  // A blanket mcp__usernode__* would auto-approve submit_work for anyone on
-  // a Claude Code older than 2.1.199, which ignores requiresUserInteraction:
-  // a change reaching a group vote with nobody having confirmed it.
+test('never a whole-server allow — the scaffold grants for everyone', () => {
+  // A blanket mcp__usernode__* in a COMMITTED file would allow every acting
+  // call for anyone who opens the repo, decided by the scaffold rather than
+  // by them. A user who wants that grants it on their own account instead.
   const wildcard = `mcp__${constants.SERVER_NAME}__*`;
   assert.ok(!constants.READ_ONLY_ALLOW_RULES.includes(wildcard));
   const settings = scaffold().get('.claude/settings.json');
@@ -174,8 +177,10 @@ test('the scaffold explains itself next to the file, since JSON has no comments'
   const readme = scaffold().get('.claude/README.md');
   assert.ok(readme, 'the scaffold writes .claude/README.md');
   assert.match(readme, /workspace trust dialog/i);
-  assert.match(readme, /requiresUserInteraction/);
-  assert.match(readme, /2\.1\.199/);
+  // Why the file stops at reads, and where to go for more — a reader who
+  // wants the acting calls allowed should not conclude it cannot be done.
+  assert.match(readme, /committed/i);
+  assert.match(readme, /~\/\.claude\/settings\.json/);
   // Both prefix forms, because it differs by surface.
   assert.match(readme, /mcp__<server>__whoami/);
   assert.match(readme, /mcp__claude_ai_<server>__whoami/);
@@ -203,10 +208,13 @@ test('the connector doc names both tool-name prefixes', () => {
   assert.match(CONNECTOR_DOC, /read the name off your own tool list/i);
 });
 
-test('the connector doc covers the trust dialog and the version gate', () => {
+test('the connector doc covers the trust dialog and allow-always', () => {
   assert.match(CONNECTOR_DOC, /workspace trust dialog/i);
-  assert.match(CONNECTOR_DOC, /2\.1\.199/);
+  // The doc keeps explaining the retired marking, because users who hit the
+  // old behaviour need to find out it changed rather than assume it is still
+  // there — and because the reasoning is why the shipped rules stop at reads.
   assert.match(CONNECTOR_DOC, /anthropic\/requiresUserInteraction/);
+  assert.match(CONNECTOR_DOC, /allow always/i);
 });
 
 // ── 5. Every creation path scaffolds it ────────────────────────────────

@@ -26,8 +26,10 @@ lives in [CLI-MCP-AUTH-SPEC.md](CLI-MCP-AUTH-SPEC.md).
    every repo at once. On Claude Code **web** they do not — the container is
    fresh each session — so there it is the repo's committed file that applies.
    Settings → Connectors has both blocks with a copy button each.
-4. The tools that change something still prompt, every time, and Usernode marks
-   them so that stays true even in permissive modes.
+4. No tool forces a prompt of its own. Setting the connector to **allow always**
+   in Claude's connector settings covers every call, acting tools included —
+   what the connector files are requests, and the group vote is the
+   confirmation. This changed: the acting tools used to override that setting.
 5. `get_connector_guidance` is the read-first tool. The instructions a client
    receives at connect time are **truncated at 2048 characters** by Claude
    Code, so the connector's full operating charter is delivered as a tool
@@ -109,44 +111,49 @@ that gets relayed, and it is throttled precisely because it interrupts.
 
 ---
 
-## 2. Tools that act always prompt
+## 2. No tool forces a prompt — the vote is the confirmation
 
-Usernode marks its acting tools with the `anthropic/requiresUserInteraction`
+Usernode's acting tools used to carry the `anthropic/requiresUserInteraction`
 metadata Claude Code reads off a tool definition:
 
 ```json
 { "name": "submit_work", "_meta": { "anthropic/requiresUserInteraction": true } }
 ```
 
-For a tool marked this way, Claude Code shows the permission prompt on **every**
+For a tool marked that way, Claude Code shows the permission prompt on **every**
 call — in `acceptEdits`, `auto` and `bypassPermissions` alike — offers no "don't
-ask again", and skips it for no allow rule. On Remote Control and mobile it also
-withholds one-tap approval, so the confirmation comes from somebody reading the
-prompt rather than from a tap.
+ask again", and skips it for no allow rule. It checks the marking *before* it
+looks up allow rules, which is the part that made it a poor fit here: it also
+outranked the connector's own **allow always** setting, so a user who granted
+that in Claude's connector settings kept being prompted anyway, with nothing on
+either surface explaining why. The setting looked broken.
 
-Five tools carry it:
+**The marking is gone.** Allow-always now means what it says, on every tool.
 
-| Tool | Why it deserves a person |
+The reasoning behind it does not apply to this connector. Nothing the connector
+exposes writes to an app. Every acting call files a *request* — a proposal, an
+issue, a build — and the platform merges none of it without a group vote:
+
+| Tool | What it actually does |
 |---|---|
-| `submit_work` | Opens or advances a proposal — starts a group vote |
-| `create_request` | Files publicly, on the app's board and as a GitHub issue |
-| `prepare_work` | Claims the request on the app's board; mints a work order that dangles if unused |
+| `submit_work` | Opens or advances a proposal, for the group to vote on |
+| `create_request` | Files on the app's board and as a GitHub issue |
+| `prepare_work` | Claims the request on the app's board; mints a work order |
 | `start_platform_build` | Spends the user's daily Usernode credits |
 | `submit_platform_build` | Puts that build to a group vote |
 
-Everything else keeps normal behaviour. `answer_questions` is a write but is
-deliberately unmarked: it only feeds text to a build the user already started,
-and an unskippable prompt inside a poll loop buys no decision they have not
-already made. `claim_request` and `release_request` are unmarked for the same
-kind of reason: a claim says "somebody is working on this" on the app's board,
-it is platform-local, it names only the caller, it expires by itself and one
-call clears it. Charging a click for announcing work is how the announcement
-stops being made.
+The vote is the confirmation, and it is a better one than a prompt clicked
+through mid-loop by the one person already driving the agent. A per-call prompt
+bought a click, not a decision.
 
-**This is defence in depth, not a control to lean on.** It requires Claude Code
-**2.1.199 or later**; earlier versions ignore the metadata and apply the
-standard permission flow. That version gate is the whole reason for the shape of
-the next section.
+`start_platform_build` is the one whose old justification was not about
+write-visibility at all — it spends a daily credit allowance. That allowance is
+capped by `connectorLimits` on the server, which is where a spending limit
+belongs; it does not need a second gate in the client.
+
+These tools are still named as a group, in `ACTING_TOOLS`. That list no longer
+controls prompting — it decides which tools stay out of the setup hint and out
+of the allow rules Usernode ships, which is the subject of the next section.
 
 ---
 
@@ -197,11 +204,17 @@ work there.
 
 ### Why not `mcp__usernode__*`
 
-Because the marking in section 2 is version-gated. A whole-server rule would
-auto-approve `submit_work` for anyone on a client older than 2.1.199 — a change
-reaching a group vote with nobody having confirmed it. Two globs and one literal
-can only ever match reads, on every version. **Never widen these to a
-wildcard.**
+Because of where this file lives, not because of what the tools do. It is
+committed into every app repo Usernode scaffolds, so it grants on behalf of
+everyone who ever opens that repo. "Every call this connector can make" is not
+a reviewable thing to put in front of a stranger in the trust dialog; a list of
+reads is. **Never widen these to a wildcard.**
+
+If you want the acting calls allowed too, that is a fine thing to want — grant
+it on your own account, where the decision covers your machine only: set the
+connector to allow-always in Claude's connector settings, or add the rules to
+your own `~/.claude/settings.json`. Both now cover the acting tools too — that
+is what section 2 changed.
 
 ### The naming contract that keeps those globs honest
 
@@ -435,10 +448,16 @@ blocks are rewritten for it — or reconnect under `usernode`. Then check you ac
 for this workspace.
 
 **Prompted on `submit_work` even though I allowed it.**
-Working as intended. The `requiresUserInteraction` marking outranks allow rules,
-by design — that call starts a group vote.
+This used to be intended behaviour and is not any more — see section 2. If you
+are still seeing it, the likely cause is which allow rule you set. The rules
+Usernode *ships* cover reads only (`get_*`, `list_*`, `whoami`), by design, so
+they will not cover `submit_work`. Either set the connector to **allow always**
+in Claude's connector settings, or add the acting tools to your own
+`~/.claude/settings.json`. Do not add them to a repo's `.claude/settings.json`,
+which grants for everyone who opens that repo rather than for you.
 
-**I am on an old Claude Code and want the strong guarantee.**
-Upgrade to 2.1.199 or later. Below that the marking is ignored and only the
-narrowness of the allowlist protects the acting tools — which is why the shipped
-rules enumerate the reads instead of allowing the server.
+**I want a per-call confirmation on the acting tools anyway.**
+There is no longer one built into the connector, and a repo-level allow rule
+cannot create one — allow rules only ever loosen. Leave the connector at
+ask-each-time in Claude's connector settings and do not add acting-tool rules to
+any settings file; that is the configuration that prompts.
