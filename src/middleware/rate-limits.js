@@ -328,6 +328,20 @@ const profileWriteLimiter = makeLimiter({
   message: 'Too many profile updates — slow down for a minute.',
 });
 
+// Username changes (#1336): 5 / hour / user. The 30-day cooldown in
+// src/services/usernames.js is the real policy — this bucket exists for the
+// REJECTED attempts the cooldown never reaches. Every call bcrypt-compares
+// the current password, so an unthrottled endpoint is both a password
+// oracle and 5 rejected-name probes worth of KDF per request. Per-user
+// keyed: the caller is always authenticated here.
+const usernameChangeLimiter = makeLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  name: 'username-change',
+  keyByUser: true,
+  message: 'Too many username attempts — try again in a little while.',
+});
+
 // Priority / assignee attribute votes: 60 / minute / user. Loose enough
 // that switching your pick a few times never bumps it, tight enough to
 // stop a scripted vote-spam loop. Per-user keyed for shared-NAT fairness.
@@ -550,4 +564,4 @@ const userDirectoryLimiter = makeLimiter({
   message: 'Too many directory lookups — please slow down.',
 });
 
-module.exports = { userDirectoryLimiter, dbExportLimiter, authLimiter, homePanelPrefLimiter, homeLayoutLimiter, draftWriteLimiter, walletCheckLimiter, appCreateLimiter, issueCreateLimiter, closeProposalLimiter, issueKindLimiter, agentFileWriteLimiter, chatLimiter, groupChatWriteLimiter, conversationMessageLimiter, conversationActionLimiter, conversationSafetyLimiter, conversationInviteLimiter, conversationReactionLimiter, conversationReportLimiter, messageBookmarkLimiter, attributeVoteLimiter, attachmentUploadLimiter, appFileUploadLimiter, feedbackTitleLimiter, boardOrderLimiter, issueScreenshotLimiter, profileWriteLimiter, publicProfileReadLimiter, profileReportLimiter, topochainMobileAuthLimiter, topochainMobilePushRegistrationLimiter, reportAiLimiter, reportSnapshotLimiter, waitlistJoinLimiter, waitlistTokenLimiter, mailTestLimiter };
+module.exports = { userDirectoryLimiter, dbExportLimiter, authLimiter, homePanelPrefLimiter, homeLayoutLimiter, draftWriteLimiter, walletCheckLimiter, appCreateLimiter, issueCreateLimiter, closeProposalLimiter, issueKindLimiter, agentFileWriteLimiter, chatLimiter, groupChatWriteLimiter, conversationMessageLimiter, conversationActionLimiter, conversationSafetyLimiter, conversationInviteLimiter, conversationReactionLimiter, conversationReportLimiter, messageBookmarkLimiter, attributeVoteLimiter, attachmentUploadLimiter, appFileUploadLimiter, feedbackTitleLimiter, boardOrderLimiter, issueScreenshotLimiter, profileWriteLimiter, usernameChangeLimiter, publicProfileReadLimiter, profileReportLimiter, topochainMobileAuthLimiter, topochainMobilePushRegistrationLimiter, reportAiLimiter, reportSnapshotLimiter, waitlistJoinLimiter, waitlistTokenLimiter, mailTestLimiter };

@@ -12,7 +12,11 @@
 //      the body are written, an empty string clears to NULL, and any
 //      invalid field rejects the WHOLE request with field-keyed details
 //      (so the sheet can pin messages and keep the user's other edits).
-//   3. The username is never writable — no code path anywhere sends it.
+//   3. The username is never writable BY THIS ROUTE. It stopped being
+//      unwritable platform-wide in #1336 (POST /api/me/username), but PATCH
+//      must still refuse it: the rename needs the current password, a
+//      cooldown and a username_history write in one transaction, and a
+//      partial field update that also accepts a bio can offer none of that.
 //   4. Avatar uploads are sniffed from BYTES, not from a declared type,
 //      capped at 1 MB, and GIF is refused. The row's id ROTATES on every
 //      upload, which is what keeps the year-long immutable cache honest.
@@ -319,7 +323,8 @@ test('PATCH writes only the keys sent, and stamps updated_at', async () => {
   const update = calls.find((c) => c.sql.startsWith('UPDATE users SET'));
   assert.match(update.sql, /updated_at = NOW\(\)/);
   assert.doesNotMatch(update.sql, /username/,
-    'the username is never writable — not by this route, not by any route');
+    'the username is not writable by THIS route — POST /api/me/username is '
+    + 'the only writer, and it is credential-gated (#1336)');
 });
 
 test('PATCH echoes the post-write profile in the /api/auth/me shape', async () => {
@@ -474,8 +479,27 @@ test('the writes share one per-user rate-limit bucket', () => {
   ]) {
     assert.match(route, surface);
   }
-  // All three writes, not just two of them.
-  assert.equal((route.match(/profileWriteLimiter,/g) || []).length, 3);
+  // All three writes, not just two of them. Counted at the ROUTE level
+  // (`requireUser,` immediately before it) rather than by bare occurrences
+  // of the name: the import line mentions it too, and since #1336 that line
+  // also destructures usernameChangeLimiter beside it.
+  assert.equal(
+    (route.match(/requireUser,\s*profileWriteLimiter/g) || []).length, 3,
+  );
+});
+
+test('the username change does NOT share the profile-write bucket', () => {
+  // Deliberately its own, much tighter bucket (#1336): every call
+  // bcrypt-compares the current password, so an endpoint sharing the
+  // 20/minute profile allowance would be both a password oracle and 20
+  // KDF rounds a minute. The cooldown is the product rule; this is the
+  // abuse ceiling underneath it.
+  const limits = read('src/middleware/rate-limits.js');
+  assert.match(limits, /usernameChangeLimiter = makeLimiter\(\{[\s\S]*?keyByUser: true/);
+  assert.match(limits, /module\.exports = \{[^}]*usernameChangeLimiter/);
+  const route = read('src/routes/profile.js');
+  assert.match(route, /'\/api\/me\/username',\s*requireUser,\s*usernameChangeLimiter/);
+  assert.doesNotMatch(route, /'\/api\/me\/username',\s*requireUser,\s*profileWriteLimiter/);
 });
 
 test('the avatar parser ceiling sits ABOVE the friendly cap', () => {

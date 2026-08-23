@@ -53,16 +53,40 @@ function initialUsers() {
   ];
 }
 
+// Retired handles (#1336), mirroring `username_history`: alice renamed
+// from `ada`, so `/api/public/profiles/ada` must still reach user 1 and
+// say so via `moved`.
+function initialRetired() {
+  return [{ user_id: 1, username: 'ada' }];
+}
+
 function makePool() {
-  const state = { users: initialUsers(), reports: [], calls: [] };
+  const state = { users: initialUsers(), retired: initialRetired(), reports: [], calls: [] };
 
   const query = async (sql, params = []) => {
     const s = String(sql);
     state.calls.push({ sql: s, params });
 
-    if (/SELECT u\.username, u\.display_name/.test(s) && /WHERE u\.username = \$1/.test(s)) {
+    // usernames.resolveHandle, live arm.
+    if (/SELECT id, username FROM users WHERE LOWER\(username\) = \$1/.test(s)) {
+      const user = state.users.find((c) => c.username.toLowerCase() === params[0]);
+      return { rows: user ? [{ id: user.id, username: user.username }] : [] };
+    }
+    // usernames.resolveHandle, retired arm.
+    if (/FROM username_history h/.test(s) && /LOWER\(h\.username\) = \$1/.test(s)) {
+      const row = state.retired.find((h) => h.username.toLowerCase() === params[0]);
+      if (!row) return { rows: [] };
+      const user = state.users.find((c) => c.id === row.user_id);
+      return { rows: user ? [{ user_id: user.id, username: user.username }] : [] };
+    }
+    // The PUBLIC read. Keyed on id since #1336 (the name was resolved a
+    // query earlier), so it is told apart from the owner read below by its
+    // publish/disable filters rather than by its WHERE column.
+    if (/SELECT u\.username, u\.display_name/.test(s)
+        && /WHERE u\.id = \$1/.test(s)
+        && /profile_published = TRUE/.test(s)) {
       const user = state.users.find((candidate) => (
-        candidate.username === params[0]
+        candidate.id === params[0]
         && candidate.profile_published
         && !candidate.profile_disabled_at
       ));
@@ -419,4 +443,63 @@ test('schema, routing and bundled profile UI pin privacy and current-shell integ
   assert.match(app, /Profile\.open\(username\)/);
   assert.match(server, /publicProfileRoutes\(config\)/);
   assert.equal(fs.existsSync(path.join(root, 'public/js/profile.js')), false);
+});
+
+// ── Retired handles (#1336) ───────────────────────────────────────────
+
+test('resolving an old handle does not bypass the opt-in publish gate', async () => {
+  // user 1 is `alice` now and retired `ada`; she is NOT published. The
+  // resolve only maps a name to a person — publishing is a separate answer.
+  const pool = makePool();
+  const server = await start(pool);
+  try {
+    const res = await request(server, '/api/public/profiles/ada');
+    assert.equal(res.status, 404);
+    assert.ok(
+      pool.state.calls.some((c) => /FROM username_history h/.test(c.sql)),
+      'the retired ledger must actually be consulted',
+    );
+  } finally {
+    await server.close();
+  }
+});
+
+test('a published profile reached by its old handle answers, and says it moved', async () => {
+  const pool = makePool();
+  pool.state.users.find((u) => u.id === 1).profile_published = true;
+  const server = await start(pool);
+  try {
+    const res = await request(server, '/api/public/profiles/ada');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.profile.username, 'alice',
+      'the body carries the CANONICAL handle, not the one that was asked for');
+    assert.deepEqual(res.body.moved, { from: 'ada', to: 'alice' });
+  } finally {
+    await server.close();
+  }
+});
+
+test('a live handle is a plain hit — no `moved` hint', async () => {
+  const pool = makePool();
+  const server = await start(pool);
+  try {
+    const res = await request(server, '/api/public/profiles/bob');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.moved, undefined,
+      'only a retired handle is a redirect; a live one is just a hit');
+  } finally {
+    await server.close();
+  }
+});
+
+test('a handle nobody ever held is still a plain 404', async () => {
+  const pool = makePool();
+  const server = await start(pool);
+  try {
+    const res = await request(server, '/api/public/profiles/nobody');
+    assert.equal(res.status, 404);
+    assert.deepEqual(res.body, { error: 'Profile not found' });
+  } finally {
+    await server.close();
+  }
 });

@@ -127,6 +127,7 @@
       { key: 'app-ai', label: 'App AI permissions', group: 'AI & agents' },
       { key: 'agent-files', label: 'Agent instructions & skills', group: 'AI & agents' },
 
+      { key: 'username', label: 'Username', group: 'Account' },
       { key: 'password', label: 'Password', group: 'Account' },
       { key: 'wallet', label: 'Usernode Wallet', group: 'Account', gate: 'wallet-section' },
 
@@ -248,6 +249,19 @@
       this._wireConnectorNameSpelling();
 
       // Change password (issue #282) → POST /api/me/password.
+      const cuSave = document.getElementById('cu-save');
+      if (cuSave) cuSave.addEventListener('click', () => this.changeUsername());
+      // Enter in either field submits, like the password form's fields do
+      // not — this one is two fields and a button, and a rename typed on a
+      // phone should not require reaching for the button.
+      ['cu-new', 'cu-password'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); this.changeUsername(); }
+          });
+        }
+      });
       const cpSave = document.getElementById('cp-save');
       if (cpSave) cpSave.addEventListener('click', () => this.changePassword());
 
@@ -459,6 +473,7 @@
       this._renderAgentFilesSection();
       this._renderWalletSection();
       this._renderDevFlowSection();
+      this._renderChangeUsernameSection();
       this._renderChangePasswordSection();
       this._renderDevConsoleSection();
       this._renderLanguageSection();
@@ -2807,6 +2822,81 @@
         } else {
           this._setCpStatus(`Wallet change failed: ${err.message || err}`, 'error');
         }
+      } finally {
+        btn.disabled = false;
+      }
+    },
+
+    _setCuStatus(text, kind) {
+      const el = document.getElementById('cu-status');
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove('hidden', 'text-red-500', 'text-emerald-500', 'text-zinc-500');
+      const cls = kind === 'error' ? 'text-red-500' : kind === 'ok' ? 'text-emerald-500' : 'text-zinc-500';
+      el.classList.add(cls);
+    },
+
+    // Paint the current handle. Called from _renderAllSections on every
+    // open, so the row is right even after a rename made somewhere else in
+    // this tab (or in another one, once /api/auth/me is re-read).
+    _renderChangeUsernameSection() {
+      const cur = document.getElementById('cu-current');
+      if (!cur) return;
+      const name = (typeof App !== 'undefined' && App.user && App.user.username) || '';
+      cur.textContent = name ? `@${name}` : '—';
+    },
+
+    // POST /api/me/username. The server is the authority on every rule
+    // here (charset, reserved names, availability against the retired
+    // ledger, the cooldown, the password); this only avoids a round-trip
+    // for the two states the form can see on its own.
+    async changeUsername() {
+      const nameEl = document.getElementById('cu-new');
+      const pwEl = document.getElementById('cu-password');
+      const btn = document.getElementById('cu-save');
+      if (!nameEl || !pwEl || !btn) return;
+
+      const username = nameEl.value.trim();
+      const currentPassword = pwEl.value;
+
+      if (!username) { this._setCuStatus('Enter a new username.', 'error'); return; }
+      if (!currentPassword) { this._setCuStatus('Enter your current password.', 'error'); return; }
+
+      btn.disabled = true;
+      this._setCuStatus('Saving…', 'info');
+      try {
+        const r = await fetch('/api/me/username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username, currentPassword }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { this._setCuStatus(j.error || 'Failed to change username.', 'error'); return; }
+
+        nameEl.value = '';
+        pwEl.value = '';
+
+        // The handle is on the drawer row, the identity card and every
+        // link this tab is about to build, so App.user has to move with
+        // it — a stale copy would keep deep-linking the OLD name, which
+        // now resolves through the retired ledger and would quietly
+        // redirect on every click.
+        if (typeof App !== 'undefined' && App.user) {
+          App.user.username = j.username;
+          if (typeof App.saveSessionSnapshot === 'function') App.saveSessionSnapshot(App.user);
+          try { App.resyncCurrentView(); } catch (_) { /* best effort */ }
+        }
+        this._renderChangeUsernameSection();
+
+        this._setCuStatus(
+          j.unchanged
+            ? 'That is already your username.'
+            : `You are now @${j.username}.`,
+          'ok',
+        );
+      } catch (err) {
+        this._setCuStatus(`Network error: ${err.message}`, 'error');
       } finally {
         btn.disabled = false;
       }

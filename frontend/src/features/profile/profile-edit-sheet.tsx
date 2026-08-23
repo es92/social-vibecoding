@@ -399,10 +399,15 @@ export function ProfileEditSheet({
         </section>
 
         {/*
-            The username is deliberately not editable — here or anywhere. It is
-            the sign-in identifier and the address of the public builder page, so
-            it is shown read-only WITH the reason: a greyed-out field with no
-            explanation reads as a bug.
+            The username is not editable HERE. It is the sign-in identifier, so
+            changing it needs the current password (#1336) — a credential prompt
+            has no business in a sheet that also edits a bio, and the rename has
+            its own cooldown and confirmation copy. It lives in
+            Settings -> Username (features/settings/sections/username.tsx).
+
+            Still shown read-only, and still WITH the reason: a greyed-out field
+            with no explanation reads as a bug. The footnote is now a route, not
+            a refusal.
         */}
         <section className="mb-4">
           <Group title="Username">
@@ -424,9 +429,9 @@ export function ProfileEditSheet({
             </div>
           </Group>
           <p className={FOOTNOTE_CLASS}>
-            Your @handle is your sign-in name and your public page address, so it
-            can’t be changed. Set a display name above to change how your name
-            appears.
+            {'Your @handle is your sign-in name and your public page address. To change it, go to '}
+            <a href="#settings/username" className="text-violet-500 hover:text-violet-400">Settings → Username</a>
+            {'. To change only how your name appears, set a display name above.'}
           </p>
         </section>
 

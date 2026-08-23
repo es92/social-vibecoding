@@ -14,14 +14,18 @@
 // point of the exercise — ONE projection. A directory answer is
 // `{ id, username }` and nothing else: no display_name, bio, avatar,
 // email, usernode_pubkey, locale, is_admin, created_at or profile_*
-// column may ever join this SELECT list. `username` is the canonical,
-// immutable route key and is already public; everything else on the
-// users row is either private or gated behind the opt-in public-profile
-// allowlist in src/routes/profiles.js.
+// column may ever join this SELECT list. `username` is the canonical route
+// key and is already public; everything else on the users row is either
+// private or gated behind the opt-in public-profile allowlist in
+// src/routes/profiles.js. It stopped being IMMUTABLE in #1336 — lookupExact
+// resolves retired handles through src/services/usernames.js, and always
+// answers with the current one.
 
 // users.username is VARCHAR(255) — anything longer cannot match a row,
 // so it is a bad request rather than a miss.
 const MAX_USERNAME_LEN = 255;
+// Retired-handle resolution for lookupExact (see the note there).
+const usernames = require('./usernames');
 // Prefix queries are clipped, matching the invite typeahead's own clip.
 const MAX_QUERY_LEN = 32;
 const DEFAULT_SEARCH_LIMIT = 10;
@@ -95,13 +99,33 @@ async function lookupExact(pool, username) {
       LIMIT 2`,
     [name]
   );
-  if (!rows.length) return { found: false, user: null, ambiguous: false };
+  if (rows.length) {
+    const exact = rows[0].username === name;
+    return {
+      found: true,
+      user: projectUser(rows[0]),
+      ambiguous: !exact && rows.length > 1,
+    };
+  }
 
-  const exact = rows[0].username === name;
+  // No live holder — try the retired-handle ledger (#1336). An app that
+  // stored `@alice` last year must keep resolving her after she renamed;
+  // that is the whole reason the handle stays reserved instead of returning
+  // to the pool. Never ambiguous: `username_history` carries a unique index
+  // on LOWER(username), so a retired handle has exactly one owner.
+  //
+  // The reply still projects the user's CANONICAL CURRENT handle, not the
+  // one that was asked for, so an app that re-persists the answer converges
+  // on the live name instead of pinning the old one forever.
+  //
+  // Deliberately NOT extended to searchPrefix below: a typeahead offering
+  // handles nobody wears is a typeahead offering the wrong person.
+  const resolved = await usernames.resolveHandle(pool, name);
+  if (!resolved) return { found: false, user: null, ambiguous: false };
   return {
     found: true,
-    user: projectUser(rows[0]),
-    ambiguous: !exact && rows.length > 1,
+    user: projectUser({ id: resolved.userId, username: resolved.username }),
+    ambiguous: false,
   };
 }
 

@@ -218,13 +218,21 @@ test('outbound handle links are scheme-guarded and rel-protected', () => {
   assert.match(profileViewTsx, /rel: 'noopener noreferrer'/);
 });
 
-test('the username is shown read-only, with the reason', () => {
+test('the username is shown read-only, with somewhere to go', () => {
   assert.match(profileSheetTsx, /id="profile-edit-username"/);
   assert.match(profileSheetTsx, /\breadOnly\b/);
   assert.match(profileSheetTsx, /\bdisabled\b/);
-  assert.match(profileSheetTsx, /can’t be changed/,
-    'a greyed-out field with no explanation reads as a bug');
-  // Nothing may ever PATCH it.
+  // The field is still read-only HERE, and still explains itself — a
+  // greyed-out field with no explanation reads as a bug. What changed in
+  // #1336 is that the explanation is a ROUTE rather than a refusal: the
+  // rename exists, it just needs the current password, so it lives in
+  // Settings next to Change password.
+  assert.match(profileSheetTsx, /#settings\/username/,
+    'the footnote must point at the screen that can actually do it');
+  assert.doesNotMatch(profileSheetTsx, /can’t be changed/,
+    'the handle CAN be changed since #1336 — this copy would be a lie');
+  // Nothing may ever PATCH it: the rename is its own credential-gated
+  // endpoint (POST /api/me/username), never a profile field write.
   const save = profileJs.slice(profileJs.indexOf('async _save('));
   assert.doesNotMatch(save.slice(0, 2500), /username:/);
 });

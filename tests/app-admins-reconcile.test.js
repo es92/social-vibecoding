@@ -11,10 +11,17 @@ const assert = require('node:assert/strict');
 const appManifest = require('../src/services/app-manifest');
 
 // Scripted mock pool: answers the fresh app-row SELECT from `appRow`,
-// resolves declared usernames from `users`, reports the existing roster
-// from `existing`, and returns empty rows for everything else (chat
-// insert, event insert, ws) so the best-effort side effects no-op.
-function mockPool(appRow, { users = [], existing = [] } = {}) {
+// resolves declared usernames from `users` (and from `retired`, the
+// retired-handle ledger — see below), reports the existing roster from
+// `existing`, and returns empty rows for everything else (chat insert,
+// event insert, ws) so the best-effort side effects no-op.
+//
+// `retired` is `[{ user_id, username }]`, mirroring `username_history`
+// (#1336). Resolution goes through usernames.resolveHandles now, whose
+// query is a UNION of the live table and that ledger projecting
+// `{ id, username, declared, live }` — `declared` being the name that
+// MATCHED, which is what the reconcile diffs against the manifest.
+function mockPool(appRow, { users = [], existing = [], retired = [] } = {}) {
   const calls = [];
   return {
     calls,
@@ -23,9 +30,20 @@ function mockPool(appRow, { users = [], existing = [] } = {}) {
       if (/SELECT id, slug, self_hosted, created_by, admin_usernames FROM apps/.test(sql)) {
         return { rows: appRow ? [appRow] : [] };
       }
-      if (/SELECT id, username FROM users WHERE LOWER\(username\) = ANY/.test(sql)) {
+      if (/AS declared/.test(sql)) {
         const wanted = new Set(params[0]);
-        return { rows: users.filter((u) => wanted.has(u.username.toLowerCase())) };
+        const rows = [];
+        for (const u of users) {
+          if (wanted.has(u.username.toLowerCase())) {
+            rows.push({ id: u.id, username: u.username, declared: u.username.toLowerCase(), live: true });
+          }
+        }
+        for (const h of retired) {
+          if (!wanted.has(h.username.toLowerCase())) continue;
+          const u = users.find((x) => x.id === h.user_id);
+          if (u) rows.push({ id: u.id, username: u.username, declared: h.username.toLowerCase(), live: false });
+        }
+        return { rows };
       }
       if (/SELECT user_id FROM app_admins WHERE app_id/.test(sql)) {
         return { rows: existing.map((id) => ({ user_id: id })) };
@@ -213,4 +231,64 @@ test('applyAdminsChange is callable directly with an explicit roster', async () 
   );
   assert.deepEqual(inserts(pool)[0].params, [5, [11]]);
   assert.deepEqual(nameWrites(pool)[0].params[0], ['alice']);
+});
+
+// ── Renamed admins (#1336) ────────────────────────────────────────────
+//
+// The reason resolution goes through the retired-handle ledger at all. A
+// dapp.json lives in the app's own repository, which the platform cannot
+// rewrite, so a manifest keeps naming `alice` long after alice renamed to
+// `ada`. Resolving only against `users` would drop her from the roster on
+// the next deploy — a silent permission loss caused by an unrelated action.
+
+test('a declared handle its owner has since retired still resolves to them', async () => {
+  const pool = mockPool(APP, {
+    users: [{ id: 11, username: 'ada' }],
+    retired: [{ user_id: 11, username: 'alice' }],
+    existing: [],
+  });
+  const changed = await appManifest.reconcileAppAdmins(pool, { id: 5 }, { admins: ['alice'] });
+  assert.equal(changed, true);
+  assert.deepEqual(inserts(pool)[0].params, [5, [11]],
+    'the rename must not cost her the grant');
+  assert.deepEqual(nameWrites(pool)[0].params[0], ['alice'],
+    'the declared list still mirrors the manifest verbatim — the platform '
+    + 'cannot edit the repo, so the panel shows what the repo actually says');
+});
+
+test('a retired handle is NOT reported as unresolved', async () => {
+  // The "declared, not a registered user" hint in the Members panel is
+  // driven by this diff. A renamed admin is very much a registered user.
+  const pool = mockPool(APP, {
+    users: [{ id: 11, username: 'ada' }],
+    retired: [{ user_id: 11, username: 'alice' }],
+    existing: [11],
+  });
+  await appManifest.reconcileAppAdmins(pool, { id: 5 }, { admins: ['alice'] });
+  const warned = pool.calls.some((c) => /unresolved/i.test(c.sql));
+  assert.equal(warned, false);
+});
+
+test('declaring BOTH a current and a retired handle of one person grants once', async () => {
+  // A manifest updated to the new name without dropping the old one. The
+  // UNION would return the same person twice; app_admins is keyed
+  // (app_id, user_id), so a duplicate id in the insert is a wasted row at
+  // best and an ON CONFLICT surprise at worst.
+  const pool = mockPool(APP, {
+    users: [{ id: 11, username: 'ada' }],
+    retired: [{ user_id: 11, username: 'alice' }],
+    existing: [],
+  });
+  await appManifest.reconcileAppAdmins(pool, { id: 5 }, { admins: ['alice', 'ada'] });
+  assert.deepEqual(inserts(pool)[0].params, [5, [11]]);
+});
+
+test('a retired handle whose owner deleted their account resolves to nobody', async () => {
+  // username_history CASCADEs on user delete, so the ledger row is gone
+  // with the account and the handle returns to the pool. Nothing to grant.
+  const pool = mockPool(APP, { users: [], retired: [], existing: [11] });
+  const changed = await appManifest.reconcileAppAdmins(pool, { id: 5 }, { admins: ['alice'] });
+  assert.equal(changed, true);
+  assert.deepEqual(deletes(pool)[0].params, [5, []]);
+  assert.equal(inserts(pool).length, 0);
 });

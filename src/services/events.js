@@ -19,6 +19,11 @@ const log = require('./logger');
 // Keep these three in sync when adding a new event type.
 const EVENT_TYPES = Object.freeze({
   USER_SIGNED_UP: 'user_signed_up',
+  // Username change (#1336). The metadata carries both handles because the
+  // retired one is the only way to read back who an old `@mention` or a
+  // shared #leaderboard/users/<name> link used to mean — `username_history`
+  // holds the reservation, this holds the WHEN and the audit trail.
+  USERNAME_CHANGED: 'username_changed',
   DAPP_OPENED: 'dapp_opened',
   DAPP_ACTIVE_DAY: 'dapp_active_day',
   CHAT_MESSAGE_SENT: 'chat_message_sent',

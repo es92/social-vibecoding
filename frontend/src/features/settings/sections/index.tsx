@@ -2,10 +2,11 @@
  * Every [data-settings-section] pane of the #settings screen, in the order the
  * shell has always emitted them (#1081 chunk D).
  *
- * There are FIFTEEN of them, one per entry in Settings.SECTIONS — #1081 says
- * sixteen, but the registry, the shell and tests/settings-screen.test.js
- * (which parses SECTIONS out of settings.js and asserts a wrapper per key) all
- * agree on fifteen. Nothing is missing; the issue's count is off by one.
+ * There are SIXTEEN of them, one per entry in Settings.SECTIONS. It was
+ * fifteen until #1336 added `username`; the count coincidentally matches what
+ * #1081 claimed all along, which it reached by a different (wrong) route. The
+ * registry, the shell and tests/settings-screen.test.js (which parses SECTIONS
+ * out of settings.js and asserts a wrapper per key) are the authority.
  *
  * This file is the MARKUP half of the settings screen. Behaviour stays in
  * ./settings.js — the module binds every control below by id, ONCE, and the
@@ -39,6 +40,7 @@ import { HomePanelsSection } from './home-panels';
 import { LanguageSection } from './language';
 import { OpenRouterSection } from './openrouter';
 import { PasswordSection } from './password';
+import { UsernameSection } from './username';
 import { UsernodeSection } from './usernode';
 import { WalletSection } from './wallet';
 
@@ -50,6 +52,7 @@ export function SettingsSections() {
       <OpenRouterSection />
       <AppAiSection />
       <AgentFilesSection />
+      <UsernameSection />
       <PasswordSection />
       <WalletSection />
       <LanguageSection />

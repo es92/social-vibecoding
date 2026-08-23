@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const log = require('../services/logger');
+const usernames = require('../services/usernames');
 const ws = require('../services/ws');
 const events = require('../services/events');
 const appAccess = require('../services/app-access');
@@ -834,14 +835,19 @@ function kudosRoutes(config) {
                WHERE ib.status = 'awarded' AND ib.awarded_session_id = cs.id)`;
 
     try {
-      const { rows: userRows } = await pool.query(
-        `SELECT id, username FROM users WHERE username = $1`,
-        [username]
-      );
-      if (!userRows.length) {
+      // Resolved through the retired-handle ledger (#1336): every
+      // #leaderboard/users/<name> link shared before its owner renamed
+      // points at a handle `users` no longer carries. The reservation makes
+      // the old name unambiguous, so it resolves to the same person and the
+      // response carries `moved` so the client can rewrite the hash.
+      const resolved = await usernames.resolveHandle(pool, username);
+      if (!resolved) {
         return res.status(404).json({ error: 'User not found' });
       }
-      const user = userRows[0];
+      const user = { id: resolved.userId, username: resolved.username };
+      const moved = resolved.retired
+        ? { from: username, to: resolved.username }
+        : null;
 
       // Headline stats over the FULL filtered set (pagination-agnostic).
       // kudos_merged matches the leaderboard's headline score
@@ -888,6 +894,7 @@ function kudosRoutes(config) {
         stats: statRows[0],
         items: rows,
         nextBefore,
+        ...(moved ? { moved } : {}),
       });
     } catch (err) {
       log.error('kudos', 'leaderboard/users/prs failed', { username, err: err.message });

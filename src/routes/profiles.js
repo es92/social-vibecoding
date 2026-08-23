@@ -17,6 +17,7 @@ const {
   profileReportLimiter,
 } = require('../middleware/rate-limits');
 const log = require('../services/logger');
+const usernames = require('../services/usernames');
 
 const REPORT_REASONS = new Set([
   'impersonation',
@@ -104,19 +105,37 @@ function publicProfileRoutes(config) {
       const username = profileUsername(req.params.username);
       if (!username) return res.status(404).json({ error: 'Profile not found' });
       try {
+        // Resolved through the retired-handle ledger (#1336) so a profile
+        // link shared before the owner renamed still lands. `moved` carries
+        // the canonical handle and the client rewrites its address; the body
+        // is the SAME shape either way, so an old link renders the profile
+        // rather than bouncing the reader through a 404 first.
+        //
+        // Still no 301: this is a JSON API read, and a redirect status would
+        // have every caller's fetch() follow it opaquely instead of learning
+        // the new handle. Deliberately NOT gated on profile_published — the
+        // resolve only maps a name to a person; the publish/disable checks
+        // below are what decide whether anything comes back.
+        const resolved = await usernames.resolveHandle(pool, username);
+        if (!resolved) {
+          return res.status(404).json({ error: 'Profile not found' });
+        }
         const { rows } = await pool.query(
           `SELECT u.username, u.display_name, u.bio, av.id AS avatar_id
              FROM users u
              LEFT JOIN user_avatars av ON av.user_id = u.id
-            WHERE u.username = $1
+            WHERE u.id = $1
               AND u.profile_published = TRUE
               AND u.profile_disabled_at IS NULL`,
-          [username]
+          [resolved.userId]
         );
         if (!rows.length) {
           return res.status(404).json({ error: 'Profile not found' });
         }
-        return res.json({ profile: publicShape(rows[0]) });
+        return res.json({
+          profile: publicShape(rows[0]),
+          ...(resolved.retired ? { moved: { from: username, to: resolved.username } } : {}),
+        });
       } catch (err) {
         log.error('profiles', 'Public profile read failed', { message: err.message });
         return res.status(500).json({ error: 'Internal server error' });

@@ -89,10 +89,19 @@ function makeMockPool(state) {
     const s = String(sql);
     calls.push({ sql: s, params });
 
-    // ---- user lookup by username ----
-    if (/SELECT id, username FROM users WHERE username = \$1/i.test(s)) {
-      const u = state.users.find((x) => x.username === params[0]);
+    // ---- user lookup by handle ----
+    // Since #1336 this goes through usernames.resolveHandle: `users` first,
+    // then the retired-handle ledger, so a #leaderboard/users/<name> link
+    // shared before its owner renamed still lands on them.
+    if (/SELECT id, username FROM users WHERE LOWER\(username\) = \$1/i.test(s)) {
+      const u = state.users.find((x) => x.username.toLowerCase() === params[0]);
       return { rows: u ? [{ id: u.id, username: u.username }] : [] };
+    }
+    if (/FROM username_history h/i.test(s)) {
+      const h = state.retired.find((x) => x.username.toLowerCase() === params[0]);
+      if (!h) return { rows: [] };
+      const u = state.users.find((x) => x.id === h.user_id);
+      return { rows: u ? [{ user_id: u.id, username: u.username }] : [] };
     }
 
     // ---- stats aggregate ----
@@ -171,6 +180,8 @@ const iso = (h) => new Date(Date.UTC(2026, 4, 20) - h * 3600 * 1000).toISOString
 function fixtureState() {
   return {
     users: [{ id: 1, username: 'alice' }, { id: 2, username: 'bob' }],
+    // Retired handles (#1336), mirroring `username_history`.
+    retired: [],
     sessions: [
       { id: 10, user_id: 1, status: 'merged', promoted_at: iso(9), merged_at: iso(8),
         created_at: iso(10), is_headless: false, app_public: true,
@@ -319,5 +330,50 @@ test('user with no proposed PRs returns empty items and zeroed stats', async () 
     assert.deepEqual(body.items, []);
     assert.deepEqual(body.stats, { prs_total: 0, prs_merged: 0, kudos_merged: 0 });
     assert.equal(body.nextBefore, null);
+  } finally { await srv.close(); }
+});
+
+// ── Retired handles (#1336) ───────────────────────────────────────────
+//
+// A #leaderboard/users/<name> link is the most-shared address on the
+// platform, and it is keyed on a handle. Renaming used to be impossible, so
+// the link could not rot; now the handle is retired rather than released and
+// the route resolves through that ledger instead of 404ing.
+
+test('a link shared before the rename resolves, and reports the new handle', async () => {
+  const state = fixtureState();
+  state.users = [{ id: 1, username: 'ada' }, { id: 2, username: 'bob' }];
+  state.retired = [{ user_id: 1, username: 'alice' }];
+  const pool = makeMockPool(state);
+  const srv = await startTestServer(pool);
+  try {
+    const res = await fetch(`${srv.baseUrl}/api/leaderboard/users/alice/prs`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body.user, { user_id: 1, username: 'ada' },
+      'the payload names the handle they hold NOW');
+    assert.deepEqual(body.moved, { from: 'alice', to: 'ada' },
+      'and says so, so the client can correct the address');
+  } finally { await srv.close(); }
+});
+
+test('a live handle carries no `moved` hint', async () => {
+  const pool = makeMockPool(fixtureState());
+  const srv = await startTestServer(pool);
+  try {
+    const res = await fetch(`${srv.baseUrl}/api/leaderboard/users/alice/prs`);
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).moved, undefined);
+  } finally { await srv.close(); }
+});
+
+test('a handle nobody ever held is still a 404', async () => {
+  const state = fixtureState();
+  state.retired = [{ user_id: 1, username: 'alice' }];
+  const pool = makeMockPool(state);
+  const srv = await startTestServer(pool);
+  try {
+    const res = await fetch(`${srv.baseUrl}/api/leaderboard/users/nobody/prs`);
+    assert.equal(res.status, 404);
   } finally { await srv.close(); }
 });

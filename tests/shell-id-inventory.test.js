@@ -46,6 +46,18 @@ const RETIRED_IDS = {
 
 // Ids a conversion chunk deliberately added, each with the reason.
 const ADDED_IDS = {
+  // #1336 — Settings -> Username, the change-your-@handle form. It sits in
+  // Settings rather than the profile edit sheet because the endpoint requires
+  // the current password, which is the same reason Change password is here.
+  'change-username-section': 'Settings -> Username section wrapper (#1336).',
+  'cu-current': 'The handle the viewer holds right now, painted by Settings._renderChangeUsernameSection (#1336).',
+  // The `cu-` prefix mirrors the `cp-` one the change-password controls
+  // beside them have always used — and stays clear of the native kit's
+  // `.un-*` class vocabulary.
+  'cu-new': 'Requested new handle (#1336).',
+  'cu-password': 'Current password, required by POST /api/me/username (#1336).',
+  'cu-save': 'Submit for the username change (#1336).',
+  'cu-status': 'Status line for the username change (#1336).',
   'settings-mobile-push-preferences': 'Account-level Social mobile-push category controls in Settings → Alerts.',
   'drawer-row-native-app-version': 'Installed Flutter app version in the drawer footer (#1101).',
   'native-app-version-slot': 'Mobile app version/build rendered through the native bridge (#1101).',

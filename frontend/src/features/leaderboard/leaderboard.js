@@ -386,6 +386,19 @@ const Leaderboard = {
         Leaderboard._cache.set(key, { error: true, notFound: res.status === 404 });
       } else {
         const data = await res.json();
+        // The handle was retired and resolved through the ledger (#1336) —
+        // a link shared before its owner renamed. Correct the address so
+        // the pane, the back stack and anything the reader copies out of
+        // the URL bar all carry the name they actually hold now. Cached
+        // under the key that is loading, so the repaint below finds it.
+        if (data.moved && Leaderboard.profileUser === data.moved.from) {
+          Leaderboard.profileUser = data.moved.to;
+          if (typeof location !== 'undefined') {
+            location.replace(
+              `#leaderboard/users/${encodeURIComponent(data.moved.to)}`
+            );
+          }
+        }
         Leaderboard._cache.set(key, data);
       }
     } catch (err) {

@@ -4,6 +4,7 @@
 // screen plus the read that backs its "Completed challenges" section.
 //
 //   PATCH  /api/me/profile             display name / bio / github / x
+//   POST   /api/me/username            change the @handle (#1336)
 //   POST   /api/me/avatar              raw image bytes -> user_avatars
 //   DELETE /api/me/avatar              remove the picture
 //   GET    /api/me/challenges/completed  the viewer's OWN completions
@@ -13,22 +14,41 @@
 // avatar is a separate, deliberately unauthenticated router
 // (src/routes/avatars.js) — an <img> can't carry a session dance.
 //
-// WHAT IS NOT HERE: a username change. `users.username` is the login
-// identifier, the address of the public builder page
-// (#leaderboard/users/<username>), the resolution key for the seeded
-// service identities, and is denormalized into `apps.admin_usernames`
-// from repo dapp.json files — nothing on the platform can rename a user,
-// not even an admin (routes/topochain/admin/users.js restricts its own
-// writable set to email/telegram/discord/display_name/accept_logs). The
-// display name is the supported way to change how your name appears.
+// ── The username change (#1336) ───────────────────────────────────────
+//
+// This header used to say a username change was impossible anywhere on
+// the platform. It is now POST /api/me/username, and what changed is not
+// the constraint — it is that the constraint has somewhere to live.
+//
+// `users.username` is still the login identifier, still the address of
+// the public builder page (#leaderboard/users/<username>), still the
+// resolution key for the seeded service identities, and still
+// denormalized into `apps.admin_usernames` from repo dapp.json files the
+// platform cannot rewrite. Releasing a handle re-points every one of
+// those at the next person to register it. So a rename does not release
+// it: src/services/usernames.js retires the old handle into
+// `username_history` permanently and every handle-keyed resolver reads
+// through that ledger. See the block comment on the table in schema.sql.
+//
+// PATCH /api/me/profile above still does NOT write `username`, and must
+// not: the rename needs the current password, a cooldown and a ledger
+// write in one transaction, none of which belong in a partial field
+// update that also accepts a bio. Two endpoints, two contracts.
+//
+// Admin-initiated renames remain unimplemented —
+// routes/topochain/admin/users.js still restricts its writable set to
+// email/telegram/discord/display_name/accept_logs, and moving someone
+// else's handle is a moderation action with its own audit needs.
 
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const express = require('express');
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const log = require('../services/logger');
 const { sniffImageType } = require('../services/attachments');
-const { profileWriteLimiter } = require('../middleware/rate-limits');
+const { profileWriteLimiter, usernameChangeLimiter } = require('../middleware/rate-limits');
+const usernames = require('../services/usernames');
 const {
   buildChallengeRow,
   DONE_EXPR,
@@ -282,6 +302,114 @@ function profileRoutes(config) {
         return res.json({ profile: await readProfile(req.user.id) });
       } catch (err) {
         log.error('profile', 'Profile update failed', {
+          userId: req.user.id, err: err.message,
+        });
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  );
+
+  // ── POST /api/me/username ────────────────────────────────────────────
+  //
+  // Body: { username, currentPassword }. Separate from PATCH /api/me/profile
+  // on purpose — see the header. The step order below is a security order,
+  // not a readability one:
+  //
+  //   1. shape         — pure, leaks nothing, costs nothing
+  //   2. password      — BEFORE any availability answer, so a stolen session
+  //                      without the password cannot walk the namespace
+  //                      asking "is @x free?"
+  //   3. service ident — a seeded identity may never move
+  //   4. cooldown      — before availability for the same reason: a user in
+  //                      cooldown gets no probes either
+  //   5. availability  — live table AND retired ledger
+  //   6. rename        — one transaction
+  router.post(
+    '/api/me/username',
+    requireUser,
+    usernameChangeLimiter,
+    express.json({ limit: '4kb' }),
+    async (req, res) => {
+      const { username: requested, currentPassword } = req.body || {};
+
+      const check = usernames.validateUsername(requested);
+      if (!check.ok) return res.status(400).json({ error: check.error });
+      const next = check.value;
+
+      if (!currentPassword || typeof currentPassword !== 'string') {
+        return res.status(400).json({ error: 'Current password is required' });
+      }
+
+      try {
+        const { rows } = await pool.query(
+          'SELECT username, password FROM users WHERE id = $1',
+          [req.user.id]
+        );
+        if (!rows.length) return res.status(404).json({ error: 'User not found' });
+        const { username: current, password: hash } = rows[0];
+
+        const valid = await bcrypt.compare(currentPassword, hash);
+        if (!valid) {
+          return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        // Seeded service accounts (usernode-capture and friends) are found
+        // BY NAME at runtime, so renaming one breaks a subsystem rather than
+        // moving an identity. src/services/visuals.js is the caller that
+        // would fail first.
+        if (usernames.isServiceIdentity(current)) {
+          return res.status(403).json({ error: 'This account cannot be renamed.' });
+        }
+
+        // An exact no-op is a success, not an error — the sheet resubmitting
+        // an unchanged field should not read as a failure. A CASE-ONLY change
+        // falls through: renameUser treats it as a re-case, which retires
+        // nothing and burns no cooldown.
+        if (current === next) {
+          return res.json({ username: current, retired: null, unchanged: true });
+        }
+        const recase = current.toLowerCase() === next.toLowerCase();
+
+        if (!recase) {
+          const cooldown = await usernames.checkCooldown(pool, req.user.id);
+          if (!cooldown.ok) {
+            return res.status(429).json({ error: cooldown.error, retryAfter: cooldown.retryAfter });
+          }
+        }
+
+        const free = await usernames.checkAvailability(pool, next, req.user.id);
+        if (!free.available) {
+          return res.status(409).json({ error: free.error });
+        }
+
+        const result = await usernames.renameUser(pool, req.user.id, next);
+        if (!result) return res.status(404).json({ error: 'User not found' });
+
+        log.info('profile', 'Username changed', {
+          userId: req.user.id, from: current, to: result.username, recase,
+        });
+        if (!recase) {
+          try {
+            const events = require('../services/events');
+            events.record(pool, {
+              type: events.EVENT_TYPES.USERNAME_CHANGED,
+              userId: req.user.id,
+              metadata: { from: current, to: result.username },
+            });
+          } catch (err) {
+            log.warn('profile', 'Username event record failed', { err: err.message });
+          }
+        }
+
+        return res.json({ username: result.username, retired: result.retired });
+      } catch (err) {
+        // The unique indexes on users.username and username_history are the
+        // backstop behind the availability check above; a race between two
+        // people claiming the same handle lands here.
+        if (err.code === '23505') {
+          return res.status(409).json({ error: 'That username is taken.' });
+        }
+        log.error('profile', 'Username change failed', {
           userId: req.user.id, err: err.message,
         });
         return res.status(500).json({ error: 'Internal server error' });

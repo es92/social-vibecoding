@@ -46,6 +46,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const log = require('./logger');
+const usernames = require('./usernames');
 const { validatePath } = require('./testing-notes');
 
 const MANIFEST_FILENAME = 'dapp.json';
@@ -1224,16 +1225,21 @@ async function reconcileAppAdmins(pool, app, manifest) {
     return false;
   }
 
+  // Resolved through src/services/usernames.js, NOT with a plain
+  // `LOWER(username) = ANY(...)` on `users` (#1336). A dapp.json lives in
+  // somebody else's repository and the platform cannot rewrite it, so a
+  // contributor who renames would otherwise silently lose admin on every
+  // app that declares their old handle — the manifest keeps saying `alice`
+  // long after alice became `ada`. resolveHandles reads the retired-handle
+  // ledger alongside `users`, so an old declared name keeps resolving to
+  // the same person; `declared` comes back as the name that MATCHED (old or
+  // new), which is what keeps the unresolved diff below honest.
   let resolved = [];
   if (declared.length) {
-    const { rows: userRows } = await pool.query(
-      `SELECT id, username FROM users WHERE LOWER(username) = ANY($1::text[])`,
-      [declared.map((u) => u.toLowerCase())]
-    );
-    resolved = userRows;
+    resolved = await usernames.resolveHandles(pool, declared);
   }
   const resolvedIds = resolved.map((r) => r.id).sort((a, b) => a - b);
-  const resolvedNames = new Set(resolved.map((r) => r.username.toLowerCase()));
+  const resolvedNames = new Set(resolved.map((r) => r.declared));
   const unresolved = declared.filter((u) => !resolvedNames.has(u.toLowerCase()));
   if (unresolved.length) {
     log.warn('app-manifest', 'dapp.json admins name(s) match no registered user', {

@@ -70,6 +70,8 @@ function makeMockPool(initial = {}) {
     specs: (initial.specs || []).slice(),
     // [{ id, username }]
     users: (initial.users || []).slice(),
+    // [{ user_id, username }] — mirrors `username_history` (#1336).
+    retired: (initial.retired || []).slice(),
     // Map<appId, { collab_visibility }>
     apps: new Map(initial.apps || []),
     // [{ app_id, user_id, status }]
@@ -98,12 +100,25 @@ function makeMockPool(initial = {}) {
       );
       return { rows: spec ? [{ version: spec.version }] : [] };
     }
-    // resolveUsers (case-insensitive).
-    if (/SELECT id, username FROM users WHERE LOWER\(username\) = ANY/i.test(s)) {
+    // notifications.resolveUsers, which resolves through the retired-handle
+    // ledger since #1336 — its query is usernames.resolveHandles, a UNION of
+    // `users` and `username_history` projecting `{ id, username, declared }`.
+    // Sharing to somebody by a handle they have since retired therefore
+    // reaches them, and answers with the name they hold now.
+    if (/AS declared/i.test(s)) {
       const names = params[0];
-      return {
-        rows: state.users.filter((u) => names.includes(u.username.toLowerCase())),
-      };
+      const rows = [];
+      for (const u of state.users) {
+        if (names.includes(u.username.toLowerCase())) {
+          rows.push({ id: u.id, username: u.username, declared: u.username.toLowerCase(), live: true });
+        }
+      }
+      for (const h of state.retired) {
+        if (!names.includes(h.username.toLowerCase())) continue;
+        const u = state.users.find((x) => x.id === h.user_id);
+        if (u) rows.push({ id: u.id, username: u.username, declared: h.username.toLowerCase(), live: false });
+      }
+      return { rows };
     }
     // filterToCollaborators: app visibility.
     if (/SELECT collab_visibility FROM apps WHERE id = \$1/i.test(s)) {

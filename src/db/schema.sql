@@ -5179,9 +5179,14 @@ CREATE TABLE IF NOT EXISTS user_avatars (
 
 -- Public profiles (#582) extend the existing profile customization storage
 -- above instead of creating a second display-name/bio/avatar record. Platform
--- username remains the canonical, immutable route key; publishing only makes
--- the already-user-authored display_name, bio and user_avatars row readable
+-- username remains the canonical route key; publishing only makes the
+-- already-user-authored display_name, bio and user_avatars row readable
 -- through the explicit public allowlist in src/routes/profiles.js.
+--
+-- That key stopped being IMMUTABLE in #1336. It is still canonical, and a
+-- profile address survives a rename, because the old handle is retired into
+-- `username_history` (see the bottom of this file) rather than released and
+-- /api/public/profiles/:username resolves through it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_published BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_disabled_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_disabled_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
@@ -5817,5 +5822,110 @@ BEGIN
     CREATE TRIGGER users_prepare_conversations_for_delete
       BEFORE DELETE ON users
       FOR EACH ROW EXECUTE FUNCTION prepare_conversations_for_user_delete();
+  END IF;
+END $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- Username changes (#1336) — the retired-handle ledger.
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- `users.username` used to be immutable, and src/routes/profile.js said so
+-- in its header. What made it immutable was never the login (sessions key
+-- on user_id, so a rename doesn't sign anyone out) — it was that FOUR
+-- surfaces resolve a person by their handle STRING, from data the platform
+-- does not own:
+--
+--   1. `@name` in historical chat text (src/services/notifications.js).
+--   2. `#leaderboard/users/<name>` links people have already shared.
+--   3. `admins: [...]` in each app repo's dapp.json, which the platform
+--      re-resolves on every deploy (src/services/app-manifest.js) and
+--      cannot rewrite — it lives in somebody else's repository.
+--   4. `/api/public/profiles/<name>`, the public profile address.
+--
+-- Free the old handle and all four silently re-point at whoever registers
+-- it next; #3 hands them app-admin rights. So a rename RETIRES the old
+-- handle permanently instead: one row here per rename, and every one of
+-- those four resolvers consults this table alongside `users`. Nobody can
+-- register a retired handle, and it keeps resolving to the person who
+-- gave it up. The namespace only ever shrinks, which is why the rename
+-- itself is rate-limited (RENAME_COOLDOWN_DAYS in src/services/usernames.js).
+--
+-- `username` is the RETIRED name and is globally unique — two people can
+-- never have given up the same handle, because holding it was already
+-- exclusive. `user_id` is ON DELETE CASCADE, not SET NULL: once the
+-- account is gone there is nobody left to resolve to, and a deleted user's
+-- old handles should return to the pool rather than be tombstoned forever
+-- (contrast db_exports.username, which is an audit snapshot and survives
+-- deletion on purpose).
+--
+-- NOT staging:private — these are public handles, on the same tier as
+-- `users.username` itself, and the resolvers above must work in a staging
+-- clone or a preview would 404 on links production serves fine.
+CREATE TABLE IF NOT EXISTS username_history (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  username    VARCHAR(255) NOT NULL,
+  changed_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- The reservation itself. Case-insensitive because every handle resolver
+-- on the platform matches with LOWER(username) — a unique index on the raw
+-- string would let "Alice" be registered after "alice" was retired, which
+-- is exactly the impersonation this table exists to stop.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_username_history_lower
+  ON username_history (LOWER(username));
+-- Backs the cooldown check and the "your previous handles" read, both of
+-- which want this user's most recent rename first.
+CREATE INDEX IF NOT EXISTS idx_username_history_user
+  ON username_history (user_id, changed_at DESC);
+
+-- The reservation has to be enforced in the DATABASE, not in the routes.
+-- Six different code paths insert into `users` (activation-code register,
+-- wallet register, the two topochain admin creates, mobile-auth signup and
+-- fleet-maintenance), none of them share a validator, and a seventh will be
+-- added by someone who has never read this file. A handle escaping through
+-- any one of them is the exact failure `username_history` exists to
+-- prevent: the new holder inherits every historical `@mention`, every
+-- shared profile link, and — through dapp.json's `admins` block — app-admin
+-- rights on somebody else's app.
+--
+-- Raised as unique_violation (23505) ON PURPOSE. Every one of those routes
+-- already catches 23505 from the `users.username` unique index and answers
+-- "Username already taken", so a retired handle produces the right 409 with
+-- no route change and no route able to opt out. It also keeps the two
+-- states indistinguishable to a caller probing the namespace, which is the
+-- same reason checkAvailability in src/services/usernames.js returns one
+-- sentence for both.
+--
+-- Scoped to INSERT and to an actual username CHANGE on UPDATE, so ordinary
+-- writes to other columns never pay for the lookup. `user_id <> NEW.id` is
+-- what lets someone take BACK a handle they retired earlier: the
+-- reservation is against other people, not against changing your mind.
+CREATE OR REPLACE FUNCTION reject_retired_username() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM username_history h
+     WHERE LOWER(h.username) = LOWER(NEW.username)
+       AND h.user_id <> NEW.id
+  ) THEN
+    RAISE EXCEPTION 'username % is retired', NEW.username
+      USING ERRCODE = 'unique_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+     WHERE tgname = 'users_reject_retired_username'
+       AND tgrelid = 'users'::regclass
+       AND NOT tgisinternal
+  ) THEN
+    CREATE TRIGGER users_reject_retired_username
+      BEFORE INSERT OR UPDATE OF username ON users
+      FOR EACH ROW EXECUTE FUNCTION reject_retired_username();
   END IF;
 END $$;
