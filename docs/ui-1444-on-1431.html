@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ARTIFACT:BEGIN -->
+<title>The App Chip Takes the Header</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+  /* ── Palette ─────────────────────────────────────────────────────────
+     Taken from the surface this document is about. --ground is #eaeaea,
+     the shell's light page ground (tailwind.config.js remaps zinc-100 to
+     it); --raise is #f5f5f7, the zinc-50 the header's controls moved to
+     when it turned out they had been painting themselves the colour of
+     the page. --accent is #0a6ee0, the blue the Improve pill is filled
+     with. Nothing here is borrowed from anywhere else. */
+  :root {
+    color-scheme: light;
+    --ground: #eaeaea;
+    --raise: #f5f5f7;
+    --card: #fdfdfe;
+    --ink: #16171a;
+    --ink-2: #5a6068;
+    --ink-3: #83898f;
+    --rule: #d2d5da;
+    --rule-soft: #e1e3e7;
+    --accent: #0a6ee0;
+    --accent-soft: #dfeaf9;
+    --amber: #a35a06;
+    --amber-soft: #f7e9d5;
+    --emerald: #04705a;
+    --emerald-soft: #d9eee7;
+    --shadow: 0 1px 2px rgb(22 23 26 / 0.05), 0 8px 24px -18px rgb(22 23 26 / 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0b0c0e;
+      --raise: #202226;
+      --card: #16171a;
+      --ink: #ededf0;
+      --ink-2: #a2a7af;
+      --ink-3: #7d838b;
+      --rule: #2c2f35;
+      --rule-soft: #232629;
+      --accent: #5ba4ff;
+      --accent-soft: #14283f;
+      --amber: #eab35a;
+      --amber-soft: #33280f;
+      --emerald: #4cc7a4;
+      --emerald-soft: #102c25;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -18px rgb(0 0 0 / 0.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0b0c0e;
+    --raise: #202226;
+    --card: #16171a;
+    --ink: #ededf0;
+    --ink-2: #a2a7af;
+    --ink-3: #7d838b;
+    --rule: #2c2f35;
+    --rule-soft: #232629;
+    --accent: #5ba4ff;
+    --accent-soft: #14283f;
+    --amber: #eab35a;
+    --amber-soft: #33280f;
+    --emerald: #4cc7a4;
+    --emerald-soft: #102c25;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -18px rgb(0 0 0 / 0.8);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.1rem, 4vw, 3rem) 5rem;
+    display: grid;
+    /* minmax(0, 1fr), never a bare 1fr: the ledger table sets a min-width so
+       it can scroll inside its own container, and an auto-sized grid column
+       would let that min-width widen the whole page instead. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(2.5rem, 4vw, 4rem);
+  }
+  @media (min-width: 62rem) {
+    .page { grid-template-columns: 13.5rem minmax(0, 1fr); align-items: start; }
+  }
+
+  /* ── Rail ──────────────────────────────────────────────────────── */
+  .rail { font-family: Archivo, system-ui, sans-serif; font-size: 0.8125rem; }
+  @media (min-width: 62rem) {
+    .rail { position: sticky; top: 2.5rem; }
+  }
+  .rail-title {
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.11em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.85rem;
+  }
+  .rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+  .rail a {
+    display: block; padding: 0.3rem 0 0.3rem 0.7rem; color: var(--ink-2);
+    text-decoration: none; border-left: 2px solid var(--rule-soft); line-height: 1.35;
+  }
+  .rail a:hover, .rail a:focus-visible { color: var(--accent); border-left-color: var(--accent); }
+
+  main { min-width: 0; display: flex; flex-direction: column; gap: clamp(2.75rem, 4vw, 3.75rem); }
+
+  /* ── Masthead ──────────────────────────────────────────────────── */
+  .eyebrow {
+    font-family: Archivo, system-ui, sans-serif; font-size: 0.6875rem; font-weight: 700;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 1rem;
+  }
+  h1 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: clamp(2.1rem, 5.5vw, 3.35rem);
+    font-weight: 700; letter-spacing: -0.025em; line-height: 1.04;
+    text-wrap: balance; margin: 0 0 1.1rem; color: var(--ink);
+  }
+  .standfirst {
+    font-size: clamp(1.1rem, 2.1vw, 1.32rem); line-height: 1.55; color: var(--ink-2);
+    max-width: 40rem; margin: 0;
+  }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .facts {
+    margin-top: 2.25rem; padding-top: 1.4rem; border-top: 1px solid var(--rule);
+    display: grid; gap: 1.1rem 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    font-family: Archivo, system-ui, sans-serif;
+  }
+  .facts dt {
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.28rem;
+  }
+  .facts dd {
+    margin: 0; font-size: 0.9rem; color: var(--ink); font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .facts dd span { display: block; color: var(--ink-2); font-weight: 400; font-size: 0.8125rem; }
+
+  /* ── Section furniture ─────────────────────────────────────────── */
+  section > h2 {
+    font-family: Archivo, system-ui, sans-serif;
+    font-size: clamp(1.25rem, 2.4vw, 1.55rem); font-weight: 600; letter-spacing: -0.012em;
+    margin: 0 0 0.4rem; text-wrap: balance;
+  }
+  .section-note { margin: 0 0 1.75rem; color: var(--ink-2); max-width: 42rem; }
+  .num {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.75rem;
+    color: var(--accent); letter-spacing: 0.06em; display: block; margin-bottom: 0.5rem;
+  }
+
+  p { margin: 0 0 0.9rem; max-width: 42rem; }
+  p:last-child { margin-bottom: 0; }
+
+  code, .id {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.855em; background: var(--raise); border: 1px solid var(--rule-soft);
+    border-radius: 4px; padding: 0.06em 0.34em; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── Change records ────────────────────────────────────────────── */
+  .records { display: flex; flex-direction: column; gap: 1rem; }
+  .record {
+    background: var(--card); border: 1px solid var(--rule-soft); border-radius: 10px;
+    padding: 1.35rem clamp(1.1rem, 2.4vw, 1.7rem); box-shadow: var(--shadow);
+  }
+  .record > h3 {
+    font-family: Archivo, system-ui, sans-serif; font-size: 1.02rem; font-weight: 600;
+    letter-spacing: -0.008em; margin: 0.55rem 0 0.7rem; line-height: 1.35; text-wrap: balance;
+  }
+  .record p { font-size: 1rem; }
+
+  .tag {
+    display: inline-block; font-family: Archivo, system-ui, sans-serif; font-size: 0.625rem;
+    font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase;
+    padding: 0.22rem 0.5rem; border-radius: 4px; border: 1px solid transparent;
+  }
+  /* The tag says how the change relates to #1431 — it is the one thing
+     every record in this document has in common, and the only thing worth
+     colour-coding. */
+  .tag-structure { background: var(--accent-soft); color: var(--accent); }
+  .tag-reversal  { background: var(--amber-soft);  color: var(--amber); }
+  .tag-fix       { background: var(--emerald-soft); color: var(--emerald); }
+  .tag-retire    { background: transparent; color: var(--ink-2); border-color: var(--rule); }
+
+  .evidence {
+    margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--rule);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.75rem;
+    line-height: 1.6; color: var(--ink-2); font-variant-numeric: tabular-nums;
+  }
+  .evidence b {
+    color: var(--ink-3); font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; font-size: 0.6875rem; margin-right: 0.4rem;
+  }
+
+  /* ── Pull quote ────────────────────────────────────────────────── */
+  .rule-quote {
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.4rem; margin: 0;
+  }
+  .rule-quote p {
+    font-size: clamp(1.16rem, 2.4vw, 1.45rem); line-height: 1.42; font-weight: 600;
+    color: var(--ink); margin: 0 0 0.7rem; max-width: 34rem; text-wrap: balance;
+  }
+  .rule-quote footer {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.72rem; color: var(--ink-3);
+  }
+
+  /* ── The header mock ───────────────────────────────────────────── */
+  .mocks { display: flex; flex-direction: column; gap: 1.5rem; }
+  .mock-frame { display: flex; flex-direction: column; gap: 0.55rem; }
+  .mock-label {
+    font-family: Archivo, system-ui, sans-serif; font-size: 0.6875rem; font-weight: 700;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .bar {
+    display: flex; align-items: center; gap: 0.75rem; height: 52px;
+    padding: 0 16px; border-radius: 10px; border: 1px solid var(--rule);
+    background: var(--card); min-width: 0; overflow-x: auto;
+  }
+  .bar-right { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
+  .disc {
+    width: 28px; height: 28px; border-radius: 999px; background: var(--raise);
+    border: 1px solid var(--rule-soft); display: grid; place-items: center;
+    font-size: 0.8rem; color: var(--ink-2); flex: none;
+  }
+  .ghost { border-style: dashed; background: transparent; color: var(--ink-3); }
+  .chip-mock {
+    display: inline-flex; align-items: center; gap: 0.35rem; height: 28px;
+    padding: 0 0.5rem 0 0.75rem; border-radius: 999px; background: var(--raise);
+    border: 1px solid var(--rule-soft); font-family: Archivo, system-ui, sans-serif;
+    font-size: 0.82rem; font-weight: 600; color: var(--ink); flex: none;
+  }
+  .chip-mock .caret { color: var(--ink-3); font-size: 0.7rem; }
+  .flat-title {
+    font-family: Archivo, system-ui, sans-serif; font-size: 0.82rem; font-weight: 600;
+    color: var(--ink); flex: none;
+  }
+  .pill-mock {
+    height: 28px; padding: 0 0.7rem; border-radius: 999px; background: var(--accent);
+    color: #fff; font-family: Archivo, system-ui, sans-serif; font-size: 0.78rem;
+    font-weight: 600; display: inline-flex; align-items: center; flex: none;
+  }
+  :root[data-theme="dark"] .pill-mock { color: #08121f; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .pill-mock { color: #08121f; }
+  }
+  .mock-caption { font-size: 0.9rem; color: var(--ink-2); margin: 0; max-width: 44rem; }
+  .mock-caption code { font-size: 0.8em; }
+
+  /* ── Ledger ────────────────────────────────────────────────────── */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule-soft); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 38rem; font-size: 0.875rem; table-layout: fixed; }
+  col.c-id { width: 21%; } col.c-was { width: 24%; } col.c-now { width: 17%; } col.c-why { width: 38%; }
+  thead th {
+    text-align: left; font-family: Archivo, system-ui, sans-serif; font-size: 0.65rem;
+    font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+    padding: 0.85rem 1rem; border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; color: var(--ink-2); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { color: var(--ink); }
+  /* Ids wrap inside the table. Holding them on one line pushed the reason
+     column off the end of a container that is scrollable but rarely
+     scrolled. */
+  td .id { overflow-wrap: anywhere; }
+
+  /* ── Aside ─────────────────────────────────────────────────────── */
+  .aside {
+    background: var(--raise); border: 1px solid var(--rule-soft); border-radius: 10px;
+    padding: 1.15rem clamp(1rem, 2.2vw, 1.5rem); font-size: 0.95rem; color: var(--ink-2);
+  }
+  .aside h4 {
+    font-family: Archivo, system-ui, sans-serif; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.55rem;
+  }
+  .aside p { max-width: 44rem; }
+
+  ul.plain { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.55rem; max-width: 42rem; }
+  ul.plain li { padding-left: 0.2rem; }
+  ul.plain li::marker { color: var(--ink-3); }
+
+  footer.doc {
+    border-top: 1px solid var(--rule); padding-top: 1.5rem; font-size: 0.85rem; color: var(--ink-3);
+  }
+  footer.doc p { max-width: 44rem; margin-bottom: 0.6rem; }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<!-- Note for the repository: this file is hand-written prose about two
+     upstream commits. It is not generated, not scanned by the Tailwind
+     build, and not part of the shell. -->
+<div class="page">
+
+  <nav class="rail" aria-label="Sections">
+    <p class="rail-title">Contents</p>
+    <ol>
+      <li><a href="#rule">The rule</a></li>
+      <li><a href="#bar">The bar, before and after</a></li>
+      <li><a href="#left">The left group empties out</a></li>
+      <li><a href="#chip">The chip: one gate removed</a></li>
+      <li><a href="#menu">The menu grows destinations</a></li>
+      <li><a href="#reversals">Three calls argued back</a></li>
+      <li><a href="#badge">One event, one badge</a></li>
+      <li><a href="#bugs">Bugs found on the way</a></li>
+      <li><a href="#books">Bookkeeping</a></li>
+      <li><a href="#ledger">The id ledger</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <header>
+      <p class="eyebrow">Usernode platform shell · change record</p>
+      <h1>The App Chip Takes the Header</h1>
+      <p class="standfirst">
+        <strong>#1444 sits directly on top of #1431</strong> — its parent commit <em>is</em> #1431's merge, with
+        nothing in between. Under three hours of <code>main</code> separate them, and in that window the header
+        lost four controls, the menu behind the one remaining control gained six destinations, and three of
+        #1431's own decisions were argued back. This is each change and the reason recorded for it.
+      </p>
+
+      <dl class="facts">
+        <div>
+          <dt>Base</dt>
+          <dd>#1431 · 116df76<span>Streamlined navigation, 27 Aug 04:47</span></dd>
+        </div>
+        <div>
+          <dt>Head</dt>
+          <dd>#1444 · 1c08cb5<span>The app chip, 27 Aug 07:30</span></dd>
+        </div>
+        <div>
+          <dt>Diff</dt>
+          <dd>46 files<span>+1,110 / −957</span></dd>
+        </div>
+        <div>
+          <dt>Declared checks</dt>
+          <dd>12 repointed, 2 added<span>frozen baseline untouched</span></dd>
+        </div>
+        <div>
+          <dt>Suite, last round</dt>
+          <dd>9,880 tests<span>0 failing, 7 skipped</span></dd>
+        </div>
+      </dl>
+    </header>
+
+    <section id="rule">
+      <blockquote class="rule-quote">
+        <p>One control names where you are, and its menu lists everywhere you can go. A destination with its own
+        page belongs in that menu; nothing else does.</p>
+        <footer>frontend/src/features/header/app-switcher-chip.tsx</footer>
+      </blockquote>
+      <p style="margin-top:1.5rem">
+        Everything in #1444 follows from that one sentence. Every header slot the shell had grown over the years —
+        a hamburger, a home glyph, a messages bubble, an app-mode switch — was some version of answering the same
+        question a second time, in a second place, with a second glyph. #1431 built the control that answers it
+        properly and then gated it. #1444 removes the gate, and the rest falls out.
+      </p>
+    </section>
+
+    <section id="bar">
+      <span class="num">01</span>
+      <h2>The bar, before and after</h2>
+      <p class="section-note">Both mocks are a root screen — Home, Discover, Settings — where the difference is
+      sharpest. Inside an app, #1431 did render a tappable title tab; outside one, it did not.</p>
+
+      <div class="mocks">
+        <div class="mock-frame">
+          <span class="mock-label">#1431 — after the Streamlined Concept landed</span>
+          <div class="bar">
+            <span class="disc ghost" aria-hidden="true">⌂</span>
+            <span class="flat-title">Home</span>
+            <span class="bar-right">
+              <span class="disc" aria-hidden="true">💬</span>
+              <span class="disc" aria-hidden="true">🔔</span>
+              <span class="pill-mock">Improve</span>
+            </span>
+          </div>
+          <p class="mock-caption">A 28px slot holding a house glyph or a back arrow, an inert <code>&lt;h1&gt;</code>
+          with no chevron and nothing behind it, then a chat bubble, the bell and the pill. The title tab existed,
+          but was gated on <code>target &amp;&amp; slug</code>.</p>
+        </div>
+
+        <div class="mock-frame">
+          <span class="mock-label">#1444 — the chip is the label everywhere</span>
+          <div class="bar">
+            <span class="chip-mock">Home <span class="caret" aria-hidden="true">▾</span></span>
+            <span class="bar-right">
+              <span class="disc" aria-hidden="true">🔔</span>
+              <span class="pill-mock">Improve</span>
+            </span>
+          </div>
+          <p class="mock-caption">The left group collapses when it holds nothing, so the chip sits flush at the
+          header's own 16px padding. Two controls on the right, one of them filled. On a dev session the chip does
+          not render at all: that bar is <code>←</code> plus the status pill, with the change's name in the strip
+          below — #1431's behaviour, kept.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="left">
+      <span class="num">02</span>
+      <h2>The left group empties out</h2>
+      <p class="section-note">Three deletions, and one invariant that gets simpler because of them.</p>
+
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-retire">Retired</span>
+          <h3>The house glyph, <span class="id">#back-icon-home</span></h3>
+          <p>Home is a row of the chip's menu, reachable from every screen, so a house icon an inch to the chip's
+          left was the second control answering one question.</p>
+          <p>The consequence is the more interesting half: with one child left, <span class="id">#back-btn</span>
+          means exactly one thing — back a level — so the chevron's <code>className</code> becomes a constant and
+          the anchor's own <code>hidden</code> is the whole of the visibility state. One node toggles now, not
+          three, in React and in <code>setBackIcon</code>'s pre-hydration fallback alike.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-retire">Retired</span>
+          <h3>The reserved 28px slot</h3>
+          <p>The fixed box existed to stop a centred title shifting as the anchor came and went. The chip is flush
+          left, so all the box did was reserve an inch of dead space at the top-left of every root screen.</p>
+          <p>Measured rather than assumed: the header's own <code>gap-3</code> applies to an empty-but-present flex
+          item, so the chip started at x=28 instead of the header's 16px padding. That was the "extra space for an
+          icon that isn't used". The group now collapses to <code>hidden</code> when it holds nothing.</p>
+          <div class="evidence"><b>Measured</b>chip x=28 → x=16 · bar height 52px, unchanged</div>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-retire">Retired</span>
+          <h3>The chat bubble and the app glyph</h3>
+          <p><span class="id">#messages-btn</span> goes because Messages is a destination with its own page, and by
+          the rule those live in the menu. <code>header-app-icon.tsx</code> goes because a chip that carries the
+          app's name does not need a second picture of the same app beside it.</p>
+        </article>
+      </div>
+
+      <div class="aside" style="margin-top:1.25rem">
+        <h4>A commit that ships red on purpose</h4>
+        <p>The commit doing this work names its eight failing assertions up front and leaves them failing, because
+        the fixes belong to later commits in the same branch. One is singled out as <em>not</em> bookkeeping:
+        <code>header-height-parity</code> pins a 28px floor on the wrapper being deleted, and its expectation is
+        held back until the bar's height has actually been checked on a screen with the anchor hidden. "A header
+        that changes height between screens would be a worse bug than the dead space removed here."</p>
+      </div>
+    </section>
+
+    <section id="chip">
+      <span class="num">03</span>
+      <h2>The chip: one gate removed</h2>
+      <p class="section-note">#1431 built the store, the publish seam, the chevron and the sheet behind it. The
+      whole of #1444's structural change is deleting the condition on when that control renders.</p>
+
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-structure">Ungated</span>
+          <h3><span class="id">#header-title-tab</span> becomes <span class="id">#app-switcher-btn</span></h3>
+          <p>#1431's tab rendered only inside an app, so Home, Discover, Messages and Settings kept an inert
+          <code>&lt;h1&gt;</code> and the sheet behind it could not even open.</p>
+          <p>The argument for dropping the gate, from the component's own header comment: "A control that is
+          sometimes a control is worse than either — you cannot learn 'the name at the top is how you get around'
+          from a thing that is a label four screens out of five."</p>
+          <p>What is deliberately unchanged is as load-bearing: the <code>&lt;h1&gt;</code> and its
+          <code>className</code> are byte-identical to what #1431 shipped, and the class stays a constant prop,
+          because <code>use-header-layout.ts</code> toggles <code>.is-centered</code> on that node through
+          <code>classList</code> and a re-rendered class attribute would drop it.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-structure">Added</span>
+          <h3>A named label, <span class="id">#app-switcher-name</span></h3>
+          <p>The label was a bare <code>&lt;span&gt;</code>, so a declared check could assert that the chip exists
+          but not what it says. It is a named slot now, and a check reads it.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-fix">Fixed</span>
+          <h3>The chip reports its menu's state</h3>
+          <p><span class="id">#improve-btn</span> — the other panel trigger in this bar — has carried
+          <code>aria-expanded</code> since #1412, so this was the shell's own convention rather than a nicety, and
+          #1431's title tab never had one.</p>
+          <p>It reads <code>appContextStore</code> instead of being written onto the node by the controller, and
+          that is the point: the sheet closes three ways — the trigger, the backdrop, Escape — and an attribute
+          only the trigger's own handler maintains goes stale on the other two.</p>
+          <div class="evidence"><b>Verified</b>false → true on tap; back to false on Escape and on backdrop dismiss</div>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-reversal">Corrected mid-branch</span>
+          <h3>The chip has no avatar</h3>
+          <p>It carried the viewer's avatar for one round. The chip names the <em>app</em> you are in, and a picture
+          of you inside it answers a different question — Profile is a row of the menu behind it.
+          <code>applyUserAvatar</code> goes back to the one pair it has left, Home's account row.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="menu">
+      <span class="num">04</span>
+      <h2>The menu grows the platform destinations</h2>
+      <p class="section-note">#1431's sheet is kept whole — lifecycle, app strip, Create New. What it gains is
+      everywhere the retired header slots used to point.</p>
+
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-structure">Grew</span>
+          <h3>Home · Discover · Messages | Profile · Settings · Admin</h3>
+          <p>Six destinations in two groups, over the strip of the viewer's apps. Its "Platform" section label went
+          with the app group it existed to separate from.</p>
+          <p>Every row keeps the writer it had elsewhere: <span class="id">#switcher-row-messages</span> carries
+          <span class="id">#drawer-messages-badge</span> with its writer unchanged, <code>settings.js</code> still
+          publishes the BYOK flag for <span class="id">#switcher-byok-dot</span>, and
+          <span class="id">#switcher-row-admin</span> ships <code>hidden</code> behind the same
+          <code>renderAdminButton</code> gate. Only the parent changed.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-structure">Kept horizontal</span>
+          <h3>The app strip stays a rail, and that is the scroll fix</h3>
+          <p>A superseded branch (#1436) made the apps a vertical list. With 39 apps that ran to roughly 1,800px
+          inside an 844px panel, clipping Home through Settings with no scroller to reach them.</p>
+          <p>A horizontal strip is vertically bounded, so 39 apps occupy the space 2 do and nothing below can be
+          pushed anywhere. <span class="id">#switcher-nav</span> is the menu's only vertical scroller, which is why
+          the clipping bug cannot recur in this shape.</p>
+          <div class="evidence"><b>Verified</b>390×844, 39 apps · all six destinations visible · menu does not need to scroll</div>
+        </article>
+      </div>
+    </section>
+
+    <section id="reversals">
+      <span class="num">05</span>
+      <h2>Three of #1431's calls argued back</h2>
+      <p class="section-note">None of these is a taste reversal. Each names the premise that changed underneath the
+      original decision, which is what makes it reviewable.</p>
+
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-reversal">Reversed</span>
+          <h3>Messages is a screen again</h3>
+          <p>#1431 made it <span class="id">#messages-sheet</span> for a real reason: a chat bubble sat in the
+          header on every route, so a full-screen Messages had no honest answer to "back to where?"</p>
+          <p>The bubble is gone and Messages is a menu row, so the reasoning is gone with it — and reading past
+          conversations and sending from them is a place you go, which is how every messaging product models it.
+          <code>sheet-controller.js</code> and <code>sheet-store.js</code> are deleted;
+          <span class="id">#messages-screen</span> comes back as the root.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-reversal">Restored</span>
+          <h3>The Improve panel's reference footer</h3>
+          <p>#1431 dissolved the block and rehomed each fact separately: the GitHub link to the app's own page, the
+          versions to a new Settings About block, fork lineage to the app detail page.</p>
+          <p>The verdict on that: "every move was defensible alone; the sum meant leaving the app to read facts
+          about the app you were standing in." The footer comes back with the GitHub link, the app's version, the
+          platform build and the native app version, and Settings' About block — built to hold two of these rows —
+          goes with them. <code>refreshDeployDot</code> rescopes to <span class="id">#improve-footer</span>.</p>
+          <p>Fork lineage does <em>not</em> come back: <span class="id">#browse-detail-fork</span> is the better
+          home, because lineage is a fact about an app rather than about the panel you have open.</p>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-reversal">Returned</span>
+          <h3>App / Board / Activity stay in the Improve panel</h3>
+          <p>They spent one round of this branch as menu rows, on the argument that they are destinations and
+          destinations live in the menu.</p>
+          <p>That was reversed within the branch: "the consistency argument was real but it was the weaker one —
+          the menu answers WHICH APP, and those three answer WHICH PART OF IT, which is the question the panel you
+          open from inside an app is already about." <span class="id">#improve-views</span>, <code>ContextRow</code>
+          and two declared checks go back exactly as #1431 had them.</p>
+        </article>
+      </div>
+
+      <div class="aside" style="margin-top:1.25rem">
+        <h4>Why the log will look like a revert, and isn't</h4>
+        <p>#1431 had already reversed one of its own owner reviews — Improve went from a plain violet text action
+        back to a filled pill — and it left a commit whose only job is to say why, because
+        <code>git log -S</code> lands anyone who searches on the review that says the opposite. The deciding fact
+        was a date the repository does not record: the Figma board is newer than the review, and the bar the review
+        was written about no longer exists. #1444 inherits that pill unchanged.</p>
+      </div>
+    </section>
+
+    <section id="badge">
+      <span class="num">06</span>
+      <h2>One event, one badge</h2>
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-structure">Changed</span>
+          <h3>A direct message stops lighting two counters</h3>
+          <p><code>conversation_message</code> is a notification kind, so one incoming DM raised the bell's unread
+          count <em>and</em> the Messages unread sum — one event, two badges, in two colours.</p>
+          <p>It is subtracted from the bell for the same reason session notifications already were: the count
+          belongs to whichever surface you would actually go to. The Messages row's count is the better one — it is
+          per-conversation, it survives the notification being marked read, and it is what you tap to act on.</p>
+          <p>The subtraction is clamped with <code>Math.max(0, …)</code>, and the comment says why: both splits read
+          the loaded items page while <code>unread</code> is the server's total, so on an account with more unread
+          than one page holds the subtraction can overshoot — and a negative badge is worse than an undercount.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="bugs">
+      <span class="num">07</span>
+      <h2>Bugs found on the way</h2>
+      <p class="section-note">Two were found by building the thing and looking at it; one was reported on
+      <code>main</code> and would have shipped; two were the branch's own checks, written wrong.</p>
+
+      <div class="records">
+        <article class="record">
+          <span class="tag tag-fix">Fixed</span>
+          <h3>The header's controls had been invisible in light mode</h3>
+          <p>The chip's first surface was <code>bg-zinc-100</code>, the same token the bell and
+          <span class="id">#back-btn</span> use, and it rendered invisible. <code>tailwind.config.js</code>
+          overrides the ramp: <code>zinc-100</code> there is <code>#eaeaea</code>, which is exactly the light page
+          ground.</p>
+          <p>So the chip had a surface you could not see — and so, it turned out, had the bell and the back button,
+          for as long as that reskin has been in. In light mode the bar was three bare glyphs on nothing. All four
+          surfaces move to <code>zinc-50</code> (<code>#f5f5f7</code>), which lifts off the ground; dark mode was
+          always fine at <code>zinc-800</code> on <code>zinc-950</code> and is untouched.</p>
+          <div class="evidence"><b>Verified</b>screenshotted in both themes rather than reasoned from the classes</div>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-fix">Fixed</span>
+          <h3>Improve never reached the margin the shell aligns to</h3>
+          <p>The pill carried <code>mr-2.5</code> from when it had siblings to its right. As the last control in the
+          bar that was 10px of dead space between it and the header's own <code>px-4</code> edge. The bell's
+          <code>mr-1</code> was the same mistake one control earlier, and became trailing space whenever Improve
+          was hidden.</p>
+          <p>Both margins are gone and the right group carries <code>gap-1</code>: spacing belongs to the layout,
+          not to the last child.</p>
+          <div class="evidence"><b>Measured</b>Improve right edge 364 → 374 · content edge 374</div>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-fix">Fixed</span>
+          <h3>A staging preview with no way out of it</h3>
+          <p>Reported on <code>main</code>, and it would have shipped: a staging preview opened outside a dev
+          session had no exit control at all.</p>
+          <p>Under-chrome mode — the preview sitting below the header and the session strip — deliberately removes
+          both of the overlay's own exits, because the strip's pencil segment is the way back. That is sound only
+          while the strip is on screen, and the class was gated on <code>previewActive</code> alone, which is
+          published for every preview from a session or not.</p>
+          <p>Two guards, because either alone is one owner's agreement away from the same dead end: the class is
+          gated on the session <em>route</em> as well as the flag, and the CSS refuses to hide the last exit unless
+          the strip is really in the document (<code>body:has(#dc-session-header)</code>). "Hiding the only way out
+          is worth making structurally impossible rather than conditional on two owners agreeing."</p>
+          <div class="evidence"><b>Verified</b>new test confirmed to FAIL with either guard reverted, not merely to pass</div>
+        </article>
+
+        <article class="record">
+          <span class="tag tag-fix">Fixed</span>
+          <h3>Two declared selectors that could not have matched</h3>
+          <p><code>*:has(#improve-sessions)</code> never matched, because <code>#improve-sessions</code> is a direct
+          child of <code>#improve-body</code> and <code>:has</code> needs a descendant. And
+          <code>#app-switcher-btn ~ #notifications-btn</code> could not join the chip, which lives inside
+          <span class="id">#header-title</span>, to the bell in the right group: they are not siblings.</p>
+          <p>The existing guard could not have caught either. <code>dapp-selectors-resolve</code> proves that every
+          id in a selector still exists, deliberately, because most of these selectors only match with data loaded.
+          A selector whose ids are all real but whose combinators are wrong costs a full check cycle to discover —
+          recorded as worth its own request rather than fixed as a rider on this one.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="books">
+      <span class="num">08</span>
+      <h2>Bookkeeping that isn't optional</h2>
+      <ul class="plain">
+        <li>Every id change is recorded in <code>RETIRED_IDS</code> / <code>ADDED_IDS</code> with its reason, and
+        the frozen markup baseline is untouched — the repository's rules forbid refreshing it to go green.</li>
+        <li>Twelve declared checks are repointed and two added: the menu's order, and its destination pair.</li>
+        <li>Tests that encoded #1431's shape are updated to the new one rather than relaxed.
+        <code>header-height-parity</code> now asserts the 28px <em>floor</em> — the invariant that survives the
+        deleted wrapper — and keeps the fixed-width rule on <span class="id">#landing-header</span>, where a centred
+        title still needs it.</li>
+        <li>The branch opens with a separate housekeeping commit: three unit tests were already failing on
+        <code>main</code> before #1431 merged. Four em dashes are rewritten ahead of the guard that landed after
+        the branch was cut, and one exact-class assertion is loosened to tolerate the layout utilities a different
+        PR added beside the gate it protects — "what the test protects is the gate, not the flex utilities beside
+        it." The finding it records is the more interesting one: the declared checks gate merge and the repository's
+        unit suite does not.</li>
+      </ul>
+    </section>
+
+    <section id="ledger">
+      <span class="num">09</span>
+      <h2>The id ledger</h2>
+      <p class="section-note">What moved, and where it came from. Several of these are round trips — an id #1431
+      retired that #1444 brings back — which is why the inventory carries a reason per entry rather than a diff.</p>
+
+      <div class="table-scroll">
+        <table>
+          <colgroup>
+            <col class="c-id"><col class="c-was"><col class="c-now"><col class="c-why">
+          </colgroup>
+          <thead>
+            <tr><th scope="col">Id</th><th scope="col">Under #1431</th><th scope="col">Under #1444</th><th scope="col">Reason recorded</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="id">#app-switcher-btn</span></td>
+              <td><span class="id">#header-title-tab</span>, gated on being inside an app</td>
+              <td>The header's label on every screen</td>
+              <td>The gate is the whole difference; losing it is what let the hamburger, the home glyph and the bubble all go.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#app-switcher-name</span></td>
+              <td>A bare <code>span</code></td>
+              <td>Named slot inside the chip</td>
+              <td>So a check can assert what the chip says, not merely that it exists.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#switcher-nav</span></td>
+              <td>—</td>
+              <td>The menu's destination list</td>
+              <td>Its only vertical scroller; the strip above is horizontal, so no number of apps can push a destination out of reach.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#switcher-row-messages</span></td>
+              <td><span class="id">#messages-btn</span> in the header</td>
+              <td>A row of the menu</td>
+              <td>It has its own page. Carries <span class="id">#drawer-messages-badge</span>, writer unchanged.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#switcher-row-settings</span></td>
+              <td><span class="id">#profile-row-settings</span></td>
+              <td>A row of the menu</td>
+              <td>The menu lists everything with its own page.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#switcher-row-admin</span></td>
+              <td><span class="id">#profile-row-admin</span></td>
+              <td>A row of the menu</td>
+              <td>Ships <code>hidden</code>; the <code>isAdmin</code> gate is unchanged and still published, not class-written.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#switcher-row-home</span> · <span class="id">#switcher-row-discover</span></td>
+              <td>The sheet's footer pair</td>
+              <td>Rows among the six</td>
+              <td>A footer button and a destination row were two shapes for one thing.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#messages-screen</span></td>
+              <td><span class="id">#messages-sheet</span></td>
+              <td>Screen root, restored</td>
+              <td>The bubble that made a sheet necessary is gone, so the reason is too.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#improve-footer</span></td>
+              <td>Dissolved, each fact rehomed</td>
+              <td>Restored whole</td>
+              <td>Every move was defensible alone; the sum meant leaving the app to read facts about the app.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#drawer-row-native-app-version</span></td>
+              <td><span class="id">#about-row-native-app-version</span></td>
+              <td>Back in that footer</td>
+              <td>The Settings block it was renamed for is gone with the rows it existed to hold.</td>
+            </tr>
+            <tr>
+              <td><span class="id">#back-icon-home</span></td>
+              <td>House glyph inside <span class="id">#back-btn</span></td>
+              <td>Retired</td>
+              <td>Home is a menu row; <span class="id">#back-btn</span> means one thing now, so its own <code>hidden</code> is the whole state.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="doc">
+      <p>Every quotation here is from the commit messages of <code>1c08cb5</code> and the header comments of the
+      files it touches. Both commits are on <code>main</code> in
+      <code>Usernode-Labs/social-vibecoding</code>; read the originals with
+      <code>git show 1c08cb5</code> and <code>git show 116df76</code>.</p>
+      <p>#1431 is "Implement Streamlined navigation and dev-session bar per Figma board"; #1444 is "The app chip is
+      the header's label everywhere, and owns every destination". The commits inside #1444's branch carry #1443,
+      the request they answer.</p>
+    </footer>
+
+  </main>
+</div>
+<!-- ARTIFACT:END -->
+</body>
+</html>
