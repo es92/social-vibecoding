@@ -14,6 +14,24 @@
  * #1436, and why a future row that is neither is the signal this drawer is
  * decaying back into the hamburger it replaced.
  *
+ * ── ONE SCROLLER, AND IT IS THE APP LIST ───────────────────────────────
+ *
+ * The first cut made this whole section `shrink-0` inside an
+ * `overflow-hidden` column. With a handful of apps that looks fine. With the
+ * 39 on a real account the list alone ran to ~1800px in an 844px panel, and
+ * every row after it — Home, Discover, Messages, Profile, Settings — was
+ * pushed past the fold and CLIPPED. Not scrolled to: clipped, with no scroller
+ * anywhere to reach them. That is what "the menu is missing home and profile"
+ * was; it reproduced the moment the stub served 39 apps instead of two.
+ *
+ * So the fixed rows are pinned and the LIST is the only thing that flexes:
+ * `flex-1 min-h-0 overflow-y-auto` on `#switcher-app-list`, `shrink-0` on
+ * everything else. Home is reachable with one app or with two hundred.
+ *
+ * It is the same rule the notifications block followed while it lived in this
+ * drawer, and it is worth stating as a rule rather than a fix: in a menu, the
+ * NAVIGATION is unconditional and the collection is what gives way.
+ *
  * ── First render is the prerender ──────────────────────────────────────
  *
  * The store ships empty and the list loads on `sv:drawer-open`, so the initial
@@ -43,30 +61,37 @@ export function SwitcherApps() {
   const { apps, loaded } = useStoreState(switcherStore);
 
   return (
-    <div id="switcher-nav" className="shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-      <div className={SECTION_LABEL}>Your apps</div>
-      <div id="switcher-app-list">
+    <div
+      id="switcher-nav"
+      className="flex-1 min-h-0 flex flex-col border-b border-zinc-100 dark:border-zinc-800"
+    >
+      {/* Home FIRST, and pinned. It is the one destination every person in
+          the product shares, and it must not depend on how many apps you
+          happen to have. */}
+      <a id="switcher-row-home" className={`${ROW} shrink-0`} href="#home">
+        <HomeIcon className="w-5 h-5 shrink-0" />
+        <span className="font-medium">Home</span>
+      </a>
+      <div className={`${SECTION_LABEL} shrink-0`}>Your apps</div>
+      {/* THE ONLY SCROLLER. See the header comment. */}
+      <div id="switcher-app-list" className="flex-1 min-h-0 overflow-y-auto">
         {apps.map((app) => (
           <a key={app.slug} className={ROW} href={`#app/${app.slug}`} data-slug={app.slug}>
             <AppWindowIcon className="w-5 h-5 shrink-0" />
             <span className="flex-1 min-w-0 truncate font-medium">{app.name}</span>
           </a>
         ))}
+        {/* Only once a load has RESOLVED. Between opening and the first
+            answer this renders nothing at all, which is the honest state —
+            an empty hint shown while the list is still arriving reads as
+            "you have no apps" for exactly as long as the request takes. */}
+        {loaded && apps.length === 0 ? (
+          <div id="switcher-apps-empty" className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-400">
+            No apps yet — Discover has some to add.
+          </div>
+        ) : null}
       </div>
-      {/* Only once a load has RESOLVED. Between opening and the first answer
-          this renders nothing at all, which is the honest state — an empty
-          hint shown while the list is still arriving reads as "you have no
-          apps" for exactly as long as the request takes. */}
-      {loaded && apps.length === 0 ? (
-        <div id="switcher-apps-empty" className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-400">
-          No apps yet — Discover has some to add.
-        </div>
-      ) : null}
-      <a id="switcher-row-home" className={ROW} href="#home">
-        <HomeIcon className="w-5 h-5 shrink-0" />
-        <span className="font-medium">Home</span>
-      </a>
-      <a id="switcher-row-discover" className={ROW} href="#apps">
+      <a id="switcher-row-discover" className={`${ROW} shrink-0`} href="#apps">
         <SearchIcon className="w-5 h-5 shrink-0" />
         <span className="font-medium">Discover</span>
       </a>
