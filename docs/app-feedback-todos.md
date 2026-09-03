@@ -6,8 +6,7 @@ Updated same day with review decisions: all DECIDE calls are resolved and folded
 **Legend**
 - **✅ Fixed** — already resolved since the feedback was taken: #60, #73.
 - **❌ Won't do** — decided against: #13, #25.
-- **❓** — action is a best guess; open question at the bottom: #42, #47, #51 (+ a wording check on #84).
-- **Needs more information** — parked until we know more (section below the table): #43, #44, #52, #114.
+- **Needs more information** — parked until we know more (section below the table): #43, #44, #51, #52, #114.
 - **Area = Game Corner** — fixes belong inside that app (via its own improve flow), not the platform. Same for the broken third-party apps in #9.
 
 | # | Feedback | What to do | Area |
@@ -33,7 +32,7 @@ Updated same day with review decisions: all DECIDE calls are resolved and folded
 | 19 | Can we make the confirm your email step happen as a part 2 to joining the waitlist? So after you click join waitlist, it just says great you're on the waitlist, and then confirming your email is a part 2? | Yes — show "you're on the waitlist" immediately on join; email confirmation becomes an explicit step 2. | Waitlist |
 | 20 | On the waitlist, Selector outlines disappear when clicked on iOS safari. | Fix selection styling on iOS Safari so chosen options keep a visible outline. | Waitlist |
 | 21 | Can the long-form text boxes, eg the one after "ever had a tool you relied on get killed, paywalled, or ruined", expand vertically for more text, not just horizontally? | Make long-answer fields multiline and auto-grow vertically. | Waitlist |
-| 22 | Confirm your email screen in the waitlist flow is not optimal. Text confusing. There are 2 ways of validating an email address. Should be discussed. | Consolidate to one verification method and rewrite the screen around it (with #19, #31, #39). Sub-choice open: link vs. code — rec code, consistent with #29/#39. | Waitlist |
+| 22 | Confirm your email screen in the waitlist flow is not optimal. Text confusing. There are 2 ways of validating an email address. Should be discussed. | Consolidate on code (OTP) as the single verification method; rewrite the screen around it (with #19, #31, #39). | Waitlist |
 | 23 | Should the X / github linking open in a new tab or something? Easy to lose the waitlist page maybe on mobile since you have to go back to get it? | Open linking in a new tab/popup so the waitlist page isn't lost (largely moot once #24 is fixed). | Waitlist |
 | 24 | The redirect from X / github linking goes to the landing page, so you lose all of your waitlist progress. | After OAuth, return to the waitlist page with all progress intact — never the landing page. | Waitlist |
 | 25 | "Only let me in when at least one person from my link gets in too". Should we have this? | ❌ Won't do. | Waitlist |
@@ -53,14 +52,13 @@ Updated same day with review decisions: all DECIDE calls are resolved and folded
 | 39 | Clicking the get started #signup link in the your usernode access is ready email brings up a page which says to enter an OTP – doesn't get sent until pushing the "email me a code" button, but page implies it would be sent without doing that. Maybe reaching that page should send it, with a timeout on sending it again? And page should auto-fill email from the link too (link should include the signup email prefilled). | Arriving from the email link auto-sends the code (with resend cooldown) and pre-fills the email from the link. | Auth |
 | 40 | Forking apps is broken (general Error message). After a while the fork works but it shows the starter template instead of the forked app. | Fix forking: no generic error, and the result must be the forked app, never the starter template. | Create/fork |
 | 41 | At first login, update the text of the Terms and conditions dialog to remove token related things. | Strip token-related language from the first-login terms dialog. | Auth |
-| 42 | There is a section in the admin to flag users as BPs but there is no way on how to use it / request it from the application. | ❓ Wire the BP flag to something user-facing (request/benefit) or remove the toggle. See question below. | Admin |
+| 42 | There is a section in the admin to flag users as BPs but there is no way on how to use it / request it from the application. | BP = block producer. Add a user-facing way to view/request block-producer status, so the admin flag has an application-side counterpart. | Admin |
 | 45 | In profile: Update token allocation section to not confuse users. | Rewrite or hide the token-allocation section until it's meaningful (align with #41). | Settings |
 | 46 | Discover / Browse all apps -> Add button confusing. Not sure it makes sense for endusers, may be we have to rename it. | Rename to something self-explanatory ("Add to my apps"); likely removed anyway when #57 lands. | Discover |
-| 47 | Settings crowded. Not sure if there is a way to simplify. | ❓ Regroup Settings into a few sections; move rarely used items under "Advanced". See question below. | Settings |
+| 47 | Settings crowded. Not sure if there is a way to simplify. | Regroup Settings into a few sections; move rarely used items under "Advanced". Nothing gets removed outright. | Settings |
 | 48 | Email format should be the same and should be updated to reflect the new brand. | One branded email template (logo, tone, footer) applied to every send. | Emails |
 | 49 | Settings -> Language selection -> changing a language does not change anything in the app. The app does not support multi-lang. | Hide the language selector (or mark "coming soon") until multi-language exists. | Settings |
 | 50 | Profile connect github works but lacking confirmation at the end of the flow. | Add an explicit success state at flow end (toast + "Connected" badge). | Settings |
-| 51 | Link with a usernode wallet from Mobile not intuitive. | ❓ Turn mobile wallet linking into a guided step-by-step flow. See question below. | Settings |
 | 53 | In https://social-vibecoding.usernodelabs.org/#admin/users toggle podium is confusing. | Rename "toggle podium" and add a tooltip stating exactly what it changes. | Admin |
 | 54 | Create app says: ask admin to enable app creation. Change to 2 allowed apps but still not able to create an app. Works well for admin user. | Fix the allowance bug; give all users 2 apps by default; show your allowance clearly (#108); add a "request more" button admins see; notify users when their allowance changes. | Create/fork |
 | 55 | Seems notifications are not working anymore on the latest build but not sure. | Verify notifications on the latest build; fix the regression if confirmed. | Core UI |
@@ -92,7 +90,7 @@ Updated same day with review decisions: all DECIDE calls are resolved and folded
 | 81 | In the activity view, the reply button should grow vertically as I type more text, and have an arrow next to it to send. | Auto-grow the reply box vertically; add a send arrow. | Feedback |
 | 82 | In the activity area, recent comments for items should be shown. | Show recent comments inline on activity items. | Feedback |
 | 83 | Sign in with email doesn't work if I have already created a password. | Fix: email sign-in must work for accounts with a password (route to password entry or still send the code). | Auth |
-| 84 | When resting a proposal, the chat sending / configuring background at the bottom and header at the top are the same color as the chat area, is confusing. The top header changes color to white when I scroll down, but it should also always be white. | Give composer and header distinct backgrounds from the chat area; keep the header white at all scroll positions. | Dev screen |
+| 84 | When resting a proposal, the chat sending / configuring background at the bottom and header at the top are the same color as the chat area, is confusing. The top header changes color to white when I scroll down, but it should also always be white. | In on-platform proposal sessions: give composer and header distinct backgrounds from the chat area; keep the header white at all scroll positions. | Dev screen |
 | 85 | The top header in the dev screen should also have the curved radius in the bottom left and right corners, to match the platform header. | Round the dev-screen header's bottom corners to match the platform header. | Dev screen |
 | 86 | The chat model selector is longer than it needs to be, it and the $ amount could be on one line but it's not. | Compact the model selector so it and the $ amount share one line. | Dev screen |
 | 87 | The current line item spinner overlaps with a moving … on the dev screen, we should have one not both, and they shouldn't overlap. | Keep exactly one progress indicator (spinner or dots), never overlapping. | Dev screen |
@@ -130,13 +128,7 @@ Updated same day with review decisions: all DECIDE calls are resolved and folded
 |---|----------|----------------------------|
 | 43 | App dropdown menu confusing. | Specifics on what confuses (labels, contents, discoverability) before changing anything. |
 | 44 | Improve menu confusing. | Specifics on what confuses; the concrete Improve fixes (#93–#96, #107) proceed independently. |
+| 51 | Link with a usernode wallet from Mobile not intuitive. | Where the flow loses people; then turn it into a guided step-by-step flow. |
 | 52 | I don't see versions anymore. | This area has churned back and forth already — pin down where versions should live and what changed before touching it again. |
 | 114 | Asking for notifications permissions every time a change is proposed or started. | Repro details (platform/browser, exact trigger) before fixing. |
 
-## Open questions (the ❓ rows)
-
-- **#42** — What does "BP" stand for, and what should the flag actually gate or grant?
-- **#47** — Settings: anything you'd remove outright, or is regrouping enough?
-- **#51** — Wallet linking: at which step does it currently lose people?
-- **#22** — Which canonical verification method: link or code? (rec: code, consistent with #29/#39)
-- **#84** — "When resting a proposal" — assume this means *reviewing/creating* a proposal?
