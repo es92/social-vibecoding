@@ -21,8 +21,15 @@
 //   2. The chip is only viewport-centred while it fits
 //      (features/header/use-header-layout.ts toggles `.is-centered`), so the
 //      panel follows the class rather than assuming the middle.
-//   3. The backdrop stays — it is what catches the dismissing click — but
-//      stops dimming, because a scrim behind a header menu says "modal".
+//   3. The backdrop stays — it is what catches the dismissing click — and
+//      paints nothing. That WAS an argument about modality (a scrim behind a
+//      header menu says "modal"), and it lost on review: this menu and the
+//      Improve rail are opened the same way, so one dimming and the other not
+//      made them read as two kinds of surface. The dim came back and is here
+//      now; what changed is that the PANEL casts it, as a 100vmax box-shadow
+//      on `.dc-lift-panel[data-open]`. A dim painted behind the panel lands
+//      inside the panel's own backdrop-filter and turns its glass grey — see
+//      tests/overlay-panes-lift.test.js for the measurements.
 //
 // And the offset is the header's own height, restated once as
 // --platform-header-h, which is only worth having if it cannot drift from the
@@ -258,10 +265,21 @@ test('below sm it is still a bottom sheet, dim and all', () => {
   assert.match(sheet, /bottom:\s*0/);
   assert.match(sheet, /transform:\s*translateY\(100%\)/, 'it still comes up from the floor');
   assert.match(block, /#apps-switcher-sheet\[data-open\] \{\s*\n\s*transform:\s*translateY\(0\)/);
-  assert.match(sheet, /border-top-left-radius:\s*1rem/, 'and keeps its two top corners');
+  // Two top corners, and they are the pane radius now rather than 1rem: below
+  // sm this menu is a bottom sheet like the Improve rail and the bell's, and
+  // all three read the same 1.75rem off `.dc-lift`. What is pinned here is
+  // that it still HAS two rounded top corners — the dropdown above keeps its
+  // own 0.75rem menu radius, which is the shape this must not inherit.
+  assert.match(sheet, /border-top-left-radius:\s*1\.75rem/, 'and keeps its two top corners');
+  assert.match(sheet, /border-top-right-radius:\s*1\.75rem/);
 
-  // The dim is the default and only desktop opts out of it.
-  assert.match(SHEET, /id="apps-switcher-overlay"[\s\S]{0,400}?bg-black\/40/);
+  // The dim is still the default at every width — but the panel CASTS it now
+  // (`.dc-lift-panel[data-open]`'s 100vmax box-shadow) rather than the backdrop
+  // painting it, because a dim painted behind the panel lands inside the
+  // panel's own backdrop-filter and turns its glass grey. The backdrop element
+  // stays for pointer-events and dismiss-on-click, and paints nothing.
+  assert.match(SHEET, /id="apps-switcher-overlay"[\s\S]{0,400}?className="fixed inset-0 z-40"/);
+  assert.doesNotMatch(SHEET, /id="apps-switcher-overlay"[\s\S]{0,400}?bg-black/);
 });
 
 test('the sheet markup is one panel — the presentation is entirely CSS', () => {

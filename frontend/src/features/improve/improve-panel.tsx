@@ -32,6 +32,26 @@
  * its own drag-to-dismiss and `.platform-sheet-adopted` neutralises the fixed
  * chrome — the same contract the work drawer runs under.
  *
+ * ── The surface is the shell's pane, not a panel of its own ────────────
+ *
+ * `.dc-lift dc-lift-panel`, which is what the notifications rail and the app
+ * chip's menu wear too. It replaced `bg-white dark:bg-zinc-900` with a zinc
+ * hairline and Tailwind's `shadow-2xl` — the pre-lift look, which left this
+ * rail and the bell's rail sitting side by side in the same corner of the
+ * screen as two different objects. The lift supplies fill, hairline and
+ * shadow, so there is nothing here to keep in step by hand.
+ *
+ * The fill is frosted glass, and the modal dim is one of the shadow layers
+ * rather than a paint on #improve-overlay — an outer shadow cannot reach the
+ * element's own backdrop-filter, which is what lets the panel frost an
+ * UNDIMMED page while darkening everything around it. app.css's
+ * `.dc-lift-panel` block carries the measurements.
+ *
+ * The one thing this file states rather than inherits is the SHAPE, in
+ * app.css: `.dc-lift` rounds the two corners of a sheet docked to the floor,
+ * and this is docked to the right, so at `sm`+ only the top-left is rounded.
+ * Below `sm` it is a floor-docked bottom sheet and takes both.
+ *
  * ── First render is the prerender ──────────────────────────────────────
  *
  * The store's initial value is the closed, empty, target-less panel, so the SSG
@@ -72,8 +92,8 @@ const SECTION_LABEL_CLASS =
  *
  * A hairline border rather than that component's figure/ground card, and the
  * difference is the surface, not a preference. `GroupedList` is a white card
- * floating on the page's grey ground; this panel IS white, so the same card
- * here would be an invisible rectangle. The border is what states the same
+ * floating on the page's grey ground; this panel is already a light surface
+ * in its own right, so the same card here would be an invisible rectangle. The border is what states the same
  * thing on a surface that cannot use contrast to state it.
  *
  * The point of it is what it stops the rows being mistaken for. Below this
@@ -308,7 +328,7 @@ export function ImprovePanel() {
         id="improve-overlay"
         aria-hidden="true"
         {...(open && !adopted ? { 'data-open': '' } : {})}
-        className="fixed inset-0 z-40 bg-black/40"
+        className="fixed inset-0 z-40"
         onClick={close}
       >
       </div>
@@ -321,7 +341,7 @@ export function ImprovePanel() {
         aria-label={target === 'platform' ? 'Improve the platform' : 'Improve this app'}
         aria-hidden={open ? undefined : 'true'}
         {...(open ? { 'data-open': '' } : {})}
-        className="fixed z-50 flex flex-col bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 shadow-2xl improve-panel-transition"
+        className="fixed z-50 flex flex-col dc-lift dc-lift-panel improve-panel-transition"
       >
         {/*
             ONE LINE. It was a stacked title-over-subtitle pair with `py-3`,

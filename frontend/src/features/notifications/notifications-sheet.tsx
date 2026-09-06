@@ -300,7 +300,7 @@ export function NotificationsSheetView() {
         id="notifications-sheet-overlay"
         aria-hidden="true"
         {...(open && !adopted ? { 'data-open': '' } : {})}
-        className="fixed inset-0 z-40 bg-black/40"
+        className="fixed inset-0 z-40"
         onClick={() => NotificationsSheet.close()}
       >
       </div>
@@ -310,14 +310,27 @@ export function NotificationsSheetView() {
         aria-label="Notifications"
         aria-hidden={open ? undefined : 'true'}
         {...(open ? { 'data-open': '' } : {})}
-        className={'fixed z-50 flex flex-col dc-lift dc-lift-session nav-sheet-transition'}
+        className={'fixed z-50 flex flex-col dc-lift dc-lift-panel nav-sheet-transition'}
       >
       {/*
-          THE SHEET IS THE FROSTED PLANE — the same `.dc-lift-session` a dev
-          session and a Messages thread rise on — with a title row of its own:
-          the name, Mark all read as a small pill (only on Unread, the tab
-          whose list it empties), and the close disc. The tabs under it are
-          the chip rail.
+          THE SHEET RISES ON THE LIFT a dev session does — the same radius,
+          hairline and two-layer shadow — on `.dc-lift-panel`, which is that
+          glass plus a third shadow layer: the modal dim, cast OUTWARD by this
+          element instead of painted behind it.
+
+          That inversion is the whole of why the sheet stopped looking dull.
+          The dim used to live on #notifications-sheet-overlay at `z-40`, under
+          the sheet at `z-50` — and `backdrop-filter` samples whatever is
+          painted behind, so the glass was frosting an already-dimmed page and
+          composited to #cac7c3. An OUTER box-shadow is clipped to outside the
+          border box, so it never enters this element's own backdrop: the sheet
+          frosts the undimmed page while the same declaration darkens
+          everything around it. The overlay is still there and still dismisses
+          on click; it just paints nothing now.
+
+          On top of that surface: a title row of its own — the name, Mark all
+          read as a small pill (only on Unread, the tab whose list it empties),
+          and the close disc. The tabs under it are the chip rail.
       */}
       <div className="flex items-center gap-2 px-4 pt-4 pb-1 shrink-0">
         <h2 className="flex-1 min-w-0 truncate text-[22px] font-bold text-zinc-900 dark:text-zinc-100">

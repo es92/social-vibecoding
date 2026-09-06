@@ -3252,7 +3252,17 @@
     {
       "name": "The notifications sheet is a lifted sheet whose title row carries a close disc, over a chip rail",
       "path": "/?shot=notifications&demo=1",
-      "expectSelector": "#notifications-sheet.dc-lift.dc-lift-session[data-open] #notifications-sheet-close"
+      "expectSelector": "#notifications-sheet.dc-lift.dc-lift-panel[data-open] #notifications-sheet-close"
+    },
+    {
+      "name": "The Improve rail is the same lifted pane as the bell's, not the old white panel",
+      "path": "/?shot=improve&demo=1#app/usernode-2d5619/dev",
+      "expectSelector": "#improve-panel.dc-lift.dc-lift-panel[data-open] #improve-quick-actions"
+    },
+    {
+      "name": "The app chip's menu is that pane too, keeping its own menu shape",
+      "path": "/?shot=app-context&demo=1",
+      "expectSelector": "#apps-switcher-sheet.dc-lift.dc-lift-panel[data-open] #switcher-nav #switcher-row-home"
     },
     {
       "name": "Unread notification rows read source, bold subject, muted preview",

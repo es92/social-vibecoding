@@ -184,6 +184,13 @@
   --app-sheet-line: rgba(0, 0, 0, 0.1);
   --app-sheet-shadow-near: rgba(24, 39, 75, 0.12);
   --app-sheet-shadow-far: rgba(24, 39, 75, 0.08);
+  /* The lift's two layers as one value — see `.dc-lift`. */
+  --dc-lift-shadow:
+    0 6px 12px -6px var(--app-sheet-shadow-near),
+    0 8px 24px -4px var(--app-sheet-shadow-far);
+  /* The modal dim, cast BY the pane rather than painted behind it. Same 40%
+     black the overlays used to carry as `bg-black/40`; see `.dc-lift-panel`. */
+  --pane-scrim: rgba(0, 0, 0, 0.4);
   --state-blocked: #dc2626;
   --state-blocked-bg: rgba(239, 68, 68, 0.12);
   --state-blocked-fill: rgba(239, 68, 68, 0.32);
@@ -1178,6 +1185,10 @@ html.un-kb .platform-safe-sheet {
   --app-sheet-line: rgba(255, 255, 255, 0.12);
   --app-sheet-shadow-near: rgba(0, 0, 0, 0.55);
   --app-sheet-shadow-far: rgba(0, 0, 0, 0.4);
+  --dc-lift-shadow:
+    0 6px 12px -6px var(--app-sheet-shadow-near),
+    0 8px 24px -4px var(--app-sheet-shadow-far);
+  --pane-scrim: rgba(0, 0, 0, 0.4);
   --state-attention-bg: rgba(245, 158, 11, 0.18);
   --state-blocked: #f87171;
   --state-blocked-bg: rgba(239, 68, 68, 0.18);
@@ -7205,23 +7216,25 @@ span.gc-vote-btn-icon { cursor: default; }
 }
 
 /* ── The bell's sheet on the ladder ─────────────────────────────────────
-   #notifications-sheet wears `.dc-lift-session` (features/notifications/
-   notifications-sheet.tsx). The geometry rules further down keep their
-   dock and slide; this only restates the corners and the hairline the
-   lift gives it, since those rules set a smaller radius and a bare
-   border-width after the lift's own. The rows separate with the grouped
-   list's inset hairline. */
+   #notifications-sheet wears `.dc-lift dc-lift-panel` (features/notifications/
+   notifications-sheet.tsx) — the opaque lift, the surface the Improve rail
+   and the app menu wear too; see `.dc-lift-panel` for why these three are
+   opaque where the dev screen's two planes are glass. The geometry rules
+   further down keep their dock and slide; this only restates the desktop
+   corner and the hairline, since the lift's own `1.75rem 1.75rem 0 0` is
+   the shape of a sheet docked to the FLOOR and this one docks to the right.
+   The rows separate with the grouped list's inset hairline.
+
+   The mobile pair of corners used to be restated here too, with
+   `!important`, to beat a `1rem` in the `max-width: 639px` block below. That
+   block says 1.75rem now — as do the Improve rail's and the app menu's, so
+   the three bottom sheets agree by reading the same number rather than by an
+   override reaching over one of them. */
 #notifications-sheet { border-color: var(--app-sheet-line); }
 @media (min-width: 640px) {
   #notifications-sheet {
-    border-radius: 1.75rem 0 0 0 !important;
+    border-radius: 1.75rem 0 0 0;
     border-left: 1px solid var(--app-sheet-line);
-  }
-}
-@media (max-width: 639px) {
-  #notifications-sheet {
-    border-top-left-radius: 1.75rem !important;
-    border-top-right-radius: 1.75rem !important;
   }
 }
 .notifications-row { position: relative; }
@@ -7333,9 +7346,11 @@ span.gc-vote-btn-icon { cursor: default; }
 .dc-lift {
   border-radius: 1.75rem 1.75rem 0 0;
   border-top: 1px solid var(--app-sheet-line);
-  box-shadow:
-    0 6px 12px -6px var(--app-sheet-shadow-near),
-    0 8px 24px -4px var(--app-sheet-shadow-far);
+  /* NAMED, because the panes have to RESTATE it. box-shadow does not cascade
+     additively: `.dc-lift-panel` appends the scrim as a third layer and must
+     therefore repeat the two the lift draws. A token is what keeps the second
+     copy from drifting from this one. */
+  box-shadow: var(--dc-lift-shadow);
   /* BOTH LAYERS ARE POSITIONED, and that is what puts the session sheet
      ON the strip rather than under it. Positioned siblings paint after
      unpositioned ones and among themselves in tree order, so with only
@@ -7383,6 +7398,109 @@ span.gc-vote-btn-icon { cursor: default; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .dc-lift-strip { background-color: var(--dc-strip); }
   .dc-lift-session { background-color: var(--dc-sheet); }
+}
+
+/* ── THE THIRD SURFACE: a lift that CASTS its own scrim ────────────────
+   `.dc-lift-panel` is the same glass the dev screen's session sheet wears —
+   `--dc-sheet-fill` over `--dc-frost` — on the shell's three floating panes:
+   the notifications rail, the Improve rail and the app chip's menu. What is
+   different is not the surface. It is where the modal dim comes from.
+
+   THE DIM USED TO BE PAINTED BEHIND THE PANE, AND THAT IS WHAT MADE IT DULL.
+   Each pane raised a sibling backdrop at `z-40` carrying `bg-black/40`, and
+   the pane sat above it at `z-50`. `backdrop-filter` samples everything
+   painted behind the element, so the thing this glass was frosting was a page
+   already dimmed 40% — and half of a dimmed page, blurred flat, is grey.
+   Measured on the home ground: #f4f2e4 goes to #929189 under the backdrop and
+   the pane composited to #cac7c3, a fifth of the way to black on the surface
+   meant to be the brightest thing on screen.
+
+   Making the pane opaque fixed the dullness and cost the glass — three flat
+   white slabs. Both halves are wanted: the page dimmed, the pane frosted over
+   what is actually behind it.
+
+   SO THE SCRIM IS AN OUTER BOX-SHADOW ON THE PANE. An outer shadow is clipped
+   to outside the border box, so it is never part of the element's own
+   backdrop: the pane frosts the UNDIMMED page while the same declaration
+   darkens everything around it. Measured, all three at (200,700) and
+   (1100,650) in a 1280x860 light viewport:
+
+     opaque + backdrop dim   page #948a84   pane #ffffff   (flat)
+     glass  + no dim         page #f7e7dc   pane #fcf6ee   (not modal)
+     glass  + backdrop dim   page #948a84   pane #cac7c3   (the dull one)
+     glass  + THIS           page #948a84   pane #fcf6ee   (both)
+
+   `100vmax` covers the viewport from wherever the pane is docked, at any
+   aspect ratio, which is what makes this work for a right rail, a bottom
+   sheet and a centred dropdown without any of them knowing its own geometry —
+   the reason this is a shadow and not a clip-path hole in the backdrop.
+
+   The backdrop ELEMENTS stay, transparent: they are the click-to-dismiss
+   target and they own `pointer-events`, which is the half of their job this
+   does not take over.
+
+   IT PAINTS AT THE PANE'S OWN z-50, one layer above the `z-40` the backdrops
+   sit at, so the header (`z-10`) is inside the dim exactly as it was — see
+   "THE HEADER IS INSIDE THE DIM" below, which this does not change.
+
+   Two shadow lists, both three layers long, because box-shadow interpolates
+   componentwise and a list that changes LENGTH snaps instead of fading. The
+   closed state carries the scrim as `transparent` so the dim fades with the
+   slide rather than popping off at the start of it. */
+.dc-lift-panel {
+  background-color: var(--dc-sheet-fill);
+  backdrop-filter: var(--dc-frost);
+  -webkit-backdrop-filter: var(--dc-frost);
+  box-shadow: var(--dc-lift-shadow), 0 0 0 100vmax transparent;
+}
+.dc-lift-panel[data-open] {
+  box-shadow: var(--dc-lift-shadow), 0 0 0 100vmax var(--pane-scrim);
+}
+/* A CLOSED PANE IS NOT PAINTED, and it is `opacity` that does it — NOT
+   `visibility: hidden`, which is the obvious answer and the wrong one.
+
+   THE COST FIRST. The scrim layer is 100vmax of spread, and all three panes
+   are ALWAYS MOUNTED — a closed rail is translated off-screen, not unmounted.
+   Chromium records and rasterises a shadow that big even when its colour is
+   `transparent`, on three elements, on every route in the shell. Measured at
+   1280x860 over 60 forced style-recalc + paint cycles:
+
+     painted while closed          frame median 51.9ms   p95 72.7ms
+     opacity: 0 while closed                 16.7ms          35.2ms
+     visibility: hidden while closed         16.7ms          17.1ms
+
+   3x the frame cost on every screen, which is enough to make timing-dependent
+   checks fail on a slow container.
+
+   WHY NOT `visibility: hidden`, WHICH IS FASTER. It removes the subtree's
+   text from `innerText`, and dapp.json reads text out of these panes on
+   routes where they are CLOSED — "Improve panel leads with Give feedback"
+   asserts that string on `/`, where #improve-panel is shut. Hiding it turned
+   that check red, and it would have taken any future one with it. `opacity: 0`
+   suppresses the paint without touching layout, text extraction or the
+   accessibility tree, which is the same trade #apps-switcher-sheet's dropdown
+   already makes for its own closed state. The p95 is 18ms worse than
+   visibility's and that is the right price.
+
+   THE DELAY IS WHAT KEEPS THE SLIDE VISIBLE. Opacity drops only after the
+   200ms transition has run, so the pane paints all the way out; opening has
+   no delay here, so it paints all the way in.
+
+   The other candidate was collapsing the spread to 0 while closed. Same
+   saving, and wrong: box-shadow interpolates spread, so the dim grew out of
+   the pane's edge as a hard-edged rectangle instead of fading. */
+.dc-lift-panel:not([data-open]) {
+  opacity: 0;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out,
+    opacity 0s linear 200ms;
+}
+
+/* NO BLUR, NO GLASS — the same fallback the two planes above take, and for
+   the same reason: without the filter the alphas leave the page sitting
+   unblurred behind body text. The scrim is unaffected; it is a shadow, not a
+   filter, so the dim still reads and only the pane goes opaque. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dc-lift-panel { background-color: var(--dc-sheet); }
 }
 
 /* THE OVERLAP MUST BE A FULL RADIUS, and it has to come from whatever is
@@ -8733,6 +8851,24 @@ a.drawer-ver--fork:hover {
    `bottom: 0` still takes it to the floor; only where it STARTS moved back.
    Below `sm` the block further down resets `top` for the bottom sheet, and
    `.platform-sheet-adopted` neutralises inset entirely on the kit path. */
+/* THE RAIL'S OWN CORNER AND HAIRLINE, which is the whole of what this panel
+   took from the bell's when both went onto `.dc-lift dc-lift-panel`. The two
+   are the same object at two names — a right-edge rail, floor to ceiling,
+   over a scrim — so the shape statement is the one #notifications-sheet
+   already makes further up ("The bell's sheet on the ladder"): ONE corner is
+   rounded, the top-left, because it is the only corner of this panel that is
+   a corner of anything. The top-right, bottom-right and bottom-left all sit
+   on an edge of the display.
+
+   `.dc-lift` ships `1.75rem 1.75rem 0 0`, which is right for a sheet docked
+   to the FLOOR and wrong for one docked to the right, so the desktop shape is
+   restated here rather than inherited; the `max-width: 639px` block below
+   puts the pair of top corners back for the bottom sheet.
+
+   The hairline is `--app-sheet-line` for all four sides, not the zinc pair
+   this wore before. Only the left edge is drawn (`border-left-width`, and
+   `.dc-lift`'s own `border-top`), but naming the colour once keeps the two
+   drawn edges from having to agree by coincidence. */
 #improve-panel {
   top: 0;
   right: 0;
@@ -8740,13 +8876,19 @@ a.drawer-ver--fork:hover {
   width: 20rem;
   max-width: 85vw;
   border-left-width: 1px;
+  border-color: var(--app-sheet-line);
+  border-radius: 1.75rem 0 0 0;
   transform: translateX(100%);
 }
 #improve-panel[data-open] {
   transform: translateX(0);
 }
+/* `box-shadow` rides along with the slide because the modal dim is one of this
+   element's shadow layers now (see `.dc-lift-panel`). Without it here the dim
+   would snap on at the start of the open and off at the start of the close,
+   which is the exact complaint the kit-adopted backdrop note records. */
 .improve-panel-transition {
-  transition: transform 200ms ease-out;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
 }
 #improve-overlay {
   opacity: 0;
@@ -8806,8 +8948,8 @@ a.drawer-ver--fork:hover {
     max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 3rem);
     border-left-width: 0;
     border-top-width: 1px;
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    border-top-left-radius: 1.75rem;
+    border-top-right-radius: 1.75rem;
     transform: translateY(100%);
   }
   #improve-panel[data-open] {
@@ -8936,8 +9078,12 @@ a.drawer-ver--fork:hover {
    than folded into the `max-width: 639px` block because the kit-adopted path
    reads it too — `.platform-sheet-adopted` sets `transition: none`, which has
    to have something to turn off. */
+/* `box-shadow` rides along with the slide because the modal dim is one of this
+   element's shadow layers now (see `.dc-lift-panel`). Without it here the dim
+   would snap on at the start of the open and off at the start of the close,
+   which is the exact complaint the kit-adopted backdrop note records. */
 .app-context-transition {
-  transition: transform 200ms ease-out;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
 }
 #apps-switcher-overlay {
   opacity: 0;
@@ -8982,8 +9128,8 @@ a.drawer-ver--fork:hover {
        sheet to 80% of the viewport, so the page behind it stays visible. */
     max-height: min(80dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 3rem));
     border-top-width: 1px;
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    border-top-left-radius: 1.75rem;
+    border-top-right-radius: 1.75rem;
     transform: translateY(100%);
   }
   #apps-switcher-sheet[data-open] {
@@ -9027,8 +9173,12 @@ a.drawer-ver--fork:hover {
 #messages-sheet[data-open] {
   transform: translateX(0);
 }
+/* `box-shadow` rides along with the slide because the modal dim is one of this
+   element's shadow layers now (see `.dc-lift-panel`). Without it here the dim
+   would snap on at the start of the open and off at the start of the close,
+   which is the exact complaint the kit-adopted backdrop note records. */
 .nav-sheet-transition {
-  transition: transform 200ms ease-out;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
 }
 #notifications-sheet-overlay,
 #messages-sheet-overlay {
@@ -9061,8 +9211,8 @@ a.drawer-ver--fork:hover {
     height: min(66dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 3rem));
     border-left-width: 0;
     border-top-width: 1px;
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
+    border-top-left-radius: 1.75rem;
+    border-top-right-radius: 1.75rem;
     transform: translateY(100%);
   }
   #notifications-sheet[data-open],
