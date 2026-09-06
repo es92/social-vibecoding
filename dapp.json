@@ -666,9 +666,9 @@
       "expectText": "Claim this issue"
     },
     {
-      "name": "Dev board, round three: the vote is one button beside the state bar, with a picker",
+      "name": "Dev board, round three: a card wears a tone-keyed edge and a glyph, and the vote is one button beside the state bar, with a picker",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban-col-inreview .gc-vote-item .dev-card-status > .dev-status-pill-block + .dev-vote-btn[data-vote-btn][aria-haspopup=\"menu\"]",
+      "expectSelector": "#dev-kanban-col-inreview .gc-vote-item.dev-card-dense[data-edge]:has(> .flex-1 > .dev-card-head > .dev-card-icon.rounded-lg + .dev-card-head-main) .dev-card-status > .dev-status-pill-block + .dev-vote-btn[data-vote-btn][aria-haspopup=\"menu\"]",
       "expectText": "Vote"
     },
     {
@@ -678,20 +678,9 @@
       "expectText": "Preview"
     },
     {
-      "name": "Dev board, round three: every card wears a tone-keyed left edge, and a glyph where the tile was",
-      "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban .gc-vote-item.dev-card-dense[data-edge] > .flex-1 > .dev-card-head > .dev-card-icon.rounded-lg + .dev-card-head-main"
-    },
-    {
       "name": "Dev board, round three: the card's facts read as one line under the bar",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
       "expectSelector": "#dev-kanban .gc-vote-item .dev-card-status > .dev-card-band-break + .dev-badge"
-    },
-    {
-      "name": "Dev board, round three: a second action pill can fold into ⋯ (one-line band)",
-      "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban-col-issues [data-issue-row] .gc-card-actions > .gc-vote-btn[data-act=\"markIssueInProgress\"][data-fold]",
-      "expectText": "Claim this issue"
     },
     {
       "name": "Activity, round three: each entry is a sheet, its reply box ends in the send disc",
