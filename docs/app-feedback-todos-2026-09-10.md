@@ -1,10 +1,9 @@
 # App feedback triage — 2026-09-10
 
-49 feedback items from the latest testing round, split into per-piece rows, actions written to stand alone. After review: 93 actionable rows, 8 parked under Open questions, and 3 rows added during review (#13b, #34e, #50).
+49 feedback items from the latest testing round, split into per-piece rows, actions written to stand alone. After two review passes: 100 actionable rows, 1 deferred (#34a), and 3 rows added during review (#13b, #34e, #50).
 
 **Legend**
-- All DECIDEs from the first pass are resolved (#2a, #24b, #26b, #29c folded into actions; #34a parked).
-- **Open questions (parked)** — moved out of the actionable table until answered/decided: #3, #4, #17, #18, #19, #34a, #39b, #39c.
+- All first-pass DECIDEs and open questions are resolved into the actions below; #34a is the one deliberate deferral (section at the bottom).
 - Added in review: #13b (governance delete), #34e (merge themes & categories), #50 (developer terminal dead option).
 - Carried-over repeats from the 2026-09-03 triage (`docs/app-feedback-todos.md`): #32c (↔ 9/3 #62), #41b (↔ 9/3 #64), #46 (↔ 9/3 #34/#50), #48 (↔ 9/3 #89).
 
@@ -18,6 +17,8 @@
 | 2c | Back button overlaps text in step 1. | Fix the back button overlapping the text on waitlist step 1. | Waitlist |
 | 2d | #waitlist?confirm=1 should be 2 steps instead of 1. | Split the waitlist email-confirm screen (#waitlist?confirm=1) into two steps instead of one. | Waitlist |
 | 2e | Missing space before "Optional" next to country name, and format/spacing for "*" needs improvement. | On the waitlist country field, add the missing space before "Optional" and clean up the required-asterisk ("*") formatting. | Waitlist |
+| 3 | App theme background color looks skin-colored vs solarized-light. | Retune the app theme background away from the skin-toned tint to true solarized-light (confirmed: solarized-light is the target). | Core UI |
+| 4 | No quick or easy way to logout. | Add logout to Profile (rec — today it lives only in Settings); discuss alternatives only if that's not sufficient. | Auth |
 | 5 | Confirmation email ("confirm your email") is not being received. | Fix delivery of the "confirm your email" message end to end (sending, provider, spam placement) — it currently never arrives. Waitlist blocker. | Emails |
 | 6a | Initial homepage load on mobile is very slow every time the app opens. | Profile and cut the mobile homepage's cold-start load so every app open is fast, not just the first install. | Performance |
 | 6b | Opening other apps from the homepage is slow. | Cut the latency of opening apps from the homepage (preload/warm app containers where possible). | Performance |
@@ -42,6 +43,9 @@
 | 15 | The option to "create an issue" directly on the board is missing (currently under give feedback). | Add a "create an issue" option directly on the board, instead of only inside the give-feedback flow. | Workshop |
 | 16a | The "Reply in thread" input appears disconnected from the page on desktop browsers. | Visually attach the "Reply in thread" input to its thread on desktop — it currently floats disconnected from the page. | Workshop |
 | 16b | Reply input is missing on workshop cards tapped under "needs your vote". | Render the reply input on Workshop cards opened from "needs your vote" — it's missing there. | Workshop |
+| 17 | Improve UI/UX around "assigned" versus "claim". | Track down what the original reporter meant by the "assigned" vs "claim" confusion, then scope the fix. | Workshop |
+| 18 | Opening a session no longer shows action buttons (e.g., archive). | Put the session action buttons (archive, …) in a hamburger at the far right of the session subheader, alongside the preview/building switcher and the "where do you want to work on this" switcher. | Sessions |
+| 19 | A brand-new session (on-session coding screen, before the first message) should look distinct so it's clear you're in a new session, like Claude/ChatGPT's new-conversation state. | Center the new-session input box on the on-session coding screen, Claude/ChatGPT-new-conversation style (pairs with #38b's empty state). | Sessions |
 | 20 | Previews are sometimes inaccurate and fail to reflect features that have been worked on. | Verify and fix session previews so they reliably reflect the features worked on — nothing to decide, just make it work. | Sessions |
 | 21 | Remaining voting time is no longer displayed on tasks, making merge/discard status unclear. | Restore the remaining-voting-time display on tasks so merge/discard timing is clear — regression. | Workshop |
 | 22 | SV APIs used to fetch app directory data are broken/incompatible (e.g. "Couldn't reach the app directory — try again in a moment"). | Fix/re-version the platform APIs apps use to fetch app-directory data (Appraise's "Couldn't reach the app directory" is the repro); add a compatibility guarantee for app-facing APIs. | Infra |
@@ -79,11 +83,13 @@
 | 36 | Editing profile social accounts lacks ownership verification. | Require ownership verification (OAuth or post-a-proof) before a social account added in profile editing appears publicly. Depends on #46. | Integrations |
 | 37 | Revert top-right "details" button to show "built with" directly. | Revert the top-right header "details" button to showing "built with" directly. | Core UI |
 | 38a | Reduce height of session descriptor area. | Reduce the session descriptor area's height to a compact row. | Sessions |
-| 38b | Add persistent empty state text/layout (similar to Claude/ChatGPT). | Add a persistent empty state (text + layout) to sessions, in the style of Claude/ChatGPT (see parked #19 for the new-session framing). | Sessions |
+| 38b | Add persistent empty state text/layout (similar to Claude/ChatGPT). | Add a persistent empty state (text + layout) to sessions, in the style of Claude/ChatGPT (pairs with #19's centered new-session box). | Sessions |
 | 38c | Session detail bar turns white on scroll. | Stop the session detail bar turning white on scroll — keep its background fixed. | Sessions |
 | 38d | Claude Code detail box toggle button/scrolling is broken. | Fix the Claude Code detail box's broken toggle button and scrolling. | Sessions |
 | 38e | Auto-set dark mode header when page content is dark. | Auto-switch the header to dark mode when the page content under it is dark. | Sessions |
 | 39a | Replace static green dot with active work indicator. | Replace the static green session dot with an indicator that reflects actual work activity. | Sessions |
+| 39b | Clarify misleading yellow dot status. | Remove the yellow session dot; show "sessions actively thinking" some other way (pairs with #39a's activity indicator). | Sessions |
+| 39c | Fix unclickable "handed off" session entries. | Investigate what "handed off" sessions mean and why their entries are sometimes unclickable, then make them click through. | Sessions |
 | 39d | Auto-name default dev sessions (e.g. dev/evan-17890406…) based on first prompt message. | Auto-name default dev sessions from the first prompt message instead of ids like dev/evan-17890406…. | Sessions |
 | 40 | Missing CSS on new server for specific apps (todo list, clear skies, workquest). | Fix CSS/asset serving on the new server for todo list, clear skies, and workquest, then audit all apps for the same failure. | Infra |
 | 41a | Search bar is not full width or centered. | Make the homescreen search bar full-width and centered. | Core UI |
@@ -104,15 +110,8 @@
 | 49 | Platform share links fail to open on Safari ("couldn't establish a secure connection"). | Fix the TLS/certificate setup on the share-link domain so Safari stops failing with "couldn't establish a secure connection"; recheck after the #1a domain move. | Infra |
 | 50 | Added in review: "developer terminal" shows up as an option under Improve, but clicking it doesn't do anything. | Make the Improve menu's "developer terminal" option work, or remove it until it does. | Sessions |
 
-## Open questions (parked)
+## Deferred
 
-| # | Feedback | What's open |
-|---|----------|-------------|
-| 3 | App theme background color looks skin-colored vs solarized-light. | Likely answer: solarized-light is the intended target and the skin tint is the bug — confirm the exact palette values before retuning. |
-| 4 | No quick or easy way to logout. | Logout lives in Settings today — is adding it to Profile as well sufficient? |
-| 17 | Improve UI/UX around "assigned" versus "claim". | What confused — the wording, not knowing who holds an item, or claim being possible on assigned items? |
-| 18 | Opening a session no longer shows action buttons (e.g., archive). | Restore them, but decide where they should live in the session view first. |
-| 19 | Original note said dev-session vs new-session formatting differs; actual intent: a brand-new session (before the first message) should look distinct so it's clear you're in a new session, like Claude/ChatGPT's new-chat state. | Decide the new-session empty-state design (overlaps #38b). |
-| 34a | Merge Board into Workshop view with an inline "sort by category" / "sort by status" toggle. | Deliberately deferred — don't do this yet; revisit later. |
-| 39b | Clarify misleading yellow dot status. | Decide what the yellow session dot should mean (and when it shows) before relabeling it. |
-| 39c | Fix unclickable "handed off" session entries. | Decide where a "handed off" entry should click through to. |
+| # | Feedback | Status |
+|---|----------|--------|
+| 34a | Merge Board into Workshop view with an inline "sort by category" / "sort by status" toggle. | Confirmed deferred — don't do this yet; revisit later. |
