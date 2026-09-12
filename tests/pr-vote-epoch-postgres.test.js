@@ -78,10 +78,21 @@ test('a vote is born at its session’s epoch, whoever inserts it', async (t) =>
     return t.skip('No local PostgreSQL; set TEST_DATABASE_URL to run the database tests.');
   }
 
+  // Per-process, like every other *-postgres test here. The runner gives each
+  // test FILE its own process and runs files concurrently, so a fixed name is
+  // a shared resource: `DROP SCHEMA ... CASCADE` takes an ACCESS EXCLUSIVE
+  // lock, Postgres's default lock_timeout is 0 (wait forever), and two
+  // overlapping runs would park a connection indefinitely rather than fail.
+  const schema = `pr_vote_epoch_test_${process.pid}`;
+
   try {
-    await client.query('DROP SCHEMA IF EXISTS pr_vote_epoch_test CASCADE');
-    await client.query('CREATE SCHEMA pr_vote_epoch_test');
-    await client.query('SET search_path = pr_vote_epoch_test');
+    // Belt and braces for the same hazard: never let this file block the
+    // suite, whatever else is holding a lock on the database it shares.
+    await client.query("SET lock_timeout = '5s'");
+    await client.query("SET statement_timeout = '30s'");
+    await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET search_path = ${schema}`);
 
     // Only the columns the migration touches. chat_sessions has ~200 of them
     // and none of the rest participate.
@@ -176,7 +187,7 @@ test('a vote is born at its session’s epoch, whoever inserts it', async (t) =>
     assert.equal(await counted(1), 0,
       'bumping the session epoch must still retire every vote under it');
   } finally {
-    await client.query('DROP SCHEMA IF EXISTS pr_vote_epoch_test CASCADE').catch(() => {});
+    await client.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`).catch(() => {});
     await client.end().catch(() => {});
   }
 });
