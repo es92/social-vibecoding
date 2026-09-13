@@ -650,6 +650,60 @@ test('native vote controls and request carry the approval epoch', async () => {
   });
 });
 
+// ── #1924: a vote leaves "Needs your vote" on the click ───────────────
+
+test('#1924: castVote sets my_vote and repaints before the request, and keeps it on success', async () => {
+  const AppView = makeAppView(ME);
+  const pr = { id: 7, status: 'promoted', my_vote: null };
+  AppView._proposals = [pr];
+  const seen = [];
+  AppView._repaintDevBody = () => { seen.push(`repaint:${pr.my_vote}`); };
+  AppView.refreshDevData = () => { seen.push('refresh'); };
+  AppView.__sandbox.PlatformUI = { toast: () => {} };
+  AppView.__sandbox.fetch = async () => {
+    seen.push(`fetch:${pr.my_vote}`);
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  await AppView.castVote(7, 'yes');
+  assert.equal(seen.join(' '), 'repaint:yes fetch:yes refresh',
+    'the card is repainted as voted before the network round-trip');
+  assert.equal(pr.my_vote, 'yes');
+});
+
+test('#1924: a refused vote puts the old value back and repaints', async () => {
+  const AppView = makeAppView(ME);
+  const pr = { id: 7, status: 'promoted', my_vote: null };
+  AppView._proposals = [pr];
+  const repaints = [];
+  let toast = null;
+  AppView._repaintDevBody = () => { repaints.push(pr.my_vote); };
+  AppView.refreshDevData = () => {};
+  AppView.__sandbox.PlatformUI = { toast: (m) => { toast = m; } };
+  AppView.__sandbox.fetch = async () => ({ ok: false, status: 409, json: async () => ({ error: 'Voting has closed' }) });
+  await AppView.castVote(7, 'yes');
+  assert.equal(pr.my_vote, null, 'rolled back');
+  assert.equal(repaints.join(','), 'yes,', 'optimistic repaint, then the rollback repaint');
+  assert.equal(toast, 'Voting has closed');
+
+  // A network failure rolls back the same way.
+  AppView.__sandbox.fetch = async () => { throw new Error('offline'); };
+  await AppView.castVote(7, 'no');
+  assert.equal(pr.my_vote, null);
+});
+
+test('#1924: re-casting the same vote does not repaint optimistically', async () => {
+  const AppView = makeAppView(ME);
+  const pr = { id: 7, status: 'promoted', my_vote: 'yes' };
+  AppView._proposals = [pr];
+  let repaints = 0;
+  AppView._repaintDevBody = () => { repaints += 1; };
+  AppView.refreshDevData = () => {};
+  AppView.__sandbox.fetch = async () => ({ ok: true, status: 200, json: async () => ({}) });
+  await AppView.castVote(7, 'yes');
+  assert.equal(repaints, 0);
+  assert.equal(pr.my_vote, 'yes');
+});
+
 test('a rejected vote re-arms from the epoch the server named', async () => {
   // One head move used to produce TWO identical rejections: the refresh was
   // fired without being awaited and the click lock was released first, so an

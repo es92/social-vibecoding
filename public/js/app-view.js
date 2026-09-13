@@ -14950,6 +14950,25 @@ const AppView = {
     const key = `${sessionId}:${vote}`;
     if (AppView._voteInFlight.has(key)) return;
     AppView._voteInFlight.add(key);
+    // #1924: the card leaves "Needs your vote" on the click, not after the
+    // 1–2 s round-trip. The lane (and the Board's needs-vote filter, and the
+    // card's own Yes/No highlight) all read `my_vote` off the cached row, so
+    // setting it and repainting from cache is the whole optimistic step. The
+    // server is still the authority: a refused vote puts the old value back
+    // and repaints, and every path ends in the usual refetch.
+    const pr = (AppView._proposals || []).find((p) => p.id === sessionId) || null;
+    const prevVote = pr ? pr.my_vote : null;
+    const optimistic = !!pr && prevVote !== vote;
+    if (optimistic) {
+      pr.my_vote = vote;
+      AppView._repaintDevBody();
+    }
+    const rollback = () => {
+      if (optimistic && pr.my_vote === vote) {
+        pr.my_vote = prevVote;
+        AppView._repaintDevBody();
+      }
+    };
     try {
       const known = AppView._seenEpoch.get(sessionId);
       const epoch = known === undefined ? expectedEpoch : known;
@@ -14960,6 +14979,10 @@ const AppView = {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        // #1924: the optimistic vote goes back before anything else — the
+        // refetch below repaints from the server anyway, but the rollback is
+        // what makes the card reappear the instant the server says no.
+        rollback();
         // A rejection that names the current epoch lets the very next click
         // land, rather than needing a refetch to have finished first.
         if (Number.isFinite(parseInt(data.approvalEpoch, 10))) {
@@ -14975,7 +14998,9 @@ const AppView = {
       // server clears this PR's nudge as a side effect, so re-pull to drop it
       // from the unread badge. Never optimistic: skip on a non-ok response.
       window.Notifications?.refresh?.();
-    } catch {}
+    } catch {
+      rollback();
+    }
     finally {
       AppView._voteInFlight.delete(key);
     }
