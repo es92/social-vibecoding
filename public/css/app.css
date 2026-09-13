@@ -12408,16 +12408,39 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
        for, and `static` would send both the marker and the measurement to
        whatever ancestor happened to be positioned. */
     position: relative;
-    /* A BLOCK, not the pill. It inherits the 760px reading column and its
-       centring, which is what keeps the strip on the same left edge whether
-       the pane beside it is the category list at 760 or the full-bleed board
-       at the window's width. The pill is `.dev-ws-tabtrack` inside it. */
-    display: block;
+    /* A CENTRING ROW, not a block. The pill is `.dev-ws-tabtrack` inside it,
+       and it is content-width, so whatever positions the pill horizontally is
+       what decides where the strip appears. As a block that was the pill's
+       LEFT EDGE against the 760px reading column — which is stable only while
+       the pane beside it is also 760 wide. By stage is not: the board goes
+       full-bleed (`#dev-workshop:has(.dev-ws-board) { max-width: none }`) and
+       the strip stayed pinned to a column that no longer existed, stranded
+       mid-window with nothing under it to align to. That is the "hasn't
+       decided where it should show up" this replaces.
+
+       CENTRED, the strip lands in the same place on every pane at every
+       width: the nav's own box is centred in the window on both paths — the
+       760 column is `margin: 0 auto`, and on the board pane the full-bleed
+       rule re-centres this element at `max-width: 760px` — so centring inside
+       it puts the pill on the window's centre line either way. `flex` rather
+       than `text-align: center`, because an inline-level box positioned by an
+       INHERITED property is one stray `text-align` on any ancestor away from
+       moving on its own. */
+    display: flex;
+    justify-content: center;
     gap: 0; padding: 0;
     border: 0; border-radius: 0;
     background: none; backdrop-filter: none; -webkit-backdrop-filter: none;
-    margin-bottom: 4px;
+    /* NO MARGIN OF ITS OWN. `.dev-ws` is a flex column with `gap: 10px`, so a
+       margin here stacks on top of it: 14px below the strip against the 8px
+       of `#dev-body` padding above it, which is the unbalanced air. The gap
+       alone sets both sides, once the padding below matches it. */
+    margin-bottom: 0;
   }
+  /* The other half of that balance: 10px above, to equal the column gap
+     below. The 8px here is the phone's, where the strip is `position: fixed`
+     at the foot and this padding is just the top of the page. */
+  #dev-body:has(> #dev-workshop) { padding-top: 10px; }
   .dev-ws-tabtrack {
     display: inline-flex; align-items: center; gap: 2px;
     padding: 2px;

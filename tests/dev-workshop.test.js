@@ -2746,10 +2746,22 @@ test('a wide window reads the tabs at the top, as a segmented control', () => {
   // bar must stay the containing block for the selection marker and the
   // element its tabs' offsetLeft/offsetTop resolve against.
   assert.match(rail[1], /position: relative;/, 'still the containing block for the marker');
-  // A BLOCK, not the pill: it inherits the reading column and its centring, so
-  // the strip keeps one left edge whether the pane beside it is the 760px
-  // category list or the full-bleed board.
-  assert.match(rail[1], /display: block;/, 'the nav is the positioning box');
+  // A CENTRING ROW, not a block. The pill inside it is content-width, so
+  // whatever positions the pill is what decides where the strip appears. As a
+  // block that was the pill's LEFT EDGE against the 760px reading column —
+  // stable only while the pane beside it is also 760 wide. By stage is not:
+  // `#dev-workshop:has(.dev-ws-board)` drops the column entirely, and the
+  // strip stayed pinned to one that no longer existed, stranded mid-window
+  // with nothing under it to align to. Centred, it lands on the window's
+  // centre line on BOTH paths, because the nav's own box is centred either
+  // way — `margin: 0 auto` on the column, or the full-bleed rule re-centring
+  // this element at `max-width: 760px`.
+  assert.match(rail[1], /display: flex;\n    justify-content: center;/,
+    'the strip is centred, so it lands in one place on every pane');
+  // FLEX, NOT `text-align: center`. An inline-level box placed by an INHERITED
+  // property is one stray `text-align` on any ancestor away from moving on its
+  // own — which is the class of bug this is fixing, not a shape to re-enter.
+  assert.ok(!/text-align/.test(decls), 'nothing here positions by inheritance');
   assert.match(rail[1], /background: none; backdrop-filter: none;/,
     'the frost belongs to the floating phone bar, not to a strip in the flow');
 
@@ -2759,6 +2771,16 @@ test('a wide window reads the tabs at the top, as a segmented control', () => {
   // the reading column reads as a header bar rather than as a control, which
   // is the same reason SECTION_TABS_LIST is inline-flex.
   assert.match(track[1], /display: inline-flex;/, 'it hugs its labels');
+
+  // THE AIR ABOVE AND BELOW IS ONE NUMBER. `.dev-ws` is a flex column with
+  // `gap: 10px`, so a `margin-bottom` on the nav STACKS on it — 14px below
+  // against the 8px of `#dev-body` padding above, which is the lopsided air
+  // the strip sat in. The gap alone sets the bottom; the padding is raised to
+  // match it, and neither side carries a number the other does not.
+  assert.match(CSS, /\.dev-ws \{ display: flex; flex-direction: column; gap: 10px; \}/);
+  assert.ok(!/margin-bottom: 4px;/.test(rail[1]), 'no margin stacked on the column gap');
+  assert.match(wide[1], /#dev-body:has\(> #dev-workshop\) \{ padding-top: 10px; \}/,
+    'and the space above equals it');
   assert.match(track[1], /border-radius: 9999px;/);
   // A TOKEN, NOT A LITERAL WHITE. The mock that sold this option hardcoded
   // #ffffff and rendered a glaring slab in dark mode; --dc-sheet-raise is the
@@ -2858,10 +2880,17 @@ test('the selection slides between tabs instead of snapping', () => {
   // is a visible flash of the marker in the wrong place.
   assert.match(WORKSHOP, /useLayoutEffect\(\(\) => \{[\s\S]{0,900}?ResizeObserver/,
     'measured in a layout effect, and re-measured on resize');
-  // The three things that move the tabs, each of which has: the tab changing,
-  // a resize (rotation, a drag across the breakpoint, a late webfont), and the
-  // portal remount, which tears the bar out of one parent into another.
-  assert.match(WORKSHOP, /\}, \[barRef, tab, railHost\]\);/);
+  // THE BAR IS A CALLBACK REF IN STATE, not a `useRef`. A ref object is stable,
+  // so it can never wake this effect: on first open the workshop renders a
+  // skeleton and there is no <nav> to measure; when the data lands the deps are
+  // all unchanged, the effect never re-runs, and the marker stays at opacity 0.
+  // Storing the node in state makes its arrival a dependency change. It also
+  // makes `railHost` redundant — the portal remount unmounts and remounts the
+  // bar, so setBar fires twice on its own with the right node each time.
+  assert.match(WORKSHOP, /const \[bar, setBar\] = useState<HTMLElement \| null>\(null\);/);
+  assert.match(WORKSHOP, /ref=\{setBar\}/);
+  assert.match(WORKSHOP, /\}, \[bar, tab\]\);/);
+  assert.ok(!/barRef/.test(WORKSHOP), 'no stable ref object gates the measurement');
 
   // NULL UNTIL MEASURED, so the marker renders hidden rather than at the left
   // edge — otherwise it slides in from nowhere on the first paint.

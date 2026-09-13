@@ -147,7 +147,7 @@
 // different builds answering to one cache name, where the second does not
 // retire the first. If that proposal is voted down, v16 simply never exists —
 // the number is a cache key, not a count.
-const SW_VERSION = 'v17';
+const SW_VERSION = 'v18';
 const SHELL_CACHE = `usernode-shell-${SW_VERSION}`;
 const IMMUTABLE_CACHE = `usernode-immutable-${SW_VERSION}`;
 

@@ -1339,13 +1339,11 @@ function NeedsDeck({
  * the first paint, which reads as a bug rather than a flourish.
  */
 function useTabMarker(
-  barRef: React.RefObject<HTMLElement | null>,
+  bar: HTMLElement | null,
   tab: TabKey,
-  railHost: HTMLElement | null,
 ): { x: number; y: number; w: number; h: number } | null {
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   useLayoutEffect(() => {
-    const bar = barRef.current;
     if (!bar) return;
     const measure = () => {
       const el = bar.querySelector<HTMLElement>('[data-ws-tab-btn][aria-selected="true"]');
@@ -1363,7 +1361,7 @@ function useTabMarker(
     const ro = new ResizeObserver(measure);
     ro.observe(bar);
     return () => ro.disconnect();
-  }, [barRef, tab, railHost]);
+  }, [bar, tab]);
   return box;
 }
 
@@ -1410,9 +1408,20 @@ export function DevWorkshop(): ReactNode {
   // status and then swapping — the same reason `openThemes` is seeded from
   // `autoExpand` rather than from an effect.
   const railHost = useRailHost();
-  const barRef = useRef<HTMLElement | null>(null);
+  // A CALLBACK REF, NOT `useRef`, AND THAT IS THE WHOLE BUG IT FIXES. While the
+  // board is loading this component returns a skeleton, so the bar does not
+  // exist: the marker's effect ran, found nothing and returned. When the data
+  // landed and the bar finally rendered, a `useRef` had not changed — refs are
+  // stable — so the effect never re-ran and the marker was never measured. The
+  // selection was simply invisible the first time the Workshop was opened.
+  //
+  // State re-renders when the node arrives, which wakes the effect exactly
+  // then. It also makes `railHost` unnecessary as a dependency: the portal
+  // remount unmounts the bar and mounts a new one, so this fires twice on its
+  // own, with the right node each time.
+  const [bar, setBar] = useState<HTMLElement | null>(null);
   const [tab, setTab] = useState<TabKey>(() => v.tab || 'status');
-  const markerBox = useTabMarker(barRef, tab, railHost);
+  const markerBox = useTabMarker(bar, tab);
   // ...AND AGAIN WHEN THE PUBLISH LANDS, which is what the seed alone could
   // not do. The seed runs against whatever the store holds AT MOUNT, and that
   // is EMPTY_WORKSHOP_VIEW: the module publishes `_workshopView()` after its
@@ -1528,7 +1537,7 @@ export function DevWorkshop(): ReactNode {
      that positions it, not inside it. */
   const railNode = (
         <nav
-          ref={barRef}
+          ref={setBar}
           className="dev-ws-tabs"
           data-ws-tabs=""
           role="tablist"
