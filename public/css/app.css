@@ -12398,28 +12398,322 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
     min-height: var(--ws-fit);
   }
 }
-.dev-ws-needs {
-  /* The lander is a flex column with a floor under its height, so the deck
-     simply takes what is left between the head of the tab and the rail —
-     no second copy of the viewport arithmetic to keep in step with the
-     first. */
-  flex: 1 1 auto;
-  min-height: 360px;
-  display: grid;
-  /* Two thirds to the thing being decided, one to the place you can ask
-     about it — enough to say the pane is there and take a question. */
-  grid-template-rows: 1fr auto;
-  gap: 8px;
-}
-/* Until it is used the ask pane is ONE ROW — the box and nothing else, which
-   is `auto` above. It opened at a third of the screen with a heading and a
-   hint in it, and that spent a third of a decision screen on an invitation
-   nobody had accepted.
+/* ═══════════════════════════════════════════════════════════════════════
+   NEEDS YOU: A FEED OF DECISIONS. One item per screen, the rail of
+   actions at the right edge, sheets over the item. workshop.tsx's NeedsFeed
+   header is the argument; this is the geometry.
 
-   Once you have asked something the conversation is what you are reading and
-   the card is context for it, so it takes half. It stops there: the card is
-   the subject, and a chat that swallows its subject is a chat about nothing. */
-.dev-ws-needs-engaged { grid-template-rows: 1fr 1fr; }
+   THE LANDER IS THE STAGE. `.dev-ws-needs` takes what is left between the
+   head of the tab and the pill's clearance (the flex chain above, with
+   `--ws-fit` on a phone), and the SCROLLER inside it is the snap container:
+   every item is exactly its height, `scroll-snap-type: y mandatory` finishes
+   any drag on an item boundary, and nothing inside an item scrolls — a long
+   summary clamps and the title links to the full page.
+   ═══════════════════════════════════════════════════════════════════════ */
+.dev-ws-needs {
+  flex: 1 1 auto; min-height: 320px;
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.dev-ws-needs-scroll {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  border-radius: 22px;
+}
+.dev-ws-needs-scroll::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .dev-ws-needs-scroll { scroll-behavior: smooth; }
+}
+/* ── The item ─────────────────────────────────────────────────────────
+   A column: progress line and eyebrow, title, summary, then the picture
+   (or the air where one would go), then the caption at the floor. The
+   caption keeps the rail's width free at its right, and the picture stops
+   short of the rail, so nothing the rail covers is text. The tint
+   alternates so a swipe reads as a new item, not the same one with new
+   words; the pair is soft enough that the pastel ground shows through. */
+.dev-ws-item {
+  position: relative;
+  height: 100%; box-sizing: border-box;
+  scroll-snap-align: start; scroll-snap-stop: always;
+  display: flex; flex-direction: column;
+  padding: 20px 16px 10px;
+  border-radius: 22px;
+  overflow: hidden;
+  background-color: var(--dc-sheet-fill);
+}
+.dev-ws-item[data-ws-tint="a"] { background-image: linear-gradient(165deg, rgba(139, 92, 246, .10), rgba(255, 255, 255, 0) 55%, rgba(244, 114, 182, .08)); }
+.dev-ws-item[data-ws-tint="b"] { background-image: linear-gradient(165deg, rgba(59, 130, 246, .10), rgba(255, 255, 255, 0) 55%, rgba(251, 191, 36, .08)); }
+.dark .dev-ws-item[data-ws-tint="a"] { background-image: linear-gradient(165deg, rgba(139, 92, 246, .16), rgba(0, 0, 0, 0) 55%, rgba(244, 114, 182, .10)); }
+.dark .dev-ws-item[data-ws-tint="b"] { background-image: linear-gradient(165deg, rgba(59, 130, 246, .16), rgba(0, 0, 0, 0) 55%, rgba(251, 191, 36, .08)); }
+.dev-ws-item-progress {
+  position: absolute; left: 22px; right: 22px; top: 9px; height: 3px;
+  border-radius: 2px; background: var(--state-neutral-bg);
+}
+.dev-ws-item-progress > i { display: block; height: 100%; border-radius: 2px; background: var(--accent); min-width: 8px; }
+.dev-ws-item-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 20px;
+}
+.dev-ws-item-of {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* After a vote the eyebrow IS the confirmation: the same line, in the ok
+   tone, with a tick — no toast over the title. */
+.dev-ws-item-done {
+  display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+  font-size: 13px; font-weight: 700; color: var(--state-ok);
+}
+.dev-ws-item-tick {
+  width: 18px; height: 18px; flex: none; padding: 3px; box-sizing: border-box;
+  border-radius: 9999px; background: var(--state-ok); color: #fff;
+}
+.dev-ws-item-title {
+  margin: 18px 20px 0 0;
+  font-size: 26px; line-height: 1.18; font-weight: 700; letter-spacing: -.016em;
+  color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  text-wrap: balance;
+}
+.dev-ws-item-title > a { color: inherit; text-decoration: none; }
+.dev-ws-item-title > a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.dev-ws-item-summary {
+  margin: 10px 20px 0 0;
+  font-size: 18px; line-height: 1.42; color: var(--text-secondary);
+  white-space: pre-line;
+  display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
+}
+.dev-ws-item-nosummary { color: var(--text-muted); font-style: italic; font-size: 16px; }
+.dev-ws-item-spacer { flex: 1 1 auto; min-height: 0; }
+.dev-ws-item-caption {
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 12px 74px 0 0;
+}
+.dev-ws-item-by {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-size: 13px; color: var(--text-muted);
+}
+.dev-ws-item-by b { color: var(--text-primary); font-weight: 600; }
+.dev-ws-item-avatar {
+  width: 24px; height: 24px; border-radius: 9999px; flex: none;
+  display: grid; place-items: center;
+  color: #fff; font-size: 11px; font-weight: 700;
+}
+.dev-ws-item-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dev-ws-chip {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+  border-radius: 9999px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  background: var(--state-neutral-bg); color: var(--text-secondary);
+}
+.dev-ws-chip-ok { background: var(--state-ok-bg); color: var(--state-ok); }
+.dev-ws-chip-progress { background: var(--state-progress-bg); color: var(--state-progress); }
+.dev-ws-chip-warn { background: var(--state-attention-bg); color: var(--state-attention); }
+.dev-ws-chip-blocked { background: var(--state-blocked-bg); color: var(--state-blocked); }
+.dev-ws-chip-info { background: var(--accent-tint); color: var(--accent-wash-ink); }
+
+/* ── The picture: the two stills, cropped to what changed ──────────────
+   The view is the box the still is placed in; the still keeps its natural
+   size and is moved and scaled with a transform (workshop.tsx computes the
+   crop), so the outline can sit on the changed region in the same
+   coordinates. It takes the height the text leaves, stops short of the
+   rail, and never scrolls. */
+.dev-ws-media {
+  position: relative;
+  flex: 1 1 auto; min-height: 120px;
+  margin: 14px 0 0;
+  display: flex; flex-direction: column;
+}
+.dev-ws-media-view {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  margin-right: 74px;
+  border-radius: 16px; overflow: hidden;
+  background: #111114;
+  box-shadow: 0 8px 24px rgba(24, 39, 75, .18);
+}
+.dev-ws-media-img { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; display: block; }
+.dev-ws-media-spot {
+  position: absolute; pointer-events: none;
+  border: 2px solid #16a34a; border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, .25), 0 0 22px rgba(22, 163, 74, .35);
+}
+.dev-ws-media-wait {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .10), rgba(255, 255, 255, .04));
+}
+/* The way out is a pill at the picture's foot; the Before/After switch sits
+   at its head, so the two never share a row — on a phone the picture is
+   about 300px wide, which is not room for both. */
+.dev-ws-media-full {
+  position: absolute; left: 10px; bottom: 10px;
+  padding: 6px 11px; border: 0; border-radius: 9999px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; line-height: 1.2;
+  background: rgba(20, 20, 26, .72); color: #fff;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.dev-ws-seg {
+  position: absolute; right: calc(74px + 10px); top: 10px;
+  display: inline-flex; padding: 3px; border-radius: 9999px;
+  background: rgba(20, 20, 26, .72);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.dev-ws-seg-btn {
+  padding: 6px 14px; border: 0; border-radius: 9999px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 700;
+  background: none; color: rgba(255, 255, 255, .8);
+}
+.dev-ws-seg-btn[aria-pressed="true"] { background: #fff; color: #141418; }
+.dev-ws-seg-one { padding: 6px 14px; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .85); }
+
+/* ── The rail ─────────────────────────────────────────────────────────
+   One column of round buttons at the right edge, bottom-aligned with the
+   caption, over the item. Frosted so it reads on a picture as well as on
+   the tint. Vote is filled in the accent: it is the thing to press. */
+.dev-ws-rail {
+  position: absolute; right: 8px; bottom: 10px; z-index: 3;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.dev-ws-rail-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 60px; margin: 0; padding: 0; border: 0; background: none;
+  color: var(--text-primary); font: inherit; cursor: pointer;
+}
+.dev-ws-rail-btn:disabled { opacity: .4; cursor: default; }
+.dev-ws-rail-ic {
+  width: 46px; height: 46px; border-radius: 9999px;
+  display: grid; place-items: center;
+  background-color: var(--dc-sheet-fill);
+  border: 1px solid var(--app-sheet-line);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  backdrop-filter: var(--dc-frost); -webkit-backdrop-filter: var(--dc-frost);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dev-ws-rail-ic { background-color: var(--dc-sheet); }
+}
+.dev-ws-rail-ic > svg { width: 24px; height: 24px; }
+.dev-ws-rail-lab { font-size: 11px; font-weight: 600; line-height: 1; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dev-ws-rail-key { display: none; }
+.dev-ws-rail-vote .dev-ws-rail-ic,
+.dev-ws-rail-take .dev-ws-rail-ic { background-color: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(10, 110, 224, .3); }
+.dev-ws-rail-vote .dev-ws-rail-lab,
+.dev-ws-rail-take .dev-ws-rail-lab { color: var(--accent); }
+.dev-ws-rail-vote.is-on .dev-ws-rail-ic { background-color: var(--state-ok); border-color: var(--state-ok); box-shadow: 0 2px 8px rgba(21, 128, 61, .28); }
+.dev-ws-rail-vote.is-on .dev-ws-rail-lab { color: var(--state-ok); }
+.dev-ws-rail-btn[aria-expanded="true"] .dev-ws-rail-ic { box-shadow: 0 0 0 3px var(--accent-wash); }
+.dev-ws-move { display: none; }
+.dev-ws-keys { display: none; }
+
+/* ── The sheets ───────────────────────────────────────────────────────
+   Fixed, which inside the lifted strip means the strip's own box: from
+   under the header to the foot of the screen, which is the area a sheet
+   should cover. The pill hides while one is up — a bar floating over a
+   sheet's answers is a bar in the way. */
+.dev-ws-sheet { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: flex-end; }
+.dev-ws-scrim {
+  position: absolute; inset: 0; border: 0; padding: 0; margin: 0; cursor: default;
+  background: var(--pane-scrim);
+}
+.dev-ws-sheet-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 66%; min-height: 0;
+  padding: 8px 16px 12px; box-sizing: border-box;
+  border-radius: 22px 22px 0 0;
+  background-color: var(--dc-sheet);
+  box-shadow: 0 -10px 30px rgba(24, 39, 75, .2);
+}
+.dev-ws-sheet-vote .dev-ws-sheet-card { padding-bottom: 22px; }
+.dev-ws-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 4px; flex: none; }
+.dev-ws-sheet-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border-light); flex: none;
+}
+.dev-ws-sheet-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.dev-ws-sheet-sub { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-left: 8px; }
+.dev-ws-sheet-x {
+  border: 0; padding: 4px 10px; border-radius: 9999px; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600;
+  background: var(--bg-secondary); color: var(--text-secondary);
+}
+.dev-ws-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+/* The vote sheet's own lines. */
+.dev-ws-ask-q { margin: 6px 0 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; color: var(--text-primary); }
+.dev-ws-vote-sub { margin: 0 0 8px; font-size: 14px; line-height: 1.4; color: var(--text-muted); }
+.dev-ws-answer-row { display: flex; gap: 10px; }
+.dev-ws-answer-btn {
+  flex: 1 1 0; min-width: 0; height: 56px;
+  border: 1.5px solid currentColor; border-radius: 14px; cursor: pointer;
+  font: inherit; font-size: 18px; font-weight: 700;
+}
+.dev-ws-answer-btn:disabled { opacity: .4; cursor: default; }
+.dev-ws-answer-yes { background: var(--state-ok-bg); color: var(--state-ok); }
+.dev-ws-answer-no { background: var(--state-blocked-bg); color: var(--state-blocked); }
+.dev-ws-vote-later {
+  margin: 6px auto 0; border: 0; background: none; padding: 6px 12px; cursor: pointer;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--text-muted);
+}
+.dev-ws-keys-hint { display: none; }
+
+/* ── The ask pane, inside its sheet ────────────────────────────────── */
+.dev-ws-ask { gap: 8px; }
+.dev-ws-ask-log {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px; padding: 6px 0 2px;
+}
+.dev-ws-ask-hint { margin: 0; font-size: 13px; color: var(--text-muted); font-style: italic; }
+.dev-ws-ask-msg {
+  margin: 0; max-width: 88%; padding: 9px 13px; border-radius: 17px;
+  font-size: 15px; line-height: 1.36; white-space: pre-wrap;
+}
+.dev-ws-ask-you { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
+.dev-ws-ask-ai { align-self: flex-start; background: var(--bg-secondary); color: var(--text-primary); border-bottom-left-radius: 6px; }
+/* The answer on its way: a breathing bubble, still while it grows. */
+.dev-ws-ask-pending {
+  color: var(--text-muted);
+  animation: dev-ws-ask-breathe 1.6s ease-in-out infinite;
+}
+@keyframes dev-ws-ask-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) {
+  .dev-ws-ask-pending { animation: none; }
+}
+.dev-ws-ask-failed { color: var(--state-blocked); background: var(--state-blocked-bg); }
+/* THE COMPOSER is the dev session's (`.dc-card`), padded evenly so its
+   resting line sits on its own middle — `.dc-card`'s 14-over-10 is for a
+   tall field with controls under it. */
+.dev-ws-ask-composer { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; flex: none; }
+.dev-ws-ask-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dev-ws-ask-line > .dev-ws-ask-input { flex: 1 1 auto; }
+.dev-ws-ask-input {
+  min-width: 0; border: 0; background: none; padding: 6px 0;
+  font: inherit; font-size: 16px; color: var(--text-primary);
+}
+.dev-ws-ask-input:focus { outline: none; }
+.dev-ws-ask-input::placeholder { color: var(--text-muted); }
+.dev-ws-ask-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dev-ws-ask-row > .dev-ws-ask-send { margin-left: auto; }
+.dev-ws-ask-model { display: flex; align-items: center; gap: 3px; min-width: 0; max-width: 100%; }
+.dev-ws-ask-model > select { min-width: 0; max-width: 100%; flex: 0 1 auto; }
+.dev-ws-ask-model-chev { flex: none; width: 14px; height: 14px; color: var(--text-muted); }
+.dev-ws-ask-send { width: 34px; height: 34px; }
+.dev-ws-ask-send-icon { width: 17px; height: 17px; }
+.dev-ws-ask-send:disabled { opacity: .45; cursor: default; }
+
+/* ── The end of the feed ──────────────────────────────────────────── */
+.dev-ws-needs-done { align-items: center; justify-content: center; text-align: center; padding: 24px 28px; gap: 10px; }
+.dev-ws-done-ring { width: 112px; height: 112px; margin-bottom: 8px; }
+.dev-ws-needs-done-line { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -.01em; color: var(--text-primary); }
+.dev-ws-needs-done-sub { margin: 0; max-width: 34ch; font-size: 15px; line-height: 1.4; color: var(--text-muted); }
+.dev-ws-done-cta {
+  margin-top: 12px; height: 44px; padding: 0 20px; border: 0; border-radius: 9999px; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 600;
+  background: var(--accent); color: #fff;
+}
+
+/* ── The tab pill steps aside for a sheet ─────────────────────────── */
+@media (max-width: 699.98px) {
+  body:has(.dev-ws-needs[data-ws-sheet]) #dev-ws-rail-host { visibility: hidden; }
+}
 /* ── The deck at the top, on a wide screen ───────────────────
    On a phone the deck fills the reading area and the answers sit at the
    floor, which is where the thumb is. On a desktop that same rule spends
@@ -12433,25 +12727,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
    auto`, not by the deck's height. The ask log takes a cap instead of a
    fraction of the screen for the same reason. */
 @media (min-width: 700px) {
-  /* THE DECK AT THE TOP, THE ASK AT THE FLOOR. `flex: 0 0 auto` with
-     `align-content: start` used to content-size the whole deck, which put the
-     ask box directly under the answers and left the rest of the window empty
-     beneath it — measured at 1440x900, 271px of gap between the composer and
-     the rail. Filling the area and giving the SECOND row the free space keeps
-     the deck content-sized at the top (the reason the rule exists) while the
-     box you type in sits where the bar is, which is where the hand already
-     is. `align-self: end` on the pane rather than `align-items` so the
-     subject above it still stretches to its own row. */
-  .dev-ws-needs,
-  .dev-ws-needs-engaged {
-    flex: 1 1 auto;
-    grid-template-rows: auto 1fr;
-    align-content: stretch;
-    min-height: 0;
-  }
-  .dev-ws-needs > .dev-ws-ask { align-self: end; }
-  .dev-ws-needs-scroll { flex: 0 1 auto; }
-  .dev-ws-ask-log { max-height: 40vh; }
 
   /* ── A wide window reads the tabs at the TOP, as a segmented control ───
      A pill pinned to the floor of a 900px window puts the switch as far from
@@ -12554,232 +12829,102 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      it — that clearance exists only for a bar that floats over what scrolls
      beneath it. */
   .dev-ws-tabbody { padding-bottom: 0; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .dev-ws-needs { transition: grid-template-rows .22s ease; }
-}
-.dev-ws-needs-subject,
-.dev-ws-ask {
-  min-height: 0;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 12px 14px;
-  border-radius: 22px;
-  background-color: var(--dc-sheet-fill);
-  backdrop-filter: var(--dc-frost);
-  -webkit-backdrop-filter: var(--dc-frost);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dev-ws-needs-subject, .dev-ws-ask { background-color: var(--dc-sheet); }
-}
-.dev-ws-needs-head,
-.dev-ws-ask-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.dev-ws-needs-scroll {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 2px;
-}
-/* The voter-facing sentence, and the biggest type on the screen after the
-   card's own title: on a screen whose only job is a decision, what changes
-   for a person using the app is the thing to read first. */
-.dev-ws-needs-summary {
-  margin: 0; font-size: 16px; line-height: 1.5; color: var(--text-primary);
-  white-space: pre-wrap;
-}
-.dev-ws-needs-nosummary { color: var(--text-muted); font-size: 14px; font-style: italic; }
-/* ── The three answers ───────────────────────────────────────
-   Big, because this is the one thing the screen is for and a decision is a
-   poor place for a small target. Three rather than two: "not now" is a real
-   answer, and a queue that accepts only yes or no gets answered carelessly
-   by people who want it to end. */
-.dev-ws-answer { display: flex; flex-direction: column; gap: 8px; }
-.dev-ws-ask-q {
-  margin: 0; text-align: center;
-  font-size: 15px; font-weight: 600; color: var(--text-primary);
-}
-.dev-ws-answer-row { display: flex; gap: 8px; }
-/* ── The move row: WHICH card, not what about it ───────────────────────
-   Quieter than the answers above it, on purpose. Those are decisions and
-   this is a page turn, so it takes the same width and half the weight: no
-   fill, a hairline, and the muted ink the lander already uses for things
-   that are navigation rather than acts. Shorter too — 44px is the shell's
-   tap minimum, and turning a page does not need the thumb-sized target a
-   vote does. */
-.dev-ws-move-row {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 10px;
-}
-/* CONTENT WIDTH, AT THE EDGES. Full-width boxes here were two equal boxes
-   under two equal boxes, and the row read as two more answers. Sized to their
-   own words they cannot line up with the pair above — "Previous" is a wider
-   word than "Next", so they are visibly not a matched set — and pushing them
-   apart leaves the centre for the count. Words rather than bare chevrons for
-   the same reason: a label says navigation where an arrow alone says button. */
-.dev-ws-move-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 14px;
-  border: 1px solid var(--app-sheet-line); border-radius: 14px;
-  background: transparent; color: var(--text-muted);
-  font: inherit; font-size: 13.5px; font-weight: 600;
-  cursor: pointer;
-}
-.dev-ws-move-btn:hover:not(:disabled) { background: var(--state-neutral-bg); color: var(--text-primary); }
-.dev-ws-move-btn:disabled { opacity: .35; cursor: default; }
-.dev-ws-move-icon { width: 16px; height: 16px; }
-.dev-ws-answer-btn {
-  flex: 1 1 0; min-width: 0; height: 52px;
-  border-radius: 16px; border: 1px solid transparent;
-  font: inherit; font-size: 16px; font-weight: 600;
-  cursor: pointer;
-}
-.dev-ws-answer-btn:disabled { opacity: .4; cursor: default; }
-.dev-ws-answer-yes { background: var(--state-ok-bg); color: var(--state-ok); border-color: currentColor; }
-/* `--state-blocked` is the platform's own red — the same token the blocked
-   pills use — rather than a literal. There is no `--state-bad`. */
-.dev-ws-answer-no { background: var(--state-blocked-bg); color: var(--state-blocked); border-color: currentColor; }
-/* Skip is deliberately the quiet one: it is always available and should
-   never be the easiest thing to hit by accident. */
-.dev-ws-answer-skip {
-  background: transparent; color: var(--text-muted);
-  border-color: var(--app-sheet-line); font-weight: 500;
-}
-.dev-ws-answer-btn[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
-/* ── Since your last visit ───────────────────────────────────
-   A HEADING over rows, not a disclosure. It was one collapsed line with a
-   caret, on the reasoning that most visits do not need the fact — and what
-   that produced was a strip nobody opened: the count said something had
-   moved and the rows saying what were behind a press. The bargain is the
-   LIST'S LENGTH now (three, then `Show older`), not its existence, which is
-   what the week walk one pane up already does with its own history.
 
-   `.dev-ws-since-head` is what `.dev-ws-since-row` was, minus everything
-   that said "press me": no pill radius, no pointer, no hover ink, no caret.
-   It is the pane's eyebrow, with a count riding it. */
-.dev-ws-since-head {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 2px 2px 0;
-  font-size: 13px; font-weight: 600;
-  color: var(--text-muted); text-align: left;
+  /* ── THE FEED ON A WIDE WINDOW: THE STAGE ──
+     Above 700px the lander is a ROW: the feed as a 720px card at the centre,
+     the rail standing beside it with a word and a key under each button, and
+     the arrows below the rail doing what the wheel does. Anything that was a
+     sheet becomes a PANEL to the right, and the row re-centres around it, so
+     the item stays readable while you use it; the vote is a popover on its
+     own button. The Workshop column widens past its 760px reading measure
+     for this tab alone — the same release the Board pane has. */
+  #dev-workshop:has(.dev-ws[data-ws-tab="needs"]) { max-width: none; }
+  .dev-ws-needs {
+    flex-direction: row; justify-content: center; align-items: stretch;
+    gap: 22px; min-height: 480px;
+    /* A line of its own under the stage for the key legend, so the legend
+       never lies across the card's caption or the arrows below the rail. */
+    padding-bottom: 30px;
+  }
+  .dev-ws-needs-scroll { flex: 0 1 720px; max-width: 720px; border-radius: 24px; }
+  .dev-ws-item { padding: 26px 32px 22px; border-radius: 24px; }
+  .dev-ws-item-title { font-size: 32px; line-height: 1.14; margin-right: 0; max-width: 30ch; }
+  .dev-ws-item-summary { font-size: 19px; line-height: 1.45; margin-right: 0; max-width: 62ch; }
+  .dev-ws-item-caption { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; padding-right: 0; }
+  /* The by-line keeps its one line; the chips take the rest and wrap. */
+  .dev-ws-item-by { flex: 0 0 auto; max-width: 55%; }
+  .dev-ws-item-chips { flex: 1 1 auto; justify-content: flex-end; }
+  .dev-ws-media-view { margin-right: 0; }
+  .dev-ws-seg { right: 12px; }
+  .dev-ws-rail {
+    position: relative; right: auto; bottom: auto; z-index: auto;
+    flex: 0 0 84px; padding-top: 6px; gap: 14px;
+  }
+  .dev-ws-rail-btn { width: 84px; }
+  .dev-ws-rail-ic { width: 52px; height: 52px; background-color: var(--dc-sheet); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .dev-ws-rail-lab { font-size: 12px; }
+  .dev-ws-rail-key { display: block; font-size: 10px; color: var(--text-faint); font-family: ui-monospace, Menlo, monospace; }
+  .dev-ws-move { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: auto; padding-top: 14px; }
+  .dev-ws-move-btn {
+    width: 44px; height: 44px; border-radius: 9999px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--dc-sheet); color: var(--text-primary);
+    display: grid; place-items: center;
+  }
+  .dev-ws-move-btn:disabled { opacity: .35; cursor: default; }
+  .dev-ws-move-icon { width: 20px; height: 20px; }
+  .dev-ws-keys {
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30px; margin: 0;
+    white-space: nowrap;
+    font-size: 12px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace;
+  }
+  .dev-ws-keys kbd {
+    display: inline-block; padding: 1px 6px; margin: 0 2px; border-radius: 5px;
+    border: 1px solid var(--border); background: var(--dc-sheet); color: var(--text-secondary);
+    font: inherit; font-weight: 600;
+  }
+  /* The panels: Ask and comments beside the rail, the stage's full height. */
+  .dev-ws-sheet-ask, .dev-ws-sheet-comments {
+    position: relative; inset: auto; flex: 0 0 400px; z-index: auto;
+    display: flex; flex-direction: column;
+  }
+  .dev-ws-sheet-ask > .dev-ws-scrim, .dev-ws-sheet-comments > .dev-ws-scrim { display: none; }
+  .dev-ws-sheet-ask > .dev-ws-sheet-card, .dev-ws-sheet-comments > .dev-ws-sheet-card {
+    flex: 1 1 auto; max-height: none; min-height: 0;
+    padding: 18px 20px 12px;
+    border-radius: 24px;
+    border: 1px solid var(--app-sheet-line);
+    box-shadow: 0 18px 50px rgba(24, 39, 75, .12);
+  }
+  .dev-ws-sheet-handle { display: none; }
+  /* The vote: a popover on its button, arrow towards it. */
+  .dev-ws-sheet-vote { position: absolute; inset: auto calc(100% + 12px) auto auto; top: -8px; width: 340px; z-index: 6; display: block; }
+  .dev-ws-sheet-vote > .dev-ws-scrim { position: fixed; background: transparent; }
+  .dev-ws-sheet-vote > .dev-ws-sheet-card {
+    max-height: none; padding: 18px 18px 16px;
+    border-radius: 18px; border: 1px solid var(--app-sheet-line);
+    box-shadow: 0 18px 50px rgba(24, 39, 75, .22);
+  }
+  .dev-ws-sheet-vote > .dev-ws-sheet-card::after {
+    content: ""; position: absolute; right: -8px; top: 24px; width: 16px; height: 16px;
+    background: var(--dc-sheet); border-right: 1px solid var(--app-sheet-line); border-top: 1px solid var(--app-sheet-line);
+    transform: rotate(45deg);
+  }
+  .dev-ws-ask-q { font-size: 18px; }
+  .dev-ws-vote-sub { font-size: 13px; }
+  .dev-ws-answer-btn { height: 46px; font-size: 15px; border-radius: 12px; }
+  .dev-ws-keys-hint { display: block; align-self: center; margin: 4px 0 0; font-size: 11px; color: var(--text-faint); font-family: ui-monospace, Menlo, monospace; }
+  .dev-ws-ask-msg { font-size: 14px; }
+  .dev-ws-ask-log { max-height: none; }
 }
-.dev-ws-since-label { flex: 1 1 auto; min-width: 0; }
-.dev-ws-since-n {
-  flex: none; display: inline-flex; align-items: center; justify-content: center;
-  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
-  background: var(--brand-tint); color: var(--brand-ink);
-  font-size: 11px; font-variant-numeric: tabular-nums;
-}
-/* `Show older` is the week walk's own control — `.dev-ws-reveal`, centred,
-   caret down at what it is about to reveal — and it sits under a stack of
-   full-width rows exactly as that one does, so it takes the centred form
-   rather than `.dev-ws-reveal-start`'s lane indent. Nothing of its own but
-   the air between it and the last row. */
-.dev-ws-since-more { margin-top: 2px; }
-/* ── The ask box's model ─────────────────────────────────────
-   The dev session's own list, and only once the box is in use: a picker over
-   an empty composer is a setting nobody has a use for yet. */
-/* The dev session's own control: `.dc-model-select` strips it back to plain
-   text and `.dc-model-name` truncates it. The caret is a sibling here rather
-   than a child, because a <select> cannot contain one — the session uses a
-   button and a kit menu, which this pane has no use for yet. */
-/* `min-width: 0` and a cap, both: a <select>'s intrinsic width is its
-   LONGEST OPTION, so "Fable 5.1 — design, taste, and difficult coding"
-   silently widened the deck past the screen. The document did not scroll —
-   the overflow was inside the frame — which is exactly the kind that hides
-   from a page-level check. */
-.dev-ws-ask-model { display: flex; align-items: center; gap: 3px; min-width: 0; max-width: 100%; }
-.dev-ws-ask-model > select { min-width: 0; max-width: 100%; flex: 0 1 auto; }
-.dev-ws-ask-model-chev { flex: none; width: 14px; height: 14px; color: var(--text-muted); }
-.dev-ws-needs-nav { display: flex; align-items: center; justify-content: center; gap: 10px; }
-.dev-ws-needs-of { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-/* In its own pane the note needs no lane indent. */
-.dev-ws-since-note { margin-left: 0; }
-.dev-ws-needs-done {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; text-align: center; padding: 48px 16px;
-}
-.dev-ws-needs-done-line { margin: 0; font-size: 17px; font-weight: 600; }
-.dev-ws-needs-done-sub { margin: 0; font-size: 14px; color: var(--text-muted); }
 
-/* ── Ask about this change ───────────────────────────────────
-   NOT WIRED UP. The composer is real; the answer is a placeholder that says
-   so on screen, because there is no endpoint that answers questions about a
-   proposal and inventing one before this layout is agreed is the wrong
-   order of work. */
-.dev-ws-ask-log {
-  flex: 1 1 auto; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 6px;
+/* Between the breakpoint and a wide desktop the panel would push the card
+   off the stage, so it OVERLAYS the stage's right side instead. */
+@media (min-width: 700px) and (max-width: 1179.98px) {
+  .dev-ws-sheet-ask, .dev-ws-sheet-comments {
+    position: absolute; right: 0; top: 0; bottom: 0; width: min(400px, 60%); z-index: 8;
+  }
 }
-.dev-ws-ask-hint { margin: 0; font-size: 13px; color: var(--text-muted); font-style: italic; }
-.dev-ws-ask-msg {
-  margin: 0; padding: 7px 11px; border-radius: 14px;
-  font-size: 14px; line-height: 1.45; max-width: 88%;
-}
-.dev-ws-ask-you { align-self: flex-end; background: var(--accent); color: #fff; }
-.dev-ws-ask-ai { align-self: flex-start; background: var(--dc-sheet); color: var(--text-primary); }
-/* An answer on its way. It occupies the bubble the answer will fill, so the
-   pane does not jump when it lands; muted and italic so it never reads as
-   the answer itself. The pulse is the only thing saying it is still going,
-   and it is dropped for anyone who has asked for less motion. */
-.dev-ws-ask-pending {
-  color: var(--text-muted); font-style: italic;
-  animation: dev-ws-ask-breathe 1.6s ease-in-out infinite;
-}
-@keyframes dev-ws-ask-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-@media (prefers-reduced-motion: reduce) {
-  .dev-ws-ask-pending { animation: none; }
-}
-/* A question that did not get an answer. Tinted rather than shouted: the
-   text in it is the server's own sentence ("you are out of allowance", "too
-   many at once"), which is information, not an alarm — but it must not be
-   mistakable for an answer about the change. */
-.dev-ws-ask-failed {
-  background: var(--danger-soft, rgba(220, 38, 38, 0.10));
-  color: var(--danger-strong, #b91c1c);
-}
-/* The composer is `.dc-card`: one white surface holding the field and a row
-   of controls under it. Everything here is what that card does NOT carry —
-   the field's own reset, and the row's spacing.
-
-   THE PADDING IS SQUARED UP, and that is a real fix rather than a tidy-up.
-   `.dc-card` ships `0.875rem 1rem 0.625rem` — 14 over, 10 under — which is
-   right for the dev session's composer, a tall field with a row of controls
-   below it where the optical weight sits low. Here, at rest, the card holds
-   ONE line: 14 above it and 10 below put that line 2px under the middle of
-   its own box, which is what "the ask box sits slightly low" was. Measured
-   at 402x874: a 58px card with its 34px line starting at 14. Even padding
-   centres it at either height. */
-.dev-ws-ask-composer { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
-/* THE RESTING LINE: the field, and the send circle while the card is ONE row.
-   The whole controls row once sat behind focus, which took the send button
-   with it and left a card that looked like a text box and nothing else — no
-   sign it would do anything. That is what the circle is doing here: a
-   collapsed composer still has to say it sends. Open, the circle is the last
-   thing in the card instead (`.dev-ws-ask-row` below), and the model is what
-   earns the second row's height. */
-.dev-ws-ask-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dev-ws-ask-line > .dev-ws-ask-input { flex: 1 1 auto; }
-.dev-ws-ask-input {
-  width: 100%; min-width: 0;
-  border: 0; padding: 0; background: transparent;
-  color: var(--text-primary); font: inherit; font-size: 15px; line-height: 1.4;
-}
-.dev-ws-ask-input:focus { outline: none; }
-.dev-ws-ask-input::placeholder { color: var(--text-muted); }
-/* THE CONTROLS ROW, AND THE SEND CIRCLE AT ITS RIGHT END. Open, the card is
-   a field over a row, and the send belongs where a composer's send belongs —
-   the bottom right corner, which is also where `.dc-card-row` puts the dev
-   session's own. `margin-left: auto` rather than `justify-content`, because
-   the model picker to its left has to keep shrinking into whatever is left
-   (a <select>'s intrinsic width is its longest option — see above). With no
-   picker the circle is the row's only child and the auto margin still pins
-   it right. */
-.dev-ws-ask-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dev-ws-ask-row > .dev-ws-ask-send { margin-left: auto; }
-/* Smaller than the session's 44px circle: that one is the primary action of
-   a whole screen, this is the second control in a pane that is a third of
-   one. The fill, the ink and the halo are `.dc-circle-send`'s. */
-.dev-ws-ask-send { width: 34px; height: 34px; }
-.dev-ws-ask-send-icon { width: 17px; height: 17px; }
-.dev-ws-ask-send:disabled { opacity: .45; cursor: default; }
 .dev-ws-reveal[aria-expanded="true"] .dev-ws-reveal-chev { transform: rotate(180deg); }
 .dev-ws-week-note {
   margin: 0; font-size: 12px; color: var(--text-muted); text-align: center;
@@ -12886,20 +13031,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 .dev-ws-lane-btn { margin: 2px 0 0 4px; }
 /* The offer under a lane's heading, where the heading states the fact. */
 .dev-ws-lane-note { margin: -2px 0 6px 16px; font-size: 12px; color: var(--text-muted); }
-/* ── "What needs you": the ring ────────────────────────────────
-   The pane stated a debt in the warning tint with no way to close it. The
-   ring is the home screen's Challenges primitive saying the same thing as
-   progress.
-
-   It sits ON THE LANE HEADING now, not in the strip head — it counts the
-   vote lane, and the strip head covers two lanes. `.dev-ws-needs-end` (the
-   ring-and-words wrapper) and `.dev-ws-needs-count` (the words) are retired
-   with that move: the words are the lane's `.dev-ws-lane-note`, in the same
-   place the free-to-take lane keeps its own line.
-
-   22px, not 30px: the heading it now rides is 12px tracked-out caps, and
-   the old size set the height of the whole row. */
-.dev-ws-vote-ring { width: 22px; height: 22px; flex: none; margin-left: 2px; }
 .dev-ws-pill {
   display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
   font-size: 12px; font-weight: 600; white-space: nowrap;

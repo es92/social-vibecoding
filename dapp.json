@@ -1963,15 +1963,21 @@
       "expectText": "[Mock] Voting"
     },
     {
-      "name": "The Workshop's Needs-you tab is one proposal at a time, with its vote button and the sentence a voter reads",
+      "name": "The Workshop's Needs-you tab is a feed of one decision per screen, with a Vote control on its rail",
       "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop [data-ws-needs] > .dev-ws-needs-subject > .dev-ws-needs-scroll > .gc-vote-item:has(+ .dev-ws-needs-summary) button.dev-vote-btn",
+      "expectSelector": "#dev-workshop [data-ws-needs] > [data-ws-rail] > button[data-ws-rail-btn=\"vote\"]",
       "expectText": "Vote"
     },
     {
-      "name": "The Needs-you deck's ask box is present and ready to take a question about the card",
+      "name": "A Needs-you item leads with its title, then the sentence a voter reads, then the caption with who and when",
       "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop [data-ws-needs] [data-ws-ask] form.dev-ws-ask-composer input#dev-ws-ask-input"
+      "expectSelector": "#dev-workshop [data-ws-needs] > .dev-ws-needs-scroll > [data-ws-item][data-ws-kind=\"vote\"] > .dev-ws-item-title + .dev-ws-item-summary ~ .dev-ws-item-caption > .dev-ws-item-by"
+    },
+    {
+      "name": "The Needs-you feed's rail offers Ask, which opens the question box about the item in front of you",
+      "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
+      "expectSelector": "#dev-workshop [data-ws-needs] > [data-ws-rail] > button[data-ws-rail-btn=\"ask\"]",
+      "expectText": "Ask"
     },
     {
       "name": "The view strip marks Workshop as the one you are on",

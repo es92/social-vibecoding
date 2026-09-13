@@ -905,7 +905,7 @@ test('the vote deck is its own tab; the unclaimed suggestion stays with the stat
   // The declared check walks to a vote button; it rides the Needs-you tab
   // now, which `?ws=needs` reaches.
   const needs = workshopHtml(AppView, 'needs');
-  assert.match(needs, /data-ws-needs=""[\s\S]*?class="dev-vote-btn"/);
+  assert.match(needs, /data-ws-needs=""[\s\S]*?data-ws-rail-btn="vote"/);
 });
 
 test('a quiet theme is not told it has never been built in', () => {
@@ -1045,10 +1045,13 @@ test('#1934: the rest of the unclaimed issues are the rest of the deck', () => {
     'nothing on the status tab any more');
   assert.deepEqual(plain(v.queue.filter((r) => r.kind === 'claim').map((r) => r.key)),
     ['need:issue:12', 'need:issue:13'], 'same order, behind the votes');
-  // The deck draws ONE card, so only the current question is in the DOM —
-  // the claim question is on the queue, and on screen when you reach it.
+  // The feed draws EVERY item (the fillers and the deep links need the rows
+  // in the DOM), votes first. The question itself is on the Vote sheet,
+  // which opens on a press; at rest an item says what kind of thing it is.
   const needs = workshopHtml(AppView, 'needs');
-  assert.match(needs, /class="dev-ws-ask-q">Should this change go in\?</, 'the first question');
+  assert.match(needs, /data-ws-item="vote:[^"]+" data-ws-kind="vote"[\s\S]*?Proposal · needs your vote/, 'the first item is a vote');
+  assert.match(needs, /data-ws-kind="claim"[\s\S]*?Open issue · nobody on it/, 'the claims follow');
+  assert.ok(!needs.includes('data-ws-ask-q'), 'the question is on the sheet, not on the item');
   assert.ok(!needs.includes('data-ws-next-more'), 'the vertical reveal is long retired');
 
   // Capped like a theme lane.
@@ -1498,39 +1501,31 @@ test('the vote badge is a ring AND the count in words, and cannot be closed', ()
   assert.equal(v.votes.total, 3);
 
   const html = workshopHtml(AppView, 'needs');
-  // The ring carries the shape of the answer; the sentence carries its
-  // meaning. "0/5" alone is a fraction with no subject, and a reader should
-  // not have to hover a donut to learn what the five are.
-  assert.match(html, /class="[^"]*dev-ws-vote-ring/);
-  assert.match(html, /1\/3/, 'answered of votable');
-  // The words are the vote lane's NOTE now, in the place the free-to-take
-  // lane keeps "Free to take, if you want to try solving an issue." — so
-  // both lanes read heading, offer, deck. They used to sit in the strip
-  // head beside the ring, which put one lane's subject above a heading
-  // that covers two.
-  assert.match(html, /class="dev-ws-eyebrow">2 proposals need your vote</);
+  // THE RING IS GONE, and so are the words that counted the debt. A feed
+  // has one counter — where you are in it — and the eyebrow says what the
+  // item in front of you IS, not how many are behind it. The total shows
+  // once, on the end card, which is the only place it is news.
+  assert.ok(!html.includes('dev-ws-vote-ring'), 'no ring');
+  assert.ok(!/proposals? needs? your vote</.test(html), 'no debt in words');
+  assert.match(html, /class="dev-ws-eyebrow">Proposal · needs your vote</, 'the kind, per item');
+  assert.match(html, /class="dev-ws-item-of">1 \/ \d+</, 'and the place in the feed');
   assert.ok(!html.includes('dev-ws-needs-count'), 'the strip-head pair is retired');
-  // The RULE, not the name: the stylesheet still names both retired classes
-  // in the comment that explains where they went, which is the point of the
-  // comment.
   assert.ok(!CSS.includes('.dev-ws-needs-count {'), 'and so is its rule');
   assert.ok(!CSS.includes('.dev-ws-needs-end {'), 'and the wrapper it sat in');
-  // And the ring rides the heading it counts.
-  assert.match(html, /class="dev-ws-needs-head">[\s\S]*?2 proposals need your vote[\s\S]{0,300}?dev-ws-vote-ring/);
-  assert.match(html, /aria-label="1 of 3 open proposals voted on"/);
+  assert.ok(!CSS.includes('.dev-ws-vote-ring {'), 'and the ring\'s');
 
   // And no ×. A count that can be closed is a count somebody stops seeing
-  // while it is still true, and this one is why the pane exists.
+  // while it is still true.
   assert.ok(!html.includes('data-ws-needs-close'), 'the dismissal is gone');
   assert.ok(!WORKSHOP.includes('ws-needs-you-dismissed'), 'and so is the key it wrote');
-  assert.ok(!WORKSHOP.includes('XIcon'), 'and the icon it used');
 });
 
-test('one proposal needing a vote is singular', () => {
+test('an item names its kind; no sentence counts what is owed', () => {
   const AppView = makeAppView();
   seed(AppView);
   const html = workshopHtml(AppView, 'needs');
-  assert.match(html, /1 proposal needs your vote</);
+  assert.match(html, /class="dev-ws-eyebrow">Proposal · needs your vote</);
+  assert.ok(!/1 proposal needs your vote</.test(html), 'the sentence that counted the debt is gone');
 });
 
 test('the viewer\u2019s own work in flight leads the lander', () => {
@@ -1634,11 +1629,13 @@ test('every owed vote is in the deck, not on a filtered board', () => {
   // them. The deck is one queue of questions, not two lists.
   // Seven in the queue, and the count rides the head: the back/forward pair
   // is gone, because Skip is the only way forward a decision screen needs.
-  assert.match(html, /class="dev-ws-needs-of">1 \/ 7</, 'the deck counts the whole queue');
-  assert.ok(!html.includes('data-ws-needs-nav'), 'and no pager under the answers');
-  assert.equal((html.match(/dev-card-dense|dev-card-topic/g) || []).length, 1, 'one card on screen');
+  assert.match(html, /class="dev-ws-item-of">1 \/ 7</, 'the feed counts the whole queue');
+  assert.equal((html.match(/ data-ws-item="/g) || []).length, 7, 'and every item is in the DOM');
+  assert.ok(!html.includes('data-ws-needs-nav'), 'no pager under the answers');
+  assert.equal((html.match(/dev-card-dense|dev-card-topic/g) || []).length, 0,
+    'and no dense card: an item is its title, the sentence a voter reads, and the caption');
   assert.ok(!html.includes('data-ws-votes-more'), 'and there is no second disclosure');
-  assert.match(html, /5 proposals need your vote/, 'with the count in words above it');
+  assert.ok(!/5 proposals need your vote/.test(html), 'no count in words: the counter is the count');
 
   // Every row in the DOM is also what keeps the two legacy fillers working:
   // `_wireFeedComments` observes hosts it can only find if they are rendered,
@@ -1941,8 +1938,8 @@ test('the declared checks cover the lander, its strips and an unfolded row', () 
   assert.ok(demo && demo.expectSelector.includes('[data-ws-theme="demo-voting"]'));
   // The vote gate rides the Needs-you tab now, which `?ws=` reaches — the
   // platform's own rule for a screen that is otherwise behind a tap.
-  const votes = byName(/Needs-you tab is one proposal at a time/);
-  assert.ok(votes && /\[data-ws-needs\][\s\S]*button\.dev-vote-btn/.test(votes.expectSelector));
+  const votes = byName(/Needs-you tab is a feed of one decision per screen/);
+  assert.ok(votes && /\[data-ws-needs\] > \[data-ws-rail\] > button\[data-ws-rail-btn="vote"\]/.test(votes.expectSelector));
   assert.match(votes.path, /[?&]ws=needs/, 'and the URL names the tab');
   const unfolded = byName(/A Workshop row unfolds into the Activity sheet/);
   assert.ok(unfolded && /shot=feed-comments/.test(unfolded.path), 'the unfolded-row checks ride the capture deep link');
@@ -2823,7 +2820,7 @@ test('the lander fills its scroller without a percentage in the floor', () => {
   assert.match(CSS, /#dev-workshop > \.dev-ws \{ flex: 1 1 auto; width: 100%; \}/);
 });
 
-test('the ask box sits just above the rail, on both widths', () => {
+test('the ask box is a sheet on a phone and a panel on a wide window', () => {
   // It was floating well clear of the bar, for two different reasons.
   //
   // ON A PHONE the deck filled its box exactly and the box stopped 80px
@@ -2845,65 +2842,70 @@ test('the ask box sits just above the rail, on both widths', () => {
   // and at a 34px one, which is the point: one number, both devices.
   assert.ok(!/\.dev-ws\[data-ws-tab="needs"\] > \.dev-ws-tabbody \{ padding-bottom: 0/.test(
     CSS.replace(/\/\*[\s\S]*?\*\//g, '')));
-  // ON A DESKTOP the deck was content-sized top-aligned (`flex: 0 0 auto` with
-  // `align-content: start`), which put the ask box directly under the answers
-  // and left the window empty beneath it — measured at 1440x900, 271px. The
-  // deck still sits at the top, which is what that rule is for; the SECOND row
-  // takes the free space and the pane aligns to its end.
+  // ON A WIDE WINDOW there is no ask box at the floor any more. The ask is a
+  // PANEL beside the rail, the stage is a row — card, rail, panel — and the
+  // item's card is what takes the height. Its rules ride the one wide block
+  // the strip already has, because that block is the breakpoint.
   const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS);
-  assert.ok(wide, 'the wide-screen deck rule exists');
-  assert.match(wide[1], /grid-template-rows: auto 1fr;/, 'the deck is content-sized, the ask row takes the rest');
-  assert.match(wide[1], /\.dev-ws-needs > \.dev-ws-ask \{ align-self: end; \}/);
-  // Comments stripped first: the block above explains WHY `align-content:
-  // start` was wrong, and prose naming it is not the declaration this forbids
-  // — the same distinction the 100vw check in this file already makes.
-  assert.ok(!/align-content: start/.test(wide[1].replace(/\/\*[\s\S]*?\*\//g, '')),
-    'top-aligning the whole deck is what left the gap');
+  assert.ok(wide, 'the wide block exists');
+  assert.match(wide[1], /THE FEED ON A WIDE WINDOW: THE STAGE/, 'and the feed\'s rules are in it, not in a second one');
+  assert.match(wide[1], /\.dev-ws-needs \{\s*flex-direction: row;/, 'the lander is a row: card, rail, panel');
+  assert.match(wide[1], /\.dev-ws-sheet-ask, \.dev-ws-sheet-comments \{\s*position: relative; inset: auto; flex: 0 0 400px;/,
+    'ask and comments are panels');
+  assert.match(wide[1], /\.dev-ws-sheet-vote \{ position: absolute;/, 'and the vote is a popover on its button');
+  assert.ok(!/\.dev-ws-needs > \.dev-ws-ask/.test(CSS), 'nothing pins an ask box to the floor');
   // Both now measure 10px above the bar — `.dev-ws`'s own column gap, which is
   // the floor for anything sitting directly above the rail.
 });
 
-test('the deck answers in one row and moves in another', () => {
-  // TWO ROWS BECAUSE THEY ARE TWO QUESTIONS. The top one is what you can do
-  // about the card in front of you, and every press there records something.
-  // The bottom one only changes which card is in front of you, and records
-  // nothing.
-  //
-  // Skip belonged to neither and sat among the answers, where it read as a
-  // third verdict while doing nothing but advancing — and it could only go
-  // forwards, so a card passed by accident was gone. The arrows replace it.
+test('the feed answers on the Vote sheet and moves by swipe, arrows or keys', () => {
+  // THE ANSWERS ARE ON THE SHEET. The rail's Vote control opens the question
+  // and records nothing by itself — a thumbs-up on a rail reads as "like",
+  // and a queue answered by reflex is answered carelessly. Yes and No sit
+  // together on the sheet with the tally, and Decide later closes it.
   assert.ok(!/data-ws-answer-btn="skip"/.test(WORKSHOP), 'skip is gone from the answers');
   assert.ok(!/dev-ws-answer-skip/.test(WORKSHOP), 'and so is its button');
-  assert.match(WORKSHOP, /<div className="dev-ws-move-row" data-ws-move-row="">/);
-  for (const [dir, guard, word] of [
-    ['prev', /disabled=\{i <= 0\}/, /Previous/],
-    ['next', /disabled=\{i >= cards\.length - 1\}/, /Next/],
+  assert.match(WORKSHOP, /data-ws-rail-btn="vote"[\s\S]{0,400}?onClick=\{\(\) => toggleSheet\('vote'\)\}/, 'Vote opens the sheet');
+  assert.match(WORKSHOP, /data-ws-answer-btn="yes"[\s\S]{0,160}?onClick=\{\(\) => answer\('yes'\)\}/, 'Yes is on the sheet');
+  assert.match(WORKSHOP, /data-ws-answer-btn="no"[\s\S]{0,160}?onClick=\{\(\) => answer\('no'\)\}/, 'and so is No');
+  // NOTHING ADVANCES ON ITS OWN. The deck used to jump half a second after a
+  // vote, which in a feed reads as the card vanishing under the press: the
+  // row is pinned in place with its confirmation until you move on.
+  assert.ok(!/window\.setTimeout\(\(\) => setAt\(i \+ 1\)/.test(WORKSHOP), 'no auto-advance');
+  assert.match(WORKSHOP, /pinsRef\.current\.set\(row\.key, \{ row, index: i \}\);/, 'the answered row is pinned');
+  assert.match(WORKSHOP, /Voted \$\{voted\} · \$\{wide \? 'press ↓ or scroll' : 'swipe up'\} for the next/,
+    'and the eyebrow becomes the confirmation');
+  // THE ARROWS: icon buttons with a NAME, since a chevron alone has none,
+  // disabled at the ends rather than wrapping. Hidden on a phone, where the
+  // swipe is the move; on a wide window they do what the wheel does.
+  assert.match(WORKSHOP, /<div className="dev-ws-move" data-ws-move-row="">/);
+  for (const [dir, guard, name] of [
+    ['prev', /disabled=\{i <= 0\}/, /aria-label="Previous"/],
+    ['next', /disabled=\{i >= n - 1\}/, /aria-label="Next"/],
   ]) {
-    const btn = new RegExp(`data-ws-move="${dir}"[\\s\\S]{0,320}?</button>`).exec(WORKSHOP);
+    const btn = new RegExp(`data-ws-move="${dir}"[\\s\\S]{0,240}?</button>`).exec(WORKSHOP);
     assert.ok(btn, `the ${dir} control exists`);
     assert.match(btn[0], guard, `${dir} is disabled at its end rather than wrapping`);
-    // A VISIBLE WORD, not a bare chevron with an aria-label. An arrow alone
-    // reads as another button in a row of buttons; the label is what says
-    // navigation. It also means no `aria-label` is wanted — a visible name
-    // IS the accessible name, and a second one only invites them to drift.
-    assert.match(btn[0], word, `${dir} says what it does`);
-    assert.ok(!/aria-label/.test(btn[0]), `${dir} needs no aria-label over its own words`);
+    assert.match(btn[0], name, `${dir} is named`);
   }
-  // The count sits BETWEEN them rather than in the eyebrow: it answers "where
-  // am I", which is the question these two buttons change, and up there it was
-  // a second small number competing with the sentence saying how many need you.
-  assert.match(WORKSHOP, /data-ws-move="prev"[\s\S]{0,700}?dev-ws-needs-of[\s\S]{0,400}?data-ws-move="next"/);
-  assert.ok(!/dev-ws-needs-head[\s\S]{0,300}?dev-ws-needs-of/.test(WORKSHOP),
-    'and no longer in the head');
-  // NO WRAP, and no reordering. Skip used to send a card to the back, which
-  // was the only way back to it without losing your place; you walk back now.
-  // A deck that reorders itself as you browse is one you never reach the end
-  // of, and an arrow that silently returns you to the first card is how you
-  // lose your place in a queue you are working through.
-  assert.match(WORKSHOP, /const go = \(delta: number\) => setAt\(Math\.min\(Math\.max\(i \+ delta, 0\), cards\.length - 1\)\);/);
+  assert.match(CSS, /\.dev-ws-move \{ display: none; \}/, 'no arrows on a phone');
+  // The count rides each item's own top line beside its eyebrow: it answers
+  // "where am I" for the thing in front of you.
+  assert.match(WORKSHOP, /className="dev-ws-item-of">\{`\$\{index \+ 1\} \/ \$\{count\}`\}/);
+  // THE KEYS, every one also a button on the rail, ignored while a field has
+  // focus, and listed only where a keyboard is likely (app.css hides the
+  // legend on a phone).
+  assert.match(WORKSHOP, /if \(t && \(t\.tagName === 'INPUT' \|\| t\.tagName === 'TEXTAREA'/, 'typing is typing');
+  for (const key of ["'ArrowDown'", "'ArrowUp'", "'v' || k === 'V'", "'a' || k === 'A'", "'c' || k === 'C'", "'t' || k === 'T'", "'m' || k === 'M'", "'Escape'"]) {
+    assert.ok(WORKSHOP.includes(`k === ${key}`), `${key} is bound`);
+  }
+  assert.match(CSS, /\.dev-ws-keys \{ display: none; \}/, 'the legend is off on a phone');
+  // NO WRAP, and no reordering: the ends are the ends, the counter says
+  // which one you are at, and you walk back yourself.
+  assert.match(WORKSHOP, /const idx = Math\.min\(Math\.max\(i \+ delta, 0\), Math\.max\(0, n - 1\)\);/);
   assert.ok(!/setSkipped/.test(WORKSHOP), 'the re-queue went with the button it belonged to');
-  assert.match(WORKSHOP, /const cards = rows\.filter\(\(r\) => r\.t === 'card'\);/,
-    'the deck keeps the order it was published in');
+  assert.match(WORKSHOP, /const live = rows\.filter\(\(r\): r is QueueRow => r\.t === 'card'\);/,
+    'the feed keeps the order it was published in');
 });
 
 test('the lander opens on the tab you last used', () => {

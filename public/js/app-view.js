@@ -5402,6 +5402,64 @@ const AppView = {
       return AppView.WORKSHOP_TABS.indexOf(stored) !== -1 ? stored : 'status';
     } catch { return 'status'; }
   },
+  // "10h ago" for the feed's caption — the same ladder every card's meta line
+  // uses (relStamp), reduced to its text. '' when the stamp is missing.
+  _workshopAgo(ts) {
+    if (!ts) return '';
+    const part = AppView._agePart(ts);
+    return part ? part.s : '';
+  },
+
+  // The first before/after capture pair, as the Needs-you feed's picture.
+  // `visuals` is the server shape visualsTilesHtml reads — the grouped form
+  // or the legacy flat one — and this keeps only what the feed draws: one
+  // still per side (the recording is the detail view's), the route it was
+  // shot on, and whether it was a phone-frame capture (#768). Null when no
+  // group has a still on either side; a group with one honest half is kept,
+  // and the feed then shows that side alone.
+  _workshopVisuals(visuals) {
+    if (!visuals) return null;
+    const idOk = (id) => typeof id === 'string' && /^[a-f0-9]{32}$/.test(id);
+    const groups = Array.isArray(visuals.captures)
+      ? visuals.captures
+      : ((visuals.before || visuals.after)
+        ? [{ path: visuals.capturedPath || '/', before: visuals.before, after: visuals.after }]
+        : []);
+    for (const g of groups) {
+      const before = g && g.before && idOk(g.before.png) ? g.before.png : null;
+      const after = g && g.after && idOk(g.after.png) ? g.after.png : null;
+      if (!before && !after) continue;
+      return {
+        path: typeof g.path === 'string' ? g.path : '/',
+        mobile: !!(g.mobile || (g.viewport && g.viewport === 'mobile')),
+        before,
+        after,
+        beforeWebm: g.before && idOk(g.before.webm) ? g.before.webm : null,
+        afterWebm: g.after && idOk(g.after.webm) ? g.after.webm : null,
+      };
+    }
+    return null;
+  },
+
+  // An issue body as one plain sentence-run for the feed: markdown marks
+  // stripped, whitespace folded, cut at a word. The full body is on the
+  // issue's own page, which the title links to.
+  _workshopExcerpt(text, max = 320) {
+    if (typeof text !== 'string') return '';
+    const plain = text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/^[#>*\-\s]+/gm, '')
+      .replace(/[*_`~]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (plain.length <= max) return plain;
+    const cut = plain.slice(0, max);
+    const at = cut.lastIndexOf(' ');
+    return `${(at > max * 0.6 ? cut.slice(0, at) : cut).trim()}…`;
+  },
+
   _setWorkshopTab(key) {
     const next = AppView.WORKSHOP_TABS.indexOf(key) !== -1 ? key : 'status';
     // An explicit tap retires the URL override, exactly as `_setWorkshopGroup`
@@ -6019,6 +6077,18 @@ const AppView = {
       askAbout: (item && item.id != null)
         ? { kind: kind === 'proposal' ? 'proposal' : 'gov', ref: item.id }
         : null,
+      // The feed's caption and its picture. `who`/`ago` are the
+      // card's own meta facts lifted out so the item can set them apart from
+      // the title; `visuals` is the first before/after capture pair, which
+      // is the item's picture when the checks shot one.
+      who: AppView._devCardAuthor(kind, item) || null,
+      ago: AppView._workshopAgo(item && (item.promoted_at || item.created_at)),
+      number: item && (item.pr_number || item.id) != null ? Number(item.pr_number || item.id) : null,
+      body: null,
+      visuals: kind === 'proposal' ? AppView._workshopVisuals(item && item.visuals) : null,
+      // The app's own thread on the item, for the feed's comments sheet —
+      // the same reference an unfolded row carries.
+      thread: AppView._feedThreadRef({ kind, item }),
     });
     // EVERY owed row, not the first few. "N more waiting on you" used to send
     // the viewer to the Board with a filter set — it left the lander, it
@@ -6230,6 +6300,13 @@ const AppView = {
         kind: 'claim',
         summary: null,
         askAbout: n != null ? { kind: 'issue', ref: n } : null,
+        who: AppView._devCardAuthor('issue', e.item) || null,
+        ago: AppView._workshopAgo(e.item && (e.item.createdAt || e.item.created_at)),
+        number: n != null ? Number(n) : null,
+        // The issue's own words, as the line under its title. Plain text:
+        // the feed sets it as a sentence, not as a document.
+        body: AppView._workshopExcerpt(e.item && e.item.body),
+        visuals: null,
         // TWO ANSWERS, NOT THREE. "No" and "Skip" were the same press wearing
         // two labels: neither recorded anything, both moved the deck on, and
         // offering them side by side asked the reader to tell apart a

@@ -360,6 +360,25 @@ export interface DevWorkshopView {
     ask: string;
     yes: { label: string; act: { fn: string; args: unknown[] } | null } | null;
     no: { label: string; act: { fn: string; args: unknown[] } | null } | null;
+    /** The caption's facts, lifted off the card's meta line. */
+    who?: string | null;
+    ago?: string;
+    number?: number | null;
+    /** An issue's body as one plain run, the claim item's sub-hero. */
+    body?: string | null;
+    /**
+     * The item's picture: the first before/after capture pair the checks
+     * shot, one still per side. Null when there is none, and the feed then
+     * leaves the space under the summary empty rather than faking one.
+     */
+    visuals?: {
+      path: string;
+      mobile: boolean;
+      before: string | null;
+      after: string | null;
+      beforeWebm: string | null;
+      afterWebm: string | null;
+    } | null;
   })[];
   /** Proposals awaiting THIS viewer's vote — pinned above the themes. */
   votes: {

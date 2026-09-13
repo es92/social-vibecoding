@@ -47,10 +47,17 @@ import { createPortal } from 'react-dom';
 
 import {
   ArrowUpIcon,
+  BallotIcon,
+  ChatBubbleTailIcon,
+  CheckIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
+  EllipsisHorizontalIcon,
+  HandRaisedIcon,
   NewspaperIcon,
+  PlayIcon,
+  SparklesIcon,
   SpeechCheckIcon,
   Squares2X2Icon,
 } from '@/components/ui/icons';
@@ -62,7 +69,8 @@ import { DevCard } from '../card/dev-card';
 import { DevKanban } from '../card/dev-kanban';
 import { DevActionsRow } from '../actions-row';
 import { useDevActions } from '../actions-store';
-import { CardRowView, callAppView } from '../card/fold';
+import { CardRowView, callAppView, openHref } from '../card/fold';
+import { FeedThread } from '../card/feed-thread';
 import type { DevWorkshopView, WorkshopTheme } from '../card/model';
 import { CardSkeleton } from '../card/skeleton';
 import { ProgressRing } from '@/components/ui/progress-ring';
@@ -648,208 +656,73 @@ function sinceWords(s: NonNullable<DevWorkshopView['since']>): string {
   return bits.length ? bits.join(', ') : `${s.rows.length} things moved`;
 }
 
-/**
- * The vote badge: a ring, beside the heading whose lane it counts.
+/* ═══════════════════════════════════════════════════════════════════════
+ * `Needs you` — a feed of decisions.
  *
- * It was "4 to vote on" in the warning tint, which stated a debt. The ring
- * says the same population as PROGRESS — how many of the app's open
- * proposals this viewer has answered — using the primitive the home
- * screen's Challenges block uses.
+ * ── What it is ───────────────────────────────────────────────────────
  *
- * A ring alone is a fraction with no subject: "0/5" does not say what the
- * five are, and a reader should not have to hover a donut to find out. So
- * the words are still there (`voteWords` below) — under the deck's own
- * heading in the `Needs you` tab, which is where the ring went when voting
- * became a screen of its own rather than one lane of three.
+ * One item fills the screen: a proposal owed a vote, or an issue nobody has
+ * picked up. A swipe (a wheel, an arrow key) snaps to the next, and nothing
+ * inside an item scrolls. Everything that acts on the item or says more
+ * about it is a button on a RAIL at the right edge — Vote, comments, Ask,
+ * Try it, More — and each opens a sheet over the item rather than a page
+ * away from it. The shape is the short-video feed's, because its two claims
+ * are the ones this screen makes: one thing at a time, and the thing you
+ * look at is the whole screen.
  *
- * There is no × any more. A count that can be closed is a count somebody
- * stops seeing while it is still true, and this one is the whole reason the
- * pane exists.
- */
-function voteWords(owed: number): string {
-  return `${owed} ${owed === 1 ? 'proposal needs' : 'proposals need'} your vote`;
-}
+ * ── The item, top to bottom ──────────────────────────────────────────
+ *
+ * A progress line and an eyebrow that says what kind of item this is and
+ * where you are ("1 / 59"); the TITLE; the plain-language SUMMARY under it as
+ * the sub-hero (`pr_summary_md`, or an issue's own words); the PICTURE, when
+ * the checks shot one (see BeforeAfter); and a CAPTION with who, when, and
+ * the state chips. The text sits at the top so the picture can take the
+ * rest — a proposal with captures is mostly its picture.
+ *
+ * ── The rail ─────────────────────────────────────────────────────────
+ *
+ * ONE rail, for the item in view, rather than one per item: the buttons stay
+ * where the thumb learned they are while the items move under them. Vote is
+ * one control that opens the question — Yes and No live on its sheet, with
+ * the tally — because a thumbs-up on a rail reads as "like", and this is not
+ * that. More is the card's own ⋯ menu: the same `data-card-menu` hook the
+ * Board's cards carry, so `_openCardMenu` finds it and the entries are
+ * exactly the card's (Open session, Withdraw, Explore in dev chat, View PR
+ * on GitHub…). Try it is the card's Preview affordance under a name that
+ * says what it does.
+ *
+ * ── Sheets on a phone; panels and a popover on a wide window ─────────
+ *
+ * The same markup, placed by app.css. Below 700px a sheet rises from the
+ * floor over a scrim and the tab pill hides under it. Above, Ask and the
+ * comments take a PANEL beside the rail and the stage slides over, so the
+ * item stays readable while you use them, and Vote is a popover on its own
+ * button. `useWideLayout` is that breakpoint in the other language; the keys
+ * (↑ ↓ move, V vote, A ask, C comments, T try it, M more) work everywhere
+ * and are only LISTED on the wide layout, where a keyboard is likely.
+ *
+ * ── After a vote ─────────────────────────────────────────────────────
+ *
+ * Nothing advances on its own. The row leaves the queue on the click
+ * (#2031), so the feed PINS a copy of it in place — the eyebrow becomes the
+ * confirmation and the Vote button a tick — until you move on; a card that
+ * vanished under the press read as a mis-tap. Moving to another item drops
+ * the pin, and the scroller re-syncs to the row you are on BY KEY, so a row
+ * leaving above you never shifts what you are reading.
+ *
+ * ── Two rules kept from the deck this replaces ───────────────────────
+ *
+ * The ask thread loads in an EFFECT, never in render — a first paint that
+ * differs from the shipped markup is a hydration mismatch, a console error
+ * and a failed check — and the composer is written once (`sendBtn`) so its
+ * two homes cannot drift. Every item stays in the DOM, so the legacy comment
+ * filler (`_wireFeedComments`) can find its hosts.
+ * ═══════════════════════════════════════════════════════════════════════ */
 
-function VoteRing({ owed, total }: { owed: number; total: number }): ReactNode {
-  const done = Math.max(0, total - owed);
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  return (
-    <ProgressRing
-      className="dev-ws-vote-ring"
-      pct={pct}
-      label={`${done}/${total}`}
-      title={`${done} of ${total} open proposals voted on`}
-      arcClassName={owed ? 'stroke-amber-500' : 'stroke-emerald-500'}
-    />
-  );
-}
+type QueueRow = Extract<DevWorkshopView['queue'][number], { t: 'card' }>;
+type SheetKind = 'vote' | 'ask' | 'comments';
+type Side = 'before' | 'after';
 
-/**
- * One offer at a time, paged sideways.
- *
- * "Needs your vote" and "Nobody has picked this up" were vertical lists with
- * a "N more" button under each, so a viewer owing four votes read a column
- * four cards tall before reaching anything else — and the pane's whole claim
- * is that it holds what you could do in five minutes, which is ONE thing.
- * Paged, the strip is a constant height whatever it holds, and the count is
- * in the control rather than in the scroll.
- *
- * It is a real horizontal SCROLLER, not a swap of one rendered row:
- *
- *   - every row stays in the DOM, so the two legacy fillers keep finding
- *     their hosts (`_wireFeedComments` observes `.dev-feed-comments` and
- *     `_fillKudosHosts` fills `[data-kudos-host]`) and the `?shot=` deep
- *     link can still name a row that is not the visible one;
- *   - a touch drag pages it for free, with `scroll-snap`, which is the
- *     gesture the surface already invites on a phone.
- *
- * The buttons drive `scrollTo` and the index is read back from the scroll
- * position, so a swipe and a press cannot disagree about which card is up.
- */
-function RowPager({
-  rows, scope, title, titleExtra, note, slug, canPost, openKey, onToggle,
-}: {
-  rows: DevWorkshopView['votes']['rows'];
-  scope: string;
-  /** The lane's heading. The pager owns it, because the control rides it. */
-  title: string;
-  /** A badge that belongs to the heading itself, after the words. */
-  titleExtra?: ReactNode;
-  /** The line under the heading, where a lane has one. */
-  note?: string;
-  slug: string;
-  canPost: boolean;
-  openKey: string;
-  onToggle: (key: string) => void;
-}): ReactNode {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [i, setI] = useState(0);
-  const cards = rows.filter((r) => r.t === 'card');
-  if (!cards.length) return null;
-  const go = (n: number) => {
-    const t = trackRef.current;
-    const at = Math.max(0, Math.min(cards.length - 1, n));
-    setI(at);
-    if (t) t.scrollTo({ left: at * t.clientWidth, behavior: 'smooth' });
-  };
-  const onScroll = () => {
-    const t = trackRef.current;
-    if (!t || !t.clientWidth) return;
-    const at = Math.round(t.scrollLeft / t.clientWidth);
-    if (at !== i) setI(Math.max(0, Math.min(cards.length - 1, at)));
-  };
-  return (
-    <>
-      {/* The control rides the HEADING, not the space under the deck. Below
-          the card it was a free-floating row of three small things with a
-          card above and a heading below, belonging to neither; on the
-          heading it is plainly the control FOR this lane, and the deck and
-          the lane under it stay one block. */}
-      <div className="dev-ws-lane-head">
-        <h4 className="dev-ws-lane-title">
-          <span className="dev-ws-dot" aria-hidden="true"></span>{title}
-          {titleExtra}
-        </h4>
-        {cards.length > 1 ? (
-          <div className="dev-ws-pager-ctl" data-ws-pager-ctl="">
-            <button
-              type="button"
-              className="dev-ws-pager-btn"
-              aria-label="Previous"
-              disabled={i === 0}
-              onClick={() => go(i - 1)}
-            ><ChevronLeftIcon className="dev-ws-pager-chev" aria-hidden="true" /></button>
-            <span className="dev-ws-pager-n">{`${Math.min(i + 1, cards.length)} of ${cards.length}`}</span>
-            <button
-              type="button"
-              className="dev-ws-pager-btn"
-              aria-label="Next"
-              disabled={i >= cards.length - 1}
-              onClick={() => go(i + 1)}
-            ><ChevronRightIcon className="dev-ws-pager-chev" aria-hidden="true" /></button>
-          </div>
-        ) : null}
-      </div>
-      {note ? <p className="dev-ws-lane-note">{note}</p> : null}
-      <div className="dev-ws-pager" data-ws-pager={scope}>
-        <div className="dev-ws-pager-track" ref={trackRef} onScroll={onScroll}>
-          {cards.map((row) => (
-            <div className="dev-ws-pager-item" key={row.key}>
-              <CardRowView
-                row={row}
-                slug={slug}
-                canPost={canPost}
-                open={openKey === row.key}
-                onToggle={() => onToggle(row.key)}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-/**
- * `Needs you` — one question, filling the screen.
- *
- * The lander's other two tabs are things you READ. This one is a thing you
- * ANSWER, and it is built to make that the only thing on offer: one proposal
- * at a time, the whole screen, no list to skim past it and nothing else
- * competing for the tap. A deck of decisions rather than a page about them.
- *
- * ── Two panes, and why the bottom one grows ──────────────────────────
- *
- * The top pane is the thing being asked about; the bottom is where you can
- * ask about it. It opens at a third of the height — enough to say it is
- * there and to take a question — and grows to half once you have asked
- * something, because from that point the conversation is what you are
- * reading and the card is context for it. It stops at half: the card is the
- * subject, and a chat that swallows its own subject is a chat about nothing.
- *
- * ── The card leads with the SUMMARY, not the title ───────────────────
- *
- * A card's title is a pull-request title. `pr_summary_md` is the sentence
- * written for the person voting — what changes for somebody using the app —
- * and on a screen whose whole job is a decision, that is the first thing
- * that should be read. A proposal without one says so rather than leaving a
- * gap, because "no summary was written" is a fact a voter should have.
- *
- * ── What the chat answers, and what it is not ────────────────────────
- *
- * `POST /api/apps/:slug/workshop/ask` — one question about the card in
- * front of you, answered from what the SERVER knows about that card. It is
- * not the app's LLM proxy (that is for apps, billed to their own budgets)
- * and it is not `dev-chat` (that is the agent's session transcript).
- *
- * The request carries an ADDRESS and a question: `row.askAbout` is a kind
- * and a reference, and the server looks the item up from that pair. Nothing
- * this component says about the card reaches the model — see
- * services/workshop-ask.js for why that boundary is where it is.
- *
- * Each press is an LLM call billed to the asker, so the route is rate
- * limited per user and a failure is SHOWN rather than swallowed: a voter
- * who thinks they have an answer and does not is the one bad outcome here.
- *
- * ── The thread is the SERVER'S, and it is private ────────────────────
- *
- * Each exchange is stored per viewer per card (workshop_ask_messages,
- * `staging:private`), so walking back to a card brings its conversation
- * with it. Two consequences worth knowing here:
- *
- * It is loaded in an EFFECT and never in the initial render — the shell's
- * rule for a stateful island, because a first paint that differs from the
- * shipped markup is a hydration mismatch and a console error, which fails
- * proposal checks.
- *
- * And this component no longer sends its transcript back as history. The
- * server reads the thread it wrote, which is both why a reload keeps the
- * conversation and why nobody can put words in their own mouth — or the
- * model's — and have them replayed as established context.
- *
- * Nothing here is shared: a voter's questions about a change they have not
- * voted on say what they are unsure about, and only they can read them.
- */
 /** One turn in the ask box. `pending` is the answer still being written. */
 type AskMsg = { who: 'you' | 'ai'; text: string; pending?: boolean; failed?: boolean };
 
@@ -865,132 +738,537 @@ function askMsgClass(m: AskMsg): string {
   return 'dev-ws-ask-msg dev-ws-ask-ai';
 }
 
-function NeedsDeck({
-  rows, owed, total, models, slug,
-}: {
+/** The status pill's tone as a caption chip. Complete literals, as above. */
+function chipTone(tone: string | undefined): string {
+  switch (tone) {
+    case 'ok': return 'dev-ws-chip dev-ws-chip-ok';
+    case 'progress': return 'dev-ws-chip dev-ws-chip-progress';
+    case 'warn': case 'attention': return 'dev-ws-chip dev-ws-chip-warn';
+    case 'blocked': case 'reject': return 'dev-ws-chip dev-ws-chip-blocked';
+    default: return 'dev-ws-chip';
+  }
+}
+
+/**
+ * The caption's chips: what the card's status pill says, the tally, and the
+ * category or priority when one is set. Four at most — this is a caption,
+ * not the card's badge band, and the rail already says a vote is owed.
+ */
+/** The key legend for an item of this kind: the keys it answers to. */
+function legendFor(kind: QueueRow['kind']): Array<[string[], string]> {
+  const keys: Array<[string[], string]> = [[['↑', '↓'], 'move']];
+  if (kind === 'vote') keys.push([['V'], 'vote']);
+  keys.push([['A'], 'ask'], [['C'], 'comments']);
+  if (kind === 'vote') keys.push([['T'], 'try it']);
+  keys.push([['M'], 'more']);
+  return keys;
+}
+
+function chipsFor(row: QueueRow, voted: string | null): { key: string; cls: string; text: string }[] {
+  const out: { key: string; cls: string; text: string }[] = [];
+  const st = row.card.pill ? row.card.pill.state : null;
+  if (row.kind === 'vote' && st) {
+    if (voted) out.push({ key: 'voted', cls: 'dev-ws-chip dev-ws-chip-ok', text: `You voted ${voted}` });
+    if (st.label && !/^Vote\b/.test(st.label)) out.push({ key: 'state', cls: chipTone(st.tone), text: st.label });
+    out.push({ key: 'tally', cls: 'dev-ws-chip', text: `${st.yes} of ${st.majority} yes` });
+  }
+  for (const b of row.card.badges) {
+    if (b.t === 'attr' && (b.field === 'category' || b.field === 'priority') && b.label.text) {
+      out.push({ key: b.key, cls: 'dev-ws-chip dev-ws-chip-info', text: b.label.text });
+    }
+  }
+  return out.slice(0, 4);
+}
+
+/** The line under the vote question: where the vote stands, and what follows. */
+function tallyLine(row: QueueRow): string {
+  const st = row.card.pill ? row.card.pill.state : null;
+  if (!st) return '';
+  const said = `${st.yes} of ${st.majority} have said yes so far.`;
+  return st.label && !/^Vote\b/.test(st.label) ? `${said} ${st.label}.` : said;
+}
+
+/* ── The picture: two stills, cropped to what changed ───────────────── */
+
+type Geo = { w: number; h: number; box: { x: number; y: number; w: number; h: number } | null };
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`could not load ${src}`));
+    img.src = src;
+  });
+}
+
+/**
+ * Where the two stills differ, as a box in the image's own pixels.
+ *
+ * Both sides are drawn at 320px wide and compared pixel for pixel — a small
+ * job, and the region it finds is what the item shows near actual size. Null
+ * box means "show the whole page": the sides are missing or differently
+ * sized, they are identical, or the change covers most of the page (a theme,
+ * a redesign), where a crop would frame nothing.
+ */
+async function diffPair(before: string | null, after: string | null): Promise<Geo> {
+  const [a, b] = await Promise.all([
+    before ? loadImage(`/visuals/${before}`) : Promise.resolve(null),
+    after ? loadImage(`/visuals/${after}`) : Promise.resolve(null),
+  ]);
+  const main = b || a;
+  if (!main) throw new Error('no still');
+  const w = main.naturalWidth;
+  const h = main.naturalHeight;
+  if (!a || !b || a.naturalWidth !== w || a.naturalHeight !== h || !w || !h) return { w, h, box: null };
+  const k = Math.min(1, 320 / w);
+  const cw = Math.max(1, Math.round(w * k));
+  const ch = Math.max(1, Math.round(h * k));
+  const pixels = (img: HTMLImageElement): Uint8ClampedArray | null => {
+    const c = document.createElement('canvas');
+    c.width = cw;
+    c.height = ch;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0, cw, ch);
+    return ctx.getImageData(0, 0, cw, ch).data;
+  };
+  const pa = pixels(a);
+  const pb = pixels(b);
+  if (!pa || !pb) return { w, h, box: null };
+  let x0 = cw; let y0 = ch; let x1 = -1; let y1 = -1;
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const p = (y * cw + x) * 4;
+      const d = Math.abs(pa[p] - pb[p]) + Math.abs(pa[p + 1] - pb[p + 1]) + Math.abs(pa[p + 2] - pb[p + 2]);
+      if (d > 48) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 < 0) return { w, h, box: null };
+  const box = { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+  if (box.w * box.h > 0.6 * w * h) return { w, h, box: null };
+  return { w, h, box };
+}
+
+/**
+ * The item's picture: the two stills the checks shot, CROPPED TO THE CHANGE.
+ *
+ * The captures are 1280×800 desktop stills (capture/capture.js), and at a
+ * phone's width a whole page is a third of its size — unreadable, whatever
+ * the arrangement. So the region that differs is what fills the box, near
+ * actual size, with an outline around it and a Before / After switch inside
+ * it; when the change is the whole page the outline goes and the page fits
+ * the box instead. "Full page" opens the platform's comparison overlay
+ * (`openVisualComparison`), which reads the pair off the button's data-*.
+ *
+ * The diff runs in an EFFECT, and only for the item in view and its two
+ * neighbours (`near`) — never for the fifty behind them.
+ */
+function BeforeAfter({ v, near, onFull }: {
+  v: NonNullable<QueueRow['visuals']>;
+  near: boolean;
+  onFull: (el: HTMLElement) => void;
+}): ReactNode {
+  const viewRef = useRef<HTMLDivElement>(null);
+  const [side, setSide] = useState<Side>(v.after ? 'after' : 'before');
+  const [geo, setGeo] = useState<Geo | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [view, setView] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    if (!near || geo || failed) return undefined;
+    let live = true;
+    diffPair(v.before, v.after)
+      .then((g) => { if (live) setGeo(g); })
+      .catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, [near, geo, failed, v.before, v.after]);
+  useLayoutEffect(() => {
+    const el = viewRef.current;
+    if (!el || typeof ResizeObserver !== 'function') return undefined;
+    const measure = () => setView((cur) => (
+      cur.w === el.clientWidth && cur.h === el.clientHeight ? cur : { w: el.clientWidth, h: el.clientHeight }
+    ));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  if (failed) return null;
+  const id = side === 'after' ? v.after : v.before;
+  let style: { width: number; height: number; transform: string } | null = null;
+  let spot: { left: number; top: number; width: number; height: number } | null = null;
+  let cropped = false;
+  if (geo && view.w && view.h) {
+    const { w, h, box } = geo;
+    if (box) {
+      const pad = 24;
+      const scale = Math.min(1, view.w / (box.w + pad * 2), view.h / (box.h + pad * 2));
+      const sw = w * scale;
+      const sh = h * scale;
+      // On an axis the still overflows, slide it so the change is centred
+      // (clamped to the still's edges); on one it does not, centre the still.
+      const tx = sw <= view.w ? (view.w - sw) / 2 : Math.max(view.w - sw, Math.min(0, view.w / 2 - (box.x + box.w / 2) * scale));
+      const ty = sh <= view.h ? (view.h - sh) / 2 : Math.max(view.h - sh, Math.min(0, view.h / 2 - (box.y + box.h / 2) * scale));
+      style = { width: w, height: h, transform: `translate(${tx}px, ${ty}px) scale(${scale})` };
+      spot = { left: box.x * scale + tx, top: box.y * scale + ty, width: box.w * scale, height: box.h * scale };
+      cropped = sw > view.w + 1 || sh > view.h + 1;
+    } else {
+      const scale = Math.min(view.w / w, view.h / h);
+      style = { width: w, height: h, transform: `translate(${(view.w - w * scale) / 2}px, ${(view.h - h * scale) / 2}px) scale(${scale})` };
+    }
+  }
+  return (
+    <div className="dev-ws-media" data-ws-media="">
+      <div className="dev-ws-media-view" ref={viewRef}>
+        {id && style ? (
+          <img
+            className="dev-ws-media-img"
+            src={`/visuals/${id}`}
+            alt={side === 'after' ? 'After the change' : 'Before the change'}
+            style={style}
+            draggable={false}
+          />
+        ) : null}
+        {spot ? <span className="dev-ws-media-spot" style={spot} aria-hidden="true" /> : null}
+        {geo ? null : <span className="dev-ws-media-wait" aria-hidden="true" />}
+      </div>
+      <button
+        type="button"
+        className="dev-ws-media-full"
+        data-before-png={v.before || undefined}
+        data-after-png={v.after || undefined}
+        data-before-webm={v.beforeWebm || undefined}
+        data-after-webm={v.afterWebm || undefined}
+        data-path={v.path}
+        data-viewport={v.mobile ? 'mobile' : undefined}
+        data-side={side}
+        onClick={(e) => onFull(e.currentTarget)}
+      >
+        {cropped ? 'Cropped to the change · Full page ↗' : 'Full page ↗'}
+      </button>
+      {v.before && v.after ? (
+        <div className="dev-ws-seg" role="group" aria-label="Before or after">
+          <button type="button" className="dev-ws-seg-btn" aria-pressed={side === 'before'} onClick={() => setSide('before')}>Before</button>
+          <button type="button" className="dev-ws-seg-btn" aria-pressed={side === 'after'} onClick={() => setSide('after')}>After</button>
+        </div>
+      ) : (
+        <span className="dev-ws-seg dev-ws-seg-one">{v.after ? 'After' : 'Before'}</span>
+      )}
+    </div>
+  );
+}
+
+/* ── One item of the feed ────────────────────────────────────────────── */
+
+function FeedItem({ row, index, count, near, voted, wide, slug, onFull }: {
+  row: QueueRow;
+  index: number;
+  count: number;
+  near: boolean;
+  voted: string | null;
+  wide: boolean;
+  slug: string;
+  onFull: (el: HTMLElement) => void;
+}): ReactNode {
+  const isVote = row.kind === 'vote';
+  const href = openHref(slug, row.card);
+  const title = row.card.title.text || row.card.title.title;
+  const chips = chipsFor(row, voted);
+  const summary = isVote ? row.summary : (row.body || null);
+  const pct = Math.max(2, Math.round(((index + 1) / Math.max(1, count)) * 100));
+  return (
+    <section className="dev-ws-item" data-ws-item={row.key} data-ws-kind={row.kind} data-ws-tint={index % 2 ? 'b' : 'a'}>
+      <div className="dev-ws-item-progress" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
+      <div className="dev-ws-item-top">
+        {voted ? (
+          <span className="dev-ws-item-done" data-ws-item-done="">
+            <CheckIcon className="dev-ws-item-tick" aria-hidden="true" />
+            {`Voted ${voted} · ${wide ? 'press ↓ or scroll' : 'swipe up'} for the next`}
+          </span>
+        ) : (
+          <span className="dev-ws-eyebrow">{isVote ? 'Proposal · needs your vote' : 'Open issue · nobody on it'}</span>
+        )}
+        <span className="dev-ws-item-of">{`${index + 1} / ${count}`}</span>
+      </div>
+      {/* The title is the headline and the door to the full card: its own
+          page, with the checks, the thread and every affordance the card
+          has. Same route the Board's rows open. */}
+      <h2 className="dev-ws-item-title">{href ? <a href={href}>{title}</a> : title}</h2>
+      {summary ? (
+        <p className="dev-ws-item-summary">{summary}</p>
+      ) : (
+        <p className="dev-ws-item-summary dev-ws-item-nosummary">
+          {isVote ? 'No plain-language summary was written for this change.' : 'This issue has no description.'}
+        </p>
+      )}
+      {row.visuals ? <BeforeAfter v={row.visuals} near={near} onFull={onFull} /> : <div className="dev-ws-item-spacer" aria-hidden="true" />}
+      <div className="dev-ws-item-caption">
+        <p className="dev-ws-item-by">
+          {row.who ? (
+            <span className="dev-ws-item-avatar" style={{ background: swatchFor(row.who) }} aria-hidden="true">
+              {row.who.slice(0, 1).toUpperCase()}
+            </span>
+          ) : null}
+          <span>
+            {isVote ? (
+              <>{row.who ? <b>{row.who}</b> : 'Proposed'}{row.ago ? ` · ${row.who ? 'proposed ' : ''}${row.ago}` : ''}</>
+            ) : (
+              <>
+                {row.number != null ? <b>{`#${row.number}`}</b> : null}
+                {row.who ? <>{row.number != null ? ' · filed by ' : 'Filed by '}<b>{row.who}</b></> : null}
+                {row.ago ? ` · ${row.ago}` : ''}
+              </>
+            )}
+          </span>
+        </p>
+        {chips.length ? (
+          <div className="dev-ws-item-chips">
+            {chips.map((c) => <span key={c.key} className={c.cls}>{c.text}</span>)}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/** The end of the feed: nothing waiting, and the only place a total appears. */
+function DoneItem({ total, onDone }: { total: number; onDone: () => void }): ReactNode {
+  return (
+    <section className="dev-ws-item dev-ws-needs-done" data-ws-item="done" data-ws-kind="done">
+      {total ? (
+        <ProgressRing
+          className="dev-ws-done-ring"
+          pct={100}
+          label={`${total}/${total}`}
+          title={`All ${total} open proposals voted on`}
+          arcClassName="stroke-emerald-500"
+        />
+      ) : null}
+      <p className="dev-ws-needs-done-line">You’re all caught up.</p>
+      <p className="dev-ws-needs-done-sub">
+        Every proposal you can vote on has your answer, and every open issue has somebody on it.
+      </p>
+      <button type="button" className="dev-ws-done-cta" onClick={onDone}>See what changed this week</button>
+    </section>
+  );
+}
+
+/* ── The feed ────────────────────────────────────────────────────────── */
+
+function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   rows: DevWorkshopView['queue'];
-  owed: number;
   total: number;
   models: DevWorkshopView['models'];
   slug: string;
+  canPost: boolean;
+  onDone: () => void;
 }): ReactNode {
-  // THE DECK KEEPS ITS ORDER. Skip used to send a card to the back, which was
-  // the only way to come back to something without losing your place; with
-  // arrows you walk back to it yourself, and a deck that reorders itself as
-  // you browse is one you can never reach the end of.
-  const cards = rows.filter((r) => r.t === 'card');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const settleRef = useRef<number>(0);
   const [at, setAt] = useState(0);
+  const [sheet, setSheet] = useState<SheetKind | null>(null);
+  // Answered here, this session: the pinned row's confirmation.
+  const [answered, setAnswered] = useState<Record<string, string>>({});
+  // The pins, keyed by row, with the index each held when it was answered.
+  // A ref with a version counter rather than state, because a pin is set in
+  // the same breath as the vote and read back in the very next publish.
+  const pinsRef = useRef<Map<string, { row: QueueRow; index: number }>>(new Map());
+  const [pinsVersion, setPinsVersion] = useState(0);
+  // Which row the reader is ON, by key — the thing the list is re-synced to
+  // when rows leave or arrive above it.
+  const curKeyRef = useRef<string | null>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const commentsRef = useRef<HTMLDivElement>(null);
+  const wide = useWideLayout();
+
   // Keyed by row, so moving to the next proposal does not carry the last
   // one's conversation with it.
   const [threads, setThreads] = useState<Record<string, AskMsg[]>>({});
   const [draft, setDraft] = useState('');
   // Which row has a question in flight. Keyed like the threads rather than a
-  // bare boolean: the arrows still work while an answer is coming, and an
-  // answer that lands after you have walked to the next card belongs to the
-  // card it was asked about.
+  // bare boolean: the feed still moves while an answer is coming, and an
+  // answer that lands after you have moved on belongs to the row it was
+  // asked about.
   const [asking, setAsking] = useState<Record<string, boolean>>({});
   // Which rows have had their stored thread fetched. Marked BEFORE the
-  // request goes out, so moving away and back does not fire a second one,
-  // and so a row whose fetch failed is not retried on every render.
-  //
-  // A REF, NOT STATE, and that is load-bearing rather than an optimisation.
-  // As state it would have to be a dependency of the effect that writes it,
-  // and then: the effect runs, sets it, the new object re-renders, the
-  // dependency has changed, React tears the effect down — running the
-  // cleanup that marks the in-flight request stale — and the response is
-  // discarded on arrival. Every time. A ref changes no identity and appears
-  // in no dependency list, so the effect runs exactly once per row.
+  // request goes out, so moving away and back does not fire a second one.
+  // A REF, NOT STATE: as state it would be a dependency of the effect that
+  // writes it, and the effect would tear itself down on every write.
   const loadedRef = useRef<Set<string>>(new Set());
   // Which model answers. The dev session's own list and its own default —
-  // see `_workshopModels`. It appears when the box is in use, because a
-  // picker over an empty composer is a setting nobody has a use for yet.
+  // see `_workshopModels`.
   const [model, setModel] = useState<string>(() => models.selected || '');
   const [focused, setFocused] = useState(false);
-  const wide = useWideLayout();
-  // Answered here, this session: an answer moves the deck on, and the card
-  // stays in the list so a mis-tap can be walked back to.
-  const [answered, setAnswered] = useState<Record<string, string>>({});
 
-  if (!cards.length) {
-    return (
-      <div className="dev-ws-needs dev-ws-needs-done" data-ws-needs="">
-        <p className="dev-ws-needs-done-line">Nothing is waiting on you.</p>
-        <p className="dev-ws-needs-done-sub">
-          Every proposal you can vote on has your answer, and every open issue has somebody on it.
-        </p>
-      </div>
-    );
-  }
+  const items = useMemo<QueueRow[]>(() => {
+    const live = rows.filter((r): r is QueueRow => r.t === 'card');
+    const have = new Set(live.map((r) => r.key));
+    const out = live.slice();
+    for (const [key, pin] of pinsRef.current) {
+      if (!have.has(key)) out.splice(Math.min(pin.index, out.length), 0, pin.row);
+    }
+    return out;
+  }, [rows, pinsVersion]);
+  const n = items.length;
+  const i = Math.min(at, Math.max(0, n - 1));
+  const row = n ? items[i] : null;
+  const voted = row ? answered[row.key] || null : null;
 
-  const i = Math.min(at, cards.length - 1);
-  const row = cards[i];
-  const thread = threads[row.key] || [];
-  const engaged = thread.length > 0;
   /**
-   * Is the composer showing its controls row?
+   * Stay on the row you were on when the list changes under you.
    *
-   * ON A DESKTOP, ALWAYS. The pane is a third of a tall window with nothing
-   * competing for it, the one-line form was hiding a model picker behind a
-   * click nobody knew to make, and there is no keyboard about to take half
-   * the screen — so the box opens the way it will be used. `wide` rather
-   * than `focused` also means blur does not shut it again, which seeding
-   * `focused` from the width would have done on the first click away.
-   *
-   * ON A PHONE it stays the one line it was until the field is tapped: the
-   * deck is a fitted screen there and the second row is height the card in
-   * front of you wants back.
+   * A layout effect, so the scroll position is corrected in the same frame
+   * the rows shift: a row leaving ABOVE the current one would otherwise slide
+   * the next row into view for a paint. By key, because indexes are what the
+   * change moves.
    */
-  const expanded = wide || focused || engaged;
-  const answer = (which: string, act: { fn: string; args: unknown[] } | null) => {
-    if (act) callAppView(act.fn, ...(act.args as unknown[]));
-    setAnswered((cur) => ({ ...cur, [row.key]: which }));
-    // A beat before the next question, so the press is SEEN. Advancing on
-    // the same frame made a vote feel like the card had simply vanished,
-    // with nothing to say whether it had registered.
-    if (i < cards.length - 1) window.setTimeout(() => setAt(i + 1), 550);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    const key = curKeyRef.current;
+    if (key) {
+      const idx = items.findIndex((r) => r.key === key);
+      if (idx >= 0) {
+        if (idx !== at) {
+          setAt(idx);
+          if (el && el.clientHeight) el.scrollTop = idx * el.clientHeight;
+        }
+        return;
+      }
+    }
+    const clamped = Math.min(at, Math.max(0, items.length - 1));
+    curKeyRef.current = items[clamped] ? items[clamped].key : null;
+    if (clamped !== at) setAt(clamped);
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Drop every pin but the current row's — called once a move has settled. */
+  const dropPins = () => {
+    const key = curKeyRef.current;
+    let dropped = false;
+    for (const k of [...pinsRef.current.keys()]) {
+      if (k !== key) { pinsRef.current.delete(k); dropped = true; }
+    }
+    if (dropped) setPinsVersion((v) => v + 1);
+  };
+  const landOn = (idx: number) => {
+    const c = Math.min(Math.max(idx, 0), Math.max(0, items.length - 1));
+    curKeyRef.current = items[c] ? items[c].key : null;
+    setAt(c);
+    // Pins go once the scroll has SETTLED, not on the first frame that
+    // crosses the halfway line — a snap in flight is not a place to remove
+    // the row it is leaving, and touch momentum would fight the correction.
+    window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(dropPins, 220);
+  };
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el || !el.clientHeight) return;
+    const idx = Math.round(el.scrollTop / el.clientHeight);
+    if (idx !== at) landOn(idx);
   };
   /**
-   * Moving through the deck, which is a separate act from answering it.
-   *
-   * The two rows say so: the top one is what you can DO about this card, the
-   * bottom one is which card you are looking at. Skip used to sit among the
-   * answers and was neither — it read as a third verdict while doing nothing
-   * but advancing, and it could only ever go forwards.
-   *
-   * No wrap. The ends are the ends, and the counter above says which one you
-   * are at; an arrow that silently returns you to the first card is how you
-   * lose track of a queue you are working through.
+   * Moving through the feed by a press rather than a swipe. No wrap: the
+   * ends are the ends, and the counter says which one you are at.
    */
-  const go = (delta: number) => setAt(Math.min(Math.max(i + delta, 0), cards.length - 1));
-  // The verbs, per kind. "Yes" over a card is only clear if you already
-  // know what the card is asking; "Vote yes" and "I'll take it" say what
-  // the press DOES, which is the thing a first-time reader is missing.
-  // A CLAIM HAS TWO ANSWERS. "Not me" and "Skip" were the same press wearing
-  // two labels — neither recorded anything, both moved the deck on — and
-  // offering them side by side asked the reader to tell apart a distinction
-  // the app does not make. A vote keeps three, because there yes and no are
-  // both real, recorded acts and skip is the third thing.
-  const verbs = row.kind === 'vote'
-    ? { yes: 'Vote yes', no: 'Vote no' }
-    : { yes: "Let's take it", no: null };
-  const done = answered[row.key];
-  const target = row.askAbout || null;
-  const inFlight = !!asking[row.key];
+  const go = (delta: number) => {
+    const el = scrollRef.current;
+    const idx = Math.min(Math.max(i + delta, 0), Math.max(0, n - 1));
+    if (idx === i) return;
+    if (el && el.clientHeight) el.scrollTo({ top: idx * el.clientHeight, behavior: 'smooth' });
+    landOn(idx);
+  };
+  useEffect(() => () => window.clearTimeout(settleRef.current), []);
+
+  const toggleSheet = (kind: SheetKind) => setSheet((cur) => (cur === kind ? null : kind));
+  const closeSheet = () => setSheet(null);
 
   /**
-   * Bring back what this viewer already asked about this card.
-   *
-   * In an effect and never in render, which is the shell's rule for a
-   * stateful island: the first paint has to be the empty pane the
-   * hand-written markup shipped, or hydration mismatches and a console
-   * error fails the proposal checks.
-   *
-   * It never overwrites a thread that already has turns in it. The local
-   * copy is the live one — a question asked while this was in flight would
-   * otherwise vanish when the stored (older) version landed on top of it.
+   * Answering the item: a vote, or taking an issue. The row is pinned BEFORE
+   * the act, because the act's publish removes it from the queue, and the
+   * pin is what keeps it on screen with its confirmation.
+   */
+  const answer = (which: 'yes' | 'no') => {
+    if (!row) return;
+    const spec = which === 'yes' ? row.yes : row.no;
+    if (!spec) return;
+    if (row.kind === 'vote') {
+      if (!pinsRef.current.has(row.key)) {
+        pinsRef.current.set(row.key, { row, index: i });
+        setPinsVersion((v) => v + 1);
+      }
+      setAnswered((cur) => ({ ...cur, [row.key]: which }));
+    }
+    setSheet(null);
+    if (spec.act) callAppView(spec.act.fn, ...(spec.act.args as unknown[]));
+  };
+
+  const preview = row ? (row.card.rail.preview || row.card.actionPreview || null) : null;
+  const canTry = !!(preview && preview.state === 'live');
+  const tryIt = () => {
+    if (preview && preview.state === 'live') callAppView('swapToStagingForSession', preview.sessionId, preview.url);
+  };
+  const openFull = (el: HTMLElement) => callAppView('openVisualComparison', el);
+  const menuKey = row ? row.card.rail.menuKey : undefined;
+  const commentCount = row ? (row.card.chatCount || 0) : 0;
+
+  /**
+   * The keys. Every one is also a button on the rail, so nothing is ONLY a
+   * key; they are listed on the wide layout, where a keyboard is likely.
+   * Ignored while a field has focus — typing "v" in the ask box is typing.
+   * No dependency list on purpose: the handler closes over this render's
+   * state, and re-binding is cheaper than a stale row.
    */
   useEffect(() => {
-    if (!target || loadedRef.current.has(row.key)) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key;
+      if (k === 'Escape') { if (sheet) { setSheet(null); e.preventDefault(); } return; }
+      if (k === 'ArrowDown' || k === 'j' || k === 'J') { go(1); e.preventDefault(); return; }
+      if (k === 'ArrowUp' || k === 'k' || k === 'K') { go(-1); e.preventDefault(); return; }
+      if (!row) return;
+      if ((k === 'v' || k === 'V') && row.kind === 'vote') { toggleSheet('vote'); return; }
+      if ((k === 'y' || k === 'Y') && sheet === 'vote') { answer('yes'); return; }
+      if ((k === 'n' || k === 'N') && sheet === 'vote') { answer('no'); return; }
+      if (k === 'a' || k === 'A') { toggleSheet('ask'); return; }
+      if (k === 'c' || k === 'C') { toggleSheet('comments'); return; }
+      if ((k === 't' || k === 'T') && canTry) { tryIt(); return; }
+      if ((k === 'm' || k === 'M') && moreRef.current) moreRef.current.click();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  // The comments sheet's GitHub thread is filled by the legacy observer, so
+  // it is pointed at the sheet each time one opens.
+  useLayoutEffect(() => {
+    if (sheet !== 'comments') return;
+    const host = commentsRef.current;
+    if (host) callAppView('_wireFeedComments', host);
+  }, [sheet, row ? row.key : null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const target = row ? row.askAbout || null : null;
+  const thread = row ? threads[row.key] || [] : [];
+  const engaged = thread.length > 0;
+  const inFlight = !!(row && asking[row.key]);
+  /**
+   * Is the composer showing its controls row? On a wide window always — the
+   * panel has room and no keyboard is about to take half the screen. On a
+   * phone it stays one line until the field is tapped.
+   */
+  const expanded = wide || focused || engaged;
+
+  /**
+   * Bring back what this viewer already asked about this item. In an effect
+   * and never in render — the shell's rule for a stateful island. It never
+   * overwrites a thread that already has turns in it.
+   */
+  useEffect(() => {
+    if (!row || sheet !== 'ask' || !target || loadedRef.current.has(row.key)) return undefined;
     const key = row.key;
     const { kind, ref } = target;
     let live = true;
@@ -1015,31 +1293,22 @@ function NeedsDeck({
         });
       })
       // A thread that will not load is a pane with no history in it, which
-      // is the state it opens in anyway. Nothing to say to the reader.
+      // is the state it opens in anyway.
       .catch(() => {});
     return () => { live = false; };
-    // PRIMITIVES ONLY. `target` is an object off the view model, and a
-    // republish that rebuilds it with the same contents would otherwise
-    // count as a change, tear the effect down and strand the request in
-    // flight exactly as the state version did.
-  }, [slug, row.key, target?.kind, target?.ref]);
+    // PRIMITIVES ONLY: `target` is an object off the view model, and a
+    // republish that rebuilds it would otherwise tear the effect down.
+  }, [slug, sheet, row ? row.key : null, target ? target.kind : null, target ? target.ref : null]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /**
-   * Send one question and write the answer in under it.
-   *
-   * THE ROW IS CAPTURED, not read back at resolve time. The arrows stay live
-   * while an answer is on its way, so by the time it lands the deck may be
-   * showing a different card — and an answer about proposal A appended to
-   * proposal B's thread is worse than no answer at all. `key` and `sending`
-   * are both closed over for that reason.
-   *
-   * The pending row is a real message rather than a spinner beside the box:
-   * it holds the place the answer will occupy, so the pane does not jump
-   * when it arrives, and it reads as "this is coming" rather than "the
-   * button did nothing".
+   * Send one question and write the answer in under it. THE ROW IS CAPTURED,
+   * not read back at resolve time: the feed keeps moving while an answer is
+   * on its way, and an answer about item A appended to item B's thread is
+   * worse than no answer at all.
    */
   const ask = async () => {
     const q = draft.trim();
-    if (!q || !target || inFlight) return;
+    if (!row || !q || !target || inFlight) return;
     const key = row.key;
     const sending = row;
     const prior = threads[key] || [];
@@ -1050,9 +1319,8 @@ function NeedsDeck({
     setAsking((cur) => ({ ...cur, [key]: true }));
     setDraft('');
 
-    // Writes the trailing bubble in place. Every update goes through here
-    // so there is one rule about which bubble is being written: the LAST
-    // one on this row's thread, and only while it is still pending.
+    // Writes the trailing bubble in place: the LAST one on this row's
+    // thread, and only while it is still pending.
     const writeTail = (patch: AskMsg) => setThreads((cur) => {
       const t = cur[key];
       if (!t || !t.length) return cur;
@@ -1070,16 +1338,11 @@ function NeedsDeck({
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'text/event-stream' },
         credentials: 'same-origin',
-        body: JSON.stringify({
-          // No transcript rides along. The server keeps this viewer's own
-          // thread and reads it back itself, so the history cannot be
-          // rewritten by whoever is asking.
-          target: sending.askAbout,
-          question: q,
-          model: model || undefined,
-        }),
+        // No transcript rides along. The server keeps this viewer's own
+        // thread and reads it back itself, so the history cannot be
+        // rewritten by whoever is asking.
+        body: JSON.stringify({ target: sending.askAbout, question: q, model: model || undefined }),
       });
-
       // A refusal the server could make BEFORE opening the stream is still
       // ordinary JSON with a real status, so that shape is handled first.
       const isStream = (res.headers.get('content-type') || '').includes('text/event-stream');
@@ -1087,24 +1350,19 @@ function NeedsDeck({
         const data = await res.json().catch(() => ({}));
         failed = true;
         // The server's own sentence wherever it wrote one: it is the only
-        // thing that can say WHICH of "you are out of allowance", "too many
-        // at once" and "no model is configured" happened, and a generic
-        // "something went wrong" would hide the two the reader can act on.
+        // thing that can say WHICH of "out of allowance", "too many at once"
+        // and "no model is configured" happened.
         text = (typeof data.error === 'string' && data.error.trim())
           ? data.error.trim()
           : 'That did not go through. Try asking again.';
       } else {
         const parsed = await readAskStream(res.body, (sofar) => {
-          // Still pending while it grows: the bubble keeps its live styling
-          // until `done` says the answer is complete.
           writeTail({ who: 'ai', text: sofar, pending: true });
         });
         if (parsed.error) {
           failed = true;
           text = parsed.error;
         } else if (parsed.text.trim()) {
-          // `done`'s assembled text wins over what was accumulated — a
-          // dropped chunk costs a flicker rather than a wrong answer.
           text = parsed.text.trim();
         } else {
           failed = true;
@@ -1126,8 +1384,8 @@ function NeedsDeck({
 
   /**
    * ONE send circle, rendered in one of two places: the resting line while
-   * the card is a single row, the controls row once it opens. Written once
-   * so the disabled rule and the classes cannot drift between the two.
+   * the composer is a single row, the controls row once it opens. Written
+   * once so the disabled rule and the classes cannot drift between the two.
    */
   const sendBtn = (
     <button
@@ -1140,158 +1398,204 @@ function NeedsDeck({
 
   return (
     <div
-      className={engaged ? 'dev-ws-needs dev-ws-needs-engaged' : 'dev-ws-needs'}
+      className="dev-ws-needs"
       data-ws-needs=""
-      data-ws-engaged={engaged ? '' : undefined}
+      data-ws-sheet={sheet || undefined}
     >
-      <section className="dev-ws-needs-subject">
-        <div className="dev-ws-needs-head">
-          <span className="dev-ws-eyebrow">{owed ? voteWords(owed) : 'Nothing owed'}</span>
-          {total ? <VoteRing owed={owed} total={total} /> : null}
-        </div>
-        {/* The card, then the sentence explaining it. The summary led at
-            first, which put the explanation above the thing it explains and
-            made the card read as a footnote to its own description. */}
-        <div className="dev-ws-needs-scroll">
-          <DevCard model={row.card} />
+      {/* THE FEED. A real scroll container with snap points, not a swap of one
+          rendered card: every row stays in the DOM (the legacy fillers find
+          their hosts, a deep link can name a row that is not in view), a
+          drag pages it with `scroll-snap`, and the index is read back from
+          the scroll position so a swipe and a press cannot disagree. */}
+      <div className="dev-ws-needs-scroll" data-ws-feed="" ref={scrollRef} onScroll={onScroll}>
+        {n === 0 ? <DoneItem total={total} onDone={onDone} /> : items.map((r, k) => (
+          <FeedItem
+            key={r.key}
+            row={r}
+            index={k}
+            count={n}
+            near={Math.abs(k - i) <= 1}
+            voted={answered[r.key] || null}
+            wide={wide}
+            slug={slug}
+            onFull={openFull}
+          />
+        ))}
+      </div>
+
+      {row ? (
+        <aside className="dev-ws-rail" data-ws-rail="" aria-label="This item">
           {row.kind === 'vote' ? (
-            row.summary
-              ? <p className="dev-ws-needs-summary">{row.summary}</p>
-              : (
-                <p className="dev-ws-needs-summary dev-ws-needs-nosummary">
-                  No plain-language summary was written for this change.
-                </p>
-              )
-          ) : null}
-        </div>
-        {/* The question, and the three answers to it. Big, because this is
-            the one thing the screen is for and a decision should not be a
-            small target; and three rather than two, because "not now" is a
-            real answer and a queue that only accepts yes or no is answered
-            carelessly. */}
-        <div className="dev-ws-answer" data-ws-answer="">
-          <p className="dev-ws-ask-q">{row.ask}</p>
-          <div className="dev-ws-answer-row">
             <button
               type="button"
-              className="dev-ws-answer-btn dev-ws-answer-yes"
-              data-ws-answer-btn="yes"
+              className={voted ? 'dev-ws-rail-btn dev-ws-rail-vote is-on' : 'dev-ws-rail-btn dev-ws-rail-vote'}
+              data-ws-rail-btn="vote"
+              aria-haspopup="dialog"
+              aria-expanded={sheet === 'vote'}
+              onClick={() => toggleSheet('vote')}
+            >
+              <span className="dev-ws-rail-ic">{voted ? <CheckIcon aria-hidden="true" /> : <BallotIcon aria-hidden="true" />}</span>
+              <span className="dev-ws-rail-lab">{voted ? `Voted ${voted}` : 'Vote'}</span>
+              <kbd className="dev-ws-rail-key" aria-hidden="true">V</kbd>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="dev-ws-rail-btn dev-ws-rail-take"
+              data-ws-rail-btn="take"
               disabled={!row.yes}
-              aria-pressed={done === 'yes'}
-              onClick={() => answer('yes', row.yes ? row.yes.act : null)}
-            >{done === 'yes' ? `${verbs.yes} ✓` : verbs.yes}</button>
-            {verbs.no ? (
+              onClick={() => answer('yes')}
+            >
+              <span className="dev-ws-rail-ic"><HandRaisedIcon aria-hidden="true" /></span>
+              <span className="dev-ws-rail-lab">Take it</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className="dev-ws-rail-btn dev-ws-rail-comments"
+            data-ws-rail-btn="comments"
+            aria-haspopup="dialog"
+            aria-expanded={sheet === 'comments'}
+            onClick={() => toggleSheet('comments')}
+          >
+            <span className="dev-ws-rail-ic"><ChatBubbleTailIcon aria-hidden="true" /></span>
+            <span className="dev-ws-rail-lab">{commentCount ? String(commentCount) : 'Comments'}</span>
+            <kbd className="dev-ws-rail-key" aria-hidden="true">C</kbd>
+          </button>
+          <button
+            type="button"
+            className="dev-ws-rail-btn dev-ws-rail-ask"
+            data-ws-rail-btn="ask"
+            aria-haspopup="dialog"
+            aria-expanded={sheet === 'ask'}
+            onClick={() => toggleSheet('ask')}
+          >
+            <span className="dev-ws-rail-ic"><SparklesIcon aria-hidden="true" /></span>
+            <span className="dev-ws-rail-lab">Ask</span>
+            <kbd className="dev-ws-rail-key" aria-hidden="true">A</kbd>
+          </button>
+          {row.kind === 'vote' ? (
             <button
               type="button"
-              className="dev-ws-answer-btn dev-ws-answer-no"
-              data-ws-answer-btn="no"
-              disabled={!row.no}
-              aria-pressed={done === 'no'}
-              onClick={() => answer('no', row.no ? row.no.act : null)}
-            >{done === 'no' ? `${verbs.no} ✓` : verbs.no}</button>
-            ) : null}
+              className="dev-ws-rail-btn dev-ws-rail-try"
+              data-ws-rail-btn="try"
+              disabled={!canTry}
+              title={preview && preview.state !== 'live' ? preview.title : undefined}
+              onClick={tryIt}
+            >
+              <span className="dev-ws-rail-ic"><PlayIcon aria-hidden="true" /></span>
+              <span className="dev-ws-rail-lab">Try it</span>
+              <kbd className="dev-ws-rail-key" aria-hidden="true">T</kbd>
+            </button>
+          ) : null}
+          {/* The card's own ⋯ menu, on the rail. Same hook, same class, so
+              the delegated handler and the declared checks find it. */}
+          <button
+            ref={moreRef}
+            type="button"
+            className="dev-ws-rail-btn dev-ws-rail-more dev-card-menu-btn"
+            data-ws-rail-btn="more"
+            data-card-menu={menuKey}
+            disabled={!menuKey}
+            aria-haspopup="true"
+            aria-label="More actions"
+          >
+            <span className="dev-ws-rail-ic"><EllipsisHorizontalIcon aria-hidden="true" /></span>
+            <span className="dev-ws-rail-lab">More</span>
+            <kbd className="dev-ws-rail-key" aria-hidden="true">M</kbd>
+          </button>
+          {/* Moving by a press. On a phone the swipe is the move and app.css
+              hides these; on a wide window they sit under the rail and do
+              what the wheel does. Disabled at the ends rather than wrapping. */}
+          <div className="dev-ws-move" data-ws-move-row="">
+            <button type="button" className="dev-ws-move-btn" data-ws-move="prev" aria-label="Previous" disabled={i <= 0} onClick={() => go(-1)}>
+              <ChevronUpIcon className="dev-ws-move-icon" aria-hidden="true" />
+            </button>
+            <button type="button" className="dev-ws-move-btn" data-ws-move="next" aria-label="Next" disabled={i >= n - 1} onClick={() => go(1)}>
+              <ChevronDownIcon className="dev-ws-move-icon" aria-hidden="true" />
+            </button>
           </div>
-          {/* ── The second row: WHICH card, not what about it ──────────────
-              Two rows because they are two different questions. The top one
-              is what you can do about the thing in front of you and every
-              press there records something; this one only changes what is in
-              front of you, and records nothing. Skip used to sit among the
-              answers and belonged to neither: it read as a third verdict
-              while doing nothing but advancing, and it could only go
-              forwards, so a card passed by accident was gone.
+          {/* The vote: the question, where it stands, and the two answers. A
+              sheet from the floor on a phone, a popover on this button on a
+              wide window (app.css). Decide later closes it. */}
+          {row.kind === 'vote' && sheet === 'vote' ? (
+            <div className="dev-ws-sheet dev-ws-sheet-vote" data-ws-sheet="vote" role="dialog" aria-label={row.ask}>
+              <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
+              <div className="dev-ws-sheet-card">
+                <span className="dev-ws-sheet-handle" aria-hidden="true" />
+                <p className="dev-ws-ask-q">{row.ask}</p>
+                <p className="dev-ws-vote-sub">{tallyLine(row)}</p>
+                <div className="dev-ws-answer-row">
+                  <button type="button" className="dev-ws-answer-btn dev-ws-answer-yes" data-ws-answer-btn="yes" disabled={!row.yes} onClick={() => answer('yes')}>Vote yes</button>
+                  <button type="button" className="dev-ws-answer-btn dev-ws-answer-no" data-ws-answer-btn="no" disabled={!row.no} onClick={() => answer('no')}>Vote no</button>
+                </div>
+                <button type="button" className="dev-ws-vote-later" onClick={closeSheet}>Decide later</button>
+                <p className="dev-ws-keys-hint" aria-hidden="true">Y yes · N no · Esc close</p>
+              </div>
+            </div>
+          ) : null}
+        </aside>
+      ) : null}
 
-              Disabled at the ends rather than wrapping. The counter above
-              says which end you are at, and an arrow that silently returns
-              you to the first card is how you lose your place in a queue you
-              are working through. */}
-          <div className="dev-ws-move-row" data-ws-move-row="">
-            <button
-              type="button"
-              className="dev-ws-move-btn"
-              data-ws-move="prev"
-              disabled={i <= 0}
-              onClick={() => go(-1)}
-            ><ChevronLeftIcon className="dev-ws-move-icon" aria-hidden="true" />Previous</button>
-            {/* THE COUNT LIVES HERE NOW, not in the eyebrow. It is the answer
-                to "where am I", which is the question these two buttons
-                change — and up there it was a second small number competing
-                with the sentence that says how many need you. It also fills
-                the gap the edge-anchored boxes leave. */}
-            <span className="dev-ws-needs-of">{`${i + 1} / ${cards.length}`}</span>
-            <button
-              type="button"
-              className="dev-ws-move-btn"
-              data-ws-move="next"
-              disabled={i >= cards.length - 1}
-              onClick={() => go(1)}
-            >Next<ChevronRightIcon className="dev-ws-move-icon" aria-hidden="true" /></button>
-          </div>
+      {/* The keys, listed once, where a keyboard is likely (app.css). Only
+          the keys this item answers to: an issue has no vote and nothing
+          to try, so those two are left off rather than listed and dead.
+          Each pair is one child with one text run, so the prerender never
+          emits two adjacent text nodes (React #418). */}
+      {row ? (
+        <p className="dev-ws-keys" aria-hidden="true">
+          {legendFor(row.kind).map(([keys, word]) => (
+            <span key={word} className="dev-ws-key">
+              {keys.map((k) => <kbd key={k}>{k}</kbd>)}
+              {` ${word}`}
+            </span>
+          ))}
+        </p>
+      ) : null}
+
+      {/* ── Ask: the private Q&A with the model, about the item in view ──
+          A sheet on a phone, a panel beside the rail on a wide window. The
+          composer is the dev session's own (`.dc-card`), as far as this pane
+          needs it — see the note on `sendBtn`. */}
+      {row && sheet === 'ask' ? (
+      <div className="dev-ws-sheet dev-ws-sheet-ask" data-ws-sheet="ask" role="dialog" aria-label="Ask about this item">
+      <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
+      <section className="dev-ws-ask dev-ws-sheet-card" data-ws-ask="">
+        <span className="dev-ws-sheet-handle" aria-hidden="true" />
+        <div className="dev-ws-sheet-head">
+          <span><span className="dev-ws-sheet-title">{row.kind === 'vote' ? 'Ask about this change' : 'Ask about this issue'}</span><span className="dev-ws-sheet-sub">private to you</span></span>
+          <button type="button" className="dev-ws-sheet-x" onClick={closeSheet}>Close</button>
         </div>
-      </section>
-
-      {/* Until you use it, this is ONE ROW — the box and nothing else. It
-          opened as a third of the screen with a heading and a hint in it,
-          which spent a third of a decision screen on an invitation nobody
-          had accepted. It earns its height when it is used. */}
-      <section className="dev-ws-ask" data-ws-ask="">
-        {engaged ? (
-          <div className="dev-ws-ask-log">
-            {thread.map((m, n) => (
-              <p
-                key={n}
-                className={askMsgClass(m)}
-                /* The answer is the one thing here nobody in this app wrote,
-                   so it is announced: a reader on a screen reader otherwise
-                   has no way to know the reply has arrived. Polite, not
-                   assertive — it must not cut across the card's own text. */
-                aria-live={m.who === 'ai' ? 'polite' : undefined}
-              >
-                {m.text}
-              </p>
-            ))}
-          </div>
-        ) : null}
-        {/* THE DEV SESSION'S COMPOSER, as far as this pane needs it:
-            `.dc-card` is the white surface with the field and one row of
-            controls under it, `.dc-model-select` / `.dc-model-name` the
-            stripped model button, `.dc-send-btn .dc-circle-send` the pale
-            blue circle with its halo. Three shared classes rather than three
-            approximations of them — the alternative drifts away from the
-            composer the first time either is tuned.
-
-            The one thing not shared is the model MENU: the session opens the
-            native kit's sheet from a <button>, and this is a <select>, which
-            is why the caret is a sibling rather than a child. */}
+        <div className="dev-ws-ask-log" data-ws-ask-log="">
+          {engaged ? thread.map((m, k) => (
+            <p
+              key={k}
+              className={askMsgClass(m)}
+              /* The answer is the one thing here nobody in this app wrote,
+                 so it is announced. Polite, not assertive. */
+              aria-live={m.who === 'ai' ? 'polite' : undefined}
+            >
+              {m.text}
+            </p>
+          )) : (
+            <p className="dev-ws-ask-hint">
+              {target ? 'Ask what this changes, who it affects, or what happens if it goes in. Answered from what the platform knows about it.' : 'There are no details to ask about on this one.'}
+            </p>
+          )}
+        </div>
         <form
           className="dev-ws-ask-composer dc-card"
           onSubmit={(e) => { e.preventDefault(); ask(); }}
         >
           <label className="sr-only" htmlFor="dev-ws-ask-input">Ask about this change</label>
-          {/* THE RESTING LINE. It keeps the send circle while the card is ONE
-              line — an earlier cut put the whole controls row behind focus,
-              which took the send button with it and left a card that looked
-              like a text box and nothing else, with no sign it would do
-              anything.
-
-              OPEN, THE CIRCLE IS THE LAST THING IN THE CARD, bottom right,
-              which is where a composer's send lives and where the dev
-              session's own card puts it (`.dc-card` + `.dc-card-row`). It
-              did stay on this line in both states, so that tapping the field
-              added a row rather than relocating the thing you were about to
-              press — but the press it was protecting cannot happen: the
-              button is disabled until there is a draft, and there is no
-              draft until the field has been tapped, which is the same tap
-              that opens the row. On the width where the row is open from the
-              first paint (see `expanded`) it never moves at all. */}
+          {/* THE RESTING LINE keeps the send circle while the card is ONE
+              line; open, the circle is the last thing in the card. */}
           <div className="dev-ws-ask-line">
             <input
               id="dev-ws-ask-input"
               className="dev-ws-ask-input"
               type="text"
               value={draft}
-              /* Three states, three placeholders. A box that says "Ask a
-                 question…" while it cannot answer one is the version of
-                 this that wastes somebody's time. */
               placeholder={
                 !target ? 'No details to ask about on this one'
                   : inFlight ? 'Reading the change…'
@@ -1304,11 +1608,8 @@ function NeedsDeck({
             />
             {expanded ? null : sendBtn}
           </div>
-          {/* ONE LINE until it is tapped, on a phone. The MODEL is what makes
-              the card two lines tall, and it is no use before there is
-              something to send — the picker on the dev session screen is the
-              same bargain. Above the breakpoint the row is there from the
-              start: see `expanded`. */}
+          {/* ONE LINE until it is tapped, on a phone; the model picker is
+              what makes the card two lines tall. */}
           {expanded ? (
           <div className="dev-ws-ask-row">
             {models.list.length ? (
@@ -1320,9 +1621,6 @@ function NeedsDeck({
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 >
-                  {/* The LABEL only, as the session shows it. The "what kind
-                      of work is this for" blurb belongs to the picker's own
-                      sheet, not to the row it collapses to. */}
                   {models.list.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                 </select>
                 <ChevronDownIcon className="dev-ws-ask-model-chev" aria-hidden="true" />
@@ -1335,6 +1633,32 @@ function NeedsDeck({
           ) : null}
         </form>
       </section>
+      </div>
+      ) : null}
+
+      {/* ── Comments: the app's own thread, and an issue's GitHub thread ──
+          The thread component is the one the unfolded rows use; the GitHub
+          slot is the legacy filler's host, pointed at this sheet when it
+          opens. */}
+      {row && sheet === 'comments' ? (
+      <div className="dev-ws-sheet dev-ws-sheet-comments" data-ws-sheet="comments" role="dialog" aria-label="Comments">
+      <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
+      <section className="dev-ws-sheet-card" data-ws-comments="">
+        <span className="dev-ws-sheet-handle" aria-hidden="true" />
+        <div className="dev-ws-sheet-head">
+          <span><span className="dev-ws-sheet-title">{commentCount ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}</span><span className="dev-ws-sheet-sub">{row.kind === 'vote' ? 'on this proposal' : 'on this issue'}</span></span>
+          <button type="button" className="dev-ws-sheet-x" onClick={closeSheet}>Close</button>
+        </div>
+        <div className="dev-ws-sheet-body" ref={commentsRef}>
+          {row.commentsFor != null ? <div className="dev-feed-comments" data-comments-for={row.commentsFor} /> : null}
+          {row.thread ? (
+            <FeedThread slug={slug} type={row.thread.type} refId={row.thread.ref} canPost={canPost} />
+          ) : null}
+          {!row.thread && row.commentsFor == null ? <p className="dev-ws-ask-hint">No comments yet.</p> : null}
+        </div>
+      </section>
+      </div>
+      ) : null}
     </div>
   );
 }
@@ -1897,7 +2221,14 @@ export function DevWorkshop(): ReactNode {
       ) : null}
 
       {tab === 'needs' ? (
-        <NeedsDeck rows={v.queue} owed={v.votes.count} total={v.votes.total} models={v.models} slug={slug} />
+        <NeedsFeed
+          rows={v.queue}
+          total={v.votes.total}
+          models={v.models}
+          slug={slug}
+          canPost={canPost}
+          onDone={() => { setTab('status'); callAppView('_setWorkshopTab', 'status'); }}
+        />
       ) : null}
 
       {tab === 'all' && themes.length ? (
