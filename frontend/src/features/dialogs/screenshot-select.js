@@ -16,8 +16,14 @@
 //     the viewport corners are located in a registration frame and an
 //     axis-aligned scale+offset mapping is solved from them; a second,
 //     clean frame (overlay hidden) is then cropped with that mapping.
-//     Any detection/validation failure FAILS CLOSED — a coded error, no
-//     degraded capture.
+//     The registration frame is shot with the page blacked out behind
+//     the markers, so nothing the page draws can pass for one; what the
+//     share includes AROUND the page (a tab strip's favicons, toolbar
+//     icons, the dock, another window) can, so the solve accepts extra
+//     candidates and picks the one set of four that agrees with the
+//     viewport's geometry and the markers' known size (#2096). Any
+//     detection/validation failure still FAILS CLOSED — a coded error,
+//     no degraded capture.
 //
 // Where getDisplayMedia is absent, the feedback controller can instead use
 // this module's native-payload decoder or PNG/JPEG file preparation helpers.
@@ -63,6 +69,30 @@
   function directMapping(viewportW, viewportH, frameW, frameH) {
     if (!(viewportW > 0) || !(viewportH > 0) || !(frameW > 0) || !(frameH > 0)) return null;
     return { scaleX: frameW / viewportW, scaleY: frameH / viewportH, offsetX: 0, offsetY: 0 };
+  }
+
+  // Carry a mapping solved on one frame size over to another. The capture
+  // stream is free to re-size its frames between the registration grab and
+  // the clean grab (Chromium's screen-cast track adapts its output
+  // resolution to load; the source itself has not moved), and a pure
+  // resample keeps the aspect ratio, so the mapping scales with it. A
+  // changed aspect ratio means the WINDOW changed — that is a real failure
+  // and returns null.
+  function rescaleMapping(mapping, fromW, fromH, toW, toH) {
+    if (!mapping) return null;
+    if (!(fromW > 0) || !(fromH > 0) || !(toW > 0) || !(toH > 0)) return null;
+    if (fromW === toW && fromH === toH) return mapping;
+    const fromAspect = fromW / fromH;
+    const toAspect = toW / toH;
+    if (Math.abs(fromAspect - toAspect) / fromAspect > 0.01) return null;
+    const kx = toW / fromW;
+    const ky = toH / fromH;
+    return {
+      scaleX: mapping.scaleX * kx,
+      scaleY: mapping.scaleY * ky,
+      offsetX: mapping.offsetX * kx,
+      offsetY: mapping.offsetY * ky,
+    };
   }
 
   // Apply an axis-aligned mapping to a viewport-CSS rect, clamping to the
@@ -266,14 +296,15 @@
     return { scale, offset: mf - scale * mc };
   }
 
-  // Solve the axis-aligned scale+offset mapping from detected markers to
-  // the known CSS marker centers. Fails closed: exactly four markers,
-  // unambiguous corner assignment, tight reprojection residuals, and
-  // near-square pixel scales are all required.
-  function solveRegistration(detected, cssCenters, frameW, frameH) {
-    if (!Array.isArray(detected) || detected.length !== 4) {
-      return { ok: false, reason: `expected 4 markers, found ${Array.isArray(detected) ? detected.length : 0}` };
-    }
+  // Solve the axis-aligned scale+offset mapping from exactly four
+  // candidates to the known CSS marker centers. Fails closed: unambiguous
+  // corner assignment, tight reprojection residuals, near-square pixel
+  // scales, and — where the candidates carry a measured module size —
+  // markers whose size agrees with the solved scale are all required. The
+  // last one is what tells a corner marker from a favicon or a toolbar
+  // glyph that happens to share its structure: a real marker is MODULE css
+  // px per module, so its size in the frame is fixed by the scale.
+  function solveFour(detected, cssCenters, frameW) {
     const corners = classifyCorners(detected);
     if (!corners) return { ok: false, reason: 'ambiguous corner assignment' };
     const keys = ['tl', 'tr', 'bl', 'br'];
@@ -287,17 +318,79 @@
     const ratio = sx.scale / sy.scale;
     if (ratio < 0.9 || ratio > 1.1) return { ok: false, reason: 'skewed axis scales' };
     const tol = Math.max(4, frameW * 0.01);
+    let residual = 0;
     for (const k of keys) {
       const px = sx.scale * cssCenters[k].x + sx.offset;
       const py = sy.scale * cssCenters[k].y + sy.offset;
       const err = Math.hypot(px - corners[k].x, py - corners[k].y);
       if (err > tol) return { ok: false, reason: `residual ${err.toFixed(1)}px on ${k}` };
+      residual = Math.max(residual, err);
     }
-    void frameH;
+    const expectedUnit = MARKER.MODULE * (sx.scale + sy.scale) / 2;
+    for (const k of keys) {
+      const unit = corners[k].unit;
+      if (typeof unit !== 'number') continue;
+      if (Math.abs(unit - expectedUnit) > expectedUnit * 0.4 + 0.5) {
+        return { ok: false, reason: `marker size ${unit.toFixed(1)}px on ${k}, expected ${expectedUnit.toFixed(1)}px` };
+      }
+    }
     return {
       ok: true,
+      residual,
       mapping: { scaleX: sx.scale, scaleY: sy.scale, offsetX: sx.offset, offsetY: sy.offset },
     };
+  }
+
+  // Two solves describe the same placement when their crops would land
+  // within the residual tolerance of each other.
+  function sameMapping(a, b, frameW) {
+    const tol = Math.max(4, frameW * 0.01);
+    return Math.abs(a.scaleX - b.scaleX) <= a.scaleX * 0.02
+      && Math.abs(a.scaleY - b.scaleY) <= a.scaleY * 0.02
+      && Math.abs(a.offsetX - b.offsetX) <= tol
+      && Math.abs(a.offsetY - b.offsetY) <= tol;
+  }
+
+  // More candidates than this and the frame is not a page with four
+  // markers in it — bail rather than search C(n,4) subsets.
+  const MAX_MARKER_CANDIDATES = 12;
+
+  // Solve the mapping from the detected candidates. At least four are
+  // needed; with more, every set of four is tried and the one that solves
+  // is used. Anything in the shared frame outside the page — a browser's
+  // tab strip and toolbar, the dock, another window — is free to contain
+  // shapes with a finder pattern's cross-section, and a share that has
+  // them must still register: requiring EXACTLY four was the failure the
+  // user met as "couldn't locate this page" (#2096). Still fails closed:
+  // no set may solve, or two sets may solve to different placements, and
+  // either is a coded error rather than a guess.
+  function solveRegistration(detected, cssCenters, frameW, frameH) {
+    void frameH;
+    const n = Array.isArray(detected) ? detected.length : 0;
+    if (n < 4) return { ok: false, reason: `expected 4 markers, found ${n}` };
+    if (n > MAX_MARKER_CANDIDATES) return { ok: false, reason: `too many marker candidates (${n})` };
+    if (n === 4) {
+      const one = solveFour(detected, cssCenters, frameW);
+      return one.ok ? { ok: true, mapping: one.mapping } : one;
+    }
+    let best = null;
+    let ambiguous = false;
+    for (let a = 0; a < n - 3; a++) {
+      for (let b = a + 1; b < n - 2; b++) {
+        for (let c = b + 1; c < n - 1; c++) {
+          for (let d = c + 1; d < n; d++) {
+            const one = solveFour([detected[a], detected[b], detected[c], detected[d]], cssCenters, frameW);
+            if (!one.ok) continue;
+            if (!best) { best = one; continue; }
+            if (!sameMapping(best.mapping, one.mapping, frameW)) ambiguous = true;
+            else if (one.residual < best.residual) best = one;
+          }
+        }
+      }
+    }
+    if (!best) return { ok: false, reason: `no consistent set of 4 markers among ${n} candidates` };
+    if (ambiguous) return { ok: false, reason: `ambiguous registration among ${n} candidates` };
+    return { ok: true, mapping: best.mapping };
   }
 
   const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // mirrors the server cap
@@ -333,6 +426,7 @@
     MAX_UPLOAD_BYTES,
     markerCssCenters,
     directMapping,
+    rescaleMapping,
     applyMapping,
     detectMarkers,
     classifyCorners,
@@ -710,7 +804,17 @@
       let regFrameW = null;
       let regFrameH = null;
       if (!tabMode) {
-        // Registration frame: markers + veil still visible.
+        // Registration frame: the markers over a blacked-out page. The
+        // selection's cut-out showed the page at full brightness here
+        // before, and anything it framed with a finder pattern's
+        // cross-section — a radio button, a ring icon, a QR code — became
+        // a fifth "marker". With the veil opaque the page contributes
+        // nothing; only the markers, and whatever the share includes
+        // around the page, are left for detection to see.
+        selection.style.display = 'none';
+        controls.style.display = 'none';
+        hint.style.display = 'none';
+        veil.style.background = '#000';
         await waitFrames(video, 2);
         const reg = grabFrame(video);
         if (!reg) throw fail('capture_failed', 'No video frame available');
@@ -730,9 +834,12 @@
       if (tabMode) {
         mapping = directMapping(viewportW, viewportH, clean.width, clean.height);
       } else if (clean.width !== regFrameW || clean.height !== regFrameH) {
-        // The window was resized between the two grabs — the solved
-        // mapping no longer applies. Fail closed.
-        throw fail('register_failed', 'window changed during capture');
+        // The stream re-sized its frames between the two grabs. A pure
+        // resample (same aspect ratio) carries the mapping over; a changed
+        // aspect ratio means the window itself was resized, and the solved
+        // mapping no longer applies. Fail closed on that.
+        mapping = rescaleMapping(mapping, regFrameW, regFrameH, clean.width, clean.height);
+        if (!mapping) throw fail('register_failed', 'window changed during capture');
       }
       stream.getTracks().forEach((t) => t.stop());
 

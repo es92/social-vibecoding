@@ -18,7 +18,7 @@ import { useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DialogCard } from '@/components/ui/dialog';
-import { CheckIcon, ChevronLeftIcon } from '@/components/ui/icons';
+import { CheckIcon, ChevronLeftIcon, InfoCircleIcon } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -111,6 +111,28 @@ export function AutoSessionModelPicker({
       <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
         Recommended models are shown first. Search only if you need another model.
       </p>
+
+      {view.personalOpenRouterKey === true ? (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-violet-200 bg-violet-50 p-3 text-xs leading-relaxed text-zinc-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-zinc-300">
+          <InfoCircleIcon className="mt-0.5 h-4 w-4 shrink-0 text-violet-700 dark:text-violet-300" aria-hidden="true" />
+          <div>
+            <strong className="block font-semibold text-zinc-900 dark:text-zinc-100">
+              Using your own OpenRouter key
+            </strong>
+            <p className="mt-0.5">
+              Model availability follows your OpenRouter privacy settings. To exclude providers that may train on your data, review those settings.
+            </p>
+            <a
+              href="https://openrouter.ai/settings/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-block font-semibold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:text-violet-600 dark:text-violet-300 dark:hover:text-violet-200"
+            >
+              Review privacy settings
+            </a>
+          </div>
+        </div>
+      ) : null}
 
       <Label htmlFor="auto-session-model-search" className="sr-only">Search models</Label>
       <Input

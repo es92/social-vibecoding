@@ -19,19 +19,11 @@ const MAX_THREAD_REF = 2147483647; // PostgreSQL INTEGER
 const IS_STAGING = process.env.USERNODE_ENV === 'staging';
 
 // Content-Disposition's legacy filename parameter is a header, so it may
-// contain ASCII only. macOS screenshot names include a narrow no-break space
-// before AM/PM; passing that value through verbatim makes Node reject the
-// entire response with ERR_INVALID_CHAR. Keep a readable ASCII fallback and
-// carry the exact UTF-8 filename in the RFC 5987 parameter browsers prefer.
-function attachmentDisposition(type, filename) {
-  const name = String(filename || 'file');
-  const fallback = name
-    .replace(/[^\x20-\x7e]/g, '_')
-    .replace(/["\\]/g, '_') || 'file';
-  const encoded = encodeURIComponent(name)
-    .replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
-  return `${type}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
-}
+// contain ASCII only (macOS screenshot names carry a narrow no-break space
+// before AM/PM). The shared helper keeps a readable ASCII fallback and
+// carries the exact UTF-8 name in the RFC 5987 parameter; see
+// services/attachments.js.
+const { attachmentDisposition } = attachmentsSvc;
 
 // #1808: staging demo rows for a chat transcript, injected at request time
 // (?demo=1) only when the real read came back EMPTY, so a genuine transcript

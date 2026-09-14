@@ -179,15 +179,25 @@ test('the OpenRouter summary is concise and accurately names a managed or person
   assert.equal(Object.hasOwn(view.options[0], 'isFavorite'), false,
     'favorites are not part of this dialog');
   assert.equal(view.billingNote, 'Uses your included OpenRouter credits.');
+  assert.equal(view.personalOpenRouterKey, false);
   const html = autoHtml(view);
   assert.match(html, /Uses your included OpenRouter credits/);
   assert.doesNotMatch(html, /OpenRouter model|\$1\/Mtok|unverified|Experimental/);
+  assert.doesNotMatch(pickerHtml(view), /Using your own OpenRouter key|Review privacy settings/,
+    'company keys do not show personal-account guidance');
 
   const personal = makeAppView();
   personal.AppView._showAutoSessionModal(42, models, models[0].id, {
     provider: 'openrouter', openrouterCredentialSource: 'personal',
   });
-  assert.equal(lastView(personal.published).billingNote, 'Uses your OpenRouter account.');
+  const personalView = lastView(personal.published);
+  assert.equal(personalView.billingNote, 'Uses your OpenRouter account.');
+  assert.equal(personalView.personalOpenRouterKey, true);
+  const personalPicker = pickerHtml(personalView);
+  assert.match(personalPicker, /Using your own OpenRouter key/);
+  assert.match(personalPicker, /Model availability follows your OpenRouter privacy settings/);
+  assert.match(personalPicker, /href="https:\/\/openrouter\.ai\/settings\/privacy"/);
+  assert.match(personalPicker, /Review privacy settings/);
 });
 
 test('the model chooser starts with recommendations and search uses the full catalog', () => {

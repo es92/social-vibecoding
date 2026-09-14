@@ -48,6 +48,8 @@ export interface AutoSessionModalView {
   options: ModelOption[];
   preselect: string;
   openRouter?: boolean;
+  /** Show privacy guidance only when the credential is the user's own key. */
+  personalOpenRouterKey?: boolean;
 }
 
 export interface CreditOptionsModalView {

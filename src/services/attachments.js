@@ -541,6 +541,23 @@ async function loadByIds(pool, ids) {
   }));
 }
 
+// Content-Disposition's legacy filename parameter is a header, so Node only
+// accepts Latin-1 in it. Real filenames are not: macOS screenshot names carry
+// a narrow no-break space (U+202F) before AM/PM, and people attach files
+// named in any script. Passing such a name through verbatim makes
+// res.set() throw ERR_INVALID_CHAR, which every serve route turns into a
+// 500 (#2113). Keep a readable ASCII fallback and carry the exact UTF-8
+// filename in the RFC 5987 parameter browsers prefer.
+function attachmentDisposition(type, filename) {
+  const name = String(filename || 'file');
+  const fallback = name
+    .replace(/[^\x20-\x7e]/g, '_')
+    .replace(/["\\]/g, '_') || 'file';
+  const encoded = encodeURIComponent(name)
+    .replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `${type}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
 module.exports = {
   MAX_IMAGE_BYTES,
   MAX_TEXT_BYTES,
@@ -565,6 +582,7 @@ module.exports = {
   validateZip,
   validateUpload,
   validateChatUpload,
+  attachmentDisposition,
   sanitizeAttachmentIds,
   clipText,
   attachedFileBlock,

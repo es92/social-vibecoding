@@ -23,7 +23,12 @@
 //     window) frames yield failure, never a partial solve.
 //   - solveRegistration: recovers scale+offset from four
 //     correspondences; skewed axis scales and outlier points fail
-//     validation.
+//     validation. With MORE than four candidates (#2096: a share that
+//     includes a tab strip, a toolbar, the dock) the four that agree with
+//     the viewport's geometry and the markers' known size are used;
+//     an ambiguous frame and a flood of candidates still fail closed.
+//   - rescaleMapping: a registration mapping carries over a uniform
+//     frame re-size and refuses a changed aspect ratio.
 //
 // Run with: node --test tests/screenshot-select.test.js
 
@@ -48,6 +53,7 @@ const {
   MARKER,
   markerCssCenters,
   directMapping,
+  rescaleMapping,
   applyMapping,
   detectMarkers,
   classifyCorners,
@@ -264,27 +270,121 @@ test('detectMarkers: all-black frame (minimized window) finds nothing', () => {
   assert.equal(solved.ok, false);
 });
 
-test('detectMarkers: five plausible patterns fail closed (>4 candidates)', () => {
-  const { frame, centers } = buildRegistrationFrame({
-    viewportW: 400, viewportH: 300, scale: 1, offsetX: 40, offsetY: 40,
-    frameW: 520, frameH: 420, bg: 220,
-  });
-  // Page content that happens to render its own finder pattern.
-  drawFinder(frame, 260, 210, MARKER.MODULE);
-  const detected = detectMarkers(frame);
-  assert.equal(detected.length, 5);
-  const solved = solveRegistration(detected, centers, frame.width, frame.height);
-  assert.equal(solved.ok, false);
-});
-
-// ── Solve validation ─────────────────────────────────────────────────
-
 function idealDetections(centers, scale, offsetX, offsetY) {
   return ['tl', 'tr', 'bl', 'br'].map((k) => ({
     x: centers[k].x * scale + offsetX,
     y: centers[k].y * scale + offsetY,
   }));
 }
+
+// ── #2096: candidates the share includes AROUND the page ─────────────
+//
+// A window or monitor share frames more than the viewport: the browser's
+// tab strip and toolbar, the dock, whatever window sits beside it. Any of
+// those can carry a shape with a finder pattern's 1:1:3:1:1 cross-section
+// (a ring icon, a checked radio, a QR code in a neighbouring tab). The
+// solve used to demand EXACTLY four detections, so one such shape was
+// enough to refuse the whole capture as "couldn't locate this page".
+
+test('solveRegistration: a fifth pattern beside the page is ignored when four markers solve', () => {
+  const { frame, centers } = buildRegistrationFrame({
+    viewportW: 400, viewportH: 300, scale: 1, offsetX: 40, offsetY: 40,
+    frameW: 520, frameH: 420, bg: 220,
+  });
+  // A same-sized finder pattern in the page's centre.
+  drawFinder(frame, 260, 210, MARKER.MODULE);
+  const detected = detectMarkers(frame);
+  assert.equal(detected.length, 5);
+  const solved = solveRegistration(detected, centers, frame.width, frame.height);
+  assert.ok(solved.ok, `solve failed: ${solved.reason}`);
+  assert.ok(Math.abs(solved.mapping.scaleX - 1) < 0.05);
+  assert.ok(Math.abs(solved.mapping.offsetX - 40) < 4);
+  assert.ok(Math.abs(solved.mapping.offsetY - 40) < 4);
+});
+
+test('solveRegistration: favicon-sized patterns in the tab strip are ignored', () => {
+  const { frame, centers } = buildRegistrationFrame({
+    viewportW: 400, viewportH: 300, scale: 2, offsetX: 60, offsetY: 120,
+    frameW: 920, frameH: 740, bg: 230,
+  });
+  // Three small finder-like glyphs in the "toolbar" above the page, with a
+  // module size a real marker at this scale cannot have.
+  drawFinder(frame, 120, 40, 3);
+  drawFinder(frame, 300, 40, 3);
+  drawFinder(frame, 700, 40, 4);
+  const detected = detectMarkers(frame);
+  assert.equal(detected.length, 7, `expected 7 candidates, got ${detected.length}`);
+  const solved = solveRegistration(detected, centers, frame.width, frame.height);
+  assert.ok(solved.ok, `solve failed: ${solved.reason}`);
+  assert.ok(Math.abs(solved.mapping.scaleX - 2) < 0.05);
+  assert.ok(Math.abs(solved.mapping.scaleY - 2) < 0.05);
+  assert.ok(Math.abs(solved.mapping.offsetX - 60) < 6);
+  assert.ok(Math.abs(solved.mapping.offsetY - 120) < 6);
+});
+
+test('solveRegistration: a marker of the wrong size does not complete a set', () => {
+  const centers = markerCssCenters(800, 600);
+  const detected = idealDetections(centers, 2, 120, 80).map((p) => ({ ...p, unit: MARKER.MODULE * 2 }));
+  // The bottom-right "marker" is a toolbar glyph that happens to sit where
+  // the corner would be — a quarter of the size a real marker has here.
+  detected[3].unit = MARKER.MODULE * 0.5;
+  const solved = solveRegistration(detected, centers, 2000, 1400);
+  assert.equal(solved.ok, false);
+  assert.match(solved.reason, /marker size/);
+});
+
+test('solveRegistration: two page-shaped sets of markers are ambiguous and fail closed', () => {
+  const centers = markerCssCenters(400, 300);
+  // Two placements of the same viewport at the same scale, side by side —
+  // there is no telling which one is the page.
+  const detected = [
+    ...idealDetections(centers, 1, 20, 20).map((p) => ({ ...p, unit: MARKER.MODULE })),
+    ...idealDetections(centers, 1, 480, 20).map((p) => ({ ...p, unit: MARKER.MODULE })),
+  ];
+  const solved = solveRegistration(detected, centers, 1000, 400);
+  assert.equal(solved.ok, false);
+  assert.match(solved.reason, /ambiguous/);
+});
+
+test('solveRegistration: a flood of candidates fails closed rather than searching', () => {
+  const centers = markerCssCenters(400, 300);
+  const detected = idealDetections(centers, 1, 20, 20);
+  for (let i = 0; i < 20; i++) detected.push({ x: 100 + i * 30, y: 500, unit: 3 });
+  const solved = solveRegistration(detected, centers, 1000, 600);
+  assert.equal(solved.ok, false);
+  assert.match(solved.reason, /too many/);
+});
+
+test('solveRegistration: fewer than four candidates still fails, however many strays', () => {
+  const centers = markerCssCenters(400, 300);
+  const detected = idealDetections(centers, 1, 20, 20).slice(0, 3);
+  assert.equal(solveRegistration(detected, centers, 1000, 600).ok, false);
+});
+
+// ── #2096: the stream re-sizes its frames between the two grabs ──────
+
+test('rescaleMapping: a uniform frame re-size carries the mapping over', () => {
+  const mapping = { scaleX: 2, scaleY: 2, offsetX: 100, offsetY: 60 };
+  const scaled = rescaleMapping(mapping, 2000, 1000, 1000, 500);
+  assert.ok(scaled);
+  assert.ok(Math.abs(scaled.scaleX - 1) < 1e-9);
+  assert.ok(Math.abs(scaled.scaleY - 1) < 1e-9);
+  assert.ok(Math.abs(scaled.offsetX - 50) < 1e-9);
+  assert.ok(Math.abs(scaled.offsetY - 30) < 1e-9);
+  // Odd rounding on one axis (1000x563 for a 16:9 source) is still a resample.
+  assert.ok(rescaleMapping(mapping, 1920, 1080, 1000, 563));
+  // Same size: unchanged.
+  assert.equal(rescaleMapping(mapping, 2000, 1000, 2000, 1000), mapping);
+});
+
+test('rescaleMapping: a changed aspect ratio is a resized window and returns null', () => {
+  const mapping = { scaleX: 2, scaleY: 2, offsetX: 100, offsetY: 60 };
+  assert.equal(rescaleMapping(mapping, 2000, 1000, 2000, 900), null);
+  assert.equal(rescaleMapping(mapping, 2000, 1000, 0, 500), null);
+  assert.equal(rescaleMapping(null, 2000, 1000, 1000, 500), null);
+});
+
+// ── Solve validation ─────────────────────────────────────────────────
 
 test('solveRegistration: exact recovery from clean correspondences', () => {
   const centers = markerCssCenters(800, 600);

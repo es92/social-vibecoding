@@ -13849,6 +13849,11 @@ const AppView = {
       options,
       preselect: preselect || (options[0] && options[0].id) || '',
       openRouter,
+      // A managed/company key inherits the platform account policy. Only a
+      // personal key needs a reminder that its key-visible catalog follows
+      // settings controlled in the user's own OpenRouter account.
+      personalOpenRouterKey: openRouter
+        && modalOptions.openrouterCredentialSource === 'personal',
     });
 
     return new Promise((resolve) => {
