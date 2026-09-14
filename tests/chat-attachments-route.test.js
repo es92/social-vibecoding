@@ -207,12 +207,14 @@ test('images serve inline with their stored type; binary as octet-stream attachm
   const server = await startServer();
   try {
     serveRow({
-      kind: 'image', filename: 'shot.png', content_type: 'image/png',
+      kind: 'image', filename: 'Screenshot 2026-09-14 at 8.17.22\u202fAM.png', content_type: 'image/png',
       data: Buffer.from([0x89, 0x50]), message_id: 9, user_id: 5,
     });
     let res = await fetch(urlFor(server, `/api/apps/demo/chat-attachments/${ATT_ID}`));
+    assert.equal(res.status, 200, 'Unicode screenshot names must not make Node reject the header');
     assert.equal(res.headers.get('content-type'), 'image/png');
     assert.match(res.headers.get('content-disposition'), /^inline/);
+    assert.match(res.headers.get('content-disposition'), /filename\*=UTF-8''Screenshot%202026-09-14%20at%208\.17\.22%E2%80%AFAM\.png/);
 
     serveRow({
       kind: 'binary', filename: 'blob.bin', content_type: 'application/octet-stream',

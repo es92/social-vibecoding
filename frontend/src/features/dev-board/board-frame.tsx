@@ -72,7 +72,7 @@ import { useStoreState } from '../../lib/use-store-state';
 import { useDevViewMode } from './view-mode-store';
 import { discussionStore, type DiscussionState } from './discussion-store';
 import { skeletonKanbanHtml, skeletonListHtml } from './card/skeleton';
-import { lockedNoticeStore, type LockedNoticeState } from './locked-notice-store';
+import { lockedNoticeStore, lockedNoticeText, type LockedNoticeState } from './locked-notice-store';
 
 /** `AppView.DEV_CARD_CLS`, unchanged. Passed in so there is one source of truth. */
 export interface DevBoardFrameProps {
@@ -218,7 +218,7 @@ export function DevBoardFrame({
   cardCls,
   cardHoverCls,
 }: DevBoardFrameProps) {
-  const { locked } = useStoreState<LockedNoticeState>(lockedNoticeStore);
+  const { locked, inviteOnly } = useStoreState<LockedNoticeState>(lockedNoticeStore);
   // The toolbar's home depends on the surface — see the DevActionsRow render
   // below. Subscribing the frame to the mode is safe for the one node this
   // file hands to the module: `#dev-body`'s `dangerouslySetInnerHTML` object
@@ -291,8 +291,11 @@ export function DevBoardFrame({
         */}
         <div id="dev-locked-notice" className={locked ? 'px-3 pt-2' : 'px-3 pt-2 hidden'}>
           {locked ? (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-800 dark:text-amber-400">
-              App is locked. An admin must approve any proposal before it applies.
+            // #1896: who can build here, not a warning. The old amber "locked"
+            // line read as "you cannot build on this app", which was never
+            // true — the lock only adds an admin's approval to the vote.
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+              {lockedNoticeText(inviteOnly)}
             </div>
           ) : null}
         </div>

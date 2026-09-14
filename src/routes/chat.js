@@ -18,6 +18,21 @@ const THREAD_TYPES = new Set(['issue', 'session', 'governance']);
 const MAX_THREAD_REF = 2147483647; // PostgreSQL INTEGER
 const IS_STAGING = process.env.USERNODE_ENV === 'staging';
 
+// Content-Disposition's legacy filename parameter is a header, so it may
+// contain ASCII only. macOS screenshot names include a narrow no-break space
+// before AM/PM; passing that value through verbatim makes Node reject the
+// entire response with ERR_INVALID_CHAR. Keep a readable ASCII fallback and
+// carry the exact UTF-8 filename in the RFC 5987 parameter browsers prefer.
+function attachmentDisposition(type, filename) {
+  const name = String(filename || 'file');
+  const fallback = name
+    .replace(/[^\x20-\x7e]/g, '_')
+    .replace(/["\\]/g, '_') || 'file';
+  const encoded = encodeURIComponent(name)
+    .replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `${type}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
+
 // #1808: staging demo rows for a chat transcript, injected at request time
 // (?demo=1) only when the real read came back EMPTY, so a genuine transcript
 // always wins. Never persisted, and a strict no-op outside staging.
@@ -458,14 +473,15 @@ function chatRoutes(config) {
       if (att.message_id == null && att.user_id !== req.user?.id) {
         return res.status(404).end();
       }
-      const safeName = String(att.filename || 'file').replace(/["\\\r\n]/g, '_');
       const inline = att.kind === 'image';
       const contentType = att.kind === 'image'
         ? (att.content_type || 'application/octet-stream')
         : (att.kind === 'binary' ? 'application/octet-stream' : 'text/plain; charset=utf-8');
       res.set('Content-Type', contentType);
       res.set('X-Content-Type-Options', 'nosniff');
-      res.set('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${safeName}"`);
+      res.set('Content-Disposition', attachmentDisposition(
+        inline ? 'inline' : 'attachment', att.filename
+      ));
       res.set('Cache-Control', 'private, max-age=31536000, immutable');
       return res.send(att.data);
     } catch (err) {
@@ -501,12 +517,11 @@ function chatRoutes(config) {
       if (att.message_id == null && att.user_id !== req.user?.id) {
         return res.status(404).end();
       }
-      const safeName = String(att.filename || 'file.html').replace(/["\\\r\n]/g, '_');
       res.set('Content-Type', 'text/html; charset=utf-8');
       res.set('Content-Security-Policy', 'sandbox allow-scripts');
       res.set('Referrer-Policy', 'no-referrer');
       res.set('X-Content-Type-Options', 'nosniff');
-      res.set('Content-Disposition', `inline; filename="${safeName}"`);
+      res.set('Content-Disposition', attachmentDisposition('inline', att.filename || 'file.html'));
       res.set('Cache-Control', 'private, max-age=31536000, immutable');
       return res.send(att.data);
     } catch (err) {

@@ -3874,9 +3874,27 @@ async function resumeDetachedTurnInner({
     } else if (recoveryActiveTurn.mode === 'sync') {
       // A sync turn is system work: it posts its own status rows via
       // sync-main's sendStatus and has no Mayor reply on the live path
-      // either, so there is nothing to wrap up here. Logged only.
-      log.info('server', 'Recovered sync turn — no Mayor wrap-up', { sessionId });
+      // either, so there is no wrap-up. What it does have is a caller that
+      // died with the previous process: the merge-queue pass that
+      // dispatched it, which would have cleared the 'integrating' it had
+      // recorded on the row and then attempted the merge. Without that,
+      // the card kept saying "bringing up to date with main" until some
+      // unrelated trigger happened by — and a proposal whose verdict
+      // carried onto the merged head, with nothing left to rebuild, had no
+      // trigger left at all. So the recovered turn hands the proposal back
+      // to the queue itself.
+      log.info('server', 'Recovered sync turn — handing back to the integration queue', {
+        sessionId,
+      });
       terminalLine = '[done]';
+      await require('./src/services/integration').setBlockReasons(pool, sessionId, []);
+      if (session.status === 'promoted' && session.app_id != null) {
+        require('./src/services/conflict-resolver')
+          .checkAndResolveConflicts(config, { app_id: session.app_id })
+          .catch((err) => log.warn('server', 'post-recovery queue kick failed', {
+            sessionId, err: err.message,
+          }));
+      }
     } else {
       const { outcome: finalizeOutcome, summary } = await finalizeRecoveredTurn({
         config, pool, staging, session, sessionId, result, repoOwner, repoName,

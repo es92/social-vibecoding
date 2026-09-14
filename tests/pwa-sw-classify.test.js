@@ -127,6 +127,18 @@ test('the key-filtered OpenRouter catalog always reaches the network', () => {
   assert.equal(classify('GET', '/api/me/coding-agent/models?backend=codex_openrouter&refresh=1'), 'bypass');
 });
 
+test('group-chat attachment files and previews never fall back to the SPA shell', () => {
+  const id = 'a'.repeat(32);
+  for (const path of [
+    `/api/apps/demo/chat-attachments/${id}`,
+    `/api/apps/demo/chat-attachments/${id}/view`,
+  ]) {
+    for (const mode of ['navigate', 'cors', 'no-cors']) {
+      assert.equal(classify('GET', path, 'text/html', mode), 'bypass', `${path} (${mode})`);
+    }
+  }
+});
+
 test('shell assets classify as shell', () => {
   assert.equal(classify('GET', '/js/app.js'), 'shell');
   assert.equal(classify('GET', '/css/app.css'), 'shell');

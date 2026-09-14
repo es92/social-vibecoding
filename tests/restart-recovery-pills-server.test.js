@@ -186,12 +186,25 @@ test('the recovered-turn success tail picks its wrap-up pill kind from the outco
 });
 
 // #896: a sync turn is system work with no Mayor reply on the live path
-// either — recovering one must not manufacture a chat message.
-test('a recovered sync turn gets no Mayor wrap-up', () => {
+// either — recovering one must not manufacture a chat message. What it does
+// owe is the follow-through of the merge-queue pass that dispatched it and
+// died with the previous process: take back the 'integrating' that pass
+// recorded, and put the proposal back in front of the queue so the merge
+// attempt happens. Without that, the card said "bringing up to date with
+// main" until an unrelated trigger came by, and a proposal whose verdict
+// carried onto the merged head had no trigger left at all.
+test('a recovered sync turn gets no Mayor wrap-up, and hands back to the integration queue', () => {
   assert.match(SERVER_SRC, /recoveryActiveTurn\.mode === 'sync'/,
     'sync mode is branched explicitly, not lumped in with build');
-  assert.match(SERVER_SRC, /Recovered sync turn — no Mayor wrap-up/,
+  const start = SERVER_SRC.indexOf("recoveryActiveTurn.mode === 'sync'");
+  const branch = SERVER_SRC.slice(start, SERVER_SRC.indexOf('} else {', start));
+  assert.match(branch, /Recovered sync turn — handing back to the integration queue/,
     'the sync branch is logged rather than surfaced in chat');
+  assert.doesNotMatch(branch, /wrapUpOutcome\s*=/, 'and sets no wrap-up outcome');
+  assert.match(branch, /setBlockReasons\(pool, sessionId, \[\]\)/,
+    "the dead pass's 'integrating' is taken back");
+  assert.match(branch, /checkAndResolveConflicts\(config, \{ app_id: session\.app_id \}\)/,
+    'and the app is enqueued so the merge attempt follows the sync');
   assert.match(SERVER_SRC, /if \(wrapUpOutcome\) \{/,
     'the wrap-up only runs for a branch that set an outcome');
 });

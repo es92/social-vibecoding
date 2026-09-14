@@ -231,13 +231,35 @@ function getSelfHostedRefuseList() {
 //   pinned whatever main was when the user pressed a button; pasted three
 //   days later it branched from stale code. prepare_work called at the moment
 //   work actually starts cannot.
+//
+// Step 0 (#2092) comes before the question. A session is routinely dispatched
+// into a checkout it did not make — a fork whose main is far behind the app's
+// repository, on a branch cut from wherever that fork was — and nothing in the
+// checkout says so, because `git fetch origin` compares a fork with itself. An
+// agent that asks what to build and then reads THAT code plans the change
+// against a version that no longer exists. So before it reads or asks anything
+// it verifies the checkout through get_checkout_status and moves to the commit
+// the canonical main is at. That moves the working copy only: the commit a
+// proposal starts from is still the one prepare_work returns, never a merge of
+// the agent's own making, because which commit a change is diffed against
+// decides what the group votes on.
 function getLaunchpadInstructions({ appName, slug, targetProposalId } = {}) {
   const name = appName || slug || 'this app';
   const continuing = Number.isInteger(Number(targetProposalId)) && Number(targetProposalId) > 0;
   return [
     `You are making a change to "${name}" on Usernode (app \`${slug}\`).`,
     '',
-    'FIRST, IF THE USER HAS NOT ALREADY TOLD YOU WHAT TO BUILD, ASK THEM.',
+    '0. Catch your checkout up to the app\'s upstream main before you read its code',
+    '   or ask anything. The checkout you were handed may be a fork whose main is',
+    '   far behind, and `git fetch origin` cannot tell you. Through your Usernode',
+    `   connector, call get_checkout_status with slug "${slug}", \`headSha\` (from`,
+    '   `git rev-parse HEAD`) and `remoteUrl` (from `git remote get-url origin`).',
+    '   Unless it says `current` or `ahead`, fetch the `baseToUse` commit it returns',
+    '   from the `canonicalRepo` it names and check that commit out. That moves your',
+    '   working copy only: the commit a proposal starts from still comes from',
+    '   prepare_work, never from merging main yourself.',
+    '',
+    'NEXT, IF THE USER HAS NOT ALREADY TOLD YOU WHAT TO BUILD, ASK THEM.',
     'Do not guess, and do not start until they answer.',
     '',
     'Then, through your Usernode connector:',

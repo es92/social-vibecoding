@@ -1,5 +1,5 @@
 /**
- * Always-visible local coding-agent setup for Settings → CLI access.
+ * Shared local coding-agent setup for Settings and the own-tools launchpad.
  *
  * This guide is static section content, not a credential-list state. Keeping
  * it outside `#cli-tokens-list` means it remains visible while capability
@@ -65,9 +65,13 @@ function SetupStep({ n, title, children }: {
   );
 }
 
-export function CliSetupGuide() {
+export function CliSetupGuide({
+  id = 'cli-setup-guide',
+  proposalPrompt = PROPOSAL_PROMPT,
+  promptHelp = 'Replace the placeholders with the app and change you have in mind, then send the prompt.',
+}: { id?: string; proposalPrompt?: string; promptHelp?: string } = {}) {
   return (
-    <div id="cli-setup-guide" className="mb-4 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
+    <div id={id} className="mb-4 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
       <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Set up a local coding agent</h3>
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
         Start Codex or Claude Code from a local checkout and ask it to create a proposal.
@@ -96,9 +100,9 @@ export function CliSetupGuide() {
         </SetupStep>
         <SetupStep n={3} title="Ask it to create a proposal">
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Replace the placeholders with the app and change you have in mind, then send the prompt.
+            {promptHelp}
           </p>
-          <CopyableCode label="example proposal prompt" value={PROPOSAL_PROMPT} />
+          <CopyableCode label="example proposal prompt" value={proposalPrompt} />
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
             Follow the agent&rsquo;s instructions. It will ask you to authorize access on a Social Vibecoding web page; review and approve the request there, then return to your terminal.
           </p>

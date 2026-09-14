@@ -120,7 +120,11 @@ async function chooseDefaultModel({ pool, userId, apiKey, config }) {
 
 async function provision({ pool, userId, config }) {
   if (!config.openrouterManagementApiKey) {
-    throw new ManagedOpenRouterError(503, 'not_configured', 'Company OpenRouter keys are not configured yet.');
+    throw new ManagedOpenRouterError(
+      503,
+      'not_configured',
+      'Company OpenRouter keys are not configured yet. Ask an administrator to check USERNODE_OPENROUTER_MANAGEMENT_API_KEY.',
+    );
   }
 
   // Reserve the user's one lifetime issuance before the provider call. The

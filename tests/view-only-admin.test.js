@@ -259,8 +259,12 @@ test('admin-approval (PR): a full admin yes-vote satisfies, a view-only one does
   assert.equal(await adminApproval.hasAdminYesVote(viewYes, 1), false);
 });
 
-test('admin-approval (PR): the locked-app gate is scoped to the reviewed head', async () => {
-  const head = 'a'.repeat(40);
+test('admin-approval (PR): the locked-app gate is scoped to the approval epoch, not the commit', async () => {
+  // #2100 / #2095: this predicate was the last tally still keyed on the
+  // vote's head_sha. A mechanical sync moves the head and keeps the epoch,
+  // so the admin's yes kept satisfying "enough approvals" while this gate
+  // said no admin had voted — and asked the admin who had just voted yes to
+  // vote yes again, which is a no-op for an unchanged vote.
   let captured = null;
   const pool = {
     async query(sql, params) {
@@ -268,9 +272,12 @@ test('admin-approval (PR): the locked-app gate is scoped to the reviewed head', 
       return { rows: [] };
     },
   };
-  await adminApproval.hasAdminYesVote(pool, 9, head);
-  assert.match(captured.sql, /pv\.head_sha = \$2/);
-  assert.deepEqual(captured.params, [9, head]);
+  await adminApproval.hasAdminYesVote(pool, 9);
+  assert.match(captured.sql, /pv\.approval_epoch = cs\.approval_epoch/,
+    'counts the vote iff it belongs to the current approval epoch');
+  assert.doesNotMatch(captured.sql, /head_sha/,
+    'the commit the admin happened to see is not part of the rule');
+  assert.deepEqual(captured.params, [9]);
 });
 
 test('admin-approval (issue): a full admin up-vote satisfies, a view-only one does not', async () => {

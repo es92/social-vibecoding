@@ -1807,9 +1807,9 @@
       "expectSelector": "#platform-header #improve-btn:not(.hidden)"
     },
     {
-      "name": "The Improve panel offers the three views in order: App, Workshop, Board",
+      "name": "The Improve panel offers its two views in order: App, then Workshop",
       "path": "/?demo=1#app/usernode-2d5619/dev",
-      "expectSelector": "#improve-views [data-context-row=\"app\"] ~ [data-context-row=\"workshop\"] ~ [data-context-row=\"board\"]"
+      "expectSelector": "#improve-views [data-context-row=\"app\"] ~ [data-context-row=\"workshop\"]"
     },
     {
       "name": "The app-context sheet carries the + New change action (Streamlined Concept)",
@@ -1827,14 +1827,14 @@
       "expectSelector": "#platform-header #improve-btn:not(.hidden)"
     },
     {
-      "name": "The Board opens straight onto its cards, with no view tab strip above them",
+      "name": "The Dev screen opens straight onto its cards, with no view tab strip above them",
       "path": "/app/staging-demo-admins/dev",
       "expectSelector": "#dev-forum-scroll #dev-body"
     },
     {
-      "name": "A ?view=kanban deep link resolves onto the kanban board",
+      "name": "A retired ?view=kanban deep link resolves onto the Workshop's stage pane",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-body #dev-kanban-board"
+      "expectSelector": "#dev-body #dev-workshop [data-ws-stage] #dev-kanban"
     },
     {
       "name": "The self-hosted platform row gets its own App segment too (#1386, #1443)",
@@ -1887,7 +1887,7 @@
       "expectSelector": "#dev-kanban-col-done [data-gov-row=\"9100060\"] .attr-chip"
     },
     {
-      "name": "?view=kanban forces the board regardless of stored preference (#814)",
+      "name": "?view=kanban still reaches the board's columns, whatever is stored (#814)",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
       "expectSelector": "#dev-kanban-tabs [data-kanban-tab=\"done\"]"
     },
@@ -1897,10 +1897,10 @@
       "expectSelector": "#dev-actions #dev-plus-btn"
     },
     {
-      "name": "The Board names itself in the chip, under the app it belongs to",
+      "name": "The Dev screen names itself in the chip, under the app it belongs to",
       "path": "/?demo=1#app/usernode-2d5619/dev",
       "expectSelector": "#app-switcher-btn #app-switcher-subtitle",
-      "expectText": "Board"
+      "expectText": "Workshop"
     },
     {
       "name": "A retired ?view=feed deep link resolves onto the Workshop",
@@ -1913,9 +1913,9 @@
       "expectSelector": "#dev-body #dev-workshop"
     },
     {
-      "name": "Kanban survives as the resolved mode on a ?view=kanban deep link, and a tap unfolds a row into its card, whose Open card leads to its page",
+      "name": "A retired ?view=kanban link lands on the stage pane, and a tap unfolds a row into its card, whose Open card leads to its page",
       "path": "/?demo=1&view=kanban&shot=board-unfold#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-body #dev-kanban-board .dev-ws-rowwrap-open > .dev-ws-sheet > .gc-vote-item.dev-card-dense[data-edge] .gc-card-actions > a.dev-ws-open-btn[href*=\"/dev/\"]",
+      "expectSelector": "#dev-body #dev-workshop [data-ws-stage] .dev-ws-rowwrap-open > .dev-ws-sheet > .gc-vote-item.dev-card-dense[data-edge] .gc-card-actions > a.dev-ws-open-btn[href*=\"/dev/\"]",
       "expectText": "Open card"
     },
     {
@@ -1924,9 +1924,9 @@
       "expectSelector": "#dev-body #dev-workshop .dev-ws-themes [data-ws-theme] .dev-ws-theme-body [data-ws-lane] .dev-ws-row[role=\"button\"][aria-expanded]"
     },
     {
-      "name": "#app/<slug>/board is the card area as a kanban, its cards folded to rows",
+      "name": "#app/<slug>/board resolves onto the stage pane, its cards folded to rows",
       "path": "/?demo=1#app/usernode-2d5619/board",
-      "expectSelector": "#dev-body #dev-kanban-board #dev-kanban .dev-kanban-col .dev-ws-rowwrap > .dev-ws-row[role=\"button\"][aria-expanded=\"false\"][data-issue-row]"
+      "expectSelector": "#dev-body #dev-workshop [data-ws-stage] #dev-kanban .dev-kanban-col .dev-ws-rowwrap > .dev-ws-row[role=\"button\"][aria-expanded=\"false\"][data-issue-row]"
     },
     {
       "name": "#app/<slug>/workshop is the card area grouped by theme, not the general chat, and it leads with the open summary card and the step back",
@@ -1991,9 +1991,9 @@
       "expectSelector": "#improve-views [data-context-row=\"workshop\"][aria-current=\"page\"]"
     },
     {
-      "name": "The view strip marks Board as the one you are on",
+      "name": "The view strip marks Workshop on the board route too, so it is never blank",
       "path": "/?demo=1#app/usernode-2d5619/board",
-      "expectSelector": "#improve-views [data-context-row=\"board\"][aria-current=\"page\"]"
+      "expectSelector": "#improve-views [data-context-row=\"workshop\"][aria-current=\"page\"]"
     },
     {
       "name": "The chip's menu is the app picker only — no view strip in it",
@@ -2001,13 +2001,7 @@
       "expectSelector": "#apps-switcher-sheet:not(:has(#switcher-views)) #switcher-nav #switcher-row-home"
     },
     {
-      "name": "The kanban carries the app's general discussion as a card above its columns",
-      "path": "/?demo=1#app/usernode-2d5619/board",
-      "expectSelector": "#dev-forum-scroll:has(#dev-body #dev-kanban-board) a#dev-chat-card[href^=\"/app/usernode-2d5619/dev/chat\"]",
-      "expectText": "General discussion"
-    },
-    {
-      "name": "...and the Workshop carries the same discussion as a row of its own instead",
+      "name": "The Workshop carries the app's general discussion as a row of its own",
       "path": "/?demo=1#app/usernode-2d5619/workshop",
       "expectSelector": "#dev-body #dev-workshop [data-discussion-row]"
     },
@@ -3191,8 +3185,8 @@
     {
       "name": "Own-tools venue: the chat becomes a launchpad, not a composer (#1281)",
       "path": "/?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990401",
-      "expectSelector": "#dc-launchpad-slot [data-launchpad=\"own-tools-pr\"] .dc-launchpad-step-title",
-      "expectText": "Connect your agent to Usernode"
+      "expectSelector": "#dc-launchpad-slot #dc-cli-setup-guide",
+      "expectText": "Set up a local coding agent"
     },
     {
       "name": "The launchpad is pinned above the transcript, not in the composer bar (#1348)",
@@ -3207,8 +3201,8 @@
     {
       "name": "Own-tools launchpad carries the copyable \"tell your agent\" block (#1281)",
       "path": "/?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990401",
-      "expectSelector": "#dc-launchpad-slot [data-launchpad-copy=\"prefill\"]",
-      "expectText": "Copy instructions"
+      "expectSelector": "#dc-cli-setup-guide button[aria-label=\"Copy example proposal prompt\"]",
+      "expectText": "Copy"
     },
     {
       "name": "A hand-off session hides the composer it will never use (#1281)",
@@ -3329,9 +3323,9 @@
       "expectText": "We sent you a code. It expires in 10 minutes."
     },
     {
-      "name": "Back from a dev session is the header's own arrow, a real link at the Board (#1036, Streamlined Concept)",
+      "name": "Back from a dev session is the header's own arrow, a real link at the Workshop (#1036, Streamlined Concept)",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev/sessions/990402",
-      "expectSelector": "a#back-btn:not(.hidden)[href=\"#app/usernode-2d5619/board\"]"
+      "expectSelector": "a#back-btn:not(.hidden)[href=\"#app/usernode-2d5619/workshop\"]"
     },
     {
       "name": "…and a cold session link opened by a Workshop viewer goes back to the Workshop",
@@ -3344,9 +3338,9 @@
       "expectSelector": "a#back-btn[aria-label=\"Back\"][href=\"#app/usernode-2d5619/workshop\"]"
     },
     {
-      "name": "…and from the Board it is still the Board",
+      "name": "…and from an issue opened on it, the same arrow to the same screen",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev/issues/900014",
-      "expectSelector": "a#back-btn[aria-label=\"Back\"][href=\"#app/usernode-2d5619/board\"]"
+      "expectSelector": "a#back-btn[aria-label=\"Back\"][href=\"#app/usernode-2d5619/workshop\"]"
     },
     {
       "name": "The bar's two edges: nothing to leave by on Home, and the bell left of Improve",
@@ -3837,8 +3831,8 @@
     {
       "name": "The instructions themselves are on the card, for a clipboard that refuses",
       "path": "/?demo=1&flow=claude-code#app/usernode-2d5619/dev/sessions/990404",
-      "expectSelector": "[data-flow-wizard] details.dc-flow-order pre[data-flow-order]",
-      "expectText": "Call prepare_work"
+      "expectSelector": "[data-flow-wizard] details.dc-flow-order:not([open]) > summary + pre[data-flow-order]",
+      "expectText": "Instructions"
     },
     {
       "name": "Without a connector the hand-off asks for one, because the agent needs it",

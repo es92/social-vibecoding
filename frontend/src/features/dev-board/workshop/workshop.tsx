@@ -42,7 +42,7 @@
  * link on the open card.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
@@ -993,10 +993,12 @@ function BeforeAfter({ v, near, onFull }: {
 
 /* ── One item of the feed ────────────────────────────────────────────── */
 
-function FeedItem({ row, index, count, near, voted, wide, slug, onFull }: {
+function FeedItem({ row, index, count, tint, near, voted, wide, slug, onFull }: {
   row: QueueRow;
   index: number;
   count: number;
+  /** 'a' or 'b': the row's own, for life (see `tintFor` in NeedsFeed). */
+  tint: 'a' | 'b';
   near: boolean;
   voted: string | null;
   wide: boolean;
@@ -1010,7 +1012,7 @@ function FeedItem({ row, index, count, near, voted, wide, slug, onFull }: {
   const summary = isVote ? row.summary : (row.body || null);
   const pct = Math.max(2, Math.round(((index + 1) / Math.max(1, count)) * 100));
   return (
-    <section className="dev-ws-item" data-ws-item={row.key} data-ws-kind={row.kind} data-ws-tint={index % 2 ? 'b' : 'a'}>
+    <section className="dev-ws-item" data-ws-item={row.key} data-ws-kind={row.kind} data-ws-tint={tint}>
       <div className="dev-ws-item-progress" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
       <div className="dev-ws-item-top">
         {voted ? (
@@ -1097,9 +1099,15 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   onDone: () => void;
 }): ReactNode {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const settleRef = useRef<number>(0);
   const [at, setAt] = useState(0);
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  // The sheet on its way out. It stays mounted, marked `data-ws-leaving`,
+  // for as long as app.css's leave animation runs, then is dropped.
+  const [leaving, setLeaving] = useState<SheetKind | null>(null);
+  // How much of the window the on-screen keyboard has taken, in px. The
+  // sheets stop above it (`--ws-kb` in app.css), so the field being typed
+  // into is never under the keys — see the visualViewport effect.
+  const [kb, setKb] = useState(0);
   // Answered here, this session: the pinned row's confirmation.
   const [answered, setAnswered] = useState<Record<string, string>>({});
   // The pins, keyed by row, with the index each held when it was answered.
@@ -1131,7 +1139,6 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   // Which model answers. The dev session's own list and its own default —
   // see `_workshopModels`.
   const [model, setModel] = useState<string>(() => models.selected || '');
-  const [focused, setFocused] = useState(false);
 
   const items = useMemo<QueueRow[]>(() => {
     const live = rows.filter((r): r is QueueRow => r.t === 'card');
@@ -1145,6 +1152,28 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   const n = items.length;
   const i = Math.min(at, Math.max(0, n - 1));
   const row = n ? items[i] : null;
+  /**
+   * Each row's tint, decided the first time it is seen and kept for life.
+   * The tints alternate so a swipe reads as a new item, and a row seen for
+   * the first time takes the opposite of the row before it, so a list seen
+   * whole alternates perfectly and a row that arrives later still differs
+   * from its neighbour above. Keyed on the index of the moment instead, a
+   * row leaving above the one in view would flip every tint after it, and
+   * the card in front of the reader would change colour for nothing.
+   */
+  const tintRef = useRef<Map<string, 'a' | 'b'>>(new Map());
+  const tints = useMemo<Array<'a' | 'b'>>(() => {
+    const seen = tintRef.current;
+    const out: Array<'a' | 'b'> = [];
+    let prev: 'a' | 'b' | null = null;
+    for (const r of items) {
+      let tint = seen.get(r.key);
+      if (!tint) { tint = prev === 'a' ? 'b' : 'a'; seen.set(r.key, tint); }
+      out.push(tint);
+      prev = tint;
+    }
+    return out;
+  }, [items]);
   const voted = row ? answered[row.key] || null : null;
 
   /**
@@ -1163,7 +1192,16 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
       if (idx >= 0) {
         if (idx !== at) {
           setAt(idx);
-          if (el && el.clientHeight) el.scrollTop = idx * el.clientHeight;
+          // INSTANTLY. The scroller has `scroll-behavior: smooth`, which
+          // applies to this assignment too, so the correction would ANIMATE
+          // from where the shifted rows left the view to where the row is —
+          // a card sliding through for a third of a second, which is the
+          // "reset" a viewer saw. Off for the one assignment, then back.
+          if (el && el.clientHeight) {
+            el.style.scrollBehavior = 'auto';
+            el.scrollTop = idx * el.clientHeight;
+            el.style.scrollBehavior = '';
+          }
         }
         return;
       }
@@ -1173,24 +1211,10 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
     if (clamped !== at) setAt(clamped);
   }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** Drop every pin but the current row's — called once a move has settled. */
-  const dropPins = () => {
-    const key = curKeyRef.current;
-    let dropped = false;
-    for (const k of [...pinsRef.current.keys()]) {
-      if (k !== key) { pinsRef.current.delete(k); dropped = true; }
-    }
-    if (dropped) setPinsVersion((v) => v + 1);
-  };
   const landOn = (idx: number) => {
     const c = Math.min(Math.max(idx, 0), Math.max(0, items.length - 1));
     curKeyRef.current = items[c] ? items[c].key : null;
     setAt(c);
-    // Pins go once the scroll has SETTLED, not on the first frame that
-    // crosses the halfway line — a snap in flight is not a place to remove
-    // the row it is leaving, and touch momentum would fight the correction.
-    window.clearTimeout(settleRef.current);
-    settleRef.current = window.setTimeout(dropPins, 220);
   };
   const onScroll = () => {
     const el = scrollRef.current;
@@ -1209,10 +1233,55 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
     if (el && el.clientHeight) el.scrollTo({ top: idx * el.clientHeight, behavior: 'smooth' });
     landOn(idx);
   };
-  useEffect(() => () => window.clearTimeout(settleRef.current), []);
 
-  const toggleSheet = (kind: SheetKind) => setSheet((cur) => (cur === kind ? null : kind));
-  const closeSheet = () => setSheet(null);
+  const closeSheet = () => {
+    if (!sheet) return;
+    setLeaving(sheet);
+    setSheet(null);
+  };
+  const toggleSheet = (kind: SheetKind) => {
+    if (sheet === kind) { closeSheet(); return; }
+    setLeaving(null);
+    setSheet(kind);
+  };
+  // The leave animation's length, then the sheet is gone. Nothing to wait
+  // for where motion is unwelcome — app.css runs no animation there.
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const still = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t = window.setTimeout(() => setLeaving(null), still ? 0 : 220);
+    return () => window.clearTimeout(t);
+  }, [leaving]);
+  // THE KEYBOARD. A fixed sheet is laid out against the layout viewport,
+  // which the on-screen keyboard does not shrink — so on a phone the card's
+  // floor, and the field on it, sat under the keys. The visual viewport
+  // does shrink; the difference is what the keyboard took, and the sheet
+  // ends above it. Only while a sheet is up, and only below the breakpoint:
+  // a panel on a wide window is not fixed at all.
+  useEffect(() => {
+    if (!sheet || wide || typeof window === 'undefined' || !window.visualViewport) return undefined;
+    const vv = window.visualViewport;
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const taken = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      setKb((cur) => (cur === taken ? cur : taken));
+      // The body under the field shrank with the sheet; keep the field in it.
+      const active = document.activeElement as HTMLElement | null;
+      if (taken > 0 && active && active.closest('.dev-ws-sheet-modal')) active.scrollIntoView({ block: 'nearest' });
+    };
+    const onChange = () => { if (!raf) raf = window.requestAnimationFrame(measure); };
+    vv.addEventListener('resize', onChange);
+    vv.addEventListener('scroll', onChange);
+    measure();
+    return () => {
+      vv.removeEventListener('resize', onChange);
+      vv.removeEventListener('scroll', onChange);
+      if (raf) window.cancelAnimationFrame(raf);
+      setKb(0);
+    };
+  }, [sheet, wide]);
 
   /**
    * Answering the item: a vote, or taking an issue. The row is pinned BEFORE
@@ -1224,13 +1293,21 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
     const spec = which === 'yes' ? row.yes : row.no;
     if (!spec) return;
     if (row.kind === 'vote') {
+      // PINNED FOR THE SESSION, not until the next move. The vote makes the
+      // row leave `rows` (it is no longer owed), and the pin keeps it in its
+      // slot, so nothing under the viewer shifts: a row leaving ABOVE the
+      // one in view moves every index after it, and with it the counter,
+      // and the scroll position has to be corrected under the reader. The
+      // pins used to go once the next card had settled, which was exactly
+      // when that correction was most visible — the card you had just
+      // arrived on re-numbered and slid.
       if (!pinsRef.current.has(row.key)) {
         pinsRef.current.set(row.key, { row, index: i });
         setPinsVersion((v) => v + 1);
       }
       setAnswered((cur) => ({ ...cur, [row.key]: which }));
     }
-    setSheet(null);
+    closeSheet();
     if (spec.act) callAppView(spec.act.fn, ...(spec.act.args as unknown[]));
   };
 
@@ -1241,6 +1318,13 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   };
   const openFull = (el: HTMLElement) => callAppView('openVisualComparison', el);
   const menuKey = row ? row.card.rail.menuKey : undefined;
+  // The card's own page, offered under More as "Open card": here the item IS
+  // the screen, so there is no card face to tap for it (app-view.js's
+  // _toggleCardMenu reads it off the trigger).
+  const cardHref = row ? openHref(slug, row.card) : null;
+  // What is rendered: the open sheet, or the one still leaving.
+  const shown = sheet || leaving;
+  const leavingAttr = !sheet && leaving ? { 'data-ws-leaving': '' } : {};
   const commentCount = row ? (row.card.chatCount || 0) : 0;
 
   /**
@@ -1256,7 +1340,7 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key;
-      if (k === 'Escape') { if (sheet) { setSheet(null); e.preventDefault(); } return; }
+      if (k === 'Escape') { if (sheet) { closeSheet(); e.preventDefault(); } return; }
       if (k === 'ArrowDown' || k === 'j' || k === 'J') { go(1); e.preventDefault(); return; }
       if (k === 'ArrowUp' || k === 'k' || k === 'K') { go(-1); e.preventDefault(); return; }
       if (!row) return;
@@ -1284,12 +1368,6 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
   const thread = row ? threads[row.key] || [] : [];
   const engaged = thread.length > 0;
   const inFlight = !!(row && asking[row.key]);
-  /**
-   * Is the composer showing its controls row? On a wide window always — the
-   * panel has room and no keyboard is about to take half the screen. On a
-   * phone it stays one line until the field is tapped.
-   */
-  const expanded = wide || focused || engaged;
 
   /**
    * Bring back what this viewer already asked about this item. In an effect
@@ -1429,7 +1507,9 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
     <div
       className="dev-ws-needs"
       data-ws-needs=""
-      data-ws-sheet={sheet || undefined}
+      data-ws-sheet={shown || undefined}
+      data-ws-kb={kb > 0 ? '' : undefined}
+      style={kb > 0 ? ({ '--ws-kb': `${kb}px` } as CSSProperties) : undefined}
     >
       {/* THE FEED. A real scroll container with snap points, not a swap of one
           rendered card: every row stays in the DOM (the legacy fillers find
@@ -1443,6 +1523,7 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
             row={r}
             index={k}
             count={n}
+            tint={tints[k]}
             near={Math.abs(k - i) <= 1}
             voted={answered[r.key] || null}
             wide={wide}
@@ -1525,7 +1606,8 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
             className="dev-ws-rail-btn dev-ws-rail-more dev-card-menu-btn"
             data-ws-rail-btn="more"
             data-card-menu={menuKey}
-            disabled={!menuKey}
+            data-card-menu-open={cardHref || undefined}
+            disabled={!menuKey && !cardHref}
             aria-haspopup="true"
             aria-label="More actions"
           >
@@ -1547,8 +1629,8 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
           {/* The vote: the question, where it stands, and the two answers. A
               sheet from the floor on a phone, a popover on this button on a
               wide window (app.css). Decide later closes it. */}
-          {row.kind === 'vote' && sheet === 'vote' ? (
-            <div className="dev-ws-sheet dev-ws-sheet-vote" data-ws-sheet="vote" role="dialog" aria-label={row.ask}>
+          {row.kind === 'vote' && shown === 'vote' ? (
+            <div className="dev-ws-sheet-modal dev-ws-sheet-vote" data-ws-sheet="vote" role="dialog" aria-label={row.ask} {...leavingAttr}>
               <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
               <div className="dev-ws-sheet-card">
                 <span className="dev-ws-sheet-handle" aria-hidden="true" />
@@ -1586,8 +1668,8 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
           A sheet on a phone, a panel beside the rail on a wide window. The
           composer is the dev session's own (`.dc-card`), as far as this pane
           needs it — see the note on `sendBtn`. */}
-      {row && sheet === 'ask' ? (
-      <div className="dev-ws-sheet dev-ws-sheet-ask" data-ws-sheet="ask" role="dialog" aria-label="Ask about this item">
+      {row && shown === 'ask' ? (
+      <div className="dev-ws-sheet-modal dev-ws-sheet-ask" data-ws-sheet="ask" role="dialog" aria-label="Ask about this item" {...leavingAttr}>
       <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
       <section className="dev-ws-ask dev-ws-sheet-card" data-ws-ask="">
         <span className="dev-ws-sheet-handle" aria-hidden="true" />
@@ -1617,8 +1699,7 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
           onSubmit={(e) => { e.preventDefault(); ask(); }}
         >
           <label className="sr-only" htmlFor="dev-ws-ask-input">Ask about this change</label>
-          {/* THE RESTING LINE keeps the send circle while the card is ONE
-              line; open, the circle is the last thing in the card. */}
+          {/* THE FIELD on a line of its own; the controls row is under it. */}
           <div className="dev-ws-ask-line">
             <input
               id="dev-ws-ask-input"
@@ -1631,15 +1712,13 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
                     : 'Ask a question…'
               }
               disabled={!target || inFlight}
-              onFocus={() => setFocused(true)}
-              onBlur={() => { if (!draft.trim()) setFocused(false); }}
               onChange={(e) => setDraft(e.target.value)}
             />
-            {expanded ? null : sendBtn}
           </div>
-          {/* ONE LINE until it is tapped, on a phone; the model picker is
-              what makes the card two lines tall. */}
-          {expanded ? (
+          {/* THE CONTROLS ROW is there at every width: the model picker, and
+              the send circle as the card's last thing. It used to wait for a
+              tap on the field on a phone, and a picker behind a tap nobody
+              knows to make is a picker nobody uses. */}
           <div className="dev-ws-ask-row">
             {models.list.length ? (
               <span className="dev-ws-ask-model" data-ws-ask-model="">
@@ -1659,7 +1738,6 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
                 right edge whether or not the model picker is beside it. */}
             {sendBtn}
           </div>
-          ) : null}
         </form>
       </section>
       </div>
@@ -1669,8 +1747,8 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
           The thread component is the one the unfolded rows use; the GitHub
           slot is the legacy filler's host, pointed at this sheet when it
           opens. */}
-      {row && sheet === 'comments' ? (
-      <div className="dev-ws-sheet dev-ws-sheet-comments" data-ws-sheet="comments" role="dialog" aria-label="Comments">
+      {row && shown === 'comments' ? (
+      <div className="dev-ws-sheet-modal dev-ws-sheet-comments" data-ws-sheet="comments" role="dialog" aria-label="Comments" {...leavingAttr}>
       <button type="button" className="dev-ws-scrim" aria-label="Close" onClick={closeSheet} />
       <section className="dev-ws-sheet-card" data-ws-comments="">
         <span className="dev-ws-sheet-handle" aria-hidden="true" />
@@ -1696,8 +1774,8 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
  * The breakpoint, in one place. app.css's `@media (min-width: 700px)` block is
  * the same decision written in the other language, and the two move together:
  * above it the tab strip is a segmented control at the head of the column and
- * the ask composer opens expanded; below it the strip is a bar stuck to the
- * floor and the composer is one line until it is tapped.
+ * the feed's sheets are panels beside it; below it the strip is a bar stuck to
+ * the floor and the sheets rise from it, stopping above the keyboard.
  */
 const WIDE_QUERY = '(min-width: 700px)';
 

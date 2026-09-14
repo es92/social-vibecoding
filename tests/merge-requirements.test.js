@@ -143,6 +143,58 @@ test('a recording supersedes the provisional list wholesale', () => {
     'the recording wins: the gate saw the real tally, the columns are a snapshot');
 });
 
+// ── #2100 / #2095: a recording is about one (head, epoch) ──────────────
+//
+// "Merging now" stayed on the card after a head move had released the claim,
+// and "enough approvals" after an epoch bump had cleared them: the recording
+// described the proposal as it was, and nothing retired it.
+
+test('a recording whose approval epoch has moved on is retired in favour of the live columns', () => {
+  const t = requirements.trace().context({ locked: false, selfHosted: false, headSha: 'a'.repeat(40), approvalEpoch: 2 });
+  t.pass('approvals').pass('integration').pass('checks').stop('github', 'active');
+  const block = requirements.readRequirements({
+    merge_requirements: t.toRecord(),
+    source: 'native', reviewed_head_sha: 'a'.repeat(40), approval_epoch: 3,
+    votes_required: 3, yes_count: 0, check_state: 'pending',
+  });
+  assert.equal(block.provisional, true);
+  assert.equal(block.superseded, true);
+  assert.notEqual(block.gates.find((g) => g.key === 'approvals').state, 'done',
+    'the approvals the run counted belong to an epoch that no longer exists');
+  assert.notEqual(block.gates.find((g) => g.key === 'github').state, 'active',
+    '"merging now" must not outlive the claim');
+});
+
+test('a recording about a commit the proposal has left behind is retired too', () => {
+  for (const [source, column] of [['native', 'reviewed_head_sha'], ['imported', 'imported_pr_head_sha']]) {
+    const t = requirements.trace().context({ locked: false, selfHosted: false, headSha: 'a'.repeat(40), approvalEpoch: 1 });
+    t.pass('approvals').stop('github', 'active');
+    const block = requirements.readRequirements({
+      merge_requirements: t.toRecord(), source, [column]: 'b'.repeat(40), approval_epoch: 1,
+    });
+    assert.equal(block.provisional, true, `${source}: the pin moved`);
+    assert.equal(block.superseded, true);
+  }
+});
+
+test('a recording that still matches, or that predates the stamps, is trusted', () => {
+  const stamped = requirements.trace().context({ locked: false, selfHosted: false, headSha: 'A'.repeat(40), approvalEpoch: 1 });
+  stamped.pass('approvals').stop('checks', 'active');
+  const same = requirements.readRequirements({
+    merge_requirements: stamped.toRecord(),
+    source: 'native', reviewed_head_sha: 'a'.repeat(40), approval_epoch: 1,
+  });
+  assert.equal(same.provisional, false, 'case-insensitive sha match, same epoch');
+
+  const unstamped = requirements.trace().context({ locked: false, selfHosted: false });
+  unstamped.pass('approvals').stop('checks', 'active');
+  const legacy = requirements.readRequirements({
+    merge_requirements: unstamped.toRecord(),
+    source: 'native', reviewed_head_sha: 'b'.repeat(40), approval_epoch: 7,
+  });
+  assert.equal(legacy.provisional, false, 'no stamps: nothing to compare, trusted as before');
+});
+
 // ── The collapsed line, and who it opens for ────────────────────────────
 
 const listStuckOn = (key, actorState, ctx) => {

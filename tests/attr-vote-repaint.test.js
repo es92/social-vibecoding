@@ -104,42 +104,54 @@ test('_refreshAttrCards repaints the topic head only in the topic sub-view', () 
   assert.equal(topicRepaints, 1);
 });
 
-test('kanban mode: a vote repaint reaches _repaintKanbanBoard', () => {
+// The repaint used to have two surfaces to reach, and this pair covered the
+// one that was easy to forget. The BOARD VIEW MODE has retired — its columns
+// are the Workshop's "By stage" pane, rendering the same <DevKanban/> from the
+// same published view model — so there is one surface left and the thing worth
+// pinning is that a stored preference naming the retired mode still arrives at
+// it. The #608 regression itself (a vote must not leave visible chips stale) is
+// covered by the two tests above, which assert the delegation directly.
+function workshopSandbox(stored) {
   const { AppView, sandbox } = makeSandbox();
-  sandbox.localStorage = { getItem: () => 'kanban', setItem: () => {} };
+  sandbox.localStorage = { getItem: () => stored, setItem: () => {} };
   sandbox.document = fakeDoc({
     'dev-body': fakeEl(),
     'dev-kanban-filterbar': fakeEl(),
-    'dev-kanban-board': fakeEl(),
+    'dev-workshop': fakeEl(),
   });
-  let boardRepaints = 0;
-  AppView._repaintKanbanBoard = () => { boardRepaints += 1; };
+  const counts = { workshop: 0, board: 0 };
+  AppView._rerenderWorkshop = () => { counts.workshop += 1; };
+  AppView._repaintKanbanBoard = () => { counts.board += 1; };
+  AppView._renderKanbanFilterBar = () => {};
+  AppView._rewirePlusMenu = () => {};
+  AppView._reanchorCardMenu = () => {};
+  AppView._loadKanbanFilters = () => ({});
   AppView._reanchorAttrPopover = () => {};
+  return { AppView, counts };
+}
 
+test('a stored kanban preference migrates, and the vote repaint reaches the Workshop', () => {
+  // A viewer who last left the Dev screen on the Board has 'kanban' stored.
+  // RETIRED_VIEW_MODES is what stops them landing on a mode that no longer
+  // exists, and the repaint has to follow the MIGRATED mode to the surviving
+  // surface rather than the stored string.
+  const { AppView, counts } = workshopSandbox('kanban');
+  assert.equal(AppView._getViewMode(), 'workshop', 'the stored Board preference migrates');
   AppView._refreshAttrCards();
-  assert.equal(boardRepaints, 1);
+  assert.equal(counts.workshop, 1);
+  assert.equal(counts.board, 0, 'nothing routes to the standalone board surface now');
 });
 
-test('a stored PM preference resolves to the board, and repaints it', () => {
-  // THE UI OVERHAUL retired the PM view. A viewer who last left the board in
-  // that mode still has 'pm' in localStorage, and the migration table
-  // (AppView.RETIRED_VIEW_MODES) is what stops them landing on the width
-  // default instead of the nearest surviving surface. The repaint has to
-  // follow the MIGRATED mode, not the stored string.
-  const { AppView, sandbox } = makeSandbox();
-  sandbox.localStorage = { getItem: () => 'pm', setItem: () => {} };
-  sandbox.document = fakeDoc({
-    'dev-body': fakeEl(),
-    'dev-kanban-filterbar': fakeEl(),
-    'dev-kanban-board': fakeEl(),
-  });
-  let boardRepaints = 0;
-  AppView._repaintKanbanBoard = () => { boardRepaints += 1; };
-  AppView._reanchorAttrPopover = () => {};
-
-  assert.equal(AppView._getViewMode(), 'kanban');
+test('a stored PM preference resolves to the Workshop, and repaints it', () => {
+  // THE UI OVERHAUL retired the PM view, and it resolved to the Board — which
+  // has since retired in turn. Both hops live in RETIRED_VIEW_MODES, so 'pm'
+  // lands on the one mode left instead of reading as "my setting was
+  // forgotten" two cuts running.
+  const { AppView, counts } = workshopSandbox('pm');
+  assert.equal(AppView._getViewMode(), 'workshop');
   AppView._refreshAttrCards();
-  assert.equal(boardRepaints, 1);
+  assert.equal(counts.workshop, 1);
+  assert.equal(counts.board, 0);
 });
 
 test('re-anchor: the open popover snaps under its chip\'s new position', () => {

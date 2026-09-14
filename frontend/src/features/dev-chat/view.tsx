@@ -16,6 +16,7 @@ import { SessionChecksPanel } from '../dev-board/modals/session-checks';
 import { SessionList } from './session-list';
 import { SpecViewer } from './spec-viewer';
 import { DevChatTranscript } from './transcript';
+import { OwnToolsGuide } from './own-tools-guide';
 import { devViewStore, type DevViewState, type PaneView } from './view-store';
 
 const HINT
@@ -160,10 +161,16 @@ function WorkspaceView({ s }: { s: Extract<DevViewState, { kind: 'session' }> })
               slot collapses when empty (.dc-launchpad-slot:empty), so an
               ordinary session's chat pane is exactly what it was — which is
               why an empty `__html` is the right way to draw nothing here. */}
-          <div
-            id="dc-launchpad-slot" className="dc-launchpad-slot"
-            dangerouslySetInnerHTML={{ __html: s.launchpadHtml }}
-          />
+          {s.ownToolsGuide ? (
+            <div id="dc-launchpad-slot" className="dc-launchpad-slot">
+              <OwnToolsGuide view={s.ownToolsGuide} />
+            </div>
+          ) : (
+            <div
+              id="dc-launchpad-slot" className="dc-launchpad-slot"
+              dangerouslySetInnerHTML={{ __html: s.launchpadHtml }}
+            />
+          )}
           {!s.change ? <DevSessionChecks /> : null}
           {/* The element carries the pane's scroll geometry and
               `initScrollTracking` binds click, keydown and scroll on it. */}

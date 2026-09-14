@@ -329,14 +329,16 @@ test('the locked-app banner has one writer', () => {
   // The module publishes server truth (`_proposalsCtx.locked`, loaded with the
   // feed) and the frame draws the banner or does not — including its `hidden`,
   // which used to be the module's `classList.toggle` over React's constant.
-  assert.match(FRAME, /const \{ locked \} = useStoreState<LockedNoticeState>\(lockedNoticeStore\);/);
+  assert.match(FRAME, /const \{ locked, inviteOnly \} = useStoreState<LockedNoticeState>\(lockedNoticeStore\);/);
   assert.match(FRAME, /id="dev-locked-notice" className=\{locked \? 'px-3 pt-2' : 'px-3 pt-2 hidden'\}/);
-  assert.match(FRAME, /App is locked. An admin must approve any proposal before it applies\./);
+  // #1896: the banner says who can build, not "App is locked".
+  assert.match(FRAME, /\{lockedNoticeText\(inviteOnly\)\}/);
+  assert.doesNotMatch(FRAME, /App is locked/);
   const code = APP_VIEW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
   const fn = code.match(/_renderLockedNotice\(\) \{([\s\S]*?)\n {2}\},/);
   assert.ok(fn, '_renderLockedNotice() found');
   assert.doesNotMatch(fn[1], /innerHTML|classList/, 'the module writes neither the markup nor the class');
-  assert.match(fn[1], /publishLockedNotice\(\s*!!\(AppView\._proposalsCtx && AppView\._proposalsCtx\.locked\)\)/);
+  assert.match(fn[1], /publishLockedNotice\(\s*!!\(AppView\._proposalsCtx && AppView\._proposalsCtx\.locked\),\s*!!\(AppView\.appData && AppView\.appData\.collab_visibility === 'private'\)\)/);
 });
 
 test('the view toggle is real React state, and the className writer is gone', () => {
@@ -360,18 +362,26 @@ test('the view toggle is real React state, and the className writer is gone', ()
   assert.match(STORE, /useSyncExternalStore\(subscribe, getSnapshot/,
     'the frame subscribes through useSyncExternalStore');
   // The control moved out of the frame, so the frame draws no view control at
-  // all and the store's reader is ../improve/view-tabs.tsx — the App | Board |
-  // Activity strip. The store itself is unchanged, which is the point of
-  // asserting both halves here.
+  // all. The store itself is unchanged, which is the point of asserting both
+  // halves here.
   //
-  // It reached the strip via the Improve panel's own Kanban|Feed sub-strip,
-  // which is gone: those two layouts ARE Board and Activity (same cards, one
-  // by column and one newest-first), so a destination row with a layout pair
-  // indented under it was one choice drawn on two levels. The layout is the
-  // ROUTE now — #app/<slug>/board and #app/<slug>/activity, see the alias
-  // block in public/js/app.js — and this store is what tells the strip which
-  // of the two segments to mark.
-  assert.match(VIEW_TABS, /useDevViewMode\(\)/, 'the view strip reads the store');
+  // Its reader WAS ../improve/view-tabs.tsx. It reached the strip via the
+  // Improve panel's own Kanban|Feed sub-strip, which is gone: those two
+  // layouts ARE Board and Activity (same cards, one by column and one
+  // newest-first), so a destination row with a layout pair indented under it
+  // was one choice drawn on two levels. The layout became the ROUTE —
+  // #app/<slug>/board and #app/<slug>/activity, see the alias block in
+  // public/js/app.js — and this store told the strip which segment to mark.
+  //
+  // The Board segment has since retired, and with it the strip's reason to
+  // subscribe: the Workshop and the kanban are ONE screen in two layouts, so
+  // the strip marks Workshop in either. The store's readers are the board
+  // frame's own now, which is where a LAYOUT belongs — the strip answers which
+  // part of the app you are in, not how its cards are stacked.
+  assert.ok(!VIEW_TABS.includes('useDevViewMode'),
+    'the view strip no longer reads the store — it marks Workshop in either layout');
+  assert.match(FRAME_ONLY, /useDevViewMode\(\)/,
+    'the board frame does, which is the half that is unchanged');
   assert.ok(!/useDevViewMode\(\)/.test(PANEL),
     'and the panel reads it only through the strip');
   // The FRAME reads the mode too, and for something that is not a control:
@@ -419,26 +429,33 @@ test('the view toggle is real React state, and the className writer is gone', ()
     assert.ok(!FRAME.includes(`id: '${id}'`) && !FRAME.includes(`id="${id}"`),
       `${id} was retired with the dev-screen tab strip`);
   }
-  // The control still reports the live mode to the a11y tree, and it says
-  // `aria-current="page"` rather than `aria-pressed` now: these are three
-  // DESTINATIONS with three addresses, not a pair of toggles restating one
-  // panel in another layout. `data-view-segment` went with the sub-strip; the
-  // segments name themselves with `data-context-row`, the key the Board and
-  // Activity rows already carried and the one dapp.json's checks select on.
-  assert.match(VIEW_TABS, /aria-current=\{active === 'board' \? 'page' : 'false'\}/,
-    'the Board segment reports whether it is the one you are on');
+  // The control still reports where you are to the a11y tree, and it says
+  // `aria-current="page"` rather than `aria-pressed`: these are DESTINATIONS
+  // with their own addresses, not a pair of toggles restating one panel in
+  // another layout. `data-view-segment` went with the sub-strip; the segments
+  // name themselves with `data-context-row`, the key the Board and Activity
+  // rows already carried and the one dapp.json's checks select on.
+  assert.match(VIEW_TABS, /aria-current=\{active === 'workshop' \? 'page' : 'false'\}/,
+    'the Workshop segment reports whether it is the one you are on');
   assert.match(VIEW_TABS, /data-context-row="workshop"/,
     'each view still names itself with data-context-row');
   assert.ok(!PANEL.includes('data-view-segment') && !FRAME.includes('data-view-segment'),
     'the retired sub-strip left no data-view-segment behind');
-  // Board and Activity are hash routes, so they have to be anchors —
-  // cmd/ctrl-click and "open in new tab" work on them, the rule
-  // tests/nav-new-tab.test.js pins across the shell. The App segment is a
-  // button because it is not a hash (on the self-hosted row it goes home).
-  assert.match(VIEW_TABS, /href=\{slug \? `#app\/\$\{slug\}\/board` : '#'\}/,
-    'the Board segment is an anchor at the board route');
+  // The Workshop is a hash route, so it has to be an anchor — cmd/ctrl-click
+  // and "open in new tab" work on it, the rule tests/nav-new-tab.test.js pins
+  // across the shell. The App segment is a button because it is not a hash (on
+  // the self-hosted row it goes home).
   assert.match(VIEW_TABS, /href=\{slug \? `#app\/\$\{slug\}\/workshop` : '#'\}/,
-    'and the Workshop at the workshop route');
+    'the Workshop segment is an anchor at the workshop route');
+  // The Board segment retired: the Workshop and the kanban are ONE screen in
+  // two layouts, so the strip stopped offering the layout as a destination.
+  // `#app/<slug>/board` and `?view=kanban` still resolve onto the kanban —
+  // dapp.json checks both — and the strip marks Workshop while you are there.
+  assert.ok(!VIEW_TABS.includes('data-context-row="board"'),
+    'the Board segment is gone from the strip');
+  assert.ok(!VIEW_TABS.includes('${slug}/board'),
+    'and with it the only control that navigated to the board route — the '
+    + 'route itself is untouched, which is why the header still names it');
   // Seeded from the module before the first paint, so ?view=kanban does not
   // flash list first.
   assert.match(MOUNT, /publishViewMode\(options\.viewMode\);/, 'the store is seeded at mount');
@@ -493,4 +510,18 @@ test('no Dev-board id leaked into the prerendered shell', () => {
   assert.match(APP_VIEW_ISLAND, /id="app-content"/, '#app-content is still rendered');
   assert.match(APP_VIEW_ISLAND, /id="app-content"[\s\S]{0,220}?\{\/\* Tab content renders here \*\/\}/,
     '#app-content is still EMPTY — the interim roots and every innerHTML render fill it');
+});
+
+test('#1896: the locked banner says who can build, by the app\'s setting', () => {
+  const { loadTsx } = require('./lib/render-tsx');
+  const { lockedNoticeText, lockedNoticeStore } = loadTsx('frontend/src/features/dev-board/locked-notice-store.ts');
+  assert.equal(lockedNoticeText(false),
+    'Anyone can build on this app. A change goes live once the group votes it in and an admin approves it.');
+  assert.equal(lockedNoticeText(true),
+    'Only invited collaborators can build on this app. A change goes live once the group votes it in and an admin approves it.');
+  assert.deepEqual({ ...lockedNoticeStore.get() }, { locked: false, inviteOnly: false },
+    'the initial render is the hidden, empty banner the shell shipped');
+
+  const MOUNT = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'features', 'dev-board', 'mount.ts'), 'utf8');
+  assert.match(MOUNT, /publishLockedNotice\(locked, inviteOnly = false\) \{\s*lockedNoticeStore\.set\(\{ locked, inviteOnly: !!inviteOnly \}\);/);
 });

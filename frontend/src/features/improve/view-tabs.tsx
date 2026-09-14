@@ -1,6 +1,6 @@
 /**
- * #improve-views — the app's three views as ONE segmented control:
- * App | Workshop | Board, plus an inert fourth segment while you are inside a
+ * #improve-views — the app's two views as ONE segmented control:
+ * App | Workshop, plus an inert third segment while you are inside a
  * change (#1598).
  *
  * ── What it replaced, and why ──────────────────────────────────────────
@@ -14,8 +14,33 @@
  * destination was that the header renamed the screen when you switched.
  *
  * So the layout became the route (see the alias block in public/js/app.js's
- * restoreFromHash), the sub-strip retired, and what is left is a flat
+ * restoreFromHash), the sub-strip retired, and what was left was a flat
  * three-way choice — which is a segmented control, not a list of rows.
+ *
+ * ── The Board segment retired; the Board did not ───────────────────────
+ *
+ * That three-way choice is a two-way choice now. Workshop and Board were
+ * offered as two destinations and they are ONE screen in two layouts —
+ * ../header/platform-header.tsx spells that out for the back arrow — with the
+ * Workshop drawing the same cards the kanban does, grouped by what they are
+ * about. So the strip was asking which LAYOUT you wanted in the one place
+ * whose question is which PART OF THE APP you are in, and the Workshop is the
+ * Dev screen's lander either way.
+ *
+ * What went is the SEGMENT, not the destination. `#app/<slug>/board` still
+ * resolves and still applies the kanban layout, `?view=kanban` still overrides
+ * it, and `boardHref` still points the header's back arrow and a session's
+ * captured origin at whichever layout was on screen — so a bookmark, a deep
+ * link, and a viewer whose stored preference is kanban all land where they
+ * always did. What no longer exists anywhere is a CONTROL that switches into
+ * the kanban layout: this segment was the last one, the Dev screen's own
+ * Feed|Kanban strip having retired into it above.
+ *
+ * The strip marks WORKSHOP on the board route, which is what `activeAppView`
+ * collapsing its two Dev answers into one means. A segmented control with
+ * nothing selected reads as broken rather than as "you are somewhere else" —
+ * the same reasoning that grew the session segment below — and with the Board
+ * no longer a segment, the Dev screen is one destination however it is drawn.
  *
  * ── One strip, ONE surface ─────────────────────────────────────────────
  *
@@ -34,9 +59,9 @@
  *
  * ── Anchors, not the Tabs primitive ────────────────────────────────────
  *
- * @/components/ui/tabs.tsx renders `<button>` triggers, and Board and Activity
- * are hash routes: cmd/ctrl-click, middle-click and "open in new tab" have to
- * work on them, the same rule tests/nav-new-tab.test.js pins across the shell.
+ * @/components/ui/tabs.tsx renders `<button>` triggers, and the Workshop is a
+ * hash route: cmd/ctrl-click, middle-click and "open in new tab" have to work
+ * on it, the same rule tests/nav-new-tab.test.js pins across the shell.
  * So the strip is written out here and borrows the primitive's CONVENTION
  * instead of its markup — `aria-current="page"` on the selected segment rather
  * than `aria-selected`, which belongs to `role="tab"`.
@@ -52,11 +77,13 @@
  *
  * ── The ids and the data-* keys are load-bearing ───────────────────────
  *
- * `data-context-row="app" | "workshop" | "board"` is what dapp.json's declared
- * checks select on. The keys named rows and now name segments; the key says
- * WHICH DESTINATION. `workshop` replaced `activity` when the Workshop replaced
- * the Activity feed as the Dev screen's lander (the old route still resolves,
- * as an alias).
+ * `data-context-row="app" | "workshop"` is what dapp.json's declared checks
+ * select on. The keys named rows and now name segments; the key says WHICH
+ * DESTINATION. `workshop` replaced `activity` when the Workshop replaced the
+ * Activity feed as the Dev screen's lander (the old route still resolves, as
+ * an alias), and `board` retired with its segment — a declared check pins its
+ * ABSENCE on the board route, the same way the chip menu's retired copy of
+ * this strip is pinned.
  *
  * The ids stay a PARAMETER even with one caller left. They were parameterised
  * because two surfaces rendered the strip at once and element ids cannot be
@@ -68,7 +95,6 @@
 import type { ReactNode } from 'react';
 
 import { useStoreState } from '../../lib/use-store-state';
-import { useDevViewMode } from '../dev-board/view-mode-store';
 import { improveStore } from './improve-store.js';
 import { Improve } from './improve-controller.js';
 
@@ -124,21 +150,23 @@ export const IMPROVE_VIEW_IDS = {
   root: 'improve-views',
   app: 'app-context-row-app',
   workshop: 'app-context-row-workshop',
-  board: 'app-context-row-board',
 } as const;
 
 /**
  * Which view the strip is currently on, or null.
  *
- * `topic` counts as the Board: a card opened full-screen is still the board's
- * content, and the segment going blank when you tap a card read as the
- * navigation losing its place.
+ * `forum` and `topic` both answer `workshop`, in EITHER layout — they are one
+ * screen, so the Dev destination is the Workshop segment whether the cards are
+ * drawn as themes or as kanban columns (see the Board-segment note in this
+ * file's header). `topic` answers at all because a card opened full-screen is
+ * still that screen's content, and the segment going blank when you tap a card
+ * read as the navigation losing its place.
  *
  * A dev session (`sessions`) answers `session` (#1598). It is not one of the
- * three destinations — it is reached from a card or a notification, never from
+ * two destinations — it is reached from a card or a notification, never from
  * this strip — but answering null left a segmented control with nothing
  * selected, which reads as a broken control rather than as "you are somewhere
- * else". The strip grows a fourth, inert segment for exactly as long as you
+ * else". The strip grows a third, inert segment for exactly as long as you
  * are in one; see AppViewTabs.
  *
  * The general chat (`chat`) still selects nothing. It is a different kind of
@@ -147,25 +175,21 @@ export const IMPROVE_VIEW_IDS = {
 export function activeAppView(
   tab: string | null,
   subTab: string | null,
-  mode: string,
-): 'app' | 'workshop' | 'board' | 'session' | null {
+): 'app' | 'workshop' | 'session' | null {
   if (tab !== 'dev') return 'app';
-  if (subTab === 'forum' || subTab === 'topic') {
-    return mode === 'kanban' ? 'board' : 'workshop';
-  }
+  if (subTab === 'forum' || subTab === 'topic') return 'workshop';
   if (subTab === 'sessions') return 'session';
   return null;
 }
 
 export function AppViewTabs({ ids, onNavigate, className }: {
-  /** Element ids for the track and its three segments. */
-  ids: { root: string; app: string; workshop: string; board: string };
+  /** Element ids for the track and its two segments. */
+  ids: { root: string; app: string; workshop: string };
   onNavigate: () => void;
   className?: string;
 }): ReactNode {
   const { name, slug, selfHosted, tab, subTab } = useStoreState(improveStore);
-  const mode = useDevViewMode();
-  const active = activeAppView(tab, subTab, mode);
+  const active = activeAppView(tab, subTab);
 
   // The platform's own row is not an iframe, so its first segment is Home —
   // the same relabelling the row it replaces carried (#1386).
@@ -188,9 +212,9 @@ export function AppViewTabs({ ids, onNavigate, className }: {
       >
         <span className="min-w-0 truncate">{appLabel}</span>
       </button>
-      {/* The Workshop is the lander for everything happening to the project
-          — the same cards as the Board, grouped by what they are about — so
-          it sits before the Board, which is the detailed read-it-all view. */}
+      {/* The Workshop is the lander for everything happening to the project —
+          the same cards the kanban layout draws, grouped by what they are
+          about. It is the strip's only Dev segment now; see the header. */}
       <a
         id={ids.workshop}
         data-context-row="workshop"
@@ -201,31 +225,21 @@ export function AppViewTabs({ ids, onNavigate, className }: {
       >
         <span className="min-w-0 truncate">Workshop</span>
       </a>
-      <a
-        id={ids.board}
-        data-context-row="board"
-        href={slug ? `#app/${slug}/board` : '#'}
-        aria-current={active === 'board' ? 'page' : 'false'}
-        className={segClass(active === 'board')}
-        onClick={onNavigate}
-      >
-        <span className="min-w-0 truncate">Board</span>
-      </a>
       {/*
           #1598: where you actually are, when that is a change rather than one
-          of the three destinations.
+          of the two destinations.
 
           A `<span>`, not a control: it is the segment you are already on, and
-          a fourth button that does nothing is worse than no fourth button. It
+          a third button that does nothing is worse than no third button. It
           exists for exactly as long as you are in a session, so the strip
           never carries a segment you cannot get back to — and outside one the
-          control is the three it has always been.
+          control is the two it has.
 
           It is appended LAST and carries no id. Last, because the declared
           check that pins the order selects `[data-context-row="app"] ~
-          [data-context-row="workshop"] ~ [data-context-row="board"]`; no id,
-          because a conditional element is not in the built document and the
-          shell's id inventory is a list of the ones that are.
+          [data-context-row="workshop"]`; no id, because a conditional element
+          is not in the built document and the shell's id inventory is a list
+          of the ones that are.
       */}
       {active === 'session' ? (
         <span

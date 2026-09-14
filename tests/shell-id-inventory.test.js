@@ -85,7 +85,7 @@ const RETIRED_IDS = {
   // rendering of it stopped. See frontend/src/features/improve/view-tabs.tsx.
   'switcher-views': 'The chip menu\'s copy of the three-view strip. The menu answers WHICH APP; a control about the app you are already in sat between you and the list you opened the menu for. The Improve panel keeps the strip, and the header\'s back arrow is the way OUT of a Board now.',
   'switcher-view-app': 'Its App segment. `#app-context-row-app` in the Improve panel is the surviving one.',
-  'switcher-view-board': 'Its Board segment; `#app-context-row-board` survives.',
+  'switcher-view-board': 'Its Board segment; `#app-context-row-board` survived it, and then retired in turn — the Workshop and the kanban are one screen in two layouts, so the strip stopped offering the layout as a destination. `#app/<slug>/board` and `?view=kanban` still resolve onto the kanban board.',
   'switcher-view-activity': 'Its Activity segment; `#app-context-row-activity` survived it, and then retired in turn (below).',
   // ── The Workshop replaced the Activity feed ─────────────────────
   // The strip's middle segment names the lander now: the same cards as the
@@ -329,13 +329,18 @@ const ADDED_IDS = {
   'drawer-row-native-app-version': 'The installed Flutter release, back in that footer. #1431 renamed it #about-row-native-app-version for the Settings About block it built; the block is gone with the rows it existed to hold, so the name goes back too. `.drawer-ver-row` is the shared CSS recipe, not a claim about a drawer.',
   // ── #1443: the app's own views stayed in the Improve panel ──────
   // They spent one round of #1443 as menu rows, on the argument that they are
-  // destinations. They came back: the menu answers WHICH APP, and these three
-  // answer WHICH PART OF IT, which is the question the panel you open from
-  // inside an app is already about.
-  'improve-views': 'The block holding the three. #1431 built it; #1443 kept it.',
+  // destinations. They came back: the menu answers WHICH APP, and these answer
+  // WHICH PART OF IT, which is the question the panel you open from inside an
+  // app is already about.
+  //
+  // There were three. `#app-context-row-board` went the way of the Activity
+  // segment before it: the Workshop and the kanban are ONE screen in two
+  // layouts, so the strip was offering a layout where its other segments offer
+  // destinations. Like other post-baseline ids it simply leaves this map
+  // rather than entering RETIRED_IDS. The board route is untouched.
+  'improve-views': 'The block holding them. #1431 built it; #1443 kept it.',
   'app-context-row-app': 'View and use the app — Improve.openApp(). Labelled Home on the self-hosted platform row.',
-  'app-context-row-workshop': 'The app\'s Workshop — the lander: the same cards as the Board, grouped by theme, with the vote and since-last-visit strips above them. Replaced the Activity segment.',
-  'app-context-row-board': 'The app\'s Board.',
+  'app-context-row-workshop': 'The app\'s Workshop — the lander, and the strip\'s only Dev segment: the same cards the kanban draws, grouped by theme, with the vote and since-last-visit strips above them. Replaced the Activity segment, then outlived the Board segment.',
   // ── #1443: the chip and its menu ────────────────────────────────
   'app-switcher-btn': 'The chip: the header\'s label on EVERY screen, and the one control that opens a list. #1431 built this as #header-title-tab but gated it on being inside an app; the gate is the whole difference, and losing it is what let #header-menu-btn, #back-icon-home and #messages-btn all go. It carries the same tinted 28px surface as #back-btn and the bell, because on the bare page ground it read as the heading it replaced.',
   'app-switcher-name': 'The label inside the chip — the same text #header-title carried as a bare heading, now a named slot so a declared check can assert WHAT the chip says and not merely that it exists.',

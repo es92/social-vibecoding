@@ -60,9 +60,23 @@ function withStagingEnv(fn) {
   })();
 }
 
+// Records every statement. The head install is a compare-and-swap on the
+// row's pin (RETURNING the epoch), so it is answered the way Postgres would
+// for a pin that still matches; everything else returns no rows.
 function recordingPool() {
   const calls = [];
-  return { calls, query: async (sql, params) => { calls.push({ sql, params }); return { rows: [] }; } };
+  let epoch = 0;
+  return {
+    calls,
+    query: async (sql, params) => {
+      calls.push({ sql, params });
+      if (/SET imported_pr_head_sha = \$1[\s\S]*RETURNING approval_epoch/.test(sql)) {
+        if (params[2]) epoch += 1;
+        return { rows: [{ approval_epoch: epoch }] };
+      }
+      return { rows: [] };
+    },
+  };
 }
 
 // ── github-mock adapter ───────────────────────────────────────────────
@@ -171,12 +185,12 @@ test('pr-import-sync (mock): a simulated push resets the tally + records skipped
       const res = await prImportSync.syncImportedProposal({ config: {}, pool, session });
       assert.equal(res, 'updated');
 
-      const sqls = pool.calls.map((c) => String(c.sql));
       const headUpdate = pool.calls.find((c) => /SET imported_pr_head_sha = \$1/.test(c.sql));
       assert.ok(headUpdate, 'stored head advanced');
       assert.equal(headUpdate.params[0], newHead);
-      assert.ok(sqls.some((s) => /approval_epoch = approval_epoch \+ 1/.test(s)),
-        'tally cleared by moving the epoch on (#2038) rather than deleting rows');
+      assert.match(headUpdate.sql, /approval_epoch = approval_epoch \+ CASE WHEN \$3::boolean THEN 1 ELSE 0 END/);
+      assert.equal(headUpdate.params[2], true,
+        'tally cleared by moving the epoch on (#2038) rather than deleting rows — a mock push is an author push');
 
       assert.equal(sysMessages.length, 1, 'one re-review note');
       assert.match(sysMessages[0].content, /updated on GitHub/i);

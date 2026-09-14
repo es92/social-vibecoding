@@ -34,7 +34,7 @@ const vm = require('node:vm');
 const read = (...rel) => fs.readFileSync(path.join(__dirname, '..', ...rel), 'utf8');
 const SRC = read('frontend', 'src', 'features', 'dev-chat', 'dev-chat.js');
 const BUILD_VENUES_SRC = read('public', 'js', 'build-venues.js');
-const LAUNCHPAD_SRC = read('public', 'js', 'launchpad.js');
+const LAUNCHPAD_SRC = read('frontend', 'src', 'features', 'dev-chat', 'launchpad.js');
 
 function makeDevChat() {
   const noopEl = {

@@ -154,6 +154,60 @@ test('underway freshness does not claim an automatic sync or scheduled merge is 
   assert.doesNotMatch(JSON.stringify(v.body.details.ledger), /automatic, now|automatic, after|retries the merge/);
 });
 
+// #2038 measures drift into the integration_* record and retired the sweep
+// that kept freshness_* current, so a proposal up for vote usually has the
+// first and not the second. The card used to read only the second — and
+// said "not verified yet" under a merge gate that had just measured the
+// proposal 3 commits behind (#2100). The Main row and the pill go through
+// one reader, and that reader takes whichever measurement is newer.
+test('the Main row reads the integration record when that is the measurement the gate has', () => {
+  const av = context();
+  const promoted = { ...failing, status: 'promoted', check_state: 'passing', proposal_state: 'ready' };
+  const mainRow = (patch) => av._topicViewFor('proposal', { ...promoted, ...patch })
+    .body.details.ledger.find((r) => ['main', 'behind', 'sync', 'conflict', 'mergeability'].includes(r.key));
+
+  // Measured by the gate only: the count is reported, with the platform's
+  // sync named as the next step — the same row a legacy measurement gets.
+  const behind = mainRow({ integration_behind_by: 3, integration_measured_at: '2026-09-14T12:42:29Z', integration_merges_clean: true });
+  assert.equal(behind.key, 'behind');
+  assert.match(behind.text.join(' '), /3 commits ahead/);
+  assert.doesNotMatch(behind.text.join(' '), /not been verified/);
+  const legacy = mainRow({ freshness_behind_by: 3, freshness_checked_at: '2026-09-14T12:42:29Z' });
+  assert.deepEqual(behind.text, legacy.text, 'one measurement, one row, whichever column carried it');
+
+  // Level with main by the same record: says so, rather than "unverified".
+  const level = mainRow({ integration_behind_by: 0, integration_measured_at: '2026-09-14T12:42:29Z', integration_merges_clean: true });
+  assert.match(level.text.join(' '), /Up to date with main/);
+
+  // Nothing measured either way still reads as unknown, never as fine.
+  const unknown = mainRow({});
+  assert.match(unknown.text.join(' '), /not been verified yet/);
+
+  // A row with both: the newer measurement wins in either direction, so a
+  // live freshness patch that arrived after the record still shows through.
+  const f = av._freshnessOf({
+    integration_behind_by: 3, integration_measured_at: '2026-09-14T12:42:29Z',
+    freshness_behind_by: 0, freshness_checked_at: '2026-09-14T12:00:00Z',
+  });
+  assert.equal(f.behindBy, 3, 'the gate measured after the sweep did');
+  assert.equal(f.checkedAt, '2026-09-14T12:42:29Z');
+  const g = av._freshnessOf({
+    integration_behind_by: 3, integration_measured_at: '2026-09-14T12:00:00Z',
+    freshness_behind_by: 0, freshness_checked_at: '2026-09-14T12:42:29Z',
+  });
+  assert.equal(g.behindBy, 0, 'a later freshness patch outranks an older record');
+
+  // A real conflict measured by the gate carries its paths, and they are the
+  // complete list — git named them, nobody estimated them.
+  const c = av._freshnessOf({
+    integration_measured_at: '2026-09-14T12:42:29Z', integration_merges_clean: false,
+    integration_conflict_paths: ['src/a.js', 'src/b.js'],
+  });
+  assert.equal(c.mergeability, 'conflict');
+  assert.deepEqual(c.files, ['src/a.js', 'src/b.js']);
+  assert.equal(c.filesComplete, true);
+});
+
 test('private changes retain sharing controls and do not pretend to have a public discussion', () => {
   const av = context();
   const v = av._topicViewFor('session', failing);

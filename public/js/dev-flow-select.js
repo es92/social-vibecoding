@@ -357,15 +357,18 @@
         + '</div>';
     }).join('');
 
-    // The instructions in full, and OPEN. The work order this replaced ran to
-    // three hundred lines, so hiding it behind a disclosure was a kindness;
-    // fifteen lines is short enough to just read, and reading what you are
-    // about to paste into an agent is the point rather than an afterthought.
-    // It also keeps the text visible to the declared checks: the two other
-    // details-based checks in dapp.json both assert on the summary, because
-    // a collapsed body is not there to be seen.
+    // The instructions in full, but COLLAPSED (#2088). #2041 opened this by
+    // default: the text seemed short enough to just read, and reading what
+    // you are about to paste into an agent is the point. In use the open box
+    // took over the card, on a phone the whole screen, and the button people
+    // actually press is Copy, which reads the status payload (dev-chat.js's
+    // 'copy' action) and never this node. So the summary is what shows and
+    // the text stays one tap away, still on the card for a clipboard that
+    // refuses. The declared check on it asserts on the summary of a
+    // details:not([open]), as the other details-based checks in dapp.json
+    // do, because a collapsed body is not there to be seen.
     var order = s.status.instructions
-      ? '<details class="dc-flow-order" open><summary>Instructions</summary>'
+      ? '<details class="dc-flow-order"><summary>Instructions</summary>'
         + '<pre class="dc-flow-order-text" data-flow-order="1">' + escapeHtml(s.status.instructions) + '</pre>'
         + '</details>'
       : '';

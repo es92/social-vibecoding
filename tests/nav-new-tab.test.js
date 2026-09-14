@@ -601,10 +601,12 @@ test('dapp.json pins the anchors that a capture can actually see', () => {
   );
 
   // The session's back control is the header's own anchor now (Streamlined
-  // Concept — #dc-back retired), so its check pins a#back-btn at the Board.
+  // Concept — #dc-back retired), so its check pins a#back-btn at the card
+  // area. That address is the WORKSHOP: the Board view retired, its columns
+  // are the Workshop's stage pane, and `boardHref` has one answer left.
   const session = (dapp.tests || []).find(
     (t) => typeof t.expectSelector === 'string'
-      && /a#back-btn[^"]*\[href="#app\/[^"]+\/board"\]/.test(t.expectSelector)
+      && /a#back-btn[^"]*\[href="#app\/[^"]+\/workshop"\]/.test(t.expectSelector)
   );
   assert.ok(session, 'the session back anchor needs its own check');
   assert.match(session.path, /dev\/sessions\/\d+/, 'it must land on a session');

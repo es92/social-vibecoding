@@ -537,13 +537,6 @@ export function Shell() {
       */}
       <script src={assetUrl('/js/credit-options.js')} />
       {/*
-          #1281: the launchpad that replaces the composer when a session is
-          being built somewhere else — the MCP connect command and the
-          "tell your agent" prefill for `own-tools-pr`. Pure render + wire,
-          no fetching; dev-chat.js reads window.Launchpad.
-      */}
-      <script src={assetUrl('/js/launchpad.js')} />
-      {/*
           #1049: the "how do you want to build this?" picker and its guided
           Claude Code / Codex walkthrough. Pure render + wire, no fetching —
           dev-chat.js owns the state and must load AFTER it.

@@ -110,13 +110,14 @@ function makePool({ epoch = 0 }) {
 }
 
 function load(r) {
+  const rebuilds = [];
   const restores = [
     stub('src/services/github.js', { isEnabled: () => true }),
     stub('src/services/ws.js', {
       pushVoteUpdate() {}, pushSessionUpdate() {}, async sendSystemMessage() {},
     }),
     stub('src/services/visuals.js', {
-      async setChecksPending() {}, notifyChecksPending() {},
+      async setChecksPending(pool_, id, sha) { rebuilds.push(sha); }, notifyChecksPending() {},
     }),
     stub('src/services/pr-import-sync.js', { async rerunChecksForNewHead() {} }),
   ];
@@ -131,6 +132,7 @@ function load(r) {
   const votes = require('../src/routes/votes');
   return {
     votes,
+    rebuilds,
     restore() {
       restores.reverse().forEach((f) => f());
       delete require.cache[require.resolve('../src/routes/votes')];
@@ -143,7 +145,7 @@ function session(r, overrides = {}) {
     id: 42, app_id: 7, app_slug: 'demo', source: null, status: 'promoted',
     repo_url: 'https://github.com/acme/demo', branch_name: 'feature',
     pr_number: 99, pr_title: 'A proposal',
-    reviewed_head_sha: r.approved, checks_commit_sha: r.approved,
+    reviewed_head_sha: r.approved, checks_commit_sha: r.approved, check_state: 'passing',
     approval_epoch: 0,
     ...overrides,
   };
@@ -151,7 +153,7 @@ function session(r, overrides = {}) {
 
 test('a clean merge of main keeps the approvals and carries the checks', async () => {
   const r = repo().moveMain('b.txt', 'main moved b\n').syncIntoFeature();
-  const { votes, restore } = load(r);
+  const { votes, rebuilds, restore } = load(r);
   const pool = makePool({ epoch: 0 });
   try {
     const out = await votes.reconcileNativeReviewedHead({
@@ -161,6 +163,43 @@ test('a clean merge of main keeps the approvals and carries the checks', async (
     assert.equal(out.votesKept, true);
     assert.equal(out.epoch, 0, 'a merge nobody edited must not move the epoch');
     assert.equal(out.headSha, r.featureHead());
+    assert.equal(pool.kickedChecks(), true, 'the passing verdict is stamped onto the merged commit');
+    assert.deepEqual(rebuilds, [], 'and nothing is rebuilt');
+  } finally { restore(); r.cleanup(); }
+});
+
+test('a clean merge over a run still in flight rebuilds instead of carrying', async () => {
+  // The queue supersedes any run in flight before it moves the branch
+  // (#1728), so a 'pending' stamp on the old head describes a run that will
+  // never report. Carrying it forward left the row pending with nothing
+  // building until the stale sweeper noticed ten minutes later.
+  for (const state of ['pending', 'error', null]) {
+    const r = repo().moveMain('b.txt', 'main moved b\n').syncIntoFeature();
+    const { votes, rebuilds, restore } = load(r);
+    const pool = makePool({ epoch: 0 });
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const out = await votes.reconcileNativeReviewedHead({
+        config: {}, pool, session: session(r, { check_state: state }), notify: false,
+      });
+      assert.equal(out.kind, 'mechanical');
+      assert.equal(out.votesKept, true, `${state}: the votes still stand — only the checks policy differs`);
+      assert.equal(pool.kickedChecks(), false, `${state}: an unfinished verdict is not carried`);
+      assert.deepEqual(rebuilds, [r.featureHead()], `${state}: the checks re-run against the merged commit`);
+    } finally { restore(); r.cleanup(); }
+  }
+});
+
+test('a settled failure carries too: a merge of main does not change what the author must fix', async () => {
+  const r = repo().moveMain('b.txt', 'main moved b\n').syncIntoFeature();
+  const { votes, rebuilds, restore } = load(r);
+  const pool = makePool({ epoch: 0 });
+  try {
+    await votes.reconcileNativeReviewedHead({
+      config: {}, pool, session: session(r, { check_state: 'failing' }), notify: false,
+    });
+    assert.equal(pool.kickedChecks(), true);
+    assert.deepEqual(rebuilds, []);
   } finally { restore(); r.cleanup(); }
 });
 

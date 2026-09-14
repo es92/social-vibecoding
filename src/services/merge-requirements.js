@@ -89,6 +89,9 @@ const GATES = [
 
 const GATE_KEYS = new Set(GATES.map((g) => g.key));
 
+// The one rule for which commit a proposal's approvals and checks are about.
+const { reviewedHeadForSession } = require('./pr-vote-revision');
+
 function intOrNull(v) {
   if (v == null) return null;
   const n = Number(v);
@@ -348,19 +351,50 @@ function provisional(session) {
   return out;
 }
 
+/**
+ * Does a stored recording still describe THIS proposal?
+ *
+ * A run is a statement about one (reviewed head, approval epoch) pair: the
+ * approvals it counted are the epoch's, and the commit it measured, checked
+ * and offered GitHub is the head's. checkAndMerge stamps both into the
+ * record's context. When either has moved since, every line of the record is
+ * about a proposal that no longer exists — "enough approvals" after the
+ * epoch was bumped, "merging now" after the claim was released because the
+ * head moved (#2100, #2095) — and the honest answer is the provisional one,
+ * read off the live columns.
+ *
+ * A record with no stamps predates this rule and is trusted as before.
+ */
+function recordIsSuperseded(record, session) {
+  const ctx = (record && record.context) || {};
+  const s = session || {};
+  if (ctx.approvalEpoch != null) {
+    const then = intOrNull(ctx.approvalEpoch);
+    const now = intOrNull(s.approval_epoch) ?? 0;
+    if (then != null && then !== now) return true;
+  }
+  if (typeof ctx.headSha === 'string' && ctx.headSha) {
+    const current = reviewedHeadForSession(s);
+    if (current && current.toLowerCase() !== ctx.headSha.toLowerCase()) return true;
+  }
+  return false;
+}
+
 /** The nested block the serializer hangs on a proposal row, beside `integration`. */
 function readRequirements(session) {
   const s = session || {};
   const raw = s.merge_requirements;
   const record = raw && typeof raw === 'object' ? raw : null;
-  if (!record) {
-    // No recording yet. Say what the columns support rather than nothing —
-    // and say that it IS provisional, so a surface can tone it accordingly.
+  if (!record || recordIsSuperseded(record, s)) {
+    // No recording yet, or one about a head or epoch this proposal has since
+    // left behind. Say what the columns support rather than nothing — and say
+    // that it IS provisional, so a surface can tone it accordingly.
     return {
       measuredAt: null,
       gates: provisional(s),
       evaluated: false,
       provisional: true,
+      ...(record ? { superseded: true } : {}),
     };
   }
   return {
@@ -401,5 +435,6 @@ module.exports = {
   provisional,
   summarize,
   readRequirements,
+  recordIsSuperseded,
   store,
 };

@@ -1438,7 +1438,17 @@ async function reconcileNativeReviewedHead({
   // Checks policy follows who wrote the tree. A mechanical merge is pure git
   // over a tested branch and a tested main, so the verdict carries. Anything
   // else is an unverified tree and is re-checked against this exact commit.
-  const checksCarry = move.kind === 'mechanical';
+  //
+  // Only a SETTLED verdict about the OLD head can carry. The merge queue
+  // supersedes any run in flight before it moves the branch (#1728), so a
+  // 'pending' stamp here describes a run that will never report; carrying
+  // it onto the new head would leave the row 'pending' with nothing building
+  // until the stale sweeper noticed ten minutes later — the exact dead wait
+  // #1728 measured. 'error' is a preview that did not boot, which a rebuild
+  // against the merged commit is the right way to find out about.
+  const checksCarry = move.kind === 'mechanical'
+    && sameSha(session.checks_commit_sha, oldHead)
+    && ['passing', 'skipped', 'failing'].includes(session.check_state);
   const needsChecks = !sameSha(session.checks_commit_sha, liveHead) && !checksCarry;
   if (needsChecks) {
     if (deferChecks) {
@@ -3171,6 +3181,13 @@ function voteRoutes(config) {
            -- dev-side controls for externally-authored proposals.
            cs.source, cs.imported_pr_author, cs.imported_pr_head_sha,
            cs.reviewed_head_sha,
+           -- Where the imported head lives. The card decides from it (against
+           -- the app's repo_url it already has) whether the platform syncs
+           -- this branch itself or only the author can — without it the
+           -- browser fell back to a branch-name guess and told the group
+           -- "the author must update this branch in their fork" about a
+           -- branch in the app's own repository (#2100).
+           cs.imported_pr_head_repo,
            -- #967: which external coding agent wrote it, when the proposal
            -- came in through the hosted MCP connector ('claude-code' |
            -- 'codex' | 'external'). NULL for everything else. Drives the
@@ -4470,6 +4487,32 @@ async function checkAndMerge(config, pool, session, options = {}) {
     };
   }
 
+  // The imported twin of the step above. An imported proposal's pin used to
+  // advance only when the sync poller's next getPR noticed the head had
+  // moved — so when the merge queue had just pushed a sync commit onto the
+  // branch, the merge below was offered the PRE-sync commit, GitHub refused
+  // it (409), the group was told "the PR was updated on GitHub", and when
+  // the poller did catch up it read the platform's own commit as an author
+  // push and cleared the votes (#2100, #2095). Re-pinning from the mirror
+  // here, with the same classifier the native path uses, is what makes that
+  // loop unreachable. Checks are deferred to the checks gate below, which
+  // rebuilds exactly the pinned head when the verdict's commit does not
+  // match. A head on the author's fork is left to the poller, as before;
+  // the exact-sha merge remains the guard for it.
+  if (session.source === 'imported') {
+    const importedRevision = await require('../services/pr-import-sync').reconcileImportedHead({
+      config, pool, session, checks: 'defer',
+    });
+    if (importedRevision.reconciled && importedRevision.changed && !importedRevision.votesKept) {
+      return {
+        merged: false,
+        headMoved: true,
+        reviewReset: true,
+        reviewedHeadSha: importedRevision.headSha,
+      };
+    }
+  }
+
   // The proposal's "opened for voting" anchor is promoted_at (falls back to
   // created_at defensively). All gates derive from one snapshot.
   //
@@ -4573,6 +4616,16 @@ async function checkAndMerge(config, pool, session, options = {}) {
   const requirements = require('../services/merge-requirements');
   const gateTrace = requirements.trace();
   const gateSave = () => requirements.store(pool, session.id, gateTrace).catch(() => {});
+  // A run is a statement about one (reviewed head, approval epoch). Stamping
+  // both lets readRequirements tell a recording about THIS proposal from one
+  // about the proposal it used to be — after a head move released the claim,
+  // or an epoch bump cleared the approvals it counted — and fall back to the
+  // live columns instead of a "merging now" that stopped being true.
+  gateTrace.context({
+    headSha: reviewedHeadForSession(session) || null,
+    approvalEpoch: Number.isFinite(parseInt(session.approval_epoch, 10))
+      ? parseInt(session.approval_epoch, 10) : 0,
+  });
 
   if (!force) {
     // Merge paths (services/active-users.js → mergeGate):
@@ -4641,9 +4694,9 @@ async function checkAndMerge(config, pool, session, options = {}) {
     // condition, not a replacement. Toggled via the home-card lock icon
     // (admin-only); see POST /api/apps/:slug/lock in routes/apps.js.
     if (await isAppLocked(pool, session.app_id)) {
-      const adminYes = await hasAdminYesVote(
-        pool, session.id, reviewedHeadForSession(session)
-      );
+      // Epoch-scoped, like every other tally: an admin's yes survives the
+      // platform's own sync exactly as the group's approvals do.
+      const adminYes = await hasAdminYesVote(pool, session.id);
       if (!adminYes) {
         log.info('votes', 'Threshold + window met but app is locked; awaiting admin yes', {
           sessionId: session.id, yesCount, required,
@@ -5060,13 +5113,30 @@ async function checkAndMerge(config, pool, session, options = {}) {
         } catch (err) {
           // Head moved between the review and the merge. Do NOT error the proposal: release
           // the 'merging' claim back to 'promoted' so the row stays recoverable
-          // (recoverStuckMerges understands both states). Imported proposals
-          // retain their existing sync-poller recovery; native proposals reset
-          // immediately below. Return a distinct { headMoved } outcome;
-          // nothing merged.
+          // (recoverStuckMerges understands both states). Both sources re-pin
+          // from the mirror right here: native rows always did; imported rows
+          // used to be left to the sync poller, which read the platform's own
+          // sync commit as an author push and cleared the votes (#2100). An
+          // imported head the mirror cannot see (author's fork) is still left
+          // to the poller. Return a distinct { headMoved } outcome; nothing
+          // merged.
           if (err && err.headMoved) {
             let nativeRefresh = null;
-            if (!isImported) {
+            let importedRefresh = null;
+            if (isImported) {
+              importedRefresh = await require('../services/pr-import-sync').reconcileImportedHead({
+                config, pool, session, checks: 'defer', notify: false,
+              });
+              // The mirror says the branch still sits on the pinned commit:
+              // this 409 was GitHub's word for an ordinary conflict, not a
+              // head move. Same routing as the native branch below.
+              if (importedRefresh.reconciled && !importedRefresh.changed
+                  && sameSha(importedRefresh.headSha, pinnedSha)) {
+                err.headMoved = false;
+                err.status = 405;
+                throw err;
+              }
+            } else {
               nativeRefresh = await reconcileNativeReviewedHead({
                 config, pool, session, fresh: true, notify: false,
               }).catch((syncErr) => {
@@ -5153,29 +5223,46 @@ async function checkAndMerge(config, pool, session, options = {}) {
             // #955: the head may have moved because the PLATFORM synced this
             // branch with main. Those approvals survived the refresh, so this
             // is a re-pin and an immediate retry — not a return to review.
-            const votesKept = !isImported && !!nativeRefresh?.votesKept;
+            const refreshed = isImported
+              ? (importedRefresh?.reconciled && importedRefresh.changed ? importedRefresh : null)
+              : nativeRefresh;
+            const votesKept = !!refreshed?.votesKept;
+            const refreshedHeadSha = refreshed?.headSha || null;
             const movedLabel = session.pr_title
               ? `PR #${session.pr_number}: ${session.pr_title}`
               : `PR #${session.pr_number}`;
-            const movedMessage = isImported
+            const movedMessage = (isImported && !refreshed)
               ? `${movedLabel} wasn't merged, because the PR was updated on GitHub since the vote, so GitHub declined to merge the older commit. It'll be re-checked against the new commit and can merge again once it passes.`
               : votesKept
-                ? `${movedLabel} wasn't merged on this attempt: it had just been synced with main, so the merge is now pinned to commit ${String(nativeRefresh.headSha).slice(0, 8)}. Existing votes were kept and the merge retries automatically.`
+                ? `${movedLabel} wasn't merged on this attempt: it had just been synced with main, so the merge is now pinned to commit ${String(refreshedHeadSha).slice(0, 8)}. Existing votes were kept and the merge retries automatically.`
                 : `${movedLabel} wasn't merged, because its GitHub head changed after review. Earlier-revision votes were cleared and the new commit is being checked; please re-review it.`;
             await sendSystemMessage(pool, session.app_id,
               movedMessage,
               'system', null, { type: 'session', ref: session.id }
             ).catch(() => {});
-            dstep({ phase: 'github_merge', level: 'warn', message: isImported
+            dstep({ phase: 'github_merge', level: 'warn', message: (isImported && !refreshed)
               ? 'GitHub refused the merge: the PR head moved since the reviewed commit. Released the merge claim; the sync poller will pick up the new head.'
               : votesKept
                 ? 'GitHub refused the merge: the pinned commit was superseded by the platform\'s own sync. Re-pinned to it with votes intact and re-queued the merge.'
-                : 'GitHub refused the merge: the native PR head moved since review. Released the merge claim and reset the proposal to the new revision.', detail: { headMoved: true, votesKept, pinnedSha, refreshedHeadSha: nativeRefresh?.headSha || null } });
-            dend('deferred', isImported
+                : 'GitHub refused the merge: the PR head moved since review. Released the merge claim and reset the proposal to the new revision.', detail: { headMoved: true, votesKept, pinnedSha, refreshedHeadSha } });
+            dend('deferred', (isImported && !refreshed)
               ? 'Head moved since the reviewed commit, so it is deferred to the sync poller.'
               : votesKept
                 ? 'Superseded by the platform\'s own sync commit, so it is re-queued with votes intact.'
                 : 'Head moved since review, so it returned to review on the new commit.');
+            // #2061: gate 7 was marked 'active — merging now' at the claim,
+            // and the claim has just been released. Whatever the card reads
+            // next must not still say the merge is under way (readRequirements
+            // also retires a recording whose head or epoch moved on, but the
+            // fork-hosted imported case moves neither).
+            gateTrace.revise('github', votesKept ? 'active' : 'waiting', {
+              note: (isImported && !refreshed)
+                ? 'GitHub declined the reviewed commit because the branch moved; waiting for the new head to be picked up'
+                : votesKept
+                  ? `re-pinned to the synced commit ${String(refreshedHeadSha).slice(0, 8)}; the merge retries automatically`
+                  : 'the branch moved after review, so it is back to review on the new commit',
+            });
+            gateSave();
             if (votesKept) {
               // Re-drive the app drain so the merge is re-attempted against the
               // corrected pin instead of waiting for the hourly sweeper. It
@@ -5190,7 +5277,7 @@ async function checkAndMerge(config, pool, session, options = {}) {
             return {
               merged: false, headMoved: true, needed: required, yesCount,
               ...(votesKept ? { votesKept: true } : {}),
-              ...(nativeRefresh?.headSha ? { reviewedHeadSha: nativeRefresh.headSha } : {}),
+              ...(refreshedHeadSha ? { reviewedHeadSha: refreshedHeadSha } : {}),
             };
           }
           throw err;

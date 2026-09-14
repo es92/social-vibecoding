@@ -12,17 +12,17 @@
  * when #1348 needed a third; this is the one.
  *
  * What reads it: resolveDefaultAgentPreference() in src/routes/sessions.js,
- * which validates the stored answer (flag / beta / model / credential)
- * before applying it and falls back to Claude with a reason when it
- * cannot. So a preference written here is a PREFERENCE, never a promise —
- * writing one can never break a session, only steer the next one.
+ * which validates the stored answer before applying it. Flag/beta policy
+ * can still produce a named Claude fallback; a missing OpenRouter credential
+ * is provisioned on the next real build action, and an operational failure
+ * stops visibly instead of changing providers.
  *
  * `client` is a pool or a checked-out client. Pass a client to enlist in a
  * caller's transaction (the OpenRouter-revoke path does, so "clear Codex,
  * make Claude the default" cannot half-apply); pass the pool otherwise and
  * the two statements are independently atomic, which is sufficient — the
- * window between them holds NO default rather than two, and a resolver
- * that finds none answers Claude.
+ * window between them holds NO default rather than two. An eligible resolver
+ * that finds none prepares OpenRouter; an explicit Claude row still wins.
  */
 
 // Make `backend` this user's default, carrying its model and effort.

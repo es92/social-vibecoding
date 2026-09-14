@@ -163,6 +163,29 @@ const forkProposal = (over) => mirrorProposal({
   ...over,
 });
 
+// _headHome can only compare repositories it was sent. /promoted is the row
+// the proposal card renders from, and until #2100 it did not carry the head
+// repo at all — so every imported branch whose name was not in the
+// connector's `usernode/from-…` namespace was called a fork, and the card
+// told the group "the author must update this branch in their fork" about a
+// branch in the app's own repository that the platform syncs itself.
+test('head home: the /promoted row carries the head repo the comparison needs', () => {
+  const votesSrc = fs.readFileSync(path.join(__dirname, '..', 'src', 'routes', 'votes.js'), 'utf8');
+  const start = votesSrc.indexOf("router.get('/api/apps/:slug/promoted'");
+  assert.ok(start > 0, 'the promoted route exists');
+  const select = votesSrc.slice(start, votesSrc.indexOf('FROM chat_sessions cs', start));
+  assert.match(select, /\bcs\.imported_pr_head_repo\b/,
+    'the card cannot tell a fork from an app-repo branch without the head repo');
+
+  // And with it on the row, an app-repo branch under any name is app_repo.
+  const AppView = makeAppView(ME);
+  AppView.appData = { repo_url: 'https://github.com/Usernode-Labs/social-vibecoding' };
+  assert.equal(AppView._headHome({
+    source: 'imported', branch_name: 'fix/imported-head-sync-votes',
+    imported_pr_head_repo: 'Usernode-Labs/social-vibecoding',
+  }), 'app_repo');
+});
+
 test('head home: a mirrored connector head is app_repo, a fork head is user_fork, a native row is app_repo', () => {
   const AppView = makeAppView(ME);
   assert.equal(AppView._headHome(baseProposal({})), 'app_repo');

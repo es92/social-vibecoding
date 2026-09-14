@@ -24,6 +24,7 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 
 import { mountLegacyPortal } from '../../lib/legacy-portals';
+import './launchpad.js';
 import { attachStripStore, type AttachStripState } from './attach-strip-store';
 import { budgetPillStore, type BudgetPillState } from './budget-pill-store';
 import { composerStore, type ComposerState } from './composer-store';

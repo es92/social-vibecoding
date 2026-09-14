@@ -712,16 +712,16 @@
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "6123f4ee2975c5d985b2",
+      "fingerprint": "61a5b0d7edd56fa67c61",
       "count": 1,
-      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_body, cs.staging_url, cs.testing_md, cs.testing_path, cs.user"
+      "preview": "`${mergedRowSelect()} WHERE cs.app_id = $1 AND cs.id = $3 AND (cs.status IN ('promoted', 'merging', 'merged') OR (cs.status IN ('active', 'paused') AND (cs.user"
     },
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "61a5b0d7edd56fa67c61",
+      "fingerprint": "6b86091f5fe42466cbc1",
       "count": 1,
-      "preview": "`${mergedRowSelect()} WHERE cs.app_id = $1 AND cs.id = $3 AND (cs.status IN ('promoted', 'merging', 'merged') OR (cs.status IN ('active', 'paused') AND (cs.user"
+      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_body, cs.staging_url, cs.testing_md, cs.testing_path, cs.user"
     },
     {
       "source": "src/routes/votes.js",
@@ -750,6 +750,13 @@
       "fingerprint": "c0f8e5747ee725a64c53",
       "count": 1,
       "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.status, cs.created_at, cs.promoted_at, cs.merge_conflict_state, cs.behind_main, cs"
+    },
+    {
+      "source": "src/services/admin-approval.js",
+      "kind": "structural-template",
+      "fingerprint": "eccf2f5dfb3499411ebb",
+      "count": 1,
+      "preview": "`SELECT 1 FROM pr_votes pv JOIN chat_sessions cs ON cs.id = pv.session_id JOIN users u ON u.id = pv.user_id WHERE pv.session_id = $1 AND pv.vote = 'yes' AND ${c"
     },
     {
       "source": "src/services/agent-turn.js",
@@ -929,9 +936,9 @@
     {
       "source": "src/services/merge-queue.js",
       "kind": "structural-template",
-      "fingerprint": "878c016b2ef18b345e82",
+      "fingerprint": "ac50f62110baae9e88c1",
       "count": 1,
-      "preview": "`SELECT cs.id, cs.promoted_at, cs.created_at, cs.requires_explicit_approval, cs.integration_behind_by, cs.integration_merges_clean, cs.check_state, (SELECT COUN"
+      "preview": "`SELECT cs.id, cs.promoted_at, cs.created_at, cs.requires_explicit_approval, cs.integration_behind_by, cs.integration_merges_clean, cs.check_state, cs.checks_co"
     },
     {
       "source": "src/services/notifications.js",

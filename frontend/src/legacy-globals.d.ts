@@ -234,6 +234,7 @@ declare global {
     DevChat?: {
       renderMarkdown(text: string, opts?: { breaks?: boolean; images?: boolean }): string;
       dismissReturnHint(): void;
+      _importOwnToolsPr(): void;
       [key: string]: unknown;
     };
     /** The inline head-blocking theme module in src/head.html. */

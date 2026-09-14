@@ -120,6 +120,30 @@ for chart installation. With `secrets.create: false`, supply
 updated chart and sync through Argo CD; the secrets checksum triggers a rollout
 when the value changes.
 
+For mobile push, merge these fields into the same SOPS-encrypted
+`platform.secrets.sops.yaml` file's existing `secrets` block:
+
+```yaml
+secrets:
+  mobilePushEnabled: true
+  pushEnv: production
+  firebaseProjectId: usernode-7f4a2
+  firebaseServiceAccountJsonB64: "<base64-encoded production service-account JSON>"
+```
+
+With `secrets.create: true`, these map to `MOBILE_PUSH_ENABLED`, `PUSH_ENV`,
+`FIREBASE_PROJECT_ID`, and `FIREBASE_SERVICE_ACCOUNT_JSON_B64` in the platform
+Secret and reach the process through the Deployment's `envFrom`. Push defaults
+to disabled; the other three fields default to empty strings. Populate all
+four together before enabling push, using a service account for the configured
+Firebase project. Supply the base64-encoded JSON directly; the chart does not
+base64-encode it again. Keep the credential in SOPS-encrypted values.
+
+With `secrets.create: false`, provide the same environment-variable keys in
+`secrets.existingSecret` instead. Publish the updated chart and sync the
+encrypted values through Argo CD; the existing secrets checksum triggers a
+rollout when chart-managed values change.
+
 `config.domain` is the canonical platform hostname (`USERNODE_DOMAIN`).
 `config.appsDomain` optionally sets a separate suffix for generated apps and
 session previews (`USERNODE_APPS_DOMAIN`). When empty, it defaults to

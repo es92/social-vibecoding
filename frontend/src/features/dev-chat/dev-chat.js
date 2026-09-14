@@ -520,8 +520,8 @@ const DevChat = {
   // Three venues build somewhere else, and for all three a composer is the
   // wrong primary control: no turn will ever run here, so a text box that
   // looks like it starts one is a lie the wireframes deliberately remove.
-  // These three methods are the swap. public/js/launchpad.js owns the
-  // markup for `own-tools-pr`; the two web hand-offs reuse the walkthrough
+  // The own-tools guide is a React child; launchpad.js supplies its context.
+  // The two web hand-offs reuse the walkthrough
   // that has existed since #1049, re-sited from the transcript into the
   // composer's place.
   //
@@ -576,24 +576,7 @@ const DevChat = {
     const venue = DevChat._launchpadVenue();
     if (!venue) return '';
     const resume = DevChat._launchpadResumeState();
-    if (venue === 'own-tools-pr') {
-      const session = DevChat.currentSession || {};
-      return Launchpad.ownToolsHtml({
-        targetKind: resume.targetKind,
-        targetId: resume.targetId,
-        branchName: resume.branchName,
-        origin: (typeof window !== 'undefined' && window.location)
-          ? window.location.origin : '',
-        slug: App.currentApp || '',
-        // The request this session was opened from, when there was one —
-        // that is the whole of the prefill's brief, and the reason the
-        // block a user pastes into their agent says something more useful
-        // than "build the thing".
-        issueNumber: session.created_from_issue_number || null,
-        sessionTitle: session.session_title || session.pr_title || '',
-        canImport: !(typeof AppView !== 'undefined' && AppView.readOnly),
-      });
-    }
+    if (venue === 'own-tools-pr') return '';
     // web-claude-code / web-codex: the five-step walkthrough, which already
     // resolves every step from the server and resumes where the user left
     // off.
@@ -627,6 +610,31 @@ const DevChat = {
     });
   },
 
+  _ownToolsGuideView() {
+    if (DevChat._launchpadVenue() !== 'own-tools-pr') return null;
+    const session = DevChat.currentSession || {};
+    const resume = DevChat._launchpadResumeState();
+    return {
+      prompt: Launchpad.prefillText({
+        ...resume,
+        slug: App.currentApp || '',
+        issueNumber: session.created_from_issue_number || null,
+        sessionTitle: session.session_title || session.pr_title || '',
+      }),
+      resumeHtml: Launchpad.resumeBannerHtml(resume),
+      canImport: !(typeof AppView !== 'undefined' && AppView.readOnly),
+    };
+  },
+
+  _importOwnToolsPr() {
+    if (typeof AppView !== 'undefined' && AppView.readOnly) return;
+    if (typeof AppView !== 'undefined' && AppView.openImportPrModal) {
+      AppView.openImportPrModal();
+    } else {
+      window.location.hash = '#settings/cli';
+    }
+  },
+
   // Repaint whichever surface the walkthrough is currently living on.
   //
   // Every dev-flow action used to end in renderMessages(), because the card
@@ -652,21 +660,6 @@ const DevChat = {
   _wireLaunchpad() {
     const host = document.getElementById('dc-launchpad-slot');
     if (!host) return;
-    if (window.Launchpad) {
-      host.querySelectorAll('[data-launchpad]').forEach((el) => {
-        Launchpad.wire(el, {
-          onCopy: (key, text, button) => DevChat._launchpadCopy(text, button),
-          onAction: (action) => {
-            if (action !== 'import') return;
-            if (typeof AppView !== 'undefined' && AppView.openImportPrModal) {
-              AppView.openImportPrModal();
-            } else {
-              window.location.hash = '#settings/cli';
-            }
-          },
-        });
-      });
-    }
     // The walkthrough renders here now rather than in the transcript, so it
     // needs wiring here too — _wireDevFlowCard only ever scans #dc-messages,
     // and a card wired by nobody is the #1304 failure again.
@@ -677,20 +670,6 @@ const DevChat = {
         });
       });
     }
-  },
-
-  // Copy, with the button itself as the receipt. No toast: the button is
-  // under the user's finger and a toast for a copy is noise on a phone.
-  _launchpadCopy(text, button) {
-    const done = (ok) => {
-      if (!button) return;
-      const original = button.textContent;
-      button.textContent = ok ? 'Copied.' : 'Press ⌘C to copy';
-      setTimeout(() => { button.textContent = original; }, 1500);
-    };
-    try {
-      navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
-    } catch { done(false); }
   },
 
   // Persist the venue this session is being built in (#1281).
@@ -847,6 +826,89 @@ const DevChat = {
     }
     return model.compatibilityNote
       || 'OpenRouter exposes this model, but it may lack repository tools or enough context; the turn may fail.';
+  },
+
+  // Prepare the saved provider for a REAL build action (currently Generate
+  // proposal). This is deliberately not called by a page-load/status read:
+  // creating a company-funded credential is a write and should happen only
+  // after the user asks Usernode to do work. An explicit Claude default is
+  // preserved. Everyone else who is eligible for OpenRouter gets the
+  // included managed key on first use, and provisioning errors are returned
+  // to the caller verbatim rather than being hidden behind a Claude fallback.
+  async _prepareDefaultCodingAgentForBuild() {
+    const readPreferences = async () => {
+      const response = await fetch('/api/me/coding-agent', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || 'Could not load your coding-agent settings.');
+      }
+      return body;
+    };
+
+    let prefs = await readPreferences();
+    const explicitClaude = prefs.backends?.claude_code?.isDefault === true;
+    if (explicitClaude) return prefs;
+    if (!prefs.codexAvailable) {
+      // This mirrors the server's deliberate flag/beta policy fallback.
+      return { ...prefs, defaultBackend: 'claude_code' };
+    }
+
+    const readCredentialStatus = async () => {
+      const response = await fetch('/api/me/credentials/openrouter', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error || 'Could not check your OpenRouter credential.');
+      }
+      return body;
+    };
+    let status = await readCredentialStatus();
+    if (status.configured === true && status.status === 'valid') {
+      if (typeof App !== 'undefined' && App.user) App.user.openrouterAvailable = true;
+      // The key may have appeared in another tab after the preference read.
+      // Re-read only in that mismatched state so the modal and the server do
+      // not choose different providers for the same request.
+      if (prefs.defaultBackend !== 'codex_openrouter') prefs = await readPreferences();
+      return prefs;
+    }
+
+    const provisionResponse = await fetch('/api/me/credentials/openrouter/managed', {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const provisioned = await provisionResponse.json().catch(() => ({}));
+    if (!provisionResponse.ok) {
+      // Two build clicks can race. The loser sees the reservation's
+      // byok_configured/already_issued conflict after the winner has saved a
+      // valid key; re-read once and accept that completed state. A conflict
+      // without a usable credential is a real problem and remains visible.
+      if (['byok_configured', 'already_issued'].includes(provisioned.code)) {
+        status = await readCredentialStatus();
+      }
+      if (status.configured !== true || status.status !== 'valid') {
+        const err = new Error(
+          provisioned.error
+            || `OpenRouter could not be set up automatically (HTTP ${provisionResponse.status}).`,
+        );
+        err.code = provisioned.code || 'provision_failed';
+        throw err;
+      }
+    }
+
+    if (typeof App !== 'undefined' && App.user) App.user.openrouterAvailable = true;
+    prefs = await readPreferences();
+    if (prefs.defaultBackend !== 'codex_openrouter') {
+      throw new Error('OpenRouter was created, but it was not saved as your default. Contact an administrator.');
+    }
+    return prefs;
   },
 
   async _loadCodingAgentChoiceData({ forceRefresh = false } = {}) {
@@ -2752,7 +2814,7 @@ const DevChat = {
   // It is normally the LAUNCHPAD that renders this (#1281), which is why
   // renderMessages() drops the card whenever _launchpadVenue() answers. The
   // transcript keeps it for the one case that has no launchpad to put it
-  // in: public/js/launchpad.js failing to load.
+  // in: features/dev-chat/launchpad.js failing to load.
   _devFlowTarget() {
     const session = DevChat.currentSession;
     if (!session || !window.DevFlowSelect) return null;
@@ -3288,6 +3350,13 @@ const DevChat = {
       if (!res.ok) {
         PlatformUI.toast(data.error || 'Failed to create session');
         return null;
+      }
+      // /api/auth/me was loaded before a first-use managed key existed.
+      // Keep venue gating in sync with the authoritative session response
+      // without waiting for a full page reload.
+      if (data.session?.agent_backend === 'codex_openrouter'
+          && typeof App !== 'undefined' && App.user) {
+        App.user.openrouterAvailable = true;
       }
       // The one thing the venue dropdown cannot work out on its own: WHY
       // this session isn't in the venue the user's default named.
@@ -7258,6 +7327,7 @@ const DevChat = {
 
     if (!DevChat._markdownReady) {
       const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const escAttr = (s) => esc(s).replace(/"/g, '&quot;');
 
       marked.use({
         breaks: true,
@@ -7281,6 +7351,24 @@ const DevChat = {
             return `<code class="dc-inline-code">${esc(text)}</code>`;
           },
           html({ text }) {
+            // GitHub emits a dragged/resized issue-comment screenshot as a
+            // raw <img ...> tag rather than Markdown image syntax. Raw HTML
+            // stays escaped everywhere by default. On an image-enabled
+            // surface, accept only one standalone image tag, extract only its
+            // quoted src/alt values, re-check the same URL policy as the
+            // Markdown image renderer, and rebuild controlled markup. Width,
+            // event handlers, styles and every other supplied attribute are
+            // deliberately discarded before DOMPurify sees the result.
+            const tag = String(text || '').trim();
+            if (DevChat._renderImagesInline && /^<img\b[^>]*\/?>$/i.test(tag)) {
+              const srcMatch = /\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag);
+              const altMatch = /\salt\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(tag);
+              const src = srcMatch ? (srcMatch[1] ?? srcMatch[2] ?? '') : '';
+              const alt = altMatch ? (altMatch[1] ?? altMatch[2] ?? '') : '';
+              if (/^https:\/\//i.test(src) || /^\/[^/]/.test(src)) {
+                return `<img class="dc-inline-img" src="${escAttr(src)}" alt="${escAttr(alt)}" loading="lazy">`;
+              }
+            }
             return esc(text);
           },
           // F3: real heading hierarchy. # → h3 (largest), ## → h4,
@@ -7358,7 +7446,7 @@ const DevChat = {
             const inlineOk = DevChat._renderImagesInline
               && (/^https:\/\//i.test(href) || (/^\/[^/]/.test(href)));
             if (inlineOk) {
-              return `<img class="dc-inline-img" src="${esc(href)}" alt="${safeText}" loading="lazy">`;
+              return `<img class="dc-inline-img" src="${escAttr(href)}" alt="${escAttr(text || '')}" loading="lazy">`;
             }
             if (!/^https?:\/\//i.test(href)) return safeText;
             return `<a href="${href}" target="_blank" rel="noopener noreferrer">${safeText || esc(href)}</a>`;
@@ -8455,6 +8543,7 @@ const DevChat = {
       // venue dropdown lives in the header, outside the swap, which is what
       // makes it reversible — it is the way back to a chat.
       launchpadHtml: DevChat._launchpadHtml(),
+      ownToolsGuide: DevChat._ownToolsGuideView(),
       // Is there anything left in the bottom bar to draw a border around?
       // The composer is hidden in a launchpad and the venue note is usually
       // absent, and an empty bordered strip reads as a broken composer.
@@ -9295,7 +9384,9 @@ const DevChat = {
   // cross-device sync and the one-time migration of drafts that existed
   // only in this browser before #940.
   //
-  //   1. union server + local by id
+  //   1. union server + local by id — except a local row already marked
+  //      synced that the server no longer has: it was deleted on another
+  //      device (or sent there), so it is dropped, never re-uploaded
   //   2. anything tombstoned locally is dropped and DELETEd server-side
   //   3. anything local-and-unsynced is POSTed (the migration/offline flush)
   //   4. tombstones the server no longer knows about are discarded
@@ -9334,10 +9425,16 @@ const DevChat = {
     }
 
     // (1) union, minus tombstones. A server row wins on text (it is the
-    // authoritative copy); a local-only row survives to be uploaded.
+    // authoritative copy); a local-only row survives to be uploaded. A row
+    // this device has already seen on the server (`synced`) and the server
+    // no longer lists was deleted elsewhere (#1960/#1961): every DELETE
+    // pushes a drafts-changed event to the account's other devices, so
+    // re-uploading it here would resurrect the draft on all of them.
     const union = new Map();
     for (const d of mirror.drafts) {
-      if (!tombstoned.has(d.id)) union.set(d.id, d);
+      if (tombstoned.has(d.id)) continue;
+      if (d.synced && !serverById.has(d.id)) continue;
+      union.set(d.id, d);
     }
     for (const [id, d] of serverById) {
       if (!tombstoned.has(id)) union.set(id, d);
@@ -9371,7 +9468,7 @@ const DevChat = {
     // (3) flush anything the server hasn't got. After the paint, so an
     // offline device still shows the right list immediately.
     const uploads = merged
-      .filter((d) => !serverById.has(d.id))
+      .filter((d) => !d.synced && !serverById.has(d.id))
       .map((d) => DevChat._pushDraftAdd(sessionId, d));
 
     if (dropped) {

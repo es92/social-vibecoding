@@ -54,6 +54,16 @@ export const DEV_VIEW_MODE_STORE_KEY = '__usernodeDevViewMode';
  * (`AppView.RETIRED_VIEW_MODES`) so a stored preference naming a retired mode
  * still resolves; nothing here needs it, because everything that reaches this
  * store has already been through `_setViewMode`.
+ *
+ * 'kanban' HAS SINCE RETIRED from `AppView.VIEW_MODES` as well: the board's
+ * columns are the Workshop's "By stage" pane, which renders the same
+ * <DevKanban/> from the same view model, so the standalone Board surface has
+ * nothing left that routes to it. The value stays in the union here because
+ * ./board-frame.tsx still compares against it to decide what that unreachable
+ * surface would draw — narrowing this type is the first step of removing that
+ * surface, which is a sweep of its own and not this change. Nothing publishes
+ * 'kanban' any more: `_getViewMode()` cannot resolve it, and
+ * `RETIRED_VIEW_MODES` maps a stored one onto 'workshop'.
  */
 export const DEV_VIEW_MODES = ['workshop', 'kanban'] as const;
 

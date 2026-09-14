@@ -2181,7 +2181,13 @@ async function execInWorker(sessionId, {
     throw new Error(`execInWorker: no warm worker registered for session ${sessionId}`);
   }
   if (meta.inFlight) {
-    throw new Error(`execInWorker: a turn is already in flight for session ${sessionId}`);
+    // Coded so a caller can tell "wait for the running turn" from a real
+    // dispatch failure without matching on the message — the merge queue
+    // treats this one as in-progress rather than as a sync that failed.
+    throw Object.assign(
+      new Error(`execInWorker: a turn is already in flight for session ${sessionId}`),
+      { code: 'TURN_IN_FLIGHT' }
+    );
   }
   if (!prompt && !reusePromptFile) {
     throw new Error('execInWorker: prompt required');

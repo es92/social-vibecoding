@@ -9,12 +9,21 @@
 // next sweeper pass and advances the row to the new head:
 //
 //   - update imported_pr_head_sha to the new head,
-//   - once the row is promoted, clear the old-head vote tally and request
+//   - once the row is promoted, ask services/integration.js what the move
+//     cost the approvals — the platform's own sync commit (the merge queue
+//     pushes those onto imported branches too, #2038) is mechanical and
+//     keeps them; an author push moves the approval epoch on and asks for
 //     re-review,
 //   - refresh behind_main / conflict state from GitHub (the native path's
 //     drift snapshot), and
 //   - re-run the proposal checks against the new head via the SHA-pinned
-//     staging build from Slice 1.
+//     staging build from Slice 1, unless a settled verdict carries across a
+//     mechanical merge.
+//
+// The same reconciliation is available WITHOUT a GitHub read for a branch
+// the app's mirror can see (reconcileImportedHead); the merge path uses it
+// so an exact-sha merge is never offered a pin the platform itself just
+// superseded.
 //
 // It is also the only pass that can correct a STALE conflict snapshot
 // (#1365). The drift refresh above runs only on a head change, and GitHub
@@ -28,6 +37,7 @@ const log = require('./logger');
 const github = require('./github');
 const githubMock = require('./github-mock');
 const { usesMockGithubForImports } = require('../config');
+const { sameSha } = require('./pr-vote-revision');
 
 function parseRepo(url) {
   const [, owner, repo] = (url || '').match(/github\.com\/([^/]+)\/([^/]+)/) || [];
@@ -148,71 +158,284 @@ async function syncImportedProposal({ config, pool, session }) {
   }
 }
 
-// Apply a head change: advance the stored SHA, refresh drift, and re-run
-// SHA-pinned checks. A promoted row also resets its old-head tally and posts
-// the re-review note; an active import has no votes to invalidate yet.
-async function applyHeadChange({ config, pool, session, pr, repo, newHead, oldHead }) {
+// What did this head move cost the approvals? The same question, and the
+// same answer, as the native path (routes/votes.js reconcileNativeReviewedHead):
+// services/integration.js redoes the merge from the local mirror and compares
+// trees, so nothing here trusts the shape of the new commit.
+//
+// This used to be assumed rather than asked. The comment read "an imported
+// head moving is always an author push by definition: the platform does not
+// write to the author's fork" — which stopped being true the day the merge
+// queue (#2038) started bringing imported proposals up to date with main by
+// pushing a merge commit onto their branch. Every one of those syncs then
+// came back through the poller as an "author push", cleared the votes, and
+// asked the group to re-review a change nobody had changed (#2100, #2095).
+//
+// 'unknown' — the mirror cannot answer — is treated by the caller as
+// authored. Failing open here would let a real push inherit approvals.
+async function classifyImportedHeadMove({ session, oldHead, newHead }) {
+  // The staging mock has no repository to redo the merge from, and a mock
+  // "push" (github-mock.bumpHead) is an author push by construction.
+  if (usesMockGithubForImports()) return { kind: 'authored', reason: 'mock_github' };
+  const integration = require('./integration');
+  const mirror = require('./repo-mirror');
+  const parsed = integration._parseRepo(session.repo_url);
+  if (!parsed) return { kind: 'unknown', reason: 'no_repo' };
+  try {
+    const dir = await mirror.ensureMirror(parsed.owner, parsed.repo, { refs: [oldHead, newHead] });
+    const mainSha = await mirror.defaultBranchSha(dir);
+    return await integration.classifyHeadMove(dir, { approvedHead: oldHead, newHead, mainSha });
+  } catch (err) {
+    log.warn('pr-import-sync', 'head-move classification failed; treating as authored', {
+      sessionId: session.id, oldHead, newHead, err: err.message,
+    });
+    return { kind: 'unknown', reason: err.message };
+  }
+}
+
+// Verdicts that describe a finished run. Only these can be carried onto a
+// mechanically merged head: a 'pending' verdict is a run still going (or one
+// the sync just superseded), and carrying its stamp forward would leave the
+// row 'pending' with nothing building — the ten-minute stale wait of #1728.
+// 'error' is left out too: it usually means the preview did not boot, which
+// a rebuild against the merged commit is the right way to find out about.
+const CARRIABLE_CHECK_STATES = new Set(['passing', 'skipped', 'failing']);
+
+// Apply a head change: advance the stored SHA, decide what the move costs the
+// approvals and the checks, refresh drift, and re-run SHA-pinned checks where
+// the verdict cannot carry. An active import has no votes to protect and
+// simply follows the new head.
+//
+// `move` is the classification when the caller already has it (the
+// mirror-driven path below); otherwise it is computed here for a row up for
+// vote. `pr`/`repo` are the GitHub read the poller had in hand and are only
+// used for the drift snapshot; the mirror-driven path has neither.
+//
+// `checks`:
+//   'await'      — (default; the poller) run the rebuild here and wait for
+//                  it, so the sweep's per-session cooldown bounds concurrency.
+//   'background' — kick the rebuild and return.
+//   'defer'      — leave the rebuild to the caller's checkAndMerge, whose
+//                  checks gate rebuilds exactly the pinned head when the
+//                  verdict's commit does not match it. Only honoured while
+//                  the approvals survive: a run that cleared them stops at
+//                  the approvals gate and would never reach the checks gate,
+//                  so that case degrades to 'background'.
+//
+// `notify: false` suppresses the group message and the vote broadcast for a
+// caller that is about to say something more specific itself (the merge
+// path's 409 handler).
+//
+// Returns { applied, votesKept, checksCarry, kind, epoch }. `applied` is
+// false when the row's pin no longer matched `oldHead` — another pass got
+// there first — and NOTHING was written or posted. The sweep and the queue
+// can both notice the same move; the second must be a no-op, not a second
+// epoch bump and a second "please re-review" (PR #2101 saw both).
+async function applyHeadChange({
+  config, pool, session, pr = null, repo = null, newHead, oldHead,
+  move = null, checks = 'await', notify = true,
+}) {
   const { sendSystemMessage, pushVoteUpdate } = require('./ws');
   const upForVote = session.status === 'promoted' || session.status === 'merging';
 
-  // 1. Advance the head the checks/votes now describe.
-  await pool.query(
-    `UPDATE chat_sessions SET imported_pr_head_sha = $1 WHERE id = $2`,
-    [newHead, session.id]
+  // 1. What the move costs. Only a proposal up for vote has approvals to
+  //    protect, so only it pays for the classification.
+  if (upForVote && !move) {
+    move = await classifyImportedHeadMove({ session, oldHead, newHead });
+  }
+  const kind = upForVote ? ((move && move.kind) || 'unknown') : 'authored';
+  const keepsApprovals = upForVote && (kind === 'mechanical' || kind === 'resolved');
+  const bumpEpoch = upForVote && !keepsApprovals;
+  // Checks policy follows who wrote the tree, as on the native path: a
+  // mechanical merge is pure git over a tested branch and a tested main, so
+  // a settled verdict carries. A 'resolved' tree is one nobody has tested.
+  const checksCarry = kind === 'mechanical'
+    && sameSha(session.checks_commit_sha, oldHead)
+    && CARRIABLE_CHECK_STATES.has(session.check_state);
+
+  // 2. One statement. If the epoch bump and the head install could land
+  //    separately, a crash between them would leave a row whose approvals
+  //    describe neither the old code nor the new. The WHERE is the guard
+  //    against a second applier: it only fires if the pin is still the one
+  //    this decision was made about.
+  const { rows: claimed } = await pool.query(
+    `UPDATE chat_sessions
+        SET imported_pr_head_sha = $1,
+            stale_notified_at = NULL,
+            approval_epoch = approval_epoch + CASE WHEN $3::boolean THEN 1 ELSE 0 END,
+            checks_commit_sha = CASE WHEN $4::boolean THEN $1 ELSE checks_commit_sha END
+      WHERE id = $2
+        AND imported_pr_head_sha IS NOT DISTINCT FROM $5::varchar
+      RETURNING approval_epoch`,
+    [newHead, session.id, bumpEpoch, checksCarry, oldHead]
   );
+  if (!claimed.length) {
+    log.info('pr-import-sync', 'Head change already applied by another pass; nothing to do', {
+      sessionId: session.id, prNumber: session.pr_number, oldHead, newHead,
+    });
+    // Let the caller carry on with the row as it now is, not as it was read:
+    // a merge attempt that kept the stale pin would offer GitHub the old
+    // commit and buy exactly the 409 this path exists to avoid.
+    const { rows: current } = await pool.query(
+      `SELECT imported_pr_head_sha, approval_epoch, checks_commit_sha, check_state
+         FROM chat_sessions WHERE id = $1`,
+      [session.id]
+    ).catch(() => ({ rows: [] }));
+    if (current[0]) Object.assign(session, current[0]);
+    return { applied: false, votesKept: false, checksCarry: false, kind, epoch: null };
+  }
+  const epoch = parseInt(claimed[0].approval_epoch, 10);
   session.imported_pr_head_sha = newHead;
+  session.approval_epoch = epoch;
+  if (checksCarry) session.checks_commit_sha = newHead;
+  if (bumpEpoch) {
+    log.info('integration', 'Approvals cleared', {
+      sessionId: session.id, epoch, reason: `imported_head_${kind}`,
+    });
+  }
 
   const label = prLabel(session);
-  if (upForVote) {
-    // Every existing vote describes the superseded code. #2038: move the
-    // approval epoch on rather than deleting the rows — one statement, no
-    // window in which the tally is half-cleared, and the votes survive as a
-    // record of what was approved and when. An imported head moving is
-    // always an author push by definition: the platform does not write to
-    // the author's fork, so there is no mechanical merge to recognise here.
-    await require('./integration').clearApprovals(pool, session.id, 'imported_head_changed');
-    await require('./app-admins').refreshExplicitApproval(pool, session, session);
-    await pool.query(
-      `UPDATE chat_sessions SET stale_notified_at = NULL WHERE id = $1`,
-      [session.id]
-    ).catch(() => {});
-    await sendSystemMessage(
-      pool, session.app_id,
-      `${label} was updated on GitHub. Earlier votes were cleared, so please re-review the new changes. `
-        + 'The staging preview and automated checks are being rebuilt against the new commit.',
-      'system',
-      { headChanged: true, prNumber: session.pr_number, headSha: newHead },
-      { type: 'session', ref: session.id }
-    ).catch((err) => log.warn('pr-import-sync', 're-review note failed', {
-      sessionId: session.id, err: err.message,
-    }));
-    try {
-      pushVoteUpdate({ sessionId: session.id, appSlug: session.app_slug || null, merged: false });
-    } catch (_) { /* ws failures are non-fatal */ }
+  const shortHead = String(newHead).slice(0, 8);
+  const needsChecks = !checksCarry && !sameSha(session.checks_commit_sha, newHead);
+  const rebuildClause = needsChecks
+    ? ' The staging preview and automated checks are being rebuilt against the new commit.'
+    : '';
+  let message;
+  if (!upForVote) {
+    message = `${label} was updated on GitHub.${rebuildClause}`;
+  } else if (kind === 'mechanical') {
+    message = `${label} was brought up to date with main. Nothing in the proposal changed, so its votes still stand.`
+      + (needsChecks ? ' The automated checks are re-running against the merged commit.' : '');
+  } else if (kind === 'resolved') {
+    const n = Array.isArray(move.conflictPaths) ? move.conflictPaths.length : 0;
+    message = `${label} was brought up to date with main and ${n || 'its'} conflicting file${n === 1 ? '' : 's'} `
+      + 'were resolved automatically. The votes still stand; the staging preview and automated checks are '
+      + 'being rebuilt against the merged commit, and it will merge on its own once they pass.';
+  } else if (kind === 'unknown') {
+    message = `${label} moved to commit ${shortHead}, which the platform could not verify`
+      + `${move && move.reason ? ` (${move.reason})` : ''}. Earlier votes were cleared, so please re-review the new changes.${rebuildClause}`;
   } else {
+    message = `${label} was updated on GitHub. Earlier votes were cleared, so please re-review the new changes.${rebuildClause}`;
+  }
+
+  if (upForVote) {
+    await require('./app-admins').refreshExplicitApproval(pool, session, session);
+  }
+  if (notify) {
     await sendSystemMessage(
-      pool, session.app_id,
-      `${label} was updated on GitHub. The staging preview and automated checks are being rebuilt against the new commit.`,
-      'system',
-      { headChanged: true, prNumber: session.pr_number, headSha: newHead },
+      pool, session.app_id, message, 'system',
+      { headChanged: true, votesKept: keepsApprovals, prNumber: session.pr_number, headSha: newHead },
       { type: 'session', ref: session.id }
     ).catch((err) => log.warn('pr-import-sync', 'head-change note failed', {
       sessionId: session.id, err: err.message,
     }));
+    if (upForVote) {
+      try {
+        pushVoteUpdate({
+          sessionId: session.id, appSlug: session.app_slug || null, merged: false,
+          headMoved: true, ...(keepsApprovals ? { votesKept: true } : {}),
+        });
+      } catch (_) { /* ws failures are non-fatal */ }
+    }
   }
 
-  // 5. Refresh behind_main / conflict snapshot the way the native path does.
-  await refreshDriftState({ pool, session, pr, repo }).catch((err) =>
-    log.warn('pr-import-sync', 'drift refresh failed', { sessionId: session.id, err: err.message }));
+  // 3. Refresh behind_main / conflict snapshot the way the native path does —
+  //    only when the caller had the GitHub read in hand. The mirror-driven
+  //    callers have just measured the integration record instead.
+  if (pr && repo) {
+    await refreshDriftState({ pool, session, pr, repo }).catch((err) =>
+      log.warn('pr-import-sync', 'drift refresh failed', { sessionId: session.id, err: err.message }));
+  }
 
-  // 6. Re-run the proposal checks against the NEW head — the SHA-pinned
-  //    staging build from Slice 1 (storeChecks / storeChecksSkipped).
-  await rerunChecksForNewHead({ config, pool, session, newHead }).catch((err) =>
-    log.warn('pr-import-sync', 'checks re-run failed', { sessionId: session.id, err: err.message }));
+  // 4. Re-run the proposal checks against the NEW head — the SHA-pinned
+  //    staging build from Slice 1 (storeChecks / storeChecksSkipped) — unless
+  //    the verdict carried, or the caller's merge attempt is about to do it.
+  if (needsChecks) {
+    const mode = (checks === 'defer' && !keepsApprovals) ? 'background' : checks;
+    if (mode === 'await') {
+      await rerunChecksForNewHead({ config, pool, session, newHead }).catch((err) =>
+        log.warn('pr-import-sync', 'checks re-run failed', { sessionId: session.id, err: err.message }));
+    } else if (mode === 'background') {
+      rerunChecksForNewHead({ config, pool, session, newHead }).catch((err) =>
+        log.warn('pr-import-sync', 'checks re-run failed', { sessionId: session.id, err: err.message }));
+    }
+  }
 
-  log.info('pr-import-sync', 'Imported PR head changed — refreshed preview and checks', {
+  log.info('pr-import-sync', 'Imported PR head changed', {
     sessionId: session.id, prNumber: session.pr_number, oldHead, newHead, upForVote,
+    moveKind: kind, votesKept: keepsApprovals, checksCarry, checksRerun: needsChecks ? checks : 'none',
   });
+  return { applied: true, votesKept: keepsApprovals, checksCarry, kind, epoch };
+}
+
+// Re-pin an imported proposal to the live head of its branch WITHOUT asking
+// GitHub — the imported analogue of routes/votes.js reconcileNativeReviewedHead.
+//
+// The poller above learns of a head move from getPR on its own cadence. Two
+// callers cannot wait for that: the merge queue, which has just pushed a sync
+// commit onto this very branch and is about to offer GitHub the pinned
+// commit (a pin still on the pre-sync head is a guaranteed 409 — the
+// "wasn't merged, because the PR was updated on GitHub" loop of #2100); and
+// the 409 handler itself, which would otherwise release the claim and leave
+// the row waiting for the next sweep.
+//
+// Only answers for a head the mirror can see: a branch in the app's own
+// repository. A head on the author's fork is left to the poller, exactly as
+// before. Never throws.
+async function reconcileImportedHead({ config, pool, session, checks = 'defer', notify = true }) {
+  try {
+    if (!session || session.source !== 'imported' || !session.pr_number) {
+      return { reconciled: false, reason: 'not_imported' };
+    }
+    const oldHead = session.imported_pr_head_sha || null;
+    if (!oldHead) return { reconciled: false, reason: 'unpinned' };
+    if (!session.branch_name || !session.repo_url) return { reconciled: false, reason: 'no_branch' };
+    if (require('./proposal-update').branchHomeOf(session) !== 'app_repo') {
+      return { reconciled: false, reason: 'fork_head' };
+    }
+    const integration = require('./integration');
+    const mirror = require('./repo-mirror');
+    const parsed = integration._parseRepo(session.repo_url);
+    if (!parsed) return { reconciled: false, reason: 'no_repo' };
+
+    let dir; let mainSha; let liveHead;
+    try {
+      dir = await mirror.ensureMirror(parsed.owner, parsed.repo, { refs: [oldHead] });
+      mainSha = await mirror.defaultBranchSha(dir);
+      liveHead = await mirror.resolveBranch(dir, session.branch_name);
+    } catch (err) {
+      log.warn('pr-import-sync', 'mirror unreadable; leaving the imported pin as it stands', {
+        sessionId: session.id, err: err.message,
+      });
+      return { reconciled: false, reason: 'mirror_unreadable' };
+    }
+    if (!liveHead) return { reconciled: false, reason: 'branch_missing' };
+    if (sameSha(liveHead, oldHead)) {
+      return { reconciled: true, changed: false, headSha: liveHead };
+    }
+
+    const move = await integration.classifyHeadMove(dir, {
+      approvedHead: oldHead, newHead: liveHead, mainSha,
+    });
+    const applied = await applyHeadChange({
+      config, pool, session, newHead: liveHead, oldHead, move, checks, notify,
+    });
+    return {
+      reconciled: true,
+      changed: applied.applied,
+      // The row's pin as it stands — liveHead when this call installed it,
+      // whatever the other pass installed when it got there first.
+      headSha: session.imported_pr_head_sha || liveHead,
+      kind: move.kind,
+      votesKept: applied.votesKept,
+      checksCarry: applied.checksCarry,
+    };
+  } catch (err) {
+    log.warn('pr-import-sync', 'reconcileImportedHead failed', {
+      sessionId: session && session.id, err: err.message,
+    });
+    return { reconciled: false, reason: err.message };
+  }
 }
 
 // The snapshot states that say a proposal is BLOCKED. Only these are worth
@@ -573,6 +796,8 @@ module.exports = {
   syncImportedProposal,
   refreshStrandedConflictState,
   applyHeadChange,
+  classifyImportedHeadMove,
+  reconcileImportedHead,
   refreshDriftState,
   rerunChecksForNewHead,
   kickImportedChecks,

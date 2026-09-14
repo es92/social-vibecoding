@@ -23,6 +23,7 @@ const branchNames = require('../services/branch-names');
 const agentTurn = require('../services/agent-turn');
 const registry = require('../agents/registry');
 const agentPreferences = require('../services/agent-preferences');
+const managedOpenRouter = require('../services/openrouter-managed-keys');
 const workerProgress = require('../services/worker-progress');
 const sessionLifecycle = require('../services/session-lifecycle');
 const stagingRecovery = require('../services/staging-recovery');
@@ -1099,32 +1100,102 @@ async function persistScoutPublication({
   return { applied: true, ...value };
 }
 
+const AGENT_REASONING_EFFORTS = new Set(['minimal', 'low', 'medium', 'high', 'xhigh']);
+
+class AgentSelectionError extends Error {
+  constructor(statusCode, message, code = null) {
+    super(message);
+    this.name = 'AgentSelectionError';
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
+
+function agentSelectionErrorBody(err) {
+  return {
+    error: err.message,
+    ...(err.code ? { code: err.code } : {}),
+  };
+}
+
+function automaticOpenRouterSetupError(err) {
+  if (err instanceof managedOpenRouter.ManagedOpenRouterError) {
+    const message = err.code === 'not_configured'
+      ? 'OpenRouter could not be set up automatically because managed key provisioning is not configured. Ask an administrator to check USERNODE_OPENROUTER_MANAGEMENT_API_KEY.'
+      : `OpenRouter could not be set up automatically. ${err.message}`;
+    return new AgentSelectionError(err.statusCode, message, err.code);
+  }
+  return new AgentSelectionError(
+    503,
+    'OpenRouter could not be set up automatically. Try again; if this continues, ask an administrator to check managed key provisioning.',
+    'provision_failed',
+  );
+}
+
+async function ensureOpenRouterCredential(pool, userId, config) {
+  const credentialStore = require('../services/credential-store');
+  let meta;
+  try {
+    meta = await credentialStore.readMetadata({
+      pool, userId, provider: 'openrouter', purpose: 'coding_agent',
+    });
+  } catch (err) {
+    log.error('sessions', 'OpenRouter credential check failed', {
+      userId, err: err.message,
+    });
+    throw new AgentSelectionError(
+      503,
+      'OpenRouter could not be set up because its credential state could not be checked. Try again; if this continues, contact an administrator.',
+      'credential_check_failed',
+    );
+  }
+  if (meta?.status === 'valid') return { meta, provisioned: null };
+
+  try {
+    const provisioned = await managedOpenRouter.provision({ pool, userId, config });
+    log.info('sessions', 'Automatically provisioned managed OpenRouter credential', {
+      userId,
+      managedKeyId: provisioned.managed?.id || null,
+      model: provisioned.defaultModel || null,
+    });
+    return {
+      meta: { status: 'valid', revision: provisioned.revision },
+      provisioned,
+    };
+  } catch (err) {
+    // A second tab can finish provisioning after the metadata read but
+    // before this caller acquires the per-user reservation lock. Treat the
+    // now-valid credential as success; every other failure remains visible.
+    if (err instanceof managedOpenRouter.ManagedOpenRouterError) {
+      try {
+        const refreshed = await credentialStore.readMetadata({
+          pool, userId, provider: 'openrouter', purpose: 'coding_agent',
+        });
+        if (refreshed?.status === 'valid') return { meta: refreshed, provisioned: null };
+      } catch (readErr) {
+        log.error('sessions', 'OpenRouter credential recheck failed after provisioning conflict', {
+          userId, err: readErr.message,
+        });
+      }
+    }
+    log.error('sessions', 'Automatic managed OpenRouter provisioning failed', {
+      userId,
+      code: err?.code || 'provision_failed',
+      err: err?.message || String(err),
+    });
+    throw automaticOpenRouterSetupError(err);
+  }
+}
+
 // Copy the user's DEFAULT coding-agent backend + model + reasoning effort
-// into a freshly created session row (review #8). Used by EVERY session
-// creation path — ordinary dev-chat, headless auto-session, and clone — so
-// "default coding agent" means the same thing regardless of how a session
-// was spawned. Falls back to the legacy claude_code schema default when the
-// user has never set a default but already owns a usable OpenRouter key,
-// OpenRouter is preferred; otherwise the safe fallback is Claude. Best-
-// effort provider fallbacks never throw, while a preference-query DB error
-// still propagates so it cannot be mistaken for "no preference".
-// Resolve the default coding-agent preference for a NEW session WITHOUT
-// mutating the session (plan 9.1). A Codex default is applied only when it
-// is actually usable (feature enabled, user in the beta allowlist, valid
-// OpenRouter credential, and a model present in the preference or the
-// operator default) — otherwise we fall back to a Claude session rather than
-// creating one that is guaranteed to fail its first dispatch. A DB error
-// while reading the preference is NOT treated as "no preference": it lets
-// session creation fail rather than silently choosing another backend.
-//
-// Every one of those fallbacks used to be a server-side log line and
-// nothing else: the user had set "Usernode · OpenRouter" as their default,
-// got a Usernode · Claude session, and the only trace was in the operator's
-// logs. The fallback stays LENIENT on purpose — a session that runs is
-// better than a 4xx — but it now names itself, so the caller can say so.
-// `fallbackReason` is one of 'flag_off' | 'not_in_beta' | 'model_unavailable'
-// | 'no_credential', and is absent whenever the resolved venue is the one
-// the user actually asked for.
+// into every new session path. An explicit Claude default always wins. When
+// OpenRouter is enabled for an eligible user, a missing credential is no
+// longer interpreted as permission to switch providers: the first real
+// build/session action provisions the included managed key, stores OpenRouter
+// as the default, and uses the provisioned model. Feature-policy fallbacks
+// (flag off / beta access revoked) stay lenient and named. Provisioning,
+// credential, and model-catalog failures stop with an actionable error so a
+// broken deployment cannot masquerade as a successful Claude fallback.
 async function resolveDefaultAgentPreference(client, userId, config) {
   const { rows: prefRows } = await client.query(
     `SELECT backend, model_id, reasoning_effort
@@ -1143,7 +1214,8 @@ async function resolveDefaultAgentPreference(client, userId, config) {
     };
   }
 
-  // Codex default — validate it is genuinely usable before applying.
+  // Deployment-policy fallbacks are still intentional. Credential and
+  // provider failures below are not: those must be surfaced to the caller.
   const claudeFallback = (reason) => ({
     backend: 'claude_code',
     provider: 'anthropic',
@@ -1162,45 +1234,79 @@ async function resolveDefaultAgentPreference(client, userId, config) {
     return claudeFallback('not_in_beta');
   }
 
-  let modelId = pref?.model_id;
-  if (!modelId) {
-    modelId = (config && config.openrouterDefaultCodexModel) || null;
-  }
-  if (!modelId) {
-    log.warn('sessions', 'Codex default not applied: no model', { userId });
-    return claudeFallback('model_unavailable');
+  const { meta, provisioned } = await ensureOpenRouterCredential(client, userId, config);
+  if (provisioned) {
+    const modelId = provisioned.defaultModel || null;
+    if (!modelId) {
+      throw new AgentSelectionError(
+        503,
+        'OpenRouter was set up, but no default model is available. Ask an administrator to check OPENROUTER_DEFAULT_CODEX_MODEL and the OpenRouter model catalog.',
+        'model_unavailable',
+      );
+    }
+    return {
+      backend: 'codex_openrouter',
+      provider: 'openrouter',
+      model: modelId,
+      // Provisioning writes this same default atomically with the key.
+      reasoningEffort: null,
+    };
   }
 
-  try {
+  let modelId = pref?.model_id
+    || (config && config.openrouterDefaultCodexModel)
+    || null;
+
+  // Accounts with a usable key but no preference predate the
+  // OpenRouter-default migration. Resolve their first new session against
+  // the live key-visible catalog so a configured future model can fall back
+  // safely until OpenRouter publishes it.
+  if (!pref) {
     const credentialStore = require('../services/credential-store');
-    const meta = await credentialStore.readMetadata({
-      pool: client, userId, provider: 'openrouter', purpose: 'coding_agent',
-    });
-    if (!meta || meta.status !== 'valid') {
-      log.warn('sessions', 'Codex default not applied: missing/invalid credential', { userId });
-      return claudeFallback('no_credential');
-    }
-    // Accounts with a usable key but no preference predate the
-    // OpenRouter-default migration. Resolve their first new session against
-    // the live key-visible catalog so a configured future model can fall
-    // back safely until OpenRouter publishes it.
-    if (!pref) {
-      const apiKey = await credentialStore.readSecret({
+    let apiKey;
+    try {
+      apiKey = await credentialStore.readSecret({
         pool: client, userId, provider: 'openrouter', purpose: 'coding_agent',
         dataKey: config.dataEncryptionKey,
+        expectedRevision: meta.revision,
       });
-      if (!apiKey) return claudeFallback('no_credential');
+    } catch (err) {
+      log.error('sessions', 'OpenRouter credential decrypt failed', { userId, err: err.message });
+      throw new AgentSelectionError(
+        503,
+        'OpenRouter is configured, but its credential could not be read. Ask an administrator to check credential encryption and managed key provisioning.',
+        'credential_unavailable',
+      );
+    }
+    if (!apiKey) {
+      throw new AgentSelectionError(
+        503,
+        'OpenRouter is configured, but its credential is unavailable. Ask an administrator to check managed key provisioning.',
+        'credential_unavailable',
+      );
+    }
+    try {
       const agentModels = require('../services/agent-models');
       const catalog = await agentModels.listOpenRouterModels({
         pool: client, userId, credentialRevision: meta.revision,
         apiKey, config, forceRefresh: false,
       });
       modelId = catalog.recommendedModelId || modelId;
-      if (!modelId) return claudeFallback('model_unavailable');
+    } catch (err) {
+      log.error('sessions', 'OpenRouter default model catalog failed', { userId, err: err.message });
+      throw new AgentSelectionError(
+        503,
+        'OpenRouter is configured, but its model catalog could not be loaded. Try again; if this continues, contact an administrator.',
+        'model_catalog_unavailable',
+      );
     }
-  } catch (err) {
-    log.warn('sessions', 'Codex default not applied: credential check failed', { userId, err: err.message });
-    return claudeFallback('no_credential');
+  }
+  if (!modelId) {
+    throw new AgentSelectionError(
+      503,
+      'No default OpenRouter model is available. Ask an administrator to check OPENROUTER_DEFAULT_CODEX_MODEL and the OpenRouter model catalog.',
+      'model_unavailable',
+    );
   }
 
   return {
@@ -1211,20 +1317,10 @@ async function resolveDefaultAgentPreference(client, userId, config) {
   };
 }
 
-const AGENT_REASONING_EFFORTS = new Set(['minimal', 'low', 'medium', 'high', 'xhigh']);
-
-class AgentSelectionError extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.name = 'AgentSelectionError';
-    this.statusCode = statusCode;
-  }
-}
-
 // Resolve an EXPLICIT user choice for a session. Unlike
 // resolveDefaultAgentPreference(), this never falls back to Claude: the
 // caller has chosen a backend and must either get that exact backend or a
-// useful 4xx explaining why it cannot be used. In particular, Codex model
+// useful error explaining why it cannot be used. In particular, Codex model
 // ids are catalog-validated because they become executable Codex config.
 async function resolveExplicitAgentPreference(client, userId, config, {
   backend, model, reasoningEffort,
@@ -1267,19 +1363,33 @@ async function resolveExplicitAgentPreference(client, userId, config, {
 
   const credentialStore = require('../services/credential-store');
   const agentModels = require('../services/agent-models');
-  const meta = await credentialStore.readMetadata({
-    pool: client, userId, provider: 'openrouter', purpose: 'coding_agent',
-  });
-  if (!meta || meta.status !== 'valid') {
-    throw new AgentSelectionError(400, 'Add your OpenRouter API key in Settings first.');
-  }
+  // Choosing OpenRouter is itself an active build action. If this eligible
+  // user has not configured a key yet, create the included managed key
+  // instead of sending them through Settings or changing providers.
+  const { meta } = await ensureOpenRouterCredential(client, userId, config);
 
-  const apiKey = await credentialStore.readSecret({
-    pool: client, userId, provider: 'openrouter', purpose: 'coding_agent',
-    dataKey: config.dataEncryptionKey, expectedRevision: meta.revision,
-  });
+  let apiKey;
+  try {
+    apiKey = await credentialStore.readSecret({
+      pool: client, userId, provider: 'openrouter', purpose: 'coding_agent',
+      dataKey: config.dataEncryptionKey, expectedRevision: meta.revision,
+    });
+  } catch (err) {
+    log.error('sessions', 'Explicit OpenRouter credential decrypt failed', {
+      userId, err: err.message,
+    });
+    throw new AgentSelectionError(
+      503,
+      'OpenRouter is configured, but its credential could not be read. Ask an administrator to check credential encryption and managed key provisioning.',
+      'credential_unavailable',
+    );
+  }
   if (!apiKey) {
-    throw new AgentSelectionError(400, 'Could not read your OpenRouter key; re-enter it in Settings first.');
+    throw new AgentSelectionError(
+      503,
+      'OpenRouter is configured, but its credential is unavailable. Ask an administrator to check managed key provisioning.',
+      'credential_unavailable',
+    );
   }
 
   let catalog;
@@ -1292,7 +1402,11 @@ async function resolveExplicitAgentPreference(client, userId, config, {
     log.warn('sessions', 'Explicit Codex model validation failed', {
       userId, model: modelId, err: err.message,
     });
-    throw new AgentSelectionError(400, 'Could not validate that OpenRouter model right now; try again.');
+    throw new AgentSelectionError(
+      503,
+      'Could not validate that OpenRouter model right now. Try again; if this continues, contact an administrator.',
+      'model_catalog_unavailable',
+    );
   }
   const selectedCatalogModel = Array.isArray(catalog?.models)
     ? catalog.models.find((candidate) => candidate.id === modelId)
@@ -2031,7 +2145,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           : await resolveDefaultAgentPreference(pool, req.user.id, config);
       } catch (err) {
         if (err instanceof AgentSelectionError) {
-          return res.status(err.statusCode).json({ error: err.message });
+          return res.status(err.statusCode).json(agentSelectionErrorBody(err));
         }
         throw err;
       }
@@ -2162,7 +2276,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           : await resolveDefaultAgentPreference(pool, req.user.id, config);
       } catch (err) {
         if (err instanceof AgentSelectionError) {
-          return res.status(err.statusCode).json({ error: err.message });
+          return res.status(err.statusCode).json(agentSelectionErrorBody(err));
         }
         throw err;
       }
@@ -2307,7 +2421,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
       });
 
       log.info('sessions', 'Headless session started', { sessionId: session.id, issueNumber, model: selectedModel });
-      // See POST /sessions: same lenient fallback, same named reason.
+      // See POST /sessions: the same named flag/beta policy fallback.
       res.status(201).json({
         session,
         ...(pref.fallbackReason ? { agentFallbackReason: pref.fallbackReason } : {}),
@@ -2361,6 +2475,20 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
       if (parseInt(countRows[0].cnt) >= caps.activeSessions) {
         return res.status(429).json({ error: `You already have ${caps.activeSessions} running sessions. Pause or archive one first.` });
       }
+
+      // Resolve (and, for a first-time eligible user, provision) the coding
+      // agent before reclaiming a global slot or creating a GitHub branch.
+      // A deployment/provisioning failure must leave no clone side effects.
+      let pref;
+      try {
+        pref = await resolveDefaultAgentPreference(pool, req.user.id, config);
+      } catch (err) {
+        if (err instanceof AgentSelectionError) {
+          return res.status(err.statusCode).json(agentSelectionErrorBody(err));
+        }
+        throw err;
+      }
+
       const { rows: globalRows } = await pool.query(
         `SELECT COUNT(*) as cnt FROM chat_sessions
           WHERE status IN ('active', 'promoted')
@@ -2415,7 +2543,6 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
 
       // plan 9 (Commit 7): the clone is inserted with its final
       // default backend/model atomically (no insert-then-patch).
-      const pref = await resolveDefaultAgentPreference(pool, req.user.id, config);
       const { rows } = await pool.query(
         `INSERT INTO chat_sessions (app_id, user_id, branch_name, status, spec_md, linked_issues, testing_md, testing_path, testing_paths, cloned_from_session_id, session_title,
             agent_backend, agent_provider, agent_model, agent_reasoning_effort)
@@ -2566,7 +2693,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
         .catch((err) => log.warn('sessions', 'headless_cloned dismiss failed', { err: err.message }));
 
       log.info('sessions', 'Cloned headless session', { src: src.id, sessionId: session.id, user: req.user.username });
-      // See POST /sessions: same lenient fallback, same named reason.
+      // See POST /sessions: the same named flag/beta policy fallback.
       res.status(201).json({
         session,
         ...(pref.fallbackReason ? { agentFallbackReason: pref.fallbackReason } : {}),
@@ -3186,11 +3313,11 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
       // /sessions already draws.
       //
       // The two resolvers are not interchangeable and the difference is the
-      // point. An EXPLICIT pick must get that backend or a 4xx explaining
-      // why not. A resolved one is lenient: a stored OpenRouter preference
-      // that no longer validates (flag off, beta access gone, no model, key
-      // revoked) falls back to Claude with a `fallbackReason` rather than
-      // refusing to switch, and the client says why above the composer.
+      // point. An EXPLICIT pick must get that backend or an error explaining
+      // why not. A stored default falls back only for deliberate deployment
+      // policy (flag off / beta access gone). Missing credentials trigger
+      // managed provisioning; provisioning or catalog failures stop here and
+      // remain visible rather than silently moving the session to Claude.
       const wantsStoredDefault = backend == null;
       let pref;
       try {
@@ -3203,7 +3330,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           });
       } catch (err) {
         if (err instanceof AgentSelectionError) {
-          return res.status(err.statusCode).json({ error: err.message });
+          return res.status(err.statusCode).json(agentSelectionErrorBody(err));
         }
         throw err;
       }

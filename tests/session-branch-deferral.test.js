@@ -327,40 +327,40 @@ test('a staging build refuses a branchless session instead of cloning origin/nul
 // ── the hand-off copy ───────────────────────────────────────────────────
 
 test('the launchpad prefill has a resume shape and a start shape', () => {
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   const base = { slug: 'my-app', sessionTitle: 'Make the header sticky' };
 
   const fresh = Launchpad.prefillText({ ...base, targetKind: 'new' });
-  assert.match(fresh, /Build a change to the Usernode app `my-app`/);
+  assert.match(fresh, /Create a proposal for the Usernode app `my-app`/);
   assert.equal(/proposalId/.test(fresh), false, 'new work has no proposal to continue');
 
   const resume = Launchpad.prefillText({
     ...base, targetKind: 'session', targetId: 812, branchName: 'dev/evan-1787',
   });
   assert.match(resume, /Continue work already started/);
-  assert.match(resume, /proposalId 812/);
+  assert.match(resume, /Continue session #812/);
   assert.match(resume, /dev\/evan-1787/);
   // The three things an agent gets wrong without being told.
-  assert.match(resume, /Do not start over from the app/);
-  assert.match(resume, /CURRENT head of that branch/);
-  assert.match(resume, /push to a branch on your own fork/);
+  assert.match(resume, /Do not start over/);
+  assert.match(resume, /current head of that branch/);
+  assert.match(resume, /Preserve the existing work/);
 });
 
 test('the resume prefill never tells an agent to push to the platform branch', () => {
-  // It cannot: submit_work mirrors from the agent's own fork. Telling it
-  // otherwise produces a push that is refused and a task that never lands.
-  const Launchpad = require('../public/js/launchpad.js');
+  // The local agent follows the repository's proposal workflow for uploads;
+  // the prompt must not suggest a direct push to a managed platform ref.
+  const Launchpad = require('./lib/launchpad');
   const resume = Launchpad.prefillText({
     slug: 'my-app', targetKind: 'session', targetId: 812, branchName: 'dev/evan-1787',
   });
   assert.equal(
     /push (?:to|onto) (?:that|this) same branch/i.test(resume), false,
-    'the agent pushes to its fork; Usernode moves the session branch'
+    'the proposal workflow controls updates to the managed session branch'
   );
 });
 
 test('a proposal continuation warns that the votes clear', () => {
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   const out = Launchpad.prefillText({
     slug: 'my-app', targetKind: 'proposal', targetId: 900, branchName: 'dev/evan-1',
   });
@@ -369,7 +369,7 @@ test('a proposal continuation warns that the votes clear', () => {
 });
 
 test('the resume banner names the branch, and the new-work banner does not invent one', () => {
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   const cont = Launchpad.resumeBannerHtml({
     targetKind: 'session', targetId: 5, branchName: 'dev/evan-1',
   });
@@ -383,7 +383,7 @@ test('the resume banner names the branch, and the new-work banner does not inven
 });
 
 test('the resume banner escapes the branch name', () => {
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   const out = Launchpad.resumeBannerHtml({
     targetKind: 'session', targetId: 5, branchName: 'dev/<img src=x>-1',
   });
@@ -396,31 +396,25 @@ test('a claimed continuation with no branch falls back to the start copy', () =>
   // 'session', but the launchpad is rendered from a session row that a
   // poll can replace, and the failure mode is instructions to continue a
   // branch that does not exist.
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   for (const state of [
     { targetKind: 'session', targetId: 5, branchName: null },
     { targetKind: 'session', targetId: 5, branchName: '   ' },
     { targetKind: 'session', targetId: null, branchName: 'dev/evan-1' },
   ]) {
     const out = Launchpad.prefillText({ slug: 'a', ...state });
-    assert.match(out, /Build a change to the Usernode app/, JSON.stringify(state));
+    assert.match(out, /Create a proposal for the Usernode app/, JSON.stringify(state));
     assert.equal(Launchpad.resumeBannerHtml(state), '', 'no banner without both facts');
   }
 });
 
 test('both hand-off launchpads render the banner from the same function', () => {
   const src = read('frontend/src/features/dev-chat/dev-chat.js');
-  // own-tools passes the three fields through to ownToolsHtml, which
-  // renders the banner itself; the web wizard gets it prepended, because
-  // dev-flow-select.js predates #1350 and knows nothing about branches.
   assert.match(src, /_launchpadResumeState\(\)/);
   assert.match(src, /Launchpad\.resumeBannerHtml\(resume\) \+ DevFlowSelect\.wizardHtml\(/);
-  const own = src.indexOf('Launchpad.ownToolsHtml({');
-  assert.ok(own > 0);
-  const block = src.slice(own, own + 400);
-  for (const field of ['targetKind:', 'targetId:', 'branchName:']) {
-    assert.ok(block.includes(field), `ownToolsHtml must receive ${field}`);
-  }
+  const own = src.match(/_ownToolsGuideView\(\)\s*\{[\s\S]*?\n  \},/)[0];
+  assert.match(own, /\.\.\.resume/);
+  assert.match(own, /resumeHtml: Launchpad\.resumeBannerHtml\(resume\)/);
 });
 
 test('the local-CLI card drops "same branch" when there is no branch', () => {
@@ -469,7 +463,7 @@ test('the deep links for both banner states are declared as checks', () => {
 // ── the copy rule ───────────────────────────────────────────────────────
 
 test('none of the new user-facing copy contains an em dash', () => {
-  const Launchpad = require('../public/js/launchpad.js');
+  const Launchpad = require('./lib/launchpad');
   const SessionOptions = require('../public/js/session-options.js');
   const strings = [
     Launchpad.prefillText({ slug: 'a', targetKind: 'new' }),

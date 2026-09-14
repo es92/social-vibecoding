@@ -72,7 +72,6 @@ const ADDED_SCRIPTS = [
   // fallback; the tag was restored in the chat-helper cluster, before
   // app-view.js. It post-dates the baseline like the rest of this list.
   '/js/session-state.js',
-  '/js/launchpad.js', // #1281 — the hand-off launchpad, before app.js
 ];
 
 // Modules a conversion chunk RETIRED, with the reason. Each one's behaviour
@@ -80,6 +79,7 @@ const ADDED_SCRIPTS = [
 // is gone from SHELL_ASSETS in public/sw.js, and the file is deleted from
 // public/js/. They are removed from the baseline side of the comparison.
 const RETIRED_SCRIPTS = {
+  '/js/launchpad.js': '#1891 — shared React local-agent guide; context helpers moved into dev-chat bundle',
   // #1078 chunk A — service-worker registration and the /health connectivity
   // probe moved into frontend/src/lib/{service-worker,offline}.ts when
   // #offline-banner became a React island (frontend/src/features/shell/
@@ -350,12 +350,12 @@ test('the shell still loads the expected number of legacy scripts', () => {
   // chunk I retires app-secrets.js and screenshot-select.js together (24):
   // they are the only two modules the nine dialogs owned outright. #1281's
   // launchpad.js — the panel that stands in for the composer when a session
-  // builds somewhere else — makes 25.
+  // builds somewhere else — makes 25. #1891 moves it into React (24).
   const bodyScripts = scriptsOf(after.slice(after.indexOf('</head>')))
     .filter((s) => s.src && s.src.startsWith('/js/'));
   assert.equal(
-    bodyScripts.length, 25,
-    `expected the 25 legacy /js/** scripts at the end of <body>, found ${bodyScripts.length}. `
+    bodyScripts.length, 24,
+    `expected the 24 legacy /js/** scripts at the end of <body>, found ${bodyScripts.length}. `
     + 'Adding or removing one is fine, but it also needs a matching SHELL_ASSETS entry in '
     + 'public/sw.js (tests/pwa-shell-wiring.test.js enforces that) — so update this count '
     + 'deliberately rather than loosening the check.',

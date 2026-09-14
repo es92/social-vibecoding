@@ -127,7 +127,7 @@ test('the module still decides who is a bot, and which sanitizer runs', () => {
   const fn = code.match(/_issueCommentsView\(comments, truncated, htmlUrl\) \{([\s\S]*?)\n {2}\},/);
   assert.ok(fn, '_issueCommentsView() found');
   assert.match(fn[1], /bot: AppView\._isBotCommentAuthor\(c\.author\)/);
-  assert.match(fn[1], /DevChat\.renderMarkdown/);
+  assert.match(fn[1], /DevChat\.renderMarkdown\(str, \{ images: true \}\)/);
   // The fallback for a page where dev-chat.js did not load escapes instead.
   assert.match(fn[1], /whitespace-pre-wrap font-sans">\$\{escapeHtml\(str\)\}/);
   assert.doesNotMatch(code, /_issueCommentsHtml/, 'the string renderer is gone, not spare');

@@ -242,16 +242,16 @@ test('the session list SELECT carries what the chip needs', () => {
 // ── 3. The fallback note ─────────────────────────────────────────────
 
 test('every server fallback reason becomes a sentence', () => {
-  // resolveDefaultAgentPreference is deliberately lenient — a session that
-  // runs beats a 4xx — but until now the fallback was a log line and
-  // nothing else. A reason with no copy is silence again.
+  // Only deliberate feature-policy decisions fall back now. Credential,
+  // provisioning, and catalog failures stop visibly instead of changing
+  // providers; the remaining policy reasons still need user-facing copy.
   const fn = SESSIONS_SRC.slice(
     SESSIONS_SRC.indexOf('async function resolveDefaultAgentPreference('),
     SESSIONS_SRC.indexOf('\n}', SESSIONS_SRC.indexOf('async function resolveDefaultAgentPreference('))
   );
   const reasons = new Set();
   for (const m of fn.matchAll(/claudeFallback\('([a-z_]+)'\)/g)) reasons.add(m[1]);
-  assert.ok(reasons.size >= 3, `the resolver produces reason codes (got ${reasons.size})`);
+  assert.deepEqual([...reasons].sort(), ['flag_off', 'not_in_beta']);
   for (const reason of reasons) {
     const note = BV.fallbackNote(reason);
     assert.ok(note.length > 0, `reason '${reason}' has no user-facing copy`);

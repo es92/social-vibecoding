@@ -94,7 +94,7 @@ export interface DevBoardBridge {
   publishAttrPopover(patch: Partial<AttrPopoverState>): void;
   mountCardMenu(host: Element | null): void;
   publishCardMenu(rows: CardMenuRowView[]): void;
-  publishLockedNotice(locked: boolean): void;
+  publishLockedNotice(locked: boolean, inviteOnly?: boolean): void;
   publishDiscussion(state: DiscussionState): void;
   mountIssueComments(host: Element | null): void;
   publishIssueComments(state: IssueCommentsState): void;
@@ -238,8 +238,8 @@ export const devBoardBridge: DevBoardBridge = {
     cardMenuStore.set({ rows });
   },
 
-  publishLockedNotice(locked) {
-    lockedNoticeStore.set({ locked });
+  publishLockedNotice(locked, inviteOnly = false) {
+    lockedNoticeStore.set({ locked, inviteOnly: !!inviteOnly });
   },
 
   // Where the app's general chat is, and the last thing said in it — see

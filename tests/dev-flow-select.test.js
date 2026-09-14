@@ -604,3 +604,48 @@ test('the card renders the instructions, not a work order', () => {
       `${gone} is not an action any more`);
   }
 });
+
+// #2088. The disclosure opened by default from #2041 on: the text seemed
+// short enough to just read. In use the open box took over the card, on a
+// phone the whole screen, and the button people press is Copy, which never
+// reads the node. So it starts collapsed, and three things have to hold for
+// that to be safe: the text is still on the card for a clipboard that
+// refuses; the copy action carries it from the status payload rather than
+// from the collapsed DOM; and the declared check asserts on the summary,
+// because a collapsed body is not there to be seen, which is how dapp.json's
+// other details-based checks are written too.
+test('the instructions start collapsed, and the copy action does not need them open (#2088)', () => {
+  const text = 'Ask the user what to build, then call prepare_work.';
+  const html = DevFlowSelect.wizardHtml({
+    agent: 'claude-code',
+    status: fullStatus({ instructions: text }),
+  });
+  const details = html.match(/<details class="dc-flow-order"[^>]*>/);
+  assert.ok(details, 'the instructions sit in a disclosure');
+  assert.doesNotMatch(details[0], /\bopen\b/, 'and it starts collapsed');
+  assert.match(html,
+    /<details class="dc-flow-order"><summary>Instructions<\/summary><pre class="dc-flow-order-text" data-flow-order="1">/,
+    'the summary is what shows; the text is one tap behind it');
+  assert.ok(html.includes(`data-flow-order="1">${text}</pre></details>`),
+    'the full text is still on the card, for a clipboard that refuses');
+
+  // The copy action reads the status payload, never the node it renders
+  // into: a collapsed <pre> has no rendered text to copy from.
+  const from = DEV_CHAT_SRC.indexOf("if (action === 'copy')");
+  const to = DEV_CHAT_SRC.indexOf("if (action === 'prepare')", from);
+  assert.ok(from > 0 && to > from, 'the dev chat still answers the copy action');
+  const copy = DEV_CHAT_SRC.slice(from, to);
+  assert.match(copy, /flow\.status\.instructions/, 'copied from state');
+  assert.doesNotMatch(copy, /data-flow-order|dc-flow-order|querySelector/,
+    'never read back out of the DOM');
+
+  // dapp.json's check on the disclosure: on the summary of a closed details,
+  // not on the body text.
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../dapp.json'), 'utf8'));
+  const checks = manifest.tests.filter((t) => /dc-flow-order/.test(t.expectSelector || ''));
+  assert.equal(checks.length, 1, 'one declared check pins the disclosure');
+  assert.match(checks[0].expectSelector, /details\.dc-flow-order:not\(\[open\]\) > summary/,
+    'it selects the summary of a collapsed disclosure');
+  assert.equal(checks[0].expectText, 'Instructions',
+    'and asserts the text that is visible with the body collapsed');
+});

@@ -34,13 +34,19 @@ const body = (start, len = 2400) => {
 };
 
 test('restoreFromHash rewrites the aliases onto the dev vocabulary', () => {
-  const fn = body("if (parts[0] === 'app' && parts[1]) {", 3600);
+  // Wide enough to reach the `board` branch, which sits last of the three and
+  // grew when it became an alias rather than a layout of its own.
+  const fn = body("if (parts[0] === 'app' && parts[1]) {", 4400);
   // Both aliases are the CARD AREA — `parts[3] = null`, the forum — and each
   // carries the layout the destination is named for.
   assert.match(fn, /tab === 'workshop' \|\| tab === 'activity'.*parts\[3\] = null; boardView = 'workshop'/s,
     'workshop (and the retired activity) parse as the card area, drawn as the Workshop');
-  assert.match(fn, /tab === 'board'.*parts\[3\] = null; boardView = 'kanban'/s,
-    'board parses as the card area, drawn as the kanban');
+  // `board` is an ALIAS now: the Board view mode retired, so the address
+  // resolves onto the Workshop and asks for the pane that draws those columns.
+  assert.match(fn, /tab === 'board'.*parts\[3\] = null; boardView = 'workshop'/s,
+    'board parses as the card area, drawn as the Workshop');
+  assert.match(fn, /tab === 'board'[\s\S]*_overrideWorkshopGroup\('stage'\)/,
+    'and selects the stage pane, which is where the board\'s columns live');
   // Both rewrites must land BEFORE the dev-section switch reads parts[3],
   // or the aliases would fall through to the plain App tab.
   assert.ok(

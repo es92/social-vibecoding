@@ -788,3 +788,91 @@ test('#940: an emptied list still stays empty across a reconcile', () => {
   assert.deepEqual(texts(DevChat), [],
     'an explicitly emptied list is never re-seeded by the demo drafts');
 });
+
+// ── #1960 / #1961: a delete must not be undone by another device ───────
+//
+// Every DELETE pushes a drafts-changed event to the account's OTHER tabs
+// and devices, and each of them reconciles. A device still holding the
+// draft in its mirror used to treat "synced here, missing on the server"
+// as "local-only, upload it" — so it POSTed the draft straight back, which
+// pushed another update, and the trashed (or sent) draft reappeared
+// everywhere. The rule pinned here: a row this device has already seen on
+// the server (`synced: true`) that the server no longer has was deleted
+// elsewhere, and is dropped — never re-uploaded. Only `synced: false` rows
+// (typed offline, the legacy migration) are local-only.
+
+// Two devices on one account: separate storage, one shared server.
+function twoDevices(server) {
+  const net = { server };
+  const a = makeHarness(new Map(), net);
+  const b = makeHarness(new Map(), net);
+  open(a.DevChat, { streaming: true });
+  open(b.DevChat, { streaming: true });
+  return { net, a, b };
+}
+
+test('#1960: a draft trashed on one device stays deleted when another syncs', async () => {
+  const { net, a, b } = twoDevices([srv('shared1', 'drop me', 1), srv('shared2', 'keep me', 2)]);
+  await a.DevChat._reconcileDrafts(SESSION_ID, null);
+  await b.DevChat._reconcileDrafts(SESSION_ID, null);
+  assert.deepEqual(texts(b.DevChat), ['drop me', 'keep me'], 'both devices adopted the list');
+
+  a.DevChat._deleteSavedDraft('shared1');
+  await flush();
+  assert.deepEqual(net.server.map((d) => d.id), ['shared2']);
+
+  // The drafts-changed push reaches device B, which reconciles.
+  b.DevChat.applyDraftsUpdate(SESSION_ID);
+  await flush();
+  await flush();
+
+  assert.deepEqual(net.server.map((d) => d.id), ['shared2'],
+    'device B must not upload the trashed draft back');
+  assert.equal(draftCalls(net).filter((c) => c.method === 'POST').length, 0,
+    'no re-upload at all');
+  assert.deepEqual(texts(b.DevChat), ['keep me'], 'and B drops it from its own list');
+
+  // Device A's next sync finds it gone too.
+  await a.DevChat._reconcileDrafts(SESSION_ID, null);
+  assert.deepEqual(texts(a.DevChat), ['keep me']);
+});
+
+test('#1961: a draft sent on one device is not resurrected by another', async () => {
+  const { net, a, b } = twoDevices([srv('shared1', 'send me', 1)]);
+  await a.DevChat._reconcileDrafts(SESSION_ID, null);
+  await b.DevChat._reconcileDrafts(SESSION_ID, null);
+
+  const sent = [];
+  a.DevChat.sendMessage = (t) => sent.push(t);
+  a.DevChat.isStreaming = false;
+  a.DevChat._sendSavedDraft('shared1');
+  await flush();
+  assert.deepEqual(sent, ['send me']);
+
+  await b.DevChat._reconcileDrafts(SESSION_ID, null);
+  await a.DevChat._reconcileDrafts(SESSION_ID, null);
+
+  assert.deepEqual(net.server, [], 'the sent draft stays deleted server-side');
+  assert.deepEqual(texts(a.DevChat), [], 'the sender does not get it back');
+  assert.deepEqual(texts(b.DevChat), [], 'nor does the other device');
+});
+
+test('#1960: an unsynced draft is still uploaded, even after a deletion elsewhere', async () => {
+  const { net, a, b } = twoDevices([srv('shared1', 'drop me', 1)]);
+  await b.DevChat._reconcileDrafts(SESSION_ID, null);
+
+  // B parks a draft while offline; meanwhile A trashes the shared one.
+  net.fail = true;
+  b.document.getElementById('dc-input').value = 'typed offline on B';
+  b.DevChat._saveComposerDraft();
+  await flush();
+  net.fail = false;
+  await a.DevChat._reconcileDrafts(SESSION_ID, null);
+  a.DevChat._deleteSavedDraft('shared1');
+  await flush();
+
+  await b.DevChat._reconcileDrafts(SESSION_ID, null);
+  assert.deepEqual(net.server.map((d) => d.text), ['typed offline on B'],
+    'the offline draft is flushed, the deleted one is not');
+  assert.deepEqual(texts(b.DevChat), ['typed offline on B']);
+});

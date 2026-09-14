@@ -214,16 +214,67 @@ const AppView = {
   // (the Activity feed) and what is in flight (the Board) — and the Workshop
   // then replaced the feed: the same cards grouped by what they are ABOUT,
   // with "what just happened" and "what needs your vote" as strips above the
-  // themes. It is the lander; the Board is the detailed read-it-all view.
-  VIEW_MODES: ['workshop', 'kanban'],
+  // themes.
+  //
+  // ONE MODE IS LEFT, and this was the last cut. The Board was the second
+  // answer, and the Workshop's own "All items -> By stage" pane renders the
+  // very same <DevKanban/> from the very same published view model — so the
+  // Board VIEW MODE was a second surface for something the lander already
+  // contains. What retired is the mode and its standalone surface, not the
+  // columns: `#app/<slug>/board` and the old `?view=kanban` both resolve onto
+  // that pane (see _readWorkshopGroupOverride below and the alias block in
+  // app.js's restoreFromHash), exactly as `/activity` resolves onto the
+  // Workshop itself.
+  VIEW_MODES: ['workshop'],
   _isViewMode(v) { return AppView.VIEW_MODES.indexOf(v) !== -1; },
   // Stored preferences from before the cut. A viewer who last left the board
   // in PM or Reporting has a localStorage value naming a mode that no longer
   // exists; without this they would silently land on the width default
   // instead of the nearest surviving surface, which reads as "my setting was
   // forgotten". 'list' and 'feed' are what the Workshop replaced; the two
-  // retired overviews were board-shaped, so they resolve to the board.
-  RETIRED_VIEW_MODES: { list: 'workshop', feed: 'workshop', pm: 'kanban', report: 'kanban' },
+  // retired overviews were board-shaped, and the board IS the Workshop's
+  // stage pane now, so every retired name resolves onto the one mode left.
+  // `kanban` joins them for exactly the reason the others are here: a viewer
+  // who last left the Dev screen on the Board has that value in localStorage,
+  // and the point of this table is that a stored preference is never silently
+  // forgotten. They land on the Workshop, whose stage pane is the board.
+  RETIRED_VIEW_MODES: {
+    list: 'workshop', feed: 'workshop', pm: 'workshop', report: 'workshop',
+    kanban: 'workshop',
+  },
+  // Which of those stored values MEANT THE BOARD — the mode itself, plus the
+  // two board-shaped overviews that already resolved onto it before it
+  // retired. The table above sends all five to the same mode, which is what
+  // stops anyone landing nowhere; this names the three whose viewer also
+  // wanted the COLUMNS, so _getWorkshopGroup can open them there. 'list' and
+  // 'feed' are not here: the Workshop replaced those, and its default pane is
+  // the one they resolve to.
+  RETIRED_BOARD_VIEW_MODES: ['kanban', 'pm', 'report'],
+  // ── Reaching the retired Board: it takes TWO answers, not one ────────
+  //
+  // The board's columns are the Workshop's stage pane, and that pane is one
+  // grouping of ONE TAB: `_workshopTab()` has to say 'all' and
+  // `_getWorkshopGroup()` has to say 'stage'. Setting the grouping alone leaves
+  // the lander on its default tab, where the grouping control is not even
+  // rendered — which is the whole of the bug this pair of helpers fixes. Both
+  // resolvers consult both, so the translation lives in one place instead of
+  // being half-applied in two.
+  //
+  // Was this page opened by the retired Board view's own deep link?
+  _retiredBoardLink() {
+    try {
+      return new URLSearchParams(window.location.search).get('view') === 'kanban';
+    } catch { return false; }
+  },
+  // Did this viewer last leave the Dev screen ON the Board? Read-time, and it
+  // never writes: the day they choose a tab or a pane, that choice persists
+  // and outranks this.
+  _storedBoardPreference() {
+    try {
+      return AppView.RETIRED_BOARD_VIEW_MODES
+        .indexOf(window.localStorage.getItem(AppView.VIEW_MODE_KEY)) !== -1;
+    } catch { return false; }
+  },
   _migrateViewMode(v) {
     if (AppView._isViewMode(v)) return v;
     return AppView.RETIRED_VIEW_MODES[v] || null;
@@ -233,13 +284,17 @@ const AppView = {
   // app.css (`max-width: 639px` for the tab strip, `min-width: 640px`
   // for the multi-column band) and with `sm:hidden` on #dev-kanban-tabs.
   KANBAN_MULTICOL_MEDIA: '(min-width: 640px)',
-  // The unset default is the Workshop on EVERY width. It used to be the
+  // The unset default is the Workshop on EVERY width — and with the Board
+  // mode retired this is the only resolution left to reach. It used to be the
   // kanban above 640px and the feed below, which made the lander depend on
   // the device; the Workshop is the lander because it answers the first
-  // question on any device, and the Board is one tap away on both.
+  // question on any device, and the board's columns are one tab away on both.
   _viewModeAutoDefault: null,
   // `?view=` on the page URL wins for one paint — a deep link to a layout —
-  // and is retired the moment the viewer chooses (see _setViewMode).
+  // and is retired the moment the viewer chooses (see _setViewMode). With one
+  // mode left it can only ever resolve to 'workshop'; `?view=kanban` is
+  // honoured as a request for the STAGE PANE instead, in
+  // _readWorkshopGroupOverride below, which is where those columns live now.
   _viewModeUrlOverride: undefined,
   _readViewModeOverride() {
     if (AppView._viewModeUrlOverride !== undefined) return AppView._viewModeUrlOverride;
@@ -284,10 +339,13 @@ const AppView = {
   // inside the Workshop's React tree. See
   // frontend/src/features/dev-board/workshop/group-mode-store.ts.
   //
-  // ADDITIVE. The Board VIEW MODE and its control in the Improve panel are
-  // untouched — this is a second way to reach those columns, not a
-  // replacement for the first, and the two can never be on screen together
-  // because `_repaintDevBody` gives #dev-body to one surface at a time.
+  // NO LONGER ADDITIVE — this pane IS the board. It arrived as a second way
+  // to reach those columns while the Board view mode still owned the first;
+  // that mode and its segment in the Improve panel have since retired, so the
+  // stage pane is the only way in and `#app/<slug>/board` resolves onto it.
+  // The two surfaces could never be on screen together anyway, because
+  // `_repaintDevBody` gives #dev-body to one at a time; what changed is that
+  // the other one is no longer reachable.
   //
   // localStorage, like VIEW_MODE_KEY and unlike the filter bar's
   // sessionStorage: which way you read the board is a lasting preference,
@@ -299,21 +357,56 @@ const AppView = {
   // what the declared check for the stage pane navigates to: a check run
   // starts with an empty localStorage and would otherwise always land on
   // category and assert nothing.
+  //
+  // It answers for the RETIRED Board view's deep link too. `?view=kanban`
+  // asked for a mode that no longer exists, and the pane it was asking for is
+  // this one, so the old parameter resolves here rather than going quietly
+  // nowhere — the same courtesy `#app/<slug>/board` gets from the alias block
+  // in app.js. An explicit `?group=` wins when both are present, because that
+  // is the parameter still being offered.
   _workshopGroupUrlOverride: undefined,
   _readWorkshopGroupOverride() {
     if (AppView._workshopGroupUrlOverride !== undefined) return AppView._workshopGroupUrlOverride;
     try {
       const v = new URLSearchParams(location.search).get('group');
-      AppView._workshopGroupUrlOverride = AppView.WORKSHOP_GROUPS.includes(v) ? v : null;
+      AppView._workshopGroupUrlOverride = AppView.WORKSHOP_GROUPS.includes(v)
+        ? v
+        : (AppView._retiredBoardLink() ? 'stage' : null);
     } catch { AppView._workshopGroupUrlOverride = null; }
     return AppView._workshopGroupUrlOverride;
+  },
+  // The retired Board ROUTE's landing, and the only caller that sets this
+  // override without a query parameter: `#app/<slug>/board` resolves onto the
+  // Workshop with the stage pane up (see app.js's restoreFromHash). Transient
+  // exactly as `?group=` is — it does NOT write the stored preference, and a
+  // tap on "By category" clears it through _setWorkshopGroup — so following an
+  // old board link shows those columns without re-deciding how this viewer
+  // reads the board from then on.
+  _overrideWorkshopGroup(group) {
+    if (!AppView.WORKSHOP_GROUPS.includes(group)) return;
+    AppView._workshopGroupUrlOverride = group;
   },
   _getWorkshopGroup() {
     try {
       const override = AppView._readWorkshopGroupOverride();
       if (override) return override;
       const stored = window.localStorage.getItem(AppView.WORKSHOP_GROUP_KEY);
-      return AppView.WORKSHOP_GROUPS.includes(stored) ? stored : 'category';
+      if (AppView.WORKSHOP_GROUPS.includes(stored)) return stored;
+      // THE RETIRED BOARD PREFERENCE, carried across rather than dropped.
+      // `RETIRED_VIEW_MODES` already stops a stored 'kanban' landing on a mode
+      // that no longer exists, but on its own it forgets the thing the viewer
+      // actually chose: they picked the COLUMNS, and migrating them to the
+      // Workshop's default pane hands them the categories instead. The rule
+      // that table exists for is "the nearest surviving surface", and for the
+      // Board that surface is this pane — so a viewer who last left the Dev
+      // screen on the Board still opens on the columns.
+      //
+      // Only when they have expressed no grouping preference of their own,
+      // which the return above has already established, and read-time like
+      // every other migration here: nothing is written back, so the day they
+      // do choose a pane, that choice is what persists.
+      if (AppView._storedBoardPreference()) return 'stage';
+      return 'category';
     } catch { return 'category'; }
   },
   _setWorkshopGroup(mode) {
@@ -2448,12 +2541,18 @@ const AppView = {
       viewMode: AppView._getViewMode(),
     });
 
-    // The card area under whichever of its two names the active layout gives
-    // it — the kanban of work in flight is the Board, the themed lander is
-    // the Workshop — carried AS A SUBTITLE beside the app's own name, so the
+    // The card area, carried AS A SUBTITLE beside the app's own name, so the
     // chip never stops saying which app you are in.
-    App.setHeaderTitle?.(AppView.appData?.name || 'App',
-      AppView._getViewMode() === 'kanban' ? 'Board' : 'Workshop');
+    //
+    // This read `_getViewMode() === 'kanban' ? 'Board' : 'Workshop'` — the two
+    // names its two layouts gave it. With the Board VIEW MODE retired the
+    // screen has one name, and the ternary could only ever take one branch.
+    // Which also settles a fragility: the declared check on this subtitle was
+    // passing because thirty board-route checks run before it and each
+    // persisted `devViewMode: 'kanban'` through `_setViewMode`, so what the
+    // chip said depended on what had been navigated to earlier in the run.
+    // It says Workshop on the Dev screen, always.
+    App.setHeaderTitle?.(AppView.appData?.name || 'App', 'Workshop');
     // The discussion card's href follows the open app immediately; its preview
     // line arrives with the request below. Both are the same publish, so the
     // card never renders pointing at the previous app.
@@ -2514,8 +2613,8 @@ const AppView = {
       if (e.target.closest('a, button, input, form')) return;
       // A card inside a fold wrapper — the Workshop's rows, and the Board's
       // columns since they fold too (card/fold.tsx) — is the fold's: its own
-      // handler opens and closes it, and "Open on its own page" is the route
-      // out. Both sizes keep their data-*-row hooks so the checks and the
+      // handler opens and closes it, and the open card's "Open page ›" pill
+      // (#1886) is the route out. Both sizes keep their data-*-row hooks so the checks and the
       // lookups below still find the item; this is what stops a click on
       // them opening it full-screen. See _inFoldWrapper for why it reads the
       // event's path rather than the target's ancestors.
@@ -3206,8 +3305,12 @@ const AppView = {
     // next to them. Forks cannot be updated by the platform worker.
     let main = rows.find((r) => ['sync', 'behind', 'conflict', 'mergeability'].includes(r.key));
     if (!main) {
-      const behind = item.freshness_behind_by ?? item.behind_main;
-      main = { key: 'main', label: 'Main', tone: behind > 0 ? 'warn' : 'mute', text: [behind > 0 ? `${behind} commits behind main.` : (item.freshness_checked_at && behind === 0 ? 'Up to date with main.' : 'Main freshness has not been verified yet.')] };
+      // Through the one reader, so this row and the pill agree on which
+      // measurement — #2038's integration record or the legacy freshness
+      // columns — is the current one.
+      const fresh = AppView._freshnessOf(item);
+      const behind = fresh.behindBy;
+      main = { key: 'main', label: 'Main', tone: behind > 0 ? 'warn' : 'mute', text: [behind > 0 ? `${behind} commit${behind === 1 ? '' : 's'} behind main.` : (fresh.checkedAt && behind === 0 ? 'Up to date with main.' : 'Main freshness has not been verified yet.')] };
       const reviewIndex = rows.findIndex((r) => r.key === 'votes');
       rows.splice(reviewIndex < 0 ? rows.length : reviewIndex, 0, main);
     }
@@ -3222,7 +3325,7 @@ const AppView = {
       const checks = rows.find((r) => r.key === 'checks');
       if (item.check_state === 'failing' && checks) checks.text = ['Required checks need attention before this change can be proposed.'];
       if (main.key === 'behind') {
-        const behind = item.freshness_behind_by ?? item.behind_main ?? main.count;
+        const behind = AppView._freshnessOf(item).behindBy ?? main.count;
         main.label = 'Main';
         main.sub = null;
         main.text = [behind > 0 ? `${behind} commit${behind === 1 ? '' : 's'} behind main.` : 'Main has moved ahead.'];
@@ -3550,11 +3653,24 @@ const AppView = {
   },
   // Everything the ⋯ under `key` lists right now: the folded pills first,
   // then the registered descriptors.
-  _cardMenuItems(key) {
+  //
+  // `own` is the card's own page, when the trigger offers it: the Needs-you
+  // feed's ⋯ (workshop.tsx NeedsFeed) carries the href as
+  // `data-card-menu-open`, because there the item IS the screen and nothing
+  // on it reads as "the card" to tap. It leads the list. Every reader of the
+  // list passes the same value, so a row's index means the same descriptor
+  // in the menu that was opened and in the one refreshed under it.
+  _cardMenuItems(key, own) {
     const list = AppView._cardMenus[key] || [];
     const folded = AppView._foldedCardActions[key] || [];
-    if (!folded.length) return list;
-    return folded.map((a) => AppView._foldedMenuItem(a)).concat(list);
+    const rows = folded.length ? folded.map((a) => AppView._foldedMenuItem(a)).concat(list) : list;
+    if (!own) return rows;
+    return [{
+      label: 'Open card',
+      icon: 'open',
+      title: 'The card on its own page',
+      act: () => { window.location.hash = own; },
+    }].concat(rows);
   },
   // The presented menu's dismissal hooks, or null. Body-mounted like
   // .attr-popover so a kanban column's overflow-x:auto can't clip it.
@@ -3619,6 +3735,7 @@ const AppView = {
     chat: '💬',       // 💬 matches the message-count badge
     archive: '📦',    // 📦
     campaign: '📊',   // 📊
+    open: '▢',             // ▢ the card on its own page
     // Nothing should reach this, but a descriptor added later without an
     // icon must still line up with its neighbours rather than losing the
     // leading column and shifting its own label left.
@@ -3715,7 +3832,9 @@ const AppView = {
 
   _toggleCardMenu(trigger) {
     const key = trigger.dataset.cardMenu;
-    const items = AppView._cardMenuItems(key);
+    // Only an in-app route is honoured as the card's own page.
+    const own = /^#app\//.test(trigger.dataset.cardMenuOpen || '') ? trigger.dataset.cardMenuOpen : null;
+    const items = AppView._cardMenuItems(key, own);
     // Re-clicking the open trigger closes it (the popover idiom).
     const wasOpen = AppView._openCardMenu && AppView._openCardMenu.key === key;
     AppView._closeCardMenu();
@@ -3752,7 +3871,7 @@ const AppView = {
       // the menu opened: a repaint re-registers under the same key, and the
       // menu now survives repaints (see _reanchorCardMenu), so a captured
       // closure could act on a row the board has already replaced.
-      const live = AppView._cardMenuItems(key);
+      const live = AppView._cardMenuItems(key, own);
       const it = (live.length ? live : items)[parseInt(btn.dataset.menuIdx, 10)];
       AppView._closeCardMenu();
       if (it && it.act) {
@@ -3763,7 +3882,7 @@ const AppView = {
       }
     });
     trigger.setAttribute('aria-expanded', 'true');
-    AppView._openCardMenu = { key, el: menu, trigger };
+    AppView._openCardMenu = { key, el: menu, trigger, own };
     const first = menu.querySelector('[data-menu-idx]:not([disabled])');
     if (first && first.focus) first.focus();
   },
@@ -3834,7 +3953,7 @@ const AppView = {
     if (!trigger) { AppView._closeCardMenu(); return; }
     open.trigger = trigger;
     trigger.setAttribute('aria-expanded', 'true');
-    AppView._fillCardMenu(open.el, AppView._cardMenuItems(open.key));
+    AppView._fillCardMenu(open.el, AppView._cardMenuItems(open.key, open.own));
     AppView._positionCardMenu(open.el, trigger);
   },
 
@@ -5118,6 +5237,17 @@ const AppView = {
     if (AppView._kanbanFiltersSlug !== App.currentApp) {
       AppView._kanbanFilters = AppView._loadKanbanFilters(App.currentApp);
       AppView._kanbanFiltersSlug = App.currentApp || null;
+      // ...and the board's active COLUMN with them, for the same reason and
+      // under the same guard. This was the standalone Board branch's job, done
+      // once at its first mount; that branch is unreachable now that those
+      // columns are the stage pane, so without this line `_kanbanTab` never
+      // leaves its 'issues' default and `?col=` reaches nothing at all.
+      //
+      // The slug guard is what makes it safe to do here: it fires on the first
+      // paint (null -> a slug) and on an app switch, the only two times the
+      // stored column legitimately changes underneath the viewer, so a tap on
+      // a column tab is never clobbered by the next repaint.
+      AppView._kanbanTab = AppView._loadKanbanTab(App.currentApp);
     }
     AppView._renderKanbanFilterBar();
     AppView._rerenderWorkshop();
@@ -5144,10 +5274,12 @@ const AppView = {
   // General chat card), per the card-list polish revision.
   // The banner and its `hidden` are features/dev-board/board-frame.tsx's now;
   // this publishes the one fact it draws from. `_proposalsCtx.locked` is
-  // server truth, loaded with the feed.
+  // server truth, loaded with the feed. The second fact (#1896) is the app's
+  // "Who can build it" setting, so the banner can say who that is.
   _renderLockedNotice() {
     AppView._reactDevBoard()?.publishLockedNotice(
-      !!(AppView._proposalsCtx && AppView._proposalsCtx.locked));
+      !!(AppView._proposalsCtx && AppView._proposalsCtx.locked),
+      !!(AppView.appData && AppView.appData.collab_visibility === 'private'));
   },
 
   // ── The app's general discussion, as a board citizen ────────────────
@@ -5456,9 +5588,23 @@ const AppView = {
     if (AppView._workshopTabUrlOverride !== undefined) return AppView._workshopTabUrlOverride;
     try {
       const v = new URLSearchParams(window.location.search).get('ws');
-      AppView._workshopTabUrlOverride = AppView.WORKSHOP_TABS.indexOf(v) !== -1 ? v : null;
+      // A retired `?view=kanban` asked for the board's columns, which live in
+      // the All items tab — the other half of the answer is the grouping, in
+      // _readWorkshopGroupOverride above. An explicit `?ws=` wins, because that
+      // is the parameter still being offered.
+      AppView._workshopTabUrlOverride = AppView.WORKSHOP_TABS.indexOf(v) !== -1
+        ? v
+        : (AppView._retiredBoardLink() ? 'all' : null);
     } catch { AppView._workshopTabUrlOverride = null; }
     return AppView._workshopTabUrlOverride;
+  },
+  // The retired Board ROUTE's landing, the tab half. `#app/<slug>/board` calls
+  // this and _overrideWorkshopGroup together (see app.js's restoreFromHash);
+  // transient exactly as `?ws=` is, and a tap on another tab clears it through
+  // _setWorkshopTab.
+  _overrideWorkshopTab(tab) {
+    if (AppView.WORKSHOP_TABS.indexOf(tab) === -1) return;
+    AppView._workshopTabUrlOverride = tab;
   },
   /**
    * Which tab the lander opens on: the deep link, then what you last chose,
@@ -5475,7 +5621,13 @@ const AppView = {
     if (url) return url;
     try {
       const stored = window.localStorage.getItem(AppView.WORKSHOP_TAB_KEY);
-      return AppView.WORKSHOP_TABS.indexOf(stored) !== -1 ? stored : 'status';
+      if (AppView.WORKSHOP_TABS.indexOf(stored) !== -1) return stored;
+      // A viewer who last left the Dev screen on the Board gets the tab those
+      // columns live in, for the same reason _getWorkshopGroup gives them the
+      // pane: migrating the retired mode without carrying what it MEANT would
+      // hand them a digest where they had chosen a worklist.
+      if (AppView._storedBoardPreference()) return 'all';
+      return 'status';
     } catch { return 'status'; }
   },
   // "10h ago" for the feed's caption — the same ladder every card's meta line
@@ -7533,7 +7685,7 @@ const AppView = {
     // The In progress column's own empty note has to come after its rows are
     // built: the archived toggle counts as content even with no cards.
     if (!cols[1].rows.length) cols[1].empty = emptyNote;
-    // `slug` is what the open card's "Open on its own page" link is built
+    // `slug` is what the open card's page link ("Open page ›") is built
     // from; `unfolded` is the ?cards=open state (every card at full size).
     const slug = (AppView.appData && AppView.appData.slug) || App.currentApp || '';
     return {
@@ -8398,7 +8550,11 @@ const AppView = {
   _issueCommentsView(comments, truncated, htmlUrl) {
     const list = Array.isArray(comments) ? comments : [];
     const renderMd = (typeof DevChat !== 'undefined' && DevChat.renderMarkdown)
-      ? (str) => DevChat.renderMarkdown(str)
+      // GitHub issue comments can carry both Markdown image syntax and the
+      // raw <img ...> form GitHub writes when a screenshot is resized. The
+      // shared renderer keeps images opt-in and rebuilds that raw form from
+      // its safe src/alt fields before sanitizing it.
+      ? (str) => DevChat.renderMarkdown(str, { images: true })
       : (str) => `<pre class="whitespace-pre-wrap font-sans">${escapeHtml(str)}</pre>`;
     return {
       comments: list.map((c, i) => ({
@@ -13210,17 +13366,26 @@ const AppView = {
     let reasoningEffort = null;
     let catalogRefreshedAt = null;
     let catalogTotalModels = 0;
+    let prefs = {};
     try {
-      const prefsRes = await fetch('/api/me/coding-agent', { credentials: 'same-origin' });
-      const prefs = prefsRes.ok ? await prefsRes.json() : {};
+      if (typeof DevChat === 'undefined' || !DevChat._prepareDefaultCodingAgentForBuild) {
+        throw new Error('Coding-agent setup is still loading. Try again.');
+      }
+      // This click is the first real work request, so it is also the safe
+      // point to create an eligible user's included OpenRouter key. The
+      // helper preserves an explicit Claude default and throws the exact
+      // provisioning/configuration error instead of silently choosing it.
+      prefs = await DevChat._prepareDefaultCodingAgentForBuild();
       if (prefs.defaultBackend === 'codex_openrouter') {
         provider = 'openrouter';
         const catalogRes = await fetch('/api/me/coding-agent/models?backend=codex_openrouter', {
           credentials: 'same-origin',
           cache: 'no-store',
         });
-        if (!catalogRes.ok) throw new Error('Could not load OpenRouter models.');
-        const catalog = await catalogRes.json();
+        const catalog = await catalogRes.json().catch(() => ({}));
+        if (!catalogRes.ok) {
+          throw new Error(catalog.error || 'Could not load OpenRouter models.');
+        }
         models = Array.isArray(catalog.models) ? catalog.models : [];
         catalogRefreshedAt = catalog.refreshedAt || null;
         catalogTotalModels = Number.isInteger(catalog.totalModels) ? catalog.totalModels : models.length;
@@ -13232,12 +13397,13 @@ const AppView = {
           || '';
       } else {
         const res = await fetch('/api/models');
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not load the model list.');
         models = Array.isArray(data.models) ? data.models : [];
         defaultModel = data.default || (models[0] && models[0].id) || '';
       }
-    } catch {
-      PlatformUI.toast("Couldn't load the model list. Try again.");
+    } catch (err) {
+      PlatformUI.toast(err.message || "Couldn't load the model list. Try again.");
       return;
     }
     if (!models.length || !defaultModel) {
@@ -13249,20 +13415,10 @@ const AppView = {
     const stored = provider === 'claude' ? localStorage.getItem('usernode:dc:model') : null;
     const preselect = models.some((m) => m.id === stored) ? stored : defaultModel;
 
-    // The venue this run will build in. It was always decided by the saved
-    // coding-agent default and never mentioned, so a user with an OpenRouter
-    // default confirmed a popup that talked only about "your tokens/credits"
-    // — the wrong pot, silently. Best-effort: an unreachable preferences
-    // endpoint just means the modal renders exactly as it did before.
-    let venueId = 'usernode-claude';
-    try {
-      const prefsRes = await fetch('/api/me/coding-agent', { credentials: 'same-origin' });
-      if (prefsRes.ok) {
-        const prefs = await prefsRes.json();
-        venueId = (window.BuildVenues || { currentVenue: () => 'usernode-claude' })
-          .currentVenue({ agentBackend: prefs.defaultBackend });
-      }
-    } catch { /* keep the default; the server decides either way */ }
+    // Use the same prepared preference that selected the model catalog, so
+    // the venue label cannot lag behind a just-created managed key.
+    const venueId = (window.BuildVenues || { currentVenue: () => 'usernode-claude' })
+      .currentVenue({ agentBackend: prefs.defaultBackend });
 
     const choice = await AppView._showAutoSessionModal(issueNumber, models, preselect, {
       provider, venueId, catalogRefreshedAt, catalogTotalModels,
@@ -13297,11 +13453,9 @@ const AppView = {
         PlatformUI.toast(data.error || `Couldn't start generating the proposal (HTTP ${resp.status}).`);
         return;
       }
-      // The server is deliberately lenient about an unusable default — a run
-      // that starts beats a 4xx — but until now the fallback was a log line
-      // and nothing else, so someone whose default was Usernode · OpenRouter
-      // got a Usernode · Claude run with no explanation and a bill on the
-      // pot they weren't expecting.
+      // Deliberate flag/beta policy fallbacks are still reported. Credential,
+      // provisioning, and catalog failures have already stopped above, so a
+      // deployment problem can no longer arrive here disguised as Claude.
       AppView._reportVenueFallback(data.agentFallbackReason);
       const issue = (AppView._ghIssues || []).find((i) => i.number === issueNumber);
       if (issue) issue.headless = { sessionId: data.session.id, status: 'generating' };
@@ -13539,6 +13693,10 @@ const AppView = {
         PlatformUI.toast(data.error || `Couldn't start a session from the proposal (HTTP ${resp.status}).`);
         return;
       }
+      if (data.session && data.session.agent_backend === 'codex_openrouter'
+          && typeof App !== 'undefined' && App.user) {
+        App.user.openrouterAvailable = true;
+      }
       // #172: remember the clone locally so a back-navigation to the
       // issues panel shows "Go to session" before the next refetch. The
       // server's headless.mySessionId is the source of truth on every
@@ -13667,6 +13825,17 @@ const AppView = {
   // clients. Neither is authoritative over the other; a row is simply
   // whichever the caller had. Everything is nullable, and null means NOT
   // MEASURED, which is never the same as measured-and-fine.
+  //
+  // #2038 added a third shape, and made it the one the merge gate decides
+  // from: the `integration_*` record, measured from the local mirror on every
+  // merge attempt and every queue pass. The freshness sweep that kept the
+  // columns above current was retired with it, so on a proposal up for vote
+  // they are usually NULL — and a card that read only them said "Main
+  // freshness has not been verified yet" under a gate that had just measured
+  // "3 commits behind" (#2100's "the UI is not matching up"). The newer
+  // measurement wins, whichever shape carried it; a live `freshness` patch
+  // therefore still shows through, and a row that predates the record reads
+  // exactly as before.
   _freshnessOf(pr) {
     const p = pr || {};
     const f = (p.freshness && typeof p.freshness === 'object') ? p.freshness : {};
@@ -13678,13 +13847,31 @@ const AppView = {
       }
       return null;
     };
-    const files = Array.isArray(f.mergeabilityFiles) ? f.mergeabilityFiles
+    const when = (v) => {
+      const t = v ? Date.parse(v) : NaN;
+      return Number.isFinite(t) ? t : null;
+    };
+    const legacyCheckedAt = f.checkedAt || p.freshness_checked_at || null;
+    const integrationAt = when(p.integration_measured_at);
+    const integrationWins = integrationAt !== null
+      && (when(legacyCheckedAt) === null || integrationAt >= when(legacyCheckedAt));
+    const legacyFiles = Array.isArray(f.mergeabilityFiles) ? f.mergeabilityFiles
       : (Array.isArray(p.mergeability_files) ? p.mergeability_files : []);
-    const complete = f.mergeabilityFilesComplete !== undefined && f.mergeabilityFilesComplete !== null
+    const legacyComplete = f.mergeabilityFilesComplete !== undefined && f.mergeabilityFilesComplete !== null
       ? f.mergeabilityFilesComplete : p.mergeability_files_complete;
+    const legacyMergeability = p.mergeability || f.mergeability || null;
+    // The integration record's verdict is a real merge, so its answer is
+    // complete by construction; the legacy one was GitHub's estimate.
+    const integrationMergeability = p.integration_merges_clean === true ? 'clean'
+      : p.integration_merges_clean === false ? 'conflict' : null;
+    const integrationFiles = Array.isArray(p.integration_conflict_paths) ? p.integration_conflict_paths : [];
+    const useIntegrationMerge = integrationWins && integrationMergeability !== null;
+    const files = useIntegrationMerge ? integrationFiles : legacyFiles;
+    const complete = useIntegrationMerge ? true : legacyComplete;
+    const integrationBehind = num(p.integration_behind_by);
     return {
-      checkedAt: f.checkedAt || p.freshness_checked_at || null,
-      mergeability: p.mergeability || f.mergeability || null,
+      checkedAt: integrationWins ? p.integration_measured_at : legacyCheckedAt,
+      mergeability: useIntegrationMerge ? integrationMergeability : legacyMergeability,
       files: files.filter((x) => typeof x === 'string'),
       filesComplete: complete === undefined ? null : complete,
       baseVerdict: p.checks_base_verdict || f.checksBaseVerdict || null,
@@ -13692,8 +13879,10 @@ const AppView = {
       // The measured count wins over the column frozen at submission, which
       // is the whole point of #1442. `behind_main` is the last fallback, and
       // it is still what the merge gate reads.
-      behindBy: num(num(p.freshness_behind_by, f.behindBy), p.behind_main),
-      error: f.error || p.freshness_error || null,
+      behindBy: (integrationWins && integrationBehind !== null)
+        ? integrationBehind
+        : num(num(p.freshness_behind_by, f.behindBy), p.behind_main),
+      error: integrationWins ? (p.integration_error || null) : (f.error || p.freshness_error || null),
     };
   },
 

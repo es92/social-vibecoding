@@ -80,6 +80,7 @@ test('Generate proposal follows the saved OpenRouter provider without Claude cre
     'async confirmAutoSession(issueNumber)',
     '// Singleton confirm popup for Generate proposal',
   );
+  assert.match(flow, /_prepareDefaultCodingAgentForBuild/);
   assert.match(flow, /defaultBackend === 'codex_openrouter'/);
   assert.match(flow, /coding-agent\/models\?backend=codex_openrouter/);
   assert.match(flow, /backend: 'codex_openrouter'/);

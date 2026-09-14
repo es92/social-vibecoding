@@ -520,24 +520,29 @@ test("a stored 'list' or 'feed' migrates to the Workshop", () => {
   }
 });
 
-test('a stored pm / report preference migrates to the board', () => {
-  // The two retired overviews were board-shaped, so the board is the nearest
-  // surviving surface. Anything else would read as "my setting was forgotten".
+test('a stored pm / report preference migrates onto the one surviving mode', () => {
+  // The two retired overviews were board-shaped, so they used to resolve to
+  // the Board. The Board VIEW MODE has retired in turn — its columns are the
+  // Workshop's "By stage" pane — so the chain ends at the Workshop. Anything
+  // else would read as "my setting was forgotten".
   for (const stored of ['pm', 'report']) {
     const ctx = makeCtx({
       localStorage: { getItem: () => stored, setItem: () => {} },
       matchMedia: () => ({ matches: false }),
     });
-    assert.equal(ctx.__AppView._getViewMode(), 'kanban', `${stored} → kanban`);
+    assert.equal(ctx.__AppView._getViewMode(), 'workshop', `${stored} → workshop`);
   }
 });
 
-test('a stored kanban preference beats the Workshop default', () => {
+test('a stored kanban preference migrates rather than being forgotten', () => {
+  // The value a viewer who last left the Dev screen on the Board still has.
+  // It names a mode that no longer exists, so RETIRED_VIEW_MODES carries it
+  // onto the Workshop, whose stage pane IS those columns.
   const ctx = makeCtx({
     localStorage: { getItem: () => 'kanban', setItem: () => {} },
     matchMedia: () => ({ matches: false }),
   });
-  assert.equal(ctx.__AppView._getViewMode(), 'kanban');
+  assert.equal(ctx.__AppView._getViewMode(), 'workshop');
 });
 
 test('no matchMedia in the environment → the Workshop (nothing to consult)', () => {

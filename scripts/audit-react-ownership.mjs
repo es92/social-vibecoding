@@ -105,6 +105,7 @@ const CHROME = process.env.CHROME_PATH
  * un-converted section's own `innerHTML` would report as a violation.
  */
 const OWNED = [
+  { sel: '#dc-launchpad-slot [data-launchpad="own-tools-pr"]' }, // #1891: shared React guide
   { sel: '[data-account-email-form]', when: '#settings/email' },
   // `#home-grid-overlay` is appended into this host by home.js during a drag,
   // which this sweep never performs and so never sees. It is a deliberate
@@ -326,6 +327,8 @@ const OWNED = [
 ];
 
 const ROUTES = [
+  '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990411',
+  '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990401',
   '#home', '#apps', '#apps/recipebot', '#settings', '#settings/app-ai',
   '#settings/email', '#settings/agent-files', '#settings/api-key', '#settings/cli', '#settings/connectors', '#settings/experimental', '#profile', '#leaderboard', '#messages', '#notifications',
   '#app/recipebot', '#app/recipebot/app', '#app/recipebot/dev', '#app/recipebot/dev/chat',

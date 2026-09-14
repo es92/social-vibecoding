@@ -156,6 +156,39 @@ test('an explicit Codex choice without a model fails without creating a session'
   }
 });
 
+test('automatic OpenRouter provisioning failure returns its stable error code without creating a session', async (t) => {
+  const managed = require('../src/services/openrouter-managed-keys');
+  const originalProvision = managed.provision;
+  managed.provision = async () => {
+    throw new managed.ManagedOpenRouterError(
+      503,
+      'not_configured',
+      'Company OpenRouter keys are not configured yet.',
+    );
+  };
+  t.after(() => { managed.provision = originalProvision; });
+
+  const getInsert = installInsertCapture();
+  const server = await startServer({
+    codexOpenrouterEnabled: true,
+    openrouterBetaUserIds: [],
+    openrouterDefaultCodexModel: 'z-ai/glm-5.3-flash',
+  });
+  t.after(() => server.close());
+
+  const port = server.address().port;
+  const res = await fetch(`http://127.0.0.1:${port}/api/apps/demo/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  assert.strictEqual(res.status, 503);
+  const body = await res.json();
+  assert.strictEqual(body.code, 'not_configured');
+  assert.match(body.error, /USERNODE_OPENROUTER_MANAGEMENT_API_KEY/);
+  assert.strictEqual(getInsert(), null, 'no chat_sessions INSERT was issued');
+});
+
 test('an explicit validated Codex choice is persisted exactly', async (t) => {
   const credentialStore = require('../src/services/credential-store');
   const agentModels = require('../src/services/agent-models');

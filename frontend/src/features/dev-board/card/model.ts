@@ -560,7 +560,7 @@ export interface KanbanColView {
 export interface DevKanbanView {
   activeTab: string;
   cols: KanbanColView[];
-  /** The app, for the open card's "Open on its own page" link. */
+  /** The app, for the open card's page link ("Open page ›", #1886). */
   slug?: string;
   canPost?: boolean;
   /**

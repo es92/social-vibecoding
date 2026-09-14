@@ -4270,8 +4270,8 @@ body:has(#platform-header.hidden) #app-frame-host {
    cards in the message stream, and they render metres apart. */
 /* ── The launchpad (#1281) ───────────────────────────────────────────────
    What a session shows instead of a composer when the work is happening
-   somewhere else. Markup comes from public/js/launchpad.js (own-tools-pr)
-   and public/js/dev-flow-select.js (the two web hand-offs); dev-chat.js
+   somewhere else. Markup comes from features/dev-chat/own-tools-guide.tsx
+   (own-tools-pr) and public/js/dev-flow-select.js (web hand-offs); dev-chat.js
    renders whichever into #dc-launchpad-slot and hides
    #dc-composer-controls beside it.
 
@@ -12615,12 +12615,34 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 .dev-ws-move { display: none; }
 .dev-ws-keys { display: none; }
 
-/* ── The sheets ───────────────────────────────────────────────────────
+/* ── The Needs-you deck's sheets ──────────────────────────────────────
    Fixed, which inside the lifted strip means the strip's own box: from
    under the header to the foot of the screen, which is the area a sheet
    should cover. The pill hides while one is up — a bar floating over a
-   sheet's answers is a bar in the way. */
-.dev-ws-sheet { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: flex-end; }
+   sheet's answers is a bar in the way.
+
+   KEYED ON `.dev-ws-sheet-modal`, AND NOT ON `.dev-ws-sheet`, WHICH IS A
+   DIFFERENT OBJECT. `.dev-ws-sheet` is the OPEN CARD — the sheet a folded
+   row unfolds into (card/fold.tsx, `.dev-ws-rowwrap-open > .dev-ws-sheet >
+   .gc-vote-item`), and it has carried that name since the Workshop shipped;
+   two declared checks select it that way. #2080 gave the deck's three
+   dialogs the same bare class, so this rule landed on every unfolded card on
+   every Workshop surface: the card left its column or its strip, became a
+   full-viewport `position: fixed` box at `z-index: 30` painting its own fill
+   over the board, and swallowed every click underneath it. That is "the
+   whole board goes opaque and stops responding" on By stage and By category,
+   and "the card opens but the layout is wrong" on Current status — one rule,
+   three screens.
+
+   So the deck's dialogs carry a base class of their own and the bare name
+   stays the fold's. The `.dev-ws-sheet-*` PARTS below (card, handle, head,
+   title, sub, x, body) are the deck's either way — they appear in no folded
+   card — as are the breakpoint rules further down, which were already keyed
+   on the -vote / -ask / -comments modifiers. */
+/* The floor lifts by what the on-screen keyboard took (workshop.tsx measures
+   the visual viewport into `--ws-kb` while a sheet is up), so the field being
+   typed into is above the keys rather than under them. */
+.dev-ws-sheet-modal { position: fixed; inset: 0; z-index: 30; bottom: var(--ws-kb, 0px); display: flex; flex-direction: column; justify-content: flex-end; }
 .dev-ws-scrim {
   position: absolute; inset: 0; border: 0; padding: 0; margin: 0; cursor: default;
   background: var(--pane-scrim);
@@ -12629,12 +12651,40 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
   position: relative;
   display: flex; flex-direction: column; gap: 8px;
   max-height: 66%; min-height: 0;
-  padding: 8px 16px 12px; box-sizing: border-box;
+  padding: 8px 16px calc(12px + var(--platform-safe-bottom, 0px)); box-sizing: border-box;
   border-radius: 22px 22px 0 0;
   background-color: var(--dc-sheet);
   box-shadow: 0 -10px 30px rgba(24, 39, 75, .2);
 }
-.dev-ws-sheet-vote .dev-ws-sheet-card { padding-bottom: 22px; }
+.dev-ws-sheet-vote .dev-ws-sheet-card { padding-bottom: calc(22px + var(--platform-safe-bottom, 0px)); }
+/* With the keyboard up the sheet is short; let the card have all of it. */
+.dev-ws-needs[data-ws-kb] .dev-ws-sheet-card { max-height: 100%; }
+/* ── Open and close MOVE. The card rises from the floor and the scrim fades
+   in; on the way out (`[data-ws-leaving]`, which workshop.tsx keeps mounted
+   for exactly this long) both reverse. The names are variables so the wide
+   block can swap them for a panel's slide and a popover's pop without a
+   second reduced-motion query of its own. */
+.dev-ws-sheet-modal { --ws-sheet-in: dev-ws-sheet-up; --ws-sheet-out: dev-ws-sheet-down; }
+@media (prefers-reduced-motion: no-preference) {
+  .dev-ws-sheet-modal > .dev-ws-scrim { animation: dev-ws-scrim-in .22s ease-out both; }
+  .dev-ws-sheet-modal > .dev-ws-sheet-card {
+    animation-name: var(--ws-sheet-in); animation-duration: .28s;
+    animation-timing-function: cubic-bezier(.32, .72, 0, 1); animation-fill-mode: both;
+  }
+  .dev-ws-sheet-modal[data-ws-leaving] > .dev-ws-scrim { animation: dev-ws-scrim-out .2s ease-in both; }
+  .dev-ws-sheet-modal[data-ws-leaving] > .dev-ws-sheet-card {
+    animation-name: var(--ws-sheet-out); animation-duration: .2s;
+    animation-timing-function: ease-in; animation-fill-mode: both;
+  }
+}
+@keyframes dev-ws-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes dev-ws-sheet-down { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes dev-ws-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dev-ws-scrim-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes dev-ws-panel-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes dev-ws-panel-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(28px); } }
+@keyframes dev-ws-pop-in { from { opacity: 0; transform: translateX(10px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes dev-ws-pop-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(10px) scale(.96); } }
 .dev-ws-sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 4px; flex: none; }
 .dev-ws-sheet-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -12935,10 +12985,13 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
     border: 1px solid var(--border); background: var(--dc-sheet); color: var(--text-secondary);
     font: inherit; font-weight: 600;
   }
-  /* The panels: Ask and comments beside the rail, the stage's full height. */
+  /* The panels: Ask and comments beside the rail, the stage's full height.
+     They slide in from the right rather than rising from a floor they do not
+     sit on (the names feed the base block's one animation rule). */
   .dev-ws-sheet-ask, .dev-ws-sheet-comments {
     position: relative; inset: auto; flex: 0 0 400px; z-index: auto;
     display: flex; flex-direction: column;
+    --ws-sheet-in: dev-ws-panel-in; --ws-sheet-out: dev-ws-panel-out;
   }
   .dev-ws-sheet-ask > .dev-ws-scrim, .dev-ws-sheet-comments > .dev-ws-scrim { display: none; }
   .dev-ws-sheet-ask > .dev-ws-sheet-card, .dev-ws-sheet-comments > .dev-ws-sheet-card {
@@ -12951,6 +13004,7 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
   .dev-ws-sheet-handle { display: none; }
   /* The vote: a popover on its button, arrow towards it. */
   .dev-ws-sheet-vote { position: absolute; inset: auto calc(100% + 12px) auto auto; top: -8px; width: 340px; z-index: 6; display: block; }
+  .dev-ws-sheet-vote { --ws-sheet-in: dev-ws-pop-in; --ws-sheet-out: dev-ws-pop-out; }
   .dev-ws-sheet-vote > .dev-ws-scrim { position: fixed; background: transparent; }
   .dev-ws-sheet-vote > .dev-ws-sheet-card {
     max-height: none; padding: 18px 18px 16px;
@@ -13458,6 +13512,33 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      to hover still eases, because that one is not feedback about a gesture. */
   transition: none;
 }
+/* -- The press, on touch: held back until the finger settles (#1928) ------
+   On a phone a card list is mostly scrolled, not tapped, and every scroll
+   starts as a touch on some card. Both press treatments above engage
+   instantly -- the fill here, and the kit's scale + brightness dim on every
+   role="button" card (the folded row, the session rows) -- so a flick down
+   the board flashed a pressed state on whichever card the finger landed on,
+   for a gesture that opened nothing. iOS lists wait a beat before
+   highlighting, so a touch that becomes a scroll never lights up.
+
+   Same here: the press still engages with no easing, but after 120ms. A
+   scroll clears :active well inside that, so the pending change is
+   cancelled and nothing is drawn; a real tap is held longer and tints as
+   before. `transition` on the :active rule is the one read on the way IN;
+   the way out keeps each element's own easing. Touch only -- a mouse press
+   is never a scroll, so desktop keeps the instant feedback the rule above
+   exists for. Real buttons inside the cards (Vote, Preview) are untouched:
+   they are pressed on purpose. */
+@media (hover: none) {
+  .dev-ws-row:active:not(:has(a:active, button:active, input:active, textarea:active, select:active)),
+  .dev-ws-rowwrap-open .gc-vote-item:active:not(:has(
+    a:active, button:active, input:active, textarea:active, select:active,
+    .dev-ws-detail:active, .dev-feed-thread:active, .dev-feed-comments:active
+  )),
+  #dev-forum-scroll [role="button"]:active {
+    transition: background-color 0s linear 120ms, transform 0s linear 120ms, filter 0s linear 120ms;
+  }
+}
 /* The row's icon is the CARD's icon, to the pixel: the same 22px box with no
    tile and no fill, and the same 18px glyph. It used to be a 28px tinted
    tile, which was the one part of the folded row that did not appear on the
@@ -13648,7 +13729,6 @@ button.dev-fold-mark:focus-visible { outline: 2px solid var(--accent); outline-o
 .dev-ws-detail .dev-topic-sheet {
   background: transparent; box-shadow: none; border-radius: 0; padding: 0;
 }
-.dev-ws-sheet-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
 .dev-ws-more { font-size: 13px; color: var(--text-muted); padding: 2px 10px; }
 .dev-ws-theme-more { font-size: 13px; color: var(--text-muted); padding: 4px 10px 0; }
 /* The row's vote button, at the right end of its last line (.dev-ws-row-band). */
