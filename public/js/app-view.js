@@ -3282,6 +3282,7 @@ const AppView = {
     const rows = body.details.ledger;
     body.changeId = item.id;
     AppView._changeItems.set(Number(item.id), item);
+    body.canEditIssues = !AppView.readOnly && (mine || !!App.user?.canAdminWrite);
     if (mine && underway && item.source !== 'imported') {
       const own = AppView._mySessionCardModel(item);
       card.rail.menuKey = own.rail.menuKey;
@@ -4431,9 +4432,22 @@ const AppView = {
     content.addEventListener('click', (e) => {
       if (!e.target.closest('#dev-plus-menu, #dev-plus-btn')) close();
     }, { signal });
-    // New change and Give feedback live in Improve (#1490). This menu keeps
-    // PR import and app management; each row is conditional on viewer/app
+    // New change lives in Improve (#1490). This menu keeps PR import and app
+    // management, and (#1900) filing an issue, which #1490 had folded into
+    // Improve's Give feedback; each row is conditional on viewer/app
     // permissions, so wire only the rows the frame rendered.
+    const issueBtn = menu.querySelector('[data-plus="issue"]');
+    if (issueBtn) {
+      issueBtn.addEventListener('click', () => {
+        close();
+        // The shared feedback dialog in its dev-context mode: the open app is
+        // preselected as the target (Platform for the self-hosted app, or
+        // while the repo does not exist yet) — #226. The same call
+        // Improve.giveFeedback() makes when the panel's app is the open one,
+        // so the two entry points cannot drift.
+        App.openFeedbackModal({ fromDev: true });
+      }, { signal });
+    }
     const importPrBtn = menu.querySelector('[data-plus="import-pr"]');
     if (importPrBtn) {
       importPrBtn.addEventListener('click', () => {
@@ -7830,7 +7844,7 @@ const AppView = {
   //
   // The venue was decided once, at creation, from a preference the user set
   // somewhere else — and then never mentioned again, so a board full of
-  // cards looked identical whether the work was billed to Usernode credits,
+  // cards looked identical whether the work was billed to Homeroom credits,
   // an OpenRouter key or a laptop. Naming it on the card is the cheapest
   // place to make that visible; the sheet behind it is the same one every
   // other surface opens (public/js/build-venues.js).
@@ -9072,8 +9086,56 @@ const AppView = {
       gates: gates.map((g) => ({
         key: g.key, label: g.label, actor: g.actor, state: g.state,
         note: (g.detail && g.detail.note) || null,
+        action: AppView._requirementAction(g, viewer),
       })),
     };
+  },
+
+  // The one control a gate carries, for the viewer who can clear it. A red
+  // main pauses every merge on the app until a fix lands or an admin says
+  // "I know, go on"; that admin is reading this ledger, and the button is
+  // the sentence's verb. Nobody else gets a control they cannot use.
+  _requirementAction(gate, viewer) {
+    if (!gate || gate.key !== 'main_healthy' || gate.state !== 'blocked') return null;
+    if (!viewer || !viewer.isAdmin || AppView.readOnly) return null;
+    const slug = (AppView.appData && AppView.appData.slug)
+      || (typeof App !== 'undefined' && App.currentApp) || null;
+    if (!slug) return null;
+    return {
+      label: 'Resume merges',
+      title: 'Main’s unit suite is failing at this commit. Resume merges on the app anyway; the pause returns if a later merge fails the suite again.',
+      act: { fn: 'resumeMainMerges', args: [slug] },
+    };
+  },
+
+  // POST /api/apps/:slug/main-check/resume (admin). The server stamps the
+  // red sha as resumed and the next queue pass merges what is ready; the
+  // ledger re-renders from the refreshed promoted list.
+  _resumeMainInFlight: false,
+  async resumeMainMerges(slug, btn) {
+    if (AppView._resumeMainInFlight) return;
+    AppView._resumeMainInFlight = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Resuming…'; }
+    try {
+      const resp = await fetch(`/api/apps/${encodeURIComponent(slug)}/main-check/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        PlatformUI.toast(data.error || `Resume failed (HTTP ${resp.status}).`);
+        if (btn) { btn.disabled = false; btn.textContent = 'Resume merges'; }
+        return;
+      }
+      PlatformUI.toast('Merges resumed. Anything ready merges on the next pass.');
+      AppView.refreshDevData('main-check-resume');
+      return true;
+    } catch (err) {
+      PlatformUI.toast(`Resume failed: ${err.message}`);
+      if (btn) { btn.disabled = false; btn.textContent = 'Resume merges'; }
+    } finally {
+      AppView._resumeMainInFlight = false;
+    }
   },
 
   // The collapsed line. Mirrors services/merge-requirements.js summarize() —
@@ -9987,21 +10049,36 @@ const AppView = {
   _conflictRemedy(pr, mode) {
     const creator = pr.username || 'the proposal’s creator';
     const home = AppView._headHome(pr);
+    // The conflict lane's own verdict on this head, when it has one. Who
+    // resolves a PREDICTED conflict is the lane's decision, not the card's:
+    // the platform resolves it (once unasked, and again once the vote
+    // passes) unless the lane has recorded that it tried and could not.
+    const served = (pr.integration && Array.isArray(pr.integration.blockReasons))
+      ? pr.integration.blockReasons : [];
+    const sync = ': open the session’s dev-chat and run "Sync with main".';
     let parts;
     if (pr.source !== 'imported') {
-      parts = mode === 'failed'
-        ? [{ b: creator }, ' needs to resolve it: run "Sync with main" from the session\'s dev-chat.']
-        : mode === 'conflict'
-          ? ['Automatic resolution may not run for this proposal. ', { b: creator },
-            ' needs to finish the merge: open the session\'s dev-chat and run "Sync with main".']
-          : [{ b: creator }, ' needs to bring it up to date: open the session’s dev-chat and run "Sync with main".'];
+      if (mode === 'failed') {
+        parts = [{ b: creator }, ' needs to resolve it: run "Sync with main" from the session\'s dev-chat.'];
+      } else if (mode === 'conflict') {
+        parts = ['Automatic resolution may not run for this proposal. ', { b: creator },
+          ' needs to finish the merge: open the session\'s dev-chat and run "Sync with main".'];
+      } else if (served.includes('integrating')) {
+        parts = ['The platform is resolving it now. Nobody needs to do anything.'];
+      } else if (served.includes('unresolvable')) {
+        parts = ['The platform tried to resolve it and could not. ', { b: creator }, ` needs to bring it up to date${sync}`];
+      } else if (served.includes('awaiting_approval')) {
+        parts = ['The platform resolves it once the vote passes. ', { b: creator }, ` can bring it up to date sooner${sync}`];
+      } else {
+        parts = ['The platform resolves it automatically. ', { b: creator }, ` can also bring it up to date sooner${sync}`];
+      }
     } else if (home === 'app_repo') {
       parts = mode === 'failed'
-        ? [{ b: creator }, ' needs to bring the branch up to date with main in the coding agent that wrote it, then submit it again as an update to this proposal. Usernode keeps this branch itself, so the merge is retried once the update lands.']
-        : ['Usernode keeps this branch itself and will try to resolve it automatically at the next merge attempt. If that fails, ',
+        ? [{ b: creator }, ' needs to bring the branch up to date with main in the coding agent that wrote it, then submit it again as an update to this proposal. Homeroom keeps this branch itself, so the merge is retried once the update lands.']
+        : ['Homeroom keeps this branch itself and will try to resolve it automatically at the next merge attempt. If that fails, ',
           { b: creator }, ' needs to bring the branch up to date with main in the coding agent that wrote it and submit it again as an update to this proposal.'];
     } else {
-      parts = ['This branch lives in ', { b: creator }, '’s own fork, which Usernode cannot write to, so it cannot sync it itself. ',
+      parts = ['This branch lives in ', { b: creator }, '’s own fork, which Homeroom cannot write to, so it cannot sync it itself. ',
         { b: creator }, ' needs to merge main into the branch and push it; the proposal follows the push.'];
     }
     // The pill's plain-text detail. A native row keeps the sentence the pill
@@ -10010,11 +10087,12 @@ const AppView = {
     const nativeDetail = {
       failed: 'The proposal’s owner needs to resolve it manually from their dev session.',
       conflict: 'Its creator needs to finish the merge from their dev session ("Sync with main").',
-      predicted: 'Its creator needs to sync with main and resolve the conflicts from their dev session ("Sync with main").',
     };
+    // A predicted conflict's plain text is the note's sentence: it is the
+    // lane's answer, and there is no older sentence worth keeping over it.
     return {
       parts,
-      text: pr.source !== 'imported'
+      text: pr.source !== 'imported' && nativeDetail[mode]
         ? nativeDetail[mode]
         : parts.map((x) => (typeof x === 'string' ? x : x.b)).join(''),
     };
@@ -10483,6 +10561,24 @@ const AppView = {
       return [{ ...fallback, key: 'checks', action: recheck }];
     }
 
+    if (state === 'pending' && pr.check_phase === 'deferred') {
+      // Nothing is running. The preview was built so reviewers have something
+      // to look at, and the tests were skipped on purpose: the head conflicts
+      // with main, and a verdict on a tree that cannot merge costs the same
+      // minutes as a real one and answers nothing. The re-run button is the
+      // way to insist — a manual run tests the head exactly as it stands.
+      const rows = [{
+        t: 'line',
+        parts: ['This proposal conflicts with main, so its preview was built but the automated tests were not run: they would judge a tree that cannot merge. They run automatically once it merges cleanly, and the merge waits for them.'],
+      }];
+      if (pr.checks_checked_at) rows.push({ t: 'line', parts: [`Preview built ${relTime(pr.checks_checked_at)}.`], weight: 'foot' });
+      rows.push({ t: 'line', parts: ['To test this head as it stands anyway, re-run the checks.'], weight: 'foot' });
+      return [{
+        key: 'checks', tone: 'neutral', spinner: false,
+        heading: 'Checks deferred until this merges cleanly.', rows, action: recheck,
+      }];
+    }
+
     if (state === 'pending') {
       // #447: stuck-'pending' checks now self-heal (the platform re-runs them
       // automatically once they've been running too long) and can be kicked
@@ -10507,19 +10603,22 @@ const AppView = {
       // nothing at all, so legacy rows are unchanged.
       const why = AppView._checksTriggerCopy(pr.check_trigger);
       if (why) rows.push({ t: 'line', parts: [why], weight: 'foot' });
-      // What happens to THIS run if main moves first. Three rows used to
-      // describe the same proposal without any of them saying which acts
-      // first: the checks row said a run was going, the "Behind main" pill
-      // said a sync was coming, and neither said that the sync ends the run.
-      // It does: a sync moves the commit this run is judged against, so the
-      // run in flight is restarted on the synced commit. Say it here, on the
-      // row the reader is watching, rather than leaving it to be inferred
-      // from two other rows.
-      const behindNow = AppView._freshnessOf(pr).behindBy || 0;
+      // What main moving means for THIS run. Three rows used to describe the
+      // same proposal without any of them saying which acts first: the
+      // checks row said a run was going, the "Behind main" pill said a sync
+      // was coming, and neither said that the sync ends the run. Now only a
+      // CONFLICT is ever synced — a head that merges cleanly merges as it
+      // stands — so the two cases get two sentences: a conflict's run is
+      // restarted on the resolved commit, a clean head's run is left alone.
+      const freshNow = AppView._freshnessOf(pr);
+      const behindNow = freshNow.behindBy || 0;
       if (behindNow > 0) {
+        const moved = `Main has moved ${behindNow} commit${behindNow === 1 ? '' : 's'} ahead`;
         rows.push({
           t: 'line',
-          parts: [`Main has moved ${behindNow} commit${behindNow === 1 ? '' : 's'} ahead. This run is judged against the commit before that, so when the platform syncs this proposal the run starts again on the synced commit.`],
+          parts: [freshNow.mergeability === 'conflict'
+            ? `${moved} and this proposal conflicts with it. This run is judged against the commit before that, so when the platform resolves the conflict the run starts again on the resolved commit.`
+            : `${moved}. That does not restart this run: a proposal that still merges cleanly merges as it stands.`],
           weight: 'foot',
         });
       }
@@ -10700,15 +10799,34 @@ const AppView = {
   },
 
   // #1442 — one sentence for a verdict earned against a superseded base.
-  // Shared by the verdict view and the status notes so the two can never
-  // word it differently.
-  _checksBaseNote(pr) {
+  // Shared by the verdict view, the status notes and the board tag so the
+  // three can never word it differently. `opts.lead` replaces the opening
+  // "These" where the sentence has to name its subject.
+  //
+  // What the superseded base MEANS changed with the direct merge lane. It
+  // used to be a warning that a sync was coming and would re-run the tests.
+  // A head that merges cleanly is never synced now: it merges as it stands,
+  // and the platform runs the app's tests on main straight after, so a
+  // regression the old base hid is caught there and pauses further merges.
+  // Only a conflicting head is ever re-run before the merge, on the resolved
+  // commit — so that case keeps its own sentence.
+  //
+  // Both sentences keep "code this proposal would no longer merge into":
+  // that is the fact the note exists to state, and the declared check
+  // "Freshness (#1442): checks that passed on a superseded base are
+  // annotated, not contradicted" pins it on the demo proposal.
+  _checksBaseNote(pr, opts) {
     const fresh = AppView._freshnessOf(pr);
     if (fresh.baseVerdict !== 'superseded') return null;
     const n = fresh.baseBehindBy || 0;
-    return n
-      ? `These ran against main as it was ${n} commit${n === 1 ? '' : 's'} ago, so they describe code this proposal would no longer merge into. Syncing with main re-runs them against the current one.`
-      : 'These ran against a version of main that has since moved on, so they describe code this proposal would no longer merge into. Syncing with main re-runs them against the current one.';
+    const lead = (opts && opts.lead) || 'These';
+    const when = n
+      ? `main as it was ${n} commit${n === 1 ? '' : 's'} ago`
+      : 'a version of main that has since moved on';
+    const describe = `${lead} ran against ${when}, so they describe code this proposal would no longer merge into.`;
+    return fresh.mergeability === 'conflict'
+      ? `${describe} It now conflicts with main; resolving the conflict re-runs them on the resolved commit.`
+      : `${describe} That does not hold the merge: a proposal that still merges cleanly merges as it stands, and the platform runs the app’s tests on main again straight after.`;
   },
 
   PASS_FOLD_AT: 8,
@@ -10749,6 +10867,13 @@ const AppView = {
     testing: {
       title: 'Running the automated tests…',
       detail: 'The preview is up and the automated tests are running against it.',
+    },
+    // Not a stage of a run: the run stopped on purpose after the build. The
+    // head conflicts with main, so the preview exists for reviewers and the
+    // tests wait for a head that can merge. No spinner belongs on this.
+    deferred: {
+      title: 'Checks deferred',
+      detail: 'The preview is up, but the tests were not run: this proposal conflicts with main, and they would judge a tree that cannot merge. They run once it merges cleanly.',
     },
   },
 
@@ -13921,20 +14046,26 @@ const AppView = {
           : 'Automated tests are not passing on the staging build.',
       });
     }
-    // Behind main resolves itself, so it is the mildest blocking reason —
-    // last in the list and rendered `attention` rather than `blocked`.
+    // Behind main is information, not a block: a head that merges cleanly
+    // merges as it stands, however far main has moved, and nothing ever
+    // syncs it. So it is `soft` — worth knowing, does not stop it landing —
+    // and last in the list. (A head that does NOT merge cleanly drew the
+    // conflict tag above; that is the one somebody has to act on.)
     //
     // #1442: the count comes from the freshness measurement now, not from
     // the `behind_main` column frozen when the proposal was submitted. A
     // proposal that read "0" for eight commits is what this fixes.
     const behind = fresh.behindBy || 0;
     if (behind > 0 || p.merge_conflict_state === 'behind') {
+      const count = behind
+        ? `This proposal is ${behind} commit${behind === 1 ? '' : 's'} behind main`
+        : 'This proposal is behind main';
       out.push({
         key: 'behind',
         label: behind ? `Behind main · ${behind}` : 'Behind main',
-        detail: behind
-          ? `This proposal is ${behind} commit${behind === 1 ? '' : 's'} behind main. Syncing automatically, then it retries the merge.`
-          : 'This proposal is behind main. Syncing automatically, then it retries the merge.',
+        detail: fresh.mergeability === 'conflict'
+          ? `${count}. The conflict is what stands between it and merging; the distance itself does not.`
+          : `${count} but still merges cleanly. It merges as it stands; nothing needs syncing.`,
         soft: true,
       });
     }
@@ -13948,9 +14079,7 @@ const AppView = {
       out.push({
         key: 'checks_base_superseded',
         label: n ? `Checks ran on older main · ${n}` : 'Checks ran on older main',
-        detail: n
-          ? `The checks passed, but they ran against main as it was ${n} commit${n === 1 ? '' : 's'} ago. They describe code this proposal would no longer merge into. Syncing with main re-runs them against the current one.`
-          : 'The checks passed, but they ran against a version of main that has since moved on. Syncing with main re-runs them against the current one.',
+        detail: AppView._checksBaseNote(p, { lead: 'The checks passed, but' }),
         soft: true,
       });
     }
@@ -13969,9 +14098,12 @@ const AppView = {
       out.push({
         key: 'integrating',
         label: 'Bringing up to date…',
-        detail: 'The platform is merging the latest main into this proposal and '
-          + 're-running its checks against the result. It merges on its own once '
-          + 'that passes. Nobody needs to do anything.',
+        // Only a conflict is ever brought up to date: this is the conflict
+        // lane merging main into the head. The result is previewed and
+        // checked like any other push, and merges once the vote passes.
+        detail: 'The platform is merging main into this proposal to resolve a conflict. '
+          + 'The result is previewed and checked, and it merges on its own once the '
+          + 'vote passes. Nobody needs to do anything.',
         running: true,
       });
     }
@@ -14381,7 +14513,7 @@ const AppView = {
     if (!name) return '';
     const label = (value === 'claude-code' || value === 'codex')
       ? `Built with ${name}` : 'Built with a coding agent';
-    return `<span class="inline-flex items-center gap-1 text-[0.65rem] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-700 dark:text-violet-400 shrink-0" title="${escapeHtml('The code was written by the proposer’s own coding agent (' + name + ') on their subscription, in their GitHub fork. Usernode opened the pull request; the group still votes on it.')}">${escapeHtml(label)}</span>`;
+    return `<span class="inline-flex items-center gap-1 text-[0.65rem] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-700 dark:text-violet-400 shrink-0" title="${escapeHtml('The code was written by the proposer’s own coding agent (' + name + ') on their subscription, in their GitHub fork. Homeroom opened the pull request; the group still votes on it.')}">${escapeHtml(label)}</span>`;
   },
 
   // #381: advisory "may break the app" warning. Shown alongside (not

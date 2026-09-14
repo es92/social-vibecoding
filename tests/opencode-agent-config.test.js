@@ -81,7 +81,7 @@ test('OpenCode promotion guard attests each model request and fails closed witho
     { system }
   );
   assert.equal(system.length, 1, 'the guard does not add a provider-incompatible second system message');
-  assert.match(system[0], /Usernode promotion guard health check: PASS/);
+  assert.match(system[0], /Homeroom promotion guard health check: PASS/);
   assert.match(system[0], /OpenCode plugin executed for this model request/);
 
   await assert.rejects(

@@ -1550,7 +1550,7 @@ function rowView(n) {
   };
 
   if (n.kind === 'test_alert') {
-    return { ...base, label: 'Usernode test alert', icon: '🔔',
+    return { ...base, label: 'Homeroom test alert', icon: '🔔',
       segments: [{ t: 'text', v: 'You requested a push notification test. Open Alerts settings to try again.' }] };
   }
 

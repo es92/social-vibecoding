@@ -75,7 +75,7 @@ async function countOr(pool, sql, params, label) {
 
 const UNAVAILABLE = limitError(
   'platform_unavailable',
-  'Usernode could not check your limits just now. Try again shortly.'
+  'Homeroom could not check your limits just now. Try again shortly.'
 );
 
 // ── 1. The promoted-session cap ────────────────────────────────────────
@@ -219,7 +219,7 @@ async function checkFallbackStart(pool, config, user) {
   if (inFlight >= caps.activeSessions) {
     return limitError(
       'at_capacity',
-      `You already have ${caps.activeSessions} Usernode builds running. `
+      `You already have ${caps.activeSessions} Homeroom builds running. `
       + 'Wait for one to finish before starting another.'
     );
   }

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const OPENCODE_PROMOTION_GUARD_ATTESTATION = [
-  'Usernode promotion guard health check: PASS.',
+  'Homeroom promotion guard health check: PASS.',
   'The trusted project OpenCode plugin executed for this model request;',
   'the OpenCode promotion-readiness check in the usernode-proposal skill is satisfied.',
 ].join(' ');
@@ -12,14 +12,14 @@ const OPENCODE_PROMOTION_GUARD_ATTESTATION = [
 module.exports = async function createOpenCodePromotionGuard({ worktree, directory }) {
   const candidate = worktree || directory;
   if (typeof candidate !== 'string' || !path.isAbsolute(candidate)) {
-    throw new Error('Usernode promotion guard requires an absolute OpenCode worktree');
+    throw new Error('Homeroom promotion guard requires an absolute OpenCode worktree');
   }
   const checkoutRoot = fs.realpathSync(candidate);
   const policyPath = path.join(checkoutRoot, '.agents', 'hooks', 'promotion-policy.js');
   const policyStat = fs.lstatSync(policyPath);
   if (!policyStat.isFile() || policyStat.isSymbolicLink()
       || fs.realpathSync(policyPath) !== policyPath) {
-    throw new Error('Usernode promotion policy must be a real file in this checkout');
+    throw new Error('Homeroom promotion policy must be a real file in this checkout');
   }
 
   // eslint-disable-next-line global-require, import/no-dynamic-require
@@ -50,7 +50,7 @@ module.exports = async function createOpenCodePromotionGuard({ worktree, directo
       } else if (typeof output.system[0] === 'string') {
         output.system[0] = `${output.system[0]}\n\n${OPENCODE_PROMOTION_GUARD_ATTESTATION}`;
       } else {
-        throw new Error('OpenCode supplied an invalid system prompt to the Usernode promotion guard');
+        throw new Error('OpenCode supplied an invalid system prompt to the Homeroom promotion guard');
       }
     },
 

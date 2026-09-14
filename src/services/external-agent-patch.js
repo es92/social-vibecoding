@@ -3,13 +3,13 @@
 // The patch path — a head for an agent that could not push.
 //
 // The normal connector flow is: the user's coding agent pushes a branch to
-// their own fork, and Usernode opens the pull request. Two of the three real
+// their own fork, and Homeroom opens the pull request. Two of the three real
 // production runs never got past the push, because the agent's sandbox
 // refused every GitHub write. The remedy for THAT is documented in the work
 // order (install the Claude GitHub App on the user's own account), but a
 // remedy the agent has to ask a human to perform is a dead end inside one
 // session. So there is a second way in: the agent exports the change as a
-// patch and submits the patch, and Usernode applies it in the app's own
+// patch and submits the patch, and Homeroom applies it in the app's own
 // repository at the exact commit the work order named.
 //
 // The result is indistinguishable downstream — a plain same-repo pull
@@ -129,7 +129,7 @@ async function applyPatch({
     credential = await head.resolveWriteCredential(owner);
   } catch (err) {
     log.error('external-agent-patch', 'no write credential for patch', { owner, err: err && err.message });
-    return fail('platform_unavailable', 'Usernode cannot write to the app repository right now. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom cannot write to the app repository right now. Try again shortly.', { retryable: true });
   }
 
   const branch = `${head.PATCH_BRANCH_PREFIX}u${userId || 0}-t${taskId || 0}-${head.nonce()}`;
@@ -192,7 +192,7 @@ async function applyPatch({
           await git(['apply', '--3way', '--whitespace=nowarn', '--', patchFile]);
           await git(['add', '-A', '--', ':!.usernode-submission.patch']);
           await git(['commit', '--quiet', '-m',
-            `Apply patch submitted through the Usernode connector\n\nBase: ${baseSha}`]);
+            `Apply patch submitted through the Homeroom connector\n\nBase: ${baseSha}`]);
         }
       } catch (err) {
         // `git am` leaves the repo mid-rebase on failure; the tmpdir is
@@ -236,7 +236,7 @@ async function applyPatch({
     if (kind === 'patch_forbidden_path') {
       return fail(
         'patch_rejected',
-        `That patch changes ${err.file}. Usernode applies patches with the platform's own GitHub credentials, so `
+        `That patch changes ${err.file}. Homeroom applies patches with the platform's own GitHub credentials, so `
         + 'it will not commit changes under `.github/` — CI workflow files are out of scope for a proposal.',
         { retryable: false }
       );
@@ -273,7 +273,7 @@ async function applyPatch({
     if (pushed) {
       await head.deleteBranch({ owner, repo, branch, token: credential.token });
     }
-    return fail('platform_unavailable', 'Usernode could not apply that patch just now. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom could not apply that patch just now. Try again shortly.', { retryable: true });
   }
 
   log.info('external-agent-patch', 'patch applied and pushed', {

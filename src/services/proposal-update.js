@@ -3,7 +3,7 @@
 // ── Updating a proposal that is already up for a vote (#1054) ──────────
 //
 // Until this existed, a connector-submitted proposal was a one-shot: an agent
-// pushed a branch to its own fork, Usernode copied that branch into the app's
+// pushed a branch to its own fork, Homeroom copied that branch into the app's
 // own repository and opened a pull request, and from then on the proposal
 // tracked a BOT-OWNED branch the agent had no way to write to. The advice in
 // get_proposal's own description — "fix the named tests and push again to the
@@ -15,9 +15,9 @@
 // there is a path for its author to advance it:
 //
 //   the author pushes to their own fork, as always
-//     → Usernode verifies the fork branch is theirs and sits AHEAD of the
+//     → Homeroom verifies the fork branch is theirs and sits AHEAD of the
 //       proposal's current head
-//     → Usernode pushes that branch onto the proposal's bot-owned branch
+//     → Homeroom pushes that branch onto the proposal's bot-owned branch
 //       under a `--force-with-lease`, with the platform's own credentials
 //     → the EXISTING head-moved machinery clears the votes, posts the
 //       "please re-review" note and rebuilds the preview and the checks.
@@ -169,7 +169,7 @@ function renameHeadFailure(result, branch) {
   if (result.code === 'fork_mismatch') {
     return fail(
       'not_your_fork',
-      `${branch} was not found in a repository owned by the GitHub account linked to your Usernode profile. `
+      `${branch} was not found in a repository owned by the GitHub account linked to your Homeroom profile. `
       + 'A proposal is only advanced from its author\'s own fork. Push the branch to your fork and try again.',
       { retryable: false }
     );
@@ -177,7 +177,7 @@ function renameHeadFailure(result, branch) {
   if (result.code === 'branch_not_found') {
     return fail(
       'fork_branch_not_found',
-      `Your fork has no branch called ${branch}. Push it first: GitHub creates branches on push, and Usernode `
+      `Your fork has no branch called ${branch}. Push it first: GitHub creates branches on push, and Homeroom `
       + 'reads it from your fork rather than from your machine.',
       { retryable: true }
     );
@@ -316,7 +316,7 @@ async function updateProposalFromForkBranch(deps, params) {
   if (gate) return gate;
 
   if (!gh.isEnabled()) {
-    return fail('platform_unavailable', 'Usernode cannot reach GitHub right now. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom cannot reach GitHub right now. Try again shortly.', { retryable: true });
   }
   // An unconfigured deployment and an unlinked user are two different
   // refusals, and the deployment is checked first — otherwise an operator's
@@ -324,7 +324,7 @@ async function updateProposalFromForkBranch(deps, params) {
   if (!githubLink.isEnabled(config)) {
     return fail(
       'github_link_unavailable',
-      'This Usernode deployment has no GitHub OAuth app configured, so it cannot verify which GitHub account is '
+      'This Homeroom deployment has no GitHub OAuth app configured, so it cannot verify which GitHub account is '
       + 'yours, and a proposal is only advanced from its author\'s verified fork. Ask an admin to set '
       + 'GITHUB_LINK_CLIENT_ID and GITHUB_LINK_CLIENT_SECRET in the platform variables panel.',
       { retryable: false }
@@ -338,7 +338,7 @@ async function updateProposalFromForkBranch(deps, params) {
   if (!link || !link.linked || !link.login) {
     return fail(
       'github_not_linked',
-      'Connect your GitHub account first: Usernode only advances a proposal from a fork it can confirm is yours.',
+      'Connect your GitHub account first: Homeroom only advances a proposal from a fork it can confirm is yours.',
       { ...(origin ? { settingsUrl: `${origin}/#settings/connectors` } : {}) }
     );
   }
@@ -422,7 +422,7 @@ async function reconcileManagedCommitUpload(deps, params) {
   if (revision.blocked) {
     return fail(
       revision.transient ? 'platform_unavailable' : 'proposal_closed',
-      revision.reason || 'Usernode could not reconcile the proposal revision.',
+      revision.reason || 'Homeroom could not reconcile the proposal revision.',
       { retryable: !!revision.transient }
     );
   }
@@ -432,7 +432,7 @@ async function reconcileManagedCommitUpload(deps, params) {
       'branch_moved',
       reconciledHead
         ? `The proposal branch moved again to commit ${reconciledHead.slice(0, 8)} while this upload was being reconciled.`
-        : 'Usernode could not pin the promoted proposal to the uploaded commit.',
+        : 'Homeroom could not pin the promoted proposal to the uploaded commit.',
       { retryable: false, ...(reconciledHead ? { headSha: reconciledHead } : {}) }
     );
   }
@@ -764,27 +764,48 @@ function normalizeLinkedIssues(linkedIssues) {
   return require('./pr-metadata').sanitizeIssueNumbers(linkedIssues);
 }
 
-async function applyLinkedIssues({ pool, gh, session, owner, repo, linkedIssues }) {
+// Update the issue associations on a session that already exists (#2028).
+// This is the one write shared by the browser, the hosted connector and the
+// older update-from-fork path below. `linked_issues` is the durable source of
+// truth; the PR body is a best-effort projection of it while a native PR is
+// still open.
+//
+// Additions and removals are DELTAS, not a replacement list. That matters to
+// agents and browser tabs working from a recently-read proposal: an unrelated
+// link added in between is preserved. Removal wins when a number appears in
+// both lists, matching applyIssueDeclarations and the dev-session dispatch
+// tools. The route bounds the final list to 50; the service sanitizes again so
+// no second caller can put malformed values into the integer[] column.
+async function updateLinkedIssues({
+  pool, gh, session, owner, repo, addIssues, removeIssues,
+}) {
   const prMetadata = require('./pr-metadata');
-  const adds = prMetadata.sanitizeIssueNumbers(linkedIssues);
-  if (!adds.length) return false;
-  const merged = prMetadata.applyIssueDeclarations(session.linked_issues, adds, []);
-  if (prMetadata.sameIssueSet(merged, session.linked_issues)) return false;
-  try {
+  const existing = prMetadata.sanitizeIssueNumbers(session.linked_issues);
+  const adds = prMetadata.sanitizeIssueNumbers(addIssues);
+  const removes = prMetadata.sanitizeIssueNumbers(removeIssues);
+  const linkedIssues = prMetadata.applyIssueDeclarations(existing, adds, removes);
+  const added = linkedIssues.filter((n) => !existing.includes(n));
+  const removed = existing.filter((n) => !linkedIssues.includes(n));
+  const changed = !prMetadata.sameIssueSet(linkedIssues, existing);
+  if (changed) {
     await pool.query(
       'UPDATE chat_sessions SET linked_issues = $1 WHERE id = $2',
-      [merged, Number(session.id)]
+      [linkedIssues, Number(session.id)]
     );
-  } catch (err) {
-    log.error('proposal-update', 'could not store the revision\'s linked issues', {
-      sessionId: Number(session.id), err: err.message,
+    session.linked_issues = linkedIssues;
+    log.info('proposal-update', 'stored the proposal\'s linked issues', {
+      sessionId: Number(session.id), linkedIssues,
     });
-    return false;
   }
-  session.linked_issues = merged;
-  log.info('proposal-update', 'stored the revision\'s linked issues', {
-    sessionId: Number(session.id), linkedIssues: merged,
-  });
+
+  const result = {
+    changed,
+    linkedIssues,
+    addedIssues: added,
+    removedIssues: removed,
+    prBodyUpdated: false,
+    prBodyStatus: 'no_pr',
+  };
 
   // A row with no PR is done: the closing block is assembled from the row
   // when the PR is created (pr-metadata.applyPrMetadata at promote time). A
@@ -796,46 +817,110 @@ async function applyLinkedIssues({ pool, gh, session, owner, repo, linkedIssues 
   // hand-written "Fixes #N" is never doubled. Imported PRs are skipped:
   // that body belongs to its external author on GitHub. Best-effort like
   // the GitHub rename above — the row is the source of truth either way.
-  if (session.pr_number && String(session.source) !== 'imported') {
-    try {
-      const pr = await gh.getPR(owner, repo, Number(session.pr_number));
-      const open = pr && !pr.merged && (!pr.state || pr.state === 'open');
-      const body = pr && typeof pr.body === 'string' ? pr.body : '';
-      const declared = prMetadata.parseClosingKeywords(body);
-      const missing = adds.filter((n) => !declared.includes(n));
-      if (open) {
-        if (missing.length) {
-          await gh.updatePR(owner, repo, Number(session.pr_number), {
-            body: body
-              ? `${body}\n\n${prMetadata.buildClosingBlock(missing)}`
-              : prMetadata.buildClosingBlock(missing),
-          });
-          log.info('proposal-update', 'appended the closing block to the live PR body', {
-            sessionId: Number(session.id), prNumber: Number(session.pr_number), missing,
-          });
-        }
-        // Keep pr-metadata's drift gate truthful: every add is now reflected
-        // in the live body (patched above, or already declared by the body's
-        // own keywords), so record them as applied — otherwise the next
-        // applyPrMetadata turn would rewrite a body that is already right.
-        const applied = prMetadata.applyIssueDeclarations(
-          session.pr_linked_issues_applied, adds, []
-        );
-        if (!prMetadata.sameIssueSet(applied, session.pr_linked_issues_applied)) {
-          await pool.query(
-            'UPDATE chat_sessions SET pr_linked_issues_applied = $1 WHERE id = $2',
-            [applied, Number(session.id)]
-          );
-          session.pr_linked_issues_applied = applied;
-        }
-      }
-    } catch (err) {
-      log.warn('proposal-update', 'stored the linked issues but could not patch the PR body', {
-        sessionId: Number(session.id), prNumber: Number(session.pr_number), err: err.message,
-      });
-    }
+  if (!session.pr_number) return result;
+  if (String(session.source) === 'imported') {
+    result.prBodyStatus = 'imported_pr';
+    return result;
   }
-  return true;
+
+  let pr;
+  try {
+    pr = await gh.getPR(owner, repo, Number(session.pr_number));
+  } catch (err) {
+    result.prBodyStatus = 'github_unavailable';
+    log.warn('proposal-update', 'stored the linked issues but could not read the PR body', {
+      sessionId: Number(session.id), prNumber: Number(session.pr_number), err: err.message,
+    });
+    return result;
+  }
+  const open = pr && !pr.merged && (!pr.state || pr.state === 'open');
+  if (!open) {
+    result.prBodyStatus = 'pr_not_open';
+    return result;
+  }
+
+  const previousBody = pr && typeof pr.body === 'string' ? pr.body : '';
+  const appliedBefore = prMetadata.sanitizeIssueNumbers(session.pr_linked_issues_applied);
+  // Only remove exact `Closes #N` lines the applied snapshot says Usernode
+  // previously projected. Other closing-keyword forms remain the PR author's.
+  // Use the requested deltas as repair candidates too. If the association
+  // write succeeded but GitHub was temporarily unavailable, repeating the
+  // same idempotent call must repair the body rather than stop at “already
+  // linked”.
+  const managedRemovals = removes.filter((n) => appliedBefore.includes(n));
+  let nextBody = prMetadata.stripClosingLines(previousBody, managedRemovals);
+  if (nextBody !== previousBody) {
+    nextBody = nextBody.replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
+  }
+  const declared = prMetadata.parseClosingKeywords(nextBody);
+  const requestedAdds = adds.filter((n) => linkedIssues.includes(n));
+  const missing = requestedAdds.filter((n) => !declared.includes(n));
+  if (missing.length) {
+    const closing = prMetadata.buildClosingBlock(missing);
+    nextBody = nextBody ? `${nextBody}\n\n${closing}` : closing;
+  }
+
+  try {
+    if (nextBody !== previousBody) {
+      await gh.updatePR(owner, repo, Number(session.pr_number), { body: nextBody });
+      result.prBodyUpdated = true;
+      try {
+        await pool.query(
+          'UPDATE chat_sessions SET pr_body = $1 WHERE id = $2',
+          [nextBody || null, Number(session.id)]
+        );
+        session.pr_body = nextBody || null;
+      } catch (err) {
+        log.warn('proposal-update', 'PR issue links changed but its body mirror did not', {
+          sessionId: Number(session.id), err: err.message,
+        });
+      }
+    }
+
+    // Keep pr-metadata's drift gate truthful: every surviving association
+    // that was already applied, and every new association now declared in the
+    // live body, belongs in the snapshot. Removed links are subtracted.
+    const bodyIssues = prMetadata.parseClosingKeywords(nextBody);
+    const applied = prMetadata.sanitizeIssueNumbers([
+      ...appliedBefore.filter((n) => linkedIssues.includes(n)),
+      ...requestedAdds.filter((n) => bodyIssues.includes(n)),
+    ]);
+    if (!prMetadata.sameIssueSet(applied, appliedBefore)) {
+      await pool.query(
+        'UPDATE chat_sessions SET pr_linked_issues_applied = $1 WHERE id = $2',
+        [applied, Number(session.id)]
+      );
+      session.pr_linked_issues_applied = applied;
+    }
+    result.prBodyStatus = result.prBodyUpdated ? 'updated' : 'already_current';
+  } catch (err) {
+    result.prBodyStatus = 'github_unavailable';
+    log.warn('proposal-update', 'stored the linked issues but could not patch the PR body', {
+      sessionId: Number(session.id), prNumber: Number(session.pr_number), err: err.message,
+    });
+  }
+  return result;
+}
+
+// The update-from-fork path predates #2028 and intentionally treats issue
+// linkage as best-effort metadata: a GitHub or database hiccup must not reject
+// an otherwise valid code update. Keep its boolean contract while routing the
+// actual mutation through the shared implementation above.
+async function applyLinkedIssues({ pool, gh, session, owner, repo, linkedIssues }) {
+  const prMetadata = require('./pr-metadata');
+  const adds = prMetadata.sanitizeIssueNumbers(linkedIssues);
+  if (!adds.length) return false;
+  try {
+    const result = await updateLinkedIssues({
+      pool, gh, session, owner, repo, addIssues: adds, removeIssues: [],
+    });
+    return result.changed;
+  } catch (err) {
+    log.error('proposal-update', 'could not store the revision\'s linked issues', {
+      sessionId: Number(session.id), err: err.message,
+    });
+    return false;
+  }
 }
 
 // ── A resubmit that moves nothing (#1199) ──────────────────────────────
@@ -1021,7 +1106,7 @@ async function advanceAppRepoBranch(ctx) {
   if (!targetBranch || !head.validRef(targetBranch)) {
     return fail(
       'platform_unavailable',
-      'Usernode cannot tell which branch this proposal lives on, so it will not push anything. Its author can '
+      'Homeroom cannot tell which branch this proposal lives on, so it will not push anything. Its author can '
       + 'still open a new proposal.',
       { retryable: false }
     );
@@ -1071,12 +1156,12 @@ async function advanceAppRepoBranch(ctx) {
       log.warn('proposal-update', 'could not read the proposal branch head', {
         sessionId, targetBranch, err: err.message,
       });
-      return fail('platform_unavailable', 'Usernode could not read this proposal\'s current commit. Try again shortly.', { retryable: true });
+      return fail('platform_unavailable', 'Homeroom could not read this proposal\'s current commit. Try again shortly.', { retryable: true });
     }
   }
   if (!firstLanding) {
     if (!liveHead || !SHA_RE.test(String(liveHead).trim())) {
-      return fail('platform_unavailable', 'Usernode could not read this proposal\'s current commit. Try again shortly.', { retryable: true });
+      return fail('platform_unavailable', 'Homeroom could not read this proposal\'s current commit. Try again shortly.', { retryable: true });
     }
     liveHead = String(liveHead).trim().toLowerCase();
     if (expectedHeadSha && expectedHeadSha !== liveHead) {
@@ -1523,7 +1608,7 @@ async function advanceForkHead(ctx) {
 
   const prNumber = Number(session.pr_number);
   if (!Number.isSafeInteger(prNumber) || prNumber <= 0) {
-    return fail('platform_unavailable', 'Usernode cannot tell which pull request this proposal follows.', { retryable: false });
+    return fail('platform_unavailable', 'Homeroom cannot tell which pull request this proposal follows.', { retryable: false });
   }
 
   let pr;
@@ -1531,7 +1616,7 @@ async function advanceForkHead(ctx) {
     pr = await gh.getPR(owner, repo, prNumber);
   } catch (err) {
     log.warn('proposal-update', 'could not read the proposal pull request', { sessionId, prNumber, err: err.message });
-    return fail('platform_unavailable', 'Usernode could not read this proposal\'s pull request. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom could not read this proposal\'s pull request. Try again shortly.', { retryable: true });
   }
   if (!pr || pr.merged || (pr.state && pr.state !== 'open')) {
     return fail(
@@ -1550,7 +1635,7 @@ async function advanceForkHead(ctx) {
     return fail(
       'not_your_fork',
       `Pull request #${prNumber} comes from ${headOwner ? `${headOwner}'s` : 'another'} repository, not from your `
-      + 'fork. Usernode only advances a proposal from its author\'s own account.',
+      + 'fork. Homeroom only advances a proposal from its author\'s own account.',
       { retryable: false }
     );
   }
@@ -1633,7 +1718,7 @@ async function advanceForkHead(ctx) {
     log.error('proposal-update', 'imported head change failed', { sessionId, err: err.message });
     return fail(
       'platform_unavailable',
-      'Usernode could not record your new commit against this proposal. Your push is on GitHub either way, so try '
+      'Homeroom could not record your new commit against this proposal. Your push is on GitHub either way, so try '
       + 'again shortly.',
       { retryable: true }
     );
@@ -1689,7 +1774,7 @@ async function checkAncestry({ gh, owner, repo, base, head: newHead, branch }) {
     log.warn('proposal-update', 'ancestry comparison failed', { owner, repo, err: err.message });
     return fail(
       'platform_unavailable',
-      'Usernode could not check that your branch builds on this proposal\'s current commit, so it did not move it. '
+      'Homeroom could not check that your branch builds on this proposal\'s current commit, so it did not move it. '
       + 'Try again shortly.',
       { retryable: true }
     );
@@ -1697,7 +1782,7 @@ async function checkAncestry({ gh, owner, repo, base, head: newHead, branch }) {
   if (!cmp || !cmp.status) {
     return fail(
       'platform_unavailable',
-      'Usernode could not check that your branch builds on this proposal\'s current commit, so it did not move it. '
+      'Homeroom could not check that your branch builds on this proposal\'s current commit, so it did not move it. '
       + 'Try again shortly.',
       { retryable: true }
     );
@@ -1757,4 +1842,6 @@ module.exports = {
   reconcileManagedCommitUpload,
   // The request-linking half of an update (#1310), unit-tested directly.
   applyLinkedIssues,
+  // The post-creation issue association seam shared by the UI + connector.
+  updateLinkedIssues,
 };

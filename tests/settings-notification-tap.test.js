@@ -1,6 +1,6 @@
 // The in-app Settings notification row must never be a dead tap (#1193).
 //
-// Reported: inside the Usernode iOS app, tapping the notification row in
+// Reported: inside the Homeroom iOS app, tapping the notification row in
 // Settings does nothing at all. Two compounding causes, neither of which
 // #1192 (which only fixed the FIRST-RUN sheet's ghost click) touched:
 //
@@ -150,7 +150,7 @@ test('outside the app, or with no requestPermissions: a named reason, not ' +
     ...IOS_IN_APP, isNative: false, pushStatus: 'undetermined',
   });
   assert.equal(off.verdict, 'no-bridge');
-  assert.match(off.reason, /Usernode app/);
+  assert.match(off.reason, /Homeroom app/);
   const noMethod = NativeChrome.decideNotificationTap({
     ...IOS_IN_APP, hasRequestMethod: false, pushStatus: 'undetermined',
   });

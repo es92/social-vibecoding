@@ -4,7 +4,7 @@
 // the PROPOSER'S OWN coding agent, on their own subscription, in their own
 // GitHub fork. The card says which agent, and the detail says on whose
 // account — that is the whole point of the connector, and the reason a
-// reviewer can trust that nobody's Usernode credits paid for it.
+// reviewer can trust that nobody's Homeroom credits paid for it.
 //
 // Two properties matter more than the pixels:
 //

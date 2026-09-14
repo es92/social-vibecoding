@@ -56,7 +56,7 @@ test('the venue copy is not re-implemented in this module', () => {
   );
   for (const label of [
     'Claude Code on the web', 'Codex on the web',
-    'Your computer · Usernode session', 'Your computer · your own tools',
+    'Your computer · Homeroom session', 'Your computer · your own tools',
   ]) {
     assert.ok(
       !SRC.includes(`'${label}'`) && !SRC.includes(`"${label}"`),
@@ -180,14 +180,14 @@ test('every row the menu carried still has a door', () => {
     path.join(__dirname, '../public/js/credit-options.js'), 'utf8'
   );
   assert.match(CREDIT_OPTIONS, /#settings\/api-key/);
-  // "Stop running on <machine>" → the runner select's Usernode option, which
+  // "Stop running on <machine>" → the runner select's Homeroom option, which
   // is features/dev-chat/composer-chrome.tsx's since #1191.
   const CHROME = fs.readFileSync(
     path.join(__dirname, '../frontend/src/features/dev-chat/composer-chrome.tsx'), 'utf8'
   );
   assert.match(CHROME, /_handBackToUsernode\?\.\(\)/);
   assert.match(CHROME, /id="dc-runner-select"/);
-  assert.match(CHROME, /<option value="platform">Usernode<\/option>/);
+  assert.match(CHROME, /<option value="platform">Homeroom<\/option>/);
   // …and the target id still travels with a hand-off (#1071): without it
   // the prepare call would open new work for a row that said "continue this
   // session". It happens where the sheet dispatches a `flow` pick — read

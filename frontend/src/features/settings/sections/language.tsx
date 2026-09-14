@@ -33,8 +33,8 @@ export function LanguageSection() {
     <div data-settings-section="language" className="hidden">
       <div id="settings-language-section" className="hidden">
         <SectionHeading title="Language">
-          Apps on Usernode use this as their default language, and may offer their own override.
-          Usernode's own screens are English-only for now, so changing this will not translate
+          Apps on Homeroom use this as their default language, and may offer their own override.
+          Homeroom's own screens are English-only for now, so changing this will not translate
           the platform.
         </SectionHeading>
         <Select id="settings-locale" variant="plain">

@@ -209,11 +209,11 @@ test('the precached document names the platform, and does not guess a theme', ()
 
   // 1. THE NAME. Both the tab title and the header chip said "dApps" — the
   //    name this shell carried before the platform had one — until routing
-  //    replaced it with "Social Vibecoding". Nothing else in the product says
+  //    replaced it with "Homeroom". Nothing else in the product says
   //    "dApps": not the manifest, not the header on home, not the landing
   //    page. The neutral starting value and the right one are the same
   //    string, so there is no reason for it to be the wrong one.
-  assert.match(head, /<title>Social Vibecoding<\/title>/);
+  assert.match(head, /<title>Homeroom<\/title>/);
   // Comments stripped: the note in head.html explains the very string it is
   // banning, and prose about a name is not a name.
   const shipped = html.replace(/<!--[\s\S]*?-->/g, ' ');
@@ -223,7 +223,7 @@ test('the precached document names the platform, and does not guess a theme', ()
     path.join(__dirname, '..', 'frontend', 'src', 'features', 'header', 'header-title-store.js'),
     'utf8'
   );
-  assert.match(store, /text: 'Social Vibecoding'/,
+  assert.match(store, /text: 'Homeroom'/,
     "the chip's INITIAL is what the prerender renders — they are one constant");
 
   // 2. THE THEME. `<html class="dark">` was hardcoded into the artifact, so

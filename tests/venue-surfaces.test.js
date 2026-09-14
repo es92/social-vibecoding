@@ -205,14 +205,14 @@ test('each in-chat provider gets its own model control, and other venues get non
 test('the card chip names the venue and carries the blurb as its title', () => {
   const chip = BV.chipHtml('usernode-openrouter');
   assert.match(chip, /class="dc-venue-chip"/);
-  assert.ok(chip.includes('Usernode · OpenRouter'));
+  assert.ok(chip.includes('Homeroom · OpenRouter'));
   assert.match(chip, /title="/, 'the blurb is the hover explanation');
   assert.equal(BV.chipHtml('nonsense'), '', 'an unknown id renders no chip');
 });
 
 test('an imported proposal gets no chip, because it has no venue to be in', () => {
   // own-tools-pr is the one venue with no chat and no session — the work
-  // already happened somewhere Usernode never saw. A chip saying "Your
+  // already happened somewhere Homeroom never saw. A chip saying "Your
   // computer · your own tools" on a card with no session behind it would
   // read as a place you could go.
   // The chip's MARKUP is card/dev-card.tsx's `venue` badge since #1367's
@@ -224,12 +224,12 @@ test('an imported proposal gets no chip, because it has no venue to be in', () =
   assert.match(fn, /s\.source === 'imported'/, 'imported rows are excluded');
   assert.match(fn, /\bBV\.sessionVenue\(/, 'and the rest resolve through the shared chain');
   assert.match(fn, /externalAgent: s\.external_agent/,
-    'external_agent travels, or a handed-off session reads as a Usernode one');
+    'external_agent travels, or a handed-off session reads as a Homeroom one');
 });
 
 test('the session list SELECT carries what the chip needs', () => {
   // A chip derived from `agent_backend` alone cannot tell an imported row
-  // from a Usernode · Claude one: an imported row has a DEFAULTED backend
+  // from a Homeroom · Claude one: an imported row has a DEFAULTED backend
   // that no turn ever ran through. `source` and `external_agent` are the
   // two columns that make the difference expressible.
   const list = SESSIONS_SRC.slice(SESSIONS_SRC.indexOf('SELECT id, branch_name, pr_number'));
@@ -255,7 +255,7 @@ test('every server fallback reason becomes a sentence', () => {
   for (const reason of reasons) {
     const note = BV.fallbackNote(reason);
     assert.ok(note.length > 0, `reason '${reason}' has no user-facing copy`);
-    assert.ok(note.includes('Usernode · Claude'),
+    assert.ok(note.includes('Homeroom · Claude'),
       `reason '${reason}' must name the venue it fell back TO`);
   }
 });

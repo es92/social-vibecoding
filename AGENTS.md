@@ -10,7 +10,7 @@ need a duplicate skill tree; its project plugin entry point under
 `.opencode/plugins/` links back to the canonical adapter in `.agents/hooks/`.
 Use the matching skill whenever its description fits:
 
-- `usernode-api` — inspect or change Usernode app/platform state.
+- `usernode-api` — inspect or change Homeroom app/platform state.
 - `usernode-proposal` — run a locally authored native proposal through
   staging, checks, and optional promotion.
 - `react-shell-migration` — convert a legacy-owned shell region to React.

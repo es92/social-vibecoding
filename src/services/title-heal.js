@@ -6,7 +6,7 @@
 //  - PRs: pr-metadata.js falls back to "<user>'s changes" and marks the
 //    session with chat_sessions.pr_title_fallback = TRUE.
 //  - Feedback issues: routes/feedback.js files with "Feedback from
-//    Usernode" and enqueues a title_heal_queue row.
+//    Homeroom" and enqueues a title_heal_queue row.
 //
 // Both used to require a manual one-off to repair (2026-07-13 credits
 // outage). This sweeper retries generation on a timer once the API is

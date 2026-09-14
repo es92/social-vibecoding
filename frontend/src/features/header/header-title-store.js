@@ -26,7 +26,7 @@
  * IT IS THE PLATFORM'S NAME. It was "dApps", the name this shell carried
  * before the platform had one, and that string is what the service worker's
  * cached document put in the chip on every load until routing replaced it
- * with "Social Vibecoding" — a cached page naming the product something no
+ * with "Homeroom" — a cached page naming the product something no
  * other surface calls it. The neutral starting point and the right one are
  * the same string, so there is no reason for it to be the wrong one.
  *
@@ -63,7 +63,7 @@ import { createStore } from '../../lib/plain-store.js';
 
 /** @type {HeaderTitleState} */
 const INITIAL = {
-  text: 'Social Vibecoding',
+  text: 'Homeroom',
   subtitle: '',
 };
 

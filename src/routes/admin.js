@@ -1203,7 +1203,7 @@ function adminRoutes(config) {
 
   // ── Linked wallet (issue #422) ─────────────────────────────
   //
-  // Set / change / clear a user's linked Usernode wallet
+  // Set / change / clear a user's linked Homeroom wallet
   // (users.usernode_pubkey). Mirrors the per-user daily-limit handler.
   // Body `{ pubkey }`:
   //   - null or '' → CLEAR: usernode_pubkey = NULL, and the link-flow

@@ -116,7 +116,7 @@ function buildUserClaudeMd(files) {
   const instructions = (files || []).filter((f) => f.kind === 'instruction');
   if (!instructions.length) return '';
   const parts = [
-    '<!-- Managed by Usernode — assembled from the user\'s "Agent',
+    '<!-- Managed by Homeroom — assembled from the user\'s "Agent',
     'instructions & skills" in their platform Settings. Do not edit here;',
     'changes are overwritten on every dispatch. -->',
     '',

@@ -12,7 +12,7 @@ const ownToolsHtml = (state) => renderComponent(
   { view: { prompt: Launchpad.prefillText(state), resumeHtml: Launchpad.resumeBannerHtml(state), canImport: state.canImport !== false } },
 );
 
-test('the launchpad venues are exactly the ones with no Usernode chat', () => {
+test('the launchpad venues are exactly the ones with no Homeroom chat', () => {
   // build-venues.js already answers this, per venue, with `chat`. This
   // module keeps its own list so it still works loaded alone — so the two
   // have to be asserted equal, or they are free to drift.
@@ -31,7 +31,7 @@ test('the launchpad venues are exactly the ones with no Usernode chat', () => {
 
 test('the proposal prompt names the app, issue, and brief for either local agent', () => {
   const text = Launchpad.prefillText({ slug: 'usernode-2d5619', issueNumber: 1891, sessionTitle: 'Fix the guide' });
-  assert.match(text, /Create a proposal for the Usernode app `usernode-2d5619`/);
+  assert.match(text, /Create a proposal for the Homeroom app `usernode-2d5619`/);
   assert.match(text, /What to build: issue #1891: Fix the guide/);
   assert.match(text, /Read the issue and its discussion/);
   assert.match(text, /link the proposal to issue #1891/);
@@ -260,7 +260,7 @@ test('preparing reads the card first and the composer only as a fallback', () =>
 });
 
 test('dismissing a launchpad repaints BOTH halves of the swap', () => {
-  // "Build on Usernode instead" changes the SWAP. Repainting only the slot
+  // "Build on Homeroom instead" changes the SWAP. Repainting only the slot
   // would empty the launchpad and leave the composer still hidden behind it
   // — a session with no way to type at all.
   //

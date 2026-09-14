@@ -716,7 +716,7 @@ test('menu: shortcut item renders when the bridge reports support', () => {
   const widgetItems = Home.menuItemsFor(baseApp({ is_collaborator: true }));
   const shortcutItem = widgetItems.find((i) => i.key === 'add-to-homescreen');
   assert.ok(shortcutItem, 'item present for widget mechanism');
-  assert.equal(shortcutItem.label, 'Add to Usernode widget');
+  assert.equal(shortcutItem.label, 'Add to Homeroom widget');
   assert.ok(!shortcutItem.disabled, 'actionable when not yet in the widget');
 });
 
@@ -744,7 +744,7 @@ test('menu: shortcut item only offered on "Your apps"', () => {
   );
 });
 
-test('menu: shortcut item becomes "Edit in Usernode widget" once added', () => {
+test('menu: shortcut item becomes "Edit in Homeroom widget" once added', () => {
   const Home = makeHome({ id: ME });
   Home._shortcutSupport = { mechanism: 'widget', widgetInstalled: true };
   Home._widgetItems = [
@@ -756,7 +756,7 @@ test('menu: shortcut item becomes "Edit in Usernode widget" once added', () => {
   const item = Home.menuItemsFor(baseApp({ is_favorited: true }))
     .find((i) => i.key === 'add-to-homescreen');
   assert.ok(item, 'item still renders');
-  assert.equal(item.label, 'Edit in Usernode widget');
+  assert.equal(item.label, 'Edit in Homeroom widget');
   assert.ok(!item.disabled, 'stays actionable — it opens the section');
   // Running it reveals the management section.
   item.run();
@@ -764,10 +764,10 @@ test('menu: shortcut item becomes "Edit in Usernode widget" once added', () => {
   // An app not yet in the widget keeps the add label.
   const other = Home.menuItemsFor(baseApp({ slug: 'other-app', is_favorited: true }))
     .find((i) => i.key === 'add-to-homescreen');
-  assert.equal(other.label, 'Add to Usernode widget');
+  assert.equal(other.label, 'Add to Homeroom widget');
 });
 
-// ── Usernode widget section ───────────────────────────────────────
+// ── Homeroom widget section ───────────────────────────────────────
 //
 // The iOS-only strip above "Your apps". It must render nothing unless BOTH
 // the bridge reported mechanism 'widget' AND the registry fetch succeeded
@@ -798,7 +798,7 @@ test('widget section: hidden unless revealed + widget mechanism + registry', () 
     { id: 'w1', name: 'Demo App', url: 'https://sv.test/#app/demo-app' },
   ];
   // Everything supported and fetched, but the user hasn't clicked
-  // "Add to Usernode widget" yet → still hidden by default.
+  // "Add to Homeroom widget" yet → still hidden by default.
   assert.equal(sectionHtml(Home), '', 'hidden until revealed');
   Home._widgetSectionVisible = true;
   assert.match(sectionHtml(Home), /id="widget-strip"/, 'revealed');
@@ -856,7 +856,7 @@ test('widget section: tiles in registry order, each with a remove button', () =>
     { id: 'w2', name: 'Other Dapp', url: 'https://elsewhere.test/thing' },
   ];
   const html = sectionHtml(Home);
-  assert.match(html, /Usernode widget/, 'section header');
+  assert.match(html, /Homeroom widget/, 'section header');
   assert.match(html, /id="widget-section-close"/, 'header has a Done/close button');
   assert.match(html, /id="widget-strip"/);
   assert.equal((html.match(/class="widget-tile /g) || []).length, 2);

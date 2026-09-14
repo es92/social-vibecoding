@@ -1447,7 +1447,7 @@ async function requireQuickReplies({ rules, context, model, tool, apiKey, signal
   if (!tool || !tool.name) throw new Error('requireQuickReplies needs the suggest_replies tool shape');
 
   const runModel = model || DEFAULT_MODEL;
-  const system = `You are the Mayor of a Usernode dev chat, continuing your own reply. You already sent the reply text below; the user can see it. All that is missing is the row of suggested next messages ("pills") that sits above their message box.
+  const system = `You are the Mayor of a Homeroom dev chat, continuing your own reply. You already sent the reply text below; the user can see it. All that is missing is the row of suggested next messages ("pills") that sits above their message box.
 
 Call ${tool.name} now with those pills, and nothing else. Do not write any text — it would not be shown.
 
@@ -1501,7 +1501,7 @@ async function generateQuickReplies({ rules, context, apiKey, telemetryContext }
   const activeClient = apiKey ? new Anthropic({ apiKey }) : client;
   if (!activeClient) throw new Error('LLM not initialized');
 
-  const system = `You write the row of suggested next messages ("pills") shown above the message box in a Usernode dev chat. They are written in the voice of the USER, as messages the user might send next — not in the voice of the assistant.
+  const system = `You write the row of suggested next messages ("pills") shown above the message box in a Homeroom dev chat. They are written in the voice of the USER, as messages the user might send next — not in the voice of the assistant.
 
 ${rules || ''}
 
@@ -1545,7 +1545,7 @@ Respond with ONLY a JSON object: {"replies": ["...", "..."]}. No prose before or
 // The template title routes/feedback.js files with when the Haiku title
 // call fails. Exported so feedback.js, the title-heal sweeper, and the UI
 // serializers all agree on the exact string they mark/detect.
-const FEEDBACK_FALLBACK_TITLE = 'Feedback from Usernode';
+const FEEDBACK_FALLBACK_TITLE = 'Feedback from Homeroom';
 
 // One-shot Haiku call that titles a GitHub issue from its feedback
 // description. Shared by routes/feedback.js (at filing time) and

@@ -1770,7 +1770,7 @@ async function _bootstrapWarmContainer(sessionId, {
   }
   if (privacy.private) {
     throw new Error(
-      `Cannot bootstrap worker for ${repoOwner}/${repoName}: repo is private. Usernode requires public repositories. Make it public on GitHub or delete this app and re-import.`
+      `Cannot bootstrap worker for ${repoOwner}/${repoName}: repo is private. Homeroom requires public repositories. Make it public on GitHub or delete this app and re-import.`
     );
   }
 
@@ -2341,7 +2341,7 @@ async function execInWorker(sessionId, {
     SYSTEM_PROMPT_FILE: systemPrompt ? TURN_SYSTEM_PROMPT_PATH : '',
     MODE: mode,
     BRANCH: branchName || '',
-    COMMIT_MSG: commitMsg || 'Changes via Usernode',
+    COMMIT_MSG: commitMsg || 'Changes via Homeroom',
     SESSION_ID: String(sessionId),
     PLATFORM_URL: PLATFORM_INTERNAL_URL,
     ...(isClaude ? {
@@ -3573,7 +3573,7 @@ async function execPushFromWorker(sessionId, branchName) {
     err.permanent = true;
     err.userMessage =
       'This session does not have a git branch yet, so there is nothing to push to. '
-      + 'Send a message in the session first. Usernode creates the branch on the '
+      + 'Send a message in the session first. Homeroom creates the branch on the '
       + 'first turn and the push will work from then on.';
     throw err;
   }

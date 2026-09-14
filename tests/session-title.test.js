@@ -9,6 +9,10 @@
 //    gathers the full request history + live spec.
 //  - services/pr-metadata: both PR UPDATE statements mirror pr_title
 //    into session_title.
+//  - #1949 OpenRouter sessions: deterministicTitle is the shared,
+//    LLM-free trim; titleFromFirstMessage names an untitled, PR-less
+//    session from its first user message with no model call and no
+//    spend, and an OpenRouter PR title equals that session name.
 //
 // Run with: node --test tests/session-title.test.js
 
@@ -232,6 +236,128 @@ test('refreshFromHistory feeds the full request history + live spec to the LLM',
   }
 });
 
+// ---- #1949: deterministic OpenRouter titles ----
+
+test('deterministicTitle trims markdown, collapses whitespace and caps at 72 chars', () => {
+  const { subject, restore } = loadServiceWithStubs({ onGenerate: async () => ({}) });
+  try {
+    assert.equal(subject.deterministicTitle('  Fix   the\nlogin  redirect  '), 'Fix the login redirect');
+    assert.equal(subject.deterministicTitle('## Fix `login` [redirect](x) *now*'), 'Fix login redirect x now');
+    assert.equal(subject.deterministicTitle('```js\nfoo()\n```'), '', 'a fenced block alone leaves nothing');
+    assert.equal(subject.deterministicTitle(''), '');
+    assert.equal(subject.deterministicTitle(null), '');
+    const exact = 'x'.repeat(72);
+    assert.equal(subject.deterministicTitle(exact), exact, '72 chars fit untouched');
+    const long = `${'word '.repeat(20)}end`;
+    const trimmed = subject.deterministicTitle(long);
+    assert.equal(trimmed.length, 72);
+    assert.ok(trimmed.endsWith('…'));
+    assert.equal(trimmed, `${long.slice(0, 71).trimEnd()}…`);
+  } finally {
+    restore();
+  }
+});
+
+test('titleFromFirstMessage names an untitled OpenRouter session from its first user message', async () => {
+  let generateCalls = 0;
+  const spends = [];
+  const { subject, restore } = loadServiceWithStubs({
+    onGenerate: async () => { generateCalls += 1; return { title: 'never' }; },
+    spends,
+  });
+  try {
+    // The FIRST user row wins over the turn's own message — a session
+    // whose opening turn was refused or stopped is still named from its
+    // opening ask, and that is the request the PR title comes from too.
+    const pool = mockPool({ userRows: [{ content: 'Make the **leaderboard** paginate' }, { content: 'try again' }] });
+    const session = { id: 5, session_title: null, pr_number: null };
+    const events = [];
+    const title = await subject.titleFromFirstMessage({
+      pool, session, message: 'try again', send: (type, data) => events.push({ type, data }),
+    });
+
+    assert.equal(title, 'Make the leaderboard paginate');
+    assert.equal(session.session_title, 'Make the leaderboard paginate');
+    const sel = pool.queries.find((q) => /FROM chat_session_messages/.test(q.sql));
+    assert.match(sel.sql, /role = 'user'/);
+    assert.match(sel.sql, /ORDER BY id ASC LIMIT 1/);
+    assert.deepEqual(sel.params, [5]);
+    const upd = pool.queries.find((q) => /UPDATE chat_sessions SET session_title/.test(q.sql));
+    assert.match(upd.sql, /pr_number IS NULL/, 'same guard as the Haiku path');
+    assert.deepEqual(upd.params, ['Make the leaderboard paginate', 5]);
+    assert.deepEqual(events, [{ type: 'session_titled', data: { sessionTitle: 'Make the leaderboard paginate' } }]);
+    assert.equal(generateCalls, 0, 'no model call');
+    assert.equal(spends.length, 0, 'nothing to debit');
+  } finally {
+    restore();
+  }
+});
+
+test('titleFromFirstMessage falls back to the turn message and skips when nothing is usable', async () => {
+  const { subject, restore } = loadServiceWithStubs({ onGenerate: async () => ({}) });
+  try {
+    // No stored row yet -> the turn's own message names the session.
+    const pool = mockPool({ userRows: [] });
+    const session = { id: 6, session_title: null, pr_number: null };
+    assert.equal(await subject.titleFromFirstMessage({ pool, session, message: 'Add a dark mode toggle' }),
+      'Add a dark mode toggle');
+    assert.equal(session.session_title, 'Add a dark mode toggle');
+
+    // Nothing readable at all -> no title, no UPDATE, branch name stays.
+    const empty = mockPool({ userRows: [{ content: '```\ncode only\n```' }] });
+    const bare = { id: 7, session_title: null, pr_number: null };
+    assert.equal(await subject.titleFromFirstMessage({ pool: empty, session: bare, message: '   ' }), null);
+    assert.equal(bare.session_title, null);
+    assert.ok(!empty.queries.some((q) => /UPDATE chat_sessions/.test(q.sql)), 'no UPDATE attempted');
+  } finally {
+    restore();
+  }
+});
+
+test('titleFromFirstMessage skips titled and PR sessions without touching the DB', async () => {
+  const { subject, restore } = loadServiceWithStubs({ onGenerate: async () => ({}) });
+  try {
+    const pool = mockPool();
+    assert.equal(await subject.titleFromFirstMessage({
+      pool, session: { id: 1, session_title: 'Already named', pr_number: null }, message: 'hi',
+    }), null);
+    assert.equal(await subject.titleFromFirstMessage({
+      pool, session: { id: 2, session_title: null, pr_number: 42 }, message: 'hi',
+    }), null);
+    assert.equal(await subject.titleFromFirstMessage({ pool, session: null, message: 'hi' }), null);
+    assert.equal(pool.queries.length, 0, 'no reads or writes');
+  } finally {
+    restore();
+  }
+});
+
+test('titleFromFirstMessage never throws: a DB failure resolves null, a lost race emits nothing', async () => {
+  const { subject, restore } = loadServiceWithStubs({ onGenerate: async () => ({}) });
+  try {
+    const broken = {
+      async query() { throw new Error('db down'); },
+    };
+    const session = { id: 9, session_title: null, pr_number: null };
+    const events = [];
+    assert.equal(await subject.titleFromFirstMessage({
+      pool: broken, session, message: 'do the thing', send: (t) => events.push(t),
+    }), null);
+    assert.equal(session.session_title, null, 'session left untouched');
+    assert.equal(events.length, 0);
+
+    // rowCount 0 = the guarded UPDATE matched nothing (PR landed meanwhile).
+    const raced = mockPool({ updateRowCount: 0, userRows: [{ content: 'do the thing' }] });
+    const late = { id: 10, session_title: null, pr_number: null };
+    assert.equal(await subject.titleFromFirstMessage({
+      pool: raced, session: late, message: 'do the thing', send: (t) => events.push(t),
+    }), null);
+    assert.equal(late.session_title, null);
+    assert.equal(events.length, 0);
+  } finally {
+    restore();
+  }
+});
+
 // ---- applyPrMetadata mirrors pr_title into session_title ----
 
 // Same stub shape as tests/pr-metadata.test.js.
@@ -317,6 +443,41 @@ test('the update-PR UPDATE mirrors pr_title into session_title', async () => {
     assert.match(upd.sql, /session_title = \$1/, 'update-path UPDATE writes session_title');
     assert.equal(upd.params[0], 'PR title');
     assert.equal(session.session_title, 'PR title');
+  } finally {
+    restore();
+  }
+});
+
+test('an OpenRouter PR title is the session name titleFromFirstMessage gave it (#1949)', async () => {
+  const githubCalls = [];
+  const { subject, restore } = loadPrMetadataWithStubs({ githubCalls });
+  try {
+    const ask = 'Make the leaderboard paginate 20 rows at a time and add a sticky header row for the column names';
+    const sessionTitles = require('../src/services/session-title');
+    const expected = sessionTitles.deterministicTitle(ask);
+    assert.equal(expected.length, 72, 'long enough to exercise the trim');
+
+    const pool = prMetadataMockPool();
+    pool.query = async function query(sql, params) {
+      this.queries.push({ sql, params });
+      if (/FROM chat_session_messages/i.test(sql)) return { rows: [{ role: 'user', content: ask, metadata: {} }] };
+      if (/FROM chat_session_specs/i.test(sql)) return { rows: [] };
+      if (/FROM chat_sessions\b/i.test(sql)) {
+        return { rows: [{ spec_md: '', linked_issues: [], pr_linked_issues_applied: [], testing_md: null, testing_path: null, pr_testing_applied: null }] };
+      }
+      return { rows: [] };
+    };
+    const session = {
+      id: 12, branch_name: 'dev/evan-17890406', pr_number: null,
+      agent_backend: 'codex_openrouter', session_title: expected,
+    };
+    await subject.applyPrMetadata({
+      pool, session, repoOwner: 'acme', repoName: 'app',
+      userMessage: ask, ccSummary: 'Paginated the leaderboard.', username: 'evan',
+    });
+    assert.equal(githubCalls[0].type, 'create');
+    assert.equal(githubCalls[0].opts.title, expected, 'PR title == pre-PR session name');
+    assert.equal(session.session_title, expected, 'the mirrored name is unchanged');
   } finally {
     restore();
   }

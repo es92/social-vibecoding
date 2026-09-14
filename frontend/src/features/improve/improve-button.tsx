@@ -9,7 +9,7 @@
  *
  * TWO publishers put one there. `setAppOpen()` does it for an open app, and
  * `Home.publishImproveTarget()` does it for the platform's own self-hosted row
- * while home is on screen (#1367) — "improve Social Vibecoding itself".
+ * while home is on screen (#1367) — "improve Homeroom itself".
  *
  * That second one shipped once before and was reverted (#1363), which is worth
  * knowing before touching it: the first version re-targeted only on the RETURN paths,

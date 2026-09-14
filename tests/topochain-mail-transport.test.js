@@ -29,7 +29,7 @@ const {
 const FULL_ENV = {
   TOPOCHAIN_MAIL_API_URL: 'https://mail.example.invalid/send',
   TOPOCHAIN_MAIL_API_KEY: 'test-key',
-  TOPOCHAIN_MAIL_FROM: 'Usernode <no-reply@example.invalid>',
+  TOPOCHAIN_MAIL_FROM: 'Homeroom <no-reply@example.invalid>',
 };
 
 // ─── create(): configured / unconfigured / partial ──────────────────────
@@ -375,7 +375,7 @@ test('the provider-aware describe() returns no credential value', () => {
     GMAIL_OAUTH_REFRESH_TOKEN: 'gmail-refresh-token-value',
     TOPOCHAIN_MAIL_API_URL: 'https://mail.example.invalid/send',
     TOPOCHAIN_MAIL_API_KEY: 'http-api-key-value',
-    PLATFORM_MAIL_FROM: 'Usernode <no-reply@example.invalid>',
+    PLATFORM_MAIL_FROM: 'Homeroom <no-reply@example.invalid>',
   };
   const serialized = JSON.stringify(mail.describe(values));
   for (const [key, value] of Object.entries(values)) {

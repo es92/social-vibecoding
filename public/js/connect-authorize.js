@@ -86,7 +86,7 @@
         cache: 'no-store',
       });
     } catch (err) {
-      showEntry('Could not reach Usernode. Check your connection and reload.', true);
+      showEntry('Could not reach Homeroom. Check your connection and reload.', true);
       return;
     }
 
@@ -123,7 +123,7 @@
     // back to Claude or ChatGPT to retry something that cannot yet succeed.
     if (resp.status === 403) {
       showEntry(
-        'Your Usernode account has not been released off the waitlist yet, so it '
+        'Your Homeroom account has not been released off the waitlist yet, so it '
         + 'cannot approve a connection. Once it is, start the connection again '
         + 'from Claude or ChatGPT.',
         true
@@ -142,7 +142,7 @@
     }
 
     document.getElementById('intro').textContent =
-      data.client_name + ' is asking to connect to your Usernode account.';
+      data.client_name + ' is asking to connect to your Homeroom account.';
     document.getElementById('confirm-client').textContent = data.client_name;
     document.getElementById('confirm-origin').textContent = data.redirect_origin;
     document.getElementById('confirm-user').textContent = data.username;
@@ -189,7 +189,7 @@
     } catch (err) {
       approve.disabled = false;
       reject.disabled = false;
-      showResult('Could not reach Usernode. Try again.', true);
+      showResult('Could not reach Homeroom. Try again.', true);
       return;
     }
 

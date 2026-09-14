@@ -581,7 +581,7 @@ test('manageStaking is a no-argument top-frame privileged action', async () => {
   );
   assert.equal(loaded.nativePosts[3].realmSessionClaim, 'realm-41');
   assert.deepEqual(loaded.nativePosts[3].args, {},
-    'Social Vibecoding must not send a target or desired state');
+    'Homeroom must not send a target or desired state');
 });
 
 test('Social push state and tap methods stay behind the top-frame capability',

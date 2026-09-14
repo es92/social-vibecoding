@@ -83,7 +83,7 @@ function normalizePem(raw) {
 }
 
 // The platform's own PUBLIC origin, for the app's platform LINKS — an
-// "Open in Usernode" CTA, a landing page's sign-up button. That is the one
+// "Open in Homeroom" CTA, a landing page's sign-up button. That is the one
 // thing a relative path cannot express, because the platform is a different
 // origin from the app. The three hosted ASSETS do not need it: they are
 // served from the app's own hostname (services/kubernetes.js), precisely so

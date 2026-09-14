@@ -1,5 +1,5 @@
 // #945: unit tests for services/thread-context — the loaders that read an
-// issue's / proposal's Usernode-side Discussion thread, and the builders
+// issue's / proposal's Homeroom-side Discussion thread, and the builders
 // that render them into an agent prompt block.
 //
 // Pure module, so the only fake needed is a pool whose `query` records the

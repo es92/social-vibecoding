@@ -858,7 +858,7 @@ const Improve = {
   /**
    * Open the feedback dialog.
    *
-   * `fromDev: true` is the mode the Dev "+" menu's "New issue" row used: it
+   * `fromDev: true` is the mode the Dev "+" menu's "File an issue" row uses: it
    * preselects the open app as the target (falling back to Platform for the
    * self-hosted row, or while the repo does not exist yet). That is the right
    * default here for the same reason — the panel is unambiguously about one

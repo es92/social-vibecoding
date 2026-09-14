@@ -282,6 +282,8 @@ export interface TranscriptSection {
 export interface TopicBody {
   changeId?: number;
   issues?: { n: number; title: string; href: string }[];
+  /** The proposal owner/full platform admin may change issue associations. */
+  canEditIssues?: boolean;
   testing?: { html: string | null; path: string | null };
   activity?: { label: string; at: string }[];
   workspace?: number | null;

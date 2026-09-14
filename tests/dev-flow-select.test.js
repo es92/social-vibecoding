@@ -44,7 +44,7 @@ function fullStatus(over) {
     github: { linked: true, login: 'octo-contributor', available: true },
     // Connected by default now: the connector is a REQUIREMENT, not the
     // advisory note it used to be, so without one the hand-off step is not the
-    // hand-off step at all — it is "Connect Usernode".
+    // hand-off step at all — it is "Connect Homeroom".
     connectors: { count: 2 },
     fork: {
       state: 'ready',
@@ -53,7 +53,7 @@ function fullStatus(over) {
       url: 'https://api.github.com/repos/octo-contributor/demo',
       pageUrl: 'https://github.com/octo-contributor/demo',
     },
-    // No `task`. Usernode does not mint the work order any more: it hands over
+    // No `task`. Homeroom does not mint the work order any more: it hands over
     // instructions, and the agent asks what to build and mints its own.
     instructions: 'Ask the user what to build, then call prepare_work.',
     targetKind: null,
@@ -389,7 +389,7 @@ test('a non-anchor node with a data-flow-href still opens it (fallback)', () => 
 
 test('an href action renders as a real anchor, never a scripted button (#1312)', () => {
   // A button that window.open()s never leaves the page on mobile: popup
-  // heuristics eat the scripted open in mobile browsers, and the Usernode
+  // heuristics eat the scripted open in mobile browsers, and the Homeroom
   // app's webview is bound to the platform's own domains, so github.com and
   // claude.ai can only leave for the system browser the way a plain
   // target="_blank" anchor does. "Fork on GitHub" was the report (#1312);
@@ -520,7 +520,7 @@ test('the dev chat is the module\'s only consumer, and owns the fetching', () =>
 
 // ── Three steps, and the agent does the rest ────────────────────────────
 //
-// Usernode used to mint the work order: the user typed a brief into step 3,
+// Homeroom used to mint the work order: the user typed a brief into step 3,
 // two more steps walked them through copying it and coming back to press
 // Submit, and a task sat in this tab tracking all of it. That tracking is what
 // a stale work order got stuck in. The agent has the connector, so it asks
@@ -563,7 +563,7 @@ test('the connector is a requirement, not a note beside the step', () => {
   // the agent cannot call prepare_work, so it has no base commit and no task
   // id, and there is nothing useful to hand it.
   const none = DevFlowSelect.steps(fullStatus({ connectors: { count: 0 } }), 'claude-code')[2];
-  assert.equal(none.title, 'Connect Usernode');
+  assert.equal(none.title, 'Connect Homeroom');
   assert.deepEqual(none.actions.map((a) => a.action), ['link-connector', 'refresh']);
   assert.ok(!none.actions.some((a) => a.action === 'copy'),
     'nothing to copy until the agent can act on it');

@@ -393,7 +393,7 @@ test('pool exhaustion records the failure WITHOUT prompting, and preserves the e
     // `usernode:wallet-recovery-required` event dispatched here — on every
     // admission attempt, and admission retries on every online / pageshow /
     // visibilitychange, so it kept popping up. It is offered from Settings →
-    // Usernode app → connection now, off lastSessionFailure(); nothing here
+    // Homeroom app → connection now, off lastSessionFailure(); nothing here
     // may announce it.
     const offers = loaded.calls.eventDetails.filter(
       (event) => event.type === 'usernode:wallet-recovery-required');
@@ -512,7 +512,7 @@ test('session mint reports native preparation separately from network failure',
     assert.equal(fetches, 0, 'native preparation still gates the session mint');
     assert.equal(
       native.sessionMintFailureMessage(preparationError),
-      'Secure app session could not be prepared. Force-quit and reopen Usernode, ' +
+      'Secure app session could not be prepared. Force-quit and reopen Homeroom, ' +
         'then try again. Diagnostic: native_session_recovery_uncertain'
     );
 
@@ -537,7 +537,7 @@ test('session mint reports native preparation separately from network failure',
       .then(() => null, (error) => error);
     assert.equal(
       untypedNative.sessionMintFailureMessage(untypedError),
-      'Secure app session could not be prepared. Force-quit and reopen Usernode, ' +
+      'Secure app session could not be prepared. Force-quit and reopen Homeroom, ' +
         'then try again. Reason: prepareForLogin was cancelled because the page changed'
     );
 

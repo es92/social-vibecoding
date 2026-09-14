@@ -35,7 +35,7 @@
 #   MODE                       build (default) | scout | sync
 #   WORKER_JWT                 required for build/sync; absent for scout
 #   MODEL                      default: claude-sonnet-5
-#   COMMIT_MSG                 default: "Changes via Usernode"
+#   COMMIT_MSG                 default: "Changes via Homeroom"
 #   CLAUDE_RESUME_SESSION_ID   if set, passes `--resume <id>` to claude
 #   PAT                        legacy back-compat — not set by the
 #                              current platform. The push step uses
@@ -79,7 +79,7 @@ fi
 : "${MODE:=build}"
 : "${WORKER_JWT:=}"
 : "${MODEL:=claude-sonnet-5}"
-: "${COMMIT_MSG:=Changes via Usernode}"
+: "${COMMIT_MSG:=Changes via Homeroom}"
 : "${PAT:=}"
 : "${CLAUDE_RESUME_SESSION_ID:=}"
 : "${SYSTEM_PROMPT_FILE:=}"
@@ -180,7 +180,7 @@ if [ "$MODE" = "sync" ]; then
   # `git merge origin/main` produces a merge commit on clean success
   # and leaves the tree dirty on conflict. We let it fail-non-zero
   # without `set -e` here on purpose.
-  if git merge origin/main --no-edit -m "Merge origin/main via Usernode sync" 2>&1; then
+  if git merge origin/main --no-edit -m "Merge origin/main via Homeroom sync" 2>&1; then
     # Clean merge → already committed by `git merge`.
     SYNC_RESULT="clean"
   else
@@ -222,7 +222,7 @@ Do not run git commands. I will commit and push for you after you finish editing
     # outside the conflict set as a side effect; we want them all in
     # the merge commit) and commit.
     git add -A
-    if ! git commit -m "Merge origin/main via Usernode sync (Claude-resolved)" 2>&1; then
+    if ! git commit -m "Merge origin/main via Homeroom sync (Claude-resolved)" 2>&1; then
       echo "__USERNODE_WARN__ commit failed after conflict resolution"
       git merge --abort 2>&1 || true
       echo "__USERNODE_RESULT__ cc_exit=$CC_EXIT ahead=0 behind=$BEHIND_NOW sha= push_ok=0 mode=sync sync_result=conflict conflict_files=$CONFLICT_FILES_CSV"

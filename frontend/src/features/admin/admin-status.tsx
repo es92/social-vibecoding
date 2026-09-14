@@ -872,13 +872,13 @@ function StatusSection() {
         {data ? <Summary s={d.summary || {}} node={d.node} runtimeKind={d.runtimeKind} /> : null}
       </div>
 
-      {/* Usernode sidecar status. The cached snapshot is updated server-side
+      {/* Homeroom node sidecar status. The cached snapshot is updated server-side
           every 500ms-2s by services/node-status.js, so this card stays fresh
           without each tab independently polling the sidecar. "→ full status"
           switches to the Node & chain section. */}
       <section className="mb-6">
         <div className="flex items-baseline justify-between mb-2">
-          <h3 className={SECTION_H3}>Usernode node</h3>
+          <h3 className={SECTION_H3}>Homeroom node</h3>
           <button type="button" data-admin-section="node"
             className="text-xs text-violet-700 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
             onClick={() => {

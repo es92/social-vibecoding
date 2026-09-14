@@ -346,7 +346,7 @@ test('native.css: .un-panel does not clip its filler or restrict input', () => {
   assert.ok(!/overflow:\s*hidden/.test(block),
     'overflow:hidden on .un-panel would clip the overshoot filler away (cf. .un-sheet)');
   // #970: the forwarded custom property first, env() as the standalone
-  // fallback — bare env() is 0px inside a Usernode app frame.
+  // fallback — bare env() is 0px inside a Homeroom app frame.
   assert.match(
     block,
     /padding-top:\s*var\(--un-safe-inset-top,\s*env\(safe-area-inset-top/,

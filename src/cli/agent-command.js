@@ -2,7 +2,7 @@
 
 // `social-vibecoding agent run|status|detach` — the local half of #907.
 //
-// `agent run` attaches this machine to one Usernode dev session and then sits
+// `agent run` attaches this machine to one Homeroom dev session and then sits
 // in a long poll. When someone types a message in that session's Dev chat, the
 // platform hands the turn here instead of to a worker container: this process
 // runs `claude` against a local checkout, streams progress back so the web
@@ -18,7 +18,7 @@
 //      the platform receives a prompt's worth of progress text and a commit —
 //      never a token, never an env dump.
 //   2. NO PUSH ACCESS IS NEEDED. Commits go up as a file-by-file upload that
-//      Usernode reconstructs through its GitHub App, and it rejects the
+//      Homeroom reconstructs through its GitHub App, and it rejects the
 //      result unless the reconstructed tree matches the local one byte for
 //      byte. That is why this never runs `git push`, and why it must not be
 //      "simplified" into one.
@@ -52,7 +52,7 @@ const COMMIT_UPLOAD_DEADLINE_MS = 2 * 60 * 1000;
 // only repaints on poll anyway.
 const PROGRESS_FLUSH_MS = 2000;
 const PROGRESS_FLUSH_LINES = 25;
-const DEFAULT_COMMIT_MESSAGE = 'Changes via Usernode';
+const DEFAULT_COMMIT_MESSAGE = 'Changes via Homeroom';
 const MAX_LABEL_CHARS = 64;
 // How much of the dispatch prompt to show in the confirmation, so the operator
 // is agreeing to something specific rather than to "a turn".
@@ -225,7 +225,7 @@ function progressReporter(api, { turnId, leaseId }) {
 // routes/sessions.js derives one from the user's own message for the
 // server-side path (`Changes: ${userMessage.substring(0, 50)}`); the CLI path
 // hardwired DEFAULT_COMMIT_MESSAGE into its context instead, so every commit
-// it made read "Changes via Usernode". These commits are not scratch: they
+// it made read "Changes via Homeroom". These commits are not scratch: they
 // become the proposal the app's group reads, and a history of identical
 // subject lines tells a voter nothing about which change is which.
 //
@@ -280,7 +280,7 @@ async function confirmTurn(turn, mode, context, io) {
     .slice(0, CONFIRM_PREVIEW_CHARS);
   io.out(
     `\n┌─ Turn ${turn.turnId}: ${mode.label}\n`
-    + `│  Usernode wants to ${mode.verb} ${context.repo}\n`
+    + `│  Homeroom wants to ${mode.verb} ${context.repo}\n`
     + `│\n${preview.split('\n').map((line) => `│  ${line}`).join('\n')}\n`
     + `└─\n`
   );
@@ -506,7 +506,7 @@ async function agentRun(args, io, deps) {
   let running = true;
 
   // Keeps the lease alive. Its 120s TTL is four beats wide, so a laptop that
-  // suspends is reliably swept and the session goes back to Usernode's own
+  // suspends is reliably swept and the session goes back to Homeroom's own
   // agent instead of hanging on a machine that is not listening.
   const heartbeat = setInterval(() => {
     api.call('POST', '/api/cli/agent/heartbeat', { leaseId: lease.leaseId })
@@ -586,7 +586,7 @@ async function agentRun(args, io, deps) {
     process.removeListener('SIGINT', onSignal);
     process.removeListener('SIGTERM', onSignal);
     await api.call('POST', '/api/cli/agent/detach', { leaseId: lease.leaseId }).catch(() => {});
-    io.out('Detached. Turns for this session go back to Usernode\'s own agent.\n');
+    io.out('Detached. Turns for this session go back to Homeroom\'s own agent.\n');
   }
   return 0;
 }

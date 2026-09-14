@@ -1,9 +1,9 @@
 ---
-name: Usernode Social Vibecoding
+name: Homeroom
 subtitle: "where the users are the developers are the users are the developers..."
 ---
 
-# Usernode Social Vibecoding
+# Homeroom
 
 > where the users are the developers are the users are the developers...
 
@@ -100,7 +100,7 @@ The template is a stripped-down recipe-bot: Node.js/Express + single HTML page +
 ## GitHub Bot Account
 
 - Dedicated GitHub user account (e.g. `usernode-bot`) that owns all app repos
-- A **GitHub App** ("Usernode Vibecoding") registered under the bot account, with permissions: repo admin, contents, issues, pull requests, secrets (all read/write), metadata (read)
+- A **GitHub App** ("Homeroom Vibecoding") registered under the bot account, with permissions: repo admin, contents, issues, pull requests, secrets (all read/write), metadata (read)
 - The App is installed on the bot account; the platform uses `@octokit/app` to get auto-rotating installation tokens
 - Setup: create bot account, register GitHub App, generate private key (PEM), install App, store `GITHUB_APP_ID` + `GITHUB_PRIVATE_KEY` as platform secrets
 
@@ -129,7 +129,7 @@ The Caddy details below apply only to standalone Docker installations.
 > **Legacy Docker checklist.** Kubernetes deployments use the
 > [platform chart](deploy/helm/social-vibecoding-platform/README.md) and
 > [Kubernetes operations](docs/kubernetes-operations.md). The steps below describe the *original*
-> `evanshapi.ro`-monorepo deploy, where Usernode is one of several
+> `evanshapi.ro`-monorepo deploy, where Homeroom is one of several
 > projects orchestrated by a shared `orchestrate.sh` + shared Caddy.
 > For the **standalone** deploy (dedicated VPS, self-contained
 > `docker-compose.yml`) see
@@ -155,7 +155,7 @@ you've picked. Allow up to 10 minutes for propagation.
 From the bot account:
 
 1. Go to **Settings > Developer settings > GitHub Apps > New GitHub App**
-2. **Name**: `Usernode Vibecoding`
+2. **Name**: `Homeroom Vibecoding`
 3. **Homepage URL**: `https://usernode.evanshapiro.dev`
 4. **Webhook**: uncheck "Active" (we don't need webhooks yet)
 5. **Permissions**:

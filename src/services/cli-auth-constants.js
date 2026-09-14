@@ -1,7 +1,7 @@
 'use strict';
 
 const CLIENT_ID = 'social-vibecoding-cli';
-const CLIENT_NAME = 'Social Vibecoding CLI';
+const CLIENT_NAME = 'Homeroom CLI';
 const IDENTITY_SCOPE = 'rpc:identity:read';
 const API_SCOPE = 'api:access';
 // #907: the local coding agent. Deliberately its own scope rather than a

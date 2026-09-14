@@ -436,8 +436,33 @@ test('#1442 — a superseded base annotates the verdict without contradicting it
   // The count is still the truth about the run.
   assert.match(html, /1/);
   assert.match(html, /8 commits ago/);
+  // The fact the note exists to state — and the phrase the declared check
+  // "Freshness (#1442): checks that passed on a superseded base are
+  // annotated, not contradicted" pins on the demo proposal. Blocking under
+  // earned gating, so a rewording that drops it fails every proposal.
   assert.match(html, /would no longer merge into/);
-  assert.match(html, /Syncing with main re-runs them/);
+  // A clean head merges as it stands; the note says what catches a
+  // regression the old base hid (the post-merge run on main), and does not
+  // promise a sync that will never come.
+  assert.match(html, /does not hold the merge/);
+  assert.match(html, /tests on main again straight after/);
+  assert.doesNotMatch(html, /Syncing with main re-runs them/);
+});
+
+test('a superseded base on a CONFLICTING head says the resolution re-runs the checks', () => {
+  const AppView = makeAppView(ME);
+  const note = AppView._checksBaseNote({
+    freshness: { checksBaseVerdict: 'superseded', checksBaseBehindBy: 4, mergeability: 'conflict' },
+  });
+  assert.match(note, /4 commits ago, so they describe code this proposal would no longer merge into\. It now conflicts with main/);
+  assert.match(note, /resolving the conflict re-runs them on the resolved commit/);
+  assert.doesNotMatch(note, /merges as it stands/);
+  // The board tag reads the same sentence, led by its own subject.
+  const tag = AppView.blockReasons({
+    check_state: 'passing',
+    freshness: { checksBaseVerdict: 'superseded', checksBaseBehindBy: 4, mergeability: 'clean' },
+  }).find((r) => r.key === 'checks_base_superseded');
+  assert.match(tag.detail, /^The checks passed, but ran against main as it was 4 commits ago, so they describe code this proposal would no longer merge into\./);
 });
 
 test('#1442 — the base note reads singular for one commit, and says nothing for none', () => {
@@ -469,7 +494,7 @@ test('#1442 — a current base, an unknown one, and a legacy row stay silent', (
     check_state: 'passing',
     test_results: [{ name: 'Home', path: '/', status: 'pass' }],
   }));
-  assert.doesNotMatch(html, /would no longer merge into/);
+  assert.doesNotMatch(html, /does not hold the merge/);
 });
 
 test('#1442 — the note reads flat columns too, not only the nested block', () => {

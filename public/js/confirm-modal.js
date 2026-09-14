@@ -1,8 +1,8 @@
-// Promise-based confirm dialog that works inside Usernode webviews.
+// Promise-based confirm dialog that works inside Homeroom webviews.
 //
 // Why this exists: native window.confirm() blocks the JS thread and is
 // suppressed or no-op'd in several webview hosts the platform runs in
-// (mobile in-app browsers, the Usernode wallet shell, etc.). Anything
+// (mobile in-app browsers, the Homeroom wallet shell, etc.). Anything
 // destructive that wants a "really?" gate has to use this instead.
 //
 // Since the native-kit adoption this is a thin adapter over

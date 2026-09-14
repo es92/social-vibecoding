@@ -2,7 +2,7 @@
 // /favicon.ico probe. Freshly created apps used to fail immediately in
 // the dev console: the template ships no favicon file, so the request
 // fell through the static middleware into the auth-gated catch-all,
-// which answered 401 ("Open in Usernode") — an error on every first
+// which answered 401 ("Open in Homeroom") — an error on every first
 // load of every new app, before the user wrote a single line.
 //
 // Two-layer fix, both asserted here:

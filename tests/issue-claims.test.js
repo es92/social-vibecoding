@@ -119,7 +119,7 @@ test('POST upserts the caller\'s own claim (create) and announces it in the thre
     assert.deepStrictEqual(q.params, [1, 2, 7]);
 
     // #1648: taking the work also casts/moves the caller's assignee vote to
-    // their own username. This stays in Usernode's topic metadata; it does
+    // their own username. This stays in Homeroom's topic metadata; it does
     // not mutate the GitHub issue.
     const assignment = capturedQueries.find((c) => /INSERT INTO topic_attribute_votes/.test(c.sql));
     assert.ok(assignment, 'claim also upserts the caller\'s assignee vote');

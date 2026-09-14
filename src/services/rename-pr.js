@@ -202,7 +202,7 @@ async function createRenamePR(config, pool, app, newName, actor) {
     commitMessage: `Rename to "${newName}"`,
     prTitle: renamePrTitle(newName),
     prBody:
-      `${actor.username} (via Usernode) proposed renaming "${app.name}" to "${newName}".\n\n` +
+      `${actor.username} (via Homeroom) proposed renaming "${app.name}" to "${newName}".\n\n` +
       `This PR updates the \`name\` field in \`dapp.json\`. It still needs a regular ` +
       `merge vote to land. Vote in the app's group chat panel. The new name applies ` +
       `automatically once the PR merges and the app redeploys.`,
@@ -232,7 +232,7 @@ async function createVisibilityPR(config, pool, app, { collab, view }, actor) {
     commitMessage: visibilityPrTitle(collab, view),
     prTitle: visibilityPrTitle(collab, view),
     prBody:
-      `${actor.username} (via Usernode) proposed changing "${app.name}" to be ${desc}.\n\n` +
+      `${actor.username} (via Homeroom) proposed changing "${app.name}" to be ${desc}.\n\n` +
       `This PR updates the \`visibility\` block in \`dapp.json\` (\`build\` = who can ` +
       `build the app, \`view\` = who can see & use it). It still needs a regular merge ` +
       `vote to land. Vote in the app's group chat panel. The new visibility applies ` +
@@ -270,7 +270,7 @@ async function createGovernancePR(config, pool, app, { policy, approvalsRequired
     commitMessage: governancePrTitle(policy, approvalsRequired),
     prTitle: governancePrTitle(policy, approvalsRequired),
     prBody:
-      `${actor.username} (via Usernode) proposed changing "${app.name}"'s proposal-approval ` +
+      `${actor.username} (via Homeroom) proposed changing "${app.name}"'s proposal-approval ` +
       `settings to ${desc}.\n\n` +
       `This PR updates the \`governance\` block in \`dapp.json\` (\`approvers\` = who can ` +
       `approve proposals, \`approvals\` = how many approvals are needed). It still needs a ` +
@@ -308,7 +308,7 @@ async function createAdminsPR(config, pool, app, { usernames }, actor) {
     commitMessage: adminsPrTitle(usernames),
     prTitle: adminsPrTitle(usernames),
     prBody:
-      `${actor.username} (via Usernode) proposed changing "${app.name}"'s app admins ` +
+      `${actor.username} (via Homeroom) proposed changing "${app.name}"'s app admins ` +
       `to ${desc}.\n\n` +
       `This PR updates the \`admins\` array in \`dapp.json\`: the platform users who can ` +
       `administer this app (creator-level settings plus force-merging its proposals). ` +
@@ -404,7 +404,7 @@ async function createSecretDeclarationPR(config, pool, app, { scope, key, declar
     commitMessage: title,
     prTitle: title,
     prBody:
-      `${actor.username} (via Usernode) proposed declaring ${isPlatform ? 'a new platform variable' : 'a new app secret'} `
+      `${actor.username} (via Homeroom) proposed declaring ${isPlatform ? 'a new platform variable' : 'a new app secret'} `
       + `\`${key}\`${decl.description ? `: ${decl.description}` : ''}.\n\n`
       + `This PR appends one entry to the \`${isPlatform ? 'platform_env' : 'secrets'}\` array in \`dapp.json\`:\n`
       + `${flagBits.map((b) => `- ${b}`).join('\n')}\n\n`
@@ -584,7 +584,7 @@ async function migrateOpenRenameIssues(config, pool) {
       }
 
       const app = { id: issue.app_id, slug: issue.slug, name: issue.name, repo_url: issue.repo_url };
-      const actor = { id: issue.created_by || null, username: issue.created_by_username || 'Usernode' };
+      const actor = { id: issue.created_by || null, username: issue.created_by_username || 'Homeroom' };
 
       const alreadyNamed = newName.toLowerCase() === (issue.name || '').toLowerCase();
       let renameSession = alreadyNamed ? null : await findRenamePrForName(pool, issue.app_id, newName);

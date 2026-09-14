@@ -597,7 +597,7 @@ test('the head still loads the bridge before anything can use it', () => {
     nativeClassAt > bridgeAt,
     'the inline script that adds .in-native-webview reads window.usernode.isNative, which '
     + '/usernode-bridge.js sets synchronously — it must run after the bridge. Reversing them '
-    + 'reintroduces the flash of a duplicated header title inside the Usernode app WebView.',
+    + 'reintroduces the flash of a duplicated header title inside the Homeroom app WebView.',
   );
   assert.ok(
     head.indexOf('window.Theme') < bridgeAt,

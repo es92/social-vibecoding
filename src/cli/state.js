@@ -840,7 +840,7 @@ async function setNativeRecord(origin, record) {
   } else if (process.platform === 'linux') {
     const stored = linuxSecretTool([
       'store',
-      '--label=Social Vibecoding CLI',
+      '--label=Homeroom CLI',
       'service', 'social-vibecoding',
       'account', origin,
     ], { input: serialized });

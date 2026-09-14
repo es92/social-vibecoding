@@ -30,6 +30,10 @@ function checksStaleMs() {
 // is still working on it.
 function checkRunOverdue(session, { now = Date.now(), staleMs = checksStaleMs() } = {}) {
   if (session?.check_state != null && session.check_state !== 'pending') return false;
+  // A deferred verdict is waiting on a conflict, not on a runner
+  // (services/check-admission.js): no run is overdue because none was
+  // started, and re-driving one would only defer it again.
+  if (session?.check_phase === 'deferred') return false;
   if (!(session?.checks_commit_sha || session?.handoff_head_sha)) return false;
   const checkedAt = session?.checks_checked_at == null
     ? NaN
@@ -76,6 +80,7 @@ async function findStuckCheckSessions({
         AND cs.branch_name IS NOT NULL
         AND (cs.check_state IS NULL
              OR (cs.check_state = 'pending'
+                 AND cs.check_phase IS DISTINCT FROM 'deferred'
                  AND (cs.checks_checked_at IS NULL
                       OR cs.checks_checked_at < NOW() - make_interval(secs => $1::double precision / 1000.0)))
              OR (cs.check_state = 'error'
@@ -221,6 +226,9 @@ const CHECK_TRIGGER_BY_REASON = {
   dangling_tail: 'boot-reconcile',
   heal: 'stuck-sweep',
   'stuck-checks-sweep': 'stuck-sweep',
+  // A verdict that was deferred while the head conflicted with main, run
+  // now that it merges cleanly (services/check-admission.js).
+  'conflict-resolved': 'conflict-resolved',
 };
 function checkTriggerForReason(reason) {
   return CHECK_TRIGGER_BY_REASON[reason] || 'stuck-sweep';

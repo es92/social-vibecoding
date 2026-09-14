@@ -55,7 +55,7 @@ test('scaffold server.js redirects unauthenticated document navigations to the c
   // never a redirect that would nest the shell inside its own iframe).
   const unauthBranch = server.indexOf('if (!req.user) {');
   const redirect = server.indexOf("req.get('sec-fetch-dest')");
-  const landing = server.indexOf('Open this app inside Usernode');
+  const landing = server.indexOf('Open this app inside Homeroom');
   assert.ok(unauthBranch !== -1 && unauthBranch < redirect && redirect < landing,
     'redirect sits between the auth check and the landing-page fallback');
 });
@@ -257,7 +257,7 @@ test('app.js setChromeless toggles the header and the pill', () => {
   // the prerendered markup and the first hydrating render identical.
   assert.ok(pill.includes('if (!chromeless) return null;'));
   assert.ok(pill.includes("id=\"chromeless-pill\""));
-  assert.ok(pill.includes("aria-label=\"Open this app on Usernode\""));
+  assert.ok(pill.includes("aria-label=\"Open this app on Homeroom\""));
   // The pill's exit target is the regular App-tab view, which clears the
   // mode via restoreFromHash. The slug is read at CLICK time, so the pill
   // survives app-to-app navigation without a remount.

@@ -938,7 +938,7 @@ function authRoutes(config) {
           amount: 1,
           memo,
           confirmTitle: 'Link Wallet',
-          confirmSubtitle: 'Link your Usernode wallet to your Social Vibecoding account.',
+          confirmSubtitle: 'Link your Homeroom wallet to your Homeroom account.',
         },
         expiresAt: expiresAt.toISOString(),
       });

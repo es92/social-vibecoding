@@ -504,7 +504,7 @@ export function Shell() {
           now (features/header/), which is deferred and therefore still runs
           after this tag. header-layout.js was retired here too — it is
           features/header/use-header-layout.ts. All of them no-op outside the
-          Usernode app webview.
+          Homeroom app webview.
       */}
       <script src={assetUrl('/js/native-chrome.js')} />
       <script src={assetUrl('/js/dev-host.js')} />

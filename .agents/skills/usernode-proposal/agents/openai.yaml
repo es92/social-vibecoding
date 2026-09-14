@@ -1,4 +1,4 @@
 interface:
-  display_name: "Usernode Proposal"
+  display_name: "Homeroom Proposal"
   short_description: "Build, test, submit, and promote proposals"
-  default_prompt: "Use $usernode-proposal to take a local Usernode proposal through its complete lifecycle."
+  default_prompt: "Use $usernode-proposal to take a local Homeroom proposal through its complete lifecycle."

@@ -1,5 +1,5 @@
 // The platform's OWN app row — the `apps` record whose `self_hosted` flag is
-// set, i.e. Social Vibecoding as an app on Social Vibecoding.
+// set, i.e. Homeroom as an app on Homeroom.
 //
 // ── Why this needs a service at all ───────────────────────────────────
 //

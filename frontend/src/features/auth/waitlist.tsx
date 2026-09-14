@@ -881,7 +881,7 @@ export function WaitlistScreen() {
             Every app in the directory was built here, by the people who use it.
           </li>
           <li>
-            They run on the Usernode chain, and contributors own a share of what
+            They run on the Homeroom chain, and contributors own a share of what
           they build.
           </li>
           <li>

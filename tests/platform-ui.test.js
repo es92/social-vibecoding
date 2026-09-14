@@ -382,7 +382,7 @@ test('setAppOpen publishes the Improve target instead of toggling a switch', () 
 
 test('home publishes the PLATFORM Improve target, from render and not only on return', () => {
   // #1367 put an Improve button on the home screen, scoped to the platform's
-  // own self-hosted row — "improve Social Vibecoding itself".
+  // own self-hosted row — "improve Homeroom itself".
   //
   // THE UI OVERHAUL shipped that once and reverted it, and this test pins the
   // shape of the fix rather than just the feature. The reverted version

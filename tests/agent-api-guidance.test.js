@@ -114,7 +114,7 @@ test('the base-commit check is always-on, not only in the proposal skill', () =>
   );
 });
 
-test('shared Usernode skills retain API safety and scope the hook UI to Codex CLI', () => {
+test('shared Homeroom skills retain API safety and scope the hook UI to Codex CLI', () => {
   const api = readSkill('usernode-api');
   assert.match(api, /social-vibecoding codex setup/);
   assert.match(api, /social-vibecoding claude setup/);

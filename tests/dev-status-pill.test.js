@@ -658,3 +658,33 @@ test('the declared checks match what the real staging fixtures render', () => {
     if (m) assert.ok(produced.has(m[1]), `${t.name} asks for a tag the fixtures produce: ${m[1]}`);
   }
 });
+
+// The ledger's one control. A red main pauses every merge on the app until a
+// fix lands or an admin resumes them; the admin reading the ledger is the one
+// person who can, so the gate carries the verb for them and for nobody else.
+test('the main_healthy gate carries "Resume merges" for an admin, and for nobody else', () => {
+  const gate = { key: 'main_healthy', label: 'Main is healthy', actor: 'admin', state: 'blocked',
+    detail: { note: "main's unit suite is failing since abc1234" } };
+  const admin = makeAppView({ admin: true });
+  admin.appData = { slug: 'demo-app' };
+  const act = admin._requirementAction(gate, { isAdmin: true, isAuthor: false, hasVoted: false });
+  assert.equal(act.label, 'Resume merges');
+  assert.equal(JSON.stringify(act.act), JSON.stringify({ fn: 'resumeMainMerges', args: ['demo-app'] }));
+  assert.match(act.title, /unit suite is failing/);
+  // Wired through requirementsSpec, so the React row sees it on the gate.
+  const spec = admin.requirementsSpec({ id: 1, status: 'promoted', mergeRequirements: { gates: [gate] } });
+  assert.equal(spec.gates[0].action.label, 'Resume merges');
+  assert.equal(spec.headline, 'Waiting on you', 'the admin is who the ledger is waiting on');
+
+  // Not for a non-admin: a control they cannot use is a chore, not a hint.
+  const viewer = makeAppView();
+  viewer.appData = { slug: 'demo-app' };
+  assert.equal(viewer._requirementAction(gate, { isAdmin: false }), null);
+  assert.equal(viewer.requirementsSpec({ id: 1, status: 'promoted', mergeRequirements: { gates: [gate] } }).gates[0].action, null);
+  // Not once main is green again, or while the post-merge run is going.
+  for (const state of ['done', 'active', 'pending']) {
+    assert.equal(admin._requirementAction({ ...gate, state }, { isAdmin: true }), null, state);
+  }
+  // Never on any other gate, whatever its state.
+  assert.equal(admin._requirementAction({ key: 'checks', state: 'blocked', actor: 'author' }, { isAdmin: true }), null);
+});

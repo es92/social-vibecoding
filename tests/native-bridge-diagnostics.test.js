@@ -2,7 +2,7 @@
 // and offers as copyable text.
 //
 // The failure this exists for: a device whose privileged handshake is refused
-// sees "Could not load Usernode app settings." and nothing else, while every
+// sees "Could not load Homeroom app settings." and nothing else, while every
 // UNPRIVILEGED read (getBridgeInfo above all) still works perfectly. All the
 // facts needed to diagnose it are already in the page; they just had no way
 // out. These tests pin that they now do, and — just as important — that the

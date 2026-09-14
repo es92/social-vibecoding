@@ -1,6 +1,6 @@
 // The access-ready mail's link survives a desktop mail client (#1545).
 //
-// "Your Usernode access is ready" is a mail whose whole job is one link, and
+// "Your Homeroom access is ready" is a mail whose whole job is one link, and
 // following it from desktop landed on the home page while the same mail worked
 // from a phone. That asymmetry is the signature of a link rewriter: the link
 // was `https://…/#signup`, a fragment is client-side only, and a scanner or

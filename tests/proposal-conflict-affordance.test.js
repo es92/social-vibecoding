@@ -215,7 +215,7 @@ test("detail: a mirrored proposal's conflict box never sends its author to a dev
     assert.match(html, /me<\/span>/, `${state}: names the creator`);
   }
   const conflict = mergeConflictHtml(AppView, mirrorProposal({ merge_conflict_state: 'conflict' }));
-  assert.match(conflict, /Usernode keeps this branch itself/, 'says the platform can sync it');
+  assert.match(conflict, /Homeroom keeps this branch itself/, 'says the platform can sync it');
   const failed = mergeConflictHtml(AppView, mirrorProposal({ merge_conflict_state: 'failed' }));
   assert.match(failed, /me<\/span> needs to bring the branch up to date/, 'after a failed resolve the author acts');
 });
@@ -226,7 +226,7 @@ test("detail: a fork-homed proposal's conflict box says the platform cannot sync
     merge_conflict_state: 'failed',
     conflict_files: ['src/app.js'],
   }));
-  assert.match(html, /own fork, which Usernode cannot write to/);
+  assert.match(html, /own fork, which Homeroom cannot write to/);
   assert.match(html, /me<\/span> needs to merge main into the branch and push it/);
   assert.match(html, /the proposal follows the push/);
   assert.doesNotMatch(html, /Sync with main/);
@@ -236,7 +236,7 @@ test('pill: the block reason for an imported proposal carries the same remedy', 
   const AppView = makeAppView(ME);
   const mirror = AppView.blockReasons(mirrorProposal({ merge_conflict_state: 'conflict' }));
   assert.equal(mirror[0].key, 'merge_conflict');
-  assert.match(mirror[0].detail, /Usernode keeps this branch itself/);
+  assert.match(mirror[0].detail, /Homeroom keeps this branch itself/);
   assert.doesNotMatch(mirror[0].detail, /dev session/);
   const fork = AppView.blockReasons(forkProposal({ merge_conflict_state: 'failed' }));
   assert.equal(fork[0].key, 'conflict_failed');
@@ -310,9 +310,39 @@ test('detail: a predicted conflict renders its own box, distinct from the attemp
   assert.match(html, /src\/routes\/votes\.js/);
   assert.match(html, /Some of those may still merge cleanly/,
     'the file list is an upper bound and says so');
-  assert.match(html, /me<\/span> needs to bring it up to date/, 'names the creator');
+  // The platform resolves a conflict itself now (once unasked, then once the
+  // vote passes), so the creator is offered the faster way out, not handed
+  // the only one.
+  assert.match(html, /The platform resolves it automatically/);
+  assert.match(html, /me<\/span> can also bring it up to date sooner/, 'names the creator');
   assert.match(html, /Sync with main/, 'points at the way out');
+  assert.doesNotMatch(html, /needs to bring it up to date/, 'not the creator\'s job alone');
   assert.doesNotMatch(html, /A merge was attempted/, 'no attempt has been made');
+});
+
+test('detail: the remedy follows the conflict lane\'s own verdict on the head', () => {
+  const AppView = makeAppView(ME);
+  const withLane = (reasons) => mergeabilityHtml(AppView, baseProposal({
+    freshness: FRESH(), integration: { blockReasons: reasons, mergesClean: false },
+  }));
+  // Spent its one pre-approval resolution: the vote is what unlocks the next.
+  const waiting = withLane(['awaiting_approval']);
+  assert.match(waiting, /resolves it once the vote passes/);
+  assert.match(waiting, /me<\/span> can bring it up to date sooner/);
+  // The lane tried and gave up: now it IS the creator's job, and says so.
+  const gaveUp = withLane(['unresolvable']);
+  assert.match(gaveUp, /tried to resolve it and could not/);
+  assert.match(gaveUp, /me<\/span> needs to bring it up to date/);
+  // In flight: nothing to do, and no instruction to do it.
+  const working = withLane(['integrating']);
+  assert.match(working, /resolving it now/);
+  assert.doesNotMatch(working, /Sync with main/);
+  // The pill's plain-text detail carries the same answer.
+  const text = (reasons) => AppView._conflictRemedy(
+    baseProposal({ freshness: FRESH(), integration: { blockReasons: reasons } }), 'predicted'
+  ).text;
+  assert.match(text(['unresolvable']), /^The platform tried to resolve it and could not\. me needs to bring it up to date/);
+  assert.match(text([]), /^The platform resolves it automatically\. me can also/);
 });
 
 test('detail: a capped file list is described as a sample', () => {

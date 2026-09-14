@@ -5,6 +5,7 @@ const llm = require('./llm');
 const limits = require('./limits');
 const github = require('./github');
 const turnEffects = require('./turn-effects');
+const sessionTitles = require('./session-title');
 
 // Coerce an arbitrary array of "issue numbers" into a clean, deduped,
 // ascending list of positive integers (#75). Defensive against malformed
@@ -270,14 +271,10 @@ function deterministicPrMetadataDraft({ userMessage, ccSummary, requests, summar
     || userMessage
     || ccSummary
     || `${username || 'User'}'s changes`;
-  const plainTitle = String(titleSource)
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/[#>*_`~\[\]()]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  const title = plainTitle.length > 72
-    ? `${plainTitle.slice(0, 71).trimEnd()}…`
-    : (plainTitle || `${username || 'User'}'s changes`);
+  // The same trim names the session before its PR exists (#1949,
+  // session-title.js), so the display name holds when the PR lands.
+  const title = sessionTitles.deterministicTitle(titleSource)
+    || `${username || 'User'}'s changes`;
   const latestSummary = String(
     ccSummary
       || (Array.isArray(summaries) && summaries[summaries.length - 1])
@@ -347,7 +344,7 @@ function renderPrMetadataDraft(draft, {
     return {
       ...safeDraft,
       title: safeDraft.title || `${username}'s changes`,
-      body: `Dev session by ${username} via Usernode${suffix}`,
+      body: `Dev session by ${username} via Homeroom${suffix}`,
       summary: '',
       fallback: true,
     };

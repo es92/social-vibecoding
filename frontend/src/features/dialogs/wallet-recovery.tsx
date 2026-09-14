@@ -4,7 +4,7 @@
  * Native admission is still the only path that publishes wallet authority.
  * When that path reports that the seeded pool is empty, native-chrome.js
  * RECORDS the failure (NativeChrome.lastSessionFailure()) and nothing more;
- * Settings → Usernode app → connection reads that record and offers a
+ * Settings → Homeroom app → connection reads that record and offers a
  * "Connect existing wallet" button, whose press is the ONLY thing that opens
  * this dialog (Settings._openWalletRecovery → UsernodeReact.dialogs
  * .walletRecovery.open). It used to open itself — on a
@@ -176,7 +176,7 @@ export function WalletRecoveryDialog() {
   async function resumeNativeSession(userId: string, generation: number) {
     const chrome = nativeChrome();
     if (!chrome || typeof chrome.recoverSessionAdmission !== 'function') {
-      setError('Update the Usernode app to finish connecting this wallet.');
+      setError('Update the Homeroom app to finish connecting this wallet.');
       return;
     }
 

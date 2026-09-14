@@ -1,5 +1,5 @@
 // #945: GET /api/internal/sessions/:id/issues/:number now returns the
-// issue's Usernode-side Discussion thread alongside its GitHub body and
+// issue's Homeroom-side Discussion thread alongside its GitHub body and
 // comments — the payload the worker's `usernode-issues <n>` CLI prints
 // for the scout and the coding agent.
 //

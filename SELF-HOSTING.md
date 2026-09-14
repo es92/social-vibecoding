@@ -1,4 +1,4 @@
-# Self-hosting Usernode inside itself
+# Self-hosting Homeroom inside itself
 
 Runtime scope: the server, Compose, Docker-log, rollback and host-deployer
 procedures here describe the standalone Docker installation and its migration
@@ -430,7 +430,7 @@ async function seedSelfApp(pool, config) {
       (name, slug, repo_url, container_id, status, self_hosted,
        main_sha, last_deploy_at)
     VALUES
-      ('Usernode', $1, $2, 'usernode', 'running', TRUE, $3, NOW())
+      ('Homeroom', $1, $2, 'usernode', 'running', TRUE, $3, NOW())
   `, [
     config.selfAppSlug,         // 'usernode-2d5619'
     config.platformRepoUrl,     // USERNODE_PLATFORM_REPO
@@ -602,7 +602,7 @@ Mayor's system prompt is assembled. When the chat session's app
 has `self_hosted = TRUE`, append a paragraph (after the existing
 `getAppConventions()` block):
 
-> **You are editing the Usernode platform itself.** Refuse to
+> **You are editing the Homeroom platform itself.** Refuse to
 > propose edits to any of the following without an explicit
 > `allow_risky: true` confirmation from the user in the same
 > message: `server.js` bootstrap path; `src/middleware/auth.js`;
@@ -1410,7 +1410,7 @@ GitHub OAuth apps have one callback URL.
   previous release left behind.
 - The immutable id is the uniqueness and credit authority; the changeable
   login is presentation and proposal-attribution metadata. One GitHub
-  account can belong to one Usernode account. Linking X as well does not
+  account can belong to one Homeroom account. Linking X as well does not
   increase the tier.
 - Store the client secret as `GITHUB_LINK_CLIENT_SECRET`; it is declared
   `private: true`, so it is encrypted at rest and never returned by any API.
@@ -1442,7 +1442,7 @@ described in step 3 of "Creating the X app" below (#880, #1291).
    `IDENTITY_CREDIT_POLICY=legacy`.
 2. In production, connect and disconnect each configured provider, confirm
    the provider's authorization page shows the documented read-only access,
-   and confirm Settings reports that Usernode retained no token.
+   and confirm Settings reports that Homeroom retained no token.
 3. Verify an existing legacy GitHub attribution row is shown as
    **reconnect required**, not silently counted for credits.
 4. Set `IDENTITY_CREDIT_POLICY=tiered` and deploy. Test one unverified account
@@ -1535,7 +1535,7 @@ whole path and each step has a distinguishable failure.
    from `upstream/main` instead is a finding. It should *not* open a pull
    request — the platform does that.
 6. **Ask the assistant to submit it** (`submit_work`).
-   Usernode opens the cross-fork PR with bot credentials and runs it
+   Homeroom opens the cross-fork PR with bot credentials and runs it
    through `POST /api/apps/:slug/pr-import`, producing an ordinary
    `source='imported'` proposal with a SHA-pinned staging preview, proposal
    checks and a group vote — carrying a "Built with Claude Code" chip.
@@ -1668,8 +1668,8 @@ Contributed by **snait** on issue #880, who set up the GitHub side.
    screen**. X API access is pay-per-use; confirm the current billing and
    credit requirements in the developer portal before rollout.
 2. **Create a Project, then an App inside it.** X requires apps to live
-   inside a project. Name the project anything (e.g. "Social Vibecoding")
-   and the app something user-visible (e.g. "Social Vibecoding Waitlist").
+   inside a project. Name the project anything (e.g. "Homeroom")
+   and the app something user-visible (e.g. "Homeroom Waitlist").
    X immediately shows an API Key / API Key Secret / Bearer Token —
    **ignore all three**; those are the OAuth 1.0a / app-only credentials,
    not what this flow uses.

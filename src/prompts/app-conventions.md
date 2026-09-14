@@ -1,7 +1,7 @@
-# Usernode platform conventions
+# Homeroom platform conventions
 
-This file is the authoritative spec for how apps on Usernode Social
-Vibecoding work. It is injected into every Mayor and Claude Code
+This file is the authoritative spec for how apps on Homeroom work. It
+is injected into every Mayor and Claude Code
 system prompt so both follow the same conventions when planning
 features, generating code, or explaining things to the user.
 
@@ -124,7 +124,7 @@ Ordered by how badly an agent working offline gets each one wrong.
     present, runs instead of `build`.
 
 One thing NOT to apply: the full document contains a section titled
-"Don't `git push` yourself". That is addressed to Usernode's own build
+"Don't `git push` yourself". That is addressed to Homeroom's own build
 worker, which runs with no GitHub credentials. It does not apply to a
 coding agent working in the user's own fork — pushing your branch is
 exactly what you are being asked to do.
@@ -175,8 +175,8 @@ see "Per-app secrets" below.
 
 ## Auth — iframe token injection
 
-Apps run inside an iframe on the Usernode shell. The shell mints an
-RS256 JWT for the logged-in Usernode user, scoped to **your app**, and
+Apps run inside an iframe on the Homeroom shell. The shell mints an
+RS256 JWT for the logged-in Homeroom user, scoped to **your app**, and
 injects it as a `?token=…` query param on the initial iframe load. The
 app's own frontend forwards that token on subsequent fetches via the
 `x-usernode-token` request header.
@@ -229,7 +229,7 @@ app.use((req, res, next) => {
 Key properties:
 
 - `req.user` contains at minimum `{ id, username, usernode_pubkey, locale }` once authenticated.
-  `usernode_pubkey` is the user's linked Usernode wallet address (`ut1...`) or `null` if not linked.
+  `usernode_pubkey` is the user's linked Homeroom wallet address (`ut1...`) or `null` if not linked.
   `locale` is the user's platform-level language preference — a BCP-47
   tag like `"id"` or `"pt-BR"`, or `null` when they haven't set one
   (see "User language preference" below).
@@ -701,7 +701,7 @@ majority of tables — app state, counters, public posts, settings,
 game scores, leaderboards, etc. — and is the default.
 
 **Tables are PUBLIC by default.** A table is marked private only when
-its rows contain content that another Usernode user must not see if
+its rows contain content that another Homeroom user must not see if
 they open a staging preview of this app.
 
 Mark a table private by adding a Postgres comment:
@@ -1612,7 +1612,7 @@ the strip is reviewable in previews and testers see the real layout.
 
 ## User directory — does this handle exist?
 
-Apps constantly need to answer "is `@someone` a real Usernode user?" —
+Apps constantly need to answer "is `@someone` a real Homeroom user?" —
 an invite field, an @-mention, a hand-off to a teammate. Don't
 approximate a directory from the users your app has happened to see:
 the platform exposes the real one.
@@ -1738,7 +1738,7 @@ canonical branch). Commit cleanly and let the harness finish the job.
 
 `usernode-bridge.js` is the one piece of cross-dapp infrastructure
 that is **not vendored**. It is served as a single canonical copy
-from the Usernode Social Vibecoding platform itself:
+from the Homeroom platform itself:
 
 ```
 {{PLATFORM_ORIGIN}}/usernode-bridge/v1/bridge.js
@@ -1838,7 +1838,7 @@ saying so is better than a queue that silently disappears.
 The platform owns a single per-user language/locale setting. Apps that
 localize their UI should treat it as the **default** instead of building
 their own detection from `navigator.language` (which reflects the device,
-not the user's Usernode-level choice). It reaches apps two ways:
+not the user's Homeroom-level choice). It reaches apps two ways:
 
 **Expect `null` for nearly every user (SV #1556).** The setting is still
 stored and still delivered on both paths below, but the platform shell is
@@ -2549,7 +2549,7 @@ When a user reports a runtime problem you can't reproduce from the
 source ("nothing happens when I click", "it's broken on my phone", a
 blank screen), the fastest path to a fix is their actual console output
 — but **do not tell them to open browser devtools or press F12.** Most
-users are inside the Usernode mobile app or a phone browser where
+users are inside the Homeroom mobile app or a phone browser where
 devtools don't exist, so that advice dead-ends the conversation (a
 common failure mode: the agent asks for a console trace, the user
 answers "I can't open the terminal / I don't have F12", and the loop
@@ -2612,7 +2612,7 @@ shared infrastructure. Two categories are worth escalating:
 
 - the shared bridge (`usernode-bridge.js`), wallet / signing, or the
   native mobile WebView (e.g. a file picker, camera, or share sheet
-  that never opens inside the Usernode app)
+  that never opens inside the Homeroom app)
 - the staging / build / preview pipeline itself (the preview won't boot
   for reasons unrelated to your code)
 - the merge/checks gate, or a documented platform convention that

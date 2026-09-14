@@ -66,7 +66,7 @@ test('the admin fallback is separated and its copy is spaced correctly (#1158)',
   // JSX drops a line-ending space, so the separators before the inline
   // elements must live inside string expressions — the shipped copy rendered
   // "atemporary" / "fromSettings" without them.
-  assert.match(tsx, /\{'Ask a Usernode platform admin to issue you a '\}/,
+  assert.match(tsx, /\{'Ask a Homeroom platform admin to issue you a '\}/,
     'explicit space before the "temporary password" span');
   assert.match(tsx, /\{"\. Once you're back in, set a password you choose from "\}/,
     'explicit space before the Settings → Change password link');

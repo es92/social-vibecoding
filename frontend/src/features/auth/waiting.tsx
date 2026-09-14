@@ -159,7 +159,7 @@ export function WaitingScreen() {
             You're in the queue
           </h1>
           <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mb-8 italic">
-            Usernode Social Vibecoding
+            Homeroom
           </p>
           <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 text-left space-y-3">
             <p className="text-[17px] leading-snug text-zinc-900 dark:text-zinc-100">

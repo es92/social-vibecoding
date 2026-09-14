@@ -162,9 +162,12 @@
     if (status === 'promoted' && served.indexOf('integrating') !== -1) {
       return descriptor('integrating', 'Bringing up to date\u2026', 'amber', true, {
         votes: votes,
-        title: 'The platform is merging the latest main into this proposal and '
-          + 're-running its checks against the result. It merges on its own once '
-          + 'that passes.' + (ageOf(integ.measuredAt) ? ' \u00b7 ' + ageOf(integ.measuredAt) : ''),
+        // Only a CONFLICT is ever brought up to date now: a head that merges
+        // cleanly merges as it stands, however far behind. So this is the
+        // conflict lane at work, and the sentence says what that lane does.
+        title: 'The platform is merging main into this proposal to resolve a conflict. '
+          + 'The result is previewed and checked, and it merges on its own once '
+          + 'the vote passes.' + (ageOf(integ.measuredAt) ? ' \u00b7 ' + ageOf(integ.measuredAt) : ''),
       });
     }
     if (status === 'promoted' && served.indexOf('budget') !== -1) {
@@ -223,13 +226,24 @@
     // (an attempt is a fact, this is a prediction) and over the checks
     // states, because green checks on a proposal that cannot merge are
     // exactly the reassurance the issue was about.
-    if (fresh.mergeability === 'conflict') {
-      var nf = fresh.files.length;
+    if (fresh.mergeability === 'conflict' || (integ && integ.mergesClean === false)) {
+      var nf = fresh.files.length || (integ && Array.isArray(integ.conflictPaths) ? integ.conflictPaths.length : 0);
+      // Who resolves it is the conflict lane's call, and the lane records
+      // its decision in the served reasons. Absent a record the default
+      // holds: the platform resolves a conflict once the vote passes (and
+      // once beforehand, unasked), so the creator is never the ONLY way out
+      // unless the lane has said so.
+      var who = served.indexOf('unresolvable') !== -1
+        ? 'The platform tried to resolve it and could not. The proposal\u2019s creator needs to bring it up to date from their dev session ("Sync with main").'
+        : served.indexOf('fork_head') !== -1
+          ? 'Its branch lives on the creator\u2019s own fork, which the platform cannot write to, so only the creator can bring it up to date.'
+          : served.indexOf('awaiting_approval') !== -1
+            ? 'The platform resolves it once the vote passes. The creator can bring it up to date sooner from their dev session ("Sync with main").'
+            : 'The platform resolves it automatically. The creator can also bring it up to date from their dev session ("Sync with main").';
       return descriptor('mergeability_conflict',
         nf ? 'Conflicts with main · ' + nf : 'Conflicts with main', 'red', false, {
           glyph: '⚠', votes: votes,
-          title: 'Main has moved on and this proposal no longer merges on its own. '
-            + 'The proposal\u2019s creator needs to bring it up to date from their dev session ("Sync with main").',
+          title: 'Main has moved on and this proposal no longer merges on its own. ' + who,
         });
     }
     // 5a — the staging preview itself couldn't boot, so checks never ran
@@ -262,6 +276,18 @@
     }
     // 6 — checks still running (not yet a verdict). Grey, not amber: it's
     // "not started" rather than "broken".
+    if (check === 'pending' && p.check_phase === 'deferred') {
+      // The preview was built for reviewers; the tests were not run, because
+      // the head conflicts with main and a verdict on a tree that cannot
+      // merge is not worth the minutes. They run once it merges cleanly.
+      // Not a spinner: nothing is running, and nobody has to act on it.
+      return descriptor('checks_deferred', 'Checks deferred', 'neutral', false, {
+        votes: votes,
+        title: 'This proposal conflicts with main, so its preview was built but its tests '
+          + 'were not run: they would judge a tree that cannot merge. They run automatically '
+          + 'once it merges cleanly.',
+      });
+    }
     if (check === 'pending') {
       return descriptor('checks_running', 'Checks running…', 'neutral', true, {
         votes: votes,
@@ -295,14 +321,16 @@
     // own red state 4b above, since "syncing automatically" was a false
     // promise for proposals the gate-filtered auto-resolver never picks up.)
     if (behind > 0 || mcs === 'behind') {
-      // #2038: no longer a promise that something is syncing. Nothing syncs a
-      // proposal until it is eligible to merge, and saying otherwise is what
-      // left people watching a card that claimed to be working on itself.
+      // Informational, not a promise of work. A head that merges cleanly is
+      // never synced — not before the vote, not after it. It merges as it
+      // stands, and GitHub's own merge is the last word on whether it still
+      // can. (The conflicting case never reaches here: 4c above takes it.)
       var behindAge = integ ? ageOf(integ.measuredAt) : null;
       return descriptor('behind', behind ? 'Behind main · ' + behind : 'Behind main', 'amber', false, {
         votes: votes,
-        title: 'Main has moved on since this was proposed. It is brought up to date and '
-          + 're-checked automatically once the vote passes.' + (behindAge ? ' \u00b7 ' + behindAge : ''),
+        title: 'Main has moved on since this was proposed, but this still merges cleanly. '
+          + 'Nothing needs syncing: it merges as it stands once the vote passes.'
+          + (behindAge ? ' \u00b7 ' + behindAge : ''),
       });
     }
     // 8 — locked app: majority reached but still needs an admin yes. (Only

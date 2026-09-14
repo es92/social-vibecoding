@@ -1116,7 +1116,7 @@ export function MoreScreen() {
               href="#landing"
               className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-violet-400"
             >
-              Back to Social Vibecoding
+              Back to Homeroom
             </a>
           </div>
         </div>

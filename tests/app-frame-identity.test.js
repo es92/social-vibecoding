@@ -228,7 +228,7 @@ async function makeHarness({ offline = false, offlineReady = false } = {}) {
 
   const asked = [];
   const intervals = [];
-  const record = { slug: SLUG, name: 'Social Vibecoding', url: APP_URL, status: 'running', icon: '🛠' };
+  const record = { slug: SLUG, name: 'Homeroom', url: APP_URL, status: 'running', icon: '🛠' };
 
   const sandbox = {
     console: { log() {}, warn() {}, error() {}, debug() {} },
@@ -545,7 +545,7 @@ test('the #931 eager launch is adopted, not rebuilt, and its cover fades off the
   assert.equal(el.loads, 1, 'the document request went out on the tap');
   assert.equal(el.style.opacity, '0', 'behind the cover');
   assert.ok(bridge.hasCover(), 'the launch cover is up');
-  assert.equal(renderer.cover.name, 'Social Vibecoding', 'showing the app name, raw (React escapes it)');
+  assert.equal(renderer.cover.name, 'Homeroom', 'showing the app name, raw (React escapes it)');
   assert.equal(renderer.cover.note, 'Opening…', 'and the neutral note');
   assert.equal(h.surface(), 'app', '#970 flipped on the launch');
 

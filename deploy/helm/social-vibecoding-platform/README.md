@@ -1,4 +1,4 @@
-# Social Vibecoding Platform
+# Homeroom Platform
 
 This application-owned chart deploys the platform process and either its own
 PostgreSQL StatefulSet or an externally managed PostgreSQL cluster into
@@ -80,7 +80,7 @@ Secret, which the Deployment imports into its environment. With
 
 All three values are optional for chart installation but must be populated to
 enable Gmail delivery. The refresh token needs the `gmail.send` scope, and its
-mailbox must be authorized to send as `Usernode <no-reply@onhomeroom.com>`
+mailbox must be authorized to send as `Homeroom <no-reply@onhomeroom.com>`
 (the application's default sender). The Kubernetes deployment reads the Secret;
 the Platform variables panel does not populate this chart's values.
 

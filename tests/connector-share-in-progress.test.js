@@ -398,7 +398,7 @@ test('the row records an APP-REPO branch of the platform\'s own, not the caller\
   assert.match(route, /branch: input\.branch,/);
 });
 
-test('a shared branch name is in Usernode\'s namespace and is always a valid ref', () => {
+test('a shared branch name is in Homeroom\'s namespace and is always a valid ref', () => {
   const seen = new Set();
   for (const id of [1, 7, 4021, 0, null, undefined, 'not-a-number']) {
     const name = head.shareBranchName(id);

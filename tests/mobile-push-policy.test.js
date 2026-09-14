@@ -284,7 +284,7 @@ test('missing context degrades to the generic notification, never a throw', () =
   for (const context of [undefined, {}, { appName: 42, sourceUsername: {} }]) {
     const message = buildMessage({ ...INPUT, kind: 'mention', context });
     assert.deepEqual(message.notification, {
-      title: 'Usernode', body: 'You have new activity',
+      title: 'Homeroom', body: 'You have new activity',
     });
   }
   // System kinds keep their kind-specific title even without app/session data.
@@ -336,8 +336,8 @@ test('enabled delivery requires a matching Firebase project and explicit environ
 test('test alert uses explicit copy with the normal opaque push envelope', () => {
   const message = buildMessage({ ...INPUT, kind: 'test_alert' });
   assert.deepEqual(message.notification, {
-    title: 'Usernode test alert',
-    body: 'Your phone can receive push notifications from Usernode.',
+    title: 'Homeroom test alert',
+    body: 'Your phone can receive push notifications from Homeroom.',
   });
   assert.equal(message.data.notification_id, '42');
   assert.equal(message.android.notification.channelId, 'social_activity');

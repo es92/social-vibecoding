@@ -382,10 +382,10 @@ test('buildHeadlessSeed: truncates long comments and caps to the most recent 20'
   }
 });
 
-// #945: the Usernode-side Discussion thread joins the GitHub comments in
+// #945: the Homeroom-side Discussion thread joins the GitHub comments in
 // ONE chronological list, each entry labelled with the surface it came
 // from — so answers left on either surface are read.
-test('buildHeadlessSeed: interleaves the Usernode thread with GitHub comments by time', () => {
+test('buildHeadlessSeed: interleaves the Homeroom thread with GitHub comments by time', () => {
   const pool = makeMockPool();
   const loaded = loadSessions(pool);
   try {
@@ -418,7 +418,7 @@ test('buildHeadlessSeed: interleaves the Usernode thread with GitHub comments by
   }
 });
 
-test('buildHeadlessSeed: a Usernode thread alone still produces the discussion block', () => {
+test('buildHeadlessSeed: a Homeroom thread alone still produces the discussion block', () => {
   const pool = makeMockPool();
   const loaded = loadSessions(pool);
   try {

@@ -1,6 +1,6 @@
 ---
 name: mobile-push-testing
-description: Verify Usernode mobile push notifications end to end from an exact product trigger through queued delivery, provider handoff, and rendering on a real phone. Use when testing notification kinds, push copy, preference gates, Firebase delivery, conversation notifications, or mobile-push diagnostics. Do not use for ordinary notification unit tests that do not require delivery.
+description: Verify Homeroom mobile push notifications end to end from an exact product trigger through queued delivery, provider handoff, and rendering on a real phone. Use when testing notification kinds, push copy, preference gates, Firebase delivery, conversation notifications, or mobile-push diagnostics. Do not use for ordinary notification unit tests that do not require delivery.
 ---
 
 # Mobile Push Testing

@@ -12,7 +12,7 @@ const fs = require('node:fs');
 const DEFAULT_CONTEXT_WINDOW = 128_000;
 const MAX_CONTEXT_WINDOW = 10_000_000;
 const DEFAULT_BASE_INSTRUCTIONS = [
-  "You are Usernode's repository coding agent.",
+  "You are Homeroom's repository coding agent.",
   'Work directly in the current workspace and follow the developer and user instructions.',
   'Inspect the relevant code before editing, use the available tools, run proportionate tests,',
   'and do not claim success without verification. Never expose credentials or other secrets.',
@@ -81,7 +81,7 @@ function buildCodexModelCatalog({
   } else if (!supportedEfforts.length) {
     // OpenRouter normally exposes reasoning as a boolean capability rather
     // than an effort list. Its normalized effort API accepts this standard
-    // set, which is also exactly the set the Usernode UI permits.
+    // set, which is also exactly the set the Homeroom UI permits.
     supportedEfforts = [...REASONING_EFFORTS];
   }
   if (reasoningSupport !== false && selectedEffort && !supportedEfforts.includes(selectedEffort)) {
@@ -101,7 +101,7 @@ function buildCodexModelCatalog({
     models: [{
       slug,
       display_name: resolvedName,
-      description: 'OpenRouter model selected for this Usernode session.',
+      description: 'OpenRouter model selected for this Homeroom session.',
       default_reasoning_level: defaultReasoningLevel,
       supported_reasoning_levels: supportedEfforts.map((effort) => ({
         effort,

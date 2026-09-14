@@ -159,7 +159,7 @@ export function MobileInstallBanner() {
     >
       <img src="/icons/icon-192.png" alt="" aria-hidden="true" className="w-8 h-8 rounded-lg shrink-0" />
       <div className="min-w-0 flex-1 text-left leading-tight">
-        <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">Usernode</div>
+        <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">Homeroom</div>
         <div className="text-zinc-500 dark:text-zinc-400 truncate">
           {/* Three states, and the middle one is the whole of #1513: with no
               store listing published this used to read "Get the app" over a

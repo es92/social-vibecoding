@@ -103,7 +103,7 @@ for (const improveAvailable of [true, false]) {
   test(`Home and Browse render identical header controls with Improve ${improveAvailable ? 'available' : 'unavailable'}`, () => {
     const h = harness({ improveAvailable });
     h.App._showOnlyScreen('home-screen');
-    h.App.setHeaderTitle('Social Vibecoding');
+    h.App.setHeaderTitle('Homeroom');
     const home = h.header();
     h.writes.length = 0;
 
@@ -111,7 +111,7 @@ for (const improveAvailable of [true, false]) {
     assert.deepEqual(h.writes, [], 'no incoming chrome before the outgoing snapshot');
     assert.equal(h.header(), home);
     h.flush();
-    assert.equal(h.header(), home.replaceAll('Social Vibecoding', 'All apps'),
+    assert.equal(h.header(), home.replaceAll('Homeroom', 'All apps'),
       'only the destination name changes, not controls, classes, or wrappers');
     assert.ok(h.writes.some((entry) => entry.mode === 'none'));
     assert.ok(h.writes.every((entry) => !entry.mode || entry.mode === 'none'),

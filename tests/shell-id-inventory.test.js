@@ -312,7 +312,7 @@ const ADDED_IDS = {
   'feedback-first-board': 'Opens the board of the app that received the feedback (#1583).',
   'feedback-first-done': 'Dismisses the first-feedback confirmation without starting work (#1583).',
   'improve-working-dot': 'What is left on #improve-btn once the session COUNT moved to the bell (#1610): a bare 8px emerald pulse, rendered only while a dev session the viewer can see is mid-turn. It carries no text and no count, because that is the distinction the move was about — a count is an event waiting to be read and belongs where reading happens, while "a turn is running right now" is a live fact about this button that needs no dismissal. Top-right, so it cannot hide under the bottom-left outbox dot.',
-  'wallet-recovery-modal': 'Native-only recovery for a pre-merge email wallet when authoritative session admission reports that the seeded wallet pool is empty. Opened ONLY from Settings → Usernode app → connection ("Connect existing wallet"); it used to open itself on every failed admission attempt, which is the pop-up that was reported.',
+  'wallet-recovery-modal': 'Native-only recovery for a pre-merge email wallet when authoritative session admission reports that the seeded wallet pool is empty. Opened ONLY from Settings → Homeroom app → connection ("Connect existing wallet"); it used to open itself on every failed admission attempt, which is the pop-up that was reported.',
   // ── Home area labels: the block chrome moved above the card ──────
   'home-browse-btn': 'Discover\'s way into the #apps directory. Not a new control — it has always been the block\'s browse link — but it is in the COLD DOCUMENT now, which is why it is a new id here. The block\'s title moved out of the card to become the section\'s label, its controls followed (a card whose first row was chrome with one link floating at the end of it reads worse than one that opens on content), and a section heading is constant markup where the block behind it is fetched. So the control ships with the shell instead of appearing when /api/home-panels answers — which is also one less thing that pops in on a cached load.',
   // ── Platform UI pass: the update state, and where the versions live ──
@@ -568,7 +568,7 @@ const ADDED_IDS = {
   'connector-name-spelling': 'Settings → Connectors input that rewrites both allow-rule blocks for a connector registered under a different server name (#1222 follow-up).',
   'messages-create-dialog': 'React-owned direct/group conversation creation dialog (#488).',
   'messages-members-dialog': 'React-owned group membership and invitation dialog (#488).',
-  'messages-share-dialog': 'React-owned typed Usernode item chooser for Messages (#488).',
+  'messages-share-dialog': 'React-owned typed Homeroom item chooser for Messages (#488).',
   'notifications-saved': 'Pinned "Saved" section at the top of the bell drawer, holding the messages this user bookmarked (#1280).',
   // #1344 — eligible users may claim one company-funded OpenRouter key.
   // These are static settings controls; settings.js owns their state. The

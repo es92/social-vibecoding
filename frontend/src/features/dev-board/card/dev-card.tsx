@@ -766,6 +766,21 @@ function RequirementsRow({ x }: { x: Extract<ExtraSpec, { t: 'requirements' }> }
             {g.note
               ? <span className="col-start-2 text-[0.68rem] leading-snug text-zinc-400 dark:text-zinc-500">{g.note}</span>
               : null}
+            {g.action
+              ? (
+                <span className="col-start-2 mt-0.5">
+                  <button
+                    type="button"
+                    className="gc-vote-btn"
+                    title={g.action.title}
+                    data-req-action={g.key}
+                    onClick={(e) => call(g.action!.act, e.currentTarget)}
+                  >
+                    {g.action.label}
+                  </button>
+                </span>
+              )
+              : null}
           </li>
         ))}
       </ol>

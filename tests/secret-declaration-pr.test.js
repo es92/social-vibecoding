@@ -148,7 +148,7 @@ test('empty optional fields are omitted rather than written as empty strings', a
 test('the block is created when the manifest has none', async (t) => {
   const { manifest } = await captureOpts(t, {
     scope: 'platform', key: 'FIRST_ONE', declaration: { group: 'General' }, hasValue: false,
-  }, { name: 'Usernode' });
+  }, { name: 'Homeroom' });
   assert.deepEqual(manifest.platform_env, [{ key: 'FIRST_ONE', group: 'General' }]);
 });
 

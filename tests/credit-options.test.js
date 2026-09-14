@@ -42,7 +42,7 @@ test('offers exactly three routes by default, in the documented order', () => {
   // this is the original list with TWO changes. The single "use a coding
   // tool on your computer" row became the two venues it always covered —
   // `local` continues this session on your machine, `own-tools-pr` is you
-  // working alone and importing a pull request, with no Usernode chat. And
+  // working alone and importing a pull request, with no Homeroom chat. And
   // since #1281 `local` is opt-in (users.session_bridge_enabled, default
   // FALSE), so the DEFAULT list is three: it is the bottom rung of the
   // spec's routing tree and it wants the CLI installed before it can do

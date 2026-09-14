@@ -124,6 +124,11 @@ const CONNECTOR_ALLOWED_ROUTES = Object.freeze([
   { method: 'GET', pattern: '/api/sessions/:id' },
   { method: 'GET', pattern: '/api/sessions/:id/status' },
   { method: 'GET', pattern: '/api/sessions/:id/spec' },
+  // Post-creation issue association (#2028). The route is owner-scoped for
+  // connectors, accepts only bounded issue-number deltas, and changes no code
+  // or vote. The tool uses the browser's same doorway instead of gaining a
+  // parallel metadata writer.
+  { method: 'PATCH', pattern: '/api/sessions/:id/linked-issues' },
   { method: 'GET', pattern: '/api/me/active-sessions' },
   // The proposal pipeline: submit_work turns a pushed branch into an
   // ordinary imported proposal, and the platform-build fallback runs an

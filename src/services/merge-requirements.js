@@ -63,8 +63,16 @@ const GATES = [
     applies: (c) => !!c.locked,
   },
   {
+    // Under direct-merge lanes (services/merge-queue.js) this asks one thing:
+    // does the head merge cleanly with main? Being behind is not a step —
+    // a clean head merges as it stands — so the step is DONE for any clean
+    // head, however far behind, and the drift is a note on it. A conflict
+    // is the platform's to resolve (actor 'auto') until the conflict lane
+    // says otherwise: a head it will not resolve until the vote is the
+    // group's, one it cannot push to or could not resolve is the author's.
+    // The evaluated entry carries that override (see describe()).
     key: 'integration',
-    label: 'Up to date with main',
+    label: 'Merges cleanly with main',
     actor: 'auto',
   },
   {
@@ -81,11 +89,25 @@ const GATES = [
     applies: (c) => !!c.selfHosted,
   },
   {
+    // The app's state, not the proposal's: services/main-watch.js runs the
+    // repo's unit suite on every merge commit, and a red main pauses every
+    // merge on the app until a fix lands or an admin resumes them. Nothing
+    // the author does clears it, which is why the actor is the admin.
+    key: 'main_healthy',
+    label: 'Main is healthy',
+    actor: 'admin',
+  },
+  {
     key: 'github',
     label: 'GitHub accepts the merge',
     actor: 'auto',
   },
 ];
+
+// Actors an evaluated entry may name instead of its gate's default. Only the
+// integration gate uses this: who resolves a conflict depends on what the
+// conflict lane decided about it, which the gate learns at run time.
+const ACTORS = new Set(['auto', 'author', 'admin', 'group']);
 
 const GATE_KEYS = new Set(GATES.map((g) => g.key));
 
@@ -181,15 +203,73 @@ function describe(record) {
   for (const gate of GATES) {
     if (gate.applies && !gate.applies(context)) continue;
     const hit = seen.get(gate.key);
+    const override = hit && hit.detail && ACTORS.has(hit.detail.actor) ? hit.detail.actor : null;
     out.push({
       key: gate.key,
       label: gate.label,
-      actor: gate.actor,
+      actor: override || gate.actor,
       state: hit && STATES.has(hit.state) ? hit.state : 'pending',
       detail: (hit && hit.detail) || null,
     });
   }
   return out;
+}
+
+/**
+ * The integration step, read off the columns: what the head measures against
+ * main and, for a conflict, what the conflict lane has decided about it.
+ * Shared by the provisional list and by the gate's own stop() so the two
+ * surfaces say the same thing about the same row.
+ *
+ * @returns {{ state: string, actor: string, note: string|null }}
+ */
+function integrationStep(session) {
+  const s = session || {};
+  const behind = intOrNull(s.integration_behind_by);
+  const clean = s.integration_merges_clean == null ? null : !!s.integration_merges_clean;
+  const reasons = Array.isArray(s.integration_block_reasons) ? s.integration_block_reasons : [];
+  const has = (r) => reasons.includes(r);
+  const paths = Array.isArray(s.integration_conflict_paths) ? s.integration_conflict_paths.length : 0;
+  const files = paths ? ` in ${paths} file${paths === 1 ? '' : 's'}` : '';
+
+  if (clean === true) {
+    return {
+      state: 'done', actor: 'auto',
+      note: behind ? `${behind} commit${behind === 1 ? '' : 's'} behind main; merges as it stands`
+        : 'level with main',
+    };
+  }
+  if (clean === false) {
+    if (has('integrating')) {
+      return { state: 'active', actor: 'auto', note: `resolving a conflict with main${files}` };
+    }
+    if (has('unresolvable')) {
+      return {
+        state: 'blocked', actor: 'author',
+        note: `conflicts with main${files} and the platform could not resolve it; the author has to`,
+      };
+    }
+    if (has('fork_head')) {
+      return {
+        state: 'waiting', actor: 'author',
+        note: `conflicts with main${files}; its head is on the author's fork, so only the author can update it`,
+      };
+    }
+    if (has('awaiting_approval')) {
+      return {
+        state: 'waiting', actor: 'group',
+        note: `conflicts with main${files}; the platform resolves it once the group approves`,
+      };
+    }
+    if (has('budget')) {
+      return {
+        state: 'waiting', actor: 'admin',
+        note: `conflicts with main${files}; the platform's token budget is exhausted`,
+      };
+    }
+    return { state: 'active', actor: 'auto', note: `conflicts with main${files}; the platform will resolve it` };
+  }
+  return { state: 'pending', actor: 'auto', note: null };
 }
 
 // Who each actor means, in the words the card uses.
@@ -300,29 +380,20 @@ function provisional(session) {
     detail: (required != null && yes != null) ? { note: `${yes} of ${required}` } : null,
   });
 
-  const behind = intOrNull(s.integration_behind_by);
-  const clean = s.integration_merges_clean == null ? null : !!s.integration_merges_clean;
-  let integrationState = 'pending';
-  let integrationNote = null;
-  if (clean === false) {
-    integrationState = 'active';
-    integrationNote = 'resolving a conflict with main';
-  } else if (behind != null && behind > 0) {
-    integrationState = 'active';
-    integrationNote = `${behind} commit${behind === 1 ? '' : 's'} behind, so the platform is merging main in`;
-  } else if (behind === 0 && clean === true) {
-    integrationState = 'done';
-    integrationNote = 'level with main, merges cleanly';
-  }
+  const step = integrationStep(s);
   out.push({
     key: 'integration',
-    label: 'Up to date with main',
-    actor: 'auto',
-    state: integrationState,
-    detail: integrationNote ? { note: integrationNote } : null,
+    label: 'Merges cleanly with main',
+    actor: step.actor,
+    state: step.state,
+    detail: step.note ? { note: step.note } : null,
   });
 
   const check = s.check_state || null;
+  // A deferred verdict (services/check-admission.js) is a run the platform
+  // chose not to start yet: the head conflicts with main, and the verdict
+  // runs once it merges cleanly. Nobody has to act, and nothing is running.
+  const deferred = check === 'pending' && s.check_phase === 'deferred';
   const checkState = (check === 'passing' || check === 'skipped') ? 'done'
     : (check === 'failing' || check === 'error') ? 'blocked'
       : check === 'pending' ? 'active' : 'pending';
@@ -333,12 +404,36 @@ function provisional(session) {
     state: checkState,
     detail: check === 'failing' ? { note: 'some checks are failing' }
       : check === 'error' ? { note: 'the staging preview could not start, so the tests could not run' }
-        : check === 'pending' ? { note: 'still running' } : null,
+        : deferred ? { note: 'waiting for the head to merge cleanly; the preview is built, the tests run then' }
+          : check === 'pending' ? { note: 'still running' } : null,
   });
+
+  // The app's main, when the serializer has joined it on (app_main_check_*).
+  // Absent, the step is absent too, like the lock and the platform
+  // variables: an answer only the gate has is not guessed here.
+  if (s.app_main_check_state !== undefined) {
+    const mainState = s.app_main_check_state || null;
+    const resumed = mainState === 'failing' && s.app_main_check_resumed_sha
+      && s.app_main_check_sha
+      && String(s.app_main_check_resumed_sha).toLowerCase() === String(s.app_main_check_sha).toLowerCase();
+    const paused = mainState === 'failing' && !resumed;
+    const short = s.app_main_check_sha ? String(s.app_main_check_sha).slice(0, 7) : null;
+    out.push({
+      key: 'main_healthy',
+      label: 'Main is healthy',
+      actor: 'admin',
+      state: paused ? 'blocked' : (mainState === 'running' ? 'active' : 'done'),
+      detail: paused
+        ? { note: `main's unit suite is failing${short ? ` since ${short}` : ''}; merges are paused until a fix lands or an admin resumes them` }
+        : mainState === 'running' ? { note: 'checking the last merge' }
+          : resumed ? { note: 'main is red, but an admin resumed merges' }
+            : null,
+    });
+  }
 
   // Left 'pending' unconditionally this would be the only never-done step in
   // a provisional list, so a proposal with every knowable requirement met
-  // would read as unresolved forever. When the three the columns DO cover are
+  // would read as unresolved forever. When the ones the columns DO cover are
   // all satisfied, the honest statement is that the platform is about to try.
   const allKnownDone = out.every((g) => g.state === 'done');
   out.push({
@@ -432,6 +527,7 @@ module.exports = {
   ACTOR_WORD,
   trace,
   describe,
+  integrationStep,
   provisional,
   summarize,
   readRequirements,

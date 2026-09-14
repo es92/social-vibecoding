@@ -54,6 +54,9 @@ test('the allowlist permits exactly the routes the tools need', () => {
     ['GET', '/api/sessions/412'],
     ['GET', '/api/sessions/412/status'],
     ['GET', '/api/sessions/412/spec'],
+    // #2028 — metadata-only deltas on the caller's own proposal. The route
+    // (not this matcher) enforces ownership and the 50-issue cap.
+    ['PATCH', '/api/sessions/412/linked-issues'],
     ['GET', '/api/me/active-sessions'],
     // #967 pass 2 — the proposal pipeline. Each of these is owner-scoped or
     // access-checked by its own handler; the allowlist only decides whether
@@ -110,6 +113,10 @@ test('fail-closed: anything not listed is refused', () => {
     ['DELETE', '/api/apps/recipe-box/issues'],
     ['POST', '/api/apps'],
     ['POST', '/api/sessions/412'],
+    ['GET', '/api/sessions/412/linked-issues'],
+    ['POST', '/api/sessions/412/linked-issues'],
+    ['PATCH', '/api/sessions/412/linked-issues/extra'],
+    ['PATCH', '/api/sessions//linked-issues'],
     ['GET', '/api/apps/recipe-box/pr-import'],
     ['POST', '/api/apps/recipe-box/pr-import/preview'],
     // Reading an issue's comments does not imply writing one, and the

@@ -179,7 +179,7 @@ const CAMPAIGN_TOOLS = [
 ];
 
 function campaignSystemPrompt(campaign, exemplarSummary) {
-  let prompt = `You are executing a platform maintenance campaign across many apps on the Usernode platform. Each app is a small Node.js/Express server with an HTML/JS frontend, in its own git repository. You work on ONE app at a time.
+  let prompt = `You are executing a platform maintenance campaign across many apps on the Homeroom platform. Each app is a small Node.js/Express server with an HTML/JS frontend, in its own git repository. You work on ONE app at a time.
 
 Campaign: ${campaign.title}
 
@@ -399,7 +399,7 @@ async function openCampaignProposal({ config, pool, campaign, app, files, summar
   const prBody =
     `Platform maintenance campaign #${campaign.id}: **${campaign.title}**\n\n` +
     `${summary || 'See campaign instructions.'}\n\n` +
-    `This PR was opened automatically by the Usernode platform after the campaign's ` +
+    `This PR was opened automatically by the Homeroom platform after the campaign's ` +
     `governance vote passed. It merges like any proposal: through this app's own ` +
     `merge vote, or when a platform admin drains the campaign's green checks.`;
   const prData = await github.createPR(repo.owner, repo.repo, { branch, title: prTitle, body: prBody });

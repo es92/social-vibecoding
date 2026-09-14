@@ -8,7 +8,7 @@
 // somewhere else and has not done it yet. `external_agent` is stamped at
 // submission, so it is null for exactly the period the launchpad is on
 // screen, and deriving from it reverts a hand-off session to
-// "Usernode · Claude" on the next reload, taking its launchpad with it.
+// "Homeroom · Claude" on the next reload, taking its launchpad with it.
 //
 // So one column stores a venue id verbatim, and the id list now has THREE
 // copies that must agree:
@@ -90,7 +90,7 @@ test('a stored venue outranks the derived ones but not the structural facts', ()
     'the stored choice wins over the backend the session was created with',
   );
 
-  // An imported proposal has no Usernode chat and never will — structural,
+  // An imported proposal has no Homeroom chat and never will — structural,
   // so nothing overrides it.
   assert.equal(at({ buildVenue: 'usernode-claude', source: 'imported' }), 'own-tools-pr');
   // A live lease describes what IS happening, which outranks a preference
@@ -181,7 +181,7 @@ test('a venue pick that works is silent — in all four states (#1348 follow-up)
   // Three of the four rows changed the session without a word, because the
   // screen is the announcement: the composer swaps for a launchpad or back,
   // and the header dropdown names the venue. On-Platform alone popped
-  // "This session now uses Usernode · Claude." over that, so the same act
+  // "This session now uses Homeroom · Claude." over that, so the same act
   // reported itself in one state out of four.
   const onPick = DEV_CHAT_SRC.match(/onPick: \(row\) => \{[\s\S]*?\n      \},\n      onUnavailable/);
   assert.ok(onPick, 'the sheet must have a pick handler');

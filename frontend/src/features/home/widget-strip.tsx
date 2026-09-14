@@ -37,7 +37,7 @@ function controller(): any {
 
 const HINT_WITH_TILES = 'Drag tiles to reorder. Drag cards from Your apps here to add them.';
 const HINT_EMPTY = 'Drag a card from Your apps here (or use its menu) to add it to the '
-  + 'Usernode widget on your home screen.';
+  + 'Homeroom widget on your home screen.';
 
 function TileIcon({ icon }: { icon: IconView }) {
   if (icon.kind === 'image') {
@@ -112,7 +112,7 @@ export function WidgetStripBody({ strip }: { strip: WidgetStripState }) {
     <>
       <div className="home-section-header flex items-center justify-between">
         <span className="flex items-center gap-1.5">
-          {'Usernode widget'}
+          {'Homeroom widget'}
           <button
             type="button"
             id="widget-section-help"
@@ -142,7 +142,7 @@ export function WidgetStripBody({ strip }: { strip: WidgetStripState }) {
             const home = controller();
             if (!home) return;
             // "Done" hides the section again. State on the device is
-            // untouched — "Add/Edit in Usernode widget" brings it back.
+            // untouched — "Add/Edit in Homeroom widget" brings it back.
             home._widgetSectionVisible = false;
             home._widgetHelpVisible = false;
             home.render();
@@ -169,7 +169,7 @@ export function WidgetStripBody({ strip }: { strip: WidgetStripState }) {
             {' (or the '}
             <span className="font-medium">+</span>
             {'), search for '}
-            <span className="font-medium">Usernode</span>
+            <span className="font-medium">Homeroom</span>
             {', pick a size and tap '}
             <span className="font-medium">Add Widget</span>
             {'. The apps below appear on it automatically.'}

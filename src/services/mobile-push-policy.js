@@ -35,7 +35,7 @@ const EMBED_TITLE_MAX = 60;
 // Labels embedded in a TITLE get a tighter cap than body embeds, so the
 // actor and the ` · App` suffix survive the final 80-char truncation.
 const TITLE_EMBED_MAX = 40;
-const GENERIC_COPY = Object.freeze({ title: 'Usernode', body: 'You have new activity' });
+const GENERIC_COPY = Object.freeze({ title: 'Homeroom', body: 'You have new activity' });
 
 // dev/evan-1786562509265 and friends: a trailing run of digits marks a
 // machine-generated branch name, which reads as noise in a push. Such a
@@ -94,7 +94,7 @@ function buildCopy(kind, context, now) {
   const quotedTitle = label ? `"${truncate(label, TITLE_EMBED_MAX)}"` : '';
   switch (kind) {
     case 'test_alert':
-      return { title: 'Usernode test alert', body: 'Your phone can receive push notifications from Usernode.' };
+      return { title: 'Homeroom test alert', body: 'Your phone can receive push notifications from Homeroom.' };
     case 'conversation_invite':
       return {
         title: withConversation(actor ? `@${actor} invited you to a conversation`

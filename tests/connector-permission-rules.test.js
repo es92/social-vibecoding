@@ -95,10 +95,10 @@ test('the connect flow recommends the canonical name where it is typed', () => {
 // ── 2. The shipped allow rules ─────────────────────────────────────────
 
 test('the shipped allow rules are two globs and three literals, per spelling of the name', () => {
-  // The same five rules under each spelling of the server name Usernode can
+  // The same five rules under each spelling of the server name Homeroom can
   // guess. A permission rule names the server LITERALLY — there is no
   // `mcp__*__` — so a user whose client registered the connector as
-  // `Usernode` matched none of the rules this shipped with, saw a prompt on
+  // `Homeroom` matched none of the rules this shipped with, saw a prompt on
   // every read, and got no error to explain it. Shipping every spelling
   // costs a few lines of JSON and covers the variations the platform can
   // predict; anything else is what the Settings field rewrites.
@@ -375,7 +375,7 @@ test('a fork adds the scaffold without clobbering what the source carried', () =
 
 test('Settings → Connectors offers the rules for a personal settings file', () => {
   // The scaffolded file fixes one repo. The user's own settings file is the
-  // only thing that fixes every repo, including ones Usernode never made — so
+  // only thing that fixes every repo, including ones Homeroom never made — so
   // the block has to be somewhere they can copy it from.
   assert.match(CONNECTORS_TSX, /Stop the permission prompts/);
   assert.match(CONNECTORS_TSX, /~\/\.claude\/settings\.json/);
@@ -437,14 +437,14 @@ test('the copied block is byte-for-byte the shipped allowlist, in BOTH places', 
   }
 });
 
-test('the panel says why Usernode cannot just do this for the user', () => {
+test('the panel says why Homeroom cannot just do this for the user', () => {
   // The #1222 gap: the page explained the fix and offered a copy button, and
   // said nothing about why a platform that clearly knows the rules does not
   // apply them. Left unsaid, the copy button reads as busywork the product
   // could have spared them — and the honest answer is also reassuring, since
   // "a connector cannot write your permission files" is exactly what stops
   // the NEXT connector granting itself whatever it likes.
-  assert.match(CONNECTORS_TSX, /Usernode cannot switch this on for you/);
+  assert.match(CONNECTORS_TSX, /Homeroom cannot switch this on for you/);
   assert.match(CONNECTORS_TSX, /a connector has no way to write either/);
   assert.match(CONNECTORS_TSX, /one-time thing/);
 });

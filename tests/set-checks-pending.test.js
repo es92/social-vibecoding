@@ -142,6 +142,46 @@ test('a terminal verdict clears the phase so a settled card never shows a stage'
   assert.match(queries[0].sql, /check_phase = NULL/);
 });
 
+// ── check_phase 'deferred': a preview without a verdict ─────────────────
+
+test("'deferred' is a known phase, so the pending stamp can name it", async () => {
+  const queries = [];
+  const pool = { query: async (sql, params) => { queries.push({ sql, params }); return { rows: [] }; } };
+  await visuals.setChecksPending(pool, 42, 'abc123', 'deferred', 'proposal-open');
+  assert.deepEqual(queries[0].params, [42, 'abc123', 'deferred', 'proposal-open']);
+});
+
+test('the deferral stamp keeps the verdict pending, names the phase, and is pinned to the head it judged', async () => {
+  const queries = [];
+  const pool = { query: async (sql, params) => { queries.push({ sql, params }); return { rows: [], rowCount: 1 }; } };
+
+  const stamped = await visuals.storeChecksDeferred(pool, 42, 'abc123',
+    'Checks wait until this proposal merges cleanly with main');
+  assert.equal(stamped, true);
+  const { sql, params } = queries[0];
+  // Not a verdict: 'pending' stays, so the checks gate still holds the merge
+  // and the vote-time kick can start the real run once the head is clean.
+  assert.match(sql, /check_state = 'pending'/);
+  assert.match(sql, /check_phase = 'deferred'/);
+  // No retry is scheduled and no half-finished progress is left behind for
+  // the card to animate: nothing is running.
+  assert.match(sql, /check_next_retry_at = NULL/);
+  assert.match(sql, /checks_progress = NULL/);
+  // The same commit guard as storeChecks: a stamp about a head the row has
+  // since left is discarded, not written over the new head's run.
+  assert.match(sql, /checks_commit_sha IS NULL OR \$2::text IS NULL OR checks_commit_sha = \$2::text/);
+  assert.match(sql, /status IN \('active', 'paused', 'promoted', 'merging'\)/);
+  assert.deepEqual(params, [42, 'abc123', 'Checks wait until this proposal merges cleanly with main']);
+
+  // A guard miss reports false so the caller logs a discard, not a notify.
+  const miss = { query: async () => ({ rows: [], rowCount: 0 }) };
+  assert.equal(await visuals.storeChecksDeferred(miss, 42, 'abc123'), false);
+});
+
+test("'conflict-resolved' is a known trigger: the run that judges a head the platform just made clean", async () => {
+  assert.ok(visuals.CHECK_TRIGGERS.has('conflict-resolved'));
+});
+
 test('the rolling-deploy console snapshot is bound to the same live commit', async () => {
   const queries = [];
   const pool = {

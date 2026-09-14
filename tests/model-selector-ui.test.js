@@ -637,11 +637,11 @@ test('an attached machine gets a selector and a live chip', () => {
   const html = runnerHtml();
   assert.match(html, /Run on:/);
   assert.match(html, /<option value="local"[^>]*>Evan&#x27;s laptop<\/option>/);
-  assert.match(html, /<option value="platform">Usernode<\/option>/);
+  assert.match(html, /<option value="platform">Homeroom<\/option>/);
   assert.match(html, /Running on your machine/);
   // The chip explains the division of labour, because "running on your
-  // machine" otherwise reads as "Usernode has stopped doing anything".
-  assert.match(html, /Usernode still opens the PR/);
+  // machine" otherwise reads as "Homeroom has stopped doing anything".
+  assert.match(html, /Homeroom still opens the PR/);
 });
 
 test('a label the user typed on their own machine is escaped, not interpreted', () => {
@@ -671,10 +671,10 @@ test('a machine that has gone leaves a past-tense chip, not a live one', () => {
   assert.match(html, /Last turn: laptop/);
   // No selector: there is nothing left to select between.
   assert.ok(!html.includes('dc-runner-select'));
-  assert.match(html, /the next turn runs on Usernode/);
+  assert.match(html, /the next turn runs on Homeroom/);
 });
 
-test('choosing Usernode hands the session back and never leaves a half-set select', async () => {
+test('choosing Homeroom hands the session back and never leaves a half-set select', async () => {
   const { DevChat, runnerView } = makeHarness();
   const requests = [];
   let confirmed = true;
@@ -703,7 +703,7 @@ test('choosing Usernode hands the session back and never leaves a half-set selec
     onChange()(event);
     await new Promise((resolve) => setImmediate(resolve));
     // The select snaps back before the async work: a dropdown left reading
-    // "Usernode" while the lease is still held is a lie about where the next
+    // "Homeroom" while the lease is still held is a lie about where the next
     // turn goes.
     assert.equal(event.target.value, 'local');
     assert.deepEqual(requests, ['DELETE /api/me/local-agents/7']);

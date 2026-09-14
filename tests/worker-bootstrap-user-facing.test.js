@@ -68,7 +68,7 @@ test('a bootstrap failure with no detail after the prefix reads as a sentence', 
 });
 
 test('non-bootstrap errors are untouched by the new branch', () => {
-  const before = describeTurnError(new Error('Cannot bootstrap worker for a/b: repo is private. Usernode requires public repositories.'));
+  const before = describeTurnError(new Error('Cannot bootstrap worker for a/b: repo is private. Homeroom requires public repositories.'));
   assert.doesNotMatch(before, /cloning the repository/);
   assert.doesNotMatch(describeTurnError(new Error('boom')), /coding agent failed while/);
 });

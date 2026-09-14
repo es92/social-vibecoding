@@ -1,5 +1,5 @@
 /**
- * "Usernode app" — the mobile app's native App Settings, absorbed into this
+ * "Homeroom app" — the mobile app's native App Settings, absorbed into this
  * modal. See ./usernode-store.ts for why this host had to convert at once and
  * what stays settings.js's.
  *
@@ -41,7 +41,7 @@ function Connection({ s }: { s: UsernodeSectionState }): ReactNode {
   return (
     <UnSection
       id="settings-usernode-connection"
-      title="Usernode app: connection"
+      title="Homeroom app: connection"
       description="What this screen can reach in the app, and what to do when it can’t."
     >
       {c.demo ? <UnP note={{ text: 'Staging demo: sample data', tone: 'demo' }} /> : null}
@@ -81,7 +81,7 @@ function Body({ s }: { s: UsernodeSectionState }): ReactNode {
   if (b.kind === 'loading') {
     return (
       <div id="settings-usernode-error" className="mt-6 pt-5 border-t border-zinc-200 dark:border-zinc-700">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading Usernode app settings…</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading Homeroom app settings…</p>
       </div>
     );
   }
@@ -90,7 +90,7 @@ function Body({ s }: { s: UsernodeSectionState }): ReactNode {
       <div id="settings-usernode-error" className="mt-6 pt-5 border-t border-zinc-200 dark:border-zinc-700">
         {/* Headline unchanged so existing reports stay recognisable. */}
         <p className="text-sm font-bold text-red-700 dark:text-red-400">
-          Could not load Usernode app settings.
+          Could not load Homeroom app settings.
         </p>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{b.reason}</p>
         {b.message ? (
@@ -131,7 +131,7 @@ function SocialPush({ s }: { s: UsernodeSectionState }): ReactNode {
   if (p.kind === 'absent') return null;
   return (
     <UnSection
-      title="Usernode app: activity notifications"
+      title="Homeroom app: activity notifications"
       description="Get a device notification when a dev session or auto-solve run finishes. Notification content is loaded only after you open Social."
     >
       {p.kind === 'checking' ? <UnP note={{ text: 'Checking status…' }} /> : null}
@@ -161,7 +161,7 @@ function BlockProduction({ s }: { s: UsernodeSectionState }): ReactNode {
   const bp = s.blockProduction;
   return (
     <UnSection
-      title="Usernode app: block production"
+      title="Homeroom app: block production"
       description="Producing blocks earns points. Access is released manually, so ask below and an admin will release your keys in batches."
     >
       <div>
@@ -180,7 +180,7 @@ function WidgetIcons({ s }: { s: UsernodeSectionState }): ReactNode {
   if (!w) return null;
   return (
     <UnSection
-      title="Usernode app: widget icons"
+      title="Homeroom app: widget icons"
       description="What the homescreen widget was told to show, and what it reports back."
     >
       {w.demo ? <UnP note={{ text: 'Staging demo: sample data', tone: 'demo' }} /> : null}
@@ -209,14 +209,14 @@ function Tail({ s }: { s: UsernodeSectionState }): ReactNode {
     <>
       {s.nodeSleep ? (
         <UnSection
-          title="Usernode app: node"
+          title="Homeroom app: node"
           description="The node pauses when the app has been inactive for a while and wakes on your next interaction."
         ><UnSwitch toggle={s.nodeSleep} /></UnSection>
       ) : null}
       <BlockProduction s={s} />
       {s.privacy ? (
         <UnSection
-          title="Usernode app: privacy & identity"
+          title="Homeroom app: privacy & identity"
           description="Controls for the ZK passport identity flow."
         >
           <UnSwitch toggle={s.privacy.facematch} />
@@ -227,7 +227,7 @@ function Tail({ s }: { s: UsernodeSectionState }): ReactNode {
       <WidgetIcons s={s} />
       {s.diagnostics ? (
         <UnSection
-          title="Usernode app: diagnostics"
+          title="Homeroom app: diagnostics"
           description="Debugging tools for the app and its embedded node."
         >
           {s.diagnostics.debugMode ? <UnSwitch toggle={s.diagnostics.debugMode} /> : null}
@@ -235,7 +235,7 @@ function Tail({ s }: { s: UsernodeSectionState }): ReactNode {
         </UnSection>
       ) : null}
       {s.about ? (
-        <UnSection title="Usernode app: about & legal">
+        <UnSection title="Homeroom app: about & legal">
           {s.about.notes.map((n, i) => (
             <p key={i} className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">{n.text}</p>
           ))}
@@ -244,7 +244,7 @@ function Tail({ s }: { s: UsernodeSectionState }): ReactNode {
         </UnSection>
       ) : null}
       {s.account ? (
-        <UnSection title="Usernode app: account">
+        <UnSection title="Homeroom app: account">
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             The app signs in automatically with your platform account. If this message persists, try closing and reopening the app.
           </p>

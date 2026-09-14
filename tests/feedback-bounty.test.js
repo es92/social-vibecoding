@@ -80,7 +80,7 @@ const DEFAULT_APP_ROW = {
 // The self-hosted platform app — the row a platform-targeted submit must
 // resolve to by repo (on production this is slug `usernode-2d5619`).
 const PLATFORM_APP_ROW = {
-  id: 1, slug: 'usernode-self', name: 'Social Vibecoding',
+  id: 1, slug: 'usernode-self', name: 'Homeroom',
   repo_url: 'https://github.com/plat/repo',
   created_by: 1, self_hosted: true,
   collab_visibility: 'public', view_visibility: 'public',

@@ -9,7 +9,7 @@ const path = require('path');
 const RECEIPT_VERSION = 2;
 const RECEIPT_TTL_MS = 10 * 60 * 1000;
 const PROMOTION_GUARD_ATTESTATION = [
-  'Usernode promotion guard health check: PASS.',
+  'Homeroom promotion guard health check: PASS.',
   'The trusted project UserPromptSubmit hook executed for this prompt;',
   'the Codex CLI promotion-readiness check in the usernode-proposal skill is satisfied.',
 ].join(' ');

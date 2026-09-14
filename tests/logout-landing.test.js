@@ -6,7 +6,7 @@
 // navigation to '/', which boots the anonymous shell on the landing screen.
 // Three other surfaces were not.
 //
-//  1. The Usernode mobile app's sign-out ends in a TERMINAL native call that
+//  1. The Homeroom mobile app's sign-out ends in a TERMINAL native call that
 //     replaces the WebView, and the old document is forbidden continuation
 //     work — so the address was deliberately left wherever it was, e.g.
 //     `/#settings`. Anything that restores that WebView at that address
@@ -144,7 +144,7 @@ test('the advisory copy is unchanged, and carries no em dash', () => {
   const copy = SETTINGS.match(/const NATIVE_SHUTDOWN_NOTICE =\s*\n\s*'([^']+)';/);
   assert.ok(copy, 'the advisory is a named constant');
   assert.equal(copy[1],
-    'Signed out. Close and reopen the app to finish shutting down Usernode.');
+    'Signed out. Close and reopen the app to finish shutting down Homeroom.');
   // User-facing copy: no em dash in any encoding.
   const logout = SETTINGS.slice(SETTINGS.indexOf('    async logout() {'));
   const scopes = [

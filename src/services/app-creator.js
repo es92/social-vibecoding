@@ -109,14 +109,14 @@ async function createApp(config, appRow) {
         // SAME slug, so the repo already exists on the bot account and a
         // plain create would 422 "name already exists" on every retry.
         const repo = await github.createRepo(botUsername, slug, {
-          description: `${name}: built on Usernode Social Vibecoding`,
+          description: `${name}: built on Homeroom`,
           adoptExisting: true,
         });
         repoUrl = repo.html_url;
 
         const files = getTemplateFiles(name, slug, dbUrl);
         await github.pushFiles(botUsername, slug, files, {
-          message: `Initialize ${name} from Usernode template`,
+          message: `Initialize ${name} from Homeroom template`,
         });
 
         await pool.query('UPDATE apps SET repo_url = $1 WHERE id = $2', [repoUrl, appId]);
@@ -156,7 +156,7 @@ async function createApp(config, appRow) {
             parsed.owner, parsed.repo, '.claude/settings.json', 'main');
           if (existing === null) {
             await github.pushFiles(parsed.owner, parsed.repo, getConnectorScaffoldFiles(), {
-              message: 'Add Usernode connector permissions',
+              message: 'Add Homeroom connector permissions',
             });
             log.info('app-creator', 'Added connector scaffold to imported repo',
                      { appId, slug, repoUrl });

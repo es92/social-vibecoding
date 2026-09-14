@@ -636,7 +636,7 @@
   // could never win, forever, while telling the user nothing. Stop after
   // the table is spent, remember why, and wait for a real signal — a
   // pageshow, a native auth-status of "ready", or the user pressing Try
-  // again in Settings → Usernode app — before spending it again.
+  // again in Settings → Homeroom app — before spending it again.
   const bridgeReadyMaxAttempts = bridgeReadyRetryMs.length;
 
   function resetBridgeReadyBackoff() {

@@ -224,6 +224,7 @@ test('actual shared component renders the entire card and escapes the issue titl
   for (const label of ['Where it stands', 'Addresses', 'Testing instructions', 'Screenshots', 'Activity', 'Discussion', 'Expected app, received login']) assert.ok(html.includes(label), label);
   assert.ok(html.includes('&lt;script&gt;issue&lt;/script&gt;'));
   assert.ok(!html.includes('<script>issue</script>'));
+  assert.match(html, />Edit issues</, 'the owner can manage associations after creation');
   assert.match(html, /role="tablist" aria-label="Conversation"/);
   assert.match(html, /role="tab"[^>]+aria-selected="true"[^>]*>Build/);
   assert.ok(html.includes('Build'));
@@ -400,13 +401,30 @@ test('Build defaults only for underway authors and explicit tab links win', () =
   assert.equal(initialConversationTab(failing, { ...own, workspace: null, transcript: { id: failing.id } }, null, true), 'workspace');
 });
 
-test('unlinked changes omit the empty issue message', () => {
+test('the issue editor parses compact lists strictly and deterministically', () => {
+  const { parseLinkedIssueInput } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
+  assert.deepEqual(parseLinkedIssueInput('#27, 12 27'), { issues: [12, 27], error: '' });
+  assert.match(parseLinkedIssueInput('12 nope').error, /not an issue number/);
+  assert.match(parseLinkedIssueInput('2147483648').error, /too large/);
+  assert.match(parseLinkedIssueInput(Array.from({ length: 51 }, (_, i) => i + 1).join(',')).error,
+    /at most 50/);
+});
+
+test('an unlinked owner gets the empty editor affordance while a reader sees no empty aside', () => {
   const av = context();
   const item = { ...failing, linked_issues: [] };
   const v = av._topicViewFor('session', item);
   const { ChangeDetail } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
   const html = renderToHtml(createElement(ChangeDetail, { ...v, item, conversation: true }));
-  assert.doesNotMatch(html, /No issue linked yet|Issues this change addresses/);
+  assert.match(html, /No issues linked yet/);
+  assert.match(html, />Edit issues</);
+
+  const reader = context({ id: 99 });
+  const readView = reader._topicViewFor('session', item);
+  const readHtml = renderToHtml(createElement(ChangeDetail, {
+    ...readView, item, conversation: true,
+  }));
+  assert.doesNotMatch(readHtml, /No issues linked yet|Issues this change addresses|Edit issues/);
 });
 
 test('imported underway PR archive is owner-only and works from compact and full cards', async () => {

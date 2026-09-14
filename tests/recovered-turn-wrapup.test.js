@@ -159,7 +159,7 @@ function makePool({ history = [] } = {}) {
 }
 
 const SESSION = {
-  id: 510, user_id: 3, app_id: 1, app_name: 'Usernode', app_self_hosted: true,
+  id: 510, user_id: 3, app_id: 1, app_name: 'Homeroom', app_self_hosted: true,
   pr_number: 893, pr_title: 'Sort the leaderboard', status: 'active',
 };
 

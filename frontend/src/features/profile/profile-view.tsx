@@ -135,7 +135,7 @@ function PublicControls({ controls, status, publishing, previewOpen }: {
       <h2 className="font-semibold text-base">Public profile</h2>
       <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
         Private by default. The public page includes only your username,
-        display name, bio and Usernode-hosted photo, not social links, wallet,
+        display name, bio and Homeroom-hosted photo, not social links, wallet,
         email, roles, memberships or private activity.
       </p>
       <div className={`mt-3 text-sm font-medium ${controls.visibilityClass}`}>

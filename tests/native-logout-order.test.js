@@ -216,7 +216,7 @@ test('native terminal failure lands on the landing page with an advisory', async
   // The toast would not survive the navigation, so the advisory is handed to
   // the anonymous boot instead (App._drainLogoutNotice reads it once).
   assert.equal(loaded.stored.get('sv:logout_notice'),
-    'Signed out. Close and reopen the app to finish shutting down Usernode.');
+    'Signed out. Close and reopen the app to finish shutting down Homeroom.');
 });
 
 test('a successful sign-out leaves no advisory for the anonymous boot',

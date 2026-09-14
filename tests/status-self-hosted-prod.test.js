@@ -91,7 +91,7 @@ function loadStatus(appRows, { sessions = [], busy = [], building = [], runtimeS
 
 test('a self-hosted app is neither prod-missing nor drift', async () => {
   const { status, restore } = loadStatus([
-    { ...APP_COLUMNS, id: 10, slug: 'usernode-2d5619', name: 'Usernode', self_hosted: true },
+    { ...APP_COLUMNS, id: 10, slug: 'usernode-2d5619', name: 'Homeroom', self_hosted: true },
   ]);
   try {
     const data = await status.gather({}, { isAdmin: true });

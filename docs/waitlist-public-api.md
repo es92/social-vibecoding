@@ -1,7 +1,7 @@
 # Waitlist public API
 
 The platform's waitlist is a public, unauthenticated HTTP API. Nothing in
-it requires a Usernode account, an OAuth token or a session cookie. A
+it requires a Homeroom account, an OAuth token or a session cookie. A
 signup is identified by an unguessable capability token that the platform
 mints on the first join and mails to the address being signed up.
 
@@ -533,7 +533,7 @@ once `state` stops being `pending`.
 | `state` | string | `"pending"`, `"confirmed"` or `"admitted"`. Ordered most advanced first, so an admitted signup reads `"admitted"` even though it also carries a `confirmed_at`. |
 | `admitted` | boolean | True once the signup has been released off the waitlist. |
 | `confirmed` | boolean | True once the address has been verified, by link or by code. |
-| `has_account` | boolean | True once the invite has actually been redeemed into a Usernode account. This is a different question from having been admitted: an admitted signup that has not signed up yet is `admitted: true, has_account: false`. |
+| `has_account` | boolean | True once the invite has actually been redeemed into a Homeroom account. This is a different question from having been admitted: an admitted signup that has not signed up yet is `admitted: true, has_account: false`. |
 | `joined_at` | string or null | ISO-8601 timestamp of the join. |
 | `confirmed_at` | string or null | ISO-8601 timestamp of the confirmation, `null` while pending. |
 | `admitted_at` | string or null | ISO-8601 timestamp of the release, `null` until admitted. |

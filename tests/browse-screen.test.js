@@ -808,7 +808,7 @@ test('detailActionsFor: filters favorite + add-to-homescreen + app-details', () 
   Home.menuItemsFor = () => ([
     { key: 'app-details', label: 'App details', run: () => {} },
     { key: 'favorite', label: 'Add to Your apps', run: () => {} },
-    { key: 'add-to-homescreen', label: 'Add to Usernode widget', run: () => {} },
+    { key: 'add-to-homescreen', label: 'Add to Homeroom widget', run: () => {} },
     { key: 'retry', label: 'Retry', run: () => {} },
     { key: 'build-log', label: 'View build log', run: () => {} },
     { key: 'check-updates', label: 'Check for updates', keepOpen: true, run: () => {} },

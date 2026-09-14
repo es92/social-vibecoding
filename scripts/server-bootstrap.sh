@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# One-time setup for a fresh Ubuntu VPS that will host Usernode
+# One-time setup for a fresh Ubuntu VPS that will host Homeroom
 # standalone. Run as root on a newly-provisioned Hetzner (or similar)
 # box. Idempotent — safe to re-run.
 #

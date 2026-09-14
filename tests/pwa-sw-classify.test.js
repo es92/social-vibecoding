@@ -76,7 +76,7 @@ test('the installed worker leaves OAuth navigation responses entirely to the bro
     URL, Headers, Response, Map, Set, Promise,
     caches: { open: async () => {
       cacheReads++;
-      return { match: async () => new Response('<h1>Cached Social Vibecoding</h1>') };
+      return { match: async () => new Response('<h1>Cached Homeroom</h1>') };
     } },
     // The server/provider may take indefinitely long. A hard bypass must
     // neither fetch on its behalf nor arm the shell fallback timer.

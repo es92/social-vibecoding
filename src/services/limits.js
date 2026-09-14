@@ -365,7 +365,7 @@ async function checkBudget(pool, userId) {
   if (caps.dailyApplies && userSpent >= userLimit) {
     if (entitlement.verificationRequired) {
       return {
-        error: 'Connect GitHub or X in Settings to unlock $10.00/day of Usernode credits.',
+        error: 'Connect GitHub or X in Settings to unlock $10.00/day of Homeroom credits.',
         reason: 'verification_required',
         ...entitlement,
       };

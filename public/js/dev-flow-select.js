@@ -1,10 +1,10 @@
 /* The guided walkthrough for the two web hand-off venues (#1049).
  *
- * Usernode has always had two ways to build a proposal: here on the
- * platform with the Usernode agent and your daily AI credits, or by handing
+ * Homeroom has always had two ways to build a proposal: here on the
+ * platform with the Homeroom agent and your daily AI credits, or by handing
  * a work order to the coding agent you already pay for — Claude Code
  * (claude.ai/code) or Codex (chatgpt.com/codex) — which pushes a branch to
- * your own fork that Usernode turns into an ordinary proposal. The second
+ * your own fork that Homeroom turns into an ordinary proposal. The second
  * route existed only behind the MCP connector, so essentially nobody found
  * it.
  *
@@ -54,7 +54,7 @@
   // here is the allowlist, because these three ids are a persisted column's
   // domain and this module is one of the three copies that must agree.
   var FLOWS = [
-    { id: 'platform', title: 'Usernode · Claude' },
+    { id: 'platform', title: 'Homeroom · Claude' },
     { id: 'claude-code', title: 'Claude Code on the web' },
     { id: 'codex', title: 'Codex on the web' },
   ];
@@ -80,7 +80,7 @@
 
   // The chat product a hand-off's connector lives in. Claude Code on the web
   // signs in as a Claude.ai account and Codex as a ChatGPT one, and the
-  // Usernode connector is added in THAT account's settings — not in Claude
+  // Homeroom connector is added in THAT account's settings — not in Claude
   // Code or Codex themselves.
   function connectorProduct(agent) {
     return agent === 'codex' ? 'ChatGPT' : 'Claude';
@@ -89,7 +89,7 @@
   // server sends the reason code; this is the only place it becomes copy.
   function unavailableNote(reason) {
     if (reason === 'no_repository') {
-      return 'This app has no GitHub repository yet, so it can only be built here on Usernode.';
+      return 'This app has no GitHub repository yet, so it can only be built here on Homeroom.';
     }
     if (reason === 'platform_unavailable' || reason === 'link_unavailable' || reason === 'unavailable') {
       return 'Handing work to Claude Code or Codex is unavailable on this deployment right now.';
@@ -125,7 +125,7 @@
         done: !!gh.linked,
         detail: gh.linked
           ? 'Linked as ' + (gh.login || 'your GitHub account') + '.'
-          : 'Identity only. Usernode asks for no access to your repositories and stores no token. It just needs to know which GitHub account is yours, so the work comes back under your name.',
+          : 'Identity only. Homeroom asks for no access to your repositories and stores no token. It just needs to know which GitHub account is yours, so the work comes back under your name.',
         actions: gh.linked ? [] : [{ action: 'link-github', label: 'Link GitHub', primary: true }],
       },
       {
@@ -139,8 +139,8 @@
       },
       {
         key: 'handoff',
-        title: connected ? 'Hand it to ' + label : 'Connect Usernode',
-        // Terminal. Usernode used to track the rest — a work order minted
+        title: connected ? 'Hand it to ' + label : 'Connect Homeroom',
+        // Terminal. Homeroom used to track the rest — a work order minted
         // here, a branch to watch for, a Submit button to come back and press
         // — and that tracking is exactly what left a stale work order sitting
         // in a launchpad nobody could clear. The agent asks what to build,
@@ -149,14 +149,14 @@
         done: false,
         detail: connected
           ? handoffDetail(label, targetKind)
-          : 'Usernode hands ' + label + ' a short set of instructions; '
+          : 'Homeroom hands ' + label + ' a short set of instructions; '
             + label + ' asks what you want to build and takes it from there: '
             + 'writing the work order, reading this app\'s rules, pushing the '
             + 'branch and opening the proposal. It needs the connector in the '
             + connectorProduct(agent) + ' account it runs as to do any of that.',
         actions: connected
           ? handoffActions(agent)
-          : [{ action: 'link-connector', label: 'Connect Usernode', primary: true },
+          : [{ action: 'link-connector', label: 'Connect Homeroom', primary: true },
             { action: 'refresh', label: 'Check again' }],
       },
     ];
@@ -188,13 +188,13 @@
   }
 
   function forkDetail(fork) {
-    if (!fork) return 'Your agent needs somewhere to push. Usernode checks GitHub for your fork of this app.';
+    if (!fork) return 'Your agent needs somewhere to push. Homeroom checks GitHub for your fork of this app.';
     if (fork.state === 'ready') return 'Found ' + fork.owner + '/' + fork.repo + '.';
     if (fork.state === 'name_conflict') {
       return 'You already own a repository called ' + fork.repo.replace(/-usernode$/, '')
         + ' that is not a fork of this app, so fork it as ' + fork.repo + ' instead.';
     }
-    if (fork.state === 'unknown') return 'Usernode could not read GitHub just now, so it cannot tell whether you have a fork. Carry on and check again in a moment.';
+    if (fork.state === 'unknown') return 'Homeroom could not read GitHub just now, so it cannot tell whether you have a fork. Carry on and check again in a moment.';
     return 'No fork yet. Fork the app on GitHub, then come back and check again.';
   }
 
@@ -228,7 +228,7 @@
   // An action with an href renders as a REAL ANCHOR, not a button that
   // window.open()s it. The two differ only off desktop, which is where it
   // matters (#1312): mobile popup heuristics eat a scripted window.open the
-  // moment anything about the tap looks indirect, and inside the Usernode
+  // moment anything about the tap looks indirect, and inside the Homeroom
   // app the anchor is what nav-link.js's delegated listener routes through
   // the bridge's openExternal — the app's webview is bound to the
   // platform's own domains and cannot navigate to github.com itself, by
@@ -396,7 +396,7 @@
       + order
       + connectors
       + '<div class="dc-flow-actions dc-flow-actions-footer">'
-      + actionHtml({ action: 'cancel', label: 'Build on Usernode instead' }, !!s.busy)
+      + actionHtml({ action: 'cancel', label: 'Build on Homeroom instead' }, !!s.busy)
       + '</div>'
       + '</div>';
   }

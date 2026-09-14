@@ -1,6 +1,6 @@
 # Managed OpenRouter keys: deployment and operations
 
-Usernode can create one company-funded OpenRouter child key for each account.
+Homeroom can create one company-funded OpenRouter child key for each account.
 By default, any authenticated user may claim one; deployments can optionally
 require a verified GitHub or X identity. Each child key receives a daily USD
 limit, is stored encrypted as that user's default session credential, and is
@@ -13,7 +13,7 @@ injected into a child app.
 ## One-time OpenRouter setup
 
 1. In OpenRouter, create or select the funded organization that will pay for
-   these users. A separate Usernode workspace is recommended so aggregate
+   these users. A separate Homeroom workspace is recommended so aggregate
    company-key spend is easy to inspect and cap independently.
 2. Create an OpenRouter **Management API key** in that organization. Use a
    management key, not a normal inference key. Management keys administer
@@ -53,7 +53,7 @@ which remains mode `0600`, and restarts the platform. No database seed or
 manual per-user key creation is required.
 
 If `z-ai/glm-5.3-flash` is not present in a particular key's live OpenRouter model
-catalog, Usernode selects the normal compatible fallback for that user. The
+catalog, Homeroom selects the normal compatible fallback for that user. The
 model picker is never restricted to GLM: every model exposed by the user's
 key remains available.
 
@@ -75,7 +75,7 @@ key remains available.
 
 ## Operational behavior
 
-- The database enforces one managed-key record per Usernode user, including
+- The database enforces one managed-key record per Homeroom user, including
   after deletion, so a user cannot claim another company key.
 - Creation is never automatically retried after an ambiguous provider
   response. The record changes to **Needs review** and admins are notified;

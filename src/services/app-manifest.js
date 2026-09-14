@@ -287,7 +287,7 @@ const RESERVED_KEYS = new Set([
   'USERNODE_PLATFORM_API_URL',
   // The platform's public origin (services/app-identity-env.js). Reserved
   // for the same reason as the rest: a manifest that shadowed it could
-  // point an app's "Open in Usernode" links at a host of its choosing.
+  // point an app's "Open in Homeroom" links at a host of its choosing.
   'USERNODE_PLATFORM_ORIGIN',
 ]);
 

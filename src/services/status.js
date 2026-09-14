@@ -19,7 +19,7 @@ const STAGING_PREFIX = 'usernode-staging-';
 // Fallbacks only — the live caps come from config (MAX_GLOBAL_SESSIONS /
 // MAX_USER_SESSIONS). Native coding sessions are 1:1 with workers. Imported
 // PRs are produced externally and are excluded from this worker budget even
-// though Usernode may build them a staging preview. These constants are kept
+// though Homeroom may build them a staging preview. These constants are kept
 // so the dashboard still renders if config is absent.
 const MAX_STAGING_GLOBAL = 25;
 const MAX_STAGING_PER_USER = 3;

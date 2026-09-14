@@ -25,9 +25,10 @@
  */
 
 import { Fragment, useEffect, useRef, useState } from 'react';
-import type { MouseEvent, ReactNode } from 'react';
+import type { FormEvent, MouseEvent, ReactNode } from 'react';
 
 import { useStoreState } from '../../../lib/use-store-state';
+import { Input } from '@/components/ui/input';
 import { DevCard, ActionButton } from '../card/dev-card';
 import { topicHeadStore } from './topic-store';
 import { ChangeConversation } from './conversation';
@@ -487,6 +488,120 @@ export async function readChangeDetail(item: any, owner: boolean, signal: AbortS
   return session;
 }
 
+/** Parse the compact issue-number list the detail editor accepts. */
+export function parseLinkedIssueInput(value: string): { issues: number[]; error: string } {
+  const tokens = value.trim() ? value.trim().split(/[\s,]+/) : [];
+  const issues: number[] = [];
+  for (const token of tokens) {
+    if (!/^#?[1-9]\d*$/.test(token)) {
+      return { issues: [], error: `“${token}” is not an issue number.` };
+    }
+    const issue = Number(token.replace(/^#/, ''));
+    if (!Number.isSafeInteger(issue) || issue > 2147483647) {
+      return { issues: [], error: `“${token}” is too large to be an issue number.` };
+    }
+    if (!issues.includes(issue)) issues.push(issue);
+  }
+  if (issues.length > 50) return { issues: [], error: 'A proposal can link at most 50 issues.' };
+  return { issues: issues.sort((a, b) => a - b), error: '' };
+}
+
+function IssueAssociations({
+  proposalId,
+  issues,
+  linkedIssues,
+  editable,
+  onSaved,
+}: {
+  proposalId: number;
+  issues: { n: number; title: string; href: string }[];
+  linkedIssues: number[];
+  editable: boolean;
+  onSaved: (issues: number[]) => void;
+}): ReactNode {
+  const normalized = [...new Set(linkedIssues
+    .map(Number)
+    .filter((n) => Number.isSafeInteger(n) && n > 0))].sort((a, b) => a - b);
+  const signature = normalized.join(', ');
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(signature);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    if (!editing) setValue(signature);
+  }, [signature, editing]);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (saving) return;
+    const parsed = parseLinkedIssueInput(value);
+    if (parsed.error) { setError(parsed.error); return; }
+    const addIssues = parsed.issues.filter((n) => !normalized.includes(n));
+    const removeIssues = normalized.filter((n) => !parsed.issues.includes(n));
+    if (!addIssues.length && !removeIssues.length) {
+      setError(''); setNotice('No changes to save.'); setEditing(false); return;
+    }
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const response = await fetch(`/api/sessions/${proposalId}/linked-issues`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ addIssues, removeIssues }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message || body.error || 'Could not update issues.');
+      const saved = Array.isArray(body.linkedIssues) ? body.linkedIssues.map(Number) : parsed.issues;
+      onSaved(saved);
+      setValue(saved.join(', '));
+      setEditing(false);
+      setNotice(body.prBodyStatus === 'github_unavailable'
+        ? 'Issues saved. The pull request could not be updated yet; saving again will retry it.'
+        : 'Issues saved.');
+    } catch (err) {
+      setError(err instanceof TypeError ? 'Network error. Try again.' : (err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <aside className="dev-change-issues" aria-label="Issues this change addresses">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="dev-topic-h">Addresses</h4>
+        {editable ? <button
+          type="button"
+          className="gc-vote-btn"
+          aria-expanded={editing}
+          onClick={() => { setEditing((open) => !open); setError(''); setNotice(''); }}
+        >{editing ? 'Cancel' : 'Edit issues'}</button> : null}
+      </div>
+      {issues.length ? issues.map((issue) => <a key={issue.n} href={issue.href} onClick={(event) => {
+        if (!issue.href.startsWith('#') && !issue.href.startsWith('/app/')) return;
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault(); call('openTopic', 'issue', issue.n);
+      }}>#{issue.n} · {issue.title}</a>) : <p className="dev-topic-note">No issues linked yet.</p>}
+      {editing ? <form className="mt-3 space-y-2" data-linked-issues-editor="" onSubmit={save}>
+        <label htmlFor={`linked-issues-${proposalId}`} className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+          Issue numbers
+        </label>
+        <Input
+          id={`linked-issues-${proposalId}`}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          placeholder="2028, 2031"
+          autoFocus
+        />
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">Separate numbers with commas or spaces. Remove a number to unlink it.</p>
+        {error ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
+        <button type="submit" className="gc-vote-btn" disabled={saving}>{saving ? 'Saving…' : 'Save issues'}</button>
+      </form> : null}
+      {!editing && notice ? <p role="status" className="dev-topic-note">{notice}</p> : null}
+    </aside>
+  );
+}
+
 /** The same card on the owner session and public review/discussion page.
  * Full public metadata is fetched separately from the lightweight board.
  * This endpoint cannot return private agent messages or credentials.
@@ -527,18 +642,24 @@ export function ChangeDetail({ card: initialCard, body: initialBody, item, owner
   const built = session && av ? av._topicViewFor(['active', 'paused'].includes(session.status) ? 'session' : 'proposal', session) : null;
   const card = built?.card || initialCard;
   const body: TopicBody = built?.body || initialBody;
+  const applyLinkedIssues = (linkedIssues: number[]) => {
+    setLoaded((current: any) => ({ ...(current || session || {}), id, linked_issues: linkedIssues }));
+    if (av?.appData?.slug && typeof av._loadDevData === 'function') {
+      Promise.resolve(av._loadDevData()).catch(() => {});
+    }
+    window.dispatchEvent(new CustomEvent('change-detail-refresh', { detail: Number(id) }));
+  };
   return (
     <div ref={root} className="dev-topic">
       {error ? <p role="alert" className="dev-topic-note">{error} <button className="gc-vote-btn" onClick={() => setRevision((n) => n + 1)}>Retry</button></p> : null}
       <div className="dev-topic-sheet dev-topic-card" data-topic-sheet="card">
-        {body.issues?.length ? <aside className="dev-change-issues" aria-label="Issues this change addresses">
-          <h4 className="dev-topic-h">Addresses</h4>
-          {body.issues.map((issue) => <a key={issue.n} href={issue.href} onClick={(event) => {
-            if (!issue.href.startsWith('#') && !issue.href.startsWith('/app/')) return;
-            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-            event.preventDefault(); call('openTopic', 'issue', issue.n);
-          }}>#{issue.n} · {issue.title}</a>)}
-        </aside> : null}
+        {(body.issues?.length || body.canEditIssues) && id ? <IssueAssociations
+          proposalId={Number(id)}
+          issues={body.issues || []}
+          linkedIssues={Array.isArray(session?.linked_issues) ? session.linked_issues : []}
+          editable={body.canEditIssues === true}
+          onSaved={applyLinkedIssues}
+        /> : null}
         <DevCard model={card} />
       </div>
       <TopicBodySections body={conversation ? { ...body, transcript: null, activity: [] } : owner ? { ...body, transcript: null } : body} />

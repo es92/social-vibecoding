@@ -77,7 +77,7 @@ const App = {
   // visits to an app's own subdomain — the shell still injects the
   // iframe token, refreshes it, and hosts the bridge/LLM-consent flows,
   // so a shared link "just works". The only chrome is a floating
-  // "Open in Usernode" pill (see _mountChromelessPill) that switches to
+  // "Open in Homeroom" pill (see _mountChromelessPill) that switches to
   // the regular /app/<slug> view. Driven purely by the route via
   // restoreFromHash/setChromeless.
   chromeless: false,
@@ -2964,7 +2964,7 @@ const App = {
   // a bare getter. Forwarding no-ops instead, which is what those calls did
   // when the drawer was not on screen anyway.
   // The home screen shows the PLATFORM's Improve button (#1367) — "improve
-  // Social Vibecoding itself", pointed at its own self-hosted app row.
+  // Homeroom itself", pointed at its own self-hosted app row.
   //
   // THE UI OVERHAUL shipped this once and #1363 reverted it, and that revert
   // is why the publish does NOT live here. That version re-targeted the platform row
@@ -3099,7 +3099,7 @@ const App = {
     // frontend/src/features/dialogs/feedback-controller.js, which the island
     // `init()`s from its layout effect. That module also re-publishes
     // `App.openFeedbackModal`, so `App._applyFeedbackShot` and the Dev "+"
-    // menu's "New issue" item still reach the dialog by name.
+    // menu's "File an issue" item still reach the dialog by name.
 
     // The header's App/Dev segmented switch (#app-mode-switch) used to be
     // wired here. THE UI OVERHAUL retired it: an app is just an app now, and
@@ -3345,7 +3345,7 @@ const App = {
           // name if document.title was set elsewhere (e.g. a stale
           // value persisted across a Flutter WebView session).
           App._ensureHomeVisible();
-          App.setHeaderTitle('Social Vibecoding');
+          App.setHeaderTitle('Homeroom');
           Home.load();
         }
         return;
@@ -3362,7 +3362,7 @@ const App = {
           App.navigateHome();
         } else {
           App._ensureHomeVisible();
-          App.setHeaderTitle('Social Vibecoding');
+          App.setHeaderTitle('Homeroom');
           Home.load();
         }
         App.showCreateModal();
@@ -3704,7 +3704,7 @@ const App = {
         if (App._inSettings) App._exitSettings();
             if (App._inBrowse) App._exitBrowse();
         App._showOnlyScreen('home-screen');
-        App.setHeaderTitle('Social Vibecoding');
+        App.setHeaderTitle('Homeroom');
         // Home has no Improve target: clear whatever screen published one, or
         // the header button would outlive the app it was about (the lingering
         // Improve-button bug, in its unrecognised-hash variant).
@@ -3737,7 +3737,7 @@ const App = {
 
   // ── Chromeless full-screen mode ──────────────────────────────────────
   // Hide/show the shared header and mount/unmount the floating "Open in
-  // Usernode" pill. Idempotent; only ever driven by restoreFromHash (the
+  // Homeroom" pill. Idempotent; only ever driven by restoreFromHash (the
   // mode is route-addressed, so history back/forward keeps working) plus a
   // defensive clear in navigateHome.
   //
@@ -4808,7 +4808,7 @@ const App = {
     // "whiteboard-abc123" — which the Flutter WebView's AppBar then
     // mirrors via document.title. Leaving the previous header title
     // in place during the brief /api/apps/:slug round-trip is much
-    // better UX: from home you see "Social Vibecoding" briefly, then "Whiteboard";
+    // better UX: from home you see "Homeroom" briefly, then "Whiteboard";
     // from app A to app B you see "App A" briefly, then "App B". The
     // user never sees the raw slug.
     //
@@ -4927,7 +4927,7 @@ const App = {
       // and none on a cold boot at `/`. Home.render() is what makes it
       // consistent; see Home.publishImproveTarget.
       if (typeof Home !== 'undefined') Home.publishImproveTarget();
-      App.setHeaderTitle('Social Vibecoding');
+      App.setHeaderTitle('Homeroom');
     }, {
       type: App._entryTransition('zoom-out', av),
       el: av,
@@ -5017,7 +5017,7 @@ const App = {
 
   // Mirror the visible header text into both the on-screen <h1> and
   // the browser tab title so the OS/window surface reflects the
-  // current screen (home → "Social Vibecoding", app open → app display name,
+  // current screen (home → "Homeroom", app open → app display name,
   // leaderboard → "Kudos leaderboard"). The browser tab title is
   // also used by Notifications._updateTitle() to prepend an unread
   // count "(N) "; we re-invoke it here so a navigation that happens
@@ -5033,7 +5033,7 @@ const App = {
   // races with the next JS task, and the result is that the AppBar
   // shows the title that was current at the *previous* pushState.
   // To pin the AppBar to whatever we just set, we also fire-and-forget
-  // a `titleChanged` message over the existing Usernode JS channel.
+  // a `titleChanged` message over the existing Homeroom JS channel.
   // The native side handles it by setting `_pageTitle` directly
   // (see lib/features/dapps/dapp_webview_screen.dart). Older app
   // builds that don't know `titleChanged` ignore the message

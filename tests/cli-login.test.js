@@ -244,7 +244,7 @@ test('login retains a valid legacy credential until explicit logout', async () =
   }
 });
 
-test('local readiness requires the expected Usernode health response', async () => {
+test('local readiness requires the expected Homeroom health response', async () => {
   const server = http.createServer((_req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.end('<p>another local service</p>');

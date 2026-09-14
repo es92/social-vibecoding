@@ -3,7 +3,7 @@
 // public/js/build-venues.js replaced nine scattered controls that each named
 // their own mechanism and none of which named the others. Two of them said
 // "Claude Code" about two different products: the platform backend
-// (chat_sessions.agent_backend='claude_code', billed to Usernode) and the web
+// (chat_sessions.agent_backend='claude_code', billed to Homeroom) and the web
 // hand-off (users.dev_flow_preference='claude-code', billed to the user's own
 // Claude plan). Picking the wrong one cost real money, so the properties
 // pinned here are the ones that keep them apart:
@@ -79,7 +79,7 @@ test('every venue carries the copy a row needs', () => {
 });
 
 test('venue() refuses an id it does not know', () => {
-  assert.equal(BV.venue('usernode-claude').label, 'Usernode · Claude');
+  assert.equal(BV.venue('usernode-claude').label, 'Homeroom · Claude');
   assert.equal(BV.venue('claude_code'), null, 'a PERSISTED value is not a venue id');
   assert.equal(BV.venue('claude-code'), null);
   assert.equal(BV.venue(''), null);
@@ -216,7 +216,7 @@ test('own-tools-pr has no chat, and its copy says so in every mode', () => {
   // that offer this venue as a place to GO say there is no chat there.
   for (const mode of ['start', 'blocked']) {
     const row = BV.venuesFor({ ...OPEN, mode }).find((r) => r.id === 'own-tools-pr');
-    assert.match(row.consequence, /no Usernode chat/i, `${mode}: chat exception unstated`);
+    assert.match(row.consequence, /no Homeroom chat/i, `${mode}: chat exception unstated`);
   }
   const moving = BV.venuesFor({ ...OPEN, mode: 'switch' }).find((r) => r.id === 'own-tools-pr');
   assert.match(moving.consequence, /this chat stays where it is/i);
@@ -244,9 +244,9 @@ test('three modes, and anything unrecognised reads as start', () => {
 
 test('start mode labels the venue and nothing else', () => {
   assert.deepEqual(BV.venuesFor({ ...OPEN, mode: 'start' }).map((r) => r.label), [
-    'Usernode · OpenRouter',
-    'Usernode · Claude',
-    'Your computer · Usernode session',
+    'Homeroom · OpenRouter',
+    'Homeroom · Claude',
+    'Your computer · Homeroom session',
     'Claude Code on the web',
     'Codex on the web',
     'Your computer · your own tools',
@@ -258,8 +258,8 @@ test('switch mode says what the move does, per group', () => {
     ...OPEN, mode: 'switch', sessionStatus: 'active', hasBranch: true, sessionId: 12,
   });
   const by = new Map(rows.map((r) => [r.id, r]));
-  assert.equal(by.get('usernode-openrouter').label, 'Move to Usernode · OpenRouter');
-  assert.equal(by.get('local').label, 'Move to Your computer · Usernode session');
+  assert.equal(by.get('usernode-openrouter').label, 'Move to Homeroom · OpenRouter');
+  assert.equal(by.get('local').label, 'Move to Your computer · Homeroom session');
   // A web hand-off from an under-way session continues it; "Move to" would
   // be a promise this venue does not keep.
   assert.equal(by.get('web-codex').label, 'Continue this session with Codex on the web');
@@ -420,8 +420,8 @@ test('every fallback reason the server can send has a sentence', () => {
   for (const reason of ['flag_off', 'not_in_beta', 'model_unavailable', 'no_credential']) {
     const note = BV.fallbackNote(reason);
     assert.ok(note, `no note for ${reason}`);
-    assert.match(note, /Usernode · OpenRouter/, `${reason} does not name the venue asked for`);
-    assert.match(note, /Usernode · Claude/, `${reason} does not name the venue given`);
+    assert.match(note, /Homeroom · OpenRouter/, `${reason} does not name the venue asked for`);
+    assert.match(note, /Homeroom · Claude/, `${reason} does not name the venue given`);
   }
 });
 
@@ -445,7 +445,7 @@ test('the selector states where this is building, and is the way to change it', 
   const id = BV.currentVenue({ agentBackend: 'codex_openrouter' });
   assert.equal(id, 'usernode-openrouter');
   const v = BV.venue(id);
-  assert.equal(v.label, 'Usernode · OpenRouter');
+  assert.equal(v.label, 'Homeroom · OpenRouter');
   // The visible LABEL is the venue and nothing else: the control sits in the
   // header beside a truncating session title, so the caption sentence the old
   // line carried survives only as the hover title — assembled in dev-chat.js's
@@ -481,7 +481,7 @@ test('the selector and the chip refuse an unknown venue instead of half-renderin
 test('the chip names the venue and explains it on hover', () => {
   const chip = BV.chipHtml('local');
   assert.match(chip, /dc-venue-chip/);
-  assert.match(chip, /Your computer · Usernode session/);
+  assert.match(chip, /Your computer · Homeroom session/);
   assert.match(chip, /title="/);
 });
 
@@ -745,9 +745,9 @@ test('native handoffs retain their actual provider without becoming web sessions
     assert.equal(BV.currentVenue(state), 'local');
     assert.equal(BV.sessionVenue(state).label, label);
     assert.equal(BV.sessionVenue(state).chat, true);
-    assert.equal(BV.sessionVenue({ ...state, buildVenue: 'usernode-openrouter' }).label, 'Usernode · OpenRouter');
-    assert.equal(BV.sessionVenue({ ...state, localAgent: { leaseId: 'active' } }).label, 'Your computer · Usernode session');
+    assert.equal(BV.sessionVenue({ ...state, buildVenue: 'usernode-openrouter' }).label, 'Homeroom · OpenRouter');
+    assert.equal(BV.sessionVenue({ ...state, localAgent: { leaseId: 'active' } }).label, 'Your computer · Homeroom session');
   }
   assert.equal(BV.sessionVenue({ externalAgent: 'codex' }).label, 'Codex on the web');
-  assert.equal(BV.sessionVenue({ agentBackend: 'claude_code' }).label, 'Usernode · Claude');
+  assert.equal(BV.sessionVenue({ agentBackend: 'claude_code' }).label, 'Homeroom · Claude');
 });

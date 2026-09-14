@@ -32,7 +32,7 @@
 //      path — anchors get "new window" free and duplicating it through
 //      window.open isn't worth the divergence.
 //
-// NEVER add target="_blank" to a control wired here. Inside the Usernode
+// NEVER add target="_blank" to a control wired here. Inside the Homeroom
 // Flutter WebView that would push a plain tap out to the system browser;
 // the whole point is that native/touch hosts, which have no modifier
 // keys and no middle button, keep the exact in-place behaviour they have
@@ -161,7 +161,7 @@
     },
   };
 
-  // ── External links inside the Usernode app (#1312) ───────────────────
+  // ── External links inside the Homeroom app (#1312) ───────────────────
   //
   // The app's webview is bound to the platform's own domains (iOS
   // App-Bound Domains — NATIVE-BRIDGE.md): it cannot navigate to

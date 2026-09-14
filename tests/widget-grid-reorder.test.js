@@ -1,4 +1,4 @@
-// Issue #770: the "Usernode widget" tile strip's kit drag uses the
+// Issue #770: the "Homeroom widget" tile strip's kit drag uses the
 // grid (displacement) mode, matching the app-card grid from #753.
 // These tests pin the attachReorder options _wireWidgetStrip passes —
 // grid: true + itemSelector — and the callback contracts: onLift /

@@ -1,6 +1,6 @@
 'use strict';
 
-// #945: Usernode-native discussion threads as agent context.
+// #945: Homeroom-native discussion threads as agent context.
 //
 // Every issue and every proposal on an app's Dev page carries a
 // discussion thread — `chat_messages` rows scoped by
@@ -36,7 +36,7 @@
 const log = require('./logger');
 
 // Clipping mirrors github.clipIssueComments (ISSUE_COMMENTS_KEEP /
-// ISSUE_COMMENT_BODY_MAX) so a merged GitHub + Usernode list is clipped
+// ISSUE_COMMENT_BODY_MAX) so a merged GitHub + Homeroom list is clipped
 // consistently on both halves.
 const THREAD_MESSAGES_KEEP = 30;
 const THREAD_MESSAGE_BODY_MAX = 2000;
@@ -146,10 +146,10 @@ function renderEntry(entry, botUsername) {
   return `${tag} ${entry.body || ''}`;
 }
 
-// Merge GitHub comments and Usernode thread messages into ONE
+// Merge GitHub comments and Homeroom thread messages into ONE
 // chronological list. Entries with no timestamp sort last (a missing
 // createdAt is a degenerate case from a stub/fixture, not real data);
-// ties keep GitHub before Usernode purely for determinism.
+// ties keep GitHub before Homeroom purely for determinism.
 function mergeEntries(githubComments, threadMessages) {
   const gh = (Array.isArray(githubComments) ? githubComments : [])
     .map((c) => ({
@@ -178,7 +178,7 @@ function mergeEntries(githubComments, threadMessages) {
     .map(({ e }) => e);
 }
 
-// The discussion on ONE issue — its GitHub comments and its Usernode
+// The discussion on ONE issue — its GitHub comments and its Homeroom
 // thread, interleaved. Returns '' when there is nothing to show, so a
 // prompt with no discussion stays byte-identical to before this change.
 function buildIssueDiscussionBlock({

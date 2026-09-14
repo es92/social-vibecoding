@@ -3,7 +3,7 @@
 // Two layers:
 //   1. Behavioral — load public/js/dev-alerts.js in a vm sandbox with faked
 //      browser globals (window/document/localStorage/AudioContext/
-//      Notification/Usernode) and exercise the real DevAlerts API: the
+//      Notification/Homeroom) and exercise the real DevAlerts API: the
 //      visible→tone / hidden→notify decision, the native vs browser
 //      systemNotify branches, the localStorage mute gate, and the tone
 //      dedup guard.
@@ -431,7 +431,7 @@ test('a live background browser still previews the alert without an eligible pho
   const result = await DevAlerts.testAlert();
   assert.equal(result.queued, false);
   calls.timers[0].fn();
-  assert.equal(calls.notifications[0].title, 'Usernode test alert');
+  assert.equal(calls.notifications[0].title, 'Homeroom test alert');
   assert.equal(DevAlerts._routeFor({ kind: 'test_alert' }), '#settings/alerts');
 });
 

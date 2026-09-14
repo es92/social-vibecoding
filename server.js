@@ -604,6 +604,30 @@ app.use(workshopThemesRoutes(config));
     ws.onBoardChange((info) => workshopThemes.noteBoardChange(getPool(config), info));
   }
 }
+// A promoted head whose checks were deferred because it conflicted with main
+// (services/check-admission.js) gets them the moment it measures clean —
+// against the preview that is already up for it, so a run rather than a
+// rebuild. Measurement happens on whichever instance took the vote, the
+// sweep or the capture, so the hook is registered on every instance, like
+// the board hook above. recheckSessionChecks is _inFlight-guarded at the
+// capture; a second kick for the same head costs nothing.
+{
+  const integration = require('./src/services/integration');
+  integration.onBecameClean(async (row) => {
+    const pool = getPool(config);
+    const { rows } = await pool.query(
+      `SELECT cs.*, a.slug AS app_slug, a.repo_url, a.name AS app_name
+         FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id
+        WHERE cs.id = $1 AND cs.status = 'promoted'
+          AND cs.check_state = 'pending' AND cs.check_phase = 'deferred'`,
+      [row.id]
+    );
+    if (!rows[0]) return;
+    await require('./src/services/staging-recovery').recheckSessionChecks({
+      config, pool, session: rows[0], reason: 'conflict-resolved',
+    });
+  });
+}
 app.use(reportSnapshotRoutes(config));
 // Home-screen panels (#911): the challenges card's data + its per-user
 // show/hide. Me-scoped reads, so it sits behind authMiddleware like the
@@ -1310,7 +1334,7 @@ module.exports = {
   },
 };
 
-// Scan existing imported apps for privacy violations. Usernode workers
+// Scan existing imported apps for privacy violations. Homeroom workers
 // run with zero GitHub credentials and rely on unauthenticated public
 // HTTPS clones; a private repo can't be cloned by the worker, so dev
 // sessions against it will fail at bootstrap. Surface those rows at
@@ -4845,7 +4869,7 @@ function startStalePrSweeper(config) {
       for (const session of rows) {
         if (activeWorkersSvc.isSessionBusy(session.id)) continue;
         try {
-          // Native PR branches can be updated outside Usernode. Refresh their
+          // Native PR branches can be updated outside Homeroom. Refresh their
           // immutable reviewed revision before any timed governance decision,
           // including automatic rejection. Imported proposals retain their
           // existing imported-head synchronization behavior.

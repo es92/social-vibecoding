@@ -236,9 +236,9 @@ test('both scout and build report their mode, and both name the machine', () => 
   assert.match(sessions, /recordTurnEvent\(pool, \{[\s\S]{0,200}mode: 'build'/);
   // The transcript rows are how a reader tells the two apart months later,
   // and both state that the platform did not pay for the work.
-  assert.match(sessions, /Drafted on \$\{localAgentLabel\}, so no Usernode credits were used/);
+  assert.match(sessions, /Drafted on \$\{localAgentLabel\}, so no Homeroom credits were used/);
   assert.match(sessions, /localAgentLabel: runLocally \? lease\.label : null/);
-  assert.match(sessions, /Coding done on \$\{lease\.label\}, so no Usernode credits were used/);
+  assert.match(sessions, /Coding done on \$\{lease\.label\}, so no Homeroom credits were used/);
 });
 
 test('the local scout produces no cost at all, rather than a zeroed one', () => {

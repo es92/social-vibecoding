@@ -3,7 +3,7 @@
 // Hosted MCP connector — handing work to the user's own coding agent.
 //
 // The shape of the problem: an app's repository is owned by the platform's
-// GitHub bot and is public, so no Usernode user has push access to it. The
+// GitHub bot and is public, so no Homeroom user has push access to it. The
 // connector cannot therefore say "here is a branch, push to it". What it
 // can do is:
 //
@@ -134,7 +134,7 @@ function agentLabel(agent) {
 //   update_branch    — the author's fork branch was pushed onto the
 //                      proposal's bot-owned branch in the app repository
 //   update_fork_head — the proposal's head already lived in the author's own
-//                      fork, so advancing the head Usernode TRACKS was the
+//                      fork, so advancing the head Homeroom TRACKS was the
 //                      whole write
 const SUBMIT_VIA = Object.freeze([
   'branch', 'branch_head_repo', 'mirror', 'patch', 'pr',
@@ -184,10 +184,10 @@ function stripEnvelope(value) {
 function linkUnavailable() {
   return fail(
     'github_link_unavailable',
-    'This Usernode deployment has no GitHub OAuth app configured, so it cannot verify which GitHub account is '
+    'This Homeroom deployment has no GitHub OAuth app configured, so it cannot verify which GitHub account is '
     + 'yours — and work built by your own coding agent is only submitted under a verified account. Ask an admin '
     + 'to set GITHUB_LINK_CLIENT_ID and GITHUB_LINK_CLIENT_SECRET in the platform variables panel. In the '
-    + 'meantime, start_platform_build has Usernode build the change itself out of your daily Usernode credits — '
+    + 'meantime, start_platform_build has Homeroom build the change itself out of your daily Homeroom credits — '
     + 'that path needs no GitHub link.',
     { retryable: false }
   );
@@ -403,7 +403,7 @@ function buildGuidance({
   if (forkStatus === 'name_conflict') {
     steps.push(
       `Create your own copy of the app's code in one click: ${forkPageUrl} — name it `
-      + `"${forkRepo}", because you already have a repository called "${repo}" that Usernode `
+      + `"${forkRepo}", because you already have a repository called "${repo}" that Homeroom `
       + `never touches, then press "Create fork".${ghNote}`
     );
   } else if (forkStatus === 'missing') {
@@ -436,12 +436,12 @@ function buildGuidance({
   }
 
   steps.push('Paste the work order below into it, exactly as written.');
-  // The coding agent submits for itself now — the Usernode connector is
+  // The coding agent submits for itself now — the Homeroom connector is
   // attached to the user's ACCOUNT, not to this conversation, so a Claude
   // Code session has it too. The human is no longer the courier; they are
   // told what to expect and what to do if it doesn't happen.
   steps.push(
-    'It\'ll submit the change to Usernode itself when it\'s done — ask me any time and I\'ll check. '
+    'It\'ll submit the change to Homeroom itself when it\'s done — ask me any time and I\'ll check. '
     + 'If it says it can\'t submit, come back and tell me.'
   );
   return steps;
@@ -451,7 +451,7 @@ function buildGuidance({
 //
 // One block of text the assistant pastes into Claude Code on the web or
 // into Codex. It has to be complete on its own — the coding agent has no
-// connector, no Usernode credential and no memory of this conversation —
+// connector, no Homeroom credential and no memory of this conversation —
 // and since the platform no longer touches the user's GitHub account, it is
 // also what CREATES the fork and the branch.
 //
@@ -461,7 +461,7 @@ function buildGuidance({
 // with human steps buried inside a block the user was told to paste.
 //
 // `brief` arrives already clipped and already wrapped in the connector's
-// <untrusted-content> envelope by the caller: it is text other Usernode
+// <untrusted-content> envelope by the caller: it is text other Homeroom
 // users wrote, and it is on its way to a second agent that has a shell.
 //
 // NO TRIPLE-BACKTICK FENCES ANYWHERE IN HERE. The host assistant is told to
@@ -496,7 +496,7 @@ function buildWorkOrder({
       setup.push(
         'FIRST, make the fork. Your GitHub account already has a repository with the',
         'app\'s name that is NOT a fork of it, so the fork needs a different name',
-        '(Usernode never touches that other repository).',
+        '(Homeroom never touches that other repository).',
         '',
         `In one click: open ${forkPageUrl}, change the repository-name field to`,
         `${forkRepo}, and press "Create fork".`,
@@ -505,11 +505,11 @@ function buildWorkOrder({
         `${CMD}gh repo fork ${upstreamSlug} --clone=false --fork-name ${forkRepo}`
       );
     } else if (forkStatus === 'unknown') {
-      // Usernode could not read GitHub, so it does not KNOW whether the
+      // Homeroom could not read GitHub, so it does not KNOW whether the
       // fork exists. Stating "you do not have one yet" as fact is how an
       // earlier run told someone to create a fork they already had.
       setup.push(
-        'FIRST, make sure you have a fork. Usernode could not read GitHub just now,',
+        'FIRST, make sure you have a fork. Homeroom could not read GitHub just now,',
         'so it does not know whether you already have one — the command below is a',
         'no-op if you do.',
         '',
@@ -652,8 +652,8 @@ function buildWorkOrder({
       '',
       'THE STARTING COMMIT IS IN THE APP\'S REPOSITORY, not in your fork — it is the',
       continuing
-        ? 'session\'s own head, on a branch only Usernode writes. Fetch it from upstream'
-        : 'proposal\'s own head, on a branch only Usernode writes. Fetch it from upstream',
+        ? 'session\'s own head, on a branch only Homeroom writes. Fetch it from upstream'
+        : 'proposal\'s own head, on a branch only Homeroom writes. Fetch it from upstream',
       'before you branch:',
       `${CMD}git fetch upstream ${baseSha}`,
       `${CMD}git checkout -b ${branch} ${baseSha}`
@@ -666,10 +666,10 @@ function buildWorkOrder({
 
   const lines = [
     continuing
-      ? `You are CONTINUING work in progress on "${appName}" (Usernode app \`${appSlug}\`).`
+      ? `You are CONTINUING work in progress on "${appName}" (Homeroom app \`${appSlug}\`).`
       : update
-        ? `You are UPDATING a proposal that is already up for a vote on "${appName}" (Usernode app \`${appSlug}\`).`
-        : `You are making a change to "${appName}" (Usernode app \`${appSlug}\`).`,
+        ? `You are UPDATING a proposal that is already up for a vote on "${appName}" (Homeroom app \`${appSlug}\`).`
+        : `You are making a change to "${appName}" (Homeroom app \`${appSlug}\`).`,
     '',
     'WHAT TO BUILD',
     brief || '(no description was supplied — ask the user what they want before writing code)',
@@ -680,8 +680,8 @@ function buildWorkOrder({
     lines.push(
       continuing ? 'THE WORK YOU ARE CONTINUING' : 'THE PROPOSAL YOU ARE UPDATING',
       continuing
-        ? `- Usernode session id:                   ${updateRef}`
-        : `- Usernode proposal id:                  ${updateRef}`,
+        ? `- Homeroom session id:                   ${updateRef}`
+        : `- Homeroom proposal id:                  ${updateRef}`,
       ...(update.title ? [`- Its title:                             ${update.title}`] : []),
       `- Its current commit:                    ${baseSha}`,
       ...(update.webPath
@@ -693,12 +693,12 @@ function buildWorkOrder({
       ...(forkIsHome
         ? [
           'Its code lives on a branch in YOUR OWN fork, so your push IS the update:',
-          `commit on ${branch}, push it, and tell Usernode with the call below.`,
+          `commit on ${branch}, push it, and tell Homeroom with the call below.`,
         ]
         : [
-          'Its code lives on a branch in the app\'s own repository that only Usernode',
+          'Its code lives on a branch in the app\'s own repository that only Homeroom',
           'can write. You do NOT need access to it — push to your fork exactly as you',
-          'would for new work, and Usernode moves the proposal onto your branch.',
+          'would for new work, and Homeroom moves the proposal onto your branch.',
         ]),
       '',
       ...(continuing
@@ -758,8 +758,8 @@ function buildWorkOrder({
   );
   if (hasTask) {
     lines.push(
-      `- Usernode task id:                      ${taskRef}`,
-      `- Usernode app slug:                     ${appSlug}`
+      `- Homeroom task id:                      ${taskRef}`,
+      `- Homeroom app slug:                     ${appSlug}`
     );
   }
 
@@ -770,10 +770,10 @@ function buildWorkOrder({
     '',
     'RULES',
     '- Commit and push to a branch on YOUR FORK, and nothing else. Do not push to',
-    '  the upstream repository — you do not have access to it, and Usernode opens',
+    '  the upstream repository — you do not have access to it, and Homeroom opens',
     '  the pull request for you.',
     '- Create the fork yourself if you do not have one:',
-    '  Usernode has no write access to your GitHub account and will not make it',
+    '  Homeroom has no write access to your GitHub account and will not make it',
     '  for you.',
     '- Any branch name works. A branch name that differs from the suggestion above',
     '  is never a reason to rewrite, rebase or redo a commit you have already',
@@ -797,24 +797,24 @@ function buildWorkOrder({
     // marker used to tell instruction text from appendix text, so this
     // pointer must not read as a second one.
     `- The platform rules ${platformRules ? 'at the end of this work order are' : 'for this app are'} an EXCERPT. Your`,
-    '  Usernode connector has the whole handbook: call',
+    '  Homeroom connector has the whole handbook: call',
     '  `get_platform_conventions` with no arguments for an index of every',
     '  section, then again with a section slug for the full text. Use it rather',
     '  than guessing whenever you need the real rule — how auth works, how to',
     '  declare a secret in dapp.json, how to call the platform\'s LLM proxy or',
     '  file storage, what the centrally hosted native UI kit provides, what the',
-    '  automated checks require. Your sandbox cannot reach the Usernode website;',
+    '  automated checks require. Your sandbox cannot reach the Homeroom website;',
     '  connector traffic does not go through your container, so that call works.',
     // The account the paste lands in may never have added the connector at
     // all — a second Claude or ChatGPT account does not inherit the first
     // one's. Said here, next to the first thing the connector is needed for,
-    // so "I have no Usernode tools" is a known state with a next step rather
+    // so "I have no Homeroom tools" is a known state with a next step rather
     // than a dead end; the finishing rules are under WHEN YOU ARE DONE.
-    '- If this session has NO Usernode tools, the connector was never added to',
+    '- If this session has NO Homeroom tools, the connector was never added to',
     '  the Claude or ChatGPT account you are running in (it is per account, so a',
     '  second account does not inherit the first one\'s). That is not a reason to',
     '  stop: the excerpt below is enough to build with, and step 6 under WHEN',
-    '  YOU ARE DONE says how to finish. The user adds it on Usernode at',
+    '  YOU ARE DONE says how to finish. The user adds it on Homeroom at',
     '  Settings → Connectors, which has the connector URL and the click-by-click',
     '  steps for Claude and for ChatGPT:',
     ...connectorsPage
@@ -824,7 +824,7 @@ function buildWorkOrder({
     // ── Ownership, stated flatly ─────────────────────────────────────
     //
     // The single most expensive missing sentence in this whole flow. In a
-    // real production run the agent had a live Usernode connector, the
+    // real production run the agent had a live Homeroom connector, the
     // right account, the right scope and this task id one call away — and
     // declined, reasoning that "the task id belongs to the assistant that
     // handed me the work order". It does not. Ownership is per USER:
@@ -839,13 +839,13 @@ function buildWorkOrder({
       '',
       'WHO THIS TASK BELONGS TO',
       `Task ${taskRef} belongs to the USERNODE ACCOUNT that this work order and your`,
-      'Usernode connector are both signed in as — not to the chat that handed you',
+      'Homeroom connector are both signed in as — not to the chat that handed you',
       'this text. Any Claude or ChatGPT session connected as that account,',
       'including yours, can submit it. Submitting it yourself is the expected',
       'path, not an overreach.',
       'The task id is not a secret; only its owner can use it, which is why it is',
       'printed here. If you want to confirm who you are, call `whoami` — one call,',
-      'and it names the Usernode account and the linked GitHub login.',
+      'and it names the Homeroom account and the linked GitHub login.',
       `If \`submit_work\` answers \`unknown_task\`, your connector is signed in as`,
       'somebody else. Say so plainly rather than starting the work over.',
       '',
@@ -862,8 +862,8 @@ function buildWorkOrder({
           ? `Session ${updateRef} belongs to the same account, which is why you can add to`
           : `Proposal ${updateRef} belongs to the same account, which is why you can revise`,
         continuing
-          ? 'it at all: Usernode only advances a session from a fork owned by the GitHub'
-          : 'it at all: Usernode only advances a proposal from a fork owned by the GitHub',
+          ? 'it at all: Homeroom only advances a session from a fork owned by the GitHub'
+          : 'it at all: Homeroom only advances a proposal from a fork owned by the GitHub',
         'account its author linked. Nobody else\'s branch can move it, and yours cannot',
         'move anybody else\'s.'
       );
@@ -922,19 +922,19 @@ function buildWorkOrder({
     // proposal's head is bot-owned — the whole reason this path exists.
     lines.push(
       '',
-      `2. SUBMIT THE UPDATE, through the Usernode connector. Call \`submit_work\``,
+      `2. SUBMIT THE UPDATE, through the Homeroom connector. Call \`submit_work\``,
       `   with proposalId ${updateRef}, branch set to the branch you pushed to your`,
       `   fork${forkIsHome ? ` (${branch})` : ''}, taskId ${taskRef}, agent "${agentValue}", source`,
       '   "work_order", and a short description of what changed for the people who',
       '   have to vote on it again.',
-      '   Usernode checks the branch is in your own fork and sits ON TOP of the',
+      '   Homeroom checks the branch is in your own fork and sits ON TOP of the',
       '   proposal\'s current commit, then moves the proposal onto it. Nothing is',
       '   force-pushed past anybody else\'s work: if the proposal moved in the',
       '   meantime the call is refused rather than overwriting it.',
       '   The proposal keeps the testing routes it was submitted with, and its',
       '   before/after screenshots are reshot for your new commit against those',
       '   same routes.',
-      '   Your sandbox cannot reach the Usernode website, and it does not need to:',
+      '   Your sandbox cannot reach the Homeroom website, and it does not need to:',
       '   connector traffic goes out through your chat product\'s own',
       '   infrastructure, not through your container.',
       '',
@@ -955,24 +955,24 @@ function buildWorkOrder({
       '   remedy above is the fix; report it and retry once.',
       '',
       '5. ON A CONNECTOR ERROR, relay it plainly rather than giving up:',
-      '   `insufficient_scope` — ask the user to reconnect Usernode and approve',
+      '   `insufficient_scope` — ask the user to reconnect Homeroom and approve',
       '   "Propose changes". `github_not_linked` — give them the settings link the',
       '   tool returns. `not_your_proposal` — your connector is signed in as',
       '   somebody else; say so rather than rewriting the change. Anything',
       '   transient, or one authentication failure: retry once.',
       '',
-      '6. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Usernode',
+      '6. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Homeroom',
       '   connector was never added to the Claude or ChatGPT account this session',
       '   runs in — it is per account, so a second account does not inherit the',
       '   first one\'s. Push the branch anyway; the work is not lost. Then tell the',
-      '   user they can add the connector on Usernode at Settings → Connectors,',
+      '   user they can add the connector on Homeroom at Settings → Connectors,',
       '   which has the connector URL and the click-by-click steps:',
       ...connectorsPage,
       '   Once they have, retry `submit_work` as in step 2 — in a fresh session',
       '   if the tools still do not appear in this one.',
       ...(startedFromWalkthrough
         ? [
-          '   Otherwise finish from Usernode: the walkthrough that produced this',
+          '   Otherwise finish from Homeroom: the walkthrough that produced this',
           '   work order checks for the pushed branch when the user returns to that',
           '   tab, and its Submit button applies the update. Print the branch name',
           '   and the proposal id so they can confirm it.',
@@ -981,7 +981,7 @@ function buildWorkOrder({
           '   Otherwise hand it back: print the branch name you pushed and the',
           '   proposal id, and tell the user to give both to the assistant that',
           '   started this — it can submit the update for you. If they started',
-          '   from the Usernode tab instead, that tab checks for the pushed branch',
+          '   from the Homeroom tab instead, that tab checks for the pushed branch',
           '   and its Submit button applies the update.',
         ]),
       '',
@@ -1005,7 +1005,7 @@ function buildWorkOrder({
               '   what moves it.']),
           '',
           'Do not open a pull request — this work is not up for a vote yet; the person',
-          'who started it promotes it from Usernode when it is ready. If they have',
+          'who started it promotes it from Homeroom when it is ready. If they have',
           'ALREADY asked, in their own words, for this change to go to the group\'s',
           'vote, pass `propose: true` on that same submit_work call — the session is',
           'promoted the moment the update lands (a paused one is reopened first).']
@@ -1025,13 +1025,13 @@ function buildWorkOrder({
           '   Remember that every submission clears the votes again, so fix everything',
           '   you know about before you submit.',
           '',
-          'Do not open a pull request: this proposal already has one, and Usernode moves',
+          'Do not open a pull request: this proposal already has one, and Homeroom moves',
           'it onto your new commit for you.'])
     );
   } else if (hasTask) {
     lines.push(
       '',
-      '2. SUBMIT IT YOURSELF, through the Usernode connector. Call `submit_work`',
+      '2. SUBMIT IT YOURSELF, through the Homeroom connector. Call `submit_work`',
       `   with taskId ${taskRef}, branch set to the name you actually pushed,`,
       `   agent "${agentValue}", source "work_order", and a short title, plus`,
       '   BOTH pieces of prose described next. It answers with a link to the new',
@@ -1062,7 +1062,7 @@ function buildWorkOrder({
       '   of in-app routes your change is actually visible on, most important',
       '   first — e.g. ["/board?demo=1", "/settings"] — and `testingSteps` is a',
       '   few short numbered lines telling a person what to click to see it.',
-      '   Usernode shoots a before/after screenshot pair of each route for the',
+      '   Homeroom shoots a before/after screenshot pair of each route for the',
       '   people voting and shows the steps beside the staging preview. Leave',
       '   them out and it can only shoot the app\'s home page, which usually shows',
       '   nothing of what you changed. Point each route at THE SCREEN YOU',
@@ -1073,11 +1073,11 @@ function buildWorkOrder({
       // not use, so a malformed route is caught while the agent is still
       // holding the branch rather than from a boolean minutes later.
       '   READ THE ANSWER: `testingPaths` is what the screenshots will actually',
-      '   be shot on and `testingPathsRejected` names anything Usernode could not',
+      '   be shot on and `testingPathsRejected` names anything Homeroom could not',
       '   use. If a route you meant was rejected, submit once more with the',
       '   proposal id and corrected routes — on the SAME commit that is not a',
       '   second proposal, it only re-shoots the screenshots and clears no votes.',
-      '   Your sandbox cannot reach the Usernode website, and it does not need to:',
+      '   Your sandbox cannot reach the Homeroom website, and it does not need to:',
       '   connector traffic goes out through Claude\'s own infrastructure, not',
       '   through your container.',
       '',
@@ -1092,21 +1092,21 @@ function buildWorkOrder({
       '   for this:',
       `${CMD}git format-patch ${baseSha}..HEAD --stdout`,
       `   then call \`submit_work\` with taskId ${taskRef} and that text as`,
-      '   `patch`. Usernode applies it at that exact commit in the app\'s own',
+      '   `patch`. Homeroom applies it at that exact commit in the app\'s own',
       '   repository and opens the pull request itself. Patches over about 250 KB',
       '   are refused — push a branch for anything that large.',
       '',
       '5. ON A CONNECTOR ERROR, relay it plainly rather than giving up:',
-      '   `insufficient_scope` — ask the user to reconnect Usernode and approve',
+      '   `insufficient_scope` — ask the user to reconnect Homeroom and approve',
       '   "Propose changes". `github_not_linked` — give them the settings link the',
       '   tool returns. Anything transient, or one authentication failure: retry',
       '   once (access tokens are short-lived and your client refreshes them).',
       '',
-      '6. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Usernode',
+      '6. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Homeroom',
       '   connector was never added to the Claude or ChatGPT account this session',
       '   runs in — it is per account, so a second account does not inherit the',
       '   first one\'s. Push the branch anyway; the work is not lost. Then tell the',
-      '   user they can add the connector on Usernode at Settings → Connectors,',
+      '   user they can add the connector on Homeroom at Settings → Connectors,',
       '   which has the connector URL and the click-by-click steps:',
       ...connectorsPage,
       '   Once they have, retry `submit_work` as in step 2 — in a fresh session',
@@ -1118,7 +1118,7 @@ function buildWorkOrder({
       // that applies comes first.
       ...(startedFromWalkthrough
         ? [
-          '   Otherwise finish from Usernode: the walkthrough that produced this',
+          '   Otherwise finish from Homeroom: the walkthrough that produced this',
           '   work order checks for the pushed branch when the user returns to that',
           '   tab, and its Submit button opens the proposal. Print the branch name',
           '   so they can confirm it.',
@@ -1127,7 +1127,7 @@ function buildWorkOrder({
           '   Otherwise hand it back: print the branch name you pushed and, in case',
           '   the push was refused, save the patch from step 4 to a `.patch` file, and',
           '   tell the user to give both to the assistant that started this — it',
-          '   finishes the same way. If they started from the Usernode tab instead,',
+          '   finishes the same way. If they started from the Homeroom tab instead,',
           '   that tab checks for the pushed branch and its Submit button does it.',
         ]),
       '',
@@ -1150,7 +1150,7 @@ function buildWorkOrder({
       '   `capturePaths` names what it did shoot, which is how you tell that apart',
       '   from a change whose own first route is "/".',
       '',
-      'Do not open the pull request yourself in the normal path: Usernode opens it,',
+      'Do not open the pull request yourself in the normal path: Homeroom opens it,',
       'and the change becomes a proposal with a staging preview, automated checks',
       'and a group vote.'
     );
@@ -1158,7 +1158,7 @@ function buildWorkOrder({
     lines.push(
       '',
       '2. Report the branch name you pushed, and stop there. Do not open a pull',
-      '   request: Usernode opens it, and the change becomes a proposal with a',
+      '   request: Homeroom opens it, and the change becomes a proposal with a',
       '   staging preview and a group vote.'
     );
   }
@@ -1167,7 +1167,7 @@ function buildWorkOrder({
     lines.splice(2, 0, `This implements request #${issueNumber}.`, '');
   }
   if (webPath) {
-    lines.push('', `The app on Usernode: ${webPath}`);
+    lines.push('', `The app on Homeroom: ${webPath}`);
   }
 
   // ── The offline appendix ─────────────────────────────────────────────
@@ -1182,7 +1182,7 @@ function buildWorkOrder({
   return lines.join('\n');
 }
 
-// The three centrally hosted files every Usernode app loads, and why an
+// The three centrally hosted files every Homeroom app loads, and why an
 // egress-blocked container seeing them fail is the SANDBOX and not the
 // change. Written out rather than pulled from the conventions doc because
 // the diagnosis ("this is your container, not your code") is specific to an
@@ -1217,7 +1217,7 @@ function hostedAssetWarning(webPath) {
   const origin = platformOriginFrom(webPath);
   const lines = [
     'ABOUT THE APP\'S HOSTED ASSETS (read before you "fix" the styling)',
-    'Every Usernode app loads three files from the platform, centrally hosted:',
+    'Every Homeroom app loads three files from the platform, centrally hosted:',
     ...hostedAssetUrls(origin).map((u) => `${CMD}${u}`),
     'Your container may not be able to reach that host. When it cannot, the app',
     'renders unstyled in a local browser and any native-kit assertion fails. That',
@@ -1228,7 +1228,7 @@ function hostedAssetWarning(webPath) {
     'tag is a different thing — a legacy state many apps are still in, whose checks',
     'pass: do not add one, do not "fix" one as a drive-by, and when migrating IS the',
     'task swap it to the Tailwind URL above (including any copy of that hostname in',
-    'the app\'s sw.js precache list). The staging preview Usernode builds — not a',
+    'the app\'s sw.js precache list). The staging preview Homeroom builds — not a',
     'local screenshot — is the authority on how this change looks.',
   ];
   if (origin) {
@@ -1263,7 +1263,7 @@ function describeTargetProposal(session, user, app, origin) {
     return fail('invalid_request', 'That proposal id is not a proposal.');
   }
   // Not "no_access": the caller asked about a real proposal and the answer is
-  // whose it is. Only the author can move a proposal's head — Usernode
+  // whose it is. Only the author can move a proposal's head — Homeroom
   // advances one from a fork owned by the GitHub account ITS AUTHOR linked,
   // so an update work order for somebody else's proposal could never be
   // submitted and is refused rather than written.
@@ -1307,7 +1307,7 @@ function describeTargetProposal(session, user, app, origin) {
       'session_not_started',
       `Session ${id} has not run a turn yet, so it has no branch to continue from. `
         + 'Ask for a new change on this app instead, or send a message in the session '
-        + 'on Usernode first and then continue it.'
+        + 'on Homeroom first and then continue it.'
     );
   }
   // A proposal whose head is in the author's fork is advanced by pushing to
@@ -1315,20 +1315,20 @@ function describeTargetProposal(session, user, app, origin) {
   // so the work order has to name it, and a name git would reject means the
   // platform cannot describe the work honestly.
   if (branchHome === 'user_fork' && !isValidBranchName(branchName)) {
-    return fail('platform_unavailable', `Usernode cannot read proposal ${id}'s branch. Try again shortly.`);
+    return fail('platform_unavailable', `Homeroom cannot read proposal ${id}'s branch. Try again shortly.`);
   }
   // A native continuation is based at the head of THIS branch and pushed back
   // onto it. Without a usable name there is no base to hand the agent and
   // nowhere for its work to land, so refuse now rather than write a work order
   // whose "Base commit" line is a guess.
   if (branchHome === 'app_repo' && !isValidBranchName(branchName)) {
-    return fail('platform_unavailable', `Usernode cannot read ${targetKind === 'session' ? `session ${id}` : `proposal ${id}`}'s branch. Try again shortly.`);
+    return fail('platform_unavailable', `Homeroom cannot read ${targetKind === 'session' ? `session ${id}` : `proposal ${id}`}'s branch. Try again shortly.`);
   }
   const trackedHead = branchHome === 'user_fork'
     ? String(session.imported_pr_head_sha || '').trim().toLowerCase()
     : null;
   if (branchHome === 'user_fork' && !BASE_SHA_RE.test(trackedHead)) {
-    return fail('platform_unavailable', `Usernode cannot read proposal ${id}'s current commit. Try again shortly.`);
+    return fail('platform_unavailable', `Homeroom cannot read proposal ${id}'s current commit. Try again shortly.`);
   }
 
   return {
@@ -1386,7 +1386,7 @@ async function prepareWork(deps, params) {
     return fail('no_repository', 'That app does not have a GitHub repository yet, so there is nothing to build against.');
   }
   if (!gh.isEnabled()) {
-    return fail('platform_unavailable', 'Usernode cannot reach GitHub right now. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom cannot reach GitHub right now. Try again shortly.', { retryable: true });
   }
 
   // Unconfigured deployment vs. unlinked user: two different refusals. Check
@@ -1398,7 +1398,7 @@ async function prepareWork(deps, params) {
   if (!link || !link.linked || !link.login) {
     return fail(
       'github_not_linked',
-      'Connect your GitHub account first: Usernode needs to know which GitHub account is yours before work '
+      'Connect your GitHub account first: Homeroom needs to know which GitHub account is yours before work '
       + 'built by your coding agent can be submitted under your name. It asks for no access to your '
       + 'repositories.',
       { settingsUrl: `${origin}/#settings/connectors` }
@@ -1512,7 +1512,7 @@ async function prepareWork(deps, params) {
     }
   }
   // A value that is not a clean 40-character hex id never reaches a work
-  // order. Refusing here is what makes "Usernode never emits a malformed
+  // order. Refusing here is what makes "Homeroom never emits a malformed
   // commit id" a property rather than an assumption — so a split id seen
   // in a chat message can only have been introduced downstream, and is
   // diagnosed as a transcription error instead of hunted for in here.
@@ -1522,7 +1522,7 @@ async function prepareWork(deps, params) {
     if (baseSha) {
       log.warn('external-agent-tasks', 'base sha is not a 40-char hex id', { app: app.slug });
     }
-    return fail('platform_unavailable', 'Usernode could not read the app\'s current code. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom could not read the app\'s current code. Try again shortly.', { retryable: true });
   }
   // Lowercased from here on, matching how inspectPushedBranch compares it.
   baseSha = String(baseSha).trim().toLowerCase();
@@ -1590,7 +1590,7 @@ async function prepareWork(deps, params) {
     row = await insertTask();
   } catch (err) {
     log.error('external-agent-tasks', 'task insert failed', { app: app.slug, err: err.message });
-    return fail('platform_unavailable', 'Usernode could not record this piece of work. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom could not record this piece of work. Try again shortly.', { retryable: true });
   }
 
   if (!row) {
@@ -1623,7 +1623,7 @@ async function prepareWork(deps, params) {
     }
 
     if (!row) {
-      return fail('platform_unavailable', 'Usernode could not record this piece of work. Try again shortly.', { retryable: true });
+      return fail('platform_unavailable', 'Homeroom could not record this piece of work. Try again shortly.', { retryable: true });
     }
   }
 
@@ -2242,7 +2242,7 @@ function attributionError(pr, expectedLogin) {
   return fail(
     'fork_mismatch',
     `That pull request comes from ${actual ? `${actual}'s` : 'another'} repository, not from your fork. `
-    + 'Usernode only submits work from your own GitHub account under your name — '
+    + 'Homeroom only submits work from your own GitHub account under your name — '
     + 'if you want to bring in someone else\'s pull request, import it from the app\'s Dev page instead.'
   );
 }
@@ -2357,8 +2357,8 @@ async function resolvePullRequest(ctx) {
       return {
         done: fail(
           'fork_collab_denied',
-          `Usernode asked GitHub to give ${owner}/${repo}'s maintainers write access to ${forkOwner}:${branch}, `
-          + 'and only a collaborator on that fork can grant it. Usernode holds no access to your GitHub account, '
+          `Homeroom asked GitHub to give ${owner}/${repo}'s maintainers write access to ${forkOwner}:${branch}, `
+          + 'and only a collaborator on that fork can grant it. Homeroom holds no access to your GitHub account, '
           + 'so it should never have asked — this is a bug on our side, not a problem with your branch. '
           + 'Report it, or open the pull request yourself and submit it with its number.',
           { retryable: false }
@@ -2452,7 +2452,7 @@ function prOpenFailed({ desc, owner, repo, forkOwner, forkRepo, branch }) {
     `GitHub refused to open the pull request from ${forkOwner}:${branch} into ${owner}/${repo} with `
     + `${status}.${field}${ref}\n\n`
     + `You can open it yourself in one click: ${compareUrl} — then call submit_work again with `
-    + `slug and prNumber, and Usernode picks up from there.`,
+    + `slug and prNumber, and Homeroom picks up from there.`,
     // Two identical attempts minutes apart proved retrying is not the
     // answer; saying "try again" here is how a run loses another hour.
     { retryable: false, compareUrl, githubStatus: (desc && desc.status) || null, requestId: (desc && desc.requestId) || null }
@@ -2481,7 +2481,7 @@ async function submitUpdate(deps, params, proposalId) {
   } = params;
 
   if (typeof updateProposal !== 'function') {
-    return fail('platform_unavailable', 'This Usernode client cannot submit proposal updates. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'This Homeroom client cannot submit proposal updates. Try again shortly.', { retryable: true });
   }
   // A patch is create-only by construction: applyPatch writes a NEW branch in
   // the app's repository and the caller opens a pull request against it, which
@@ -2504,7 +2504,7 @@ async function submitUpdate(deps, params, proposalId) {
   if (!branch) {
     return fail(
       'invalid_request',
-      'Pass `branch` too: the branch in your own fork that carries the new commits. Usernode reads it from GitHub, '
+      'Pass `branch` too: the branch in your own fork that carries the new commits. Homeroom reads it from GitHub, '
       + 'so it has to be pushed first.'
     );
   }
@@ -2544,7 +2544,7 @@ async function submitUpdate(deps, params, proposalId) {
   if (!slug) {
     return fail(
       'invalid_request',
-      `Usernode has no proposal ${proposalId}. Check the id with list_my_proposals — or pass the taskId from the `
+      `Homeroom has no proposal ${proposalId}. Check the id with list_my_proposals — or pass the taskId from the `
       + 'work order, which names both the proposal and its app.'
     );
   }
@@ -2594,7 +2594,7 @@ async function submitUpdate(deps, params, proposalId) {
     return {
       ok: false,
       code: body.error || 'platform_unavailable',
-      message: body.message || 'Usernode could not update that proposal.',
+      message: body.message || 'Homeroom could not update that proposal.',
       ...(body.retryable ? { retryable: true } : {}),
       ...(body.expectedBase ? { expectedBase: body.expectedBase } : {}),
       ...(body.headSha ? { headSha: body.headSha } : {}),
@@ -2782,7 +2782,7 @@ async function submitWorkLocked(deps, params) {
   } = params;
 
   if (!gh.isEnabled()) {
-    return fail('platform_unavailable', 'Usernode cannot reach GitHub right now. Try again shortly.', { retryable: true });
+    return fail('platform_unavailable', 'Homeroom cannot reach GitHub right now. Try again shortly.', { retryable: true });
   }
 
   // Before anything is read: with no OAuth app there is no verified GitHub
@@ -2819,7 +2819,7 @@ async function submitWorkLocked(deps, params) {
 
   let task = taskId ? await loadOpenTask(pool, user.id, taskId) : null;
   if (taskId && !task) {
-    // Telling Usernode twice is no longer an error. Since the coding agent
+    // Telling Homeroom twice is no longer an error. Since the coding agent
     // submits for itself, the user may also relay "it's done" to their chat
     // assistant — and the old answer ("that work does not exist… start again
     // with prepare_work") would have opened a duplicate for work already up
@@ -2883,10 +2883,10 @@ async function submitWorkLocked(deps, params) {
           + 'from — then submit with taskId + the branch you pushed. The branch you already pushed is fine '
           + 'as it is; nothing needs rebuilding.'
         : 'Nothing to submit. Any of these works: taskId + the branch you pushed; taskId + patch (if GitHub '
-          + 'refused the push — Usernode applies it and opens the pull request itself, no GitHub write access '
+          + 'refused the push — Homeroom applies it and opens the pull request itself, no GitHub write access '
           + 'needed); slug + prNumber for a pull request that is already open; or slug + branch, which '
           + 'recovers an open task whose id you lost. The taskId is printed in the work order you were given, '
-          + 'and it belongs to the user\'s Usernode account — you can submit it yourself.'
+          + 'and it belongs to the user\'s Homeroom account — you can submit it yourself.'
     );
   }
   if (patch && !task) {
@@ -2941,7 +2941,7 @@ async function submitWorkLocked(deps, params) {
     if (typeof params.shareWork !== 'function') {
       return fail(
         'platform_unavailable',
-        'This Usernode client cannot share work to the in-progress area. Try again shortly.',
+        'This Homeroom client cannot share work to the in-progress area. Try again shortly.',
         { retryable: true }
       );
     }
@@ -2980,7 +2980,7 @@ async function submitWorkLocked(deps, params) {
       if (typeof params.updateProposal !== 'function') {
         return fail(
           'platform_unavailable',
-          'This Usernode client cannot advance a shared session. Try again shortly.',
+          'This Homeroom client cannot advance a shared session. Try again shortly.',
           { retryable: true }
         );
       }
@@ -2993,7 +2993,7 @@ async function submitWorkLocked(deps, params) {
           ok: false,
           code: 'share_failed',
           message: (advanced && advanced.body && (advanced.body.message || advanced.body.error))
-            || 'Usernode could not advance that shared session.',
+            || 'Homeroom could not advance that shared session.',
           status: advanced ? advanced.status : 0,
           platformResult: advanced,
         };
@@ -3039,7 +3039,7 @@ async function submitWorkLocked(deps, params) {
         ok: false,
         code: 'share_failed',
         message: (shared && shared.body && (shared.body.message || shared.body.error))
-          || 'Usernode could not share that work to the in-progress area.',
+          || 'Homeroom could not share that work to the in-progress area.',
         status: shared ? shared.status : 0,
         platformResult: shared,
       };
@@ -3141,7 +3141,7 @@ async function submitWorkLocked(deps, params) {
       log.error('external-agent-tasks', 'PR creation failed for an applied patch', {
         owner, repo, taskId: task.id, ...(desc || { message: err && err.message }),
       });
-      return fail('platform_unavailable', 'Usernode applied the patch but could not open the pull request. Try again shortly.', { retryable: true });
+      return fail('platform_unavailable', 'Homeroom applied the patch but could not open the pull request. Try again shortly.', { retryable: true });
     }
   } else {
     // ── The branch path ────────────────────────────────────────────────
@@ -3304,7 +3304,7 @@ async function submitWorkLocked(deps, params) {
       ok: false,
       code: 'import_failed',
       message: (imported && imported.body && imported.body.error)
-        || 'Usernode could not turn that pull request into a proposal.',
+        || 'Homeroom could not turn that pull request into a proposal.',
       status: imported ? imported.status : 0,
       prNumber: pr.number,
       prUrl: pr.html_url || null,

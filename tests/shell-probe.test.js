@@ -148,9 +148,9 @@ test('probeUrl: same-origin API redirects still enforce the final auth verdict',
   finally { await srv.close(); }
 });
 
-test('probeUrl: scaffold 401 "Open in Usernode" page → gated', async () => {
+test('probeUrl: scaffold 401 "Open in Homeroom" page → gated', async () => {
   const requests = [];
-  const srv = await serve((req, res) => { requests.push(req.url); res.writeHead(401); res.end('Open in Usernode'); });
+  const srv = await serve((req, res) => { requests.push(req.url); res.writeHead(401); res.end('Open in Homeroom'); });
   try {
     assert.equal(await probeUrl(srv.url), 'gated');
     assert.deepEqual(requests, ['/'], 'a gated shell needs no second request');

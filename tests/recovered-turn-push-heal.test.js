@@ -186,7 +186,7 @@ function makeFailingStaging(err) {
 
 const SESSION = {
   id: 510, status: 'active', is_headless: false, user_id: 1, app_id: 1,
-  username: 'evan', app_slug: 'usernode-2d5619', app_name: 'Usernode',
+  username: 'evan', app_slug: 'usernode-2d5619', app_name: 'Homeroom',
   repo_url: 'https://github.com/Usernode-Labs/social-vibecoding',
   branch_name: 'dev/evan-1781527910307',
   cc_session_id: 'cc-1',

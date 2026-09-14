@@ -637,7 +637,7 @@ async function requestStop(pool, { sessionId, userId }) {
   const { rows } = await pool.query(
     `UPDATE local_agent_turns
         SET status = 'stopped', finished_at = NOW(), updated_at = NOW(),
-            error_detail = 'Stopped from the Usernode dev chat.'
+            error_detail = 'Stopped from the Homeroom dev chat.'
       WHERE session_id = $1 AND ($2::INTEGER IS NULL OR user_id = $2)
         AND status = ANY($3::TEXT[])
       RETURNING *`,

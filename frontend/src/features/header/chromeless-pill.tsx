@@ -1,5 +1,5 @@
 /**
- * #chromeless-pill — the floating "Open in Usernode" affordance shown while the
+ * #chromeless-pill — the floating "Open in Homeroom" affordance shown while the
  * platform header is hidden (`/app/<slug>/full`). App._mountChromelessPill /
  * _unmountChromelessPill in app.js, as a component (#1079 chunk B).
  *
@@ -51,7 +51,7 @@ export function ChromelessPill() {
     <a
       id="chromeless-pill"
       href="#"
-      aria-label="Open this app on Usernode"
+      aria-label="Open this app on Homeroom"
       style={{ ...PILL_STYLE, opacity: hover ? 1 : 0.85 }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -65,7 +65,7 @@ export function ChromelessPill() {
         }
       }}
     >
-      <span>Open in Usernode</span>
+      <span>Open in Homeroom</span>
       <span style={GLYPH_STYLE} aria-hidden="true">
         {'↗'}
       </span>

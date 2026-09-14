@@ -174,7 +174,7 @@ function publicApiRoutes(config) {
           // Direct subdomain URL — what the public landing page links to.
           // View-public apps pass the Caddy edge gate without a session;
           // apps that JWT-gate their own HTML shell will show their
-          // "Open in Usernode" page to anonymous visitors.
+          // "Open in Homeroom" page to anonymous visitors.
           url: `https://${productionHostname(a.slug)}`,
           contributors: (byApp.get(a.id) || []).map((r) =>
             shapeContributor(r, includeWallets)

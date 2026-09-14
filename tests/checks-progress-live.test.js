@@ -676,19 +676,50 @@ test('a roster already on screen is never replaced by a loading line', async () 
   assert.match(src, /else delete AppView\._voteRoster\[sessionId\];/);
 });
 
-test('a pending run says what a pending sync will do to it', () => {
+test('a pending run says what main moving means for it', () => {
   const AppView = makeAppView();
   const base = { check_state: 'pending', check_phase: 'testing', checks_checked_at: new Date().toISOString() };
   const lines = (pr) => AppView._checksStatusNotes(pr)[0].rows.map((r) => r.parts[0]);
+  // A head that still merges cleanly is never synced: it merges as it
+  // stands, so the run in flight is left to finish. Saying a sync was coming
+  // here was the promise that the direct merge lane retired.
   const behind = lines({ ...base, behind_main: 3 });
-  assert.ok(behind.some((l) => /Main has moved 3 commits ahead\. This run is judged against the commit before that, so when the platform syncs this proposal the run starts again on the synced commit\./.test(l)),
-    'the checks row says the sync ends this run — not left to be inferred from the Behind main pill');
+  assert.ok(behind.some((l) => /Main has moved 3 commits ahead\. That does not restart this run: a proposal that still merges cleanly merges as it stands\./.test(l)),
+    'the checks row says the drift leaves this run alone');
+  assert.ok(!behind.some((l) => /syncs this proposal/.test(l)));
+  // A CONFLICTING head is the one the platform brings up to date, and that
+  // does restart the run — on the resolved commit.
+  const conflict = lines({ ...base, behind_main: 3, freshness: { mergeability: 'conflict', behindBy: 3 } });
+  assert.ok(conflict.some((l) => /Main has moved 3 commits ahead and this proposal conflicts with it\. .*when the platform resolves the conflict the run starts again on the resolved commit\./.test(l)),
+    'the checks row says the resolution ends this run');
   assert.ok(lines({ ...base, behind_main: 1 }).some((l) => /Main has moved 1 commit ahead/.test(l)), 'singular');
   assert.ok(!lines({ ...base, behind_main: 0 }).some((l) => /Main has moved/.test(l)), 'nothing to say when it is level with main');
   assert.ok(!lines(base).some((l) => /Main has moved/.test(l)));
   // A verdict is not a run in flight: no forecast on a finished one.
   const done = AppView._checksStatusNotes({ check_state: 'passing', behind_main: 3, test_results: [] });
   assert.ok(!JSON.stringify(done).includes('Main has moved'));
+});
+
+test('a deferred run is a note about a decision, not a spinner about a run', () => {
+  const AppView = makeAppView();
+  const notes = AppView._checksStatusNotes({
+    id: 7, user_id: 1, status: 'promoted',
+    check_state: 'pending', check_phase: 'deferred', checks_checked_at: new Date().toISOString(),
+    freshness: { mergeability: 'conflict', behindBy: 2 },
+  });
+  assert.equal(notes.length, 1);
+  const note = notes[0];
+  assert.equal(note.spinner, false, 'nothing is running');
+  assert.match(note.heading, /Checks deferred until this merges cleanly/);
+  const text = note.rows.map((r) => r.parts[0]).join(' ');
+  assert.match(text, /preview was built but the automated tests were not run/);
+  assert.match(text, /run automatically once it merges cleanly/);
+  assert.match(text, /Preview built /);
+  assert.ok(!/Main has moved/.test(text), 'the in-flight forecast belongs to a run that is going');
+  assert.ok(note.action, 'the re-run button is how to insist on a verdict for this head as it stands');
+  // The phase copy the Underway card reads names the same decision.
+  assert.equal(AppView._checksPhaseCopy('deferred').title, 'Checks deferred');
+  assert.match(AppView._checksPhaseCopy('deferred').detail, /conflicts with main/);
 });
 
 test('an integration supersedes a check run rather than queueing behind it', () => {

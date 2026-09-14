@@ -308,7 +308,7 @@ function ProviderRow({ row }: { row: ProviderRowView }) {
                       accountId: (window as any).App?.user?.id,
                       origin: window.location.origin,
                     });
-                    setLaunchStatus('Finish connecting in your browser, then return to the app. Sign in with the same Usernode account if asked.');
+                    setLaunchStatus('Finish connecting in your browser, then return to the app. Sign in with the same Homeroom account if asked.');
                   } catch (err) {
                     setLaunchFailed(true);
                     setLaunchStatus((err as Error).message);

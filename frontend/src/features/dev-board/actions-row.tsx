@@ -41,7 +41,7 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 
 import {
-  AppWindowIcon, GitHubIcon, KeyIcon, PencilSquareIcon, UserGroupIcon,
+  AppWindowIcon, GitHubIcon, KeyIcon, LightBulbIcon, PencilSquareIcon, UserGroupIcon,
 } from '@/components/ui/icons';
 
 import { callAppView } from './card/fold';
@@ -230,7 +230,7 @@ export function DevActionsRow({
         title={
           readOnly
             ? 'Fork this app'
-            : 'Import a PR or manage this app'
+            : 'File an issue, import a PR or manage this app'
         }
       >
         +
@@ -241,27 +241,41 @@ export function DevActionsRow({
       >
         {readOnly ? null : (
           <>
-            {/* New change and Give feedback live in Improve (#1490). */}
+            {/*
+                New change lives in Improve (#1490). Filing an issue is back
+                HERE as well (#1900): #1490 folded it into Improve's Give
+                feedback beside New change, and people on the board could not
+                find "create an issue" any more. Same dialog, opened with the
+                open app preselected — the row needs nothing of the viewer
+                beyond a writeable board, so it is the one action in this group
+                that is not gated on canCollaborate, and the group heading is
+                unconditional because of it.
+            */}
+            <PlusMenuHeading label="Add to the board" groupKey="build" divider={false} />
+            <PlusRow
+              data-plus="issue"
+              icon={<LightBulbIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
+              title="File an issue"
+              sub="Report a problem or idea without building it yourself"
+            />
             {canCollaborate ? (
-              <>
-                <PlusMenuHeading label="Import a change" groupKey="build" divider={false} />
-                <PlusRow
-                  data-plus="import-pr"
-                  icon={<GitHubIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
-                  title="Import Feature from a PR"
-                  sub={(
-                    <>
-                      Your computer &middot; your own tools. You have already built it, so
-                      there is no chat for this one
-                    </>
-                  )}
-                />
-              </>
+              <PlusRow
+                data-plus="import-pr"
+                icon={<GitHubIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
+                title="Import Feature from a PR"
+                sub={(
+                  <>
+                    Your computer &middot; your own tools. You have already built it, so
+                    there is no chat for this one
+                  </>
+                )}
+                dividerCls={PLUS_ROW_DIVIDER_CLS}
+              />
             ) : null}
             <PlusMenuHeading
               label="Settings &amp; rules"
               groupKey="settings"
-              divider={canCollaborate}
+              divider={true}
             />
             {canManageIllustration ? <PlusRow
               data-plus="featured-illustration"

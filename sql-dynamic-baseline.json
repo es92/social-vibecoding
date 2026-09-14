@@ -936,9 +936,9 @@
     {
       "source": "src/services/merge-queue.js",
       "kind": "structural-template",
-      "fingerprint": "ac50f62110baae9e88c1",
+      "fingerprint": "33bca25f32a9a95ab363",
       "count": 1,
-      "preview": "`SELECT cs.id, cs.promoted_at, cs.created_at, cs.requires_explicit_approval, cs.integration_behind_by, cs.integration_merges_clean, cs.check_state, cs.checks_co"
+      "preview": "`SELECT cs.id, cs.user_id, cs.source, cs.promoted_at, cs.created_at, cs.requires_explicit_approval, cs.approval_epoch, cs.integration_resolved_epoch, cs.integra"
     },
     {
       "source": "src/services/notifications.js",

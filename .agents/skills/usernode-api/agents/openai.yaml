@@ -1,4 +1,4 @@
 interface:
-  display_name: "Usernode API"
-  short_description: "Inspect or change Usernode platform state"
-  default_prompt: "Use $usernode-api to inspect or change Usernode platform state safely."
+  display_name: "Homeroom API"
+  short_description: "Inspect or change Homeroom platform state"
+  default_prompt: "Use $usernode-api to inspect or change Homeroom platform state safely."

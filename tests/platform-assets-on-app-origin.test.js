@@ -217,7 +217,7 @@ test('an app manifest cannot shadow the platform origin', () => {
   // This set is what the manifest reader consults before accepting a
   // declared secret: a key in it is dropped with a warning rather than
   // handed to the container. Without it an app could redeclare the key and
-  // point its own "Open in Usernode" links wherever it liked.
+  // point its own "Open in Homeroom" links wherever it liked.
   assert.ok(appManifest.RESERVED_KEYS.has('USERNODE_PLATFORM_ORIGIN'));
 });
 

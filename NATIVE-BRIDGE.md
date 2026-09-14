@@ -1,6 +1,6 @@
-# Usernode Native Bridge Contract
+# Homeroom Native Bridge Contract
 
-The Usernode Flutter app injects a `Usernode` JavaScript channel into every
+The Homeroom Flutter app injects a `Homeroom` JavaScript channel into every
 page loaded in its dapp webview. `public/usernode-bridge.js` (canonical copy:
 `public/usernode-bridge/v1/bridge.js`) wraps that channel in promise-returning
 methods on `window.usernode`. This document is the versioned contract between
@@ -318,7 +318,7 @@ callers can always `await` it and gate UI on capabilities.
 
 `appVersion` and `buildNumber` identify the installed Flutter binary (for
 example `0.4.0` and `1223`). They are public release identifiers on the
-unprivileged probe so a Social Vibecoding staging build can display the app
+unprivileged probe so a Homeroom staging build can display the app
 hosting its WebView without receiving access to native settings or account
 state. App builds predating these optional fields omit them; production SV
 falls back to the same pair under `getSettingsState().buildInfo` while those
@@ -331,7 +331,7 @@ a negative conclusion from a probe MUST check `degraded` and re-probe
 instead.** `version: 0` from inside the app means "don't know", not "this
 build has no capabilities": treating a 4s timeout as the latter is how one
 cold-start hiccup disabled every privileged call for a whole document and
-made Settings → Usernode app unloadable until the app was force-closed
+made Settings → Homeroom app unloadable until the app was force-closed
 (issue #978). The two in-repo consumers of this rule are the bridge's own
 privileged-capability negotiation and `NativeChrome.getInfo()`, which
 shares its in-flight promise but never memoises a degraded answer.
@@ -462,7 +462,7 @@ records. In a child frame the privileged record is reported as
 `blocked-frame` / `no-transport` regardless of what that frame last tried,
 so an embedded dapp learns nothing about the top frame.
 
-SV renders it as Settings → Usernode app → "Usernode app — connection", with
+SV renders it as Settings → Homeroom app → "Homeroom app — connection", with
 **Try again** and **Copy diagnostics**.
 
 #### `getNodeStatus()` → snapshot object
@@ -533,7 +533,7 @@ Bridge v4 capability: `manageStaking`. This privileged top-frame method takes
 no arguments, opens the native delegation screen, and resolves with the latest
 staking snapshot after that screen closes, including when the user makes no
 change. Native owns the fixed delegation target, confirmation, backend
-synchronization, persistence and node reconfiguration. Social Vibecoding must
+synchronization, persistence and node reconfiguration. Homeroom must
 not submit a target address or requested delegation state itself.
 
 #### Social-owned transaction receipts
@@ -597,7 +597,7 @@ dead button.
 #### `captureScreenshot()` → `{ contentType, base64 }`
 
 Additive bridge-v4 capability: `captureScreenshot`. Captures the currently
-visible Usernode app window on Android or iOS and returns a JPEG as base64.
+visible Homeroom app window on Android or iOS and returns a JPEG as base64.
 The native encoder bounds the image to the feedback endpoint's 4 MB limit.
 SV hides its feedback dialog before calling so the returned pixels show the
 underlying screen, then restores the unchanged draft and presents a preview.
@@ -609,7 +609,7 @@ older app builds continue to use the feedback dialog's Photos/file fallback.
 ### Settings (v3 — app-settings-to-web migration)
 
 All v3 methods are trusted-SV-origin gated like `openNativeScreen`. They
-power the "Usernode app" sections in SV's Settings modal
+power the "Homeroom app" sections in SV's Settings modal
 (`frontend/src/features/settings/settings.js`). Profile identity and data are
 owned entirely by the authenticated Social session.
 
@@ -644,7 +644,7 @@ wrapper uses a longer (12s) timeout for this method.
 Like every chrome read it resolves `null` rather than rejecting on failure,
 and the reason is available from
 `getLastNativeReadError("getSettingsState")` (see above). SV's Settings →
-Usernode app section renders that reason with a retry, and keeps the blocks
+Homeroom app section renders that reason with a retry, and keeps the blocks
 that don't need this snapshot (activity notifications, block production,
 terms, FAQ, the native diagnostics screens) on screen, so a failed read is
 recoverable rather than a dead end.
@@ -804,6 +804,6 @@ Consequences:
 
 - The webview cannot navigate to non-bound domains; external links must go
   through `openExternal`.
-- The `Usernode` channel only exists on bound domains.
+- The `Homeroom` channel only exists on bound domains.
 
 Android webviews support service workers without configuration.

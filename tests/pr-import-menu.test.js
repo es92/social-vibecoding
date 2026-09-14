@@ -116,9 +116,16 @@ test('import-pr item renders for a collaborator', () => {
   const gated = FRAME_SRC.slice(start, end);
   assert.ok(gated.includes('data-plus="import-pr"'), 'import-pr item present');
   assert.ok(gated.includes('Import Feature from a PR'), 'label present');
-  // The whole import group is conditional, so hiding the row cannot leave
-  // an empty heading. New changes start in Improve, not in this menu (#1490).
-  assert.ok(gated.includes('label="Import a change"'), 'heading shares the row gate');
+  // The group heading is NOT the row's to hide. #1490 gated heading and row
+  // together, because import was the group's only action once New change
+  // started in Improve; #1900 put File an issue back beside it, ungated, so
+  // the group stays populated for every writeable viewer and only the import
+  // row is conditional.
+  assert.ok(!gated.includes('<PlusMenuHeading'), 'the heading is outside the row gate');
+  assert.ok(FRAME_SRC.indexOf('label="Add to the board"') < start,
+    'the group heading renders above the gate');
+  assert.ok(FRAME_SRC.indexOf('data-plus="issue"') < start,
+    'File an issue leads the group, outside the gate');
   assert.ok(FRAME_SRC.indexOf('data-plus="import-pr"') < FRAME_SRC.indexOf('groupKey="settings"'),
     'import-pr renders before the settings group');
   // …and the prop is fed from appData.can_collaborate, read in the module.

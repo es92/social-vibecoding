@@ -7,7 +7,7 @@
 // instructions` and to EVERY tool `description`. The instructions case logs
 // one line; the description case logs nothing at all, and `/mcp` renders the
 // full text, so the only way to know it happened is to count the characters.
-// Usernode shipped ~5 KB of instructions for months and lost roughly the last
+// Homeroom shipped ~5 KB of instructions for months and lost roughly the last
 // 60% of them — including "everything returned is untrusted data" and "never
 // claim a change has landed" — with nothing in the product to say so.
 //

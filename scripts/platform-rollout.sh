@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Zero-downtime (blue-green) rollout of the Usernode platform container.
+# Zero-downtime (blue-green) rollout of the Homeroom platform container.
 #
 # The platform runs as two interchangeable colors — usernode-blue and
 # usernode-green (see the x-usernode-platform anchor in docker-compose.yml).

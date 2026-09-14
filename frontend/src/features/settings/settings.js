@@ -104,7 +104,7 @@
   // boot instead: App.enterAnonymous reads this key once and toasts it.
   const LOGOUT_NOTICE_KEY = 'sv:logout_notice';
   const NATIVE_SHUTDOWN_NOTICE =
-    'Signed out. Close and reopen the app to finish shutting down Usernode.';
+    'Signed out. Close and reopen the app to finish shutting down Homeroom.';
 
   // A successful native logout replaces the WebView, so nothing below it in
   // this document normally runs. This bounded net covers the case where the
@@ -200,8 +200,8 @@
     // order, and the first VISIBLE entry is the default section.
     //
     // `gate` names the INNER node whose own `hidden` decides whether the
-    // section is offered at all — Usernode Wallet (wallet linking enabled),
-    // Usernode app (the native bridge's getSettingsState capability) and
+    // section is offered at all — Homeroom Wallet (wallet linking enabled),
+    // Homeroom app (the native bridge's getSettingsState capability) and
     // Admin preview (a real platform admin). Those gates live in
     // _renderWalletSection / _renderUsernodeSection / _renderAdminSection
     // and are read here, never duplicated. Sections with no `gate` are
@@ -231,7 +231,7 @@
       { key: 'username', label: 'Username', group: 'Account' },
       { key: 'email', label: 'Email & recovery', group: 'Account' },
       { key: 'password', label: 'Password', group: 'Account' },
-      { key: 'wallet', label: 'Usernode Wallet', group: 'Account', gate: 'wallet-section' },
+      { key: 'wallet', label: 'Homeroom Wallet', group: 'Account', gate: 'wallet-section' },
 
       { key: 'openrouter', label: 'OpenRouter', group: 'AI & agents' },
       { key: 'api-key', label: 'Anthropic API key', group: 'AI & agents' },
@@ -261,7 +261,7 @@
       { key: 'cli', label: 'CLI & coding-agent access', group: 'Advanced' },
       { key: 'dev-console', label: 'Developer console', group: 'Advanced' },
       { key: 'experimental', label: 'Experimental', group: 'Advanced' },
-      { key: 'usernode', label: 'Usernode app', group: 'Advanced', gate: 'settings-usernode-section' },
+      { key: 'usernode', label: 'Homeroom app', group: 'Advanced', gate: 'settings-usernode-section' },
       { key: 'admin-preview', label: 'Admin preview', group: 'Advanced', gate: 'settings-admin-section' },
       { key: 'about', label: 'About', group: 'Advanced' },
     ],
@@ -281,7 +281,7 @@
       // is static in index.html and only ever hidden/shown, never rebuilt
       // (see the "MOVE, DON'T REWRITE" note on #settings-screen).
 
-      // The Usernode app → connection panel offers wallet recovery only while
+      // The Homeroom app → connection panel offers wallet recovery only while
       // native admission is refused for want of a seeded wallet
       // (_walletRecoveryAvailable). Admission flipping either way — the
       // recovery dialog succeeding, a sign-out — must repaint that panel
@@ -599,7 +599,7 @@
         // resolve to the same deployment-constant answer.)
         this._cliAuthPromise = Promise.resolve(j.user?.cliAuthEnabled !== false);
         this._renderIndicator();
-        // `walletLinkEnabled` decides whether the Usernode Wallet row is in
+        // `walletLinkEnabled` decides whether the Homeroom Wallet row is in
         // the menu at all, and it lands here — possibly AFTER a cold-boot
         // deep link has already painted. Re-resolve the menu.
         this._renderWalletSection();
@@ -720,7 +720,7 @@
       Settings._pushedFromMenu = false;
       Settings._menuScrollTop = 0;
       Settings._chromeSuspended = !!(opts && opts.chrome === false);
-      // Per-mount state: the Usernode-app auto-retry is offered once per
+      // Per-mount state: the Homeroom-app auto-retry is offered once per
       // visit to Settings, not once per document.
       Settings._usernodeAuthRetryUsed = false;
       Settings._ensureMediaListener();
@@ -1338,7 +1338,7 @@
     },
 
     // Re-resolve the menu after late-arriving state: `walletLinkEnabled`
-    // lands with refresh()'s /api/auth/me response and the Usernode-app
+    // lands with refresh()'s /api/auth/me response and the Homeroom-app
     // capability with the bridge's async probe, both of which can resolve
     // AFTER a cold-boot deep link has already painted. Without this the
     // menu would be missing those rows until the next navigation.
@@ -1452,7 +1452,7 @@
     // point is to get the session's turns back without waiting out the lease.
     async _detachLocalAgent(agent, button) {
       const label = agent.label || 'this machine';
-      if (!window.confirm(`Detach ${label}?\n\nIts session's coding turns go back to running on Usernode. Anything it already committed stays on the branch.`)) return;
+      if (!window.confirm(`Detach ${label}?\n\nIts session's coding turns go back to running on Homeroom. Anything it already committed stays on the branch.`)) return;
       const status = document.getElementById('settings-local-agents-status');
       button.disabled = true;
       try {
@@ -1520,7 +1520,7 @@
         select.addEventListener('change', (e) => this._saveDevFlow(e.target.value));
       }
       // A deployment without the external flows can still express "always
-      // build on Usernode" vs "ask me" — just not the two hand-offs.
+      // build on Homeroom" vs "ask me" — just not the two hand-offs.
       select.querySelectorAll('option[value="claude-code"], option[value="codex"]').forEach((opt) => {
         opt.disabled = !this.state.externalFlowsAvailable;
       });
@@ -1597,8 +1597,8 @@
 
     // ── Rewriting the allow rules for a different connector name ─────────
     //
-    // The two blocks ship covering `usernode` and `Usernode`, the two
-    // spellings Usernode can guess. Anything else — a typo like the `Uesrnode`
+    // The two blocks ship covering `homeroom` and `Homeroom` plus the
+    // pre-rename `usernode` and `Usernode`. Anything else — a typo like the `Uesrnode`
     // from #1218, or a name someone simply chose — needs the same rules with
     // that segment, and asking a user to hand-edit six JSON strings is asking
     // for a seventh mistake. So the page does the edit.
@@ -1727,9 +1727,9 @@
       // behind — the rule the written steps already follow by pointing back
       // at #connector-url rather than naming a host.
       //
-      // The prompt carries the two things people get wrong: that Usernode
+      // The prompt carries the two things people get wrong: that Homeroom
       // uses dynamic client registration (so there is no client ID or secret
-      // to go looking for), and the exact name `usernode`, which is what
+      // to go looking for), and the exact name `homeroom`, which is what
       // Claude Code builds its permission rules from (#1218) and which one
       // account once mistyped, silently missing every rule the platform
       // ships.
@@ -1739,7 +1739,7 @@
       // happens through OAuth inside the product, not in this link.
       const chatPrompt = `I want to add a custom MCP connector. The server URL is ${connectorUrl}`
         + ' and it uses dynamic client registration, so there is no client ID or secret to enter.'
-        + ' Name it exactly "usernode". Walk me through it one step at a time and tell me what to click.';
+        + ' Name it exactly "homeroom". Walk me through it one step at a time and tell me what to click.';
       const chatLinks = [
         ['connector-open-claude', 'https://claude.ai/new?q='],
         ['connector-open-chatgpt', 'https://chatgpt.com/?q='],
@@ -1844,13 +1844,13 @@
 
       let text;
       if (!shown) {
-        text = 'Usernode has not sent you this tip in chat yet. It rides along on the first read it answers in a new conversation.';
+        text = 'Homeroom has not sent you this tip in chat yet. It rides along on the first read it answers in a new conversation.';
       } else {
         const when = Number.isFinite(Date.parse(hint.lastShownAt))
           ? new Date(hint.lastShownAt).toLocaleString()
           : 'recently';
         const times = shown === 1 ? 'once' : `${shown} times`;
-        text = `Usernode sent you this tip in chat ${times} in the last ${days} days, most recently ${when}. `;
+        text = `Homeroom sent you this tip in chat ${times} in the last ${days} days, most recently ${when}. `;
         // Three different answers to "why am I not seeing it", and they are
         // not interchangeable: the budget is spent (comes back next week),
         // the hour since the last one has not passed (comes back shortly), or
@@ -2036,7 +2036,7 @@
         return {
           tone: 'plain',
           title: 'Daily credit tier temporarily unavailable',
-          detail: 'Usernode could not verify credit eligibility. Platform-funded calls fail closed; your own API key still works.',
+          detail: 'Homeroom could not verify credit eligibility. Platform-funded calls fail closed; your own API key still works.',
         };
       }
       if (e.policy === 'legacy') {
@@ -2120,8 +2120,8 @@
           : null,
         noToken: link.linked && link.access === 'identity'
           ? (provider === 'github'
-            ? 'Usernode holds no GitHub access token for your account.'
-            : 'Usernode stores no X access token for your account.')
+            ? 'Homeroom holds no GitHub access token for your account.'
+            : 'Homeroom stores no X access token for your account.')
           : null,
         connect: offersConnect
           ? {
@@ -2196,7 +2196,7 @@
         conflict: `That ${name} account is already linked elsewhere, or a different account must be disconnected first.`,
         denied: `${name} connection was cancelled.`,
         error: `${name} could not be connected. Try again.`,
-        account_mismatch: 'This browser is signed into a different Usernode account than the app. Sign out here, then tap Connect again in the app and sign in with the same account.',
+        account_mismatch: 'This browser is signed into a different Homeroom account than the app. Sign out here, then tap Connect again in the app and sign in with the same account.',
       };
       status.textContent = messages[result] || '';
       if (!status.textContent) return;
@@ -2979,13 +2979,13 @@
         if (claimBtn) claimBtn.classList.toggle('hidden', !provisioning.canClaim);
         if (managedMessage) {
           if (managed?.status === 'active') {
-            managedMessage.textContent = `Your Usernode-managed key is active with a $${Number(managed.dailyLimitUsd || 0).toFixed(2)} daily limit. Admins can block or remove it; you may choose any available model.`;
+            managedMessage.textContent = `Your Homeroom-managed key is active with a $${Number(managed.dailyLimitUsd || 0).toFixed(2)} daily limit. Admins can block or remove it; you may choose any available model.`;
           } else if (managed?.status === 'disabled') {
             managedMessage.textContent = 'An admin has blocked this company key. Contact the platform admins if it should be enabled again.';
           } else if (managed?.status === 'deleted') {
             managedMessage.textContent = 'Your included key was deleted by an admin. Included keys are issued once, but you may add a personal key below.';
           } else if (managed?.status === 'needs_review' || managed?.status === 'provisioning') {
-            managedMessage.textContent = 'This key needs admin review. Usernode did not retry the provider request, which prevents accidental duplicate keys.';
+            managedMessage.textContent = 'This key needs admin review. Homeroom did not retry the provider request, which prevents accidental duplicate keys.';
           } else if (provisioning.verificationRequired && !provisioning.verified) {
             managedMessage.textContent = 'Connect and verify GitHub or X in Social accounts & connectors to claim one limited company key.';
           } else if (!provisioning.available) {
@@ -3008,7 +3008,7 @@
             info.classList.remove('hidden');
             const lim = j.keyInfo?.limit != null ? `$${j.keyInfo.limit}` : '';
             const rem = j.keyInfo?.limitRemaining != null ? `$${j.keyInfo.limitRemaining}` : '';
-            const owner = managedOwnsCredential ? 'Usernode-managed' : 'Personal key';
+            const owner = managedOwnsCredential ? 'Homeroom-managed' : 'Personal key';
             info.textContent = lim ? `${owner} · Daily limit: ${lim} · Remaining: ${rem}` : `${owner} · ${j.keyInfo?.label || ''}`;
           }
           await this._loadOpenRouterModels();
@@ -3237,7 +3237,7 @@
 
     // Decide whether the wallet option is even offered, then default to
     // the password form. The "Use your wallet instead" link only appears
-    // in the Usernode native app (signMessage available) AND when the
+    // in the Homeroom native app (signMessage available) AND when the
     // logged-in account has a linked wallet to prove control of.
     _renderChangePasswordSection() {
       const section = document.getElementById('change-password-section');
@@ -3283,7 +3283,7 @@
       if (newPassword.length < 8) { this._setCpStatus('New password must be at least 8 characters.', 'error'); return; }
       if (newPassword !== confirm) { this._setCpStatus('New passwords do not match.', 'error'); return; }
       if (!(window.usernode && window.usernode.isNative) || typeof window.signMessage !== 'function') {
-        this._setCpStatus('Wallet signing is only available in the Usernode app.', 'error');
+        this._setCpStatus('Wallet signing is only available in the Homeroom app.', 'error');
         return;
       }
 
@@ -4091,7 +4091,7 @@
     },
 
     async _unlinkWallet() {
-      if (!await PlatformUI.confirm({ title: 'Unlink your Usernode wallet?', confirmLabel: 'Unlink', danger: true })) return;
+      if (!await PlatformUI.confirm({ title: 'Unlink your Homeroom wallet?', confirmLabel: 'Unlink', danger: true })) return;
       try {
         const r = await fetch('/api/me/wallet-link', { method: 'DELETE', credentials: 'same-origin' });
         if (!r.ok) {
@@ -4114,7 +4114,7 @@
       if (kind === 'ok') setTimeout(() => el.classList.add('hidden'), 3000);
     },
 
-    // ── "Usernode app" sections (profile-and-settings-to-web migration) ──
+    // ── "Homeroom app" sections (profile-and-settings-to-web migration) ──
     //
     // The mobile app's native App Settings absorbed into this modal,
     // rendered from the bridge's getSettingsState snapshot (bridge v3,
@@ -4159,19 +4159,19 @@
     // handshake alike, which is exactly what made issue #978 impossible to
     // diagnose from the device.
     USERNODE_READ_ERROR_REASONS: {
-      'timeout': 'The Usernode app didn’t respond in time. ' +
+      'timeout': 'The Homeroom app didn’t respond in time. ' +
         'It may still be starting up.',
-      'rejected': 'The Usernode app reported an error.',
-      'probe-inconclusive': 'The Usernode app hasn’t re-established ' +
+      'rejected': 'The Homeroom app reported an error.',
+      'probe-inconclusive': 'The Homeroom app hasn’t re-established ' +
         'its secure connection for settings. Reopening the app usually ' +
         'fixes this.',
-      'no-transport': 'This screen can’t reach the Usernode app from here.',
-      'not-native': 'This screen can’t reach the Usernode app from here.',
+      'no-transport': 'This screen can’t reach the Homeroom app from here.',
+      'not-native': 'This screen can’t reach the Homeroom app from here.',
       'page-changed': 'The request was cancelled because this page changed.',
-      'privileged-unavailable': 'The Usernode app refused this screen’s ' +
-        'secure connection. See “Usernode app: connection” below.',
+      'privileged-unavailable': 'The Homeroom app refused this screen’s ' +
+        'secure connection. See “Homeroom app: connection” below.',
     },
-    USERNODE_READ_ERROR_FALLBACK: 'The Usernode app returned no settings.',
+    USERNODE_READ_ERROR_FALLBACK: 'The Homeroom app returned no settings.',
 
     // ── The connection panel ──────────────────────────────────────────
     //
@@ -4195,7 +4195,7 @@
         'usually re-establishes it. If it keeps happening, reinstalling ' +
         'the app clears the stuck state.',
       'unsupported': 'This app build predates the secure connection this ' +
-        'screen uses. Update the Usernode app to manage its settings here.',
+        'screen uses. Update the Homeroom app to manage its settings here.',
       'inconclusive': 'The app hasn’t answered yet, so we can’t ' +
         'tell whether the secure connection is up. It may still be ' +
         'starting, so try again in a moment.',
@@ -4417,7 +4417,7 @@
       }
     },
 
-    // ── Settings → "Usernode app: widget icons" ──────────────────────
+    // ── Settings → "Homeroom app: widget icons" ──────────────────────
     //
     // Gated on being in the app (or the demo link), NEVER on the
     // capability or the mechanism: this box exists to explain why the
@@ -4472,7 +4472,7 @@
         try { return new Date(ms).toISOString(); } catch (_) { return String(ms); }
       };
       const lines = [
-        'Usernode bridge diagnostics',
+        'Homeroom bridge diagnostics',
         `collected: ${at(diag.collectedAt)}`,
         `origin: ${diag.origin || 'unknown'}`,
         `native: ${diag.isNative} topFrame: ${diag.isTopFrame} ` +
@@ -4518,7 +4518,7 @@
       return lines.join('\n');
     },
 
-    // Rendered FIRST inside the Usernode app section and independent of
+    // Rendered FIRST inside the Homeroom app section and independent of
     // the settings snapshot: when the handshake is refused there is no
     // snapshot, and this panel is the only thing that can say why.
 
@@ -4559,7 +4559,7 @@
       const gated = this._bridgeDiagDemo() || this._walletRecoveryDemo() ||
         this._widgetIconsDemo() || !!demo ||
         (!!bridge && bridge.isNative === true);
-      // The gate resolves asynchronously downstream, so the "Usernode app"
+      // The gate resolves asynchronously downstream, so the "Homeroom app"
       // menu row is only settled here — re-render the nav either way.
       if (!gated) {
         this._usernodeGated = false;
@@ -4735,7 +4735,7 @@
     // public/usernode-bridge.js.
     _nativeActionMessage(err, fallback) {
       if (err && err.usernodePrivileged === true) {
-        return 'The Usernode app isn’t accepting changes from this ' +
+        return 'The Homeroom app isn’t accepting changes from this ' +
           'screen. Force-close and reopen the app, then try again.';
       }
       return fallback;
@@ -4796,7 +4796,7 @@
         this._unNotifNotice = {
           tone: 'info',
           text: 'This is a preview of the in-app row. The notification ' +
-            'permission itself lives in the Usernode app.',
+            'permission itself lives in the Homeroom app.',
         };
         return;
       }
@@ -4805,7 +4805,7 @@
         if (!hasRequest) {
           this._unNotifDeadEnd('no-bridge', {
             text: 'Notification permission is only available inside the ' +
-              'Usernode app.',
+              'Homeroom app.',
             settings: false,
           });
           return;
@@ -4830,7 +4830,7 @@
           // that resolves instantly and shows nothing.
           this._unNotifNotice = {
             tone: 'ok',
-            text: 'Notifications are already allowed for Usernode.',
+            text: 'Notifications are already allowed for Homeroom.',
           };
           return;
         }
@@ -4847,7 +4847,7 @@
       } catch (err) {
         this._unNotifDeadEnd(err && err.usernodeNoAnswer ? 'no-answer' : 'failed', {
           text: err && err.usernodeNoAnswer
-            ? 'The Usernode app didn’t respond to the permission request. ' +
+            ? 'The Homeroom app didn’t respond to the permission request. ' +
               'Force-close and reopen the app, then try again.'
             : this._nativeActionMessage(err,
                 'The permission request could not be started.'),
@@ -4888,7 +4888,7 @@
           tone: 'ok',
           text: isAndroid
             ? 'Permission granted.'
-            : 'Notifications are now allowed for Usernode.',
+            : 'Notifications are now allowed for Homeroom.',
         };
         this._usernodeLoading = false;
       this._publishUsernode();
@@ -4917,7 +4917,7 @@
         const timer = setTimeout(() => {
           if (settled) return;
           settled = true;
-          const err = new Error('the Usernode app did not answer in time');
+          const err = new Error('the Homeroom app did not answer in time');
           err.usernodeNoAnswer = true;
           reject(err);
         }, this._UN_NATIVE_ANSWER_MS);
@@ -4947,23 +4947,23 @@
       switch (plan.verdict) {
         case 'no-bridge':
           return 'Notification permission is only available inside the ' +
-            'Usernode app.';
+            'Homeroom app.';
         case 'unsupported':
-          return 'This version of the Usernode app can’t open the ' +
+          return 'This version of the Homeroom app can’t open the ' +
             'notification prompt. Update the app from the App Store.';
         case 'settings':
           return isAndroid
             ? 'Permission was denied. Allow notifications in the system ' +
-              'settings for Usernode.'
-            : 'Notifications are turned off for Usernode. iOS only shows ' +
+              'settings for Homeroom.'
+            : 'Notifications are turned off for Homeroom. iOS only shows ' +
               'its prompt once, so this has to be changed in Settings › ' +
-              'Notifications › Usernode.';
+              'Notifications › Homeroom.';
         case 'declined':
           return 'Permission was not granted.';
         case 'silent':
-          return 'The Usernode app closed without showing the notification ' +
+          return 'The Homeroom app closed without showing the notification ' +
             'prompt. Reopen the app and try again, or allow notifications ' +
-            'in Settings › Notifications › Usernode.';
+            'in Settings › Notifications › Homeroom.';
         default:
           return 'The notification prompt could not be opened.';
       }
@@ -5236,7 +5236,7 @@
     // activity notifications, block production, Terms, the FAQ, the native
     // diagnostics screens — still renders. A failed read used to blank the
     // whole section, turning a transient app hiccup into a dead end.
-    // ── Usernode app section: view builders ────────────────────────────
+    // ── Homeroom app section: view builders ────────────────────────────
     //
     // #1079: `_renderUsernodeBody` and eight sibling renderers built ~800
     // lines of `document.createElement` into #settings-usernode-section.
@@ -5426,10 +5426,10 @@
       return {
         kind: 'permissions',
         demo: !!this._unDemoMode(),
-        heading: 'Usernode app: device permissions',
+        heading: 'Homeroom app: device permissions',
         description: isAndroid
           ? 'Block production needs the app to wake your device at exact slot times.'
-          : 'Notifications let Usernode alert you about node and account activity.',
+          : 'Notifications let Homeroom alert you about node and account activity.',
         // The row IS the control. It used to be an inert div whose only
         // affordance was a chip below, rendered only when the (iOS-meaningless)
         // exactAlarmGranted boolean said "not granted" — so on a build
@@ -5488,8 +5488,8 @@
         return {
           kind: 'unavailable',
           reason: stuck
-            ? 'The Usernode app isn’t accepting this screen’s secure ' +
-              'connection, so notifications can’t be set up. See “Usernode ' +
+            ? 'The Homeroom app isn’t accepting this screen’s secure ' +
+              'connection, so notifications can’t be set up. See “Homeroom ' +
               'app: connection” above.'
             : (admissionPending
               ? 'Finishing secure app sign-in before enabling notifications…'
@@ -5598,7 +5598,7 @@
       }));
     },
 
-    // ── Usernode app section: the named actions the components dispatch ──
+    // ── Homeroom app section: the named actions the components dispatch ──
     //
     // Each was an inline closure passed to `_unButton` / `_unToggle` /
     // `_unStatusRow`. They are named methods so the view model stays plain

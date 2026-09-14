@@ -182,6 +182,34 @@ test('checkRunOverdue requires a submitted head and treats a missing timestamp a
   } finally { restore(); }
 });
 
+test('a deferred verdict is waiting on a conflict, not on a runner: never overdue, never swept', async () => {
+  const { subject, restore } = loadRecovery();
+  try {
+    const now = Date.now();
+    // Hours old and still 'pending' — the shape the stale sweep exists to
+    // catch — but phase 'deferred' says no run was ever started for it
+    // (services/check-admission.js). Re-driving one would only defer again.
+    assert.equal(subject.checkRunOverdue({
+      check_state: 'pending', check_phase: 'deferred', checks_commit_sha: 'head',
+      checks_checked_at: new Date(now - 6 * 3600 * 1000),
+    }, { now, staleMs: 600000 }), false);
+    assert.equal(subject.checkRunOverdue({
+      check_state: 'pending', check_phase: 'deferred', checks_commit_sha: 'head', checks_checked_at: null,
+    }, { now, staleMs: 600000 }), false, 'even with no timestamp at all');
+    // The same head with a run actually going is judged as before.
+    assert.equal(subject.checkRunOverdue({
+      check_state: 'pending', check_phase: 'testing', checks_commit_sha: 'head',
+      checks_checked_at: new Date(now - 6 * 3600 * 1000),
+    }, { now, staleMs: 600000 }), true);
+
+    const queries = [];
+    const pool = { query: async (sql, params) => { queries.push({ sql, params }); return { rows: [] }; } };
+    await subject.findStuckCheckSessions({ pool, staleMs: 600000, maxAutoRetries: 6 });
+    assert.match(queries[0].sql, /cs\.check_phase IS DISTINCT FROM 'deferred'/,
+      'the pending branch of the sweep leaves deferred rows alone');
+  } finally { restore(); }
+});
+
 test("rebuildSessionStaging: unparseable repo_url records a 'skipped' verdict (GitHub not configured)", async () => {
   const { subject, skippedCalls, restore } = loadRecovery();
   try {

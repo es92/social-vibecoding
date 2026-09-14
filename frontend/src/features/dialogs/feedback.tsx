@@ -70,7 +70,7 @@ export function FeedbackDialog() {
         </h2>
         {/*
             Target toggle: file this feedback against the app being viewed
-            or against the Social Vibecoding platform. The "This app" button
+            or against the Homeroom platform. The "This app" button
             is always visible but rendered disabled/grayed-out when no app
             with a repo is open (see ./feedback-controller).
         */}
@@ -102,7 +102,7 @@ export function FeedbackDialog() {
               id="feedback-target-platform"
               className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-xs font-medium transition-colors"
             >
-              Social Vibecoding Platform
+              Homeroom Platform
             </button>
             <div
               id="feedback-caret-platform"

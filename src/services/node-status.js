@@ -1,4 +1,4 @@
-// Lightweight probe over the sidecar Usernode `GET /status` endpoint, plus
+// Lightweight probe over the sidecar Homeroom `GET /status` endpoint, plus
 // an explorer `GET /active_chain` probe.
 //
 // Pattern is copied from `examples/lib/dapp-server.js::createNodeStatusProbe`

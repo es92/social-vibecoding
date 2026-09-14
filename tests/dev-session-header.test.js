@@ -119,7 +119,7 @@ test('the venue remains a direct child with the attributes the check reads, at e
   assert.match(html, /data-venue-change="1"/);
   assert.match(html, /data-venue-current="usernode-openrouter"/);
   assert.match(html, /aria-haspopup="menu"/);
-  assert.match(html, /class="dc-venue-name">Usernode · OpenRouter</);
+  assert.match(html, /class="dc-venue-name">Homeroom · OpenRouter</);
   assert.match(html, /class="dc-venue-caret"[^>]*>▾</);
   assert.doesNotMatch(html, /data-venue-busy|Thinking…|dc-venue-busy/,
     'idle keeps the ordinary dropdown affordance');
@@ -146,8 +146,8 @@ test('the caption sentence is the TOOLTIP, never the label', () => {
   // explanation the old composer caption carried survives only on hover.
   const { view } = makeDevChat();
   const v = view({ ...SESSION, agent_backend: 'codex_openrouter' });
-  assert.match(v.venue.title, /^Building in Usernode · OpenRouter\./);
-  assert.equal(v.venue.label, 'Usernode · OpenRouter');
+  assert.match(v.venue.title, /^Building in Homeroom · OpenRouter\./);
+  assert.equal(v.venue.label, 'Homeroom · OpenRouter');
   assert.doesNotMatch(v.venue.label, /Building in/);
 });
 

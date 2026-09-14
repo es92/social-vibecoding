@@ -94,7 +94,7 @@ function appPlatformApiRoutes(config) {
   //   GET /api/app-platform/users/lookup?username=<handle>
   //   GET /api/app-platform/users/search?q=<prefix>[&limit=]
   //
-  // "Does this Usernode handle exist?", so an app can validate an invite
+  // "Does this Homeroom handle exist?", so an app can validate an invite
   // or @-mention against the real platform roster instead of guessing
   // from the users it has already seen.
   //

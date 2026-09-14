@@ -541,7 +541,7 @@ async function ensureSessionBranch({ pool, sessionId, username = null }) {
         });
         const wrapped = new Error(`Could not create branch ${branchName}: ${err.message}`);
         wrapped.code = 'branch_create_failed';
-        wrapped.userMessage = 'Usernode could not create this session\'s branch on GitHub. '
+        wrapped.userMessage = 'Homeroom could not create this session\'s branch on GitHub. '
           + 'Send your message again in a moment. If it keeps failing, ask an admin to check '
           + 'the GitHub connection for this app.';
         throw wrapped;

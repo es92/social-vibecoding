@@ -7397,6 +7397,65 @@ CREATE INDEX IF NOT EXISTS chat_sessions_integration_measured_idx
   ON chat_sessions (integration_measured_at NULLS FIRST)
   WHERE status = 'promoted';
 
+-- ── Direct-merge lanes ─────────────────────────────────────────────────
+--
+-- A proposal that merges cleanly with main merges as it stands: being
+-- behind is no longer a reason to bring it up to date first, and the
+-- platform's own sync no longer precedes a merge (services/merge-queue.js).
+-- Only a measured CONFLICT costs a worker turn, and the conflict lane
+-- admits one pre-approval resolution per authored head — the author's work
+-- gets one chance to be made mergeable before anyone has voted on it, and
+-- unlimited chances once the group has approved it. What ties a resolution
+-- to "this authored head" is the approval epoch: an authored push bumps
+-- it, a mechanical or resolved move does not (see The approval epoch,
+-- above), so "spent in this epoch" is exactly "spent on this author's
+-- work".
+--
+--   integration_resolved_epoch  the approval_epoch during which the queue
+--                               last spent a pre-approval resolution on
+--                               this proposal. NULL: never. Equal to the
+--                               current approval_epoch: the one resolution
+--                               this authored head gets before approval is
+--                               used, and a further conflict waits for the
+--                               vote. Different: the author has pushed
+--                               since, and the new head has its own.
+--
+-- check_phase gains 'deferred' beside 'building' / 'testing': a promoted
+-- head that conflicts with main gets its preview and screenshots (so the
+-- group can review it) but no assertions and no unit suite, because a
+-- tree that cannot merge is not the tree that would be tested after the
+-- resolution. The verdict stays 'pending' with this phase until the head
+-- merges cleanly, at which point the checks run (services/check-admission.js).
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS integration_resolved_epoch INTEGER;
+
+-- ── Main watch ─────────────────────────────────────────────────────────
+--
+-- The safety net under direct merges. Each merge lands a tree nobody ran
+-- the checks against as a whole (the proposal was checked on its own head,
+-- against the main of the time), so after every merge the repo's unit
+-- suite runs once more on the merge commit (services/main-watch.js). Red
+-- pauses the app's merges until a fix lands or an admin resumes them;
+-- nothing is rolled back, and the culprit is whatever landed since the
+-- last green.
+--
+--   main_check_state        'running' | 'passing' | 'failing' | 'error' |
+--                           'skipped'. NULL: never run. 'error' is a run
+--                           that could not happen (no runner, no clone)
+--                           and does not pause anything; 'skipped' is a
+--                           repo with no runnable test script.
+--   main_check_sha          the merge commit the state describes.
+--   main_check_at           when that run finished (or started, while
+--                           'running').
+--   main_check_detail       the run's own account: failing tests, the
+--                           TAP summary, the PR that landed it.
+--   main_check_resumed_sha  an admin's "resume merges" for exactly this
+--                           red sha. A later red is a new pause.
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS main_check_state VARCHAR(16);
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS main_check_sha VARCHAR(40);
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS main_check_at TIMESTAMPTZ;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS main_check_detail JSONB;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS main_check_resumed_sha VARCHAR(40);
+
 -- The Needs-you deck's ask box (services/workshop-ask.js): one person's
 -- own questions about one card, and the answers they got.
 --

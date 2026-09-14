@@ -72,7 +72,7 @@ test('mayor prompt: the block names the trigger phrasings and both targets', () 
     assert.ok(p.includes(phrase), `trigger verb "${phrase}" named`);
   }
   assert.match(p, /create a platform issue for step 2/, 'the reported phrasing is quoted verbatim');
-  assert.match(p, /"platform" for anything about Usernode itself/);
+  assert.match(p, /"platform" for anything about Homeroom itself/);
   assert.match(p, /"app" for a bug or request about Demo App itself/);
 });
 

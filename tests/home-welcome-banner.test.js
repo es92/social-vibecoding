@@ -77,6 +77,6 @@ test('the copy says the two things the screen otherwise does not', () => {
   assert.match(SRC, /Nothing ships until the group votes it in\./);
   // No em dash: tests/no-em-dash-in-copy.test.js bans it in shipped copy, and
   // this file is all copy.
-  const copy = SRC.slice(SRC.indexOf('Welcome to Usernode'));
+  const copy = SRC.slice(SRC.indexOf('Welcome to Homeroom'));
   assert.doesNotMatch(copy.slice(0, 600), /—/);
 });

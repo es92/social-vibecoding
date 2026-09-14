@@ -163,7 +163,7 @@ test('a delivery with no context fields still sends with the generic fallback', 
   await worker.processDelivery(JOB);
   assert.equal(calls.sent.length, 1);
   assert.deepEqual(calls.sent[0].notification, {
-    title: 'Usernode', body: 'You have new activity',
+    title: 'Homeroom', body: 'You have new activity',
   });
 });
 
@@ -506,7 +506,7 @@ test('test pushes use the normal provider path and recheck opt-outs before sendi
     await worker.processDelivery(JOB);
     assert.equal(calls.sent.length, enabled ? 1 : 0);
     assert.equal(calls.finished[0].status, enabled ? 'sent' : 'cancelled');
-    if (enabled) assert.equal(calls.sent[0].notification.title, 'Usernode test alert');
+    if (enabled) assert.equal(calls.sent[0].notification.title, 'Homeroom test alert');
     else assert.equal(calls.finished[0].code, 'preference_disabled');
   }
 });

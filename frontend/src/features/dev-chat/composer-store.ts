@@ -104,7 +104,7 @@ export interface ComposerState {
   /** #1281: a launchpad stands in the composer's place, so it is hidden. */
   hidden: boolean;
   /**
-   * Usernode · Claude's chat-model picker. Null on every other venue.
+   * Homeroom · Claude's chat-model picker. Null on every other venue.
    *
    * `selectedLabel` is the CLOSED control — a bare model name, and #1589's
    * finding stands on it: the guidance set the control's width and wrapped

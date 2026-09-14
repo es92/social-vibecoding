@@ -115,7 +115,7 @@ test('buildUserClaudeMd: managed header + one section per instruction, skills ex
     { kind: 'skill', name: 'not-me', content: 'skill body' },
     { kind: 'instruction', name: 'ui-prefs', content: 'Dark mode first.' },
   ]);
-  assert.match(out, /Managed by Usernode/);
+  assert.match(out, /Managed by Homeroom/);
   assert.match(out, /## code-style/);
   assert.match(out, /Use cents\./);
   assert.match(out, /## ui-prefs/);

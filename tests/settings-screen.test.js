@@ -1042,7 +1042,7 @@ test('the ?shot=settings-back driver runs a real traversal from init()', () => {
     'the per-fragment re-apply deliberately leaves the traversal driver out');
 });
 
-// ── Usernode-app section: a failed native read is diagnosable ───────────
+// ── Homeroom-app section: a failed native read is diagnosable ───────────
 //
 // The bridge's chrome reads resolve null on a timeout, on a native
 // rejection AND on a refused privileged handshake alike, so the section
@@ -1073,7 +1073,7 @@ test('the usernode section renders a reason, not just "could not load"', () => {
     'the reason is read through one helper');
   assert.match(settingsJs, /NativeChrome\.lastReadError\('getSettingsState'\)/,
     'it comes from the shared bridge record, not a settings-local guess');
-  assert.match(usernodeTsx, /Could not load Usernode app settings\./,
+  assert.match(usernodeTsx, /Could not load Homeroom app settings\./,
     'the headline is unchanged so existing reports stay recognisable');
   // #1079: the box is sections/usernode.tsx now. The MODEL carries the
   // app's own message and the component renders it verbatim in a mono run.
@@ -1245,9 +1245,9 @@ test('the local-agent block lives in Experimental and ships hidden', () => {
   // so it costs nothing for the overwhelming majority who never run the CLI.
   assert.match(experimental, /id="settings-local-agents-section" class="hidden/);
   assert.match(experimental, /Local coding agent/);
-  // The copy has to answer "what still happens on Usernode?", because
-  // "runs on your machine" otherwise reads as "Usernode stops working".
-  assert.match(experimental, /Usernode still opens the pull request/);
+  // The copy has to answer "what still happens on Homeroom?", because
+  // "runs on your machine" otherwise reads as "Homeroom stops working".
+  assert.match(experimental, /Homeroom still opens the pull request/);
 });
 
 // The label is free text typed on someone's own laptop and arrives here
@@ -1350,7 +1350,7 @@ test('the Experimental toggle still gates the whole section', () => {
   assert.match(settingsJs, /_renderExperimentalSection\(\)[\s\S]{0,4000}_renderLocalAgentsSection\(\)/);
 });
 
-// ── "Usernode app: connection" (the diagnostics panel) ─────────────────
+// ── "Homeroom app: connection" (the diagnostics panel) ─────────────────
 
 test('the usernode section is gated on being in the app, not on a capability', () => {
   const section = settingsJs.slice(
@@ -1395,7 +1395,7 @@ test('the panel has stable ids and both actions', () => {
   }
 });
 
-// ── Settings → "Usernode app: widget icons" ────────────────────────
+// ── Settings → "Homeroom app: widget icons" ────────────────────────
 //
 // The homescreen widget's icon path is invisible from both ends: the
 // user sees "the tile is the wrong colour", and SV's side of the story
@@ -1406,7 +1406,7 @@ test('the widget-icon box reports every step of the icon decision', () => {
   // #1079: the DECISIONS are _widgetIconsView's; the heading is the
   // component's. Every property below is unchanged.
   const widget = sliceMethod(settingsJs, '_widgetIconsView');
-  assert.match(usernodeTsx, /Usernode app: widget icons/);
+  assert.match(usernodeTsx, /Homeroom app: widget icons/);
   for (const id of [
     'settings-widget-mechanism-row',
     'settings-widget-registry-row',
@@ -1473,7 +1473,7 @@ test('?widgeticons=demo opens the box on a plain browser', () => {
     settingsJs.indexOf('    // The row’s truth, read BEFORE it can mislead.'),
   );
   assert.match(section, /this\._widgetIconsDemo\(\) \|\|/,
-    'the demo link opens the Usernode section it lives in');
+    'the demo link opens the Homeroom section it lives in');
   // A fixed snapshot: no bridge call, no writes — and deliberately the
   // interesting state rather than the healthy one.
   const demo = settingsJs.slice(
@@ -1789,7 +1789,7 @@ test('the local-agent setup guide is always-visible section markup', () => {
   assert.match(guide, /<code>claude<\/code>/);
   assert.match(guide,
     /Create a proposal for &lt;app name&gt; that &lt;describe the change you want&gt;\./);
-  assert.match(guide, /authorize access on a Social Vibecoding web page/);
+  assert.match(guide, /authorize access on a Homeroom web page/);
   assert.equal((guide.match(/>Copy<\/button>/g) || []).length, 4,
     'repository setup, each alternative agent, and the prompt copy separately');
   const copyLabels = guide.match(/aria-label="Copy [^"]+"/g) || [];
@@ -1987,7 +1987,7 @@ test('the reviewable claims travel with the row that makes them', () => {
       heading: 'GitHub · @octo',
       state: { tone: 'emerald', text: 'Ownership verified · counts toward the single $10/day social tier.' },
       linkedAt: 'linked 1 Jan',
-      noToken: 'Usernode holds no GitHub access token for your account.',
+      noToken: 'Homeroom holds no GitHub access token for your account.',
       connect: null,
       unlink: { disabled: false },
       strandedNote: 'Your last GitHub connection attempt didn’t complete.',

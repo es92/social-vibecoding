@@ -876,6 +876,41 @@ test('since-your-last-visit sits with the other things addressed to you', () => 
   assert.ok(!html.includes('1 change landed, 1 new issue, 1 new proposal</button>'));
 });
 
+// ── #2097: the heading's rules have to follow its markup ─────────────
+
+test('the since heading is styled: each class it emits has a rule, and the count is a pill beside the label', () => {
+  const store = {};
+  store['workshopSeen:demo-app'] = String(Date.now() - 3 * 86400000);
+  const AppView = makeAppView({ localStorage: store });
+  seed(AppView);
+  AppView._workshopThemes = themes([{ id: 't', name: 'T', items: ['issue:12'] }]);
+  const html = workshopHtml(AppView);
+  // The label and the count are two elements with nothing between them: the
+  // air is the heading's flex gap, not a text space and not a margin of the
+  // pill's own. So the moment the rules go, the markup reads as exactly what
+  // it is — two inline spans — and the strip says "Since your last visit2".
+  // That is what #2080 shipped: it rewrote the Needs-you tab and took these
+  // rules out with that tab's CSS, while the strip had moved to Current
+  // status in #2065 and its markup went on emitting the classes. Every
+  // assertion above matched the markup and none of them looked for the
+  // rules; this one does.
+  const head = html.match(/<div class="dev-ws-since-head" data-ws-since-head="">([\s\S]*?)<\/div>/);
+  assert.ok(head, 'the heading is drawn');
+  const classes = [...head[1].matchAll(/<span class="([^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(classes, ['dev-ws-since-label', 'dev-ws-since-n'], 'the label, then the count, as two elements');
+  assert.match(head[1], /<\/span><span class="dev-ws-since-n">3<\/span>$/, 'nothing between them but the gap');
+  // Comments stripped: a selector named in prose is not a selector.
+  const stripped = CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  for (const cls of ['dev-ws-since-head', ...classes, 'dev-ws-since-more']) {
+    assert.match(stripped, new RegExp(`\\.${cls} \\{`), `.${cls} has a rule`);
+  }
+  assert.match(stripped, /\.dev-ws-since-head \{[^}]*display: flex;[^}]*gap: 8px;/,
+    'the heading lays the two out with a gap');
+  assert.match(stripped, /\.dev-ws-since-n \{[^}]*border-radius: 999px;/, 'the count is a pill');
+  assert.match(stripped, /\.dev-ws-since-n \{[^}]*background: var\(--brand-tint\); color: var\(--brand-ink\);/,
+    'in the brand tint, as it was');
+});
+
 test('the vote deck is its own tab; the unclaimed suggestion stays with the status', () => {
   const AppView = makeAppView();
   seed(AppView);

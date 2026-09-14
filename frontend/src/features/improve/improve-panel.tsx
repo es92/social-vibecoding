@@ -401,7 +401,7 @@ export function ImprovePanel() {
 
             The name keeps its id and its job: on the home screen the target is
             the platform itself, and this is the only cue that says "Improve"
-            there means Social Vibecoding rather than an app.
+            there means Homeroom rather than an app.
         */}
         <div className="flex items-center gap-2 px-4 py-2 shrink-0">
           {/* #1599: which app this is about, as artwork rather than as a name

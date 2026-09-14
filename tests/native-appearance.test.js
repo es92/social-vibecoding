@@ -1,6 +1,6 @@
 // The cold-launch white flash, and the two halves that fix it.
 //
-// The Usernode Flutter shell paints a launch screen before this document
+// The Homeroom Flutter shell paints a launch screen before this document
 // exists. It had no way to know what colour to paint: SV's theme lives in
 // the WebView's localStorage, the app's in its own SharedPreferences, and
 // nothing carried a value between them — so it guessed from the OS and

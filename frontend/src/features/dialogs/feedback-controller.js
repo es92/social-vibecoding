@@ -200,7 +200,7 @@ export function init() {
     const stateRow = document.getElementById('feedback-state-row');
     const stateCheckbox = document.getElementById('feedback-state-checkbox');
     // #964: the opt-in kudos-bounty row. Unlike the state row this shows for
-    // BOTH targets — "This app" and "Social Vibecoding Platform" alike file
+    // BOTH targets — "This app" and "Homeroom Platform" alike file
     // into a repository the platform tracks as an app, so either can carry a
     // bounty.
     const bountyRow = document.getElementById('feedback-bounty-row');
@@ -1044,7 +1044,7 @@ export function init() {
           }
           const filedAgainst = (target === 'app'
             ? `Thanks! Filed against ${AppView?.appData?.name || 'this app'}`
-            : 'Thanks! Filed against Social Vibecoding');
+            : 'Thanks! Filed against Homeroom');
           // Both variants end the first sentence before appending, so the
           // bounty outcome reads as its own sentence either way.
           feedbackStatus.textContent = `${filedAgainst}.${bountyNotice}${stateNotice}`;
@@ -1101,7 +1101,7 @@ export function init() {
 
     // The state half of "open the Send Feedback modal", called by the
     // island's onOpen. Shared by the header feedback button (no opts) and
-    // the dev view's plus-menu "New issue" item, which passes
+    // the dev view's plus-menu "File an issue" item, which passes
     // { fromDev: true } — see issue #226. The classList.remove('hidden')
     // that used to be this function's first line belongs to useStaticModal
     // now: by the time this runs the island has already revealed the root
@@ -1140,7 +1140,7 @@ export function init() {
       // cleared together by AppView.close() (on navigateHome /
       // navigateToLeaderboard), so they're never stale on the
       // home/leaderboard screens. This unifies the old fromDev-vs-header
-      // split: the dev plus-menu's "New issue" item (currentTab==='dev')
+      // split: the dev plus-menu's "File an issue" item (currentTab==='dev')
       // and the top-bar Send feedback button now resolve identically, so
       // the header button targets the app whose dev screen is open
       // instead of falling back to "No app open" (#312).
@@ -1246,7 +1246,7 @@ export function init() {
     // giveFeedback(), which opens it with `fromDev: true` so the panel's own
     // app is preselected as the target). `App.openFeedbackModal` is unchanged
     // and still published below, so every other caller — the Dev "+" menu's
-    // "New issue", App._applyFeedbackShot, the rescued-draft notice — is
+    // "File an issue", App._applyFeedbackShot, the rescued-draft notice — is
     // untouched.
     //
     // The button's outbox dot moved rather than went: #feedback-queue-dot
@@ -1319,7 +1319,7 @@ export function init() {
     });
 
   // The entry point every caller uses — the header speech-bubble wired just
-  // above, the Dev "+" menu's "New issue" item, and `App._applyFeedbackShot`
+  // above, the Dev "+" menu's "File an issue" item, and `App._applyFeedbackShot`
   // for the ?shot=feedback deep links. Forwards to the island so React state
   // stays the source of truth.
   App.openFeedbackModal = (opts = {}) => {

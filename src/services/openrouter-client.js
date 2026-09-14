@@ -20,7 +20,7 @@ const MODELS_TIMEOUT_MS = 20000;
 function platformHeaders(origin) {
   return {
     'HTTP-Referer': origin || 'https://usernode.dev',
-    'X-OpenRouter-Title': 'Usernode',
+    'X-OpenRouter-Title': 'Homeroom',
   };
 }
 

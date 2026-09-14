@@ -193,7 +193,7 @@ function credentialRoutes(config) {
       const claimed = await managedOpenRouter.provision({
         pool, userId: req.user.id, config,
       });
-      // Company-funded credentials stay inside Usernode. Keep this response
+      // Company-funded credentials stay inside Homeroom. Keep this response
       // allowlisted so a future provisioning detail cannot accidentally
       // expose credential material to the claimant's browser.
       return res.status(201).json({
@@ -230,7 +230,7 @@ function credentialRoutes(config) {
     try {
       const managedState = await managedOpenRouter.stateForUser(pool, req.user.id);
       if (managedState.managed_key_id && managedState.managed_status !== 'deleted') {
-        return res.status(409).json({ error: 'This OpenRouter key is managed by Usernode. Ask an admin to block or remove it.' });
+        return res.status(409).json({ error: 'This OpenRouter key is managed by Homeroom. Ask an admin to block or remove it.' });
       }
     } catch (err) {
       log.error('credentials', 'managed key ownership check failed', { userId: req.user.id, err: err.message });
@@ -274,7 +274,7 @@ function credentialRoutes(config) {
           throw new managedOpenRouter.ManagedOpenRouterError(
             409,
             'managed_key_exists',
-            'This OpenRouter key is managed by Usernode. Ask an admin to block or remove it.',
+            'This OpenRouter key is managed by Homeroom. Ask an admin to block or remove it.',
           );
         }
         const credential = await credentialStore.writeOpenRouterCodingAgentOnClient({

@@ -281,9 +281,18 @@ async function measure({ pool, session }, options = {}) {
     : (Array.isArray(options.blockReasons) ? options.blockReasons
       : [options.blockReasons].filter(Boolean));
 
+  // What the row said before this write, read in the same statement so the
+  // comparison is against the STORED answer rather than the caller's copy of
+  // the session, which may be minutes and several measurements old.
+  let wasClean = null;
+  let wasHead = null;
   try {
-    await pool.query(
-      `UPDATE chat_sessions
+    const { rows } = await pool.query(
+      `WITH prev AS (
+         SELECT integration_merges_clean AS was_clean, integration_head_sha AS was_head
+           FROM chat_sessions WHERE id = $1
+       )
+       UPDATE chat_sessions
           SET integration_measured_at = NOW(),
               integration_head_sha = $2,
               integration_main_sha = $3,
@@ -296,7 +305,9 @@ async function measure({ pool, session }, options = {}) {
               integration_checks_base_current = $10,
               integration_block_reasons = $11::jsonb,
               integration_error = NULL
-        WHERE id = $1`,
+        WHERE id = $1
+    RETURNING (SELECT was_clean FROM prev) AS was_clean,
+              (SELECT was_head FROM prev) AS was_head`,
       [
         s.id, next.headSha, next.mainSha, next.baseSha,
         next.behindBy, next.aheadBy, next.mergesClean,
@@ -304,9 +315,31 @@ async function measure({ pool, session }, options = {}) {
         next.checksBaseCurrent, JSON.stringify(blockReasons),
       ]
     );
+    wasClean = rows[0] ? rows[0].was_clean : null;
+    wasHead = rows[0] ? rows[0].was_head : null;
   } catch (err) {
     log.warn('integration', 'write failed', { sessionId: s.id, err: err.message });
     return { ...answer, error: err.message };
+  }
+
+  // The one transition that starts work: a head that conflicted and now
+  // merges cleanly is a head whose checks were held back (check-admission)
+  // and can run. Same head only — a NEW head that measures clean gets its
+  // checks from the build its push started, and a hook here would run them
+  // twice. The hook is registered at boot, since this module has no config
+  // of its own; unregistered, the transition is simply logged.
+  if (wasClean === false && next.mergesClean === true
+      && wasHead && normalizeSha(wasHead) === normalizeSha(next.headSha)) {
+    log.info('integration', 'proposal now merges cleanly with main', {
+      sessionId: s.id, headSha: next.headSha,
+    });
+    if (typeof _onBecameClean === 'function') {
+      Promise.resolve()
+        .then(() => _onBecameClean({ ...s, integration_head_sha: next.headSha }))
+        .catch((err) => log.warn('integration', 'became-clean hook failed', {
+          sessionId: s.id, err: err && err.message,
+        }));
+    }
   }
 
   const written = readIntegration({
@@ -410,6 +443,45 @@ async function clearApprovals(pool, sessionId, reason) {
   return epoch;
 }
 
+// ── The conflict lane's one pre-approval resolution ─────────────────────
+
+/**
+ * Record that the queue spent a resolution on this proposal's current
+ * authored head. "Current authored head" IS the approval epoch: an authored
+ * push bumps it, the platform's own mechanical or resolved moves do not
+ * (routes/votes.js reconcileNativeReviewedHead), so stamping the epoch ties
+ * the resolution to the author's work rather than to a commit that the
+ * resolution itself is about to replace. Never throws.
+ */
+async function markResolutionSpent(pool, sessionId) {
+  try {
+    await pool.query(
+      `UPDATE chat_sessions SET integration_resolved_epoch = approval_epoch WHERE id = $1`,
+      [sessionId]
+    );
+  } catch (err) {
+    log.warn('integration', 'resolution stamp failed', { sessionId, err: err.message });
+  }
+}
+
+/**
+ * Has this authored head already had its pre-approval resolution?
+ * Reads the two columns off a row; a row that predates the stamp has not.
+ */
+function resolutionSpent(session) {
+  const s = session || {};
+  const spent = intOrNull(s.integration_resolved_epoch);
+  if (spent == null) return false;
+  return spent === (intOrNull(s.approval_epoch) ?? 0);
+}
+
+// Registered once at boot (server.js) with the platform config in scope; see
+// measure() for the one transition that calls it.
+let _onBecameClean = null;
+function onBecameClean(fn) {
+  _onBecameClean = typeof fn === 'function' ? fn : null;
+}
+
 // The SQL predicate for "this vote still counts" is owned by
 // services/pr-vote-revision.js — the module named for exactly that concern,
 // and the one all eighteen call sites already import. Re-exported here so a
@@ -424,6 +496,9 @@ module.exports = {
   setBlockReasons,
   classifyHeadMove,
   clearApprovals,
+  markResolutionSpent,
+  resolutionSpent,
+  onBecameClean,
   currentVotePredicateSql,
   MEASURE_TTL_MS,
   _normalizeSha: normalizeSha,

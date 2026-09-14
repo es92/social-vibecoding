@@ -46,14 +46,14 @@ export function ExperimentalSection() {
             Session bridge (run this chat on your computer)
           </SwitchRow>
           <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
-            Adds <span className="font-mono">Your computer &middot; Usernode session</span> to the list of places a session can be built. You keep the platform chat exactly as it is, with the same transcript, branch and proposal, but its turns run through the Usernode CLI on your own machine, on your own Claude plan. It needs the CLI installed and attached, so it stays off until you ask for it.
+            Adds <span className="font-mono">Your computer &middot; Homeroom session</span> to the list of places a session can be built. You keep the platform chat exactly as it is, with the same transcript, branch and proposal, but its turns run through the Homeroom CLI on your own machine, on your own Claude plan. It needs the CLI installed and attached, so it stays off until you ask for it.
           </p>
           <StatusLine id="session-bridge-status" size="xs" />
         </div>
       </div>
       <div id="settings-local-agents-section" className="hidden mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
         <SectionHeading title="Local coding agent">
-          Machines running <span className="font-mono">social-vibecoding agent run</span>. While one is attached, that session's spec and coding turns run there on your own Claude subscription instead of on Usernode. Each turn asks in your terminal before it starts; spec turns are read-only, and after a coding turn Usernode still opens the pull request, builds the preview and runs the checks. Detaching sends the next turn back to Usernode.
+          Machines running <span className="font-mono">social-vibecoding agent run</span>. While one is attached, that session's spec and coding turns run there on your own Claude subscription instead of on Homeroom. Each turn asks in your terminal before it starts; spec turns are read-only, and after a coding turn Homeroom still opens the pull request, builds the preview and runs the checks. Detaching sends the next turn back to Homeroom.
         </SectionHeading>
         <div id="settings-local-agents-list" className="space-y-2">
           <LocalAgentsList />

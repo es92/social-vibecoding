@@ -1,5 +1,5 @@
 // Platform-accurate permission copy (iOS wording fix) — the first-run
-// "Set up your device" sheet and the Settings → Usernode app permission
+// "Set up your device" sheet and the Settings → Homeroom app permission
 // rows must describe what each OS actually prompts for:
 //
 //  - Android: the exact-alarm permission (plus battery optimization) so

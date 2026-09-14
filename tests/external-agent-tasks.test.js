@@ -202,7 +202,7 @@ test('the work order creates the branch itself — the platform no longer does',
     // accepted now, and a differently-named branch is never a reason to
     // redo a finished commit.
     assert.match(order, /git push -u origin HEAD/, `${status}: and pushed`);
-    assert.match(order, /Usernode has no write access to your GitHub account/,
+    assert.match(order, /Homeroom has no write access to your GitHub account/,
       `${status}: and says why the agent has to do it`);
   }
 });
@@ -553,10 +553,10 @@ test('every guidance step is an action the HUMAN takes, never agent narration', 
 
     // The hand-off back to this conversation is always last — and it now
     // sets the expectation that the coding agent submits for ITSELF, since
-    // the Usernode connector is attached to the account rather than to one
+    // the Homeroom connector is attached to the account rather than to one
     // conversation. The human is told what to expect and when to come back,
     // not asked to relay a branch name.
-    assert.match(result.guidance[result.guidance.length - 1], /submit the change to Usernode itself/);
+    assert.match(result.guidance[result.guidance.length - 1], /submit the change to Homeroom itself/);
     assert.match(result.guidance[result.guidance.length - 1], /can't submit/);
     assert.match(result.guidance[result.guidance.length - 2], /exactly as written/);
   }
@@ -588,17 +588,17 @@ test('an explicitly chosen agent beats sniffing the calling client', async () =>
   // and every prepared task would otherwise come back as 'external', with
   // guidance that names no product and a badge that names no agent.
   for (const agent of ['claude-code', 'codex']) {
-    const picked = await prepareWith({ agent, clientName: 'Usernode' }, FORK_MISSING);
+    const picked = await prepareWith({ agent, clientName: 'Homeroom' }, FORK_MISSING);
     assert.equal(picked.ok, true);
     assert.equal(picked.agent, agent, 'the resolved agent comes back to the caller');
     assert.equal(picked.guidance.length, 5, 'the hosted-web-UI guidance, not the generic four');
   }
   assert.match(
-    (await prepareWith({ agent: 'claude-code', clientName: 'Usernode' }, FORK_MISSING)).guidance[1],
+    (await prepareWith({ agent: 'claude-code', clientName: 'Homeroom' }, FORK_MISSING)).guidance[1],
     /https:\/\/claude\.ai\/code/,
   );
   assert.match(
-    (await prepareWith({ agent: 'codex', clientName: 'Usernode' }, FORK_MISSING)).guidance[1],
+    (await prepareWith({ agent: 'codex', clientName: 'Homeroom' }, FORK_MISSING)).guidance[1],
     /https:\/\/chatgpt\.com\/codex/,
   );
 
@@ -656,7 +656,7 @@ test('the work order is addressed to the agent and to nobody else', async () => 
   assert.match(result.workOrder, /git clone https:\/\/github\.com\/someuser\/recipe-box\.git recipe-box/);
   assert.match(result.workOrder, /git remote add upstream https:\/\/github\.com\/usernode-bot\/recipe-box/);
   // And it still forbids opening the pull request on the normal path —
-  // Usernode opens it, so the change arrives as a proposal with a preview,
+  // Homeroom opens it, so the change arrives as a proposal with a preview,
   // checks and a vote rather than a bare PR nobody is voting on.
   assert.match(result.workOrder, /Do not open the pull request yourself in the normal path/);
 });
@@ -2199,8 +2199,8 @@ function fullOrder(overrides = {}) {
 
 test('the work order names the task and says who it belongs to', async () => {
   const order = fullOrder();
-  assert.match(order, /Usernode task id:\s+31/);
-  assert.match(order, /Usernode app slug:\s+recipe-box/);
+  assert.match(order, /Homeroom task id:\s+31/);
+  assert.match(order, /Homeroom app slug:\s+recipe-box/);
   // The exact sentence a production run needed and did not have: it had a
   // live connector, the right account and the taskId one call away, and
   // declined on a guess about who owned it.
@@ -2258,11 +2258,11 @@ test('the work order presents every submit shape, in order of preference', async
   // The push comes before the submit, and the patch after both.
   assert.ok(order.indexOf('git push -u origin HEAD') < order.indexOf('SUBMIT IT YOURSELF'));
   assert.ok(order.indexOf('SUBMIT IT YOURSELF') < order.indexOf('git format-patch'));
-  // The connector reaches Usernode even though the sandbox cannot.
+  // The connector reaches Homeroom even though the sandbox cannot.
   assert.match(order, /connector traffic goes out through Claude's own infrastructure/);
 });
 
-test('the work order tells an agent with no Usernode tools what that means and how to finish', async () => {
+test('the work order tells an agent with no Homeroom tools what that means and how to finish', async () => {
   // The connector is per Claude / ChatGPT account, so a second account has
   // none — and the old step 6 treated a missing connector as an unexplained
   // state with a single remedy (hand it back). Now it names the cause,
@@ -2270,26 +2270,26 @@ test('the work order tells an agent with no Usernode tools what that means and h
   // who started the hand-off.
   const assistant = fullOrder();
   // Next to the first thing the connector is needed for: the rules pointer.
-  assert.match(assistant, /If this session has NO Usernode tools, the connector was never added to\n {2}the Claude or ChatGPT account you are running in/);
+  assert.match(assistant, /If this session has NO Homeroom tools, the connector was never added to\n {2}the Claude or ChatGPT account you are running in/);
   assert.match(assistant, /the excerpt below is enough to build with/);
   assert.match(assistant, /^ {4}https:\/\/usernode\.example\/#settings\/connectors$/m,
     'the settings URL is on its own indented line, like a command');
   // And under WHEN YOU ARE DONE.
-  assert.match(assistant, /6\. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Usernode\n {3}connector was never added to the Claude or ChatGPT account this session\n {3}runs in/);
+  assert.match(assistant, /6\. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Homeroom\n {3}connector was never added to the Claude or ChatGPT account this session\n {3}runs in/);
   assert.match(assistant, /a second account does not inherit the\n {3}first one's/);
   assert.match(assistant, /Push the branch anyway; the work is not lost/);
   assert.match(assistant, /retry `submit_work` as in step 2/);
   // Started by a chat assistant: hand it back, patch included.
   assert.match(assistant, /Otherwise hand it back: print the branch name you pushed/);
   assert.match(assistant, /save the patch from step 4 to a `\.patch` file/);
-  assert.match(assistant, /If they started from the Usernode tab instead/);
-  assert.doesNotMatch(assistant, /Otherwise finish from Usernode/);
+  assert.match(assistant, /If they started from the Homeroom tab instead/);
+  assert.doesNotMatch(assistant, /Otherwise finish from Homeroom/);
   // The URL appears in both places.
   assert.equal(assistant.split('https://usernode.example/#settings/connectors').length - 1, 2);
 
   // Started from the browser walkthrough: that tab's Submit button finishes.
   const walkthrough = fullOrder({ startedFromWalkthrough: true });
-  assert.match(walkthrough, /Otherwise finish from Usernode: the walkthrough that produced this\n {3}work order checks for the pushed branch/);
+  assert.match(walkthrough, /Otherwise finish from Homeroom: the walkthrough that produced this\n {3}work order checks for the pushed branch/);
   assert.match(walkthrough, /its Submit button opens the proposal/);
   assert.doesNotMatch(walkthrough, /Otherwise hand it back/);
 
@@ -2303,7 +2303,7 @@ test('the update work order says the same for a missing connector, in its own te
   const update = fullOrder({
     targetProposal: { id: 512, targetKind: 'proposal', branchHome: 'app_repo' },
   });
-  assert.match(update, /6\. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Usernode\n {3}connector was never added/);
+  assert.match(update, /6\. IF THE USERNODE TOOLS ARE NOT AVAILABLE to you at all, the Homeroom\n {3}connector was never added/);
   assert.match(update, /^ {4}https:\/\/usernode\.example\/#settings\/connectors$/m);
   assert.match(update, /Otherwise hand it back: print the branch name you pushed and the\n {3}proposal id/);
   assert.doesNotMatch(update, /save the patch/, 'an update never sends a patch — that opens a second proposal');
@@ -2330,7 +2330,7 @@ test('renderPreparedTask derives "started from the walkthrough" from client_id',
   const fromTab = svc.renderPreparedTask({
     ...common, task: { ...row, client_id: 'usernode-web:claude-code' }, clientId: 'usernode-web:claude-code',
   });
-  assert.match(fromTab.workOrder, /Otherwise finish from Usernode/);
+  assert.match(fromTab.workOrder, /Otherwise finish from Homeroom/);
   const fromChat = svc.renderPreparedTask({
     ...common, task: { ...row, client_id: 'claude-ai-abc' }, clientId: 'claude-ai-abc',
   });
@@ -2370,7 +2370,7 @@ test('the PLATFORM RULES appendix comes LAST, after everything load-bearing', as
   // A host model that truncates should cost background guidance, never the
   // base commit, the push commands or the task id.
   const rulesAt = order.indexOf('PLATFORM RULES');
-  for (const essential of [BASE_SHA, 'git push -u origin HEAD', 'Usernode task id', 'submit_work']) {
+  for (const essential of [BASE_SHA, 'git push -u origin HEAD', 'Homeroom task id', 'submit_work']) {
     assert.ok(order.indexOf(essential) < rulesAt, `${essential} survives a truncation`);
   }
   // And the hosted-asset warning sits immediately above it.
@@ -2382,7 +2382,7 @@ test('the PLATFORM RULES appendix comes LAST, after everything load-bearing', as
   // two checks reject this (#1215).
   assert.doesNotMatch(order, /rejected by/i);
   assert.match(order, /No automated check catches that/);
-  assert.match(order, /staging preview Usernode builds/);
+  assert.match(order, /staging preview Homeroom builds/);
   assert.match(order, /https:\/\/usernode\.example\/claude\.md/);
 
   // Omitted entirely when there is nothing to append — never an empty heading.
@@ -2416,7 +2416,7 @@ test('an unreadable GitHub produces hedged wording, never "you have no fork"', a
   assert.match(result.guidance[0], /If you don't already have/);
   assert.match(result.guidance[0], /Skip this if you already have one/);
   assert.doesNotMatch(result.guidance.join('\n'), /the copy you just made/);
-  assert.match(result.workOrder, /Usernode could not read GitHub just now/);
+  assert.match(result.workOrder, /Homeroom could not read GitHub just now/);
   assert.match(result.workOrder, /no-op if you do/);
   assert.doesNotMatch(result.workOrder, /you do not have one yet/);
 });
@@ -3078,7 +3078,7 @@ test('a proposal id that is not a proposal, or is on another app, is invalid_req
   assert.match(elsewhere.message, /is not on recipe-box/);
 });
 
-test('a fork-home proposal Usernode cannot describe is a platform fault, not the caller’s', () => {
+test('a fork-home proposal Homeroom cannot describe is a platform fault, not the caller’s', () => {
   // The branch NAME matters on this path in a way it never did for new work:
   // an open pull request cannot be repointed, so this exact ref is the only
   // one that can advance the proposal. A name git would reject means the
@@ -3152,7 +3152,7 @@ test('a bot-owned update gets a fresh branch whose name says which proposal it r
   assert.notEqual(result.branch, 'session-512', 'the caller cannot push to the app’s own repository');
 });
 
-test('a proposal head Usernode cannot read produces a retryable refusal, not a work order', async () => {
+test('a proposal head Homeroom cannot read produces a retryable refusal, not a work order', async () => {
   const gh = baseGh({ getBranchSha: async () => { throw new Error('502'); } });
   const { result, queries } = await prepareUpdate(BOT_PROPOSAL, { gh });
   assert.equal(result.ok, false);
@@ -3213,7 +3213,7 @@ test('the update work order names the proposal, its head, and where it is being 
   const order = result.workOrder;
   assert.match(order, /You are UPDATING a proposal that is already up for a vote/);
   assert.match(order, /THE PROPOSAL YOU ARE UPDATING/);
-  assert.match(order, /Usernode proposal id:\s+512/);
+  assert.match(order, /Homeroom proposal id:\s+512/);
   assert.match(order, /Its title:\s+Add a dark-mode toggle/);
   assert.match(order, new RegExp(`Its current commit:\\s+${BASE_SHA}`));
   // The line a production run needed: the agent had the proposal id and no
@@ -3231,12 +3231,12 @@ test('the update work order says, up front, that submitting clears the votes', a
 test('the update work order tells the agent to fetch the proposal’s head from UPSTREAM', async () => {
   // The commit lives only in the app's repository on a bot-owned branch, so
   // `git checkout -b <b> <sha>` in a fresh fork clone cannot find it — which
-  // is exactly the failure that reads as "Usernode gave me a bad SHA".
+  // is exactly the failure that reads as "Homeroom gave me a bad SHA".
   const { result } = await prepareUpdate(BOT_PROPOSAL);
   assert.match(result.workOrder, /THE STARTING COMMIT IS IN THE APP'S REPOSITORY, not in your fork/);
   assert.match(result.workOrder, new RegExp(`git fetch upstream ${BASE_SHA}`));
   assert.match(result.workOrder, new RegExp(`git checkout -b ${result.branch} ${BASE_SHA}`));
-  assert.match(result.workOrder, /only Usernode writes/);
+  assert.match(result.workOrder, /only Homeroom writes/);
   assert.match(result.workOrder, /You do NOT need access to it/);
 });
 
@@ -3255,7 +3255,7 @@ test('a fork-home update work order says USE the existing branch, and to check i
 
 test('the update work order asks for proposalId, and never offers the patch fallback', async () => {
   const { result } = await prepareUpdate(BOT_PROPOSAL);
-  assert.match(result.workOrder, /SUBMIT THE UPDATE, through the Usernode connector/);
+  assert.match(result.workOrder, /SUBMIT THE UPDATE, through the Homeroom connector/);
   assert.match(result.workOrder, /with proposalId 512/);
   assert.match(result.workOrder, /taskId 44/);
   // The two refusals an update gets that new work never does, each with the
@@ -3347,7 +3347,7 @@ test('the session work order says CONTINUING, and names the session it continues
   assert.match(order, /You are CONTINUING work in progress on "Recipe Box"/);
   assert.doesNotMatch(order, /already up for a vote/);
   assert.match(order, /THE WORK YOU ARE CONTINUING/);
-  assert.match(order, /Usernode session id:\s+601/);
+  assert.match(order, /Homeroom session id:\s+601/);
   assert.match(order, /Its title:\s+Fix the failing dark-mode check/);
   assert.match(order, new RegExp(`Its current commit:\\s+${BASE_SHA}`));
   assert.match(order, /Where its owner is reading it:\s+https:\/\/usernode\.example\/#app\/recipe-box\/dev\/sessions\/601/);
@@ -3385,14 +3385,14 @@ test('the session work order keeps every mechanical instruction the update path 
   const order = result.workOrder;
   // Same starting commit, fetched the same way from upstream…
   assert.match(order, /THE STARTING COMMIT IS IN THE APP'S REPOSITORY, not in your fork/);
-  assert.match(order, /session's own head, on a branch only Usernode writes/);
+  assert.match(order, /session's own head, on a branch only Homeroom writes/);
   assert.match(order, new RegExp(`git fetch upstream ${BASE_SHA}`));
   assert.match(order, new RegExp(`git checkout -b ${result.branch} ${BASE_SHA}`));
   assert.match(order, new RegExp(`It must start at the session's head:\\s+${BASE_SHA}`));
   assert.match(order, /NOT the app's main branch/);
   assert.match(order, /work already done here/);
   // …and the same submission, with the same two refusals and no patch route.
-  assert.match(order, /SUBMIT THE UPDATE, through the Usernode connector/);
+  assert.match(order, /SUBMIT THE UPDATE, through the Homeroom connector/);
   assert.match(order, /with proposalId 601/);
   assert.match(order, /base_mismatch/);
   assert.match(order, /branch_moved/);
@@ -3407,11 +3407,11 @@ test('the session work order closes on "not up for a vote yet", not on the PR re
   assert.doesNotMatch(order, /cannot merge however the vote goes/);
   assert.doesNotMatch(order, /every submission clears the votes again/);
   assert.match(order, /Do not open a pull request — this work is not up for a vote yet/);
-  assert.match(order, /who started it promotes it from Usernode when it is ready/);
+  assert.match(order, /who started it promotes it from Homeroom when it is ready/);
   assert.doesNotMatch(order, /this proposal already has one/);
   // The ownership appendix says session, and says ADD TO rather than revise.
   assert.match(order, /Session 601 belongs to the same account, which is why you can add to/);
-  assert.match(order, /Usernode only advances a session from a fork owned by the GitHub/);
+  assert.match(order, /Homeroom only advances a session from a fork owned by the GitHub/);
 });
 
 test('the proposal work order is untouched by all of this', async () => {
@@ -4058,7 +4058,7 @@ test('the lease is a force-with-lease pinned to the commit the platform read', (
   assert.match(block, /refs\/heads\/\$\{targetBranch\}:\$\{expectedRemoteSha\.toLowerCase\(\)\}/);
   assert.match(block, /--force-with-lease=\$\{lease\}/);
   assert.doesNotMatch(block.slice(0, block.indexOf('return { ok: true')), /'--force'|"--force"|`--force`/);
-  // The fork is read UNAUTHENTICATED: Usernode holds no credential for the
+  // The fork is read UNAUTHENTICATED: Homeroom holds no credential for the
   // user's GitHub account, and this path does not change that.
   assert.match(block, /sourceCloneUrl\(forkOwner, forkRepo\)/);
   assert.match(block, /UNAUTHENTICATED/);

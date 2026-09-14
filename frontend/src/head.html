@@ -4,12 +4,14 @@
   <!-- THE PLATFORM'S NAME, not "dApps". This is the title the SERVICE WORKER
        serves: public/index.html is precached, so a cached load shows it in the
        tab, the task switcher and the native AppBar until the SPA routes and
-       calls App.setHeaderTitle('Social Vibecoding'). "dApps" is the name this
+       calls App.setHeaderTitle('Homeroom'). "dApps" is the name this
        shell had before the platform had one, and every other surface —
        manifest.webmanifest, the header on home, the landing page — says
-       Social Vibecoding. A cached document that names the product something
-       nothing else calls it is the discontinuity, not just the delay. -->
-  <title>Social Vibecoding</title>
+       Homeroom. A cached document that names the product something
+       nothing else calls it is the discontinuity, not just the delay. Renaming
+       this title REQUIRES a SW_VERSION bump in public/sw.js, or existing
+       installs keep serving the precached document with the old name. -->
+  <title>Homeroom</title>
   <!-- The browser-chrome colour, and the ground the shell paints on before
        any stylesheet has loaded. Both live UP HERE, ahead of the theme
        module, because that module rewrites the meta from the resolved theme
@@ -39,7 +41,7 @@
        own two palettes to use, and it reaches three surfaces no declaration
        of ours can: the canvas underneath the document (the strip a WebView
        shows between navigation start and the first painted frame — the white
-       flash the Usernode Flutter shell shows on cold launch), the scrollbars,
+       flash the Homeroom Flutter shell shows on cold launch), the scrollbars,
        and the default rendering of form controls, which without it stay
        light-on-light inside a near-black shell.
 
@@ -360,7 +362,7 @@
   </script>
   <script src="/usernode-bridge.js"></script>
   <script>
-    // Mark the document when running as the top frame of the Usernode
+    // Mark the document when running as the top frame of the Homeroom
     // Flutter WebView. This used to hide the header title as well — the
     // shell shows the screen name in its own AppBar — but on a device
     // that read as a screen with no title, so the in-page one is drawn
@@ -369,7 +371,7 @@
     // way: on <html>, before app.js runs, so nothing flashes — the
     // bridge sets
     // `window.usernode.isNative` synchronously at load time based on
-    // the presence of the injected `Usernode` JS channel.
+    // the presence of the injected `Homeroom` JS channel.
     // `?un-native-webview=1` forces the same class from a plain URL. The
     // real signal is the injected JS channel, which a headless browser can
     // never have — so without this override the native-only presentation

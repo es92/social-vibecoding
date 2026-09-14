@@ -316,10 +316,11 @@ test('the "+" menu is two named groups, not one flat list', () => {
   // #1084 chunk G converted the menu to JSX: the two headings are
   // <PlusMenuHeading> elements in the toolbar row now (actions-row.tsx, split
   // out of the board frame when the Workshop gained its own copy), not
-  // AppView._plusMenuHeading() calls. #1490 leaves import as the only build
-  // action here, since a new change starts in Improve.
+  // AppView._plusMenuHeading() calls. #1490 moved New change to Improve and
+  // left import alone in the first group; #1900 put File an issue back beside
+  // it, so the group is "Add to the board" — what both rows do.
   const frame = read('frontend/src/features/dev-board/actions-row.tsx');
-  assert.match(frame, /label="Import a change" groupKey="build" divider=\{false\}/);
+  assert.match(frame, /label="Add to the board" groupKey="build" divider=\{false\}/);
   assert.match(frame, /label="Settings &amp; rules"[\s\S]{0,80}groupKey="settings"[\s\S]{0,40}divider/);
   // A heading must not be a <button>: _wirePlusMenu collects
   // `button[data-plus]` for the touch action sheet, and a heading that

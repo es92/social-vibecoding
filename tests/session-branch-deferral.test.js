@@ -331,7 +331,7 @@ test('the launchpad prefill has a resume shape and a start shape', () => {
   const base = { slug: 'my-app', sessionTitle: 'Make the header sticky' };
 
   const fresh = Launchpad.prefillText({ ...base, targetKind: 'new' });
-  assert.match(fresh, /Create a proposal for the Usernode app `my-app`/);
+  assert.match(fresh, /Create a proposal for the Homeroom app `my-app`/);
   assert.equal(/proposalId/.test(fresh), false, 'new work has no proposal to continue');
 
   const resume = Launchpad.prefillText({
@@ -403,7 +403,7 @@ test('a claimed continuation with no branch falls back to the start copy', () =>
     { targetKind: 'session', targetId: null, branchName: 'dev/evan-1' },
   ]) {
     const out = Launchpad.prefillText({ slug: 'a', ...state });
-    assert.match(out, /Create a proposal for the Usernode app/, JSON.stringify(state));
+    assert.match(out, /Create a proposal for the Homeroom app/, JSON.stringify(state));
     assert.equal(Launchpad.resumeBannerHtml(state), '', 'no banner without both facts');
   }
 });

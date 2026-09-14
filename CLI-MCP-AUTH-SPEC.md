@@ -8,7 +8,7 @@ This feature lets a user authenticate a project-local CLI/MCP integration from
 Codex or Claude Code with a browser approval flow:
 
 ```text
-Coding agent → project-local MCP → global Usernode API
+Coding agent → project-local MCP → global Homeroom API
                                 ↘ device authorization in browser
 ```
 
@@ -18,7 +18,7 @@ must not use iframe identity tokens.
 ## User experience
 
 From a trusted checkout, the coding agent has a project-local MCP configured.
-The user asks it to perform an operation that requires Usernode access.
+The user asks it to perform an operation that requires Homeroom access.
 
 If the user is already authenticated locally, the MCP calls the global API.
 
@@ -30,7 +30,7 @@ node ./tools/social-vibecoding login
 
 The command:
 
-1. Requests a device authorization from Usernode.
+1. Requests a device authorization from Homeroom.
 2. Prints a complete one-click verification URL and the display code.
 3. Opens the complete URL when possible.
 4. Waits for the user to authenticate and approve access.
@@ -38,7 +38,7 @@ The command:
 6. Stores the credential in the user's local credential store.
 7. Exits successfully so the agent can retry the original MCP tool call.
 
-The browser approval page uses the existing Usernode account session. A user
+The browser approval page uses the existing Homeroom account session. A user
 who is already logged in proceeds directly to confirmation; otherwise the page
 sends them through login and returns them to that request.
 
@@ -61,7 +61,7 @@ Excluded:
 - Per-dApp credentials.
 - Reuse of iframe JWTs.
 - Reuse of the browser `session` cookie.
-- Changes to the native Usernode bridge.
+- Changes to the native Homeroom bridge.
 - OAuth client registration for third-party applications.
 
 ## Credential model
@@ -95,7 +95,7 @@ The initial release has one server-defined first-party client:
 
 ```text
 client_id:   social-vibecoding-cli
-client_name: Social Vibecoding CLI
+client_name: Homeroom CLI
 ```
 
 The device-code endpoint does not accept a caller-supplied client identity.
@@ -550,7 +550,7 @@ This page is publicly reachable so the CLI can direct the user to it. It must:
    approving.
 4. Display the canonical user code, server-defined client name, and requested
    scopes on the confirmation view.
-5. Warn: "Approve only if this code matches the Social Vibecoding CLI or
+5. Warn: "Approve only if this code matches the Homeroom CLI or
    coding-agent session you started."
 6. Use one generic invalid/expired response for failed code lookup.
 7. Require an explicit **Authorize** click after showing the confirmation view.
@@ -1416,7 +1416,7 @@ the tool returns a structured error:
   "content": [
     {
       "type": "text",
-      "text": "Usernode login is required. Run node ./tools/social-vibecoding login --profile production, then retry."
+      "text": "Homeroom login is required. Run node ./tools/social-vibecoding login --profile production, then retry."
     }
   ]
 }
@@ -1445,7 +1445,7 @@ cannot reach. The display command contains placeholders rather than
 interpolating the untrusted API path or request body; only the argument vector
 is executable. The agent asks
 for host execution once, consumes the CLI's JSON result, and uses the direct
-CLI path for later Usernode calls in the same sandboxed session. It must not
+CLI path for later Homeroom calls in the same sandboxed session. It must not
 retry the doomed MCP call, start a second login, copy a bearer token into the
 repository, or silently migrate the credential to the fallback file. Other
 native-store errors remain fail-closed configuration errors. The MCP process
@@ -1454,7 +1454,7 @@ later tool call returns the host vector without another keyring probe or
 timeout.
 
 `proposal_push_commit` requires an explicit absolute repository path because
-the MCP server's own working directory is the Usernode platform checkout, not
+the MCP server's own working directory is the Homeroom platform checkout, not
 necessarily the app checkout. Its returned host command uses a two-minute HTTP
 deadline for the bounded upload/GitHub reconstruction operation; ordinary API
 calls retain the generic 30-second deadline.
@@ -1486,7 +1486,7 @@ The seven proposal tools are reviewed convenience wrappers around those same
 user-facing APIs, not a hardcoded API registry. They preserve the browser Dev
 workflow for work authored in a local Codex or Claude session:
 
-1. The agent resolves the app, repository, and exact base SHA through Usernode.
+1. The agent resolves the app, repository, and exact base SHA through Homeroom.
    It reuses an existing checkout only if its `HEAD` is that exact base SHA;
    otherwise it retrieves a shallow
    checkout, never the repository's full history: `git clone --depth 1` is
@@ -1502,7 +1502,7 @@ workflow for work authored in a local Codex or Claude session:
    `codex` or `claude-code` to identify the authoring tool (`external` when
    unknown). The HTTP body calls this optional field `externalAgent`; it is
    persisted in `external_agent` without changing the execution backend. Older
-   clients remain compatible and display as External agent. Usernode creates a native
+   clients remain compatible and display as External agent. Homeroom creates a native
    `source='cli_handoff'` Dev session and a platform-managed branch at that
    exact base. History contains exact user-visible requests and concise agent
    summaries, each with a stable event ID. It never contains hidden reasoning,
@@ -1515,7 +1515,7 @@ workflow for work authored in a local Codex or Claude session:
    retries, rebases, pushes, and check recovery. A new request ID for the same
    owner's linked pre-vote handoff returns `proposal_already_started` with the
    existing session. Only an explicitly supplied `supersedes_session_id` may
-   replace it; Usernode archives the named predecessor and inserts the
+   replace it; Homeroom archives the named predecessor and inserts the
    lineage-linked successor in one transaction.
 3. The agent implements and tests in its local checkout and creates one normal
    non-merge commit. It does not push the bot-owned branch with personal
@@ -1526,10 +1526,10 @@ workflow for work authored in a local Codex or Claude session:
    commit/parent/tree identities plus a bounded base64 snapshot of its changed
    blobs and deletions to
    `POST /api/sessions/:id/proposal-handoff/commits`.
-4. Usernode uses the app's GitHub installation credential to reconstruct the
+4. Homeroom uses the app's GitHub installation credential to reconstruct the
    changed tree on the managed branch. The current remote tip's tree must equal
    the local parent tree, and GitHub's reconstructed tree SHA must equal the
-   tested local commit's tree SHA. Only then does Usernode create a bot-owned
+   tested local commit's tree SHA. Only then does Homeroom create a bot-owned
    commit and non-force advance the managed ref. The returned platform
    `headSha` may differ from the local commit SHA because author, committer, and
    message metadata differ; tree equality is the exact-code invariant. A
@@ -1537,7 +1537,7 @@ workflow for work authored in a local Codex or Claude session:
    preceding bot commit's tree even though their commit IDs differ. Commits are
    uploaded oldest-first when a local change spans more than one commit.
 5. The agent passes that returned platform `headSha` to
-   `proposal_submit_build`. Usernode re-verifies ancestry and branch ownership,
+   `proposal_submit_build`. Homeroom re-verifies ancestry and branch ownership,
    then runs the ordinary staging, preview, screenshot, and proposal-check
    pipeline against that exact bot-owned commit.
 6. The agent polls `proposal_status` until `ready`, `failed`, or `stalled`.
@@ -1546,7 +1546,7 @@ workflow for work authored in a local Codex or Claude session:
    durable pending snapshot is overdue with no live owner; `proposal_recheck`
    rebuilds or re-runs checks on that same session. Failed code is revised with
    later fast-forward commits. `proposal_promote` first verifies the session is
-   ready, then uses the existing Usernode promotion route to create the app PR
+   ready, then uses the existing Homeroom promotion route to create the app PR
    lazily and enter the normal vote flow; it never opens a GitHub PR directly.
 
 The returned `webPath` opens the exact same native session on the web Dev

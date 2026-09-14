@@ -32,7 +32,7 @@
 //
 // NAMING — "panel", not "widget". home.js already owns a DIFFERENT concept
 // called "widget" (Home.widgetSectionView / #widget-strip / .widget-tile:
-// the iOS home-screen widget's pinned app grid, whose UI says "Usernode
+// the iOS home-screen widget's pinned app grid, whose UI says "Homeroom
 // widget"). Both render on this same screen, so everything here says
 // `panel`. Nothing user-facing says either: the blocks are titled by their
 // own headings.

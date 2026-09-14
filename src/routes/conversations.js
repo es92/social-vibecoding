@@ -127,7 +127,7 @@ function demoMessages(user, conversationId) {
       reply: null, reactions: [{ emoji: '👍', count: 2, reacted: false, users: ['ada', self.username] }],
       attachments: [], objects: [{
         type: 'proposal', appId: 1, appSlug: 'usernode', available: true,
-        sessionId: 3327, title: 'Platform Messages', subtitle: 'Usernode', state: 'active',
+        sessionId: 3327, title: 'Platform Messages', subtitle: 'Homeroom', state: 'active',
         author: 'ada', href: '#app/usernode/dev/proposals/3327',
       }],
     },
@@ -137,11 +137,11 @@ function demoMessages(user, conversationId) {
       reply: { id: 9100101, sender: ada, content: 'Can you look at the latest proposal?' },
       reactions: [], attachments: [], objects: [{
         type: 'app', appId: 1, appSlug: 'usernode', available: true,
-        title: 'Usernode', subtitle: 'Platform app', state: 'active', author: 'ada',
+        title: 'Homeroom', subtitle: 'Platform app', state: 'active', author: 'ada',
         href: '#app/usernode',
       }, {
         type: 'issue', appId: 1, appSlug: 'usernode', issueNumber: 488, available: true,
-        title: 'Platform-wide private messaging', subtitle: 'Usernode · Issue #488',
+        title: 'Platform-wide private messaging', subtitle: 'Homeroom · Issue #488',
         state: 'open', author: 'ada', href: '#app/usernode/dev/issues/488',
       }],
     },
@@ -150,11 +150,11 @@ function demoMessages(user, conversationId) {
       content: 'The proposal card is ready to review.', createdAt: '2026-08-13T13:30:00Z', editedAt: null,
       reply: null, reactions: [], attachments: [], objects: [{
         type: 'spec', appId: 1, appSlug: 'usernode', sessionId: 3327, version: 1,
-        available: true, title: 'Platform Messages spec v1', subtitle: 'Usernode',
+        available: true, title: 'Platform Messages spec v1', subtitle: 'Homeroom',
         state: 'v1', author: 'ada', href: '#app/usernode/dev/sessions/3327',
       }, {
         type: 'governance', appId: 1, appSlug: 'usernode', proposalId: 701,
-        available: true, title: 'Enable Messages rollout', subtitle: 'Usernode governance',
+        available: true, title: 'Enable Messages rollout', subtitle: 'Homeroom governance',
         state: 'open', author: 'ada', href: '#app/usernode/dev/governance/701',
       }, { type: 'spec', available: false }],
     },

@@ -1,4 +1,4 @@
-// External links inside the Usernode app go out through the bridge (#1312).
+// External links inside the Homeroom app go out through the bridge (#1312).
 //
 // The app's webview is bound to the platform's own domains (iOS App-Bound
 // Domains — NATIVE-BRIDGE.md): it cannot navigate to github.com or claude.ai

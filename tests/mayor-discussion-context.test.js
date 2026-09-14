@@ -1,5 +1,5 @@
 // #945: the discussion context the Mayor and the dispatched agents now
-// receive — the issue's and the proposal's Usernode-side Discussion
+// receive — the issue's and the proposal's Homeroom-side Discussion
 // threads.
 //
 // Covers:

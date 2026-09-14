@@ -36,7 +36,7 @@ const runtimeSource = fs.readFileSync(
 // source files and nothing else: a turn that reaches uploadTurnCommits runs
 // `git add -A && git commit` in whatever `repo` it was handed, so passing this
 // repository meant `npm test` silently swept a contributor's uncommitted work
-// into a commit titled "Changes via Usernode". It was invisible on a clean
+// into a commit titled "Changes via Homeroom". It was invisible on a clean
 // tree — `git status --porcelain` empty, no commit — and bit exactly the
 // people who run the suite mid-change. See tempRepo() below.
 const turnRepo = tempRepo().dir;
@@ -214,7 +214,7 @@ test('nothing runs until the operator says yes at their own keyboard', async () 
 
 test('a terminal with no interactive stdin is a decline, never an implied yes', async () => {
   // main.js's io.ask resolves null when process.stdin is not a TTY. That must
-  // read as "nobody could confirm", because the alternative is Usernode
+  // read as "nobody could confirm", because the alternative is Homeroom
   // starting a process on a machine with nobody watching.
   const api = fakeApi({ '/decline': { status: 200, data: {} } });
   const io = fakeIo();
@@ -518,7 +518,7 @@ test('the agent commands are documented in the CLI usage text', () => {
   }
 });
 
-// #1248 — every commit this path made read "Changes via Usernode".
+// #1248 — every commit this path made read "Changes via Homeroom".
 //
 // The server-side sibling (routes/sessions.js) derives a subject from the
 // user's own message; this file hardwired DEFAULT_COMMIT_MESSAGE into the turn
@@ -560,5 +560,5 @@ test('a turn with nothing to summarise falls back to the constant', () => {
   // And the call site is what applies that fallback, so the constant survives.
   const source = fs.readFileSync(path.join(root, 'src/cli/agent-command.js'), 'utf8');
   assert.match(source, /commitMessage: turnCommitMessage\(turn\) \|\| commitMessage/);
-  assert.equal(agent.DEFAULT_COMMIT_MESSAGE, 'Changes via Usernode');
+  assert.equal(agent.DEFAULT_COMMIT_MESSAGE, 'Changes via Homeroom');
 });

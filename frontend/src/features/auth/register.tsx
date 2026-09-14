@@ -145,7 +145,7 @@ export function RegisterScreen() {
       <div className="min-h-full flex items-center justify-center">
         <div className="w-full max-w-sm px-6 py-16">
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-center mb-1 text-zinc-900 dark:text-zinc-100">
-            Usernode Social Vibecoding
+            Homeroom
           </h1>
           <p className="text-[15px] text-zinc-500 dark:text-zinc-400 text-center mb-2 italic">
             A place where users own and build apps together

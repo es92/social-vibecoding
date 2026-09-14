@@ -323,7 +323,7 @@ test('requestStop only touches live turns, and says who stopped it', async () =>
   const turn = await localAgent.requestStop(pool, { sessionId: 42, userId: 5 });
   assert.equal(turn.status, 'stopped');
   assert.match(pool.last().sql, /status = 'stopped'/);
-  assert.match(pool.last().sql, /Stopped from the Usernode dev chat/);
+  assert.match(pool.last().sql, /Stopped from the Homeroom dev chat/);
   assert.deepEqual(pool.last().params[2], localAgent.LIVE_TURN_STATUSES);
 
   // The orphan-stop path has no user in hand; the SQL must tolerate null

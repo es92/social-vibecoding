@@ -1,4 +1,4 @@
-# Extracting Usernode into its own repo
+# Extracting Homeroom into its own repo
 
 Historical repository-extraction plan. The standalone server described here is
 one supported deployment mode; it does not describe the Kubernetes runtime.
@@ -29,8 +29,8 @@ before knowing whether the extraction "feels" right.
 
 ## Goal
 
-- Usernode lives in its own repo with its own issues, PRs, releases.
-- Eventually, Usernode deploys itself — no dependence on `evanshapi.ro`
+- Homeroom lives in its own repo with its own issues, PRs, releases.
+- Eventually, Homeroom deploys itself — no dependence on `evanshapi.ro`
   for CI, secrets, or orchestration.
 - Every step along the way is a valid stopping point.
 
@@ -190,9 +190,9 @@ When the shadow deploy has been stable for a week or so:
    `docker-compose.dev.yml`.
 4. Disable the cron/dispatch bump from Phase 2.
 
-After this, `evanshapi.ro` has no knowledge of Usernode. The
+After this, `evanshapi.ro` has no knowledge of Homeroom. The
 orchestrator still deploys recipe-bot / best-of-the-best /
-gdocs-claude-bot. Usernode deploys itself.
+gdocs-claude-bot. Homeroom deploys itself.
 
 ## Gotchas regardless of path
 
@@ -220,7 +220,7 @@ the loop.
 ## Cross-reference
 
 The [SELF-HOSTING.md](./SELF-HOSTING.md) document is the operational
-reference for the now-shipped self-app — Usernode registered as an
+reference for the now-shipped self-app — Homeroom registered as an
 app inside itself. That work depended on this extraction being done
 through at least Phase 2 (ideally Phase 4), because "edit this app"
 means "edit a GitHub repo," and the original monorepo contained

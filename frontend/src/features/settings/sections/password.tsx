@@ -4,7 +4,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * Change password (issue #282). Default form calls POST /api/me/password
- * (current password required). In the Usernode native app with a linked
+ * (current password required). In the Homeroom native app with a linked
  * wallet, a "Use your wallet instead" link switches to wallet mode
  * (cp-wallet-mode shown, current password hidden) which signs a wallet-check
  * challenge and calls POST /api/me/wallet-change-password — the way back for a

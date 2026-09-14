@@ -1111,12 +1111,38 @@ async function setChecksPending(pool, sessionId, commitSha, phase = null, trigge
   return write.rowCount !== 0;
 }
 
-// The two stages a 'pending' run can be in. Anything else (undefined, a
-// typo, a value from a newer writer) collapses to NULL — the card's legacy
-// wording — rather than rendering an unknown caption.
-const CHECK_PHASES = new Set(['building', 'testing']);
+// The stages a 'pending' run can be in. 'building' and 'testing' are the two
+// halves of a run; 'deferred' is a promoted head that conflicts with main and
+// got its preview but no verdict (services/check-admission.js) — nothing is
+// running for it, and nothing will until the head merges cleanly. Anything
+// else (undefined, a typo, a value from a newer writer) collapses to NULL —
+// the card's legacy wording — rather than rendering an unknown caption.
+const CHECK_PHASES = new Set(['building', 'testing', 'deferred']);
 function normalizeCheckPhase(phase) {
   return CHECK_PHASES.has(phase) ? phase : null;
+}
+
+// The deferral stamp. The run captured the preview and stopped: the verdict
+// stays 'pending', the phase says why, and the commit pin keeps the stale
+// sweeper (staging-recovery.checkRunOverdue) and the vote-time kick from
+// re-driving a run that is waiting on a conflict rather than on a runner.
+// Same commit guard as storeChecks: a stamp about a head the row has since
+// left is discarded.
+async function storeChecksDeferred(pool, sessionId, commitSha, detail = null) {
+  const write = await pool.query(
+    `UPDATE chat_sessions
+        SET check_state = 'pending',
+            check_phase = 'deferred',
+            checks_checked_at = NOW(),
+            checks_progress = NULL,
+            check_next_retry_at = NULL,
+            check_error_detail = $3::text
+      WHERE id = $1
+        AND status IN ('active', 'paused', 'promoted', 'merging')
+        AND (checks_commit_sha IS NULL OR $2::text IS NULL OR checks_commit_sha = $2::text)`,
+    [sessionId, commitSha || null, detail ? String(detail).slice(0, 300) : null]
+  );
+  return write.rowCount !== 0;
 }
 
 // Why a check run started. The merge-gate trace used to record trigger
@@ -1137,6 +1163,7 @@ const CHECK_TRIGGERS = new Set([
   'boot-reconcile',    // server boot re-drove an interrupted run
   'stuck-sweep',       // the recovery sweeper re-drove a stalled run
   'fleet-maintenance', // a fleet-wide rebuild
+  'conflict-resolved', // a deferred verdict, run now that the head merges cleanly
 ]);
 function normalizeCheckTrigger(trigger) {
   return CHECK_TRIGGERS.has(trigger) ? trigger : null;
@@ -2032,10 +2059,31 @@ async function captureForSession(config, session, app, commitHash, stagingResult
     // origin + token (and self-app hash normalisation) as the after target.
     const declared = await resolveDeclaredTests(repoOwner, repoName, gitRef);
     const declaredTests = declared.tests;
-    const tests = (declaredTests.length
+
+    // Which half of the run this head gets (services/check-admission.js). A
+    // promoted head that conflicts with main is previewed and not judged:
+    // no assertions, no unit suite, and the verdict below is a deferral
+    // stamp rather than a state. Decided AFTER the tests are resolved so the
+    // log line can say what was held back.
+    const admission = await require('./check-admission').decide({
+      pool, session, app, commitHash, trigger,
+    });
+    const shotsOnly = admission.mode === 'shots_only';
+    if (shotsOnly) {
+      log.info('visuals', 'Head conflicts with main — capturing the preview, deferring the verdict', {
+        sessionId: session.id, commitHash: commitHash || null, trigger,
+        declaredTests: declaredTests.length,
+        conflictPaths: (admission.measured && admission.measured.conflictPaths || []).slice(0, 5),
+      });
+      traceStep('admission', 'Verdict deferred: the head conflicts with main', {
+        reason: admission.reason, declaredTests: declaredTests.length,
+      });
+    }
+
+    const tests = (shotsOnly ? [] : (declaredTests.length
       ? declaredTests
       : capturePaths.map((p) => ({ name: `Loads ${p}`, path: p, expectSelector: '', expectText: '', allowConsoleErrors: false }))
-    ).map((t, index) => {
+    )).map((t, index) => {
       const visitPath = isSelfApp ? selfAppHashPath(t.path) : t.path;
       return {
         index,
@@ -2059,7 +2107,7 @@ async function captureForSession(config, session, app, commitHash, stagingResult
     // the pre-#1019 all-blocking semantics, because it is one "loads without
     // console errors" check per capture path and has always gated.
     let dispatched = null;
-    if (declaredTests.length) {
+    if (declaredTests.length && !shotsOnly) {
       try {
         // First run for this app pre-graduates the head the merge gate used
         // to enforce, so turning this on never OPENS a gate that was closed.
@@ -2153,7 +2201,7 @@ async function captureForSession(config, session, app, commitHash, stagingResult
     // ~zero wall clock unless it outlasts the whole capture run. The
     // .catch collapses every failure mode to null (no row) — the checks
     // run must never die because the unit-suite runner did.
-    const unitSuitePromise = unitSuite.maybeRunUnitSuite({
+    const unitSuitePromise = shotsOnly ? Promise.resolve(null) : unitSuite.maybeRunUnitSuite({
       config, pool, appId: app.id, sessionId: session.id,
       repoOwner, repoName, ref: gitRef,
       prNumber: Number(session.pr_number) || null,
@@ -2173,6 +2221,7 @@ async function captureForSession(config, session, app, commitHash, stagingResult
       authenticated: !!captureToken, selfApp: isSelfApp, deviceScaleFactor, media,
       tests: tests.length, declaredTests: declaredTests.length,
       blocking: dispatched ? dispatched.filter((d) => d.graduated).length : tests.length,
+      deferred: shotsOnly || undefined,
     });
     let stdout;
     let runPartial = false;
@@ -2243,7 +2292,13 @@ async function captureForSession(config, session, app, commitHash, stagingResult
           TEST_TIMEOUT_MS,
           TESTS_DEADLINE_MS,
       };
-      if (kubernetesCapture) {
+      if (shotsOnly && !media) {
+        // A deferred verdict on a range with no frontend files: no
+        // assertions to run and no screens to shoot, so there is nothing
+        // for the container to do. The stamp below still lands.
+        stdout = '';
+        res = { partial: false };
+      } else if (kubernetesCapture) {
         ({ stdout, ...res } = await kubernetes.runCaptureJob(config, {
           onStdoutLine: progressObserver,
           memory: CAPTURE_MEMORY,
@@ -2327,6 +2382,70 @@ async function captureForSession(config, session, app, commitHash, stagingResult
     closeProgress();
     await operation?.check();
     if (unitOutcome) extraRows.push(unitOutcome.row);
+
+    if (shotsOnly) {
+      // No verdict was taken, so none is stored: the row stays 'pending' in
+      // phase 'deferred' until the head merges cleanly, when the run that
+      // judges it starts (integration.onBecameClean → recheckSessionChecks,
+      // or the checks gate's own kick). The preview half below still lands
+      // — the screenshots are the point of having run at all.
+      traceStatus = 'deferred';
+      traceStep('tests', 'Suite verdict: deferred', {
+        state: 'deferred', reason: admission.reason, durationMs: Date.now() - runStartedAt,
+      });
+      try {
+        const stamped = await storeChecksDeferred(pool, session.id, commitHash,
+          'Checks wait until this proposal merges cleanly with main');
+        if (stamped) {
+          notifyChecksPending(session.id, commitHash, 'deferred', trigger);
+        } else {
+          log.info('visuals', 'Discarded stale deferral stamp', {
+            sessionId: session.id, commitHash: commitHash || null,
+          });
+        }
+      } catch (err) {
+        log.warn('visuals', 'Deferral stamp failed (non-fatal)', {
+          sessionId: session.id, err: err.message,
+        });
+      }
+      const dropped = [];
+      const stored = await storeArtifacts(pool, session.id, commitHash, targets, shots, dropped);
+      const captureState = !media ? 'console_only'
+        : (!stored ? 'failed'
+          : ((failures.length || dropped.length || runPartial) ? 'partial' : 'captured'));
+      await storeCaptureOutcome(pool, session.id, captureState, {
+        media, pathDefaulted, prodRunning, paths: capturePaths,
+        failures: failures.slice(0, 20), droppedOverCap: dropped.slice(0, 20),
+        runCutShort: runPartial ? (runPartialReason || true) : false,
+        deferred: true,
+        reason: !media ? 'No frontend files in commit range and the verdict is deferred — nothing to capture'
+          : (!stored ? 'No usable "after" artifact was produced' : undefined),
+      }).catch((err) => {
+        log.warn('visuals', 'Capture-outcome store failed (non-fatal)', {
+          sessionId: session.id, err: err.message,
+        });
+      });
+      if (stored) {
+        if (session.pr_number && repoOwner && repoName && github.isEnabled()) {
+          try {
+            await patchPrBody(pool, session, repoOwner, repoName,
+              prMetadata.buildVisualsBlock(stored, caddy.USERNODE_DOMAIN));
+          } catch (err) {
+            log.warn('visuals', 'PR body visuals patch failed', {
+              sessionId: session.id, pr: session.pr_number, err: err.message,
+            });
+          }
+        }
+        await operation?.check();
+        notifyVisualsReady(session.id, stored, send);
+      }
+      log.info('visuals', 'Capture complete; verdict deferred', {
+        sessionId: session.id, artifacts: shots.map((s) => `${s.kind}.${s.media}`).join(','),
+        durationMs: Date.now() - runStartedAt,
+      });
+      return { state: 'pending', deferred: true };
+    }
+
     const checksResult = classifyTests(parseTests(stdout), tests.length, dispatched
       ? { dispatched, sentinel: parseTestsDone(stdout), extraRows }
       : { extraRows });
@@ -3072,6 +3191,7 @@ function notifyChecks(sessionId, result, commitSha, send) {
 module.exports = {
   kubernetesCaptureOrigin,
   captureForSession,
+  storeChecksDeferred,
   // Exported for the regression test: the capture hostname is the only
   // consumer of these columns that needs a NAME rather than any handle
   // `docker` accepts, so the guard lives here and is asserted here.

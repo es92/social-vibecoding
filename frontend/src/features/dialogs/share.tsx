@@ -114,7 +114,7 @@ export function ShareDialog() {
           Share this app
         </h2>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
-          Anyone with this link can open the app outside the Usernode platform. Whether they need to log in is up to the app; most public apps work for anonymous viewers.
+          Anyone with this link can open the app outside the Homeroom platform. Whether they need to log in is up to the app; most public apps work for anonymous viewers.
         </p>
         <div className="flex gap-2">
           <Input

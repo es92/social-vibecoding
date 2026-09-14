@@ -1133,7 +1133,7 @@ const Home = {
   // ── The home screen's Improve button (#1367) ───────────────────────
   //
   // "Improve" on home means the PLATFORM: the same panel every app gets,
-  // scoped to Social Vibecoding's own self-hosted row. Feedback, its dev
+  // scoped to Homeroom's own self-hosted row. Feedback, its dev
   // sessions, its kanban and feed, its repo — all of it already works on that
   // row, which is why this is a target publish and not a second surface.
   //
@@ -2094,7 +2094,7 @@ const Home = {
   // wording of the locked case, shared by the tooltip and the ⋮ menu's inert
   // note. A tap opens the create dialog, where the exact quota is shown.
 
-  // ── Usernode widget section (iOS in-app only) ──────────────────────
+  // ── Homeroom widget section (iOS in-app only) ──────────────────────
   //
   // A strip above the launcher grid mirroring the pinned grid the iOS
   // homescreen widget renders. Tiles are the device registry, in widget
@@ -2427,7 +2427,7 @@ const Home = {
   // so the management UI only appears where every management call works.
   _widgetItems: null,
   // The section is opt-in per page load: hidden until the user clicks
-  // "Add to Usernode widget" (see _menuAddShortcut), then it stays up
+  // "Add to Homeroom widget" (see _menuAddShortcut), then it stays up
   // for the rest of the session as the management surface.
   _widgetSectionVisible: false,
   // The iOS medium widget renders at most 8 tiles (see
@@ -3138,7 +3138,7 @@ const Home = {
       });
     }
     // Native homescreen shortcut — only when the page runs inside a
-    // Usernode app build whose bridge reports the feature (see
+    // Homeroom app build whose bridge reports the feature (see
     // _probeShortcutSupport; Home._shortcutSupport stays null in plain
     // browsers and on old app builds, so the item never renders there).
     const shortcutSupport = Home._shortcutSupport;
@@ -3159,13 +3159,13 @@ const Home = {
         // by default) management section — reorder or remove from there.
         items.push({
           key: 'add-to-homescreen',
-          label: 'Edit in Usernode widget',
+          label: 'Edit in Homeroom widget',
           run: () => Home._revealWidgetSection(),
         });
       } else {
         items.push({
           key: 'add-to-homescreen',
-          label: isWidget ? 'Add to Usernode widget' : 'Add to phone home screen',
+          label: isWidget ? 'Add to Homeroom widget' : 'Add to phone home screen',
           run: () => Home._menuAddShortcut(app),
         });
       }
@@ -3344,7 +3344,7 @@ const Home = {
 
   // ── Menu actions ──────────────────────────────────────────────────
 
-  // Ask the Usernode app to pin this app to the device homescreen. The
+  // Ask the Homeroom app to pin this app to the device homescreen. The
   // shortcut URL is the platform's own hash deep link (#app/<slug>), so
   // tapping it reopens the SV shell already navigated to the app — same
   // surface as tapping the card, with the platform session intact. The
@@ -3375,7 +3375,7 @@ const Home = {
   },
 
   // Show the widget management section (idempotent) and bring it into
-  // view. Shared by "Add to Usernode widget" and "Edit in Usernode
+  // view. Shared by "Add to Homeroom widget" and "Edit in Homeroom
   // widget".
   _revealWidgetSection() {
     Home._widgetSectionVisible = true;

@@ -22,7 +22,7 @@ function headers(apiKey, origin) {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
     'HTTP-Referer': origin || 'https://usernode.dev',
-    'X-OpenRouter-Title': 'Usernode',
+    'X-OpenRouter-Title': 'Homeroom',
   };
 }
 

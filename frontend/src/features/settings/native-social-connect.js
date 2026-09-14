@@ -5,7 +5,7 @@ export async function openNativeSocialConnect({ bridge, provider, accountId, ori
     throw new Error('Your account could not be identified. Reopen Settings and try again.');
   }
   if (typeof bridge?.openExternal !== 'function') {
-    throw new Error('Update the Usernode app to open account connections in your browser.');
+    throw new Error('Update the Homeroom app to open account connections in your browser.');
   }
   const url = new URL(`/api/me/social-identities/${provider}/connect`, origin);
   url.searchParams.set('account', String(accountId));

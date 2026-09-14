@@ -53,7 +53,7 @@ import {
 import { TileSkeleton } from '../apps/tile-skeleton';
 import { waitlistOptions } from './waitlist-shared';
 
-const LANDING_TITLE = 'Usernode Social Vibecoding';
+const LANDING_TITLE = 'Homeroom';
 
 /** Directory-load outcome. `loading` is what the prerendered markup ships. */
 type AppsState =
@@ -789,7 +789,7 @@ export function LandingScreen() {
         <div className="max-w-3xl mx-auto px-6 py-12">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold mb-2">
-              Usernode Social Vibecoding
+              Homeroom
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 italic">
               A place where users own and build apps together
@@ -837,10 +837,10 @@ export function LandingScreen() {
               Build apps together, own them together
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
-              Usernode Social Vibecoding is a place where users describe the app
+              Homeroom is a place where users describe the app
           they want in chat, an AI builds it, and the community votes the
           changes in. Every app below was built here by the people who use
-          it. They run on the Usernode chain, and contributors own a share
+          it. They run on the Homeroom chain, and contributors own a share
           of what they build.
             </p>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
@@ -906,7 +906,7 @@ export function LandingScreen() {
               Apps built here
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-              Community-built apps on the Usernode chain. Many are open to
+              Community-built apps on the Homeroom chain. Many are open to
           everyone. The grayed-out ones need an account.
             </p>
             {/* Same launcher-grid shape as the authed homescreen (#app-list). */}

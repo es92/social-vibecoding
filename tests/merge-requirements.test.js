@@ -36,22 +36,39 @@ test('a gate that does not apply is omitted, not greyed', () => {
   const t = requirements.trace().context({ locked: false, selfHosted: false, explicitApproval: false });
   t.pass('approvals');
   const keys = requirements.describe(t.toRecord()).map((g) => g.key);
-  assert.deepEqual(keys, ['approvals', 'integration', 'checks', 'github']);
+  assert.deepEqual(keys, ['approvals', 'integration', 'checks', 'main_healthy', 'github']);
 
   const t2 = requirements.trace().context({ locked: true, selfHosted: true, explicitApproval: true });
   t2.pass('approvals');
   assert.deepEqual(requirements.describe(t2.toRecord()).map((g) => g.key),
-    ['approvals', 'explicit', 'admin_yes', 'integration', 'checks', 'platform_env', 'github']);
+    ['approvals', 'explicit', 'admin_yes', 'integration', 'checks', 'platform_env', 'main_healthy', 'github']);
 });
 
 test('everything after the refusal is "pending", never "done"', () => {
   // The whole reconstruction rests on this: evaluation stops at the first
   // refusal, so a gate it never reached must not read as satisfied.
   const t = requirements.trace().context({ locked: false, selfHosted: false });
-  t.pass('approvals').stop('integration', 'active', { behindBy: 2 });
+  t.pass('approvals').stop('integration', 'active', { conflictPaths: ['a.js'] });
   const list = requirements.describe(t.toRecord());
   assert.deepEqual(list.map((g) => `${g.key}:${g.state}`),
-    ['approvals:done', 'integration:active', 'checks:pending', 'github:pending']);
+    ['approvals:done', 'integration:active', 'checks:pending', 'main_healthy:pending', 'github:pending']);
+});
+
+test('an evaluated integration entry may name who resolves the conflict', () => {
+  // The gate's default actor is the platform. The conflict lane can decide
+  // otherwise about a head — the author's fork, a resolution the AI already
+  // failed — and the recorded entry carries that, so the card asks the
+  // right person.
+  const t = requirements.trace().context({ locked: false, selfHosted: false });
+  t.pass('approvals').stop('integration', 'blocked', { actor: 'author', note: 'could not resolve it' });
+  const list = requirements.describe(t.toRecord());
+  assert.equal(list.find((g) => g.key === 'integration').actor, 'author');
+  assert.equal(requirements.summarize(list, { isAuthor: true }).headline, 'Waiting on you');
+
+  // Anything that is not an actor is ignored, and the default stands.
+  const t2 = requirements.trace().context({ locked: false, selfHosted: false });
+  t2.pass('approvals').stop('integration', 'active', { actor: 'robot' });
+  assert.equal(requirements.describe(t2.toRecord()).find((g) => g.key === 'integration').actor, 'auto');
 });
 
 test('a mark after the stop is ignored, so one run cannot report two refusals', () => {
@@ -138,7 +155,7 @@ test('a recording supersedes the provisional list wholesale', () => {
     votes_required: 3, yes_count: 0, check_state: 'failing',
   });
   assert.equal(block.provisional, false);
-  assert.deepEqual(block.gates.map((g) => g.key), ['approvals', 'admin_yes', 'integration', 'checks', 'github']);
+  assert.deepEqual(block.gates.map((g) => g.key), ['approvals', 'admin_yes', 'integration', 'checks', 'main_healthy', 'github']);
   assert.equal(block.gates.find((g) => g.key === 'approvals').state, 'done',
     'the recording wins: the gate saw the real tally, the columns are a snapshot');
 });
@@ -261,12 +278,88 @@ test('the opening rule: a card opens only for the person who can clear it', () =
 
 test('every step done reads as merging, not as an empty checklist', () => {
   const t = requirements.trace().context({ locked: false, selfHosted: false });
-  t.pass('approvals').pass('integration').pass('checks').stop('github', 'active');
+  t.pass('approvals').pass('integration').pass('checks').pass('main_healthy').stop('github', 'active');
   t.revise('github', 'done', { note: 'merged' });
   const s = requirements.summarize(requirements.describe(t.toRecord()), {});
   assert.equal(s.headline, 'Merging now');
-  assert.equal(s.done, 4);
-  assert.equal(s.total, 4);
+  assert.equal(s.done, 5);
+  assert.equal(s.total, 5);
+});
+
+// ── Direct-merge lanes: what the integration step says off the columns ──
+
+test('a clean head is done, however far behind main; the drift is a note', () => {
+  // Under direct-merge lanes being behind is not a step — a clean head
+  // merges as it stands — so the card must not show a sync that is not
+  // going to happen.
+  const far = requirements.integrationStep({ integration_merges_clean: true, integration_behind_by: 37 });
+  assert.equal(far.state, 'done');
+  assert.match(far.note, /37 commits behind main; merges as it stands/);
+  const level = requirements.integrationStep({ integration_merges_clean: true, integration_behind_by: 0 });
+  assert.equal(level.state, 'done');
+  assert.equal(level.note, 'level with main');
+  assert.equal(requirements.integrationStep({ integration_merges_clean: null }).state, 'pending');
+});
+
+test('a conflict names who resolves it, from what the conflict lane wrote on the row', () => {
+  const step = (reasons) => requirements.integrationStep({
+    integration_merges_clean: false, integration_conflict_paths: ['a.js', 'b.js'],
+    integration_block_reasons: reasons,
+  });
+  // Nothing decided yet: the platform's.
+  assert.deepEqual([step([]).state, step([]).actor], ['active', 'auto']);
+  assert.deepEqual([step(['integrating']).state, step(['integrating']).actor], ['active', 'auto']);
+  assert.match(step(['integrating']).note, /resolving a conflict with main in 2 files/);
+  // The lane will not spend a turn until the vote: the group's.
+  assert.deepEqual([step(['awaiting_approval']).state, step(['awaiting_approval']).actor], ['waiting', 'group']);
+  assert.match(step(['awaiting_approval']).note, /once the group approves/);
+  // The author's, two ways.
+  assert.deepEqual([step(['unresolvable']).state, step(['unresolvable']).actor], ['blocked', 'author']);
+  assert.deepEqual([step(['fork_head']).state, step(['fork_head']).actor], ['waiting', 'author']);
+  // Out of budget: an admin's.
+  assert.deepEqual([step(['budget']).state, step(['budget']).actor], ['waiting', 'admin']);
+});
+
+test('the provisional list reads a deferred verdict as waiting on the conflict, not on a runner', () => {
+  const gates = requirements.provisional({
+    votes_required: 1, yes_count: 0, check_state: 'pending', check_phase: 'deferred',
+    integration_merges_clean: false, integration_conflict_paths: ['a.js'],
+  });
+  const checks = gates.find((g) => g.key === 'checks');
+  assert.equal(checks.state, 'active');
+  assert.match(checks.detail.note, /waiting for the head to merge cleanly/);
+});
+
+test('the provisional list names main health only when the serializer has the app columns', () => {
+  const without = requirements.provisional({ votes_required: 1, yes_count: 1 }).map((g) => g.key);
+  assert.ok(!without.includes('main_healthy'), 'an answer only the gate has is not invented');
+
+  const red = requirements.provisional({
+    votes_required: 1, yes_count: 1, check_state: 'passing',
+    integration_merges_clean: true, integration_behind_by: 2,
+    app_main_check_state: 'failing', app_main_check_sha: 'f'.repeat(40), app_main_check_resumed_sha: null,
+  });
+  const main = red.find((g) => g.key === 'main_healthy');
+  assert.equal(main.state, 'blocked');
+  assert.equal(main.actor, 'admin');
+  assert.match(main.detail.note, /failing since fffffff/);
+  assert.equal(requirements.summarize(red, { isAdmin: true }).headline, 'Waiting on you');
+
+  const resumed = requirements.provisional({
+    votes_required: 1, yes_count: 1, check_state: 'passing',
+    integration_merges_clean: true, integration_behind_by: 2,
+    app_main_check_state: 'failing', app_main_check_sha: 'f'.repeat(40), app_main_check_resumed_sha: 'F'.repeat(40),
+  });
+  assert.equal(resumed.find((g) => g.key === 'main_healthy').state, 'done', 'an admin resumed merges');
+  assert.equal(requirements.summarize(resumed, {}).detail, 'merging shortly',
+    'and with every knowable step done the platform is about to try');
+
+  const green = requirements.provisional({
+    votes_required: 1, yes_count: 1, app_main_check_state: 'passing', app_main_check_sha: 'g'.repeat(40),
+  });
+  assert.equal(green.find((g) => g.key === 'main_healthy').state, 'done');
+  const never = requirements.provisional({ votes_required: 1, yes_count: 1, app_main_check_state: null });
+  assert.equal(never.find((g) => g.key === 'main_healthy').state, 'done', 'never watched is not red');
 });
 
 // ── The promise: the description matches the gate that decided ──────────
@@ -394,9 +487,11 @@ const DRIFT = [
     stuckAt: 'admin_yes',
   },
   {
-    name: 'behind main → integration',
+    // Under direct-merge lanes only a CONFLICT stops here; a clean head
+    // merges as it stands however far behind (see the case after this).
+    name: 'conflicts with main → integration',
     world: { yes: 4, no: 0 },
-    load: { measured: { behindBy: 3, mergesClean: true, conflictPaths: [] } },
+    load: { measured: { behindBy: 3, mergesClean: false, conflictPaths: ['a.js'] } },
     stuckAt: 'integration',
   },
   {
@@ -441,8 +536,49 @@ test('a passing run records every gate as done', async () => {
     assert.equal(byKey.approvals, 'done');
     assert.equal(byKey.integration, 'done');
     assert.equal(byKey.checks, 'done');
+    assert.equal(byKey.main_healthy, 'done');
     assert.ok(['done', 'active', 'blocked'].includes(byKey.github),
       'gate 7 reports a real outcome rather than staying unreached');
+  } finally {
+    restore();
+  }
+});
+
+test('a clean head behind main passes the integration gate as it stands', async () => {
+  // The direct lane. #2038's gate refused here and queued a sync; now the
+  // drift is a note on a passed step and the run goes on to the checks.
+  const { subject, restore } = loadVotes({ measured: { behindBy: 3, mergesClean: true, conflictPaths: [] } });
+  try {
+    const { pool, saved } = makePool({ yes: 4, no: 0, sessionId: 7, appId: 5 });
+    await subject.checkAndMerge({ jwtSecret: 's' }, pool, session, {});
+    const list = requirements.describe(saved[saved.length - 1]);
+    const integration = list.find((g) => g.key === 'integration');
+    assert.equal(integration.state, 'done');
+    assert.match(integration.detail.note, /3 commits behind main; merges as it stands/);
+  } finally {
+    restore();
+  }
+});
+
+test('a red main stops the run at main_healthy, for the admin', async () => {
+  const { subject, restore } = loadVotes({});
+  try {
+    const { pool, saved } = makePool({ yes: 4, no: 0, sessionId: 7, appId: 5 });
+    const inner = pool.query.bind(pool);
+    pool.query = async (sql, params) => {
+      if (/SELECT main_check_state, main_check_sha/.test(sql)) {
+        return { rows: [{ main_check_state: 'failing', main_check_sha: 'f'.repeat(40), main_check_resumed_sha: null }] };
+      }
+      return inner(sql, params);
+    };
+    const r = await subject.checkAndMerge({ jwtSecret: 's' }, pool, session, {});
+    assert.equal(r.merged, false);
+    assert.equal(r.blockReason, 'main_failing');
+    const list = requirements.describe(saved[saved.length - 1]);
+    const current = list.find((g) => g.state !== 'done' && g.state !== 'pending');
+    assert.equal(current.key, 'main_healthy');
+    assert.equal(current.state, 'blocked');
+    assert.equal(requirements.summarize(list, { isAdmin: true }).headline, 'Waiting on you');
   } finally {
     restore();
   }

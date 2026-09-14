@@ -124,7 +124,7 @@ test('native failures are actionable, and invalid account/provider values never 
   const { openNativeSocialConnect } = await import('../frontend/src/features/settings/native-social-connect.js');
   const args = { provider: 'github', accountId: 7, origin: config.cliAuthOrigin };
   for (const bridge of [null, {}]) {
-    await assert.rejects(openNativeSocialConnect({ ...args, bridge }), /Update the Usernode app/);
+    await assert.rejects(openNativeSocialConnect({ ...args, bridge }), /Update the Homeroom app/);
   }
   for (const openExternal of [async () => false, async () => { throw new Error('bridge failed'); }]) {
     await assert.rejects(openNativeSocialConnect({ ...args, bridge: { openExternal } }), /Could not open your browser/);

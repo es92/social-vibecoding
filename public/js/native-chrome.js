@@ -1,5 +1,5 @@
 // Native chrome glue — the shared seam between SV's web chrome and the
-// Usernode app's bridge (app-as-SV-chrome migration, see NATIVE-BRIDGE.md).
+// Homeroom app's bridge (app-as-SV-chrome migration, see NATIVE-BRIDGE.md).
 //
 // Owns:
 //   - a single cached `getBridgeInfo()` probe (NativeChrome.getInfo()) so
@@ -46,7 +46,7 @@
     // Concurrent callers share ONE in-flight probe, but a DEGRADED answer
     // (the bridge's marker for a probe that timed out or errored inside
     // the app) is never memoised: caching it would hide every
-    // capability-gated row — the Settings → Usernode app section included —
+    // capability-gated row — the Settings → Homeroom app section included —
     // for the rest of the document over one cold-start hiccup (issue #978).
     // Same discipline prepareWebLogout() already applies to a version-0
     // probe below.
@@ -362,7 +362,7 @@
             !capabilities.includes('establishNativeSession') ||
             typeof bridge.establishNativeSession !== 'function') {
           throw new Error(
-            'This Usernode app version must be updated for secure sign-in'
+            'This Homeroom app version must be updated for secure sign-in'
           );
         }
         if (!NativeChrome._isCurrentRealm(userId, generation)) return null;
@@ -411,7 +411,7 @@
           // attempt — and _initSessionRecoveryEvents() retries on every
           // online / pageshow / visibilitychange, so the dialog kept
           // coming back. The failure is RECORDED only now; Settings →
-          // Usernode app → connection reads lastSessionFailure() and offers
+          // Homeroom app → connection reads lastSessionFailure() and offers
           // the recovery as a button the user presses on purpose.
         }
         return null;
@@ -460,7 +460,7 @@
             !capabilities.includes('prepareForLogin') ||
             typeof bridge.prepareForLogin !== 'function') {
           throw new Error(
-            'This Usernode app version must be updated for secure sign-in'
+            'This Homeroom app version must be updated for secure sign-in'
           );
         }
         return bridge.prepareForLogin().then(() => {
@@ -556,7 +556,7 @@
             !capabilities.includes('logout') ||
             typeof bridge.logout !== 'function') {
           throw new Error(
-            'This Usernode app version must be updated for secure sign-out'
+            'This Homeroom app version must be updated for secure sign-out'
           );
         }
         return bridge.logout();
@@ -573,7 +573,7 @@
     // prompt has never been presented (permission still un-determined),
     // where the marker is not final: the OS prompt itself is one-shot,
     // so an un-asked device must keep its chance. The same rows live
-    // permanently in Settings → Usernode app.
+    // permanently in Settings → Homeroom app.
     _FIRST_RUN_KEY: 'sv:onboarding_permissions_done',
     _firstRunPromise: null,
     _firstRunSheetPresented: false,
@@ -675,7 +675,7 @@
           verdict: 'no-bridge',
           settings: false,
           reason: s.isNative !== true
-            ? 'not running inside the Usernode app'
+            ? 'not running inside the Homeroom app'
             : 'the bridge exposes no requestPermissions()',
         };
       }
@@ -903,7 +903,7 @@
           ? 'Your node can produce blocks while the app is in the ' +
             'background. That needs permission to wake your device at ' +
             'exact slot times and freedom from battery optimization.'
-          : 'Allow notifications so Usernode can alert you about node ' +
+          : 'Allow notifications so Homeroom can alert you about node ' +
             'and account activity.'));
 
       const statusRow = (label, ok) => {
@@ -1016,7 +1016,7 @@
 
     // Resolve what the iOS notification permission ACTUALLY ended up as
     // after requestPermissions() resolved. Shared by the sheet above and
-    // Settings → Usernode app (frontend/src/features/settings/settings.js)
+    // Settings → Homeroom app (frontend/src/features/settings/settings.js)
     // so both screens read the grant the same way.
     //
     // The native permission caches settle asynchronously after the OS

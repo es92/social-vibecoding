@@ -902,7 +902,7 @@ function issueRoutes(config) {
         // DEPLOY, not through a rebuild of a container — so don't promise a
         // redeploy the apply path deliberately never performs.
         description = description?.trim() ||
-          `${req.user.username} (via Usernode) proposed ${
+          `${req.user.username} (via Homeroom) proposed ${
             action === 'delete' ? 'removing' : 'setting'
           } the env var "${key}". ${app.self_hosted
             ? 'Auto-applies when a majority of active users vote up; the value reaches the platform on its next deploy.'
@@ -3058,8 +3058,8 @@ async function maybeApplyCloseIssueProposal(pool, issue, options = {}) {
       await github.closeIssue(parsed.owner, parsed.repo, issueNumber);
 
       let commentBody = force
-        ? `Closed by admin override (${options.forceBy?.username || 'admin'}) on Usernode.`
-        : `Closed by group vote (${upCount}/${required}) on Usernode.`;
+        ? `Closed by admin override (${options.forceBy?.username || 'admin'}) on Homeroom.`
+        : `Closed by group vote (${upCount}/${required}) on Homeroom.`;
       const reason = typeof locked.payload?.reason === 'string'
         ? locked.payload.reason.trim() : '';
       if (reason) {

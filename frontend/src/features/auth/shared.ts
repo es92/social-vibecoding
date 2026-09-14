@@ -186,14 +186,14 @@ export function hasSession(): boolean {
   return !!legacy().App?.user;
 }
 
-/** Are we inside the Usernode native app (bridge present)? */
+/** Are we inside the Homeroom native app (bridge present)? */
 export function isNative(): boolean {
   const w = legacy();
   return !!(w.usernode && w.usernode.isNative);
 }
 
 const NATIVE_LOGIN_PREPARATION_MESSAGE =
-  'Secure app session could not be prepared. Force-quit and reopen Usernode, then try again.';
+  'Secure app session could not be prepared. Force-quit and reopen Homeroom, then try again.';
 const NATIVE_DIAGNOSTIC_RE = /^[a-z][a-z0-9_-]{0,95}$/;
 
 function diagnosticValue(value: unknown): string | null {
@@ -258,7 +258,7 @@ async function prepareNativeMint(w: LegacyWindow): Promise<void> {
   if (!chrome || typeof chrome.prepareForLogin !== 'function') {
     throw new NativeLoginPreparationError(
       null,
-      'This Usernode app version must be updated for secure sign-in',
+      'This Homeroom app version must be updated for secure sign-in',
     );
   }
   try {

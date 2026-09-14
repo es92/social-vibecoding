@@ -4,7 +4,7 @@
 //
 // Improve is the header's STANDING action — it renders on every screen that
 // carries a target (frontend/src/features/improve/improve-button.tsx), and on
-// the platform screens that target is Social Vibecoding's own self-hosted row,
+// the platform screens that target is Homeroom's own self-hosted row,
 // published by Home.publishImproveTarget (#1367/#1406). Backing out of an app
 // dropped it: the button was there on the app, gone on home, and stayed gone
 // for the rest of the visit.
@@ -54,7 +54,7 @@ const appJs = read('public/js/app.js');
 
 const SELF_ROW = {
   slug: 'usernode-2d5619',
-  name: 'Social Vibecoding',
+  name: 'Homeroom',
   self_hosted: true,
   can_collaborate: true,
   status: 'running',

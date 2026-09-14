@@ -1,4 +1,4 @@
-# Standalone production stack for Usernode Social Vibecoding.
+# Standalone production stack for Homeroom.
 #
 # Lives on a dedicated VPS at the domain set in `.env` (USERNODE_DOMAIN).
 # Three services: Caddy (TLS + reverse proxy), the platform itself,
@@ -96,7 +96,7 @@ x-usernode-platform: &usernode-platform
     PLATFORM_LEADER_LOCK: "1"
   volumes:
     # Required: the platform spawns child-app containers via the
-    # host Docker daemon. Standard Usernode pattern.
+    # host Docker daemon. Standard Homeroom pattern.
     - /var/run/docker.sock:/var/run/docker.sock
     # Read-only host bind for deploy signals (see scripts/deploy.sh).
     # The deploy user on the host writes /opt/usernode/runtime/

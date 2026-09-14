@@ -26,9 +26,9 @@ const registry = require('../src/agents/registry');
 // The six venues, in group order: three that build in this chat, three that
 // build somewhere else. Kept in sync with public/js/build-venues.js VENUES.
 const VENUE_LABELS = {
-  'usernode-claude': 'Usernode · Claude',
-  'usernode-openrouter': 'Usernode · OpenRouter',
-  local: 'Your computer · Usernode session',
+  'usernode-claude': 'Homeroom · Claude',
+  'usernode-openrouter': 'Homeroom · OpenRouter',
+  local: 'Your computer · Homeroom session',
   'web-claude-code': 'Claude Code on the web',
   'web-codex': 'Codex on the web',
   'own-tools-pr': 'Your computer · your own tools',
@@ -40,7 +40,7 @@ const RETIRED_LABELS = [
   'Claude Code (OpenRouter BYOK)',
   'Codex (OpenRouter BYOK)',
   'Codex via OpenRouter',
-  'Build it here on Usernode',
+  'Build it here on Homeroom',
   'Build it with Claude Code',
   'Build it with Codex',
   'Carry on in Claude Code',

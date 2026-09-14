@@ -232,7 +232,7 @@
       if (!response.ok) throw new Error(result.error || 'Could not queue the test push. Please try again.');
       const info = {
         kind: 'test_alert',
-        title: 'Usernode test alert',
+        title: 'Homeroom test alert',
         body: 'This is a test of your dev-chat sound & alerts.',
       };
       setTimeout(() => {

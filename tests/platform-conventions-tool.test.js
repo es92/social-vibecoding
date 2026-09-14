@@ -14,7 +14,7 @@
 //   2. Every section fits in one response, so "read the section" is one call
 //      rather than a paging protocol nobody implements.
 //   3. It carries the neutralisation preamble. Three sections are addressed
-//      to Usernode's own build worker, and one of them ("Don't `git push`
+//      to Homeroom's own build worker, and one of them ("Don't `git push`
 //      yourself") forbids the exact step the agent reading this was asked to
 //      perform — the work-order excerpt neutralises it, and so must this.
 //   4. It is NOT wrapped as untrusted content. Everything else the connector
@@ -207,7 +207,7 @@ test('platform-authored rules are NOT wrapped as untrusted content', () => {
 });
 
 test('the preamble neutralises the sections addressed to the build worker', () => {
-  // "Don't `git push` yourself" is written for Usernode's own worker, which
+  // "Don't `git push` yourself" is written for Homeroom's own worker, which
   // has no GitHub credentials. An agent that fetches that section and reads
   // it as its own instruction stops dead on the step it was asked to do —
   // the same failure the work-order excerpt already guards against.

@@ -30,14 +30,14 @@ const DEFAULT_BACKEND = 'claude_code';
 const BACKENDS = {
   claude_code: {
     id: 'claude_code',
-    label: 'Usernode · Claude',
+    label: 'Homeroom · Claude',
     provider: 'anthropic',
     runner: '/usr/local/bin/run-cc.sh',
     claudeLike: true,
   },
   codex_openrouter: {
     id: 'codex_openrouter',
-    label: 'Usernode · OpenRouter',
+    label: 'Homeroom · OpenRouter',
     provider: 'openrouter',
     runner: '/usr/local/bin/run-codex-agent.sh',
     claudeLike: false,

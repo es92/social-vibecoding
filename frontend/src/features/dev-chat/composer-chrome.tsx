@@ -67,11 +67,11 @@ export function QuickRepliesBar() {
 }
 
 const PAST_TITLE = (label: string) =>
-  `The last turn ran on ${label}. That machine has detached, so the next turn runs on Usernode.`;
+  `The last turn ran on ${label}. That machine has detached, so the next turn runs on Homeroom.`;
 
 const LIVE_TITLE = (label: string) =>
   `Spec and coding turns in this session run on ${label}, using its own Claude subscription. `
-  + 'A spec turn is read-only; after a coding turn Usernode still opens the PR, builds the '
+  + 'A spec turn is read-only; after a coding turn Homeroom still opens the PR, builds the '
   + 'preview and runs the checks.';
 
 export function RunnerControlsView({ kind, label }: RunnerState) {
@@ -89,7 +89,7 @@ export function RunnerControlsView({ kind, label }: RunnerState) {
         Run on:
       </label>
       {/*
-          Picking "Usernode" is a HAND-BACK, not a selection: the module puts
+          Picking "Homeroom" is a HAND-BACK, not a selection: the module puts
           the value straight back to `local` and asks for confirmation, because
           releasing the lease is destructive and the select must not look like
           it already happened. That is why this is `value` + a snap-back rather
@@ -106,7 +106,7 @@ export function RunnerControlsView({ kind, label }: RunnerState) {
         }}
       >
         <option value="local">{label}</option>
-        <option value="platform">Usernode</option>
+        <option value="platform">Homeroom</option>
       </select>
       <span className="dc-runner-chip" title={LIVE_TITLE(label)}>Running on your machine</span>
     </>

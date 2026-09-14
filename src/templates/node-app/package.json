@@ -2,7 +2,7 @@
   "name": "usernode-app-template",
   "version": "1.0.0",
   "private": true,
-  "description": "Usernode app template",
+  "description": "Homeroom app template",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

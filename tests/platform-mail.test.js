@@ -43,7 +43,7 @@ const GMAIL_ENV = {
 const HTTP_ENV = {
   TOPOCHAIN_MAIL_API_URL: 'https://mail.example.invalid/send',
   TOPOCHAIN_MAIL_API_KEY: 'test-key',
-  TOPOCHAIN_MAIL_FROM: 'Usernode <no-reply@example.invalid>',
+  TOPOCHAIN_MAIL_FROM: 'Homeroom <no-reply@example.invalid>',
 };
 
 test('a staging preview ALWAYS logs, even with a real provider configured', () => {
@@ -94,7 +94,7 @@ test('gmail without a sender address is refused', () => {
 });
 
 test('the committed default sender is the single platform address', () => {
-  assert.equal(select.DEFAULT_FROM, 'Usernode <no-reply@onhomeroom.com>');
+  assert.equal(select.DEFAULT_FROM, 'Homeroom <no-reply@onhomeroom.com>');
   // A fresh deploy that set nothing still has a correct From.
   assert.equal(select.resolveFrom({}), select.DEFAULT_FROM);
   // PLATFORM_MAIL_FROM wins; TOPOCHAIN_MAIL_FROM is the legacy fallback.
@@ -542,7 +542,7 @@ test('every kind renders subject, text and html with no leaked undefined', () =>
     waitlist_released: { url: 'https://x.invalid/#signup/a%40b.invalid', hasAccount: false },
     password_reset: { url: 'https://x.invalid/#reset-password?token=aa' },
     admin_test: {
-      provider: 'gmail', from: 'Usernode <no-reply@x.invalid>',
+      provider: 'gmail', from: 'Homeroom <no-reply@x.invalid>',
       sentAt: '2026-01-01T00:00:00.000Z', reference: 'abcd1234',
     },
   };
@@ -568,12 +568,12 @@ test('base64url output is URL-safe and unpadded', () => {
 
 test('the raw message is CRLF multipart/alternative with the right headers', () => {
   const raw = gmail.buildRaw({
-    from: 'Usernode <no-reply@onhomeroom.com>',
+    from: 'Homeroom <no-reply@onhomeroom.com>',
     to: 'a@b.invalid',
-    message: { subject: 'Your Usernode login code', text: 'code 123456', html: '<p>hi</p>' },
+    message: { subject: 'Your Homeroom login code', text: 'code 123456', html: '<p>hi</p>' },
     boundary: 'bnd',
   });
-  assert.match(raw, /^From: Usernode <no-reply@onhomeroom\.com>\r\n/);
+  assert.match(raw, /^From: Homeroom <no-reply@onhomeroom\.com>\r\n/);
   assert.match(raw, /\r\nTo: a@b\.invalid\r\n/);
   assert.match(raw, /Content-Type: multipart\/alternative; boundary="bnd"/);
   // text part before html part: clients pick the LAST part they can render.
@@ -583,12 +583,12 @@ test('the raw message is CRLF multipart/alternative with the right headers', () 
 });
 
 test('a non-ASCII subject is RFC 2047 encoded, not emitted raw', () => {
-  assert.equal(gmail.encodeHeader('Your Usernode login code'), 'Your Usernode login code');
-  const encoded = gmail.encodeHeader('Your Usernode access — ready');
+  assert.equal(gmail.encodeHeader('Your Homeroom login code'), 'Your Homeroom login code');
+  const encoded = gmail.encodeHeader('Your Homeroom access — ready');
   assert.match(encoded, /^=\?UTF-8\?B\?/);
   assert.equal(
     Buffer.from(encoded.slice('=?UTF-8?B?'.length, -2), 'base64').toString('utf8'),
-    'Your Usernode access — ready');
+    'Your Homeroom access — ready');
 });
 
 test('a CRLF in a header value cannot inject a header', () => {
@@ -624,7 +624,7 @@ test('gmail mints one access token for many sends, and retries a 401 once', asyn
     return { ok: true, status: 200, text: async () => '{}' };
   };
 
-  const t = gmail.create(GMAIL_ENV, { sender: 'Usernode <no-reply@x.invalid>', fetchImpl });
+  const t = gmail.create(GMAIL_ENV, { sender: 'Homeroom <no-reply@x.invalid>', fetchImpl });
   await t.send({ to: 'a@b.invalid', kind: 'otp', code: '111111' });
   assert.equal(tokenRequests, 2, 'a 401 forces exactly one extra refresh');
   assert.equal(sendAttempts, 2, 'and exactly one retry, not a loop');
@@ -823,7 +823,7 @@ test('dapp.json declares every Platform mail variable, credentials private', () 
   }
   // The sender default is committed, so a fresh deploy has a correct From.
   assert.equal(byKey.get('PLATFORM_MAIL_FROM').default,
-    'Usernode <no-reply@onhomeroom.com>');
+    'Homeroom <no-reply@onhomeroom.com>');
   // ...and code and manifest agree on it.
   assert.equal(byKey.get('PLATFORM_MAIL_FROM').default, select.DEFAULT_FROM);
 });
@@ -896,14 +896,14 @@ test('sendTest reports a successful send with provider, from and copy', async ()
     mailStagingLogOnly: false,
     mailTransport: {
       provider: 'gmail',
-      from: 'Usernode <no-reply@x.invalid>',
+      from: 'Homeroom <no-reply@x.invalid>',
       send: async (m) => { seen.push(m); },
     },
   }, { to: 'ops@example.invalid' });
 
   assert.equal(outcome.status, 'sent');
   assert.equal(outcome.provider, 'gmail');
-  assert.equal(outcome.from, 'Usernode <no-reply@x.invalid>');
+  assert.equal(outcome.from, 'Homeroom <no-reply@x.invalid>');
   assert.equal(seen[0].kind, 'admin_test');
   assert.equal(seen[0].to, 'ops@example.invalid');
   assert.match(outcome.message.subject, /test email/i);

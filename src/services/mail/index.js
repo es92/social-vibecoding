@@ -440,7 +440,7 @@ async function sendPasswordResetMail(config, email, token) {
 }
 
 /**
- * "Your Usernode access is ready" — the one mail whose whole job is a link.
+ * "Your Homeroom access is ready" — the one mail whose whole job is a link.
  *
  * #1545: the destination is a QUERY, not a fragment. It was
  * `/#signup`, and the report was that following it from a desktop mail client

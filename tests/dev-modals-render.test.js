@@ -63,7 +63,7 @@ function makeAppView(opts) {
     },
     Settings: { state: { hasApiKey: false } },
     BuildVenues: o.venue === false ? undefined
-      : { venue: () => ({ label: 'Usernode', blurb: 'Runs on the platform.' }) },
+      : { venue: () => ({ label: 'Homeroom', blurb: 'Runs on the platform.' }) },
     DevChat: {
       modelOptionText: (m) => `${m.id} — 40-60%`,
       modelNoteText: (m) => `${m.id} does medium changes`,

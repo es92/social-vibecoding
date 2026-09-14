@@ -1066,7 +1066,7 @@ export function LoginScreen() {
       <div className="min-h-full flex items-center justify-center">
         <div className="w-full max-w-sm px-6 py-16">
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight text-center mb-1 text-zinc-900 dark:text-zinc-100">
-            Usernode Social Vibecoding
+            Homeroom
           </h1>
           <p className="text-[15px] text-zinc-500 dark:text-zinc-400 text-center mb-8 italic">
             A place where users own and build apps together
@@ -1352,7 +1352,7 @@ export function LoginScreen() {
           {/*
               Password recovery sub-view (issue #282). Hidden until "Forgot
               password?" is tapped. Picks one of two paths by context: a
-              wallet-signature self-reset when running inside the Usernode
+              wallet-signature self-reset when running inside the Homeroom
               app with a linked wallet, otherwise the emailed magic link
               with the "ask an admin" message as its fallback.
           */}
@@ -1472,7 +1472,7 @@ export function LoginScreen() {
                     inline elements must live inside the string expressions —
                     without them the text renders as "atemporary" /
                     "fromSettings" (issue #1158). */}
-                {'Ask a Usernode platform admin to issue you a '}
+                {'Ask a Homeroom platform admin to issue you a '}
                 <span className="font-medium text-zinc-700 dark:text-zinc-300">
                   temporary password
                 </span>

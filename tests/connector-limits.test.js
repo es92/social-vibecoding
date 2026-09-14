@@ -146,7 +146,7 @@ test('the fallback counts builds running, against the platform session cap', asy
   const caps = effectiveSessionCaps({}, ordinary);
   const refused = await limits.checkFallbackStart(poolCounting(caps.activeSessions), {}, ordinary);
   assert.equal(refused.code, 'at_capacity');
-  assert.match(refused.message, new RegExp(`${caps.activeSessions} Usernode builds running`));
+  assert.match(refused.message, new RegExp(`${caps.activeSessions} Homeroom builds running`));
   assert.doesNotMatch(refused.message, /24 hours|daily limit/);
 
   // Same tiering as a dev session in the browser.

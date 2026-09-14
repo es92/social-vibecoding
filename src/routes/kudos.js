@@ -42,7 +42,7 @@ const LEADERBOARD_USER_FIELDS = new Set([
   'last_kudos_at',
   'kudos_given',
   'issues_created',
-  // The user's linked Usernode wallet address (the `ut1...` value stored in
+  // The user's linked Homeroom wallet address (the `ut1...` value stored in
   // users.usernode_pubkey), or null when no wallet is linked. Aliased to
   // `address` in the SELECT below.
   'address',

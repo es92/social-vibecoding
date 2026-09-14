@@ -4,7 +4,7 @@
 // window publication and layout-effect init seam remain load-bearing.
 //
 // Node status row (top of the hamburger drawer) — surfaces the embedded
-// Usernode node's sync state when the platform runs inside the Usernode
+// Homeroom node's sync state when the platform runs inside the Homeroom
 // app (app-as-SV-chrome migration, see NATIVE-BRIDGE.md). Lived in the
 // header as a pill originally; moved into the drawer to keep the header
 // uncluttered.

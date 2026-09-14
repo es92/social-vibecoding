@@ -2,7 +2,7 @@
 //
 // The spec puts the bridge at the bottom of its routing tree, marked
 // SETTINGS-GATED and "most users: no": it is the platform dev-chat UX
-// driven from your own machine, and it wants the Usernode CLI installed and
+// driven from your own machine, and it wants the Homeroom CLI installed and
 // attached before it does anything at all. Until #1281 the only gate was
 // the DEPLOYMENT's cliAuthEnabled, so the venue was offered to everyone on
 // a deployment that merely supports the CLI — including, most visibly, in

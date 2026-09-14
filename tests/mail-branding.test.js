@@ -34,7 +34,7 @@ const PAYLOAD = {
   statusUrl: 'https://x.invalid/status',
   hasAccount: false,
   provider: 'gmail',
-  from: 'Usernode <no-reply@x.invalid>',
+  from: 'Homeroom <no-reply@x.invalid>',
   sentAt: '2026-09-07T00:00:00Z',
   reference: 'ref-1',
 };
@@ -44,8 +44,8 @@ test('every kind is framed, and framed exactly once', () => {
   for (const kind of templates.KINDS) {
     const { html } = templates.buildMessage(kind, PAYLOAD);
     assert.equal((html.match(/<!doctype html>/gi) || []).length, 1, `${kind}: one document`);
-    assert.match(html, />Usernode<\/div>/, `${kind}: carries the wordmark`);
-    assert.match(html, /Usernode Social Vibecoding/, `${kind}: carries the footer`);
+    assert.match(html, />Homeroom<\/div>/, `${kind}: carries the wordmark`);
+    assert.match(html, /Homeroom<br>You are receiving this because/, `${kind}: carries the footer`);
     assert.match(html, /activity on your account or your place on the waitlist/,
       `${kind}: says why it arrived`);
   }
@@ -94,7 +94,7 @@ test('the text part is untouched by the frame', () => {
   // is a rendering concern. A wordmark in the plaintext would be noise.
   for (const kind of templates.KINDS) {
     const { text } = templates.buildMessage(kind, PAYLOAD);
-    assert.doesNotMatch(text, /Social Vibecoding/, `${kind}: no footer in the text part`);
+    assert.doesNotMatch(text, /You are receiving this because/, `${kind}: no footer in the text part`);
     assert.ok(text.trim().length > 0, `${kind}: still has copy`);
   }
 });

@@ -2,7 +2,7 @@
 
 // #1049: the alternate development flows, offered IN the platform.
 //
-// Usernode has had a second way to build for a while: instead of spending
+// Homeroom has had a second way to build for a while: instead of spending
 // daily AI credits here, hand a work order to the coding agent the user
 // already pays for — Claude Code (claude.ai/code) or Codex
 // (chatgpt.com/codex) — let it push a branch to their own fork, and turn
@@ -214,7 +214,7 @@ async function describeRequestedTarget(pool, user, app, origin, proposalId) {
       described: {
         ok: false,
         code: 'platform_unavailable',
-        message: 'Usernode cannot read that session right now. Try again shortly.',
+        message: 'Homeroom cannot read that session right now. Try again shortly.',
       },
     };
   }
@@ -569,7 +569,7 @@ function devFlowRoutes(config) {
         // back on the status route — so the picked agent survives a reload
         // without adding a column.
         clientId: `usernode-web:${agent}`,
-        clientName: 'Usernode',
+        clientName: 'Homeroom',
         origin: originOf(config),
         restart: !!req.body?.restart,
         originSessionId,
@@ -652,7 +652,7 @@ function devFlowRoutes(config) {
 
       const result = await externalAgentTasks.submitWork(taskDeps(pool, config), {
         user: req.user,
-        clientName: 'Usernode',
+        clientName: 'Homeroom',
         clientId: 'usernode-web',
         taskId,
         slug: app.slug,
@@ -804,7 +804,7 @@ function devFlowRoutes(config) {
 
       const result = await externalAgentTasks.submitWork(taskDeps(pool, config), {
         user: req.user,
-        clientName: 'Usernode',
+        clientName: 'Homeroom',
         clientId: 'usernode-web',
         taskId,
         proposalId,
@@ -835,11 +835,11 @@ function devFlowRoutes(config) {
 //
 // Small now, because the walkthrough is. It used to carry a minted task, a
 // branch state and ~100 lines of work-order prose, all of which existed so a
-// reviewer could check copy that Usernode no longer writes: the agent asks
+// reviewer could check copy that Homeroom no longer writes: the agent asks
 // what to build and mints its own order through the connector.
 //
 // `?order=connect` drops the connector, which is the OTHER state worth
-// shooting: the hand-off step becomes "Connect Usernode", because without one
+// shooting: the hand-off step becomes "Connect Homeroom", because without one
 // the agent cannot call prepare_work and there is nothing useful to hand it.
 // `?order=continue` makes it a continuation, where the instructions name the
 // proposal being updated. Any value here must also be in DevChat's

@@ -16,7 +16,7 @@ export function CliSection() {
     <div data-settings-section="cli" className="hidden">
       <div id="cli-tokens-section">
         <SectionHeading title={<>CLI &amp; coding-agent access</>}>
-          Credentials approved for the Social Vibecoding CLI, Codex, Claude Code, or OpenCode. Revoking an active credential takes effect immediately.
+          Credentials approved for the Homeroom CLI, Codex, Claude Code, or OpenCode. Revoking an active credential takes effect immediately.
         </SectionHeading>
         <CliSetupGuide />
         <div id="cli-tokens-list" className="space-y-2">

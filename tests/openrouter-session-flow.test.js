@@ -54,7 +54,10 @@ test('interactive OpenRouter chat bypasses Claude billing and the Mayor', () => 
   assert.match(direct, /openRouterDirect: true/);
   assert.doesNotMatch(direct, /llm\./);
   assert.doesNotMatch(direct, /resolveBillingPath/);
-  assert.doesNotMatch(direct, /sessionTitles\./);
+  // #1949: the session IS named here, but only by the deterministic,
+  // payer-free trim — never by the Haiku titler the Claude path uses.
+  assert.match(direct, /sessionTitles\.titleFromFirstMessage\(/);
+  assert.doesNotMatch(direct, /sessionTitles\.(?:maybeTitleFirstMessage|refreshFromHistory|generateAndApply)/);
   assert.ok(
     route.indexOf('// OpenRouter is a complete, single-provider session path.')
       < route.indexOf('if (!llm.isEnabled())'),

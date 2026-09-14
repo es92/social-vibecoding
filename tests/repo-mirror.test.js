@@ -29,7 +29,7 @@ function makeRepo(propEdit, mainEdit) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usernode-mirror-test-'));
   execFileSync('git', ['init', '-q', '-b', 'main', dir]);
   git(dir, 'config', 'user.email', 'test@usernode.invalid');
-  git(dir, 'config', 'user.name', 'Usernode Test');
+  git(dir, 'config', 'user.name', 'Homeroom Test');
   git(dir, 'config', 'commit.gpgsign', 'false');
 
   fs.writeFileSync(path.join(dir, 'a.txt'), 'line1\nline2\nline3\nline4\nline5\n');

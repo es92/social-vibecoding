@@ -32,7 +32,7 @@ const logTransport = require('./transports/log');
 // default so a fresh deploy has a correct From without an operator
 // setting anything — but the mailbox behind it still has to be
 // authorised with the provider before a send succeeds.
-const DEFAULT_FROM = 'Usernode <no-reply@onhomeroom.com>';
+const DEFAULT_FROM = 'Homeroom <no-reply@onhomeroom.com>';
 
 const PROVIDERS = ['gmail', 'http', 'log'];
 

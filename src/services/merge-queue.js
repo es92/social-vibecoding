@@ -1,54 +1,71 @@
 'use strict';
 
-// #2038 — the integration queue.
-//
-// One proposal per app is brought onto current main, checked against the
-// merged tree, and merged. Everything else is left alone and simply measured.
+// The integration queue — direct-merge lanes.
 //
 // ── What this replaces ─────────────────────────────────────────────────
 //
-// services/conflict-resolver.js ran a two-phase drain: phase 1 merged
-// anything directly mergeable, phase 2 ran worker syncs for the rest. The
-// split existed because a blocked proposal's minutes-long sync ran INSIDE the
-// single-flight drain and froze every clean sibling behind it. A queue where
-// a blocked proposal leaves the queue does not have that failure, so the
-// phases are gone.
+// #2038's queue brought ONE approved proposal per app onto current main (a
+// worker sync), re-checked the merged tree (a rebuild and a full run), then
+// merged it — and stopped, because the merge had just put every sibling one
+// further behind, each of which then needed its own sync and its own re-run
+// before it could go. Ten clean, approved, passing proposals cost ten worker
+// turns and ten full check runs, strictly in series, and the board watched
+// "bringing up to date with main" walk down the line. That was correct and it
+// was slow, and its slowness was structural: a proposal was never merged as
+// the group had reviewed it, only as the platform had re-made it.
 //
-// Two behaviours change, and both were bugs:
+// ── The two lanes ──────────────────────────────────────────────────────
 //
-//   - The drain's candidate filter was the merge gate, so only proposals
-//     already eligible to merge were ever touched. A proposal that drifted
-//     before reaching threshold was synced by nobody, measured by nobody and
-//     reconciled by nobody, while its card read "Behind main · N — syncing
-//     automatically" (#2038 F2). MEASUREMENT is now separate and universal
-//     (services/integration.js, driven by the sweep); only INTEGRATION —
-//     which costs a worker turn and real tokens — is gated on eligibility,
-//     and the card says so honestly instead of promising a sync.
+// A proposal that MERGES CLEANLY with main merges as it stands. GitHub
+// produces the same merge commit the sync would have pushed, so the sync is
+// pure cost; and its checks judged its own head against the main of the
+// time, which is the thing the group approved. Being behind main is not a
+// reason to do anything. The DIRECT LANE merges every approved, clean
+// candidate in a pass, one exact-sha GitHub call each and no worker turn:
+// checkAndMerge re-measures each head at its integration gate, so a sibling
+// landing a moment earlier is noticed there (a fresh merge-tree, not a stale
+// column), and GitHub's own refusal is the last guard behind that.
 //
-//   - Checks in flight were QUEUED behind, not superseded. #1728 recorded
-//     the cost: two syncs, two abandoned runs (one of them 490 checks in),
-//     two ten-minute dead waits and three full runs for one proposal. The
-//     supersede primitive already existed in services/preview-lifecycle.js;
-//     it simply was not used here.
+// A proposal that CONFLICTS with main cannot merge as it stands, and that is
+// the only thing that still costs a worker turn: an AI resolution that
+// pushes a new head, which comes back through the pipeline on its own
+// (measured, previewed, checked, merged direct). The CONFLICT LANE works one
+// at a time, cheapest first, and holds while the direct lane has work in
+// flight — a resolution made against a main that is about to move is a
+// resolution made twice.
 //
-// ── How the line is worked ─────────────────────────────────────────────
+// Who gets a resolution — rule C:
 //
-// One candidate at a time, cheapest first (nextCandidate / effortOf), and a
-// pass stops the moment what happens next arrives as its own trigger — a
-// merge, a check run or a sync already in flight (passShouldStop). A sync
-// whose machinery failed backs its candidate off instead of costing every
-// pass the same timeout (noteSyncFailure), and each pass first retires any
-// 'integrating' a dead process left behind (retireStaleIntegrating).
+//   - approved and merges-blocked only by the conflict: now, front of the
+//     lane. The group has said yes; the platform's job is to land it.
+//   - not yet approved, first conflict of this authored head: now, once.
+//     Voters should review a head that can merge, with a real preview and
+//     (once clean) a real verdict. "This authored head" is the approval
+//     epoch (integration.markResolutionSpent): the author's next push is a
+//     new head with its own one chance.
+//   - not yet approved, conflicting again: waits for the vote. The card
+//     says so ('awaiting_approval').
+//   - a head the platform cannot push to (the author's fork), or one the
+//     AI already failed to resolve against this very main: the author has
+//     to update it ('fork_head' / 'unresolvable'). No turn is spent.
 //
-// ── What is NOT here any more ──────────────────────────────────────────
+// ── The safety net ─────────────────────────────────────────────────────
 //
-// pollMergeable and waitForMergeableTrue — up to fourteen GitHub reads and
-// ~30 seconds of sleeping per cycle, spent asking a lazily-computed field
-// whether a branch merges. The mirror answers that exactly, before the call.
-// The exact-sha merge is still the real guard: if main moves between the
-// measurement and the merge, GitHub refuses with a 409 and the queue comes
-// back round. That was always the only guarantee; the polling just made the
-// window narrower at considerable cost.
+// Every direct merge lands a tree that nobody ran the checks against as a
+// whole. services/main-watch.js runs the repo's unit suite on each merge
+// commit; red pauses the app's merges (checkAndMerge's main_healthy gate)
+// until a fix lands or an admin resumes them. That is where the
+// re-check-after-sync went, and it runs once per merge instead of once per
+// sibling per merge.
+//
+// ── What is NOT here ───────────────────────────────────────────────────
+//
+// pollMergeable / waitForMergeableTrue (GitHub's lazily-computed field,
+// asked up to fourteen times per cycle — the mirror answers exactly), the
+// two-phase drain of services/conflict-resolver.js, and the sync-then-merge
+// step itself. The exact-sha merge remains the real guard: if main moves
+// between the measurement and the merge, GitHub refuses with a 409 and the
+// row comes back round measured against the new main.
 
 const log = require('./logger');
 const github = require('./github');
@@ -61,11 +78,11 @@ const { getPool } = require('../db/pool');
 // App-level single-flight. Every trigger — a vote crossing threshold, a
 // post-merge cascade, the drift poller, the eligible-merge sweep — funnels
 // here, so concurrent triggers for one app coalesce into one sequential pass
-// instead of N parallel worker syncs against the same main.
+// instead of N parallel passes against the same main.
 const _running = new Map(); // appId -> Promise
 const _rekick = new Set();  // appId -> a trigger arrived mid-pass
 
-/** True while this app is integrating something. Read by the status routes. */
+/** True while this app's queue is running a pass. Read by the status routes. */
 function isIntegrating(appId) {
   return _running.has(appId);
 }
@@ -73,7 +90,7 @@ function isIntegrating(appId) {
 /**
  * Ask the app's queue to make progress. Safe to call from anywhere, as often
  * as you like: a call while a pass is running flags a re-kick rather than
- * starting a second one.
+ * starting a second one, and the re-kick runs a fresh pass once this one ends.
  */
 function enqueue(config, appId, options = {}) {
   if (appId == null) return Promise.resolve();
@@ -95,49 +112,27 @@ function enqueue(config, appId, options = {}) {
   return run;
 }
 
-// The next proposal worth spending a worker turn on: promoted, eligible on
-// votes, and not the one we just merged.
-//
-// Ordered by how little stands between it and a merge (effortOf, below);
-// the vote tally and then waiting time break ties. Every candidate here is
-// one the group has already approved, so the tally is a tie-break rather
-// than the order. It WAS the order until the afternoon #2104 landed, when
-// the line for the platform app read: a proposal that CONFLICTED with main
-// (an AI resolution turn), then one whose worker could not mount its volume
-// (a warm-ready timeout, every pass), and only then one that was two commits
-// behind, merged clean and had passing checks on its pinned head. Each
-// merge restarts the platform and puts every sibling one further behind, so
-// the order the line is worked in decides how many syncs and rebuilds the
-// whole board costs — not just who waits.
-//
-// Three things a sync cannot fix are filtered here rather than discovered
-// after the worker turn has been spent. The first two used to reach
-// checkAndMerge, which refused them at a gate the queue had no way to
-// satisfy, and the pass then moved on to the next candidate and synced that
-// one too:
-//
-//   - a locked app with no admin yes vote in the current epoch. The lock
-//     gate is exactly the admin's say-so; integrating ahead of it spends
-//     tokens on a change that may never merge, and the admin's vote itself
-//     enqueues the app when it lands;
-//   - checks that FAILED (or errored) against the commit currently pinned.
-//     "They re-run on the next push" — the author has to act, and a merge of
-//     main into a failing branch does not change that. A verdict about an
-//     OLDER commit is not a reason to skip: the pinned head still needs its
-//     rebuild, which the checks gate kicks;
-//   - a sync turn that threw for it recently (noteSyncFailure). Infrastructure
-//     that failed a minute ago has usually not been fixed since.
-async function nextCandidate(pool, appId, { excludeId = 0, attempted = [] }) {
+// ── The line ─────────────────────────────────────────────────────────────
+
+// Every promoted proposal of the app, with what the two lanes need to know
+// about it: whether the group has approved it (`approved`, from the
+// governance gate), where it stands against main (the integration columns),
+// where its verdict stands (the checks columns), and the rule-C bookkeeping
+// (approval_epoch / integration_resolved_epoch). One query per pass.
+async function loadLine(pool, appId, { excludeId = 0 } = {}) {
   const governance = require('./governance');
   const gov = await governance.getGovernance(pool, appId);
   const electorate = await governance.getElectorate(pool, appId, gov);
 
   const { rows } = await pool.query(
-    `SELECT cs.id, cs.promoted_at, cs.created_at, cs.requires_explicit_approval,
-            cs.integration_behind_by, cs.integration_merges_clean, cs.check_state,
-            cs.checks_commit_sha,
+    `SELECT cs.id, cs.user_id, cs.source, cs.promoted_at, cs.created_at,
+            cs.requires_explicit_approval, cs.approval_epoch, cs.integration_resolved_epoch,
+            cs.integration_behind_by, cs.integration_merges_clean, cs.integration_conflict_paths,
+            cs.integration_head_sha, cs.integration_main_sha, cs.integration_block_reasons,
+            cs.check_state, cs.check_phase, cs.checks_commit_sha, cs.checks_checked_at,
+            cs.branch_name, cs.imported_pr_head_repo,
             ${reviewedHeadSql('cs')} AS reviewed_head,
-            a.locked AS app_locked,
+            a.locked AS app_locked, a.repo_url,
             EXISTS (SELECT 1 FROM pr_votes pv
                       JOIN users u ON u.id = pv.user_id
                      WHERE pv.session_id = cs.id AND pv.vote = 'yes'
@@ -151,40 +146,32 @@ async function nextCandidate(pool, appId, { excludeId = 0, attempted = [] }) {
                 AND ${currentVotePredicateSql('pv', 'cs')}) AS no_count
        FROM chat_sessions cs
        JOIN apps a ON a.id = cs.app_id
-      WHERE cs.app_id = $1 AND cs.status = 'promoted' AND cs.id <> $2
-        AND NOT (cs.id = ANY($3::int[]))`,
-    [appId, excludeId, attempted]
+      WHERE cs.app_id = $1 AND cs.status = 'promoted' AND cs.id <> $2`,
+    [appId, excludeId]
   );
 
   const qualified = electorate.approverIds
     ? await governance.qualifiedCountsBatch(pool, 'pr', rows.map((r) => r.id), electorate.approverIds)
     : null;
 
-  const eligible = rows.filter((r) => {
+  return rows.map((r) => {
     const q = qualified ? (qualified.get(r.id) || { yes: 0, no: 0 })
       : { yes: r.yes_count, no: r.no_count };
-    if (!governance.computeGate(
+    const approved = !!governance.computeGate(
       gov, electorate.active, q.yes, q.no, r.promoted_at || r.created_at, null,
       { explicitApproval: !!r.requires_explicit_approval }
-    ).mergeable) return false;
-    const blockedBy = unintegrableReason(r);
-    if (blockedBy) {
-      log.debug('merge-queue', 'candidate skipped: a sync cannot unblock it', {
-        appId, sessionId: r.id, blockedBy,
-      });
-      return false;
-    }
-    return true;
+    ).mergeable;
+    return { ...r, approved };
   });
+}
 
-  const toMs = (v) => (v instanceof Date ? v.getTime()
-    : typeof v === 'number' ? v : (Date.parse(v) || 0));
+const toMs = (v) => (v instanceof Date ? v.getTime()
+  : typeof v === 'number' ? v : (Date.parse(v) || 0));
 
-  eligible.sort((a, b) => compareEffort(effortOf(a), effortOf(b))
-    || (b.yes_count - a.yes_count)
-    || (toMs(a.promoted_at || a.created_at) - toMs(b.promoted_at || b.created_at)));
-
-  return eligible[0] || null;
+// Ties within a lane: the group's stronger preference, then the longer wait.
+function compareTally(a, b) {
+  return (b.yes_count - a.yes_count)
+    || (toMs(a.promoted_at || a.created_at) - toMs(b.promoted_at || b.created_at));
 }
 
 // What a candidate still costs before it can merge, from the columns the
@@ -192,29 +179,28 @@ async function nextCandidate(pool, appId, { excludeId = 0, attempted = [] }) {
 // most decisive first:
 //
 //   conflict  0 merges clean · 1 never measured · 2 conflicts. A conflict is
-//             an AI resolution turn, then a tree nobody has tested, so a
-//             rebuild too — the most expensive thing the queue does.
-//   rebuild   0 when a settled verdict stands on the pinned head, so a
-//             mechanical sync carries it and the merge follows the sync
-//             directly; 1 when the merged commit will need the full run
+//             an AI resolution turn, then a new head that is previewed and
+//             checked from scratch — the most expensive thing the queue does.
+//   rebuild   0 when a settled verdict stands on the pinned head, so the
+//             merge can follow at once; 1 when the head still needs its run
 //             (the ~5 min of preview + browser checks + unit suite) first.
-//   behind    the sync's size, 0 meaning no sync at all. Unmeasured sorts last.
+//   paths     the size of the conflict, for the conflict lane's order.
 //
-// Ties fall through to the tally and then to age, as before.
+// Being behind main costs nothing any more and is not a field.
 function effortOf(row) {
-  const behind = parseInt(row.integration_behind_by, 10);
   const settled = (row.check_state === 'passing' || row.check_state === 'skipped')
     && sameSha(row.checks_commit_sha, row.reviewed_head);
+  const paths = Array.isArray(row.integration_conflict_paths) ? row.integration_conflict_paths.length : 0;
   return {
     conflict: row.integration_merges_clean === true ? 0
       : (row.integration_merges_clean == null ? 1 : 2),
     rebuild: settled ? 0 : 1,
-    behind: Number.isFinite(behind) ? Math.max(0, behind) : Number.MAX_SAFE_INTEGER,
+    paths: row.integration_merges_clean === false ? paths : 0,
   };
 }
 
 function compareEffort(a, b) {
-  return (a.conflict - b.conflict) || (a.rebuild - b.rebuild) || (a.behind - b.behind);
+  return (a.conflict - b.conflict) || (a.rebuild - b.rebuild) || (a.paths - b.paths);
 }
 
 // ── Sync backoff ─────────────────────────────────────────────────────────
@@ -225,9 +211,9 @@ function compareEffort(a, b) {
 // pass used to pay for again on every trigger: #2102's worker could not
 // mount its volume, so each pass sat through a warm-ready timeout (minutes)
 // to rediscover that, with every sibling waiting in line behind it. A thrown
-// sync now backs its candidate off — two minutes, doubling to a half-hour
-// ceiling — and a candidate inside its window is skipped the way lock- and
-// failing-blocked ones are, while the rest of the line moves.
+// sync backs its candidate off — two minutes, doubling to a half-hour
+// ceiling — and a candidate inside its window is skipped while the rest of
+// the line moves.
 //
 // Deliberately in memory, per process. A restart is a fresh look, and on
 // this platform a restart usually IS the rollout that fixed the machinery.
@@ -251,6 +237,29 @@ function noteSyncFailure(sessionId, err, now = Date.now()) {
 function syncBackoffRemaining(sessionId, now = Date.now()) {
   const entry = _syncBackoff.get(sessionId);
   return entry ? Math.max(0, entry.until - now) : 0;
+}
+
+// ── "The AI could not resolve it" ────────────────────────────────────────
+//
+// A resolution turn that ran to a CONFLICT answer — Claude tried and could
+// not — is an answer about this head against this main, and the same
+// question asked again gets the same answer at the same price. Remembered
+// per (head, main) pair so that either moving makes it a new question: the
+// author pushing, or a sibling landing that changes what the conflict is.
+// In memory like the backoff, and for the same reason.
+const _gaveUp = new Map(); // sessionId -> { head, main }
+
+function noteResolutionGaveUp(sessionId, head, main) {
+  if (!sessionId || !head) return;
+  _gaveUp.set(sessionId, { head: String(head).toLowerCase(), main: main ? String(main).toLowerCase() : null });
+}
+
+function gaveUpOn(row) {
+  const entry = _gaveUp.get(row.id);
+  if (!entry) return false;
+  const head = row.integration_head_sha ? String(row.integration_head_sha).toLowerCase() : null;
+  const main = row.integration_main_sha ? String(row.integration_main_sha).toLowerCase() : null;
+  return !!head && entry.head === head && (entry.main == null || main == null || entry.main === main);
 }
 
 // The worker's own guard against two turns in one container. Reaching it
@@ -279,10 +288,22 @@ async function inFlightTurnMode(pool, sessionId) {
   }
 }
 
-// Why a vote-eligible candidate is still not worth a worker turn, or null.
+// ── Admission ────────────────────────────────────────────────────────────
+
+// Why an approved candidate is not worth a merge attempt, or null. Both are
+// things only a person can change, and their action enqueues the app:
+//
+//   - a locked app with no admin yes vote in the current epoch. The lock
+//     gate is exactly the admin's say-so; the admin's vote itself enqueues
+//     the app when it lands;
+//   - checks that FAILED (or errored) against the commit currently pinned.
+//     "They re-run on the next push" — the author has to act. A verdict
+//     about an OLDER commit is not a reason to skip: the pinned head still
+//     needs its run, which the checks gate kicks.
+//
 // `undefined` fields exist only in narrow unit-test rows that predate the
 // selected columns; PostgreSQL returns null or a value for a real row.
-function unintegrableReason(row) {
+function unmergeableReason(row) {
   if (row.app_locked === true && row.admin_yes === false) return 'lock';
   const verdictIsCurrent = row.checks_commit_sha !== undefined
     && row.reviewed_head !== undefined
@@ -290,9 +311,63 @@ function unintegrableReason(row) {
   if ((row.check_state === 'failing' || row.check_state === 'error') && verdictIsCurrent) {
     return `checks_${row.check_state}`;
   }
-  if (syncBackoffRemaining(row.id) > 0) return 'sync_backoff';
   return null;
 }
+
+// Is a head one the platform can push a resolution to? An imported proposal
+// whose head lives on the author's fork is not: the resolution has nowhere
+// to go, and the author is the only one who can update it.
+function headIsPushable(row) {
+  try {
+    return require('./proposal-update').branchHomeOf(row) !== 'user_fork';
+  } catch (err) {
+    log.warn('merge-queue', 'branch home lookup failed; assuming pushable', {
+      sessionId: row && row.id, err: err.message,
+    });
+    return true;
+  }
+}
+
+/**
+ * Rule C, as a function of one row: does the conflict lane spend a worker
+ * turn on this conflicting head right now, and if not, what does the card
+ * say? Pure and synchronous, so the merge gate and the tests can ask it too.
+ *
+ * @returns {{ admit: boolean, reason: string }}
+ *   admit=true  reason 'approved' | 'first_conflict'
+ *   admit=false reason 'fork_head' | 'unresolvable' | 'sync_backoff'
+ *                      | 'checks_failing' | 'checks_error' | 'lock'
+ *                      | 'awaiting_approval'
+ */
+function conflictAdmission(row) {
+  if (!headIsPushable(row)) return { admit: false, reason: 'fork_head' };
+  if (gaveUpOn(row)) return { admit: false, reason: 'unresolvable' };
+  if (syncBackoffRemaining(row.id) > 0) return { admit: false, reason: 'sync_backoff' };
+  const blocked = unmergeableReason(row);
+  // Failing checks on the pinned head: the author has to push anyway, and
+  // that push is a new authored head with its own first resolution. A turn
+  // spent on this one is spent on a head about to be replaced.
+  if (blocked === 'checks_failing' || blocked === 'checks_error') return { admit: false, reason: blocked };
+  if (row.approved && !blocked) return { admit: true, reason: 'approved' };
+  if (!integration.resolutionSpent(row)) return { admit: true, reason: 'first_conflict' };
+  return { admit: false, reason: row.approved ? blocked : 'awaiting_approval' };
+}
+
+// The block reasons the conflict lane owns on a row. Written when the lane
+// declines a conflicting head so the card can say why nobody is resolving
+// it; cleared the moment the head is clean again or the lane admits it.
+const LANE_REASONS = new Set(['awaiting_approval', 'unresolvable', 'fork_head']);
+
+async function writeLaneReason(pool, row, reason) {
+  const current = Array.isArray(row.integration_block_reasons) ? row.integration_block_reasons : [];
+  const kept = current.filter((r) => !LANE_REASONS.has(r));
+  const next = reason && LANE_REASONS.has(reason) ? [...kept, reason] : kept;
+  if (next.length === current.length && next.every((r, i) => r === current[i])) return false;
+  await integration.setBlockReasons(pool, row.id, next);
+  return true;
+}
+
+// ── The pass ─────────────────────────────────────────────────────────────
 
 async function loadSession(pool, sessionId) {
   const { rows } = await pool.query(
@@ -303,33 +378,6 @@ async function loadSession(pool, sessionId) {
     [sessionId]
   );
   return rows[0] || null;
-}
-
-// Outcomes after which the pass has nothing useful left to do, because what
-// happens next arrives as its own trigger:
-//
-//   merged      — main just moved, so every other candidate's measurement is
-//                 now stale and a sync for it would be the SECOND sync it
-//                 needs. finalizeMerge re-kicks the queue (excluding the
-//                 merged row), and that fresh pass measures against the new
-//                 main. Carrying on here was the "thundering herd" of #2100:
-//                 one merge, then every sibling synced and rebuilt in a row,
-//                 each to be synced and rebuilt again once the next one landed.
-//   checks      — a run is in flight for the current pin. Nothing merges
-//                 before it reports, and visuals.maybeAutoMergeAfterChecks
-//                 enqueues the app the moment it does. Syncing the next
-//                 candidate meanwhile would only put it behind whatever this
-//                 one merges.
-//   in_progress — another caller holds the merge claim; its finalizer
-//                 cascades.
-//
-// Everything else — a conflict only the author can fix, checks that failed,
-// a lock with no admin yes, an epoch that moved under the vote, a budget cap
-// — leaves the candidate and lets the next one be tried, as before.
-function passShouldStop(outcome) {
-  if (!outcome) return false;
-  if (outcome.reason === 'merged' || outcome.reason === 'in_progress') return true;
-  return outcome.reason === 'checks' && outcome.waiting === true;
 }
 
 // 'integrating' is the one block reason the server records rather than the
@@ -343,7 +391,7 @@ function passShouldStop(outcome) {
 // for.
 //
 // Two things vouch for a live sync. `_inFlight` is this process's own
-// integrateOne, which set the flag moments ago and may not have dispatched
+// resolveOne, which set the flag moments ago and may not have dispatched
 // the worker yet. `active_turn` is the worker's durable turn record, which
 // every dispatch writes and a restart resumes from (server.js
 // resumeDetachedTurn): a row whose durable turn is a sync is one the
@@ -377,91 +425,194 @@ async function retireStaleIntegrating(pool, appId) {
   }
 }
 
+// A run is going for this head: 'pending' about the pinned commit, not a
+// deferral (nothing was started for those), and not overdue (the stale
+// sweeper owns those). Its finalizer enqueues the app when it reports, so
+// the pass has nothing to do for it but wait — and the conflict lane holds
+// meanwhile, because what it merges moves main.
+function checkRunInFlight(row) {
+  if (row.check_state !== 'pending') return false;
+  if (row.check_phase === 'deferred') return false;
+  if (!sameSha(row.checks_commit_sha, row.reviewed_head)) return false;
+  try {
+    return !require('./staging-recovery').checkRunOverdue(row);
+  } catch (err) {
+    log.debug('merge-queue', 'overdue check lookup failed; treating the run as live', {
+      sessionId: row.id, err: err.message,
+    });
+    return true;
+  }
+}
+
 async function runQueue(config, appId, { excludeSessionId = 0 } = {}) {
   const pool = getPool(config);
-  const attempted = [];
-  const seen = new Set();
-
   await retireStaleIntegrating(pool, appId);
 
-  // Termination is belt AND braces. The candidate query excludes what has
-  // already been attempted, but this loop runs unattended in a background
-  // service: if that exclusion ever stopped working — a query edit, a
-  // parameter-type surprise — the pass would spin forever dispatching worker
-  // turns. So the JS side refuses a repeat too, and an absolute cap bounds
-  // the pass no matter what. An app cannot have more eligible proposals than
-  // it has proposals.
-  const MAX_PASSES = 50;
-  for (let i = 0; i < MAX_PASSES; i++) {
-    _rekick.delete(appId);
-    const candidate = await nextCandidate(pool, appId, {
-      excludeId: excludeSessionId, attempted,
-    });
-    if (!candidate) {
-      if (_rekick.has(appId)) continue;
-      return;
+  const line = await loadLine(pool, appId, { excludeId: excludeSessionId });
+  if (!line.length) return;
+
+  // ── Direct lane ──
+  //
+  // Every approved candidate that is not measured conflicting, cheapest
+  // first. Each attempt is the whole gate (checkAndMerge): it re-measures
+  // the head against the main of THIS moment — a sibling that merged three
+  // lines up is already in the mirror — so a candidate that no longer
+  // merges cleanly is refused there and handed to the conflict lane, and
+  // the exact-sha merge is the guard behind that. Nothing here spends a
+  // worker turn, so the pass does not stop after a merge: the next
+  // candidate is simply measured against the new main.
+  const direct = line
+    .filter((r) => r.approved && r.integration_merges_clean !== false && !unmergeableReason(r))
+    .sort((a, b) => compareEffort(effortOf(a), effortOf(b)) || compareTally(a, b));
+
+  let merged = 0;
+  let directInFlight = 0;
+  for (const r of direct) {
+    if (checkRunInFlight(r)) {
+      // Its run reports on its own; nothing merges before it does.
+      directInFlight++;
+      continue;
     }
-    if (seen.has(candidate.id)) {
-      log.warn('merge-queue', 'candidate query returned an already-attempted proposal; stopping', {
-        appId, sessionId: candidate.id,
-      });
-      return;
-    }
-    seen.add(candidate.id);
-    attempted.push(candidate.id);
     let outcome = null;
     try {
-      outcome = await integrateOne(config, pool, candidate.id);
+      outcome = await mergeDirect(config, pool, r.id);
     } catch (err) {
-      log.error('merge-queue', 'integrateOne threw', { sessionId: candidate.id, err: err.message });
+      log.error('merge-queue', 'direct merge attempt threw', { sessionId: r.id, err: err.message });
     }
-    if (passShouldStop(outcome)) {
-      log.info('merge-queue', 'pass complete; the next step arrives as its own trigger', {
-        appId, sessionId: candidate.id, reason: outcome.reason,
-      });
-      return;
+    if (!outcome) continue;
+    if (outcome.reason === 'merged') merged++;
+    else if (outcome.reason === 'in_progress' || (outcome.reason === 'checks' && outcome.waiting)) {
+      directInFlight++;
     }
   }
-  log.warn('merge-queue', 'queue pass hit its iteration cap', { appId, attempted: attempted.length });
+
+  // A head that is clean again does not need whatever the conflict lane
+  // last said about it.
+  for (const r of line) {
+    if (r.integration_merges_clean === false) continue;
+    const reasons = Array.isArray(r.integration_block_reasons) ? r.integration_block_reasons : [];
+    if (reasons.some((x) => LANE_REASONS.has(x))) {
+      await writeLaneReason(pool, r, null).catch(() => {});
+    }
+  }
+
+  // ── Conflict lane ──
+  //
+  // One at a time, cheapest first, and only when nothing in the direct lane
+  // is about to move main under the resolution. Every conflicting head gets
+  // its admission recorded on the row whether or not it goes, so the card
+  // can say who is expected to act.
+  const conflicts = line.filter((r) => r.integration_merges_clean === false);
+  const admitted = [];
+  for (const r of conflicts) {
+    const admission = conflictAdmission(r);
+    if (admission.admit) {
+      await writeLaneReason(pool, r, null).catch(() => {});
+      admitted.push({ row: r, admission });
+    } else {
+      await writeLaneReason(pool, r, admission.reason).catch(() => {});
+      log.debug('merge-queue', 'conflicting head not admitted to the conflict lane', {
+        appId, sessionId: r.id, reason: admission.reason,
+      });
+    }
+  }
+  if (!admitted.length) {
+    if (merged || conflicts.length) {
+      log.info('merge-queue', 'pass complete', {
+        appId, merged, directInFlight, conflicts: conflicts.length, admitted: 0,
+      });
+    }
+    return;
+  }
+  if (directInFlight > 0) {
+    log.info('merge-queue', 'conflict lane held: direct work is in flight', {
+      appId, directInFlight, waiting: admitted.map((a) => a.row.id),
+    });
+    return;
+  }
+
+  // Approved candidates go to the front — the group has said yes — then the
+  // smaller conflict, then the tally.
+  admitted.sort((a, b) => (Number(b.admission.reason === 'approved') - Number(a.admission.reason === 'approved'))
+    || compareEffort(effortOf(a.row), effortOf(b.row))
+    || compareTally(a.row, b.row));
+
+  // One resolution per pass. A candidate whose turn could not START — the
+  // machinery threw (it is backed off now), or the branch is busy in its
+  // dev chat — has not been resolved and has not moved main, so the next
+  // in line is tried instead; anything that actually dispatched ends the
+  // pass, and its completion is the next trigger. An exhausted budget is
+  // the whole platform's, not the candidate's, so it ends the pass too.
+  const tried = [];
+  let outcome = null;
+  for (const { row, admission } of admitted) {
+    tried.push(row.id);
+    outcome = null;
+    try {
+      outcome = await resolveOne(config, pool, row.id, admission);
+    } catch (err) {
+      log.error('merge-queue', 'resolveOne threw', { sessionId: row.id, err: err.message });
+    }
+    if (!outcome || !TRY_NEXT_AFTER.has(outcome.reason)) break;
+  }
+  log.info('merge-queue', 'pass complete', {
+    appId, merged, directInFlight, conflicts: conflicts.length, admitted: admitted.length,
+    tried, outcome: outcome && outcome.reason,
+  });
 }
+
+const TRY_NEXT_AFTER = new Set(['sync_threw', 'turn_in_flight', 'not_promoted', 'github_disabled_or_no_pr']);
+
+// ── Direct lane: one attempt ─────────────────────────────────────────────
+
+async function mergeDirect(config, pool, sessionId) {
+  const session = await loadSession(pool, sessionId);
+  if (!session || session.status !== 'promoted') return { ok: false, reason: 'not_promoted' };
+  if (!github.isEnabled() || !session.repo_url || !session.pr_number) {
+    return { ok: false, reason: 'github_disabled_or_no_pr' };
+  }
+  const { checkAndMerge } = require('../routes/votes');
+  return runMerge(config, pool, session, checkAndMerge);
+}
+
+// ── Conflict lane: one resolution ────────────────────────────────────────
 
 // Per-session coalescing: a vote and a sweep can name the same proposal at
 // once, and two concurrent syncs for one session hit the worker's
 // "a turn is already in flight" guard.
 const _inFlight = new Map();
 
-function integrateOne(config, pool, sessionId) {
+function resolveOne(config, pool, sessionId, admission) {
   const existing = _inFlight.get(sessionId);
   if (existing) return existing;
-  const p = integrateOneInner(config, pool, sessionId)
+  const p = resolveOneInner(config, pool, sessionId, admission)
     .finally(() => { _inFlight.delete(sessionId); });
   _inFlight.set(sessionId, p);
   return p;
 }
 
-/** True while this proposal is being integrated. Read by the status routes. */
+/** True while this proposal is being resolved. Read by the status routes. */
 function isIntegratingSession(sessionId) {
   return _inFlight.has(sessionId);
 }
 
-async function integrateOneInner(config, pool, sessionId) {
+async function resolveOneInner(config, pool, sessionId, admission = { reason: 'approved' }) {
   const session = await loadSession(pool, sessionId);
   if (!session || session.status !== 'promoted') return { ok: false, reason: 'not_promoted' };
   if (!github.isEnabled() || !session.repo_url || !session.pr_number) {
     return { ok: false, reason: 'github_disabled_or_no_pr' };
   }
 
-  const { checkAndMerge } = require('../routes/votes');
-
-  // Measure first, from the mirror. No GitHub call, no polling window, and
-  // the answer is exact rather than a field GitHub may still be computing.
+  // Measure first, from the mirror: the columns the pass read may be a
+  // sweep old, and a head that has become clean meanwhile belongs to the
+  // direct lane, not here.
   const measured = await integration.measureDeduped({ pool, session }, { force: true });
-
-  const needsIntegration = (measured.behindBy || 0) > 0 || measured.mergesClean === false;
-  if (!needsIntegration) {
-    // Already on main and clean: the only thing between it and a merge is
-    // the rest of the gate, so go straight there.
-    return runMerge(config, pool, session, checkAndMerge);
+  if (measured.mergesClean !== false) {
+    if (admission.reason === 'approved') {
+      const { checkAndMerge } = require('../routes/votes');
+      return runMerge(config, pool, session, checkAndMerge);
+    }
+    return { ok: true, reason: 'clean_now' };
   }
 
   // A worker sync is platform housekeeping, billed to the system budget
@@ -473,14 +624,18 @@ async function integrateOneInner(config, pool, sessionId) {
     return { ok: false, reason: 'over_budget' };
   }
 
+  // Rule C's one pre-approval resolution is spent when it is DISPATCHED,
+  // not when it lands: a turn that dies half-way must not buy a second.
+  if (admission.reason === 'first_conflict') {
+    await integration.markResolutionSpent(pool, session.id);
+  }
+
   await integration.setBlockReasons(pool, session.id, ['integrating']);
   broadcast(session, { integrating: true });
 
-  // #1728: supersede any check run in flight before moving the branch under
-  // it. The run that is going tested the PRE-merge commit, and its verdict
-  // is keyed to the commit it started on, so letting it finish writes a
-  // verdict nowhere and leaves the row 'pending' until the stale sweeper
-  // notices ten minutes later.
+  // #1728: supersede any capture in flight before moving the branch under
+  // it. Whatever it was building or shooting is about the PRE-resolution
+  // commit; the new head gets its own.
   try {
     const previewLifecycle = require('./preview-lifecycle');
     if (typeof previewLifecycle.cancelled === 'function') {
@@ -503,12 +658,9 @@ async function integrateOneInner(config, pool, sessionId) {
       if (mode === 'sync') {
         // A sync for this proposal is already running — the one this process
         // resumed from its journal after the restart, typically. The row is
-        // integrating, so the flag stands; and the pass stops here, as it
-        // does for a check run in flight: the resumed turn's completion
+        // integrating, so the flag stands; the resumed turn's completion
         // hands the proposal back to the queue (server.js
-        // resumeDetachedTurn), which is when the merge attempt belongs.
-        // Before this it was logged as a failure, the flag was cleared under
-        // a live sync, and the pass moved on to sync the next sibling.
+        // resumeDetachedTurn), which is when the next step belongs.
         log.info('merge-queue', 'a sync is already in flight for this proposal; waiting for it', {
           sessionId,
         });
@@ -538,50 +690,88 @@ async function integrateOneInner(config, pool, sessionId) {
   _syncBackoff.delete(session.id);
 
   if (sync.syncResult === 'conflict') {
-    // The worker could not resolve it. This proposal leaves the queue: it
-    // needs a person, and holding the app's queue open for it would block
-    // every sibling behind something only its author can fix.
+    // The worker could not resolve it. Remembered against this head and
+    // this main so the same question is not asked again until one of them
+    // moves; the row says the author is the one to act.
+    noteResolutionGaveUp(session.id, measured.headSha, measured.mainSha);
     const owner = session.user_id ? `<@${session.user_id}>` : 'the session owner';
     await postGroup(pool, session,
-      `PR #${session.pr_number} could not be brought up to date with main automatically. `
+      `PR #${session.pr_number} conflicts with main and could not be resolved automatically. `
       + `${owner}: open the session's dev-chat to resolve it.`);
-    // The queue is done with it; the card derives the conflict itself from
-    // merge_conflict_state, which the sync turn just wrote.
-    await integration.setBlockReasons(pool, session.id, []);
+    // The card derives the conflict itself from merge_conflict_state, which
+    // the sync turn just wrote; the lane adds only what it alone knows.
+    await integration.setBlockReasons(pool, session.id, ['unresolvable']);
     broadcast(session, { integrating: false });
     return { ok: false, reason: 'unresolved_conflict' };
   }
 
-  // The integrating phase is over on EVERY path from here, whatever the merge
-  // attempt decides. 'integrating' is the one block reason the server owns
-  // (the card derives the rest), and checkAndMerge only clears it on a
-  // successful claim — so a row whose merge then stopped at approvals, the
-  // lock or a pending check kept a card that said "syncing with main" long
-  // after the sync had finished (#2100's "the UI is not matching up").
+  // The integrating phase is over on EVERY path from here. 'integrating' is
+  // the one block reason the server owns (the card derives the rest), and
+  // checkAndMerge only clears it on a successful claim — so a row whose
+  // merge then stopped at approvals, the lock or a pending check kept a
+  // card that said "syncing with main" long after the sync had finished
+  // (#2100's "the UI is not matching up").
   await integration.setBlockReasons(pool, session.id, []);
 
-  // Re-read: the sync moved the head, and the reconciliation inside
-  // checkAndMerge needs the current row.
+  // Re-read: the sync moved the head.
   const fresh = await loadSession(pool, session.id);
   if (!fresh || fresh.status !== 'promoted') {
     broadcast(session, { integrating: false });
     return { ok: true, reason: 'no_longer_promoted' };
   }
-  // measure() carries the row's recorded reasons forward unless told
-  // otherwise, and a row read a moment ago may still say 'integrating'.
+
+  // Measure the pushed head first — it contains main, so it measures clean
+  // — so that the columns say so before anything reads them for the run
+  // that follows. measure() carries the row's recorded reasons forward
+  // unless told otherwise, and a row read a moment ago may still say
+  // 'integrating'. (The became-clean hook does not fire here: the head
+  // changed, and a new head gets its run from its own push, below.)
   await integration.measureDeduped(
     { pool, session: fresh }, { force: true, blockReasons: [] }
   ).catch(() => {});
   broadcast(fresh, { integrating: false });
 
+  // Install the new head as the reviewed revision and start its run. The
+  // classifier reads the move as 'resolved' (every byte outside the
+  // mechanical merge lies in a file git could not merge), which keeps the
+  // approvals and re-checks the tree — the run that judges what the
+  // resolution produced. For an approved candidate checkAndMerge would do
+  // this itself; a candidate on its pre-approval resolution has no merge
+  // attempt coming, so it is done here for both.
+  await reconcileResolvedHead(config, pool, fresh).catch((err) => {
+    log.warn('merge-queue', 'post-resolution head reconciliation failed (non-fatal)', {
+      sessionId: session.id, err: err.message,
+    });
+  });
+
+  if (admission.reason !== 'approved') {
+    // The group has not said yes yet. The new head is being previewed and
+    // checked; the vote brings it back round.
+    return { ok: true, reason: 'resolved' };
+  }
+  const { checkAndMerge } = require('../routes/votes');
   return runMerge(config, pool, fresh, checkAndMerge);
+}
+
+// Re-pin the reviewed revision to the head the resolution pushed and kick
+// the run for it — the native reconciler for native rows, the imported one
+// (which only answers for a head in the app's own repository) for imported.
+async function reconcileResolvedHead(config, pool, session) {
+  if (session.source === 'imported') {
+    return require('./pr-import-sync').reconcileImportedHead({
+      config, pool, session, checks: 'background', notify: false,
+    });
+  }
+  return require('../routes/votes').reconcileNativeReviewedHead({
+    config, pool, session, fresh: true, notify: false,
+  });
 }
 
 async function runMerge(config, pool, session, checkAndMerge) {
   let result;
   try {
     // autoResolve:false so a merge that fails here cannot re-enter the queue
-    // from inside the queue. One integrate-and-merge cycle per pass.
+    // from inside the queue. One attempt per candidate per pass.
     result = await checkAndMerge(config, pool, session, { autoResolve: false });
   } catch (err) {
     log.error('merge-queue', 'checkAndMerge threw', { sessionId: session.id, err: err.message });
@@ -643,10 +833,15 @@ module.exports = {
         ? trigger.excludeSessionId : (trigger.id || 0)),
     });
   },
+  // Rule C, for the merge gate's copy and for the tests.
+  conflictAdmission,
+  LANE_REASONS,
   // The ordering and the backoff, for the tests that pin them.
   effortOf,
   compareEffort,
   noteSyncFailure,
   syncBackoffRemaining,
+  noteResolutionGaveUp,
   _syncBackoff,
+  _gaveUp,
 };

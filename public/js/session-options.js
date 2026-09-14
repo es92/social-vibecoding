@@ -12,7 +12,7 @@
  * is the venue dropdown in the session header (#1348), which is also what
  * opens this card now; the API-key rows are Settings links the credits
  * banner offers at the moment they matter; and "Stop running on <machine>"
- * is the runner select's own "Run on: Usernode". What survives is the copy
+ * is the runner select's own "Run on: Homeroom". What survives is the copy
  * that had no other home — the commands, and the paragraph explaining what
  * a lease does and does not move.
  *
@@ -92,7 +92,7 @@
     var s = state || {};
     if (s.hasBranch === false) {
       return 'This session stays right here: same transcript, same proposal. '
-        + 'Nothing has run in it yet, so it has no branch on GitHub. Usernode '
+        + 'Nothing has run in it yet, so it has no branch on GitHub. Homeroom '
         + 'creates one when the first turn pushes. The turns run through Claude '
         + 'Code on your machine, on your own Claude plan, and each one asks in '
         + 'your terminal before it starts.';
@@ -121,7 +121,7 @@
       + '    <pre id="dc-options-commands" class="mt-3 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 p-3 text-[0.7rem] leading-relaxed font-mono whitespace-pre-wrap break-words select-text text-zinc-700 dark:text-zinc-300">'
       + escapeHtml(cmdText)
       + '</pre>'
-      + '    <p class="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Usernode still opens the pull request, builds the preview and runs the checks. Hand the turns back to Usernode at any time from the composer’s &#8220;Run on&#8221; selector.</p>'
+      + '    <p class="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Homeroom still opens the pull request, builds the preview and runs the checks. Hand the turns back to Homeroom at any time from the composer’s &#8220;Run on&#8221; selector.</p>'
       + '  </div>'
       + '  <div class="flex items-center justify-end gap-2 px-4 py-3 border-t border-zinc-200 dark:border-zinc-700">'
       + '    <button type="button" id="dc-options-copy" class="rounded-lg border border-zinc-300 dark:border-zinc-600 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-500/10">Copy commands</button>'

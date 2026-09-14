@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Roll the Usernode harness back to a specific git SHA.
+# Roll the Homeroom harness back to a specific git SHA.
 #
 # Usage (on the VPS, as the `deploy` user):
 #
@@ -47,7 +47,7 @@ if [ "$#" -ne 1 ]; then
   cat <<USAGE >&2
 Usage: $0 <sha>
 
-Roll the Usernode platform back to the given commit.
+Roll the Homeroom platform back to the given commit.
 
 Find a known-good SHA at:
   https://github.com/Usernode-Labs/social-vibecoding/commits/main

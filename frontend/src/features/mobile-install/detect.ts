@@ -21,7 +21,7 @@ export interface InstallEnv {
   ua: string;
   /** `navigator.maxTouchPoints`. The only thing that identifies an iPad. */
   maxTouchPoints: number;
-  /** Inside the Usernode native app (the `usernode` bridge is present). */
+  /** Inside the Homeroom native app (the `usernode` bridge is present). */
   native: boolean;
   /** Already installed — launched from a home-screen icon, not a tab. */
   standalone: boolean;

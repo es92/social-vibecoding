@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { SectionHeading, StatusLine } from '@/components/ui/field';
 
 /**
- * Usernode Wallet linking.
+ * Homeroom Wallet linking.
  *
  * #wallet-section carries a `hidden` of its own, INSIDE the section wrapper's
  * routing `hidden`. That inner one is the CAPABILITY GATE: settings.js reveals
@@ -16,13 +16,13 @@ export function WalletSection() {
     <div data-settings-section="wallet" className="hidden">
       {/* Wallet linking section */}
       <div id="wallet-section" className="hidden">
-        <SectionHeading title="Usernode Wallet">
-          Link your on-chain identity. Scan the QR code with the Usernode mobile app.
+        <SectionHeading title="Homeroom Wallet">
+          Link your on-chain identity. Scan the QR code with the Homeroom mobile app.
         </SectionHeading>
         {/* Unlinked: show link button */}
         <div id="wallet-unlinked" className="hidden">
           <Button id="wallet-link-btn" layout="full">
-            Link Usernode Wallet
+            Link Homeroom Wallet
           </Button>
         </div>
         {/* Linking: show QR */}

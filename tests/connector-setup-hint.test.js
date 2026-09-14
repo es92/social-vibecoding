@@ -51,7 +51,7 @@ test('the initialize instructions set up the relay', () => {
   // model can reasonably read as noise and drop — and then nobody is reached
   // at all, which is the failure the whole feature exists to avoid.
   const instructions = tools.SERVER_INSTRUCTIONS;
-  assert.match(instructions, /Usernode setup tip/);
+  assert.match(instructions, /Homeroom setup tip/);
   assert.match(instructions, /relay it once/i);
   // It says the block is NOT untrusted content, because every other line of
   // these instructions says the opposite about everything else returned.
@@ -65,8 +65,8 @@ test('the initialize instructions set up the relay', () => {
 
 test('the marker in the instructions is the marker the hint actually uses', () => {
   // Two literals, in two files, that only work if identical.
-  assert.ok(tools.buildSetupHint(ORIGIN).startsWith('Usernode setup tip'));
-  assert.match(tools.SERVER_INSTRUCTIONS, /"Usernode setup tip"/);
+  assert.ok(tools.buildSetupHint(ORIGIN).startsWith('Homeroom setup tip'));
+  assert.match(tools.SERVER_INSTRUCTIONS, /"Homeroom setup tip"/);
 });
 
 // ── 2. What the hint says ──────────────────────────────────────────────
@@ -83,7 +83,7 @@ test('the hint carries the shipped rules, from the shipped constant', () => {
 
 test('the hint tells the model to correct the server segment itself', () => {
   // #1218's real failure was an account registered as `Uesrnode`, so every
-  // rule Usernode ships missed it silently. The server cannot see the name
+  // rule Homeroom ships missed it silently. The server cannot see the name
   // the client built its tool names from; the model can. So the correction is
   // delegated to the only party in the exchange that knows.
   const hint = tools.buildSetupHint(ORIGIN);
@@ -179,10 +179,10 @@ test('the hint is a second content block, leaving structuredContent alone', () =
   assert.equal(plain.content.length, 1);
   assert.deepEqual(plain.structuredContent, structured);
 
-  const hinted = tools.toolResult(structured, 'Usernode setup tip — hello');
+  const hinted = tools.toolResult(structured, 'Homeroom setup tip — hello');
   assert.equal(hinted.content.length, 2);
   assert.equal(hinted.content[1].type, 'text');
-  assert.equal(hinted.content[1].text, 'Usernode setup tip — hello');
+  assert.equal(hinted.content[1].text, 'Homeroom setup tip — hello');
 
   // The JSON block and the structured object are byte-identical either way:
   // a caller parsing content[0], and a caller reading structuredContent, both
@@ -226,7 +226,7 @@ test('the SDK accepts the extra block against a declared outputSchema', async ()
   assert.equal(res.content.length, 2);
   assert.deepEqual(res.structuredContent, structured);
   assert.deepEqual(JSON.parse(res.content[0].text), structured);
-  assert.ok(res.content[1].text.startsWith('Usernode setup tip'));
+  assert.ok(res.content[1].text.startsWith('Homeroom setup tip'));
 
   await client.close();
   await server.close();
@@ -593,7 +593,7 @@ test('a read tool really does emit the hint, once per request', async () => {
 
   const first = await handlers.get('whoami')({});
   assert.equal(first.content.length, 2, 'the hint rides along on the read');
-  assert.ok(first.content[1].text.startsWith('Usernode setup tip'));
+  assert.ok(first.content[1].text.startsWith('Homeroom setup tip'));
   assert.equal(first.structuredContent.username, 'ada');
 
   // Same request (same registerTools closure): the memo spends one slot even

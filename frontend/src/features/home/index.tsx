@@ -186,7 +186,7 @@ export function HomeScreen() {
         */}
         <WelcomeBanner />
         {/*
-            iOS in-app only: the "Usernode widget" editing strip, mirroring
+            iOS in-app only: the "Homeroom widget" editing strip, mirroring
             the pinned grid the homescreen widget renders. It lives ABOVE the
             launcher grid rather than inside it — a full-width flow item
             cannot coexist with the explicit cell placement #app-list now

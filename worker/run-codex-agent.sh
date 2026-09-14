@@ -44,7 +44,7 @@ die() {
 : "${AGENT_MODEL_REASONING_EFFORTS:=}"
 : "${AGENT_MODEL_SUPPORTS_TOOLS:=}"
 : "${AGENT_THREAD_ID:=}"
-: "${COMMIT_MSG:=Changes via Usernode (Codex)}"
+: "${COMMIT_MSG:=Changes via Homeroom (Codex)}"
 : "${TURN_UUID:=}"
 : "${WORKER_JWT:=}"
 # Scout must NEVER receive push authority (review #4): WORKER_JWT is

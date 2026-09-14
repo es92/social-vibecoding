@@ -84,7 +84,7 @@ for (const [label, build] of VARIANTS) {
   test(`the steps that follow keep their numbers and their order, for ${label}`, () => {
     const text = build();
     const order = [
-      STEP_0, 'NEXT, IF THE USER', 'Then, through your Usernode connector:',
+      STEP_0, 'NEXT, IF THE USER', 'Then, through your Homeroom connector:',
       STEP_1, '2. Build it', '3. Push the branch', '4. Call submit_work',
     ];
     const at = order.map((s) => text.indexOf(s));

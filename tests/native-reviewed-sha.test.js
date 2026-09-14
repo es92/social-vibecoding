@@ -36,7 +36,7 @@ function repo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usernode-reconcile-'));
   execFileSync('git', ['init', '-q', '-b', 'main', dir]);
   git(dir, 'config', 'user.email', 'test@usernode.invalid');
-  git(dir, 'config', 'user.name', 'Usernode Test');
+  git(dir, 'config', 'user.name', 'Homeroom Test');
   fs.writeFileSync(path.join(dir, 'a.txt'), 'l1\nl2\nl3\n');
   fs.writeFileSync(path.join(dir, 'b.txt'), 'b\n');
   git(dir, 'add', '-A'); git(dir, 'commit', '-qm', 'base');

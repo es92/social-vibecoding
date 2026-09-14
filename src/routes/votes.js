@@ -2020,7 +2020,7 @@ function voteRoutes(config) {
 
           // Native proposals are platform-owned drafts, so crossing the local
           // review boundary also marks them ready on GitHub. Imported PRs are
-          // externally owned: promotion changes only Usernode's local state
+          // externally owned: promotion changes only Homeroom's local state
           // and must not publish an external author's draft.
           if (!imported) {
             try {
@@ -3427,6 +3427,10 @@ function voteRoutes(config) {
       // vocabulary). The flat snake_case columns stay exactly where they were
       // — public/js/app-view.js reads those — so this is additive on both
       // sides rather than a rename anything has to follow.
+      // The app's main, as services/main-watch.js last saw it. One read per
+      // panel, not per row: a red main pauses every merge on the app, and
+      // the provisional ledger below names that step off these columns.
+      const mainCheck = await require('../services/main-watch').mergePause(pool, appRows[0].id);
       {
         const freshnessSvc = require('../services/proposal-freshness');
         const integrationSvc = require('../services/integration');
@@ -3442,12 +3446,20 @@ function voteRoutes(config) {
           // #2061: the whole ordered list of what is still required, rather
           // than only what is currently wrong. The card's tags say the second;
           // nothing said the first, so two of the seven gates had no UI at all.
-          row.mergeRequirements = requirementsSvc.readRequirements(row);
+          row.mergeRequirements = requirementsSvc.readRequirements({
+            ...row,
+            app_main_check_state: mainCheck.state,
+            app_main_check_sha: mainCheck.sha,
+            app_main_check_resumed_sha: mainCheck.resumedSha,
+          });
         }
       }
 
       res.json({
         promoted: rows,
+        // services/main-watch.js: the unit suite's verdict on the last
+        // merge commit, and whether it is pausing this app's merges.
+        mainCheck,
         activeUsers,
         majority,
         viewerActive,
@@ -4434,6 +4446,19 @@ async function finalizeMerge({ config, pool, session, mergeCommitSha, required, 
       log.error('votes', 'Conflict resolution check failed', { err: err.message });
     });
 
+    // The whole-tree check under direct merges (services/main-watch.js): the
+    // repo's unit suite on the merge commit, red pausing the app's merges.
+    // Fire-and-forget; a merge never waits on it and never fails because of it.
+    if (app && mergeCommitSha) {
+      require('../services/main-watch').afterMerge(config, pool, {
+        app, session, mergeSha: mergeCommitSha,
+      }).catch((err) => {
+        log.warn('votes', 'Main watch failed to run (non-fatal)', {
+          appId: session.app_id, sha: mergeCommitSha, err: err.message,
+        });
+      });
+    }
+
     dstep({ phase: 'merged', message: `Marked session merged${mergeCommitSha ? ` (commit ${String(mergeCommitSha).slice(0, 9)})` : ''}.`, detail: { sha: mergeCommitSha, yesCount, majority } });
     // Optional: finalizeMerge is exported and called directly (the imported-PR
     // suite drives it on its own), and the recording is a description. A merge
@@ -4726,10 +4751,11 @@ async function checkAndMerge(config, pool, session, options = {}) {
     // the message was a promise nobody was keeping, and the proposal sat
     // drifting with no actor at all. That was #2038's F2.
     //
-    // Being behind is not a reason to refuse a merge; it is a reason to
-    // integrate first. The queue brings the proposal onto current main,
-    // re-checks the merged tree and comes back here. What this gate decides
-    // is only whether that is possible right now.
+    // Under direct-merge lanes (services/merge-queue.js) the gate asks one
+    // question: does this head merge cleanly with main RIGHT NOW? Clean
+    // merges as it stands, however far behind. A conflict is refused and
+    // handed to the conflict lane, whose resolution pushes a new head that
+    // comes back through here on its own.
     //
     // Measured, not remembered: the old gate read session.behind_main off a
     // row that could be hours old, and a cached 0 let a genuinely-behind
@@ -4770,19 +4796,34 @@ async function checkAndMerge(config, pool, session, options = {}) {
         : `PR #${session.pr_number || session.id}`;
       const n = (measured.conflictPaths || []).length;
       const owner = session.user_id ? `<@${session.user_id}>` : 'the session owner';
+      // Who resolves it, in the words the card uses: the conflict lane's
+      // verdict on this head, read off the row (services/merge-queue.js
+      // writes it; services/merge-requirements.js reads it). The approvals
+      // gate has passed, so an 'awaiting_approval' left from before the
+      // vote is stale here and is not repeated.
+      const step = requirements.integrationStep({
+        ...session,
+        integration_merges_clean: false,
+        integration_behind_by: measured.behindBy,
+        integration_conflict_paths: measured.conflictPaths || [],
+        integration_block_reasons: (Array.isArray(session.integration_block_reasons)
+          ? session.integration_block_reasons : []).filter((r) => r !== 'awaiting_approval'),
+      });
       const msg = `${label} conflicts with main in ${n} file${n === 1 ? '' : 's'}`
         + `${n ? ` (${measured.conflictPaths.slice(0, 5).join(', ')}${n > 5 ? ', …' : ''})` : ''}. `
-        + `The platform will try to resolve it automatically; if it can't, ${owner} needs to resolve it from the session's dev-chat.`;
+        + (step.actor === 'author'
+          ? `The platform cannot resolve this one; ${owner} needs to resolve it from the session's dev-chat.`
+          : `The platform will try to resolve it automatically; if it can't, ${owner} needs to resolve it from the session's dev-chat.`);
       await sendSystemMessage(pool, session.app_id, msg, 'system',
         null, { type: 'session', ref: session.id }).catch(() => {});
       dstep({
         phase: 'gate:integration', level: 'warn',
-        message: `Conflicts with main in ${n} file(s); queued for integration.`,
-        detail: { conflictPaths: measured.conflictPaths, behindBy: measured.behindBy },
+        message: `Conflicts with main in ${n} file(s); ${step.actor === 'author' ? 'the author has to resolve it' : 'handed to the conflict lane'}.`,
+        detail: { conflictPaths: measured.conflictPaths, behindBy: measured.behindBy, actor: step.actor },
       });
-      gateTrace.stop('integration', 'active', {
+      gateTrace.stop('integration', step.state, {
         conflictPaths: measured.conflictPaths, behindBy: measured.behindBy,
-        note: n ? `resolving a conflict in ${n} file${n === 1 ? '' : 's'}` : 'resolving a conflict with main',
+        actor: step.actor, note: step.note,
       });
       gateSave();
       dend('conflict_resolving', 'Conflicts with main: queued for integration.');
@@ -4796,26 +4837,28 @@ async function checkAndMerge(config, pool, session, options = {}) {
       };
     }
 
-    if ((measured.behindBy || 0) > 0) {
-      dstep({
-        phase: 'gate:integration',
-        message: `Behind main by ${measured.behindBy}; queued for integration before merging.`,
-        detail: { behindBy: measured.behindBy },
-      });
-      gateTrace.stop('integration', 'active', {
-        behindBy: measured.behindBy,
-        note: `${measured.behindBy} commit${measured.behindBy === 1 ? '' : 's'} behind, so the platform is merging main in`,
-      });
-      gateSave();
-      dend('conflict_resolving', 'Behind main: queued for integration.');
-      if (autoResolve) enqueueIntegration();
-      return {
-        merged: false, yesCount, needed: required,
-        blockReason: 'integrating', behindMain: measured.behindBy,
-      };
-    }
-
-    gateTrace.pass('integration', { note: 'level with main, merges cleanly' });
+    // Being behind main is not a reason to refuse. A head that merges
+    // cleanly merges as it stands — GitHub produces the same merge commit
+    // the platform's own sync would have pushed, without the worker turn,
+    // the rebuild and the re-run that used to precede it (and that put
+    // every sibling one further behind per merge). The measurement is
+    // still recorded; the card shows it as information, not as a step.
+    // The tree that results is judged afterwards, as a whole, by
+    // services/main-watch.js — the main_healthy gate below.
+    const behind = measured.behindBy || 0;
+    dstep({
+      phase: 'gate:integration',
+      message: behind
+        ? `Merges cleanly with main (${behind} commit${behind === 1 ? '' : 's'} behind; merging as it stands).`
+        : 'Level with main, merges cleanly.',
+      detail: { behindBy: measured.behindBy, mergesClean: measured.mergesClean },
+    });
+    gateTrace.pass('integration', {
+      behindBy: measured.behindBy,
+      note: behind
+        ? `${behind} commit${behind === 1 ? '' : 's'} behind main; merges as it stands`
+        : 'level with main',
+    });
 
     // #47: "CI for proposals" gate. A proposal merges only when its
     // automated tests (the dapp.json `tests` suite, run against the staging
@@ -4830,10 +4873,28 @@ async function checkAndMerge(config, pool, session, options = {}) {
     // build's verdict. Admin force-merge bypasses (skipped under !force).
     const { rows: checkRows } = await pool.query(
       `SELECT check_state, test_results, checks_checked_at,
-              check_error_detail, checks_commit_sha
+              check_error_detail, checks_commit_sha, check_phase
          FROM chat_sessions WHERE id = $1`,
       [session.id]
     );
+    // A verdict deferred while the head conflicted (check_phase 'deferred',
+    // services/check-admission.js). The integration gate just measured this
+    // head clean, so the run that judges it can start now — the same kick
+    // integration.onBecameClean makes, made here too so a merge attempt
+    // never waits on a hook that did not fire. recheckSessionChecks is
+    // _inFlight-guarded at the capture, so a double kick costs nothing.
+    const checksDeferred = checkRows[0]?.check_state === 'pending'
+      && checkRows[0]?.check_phase === 'deferred';
+    if (checksDeferred && measured.mergesClean === true) {
+      const stagingRecovery = require('../services/staging-recovery');
+      stagingRecovery.recheckSessionChecks({
+        config, pool, session, reason: 'conflict-resolved',
+      }).catch((err) => {
+        log.warn('votes', 'Deferred-checks kick failed', {
+          sessionId: session.id, err: err.message,
+        });
+      });
+    }
     const reviewedHead = reviewedHeadForSession(session);
     const returnedChecksSha = checkRows[0]?.checks_commit_sha;
     const checksRevisionMismatch = !!reviewedHead
@@ -4858,8 +4919,10 @@ async function checkAndMerge(config, pool, session, options = {}) {
       const checkedAt = checkRows[0]?.checks_checked_at
         ? new Date(checkRows[0].checks_checked_at).getTime()
         : 0;
-      const stalePending = checkState === null
-        || (checkState === 'pending' && (Date.now() - checkedAt) > CHECKS_STALE_MS);
+      // A deferred row is not stale: nothing was started for it, so nothing
+      // is overdue, and the kick above (or the hook) owns its next run.
+      const stalePending = !checksDeferred && (checkState === null
+        || (checkState === 'pending' && (Date.now() - checkedAt) > CHECKS_STALE_MS));
       if (checksRevisionMismatch) {
         if (session.source === 'imported') {
           await kickImportedRevisionChecks({
@@ -4929,7 +4992,9 @@ async function checkAndMerge(config, pool, session, options = {}) {
             ? `${failingCount || 'some'} failing. They re-run on the next push`
             : checkState === 'error'
               ? 'the staging preview could not start, so the tests could not run'
-              : 'still running',
+              : checksDeferred
+                ? 'waited for the head to merge cleanly; running now'
+                : 'still running',
         });
       gateSave();
       dend('blocked', 'Blocked: votes reached, but checks must pass first.');
@@ -5008,6 +5073,48 @@ async function checkAndMerge(config, pool, session, options = {}) {
       // from the list rather than shown as satisfied.
       gateTrace.context({ selfHosted: false });
     }
+
+    // Main-health gate (services/main-watch.js). Every merge lands a tree
+    // nobody ran the checks against as a whole, so the repo's unit suite
+    // runs once more on each merge commit, and a red result pauses the
+    // app's merges — all of them, this proposal included, whatever its own
+    // checks said — until a fix lands or an admin resumes them. This is
+    // the app's state rather than the proposal's, which is why it is the
+    // last thing asked before GitHub: nothing about the proposal changes
+    // it, and nothing the author does clears it.
+    const mainHealth = await require('../services/main-watch').mergePause(pool, session.app_id);
+    if (mainHealth.paused) {
+      const since = mainHealth.sha ? String(mainHealth.sha).slice(0, 7) : 'the last merge';
+      dstep({
+        phase: 'gate:main_healthy', level: 'warn',
+        message: `Merge blocked: main's unit suite is failing (since ${since}); merges for this app are paused.`,
+        detail: { sha: mainHealth.sha, at: mainHealth.at },
+      });
+      gateTrace.stop('main_healthy', 'blocked', {
+        sha: mainHealth.sha,
+        note: `main's unit suite is failing since ${since}; merges are paused until a fix lands or an admin resumes them`,
+      });
+      gateSave();
+      dend('blocked', 'Blocked: main is red, merges paused.');
+      return {
+        merged: false, yesCount, needed: required, blockReason: 'main_failing',
+        mainCheck: mainHealth,
+      };
+    }
+    dstep({
+      phase: 'gate:main_healthy',
+      message: mainHealth.state
+        ? `Main's unit suite: ${mainHealth.state}${mainHealth.state === 'failing' ? ' (an admin resumed merges)' : ''}.`
+        : 'Main has not been watched yet for this app.',
+      detail: { state: mainHealth.state, sha: mainHealth.sha },
+    });
+    gateTrace.pass('main_healthy', {
+      state: mainHealth.state,
+      note: mainHealth.state === 'passing' ? 'main is green'
+        : mainHealth.state === 'failing' ? 'main is red, but an admin resumed merges'
+          : mainHealth.state === 'running' ? 'main is being checked after the last merge'
+            : 'no verdict about main yet',
+    });
   }
   // For admin force-merge we deliberately skip the behind_main pre-check
   // — GitHub will still reject the merge if there's a real conflict,

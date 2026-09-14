@@ -10515,7 +10515,7 @@ body.is-offline [data-offline-disabled] {
   display: none;
 }
 
-/* "Your OpenRouter key is not set, so this turn ran on Usernode · Claude"
+/* "Your OpenRouter key is not set, so this turn ran on Homeroom · Claude"
    — the one place a venue the user did not choose is confessed. A whole
    sentence, so it lives above the composer where it can wrap, rather than
    in the header control that names the venue. */
@@ -11922,6 +11922,43 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
    note's 16px so the two share a left edge. */
 .dev-ws-reveal-start { justify-content: flex-start; padding-left: 16px; }
 .dev-ws-reveal-chev { width: 14px; height: 14px; }
+/* ── Since your last visit ───────────────────────────────────
+   A HEADING over rows, not a disclosure. It was one collapsed line with a
+   caret, on the reasoning that most visits do not need the fact — and what
+   that produced was a strip nobody opened: the count said something had
+   moved and the rows saying what were behind a press. The bargain is the
+   LIST'S LENGTH now (three, then `Show older`), not its existence, which is
+   what the week walk one pane up already does with its own history.
+
+   `.dev-ws-since-head` is what `.dev-ws-since-row` was, minus everything
+   that said "press me": no pill radius, no pointer, no hover ink, no caret.
+   It is the pane's eyebrow, with a count riding it.
+
+   These rules live beside the reveal control the strip shares, not under
+   the tab they were first written for. They were born inside the old
+   Needs-you block, and #2080, rewriting that tab into a feed, took them out
+   with the rest of it — while the strip had already moved to Current status
+   in #2065 and its markup went on emitting the classes. Two bare inline
+   spans were what was left: "Since your last visit2" (#2097). */
+.dev-ws-since-head {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 2px 2px 0;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted); text-align: left;
+}
+.dev-ws-since-label { flex: 1 1 auto; min-width: 0; }
+.dev-ws-since-n {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: var(--brand-tint); color: var(--brand-ink);
+  font-size: 11px; font-variant-numeric: tabular-nums;
+}
+/* `Show older` is the week walk's own control — `.dev-ws-reveal`, centred,
+   caret down at what it is about to reveal — and it sits under a stack of
+   full-width rows exactly as that one does, so it takes the centred form
+   rather than `.dev-ws-reveal-start`'s lane indent. Nothing of its own but
+   the air between it and the last row. */
+.dev-ws-since-more { margin-top: 2px; }
 
 /* ── Where the summary came from ─────────────────────────────
    Two clauses of the category footnote, moved onto the tab that holds the

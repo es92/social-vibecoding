@@ -41,7 +41,7 @@ function getAppConventions() {
 // The offline excerpt carried inside a connector work order.
 //
 // Every app's notes tell a coding agent to fetch these conventions from the
-// Usernode site at the start of a session. A hosted agent's container blocks
+// Homeroom site at the start of a session. A hosted agent's container blocks
 // that host, so it never reads them — and then reasons its way to the very
 // things the document forbids (vendoring the hosted assets, "fixing" the
 // styling, shipping a screen with no test). The work order therefore carries
@@ -178,7 +178,7 @@ const SELF_HOSTED_REFUSE_LIST = `
 
 ==== PLATFORM SELF-EDIT GUARDRAILS (self-hosted only) ====
 
-You are editing the Usernode platform itself. Refuse to propose edits to
+You are editing the Homeroom platform itself. Refuse to propose edits to
 any of the following without an explicit \`allow_risky: true\`
 confirmation from the user in the same message:
 
@@ -210,10 +210,10 @@ function getSelfHostedRefuseList() {
 // ── What the launchpad hands to the agent (#1049 successor) ───────────
 //
 // The browser used to mint the work order: the user typed a brief into the
-// walkthrough, Usernode minted a task and rendered a ~300-line order, and two
+// walkthrough, Homeroom minted a task and rendered a ~300-line order, and two
 // more steps walked them through copying it and coming back to press Submit.
 // That is backwards — people expect to talk to Claude Code or Codex, not to
-// fill in a form on Usernode first — and it is also the reason the launchpad
+// fill in a form on Homeroom first — and it is also the reason the launchpad
 // had any state to get stuck on.
 //
 // So this is all it hands over now. The agent asks what to build, then calls
@@ -247,7 +247,7 @@ function getLaunchpadInstructions({ appName, slug, targetProposalId } = {}) {
   const name = appName || slug || 'this app';
   const continuing = Number.isInteger(Number(targetProposalId)) && Number(targetProposalId) > 0;
   return [
-    `You are making a change to "${name}" on Usernode (app \`${slug}\`).`,
+    `You are making a change to "${name}" on Homeroom (app \`${slug}\`).`,
     '',
     '0. Catch your checkout up to the app\'s upstream main before you read its code',
     '   or ask anything. The checkout you were handed may be a fork whose main is',
@@ -262,7 +262,7 @@ function getLaunchpadInstructions({ appName, slug, targetProposalId } = {}) {
     'NEXT, IF THE USER HAS NOT ALREADY TOLD YOU WHAT TO BUILD, ASK THEM.',
     'Do not guess, and do not start until they answer.',
     '',
-    'Then, through your Usernode connector:',
+    'Then, through your Homeroom connector:',
     continuing
       ? `1. Call prepare_work with slug "${slug}" and proposalId ${Number(targetProposalId)}, `
         + 'and their answer as `brief`. Naming the proposal is what makes this an '
@@ -276,7 +276,7 @@ function getLaunchpadInstructions({ appName, slug, targetProposalId } = {}) {
     '   pushed. That opens the pull request and puts the change to the group vote.',
     '   Then give the user the link it returns.',
     '',
-    'If you have no Usernode tools at all, the connector was never added to the',
+    'If you have no Homeroom tools at all, the connector was never added to the',
     'account you are running in. Say so rather than improvising a base commit:',
     'the user adds it at https://my.onhomeroom.com/#settings/connectors, and',
     'without it nothing you push can be submitted as a proposal.',

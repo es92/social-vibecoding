@@ -1,5 +1,5 @@
 /**
- * The Usernode-app section's vocabulary: the five shapes `settings.js` built
+ * The Homeroom-app section's vocabulary: the five shapes `settings.js` built
  * with `_unEl`, `_unSection`, `_unStatusRow`, `_unButton` and `_unToggle`.
  *
  * ── The async wrapper was written three times ─────────────────────────

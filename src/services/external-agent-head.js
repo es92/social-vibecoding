@@ -85,7 +85,7 @@ function isMirrorNamespace(name) {
 
 // The app-repo branch name for work SHARED to the in-progress area (#1347).
 //
-// Minted from the Usernode user id, not from a login or a username: 194 of
+// Minted from the Homeroom user id, not from a login or a username: 194 of
 // 303 production usernames are email addresses (see services/branch-names.js
 // on what that cost the dev-session path), and `@`/`+` are outside `REF_RE`
 // here. An integer is always a valid ref segment.
@@ -209,7 +209,7 @@ async function verifyForkBranch({
       ok: false,
       code: 'fork_mismatch',
       message: `That branch is in ${forkOwner}'s repository, not in a repository owned by your linked GitHub `
-        + `account (${expectedLogin}). Usernode only submits work from your own GitHub account under your name.`,
+        + `account (${expectedLogin}). Homeroom only submits work from your own GitHub account under your name.`,
     };
   }
 
@@ -226,7 +226,7 @@ async function verifyForkBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode could not read that repository on GitHub just now. Try again shortly.',
+      message: 'Homeroom could not read that repository on GitHub just now. Try again shortly.',
       retryable: true,
     };
   }
@@ -237,7 +237,7 @@ async function verifyForkBranch({
       ok: false,
       code: 'fork_mismatch',
       message: `${forkOwner}/${forkRepo} is owned by ${actualOwner || 'somebody else'}, not by your linked `
-        + 'GitHub account. Usernode only submits work from your own GitHub account under your name.',
+        + 'GitHub account. Homeroom only submits work from your own GitHub account under your name.',
     };
   }
 
@@ -258,7 +258,7 @@ async function verifyForkBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode could not read that branch on GitHub just now. Try again shortly.',
+      message: 'Homeroom could not read that branch on GitHub just now. Try again shortly.',
       retryable: true,
     };
   }
@@ -291,7 +291,7 @@ async function mirrorForkBranch({
       return {
         ok: false,
         code: 'invalid_request',
-        message: 'A mirrored branch has to be named in Usernode\'s own branch namespace.',
+        message: 'A mirrored branch has to be named in Homeroom\'s own branch namespace.',
         retryable: false,
       };
     }
@@ -328,7 +328,7 @@ async function mirrorForkBranch({
       return {
         ok: false,
         code: 'platform_unavailable',
-        message: 'Usernode could not verify that branch against the recorded base commit. Try again shortly.',
+        message: 'Homeroom could not verify that branch against the recorded base commit. Try again shortly.',
         retryable: true,
       };
     }
@@ -343,7 +343,7 @@ async function mirrorForkBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode cannot write to the app repository right now. Try again shortly.',
+      message: 'Homeroom cannot write to the app repository right now. Try again shortly.',
       retryable: true,
     };
   }
@@ -366,7 +366,7 @@ async function mirrorForkBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode could not copy that branch into the app repository. Try again shortly.',
+      message: 'Homeroom could not copy that branch into the app repository. Try again shortly.',
       retryable: true,
     };
   }
@@ -427,7 +427,7 @@ async function pushForkBranchToAppBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode does not know which commit this proposal is currently at, so it will not move its branch. Try again shortly.',
+      message: 'Homeroom does not know which commit this proposal is currently at, so it will not move its branch. Try again shortly.',
       retryable: true,
     };
   }
@@ -441,7 +441,7 @@ async function pushForkBranchToAppBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode cannot write to the app repository right now. Try again shortly.',
+      message: 'Homeroom cannot write to the app repository right now. Try again shortly.',
       retryable: true,
     };
   }
@@ -449,7 +449,7 @@ async function pushForkBranchToAppBranch({
   try {
     await withScratchRepo(`update-${sessionId || 0}`, async ({ git }) => {
       // UNAUTHENTICATED, exactly as the mirror reads: the fork is public and
-      // Usernode holds no credential for the user's GitHub account.
+      // Homeroom holds no credential for the user's GitHub account.
       const forkUrl = sourceCloneUrl(forkOwner, forkRepo);
       try {
         await git(['fetch', '--depth', String(UPDATE_FETCH_DEPTH), '--no-tags', forkUrl, branch]);
@@ -501,7 +501,7 @@ async function pushForkBranchToAppBranch({
     return {
       ok: false,
       code: 'platform_unavailable',
-      message: 'Usernode could not push that branch onto the proposal. Try again shortly.',
+      message: 'Homeroom could not push that branch onto the proposal. Try again shortly.',
       retryable: true,
     };
   }

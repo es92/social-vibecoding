@@ -146,7 +146,7 @@ test('navigateHome swaps and retitles inside its transition', () => {
   // `after` hook is what conceals it.
   assert.ok(callback.includes("App._showOnlyScreen('home-screen', ['app-view'])"),
     'home is revealed and every root but the shrinking app card is hidden');
-  assert.match(callback, /App\.setHeaderTitle\('Social Vibecoding'\)/);
+  assert.match(callback, /App\.setHeaderTitle\('Homeroom'\)/);
   assert.match(callback, /after: \(\) => \{[\s\S]*av\.classList\.add\('hidden'\)/,
     'the app view itself is concealed in the kit `after` hook');
 });

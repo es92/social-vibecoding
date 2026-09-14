@@ -1,6 +1,6 @@
 name: Deploy
 
-# Standalone deploy for Usernode Social Vibecoding — the FALLBACK path.
+# Standalone deploy for Homeroom — the FALLBACK path.
 #
 # The PRIMARY deploy path is the host-side deployer on the VPS
 # (scripts/usernode-deployer.sh, a systemd service), which polls

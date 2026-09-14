@@ -1,4 +1,4 @@
-// Polls the Usernode block explorer for wallet-linking transactions
+// Polls the Homeroom block explorer for wallet-linking transactions
 // sent to the platform's APP_PUBKEY. When a tx with memo
 // { app: "vibecode", type: "link_wallet", token: "..." } is found,
 // the sender's pubkey is stored against the user who generated that token.

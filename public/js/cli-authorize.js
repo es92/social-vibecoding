@@ -135,7 +135,7 @@
       });
     } else {
       entryMessage.textContent =
-        'Start a new authorization request from the Social Vibecoding CLI, Codex, Claude Code, or OpenCode.';
+        'Start a new authorization request from the Homeroom CLI, Codex, Claude Code, or OpenCode.';
     }
   });
 

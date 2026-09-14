@@ -34,7 +34,7 @@ function scenario({ propEdit, mainEdit }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'usernode-classify-'));
   execFileSync('git', ['init', '-q', '-b', 'main', dir]);
   git(dir, 'config', 'user.email', 'test@usernode.invalid');
-  git(dir, 'config', 'user.name', 'Usernode Test');
+  git(dir, 'config', 'user.name', 'Homeroom Test');
 
   fs.writeFileSync(path.join(dir, 'a.txt'), 'l1\nl2\nl3\nl4\nl5\n');
   fs.writeFileSync(path.join(dir, 'other.txt'), 'untouched\n');

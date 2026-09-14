@@ -4,7 +4,7 @@ const nodeAppLock = require('../templates/node-app/package-lock.json');
 // Forwarder snippet injected into every scaffolded app's public/index.html.
 // Captures console.log/info/warn/error/debug + uncaught errors +
 // unhandled promise rejections and posts them to `window.parent` via
-// postMessage. The Usernode platform shell listens for these to power
+// postMessage. The Homeroom platform shell listens for these to power
 // the in-app developer console (header icon + log panel).
 //
 // Existing apps (created before this feature) won't have this block. The
@@ -73,9 +73,9 @@ const DEV_CONSOLE_FORWARDER = `
   })();
   </script>`;
 
-// Resolved at module-load: which Usernode platform domain do we
+// Resolved at module-load: which Homeroom platform domain do we
 // inject into scaffolded apps? Apps need to point users back to the
-// platform that hosts them (the "Open in Usernode" landing page) and
+// platform that hosts them (the "Open in Homeroom" landing page) and
 // reference its `/claude.md` URL. Driven by USERNODE_DOMAIN env so a
 // fork running at a different domain templates the right URL into its
 // child apps. Fallback is the canonical standalone deploy.
@@ -143,7 +143,7 @@ function getConnectorScaffoldFiles() {
 
 ## Why \`settings.json\` is here
 
-This app is built on **Usernode**, and Usernode has a hosted MCP connector
+This app is built on **Homeroom**, and Homeroom has a hosted MCP connector
 that Claude and ChatGPT can talk to. Without an allow rule, Claude Code asks
 permission on **every** connector call — including read-only ones like
 \`whoami\`, \`get_proposal\` and \`list_requests\`. In a Claude Code web session
@@ -207,7 +207,7 @@ wildcard, for the version reason above.
 
 To stop the prompts in **every** repo at once rather than one at a time, put
 the same rules under \`permissions.allow\` in your personal
-\`~/.claude/settings.json\`. Usernode's Settings → Connectors page has the
+\`~/.claude/settings.json\`. Homeroom's Settings → Connectors page has the
 exact block, a copy button, and a field that rewrites the rules for a
 connector registered under some other name.
 `,
@@ -221,7 +221,7 @@ function getTemplateFiles(appName, slug, dbUrl) {
       path: 'CLAUDE.md',
       content: `# ${appName} — notes for Claude Code
 
-This app runs on **Usernode Social Vibecoding**. If you're Claude Code
+This app runs on **Homeroom**. If you're Claude Code
 editing this repo, read the platform conventions before making
 changes:
 
@@ -234,7 +234,7 @@ public/private tables, "don't \`git push\`", etc.). The hosted copy is
 updated in place when platform rules change, so fetching it gives you
 today's rules, not a stale snapshot.
 
-When running inside Usernode's dev-chat, those same conventions are
+When running inside Homeroom's dev-chat, those same conventions are
 already injected into your system prompt, so the fetch is a no-op in
 that path — but it's the right reflex when someone runs Claude Code
 against this repo locally or from another harness.
@@ -242,7 +242,7 @@ against this repo locally or from another harness.
 ## Connector permission prompts
 
 This repo ships \`.claude/settings.json\`, which allows the **read-only**
-Usernode connector calls (\`mcp__${CONNECTOR_SERVER_NAME}__get_*\`,
+Homeroom connector calls (\`mcp__${CONNECTOR_SERVER_NAME}__get_*\`,
 \`…__list_*\`, \`…__whoami\`) so they stop prompting one at a time. Everything
 that acts — filing a request, opening or advancing a proposal — still asks.
 Claude Code applies those rules only after you accept the
@@ -257,7 +257,7 @@ The screen this app currently ships — the hero, the "What's already
 working" card, and the Press! example (the demo markup in
 \`public/index.html\`, the \`/api/press\` and \`/api/leaderboard\` routes, and
 the \`presses\` table bootstrap in \`server.js\`) — is placeholder content
-from the Usernode starter template, not product intent.
+from the Homeroom starter template, not product intent.
 
 When the user asks for their first real feature, REPLACE the template
 screen rather than building alongside it:
@@ -295,7 +295,7 @@ dependencies"; etc.)_
       path: 'README.md',
       content: `# ${appName}
 
-> **Starter template** — this repo was scaffolded by Usernode Social
+> **Starter template** — this repo was scaffolded by Homeroom Social
 > Vibecoding. Everything in it is placeholder example code until the
 > app's first real feature is built.
 
@@ -313,7 +313,7 @@ The scaffold is a small working demo that proves the plumbing works:
 
 ## Replacing the template
 
-Open the app on Usernode, tap **Improve** in the header, and describe
+Open the app on Homeroom, tap **Improve** in the header, and describe
 the app you want in plain English — the template will be replaced with
 your real app. You can also run Claude Code against this repo directly;
 start with \`CLAUDE.md\`, which carries the app-specific notes and
@@ -467,7 +467,7 @@ value = "build"
       // Per-app secrets manifest. Empty by default — apps that need
       // env vars beyond the platform-injected DATABASE_URL/
       // USERNODE_JWT_PUBLIC_KEY/USERNODE_APP_ID/PORT/USERNODE_ENV add
-      // entries here. The Usernode platform
+      // entries here. The Homeroom platform
       // reads this on every deploy and refuses to start the container
       // if a required key has no stored value (see
       // src/services/app-secrets.js + app-manifest.js in the platform).
@@ -644,7 +644,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // are sent to the platform's chromeless view of this app, where the shell
 // embeds it with a real token so the link just works. Every other
 // tokenless case (iframe loads with an expired token, old browsers
-// without Sec-Fetch-*) gets the "open in Usernode" landing page instead
+// without Sec-Fetch-*) gets the "open in Homeroom" landing page instead
 // of a redirect, so the platform shell is never loaded INSIDE its own
 // app iframe and stray visits still don't reveal the app.
 app.get('*', (req, res) => {
@@ -662,12 +662,12 @@ app.get('*', (req, res) => {
     if (req.get('sec-fetch-dest') === 'document') {
       return res.redirect(302, PLATFORM_ORIGIN + '/app/${slug}/full' + deepPath);
     }
-    return res.status(401).send(\`<!doctype html><meta charset=utf-8><title>Open in Usernode</title>
+    return res.status(401).send(\`<!doctype html><meta charset=utf-8><title>Open in Homeroom</title>
 <body style="font-family:system-ui;background:#09090b;color:#e4e4e7;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
   <div style="max-width:24rem;padding:2rem;text-align:center">
-    <h1 style="font-size:1.25rem;margin:0 0 0.5rem">Open this app inside Usernode</h1>
+    <h1 style="font-size:1.25rem;margin:0 0 0.5rem">Open this app inside Homeroom</h1>
     <p style="color:#a1a1aa;font-size:0.9rem;margin:0 0 1.25rem">This page is served via the platform; direct visits aren't authenticated.</p>
-    <a href="\${PLATFORM_ORIGIN}/app/${slug}/full\${deepPath}" style="display:inline-block;padding:0.5rem 1rem;background:#7c3aed;color:white;border-radius:0.5rem;text-decoration:none;font-size:0.9rem">Open in Usernode</a>
+    <a href="\${PLATFORM_ORIGIN}/app/${slug}/full\${deepPath}" style="display:inline-block;padding:0.5rem 1rem;background:#7c3aed;color:white;border-radius:0.5rem;text-decoration:none;font-size:0.9rem">Open in Homeroom</a>
   </div>
 </body>\`);
   }
@@ -735,7 +735,7 @@ start().catch(err => { console.error(err); process.exit(1); });
           <svg class="w-5 h-5 text-violet-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7 7a1 1 0 0 1-1.4 0l-3-3a1 1 0 1 1 1.4-1.4L9 11.6l6.3-6.3a1 1 0 0 1 1.4 0Z" clip-rule="evenodd"/></svg>
           <div>
             <p class="text-sm font-semibold text-zinc-100">Sign-in</p>
-            <p class="text-sm text-zinc-400">You're signed in through Usernode automatically — no accounts to build.</p>
+            <p class="text-sm text-zinc-400">You're signed in through Homeroom automatically — no accounts to build.</p>
           </div>
         </div>
         <div class="flex items-start gap-3 p-4">
@@ -774,7 +774,7 @@ start().catch(err => { console.error(err); process.exit(1); });
       </div>
     </section>
 
-    <p class="text-center text-xs text-zinc-600">Built on Usernode — this template screen disappears once you build your real app.</p>
+    <p class="text-center text-xs text-zinc-600">Built on Homeroom — this template screen disappears once you build your real app.</p>
   </main>
 
   <script>

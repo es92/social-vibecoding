@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Host-side deployer for the Usernode platform.
+# Host-side deployer for the Homeroom platform.
 #
 # Runs on the VPS as a systemd service (scripts/usernode-deployer.service,
 # user `deploy`), polling github.com for a new head of main. When one

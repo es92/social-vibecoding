@@ -58,7 +58,7 @@ function esc(s) {
  * account mails rather than marketing — which is the honest answer to "why am
  * I getting this".
  */
-const BRAND_NAME = 'Usernode';
+const BRAND_NAME = 'Homeroom';
 const BRAND_ACCENT = '#1f86ff';
 const BODY_STYLE =
   'margin:0;padding:24px 12px;background:#f4f4f5;font-family:-apple-system,'
@@ -79,7 +79,7 @@ const HTML_SHELL = (body) =>
   + '<div style="' + WORDMARK_STYLE + '">' + BRAND_NAME + '</div>'
   + body
   + '<div style="' + FOOTER_STYLE + '">'
-  + BRAND_NAME + ' Social Vibecoding'
+  + BRAND_NAME
   + '<br>You are receiving this because of activity on your account or your '
   + 'place on the waitlist. We only send mail you asked for.'
   + '</div>'
@@ -122,11 +122,11 @@ const codeBlock = (code) =>
 function otp(payload) {
   const code = payload.code;
   return {
-    subject: 'Your Usernode login code',
-    text: `Your Usernode login code is ${code}.\n\n`
+    subject: 'Your Homeroom login code',
+    text: `Your Homeroom login code is ${code}.\n\n`
       + 'It expires in 10 minutes. If you did not request it, you can ignore this email.',
     html: (
-      p('Your Usernode login code is:')
+      p('Your Homeroom login code is:')
       + codeBlock(code)
       + p('It expires in 10 minutes. If you did not request it, you can ignore this email.')
     ),
@@ -151,9 +151,9 @@ function otp(payload) {
 // access group opens [September 9]" — the date is a placeholder and no
 // wave has been committed to, so the sentence keeps the rolling-groups
 // promise and drops the date rather than shipping one that slips. And it
-// addresses the reader as [BRAND NAME]; the rename is a separate decision
-// that has to move every surface at once, so this stays "Usernode" and
-// changes with the rest.
+// addresses the reader as [BRAND NAME], which is BRAND_NAME above — the
+// rename to Homeroom moved every surface at once, and this line moved
+// with the rest.
 function waitlistJoined(payload) {
   const confirmUrl = payload.confirmUrl || null;
   const surveyUrl = payload.url || null;
@@ -181,11 +181,11 @@ function waitlistJoined(payload) {
       + p('It works for 15 minutes.');
   }
 
-  text += 'Thanks for joining the Usernode waitlist.\n\n'
+  text += 'Thanks for joining the Homeroom waitlist.\n\n'
     + "We'll email you at this address as soon as your access is ready.\n\n"
     + 'Early access opens in small groups, with more groups opening on a '
     + 'rolling basis after that.';
-  html += p('Thanks for joining the Usernode waitlist.')
+  html += p('Thanks for joining the Homeroom waitlist.')
     + p("We'll email you at this address as soon as your access is ready.")
     + p('Early access opens in small groups, with more groups opening on a '
       + 'rolling basis after that.');
@@ -203,7 +203,7 @@ function waitlistJoined(payload) {
       + `and follow along: ${link(surveyUrl)}`);
   }
 
-  return { subject: "You're on the Usernode waitlist 🎉", text, html };
+  return { subject: "You're on the Homeroom waitlist 🎉", text, html };
 }
 
 // A REQUESTED confirmation code (POST /api/public/waitlist/resend, and the
@@ -228,26 +228,26 @@ function waitlistCode(payload) {
   // type, so the useful answer is where to look at where they stand.
   if (!payload.code) {
     const statusUrl = payload.statusUrl || null;
-    let text = 'You asked for a new confirmation code for the Usernode waitlist.\n\n'
+    let text = 'You asked for a new confirmation code for the Homeroom waitlist.\n\n'
       + 'This address is already confirmed, so there is nothing left to do. '
       + "You're on the list and we'll email you when your spot opens.";
-    let html = p('You asked for a new confirmation code for the Usernode waitlist.')
+    let html = p('You asked for a new confirmation code for the Homeroom waitlist.')
       + p('This address is already confirmed, so there is nothing left to do. '
         + "You're on the list and we'll email you when your spot opens.");
     if (statusUrl) {
       text += `\n\nCheck where you stand: ${statusUrl}`;
       html += p(`Check where you stand: ${link(statusUrl)}`);
     }
-    return { subject: 'Your Usernode waitlist address is already confirmed', text, html };
+    return { subject: 'Your Homeroom waitlist address is already confirmed', text, html };
   }
 
   // The status-code shape: same six digits, different errand.
   if (payload.confirmed) {
     const statusUrl = payload.statusUrl || null;
-    let text = `Your Usernode waitlist status code is ${payload.code}. `
+    let text = `Your Homeroom waitlist status code is ${payload.code}. `
       + 'It works for 15 minutes.\n\n'
       + 'Any earlier code has stopped working, so use this one.';
-    let html = p('Your Usernode waitlist status code is:')
+    let html = p('Your Homeroom waitlist status code is:')
       + codeBlock(payload.code)
       + p('It works for 15 minutes. Any earlier code has stopped working, so use this one.');
     if (statusUrl) {
@@ -256,14 +256,14 @@ function waitlistCode(payload) {
     }
     text += '\n\nIf you did not ask for this, you can ignore this email.';
     html += p('If you did not ask for this, you can ignore this email.');
-    return { subject: 'Your Usernode waitlist status code', text, html };
+    return { subject: 'Your Homeroom waitlist status code', text, html };
   }
 
   const confirmUrl = payload.confirmUrl || null;
-  let text = `Your Usernode waitlist confirmation code is ${payload.code}. `
+  let text = `Your Homeroom waitlist confirmation code is ${payload.code}. `
     + 'It works for 15 minutes.\n\n'
     + 'Any earlier code has stopped working, so use this one.';
-  let html = p('Your Usernode waitlist confirmation code is:')
+  let html = p('Your Homeroom waitlist confirmation code is:')
     + codeBlock(payload.code)
     + p('It works for 15 minutes. Any earlier code has stopped working, so use this one.');
   if (confirmUrl) {
@@ -273,7 +273,7 @@ function waitlistCode(payload) {
   text += '\n\nIf you did not ask for this, you can ignore this email.';
   html += p('If you did not ask for this, you can ignore this email.');
 
-  return { subject: 'Your Usernode waitlist confirmation code', text, html };
+  return { subject: 'Your Homeroom waitlist confirmation code', text, html };
 }
 
 // Waitlist release. The no-account link carries the released address, and
@@ -286,18 +286,18 @@ const RELEASE_CODE_NOTE = 'Opening the link emails you a 6-digit code to sign in
 function waitlistReleased(payload) {
   const url = payload.url;
   const text = payload.hasAccount
-    ? "Good news, you're off the Usernode waitlist and your account now has platform access.\n\n"
+    ? "Good news, you're off the Homeroom waitlist and your account now has platform access.\n\n"
       + `Sign in to get started: ${url}`
-    : "Good news, you're off the Usernode waitlist.\n\n"
+    : "Good news, you're off the Homeroom waitlist.\n\n"
       + `Create your account with this email address to get started: ${url}\n\n`
       + RELEASE_CODE_NOTE;
   return {
-    subject: 'Your Usernode access is ready',
+    subject: 'Your Homeroom access is ready',
     text,
     html: (
       p(payload.hasAccount
-        ? "Good news, you're off the Usernode waitlist and your account now has platform access."
-        : "Good news, you're off the Usernode waitlist.")
+        ? "Good news, you're off the Homeroom waitlist and your account now has platform access."
+        : "Good news, you're off the Homeroom waitlist.")
       + p(payload.hasAccount
         ? 'Sign in to get started.'
         : 'Create your account with this email address to get started.')
@@ -319,14 +319,14 @@ function waitlistReleased(payload) {
 function passwordReset(payload) {
   const url = payload.url;
   return {
-    subject: 'Reset your Usernode password',
-    text: 'Someone asked to reset the password for the Usernode account with this '
+    subject: 'Reset your Homeroom password',
+    text: 'Someone asked to reset the password for the Homeroom account with this '
       + 'email address.\n\n'
       + `Set a new password here: ${url}\n\n`
       + 'The link expires in 30 minutes and works once. If you did not request '
       + 'this, you can ignore it. Your password is unchanged.',
     html: (
-      p('Someone asked to reset the password for the Usernode account with this '
+      p('Someone asked to reset the password for the Homeroom account with this '
         + 'email address.')
       + p(`Set a new password here: ${link(url)}`)
       + p('The link expires in 30 minutes and works once. If you did not request '
@@ -348,7 +348,7 @@ function adminTest(payload) {
   const sentAt = payload.sentAt || '';
   const reference = payload.reference || '(none)';
 
-  const text = 'This is a test email from the Usernode platform admin console.\n\n'
+  const text = 'This is a test email from the Homeroom platform admin console.\n\n'
     + `Provider: ${provider}\n`
     + `Sent as: ${from}\n`
     + `Sent at: ${sentAt}\n`
@@ -357,10 +357,10 @@ function adminTest(payload) {
     + 'No action is needed.';
 
   return {
-    subject: 'Usernode test email',
+    subject: 'Homeroom test email',
     text,
     html: (
-      p('This is a test email from the Usernode platform admin console.')
+      p('This is a test email from the Homeroom platform admin console.')
       + `<p>Provider: <strong>${esc(provider)}</strong><br>`
       + `Sent as: ${esc(from)}<br>`
       + `Sent at: ${esc(sentAt)}<br>`

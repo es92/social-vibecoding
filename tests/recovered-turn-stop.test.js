@@ -3,7 +3,7 @@
 // #1378 — a turn ADOPTED after a platform restart must be stoppable, and a
 // stop that lands on one must end it as a stop.
 //
-// The reported failure: Usernode version-swaps mid-turn, the new process
+// The reported failure: Homeroom version-swaps mid-turn, the new process
 // picks the running agent back up through resumeDetachedTurn, and the user
 // still sees a red Stop square. Pressing it did nothing, because the stop
 // handle POST /stop looks up is only ever created by POST /chat — the

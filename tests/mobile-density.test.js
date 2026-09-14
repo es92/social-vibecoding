@@ -15,7 +15,7 @@ test('#1940: the provider and PR link show directly at every width — no Detail
   header.sessionHeaderStore.set({
     sessionId: 12, title: 'A longer change name', branch: 'test/long-title', pr: 21,
     prTitle: 'This session’s PR', newChangeTitle: '', life: null, busy: false,
-    venue: { id: 'usernode-openrouter', label: 'Usernode · OpenRouter', title: 'Choose where to build', disabled: false },
+    venue: { id: 'usernode-openrouter', label: 'Homeroom · OpenRouter', title: 'Choose where to build', disabled: false },
   });
   header.improveStore.set({ previewSessionId: null, previewUrl: null, previewActive: false });
   const html = renderToHtml(createElement(header.SessionHeader));

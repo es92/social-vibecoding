@@ -61,7 +61,7 @@ test('#1607: the prompt carries the two facts people get wrong, and nothing secr
   // The exact name. Claude Code builds its permission rules from what the
   // human types, and one account typed `Uesrnode`, silently missing every
   // rule the platform ships (#1218).
-  assert.match(prompt, /"usernode"/);
+  assert.match(prompt, /"homeroom"/);
 
   // Nothing sensitive may travel in a query string. Rather than scanning for
   // sensitive-sounding WORDS — the prompt legitimately says "no client ID or

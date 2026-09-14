@@ -210,12 +210,12 @@ const SELF_SCOPED_ALLOW_TOOLS = Object.freeze([
   'notify_input_received',
 ]);
 
-// The read-only allow rules Usernode ships in the app scaffold and
+// The read-only allow rules Homeroom ships in the app scaffold and
 // documents. Two globs plus one literal per covered spelling, and
 // deliberately NOT the whole-server `mcp__homeroom__*`.
 //
 // The reason is the SCAFFOLD, not the tools. These rules are committed into
-// every app repo Usernode creates, and a repo that grants a connector blanket
+// every app repo Homeroom creates, and a repo that grants a connector blanket
 // approval on a stranger's machine is exactly what the workspace trust dialog
 // exists to catch — the dialog lists what is being granted, and "every call
 // this connector can make" is not a reviewable thing to hand someone. Reads

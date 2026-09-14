@@ -90,7 +90,7 @@ const ROW = {
   id: 7, issue_number: 1417, branch_name: 'usernode/x',
   brief: '<untrusted-content>Show work orders in the panel</untrusted-content>\n\nbody',
   client_id: 'claude-code', created_at: '2026-08-25T10:00:00Z',
-  app_slug: 'usernode-2d5619', app_name: 'Usernode',
+  app_slug: 'usernode-2d5619', app_name: 'Homeroom',
 };
 
 // ── The read ───────────────────────────────────────────────────────────

@@ -247,7 +247,7 @@ test('read-only viewers get only Fork in the "+" menu', () => {
     'the writeable block is gated on readOnly and closes before the fork row'
   );
   const gated = FRAME_SRC.slice(start, end);
-  for (const item of ['import-pr', 'members', 'rename', 'secrets']) {
+  for (const item of ['issue', 'import-pr', 'members', 'rename', 'secrets']) {
     assert.ok(gated.includes(`data-plus="${item}"`), `${item} item is inside the readOnly gate`);
   }
   assert.ok(!gated.includes('data-plus="fork"'), 'fork is NOT inside the readOnly gate');

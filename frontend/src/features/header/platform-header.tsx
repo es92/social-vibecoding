@@ -225,7 +225,7 @@ export function PlatformHeader() {
     window.Notifications?.init();
   }, []);
 
-  // Chromeless mode hides the bar and floats the "Open in Usernode" pill in
+  // Chromeless mode hides the bar and floats the "Open in Homeroom" pill in
   // its place; App.setChromeless publishes the flag, this reads it.
   const visible = useVisibility('platform-header', true);
   useHiddenClass(headerRef, !visible);

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usernode worker entrypoint — long-lived "warm" wrapper.
+# Homeroom worker entrypoint — long-lived "warm" wrapper.
 #
 # The container is brought up once per chat session (via `docker run`)
 # with MODE=warm (the default). This script does one-time bootstrap —

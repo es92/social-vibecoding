@@ -259,7 +259,7 @@ function mcpPreAuthRoutes(config) {
       authorization_servers: [config.cliAuthOrigin],
       scopes_supported: SUPPORTED_SCOPES,
       bearer_methods_supported: ['header'],
-      resource_name: 'Usernode',
+      resource_name: 'Homeroom',
       resource_documentation: `${config.cliAuthOrigin}/`,
     });
   };

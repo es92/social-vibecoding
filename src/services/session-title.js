@@ -13,6 +13,12 @@
 //   4. Headless auto sessions get the deterministic, LLM-free
 //      "#N · issue title" at creation (headlessTitle), inherited by
 //      clones.
+//   5. OpenRouter sessions (#1949) buy no helper-model call at all —
+//      their turn is a single-provider path, and pr-metadata.js names
+//      their PR deterministically for the same reason — so
+//      titleFromFirstMessage trims the opening ask itself, with the same
+//      trim the PR title gets: the name a session shows before its PR is
+//      the name it keeps after.
 //
 // Every entry point is fire-and-forget: the returned promise ALWAYS
 // resolves (with the new title, or null on failure/skip) and never
@@ -34,9 +40,43 @@ function headlessTitle(issueNumber, issueTitle) {
   return `#${n} · ${t}`.slice(0, 256);
 }
 
-// Core generate → debit → persist → broadcast path. `send` is the
+// The deterministic, LLM-free trim an OpenRouter session's display name
+// and its PR title (deterministicPrMetadataDraft in pr-metadata.js) share:
+// fenced code and markdown punctuation dropped, whitespace collapsed, and
+// a hard 72-character ceiling with an ellipsis on truncation. Returns ''
+// when nothing readable survives so each caller picks its own fallback.
+// One derivation on purpose — the session name and the PR title stay
+// identical only while they come from the same function.
+const DETERMINISTIC_TITLE_MAX = 72;
+
+function deterministicTitle(text) {
+  const plain = String(text || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#>*_`~\[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return plain.length > DETERMINISTIC_TITLE_MAX
+    ? `${plain.slice(0, DETERMINISTIC_TITLE_MAX - 1).trimEnd()}…`
+    : plain;
+}
+
+// Guarded persist + broadcast shared by every title source. The
+// `pr_number IS NULL` guard: once applyPrMetadata mirrored a PR title in,
+// a slower in-flight early-title call must lose the race. `send` is the
 // chat turn's event emitter (SSE + global WS + session bus), so open
 // session lists update live via the `session_titled` event.
+async function persistTitle({ pool, session, title, send }) {
+  const { rowCount } = await pool.query(
+    `UPDATE chat_sessions SET session_title = $1 WHERE id = $2 AND pr_number IS NULL`,
+    [title, session.id]
+  );
+  if (!rowCount) return null;
+  session.session_title = title;
+  if (send) send('session_titled', { sessionTitle: title });
+  return title;
+}
+
+// Core generate → debit → persist → broadcast path.
 function generateAndApply({ pool, session, requests, specs, issueTitle, userId, apiKey, send }) {
   return (async () => {
     const meta = await llm.generateSessionTitle({
@@ -58,16 +98,7 @@ function generateAndApply({ pool, session, requests, specs, issueTitle, userId, 
       await limits.recordSpend(pool, userId, costCents, { byok: !!apiKey });
     }
 
-    // pr_number IS NULL guard: once applyPrMetadata mirrored a PR title
-    // in, a slower in-flight early-title call must lose the race.
-    const { rowCount } = await pool.query(
-      `UPDATE chat_sessions SET session_title = $1 WHERE id = $2 AND pr_number IS NULL`,
-      [meta.title, session.id]
-    );
-    if (!rowCount) return null;
-    session.session_title = meta.title;
-    if (send) send('session_titled', { sessionTitle: meta.title });
-    return meta.title;
+    return persistTitle({ pool, session, title: meta.title, send });
   })().catch((err) => {
     log.warn('session-title', 'Title generation failed (non-fatal)', {
       sessionId: session && session.id, err: err.message,
@@ -85,6 +116,35 @@ function maybeTitleFirstMessage({ pool, session, message, userId, apiKey, send }
   const requests = [String(message || '').trim()].filter(Boolean);
   if (!requests.length) return Promise.resolve(null);
   return generateAndApply({ pool, session, requests, specs: [], userId, apiKey, send });
+}
+
+// Hook 1, OpenRouter flavour (#1949) — same entry conditions as
+// maybeTitleFirstMessage (untitled, no PR), but no model call and no
+// payer to resolve. Reads the session's FIRST user message rather than
+// trusting the turn's own: a session whose opening turn was refused
+// (worker busy) or stopped is still named from its opening ask on the
+// next one, and — since deterministicPrMetadataDraft titles the PR from
+// the first request too — the name the session shows now is the one it
+// keeps when the PR lands. The turn's `message` is the fallback when no
+// row comes back. Fire-and-forget like its siblings: always resolves.
+function titleFromFirstMessage({ pool, session, message, send }) {
+  if (!session || session.session_title || session.pr_number) return Promise.resolve(null);
+  return (async () => {
+    const { rows } = await pool.query(
+      `SELECT content FROM chat_session_messages
+         WHERE session_id = $1 AND role = 'user'
+         ORDER BY id ASC LIMIT 1`,
+      [session.id]
+    );
+    const title = deterministicTitle((rows[0] && rows[0].content) || message);
+    if (!title) return null;
+    return persistTitle({ pool, session, title, send });
+  })().catch((err) => {
+    log.warn('session-title', 'First-message title failed (non-fatal)', {
+      sessionId: session && session.id, err: err.message,
+    });
+    return null;
+  });
 }
 
 // Hook 2 — pre-PR turn-end refresh: re-title from everything known so
@@ -118,4 +178,7 @@ function refreshFromHistory({ pool, session, userId, apiKey, send }) {
   });
 }
 
-module.exports = { headlessTitle, generateAndApply, maybeTitleFirstMessage, refreshFromHistory };
+module.exports = {
+  headlessTitle, deterministicTitle, generateAndApply,
+  maybeTitleFirstMessage, titleFromFirstMessage, refreshFromHistory,
+};

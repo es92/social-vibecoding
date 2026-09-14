@@ -35,7 +35,7 @@ const ANTHROPIC_UPSTREAM = 'https://api.anthropic.com';
 const ANTHROPIC_VERSION = '2023-06-01';
 // Anthropic asks integrations to identify themselves so they can see
 // usage patterns; harmless either way.
-const USER_AGENT = 'Usernode/1.0 (+https://social-vibecoding.usernodelabs.org)';
+const USER_AGENT = 'Homeroom/1.0 (+https://social-vibecoding.usernodelabs.org)';
 
 const FETCH_TIMEOUT_MS = 8000;
 // cost_report caps a page at 31 daily buckets, so a long window pages.

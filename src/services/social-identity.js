@@ -73,7 +73,7 @@ async function createOauthState(pool, { userId, provider }) {
 }
 
 // Consume-before-exchange. A replay, expired state, cross-provider callback,
-// or callback under a different signed-in Usernode account deletes nothing
+// or callback under a different signed-in Homeroom account deletes nothing
 // and receives no verifier.
 async function consumeOauthState(pool, { userId, provider, state }) {
   requireProvider(provider);
@@ -176,7 +176,7 @@ async function saveIdentity(pool, userId, rawIdentity) {
     if (err && err.code === '23505') {
       throw new SocialIdentityError(
         'identity_in_use',
-        'That social account is already linked to another Usernode account'
+        'That social account is already linked to another Homeroom account'
       );
     }
     throw err;

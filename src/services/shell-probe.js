@@ -9,7 +9,7 @@
 // browser hitting the app subdomain, and classify the response:
 //
 //   2xx                      -> check the app's /api/ gate before opening
-//   401 / 403                -> 'gated'   (scaffold's "Open in Usernode" page)
+//   401 / 403                -> 'gated'   (scaffold's "Open in Homeroom" page)
 //   3xx off-origin           -> 'gated'   (bounce to the platform login)
 //   3xx same-origin          -> followed (<= 3 hops), then classified
 //   anything else / timeout  -> 'unknown' (never claim public on a guess)

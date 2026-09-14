@@ -79,7 +79,7 @@ export function CliSetupGuide({
       <ol className="mt-4 space-y-4">
         <SetupStep n={1} title="Clone the repository">
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Clone Social Vibecoding and enter the checkout.
+            Clone Homeroom and enter the checkout.
           </p>
           <CopyableCode label="repository setup commands" value={REPOSITORY_SETUP} />
         </SetupStep>
@@ -104,7 +104,7 @@ export function CliSetupGuide({
           </p>
           <CopyableCode label="example proposal prompt" value={proposalPrompt} />
           <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Follow the agent&rsquo;s instructions. It will ask you to authorize access on a Social Vibecoding web page; review and approve the request there, then return to your terminal.
+            Follow the agent&rsquo;s instructions. It will ask you to authorize access on a Homeroom web page; review and approve the request there, then return to your terminal.
           </p>
         </SetupStep>
       </ol>

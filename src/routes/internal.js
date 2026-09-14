@@ -12,7 +12,7 @@ const kubernetes = require('../services/kubernetes');
 const statusSvc = require('../services/status');
 const debugAccess = require('../services/debug-access');
 const github = require('../services/github');
-// #945: the issue's Usernode-side Discussion thread, merged into the
+// #945: the issue's Homeroom-side Discussion thread, merged into the
 // by-number issue response the worker's usernode-issues CLI prints.
 const threadContext = require('../services/thread-context');
 const { USERNODE_DOMAIN, USERNODE_APPS_DOMAIN } = require('../services/caddy');
@@ -370,7 +370,7 @@ function internalRoutes(_config) {
       if (privacy.private) {
         return res.status(403).json({
           ok: false, code: 'private_repo',
-          message: `${owner}/${repo} is private; Usernode supports public repos only.`,
+          message: `${owner}/${repo} is private; Homeroom supports public repos only.`,
         });
       }
 
@@ -452,7 +452,7 @@ function internalRoutes(_config) {
 
   // Read-only: fetch ONE GitHub issue with its FULL (untruncated) body and
   // BOTH of its discussion surfaces — the GitHub comment thread (#396) and
-  // the issue's Usernode-side Discussion thread (#945). Backs the worker's
+  // the issue's Homeroom-side Discussion thread (#945). Backs the worker's
   // `usernode-issues <number>` CLI form — the escape hatch for bodies the
   // list route clips (#158) and the discussion the original post doesn't
   // carry. Same auth posture as the list route (session-scoped ISSUES_JWT,

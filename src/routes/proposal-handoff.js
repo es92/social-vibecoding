@@ -1185,7 +1185,7 @@ function proposalHandoffRoutes(config) {
           }
           const { rows } = await client.query(
             // This session's turns run on the
-            // caller's own machine, in whatever tool they chose — Usernode
+            // caller's own machine, in whatever tool they chose — Homeroom
             // never dispatched an agent for it. Preserve the caller's explicit
             // authoring identity without changing the platform execution backend.
             `INSERT INTO chat_sessions
@@ -1530,7 +1530,7 @@ function proposalHandoffRoutes(config) {
         // checkout to the bot-owned branch. Do not retain the old handoff
         // behavior that accepted any repository commit supplied by SHA: that
         // would bypass exact-tree reconstruction and let callers submit code
-        // that Usernode never received through proposal_push_commit.
+        // that Homeroom never received through proposal_push_commit.
         if (!session.handoff_uploaded_sha
             || session.handoff_uploaded_sha !== input.headSha) {
           return res.status(409).json({

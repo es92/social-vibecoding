@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  // The venues with no Usernode chat. Kept as a list rather than derived
+  // The venues with no Homeroom chat. Kept as a list rather than derived
   // from `chat: false` in build-venues.js so this module still answers
   // correctly when it is loaded without that one (the test harness does
   // exactly that), and asserted against it in tests/launchpad.test.js so
@@ -45,8 +45,8 @@
     var title = String(s.sessionTitle || '').trim();
     var resume = resumeTarget(s);
     var lines = [resume
-      ? 'Continue work already started on the Usernode app `' + slug + '`.'
-      : 'Create a proposal for the Usernode app `' + slug + '`.'];
+      ? 'Continue work already started on the Homeroom app `' + slug + '`.'
+      : 'Create a proposal for the Homeroom app `' + slug + '`.'];
     lines.push('');
     lines.push('What to build: ' + (hasIssue ? 'issue #' + issue + (title ? ': ' + title : '')
       : title || '<describe the change here>'));
@@ -97,7 +97,7 @@
         + '<div class="dc-launchpad-resume-title">Starting new work</div>'
         + '<div class="dc-launchpad-resume-detail">Nothing has been built in this session '
         + 'yet, so there is nothing to resume. Your agent starts from the app’s current '
-        + 'code, implements and tests the change locally, then submits the result to Usernode.</div>'
+        + 'code, implements and tests the change locally, then submits the result to Homeroom.</div>'
         + '</div>';
     }
     return '';

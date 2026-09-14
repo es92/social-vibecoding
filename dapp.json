@@ -1,4 +1,5 @@
 {
+  "name": "Homeroom",
   "description": "Build small web apps together — every change is proposed, previewed and merged by a group vote.",
   "icon": {
     "emoji": "🏗️"
@@ -66,7 +67,7 @@
     {
       "key": "USERNODE_APP_PUBKEY",
       "required": false,
-      "description": "Platform's on-chain wallet public key for the Usernode social-vibecoding linking flow (chain-poller + auth wallet-link in routes/auth.js). When unset, wallet-linking is gracefully disabled — the platform still works without it."
+      "description": "Platform's on-chain wallet public key for the Homeroom wallet-linking flow (chain-poller + auth wallet-link in routes/auth.js). When unset, wallet-linking is gracefully disabled — the platform still works without it."
     },
     {
       "key": "USERNODE_APP_SECRET_KEY",
@@ -295,8 +296,8 @@
     {
       "key": "PLATFORM_MAIL_FROM",
       "group": "Platform mail",
-      "default": "Usernode <no-reply@onhomeroom.com>",
-      "description": "The From address on every platform mail. Defaults to Usernode <no-reply@onhomeroom.com>, which is the single sender for all platform mail, so a fresh deploy needs no edit here. The mailbox behind GMAIL_OAUTH_* must be authorised to send as this address (a Workspace alias or a 'send mail as' identity) or every send is rejected upstream. Not secret — it is in the header of every mail we send."
+      "default": "Homeroom <no-reply@onhomeroom.com>",
+      "description": "The From address on every platform mail. Defaults to Homeroom <no-reply@onhomeroom.com>, which is the single sender for all platform mail, so a fresh deploy needs no edit here. The mailbox behind GMAIL_OAUTH_* must be authorised to send as this address (a Workspace alias or a 'send mail as' identity) or every send is rejected upstream. Not secret — it is in the header of every mail we send."
     },
     {
       "key": "GMAIL_OAUTH_CLIENT_ID",
@@ -375,21 +376,21 @@
       "key": "OPENROUTER_MANAGED_WORKSPACE_ID",
       "group": "AI & coding agents",
       "required": false,
-      "description": "Optional OpenRouter workspace id that owns newly-created company child keys. A dedicated funded Usernode workspace is recommended so aggregate spend is isolated and visible. Set the matching GitHub Actions variable."
+      "description": "Optional OpenRouter workspace id that owns newly-created company child keys. A dedicated funded Homeroom workspace is recommended so aggregate spend is isolated and visible. Set the matching GitHub Actions variable."
     },
     {
       "key": "OPENROUTER_MANAGED_REQUIRE_VERIFIED_IDENTITY",
       "group": "AI & coding agents",
       "required": false,
       "default": "false",
-      "description": "Eligibility gate for company-funded child keys. Leave false to let any authenticated Usernode account claim its one included key; set true to require a verified GitHub or X identity before claiming. Existing keys are never revoked automatically when this changes."
+      "description": "Eligibility gate for company-funded child keys. Leave false to let any authenticated Homeroom account claim its one included key; set true to require a verified GitHub or X identity before claiming. Existing keys are never revoked automatically when this changes."
     },
     {
       "key": "OPENROUTER_DEFAULT_CODEX_MODEL",
       "group": "AI & coding agents",
       "required": false,
       "default": "z-ai/glm-5.3-flash",
-      "description": "Preferred OpenRouter model for new coding-agent sessions. The complete key-visible catalog remains selectable; if this slug is absent, Usernode safely recommends another compatible model."
+      "description": "Preferred OpenRouter model for new coding-agent sessions. The complete key-visible catalog remains selectable; if this slug is absent, Homeroom safely recommends another compatible model."
     },
     {
       "key": "OPENROUTER_RECOMMENDED_MODELS",
@@ -1143,10 +1144,10 @@
       "expectSelector": "[data-plus=\"import-pr\"]"
     },
     {
-      "name": "The Dev '+' menu separates importing work from managing the app (#1490)",
+      "name": "The Dev '+' menu separates adding to the board from managing the app (#1900)",
       "path": "/?demo=1&ws=all&shot=plus-menu#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-plus-menu [data-plus-group=\"build\"] ~ [data-plus-group=\"settings\"]",
-      "expectText": "Import a change"
+      "expectSelector": "#dev-plus-menu [data-plus-group=\"build\"] ~ [data-plus=\"issue\"] ~ [data-plus-group=\"settings\"]",
+      "expectText": "Add to the board"
     },
     {
       "name": "Improve keeps the New change action after deduplicating the '+' menu (#1490)",
@@ -1161,9 +1162,10 @@
       "expectText": "Give feedback"
     },
     {
-      "name": "The Dev '+' menu retains PR import without duplicating Improve actions (#1490)",
+      "name": "The Dev '+' menu files an issue directly and keeps New change in Improve (#1900)",
       "path": "/?demo=1&ws=all&shot=plus-menu#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-plus-menu:not(.hidden):not(:has([data-plus=\"proposal\"], [data-plus=\"issue\"])) [data-plus=\"import-pr\"]"
+      "expectSelector": "#dev-plus-menu:not(.hidden):not(:has([data-plus=\"proposal\"])) button[data-plus=\"issue\"] ~ [data-plus=\"import-pr\"]",
+      "expectText": "File an issue"
     },
     {
       "name": "Custom category chip renders on a Dev card (#780)",
@@ -1847,7 +1849,7 @@
       "expectSelector": "#header-title #app-switcher-btn"
     },
     {
-      "name": "Home shows the platform Improve button (improve Social Vibecoding itself)",
+      "name": "Home shows the platform Improve button (improve Homeroom itself)",
       "path": "/",
       "expectSelector": "#improve-btn:not(.hidden)"
     },
@@ -2234,7 +2236,7 @@
       "expectText": "staging-demo-notes.md"
     },
     {
-      "name": "Chromeless share-link view renders the Open-in-Usernode pill",
+      "name": "Chromeless share-link view renders the Open-in-Homeroom pill",
       "path": "/#app/usernode-2d5619/full",
       "expectSelector": "#chromeless-pill"
     },
@@ -3379,13 +3381,13 @@
       "name": "Every session states the venue it is building in, unasked (#1086)",
       "path": "/#app/usernode-2d5619/dev/sessions/990403",
       "expectSelector": "#dc-venue-select[data-venue-current=\"usernode-claude\"] .dc-venue-name",
-      "expectText": "Usernode · Claude"
+      "expectText": "Homeroom · Claude"
     },
     {
       "name": "The venue dropdown sits in the session header, before the mode switch (#1348)",
       "path": "/#app/usernode-2d5619/dev/sessions/990403",
       "expectSelector": "#dc-session-header > button#dc-venue-select[data-venue-change][aria-haspopup=\"menu\"]",
-      "expectText": "Usernode · Claude"
+      "expectText": "Homeroom · Claude"
     },
     {
       "name": "A pinned OpenRouter session says so, and shows its model (#1086)",
@@ -3863,7 +3865,7 @@
       "name": "Without a connector the hand-off asks for one, because the agent needs it",
       "path": "/?demo=1&order=connect&flow=claude-code#app/usernode-2d5619/dev/sessions/990404",
       "expectSelector": "[data-flow-wizard] [data-flow-step=\"handoff\"] .dc-flow-actions button[data-flow-action=\"link-connector\"]",
-      "expectText": "Connect Usernode"
+      "expectText": "Connect Homeroom"
     },
     {
       "name": "A continuation says the work lands as an update, not a second copy",

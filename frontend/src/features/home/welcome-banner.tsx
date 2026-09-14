@@ -101,7 +101,7 @@ export function WelcomeBanner() {
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Welcome to Usernode
+            Welcome to Homeroom
           </div>
           {/*
               What the screen does not otherwise say. Two sentences: what the

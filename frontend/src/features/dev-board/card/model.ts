@@ -189,6 +189,12 @@ export interface RequirementSpec {
   state: string;
   /** The one-line "why", when the gate recorded one. */
   note?: string | null;
+  /**
+   * The one control a gate can carry, for the viewer who can clear it. Today
+   * only `main_healthy` has one: an admin's "Resume merges" while main's
+   * unit suite is red. Absent for everyone else.
+   */
+  action?: { label: string; title?: string; act: ActionRef } | null;
 }
 
 /** An extra row under the four bands (the work note, the admin claim list). */

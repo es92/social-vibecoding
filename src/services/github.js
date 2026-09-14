@@ -3,7 +3,7 @@ const log = require('./logger');
 let App;
 let app;
 
-// Neutralize `@handle` mentions in outgoing content so Usernode never
+// Neutralize `@handle` mentions in outgoing content so Homeroom never
 // pings a random GitHub account that happens to own a matching handle.
 // We insert a zero-width space between `@` and the first word char; the
 // text still renders as `@handle` visually but GitHub's linker skips it.
@@ -616,7 +616,7 @@ async function createBranch(owner, repo, branchName, fromBranch = 'main') {
 
 // Create a platform-managed branch at an exact commit supplied by a native
 // CLI handoff. Unlike createBranch(), this does not infer `main`: the local
-// agent and Usernode agree on one audited base SHA. Retrying after a DB
+// agent and Homeroom agree on one audited base SHA. Retrying after a DB
 // failure is safe when the orphaned ref still points at that SHA; a different
 // ref is a hard conflict rather than something we silently overwrite.
 async function ensureBranchAtSha(owner, repo, branchName, sha) {
@@ -932,7 +932,7 @@ async function createProposalCommit(owner, repo, {
   }
 
   const identity = {
-    name: 'Usernode CLI',
+    name: 'Homeroom CLI',
     email: 'cli@usernodelabs.org',
   };
   const { data: commit } = await octokit.request(
@@ -1582,7 +1582,7 @@ async function verifyBotAccess(owner, repo) {
     return { ok: false, status: 502, code: 'github_error', message: `GitHub error: ${err.message}` };
   }
 
-  // Public-only enforcement. Usernode workers run with zero GitHub
+  // Public-only enforcement. Homeroom workers run with zero GitHub
   // credentials inside the container — git pushes flow through a
   // platform-side proxy instead. That model relies on the worker being
   // able to `git clone` over unauthenticated HTTPS, which requires the
@@ -1591,7 +1591,7 @@ async function verifyBotAccess(owner, repo) {
   if (resp.data.private === true) {
     return {
       ok: false, status: 400, code: 'private_repo',
-      message: `${owner}/${repo} is a private repository. Usernode currently supports public repositories only. Switch the repo to public on GitHub and resubmit.`,
+      message: `${owner}/${repo} is a private repository. Homeroom currently supports public repositories only. Switch the repo to public on GitHub and resubmit.`,
     };
   }
 

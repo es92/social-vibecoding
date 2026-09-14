@@ -8,7 +8,7 @@
  * Codex" door in the "+" menu, and the PR-import modal. Each named its own
  * mechanism, none named the others, and two of them said "Claude Code"
  * about two different products — the platform backend
- * (chat_sessions.agent_backend = 'claude_code', billed to Usernode) and
+ * (chat_sessions.agent_backend = 'claude_code', billed to Homeroom) and
  * the web hand-off (users.dev_flow_preference = 'claude-code', billed to
  * the user's own Claude plan). Picking the wrong one cost real money.
  *
@@ -47,7 +47,7 @@
  * public/js/session-options.js; see its header.
  *
  * `own-tools-pr` is the one venue with two hard exceptions, both enforced
- * server-side and merely REPORTED here: it has no Usernode chat (the
+ * server-side and merely REPORTED here: it has no Homeroom chat (the
  * imported-proposal guard refuses dev-chat turns on a session with
  * source='imported'), and it cannot be anyone's default (there is nothing
  * for a default to do — the work arrives as a pull request or not at all).
@@ -99,7 +99,7 @@
   var VENUES = [
     {
       id: 'usernode-openrouter',
-      label: 'Usernode · OpenRouter',
+      label: 'Homeroom · OpenRouter',
       group: 'in-chat',
       mechanism: { kind: 'backend', backend: 'codex_openrouter' },
       // The OpenRouter backend is a flagged, allowlisted beta and needs a
@@ -113,18 +113,18 @@
     },
     {
       id: 'usernode-claude',
-      label: 'Usernode · Claude',
+      label: 'Homeroom · Claude',
       group: 'in-chat',
       mechanism: { kind: 'backend', backend: 'claude_code' },
       requires: null,
       defaultable: true,
       chat: true,
-      blurb: 'Usernode runs the turns right here, on your daily Claude credits, or your own Anthropic key once they run out.',
+      blurb: 'Homeroom runs the turns right here, on your daily Claude credits, or your own Anthropic key once they run out.',
       cta: 'Use Claude',
     },
     {
       id: 'local',
-      label: 'Your computer · Usernode session',
+      label: 'Your computer · Homeroom session',
       group: 'in-chat',
       mechanism: { kind: 'lease', hash: SETTINGS_HASHES.localTool },
       // TWO flags, both required (#1281). The deployment has to offer the
@@ -134,8 +134,8 @@
       requires: ['cliAuthEnabled', 'sessionBridgeEnabled'],
       defaultable: true,
       chat: true,
-      blurb: 'The Usernode CLI runs this session’s turns on your machine and your own Claude plan. Same chat, same branch, same proposal. The work just executes locally.',
-      cta: 'Set up the Usernode CLI',
+      blurb: 'The Homeroom CLI runs this session’s turns on your machine and your own Claude plan. Same chat, same branch, same proposal. The work just executes locally.',
+      cta: 'Set up the Homeroom CLI',
     },
     {
       id: 'web-claude-code',
@@ -145,7 +145,7 @@
       requires: 'externalFlowsAvailable',
       defaultable: true,
       chat: false,
-      blurb: 'Usernode writes the work order; Claude Code on the web builds it on your own Claude plan and pushes to your fork. Usernode opens the pull request and imports it as a proposal. No credits, no API key.',
+      blurb: 'Homeroom writes the work order; Claude Code on the web builds it on your own Claude plan and pushes to your fork. Homeroom opens the pull request and imports it as a proposal. No credits, no API key.',
       cta: 'Use Claude Code',
     },
     {
@@ -156,7 +156,7 @@
       requires: 'externalFlowsAvailable',
       defaultable: true,
       chat: false,
-      blurb: 'The same hand-off for Codex on the web and the ChatGPT plan you already pay for. Usernode guides you through linking GitHub, forking and submitting.',
+      blurb: 'The same hand-off for Codex on the web and the ChatGPT plan you already pay for. Homeroom guides you through linking GitHub, forking and submitting.',
       cta: 'Use Codex',
     },
     {
@@ -191,7 +191,7 @@
   // unused but structurally unreachable.
   // Order is: structural facts, then the stored choice, then derivation.
   //
-  //   imported    — structural. The session has no Usernode chat at all and
+  //   imported    — structural. The session has no Homeroom chat at all and
   //                 never will, so nothing overrides it.
   //   localAgent  — a live lease. This describes what IS happening right
   //                 now (a machine is taking turns), which outranks a
@@ -320,7 +320,7 @@
         + 'clears the votes it has already collected and re-runs its checks. The agent\'s own conversation happens '
         + 'there, not in this transcript.';
     }
-    return 'Usernode prepares a task for the web agent; what it builds comes back as its own proposal, not as more '
+    return 'Homeroom prepares a task for the web agent; what it builds comes back as its own proposal, not as more '
       + 'turns in this session.';
   }
 
@@ -336,9 +336,9 @@
         return 'Starts separate work. This chat stays where it is, and what you import comes back as its own proposal. It can’t be your default.';
       }
       if (mode === 'blocked') {
-        return 'Costs no credits: you build it yourself and import the pull request. There is no Usernode chat for this one, and it can’t be your default.';
+        return 'Costs no credits: you build it yourself and import the pull request. There is no Homeroom chat for this one, and it can’t be your default.';
       }
-      return 'No Usernode chat for this one. You build it, then import the pull request. It can’t be your default.';
+      return 'No Homeroom chat for this one. You build it, then import the pull request. It can’t be your default.';
     }
     if (v.group === 'in-chat') {
       return mode === 'switch'
@@ -357,7 +357,7 @@
     if (!v) return '';
     if (mode !== 'switch') return v.label;
     // The row you are already in is a statement, not an instruction —
-    // "Move to Usernode · Claude ✓" reads as a contradiction, and this is
+    // "Move to Homeroom · Claude ✓" reads as a contradiction, and this is
     // the one row whose job is to confirm rather than offer.
     if (state && state.current === id) return v.label;
     // In a session already under way, "start new work with Codex" and
@@ -498,13 +498,13 @@
   // resolveDefaultAgentPreference (src/routes/sessions.js) is deliberately
   // LENIENT — a session that runs beats a 4xx — but until now the fallback
   // was a server log line and nothing else, so a user whose saved default
-  // was Usernode · OpenRouter got a Usernode · Claude session with no
+  // was Homeroom · OpenRouter got a Homeroom · Claude session with no
   // explanation. One sentence, naming the fix.
   var FALLBACK_NOTES = {
-    flag_off: 'Your default is Usernode · OpenRouter, but this deployment has it turned off, so this session is building in Usernode · Claude.',
-    not_in_beta: 'Your default is Usernode · OpenRouter, which is still in a limited beta you’re not in yet. This session is building in Usernode · Claude.',
-    model_unavailable: 'Your default is Usernode · OpenRouter but no model is set for it, so this session is building in Usernode · Claude. Pick a model in Settings and the next one will use it.',
-    no_credential: 'Your default is Usernode · OpenRouter but your OpenRouter key is missing or no longer valid, so this session is building in Usernode · Claude. Re-save the key in Settings.',
+    flag_off: 'Your default is Homeroom · OpenRouter, but this deployment has it turned off, so this session is building in Homeroom · Claude.',
+    not_in_beta: 'Your default is Homeroom · OpenRouter, which is still in a limited beta you’re not in yet. This session is building in Homeroom · Claude.',
+    model_unavailable: 'Your default is Homeroom · OpenRouter but no model is set for it, so this session is building in Homeroom · Claude. Pick a model in Settings and the next one will use it.',
+    no_credential: 'Your default is Homeroom · OpenRouter but your OpenRouter key is missing or no longer valid, so this session is building in Homeroom · Claude. Re-save the key in Settings.',
   };
 
   // hasOwnProperty, not a bare lookup: `reason` arrives on the 201 body, so
@@ -521,8 +521,8 @@
    *
    * The sheet used to be the VENUES list itself: six rows under two
    * headings. That put the platform's own vocabulary in front of the
-   * user — "Usernode · Claude" vs "Usernode · OpenRouter" is a backend
-   * question, and "Your computer · Usernode session" vs "Your computer ·
+   * user — "Homeroom · Claude" vs "Homeroom · OpenRouter" is a backend
+   * question, and "Your computer · Homeroom session" vs "Your computer ·
    * your own tools" differ by a word most people would read straight
    * past. So the sheet asks the coarse question now — WHERE do you want
    * to work on this — and each answer resolves to a venue underneath.
@@ -563,7 +563,7 @@
       venue: null,
       matches: ['usernode-claude', 'usernode-openrouter'],
       requires: null,
-      blurb: 'Usernode runs the turns right here, in this chat, on your daily AI credits or your own key once they run out.',
+      blurb: 'Homeroom runs the turns right here, in this chat, on your daily AI credits or your own key once they run out.',
     },
     {
       id: 'web-agent',
@@ -572,7 +572,7 @@
       venue: 'web-claude-code',
       matches: ['web-claude-code', 'web-codex'],
       requires: 'externalFlowsAvailable',
-      blurb: 'Usernode writes the work order and Claude Code or Codex builds it on the plan you already pay for, then pushes back here. You pick which of the two on the next screen.',
+      blurb: 'Homeroom writes the work order and Claude Code or Codex builds it on the plan you already pay for, then pushes back here. You pick which of the two on the next screen.',
     },
     {
       id: 'own-tools',
@@ -594,7 +594,7 @@
       venue: 'local',
       matches: ['local'],
       requires: ['cliAuthEnabled', 'sessionBridgeEnabled'],
-      blurb: 'The Usernode CLI runs this session’s turns on your machine and your own Claude plan. Same chat, same branch, same proposal. The work just executes locally.',
+      blurb: 'The Homeroom CLI runs this session’s turns on your machine and your own Claude plan. Same chat, same branch, same proposal. The work just executes locally.',
     },
   ];
 
@@ -670,7 +670,7 @@
   // FOUR rows, one question, no group headings (#1348). The headings were
   // load-bearing while the rows were six venue names that did not say what
   // they did — "In this chat" was the only thing telling you that
-  // "Usernode · Claude" kept your transcript. The coarse labels say it
+  // "Homeroom · Claude" kept your transcript. The coarse labels say it
   // themselves, and the rows are ordered so the two that keep this chat
   // still come first.
   //

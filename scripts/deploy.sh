@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Deploy the Usernode platform on the VPS.
+# Deploy the Homeroom platform on the VPS.
 #
 # This is THE deploy: the single copy of the logic that used to live
 # inline in .github/workflows/deploy.yml's ssh step. It has exactly two

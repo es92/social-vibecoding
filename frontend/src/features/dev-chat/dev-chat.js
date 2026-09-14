@@ -400,7 +400,7 @@ const DevChat = {
   // and the web hand-off, in menus that sat inches apart; the venue names
   // say where the work happens and collide with nothing.
   _agentName(backend) {
-    return backend === 'codex_openrouter' ? 'Usernode · OpenRouter' : 'Usernode · Claude';
+    return backend === 'codex_openrouter' ? 'Homeroom · OpenRouter' : 'Homeroom · Claude';
   },
 
   // Runtime rows use camelCase metadata, session rows use snake_case, and
@@ -481,7 +481,7 @@ const DevChat = {
   //
   // A SAVED DEFAULT is deliberately NOT one of them (#1353). It used to put
   // the walkthrough on screen for any untouched session, while the venue
-  // derivation above — which never read it — went on saying Usernode ·
+  // derivation above — which never read it — went on saying Homeroom ·
   // Claude: the header and the sheet said "On-Platform" over a WebUI
   // launchpad, and the only way out was to pick another venue and come back,
   // once per tab, because a preference is not a choice about THIS session
@@ -710,8 +710,8 @@ const DevChat = {
   // user's and so is the invoice, and none of that spend passes through the
   // platform meter, so nothing else on the composer can state it.
   //
-  // A Usernode · Claude session had a sentence here too and no longer does
-  // (#1353): "Chat and coding use Usernode · Claude and its normal credit
+  // A Homeroom · Claude session had a sentence here too and no longer does
+  // (#1353): "Chat and coding use Homeroom · Claude and its normal credit
   // rules" sat under a meter counting those very credits, beside a picker
   // labelled Chat model, in a session whose header names the venue. Four
   // ways of saying the same thing, on the surface with the least room for
@@ -1017,12 +1017,12 @@ const DevChat = {
         </div>
         <div class="mt-4 grid gap-2 sm:grid-cols-2 ${openRouterModelOnly ? 'hidden' : ''}" role="radiogroup" aria-label="Session AI">
           <button type="button" id="dc-agent-choice-codex" role="radio" class="rounded-lg border p-3 text-left transition-colors">
-            <span class="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">Usernode · OpenRouter</span>
+            <span class="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">Homeroom · OpenRouter</span>
             <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">Preferred. Use your included daily credits or personal key, with any available model.</span>
             ${data.defaultBackend === 'codex_openrouter' ? '<span class="mt-2 inline-block rounded bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">Saved default</span>' : ''}
           </button>
           <button type="button" id="dc-agent-choice-claude" role="radio" class="rounded-lg border p-3 text-left transition-colors">
-            <span class="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">Usernode · Claude</span>
+            <span class="block text-sm font-semibold text-zinc-900 dark:text-zinc-100">Homeroom · Claude</span>
             <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">Use the platform Claude allowance instead.</span>
             ${data.defaultBackend === 'claude_code' ? '<span class="mt-2 inline-block rounded bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:text-violet-300">Saved default</span>' : ''}
           </button>
@@ -1128,15 +1128,15 @@ const DevChat = {
       settingsButton.classList.toggle('hidden', !codex);
 
       applyButton.disabled = false;
-      const venueName = codex ? 'Usernode · OpenRouter' : 'Usernode · Claude';
+      const venueName = codex ? 'Homeroom · OpenRouter' : 'Homeroom · Claude';
       applyButton.textContent = openRouterModelOnly
         ? 'Use this OpenRouter model'
         : (mode === 'switch' ? `Switch to ${venueName}` : `Build on ${venueName}`);
 
       if (!codex) {
         status.textContent = data.loadError
-          ? `${data.loadError} Usernode · Claude is still available.`
-          : 'Usernode · Claude builds in this chat on your daily Usernode credits.';
+          ? `${data.loadError} Homeroom · Claude is still available.`
+          : 'Homeroom · Claude builds in this chat on your daily Homeroom credits.';
         return;
       }
       if (data.loadError) {
@@ -1145,7 +1145,7 @@ const DevChat = {
         return;
       }
       if (!data.codexAvailable) {
-        status.textContent = 'Usernode · OpenRouter is not enabled for this account or deployment.';
+        status.textContent = 'Homeroom · OpenRouter is not enabled for this account or deployment.';
         applyButton.disabled = true;
         return;
       }
@@ -1388,7 +1388,7 @@ const DevChat = {
         DevChat._venueFallbackReason = data.agentFallbackReason;
       }
       // No toast on the way out (#1348 follow-up). A successful pick used to
-      // pop "This session now uses Usernode · Claude." here — and only here:
+      // pop "This session now uses Homeroom · Claude." here — and only here:
       // the sheet's other three rows change the session in silence, so the
       // same act announced itself in one state out of four. The screen is
       // already the announcement. The repaint above swaps a launchpad back
@@ -1537,7 +1537,7 @@ const DevChat = {
     const agent = DevChat._localAgent;
     if (!agent || agent.demo) return;
     const label = agent.label || 'your machine';
-    if (!confirm(`Hand coding turns back to Usernode?\n\n${label} stops receiving turns for this session. Anything it already committed stays on the branch.`)) return;
+    if (!confirm(`Hand coding turns back to Homeroom?\n\n${label} stops receiving turns for this session. Anything it already committed stays on the branch.`)) return;
     try {
       const res = await fetch(`/api/me/local-agents/${encodeURIComponent(agent.leaseId)}`, {
         method: 'DELETE',
@@ -2145,7 +2145,7 @@ const DevChat = {
         ...base,
         tone: 'amber',
         icon: 'person',
-        lead: 'Connect GitHub or X to unlock $10/day of Usernode credits.',
+        lead: 'Connect GitHub or X to unlock $10/day of Homeroom credits.',
         tail: ' Either account unlocks the same tier; connecting both does not stack credits.',
         actionsHtml: actions({ verificationRequired: true }),
       };
@@ -2406,7 +2406,7 @@ const DevChat = {
   // dropdown in the session header (#1348), the two key rows are Settings
   // links the credits banner already offers at the moment they matter, the
   // local-CLI card is what picking the CLI venue opens, and handing turns
-  // back to Usernode is the runner select's own "Run on: Usernode". A menu
+  // back to Homeroom is the runner select's own "Run on: Homeroom". A menu
   // whose every row is a second way to somewhere else is a menu of
   // duplicates — on the strip with the least room in the app.
 
@@ -2534,7 +2534,7 @@ const DevChat = {
     const CO = window.CreditOptions;
     const state = CO ? DevChat._creditState() : null;
     if (state && state.level === 'locked') {
-      return 'Connect GitHub or X to unlock $10/day of Usernode credits.';
+      return 'Connect GitHub or X to unlock $10/day of Homeroom credits.';
     }
     const reset = DevChat._creditResetSentence();
     const lead = DevChat._globalBudgetOut()
@@ -2846,7 +2846,7 @@ const DevChat = {
   // ── Development-flow picker + walkthrough (#1049) ──────────────────
   //
   // A fresh session used to open with nothing but a text box, and the ONLY
-  // way to discover that Usernode can hand the work to your own Claude Code
+  // way to discover that Homeroom can hand the work to your own Claude Code
   // or Codex was to install the MCP connector. So the choice is offered
   // here instead: a card at the top of an empty session naming all three
   // routes, and — if you pick an external one — a five-step walkthrough
@@ -2872,7 +2872,7 @@ const DevChat = {
     busy: false,
     error: null,
     notice: null,
-    // "Build on Usernode instead" / "Build here" — hide the card for the
+    // "Build on Homeroom instead" / "Build here" — hide the card for the
     // rest of this session without writing a preference.
     dismissed: false,
     brief: null,
@@ -3037,11 +3037,11 @@ const DevChat = {
     flow.error = null;
     flow.notice = null;
     if (action === 'cancel') {
-      // "Build here instead" / "Build on Usernode instead" — the same act as
+      // "Build here instead" / "Build on Homeroom instead" — the same act as
       // picking On-Platform in the venue sheet, so it does the same two
       // things (#1353). Dismissing the in-memory wizard alone left a session
       // whose venue column had already been stored answering "handed to
-      // Claude Code" on the very next paint: the button said Usernode, the
+      // Claude Code" on the very next paint: the button said Homeroom, the
       // header said the web, and the launchpad never left.
       if (DevChat.currentSession && DevChat.currentSession.build_venue) {
         DevChat.currentSession.build_venue = null;
@@ -3083,7 +3083,7 @@ const DevChat = {
       return;
     }
     if (action === 'copy') {
-      // The instructions, not a work order. Usernode no longer writes the work
+      // The instructions, not a work order. Homeroom no longer writes the work
       // order — the agent asks what to build and mints its own through the
       // connector, which is also what stopped a stale one being able to sit in
       // this tab at all.
@@ -3225,7 +3225,7 @@ const DevChat = {
     }
   },
 
-  // Step 5. Usernode opens the cross-fork pull request with its own
+  // Step 5. Homeroom opens the cross-fork pull request with its own
   // credentials and imports it as an ordinary proposal, then we jump to it.
   async _devFlowSubmit() {
     const flow = DevChat._devFlow;
@@ -3930,7 +3930,7 @@ const DevChat = {
           const { busy, progress, phase, sync, stopping, stopRequestedAt, stoppable } = statusPayload;
           // #907: restore the Run-on selector / chip from the server, so a
           // reload of a session with a machine attached does not silently
-          // claim the next turn runs on Usernode.
+          // claim the next turn runs on Homeroom.
           DevChat._applyRunnerState(statusPayload);
           // #252: reload recovery for the sync banner. A MODE=sync turn
           // also flips `busy` (it holds the worker), so check it first
@@ -8116,7 +8116,7 @@ const DevChat = {
       id: v.id,
       label: v.label,
       title: 'Building in ' + v.label + '. ' + v.blurb
-        + ' Pick a different venue: on Usernode, on your computer, or handed to'
+        + ' Pick a different venue: on Homeroom, on your computer, or handed to'
         + ' Claude Code or Codex on the web.',
       // Mid-turn the venue is not changeable: a running turn holds the
       // worker, and moving it under itself is the failure the old

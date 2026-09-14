@@ -139,7 +139,7 @@ async function copyRepoTree({ sourceApp, botUsername, forkSlug, forkName, tempDi
   // fork slug, so the repo may already exist on the bot account — adopt
   // it rather than 422ing; the force-push below overwrites its content.
   const repo = await github.createRepo(botUsername, forkSlug, {
-    description: `${forkName}: forked on Usernode Social Vibecoding`,
+    description: `${forkName}: forked on Homeroom`,
     adoptExisting: true,
   });
   const repoUrl = repo.html_url;

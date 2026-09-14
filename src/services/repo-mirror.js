@@ -41,7 +41,7 @@
 //
 // ── What this module does NOT do ───────────────────────────────────────
 //
-// It never writes to a repository and never authenticates. Usernode app
+// It never writes to a repository and never authenticates. Homeroom app
 // repositories are public by contract (services/github.js rejects a private
 // import outright), so plain unauthenticated HTTPS is enough to read them —
 // the same assumption the build worker already runs on. Nothing here can
