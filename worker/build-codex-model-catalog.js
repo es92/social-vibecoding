@@ -6,6 +6,8 @@
 // so each turn installs a one-model catalog for the session-pinned model.
 // This keeps Codex's tool/runtime behavior while avoiding its unknown-model
 // fallback metadata and the misleading diagnostic that fallback produces.
+// The entry reuses Codex's own bundled instructions with the bundled GPT
+// identity sentence replaced by one naming the selected model (#2120).
 
 const fs = require('node:fs');
 
@@ -26,6 +28,32 @@ const REASONING_DESCRIPTIONS = {
   xhigh: 'Extra-high reasoning depth for the hardest tasks',
 };
 const REASONING_EFFORTS = Object.keys(REASONING_DESCRIPTIONS);
+// Codex's bundled prompts open with an identity sentence written for
+// OpenAI's own models. At CLI 0.146.0 every entry leads with one of three
+// phrasings: "You are Codex, an agent based on GPT-5." (5.6), "You are Codex,
+// a coding agent based on GPT-5." (5.4/5.5) or "You are GPT-5.2 running in
+// the Codex CLI, a terminal-based coding assistant." (5.2). The builder
+// copies the first entry, so all three are matched: a Codex upgrade that
+// reorders its catalog must not bring GPT back (#2120). Group 1 keeps any
+// leading markdown (a heading marker, bold) in front of the replacement and
+// the lookahead lets a dotted version such as "GPT-5.6." end the sentence
+// without swallowing the text after it.
+const IDENTITY_LEAD = '^([\\s#>*_-]*)';
+const IDENTITY_END = '(?=[\\s*_]|$)';
+const BUNDLED_IDENTITY_ALTERNATIVES = '(?:You are Codex,\\s+an?(?:\\s+[\\w-]+)?\\s+agent based on [^\\n]*?\\.'
+  + '|You are [^\\n]*? running in the Codex CLI,[^\\n]*?\\.)';
+const BUNDLED_IDENTITY_SENTENCE = new RegExp(
+  IDENTITY_LEAD + BUNDLED_IDENTITY_ALTERNATIVES + IDENTITY_END, 'i',
+);
+// The sentence nameSelectedModel() replaces: the neutral one neutralize()
+// leaves in front, or a bundled GPT one that reached it unneutralized.
+const LEADING_IDENTITY_SENTENCE = new RegExp(
+  `${IDENTITY_LEAD}(?:${BUNDLED_IDENTITY_ALTERNATIVES}|${
+    NEUTRAL_IDENTITY_INSTRUCTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  })${IDENTITY_END}`,
+  'i',
+);
+const MAX_MODEL_NAME_LENGTH = 120;
 
 function optionalPositiveInteger(value) {
   if (value == null || value === '') return null;
@@ -54,9 +82,38 @@ function neutralizeBundledBaseInstructions(value) {
   // that sentence for an OpenRouter model makes models such as GLM report
   // that they are GPT even though the request is routed to the selected GLM
   // slug. Preserve every operational/tool instruction after that sentence.
-  const codexIdentity = /^You are Codex,\s+an agent based on GPT[\w.-]*\.\s*/i;
-  if (!codexIdentity.test(instructions)) return instructions;
-  return `${NEUTRAL_IDENTITY_INSTRUCTION} ${instructions.replace(codexIdentity, '')}`.trim();
+  if (!BUNDLED_IDENTITY_SENTENCE.test(instructions)) return instructions;
+  return instructions.replace(BUNDLED_IDENTITY_SENTENCE,
+    (_match, lead) => `${lead}${NEUTRAL_IDENTITY_INSTRUCTION}`);
+}
+
+// The neutral sentence with the selected model named in it: "You are
+// Homeroom's repository coding agent, running on <display name> (<slug>)
+// through OpenRouter." — the slug alone when the display name is missing or
+// is the slug. The display name comes from OpenRouter's catalog, so it is
+// collapsed to one line and capped before it enters the prompt.
+function selectedModelIdentity(modelId, displayName) {
+  const slug = String(modelId || '').trim();
+  const name = String(displayName || '').replace(/\s+/g, ' ').trim()
+    .slice(0, MAX_MODEL_NAME_LENGTH);
+  const label = name && name.toLowerCase() !== slug.toLowerCase()
+    ? `${name} (${slug})`
+    : slug;
+  return `${NEUTRAL_IDENTITY_INSTRUCTION.replace(/\.$/, '')}, running on ${label} through OpenRouter.`;
+}
+
+// Name the selected model in `instructions` (#2120): the leading identity
+// sentence becomes the model-naming form, and when no identity sentence leads
+// the text the line is prepended, so the model is never left without one.
+// GLM-5.3-Flash sessions used to answer "GPT-5" because the bundled sentence
+// said so; the neutral sentence alone leaves the model guessing.
+function nameSelectedModel(instructions, { modelId, displayName } = {}) {
+  const text = String(instructions || '');
+  const identity = selectedModelIdentity(modelId, displayName);
+  if (LEADING_IDENTITY_SENTENCE.test(text)) {
+    return text.replace(LEADING_IDENTITY_SENTENCE, (_match, lead) => `${lead}${identity}`);
+  }
+  return text.trim() ? `${identity}\n\n${text}` : identity;
 }
 
 function loadBundledBaseInstructions(catalogPath) {
@@ -105,7 +162,10 @@ function buildCodexModelCatalog({
   const resolvedContextWindow = optionalPositiveInteger(contextWindow)
     || DEFAULT_CONTEXT_WINDOW;
   const resolvedName = String(displayName || slug).trim().slice(0, 300) || slug;
-  const instructions = neutralizeBundledBaseInstructions(baseInstructions);
+  const instructions = nameSelectedModel(
+    neutralizeBundledBaseInstructions(baseInstructions),
+    { modelId: slug, displayName: resolvedName },
+  );
   const defaultReasoningLevel = supportedEfforts.length
     ? (selectedEffort || (supportedEfforts.includes('medium') ? 'medium' : supportedEfforts[0]))
     : null;
@@ -187,5 +247,6 @@ module.exports = {
   buildCodexModelCatalog,
   buildCatalogFromEnvironment,
   loadBundledBaseInstructions,
+  nameSelectedModel,
   neutralizeBundledBaseInstructions,
 };

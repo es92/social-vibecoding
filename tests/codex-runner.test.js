@@ -13,8 +13,11 @@ const path = require('path');
 const { execFileSync, spawnSync } = require('child_process');
 const { classifyResumeJsonl } = require('../worker/classify-codex-resume');
 const {
+  DEFAULT_BASE_INSTRUCTIONS,
   NEUTRAL_IDENTITY_INSTRUCTION,
+  buildCatalogFromEnvironment,
   buildCodexModelCatalog,
+  nameSelectedModel,
   neutralizeBundledBaseInstructions,
 } = require('../worker/build-codex-model-catalog');
 
@@ -289,8 +292,11 @@ exit 1
   assert.equal(catalog.models[0].display_name, 'GLM 5.3 Flash');
   assert.equal(catalog.models[0].context_window, 1_048_576);
   assert.equal(catalog.models[0].default_reasoning_level, 'medium');
+  // #2120: the installed metadata names the selected model in the neutral
+  // identity sentence and keeps every instruction after it.
   assert.equal(catalog.models[0].base_instructions,
-    `${NEUTRAL_IDENTITY_INSTRUCTION} Keep every repository tool instruction after the identity sentence.`);
+    "You are Homeroom's repository coding agent, running on GLM 5.3 Flash (z-ai/glm-5.3-flash) "
+    + 'through OpenRouter. Keep every repository tool instruction after the identity sentence.');
   assert.doesNotMatch(catalog.models[0].base_instructions, /\bGPT(?:[-\w.]*)?\b/i);
   assert.doesNotMatch(JSON.stringify(catalog), /CONFIG_INJECTION_SENTINEL|sk-or-v1-test/);
   assert.equal(fs.statSync(catalogPath).mode & 0o777, 0o600,
@@ -310,6 +316,89 @@ test('OpenRouter model catalog removes only the bundled GPT identity sentence', 
   const custom = 'You are a repository agent supplied by another runtime. Keep this exact policy.';
   assert.equal(neutralizeBundledBaseInstructions(custom), custom,
     'future non-Codex base prompts remain untouched');
+});
+
+test('OpenRouter model catalog neutralizes every identity phrasing the pinned CLI ships (#2120)', () => {
+  // `codex debug models --bundled` at 0.146.0 leads its entries with one of
+  // these three sentences. The builder copies the first entry, so a Codex
+  // upgrade that reorders the catalog must not bring GPT back.
+  const tail = ' You and the user share one workspace. Keep the complete tool policy.';
+  for (const opening of [
+    'You are Codex, an agent based on GPT-5.',
+    'You are Codex, a coding agent based on GPT-5.',
+    'You are GPT-5.2 running in the Codex CLI, a terminal-based coding assistant.',
+  ]) {
+    assert.equal(neutralizeBundledBaseInstructions(`${opening}${tail}`),
+      `${NEUTRAL_IDENTITY_INSTRUCTION}${tail}`, opening);
+  }
+  // Case, leading markdown and a dotted version do not defeat the match, and
+  // the whitespace after the sentence is kept as shipped.
+  assert.equal(
+    neutralizeBundledBaseInstructions('\n\n**you are codex, an agent based on gpt-5.6.** Rest.'),
+    `**${NEUTRAL_IDENTITY_INSTRUCTION}** Rest.`);
+  assert.equal(
+    neutralizeBundledBaseInstructions('# You are Codex, a coding agent based on GPT-5.\n\n# General\nAs an expert.'),
+    `# ${NEUTRAL_IDENTITY_INSTRUCTION}\n\n# General\nAs an expert.`);
+});
+
+test('model catalog names the selected model in the identity sentence (#2120)', () => {
+  const selected = { modelId: 'z-ai/glm-5.3-flash', displayName: 'Z.AI: GLM 5.3 Flash' };
+  const named = "You are Homeroom's repository coding agent, running on Z.AI: GLM 5.3 Flash "
+    + '(z-ai/glm-5.3-flash) through OpenRouter.';
+  const tail = ' You and the user share one workspace. Keep the complete tool policy.';
+  // The neutral sentence neutralize() leaves in front becomes the
+  // model-naming form, and so does a bundled GPT sentence that reaches it
+  // unneutralized; the text after it is byte-identical.
+  assert.equal(nameSelectedModel(`${NEUTRAL_IDENTITY_INSTRUCTION}${tail}`, selected), `${named}${tail}`);
+  assert.equal(nameSelectedModel(`You are Codex, an agent based on GPT-5.${tail}`, selected), `${named}${tail}`);
+  assert.equal(nameSelectedModel(`You are Codex, a coding agent based on GPT-5.${tail}`, selected), `${named}${tail}`);
+  assert.equal(
+    nameSelectedModel(`You are GPT-5.2 running in the Codex CLI, a terminal-based coding assistant.${tail}`, selected),
+    `${named}${tail}`);
+  // Leading whitespace/markdown and case survive around the replaced sentence.
+  assert.equal(
+    nameSelectedModel(`\n\n**${NEUTRAL_IDENTITY_INSTRUCTION.toUpperCase()}** Rest.`, selected),
+    `\n\n**${named}** Rest.`);
+  // The slug alone when the display name is missing or is the slug (any
+  // case); a catalog display name is collapsed to one line and capped at 120
+  // characters before it enters the prompt.
+  const slugOnly = "You are Homeroom's repository coding agent, running on a/b through OpenRouter.";
+  assert.equal(nameSelectedModel(NEUTRAL_IDENTITY_INSTRUCTION, { modelId: 'a/b' }), slugOnly);
+  assert.equal(nameSelectedModel(NEUTRAL_IDENTITY_INSTRUCTION, { modelId: 'a/b', displayName: 'A/B' }), slugOnly);
+  assert.equal(
+    nameSelectedModel(NEUTRAL_IDENTITY_INSTRUCTION, { modelId: 'a/b', displayName: 'Name\nWith   newline' }),
+    "You are Homeroom's repository coding agent, running on Name With newline (a/b) through OpenRouter.");
+  assert.equal(
+    nameSelectedModel(NEUTRAL_IDENTITY_INSTRUCTION, { modelId: 'a/b', displayName: 'x'.repeat(200) }),
+    `You are Homeroom's repository coding agent, running on ${'x'.repeat(120)} (a/b) through OpenRouter.`);
+  // Without any identity sentence the line is prepended, so the model is
+  // never left without one.
+  assert.equal(nameSelectedModel('Work carefully.\n\nRun the tests.', selected),
+    `${named}\n\nWork carefully.\n\nRun the tests.`);
+
+  // buildCodexModelCatalog applies it after neutralize(): the neutral
+  // default and a bundled prompt loaded the way the runner loads it both
+  // come out naming the model. The constants themselves stay neutral.
+  assert.equal(
+    buildCodexModelCatalog({ modelId: 'z-ai/glm-5.3-flash', displayName: 'Z.AI: GLM 5.3 Flash' })
+      .models[0].base_instructions,
+    `${named}${DEFAULT_BASE_INSTRUCTIONS.slice(NEUTRAL_IDENTITY_INSTRUCTION.length)}`);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-catalog-2120-'));
+  const bundledCatalogPath = path.join(dir, 'bundled-models.json');
+  fs.writeFileSync(bundledCatalogPath, JSON.stringify({ models: [{
+    slug: 'gpt-5.6-sol',
+    base_instructions: `You are Codex, an agent based on GPT-5.${tail}`,
+  }] }));
+  const fromEnvironment = buildCatalogFromEnvironment({
+    CODEX_BUNDLED_MODELS_PATH: bundledCatalogPath,
+    AGENT_MODEL: 'z-ai/glm-5.3-flash',
+    AGENT_MODEL_NAME: 'Z.AI: GLM 5.3 Flash',
+  });
+  assert.equal(fromEnvironment.models[0].base_instructions, `${named}${tail}`);
+  assert.doesNotMatch(fromEnvironment.models[0].base_instructions, /\bGPT(?:[-\w.]*)?\b/i);
+  assert.equal(NEUTRAL_IDENTITY_INSTRUCTION, "You are Homeroom's repository coding agent.");
+  assert.ok(DEFAULT_BASE_INSTRUCTIONS.startsWith(NEUTRAL_IDENTITY_INSTRUCTION));
+  assert.doesNotMatch(DEFAULT_BASE_INSTRUCTIONS, /OpenRouter|GPT/);
 });
 
 test('model catalog omits reasoning levels for a non-reasoning OpenRouter model', () => {
