@@ -2604,15 +2604,9 @@ test('the phone rail is fixed to the real viewport, not to its container', () =>
 test('the ask composer keeps a visible send, and opens with it in the bottom-right corner', () => {
   // The whole controls row used to sit behind focus, which took the send
   // circle with it and left a card that looked like a text box and nothing
-  // else — no sign it would do anything. That half still holds: SHUT, the
-  // send is on the resting line, so a one-row card still says it sends.
-  //
-  // OPEN, it is the last thing in the card. A composer's send belongs in the
-  // bottom-right corner — it is where `.dc-card-row` puts the dev session's
-  // own — and the earlier rule that pinned it to the resting line in BOTH
-  // states was protecting a press that cannot happen: the button is disabled
-  // until there is a draft, and there is no draft until the field has been
-  // tapped, which is the same tap that opens the row.
+  // else — no sign it would do anything. The card has no shut state any
+  // more, so the circle has ONE home: the bottom-right corner, where
+  // `.dc-card-row` puts the dev session's own.
   const send = /const sendBtn = \(([\s\S]*?)\n  \);/.exec(WORKSHOP);
   assert.ok(send, 'the circle is written ONCE, so its two homes cannot drift');
   assert.match(send[1], /className="dc-send-btn dc-circle-send dev-ws-ask-send"/);
@@ -2620,10 +2614,10 @@ test('the ask composer keeps a visible send, and opens with it in the bottom-rig
   const line = /<div className="dev-ws-ask-line">([\s\S]*?)<\/div>/.exec(WORKSHOP);
   assert.ok(line, 'the composer has a resting line');
   assert.match(line[1], /id="dev-ws-ask-input"/, 'the field is on it');
-  assert.match(line[1], /\{expanded \? null : sendBtn\}/,
-    'and the circle, while the card is one row');
-  const row = /\{expanded \? \(\s*<div className="dev-ws-ask-row">([\s\S]*?)\n          <\/div>/.exec(WORKSHOP);
-  assert.ok(row, 'the controls row is gated on `expanded`');
+  assert.ok(!/\{expanded/.test(WORKSHOP),
+    'nothing in the composer waits for a tap: the controls row is always there');
+  const row = /<div className="dev-ws-ask-row">([\s\S]*?)\n          <\/div>/.exec(WORKSHOP);
+  assert.ok(row, 'the controls row is written once, ungated');
   assert.match(row[1], /data-ws-ask-model/, 'the model picker is in it');
   assert.match(row[1], /\{sendBtn\}/, 'and the circle, as the row\'s last child');
   assert.ok(row[1].indexOf('data-ws-ask-model') < row[1].indexOf('{sendBtn}'),
@@ -2759,19 +2753,14 @@ test('since-your-last-visit shows three and reveals the rest, like the week walk
   assert.ok(!quiet.includes('data-ws-since-more'));
 });
 
-test('the composer opens expanded on a desktop and stays one line on a phone', () => {
-  // The pane is a third of a tall window with nothing competing for it, the
-  // one-line form hid the model picker behind a click nobody knew to make,
-  // and no keyboard is about to take half the screen — so above the
-  // breakpoint the box opens the way it will be used. Below it the deck is a
-  // fitted screen and the second row is height the card in front of you wants
-  // back, so it stays the one line it was until the field is tapped.
-  assert.match(WORKSHOP, /const expanded = wide \|\| focused \|\| engaged;/);
+test('the composer shows its model picker and send circle at every width', () => {
+  // It used to open expanded above the breakpoint and stay one line on a
+  // phone until the field was tapped. The tap was the problem: a picker
+  // behind it was a picker nobody knew was there. So there is no collapsed
+  // state and no `focused` flag to seed, or to lose again on blur.
+  assert.ok(!/const expanded = /.test(WORKSHOP), 'no expanded/collapsed state');
+  assert.ok(!/setFocused\(/.test(WORKSHOP), 'and no focus flag driving one');
   assert.match(WORKSHOP, /const wide = useWideLayout\(\);/);
-  // `wide` rather than a seeded `focused`, which is the part worth pinning:
-  // blur with an empty draft sets `focused` false, so seeding it would have
-  // shut the box again on the first click away.
-  assert.match(WORKSHOP, /onBlur=\{\(\) => \{ if \(!draft\.trim\(\)\) setFocused\(false\); \}\}/);
   // READ AT MOUNT, unlike `useRailHost` — nothing here is prerendered (the
   // Workshop mounts client-side into a host `_repaintDevBody()` creates), so
   // there is no first paint to disagree with, and a collapsed frame followed
@@ -2780,6 +2769,47 @@ test('the composer opens expanded on a desktop and stays one line on a phone', (
   // And guarded, because the render this suite does happens in node, where
   // there is no matchMedia at all.
   assert.match(WORKSHOP, /typeof window !== 'undefined' && typeof window\.matchMedia === 'function'/);
+});
+
+test('the sheets move, stop above the keyboard, and More opens the card page', () => {
+  // OPEN AND CLOSE ANIMATE. A sheet unmounts when it closes, so the leave
+  // needs the element kept for the animation's length: `leaving` holds the
+  // kind, `[data-ws-leaving]` marks it, and a timer drops it — instantly
+  // where motion is unwelcome, because app.css runs no animation there.
+  assert.match(WORKSHOP, /const \[leaving, setLeaving\] = useState<SheetKind \| null>\(null\);/);
+  assert.match(WORKSHOP, /const shown = sheet \|\| leaving;/);
+  assert.match(WORKSHOP, /window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches/);
+  assert.match(CSS, /\.dev-ws-sheet\[data-ws-leaving\] > \.dev-ws-sheet-card \{\s*animation-name: var\(--ws-sheet-out\)/);
+  assert.match(CSS, /@keyframes dev-ws-sheet-up \{ from \{ transform: translateY\(100%\); \}/);
+  // A panel slides in from the side it lives on; a popover pops. Same rule,
+  // different names, set where the panel and the popover are declared.
+  const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS)[1];
+  assert.match(wide, /--ws-sheet-in: dev-ws-panel-in; --ws-sheet-out: dev-ws-panel-out;/);
+  assert.match(wide, /--ws-sheet-in: dev-ws-pop-in; --ws-sheet-out: dev-ws-pop-out;/);
+  // THE KEYBOARD. Fixed elements are laid out against the layout viewport,
+  // which the on-screen keyboard does not shrink, so the card's floor — and
+  // the field on it — sat under the keys. The visual viewport does shrink;
+  // the difference lifts the sheet's floor, only while a sheet is up and only
+  // below the breakpoint.
+  assert.match(WORKSHOP, /window\.innerHeight - vv\.height - vv\.offsetTop/);
+  assert.match(WORKSHOP, /\}, \[sheet, wide\]\);/);
+  assert.match(CSS, /\.dev-ws-sheet \{\s*position: fixed; inset: 0; z-index: 30;[\s\S]*?bottom: var\(--ws-kb, 0px\);/);
+  assert.match(CSS, /\.dev-ws-needs\[data-ws-kb\] \.dev-ws-sheet-card \{ max-height: 100%; \}/);
+  assert.match(CSS, /padding: 8px 16px calc\(12px \+ var\(--platform-safe-bottom, 0px\)\);/,
+    'and the floor clears the home indicator');
+  // OPEN CARD. The item is the whole screen, so the card's own page is a row
+  // under More; the href rides on the trigger and app-view.js reads it.
+  assert.match(WORKSHOP, /data-card-menu-open=\{cardHref \|\| undefined\}/);
+  assert.match(WORKSHOP, /const cardHref = row \? openHref\(slug, row\.card\) : null;/);
+  const appView = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app-view.js'), 'utf8');
+  assert.match(appView, /trigger\.dataset\.cardMenuOpen/);
+  // The row is part of the ONE descriptor list every reader of the menu
+  // uses, so a row's index means the same thing in the menu that opened and
+  // in the refreshed one under it — prepending it in only the opener once
+  // sent the first row's click to the wrong descriptor on a desktop.
+  assert.match(appView, /_cardMenuItems\(key, own\)/);
+  assert.match(appView, /_cardMenuItems\(open\.key, open\.own\)/);
+  assert.match(appView, /label: 'Open card',/);
 });
 
 test('the lander fills its scroller without a percentage in the floor', () => {
