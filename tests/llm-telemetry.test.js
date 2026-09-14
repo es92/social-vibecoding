@@ -888,7 +888,7 @@ test('the aggregate report normalizes OpenRouter per-attempt deltas and preserve
       }
       return { rows: [{
         provider: 'openrouter', backend: 'coding_agent', component: 'coding_agent_build',
-        requested_model: 'openai/model', served_model: 'openai/model', billing_path: 'openrouter_byok',
+        requested_model: 'z-ai/glm-5.3-flash', served_model: null, billing_path: 'openrouter_byok',
         invocation_count: '2', logical_run_count: '1', retry_invocation_count: '1', fallback_served_count: '0',
         success_count: '1', error_count: '1', cancelled_count: '0', refusal_count: '0',
         input_tokens: null, cache_read_input_tokens: '0', cache_write_input_tokens: null,
@@ -931,6 +931,10 @@ test('the aggregate report normalizes OpenRouter per-attempt deltas and preserve
     assert.match(query.sql, /e\.app_id AS app_id/);
     assert.match(query.sql, /s\.app_id AS app_id/);
     assert.match(query.sql, /provider_input_tokens_total IS NULL THEN NULL ELSE a\.input_tokens/);
+    assert.match(query.sql, /a\.routed_model AS served_model/,
+      'served model is reported only when it was actually observed');
+    assert.doesNotMatch(query.sql, /COALESCE\(a\.routed_model, a\.requested_model\)/,
+      'the requested slug is not presented as provider-observed routing');
     assert.match(query.sql, /a\.metadata \? 'telemetry_component'/);
     assert.match(query.sql, /jsonb_each_text/);
     assert.doesNotMatch(query.sql, /prompt|messages|error_detail|user_id/);
@@ -948,6 +952,9 @@ test('the aggregate report normalizes OpenRouter per-attempt deltas and preserve
   assert.equal(report.groups[0].costSourceCounts.providerReported, 0);
   assert.equal(report.groups[0].logicalRunCount, 1);
   assert.equal(report.groups[0].retryInvocationCount, 1);
+  assert.equal(report.groups[0].requestedModel, 'z-ai/glm-5.3-flash');
+  assert.equal(report.groups[0].servedModel, null,
+    'the report does not invent a provider-served model from the request');
   assert.deepEqual(report.groups[0].knownCostUsd, {
     average: 0.12, median: 0.12, p95: 0.12,
   });

@@ -33,9 +33,6 @@ A direct Messages API call is one invocation. A server-side fallback produces on
 record per model hop. A coding-agent CLI run is one provider run because the CLI
 exposes aggregate terminal accounting; `providerTurnCount` records the API/model
 turns inside that run when the runtime reports them.
-An OpenRouter coding-agent run records a served model only when the provider
-reported one; the direct Codex transport reports none, so its served model is
-the requested model and no fallback is attributed to it (#2120).
 
 ## Diagnostic fields
 

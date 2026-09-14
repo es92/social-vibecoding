@@ -36,6 +36,7 @@ test('underway and review share context, sections and check explanations', () =>
   for (const status of ['active', 'promoted']) {
     const v = av._topicViewFor(status === 'active' ? 'session' : 'proposal', { ...failing, status });
     assert.equal(v.body.issues[0].title, av._ghIssues[0].title);
+    assert.equal(v.body.issueOptions[0].title, av._ghIssues[0].title);
     assert.match(v.body.issues[0].href, /dev\/issues\/1993$/);
     assert.equal(row(v, 'checks').fails[0].reason, 'Expected app, received login');
     assert.ok(row(v, 'checks').actions.some((a) => /re-run/i.test(a.label)));
@@ -225,6 +226,8 @@ test('actual shared component renders the entire card and escapes the issue titl
   assert.ok(html.includes('&lt;script&gt;issue&lt;/script&gt;'));
   assert.ok(!html.includes('<script>issue</script>'));
   assert.match(html, />Edit issues</, 'the owner can manage associations after creation');
+  assert.match(html, /rounded-full bg-violet-500\/10/, 'the issue number is a compact identity chip');
+  assert.match(html, /rounded-xl bg-zinc-100\/80/, 'the linked issue is a full navigable row');
   assert.match(html, /role="tablist" aria-label="Conversation"/);
   assert.match(html, /role="tab"[^>]+aria-selected="true"[^>]*>Build/);
   assert.ok(html.includes('Build'));
@@ -401,13 +404,39 @@ test('Build defaults only for underway authors and explicit tab links win', () =
   assert.equal(initialConversationTab(failing, { ...own, workspace: null, transcript: { id: failing.id } }, null, true), 'workspace');
 });
 
-test('the issue editor parses compact lists strictly and deterministically', () => {
-  const { parseLinkedIssueInput } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
-  assert.deepEqual(parseLinkedIssueInput('#27, 12 27'), { issues: [12, 27], error: '' });
-  assert.match(parseLinkedIssueInput('12 nope').error, /not an issue number/);
-  assert.match(parseLinkedIssueInput('2147483648').error, /too large/);
-  assert.match(parseLinkedIssueInput(Array.from({ length: 51 }, (_, i) => i + 1).join(',')).error,
-    /at most 50/);
+test('the issue picker normalizes, searches and ranks the local issue catalog', () => {
+  const { normalizeLinkedIssues, parseExactIssueNumber, filterIssueOptions } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
+  assert.deepEqual(normalizeLinkedIssues([27, 12, 27, 0, Number.NaN]), [12, 27]);
+  assert.deepEqual(parseExactIssueNumber('#27'), { issue: 27, error: '' });
+  assert.deepEqual(parseExactIssueNumber('authentication'), { issue: null, error: '' });
+  assert.match(parseExactIssueNumber('2147483648').error, /too large/);
+
+  const options = [
+    { n: 91, title: 'Preview authentication', href: '#91' },
+    { n: 19, title: 'Authentication status', href: '#19' },
+    { n: 1993, title: 'Wait for authentication before opening previews', href: '#1993' },
+    { n: 199, title: 'Unrelated', href: '#199' },
+  ];
+  assert.deepEqual(filterIssueOptions('auth', options, []).map((issue) => issue.n), [19, 91, 1993],
+    'title prefix sorts ahead of a title-body match');
+  assert.deepEqual(filterIssueOptions('#19', options, [19]).map((issue) => issue.n), [199, 1993],
+    'selected issues are excluded and number-prefix matches remain ranked');
+  assert.deepEqual(filterIssueOptions('', options, []), [], 'an empty search never opens a giant list');
+});
+
+test('the issue picker computes bounded add/remove deltas for the existing PATCH route', () => {
+  const { linkedIssueDelta } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
+  assert.deepEqual(linkedIssueDelta([12, 27, 44], [27, 50, 50]), {
+    addIssues: [50], removeIssues: [12, 44],
+  });
+
+  const src = fs.readFileSync('frontend/src/features/dev-board/topic/topic-head.tsx', 'utf8');
+  assert.match(src, /Search by number or title/);
+  assert.match(src, /aria-label={`Remove #\$\{issue\.n}: \$\{issue\.title}`}/);
+  assert.match(src, /event\.key === 'Escape'/);
+  assert.match(src, /if \(suggestions\[0\]\) addIssue/);
+  assert.match(src, /disabled=\{saving \|\| !changed\}/);
+  assert.match(src, /JSON\.stringify\(\{ addIssues, removeIssues \}\)/);
 });
 
 test('an unlinked owner gets the empty editor affordance while a reader sees no empty aside', () => {
@@ -417,7 +446,7 @@ test('an unlinked owner gets the empty editor affordance while a reader sees no 
   const { ChangeDetail } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
   const html = renderToHtml(createElement(ChangeDetail, { ...v, item, conversation: true }));
   assert.match(html, /No issues linked yet/);
-  assert.match(html, />Edit issues</);
+  assert.match(html, />Add issue</);
 
   const reader = context({ id: 99 });
   const readView = reader._topicViewFor('session', item);

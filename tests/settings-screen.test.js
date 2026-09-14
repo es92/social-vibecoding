@@ -1850,6 +1850,80 @@ test('settings.js publishes the rows rather than building them', () => {
   assert.match(render, /status\.textContent = 'Demo data/);
 });
 
+// ── App AI permissions rows (#1957) ───────────────────────────────────
+//
+// `#llm-grants-list` is features/settings/grants-list.tsx's, driven by what
+// `Settings._renderLlmGrants` publishes. A revoked row used to be the badge
+// and nothing else: the only way back was the app's own consent dialog, which
+// an app that never asks again never opens. Re-enable is that way back, and
+// the branch renders differently, so it gets executed coverage like the CLI
+// rows above rather than a source grep.
+
+const GRANTS_LIST = 'frontend/src/features/settings/grants-list.tsx';
+const grantRows = (state) => renderComponent(GRANTS_LIST, 'GrantsListView', state);
+const grantView = (over) => ({
+  appId: 11, appName: 'Demo App', appSlug: 'demo-app', revoked: false,
+  spent: '0.37', cap: '1.00', capValue: '1.00', capCents: 100,
+  showByok: false, allowByok: false, ...over,
+});
+
+test('the permissions list renders its host states, and idle draws nothing', () => {
+  // `idle` is the PRERENDER state: the shipped host is an empty div, and a
+  // first render that drew a line would mismatch on hydration.
+  assert.equal(grantRows({ phase: 'idle', grants: [] }), '');
+  assert.equal(shellMarkup().includes('<div id="llm-grants-list" class="space-y-2"></div>'),
+    true, 'and the prerendered document agrees');
+  assert.match(grantRows({ phase: 'loading', grants: [] }), /Loading…/);
+  assert.match(grantRows({ phase: 'error', grants: [] }), /Failed to load app permissions\./);
+  assert.match(grantRows({ phase: 'ready', grants: [] }), /No apps have asked to use AI yet\./);
+});
+
+test('a revoked app permission offers Re-enable; an active one offers Revoke (#1957)', () => {
+  const html2 = grantRows({
+    phase: 'ready',
+    grants: [
+      grantView(),
+      grantView({
+        appId: 12, appName: 'Quiet App', appSlug: 'quiet-app', revoked: true,
+        cap: '2.50', capValue: '2.50', capCents: 250, allowByok: true,
+      }),
+    ],
+  });
+  assert.equal((html2.match(/>Revoke</g) || []).length, 1, 'exactly one Revoke, on the active row');
+  assert.equal((html2.match(/>Re-enable</g) || []).length, 1, 'exactly one Re-enable, on the revoked row');
+  assert.match(html2, /data-role="re-enable"/,
+    'the control is addressable, which is what the declared #settings/app-ai check selects on');
+  // The copy beside it names what comes back, so the click is an informed one.
+  assert.match(html2, /Re-enabling restores its \$2\.50 daily cap\./);
+  // The revoked row keeps its muted badge — Re-enable sits beside it, not in
+  // place of it — and grows no cap editor or BYOK toggle: those are the
+  // ACTIVE row's controls and take over once the grant is back.
+  assert.match(html2, />Revoked</);
+  assert.equal((html2.match(/data-role="cap"/g) || []).length, 1, 'one cap editor, on the active row');
+  assert.equal((html2.match(/data-role="byok"/g) || []).length, 0, 'no BYOK toggle without a key on file');
+  // The language's compact accent action, not a bespoke box.
+  assert.match(html2, /data-role="re-enable" class="shrink-0 rounded bg-violet-600 hover:bg-violet-500 px-3 py-1 font-medium text-white transition-colors"/);
+});
+
+test('Re-enable re-grants by slug with the cap and BYOK choice the row carries (#1957)', () => {
+  const view = sliceMethod(settingsJs, '_grantView');
+  assert.match(view, /appSlug: String\(g\.appSlug \?\? ''\)/,
+    'the view carries the slug the re-grant endpoint is keyed on');
+  assert.match(view, /capCents: Number\(g\.dailyCapCents\) \|\| 0/,
+    'and the previous cap, in the cents the endpoint takes');
+  const handler = code(sliceMethod(settingsJs, '_onGrantReenable'));
+  assert.match(handler, /fetch\('\/api\/me\/llm-grants', \{\s*method: 'POST'/,
+    "the consent dialog's own upsert — a PATCH on the revoked id would not re-activate it");
+  assert.match(handler, /appSlug: grant\.appSlug, allowByok: !!grant\.allowByok/,
+    'the BYOK consent the user gave before is restored, never widened');
+  assert.match(handler, /dailyCapCents: grant\.capCents/, 'the previous cap is what comes back');
+  assert.match(handler, /r\.status === 400 && !j\.code/,
+    'a cap the allowance no longer covers falls back to the default cap instead of stranding the row');
+  assert.match(handler, /this\._isDemoGrant\(grant\.appId\)/, 'staging demo rows never reach the API');
+  assert.match(handler, /this\._renderLlmGrants\(\)/, 'success re-renders, so the row comes back active');
+  assert.doesNotMatch(handler, /ConfirmModal/, 're-enabling is not destructive and asks nothing twice');
+});
+
 
 // ── The connector cards (#1191) ───────────────────────────────────────
 

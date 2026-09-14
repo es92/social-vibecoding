@@ -465,9 +465,11 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // under it proving the search applied), so the count is unchanged.
   // 609 → 611: the two #1960 checks on the draft-delete shot, one for the
   // count the trash left behind and one for which draft is still standing.
-  // 611 → 613: the two #2118 checks on the OpenRouter spend shot, one for
+  // 611 → 613: #1956 adds one direct hamburger-menu check for issue cards
+  // and one for proposal cards, both exercising the Share to Messages row.
+  // 613 → 615: the two #2118 checks on the OpenRouter spend shot, one for
   // what is left on the key and one for what the turn cost.
-  assert.equal(DAPP.tests.length, 613);
+  assert.equal(DAPP.tests.length, 615);
 });
 
 test('the board’s fold rules: the column’s rhythm, not the wrapper’s, and a bare sheet', () => {

@@ -269,6 +269,12 @@ test("resolveProgress: 'blocks_produced' reads the snapshot, not the ledger", ()
   );
 });
 
+test('buildChallengeRow: carries the event id a Home card deep-links with', () => {
+  assert.equal(buildChallengeRow(row({ season_event_id: '42' })).season_event_id, 42,
+    'with the challenge id it addresses #leaderboard/challenges/<event>/<challenge>');
+  assert.equal(buildChallengeRow(row({ season_event_id: null })).season_event_id, null);
+});
+
 test('buildChallengeRow: the challenge row overrides the template per field', () => {
   const built = buildChallengeRow(row({
     goal: 'Challenge goal',

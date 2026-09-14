@@ -3283,6 +3283,11 @@ const AppView = {
     body.changeId = item.id;
     AppView._changeItems.set(Number(item.id), item);
     body.canEditIssues = !AppView.readOnly && (mine || !!App.user?.canAdminWrite);
+    body.issueOptions = (AppView._ghIssues || []).map((issue) => ({
+      n: Number(issue.number),
+      title: issue.title || `Issue #${issue.number}`,
+      href: `#app/${AppView.appData?.slug || App.currentApp}/dev/issues/${issue.number}`,
+    })).filter((issue) => Number.isSafeInteger(issue.n) && issue.n > 0);
     if (mine && underway && item.source !== 'imported') {
       const own = AppView._mySessionCardModel(item);
       card.rail.menuKey = own.rail.menuKey;
@@ -3746,6 +3751,7 @@ const AppView = {
     archive: '📦',    // 📦
     campaign: '📊',   // 📊
     open: '▢',             // ▢ the card on its own page
+    share: '↑',            // ↑ into Messages, distinct from ↗ leaving the platform
     // Nothing should reach this, but a descriptor added later without an
     // icon must still line up with its neighbours rather than losing the
     // leading column and shifting its own label left.
@@ -3764,6 +3770,18 @@ const AppView = {
   // Two spaces, not one: the sheet has no leading column to align against.
   _menuSheetLabel(it) {
     return `${AppView._menuIconGlyph(it)}  ${it.label}`;
+  },
+
+  // Hand one card to Messages by identity only. Messages owns destination
+  // selection and attachment confirmation; the server resolves the live
+  // title/state and re-checks access for every recipient when it is sent.
+  _shareCardToMessages(reference) {
+    const app = AppView.appData || {};
+    return window.UsernodeReact?.messages?.share?.({
+      ...reference,
+      appId: app.id,
+      appSlug: app.slug || App.currentApp,
+    });
   },
 
   // Register `items` under `key` and return the ⋯ trigger, or '' when there
@@ -9364,6 +9382,12 @@ const AppView = {
     if (!st.noNav) {
       items.push(...AppView._attrMenuItems('proposal', pr.id, pr));
     }
+    items.push({
+      label: 'Share to Messages',
+      icon: 'share',
+      title: 'Share this proposal card in a private conversation',
+      act: () => AppView._shareCardToMessages({ type: 'proposal', sessionId: pr.id }),
+    });
     if (pr.pr_url) {
       items.push({
         label: 'View PR on GitHub',
@@ -12982,6 +13006,12 @@ const AppView = {
         items.push(...AppView._attrMenuItems('issue', n, issue));
       }
     }
+    items.push({
+      label: 'Share to Messages',
+      icon: 'share',
+      title: 'Share this issue card in a private conversation',
+      act: () => AppView._shareCardToMessages({ type: 'issue', issueNumber: n }),
+    });
     if (issue.htmlUrl) {
       items.push({
         label: 'Open on GitHub',

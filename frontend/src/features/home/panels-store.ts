@@ -91,6 +91,8 @@ export interface ChallengeMeterView {
 
 export interface ChallengeRowView {
   id: string;
+  /** The challenge's event, for the card's deep link to its page; null without one. */
+  eventId: number | null;
   /** The challenge kind's icon, drawn in the tile; null when the kind has none. */
   icon: string | null;
   goal: string;

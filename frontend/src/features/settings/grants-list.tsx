@@ -5,7 +5,7 @@
  * The host is STATIC in the React tree (sections/app-ai.tsx), so this is a
  * plain child component rather than a portal: there is nothing to mount, and
  * nothing outside React writes here any more. settings.js keeps every fetch,
- * every PATCH/DELETE and the confirm dialog; this file keeps the markup.
+ * every POST/PATCH/DELETE and the confirm dialog; this file keeps the markup.
  *
  * The handlers are called BY NAME on `window.Settings` rather than passed in,
  * for the same reason the transcript calls `window.GroupChat`: settings.js is
@@ -18,19 +18,25 @@
  * noted at their call sites.
  */
 
+import { Button } from '@/components/ui/button';
+
 import { useStoreState } from '../../lib/use-store-state';
 import { grantsStore } from './grants-store.js';
 
 type GrantView = {
   appId: number;
   appName: string;
+  appSlug: string;
   revoked: boolean;
   spent: string;
   cap: string;
   capValue: string;
+  capCents: number;
   showByok: boolean;
   allowByok: boolean;
 };
+
+type GrantsState = { phase: 'idle' | 'loading' | 'error' | 'ready'; grants: GrantView[] };
 
 function controller(): any {
   return (typeof window !== 'undefined' ? (window as any).Settings : null) || null;
@@ -47,6 +53,18 @@ function controller(): any {
  */
 const ROW_CLASS = 'rounded-lg bg-white dark:bg-zinc-900 px-3 py-2 text-xs';
 
+/*
+ * #1957: the way back. A revoked row used to be the badge and nothing else —
+ * re-approving happened only through the app's own consent dialog, which an
+ * app that never asks again never opens. Re-enable re-grants through the same
+ * POST that dialog uses (Settings._onGrantReenable), restoring the cap and
+ * BYOK choice the row still carries, and the copy beside it says what comes
+ * back so the click is an informed one.
+ *
+ * The button is the language's compact accent action — the `compact` + `xs`
+ * string #agent-files-save writes, one card over. Revoke above keeps its
+ * hand-written red tint because it is destructive; this is the opposite act.
+ */
 function RevokedRow({ grant }: { grant: GrantView }) {
   return (
     <div className={ROW_CLASS}>
@@ -55,6 +73,21 @@ function RevokedRow({ grant }: { grant: GrantView }) {
         <span className="shrink-0 rounded px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
           Revoked
         </span>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
+        <span className="text-zinc-500 dark:text-zinc-500">
+          {`Re-enabling restores its $${grant.cap} daily cap.`}
+        </span>
+        <Button
+          type="button"
+          data-role="re-enable"
+          layout="shrink"
+          variant="compact"
+          size="xs"
+          onClick={() => { void controller()?._onGrantReenable?.(grant); }}
+        >
+          Re-enable
+        </Button>
       </div>
     </div>
   );
@@ -113,19 +146,22 @@ function GrantRow({ grant }: { grant: GrantView }) {
   );
 }
 
-export function GrantsList() {
-  const state = useStoreState(grantsStore);
-  if (state.phase === 'idle') return null;
-  if (state.phase === 'loading') return <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading…</p>;
-  if (state.phase === 'error') return <p className="text-xs text-red-700 dark:text-red-400">Failed to load app permissions.</p>;
-  if (!state.grants.length) {
+export function GrantsListView({ phase, grants }: GrantsState) {
+  if (phase === 'idle') return null;
+  if (phase === 'loading') return <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading…</p>;
+  if (phase === 'error') return <p className="text-xs text-red-700 dark:text-red-400">Failed to load app permissions.</p>;
+  if (!grants.length) {
     return <p className="text-xs text-zinc-500 dark:text-zinc-500">No apps have asked to use AI yet.</p>;
   }
   return (
     <>
-      {state.grants.map((g) => (
+      {grants.map((g) => (
         g.revoked ? <RevokedRow key={g.appId} grant={g} /> : <GrantRow key={g.appId} grant={g} />
       ))}
     </>
   );
+}
+
+export function GrantsList() {
+  return <GrantsListView {...useStoreState<GrantsState>(grantsStore)} />;
 }

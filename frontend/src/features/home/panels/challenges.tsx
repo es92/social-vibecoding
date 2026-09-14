@@ -130,7 +130,7 @@ export function ChallengesPanel({ view }: { view: ChallengesView }) {
               view={row}
               className="home-challenge-card"
               data-challenge-id={row.id}
-              onClick={() => panels()?.goToChallenges?.()}
+              onClick={() => panels()?.goToChallenge?.(row.eventId, row.id)}
             />
           ))}
         </div>

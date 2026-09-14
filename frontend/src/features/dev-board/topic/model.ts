@@ -278,10 +278,19 @@ export interface TranscriptSection {
   expanded: boolean;
 }
 
+/** A compact issue reference used by the change detail and its issue picker. */
+export interface IssueLink {
+  n: number;
+  title: string;
+  href: string;
+}
+
 /** Everything under the card, by topic kind. */
 export interface TopicBody {
   changeId?: number;
-  issues?: { n: number; title: string; href: string }[];
+  issues?: IssueLink[];
+  /** Open issues already loaded for this app; the picker filters them locally. */
+  issueOptions?: IssueLink[];
   /** The proposal owner/full platform admin may change issue associations. */
   canEditIssues?: boolean;
   testing?: { html: string | null; path: string | null };

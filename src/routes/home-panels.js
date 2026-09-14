@@ -135,6 +135,9 @@ function buildChallengeRow(r) {
   const ctaLink = eff('cta_link');
   return {
     id: Number(r.id),
+    // The event the challenge belongs to. With `id` it is the Challenges tab's
+    // deep link (#leaderboard/challenges/<event>/<challenge>) a Home card opens.
+    season_event_id: r.season_event_id == null ? null : Number(r.season_event_id),
     label: String(r.t_category || 'OTHER').toUpperCase(),
     icon: r.kind_icon || null,
     goal: eff('goal'),

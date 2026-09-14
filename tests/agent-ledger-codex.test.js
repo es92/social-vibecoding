@@ -239,7 +239,7 @@ function makeTransactionPool() {
       const r = {
         id: params[0], session_id: params[1], user_id: params[2],
         requested_model: params[3], reasoning_effort: params[4],
-        status: 'running', metadata: JSON.parse(params[11] || '{}'),
+        routed_model: null, status: 'running', metadata: JSON.parse(params[11] || '{}'),
       };
       rowsById.set(params[0], r);
       return { rows: [r] };
@@ -251,7 +251,7 @@ function makeTransactionPool() {
     }
     if (/UPDATE agent_turns SET/.test(sql)) {
       const r = rowsById.get(params[0]);
-      const reconcileTerminalUsage = params[20] === true;
+      const reconcileTerminalUsage = params[19] === true;
       if (r && (r.status === 'running' || reconcileTerminalUsage)) {
         if (!reconcileTerminalUsage) r.status = params[1];
         r.agent_thread_id = params[4] || r.agent_thread_id || null;
@@ -265,8 +265,7 @@ function makeTransactionPool() {
         r.provider_cache_write_input_tokens_total = params[12];
         r.provider_output_tokens_total = params[13];
         r.provider_reasoning_output_tokens_total = params[14];
-        r.metadata = JSON.parse(params[19] || '{}');
-        r.routed_model = params[18] ?? r.routed_model ?? null;
+        r.metadata = JSON.parse(params[18] || '{}');
         r.updated = true;
       }
       return { rows: r && r.status ? [{ id: params[0] }] : [] };
@@ -306,6 +305,8 @@ test('completeCodexAttempt completes once and is idempotent on repeat', async ()
   assert.equal(first.delta.inputTokens, 100);
   assert.equal(first.estimatedCost.costSource, 'requested_model_catalog_estimate');
   assert.equal(rowsById.get(started.turnUuid).status, 'completed');
+  assert.equal(rowsById.get(started.turnUuid).routed_model, null,
+    'the provider-served model remains unknown when Codex does not report it');
 
   const second = await completeCodexAttempt({
     pool, turnUuid: started.turnUuid, status: 'completed', threadId: 'thr-1',
@@ -359,39 +360,6 @@ test('OpenRouter completion persists only allowlisted run diagnostics on its aut
   } finally {
     llmTelemetry._setEnabledForTests(previousEnabled);
   }
-});
-
-test('completeCodexAttempt records a served model only when the provider reported one (#2120)', async () => {
-  const runtimeContext = { agentConfigVersion: 1, pricingSnapshot: { available: false } };
-  const unobserved = makeTransactionPool();
-  const started = await startCodexAttempt({
-    pool: unobserved.pool, session: { id: 13, agent_config_version: 1 }, userId: 1,
-    logicalTurnId: 'lt-served-1', attemptNumber: 1, model: 'z-ai/glm-5.3-flash',
-    resumeThreadId: null, runtimeContext,
-  });
-  await completeCodexAttempt({
-    pool: unobserved.pool, turnUuid: started.turnUuid, status: 'completed', threadId: 'thr-served',
-    usageTotal: { inputTokens: 10, outputTokens: 2 },
-  });
-  const row = unobserved.rowsById.get(started.turnUuid);
-  assert.equal(row.status, 'completed');
-  assert.equal(row.requested_model, 'z-ai/glm-5.3-flash');
-  assert.equal(row.routed_model, null,
-    'the direct Codex transport reports no served model, so the column does not echo the request');
-
-  const observed = makeTransactionPool();
-  const reported = await startCodexAttempt({
-    pool: observed.pool, session: { id: 14, agent_config_version: 1 }, userId: 1,
-    logicalTurnId: 'lt-served-2', attemptNumber: 1, model: 'z-ai/glm-5.3-flash',
-    resumeThreadId: null, runtimeContext,
-  });
-  await completeCodexAttempt({
-    pool: observed.pool, turnUuid: reported.turnUuid, status: 'completed', threadId: 'thr-served-2',
-    usageTotal: { inputTokens: 10, outputTokens: 2 },
-    servedModel: 'z-ai/glm-5.3-flash:exacto',
-  });
-  assert.equal(observed.rowsById.get(reported.turnUuid).routed_model, 'z-ai/glm-5.3-flash:exacto',
-    'a provider-reported served model is what routed_model records');
 });
 
 test('completeCodexAttempt records unavailable cost when usage was not observed', async () => {

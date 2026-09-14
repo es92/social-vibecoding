@@ -58,6 +58,29 @@ function isBusy(session) {
 }
 
 /**
+ * Whether an AI turn is in flight for this session RIGHT NOW (#1958).
+ *
+ * `isBusy` above reads the flag the server wrote into the last
+ * /api/me/active-sessions answer, which is true for exactly as long as that
+ * answer is. `SessionState` (public/js/session-state.js) is what the server
+ * has said SINCE: it pushes a `session_state` event on every real turn
+ * boundary, so a turn that ended after the payload was issued is already
+ * idle there — and every other surface that draws this fact (the dev
+ * screen's session list, the board's cards) reads it through the store.
+ * This row was the one that did not, so its pill went Working → Ready one
+ * refetch round trip after the turn ended, and a panel opened later painted
+ * the flag a fetch during the turn had left behind until the open-time
+ * refetch landed. A live entry wins; the payload's flag is the fallback for
+ * a session the store has never heard of.
+ */
+function liveBusy(session) {
+  const fallback = isBusy(session);
+  const live = typeof window !== 'undefined' ? window.SessionState : null;
+  if (!live || typeof live.isBusy !== 'function') return fallback;
+  return !!live.isBusy(session.id, fallback);
+}
+
+/**
  * A PARKED session (owner review).
  *
  * "Changes in progress" and "Changes in other apps" are lists of what is
@@ -123,7 +146,7 @@ function toRow(session, appNameFallback) {
       || `Session #${session.id}`,
     href: `#app/${session.app_slug}/dev/sessions/${session.id}`,
     status: statusLabel(session),
-    busy: isBusy(session),
+    busy: liveBusy(session),
     sortAt: timeOf(session.last_activity_at) || timeOf(session.created_at),
     // Streamlined Concept: the app-context sheet's change rows show a
     // relative time, the way the Figma board draws them.
@@ -726,6 +749,13 @@ const Improve = {
 
   async loadSessions() {
     const token = ++Improve._loadToken;
+    // #1958: stamped BEFORE the request goes out — see SessionState.seed.
+    // This used to hand the seed `data.issuedAt`, a field the endpoint has
+    // never sent, so every payload was stamped at ARRIVAL and an answer that
+    // was in flight while a turn ended put the spinner straight back — the
+    // inversion the store's own comment warns about. DevChat.loadActiveSessions
+    // stamps the same call the same way.
+    const issuedAt = Date.now();
     if (!improveStore.get().sessionsLoaded) improveStore.set({ loadingSessions: true });
     let sessions = [];
     let tasks = [];
@@ -739,7 +769,7 @@ const Improve = {
         // session that finishes while the panel is open updates in place
         // instead of going stale until the next open.
         if (window.SessionState) {
-          window.SessionState.seed(sessions, data.issuedAt);
+          window.SessionState.seed(sessions, issuedAt);
         }
       }
     } catch {
@@ -774,15 +804,24 @@ const Improve = {
   /**
    * Session state changed underneath us.
    *
-   * Two jobs, and the second is the one that matters with the panel SHUT: an
-   * open panel reloads its list, and the button's glyph tracks whether
-   * anything is running at all. `SessionState` is synced from app.js's boot
+   * Three jobs. The rows re-derive from the last payload, so their pills
+   * follow the push (#1958); an open panel then reloads its list; and the
+   * button's glyph tracks whether anything is running at all — the one that
+   * matters with the panel SHUT. `SessionState` is synced from app.js's boot
    * path and re-ticks on its own (faster while something is in flight), so
    * this is live without the panel ever being opened — which is the whole
    * point of putting the cue on the button.
    */
   onSessionStateChanged() {
     Improve.refreshWorking();
+    // #1958: the rows are re-derived from the last payload FIRST, so the
+    // Working → Ready flip IS the push — one frame, no round trip — and it
+    // happens with the panel shut too, so opening it after a turn ended
+    // paints Ready rather than the flag a fetch during the turn left behind.
+    // The reload below (open panels only) still refreshes what the store
+    // cannot know: a title that landed at turn end, the status line, the
+    // activity stamp.
+    if (improveStore.get().sessionsLoaded) Improve._rebucket();
     if (improveStore.get().open) Improve.loadSessions();
   },
 

@@ -4,8 +4,8 @@
 // ── What this renders ──────────────────────────────────────────────────
 //
 // Everything `TopochainChallenges._renderShell()` used to innerHTML into
-// #challenges-root: the grid host, and the two full-screen overlays that sit
-// on top of it. The descriptors come from ./topochain-challenges-store.js,
+// #challenges-root: the grid host, and the challenge detail page and profile
+// overlay that sit on top of it. The descriptors come from ./topochain-challenges-store.js,
 // which that module fills; nothing here decides anything. The completed
 // split, the summary tally, the deep-link resolution, the scheme guard on the
 // CTA — all of it stays in the .js, which is both the island rule's
@@ -23,15 +23,16 @@
 //
 // ── Two things that are NOT portals ────────────────────────────────────
 //
-// Both overlays are `fixed inset-0 z-50` children of #challenges-root, which
-// is where the markup put them and where they still are. They cover the
-// viewport by position, not by parentage, so there is nothing for a portal to
-// solve — and a portal would put React-managed nodes outside the island,
-// which is the one thing the island rule is about.
+// The profile overlay is a `fixed inset-0 z-50` child of #challenges-root,
+// which is where the markup put it and where it still is. They cover the viewport by position,
+// not by parentage, so there is nothing for a portal to solve — and a portal
+// would put React-managed nodes outside the island, which is the one thing
+// the island rule is about.
 //
-// Backdrop dismiss keeps its original test verbatim: `e.target.id === <the
-// overlay root>`, not `e.target === e.currentTarget`. They agree today, and
-// the id form is the one the markup shipped.
+// The profile overlay's backdrop dismiss keeps its original test verbatim:
+// `e.target.id === <the overlay root>`, not `e.target === e.currentTarget`.
+// The detail page is not an overlay at all: it is a level of the screen, in
+// flow (see PAGE below).
 //
 // ── Whitespace ─────────────────────────────────────────────────────────
 //
@@ -42,11 +43,12 @@
 // here (tests/shell-build.test.js rejects it: adjacent text children are
 // React #418 in a hydrating tree).
 
-import { Fragment } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
+import { useIsomorphicLayoutEffect } from '../../lib/legacy-dom';
 import { useStoreState } from '../../lib/use-store-state';
-import { ChallengeCard } from './challenge-card';
+import { ChallengeCard, ChallengeMeta, ProgressRail } from './challenge-card';
 import type { ChallengeState } from './challenge-card';
 import { topochainChallengesStore } from './topochain-challenges-store.js';
 
@@ -62,6 +64,8 @@ const controller = () => (window as {
     _toOnboarding(eventId: number): void;
     _moreBreakdown(): void;
     closeChallengeDetail(): void;
+    _backFromDetail(): void;
+    handleBack(): boolean;
     closeUserProfile(): void;
     openUserProfile(userId: number): void;
   };
@@ -109,15 +113,23 @@ type EntriesView =
 type CtaView = { kind: 'link'; href: string; label: string } | { kind: 'text'; label: string };
 
 type DetailView = {
-  label: string;
+  key: string;
+  eyebrow: string | null;
   goal: string;
   task: string | null;
-  description: string | null;
-  mineNote: string | null;
-  requirements: string | null;
-  rewardLogic: string | null;
+  deadline: string | null;
+  amount: { text: string; earned: boolean } | null;
+  state: ChallengeState;
+  stateLabel: string;
+  fill: number | null;
+  counted: boolean;
   cta: CtaView | null;
-  totals: string | null;
+  description: string | null;
+  requirements: string | null;
+  scoring: string | null;
+  participants: string;
+  pointsTotal: string | null;
+  moreLabel: string;
   entries: EntriesView;
 };
 
@@ -148,24 +160,42 @@ type ProfileView =
 // while there are two or more; below that the grid is one full-width column.
 const GRID = 'grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(21rem,100%),1fr))]';
 const CARD_FEATURED = ' ring-1 ring-violet-500/40';
-// The detail overlay's category line. It used to glue two strings into
-// `dark:text-violet-400dark:text-violet-400`, a class nothing compiles, so the
-// label lost its dark-mode colour.
-const CARD_LABEL = 'text-[10px] uppercase tracking-wide text-violet-700 dark:text-violet-400 font-semibold';
 const GROUP_HEADING = 'text-sm font-semibold text-zinc-500 dark:text-zinc-400 mt-6 mb-2';
 const GRID_ERROR = 'rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 '
   + 'dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 text-sm';
 
+// The challenge detail PAGE (ITERATION 03's challenge detail screen) is a
+// LEVEL of the Leaderboard screen, the way a Settings section and an app's
+// detail in Browse are. It takes the screen's place below the platform
+// header, and that header becomes its nav bar — the chevron up to the grid
+// and the challenge's name (TopochainChallenges._syncChrome / handleBack) —
+// while the screen's own title, tabs and event bar (./index.tsx) and the grid
+// step aside. So it scrolls with the screen and keeps the shell's safe areas,
+// offline strip and pull-to-refresh, and nothing sits hidden behind it.
+//
+// The root and the panel keep #tc-se-detail-overlay and #tc-se-detail-panel,
+// which the declared screenshot check selects on.
+const PAGE = 'mx-auto w-full max-w-lg';
+const PAGE_BODY = 'flex flex-col gap-3.5 pb-8';
+const EYEBROW = 'min-w-0 truncate text-[0.8125rem] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400';
+const PAGE_TITLE = 'text-[1.625rem] font-semibold leading-tight tracking-tight text-balance text-zinc-900 dark:text-zinc-100';
+const PROSE = 'text-sm text-zinc-600 dark:text-zinc-400';
+const SECTION_HEADING = 'text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100';
+const CTA_LINK = 'flex h-12 w-full items-center justify-center rounded-[0.875rem] bg-violet-600 px-4 '
+  + 'text-[0.9375rem] font-semibold text-white transition-colors hover:bg-violet-500';
+
 const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4';
-// Split either side of the max-width, which is the one thing the two panels
-// disagree about — so each still renders its class attribute in the order the
-// markup shipped rather than with the width tacked on the end.
+// Split either side of the max-width, so the profile panel still renders its
+// class attribute in the order the markup shipped rather than with the width
+// tacked on the end.
 const PANEL_HEAD = 'bg-white dark:bg-zinc-900 rounded-xl p-6 w-full';
 const PANEL_TAIL = 'max-h-[85vh] overflow-y-auto shadow-xl border border-zinc-200 '
   + 'dark:border-zinc-800';
 const CLOSE_X = 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 text-xl leading-none dark:text-zinc-400';
-const ENTRY_ROW = 'tc-se-entry flex items-center justify-between gap-3 text-xs p-1.5 rounded '
-  + 'hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer';
+// A row is a button: the name and points are one control that opens the
+// participant's profile, reachable by keyboard as well as by touch.
+const ENTRY_ROW = 'tc-se-entry -mx-2 flex min-h-11 w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 '
+  + 'text-left text-sm font-medium cursor-pointer hover:bg-zinc-200/60 disabled:cursor-default dark:hover:bg-zinc-800';
 // × as a character, not `&times;` — the entity was HTML source; this is text.
 const TIMES = '×';
 
@@ -238,12 +268,12 @@ function Grid({ view }: { view: GridView | null }): ReactNode {
   );
 }
 
-// ── Detail overlay ──────────────────────────────────────────────────────
+// ── Detail page ─────────────────────────────────────────────────────────
 
 function Cta({ view }: { view: CtaView }): ReactNode {
   if (view.kind === 'text') {
     return (
-      <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
         {view.label} <span className="italic">(link unavailable)</span>
       </p>
     );
@@ -252,102 +282,108 @@ function Cta({ view }: { view: CtaView }): ReactNode {
   // http(s)-only scheme check. There is deliberately no fallback branch: a
   // link that failed it is a different descriptor kind, handled above.
   return (
-    <a
-      href={view.href}
-      target="_blank"
-      rel="noopener"
-      className="inline-block mb-3 rounded-lg bg-violet-600 hover:bg-violet-500 px-4 py-2 text-sm font-medium text-white transition-colors"
-    >
+    <a href={view.href} target="_blank" rel="noopener" className={CTA_LINK}>
       {view.label}
     </a>
   );
 }
 
-function Entries({ view }: { view: EntriesView }): ReactNode {
+function Entries({ view, moreLabel }: { view: EntriesView; moreLabel: string }): ReactNode {
   if (view.kind === 'loading') {
-    return <p className="text-xs text-zinc-500 dark:text-zinc-400">Loading participants…</p>;
+    return <p className={PROSE}>Loading participants…</p>;
   }
-  if (view.kind === 'error') return <p className="text-xs text-zinc-500 dark:text-zinc-400">{view.message}</p>;
-  if (view.kind === 'empty') return <p className="text-xs text-zinc-500 dark:text-zinc-400">No participants yet.</p>;
+  if (view.kind === 'error') return <p className={PROSE}>{view.message}</p>;
+  if (view.kind === 'empty') return <p className={PROSE}>No participants yet.</p>;
   return (
     <>
-      <ul className="space-y-1">
+      <ul className="flex flex-col">
         {view.rows.map((row) => (
-          <li
-            key={row.key}
-            className={ENTRY_ROW}
-            onClick={() => {
-              if (Number.isInteger(row.userId)) controller()?.openUserProfile(row.userId);
-            }}
-          >
-            <span className="text-zinc-700 dark:text-zinc-200">
-              {row.name}
-              {/* The leading space lived between the two spans in the old
-                  string; it is inside this one now, for the reason the header
-                  gives. */}
-              {row.nonPodium ? <span className="text-zinc-500 dark:text-zinc-400"> (non-podium)</span> : null}
-            </span>
-            <span className="font-mono text-zinc-500 dark:text-zinc-400">{row.points}</span>
+          <li key={row.key}>
+            <button
+              type="button"
+              className={ENTRY_ROW}
+              disabled={!Number.isInteger(row.userId)}
+              onClick={() => {
+                if (Number.isInteger(row.userId)) controller()?.openUserProfile(row.userId);
+              }}
+            >
+              <span className="min-w-0 truncate text-zinc-900 dark:text-zinc-100">
+                {row.name}
+                {/* The leading space lived between the two spans in the old
+                    string; it is inside this one now, for the reason the header
+                    gives. */}
+                {row.nonPodium ? <span className="font-normal text-zinc-500 dark:text-zinc-400"> (non-podium)</span> : null}
+              </span>
+              <span className="shrink-0 tabular-nums text-zinc-700 dark:text-zinc-300">{row.points}</span>
+            </button>
           </li>
         ))}
       </ul>
       {view.hasMore ? (
         <button
           id="tc-se-breakdown-more"
-          className="mt-2 text-xs text-violet-700 hover:text-violet-400 dark:text-violet-400"
+          className="self-start text-[0.8125rem] font-medium text-violet-700 hover:underline dark:text-violet-400"
           onClick={() => controller()?._moreBreakdown()}
         >
-          Load more
+          {moreLabel}
         </button>
       ) : null}
     </>
   );
 }
 
-function DetailPanel({ view }: { view: DetailView }): ReactNode {
+function PageSection({ heading, children }: { heading: string; children: string }): ReactNode {
+  return (
+    <section className="flex flex-col gap-1">
+      <h3 className={SECTION_HEADING}>{heading}</h3>
+      <p className={PROSE}>{children}</p>
+    </section>
+  );
+}
+
+// The board's order, below the platform header that carries the way back and
+// the name: the category, the title with the card's meta line ("3d left · 720
+// pts so far") and the task, the clean rail,
+// the action, then the reading — description,
+// Requirements, Scoring — and Participants under a rule. The board's
+// "Next: …" hint under the action is deliberately absent (owner decision),
+// and so is its artwork well until challenges carry illustrations: an empty
+// 224px block would be the tallest thing on the page.
+export function DetailPage({ view }: { view: DetailView }): ReactNode {
   return (
     <>
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div>
-          <div className={CARD_LABEL}>{view.label}</div>
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{view.goal}</h2>
-        </div>
-        <button
-          id="tc-se-detail-close"
-          className={CLOSE_X}
-          aria-label="Close"
-          onClick={() => controller()?.closeChallengeDetail()}
-        >
-          {TIMES}
-        </button>
+      <div className="flex flex-col gap-1.5">
+        {view.eyebrow ? <div className={EYEBROW}>{view.eyebrow}</div> : null}
+        <h2 id="tc-se-detail-title" tabIndex={-1} className={PAGE_TITLE}>{view.goal}</h2>
+        <ChallengeMeta
+          size="lg"
+          deadline={view.deadline}
+          text={view.amount ? view.amount.text : null}
+          earned={!!view.amount?.earned}
+        />
+        {view.task ? <p className={PROSE}>{view.task}</p> : null}
       </div>
-      {view.task ? (
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-2">{view.task}</p>
-      ) : null}
-      {view.description ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-2">{view.description}</p>
-      ) : null}
-      {view.mineNote ? (
-        <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-2 font-medium">
-          {view.mineNote}
-        </p>
-      ) : null}
-      {view.requirements ? (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-          <span className="font-medium">Requirements:</span> {view.requirements}
-        </p>
-      ) : null}
-      {view.rewardLogic ? (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-          <span className="font-medium">Reward logic:</span> {view.rewardLogic}
-        </p>
-      ) : null}
+      <ProgressRail
+        size="lg"
+        state={view.state}
+        label={view.stateLabel}
+        fill={view.fill}
+        name={view.goal}
+        counted={view.counted}
+      />
       {view.cta ? <Cta view={view.cta} /> : null}
-      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
-        <div className="text-[0.9375rem] text-zinc-500 dark:text-zinc-400 mb-1">Participants</div>
-        {view.totals ? <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">{view.totals}</p> : null}
-        <Entries view={view.entries} />
-      </div>
+      {view.description ? <p className={PROSE}>{view.description}</p> : null}
+      {view.requirements ? <PageSection heading="Requirements">{view.requirements}</PageSection> : null}
+      {view.scoring ? <PageSection heading="Scoring">{view.scoring}</PageSection> : null}
+      <section className="flex flex-col gap-2 border-t border-zinc-200 pt-3.5 dark:border-zinc-800">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className={`shrink-0 ${SECTION_HEADING}`}>{view.participants}</h3>
+          {view.pointsTotal ? (
+            <span className="min-w-0 truncate text-[0.8125rem] text-zinc-500 dark:text-zinc-400">{view.pointsTotal}</span>
+          ) : null}
+        </div>
+        <Entries view={view.entries} moreLabel={view.moreLabel} />
+      </section>
     </>
   );
 }
@@ -387,6 +423,21 @@ function ProfileBody({ view }: { view: ProfileView }): ReactNode {
 
 // ── The pane ────────────────────────────────────────────────────────────
 
+// The Leaderboard screen's scroller — the screen itself, or the document in
+// browser-scroller mode; PlatformUI resolves which, exactly as Settings asks
+// it. Read and scrolled, never written into: the screen is not this island's.
+function screenScroller(): HTMLElement | null {
+  const screen = document.getElementById('leaderboard-screen');
+  const ui = (window as { PlatformUI?: { scrollElement?(el: HTMLElement | null): HTMLElement | null } }).PlatformUI;
+  return ui?.scrollElement?.(screen) || screen;
+}
+
+// Where a scroller's scroll events arrive: the window for the document's own.
+function scrollTarget(el: HTMLElement): HTMLElement | Window {
+  return el === document.scrollingElement || el === document.documentElement || el === document.body
+    ? window : el;
+}
+
 export function ChallengesPane(): ReactNode {
   const state = useStoreState(topochainChallengesStore) as {
     mounted: boolean;
@@ -395,26 +446,73 @@ export function ChallengesPane(): ReactNode {
     profile: ProfileView | null;
   };
 
+  // A page is a level of the screen, so the screen's scroller is the page's:
+  // it opens at its top, and going back up returns the grid to where it was
+  // left, as a Settings section's menu does. The grid's offset is TRACKED while
+  // the grid shows rather than read at open, because by the time the page has
+  // rendered the grid is gone and the screen's scroll has already clamped.
+  //
+  // Two layout effects, in this order on purpose: the restore runs first, then
+  // the tracker's setup reads the restored value. Layout effects, so the
+  // tracker is removed within the same commit that hides the grid, before a
+  // clamp's scroll event could reach it; and so both land inside the level
+  // transition, whose store write flushes synchronously.
+  const gridScroll = useRef(0);
+  const wasOpen = useRef(false);
+  const openKey = state.detail ? state.detail.key : null;
+  useIsomorphicLayoutEffect(() => {
+    const el = screenScroller();
+    if (el) {
+      if (openKey != null) el.scrollTop = 0;
+      else if (wasOpen.current) el.scrollTop = gridScroll.current;
+    }
+    wasOpen.current = openKey != null;
+  }, [openKey]);
+  useIsomorphicLayoutEffect(() => {
+    if (!state.mounted || openKey != null) return undefined;
+    const el = screenScroller();
+    if (!el) return undefined;
+    const target = scrollTarget(el);
+    const track = () => { gridScroll.current = el.scrollTop; };
+    track();
+    target.addEventListener('scroll', track, { passive: true });
+    return () => target.removeEventListener('scroll', track);
+  }, [state.mounted, openKey]);
+
+  // A page moves focus to its title when it opens, so a keyboard or a screen
+  // reader starts at the top of the new level, and Escape goes back up. With
+  // the profile overlay stacked on the page, Escape closes that first.
+  const detailKey = state.detail ? state.detail.key : null;
+  const profileOpen = !!state.profile;
+  useEffect(() => {
+    if (detailKey == null) return undefined;
+    if (!profileOpen) document.getElementById('tc-se-detail-title')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (profileOpen) controller()?.closeUserProfile();
+      else controller()?.handleBack();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [detailKey, profileOpen]);
+
   // The prerender state, and the state before the pane's first open.
   if (!state.mounted) return null;
 
   return (
     <>
-      <div id="tc-se-grid">
+      <div id="tc-se-grid" className={state.detail ? 'hidden' : undefined}>
         <Grid view={state.grid} />
       </div>
-      {/* Challenge detail overlay */}
+      {/* Challenge detail page */}
       <div
         id="tc-se-detail-overlay"
-        className={state.detail ? OVERLAY : `hidden ${OVERLAY}`}
-        onClick={(e) => {
-          if ((e.target as HTMLElement).id === 'tc-se-detail-overlay') {
-            controller()?.closeChallengeDetail();
-          }
-        }}
+        className={state.detail ? PAGE : `hidden ${PAGE}`}
+        role="region"
+        aria-labelledby={state.detail ? 'tc-se-detail-title' : undefined}
       >
-        <div id="tc-se-detail-panel" className={`${PANEL_HEAD} max-w-lg ${PANEL_TAIL}`}>
-          {state.detail ? <DetailPanel view={state.detail} /> : null}
+        <div id="tc-se-detail-panel" className={PAGE_BODY}>
+          {state.detail ? <DetailPage key={state.detail.key} view={state.detail} /> : null}
         </div>
       </div>
       {/* User profile overlay */}

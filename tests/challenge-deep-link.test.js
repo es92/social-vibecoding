@@ -147,7 +147,7 @@ function loadPane({ challenges, eventId = null }) {
   pane._challenges = challenges;
   pane._challengesLoading = false;
   pane._loadedEventId = eventId;
-  return { pane, context, byId, subs, store };
+  return { pane, context, byId, subs, store, sandbox };
 }
 
 const CH = [
@@ -616,6 +616,210 @@ test('the grid’s card descriptors carry the rail and never re-sort by it', () 
   }
 });
 
+// ─── The detail page (ITERATION 03) ─────────────────────────────────────
+//
+// The detail is a page now, so a tap gives it an address and a history entry:
+// the phone's back gesture pops it, the back disc spends it, and the router's
+// answer to the push must not reset the page it just opened.
+
+test('a card tap opens the page and pushes its address; leaving the address closes it', () => {
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  pane._openIdx(0);
+  const first = pane._ordered()[0];
+  assert.equal(store.get().detail.key, String(first.id));
+  assert.equal(sandbox.location.hash, `#leaderboard/challenges/900500/${first.id}`,
+    'the tap pushes the page’s own deep-link address');
+  const opened = store.get().detail;
+  pane.openFromHash(900500, Number(first.id));
+  assert.equal(store.get().detail, opened,
+    'the router resolving that address again leaves the open page untouched');
+  sandbox.location.hash = '#leaderboard/challenges';
+  pane._onHashChange();
+  assert.equal(store.get().detail, null, 'the back gesture’s hashchange closes the page');
+});
+
+test('the back disc spends the pushed entry; a page without one just closes', () => {
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  let backs = 0;
+  sandbox.window.history = { back() { backs += 1; } };
+  pane._openIdx(0);
+  pane._backFromDetail();
+  assert.equal(store.get().detail, null, 'closed at once, not on a later hashchange');
+  assert.equal(backs, 1, 'and the history step the tap added is taken back');
+  sandbox.location.hash = '#leaderboard/challenges';
+  pane.openChallengeDetail(CH[0]);
+  pane._backFromDetail();
+  assert.equal(store.get().detail, null);
+  assert.equal(backs, 1, 'a page opened without an entry (?shot, a cold link) takes no history step');
+});
+
+test('a challenge address reached from another section opens a page that survives the section switch', () => {
+  // Standings or Kudos showing, then Forward (or a pasted link) to a
+  // challenge: the router opens the page first and switches section second,
+  // and that switch replaceStates the address to #leaderboard/challenges.
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  sandbox.window.Leaderboard = { section: 'topochain' };
+  sandbox.location.hash = '#leaderboard/challenges/900500/900500';
+  pane.openFromHash(900500, 900500);
+  assert.ok(store.get().detail, 'the page opens');
+  assert.equal(pane._detailHash, null, 'but claims no entry the section switch is about to rewrite');
+  sandbox.window.Leaderboard.section = 'challenges';
+  sandbox.location.hash = '#leaderboard/challenges';
+  pane._onHashChange({ newURL: 'https://example.test/#leaderboard/challenges/900500/900500' });
+  assert.ok(store.get().detail, 'so the rewrite inside the same dispatch does not close it');
+  pane._onHashChange({ newURL: 'https://example.test/#leaderboard' });
+  assert.equal(store.get().detail, null, 'but a later move to another tab does');
+
+  // Already on the Challenges tab, Forward to the same address: no switch
+  // follows, and the page owns the entry as a tap would.
+  const again = loadPane({ challenges: CH, eventId: 900500 });
+  again.sandbox.window.Leaderboard = { section: 'challenges' };
+  again.sandbox.location.hash = '#leaderboard/challenges/900500/900500';
+  again.pane.openFromHash(900500, 900500);
+  assert.equal(again.pane._detailHash, '#leaderboard/challenges/900500/900500');
+  again.sandbox.location.hash = '#leaderboard/challenges';
+  again.pane._onHashChange();
+  assert.equal(again.store.get().detail, null, 'and Back closes it');
+});
+
+test('without an event id there is no address to push, and the page still opens', () => {
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: null });
+  pane._openIdx(0);
+  assert.ok(store.get().detail, 'the page opens');
+  assert.equal(sandbox.location.hash, '', 'no unresolvable address is pushed');
+  assert.equal(pane._detailHash, null);
+});
+
+test('the page descriptor: category, the card’s meta line, task, a clean rail', () => {
+  const ch = {
+    id: 5, completed: false,
+    effective: { schedule_end: inHours(71) },
+    card_preview: { label: 'ONBOARDING', goal: 'Join block production', task: 'Up to 2,000 pts a week', reward: '2000' },
+    detail_modal: { description: 'Run a node.', requirements: 'A node reachable all week.', reward_logic: 'Points scale with blocks.' },
+  };
+  const { pane, store } = loadPane({ challenges: [ch], eventId: 900500 });
+  pane.openChallengeDetail(ch);
+  const d = store.get().detail;
+  assert.equal(d.eyebrow, 'ONBOARDING', 'the category alone: the deadline is on the meta line');
+  assert.equal(d.deadline, '3d left', 'in the card’s words, from the card’s rule');
+  assert.equal(d.goal, 'Join block production');
+  assert.equal(d.task, 'Up to 2,000 pts a week');
+  assert.equal(d.description, 'Run a node.');
+  assert.equal(d.requirements, 'A node reachable all week.');
+  assert.equal(d.scoring, 'Points scale with blocks.', 'reward logic reads as Scoring');
+  assert.deepEqual([d.state, d.stateLabel, d.fill, d.counted], ['new', 'Not started', 0, false]);
+  assert.deepEqual({ ...d.amount }, { text: '2000 pts', earned: false }, 'nothing scored yet: the reward on offer');
+  assert.equal(d.participants, 'Participants', 'no count before the breakdown lands');
+  assert.equal(d.pointsTotal, null);
+  for (const retired of ['label', 'mineNote', 'rewardLogic', 'totals', 'chip']) {
+    assert.equal(retired in d, false, `${retired} retired from the descriptor`);
+  }
+
+  pane._mine = new Map([[5, { id: 5, activities_total: 720, activities: rows(3, 240) }]]);
+  pane._renderDetailOverlay();
+  assert.deepEqual({ ...store.get().detail.amount }, { text: '720 pts so far', earned: false },
+    'the contribution line retired into the meta line');
+
+  ch.completed = true;
+  pane._renderDetailOverlay();
+  const done = store.get().detail;
+  assert.deepEqual({ ...done.amount }, { text: 'Earned 720 pts', earned: true });
+  assert.equal(done.deadline, null, 'a finished challenge counts down to nothing, as on the card');
+
+  ch.completed = false;
+  ch.effective.schedule_end = inHours(-1);
+  pane._renderDetailOverlay();
+  assert.equal(store.get().detail.deadline, null, 'an ended challenge shows no time left');
+});
+test('participants: count and total in the heading row, "Show all" only when one page finishes it', () => {
+  const { pane, store } = loadPane({ challenges: CH, eventId: 900500 });
+  pane.openChallengeDetail(CH[0]);
+  pane._breakdownLoading = false;
+  pane._breakdown = {
+    entries: Array.from({ length: 25 }, (_, i) => ({ user_id: i + 1, display_name: `P${i}`, points: 2000 - i, rate: null })),
+    totals: { participants: 34, total_points: 12800 },
+    has_more: true,
+    next_offset: 25,
+  };
+  pane._renderDetailOverlay();
+  let d = store.get().detail;
+  assert.equal(d.participants, 'Participants · 34');
+  assert.equal(d.pointsTotal, '12,800 pts between them');
+  assert.equal(d.moreLabel, 'Show all 34 →');
+  assert.equal(d.entries.rows[0].points, '2,000 pts');
+
+  pane._breakdown = { ...pane._breakdown, totals: { participants: 200, total_points: 0 } };
+  pane._renderDetailOverlay();
+  d = store.get().detail;
+  assert.equal(d.moreLabel, 'Show more →', 'beyond one more page, "all" would overpromise');
+  assert.equal(d.pointsTotal, null);
+});
+
+test('the page is a level of the screen: the platform header is its nav bar', () => {
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  const calls = [];
+  sandbox.window.App = {
+    setBackIcon: (mode, href) => calls.push(['back', mode, href ?? null]),
+    setHeaderTitle: (title) => calls.push(['title', title]),
+  };
+  sandbox.window.Leaderboard = { isOpen: () => true, section: 'challenges' };
+  pane._openIdx(0);
+  assert.deepEqual(calls.splice(0), [['back', 'arrow', '#leaderboard/challenges'], ['title', 'Challenge']],
+    'the header chevron points up to the grid and the title is the generic word; the page names the challenge');
+  assert.equal(pane.handleBack(), true, 'on a page the header chevron is claimed');
+  assert.equal(store.get().detail, null, 'and goes up a level');
+  assert.deepEqual(calls.splice(0), [['back', 'home', null], ['title', 'Leaderboard']],
+    'the screen gets its own chrome back');
+  assert.equal(pane.handleBack(), false, 'on the grid the chevron is not the page’s to claim');
+});
+
+test('a page closed by navigating away never retitles the screen being entered', () => {
+  const { pane, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  const calls = [];
+  sandbox.window.App = { setBackIcon: () => calls.push('back'), setHeaderTitle: () => calls.push('title') };
+  sandbox.window.Leaderboard = { isOpen: () => true, section: 'challenges' };
+  pane._openIdx(0);
+  calls.length = 0;
+  sandbox.window.Leaderboard = { isOpen: () => false, section: 'challenges' };
+  sandbox.location.hash = '#profile';
+  pane._onHashChange();
+  assert.deepEqual(calls, [], 'the Leaderboard is not on show: its chrome is not restored over another screen');
+});
+
+test('back from a page reached from elsewhere in the app returns there; a cold page goes up to the grid', () => {
+  // Home's challenge card: the page owns no entry (the section switch rewrote
+  // the address), and Home is the route below it.
+  const { pane, store, sandbox } = loadPane({ challenges: CH, eventId: 900500 });
+  let backs = 0;
+  sandbox.window.history = { back() { backs += 1; } };
+  sandbox.window.App = { previousRoute: () => '' };
+  sandbox.location.hash = '#leaderboard/challenges';
+  pane.openChallengeDetail(CH[0]);
+  assert.equal(pane.handleBack(), true);
+  assert.equal(backs, 1, 'back to Home, where the viewer came from');
+  assert.ok(store.get().detail, 'the page closes as the address moves off it, not before');
+
+  // A cold arrival (bookmark, ?shot): nothing of ours below.
+  const cold = loadPane({ challenges: CH, eventId: 900500 });
+  let coldBacks = 0;
+  cold.sandbox.window.history = { back() { coldBacks += 1; } };
+  cold.sandbox.window.App = { previousRoute: () => null };
+  cold.pane.openChallengeDetail(CH[0]);
+  assert.equal(cold.pane.handleBack(), true);
+  assert.equal(coldBacks, 0, 'no step back out of the app');
+  assert.equal(cold.store.get().detail, null, 'up to the grid instead');
+
+  // A card tap owns its entry: up to the grid, spending it, even with a route below.
+  const tap = loadPane({ challenges: CH, eventId: 900500 });
+  let tapBacks = 0;
+  tap.sandbox.window.history = { back() { tapBacks += 1; } };
+  tap.sandbox.window.App = { previousRoute: () => '#leaderboard/challenges' };
+  tap.pane._openIdx(0);
+  assert.equal(tap.pane.handleBack(), true);
+  assert.equal(tap.store.get().detail, null, 'closed at once');
+  assert.equal(tapBacks, 1, 'and the pushed entry is spent');
+});
+
 // ─── 2. Static: the router carries both ids ─────────────────────────────
 
 test('the hash router parses #leaderboard/challenges/<event>/<challenge>', () => {
@@ -667,4 +871,9 @@ test('the profile links each completed challenge to <event>/<challenge>', () => 
   assert.match(profileViewTsx, /href=\{row\.href\}/,
     'the row renders as a real anchor to that address, not a click handler');
   assert.match(profileViewTsx, /data-completed-challenge=\{row\.id\}/);
+});
+
+test('the header back chevron asks the Challenges page first', () => {
+  assert.match(appJs, /if \(App\._inLeaderboard && window\.TopochainChallenges\?\.handleBack\?\.\(\)\) return;/,
+    'the same claim chain Settings, Admin and Browse use');
 });

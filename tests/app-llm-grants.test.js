@@ -222,6 +222,57 @@ test('DELETE revokes; POST after revoke reactivates the same row', async () => {
   });
 });
 
+// #1957: Settings' Re-enable rests on two facts about this API — the list
+// still carries a revoked row's slug, cap and BYOK choice, and POSTing those
+// back is what re-activates it. Pin them together, since the client sends
+// exactly what the list gave it — plus the one fallback it takes.
+test('the list keeps a revoked grant with the slug and cap that Re-enable sends back', async () => {
+  await withServer(async (base) => {
+    const post = (body) => fetch(`${base}/api/me/llm-grants`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const listed = async () => (await (await fetch(`${base}/api/me/llm-grants`)).json())
+      .grants.find((g) => g.appId === 11);
+
+    await post({ appSlug: 'demo-app', dailyCapCents: 250, allowByok: true });
+    await fetch(`${base}/api/me/llm-grants/11`, { method: 'DELETE' });
+
+    const revoked = await listed();
+    assert.equal(revoked.status, 'revoked');
+    assert.equal(revoked.appSlug, 'demo-app', 'the re-grant endpoint is keyed on slug, so the list carries it');
+    assert.equal(revoked.dailyCapCents, 250, 'and the cap survives the revoke');
+    assert.equal(revoked.allowByok, true);
+
+    const re = await post({
+      appSlug: revoked.appSlug, dailyCapCents: revoked.dailyCapCents, allowByok: revoked.allowByok,
+    });
+    assert.equal(re.status, 200);
+    const active = await listed();
+    assert.equal(active.status, 'active');
+    assert.equal(active.dailyCapCents, 250, 'the grant comes back as it was');
+    assert.equal(active.allowByok, true);
+
+    // The fallback: a cap the allowance no longer covers is a 400 with no
+    // `code` (credit_required and byok_required both carry one), and a POST
+    // without a cap lands on the default — so the row is never stranded.
+    await fetch(`${base}/api/me/llm-grants/11`, { method: 'DELETE' });
+    state.userLimit = 200;
+    limits.invalidate();
+    const tooBig = await post({ appSlug: 'demo-app', dailyCapCents: 250, allowByok: true });
+    assert.equal(tooBig.status, 400);
+    const refusal = await tooBig.json();
+    assert.equal(refusal.code, undefined, 'a cap refusal is the one 400 without a code');
+    assert.match(refusal.error, /\$2\.00/);
+    assert.equal((await listed()).status, 'revoked', 'a refused re-grant changes nothing');
+    const atDefault = await post({ appSlug: 'demo-app', allowByok: true });
+    assert.equal(atDefault.status, 200);
+    assert.equal((await atDefault.json()).grant.dailyCapCents, 100);
+    assert.equal((await listed()).status, 'active');
+  });
+});
+
 test('PATCH updates the cap with the same validation', async () => {
   await withServer(async (base) => {
     await fetch(`${base}/api/me/llm-grants`, {

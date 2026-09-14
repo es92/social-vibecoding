@@ -61,6 +61,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { useStoreState } from '../../lib/use-store-state';
 import { useVisibilityHiddenClass } from '../../lib/visibility-store';
 import { useLeaderboardSection } from './section-store';
 import './kudos.js';
@@ -73,6 +74,7 @@ import { EventBar } from './event-bar';
 import { KudosPane } from './kudos-pane';
 import { TopochainStandingsPane } from './topochain-standings';
 import { ChallengesPane } from './challenges-pane';
+import { topochainChallengesStore } from './topochain-challenges-store.js';
 
 // The strip, in TAB ORDER. Moved here verbatim from the template that
 // _renderSectionTabs used to hold, labels included: the standings tab is
@@ -90,6 +92,12 @@ export function LeaderboardScreen() {
   const screenRef = useRef<HTMLElement | null>(null);
   useVisibilityHiddenClass(screenRef, 'leaderboard-screen', false);
   const { mounted, section } = useLeaderboardSection();
+  // A challenge's detail page is a LEVEL of this screen (see
+  // ./challenges-pane.tsx): while one is open the platform header is its nav
+  // bar, and the screen's own title, tab strip and event bar step aside so the
+  // page takes their place. Null in the prerender, so the shipped markup is
+  // unchanged.
+  const detailOpen = (useStoreState(topochainChallengesStore) as { detail: unknown }).detail != null;
 
   return (
     <main
@@ -103,52 +111,54 @@ export function LeaderboardScreen() {
           narrower max-w-3xl reading column below.
       */}
       <div className="max-w-5xl mx-auto p-4 w-full">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">
-          Leaderboard
-        </h2>
-        <Tabs
-          value={section}
-          onValueChange={(key) => {
-            // Straight back into the module: it validates the key, records the
-            // section, syncs the hash, re-publishes (which re-renders this
-            // strip) and applies the pane switch.
-            window.Leaderboard?._setSection?.(key);
-          }}
-        >
-          <TabsList id="standings-tabs" className={SECTION_TABS_LIST}>
-            {mounted
-              ? SECTION_TABS.map((s) => (
-                  <TabsTrigger
-                    key={s.key}
-                    value={s.key}
-                    data-standings-tab={s.key}
-                    className={SECTION_TAB_BASE}
-                    activeClassName={SECTION_TAB_ACTIVE}
-                    inactiveClassName={SECTION_TAB_INACTIVE}
-                  >
-                    {s.label}
-                  </TabsTrigger>
-                ))
-              : null}
-          </TabsList>
-        </Tabs>
-        {/*
-            The shared event picker + hero for the two Topochain-domain
-            sections. STATEFUL as of #1191: ./event-bar.tsx is the only writer
-            below this host, driven by what ./topochain-event-context.js pushes
-            into ./event-bar-store.js — that module still owns the two fetches,
-            the default pick and the subscriber list both panes register with.
+        <div className={detailOpen ? 'hidden' : undefined}>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-3">
+            Leaderboard
+          </h2>
+          <Tabs
+            value={section}
+            onValueChange={(key) => {
+              // Straight back into the module: it validates the key, records the
+              // section, syncs the hash, re-publishes (which re-renders this
+              // strip) and applies the pane switch.
+              window.Leaderboard?._setSection?.(key);
+            }}
+          >
+            <TabsList id="standings-tabs" className={SECTION_TABS_LIST}>
+              {mounted
+                ? SECTION_TABS.map((s) => (
+                    <TabsTrigger
+                      key={s.key}
+                      value={s.key}
+                      data-standings-tab={s.key}
+                      className={SECTION_TAB_BASE}
+                      activeClassName={SECTION_TAB_ACTIVE}
+                      inactiveClassName={SECTION_TAB_INACTIVE}
+                    >
+                      {s.label}
+                    </TabsTrigger>
+                  ))
+                : null}
+            </TabsList>
+          </Tabs>
+          {/*
+              The shared event picker + hero for the two Topochain-domain
+              sections. STATEFUL as of #1191: ./event-bar.tsx is the only writer
+              below this host, driven by what ./topochain-event-context.js pushes
+              into ./event-bar-store.js — that module still owns the two fetches,
+              the default pick and the subscriber list both panes register with.
 
-            The host ships VISIBLE, with the standings pane below (the default
-            section is an event section), and EMPTY — the bar's interior was
-            written on the screen's first open, so the store's initial
-            `mounted: false` renders nothing. `_applySection` hides the host on
-            Kudos by `classList`, which is safe for the reason the two pane
-            roots' comments give: this `className` is a constant React never
-            writes again.
-        */}
-        <div id="leaderboard-event-bar" className="w-full mb-4">
-          <EventBar />
+              The host ships VISIBLE, with the standings pane below (the default
+              section is an event section), and EMPTY — the bar's interior was
+              written on the screen's first open, so the store's initial
+              `mounted: false` renders nothing. `_applySection` hides the host on
+              Kudos by `classList`, which is safe for the reason the two pane
+              roots' comments give: this `className` is a constant React never
+              writes again.
+          */}
+          <div id="leaderboard-event-bar" className="w-full mb-4">
+            <EventBar />
+          </div>
         </div>
         {/*
             The Kudos pane. STATEFUL as of #1191 slice 6 conversion 6:

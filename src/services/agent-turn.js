@@ -353,16 +353,10 @@ async function lockAttempt(client, turnUuid) {
 // changing its status or double-counting.
 // One physical invocation = one attempt; a retry writes a NEW attempt row
 // and never overwrites the prior attempt's usage (plan 6.1, 6.5).
-// `servedModel` is the model the provider REPORTED serving, when something
-// observed one; it lands in routed_model. The direct Codex transport reports
-// none (#2120): Codex 0.146.0's `exec --json` events carry no model field and
-// its Responses client ignores the payload's `model`, so callers pass nothing
-// and the column stays NULL instead of echoing requested_model as if it had
-// been observed. Telemetry's served_model still falls back to requested_model.
 async function completeCodexAttempt({
   pool, turnUuid, status = 'completed', threadId = null, usageTotal = null,
   errorCode = null, errorDetail = null, telemetryComponent = null,
-  telemetryMetrics = null, servedModel = null,
+  telemetryMetrics = null,
 }) {
   if (!turnUuid) return { updated: false, alreadyTerminal: true };
   const client = await pool.connect();
@@ -447,12 +441,17 @@ async function completeCodexAttempt({
       };
     }
 
+    // requested_model records the exact OpenRouter slug dispatched by the
+    // runner. Codex's JSONL does not expose the model returned by OpenRouter,
+    // so routed_model must remain unknown until that value is actually
+    // observed rather than being copied from the request.
+
     await client.query(
       `UPDATE agent_turns SET
-         status = CASE WHEN $21::boolean THEN status ELSE $2 END,
+         status = CASE WHEN $20::boolean THEN status ELSE $2 END,
          completed_at = COALESCE(completed_at, NOW()),
-         error_code = CASE WHEN $21::boolean THEN error_code ELSE COALESCE($3, error_code) END,
-         error_detail = CASE WHEN $21::boolean THEN error_detail ELSE COALESCE($4, error_detail) END,
+         error_code = CASE WHEN $20::boolean THEN error_code ELSE COALESCE($3, error_code) END,
+         error_detail = CASE WHEN $20::boolean THEN error_detail ELSE COALESCE($4, error_detail) END,
          agent_thread_id = COALESCE($5, agent_thread_id),
          input_tokens = input_tokens + $6,
          cached_input_tokens = cached_input_tokens + $7,
@@ -467,13 +466,12 @@ async function completeCodexAttempt({
          estimated_cost_usd = $16,
          cost_source = $17,
          usage_reset_detected = $18,
-         routed_model = COALESCE($19, routed_model),
          billed_by = 'user_openrouter',
-         metadata = $20::jsonb
+         metadata = $19::jsonb
        WHERE id = $1
          AND (
            status = 'running'
-           OR ($21::boolean
+           OR ($20::boolean
                AND status IN ('completed', 'failed', 'cancelled')
                AND provider_input_tokens_total IS NULL
                AND provider_cached_input_tokens_total IS NULL
@@ -499,7 +497,6 @@ async function completeCodexAttempt({
        cost != null ? cost.estimatedCostUsd : null,
        cost != null ? cost.costSource : 'unavailable',
        resetDetected,
-       servedModel || null,
        JSON.stringify(metadata),
        reconcileTerminalUsage],
     );

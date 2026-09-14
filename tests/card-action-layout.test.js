@@ -392,8 +392,8 @@ test('issue card: read-only viewer gets no primary, keeps a read-safe ⋯', () =
   assertCardActionContract(AppView, html, { primary: 0, menu: true });
   // join(), not deepEqual: the vm context has its own Array prototype, so
   // deepStrictEqual on a cross-realm array fails on the prototype alone.
-  assert.equal(menuLabels(AppView, html).join('|'), 'Open on GitHub',
-    'only the read-safe row survives for a read-only viewer');
+  assert.equal(menuLabels(AppView, html).join('|'), 'Share to Messages|Open on GitHub',
+    'only the read-safe rows survive for a read-only viewer');
   AppView.appData = null;
 });
 
@@ -727,4 +727,3 @@ test('a rejected vote re-arms from the epoch the server named', async () => {
   assert.deepEqual(sent.map((b) => b.expectedEpoch), [3, 9],
     'the second click must carry the epoch the rejection named, not the stale one');
 });
-

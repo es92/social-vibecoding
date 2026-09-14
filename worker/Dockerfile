@@ -88,10 +88,11 @@ RUN echo "claude-code cache bust: ${CLAUDE_CODE_CACHE_BUST}" \
 # aligned with the JSONL event shapes src/agents/codex-openrouter.js parses.
 ARG CODEX_VERSION=0.146.0
 RUN npm install -g @openai/codex@${CODEX_VERSION}
-# Preserve the pinned CLI's own full coding-agent instructions as the base for
-# custom OpenRouter model entries. The per-turn builder copies only that text
-# into its one-model catalog; it does not inherit OpenAI-only tool modes or
-# capabilities from the bundled models. Codex requires an explicitly selected
+# Preserve the pinned CLI's full coding-agent/tool instructions as the base for
+# custom OpenRouter model entries. The per-turn builder replaces only the
+# misleading OpenAI-model identity sentence before copying that text into its
+# one-model catalog; it does not inherit OpenAI-only tool modes or capabilities
+# from the bundled models. Codex requires an explicitly selected
 # CODEX_HOME to exist before startup; otherwise `codex debug models` exits 1.
 # (This layer sits after the day-bumped claude-code layer, so it re-runs on
 # every cache-bust rollover — the 2026-08-11 rollover broke every worker

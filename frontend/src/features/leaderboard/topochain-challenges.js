@@ -120,6 +120,15 @@ const TopochainChallenges = {
   // immediately because the router registers it before the pane has
   // mounted, let alone fetched the event's challenge list.
   _pendingDeepLink: null,
+  // The address a card tap pushed for the detail page it opened
+  // (#leaderboard/challenges/<eventId>/<challengeId>), or null. The detail is
+  // a page, so it owns a history entry: the phone's back gesture pops it and
+  // _onHashChange closes the page once the address stops naming it. Null for
+  // a page opened without one (?shot, or a cold deep link whose hash the
+  // section switch has already rewritten).
+  _detailHash: null,
+  // The hashchange listener open() installs, kept so close() can remove it.
+  _hashListener: null,
 
   // Challenge detail overlay state. `_detailChallenge` is the clicked
   // challenge-grid item (already carries card_preview/detail_modal); the
@@ -157,6 +166,15 @@ const TopochainChallenges = {
     const s = String(reward == null ? '' : reward).trim();
     if (!s) return null;
     return /^[\d][\d.,]*$/.test(s) ? `${s} pts` : s;
+  },
+
+  // "2,000 pts": a points figure with thousands separators. A value that is
+  // not a finite number comes back verbatim, so a surprise payload still
+  // reads as what the server sent.
+  _pts(v) {
+    const n = Number(v);
+    return v != null && v !== '' && Number.isFinite(n)
+      ? `${n.toLocaleString('en-US')} pts` : TopochainChallenges.str(v);
   },
 
   // href-safe URL: only http(s) links are ever rendered as a real anchor.
@@ -220,6 +238,10 @@ const TopochainChallenges = {
         TopochainChallenges.loadChallenges();
       });
     }
+    if (!TopochainChallenges._hashListener && window.addEventListener) {
+      TopochainChallenges._hashListener = (e) => TopochainChallenges._onHashChange(e);
+      window.addEventListener('hashchange', TopochainChallenges._hashListener);
+    }
     TopochainChallenges.loadChallenges();
   },
 
@@ -227,6 +249,11 @@ const TopochainChallenges = {
     TopochainChallenges._open = false;
     TopochainChallenges._detailChallenge = null;
     TopochainChallenges._profileUserId = null;
+    TopochainChallenges._detailHash = null;
+    if (TopochainChallenges._hashListener && window.removeEventListener) {
+      window.removeEventListener('hashchange', TopochainChallenges._hashListener);
+    }
+    TopochainChallenges._hashListener = null;
     // An unresolved deep link dies with the screen. Keeping it would make a
     // much later, unrelated visit to this pane pop an overlay the user
     // never asked for.
@@ -642,8 +669,9 @@ const TopochainChallenges = {
   // fresh grid descriptor, so the index the component is holding belongs to
   // the array this returns.
   _openIdx(idx) {
-    const ordered = TopochainChallenges._ordered();
-    TopochainChallenges.openChallengeDetail(ordered[idx]);
+    const challenge = TopochainChallenges._ordered()[idx];
+    TopochainChallenges.openChallengeDetail(challenge);
+    TopochainChallenges._pushDetailHash(challenge);
   },
 
   // Real hash navigation so the section switch goes through the router
@@ -715,27 +743,183 @@ const TopochainChallenges = {
         && TopochainChallenges._eventId() !== want.eventId) return;
     TopochainChallenges._pendingDeepLink = null;
     const match = ordered.find((c) => c && Number(c.id) === want.challengeId);
-    if (match) TopochainChallenges.openChallengeDetail(match);
+    if (!match) return;
+    TopochainChallenges.openChallengeDetail(match);
+    // Reached by a history step while the Challenges tab is already showing
+    // (a card tap's own push, or forward after back): the address still
+    // names this page, so the page owns that entry exactly as a tap would.
+    //
+    // Not when another section is showing. The router resolves the link
+    // BEFORE it switches sections, and that switch replaceStates the address
+    // to #leaderboard/challenges — so a page that claimed the address here
+    // would read the rewrite as navigating away and close itself in the same
+    // event. Such a page owns no entry, like a cold arrival (whose hash the
+    // section switch rewrote before the grid was even fetched): its back disc
+    // just closes it.
+    const section = window.Leaderboard?.section;
+    if (section != null && section !== 'challenges') return;
+    const hash = `#leaderboard/challenges/${TopochainChallenges._eventId()}/${Number(match.id)}`;
+    try {
+      if (location.hash === hash) TopochainChallenges._detailHash = hash;
+    } catch (err) { /* ignore */ }
   },
 
   // ── Challenge detail overlay ─────────────────────────────────────────
 
   openChallengeDetail(challenge) {
     if (!challenge) return;
+    // Already the open page. A card tap opens the page and then pushes its
+    // address, and the router answers that push (twice: popstate and
+    // hashchange) by resolving the same challenge again; without this each
+    // answer would reset the page and refetch its participants.
+    if (TopochainChallenges._detailChallenge === challenge) return;
+    const fromGrid = !TopochainChallenges._detailChallenge;
     TopochainChallenges._detailChallenge = challenge;
     TopochainChallenges._breakdown = null;
     TopochainChallenges._breakdownError = null;
     TopochainChallenges._breakdownLoading = true;
-    // The overlay's visibility IS its descriptor now — _renderDetailOverlay
+    // The page's visibility IS its descriptor — _renderDetailOverlay
     // publishing a non-null `detail` is what used to be the
-    // classList.remove('hidden') on this line.
-    TopochainChallenges._renderDetailOverlay();
+    // classList.remove('hidden') on this line. It is a level of the screen,
+    // so it opens the way one does: pushed, with the platform header as its
+    // nav bar (the pane puts the screen's scroll at the page's top).
+    TopochainChallenges._level(() => {
+      TopochainChallenges._renderDetailOverlay();
+      TopochainChallenges._syncChrome();
+    }, fromGrid ? 'push' : 'none');
     TopochainChallenges._loadBreakdown(0);
   },
 
-  closeChallengeDetail() {
+  closeChallengeDetail(type = 'none') {
+    const wasOpen = !!TopochainChallenges._detailChallenge;
     TopochainChallenges._detailChallenge = null;
-    TopochainChallenges._store?.set({ detail: null });
+    TopochainChallenges._detailHash = null;
+    if (!wasOpen) {
+      TopochainChallenges._store?.set({ detail: null });
+      return;
+    }
+    // Back up a level: the header returns to the screen's own chrome (and the
+    // pane returns the grid to where it was scrolled).
+    TopochainChallenges._level(() => {
+      TopochainChallenges._store?.set({ detail: null });
+      TopochainChallenges._syncChrome();
+    }, type);
+  },
+
+  // A level change, animated the way Settings animates its own ('push' in,
+  // 'pop' out); 'none' applies it at once.
+  _level(fn, type) {
+    if (type && type !== 'none' && window.PlatformUI?.transition) {
+      window.PlatformUI.transition(fn, { type });
+    } else {
+      fn();
+    }
+  },
+
+  // The platform header IS the page's nav bar, as it is for a Settings section
+  // or an app's detail in Browse: while a page is open its chevron points up to
+  // the grid and its title reads "Challenge"; back on the grid the screen's
+  // own chrome returns ("Leaderboard", the house).
+  //
+  // Only while the Leaderboard is the screen on show. A page closed by a
+  // navigation AWAY must never retitle the screen being entered, and restoring
+  // the grid's chrome needs the Challenges tab to be the section showing.
+  _syncChrome() {
+    const app = window.App;
+    if (!app || typeof app.setBackIcon !== 'function' || typeof app.setHeaderTitle !== 'function') return;
+    const lb = window.Leaderboard;
+    if (lb && typeof lb.isOpen === 'function' && !lb.isOpen()) return;
+    const challenge = TopochainChallenges._detailChallenge;
+    if (challenge) {
+      // "Challenge", not the challenge's own name: the page's large title says
+      // which one, and a generic word keeps the bar short and steady.
+      app.setBackIcon('arrow', '#leaderboard/challenges');
+      app.setHeaderTitle('Challenge');
+      return;
+    }
+    // Any section: "Leaderboard" is the whole screen's title, and a page left
+    // for another tab must not keep the page's chevron and word.
+    app.setBackIcon('home');
+    app.setHeaderTitle('Leaderboard');
+  },
+
+  // The platform header's back chevron (and Escape), claimed the way Settings
+  // and Browse claim it (app.js's #back-btn chain). On the grid it declines, so
+  // the chevron's usual destination takes over. On a page:
+  //   * a page a card tap opened owns its entry: up to the grid, spending it;
+  //   * a page reached from ANOTHER place in the app — a Home challenge card,
+  //     another Leaderboard tab — goes back THERE, the rule Settings keeps for
+  //     a link from elsewhere (#1565): replacing it with the grid would strand
+  //     the viewer a level below where they started. The page closes as the
+  //     address moves off it (_onHashChange, or the screen's own exit);
+  //   * a cold arrival (a bookmark, ?shot) has nothing of ours below: up to
+  //     the grid.
+  handleBack() {
+    if (!TopochainChallenges._detailChallenge) return false;
+    const owned = !!TopochainChallenges._detailHash && location.hash === TopochainChallenges._detailHash;
+    let cameFrom = null;
+    try { cameFrom = window.App?.previousRoute?.() ?? null; } catch (err) { cameFrom = null; }
+    if (!owned && cameFrom != null && window.history?.back) {
+      window.history.back();
+      return true;
+    }
+    TopochainChallenges._backFromDetail();
+    return true;
+  },
+
+  // A card tap gives the page its own address and history entry, so the
+  // phone's back gesture (or the browser's) returns to the grid. The page is
+  // already open when the router sees the new hash. Without an event id or a
+  // numeric challenge id there is no address the router could resolve, so no
+  // entry — the page still opens, and its back disc still closes it.
+  _pushDetailHash(challenge) {
+    const eventId = TopochainChallenges._eventId();
+    const ev = eventId == null ? NaN : Number(eventId);
+    const id = Number(challenge && challenge.id);
+    if (!Number.isSafeInteger(ev) || !Number.isSafeInteger(id)) return;
+    const hash = `#leaderboard/challenges/${ev}/${id}`;
+    try {
+      if (location.hash === hash) return;
+      TopochainChallenges._detailHash = hash;
+      location.hash = hash;
+    } catch (err) { /* no history to push: the page works without it */ }
+  },
+
+  // The address moved off the page — the back gesture, the header chevron, a
+  // tab, or any other navigation. Close the page and the profile stacked on it.
+  //
+  // Judged by the address the event ARRIVED at (`newURL`), not only by
+  // location.hash: when a challenge link lands while another Leaderboard tab
+  // is showing, the router opens the page and then its section switch
+  // replaceStates the address to #leaderboard/challenges inside the same
+  // dispatch, and that rewrite is not a navigation away.
+  _onHashChange(e) {
+    const challenge = TopochainChallenges._detailChallenge;
+    if (!challenge) return;
+    let arrived = location.hash;
+    if (e && typeof e.newURL === 'string') {
+      const at = e.newURL.indexOf('#');
+      arrived = at === -1 ? '' : e.newURL.slice(at);
+    }
+    const own = `#leaderboard/challenges/${TopochainChallenges._eventId()}/${Number(challenge.id)}`;
+    if (arrived === own) return;
+    if (TopochainChallenges._detailHash && location.hash === TopochainChallenges._detailHash) return;
+    TopochainChallenges.closeUserProfile();
+    TopochainChallenges.closeChallengeDetail('pop');
+  },
+
+  // Up from the page — the header chevron (handleBack) and Escape. When the
+  // page owns a history entry, going back spends it, so the browser's own back
+  // does not land on the same grid a second time. The page closes here first
+  // rather than waiting for the hashchange, so going up never depends on that
+  // event arriving.
+  _backFromDetail() {
+    const hash = TopochainChallenges._detailHash;
+    TopochainChallenges.closeChallengeDetail('pop');
+    if (!hash || location.hash !== hash) return;
+    try {
+      window.history?.back?.();
+    } catch (err) { /* the page is closed already */ }
   },
 
   async _loadBreakdown(offset) {
@@ -811,34 +995,63 @@ const TopochainChallenges = {
           // Points and the optional rate are ONE string, composed here: they
           // shared a single <span> in the markup this replaces, and two
           // sibling expressions in JSX are two text nodes.
-          points: e.rate != null ? `${str(e.points)} · ${str(e.rate)}%` : str(e.points),
+          points: e.rate != null
+            ? `${TopochainChallenges._pts(e.points)} · ${str(e.rate)}%`
+            : TopochainChallenges._pts(e.points),
         })),
       };
     } else {
       entries = { kind: 'empty' };
     }
 
-    // Your own contribution on this challenge, when the personalization pass
-    // has it — the same number the card shows, repeated where the detail is.
+    // Under the title, the card's own meta line: how long is left, by the
+    // card's rules (_isOpen, _deadlineOf), and an amount — what the viewer
+    // earned on a finished challenge, their points so far on an open one they
+    // have scored on, otherwise the reward on offer. The rail beneath holds the
+    // state and nothing else, as on the card.
+    const rail = TopochainChallenges._stateOf(challenge);
     const mine = TopochainChallenges._mine.get(Number(challenge.id)) || null;
-    const mineTotal = mine && Number(mine.activities_total) > 0
-      ? Number(mine.activities_total) : 0;
+    const points = mine && Number(mine.activities_total) > 0 ? Number(mine.activities_total) : 0;
+    const reward = TopochainChallenges.formatReward(cp.reward);
+    let amount = null;
+    if (rail.earned) amount = { text: rail.earned, earned: true };
+    else if (points) amount = { text: `${points.toLocaleString('en-US')} pts so far`, earned: false };
+    else if (reward) amount = { text: reward, earned: false };
+
+    const totals = (bd && bd.totals) || {};
+    const participants = Number(totals.participants) > 0 ? Number(totals.participants) : 0;
+    const totalPoints = Number(totals.total_points) > 0 ? Number(totals.total_points) : 0;
+    const loaded = bd && Array.isArray(bd.entries) ? bd.entries.length : 0;
+    // One more page (25, _loadBreakdown's limit) finishes the list: say how
+    // many that is. Beyond one page, "Show all" would promise what one tap
+    // does not deliver.
+    const remaining = participants - loaded;
 
     return {
-      label: str(cp.label || ''),
+      key: str(challenge.id),
+      // The category, uppercase on the page, beside the back disc.
+      eyebrow: cp.label ? str(cp.label) : null,
       goal: str(cp.goal || ''),
-      // The card shows only the title and the rail, so the overlay is where
-      // the task is read; before ITERATION 03 the card showed it and the
-      // overlay never needed it.
+      deadline: TopochainChallenges._isDone(challenge) || !TopochainChallenges._isOpen(challenge)
+        ? null : TopochainChallenges._deadlineOf(challenge),
+      amount,
+      // The card shows only the title, its meta line and the rail, so the page
+      // is where the task is read; before ITERATION 03 the card showed it and
+      // the overlay never needed it.
       task: cp.task ? str(cp.task) : null,
-      description: dm.description ? str(dm.description) : null,
-      mineNote: mineTotal ? `You’ve contributed ${mineTotal} pts to this.` : null,
-      requirements: dm.requirements ? str(dm.requirements) : null,
-      rewardLogic: dm.reward_logic ? str(dm.reward_logic) : null,
+      state: rail.state,
+      stateLabel: rail.stateLabel,
+      fill: rail.fill,
+      counted: !!rail.counted,
       cta: TopochainChallenges.ctaView(dm),
-      totals: bd
-        ? `${str(bd.totals.participants)} participants · ${str(bd.totals.total_points)} points total`
-        : null,
+      description: dm.description ? str(dm.description) : null,
+      requirements: dm.requirements ? str(dm.requirements) : null,
+      scoring: dm.reward_logic ? str(dm.reward_logic) : null,
+      participants: participants
+        ? `Participants · ${participants.toLocaleString('en-US')}` : 'Participants',
+      pointsTotal: totalPoints ? `${totalPoints.toLocaleString('en-US')} pts between them` : null,
+      moreLabel: remaining > 0 && remaining <= 25
+        ? `Show all ${participants.toLocaleString('en-US')} →` : 'Show more →',
       entries,
     };
   },

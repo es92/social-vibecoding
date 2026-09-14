@@ -207,7 +207,9 @@ test('the header back/home control is a real anchor', () => {
 });
 
 test('the header click handler guards before it preventDefaults', () => {
-  const body = handlerAfter(appJs, "document.getElementById('back-btn').addEventListener", 1400);
+  // 1700: the claim chain grew by the Challenges page's line, and the span only
+  // has to reach the home fallback at the end of it.
+  const body = handlerAfter(appJs, "document.getElementById('back-btn').addEventListener", 1700);
   const guard = body.indexOf('NavLink.isNativeClick(e)');
   const prevent = body.indexOf('e.preventDefault()');
   assert.ok(guard !== -1, 'the modified-click guard went missing');
@@ -216,7 +218,10 @@ test('the header click handler guards before it preventDefaults', () => {
   // dev session's claim (Streamlined Concept) last before the home fallback.
   assert.ok(body.indexOf('AdminConsole?.handleBack') < body.indexOf('Settings?.handleBack'));
   assert.ok(body.indexOf('Settings?.handleBack') < body.indexOf('Browse?.handleBack'));
-  assert.ok(body.indexOf('Browse?.handleBack') < body.indexOf('DevChat?.handleBack'));
+  // The Challenges tab's detail page is a level of the Leaderboard screen and
+  // claims the chevron the same way, after Browse and before a dev session.
+  assert.ok(body.indexOf('Browse?.handleBack') < body.indexOf('TopochainChallenges?.handleBack'));
+  assert.ok(body.indexOf('TopochainChallenges?.handleBack') < body.indexOf('DevChat?.handleBack'));
   assert.ok(body.indexOf('DevChat?.handleBack') < body.indexOf('App.navigateHome()'));
 });
 

@@ -6888,6 +6888,11 @@ const DevChat = {
       // would show it twice.
       devFlowHtml: DevChat._launchpadVenue() ? '' : DevChat._devFlowHtml(),
       activity: DevChat._activitySpec(),
+      // #1889: whether a turn is in flight. The transcript keeps the latest
+      // Changes card in its turn's slot while the run's tail is painting and
+      // draws it after the last row once the chat is idle — see
+      // `DevChatTranscript` in ./transcript.tsx.
+      busy: !!DevChat.isStreaming,
     };
   },
 

@@ -22,6 +22,10 @@
  * that into the component would be a second place that decides what a cap
  * looks like.
  *
+ * `appSlug` and `capCents` ride along for Re-enable (#1957): the re-grant
+ * endpoint is keyed on slug, not app id, and the previous cap is what it
+ * restores — a revoked row keeps both, so the view carries both.
+ *
  * ── What is NOT in here ───────────────────────────────────────────────
  *
  * The status line (`#llm-grants-status`). It is a SIBLING of this host, not a
@@ -29,8 +33,8 @@
  * timer. Nothing in this subtree writes to it.
  *
  * @typedef {{
- *   appId: number, appName: string, revoked: boolean,
- *   spent: string, cap: string, capValue: string,
+ *   appId: number, appName: string, appSlug: string, revoked: boolean,
+ *   spent: string, cap: string, capValue: string, capCents: number,
  *   showByok: boolean, allowByok: boolean,
  * }} GrantView
  * @typedef {{ phase: 'idle'|'loading'|'error'|'ready', grants: GrantView[] }} GrantsState

@@ -104,6 +104,8 @@ function makeDevChat() {
     alerts: sandbox.__alerts,
     setFetch(fn) { sandbox.__fetchImpl = fn; },
     getHtml() { return t.html(); },
+    /** The last published view model, as plain data. */
+    state: () => t.state(),
     render(messages, session) {
       DevChat.messages = messages;
       DevChat.currentSession = session || null;
@@ -531,4 +533,116 @@ test('card and standalone workspace share one pending submission and reject conc
   await pending;
   assert.equal(h.changesRow().propose.kind, 'completed');
   assert.equal(h.AppView._changeActions.size, 0);
+});
+
+// ── #1889: the card follows the latest iteration ──────────────────────
+// A Changes card is persisted by the turn that landed the change, but its
+// actions are the session's, and a later iteration that ended without a new
+// card — a question answered, a stopped or failed run — left the only Submit
+// for review mid-transcript. The transcript now draws the latest card after
+// the last row once a later user turn follows it (its status line stays in
+// the timeline), keeps it in its slot while a turn is in flight, and leaves a
+// single-iteration session exactly as it was.
+
+const count = (html, needle) => html.split(needle).length - 1;
+const at = (html, needle) => {
+  const i = html.indexOf(needle);
+  assert.ok(i >= 0, `expected the markup to contain ${JSON.stringify(needle)}`);
+  return i;
+};
+
+const CARD = {
+  id: 1, role: 'system', content: 'Staging deployed!', changesReady: true,
+  stagingUrl: 'https://preview.example.org',
+};
+const WRAP_UP = { id: 2, role: 'assistant', content: 'Preview it, or propose it to the group.' };
+const ASK = { id: 3, role: 'user', content: 'Can it round to the nearest hour?' };
+const ANSWER = { id: 4, role: 'assistant', content: 'Yes, past a day it rounds to the hour.' };
+const withPr = (over) => activeSession({
+  id: 7, pr_number: 12, pr_url: 'https://github.com/example/app/pull/12', ...over,
+});
+
+test('a single iteration keeps the card where its turn left it (#1889)', () => {
+  const h = makeDevChat();
+  const html = h.render([CARD, WRAP_UP], withPr());
+  assert.ok(at(html, 'class="dc-pr-card"') < at(html, 'propose it to the group'),
+    'the wrap-up bubble is the same turn, so the card stays above it');
+  assert.equal(count(html, 'dc-pr-btn-promote'), 1);
+  assert.equal(h.state().busy, false, 'the model says the chat is idle');
+});
+
+test('a later iteration moves the card, not its status line, to the bottom (#1889)', () => {
+  const h = makeDevChat();
+  const html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr());
+  assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'),
+    'the card renders after the last row');
+  assert.ok(at(html, 'Staging deployed!') < at(html, 'nearest hour'),
+    'its status line stays in the timeline, where the change landed');
+  assert.equal(count(html, 'class="dc-pr-card"'), 1, 'one card, not one per iteration');
+  assert.equal(count(html, 'dc-pr-btn-promote'), 1, 'one Submit for review');
+  assert.match(html, />Submit for review</);
+  assert.match(html, /PR #12/, 'the card keeps its header');
+  assert.match(html, /Preview staging/, 'and its other actions');
+  assert.doesNotMatch(html, /Earlier build result|Current actions are/,
+    'nothing is left behind as a stub');
+  assert.deepEqual(h.changesRow().propose, { kind: 'ready' }, 'same model, same wiring');
+});
+
+test('the trailing card keeps the proposal action\'s lifecycle (#1889)', () => {
+  // Completed on a promoted session, blocked with its reason on a failing
+  // one, absent on a paused one — the model the in-place card renders from.
+  let h = makeDevChat();
+  let html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr({ status: 'promoted' }));
+  assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'));
+  assert.match(html, /disabled[^>]*>Already proposed</);
+  assert.deepEqual(h.changesRow().propose, { kind: 'completed' });
+
+  h = makeDevChat();
+  html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr({ check_state: 'failing' }));
+  assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'));
+  assert.match(html, /disabled[^>]*title="The checks on this revision are failing/);
+  assert.match(html, /Submit for review/, 'the blocked action keeps its label');
+
+  h = makeDevChat();
+  html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr({ status: 'paused' }));
+  assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'), 'the card still trails');
+  assert.doesNotMatch(html, /dc-pr-btn-promote/, 'with no proposal action, as before');
+});
+
+test('a turn in flight keeps the card in its slot; it trails again once the turn settles (#1889)', () => {
+  const h = makeDevChat();
+  const session = withPr();
+  // The user sends a third message: an optimistic row, with the turn running.
+  const NEXT = { id: null, _slug: 'u3', role: 'user', content: 'Ship it with a tweak.' };
+  h.DevChat.isStreaming = true;
+  let html = h.render([CARD, WRAP_UP, ASK, ANSWER, NEXT], session);
+  assert.equal(h.state().busy, true, 'the published model says a turn is running');
+  assert.ok(at(html, 'class="dc-pr-card"') < at(html, 'Ship it with a tweak'),
+    'the tail belongs to the run: the card is back in its turn\'s slot');
+  assert.equal(count(html, 'dc-pr-btn-promote'), 1, 'and is still the only Submit for review');
+
+  // The turn settles without a new card — a failed run.
+  h.DevChat.isStreaming = false;
+  const FAILED = {
+    id: 6, role: 'system', turnError: true,
+    content: 'This turn failed: the coding agent exited before writing a result. Send your message again to retry.',
+  };
+  html = h.render([CARD, WRAP_UP, ASK, ANSWER, { ...NEXT, id: 5 }, FAILED], session);
+  assert.equal(h.state().busy, false);
+  assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'Send your message again'),
+    'the card trails the failure');
+  assert.equal(count(html, 'dc-pr-btn-promote'), 1);
+});
+
+test('a new card lands in its own turn and the earlier one becomes the record (#1889)', () => {
+  const h = makeDevChat();
+  const CARD2 = {
+    id: 6, role: 'system', content: 'Staging deployed!', changesReady: true,
+    stagingUrl: 'https://preview.example.org/2',
+  };
+  const html = h.render([CARD, WRAP_UP, ASK, CARD2], withPr());
+  assert.equal(count(html, 'class="dc-pr-card"'), 2, 'both cards render');
+  assert.equal(count(html, 'dc-pr-btn-promote'), 1, 'one Submit for review');
+  assert.ok(at(html, 'dc-pr-btn-promote') > at(html, 'nearest hour'), 'on the newest card, in place');
+  assert.match(html, /Earlier build result/, 'the first card is the record it always was');
 });

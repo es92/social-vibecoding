@@ -285,7 +285,36 @@ test('proposal, author, imported PR: no Open session (there is no in-app session
 test('proposal, read-only viewer: only read-safe rows survive', () => {
   const AppView = makeAppView({ readOnly: true, admin: true });
   const labels = menuLabels(AppView, proposalCardHtml(AppView, PR({ pr_url: 'https://gh/pr/7' })));
-  assert.equal(labels.join('|'), 'View PR on GitHub');
+  assert.equal(labels.join('|'), 'Share to Messages|View PR on GitHub');
+});
+
+test('issue and proposal menus share their exact card references to Messages', () => {
+  const AppView = makeAppView({ readOnly: true });
+  AppView.appData = { id: 10, slug: 'usernode-2d5619', can_collaborate: false };
+  const shared = [];
+  AppView.__sandbox.UsernodeReact.messages = {
+    share: (reference) => { shared.push(JSON.parse(JSON.stringify(reference))); },
+  };
+
+  const issueMenu = menuItems(AppView, issueCardHtml(
+    AppView, ISSUE({ number: 1956, htmlUrl: 'https://gh/i/1956' }), { noNav: true },
+  ));
+  const proposalMenu = menuItems(AppView, proposalCardHtml(
+    AppView, PR({ id: 4209, pr_url: 'https://gh/pr/4209' }), { noNav: true },
+  ));
+  const issueShare = issueMenu.find((item) => item.label === 'Share to Messages');
+  const proposalShare = proposalMenu.find((item) => item.label === 'Share to Messages');
+
+  assert.ok(issueShare, 'read-only issue topic cards remain shareable');
+  assert.ok(proposalShare, 'read-only proposal topic cards remain shareable');
+  assert.equal(issueShare.icon, 'share');
+  assert.equal(proposalShare.icon, 'share');
+  issueShare.act();
+  proposalShare.act();
+  assert.deepEqual(shared, [
+    { type: 'issue', issueNumber: 1956, appId: 10, appSlug: 'usernode-2d5619' },
+    { type: 'proposal', sessionId: 4209, appId: 10, appSlug: 'usernode-2d5619' },
+  ]);
 });
 
 test('proposal: Retry preview only after a preview error', () => {

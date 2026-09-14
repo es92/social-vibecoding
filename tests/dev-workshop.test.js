@@ -91,6 +91,10 @@ function makeAppView(over) {
     },
     location: o.location || { search: '', hash: '', href: 'http://localhost/' },
     URLSearchParams,
+    // Globals a code path reads as bare identifiers at call time — the "+"
+    // wiring wants the real AbortController and a PlatformUI to ask about
+    // touch. Absent by default, as they always were.
+    ...(o.globals || {}),
   };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
@@ -822,7 +826,7 @@ test('themes all start collapsed, and a deep link is what opens one', () => {
 
 test('since-your-last-visit sits with the other things addressed to you', () => {
   const store = {};
-  store['workshopSeen:demo-app'] = String(Date.now() - 3 * 86400000);
+  store['workshopSeen:demo-app'] = String(Date.now() - 3.5 * 86400000);
   const AppView = makeAppView({ localStorage: store });
   seed(AppView);
   AppView._workshopThemes = themes([{ id: 't', name: 'T', items: ['issue:12'] }]);
@@ -880,7 +884,7 @@ test('since-your-last-visit sits with the other things addressed to you', () => 
 
 test('the since heading is styled: each class it emits has a rule, and the count is a pill beside the label', () => {
   const store = {};
-  store['workshopSeen:demo-app'] = String(Date.now() - 3 * 86400000);
+  store['workshopSeen:demo-app'] = String(Date.now() - 3.5 * 86400000);
   const AppView = makeAppView({ localStorage: store });
   seed(AppView);
   AppView._workshopThemes = themes([{ id: 't', name: 'T', items: ['issue:12'] }]);
@@ -2984,6 +2988,106 @@ test('the filter host asks to be filled, because the repaint that fills it runs 
   assert.match(ACTIONS_ROW, /id="dev-kanban-filterbar" className="flex-1 min-w-0 min-h-8"/);
 });
 
+test('the "+" asks to be wired when its row mounts, because the module wires it before the row exists (#2141)', () => {
+  // THE ORDER IS THE BUG, AGAIN, one line further down the same branch. The
+  // module wires the button from `_repaintDevBody`, on the line after
+  // `_rerenderWorkshop()` — by id, so it is a no-op while the button is not
+  // in the DOM.
+  assert.match(APP_VIEW_SRC, /AppView\._rerenderWorkshop\(\);\s*AppView\._rewirePlusMenu\(\);/,
+    'the module wires on the repaint, after the Workshop publish');
+  assert.match(APP_VIEW_SRC, /_wirePlusMenu\(content\) \{\s*const btn = document\.getElementById\('dev-plus-btn'\);\s*const menu = document\.getElementById\('dev-plus-menu'\);\s*if \(!btn \|\| !menu\) return;/,
+    'and it returns at its own guard when the "+" is absent');
+  // Two ways the row arrives AFTER that line. A tap on All items mounts the
+  // pane from React state, and the module side of the tap only persists the
+  // choice — nothing re-runs the wiring.
+  assert.match(WORKSHOP, /onClick=\{\(\) => \{ setTab\(t\.key\); callAppView\('_setWorkshopTab', t\.key\); \}\}/);
+  const setTab = APP_VIEW_SRC.slice(APP_VIEW_SRC.indexOf('  _setWorkshopTab(key) {'));
+  const setTabBody = setTab.slice(0, setTab.indexOf('\n  },'));
+  assert.match(setTabBody, /localStorage\.setItem\(AppView\.WORKSHOP_TAB_KEY, next\)/);
+  assert.ok(!/_rewirePlusMenu|_repaintDevBody|_rerenderWorkshop/.test(setTabBody),
+    'the tab is persisted, not repainted');
+  // And a deep-linked or remembered `ws=all` reaches a cold Workshop through
+  // the late-arrival effect on `v.tab`: a state update raised inside a
+  // passive effect is scheduled at default priority, so the pane lands a task
+  // AFTER the synchronous publish the module's call follows.
+  assert.match(WORKSHOP, /useState<TabKey>\(\(\) => v\.tab \|\| 'status'\)/);
+  assert.match(WORKSHOP, /useEffect\(\(\) => \{\s*if \(deepTabApplied\.current \|\| !v\.tab\) return;\s*deepTabApplied\.current = true;\s*setTab\(v\.tab\);\s*\}, \[v\.tab\]\);/);
+  // So the row asks for itself, from the mount effect that already asks for
+  // the filter strip.
+  const effect = ACTIONS_ROW.match(/useEffect\(\(\) => \{[\s\S]*?\}, \[\]\);/);
+  assert.ok(effect, 'the mount effect');
+  assert.match(effect[0], /callAppView\('_rewirePlusMenu'\);/);
+  // In the effect BODY, not the microtask: the wiring binds listeners and
+  // flushes nothing through React, so there is nothing for a microtask to
+  // keep out of the commit, and the nodes it looks up are committed by the
+  // time any effect runs. The strip keeps its microtask; see the test above.
+  assert.match(effect[0], /queueMicrotask\(\(\) => \{ if \(live\) callAppView\('_renderKanbanFilterBar'\); \}\);\s*callAppView\('_rewirePlusMenu'\);/);
+  const wire = APP_VIEW_SRC.slice(APP_VIEW_SRC.indexOf('  _wirePlusMenu(content) {'));
+  const wireBody = wire.slice(0, wire.indexOf('\n  },'));
+  assert.ok(!/_reactDevBoard|publish|flushSync|innerHTML/.test(wireBody), 'listeners only');
+  assert.match(wireBody, /AppView\._plusMenuAbort\?\.abort\(\);/,
+    'and re-entrant: the previous handlers go before the next ones bind');
+});
+
+test('re-running the wiring from the row is safe: nothing bound while the "+" is absent, one live handler once it is', () => {
+  // The module half of the fix above, executed: the sequence the row's mount
+  // now produces is "the module called with no button, then the row called
+  // with one, then the module again on the next repaint", and every step has
+  // to leave at most one handler on the node. Real EventTargets, so the
+  // `{ signal }` each listener carries is honoured by the dispatch.
+  const target = () => {
+    const node = new EventTarget();
+    node.click = () => node.dispatchEvent(new Event('click'));
+    node.attrs = {};
+    node.setAttribute = (k, v) => { node.attrs[k] = v; };
+    node.querySelector = () => null;
+    node.querySelectorAll = () => [];
+    return node;
+  };
+  const content = target();
+  const btn = target();
+  const menu = target();
+  const cls = new Set(['hidden']);
+  menu.classList = {
+    add: (c) => { cls.add(c); },
+    remove: (c) => { cls.delete(c); },
+    contains: (c) => cls.has(c),
+    toggle: (c) => (cls.has(c) ? (cls.delete(c), false) : (cls.add(c), true)),
+  };
+  const present = { 'app-content': content };
+  const AppView = makeAppView({
+    document: {
+      getElementById: (id) => present[id] || null,
+      querySelector: () => null,
+      querySelectorAll: () => ({ forEach: () => {} }),
+      addEventListener: () => {},
+      createElement: () => ({ style: {}, classList: { add: () => {}, remove: () => {} } }),
+      body: { appendChild: () => {} },
+    },
+    globals: { AbortController, PlatformUI: { isTouch: () => false } },
+  });
+  AppView.refreshDevChatSecretsState = () => {};
+  // 1. The button is not in the DOM (the lander is on Current status, or a
+  //    cold Workshop is on its first frame): the module's call binds nothing.
+  AppView._rewirePlusMenu();
+  assert.equal(AppView._plusMenuAbort, undefined, 'nothing bound, so nothing to abort');
+  // 2. The row mounts and asks: the button opens the menu.
+  present['dev-plus-btn'] = btn;
+  present['dev-plus-menu'] = menu;
+  AppView._rewirePlusMenu();
+  btn.click();
+  assert.equal(cls.has('hidden'), false, 'the menu opens');
+  assert.equal(btn.attrs['aria-expanded'], 'true');
+  // 3. The module's own repaint call lands on top: still one handler, so a
+  //    click toggles once (shut) rather than twice (shut, then open again).
+  AppView._rewirePlusMenu();
+  btn.click();
+  assert.equal(cls.has('hidden'), true, 'closes: one toggle, not two');
+  assert.equal(btn.attrs['aria-expanded'], 'false');
+  btn.click();
+  assert.equal(cls.has('hidden'), false, 'and opens again');
+});
+
 test('Needs you is a fitted screen on a phone, in the page-scrolling layout too', () => {
   // MEASURED, in the harness that loads the real generated shell and the real
   // app.css at 402x874, with a nine-paragraph summary on the card, at a 34px
@@ -3039,7 +3143,7 @@ test('the ask card is padded evenly, so its resting line sits on its own middle'
 
 test('since-your-last-visit shows three and reveals the rest, like the week walk', () => {
   const store = {};
-  store['workshopSeen:demo-app'] = String(Date.now() - 3 * 86400000);
+  store['workshopSeen:demo-app'] = String(Date.now() - 3.5 * 86400000);
   const AppView = makeAppView({ localStorage: store });
   seed(AppView);
   // Four merges instead of one, so the strip holds more than it draws.

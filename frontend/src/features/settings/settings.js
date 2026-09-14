@@ -3658,10 +3658,13 @@
     // Fetched fresh on every modal open. Each active grant renders as
     // a row: app name, $spent / $cap today, a cap editor, the BYOK
     // spillover toggle (only when a key is on file), and Revoke.
-    // Revoked grants show a muted badge — re-approving happens via the
-    // app's own consent dialog, not from here. In staging previews the
-    // page's ?demo=1 is passed through so the (always-empty,
-    // staging:private) grant tables still produce a reviewable list.
+    // Revoked grants show a muted badge and Re-enable (#1957), which
+    // re-grants through the consent dialog's own POST with the cap and
+    // BYOK choice the row still carries — before it, the only way back
+    // was that dialog, which an app that never asks again never opens.
+    // In staging previews the page's ?demo=1 is passed through so the
+    // (always-empty, staging:private) grant tables still produce a
+    // reviewable list.
 
     async _renderLlmGrants() {
       const bridge = (typeof window !== 'undefined' && window.UsernodeReact)
@@ -3687,17 +3690,21 @@
     // inline is decided here, where `this.state.hasApiKey` and the demo flag
     // already live — see the note in ./grants-store.js. The money is
     // pre-formatted for the same reason: cents-to-dollars is this module's
-    // rule, not the component's.
+    // rule, not the component's. `appSlug` and `capCents` ride along for
+    // Re-enable (#1957): the re-grant endpoint is keyed on slug, and the
+    // previous cap is what it restores.
     _grantView(g) {
       const spent = ((g.spentTodayCents || 0) + (g.byokSpentTodayCents || 0)) / 100;
       const cap = (g.dailyCapCents || 0) / 100;
       return {
         appId: g.appId,
         appName: String(g.appName ?? ''),
+        appSlug: String(g.appSlug ?? ''),
         revoked: g.status !== 'active',
         spent: spent.toFixed(2),
         cap: cap.toFixed(2),
         capValue: cap.toFixed(2),
+        capCents: Number(g.dailyCapCents) || 0,
         showByok: !!(this.state.hasApiKey || g.allowByok),
         allowByok: !!g.allowByok,
       };
@@ -3708,13 +3715,14 @@
     // reach the API.
     _isDemoGrant(appId) { return appId < 0; },
 
-    // ── The three row handlers ───────────────────────────────────
+    // ── The row handlers ─────────────────────────────────────────
     //
-    // These were closures inside the row builder, wired with addEventListener
-    // to nodes it had just created. They are methods now, called by name from
-    // ./grants-list.tsx, because the component owns the markup and this module
-    // owns the writes. Each still reports through _setLlmGrantsStatus and
-    // re-renders on success, exactly as before.
+    // The first three were closures inside the row builder, wired with
+    // addEventListener to nodes it had just created. They are methods now,
+    // called by name from ./grants-list.tsx, because the component owns the
+    // markup and this module owns the writes. Each still reports through
+    // _setLlmGrantsStatus and re-renders on success, exactly as before.
+    // _onGrantReenable (#1957) is the fourth, written the same way.
 
     async _onGrantCapChange(appId, value) {
       const status = (t, k) => this._setLlmGrantsStatus(t, k);
@@ -3781,6 +3789,47 @@
         const j = await r.json().catch(() => ({}));
         if (!r.ok) { status(j.error || 'Failed to revoke.', 'error'); return; }
         status('Revoked.', 'ok');
+        this._renderLlmGrants();
+      } catch (err) {
+        status('Network error: ' + err.message, 'error');
+      }
+    },
+
+    // The way back from Revoke (#1957). The consent dialog's POST is an
+    // upsert keyed on slug that re-activates a revoked row, so re-enabling
+    // re-sends the cap and BYOK choice the row still carries and the grant
+    // comes back as it was; the active row's controls take over from there.
+    // No confirm dialog: this is not destructive, and the row's copy already
+    // says what the click restores.
+    //
+    // If the old cap no longer fits the user's allowance (the ceiling moved
+    // since the grant was made), the server refuses it with a 400 that
+    // carries no `code` — credit_required and byok_required both do — so
+    // retry once at the server's default cap rather than strand the row
+    // with no way back, and say so. Anything else is reported verbatim,
+    // as the cap editor's errors are.
+    async _onGrantReenable(grant) {
+      const status = (t, k) => this._setLlmGrantsStatus(t, k);
+      if (this._isDemoGrant(grant.appId)) { status('Demo data: changes are not saved.', 'info'); return; }
+      const post = (body) => fetch('/api/me/llm-grants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ appSlug: grant.appSlug, allowByok: !!grant.allowByok, ...body }),
+      });
+      try {
+        const withCap = grant.capCents > 0;
+        let r = await post(withCap ? { dailyCapCents: grant.capCents } : {});
+        let j = await r.json().catch(() => ({}));
+        let atDefault = false;
+        if (withCap && r.status === 400 && !j.code) {
+          r = await post({});
+          j = await r.json().catch(() => ({}));
+          atDefault = true;
+        }
+        if (!r.ok) { status(j.error || 'Failed to re-enable.', 'error'); return; }
+        const cap = ((j.grant && j.grant.dailyCapCents) || 0) / 100;
+        status(atDefault ? `Re-enabled at the default $${cap.toFixed(2)} daily cap.` : 'Re-enabled.', 'ok');
         this._renderLlmGrants();
       } catch (err) {
         status('Network error: ' + err.message, 'error');

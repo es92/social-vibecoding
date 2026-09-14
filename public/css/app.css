@@ -2924,6 +2924,12 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
   scrollbar-width: none;
   margin-inline: -0.75rem;
   padding-inline: 0.75rem;
+  /* The snap position must be the KEYLINE, not the rail's own edge. Without
+     it `scroll-snap-align: start` lines the first card up with the scrollport
+     edge — 0.75rem outside the section's gutter, since the negative margin
+     above cancelled it — and WebKit applies that snap on layout, so on iOS
+     the rail arrived pre-scrolled with the first card stuck to the screen. */
+  scroll-padding-inline: 0.75rem;
   /* Room for the cards' own shadow-less hairline to not be clipped, and for
      a focus ring on the last card. */
   padding-block: 0.125rem;
@@ -3086,8 +3092,13 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
      is the same element, one specificity step up, so the intended phone
      padding lands without an !important or a #app-list scope that would
      miss the landing grid's tiles. It also buys the label 8px of extra
-     line width, which at 11px is roughly two more characters per line. */
-  .app-card.app-card { padding: 0.5rem; }
+     line width, which at 11px is roughly two more characters per line.
+
+     NOT the Discover card. It carries `.app-card` only as the wiring contract
+     with `_wireDiscoveryCards`; it is a tile of its own whose art block is
+     meant to run edge to edge, and this padding inset the illustration inside
+     a frame of tint on every phone. */
+  .app-card.app-card:not(.home-discover-card) { padding: 0.5rem; }
 
   /* `.home-panel-slot > .home-panel--fit { align-self: flex-start }` lived
      here: the phone-only release from the slot's stretch-to-fill, so a short

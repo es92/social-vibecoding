@@ -147,3 +147,17 @@ test('the meta line drops what it does not have, and never holds a stray dot', (
   assert.match(zero, /style="width:0\.375rem"/, 'the stub at 0 of 3');
   assert.match(zero, />0\/3 Apps tried</);
 });
+
+test('the detail page draws the same rail and meta line at page size', () => {
+  const lg = classOf(rail({ state: 'progress', label: '180/500 blocks', fill: 0.36, name: 'x', counted: true, size: 'lg' }),
+    'role="progressbar"').split(' ');
+  for (const c of ['h-10', 'text-[0.9375rem]', 'rounded-[0.75rem]', 'w-full', 'min-w-0', 'overflow-hidden']) {
+    assert.ok(lg.includes(c), `lg rail has ${c}`);
+  }
+  assert.ok(!lg.includes('h-9') && !lg.includes('rounded-lg'), 'one size, not both');
+  const meta = renderToHtml(createElement(Card.ChallengeMeta, { deadline: '3d left', text: '720 pts so far', size: 'lg' }));
+  assert.equal(meta, `<div class="flex min-w-0 items-baseline gap-1.5 text-sm leading-5">${DEADLINE('3d left')}${DOT}${REWARD('720 pts so far')}</div>`);
+  assert.equal(renderToHtml(createElement(Card.ChallengeMeta, { text: 'Earned 900 pts', earned: true })),
+    `${META_OPEN}${EARNED('Earned 900 pts')}</div>`, 'the card size is the card’s line, unchanged');
+  assert.equal(renderToHtml(createElement(Card.ChallengeMeta, {})), '', 'nothing to say, no line');
+});

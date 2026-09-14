@@ -627,8 +627,12 @@ const HomePanels = {
     } else {
       rail = { state: 'new', stateLabel: 'Not started', fill: 0, counted: false };
     }
+    const eventId = Number(c.season_event_id);
     return {
       id: String(c.id),
+      // The event the challenge belongs to, for the card's deep link to its
+      // page on the Challenges tab (goToChallenge); null without one.
+      eventId: Number.isSafeInteger(eventId) && eventId > 0 ? eventId : null,
       // The tile's picture, from the challenge's KIND (challenge_kinds.icon —
       // one setting gives every challenge of a kind the same face). Null on a
       // kind that has none; the tile is then an empty neutral face.
@@ -709,6 +713,21 @@ const HomePanels = {
   // history entry and the device back gesture returns to the home screen.
   goToChallenges() {
     location.hash = '#leaderboard/challenges';
+  },
+
+  // A challenge CARD opens that challenge's own page, not the list: the
+  // Challenges tab's deep link, #leaderboard/challenges/<event>/<challenge>.
+  // Real hash navigation for the same reason as goToChallenges, and that page's
+  // back chevron returns here. A row with no event id (a demo row) has no
+  // address the tab could resolve, so it lands on the list instead.
+  goToChallenge(eventId, challengeId) {
+    const ev = Number(eventId);
+    const ch = Number(challengeId);
+    if (!Number.isSafeInteger(ev) || ev <= 0 || !Number.isSafeInteger(ch) || ch <= 0) {
+      HomePanels.goToChallenges();
+      return;
+    }
+    location.hash = `#leaderboard/challenges/${ev}/${ch}`;
   },
 
   // The Leaderboard screen's standings tab. The Topochain standings ARE the

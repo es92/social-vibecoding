@@ -50,6 +50,13 @@
 // in ./topochain-challenges.js (`_stateOf`), because the ring already says
 // which state it is.
 //
+// ── The detail page draws the same parts ──────────────────────────────
+//
+// The Challenges tab's detail page (./challenges-pane.tsx) shows the same
+// meta line under its title (`ChallengeMeta`) and the same clean rail, both at
+// a larger `size` for a page that is read rather than scanned. Only the size
+// differs; the words, tones and rules are these.
+//
 // Every class below is a complete literal: Tailwind's extractor is a regex
 // over source text, so a computed class name never compiles.
 
@@ -60,8 +67,14 @@ import { CheckIcon } from '@/components/ui/icons';
 
 export type ChallengeState = 'new' | 'progress' | 'done';
 
-const RAIL = 'relative flex h-9 w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-lg px-2.5 '
-  + 'text-[0.8125rem] font-medium';
+export type PartSize = 'md' | 'lg';
+
+// `md` is the card's 36px rail; `lg` the detail page's 40px rail with 15px copy.
+const RAIL = 'relative flex w-full min-w-0 items-center gap-1.5 overflow-hidden font-medium';
+const RAIL_SIZE: Record<PartSize, string> = {
+  md: 'h-9 rounded-lg px-2.5 text-[0.8125rem]',
+  lg: 'h-10 rounded-[0.75rem] px-3 text-[0.9375rem]',
+};
 const RAIL_TONE: Record<ChallengeState, string> = {
   new: 'bg-zinc-200/70 text-zinc-700 dark:bg-zinc-700/60 dark:text-zinc-300',
   progress: 'bg-zinc-200/70 text-zinc-900 dark:bg-zinc-700/60 dark:text-zinc-100',
@@ -76,7 +89,10 @@ const RAIL_STUB = '0.375rem';
 const RAIL_LABEL = 'relative min-w-0 truncate';
 
 const TITLE = 'truncate text-base font-medium leading-6 text-zinc-900 dark:text-zinc-100';
-const META = 'flex min-w-0 items-baseline gap-1.5 text-[0.8125rem] leading-5';
+const META: Record<PartSize, string> = {
+  md: 'flex min-w-0 items-baseline gap-1.5 text-[0.8125rem] leading-5',
+  lg: 'flex min-w-0 items-baseline gap-1.5 text-sm leading-5',
+};
 const META_DEADLINE = 'shrink-0 text-zinc-500 dark:text-zinc-400';
 const META_DOT = 'shrink-0 text-zinc-400 dark:text-zinc-500';
 const META_REWARD = 'min-w-0 truncate font-medium text-amber-800 dark:text-amber-300';
@@ -111,12 +127,13 @@ function StateMark({ state }: { state: ChallengeState }): ReactNode {
 // `counted` is what draws the bar: a challenge with a target above one,
 // from 0 of N (the stub) up to one short of done. A finished rail is the
 // green tone instead, and an uncounted one is words alone.
-export function ProgressRail({ state, label, fill, name, counted = false }: {
+export function ProgressRail({ state, label, fill, name, counted = false, size = 'md' }: {
   state: ChallengeState;
   label: string;
   fill: number | null;
   name: string;
   counted?: boolean;
+  size?: PartSize;
 }): ReactNode {
   const pct = fill == null ? null : Math.round(Math.max(0, Math.min(fill, 1)) * 100);
   const bar = counted && state !== 'done' && pct != null;
@@ -130,11 +147,30 @@ export function ProgressRail({ state, label, fill, name, counted = false }: {
       // 1/500 and 100% at 499/500.
       aria-valuetext={label || undefined}
       aria-label={label ? (name ? `${name}: ${label}` : label) : name}
-      className={`${RAIL} ${RAIL_TONE[state]}`}
+      className={`${RAIL} ${RAIL_SIZE[size]} ${RAIL_TONE[state]}`}
     >
       {bar ? <span className={RAIL_FILL} style={{ width: pct ? `max(${RAIL_STUB}, ${pct}%)` : RAIL_STUB }} /> : null}
       <StateMark state={state} />
       {label ? <span className={RAIL_LABEL}>{label}</span> : null}
+    </div>
+  );
+}
+
+// The meta line: "5d left · 500 pts". `text` is the amount — the reward on
+// offer, or with `earned` what the viewer earned, in emerald. Nothing to say
+// is no line at all, never a stray dot.
+export function ChallengeMeta({ deadline = null, text = null, earned = false, size = 'md' }: {
+  deadline?: string | null;
+  text?: string | null;
+  earned?: boolean;
+  size?: PartSize;
+}): ReactNode {
+  if (!deadline && !text) return null;
+  return (
+    <div className={META[size]}>
+      {deadline ? <span className={META_DEADLINE}>{deadline}</span> : null}
+      {deadline && text ? <span aria-hidden="true" className={META_DOT}>·</span> : null}
+      {text ? <span className={earned ? META_EARNED : META_REWARD}>{text}</span> : null}
     </div>
   );
 }
@@ -191,13 +227,7 @@ export function ChallengeCard({ view, className, ...rest }: {
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="min-w-0">
           <div className={TITLE}>{view.goal}</div>
-          {view.deadline || reward ? (
-            <div className={META}>
-              {view.deadline ? <span className={META_DEADLINE}>{view.deadline}</span> : null}
-              {view.deadline && reward ? <span aria-hidden="true" className={META_DOT}>·</span> : null}
-              {reward ? <span className={view.earned ? META_EARNED : META_REWARD}>{reward}</span> : null}
-            </div>
-          ) : null}
+          <ChallengeMeta deadline={view.deadline} text={reward} earned={!!view.earned} />
         </div>
         <ProgressRail
           state={view.state}

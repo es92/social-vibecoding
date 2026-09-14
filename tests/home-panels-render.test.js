@@ -1491,7 +1491,7 @@ test('the cell height still matches the app tile it is derived from', () => {
   // and the tightening has to OUT-SPECIFY Tailwind's own p-3 utility,
   // since tailwind.css is linked after app.css (see the rule's comment).
   assert.match(grid, /\bp-2\b/);
-  assert.match(CSS, /\.app-card\.app-card \{ padding: 0\.5rem; \}/);
+  assert.match(CSS, /\.app-card\.app-card:not\(\.home-discover-card\) \{ padding: 0\.5rem; \}/);
   assert.match(CSS, /--home-cell-h: 7\.25rem/);
   // …and the phone cap override is GONE with the cap itself (#968 introduced
   // it: a block's phone footprint was a single grid row, so a two-cell cap
@@ -2005,6 +2005,16 @@ test('the Discover rail is a fixed-width row that bleeds to both screen edges', 
   // puts the first card back on the text edge; the two must move together.
   assert.match(css, /\.home-discover-rail \{[^}]*margin-inline: -0\.75rem/);
   assert.match(css, /\.home-discover-rail \{[^}]*padding-inline: 0\.75rem/);
+  // …and the snap position has to agree with that padding. Without it
+  // `scroll-snap-align: start` snaps the first card to the scrollport edge,
+  // and iOS applies the snap on layout: the rail arrived pre-scrolled with the
+  // first card stuck to the screen edge instead of on the keyline.
+  assert.match(css, /\.home-discover-rail \{[^}]*scroll-padding-inline: 0\.75rem/);
+  // The ART IS FULL BLEED. The phone launcher tightens `.app-card` padding,
+  // and the Discover card carries `.app-card` as its wiring contract, so that
+  // rule has to exclude it or the illustration sits inset in a frame of tint.
+  assert.match(css, /\.app-card\.app-card:not\(\.home-discover-card\) \{ padding: 0\.5rem; \}/);
+  assert.doesNotMatch(css, /\.app-card\.app-card \{/);
   // #home-screen states `overflow-x: hidden` (pinned by
   // tests/home-vertical-scroll-only.test.js), which is what clips that
   // overhang instead of letting it widen the feed.
@@ -2162,4 +2172,24 @@ test('app.css: the body wrapper carries the budget’s geometry', () => {
   // two rules — a `.home-panel-fill` left behind would be a lane reserved for
   // a list nothing draws.
   assert.doesNotMatch(css, /\.home-panel-fill[ .{]/);
+});
+
+test('a Home challenge card opens that challenge’s page on the Challenges tab, not the list', () => {
+  const fs = require('node:fs');
+  const pathMod = require('node:path');
+  const read = (p) => fs.readFileSync(pathMod.join(__dirname, '..', p), 'utf8');
+  const ui = read('frontend/src/features/home/panels/challenges.tsx');
+  assert.match(ui, /data-challenge-id=\{row\.id\}\s*onClick=\{\(\) => panels\(\)\?\.goToChallenge\?\.\(row\.eventId, row\.id\)\}/,
+    'each card deep-links to its own challenge');
+  assert.equal((ui.match(/goToChallenges\?\.\(\)/g) || []).length, 1,
+    'only the empty state still goes to the list (the bar link lives in ui.tsx)');
+  const panels = read('frontend/src/features/home/home-panels.js');
+  const fn = panels.slice(panels.indexOf('  goToChallenge(eventId, challengeId) {'));
+  assert.ok(fn.length > 0, 'goToChallenge is defined');
+  assert.match(fn, /location\.hash = `#leaderboard\/challenges\/\$\{ev\}\/\$\{ch\}`;/,
+    'the Challenges tab’s own deep link, which the router resolves');
+  assert.match(fn.slice(0, fn.indexOf('location.hash')), /HomePanels\.goToChallenges\(\);/,
+    'a row without an event id falls back to the list');
+  assert.match(panels, /eventId: Number\.isSafeInteger\(eventId\) && eventId > 0 \? eventId : null,/,
+    'the row view carries the event id from the payload');
 });

@@ -376,10 +376,24 @@ const MERGED_TITLE = 'This change is merged and now live in the app.';
 const PREVIEW_GONE = 'Preview removed after merge. This change is now live in the app';
 
 function ChangesCard({ r, embedded = false, historical = false }: { r: Extract<TranscriptRow, { t: 'changes' }>; embedded?: boolean; historical?: boolean }): ReactNode {
-  const preview = (testing: boolean, url: string) => controller()?.previewStaging?.(url, testing);
   return (
     <>
       <StatusLine r={r.status} />
+      <PrCard r={r} embedded={embedded} historical={historical} />
+    </>
+  );
+}
+
+/**
+ * The card under a `changes` row's status line, on its own. `ChangesCard`
+ * draws both; `DevChatTranscript` draws this after the LAST row once later
+ * iterations follow the change (#1889), with the status line left in the
+ * timeline where the change landed.
+ */
+function PrCard({ r, embedded = false, historical = false }: { r: Extract<TranscriptRow, { t: 'changes' }>; embedded?: boolean; historical?: boolean }): ReactNode {
+  const preview = (testing: boolean, url: string) => controller()?.previewStaging?.(url, testing);
+  return (
+    <>
       {/* `revealPrCard` adds `dc-pr-card-highlight` to this node for 1.5s to
           flash it after the header's "PR #12" jump. That stays a classList
           mutation, and it survives every repaint because this `className` is
@@ -650,13 +664,53 @@ function Row({ r, embedded = false, historical = false }: { r: TranscriptRow; em
  * matters for `_bindDevFlowVisibility` in particular: in a hand-off venue the
  * walkthrough renders in the composer's place instead of here, and that path
  * wires the card but not the visibility re-check.
+ *
+ * ── Where the Changes card sits (#1889) ───────────────────────────────
+ *
+ * A `changes` row is persisted by the turn that landed the change, but the
+ * card's actions are the SESSION's: Preview, Test, View on GitHub and Submit
+ * for review all read session state, which is why only the latest card
+ * carries them and every earlier one is `historical`. Anchored to its turn,
+ * that card was left mid-transcript by every later iteration that ended
+ * without a new one — a question answered, a run stopped or failed, a turn
+ * with nothing to commit — and the bottom of the chat had no way to submit.
+ *
+ * So once a later USER turn follows the latest card, the card renders after
+ * the last row, and its status line stays in the timeline as the record of
+ * when the change landed. Three things bound that rule:
+ *
+ *   - A single iteration is unchanged. The wrap-up bubble under the card is
+ *     the same turn, not a new one, and the card stays above it.
+ *   - A turn in flight keeps the card in its slot: the tail then belongs to
+ *     the run (its progress, #990's dots), and the actions come back to the
+ *     bottom with the `renderMessages` that settles the turn — or a new card
+ *     lands, and it is the latest.
+ *   - The embedded workspace never moves it: its cards carry no actions
+ *     (the change card above does), so there is nothing to keep at hand.
+ *
+ * One card either way — `#dc-pr-card`, with the visuals and the actions —
+ * so `revealPrCard` and the declared checks under that id resolve wherever
+ * it sits.
  */
 export function DevChatTranscript({ embedded = false }: { embedded?: boolean }): ReactNode {
   const s = useStoreState(transcriptStore);
-  const latest = s.rows.findLast((r) => r.t === 'changes')?.key;
+  const latestAt = s.rows.findLastIndex((r) => r.t === 'changes');
+  const latest = latestAt >= 0 ? s.rows[latestAt] as Extract<TranscriptRow, { t: 'changes' }> : null;
+  // #1889: a later iteration — a user turn after the latest card — with the
+  // chat idle. See "Where the Changes card sits" in the header.
+  const trails = !!latest && !embedded && !s.busy
+    && s.rows.some((r, i) => i > latestAt && r.t === 'msg' && r.who === 'user');
   return (
     <>
-      {s.rows.map((r) => <Row key={r.key} r={r} embedded={embedded} historical={r.t === 'changes' && r.key !== latest} />)}
+      {s.rows.map((r, i) => {
+        if (r.t !== 'changes') return <Row key={r.key} r={r} embedded={embedded} />;
+        if (i !== latestAt) return <Row key={r.key} r={r} embedded={embedded} historical />;
+        // The status line keeps the change's place in the timeline; the
+        // card is drawn after the last row instead.
+        if (trails) return <Row key={r.key} r={r.status} embedded={embedded} />;
+        return <Row key={r.key} r={r} embedded={embedded} />;
+      })}
+      {trails && latest ? <PrCard r={latest} embedded={embedded} /> : null}
       {/* #1049: the walkthrough sits at the END of the transcript, so on an
           empty session it is the only thing in the pane and on a resumed one
           it stays next to the composer the brief is typed into. Another

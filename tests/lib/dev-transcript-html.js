@@ -54,7 +54,7 @@ let api = null;
 // object from the one the component subscribes to.
 const mod = () => (api || (api = loadTsx('tests/fixtures/dev-transcript-api.ts')));
 
-const EMPTY = { rows: [], devFlowHtml: '', activity: null };
+const EMPTY = { rows: [], devFlowHtml: '', activity: null, busy: false };
 
 /** The whole transcript, as html. `state` may be a cross-realm object. */
 function transcriptHtml(state) {

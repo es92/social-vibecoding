@@ -3065,6 +3065,8 @@ const App = {
       // Browse's detail level (#apps/<slug>) claims the button as "up to
       // the list"; on the list itself it declines and we leave the screen.
       if (App._inBrowse && window.Browse?.handleBack?.()) return;
+      // A challenge's detail page claims it as "up to the grid".
+      if (App._inLeaderboard && window.TopochainChallenges?.handleBack?.()) return;
       // A dev SESSION claims it as "back to the Board" (Streamlined
       // Concept); declines when no session is open.
       if (App.currentApp && window.DevChat?.handleBack?.()) return;

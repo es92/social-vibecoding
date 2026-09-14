@@ -880,6 +880,12 @@
       "expectSelector": ".dev-card-menu [data-menu-idx][data-menu-row=\"assignee\"]"
     },
     {
+      "name": "Issue cards can be shared directly to Messages from the hamburger menu (#1956)",
+      "path": "/?demo=1&view=kanban&shot=card-menu&card=issue:900009&cards=open#app/usernode-2d5619/dev",
+      "expectSelector": ".dev-card-menu [data-menu-idx][data-menu-row=\"share\"]",
+      "expectText": "Share to Messages"
+    },
+    {
       "name": "Dev board: attribute chips keep the small label inside the 20px box",
       "path": "/?demo=1&view=kanban&cards=open#app/usernode-2d5619/dev",
       "expectSelector": "#dev-kanban button.attr-chip.dev-badge[data-attr-field=\"priority\"]"
@@ -905,6 +911,12 @@
       "name": "A proposal opened by DIRECT URL has a working ⋯ menu (#1324)",
       "path": "/?demo=1&shot=card-menu&card=proposal:9000043#app/usernode-2d5619/dev/proposals/9000043",
       "expectSelector": ".dev-card-menu [data-menu-idx]"
+    },
+    {
+      "name": "Proposal cards can be shared directly to Messages from the hamburger menu (#1956)",
+      "path": "/?demo=1&shot=card-menu&card=proposal:9000043&cards=open#app/usernode-2d5619/board",
+      "expectSelector": ".dev-card-menu [data-menu-idx][data-menu-row=\"share\"]",
+      "expectText": "Share to Messages"
     },
     {
       "name": "A directly-opened proposal opens its assignee picker (#1324, #1330)",
@@ -2708,6 +2720,7 @@
     {
       "name": "Settings deep-links App AI permissions with the seeded demo grants",
       "path": "/?demo=1#settings/app-ai",
+      "expectSelector": "[data-settings-section=\"app-ai\"]:not(.hidden) #llm-grants-list [data-role=\"re-enable\"]",
       "expectText": "Staging demo app A"
     },
     {
@@ -2878,9 +2891,9 @@
       "expectSelector": "#leaderboard-event-bar:not(.hidden) #tc-ev-select"
     },
     {
-      "name": "Challenge detail overlay is reachable by deep link (?shot=challenge-detail)",
+      "name": "Challenge detail page is reachable by deep link and draws its rail (?shot=challenge-detail)",
       "path": "/?shot=challenge-detail#leaderboard/challenges",
-      "expectSelector": "#tc-se-detail-overlay:not(.hidden) #tc-se-detail-panel"
+      "expectSelector": "#tc-se-detail-overlay:not(.hidden) #tc-se-detail-panel [role=progressbar]"
     },
     {
       "name": "Imported proposal mid-build shows the Preview building pill (#866)",

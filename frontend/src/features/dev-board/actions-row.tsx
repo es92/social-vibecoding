@@ -195,10 +195,36 @@ export function DevActionsRow({
    * Nothing waits on the microtask: it runs as soon as React's work loop
    * unwinds, and the host below holds the field's row open with `min-h-8`
    * from the frame's first paint, so arriving a beat later shifts nothing.
+   *
+   * AND ASK FOR THE "+" TO BE WIRED (#2141) — the same bug, one line later
+   * in the module. `_wirePlusMenu` binds the button's handlers by looking
+   * `#dev-plus-btn` up, and `_repaintDevBody` re-runs it right after
+   * `_rerenderWorkshop()`, which is sound only while the pane is in the DOM
+   * by then. Twice it is not. A tap on the All items tab mounts this row
+   * from `setTab`, on React's own schedule, and `_setWorkshopTab` only
+   * persists the choice. And on the first Workshop paint of a page session
+   * a deep-linked or remembered `ws=all` reaches the pane through the
+   * late-arrival effect on `v.tab` (workshop/workshop.tsx): a state update
+   * raised inside a passive effect is scheduled at default priority, so that
+   * render lands a task AFTER the synchronous publish `_rewirePlusMenu()`
+   * follows. Both ways the button arrived after the one call that wires it
+   * and stayed dead until the next body repaint — a WebSocket-driven reload,
+   * a vote, a card action — or until a Dev re-entry remounted the Workshop
+   * with its tab already in the store. Whether the "+" worked depended on
+   * what else had happened since: "sometimes need to refresh before it
+   * works".
+   *
+   * `_rewirePlusMenu` aborts the previous controller before binding, so
+   * this call on top of the module's own leaves exactly one handler per
+   * node. In the effect BODY, not the microtask: it binds listeners and
+   * flushes nothing through React, and the nodes it looks up are committed
+   * by the time any effect runs — which is also before anyone can have
+   * tapped.
    */
   useEffect(() => {
     let live = true;
     queueMicrotask(() => { if (live) callAppView('_renderKanbanFilterBar'); });
+    callAppView('_rewirePlusMenu');
     return () => { live = false; };
   }, []);
   return (
