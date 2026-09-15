@@ -100,6 +100,19 @@ function makeMockPool() {
           rows: [{ ...row, confirmed_at: row.confirmed_at || new Date() }],
         };
       }
+      // The join path, for the re-join comparison below. Every address the
+      // fixture knows about is already on the list, so the ON CONFLICT
+      // insert returns no row and getSignupByEmail answers with the same
+      // tuple the confirm route's UPDATE returns.
+      if (/INSERT INTO waitlist_signups/.test(sql)) {
+        return ROWS[params[0]]
+          ? { rowCount: 0, rows: [] }
+          : { rowCount: 1, rows: [{ submitted_at: JOINED }] };
+      }
+      if (/SELECT id, email, submitted_at, confirmed_at[\s\S]*FROM waitlist_signups/.test(sql)) {
+        const row = ROWS[params[0]];
+        return { rows: row ? [row] : [] };
+      }
       return { rowCount: 0, rows: [] };
     },
   };
@@ -163,6 +176,34 @@ test('a confirmed row reads back as confirmed, not as a fresh confirmation', asy
     assert.equal(body.status.joined_at, JOINED.toISOString());
     // Unchanged: the code read did not restamp the row.
     assert.equal(body.status.confirmed_at, CONFIRMED_AT.toISOString());
+  });
+});
+
+test('a confirmed re-join reads back the same row, unmoved (#2201)', async () => {
+  // The join endpoint now answers a confirmed address with a status block
+  // too, and it has to be the SAME block: one helper, signupStatus(), or
+  // the two surfaces start describing one row differently.
+  //
+  // What this really pins is that case 3 is a pure read. It returns before
+  // anything mints, and confirmSignupByCode's UPDATE uses COALESCE so that
+  // the FIRST confirmation wins — but case 3 never reaches that UPDATE at
+  // all, so a re-join cannot restamp confirmed_at even by accident, and the
+  // panel keeps saying the date it said before.
+  await withPublicApi(async (base) => {
+    const viaCode = await (await confirm(base, CONFIRMED, RIGHT)).json();
+    const viaJoin = await (await fetch(`${base}/api/public/waitlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: CONFIRMED }),
+    })).json();
+
+    assert.equal(viaJoin.status.confirmed, true);
+    assert.equal(viaJoin.status.confirmed_at, CONFIRMED_AT.toISOString(),
+      'a re-join must not restamp the row');
+    assert.equal(viaJoin.status.joined_at, JOINED.toISOString());
+    assert.deepEqual(viaJoin.status, viaCode.status, 'one row, one description');
+    // And no capability rides along with it.
+    assert.equal(viaJoin.more_token, null);
   });
 });
 

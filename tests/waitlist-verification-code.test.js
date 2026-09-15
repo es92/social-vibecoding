@@ -20,6 +20,14 @@
 //      never be used to test whether an address is on the list.
 //   4. Confirming by code is idempotent with confirming by link: both stamp
 //      confirmed_at and the FIRST timestamp wins.
+//   5. Contract 2 has a 60-second hole in it, and hasReusableCode is what
+//      fills it (#2201). Issuing DELETEs before it INSERTs, but the mail
+//      layer only decides afterwards and allows one waitlist_code a minute
+//      per address — so a second ask inside the gap invalidated the code
+//      that had actually been delivered and then mailed nothing to replace
+//      it. Inside the window the live code is reported reusable and left
+//      alone, which is the same fix services/email-signup.js already made
+//      for account OTPs.
 //
 // Service-level tests against a stateful in-memory mock pool — no live DB,
 // same idiom as tests/onboarding-waitlist.test.js.
@@ -29,6 +37,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   joinWaitlist,
@@ -36,7 +46,9 @@ const {
   confirmSignupByCode,
   confirmSignupByMoreToken,
   getSignupByEmail,
+  hasReusableCode,
   MAX_CODE_ATTEMPTS,
+  CODE_REUSE_WINDOW_SECONDS,
 } = require('../src/services/waitlist');
 
 // ─── Stateful mock pool ───────────────────────────────────────────────
@@ -60,17 +72,20 @@ function makePool(state) {
     if (sql.startsWith('INSERT INTO waitlist_signups')) {
       const [email, , answers, moreToken] = params;
       if (state.signups.has(email)) return { rowCount: 0, rows: [] };
+      const submittedAt = new Date();
       state.signups.set(email, {
         id: state.nextSignupId++,
         email,
         answers: answers ? JSON.parse(answers) : null,
         more_token: moreToken || null,
-        submitted_at: new Date(),
+        submitted_at: submittedAt,
         confirmed_at: null,
         released_at: null,
         linked_user_id: null,
       });
-      return { rowCount: 1, rows: [] };
+      // RETURNING submitted_at. A conflict returns no row at all, which is
+      // how joinWaitlist tells the two apart.
+      return { rowCount: 1, rows: [{ submitted_at: submittedAt }] };
     }
 
     if (sql.startsWith('DELETE FROM waitlist_verification_codes')) {
@@ -86,11 +101,29 @@ function makePool(state) {
         email,
         code_hash: hash,
         attempts: 0,
-        // The real column is NOW() + INTERVAL '15 minutes'.
+        // The real columns are NOW() + INTERVAL '15 minutes' and a NOW()
+        // default. created_at is not decoration here: it is what the reuse
+        // window in hasReusableCode() measures.
         expires_at: new Date(Date.now() + 15 * 60 * 1000),
+        created_at: new Date(),
         consumed_at: null,
       });
       return { rowCount: 1, rows: [] };
+    }
+
+    // Must precede the live-code read below: that branch's substring is a
+    // prefix of this one's, so ordering is what keeps them apart.
+    if (sql.startsWith('SELECT 1 FROM waitlist_verification_codes')) {
+      const [email] = params;
+      const windowMs = CODE_REUSE_WINDOW_SECONDS * 1000;
+      const reusable = state.codes
+        .filter((c) => c.email === email
+          && c.consumed_at == null
+          && c.attempts === 0
+          && c.expires_at > new Date()
+          && Date.now() - c.created_at.getTime() < windowMs)
+        .sort((a, b) => b.id - a.id);
+      return { rows: reusable.length ? [{ '?column?': 1 }] : [] };
     }
 
     if (sql.includes('FROM waitlist_verification_codes WHERE email = $1 AND consumed_at IS NULL')) {
@@ -141,12 +174,23 @@ function makePool(state) {
       };
     }
 
-    if (sql.startsWith('SELECT id, email, confirmed_at, more_token FROM waitlist_signups WHERE email = $1')) {
+    // The widened column set (#2201): the join endpoint builds its status
+    // block straight off this row, so submitted_at / released_at /
+    // linked_user_id come back with it rather than costing a second query.
+    if (sql.startsWith('SELECT id, email, submitted_at, confirmed_at, released_at, linked_user_id, more_token FROM waitlist_signups WHERE email = $1')) {
       const [email] = params;
       const s = state.signups.get(email);
       return {
         rows: s
-          ? [{ id: s.id, email: s.email, confirmed_at: s.confirmed_at, more_token: s.more_token }]
+          ? [{
+            id: s.id,
+            email: s.email,
+            submitted_at: s.submitted_at,
+            confirmed_at: s.confirmed_at,
+            released_at: s.released_at,
+            linked_user_id: s.linked_user_id,
+            more_token: s.more_token,
+          }]
           : [],
       };
     }
@@ -360,9 +404,14 @@ test('getSignupByEmail refuses a non-address without touching the database', asy
 });
 
 test('getSignupByEmail reports confirmed state and the stage-2 token', async () => {
-  // The three fields the resend branch decides on: that the address exists,
-  // whether it still needs confirming, and which token to carry into the
-  // mail. Nothing else, and none of it ever reaches a response body.
+  // The fields the callers decide on: that the address exists, whether it
+  // still needs confirming, and which token to carry into the mail.
+  //
+  // Where that lands changed in #2201. It used to be true that none of it
+  // ever reached a response body; now the join endpoint's status block is
+  // built from this row on purpose, and /resend still answers every branch
+  // with the same bytes. The row is the same either way — which caller
+  // reads it is what differs.
   const { pool } = fixture();
   await joinWaitlist(pool, { email: 'a@example.com' });
 
@@ -376,4 +425,115 @@ test('getSignupByEmail reports confirmed state and the stage-2 token', async () 
   const confirmed = await getSignupByEmail(pool, 'a@example.com');
   assert.ok(confirmed.confirmed_at, 'a confirmed row is distinguishable to the CALLER');
   assert.equal(confirmed.more_token, pending.more_token);
+});
+
+test('getSignupByEmail selects the whole status tuple, in one query', async () => {
+  // signupStatus() reads submitted_at, confirmed_at, released_at and
+  // linked_user_id. Before #2201 this query selected two of the four, so
+  // the join branch that now answers a returning reader would have had to
+  // either issue a second read or report a state built from nulls — and a
+  // panel that says "on the list since" with no date is the bug the whole
+  // change exists to remove.
+  const { pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+
+  const row = await getSignupByEmail(pool, 'a@example.com');
+  for (const column of [
+    'id', 'email', 'submitted_at', 'confirmed_at',
+    'released_at', 'linked_user_id', 'more_token',
+  ]) {
+    assert.ok(Object.hasOwn(row, column), `getSignupByEmail must select ${column}`);
+  }
+  assert.ok(row.submitted_at, 'a joined row knows when it joined');
+});
+
+// ─── 5. The reuse window: a live code is left alone, not replaced ─────
+
+test('a code minted seconds ago is reusable, so a fresh ask leaves it alone', async () => {
+  // The whole point of the window. issueVerificationCode DELETEs every
+  // unconsumed code before it INSERTs, and the mail throttle only decides
+  // afterwards — so without this predicate, a second ask inside the minute
+  // destroyed the code already sitting in the inbox AND delivered nothing
+  // to replace it, because waitlist_code allows one send per minute.
+  const { state, pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  await issueVerificationCode(pool, 'a@example.com');
+
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), true);
+  assert.equal(state.codes.length, 1);
+});
+
+test('a code older than the window is not reusable', async () => {
+  // Past the gap the throttle will allow a send, so there is a fresh code
+  // to be had and no reason to keep serving the old one.
+  const { state, pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  await issueVerificationCode(pool, 'a@example.com');
+
+  state.codes[0].created_at = new Date(
+    Date.now() - (CODE_REUSE_WINDOW_SECONDS + 5) * 1000
+  );
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), false);
+});
+
+test('a code somebody has guessed at is not reusable', async () => {
+  // attempts > 0 means they are typing a code they HAVE and getting it
+  // wrong, so "the one in your inbox still works" is the wrong answer:
+  // minting a fresh one is what they actually asked for.
+  const { state, pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  await issueVerificationCode(pool, 'a@example.com');
+
+  await confirmSignupByCode(pool, 'a@example.com', '999999');
+  assert.equal(state.codes[0].attempts, 1);
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), false);
+});
+
+test('an expired or consumed code is not reusable', async () => {
+  const { state, pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  const code = await issueVerificationCode(pool, 'a@example.com');
+
+  // Expired: inside the 60s window by created_at, but dead anyway. Both
+  // halves have to hold, and the window is the weaker of the two.
+  state.codes[0].expires_at = new Date(Date.now() - 1000);
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), false);
+
+  // Consumed: they already used it, so there is nothing live to protect.
+  state.codes[0].expires_at = new Date(Date.now() + 15 * 60 * 1000);
+  await confirmSignupByCode(pool, 'a@example.com', code);
+  assert.ok(state.codes[0].consumed_at);
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), false);
+});
+
+test('an address with no code at all is not reusable', async () => {
+  // The first ask of all must mint, or nobody ever gets a code.
+  const { pool } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  assert.equal(await hasReusableCode(pool, 'a@example.com'), false);
+});
+
+test('hasReusableCode refuses a non-address without touching the database', async () => {
+  // Same contract as getSignupByEmail: the mock throws on an unhandled
+  // query, so reaching the pool at all would fail here.
+  const { pool } = fixture();
+  assert.equal(await hasReusableCode(pool, 'not-an-email'), false);
+  assert.equal(await hasReusableCode(pool, null), false);
+});
+
+test('the reuse window mirrors the account OTP flow', async () => {
+  // Not a coincidence and not a number to retune on its own:
+  // services/email-signup.js solved this exact bug class for account OTPs
+  // first, and the two windows describing the same "the mail is already
+  // out" state should describe it identically.
+  //
+  // email-signup.js keeps its constant module-private, so read it from the
+  // source rather than widening that module's surface for a test.
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'services', 'email-signup.js'),
+    'utf8'
+  );
+  const match = source.match(/const OTP_REUSE_WINDOW_SECONDS = (\d+);/);
+  assert.ok(match, 'email-signup.js still declares the OTP reuse window');
+  assert.equal(CODE_REUSE_WINDOW_SECONDS, Number(match[1]));
 });

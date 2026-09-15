@@ -529,21 +529,30 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // under it.
   // 631 → 639: the tallies above were computed across several independent
   // merges and do not compose into one arithmetic sequence: this branch's
-  // #1933 check, main's #1945 pair, and the #1910, invite-link and #1962
-  // pairs each landed against a slightly different shared base than the
-  // others, and some of those pairs already landed once on both sides before
-  // this merge de-duplicated them. The number that matters is what the
-  // merged manifest actually holds, so this entry counts it directly rather
-  // than re-deriving it: 639.
-  // 639 → 643: #2219's four, counted the same way (639 was main's directly
-  // counted total and this branch adds four on top of it). Two photograph
-  // the app-permission prompt through `?shot=app-permission` — the dialog an
-  // embedded app opens by calling usernode.requestPermission(), which no
-  // plain route can reach because it needs a running app that asks; two read
-  // the new Settings pane behind `?demo=1#settings/app-permissions`, one for
-  // the rows and one for the copy that must NOT promise a revoke lands while
-  // the app is still open.
-  assert.equal(DAPP.tests.length, 643);
+  // #1945 pair and main's #1910 and #1944 pairs each landed against a
+  // slightly different shared base than the others, and the invite-link and
+  // #1962 pairs each already landed once on both sides before this merge
+  // de-duplicated them. The number that matters is what the merged manifest
+  // actually holds, so this entry counts it directly rather than re-deriving
+  // it: 638.
+  // 638 → 639: independently, #1933 adds one board check that an issue card
+  // names the auto-drafted category the demo themes placed it in.
+  // 638 → 641: #2201's three checks on a confirmed address re-joining the
+  // waitlist — it lands on the settled panel, the copy reads back rather
+  // than congratulating, and it is never asked for a code.
+  // 639 → 642, 641 → 642: the tallies above were computed on either side of
+  // this merge and cannot be read as one sequence. This branch took 638 → 641
+  // alone, with the #2201 trio above; main independently took the SAME 638 →
+  // 639 with the #1933 check above. One +3 and one +1 against a shared 638 is
+  // 642.
+  // 642 → 646: #2219's four, counted directly off the merged manifest for
+  // the same reason. Two photograph the app-permission prompt through
+  // `?shot=app-permission` — the dialog an embedded app opens by calling
+  // usernode.requestPermission(), which no plain route can reach because it
+  // needs a running app that asks; two read the new Settings pane behind
+  // `?demo=1#settings/app-permissions`, one for the rows and one for the
+  // copy that must NOT promise a revoke lands while the app is still open.
+  assert.equal(DAPP.tests.length, 646);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

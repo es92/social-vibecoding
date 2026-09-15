@@ -31,15 +31,22 @@ const RULES = {
   // carries no new information, and the mail is the same words.
   waitlist_joined: { minGapMs: DAY_MS, perWindow: 1, windowMs: DAY_MS },
   // A code the recipient ASKED for again, from the resend endpoint or an
-  // idempotent re-join. It cannot share waitlist_joined's rule — one per
+  // unconfirmed re-join. It cannot share waitlist_joined's rule — one per
   // address per day is exactly the thing being worked around, and the
   // second send of the day would be recorded suppressed_rate_limit and
   // silently dropped. The minute gap collapses a double-tap and is what
-  // the endpoint's advertised cooldown corresponds to; five a day is the
-  // per-address ceiling, generous for somebody genuinely chasing a code
-  // through a spam folder and small enough that the platform can never be
-  // the amplifier in a mail bomb.
-  waitlist_code: { minGapMs: 60 * 1000, perWindow: 5, windowMs: DAY_MS },
+  // the endpoint's advertised cooldown corresponds to.
+  //
+  // Ten a day, not five (#2201). Five was picked as "generous for
+  // somebody chasing a code through a spam folder", and thirty days of
+  // production said otherwise: one address was refused repeatedly with
+  // "5 waitlist_code mails already sent to this address in the window",
+  // i.e. a person who wanted in and could not get another code until the
+  // next day. The gap is what actually stops a mail bomb — a sustained
+  // flood needs a send a minute for hours, and the minute gap plus the
+  // per-IP express limiter bound that long before the daily ceiling
+  // does. Ten still cannot make the platform the amplifier in one.
+  waitlist_code: { minGapMs: 60 * 1000, perWindow: 10, windowMs: DAY_MS },
   // Released once per signup by construction (newly_released), so this is
   // a backstop against a stuck admin button, not a normal path.
   waitlist_released: { minGapMs: 60 * 1000, perWindow: 3, windowMs: DAY_MS },

@@ -18,7 +18,12 @@
 //   - A request the server accepted ALWAYS advances. The resend endpoint
 //     answers with one frozen body for everybody, and a step that advanced
 //     only for addresses we hold would answer the membership question that
-//     body exists to refuse.
+//     body exists to refuse. That is about THIS errand's own send, and #2201
+//     does not touch it: the endpoint behind `onRequestCode` still answers
+//     one body. The JOIN form is the one that learned to branch, and its
+//     confirmed arm is the one case in the screen where an accepted request
+//     does not advance — there is no code to enter, so a code step would be
+//     a dead end with a cooldown on it. Pinned below.
 //   - "I already have a code" sends NOTHING. issueVerificationCode deletes
 //     every unconsumed code for an address before minting the next one, so a
 //     send here would invalidate the code in the inbox of the very person who
@@ -169,4 +174,44 @@ test('both steps are photographable, and declared', () => {
   assert.ok(step2.some((t) => /#waitlist-confirm-code:not\(\.hidden\) #waitlist-code$/.test(t.expectSelector)));
   assert.ok(step2.some((t) => t.expectSelector === '#waitlist-confirm-address.hidden'));
   assert.ok(step2.some((t) => /#waitlist-change-email/.test(t.expectSelector)));
+});
+
+test('a confirmed re-join skips the code step, cooldown and all (#2201)', () => {
+  // The join form's three answers, and the one asymmetry between them. Cases
+  // 1 and 2 mailed a code, so they go where the code is typed and arm the gap
+  // the mail throttle will enforce anyway. Case 3 minted nothing, mailed
+  // nothing and deleted nothing, so both of those would be lies: a code step
+  // with no code on its way, and a countdown on a resend that would be
+  // refused.
+  const body = callback(WAITLIST, 'onSubmit');
+  const at = body.indexOf('if (joinStatus && joinStatus.confirmed) {');
+  assert.ok(at > 0, 'onSubmit branches on the status block, not on the message');
+  // The inner else, nested one level deeper than `if (res.ok)`'s own.
+  const split = body.indexOf('\n          } else {', at);
+  assert.ok(split > at, 'and the other two cases share the else arm');
+  const confirmedArm = body.slice(at, split);
+  const otherArm = body.slice(split);
+
+  // The confirmed arm sets the settled panel up and stops.
+  assert.match(confirmedArm, /setAlreadyConfirmed\(true\);/);
+  assert.match(confirmedArm, /setConfirmed\(true\);/);
+  assert.match(confirmedArm, /setStatus\(joinStatus\);/);
+  assert.match(confirmedArm, /setOffer\(false\);/,
+    'a re-join carries no token, so the survey link has nowhere to go');
+  assert.doesNotMatch(confirmedArm, /setFlowStep\(/, 'no step to move to');
+  assert.doesNotMatch(confirmedArm, /goToCodeStep\(/);
+  assert.doesNotMatch(confirmedArm, /startCooldown\(/, 'and no gap to arm');
+  assert.doesNotMatch(confirmedArm, /code\.current\?\.focus/,
+    'nothing to focus: the code field is hidden on this panel');
+  assert.doesNotMatch(confirmedArm, /setMoreToken\(/);
+
+  // The other arm still does both, for both of the cases that reach it.
+  assert.match(otherArm, /startCooldown\(\);/);
+  assert.match(otherArm, /code\.current\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.equal((body.match(/startCooldown\(\)/g) || []).length, 1,
+    'the cooldown is armed in exactly one arm');
+
+  // And the flag that separates case 2 from case 1 is the absent token, not a
+  // sentence: `more_token` is issued on a first join and never on a re-join.
+  assert.match(otherArm, /if \(joinStatus && !token\) setRejoined\(true\);/);
 });

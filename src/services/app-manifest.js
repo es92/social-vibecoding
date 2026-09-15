@@ -168,22 +168,13 @@ const MANIFEST_FILENAME = 'dapp.json';
 // (clears it by ~6s), and RUN_TIMEOUT_MS 740s → 770s to stay the required 120s
 // above it. The step buys 29 slots over the 611 declared here.
 //
-// Raised 660 → 680 by #2219, whose four checks put the manifest at 643
-// against the 640 floor, landing on main's own growth to 639 — main was
-// already one check clear of the floor, so this is the usual "a floor
-// cleared by one is a floor the next feature crosses".
-//
-// THIS ONE IS NOT A COUPLED MOVE, and that is the difference worth recording
-// rather than the number. Every bump above had to drag TESTS_DEADLINE_MS and
-// RUN_TIMEOUT_MS with it because the arithmetic ran over a pool of 8. The
-// pool is 16 now (software compositing freed the capture container's CPU),
-// which halves the ideal work: 680 checks at ~3.9s over 16 is ~166s, and the
-// UNCHANGED 650s deadline clears the 2x margin by ~318s. So the deadline and
-// the run timeout stay exactly where #1960 left them. The next few bumps are
-// free on the same arithmetic — tests/checks-budget.test.js says so from the
-// other side, and it is the assertion that will stop being satisfied first if
-// that ever changes.
-const MAX_DECLARED_TESTS = 680;
+// Raised 660 → 690 by #2201, whose three confirmed-re-join checks put the
+// manifest at 641 against the 640 floor. The first bump after the capture
+// pool doubled 8 → 16 (services/visuals.js), and the free one that note
+// promised: 690 checks at ~3.9s over 16 pages is ~168s of ideal work, still
+// under a quarter of the 650s TESTS_DEADLINE_MS, so neither the deadline nor
+// RUN_TIMEOUT_MS moves. The step buys 29 slots over the 641 declared here.
+const MAX_DECLARED_TESTS = 690;
 
 // The pre-pool cap, kept for exactly one purpose: services/check-history.js
 // bootstraps an app with no recorded history by marking its first

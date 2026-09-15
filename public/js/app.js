@@ -673,6 +673,13 @@ const App = {
     // between them is the whole point of the panel — the celebration is the
     // join's and the state pill is the status read's — and one shot cannot
     // photograph both.
+    // `waitlist-rejoined` (#2201) is that same settled panel reached the
+    // third way: an address already on the list AND already confirmed
+    // submits the join form again, and the server answers with its status
+    // instead of a code, so the client skips the code step entirely. No URL
+    // reaches it without the POST behind it, so a capture cannot get there
+    // on its own — and it is the state this change exists to produce, so a
+    // before/after that photographed the home screen would show none of it.
     // `signup-code-sent` (#1548) is the signup screen a second after a
     // waitlist-release link opens it: the code step, the confirmation, and
     // the resend held for its cooldown. The address rides in the fragment
@@ -684,6 +691,7 @@ const App = {
         shot !== 'waitlist-step1' && shot !== 'waitlist-code-entry' &&
         shot !== 'waitlist-code-step' &&
         shot !== 'waitlist-admitted' && shot !== 'waitlist-status' &&
+        shot !== 'waitlist-rejoined' &&
         shot !== 'waitlist-more' &&
         shot !== 'anon-back' &&
         shot !== 'signup-code-sent' &&
@@ -694,7 +702,8 @@ const App = {
     if ((shot === 'waitlist-joined' || shot === 'waitlist-confirmed'
          || shot === 'waitlist-step1' || shot === 'waitlist-code-entry'
          || shot === 'waitlist-code-step'
-         || shot === 'waitlist-admitted' || shot === 'waitlist-status') &&
+         || shot === 'waitlist-admitted' || shot === 'waitlist-status'
+         || shot === 'waitlist-rejoined') &&
         (!location.hash || location.hash === '#')) {
       try { history.replaceState(null, '', location.search + '#waitlist'); } catch (err) { /* ignore */ }
     }

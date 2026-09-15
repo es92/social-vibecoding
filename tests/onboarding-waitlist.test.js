@@ -10,9 +10,12 @@
 //
 //   1. normalizeEmail is the single sanitizer: trims, lowercases, and
 //      rejects non-emails so a garbage POST can never mint a row.
-//   2. joinWaitlist is idempotent by email (re-joining is a silent no-op
-//      that keeps the original submitted_at) — the public endpoint must
-//      never disclose whether an email was already on the list.
+//   2. joinWaitlist is idempotent by email: re-joining is a silent no-op
+//      at the DATABASE level, keeping the original submitted_at. What it
+//      reports about that changed in #2201 — the public endpoint now
+//      answers a re-join differently on purpose — but `created` and the
+//      row count are unaffected, and the capability is not: a re-join
+//      still returns a null moreToken, which is the guard below.
 //   3. linkUserByEmail points the email's row at the new account, and a
 //      row that was ALREADY released grants has_platform_access on the
 //      spot (the doc's "released off the waitlist — create an account if
@@ -63,16 +66,22 @@ function makePool(state) {
 
     if (sql.startsWith('INSERT INTO waitlist_signups')) {
       const [email, , answers, moreToken] = params;
+      // ON CONFLICT DO NOTHING ... RETURNING returns NO ROW on a
+      // conflict, which is how joinWaitlist tells a re-join from a first
+      // join. Returning rowCount alone would make every join look fresh.
       if (state.signups.has(email)) return { rowCount: 0, rows: [] };
+      const submittedAt = new Date();
       state.signups.set(email, {
         id: state.nextSignupId++,
         email,
         answers: answers ? JSON.parse(answers) : null,
         more_token: moreToken || null,
+        submitted_at: submittedAt,
+        confirmed_at: null,
         released_at: null,
         linked_user_id: null,
       });
-      return { rowCount: 1, rows: [] };
+      return { rowCount: 1, rows: [{ submitted_at: submittedAt }] };
     }
 
     if (sql.includes('WHERE more_token = $1')) {
@@ -200,8 +209,27 @@ test('first join returns the stage-2 token; a re-join never does', async () => {
 
   // A second join with the same email must NOT hand out the capability —
   // anyone can type a stranger's address.
+  //
+  // This is the load-bearing guard now that the endpoint above it answers
+  // a re-join differently (#2201). Disclosing "this address is on the
+  // list, and confirmed" was a decision the app owner made; handing over
+  // the token that dereferences to that address's survey answers, its
+  // recorded email and its whole invite list was NOT part of it, and this
+  // is the line between the two.
   const again = await joinWaitlist(pool, { email: 'survey@example.com' });
   assert.equal(again.moreToken, null);
+  // Nor does the service hand back anything ELSE that widening the
+  // response tempted: the shape a re-join returns carries no address, no
+  // answers and no invite data for a caller to forward into a body.
+  assert.deepEqual(Object.keys(again).sort(), ['created', 'moreToken', 'submittedAt']);
+  assert.equal(again.submittedAt, null);
+  for (const leak of ['email', 'answers', 'invite', 'more_token']) {
+    assert.equal(Object.hasOwn(again, leak), false, `re-join must not return ${leak}`);
+  }
+
+  // The first join DOES report its own submitted_at, which is what lets
+  // the endpoint build a status block without a second read.
+  assert.ok(first.submittedAt instanceof Date);
 });
 
 test('getSignupByMoreToken resolves only well-formed, existing tokens', async () => {

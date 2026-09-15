@@ -58,7 +58,7 @@ test('the pill drops its note where the panel already says it', () => {
   // The note is the survey screen's only guidance, so it stays on there. On
   // check-my-status it would restate the body copy a line later, and for an
   // admitted reader it would point at a mail instead of the button beside it.
-  assert.match(WAITLIST, /id="waitlist-status-pill"\s*\n\s*status=\{codeOnly \? status : null\}\s*\n\s*note=\{false\}/);
+  assert.match(WAITLIST, /id="waitlist-status-pill"\s*\n\s*status=\{statusRead \? status : null\}\s*\n\s*note=\{false\}/);
   assert.doesNotMatch(MORE, /note=\{false\}/, 'the survey screen lost its guidance');
   assert.match(SHARED, /note: showNote = true,/, 'the note is opt-out, not opt-in');
 });
@@ -185,6 +185,45 @@ test('the declared checks cover the states the panel can be in', () => {
   // And the landing way in is checked too, or it can vanish silently.
   assert.ok(DAPP.tests.some((t) => (t.expectSelector || '').includes('landing-status-link')),
     'the landing entry point is unchecked');
+
+  // #2201's settled arrival. Plain navigation cannot reach it — it needs a
+  // POST whose response says the address is already confirmed — so without
+  // a shot the before/after images of this change would both photograph the
+  // home screen, and the panel it lands on would be covered by nothing.
+  assert.ok(paths.has('/?shot=waitlist-rejoined'), 'the confirmed re-join is unchecked');
+  const rejoined = DAPP.tests.filter((t) => t.path === '/?shot=waitlist-rejoined');
+  const settled = rejoined.map((t) => t.expectSelector).join(' ');
+  // The three facts that make it case 3 rather than any other arrival: the
+  // panel is up with its pill, the celebration is held out of it (this is
+  // weeks-old news), and the code step was never entered.
+  assert.match(settled, /#waitlist-confirmed:not\(\.hidden\)[\s\S]*#waitlist-status-pill:not\(\.hidden\)/);
+  assert.match(settled, /#waitlist-confirmed-headline\.hidden/);
+  assert.match(settled, /#waitlist-confirm\.hidden/);
+  assert.ok(rejoined.some((t) => /on the waitlist/i.test(t.expectText || '')),
+    'nothing pins the words the pill actually prints');
+});
+
+test('the confirmed re-join shot paints the state it claims to', () => {
+  // Deterministic and settled, like the other two: a fixed joined_at so two
+  // shots of the same path compare, confirmed true so the pill reads "On the
+  // waitlist", admitted false so this is the waiting state most returning
+  // readers are in, and the offer off because case 3 hands back no token to
+  // stand behind it.
+  assert.match(WAITLIST, /shot === 'waitlist-rejoined'/);
+  assert.match(APP, /shot !== 'waitlist-rejoined'/, 'the shot is not allowlisted in app.js');
+  assert.match(APP, /shot === 'waitlist-rejoined'/, 'the hash is not normalised to #waitlist');
+
+  const block = WAITLIST.slice(WAITLIST.indexOf('if (shotRejoined) {'));
+  const body = block.slice(0, block.indexOf('\n    }'));
+  assert.match(body, /setAlreadyConfirmed\(true\)/, 'without this the celebration shows');
+  assert.match(body, /setConfirmed\(true\)/);
+  assert.match(body, /setOffer\(false\)/);
+  assert.match(body, /confirmed: true/);
+  assert.match(body, /admitted: false/);
+  assert.match(body, /joined_at: '2026-03-14T10:00:00\.000Z'/);
+  // And it must NOT set codeOnly: that flag drives the returning-code-entry
+  // section label and step copy, and this arrival never saw a code field.
+  assert.doesNotMatch(body, /setCodeOnly\(true\)/);
 });
 
 // ─── Staging has something to show ───────────────────────────────────
@@ -209,6 +248,47 @@ test('staging seeds a known code for the two confirmed demo addresses', () => {
   assert.doesNotMatch(body, /req\.user/);
 });
 
+test('staging seeds the two delivery states #2201 turns on', () => {
+  // The change is entirely about what the mail layer decides, and a preview
+  // of it is blank without rows to decide against: platform_mail_deliveries
+  // is staging-private, so a fresh container starts with an empty history
+  // and every send looks like a first one.
+  const seed = MIGRATE.slice(MIGRATE.indexOf('async function seedStagingPlatformMail'));
+  const body = seed.slice(0, seed.indexOf('\n}\n'));
+
+  // Capped: enough counted waitlist_code rows inside the window that the
+  // next ask is refused by the DAILY ceiling rather than by the 60s gap —
+  // which is the half of the change a reviewer cannot otherwise see.
+  assert.match(body, /staging-demo-waitlist-capped@example\.invalid/);
+  assert.match(body, /mailRateLimit\.RULES\.waitlist_code\.perWindow/,
+    'the fixture hardcodes the cap instead of reading it');
+  assert.match(body, /generate_series\(1, \$2::int\)/, 'the shortfall is not seeded in bulk');
+
+  // Fresh: one unconsumed, unexpired, unguessed code minted seconds ago, so
+  // hasReusableCode answers true and the next ask mints nothing.
+  assert.match(body, /staging-demo-waitlist-fresh@example\.invalid/);
+  assert.match(body, /attempts = 0/, 'a guessed-at code is not reusable');
+
+  // Both are .invalid, like every other fixture here, so the mail this flow
+  // sends can never leave the building.
+  assert.doesNotMatch(body, /staging-demo-waitlist-[a-z]+@(?!example\.invalid)/);
+});
+
+test('the two delivery fixtures survive a redeploy without drifting', () => {
+  // Staging containers rebuild on every push, so these run again on each
+  // boot. Neither may accumulate rows, and neither may go stale: the capped
+  // one tops the window up to the ceiling (which also heals it as rows age
+  // out of the 24 hours), and the fresh one RE-ARMS its existing row rather
+  // than stacking a second, because issueVerificationCode's one-live-code
+  // rule forbids two and the 60-second window expires a minute after boot.
+  const seed = MIGRATE.slice(MIGRATE.indexOf('async function seedStagingPlatformMail'));
+  const body = seed.slice(0, seed.indexOf('\n}\n'));
+  assert.match(body, /Math\.max\(0, codeCap - /, 'the capped fixture is not a shortfall top-up');
+  assert.match(body, /UPDATE waitlist_verification_codes[\s\S]*?SET created_at = NOW\(\)/,
+    'the fresh fixture does not re-arm its window');
+  assert.match(body, /consumed_at IS NULL/);
+});
+
 test('the seed cannot run outside staging and cannot break a boot', () => {
   const seed = MIGRATE.slice(MIGRATE.indexOf('async function seedStagingPlatformMail'));
   const body = seed.slice(0, seed.indexOf('\n}\n'));
@@ -221,23 +301,34 @@ test('the seed cannot run outside staging and cannot break a boot', () => {
 });
 
 test('the state is stated once: the celebration is the join\u2019s, the pill is the read\u2019s', () => {
-  // Both arrivals land on #waitlist-confirmed, and they want different
+  // THREE arrivals land on #waitlist-confirmed now, and they want different
   // sentences. Somebody who just typed the code from a joining mail is being
   // congratulated; somebody who typed their address to READ their state
   // joined weeks ago, so "You\u2019re on the list \ud83c\udf89" above a pill that says
   // "On the waitlist" is the same fact twice and the wrong tone once.
-  // `codeOnly` already separates the two arrivals for the section label and
-  // the step copy, so it separates them here too.
-  assert.match(WAITLIST, /id="waitlist-confirmed-headline"\s*\n\s*className=\{hiddenFirst\(\s*codeOnly,/);
-  assert.match(WAITLIST, /status=\{codeOnly \? status : null\}/);
+  //
+  // #2201 added the third: a confirmed address re-joining is sent straight
+  // here with no code step in between, and it wants the reader's treatment
+  // for the same reason — weeks-old news, stated by the pill. So the gate is
+  // `statusRead`, the union of the two reads, and NOT `codeOnly`: that flag
+  // still means "arrived via the code step", which case 3 never touches.
+  assert.match(WAITLIST, /const statusRead = codeOnly \|\| alreadyConfirmed;/);
+  assert.match(WAITLIST, /id="waitlist-confirmed-headline"\s*\n\s*className=\{hiddenFirst\(\s*statusRead,/);
+  assert.match(WAITLIST, /status=\{statusRead \? status : null\}/);
+  // Exactly those two gates move. The section label and the step copy stay
+  // on `codeOnly`, because a case-3 arrival is not a returning code entry.
+  const code = WAITLIST.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  assert.equal((code.match(/statusRead/g) || []).length, 3,
+    'statusRead is declared once and read at exactly the two gates');
 });
 
 test('the headline is visible in the prerender, so hydration matches', () => {
-  // hiddenFirst on `codeOnly`, which is false at first render, is the
-  // document the hand-written shell shipped: the line was always visible.
-  // A gate that started hidden would console.error on hydration and fail
-  // every proposal check.
+  // hiddenFirst on a flag that is false at first render is the document the
+  // hand-written shell shipped: the line was always visible. A gate that
+  // started hidden would console.error on hydration and fail every
+  // proposal check — so BOTH halves of statusRead start false.
   assert.match(WAITLIST, /const \[codeOnly, setCodeOnly\] = useState\(false\)/);
+  assert.match(WAITLIST, /const \[alreadyConfirmed, setAlreadyConfirmed\] = useState\(false\)/);
 });
 
 test('both halves of the split are photographable, and declared', () => {

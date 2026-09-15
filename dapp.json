@@ -1667,6 +1667,25 @@
       "allowConsoleErrors": true
     },
     {
+      "name": "A confirmed address re-joining lands on the settled panel (#2201)",
+      "path": "/?shot=waitlist-rejoined",
+      "expectSelector": "#waitlist-confirmed:not(.hidden) #waitlist-status-pill:not(.hidden)",
+      "expectText": "On the waitlist",
+      "allowConsoleErrors": true
+    },
+    {
+      "name": "A confirmed re-join reads back instead of congratulating (#2201)",
+      "path": "/?shot=waitlist-rejoined",
+      "expectSelector": "#waitlist-confirmed:not(.hidden) #waitlist-confirmed-headline.hidden",
+      "allowConsoleErrors": true
+    },
+    {
+      "name": "A confirmed re-join is never asked for a code (#2201)",
+      "path": "/?shot=waitlist-rejoined",
+      "expectSelector": "#waitlist-confirm.hidden",
+      "allowConsoleErrors": true
+    },
+    {
       "name": "Stage-2 survey says where a pending signup stands",
       "path": "/?shot=waitlist-more#more/deaddeaddeaddeaddeaddeaddeaddeaddeaddeaddeaddead",
       "expectSelector": "#more-form #more-status-pill",

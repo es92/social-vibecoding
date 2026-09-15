@@ -63,6 +63,7 @@ function makePool(state) {
     if (sql.startsWith('INSERT INTO waitlist_signups')) {
       const [email, , answers, moreToken, invitedBy] = params;
       if (state.signups.has(email)) return { rowCount: 0, rows: [] };
+      const submittedAt = new Date(Date.now() + state.nextSignupId);
       state.signups.set(email, {
         id: state.nextSignupId++,
         email,
@@ -70,12 +71,14 @@ function makePool(state) {
         more_token: moreToken || null,
         invite_code: null,
         invited_by: invitedBy ?? null,
-        submitted_at: new Date(Date.now() + state.nextSignupId),
+        submitted_at: submittedAt,
         confirmed_at: null,
         released_at: null,
         linked_user_id: null,
       });
-      return { rowCount: 1, rows: [] };
+      // The insert ends RETURNING submitted_at, and joinWaitlist reads a
+      // first join off the returned row (ON CONFLICT DO NOTHING returns none).
+      return { rowCount: 1, rows: [{ submitted_at: submittedAt }] };
     }
 
     if (sql.includes('SELECT invite_code FROM waitlist_signups WHERE id = $1')) {

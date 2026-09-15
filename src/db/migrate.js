@@ -11,6 +11,9 @@ const { encrypt } = require('../services/secrets');
 // drafts, so the staging fixture can't drift from what production emits.
 const issueDraftSvc = require('../services/issue-draft');
 const { reindexAfterHostMove } = require('./reindex-after-host-move');
+// Read by seedStagingPlatformMail's at-the-ceiling fixture, so the number
+// of seeded sends tracks the rule instead of restating it.
+const mailRateLimit = require('../services/mail/rate-limit');
 
 async function migrate(config) {
   const pool = getPool(config);
@@ -12361,6 +12364,138 @@ async function seedStagingPlatformMail(pool) {
         [email, demoCodeHash]
       );
     }
+
+    // ── The two delivery states #2201 turns on, as fixtures ────────────
+    //
+    // Both are about mail that does NOT go out, which is exactly the kind
+    // of state a preview cannot reach by clicking: a tester would have to
+    // sit through a real 24-hour window, or hit submit twice inside one
+    // second and hope. Seeded, each is one address away.
+
+    // 1. AT THE DAILY CEILING. An unconfirmed signup carrying a full
+    // window of counted waitlist_code sends, so the next ask is refused
+    // by the per-address cap in services/mail/rate-limit.js. What it
+    // makes reachable is the screen's answer to that: the join still
+    // returns 200 and still advances to the code step, no code arrives,
+    // and the constant cap advisory beside the send controls is the only
+    // thing that explains why. Reviewing that sentence in place is the
+    // point of the fixture.
+    const CAPPED_EMAIL = 'staging-demo-waitlist-capped@example.invalid';
+    await pool.query(
+      `INSERT INTO waitlist_signups (email, answers, more_token)
+       VALUES ($1, NULL, $2)
+       ON CONFLICT (email) DO NOTHING`,
+      [CAPPED_EMAIL, 'feed'.repeat(12)]
+    );
+    await pool.query(
+      `UPDATE waitlist_signups
+          SET confirmed_at = NULL, released_at = NULL, linked_user_id = NULL
+        WHERE email = $1`,
+      [CAPPED_EMAIL]
+    );
+    // Idempotent by SHORTFALL rather than by an existence check: the rows
+    // are identical to each other by construction (same recipient, kind
+    // and status), so the (recipient, kind, status) guard the ROWS loop
+    // above uses would seed exactly one of them and call it done. Topping
+    // the window up to the ceiling is also what heals it — rows age out
+    // of the 24h window on a long-lived container, and the next boot puts
+    // back however many are missing.
+    const { rows: cappedRows } = await pool.query(
+      `SELECT COUNT(*)::int AS n
+         FROM mail_deliveries
+        WHERE recipient = $1 AND kind = 'waitlist_code'
+          AND status IN ('sent', 'skipped_staging')
+          AND created_at > NOW() - INTERVAL '24 hours'`,
+      [CAPPED_EMAIL]
+    );
+    // The cap the rule actually enforces, read from the rule rather than
+    // written down twice: a fixture that hardcoded 10 would stop sitting
+    // at the ceiling the moment somebody retuned it, and would do so
+    // silently.
+    const codeCap = mailRateLimit.RULES.waitlist_code.perWindow;
+    const shortfall = Math.max(0, codeCap - (cappedRows[0]?.n || 0));
+    if (shortfall > 0) {
+      // Spaced 90 minutes apart, so all of them sit inside the 24h window
+      // and the newest is far outside the one-minute gap. That matters:
+      // it makes the DAILY CEILING the reason the next send is refused,
+      // which is the state being demonstrated, rather than the gap, which
+      // any double-tap reaches.
+      await pool.query(
+        `INSERT INTO mail_deliveries (kind, recipient, provider, status, created_at)
+         SELECT 'waitlist_code', $1::text, 'log', 'sent',
+                NOW() - (INTERVAL '90 minutes' * g.i)
+           FROM generate_series(1, $2::int) AS g(i)`,
+        [CAPPED_EMAIL, shortfall]
+      );
+    }
+
+    // 2. INSIDE THE REUSE WINDOW. An unconfirmed signup whose live code
+    // was minted seconds ago, which is the state a re-join must answer by
+    // doing nothing at all: no new code minted, the live one left alone,
+    // no second mail. Before #2201 this was the damaging case — minting
+    // deletes every unconsumed code first and the throttle only decides
+    // afterwards, so a second ask inside the minute destroyed the code
+    // that was already in the inbox and delivered nothing in its place.
+    //
+    // The window is 60 seconds from the created_at below, so this fixture
+    // is live for the first minute after a boot and the UPDATE is what
+    // makes every redeploy a fresh minute. A tester who arrives later
+    // reproduces it the same way a person does: ask for a code, then ask
+    // again straight away.
+    const FRESH_EMAIL = 'staging-demo-waitlist-fresh@example.invalid';
+    await pool.query(
+      `INSERT INTO waitlist_signups (email, answers, more_token)
+       VALUES ($1, NULL, $2)
+       ON CONFLICT (email) DO NOTHING`,
+      [FRESH_EMAIL, 'f00d'.repeat(12)]
+    );
+    await pool.query(
+      `UPDATE waitlist_signups
+          SET confirmed_at = NULL, released_at = NULL, linked_user_id = NULL
+        WHERE email = $1`,
+      [FRESH_EMAIL]
+    );
+    // Same DEMO_STATUS_CODE as the confirmed fixtures, so the code path
+    // stays walkable: a tester can type 000000 and watch it confirm.
+    // attempts = 0 and a real future expiry are not decoration — they are
+    // three of the four things hasReusableCode() checks, and a fixture
+    // that got one wrong would demonstrate the opposite of the state it
+    // is named for.
+    await pool.query(
+      `INSERT INTO waitlist_verification_codes (email, code_hash, expires_at)
+       SELECT $1::text, $2::text, NOW() + INTERVAL '15 minutes'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM waitlist_verification_codes
+           WHERE email = $1::text AND consumed_at IS NULL
+        )`,
+      [FRESH_EMAIL, demoCodeHash]
+    );
+    // Re-arm an existing row instead of stacking a second one beside it.
+    // issueVerificationCode's whole contract is that exactly one code is
+    // live per address, so a fixture that inserted a duplicate would seed
+    // a state the app itself cannot produce.
+    await pool.query(
+      `UPDATE waitlist_verification_codes
+          SET created_at = NOW(),
+              expires_at = NOW() + INTERVAL '15 minutes',
+              attempts = 0
+        WHERE email = $1 AND consumed_at IS NULL`,
+      [FRESH_EMAIL]
+    );
+    // The delivery that carried it. Without this row the throttle would
+    // allow another send, and "the code is live but nothing was mailed"
+    // is not a state the app can be in.
+    await pool.query(
+      `INSERT INTO mail_deliveries (kind, recipient, provider, status)
+       SELECT 'waitlist_code', $1::text, 'log', 'sent'
+        WHERE NOT EXISTS (
+          SELECT 1 FROM mail_deliveries
+           WHERE recipient = $1::text AND kind = 'waitlist_code'
+             AND status = 'sent'
+             AND created_at > NOW() - INTERVAL '5 minutes'
+        )`,
+      [FRESH_EMAIL]
+    );
 
     log.info('migrate', 'Staging platform-mail fixture seeded', {
       deliveries: ROWS.length,

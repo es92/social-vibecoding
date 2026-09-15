@@ -27,12 +27,17 @@ function normalizeEmail(raw) {
 }
 
 // Join the platform waitlist. Idempotent by email: re-joining is a
-// silent no-op (the original submitted_at is kept) so the endpoint never
-// discloses whether an email was already on the list. Returns
-// { created, moreToken } — created=false means the email already had a
-// row, and moreToken is null in that case: the stage-2 capability link
-// only goes to the FIRST join (and its email), never to whoever types
-// the same address again later.
+// silent no-op at the DATABASE level (the original submitted_at is kept).
+// Returns { created, moreToken, submittedAt } — created=false means the
+// email already had a row, and moreToken is null in that case: the
+// stage-2 capability link only goes to the FIRST join (and its email),
+// never to whoever types the same address again later.
+//
+// `created` is no longer only an internal detail. The join endpoint now
+// answers the three cases differently (#2201, app owner's decision), so
+// this flag plus the existing row's confirmed_at is what picks the
+// branch. The capability token is the part that did NOT widen: a
+// re-join still gets null, whatever else the response says.
 async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode = null }) {
   const moreToken = crypto.randomBytes(24).toString('hex');
   const stored = answers
@@ -55,14 +60,22 @@ async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode
   // means an existing row can never be re-parented by someone
   // re-submitting with a different code. There is deliberately no
   // separate UPDATE path.
-  const { rowCount } = await pool.query(
+  // RETURNING submitted_at, so a first join can report its own status
+  // block without a second round trip. ON CONFLICT DO NOTHING returns no
+  // row, which is still exactly how a re-join is detected.
+  const { rows } = await pool.query(
     `INSERT INTO waitlist_signups (email, ip, answers, more_token, invited_by)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (email) DO NOTHING`,
+     ON CONFLICT (email) DO NOTHING
+     RETURNING submitted_at`,
     [email, ip, stored ? JSON.stringify(stored) : null, moreToken, invitedBy]
   );
-  const created = rowCount > 0;
-  return { created, moreToken: created ? moreToken : null };
+  const created = rows.length > 0;
+  return {
+    created,
+    moreToken: created ? moreToken : null,
+    submittedAt: created ? rows[0].submitted_at : null,
+  };
 }
 
 // The shareable half of a signup's invite link. Minted on first ask and
@@ -156,20 +169,69 @@ const MAX_CODE_ATTEMPTS = 5;
 // whether the address is on the list at all, whether it is already
 // confirmed, and which more_token to carry.
 //
-// It returns a row rather than a boolean, and that is exactly why it must
-// never reach a response body: the CALLER answers every branch with the
-// same words. Nothing here is non-enumerating on its own.
+// It returns a row rather than a boolean, and WHICH CALLER reads it now
+// matters. POST /resend still answers every branch with the same words, so
+// nothing from here reaches that response. POST /api/public/waitlist does
+// not: #2201 makes the join endpoint report membership and confirmed state
+// deliberately, so the columns below back signupStatus() there. Nothing
+// here is non-enumerating on its own; the caller decides, and the two
+// callers decide differently on purpose.
+//
+// The column list is the whole state tuple for exactly that reason —
+// submitted_at / released_at / linked_user_id are what signupStatus()
+// reads, so the join branch needs no second query.
 async function getSignupByEmail(pool, email) {
   const normalized = normalizeEmail(email);
   if (!normalized) return null;
   const { rows } = await pool.query(
-    `SELECT id, email, confirmed_at, more_token
+    `SELECT id, email, submitted_at, confirmed_at, released_at,
+            linked_user_id, more_token
        FROM waitlist_signups
       WHERE email = $1
       LIMIT 1`,
     [normalized]
   );
   return rows[0] || null;
+}
+
+// How long a just-issued code stays reusable. Mirrors
+// OTP_REUSE_WINDOW_SECONDS in services/email-signup.js, which solved this
+// exact bug class for the account OTP flow.
+//
+// The failure it prevents: issueVerificationCode below DELETEs every
+// unconsumed code before it INSERTs, and the mail throttle only decides
+// afterwards. So two asks a few seconds apart used to destroy the code
+// that was already in the inbox AND deliver nothing in its place
+// (waitlist_code allows one send per minute per address), leaving a
+// reader typing a code the database had already thrown away.
+//
+// "Reuse" means SKIP, not re-send: only the bcrypt hash is stored, so the
+// plaintext cannot be recovered to mail again. Inside the window the
+// right move is to leave the live code alone and let the mail that is
+// already out do its job.
+const CODE_REUSE_WINDOW_SECONDS = 60;
+
+// Is there a live code for this address that a fresh ask should leave
+// alone? True only when every part of "the code in their inbox still
+// works" holds: unconsumed, unexpired, never guessed at (a wrong attempt
+// means they are typing one they have, so minting a new one is what they
+// asked for), and minted inside the reuse window above.
+async function hasReusableCode(pool, email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return false;
+  const { rows } = await pool.query(
+    `SELECT 1
+       FROM waitlist_verification_codes
+      WHERE email = $1
+        AND consumed_at IS NULL
+        AND attempts = 0
+        AND expires_at > NOW()
+        AND created_at > NOW() - INTERVAL '${CODE_REUSE_WINDOW_SECONDS} seconds'
+      ORDER BY id DESC
+      LIMIT 1`,
+    [normalized]
+  );
+  return rows.length > 0;
 }
 
 // Mint a six-digit verification code for an email on the waitlist.
@@ -369,10 +431,12 @@ async function releaseWaitlistSignup(pool, signupId) {
 
 module.exports = {
   MAX_CODE_ATTEMPTS,
+  CODE_REUSE_WINDOW_SECONDS,
   normalizeEmail,
   joinWaitlist,
   getSignupByMoreToken,
   getSignupByEmail,
+  hasReusableCode,
   confirmSignupByMoreToken,
   issueVerificationCode,
   confirmSignupByCode,

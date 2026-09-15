@@ -185,7 +185,7 @@ test('a requested code is not swallowed by the join mail\'s daily cap', () => {
   }).allowed, true, 'a different kind keeps its own history');
 });
 
-test('requested codes are one a minute, five a day, per address', () => {
+test('requested codes are one a minute, ten a day, per address', () => {
   const at = (msAgo) => ({ status: 'sent', created_at: new Date(T0 - msAgo) });
   // The minute gap the endpoint's advertised cooldown corresponds to.
   assert.equal(rateLimit.decide({
@@ -194,15 +194,29 @@ test('requested codes are one a minute, five a day, per address', () => {
   assert.equal(rateLimit.decide({
     kind: 'waitlist_code', now: T0, recipientHistory: [at(61 * 1000)],
   }).allowed, true);
-  // And the ceiling that bounds a determined one. Four earlier sends, the
-  // most recent well outside the gap, so only the daily count can refuse it.
-  const four = [2, 3, 4, 5].map((h) => at(h * 60 * 60 * 1000));
+  // And the ceiling that bounds a determined one. It was five a day until
+  // #2201, which is a number a person reaches without trying: a join, a
+  // re-join, one status read and one mistyped address is four, and the fifth
+  // refusal is silent, so the code simply never arrives. Ten still bounds a
+  // harvester (the 60-second gap is what actually costs them) without
+  // spending the day's whole allowance on ordinary use.
+  const nine = [2, 3, 4, 5, 6, 7, 8, 9, 10].map((h) => at(h * 60 * 60 * 1000));
+  assert.equal(nine.length, 9);
   assert.equal(rateLimit.decide({
-    kind: 'waitlist_code', now: T0, recipientHistory: four,
-  }).allowed, true, 'the fifth of the day is allowed');
+    kind: 'waitlist_code', now: T0, recipientHistory: nine,
+  }).allowed, true, 'the tenth of the day is allowed');
   assert.equal(rateLimit.decide({
-    kind: 'waitlist_code', now: T0, recipientHistory: [...four, at(6 * 60 * 60 * 1000)],
-  }).allowed, false, 'the sixth is not');
+    kind: 'waitlist_code', now: T0, recipientHistory: [...nine, at(11 * 60 * 60 * 1000)],
+  }).allowed, false, 'the eleventh is not');
+  // The gap still outranks the count, so being under the ceiling is not a
+  // licence to send twice in a minute.
+  assert.equal(rateLimit.decide({
+    kind: 'waitlist_code', now: T0, recipientHistory: [at(30 * 1000)],
+  }).reason && true, true);
+  // And the window is a day, not an hour: a send this morning still counts
+  // against this evening's ask.
+  assert.equal(rateLimit.RULES.waitlist_code.windowMs, 24 * 60 * 60 * 1000);
+  assert.equal(rateLimit.RULES.waitlist_code.perWindow, 10);
 });
 
 test('the global ceiling outranks every per-recipient allowance', () => {
@@ -842,11 +856,21 @@ test('the staging mail fixture only writes when USERNODE_ENV=staging', async () 
     process.env.USERNODE_ENV = 'staging';
     await seedStagingPlatformMail(pool);
     const inserts = seen.filter((s) => /INSERT INTO mail_deliveries/.test(s));
-    assert.equal(inserts.length, 11,
+    assert.equal(inserts.length, 13,
       'one row per status the card renders, plus three admin_test rows, plus '
       + 'the admission mail behind the admitted waitlist fixture, plus the '
-      + 'delivered and throttled shapes of a requested waitlist code');
+      + 'delivered and throttled shapes of a requested waitlist code, plus '
+      + "#2201's two delivery states: a window filled to the daily ceiling "
+      + 'and a code delivered seconds ago');
     for (const sql of inserts) {
+      // Every fixture is idempotent, but #2201's capped one cannot say so
+      // with WHERE NOT EXISTS: it needs TEN identical rows, and that guard
+      // would seed exactly one of them. It counts what is already in the
+      // window and inserts only the shortfall instead, behind an
+      // `if (shortfall > 0)`, which is also what heals it as rows age past
+      // the 24 hours. The mock has no history to count, so it takes the
+      // branch here and inserts the full ten.
+      if (/generate_series\(1, \$2::int\)/.test(sql)) continue;
       assert.match(sql, /WHERE NOT EXISTS/, 'a re-boot must not grow the table');
     }
     assert.ok(seen.some((s) => /INSERT INTO waitlist_signups/.test(s)));

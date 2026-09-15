@@ -40,39 +40,69 @@ const CONFIRMED = 'confirmed@example.invalid';
 const STRANGER = 'stranger@example.invalid';
 const BROKEN = 'broken@example.invalid';
 
-function makeMockPool() {
+const JOINED_AT = new Date('2026-03-14T10:00:00.000Z');
+
+// PENDING and CONFIRMED are already on the list, so joinWaitlist's
+// ON CONFLICT insert writes nothing for them; STRANGER and BROKEN are not.
+const ON_THE_LIST = new Set([PENDING, CONFIRMED]);
+
+// `log` collects every statement so a test can assert on what did NOT run —
+// which is the only way to see the reuse window, whose whole effect is an
+// absence. `reusableCode` makes hasReusableCode answer true.
+function makeMockPool({ log = [], reusableCode = false } = {}) {
   return {
+    log,
     async query(sql, params) {
-      if (/SELECT id, email, confirmed_at, more_token[\s\S]*FROM waitlist_signups/.test(sql)) {
+      log.push(sql.replace(/\s+/g, ' ').trim());
+      // hasReusableCode's probe. Must be tested BEFORE the broader
+      // waitlist_verification_codes branch below, whose pattern this
+      // statement also matches.
+      if (/SELECT 1[\s\S]*FROM waitlist_verification_codes/.test(sql)) {
+        return { rows: reusableCode ? [{ '?column?': 1 }] : [] };
+      }
+      if (/SELECT id, email, submitted_at, confirmed_at[\s\S]*FROM waitlist_signups/.test(sql)) {
         const email = params[0];
-        if (email === PENDING) {
-          return { rows: [{ id: 1, email, confirmed_at: null, more_token: TOKEN }] };
-        }
+        const base = {
+          email, submitted_at: JOINED_AT, released_at: null,
+          linked_user_id: null, more_token: TOKEN,
+        };
+        if (email === PENDING) return { rows: [{ id: 1, ...base, confirmed_at: null }] };
         if (email === CONFIRMED) {
-          return { rows: [{ id: 2, email, confirmed_at: new Date(), more_token: TOKEN }] };
+          return { rows: [{ id: 2, ...base, confirmed_at: new Date('2026-03-14T10:05:00.000Z') }] };
         }
         if (email === BROKEN) throw new Error('pool is on fire');
         return { rows: [] };
       }
-      // issueVerificationCode's write.
+      // issueVerificationCode's delete and write.
       if (/waitlist_verification_codes/.test(sql)) return { rows: [{ id: 1 }] };
-      // joinWaitlist's ON CONFLICT DO NOTHING insert. rowCount 0 is a
+      // joinWaitlist's ON CONFLICT DO NOTHING insert. No returned row is a
       // RE-join: the row was already there, so nothing was written.
       if (/INSERT INTO waitlist_signups/.test(sql)) {
-        return { rowCount: params[0] === PENDING ? 0 : 1, rows: [] };
+        return ON_THE_LIST.has(params[0])
+          ? { rowCount: 0, rows: [] }
+          : { rowCount: 1, rows: [{ submitted_at: JOINED_AT }] };
       }
       return { rowCount: 0, rows: [] };
     },
   };
 }
 
-async function withPublicApi(fn, extraConfig = {}) {
+function join(base, email, headers = {}) {
+  return fetch(`${base}/api/public/waitlist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify({ email }),
+  });
+}
+
+async function withPublicApi(fn, extraConfig = {}, poolOptions = {}) {
   const poolPath = require.resolve('../src/db/pool');
   const publicApiPath = require.resolve('../src/routes/public-api');
   const rateLimitsPath = require.resolve('../src/middleware/rate-limits');
   const originalPool = require.cache[poolPath];
+  const mockPool = makeMockPool(poolOptions);
   require.cache[poolPath] = {
-    exports: { getPool: () => makeMockPool() },
+    exports: { getPool: () => mockPool },
     loaded: true, id: poolPath, filename: poolPath,
     paths: originalPool ? originalPool.paths : [],
   };
@@ -86,7 +116,7 @@ async function withPublicApi(fn, extraConfig = {}) {
     app.use(publicApiRoutes({ databaseUrl: 'postgres://fake/fake', env: 'test', ...extraConfig }));
     server = app.listen(0);
     await new Promise((resolve) => server.once('listening', resolve));
-    await fn(`http://127.0.0.1:${server.address().port}`);
+    await fn(`http://127.0.0.1:${server.address().port}`, mockPool);
   } finally {
     if (server) server.close();
     if (originalPool) require.cache[poolPath] = originalPool;
@@ -105,6 +135,13 @@ function resend(base, email) {
 }
 
 test('every branch answers with the same status and the same bytes', async () => {
+  // SCOPE: this is /resend only, and deliberately so. POST /api/public/waitlist
+  // stopped keeping this property in #2201 — it now branches three ways and
+  // says which one ran, because a returning reader was being told a code was
+  // coming when nothing was. /resend kept the frozen body: unlike the join, it
+  // has no returning-reader problem to solve, and it is the endpoint an
+  // attacker would reach for, since it takes an address and needs no survey
+  // answers. The two endpoints answering differently is the design, not drift.
   await withPublicApi(async (base) => {
     const seen = [];
     for (const email of [PENDING, CONFIRMED, STRANGER, BROKEN]) {
@@ -265,29 +302,135 @@ test('the resend limiter is keyed per address, not shared across them', async ()
   });
 });
 
-test('a re-join sends a fresh code instead of claiming it sent one', async () => {
+test('an unconfirmed re-join mails one fresh code and says so (#2201)', async () => {
   // The bug behind the whole feature. joinWaitlist is idempotent by email,
   // so a second submit wrote nothing, minted nothing and mailed nothing —
-  // while the screen said "we sent a six-digit code to you@…" on any 200.
-  // The response is unchanged (it has to be: the join endpoint is public and
-  // must not disclose membership either); what changed is that the claim is
-  // now true.
+  // while the screen said "we sent a six-digit code to you@..." on any 200.
+  //
+  // This test used to assert that the RESPONSE was unchanged, on the grounds
+  // that the join must not disclose membership either. That is the decision
+  // #2201 reversed: the address is on the list and still needs confirming,
+  // so the honest answer names both facts and hands the client a status
+  // block, and the client shows the code step with the right words above it.
   const seen = [];
   await withPublicApi(async (base) => {
-    const res = await fetch(`${base}/api/public/waitlist`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: PENDING }),
-    });
+    const res = await join(base, PENDING);
     assert.equal(res.status, 200);
     const body = await res.json();
-    // A re-join still carries no stage-2 token: that belongs to the row's
-    // first creation, and handing one out here would leak that the address
-    // was already on the list.
-    assert.equal(body.more_token || null, null);
+    assert.match(body.message, /already on the waitlist/i);
+    assert.equal(body.status.confirmed, false, 'this address still needs confirming');
+    assert.ok(body.status.joined_at, 'and the panel can say since when');
+    // A re-join still carries no stage-2 token: that dereferences to an
+    // address, its survey answers and its invite list, so handing one to
+    // whoever typed the address is a capability leak. Membership disclosure
+    // was decided on; this was not part of it.
+    assert.equal(body.more_token, null);
   }, { mailTransport: { send: async (m) => { seen.push(m); } } });
 
   assert.equal(seen.length, 1, 'exactly one mail, and it is not a second welcome');
   assert.equal(seen[0].kind, 'waitlist_code');
   assert.match(seen[0].code, /^[0-9]{6}$/);
+});
+
+test('a confirmed re-join mails nothing and lands on the settled panel (#2201)', async () => {
+  // Case 3, and the reason the branch reads the row BEFORE deciding. There
+  // is nothing left for this person to do, so there is nothing to mint,
+  // nothing to delete and nothing to mail — the answer is a status block,
+  // which is what puts the client on the settled panel instead of in front
+  // of a code field waiting for a mail that is not coming.
+  const seen = [];
+  await withPublicApi(async (base, pool) => {
+    const res = await join(base, CONFIRMED);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.match(body.message, /already on the waitlist, and this address is confirmed/i);
+    assert.equal(body.status.confirmed, true);
+    assert.equal(body.more_token, null, 'no capability token on a re-join, confirmed or not');
+
+    // Nothing minted and nothing deleted: the old code routed every re-join
+    // through resendConfirmation, which DELETEd this reader's live code to
+    // mint one it then mailed as a status code nobody was waiting for.
+    const touched = pool.log.filter((sql) => /waitlist_verification_codes/.test(sql));
+    assert.deepEqual(touched, [], 'a confirmed re-join must not touch the code table');
+  }, { mailTransport: { send: async (m) => { seen.push(m); } } });
+
+  assert.deepEqual(seen, [], 'and mails nothing at all');
+});
+
+test('a re-join inside the reuse window neither mints nor mails', async () => {
+  // Case 2 goes through resendConfirmation, which leaves a code minted
+  // seconds ago alone. Two submits a few seconds apart is the ordinary
+  // shape of an impatient person, and without the window the second one
+  // DELETEd the code already in their inbox and then delivered nothing,
+  // because waitlist_code allows one send a minute per address.
+  const seen = [];
+  await withPublicApi(async (base, pool) => {
+    assert.equal((await join(base, PENDING)).status, 200);
+
+    const wrote = pool.log.filter((sql) => /^(INSERT INTO|DELETE FROM) waitlist_verification_codes/.test(sql));
+    assert.deepEqual(wrote, [], 'the live code is left exactly where it is');
+  }, { mailTransport: { send: async (m) => { seen.push(m); } } }, { reusableCode: true });
+
+  assert.deepEqual(seen, [], 'and no mail claims a fresh one was sent');
+});
+
+test('a suppressed send leaves the previously delivered code alive', async () => {
+  // Same guarantee from /resend's side, and stated the other way round: the
+  // point is not that the second ask does less, it is that the code the
+  // first ask actually delivered still works. Deleting it is what made the
+  // mail in the inbox a dead end.
+  const seen = [];
+  await withPublicApi(async (base, pool) => {
+    const res = await resend(base, PENDING);
+    // The frozen body, unchanged: the reuse window is invisible from
+    // outside, which is also what keeps it from becoming an oracle.
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.match(body.message, /six-digit code is on its way/i);
+
+    assert.deepEqual(
+      pool.log.filter((sql) => /^DELETE FROM waitlist_verification_codes/.test(sql)),
+      [],
+      'nothing deletes the code that was delivered'
+    );
+    assert.deepEqual(
+      pool.log.filter((sql) => /^INSERT INTO waitlist_verification_codes/.test(sql)),
+      [],
+      'and nothing replaces it with one that was not'
+    );
+  }, { mailTransport: { send: async (m) => { seen.push(m); } } }, { reusableCode: true });
+
+  assert.deepEqual(seen, [], 'the mail throttle would have dropped this send anyway');
+});
+
+test('an integrator-keyed re-join gets the pre-#2201 body, with no status block', async () => {
+  // The bound on the oracle. A first-party join comes from a browser
+  // through 5 requests per 15 minutes per IP, which is a rate a person
+  // reaches and a harvester does not. An integrator key re-keys that budget
+  // to a label with a much larger ceiling, so the same disclosure through
+  // it would be bulk membership testing — and an integrator proxies other
+  // people's addresses, so it has no returning reader of its own to serve.
+  await withPublicApi(async (base) => {
+    const keyed = { 'X-Waitlist-Client-Key': 's3cret' };
+
+    const confirmed = await (await join(base, CONFIRMED, keyed)).json();
+    assert.equal(Object.hasOwn(confirmed, 'status'), false, 'case 3 discloses nothing');
+
+    const pending = await (await join(base, PENDING, keyed)).json();
+    assert.equal(Object.hasOwn(pending, 'status'), false, 'nor does case 2');
+
+    const fresh = await (await join(base, STRANGER, keyed)).json();
+    assert.equal(Object.hasOwn(fresh, 'status'), false, 'nor does case 1');
+    assert.match(fresh.more_token, /^[0-9a-f]{48}$/, 'but the first join still returns its token');
+
+    // Same request without the key: the status block is back. Without this
+    // half, a broken key parser would pass the three assertions above for
+    // the wrong reason.
+    const unkeyed = await (await join(base, CONFIRMED)).json();
+    assert.equal(unkeyed.status.confirmed, true);
+  }, {
+    waitlistIntegrationKeys: 'acme:s3cret',
+    mailTransport: { send: async () => {} },
+  });
 });
