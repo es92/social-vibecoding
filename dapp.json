@@ -1163,7 +1163,7 @@
     {
       "name": "Board cards name the auto-drafted category they were placed in (#1933)",
       "path": "/?demo=1#app/usernode-2d5619/board",
-      "expectSelector": "#dev-kanban [data-ref-issue=\"900001\"] [data-theme-chip=\"demo-appearance\"]",
+      "expectSelector": "#dev-kanban [data-issue-row=\"900001\"] [data-theme-chip=\"demo-appearance\"]",
       "expectText": "[Mock] Appearance & theming"
     },
     {

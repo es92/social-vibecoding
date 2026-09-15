@@ -4052,6 +4052,9 @@ test('#1933: a card names the auto-drafted category it was placed in, once the t
   const html = kanbanHtml(AppView);
   assert.ok(html.includes('data-theme-chip="theming"'), 'the chip is in the kanban markup');
   assert.ok(/data-theme-chip="theming"[^>]*>Theming</.test(html), 'with the category\'s name as its text');
+  // On the folded row the declared check selects through, under the item
+  // hook the row carries (`data-issue-row`), not the open card's `data-ref-issue`.
+  assert.match(html, /data-issue-row="12"[^]*?data-theme-chip="theming"/, 'inside the folded row for issue 12');
 });
 
 test('#1933: under the "By category" pane the chip is dropped, because the heading already says it', () => {
@@ -4091,7 +4094,10 @@ test('#1933: the declared check reads the chip off a demo issue card on the boar
   const check = dapp.tests.find((t) => /#1933/.test(t.name || ''));
   assert.ok(check, 'declared');
   assert.match(check.path, /demo=1.*#app\/usernode-2d5619\/board$/);
-  assert.match(check.expectSelector, /#dev-kanban \[data-ref-issue="900001"\] \[data-theme-chip="demo-appearance"\]/);
+  // `data-issue-row`, not `data-ref-issue`: the Board draws FOLDED rows, and
+  // a folded row carries only the item hooks (fold.tsx ITEM_HOOKS), which is
+  // the one the first run of this check learned the hard way.
+  assert.match(check.expectSelector, /#dev-kanban \[data-issue-row="900001"\] \[data-theme-chip="demo-appearance"\]/);
   assert.equal(check.expectText, '[Mock] Appearance & theming');
   // The name and the placement it asserts are the staging demo theme's.
   const route = read('src/routes/workshop-themes.js');
