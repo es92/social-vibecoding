@@ -1888,6 +1888,18 @@
       "expectSelector": "#gc-thread-head [data-gov-row='9100005'] .gc-merging-badge .dc-status-spinner-arc"
     },
     {
+      "name": "An illustration proposal card previews the proposed image beside the current one (#2086)",
+      "path": "/?demo=1&cards=open#app/usernode-2d5619/board",
+      "expectSelector": "[data-gov-row='9100008'] [data-illustration-preview] [data-illustration-side='proposed'] img[alt]",
+      "expectText": "Proposed"
+    },
+    {
+      "name": "An illustration proposal's discussion page carries the same preview (#2086)",
+      "path": "/?demo=1#app/usernode-2d5619/dev/governance/9100008",
+      "expectSelector": "#gc-thread-head [data-gov-row='9100008'] [data-illustration-preview] [data-illustration-side='current'] img[alt]",
+      "expectText": "Change the featured illustration"
+    },
+    {
       "name": "An applied close proposal opens its discussion, not the board (#1115)",
       "path": "/?demo=1#app/usernode-2d5619/dev/governance/9100060",
       "expectSelector": "#gc-thread-head [data-gov-row='9100060']"

@@ -53,6 +53,7 @@ import { createPortal } from 'react-dom';
 import { Bars3Icon, CheckIcon, ChevronDownIcon, ChevronRightIcon, EyeIcon, EyeOffIcon, Glyph, PencilSquareIcon, XIcon } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
 import { useStoreState } from '../../../lib/use-store-state';
+import { cardTintClass } from '../../home/panels/ui';
 import { aiEnabledStore, cardNowStore } from './cards-store';
 import type {
   ActionRef,
@@ -788,8 +789,48 @@ function RequirementsRow({ x }: { x: Extract<ExtraSpec, { t: 'requirements' }> }
   );
 }
 
+/**
+ * A featured-illustration card's preview (#2086): the current illustration
+ * beside the proposed one, each a captioned thumbnail on the card colour it
+ * wears. The image URL is API-supplied, so it is an <img> with alt text and
+ * nothing else, never an anchor. A side with no illustration says so in
+ * words, because the empty state (the app icon shows instead) is a real
+ * outcome a voter is deciding on, not a missing picture.
+ */
+function IllustrationPreviewRow({ x }: { x: Extract<ExtraSpec, { t: 'illustration' }> }): ReactNode {
+  const side = (label: string, which: 'current' | 'proposed', art: typeof x.proposed) => (
+    <figure className="m-0 flex min-w-0 flex-1 flex-col gap-1" data-illustration-side={which}>
+      <figcaption className="text-[0.65rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</figcaption>
+      {art ? (
+        <div
+          className={`${cardTintClass(art.tint) || ''} overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700`}
+          style={{ background: cardTintClass(art.tint) ? 'var(--tone-50)' : undefined }}
+        >
+          <img
+            src={art.url}
+            alt={`${which === 'proposed' ? 'Proposed' : 'Current'} featured illustration`}
+            loading="lazy"
+            className="block h-24 w-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[0.7rem] text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+          {which === 'proposed' && x.remove ? 'Removed, the app icon shows instead' : 'No illustration, the app icon shows'}
+        </div>
+      )}
+    </figure>
+  );
+  return (
+    <div className="mt-2 flex gap-3 px-0.5" data-illustration-preview="1">
+      {side('Current', 'current', x.current)}
+      {side('Proposed', 'proposed', x.proposed)}
+    </div>
+  );
+}
+
 function ExtraRow({ x }: { x: ExtraSpec }): ReactNode {
   if (x.t === 'requirements') return <RequirementsRow x={x} />;
+  if (x.t === 'illustration') return <IllustrationPreviewRow x={x} />;
   if (x.t === 'note') {
     return (
       <div className="mt-1 px-0.5 text-[0.7rem] leading-snug text-zinc-500 dark:text-zinc-400" data-work-note={x.workState}>

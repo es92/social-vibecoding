@@ -5563,7 +5563,7 @@ const AppView = {
       AppView._proposals = promoted;
       AppView._govProposals = (issuesData.issues || [])
         .filter((i) => i.kind === 'secret_change' || i.kind === 'rename' || i.kind === 'close_issue'
-          || i.kind === 'maintenance_campaign');
+          || i.kind === 'maintenance_campaign' || i.kind === 'featured_illustration');
       AppView._proposalsCtx = {
         majority,
         activeUsers,
@@ -11815,6 +11815,7 @@ const AppView = {
     if (kind === 'secret_change') return 'Applying env-var change…';
     if (kind === 'rename') return 'Renaming app…';
     if (kind === 'maintenance_campaign') return 'Starting campaign…';
+    if (kind === 'featured_illustration') return 'Updating illustration…';
     return 'Applying…';
   },
 
@@ -12134,8 +12135,11 @@ const AppView = {
 
     // Admin merge, View campaign and Withdraw are the demoted three.
     const isCampaign = issue.kind === 'maintenance_campaign';
+    // #2086: a featured-illustration proposal force-applies like the rest.
+    const isIllustration = issue.kind === 'featured_illustration';
     const menu = [];
-    if (!ro && (issue.kind === 'secret_change' || isCloseIssue || isCampaign) && App.user?.canAdminWrite) {
+    if (!ro && (issue.kind === 'secret_change' || isCloseIssue || isCampaign || isIllustration)
+        && App.user?.canAdminWrite) {
       menu.push({
         label: 'Admin merge',
         icon: 'merge',
@@ -12193,9 +12197,31 @@ const AppView = {
       actions,
       actionPreview: null,
       rail: { menuKey: AppView._registerCardMenu(`gov:${issue.id}`, menu), chevron: !noNav },
-      extra: [],
+      // #2086: an illustration card shows what is proposed beside what the
+      // app wears now; the other kinds say it all in their title.
+      extra: isIllustration ? [AppView._illustrationExtraSpec(issue)] : [],
       dense: !noNav,
       uncapped: noNav,
+    };
+  },
+
+  // The preview block of a featured-illustration card (#2086): the record
+  // proposed and the record current when it was proposed, each an image URL
+  // plus the card colour it wears, or null for "no illustration". Rendered
+  // by dev-card.tsx's ExtraRow as two thumbnails with captions, never as a
+  // link: the URL is API-supplied and only ever an <img> source.
+  _illustrationExtraSpec(issue) {
+    const p = (issue && issue.payload) || {};
+    const pick = (rec) => (rec && rec.url
+      ? { url: String(rec.url), darkUrl: rec.darkUrl ? String(rec.darkUrl) : null,
+        tint: rec.tint != null ? rec.tint : null }
+      : null);
+    return {
+      t: 'illustration',
+      key: 'illustration',
+      proposed: pick(p.proposed),
+      current: pick(p.current),
+      remove: !!p.remove || !p.proposed,
     };
   },
 
@@ -13345,18 +13371,23 @@ const AppView = {
     const gov = (AppView._govProposals || []).find((g) => g.id === issueId);
     const isCloseIssue = gov?.kind === 'close_issue';
     const isCampaign = gov?.kind === 'maintenance_campaign';
+    const isIllustration = gov?.kind === 'featured_illustration';
     const targetN = gov?.payload?.issueNumber;
     const ok = await ConfirmModal.show({
       title: isCloseIssue
         ? `Close issue ${targetN ? `#${targetN} ` : ''}now?`
         : isCampaign
           ? 'Start this maintenance campaign now?'
-          : 'Apply this env-var change now?',
+          : isIllustration
+            ? 'Apply this illustration change now?'
+            : 'Apply this env-var change now?',
       message: (isCloseIssue
         ? 'This bypasses the active-user vote majority and closes the issue right now, here and on GitHub.\n\n'
         : isCampaign
           ? 'This bypasses the platform vote and starts the campaign right now: an AI will open one maintenance PR per app across the fleet.\n\n'
-          : 'This bypasses the active-user vote majority and applies the proposed secret change right now (the app redeploys with the new value).\n\n')
+          : isIllustration
+            ? 'This bypasses the active-user vote majority and changes the featured illustration on Discover right now.\n\n'
+            : 'This bypasses the active-user vote majority and applies the proposed secret change right now (the app redeploys with the new value).\n\n')
         + 'Use only when you\'re confident the change should ship. The override is announced in group chat with your username.',
       confirmLabel: isCloseIssue ? 'Close now' : isCampaign ? 'Start now' : 'Apply now',
       cancelLabel: 'Cancel',
@@ -16465,11 +16496,15 @@ const AppView = {
       // four per-kind result objects this row produced (all share the
       // { applied, superseded, awaitingAdmin, error, … } shape).
       const outcome = data?.issueClosed || data?.secretChanged
-        || data?.renamed || data?.campaignStarted || null;
+        || data?.renamed || data?.campaignStarted || data?.illustrationChanged || null;
       finish();
       if (outcome && outcome.applied) {
         if (kind === 'close_issue') {
           PlatformUI.toast(`Issue #${outcome.issueNumber || targetN || '?'} closed by group vote.`);
+        } else if (kind === 'featured_illustration') {
+          PlatformUI.toast(outcome.illustration
+            ? 'Featured illustration changed by group vote.'
+            : 'Featured illustration removed by group vote.');
         }
       } else if (outcome && outcome.superseded) {
         // Not an error: the guard found the target already closed and

@@ -11,6 +11,8 @@ import {
 } from '../../lib/illustration-framing';
 
 type Art = NonNullable<DiscoverTileView['illustration']>;
+/** The governance card a save opened, or the one already waiting (#2086). */
+type ProposalLink = { id: number; href: string };
 /**
  * The card colour rides INSIDE the framing state, not beside it, and that is
  * what makes every existing action behave the way it already did: a gesture
@@ -40,6 +42,11 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // #2086: a save no longer changes the app. It opens a governance card the
+  // group votes on, so the editor tells the user where it went (`sent`) and,
+  // when one is already open, that this save has to wait for it (`pending`).
+  const [pending, setPending] = useState<ProposalLink | null>(null);
+  const [sent, setSent] = useState<ProposalLink | null>(null);
   // Live pointers, in insertion order: one is a drag, two or more a pinch.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const [dragging, setDragging] = useState(false);
@@ -50,7 +57,8 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not load the illustration. Reopen the editor to try again.');
       if (controller.signal.aborted) return;
-      setArt(data.illustration ? { ...data.illustration, ...clampFrame(data.illustration) } : null); setLoading(false);
+      setArt(data.illustration ? { ...data.illustration, ...clampFrame(data.illustration) } : null);
+      setPending(data.pending || null); setLoading(false);
     }).catch(err => { if (!controller.signal.aborted) setError(err.message); });
     return () => { controller.abort(); generation.current++; };
   }, [endpoint]);
@@ -68,7 +76,7 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       adoptedOn: root.current, home: 'placeholder', gate: 'kit', onDismiss: () => { adoption = null; close.current(); } });
     return () => { if (adoption) { adoption.restore(); adoption.dismiss(); } };
   }, []);
-  const interactive = !!art && !busy && !loading;
+  const interactive = !!art && !busy && !loading && !sent;
   // The art block, not the whole card: the name and blurb below it are not a
   // framing surface, and its box is what every gesture is measured against.
   const artRect = () => {
@@ -139,13 +147,17 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
         body: art ? JSON.stringify({ ...framing, light: await encode(pendingBlob.current),
           dark: art.darkUrl ? await encode(pendingDark.current) : null }) : undefined });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save. Try again.');
-      app.featured_illustration = data.illustration;
-      const home = (window as any).Home;
-      const cached = home?._apps?.find((a: any) => a.slug === app.slug);
-      if (cached) cached.featured_illustration = data.illustration;
-      home?.render?.();
-      close.current();
+      if (!res.ok) {
+        // 409 carries the card already waiting; keep it on screen with the
+        // message so the link is one tap away.
+        if (data.pending) setPending(data.pending);
+        throw new Error(data.error || 'Could not save. Try again.');
+      }
+      // Nothing changed on the app: the caches the editor used to patch here
+      // are patched by the illustration_changed broadcast when the vote
+      // applies it. Removing an illustration the app never had opens nothing.
+      if (!data.proposal) { close.current(); return; }
+      setSent(data.proposal);
     } catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   };
@@ -218,7 +230,7 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       </div>
       <input ref={file} name="featured-illustration" type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
         aria-label="Upload featured illustration" onChange={e => { void chooseFile(e.target.files?.[0]); e.target.value = ''; }} />
-      <fieldset disabled={busy || loading} className="flex flex-col gap-3">
+      <fieldset disabled={busy || loading || !!sent} className="flex flex-col gap-3">
         <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => { uploadTheme.current = 'light'; file.current?.click(); }}>{art ? 'Replace light image' : 'Upload light image'}</Button>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">PNG, JPEG or WebP, up to 20 MB.</p>
         {art ? <>
@@ -266,9 +278,20 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       </fieldset>
       {loading && !error ? <p role="status" className="text-sm mt-3">Loading preview…</p> : null}
       {error ? <p role="alert" className="text-sm text-red-500 mt-3">{error}</p> : null}
+      {sent ? <p role="status" data-illustration-sent className="text-sm mt-3 text-zinc-700 dark:text-zinc-300">
+        {'Sent to the group for approval. The illustration changes when the vote passes. '}
+        <a href={sent.href} className="text-violet-600 dark:text-violet-400 underline" onClick={onClose}>Open the proposal</a>
+      </p> : pending ? <p role="status" data-illustration-pending className="text-sm mt-3 text-zinc-700 dark:text-zinc-300">
+        {'A change to this illustration is already waiting for the group\'s vote. Another can be proposed once it settles. '}
+        <a href={pending.href} className="text-violet-600 dark:text-violet-400 underline" onClick={onClose}>Open the proposal</a>
+      </p> : <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-3">Proposing opens a governance card on the board. The change applies when the group votes it in.</p>}
       <div className="flex gap-3 mt-5">
-        <Button type="button" className="min-h-[44px] flex-1" disabled={loading || busy} onClick={() => { void save(); }}>{busy ? 'Please wait…' : 'Save'}</Button>
-        <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" disabled={busy} onClick={onClose}>Cancel</Button>
+        {sent
+          ? <Button type="button" className="min-h-[44px] flex-1" onClick={onClose}>Done</Button>
+          : <>
+            <Button type="button" className="min-h-[44px] flex-1" disabled={loading || busy || !!pending} onClick={() => { void save(); }}>{busy ? 'Please wait…' : 'Propose change'}</Button>
+            <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" disabled={busy} onClick={onClose}>Cancel</Button>
+          </>}
       </div>
     </div>
   </div>;

@@ -198,8 +198,28 @@ export interface RequirementSpec {
 }
 
 /** An extra row under the four bands (the work note, the admin claim list). */
+/** One side of a featured-illustration card's preview (#2086). */
+export interface IllustrationPreviewSpec {
+  url: string;
+  darkUrl: string | null;
+  tint: string | number | null;
+}
+
 export type ExtraSpec =
   | { t: 'note'; key: string; text: string; workState: string }
+  | {
+    /**
+     * The proposed illustration beside the current one, on a
+     * `featured_illustration` governance card. Either side null means "no
+     * illustration" (the app icon shows instead); `remove` is the proposal
+     * to take the current one down.
+     */
+    t: 'illustration';
+    key: string;
+    proposed: IllustrationPreviewSpec | null;
+    current: IllustrationPreviewSpec | null;
+    remove: boolean;
+  }
   | { t: 'claims'; key: string; claims: { username: string; userId: number; issue: number }[] }
   | {
     t: 'requirements';

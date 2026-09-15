@@ -576,21 +576,35 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // so the third property (the code half still down) is asserted from
   // source in tests/waitlist-two-step.test.js instead of spending a slot
   // the next proposal needs.
-  // 650 → 655, 652 → 655, 651 → 655: the tallies above were computed on
-  // three different sides of this merge and cannot be read as one sequence.
-  // This branch took 649 → 650 alone, with the #2240 check above; main
-  // independently took the SAME 649 to both 652 (the #1374 checks above) and
-  // 651 (the #2201 not-found pair above). #2240 (+1), #1374 (+3) and the
-  // #2201 pair (+2) are three independent additions against the shared 649,
-  // which is 649 + 1 + 3 + 2 = 655.
-  // 655 → 657: #2241's two checks on the unsent-change screen, which has a
+  // 651 → 653: #2086 makes a featured-illustration change a governance
+  // proposal, and adds two checks on its card via the ?demo=1 mock row
+  // 9100008: the proposed-beside-current preview on the open board card,
+  // and the same preview on the proposal's own discussion page. (This
+  // branch took 649 → 651 alone; main independently took the same step
+  // with the #2201 pair above, so the merged manifest holds 653.)
+  // 650 → 655, 652 → 655, 651 → 655: on another side of this merge, the
+  // tallies above were computed on three different sides and cannot be read
+  // as one sequence either. Main took 649 → 650 alone, with the #2240 check
+  // above, and independently took the SAME 649 to both 652 (the #1374
+  // checks above) and 651 (the #2201 not-found pair above). #2240 (+1),
+  // #1374 (+3) and the #2201 pair (+2) are three independent additions
+  // against the shared 649, which is 649 + 1 + 3 + 2 = 655.
+  // 653 → 657, 655 → 657: this branch's #2086 pair and main's #2240/#1374
+  // trio share the #2201 pair in their common ancestry (this branch merged
+  // main's #2201 addition on the way to 651 before adding #2086; main's own
+  // 655 already counts that same #2201 pair once). The union does not add
+  // 653 + 655 against a doubled base: it is the shared 649, plus #2201 (+2,
+  // counted once), plus this branch's #2086 (+2), plus main's #2240 (+1) and
+  // #1374 (+3) — 649 + 2 + 2 + 1 + 3 = 657, which is what the merged
+  // manifest holds.
+  // 657 → 659: #2241's two checks on the unsent-change screen, which has a
   // route of its own (/dev/sessions/new) and no session behind it — one on
   // the empty state's sentence, one on the live composer beside a header
   // that offers no venue dropdown and no ⋯ menu, because there is nothing
-  // yet for either to act on. This one IS a plain sequence: the pair landed
-  // on a branch cut before #2240 / #1374 / #2201 and was merged after all
-  // three, so it adds to whatever the manifest holds, which is 655.
-  assert.equal(DAPP.tests.length, 657);
+  // yet for either to act on. A plain sequence, not another reconciliation:
+  // the pair was cut before every addition counted above and merged after
+  // all of them, so it adds to whatever the merged manifest holds — 657.
+  assert.equal(DAPP.tests.length, 659);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

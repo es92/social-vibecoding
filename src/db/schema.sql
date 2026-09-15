@@ -2633,6 +2633,27 @@ ALTER TABLE app_illustrations ADD COLUMN IF NOT EXISTS dark_id VARCHAR(32) UNIQU
 ALTER TABLE app_illustrations ADD COLUMN IF NOT EXISTS dark_content_type TEXT;
 ALTER TABLE app_illustrations ADD COLUMN IF NOT EXISTS dark_data BYTEA;
 
+-- #2086: a featured-illustration change is a governance proposal now, not a
+-- direct write. The bytes a proposal carries wait here, keyed by the issue
+-- row that is the proposal, until the group votes it in (at which point the
+-- apply copies them into app_illustrations under the SAME ids, so the card's
+-- preview URL keeps resolving) or the proposal settles without applying. One
+-- open illustration proposal per app, enforced by the partial index below
+-- rather than by a read-then-insert the two saves in a race would both pass.
+CREATE TABLE IF NOT EXISTS app_illustration_proposals (
+  issue_id INTEGER PRIMARY KEY REFERENCES issues(id) ON DELETE CASCADE,
+  app_id INTEGER NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  id VARCHAR(32) UNIQUE,
+  content_type TEXT,
+  data BYTEA,
+  dark_id VARCHAR(32) UNIQUE,
+  dark_content_type TEXT,
+  dark_data BYTEA
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_issues_open_featured_illustration
+  ON issues (app_id)
+  WHERE kind = 'featured_illustration' AND status = 'open';
+
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS icon_emoji VARCHAR(32);
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS icon_image_id VARCHAR(32);
 

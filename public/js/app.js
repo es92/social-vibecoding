@@ -2891,6 +2891,19 @@ const App = {
           AppView.applyRename(data.newName);
         }
       }
+    } else if (data.action === 'illustration_changed') {
+      // #2086: a featured-illustration proposal was voted in (or admin
+      // applied). The editor used to patch these caches itself the moment
+      // it saved; the vote apply is what changes the app now, so every
+      // open client patches them from the broadcast instead.
+      if (typeof Home !== 'undefined' && Array.isArray(Home._apps)) {
+        const cached = Home._apps.find((a) => a.slug === data.slug);
+        if (cached) cached.featured_illustration = data.illustration || null;
+        if (Home.render) Home.render();
+      }
+      if (App.currentApp === data.slug && typeof AppView !== 'undefined' && AppView.appData) {
+        AppView.appData.featured_illustration = data.illustration || null;
+      }
     } else if (data.action === 'icon_changed') {
       // A deploy reconciled this app's dapp.json icon block (emoji /
       // image / cleared back to the letter). Patch the mounted home

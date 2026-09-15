@@ -1,11 +1,11 @@
 const express = require('express');
-const crypto = require('crypto');
 const { getPool } = require('../db/pool');
 const { getAppForUser, NON_SECRET_APP_COLUMNS } = require('../services/app-access');
 const { canManageApp } = require('../services/app-admins');
 const { sniffImageType } = require('../services/attachments');
 const log = require('../services/logger');
 const { attachmentUploadLimiter } = require('../middleware/rate-limits');
+const proposals = require('../services/illustration-proposals');
 
 // The card colours an illustration may carry, kept in step with
 // frontend/src/features/home/panels/ui.tsx (asserted by
@@ -52,7 +52,14 @@ function illustrationImageRoutes(config) {
   router.get('/app-illustrations/:id', async (req, res) => {
     if (!/^[a-f0-9]{32}$/.test(req.params.id)) return res.status(404).end();
     try {
-      const { rows } = await pool.query('SELECT content_type, data FROM app_illustrations WHERE id = $1 UNION ALL SELECT dark_content_type AS content_type, dark_data AS data FROM app_illustrations WHERE dark_id = $1', [req.params.id]);
+      // An id names either a published image or one a proposal is still
+      // carrying (#2086): the card previews the proposed image from the same
+      // URL it will keep once the vote applies it.
+      const { rows } = await pool.query(`SELECT content_type, data FROM app_illustrations WHERE id = $1
+        UNION ALL SELECT dark_content_type AS content_type, dark_data AS data FROM app_illustrations WHERE dark_id = $1
+        UNION ALL SELECT content_type, data FROM app_illustration_proposals WHERE id = $1
+        UNION ALL SELECT dark_content_type AS content_type, dark_data AS data FROM app_illustration_proposals WHERE dark_id = $1`,
+      [req.params.id]);
       if (!rows.length) return res.status(404).end();
       res.set('Content-Type', rows[0].content_type);
       res.set('X-Content-Type-Options', 'nosniff');
@@ -62,6 +69,12 @@ function illustrationImageRoutes(config) {
   });
   return router;
 }
+// #2086: none of the writes below touch apps.featured_illustration. Each one
+// builds the COMPLETE record the app would wear and opens a governance
+// proposal carrying it (services/illustration-proposals.js); the record
+// lands when the group votes it in. The response therefore returns the
+// illustration the app still wears plus the proposal to link to, and a 409
+// with the open card when one is already waiting.
 function illustrationRoutes(config) {
   const router = express.Router();
   const pool = getPool(config);
@@ -70,12 +83,32 @@ function illustrationRoutes(config) {
     try {
       const app = await getAppForUser(pool, req.params.slug, req.user, 'view', NON_SECRET_APP_COLUMNS.join(', '));
       if (!app) return res.status(404).json({ error: 'App not found' });
-      if (!(await canManageApp(pool, app, req.user))) return res.status(403).json({ error: 'Only app managers can change this illustration.' });
+      if (!(await canManageApp(pool, app, req.user))) return res.status(403).json({ error: 'Only app managers can propose a change to this illustration.' });
       req.illustrationApp = app;
       next();
     } catch (err) { next(err); }
   });
-  router.get(path, (req, res) => res.json({ illustration: req.illustrationApp.featured_illustration || null }));
+  router.get(path, async (req, res, next) => {
+    try {
+      const pending = await proposals.findOpenProposal(pool, req.illustrationApp.id);
+      res.json({
+        illustration: req.illustrationApp.featured_illustration || null,
+        pending: pending ? proposals.proposalLink(req.illustrationApp, pending) : null,
+      });
+    } catch (err) { next(err); }
+  });
+  const propose = async (req, res, next, proposed, images) => {
+    const app = req.illustrationApp;
+    try {
+      const issue = await proposals.createProposal(pool, { app, user: req.user, proposed, images });
+      res.status(201).json({ illustration: app.featured_illustration || null, proposal: proposals.proposalLink(app, issue) });
+    } catch (err) {
+      if (err instanceof proposals.PendingProposalError) {
+        return res.status(409).json({ error: err.message, pending: err.issue ? proposals.proposalLink(app, err.issue) : null });
+      }
+      next(err);
+    }
+  };
   router.post(path, attachmentUploadLimiter, express.raw({ type: 'application/octet-stream', limit: '2mb' }), async (req, res, next) => {
     const framing = parseFraming({
       zoom: Number(req.query.zoom), x: Number(req.query.x), y: Number(req.query.y),
@@ -89,20 +122,12 @@ function illustrationRoutes(config) {
     });
     const contentType = validateImage(req.body);
     if (!framing || !contentType) return res.status(400).json({ error: 'Choose a PNG, JPEG or WebP under 1 MB, a card colour from the set, and valid image framing.' });
-    const id = crypto.randomBytes(16).toString('hex');
-    const illustration = { url: `/app-illustrations/${id}`, ...framing };
-    try {
-      // One statement keeps the image and the framing atomic, even on replacement.
-      await pool.query(`WITH image AS (
-        INSERT INTO app_illustrations (app_id, id, content_type, data) VALUES ($1, $2, $3, $4)
-        ON CONFLICT (app_id) DO UPDATE SET id = EXCLUDED.id, content_type = EXCLUDED.content_type, data = EXCLUDED.data
-        RETURNING app_id)
-        UPDATE apps SET featured_illustration = $5::jsonb WHERE id = (SELECT app_id FROM image)`,
-      [req.illustrationApp.id, id, contentType, req.body, JSON.stringify(illustration)]);
-      res.json({ illustration });
-    } catch (err) { next(err); }
+    const id = proposals.newImageId();
+    // A single upload proposes the light image on its own, as it always did.
+    await propose(req, res, next, { url: proposals.imageUrl(id), ...framing },
+      { light: { id, contentType, data: req.body } });
   });
-  // Both variants and their shared framing are published in one statement.
+  // Both variants and their shared framing travel in one proposal.
   // Raw JSON avoids the shell's smaller general-purpose JSON body limit.
   router.put(path, attachmentUploadLimiter, express.raw({ type: 'application/octet-stream', limit: '3mb' }), async (req, res, next) => {
     let body;
@@ -116,46 +141,38 @@ function illustrationRoutes(config) {
         (body.dark !== undefined && body.dark !== null && !validateImage(dark))) {
       return res.status(400).json({ error: 'Choose PNG, JPEG or WebP images under 1 MB and valid shared framing.' });
     }
-    const lightId = light ? crypto.randomBytes(16).toString('hex') : null;
-    const darkId = dark ? crypto.randomBytes(16).toString('hex') : null;
-    try {
-      const { rows } = await pool.query(`WITH pair AS (
-        INSERT INTO app_illustrations (app_id, id, content_type, data, dark_id, dark_content_type, dark_data)
-        SELECT a.id, COALESCE($2, i.id), COALESCE($3, i.content_type), COALESCE($4, i.data),
-          CASE WHEN $8 THEN $5 ELSE i.dark_id END,
-          CASE WHEN $8 THEN $6 ELSE i.dark_content_type END,
-          CASE WHEN $8 THEN $7 ELSE i.dark_data END
-        FROM apps a LEFT JOIN app_illustrations i ON i.app_id = a.id
-        WHERE a.id = $1 AND ($2::text IS NOT NULL OR i.id IS NOT NULL)
-        ON CONFLICT (app_id) DO UPDATE SET id = EXCLUDED.id, content_type = EXCLUDED.content_type,
-          data = EXCLUDED.data, dark_id = EXCLUDED.dark_id, dark_content_type = EXCLUDED.dark_content_type, dark_data = EXCLUDED.dark_data
-        RETURNING app_id, id, dark_id)
-        UPDATE apps a SET featured_illustration = COALESCE(a.featured_illustration, '{}'::jsonb) || $9::jsonb ||
-          jsonb_build_object('url', '/app-illustrations/' || pair.id, 'darkUrl', CASE WHEN pair.dark_id IS NULL THEN NULL ELSE '/app-illustrations/' || pair.dark_id END)
-        FROM pair WHERE a.id = pair.app_id RETURNING featured_illustration`,
-      [req.illustrationApp.id, lightId, light && validateImage(light), light, darkId, dark && validateImage(dark), dark,
-        body.dark !== undefined, JSON.stringify(framing)]);
-      if (!rows.length) return res.status(409).json({ error: 'Upload a light image first.' });
-      res.json({ illustration: rows[0].featured_illustration });
-    } catch (err) { next(err); }
+    const current = req.illustrationApp.featured_illustration || null;
+    // A dark image or a reframe on its own needs a light image to sit under
+    // it, and the only one in hand is the app's current record: a proposal
+    // that is still open does not count, and there is at most one anyway.
+    if (!light && !current?.url) return res.status(409).json({ error: 'Upload a light image first.' });
+    const lightId = light ? proposals.newImageId() : null;
+    const darkId = dark ? proposals.newImageId() : null;
+    // The same merge the direct write performed: the current record under
+    // the new framing, then whichever urls this save replaces. A dark left
+    // undefined keeps the current dark image; null drops it.
+    const proposed = {
+      ...(current || {}),
+      ...framing,
+      url: light ? proposals.imageUrl(lightId) : current.url,
+      darkUrl: body.dark === undefined ? (current?.darkUrl || null) : dark ? proposals.imageUrl(darkId) : null,
+    };
+    await propose(req, res, next, proposed, {
+      light: light ? { id: lightId, contentType: validateImage(light), data: light } : null,
+      dark: dark ? { id: darkId, contentType: validateImage(dark), data: dark } : null,
+    });
   });
   router.patch(path, async (req, res, next) => {
     const framing = parseFraming(req.body);
     if (!framing) return res.status(400).json({ error: 'Choose valid image framing and a card colour from the set.' });
-    try {
-      const { rows } = await pool.query(`UPDATE apps SET featured_illustration = featured_illustration || $2::jsonb
-        WHERE id = $1 AND featured_illustration IS NOT NULL RETURNING featured_illustration`,
-      [req.illustrationApp.id, JSON.stringify(framing)]);
-      if (!rows.length) return res.status(409).json({ error: 'The illustration was removed. Upload an image again.' });
-      res.json({ illustration: rows[0].featured_illustration });
-    } catch (err) { next(err); }
+    const current = req.illustrationApp.featured_illustration || null;
+    if (!current) return res.status(409).json({ error: 'The illustration was removed. Upload an image again.' });
+    await propose(req, res, next, { ...current, ...framing }, {});
   });
   router.delete(path, async (req, res, next) => {
-    try {
-      await pool.query(`WITH removed AS (DELETE FROM app_illustrations WHERE app_id = $1)
-        UPDATE apps SET featured_illustration = NULL WHERE id = $1`, [req.illustrationApp.id]);
-      res.json({ illustration: null });
-    } catch (err) { next(err); }
+    // Nothing to remove means nothing to vote on.
+    if (!req.illustrationApp.featured_illustration) return res.json({ illustration: null, proposal: null });
+    await propose(req, res, next, null, {});
   });
   return router;
 }
