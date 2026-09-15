@@ -213,3 +213,71 @@ test('maskEmail keeps the domain and a hint, never the whole local part', () => 
   assert.equal(maskEmail('not-an-email'), '***');
   assert.equal(maskEmail(''), '***');
 });
+
+// ─── 5. Where the shared link points ──────────────────────────────────
+//
+// The link used to be `<app origin>/#waitlist?ref=<code>`, which opened the
+// SPA shell for somebody who had never heard of the product. It points at
+// the public marketing site's /waitlist page now. Three things are load
+// bearing and each has a way of quietly regressing: the host comes from
+// configuration rather than a literal, the `ref` code is passed through
+// untouched (a re-encoded or truncated code attributes the join to nobody),
+// and a signup with no code yet renders no link at all rather than a URL
+// with an empty `ref=`.
+
+const {
+  DEFAULT_MARKETING_BASE_URL,
+  inviteUrl,
+  normalizeBaseUrl,
+} = require('../src/services/marketing-links');
+
+test('the shared link is the marketing waitlist page, not the in-app route', () => {
+  const url = inviteUrl({ marketingBaseUrl: 'https://onhomeroom.com' }, 'a1b2c3d4e5');
+  assert.equal(url, 'https://onhomeroom.com/waitlist?ref=a1b2c3d4e5');
+  // The in-app hash route is left alone, but it is not what gets shared.
+  assert.doesNotMatch(url, /#waitlist/);
+  assert.doesNotMatch(url, /my\.onhomeroom\.com/);
+});
+
+test('a real minted code survives the trip into the link unchanged', async () => {
+  const { pool, state } = fixture();
+  await joinWaitlist(pool, { email: 'a@example.com' });
+  const code = await inviteCodeFor(pool, idOf(state, 'a@example.com'));
+  const url = inviteUrl({ marketingBaseUrl: DEFAULT_MARKETING_BASE_URL }, code);
+  assert.equal(url, `${DEFAULT_MARKETING_BASE_URL}/waitlist?ref=${code}`);
+  // And the code in the URL is the one the join endpoint accepts back.
+  assert.equal(new URL(url).searchParams.get('ref'), code);
+});
+
+test('the marketing origin is configurable, and a trailing slash is not doubled', () => {
+  assert.equal(
+    inviteUrl({ marketingBaseUrl: 'https://example.test' }, 'abc'),
+    'https://example.test/waitlist?ref=abc'
+  );
+  assert.equal(
+    inviteUrl({ marketingBaseUrl: 'https://example.test/' }, 'abc'),
+    'https://example.test/waitlist?ref=abc'
+  );
+  assert.equal(
+    inviteUrl({ marketingBaseUrl: '  https://example.test//  ' }, 'abc'),
+    'https://example.test/waitlist?ref=abc'
+  );
+});
+
+test('an unset marketing origin falls back to the committed default', () => {
+  assert.equal(DEFAULT_MARKETING_BASE_URL, 'https://onhomeroom.com');
+  for (const cfg of [{}, null, { marketingBaseUrl: '' }, { marketingBaseUrl: '   ' }]) {
+    assert.equal(
+      inviteUrl(cfg, 'abc'),
+      'https://onhomeroom.com/waitlist?ref=abc',
+      `fell back wrongly for ${JSON.stringify(cfg)}`
+    );
+  }
+  assert.equal(normalizeBaseUrl(undefined), 'https://onhomeroom.com');
+});
+
+test('a signup with no code yet renders no link, never an empty ref', () => {
+  assert.equal(inviteUrl({ marketingBaseUrl: 'https://onhomeroom.com' }, null), null);
+  assert.equal(inviteUrl({ marketingBaseUrl: 'https://onhomeroom.com' }, ''), null);
+  assert.equal(inviteUrl({ marketingBaseUrl: 'https://onhomeroom.com' }, undefined), null);
+});

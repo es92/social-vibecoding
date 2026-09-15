@@ -43,7 +43,7 @@ const { waitlistIntegratorAuth } = require('../services/waitlist-integrator');
 const waitlist = require('../services/waitlist');
 const questions = require('../services/waitlist-questions');
 const { sendWaitlistJoinMail, sendWaitlistCodeMail } = require('../services/topochain/mailer');
-const { PRODUCTION_ORIGIN } = require('../services/cli-auth-constants');
+const { inviteUrl } = require('../services/marketing-links');
 const { productionHostname } = require('../services/caddy');
 const { loadContributors, shapeContributor } = require('../services/contributors');
 
@@ -253,8 +253,11 @@ function publicApiRoutes(config) {
         // unkeyed request has no forwarded address and is unchanged.
         ip: req.waitlistEndUserIp || clientIp(req),
         answers: stage1.value,
-        // From /#waitlist?ref=<code>. An unresolvable code is ignored
-        // rather than refused — a stale link must never block a join.
+        // From an invite link's ?ref=<code> — the marketing site's
+        // /waitlist page forwards it here, and the in-app /#waitlist route
+        // still reads it from the hash for links minted before the move.
+        // An unresolvable code is ignored rather than refused: a stale
+        // link must never block a join.
         inviteCode: typeof req.body?.invite_code === 'string' ? req.body.invite_code : null,
       });
       if (created) {
@@ -510,8 +513,14 @@ function publicApiRoutes(config) {
           linkedin: config.waitlistFollowLinkedinUrl || null,
           instagram: config.waitlistFollowInstagramUrl || null,
         },
+        // The link points at the marketing site's /waitlist page, not at
+        // this app's #waitlist route: it is shared with people who have
+        // never seen the product, and the shell has nothing to tell them.
+        // The `ref` code is unchanged and still comes back here as
+        // `invite_code` on the join (see the note above), so links minted
+        // before this change keep attributing correctly.
         invite: {
-          url: inviteCode ? `${PRODUCTION_ORIGIN}/#waitlist?ref=${inviteCode}` : null,
+          url: inviteUrl(config, inviteCode),
           count: invited.count,
           emails: invited.emails,
         },

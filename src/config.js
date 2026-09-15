@@ -2,6 +2,10 @@ const crypto = require('crypto');
 const { bech32m } = require('bech32');
 const platformJwt = require('./services/platform-jwt');
 const { PRODUCTION_ORIGIN } = require('./services/cli-auth-constants');
+const {
+  DEFAULT_MARKETING_BASE_URL,
+  normalizeBaseUrl,
+} = require('./services/marketing-links');
 
 const REQUIRED = [
   'DATABASE_URL',
@@ -394,6 +398,16 @@ function load() {
     // Overrides the OAuth redirect_uri origin (staging); defaults to the
     // production origin in production, localhost in dev.
     waitlistOauthOrigin: process.env.WAITLIST_OAUTH_ORIGIN || '',
+    // Origin of the public marketing site, which owns the /waitlist page a
+    // shared invite link now lands on. Deliberately NOT the app's own
+    // origin: the app renders #waitlist for people already inside the
+    // shell, while a link pasted into a group chat should open the page
+    // that explains what this is. Trailing slashes are stripped so the
+    // builder can concatenate a path without doubling the separator.
+    marketingBaseUrl: normalizeBaseUrl(
+      process.env.MARKETING_BASE_URL,
+      DEFAULT_MARKETING_BASE_URL
+    ),
     logLevel: process.env.LOG_LEVEL || 'INFO',
     // Hard cap on non-errored apps per server. Protects against runaway
     // container / DB creation chewing through host resources. Admins bypass
@@ -761,6 +775,7 @@ function load() {
   console.log(`  X_LINK=${(config.xLinkClientId && config.xLinkClientSecret) || (config.waitlistXClientId && config.waitlistXClientSecret) ? '(enabled)' : '(disabled)'}`);
   console.log(`  WAITLIST_CONNECT=github:${config.waitlistGithubClientId && config.waitlistGithubClientSecret ? 'on' : 'off'} x:${config.waitlistXClientId && config.waitlistXClientSecret ? 'on' : 'off'} linkedin:${config.waitlistLinkedinClientId && config.waitlistLinkedinClientSecret ? 'on' : 'off'}`);
   console.log(`  WAITLIST_FOLLOW=x:${config.waitlistFollowXUrl ? 'set' : 'unset'} linkedin:${config.waitlistFollowLinkedinUrl ? 'set' : 'unset'} instagram:${config.waitlistFollowInstagramUrl ? 'set' : 'unset'}`);
+  console.log(`  MARKETING_BASE_URL=${config.marketingBaseUrl}${process.env.MARKETING_BASE_URL ? '' : ' (default)'}`);
   console.log(`  WAITLIST_INTEGRATION_KEYS=${(() => { const n = require('./services/waitlist-integrator').parseIntegrationKeys(config.waitlistIntegrationKeys).length; return n ? `(${n} configured)` : '(not set)'; })()}`);
   console.log(`  LOG_LEVEL=${config.logLevel}`);
   console.log(`  CLI_AUTH=${config.cliAuthEnabled ? config.cliAuthOrigin : '(disabled in staging)'}`);

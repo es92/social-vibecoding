@@ -302,6 +302,11 @@ export function WaitlistScreen() {
    * the OAuth connect round trip puts its status, so it never reaches a
    * server log, ours or a proxy's. Read on show rather than at mount: this
    * screen stays mounted across navigations.
+   *
+   * A link SHARED today lands on the marketing site's /waitlist page
+   * instead (src/services/marketing-links.js), which carries the same code
+   * through to the join endpoint. This keeps working because links minted
+   * before that move point here, and their code must still attribute.
    */
   const inviteRef = useRef<string | null>(null);
 

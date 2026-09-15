@@ -213,7 +213,7 @@ X-Waitlist-Client-IP: <end user address, optional>
 | `email` | string | **yes** | Trimmed and lowercased. Must match `^[^\s@]+@[^\s@]+\.[^\s@]+$` and be at most 255 characters. |
 | `discovery_source` | string | no | One key from `discovery_sources`. An unknown key is a `422`. |
 | `country` | string | no | One key from `countries`, case-insensitive, stored uppercased. An unknown code is a `422`. |
-| `invite_code` | string | no | A 10-character `[a-z0-9]` referral code from another signup's invite link (`/#waitlist?ref=<code>`). An unresolvable code is ignored rather than refused, so a stale link never blocks a join. |
+| `invite_code` | string | no | A 10-character `[a-z0-9]` referral code from another signup's invite link (`<marketing origin>/waitlist?ref=<code>`, and `/#waitlist?ref=<code>` for links minted before the marketing page owned it). An unresolvable code is ignored rather than refused, so a stale link never blocks a join. |
 
 A bare `{"email": "…"}` is a complete, valid signup.
 
@@ -441,7 +441,7 @@ Host: social-vibecoding.usernodelabs.org
     "instagram": null
   },
   "invite": {
-    "url": "https://social-vibecoding.usernodelabs.org/#waitlist?ref=a1b2c3d4e5",
+    "url": "https://onhomeroom.com/waitlist?ref=a1b2c3d4e5",
     "count": 2,
     "emails": ["gr***@example.com", "jo***@example.net"]
   }
@@ -489,6 +489,13 @@ Field by field:
   masked to the first two characters of the local part plus the full
   domain, enough to recognise a friend and never a harvestable list.
   `url` is `null` only when the signup could not be resolved to a code.
+
+  The link points at the public marketing site's `/waitlist` page, whose
+  origin is the `MARKETING_BASE_URL` platform variable (default
+  `https://onhomeroom.com`). It is deliberately not the app's own
+  `#waitlist` route: an invite is shared with people who have never seen
+  the product. The `ref` code is unchanged either way, so a link minted
+  before the move still attributes its joins correctly.
 
 Note that the invite code is minted lazily, on the first full read of
 this route. A signup that never opens the stage-2 form never gets one.
