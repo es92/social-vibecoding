@@ -198,3 +198,51 @@ test('the self-app hash routes dapp.json targets are the ones visuals.js normali
     + 'touched:\n  ' + unroutable.join('\n  '),
   );
 });
+
+test('no declared selector nests :has() inside another :has()', () => {
+  // A selector that does not PARSE is the worst kind of declared check: the
+  // runner reports "element was not found", which reads exactly like a
+  // change that failed to render, so the hunt starts in the product code and
+  // the markup is innocent the whole time. #2241 lost a round to this —
+  //
+  //   #dc-view:has(#dc-session-header:not(:has(#dc-venue-select))…)
+  //
+  // — whose `:not(:has())` puts a second `:has()` inside the first. Selectors
+  // Level 4 forbids that, DIRECTLY or through another functional
+  // pseudo-class, so Chromium throws SyntaxError out of querySelector and the
+  // check can never pass however right the screen is. Verified against
+  // Chromium 141: the same chain matched a document built to satisfy every
+  // link once the nesting was flattened, and threw before.
+  //
+  // The rewrite is always available, because the nesting buys nothing:
+  // `:has()` at the TOP level of a compound is legal, so the negatives move
+  // onto the element they are about and a combinator walks on to the rest
+  // (`#dc-session-header:not(:has(…)) ~ .dc-session-body #dc-input`).
+  //
+  // Pure text scan with a paren matcher rather than a regex: `:has(` spans
+  // nest, and a regex cannot find the end of one.
+  const nested = [];
+  for (const t of declared) {
+    const sel = t.expectSelector;
+    if (!sel) continue;
+    let i = 0;
+    while ((i = sel.indexOf(':has(', i)) !== -1) {
+      let depth = 0;
+      let j = i + 4;
+      for (; j < sel.length; j++) {
+        if (sel[j] === '(') depth += 1;
+        else if (sel[j] === ')') { depth -= 1; if (depth === 0) break; }
+      }
+      if (sel.slice(i + 5, j).includes(':has(')) nested.push(`"${t.name}" (${t.path})\n     ${sel}`);
+      i = j + 1;
+    }
+  }
+
+  assert.deepEqual(
+    [...new Set(nested)], [],
+    'dapp.json declares selectors with :has() inside :has() — invalid CSS, so querySelector '
+    + 'throws and the check reports a missing element on a screen that is fine. Move the '
+    + 'negatives onto the element they describe and reach the rest with a combinator:\n  '
+    + [...new Set(nested)].join('\n  '),
+  );
+});
