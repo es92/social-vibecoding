@@ -147,7 +147,7 @@ function row(over = {}) {
     t_goal: 'Template goal', t_task: 'Template task', t_reward: '250 pts',
     t_cta_label: null, t_cta_link: null,
     t_metric_type: null, t_metric_target: null, t_metric_label: null,
-    t_schedule_start: null, t_schedule_end: null,
+    t_schedule_start: null, t_schedule_end: null, t_illustration: null, t_illustration_tone: null,
     my_activity_count: 0, my_points: 0, my_blocks: null,
     ...over,
   };
@@ -308,6 +308,24 @@ test('buildChallengeRow: no cta_link means no cta, and a missing category is OTH
   const built = buildChallengeRow(row({ t_category: null }));
   assert.equal(built.cta, null);
   assert.equal(built.label, 'OTHER');
+});
+
+test('buildChallengeRow: passes the template\'s illustration slug through, null when it has none', () => {
+  assert.equal(buildChallengeRow(row({ t_illustration: 'block-production' })).illustration, 'block-production');
+  assert.equal(buildChallengeRow(row()).illustration, null);
+  assert.equal(buildChallengeRow(row({ t_illustration: undefined })).illustration, null,
+    'a row without the column still carries the key, so the client sees one shape');
+});
+
+test('buildChallengeRow: carries an uploaded illustration\'s tone, null for a built-in slug or none', () => {
+  const slug = `u-${'d'.repeat(32)}`;
+  const built = buildChallengeRow(row({ t_illustration: slug, t_illustration_tone: 'coral' }));
+  assert.equal(built.illustration, slug);
+  assert.equal(built.illustration_tone, 'coral');
+  assert.equal(buildChallengeRow(row({ t_illustration: 'block-production' })).illustration_tone, null);
+  assert.equal(buildChallengeRow(row()).illustration_tone, null);
+  assert.equal(buildChallengeRow(row({ t_illustration_tone: undefined })).illustration_tone, null,
+    'a row without the column still carries the key');
 });
 
 test('the registry is ordered and carries the challenges panel', () => {
@@ -810,6 +828,28 @@ test('demoChallengesPanel: the few / none variants, and no standings preview', (
 
   // An unknown value falls through to that default rather than erroring.
   assert.equal(demoChallengesPanel({ variant: 'wat' }).challenges.length, 4);
+});
+
+// /?demo=1 is where the card artwork is reviewed (and dapp.json's check looks
+// for it), so the demo rows carry slugs the client registry actually draws —
+// and one of the four collapsed rows carries none, so the kind-icon fallback
+// is on the same screen.
+test('demoChallengesPanel: registry artwork on the rows, with one fallback in the collapsed four', () => {
+  const { demoChallengesPanel } = require('../src/routes/home-panels');
+  const registry = read('frontend/src/lib/challenge-illustrations.ts');
+  const members = new Set([...registry.matchAll(/^\s*'([a-z0-9-]+)': \{ label:/gm)].map((m) => m[1]));
+  assert.ok(members.size >= 9, 'the registry keys parse out of the source');
+
+  const all = demoChallengesPanel({ expanded: true, username: 'tester' }).challenges;
+  for (const c of all) {
+    assert.ok('illustration' in c, `demo row ${c.id} carries the key, like buildChallengeRow`);
+    if (c.illustration !== null) {
+      assert.ok(members.has(c.illustration), `demo row ${c.id}: ${c.illustration} is a registry slug`);
+    }
+  }
+  const collapsed = demoChallengesPanel({ username: 'tester' }).challenges;
+  assert.ok(collapsed.some((c) => c.illustration), 'the collapsed route draws artwork');
+  assert.ok(collapsed.some((c) => c.illustration === null), 'and keeps one fallback in view');
 });
 
 test('the demo variants are staging-only, like ?demo=1 itself', async () => {

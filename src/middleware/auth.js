@@ -96,6 +96,18 @@ const PUBLIC_PATHS = [
   '/sw.js',
   '/manifest.webmanifest',
   '/icons/',
+  // Challenge artwork (public/illustrations/challenges/). The challenge list
+  // it decorates is public (/api/v4/), so the pictures must be too: an image
+  // request answered with a redirect body draws a broken picture instead of
+  // the card fallback. Same public tier as /icons/ above. Static SVG files
+  // only, no data access.
+  '/illustrations/',
+  // Uploaded challenge artwork (routes/topochain/challenge-illustrations.js),
+  // public for the same reason as the directory above: it decorates the same
+  // public challenge cards. The route mounts BEFORE this middleware, so this
+  // entry is belt-and-braces like the report share entry below. Access control
+  // is the unguessable 32-hex id, and the bytes are served under a sandbox CSP.
+  '/challenge-illustrations/',
   // Public report share links (routes/report-snapshots.js). The route is
   // mounted BEFORE this middleware in server.js, so requests normally
   // never get here — this entry is belt-and-braces so the public contract

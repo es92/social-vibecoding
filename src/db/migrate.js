@@ -10984,33 +10984,37 @@ async function seedStagingTopochain(pool, config) {
     );
 
     // ─── Challenge templates (5; one kind is reused across two templates) ──
+    // `illustration` names a drawing from the client registry
+    // (frontend/src/lib/challenge-illustrations.ts). 900502 and 900503 carry
+    // none: nothing in the set shows a share or an invite, and they keep the
+    // kind-icon fallback in view on the seeded screens.
     await pool.query(
       `INSERT INTO challenge_templates
          (id, category, goal, task, reward, description, kind,
-          metric_type, metric_target, metric_label, created_at, updated_at)
+          metric_type, metric_target, metric_label, illustration, created_at, updated_at)
        VALUES
          (900500, 'bug', 'Report a reproducible bug',
           'Find and file a reproducible bug report against the testnet client.',
           '250 points', 'Bug-report challenge template.', 'REPORT_BUG_CHALLENGE',
-          NULL, NULL, NULL, NOW(), NOW()),
+          NULL, NULL, NULL, 'useful-feedback', NOW(), NOW()),
          (900501, 'onchain', 'Send your first testnet transaction',
           'Send a transaction on the testnet within the event window.',
           '100 points', 'Send-transaction challenge template.',
           'SEND_TRANSACTION_CHALLENGE', 'transactions_sent', 1, 'transactions',
-          NOW(), NOW()),
+          'network-participation', NOW(), NOW()),
          (900502, 'social', 'Share the season announcement',
           'Share the season announcement post on social media.',
           '50 points', 'Social-share challenge template.', 'SOCIAL_SHARE_CHALLENGE',
-          NULL, NULL, NULL, NOW(), NOW()),
+          NULL, NULL, NULL, NULL, NOW(), NOW()),
          (900503, 'growth', 'Invite a new participant',
           'Invite a new participant who successfully enrolls in the season.',
           '150 points', 'Invite challenge template.', 'INVITE_PARTICIPANT_CHALLENGE',
-          NULL, NULL, NULL, NOW(), NOW()),
+          NULL, NULL, NULL, NULL, NOW(), NOW()),
          (900504, 'onchain', 'Produce your first block',
           'Produce at least one block during the event window.',
           '250 points', 'Block-production challenge template.',
           'SEND_TRANSACTION_CHALLENGE', 'blocks_produced', 1, 'blocks',
-          NOW(), NOW())
+          'block-production', NOW(), NOW())
        ON CONFLICT (id) DO NOTHING`
     );
 
@@ -11030,22 +11034,44 @@ async function seedStagingTopochain(pool, config) {
     await pool.query(
       `INSERT INTO challenge_templates
          (id, category, goal, task, reward, description, kind,
-          metric_type, metric_target, metric_label, created_at, updated_at)
+          metric_type, metric_target, metric_label, illustration, created_at, updated_at)
        VALUES
          (900505, 'onchain', 'Staging demo challenge — test the demo dApps',
           'Open eight of the demo dApps and leave a note on each.',
           'Up to 2,100 pts', 'Numeric-metric challenge template (home panel fixture).',
-          'SEND_TRANSACTION_CHALLENGE', 'count', 8, 'Apps tested', NOW(), NOW()),
+          'SEND_TRANSACTION_CHALLENGE', 'count', 8, 'Apps tested', 'try-three-apps', NOW(), NOW()),
          (900506, 'social', 'Staging demo challenge — give kudos to five builders',
           'Send kudos on five merged proposals from other builders.',
           '1500', 'Numeric-metric challenge template (bare-number reward fixture).',
-          'SOCIAL_SHARE_CHALLENGE', 'count', 5, 'Kudos', NOW(), NOW()),
+          'SOCIAL_SHARE_CHALLENGE', 'count', 5, 'Kudos', 'proposal-accepted', NOW(), NOW()),
          (900507, 'community', 'Staging demo challenge — vote on five proposals',
           'Cast a vote on five open proposals from other builders.',
           '900 pts', 'Numeric-metric challenge template (completed fixture).',
-          'SOCIAL_SHARE_CHALLENGE', 'count', 5, 'Proposals voted', NOW(), NOW())
+          'SOCIAL_SHARE_CHALLENGE', 'count', 5, 'Proposals voted', 'make-a-proposal', NOW(), NOW())
        ON CONFLICT (id) DO NOTHING`
     );
+
+    // Backfill the artwork on templates seeded before the column existed: the
+    // INSERTs above only land on a database that has none of these ids. This
+    // runs on every staging boot, so it touches only a row still in its seeded
+    // state — no illustration, and updated_at still equal to the created_at the
+    // seed stamped from the same NOW(). An admin save bumps updated_at, so an
+    // organiser's pick AND a deliberate clear to (none), which stores the same
+    // NULL, both survive the reboot. The pairs repeat the INSERTs;
+    // tests/topochain-staging-seed.test.js checks the two lists agree.
+    for (const [id, illustration] of [
+      [900500, 'useful-feedback'],
+      [900501, 'network-participation'],
+      [900504, 'block-production'],
+      [900505, 'try-three-apps'],
+      [900506, 'proposal-accepted'],
+      [900507, 'make-a-proposal'],
+    ]) {
+      await pool.query(
+        'UPDATE challenge_templates SET illustration = $2 WHERE id = $1 AND illustration IS NULL AND updated_at = created_at',
+        [id, illustration]
+      );
+    }
 
     // ─── Challenges (8): 5 on the regular event, 3 on the season-type event ──
     await pool.query(

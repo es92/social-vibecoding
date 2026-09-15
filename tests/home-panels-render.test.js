@@ -626,6 +626,18 @@ test("a row carries the Challenges tab's rail descriptor", () => {
   const row = HP.challengeRowView(challenge({ reward: '1500', icon: ' 🐞 ' }));
   assert.equal(row.reward, '1500 pts', 'the same reward rule as the tab');
   assert.equal(row.icon, '🐞');
+  assert.equal(row.illustration, null, 'no illustration on a row whose template names none');
+  assert.equal(HP.challengeRowView(challenge({ illustration: 'useful-feedback' })).illustration, 'useful-feedback');
+  for (const bad of ['../icons/x', 'Useful-Feedback', '', 7]) {
+    assert.equal(HP.challengeRowView(challenge({ illustration: bad })).illustration, null,
+      `${String(bad)}: the row carries a slug-shaped string or null, as the tab does`);
+  }
+  assert.equal(row.illustrationTone, null, 'no tone on a row whose template names no upload');
+  assert.equal(HP.challengeRowView(challenge({ illustration_tone: 'teal' })).illustrationTone, 'teal');
+  for (const bad of ['Teal', 'home-tone-teal', 'ab', '', 7, null]) {
+    assert.equal(HP.challengeRowView(challenge({ illustration_tone: bad })).illustrationTone, null,
+      `${String(bad)}: the row carries a tone-shaped word or null, as the tab does`);
+  }
   assert.equal(row.task, undefined, 'no task on the row: the card is title and rail only');
   assert.equal(row.tip, undefined, 'and no tooltip field');
   assert.equal(row.label, undefined, 'no category: the tile never shows it');
@@ -679,6 +691,37 @@ test('render: the card shows the kind icon and the title, never the task, the ca
   assert.doesNotMatch(card, /\btitle="/, 'and no tooltip either: a phone has no hover');
   assert.doesNotMatch(html, /<a href=/, 'still no per-challenge Start button');
   assert.doesNotMatch(html, /example\.invalid/);
+});
+
+test('render: a registry illustration takes the kind icon’s place in the tile', () => {
+  const withArt = (illustration) => cardOf(renderWith({
+    registry: [], hidden: [],
+    panels: [panel({ challenges: [challenge({ icon: '🐞', illustration })] })],
+  }).html);
+  const card = withArt('useful-feedback');
+  assert.match(card, /<img src="\/illustrations\/challenges\/useful-feedback\.svg" alt="" draggable="false" class="object-contain"\/>/,
+    'the artwork, from the same-origin static path');
+  assert.match(card, /home-tone-orange bg-\[var\(--tint-art\)\] dark:bg-\[var\(--tint-art\)\]/, 'on its pale tone');
+  assert.doesNotMatch(card, /🐞/, 'in place of the kind icon');
+  for (const slug of [null, 'not-in-the-registry']) {
+    const plain = withArt(slug);
+    assert.match(plain, /<span class="text-\[2\.5rem\] leading-none">🐞<\/span>/, `${slug}: the kind icon stays`);
+    assert.doesNotMatch(plain, /<img/, `${slug}: and no artwork is guessed`);
+  }
+
+  // An admin upload: the path derived from the `u-` slug, on the payload tone,
+  // or gray when the payload has none.
+  const HEX = '00112233445566778899aabbccddeeff';
+  const uploadedCard = (tone) => cardOf(renderWith({
+    registry: [], hidden: [],
+    panels: [panel({ challenges: [challenge({ icon: '🐞', illustration: `u-${HEX}`, illustration_tone: tone })] })],
+  }).html);
+  const onTone = uploadedCard('yellow');
+  assert.ok(onTone.includes(`<img src="/challenge-illustrations/${HEX}" alt="" draggable="false" class="object-contain"/>`),
+    'the upload, from its derived path');
+  assert.match(onTone, /home-tone-yellow bg-\[var\(--tint-art\)\] dark:bg-\[var\(--tint-art\)\]/, 'on the payload tone');
+  assert.doesNotMatch(onTone, /🐞/, 'in place of the kind icon');
+  assert.match(uploadedCard(undefined), /home-tone-gray bg-\[var\(--tint-art\)\]/, 'without a tone, on gray');
 });
 
 test('render: organiser text is escaped in text AND attribute contexts', () => {

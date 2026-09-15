@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchJson, send } from './api.ts';
+import { IllustrationGallery } from './illustration-gallery.tsx';
 import { BTN } from './tokens.ts';
 import {
   EmptyState, ErrorState, Field, FormActions, FormError, FormGrid, FormSection, Input, List,
@@ -16,7 +17,7 @@ import type { Column, PageMeta } from './ui.tsx';
 // ── React-owned (#1120 slice 32) ──────────────────────────────────────
 //
 // Ninth screen through the portal seam, and the longest FORM in the console:
-// twenty fields across four labelled groups. The innerHTML version wrote all
+// twenty-one fields across five labelled groups. The innerHTML version wrote all
 // twenty as `_inputHtml(id, …)` strings and read all twenty back at save time
 // through `val('admin-topo-tpl-f-<name>')` — the id was the only thing tying
 // a control to the payload key it filled, in two places, 300 lines apart. The
@@ -28,6 +29,16 @@ import type { Column, PageMeta } from './ui.tsx';
 // must match an existing id. Do not invent an endpoint for it.
 //
 // Ids are like-for-like — `admin-topo-tpl-*` and every `-f-` field id.
+//
+// The Illustration field is the one whose options are not typed here: it is
+// a gallery (./illustration-gallery.tsx) of the built-ins in
+// frontend/src/lib/challenge-illustrations.ts plus the art admins have
+// uploaded, resolved through the same table the challenge cards use, so an
+// admin can only pick art this build can draw. Its value is still the slug
+// string, so the round trip below does not know it is a gallery. It is
+// template-level by owner decision — a challenge inherits it and has no
+// override, which is why challenge-fields.ts does not list it and the
+// Add-challenge form never copies it.
 
 const topo = () => (window as any).AdminTopochain;
 const canWrite = () => !!topo()?.canWrite();
@@ -48,7 +59,7 @@ type Template = {
 type FieldSpec = {
   key: string;
   label: string;
-  kind: 'text' | 'number' | 'datetime' | 'cta' | 'textarea';
+  kind: 'text' | 'number' | 'datetime' | 'cta' | 'textarea' | 'illustration';
   help?: string;
   req?: boolean;
 };
@@ -65,6 +76,17 @@ const CORE: FieldSpec[] = [
   },
   { key: 'schedule_start', label: 'Schedule start', kind: 'datetime' },
   { key: 'schedule_end', label: 'Schedule end', kind: 'datetime' },
+];
+
+// How the challenge is drawn, for every challenge stamped out of the template.
+const CARD: FieldSpec[] = [
+  {
+    key: 'illustration',
+    label: 'Illustration',
+    kind: 'illustration',
+    help: 'Drawn on the challenge card and detail page. (none) keeps the plain tile. '
+      + 'Archiving uploaded art hides it here; templates that use it keep drawing it.',
+  },
 ];
 
 const CTA: FieldSpec[] = [
@@ -90,7 +112,7 @@ const COPY: FieldSpec[] = [
   { key: 'reward_logic', label: 'Reward logic', kind: 'textarea' },
 ];
 
-const ALL_FIELDS = [...CORE, ...CTA, ...METRIC, ...COPY];
+const ALL_FIELDS = [...CORE, ...CARD, ...CTA, ...METRIC, ...COPY];
 
 const CTA_OPTIONS = [
   { value: 'url', label: 'url' },
@@ -98,6 +120,36 @@ const CTA_OPTIONS = [
 ];
 
 const fieldId = (key: string) => `admin-topo-tpl-f-${key}`;
+
+// The form's values for one stored template, and the POST/PUT body for a
+// filled form: the two halves of the round trip, stated as pure functions so
+// tests/challenge-template-prefill.test.js can check them directly — effects
+// do not run under the static renderer the root suite has.
+function templateFormValues(t: Record<string, unknown>): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const f of ALL_FIELDS) {
+    const raw = t[f.key];
+    next[f.key] = f.kind === 'datetime'
+      ? isoToLocalInput(raw as string | null)
+      : (raw == null ? '' : String(raw));
+  }
+  return next;
+}
+
+// Every key is sent on POST and PUT alike, so an optional field left empty
+// goes out as null — which is also how "(none)" clears a stored illustration.
+function buildTemplateBody(values: Record<string, string>): Record<string, unknown> {
+  const val = (key: string) => (values[key] || '').trim();
+  const body: Record<string, unknown> = {};
+  for (const f of ALL_FIELDS) {
+    const v = val(f.key);
+    if (f.kind === 'datetime') body[f.key] = localInputToIso(v);
+    else if (f.kind === 'number') body[f.key] = v === '' ? null : Number(v);
+    else if (f.req) body[f.key] = v;
+    else body[f.key] = v || null;
+  }
+  return body;
+}
 
 const COLUMNS: Column<Template>[] = [
   { label: 'Goal', primary: true, cell: (t) => t.goal },
@@ -114,8 +166,22 @@ function FormFields({ specs, values, onChange }: {
   return (
     <>
       {specs.map((f) => (
-        <Field key={f.key} label={f.label} htmlFor={fieldId(f.key)} help={f.help}>
-          {f.kind === 'cta' ? (
+        // The gallery spans both columns, and its label names the radio group
+        // through aria-label instead: a <label for> cannot point at a group.
+        <Field
+          key={f.key}
+          label={f.label}
+          htmlFor={f.kind === 'illustration' ? undefined : fieldId(f.key)}
+          help={f.help}
+          className={f.kind === 'illustration' ? 'md:col-span-2' : undefined}
+        >
+          {f.kind === 'illustration' ? (
+            <IllustrationGallery
+              id={fieldId(f.key)}
+              value={values[f.key] || ''}
+              onChange={(value) => onChange(f.key, value)}
+            />
+          ) : f.kind === 'cta' ? (
             <Select
               id={fieldId(f.key)}
               value={values[f.key] || ''}
@@ -150,7 +216,7 @@ function TemplateForm({ id, onClose, onSaved }: {
   useEffect(() => () => { alive.current = false; }, []);
 
   // Edit fetches the single row: the index payload carries four columns and
-  // the form has twenty fields.
+  // the form has twenty-one fields.
   useEffect(() => {
     if (id == null) return;
     (async () => {
@@ -158,16 +224,7 @@ function TemplateForm({ id, onClose, onSaved }: {
         `/api/v4/admin/challenge-templates/${encodeURIComponent(id)}`);
       if (!alive.current) return;
       const t = ok && data?.success ? data.data : null;
-      if (t) {
-        const next: Record<string, string> = {};
-        for (const f of ALL_FIELDS) {
-          const raw = t[f.key];
-          next[f.key] = f.kind === 'datetime'
-            ? isoToLocalInput(raw as string | null)
-            : (raw == null ? '' : String(raw));
-        }
-        setValues(next);
-      }
+      if (t) setValues(templateFormValues(t));
       setLoaded(true);
     })();
   }, [id]);
@@ -179,15 +236,7 @@ function TemplateForm({ id, onClose, onSaved }: {
   const save = useCallback(async () => {
     if (!canWrite()) return;
     setError(null);
-    const val = (key: string) => (values[key] || '').trim();
-    const body: Record<string, unknown> = {};
-    for (const f of ALL_FIELDS) {
-      const v = val(f.key);
-      if (f.kind === 'datetime') body[f.key] = localInputToIso(v);
-      else if (f.kind === 'number') body[f.key] = v === '' ? null : Number(v);
-      else if (f.req) body[f.key] = v;
-      else body[f.key] = v || null;
-    }
+    const body = buildTemplateBody(values);
     if (ALL_FIELDS.some((f) => f.req && !body[f.key])) {
       setError('Category, goal, task and reward are required.');
       return;
@@ -212,6 +261,10 @@ function TemplateForm({ id, onClose, onSaved }: {
         <>
           <FormGrid>
             <FormFields specs={CORE} values={values} onChange={set} />
+          </FormGrid>
+          <FormSection label="Card" />
+          <FormGrid>
+            <FormFields specs={CARD} values={values} onChange={set} />
           </FormGrid>
           <FormSection label="Call to action" />
           <FormGrid>
@@ -418,4 +471,6 @@ function ChallengeTemplatesScreen() {
   );
 }
 
-export { ALL_FIELDS, ChallengeTemplatesScreen };
+export {
+  ALL_FIELDS, ChallengeTemplatesScreen, buildTemplateBody, templateFormValues,
+};

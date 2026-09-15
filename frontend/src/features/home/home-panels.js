@@ -577,6 +577,18 @@ const HomePanels = {
     return !!(c && c.metric && c.progress && c.progress.target != null);
   },
 
+  // The shape of a challenge illustration slug, the Challenges tab
+  // controller's ILLUSTRATION_SLUG. Spelled out rather than imported from
+  // lib/challenge-illustrations.ts: this module runs in the tests' vm with its
+  // imports stripped (tests/helpers/home-modules.js), and a row needs only
+  // the shape — the card resolves the slug (a built-in by membership, an
+  // upload by its `u-` slug).
+  ILLUSTRATION_SLUG: /^[a-z0-9][a-z0-9-]{0,63}$/,
+  // The shape of an uploaded illustration's tone, the controller's
+  // ILLUSTRATION_TONE, spelled out for the same reason; the registry decides
+  // whether it is one of its TONES.
+  ILLUSTRATION_TONE: /^[a-z]{3,10}$/,
+
   // ONE CARD ON BOTH SURFACES. Home's Challenges block draws the Challenges
   // tab's card (features/leaderboard/challenge-card.tsx), so a row carries the
   // descriptor that tab's controller builds: the rail's state, its one short
@@ -626,10 +638,20 @@ const HomePanels = {
       // The event the challenge belongs to, for the card's deep link to its
       // page on the Challenges tab (goToChallenge); null without one.
       eventId: Number.isSafeInteger(eventId) && eventId > 0 ? eventId : null,
-      // The tile's picture, from the challenge's KIND (challenge_kinds.icon —
-      // one setting gives every challenge of a kind the same face). Null on a
-      // kind that has none; the tile is then an empty neutral face.
+      // The kind's icon (challenge_kinds.icon — one setting gives every
+      // challenge of a kind the same face), the tile's fallback when the
+      // template names no illustration the registry resolves or its artwork fails
+      // to load. Null on a kind that has none; with no artwork either, the
+      // tile is then an empty neutral face.
       icon: typeof c.icon === 'string' && c.icon.trim() ? c.icon.trim().slice(0, 8) : null,
+      // The template's illustration, which the tile draws in place of the
+      // icon when the registry resolves it; null without one or when malformed.
+      illustration: typeof c.illustration === 'string' && HomePanels.ILLUSTRATION_SLUG.test(c.illustration)
+        ? c.illustration : null,
+      // An uploaded illustration's tone (null for a built-in, which has its
+      // own); the tile draws an upload on gray without a tone it knows.
+      illustrationTone: typeof c.illustration_tone === 'string' && HomePanels.ILLUSTRATION_TONE.test(c.illustration_tone)
+        ? c.illustration_tone : null,
       goal: String(c.goal || ''),
       done,
       reward: HomePanels.formatReward(c.reward) || null,

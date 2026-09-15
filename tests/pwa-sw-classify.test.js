@@ -157,6 +157,21 @@ test('content-addressed images are cache-first', () => {
   assert.equal(classify('GET', `/visuals/${'b'.repeat(32)}`), 'immutable');
 });
 
+// Challenge artwork is deliberately left to the network. It is decoration: an
+// offline card whose picture fails to load draws its kind icon instead, so
+// caching nine SVGs would buy nothing a reader can tell apart. Pinned so a
+// later broadening of the `shell` rules does not start caching them silently.
+test('challenge illustrations bypass the worker, with no offline copy', () => {
+  assert.equal(classify('GET', '/illustrations/challenges/block-production.svg'), 'bypass');
+  assert.equal(classify('GET', '/illustrations/challenges/block-production.svg', 'image/svg+xml', 'no-cors'),
+    'bypass');
+  // Uploaded artwork too. Its id is immutable, which would suit cache-first, but
+  // it is the same decoration with the same fallback, so it stays on the
+  // network rather than joining the `immutable` app-icon rule.
+  assert.equal(classify('GET', `/challenge-illustrations/${'c'.repeat(32)}`), 'bypass');
+  assert.equal(classify('GET', `/challenge-illustrations/${'c'.repeat(32)}`, 'image/png', 'no-cors'), 'bypass');
+});
+
 // ALL cross-origin traffic is bypassed now: the shell compiles Tailwind into
 // /css/tailwind.css and vendors marked/DOMPurify/qrcodejs under /vendor/, so
 // there is no third-party asset left to cache. The URLs that used to be

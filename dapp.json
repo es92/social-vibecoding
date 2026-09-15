@@ -685,6 +685,11 @@
       "expectText": "See all 7 challenges"
     },
     {
+      "name": "Challenges: a Home card with an illustration draws its artwork (Iteration 03)",
+      "path": "/?demo=1",
+      "expectSelector": "#home-body.home-column #home-challenges-section .home-challenge-card img[src^=\"/illustrations/challenges/\"]"
+    },
+    {
       "name": "Dev board: one composite status pill and a menu trigger per card (card-as-pointer)",
       "path": "/?demo=1&view=kanban&cards=open#app/usernode-2d5619/dev",
       "expectSelector": "#dev-kanban .gc-vote-item .dev-card-meta > .dev-chat-badge, #dev-kanban .gc-vote-item [data-card-menu]",

@@ -70,9 +70,14 @@ test('all 22 topochain tables are declared as CREATE TABLE IF NOT EXISTS', () =>
   }
 });
 
-test('exactly 22 CREATE TABLE statements were added in this block (no accidental duplicates)', () => {
+// The 22 tables above plus `challenge_illustrations`, the art admins upload
+// from the challenge template form's gallery. It is platform content rather
+// than a SPEC §3.4 table, so it is pinned by its own test below instead of
+// joining TABLES, whose entries mirror the db tools' allowlist and all carry
+// the surrogate keys checked further down.
+test('exactly 23 CREATE TABLE statements in this block: the 22 above plus challenge_illustrations', () => {
   const matches = block.match(/CREATE TABLE IF NOT EXISTS/g) || [];
-  assert.equal(matches.length, 22);
+  assert.equal(matches.length, 23);
 });
 
 // ─── Dependency order (FK targets declared before their referencing table) ──
@@ -146,6 +151,44 @@ test('challenge_templates and challenges both FK `kind` to challenge_kinds', () 
   assert.match(challenges, /kind\s+VARCHAR\(100\) REFERENCES challenge_kinds\(id\)/);
   assert.match(challenges, /season_event_id\s+BIGINT NOT NULL REFERENCES season_events\(id\) ON DELETE CASCADE/);
   assert.match(templates, /metric_target\s+NUMERIC\(20,4\)/);
+});
+
+// The artwork slug is TEMPLATE-level only. CREATE TABLE IF NOT EXISTS is a
+// no-op on a database that already has the table, so the column needs both
+// halves: the declaration for a fresh database, and the idempotent ALTER for
+// every database migrated before it (migrate.js replays this file each boot).
+// tableText() stops at the table's own `);`, so the ALTER is pinned against the
+// whole block.
+test('challenge_templates.illustration reaches fresh AND existing databases', () => {
+  assert.match(tableText('challenge_templates'), /\billustration\s+VARCHAR\(64\)\n\);/,
+    'declared as the last column, nullable, sized for a slug');
+  assert.match(block,
+    /^ALTER TABLE challenge_templates ADD COLUMN IF NOT EXISTS illustration VARCHAR\(64\);$/m);
+  assert.doesNotMatch(tableText('challenges'), /\billustration\b/,
+    'a challenge has no artwork of its own; it shows its template\'s');
+});
+
+// Uploaded challenge artwork. A template names a row by slug (`u-` plus the
+// id) in the same `illustration` column, so there is deliberately no foreign
+// key in either direction: a missing row draws the kind icon, like a built-in
+// slug from another build, and archiving rather than deleting is what keeps a
+// named row available. The id doubles as the public file id, hence 32 hex
+// characters rather than a BIGSERIAL.
+test('challenge_illustrations: declared after the template illustration column, keyed by its file id', () => {
+  const t = tableText('challenge_illustrations');
+  assert.match(t, /\bid\s+VARCHAR\(32\) PRIMARY KEY/, 'the random 32-hex file id');
+  assert.match(t, /\bslug\s+VARCHAR\(64\) NOT NULL UNIQUE/, 'sized like challenge_templates.illustration');
+  assert.match(t, /\blabel\s+VARCHAR\(80\) NOT NULL/);
+  assert.match(t, /\btone\s+VARCHAR\(16\) NOT NULL/);
+  assert.match(t, /\bcontent_type\s+TEXT NOT NULL/);
+  assert.match(t, /\bdata\s+BYTEA NOT NULL/);
+  assert.match(t, /\barchived\s+BOOLEAN NOT NULL DEFAULT FALSE/, 'archive, never delete');
+  assert.match(t, /\bcreated_by\s+INTEGER REFERENCES users\(id\) ON DELETE SET NULL/);
+  assert.match(t, /\bcreated_at\s+TIMESTAMPTZ NOT NULL DEFAULT NOW\(\)/);
+  assert.doesNotMatch(t, /REFERENCES challenge_templates/);
+  assert.doesNotMatch(tableText('challenge_templates'), /REFERENCES challenge_illustrations/);
+  assert.ok(block.indexOf('CREATE TABLE IF NOT EXISTS challenge_illustrations (')
+    > block.indexOf('ALTER TABLE challenge_templates ADD COLUMN IF NOT EXISTS illustration VARCHAR(64);'));
 });
 
 test('challenges.challenge_template_id has no ON DELETE action (RESTRICT/NO ACTION), per SPEC §D4', () => {

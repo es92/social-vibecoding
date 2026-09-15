@@ -60,10 +60,12 @@
 // Every class below is a complete literal: Tailwind's extractor is a regex
 // over source text, so a computed class name never compiles.
 
+import { useState } from 'react';
 import type { HTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 
 import { IconTile } from '@/components/ui/icon-tile';
 import { CheckIcon } from '@/components/ui/icons';
+import { resolveIllustration } from '../../lib/challenge-illustrations';
 
 export type ChallengeState = 'new' | 'progress' | 'done';
 
@@ -97,6 +99,12 @@ const META_DEADLINE = 'shrink-0 text-zinc-500 dark:text-zinc-400';
 const META_DOT = 'shrink-0 text-zinc-400 dark:text-zinc-500';
 const META_REWARD = 'min-w-0 truncate font-medium text-amber-800 dark:text-amber-300';
 const META_EARNED = 'min-w-0 truncate font-medium text-emerald-700 dark:text-emerald-400';
+// The artwork's face: whatever `--tint-art` the registry's tone class sets.
+// The `dark:` twin is not a second colour — the tone class already switches
+// the property in dark mode — it is what displaces IconTile's own
+// `dark:bg-zinc-800`, because tailwind-merge replaces a class only within its
+// variant.
+const TILE_ART = 'bg-[var(--tint-art)] dark:bg-[var(--tint-art)]';
 
 
 // The three state marks. The board draws an empty ring, a dashed ring and a
@@ -175,12 +183,43 @@ export function ChallengeMeta({ deadline = null, text = null, earned = false, si
   );
 }
 
-// The 5rem artwork tile, a neutral face holding the challenge kind's icon when
-// the payload carries one (Home's does, from `challenge_kinds.icon`) and empty
-// otherwise, until per-challenge illustrations land. It never holds the
-// category: headings name it, and a category word in an 80px square was the
-// "ONBOARDIN / G" break on both surfaces.
-export function ChallengeTile({ icon = null }: { icon?: string | null }): ReactNode {
+// The 5rem artwork tile. A challenge whose template names an illustration
+// the registry resolves (../../lib/challenge-illustrations.ts: a built-in by
+// MEMBERSHIP, or an admin upload by its `u-` slug) draws that artwork on its
+// pale harmonic tone. A built-in brings its own tone; an upload's is
+// `illustrationTone` from the payload, which the registry honours only when it
+// is one of its TONES and otherwise draws on gray. The same file serves both
+// themes, on the tone's dark surface; there is no dark copy.
+//
+// An upload need not be square, so the image is `object-contain`: a wide or
+// tall one fits inside the 64px art box on its tone rather than stretching.
+//
+// Anything else is the tile as it was: a neutral face holding the challenge
+// kind's icon when the payload carries one (both surfaces do, from
+// `challenge_kinds.icon`) and empty otherwise. That includes artwork that
+// fails to load. The service worker leaves both image paths to the network, so
+// offline the image errors, and the error puts back the tile it replaced
+// rather than a broken-image glyph on a tone. It is component state, not a
+// write to the node: the card is a React island.
+//
+// It never holds the category: headings name it, and a category word in an
+// 80px square was the "ONBOARDIN / G" break on both surfaces.
+export function ChallengeTile({ icon = null, illustration = null, illustrationTone = null }: {
+  icon?: string | null;
+  illustration?: string | null;
+  illustrationTone?: string | null;
+}): ReactNode {
+  const art = resolveIllustration(illustration, illustrationTone);
+  // Keyed by the file rather than a flag, so a tile handed a different
+  // illustration tries that one instead of inheriting the last failure.
+  const [failed, setFailed] = useState<string | null>(null);
+  if (art && failed !== art.src) {
+    return (
+      <IconTile size="xl" aria-hidden="true" className={`${art.toneClass} ${TILE_ART}`}>
+        <img src={art.src} alt="" draggable={false} className="object-contain" onError={() => setFailed(art.src)} />
+      </IconTile>
+    );
+  }
   return (
     <IconTile size="xl" aria-hidden="true">
       {icon ? <span className="text-[2.5rem] leading-none">{icon}</span> : null}
@@ -192,6 +231,10 @@ export type ChallengeCardView = {
   goal: string;
   reward: string | null;
   icon?: string | null;
+  /** The template's illustration slug; the tile draws it when the registry resolves it. */
+  illustration?: string | null;
+  /** An uploaded illustration's tone (shape-checked); built-ins ignore it. */
+  illustrationTone?: string | null;
   state: ChallengeState;
   stateLabel: string;
   fill: number | null;
@@ -246,7 +289,7 @@ export function ChallengeCard({ view, className, onClick, onKeyDown, ...rest }: 
     : { onKeyDown };
   return (
     <div className={className ? `${className} ${CARD}` : CARD} {...pressable} {...rest}>
-      <ChallengeTile icon={view.icon} />
+      <ChallengeTile icon={view.icon} illustration={view.illustration} illustrationTone={view.illustrationTone} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="min-w-0">
           <div className={TITLE}>{view.goal}</div>

@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils';
  * the 44px tap target and where an 11-unit tile would leave no air: the
  * Improve panel's App / Board / Activity rows. `2xs` is 1.5rem, for a tile
  * inside a single-line header rather than a row. `xl` is the 5rem artwork
- * tile on the Challenges tab's card (features/leaderboard/challenge-card.tsx),
- * the first caller outside Home and chrome: it holds a 4rem illustration, and
- * stays an empty neutral face while a challenge has none.
+ * tile on the shared challenge card (features/leaderboard/challenge-card.tsx),
+ * which the Challenges tab and Home both draw: it holds a 4rem illustration,
+ * else the challenge kind's emoji, else nothing.
  *
  * ── There is ONE face, and it is neutral ──────────────────────────────
  *
@@ -30,6 +30,15 @@ import { cn } from '@/lib/utils';
  * That is also why there is no `data-tint` and no slug hash any more. The
  * class strings below stay COMPLETE literals: Tailwind's extractor is a regex
  * over source text, so a computed class name is one that never compiles.
+ *
+ * A challenge illustration is the one tile that is not on this face, and the
+ * difference is not a tint of the tile's. The artwork is drawn for a pale
+ * harmonic ground, so its tone comes WITH it — named per artwork in
+ * frontend/src/lib/challenge-illustrations.ts, never derived from the caller —
+ * and the challenge card hands the tone class and a `--tint-art` background in
+ * through `className`, where `cn` (tailwind-merge) displaces the neutral one.
+ * No variant here knows about it, and the neutral face stays the default for
+ * every other tile, that card's included when it has no artwork.
  */
 
 const tile = cva('flex shrink-0 items-center justify-center', {

@@ -140,6 +140,15 @@ function buildChallengeRow(r) {
     season_event_id: r.season_event_id == null ? null : Number(r.season_event_id),
     label: String(r.t_category || 'OTHER').toUpperCase(),
     icon: r.kind_icon || null,
+    // The template's artwork slug (t_illustration), passed through as stored.
+    // Not part of the `eff` merge: a challenge row has no illustration of its
+    // own. Whether the slug actually draws is the client registry's call; the
+    // card falls back to `icon` when it does not.
+    illustration: r.t_illustration || null,
+    // The tone of an UPLOADED illustration (TEMPLATE_JOIN_COLUMNS_SQL's
+    // t_illustration_tone), null otherwise. The client only honours it for an
+    // uploaded slug and only when it is one of its twelve tones.
+    illustration_tone: r.t_illustration_tone || null,
     goal: eff('goal'),
     task: eff('task'),
     reward: eff('reward'),
@@ -421,6 +430,7 @@ function demoChallengesPanel(opts) {
       label: 'ONCHAIN',
       goal: 'Staging demo challenge — test the demo dApps',
       icon: '🧪',
+      illustration: 'try-three-apps',
       task: 'Open eight of the demo dApps and leave a note on each.',
       reward: 'Up to 2,100 pts',
       cta: { label: 'Get Started', link: 'https://example.invalid/staging-demo' },
@@ -434,6 +444,7 @@ function demoChallengesPanel(opts) {
       label: 'BUG',
       goal: 'Staging demo challenge — report a reproducible bug',
       icon: '🐞',
+      illustration: 'useful-feedback',
       task: 'Find and file a reproducible bug report against the testnet client.',
       reward: '250 points',
       cta: null,
@@ -452,6 +463,9 @@ function demoChallengesPanel(opts) {
       label: 'SOCIAL',
       goal: 'Staging demo challenge — share the season announcement',
       icon: '📣',
+      // No artwork on purpose: one of the four collapsed rows keeps the
+      // kind emoji, so the fallback is on screen beside the pictures.
+      illustration: null,
       task: 'Share the season announcement post on social media.',
       reward: '50 points',
       cta: null,
@@ -464,6 +478,7 @@ function demoChallengesPanel(opts) {
       label: 'COMMUNITY',
       goal: 'Staging demo challenge — vote on five proposals',
       icon: '🗳️',
+      illustration: 'make-a-proposal',
       task: 'Cast a vote on five open proposals from other builders.',
       reward: '900 pts',
       cta: null,
@@ -481,6 +496,7 @@ function demoChallengesPanel(opts) {
       label: 'COMMUNITY',
       goal: 'Staging demo challenge — give kudos to five builders',
       icon: '👏',
+      illustration: 'proposal-accepted',
       task: 'Send kudos on five merged proposals from other builders.',
       reward: '1500',
       cta: null,
@@ -499,6 +515,7 @@ function demoChallengesPanel(opts) {
       label: 'FLASH',
       goal: 'Staging demo challenge — closed: live feedback session',
       icon: '🎧',
+      illustration: 'useful-feedback',
       task: 'Joined the live feedback call and left notes.',
       reward: '500 points',
       cta: null,
@@ -512,6 +529,7 @@ function demoChallengesPanel(opts) {
       label: 'TECHNICAL',
       goal: 'Staging demo challenge — closed: stress load round',
       icon: '🏋️',
+      illustration: 'network-participation',
       task: 'The stress-load round has finished.',
       reward: 'Up to 500 pts',
       cta: null,

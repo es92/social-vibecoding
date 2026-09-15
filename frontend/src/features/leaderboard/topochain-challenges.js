@@ -188,6 +188,30 @@ const TopochainChallenges = {
     return typeof url === 'string' && /^https?:\/\//i.test(url) ? url : null;
   },
 
+  // The challenge template's illustration, as the card and the page are
+  // handed it: a slug of the registry's SHAPE, else null. This file cannot
+  // import frontend/src/lib/challenge-illustrations.ts — it stays an
+  // import-free classic script (see tests/challenge-deep-link.test.js) — so it
+  // checks only the shape the server already checks, and the components
+  // resolve it (a built-in by MEMBERSHIP, an admin upload by its `u-` slug).
+  // Nothing here builds a path from it.
+  ILLUSTRATION_SLUG: /^[a-z0-9][a-z0-9-]{0,63}$/,
+  _illustrationOf(cp) {
+    const slug = cp && cp.illustration;
+    return typeof slug === 'string' && TopochainChallenges.ILLUSTRATION_SLUG.test(slug) ? slug : null;
+  },
+
+  // An uploaded illustration's tone, which the server sends beside the slug
+  // (null for a built-in, which carries its own). Again only its SHAPE: a
+  // lowercase word of the length a tone name has. The registry decides
+  // whether it is one of its TONES and draws an unknown one on gray, so a
+  // tone added there needs no change here.
+  ILLUSTRATION_TONE: /^[a-z]{3,10}$/,
+  _illustrationToneOf(cp) {
+    const tone = cp && cp.illustration_tone;
+    return typeof tone === 'string' && TopochainChallenges.ILLUSTRATION_TONE.test(tone) ? tone : null;
+  },
+
   async fetchJson(url) {
     try {
       const res = await fetch(url);
@@ -506,6 +530,8 @@ const TopochainChallenges = {
       // screen used to get — the payload simply never carried one.
       icon: str(cp.icon || '').trim().slice(0, 8) || null,
       reward: TopochainChallenges.formatReward(cp.reward),
+      illustration: TopochainChallenges._illustrationOf(cp),
+      illustrationTone: TopochainChallenges._illustrationToneOf(cp),
       ...TopochainChallenges._stateOf(c),
       deadline: TopochainChallenges._isDone(c) || !TopochainChallenges._isOpen(c)
         ? null : TopochainChallenges._deadlineOf(c),
@@ -1057,6 +1083,9 @@ const TopochainChallenges = {
       // is where the task is read; before ITERATION 03 the card showed it and
       // the overlay never needed it.
       task: cp.task ? str(cp.task) : null,
+      // The same artwork as the card's tile, for the page's well under the task.
+      illustration: TopochainChallenges._illustrationOf(cp),
+      illustrationTone: TopochainChallenges._illustrationToneOf(cp),
       state: rail.state,
       stateLabel: rail.stateLabel,
       fill: rail.fill,

@@ -13,6 +13,7 @@ const {
 const { authMiddleware } = require('./src/middleware/auth');
 const { authRoutes } = require('./src/routes/auth');
 const { illustrationRoutes, illustrationImageRoutes } = require('./src/routes/app-illustrations');
+const { challengeIllustrationImageRoutes } = require('./src/routes/topochain/challenge-illustrations');
 const { appRoutes } = require('./src/routes/apps');
 const { chatRoutes } = require('./src/routes/chat');
 const { conversationRoutes } = require('./src/routes/conversations');
@@ -488,6 +489,11 @@ app.use(issueImageRoutes(config));
 // is published to other users by design.
 app.use(avatarRoutes(config));
 app.use(illustrationImageRoutes(config));
+// Uploaded challenge artwork, public for the same reason: challenge cards draw
+// it with plain <img> tags for anonymous viewers too. Access control is the
+// unguessable 32-hex id; the admin list/upload/archive routes live in
+// topochainAdminRoutes behind the admin gates.
+app.use(challengeIllustrationImageRoutes(config));
 
 // Publicly shared locked report snapshots (report-lock-share). Mounted
 // before authMiddleware like visuals: access control is the unguessable

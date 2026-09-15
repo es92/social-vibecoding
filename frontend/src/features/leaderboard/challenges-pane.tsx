@@ -43,9 +43,10 @@
 // here (tests/shell-build.test.js rejects it: adjacent text children are
 // React #418 in a hydrating tree).
 
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { resolveIllustration } from '../../lib/challenge-illustrations';
 import { useIsomorphicLayoutEffect } from '../../lib/legacy-dom';
 import { useStoreState } from '../../lib/use-store-state';
 import { ChallengeCard, ChallengeMeta, ProgressRail } from './challenge-card';
@@ -82,6 +83,12 @@ type CardView = {
   goal: string;
   reward: string | null;
   icon?: string | null;
+  // The template's illustration slug, shape-checked by the controller; the
+  // card's tile resolves it against the registry.
+  illustration: string | null;
+  // An uploaded illustration's tone, shape-checked the same way; the registry
+  // honours it only when it is one of its TONES.
+  illustrationTone: string | null;
   // From TopochainChallenges._stateOf: the rail's state, its one short line,
   // its fill (null = indeterminate), whether it is counted (a bar, from zero),
   // and "Earned N pts" on a finished challenge the viewer scored on.
@@ -117,6 +124,10 @@ type DetailView = {
   eyebrow: string | null;
   goal: string;
   task: string | null;
+  // The template's illustration slug and an upload's tone, for the artwork
+  // well (see DetailPage).
+  illustration: string | null;
+  illustrationTone: string | null;
   deadline: string | null;
   amount: { text: string; earned: boolean } | null;
   state: ChallengeState;
@@ -180,6 +191,9 @@ const PAGE_BODY = 'flex flex-col gap-3.5 pb-8';
 const EYEBROW = 'min-w-0 truncate text-[0.8125rem] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400';
 const PAGE_TITLE = 'text-[1.625rem] font-semibold leading-tight tracking-tight text-balance text-zinc-900 dark:text-zinc-100';
 const PROSE = 'text-sm text-zinc-600 dark:text-zinc-400';
+// The artwork well: the registry's tone class sets `--tint-art` for both
+// themes, so the one background reads it in either.
+const WELL = 'flex h-56 w-full items-center justify-center rounded-2xl bg-[var(--tint-art)]';
 const SECTION_HEADING = 'text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100';
 const CTA_LINK = 'flex h-12 w-full items-center justify-center rounded-[0.875rem] bg-violet-600 px-4 '
   + 'text-[0.9375rem] font-semibold text-white transition-colors hover:bg-violet-500';
@@ -332,14 +346,33 @@ function PageSection({ heading, children }: { heading: string; children: string 
   );
 }
 
+// The artwork well, drawn ONLY for a slug the registry resolves
+// (../../lib/challenge-illustrations.ts): the same artwork as the card's
+// tile, larger, on the same pale tone, which for an upload is the payload's
+// `tone` (gray when it is not one the registry knows). Anything else is no
+// well at all rather than an empty one — a 224px block with nothing in it
+// would be the tallest thing on the page — and so is artwork that fails to
+// load, which is the offline case: the service worker leaves both image paths
+// to the network. Dropping it is state, not a write to the node, because the
+// page is React's. The image is `object-contain` so a non-square upload fits
+// the 192px box instead of stretching.
+function ArtworkWell({ slug, tone }: { slug: string | null; tone: string | null }): ReactNode {
+  const art = resolveIllustration(slug, tone);
+  const [failed, setFailed] = useState<string | null>(null);
+  if (!art || failed === art.src) return null;
+  return (
+    <div className={`${art.toneClass} ${WELL}`}>
+      <img src={art.src} alt="" draggable={false} className="h-48 w-48 object-contain" onError={() => setFailed(art.src)} />
+    </div>
+  );
+}
+
 // The board's order, below the platform header that carries the way back and
 // the name: the category, the title with the card's meta line ("3d left · 720
-// pts so far") and the task, the clean rail,
+// pts so far") and the task, the artwork well, the clean rail,
 // the action, then the reading — description,
 // Requirements, Scoring — and Participants under a rule. The board's
-// "Next: …" hint under the action is deliberately absent (owner decision),
-// and so is its artwork well until challenges carry illustrations: an empty
-// 224px block would be the tallest thing on the page.
+// "Next: …" hint under the action is deliberately absent (owner decision).
 export function DetailPage({ view }: { view: DetailView }): ReactNode {
   return (
     <>
@@ -354,6 +387,7 @@ export function DetailPage({ view }: { view: DetailView }): ReactNode {
         />
         {view.task ? <p className={PROSE}>{view.task}</p> : null}
       </div>
+      <ArtworkWell slug={view.illustration} tone={view.illustrationTone} />
       <ProgressRail
         size="lg"
         state={view.state}

@@ -50,6 +50,15 @@ function formatTemplate(row) {
     metric_type: row.metric_type,
     metric_target: num(row.metric_target),
     metric_label: row.metric_label,
+    // A built-in or uploaded illustration slug, or null. `?? null` because a row read before the
+    // column existed (or a caller that selects an explicit list) has no key.
+    illustration: row.illustration ?? null,
+    // The tone of an UPLOADED illustration (challenge_illustrations.tone),
+    // selected beside the row by D4's own GETs or by the joined fragment below
+    // (t_illustration_tone). Null for a built-in slug, whose tone lives in the
+    // client registry, for no illustration, and for a query that did not
+    // select it.
+    illustration_tone: row.illustration_tone ?? null,
   };
 }
 
@@ -68,7 +77,9 @@ const TEMPLATE_JOIN_COLUMNS_SQL = `
                 ct.cta_type AS t_cta_type, ct.mobile_cta_type AS t_mobile_cta_type,
                 ct.mobile_cta_label AS t_mobile_cta_label, ct.mobile_cta_link AS t_mobile_cta_link,
                 ct.metric_type AS t_metric_type, ct.metric_target AS t_metric_target,
-                ct.metric_label AS t_metric_label`.trim();
+                ct.metric_label AS t_metric_label, ct.illustration AS t_illustration,
+                (SELECT ci.tone FROM challenge_illustrations ci
+                  WHERE ci.slug = ct.illustration) AS t_illustration_tone`.trim();
 
 // `r` is one joined row (`t_*` aliases present) -> the same shape
 // `formatTemplate` returns, without a second DB round trip.
@@ -97,6 +108,8 @@ function templateProjectionFromJoinedRow(r) {
     metric_type: r.t_metric_type,
     metric_target: r.t_metric_target,
     metric_label: r.t_metric_label,
+    illustration: r.t_illustration,
+    illustration_tone: r.t_illustration_tone,
   });
 }
 
@@ -172,6 +185,14 @@ function buildChallengeListItem(r) {
       // Challenges screen drew an empty tile for every card. Callers that do
       // not select `kind_icon` (the admin index routes) simply get null.
       icon: r.kind_icon || null,
+      // The TEMPLATE's artwork slug, never overridden: a challenge row has no
+      // illustration of its own, so it is not in OVERRIDE_KEYS. Null when the
+      // template has none, and when the challenge has no template at all.
+      illustration: r.t_illustration ?? null,
+      // An uploaded illustration's tone, from the same template. The client
+      // honours it only for an uploaded slug and only when it is one of its
+      // twelve tones; a built-in slug keeps the tone its registry gives it.
+      illustration_tone: r.t_illustration_tone ?? null,
     },
     detail_modal: {
       description: effective.description,

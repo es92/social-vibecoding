@@ -28,6 +28,7 @@ const { seasonEventsAdminRoutes } = require('./admin/season-events');
 const { usersAdminRoutes } = require('./admin/users');
 const { userActivitiesAdminRoutes } = require('./admin/user-activities');
 const { challengeTemplatesAdminRoutes } = require('./admin/challenge-templates');
+const { challengeIllustrationsAdminRoutes } = require('./challenge-illustrations');
 const { onchainAccountsAdminRoutes } = require('./admin/onchain-accounts');
 const { challengesAdminRoutes } = require('./admin/challenges');
 const { appVersionConfigsAdminRoutes } = require('./admin/app-version-configs');
@@ -121,6 +122,11 @@ function topochainAdminRoutes(config) {
   // `/season-events/:id` (2 segments), so Express can never confuse one
   // for the other regardless of mount order.
   router.use(challengeTemplatesAdminRoutes(config));
+  // The template form's illustration gallery: list, upload, archive. Its
+  // `/challenge-illustrations` path is unused by every other admin group. The
+  // module sits beside ./admin/ rather than in it because it also exports the
+  // PUBLIC image route server.js mounts before authMiddleware.
+  router.use(challengeIllustrationsAdminRoutes(config));
   router.use(onchainAccountsAdminRoutes(config));
   router.use(challengesAdminRoutes(config));
   router.use(appVersionConfigsAdminRoutes(config));

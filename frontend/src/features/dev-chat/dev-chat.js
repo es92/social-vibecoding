@@ -6228,7 +6228,7 @@ const DevChat = {
   async promotePR() {
     const session = DevChat.currentSession;
     if (!session || AppView.changeSubmissionState(session).kind !== 'ready') return;
-    return AppView.runChangeAction(session.id, 'promote');
+    return AppView.runChangeAction(session.id, 'promote', session);
   },
 
   // Append a live agent-suggested platform-report card to the timeline.
