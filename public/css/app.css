@@ -13238,6 +13238,31 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
       - var(--ws-gap)
     );
   }
+  /* NOTHING PINS UP HERE. The tab strip is in flow at the head of the column
+     from this breakpoint, and the ear hangs off the pane's top-right corner,
+     so both scroll away with the page — and a head that stayed pinned left
+     the search box and the "+" floating over the list with the tabs they
+     belong to gone from the screen. The three are one control surface; they
+     scroll together.
+
+     SCOPED BY `#dev-workshop`, and that is the load-bearing part. The base
+     rule is `.dev-ws-pane-head { position: sticky }` six hundred lines BELOW
+     this block, and on equal specificity the later rule wins — so an override
+     written as a bare class here would silently lose. The id makes
+     specificity, not source order, decide it. (A second `@media
+     (min-width: 700px)` block after the base rule would also work and is
+     wrong: the test over this block reads the FIRST match only, so rules in a
+     second one go unchecked.)
+
+     `relative` rather than `static`, so `z-index: 20` still applies — the
+     pane's outline pseudo-elements are positioned, and against a static head
+     they would paint over its fill instead of under it.
+
+     The frost stays. It no longer does the job its own note describes, since
+     rows no longer pass beneath a pinned head, but head and body carry the
+     SAME fill over the same backdrop and that is what makes them one colour
+     by construction. */
+  #dev-workshop .dev-ws-pane-head { position: relative; top: auto; }
   .dev-ws-tabs {
     order: 0;
     /* RELATIVE, NOT STATIC. There is nothing to stick to at the head of a
@@ -13906,7 +13931,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 
 /* The pane's title, above the tabs. Indented to the same 4px the sort row
    and the tab strip sit at, so the head reads as one column. */
-.dev-ws-pane-eyebrow { padding: 2px 4px 0; }
 /* `space-between` with the eyebrow gone leaves the chips alone at the START
    of the row, which is where they belong: on a healthy board there is no
    grouping state to report and the row is just the sort control. */

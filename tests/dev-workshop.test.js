@@ -2297,11 +2297,13 @@ test('the grouping is a two-tab control, and category is what an untouched Works
   assert.ok(html.includes('dev-ws-themes'), 'the theme list still renders');
   assert.ok(html.includes('dev-ws-sort-opts'), 'and its sort chips');
 
-  // The pane says what it holds, above the tabs. Everything above this point
-  // on the lander is a selection — your work, what needs you, what moved —
-  // and the tabs alone named the CHOICE without naming what the choice is
-  // being made about.
-  assert.match(html, /class="dev-ws-eyebrow dev-ws-pane-eyebrow">All items<\/span><div class="dev-ws-group"/);
+  // NO TITLE LINE IN THE HEAD. It used to open with an "All items" eyebrow,
+  // on the argument that the tabs named the CHOICE without naming what the
+  // choice was being made about. The selected TAB says it — it is the thing
+  // reading "All items", one line above — so the eyebrow was the same word
+  // twice and the head leads with the tools now.
+  assert.ok(!html.includes('dev-ws-pane-eyebrow'), 'the eyebrow is gone');
+  assert.ok(!/\.dev-ws-pane-eyebrow/.test(CSS), 'and so is the rule that styled it');
   // THIS RENDER IS THE NARROW ONE. The suite renders in node, where there is
   // no `matchMedia`, so `matchesQuery` answers false and the strip is in the
   // pane head — which is what the two assertions below describe. The wide
@@ -2319,8 +2321,11 @@ test('the grouping is a two-tab control, and category is what an untouched Works
     dapp.tests.some((t) => /\[data-ws-ear\] > \.dev-ws-group/.test(t.expectSelector || '')),
     'one names the ear',
   );
+  // The head it left, and `:first-child` is the stronger claim now that the
+  // eyebrow is gone: the tools LEAD the head, with neither the strip nor a
+  // title line before them.
   assert.ok(
-    dapp.tests.some((t) => /pane-head:not\(:has\(> \.dev-ws-group\)\) > \.dev-ws-pane-eyebrow \+ #dev-actions/
+    dapp.tests.some((t) => /pane-head:not\(:has\(> \.dev-ws-group\)\) > #dev-actions:first-child/
       .test(t.expectSelector || '')),
     'and one names the head it left',
   );

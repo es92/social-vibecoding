@@ -2874,12 +2874,12 @@ export function DevWorkshop(): ReactNode {
               with the switch also gives the head a title bar — the two-state
               choice, then the tools for whichever state you picked. */}
           <div className="dev-ws-pane-head">
-          {/* The pane's own title. Everything above this point is a selection
-              — your work, what needs you, what moved — and this is the whole
-              board, however you choose to read it. Without the line the tabs
-              were the first thing in the pane and named only the CHOICE,
-              leaving what the choice was being made about unsaid. */}
-          <span className="dev-ws-eyebrow dev-ws-pane-eyebrow">All items</span>
+          {/* NO TITLE LINE HERE. The head used to open with an "All items"
+              eyebrow, on the argument that the tabs named the CHOICE without
+              naming what the choice was being made about. The selected TAB
+              says it — it is the thing reading "All items", right above this
+              — so the eyebrow was the same word twice, one line apart, and
+              the head now leads with the tools. */}
           {/* The strip's narrow home. Above the breakpoint it is in the ear
               instead — one node, two places. */}
           {earUp ? null : <GroupStrip group={group} />}

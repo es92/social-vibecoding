@@ -2176,7 +2176,7 @@
     {
       "name": "...and the pane head leads with the tools, the strip having left it",
       "path": "/?demo=1&ws=all#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-body #dev-workshop [data-ws-pane] > .dev-ws-pane-head:not(:has(> .dev-ws-group)) > .dev-ws-pane-eyebrow + #dev-actions"
+      "expectSelector": "#dev-body #dev-workshop [data-ws-pane] > .dev-ws-pane-head:not(:has(> .dev-ws-group)) > #dev-actions:first-child"
     },
     {
       "name": "The ear is the pane's own child, so it tracks the pane's right edge on By stage too",
