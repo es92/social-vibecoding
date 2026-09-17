@@ -2193,7 +2193,10 @@ const EAR_GAP_PX = 10;
  * stale one left on the host would be inherited by the next crossing, which
  * is why this is a list rather than four remove calls written out.
  */
-const EAR_PROPS = ['--dev-ws-ear-left', '--dev-ws-head-top'];
+const EAR_PROPS = ['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'];
+
+/** The ear's own horizontal padding (`padding: 5px 10px`, app.css). */
+const EAR_PAD_X = 10;
 
 /** The column gap between the tab strip and the pane below it (`.dev-ws`). */
 const WS_GAP_PX = 10;
@@ -2290,6 +2293,19 @@ function useEarInset(
       const wanted = Math.max(0, t.right - p.left + EAR_GAP_PX);
       const left = Math.min(wanted, Math.max(0, p.width - EAR_MIN_PX));
       host.style.setProperty('--dev-ws-ear-left', `${Math.round(left)}px`);
+      // HOW WIDE THE TABS ARE, and it is the same number under both
+      // groupings — which is the whole point. They fill the ear on By
+      // category, where the surface stops at the reading column; on By stage
+      // the SURFACE grows with the full-bleed pane and the tabs keep the size
+      // they had, rather than stretching to 268px apiece or shrinking to their
+      // labels.
+      //
+      // So it is measured to the NAV's right edge rather than the pane's. The
+      // nav keeps the reading column in both groupings and the ear's left edge
+      // sits beside the pill in both, so this is one width: 286px at 1280,
+      // whether the ear around it is 306px or 562px.
+      const groupW = Math.max(0, Math.round(n.right - (p.left + left) - EAR_PAD_X * 2));
+      host.style.setProperty('--dev-ws-group-w', `${groupW}px`);
       // WHERE THE HEAD COMES TO REST, which is under the pinned tab strip
       // rather than at the top of the scroller. Both stick, so the offset has
       // to be the strip's own height — three text labels and a glyph, so a

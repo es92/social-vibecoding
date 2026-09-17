@@ -3037,7 +3037,8 @@ test('the ear abuts the pane and wears its face, on its own breakpoint', () => {
   // either way, which is exactly what hid it, because the pill is a separate
   // box and measuring the tabs says nothing about it.
   assert.match(CSS, /\.dev-ws-ear \{ display: flex; justify-content: flex-start; align-items: center; \}/);
-  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 0 0 auto; \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group \{ width: var\(--dev-ws-group-w, auto\); \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 1 1 0; \}/);
 });
 
 test('the ear is stretched by measurement, because no selector can reach the pill', () => {
@@ -3069,7 +3070,7 @@ test('the ear is stretched by measurement, because no selector can reach the pil
   assert.match(WORKSHOP, /const left = Math\.min\(wanted, Math\.max\(0, p\.width - EAR_MIN_PX\)\);/);
   // Both properties are cleared together below the breakpoint; a stale one
   // would be inherited by the next crossing.
-  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-head-top'\];/);
+  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'\];/);
   assert.match(WORKSHOP, /for \(const k of EAR_PROPS\) host\.style\.removeProperty\(k\);/);
   const earCss = CSS.slice(CSS.indexOf('  .dev-ws-ear {'), CSS.indexOf('}', CSS.indexOf('  .dev-ws-ear {')));
   assert.ok(!/max-width/.test(earCss), 'and never as a max-width, which would drift the right edge');
@@ -4580,9 +4581,13 @@ test('the surface grows with the pane on By stage, the labels do not', () => {
   // either way, which is exactly what hid it, because the pill is a separate
   // box and measuring the tabs says nothing about it.
   assert.match(CSS, /\.dev-ws-ear \{ display: flex; justify-content: flex-start; align-items: center; \}/);
-  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 0 0 auto; \}/,
-    'the labels do not grow with it');
-  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-head-top'\];/,
+  // The GROUP carries a measured width and the tabs divide it: they fill the
+  // ear on By category and keep that same size once By stage grows the
+  // surface past the reading column.
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group \{ width: var\(--dev-ws-group-w, auto\); \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 1 1 0; \}/,
+    'the tabs divide the measured width rather than hugging their labels');
+  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'\];/,
     'one number for the ear, one for where the head rests');
 });
 

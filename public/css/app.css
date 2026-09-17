@@ -13893,24 +13893,28 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
       inset 1px 0 0 var(--app-sheet-line),
       inset -1px 0 0 var(--app-sheet-line);
   }
-  /* THE TABS DO NOT GROW WITH IT. The surface stretches to the pane's right
-     edge and the two labels stay exactly where they are, which is what keeps
-     them in ONE PLACE across the grouping switch: By theme and By stage put
-     the control at the same coordinates and only the surface behind it
-     changes width. Sharing the surface instead (`flex: 1 1 0`) made each tab
-     268px on a full-bleed pane — a title bar with a label in it.
+  /* THE TABS FILL THE EAR, AND KEEP THAT SIZE WHEN THE EAR GROWS. Two earlier
+     cuts each got half of this: sharing the surface (`flex: 1 1 0` with no
+     width) made each tab 268px on a full-bleed By stage pane, and hugging
+     their labels left them adrift in a wide surface and SMALLER than they had
+     been on By category.
 
-     The cost is visible and deliberate: on By theme the labels no longer
-     fill their surface, so there is empty ear to the right of "By stage". */
-  /* A FLEX ROW, which is what makes the rule below mean anything. The ear was
-     a BLOCK box, so `justify-content` was inert and `.dev-ws-group` — itself a
-     flex container, and block-level inside a block — stretched to the ear's
-     full width. The tabs hugged their labels inside it (the rule below did
-     work), so what grew was the PILL around them: on a full-bleed By stage
-     pane, a 1200px rounded container with two 90px labels at its left end.
-     Measuring the tabs is what hid it; the pill is a separate box. */
+     So the GROUP carries a measured width and the tabs divide it. The width is
+     taken to the NAV's right edge, which keeps the reading column under both
+     groupings, so it is one number: the tabs fill the ear on By category,
+     where the surface ends at that same edge, and stay exactly that size on By
+     stage, where the surface grows past it. Measured at 1280: 286px, whether
+     the ear around it is 306px or 562px.
+
+     A FLEX ROW, and that part is load-bearing: as a BLOCK box the ear made
+     `justify-content` inert and `.dev-ws-group` — itself a flex container, and
+     block-level inside a block — stretched to the ear's full width. The tabs
+     hugged their labels inside it, so what grew was the PILL around them, and
+     measuring the tabs is what hid it. `flex-start` puts the group at the
+     surface's left end, so the empty ear on By stage falls to its right. */
   .dev-ws-ear { display: flex; justify-content: flex-start; align-items: center; }
-  .dev-ws-ear .dev-ws-group-tab { flex: 0 0 auto; }
+  .dev-ws-ear .dev-ws-group { width: var(--dev-ws-group-w, auto); }
+  .dev-ws-ear .dev-ws-group-tab { flex: 1 1 0; }
   /* Square where the two meet, so the ear and the card read as one surface
      rather than a pill resting on a rounded corner. */
   .dev-ws-pane:has(.dev-ws-ear) > .dev-ws-pane-head {
