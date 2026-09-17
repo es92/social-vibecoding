@@ -2121,8 +2121,29 @@ ${itemsJson}`;
 const WORKSHOP_DIGEST_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['lastWeek', 'thisWeek', 'open'],
+  required: ['tally', 'lastWeek', 'thisWeek', 'open'],
   properties: {
+    // THE COUNT, AS AN ANSWER RATHER THAN AN INSTRUCTION. "Lead by how many
+    // items an area has, not by how visible it is" has been in this prompt
+    // since version 4 and has gone on losing: a redesign is the easiest
+    // thing in a week to see and to write about, so it keeps getting led
+    // with over larger unglamorous work. The rule asked the model to have
+    // counted; nothing made it count.
+    //
+    // Required, and FIRST in the schema so it is produced before the lines
+    // that depend on it. It is not drawn anywhere — its whole job is to
+    // exist, and to be in the log when a line leads with the wrong area, so
+    // "the tally was right and the sentence ignored it" and "the tally was
+    // wrong" are different findings instead of one shrug.
+    tally: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['area', 'count'],
+        properties: { area: { type: 'string' }, count: { type: 'integer' } },
+      },
+    },
     lastWeek: { type: 'string' },
     thisWeek: { type: 'string' },
     open: { type: 'string' },
@@ -2155,6 +2176,11 @@ function sanitizeWorkshopDigest(parsed) {
     thisWeek: line(parsed && parsed.thisWeek),
     open: line(parsed && parsed.open),
   };
+  // `tally` is deliberately NOT carried through. It exists to make the model
+  // count before it leads (see WORKSHOP_DIGEST_SCHEMA), and nothing draws it
+  // — persisting it would put a field in every row that no reader ever sees.
+  // The caller logs it instead, which is where it is wanted: beside the line
+  // it was supposed to produce, when that line leads with the wrong area.
   return (out.lastWeek || out.thisWeek || out.open) ? out : null;
 }
 
@@ -2174,8 +2200,27 @@ function sanitizeWorkshopDigest(parsed) {
 // name of the other axis entirely (the voted feature/bug/docs field). Two
 // groupings both presented as "categories" is what the merge set out to fix,
 // so the summary card cannot keep saying the wrong one.
-// 6: back to CATEGORIES, which is what the grouping is called again.
-const WORKSHOP_DIGEST_VERSION = 6;
+// 6: the lines had ONE SKELETON. Version 4 gave the two-clause rule a worked
+// example — "the Dev screen became a styled Workshop, alongside many bug
+// fixes and reliability work" — and at twelve words a single example stops
+// being a register and becomes a mould: every week came back as "<area>,
+// alongside <the rest>", the word included. Read one at a time that was
+// invisible; the walk draws several weeks under each other, so it is not any
+// more. The example is gone, "alongside" and "mostly" are banned by name, and
+// variety is asked for directly.
+//
+// It also makes COUNT BEFORE YOU LEAD enforceable. That rule has been here
+// since 4 and has gone on losing to whatever was most visible, because it
+// asked the model to have counted and nothing made it count. The tally is a
+// required schema field now, ordered before the lines, and the prompt says to
+// write FROM it — the count is an answer, not an instruction.
+//
+// 7: the merge of the two. #2361 rewrote this prompt as 6 (the tally, the
+// banned moulds) on the same day the grouping went back to being called a
+// CATEGORY, which was also 6. The text here is neither of those — it carries
+// both edits — so it takes its own number rather than letting a row written
+// under either one read as current.
+const WORKSHOP_DIGEST_VERSION = 7;
 
 async function generateWorkshopDigest({
   inputJson, lastWeekJson, thisWeekJson, themesJson, appName, windows, apiKey, telemetryContext,
@@ -2206,15 +2251,17 @@ async function generateWorkshopDigest({
 
 You are given the changes that landed LAST WEEK and the changes that landed THIS WEEK — each with a title and a plain-language summary of what it does for a person using the app — plus the whole BOARD as a JSON snapshot and the CATEGORIES the work is grouped into.
 
-Answer with exactly three fields, each ONE sentence of about 12 words — 15 at the very most:
+Answer with "tally" — your working count, described below — and then three SENTENCE fields, each ONE sentence of about 12 words — 15 at the very most:
 
 - "lastWeek": what landed in the completed week just gone.
 - "thisWeek": what has landed in the current week so far.
 - "open": what the app's open, unfinished work is about — the issues nobody has closed and the proposals waiting on votes, as categories rather than as a list.
 
-TWO CLAUSES, NOT A LIST. At twelve words you cannot enumerate, and you should not try — an inventory of five areas at this length is a worse sentence than a shape a reader takes in at once. Write ONE clause naming the single largest area, then ONE clause acknowledging the rest in general terms: "the Dev screen became a styled Workshop, alongside many bug fixes and reliability work" is the target register. The tail clause is what carries breadth; it does not need to name what is in it.
+NAME THE LARGEST THING, THEN ACKNOWLEDGE THE REST. At twelve words you cannot enumerate, and you should not try — an inventory of five areas at this length is a worse sentence than a shape a reader takes in at once. The second part carries breadth; it does not need to name what is in it.
 
-COUNT BEFORE YOU LEAD. Which area is "largest" is a matter of how many items it has, NOT of how visible it is. This is the rule the line most often breaks: a redesign is easy to see and easy to lead with, so it gets written up as the story of a week whose issue and reliability work was bigger. Tally the entries by area first, and if the largest is unglamorous, lead with it anyway. Say "mostly" only when one area really is more than half the list.
+VARY THE SENTENCE. These lines are read one under another, several weeks at a time, and a shared skeleton is obvious the moment two of them sit together. There is no house shape to copy: write each week as its own sentence. Two words are BANNED outright because they are what the skeleton was made of — never write "alongside", and never write "mostly". A semicolon, a full stop between two short sentences, leading with the small thing, naming a number of items, or simply starting somewhere other than the biggest area are all available and all better than one mould used four times.
+
+FILL IN "tally" FIRST, THEN WRITE FROM IT. Group the window's entries by area, count each, and answer with those pairs — largest first, at most five, and only areas that actually have entries. Then LEAD WITH THE AREA AT THE TOP OF YOUR OWN TALLY. Which area is "largest" is a matter of how many items it has, NOT of how visible it is: a redesign is easy to see and easy to lead with, so it keeps getting written up as the story of a week whose issue and reliability work was bigger. If the largest is unglamorous, lead with it anyway. If the tally has no clear winner, say so in the shape of the sentence rather than inventing one.
 
 STATE NO COUNTS. The dashboard directly above these cards shows how many items are open, how many wait on votes, how many landed and how many have nobody on them. Write what a number cannot. "Many issues related to X" has said nothing a tile did not; "X now survives a refresh" has earned its place.
 
@@ -2264,7 +2311,21 @@ ${inputJson}`;
     apiKey,
   });
 
-  const digest = sanitizeWorkshopDigest(parseWorkshopJson(resp, 'digest'));
+  const raw = parseWorkshopJson(resp, 'digest');
+  const digest = sanitizeWorkshopDigest(raw);
+  // The tally, beside the lines it was supposed to produce. It is the only
+  // record of WHY a week led with what it led with, and without it a line
+  // that leads with the wrong area is one shrug: this separates "the count
+  // was right and the sentence ignored it" from "the count was wrong",
+  // which are different faults with different fixes. Bounded and shape-
+  // checked because it is model output, and logged at info because it is
+  // read when somebody disputes a line, not on every pass.
+  const tally = Array.isArray(raw && raw.tally)
+    ? raw.tally.slice(0, 5)
+      .filter((t) => t && typeof t.area === 'string' && Number.isFinite(t.count))
+      .map((t) => ({ area: String(t.area).slice(0, 60), count: t.count }))
+    : null;
+  if (tally && tally.length) log.info('llm', 'workshop digest tally', { model, tally });
   return { digest, usage: resp.usage, model };
 }
 

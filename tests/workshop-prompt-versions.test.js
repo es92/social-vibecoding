@@ -67,9 +67,27 @@ const STAGES = {
     // to call the grouping "CATEGORIES", which is the name of the OTHER axis
     // (the voted feature/bug/docs field). The line it writes is user-facing,
     // so the rows have to re-ask for it under the right noun.
-    // 6 puts the noun back: the grouping is called categories again, so the
-    // user-facing line has to be re-asked under the right one.
-    pinned: { 2: '14c1ca1864a4fb96', 3: '98f17a8ffee59b3b', 4: '5ae848d3fe65b9d1', 5: 'fa7bbe7465b5aea4', 6: '6760fee2cc56af8d' },
+    // 6 breaks the shape every week was coming back in. Four of these lines
+    // are read one under another in the walk, and they all arrived as
+    // "Mostly X, alongside Y" — which is what the prompt's single worked
+    // example was, so the example had become a mould. It is gone, both of
+    // its words are banned outright, and the count the old prompt only
+    // ASKED for ("count before you lead") is now a required schema field
+    // ordered ahead of the lines, so the tally has to exist before there is
+    // a sentence to lead with. Every app's digest is re-drafted; that is one
+    // short call per app, and the lines are what the pane shows.
+    pinned: {
+      2: '14c1ca1864a4fb96',
+      3: '98f17a8ffee59b3b',
+      4: '5ae848d3fe65b9d1',
+      5: 'fa7bbe7465b5aea4',
+      6: '84cedc3ec42f85d4',
+      // 7 is the merge: #2361's rewrite above landed as 6 on the same day the
+      // grouping went back to being called a CATEGORY, which was also 6. This
+      // text is neither — it carries both — so it takes its own number rather
+      // than letting a row written under either read as current.
+      7: '95951e15d7808fa2',
+    },
   },
 };
 

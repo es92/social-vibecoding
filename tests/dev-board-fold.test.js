@@ -233,11 +233,26 @@ test('the column owns which card is open, one per column, through the shared fol
 });
 
 test('the delegated #dev-body open handler leaves a fold’s clicks and keys to the fold', () => {
-  const click = APP_VIEW_SRC.slice(APP_VIEW_SRC.indexOf("if (e.target.closest('a, button, input, form')) return;"));
+  // ANCHORED TO THE HANDLER, not to the control guard. This used to slice
+  // from `a, button, input, form` and look for the fold check after it,
+  // which pinned a relative position the rule never cared about: #2361
+  // hoisted the fold check ABOVE that guard so the discussion row's branch
+  // could sit between the two (the row is a `<button>`, so the guard was
+  // eating it). The fold check moved earlier, which is the same rule, and
+  // the old anchor could not tell the difference between that and its
+  // deletion.
+  const body = APP_VIEW_SRC.slice(APP_VIEW_SRC.indexOf("bodyEl.addEventListener('click'"));
+  const click = body.slice(0, body.indexOf('{ signal: devBodySignal }'));
   const guard = click.indexOf('if (AppView._inFoldWrapper(e)) return;');
   assert.ok(guard > 0, 'the click handler asks whether the event was inside a wrapper');
-  assert.ok(guard < click.indexOf("e.target.closest('[data-session-chip]')"),
-    'before it reads any of the item hooks, which both sizes now carry');
+  // Before it reads ANY of the item hooks, which both sizes now carry — all
+  // six, so a hook added to a branch below cannot quietly escape the fold.
+  for (const hook of ['data-session-chip', 'data-shared-session-row', 'data-discussion-row',
+    'data-issue-row', 'data-proposal-row', 'data-gov-row']) {
+    const at = click.indexOf(`e.target.closest('[${hook}]')`);
+    assert.ok(at > 0, `the handler reads ${hook}`);
+    assert.ok(guard < at, `and asks about the fold before reading ${hook}`);
+  }
   assert.match(APP_VIEW_SRC, /if \(AppView\._inFoldWrapper\(ev\)\) return;/,
     'and the keydown handler, which would otherwise open a session on the Enter that toggles its row');
   // The folded row carries the hooks, so a lookup by hook finds it either way.

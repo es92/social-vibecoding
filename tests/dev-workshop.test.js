@@ -35,15 +35,20 @@ const { loadTsx, renderToHtml, createElement } = require('./lib/render-tsx');
 // The pane's week walk opens CLOSED — every window, the live one included,
 // is behind "Show past week" — so a static render of the whole tab draws no
 // window at all and cannot be asked to press anything
-// (renderToStaticMarkup runs no effects and dispatches no events). `WeekWalk`
-// takes an initial-shown seam for exactly this: render it open, with the
-// pane's own weeks, and assert what a revealed window is made of.
+// (renderToStaticMarkup runs no effects and dispatches no events).
+//
+// `WeekWalk` is CONTROLLED, which is what makes that testable without a
+// seam: the pane owns the count because "Hide past weeks" sits above the
+// walk and reads it too, so a test renders the component at whatever depth
+// it wants to assert and the prop is the production one. It used to take a
+// test-only `initialShown` for this, back when the state was internal.
 const openWalk = (AppView, shown) => {
   const { WeekWalk } = loadTsx('frontend/src/features/dev-board/workshop/workshop.tsx');
   return renderToHtml(createElement(WeekWalk, {
     weeks: plain(AppView._workshopView().dashboard.weeks),
     firstWeek: null,
-    initialShown: shown,
+    shown,
+    onMore: () => {},
   }));
 };
 const { tokenize } = require('./helpers/html-tokens');
@@ -482,19 +487,49 @@ test('the numbers are tiles, and the pane always has a sentence under them', () 
   assert.match(html, /data-ws-dash-cell="shipped"[^>]*><b>1<\/b>/);
   assert.match(html, /nobody on them/);
   assert.match(html, /waiting on a vote/);
-  // TONE IS A MARK BESIDE THE LABEL, NEVER A COLOUR ON THE NUMBER. It used
-  // to be `dev-ws-dash-good`/`-warn` on the cell, painting the integer
-  // itself — state carried by hue alone, unreadable to anyone who cannot
-  // separate the two, and a status colour sitting on text where the rest of
-  // the product keeps text in text ink.
-  assert.ok(!/dev-ws-dash-(good|warn)\b/.test(html), 'no tone class on the cell');
+  // TONE IS CARRIED TWICE: a mark beside the label, and the same hue on the
+  // figure. The mark is what makes the colour affordable. The original
+  // `dev-ws-dash-good`/`-warn` painted the integer and nothing else, which
+  // is state carried by hue ALONE — invisible to a reader who cannot
+  // separate the two, and a status colour on bare text. Adding the dot fixed
+  // that, and the fix was over-applied: the number went back to ink at the
+  // same time, so the one thing the eye actually lands on in this row went
+  // grey while a 5px mark two lines down carried the whole signal. With the
+  // dot present the hue is REDUNDANT rather than load-bearing, so it is free
+  // — the row still reads correctly in greyscale, and reads faster in
+  // colour. Both halves are pinned here so neither can be dropped as the
+  // duplicate it looks like.
+  assert.match(html, /class="dev-ws-dash-cell dev-ws-dash-cell-good"[^>]*data-ws-dash-cell="shipped"/);
+  assert.match(html, /class="dev-ws-dash-cell dev-ws-dash-cell-warn"[^>]*data-ws-dash-cell="votes"/);
+  assert.match(CSS, /\.dev-ws-dash-cell-good b \{ color: var\(--state-ok\); \}/);
+  assert.match(CSS, /\.dev-ws-dash-cell-warn b \{ color: var\(--state-attention\); \}/);
   assert.match(html, /data-ws-dash-cell="shipped"[\s\S]{0,200}?dev-ws-dash-dot-good/);
   assert.match(html, /data-ws-dash-cell="votes"[\s\S]{0,200}?dev-ws-dash-dot-warn/);
+  // The mark and the figure take their colour from ONE token each, so they
+  // cannot drift into two greens.
+  assert.match(CSS, /\.dev-ws-dash-dot-good \{[^}]*var\(--state-ok\)/);
+  assert.match(CSS, /\.dev-ws-dash-dot-warn \{[^}]*var\(--state-attention\)/);
   // Only the two that are a CALL wear one. "Nobody on them" is a fact about
   // the backlog, not an alarm; it had no tone before and gains none.
   const unclaimed = html.slice(html.indexOf('data-ws-dash-cell="unclaimed"'));
   assert.ok(!unclaimed.slice(0, unclaimed.indexOf('data-ws-dash-cell="votes"')).includes('dev-ws-dash-dot'),
     'the unclaimed figure carries no mark');
+
+  // AND A ZERO IS NOT A STATE. Nothing waiting on a vote and nothing shipped
+  // are the resting values of these two, not an alarm and not an
+  // achievement — a green 0 beside "shipped this week" congratulates a
+  // quiet Monday, and it only became possible to draw once the hue went back
+  // on the figure.
+  const quiet = makeAppView();
+  seed(quiet);
+  quiet._proposals = [];
+  quiet._merged = [];
+  quiet._mergedTotal = 0;
+  const calm = workshopHtml(quiet);
+  assert.match(calm, /data-ws-dash-cell="votes"[^>]*><b>0<\/b>/);
+  assert.match(calm, /data-ws-dash-cell="shipped"[^>]*><b>0<\/b>/);
+  assert.ok(!/dev-ws-dash-cell-(good|warn)/.test(calm), 'no tone on a resting figure');
+  assert.ok(!calm.includes('dev-ws-dash-dot'), 'and no mark either');
 
   // And the derived sentence is back UNDER them. Round four trimmed it to
   // the two things a tile cannot show and let it render nothing when it
@@ -713,7 +748,19 @@ test('the pane leads with the open line, and the walk opens on the live week', a
   // a flex gap, which went when the windows started spacing themselves
   // across their own rules — leaving the button flush against a sentence
   // it is 23px from on the other side.
-  assert.match(CSS, /\.dev-ws-week-more \{ margin-top: 11px; \}/);
+  //
+  // The three rules are one measurement, so they are pinned together: this
+  // button and `Show older` one pane down are the same control, and a
+  // reader compares them. Both land on 14px above and 12px below. COLLAPSED
+  // — the state every visit opens on — this one is `.dev-ws-cards`' only
+  // child and inherits only the strip's 8px gap, so 6 makes the 14; after a
+  // window it takes 11, the padding each window's own rule uses; and the
+  // chat row hands back that same 8px so its hairline sits 12 below the
+  // tail, where `Show older` has its pane edge. Each was wrong on its own
+  // once — 19px, then 8px — because only one end was being measured.
+  assert.match(CSS, /\.dev-ws-week-more \{ margin-top: 6px; \}/);
+  assert.match(CSS, /\.dev-ws-week-more:not\(:first-child\) \{ margin-top: 11px; \}/);
+  assert.match(CSS, /\.dev-ws-cards \+ \.dev-ws-chat-row \{ margin-top: 4px; \}/);
   assert.ok(!/\.dev-ws-cards \{[^}]*gap:/.test(CSS), 'and the gap it replaced is gone');
 
   // The walk itself is the view model's, so the order and the titles are
@@ -740,6 +787,160 @@ test('the pane leads with the open line, and the walk opens on the live week', a
   // The healthy case says NOTHING now: provenance under every working board
   // answered a question nobody had asked and cost a line to do it.
   assert.ok(!html.includes('data-ws-digest-note'), 'no caption on the ordinary case');
+});
+
+test('the lead block names what its sentence is about, and holds the way back', async () => {
+  const AppView = await loadWith(responseBody({
+    digestCards: {
+      lastWeek: 'The vote counter was rebuilt and two preview races were closed.',
+      thisWeek: 'Kubernetes deploys stopped racing the health check.',
+      open: 'The domain migration and a long tail of preview reliability.',
+    },
+  }));
+  const html = workshopHtml(AppView);
+
+  // A HEADING OVER THE SENTENCE. The pane's lead paragraph is about the
+  // OPEN work — the issues nobody has closed and the proposals waiting on
+  // votes — and nothing said so. Under four figures and above a walk
+  // through past weeks, a bare sentence reads as a summary of the pane,
+  // which is the one thing it is not: it never mentions what landed.
+  assert.match(html, /class="dev-ws-lead-title">Open items</, 'the lead block is titled');
+  assert.ok(html.indexOf('dev-ws-lead-title') < html.indexOf('dev-ws-open-line'),
+    'and the title comes first');
+  // Sentence case and the pane's own heading size, not a second `dev-ws-head`:
+  // this names a paragraph inside a pane, and a pane already has one heading.
+  assert.match(CSS, /\.dev-ws-lead-title \{[^}]*font-size: 13px/);
+
+  // THE WAY BACK IS NOT DRAWN UNTIL THERE IS SOMETHING TO GO BACK FROM.
+  // The walk opens closed, so on arrival there is nothing to hide and the
+  // control would be a dead button over an empty walk.
+  assert.ok(!html.includes('data-ws-week-less'), 'nothing to collapse on arrival');
+  // It appears on the FIRST press rather than the second: one window open is
+  // already a state you might want out of, and a control that waits for two
+  // makes you discover it after you have stopped looking.
+  assert.match(WORKSHOP, /weeksShown > 0 \? \(/,
+    'one open window is enough to offer the way back');
+
+  // ANCHORED TO THE LEAD BLOCK, WHICH IS THE ONE THING THAT DOES NOT MOVE.
+  // Put beside "Show past week" it would ride the walk's growing edge and
+  // sit somewhere new after every press; put here it is always in the same
+  // place. The cost is real and is the trade: walk far enough and you
+  // scroll back up for it.
+  assert.ok(WORKSHOP.indexOf('data-ws-week-less') < WORKSHOP.indexOf('<WeekWalk'),
+    'the control is rendered above the walk');
+  assert.match(CSS, /\.dev-ws-lead-foot \{[^}]*justify-content: flex-end/);
+  // The reveal's own caret turned over, not a second glyph: what it does is
+  // the inverse of the control it undoes.
+  assert.match(CSS, /\.dev-ws-lead-chev \{[^}]*transform: rotate\(180deg\)/);
+});
+
+test('the walk’s depth belongs to the pane, because two controls read it', () => {
+  const { WeekWalk } = loadTsx('frontend/src/features/dev-board/workshop/workshop.tsx');
+  const weeks = [
+    { key: 'thisWeek', title: 'This week', startMs: Date.UTC(2026, 8, 14), endMs: FIXED_NOW,
+      counts: { closed: 1 }, line: 'One change landed.' },
+    { key: 'w2', title: '', startMs: Date.UTC(2026, 8, 7), endMs: Date.UTC(2026, 8, 14),
+      counts: { closed: 6 }, line: 'Six changes landed.' },
+  ];
+  const at = (shown) => renderToHtml(createElement(WeekWalk, { weeks, firstWeek: null, shown, onMore: () => {} }));
+
+  // CONTROLLED, and the pane owns the count. It was `useState` inside this
+  // component, which was fine while "Show past week" was the only thing that
+  // read it; "Hide past weeks" sits ABOVE the walk and reads it too, and
+  // state cannot be lifted to a sibling.
+  assert.ok(!/const \[shown, setShown\]/.test(WORKSHOP), 'the walk holds no count of its own');
+  assert.match(WORKSHOP, /const \[weeksShown, setWeeksShown\] = useState\(0\)/,
+    'the pane does, and every visit opens closed');
+  assert.match(WORKSHOP, /shown=\{weeksShown\}/);
+  assert.match(WORKSHOP, /onMore=\{\(\) => setWeeksShown\(weeksShown \+ 1\)\}/);
+  assert.match(WORKSHOP, /onClick=\{\(\) => setWeeksShown\(0\)\}/, 'and the way back is all the way back');
+
+  // Which is also what retired the test-only `initialShown` seam: the prop a
+  // test renders at is now the prop production passes. Asserted by passing
+  // the retired name and watching it do nothing — a grep for the identifier
+  // would trip on the comment that explains what it replaced.
+  const stale = renderToHtml(createElement(WeekWalk,
+    { weeks, firstWeek: null, shown: 0, onMore: () => {}, initialShown: 2 }));
+  assert.equal([...stale.matchAll(/data-ws-card="/g)].length, 0,
+    'the old seam is a dead prop, not a second way in');
+  assert.equal([...at(0).matchAll(/data-ws-card="/g)].length, 0);
+  assert.equal([...at(1).matchAll(/data-ws-card="/g)].length, 1);
+  assert.equal([...at(2).matchAll(/data-ws-card="/g)].length, 2);
+  assert.ok(!at(2).includes('data-ws-week-more'), 'and the control goes when the walk is spent');
+});
+
+test('the discussion row is a button, so its branch runs BEFORE the control guard', () => {
+  const AppView = makeAppView();
+  seed(AppView);
+  const html = workshopHtml(AppView);
+
+  // The two facts that made this row dead, pinned together because neither
+  // is a bug on its own.
+  //
+  // ONE: the row is a `<button>`. #2341 retired the card around it, and with
+  // the card gone the row IS the control — so it stopped being a `div` with
+  // a click hook and became the element it behaves like.
+  assert.match(html, /<button[^>]*class="dev-ws-chat-row"[^>]*data-discussion-row="1"/);
+
+  // TWO: the delegated `#dev-body` handler opens with
+  // `if (e.target.closest('a, button, input, form')) return;` — the guard
+  // that stops a vote button or a PR link inside a card also opening the
+  // card. A row that IS a button matches it, so every click returned there
+  // and the branch below was unreachable. Nothing failed loudly: the row
+  // just did nothing, on pointer AND on Enter, since Enter on a button
+  // fires the same click.
+  const body = APP_VIEW_SRC.slice(APP_VIEW_SRC.indexOf("bodyEl.addEventListener('click'"));
+  const handler = body.slice(0, body.indexOf('{ signal: devBodySignal }'));
+  const guard = handler.indexOf("e.target.closest('a, button, input, form')");
+  const branch = handler.indexOf("e.target.closest('[data-discussion-row]')");
+  assert.ok(guard > 0 && branch > 0, 'both the guard and the branch are in the handler');
+  assert.ok(branch < guard,
+    'the discussion branch must be reached before the guard that swallows buttons');
+  // Exactly one branch: the fix moved the check rather than adding a second.
+  assert.equal(handler.split("e.target.closest('[data-discussion-row]')").length - 1, 1);
+
+  // AND THE FOLD CHECK STAYS AHEAD OF BOTH. A folded discussion card on the
+  // Board carries the same hook (card/fold.tsx `ITEM_HOOKS`) and belongs to
+  // its fold, which opens and closes it in place — hoisting the branch past
+  // that would make a folded card switch screens instead.
+  const fold = handler.indexOf('AppView._inFoldWrapper(e)');
+  assert.ok(fold > 0 && fold < branch, 'the fold owns its own card first');
+
+  // The same precedent this follows, three lines up: a `<button>` inside a
+  // card is handled before the guard, not after it.
+  assert.ok(handler.indexOf('gc-explore-chat-btn') < guard);
+});
+
+test('the discussion row says whose chat it is, over the last thing said', () => {
+  const AppView = makeAppView();
+  seed(AppView);
+  AppView.appData = { ...AppView.appData, name: 'Homeroom' };
+  const html = workshopHtml(AppView);
+
+  // NAMED FOR ITS APP. This row is the foot of a pane headed "Where the app
+  // is", and "General discussion" alone does not say whose — the Dev screen
+  // opens from a notification or a direct link, so the app's name is not
+  // reliably on screen above it.
+  assert.match(html, /class="dev-ws-chat-title">General discussion for Homeroom</);
+
+  // TWO LINES, in the card order the Board has always used: what this is,
+  // then what was last said in it. The row was one line carrying only the
+  // preview, which made the one heading on the pane that never changes
+  // change every time somebody spoke.
+  assert.match(html, /class="dev-ws-chat-said">Talk with everyone building this app</);
+  assert.ok(html.indexOf('dev-ws-chat-title') < html.indexOf('dev-ws-chat-said'));
+  // The title is the row's own name and never wraps; the saying under it is
+  // somebody else's sentence of any length, and a row that grew to hold one
+  // would stop being a row.
+  assert.match(CSS, /\.dev-ws-chat-said \{[^}]*text-overflow: ellipsis/);
+  assert.match(CSS, /\.dev-ws-chat-said \{[^}]*white-space: nowrap/);
+  // The glyph aligns to the TITLE, not to the middle of a two-line block.
+  assert.match(CSS, /\.dev-ws-chat-row \{ align-items: flex-start; \}/);
+
+  // An app whose name has not loaded gets a heading that is short rather
+  // than one that says "for undefined".
+  AppView.appData = { slug: 'demo-app', can_collaborate: true };
+  assert.equal(AppView._workshopView().discussion.card.title.text, 'General discussion');
 });
 
 test('a window is a block on a rule: its heading, what it paid, then its line', async () => {
@@ -3037,7 +3238,8 @@ test('the ear abuts the pane and wears its face, on its own breakpoint', () => {
   // either way, which is exactly what hid it, because the pill is a separate
   // box and measuring the tabs says nothing about it.
   assert.match(CSS, /\.dev-ws-ear \{ display: flex; justify-content: flex-start; align-items: center; \}/);
-  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 0 0 auto; \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group \{ width: var\(--dev-ws-group-w, auto\); \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 1 1 0; \}/);
 });
 
 test('the ear is stretched by measurement, because no selector can reach the pill', () => {
@@ -3069,7 +3271,7 @@ test('the ear is stretched by measurement, because no selector can reach the pil
   assert.match(WORKSHOP, /const left = Math\.min\(wanted, Math\.max\(0, p\.width - EAR_MIN_PX\)\);/);
   // Both properties are cleared together below the breakpoint; a stale one
   // would be inherited by the next crossing.
-  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-head-top'\];/);
+  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'\];/);
   assert.match(WORKSHOP, /for \(const k of EAR_PROPS\) host\.style\.removeProperty\(k\);/);
   const earCss = CSS.slice(CSS.indexOf('  .dev-ws-ear {'), CSS.indexOf('}', CSS.indexOf('  .dev-ws-ear {')));
   assert.ok(!/max-width/.test(earCss), 'and never as a max-width, which would drift the right edge');
@@ -4576,9 +4778,13 @@ test('the surface grows with the pane on By stage, the labels do not', () => {
   // either way, which is exactly what hid it, because the pill is a separate
   // box and measuring the tabs says nothing about it.
   assert.match(CSS, /\.dev-ws-ear \{ display: flex; justify-content: flex-start; align-items: center; \}/);
-  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 0 0 auto; \}/,
-    'the labels do not grow with it');
-  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-head-top'\];/,
+  // The GROUP carries a measured width and the tabs divide it: they fill the
+  // ear on By category and keep that same size once By stage grows the
+  // surface past the reading column.
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group \{ width: var\(--dev-ws-group-w, auto\); \}/);
+  assert.match(CSS, /\.dev-ws-ear \.dev-ws-group-tab \{ flex: 1 1 0; \}/,
+    'the tabs divide the measured width rather than hugging their labels');
+  assert.match(WORKSHOP, /const EAR_PROPS = \['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'\];/,
     'one number for the ear, one for where the head rests');
 });
 

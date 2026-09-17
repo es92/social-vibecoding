@@ -12209,7 +12209,30 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
 /* The pane's lead paragraph: what the open work is about. It was the first
    card of the week walk, which put the one line the pane always shows
    inside a control about history. */
+/* The lead block's heading — the one the walk's first card wore while that
+   line was a window in it. Same size and weight as a window's heading, so
+   the pane reads as headings-and-their-lines all the way down; no rule
+   above it and no dates beside it, which is what keeps it from reading as
+   one of the windows. */
+.dev-ws-lead-head { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
+.dev-ws-lead-title { font-size: 13px; font-weight: 600; letter-spacing: 0.01em; color: var(--text-primary); }
 .dev-ws-open-line { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-primary); }
+/* THE WAY BACK OUT, at the foot of the block that does not move. Right of
+   the column, because it acts on what is BELOW it rather than on the
+   sentence it follows — a control at the left margin would read as
+   belonging to the paragraph. */
+.dev-ws-lead-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.dev-ws-lead-collapse {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 0; background: none; padding: 2px 0 0; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: .01em;
+  color: var(--text-muted);
+}
+.dev-ws-lead-collapse:hover { color: var(--accent); }
+.dev-ws-lead-collapse:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+/* The reveal's caret turned over: this undoes that control, so it is the
+   same mark pointing the other way rather than a second glyph. */
+.dev-ws-lead-chev { width: 14px; height: 14px; transform: rotate(180deg); }
 /* What moved, in words, under the heading that gives it an antecedent. It
    was a `N shipped since` pill on the dashboard's head four blocks up — a
    fragment with its object missing, beside numbers about the board. */
@@ -12235,12 +12258,23 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
   background: transparent; border-radius: 0;
 }
 .dev-ws-chat-row > .dev-card-icon > svg { width: 17px; height: 17px; }
-/* ONE LINE, clipped. The last thing said can be any length, and a row that
-   grows to hold it stops being a row. */
-.dev-ws-chat-said {
+/* TWO LINES: what this is, then the last thing said. The title is the
+   row's own name and wraps never; the saying under it is somebody else's
+   sentence of any length, and a row that grows to hold it stops being a
+   row — so that one clips. */
+.dev-ws-chat-text {
   flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.dev-ws-chat-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.dev-ws-chat-said {
+  min-width: 0; font-size: 12.5px; color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* The glyph aligns to the TITLE rather than to the middle of a two-line
+   block, which is where a centred row would put it. */
+.dev-ws-chat-row { align-items: flex-start; }
+.dev-ws-chat-row > .dev-card-icon { margin-top: 1px; }
 /* ── The digest's three cards ────────────────────────────────
    One paragraph became three, because one paragraph was answering three
    questions — what landed last week, what has landed this week, what is
@@ -12416,15 +12450,31 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
    full-width rows exactly as that one does, so it takes the centred form
    rather than `.dev-ws-reveal-start`'s lane indent. Nothing of its own but
    the air between it and the last row. */
-/* THE WALK'S OWN SPACING, which the cards no longer supply. `.dev-ws-cards`
-   carried `gap: 6px` while every window was a floating card; the windows
-   space themselves across their own rules now (12px above, 11px below), so
-   the gap went — and took the air under the last window with it, leaving
-   this button flush against a sentence it is 23px away from on the other
-   side. 11px mirrors the padding the rule above each window uses, so the
-   control sits in the same rhythm as the blocks it follows. */
-.dev-ws-week-more { margin-top: 11px; }
+/* THE TWO REVEAL CONTROLS SIT IN THE SAME AIR. `Show past week` and `Show
+   older` are the same control one pane apart, close enough that a reader
+   compares them — and each takes its spacing from a different place, which
+   is why they kept drifting. `Show older` follows a stack of rows inside
+   its strip and needs nothing: a row's 4px tail, the strip's 8px gap and
+   its own 2px put it 14px below the last row, and the strip's padding puts
+   it 12px above the pane's edge.
+
+   `Show past week` has to be built up to the same two numbers. ABOVE:
+   `.dev-ws-cards` carried `gap: 6px` while every window was a floating
+   card; the windows space themselves now (12px above, 11px below) and the
+   gap went with the cards. COLLAPSED — which is what every visit opens on
+   — this button is that container's only child and inherits only the
+   strip's 8px, so 6 + 8 makes the 14. EXPANDED it follows a window
+   instead, and 11 mirrors the padding the rule above each window uses, so
+   the control keeps the rhythm of the blocks it follows. BELOW: the chat
+   row adds its own 12px on top of that same 8px strip gap, which is 20 to
+   the hairline against the 12 `Show older` gets to its pane edge — so when
+   the block above the row ends in this button, the row gives the 8 back.
+   Scoped to `.dev-ws-cards` because with no weeks at all there is no walk
+   and no button, and the row follows a paragraph that does want the air. */
+.dev-ws-week-more { margin-top: 6px; }
+.dev-ws-week-more:not(:first-child) { margin-top: 11px; }
 .dev-ws-since-more { margin-top: 2px; }
+.dev-ws-cards + .dev-ws-chat-row { margin-top: 4px; }
 /* #2183: the control is always drawn and DISABLED when the walk is over,
    rather than leaving — so it reads as spent, not pressable. */
 .dev-ws-reveal:disabled { color: var(--text-muted); opacity: .45; cursor: default; }
@@ -13725,6 +13775,15 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 .dev-ws-dash-dot { width: 6px; height: 6px; border-radius: 999px; margin-top: 5px; }
 .dev-ws-dash-dot-good { background: var(--state-ok); }
 .dev-ws-dash-dot-warn { background: var(--state-attention); }
+/* AND THE FIGURE TAKES THE TONE BACK. The objection that moved it to the
+   label was to state carried by hue ALONE — unreadable to anyone who cannot
+   separate the two, and a status colour sitting on text. The dot answers
+   that: the mark is the non-colour channel, so the colour on the number is
+   now redundant rather than load-bearing, which is what makes it free. The
+   tone still appears only where the component put a dot, so a zero — not a
+   call — stays in text ink. */
+.dev-ws-dash-cell-good b { color: var(--state-ok); }
+.dev-ws-dash-cell-warn b { color: var(--state-attention); }
 /* The grouping tabs. A SEGMENTED strip, not two loose chips: the two panes
    are alternatives over one board, and a shared rail says that where a gap
    between pills would read as two unrelated toggles. Deliberately NOT
@@ -13893,24 +13952,28 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
       inset 1px 0 0 var(--app-sheet-line),
       inset -1px 0 0 var(--app-sheet-line);
   }
-  /* THE TABS DO NOT GROW WITH IT. The surface stretches to the pane's right
-     edge and the two labels stay exactly where they are, which is what keeps
-     them in ONE PLACE across the grouping switch: By theme and By stage put
-     the control at the same coordinates and only the surface behind it
-     changes width. Sharing the surface instead (`flex: 1 1 0`) made each tab
-     268px on a full-bleed pane — a title bar with a label in it.
+  /* THE TABS FILL THE EAR, AND KEEP THAT SIZE WHEN THE EAR GROWS. Two earlier
+     cuts each got half of this: sharing the surface (`flex: 1 1 0` with no
+     width) made each tab 268px on a full-bleed By stage pane, and hugging
+     their labels left them adrift in a wide surface and SMALLER than they had
+     been on By category.
 
-     The cost is visible and deliberate: on By theme the labels no longer
-     fill their surface, so there is empty ear to the right of "By stage". */
-  /* A FLEX ROW, which is what makes the rule below mean anything. The ear was
-     a BLOCK box, so `justify-content` was inert and `.dev-ws-group` — itself a
-     flex container, and block-level inside a block — stretched to the ear's
-     full width. The tabs hugged their labels inside it (the rule below did
-     work), so what grew was the PILL around them: on a full-bleed By stage
-     pane, a 1200px rounded container with two 90px labels at its left end.
-     Measuring the tabs is what hid it; the pill is a separate box. */
+     So the GROUP carries a measured width and the tabs divide it. The width is
+     taken to the NAV's right edge, which keeps the reading column under both
+     groupings, so it is one number: the tabs fill the ear on By category,
+     where the surface ends at that same edge, and stay exactly that size on By
+     stage, where the surface grows past it. Measured at 1280: 286px, whether
+     the ear around it is 306px or 562px.
+
+     A FLEX ROW, and that part is load-bearing: as a BLOCK box the ear made
+     `justify-content` inert and `.dev-ws-group` — itself a flex container, and
+     block-level inside a block — stretched to the ear's full width. The tabs
+     hugged their labels inside it, so what grew was the PILL around them, and
+     measuring the tabs is what hid it. `flex-start` puts the group at the
+     surface's left end, so the empty ear on By stage falls to its right. */
   .dev-ws-ear { display: flex; justify-content: flex-start; align-items: center; }
-  .dev-ws-ear .dev-ws-group-tab { flex: 0 0 auto; }
+  .dev-ws-ear .dev-ws-group { width: var(--dev-ws-group-w, auto); }
+  .dev-ws-ear .dev-ws-group-tab { flex: 1 1 0; }
   /* Square where the two meet, so the ear and the card read as one surface
      rather than a pill resting on a rounded corner. */
   .dev-ws-pane:has(.dev-ws-ear) > .dev-ws-pane-head {

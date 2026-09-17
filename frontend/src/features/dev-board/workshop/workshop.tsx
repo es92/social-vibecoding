@@ -529,7 +529,18 @@ function DiscussionRow({ card }: { card: DevCardModel }): ReactNode {
       title={card.title.title}
     >
       {card.icon ? <CardIcon spec={{ ...card.icon, small: true }} /> : null}
-      <span className="dev-ws-chat-said">{metaLineNodes(card)}</span>
+      {/* TWO LINES: what this is, then the last thing said in it. The row
+          drew only the meta line, which meant the one block on the pane
+          that opens a different screen was identified by somebody else's
+          sentence — and on a quiet app by the placeholder "Talk with
+          everyone building this app", which reads as a caption rather than
+          a name. The title is the card's own (app-view.js
+          `_discussionCardModel`), so the row and the screen it opens
+          cannot drift apart on what they are called. */}
+      <span className="dev-ws-chat-text">
+        <span className="dev-ws-chat-title">{card.title.text}</span>
+        <span className="dev-ws-chat-said">{metaLineNodes(card)}</span>
+      </span>
       <Chevron />
     </button>
   );
@@ -554,31 +565,30 @@ function DiscussionRow({ card }: { card: DevCardModel }): ReactNode {
  * open, shipped, votes, unclaimed — put the outcome second and buried the
  * unclaimed count at the end, away from the total it qualifies.
  *
- * ── THE MARK IS BESIDE THE LABEL, NOT ON THE NUMBER ──
- * Tone used to be a colour on the integer itself: a green `6`, an amber `3`.
- * That is state carried by hue alone, which says nothing to a reader who
- * cannot separate the two, and it puts a status colour on text where the
- * rest of the product keeps text in text ink. The number takes
- * `--text-primary` like every other figure and a dot beside the label
- * carries the state. Only the two figures that are a CALL wear one: a zero
- * is not a warning, and "nobody on them" is a fact about the backlog, not an
- * alarm — it had no tone before and gains none here.
+ * ── THE MARK CARRIES THE TONE; THE COLOUR RIDES ALONG ──
+ * Tone was a colour on the integer alone — a green `6`, an amber `3` — which
+ * is state in hue and nothing else, unreadable to anyone who cannot separate
+ * the two. A dot beside the label carries it now, and BECAUSE it does, the
+ * number is free to take the colour as well: redundant rather than
+ * load-bearing is the whole difference. Only the two figures that are a CALL
+ * wear either: a zero is not a warning, and "nobody on them" is a fact about
+ * the backlog rather than an alarm, so both stay in text ink.
  */
 function DashTiles({ d }: { d: Dash }): ReactNode {
-  const cells: { key: string; n: number; label: string; dot?: string; title?: string }[] = [
+  const cells: { key: string; n: number; label: string; tone?: string; title?: string }[] = [
     { key: 'open', n: d.open, label: d.open === 1 ? 'open item' : 'open items' },
     { key: 'unclaimed', n: d.unclaimed, label: 'nobody on them' },
     {
       key: 'votes',
       n: d.votesWaiting,
       label: d.votesWaiting === 1 ? 'waiting on a vote' : 'waiting on votes',
-      dot: d.votesWaiting ? 'dev-ws-dash-dot-warn' : undefined,
+      tone: d.votesWaiting ? 'warn' : undefined,
     },
     {
       key: 'shipped',
       n: d.shippedWeek,
       label: 'shipped this week',
-      dot: d.shippedWeek ? 'dev-ws-dash-dot-good' : undefined,
+      tone: d.shippedWeek ? 'good' : undefined,
       title: d.partial
         ? 'At least this many: the merged history is longer than the page loaded.'
         : 'This calendar week, counted from Monday 00:00 UTC.',
@@ -589,7 +599,7 @@ function DashTiles({ d }: { d: Dash }): ReactNode {
       {cells.map((c) => (
         <span
           key={c.key}
-          className="dev-ws-dash-cell"
+          className={c.tone ? `dev-ws-dash-cell dev-ws-dash-cell-${c.tone}` : 'dev-ws-dash-cell'}
           data-ws-dash-cell={c.key}
           title={c.title}
         >
@@ -598,7 +608,7 @@ function DashTiles({ d }: { d: Dash }): ReactNode {
             {/* A GRID in app.css, not an inline run: the label wraps at phone
                 widths, and a centred mark floated to the middle of a two-line
                 label while its second line ran back underneath the dot. */}
-            {c.dot ? <i className={`dev-ws-dash-dot ${c.dot}`} aria-hidden="true" /> : null}
+            {c.tone ? <i className={`dev-ws-dash-dot dev-ws-dash-dot-${c.tone}`} aria-hidden="true" /> : null}
             <span>{c.label}</span>
           </span>
         </span>
@@ -676,38 +686,27 @@ function weekRange(startMs: number, endMs: number, live?: boolean): string {
  * about the summary's reach, not a claim about the app's age, and it can
  * always be made.
  */
-export function WeekWalk({ weeks, firstWeek, note, initialShown = 0 }: {
+export function WeekWalk({ weeks, firstWeek, note, shown, onMore }: {
   weeks: Dash['weeks'];
   firstWeek: number | null;
   /** Why the summary is what it is, when something is wrong with it. */
   note?: string;
   /**
-   * How many windows are open on the first render. The pane passes nothing
-   * and gets none, which is the product behaviour; this exists so the suite
-   * can assert what an OPENED walk draws.
+   * How many windows are open. CONTROLLED, and owned by the pane: the way
+   * back out of the walk ("Hide past weeks") is anchored to the lead block
+   * ABOVE this component — the one thing that does not move as the walk
+   * grows — so the pane is the only place that can hold the count for both
+   * controls to read.
    *
-   * It is a test seam and worth saying so plainly. The alternative was to
-   * leave a window drawn unasked purely so a static render could see one —
-   * which is letting the tests choose the product's default state, and this
-   * walk's default is the whole question. `renderToStaticMarkup` runs no
-   * effects and dispatches no events (tests/lib/render-tsx.js says so in its
-   * header), so there is no press for a test to make.
+   * It retires a test-only `initialShown` prop that existed because this
+   * state used to be internal and `renderToStaticMarkup` can neither run an
+   * effect nor dispatch a press. A controlled component needs no such seam:
+   * a test renders it at whatever count it wants to assert.
    */
-  initialShown?: number;
+  shown: number;
+  /** One more window, oldest-ward. */
+  onMore: () => void;
 }): ReactNode {
-  // How many windows are on screen. NONE, until asked: the pane opens on its
-  // lead paragraph — what the open work is about — and the whole history,
-  // the live week included, is behind the press. That is the bargain this
-  // walk has always made; what changed is only WHAT is always on screen,
-  // because `open` is a sentence about now rather than a window and has left
-  // the walk for the paragraph above it.
-  //
-  // The label stays "Show past week" on every press, which makes its first
-  // press the one place it overstates: This week is not a past week. The
-  // alternative — drawing the live window unasked — buys that one word at
-  // the cost of opening every visit on a block nobody asked for, and reads
-  // as a pane that forgot to collapse.
-  const [shown, setShown] = useState(initialShown);
   if (!weeks.length) return null;
   const drawn = weeks.slice(0, shown);
   const more = weeks.length - drawn.length;
@@ -760,7 +759,7 @@ export function WeekWalk({ weeks, firstWeek, note, initialShown = 0 }: {
           type="button"
           className="dev-ws-reveal dev-ws-week-more"
           data-ws-week-more=""
-          onClick={() => setShown(shown + 1)}
+          onClick={onMore}
         >
           {/* Pointing DOWN, because that is where the window it reveals
               appears — under the card you are reading, not above it. */}
@@ -2193,7 +2192,10 @@ const EAR_GAP_PX = 10;
  * stale one left on the host would be inherited by the next crossing, which
  * is why this is a list rather than four remove calls written out.
  */
-const EAR_PROPS = ['--dev-ws-ear-left', '--dev-ws-head-top'];
+const EAR_PROPS = ['--dev-ws-ear-left', '--dev-ws-group-w', '--dev-ws-head-top'];
+
+/** The ear's own horizontal padding (`padding: 5px 10px`, app.css). */
+const EAR_PAD_X = 10;
 
 /** The column gap between the tab strip and the pane below it (`.dev-ws`). */
 const WS_GAP_PX = 10;
@@ -2290,6 +2292,19 @@ function useEarInset(
       const wanted = Math.max(0, t.right - p.left + EAR_GAP_PX);
       const left = Math.min(wanted, Math.max(0, p.width - EAR_MIN_PX));
       host.style.setProperty('--dev-ws-ear-left', `${Math.round(left)}px`);
+      // HOW WIDE THE TABS ARE, and it is the same number under both
+      // groupings — which is the whole point. They fill the ear on By
+      // category, where the surface stops at the reading column; on By stage
+      // the SURFACE grows with the full-bleed pane and the tabs keep the size
+      // they had, rather than stretching to 268px apiece or shrinking to their
+      // labels.
+      //
+      // So it is measured to the NAV's right edge rather than the pane's. The
+      // nav keeps the reading column in both groupings and the ear's left edge
+      // sits beside the pill in both, so this is one width: 286px at 1280,
+      // whether the ear around it is 306px or 562px.
+      const groupW = Math.max(0, Math.round(n.right - (p.left + left) - EAR_PAD_X * 2));
+      host.style.setProperty('--dev-ws-group-w', `${groupW}px`);
       // WHERE THE HEAD COMES TO REST, which is under the pinned tab strip
       // rather than at the top of the scroller. Both stick, so the offset has
       // to be the strip's own height — three text labels and a glyph, so a
@@ -2465,6 +2480,12 @@ export function DevWorkshop(): ReactNode {
   const v = useStoreState(devWorkshopStore);
   const hostRef = useRef<HTMLDivElement>(null);
   const [sortKey, setSortKey] = useState<SortKey>('people');
+  // HOW FAR THE WEEK WALK IS OPEN, held here rather than inside WeekWalk
+  // because two controls read it and they sit on opposite sides of the
+  // walk: "Show past week" at its growing edge, and the way back out
+  // anchored to the lead block above it. Zero on arrival — every window,
+  // the live one included, is behind a press.
+  const [weeksShown, setWeeksShown] = useState(0);
   // Which themes are unfolded, keyed by id. The FIRST theme opens by
   // default: a lander whose every theme is shut is a list of headings.
   // Seeded once the first real publish lands, then the viewer's.
@@ -2784,6 +2805,22 @@ export function DevWorkshop(): ReactNode {
               the paragraph in above it would state the same thing twice. */}
           {v.dashboard.openLine || (!v.dashboard.weeks.length && summarise(v.dashboard)) ? (
             <>
+              {/* THE HEADING THE WALK'S FIRST CARD USED TO WEAR. It was
+                  titled "Open issues" while it was a window in the walk;
+                  promoting the line to a paragraph dropped the title with
+                  it, and left the pane's one always-visible sentence with
+                  nothing saying what it is about.
+
+                  A HEADING, not a prose prefix. The model's line is written
+                  to stand alone at about twelve words, so "Open items
+                  include …" in front of it produces a sentence with two
+                  subjects. It also puts this block in the same shape as the
+                  windows below — a heading, then its line — while its
+                  missing rule and missing dates keep it from reading as one
+                  of them. */}
+              <div className="dev-ws-lead-head">
+                <span className="dev-ws-lead-title">Open items</span>
+              </div>
               <p className="dev-ws-open-line" data-ws-open-line="">
                 {v.dashboard.openLine || summarise(v.dashboard)}
               </p>
@@ -2800,6 +2837,40 @@ export function DevWorkshop(): ReactNode {
                 ) : null}
             </>
           ) : null}
+          {/* ── THE WAY BACK, anchored to the block that never moves ──
+              "Show past week" sits at the walk's growing edge and travels
+              down the pane with every press; a collapse beside it would do
+              the same, so the deeper you went the further both controls
+              would be from where you started. This one rides the LEAD
+              block, which is fixed however many windows are open, so there
+              is always one place to look for it.
+
+              DRAWN ONLY WHEN THERE IS SOMETHING TO HIDE, from the first
+              press. A control that collapses nothing is a dead control,
+              and the alternative — waiting for a second window — means
+              pressing twice before discovering there is a way back.
+
+              The cost, and it is a real one: the control is ABOVE the
+              windows, so a reader who has pressed several times and
+              scrolled down to an older week has to come back up for it.
+              That is the trade an anchor makes, and it beats a control
+              that is never in the same place twice. */}
+          {v.dashboard.weeks.length && weeksShown > 0 ? (
+            <div className="dev-ws-lead-foot">
+              <button
+                type="button"
+                className="dev-ws-lead-collapse"
+                data-ws-week-less=""
+                onClick={() => setWeeksShown(0)}
+              >
+                {/* The reveal's own caret, turned over: what it does is the
+                    inverse of the control it undoes, so it is the same mark
+                    pointing the other way rather than a second glyph. */}
+                <ChevronDownIcon className="dev-ws-lead-chev" aria-hidden="true" />
+                Hide past weeks
+              </button>
+            </div>
+          ) : null}
           {/* The weeks, the live one on screen and the rest one press away.
               The note about the summary rides INSIDE the walk (above "Show
               past week"), with the card it is about — see WeekWalk. */}
@@ -2808,6 +2879,8 @@ export function DevWorkshop(): ReactNode {
               weeks={v.dashboard.weeks}
               firstWeek={v.dashboard.firstWeek}
               note={digestNote(v.meta, !!(v.dashboard.cards || v.dashboard.summary))}
+              shown={weeksShown}
+              onMore={() => setWeeksShown(weeksShown + 1)}
             />
           ) : null}
           {/* ── The door to the general chat, at the foot of this pane ──

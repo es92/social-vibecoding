@@ -420,6 +420,56 @@ test('a theme icon is one emoji or nothing — a word or a keycap is worse than 
   assert.equal(icon(undefined), '');
 });
 
+test('the digest prompt asks for a tally before the lines, and bans the mould', () => {
+  const src = require('node:fs').readFileSync(require.resolve('../src/services/llm'), 'utf8');
+  const at = src.indexOf('You write the three one-line cards');
+  const system = src.slice(at, src.indexOf('const user = `APP:', at));
+  assert.ok(system.length > 500, 'the system prompt was actually found');
+
+  // THE MOULD. Version 4 illustrated its two-clause rule with one worked
+  // example — "the Dev screen became a styled Workshop, alongside many bug
+  // fixes and reliability work" — and at twelve words an example is not a
+  // register, it is a template: every week came back as "Mostly <area>,
+  // alongside <the rest>". One line at a time that passed unnoticed; the
+  // walk stacks four of them.
+  assert.ok(!/alongside many bug fixes/.test(system), 'the worked example is gone');
+  assert.match(system, /VARY THE SENTENCE/);
+  for (const word of ['alongside', 'mostly']) {
+    assert.ok(system.includes(`never write "${word}"`), `"${word}" is banned by name`);
+  }
+  // Banning two words only helps if something else is offered in their place.
+  assert.match(system, /semicolon/, 'and other shapes are named');
+
+  // THE COUNT, MADE INTO AN ANSWER. "Lead by count, not by visibility" is
+  // older than this version and kept losing, because it asked the model to
+  // have counted and nothing made it count.
+  assert.match(system, /FILL IN "tally" FIRST/);
+  assert.match(system, /LEAD WITH THE AREA AT THE TOP OF YOUR OWN TALLY/);
+  const schema = llm.WORKSHOP_DIGEST_SCHEMA;
+  assert.ok(schema, 'the schema is exported so this is the real one');
+  assert.deepEqual(schema.required, ['tally', 'lastWeek', 'thisWeek', 'open'],
+    'tally is required, and ordered ahead of the lines that depend on it');
+  assert.deepEqual(Object.keys(schema.properties), ['tally', 'lastWeek', 'thisWeek', 'open']);
+  assert.deepEqual(schema.properties.tally.items.required, ['area', 'count']);
+});
+
+test('the tally is the model\u2019s scratch work, and is never written to the row', () => {
+  // It exists to force a count before a sentence; nothing draws it. A row
+  // carrying it would be a field every reader pays for and none sees — and
+  // `additionalProperties: false` on the row\u2019s own shape would have to
+  // learn about it. The caller logs it instead, beside the line it was meant
+  // to produce, so "the tally was right and the sentence ignored it" and
+  // "the tally was wrong" stay different findings.
+  const out = llm.sanitizeWorkshopDigest({
+    tally: [{ area: 'reliability', count: 9 }, { area: 'design', count: 2 }],
+    lastWeek: 'Nine reliability fixes landed; the board redesign was two of them.',
+    thisWeek: '',
+    open: 'Open work is the domain migration and a long tail of preview bugs.',
+  });
+  assert.deepEqual(Object.keys(out), ['lastWeek', 'thisWeek', 'open'], 'no tally on the row');
+  assert.equal(out.thisWeek, '', 'and an empty window still draws no card');
+});
+
 test('the discovery prompt cuts the board on ONE axis, and names the words that make a bucket', () => {
   const src = require('node:fs').readFileSync(require.resolve('../src/services/llm'), 'utf8');
   // Anchor the end marker AFTER the start: `const user = \`APP:` appears in
@@ -1019,7 +1069,10 @@ test('the status paragraph is written on a discovery pass, and survives one that
     const call = m.calls.find((c) => c.kind === 'digest');
 
     assert.match(call.params.messages[0].content, /BOARD \(JSON\):/);
-    assert.match(call.params.system, /exactly three fields, each ONE sentence of about 12 words/);
+    // Four required fields, three of which are sentences: the schema and
+    // the prose have to agree about that, or the model is told to answer
+    // with three fields against a shape that demands four.
+    assert.match(call.params.system, /three SENTENCE fields, each ONE sentence of about 12 words/);
     // The three windows, each its own field, and the rule that keeps a
     // single line from becoming a headline — the failure that produced
     // "mostly reshaped the Workshop and Dev board" on a week of eight areas.
@@ -1028,10 +1081,18 @@ test('the status paragraph is written on a discovery pass, and survives one that
     assert.match(call.params.system, /"open": what the app's open, unfinished work is about/);
     // The two rules that survive twelve words. "Name the breadth" did not:
     // at this length an inventory of five areas is a worse sentence than a
-    // shape, so breadth moves into a general tail clause instead.
-    assert.match(call.params.system, /TWO CLAUSES, NOT A LIST/);
-    assert.match(call.params.system, /COUNT BEFORE YOU LEAD/);
+    // shape, so breadth moves into a general tail clause instead. Both are
+    // still here; both were renamed in version 6, because the headings had
+    // become the thing they were teaching. "TWO CLAUSES, NOT A LIST" came
+    // with a worked example that four weeks then copied word for word, and
+    // "COUNT BEFORE YOU LEAD" asked for a count nothing made the model take.
+    assert.match(call.params.system, /NAME THE LARGEST THING, THEN ACKNOWLEDGE THE REST/);
+    assert.match(call.params.system, /FILL IN "tally" FIRST, THEN WRITE FROM IT/);
     assert.match(call.params.system, /how many items it has, NOT of how visible it is/);
+    // …and the schema that makes the second one an answer rather than an
+    // instruction, on the call the service actually places.
+    assert.deepEqual(call.params.output_config.format.schema.required,
+      ['tally', 'lastWeek', 'thisWeek', 'open']);
     assert.match(call.params.system, /STATE NO COUNTS/);
     // An empty window is an empty field, which is what stops its card being
     // drawn — the "(if any)" of the design, stated to the model.
@@ -1195,7 +1256,7 @@ test('digestDue: the version first, then the clocks', () => {
   assert.equal(svc.versionBehind(undefined, 2), false);
 });
 
-test('the three versions are positive integers and the digest is on its sixth', () => {
+test('the three versions are positive integers and the digest is on its seventh', () => {
   for (const v of [llm.WORKSHOP_DISCOVERY_VERSION, llm.WORKSHOP_PLACEMENT_VERSION, llm.WORKSHOP_DIGEST_VERSION]) {
     assert.ok(Number.isInteger(v) && v >= 1, String(v));
   }
@@ -1210,8 +1271,15 @@ test('the three versions are positive integers and the digest is on its sixth', 
   // 5 is vocabulary: the prompt had been telling the model to call the
   // grouping "categories", which names the OTHER axis (the voted
   // feature/bug/docs field). The line is user-facing, so the rows re-ask.
-  // 6 puts the noun back: there is ONE grouping and it is called a category.
-  assert.equal(llm.WORKSHOP_DIGEST_VERSION, 6);
+  // 6 breaks the one shape every week was arriving in — "Mostly X,
+  // alongside Y", which was the prompt's own worked example copied back —
+  // and makes the count a required schema field instead of an instruction.
+  // The walk draws four of these lines under each other now, so a shared
+  // skeleton is visible in a way it never was when only one was on screen.
+  // 7 is the merge of that rewrite with the grouping going back to being
+  // called a CATEGORY — both landed as 6 on the same day, and this text is
+  // neither of them alone.
+  assert.equal(llm.WORKSHOP_DIGEST_VERSION, 7);
 });
 
 test('a digest version bump rewrites a fresh paragraph now, and only the paragraph', async () => {

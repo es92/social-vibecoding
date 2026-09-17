@@ -3041,7 +3041,6 @@ const AppView = {
       // in place — and every repaint collapsed the list again. Open/closed
       // is component state now (card/list-rows.tsx) and survives repaints,
       // so both the branch and that helper are gone.
-      if (e.target.closest('a, button, input, form')) return;
       // A card inside a fold wrapper — the Workshop's rows, and the Board's
       // columns since they fold too (card/fold.tsx) — is the fold's: its own
       // handler opens and closes it, and the open card's "Open page ›" pill
@@ -3049,7 +3048,28 @@ const AppView = {
       // lookups below still find the item; this is what stops a click on
       // them opening it full-screen. See _inFoldWrapper for why it reads the
       // event's path rather than the target's ancestors.
+      //
+      // It sits ABOVE the control guard rather than below it so the
+      // discussion branch can sit between the two. Both arms only `return`,
+      // so which one a click on a link inside a fold takes is not
+      // observable; `_inFoldWrapper` is a pure read of the event path.
       if (AppView._inFoldWrapper(e)) return;
+      // The general discussion's row. It is not a topic — the chat is a
+      // full-screen sub-view with its own sub-tab — so it switches rather
+      // than calling openTopic.
+      //
+      // HANDLED BEFORE THE GUARD BELOW, for the reason the explore button
+      // above is: #2341 made this row a `<button>`, because with the card
+      // around it gone the row IS the control — and `a, button, input,
+      // form` then swallowed every click on it, so the row went dead and
+      // Enter on it with it. The fold check stays ahead of this one: a
+      // FOLDED discussion card on the Board carries the same hook and
+      // belongs to its fold.
+      if (e.target.closest('[data-discussion-row]')) {
+        App.switchTab('dev', null, 'chat');
+        return;
+      }
+      if (e.target.closest('a, button, input, form')) return;
       const sessionChip = e.target.closest('[data-session-chip]');
       if (sessionChip) {
         // Open card always reads the change; building is a separate action.
@@ -3061,13 +3081,6 @@ const AppView = {
         // Someone else's shared session → its public discussion topic
         // (never their dev chat — that stays owner-scoped server-side).
         AppView.openTopic('proposal', parseInt(sharedRow.dataset.sharedSessionRow, 10));
-        return;
-      }
-      // The general discussion's feed row. It is not a topic — the chat is a
-      // full-screen sub-view with its own sub-tab — so it switches rather
-      // than calling openTopic.
-      if (e.target.closest('[data-discussion-row]')) {
-        App.switchTab('dev', null, 'chat');
         return;
       }
       const issueRow = e.target.closest('[data-issue-row]');
@@ -6087,7 +6100,19 @@ const AppView = {
       // data-issue-row. A `1` rather than an id because there is exactly one.
       attrs: { 'data-discussion-row': '1', title: "Open the app's general chat" },
       icon: AppView._devCardIcon('chat'),
-      title: { text: 'General discussion', title: "Open the app's general chat" },
+      // NAMED FOR ITS APP. The Workshop draws this as one row at the foot
+      // of the dashboard pane, where "General discussion" alone does not
+      // say whose — the Dev screen can be reached from a notification or a
+      // direct link, so the app whose chat this is not always on screen
+      // above it. The bare form stays the fallback: an app whose name has
+      // not loaded gets a heading that is short rather than one that says
+      // "for undefined".
+      title: {
+        text: (AppView.appData && AppView.appData.name)
+          ? `General discussion for ${AppView.appData.name}`
+          : 'General discussion',
+        title: "Open the app's general chat",
+      },
       meta,
       pill: null,
       linked: [],
