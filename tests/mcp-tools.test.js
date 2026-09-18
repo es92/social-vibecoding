@@ -3618,7 +3618,7 @@ test('get_demo_status hands back the platform\'s own readiness list, shaped and 
     assert.equal(method, 'GET');
     assert.equal(pathname, '/api/apps/demo-app/demo');
     return {
-      demoMode: true, partner: { id: 50, username: 'sam' },
+      demoMode: true, partner: { id: 50, username: 'sam' }, approvalsRequired: 2,
       baseSha: 'b'.repeat(40), mainSha: 'm'.repeat(40),
       activeCount: 2, required: 2, creatorActive: true, partnerActive: true,
       notifyOnNewProposals: false,
@@ -3645,6 +3645,7 @@ test('get_demo_status hands back the platform\'s own readiness list, shaped and 
     assert.match(out.openProposal.title, /^<untrusted-content>/, 'a title is text somebody typed');
     assert.equal(out.partner.username, 'sam');
     assert.equal(out.required, 2);
+    assert.equal(out.approvalsRequired, 2, 'the rule the card counts against');
   } finally {
     c.restore();
   }
@@ -3654,7 +3655,11 @@ test('the demo write tools post to the demo routes and pass the platform\'s refu
   const demoCalls = [];
   const c = connector((method, pathname) => {
     if (pathname === '/api/apps/demo-app/demo-mode') {
-      return { demoMode: true, partner: { id: 50, username: 'sam' }, baseSha: 'b'.repeat(40) };
+      const sent = demoCalls.at(-1)?.body || {};
+      return {
+        demoMode: true, partner: { id: 50, username: 'sam' }, baseSha: 'b'.repeat(40),
+        approvalsRequired: 'approvals' in sent ? sent.approvals : 2,
+      };
     }
     if (pathname === '/api/apps/demo-app/demo/propose') {
       // Held, the platform announces nobody; the answer says so.
@@ -3675,8 +3680,18 @@ test('the demo write tools post to the demo routes and pass the platform\'s refu
     const on = await c.handlers.get('demo_mode')({ slug: 'demo-app', enabled: true, partnerName: 'sam' });
     assert.notEqual(on.isError, true);
     assert.equal(on.structuredContent.partner.username, 'sam');
-    assert.deepEqual(c.calls.at(-1).body, { enabled: true, partnerName: 'sam' });
+    assert.deepEqual(c.calls.at(-1).body, { enabled: true, partnerName: 'sam' },
+      'no approvals key unless the caller said one, so the platform default is the only default');
+    assert.equal(on.structuredContent.approvalsRequired, 2);
     assert.match(on.structuredContent.nextStep, /get_demo_status/);
+
+    // An explicit null is a choice, not an absence: it has to reach the platform.
+    const timed = await c.handlers.get('demo_mode')({ slug: 'demo-app', enabled: true, partnerName: 'sam', approvals: null });
+    assert.deepEqual(c.calls.at(-1).body, { enabled: true, partnerName: 'sam', approvals: null });
+    assert.equal(timed.structuredContent.approvalsRequired, null);
+    const three = await c.handlers.get('demo_mode')({ slug: 'demo-app', enabled: true, partnerName: 'sam', approvals: 3 });
+    assert.equal(c.calls.at(-1).body.approvals, 3);
+    assert.equal(three.structuredContent.approvalsRequired, 3);
 
     const proposed = await c.handlers.get('demo_propose')({
       slug: 'demo-app', branch: 'demo/animations', title: 'Smooth category animations',

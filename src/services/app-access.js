@@ -61,7 +61,7 @@ const NON_SECRET_APP_COLUMNS = [
   // Demo mode (routes/demo-mode.js): the switch, its synthetic partner and
   // the commit a reset puts main back to. The settings dialog reads the
   // first; nothing about any of them is secret.
-  'demo_mode', 'demo_partner_id', 'demo_base_sha',
+  'demo_mode', 'demo_partner_id', 'demo_base_sha', 'demo_prev_approvals',
 ];
 
 // `NON_SECRET_APP_COLUMNS` rendered as a bare comma-joined column list

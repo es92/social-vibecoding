@@ -234,6 +234,9 @@ export function AppSettingsDialog() {
       >
         This app is in demo mode. Proposals and votes from <b>@{app.demo_partner || 'its demo partner'}</b> are
         synthetic: the app’s creator made them to record how a change is proposed, previewed and merged.
+        {app.approvals_required != null ? <> While demo mode is on, a proposal here merges
+        on {app.approvals_required} approval{app.approvals_required === 1 ? '' : 's'} rather than
+        on the app’s usual timed rules; switching demo mode off puts that back.</> : null}
       </Alert> : null}
       {loading ? <p role="status" className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Loading app settings…</p> : null}
       {error ? <p role="alert" className="text-sm text-red-700 dark:text-red-400 mb-4">{error}</p> : null}

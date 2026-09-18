@@ -43,11 +43,13 @@ function resetWorld() {
       id: 1, slug: 'demo-app', name: 'Demo App', created_by: 7, self_hosted: false,
       repo_url: REPO, main_sha: 'm'.repeat(40),
       demo_mode: true, demo_partner_id: 50, demo_base_sha: 'b'.repeat(40),
+      approver_policy: 'anyone', approvals_required: 2, demo_prev_approvals: null,
     }],
     ['plain-app', {
       id: 2, slug: 'plain-app', name: 'Plain App', created_by: 7, self_hosted: false,
       repo_url: 'https://github.com/usernode-bot/plain-app', main_sha: 'p'.repeat(40),
       demo_mode: false, demo_partner_id: null, demo_base_sha: null,
+      approver_policy: 'anyone', approvals_required: null, demo_prev_approvals: null,
     }],
     ['homeroom', {
       id: 3, slug: 'homeroom', name: 'Homeroom', created_by: 7, self_hosted: true,
@@ -171,6 +173,15 @@ activeUsers.listActiveUserIds = async () => state.activeIds.slice();
 activeUsers.isUserActive = async (_pool, _appId, userId) => state.activeIds.includes(userId);
 const notificationPreferences = require('../src/services/notification-preferences');
 notificationPreferences.allowsKind = async () => state.notify;
+const governanceService = require('../src/services/governance');
+governanceService.getGovernance = async (_pool, appId) => {
+  const app = [...state.apps.values()].find((a) => a.id === appId) || {};
+  return {
+    approverPolicy: app.approver_policy === 'invited' ? 'invited' : 'anyone',
+    approvalsRequired: app.approvals_required ?? null,
+  };
+};
+governanceService.invalidateGovernance = record('invalidateGovernance');
 const appAccess = require('../src/services/app-access');
 appAccess.getAppForUser = async (_pool, slug) => (state.apps.get(slug) ? { ...state.apps.get(slug) } : null);
 
@@ -198,13 +209,22 @@ poolMod.getPool = () => ({
     if (s.includes('FROM username_history')) return { rows: [] };
     if (s.startsWith('UPDATE apps SET demo_mode = TRUE')) {
       const app = [...state.apps.values()].find((a) => a.id === params[2]);
-      Object.assign(app, { demo_mode: true, demo_partner_id: params[0], demo_base_sha: params[1] });
+      Object.assign(app, {
+        demo_mode: true, demo_partner_id: params[0], demo_base_sha: params[1],
+        // The CASE: the snapshot is only taken on the way in.
+        demo_prev_approvals: app.demo_mode ? app.demo_prev_approvals : (app.approvals_required ?? null),
+        approvals_required: params[3] ?? null,
+      });
       return { rows: [], rowCount: 1 };
     }
     if (s.startsWith('UPDATE apps SET demo_mode = FALSE')) {
       const app = [...state.apps.values()].find((a) => a.id === params[0]);
-      Object.assign(app, { demo_mode: false, demo_partner_id: null, demo_base_sha: null });
-      return { rows: [], rowCount: 1 };
+      Object.assign(app, {
+        demo_mode: false, demo_partner_id: null, demo_base_sha: null,
+        approvals_required: app.demo_mode ? (app.demo_prev_approvals ?? null) : (app.approvals_required ?? null),
+        demo_prev_approvals: null,
+      });
+      return { rows: [{ approvals_required: app.approvals_required }], rowCount: 1 };
     }
     if (s.startsWith('SELECT cs.*, a.slug AS app_slug')) {
       const open = state.sessions
@@ -634,6 +654,77 @@ test('a vote with nothing open, or on a proposal that just closed, is refused', 
   assert.equal(calls.checkAndMerge, undefined, 'nothing to merge-check when nothing was written');
 });
 
+// ── The approvals rule ──────────────────────────────────────────────────
+
+test('switching on puts the app on "at least 2 approvals", and switching off puts its own rule back', async () => {
+  // A creator who had deliberately set five.
+  const app = state.apps.get('plain-app');
+  app.approvals_required = 5;
+  let r = await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.approvalsRequired, 2, 'the card counts "1 of 2" while the take runs');
+  assert.equal(app.approvals_required, 2);
+  assert.equal(app.demo_prev_approvals, 5, 'what it was is kept, not lost');
+  assert.equal(calls.invalidateGovernance.length, 1, 'the governance cache is a cache');
+  // The two guards live in the statements, so they are pinned there: a fake
+  // pool can only answer what it is asked, and what it is asked IS the
+  // behaviour here.
+  const [onSql] = queriesLike('UPDATE apps SET demo_mode = TRUE');
+  assert.match(onSql.sql,
+    /demo_prev_approvals = CASE WHEN demo_mode THEN demo_prev_approvals ELSE approvals_required END/,
+    'the snapshot is taken on the way in and only then');
+  assert.match(onSql.sql, /approvals_required = \$4/, 'and the rule is written');
+  assert.equal(onSql.params[3], 2);
+
+  // Switching on again must not snapshot demo mode's own value over it.
+  r = await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(app.demo_prev_approvals, 5);
+
+  r = await post('/api/apps/plain-app/demo-mode', { enabled: false });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.approvalsRequired, 5);
+  assert.equal(app.approvals_required, 5, 'the creator\'s own rule is back');
+  assert.equal(app.demo_prev_approvals, null);
+  const [offSql] = queriesLike('UPDATE apps SET demo_mode = FALSE');
+  assert.match(offSql.sql,
+    /approvals_required = CASE WHEN demo_mode THEN demo_prev_approvals ELSE approvals_required END/,
+    'switching off an app that is already off must not read an empty snapshot as the default strategy');
+  assert.match(offSql.sql, /demo_prev_approvals = NULL/);
+  assert.equal(calls.invalidateGovernance.length, 3);
+});
+
+test('an app on the default strategy is restored to it, not to a number', async () => {
+  const app = state.apps.get('plain-app');
+  assert.equal(app.approvals_required, null, 'the default strategy, which is NULL');
+  await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat' });
+  assert.equal(app.approvals_required, 2);
+  assert.equal(app.demo_prev_approvals, null);
+  const off = await post('/api/apps/plain-app/demo-mode', { enabled: false });
+  assert.equal(off.body.approvalsRequired, null);
+  assert.equal(app.approvals_required, null, 'back on the timed rule it was on');
+});
+
+test('the number is the caller\'s, within the platform\'s own bounds, and null keeps the timed rule', async () => {
+  const app = state.apps.get('plain-app');
+  let r = await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat', approvals: 3 });
+  assert.equal(r.body.approvalsRequired, 3);
+  assert.equal(app.approvals_required, 3);
+
+  // Explicitly null: the app keeps its own timed rule, for a take that wants
+  // the countdown on camera.
+  r = await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat', approvals: null });
+  assert.equal(r.body.approvalsRequired, null);
+  assert.equal(app.approvals_required, null);
+
+  for (const bad of [0, -1, 2.5, 51, 'two']) {
+    r = await post('/api/apps/plain-app/demo-mode', { enabled: true, partnerName: 'pat', approvals: bad });
+    assert.equal(r.status, 400, `approvals: ${JSON.stringify(bad)}`);
+    assert.match(r.body.error, /whole number between 1 and 50/);
+  }
+  assert.equal(app.approvals_required, null, 'a refused number changed nothing');
+});
+
 // ── Reset ───────────────────────────────────────────────────────────────
 
 test('reset takes the partner\'s proposals down, puts main back, and rebuilds', async () => {
@@ -689,14 +780,26 @@ test('status names what would spoil the take, and is quiet when nothing would', 
   assert.equal(r.body.partner.username, 'sam');
   assert.equal(r.body.baseSha, 'b'.repeat(40));
 
-  // The creator has not used the app lately: the partner's yes would merge alone.
+  // Approvals mode counts VOTES, so how lately anybody used the app does not
+  // enter into the threshold — the reason that would have named it is gone.
   state.activeIds = [50];
   r = await get('/api/apps/demo-app/demo');
-  assert.equal(r.body.ready, false);
   assert.equal(r.body.creatorActive, false);
+  assert.equal(r.body.required, 2, 'the rule is the number, not the electorate');
+  assert.equal(r.body.approvalsRequired, 2);
+  assert.deepEqual(r.body.reasons, [], 'nothing about this would spoil the take');
+
+  // On the app's own timed rule, the old arithmetic is what applies: one
+  // active voter means one yes merges, which is the take spoiled.
+  state.apps.get('demo-app').approvals_required = null;
+  r = await get('/api/apps/demo-app/demo');
+  assert.equal(r.body.ready, false);
+  assert.equal(r.body.approvalsRequired, null);
   assert.equal(r.body.required, 1);
   assert.ok(r.body.reasons.some((x) => /not counted as a voter/.test(x)));
   assert.ok(r.body.reasons.some((x) => /expects 2/.test(x)));
+  assert.ok(r.body.reasons.some((x) => /Goes live in ~3d/.test(x)),
+    'and the card would count down rather than tally');
 });
 
 test('status reports the open proposal with its tally', async () => {

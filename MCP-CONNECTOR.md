@@ -187,7 +187,7 @@ tools, and only these, the partner acts:
 
 | Tool | What it actually does |
 |---|---|
-| `demo_mode` | Switches an app the caller created into demo mode; creates the partner |
+| `demo_mode` | Switches an app the caller created into demo mode; creates the partner, and puts the app on "at least N approvals" (2 by default) until it is switched off |
 | `demo_propose` | The partner opens a proposal from a branch already on the repo, or from a patch the platform applies there itself, and sends the real vote notification; with `hold` it opens the pull request and builds the preview but announces nothing |
 | `demo_promote` | Puts a held proposal up for the vote on cue, which sends that notification, casting the partner's vote first when asked |
 | `demo_vote` | The partner casts its vote — a real vote, through the real path |

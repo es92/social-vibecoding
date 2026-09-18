@@ -3809,11 +3809,12 @@ function registerTools(server, ctx) {
 
   server.registerTool('get_demo_status', {
     title: 'Demo mode: is the next take ready?',
-    description: 'What state an app\'s demo mode is in and, more usefully, what would spoil a take: `reasons` names every condition that would stop the notification or the vote from landing — the "New proposals to vote on" preference that defaults off, a creator who has not used the app in 10 days and so is not counted as a voter, a vote threshold that is not 2. `ready` is true when that list is empty. Also reports the partner, the commit demo_reset puts main back to, and the partner\'s open proposal with its tally and preview URL; a proposal opened with hold reads `held: true`, and its `checkState` and `previewReady` say whether the preview has finished building, which is what to wait for before demo_promote. Read-only; answers for any app this user created (this user must also be a full platform admin), in demo mode or not.',
+    description: 'What state an app\'s demo mode is in and, more usefully, what would spoil a take: `reasons` names every condition that would stop the notification or the vote from landing — the "New proposals to vote on" preference that defaults off, a creator who has not used the app in 10 days and so is not counted as a voter, a vote threshold that is not 2. `ready` is true when that list is empty. Also reports the partner, the approvals rule in force, the commit demo_reset puts main back to, and the partner\'s open proposal with its tally and preview URL; a proposal opened with hold reads `held: true`, and its `checkState` and `previewReady` say whether the preview has finished building, which is what to wait for before demo_promote. Read-only; answers for any app this user created (this user must also be a full platform admin), in demo mode or not.',
     inputSchema: { slug: z.string().describe('The app slug, as returned by list_apps.') },
     outputSchema: {
       demoMode: z.boolean(),
       partner: demoPartnerShape,
+      approvalsRequired: z.number().nullable(),
       baseSha: z.string().nullable(),
       mainSha: z.string().nullable(),
       activeCount: z.number(),
@@ -3848,6 +3849,9 @@ function registerTools(server, ctx) {
     return toolResult({
       demoMode: !!b.demoMode,
       partner: shapeDemoPartner(b.partner),
+      // null means the app's own timed rule, where one yes reads as a
+      // countdown rather than a tally.
+      approvalsRequired: b.approvalsRequired == null ? null : Number(b.approvalsRequired),
       baseSha: b.baseSha || null,
       mainSha: b.mainSha || null,
       activeCount: Number(b.activeCount) || 0,
@@ -3877,32 +3881,39 @@ function registerTools(server, ctx) {
 
   server.registerTool('demo_mode', {
     title: 'Switch demo mode on or off for an app you created',
-    description: 'Switch an app this user created into demo mode, or out of it; this user must also be a full platform admin, and both are required. ON creates the synthetic partner — `partnerName` is a username (letters, digits, underscores), and it is what the proposal card and the notification show, so choose what should be on camera — records where main stands so demo_reset can put it back, and gives the partner standing as a voter on this app. The partner cannot sign in and acts only through demo_propose, demo_vote and demo_reset. OFF removes the partner and its standing; it is refused while the partner still has proposals on the app, so demo_reset first. Refused on the platform app, on any app this user did not create, and for a user who is not a full platform admin. Never present the partner as a person: its proposals and votes are synthetic, and the app\'s settings say so.',
+    description: 'Switch an app this user created into demo mode, or out of it; this user must also be a full platform admin, and both are required. ON also puts the app into "at least N approvals" mode (N = 2 unless the approvals argument says otherwise), because under the default strategy a proposal with one yes counts down a lazy-consensus window and the card reads "Goes live in ~3d" where a recording wants "1 of 2 approvals"; the votes and the gate are unchanged, and OFF puts the app\'s own rule back. ON creates the synthetic partner — `partnerName` is a username (letters, digits, underscores), and it is what the proposal card and the notification show, so choose what should be on camera — records where main stands so demo_reset can put it back, and gives the partner standing as a voter on this app. The partner cannot sign in and acts only through demo_propose, demo_vote and demo_reset. OFF removes the partner and its standing; it is refused while the partner still has proposals on the app, so demo_reset first. Refused on the platform app, on any app this user did not create, and for a user who is not a full platform admin. Never present the partner as a person: its proposals and votes are synthetic, and the app\'s settings say so.',
     inputSchema: {
       slug: z.string().describe('The app slug, as returned by list_apps.'),
       enabled: z.boolean().describe('true to switch demo mode on, false to switch it off.'),
       partnerName: z.string().optional()
         .describe('The partner\'s username, required the first time demo mode goes on. 3–32 characters: letters, digits, underscores.'),
+      approvals: z.number().nullable().optional()
+        .describe('How many approvals merge a proposal while demo mode is on, which is also what the vote card counts ("1 of 2 approvals"). Defaults to 2, the creator plus the partner. Pass null to leave the app on its own timed rule instead, where a single yes shows a countdown.'),
     },
     outputSchema: {
       demoMode: z.boolean(),
       partner: demoPartnerShape,
+      approvalsRequired: z.number().nullable(),
       baseSha: z.string().nullable(),
       nextStep: z.string(),
     },
     annotations: writeAnnotations,
-  }, async ({ slug, enabled, partnerName }) => {
+  }, async ({ slug, enabled, partnerName, approvals }) => {
     const guard = scopeGuard(WRITE_SCOPE);
     if (guard) return guard;
     if (!requireSlug(slug)) return toolError('invalid_request', 'slug must be a valid app slug.');
     const body = { enabled: enabled !== false };
     if (typeof partnerName === 'string' && partnerName.trim()) body.partnerName = partnerName.trim();
+    // Passed through only when the caller said something, so the platform's
+    // own default (2) stays the one default.
+    if (approvals !== undefined) body.approvals = approvals;
     const r = await callPlatform(baseUrl, accessToken, 'POST', `/api/apps/${slug}/demo-mode`, body);
     if (!r.ok) return platformError(r);
     const b = r.body || {};
     return toolResult({
       demoMode: !!b.demoMode,
       partner: shapeDemoPartner(b.partner),
+      approvalsRequired: b.approvalsRequired == null ? null : Number(b.approvalsRequired),
       baseSha: b.baseSha || null,
       nextStep: b.demoMode
         ? 'Call get_demo_status: it lists what would still keep a take from working, starting with the "New proposals to vote on" preference, which defaults off.'

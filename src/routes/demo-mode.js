@@ -13,6 +13,8 @@ const appAccess = require('../services/app-access');
 const events = require('../services/events');
 const topicAttrs = require('../services/topic-attributes');
 const usernames = require('../services/usernames');
+const appManifest = require('../services/app-manifest');
+const governanceService = require('../services/governance');
 const prImportSync = require('../services/pr-import-sync');
 const sessionLifecycle = require('../services/session-lifecycle');
 const externalAgentPatch = require('../services/external-agent-patch');
@@ -88,6 +90,24 @@ const votes = require('./votes');
 // the notification is tapped. By then the preview is minutes old, which is
 // the point: the beat the camera waits for is the notification, not a
 // build.
+//
+// ── The approvals rule ─────────────────────────────────────────────────
+//
+// Switching demo mode on also puts the app into the "at least N approvals"
+// mode (services/governance.js), N = 2 by default. Under the DEFAULT
+// strategy a two-voter app whose proposal has one yes arms the
+// lazy-consensus clock, and the card reads "Goes live in ~3d · 1/2" until
+// the second vote lands. That is correct, and it is unrecordable: the beat
+// on camera is "she has approved it, it is waiting on me", and what the
+// screen says is a three-day countdown. In approvals mode the same moment
+// reads "1 of 2 approvals", there is no clock at all, and the second yes
+// still merges it immediately. Nothing about the vote changes: the same
+// votes are cast, counted and gated.
+//
+// It is a GOVERNANCE column, so it is put back: the previous value is
+// snapshotted into demo_prev_approvals on the way in and restored on the
+// way out, and the app's settings dialog says the rule is in force while
+// demo mode is on.
 //
 // demo/vote records the partner's vote through recordVote and hands the
 // session to checkAndMerge, exactly as routes/votes.js does for a person.
@@ -184,6 +204,19 @@ function demoModeRoutes(config) {
        ON CONFLICT (app_id, user_id) DO UPDATE SET status = 'member'`,
       [app.id, partner.id, creatorId]
     );
+  }
+
+  // The approvals rule a switch-on asks for: 2 unless told otherwise, and
+  // an explicit null keeps the app on its own (timed) strategy for a take
+  // that wants the countdown on camera. Answers { ok, value } or an error.
+  function readApprovals(body) {
+    if (!body || !('approvals' in body) || body.approvals === undefined) return { ok: true, value: 2 };
+    if (body.approvals === null) return { ok: true, value: null };
+    const n = Number(body.approvals);
+    if (!Number.isInteger(n) || n < 1 || n > appManifest.MAX_APPROVALS_REQUIRED) {
+      return { ok: false, error: `approvals must be a whole number between 1 and ${appManifest.MAX_APPROVALS_REQUIRED}, or null to leave the app's own rule alone.` };
+    }
+    return { ok: true, value: n };
   }
 
   // Every proposal the partner has on this app, any status. Reset removes
@@ -314,19 +347,33 @@ function demoModeRoutes(config) {
             error: 'The partner still has proposals on this app. Reset demo mode first, then switch it off.',
           });
         }
-        await pool.query(
-          'UPDATE apps SET demo_mode = FALSE, demo_partner_id = NULL, demo_base_sha = NULL WHERE id = $1',
+        // The approvals rule goes back to whatever it was. Guarded on
+        // demo_mode so switching off an app that is already off cannot read
+        // an empty snapshot as "the default strategy" and clear a real
+        // setting.
+        const { rows: restored } = await pool.query(
+          `UPDATE apps
+              SET demo_mode = FALSE, demo_partner_id = NULL, demo_base_sha = NULL,
+                  approvals_required = CASE WHEN demo_mode THEN demo_prev_approvals ELSE approvals_required END,
+                  demo_prev_approvals = NULL
+            WHERE id = $1
+        RETURNING approvals_required`,
           [app.id]
         );
+        governanceService.invalidateGovernance(app.id);
         if (partner) {
           // Its standing goes with it (rule 4 above), and so does the row: a
           // partner has no history left by now, and a synthetic account with
           // nothing to attribute is a name held for nobody.
           await pool.query('DELETE FROM users WHERE id = $1 AND is_synthetic = TRUE', [partner.id]);
         }
-        log.info('demo-mode', 'Demo mode off', { slug: app.slug, userId: req.user.id });
-        return res.json({ demoMode: false, partner: null, baseSha: null });
+        const back = restored[0] ? restored[0].approvals_required : null;
+        log.info('demo-mode', 'Demo mode off', { slug: app.slug, userId: req.user.id, approvalsRequired: back });
+        return res.json({ demoMode: false, partner: null, baseSha: null, approvalsRequired: back });
       }
+
+      const approvals = readApprovals(req.body);
+      if (!approvals.ok) return res.status(400).json({ error: approvals.error });
 
       let who = partner;
       const wanted = typeof req.body?.partnerName === 'string' ? req.body.partnerName.trim() : '';
@@ -369,13 +416,26 @@ function demoModeRoutes(config) {
           });
         }
       }
+      // The snapshot is taken on the way IN and only then: switching on an
+      // app that is already on must not overwrite it with demo mode's own
+      // value, which would make the way out a no-op.
       await pool.query(
-        'UPDATE apps SET demo_mode = TRUE, demo_partner_id = $1, demo_base_sha = $2 WHERE id = $3',
-        [who.id, baseSha, app.id]
+        `UPDATE apps
+            SET demo_mode = TRUE, demo_partner_id = $1, demo_base_sha = $2,
+                demo_prev_approvals = CASE WHEN demo_mode THEN demo_prev_approvals ELSE approvals_required END,
+                approvals_required = $4
+          WHERE id = $3`,
+        [who.id, baseSha, app.id, approvals.value]
       );
+      governanceService.invalidateGovernance(app.id);
       await refreshPartnerStanding(app, who, req.user.id);
-      log.info('demo-mode', 'Demo mode on', { slug: app.slug, partner: who.username, baseSha });
-      res.json({ demoMode: true, partner: { id: who.id, username: who.username }, baseSha });
+      log.info('demo-mode', 'Demo mode on', {
+        slug: app.slug, partner: who.username, baseSha, approvalsRequired: approvals.value,
+      });
+      res.json({
+        demoMode: true, partner: { id: who.id, username: who.username }, baseSha,
+        approvalsRequired: approvals.value,
+      });
     } catch (err) {
       log.error('demo-mode', 'Switch failed', { slug: req.params.slug, message: err.message });
       res.status(500).json({ error: 'Internal server error' });
@@ -401,7 +461,13 @@ function demoModeRoutes(config) {
       }
       const activeIds = await activeUsers.listActiveUserIds(pool, app.id);
       const activeCount = activeIds.length;
-      const required = activeUsers.requiredVotes(activeCount, tally ? tally.no : 0);
+      // Which rule decides the threshold. In approvals mode it is the number
+      // itself, and how lately anybody used the app does not enter into it.
+      const gov = await governanceService.getGovernance(pool, app.id);
+      const approvalsRequired = gov.approvalsRequired;
+      const required = approvalsRequired != null
+        ? approvalsRequired
+        : activeUsers.requiredVotes(activeCount, tally ? tally.no : 0);
       const creatorActive = await activeUsers.isUserActive(pool, app.id, req.user.id);
       const partnerActive = partner ? await activeUsers.isUserActive(pool, app.id, partner.id) : false;
       const notify = await notificationPreferences.allowsKind(pool, {
@@ -414,20 +480,30 @@ function demoModeRoutes(config) {
       if (!notify) {
         reasons.push('"New proposals to vote on" is off for you on this app (it defaults off), so no notification would arrive. Switch it on in the app\'s notification settings.');
       }
-      if (!creatorActive) {
-        reasons.push('You have not used this app in the last 10 days, so you are not counted as a voter and the partner\'s yes would merge on its own. Open the app for a minute.');
-      }
-      if (partner && !partnerActive) {
-        reasons.push('The partner is not counted as a voter; switching demo mode on again, or proposing, refreshes that.');
+      if (approvalsRequired == null) {
+        // Only the default strategy counts voters by how lately they used
+        // the app; approvals mode counts votes.
+        if (!creatorActive) {
+          reasons.push('You have not used this app in the last 10 days, so you are not counted as a voter and the partner\'s yes would merge on its own. Open the app for a minute.');
+        }
+        if (partner && !partnerActive) {
+          reasons.push('The partner is not counted as a voter; switching demo mode on again, or proposing, refreshes that.');
+        }
+        reasons.push('This app is on the default strategy, so a proposal with one yes counts down a lazy-consensus window and the card reads "Goes live in ~3d" rather than a tally. Switch demo mode on with approvals: 2 for the "1 of 2 approvals" card.');
       }
       if (required !== 2) {
-        reasons.push(`${activeCount} active voter(s) means ${required} yes vote(s) merge a proposal; the take expects 2, so the partner's yes waits on yours.`);
+        reasons.push(approvalsRequired != null
+          ? `This app merges a proposal on ${required} approval(s); the take expects 2, so the partner's yes waits on yours.`
+          : `${activeCount} active voter(s) means ${required} yes vote(s) merge a proposal; the take expects 2, so the partner's yes waits on yours.`);
       }
 
       res.json({
         demoMode: !!app.demo_mode,
         partner: partner ? { id: partner.id, username: partner.username } : null,
         baseSha: app.demo_base_sha || null,
+        // null means the app's own (timed) strategy, where a single yes
+        // shows a countdown rather than a tally.
+        approvalsRequired: approvalsRequired ?? null,
         mainSha: app.main_sha || null,
         activeCount,
         required,

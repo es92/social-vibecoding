@@ -8297,6 +8297,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS is_synthetic BOOLEAN NOT NULL DEFAULT
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS demo_mode BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS demo_partner_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS demo_base_sha VARCHAR(40);
+-- What the app's approvals rule was before demo mode changed it, so switching
+-- demo mode off puts it back. NULL while demo mode is off; NULL while it is ON
+-- means the app was on the default (timed) strategy, which is the common case.
+-- Demo mode sets apps.approvals_required so the vote card reads "1 of 2
+-- approvals" instead of counting down a lazy-consensus window nobody in a
+-- recording waits out; the column it overwrites is a governance setting, so it
+-- is restored rather than cleared.
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS demo_prev_approvals INTEGER;
 
 -- Cross-Pod ownership of a preview build/capture; ephemeral runtime state.
 --
