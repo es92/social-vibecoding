@@ -22,6 +22,9 @@ const read = (...p) => fs.readFileSync(path.join(root, ...p), 'utf8');
 const settings = new Map([['homeroom_bot_mode', 'off']]);
 const writes = [];
 let runRow = { id: 41, rating: null, rating_note: null, rated_at: null };
+// Whether the bot's users row exists yet: the dashboard creates it on load
+// when it does not, so the cap box is never blank (#2684 follow-up).
+let botExists = true;
 
 const poolMod = require('../src/db/pool');
 poolMod.getPool = () => ({
@@ -32,8 +35,10 @@ poolMod.getPool = () => ({
     }
     if (/INSERT INTO platform_settings/.test(s)) { settings.set(params[0], params[1]); writes.push(['setting', params[0], params[1]]); return { rows: [] }; }
     if (/UPDATE users SET weekly_limit_cents/.test(s)) { writes.push(['cap', params[0]]); return { rows: [] }; }
-    if (/FROM users WHERE username = \$1 AND is_synthetic = TRUE/.test(s)) {
-      return { rows: [{ id: 77, username: 'homeroom_bot', weekly_limit_cents: 15000 }] };
+    if (/INSERT INTO users/.test(s)) { botExists = true; writes.push(['bot-user', params[0]]); return { rows: [] }; }
+    if (/SELECT is_synthetic FROM users/.test(s)) return { rows: [{ is_synthetic: true }] };
+    if (/FROM users WHERE username = \$1/.test(s)) {
+      return { rows: botExists ? [{ id: 77, username: 'homeroom_bot', weekly_limit_cents: 15000 }] : [] };
     }
     if (/COUNT\(\*\)::int AS runs/.test(s)) return { rows: [{ runs: 3, questions: 1, ready: 1, person: 1, failed: 0, rated: 2, agreed: 1, suppressed: 0, cost_usd: 0.12 }] };
     if (/FROM homeroom_bot_queue q JOIN apps/.test(s)) return { rows: [] };
@@ -112,6 +117,17 @@ test('GET /api/admin/homeroom-bot: a view-only admin reads the whole dashboard; 
   who = FULL_ADMIN;
 });
 
+test('GET creates the bot user when it does not exist yet, so the cap is never blank', async () => {
+  botExists = false;
+  writes.length = 0;
+  const res = await call('GET', '/api/admin/homeroom-bot');
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.ok(writes.some((w) => w[0] === 'bot-user' && w[1] === 'homeroom_bot'), 'the users row is created on load');
+  assert.equal(data.bot.username, 'homeroom_bot');
+  assert.equal(data.bot.weeklyLimitCents, 15000);
+});
+
 test('PUT settings: refused for a view-only admin, refuses live, accepts shadow and a cap', async () => {
   who = VIEW_ADMIN;
   let res = await call('PUT', '/api/admin/homeroom-bot/settings', { mode: 'shadow' });
@@ -125,6 +141,10 @@ test('PUT settings: refused for a view-only admin, refuses live, accepts shadow 
 
   res = await call('PUT', '/api/admin/homeroom-bot/settings', { batchSize: 0 });
   assert.equal(res.status, 400);
+  res = await call('PUT', '/api/admin/homeroom-bot/settings', { batchSize: 501 });
+  assert.equal(res.status, 400);
+  res = await call('PUT', '/api/admin/homeroom-bot/settings', { batchSize: 100 });
+  assert.equal(res.status, 200, 'the default is 100 and the ceiling 500');
   res = await call('PUT', '/api/admin/homeroom-bot/settings', {});
   assert.equal(res.status, 400);
 

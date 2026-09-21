@@ -1284,6 +1284,15 @@ function issueRoutes(config) {
       }
 
       pushIssueUpdate({ action: 'created', appSlug: app.slug, appId: app.id, issueId: rows[0].id, kind });
+      // The Homeroom bot triages a new request as soon as it exists — the
+      // create carries the local row's id, so the twin's number goes here.
+      if (githubIssueNumber) {
+        try {
+          require('../services/homeroom-bot').noteIssueActivity({ appId: app.id, issueNumber: githubIssueNumber, reason: 'created' });
+        } catch (botErr) {
+          log.warn('issues', 'Homeroom bot wake failed', { err: botErr.message });
+        }
+      }
 
       log.info('issues', 'Issue created', { issueId: rows[0].id, kind, title });
       res.status(201).json({ issue: rows[0] });

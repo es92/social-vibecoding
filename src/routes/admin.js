@@ -962,7 +962,7 @@ function adminRoutes(config) {
 
   router.put('/api/admin/homeroom-bot/settings', requireAdminWrite, async (req, res) => {
     try {
-      const result = await homeroomBot.writeSettings(pool, req.body || {}, req.user.id);
+      const result = await homeroomBot.writeSettings(pool, req.body || {}, req.user.id, config);
       if (!result.ok) return res.status(400).json({ error: result.error });
       log.info('admin', 'Homeroom bot settings updated', {
         by: req.user.username, patch: Object.keys(req.body || {}),

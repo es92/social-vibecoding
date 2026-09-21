@@ -59,8 +59,25 @@ function _onBusMessage({ kind, routing, data, oversize }) {
     case 'user':
       if (r.userId != null) deliverToUser(r.userId, payload);
       return;
+    case 'homeroom_bot':
+      // Not a socket event at all: the Homeroom bot's loop runs on one Pod
+      // and an issue event can land on any, so the wake rides this bus.
+      // The bot ignores it on every Pod but the one running the loop.
+      require('./homeroom-bot').onBusMessage(payload);
+      return;
     default:
       log.warn('ws', 'unknown bus kind', { kind });
+  }
+}
+
+// The Homeroom bot follows issue activity. Best-effort by construction: the
+// event has already been delivered, and a bot that fails to hear it is
+// caught up by its reconcile sweep.
+function noteIssueActivityForBot(appId, issueNumber, reason) {
+  try {
+    require('./homeroom-bot').noteIssueActivity({ appId, issueNumber, reason });
+  } catch (err) {
+    log.warn('ws', 'homeroom bot wake failed', { err: err.message });
   }
 }
 
@@ -633,6 +650,9 @@ async function handleMessage(pool, client, msg) {
       };
 
       broadcast(client.appId, outMsg);
+      // A person answering on an issue's thread is exactly what the Homeroom
+      // bot waits for; a system row (a claim, a bounty) is not a message.
+      if (thread && thread.type === 'issue') noteIssueActivityForBot(client.appId, thread.ref, 'thread');
 
       events.record(pool, {
         type: events.EVENT_TYPES.CHAT_MESSAGE_SENT,
@@ -1165,6 +1185,12 @@ function pushAppUpdate(data) {
 function pushIssueUpdate(data) {
   broadcastGlobalScoped({ type: 'issue_update', ...data },
     { appId: data.appId, appSlug: data.appSlug });
+  // An edit or an unclaim names the GitHub issue; a create names the local
+  // row, so routes/issues.js wakes the bot itself once the twin exists.
+  if (data && data.issueNumber != null && data.appId != null
+      && (data.action === 'updated' || data.action === 'unclaimed')) {
+    noteIssueActivityForBot(data.appId, data.issueNumber, data.action);
+  }
   noteBoardChange(data);
 }
 

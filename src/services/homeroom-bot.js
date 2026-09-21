@@ -65,26 +65,39 @@ const KEY_BATCH_SIZE = 'homeroom_bot_batch_size';
 const KEY_PAUSED_APPS = 'homeroom_bot_paused_apps';
 const SETTING_KEYS = Object.freeze([KEY_MODE, KEY_CONCURRENCY, KEY_BATCH_SIZE, KEY_PAUSED_APPS]);
 
+// batchSize is how many of ONE app's issues a pass takes before the loop
+// looks for the most urgent app again — the fairness knob between apps, not
+// a throughput cap: the loop drains continuously (see the cadence below).
+// 100 means "finish the app you are on" for any realistic board.
 const DEFAULTS = Object.freeze({
   mode: 'off',
   concurrency: 1,
-  batchSize: 10,
+  batchSize: 100,
   pausedApps: [],
 });
 const MAX_CONCURRENCY = 4;
-const MAX_BATCH_SIZE = 50;
+const MAX_BATCH_SIZE = 500;
 
 // The bot's own weekly allowance, on its users row like anybody else's.
 // $150 to start: at Flash prices a triage is a few cents, so this is a
 // ceiling on a runaway loop, not a budget anybody expects to reach.
 const DEFAULT_WEEKLY_LIMIT_CENTS = 15000;
 
-// Loop cadence. A pass drains one batch; when it did work the next pass
-// follows almost at once, when the queue was empty the loop idles.
+// Loop cadence. The loop is EVENT-DRIVEN: an issue filed, edited or
+// discussed on the platform calls noteIssueActivity, which queues that app's
+// issues and wakes the loop at once (through the ws-bus when the event
+// landed on another Pod, since only the leader runs the loop). A pass drains
+// one batch; when it did work the next pass follows almost at once, and when
+// the queue was empty the loop sleeps until the next wake. The idle delay is
+// only a fallback poll for a wake that was lost, and REFRESH_INTERVAL_MS is
+// the reconcile sweep for what no event can tell us — an issue opened or
+// commented on GitHub directly, a claim that expired — read through
+// github.fetchPublicIssues' own cache.
 const FIRST_PASS_DELAY_MS = 60 * 1000;
 const BUSY_PASS_DELAY_MS = 2 * 1000;
-const IDLE_PASS_DELAY_MS = 2 * 60 * 1000;
+const IDLE_PASS_DELAY_MS = 30 * 1000;
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const BUS_KIND = 'homeroom_bot';
 
 // Eligibility windows. A human claim counts while it is younger than the
 // board's own claim TTL; a paused human session counts while it is inside
@@ -109,6 +122,14 @@ let stopped = false;
 let passInFlight = false;
 let lastRefreshAt = 0;
 let triagePromptCache = null;
+// The config start() was handed, so a wake can schedule a pass itself.
+let loopConfig = null;
+// Apps whose issues changed since the last pass (wake), and whether a full
+// reconcile was asked for (the mode was switched on, say). Read and cleared
+// at the top of every pass; only meaningful on the Pod running the loop.
+const pendingApps = new Set();
+let refreshAllRequested = false;
+let wakeRequested = false;
 // What the last pass did, for the dashboard: a loop that is on but idle
 // on budget or on a worker fault should say so rather than show nothing.
 let lastPass = null;
@@ -211,9 +232,13 @@ function validateSettingsPatch(patch) {
   return { ok: true, updates, weeklyLimitCents };
 }
 
-async function writeSettings(pool, patch, actorId) {
+async function writeSettings(pool, patch, actorId, config = {}) {
   const valid = validateSettingsPatch(patch);
   if (!valid.ok) return valid;
+  let modeBefore = null;
+  if (valid.updates.some(([key]) => key === KEY_MODE)) {
+    try { modeBefore = (await readSettings(pool)).mode; } catch {}
+  }
   for (const [key, value] of valid.updates) {
     await pool.query(
       `INSERT INTO platform_settings (key, value, updated_at, updated_by)
@@ -224,6 +249,10 @@ async function writeSettings(pool, patch, actorId) {
     );
   }
   if (valid.weeklyLimitCents !== undefined) {
+    // The cap lives on the bot's users row, which the first pass used to be
+    // the only thing that created — so a cap saved before that pass updated
+    // nothing and the box stayed blank. Create the row first.
+    await ensureBotUser(pool, config);
     await pool.query(
       'UPDATE users SET weekly_limit_cents = $1 WHERE username = $2 AND is_synthetic = TRUE',
       [valid.weeklyLimitCents, BOT_USERNAME],
@@ -234,6 +263,12 @@ async function writeSettings(pool, patch, actorId) {
       const limits = require('./limits');
       limits.invalidate();
     } catch {}
+  }
+  const modeAfter = valid.updates.find(([key]) => key === KEY_MODE)?.[1];
+  if (modeAfter && modeAfter !== 'off' && modeAfter !== modeBefore) {
+    // Switched on: rebuild the whole queue now rather than when the next
+    // reconcile sweep happens to be due.
+    wakeAll();
   }
   return { ok: true };
 }
@@ -529,6 +564,27 @@ async function refreshApp(pool, app, { github = require('./github') } = {}) {
 
 async function refreshQueue(pool, settings, deps = {}) {
   const apps = await listApps(pool);
+  const paused = new Set(settings?.pausedApps || []);
+  const summary = { apps: 0, queued: 0, removed: 0, skipped: 0 };
+  for (const app of apps) {
+    if (paused.has(app.slug)) continue;
+    summary.apps += 1;
+    try {
+      const r = await refreshApp(pool, app, deps);
+      summary.queued += r.queued;
+      summary.removed += r.removed;
+      if (r.skipped) summary.skipped += 1;
+    } catch (err) {
+      log.warn('homeroom-bot', 'Queue refresh failed for app', { app: app.slug, err: err.message });
+    }
+  }
+  return summary;
+}
+
+/** refreshQueue for the named apps only: what a wake asks for. */
+async function refreshApps(pool, settings, appIds, deps = {}) {
+  const wanted = new Set(appIds.map(Number));
+  const apps = (await listApps(pool)).filter((a) => wanted.has(Number(a.id)));
   const paused = new Set(settings?.pausedApps || []);
   const summary = { apps: 0, queued: 0, removed: 0, skipped: 0 };
   for (const app of apps) {
@@ -874,11 +930,23 @@ async function runOnce(pool, config, deps = {}) {
     if (settings.mode === 'off') return out;
 
     const now = deps.now ? deps.now() : Date.now();
-    if (deps.forceRefresh || now - lastRefreshAt >= REFRESH_INTERVAL_MS) {
+    // Take the wakes that arrived before this pass. Ones that arrive DURING
+    // it are left for the next, which tick() schedules at once.
+    const targeted = [...pendingApps];
+    pendingApps.clear();
+    const forceAll = !!deps.forceRefresh || refreshAllRequested;
+    refreshAllRequested = false;
+    wakeRequested = false;
+    if (forceAll || now - lastRefreshAt >= REFRESH_INTERVAL_MS) {
       const summary = await refreshQueue(pool, settings, deps);
       lastRefreshAt = now;
       out.refreshed = true;
       if (summary.queued) log.info('homeroom-bot', 'Queue refreshed', summary);
+    } else if (targeted.length) {
+      const summary = await refreshApps(pool, settings, targeted, deps);
+      out.refreshed = true;
+      out.woken = targeted.length;
+      if (summary.queued) log.info('homeroom-bot', 'Queue refreshed on activity', summary);
     }
 
     const bot = await ensureBotUser(pool, config);
@@ -932,7 +1000,8 @@ async function runOnce(pool, config, deps = {}) {
 
 function schedule(config, delayMs) {
   if (stopped) return;
-  timer = setTimeout(() => { tick(config); }, delayMs);
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(() => { timer = null; tick(config); }, delayMs);
   if (typeof timer.unref === 'function') timer.unref();
 }
 
@@ -944,6 +1013,9 @@ async function tick(config) {
     const { getPool } = require('../db/pool');
     const out = await runOnce(getPool(config), config);
     if (out.processed > 0 && !out.paused && out.mode !== 'off') delay = BUSY_PASS_DELAY_MS;
+    // A wake that landed while this pass ran is not made to wait out the
+    // idle delay; a pass that paused (budget, fault) is not spun by it.
+    if (wakeRequested && !out.paused && out.mode !== 'off') delay = 0;
   } catch (err) {
     log.error('homeroom-bot', 'Tick failed', { err: err.message });
   } finally {
@@ -956,6 +1028,7 @@ async function tick(config) {
 function start(config) {
   if (timer) return;
   stopped = false;
+  loopConfig = config;
   schedule(config, FIRST_PASS_DELAY_MS);
 }
 
@@ -963,6 +1036,64 @@ function stop() {
   stopped = true;
   if (timer) clearTimeout(timer);
   timer = null;
+}
+
+// ── Wakes ────────────────────────────────────────────────────────────────
+//
+// The loop runs on the leader Pod only; an issue event can land on any Pod.
+// So a wake has two halves: the local one (below) records what changed and
+// pulls the next pass forward, and the bus half tells the other Pods the
+// same thing — the leader among them does the local half on receipt. A Pod
+// that is not running the loop records nothing, so the pending set cannot
+// grow on the Pods that never drain it.
+
+/** Record that `appId`'s issues changed (or `all` did) and run a pass now. */
+function wake({ appId = null, all = false } = {}) {
+  const running = timer !== null || passInFlight;
+  if (stopped || !running) return false;
+  if (all) refreshAllRequested = true;
+  else if (Number.isInteger(Number(appId)) && Number(appId) > 0) pendingApps.add(Number(appId));
+  else return false;
+  wakeRequested = true;
+  // Idle (a timer waiting): pull the pass forward. In a pass: tick() sees
+  // wakeRequested and schedules the next one at once.
+  if (!passInFlight && loopConfig) schedule(loopConfig, 0);
+  return true;
+}
+
+function publishWake(data) {
+  try {
+    require('./ws-bus').publish(BUS_KIND, null, data);
+  } catch (err) {
+    log.warn('homeroom-bot', 'wake publish failed', { err: err.message });
+  }
+}
+
+/** The whole queue is stale (the mode was switched on): every Pod hears. */
+function wakeAll() {
+  wake({ all: true });
+  publishWake({ all: true });
+}
+
+/**
+ * An issue was filed, edited or discussed on the platform. Called from the
+ * places that already know (routes/issues.js on create, ws.pushIssueUpdate
+ * on edits and unclaims, ws.handleMessage on a thread post); never throws,
+ * never waits — the event has already happened and the bot is a follower.
+ */
+function noteIssueActivity({ appId, issueNumber, reason = 'activity' } = {}) {
+  const id = Number(appId);
+  const n = Number(issueNumber);
+  if (!Number.isInteger(id) || id <= 0 || !Number.isInteger(n) || n <= 0) return false;
+  wake({ appId: id });
+  publishWake({ appId: id, issueNumber: n, reason: String(reason).slice(0, 40) });
+  return true;
+}
+
+/** ws._onBusMessage hands BUS_KIND envelopes here. */
+function onBusMessage(data) {
+  if (!data || typeof data !== 'object') return false;
+  return wake({ appId: data.appId, all: !!data.all });
 }
 
 // ── The dashboard's read and writes ─────────────────────────────────────
@@ -974,10 +1105,24 @@ async function adminPayload(pool, config, { app = null, verdict = null, before =
   const limits = require('./limits');
   const managedOpenRouter = require('./openrouter-managed-keys');
 
-  const { rows: botRows } = await pool.query(
+  let { rows: botRows } = await pool.query(
     'SELECT id, username, weekly_limit_cents FROM users WHERE username = $1 AND is_synthetic = TRUE',
     [BOT_USERNAME],
   );
+  if (!botRows.length) {
+    // Nothing else creates the row until the loop's first pass in a mode
+    // that is not off — which left the cap box blank and the cap write a
+    // no-op on a fresh deployment. The dashboard creates it on load.
+    try {
+      await ensureBotUser(pool, config);
+      ({ rows: botRows } = await pool.query(
+        'SELECT id, username, weekly_limit_cents FROM users WHERE username = $1 AND is_synthetic = TRUE',
+        [BOT_USERNAME],
+      ));
+    } catch (err) {
+      log.warn('homeroom-bot', 'Could not create the bot user for the dashboard', { err: err.message });
+    }
+  }
   const botRow = botRows[0] || null;
   let bot = null;
   if (botRow) {
@@ -1134,6 +1279,13 @@ module.exports = {
   adminPayload,
   rateRun,
   enqueueNow,
+  wake,
+  wakeAll,
+  noteIssueActivity,
+  onBusMessage,
+  refreshApps,
+  BUS_KIND,
+  MAX_BATCH_SIZE,
   // Pure, exported for tests.
   classifyIssue,
   parseVerdict,
@@ -1151,5 +1303,13 @@ module.exports = {
   BUSY_PASS_DELAY_MS,
   PROPOSALS_PER_APP_CAP,
   QUESTION_TRIPWIRE_PER_DAY,
-  _resetForTests() { lastRefreshAt = 0; triagePromptCache = null; stopped = false; passInFlight = false; lastPass = null; },
+  _resetForTests() {
+    lastRefreshAt = 0; triagePromptCache = null; stopped = false; passInFlight = false; lastPass = null;
+    if (timer) clearTimeout(timer);
+    timer = null; loopConfig = null; pendingApps.clear(); refreshAllRequested = false; wakeRequested = false;
+  },
+  // Test seams for the wake path.
+  _pendingForTests() { return { apps: [...pendingApps], all: refreshAllRequested, wake: wakeRequested, armed: timer !== null }; },
+  _armForTests(config) { stopped = false; loopConfig = config; passInFlight = false; timer = setTimeout(() => {}, 1e9); timer.unref(); },
+  _setPassInFlightForTests(v) { passInFlight = !!v; },
 };

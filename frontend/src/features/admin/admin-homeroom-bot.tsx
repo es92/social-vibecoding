@@ -340,20 +340,23 @@ function HomeroomBotSection() {
             </div>
           </div>
           <div>
-            <label className={AdminUI.label} htmlFor="admin-homeroom-bot-batch">Issues per app per pass</label>
+            <label className={AdminUI.label} htmlFor="admin-homeroom-bot-batch">Issues per app before switching apps</label>
             <div className="flex items-center gap-2 mt-1">
               <input
                 id="admin-homeroom-bot-batch"
-                type="number" min="1" max="50" step="1"
+                type="number" min="1" max="500" step="1"
                 className={AdminUI.input}
-                defaultValue={settings?.batchSize ?? 10}
-                key={`batch-${settings?.batchSize ?? 10}`}
+                defaultValue={settings?.batchSize ?? 100}
+                key={`batch-${settings?.batchSize ?? 100}`}
                 disabled={!canWrite}
                 onBlur={(e) => {
                   const n = Number(e.target.value);
-                  if (Number.isInteger(n) && n >= 1 && n <= 50 && n !== settings?.batchSize) {
-                    saveSettings({ batchSize: n }, `Batch size is now ${n}.`);
+                  if (n === settings?.batchSize) return;
+                  if (!Number.isInteger(n) || n < 1 || n > 500) {
+                    setStatus({ text: 'Issues per app must be a whole number from 1 to 500.', tone: 'err' });
+                    return;
                   }
+                  saveSettings({ batchSize: n }, `The bot now takes up to ${n} issues on one app before it looks at another.`);
                 }}
               />
             </div>
@@ -363,7 +366,7 @@ function HomeroomBotSection() {
         <p className={`${AdminUI.muted} mt-3`} id="admin-homeroom-bot-identity">
           {`${bot
             ? `Runs as ${bot.username} on ${bot.model || 'the platform default model'}, ${bot.hasIncludedKey ? 'with its included OpenRouter key' : 'with no OpenRouter key yet (the first pass mints one)'}.`
-            : 'The bot user is created on the first pass.'} Before posting anything the live rules would hold a verdict at ${payload?.caps.proposalsPerApp ?? 2} open bot proposals per app and ${payload?.caps.questionsPerAppPerDay ?? 10} questions per app per day; rows below say when they would have.`}
+            : 'The bot user is not set up yet; the dashboard creates it on load, so check the logs if this persists.'} Before posting anything the live rules would hold a verdict at ${payload?.caps.proposalsPerApp ?? 2} open bot proposals per app and ${payload?.caps.questionsPerAppPerDay ?? 10} questions per app per day; rows below say when they would have.`}
         </p>
 
         <p className={`${AdminUI.muted} mt-1`} id="admin-homeroom-bot-loop">
@@ -374,6 +377,9 @@ function HomeroomBotSection() {
                   : payload.loop.paused === 'mode_off' ? '; stopped because the mode was switched off'
                     : payload.loop.busy ? '; another instance held the loop' : ''}.`
             : 'No pass has run since the platform started.'}
+        </p>
+        <p className={`${AdminUI.muted} mt-1`} id="admin-homeroom-bot-cadence">
+          The loop wakes the moment a request is filed, edited or discussed here, drains the queue, then sleeps until the next one. A sweep of GitHub every five minutes catches what happens there directly.
         </p>
         <p id="admin-homeroom-bot-status" className={status
           ? `text-xs mt-3 ${status.tone === 'err' ? 'text-red-400' : 'text-green-800 dark:text-green-400'}`

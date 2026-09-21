@@ -101,7 +101,7 @@ test('classifyIssue: the bot never competes with a person, and never looks at a 
 
 test('settings default to off and clamp their numbers', () => {
   const s = bot.parseSettings([]);
-  assert.deepEqual(s, { mode: 'off', concurrency: 1, batchSize: 10, pausedApps: [] });
+  assert.deepEqual(s, { mode: 'off', concurrency: 1, batchSize: 100, pausedApps: [] });
   const t = bot.parseSettings([
     { key: bot.KEY_MODE, value: 'shadow' },
     { key: bot.KEY_CONCURRENCY, value: '99' },
@@ -120,7 +120,8 @@ test('validateSettingsPatch refuses live mode and bad values, accepts a real pat
   assert.match(bot.validateSettingsPatch({ mode: 'live' }).error, /shadow mode/);
   assert.equal(bot.validateSettingsPatch({ mode: 'loud' }).ok, false);
   assert.equal(bot.validateSettingsPatch({ concurrency: 0 }).ok, false);
-  assert.equal(bot.validateSettingsPatch({ batchSize: 51 }).ok, false);
+  assert.equal(bot.validateSettingsPatch({ batchSize: 501 }).ok, false);
+  assert.equal(bot.validateSettingsPatch({ batchSize: 500 }).ok, true, 'the ceiling is 500 (#2684 follow-up: 100 is the default)');
   assert.equal(bot.validateSettingsPatch({ pausedApps: ['Bad Slug'] }).ok, false);
   assert.equal(bot.validateSettingsPatch({ weeklyLimitCents: -1 }).ok, false);
   assert.equal(bot.validateSettingsPatch({}).ok, false, 'nothing to update');
@@ -178,6 +179,119 @@ test('runOnce: another Pod holding the lock means this one skips the pass', asyn
   assert.equal(out.busy, true);
   assert.ok(!log.some((l) => /pg_advisory_unlock/.test(l.sql || '')), 'never unlocks a lock it did not take');
   assert.ok(!log.some((l) => /FROM apps/.test(l.sql || '')));
+});
+
+// ── The loop is event-driven: wakes ──────────────────────────────────────
+
+test('a wake on the Pod running the loop records the app and pulls the next pass forward', () => {
+  bot._resetForTests();
+  // Not running the loop here (no timer, no pass): a wake is a no-op, so the
+  // pending set cannot grow on the Pods that never drain it.
+  assert.equal(bot.wake({ appId: 9 }), false);
+  assert.deepEqual(bot._pendingForTests().apps, []);
+
+  bot._armForTests({});
+  assert.equal(bot.wake({ appId: 9 }), true);
+  assert.equal(bot.wake({ appId: '9' }), true, 'ids arrive as strings off the bus');
+  assert.equal(bot.wake({ appId: 0 }), false);
+  assert.equal(bot.wake({}), false);
+  const p = bot._pendingForTests();
+  assert.deepEqual(p.apps, [9]);
+  assert.equal(p.wake, true);
+  assert.equal(p.armed, true, 'the idle timer was replaced by an immediate one');
+
+  bot.wake({ all: true });
+  assert.equal(bot._pendingForTests().all, true);
+  bot._resetForTests();
+});
+
+test('noteIssueActivity wakes locally and publishes the same wake for the other Pods', () => {
+  bot._resetForTests();
+  const wsBus = require('../src/services/ws-bus');
+  const published = [];
+  const realPublish = wsBus.publish;
+  wsBus.publish = (kind, routing, data) => { published.push({ kind, routing, data }); };
+  try {
+    bot._armForTests({});
+    assert.equal(bot.noteIssueActivity({ appId: 9, issueNumber: 12, reason: 'created' }), true);
+    assert.equal(bot.noteIssueActivity({ appId: 9, issueNumber: 'x' }), false, 'a bad number is dropped, not published');
+    assert.deepEqual(published, [{ kind: bot.BUS_KIND, routing: null, data: { appId: 9, issueNumber: 12, reason: 'created' } }]);
+    assert.deepEqual(bot._pendingForTests().apps, [9]);
+    // The receiving side: ws._onBusMessage hands the envelope to onBusMessage.
+    bot._resetForTests();
+    bot._armForTests({});
+    assert.equal(bot.onBusMessage({ appId: 4, issueNumber: 1, reason: 'thread' }), true);
+    assert.equal(bot.onBusMessage(null), false);
+    assert.deepEqual(bot._pendingForTests().apps, [4]);
+  } finally {
+    wsBus.publish = realPublish;
+    bot._resetForTests();
+  }
+});
+
+test('runOnce: a wake refreshes only the app that changed; the reconcile sweep still covers everything', async () => {
+  bot._resetForTests();
+  const fetched = [];
+  const github = { async fetchPublicIssues(owner, repo) { fetched.push(`${owner}/${repo}`); return { issues: [] }; } };
+  const apps = [
+    { id: 1, slug: 'a', repo_url: 'https://github.com/o/a' },
+    { id: 2, slug: 'b', repo_url: 'https://github.com/o/b' },
+  ];
+  const { pool } = mockPool({ settings: [{ key: bot.KEY_MODE, value: 'shadow' }] });
+  const realQuery = pool.query.bind(pool);
+  pool.query = async (sql, params) => {
+    if (/FROM apps\s+WHERE status = 'running'/.test(String(sql))) return { rows: apps };
+    return realQuery(sql, params);
+  };
+  let now = 1_000_000;
+  const deps = { github, now: () => now };
+
+  // First pass: the reconcile sweep is due (never run), so every app.
+  let out = await bot.runOnce(pool, {}, deps);
+  assert.equal(out.refreshed, true);
+  assert.deepEqual(fetched, ['o/a', 'o/b']);
+
+  // A wake for app 2, inside the sweep interval: only app 2 is read.
+  fetched.length = 0;
+  now += 1000;
+  bot._armForTests({});
+  bot.wake({ appId: 2 });
+  out = await bot.runOnce(pool, {}, deps);
+  assert.equal(out.refreshed, true);
+  assert.equal(out.woken, 1);
+  assert.deepEqual(fetched, ['o/b']);
+  assert.deepEqual(bot._pendingForTests().apps, [], 'the wake was consumed');
+
+  // No wake, inside the interval: nothing is read.
+  fetched.length = 0;
+  now += 1000;
+  out = await bot.runOnce(pool, {}, deps);
+  assert.equal(out.refreshed, false);
+  assert.deepEqual(fetched, []);
+
+  // The interval elapses: the sweep again.
+  fetched.length = 0;
+  now += bot.REFRESH_INTERVAL_MS;
+  out = await bot.runOnce(pool, {}, deps);
+  assert.deepEqual(fetched, ['o/a', 'o/b']);
+  bot._resetForTests();
+});
+
+test('the wake reaches the bot from every place an issue changes on the platform', () => {
+  const ws = read('src/services/ws.js');
+  const busCase = ws.slice(ws.indexOf("case 'homeroom_bot':"), ws.indexOf("case 'homeroom_bot':") + 500);
+  assert.match(busCase, /require\('\.\/homeroom-bot'\)\.onBusMessage\(payload\)/, 'the bus hands the bot its envelopes');
+  const push = ws.slice(ws.indexOf('function pushIssueUpdate(data)'));
+  assert.match(push.slice(0, 700), /noteIssueActivityForBot\(data\.appId, data\.issueNumber, data\.action\)/,
+    'an edit or an unclaim wakes the bot');
+  const handle = ws.slice(ws.indexOf('async function handleMessage(pool, client, msg)'));
+  assert.match(handle, /if \(thread && thread\.type === 'issue'\) noteIssueActivityForBot\(client\.appId, thread\.ref, 'thread'\)/,
+    'a post on an issue thread wakes the bot');
+  const issues = read('src/routes/issues.js');
+  assert.match(issues, /noteIssueActivity\(\{ appId: app\.id, issueNumber: githubIssueNumber, reason: 'created' \}\)/,
+    'a new request wakes the bot once its GitHub twin exists');
+  assert.match(SRC, /const IDLE_PASS_DELAY_MS = 30 \* 1000;/, 'the idle poll is a fallback, not the cadence');
+  assert.match(read('src/services/homeroom-bot.js'), /wakeAll\(\);/, 'switching the mode on rebuilds the queue at once');
 });
 
 // ── refreshApp against an injected GitHub ────────────────────────────────
