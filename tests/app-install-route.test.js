@@ -213,7 +213,7 @@ test('an emoji app declares the SVG tile plus the platform PNGs, and reads no ic
     assert.equal(manifest.icons.length, 4);
     assert.equal(manifest.icons[0].type, 'image/svg+xml');
     assert.ok(decodeURIComponent(manifest.icons[0].src).includes('🍕'));
-    assert.equal(manifest.icons[1].src, '/icons/icon-192.png');
+    assert.equal(manifest.icons[1].src, '/icons/v2/icon-192.png');
     assert.equal(manifest.icons[3].purpose, 'maskable');
     assert.equal(iconReads, 0);
   } finally {
@@ -295,7 +295,7 @@ test('an emoji app\'s page offers iOS the platform icon and draws the emoji', as
   const server = await startServer(USER);
   try {
     const { body } = await get(server, '/app/recipe-box/install');
-    assert.ok(body.includes('<link rel="apple-touch-icon" href="/icons/icon-192.png">'));
+    assert.ok(body.includes('<link rel="apple-touch-icon" href="/apple-touch-icon.png">'));
     assert.ok(body.includes('<span aria-hidden="true">🍕</span>'));
     assert.doesNotMatch(body, /app-icons\//);
   } finally {

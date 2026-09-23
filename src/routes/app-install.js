@@ -147,7 +147,7 @@ function appInstallRoutes(config) {
     // PNG/JPEG/WebP/GIF bytes (SVG is refused because it can script when
     // navigated to), and iOS wants a raster for the apple-touch-icon.
     const iconUrl = typeof app.icon_image_id === 'string' && ICON_ID_RE.test(app.icon_image_id)
-      ? `/app-icons/${app.icon_image_id}` : '/icons/icon-192.png';
+      ? `/app-icons/${app.icon_image_id}` : '/apple-touch-icon.png';
     return res.send(renderInstallPage(manifestFacts(app), { iconUrl }));
   });
 

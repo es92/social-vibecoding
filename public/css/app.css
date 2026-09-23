@@ -3009,6 +3009,21 @@ body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
   backdrop-filter: var(--dc-frost);
   -webkit-backdrop-filter: var(--dc-frost);
 }
+/* …AND OVER AN APP'S OWN WORKSHOP (#2806). The exclusion above is about the
+   APP: its page colour is under the bar, and the bar takes that tone instead.
+   An app's Workshop tab (board, sessions, a discussion) is not the app, it is
+   the platform's own page about it — `data-app-surface="platform"`, set by
+   AppView._setSurface for everything the shell renders into #app-content —
+   and with the frame parked there is no app tone either (toneForState answers
+   null). So it is the same chrome as the standalone Workshop screen and wears
+   the same glass; left clear, the bar went bare on exactly those pages and
+   nowhere else. A separate rule, not a widened selector: the one above is
+   pinned to exclude #app-view, because a running app must stay clear. */
+body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
+  background-color: var(--dc-sheet-fill);
+  backdrop-filter: var(--dc-frost);
+  -webkit-backdrop-filter: var(--dc-frost);
+}
 /* THE BAR TAKES THE APP'S TONE (#1945). A dark app under the light shell
    used to sit beneath a cream strip, and a light app under the dark shell
    beneath a night one: the bar has no surface inside an app, so the

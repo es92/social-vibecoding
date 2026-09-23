@@ -4223,9 +4223,57 @@ const App = {
   // so there is nothing to suppress and every screen simply gets the type its
   // caller asked for. The STAMP stays — dapp.json asserts `data-entered`,
   // which is the only way a mid-animation state is testable at all.
+  //
+  // …AND ONE RULE AGAIN (#2797): A PRESS ON THE RAIL IS A TAB SWITCH, and a
+  // tab switch is the kit's "high-frequency UI" that must use type:'none'. On
+  // the desktop layout every swap between the rail's five places ran the
+  // kit's fade-through, a View Transition over the whole document — and for
+  // its length the header and the rail are not themselves: each is a pinned
+  // SNAPSHOT image over a substitute ground (--un-vt-ground), composited above
+  // two root snapshots that fade out and back in. Every difference between
+  // those pictures and the live bars — the frost, the wallpaper star behind
+  // the bell, the page tucked under the header's notch — reads as the bars
+  // popping at the start or the end of the fade. Messages was the one tab
+  // reported as never doing it, and it is the one tab whose transition never
+  // ran: its hashchange re-entry skipped it every time. So all five now swap
+  // the way Messages already did. The page changes in place and the bars
+  // never stop being the live elements they are at rest.
+  //
+  // DESKTOP ONLY, where the rail is the navigation beside the page. The
+  // phone's bottom bar keeps its slide (it is being reworked separately,
+  // #2766), and every other entry — a drill-in, an app's zoom — keeps its
+  // motion, because there the page really does go somewhere.
   _entryTransition(preferred, screenEl) {
+    if (App._isRailSwitch(preferred, screenEl)) preferred = 'none';
     if (screenEl && screenEl.setAttribute) screenEl.setAttribute('data-entered', preferred);
     return preferred;
+  },
+
+  // The rail's own places: the roots its five tabs navigate to.
+  _RAIL_ROOTS: ['home-screen', 'browse-screen', 'messages-screen',
+    'workshop-screen', 'profile-screen'],
+
+  // Whether entering `screenEl` with `preferred` is a switch between places
+  // on the desktop rail. The rail has to be on screen now (not hidden inside
+  // a running app) and the layout has to be the desktop one — the same
+  // 768px breakpoint app.css turns the bar into a rail at. A push into one of
+  // the five roots is a switch; so is navigateHome's zoom-out when there is
+  // no app view on screen to shrink, because the kit then falls back to a
+  // plain full-page transition. Anything unreadable answers false, which is
+  // the old behaviour.
+  _isRailSwitch(preferred, screenEl) {
+    if (!screenEl || (preferred !== 'push' && preferred !== 'zoom-out')) return false;
+    try {
+      if (!window.matchMedia || !window.matchMedia('(min-width: 768px)').matches) return false;
+      const rail = document.getElementById('platform-tabs');
+      if (!rail || rail.classList.contains('hidden')) return false;
+      if (preferred === 'zoom-out') {
+        return screenEl.id === 'app-view' && screenEl.classList.contains('hidden');
+      }
+      return App._RAIL_ROOTS.includes(screenEl.id);
+    } catch (_) {
+      return false;
+    }
   },
 
   // ── Screen swap — THE ORDERING RULE (issue #979) ────────────────────
@@ -6047,6 +6095,14 @@ const App = {
       // header resolves its destination from the session's captured origin
       // first (features/header/platform-header.tsx), and Messages otherwise.
       if (App._isMessagesThread()) return ['arrow', '#messages'];
+      // THE PLATFORM'S OWN WORKSHOP IS NOT AN APP TO STEP OUT OF (#2799).
+      // Homeroom's tile on "Your apps" is a self-hosted row: it has no App
+      // tab (switchTab coerces one to the Workshop), so the ✕ that leaves a
+      // running program had nothing to leave. It is the Workshop panel, and a
+      // Workshop panel's corner is empty like the Workshop screen's —
+      // _repaintDevBody publishes the same 'none', and the two writers have
+      // to agree (see above).
+      if (App._selfHostedRoute()) return ['none'];
       // The ✕'s DESTINATION is the breadcrumb navigateToApp recorded — the
       // Workshop, when that is where this app was opened from — and home on
       // every other route, which is what setBackIcon falls back to. The table
@@ -6055,6 +6111,22 @@ const App = {
       if (App._appBackHref) return ['close', App._appBackHref];
     }
     return slot;
+  },
+
+  // Whether the app on screen is the platform itself (a self-hosted row).
+  // AppView.appData answers once the app's record has loaded; before that —
+  // navigateToApp's transition runs _showOnlyScreen before AppView.open
+  // resolves — the launcher's cached row does, the same record navigateToApp
+  // reads to send this app to its Workshop in the first place.
+  _selfHostedRoute() {
+    const slug = App.currentApp;
+    if (!slug) return false;
+    try {
+      const rec = (typeof AppView !== 'undefined'
+        && ((AppView.appData?.slug === slug ? AppView.appData : null)
+          || AppView.launchRecordFor?.(slug))) || null;
+      return !!rec?.self_hosted;
+    } catch (_) { return false; }
   },
 
   setBackIcon(mode, href) {

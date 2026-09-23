@@ -233,7 +233,7 @@ test('the install page carries its own manifest link, icons and instructions', (
 test('an app without an image icon draws its emoji and offers iOS the platform icon', () => {
   const html = m.renderInstallPage({ slug: 'arcade', name: 'Arcade', icon_emoji: '🎮', icon_image_id: null });
   assert.ok(html.includes('<div class="icon"><span aria-hidden="true">🎮</span></div>'));
-  assert.ok(html.includes('<link rel="apple-touch-icon" href="/icons/icon-192.png">'));
+  assert.ok(html.includes('<link rel="apple-touch-icon" href="/apple-touch-icon.png">'));
   assert.doesNotMatch(html, /app-icons\//);
 });
 

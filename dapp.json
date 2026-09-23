@@ -576,6 +576,16 @@
       "expectSelector": "#dev-body [data-session-chip=\"990102\"] .dc-status-spinner-arc, #dev-body [data-shared-session-row=\"990001\"] .dc-status-spinner-arc"
     },
     {
+      "name": "The platform's own Workshop is a plain Workshop panel, with no close button (#2799)",
+      "path": "/?demo=1&cards=open#app/usernode-2d5619/board",
+      "expectSelector": "body:has(#app-view:not(.hidden) #dev-body) #back-btn.hidden #back-icon-close.hidden"
+    },
+    {
+      "name": "An app's Workshop is the platform surface the header frosts over (#2806)",
+      "path": "/?demo=1&cards=open#app/usernode-2d5619/board",
+      "expectSelector": "body:has(#app-view:not(.hidden)[data-app-surface=\"platform\"] #dev-body) #platform-header"
+    },
+    {
       "name": "Platform variables panel renders on the platform app (#826 folded into app secrets)",
       "path": "/?shot=secrets#app/usernode-2d5619/dev",
       "expectSelector": "#app-secrets-list code"

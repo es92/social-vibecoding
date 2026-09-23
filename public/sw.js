@@ -279,7 +279,15 @@
 // "two rounds of 'still not fixed'" for the same omission; this is the
 // third, and it is the same lesson: the bump belongs in the proposal that
 // changes the shell, not in the one after it.
-const SW_VERSION = 'v34';
+//
+// v35 (home-screen icon): the icons are the real Homeroom mark on the brand
+// cream now, and they moved from /icons/icon-*.png to /icons/v2/ — Chrome
+// judges an installed app's icon changed by its URL, so new art gets a new
+// directory. The old files are deleted, and the precached /index.html is
+// what names them in its <head>: a client serving the v34 copy would keep
+// linking a favicon and touch icon the server no longer has. Per v10 the
+// retirement ships with the change, and it drops the old pictures too.
+const SW_VERSION = 'v35';
 const SHELL_CACHE = `usernode-shell-${SW_VERSION}`;
 const IMMUTABLE_CACHE = `usernode-immutable-${SW_VERSION}`;
 
@@ -602,9 +610,9 @@ const SHELL_ASSETS = [
   // too, and moved in the same chunk. Only the shared event RULES they read
   // (topochain-events.js, above) are still a classic script.
   '/manifest.webmanifest',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/icon-maskable-512.png',
+  '/icons/v2/icon-192.png',
+  '/icons/v2/icon-512.png',
+  '/icons/v2/icon-maskable-512.png',
   // The signed-out landing's illustration. Unlike the challenge artwork that
   // deliberately stays on the network (see the classify tests), this one has no
   // fallback to draw in its place, and it is the first thing a visitor who has

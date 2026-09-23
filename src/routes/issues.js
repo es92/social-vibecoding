@@ -253,7 +253,7 @@ function stagingMockIssues(repoUrl) {
       + 'the image below should render inline in the topic view, the '
       + 'same way a reporter-captured screenshot attached from the '
       + 'feedback modal does.\n\n'
-      + '**Screenshot:**\n![Screenshot](/icons/icon-192.png)', 4),
+      + '**Screenshot:**\n![Screenshot](/icons/v2/icon-192.png)', 4),
     // #1010: the two targets of the applying / retry-pending mock close
     // proposals below (stagingMockGovernance 9100005 / 9100006), so the
     // ?demo=1 preview shows the governance card's spinner state AND the
@@ -353,8 +353,8 @@ function stagingMockGovernance() {
     // an app-illustrations id, which the empty DB could not serve.
     mk(9100008, 'featured_illustration', '[Mock] Change the featured illustration',
       {
-        proposed: { url: '/icons/icon-512.png', darkUrl: null, zoom: 1.2, x: 10, y: -5, tint: 'teal' },
-        current: { url: '/icons/icon-192.png', darkUrl: null, zoom: 1, x: 0, y: 0 },
+        proposed: { url: '/icons/v2/icon-512.png', darkUrl: null, zoom: 1.2, x: 10, y: -5, tint: 'teal' },
+        current: { url: '/icons/v2/icon-192.png', darkUrl: null, zoom: 1, x: 0, y: 0 },
         remove: false,
       }, 5, 1, 0,
       { required: 2, windowEndsAt: hoursAhead(30) }),

@@ -44,9 +44,9 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 // a declared size of 144px or more before it treats a manifest as
 // installable. Same three entries as public/manifest.webmanifest.
 const PLATFORM_ICONS = Object.freeze([
-  Object.freeze({ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }),
-  Object.freeze({ src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }),
-  Object.freeze({ src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }),
+  Object.freeze({ src: '/icons/v2/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }),
+  Object.freeze({ src: '/icons/v2/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }),
+  Object.freeze({ src: '/icons/v2/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }),
 ]);
 
 function escapeHtml(value) {
@@ -362,7 +362,7 @@ function renderInstallPage(app, { iconUrl = null } = {}) {
   const rawName = String(app.name || '').trim() || String(app.slug || '');
   const name = escapeHtml(rawName);
   const imageId = appIconId(app);
-  const touchIcon = escapeHtml(iconUrl || (imageId ? `/app-icons/${imageId}` : '/icons/icon-192.png'));
+  const touchIcon = escapeHtml(iconUrl || (imageId ? `/app-icons/${imageId}` : '/apple-touch-icon.png'));
   const tile = imageId
     ? `<img src="/app-icons/${imageId}" alt="" draggable="false">`
     : `<span aria-hidden="true">${escapeHtml(iconGlyph(app))}</span>`;
@@ -412,7 +412,7 @@ function renderInstallPage(app, { iconUrl = null } = {}) {
 function renderSignInPage(slug) {
   const safeSlug = encodeURIComponent(String(slug || ''));
   const body = `<main id="app-install-signin">
-  <div class="icon"><img src="/icons/icon-192.png" alt="" draggable="false"></div>
+  <div class="icon"><img src="/icons/v2/icon-192.png" alt="" draggable="false"></div>
   <h1>Sign in to Homeroom first</h1>
   <p class="lead">Sign in to Homeroom, then come back here to add this app to your home screen.</p>
   <p><a class="btn" href="/app/${safeSlug}">Open the app</a></p>
@@ -423,7 +423,7 @@ function renderSignInPage(slug) {
 /** Same existence-hiding 404 the shell's own app routes give a denied slug. */
 function renderNotFoundPage() {
   const body = `<main id="app-install-missing">
-  <div class="icon"><img src="/icons/icon-192.png" alt="" draggable="false"></div>
+  <div class="icon"><img src="/icons/v2/icon-192.png" alt="" draggable="false"></div>
   <h1>App not found</h1>
   <p class="lead">There is no app here, or it is not shared with you.</p>
   <p><a class="btn" href="/">Back to Homeroom</a></p>

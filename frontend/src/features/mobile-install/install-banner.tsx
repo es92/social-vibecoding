@@ -142,7 +142,7 @@ export function MobileInstallBanner() {
       id="mobile-install-banner"
       className="hidden shrink-0 items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs"
     >
-      <img src="/icons/icon-192.png" alt="" aria-hidden="true" className="w-8 h-8 rounded-lg shrink-0" />
+      <img src="/icons/v2/icon-192.png" alt="" aria-hidden="true" className="w-8 h-8 rounded-lg shrink-0" />
       <div className="min-w-0 flex-1 text-left leading-tight">
         <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">Homeroom</div>
         <div className="text-zinc-500 dark:text-zinc-400 truncate">
