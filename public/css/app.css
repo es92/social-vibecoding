@@ -118,50 +118,12 @@
      inset it reads, so the Android standalone override of the inset (#2755)
      flows through it on the same element. */
   --platform-tabs-inset: var(--platform-safe-bottom);
-  /* THE AIR UNDER THE WORKSHOP'S BAR, and it lives at the ROOT because the bar
-     does not live in the Workshop any more. It is portalled to
-     #dev-ws-rail-host so it can be `position: fixed` to the real viewport,
-     which takes it out of `.dev-ws`'s subtree — and a custom property declared
-     there would simply be undefined for it. An undefined var inside a calc()
-     makes the whole declaration invalid at computed-value time, so `bottom`
-     would be dropped and the bar would fall to its static position at the end
-     of the body: measured at 946px in an 874px viewport, i.e. off the screen.
-     `.dev-ws` still reads it for `--ws-area` and the tab body's clearance. */
+  /* THE AIR BETWEEN THE WORKSHOP'S LANDER AND THE FOOT OF ITS SCROLLER.
+     `.dev-ws`'s `--ws-area` and `--ws-fit` both read it. Root-scoped since
+     the tab bar was portalled out of `.dev-ws`; the bar is back in flow at
+     the head of the page (#2767) and the token simply stayed where every
+     reader can see it. */
   --ws-gap: 8px;
-  /* THE BAR'S BOX ABOVE THE INDICATOR: 1 of top border, 6 of padding, 58 of
-     tab, 6 again. Named once because the bar is out of flow, so nothing
-     reserves its space automatically and two rules have to agree — `--ws-area`
-     subtracts it so the fitted deck ends above the bar, and the tab body pads
-     by it so a scrolling tab's last card clears one. Recompute it whenever the
-     bar's box changes, or the overlap comes back somewhere.
-
-     IT DOES NOT INCLUDE THE INSET, and that is the whole trick. The bar's own
-     lower padding covers the home-indicator strip, and BELOW `.dev-ws` that
-     same strip is already held open by `.platform-safe-scroll` on the
-     scroller. Adding it here as well reserved it twice and left the content
-     floating: measured at 402x874, 51px of slack above the bar at a 34px
-     inset against 17px at zero. Counting only the box gives 9px at both. */
-  --ws-bar: 72px;
-  /* HOW FAR THE PILL FLOATS OFF THE BOTTOM. The bar is a rounded pill again —
-     WhatsApp's shape, not a strip fused to the edge — so it needs air beneath
-     it, and the question is how much.
-
-     NOT the full home-indicator inset. That is Apple's GESTURE zone, 34px;
-     the indicator GRAPHIC is a thin line about 8px off the bottom. Reserving
-     the whole inset is what made the pill read as stopping short of the phone
-     — the complaint that started this. Sixteen less than the inset clears the
-     line with room to spare and sits the pill visibly at the bottom.
-
-     `max()` rather than a bare subtraction because a device with no indicator
-     reports 0, and a bare subtraction would tuck the pill off the screen.
-
-     TWENTY, NOT SIXTEEN: 18px off the bottom was still reading high on a real
-     phone, so this is the second trim, from a preview rather than a guess.
-     There is not much further to go — the indicator LINE sits about 8px up and
-     is roughly 5px tall, so its top edge is near 13px, and a pill resting
-     below that starts to meet it. 14px is the last value with visible air
-     between the two; anything smaller is a collision, not a nudge. */
-  --ws-lift: max(8px, calc(var(--platform-safe-bottom, 0px) - 20px));
   --platform-safe-top: var(--un-safe-inset-top, env(safe-area-inset-top, 0px));
 
   /* Content-row height of the mobile install strip (#1372). Declared here,
@@ -9095,6 +9057,30 @@ a.gc-event-box:focus-visible { outline: 2px solid var(--accent); outline-offset:
   }
 }
 
+/* A DIALOG STAYS ON THE PART OF THE SCREEN THE KEYBOARD LEAVES (#2765).
+
+   The kit centres its modal in the strip above the on-screen keyboard as
+   `50% - var(--un-kb-inset) / 2`, which is the middle of what is visible
+   only while the visual viewport starts at the top of the layout viewport.
+   iOS pans it down to reveal a focused field, and a fixed box stays behind:
+   Give feedback, re-centred after that pan, landed pressed against the top
+   edge with its heading cut off, and opened with the keys already up it was
+   almost entirely above the screen. `--platform-vv-top` is the pan
+   (lib/visual-viewport.ts), so adding it moves the kit's centre into the
+   visible band. Nothing else is needed: the kit already caps the height at
+   that band less its margins (100dvh less the inset IS the visual viewport's
+   height) and scrolls the overflow, so every field and Submit stay reachable.
+
+   0px whenever the visual viewport is not panned — no keyboard, desktop, and
+   Android, where the kit measured no pan — and while pinch-zoomed, so there
+   the kit's own `top` is untouched. Every kit modal in the shell takes
+   it: each dialog `useDialog` presents, the username and terms gates,
+   session options and the build log. The alert card (`.un-alert`) is centred
+   the same way but is not a `.un-modal`, and is left to the kit. */
+.un-modal {
+  top: calc(var(--platform-vv-top, 0px) + 50% - var(--un-kb-inset, 0px) / 2);
+}
+
 /* THE OVERLAP MUST BE A FULL RADIUS, and it has to come from whatever is
    directly above the sheet.
 
@@ -14302,75 +14288,31 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
    make it reachable. */
 #dev-workshop > .dev-ws[data-ws-tab="needs"] { min-height: 0; }
 html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
-/* The tab body takes the space and carries the clearance; the rail follows
-   it. `margin-top: auto` on the rail is gone with it — the body's `flex: 1`
-   is what puts the rail at the foot now, and an auto margin on top of that
-   would fight the padding below. */
+/* The tab body takes the space the tabs above it leave. */
 .dev-ws-tabbody {
   flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column; gap: 10px;
-  /* WHAT SITS BETWEEN `.dev-ws`'s FOOT AND THE PILL'S TOP EDGE. A fixed bar
-     overlays what scrolls beneath it, and the pill's top is `--ws-bar +
-     --ws-lift` above the screen's foot — while `.dev-ws` itself already ends
-     `--ws-gap + the inset` above it, reserved by `#dev-body`'s bottom padding
-     and `.platform-safe-scroll`.
-
-     Subtracting the inset is what makes the result INDEPENDENT of it: the
-     remaining air works out to `--ws-gap` exactly, whatever the device
-     reports. Measured, the version without it gave 0px of air at a 0 inset
-     and 34px at a 34px one — the composer touching the pill on one phone and
-     floating well clear of it on another. */
-  padding-bottom: calc(var(--ws-bar) + var(--ws-lift) - var(--platform-safe-bottom, 0px));
 }
-/* NEEDS YOU USED TO BE EXEMPT FROM THAT, and can't be any more. The exemption
-   read: the deck is fitted, nothing ever passes beneath the rail, so the
-   clearance is dead space pushing the ask box up — measured at 402x874, 90px
-   of it. That was true while the rail sat IN FLOW and took its own space at
-   the foot of the column.
-   The bar is fixed now, so it overlays every tab equally, fitted or not. With
-   the exemption still in place the deck filled to the foot of `.dev-ws` and
-   the composer ran 63px UNDER the bar — measured, not predicted. Every tab
-   owes the same clearance because every tab has the same thing on top of it. */
 .dev-ws-tabs {
-  /* FIXED TO THE REAL VIEWPORT, which is the whole point of the portal.
-     `position: sticky` is what this replaces, and sticky was itself a retreat
-     from `fixed` after the frame's `backdrop-filter` turned out to establish a
-     containing block. The bar is rendered into #dev-ws-rail-host now, outside
-     that frost, so `fixed` finally means the screen.
+  /* AT THE HEAD OF THE PAGE, IN FLOW (#2767). On a phone this was a pill
+     FIXED to the foot of the window, which took a portal out of the Dev
+     frame's frost to achieve, a token for its box, a token for the air under
+     it and a clearance on every tab so content could scroll out from beneath
+     it. The owner moved it to the top, under the header, where the app
+     switcher drops down from — and there it is simply the first thing in the
+     column, taking its own space, overlaying nothing.
 
-     WHY THAT MATTERS MORE THAN THE POSITIONING KEYWORD: sticky put the bar's
-     resting place at the mercy of the container it sat in — `--ws-area`'s
-     viewport arithmetic, the flex chain filling, `.platform-safe-scroll`'s
-     padding and `100dvh`. Three separate fixes failed on a real iOS PWA while
-     measuring correctly in a headless Chromium, each because one of those
-     inputs behaved differently there. A fixed element depends on none of them.
+     That also ended #2769: the portal's anchor lived outside #app-view, so
+     hiding the app view for Messages, Discover or Me left the pill on screen.
 
-     `order: 1` stays for the one render before the portal takes over: until
-     `useRailHost` reports, the bar is still a flex item of `.dev-ws`.
-
-     The offset spends the inset ONCE, here, because a fixed element is out of
-     flow — `.platform-safe-scroll`'s reservation applies to the scroller's
-     content, and the bar is no longer part of it. That is the double-count
-     from #4149 made structurally impossible rather than merely corrected. */
-  order: 1;
-  position: fixed;
-  /* A FLOATING PILL, RESTING LOW. It went edge-to-edge for one round, on the
-     reasoning that a surface reaching the physical edge is what iOS does with
-     its own tab bars. It is — but it is not what this app wants: the shape
-     that reads right here is the oval, the way WhatsApp draws its bar, and
-     the complaint was never the shape. It was that the oval sat too high,
-     because it reserved the whole gesture inset beneath itself.
-
-     So: the pill returns, and `--ws-lift` decides the air under it — the
-     indicator's graphic cleared, its gesture zone not reserved twice over.
-     The inset is still spent exactly once, now inside that token. */
-  left: 10px; right: 10px;
-  bottom: var(--ws-lift);
-  max-width: calc(760px - 20px);
-  margin-inline: auto;
-  z-index: 30;
+     RELATIVE, not static: the bar is the containing block for the selection
+     marker and the element workshop.tsx measures `offsetLeft`/`offsetTop`
+     against. Not sticky: the pane head below it is the part that pins, and
+     two sticky bands at `top: 0` would stack on each other. */
+  order: 0;
+  position: relative;
   display: flex; gap: 4px;
-  padding: 6px;
+  padding: 4px;
   border-radius: 999px;
   border: 1px solid var(--app-sheet-line);
   background-color: var(--dc-sheet-fill);
@@ -14380,41 +14322,38 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .dev-ws-tabs { background-color: var(--dc-sheet); }
 }
-/* A GLYPH OVER ITS LABEL, which is what took the row from 48 to 58: 26 of
-   glyph, 3 of gap, a 11px line, and the rest is the padding that keeps the
-   pair off the pill's edges. A thumb target, not a text button — the shell's
-   own minimum for something you tap on a phone is 44, and this bar is the
-   lander's primary navigation, so it clears that by a margin.
-
-   The label SHRINKS rather than disappearing. At 14px the three phrases were
-   one undifferentiated line of text; at 11px under a glyph the glyph carries
-   the scanning and the words settle the ambiguity none of the three glyphs
-   can settle alone. `text-overflow` still has to hold, because "Current
-   status" is the longest label on the narrowest phone. */
+/* A GLYPH BESIDE ITS LABEL, 40px tall. It was a glyph OVER its label, 58px,
+   while this was a thumb bar at the foot of the window; at the head of the
+   page it is a segmented control — the shape the wide layout already draws —
+   and a 72px band there would spend a sixth of a phone's height before the
+   first card. 40 still clears the shell's 44px minimum once the pill's own
+   padding is counted, and the glyph still carries the scanning if a label
+   has to ellipsize on the narrowest phone. */
 .dev-ws-tab {
-  flex: 1 1 0; min-width: 0;
-  display: inline-flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 3px;
-  height: 58px; padding: 0 4px;
+  /* CONTENT-WEIGHTED, not equal thirds: "Current status" is twice "All
+     items", and three equal cells ellipsized it at 390px while the other two
+     sat in air. The spare width is still shared out, so the pill stays full. */
+  flex: 1 1 auto; min-width: 0;
+  display: inline-flex; flex-direction: row;
+  align-items: center; justify-content: center; gap: 5px;
+  height: 40px; padding: 0 8px;
   border: 0; border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
-  font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .01em;
+  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: .01em;
   white-space: nowrap; overflow: hidden;
   cursor: pointer;
 }
-/* THE TRACK IS INERT ON A PHONE. `.dev-ws-tabs` is itself the pill there —
-   edge to edge, frosted, stuck to the floor — so the wrapper the desktop
-   layout needs must not introduce a box. `display: contents` removes it from
-   the layout entirely and the buttons stay direct flex items of the nav,
-   which is what they were before it existed. */
+/* THE TRACK IS INERT ON A PHONE. `.dev-ws-tabs` is itself the pill there,
+   full width, so the wrapper the desktop layout needs must not introduce a
+   box. `display: contents` removes it from the layout entirely and the
+   buttons stay direct flex items of the nav. */
 .dev-ws-tabtrack { display: contents; }
 /* Size lives here, not on the component: icons.tsx has no size variant by
-   design, so every call site passes its own class. `flex: none` because the
-   glyph is now a flex ITEM in a column and would otherwise be squeezed by a
-   label that is trying to fit. */
-.dev-ws-tab-glyph { width: 26px; height: 26px; flex: none; }
-.dev-ws-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+   design, so every call site passes its own class. `flex: none` so a label
+   that is trying to fit squeezes itself, not the glyph. */
+.dev-ws-tab-glyph { width: 16px; height: 16px; flex: none; }
+.dev-ws-tab-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* THE HEADER'S PERIWINKLE, not black. `--brand-ink` on `--brand-tint` with a
    hairline of `--brand-line` is how the bar above draws its own controls —
    the back glyph, the bell, the app chip — and these are the same kind of
@@ -14496,103 +14435,65 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
    layouts, and the chain only worked in one.
 
    So the deck measures the viewport and subtracts the chrome it can name:
-   the platform header, the device insets, and this surface's own bottom tab
-   rail. `min-height` keeps it usable on a short window rather than letting
-   the subtraction win. */
+   the platform header, the device insets and the platform's own tab bar.
+   `min-height` keeps it usable on a short window rather than letting the
+   subtraction win. */
 .dev-ws {
-  /* THE AIR UNDER THE RAIL, decided once and spent in two places. It has to
-     be one number, because the rail comes to rest two different ways: on a
-     short tab it sits at the foot of `.dev-ws` (so the floor below sets the
-     gap), and on a long one it is stuck while the content scrolls past (so
-     `bottom` sets it). Two numbers meant two gaps — measured at 1440x900,
-     23px of air on Current status and Needs you against 0 on All items,
-     which is exactly the "floating part way up, and it moves between tabs"
-     this replaces. The old floor subtracted a bare 24px with no counterpart
-     on the rail at all.
+  /* THE AIR AT THE FOOT, decided once. The device inset is NOT in this
+     number: `#dev-forum-scroll` carries `.platform-safe-scroll`, whose
+     padding already reserves the larger of the home-indicator strip and the
+     platform's tab bar, and counting either again here is the double spend
+     that once left a whole indicator of dead air on a real iOS PWA (the
+     headless harnesses report a zero inset and could not see it).
 
-     THE DEVICE INSET IS NOT IN THIS NUMBER, and used to be. `--ws-gap` read
-     `calc(8px + var(--platform-safe-bottom, 0px))`, which counted the
-     home-indicator strip a SECOND time: `#dev-forum-scroll` carries
-     `.platform-safe-scroll`, whose `padding-bottom: var(--platform-safe-bottom)`
-     has already reserved it. On a 34px inset that put the rail 76px off the
-     bottom instead of 42 — a whole indicator of dead air, constant on every
-     tab and at every scroll position, which is what an iOS PWA showed.
-
-     It was invisible everywhere it was tested. A headless desktop browser
-     reports the inset as 0, so both spends were `0px` and the sum was the
-     right 8px; the screenshot and measuring harnesses never set an inset at
-     all. Only a real device has a non-zero value for this, so only a real
-     device could see it.
-
-     The rail still rests clear of the indicator — the reservation just comes
-     from the platform class that owns it rather than from a second copy
-     here. Two things follow: the gap is a plain length again, so `--ws-area`
-     subtracts a constant; and `html.un-kb .dev-ws { --ws-gap: 8px }` is gone,
-     because `html.un-kb .platform-safe-scroll` already zeroes the reservation
-     when the keyboard is up. The keyboard case now falls out of the shell's
-     own rule instead of needing a copy of its reasoning.
-
-     The rail still does NOT carry `.platform-safe-bar`, for the original
-     reason: that rule's `calc(0.5rem + inset)` lands the inset INSIDE the
-     bar's padding, 8px under the tabs against 6px over them, and this bar
-     floats — a rounded pill with air beneath it, not a strip against the
-     screen edge. */
+     WHAT IS NOT SUBTRACTED ANY MORE: a Workshop tab bar. On a phone that bar
+     floated fixed at the foot of the window, out of flow, so this floor took
+     its box and the air under it off by hand. It sits at the head of the page
+     now (#2767), in flow INSIDE this box, so the flex chain accounts for it
+     and the floor must not take it off a second time — the arithmetic the
+     wide layout has always used, at every width. */
   --ws-area: calc(
     100dvh - var(--platform-header-h, 56px) - var(--platform-safe-top, 0px)
-    - var(--ws-bar) - var(--ws-lift)
+    - var(--ws-gap) - max(var(--platform-tabs-h, 0px), var(--platform-safe-bottom, 0px))
   );
-  /* AND THE SCROLLER'S OWN CONTENT BOX, which is a DIFFERENT quantity and
-     not `--ws-area` plus something. That floor clears the floating pill,
-     which rests `--ws-lift` off the screen's foot; this is simply where
-     `.dev-ws` ends when the chain above it has a definite height — the
-     reading area, less `.platform-safe-scroll`'s reservation and
-     `#dev-body`'s own bottom padding, which are the two things below it.
-     The pill then overlays the last `--ws-bar` of it, exactly as it
-     overlays every other tab, and `.dev-ws-tabbody`'s clearance is what
-     holds the content off it.
-     The two coincide only at a zero inset. At a 34px one the pill lifts by
-     14 and the scroller gives back 34, so a fitted tab written in terms of
-     the floor would be 20px out on a phone with an indicator and nowhere
-     else. */
-  --ws-fit: calc(
-    100dvh - var(--platform-header-h, 56px) - var(--platform-safe-top, 0px)
-    - var(--ws-gap) - var(--platform-safe-bottom, 0px)
-  );
+  /* THE FITTED BOX Needs you takes as a definite height in the browser
+     layout (below). While a pill floated over the foot of every tab this was
+     a different number from the floor above — the pill overlaid the last
+     stretch of it and the tab body's clearance held content off it. Nothing
+     overlays the lander now, so the box and the floor are the same length. */
+  --ws-fit: var(--ws-area);
 }
 /* ── Needs you is a FITTED SCREEN on a phone, in both layouts ──────────
-   With the rule above it is, in the NATIVE one: #dev-forum-scroll has a
-   definite height there, the flex chain bounds the deck, and
-   `.dev-ws-needs-scroll` is what takes a long card — so the answers, the
-   page arrows and the ask box are pinned. Measured at 402x874: the composer
-   ends 8px under the pill whatever the card holds, at a 34px inset and at
-   none.
+   In the NATIVE one #dev-forum-scroll has a definite height, the flex chain
+   bounds the deck, and `.dev-ws-needs-scroll` is what takes a long card — so
+   the answers, the page arrows and the ask box are pinned.
 
    In a mobile BROWSER the page itself scrolls (`html[data-browser-scroller]`,
    see browser-scroll.ts), #dev-forum-scroll is `height: auto`, and every
    height below it resolves to content. `--ws-area` is only a FLOOR there, so
-   it could not stop a long card growing the deck — and on a SHORT one it
-   stopped the deck early instead, because it is not the same number as the
-   clearance `.dev-ws-tabbody` reserves: measured, 79px of dead air between
-   the composer and the pill at a zero inset and 51px at 34, against the
-   native layout's 8 at both. The inset-independence the tab body's padding
-   is built for cannot survive a floor that disagrees with it.
+   it could not stop a long card growing the deck. So the tab takes `--ws-fit`
+   as a definite HEIGHT — the box the native chain arrives at on its own.
 
-   So the tab takes `--ws-fit` as a definite HEIGHT — the box the native
-   chain arrives at on its own — and the tab body's clearance is what holds
-   the composer off the pill, exactly as it does on every other tab. One
-   reservation, one layout, both engines, any inset.
-
-   Scoped to the phone as well as to the layout, and that is load-bearing:
-   `data-browser-scroller` is set on any coarse pointer (MOBILE_PAGE_QUERY),
-   tablets included, and above 700px the pill is in flow at the head of the
-   column, so the whole arithmetic below it is a different one. 700px is the
-   same decision as the `@media (min-width: 700px)` block below and as
-   `useRailHost`'s query. */
+   Scoped to the phone as well as to the layout: `data-browser-scroller` is
+   set on any coarse pointer (MOBILE_PAGE_QUERY), tablets included, and above
+   700px the deck is content-sized at the top of the column instead. 700px is
+   the same decision as the `@media (min-width: 700px)` block below and as
+   workshop.tsx's `WIDE_QUERY`. */
 @media (max-width: 699.98px) {
   html[data-browser-scroller] .dev-ws[data-ws-tab="needs"] {
     height: var(--ws-fit);
     min-height: var(--ws-fit);
   }
+}
+/* ON A PHONE THE HEADER IS THE CHIP (#2768) — the `.dev-ws-scope` chip
+   from the Workshop's head, far above. The bar already shows
+   this app's tile and name, and below 700px those two ARE the switcher
+   (features/header/header-title.tsx), opening this same panel. So the chip
+   goes, and the wrapper with it while the panel is shut — an empty flex item
+   would still cost `.dev-ws` a 10px gap at the top of the page. */
+@media (max-width: 699.98px) {
+  .dev-ws-scope > button { display: none; }
+  .dev-ws-scope:not(:has(> [role='menu'])) { display: none; }
 }
 /* ═══════════════════════════════════════════════════════════════════════
    NEEDS YOU: A FEED OF DECISIONS. One item per screen, the rail of
@@ -14983,10 +14884,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 }
 .dev-ws-done-back:hover { background: var(--accent-wash); }
 
-/* ── The tab pill steps aside for a sheet ─────────────────────────── */
-@media (max-width: 699.98px) {
-  body:has(.dev-ws-needs[data-ws-sheet]) #dev-ws-rail-host { visibility: hidden; }
-}
 /* ── The deck at the top, on a wide screen ───────────────────
    On a phone the deck fills the reading area and the answers sit at the
    floor, which is where the thumb is. On a desktop that same rule spends
@@ -15033,16 +14930,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      surface the cards already use — the same reason tabs.tsx's track is white
      rather than the recessed grey a control gets on a card. */
 
-  /* THE BAR IS BACK IN FLOW UP HERE, at the head of the column, so it takes
-     its own space and the floor must not subtract it a second time — that
-     would shorten `.dev-ws` by a bar's height for no one. Only the air is
-     taken off, as it was before the bar ever left the flow. */
-  .dev-ws {
-    --ws-area: calc(
-      100dvh - var(--platform-header-h, 56px) - var(--platform-safe-top, 0px)
-      - var(--ws-gap)
-    );
-  }
   /* EVERYTHING PINS UP HERE, as one band: the tab strip, the ear hanging off
      the head's top edge, and the head itself with the search, the filters and
      the "+". The controls belong WITH the list you are narrowing, so they
@@ -15069,10 +14956,9 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
     /* RELATIVE, NOT STATIC. There is nothing to stick to at the head of a
        column — that part is unchanged — but the bar has to remain the
        CONTAINING BLOCK for the selection marker, and the element `offsetLeft`
-       and `offsetTop` resolve against when workshop.tsx measures a tab. On a
-       phone `position: fixed` gives that for free; here it has to be asked
-       for, and `static` would send both the marker and the measurement to
-       whatever ancestor happened to be positioned. */
+       and `offsetTop` resolve against when workshop.tsx measures a tab.
+       `static` would send both the marker and the measurement to whatever
+       ancestor happened to be positioned. */
     /* STICKY, NOT MERELY RELATIVE. Relative kept the containing block the
        selection marker and `offsetLeft` need, which is all this rule used to
        want; pinning needs the same thing and keeps it, since a sticky element
@@ -15160,10 +15046,6 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
     border-radius: 9999px; font-size: 14px;
   }
   .dev-ws-tab-glyph { width: 16px; height: 16px; }
-  /* Nothing overlays the content any more, so nothing needs reserving under
-     it — that clearance exists only for a bar that floats over what scrolls
-     beneath it. */
-  .dev-ws-tabbody { padding-bottom: 0; }
 
   /* ── THE FEED ON A WIDE WINDOW: THE STAGE ──
      Above 700px the lander is a ROW: the feed as a 720px card at the centre,
@@ -16300,25 +16182,6 @@ html:not(.un-kb) body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek)) 
    from the plain `body` rule rather than the value the selector above sets. */
 html:not(.un-kb) body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek)):has(#platform-parked:not(.hidden)) {
   --platform-tabs-h: calc(52px + 56px + var(--platform-tabs-inset, 0px));
-}
-
-/* THE APP WORKSHOP'S PILL RESTS ON THE PLATFORM'S BAR (#2718 review).
-   `.dev-ws-tabs` is a floating oval fixed to the foot of the window, and
-   `--ws-lift` is the air under it — until this change it was alone down
-   there, because an app hid the platform's bar. The app's WORKSHOP keeps
-   that bar now (App._syncPlatformTabs), so on a phone the two share the
-   bottom edge and the pill rides above rather than through.
-
-   DECLARED ON `body`, not on :root beside the token's default: a custom
-   property's var()s resolve on the element it is declared on, and
-   `--platform-tabs-h` is a body-level answer. The pill inherits this through
-   its portal host, which is a descendant of body like everything else.
-
-   The inset is still spent exactly once. `--platform-tabs-h` already carries
-   it (`56px + --platform-safe-bottom`), which is why this adds air and not
-   the inset again — the double-count the default value's own note is about. */
-html:not(.un-kb) body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek)) {
-  --ws-lift: calc(var(--platform-tabs-h, 0px) + 8px);
 }
 
 /* KEYBOARD UP, BAR GONE. The same reasoning `html.un-kb .platform-safe-scroll`

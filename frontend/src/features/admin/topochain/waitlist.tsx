@@ -7,7 +7,7 @@ import { fetchJson, send } from './api.ts';
 import { countryLabel } from './countries.ts';
 import { BTN } from './tokens.ts';
 import {
-  Badge, EmptyState, ErrorState, List, Pager, ScreenHeader, Select, Skeleton, fmt,
+  Badge, EmptyState, ErrorState, List, Pager, Panel, ScreenHeader, Select, Skeleton, fmt,
 } from './ui.tsx';
 import type { Column, PageMeta } from './ui.tsx';
 import { useWaitlistOptions } from '../../auth/waitlist-shared.tsx';
@@ -376,7 +376,7 @@ function WaitlistDetails({ row }: { row: WaitlistRow }) {
 function Queue<T>({
   hostId, title, subtitle, filterId, filterLabel, statusLabels, endpoint, columns,
   rowKey, empty, errorTitle, actions, extra, onlyFilterId, sortId, exportCsv,
-  deleteAction,
+  deleteAction, analytics, panel,
 }: {
   hostId: string;
   title: string;
@@ -419,6 +419,17 @@ function Queue<T>({
     confirmTitle: (n: number) => string;
     confirmMessage: (n: number) => string;
   };
+  /**
+   * Renders "Analytics" immediately before Export CSV, set only where a
+   * dashboard exists for this queue. `onClick` is a toggle, not a route —
+   * the caller owns the boolean that decides whether `panel` renders.
+   */
+  analytics?: { id: string; onClick: () => void };
+  /**
+   * Arbitrary content shown between the header and the table, the same slot
+   * onchain-accounts.tsx's `#admin-topo-oa-form` fills for its import panel.
+   */
+  panel?: ReactNode;
 }) {
   const [status, setStatus] = useState<Status>('pending');
   const [only, setOnly] = useState<Only>('any');
@@ -534,6 +545,17 @@ function Queue<T>({
                 ))}
               </Select>
             ) : null}
+            {analytics ? (
+              <button
+                id={analytics.id}
+                type="button"
+                className={BTN.secondarySm}
+                title="See signup totals and trends for this queue"
+                onClick={analytics.onClick}
+              >
+                Analytics
+              </button>
+            ) : null}
             {exportCsv ? (
               <button
                 id={exportCsv.id}
@@ -555,6 +577,7 @@ function Queue<T>({
           </>
         )}
       />
+      {panel}
       <div id={hostId}>
         {items === null ? <Skeleton rows={4} /> : null}
         {error ? (
@@ -597,6 +620,205 @@ function Queue<T>({
         ) : null}
       </div>
     </>
+  );
+}
+
+// ── Waitlist analytics dashboard (#2748) ────────────────────────────────
+//
+// A read-only summary layered over the same rows the queue above lists.
+// Every figure comes straight off `/api/v4/admin/waitlist/analytics`,
+// which itself derives everything from columns the queue already renders
+// (`released_at`, `confirmed_at`, `linked_user_id`) — no invented status
+// enum on either side of the wire.
+
+type WaitlistAnalytics = {
+  totalSignups: number;
+  waiting: number;
+  admitted: number;
+  confirmed: number;
+  linked: number;
+  series: { day: string; count: number }[];
+};
+
+// The signup trend is a single series, so it takes one hue with no legend
+// box (the heading above the chart already names what is plotted) — this
+// is the same indigo already shipped for a primary/signup-like metric in
+// the admin analytics screen (`SPEND_PLATFORM`).
+const WL_TREND_COLOR = '#6366f1';
+
+function StatTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-zinc-100 dark:bg-zinc-800 p-3">
+      <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</div>
+      <div className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+        {value.toLocaleString()}
+      </div>
+    </div>
+  );
+}
+
+function WaitlistTrendChart({ series }: { series: { day: string; count: number }[] }) {
+  const W = 640;
+  const H = 160;
+  const padTop = 16;
+  const padBottom = 8;
+  const n = series.length;
+  const counts = series.map((p) => p.count);
+  const max = Math.max(1, ...counts);
+  const step = n > 1 ? W / (n - 1) : W;
+  const x = (i: number) => i * step;
+  const y = (v: number) => padTop + (H - padTop - padBottom) * (1 - v / max);
+  const points = counts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const lastIndex = n - 1;
+  const lastValue = lastIndex >= 0 ? counts[lastIndex] : 0;
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full"
+      style={{ height: '160px' }}
+      role="img"
+      aria-label={`Signups per day over the last ${n} days, most recently ${lastValue}`}
+    >
+      {[0, 0.5, 1].map((f) => {
+        const gy = padTop + (H - padTop - padBottom) * f;
+        return (
+          <line
+            key={f}
+            x1={0}
+            y1={gy}
+            x2={W}
+            y2={gy}
+            stroke="currentColor"
+            strokeOpacity={0.12}
+            strokeWidth={1}
+            className="text-zinc-400 dark:text-zinc-500"
+          />
+        );
+      })}
+      {n > 0 ? (
+        <polyline
+          points={points}
+          fill="none"
+          stroke={WL_TREND_COLOR}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      ) : null}
+      {series.map((p, i) => (
+        <circle
+          key={p.day}
+          cx={x(i)}
+          cy={y(p.count)}
+          r={i === lastIndex ? 5 : 3}
+          fill={WL_TREND_COLOR}
+          strokeWidth={2}
+          className="stroke-white dark:stroke-zinc-900"
+        >
+          <title>{`${p.day}: ${p.count} signup${p.count === 1 ? '' : 's'}`}</title>
+        </circle>
+      ))}
+    </svg>
+  );
+}
+
+// The waiting/admitted split is a status (a signup's lifecycle state), not
+// an open-ended category, so it reuses the exact reserved tones the queue's
+// own Status column already wears (`Badge tone="amber"` / `tone="green"`)
+// rather than picking a new pair.
+function WaitlistStatusBreakdown({ waiting, admitted }: { waiting: number; admitted: number }) {
+  const total = Math.max(1, waiting + admitted);
+  const waitingPct = Math.round((waiting / total) * 100);
+  const admittedPct = 100 - waitingPct;
+  return (
+    <div>
+      <div
+        className="flex h-3 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+        role="img"
+        aria-label={`${waiting} waiting, ${admitted} admitted`}
+      >
+        {waiting > 0 ? (
+          <div
+            className="h-full bg-amber-400 dark:bg-amber-500"
+            style={{ width: `${waitingPct}%`, marginRight: admitted > 0 ? '2px' : 0 }}
+          />
+        ) : null}
+        {admitted > 0 ? (
+          <div className="h-full bg-green-500 dark:bg-green-600" style={{ width: `${admittedPct}%` }} />
+        ) : null}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+        <span className="inline-flex items-center gap-1.5">
+          <Badge tone="amber" label="Waiting" />
+          {`${waiting.toLocaleString()} (${waitingPct}%)`}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Badge tone="green" label="Admitted" />
+          {`${admitted.toLocaleString()} (${admittedPct}%)`}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function WaitlistAnalyticsPanel({ onClose }: { onClose: () => void }) {
+  const [data, setData] = useState<WaitlistAnalytics | null>(null);
+  const [error, setError] = useState<{ status: number; message: string | null } | null>(null);
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const res = await fetchJson('/api/v4/admin/waitlist/analytics');
+    if (!alive.current) return;
+    if (res.ok && res.data?.success) {
+      setData(res.data.data);
+      return;
+    }
+    setData(null);
+    setError({ status: res.status, message: (res.data && res.data.error) || null });
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <div id="admin-topo-wl-analytics-panel">
+      <Panel
+        title="Waitlist analytics"
+        subtitle="Totals and a 30-day trend for the signups in the queue below."
+        onClose={onClose}
+        closeLabel="Close the waitlist analytics dashboard"
+      >
+        {data === null && !error ? <Skeleton rows={3} /> : null}
+        {error ? (
+          <ErrorState
+            title="Couldn't load waitlist analytics"
+            status={error.status}
+            message={error.message}
+            onRetry={load}
+          />
+        ) : null}
+        {data ? (
+          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <StatTile label="Total signups" value={data.totalSignups} />
+              <StatTile label="Waiting" value={data.waiting} />
+              <StatTile label="Admitted" value={data.admitted} />
+              <StatTile label="Confirmed email" value={data.confirmed} />
+              <StatTile label="Linked to an account" value={data.linked} />
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Signups, last 30 days
+              </div>
+              <WaitlistTrendChart series={data.series} />
+            </div>
+            <WaitlistStatusBreakdown waiting={data.waiting} admitted={data.admitted} />
+          </div>
+        ) : null}
+      </Panel>
+    </div>
   );
 }
 
@@ -766,6 +988,7 @@ function bpEmpty({ status }: { status: Status; only: Only }) {
 
 function WaitlistScreen() {
   const write = canWrite();
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // "Admit", not "Release". The route, the column and the mail kind keep
   // their names; this is the only place a person reads the word.
@@ -830,6 +1053,10 @@ function WaitlistScreen() {
         onlyFilterId="admin-topo-wl-only"
         sortId="admin-topo-wl-sort"
         endpoint="/api/v4/admin/waitlist"
+        analytics={{ id: 'admin-topo-wl-analytics', onClick: () => setShowAnalytics((s) => !s) }}
+        panel={showAnalytics ? (
+          <WaitlistAnalyticsPanel onClose={() => setShowAnalytics(false)} />
+        ) : null}
         exportCsv={write
           ? { id: 'admin-topo-wl-export', path: '/api/v4/admin/waitlist/export-csv' }
           : undefined}

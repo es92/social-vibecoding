@@ -9,6 +9,7 @@ const routes = require('../src/routes/visual-evidence');
 const fixtures = require('./fixtures/visual-evidence');
 const db = require('../src/db/pool');
 const appAccess = require('../src/services/app-access');
+const appAdmins = require('../src/services/app-admins');
 const orchestrator = require('../src/services/visual-evidence-orchestrator');
 const state = require('../src/services/visual-evidence-state');
 const planContract = require('../src/services/visual-evidence-plan');
@@ -31,7 +32,7 @@ test('artifact ids and proposal ids are canonical and traversal-proof', () => {
   assert.equal(routes.sessionId(String(2 ** 40)), null);
 });
 
-test('failed-run diagnostics expose the stored plan only to the proposal owner, including after a retry', async (t) => {
+test('run diagnostics are private to the author or app manager, available live, and retain retry history', async (t) => {
   const base = 'a'.repeat(40);
   const head = 'b'.repeat(40);
   const runId = '1'.repeat(32);
@@ -42,12 +43,21 @@ test('failed-run diagnostics expose the stored plan only to the proposal owner, 
   };
   const run = {
     id: runId, base_sha: base, head_sha: head, state: 'failed',
+    trigger: 'preview-ready', author_plan_supplied: false,
+    fixture_fingerprint: 'fixture-1', base_image_digest: 'sha256:base',
+    head_image_digest: 'sha256:head', repair_attempt: 1,
+    created_at: new Date('2026-09-01T00:00:00Z'),
+    started_at: new Date('2026-09-01T00:01:00Z'),
+    completed_at: new Date('2026-09-01T00:02:00Z'),
+    updated_at: new Date('2026-09-01T00:02:00Z'),
     replay_plan: fixtures.plan(), plan_hash: planContract.planHash(fixtures.plan()),
     failure_code: 'assertion_failed', failure_reason: 'Sort was not visible.',
     trace_summary: {
-      replayPasses: [{ pass: 1, durationMs: 20 }], agentAttempts: 1,
-      agentDispatches: [{ requestedBackend: 'claude_code', backend: 'claude_code', outcome: 'completed' }],
+      replayPasses: [{ pass: 1, durationMs: 20 }], replayRuntime: 'kubernetes', agentAttempts: 1,
+      agentDispatches: [{ requestedBackend: 'codex_openrouter', requestedModel: 'glm-4', backend: 'claude_code', model: 'claude-sonnet', fallbackReason: 'model_without_tools', outcome: 'completed' }],
       lastReplayEvent: { pass: 2, type: 'viewport_started', storyId: 'invite-suggestions', viewport: 'desktop' },
+      replayEvents: [{ pass: 2, type: 'action_started', actionId: 'open-settings', side: 'head' }],
+      planSource: 'hosted_planner', tokenUsage: { inputTokens: 123 }, artifactBytes: 345,
       failure: { phase: 'pass_2', code: 'assertion_failed', detail: { side: 'head', phase: 'assertion' } },
       control: { planCalls: 1, finishStatus: 'failed', finishReason: 'The checkpoint did not render.' },
     },
@@ -55,15 +65,24 @@ test('failed-run diagnostics expose the stored plan only to the proposal owner, 
   const pool = { query: async (sql, params) => {
     if (String(sql).includes('FROM chat_sessions cs')) return { rows: [session] };
     if (String(sql).includes('FROM visual_evidence_runs')) {
-      assert.match(String(sql), /state IN \('failed', 'stale'\) AND failure_code IS NOT NULL/);
+      assert.doesNotMatch(String(sql), /state IN/);
       return { rows: params[0] === runId && params[1] === session.id ? [run] : [] };
+    }
+    if (String(sql).includes('FROM visual_evidence_artifacts')) {
+      assert.deepEqual(params, [runId]);
+      return { rows: [{
+        story_id: 'invite-suggestions', viewport: 'desktop', side: 'head', variant: 'focus',
+        media: 'png', bytes: 345, width: 640, height: 480, sha256: 'c'.repeat(64),
+      }] };
     }
     throw new Error(`Unexpected query: ${String(sql).slice(0, 80)}`);
   } };
   const savedPool = db.getPool;
   const savedAccess = appAccess.getAppForUser;
+  const savedManage = appAdmins.canManageApp;
   db.getPool = () => pool;
   appAccess.getAppForUser = async () => ({ id: 9, slug: 'demo' });
+  appAdmins.canManageApp = async (_pool, app, user) => app.id === 9 && user.id === 8;
   const routePath = require.resolve('../src/routes/visual-evidence');
   delete require.cache[routePath];
   const isolatedRoutes = require('../src/routes/visual-evidence');
@@ -77,6 +96,7 @@ test('failed-run diagnostics expose the stored plan only to the proposal owner, 
     server.close();
     db.getPool = savedPool;
     appAccess.getAppForUser = savedAccess;
+    appAdmins.canManageApp = savedManage;
     delete require.cache[routePath];
   });
   const url = `http://127.0.0.1:${server.address().port}/api/apps/demo/proposals/42/evidence/diagnostics`;
@@ -85,16 +105,31 @@ test('failed-run diagnostics expose the stored plan only to the proposal owner, 
   assert.match(ownerResponse.headers.get('cache-control'), /no-store/);
   const { diagnostics } = await ownerResponse.json();
   assert.equal(diagnostics.runId, runId);
+  assert.equal(diagnostics.currentRun, true);
   assert.equal(diagnostics.replayPlan.stories[0].id, fixtures.plan().stories[0].id);
   assert.deepEqual(diagnostics.trace.replayPasses, [{ pass: 1, durationMs: 20 }]);
   assert.equal(diagnostics.trace.agentDispatches[0].backend, 'claude_code');
+  assert.equal(diagnostics.trace.agentDispatches[0].fallbackReason, 'model_without_tools');
   assert.equal(diagnostics.trace.lastReplayEvent.pass, 2);
+  assert.equal(diagnostics.trace.replayEvents[0].actionId, 'open-settings');
+  assert.equal(diagnostics.trace.replayRuntime, 'kubernetes');
+  assert.equal(diagnostics.trace.planSource, 'hosted_planner');
+  assert.equal(diagnostics.trace.tokenUsage.inputTokens, 123);
+  assert.equal(diagnostics.trigger, 'preview-ready');
+  assert.equal(diagnostics.repairAttempt, 1);
+  assert.equal(diagnostics.provenance.fixtureFingerprint, 'fixture-1');
+  assert.equal(diagnostics.artifacts[0].bytes, 345);
   assert.equal(diagnostics.trace.failure.detail.side, 'head');
   assert.equal(diagnostics.trace.control.planCalls, 1);
 
   userId = 8;
+  assert.equal((await fetch(url)).status, 200, 'app manager can diagnose another author’s run');
+  run.state = 'replaying';
+  assert.equal((await (await fetch(url)).json()).diagnostics.state, 'replaying', 'the private trace is available while a run is active');
+  run.state = 'failed';
+  userId = 9;
   assert.equal((await fetch(url)).status, 404);
-  userId = 7;
+  userId = 8;
   session.imported_pr_head_sha = 'd'.repeat(40);
   session.visual_evidence_run_id = '2'.repeat(32);
   run.state = 'stale';
@@ -105,6 +140,21 @@ test('failed-run diagnostics expose the stored plan only to the proposal owner, 
   assert.equal(historicalDiagnostics.headSha, head);
   assert.equal(historicalDiagnostics.state, 'stale');
   assert.equal((await fetch(`${url}?runId=${'3'.repeat(32)}`)).status, 404);
+
+  run.state = 'verified';
+  run.failure_code = null;
+  run.failure_reason = null;
+  const verified = (await (await fetch(`${url}?runId=${runId}`)).json()).diagnostics;
+  assert.equal(verified.state, 'verified');
+  assert.equal(verified.failureCode, null);
+  assert.equal(verified.trace.agentDispatches[0].backend, 'claude_code');
+  session.visual_evidence_run_id = null;
+  session.visual_evidence_state = 'planned';
+  session.visual_evidence_detail = { notStartedReason: 'No staging preview was built.' };
+  const notStarted = (await (await fetch(url)).json()).diagnostics;
+  assert.equal(notStarted.runId, null);
+  assert.equal(notStarted.notStartedReason, 'No staging preview was built.');
+  assert.equal((await fetch(`${url}?runId=bad`)).status, 404);
 });
 
 test('the binary route is authenticated, current-run fenced, exact-head fenced, and private', () => {

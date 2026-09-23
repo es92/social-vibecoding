@@ -88,21 +88,19 @@ test('every blocked reason names its own condition (#2074)', () => {
   const av = context();
   const reason = (patch) => av.changeSubmissionState({ ...failing, ...patch }).reason;
 
-  assert.match(reason({ status: 'paused' }), /Resume this change/);
-  assert.match(reason({ proposal_state: 'checking' }), /tested commit uploaded/,
-    'the managed-handoff contract says what it wants');
-  // `failing` is a cli_handoff, whose contract is checked first — so the
-  // generic verdicts need an ordinary session to be reachable at all.
-  const plain = { source: null, proposal_state: undefined };
-  assert.match(reason({ ...plain, check_state: 'failing' }), /checks on this revision are failing/);
-  assert.match(reason({ ...plain, check_state: 'error' }), /checks could not run/);
+  assert.match(reason({ status: 'paused' }), /checks on this revision are failing/);
+  assert.match(reason({ status: 'paused', proposal_state: 'checking', check_state: 'pending' }), /staging and checks to finish/);
+  assert.match(reason({ status: 'paused', proposal_state: 'uploaded', check_state: null }), /tested commit uploaded/);
+  assert.match(reason({ status: 'paused', check_state: 'error' }), /checks could not run/);
+  assert.equal(av.changeSubmissionState({ ...failing, status: 'paused',
+    proposal_state: 'ready', check_state: 'passing' }).kind, 'ready');
 
   // No two of them are the same sentence — the whole point.
   const reasons = [
     reason({ status: 'paused' }),
-    reason({ proposal_state: 'checking' }),
-    reason({ ...plain, check_state: 'failing' }),
-    reason({ ...plain, check_state: 'error' }),
+    reason({ proposal_state: 'checking', check_state: 'pending' }),
+    reason({ proposal_state: 'uploaded', check_state: null }),
+    reason({ check_state: 'error' }),
   ];
   assert.equal(new Set(reasons).size, reasons.length, 'four conditions, four reasons');
 

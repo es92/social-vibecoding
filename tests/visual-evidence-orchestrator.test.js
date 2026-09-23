@@ -111,6 +111,7 @@ async function execute(fixture, options = {}) {
     app: fixture.app,
     revision: { baseSha: BASE, headSha: HEAD, files: [], filesComplete: true },
     ...(options.authorPlan ? { authorPlan: options.authorPlan } : {}),
+    ...(options.onReplayEvent ? { onReplayEvent: options.onReplayEvent } : {}),
   }, fixture.dependencies);
 }
 
@@ -158,8 +159,10 @@ test('a replay tool failure survives a successful planner exit with its original
   assert.deepEqual(failure.patch.traceSummary.control, {
     planCalls: 1, finishStatus: null, finishReason: null,
   });
+  assert.ok(failure.patch.traceSummary.lastReplayEvent.elapsedMs >= 0);
   assert.deepEqual(failure.patch.traceSummary.lastReplayEvent, {
     pass: 1, type: 'viewport_started', storyId: 'invite-suggestions', viewport: 'desktop',
+    elapsedMs: failure.patch.traceSummary.lastReplayEvent.elapsedMs,
   });
 });
 
@@ -192,9 +195,11 @@ test('a retry after a failed replay cannot replace the browser error with the pl
     tool: 'run-plan', detail: replayError.detail,
   });
   assert.equal(failure.patch.traceSummary.control.planCalls, 1);
+  assert.ok(failure.patch.traceSummary.lastReplayEvent.elapsedMs >= 0);
   assert.deepEqual(failure.patch.traceSummary.lastReplayEvent, {
     pass: 1, type: 'result', passed: false, code: 'missing_replay_result',
     message: replayError.message, detail: replayError.detail,
+    elapsedMs: failure.patch.traceSummary.lastReplayEvent.elapsedMs,
   });
 });
 
@@ -228,6 +233,30 @@ test('an author plan uses the same two clean replays without a second model call
   assert.equal(Object.hasOwn(fixture.transitions.at(-1).patch, 'semanticVerdict'), false);
 });
 
+test('replay action progress reaches the durable trace without carrying plan values', async () => {
+  const fixture = setup();
+  const original = fixture.dependencies.replay.runPass;
+  const observed = [];
+  fixture.dependencies.replay.runPass = async (...args) => {
+    const input = args[2];
+    args[3].onEvent({
+      type: 'action_completed', storyId: 'invite-suggestions', viewport: 'desktop',
+      side: 'head', actionId: 'open-settings', actionStage: 'settings',
+      actionType: 'click', durationMs: 43, value: 'secret-form-value',
+      location: { sameOrigin: true, pathname: '/settings', hash: '#token=secret.jwt', queryKeys: ['shot'] },
+    });
+    return original(...args);
+  };
+  await execute(fixture, { authorPlan: fixtures.plan(), onReplayEvent: (event) => observed.push(event) });
+  const trace = fixture.transitions.at(-1).patch.traceSummary;
+  assert.equal(trace.planSource, 'author');
+  assert.equal(trace.replayEvents.length, 2);
+  assert.deepEqual(trace.replayEvents.map((event) => event.pass), [1, 2]);
+  assert.equal(trace.lastReplayEvent.actionId, 'open-settings');
+  assert.deepEqual(observed, trace.replayEvents);
+  assert.doesNotMatch(JSON.stringify(trace), /secret-form-value|secret\.jwt/);
+});
+
 test('a persisted author plan survives scheduling without a separate author request', async () => {
   const fixture = setup();
   fixture.run.author_plan = fixtures.plan();
@@ -251,12 +280,16 @@ test('slow paired environment provisioning does not consume the agent exploratio
 
 test('background evidence heartbeat records progress and stops when the run ends', async () => {
   const seen = [];
+  const writes = [];
   const heartbeat = orchestrator.startRunHeartbeat({}, RUN_ID, {
-    heartbeatRun: async (_pool, _runId, phase) => { seen.push(phase); },
+    heartbeatRun: async (_pool, _runId, phase, patch) => { seen.push(phase); writes.push(patch); },
   }, null, 10);
   heartbeat.onProgress({ stage: 'checkout_revisions' });
+  heartbeat.onReplayEvent({ pass: 1, type: 'action_started', side: 'base', actionId: 'open-settings' });
   await new Promise((resolve) => setTimeout(resolve, 35));
   assert.ok(seen.includes('checkout_revisions'));
+  assert.equal(writes.at(-1).lastReplayEvent.actionId, 'open-settings');
+  assert.equal(writes.at(-1).replayEvents.length, 1);
   assert.ok(seen.length >= 2, 'the lease renews during a slow provisioning step');
   heartbeat.stop();
   const stoppedAt = seen.length;
@@ -264,6 +297,21 @@ test('background evidence heartbeat records progress and stops when the run ends
   assert.equal(seen.length, stoppedAt, 'finished runs stop renewing their lease');
   assert.equal(orchestrator.progressPhase({ phase: 'build', detail: 'private output' }), 'build_build');
   assert.equal(orchestrator.progressPhase({ detail: 'private output' }), null);
+});
+
+test('terminal failure metadata fits the database and redacts credentials before persistence', async () => {
+  let persisted;
+  const error = Object.assign(new Error('Request failed: token=secret.jwt api_key=topsecret'), {
+    code: 'bad-code-with-punctuation',
+  });
+  const updated = await orchestrator.failCurrentRun({}, RUN_ID, error, {
+    getRun: async () => ({ id: RUN_ID, current_run_id: RUN_ID, state: 'replaying' }),
+    transitionRun: async (_pool, _runId, next, patch) => { persisted = { next, patch }; },
+  });
+  assert.equal(updated, true);
+  assert.equal(persisted.next, 'failed');
+  assert.equal(persisted.patch.failureCode, 'visual_evidence_failed');
+  assert.doesNotMatch(persisted.patch.failureReason, /secret\.jwt|topsecret/);
 });
 
 test('competing schedulers claim a planned run only once before launching paired replay', async (t) => {

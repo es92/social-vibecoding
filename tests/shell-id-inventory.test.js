@@ -337,7 +337,11 @@ const ADDED_IDS = {
   // NOT in this map and that is not an omission: all six render only once
   // somebody has tapped or once a tab has filtered to nothing, so none of
   // them is in the prerendered document, which is what this map is for.
-  'workshop-scope': '#2718: the scope chip. It reads "All apps" on this screen, because this screen IS the all-apps one — narrowing navigates to that app\'s own Workshop rather than filtering here, which is the link-out every mini-app host in the study draws under a mini-app (Telegram to the bot\'s chat, Steam to the game\'s hub, Slack to the channel\'s files). Disabled with no apps rather than opening an empty list.',
+  // #workshop-scope left this map with the chip itself (#2759): the all-apps
+  // screen IS the list of your apps, so a chip whose panel listed them again
+  // was the page repeating itself. It was only ever an ADDED id, so it simply
+  // leaves; the chip on an app's own Workshop is #dev-ws-scope-chip, which
+  // renders client-side and was never in the prerendered document.
   'platform-parked': '#2718: the app you left, offered above the tab bar until it is resumed or dismissed. The bar makes the platform\'s five places one tap each and in doing so makes the app you were IN the one thing that is not: it has no tab, the header\'s app strip goes with it, and Home\'s grid is every app rather than the one you were halfway through. Every host that runs other people\'s programs keeps a handle to the thing you stepped out of — the app switcher, the taskbar, Telegram\'s minimised bot window, WeChat\'s floating capsule — and this is that handle at phone scale. The ROOT ships in the document, `hidden` and EMPTY, which is what an empty store renders; the app arrives from localStorage in an effect, so the prerender and the first client render agree and the id stays in this inventory whatever is parked. Its two children (#platform-parked-resume, #platform-parked-forget) are conditional and therefore not in this map, like #header-app-tile above.',
   'app-menu-row-discussion': '#2718: "Go to app discussion" — the same link-out, to the app\'s own chat. The menu is where an app\'s conversation is reached from inside it; the Messages tab is where it is reached from outside.',
   // ── Three ids from #2718's second pass that are NOT in this map ──
@@ -411,7 +415,6 @@ const ADDED_IDS = {
   'app-access-status': '#2304: proposal success, duplicate-proposal and failure feedback for the access editor. It ships empty so the React-owned dialog hydrates exactly.',
   'app-access-propose': '#2304: the explicit action that turns a selected access draft into the existing vote-gated visibility proposal.',
   'members-load-error': '#2304: dialog-level feedback when Members & approvals is opened before its app row has loaded, replacing the misleading visibility-specific status target.',
-  'dev-ws-rail-host': 'Empty anchor outside the frosted .dc-lift-strip wrapper, so the Workshop\'s phone tab bar can be `position: fixed` to the real viewport. That wrapper\'s backdrop-filter establishes a containing block for fixed descendants — walking the rail\'s real ancestor chain it is the only one — and it is shared with the chat/topic frames and three panels, so the bar moves out rather than the blur coming off.',
   'staging-retry-btn': '#1993: retry preview sign-in after token acquisition fails; initially hidden.',
   // ── OpenRouter catalog controls ──────────────────────────────────
   'settings-openrouter-model-search': 'Filters the key-visible OpenRouter catalog by model name, id or provider without another network request.',

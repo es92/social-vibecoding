@@ -1,9 +1,14 @@
 ---
 name: usernode-proposal
-description: Run the native Homeroom proposal lifecycle for a feature authored from a local coding-agent session, including pinning the base commit, starting the proposal, implementing and testing locally, uploading commits, submitting staging builds, polling checks, and promoting for voting. Use when starting, updating, checking, or promoting a Homeroom proposal. Do not use for an ordinary GitHub branch or pull request.
+description: Run the native Homeroom proposal lifecycle from a coding agent on the user's own machine, including pinning the base commit, starting the proposal, implementing and testing locally, uploading commits, submitting staging builds, polling checks, and promoting for voting. Do not use inside a Homeroom hosted dev-chat worker or for an ordinary GitHub branch or pull request.
 ---
 
 # Homeroom Proposal
+
+This workflow is for an agent running outside Homeroom on the user's machine.
+Inside a Homeroom hosted dev-chat worker, use the supplied visual-intent tool,
+commit on the assigned branch, and finish the turn. The platform harness owns
+push, PR creation, staging, checks, and evidence scheduling there.
 
 Use `production` unless the user explicitly requests `local`. Read `../usernode-api/SKILL.md` before performing setup, authentication, or generic Homeroom API calls.
 

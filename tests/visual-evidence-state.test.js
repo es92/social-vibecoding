@@ -50,10 +50,20 @@ test('evidence heartbeat renews only the current active run and stores a bounded
   } };
   const id = 'f'.repeat(32);
   assert.deepEqual(await state.heartbeatRun(pool, id, 'checkout_revisions'), { active: true });
-  assert.deepEqual(statement.values, [id, 'checkout_revisions']);
+  assert.deepEqual(statement.values, [id, 'checkout_revisions', null]);
   assert.match(statement.sql, /s\.visual_evidence_run_id = r\.id/);
   assert.match(statement.sql, /r\.state IN \('provisioning','exploring','replaying','reviewing'\)/);
   assert.match(statement.sql, /trace_summary = jsonb_set/);
+  const event = { pass: 1, type: 'action_started', actionId: 'open-settings' };
+  await state.heartbeatRun(pool, id, 'pass_1', {
+    lastReplayEvent: event, replayEvents: [event],
+  });
+  assert.deepEqual(JSON.parse(statement.values[2]), {
+    lastReplayEvent: event, replayEvents: [event],
+  });
+  await assert.rejects(state.heartbeatRun(pool, id, 'pass_1', {
+    replayEvents: Array.from({ length: 40 }, () => ({ message: 'x'.repeat(2000) })),
+  }), { code: 'invalid_evidence_heartbeat' });
   await assert.rejects(state.heartbeatRun(pool, id, 'https://private.internal'), {
     code: 'invalid_evidence_heartbeat',
   });

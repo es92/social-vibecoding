@@ -57,9 +57,6 @@ import { AppsLoadError } from '../apps/load-error';
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibilityHiddenClass } from '../../lib/visibility-store';
 import { workshopStore } from './workshop-store.js';
-import {
-  WorkshopPicker, WorkshopScope,
-} from './workshop-chrome';
 
 // The legacy router reads the DOM on the line after it routes — the ?shot=
 // capture fixtures assert the revealed screen inside the same task — so the
@@ -248,7 +245,6 @@ export function WorkshopScreen() {
   const screenRef = useRef<HTMLElement | null>(null);
   const state = useStoreState(workshopStore) as {
     open: boolean; rows: WorkshopRow[] | null; error: boolean;
-    picker: null | 'scope';
   };
   useVisibilityHiddenClass(screenRef, 'workshop-screen', false);
   // ONE LIST, EVERY APP. The three tabs — Current status / Needs you / All
@@ -299,26 +295,14 @@ export function WorkshopScreen() {
             their own name under a bar that was already saying it — the same
             word twice, an inch apart, on the two screens that had been made
             to agree about what a title IS. The bar is the title, which is
-            what it is for on every other screen in the shell; the chip below
-            says which workshop, which is the thing the bar cannot. */}
-        {/* THE CHIP, THE TABS AND THE PLUS — see ./workshop-chrome.tsx for
-            what each is for. They render whether or not the list has
-            answered: a screen whose controls appear after its data does is a
-            screen that moves under the thumb reaching for them. */}
-        {/* `pt-5` CLEARS THE HEADER'S NOTCH (#2718 review). The bar is
-            `rounded-b-2xl -mb-2`, so every screen root starts 8px UNDER its
-            bottom edge and whatever leads a screen has to step down past it.
-            The retired <h1> was carrying that step in its own `padding-top`,
-            and taking the title away took the clearance with it: the chip's
-            top 8px went under the bar, sliced flat by it. 20px is the 8 the
-            notch owes plus 12 of air, which is what Messages' own first
-            element steps down by. */}
-        <div className="px-4 pt-5 pb-2 flex items-center gap-2">
-          <WorkshopScope apps={all} open={state.picker === 'scope'} />
-        </div>
-        {state.picker
-          ? <WorkshopPicker apps={all} />
-          : null}
+            what it is for on every other screen in the shell. */}
+        {/* NO SCOPE CHIP HERE EITHER (#2759). It read "All apps" and its
+            panel listed your apps so you could pick one — but this screen IS
+            that list, every row the way into its app's Workshop, so the chip
+            was the one control on the page that repeated the page. The chip
+            lives on ONE app's Workshop now (./workshop-chrome.tsx), where
+            naming the app and offering the others is something the screen
+            does not already say. */}
         {/* THE LEGEND IS NOT DECORATION. Two bare numbers on a row cannot be
             read, and the per-pill tooltip is not available to a thumb — so the
             two glyphs are named once, here, in the muted line the language
@@ -351,7 +335,13 @@ export function WorkshopScreen() {
             also the better reading, because the glyph's name and its count
             are two different things and the name is the one that has to be
             legible cold. */}
-        <p className="px-4 pt-2 pb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-500">
+        {/* `pt-5` CLEARS THE HEADER'S NOTCH (#2718 review). The bar is
+            `rounded-b-2xl -mb-2`, so every screen root starts 8px UNDER its
+            bottom edge and whatever leads a screen has to step down past it.
+            The chip carried that step while it led the screen; the legend
+            leads now, so it carries it: the 8 the notch owes plus 12 of air,
+            which is what Messages' own first element steps down by. */}
+        <p className="px-4 pt-5 pb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-500 dark:text-zinc-500">
           <span className="inline-flex items-center gap-1">
             <HandRaisedIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
             You are working on

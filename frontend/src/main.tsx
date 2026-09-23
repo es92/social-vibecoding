@@ -110,6 +110,9 @@ import './features/nav/mount';
 // screens share, so it hangs off the document and the visibility store.
 import './lib/browser-scroll';
 import './lib/wallpaper-scroll';
+// …and where the on-screen keyboard has panned the screen to, so a centred
+// dialog stays inside what is visible above the keys (#2765).
+import './lib/visual-viewport';
 // …and the same wallpaper is copied under a screen's view transition, so the
 // pinned, translucent header and rail keep their ground mid-fade (#2758).
 import './lib/transition-ground';

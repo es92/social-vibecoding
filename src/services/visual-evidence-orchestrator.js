@@ -22,6 +22,7 @@ const ACTIVE_STATES = new Set(['planned', 'provisioning', 'exploring', 'replayin
 const DIFF_CONTEXT_CHARS = 8_000;
 const inFlight = new Map();
 const HEARTBEAT_INTERVAL_MS = 30_000;
+const MAX_REPLAY_EVENTS = 40;
 
 function progressPhase(event) {
   if (!event || typeof event !== 'object') return null;
@@ -42,6 +43,9 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
   let stopped = false;
   let writing = false;
   let pending = false;
+  let lastReplayEvent = null;
+  const replayEvents = [];
+  let lastReplayFlushAt = 0;
   const flush = () => {
     if (stopped || typeof stateService.heartbeatRun !== 'function') return;
     if (writing) { pending = true; return; }
@@ -49,7 +53,8 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
     Promise.resolve().then(async () => {
       do {
         pending = false;
-        await stateService.heartbeatRun(pool, runId, phase);
+        await stateService.heartbeatRun(pool, runId, phase,
+          lastReplayEvent ? { lastReplayEvent, replayEvents: replayEvents.slice(-MAX_REPLAY_EVENTS) } : null);
       } while (pending && !stopped);
     }).catch((error) => {
       log.warn('visual-evidence', 'Evidence heartbeat failed', { runId, error: error.message });
@@ -62,6 +67,21 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
   timer.unref?.();
   flush();
   return {
+    onReplayEvent(event) {
+      if (stopped || !event || typeof event !== 'object') return;
+      lastReplayEvent = event;
+      replayEvents.push(event);
+      if (replayEvents.length > MAX_REPLAY_EVENTS) replayEvents.shift();
+      // Persist an action start immediately: if its browser call hangs or the
+      // pod exits, this identifies the exact unfinished step. Less important
+      // progress is throttled to avoid one database write per emitted event.
+      if (event.type === 'action_started' || event.type === 'side_failed'
+          || event.type === 'animation_started' || event.type === 'result'
+          || Date.now() - lastReplayFlushAt >= 5000) {
+        lastReplayFlushAt = Date.now();
+        flush();
+      }
+    },
     onProgress(event) {
       if (typeof observer === 'function') {
         try { observer(event); } catch (error) {
@@ -298,28 +318,39 @@ async function waitForSessionIdle(pool, sessionId, {
 }
 
 function errorCode(error) {
-  return String(error?.code || 'visual_evidence_failed').slice(0, 64);
+  const code = String(error?.code || '');
+  return /^[A-Za-z0-9_]{1,48}$/.test(code) ? code : 'visual_evidence_failed';
+}
+
+function safeModelId(value) {
+  const model = String(value || '');
+  return /^[A-Za-z0-9._:/-]{1,120}$/.test(model) ? model : null;
+}
+
+function redactDiagnosticText(value, max = 240) {
+  return String(value)
+    .replace(/(\b(?:token|access_token|auth|authorization|password|secret|api[_-]?key|code|session)\s*=\s*)[^&\s"'<>)]*/gi, '$1[redacted]')
+    .replace(/\bBearer\s+[^\s"']+/gi, 'Bearer [redacted]')
+    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted]')
+    .replace(/\b(?:sk-(?:proj-)?|ghp_|gho_|github_pat_)[A-Za-z0-9_-]{16,}\b/gi, '[redacted]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email]')
+    .slice(0, max);
 }
 
 function visibleError(error) {
   const message = String(error?.message || 'The visual change preview could not be produced.').trim();
-  return message.slice(0, 2000) || 'The visual change preview could not be produced.';
+  return redactDiagnosticText(message, 2000) || 'The visual change preview could not be produced.';
 }
 
 function safeDiagnosticValue(value, depth = 0) {
   if (value == null || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (typeof value === 'string') {
-    return value.slice(0, 200)
-      .replace(/([?&]token=)[^&\s"'<>)]*/gi, '$1[redacted]')
-      .replace(/\bBearer\s+[^\s"']+/gi, 'Bearer [redacted]');
-  }
-  if (depth >= 4) return '[nested detail omitted]';
+  if (typeof value === 'string') return redactDiagnosticText(value);
+  if (depth >= 7) return '[nested detail omitted]';
   if (Array.isArray(value)) {
-    const limit = value.every((item) => typeof item === 'string' || typeof item === 'number') ? 12 : 2;
-    return value.slice(0, limit).map((item) => safeDiagnosticValue(item, depth + 1));
+    return value.slice(0, 12).map((item) => safeDiagnosticValue(item, depth + 1));
   }
   if (typeof value !== 'object') return null;
-  return Object.fromEntries(Object.entries(value).slice(0, 16)
+  return Object.fromEntries(Object.entries(value).slice(0, 24)
     .filter(([key]) => !/^(?:token|authorization|cookie|password|secret|payload|data)$/i.test(key))
     .map(([key, item]) => [key, safeDiagnosticValue(item, depth + 1)]));
 }
@@ -329,9 +360,9 @@ function boundedReplayDetail(error) {
     const value = error?.detail || (error?.issues ? { issues: error.issues } : null);
     if (value == null) return null;
     const serialized = JSON.stringify(safeDiagnosticValue(value));
-    return serialized.length <= 4000
+    return serialized.length <= 16000
       ? JSON.parse(serialized)
-      : { truncated: true, excerpt: serialized.slice(0, 2000) };
+      : { truncated: true, excerpt: serialized.slice(0, 8000) };
   } catch { return null; }
 }
 
@@ -339,11 +370,58 @@ function replayProgressEvent(event, pass) {
   const type = String(event?.type || 'unknown');
   const storyId = String(event?.storyId || '');
   const viewport = String(event?.viewport || '');
+  const side = String(event?.side || '');
+  const phase = String(event?.phase || '');
+  const actionId = String(event?.actionId || '');
+  const actionStage = String(event?.actionStage || '');
+  const actionType = String(event?.actionType || '');
+  const assertionType = String(event?.assertionType || '');
+  const location = event?.location && typeof event.location === 'object'
+    ? {
+      sameOrigin: event.location.sameOrigin === true,
+      ...(typeof event.location.pathname === 'string'
+        ? { pathname: safeDiagnosticValue(event.location.pathname) } : {}),
+      ...(typeof event.location.hash === 'string'
+        ? { hash: safeDiagnosticValue(event.location.hash) } : {}),
+      queryKeys: Array.isArray(event.location.queryKeys)
+        ? event.location.queryKeys.slice(0, 12).map((value) => safeDiagnosticValue(String(value))) : [],
+    } : null;
   return {
     pass,
     type: /^[a-z_]{1,40}$/.test(type) ? type : 'unknown',
     ...(/^[a-z0-9][a-z0-9_-]{0,95}$/.test(storyId) ? { storyId } : {}),
     ...(/^[a-z0-9][a-z0-9_-]{0,31}$/.test(viewport) ? { viewport } : {}),
+    ...(['base', 'head'].includes(side) ? { side } : {}),
+    ...(/^[a-z_]{1,40}$/.test(phase) ? { phase } : {}),
+    ...(/^[a-z0-9][a-z0-9_-]{0,95}$/.test(actionId) ? { actionId } : {}),
+    ...(/^[a-z0-9][a-z0-9_-]{0,63}$/.test(actionStage) ? { actionStage } : {}),
+    ...(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.test(actionType) ? { actionType } : {}),
+    ...(Number.isInteger(event?.assertionIndex) && event.assertionIndex >= 0
+      ? { assertionIndex: event.assertionIndex } : {}),
+    ...(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.test(assertionType) ? { assertionType } : {}),
+    ...(Number.isInteger(event?.durationMs) && event.durationMs >= 0
+      ? { durationMs: event.durationMs } : {}),
+    ...(['actionCount', 'assertionCount', 'recordedFrameCount', 'httpErrorCount', 'baseFrames', 'headFrames', 'bytes'].reduce((counts, key) => {
+      if (Number.isInteger(event?.[key]) && event[key] >= 0) counts[key] = event[key];
+      return counts;
+    }, {})),
+    ...(type === 'session_bootstrap' ? {
+      attempted: event.attempted === true,
+      cookieAlreadyPresent: event.cookieAlreadyPresent === true,
+      sessionCookieInstalled: event.sessionCookieInstalled === true,
+      ...(Number.isInteger(event.responseStatus) ? { responseStatus: event.responseStatus } : {}),
+    } : {}),
+    ...(['steps', 'motion'].includes(event?.animation) ? { animation: event.animation } : {}),
+    ...(Number.isInteger(event?.status) && event.status >= 100 && event.status <= 599
+      ? { status: event.status } : {}),
+    ...(location ? { location } : {}),
+    ...(typeof event?.code === 'string' && /^[a-z0-9_]{1,80}$/.test(event.code)
+      ? { code: event.code } : {}),
+    ...(type === 'result' && event?.passed === true ? {
+      passed: true,
+      ...(Number.isInteger(event.artifactCount) ? { artifactCount: event.artifactCount } : {}),
+      ...(Array.isArray(event.stories) ? { storyCount: event.stories.length } : {}),
+    } : {}),
     ...(type === 'result' && event?.passed === false ? {
       passed: false,
       code: /^[a-z0-9_]{1,80}$/.test(String(event.code || '')) ? String(event.code) : 'replay_failed',
@@ -365,7 +443,9 @@ function newRunMetrics() {
       cleanup: 0,
     },
     replayPasses: [],
+    replayRuntime: null,
     lastReplayEvent: null,
+    replayEvents: [],
     agentAttempts: 0,
     agentDispatches: [],
     repairCount: 0,
@@ -402,11 +482,14 @@ function traceSummary(metrics, extra = {}) {
       total: Math.max(0, Date.now() - metrics.startedAtMs),
     },
     replayPasses: metrics.replayPasses.slice(0, 12),
+    replayRuntime: metrics.replayRuntime,
     lastReplayEvent: metrics.lastReplayEvent,
+    replayEvents: metrics.replayEvents.slice(-MAX_REPLAY_EVENTS),
     agentAttempts: metrics.agentAttempts,
     agentDispatches: metrics.agentDispatches.slice(0, 4),
     repairCount: metrics.repairCount,
     artifactBytes: metrics.artifactBytes,
+    planSource: metrics.planSource || null,
     ...(Object.keys(metrics.tokenUsage).length ? { tokenUsage: { ...metrics.tokenUsage } } : {}),
   };
 }
@@ -469,6 +552,7 @@ async function executeRun(config, options, injected = {}) {
   let failurePhase = 'load_run';
   let agentThreadId;
   const metrics = newRunMetrics();
+  metrics.replayRuntime = String(config.captureRuntime || process.env.CAPTURE_RUNTIME || config.appRuntime || 'docker').slice(0, 32);
   const agentBudgetMs = config.visualEvidence?.maxAgentMs || 240_000;
   let agentWindowStartedAt = null;
   let agentWindowSuspendedAt = 0;
@@ -480,6 +564,15 @@ async function executeRun(config, options, injected = {}) {
     if (typeof onProgress === 'function') onProgress(message);
   };
   const stage = (name) => progress({ stage: name });
+  const recordReplayEvent = (event, pass) => {
+    const summary = replayProgressEvent(event, pass);
+    summary.elapsedMs = Math.max(0, Date.now() - metrics.startedAtMs);
+    metrics.lastReplayEvent = summary;
+    metrics.replayEvents.push(summary);
+    if (metrics.replayEvents.length > MAX_REPLAY_EVENTS) metrics.replayEvents.shift();
+    if (typeof options.onReplayEvent === 'function') options.onReplayEvent(summary);
+    progress(`Evidence pass ${pass}: ${summary.type}`);
+  };
 
   try {
     if (!run || !session || !app) {
@@ -495,6 +588,7 @@ async function executeRun(config, options, injected = {}) {
     const authorPlan = options.authorPlan == null
       ? (run.author_plan == null ? null : planContract.parseReplayPlan(run.author_plan))
       : planContract.parseReplayPlan(options.authorPlan);
+    metrics.planSource = authorPlan ? 'author' : 'hosted_planner';
     if (authorPlan && planContract.canonicalJson(planContract.semanticIntentFromPlan(authorPlan))
         !== planContract.canonicalJson(intent)) {
       throw new VisualEvidenceOrchestrationError(
@@ -600,10 +694,7 @@ async function executeRun(config, options, injected = {}) {
             session.id,
             replayInput({ run, plan, deployment: firstDeployment, authTokens, provenance: expectedProvenance, pass: 1 }),
             { onEvent: (event) => {
-              if (event?.type !== 'result' || event?.passed === false) {
-                metrics.lastReplayEvent = replayProgressEvent(event, 1);
-              }
-              progress(`Evidence pass 1: ${event.type}`);
+              recordReplayEvent(event, 1);
             }, previewRunId: run.id }
           );
           metrics.replayPasses.push({
@@ -625,10 +716,7 @@ async function executeRun(config, options, injected = {}) {
             session.id,
             replayInput({ run, plan, deployment: secondDeployment, authTokens, provenance: expectedProvenance, pass: 2 }),
             { onEvent: (event) => {
-              if (event?.type !== 'result' || event?.passed === false) {
-                metrics.lastReplayEvent = replayProgressEvent(event, 2);
-              }
-              progress(`Evidence pass 2: ${event.type}`);
+              recordReplayEvent(event, 2);
             }, previewRunId: run.id }
           );
           metrics.replayPasses.push({
@@ -644,7 +732,7 @@ async function executeRun(config, options, injected = {}) {
             runId: run.id,
           });
           if (!hardVerdict.passed) {
-            throw new VisualEvidenceOrchestrationError(hardVerdict.code, hardVerdict.reason);
+            throw new VisualEvidenceOrchestrationError(hardVerdict.code, hardVerdict.reason, hardVerdict.detail || null);
           }
           const replayTrace = traceSummary(metrics, {
             planHash,
@@ -703,7 +791,10 @@ async function executeRun(config, options, injected = {}) {
       const dispatchStartedAt = Date.now();
       const suspendedAtStart = suspendedMs();
       metrics.agentAttempts += 1;
-      const dispatchTrace = { requestedBackend: String(forceBackend || session.agent_backend || 'unknown').slice(0, 64) };
+      const dispatchTrace = {
+        requestedBackend: String(forceBackend || session.agent_backend || 'unknown').slice(0, 64),
+        requestedModel: safeModelId(session.agent_model || session.model),
+      };
       metrics.agentDispatches.push(dispatchTrace);
       try {
         // Provisioning and deterministic replay are platform work. Starting
@@ -733,9 +824,13 @@ async function executeRun(config, options, injected = {}) {
         addAgentUsage(metrics, dispatched);
         agentThreadId = dispatched.threadId || agentThreadId || null;
         dispatchTrace.backend = String(dispatched.backend || dispatchTrace.requestedBackend).slice(0, 64);
+        dispatchTrace.model = safeModelId(dispatched.model);
+        if (dispatched.fallbackReason) dispatchTrace.fallbackReason = String(dispatched.fallbackReason).slice(0, 64);
         dispatchTrace.outcome = 'completed';
         return { dispatched, error: null };
       } catch (error) {
+        if (error?.evidenceBackend) dispatchTrace.backend = String(error.evidenceBackend).slice(0, 64);
+        if (error?.evidenceModel) dispatchTrace.model = safeModelId(error.evidenceModel);
         dispatchTrace.outcome = 'failed';
         dispatchTrace.code = errorCode(error);
         return { dispatched: null, error };
@@ -976,6 +1071,7 @@ async function scheduleForSession(config, options, injected = {}) {
     app,
     revision,
     onProgress: heartbeat.onProgress,
+    onReplayEvent: heartbeat.onReplayEvent,
     authorPlan: run.author_plan || authorPlan,
   }, injected).catch((error) => {
     log.warn('visual-evidence', 'Visual evidence run failed', {

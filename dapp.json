@@ -2319,9 +2319,9 @@
       "expectSelector": "#apps-switcher-sheet:not(:has(#switcher-views)) #switcher-nav #app-menu-row-about"
     },
     {
-      "name": "The Workshop's Current status no longer carries the app's general discussion (#2718 review)",
+      "name": "The Workshop's Current status no longer carries the app's general discussion (#2718 review), and on a desktop the header over it names the app with no second icon beside the scope chip (#2768)",
       "path": "/?demo=1#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-body #dev-workshop:not(:has([data-discussion-row]))"
+      "expectSelector": "body:has(#dev-workshop #dev-ws-scope-chip):has(#header-title > span > span:first-child > #header-title-name) #dev-body #dev-workshop:not(:has([data-discussion-row]))"
     },
     {
       "name": "The Workshop does not draw the discussion card too — one fact, one shape per view",
@@ -2902,9 +2902,9 @@
       "expectSelector": "#workshop-list a[data-workshop-app]:first-of-type [data-workshop-needs]:not([data-workshop-needs=\"0\"])"
     },
     {
-      "name": "The Workshop screen draws no empty-state line while it has rows",
+      "name": "The Workshop screen draws no empty-state line while it has rows, and no scope chip over its flat list of apps (#2759)",
       "path": "/?demo=1#workshop",
-      "expectSelector": "#workshop-screen:not(.hidden):has(#workshop-list [data-workshop-app]) #workshop-empty.hidden"
+      "expectSelector": "#workshop-screen:not(.hidden):not(:has(#workshop-scope)):has(#workshop-list [data-workshop-app]) #workshop-empty.hidden"
     },
     {
       "name": "The Challenges area is the way to the Leaderboard screen",
@@ -3538,6 +3538,12 @@
       "path": "/#admin/waitlist",
       "expectSelector": "#admin-topo-wl-table",
       "expectText": "of 7 answered"
+    },
+    {
+      "name": "Admin Waitlist has an Analytics button just before Export CSV (#2748)",
+      "path": "/#admin/waitlist",
+      "expectSelector": "#admin-topo-wl-analytics",
+      "expectText": "Analytics"
     },
     {
       "name": "Legacy #admin/seasons/<screen> addresses still deep-link their promoted section (#1179)",
@@ -4698,9 +4704,9 @@
       "expectText": "About"
     },
     {
-      "name": "Inside an app the header is that app's strip: close, tile, name (#2718)",
+      "name": "Inside an app the header is that app's strip, tile and name (#2718) - except on a desktop Workshop, where the demo's app route lands and the name stands alone beside the scope chip (#2768)",
       "path": "/?demo=1#app/usernode-2d5619/app",
-      "expectSelector": "#platform-header #back-btn:not(.hidden) #back-icon-close:not(.hidden) ~ *, #platform-header #header-app-tile"
+      "expectSelector": "body:not(:has(#dev-ws-scope-chip)) #platform-header #header-app-tile + span > #header-title-name, body:has(#app-view:not(.hidden) #dev-ws-scope-chip) #platform-header #header-title > span > span:first-child > #header-title-name"
     },
     {
       "name": "An app's Workshop keeps the rail, which only a running app covers (#2718 review)",

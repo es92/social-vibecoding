@@ -253,6 +253,65 @@ function waitlistAdminRoutes(config) {
     }
   });
 
+  // ── GET /api/v4/admin/waitlist/analytics ──────────────────────────────
+  // Aggregate counts + a 30-day signup trend for the Analytics dashboard.
+  // Read-only and cheap (a handful of aggregates plus one grouped count),
+  // so it sits under the router-wide `adminReadGate` like the list route
+  // above rather than `adminWriteGate` — nothing here exposes a row an
+  // admin couldn't already see paging through the queue.
+  //
+  // Every figure is derived from columns the table actually has (no
+  // invented "status" enum): `released_at` is waiting vs. admitted,
+  // `confirmed_at` is whether the signup ever proved it could receive
+  // mail, `linked_user_id` is whether a platform account is attached.
+  router.get('/api/v4/admin/waitlist/analytics', async (req, res) => {
+    try {
+      const { rows: totalsRows } = await pool.query(
+        `SELECT COUNT(*)::int AS "totalSignups",
+                COUNT(*) FILTER (WHERE released_at IS NULL)::int AS waiting,
+                COUNT(*) FILTER (WHERE released_at IS NOT NULL)::int AS admitted,
+                COUNT(*) FILTER (WHERE confirmed_at IS NOT NULL)::int AS confirmed,
+                COUNT(*) FILTER (WHERE linked_user_id IS NOT NULL)::int AS linked
+           FROM waitlist_signups`
+      );
+      const totals = totalsRows[0];
+
+      // 30-day daily trend, zero-filled so a quiet day is a real zero
+      // rather than a missing point the chart would have to skip.
+      const days = 30;
+      const { rows: dailyRows } = await pool.query(
+        `SELECT to_char(date_trunc('day', submitted_at), 'YYYY-MM-DD') AS day,
+                COUNT(*)::int AS count
+           FROM waitlist_signups
+          WHERE submitted_at >= NOW() - $1::interval
+          GROUP BY 1`,
+        [`${days} days`]
+      );
+      const byDay = new Map(dailyRows.map((r) => [r.day, r.count]));
+      const series = [];
+      for (let i = days - 1; i >= 0; i -= 1) {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() - i);
+        const day = d.toISOString().slice(0, 10);
+        series.push({ day, count: byDay.get(day) || 0 });
+      }
+
+      return ok(res, {
+        data: {
+          totalSignups: totals.totalSignups,
+          waiting: totals.waiting,
+          admitted: totals.admitted,
+          confirmed: totals.confirmed,
+          linked: totals.linked,
+          series,
+        },
+      });
+    } catch (err) {
+      log.error('topochain-admin', 'GET /admin/waitlist/analytics failed', { message: err.message });
+      return fail(res, 500, 'Internal server error.');
+    }
+  });
+
   // ── GET /api/v4/admin/waitlist/export-csv ─────────────────────────────
   // Every signup the `?status=` / `?only=` filters select, unpaginated, as
   // a CSV — newest signup first, which is the order someone cross-checking

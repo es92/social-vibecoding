@@ -445,6 +445,55 @@ const BASE = '1'.repeat(40);
 const HEAD = '2'.repeat(40);
 const BOT_HEAD = '3'.repeat(40);
 const TREE = '4'.repeat(40);
+
+test('paused native revisions retain progress and exact-head submission preflight', async () => {
+  const { subject, router, state, restore } = makeHarness();
+  try {
+    const start = routeHandler(router, '/api/apps/:slug/proposal-handoffs', 'post');
+    await start({ params: { slug: 'demo' }, cliAuthenticated: true,
+      user: { id: 7, username: 'maker' }, body: START_BODY }, mockRes());
+    Object.assign(state.sessions[0], { status: 'paused', handoff_head_sha: HEAD,
+      handoff_uploaded_sha: HEAD, checks_commit_sha: HEAD, check_state: 'passing',
+      staging_url: 'https://preview.example' });
+    const session = state.sessions[0];
+    const paused = subject.publicSessionStatus(session);
+    assert.equal(paused.state, 'paused');
+    assert.equal(paused.revisionState, 'ready');
+    assert.match(paused.nextStep, /Promote this same session/);
+    const gate = routeHandler(router, '/api/sessions/:id/promote', 'post');
+    const req = { params: { id: '101' }, user: { id: 7 } };
+    const res = mockRes();
+    let next = false;
+    await gate(req, res, () => { next = true; });
+    assert.equal(next, true);
+    assert.equal(req.cliHandoffCheckedHead, HEAD);
+    assert.equal(req.cliHandoffStatus, 'paused');
+    assert.equal(session.status, 'paused', 'preflight must not resume coding');
+    res.emit('finish');
+    for (const patch of [
+      { check_state: 'pending' }, { check_state: 'failing' }, { check_state: 'error' },
+      { handoff_uploaded_sha: BOT_HEAD }, { staging_url: null },
+      { status: 'archived' }, { status: 'promoted' }, { status: 'merged' },
+    ]) {
+      const original = { ...session };
+      Object.assign(session, patch);
+      const blocked = mockRes();
+      await gate({ ...req }, blocked, () => assert.fail('an ineligible revision reached promotion'));
+      assert.equal(blocked.statusCode, 409);
+      Object.assign(session, original);
+    }
+    state.busy = true;
+    const busy = mockRes();
+    await gate({ ...req }, busy, () => assert.fail('busy submission admitted'));
+    assert.equal(busy.statusCode, 409);
+    state.busy = false;
+    state.remoteHead = BOT_HEAD;
+    const changed = mockRes();
+    await gate({ ...req }, changed, () => assert.fail('unchecked branch admitted'));
+    assert.equal(changed.body.error, 'branch_head_changed');
+  } finally { restore(); }
+});
+
 const START_BODY = {
   schemaVersion: 1,
   requestId: 'feature-0001',

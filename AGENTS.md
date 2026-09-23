@@ -28,7 +28,10 @@ Use the matching skill whenever its description fits:
 
 - `usernode-api` — inspect or change Homeroom app/platform state.
 - `usernode-proposal` — run a locally authored native proposal through
-  staging, checks, and optional promotion.
+  staging, checks, and optional promotion from an agent on the user's own
+  machine. This skill does not apply inside a Homeroom hosted dev-chat worker:
+  that worker commits on its assigned branch, records visual evidence intent
+  with its supplied tool, and leaves push, PR, and staging to the harness.
 - `react-shell-migration` — convert a legacy-owned shell region to React.
 - `mobile-push-testing` — verify push delivery through a real phone.
 
@@ -108,6 +111,10 @@ selects a skill.
   fails after three minutes instead of holding the summary open.
 
 ## Verify author-written visual evidence before opening a PR
+
+This section applies to an external agent authoring a PR from a local
+checkout. A Homeroom hosted dev-chat worker records semantic intent through
+its supplied tool and lets the platform create and replay the evidence plan.
 
 Before opening a PR for a platform UI change with `visualEvidence` impact
 `ui` or `motion`, write the semantic intent and replay plan locally, then run

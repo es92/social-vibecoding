@@ -251,6 +251,17 @@ test('stagingUrl renders the FULL card with a live Preview + Propose', () => {
   assert.doesNotMatch(html, /disabled[^>]*>Preview staging</, 'Preview is NOT disabled when a URL exists');
 });
 
+test('a paused checked handoff retains its ready submission action in the workspace', () => {
+  const h = makeDevChat();
+  const messages = [{ role: 'system', content: 'Changes ready', changesReady: true,
+    stagingUrl: 'https://preview.example.org', _slug: 'paused-ready' }];
+  const html = h.render(messages, activeSession({ status: 'paused', source: 'cli_handoff',
+    proposal_state: 'ready', check_state: 'passing' }));
+  assert.equal(h.changesRow().propose.kind, 'ready');
+  assert.match(html, /Submit for review/);
+  assert.doesNotMatch(html, /disabled[^>]*>Submit for review</);
+});
+
 test('managed CLI handoff keeps Propose disabled until its authoritative state is ready (#1650)', () => {
   const h = makeDevChat();
   const messages = [{
@@ -268,9 +279,9 @@ test('managed CLI handoff keeps Propose disabled until its authoritative state i
   // and is how a passing state got read as a broken button.
   assert.deepEqual(h.changesRow().propose, {
     kind: 'blocked', label: 'Submit for review',
-    reason: 'This managed session needs a tested commit uploaded before it can be submitted.',
+    reason: 'This managed session needs staging and checks to finish before it can be submitted.',
   });
-  assert.match(html, /disabled[^>]*title="This managed session needs a tested commit uploaded/,
+  assert.match(html, /disabled[^>]*title="This managed session needs staging and checks to finish/,
     'the unavailable action is disabled and explains why — naming ITS condition');
   assert.match(html, /Submit for review/, 'the action keeps its stable label');
 
@@ -437,8 +448,8 @@ test('merging and merged cards keep the proposal action completed (#1602)', () =
   }
 });
 
-test('paused and archived cards do not gain a proposal action (#1602)', () => {
-  for (const status of ['paused', 'archived']) {
+test('archived cards do not gain a proposal action (#1602)', () => {
+  for (const status of ['archived']) {
     const h = makeDevChat();
     const html = h.render([
       { role: 'system', content: 'Changes were saved.', changesReady: true, _slug: `prm-${status}` },
@@ -593,7 +604,7 @@ test('a later iteration moves the card, not its status line, to the bottom (#188
 
 test('the trailing card keeps the proposal action\'s lifecycle (#1889)', () => {
   // Completed on a promoted session, blocked with its reason on a failing
-  // one, absent on a paused one — the model the in-place card renders from.
+  // one, ready on a paused checked one — the model the in-place card renders from.
   let h = makeDevChat();
   let html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr({ status: 'promoted' }));
   assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'));
@@ -609,7 +620,8 @@ test('the trailing card keeps the proposal action\'s lifecycle (#1889)', () => {
   h = makeDevChat();
   html = h.render([CARD, WRAP_UP, ASK, ANSWER], withPr({ status: 'paused' }));
   assert.ok(at(html, 'class="dc-pr-card"') > at(html, 'rounds to the hour'), 'the card still trails');
-  assert.doesNotMatch(html, /dc-pr-btn-promote/, 'with no proposal action, as before');
+  assert.equal(h.changesRow().propose.kind, 'ready');
+  assert.match(html, />Submit for review</);
 });
 
 test('a turn in flight keeps the card in its slot; it trails again once the turn settles (#1889)', () => {

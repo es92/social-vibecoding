@@ -642,6 +642,9 @@ function revisionBuildState(session, checks, runtime) {
 
 function statusNextStep(state, revisionState, checks) {
   const progress = revisionState || state;
+  if (state === 'paused' && progress !== 'ready') {
+    return 'Coding is paused. Resume this same session before changing its revision or rerunning checks; do not call proposal_start.';
+  }
   if (progress === 'stalled') {
     return 'This check run is overdue and no live worker owns it. Re-run checks on this same session with proposal_recheck, then keep polling proposal_status. Do not call proposal_start.';
   }
@@ -659,7 +662,7 @@ function statusNextStep(state, revisionState, checks) {
       ? 'The build or checks infrastructure failed. Re-run this same session with proposal_recheck; create a new proposal only if the user explicitly asks to replace it.'
       : 'Fix the reported failure and submit a later fast-forwarding commit to this same proposal.';
   }
-  if (progress === 'ready' && state === 'active') {
+  if (progress === 'ready' && ['active', 'ready', 'paused'].includes(state)) {
     return 'The proposal is ready. Promote this same session only if the user wants it opened for voting.';
   }
   if (state === 'promoted') return 'This proposal is already open for voting; keep any revision on this same session.';
@@ -680,7 +683,7 @@ function publicSessionStatus(session, options = {}) {
     externalAgent: session.external_agent || 'external',
     state,
     status: session.status,
-    ...(session.status === 'promoted' ? { revisionState } : {}),
+    ...(['active', 'paused', 'promoted'].includes(session.status) ? { revisionState } : {}),
     branch: session.branch_name,
     baseSha: session.handoff_base_sha,
     headSha,
@@ -698,7 +701,7 @@ function publicSessionStatus(session, options = {}) {
       : Number(session.handoff_supersedes_session_id),
     webPath: changeHashPath(session.app_slug, session.id),
     nextStep: statusNextStep(state,
-      session.status === 'promoted' ? revisionState : null, checks),
+      ['paused', 'promoted'].includes(session.status) ? revisionState : null, checks),
   };
 }
 
@@ -1862,7 +1865,8 @@ function proposalHandoffRoutes(config) {
       if (!(await appAccess.checkAppAccess(pool, accessRow(session), req.user, 'collab'))) {
         return res.status(404).json({ error: 'Active handoff session not found' });
       }
-      if (publicSessionStatus(session).state !== 'ready') {
+      if (!['active', 'paused'].includes(session.status)
+          || publicSessionStatus(session).revisionState !== 'ready') {
         return res.status(409).json({
           error: 'proposal_not_ready',
           message: 'This proposal is not ready yet. Wait for staging and checks to finish, then try again.',
@@ -1895,9 +1899,9 @@ function proposalHandoffRoutes(config) {
         const detail = 'The proposal branch changed after checks. Rebuild the new head locally or from the web Dev session before promoting.';
         await pool.query(
           `UPDATE chat_sessions SET check_state = 'error', check_error_detail = $1
-            WHERE id = $2 AND status = 'active' AND source = $3
+            WHERE id = $2 AND status = $5 AND source = $3
               AND COALESCE(checks_commit_sha, handoff_head_sha) IS NOT DISTINCT FROM $4`,
-          [detail, session.id, SOURCE, checkedHead]
+          [detail, session.id, SOURCE, checkedHead, session.status]
         ).catch(() => {});
         return res.status(409).json({ error: 'branch_head_changed', message: detail });
       }
@@ -1906,6 +1910,7 @@ function proposalHandoffRoutes(config) {
       // authoritative PR-head read can close the remaining external-push
       // race before the row enters voting.
       req.cliHandoffCheckedHead = checkedHead;
+      req.cliHandoffStatus = session.status;
       res.once('finish', releasePromotion);
       res.once('close', releasePromotion);
       releaseOnResponse = true;

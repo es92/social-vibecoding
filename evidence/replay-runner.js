@@ -61,19 +61,22 @@ function clip(value, max = MAX_DIAGNOSTIC_CHARS) {
 }
 
 function safeDiagnosticText(value, max = MAX_DIAGNOSTIC_CHARS) {
-  return clip(value, max)
-    .replace(/([?&]token=)[^&\s"'<>)]*/gi, '$1[redacted]')
+  const redacted = String(value == null ? '' : value)
+    .replace(/(\b(?:token|access_token|auth|authorization|password|secret|api[_-]?key|code|session)\s*=\s*)[^&\s"'<>)]*/gi, '$1[redacted]')
     .replace(/\bBearer\s+[^\s"']+/gi, 'Bearer [redacted]')
-    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted]');
+    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted]')
+    .replace(/\b(?:sk-(?:proj-)?|ghp_|gho_|github_pat_)[A-Za-z0-9_-]{16,}\b/gi, '[redacted]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email]');
+  return clip(redacted, max);
 }
 
 function boundedFailureDetail(value, depth = 0) {
   if (value == null || typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'string') return safeDiagnosticText(value, 200);
-  if (depth >= 3) return '[nested detail omitted]';
-  if (Array.isArray(value)) return value.slice(0, 3).map((item) => boundedFailureDetail(item, depth + 1));
+  if (depth >= 6) return '[nested detail omitted]';
+  if (Array.isArray(value)) return value.slice(0, 12).map((item) => boundedFailureDetail(item, depth + 1));
   if (typeof value !== 'object') return null;
-  return Object.fromEntries(Object.entries(value).slice(0, 16)
+  return Object.fromEntries(Object.entries(value).slice(0, 24)
     .filter(([key]) => !/^(?:token|authorization|cookie|password|secret|payload|data)$/i.test(key))
     .map(([key, item]) => [key, boundedFailureDetail(item, depth + 1)]));
 }
@@ -191,7 +194,29 @@ async function requireOne(locator, description) {
   return locator;
 }
 
-async function locatorSnapshot(page, spec) {
+async function roleCandidateHints(page, spec) {
+  if (spec.by !== 'role' || !spec.name) return null;
+  try {
+    // A missing exact accessible name is often a stale recipe. Read only
+    // short, redacted names of controls with the requested role; never dump
+    // the DOM, input values, or the whole accessibility tree.
+    const candidates = page.getByRole(spec.role, { includeHidden: true });
+    const count = await candidates.count();
+    const sample = await Promise.all(Array.from({ length: Math.min(count, 12) }, async (_, index) => {
+      const candidate = candidates.nth(index);
+      if (typeof candidate.ariaSnapshot !== 'function') return null;
+      const [snapshot, visible] = await Promise.all([
+        candidate.ariaSnapshot({ timeout: 1000 }).catch(() => ''),
+        candidate.isVisible().catch(() => false),
+      ]);
+      const name = safeDiagnosticText(String(snapshot).split('\n')[0], 120);
+      return name ? { name, visible } : null;
+    }));
+    return { candidateCount: count, candidates: sample.filter(Boolean).slice(0, 12) };
+  } catch { return null; }
+}
+
+async function locatorSnapshot(page, spec, { includeCandidates = false } = {}) {
   const locator = locatorFor(page, spec);
   const attachedLocator = spec.by === 'role'
     ? locatorFor(page, spec, { includeHidden: true })
@@ -213,6 +238,7 @@ async function locatorSnapshot(page, spec) {
     matchedCount,
     attachedCount,
     visibleCount,
+    ...(includeCandidates ? { roleHints: await roleCandidateHints(page, spec) } : {}),
   };
 }
 
@@ -226,7 +252,7 @@ async function resolveOne(page, spec, description, {
     // exposed the element yet is reported as zero matches immediately.
     await locator.first().waitFor({ state, timeout: timeoutMs });
   } catch (error) {
-    const snapshot = await locatorSnapshot(page, spec);
+    const snapshot = await locatorSnapshot(page, spec, { includeCandidates: true });
     const count = snapshot.attachedCount;
     if (!Number.isInteger(count) && !Number.isInteger(snapshot.matchedCount)) throw error;
     if (Number.isInteger(count) && count > 1) {
@@ -316,6 +342,9 @@ async function failurePageState(page, context, origin, navigation = null) {
       'main[id], [role="main"][id], [role="dialog"][id], [id$="-screen"]'
     )].filter(visible).map((element) => element.id)
       .filter((id) => /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 12);
+    const controls = [...document.querySelectorAll(
+      'button, a[href], input:not([type="hidden"]), [role="button"], [role="link"], [role="tab"]'
+    )].filter(visible).slice(0, 80);
     return {
       readyState: document.readyState,
       bodyChildCount: document.body?.children.length ?? 0,
@@ -324,6 +353,14 @@ async function failurePageState(page, context, origin, navigation = null) {
       visibleDialogCount: [...document.querySelectorAll('[role="dialog"]')].filter(visible).length,
       visibleButtonCount: [...document.querySelectorAll('button')].filter(visible).length,
       visibleLinkCount: [...document.querySelectorAll('a[href]')].filter(visible).length,
+      visibleIds: [...document.querySelectorAll('[id]')].filter(visible)
+        .map((element) => element.id)
+        .filter((id) => /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 30),
+      visibleControlIds: controls.map((element) => element.id)
+        .filter((id) => /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 20),
+      visibleTestIds: [...document.querySelectorAll('[data-testid]')].filter(visible)
+        .map((element) => element.getAttribute('data-testid'))
+        .filter((id) => /^[A-Za-z0-9_-]{1,80}$/.test(id || '')).slice(0, 20),
     };
   }).catch(() => null);
   const cookies = typeof context.cookies === 'function'
@@ -339,6 +376,9 @@ async function failurePageState(page, context, origin, navigation = null) {
     visibleDialogCount: Number.isInteger(dom?.visibleDialogCount) ? dom.visibleDialogCount : null,
     visibleButtonCount: Number.isInteger(dom?.visibleButtonCount) ? dom.visibleButtonCount : null,
     visibleLinkCount: Number.isInteger(dom?.visibleLinkCount) ? dom.visibleLinkCount : null,
+    visibleIds: Array.isArray(dom?.visibleIds) ? dom.visibleIds.slice(0, 30) : [],
+    visibleControlIds: Array.isArray(dom?.visibleControlIds) ? dom.visibleControlIds.slice(0, 20) : [],
+    visibleTestIds: Array.isArray(dom?.visibleTestIds) ? dom.visibleTestIds.slice(0, 20) : [],
     cookieCount: cookies.length,
     sessionCookiePresent: cookies.some((cookie) => cookie?.name === 'session'),
   };
@@ -350,10 +390,17 @@ function failureBrowserDiagnostics(diagnostics) {
     pageErrorCount: diagnostics.pageErrors.length,
     failedRequestCount: diagnostics.failedRequests.length,
     blockedRequestCount: diagnostics.blockedRequests.length,
+    httpErrorCount: diagnostics.httpErrors.length,
     firstConsoleError: diagnostics.consoleErrors[0]?.message || null,
     firstPageError: diagnostics.pageErrors[0]?.message || null,
-    firstFailedRequest: diagnostics.failedRequests[0]?.url || null,
-    firstBlockedRequest: diagnostics.blockedRequests[0]?.url || null,
+    firstFailedRequest: diagnostics.failedRequests[0] || null,
+    firstBlockedRequest: diagnostics.blockedRequests[0] || null,
+    firstHttpError: diagnostics.httpErrors[0] || null,
+    consoleErrors: diagnostics.consoleErrors.slice(0, 5),
+    pageErrors: diagnostics.pageErrors.slice(0, 5),
+    failedRequests: diagnostics.failedRequests.slice(0, 5),
+    blockedRequests: diagnostics.blockedRequests.slice(0, 5),
+    httpErrors: diagnostics.httpErrors.slice(0, 10),
   };
 }
 
@@ -618,12 +665,21 @@ async function encodeWebm(frames, { fps, targetBytes, maxBytes }) {
     let result = null;
     for (const crf of [36, 42, 48]) {
       const output = path.join(dir, `animation-${crf}.webm`);
-      await execFileAsync('ffmpeg', [
-        '-hide_banner', '-loglevel', 'error', '-y', '-framerate', String(fps),
-        '-i', path.join(dir, 'frame-%04d.png'), '-an', '-c:v', 'libvpx-vp9',
-        '-deadline', 'good', '-cpu-used', '3', '-crf', String(crf), '-b:v', '0',
-        '-pix_fmt', 'yuv420p', '-row-mt', '1', output,
-      ], { timeout: 120_000, maxBuffer: 2 * 1024 * 1024 });
+      try {
+        await execFileAsync('ffmpeg', [
+          '-hide_banner', '-loglevel', 'error', '-y', '-framerate', String(fps),
+          '-i', path.join(dir, 'frame-%04d.png'), '-an', '-c:v', 'libvpx-vp9',
+          '-deadline', 'good', '-cpu-used', '3', '-crf', String(crf), '-b:v', '0',
+          '-pix_fmt', 'yuv420p', '-row-mt', '1', output,
+        ], { timeout: 120_000, maxBuffer: 2 * 1024 * 1024 });
+      } catch (error) {
+        throw new ReplayFailure('animation_encode_failed', 'The evidence video encoder failed.', {
+          frameCount: capped.length, fps, crf,
+          exitCode: Number.isInteger(error.code) ? error.code : null,
+          killed: error.killed === true,
+          stderr: safeDiagnosticText(error.stderr || error.message, 300),
+        });
+      }
       result = await fsp.readFile(output);
       if (result.length <= targetBytes) break;
     }
@@ -643,7 +699,10 @@ async function installOriginFence(context, allowedOrigins, diagnostics) {
     try { origin = new URL(url).origin; } catch { origin = null; }
     if (origin && allowedOrigins.has(origin)) return route.continue();
     if (diagnostics.blockedRequests.length < MAX_CONSOLE_ITEMS) {
-      diagnostics.blockedRequests.push({ url: clip(redactedUrl(url), 300), resourceType: request.resourceType() });
+      diagnostics.blockedRequests.push({
+        origin: safeDiagnosticText(origin || 'invalid', 120),
+        resourceType: safeDiagnosticText(request.resourceType(), 40),
+      });
     }
     return route.abort('blockedbyclient');
   });
@@ -682,10 +741,14 @@ function sessionCookieValue(headers) {
   return null;
 }
 
-async function bootstrapInternalSession(context, origin, startPath, authToken) {
+async function bootstrapInternalSession(context, origin, startPath, authToken, diagnostic = null) {
+  if (diagnostic) diagnostic.attempted = origin.startsWith('http:');
   if (!origin.startsWith('http:')) return false;
   const existing = await context.cookies(origin);
-  if (existing.some((cookie) => cookie.name === 'session')) return false;
+  if (existing.some((cookie) => cookie.name === 'session')) {
+    if (diagnostic) diagnostic.cookieAlreadyPresent = true;
+    return false;
+  }
 
   let response;
   try {
@@ -700,6 +763,7 @@ async function bootstrapInternalSession(context, origin, startPath, authToken) {
       maxRedirects: 0,
       timeout: planContract.MAX_WAIT_MS,
     });
+    if (diagnostic) diagnostic.responseStatus = response.status();
     const value = sessionCookieValue(await Promise.resolve(response.headersArray()));
     if (!value) return false;
     try {
@@ -718,6 +782,7 @@ async function bootstrapInternalSession(context, origin, startPath, authToken) {
     if (!installed.some((cookie) => cookie.name === 'session')) {
       throw new ReplayFailure('session_bootstrap_failed', 'The evidence browser did not retain its private session cookie.');
     }
+    if (diagnostic) diagnostic.sessionCookieInstalled = true;
     return true;
   } finally {
     await response?.dispose?.().catch(() => {});
@@ -764,57 +829,100 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
   const animation = story.replay.checkpoint.animation;
   const motion = animation === 'motion';
   const recordInteraction = animation === 'steps';
-  const diagnostics = { consoleErrors: [], pageErrors: [], failedRequests: [], blockedRequests: [] };
-  const context = await browser.newContext({
-    viewport: { width: viewport.width, height: viewport.height },
-    deviceScaleFactor: input.browser.deviceScaleFactor,
-    locale: input.browser.locale,
-    timezoneId: input.browser.timezoneId,
-    colorScheme: input.browser.colorScheme,
-    reducedMotion: motion ? 'no-preference' : 'reduce',
-    serviceWorkers: 'block',
-    // Evidence environments are deliberately reachable only over their
-    // private in-cluster HTTP origins. A production-mode self-app answers
-    // the initial token-bearing request with a Secure session cookie, which
-    // Chromium must reject on HTTP. Forward the same app-scoped credential
-    // through the standard app request header as well, so later API requests
-    // stay authenticated even when that cookie cannot be stored. The origin
-    // fence installed below prevents this context from sending any request
-    // outside the one evidence side.
-    extraHTTPHeaders: { 'x-usernode-token': authToken },
-  });
-  // A side may never fetch from or navigate to its counterpart. Keeping the
-  // origins in one input is an orchestration convenience, not a permission
-  // for base and head to observe each other.
-  const allowedOrigins = new Set([origin]);
-  await installOriginFence(context, allowedOrigins, diagnostics);
-  await addCookies(context, origin, input.cookies[side]);
-  await bootstrapInternalSession(context, origin, sidePlan.startPath, authToken);
-  if (!motion) {
-    await context.addInitScript(() => {
-      const style = document.createElement('style');
-      style.dataset.usernodeEvidence = '1';
-      style.textContent = '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;scroll-behavior:auto!important;caret-color:transparent!important}';
-      const attach = () => document.documentElement?.appendChild(style);
-      if (document.documentElement) attach(); else document.addEventListener('DOMContentLoaded', attach, { once: true });
+  const diagnostics = {
+    consoleErrors: [], pageErrors: [], failedRequests: [], blockedRequests: [], httpErrors: [],
+  };
+  const bootstrap = { attempted: false, cookieAlreadyPresent: false, sessionCookieInstalled: false, responseStatus: null };
+  const eventBase = {
+    runId: input.runId, pass: input.pass, storyId: story.id,
+    viewport: viewport.name, side,
+  };
+  const sideStartedAt = Date.now();
+  emitEvent({ type: 'side_started', ...eventBase });
+  let context;
+  let page;
+  let setupPhase = 'create_context';
+  try {
+    context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: input.browser.deviceScaleFactor,
+      locale: input.browser.locale,
+      timezoneId: input.browser.timezoneId,
+      colorScheme: input.browser.colorScheme,
+      reducedMotion: motion ? 'no-preference' : 'reduce',
+      serviceWorkers: 'block',
+      // Evidence environments are deliberately reachable only over their
+      // private in-cluster HTTP origins. A production-mode self-app answers
+      // the initial token-bearing request with a Secure session cookie, which
+      // Chromium must reject on HTTP. Forward the same app-scoped credential
+      // through the standard app request header as well, so later API requests
+      // stay authenticated even when that cookie cannot be stored. The origin
+      // fence installed below prevents this context from sending any request
+      // outside the one evidence side.
+      extraHTTPHeaders: { 'x-usernode-token': authToken },
+    });
+    // A side may never fetch from or navigate to its counterpart. Keeping the
+    // origins in one input is an orchestration convenience, not a permission
+    // for base and head to observe each other.
+    const allowedOrigins = new Set([origin]);
+    setupPhase = 'install_origin_fence';
+    await installOriginFence(context, allowedOrigins, diagnostics);
+    setupPhase = 'install_cookies';
+    await addCookies(context, origin, input.cookies[side]);
+    setupPhase = 'bootstrap_session';
+    await bootstrapInternalSession(context, origin, sidePlan.startPath, authToken, bootstrap);
+    emitEvent({ type: 'session_bootstrap', ...eventBase, ...bootstrap });
+    setupPhase = 'install_capture_style';
+    if (!motion) {
+      await context.addInitScript(() => {
+        const style = document.createElement('style');
+        style.dataset.usernodeEvidence = '1';
+        style.textContent = '*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important;scroll-behavior:auto!important;caret-color:transparent!important}';
+        const attach = () => document.documentElement?.appendChild(style);
+        if (document.documentElement) attach(); else document.addEventListener('DOMContentLoaded', attach, { once: true });
+      });
+    }
+    setupPhase = 'new_page';
+    page = await context.newPage();
+  } catch (error) {
+    emitEvent({
+      type: 'side_failed', ...eventBase, phase: setupPhase,
+      code: String(error?.code || 'replay_failed').slice(0, 64),
+    });
+    await context?.close().catch(() => {});
+    throw contextualFailure(error, {
+      storyId: story.id, viewport: viewport.name, side, phase: setupPhase, bootstrap,
     });
   }
-  const page = await context.newPage();
   const network = networkTracker(page);
   page.on('console', (message) => {
     if (message.type() === 'error' && diagnostics.consoleErrors.length < MAX_CONSOLE_ITEMS) {
-      diagnostics.consoleErrors.push({ message: clip(message.text()), source: clip(redactedUrl(message.location()?.url || ''), 200) });
+      diagnostics.consoleErrors.push({
+        message: safeDiagnosticText(message.text()),
+        source: diagnosticLocation(message.location()?.url || '', origin),
+      });
     }
   });
   page.on('pageerror', (error) => {
-    if (diagnostics.pageErrors.length < MAX_CONSOLE_ITEMS) diagnostics.pageErrors.push({ message: clip(error.message) });
+    if (diagnostics.pageErrors.length < MAX_CONSOLE_ITEMS) {
+      diagnostics.pageErrors.push({ message: safeDiagnosticText(error.message) });
+    }
   });
   page.on('requestfailed', (request) => {
     let sameOrigin = false;
     try { sameOrigin = new URL(request.url()).origin === origin; } catch {}
     if (sameOrigin && diagnostics.failedRequests.length < MAX_CONSOLE_ITEMS) {
-      diagnostics.failedRequests.push({ url: clip(redactedUrl(request.url()), 300), error: clip(request.failure()?.errorText || '') });
+      diagnostics.failedRequests.push({
+        location: diagnosticLocation(request.url(), origin),
+        error: safeDiagnosticText(request.failure()?.errorText || '', 120),
+      });
     }
+  });
+  page.on('response', (response) => {
+    const status = response.status();
+    if (status < 400 || diagnostics.httpErrors.length >= MAX_CONSOLE_ITEMS) return;
+    const location = diagnosticLocation(response.url(), origin);
+    if (location.sameOrigin) diagnostics.httpErrors.push({ status, location });
   });
 
   const stages = [];
@@ -823,6 +931,7 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
   let failureLocatorSpecs = [];
   let failureStage = { phase: 'navigate_start' };
   try {
+    emitEvent({ type: 'navigation_started', ...eventBase });
     const response = await page.goto(authorizedUrl(origin, sidePlan.startPath, authToken), {
       waitUntil: 'domcontentloaded', timeout: planContract.MAX_WAIT_MS,
     });
@@ -830,6 +939,11 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
       status: typeof response?.status === 'function' ? response.status() : null,
     };
     await settlePage(page, { motion });
+    emitEvent({
+      type: 'navigation_completed', ...eventBase,
+      status: navigation.status,
+      location: diagnosticLocation(page.url(), origin),
+    });
     failureStage = { phase: 'capture_start' };
     stages.push({ stage: '__start__', image: await page.screenshot({ type: 'png' }) });
     failureStage = { phase: 'start_recording' };
@@ -840,10 +954,19 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
     for (const action of sidePlan.actions) {
       failureStage = { phase: 'action', actionId: action.id, actionStage: action.stage, actionType: action.type };
       failureLocatorSpecs = actionLocatorSpecs(action);
+      emitEvent({
+        type: 'action_started', ...eventBase,
+        actionId: action.id, actionStage: action.stage, actionType: action.type,
+      });
       if (Date.now() >= sideDeadline) throw new ReplayFailure('side_timeout', `${side} exceeded its ${planContract.MAX_SIDE_MS} ms budget.`);
       const durationMs = await executeAction(page, action, origin, network, authToken);
       await settlePage(page, { motion });
       actionResults.push({ id: action.id, stage: action.stage, type: action.type, durationMs, passed: true });
+      emitEvent({
+        type: 'action_completed', ...eventBase,
+        actionId: action.id, actionStage: action.stage, actionType: action.type,
+        durationMs, location: diagnosticLocation(page.url(), origin),
+      });
       if (story.replay.checkpoint.animation === 'steps') {
         stages.push({ stage: action.stage, image: await page.screenshot({ type: 'png' }) });
       }
@@ -861,7 +984,9 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
     for (const [assertionIndex, assertion] of assertionList.entries()) {
       failureStage = { phase: 'assertion', assertionIndex, assertionType: assertion.type };
       failureLocatorSpecs = assertion.target ? [assertion.target] : [];
+      emitEvent({ type: 'assertion_started', ...eventBase, assertionIndex, assertionType: assertion.type });
       assertions.push(await evaluateAssertion(page, assertion, origin));
+      emitEvent({ type: 'assertion_completed', ...eventBase, assertionIndex, assertionType: assertion.type });
     }
 
     failureStage = { phase: 'focus' };
@@ -903,16 +1028,32 @@ async function runSide(browser, scratchPage, input, story, viewport, side) {
     // bits between clean Chromium runs.
     result.contextHash = perceptualHash(contextPng);
     result.fingerprint = screenshotFingerprint(result);
+    emitEvent({
+      type: 'side_finished', ...eventBase,
+      durationMs: Date.now() - sideStartedAt,
+      actionCount: actionResults.length, assertionCount: assertions.length,
+      recordedFrameCount: result.recordedFrameCount,
+      location: diagnosticLocation(page.url(), origin),
+      httpErrorCount: diagnostics.httpErrors.length,
+    });
     return result;
   } catch (error) {
     const [pageState, targetStates] = await Promise.all([
       failurePageState(page, context, origin, navigation),
-      Promise.all(failureLocatorSpecs.slice(0, 4).map((spec) => locatorSnapshot(page, spec)))
+      Promise.all(failureLocatorSpecs.slice(0, 4).map((spec) =>
+        locatorSnapshot(page, spec, { includeCandidates: true })))
         .catch(() => []),
     ]);
+    emitEvent({
+      type: 'side_failed', ...eventBase, ...failureStage,
+      code: String(error?.code || 'replay_failed').slice(0, 64),
+      message: safeDiagnosticText(error?.message || error, 200),
+      location: diagnosticLocation(page.url(), origin),
+    });
     throw contextualFailure(error, {
       storyId: story.id, viewport: viewport.name, side, ...failureStage,
       pageState,
+      bootstrap,
       targetStates,
       browserDiagnostics: failureBrowserDiagnostics(diagnostics),
     });
@@ -988,7 +1129,13 @@ async function buildMotionAnimation(scratchPage, base, head, crops, viewport, ch
   }
   if (!changed) {
     throw new ReplayFailure('no_visible_motion',
-      'The motion flow did not record changing visual frames; use screenshots for a static claim.');
+      'The motion flow did not record changing visual frames; use screenshots for a static claim.',
+      {
+        baseFrames: base.recordedFrameCount,
+        headFrames: head.recordedFrameCount,
+        sampledFrames: frames.length,
+        durationMs: maxAt,
+      });
   }
   return {
     data: await encodeWebm(frames, { fps: MOTION_FPS, targetBytes: MOTION_TARGET_BYTES, maxBytes: MOTION_MAX_BYTES }),
@@ -999,8 +1146,12 @@ async function buildMotionAnimation(scratchPage, base, head, crops, viewport, ch
 async function runReplay(browser, input) {
   const stories = [];
   const artifacts = [];
+  emitEvent({ type: 'scratch_context_started', runId: input.runId, pass: input.pass });
   const scratchContext = await browser.newContext({ viewport: { width: 960, height: 640 }, deviceScaleFactor: 1 });
-  const scratchPage = await scratchContext.newPage();
+  let scratchPage;
+  try { scratchPage = await scratchContext.newPage(); }
+  catch (error) { await scratchContext.close().catch(() => {}); throw error; }
+  emitEvent({ type: 'scratch_context_ready', runId: input.runId, pass: input.pass });
   try {
     for (const story of input.plan.stories) {
       for (const viewport of story.viewports) {
@@ -1032,6 +1183,12 @@ async function runReplay(browser, input) {
             );
             if (story.replay.checkpoint.animation !== 'none') {
               phase = 'encode_animation';
+              emitEvent({
+                type: 'animation_started', runId: input.runId, pass: input.pass,
+                storyId: story.id, viewport: viewport.name,
+                animation: story.replay.checkpoint.animation,
+                baseFrames: base.recordedFrameCount, headFrames: head.recordedFrameCount,
+              });
               const animation = story.replay.checkpoint.animation === 'motion'
                 ? await buildMotionAnimation(scratchPage, base, head, crops, viewport, story.replay.checkpoint)
                 : await buildStepsAnimation(scratchPage, base, head, viewport, story.replay.checkpoint);
@@ -1040,6 +1197,12 @@ async function runReplay(browser, input) {
                 media: 'webm', contentType: 'video/webm', width: 960, height: null,
                 focusRect: { base: crops.base, head: crops.head }, stageLabels: animation.labels,
                 data: animation.data,
+              });
+              emitEvent({
+                type: 'animation_completed', runId: input.runId, pass: input.pass,
+                storyId: story.id, viewport: viewport.name,
+                animation: story.replay.checkpoint.animation,
+                bytes: animation.data?.length || 0,
               });
             }
           }
@@ -1070,11 +1233,13 @@ async function main({ chromium: injectedChromium, rawInput = null } = {}) {
   const input = validateInput(rawInput || await readInput());
   const chromium = injectedChromium || require('playwright-core').chromium;
   emitEvent({ type: 'started', runId: input.runId, pass: input.pass, planHash: input.planHash });
+  emitEvent({ type: 'browser_launch_started', runId: input.runId, pass: input.pass });
   const browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
     headless: true,
     args: CHROMIUM_ARGS,
   });
+  emitEvent({ type: 'browser_launch_completed', runId: input.runId, pass: input.pass });
   try {
     const result = await runReplay(browser, input);
     for (const artifact of result.artifacts) {
@@ -1098,7 +1263,7 @@ if (require.main === module) {
     emitEvent({
       type: 'result', runId: rawIdentity.runId, pass: rawIdentity.pass,
       passed: false, code: err.code || 'replay_failed',
-      message: clip(err.message || err), detail: err.detail || null,
+      message: safeDiagnosticText(err.message || err), detail: err.detail || null,
     });
     process.exitCode = 1;
   });

@@ -168,9 +168,12 @@ test('a platform screen is named by the bar, and says it once', () => {
     'and certainly not with a muted section label');
   assert.ok(!messages.includes('messages-list-title'),
     'Messages\' own title row went with it — a search took the space');
-  // What each screen DOES say is the thing the bar cannot: which workshop,
-  // and which of three kinds of message.
-  assert.match(workshop, /<WorkshopScope /);
+  // What each screen DOES say is the thing the bar cannot. Messages: which
+  // of three kinds of message. The Workshop said which workshop with a scope
+  // chip until #2759 — but that screen IS the list of your apps, so the chip
+  // repeated the page; what it says under the bar now is the legend's totals.
+  assert.ok(!/<WorkshopScope /.test(workshop), 'the all-apps screen wears no scope chip (#2759)');
+  assert.match(workshop, /id="workshop-total-working"/);
   assert.match(messages, /<InboxFilters /);
 });
 

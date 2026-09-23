@@ -59,10 +59,16 @@ const sessionRow = {
 
 function promotePool(session = sessionRow, { promotionMatches = true } = {}) {
   return makeRecordingPool([
-    [/cs\.status = 'active'/, [{ ...session }]],
+    [/cs\.status IN \('active', 'paused'\)/, (params) =>
+      ['active', 'paused'].includes(session.status) && session.user_id === params[1]
+        && !session.is_headless ? [{ ...session }] : []],
     [/COUNT\(\*\) AS cnt FROM chat_sessions/i, [{ cnt: '0' }]],
     [/SET status = 'promoted', promoted_at = NOW\(\),[\s\S]*reviewed_head_sha/,
-      { rows: [], rowCount: promotionMatches ? 1 : 0 }],
+      (params) => {
+        const matches = promotionMatches && params[2] === session.status;
+        if (matches) session = { ...session, status: 'promoted' };
+        return { rows: [], rowCount: matches ? 1 : 0 };
+      }],
   ]);
 }
 
@@ -169,7 +175,7 @@ function loadVotesRouter({ getPRImpl, reopenImpl, pool } = {}) {
 }
 
 async function withServer({
-  getPRImpl, reopenImpl, session, expectedHandoffHead, promotionMatches,
+  getPRImpl, reopenImpl, session, expectedHandoffHead, expectedHandoffStatus, promotionMatches,
 } = {}, fn) {
   const pool = promotePool(session, { promotionMatches });
   const ctx = loadVotesRouter({ getPRImpl, reopenImpl, pool });
@@ -178,6 +184,7 @@ async function withServer({
   app.use((req, _res, next) => {
     req.user = { id: 3, username: 'evan' };
     if (expectedHandoffHead) req.cliHandoffCheckedHead = expectedHandoffHead;
+    if (expectedHandoffStatus) req.cliHandoffStatus = expectedHandoffStatus;
     next();
   });
   app.use(ctx.voteRoutes({ jwtSecret: 's', maxUserPromotedSessions: 3 }));
@@ -191,6 +198,56 @@ async function withServer({
     ctx.restore();
   }
 }
+
+test('paused promotion goes directly to review and duplicate submissions do not repeat it', async () => {
+  await withServer({ session: { ...sessionRow, status: 'paused' } }, async ctx => {
+    const response = await fetch(`${ctx.base}/api/sessions/7/promote`, { method: 'POST' });
+    assert.equal(response.status, 200);
+    const update = ctx.pool.queries.find(q => /SET status = 'promoted'/.test(q.sql));
+    assert.match(update.sql, /WHERE id = \$1 AND status = \$3/);
+    assert.equal(update.params[2], 'paused');
+    assert.equal(update.params[1], HEAD);
+    assert.equal(ctx.pool.issued(/SET status = 'active'/), false);
+    assert.equal(ctx.pool.issued(/COUNT[\s\S]+status = 'active'/), false);
+    const duplicate = await fetch(`${ctx.base}/api/sessions/7/promote`, { method: 'POST' });
+    assert.equal(duplicate.status, 404);
+    assert.equal(ctx.getPRCalls.length, 1);
+    assert.equal(ctx.rerunCalls.length, 0);
+  });
+});
+
+test('paused promotion preserves ownership, headless, and terminal status exclusions', async () => {
+  for (const patch of [{ user_id: 99 }, { is_headless: true }, { status: 'archived' },
+    { status: 'promoted' }, { status: 'merging' }, { status: 'merged' }]) {
+    await withServer({ session: { ...sessionRow, status: 'paused', ...patch } }, async ctx => {
+      const response = await fetch(`${ctx.base}/api/sessions/7/promote`, { method: 'POST' });
+      assert.equal(response.status, 404);
+      assert.equal(ctx.getPRCalls.length, 0);
+      const lookup = ctx.pool.queries[0].sql;
+      assert.match(lookup, /cs.user_id = \$2/);
+      assert.match(lookup, /cs.is_headless = FALSE/);
+    });
+  }
+});
+
+test('a lifecycle change after native preflight requires a fresh submission', async () => {
+  await withServer({ session: { ...sessionRow, source: 'cli_handoff', status: 'paused' },
+    expectedHandoffHead: HEAD, expectedHandoffStatus: 'active' }, async ctx => {
+    const response = await fetch(`${ctx.base}/api/sessions/7/promote`, { method: 'POST' });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).error, 'session_state_changed');
+    assert.equal(ctx.getPRCalls.length, 0);
+  });
+});
+
+test('a concurrent lifecycle change prevents committing a paused submission', async () => {
+  await withServer({ session: { ...sessionRow, status: 'paused' }, promotionMatches: false }, async ctx => {
+    const response = await fetch(`${ctx.base}/api/sessions/7/promote`, { method: 'POST' });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).error, 'session_state_changed');
+    assert.equal(ctx.systemMessages.length, 0);
+  });
+});
 
 test('promote: an open PR captures its head and promotes (no reopen call)', async () => {
   await withServer({ getPRImpl: async () => ({ state: 'open', merged: false, head: { sha: HEAD } }) }, async (ctx) => {
@@ -224,7 +281,7 @@ test('promote: a CLI handoff refuses a PR head that moved after its ready prefli
       'the raced, unchecked PR revision never enters voting');
     const invalidation = ctx.pool.queries.find((q) => /SET check_state = 'error'/.test(q.sql));
     assert.ok(invalidation, 'the stale ready verdict is invalidated for status/UI callers');
-    assert.deepEqual(invalidation.params.slice(1), [7, HEAD]);
+    assert.deepEqual(invalidation.params.slice(1), [7, HEAD, 'active']);
   });
 });
 

@@ -74,7 +74,7 @@ test('a displayed blocked snapshot cannot submit through an older ready workspac
     { proposal_state: 'checking', check_state: 'pending' },
     { proposal_state: 'failed', check_state: 'failing' },
     { check_state: 'error' },
-    { status: 'paused' },
+    { status: 'paused', proposal_state: 'checking', check_state: 'pending' },
   ]) {
     const { requests, action, click } = fixture(ready());
     const button = action(ready(patch));
@@ -151,4 +151,13 @@ test('an action cannot submit a different id from its bound session', async () =
   const { av, requests } = fixture(ready());
   await av.runChangeAction(456, 'promote', ready());
   assert.equal(requests.length, 0);
+});
+
+test('a paused ready change submits directly without a resume request', async () => {
+  const { c, requests, action, click } = fixture(ready({ status: 'paused' }));
+  const button = action(ready({ status: 'paused' }));
+  assert.equal(button.disabled, false);
+  await click(button);
+  assert.deepEqual(requests.map(r => r.url), ['/api/sessions/123/promote']);
+  assert.equal(c.DevChat.currentSession.status, 'promoted');
 });

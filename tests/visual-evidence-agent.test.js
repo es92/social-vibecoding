@@ -58,6 +58,31 @@ test('backend results cannot silently turn an errored model turn into success', 
   assert.equal(agent.failedResult({ exitCode: 0 }), false);
 });
 
+test('dispatch reports the actual model when a selected model cannot use evidence tools', async () => {
+  const session = {
+    id: 42, user_id: 7, repo_url: 'https://github.com/acme/demo.git',
+    agent_backend: 'codex_openrouter', agent_model: 'z-ai/glm-test', model: 'claude-sonnet-5',
+  };
+  const result = await agent.dispatch({ visualEvidence: {} }, {
+    pool: {}, session, runId: 'a'.repeat(32),
+    origins: { base: 'http://base:3000', head: 'http://head:3000' },
+    authTokens: { member: 'fixture-member' },
+  }, {
+    workerService: {
+      ensureWorker: async () => ({}),
+      execInWorker: async () => ({ exitCode: 0 }),
+    },
+    agentTurn: {
+      resolveCodexRuntimeContext: async () => ({
+        agentModel: 'z-ai/glm-test', agentModelMetadata: { supportsTools: false },
+      }),
+    },
+  });
+  assert.equal(result.backend, 'claude_code');
+  assert.equal(result.model, 'claude-sonnet-5');
+  assert.equal(result.fallbackReason, 'model_without_tools');
+});
+
 test('Kubernetes evidence tools call the Pod that owns their in-memory replay control', () => {
   assert.equal(worker.evidenceControlUrl({ podIp: '10.20.30.40', port: '3000', fallback: 'http://service:3000' }),
     'http://10.20.30.40:3000');

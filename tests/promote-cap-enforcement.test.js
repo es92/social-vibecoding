@@ -63,7 +63,7 @@ function prLessSessionRow() {
 // Loads routes/votes.js with everything stubbed. `promotedCount` is what
 // the promoted-count query answers; `onApplyPrMetadata` records whether
 // lazy PR creation was reached at all.
-function loadPromote({ promotedCount, config }) {
+function loadPromote({ promotedCount, config, status = 'active' }) {
   const ids = {
     logger: require.resolve('../src/services/logger'),
     pool: require.resolve('../src/db/pool'),
@@ -88,7 +88,7 @@ function loadPromote({ promotedCount, config }) {
   const pool = {
     async query(sql, params) {
       const s = String(sql);
-      if (/FROM chat_sessions cs JOIN apps a/.test(s)) return { rows: [prLessSessionRow()], rowCount: 1 };
+      if (/FROM chat_sessions cs JOIN apps a/.test(s)) return { rows: [{ ...prLessSessionRow(), status }], rowCount: 1 };
       if (/SELECT COUNT\(\*\) AS cnt FROM chat_sessions/.test(s)) {
         seen.countQueried = true;
         return { rows: [{ cnt: String(promotedCount) }], rowCount: 1 };
@@ -167,8 +167,8 @@ function reqFor(user) {
   return { params: { id: '7' }, user, body: {} };
 }
 
-async function promoteAs({ user, promotedCount, config }) {
-  const ctx = loadPromote({ promotedCount, config });
+async function promoteAs({ user, promotedCount, config, status }) {
+  const ctx = loadPromote({ promotedCount, config, status });
   try {
     const res = makeRes();
     await ctx.promote(reqFor(user), res);
@@ -223,4 +223,11 @@ test('an over-cap promote never reaches lazy PR creation', async () => {
   assert.strictEqual(status, 429);
   assert.ok(seen.countQueried, 'the cap was actually checked');
   assert.strictEqual(seen.prCreated, false, 'no PR was created on GitHub');
+});
+
+test('paused submission still enforces the promoted cap before touching GitHub', async () => {
+  const { status, seen } = await promoteAs({ user: USER, promotedCount: 5, status: 'paused' });
+  assert.equal(status, 429);
+  assert.equal(seen.countQueried, true);
+  assert.equal(seen.prCreated, false);
 });

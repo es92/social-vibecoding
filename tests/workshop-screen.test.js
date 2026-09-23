@@ -675,11 +675,14 @@ test('the app\'s own Workshop keeps the rail, and lights the tab it came through
     /if \(App\._isScreenVisible\?\.\('app-view'\)\) App\._syncPlatformTabs\('app-view'\);/,
     'the rail moves with the tab');
 
-  // And the pill at the foot of the app's Workshop rests ON the platform's
-  // bar rather than through it.
+  // And the Workshop's lander ends ABOVE the platform's bar: its floor takes
+  // off the larger of that bar and the home-indicator strip. (The Workshop's
+  // own tabs used to float at the foot and ride on the bar; they sit at the
+  // head of the page now, #2767, so the floor is the only thing that has to
+  // know about it.)
   const css = read('public/css/app.css');
   assert.match(css,
-    /html:not\(\.un-kb\) body:has\(#platform-tabs:not\(\.hidden\):not\(\.platform-tabs-peek\)\) \{\s*--ws-lift: calc\(var\(--platform-tabs-h, 0px\) \+ 8px\);/);
+    /--ws-area: calc\([\s\S]*?max\(var\(--platform-tabs-h, 0px\), var\(--platform-safe-bottom, 0px\)\)\s*\);/);
 });
 
 test('the app\'s own Workshop wears the same scope chip, read from the other end', () => {
@@ -699,21 +702,24 @@ test('the app\'s own Workshop wears the same scope chip, read from the other end
   assert.match(ws, /iconUrl=\{app\.iconUrl\}/);
   assert.match(ws, /const app = useStoreState\(improveStore\);/);
 
-  // THE PANEL'S "All apps" ROW IS A TICK HERE AND A DESTINATION THERE.
-  assert.match(chrome, /onClick=\{\(\) => \{ close\(\); if \(scope\) goToAllApps\(\); \}\}/);
+  // THE PANEL'S "All apps" ROW IS THE WAY BACK UP.
+  assert.match(chrome, /onClick=\{\(\) => \{ onClose\(\); goToAllApps\(\); \}\}/);
   assert.match(chrome, /function goToAllApps\(\): void \{[\s\S]{0,200}window\.location\.hash = '#workshop';/,
     'a hash assignment, so the rail\'s Workshop tab and this are one route');
   // The app you are already in closes the panel and goes nowhere: a row that
   // re-navigated to the current route would throw this screen's scroll
   // position and its open windows away to arrive where it started.
-  assert.match(chrome, /if \(scope && scope\.slug === app\.slug\) \{ close\(\); return; \}/);
+  assert.match(chrome, /onClose\(\);\n\s*if \(scope\.slug === app\.slug\) return;/);
 
-  // ITS OWN OPEN STATE, not workshopStore.picker: the all-apps screen stays
-  // mounted while this one is on show, and a panel left open on one would
-  // greet the other.
+  // ITS OPEN STATE IS A STORE OF ITS OWN (#2768): two controls open this
+  // panel — the chip above 700px, the header's tile and name below it — so
+  // the flag cannot be the chip's `useState`. And it is still not
+  // workshopStore: that was the all-apps screen's, which wears no chip now.
   const island = chrome.slice(chrome.indexOf('export function AppWorkshopScope('));
-  assert.match(island, /const \[open, setOpen\] = useState\(false\);/);
-  assert.ok(!island.includes('workshopStore'), 'the two surfaces share no flag');
+  assert.match(island, /const \{ open \} = useStoreState\(appScopeStore\)/);
+  assert.ok(!island.includes('workshopStore'), 'the two screens share no flag');
+  // A panel left open does not outlive the app, nor the Workshop.
+  assert.match(island, /useEffect\(\(\) => \{\n\s*appScopeStore\.set\(\{ open: false \}\);\n\s*return \(\) => appScopeStore\.set\(\{ open: false \}\);\n\s*\}, \[slug\]\);/);
   // The list loads in an effect and never during render.
   assert.match(island, /useEffect\(\(\) => \{[\s\S]{0,600}fetch\(`\/api\/apps\$\{demoQuery\(\)\}`\)/);
   assert.match(island, /catch \{/, 'and offline leaves the chip working');

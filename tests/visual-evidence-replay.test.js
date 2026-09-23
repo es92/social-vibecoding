@@ -108,8 +108,37 @@ test('element resolution distinguishes a hidden role target from a missing targe
     assert.equal(error.code, 'locator_not_visible');
     assert.deepEqual(error.detail, {
       kind: 'role', role: 'button', matchedCount: 0, attachedCount: 1,
-      visibleCount: 0, waitState: 'visible', timeoutMs: 5000,
+      visibleCount: 0, roleHints: { candidateCount: 1, candidates: [] },
+      waitState: 'visible', timeoutMs: 5000,
     });
+    return true;
+  });
+});
+
+test('a stale accessible name reports nearby controls without leaking values', async () => {
+  const missing = {
+    first: () => ({ waitFor: async () => { throw new Error('timeout'); } }),
+    count: async () => 0,
+    nth: () => ({ isVisible: async () => false }),
+  };
+  const controls = [
+    '- button "Browse all apps"',
+    '- button "Contact alice@example.com token=secret.jwt"',
+  ];
+  const candidates = {
+    count: async () => controls.length,
+    nth: (index) => ({
+      ariaSnapshot: async () => controls[index],
+      isVisible: async () => index === 0,
+    }),
+  };
+  const page = { getByRole: (_role, options) => options.name ? missing : candidates };
+  await assert.rejects(replay.resolveOne(page, {
+    by: 'role', role: 'button', name: 'Browse', exact: true,
+  }, 'open-browse', { state: 'visible', timeoutMs: 25 }), (error) => {
+    assert.equal(error.code, 'locator_not_found');
+    assert.deepEqual(error.detail.roleHints.candidates[0], { name: controls[0], visible: true });
+    assert.doesNotMatch(JSON.stringify(error.detail), /alice@example\.com|secret\.jwt/);
     return true;
   });
 });
@@ -150,7 +179,7 @@ test('browser contexts forward the app-scoped token and failures never expose it
     assert.equal(error.code, 'replay_failed');
     assert.equal(error.detail.storyId, 'invite-suggestions');
     assert.equal(error.detail.viewport, 'desktop');
-    assert.equal(error.detail.phase, 'base');
+    assert.equal(error.detail.phase, 'create_context');
     assert.equal(error.detail.side, 'base');
     assert.doesNotMatch(error.message, /secret\.jwt/);
     return true;
@@ -162,6 +191,7 @@ test('internal HTTP replay bootstraps the clone-local platform session cookie', 
   const calls = [];
   let cookies = [];
   const response = {
+    status: () => 200,
     headersArray: () => [
       { name: 'set-cookie', value: 'other=ignored; Path=/' },
       { name: 'Set-Cookie', value: 'session=clone-session-token; Path=/; HttpOnly; Secure; SameSite=Lax' },
@@ -185,9 +215,13 @@ test('internal HTTP replay bootstraps the clone-local platform session cookie', 
     },
   };
 
+  const diagnostic = {};
   assert.equal(await replay.bootstrapInternalSession(
-    context, 'http://base-evidence:3000', '/?fixture=1#apps', 'member.jwt'
+    context, 'http://base-evidence:3000', '/?fixture=1#apps', 'member.jwt', diagnostic
   ), true);
+  assert.deepEqual(diagnostic, {
+    attempted: true, responseStatus: 200, sessionCookieInstalled: true,
+  });
   const get = calls.find(([name]) => name === 'get');
   assert.equal(new URL(get[1]).searchParams.get('token'), 'member.jwt');
   assert.deepEqual(get[2].headers, { 'x-usernode-token': 'member.jwt' });
@@ -217,8 +251,26 @@ test('a failed browser action identifies its plan action and stage', async () =>
   replayPlan.stories[0].intent.animation = 'none';
   replayPlan.stories[0].replay.checkpoint.animation = 'none';
   let contexts = 0;
+  const handlers = {};
   const page = {
-    on: () => {}, off: () => {}, goto: async () => {}, evaluate: async () => {},
+    on: (name, callback) => { handlers[name] = callback; }, off: () => {},
+    goto: async () => {
+      handlers.response?.({
+        status: () => 404,
+        url: () => 'http://base-evidence:3000/favicon.ico',
+      });
+      handlers.response?.({
+        status: () => 401,
+        url: () => 'http://base-evidence:3000/api/members?token=member.jwt',
+      });
+      return { status: () => 200 };
+    },
+    evaluate: async () => ({
+      readyState: 'complete', bodyChildCount: 5,
+      visibleLandmarkIds: ['members-screen'], visibleIds: ['members-screen', 'browse-all-apps'],
+      visibleControlIds: ['browse-all-apps'],
+      visibleTestIds: ['members-trigger'],
+    }),
     waitForTimeout: async () => {}, screenshot: async () => Buffer.from('png'),
     url: () => 'http://base-evidence:3000/?token=member.jwt',
     getByRole: () => ({
@@ -245,8 +297,16 @@ test('a failed browser action identifies its plan action and stage', async () =>
     });
     assert.equal(error.detail.pageState.sameOrigin, true);
     assert.equal(error.detail.pageState.queryKeys.includes('token'), false);
+    assert.deepEqual(error.detail.pageState.visibleIds, ['members-screen', 'browse-all-apps']);
+    assert.deepEqual(error.detail.pageState.visibleControlIds, ['browse-all-apps']);
+    assert.deepEqual(error.detail.pageState.visibleTestIds, ['members-trigger']);
+    assert.equal(error.detail.browserDiagnostics.firstHttpError.status, 404);
+    assert.deepEqual(error.detail.browserDiagnostics.httpErrors.map((item) => item.status), [404, 401]);
+    assert.deepEqual(error.detail.browserDiagnostics.httpErrors[1].location.queryKeys, []);
+    assert.doesNotMatch(JSON.stringify(error.detail.browserDiagnostics), /member\.jwt/);
     assert.deepEqual(error.detail.targetStates[0], {
       kind: 'role', role: 'button', matchedCount: 0, attachedCount: 0, visibleCount: 0,
+      roleHints: { candidateCount: 0, candidates: [] },
     });
     return true;
   });

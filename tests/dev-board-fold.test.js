@@ -1047,10 +1047,13 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // +1 (#2764): the folded-sidebar peek's toggle check, 730 — exactly the
   // 20-slot floor, so the next addition moves the ceiling.
   //
-  // +1 (#2760): the fifth tab named after the signed-in user, 731 — one past
-  // that floor, so the ceiling moved with it (services/app-manifest.js,
-  // 750 → 770, still not a coupled move), leaving 39 slots.
-  assert.equal(DAPP.tests.length, 731);
+  // +1 (#2748): the waitlist analytics dashboard's Analytics button/panel
+  // check, 731. That crossed the floor, so the same change moved
+  // MAX_DECLARED_TESTS 750 → 770 (services/app-manifest.js), leaving 39 slots.
+  //
+  // +1 (#2760): the fifth tab named after the signed-in user, 732, under the
+  // same 770 ceiling, leaving 38.
+  assert.equal(DAPP.tests.length, 732);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

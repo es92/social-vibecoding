@@ -43,7 +43,6 @@
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -2104,8 +2103,7 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
 /**
  * The grouping strip — "By category" / "By stage".
  *
- * ONE NODE, RENDERED IN ONE OF TWO PLACES, which is the arrangement the tab
- * bar above it already uses (see `useRailHost`). Below 768px it is a row of
+ * ONE NODE, RENDERED IN ONE OF TWO PLACES. Below 768px it is a row of
  * the pane's sticky head, full width, as it has always been. From 768px up it
  * moves into `.dev-ws-ear` — a surface hanging off the pane's top-right
  * corner, beside the lander's tab pill — and app.css shrinks it to its labels
@@ -2172,10 +2170,8 @@ function matchesQuery(query: string): boolean {
 /**
  * Is this the wide layout?
  *
- * READ AT MOUNT, not in an effect — which is the opposite of `useRailHost`
- * below, and the difference is worth stating. That hook returns null until
- * after mount because the node it moves has to agree with markup that may
- * have been prerendered. NOTHING here is: the Workshop mounts client-side
+ * READ AT MOUNT, not in an effect. Nothing here is prerendered: the Workshop
+ * mounts client-side
  * into a host `_repaintDevBody()` creates, so there is no first paint to
  * disagree with, and the component's own header says so. The seed matters
  * because the composer's resting state differs by width: a collapsed frame
@@ -2366,32 +2362,6 @@ function useEarInset(
 }
 
 /**
- * WHERE THE PHONE'S TAB BAR RENDERS.
- *
- * It has to pin to the real viewport, and it cannot do that in place:
- * `position: fixed` resolves against the nearest ancestor that establishes a
- * containing block, and the Dev board's frame wears `.dc-lift-strip`, whose
- * `backdrop-filter` is one — so `bottom: 0` there means the bottom of a
- * frosted panel, not of the screen. Walking the rail's real ancestor chain,
- * that wrapper is the ONLY blocker, and it is shared with the chat and topic
- * frames and three panels, so the bar comes out to #dev-ws-rail-host — an
- * empty anchor the shell keeps outside the frost (Shell.tsx) — rather than
- * the blur coming off.
- *
- * TWO RULES THIS HOOK EXISTS TO KEEP:
- *
- * 1. IT RETURNS null UNTIL AFTER MOUNT, so the first render is always the
- *    in-place one and never disagrees with markup that was prerendered. A
- *    hydration mismatch is a console error, and a console error on any route
- *    fails proposal checks.
- *
- * 2. IT ONLY PORTALS BELOW THE BREAKPOINT. Above 700px the strip is the
- *    segmented control at the head of the column — in flow, in place, not
- *    fixed — so there is nothing to lift out. This query and app.css's
- *    `@media (min-width: 700px)` are one decision in two places and have to
- *    move together.
- */
-/**
  * THE SLIDING SELECTION MARKER.
  *
  * The selected tab used to draw its own fill, so the selection jumped between
@@ -2482,23 +2452,6 @@ function useTabMarker(
   return box;
 }
 
-function useRailHost(): HTMLElement | null {
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    const mq = window.matchMedia(WIDE_QUERY);
-    const apply = () => {
-      setHost(mq.matches ? null : document.getElementById('dev-ws-rail-host'));
-    };
-    apply();
-    // `change` rather than a resize listener: it fires once per crossing
-    // instead of on every intermediate width, and it is what the breakpoint
-    // actually means.
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-  return host;
-}
-
 export function DevWorkshop(): ReactNode {
   const v = useStoreState(devWorkshopStore);
   // THE OPEN APP'S NAME AND ARTWORK, for the scope chip below. The same
@@ -2541,7 +2494,6 @@ export function DevWorkshop(): ReactNode {
   // link paints the right one on the FIRST frame rather than showing Current
   // status and then swapping — the same reason `openThemes` is seeded from
   // `autoExpand` rather than from an effect.
-  const railHost = useRailHost();
   // A CALLBACK REF, NOT `useRef`, AND THAT IS THE WHOLE BUG IT FIXES. While the
   // board is loading this component returns a skeleton, so the bar does not
   // exist: the marker's effect ran, found nothing and returned. When the data
@@ -2550,9 +2502,7 @@ export function DevWorkshop(): ReactNode {
   // selection was simply invisible the first time the Workshop was opened.
   //
   // State re-renders when the node arrives, which wakes the effect exactly
-  // then. It also makes `railHost` unnecessary as a dependency: the portal
-  // remount unmounts the bar and mounts a new one, so this fires twice on its
-  // own, with the right node each time.
+  // then.
   const [bar, setBar] = useState<HTMLElement | null>(null);
   const [tab, setTab] = useState<TabKey>(() => v.tab || 'status');
   const markerBox = useTabMarker(bar, tab);
@@ -2684,22 +2634,20 @@ export function DevWorkshop(): ReactNode {
   const canPost = !!v.canPost;
 
   /* ── The three destinations ──
-     ONE NODE, RENDERED IN ONE OF TWO PLACES. Above the breakpoint it stays
-     here, in flow at the head of the column, as the segmented control. Below
-     it, `useRailHost` hands back the shell's out-of-frost anchor and the same
-     element is portalled there so it can be `position: fixed` to the real
-     viewport — see app.css, and the hook for why the frost forces it out.
+     AT THE HEAD OF THE PAGE, AT EVERY WIDTH (#2767). Above 700px it is the
+     segmented control it has been; below it, it is the full-width pill under
+     the scope panel, where the header's app switcher drops it down.
 
-     It LEADS the markup either way. Focus follows the DOM rather than the
-     painting, so a nav announced before the content it navigates is the
-     better half of that trade, and on the narrow width the portal puts it
-     last in the body — which is the same answer, reached the other way.
+     It used to float at the FOOT of a phone's window instead, `position:
+     fixed`, and to get there it was portalled out of this tree into an anchor
+     the shell kept outside the Dev frame's frost (whose `backdrop-filter`
+     makes it a containing block for fixed descendants). That portal is what
+     #2769 was: the anchor sits outside #app-view, so when the app view was
+     hidden for Messages, Discover or Me the pill stayed on screen over them.
+     In flow it is part of the Workshop's own subtree and leaves with it.
 
-     NO `.platform-safe-bar` HERE, deliberately. That rule adds the
-     home-indicator inset to the element's own bottom PADDING, which on this
-     pill landed 8px under the tabs against 6px over them. The bar floats — a
-     rounded pill with air beneath it — so the inset belongs in the offset
-     that positions it, not inside it. */
+     It LEADS the markup, so focus order and reading order agree at every
+     width: the nav is announced before the content it navigates. */
   const railNode = (
         <nav
           ref={setBar}
@@ -2782,16 +2730,13 @@ export function DevWorkshop(): ReactNode {
   return (
     <div ref={hostRef} className="dev-ws" data-ws-tab={tab}>
       {/* WHICH WORKSHOP YOU ARE IN, and the way to another (#2718 review).
-          The same chip the all-apps Workshop screen wears, read from the
-          other end: there it says "All apps" and picking one navigates
-          here, here it names this app and its panel offers the others —
-          and All apps, which is the way back up.
+          It names this app and its panel offers the others — and All apps,
+          which is the way back up.
 
-          ABOVE THE RAIL in the markup, so it leads on both layouts: above
-          the breakpoint the tabs are in flow right below it, and below it
-          they are portalled to the foot of the window and this is simply
-          the first thing on the screen. It scrolls with the content, like
-          the same chip on the all-apps screen. */}
+          ABOVE THE RAIL in the markup, so the panel drops down over the tabs
+          rather than under them. On a phone the chip itself is hidden
+          (app.css) and the header's tile and name open the same panel
+          (#2768), so there it is the panel alone, right under the header. */}
       {slug ? (
         <AppWorkshopScope
           slug={slug}
@@ -2800,7 +2745,7 @@ export function DevWorkshop(): ReactNode {
           iconEmoji={app.iconEmoji}
         />
       ) : null}
-      {railHost ? null : railNode}
+      {railNode}
       {/* Everything but the rail lives in here. It is what carries the
           clearance under the last card: a sticky bar overlays whatever is
           beneath it while you scroll, so the content needs a rail's worth of
@@ -3307,11 +3252,6 @@ export function DevWorkshop(): ReactNode {
       ) : null}
 
       </div>
-
-      {/* The same node, lifted out of the frost. `railHost` is null above the
-          breakpoint and until after mount, so in both of those cases the rail
-          renders in place above and this is nothing. */}
-      {railHost ? createPortal(railNode, railHost) : null}
     </div>
   );
 }

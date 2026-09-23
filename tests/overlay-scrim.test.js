@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function harness() {
+function harness(globals = {}) {
   const callbacks = new Map(), observers = [], events = new Map();
   let next = 0, reads = 0;
   const style = {
@@ -36,6 +36,7 @@ function harness() {
     innerWidth: 400, innerHeight: 800, matchMedia: () => ({ matches: false }),
     addEventListener: (e, f) => events.set('window:' + e, f),
     removeEventListener: e => events.delete('window:' + e),
+    ...globals,
   };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
@@ -78,6 +79,29 @@ test('closing animation keeps its decoration until the surface hides', () => {
   h.style.visibility = 'hidden'; h.frame();
   assert.equal(h.paint.style.visibility, 'hidden');
   assert.equal(h.callbacks.size, 0); h.detach();
+});
+
+test('the dim reaches the foot of the layout viewport when iOS collapses innerHeight (#2765)', () => {
+  // A phone with the on-screen keyboard up: innerHeight has collapsed to the
+  // 441px visual viewport while the fixed paint layer still spans the 844px
+  // layout viewport, and the dialog rides the band the keyboard panned to.
+  const h = harness({ innerHeight: 441, document: { documentElement: { clientHeight: 844 } } });
+  h.style.visibility = 'visible';
+  h.surface.getBoundingClientRect = () => ({ left: 16, top: 419, right: 374, bottom: 828, width: 358, height: 409 });
+  h.observers[0].fn(); h.frame();
+  const paint = h.paint.style.background;
+  assert.match(paint, /0px 0px \/ 400px 419px no-repeat/, 'the band above the card');
+  assert.match(paint, /0px 828px \/ 400px 16px no-repeat/, 'and the strip under it, down to 844 rather than 441');
+  assert.match(paint, /0px 419px \/ 16px 409px no-repeat/, 'the gutters run the card\'s whole height');
+  h.detach();
+});
+
+test('without a document the paint height is innerHeight, as before', () => {
+  const h = harness();
+  h.style.visibility = 'visible';
+  h.observers[0].fn(); h.frame();
+  assert.match(h.paint.style.background, /0px 0px \/ 80px 800px no-repeat/);
+  h.detach();
 });
 
 test('adopted content does not paint a second scrim', () => {

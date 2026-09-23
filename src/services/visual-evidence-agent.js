@@ -142,11 +142,13 @@ async function ensureEvidenceWorker(session, { onProgress = null, workerService 
 
 async function dispatchClaude(config, options, deps) {
   const { session, runId, origins, authTokens, onProgress, resumeThreadId } = options;
-  const result = await withDispatchTimeout(deps.workerService.execInWorker(session.id, {
+  const model = models.resolve(session.model || session.agent_model);
+  let result;
+  try { result = await withDispatchTimeout(deps.workerService.execInWorker(session.id, {
     mode: 'evidence',
     prompt: promptFor(),
     systemPrompt: SYSTEM_PROMPT,
-    model: models.resolve(session.model || session.agent_model),
+    model,
     resumeSessionId: resumeThreadId === undefined
       ? (session.cc_session_id || (session.agent_backend === 'claude_code' ? session.agent_thread_id : null))
       : resumeThreadId,
@@ -163,15 +165,25 @@ async function dispatchClaude(config, options, deps) {
     timeoutMs: options.timeoutMs || config.visualEvidence?.maxAgentMs || 240_000,
     onTimeout: () => deps.workerService.stopTurn?.(session.id),
     suspendedMs: options.suspendedMs,
-  });
+  }); }
+  catch (error) {
+    if (error && typeof error === 'object') {
+      error.evidenceBackend = 'claude_code';
+      error.evidenceModel = model;
+    }
+    throw error;
+  }
   if (failedResult(result)) {
-    throw new VisualEvidenceAgentError(
+    const error = new VisualEvidenceAgentError(
       'evidence_agent_failed',
       'The visual evidence planner ended before submitting a passing replay.',
       deps.agentTurn.sanitizeError({ message: result?.fatalError || `exit ${result?.exitCode ?? result?.agentExit ?? 'unknown'}` })
     );
+    error.evidenceBackend = 'claude_code';
+    error.evidenceModel = model;
+    throw error;
   }
-  return { backend: 'claude_code', result, threadId: resultThreadId(result, 'claude_code') };
+  return { backend: 'claude_code', model, result, threadId: resultThreadId(result, 'claude_code') };
 }
 
 async function dispatchCodex(config, options, runtimeContext, deps) {
@@ -270,7 +282,10 @@ async function dispatchCodex(config, options, runtimeContext, deps) {
       deps.agentTurn.sanitizeError({ message: lastResult?.fatalError || `exit ${lastResult?.exitCode ?? lastResult?.agentExit ?? 'unknown'}` })
     );
   }
-  return { backend: 'codex_openrouter', result: lastResult, threadId: resultThreadId(lastResult, 'codex_openrouter') };
+  return {
+    backend: 'codex_openrouter', model: runtimeContext.agentModel,
+    result: lastResult, threadId: resultThreadId(lastResult, 'codex_openrouter'),
+  };
 }
 
 async function dispatch(config, options, injected = {}) {
@@ -295,11 +310,22 @@ async function dispatch(config, options, injected = {}) {
       config,
     });
     if (runtime && !runtime.error && runtime.agentModelMetadata?.supportsTools !== false) {
-      return dispatchCodex(config, options, runtime, deps);
+      try { return await dispatchCodex(config, options, runtime, deps); }
+      catch (error) {
+        if (error && typeof error === 'object') {
+          error.evidenceBackend = 'codex_openrouter';
+          error.evidenceModel = runtime.agentModel;
+        }
+        throw error;
+      }
     }
     // A model without tool support cannot explore or submit a plan. Use the
     // platform evidence planner rather than attributing work to that model.
-    return dispatchClaude(config, { ...options, resumeThreadId: null }, deps);
+    const fallbackReason = runtime?.error ? 'codex_runtime_unavailable' : 'model_without_tools';
+    return {
+      ...await dispatchClaude(config, { ...options, resumeThreadId: null }, deps),
+      fallbackReason,
+    };
   }
   return dispatchClaude(config, options, deps);
 }

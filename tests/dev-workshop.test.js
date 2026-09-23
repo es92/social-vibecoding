@@ -3471,149 +3471,58 @@ test('the ?ws= deep link survives arriving AFTER the first paint', () => {
     'applied once, so a later republish cannot override the reader');
 });
 
-test('the phone rail is fixed to the real viewport, not to its container', () => {
-  // THREE FIXES FAILED HERE BEFORE THIS ONE, and they failed the same way:
-  // the bar's resting place was derived from the container it sat in, so it
-  // depended on `--ws-area`'s viewport arithmetic, the flex chain filling,
-  // `.platform-safe-scroll`'s padding and `100dvh` — every one of which
-  // behaved differently on a real iOS PWA than in a headless Chromium, where
-  // all three measured correct. A fixed element depends on none of them.
-  //
-  // `position: fixed` was the ORIGINAL design and was abandoned because the
-  // Dev frame's `.dc-lift-strip` carries a `backdrop-filter`, which
-  // establishes a containing block for fixed descendants — so `bottom` meant
-  // the bottom of a frosted panel. The bar is portalled out of that frost now,
-  // which is what makes the keyword mean the screen again.
+test('#2767/#2769: the phone rail sits at the HEAD of the page, in flow, and leaves with the Workshop', () => {
+  // THE OWNER REVERSED THE BOTTOM BAR. On a phone this was a pill fixed to
+  // the foot of the window, portalled out of the Dev frame's frost into a
+  // shell-level anchor so `position: fixed` could mean the screen. #2767
+  // moved the tabs to the top of the page, under the header; and the portal
+  // WAS #2769 — its anchor sat outside #app-view, so the pill stayed on
+  // screen over Messages, Discover and Me after a visit to the Workshop.
   const rail = /\n\.dev-ws-tabs \{([\s\S]*?)\n\}/.exec(CSS);
   assert.ok(rail, 'the rail rule exists');
-  assert.match(rail[1], /position: fixed;/, 'pinned to the viewport');
-  // Comments stripped: the block above NAMES `position: sticky` to say what it
-  // replaces, and prose naming a declaration is not the declaration — the
-  // third absence check in this file to need saying so.
   const railDecls = rail[1].replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.ok(!/position: sticky/.test(railDecls), 'not to its container');
-  // A FLOATING PILL, RESTING LOW. It went edge-to-edge for one round, on the
-  // reasoning that a surface reaching the physical edge is what iOS does with
-  // its own tab bars. It is — but it is not what this app wants: the shape
-  // that reads right here is the oval, and the complaint was never the shape.
-  // It was that the oval sat too high, reserving the whole gesture inset.
-  assert.match(rail[1], /border-radius: 999px;/, 'a pill, not a strip');
-  assert.match(rail[1], /left: 10px; right: 10px;/, 'inset from the side edges');
-  assert.match(rail[1], /bottom: var\(--ws-lift\);/, 'and floating on the lift');
-  // THE LIFT IS NOT THE WHOLE INSET. 34px is Apple's GESTURE zone; the
-  // indicator GRAPHIC is a thin line about 8px off the bottom. Reserving all
-  // of it is what made the pill read as stopping short of the phone.
-  // Trimmed twice, the second time from a preview on a real phone rather than
-  // a guess. There is little further to go: the indicator LINE sits about 8px
-  // up and is roughly 5px tall, so its top edge is near 13px — 14px is the
-  // last value with visible air between the two.
-  assert.match(CSS, /--ws-lift: max\(8px, calc\(var\(--platform-safe-bottom, 0px\) - 20px\)\);/);
-  // `max()` because a device with no indicator reports 0, and `0 - 16px` would
-  // tuck the pill off the bottom of the screen.
-  const lift = /--ws-lift: ([^;]+);/.exec(CSS);
-  assert.match(lift[1], /^max\(/, 'the floor is a max, not a bare subtraction');
-  // The inset is spent ONCE in the bar rule — inside the lift, via the token.
-  const insetSpends = (rail[1].replace(/\/\*[\s\S]*?\*\//g, '').match(/--platform-safe-bottom/g) || []).length;
-  assert.equal(insetSpends, 0, 'the bar reads the lift, not the inset directly');
-  // `order` survives for the single render before the portal takes over.
-  assert.match(rail[1], /^\s*order: 1;$/m);
+  // RELATIVE: the containing block the selection marker and `offsetLeft`
+  // measure against, and nothing more. Not fixed, and not sticky — the pane
+  // head below it is the band that pins.
+  assert.match(railDecls, /position: relative;/, 'in flow, and the marker\'s containing block');
+  assert.ok(!/position: (fixed|sticky)/.test(railDecls), 'neither fixed to the viewport nor pinned');
+  assert.match(railDecls, /order: 0;/, 'painted where it is written: first');
+  assert.ok(!/\bbottom:|\bleft:|\bright:/.test(railDecls), 'no viewport offsets left behind');
 
-  // THE PORTAL, and the two rules that keep it honest.
-  assert.match(WORKSHOP, /import \{ createPortal \} from 'react-dom';/);
-  assert.match(WORKSHOP, /function useRailHost\(\): HTMLElement \| null \{/);
-  // Null until after mount, so the FIRST render is always the in-place one and
-  // never disagrees with prerendered markup — a hydration mismatch is a
-  // console error, and a console error on any route fails proposal checks.
-  assert.match(WORKSHOP, /const \[host, setHost\] = useState<HTMLElement \| null>\(null\);/);
-  // ONE SPELLING OF THE BREAKPOINT. It was written out at this call site; the
-  // ask composer needs the same query to know whether to open expanded, and
-  // two literals of one decision is how they drift apart from each other and
-  // from app.css's `@media (min-width: 700px)` block.
+  // NO PORTAL. The node renders in place at every width, inside the
+  // Workshop's own subtree, so hiding the app view hides it.
+  assert.ok(!/createPortal/.test(WORKSHOP), 'nothing lifts the rail out of the tree');
+  assert.ok(!/useRailHost|railHost/.test(WORKSHOP), 'and no hook looks for a host');
+  assert.match(WORKSHOP, /\{railNode\}/, 'the rail renders where it is written');
+  assert.ok(!/dev-ws-rail-host/.test(SHELL), 'the shell keeps no anchor for it');
+  assert.ok(!/dev-ws-rail-host/.test(CSS), 'and no rule styles one');
+  // ONE SPELLING OF THE BREAKPOINT survives for the ask composer and the feed.
   assert.match(WORKSHOP, /const WIDE_QUERY = '\(min-width: 700px\)';/);
-  assert.match(WORKSHOP, /useEffect\(\(\) => \{[\s\S]{0,400}?matchMedia\(WIDE_QUERY\)/,
-    'the host is resolved in an effect, not during render');
-  // Null above the breakpoint too: up there the strip is the segmented control
-  // in flow at the head of the column, and there is nothing to lift out.
-  assert.match(WORKSHOP, /setHost\(mq\.matches \? null : document\.getElementById\('dev-ws-rail-host'\)\);/);
-  assert.match(WORKSHOP, /\{railHost \? createPortal\(railNode, railHost\) : null\}/);
-  assert.match(WORKSHOP, /\{railHost \? null : railNode\}/,
-    'and the same node renders in place when there is no host');
 
-  // THE HOST IS OUTSIDE THE FROST. This is the whole mechanism: if it ever
-  // moves inside `.dc-lift`, `fixed` silently starts resolving against the
-  // frosted panel again and the bug returns with no test to catch it.
-  // It is rendered at the shell's TOP LEVEL — six-space indent, sibling of the
-  // islands — which is what puts it outside every frame the Dev board mounts
-  // at runtime. Shell.tsx renders no `.dc-lift` element itself; the frosted
-  // wrappers all come from features/dev-board, below #app-view.
-  //
-  // Ancestry is a DOM property and a source file cannot assert it, so the real
-  // check is the harness walking the rail's live ancestor chain for anything
-  // with transform / filter / backdrop-filter / contain. This pins the half
-  // that IS expressible: the host stays where the shell put it.
-  assert.match(SHELL, /^      <div id="dev-ws-rail-host" \/>$/m,
-    'the host is a top-level child of the shell body');
-  assert.match(SHELL, /<Island name="LegacyPortals"><LegacyPortals \/><\/Island>[\s\S]*?<div id="dev-ws-rail-host" \/>/,
-    'and sits with the other end-of-body anchors');
+  // NOTHING OVERLAYS THE LANDER, so nothing reserves room for a bar: the
+  // tokens that held the pill's box and the air under it are gone, and the
+  // tab body carries no clearance.
+  const decls = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(!/--ws-bar|--ws-lift/.test(decls), 'no bar box, no lift');
+  const body = /\n\.dev-ws-tabbody \{([\s\S]*?)\n\}/.exec(decls);
+  assert.ok(body && !/padding-bottom/.test(body[1]), 'the tab body reserves nothing under itself');
 
-  // THE BAR IS OUT OF FLOW, so nothing reserves its space automatically and
-  // three rules have to agree about its footprint. It is one token, so they
-  // agree by construction rather than by being remembered.
-  // The token is the bar's BOX, not its footprint: its own lower padding
-  // covers the home-indicator strip, and below `.dev-ws` that strip is already
-  // held open by `.platform-safe-scroll`. Counting it here too reserved it
-  // twice — measured, 51px of slack above the bar at a 34px inset against 17px
-  // at zero. Box only gives 9px at both.
-  assert.match(CSS, /--ws-bar: 72px;/);
-  assert.ok(!/--ws-bar: calc\(72px \+ var\(--platform-safe-bottom/.test(CSS),
-    'the inset is reserved below the bar, not inside this token');
-  // The fitted deck ends above the bar...
-  const area = /\.dev-ws \{[\s\S]*?--ws-area: calc\(([\s\S]*?)\);/.exec(CSS);
+  // THE FLOOR takes the header, the insets, the air and the platform's tab
+  // bar — the larger of that bar and the home-indicator strip, which is what
+  // `.platform-safe-scroll` reserves below the lander — and NOT a Workshop
+  // bar, which is in flow inside `.dev-ws` now.
+  const area = /\.dev-ws \{[\s\S]*?--ws-area: calc\(([\s\S]*?)\);\n/.exec(CSS);
   assert.ok(area, 'the floor exists');
-  assert.match(area[1], /var\(--ws-bar\)/, 'the floor takes the bar off');
-  assert.match(area[1], /var\(--ws-lift\)/, 'and the air it floats on');
-  // AND `--ws-fit` IS A SECOND, DIFFERENT QUANTITY beside it, not the floor
-  // plus something: where `.dev-ws` ends when the chain above it has a
-  // definite height — the reading area less `.platform-safe-scroll`'s
-  // reservation and `#dev-body`'s bottom padding, which are the two things
-  // below it. The pill overlays the last `--ws-bar` of that, as it overlays
-  // every tab. The two coincide only at a zero inset: at 34px the pill lifts
-  // by 14 and the scroller gives back 34.
-  const fit = /--ws-fit: calc\(([\s\S]*?)\);/.exec(CSS);
-  assert.ok(fit, 'the fitted box exists');
-  assert.match(fit[1], /var\(--ws-gap\)/);
-  assert.match(fit[1], /var\(--platform-safe-bottom, 0px\)/);
-  assert.ok(!/--ws-bar|--ws-lift/.test(fit[1]),
-    'it is the box the pill sits ON, so it names neither the pill nor its air');
-  // ...and a scrolling tab's last card clears one.
-  // WHAT SITS BETWEEN `.dev-ws`'s FOOT AND THE PILL'S TOP. Subtracting the
-  // inset is what makes the remaining air independent of it — it works out to
-  // `--ws-gap` exactly, whatever the device reports. Measured, the version
-  // without it gave 0px of air at a 0 inset and 34px at a 34px one: the
-  // composer touching the pill on one phone and floating clear of it on
-  // another.
-  assert.match(CSS, /padding-bottom: calc\(var\(--ws-bar\) \+ var\(--ws-lift\) - var\(--platform-safe-bottom, 0px\)\);/);
-  // AND NEEDS YOU IS NO LONGER EXEMPT. It was, while the rail sat in flow and
-  // took its own space; a fixed bar overlays every tab equally. With the
-  // exemption left in, the deck filled to the foot of `.dev-ws` and the
-  // composer ran 63px UNDER the bar — measured, not predicted.
-  assert.ok(!/\.dev-ws\[data-ws-tab="needs"\] > \.dev-ws-tabbody \{ padding-bottom: 0/.test(
-    CSS.replace(/\/\*[\s\S]*?\*\//g, '')),
-    'every tab owes the same clearance because every tab has the same thing on top');
-  // ABOVE THE BREAKPOINT the bar is back in flow at the head of the column, so
-  // it takes its own space and the floor must not subtract it again.
+  assert.match(area[1], /var\(--ws-gap\)/);
+  assert.match(area[1], /max\(var\(--platform-tabs-h, 0px\), var\(--platform-safe-bottom, 0px\)\)/);
+  // The fitted box is the same length, since nothing floats over its foot.
+  assert.match(CSS, /--ws-fit: var\(--ws-area\);/);
+  // And the wide block no longer needs its own floor: the base one is the
+  // in-flow arithmetic it always used.
   const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS);
   assert.ok(wide, 'the wide block exists');
-  assert.match(wide[1], /--ws-area: calc\([\s\S]*?- var\(--ws-gap\)\n?\s*\);/,
-    'the wide floor takes only the air off');
-  assert.ok(!/--ws-bar/.test(wide[1].replace(/\/\*[\s\S]*?\*\//g, '')),
-    'and not the bar, which is in flow up there');
-
-  // Still NOT `.platform-safe-bar`: that rule puts the inset inside the
-  // element's own padding, which on this pill landed 8px under the tabs
-  // against 6px over them. The bar floats; the inset belongs in the offset.
-  assert.ok(!/dev-ws-tabs platform-safe-bar/.test(WORKSHOP),
-    'the floating pill carries the inset in its offset, not in its padding');
+  assert.ok(!/--ws-area/.test(wide[1].replace(/\/\*[\s\S]*?\*\//g, '')),
+    'one floor, every width');
 });
 
 test('the ask composer keeps a visible send, and opens with it in the bottom-right corner', () => {
@@ -4474,9 +4383,11 @@ test('a wide window reads the tabs at the top, as a segmented control', () => {
   assert.match(CSS, /\.dev-ws-tab-marker \{[\s\S]*?background: var\(--brand-tint\);/,
     'and the fill is the marker, at both widths — it carries no breakpoint');
 
-  // Nothing overlays the content any more, so the clearance that existed for a
-  // bar floating over what scrolls beneath it is dead space here.
-  assert.match(wide[1], /\.dev-ws-tabbody \{ padding-bottom: 0; \}/);
+  // Nothing overlays the content at ANY width now (#2767), so the tab body
+  // carries no clearance in its base rule and the wide block has nothing to
+  // take back off.
+  assert.ok(!/\.dev-ws-tabbody \{[^}]*padding-bottom/.test(CSS.replace(/\/\*[\s\S]*?\*\//g, '')),
+    'no clearance for a bar that no longer floats');
 
   // The markup half: the track exists and is inert on a phone, so the bar
   // there is byte-identical to what it was.
@@ -4608,10 +4519,10 @@ test('the selection slides between tabs instead of snapping', () => {
     'the observer’s first delivery must not replace an identical box');
 
   // THE BAR IS THE CONTAINING BLOCK AT BOTH WIDTHS, which is what makes
-  // offsetLeft/offsetTop mean what the marker assumes. `fixed` gives it for
-  // free on a phone; the wide rule has to ask for it.
+  // offsetLeft/offsetTop mean what the marker assumes. The phone rule is
+  // `relative` (#2767); the wide rule has to ask for it too.
   const rail = /\n\.dev-ws-tabs \{([\s\S]*?)\n\}/.exec(CSS);
-  assert.match(rail[1], /position: fixed;/);
+  assert.match(rail[1], /position: relative;/);
   const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS);
   assert.match(wide[1], /position: relative;/);
   assert.ok(!/position: static;/.test(wide[1].replace(/\/\*[\s\S]*?\*\//g, '')),

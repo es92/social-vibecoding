@@ -530,8 +530,8 @@ function makePromotePool(sessionRow) {
     const s = String(sql);
     calls.push({ sql: s, params });
 
-    if (/FROM chat_sessions cs JOIN apps a/i.test(s) && /status = 'active'/i.test(s)) {
-      let ok = sessionRow.status === 'active' && sessionRow.user_id === params[1];
+    if (/FROM chat_sessions cs JOIN apps a/i.test(s) && /status IN \('active', 'paused'\)/i.test(s)) {
+      let ok = ['active', 'paused'].includes(sessionRow.status) && sessionRow.user_id === params[1];
       if (/is_headless = FALSE/i.test(s) && sessionRow.is_headless) ok = false;
       return { rows: ok ? [{ ...sessionRow }] : [] };
     }

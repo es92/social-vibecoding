@@ -35,6 +35,7 @@ const worker = require('../src/services/worker');
 const {
   buildCodingAgentBuildGuidance,
   buildCodingAgentConventionsContext,
+  buildHostedCodingWorkflowGuidance,
   buildCodingAgentSpecContext,
   canReuseHostedClaudeScoutSpec,
   describeTurnError,
@@ -66,6 +67,19 @@ test('hosted Claude receives conventions once as system context, while unchanged
   const codex = buildCodingAgentConventionsContext({ isCodexSession: true, conventions });
   assert.equal(codex.systemPrompt, null);
   assert.match(codex.promptBlock, /SENTINEL platform rule/);
+});
+
+test('hosted build guidance keeps proposal submission with the harness and evidence intent with the agent', () => {
+  const hosted = buildHostedCodingWorkflowGuidance();
+  assert.match(hosted, /HOSTED WORKER LIFECYCLE/);
+  assert.match(hosted, /record_visual_evidence_intent/);
+  assert.match(hosted, /harness handles push, pull request/);
+  assert.match(hosted, /Do not run\s+that skill, the social-vibecoding CLI/);
+  assert.match(hosted, /Do not create platform users or tokens/);
+  assert.equal(buildHostedCodingWorkflowGuidance({ runLocally: true }), '');
+  const sessionsSource = read('src/routes/sessions.js');
+  assert.match(sessionsSource, /const workflowGuidance = buildHostedCodingWorkflowGuidance\(\{ runLocally \}\)/);
+  assert.match(sessionsSource, /INSTRUCTIONS:\n\$\{workflowGuidance\}\n\$\{turnInstructions\}/);
 });
 
 test('hosted Claude references system build guidance while local and Codex share the reviewed inline contract', () => {

@@ -407,6 +407,7 @@ test('proposal MCP tools call the native handoff lifecycle and gate promotion on
         sessionId: 41,
         source: 'cli_handoff',
         state: promoted ? 'promoted' : proposalState,
+        ...(proposalState === 'paused' ? { revisionState: 'ready' } : {}),
         checkState: proposalState === 'stalled' ? 'pending' : 'passing',
         headSha: 'b'.repeat(40),
       }));
@@ -559,6 +560,8 @@ test('proposal MCP tools call the native handoff lifecycle and gate promotion on
       arguments: { session_id: 41 },
     });
     assert.equal(ready.structuredContent.body.state, 'ready');
+
+    proposalState = 'paused'; // Idle resource cleanup must not require a resume.
 
     const promote = await client.callTool({
       name: 'social_vibecoding.proposal_promote',

@@ -4045,8 +4045,17 @@ const AppView = {
     // finishing the build is what turned a passing state into a bug report:
     // the message named checks that were not running, and gave no way to tell
     // whether waiting would help.
-    if (item.status === 'paused') return blocked('Resume this change before submitting it.');
+    // Pausing releases coding resources; review readiness belongs to the revision.
+    if (item.check_state === 'failing') {
+      return blocked('The checks on this revision are failing. Push a fix, then submit it.');
+    }
+    if (item.check_state === 'error') {
+      return blocked('The checks could not run on this revision. Push a fix, then submit it.');
+    }
     if (handoff && item.proposal_state !== 'ready') {
+      if (['checking', 'deploying', 'stalled'].includes(item.proposal_state)) {
+        return blocked('This managed session needs staging and checks to finish before it can be submitted.');
+      }
       return blocked('This managed session needs a tested commit uploaded before it can be submitted.');
     }
     if (handoff && item.check_state !== 'passing') {
@@ -4066,12 +4075,6 @@ const AppView = {
       if (levelWithMain || nothingPushed) {
         return blocked('There are no committed changes to submit yet. Ask the agent to make a change first.');
       }
-    }
-    if (item.check_state === 'failing') {
-      return blocked('The checks on this revision are failing. Push a fix, then submit it.');
-    }
-    if (item.check_state === 'error') {
-      return blocked('The checks could not run on this revision. Push a fix, then submit it.');
     }
     return { kind: 'ready' };
   },

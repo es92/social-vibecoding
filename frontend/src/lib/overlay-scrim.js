@@ -50,6 +50,18 @@ export function scrimBackground(rect, radii, width, height, pixelRatio = 1) {
   return layers.join(', ') || 'none';
 }
 
+// How tall the paint layer is. It is `position: fixed; inset: 0`, so it spans
+// the LAYOUT viewport, and on iOS `innerHeight` is not that while the on-screen
+// keyboard is up: it collapses to the visual viewport (409 of an 812px layout
+// in the kit's measurements, native.js keyboardInset). The dim stopped there,
+// and a dialog riding the band the keyboard pans the page to (#2765) sat on
+// undimmed page below it. The larger of the two is the kit's own
+// layoutViewportHeight(); everywhere else they agree.
+function layoutViewportHeight() {
+  const root = typeof document === 'undefined' ? null : document.documentElement;
+  return Math.max(innerHeight, (root && root.clientHeight) || 0);
+}
+
 export function attachOverlayScrim(surface, backdrop, paint) {
   if (!surface || !backdrop || !paint) return () => {};
   let disposed = false;
@@ -98,7 +110,7 @@ export function attachOverlayScrim(surface, backdrop, paint) {
         || (surface.id === 'apps-switcher-sheet' && matchMedia('(min-width: 640px)').matches);
       const opacity = cardFade ? style.opacity : getComputedStyle(backdrop).opacity;
       return {
-        background: scrimBackground(box, radii, innerWidth, innerHeight, window.devicePixelRatio || 1),
+        background: scrimBackground(box, radii, innerWidth, layoutViewportHeight(), window.devicePixelRatio || 1),
         opacity, zIndex: style.zIndex, visibility: 'visible',
         animating: [surface, backdrop].some(el => el.getAnimations().some(a => a.playState === 'running')),
       };

@@ -142,17 +142,21 @@ function executionDetail(execution) {
   if (Number.isInteger(execution?.exitCode)) detail.exitCode = execution.exitCode;
   const stdout = String(execution?.stdout || '');
   let cursor = stdout.length;
-  for (let inspected = 0; inspected < 12 && cursor > 0; inspected += 1) {
+  for (let inspected = 0; inspected < 24 && cursor > 0; inspected += 1) {
     const start = stdout.lastIndexOf(EVENT_PREFIX, cursor - 1);
     if (start < 0) break;
     const end = stdout.indexOf('\n', start);
     try {
       const event = JSON.parse(stdout.slice(start + EVENT_PREFIX.length, end < 0 ? undefined : end));
-      if (['started', 'viewport_started', 'viewport_finished'].includes(event?.type)) {
+      if (/^(?:started|browser_launch_started|browser_launch_completed|scratch_context_started|scratch_context_ready|viewport_started|viewport_finished|side_started|side_finished|side_failed|session_bootstrap|navigation_started|navigation_completed|action_started|action_completed|assertion_started|assertion_completed|animation_started|animation_completed)$/.test(event?.type || '')) {
         detail.lastEvent = {
           type: event.type,
           ...(typeof event.storyId === 'string' ? { storyId: event.storyId.slice(0, 96) } : {}),
           ...(typeof event.viewport === 'string' ? { viewport: event.viewport.slice(0, 32) } : {}),
+          ...(['base', 'head'].includes(event.side) ? { side: event.side } : {}),
+          ...(typeof event.actionId === 'string' ? { actionId: event.actionId.slice(0, 96) } : {}),
+          ...(typeof event.phase === 'string' ? { phase: event.phase.slice(0, 40) } : {}),
+          ...(Number.isInteger(event.assertionIndex) ? { assertionIndex: event.assertionIndex } : {}),
         };
         break;
       }
@@ -163,10 +167,12 @@ function executionDetail(execution) {
 }
 
 function runtimeReason(error) {
-  return String(error?.message || '').replace(/\s+/g, ' ').slice(0, 300)
-    .replace(/([?&]token=)[^&\s"'<>)]*/gi, '$1[redacted]')
+  return String(error?.message || '').replace(/\s+/g, ' ')
+    .replace(/(\b(?:token|access_token|auth|authorization|password|secret|api[_-]?key|code|session)\s*=\s*)[^&\s"'<>)]*/gi, '$1[redacted]')
     .replace(/\bBearer\s+[^\s"']+/gi, 'Bearer [redacted]')
-    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted]');
+    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[redacted]')
+    .replace(/\b(?:sk-(?:proj-)?|ghp_|gho_|github_pat_)[A-Za-z0-9_-]{16,}\b/gi, '[redacted]')
+    .slice(0, 300);
 }
 
 function withRuntimeDetail(error) {
@@ -178,6 +184,7 @@ function withRuntimeDetail(error) {
         reason: runtimeReason(error),
         killed: error.killed === true,
       },
+      ...(error.stdout ? { execution: executionDetail(error) } : {}),
     };
   }
   return error;
@@ -241,25 +248,38 @@ function hammingHex(left, right) {
   return distance;
 }
 
-function reproducibleStories(leftStories, rightStories) {
-  if (leftStories.length !== rightStories.length) return false;
+function reproducibilityDifference(leftStories, rightStories) {
+  if (leftStories.length !== rightStories.length) return {
+    field: 'storyCount', firstCount: leftStories.length, secondCount: rightStories.length,
+  };
   for (let index = 0; index < leftStories.length; index += 1) {
     const left = leftStories[index];
     const right = rightStories[index];
-    if (left.id !== right.id || left.viewport !== right.viewport) return false;
+    if (left.id !== right.id || left.viewport !== right.viewport) return {
+      field: 'storyIdentity', index,
+      first: { storyId: left.id, viewport: left.viewport },
+      second: { storyId: right.id, viewport: right.viewport },
+    };
     for (const side of ['base', 'head']) {
-      if (left[side].fingerprint !== right[side].fingerprint
-          || left[side].path !== right[side].path) return false;
+      const at = { storyId: left.id, viewport: left.viewport, side };
+      if (left[side].fingerprint !== right[side].fingerprint) return {
+        ...at, field: 'fingerprint',
+        first: left[side].fingerprint, second: right[side].fingerprint,
+      };
+      if (left[side].path !== right[side].path) return { ...at, field: 'path' };
       for (const hash of ['contextHash', 'focusHash']) {
         if (!/^[0-9a-f]{16}$/.test(String(left[side][hash] || ''))
-            || !/^[0-9a-f]{16}$/.test(String(right[side][hash] || ''))
-            || hammingHex(left[side][hash], right[side][hash]) > 2) {
-          return false;
-        }
+            || !/^[0-9a-f]{16}$/.test(String(right[side][hash] || ''))) return { ...at, field: hash, invalidHash: true };
+        const distance = hammingHex(left[side][hash], right[side][hash]);
+        if (distance > 2) return { ...at, field: hash, hammingDistance: distance };
       }
     }
   }
-  return true;
+  return null;
+}
+
+function reproducibleStories(leftStories, rightStories) {
+  return reproducibilityDifference(leftStories, rightStories) == null;
 }
 
 // The browser runner emits every known provenance field, representing an
@@ -311,8 +331,9 @@ function comparePasses(first, second, { plan = null, provenance = null, runId = 
   }
   const left = comparableStories(first.result.stories);
   const right = comparableStories(second.result.stories);
-  if (!reproducibleStories(left, right)) {
-    return { passed: false, code: 'non_reproducible', reason: 'The two clean replay passes reached different checkpoints.' };
+  const difference = reproducibilityDifference(left, right);
+  if (difference) {
+    return { passed: false, code: 'non_reproducible', reason: 'The two clean replay passes reached different checkpoints.', detail: difference };
   }
   if (!second.artifacts.length) {
     return { passed: false, code: 'missing_artifacts', reason: 'The reproducible pass produced no review artifacts.' };

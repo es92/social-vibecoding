@@ -2332,7 +2332,9 @@ async function runMcp(args, launcherPath) {
         && ['promoted', 'merging', 'merged'].includes(statusBody.state)) {
       return statusResult;
     }
-    if (statusCode !== 200 || !statusBody || statusBody.state !== 'ready') {
+    if (statusCode !== 200 || !statusBody
+        || !['ready', 'paused'].includes(statusBody.state)
+        || (statusBody.revisionState || statusBody.state) !== 'ready') {
       return mcpError(
         'proposal_not_ready',
         'The proposal is not ready to promote. Poll proposal_status and resolve staging or check failures first.',

@@ -141,7 +141,7 @@ function makePromotePool(session) {
   async function query(sql, params = []) {
     const s = String(sql);
     calls.push({ sql: s, params });
-    if (/WHERE cs\.id = \$1 AND cs\.user_id = \$2 AND cs\.status = 'active'/.test(s)) {
+    if (/WHERE cs\.id = \$1 AND cs\.user_id = \$2 AND cs\.status IN \('active', 'paused'\)/.test(s)) {
       return Number(params[0]) === session.id && params[1] === session.user_id
         ? { rows: [session] } : { rows: [] };
     }

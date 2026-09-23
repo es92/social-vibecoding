@@ -17,11 +17,15 @@
 // before two questions ("propose a change", "report a problem") that can only
 // be asked inside an app.
 //
-// Three things are still pinned, and each is a way the screen can be quietly
+// AND THE SCOPE CHIP (#2759). It read "All apps" here and its panel listed
+// your apps — but this screen IS that list, every row the way into its app's
+// Workshop, so the chip was the page repeating itself. It lives on ONE app's
+// Workshop now, where naming the app and offering the others says something.
+//
+// Three things are still pinned, and each is a way the screens can be quietly
 // wrong:
 //
-//   1. NARROWING NAVIGATES. This screen is the all-apps one; picking an app
-//      is the link out, not a filter.
+//   1. PICKING AN APP NAVIGATES, to that app's own Workshop.
 //   2. THE NAVIGATION IS AWAITED, so a refused one cannot read as a
 //      completed one.
 //   3. THE TOTALS DO NOT REWORD THE LEGEND. A declared check pins the phrase
@@ -44,18 +48,12 @@ const chrome = loadTsx('frontend/src/features/workshop/workshop-chrome.tsx');
 
 const app = (slug, working, needs) => ({ slug, name: slug, working, needs });
 
-test('narrowing navigates: the chip is the link out', () => {
+test('picking an app navigates: the chip is the link out', () => {
   assert.match(CHROME, /await win\(\)\.App\?\.navigateToApp\?\.\(slug, 'dev'\);/,
     'picking an app goes to that app’s own Workshop');
-  assert.doesNotMatch(CHROME, /workshopStore\.set\(\{ scope/,
-    'there is no scope to hold: this screen is the all-apps one');
-  // DEAD ONLY WHERE THERE IS NOTHING BEHIND IT. On this screen the one thing
-  // the panel holds is your apps, so with none of them a control that says it
-  // has nothing to offer beats a panel that says nothing. The same chip worn
-  // by ONE app's Workshop always has somewhere to go — back up to all of
-  // them — which is why the condition names the scope (#2718 review).
-  assert.match(CHROME, /disabled=\{!scope && \(!apps \|\| apps\.length === 0\)\}/,
-    'and the chip says it has nothing to offer rather than opening an empty list');
+  // NEVER DISABLED. The chip is only ever scoped to an app now, and scoped
+  // there is always somewhere to go — back up to all of them.
+  assert.ok(!/disabled=\{/.test(CHROME), 'the chip is never a dead control');
 });
 
 test('the action waits for the navigation', () => {
@@ -87,18 +85,12 @@ test('the tabs and the plus are gone, and took their panel modes with them', () 
   const store = read('frontend/src/features/workshop/workshop-store.js');
   assert.ok(!/^\s*tab:/m.test(store), 'the store holds no tab');
   assert.ok(!SCREEN.includes('filterRows'), 'and the screen does not filter');
-  // The scope chip keeps its panel, which is why `picker` survives.
-  assert.match(store, /picker: null,/);
-  // ONE PANEL COMPONENT, TWO SURFACES (#2718 review). The id is a prop now,
-  // because the app's own Workshop wears the same chip and the same panel
-  // with the scope set — and two elements sharing one id is the shell's id
-  // contract broken in the quietest possible way. This screen's spelling is
-  // the default, so it is the only literal in the file.
-  assert.equal(CHROME.split("id || 'workshop-picker'").length - 1, 2,
-    'there is exactly one panel element, and it names itself once per id it needs');
-  assert.match(CHROME, /id=\{id \|\| 'workshop-scope'\}/, 'and so does the chip');
-  assert.ok(!CHROME.includes('id="workshop-picker"'),
-    'nothing hard-codes the id any more');
+  // #2759: the scope chip went too, and `picker` — its open flag — with it.
+  assert.ok(!/picker/.test(store), 'the store holds no panel flag');
+  assert.ok(!/WorkshopScope|WorkshopPicker/.test(SCREEN), 'the all-apps screen renders no chip');
+  // ONE PANEL COMPONENT, and the ids are the caller's: there is one caller
+  // left (an app's own Workshop), and no default spelling to fall back on.
+  assert.ok(!/'workshop-(scope|picker)'/.test(CHROME), 'no all-apps ids survive as defaults');
 });
 
 test('the legend carries the totals, and says nothing when there is nothing', () => {
@@ -136,15 +128,16 @@ test('the legend carries the totals, and says nothing when there is nothing', ()
     'a figure read from data is not in a cold document');
 });
 
-test('the chrome ships in the prerendered document', () => {
-  // It renders whether or not the list has answered: a screen whose controls
-  // appear after its data does is a screen that moves under the thumb
-  // reaching for them.
-  for (const id of ['workshop-scope']) {
-    assert.ok(HTML.includes(`id="${id}"`), `#${id} is in the shipped shell`);
+test('#2759: the all-apps screen ships no scope chip', () => {
+  // The screen is a flat list of your apps; a chip whose panel listed them
+  // again was redundant. Gone from the source and from the cold document.
+  for (const id of ['workshop-scope', 'workshop-picker']) {
+    assert.ok(!SCREEN.includes(id), `#${id} is not on the screen`);
+    assert.ok(!HTML.includes(`id="${id}"`), `#${id} is not in the shipped shell`);
   }
-  // …and the panels are not, because they render only once somebody taps.
-  assert.ok(!HTML.includes('id="workshop-picker"'), 'the panel is not in a cold document');
+  // What leads the screen now is the legend, and it carries the header's
+  // notch clearance the chip's row used to.
+  assert.match(SCREEN, /<p className="px-4 pt-5 pb-2 flex flex-wrap/);
 });
 
 // ── The same chip, scoped to one app (#2718 review) ────────────────────
@@ -171,15 +164,40 @@ test('scoped, the chip names the app and never reads as a dead control', () => {
     'the panel it names is this surface\'s, not the all-apps screen\'s');
 });
 
-test('unscoped, the chip is the all-apps screen\'s and is dead with no apps', () => {
-  const empty = renderToHtml(createElement(chrome.WorkshopScope, { apps: [], open: false }));
-  assert.match(empty, /id="workshop-scope"/, 'the default id is this screen\'s');
-  assert.match(empty, /All apps/);
-  assert.match(empty, /disabled=""/,
-    'with nothing behind it, a control that says so beats a panel that says nothing');
+test('#2768: the panel\'s id is one spelling, shared with the header\'s control', () => {
+  // Below 700px the chip is hidden and the HEADER's tile and name open the
+  // same panel; its `aria-controls` must name the element the chip's does.
+  const store = read('frontend/src/features/workshop/app-scope-store.js');
+  assert.match(store, /export const APP_SCOPE_PANEL_ID = 'dev-ws-scope-chip-picker';/);
+  assert.match(CHROME, /id=\{APP_SCOPE_PANEL_ID\}/, 'the panel wears it');
+  assert.match(CHROME, /aria-controls=\{`\$\{id\}-picker`\}/, 'and the chip derives the same string');
+  const header = read('frontend/src/features/header/header-title.tsx');
+  assert.match(header, /aria-controls=\{APP_SCOPE_PANEL_ID\}/, 'and so does the header');
+  assert.match(header, /onClick=\{\(\) => appScopeStore\.set\(\{ open: !scopeOpen \}\)\}/);
+});
 
-  const some = renderToHtml(createElement(chrome.WorkshopScope, {
-    apps: [app('notes-ab12', 0, 0)], open: false,
-  }));
-  assert.doesNotMatch(some, /disabled=""/);
+test('#2768: on the app\'s Workshop the header drops its tile on desktop and IS the switcher on a phone', () => {
+  const header = read('frontend/src/features/header/header-title.tsx');
+  // Which screen: the Dev half's board route in its Workshop layout.
+  assert.match(header,
+    /const onWorkshop = inApp && tab === 'dev' && subTab === 'forum' && viewMode === 'workshop';/);
+  // DESKTOP: the chip under the bar is the one picture of the app, so the
+  // bar keeps the name and loses the tile.
+  assert.match(header, /const showTile = inApp && !\(onWorkshop && !phone\);/);
+  // PHONE: the tile and the app's name become a button that opens the panel.
+  assert.match(header, /const switcher = onWorkshop && phone;/);
+  assert.match(header, /id="header-app-switch"/);
+  assert.match(header, /aria-haspopup="menu"/);
+  // `pointer-events-auto`, or the h1's `pointer-events-none` swallows the tap.
+  assert.match(header, /className="pointer-events-auto /);
+  // The width is settled in an EFFECT, false first, so the hydrating render is
+  // the prerender's whatever the window is — a mismatch is a console error on
+  // every route.
+  assert.match(header, /const \[phone, setPhone\] = useState\(false\);/);
+  assert.match(header, /const PHONE_QUERY = '\(max-width: 699\.98px\)';/);
+
+  // And below the same breakpoint the Workshop's own chip steps aside, the
+  // wrapper with it while the panel is shut.
+  const css = read('public/css/app.css');
+  assert.match(css, /@media \(max-width: 699\.98px\) \{\n  \.dev-ws-scope > button \{ display: none; \}\n  \.dev-ws-scope:not\(:has\(> \[role='menu'\]\)\) \{ display: none; \}\n\}/);
 });

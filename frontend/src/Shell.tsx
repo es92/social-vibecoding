@@ -526,31 +526,6 @@ export function Shell() {
       */}
       <Island name="LegacyPortals"><LegacyPortals /></Island>
       {/*
-          #dev-ws-rail-host — an EMPTY anchor, and its emptiness is the point.
-
-          The Workshop's phone tab bar has to pin to the real viewport. It
-          cannot do that from where it is rendered: `position: fixed` resolves
-          against the nearest ancestor that establishes a containing block,
-          and the Dev board's frame wears `.dc-lift-strip`, whose
-          `backdrop-filter: blur(24px) saturate(1.6)` is exactly that. So
-          `bottom: 0` inside the Workshop means the bottom of a frosted panel,
-          not the bottom of the screen — which is how the bar first came to be
-          sticky rather than fixed.
-
-          Walking the real ancestor chain, that wrapper is the ONLY blocker:
-          #dev-workshop, #dev-body, #dev-forum-scroll, #app-view and the page
-          ground are all clean. Stripping the blur would fix it too, but
-          `.dc-lift` is shared with the chat frame, the topic frame, the
-          notifications rail, the improve panel and the app-context sheet —
-          far too much blast radius for one screen's bar. So the bar comes out
-          to a host that was never inside the frost instead, through a React
-          portal, and stays part of the Workshop's component tree.
-
-          It renders nothing on its own, so the prerendered document and the
-          first client render agree whether or not the Dev screen is up.
-      */}
-      <div id="dev-ws-rail-host" />
-      {/*
           PlatformUI — the platform's single wrapper over the native kit
           (toasts, alerts, confirms, sheets). Loaded FIRST in the bundle:
           every other platform script calls PlatformUI, never unNative.

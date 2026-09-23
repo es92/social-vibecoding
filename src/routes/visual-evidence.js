@@ -83,28 +83,45 @@ function visualEvidenceRoutes(config) {
     }
   });
 
-  // The proposal owner can inspect a failed run's exact submitted plan and
-  // bounded replay trace, including an older run selected by its id after a
-  // same-proposal retry. The public evidence view contains only the reviewer
-  // result, while these diagnostics support local reproduction.
+  // The proposal owner and app managers can inspect the current run while it
+  // is active, or an older run by id after a retry. The public evidence view
+  // contains only the reviewer result; this private view supports diagnosis.
   router.get('/api/apps/:slug/proposals/:sessionId/evidence/diagnostics', async (req, res) => {
     const id = sessionId(req.params.sessionId);
     if (!config.visualEvidence?.present || !id) return res.status(404).json({ error: 'Evidence diagnostics not found' });
     try {
       const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view');
-      if (!ctx || ctx.session.user_id !== req.user?.id) {
+      if (!ctx || (ctx.session.user_id !== req.user?.id
+          && !(await appAdmins.canManageApp(pool, ctx.app, req.user)))) {
         return res.status(404).json({ error: 'Evidence diagnostics not found' });
       }
       const runId = req.query.runId || ctx.session.visual_evidence_run_id;
+      if (!runId && req.query.runId == null) {
+        const reason = ctx.session.visual_evidence_detail?.notStartedReason;
+        if (!reason) return res.status(404).json({ error: 'Evidence diagnostics not found' });
+        res.set({
+          'Cache-Control': 'private, no-store',
+          Vary: 'Cookie, Authorization',
+          'X-Content-Type-Options': 'nosniff',
+        });
+        return res.json({ diagnostics: {
+          runId: null,
+          state: ctx.session.visual_evidence_state || 'planned',
+          headSha: visualHeadForSession(ctx.session),
+          notStartedReason: String(reason).slice(0, 300),
+        } });
+      }
       if (!ARTIFACT_ID_RE.test(String(runId || ''))) {
         return res.status(404).json({ error: 'Evidence diagnostics not found' });
       }
       const { rows } = await pool.query(
         `SELECT id, base_sha, head_sha, state, replay_plan, plan_hash,
-                trace_summary, failure_code, failure_reason
+                trace_summary, failure_code, failure_reason, trigger,
+                author_plan IS NOT NULL AS author_plan_supplied,
+                fixture_fingerprint, base_image_digest, head_image_digest,
+                repair_attempt, created_at, started_at, completed_at, updated_at
            FROM visual_evidence_runs
-          WHERE id = $1 AND session_id = $2
-            AND state IN ('failed', 'stale') AND failure_code IS NOT NULL`,
+          WHERE id = $1 AND session_id = $2`,
         [runId, id]
       );
       const run = rows[0];
@@ -115,6 +132,14 @@ function visualEvidenceRoutes(config) {
       }
       const trace = run.trace_summary && typeof run.trace_summary === 'object'
         ? run.trace_summary : {};
+      const artifacts = await pool.query(
+        `SELECT story_id, viewport, side, variant, media, bytes, width, height, sha256
+           FROM visual_evidence_artifacts
+          WHERE run_id = $1
+          ORDER BY story_id, viewport, side, variant
+          LIMIT 256`,
+        [run.id]
+      );
       res.set({
         'Cache-Control': 'private, no-store',
         Vary: 'Cookie, Authorization',
@@ -122,21 +147,53 @@ function visualEvidenceRoutes(config) {
       });
       return res.json({ diagnostics: {
         runId: run.id,
+        currentRun: run.id === ctx.session.visual_evidence_run_id,
         state: run.state,
         baseSha: run.base_sha,
         headSha: run.head_sha,
+        trigger: run.trigger || null,
+        authorPlanSupplied: run.author_plan_supplied === true,
+        createdAt: run.created_at || null,
+        startedAt: run.started_at || null,
+        completedAt: run.completed_at || null,
+        updatedAt: run.updated_at || null,
+        repairAttempt: Number(run.repair_attempt || 0),
+        provenance: {
+          fixtureFingerprint: run.fixture_fingerprint || null,
+          baseImageDigest: run.base_image_digest || null,
+          headImageDigest: run.head_image_digest || null,
+        },
         planHash: run.plan_hash,
         replayPlan,
+        artifacts: artifacts.rows.map((artifact) => ({
+          storyId: artifact.story_id,
+          viewport: artifact.viewport,
+          side: artifact.side,
+          variant: artifact.variant,
+          media: artifact.media,
+          bytes: artifact.bytes,
+          width: artifact.width,
+          height: artifact.height,
+          sha256: artifact.sha256,
+        })),
         failureCode: run.failure_code,
         failureReason: run.failure_reason,
         trace: {
           progress: trace.progress || null,
           timingsMs: trace.timingsMs || null,
           replayPasses: trace.replayPasses || [],
+          replayRuntime: trace.replayRuntime || null,
           lastReplayEvent: trace.lastReplayEvent || null,
+          replayEvents: trace.replayEvents || [],
           agentAttempts: trace.agentAttempts || 0,
           agentDispatches: trace.agentDispatches || [],
           repairCount: trace.repairCount || 0,
+          planSource: trace.planSource || null,
+          tokenUsage: trace.tokenUsage || null,
+          artifactBytes: trace.artifactBytes || 0,
+          runs: trace.runs || 0,
+          stories: trace.stories || [],
+          relativePointer: trace.relativePointer === true,
           terminalFailureClass: trace.terminalFailureClass || null,
           failure: trace.failure || null,
           control: trace.control || null,

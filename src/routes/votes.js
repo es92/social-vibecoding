@@ -2068,12 +2068,18 @@ function voteRoutes(config) {
       const { rows } = await pool.query(
         `SELECT cs.*, a.slug as app_slug, a.name as app_name, a.repo_url
          FROM chat_sessions cs JOIN apps a ON cs.app_id = a.id
-         WHERE cs.id = $1 AND cs.user_id = $2 AND cs.status = 'active'
+         WHERE cs.id = $1 AND cs.user_id = $2 AND cs.status IN ('active', 'paused')
            AND cs.is_headless = FALSE`,
         [req.params.id, req.user.id]
       );
       if (!rows.length) return res.status(404).json({ error: 'Active session not found' });
       const session = rows[0];
+      // A native preflight may have started while active. If the owner paused
+      // it during that request, require a fresh explicit submission. Paused
+      // submissions themselves never resume a worker or consume an active slot.
+      if (req.cliHandoffStatus && req.cliHandoffStatus !== session.status) {
+        return res.status(409).json({ error: 'session_state_changed' });
+      }
       const imported = session.source === 'imported';
       const previousReviewedHead = imported
         ? (session.imported_pr_head_sha || null)
@@ -2318,10 +2324,10 @@ function voteRoutes(config) {
             const detail = 'The proposal branch changed after checks. Rebuild the new head locally or from the web Dev session before promoting.';
             await pool.query(
               `UPDATE chat_sessions SET check_state = 'error', check_error_detail = $1
-                WHERE id = $2 AND status = 'active' AND source = 'cli_handoff'
+                WHERE id = $2 AND status = $4 AND source = 'cli_handoff'
                   AND COALESCE(checks_commit_sha, handoff_head_sha)
                       IS NOT DISTINCT FROM $3`,
-              [detail, session.id, req.cliHandoffCheckedHead]
+              [detail, session.id, req.cliHandoffCheckedHead, session.status]
             ).catch(() => {});
             return res.status(409).json({
               error: 'branch_head_changed',
@@ -2362,8 +2368,8 @@ function voteRoutes(config) {
                   THEN reviewed_head_sha ELSE COALESCE($2, reviewed_head_sha) END,
                 imported_pr_head_sha = CASE WHEN source = 'imported'
                   THEN COALESCE($2, imported_pr_head_sha) ELSE imported_pr_head_sha END
-          WHERE id = $1 AND status = 'active'`,
-        [session.id, promotedHeadSha]
+          WHERE id = $1 AND status = $3`,
+        [session.id, promotedHeadSha, session.status]
       );
       if (!promoted.rowCount) {
         return res.status(409).json({ error: 'session_state_changed' });

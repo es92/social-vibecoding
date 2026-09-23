@@ -7669,7 +7669,7 @@ const DevChat = {
           // already crossed into group voting. Keep the completed control on
           // every post-proposal state, disabled and handler-free; unrelated
           // terminal states still render no proposal action.
-          const propose = session && ['active', 'promoted', 'merging', 'merged'].includes(session.status)
+          const propose = session && ['active', 'paused', 'promoted', 'merging', 'merged'].includes(session.status)
             ? AppView.changeSubmissionState(session) : null;
           rows.push({
             t: 'changes', key,
