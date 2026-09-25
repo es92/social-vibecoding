@@ -8,8 +8,13 @@ const cookieParser = require('cookie-parser');
 const poolModule = require('../src/db/pool');
 const identity = require('../src/services/social-identity');
 const queries = [];
+let pendingOauthState = false;
 const pool = { async query(sql, params = []) {
   queries.push({ sql, params });
+  if (pendingOauthState && /DELETE FROM social_identity_oauth_states\s+WHERE state_hash/.test(sql)) {
+    return { rows: [{ intent: 'connect', pkce_verifier: 'v'.repeat(64),
+      expires_at: new Date(Date.now() + 600000) }] };
+  }
   if (/FROM sessions s JOIN users u/.test(sql)) {
     const id = params[0] === 'app-account' ? 7 : 8;
     return { rows: [{ user_id: id, username: `user${id}`, has_platform_access: true,
@@ -247,4 +252,46 @@ test('return to app refreshes status, coalesces focus/visibility events, and rem
   win.dispatchEvent(new Event('focus'));
   doc.dispatchEvent(new Event('visibilitychange'));
   assert.equal(calls, 2);
+});
+
+// #3044: GitHub answers a redirect_uri that is not the registered one by
+// redirecting straight back to the REGISTERED callback with
+// error=redirect_uri_mismatch and the state — no GitHub page is shown. The
+// state is still validated and consumed, but the result must name the
+// misregistration rather than claim the viewer cancelled.
+test('a provider error on the callback is reported for what it is, not as a cancellation', async t => {
+  const get = await serve(t);
+  pendingOauthState = true;
+  t.after(() => { pendingOauthState = false; });
+  const state = 'a'.repeat(43);
+  const cases = [
+    ['error=redirect_uri_mismatch&error_description=The+redirect_uri+MUST+match', 'callback_mismatch'],
+    ['error=access_denied', 'denied'],
+    ['', 'denied'],
+    ['error=application_suspended', 'error'],
+    ['error=%3Cscript%3E', 'error'],
+  ];
+  for (const [extra, status] of cases) {
+    queries.length = 0;
+    const response = await get(`/api/me/github/callback?state=${state}${extra ? `&${extra}` : ''}`, {
+      headers: { Cookie: 'session=app-account' },
+    });
+    assert.equal(response.status, 302, extra);
+    assert.equal(response.headers.get('location'),
+      `${config.cliAuthOrigin}/#settings/connectors?identity=${status}&provider=github`, extra);
+    const consumed = queries.find(q => /DELETE FROM social_identity_oauth_states\s+WHERE state_hash/.test(q.sql));
+    assert.ok(consumed, 'the OAuth state is still validated and consumed');
+    assert.equal(consumed.params[1], 7, 'bound to the signed-in user');
+  }
+});
+
+test('the settings screen explains a callback mismatch instead of staying silent', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const src = fs.readFileSync(path.join(__dirname, '../frontend/src/features/settings/settings.js'), 'utf8');
+  const start = src.indexOf('_socialIdentityCallbackStatus(status) {');
+  assert.ok(start > 0);
+  const body = src.slice(start, src.indexOf('async _unlinkGithub', start));
+  assert.match(body, /callback_mismatch: `\$\{name\} did not accept Homeroom’s callback address/);
+  assert.match(body, /Ask an administrator to register this site’s callback URL \(\$\{window\.location\.origin\}\)/);
 });

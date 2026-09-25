@@ -2015,9 +2015,10 @@
       "expectText": "Top users"
     },
     {
-      "name": "Admin Users list renders",
+      "name": "Admin Users list renders, with its Total points column",
       "path": "/#admin/users",
-      "expectText": "Users"
+      "expectSelector": "#admin-users-points-header",
+      "expectText": "Total points"
     },
     {
       "name": "Admin App storage section renders",
@@ -2856,6 +2857,34 @@
       "name": "Settings ships the native Node status row in its account block, moved there from Me",
       "path": "/#settings",
       "expectSelector": "#settings-footer #settings-account-rows #account-row-node"
+    },
+    {
+      "name": "Settings' Node row refreshes on its own while Settings is visible, no tap needed",
+      "path": "/?shot=node-status#settings",
+      "expectSelector": "#settings-screen:not(.hidden) #settings-account-rows #account-row-node:not(.hidden) #account-node-status[data-node-status=\"synced\"]",
+      "expectText": "Synced"
+    },
+    {
+      "id": "wallet-block-production-order",
+      "name": "Wallet Block production: status card, then laptop card (normal cards), then the background service soft warning",
+      "visual": true,
+      "impact": [
+        "frontend/src/features/header/wallet-sheet-body.tsx"
+      ],
+      "path": "/?shot=wallet-sheet#settings",
+      "expectSelector": "#wallet-sheet-body [data-block-production-card=\"status\"][class*=\"zinc-200\"]:not([class*=\"bg-\"])+[data-block-production-card=\"self-hosted\"][class*=\"zinc-200\"]+[data-background-service=\"active\"][class*=\"amber-500/40\"]+button",
+      "expectText": "Producing blocks on this phone"
+    },
+    {
+      "id": "wallet-block-production-delegated",
+      "name": "Wallet Block production: delegated state is a normal card with the disclosure inside it",
+      "visual": true,
+      "impact": [
+        "frontend/src/features/header/wallet-sheet-body.tsx"
+      ],
+      "path": "/?shot=wallet-sheet-delegated#settings",
+      "expectSelector": "#wallet-sheet-body [data-block-production-card=\"status\"][class*=\"border-zinc-200\"]:not([class*=\"violet\"]) + [data-block-production-card=\"self-hosted\"] + [data-background-service=\"inactive\"]",
+      "expectText": "When delegated, you receive half the points"
     },
     {
       "name": "The completed-task badge sits on the bell, not the Improve pill (#1610)",
@@ -3924,6 +3953,11 @@
       "path": "/#admin/users/900301",
       "expectSelector": "#admin-user-details .admin-user-weekly-limit-value",
       "expectText": "Programme profile"
+    },
+    {
+      "name": "Admin support view shows a user's points",
+      "path": "/#admin/support/900302",
+      "expectSelector": "#admin-support-points"
     },
     {
       "name": "Analytics states the week's platform-key LLM spend (#1788)",

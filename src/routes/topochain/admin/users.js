@@ -21,7 +21,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { getPool } = require('../../../db/pool');
 const log = require('../../../services/logger');
-const { computeStandings } = require('../../../services/topochain/standings');
+const { computeOwnStanding } = require('../../../services/topochain/standings');
 const { adminWriteGate } = require('./auth');
 const managedOpenRouter = require('../../../services/openrouter-managed-keys');
 const { toIntId, toBool } = require('./util');
@@ -675,19 +675,13 @@ function usersAdminRoutes(config) {
       // `global_leaderboard` (SPEC 2334): the source's season-less row,
       // or null. There's no global_leaderboard TABLE in this schema
       // (Global Constraints — all-time standings are always derived), so
-      // this reuses the same shared §4.10 aggregate every other all-time
-      // view is built on (services/topochain/standings.js).
-      //
-      // PERF NOTE (code-review finding, not fixed here): `computeStandings`
-      // ranks EVERY user across every public event, then this line reads
-      // off just one row — a real per-request cost on a large user base.
-      // A `userId`-scoped variant belongs on the shared service itself
-      // (services/topochain/standings.js, Task 5's file) so every caller
-      // benefits, not a one-off filtered copy of the query duplicated
-      // here; left as a follow-up rather than reshaping a prior task's
-      // shared service inside this one.
-      const standings = await computeStandings(pool, { seasonId: null });
-      const own = standings.find((s) => s.user_id === id) || null;
+      // this reads the same shared §4.10 aggregate every other all-time
+      // view is built on (services/topochain/standings.js), scoped to one
+      // user: computeOwnStanding ranks in SQL and returns only this row,
+      // rather than materialising every participant to `.find()` one.
+      // The admin Support section (routes/admin-support.js) reads the
+      // same function, so the two screens can never disagree on rank.
+      const { own } = await computeOwnStanding(pool, { seasonId: null, userId: id });
       const globalLeaderboard = own ? {
         rank: own.rank,
         total_points: own.total_points,

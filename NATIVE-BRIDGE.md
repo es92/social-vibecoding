@@ -522,8 +522,12 @@ clock produces the node clock used for the displayed best-tip age.
   ready, and
 - on every pill-state transition.
 
-So chrome renders from the event stream and only calls `getNodeStatus()`
-for an initial value; no polling needed.
+So chrome renders from the event stream and calls `getNodeStatus()` for an
+initial value. Because events only fire on transitions (and can be missed
+while the WebView is suspended), chrome also re-reads `getNodeStatus()`
+every few seconds while the Settings Node row or the Node sheet is on screen
+and the page is visible, and once on each reveal or return to the
+foreground. Nothing is read while neither is showing.
 
 #### `getWalletState()` → wallet snapshot
 

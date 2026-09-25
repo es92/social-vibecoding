@@ -9376,3 +9376,29 @@ BEGIN
 END $$;
 CREATE INDEX IF NOT EXISTS idx_chat_session_attachments_agent_session
   ON chat_session_attachments(agent_session_id) WHERE agent_session_id IS NOT NULL;
+
+-- Admin Support (#admin/support): one row per thing staff did to or looked
+-- at on a participant's account. `view` rows are the access audit (one per
+-- admin, user and hour); `points_adjustment` / `points_reversal` rows carry
+-- the reason and inputs behind the user_activities row they created (its id
+-- lands in payload.activity_id). Private: reasons and ticket references
+-- describe individual users' support cases.
+CREATE TABLE IF NOT EXISTS support_actions (
+  id              BIGSERIAL PRIMARY KEY,
+  actor_user_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  target_user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  action          VARCHAR(32) NOT NULL,
+  reason          TEXT,
+  payload         JSONB NOT NULL DEFAULT '{}',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_support_actions_target_created
+  ON support_actions (target_user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_support_actions_actor_target_created
+  ON support_actions (actor_user_id, target_user_id, created_at);
+COMMENT ON TABLE support_actions IS 'staging:private';
+-- A support adjustment can be reversed once: the reversal row names the
+-- activity it cancels in metadata.reverses.
+CREATE UNIQUE INDEX IF NOT EXISTS user_activities_support_reversal_unique
+  ON user_activities ((metadata->>'reverses'))
+  WHERE source = 'support_adjustment' AND metadata ? 'reverses';

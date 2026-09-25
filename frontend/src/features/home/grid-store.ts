@@ -93,7 +93,9 @@ export type GridItem = { kind: 'card'; placement: GridPlacement | null; app: Hom
  * Your apps with it). NOT a `GridItem`: it has no app, no layout entry and no
  * drag. Its cell is derived per paint by HomeLayout.trailingCell — straight
  * after the last tile on screen — so the tile always ends the grid, collapsed
- * or expanded. `placement` is null when the tile must FLOW instead: after the
+ * or expanded. A collapsed grid whose last shown row is full holds it behind
+ * "Show all N apps" rather than drawing a row for it alone (#3047;
+ * HomeLayout.createTileCollapsed). `placement` is null when the tile must FLOW instead: after the
  * empty-launcher note, or after overflow tiles that have no cell of their own.
  */
 export interface CreateTileView {
@@ -126,7 +128,8 @@ export interface HomeGridState {
   /**
    * The trailing Create tile, or null: before the first paint (so the
    * prerender and the first client render agree — the tile is data-placed),
-   * in the search view, and with a load notice on screen.
+   * in the search view, with a load notice on screen, and in a collapsed grid
+   * it would add a row to (#3047) — there it is behind "Show all N apps".
    */
   create: CreateTileView | null;
 }

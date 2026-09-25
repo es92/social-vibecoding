@@ -684,4 +684,4 @@ function userActivitiesAdminRoutes(config) {
   return router;
 }
 
-module.exports = { userActivitiesAdminRoutes, formatActivityRow };
+module.exports = { userActivitiesAdminRoutes, formatActivityRow, ACTIVITY_SELECT };

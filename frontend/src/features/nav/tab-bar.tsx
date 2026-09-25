@@ -305,6 +305,55 @@ export function markerBoxFor(
   };
 }
 
+/**
+ * Run `fn` once the NEXT frame has been produced — two animation frames out,
+ * not one (#3046). Returns a cancel.
+ *
+ * WHY THE SLIDE WAITS A FRAME. A tab press is a screen swap, and on the phone
+ * the swap is synchronous (PlatformUI.phoneMotion makes every push/pop
+ * 'none'): the router reveals the incoming screen in the same task that
+ * lights the tab. So the first frame after the press is the EXPENSIVE one —
+ * style, layout and paint of a whole screen that was `hidden` a moment ago.
+ * A CSS transition's clock starts at the frame its style change is resolved
+ * in, so a marker written in that frame had already spent the heavy frame's
+ * duration by the time anything was painted, and on this curve (a steep
+ * ease-out: two-thirds of the travel in the first third of the time) that is
+ * most of the slide. What showed was the pill appearing half-way across and
+ * settling — "missing the first half of the animation". The Workshop's own
+ * strip runs the same hook on the same curve and looked right, because
+ * switching ITS tab swaps no screen.
+ *
+ * One `requestAnimationFrame` is not enough: it fires at the START of that
+ * heavy frame, before its style and layout, so a write there still lands in
+ * it. The second fires once it has been produced. The label colour still
+ * changes with the press (it keys off `aria-current`); only the pill's start
+ * is held, by one frame nobody saw anyway.
+ *
+ * Without rAF (a test environment) it runs at once.
+ */
+export function afterNextFrame(
+  fn: () => void,
+  raf: ((cb: () => void) => number) | undefined
+    = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : undefined,
+  caf: ((id: number) => void) | undefined
+    = typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : undefined,
+): () => void {
+  if (!raf) {
+    fn();
+    return () => {};
+  }
+  let id = raf(() => {
+    id = raf(() => {
+      id = 0;
+      fn();
+    });
+  });
+  return () => {
+    if (id && caf) caf(id);
+    id = 0;
+  };
+}
+
 function useTabMarker(
   barRef: React.RefObject<HTMLElement | null>,
   tab: string | null,
@@ -317,6 +366,8 @@ function useTabMarker(
       setBox(null);
       return;
     }
+    // A slide waiting for the swap's frame to be painted (see afterNextFrame).
+    let cancelSlide: (() => void) | null = null;
     const measure = (selectionChanged: boolean) => {
       const el = bar.querySelector<HTMLElement>('.platform-tab[aria-current="page"]');
       if (!el) return;
@@ -329,11 +380,28 @@ function useTabMarker(
       });
     };
     // This run is the tab having changed; the observer's are layout moving.
-    measure(true);
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => measure(false));
+    // The first placement lands now; a move from a tab already marked waits
+    // out the screen swap's frame and then slides, re-measuring then so it
+    // goes where the tab IS rather than where it was a frame ago.
+    const hadBox = bar.querySelector('.platform-tabs-marker[data-marker-at]') !== null;
+    if (hadBox) {
+      cancelSlide = afterNextFrame(() => {
+        cancelSlide = null;
+        measure(true);
+      });
+    } else {
+      measure(true);
+    }
+    if (typeof ResizeObserver === 'undefined') return () => cancelSlide?.();
+    // The observer delivers once on observe(); while a slide is pending that
+    // delivery must not land the marker at the new tab without it (the
+    // pending slide re-measures anyway), so it waits for the slide too.
+    const ro = new ResizeObserver(() => { if (!cancelSlide) measure(false); });
     ro.observe(bar);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      cancelSlide?.();
+    };
   }, [barRef, tab]);
   return box;
 }

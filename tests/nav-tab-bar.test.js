@@ -705,9 +705,50 @@ test('only a selection change slides, the Workshop\'s way (#2824)', () => {
   const src = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(src, /slide: !!prev && selectionChanged/,
     'the first placement and a re-measure land; only a new tab slides');
-  assert.match(src, /new ResizeObserver\(\(\) => measure\(false\)\)/);
+  assert.match(src, /new ResizeObserver\(\(\) => \{ if \(!cancelSlide\) measure\(false\); \}\)/);
   assert.match(src, /querySelector<HTMLElement>\('\.platform-tab\[aria-current="page"\]'\)/,
     'the marker follows the same attribute the declared checks and screen readers read');
+});
+
+// #3046: on the phone a tab press swaps the whole screen synchronously, so
+// the first frame after it is the expensive one. A transition written in that
+// frame had spent its duration before anything painted and showed only the
+// tail of the slide. The slide therefore starts two frames out.
+test('a slide waits out the screen swap\'s frame before it starts (#3046)', () => {
+  const { afterNextFrame } = loadTsx('frontend/src/features/nav/tab-bar.tsx');
+  const queue = [];
+  let nextId = 0;
+  const raf = (cb) => { queue.push(cb); nextId += 1; return nextId; };
+  const cancelled = [];
+  const caf = (id) => cancelled.push(id);
+  let ran = 0;
+  afterNextFrame(() => { ran += 1; }, raf, caf);
+  assert.equal(ran, 0, 'not in the press\'s own task');
+  queue.shift()();
+  assert.equal(ran, 0, 'not at the start of the swap\'s frame either — that write lands in it');
+  queue.shift()();
+  assert.equal(ran, 1, 'once the swap\'s frame has been produced');
+
+  // A second press before it starts cancels the first slide.
+  let ran2 = 0;
+  const cancel = afterNextFrame(() => { ran2 += 1; }, raf, caf);
+  queue.shift()();
+  cancel();
+  assert.deepEqual(cancelled, [4], 'the pending second frame is cancelled');
+  assert.equal(ran2, 0);
+
+  // No rAF (a test environment, a worker): it runs at once.
+  let ran3 = 0;
+  afterNextFrame(() => { ran3 += 1; }, undefined, undefined);
+  assert.equal(ran3, 1);
+
+  const src = read('frontend/src/features/nav/tab-bar.tsx');
+  const hook = src.slice(src.indexOf('function useTabMarker('), src.indexOf('export function PlatformTabs()'));
+  assert.match(hook, /cancelSlide = afterNextFrame\(\(\) => \{\s*cancelSlide = null;\s*measure\(true\);/,
+    'a move from a marked tab re-measures and slides after the frame');
+  assert.match(hook, /new ResizeObserver\(\(\) => \{ if \(!cancelSlide\) measure\(false\); \}\)/,
+    'the observer\'s delivery on observe() cannot land the marker ahead of its pending slide');
+  assert.match(hook, /cancelSlide\?\.\(\);/, 'a tab change or unmount cancels a pending slide');
 });
 
 test('the marker is the Workshop\'s blue, on the Workshop\'s curve, phone only', () => {

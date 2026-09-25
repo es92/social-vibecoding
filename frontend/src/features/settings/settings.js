@@ -2442,6 +2442,11 @@
         different_account: `That is a different ${name} account. Use Change account instead; your current connection is unchanged.`,
         conflict: `That ${name} account could not be used. Your current connection is unchanged.`,
         denied: `${name} connection was cancelled.`,
+        // #3044: the provider bounced the trip before any sign-in page because
+        // Homeroom's callback address is not the one registered on its OAuth
+        // app. Not something the viewer did, and not fixed by retrying.
+        callback_mismatch: `${name} did not accept Homeroom’s callback address, so nothing changed. `
+          + `Ask an administrator to register this site’s callback URL (${window.location.origin}) on the ${name} OAuth app.`,
         error: `${name} could not be connected. Try again.`,
         account_mismatch: 'This browser is signed into a different Homeroom account than the app. Sign out here, then tap Connect again in the app and sign in with the same account.',
       };

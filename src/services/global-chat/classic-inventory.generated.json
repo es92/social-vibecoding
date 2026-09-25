@@ -3,11 +3,11 @@
   "inventoryReviewed": true,
   "parityReady": true,
   "summary": {
-    "totalRoutes": 706,
-    "mappedRoutes": 550,
+    "totalRoutes": 716,
+    "mappedRoutes": 560,
     "exemptRoutes": 156,
     "reviewRequiredRoutes": 0,
-    "clientApiReferences": 403,
+    "clientApiReferences": 413,
     "unmatchedClientApiReferences": 0,
     "settingsSections": 22,
     "navigationSurfaces": 10
@@ -520,6 +520,186 @@
       "mobileSupported": true,
       "classicPath": "#admin",
       "clientReferences": []
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/search",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.search.b56155fc",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/users/:id",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.users.item.6e96e5f6",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/users/:id/points",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.users.item.points.b6337565",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/users/:id/timeline",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.users.item.timeline.5d005676",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/users/:id/kudos",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.users.item.kudos.a8aaec98",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/users/:id/history",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.users.item.history.96822555",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/events",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.events.730b38e0",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "GET",
+      "path": "/api/admin/support/challenges",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.get.admin.support.challenges.20bb83e0",
+      "domain": "admin",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "POST",
+      "path": "/api/admin/support/users/:id/points-adjustment",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.post.admin.support.users.item.points.adjustment.07c0cf35",
+      "domain": "admin",
+      "risk": "external_write",
+      "confirmation": "required",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "method": "POST",
+      "path": "/api/admin/support/actions/:actionId/reverse",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "admin.post.admin.support.actions.item.reverse.e13d4655",
+      "domain": "admin",
+      "risk": "external_write",
+      "confirmation": "required",
+      "renderer": "admin_record",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#admin",
+      "clientReferences": [
+        "frontend/src/features/admin/admin-support.tsx"
+      ]
     },
     {
       "source": "src/routes/admin.js",

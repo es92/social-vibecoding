@@ -49,10 +49,20 @@ function sheetHtml() {
   return renderToHtml(createElement(mod().NodeSheetBody, {}));
 }
 
-function loadNodePill({ hasNodeStatus, snapshot = null, isNative = true }) {
+function loadNodePill({ hasNodeStatus, snapshot = null, isNative = true, reader = null }) {
   const windowListeners = {};
+  const documentListeners = {};
+  const intervals = new Map();
+  let nextInterval = 1;
   let statusReads = 0;
+  const doc = {
+    visibilityState: 'visible',
+    addEventListener(type, listener) { documentListeners[type] = listener; },
+  };
   const sandbox = {
+    document: doc,
+    setInterval(fn) { const id = nextInterval++; intervals.set(id, fn); return id; },
+    clearInterval(id) { intervals.delete(id); },
     console: { log() {}, warn() {}, error() {} },
     NativeChrome: {
       has() { return hasNodeStatus; },
@@ -61,7 +71,7 @@ function loadNodePill({ hasNodeStatus, snapshot = null, isNative = true }) {
       isNative,
       async getNodeStatus() {
         statusReads += 1;
-        return snapshot;
+        return reader ? reader(statusReads) : snapshot;
       },
     },
     addEventListener(type, listener) { windowListeners[type] = listener; },
@@ -90,6 +100,14 @@ function loadNodePill({ hasNodeStatus, snapshot = null, isNative = true }) {
     get status() { return rowParts().status; },
     get sheetHtml() { return sheetHtml(); },
     get statusReads() { return statusReads; },
+    get timers() { return intervals.size; },
+    tick() { for (const fn of [...intervals.values()]) fn(); },
+    setVisibility(state) {
+      doc.visibilityState = state;
+      if (documentListeners.visibilitychange) documentListeners.visibilitychange();
+    },
+    setLiveRefresh(reason, on) { sandbox.window.NodePill.setLiveRefresh(reason, on); },
+    refresh() { return sandbox.window.NodePill.refresh(); },
     // #1402's four derivations. They are DECISIONS, so the merge kept them in
     // the module rather than moving them into the component — which also
     // keeps upstream's tests for them pointed at their original subject.
@@ -356,4 +374,96 @@ test('a known tip age rides along with the height, in one row', async () => {
   });
 
   assert.match(loaded.sheetHtml, /12,480 · 4 minutes ago/);
+});
+
+test('Settings keeps the Node row current without a tap', async () => {
+  const loaded = loadNodePill({
+    hasNodeStatus: Promise.resolve(true),
+    reader: (n) => ({ status: n === 1 ? 'syncing' : 'synced' }),
+  });
+  await settle();
+  assert.equal(loaded.status.textContent, 'Syncing');
+  assert.equal(loaded.statusReads, 1);
+  assert.equal(loaded.timers, 0, 'nothing polls until something is on screen');
+
+  loaded.setLiveRefresh('settings', true);
+  await settle();
+  assert.equal(loaded.statusReads, 2, 'reveal pulls at once');
+  assert.equal(loaded.status.textContent, 'Synced');
+  assert.match(loaded.row.className, /flex/);
+  assert.equal(loaded.timers, 1);
+
+  loaded.tick();
+  await settle();
+  assert.equal(loaded.statusReads, 3, 'and on every interval after');
+
+  loaded.setLiveRefresh('settings', false);
+  assert.equal(loaded.timers, 0, 'leaving Settings stops the pull');
+  loaded.tick();
+  await settle();
+  assert.equal(loaded.statusReads, 3);
+});
+
+test('live refresh pauses in the background and pulls on return', async () => {
+  const loaded = loadNodePill({
+    hasNodeStatus: Promise.resolve(true),
+    snapshot: { status: 'synced' },
+  });
+  await settle();
+  loaded.setLiveRefresh('settings', true);
+  await settle();
+  const before = loaded.statusReads;
+
+  loaded.setVisibility('hidden');
+  assert.equal(loaded.timers, 0, 'no pulls while the app is hidden');
+  await settle();
+  assert.equal(loaded.statusReads, before);
+
+  loaded.setVisibility('visible');
+  await settle();
+  assert.equal(loaded.statusReads, before + 1, 'returning pulls at once');
+  assert.equal(loaded.timers, 1);
+});
+
+test('live refresh is single-flight and needs the capability', async () => {
+  let release;
+  const loaded = loadNodePill({
+    hasNodeStatus: Promise.resolve(true),
+    reader: (n) => (n === 1 ? { status: 'syncing' }
+      : new Promise((resolve) => { release = () => resolve({ status: 'synced' }); })),
+  });
+  await settle();
+  loaded.setLiveRefresh('settings', true);
+  loaded.refresh();
+  loaded.tick();
+  await settle();
+  assert.equal(loaded.statusReads, 2, 'a read in flight is not doubled');
+  release();
+  await settle();
+  assert.equal(loaded.status.textContent, 'Synced');
+
+  const unsupported = loadNodePill({ hasNodeStatus: Promise.resolve(false) });
+  await settle();
+  unsupported.setLiveRefresh('settings', true);
+  unsupported.tick();
+  await settle();
+  assert.equal(unsupported.statusReads, 0, 'no reads without getNodeStatus');
+});
+
+test('the Node sheet pulls while open and a status event still wins between pulls', async () => {
+  const loaded = loadNodePill({
+    hasNodeStatus: Promise.resolve(true),
+    snapshot: { status: 'syncing' },
+  });
+  await settle();
+  loaded.dispatchNodeStatus({ status: 'offline' });
+  assert.equal(loaded.status.textContent, 'Offline');
+  assert.match(source, /NodePill\.setLiveRefresh\('sheet', true\)/);
+  assert.match(source, /onDismiss: \(\) => \{\n\s*NodePill\.setLiveRefresh\('sheet', false\)/);
+  const rowSrc = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src',
+    'features', 'header', 'node-pill-row.tsx'), 'utf8');
+  assert.match(rowSrc, /data-node-status=\{s\.status\}/);
+  const settingsSrc = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src',
+    'features', 'settings', 'account-rows.tsx'), 'utf8');
+  assert.match(settingsSrc, /setLiveRefresh\?\.\('settings', liveNode\)/);
 });

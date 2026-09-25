@@ -147,6 +147,22 @@ test('Kudos sits in Me\'s column, and the strip clears the bar as Me does (#2832
     'the Kudos rows are exactly as wide as Me\'s cards');
 });
 
+test('the strip lines up with the pane under it, and the column holds still across tabs', () => {
+  const src = fs.readFileSync(path.join(root, 'frontend/src/features/leaderboard/index.tsx'), 'utf8');
+  // Kudos narrows to Me's column; the strip above it follows, so the first tab
+  // starts where the first row does instead of at the wide frame's edge.
+  assert.match(src, /const KUDOS_COLUMN = 'max-w-\[40rem\] mx-auto';/);
+  assert.match(src, /section === 'kudos' \? KUDOS_COLUMN : undefined/,
+    'the strip wrapper takes the Kudos column only while Kudos shows');
+  assert.match(src, /id="leaderboard-root" className=\{`hidden \$\{KUDOS_COLUMN\}`\}/,
+    'from the same constant as the Kudos root, so the two cannot drift');
+  // Kudos and Standings scroll, Challenges and History do not: without a
+  // reserved gutter a classic scrollbar re-centers the column on the long tabs.
+  const main = (html.match(/<main id="leaderboard-screen" class="([^"]*)"/) || [])[1] || '';
+  assert.ok(main.split(/\s+/).includes('[scrollbar-gutter:stable]'),
+    'the scroller reserves its scrollbar gutter on every tab');
+});
+
 test('the retired screens are gone from the shell', () => {
   assert.ok(!html.includes('<main id="challenges-screen"'),
     '#challenges-screen was folded into the Leaderboard screen');

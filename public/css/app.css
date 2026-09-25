@@ -15472,6 +15472,19 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
    so shrinking them to the viewport would clip what they hold rather than
    make it reachable. */
 #dev-workshop > .dev-ws[data-ws-tab="needs"] { min-height: 0; }
+/* …AND ON THE TWO TABS THAT GROW, THE LINKS ABOVE MUST NOT SHRINK (#3053).
+   `min-height: 0` on #dev-body and #dev-workshop is what lets Needs you be
+   bounded; on Current status and All items it let both shrink to the
+   scroller's height while `.dev-ws` kept its content height and overflowed
+   them. A scroller's block-end padding is added after its in-flow CHILDREN,
+   not after a descendant that overflows one, so `.platform-safe-scroll` on
+   #dev-forum-scroll reserved nothing: at max scroll the last item's foot sat
+   exactly at the screen's bottom edge, under the fixed tab bar, with no way
+   to scroll it clear. Native layout only — in the browser layout the
+   scroller is auto-height and nothing shrinks. `flex-shrink: 0` keeps the
+   grow (the lander still fills a short tab) and gives the padding back. */
+#dev-body:has(> #dev-workshop > .dev-ws:not([data-ws-tab="needs"])),
+#dev-workshop:has(> .dev-ws:not([data-ws-tab="needs"])) { flex-shrink: 0; }
 html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 /* The tab body takes the space the tabs above it leave. */
 .dev-ws-tabbody {

@@ -24,6 +24,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 import { useStoreState } from '../../lib/use-store-state';
@@ -60,87 +61,88 @@ export const BACKGROUND_SERVICE_INACTIVE
   = 'The background service is not active. This phone is not producing blocks,'
   + ' so nothing keeps running while you are not using the app.';
 
+/** Drawn as the soft warning box, the Node sheet's health notice. */
 function BackgroundServiceNote({ active }: { active: boolean }): ReactNode {
   return (
-    <div
+    <Alert
+      variant="notice" density="compact"
       data-background-service={active ? 'active' : 'inactive'}
-      className="mt-3 text-sm text-zinc-500 dark:text-zinc-400"
     >
       {active ? BACKGROUND_SERVICE_ACTIVE : BACKGROUND_SERVICE_INACTIVE}
-    </div>
+    </Alert>
   );
 }
+
+export const DELEGATION_DISCLOSURE
+  = 'When delegated, you receive half the points you would earn by producing blocks directly from your phone.';
+export const SELF_HOSTED_NODE
+  = 'Want to run a node on your own laptop or server and monitor it from your phone?'
+  + ' Start the node there using the same account you use on this phone.';
+
+/** The plain card every non-warning box in this section uses. */
+const CARD = 'rounded-lg border border-zinc-200 dark:border-zinc-800 p-3 text-sm';
+const MUTED = 'mt-1 text-sm text-zinc-500 dark:text-zinc-400';
 
 function StakingCard({ s }: { s: WalletSheetState }): ReactNode {
   const staking: StakingView = s.staking;
   if (staking.kind === 'absent') return null;
+  // Order (#3059 follow-up): the phone's status, with the delegation
+  // disclosure inside it; then the self-hosted node card; then, on Android,
+  // the background service warning; then the action. Warnings use
+  // `Alert notice`; every other box is the plain CARD.
   return (
-    <section className="mb-4 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
+    <section data-block-production className="mb-4 space-y-3">
       <div className="text-[0.9375rem] font-semibold text-zinc-500 dark:text-zinc-400">
         Block production
       </div>
-      {/*
-          #2443 looked at this box and left it alone. It is not a caution box
-          on its own: it is one of a set of three BORDERLESS tint chips this
-          card draws — amber here, sky immediately below, violet for the
-          delegated state further down — all `rounded-lg bg-<hue>-500/10 px-3
-          py-2 text-sm font-medium`. `Alert`'s `notice` variant carries a
-          border, and the other two are not cautions, so they cannot follow it
-          there; routing only the amber one would give one chip of three a rule
-          its siblings lack. The set moves together or not at all.
-      */}
-      <div className="my-3 rounded-lg bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-800 dark:text-amber-300">
-        When delegated, you receive half the points you would earn by producing blocks directly from your phone.
-      </div>
-      <div className="mb-3 rounded-lg bg-sky-500/10 px-3 py-2 text-sm font-medium text-sky-800 dark:text-sky-300">
-        Want to run a node on your own laptop or server and monitor it from your phone? Start the node there using the same account you use on this phone.
-      </div>
-      {staking.kind === 'pending' ? (
-        <>
-          {/* Setup unfinished is NOT "not delegated": it offers a retry. */}
-          <div className="text-sm font-semibold">Wallet setup is still in progress</div>
-          {s.isAndroid ? <BackgroundServiceNote active={false} /> : null}
-          <Button
-            layout="full" size="narrowBold" className="mt-3"
-            disabled={s.refreshPending}
-            onClick={() => controller()?.retryState?.()}
-          >{s.refreshPending ? 'Retrying…' : 'Retry'}</Button>
-        </>
-      ) : (
-        <>
-          <div className={staking.kind === 'delegated' ? 'rounded-lg bg-violet-500/10 px-3 py-2' : ''}>
-            <div className={staking.kind === 'delegated'
-              ? 'text-base font-semibold text-violet-800 dark:text-violet-300'
-              : 'text-base font-semibold'}>
+      <div data-block-production-card="status" className={CARD}>
+        {staking.kind === 'pending' ? (
+          // Setup unfinished is NOT "not delegated": it offers a retry.
+          <div className="text-base font-semibold">Wallet setup is still in progress</div>
+        ) : (
+          <>
+            <div className="text-base font-semibold">
               {staking.kind === 'delegated' ? 'Delegated' : 'Producing blocks on this phone'}
             </div>
-            <div className={staking.kind === 'delegated'
-              ? 'mt-1 text-sm text-violet-700 dark:text-violet-300/80'
-              : 'mt-1 text-sm text-zinc-500 dark:text-zinc-400'}>
+            <div className={MUTED}>
               {staking.kind === 'delegated'
                 ? 'Block production on this phone is disabled.'
                 : 'Producing blocks directly on this phone earns full points.'}
             </div>
             {staking.kind === 'delegated' ? (
               <>
-                <div className="mt-2 font-mono text-xs text-violet-700 dark:text-violet-300">
-                  {staking.delegate}
-                </div>
+                <div className="mt-2 font-mono text-xs">{staking.delegate}</div>
                 {staking.since ? (
-                  <div className="mt-1 text-xs text-violet-700 dark:text-violet-300/80">
+                  <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                     {`Delegated since ${staking.since}`}
                   </div>
                 ) : null}
               </>
             ) : null}
-          </div>
-          {s.isAndroid ? <BackgroundServiceNote active={staking.kind === 'local'} /> : null}
-          <Button
-            layout="full" size="narrowBold" className="mt-3"
-            disabled={s.stakingPending}
-            onClick={() => controller()?._manageStaking?.()}
-          >{s.stakingPending ? 'Opening…' : 'Manage delegation'}</Button>
-        </>
+          </>
+        )}
+        <div className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          {DELEGATION_DISCLOSURE}
+        </div>
+      </div>
+      <div data-block-production-card="self-hosted" className={CARD}>
+        {SELF_HOSTED_NODE}
+      </div>
+      {s.isAndroid
+        ? <BackgroundServiceNote active={staking.kind === 'local'} />
+        : null}
+      {staking.kind === 'pending' ? (
+        <Button
+          layout="full" size="narrowBold"
+          disabled={s.refreshPending}
+          onClick={() => controller()?.retryState?.()}
+        >{s.refreshPending ? 'Retrying…' : 'Retry'}</Button>
+      ) : (
+        <Button
+          layout="full" size="narrowBold"
+          disabled={s.stakingPending}
+          onClick={() => controller()?._manageStaking?.()}
+        >{s.stakingPending ? 'Opening…' : 'Manage delegation'}</Button>
       )}
     </section>
   );

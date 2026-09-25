@@ -94,6 +94,20 @@
       "preview": "`SELECT s.user_id, s.expires_at, u.username, u.is_admin, ${nativeWebSessionIsLive('s')} AS native_session_valid FROM sessions s JOIN users u ON s.user_id = u.id"
     },
     {
+      "source": "src/routes/admin-support.js",
+      "kind": "structural-template",
+      "fingerprint": "0f40a4002a602708b5ff",
+      "count": 1,
+      "preview": "`SELECT * FROM (${arms.join('\\n UNION ALL \\n')}) AS t(at, kind, type, points, title, detail, app_name, app_slug) WHERE t.at IS NOT NULL AND ($2::timestamptz IS "
+    },
+    {
+      "source": "src/routes/admin-support.js",
+      "kind": "structural-template",
+      "fingerprint": "c3b54fb09164d9c6b32f",
+      "count": 1,
+      "preview": "`${ACTIVITY_SELECT} ${where} ORDER BY ua.activity_at DESC, ua.id DESC LIMIT $${params.length - 1} OFFSET $${params.length}`"
+    },
+    {
       "source": "src/routes/admin.js",
       "kind": "structural-template",
       "fingerprint": "398169416381769c08fe",

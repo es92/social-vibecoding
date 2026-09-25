@@ -26,6 +26,26 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
 
   const REFRESH_MS = 60000;
 
+  // `?shot=wallet-sheet` / `?shot=wallet-sheet-delegated`: read-only
+  // screenshot states for browsers, which have no bridge. A fixed Android
+  // snapshot opens the sheet with no bridge call, no timer and no writes;
+  // Manage delegation and Retry only toast. Never runs inside the native app.
+  const DEMO_STATE = {
+    address: 'ut1demo0wallet0sheet0preview0address0x7k2q',
+    tokenAmount: 1250,
+    tokenSymbol: 'UT',
+  };
+  const DEMO_DELEGATE = 'B62qiTKpEPjGTSHZrtM8uXiKgn8So916pLmNJKDhKeyBQL9TDb3nvBG';
+
+  function demoShot() {
+    try {
+      if (window.usernode && window.usernode.isNative === true) return null;
+      const shot = new URLSearchParams(window.location.search).get('shot');
+      return shot === 'wallet-sheet' || shot === 'wallet-sheet-delegated'
+        ? shot : null;
+    } catch (_) { return null; }
+  }
+
   const WalletSheet = {
     _state: null,     // last getWalletState snapshot
     _records: null,   // last Social-owned transaction receipt items
@@ -38,6 +58,7 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
     _stakingPending: false,
     _refreshPending: false,
     _stateError: null,
+    _demo: null,
     // Was `hidden` on the row element; the component renders the class now.
     _visible: false,
 
@@ -66,6 +87,7 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
 
     /** The staking card's Retry. */
     async retryState() {
+      if (WalletSheet._demo) { WalletSheet._demoToast(); return; }
       if (WalletSheet._refreshPending) return;
       WalletSheet._refreshPending = true;
       WalletSheet._publish();
@@ -81,6 +103,7 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
      * the form should close.
      */
     async sendFromSheet(to, amount) {
+      if (WalletSheet._demo) { WalletSheet._demoToast(); return false; }
       if (!WalletSheet._submissionSupported) {
         PlatformUI.toast('Sending is unavailable in this app version');
         return false;
@@ -108,6 +131,8 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
     // Drops any snapshot read before the current web participant was handed
     // to native. Reopening refreshes from the newly admitted identity.
     _setSessionWalletAdmission(admitted) {
+      // The screenshot state has no session to admit; keep its fixed snapshot.
+      if (WalletSheet._demo) return Promise.resolve();
       if (admitted !== true) {
         WalletSheet._state = null;
         WalletSheet._records = null;
@@ -127,7 +152,35 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
       });
     },
 
+    _demoToast() {
+      if (window.PlatformUI && PlatformUI.toast) {
+        PlatformUI.toast('Preview only. Nothing was changed.');
+      }
+    },
+
     async init() {
+      const shot = demoShot();
+      if (shot) {
+        WalletSheet._demo = shot;
+        WalletSheet._visible = true;
+        WalletSheet._walletSupported = true;
+        WalletSheet._submissionSupported = true;
+        WalletSheet._stakingSupported = true;
+        WalletSheet._records = [];
+        WalletSheet._state = Object.assign({}, DEMO_STATE, {
+          staking: shot === 'wallet-sheet-delegated'
+            ? { delegate: DEMO_DELEGATE, delegated_since: '2026-08-11T10:30:00Z' }
+            : { delegate: null, delegated_since: null },
+        });
+        WalletSheet._publish();
+        // init() runs from a layout effect before DOMContentLoaded; the kit's
+        // sheet wants the shell's scripts in, so present once they are.
+        const open = () => setTimeout(() => WalletSheet._openSheet(), 0);
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', open, { once: true });
+        } else open();
+        return;
+      }
       if (!window.NativeChrome || !window.usernode ||
           window.usernode.isNative !== true) return;
 
@@ -253,7 +306,8 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
         submissionSupported: WalletSheet._submissionSupported,
         stateError: WalletSheet._stateError || null,
         staking: WalletSheet._stakingView(s.staking),
-        isAndroid: !!(window.unNative && window.unNative.platform === 'android'),
+        isAndroid: !!WalletSheet._demo ||
+          !!(window.unNative && window.unNative.platform === 'android'),
         stakingPending: WalletSheet._stakingPending,
         refreshPending: WalletSheet._refreshPending,
         receipts: WalletSheet._receiptViews(),
@@ -325,6 +379,7 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
       // The store already holds what the body draws, so the mount paints the
       // current snapshot with no separate first render.
       mountWalletSheet(bodyEl);
+      if (WalletSheet._demo) return;
 
       await Promise.all([
         WalletSheet._refreshCapabilities(),
@@ -352,6 +407,7 @@ import { mountWalletSheet, unmountWalletSheet } from './wallet-sheet-body';
     },
 
     async _manageStaking() {
+      if (WalletSheet._demo) { WalletSheet._demoToast(); return; }
       if (!WalletSheet._stakingSupported || WalletSheet._stakingPending) return;
       WalletSheet._stakingPending = true;
       WalletSheet._stateError = null;

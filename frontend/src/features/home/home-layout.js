@@ -524,36 +524,30 @@ const HomeLayout = {
     return col < cols ? { col, row: last.row } : { col: 0, row: last.row + h };
   },
 
-  // The collapsed grid's bound WITH the Create tile counted in.
+  // Whether a COLLAPSED grid holds the Create tile back (#3047).
   //
-  // defaultRowBound answers "which rows hold `rows` rows of apps", and the
-  // Create tile then follows the last tile shown (trailingCell). When that
-  // last row is FULL the tile starts a row of its own — one past the budget
-  // the viewport gave. On a phone with a lot of apps that pushed "Show all N
-  // apps" and the Discover heading under the tab bar, and the budget exists
-  // precisely to keep the sections below within reach (Home.visibleRowBudget).
+  // The tile follows the last tile shown (trailingCell). When that last shown
+  // row is FULL, the tile would start a row of its own — one past what the
+  // collapsed grid shows: a third row under a two-row launcher of eight apps,
+  // and on a phone that pushed "Show all N apps" and the Discover heading
+  // under the tab bar. The budget exists precisely to keep the sections below
+  // within reach (Home.visibleRowBudget).
   //
-  // So while the grid is COLLAPSED (something lies past the bound) and the
-  // tile would start a new row, the bound comes in by one row of apps and the
-  // tile takes the row that frees: the budget is `rows` rows INCLUDING the
-  // tile's. Two cases keep the plain bound:
+  // So the tile goes behind "Show all N apps" instead, exactly like an app
+  // past the bound: the collapsed grid never draws a row for the tile alone,
+  // and the expanded grid ends with it as always. It is never traded for a
+  // row of apps (the rule this replaced), and it never hides when it fits
+  // beside the last tile shown.
   //
-  //   * at the DEFAULT_ROWS floor — the two-row contract is a promise about
-  //     apps, and a short screen already over-runs its budget to keep it;
-  //   * when nothing is hidden — collapsing apps away to make room for the
-  //     tile would be a "Show all" button that exists only because of it.
-  //
-  // Nothing is re-placed either way: this only moves the window, exactly like
-  // defaultRowBound. Pure — unit-tested in tests/home-layout-model.test.js.
-  collapsedRowBound(layout, cols, rows) {
-    const bound = HomeLayout.defaultRowBound(layout, cols, rows);
-    const want = Math.trunc(Number(rows)) || 0;
-    if (want <= HomeLayout.DEFAULT_ROWS) return bound;
-    const canvas = HomeLayout.canvasItems(layout);
-    if (!canvas.some((it) => it.row > bound)) return bound;
-    const shown = canvas.filter((it) => it.row <= bound);
-    if (HomeLayout.trailingCell(shown, cols).row <= bound) return bound;
-    return HomeLayout.defaultRowBound(layout, cols, want - 1);
+  // `shown` is what the caller is about to draw and `bound` the last row
+  // index the collapsed window may draw (defaultRowBound). An empty `shown`
+  // never holds it back: an empty launcher's tile flows after the
+  // "No apps added yet" note and must always be there.
+  // Pure — unit-tested in tests/home-layout-model.test.js.
+  createTileCollapsed(shown, cols, bound) {
+    const onCanvas = (shown || []).filter((it) => it && it.row < HomeLayout.MAX_ROWS);
+    if (!onCanvas.length) return false;
+    return HomeLayout.trailingCell(onCanvas, cols).row > bound;
   },
 
   // The wire shape for PUT /api/home-layout: canvas items only (the server's

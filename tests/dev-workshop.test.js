@@ -4486,6 +4486,28 @@ test('the lander fills its scroller without a percentage in the floor', () => {
   assert.match(CSS, /#dev-workshop > \.dev-ws \{ flex: 1 1 auto; width: 100%; \}/);
 });
 
+test('the growing tabs keep the tab-bar clearance at the foot of the scroller (#3053)', () => {
+  // "Unable to scroll down to see last issue on mobile." In the NATIVE layout
+  // the chain's `min-height: 0` let #dev-body and #dev-workshop shrink to the
+  // scroller while `.dev-ws` (Current status, All items) overflowed them — and
+  // a scroller's block-end padding follows its in-flow children, not an
+  // overflowing descendant, so `.platform-safe-scroll` reserved nothing and
+  // the last item's foot ended under the fixed tab bar. Measured with the real
+  // app.css at 390x844: the last card 13px past the bar's top edge before,
+  // 51px clear of it after.
+  const rule = /#dev-body:has\(> #dev-workshop > \.dev-ws:not\(\[data-ws-tab="needs"\]\)\),\s*#dev-workshop:has\(> \.dev-ws:not\(\[data-ws-tab="needs"\]\)\) \{ flex-shrink: 0; \}/;
+  assert.match(CSS, rule, 'the two links above a growing tab do not shrink');
+  // It lands AFTER the chain it overrides, so equal-or-higher specificity and
+  // source order both favour it.
+  assert.ok(CSS.search(rule) > CSS.indexOf('#dev-body:has(> #dev-workshop) {\n  flex: 1 1 auto; min-height: 0;'),
+    'declared after the flex chain');
+  // Needs you is left bounded — it is the tab the chain exists for.
+  assert.doesNotMatch(CSS, /#dev-body:has\(> #dev-workshop\) \{[^}]*flex-shrink: 0/);
+  // And the scroller still carries the clearance this relies on.
+  const frame = read('frontend/src/features/dev-board/board-frame.tsx');
+  assert.match(frame, /id="dev-forum-scroll"\s+className="[^"]*\bplatform-safe-scroll\b/);
+});
+
 test('the ask box is a sheet on a phone and a panel on a wide window', () => {
   // It was floating well clear of the bar, for two different reasons.
   //

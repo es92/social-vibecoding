@@ -32,8 +32,8 @@
 //   5. place() clamps at the edges, swaps two cells, and displaces rather
 //      than refusing.
 //   6. The Create tile is DERIVED, never placed: trailingCell puts it straight
-//      after the last tile on screen, and collapsedRowBound counts its row
-//      against the viewport budget of a collapsed grid.
+//      after the last tile on screen, and createTileCollapsed holds it behind
+//      "Show all" when it would add a row to a collapsed grid (#3047).
 //
 // Run with: node --test tests/home-layout-model.test.js
 
@@ -141,12 +141,11 @@ test('the two-row default counts rows that HOLD apps, not row indices (#1367)', 
 
   // The renderer bounds INCLUSIVELY on this value, and re-places nothing —
   // widening the window must never move a tile off the cell its owner chose.
-  // The renderer asks through collapsedRowBound (the Create tile's row
-  // counted in, see below), which is defaultRowBound first and only ever one
-  // row of apps narrower.
+  // The Create tile never narrows or widens this window (#3047): it is held
+  // behind "Show all" instead — see createTileCollapsed below.
   const HOME = read('frontend/src/features/home/home.js');
-  assert.match(HOME, /collapsedRowBound\(layout, cols, rowBudget\)/);
-  assert.match(LAYOUT_SRC, /const bound = HomeLayout\.defaultRowBound\(layout, cols, rows\);/);
+  assert.match(HOME, /const rowBound = HomeLayout\.defaultRowBound\(layout, cols, rowBudget\);/);
+  assert.doesNotMatch(HOME, /collapsedRowBound/);
   assert.match(HOME, /canvas\.filter\(\(it\) => it\.row <= rowBound\)/);
   assert.match(HOME, /canvas\.some\(\(it\) => it\.row > rowBound\)/);
 });
@@ -284,34 +283,56 @@ test('trailingCell: a hole earlier in the grid stays a hole', () => {
   assert.equal(JSON.stringify(layout), before);
 });
 
-test('collapsedRowBound: the tile\'s row counts against a collapsed grid\'s budget', () => {
+test('createTileCollapsed: the tile goes behind "Show all" rather than start a row (#3047)', () => {
   const packed = (n) => Array.from({ length: n }, (_, i) => (
     { type: 'app', slug: `a${i}`, col: i % 4, row: Math.floor(i / 4) }
   ));
-  // 17 apps on a four-row budget: rows 0-3 are full, so the tile would start a
-  // fifth row. The window comes in by one row of apps instead, and the tile
-  // takes the row that frees — four rows on screen, as the budget said.
+  const shownOf = (layout, bound) => layout.filter((it) => it.row <= bound);
+
+  // Eight apps on the two-row floor: rows 0-1 are full, so the tile would
+  // start a third row. It is held back — the issue's exact case.
+  const eight = packed(8);
+  const b8 = HomeLayout.defaultRowBound(eight, 4, 2);
+  assert.equal(b8, 1);
+  assert.equal(HomeLayout.createTileCollapsed(shownOf(eight, b8), 4, b8), true);
+
+  // Seven apps: the tile fits beside the seventh, inside two rows.
+  const seven = packed(7);
+  assert.equal(HomeLayout.createTileCollapsed(shownOf(seven, 1), 4, 1), false);
+
+  // Seventeen apps, two rows shown: the tile goes behind "Show all" with them.
   const seventeen = packed(17);
-  assert.equal(HomeLayout.defaultRowBound(seventeen, 4, 4), 3);
-  assert.equal(HomeLayout.collapsedRowBound(seventeen, 4, 4), 2);
-  const shown = seventeen.filter((it) => it.row <= 2);
-  assert.deepEqual(HomeLayout.trailingCell(shown, 4), { col: 0, row: 3 });
+  assert.equal(HomeLayout.createTileCollapsed(shownOf(seventeen, 1), 4, 1), true);
 
-  // A last shown row with room in it keeps the plain bound: the tile sits
-  // beside the apps, inside the budget already.
-  const ragged = packed(15).concat([{ type: 'app', slug: 'far', col: 0, row: 5 }]);
-  assert.equal(HomeLayout.collapsedRowBound(ragged, 4, 4), HomeLayout.defaultRowBound(ragged, 4, 4));
+  // A taller budget: the same rule — never a row for the tile alone, and no
+  // row of apps is traded for it (the bound is defaultRowBound's, unchanged).
+  const b4 = HomeLayout.defaultRowBound(seventeen, 4, 4);
+  assert.equal(b4, 3);
+  assert.equal(HomeLayout.createTileCollapsed(shownOf(seventeen, b4), 4, b4), true);
+  // …and a budget with room left for its row shows it.
+  const eight3 = HomeLayout.defaultRowBound(eight, 4, 3);
+  assert.equal(eight3, 2);
+  assert.equal(HomeLayout.createTileCollapsed(shownOf(eight, eight3), 4, eight3), false);
 
-  // Nothing hidden, nothing to trade: sixteen apps fill four rows exactly and
-  // the tile takes a fifth rather than a "Show all" appearing for its sake.
-  const sixteen = packed(16);
-  assert.equal(HomeLayout.collapsedRowBound(sixteen, 4, 4), HomeLayout.defaultRowBound(sixteen, 4, 4));
+  // A hole: apps on rows 0 and 2 widen the window to row 2; a full row 2
+  // still pushes the tile to row 3, past it.
+  const holey = [
+    { type: 'app', slug: 'x', col: 0, row: 0 },
+    ...[0, 1, 2, 3].map((c) => ({ type: 'app', slug: `r${c}`, col: c, row: 2 })),
+  ];
+  const bh = HomeLayout.defaultRowBound(holey, 4, 2);
+  assert.equal(bh, 2);
+  assert.equal(HomeLayout.createTileCollapsed(holey, 4, bh), true);
 
-  // The two-row contract is about APPS: at the floor the bound never narrows.
-  assert.equal(HomeLayout.collapsedRowBound(seventeen, 4, 2), HomeLayout.defaultRowBound(seventeen, 4, 2));
-  for (const bad of [1, 0, NaN, null, undefined]) {
-    assert.equal(HomeLayout.collapsedRowBound(seventeen, 4, bad), HomeLayout.defaultRowBound(seventeen, 4, bad));
-  }
+  // An empty launcher always shows it (after the "No apps added yet" note).
+  assert.equal(HomeLayout.createTileCollapsed([], 4, 1), false);
+  assert.equal(HomeLayout.createTileCollapsed(null, 4, 1), false);
+
+  // Pure: nothing is re-placed.
+  const before = JSON.stringify(eight);
+  HomeLayout.createTileCollapsed(eight, 4, 1);
+  assert.equal(JSON.stringify(eight), before);
+  assert.doesNotMatch(LAYOUT_SRC, /collapsedRowBound/);
 });
 
 test('the module is evaluated before its consumers, and precached', () => {

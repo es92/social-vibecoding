@@ -35,9 +35,9 @@ export interface NodePillState {
    */
   chain: string;
   /**
-   * The sheet's numbers. Null renders an em dash — the pill's events only fire
-   * on state transitions, so these are stale between flips and the sheet
-   * re-reads them on open.
+   * The sheet's numbers. Null renders an em dash. The pill's events only fire
+   * on state transitions, so the module re-reads them every few seconds while
+   * Settings or the sheet is on screen (NodePill.setLiveRefresh).
    */
   localBestHeight: number | null;
   /**
@@ -45,9 +45,9 @@ export interface NodePillState {
    *
    * #1402 derives it from `localBestTimestampMs` and `clockDriftMs`, which
    * makes it a decision — which clock, what wording, what counts as "just
-   * now" — and decisions stay in the module. It is recomputed on each publish,
-   * which is exactly the cadence the imperative version repainted at: per
-   * status event and on sheet open. It does NOT tick on its own.
+   * now" — and decisions stay in the module. It is recomputed on each publish:
+   * per status event, and per live pull while Settings or the Node sheet is
+   * visible. It does NOT tick on its own otherwise.
    */
   tipAge: string | null;
   /**

@@ -47,6 +47,7 @@ import { useStoreState } from '../../lib/use-store-state';
 import { useVisibility } from '../../lib/visibility-store';
 import { NodePillRow } from '../header/node-pill-row';
 import { nodePillStore } from '../header/node-pill-store';
+import { navStore } from '../nav/nav-store.js';
 import { WalletRow } from '../header/wallet-row';
 import { walletSheetStore } from '../header/wallet-sheet-store';
 import { StakingRow } from '../profile/staking-sheet';
@@ -76,6 +77,18 @@ export function SettingsAccountRows(): ReactNode {
   const isAdmin = useVisibility('switcher-row-admin', false);
   const nodeVisible = (useStoreState(nodePillStore) as { visible: boolean }).visible;
   const walletVisible = (useStoreState(walletSheetStore) as { visible: boolean }).visible;
+  // The Node row keeps itself current while Settings is on screen: status
+  // events only fire on transitions, so it pulls on reveal and every few
+  // seconds after (node-pill.js `setLiveRefresh`), and stops when hidden.
+  // The router's last revealed screen (nav-store), which is Settings'
+  // own truth: this screen does not publish through the visibility store.
+  const settingsVisible = (useStoreState(navStore) as { screen: string | null }).screen === 'settings-screen';
+  const liveNode = settingsVisible && nodeVisible;
+  useEffect(() => {
+    const pill = (window as any).NodePill;
+    pill?.setLiveRefresh?.('settings', liveNode);
+    return () => { pill?.setLiveRefresh?.('settings', false); };
+  }, [liveNode]);
   if (!mounted) return null;
   // The native readouts ship hidden and reveal themselves when the bridge
   // reports the capability; their group heading follows them, so a browser

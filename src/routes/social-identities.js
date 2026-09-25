@@ -58,6 +58,26 @@ function settingsUrl(config, status, provider) {
   return `${config.cliAuthOrigin}/#settings/connectors?${params.toString()}`;
 }
 
+// The provider's `error` parameter on a callback that carries no code. The
+// value is provider-controlled, so only a short snake_case token survives.
+function providerCallbackError(rawError) {
+  if (rawError === undefined) return '';
+  return typeof rawError === 'string' && /^[a-z_]{1,64}$/.test(rawError)
+    ? rawError
+    : 'unrecognized';
+}
+
+// The settings status for a callback without a usable code. Only an explicit
+// `access_denied` (or no error at all) is the user cancelling; a
+// provider-reported configuration error such as `redirect_uri_mismatch` must
+// not be dressed up as a cancellation (#3044).
+function callbackFailureStatus(code, providerError) {
+  if (code) return 'error';
+  if (!providerError || providerError === 'access_denied') return 'denied';
+  if (providerError === 'redirect_uri_mismatch') return 'callback_mismatch';
+  return 'error';
+}
+
 // A connect attempt younger than this is a flow still in flight in another
 // tab, not a stranded one worth flagging.
 const PENDING_ATTEMPT_MIN_AGE_MS = 60 * 1000;
@@ -347,7 +367,27 @@ function socialIdentityRoutes(config) {
       ? req.query.code
       : '';
     if (!pending || !code) {
-      return res.redirect(302, settingsUrl(config, code ? 'error' : 'denied', provider));
+      const providerError = code ? '' : providerCallbackError(req.query.error);
+      if (providerError) {
+        // #3044: GitHub does not stop on its own page when the redirect_uri
+        // is not the one registered on the OAuth app. It redirects straight
+        // back to the REGISTERED callback with error=redirect_uri_mismatch
+        // and the state, so a platform whose origin moved (my. -> app.)
+        // bounced every Connect/Reconnect without showing any GitHub page,
+        // and this route reported it as the user cancelling. Log what the
+        // provider said and the address we sent, so an admin can fix the
+        // registration from the log ring.
+        log.warn('social-identity', 'provider returned an authorization error', {
+          provider,
+          userId: req.user.id,
+          providerError,
+          stateMatched: !!pending,
+          callbackUrl: callbackUri(config, provider),
+        });
+      }
+      return res.redirect(302, settingsUrl(
+        config, callbackFailureStatus(code, providerError), provider
+      ));
     }
 
     try {
@@ -516,5 +556,6 @@ function socialIdentityRoutes(config) {
 module.exports = {
   socialIdentityRoutes,
   callbackUri,
+  callbackFailureStatus,
   demoPayload,
 };

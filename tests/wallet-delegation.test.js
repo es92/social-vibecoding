@@ -172,13 +172,16 @@ test('delegation card renders off, active and setup states with disclosure', () 
   assert.ok(active.includes(disclosure));
   assert.ok(active.includes(selfHosted));
 
-  // The status line and the address live INSIDE the tinted container — the
-  // containment the element walk used to prove, now read off the markup.
-  const tinted = activeHtml.match(
-    /<div class="rounded-lg bg-violet-500\/10 px-3 py-2">([\s\S]*?)<\/div><button/);
-  assert.ok(tinted, 'the delegated state sits in a tinted container');
-  assert.match(tinted[1], /Delegated/);
-  assert.match(tinted[1], /B62qiTKp…b3nvBG/);
+  // The status line, the address and the disclosure live INSIDE the status
+  // card, which is a plain card now: no violet highlight.
+  const card = activeHtml.match(
+    /<div data-block-production-card="status" class="([^"]*)">([\s\S]*?)<\/div><div data-block-production-card="self-hosted"/);
+  assert.ok(card, 'the delegated state sits in the status card');
+  assert.match(card[1], /border-zinc-200/);
+  assert.match(card[2], /Delegated/);
+  assert.match(card[2], /B62qiTKp…b3nvBG/);
+  assert.ok(textOf(card[2]).includes(disclosure));
+  assert.doesNotMatch(activeHtml, /bg-violet-500\/10/);
 
   const setup = textOf(stakingHtml(wallet, null));
   assert.match(setup, /Wallet setup is still in progress/);
@@ -227,6 +230,40 @@ test('background service note shows on Android only, active only while producing
   }
   for (const copy of [mod().BACKGROUND_SERVICE_ACTIVE, mod().BACKGROUND_SERVICE_INACTIVE]) {
     assert.ok(copy && !copy.includes('\u2014'), 'no em dashes in user copy');
+  }
+});
+
+test('Block production: status card, laptop card, background warning, then the button', () => {
+  const { wallet, sandbox } = loadWallet();
+  sandbox.unNative = { platform: 'android' };
+  const states = {
+    local: { delegate: null, delegated_since: null },
+    delegated: {
+      delegate: 'B62qiTKpEPjGTSHZrtM8uXiKgn8So916pLmNJKDhKeyBQL9TDb3nvBG',
+      delegated_since: null,
+    },
+    setup: null,
+  };
+  for (const [name, staking] of Object.entries(states)) {
+    const html = stakingHtml(wallet, staking);
+    const at = (needle) => html.indexOf(needle);
+    const status = at('data-block-production-card="status"');
+    const selfHosted = at('data-block-production-card="self-hosted"');
+    const note = at('data-background-service=');
+    const button = html.indexOf('<button', note);
+    assert.ok(status > -1 && status < selfHosted && selfHosted < note && note < button,
+      `${name}: status, then laptop card, then the note, then the button`);
+    // The disclosure is inside the status card, before the laptop card.
+    const disclosure = at('When delegated, you receive half the points');
+    assert.ok(disclosure > status && disclosure < selfHosted,
+      `${name}: the disclosure completes the status card`);
+    // The note is the soft warning; the cards are plain.
+    assert.match(html, /class="[^"]*border-amber-500\/40 bg-amber-500\/10[^"]*" data-background-service=|data-background-service="[a-z]+" class="[^"]*border-amber-500\/40 bg-amber-500\/10/);
+    assert.match(html, /data-block-production-card="status" class="[^"]*border-zinc-200/);
+    assert.match(html, /data-block-production-card="self-hosted" class="[^"]*border-zinc-200/);
+    for (const tint of [/bg-violet-500\/10/, /bg-sky-500\/10/, /bg-amber-500\/10 px-3/]) {
+      assert.doesNotMatch(html, tint, `${name}: no tinted chips remain`);
+    }
   }
 });
 

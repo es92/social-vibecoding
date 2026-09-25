@@ -772,11 +772,9 @@ const Home = {
       // same number; on one with a hole on row 1 the old form collapsed the
       // two-row default down to a single visible row of tiles.
       //
-      // …with the trailing Create tile counted in (HomeLayout.
-      // collapsedRowBound): when a collapsed grid's last shown row is full,
-      // the tile would start a row past the budget, so the window comes in
-      // by a row of apps and the tile takes the row that frees.
-      const rowBound = HomeLayout.collapsedRowBound(layout, cols, rowBudget);
+      // The trailing Create tile never widens this window: when it would
+      // start a row past it, it goes behind "Show all N apps" (#3047, below).
+      const rowBound = HomeLayout.defaultRowBound(layout, cols, rowBudget);
       // AN ADD THAT LANDS BELOW THE FOLD OPENS THE GRID (#1567). The whole
       // point of repainting on add is that the viewer SEES the app arrive;
       // a collapsed grid that holds it back turns the tick into the only
@@ -792,7 +790,16 @@ const Home = {
       const shown = hiddenRows
         ? canvas.filter((it) => it.row <= rowBound)
         : canvas;
-      const overflow = hiddenRows ? [] : HomeLayout.overflowItems(layout);
+      // THE CREATE TILE GOES BEHIND "SHOW ALL" TOO (#3047). When the last row
+      // the collapsed grid shows is full, the tile would start a row of its
+      // own — a third row under two rows of eight apps. It is held back with
+      // the hidden rows instead, and the expander appears for it even when
+      // every app already fits: a launcher of exactly eight apps shows two
+      // rows and "Show all 8 apps", and the tile ends the expanded grid.
+      const createHidden = !Home._appsExpanded
+        && HomeLayout.createTileCollapsed(shown, cols, rowBound);
+      const collapsed = hiddenRows || createHidden;
+      const overflow = collapsed ? [] : HomeLayout.overflowItems(layout);
       const parts = shown.map((it) => Home.gridItemView(it, cols, false));
       // Items past the 8-row canvas render after it in plain flow, packed
       // densely. The row cap bounds free PLACEMENT, never how many apps a
@@ -804,8 +811,8 @@ const Home = {
       // declare tracks for the rows it is holding back — an explicit track
       // exists whether or not anything is in it, and naming row 2 while
       // rendering rows 0-1 would pad the grid out with an empty tile row.
-      rowTemplate = Home.rowTemplate(hiddenRows ? shown : layout, cols);
-      moreCount = hiddenRows ? (canvas.length + HomeLayout.overflowItems(layout).length) : 0;
+      rowTemplate = Home.rowTemplate(collapsed ? shown : layout, cols);
+      moreCount = collapsed ? (canvas.length + HomeLayout.overflowItems(layout).length) : 0;
       // One-shot: it described this paint.
       Home._revealSlug = null;
       // THE GRID ENDS WITH "CREATE AN APP" (the prototype's scrHome, whose
@@ -825,9 +832,12 @@ const Home = {
       //
       // Present for EVERY account: `canCreate` decides its treatment, never
       // its presence — the locked tile opens the dialog that prints the quota.
+      // The one place it is not drawn is a collapsed grid it would add a row
+      // to (createHidden above): there it is behind "Show all N apps", one
+      // tap away, like the apps past the fold.
       const placed = items.filter((it) => it.placement).map((it) => it.placement);
       const flows = !placed.length || items.some((it) => !it.placement);
-      create = {
+      create = createHidden ? null : {
         enabled: canCreate,
         hint: Home.CREATE_DISABLED_HINT,
         placement: flows ? null : { ...HomeLayout.trailingCell(placed, cols), w: 1, h: 1 },
@@ -1481,9 +1491,14 @@ const Home = {
   // budget is unreachable to a still frame and to a declared check otherwise,
   // because the only way in is a tap; ungated and read-only, like every other
   // shot link here, so the production "before" side works the moment it ships.
+  //
+  // `?shot=create-enabled` / `?shot=create-disabled` pin it ON as well: they
+  // exist to show the Create tile's two treatments, and a collapsed grid whose
+  // last row is full holds that tile behind "Show all N apps" (#3047).
   _appsExpanded: (() => {
     try {
-      return new URLSearchParams(location.search).get('shot') === 'home-apps';
+      const shot = new URLSearchParams(location.search).get('shot');
+      return shot === 'home-apps' || shot === 'create-enabled' || shot === 'create-disabled';
     } catch (err) { return false; }
   })(),
 

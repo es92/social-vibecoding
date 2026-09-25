@@ -10,9 +10,14 @@
 // uncluttered.
 //
 // Data flow: the app pushes `usernode:node-status` CustomEvents (once through
-// the explicit realm-readiness replay + on pill-state transitions), so the row
-// renders from the event stream; `usernode.getNodeStatus()` is only called for
-// the initial value and when the detail sheet opens. No polling.
+// the explicit realm-readiness replay + on pill-state transitions), and the
+// row renders from that stream. Transition events alone left the row stale
+// whenever one was missed (readiness race, a suspended WebView) and never
+// carried fresh heights between flips, so the row went on reading "Syncing"
+// until somebody tapped it. `setLiveRefresh` therefore re-reads
+// `usernode.getNodeStatus()` every LIVE_REFRESH_MS while Settings or the Node
+// sheet is on screen AND the document is visible, and once immediately on
+// each reveal / return to the foreground. Nothing polls while neither is up.
 //
 // The row is present for every native top frame, even while capabilities or
 // node state are unavailable. Desktop browsers and child-app iframes keep it
@@ -28,9 +33,47 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
   // at runtime by a `.filter()` — a computed class name, which Tailwind's
   // extractor cannot see. It is two complete literals there.
 
+  const LIVE_REFRESH_MS = 5000;
+
+  // `?shot=node-status`: a read-only screenshot state for browsers, which have
+  // no bridge. The row is revealed and reads a fixed stub whose FIRST answer
+  // is "syncing" and every later one "synced", and no status event is ever
+  // fired, so only the live pull can move the row to Synced. It never runs
+  // where a real native bridge is present, and writes nothing anywhere.
+  const DEMO_SNAPSHOTS = {
+    first: {
+      status: 'syncing', chain: 'demo', localBestHeight: 12470,
+      networkBestHeight: 12483, readyPeers: 3, totalPeers: 8,
+    },
+    later: {
+      status: 'synced', chain: 'demo', localBestHeight: 12483,
+      readyPeers: 3, totalPeers: 8,
+    },
+  };
+
+  function demoShot() {
+    try {
+      if (window.usernode && window.usernode.isNative === true) return false;
+      return new URLSearchParams(window.location.search).get('shot') ===
+        'node-status';
+    } catch (_) { return false; }
+  }
+
+  function documentVisible() {
+    return typeof document === 'undefined' ||
+      document.visibilityState !== 'hidden';
+  }
+
   const NodePill = {
     _status: null,
     _sheet: null,
+    // Whether `getNodeStatus` may be called at all; set by init().
+    _canRead: false,
+    _read: null,
+    _refreshing: false,
+    _liveReasons: new Set(),
+    _liveTimer: null,
+    _visibilityBound: false,
     // Was `hidden` on the row element. It is the model's now, and the
     // component renders the class — see ./node-pill-row.tsx.
     _visible: false,
@@ -47,6 +90,17 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
     },
 
     async init() {
+      if (demoShot()) {
+        let reads = 0;
+        NodePill._read = async () => (reads++ === 0
+          ? DEMO_SNAPSHOTS.first : DEMO_SNAPSHOTS.later);
+        NodePill._visible = true;
+        NodePill._canRead = true;
+        NodePill._bindVisibility();
+        NodePill._status = await NodePill._read();
+        NodePill._render();
+        return;
+      }
       if (!window.NativeChrome || !window.usernode ||
           window.usernode.isNative !== true) return;
 
@@ -73,6 +127,9 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
         NodePill._render();
         return;
       }
+      NodePill._read = () => window.usernode.getNodeStatus();
+      NodePill._canRead = true;
+      NodePill._bindVisibility();
 
       try {
         const snap = await window.usernode.getNodeStatus();
@@ -80,6 +137,60 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
         if (snap && !NodePill._status) NodePill._status = snap;
       } catch (_) { /* event stream will populate it */ }
       NodePill._render();
+    },
+
+    // -- live refresh ---------------------------------------------------
+
+    /** One pull, single-flight. Errors keep the last snapshot. */
+    async refresh() {
+      if (!NodePill._canRead || NodePill._refreshing) return;
+      NodePill._refreshing = true;
+      try {
+        const snap = await NodePill._read();
+        if (snap && typeof snap.status === 'string') {
+          NodePill._status = snap;
+          NodePill._render();
+        }
+      } catch (_) { /* keep the last snapshot */ } finally {
+        NodePill._refreshing = false;
+      }
+    },
+
+    /**
+     * Turn one reason for live refresh on or off. Reasons are 'settings'
+     * (the Settings screen is up, see features/settings/account-rows.tsx) and
+     * 'sheet' (the Node sheet is open). A reason newly switched on pulls at
+     * once, so opening the sheet over Settings still refreshes on tap.
+     */
+    setLiveRefresh(reason, on) {
+      const reasons = NodePill._liveReasons;
+      const added = on && !reasons.has(reason);
+      if (on) reasons.add(reason); else reasons.delete(reason);
+      if (added && documentVisible()) NodePill.refresh();
+      NodePill._syncTimer();
+    },
+
+    _syncTimer() {
+      const want = NodePill._liveReasons.size > 0 && documentVisible();
+      if (want && !NodePill._liveTimer) {
+        NodePill._liveTimer = setInterval(() => NodePill.refresh(),
+          LIVE_REFRESH_MS);
+      } else if (!want && NodePill._liveTimer) {
+        clearInterval(NodePill._liveTimer);
+        NodePill._liveTimer = null;
+      }
+    },
+
+    _bindVisibility() {
+      if (NodePill._visibilityBound || typeof document === 'undefined' ||
+          typeof document.addEventListener !== 'function') return;
+      NodePill._visibilityBound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (documentVisible() && NodePill._liveReasons.size > 0) {
+          NodePill.refresh();
+        }
+        NodePill._syncTimer();
+      });
     },
 
     // Five writes across two elements — the dot's class, the label's text and
@@ -166,8 +277,8 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
     // `_sheetRow` and `_renderSheetBody` built six nodes imperatively and
     // blanked them with `body.textContent = ''` on every status event. The
     // body is a portal now (./node-pill-sheet.tsx) and the store repaints it,
-    // so an event arriving mid-sheet updates the numbers in place — including
-    // #1402's tip age, which is why nothing here needs a timer.
+    // so an event or a live pull arriving mid-sheet updates the numbers in
+    // place, including #1402's tip age.
     _renderSheetBody() {
       NodePill._render();
     },
@@ -191,6 +302,7 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
         // the rule the dev chat's conversions wrote down, on the one seam here
         // where something other than React destroys the host.
         onDismiss: () => {
+          NodePill.setLiveRefresh('sheet', false);
           unmountNodeSheet(bodyEl);
           NodePill._sheet = null;
         },
@@ -199,16 +311,9 @@ import { mountNodeSheet, unmountNodeSheet } from './node-pill-sheet';
       // current status immediately — no separate first render.
       mountNodeSheet(bodyEl);
 
-      // Refresh heights/peers on open — pill events only fire on state
-      // transitions, so the numbers can be stale between flips.
-      try {
-        const snap = await window.usernode.getNodeStatus();
-        if (snap) {
-          NodePill._status = snap;
-          NodePill._render();
-          NodePill._renderSheetBody();
-        }
-      } catch (_) { /* keep the last snapshot */ }
+      // Keep heights/peers current while the sheet is up: pill events only
+      // fire on state transitions, so the numbers go stale between flips.
+      NodePill.setLiveRefresh('sheet', true);
     },
   };
 

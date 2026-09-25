@@ -1,10 +1,10 @@
 'use strict';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 
 import { AccountDeletions } from './account-deletions';
 import { AdminUI } from './admin-console.js';
+import { DetailCard, Row, fmtDate, orDash } from './admin-detail-parts.tsx';
 import { mountLegacyPortal, unmountLegacyPortal } from '../../lib/legacy-portals';
 import { ProgrammeUsers } from './topochain/programme-users.tsx';
 import { fetchAllEvents, fetchJson, send } from './topochain/api.ts';
@@ -74,6 +74,8 @@ interface User {
   app_quota?: number | null;
   app_quota_requested_at?: string | null;
   apps_created?: number | null;
+  // All-time programme points, the same total the global leaderboard shows.
+  total_points?: number | null;
   daily_limit_cents?: number | null;
   weekly_limit_cents?: number | null;
   usernode_pubkey?: string | null;
@@ -278,12 +280,6 @@ function Kebab({ user, open, onToggle, onReload }: {
 
 // ── Formatting ─────────────────────────────────────────────────────────
 
-function fmtDate(v?: string | null): string {
-  if (!v) return '';
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 const dollars = (cents?: number | string | null) => (parseFloat(String(cents || 0)) / 100).toFixed(2);
 const roleOf = (u: User) => (!u.is_admin ? 'user' : (u.admin_readonly ? 'view_admin' : 'admin'));
 const tierText = (u: User) => `${TIER_LABEL[u.identity_tier || 'unverified']}${tierDetail(u) ? ` (${tierDetail(u)})` : ''}`;
@@ -328,7 +324,7 @@ function AppSlotRequest({ user, canWrite, onReload }: { user: User; canWrite: bo
 
 // Fixed columns from md up, so the same value sits in the same place on
 // every row; stacked below md.
-const ROW_GRID = 'p-4 flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.8fr)_auto] md:items-start md:gap-4';
+const ROW_GRID = 'p-4 flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] md:items-start md:gap-4';
 const CELL_LABEL = 'md:hidden text-xs text-zinc-500 dark:text-zinc-400';
 
 function UserListRow({ user, canWrite, menuOpen, onMenu, onReload, onMore }: {
@@ -343,7 +339,9 @@ function UserListRow({ user, canWrite, menuOpen, onMenu, onReload, onMore }: {
   return (
     <div className={ROW_GRID} data-user-row={user.id}>
       <div className="min-w-0">
-        <div className="font-medium break-words text-zinc-900 dark:text-zinc-100">{user.username}</div>
+        <button type="button" data-open-support={user.id} title="Open in Support"
+          className="font-medium break-words text-left text-zinc-900 dark:text-zinc-100 hover:underline focus-visible:underline"
+          onClick={() => { location.hash = `#admin/support/${user.id}`; }}>{user.username}</button>
         {joined ? <div className="text-xs text-zinc-500 dark:text-zinc-400">{`Joined ${joined}`}</div> : null}
         <div className="mt-1 flex flex-wrap gap-1.5">
           {role !== 'user' ? <span className={AdminUI.badge.secondary}>{ROLE_LABEL[role]}</span> : null}
@@ -373,6 +371,12 @@ function UserListRow({ user, canWrite, menuOpen, onMenu, onReload, onMore }: {
           {`${user.apps_created || 0} of ${user.app_quota == null ? 0 : user.app_quota} used`}
         </span>
       </div>
+      <div className="text-sm">
+        <div className={CELL_LABEL}>Total points</div>
+        <span className="text-zinc-700 dark:text-zinc-300 tabular-nums" data-user-points={user.id}>
+          {Number(user.total_points || 0).toLocaleString('en-US')}
+        </span>
+      </div>
       <div className="flex items-center gap-1 md:justify-end">
         <button type="button" className={AdminUI.btn.outlineSm} data-user-more={user.id} onClick={onMore}>More</button>
         {canWrite ? <Kebab user={user} open={menuOpen} onToggle={onMenu} onReload={onReload} /> : null}
@@ -383,29 +387,7 @@ function UserListRow({ user, canWrite, menuOpen, onMenu, onReload, onMore }: {
 
 // ── The details view ───────────────────────────────────────────────────
 
-function DetailCard({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
-  return (
-    <section id={id} className={`${AdminUI.card} p-5`} aria-label={title}>
-      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function Row({ label, children, help }: { label: string; children: ReactNode; help?: string }) {
-  return (
-    <div className="py-2 border-t first:border-t-0 border-zinc-100 dark:border-zinc-800 flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
-      <div className="sm:w-40 shrink-0 text-sm text-zinc-500 dark:text-zinc-400">{label}</div>
-      <div className="min-w-0 flex-1 text-sm text-zinc-900 dark:text-zinc-100 break-words">
-        <div className="flex flex-wrap items-center gap-2">{children}</div>
-        {help ? <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{help}</p> : null}
-      </div>
-    </div>
-  );
-}
-
 const DETAIL_INPUT = `${AdminUI.input} max-w-[12rem]`;
-const orDash = (v?: string | null) => (v ? v : 'Not set');
 
 function OpenRouterCard({ user, onReload }: { user: User; onReload: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -802,15 +784,19 @@ function UserDetails({ user, fullAdminCount, canWrite, onBack, onReload, onDelet
             <span className={AdminUI.badge.default}>{tierText(user)}</span>
           </div>
         </div>
-        {canWrite ? (
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <button type="button" className={AdminUI.btn.outlineSm} onClick={() => resetUserPassword(user)}>Reset password</button>
-            {!isAdmin && !isSelf ? (
-              <button type="button" className={AdminUI.btn.destructiveSm}
-                onClick={async () => { if (await deleteUser(user)) onDeleted(); }}>Delete account</button>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button type="button" id="admin-user-details-open-support" className={AdminUI.btn.outlineSm}
+            onClick={() => { location.hash = `#admin/support/${user.id}`; }}>Open in Support</button>
+          {canWrite ? (
+            <>
+              <button type="button" className={AdminUI.btn.outlineSm} onClick={() => resetUserPassword(user)}>Reset password</button>
+              {!isAdmin && !isSelf ? (
+                <button type="button" className={AdminUI.btn.destructiveSm}
+                  onClick={async () => { if (await deleteUser(user)) onDeleted(); }}>Delete account</button>
+              ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -1107,8 +1093,8 @@ function UsersSection() {
             onChange={(e) => setFilter(e.target.value)}
           />
         </div>
-        <div className="hidden md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.8fr)_auto] md:gap-4 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          <span>User</span><span>Spend</span><span>Tier</span><span>Apps</span><span className="w-24" />
+        <div className="hidden md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto] md:gap-4 px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          <span>User</span><span>Spend</span><span>Tier</span><span>Apps</span><span id="admin-users-points-header">Total points</span><span className="w-24" />
         </div>
         <div id="admin-user-list" className="divide-y divide-zinc-200 dark:divide-zinc-800">
           {denied ? <p className="p-4 text-sm text-zinc-500 dark:text-zinc-400">Admin access required.</p> : null}

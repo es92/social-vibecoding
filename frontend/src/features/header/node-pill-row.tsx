@@ -89,6 +89,7 @@ export function NodePillRow(): ReactNode {
           shipped this span blank, and the prerender has to agree. */}
       <span
         id="account-node-status"
+        data-node-status={s.status}
         className={s.visible ? `ml-auto text-xs font-medium ${style.ink}` : 'ml-auto text-xs font-medium text-zinc-500 dark:text-zinc-400'}
       >{s.visible ? style.label : ''}</span>
     </button>

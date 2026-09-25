@@ -10,7 +10,8 @@
 // the properties the move has to keep:
 //
 //   1. It is the grid's LAST child and sits in the cell straight after the
-//      last tile — collapsed, and after "Show all N apps".
+//      last tile — collapsed, and after "Show all N apps". A collapsed grid it
+//      would add a row to holds it behind "Show all N apps" instead (#3047).
 //   2. It is not a layout item: nothing stores, drags or displaces it.
 //   3. Hydration: it is absent from the initial store state and so from the
 //      prerender, exactly like every other data-placed child of #app-list.
@@ -173,7 +174,8 @@ function makeHome({ search = '', canCreateApps = true } = {}) {
   vm.runInContext(`${HOME_SRC}\n;globalThis.__Home = Home;`, sandbox);
   // Cross-realm: the store lives in the vm context, so round-trip through JSON.
   const model = () => JSON.parse(JSON.stringify(gridStore.get()));
-  return { Home: sandbox.__Home, model };
+  const moreCount = () => sandbox.chromeStore.get().moreCount;
+  return { Home: sandbox.__Home, model, moreCount };
 }
 
 const mine = (n) => Array.from({ length: n }, (_, i) => ({
@@ -207,33 +209,82 @@ test('a hole the viewer left stays a hole: the tile follows the LAST tile', () =
 
 test('it survives "Show all N apps": last in the collapsed grid and the expanded one', () => {
   const { Home, model } = makeHome();
-  Home._apps = mine(17);
-  Home.visibleRowBudget = () => 2;
+  // Rows 0-1 full, two apps on row 2 and one on row 3.
+  Home._apps = mine(11);
+  Home._layouts = { 4: [
+    ...Array.from({ length: 10 }, (_, i) => ({ type: 'app', slug: `app-${i}`, col: i % 4, row: Math.floor(i / 4) })),
+    { type: 'app', slug: 'app-10', col: 0, row: 3 },
+  ] };
+  Home.visibleRowBudget = () => 3;
   Home.render();
   let state = model();
-  const shownLast = state.items[state.items.length - 1].placement;
-  assert.deepEqual(shownLast, { col: 3, row: 1, w: 1, h: 1 }, 'two rows of apps shown');
-  assert.deepEqual(state.create.placement, { col: 0, row: 2, w: 1, h: 1 },
+  // Budget 3 → rows 0-2 shown; row 2 has room, so the tile fits beside its
+  // two apps while row 3 is behind the button.
+  assert.equal(state.items.length, 10, 'three rows of apps shown, row 3 held back');
+  assert.deepEqual(state.create.placement, { col: 2, row: 2, w: 1, h: 1 },
     'the tile ends the collapsed grid');
-  // "Show all 17 apps" — the same flag the button sets.
+  // "Show all 11 apps" — the same flag the button sets.
   Home._appsExpanded = true;
   Home.render();
   state = model();
-  assert.equal(state.items.length, 17);
-  assert.deepEqual(state.create.placement, { col: 1, row: 4, w: 1, h: 1 },
+  assert.equal(state.items.length, 11);
+  assert.deepEqual(state.create.placement, { col: 1, row: 3, w: 1, h: 1 },
     'and moves to the end of the expanded grid');
 });
 
-test('on a taller budget the tile\'s row counts against it (HomeLayout.collapsedRowBound)', () => {
-  const { Home, model } = makeHome();
+test('#3047: the tile goes behind "Show all" when it would add a row past 2 rows / 8 apps', () => {
+  const { Home, model, moreCount } = makeHome();
+  Home.visibleRowBudget = () => 2;
+
+  // Seven apps: the tile fits in the eighth cell, no expander.
+  Home._apps = mine(7);
+  Home.render();
+  let state = model();
+  assert.deepEqual(state.create.placement, { col: 3, row: 1, w: 1, h: 1 });
+  assert.equal(moreCount(), 0, 'nothing to show more of');
+
+  // Eight apps fill both rows: the tile would start a third row, so it is
+  // held back — and the grid still shows all eight apps.
+  Home._apps = mine(8);
+  Home.render();
+  state = model();
+  assert.equal(state.items.length, 8, 'every app still shown');
+  assert.equal(state.create, null, 'the tile is behind "Show all"');
+  assert.ok(state.items.every((it) => it.placement.row <= 1), 'two rows, nothing more');
+  assert.equal(moreCount(), 8, 'the expander appears for the tile alone, naming every app');
+
+  // Seventeen apps: two rows of apps, no third row for the tile.
   Home._apps = mine(17);
+  Home.render();
+  state = model();
+  assert.equal(state.items.length, 8);
+  assert.equal(state.create, null);
+
+  // A taller budget holds it back the same way, trading no apps for it.
+  Home._apps = mine(16);
   Home.visibleRowBudget = () => 4;
   Home.render();
-  const state = model();
-  // Rows 0-3 would all be full, pushing the tile onto a fifth row past the
-  // budget; three rows of apps and the tile's row are four.
-  assert.equal(state.items.length, 12);
-  assert.deepEqual(state.create.placement, { col: 0, row: 3, w: 1, h: 1 });
+  state = model();
+  assert.equal(state.items.length, 16, 'four full rows of apps, not three');
+  assert.equal(state.create, null);
+
+  // "Show all" brings it back, ending the expanded grid.
+  Home._appsExpanded = true;
+  Home.render();
+  state = model();
+  assert.deepEqual(state.create.placement, { col: 0, row: 4, w: 1, h: 1 });
+  assert.equal(moreCount(), 0, 'expanded: the expander goes away');
+});
+
+test('#3047: the expander appears for the tile alone, naming every app', () => {
+  const HOME = HOME_SRC;
+  assert.match(HOME, /const createHidden = !Home\._appsExpanded\s*&& HomeLayout\.createTileCollapsed\(shown, cols, rowBound\);/);
+  assert.match(HOME, /const collapsed = hiddenRows \|\| createHidden;/);
+  assert.match(HOME, /moreCount = collapsed \? \(canvas\.length \+ HomeLayout\.overflowItems\(layout\)\.length\) : 0;/);
+  assert.match(HOME, /create = createHidden \? null : \{/);
+  // The shot links that pin the tile's treatments open the grid, so the tile
+  // they exist to show is on screen whatever the viewport's budget.
+  assert.match(HOME, /shot === 'home-apps' \|\| shot === 'create-enabled' \|\| shot === 'create-disabled'/);
 });
 
 test('no apps, or tiles in the overflow, and the tile flows after them', () => {

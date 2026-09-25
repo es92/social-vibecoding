@@ -365,6 +365,7 @@ const OWNED = [
   // card's host, filled by admin-topochain.js, and #1120 slice 35 made that
   // card a child component. The whole section is React's, exemption included.
   { sel: '#admin-section-content', when: '#admin/users' }, // features/admin/admin-users.tsx
+  { sel: '#admin-section-content', when: '#admin/support' }, // features/admin/admin-support.tsx
   { sel: '#admin-section-content', when: '#admin/reports' }, // features/admin/admin-reports.tsx
 ];
 
@@ -389,7 +390,7 @@ const ROUTES = [
   // issue (scripts/seed-checks-db.js); if the seed changes, re-point it rather
   // than dropping the route.
   '#app/recipebot/dev/issues/900001',
-  '#admin/e2e', '#admin/gallery', '#admin/node', '#admin/merges', '#admin/push', '#admin/campaigns', '#admin/mail', '#admin/estimator', '#admin/analytics', '#admin/overview', '#admin/codes', '#admin/featured-apps', '#admin/db-export', '#admin/features', '#admin/limits', '#admin/users', '#admin/users/900301', '#admin/status', '#admin/rollover', '#admin/staging-reap',
+  '#admin/e2e', '#admin/gallery', '#admin/node', '#admin/merges', '#admin/push', '#admin/campaigns', '#admin/mail', '#admin/estimator', '#admin/analytics', '#admin/overview', '#admin/codes', '#admin/featured-apps', '#admin/db-export', '#admin/features', '#admin/limits', '#admin/users', '#admin/users/900301', '#admin/support', '#admin/support/900302', '#admin/status', '#admin/rollover', '#admin/staging-reap',
   '#admin/model-costs', '#admin/reports',
   '#admin/api-tester', '#admin/sql-console', '#admin/settings', '#admin/app-version', '#admin/waitlist', '#admin/onchain-accounts', '#admin/user-activities', '#admin/delegations',
   '#admin/challenge-templates', '#admin/challenge-scoring', '#admin/seasons', '#admin/season-events',

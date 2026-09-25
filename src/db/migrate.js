@@ -59,6 +59,7 @@ async function migrate(config) {
   // hard-coded created_by = 900001. See seedStagingDemoUser.
   await seedStagingDemoUser(pool);
   await seedStagingAdminDetailsUser(pool);
+  await seedStagingSupportUser(pool);
   await seedSelfApp(pool, config);
   finishPhase('coreSeedMs');
   await seedStagingNotifications(pool, config);
@@ -1162,6 +1163,151 @@ async function seedStagingAdminDetailsUser(pool) {
     log.info('db', 'Staging admin details user seeded', { id: 900301 });
   } catch (err) {
     log.warn('db', 'Staging admin details user seeding failed', { message: err.message });
+  }
+}
+
+// Support screen (#admin/support/900302): one fake participant with enough
+// history that every Support card has something to show. Points in a running
+// and an ended event from several sources (automatic scoring, admin, a
+// support adjustment), one leaderboard snapshot older than the ledger so the
+// "differs from the ledger" hint renders, an enrollment, an onchain account,
+// kudos both ways, a username change, and one support action.
+//
+// Every row belongs to fake 9003xx identities, never the viewer, and nothing
+// here is a signal the Support routes decide anything from. Fixed ids and
+// ON CONFLICT DO NOTHING keep it idempotent; strictly a no-op outside staging.
+async function seedStagingSupportUser(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    await pool.query(
+      `INSERT INTO users (id, username, password, is_admin, can_create_apps,
+                          email, telegram, display_name, usernode_pubkey)
+       VALUES (900302, 'staging-demo-support', 'staging-demo-not-a-login', FALSE, FALSE,
+               'staging-demo-support@example.invalid', 'staging_demo_support',
+               'Staging demo support user', 'ut1stagingdemosupport00000000001')
+       ON CONFLICT DO NOTHING`
+    );
+    const owned = await pool.query(
+      `SELECT 1 FROM users WHERE id = 900302 AND username = 'staging-demo-support'`
+    );
+    if (!owned.rowCount) return;
+    await pool.query(
+      `INSERT INTO username_history (id, user_id, username, changed_at)
+       VALUES (900302, 900302, 'staging-demo-support-old', NOW() - INTERVAL '40 days')
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO seasons (id, name, starts_at, ends_at, created_at, updated_at)
+       VALUES (900302, 'Staging demo season', NOW() - INTERVAL '60 days', NOW() + INTERVAL '30 days', NOW(), NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO season_events (id, name, starts_at, ends_at, scoring_formula, season_id, created_at, updated_at)
+       VALUES (900302, 'Staging demo running event', NOW() - INTERVAL '10 days', NOW() + INTERVAL '20 days', '{}'::jsonb, 900302, NOW(), NOW()),
+              (900303, 'Staging demo ended event', NOW() - INTERVAL '60 days', NOW() - INTERVAL '30 days', '{}'::jsonb, 900302, NOW(), NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO challenge_templates (id, category, goal, task, reward, created_at, updated_at)
+       VALUES (900302, 'staging', 'Staging demo: try 3 apps', 'Open three apps.', '200 points', NOW(), NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO challenges (id, season_event_id, challenge_template_id, goal, display_order, created_at, updated_at)
+       VALUES (900302, 900302, 900302, 'Staging demo: try 3 apps', 0, NOW(), NOW()),
+              (900303, 900303, 900302, 'Staging demo: invite a friend', 0, NOW(), NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO user_enrollments (id, user_id, season_id, season_event_id, registered_at, created_at)
+       VALUES (900302, 900302, 900302, NULL, NOW() - INTERVAL '50 days', NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO onchain_accounts (id, amount, identity_uid, address, public_key, secret_key, tier,
+                                     registration_code, season_id, season_event_id, user_id, is_used, used_at, created_at)
+       VALUES (900302, 0, 'staging-demo-support', 'ut1stagingdemosupportaccount0000001', 'staging-demo-public-key',
+               'staging-not-a-secret', 'standard', 'staging-demo-support-code', 900302, 900302, 900302,
+               TRUE, NOW() - INTERVAL '9 days', NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO support_actions (id, actor_user_id, target_user_id, action, reason, payload, created_at)
+       VALUES (900302, 900001, 900302, 'points_adjustment',
+               'Staging demo: missed points for a scanner outage',
+               '{"points": 50, "season_event_id": 900302, "challenge_id": 900302, "ticket": "STAGING-1", "activity_id": 900305}'::jsonb,
+               NOW() - INTERVAL '2 days')
+       ON CONFLICT DO NOTHING`
+    );
+    const activities = [
+      [900302, 900302, 900302, 'challenge_completed', 200, 'challenge_scorer', null, '8 days'],
+      [900303, 900302, 900302, 'challenge_completed', 100, 'scanner', null, '6 days'],
+      [900304, 900302, 900302, 'manual', 25, 'admin_ui', null, '5 days'],
+      [900305, 900302, 900302, 'support_adjustment', 50, 'support_adjustment',
+        { support_action_id: 900302, reason: 'Staging demo: missed points for a scanner outage', ticket: 'STAGING-1' }, '2 days'],
+      [900306, 900302, 900302, 'challenge_completed', 75, 'challenge_scorer', null, '1 day'],
+      [900307, 900303, 900303, 'challenge_completed', 300, 'challenge_scorer', null, '45 days'],
+      [900308, 900303, 900303, 'manual', -20, 'admin_ui', null, '40 days'],
+      [900309, 900303, 900303, 'import', 40, 'import', null, '35 days'],
+    ];
+    for (const [id, eventId, challengeId, type, points, source, metadata, ago] of activities) {
+      await pool.query(
+        `INSERT INTO user_activities (id, user_id, season_event_id, challenge_id, activity_type, points,
+                                      description, metadata, activity_at, source, created_at, updated_at)
+         VALUES ($1, 900302, $2, $3, $4, $5, 'Staging demo activity', $6::jsonb,
+                 NOW() - $7::interval, $8, NOW(), NOW())
+         ON CONFLICT DO NOTHING`,
+        [id, eventId, challengeId, type, points, metadata ? JSON.stringify(metadata) : null, ago, source]
+      );
+    }
+    // The running event's snapshot predates the last two entries, so the
+    // leaderboard (325) trails the ledger (450) until the next refresh.
+    await pool.query(
+      `INSERT INTO leaderboard_snapshots (id, season_event_id, user_id, rank, total_points, snapshot_at, season_id, created_at)
+       VALUES (900302, 900302, 900302, 4, 325, NOW() - INTERVAL '3 days', 900302, NOW()),
+              (900303, 900303, 900302, 2, 320, NOW() - INTERVAL '30 days', 900302, NOW())
+       ON CONFLICT DO NOTHING`
+    );
+    const app = await pool.query(
+      `SELECT id FROM apps WHERE view_visibility = 'public' ORDER BY id LIMIT 1`
+    );
+    const appId = app.rows[0]?.id || null;
+    if (appId) {
+      await pool.query(
+        `INSERT INTO chat_sessions (id, app_id, user_id, pr_number, pr_title, status)
+         VALUES (900302, $1, 900302, 900302, 'Staging demo: support user proposal', 'archived'),
+                (900303, $1, 900301, 900303, 'Staging demo: another proposal', 'archived')
+         ON CONFLICT DO NOTHING`,
+        [appId]
+      );
+      await pool.query(
+        `INSERT INTO pr_kudos (session_id, giver_user_id, week_start, created_at)
+         SELECT s.sid, s.giver, date_trunc('week', NOW())::date, NOW() - INTERVAL '1 day'
+           FROM (VALUES (900302, 900301), (900303, 900302)) AS s(sid, giver)
+          WHERE EXISTS (SELECT 1 FROM chat_sessions WHERE id = s.sid)
+            AND EXISTS (SELECT 1 FROM users WHERE id = s.giver)
+         ON CONFLICT (session_id, giver_user_id) DO NOTHING`
+      );
+    }
+    const hasEvents = await pool.query(
+      `SELECT 1 FROM events WHERE user_id = 900302 AND metadata->>'staging_demo' = 'support' LIMIT 1`
+    );
+    if (!hasEvents.rowCount) {
+      const rows = [
+        ['app_created', '12 days'], ['chat_message_sent', '4 days'], ['dapp_active_day', '3 days'],
+        ['pr_opened', '7 days'], ['pr_vote_cast', '2 days'], ['dev_session_started', '7 days'],
+      ];
+      for (const [type, ago] of rows) {
+        await pool.query(
+          `INSERT INTO events (user_id, app_id, event_type, metadata, created_at)
+           VALUES (900302, $1, $2, '{"staging_demo": "support"}'::jsonb, NOW() - $3::interval)`,
+          [appId, type, ago]
+        );
+      }
+    }
+    log.info('db', 'Staging support user seeded', { id: 900302 });
+  } catch (err) {
+    log.warn('db', 'Staging support user seeding failed', { message: err.message });
   }
 }
 

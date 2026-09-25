@@ -27,6 +27,7 @@ const homeroomBot = require('../services/homeroom-bot');
 // The CSV writer the topochain admin's two exports share: quoting plus the
 // spreadsheet formula-injection guard, documented where it is defined.
 const { csvField } = require('./topochain/helpers');
+const { computeStandings } = require('../services/topochain/standings');
 const {
   accountRecovery,
   withTransaction,
@@ -309,7 +310,10 @@ function adminRoutes(config) {
 
   router.get('/api/admin/users', async (req, res) => {
     try {
-      const { rows } = await pool.query(
+      // The all-time programme standings, the same shared aggregate the
+      // global leaderboard ranks on, so the Points column here matches it.
+      // One query for every user, read off by id below.
+      const [standings, { rows }] = await Promise.all([computeStandings(pool, { seasonId: null }), pool.query(
         `SELECT u.id, u.username, u.is_admin, u.admin_readonly, u.app_quota, u.app_quota_requested_at, u.created_at,
                 u.daily_limit_cents, u.weekly_limit_cents, u.usernode_pubkey,
                 EXISTS (
@@ -362,12 +366,16 @@ function adminRoutes(config) {
          ) ac2 ON ac2.created_by = u.id
          ORDER BY u.created_at ASC`,
         [req.user.id]
-      );
+      )]);
       // #838: name the tier on each row so the console shows it and the
       // two readers of the flags can never disagree.
+      const pointsByUser = new Map(
+        standings.map((s) => [s.user_id, s.total_points])
+      );
       res.json(rows.map((row) => ({
         ...row,
         identity_tier: limits.identityTierFromFlags(row).tier,
+        total_points: pointsByUser.get(Number(row.id)) || 0,
       })));
     } catch (err) {
       log.error('admin', 'List users failed', { message: err.message });

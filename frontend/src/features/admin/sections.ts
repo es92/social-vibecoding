@@ -1,5 +1,5 @@
 /**
- * The twenty-three admin section modules, in one lazily-imported barrel.
+ * The twenty-four admin section modules, in one lazily-imported barrel.
  *
  * Each of these is a side-effect import: the module publishes itself on
  * `window.<Name>` and AdminConsole._renderModule looks it up there by the
@@ -30,6 +30,7 @@ import './admin-homeroom-bot.tsx';
 import './admin-features.tsx';
 import './admin-limits.tsx';
 import './admin-users.tsx';
+import './admin-support.tsx';
 import './admin-reports.tsx';
 import './admin-rollover.tsx';
 import './admin-staging-reap.tsx';

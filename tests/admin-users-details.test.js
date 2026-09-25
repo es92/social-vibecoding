@@ -121,3 +121,10 @@ test('staging seeds a fake user for the details view, and dapp.json checks it', 
   assert.match(USERS, /<span className="admin-user-weekly-limit-value">/,
     'the read-only cap carries the class the check selects');
 });
+
+test('details cards come from the shared parts and link to Support', () => {
+  assert.match(USERS, /from '\.\/admin-detail-parts\.tsx'/);
+  assert.match(USERS, /id="admin-user-details-open-support"/);
+  assert.match(USERS, /location\.hash = `#admin\/support\/\$\{user\.id\}`/);
+  assert.match(USERS, /data-open-support=\{user\.id\}/);
+});
