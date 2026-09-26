@@ -793,6 +793,25 @@ const Notifications = {
       }
       return;
     }
+    // A platform limit opens where it is raised. MAX_APPS lives in the
+    // platform's Platform variables panel, opened over the current screen
+    // like the create dialog does; the session cap opens Health & status,
+    // whose capacity meter shows the load behind it. Either falls back to
+    // Health & status when the panel or the platform's slug is unavailable.
+    if (item.kind === 'platform_limit') {
+      Notifications._dismissSheetForNav();
+      const limit = parsePlatformLimitDetail(item.detail);
+      const selfSlug = typeof window !== 'undefined' && window.PlatformTarget?.slug
+        ? window.PlatformTarget.slug() : null;
+      if (limit?.limit === 'apps' && selfSlug && typeof window.Secrets?.open === 'function') {
+        window.Secrets.open(selfSlug);
+      } else if (typeof App !== 'undefined' && App.navigateToAdminConsole) {
+        App.navigateToAdminConsole('status');
+      } else {
+        window.location.hash = '#admin/status';
+      }
+      return;
+    }
     // #161/#194: completion notifications deep-link to their change.
     // session_done opens the lifecycle-aware detail page around its workspace;
     // auto_solve_done opens the Issues tab with that issue's accordion
@@ -1509,6 +1528,14 @@ function conversationNotificationHref(n) {
 // FRIEND_NOTIFICATION_KINDS). No app and no conversation — a person.
 const FRIEND_NOTIF_KINDS = new Set(['friend_request', 'friend_accept']);
 
+// services/platform-limit-alerts.js detailToken(): "<limit>_<level>:<used>:<cap>".
+const PLATFORM_LIMIT_DETAIL_RE = /^(apps|sessions)_(warn|full):(\d{1,7}):(\d{1,7})$/;
+
+function parsePlatformLimitDetail(detail) {
+  const m = PLATFORM_LIMIT_DETAIL_RE.exec(String(detail || ''));
+  return m ? { limit: m[1], level: m[2], used: Number(m[3]), cap: Number(m[4]) } : null;
+}
+
 // #161 defined these as the kinds that "demand attention": a finished dev
 // session or headless run, while still unread.
 //
@@ -1989,6 +2016,38 @@ function rowView(n) {
       icon: review ? '⚠️' : '🔑',
       label: review ? 'OpenRouter key needs admin review' : 'OpenRouter access enabled',
       segments: [{ t: 'who', v: who }],
+    };
+  }
+
+  // A server-wide cap nearing or at its ceiling (services/platform-limit-
+  // alerts.js). Full admins only, no app: the meta line says Admin like the
+  // two kinds above. `detail` is "<limit>_<level>:<used>:<cap>"; a token this
+  // build cannot read still says which kind of alert it is.
+  if (n.kind === 'platform_limit') {
+    const limit = parsePlatformLimitDetail(n.detail);
+    if (!limit) {
+      return { ...base, appLine: 'Admin', wrap: true, icon: '\u26A0\uFE0F',
+        ...headline('Platform limit', 'the server is nearing one of its limits') };
+    }
+    const noun = limit.limit === 'apps' ? 'apps' : 'coding sessions';
+    const full = limit.level === 'full';
+    const consequence = limit.limit === 'apps'
+      ? (full ? ' New apps are refused until MAX_APPS is raised or an app is removed.'
+        : ' Raise MAX_APPS before new apps are refused.')
+      : (full ? ' New sessions pause idle ones, or wait, until MAX_GLOBAL_SESSIONS is raised.'
+        : ' At the limit, idle sessions are paused to make room.');
+    return {
+      ...base,
+      appLine: 'Admin',
+      wrap: true,
+      icon: full ? '\u{1F6A8}' : '\u26A0\uFE0F',
+      label: full
+        ? (limit.limit === 'apps' ? 'App limit reached' : 'Session limit reached')
+        : (limit.limit === 'apps' ? 'Nearing the app limit' : 'Nearing the session limit'),
+      segments: [
+        { t: 'strong', v: `${limit.used} of ${limit.cap} ${noun} in use.` },
+        { t: 'text', v: consequence },
+      ],
     };
   }
 

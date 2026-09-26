@@ -329,12 +329,16 @@ test("storeChecksSkipped: writes 'skipped' + reason and clears the failure strea
   } finally { restore(); }
 });
 
-test('storeChecksSkipped: null commit/reason degrade to NULLs, never "undefined"', async () => {
+test('storeChecksSkipped: a null commit degrades to NULL, a missing reason to the fallback line (#3180)', async () => {
   const { subject, restore } = loadVisuals();
   const pool = makeRecordingPool();
   try {
-    await subject.storeChecksSkipped(pool, 42, null, null);
-    assert.deepEqual(pool.queries[0].params, [null, null, 42, null]);
+    assert.equal(subject.DEFAULT_CHECKS_SKIPPED_REASON, 'there was nothing to test');
+    for (const reason of [null, undefined, '', '   ']) {
+      await subject.storeChecksSkipped(pool, 42, null, reason);
+      assert.deepEqual(pool.queries.at(-1).params, [null, 'there was nothing to test', 42, null],
+        `a skipped verdict always says why (reason ${JSON.stringify(reason)})`);
+    }
   } finally { restore(); }
 });
 

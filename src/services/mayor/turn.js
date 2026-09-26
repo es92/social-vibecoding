@@ -106,6 +106,10 @@ async function runMayorTurn(ctx, deps) {
     selectedModel,
     turnAttachments,
     scheduleInteractiveRecovery,
+    // #3177: the stored user message this turn answers, and the id its
+    // client sent with it (null when none was sent).
+    userMessageId = null,
+    clientMessageId = null,
   } = ctx;
   // Reassigned when a later model call needs a fresh payer (#664).
   let { userApiKey } = ctx;
@@ -168,7 +172,13 @@ async function runMayorTurn(ctx, deps) {
   // refresh. Same safety argument as mayor_reasoning: App.handleSessionEvent
   // has dedicated cases for both, and each event carries the COMPLETE
   // chip/pill list, applied last-write-wins.
-  const SSE_ONLY = new Set(['token', 'usage', 'error']);
+  //
+  // 'accepted' (#3177) is SSE-only too: it answers the request that sent the
+  // message, and the global WS has no handler for it, so a WS copy would be
+  // swallowed and the SSE copy then deduped away. It still goes to the
+  // session bus below, which is what makes `/events?since=<its _seq>` replay
+  // the turn from its start.
+  const SSE_ONLY = new Set(['token', 'usage', 'error', 'accepted']);
   const send = (type, data) => {
     const seq = `${seqPrefix}-${++eventSeq}`;
     const event = { type, _seq: seq, ...data };
@@ -239,6 +249,9 @@ async function runMayorTurn(ctx, deps) {
     // when the turn actually unwinds). Handing it the closure keeps the
     // _seq numbering consistent with the rest of the turn's events.
     send,
+    // #3177: which stored message this turn answers, so a delivery lookup
+    // (GET /status?client_message_id=) can say its turn is the one running.
+    userMessageId,
   };
   const prior = stopRegistry.get(session.id);
   if (prior && prior !== stopHandle) {
@@ -253,6 +266,12 @@ async function runMayorTurn(ctx, deps) {
   // retire it, and "the user sent a new message" is the only moment
   // that unambiguously means the previous stop is spent.
   worker.clearPendingStop(session.id);
+
+  // #3177: the turn's first event, and its first bytes on the wire. The
+  // message is stored by now, so a client that reads this knows it was
+  // delivered even if the stream breaks a moment later, and resumes from this
+  // event's _seq through GET /api/sessions/:id/events?since=.
+  send('accepted', { messageId: userMessageId, clientMessageId });
 
   const setPhase = (phase) => {
     stopHandle.phase = phase;

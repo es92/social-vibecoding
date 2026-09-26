@@ -212,7 +212,9 @@ test('runner-normalized optional provenance matches the exact submitted fixture'
   const normalized = runner.validateInput({
     runId: 'a'.repeat(32), pass: 1,
     origins: { base: 'http://base:3000', head: 'http://head:3000' },
-    authTokens: { member: 'fixture-member', read_only_admin: 'fixture-admin' },
+    authTokens: {
+      member: 'fixture-member', read_only_admin: 'fixture-admin', full_admin: 'fixture-full-admin',
+    },
     provenance: submitted,
     plan: require('./fixtures/visual-evidence').plan(),
   }).provenance;

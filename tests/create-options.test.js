@@ -80,6 +80,37 @@ test('the new repository\'s dapp.json carries a non-default rule, and only then'
   assert.deepEqual(readGovernance(dapp({ approverPolicy: 'invited', approvalsRequired: 3 })),
     { approvers: 'invited', approvals: 3 });
   const creator = fs.readFileSync(path.join(__dirname, '../src/services/app-creator.js'), 'utf8');
-  assert.equal((creator.match(/\{ governance: governanceOf\(appRow\) \}/g) || []).length, 2,
-    'both template paths (GitHub and local) pass the row\'s rule');
+  assert.equal((creator.match(/\{ governance: governanceOf\(appRow\), description: descriptionOf\(appRow\) \}/g) || []).length, 2,
+    'both template paths (GitHub and local) pass the row\'s rule and its line');
+});
+
+test('"What is it?" is one optional line, tidied and bounded, for a new project only', () => {
+  const desc = (description, opts) => options.parseCreateOptions({ audience: 'open', description }, opts);
+  assert.equal(desc(undefined).description, null);
+  assert.equal(desc('   ').description, null, 'blank is no line');
+  assert.equal(desc('  A shared\n\tlist  for our house ').description, 'A shared list for our house');
+  assert.equal(desc('x'.repeat(options.DESCRIPTION_MAX)).description.length, 100);
+  assert.match(desc('x'.repeat(101)).error, /100 characters or fewer/);
+  assert.match(desc(42).error, /line of text/);
+  assert.match(desc('A fork of ours', { imported: true }).error, /own dapp\.json describes it/);
+});
+
+test('the new repository\'s dapp.json and CLAUDE.md carry the line, and only when there is one', () => {
+  const files = (description) => getTemplateFiles('Notes', 'notes-abc123', 'postgres://x', null, { description });
+  const dapp = (description) => JSON.parse(files(description).find((f) => f.path === 'dapp.json').content);
+  assert.deepEqual(dapp(null), { secrets: [] });
+  assert.deepEqual(dapp('Shared notes for the house'), { description: 'Shared notes for the house', secrets: [] });
+  const both = JSON.parse(getTemplateFiles('Notes', 'notes-abc123', 'postgres://x', null, {
+    description: 'Shared notes', governance: { approverPolicy: 'invited', approvalsRequired: null },
+  }).find((f) => f.path === 'dapp.json').content);
+  assert.deepEqual(Object.keys(both), ['description', 'secrets', 'governance']);
+  const about = (description) => {
+    const claude = files(description).find((f) => f.path === 'CLAUDE.md').content;
+    return claude.slice(claude.indexOf('## About Notes'), claude.indexOf('## App-specific conventions'));
+  };
+  assert.match(about('Shared notes for the house'), /^## About Notes\n\nShared notes for the house\n\n/);
+  assert.doesNotMatch(about(null), /Shared notes/);
+  const route = fs.readFileSync(path.join(__dirname, '../src/routes/apps.js'), 'utf8');
+  assert.match(route, /UPDATE apps SET manifest_snapshot = \$1 WHERE id = \$2 RETURNING \*`,\s*\[JSON\.stringify\(\{ description, secrets: \[\] \}\), appRow\.id\]/,
+    'the route seeds the line where app-creator (and a Retry) reads it');
 });

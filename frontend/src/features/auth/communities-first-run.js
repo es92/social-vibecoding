@@ -46,13 +46,13 @@
   const SHOT = 'join-communities';
   const SHOT_LIST = [
     { slug: 'homeroom', name: 'Homeroom', icon_emoji: '🏠', self_hosted: true, checked: true,
-      detail: 'Build the platform you are using' },
+      detail: 'Contribute to the Homeroom platform' },
     { slug: 'book-club', name: 'Book club', icon_emoji: '📚', checked: true,
       detail: 'Invited by @grace', invited_by: 'grace' },
     { slug: 'city-garden', name: 'City garden', icon_emoji: '🌱', checked: false,
-      detail: 'Community · 48 members' },
-    { slug: 'pickup-soccer', name: 'Pickup soccer', icon_emoji: '⚽', checked: false,
-      detail: 'Community · 23 members' },
+      detail: 'Swap seeds and plan the shared plots.' },
+    // No description of its own: the row is just the name.
+    { slug: 'pickup-soccer', name: 'Pickup soccer', icon_emoji: '⚽', checked: false, detail: '' },
   ];
 
   const SETTLE_DELAY_MS = 450;
@@ -229,9 +229,14 @@
 
       const panel = el('div', 'px-4 pb-5');
       panel.setAttribute('data-join-communities', '');
-      panel.appendChild(el('div', 'text-lg font-bold pt-3', 'What communities do you want to join?'));
-      panel.appendChild(el('p', 'text-sm text-zinc-500 dark:text-zinc-400 mt-1 mb-4',
-        'You can join or leave any time from Discover.'));
+      // A welcome first: this is a new account's first screen after its
+      // name and the terms, so it says what the place is before it asks.
+      panel.appendChild(el('div', 'text-xl font-bold pt-3', 'Welcome to Homeroom!'));
+      panel.appendChild(el('p', 'text-sm text-zinc-600 dark:text-zinc-300 mt-1',
+        'Homeroom is a place where communities build the apps they use together.'));
+      panel.appendChild(el('div',
+        'text-[0.9375rem] font-[650] leading-5 text-zinc-900 dark:text-zinc-100 mt-5 mb-2',
+        'What communities do you want to join?'));
 
       // One card of rows, the platform's grouped-list shape: the plane
       // colour, a 20px radius and one inset hairline.
@@ -249,9 +254,12 @@
         row.setAttribute('data-join-community', c.slug);
         const text = el('div', 'min-w-0 flex-1');
         text.appendChild(el('div', 'truncate text-[0.9375rem] font-[650] leading-5 text-zinc-900 dark:text-zinc-100', c.name));
-        // The detail may wrap: "Build the platform you are using" and a long
-        // inviter's handle are both wider than a phone row.
-        text.appendChild(el('div', 'mt-0.5 line-clamp-2 text-[0.8125rem] leading-[1.125rem] text-zinc-500 dark:text-zinc-400', c.detail || ''));
+        // The detail may wrap to two lines: a community's own description
+        // and a long inviter's handle are both wider than a phone row. A
+        // community with no description of its own is just its name.
+        if (c.detail) {
+          text.appendChild(el('div', 'mt-0.5 line-clamp-2 text-[0.8125rem] leading-[1.125rem] text-zinc-500 dark:text-zinc-400', c.detail));
+        }
         const tick = CommunitiesFirstRun._tick(el);
         row.appendChild(CommunitiesFirstRun._icon(c, el));
         row.appendChild(text);
@@ -273,7 +281,7 @@
       }
 
       panel.appendChild(el('p', 'text-[0.8125rem] text-zinc-500 dark:text-zinc-400 mt-3',
-        'You can start your own group or community after you join.'));
+        'You can join or leave any time from Discover, and start your own group or community once you are in.'));
 
       const status = el('p', 'text-sm mt-2 min-h-5 text-red-600 dark:text-red-400');
       status.setAttribute('data-join-communities-error', '');

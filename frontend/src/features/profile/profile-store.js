@@ -59,6 +59,7 @@ import { createStore } from '../../lib/plain-store.js';
  * @property {boolean} previewOpen
  * @property {number|null} friendsPending — the incoming request being answered (#2386)
  * @property {string} friendsStatus         — why the last answer failed, if it did
+ * @property {boolean} feedbackOpen         — the "Your feedback" list is up (#3186)
  */
 
 export const profileStore = createStore(/** @type {ProfileState} */ ({
@@ -73,6 +74,7 @@ export const profileStore = createStore(/** @type {ProfileState} */ ({
   previewOpen: false,
   friendsPending: null,
   friendsStatus: '',
+  feedbackOpen: false,
 }));
 
 /** Only ever render an http(s) URL as a real anchor. Escaping alone would not
@@ -272,6 +274,74 @@ export function moreRowsView(data) {
   return {
     challenges: challenges.length ? challenges.join(' · ') : null,
     kudos: kudos == null ? null : `${kudos.toLocaleString()} received`,
+    feedback: feedbackLine(d.feedback),
+  };
+}
+
+/** "4 sent · 1 counted", from GET /api/feedback/mine (#3186). Null when the
+ *  read failed or has not answered, so the row falls back to saying what is
+ *  behind it rather than claiming none were sent. */
+function feedbackLine(feedback) {
+  if (!feedback || typeof feedback !== 'object' || !Number.isFinite(Number(feedback.sent))) return null;
+  const sent = Number(feedback.sent) || 0;
+  if (sent === 0) return 'Nothing sent yet';
+  return `${sent.toLocaleString()} sent · ${(Number(feedback.counted) || 0).toLocaleString()} counted`;
+}
+
+/** A report's status as the list says it. Two, not three: see
+ *  MY_FEEDBACK_SQL in src/routes/feedback.js for why there is no "reviewed". */
+const FEEDBACK_STATUS = {
+  received: {
+    label: 'Received',
+    className: 'shrink-0 rounded-full bg-zinc-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-zinc-700 dark:text-zinc-300',
+  },
+  counted: {
+    label: 'Counted',
+    className: 'shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-emerald-700 dark:text-emerald-400',
+  },
+};
+
+/** A slug the shell routes to, the shape an app slug has. Anything else gets
+ *  no link at all rather than an address built from it. */
+const APP_SLUG = /^[a-z0-9][a-z0-9-]*$/;
+
+/**
+ * "Your feedback" (#3186): the viewer's own reports, newest first, from
+ * GET /api/feedback/mine. Each row says what was sent (its title and where
+ * it went), its status, and links to the request it became, on that app's
+ * board. `loaded: false` is a read that failed, told apart from "nothing
+ * sent yet" the way Your contributions tells them apart.
+ */
+export function feedbackListView(feedback, now = Date.now()) {
+  const valid = feedback && typeof feedback === 'object' && Array.isArray(feedback.reports);
+  if (!valid) return { loaded: false, summary: null, truncated: false, rows: [] };
+  const rows = feedback.reports.filter((r) => r && r.id != null).map((r) => {
+    const status = r.status === 'counted' ? 'counted' : 'received';
+    const issue = Number(r.issueNumber);
+    const slug = typeof r.appSlug === 'string' && APP_SLUG.test(r.appSlug) ? r.appSlug : null;
+    const linked = !!slug && Number.isSafeInteger(issue) && issue > 0;
+    const meta = [r.appName ? String(r.appName) : (r.target === 'platform' ? 'Homeroom' : 'An app')];
+    if (linked) meta.push(`request #${issue}`);
+    const when = mergedAgo(r.createdAt, now);
+    if (when) meta.push(`sent ${when}`);
+    const points = Number(r.points);
+    return {
+      key: String(r.id),
+      title: r.title ? String(r.title) : 'Feedback',
+      meta: meta.join(' · '),
+      status,
+      statusLabel: status === 'counted' && points > 0
+        ? `${FEEDBACK_STATUS.counted.label} · ${points.toLocaleString()} pts`
+        : FEEDBACK_STATUS[status].label,
+      statusClassName: FEEDBACK_STATUS[status].className,
+      href: linked ? `#app/${encodeURIComponent(slug)}/dev/issues/${issue}` : null,
+    };
+  });
+  return {
+    loaded: true,
+    summary: feedbackLine(feedback),
+    truncated: !!feedback.truncated,
+    rows,
   };
 }
 
@@ -502,5 +572,6 @@ export function buildProfileView(state, now = Date.now()) {
     rows: moreRowsView(d),
     friends: friendsView(d.friends || null, now),
     contributions: contributionsView(d.summary || null, u.username || null, now),
+    feedback: feedbackListView(d.feedback || null, now),
   };
 }

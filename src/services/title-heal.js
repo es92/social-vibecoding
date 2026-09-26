@@ -110,7 +110,10 @@ async function healPrTitles(pool, { limit = 5, dataKey } = {}) {
 
 // Retry title generation for feedback issues in title_heal_queue. Success
 // deletes the row; failure bumps attempts with exponential backoff and
-// abandons the row past MAX_ISSUE_ATTEMPTS.
+// abandons the row past MAX_ISSUE_ATTEMPTS. A reply that is no usable
+// title resolves (not throws) with the reporter's own words (#3193), so
+// that is what gets PATCHed: a refusal never reaches GitHub, and the row
+// is not retried for an answer that won't change.
 async function healIssueTitles(pool, { limit = 10, dataKey } = {}) {
   const { rows } = await pool.query(
     `SELECT * FROM title_heal_queue

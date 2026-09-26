@@ -153,6 +153,11 @@ the same fixture. Explore both through the browser tool matching the story's
 persona. Do not sign in, expose storage, leave the supplied origins, or invent
 an alternate claim.
 
+The full_admin persona is a non-loginable identity inserted only into the two
+disposable Homeroom evidence databases. Use browser_full_admin only when the
+accepted story names full_admin; never substitute it for a member or
+read_only_admin story.
+
 The context includes the proposal's recorded testing paths and steps. They are
 navigation hints, not proof. If the accepted startPath is generic, inspect
 those paths and the most relevant declared checks before browsing unrelated

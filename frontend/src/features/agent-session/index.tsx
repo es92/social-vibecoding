@@ -63,6 +63,7 @@ import {
 import {
   buildTranscript,
   checksSummary,
+  skippedChecksReason,
   cardView,
   changeStatusLabel,
   durationLabel,
@@ -555,7 +556,11 @@ const CHECK_TONE: Record<string, string> = {
   failing: 'text-red-700 dark:text-red-300',
   running: 'text-zinc-500 dark:text-zinc-400',
   error: 'text-amber-700 dark:text-amber-300',
+  skipped: 'text-zinc-500 dark:text-zinc-400',
 };
+// Why checks were skipped, as text under the line rather than a tooltip: a
+// touch screen cannot hover (#3180).
+const CHECK_REASON = 'mt-1 text-xs text-zinc-600 dark:text-zinc-400';
 
 /**
  * A change's preview: in the side pane where there is room beside the chat,
@@ -617,7 +622,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
       </section>
     );
   }
-  const checks = checksSummary(change?.checkState, change?.checkFailing);
+  const checks = checksSummary(change?.checkState, change?.checkFailing, change?.checkSkipReason);
   const changeHref = change && change.appSlug && item.changeId != null
     ? `#app/${encodeURIComponent(change.appSlug)}/dev/proposals/${item.changeId}`
     : null;
@@ -652,6 +657,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
         ) : null}
       </div>
       {item.failed && item.error ? <p className="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">{item.error}</p> : null}
+      {checks && checks.reason ? <p className={CHECK_REASON} data-agent-session-checks-reason>{checks.reason}</p> : null}
       <div className="mt-2 flex flex-wrap gap-2">
         {item.failed ? (
           item.changeId != null ? (
@@ -1719,7 +1725,7 @@ function Composer({ id }: { id: string }) {
 
 // ── The changes drawer ─────────────────────────────────────────────────
 
-function ChangesDrawer({ session }: { session: AgentSession }) {
+export function ChangesDrawer({ session }: { session: AgentSession }) {
   const wide = useWideEnoughForSpec();
   const active = session.activeChange;
   const others = (session.changes || []).filter((change) => !active || change.id !== active.id);
@@ -1753,6 +1759,8 @@ function ChangesDrawer({ session }: { session: AgentSession }) {
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(active.status)}`}>{changeStatusLabel(active.status)}</span>
             </div>
             {active.checkState ? <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Checks: {active.checkState}</p> : null}
+            {active.checkState === 'skipped'
+              ? <p className={CHECK_REASON} data-agent-session-checks-reason>{skippedChecksReason(active.checkSkipReason)}</p> : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {active.stagingUrl ? (
                 <Button

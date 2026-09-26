@@ -17,7 +17,9 @@ function reportAuth(persona, side, bootstrap, sessionCookiePresent) {
   // Only fixed booleans and status cross the worker boundary. The token,
   // session cookie, URLs, and response body stay inside this process.
   process.stdout.write(`__USERNODE_EVIDENCE_BROWSER__ ${JSON.stringify({
-    kind: 'auth_bootstrap', persona: persona === 'member' ? 'member' : 'admin', side,
+    kind: 'auth_bootstrap',
+    persona: persona === 'member' ? 'member' : persona === 'full_admin' ? 'full_admin' : 'admin',
+    side,
     attempted: bootstrap.attempted === true,
     cookieAlreadyPresent: bootstrap.cookieAlreadyPresent === true,
     sessionCookieInstalled: bootstrap.sessionCookieInstalled === true,
@@ -33,6 +35,7 @@ async function main() {
   const personas = {
     member: String(process.env.EVIDENCE_MEMBER_TOKEN || ''),
     read_only_admin: String(process.env.EVIDENCE_ADMIN_TOKEN || ''),
+    full_admin: String(process.env.EVIDENCE_FULL_ADMIN_TOKEN || ''),
   };
   if (origins.length !== 2 || !outputDir || !proxy || Object.values(personas).some((value) => !value)) {
     throw new Error('Evidence browser bootstrap configuration is incomplete.');

@@ -280,6 +280,52 @@ test('healIssueTitles: success retitles the issue, deletes the queue row, announ
   }
 });
 
+test('healIssueTitles: a refusal reply is never PATCHed; the reporter\'s words are, and the row is done (#3193)', async () => {
+  // The real generateIssueTitle behind a stubbed client, answering with
+  // #3105's published refusal as the request list shows it.
+  const realLlm = require('../src/services/llm');
+  const prevClient = realLlm._setClientForTests({
+    messages: {
+      create: async () => ({
+        content: [{ type: 'text', text: 'I need more information to create a meaningful GitHub issue title. "Lfg" (looking for group) doesn\'t describe a specific problem or feature request.\n\nCould you provide details about what needs to be f' }],
+        usage: { input_tokens: 40, output_tokens: 30 },
+        stop_reason: 'end_turn',
+      }),
+    },
+  });
+  const ghCalls = [];
+  const { subject, restore } = loadTitleHealWithStubs({
+    llm: { isEnabled: () => true, generateIssueTitle: realLlm.generateIssueTitle },
+    github: {
+      safeMention: (s) => s,
+      patchIssueTitle: async (owner, repo, n, title) => { ghCalls.push(title); },
+      invalidateIssuesCache: () => {},
+    },
+    prMetadata: {},
+    ws: noopWs,
+  });
+  try {
+    const queries = [];
+    const pool = {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        if (/FROM title_heal_queue/.test(sql)) {
+          return { rows: [{ id: 5, owner: 'acme', repo: 'app', issue_number: 12, description: 'Lfg', attempts: 0 }] };
+        }
+        return { rows: [] };
+      },
+    };
+    const res = await subject.healIssueTitles(pool);
+    assert.deepEqual(res, { scanned: 1, healed: 1 });
+    assert.deepEqual(ghCalls, ['Feedback: Lfg']);
+    assert.ok(queries.some((q) => /DELETE FROM title_heal_queue/.test(q.sql)), 'queue row deleted');
+    assert.ok(!queries.some((q) => /UPDATE title_heal_queue/.test(q.sql)), 'no backoff retry');
+  } finally {
+    restore();
+    realLlm._setClientForTests(prevClient);
+  }
+});
+
 test('healIssueTitles: failure backs off; final attempt abandons the row', async () => {
   delete process.env.GITHUB_BOT_TOKEN;
   const { subject, restore } = loadTitleHealWithStubs({

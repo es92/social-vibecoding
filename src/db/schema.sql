@@ -1375,6 +1375,16 @@ ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS local_agent_label TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS chat_session_messages_handoff_event_idx
   ON chat_session_messages(session_id, (metadata->>'handoffEventId'))
   WHERE metadata ? 'handoffEventId';
+
+-- #3177: the optional id a client sends with a dev-chat message
+-- (POST /api/sessions/:id/chat `client_message_id`), so a retry after a
+-- dropped stream finds the message it already sent instead of starting a
+-- second turn. Same shape and rule as conversation_messages.idempotency_key:
+-- one per session, and rows sent without one are never constrained.
+ALTER TABLE chat_session_messages ADD COLUMN IF NOT EXISTS client_message_id VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS chat_session_messages_client_message_idx
+  ON chat_session_messages (session_id, client_message_id)
+  WHERE client_message_id IS NOT NULL;
 -- source = 'maintenance' marks proposals opened by a fleet maintenance
 -- campaign (services/fleet-maintenance.js): platform-authored PRs fanned
 -- out to child apps after a maintenance_campaign governance vote passes.
@@ -4944,6 +4954,10 @@ INSERT INTO mobile_push_kind_categories (kind, category, default_enabled) VALUES
   ('weekly_digest', 'proposal_alerts', TRUE),
   ('issue_opened', 'app_alerts', TRUE),
   ('app_health', 'app_alerts', TRUE),
+  -- A server-wide cap nearing its ceiling, for full admins only
+  -- (services/platform-limit-alerts.js). "Something happened that affects
+  -- the apps you look after", one level up, so the same category.
+  ('platform_limit', 'app_alerts', TRUE),
   ('reaction', 'lightweight_activity', FALSE),
   ('kudos', 'lightweight_activity', FALSE),
   ('conversation_invite', 'messages', TRUE),
@@ -4980,7 +4994,9 @@ DELETE FROM mobile_push_kind_categories
    -- #2387.
    'conversation_thread_reply',
    -- #3181.
-   'session_stalled'
+   'session_stalled',
+   -- Server-wide limit alerts for full admins.
+   'platform_limit'
  );
 
 -- Sparse account overrides. The closed policy above supplies defaults, so
@@ -9874,3 +9890,23 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS getting_started_closed_at TIMESTAMPTZ
 -- { "workshop": "<iso>", "discover": "<iso>" }. Written only while the card
 -- is showing, and read only by it.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS getting_started_seen JSONB;
+
+-- ── Platform limit alerts ──────────────────────────────────────────────
+--
+-- The last level each server-wide cap reached (services/platform-limit-
+-- alerts.js): 'ok', 'warn' (at PLATFORM_LIMIT_WARN_PERCENT of the cap) or
+-- 'full'. One row per cap ('apps' for MAX_APPS, 'sessions' for
+-- MAX_GLOBAL_SESSIONS), read and written under a row lock in the same
+-- transaction that notifies the full admins, so a crossing is announced
+-- once however many evaluators race it. used / cap / measured_at are the
+-- figures behind the last decision, kept for anybody reading the row.
+--
+-- Operational state, not a secret, so it is not tagged staging:private.
+CREATE TABLE IF NOT EXISTS platform_limit_alerts (
+  limit_key   VARCHAR(32) PRIMARY KEY,
+  level       VARCHAR(8) NOT NULL DEFAULT 'ok' CHECK (level IN ('ok', 'warn', 'full')),
+  used        INTEGER,
+  cap         INTEGER,
+  measured_at TIMESTAMPTZ,
+  notified_at TIMESTAMPTZ
+);

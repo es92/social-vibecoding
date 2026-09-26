@@ -152,7 +152,7 @@ function validateInput(raw) {
   if (!provenance.fixtureFingerprint || typeof provenance.fixtureFingerprint !== 'string') {
     throw new ReplayFailure('invalid_provenance', 'A paired fixture fingerprint is required.');
   }
-  const authTokens = Object.fromEntries(['member', 'read_only_admin'].map((persona) => {
+  const authTokens = Object.fromEntries(['member', 'read_only_admin', 'full_admin'].map((persona) => {
     const token = raw.authTokens?.[persona];
     if (typeof token !== 'string' || token.length === 0 || token.length > 8192
         || !/^[A-Za-z0-9._~-]+$/.test(token)) {

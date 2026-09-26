@@ -194,7 +194,8 @@ function requireNonEmptySecret(value, name) {
 function buildTurnSecretEnv({
   mode, agentBackend, workerSessionJwt, workerPushJwt, issuesReadJwt,
   anthropicProxyJwt, anthropicApiKey, prodDebugJwt, openrouterApiKey,
-  evidenceJwt, evidenceMemberToken, evidenceAdminToken, homeroomMcpToken = null,
+  evidenceJwt, evidenceMemberToken, evidenceAdminToken, evidenceFullAdminToken,
+  homeroomMcpToken = null,
 }) {
   const { backend, isCodex, isClaude } = resolveTurnBackend(agentBackend);
   if (!isClaude && !isCodex) {
@@ -220,6 +221,7 @@ function buildTurnSecretEnv({
       env.EVIDENCE_JWT = requireNonEmptySecret(evidenceJwt, 'evidenceJwt');
       env.EVIDENCE_MEMBER_TOKEN = requireNonEmptySecret(evidenceMemberToken, 'evidenceMemberToken');
       env.EVIDENCE_ADMIN_TOKEN = requireNonEmptySecret(evidenceAdminToken, 'evidenceAdminToken');
+      env.EVIDENCE_FULL_ADMIN_TOKEN = requireNonEmptySecret(evidenceFullAdminToken, 'evidenceFullAdminToken');
     }
     if (homeroomMcpToken && HOMEROOM_READ_MODES.has(mode)) env.HOMEROOM_MCP_TOKEN = homeroomMcpToken;
     return env;
@@ -246,6 +248,7 @@ function buildTurnSecretEnv({
     env.EVIDENCE_JWT = requireNonEmptySecret(evidenceJwt, 'evidenceJwt');
     env.EVIDENCE_MEMBER_TOKEN = requireNonEmptySecret(evidenceMemberToken, 'evidenceMemberToken');
     env.EVIDENCE_ADMIN_TOKEN = requireNonEmptySecret(evidenceAdminToken, 'evidenceAdminToken');
+    env.EVIDENCE_FULL_ADMIN_TOKEN = requireNonEmptySecret(evidenceFullAdminToken, 'evidenceFullAdminToken');
   }
   if (homeroomMcpToken && HOMEROOM_READ_MODES.has(mode)) env.HOMEROOM_MCP_TOKEN = homeroomMcpToken;
   return env;
@@ -479,7 +482,8 @@ function evidenceDiagnosticTool(name) {
   const tool = parts.at(-1);
   if (!EVIDENCE_DIAGNOSTIC_TOOLS.has(tool)) return { tool: 'other' };
   const server = parts.includes('browser_member') ? 'member'
-    : parts.includes('browser_admin') ? 'admin' : null;
+    : parts.includes('browser_full_admin') ? 'full_admin'
+      : parts.includes('browser_admin') ? 'admin' : null;
   return { tool, ...(server ? { persona: server } : {}) };
 }
 
@@ -751,6 +755,7 @@ function applyStreamEvent(event, onProgress, state) {
       evidenceRunPlanAvailable: evidenceToolAvailable(systemEvent.tools, 'evidence_run_plan'),
       browserMemberToolCount: mcpToolCount(systemEvent.tools, 'browser_member'),
       browserAdminToolCount: mcpToolCount(systemEvent.tools, 'browser_admin'),
+      browserFullAdminToolCount: mcpToolCount(systemEvent.tools, 'browser_full_admin'),
     });
   }
   if (event.type === 'assistant' && event.message?.content) {
@@ -2935,6 +2940,7 @@ async function execInWorker(sessionId, {
       evidenceJwt,
       evidenceMemberToken: evidenceAuthTokens?.member,
       evidenceAdminToken: evidenceAuthTokens?.read_only_admin,
+      evidenceFullAdminToken: evidenceAuthTokens?.full_admin,
       homeroomMcpToken: homeroomGrant ? homeroomGrant.token : null,
     });
   } catch (err) {

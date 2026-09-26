@@ -169,7 +169,11 @@ async function runWithFixture(options, plan, fixture) {
   };
   const inputFor = (pass) => ({
     runId, pass, publishArtifacts: pass === 2, plan, origins, provenance,
-    authTokens: { member: 'local-member-fixture', read_only_admin: 'local-admin-fixture' },
+    authTokens: {
+      member: 'local-member-fixture',
+      read_only_admin: 'local-admin-fixture',
+      full_admin: 'local-full-admin-fixture',
+    },
     cookies: {},
     browser: { locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light', deviceScaleFactor: 1 },
   });

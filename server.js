@@ -1270,6 +1270,10 @@ async function becomeLeader() {
   // warn its admins on the way up and freeze it read-only at the top.
   startAppStorageCapSweeper(config);
 
+  // Tell the full admins when a server-wide cap (MAX_APPS,
+  // MAX_GLOBAL_SESSIONS) nears or reaches its ceiling.
+  startPlatformLimitSweeper(config);
+
   // #907: release local coding-agent leases whose machine stopped
   // heartbeating, and fail the turn they were holding.
   startLocalAgentLeaseSweeper(config);
@@ -5530,6 +5534,46 @@ function startAppStorageCapSweeper(config) {
   appStorageCapSweeperHandle.unref?.();
 }
 
+// Early warning for the server-wide caps (services/platform-limit-alerts.js):
+// every few minutes the leader counts live apps against MAX_APPS and active
+// sessions against MAX_GLOBAL_SESSIONS, and tells the full admins once when
+// either crosses PLATFORM_LIMIT_WARN_PERCENT and once when it is full.
+// Leader-only so two colors don't each measure the same crossing (the row
+// lock would stop a double notification anyway, but not the double work).
+// The app-create routes nudge the apps check between sweeps. The first run
+// waits half a minute to land after the boot-time migration that adds its
+// table.
+let platformLimitSweeperHandle = null;
+let platformLimitFirstRunHandle = null;
+
+function startPlatformLimitSweeper(config) {
+  if (platformLimitSweeperHandle) return;
+  const pool = getPool(config);
+  const platformLimits = require('./src/services/platform-limit-alerts');
+  log.info('server', 'Platform limit sweeper started', {
+    maxApps: config.maxApps,
+    maxGlobalSessions: config.maxGlobalSessions,
+    warnPercent: platformLimits.warnPercent(),
+    intervalMs: platformLimits.SWEEP_INTERVAL_MS,
+  });
+  let running = false;
+  const run = async () => {
+    if (lifecycle.isShuttingDown() || running) return;
+    running = true;
+    try {
+      await platformLimits.sweep(pool, config);
+    } catch (err) {
+      log.warn('server', 'Platform limit sweep failed', { err: err.message });
+    } finally {
+      running = false;
+    }
+  };
+  platformLimitFirstRunHandle = setTimeout(run, 30 * 1000);
+  platformLimitFirstRunHandle.unref?.();
+  platformLimitSweeperHandle = setInterval(run, platformLimits.SWEEP_INTERVAL_MS);
+  platformLimitSweeperHandle.unref?.();
+}
+
 // Graceful shutdown: mark drain state so new chats/app-creates/builds get
 // 503'd, wait up to DRAIN_TIMEOUT_MS for in-flight HTTP handlers to
 // finish flushing DB writes, then exit.
@@ -5680,6 +5724,14 @@ async function cleanup() {
   if (appStorageCapSweeperHandle) {
     clearInterval(appStorageCapSweeperHandle);
     appStorageCapSweeperHandle = null;
+  }
+  if (platformLimitFirstRunHandle) {
+    clearTimeout(platformLimitFirstRunHandle);
+    platformLimitFirstRunHandle = null;
+  }
+  if (platformLimitSweeperHandle) {
+    clearInterval(platformLimitSweeperHandle);
+    platformLimitSweeperHandle = null;
   }
   if (governanceApplyTickerHandle) {
     clearInterval(governanceApplyTickerHandle);

@@ -78,6 +78,34 @@ function minutesSince(value, now) {
   return Math.floor(elapsed / (60 * 1000));
 }
 
+// services/platform-limit-alerts.js detailToken(): "<limit>_<level>:<used>:<cap>".
+// Parsed here rather than required from there: that module reaches the
+// database helpers, and copy assembly stays dependency-free.
+const PLATFORM_LIMIT_DETAIL_RE = /^(apps|sessions)_(warn|full):(\d{1,7}):(\d{1,7})$/;
+
+function platformLimitCopy(detail) {
+  const m = PLATFORM_LIMIT_DETAIL_RE.exec(detail);
+  if (!m) {
+    return {
+      title: 'Platform limit',
+      body: 'The server is nearing one of its limits. Open Homeroom to see which',
+    };
+  }
+  const [, limit, level, used, cap] = m;
+  if (limit === 'apps') {
+    return level === 'full'
+      ? { title: 'App limit reached',
+        body: `${used} of ${cap} apps are in use. New apps are refused until an admin raises MAX_APPS or removes one` }
+      : { title: 'Nearing the app limit',
+        body: `${used} of ${cap} apps are in use. Raise MAX_APPS in Platform variables before new apps are refused` };
+  }
+  return level === 'full'
+    ? { title: 'Session limit reached',
+      body: `${used} of ${cap} coding sessions are running. New ones pause idle sessions or wait until MAX_GLOBAL_SESSIONS is raised` }
+    : { title: 'Nearing the session limit',
+      body: `${used} of ${cap} coding sessions are running. At the limit, idle sessions are paused to make room` };
+}
+
 // Kind-specific {title, body}, or null when the kind's essential context is
 // missing (e.g. a mention without a sender) — null means the generic copy.
 function buildCopy(kind, context, now) {
@@ -407,6 +435,11 @@ function buildCopy(kind, context, now) {
         title: withApp('App needs attention'),
         body: 'Open the app to see what needs attention',
       };
+    // A server-wide cap nearing or at its ceiling, for full admins only
+    // (services/platform-limit-alerts.js). The detail token carries which
+    // cap, the level and the figures, so the push can say how close it is.
+    case 'platform_limit':
+      return platformLimitCopy(detail);
     default:
       return null;
   }

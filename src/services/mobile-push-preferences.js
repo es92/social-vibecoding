@@ -86,7 +86,12 @@ const CATEGORY_DEFINITIONS = Object.freeze([
     // services/notification-preferences.js, so this being on by default
     // does not make it noisy: no notification is created in the first
     // place unless somebody opted the app in.
-    kinds: Object.freeze(['issue_opened', 'app_health']),
+    //
+    // 'platform_limit' is the same moment one level up, for full admins
+    // only: the SERVER is nearing a cap that stops apps being created or
+    // sessions starting (services/platform-limit-alerts.js). Only full
+    // admins ever receive one, so nobody else's switch is affected.
+    kinds: Object.freeze(['issue_opened', 'app_health', 'platform_limit']),
   }),
   Object.freeze({
     key: 'lightweight_activity',

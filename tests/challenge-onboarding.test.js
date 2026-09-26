@@ -136,6 +136,9 @@ function makeApp(counts = [0, 0, 0], credits = {}) {
     if (sql.startsWith('/* challenge onboarding */')) {
       return { rows: intro(params[0] === 7 ? state.counts : [0, 0, 0]) };
     }
+    // The public list's scoring-cadence read (#3185). No rule scores anything
+    // in this fixture, so every card's `scoring` is null.
+    if (sql.startsWith('/* challenge scoring cadence */')) return { rows: [] };
     if (sql.includes('SELECT home_panels_hidden FROM users')) return { rows: [{ home_panels_hidden: [] }] };
     if (sql.includes('FROM seasons')) return { rows: [{ id: 2, name: 'Current season', internal: false }] };
     if (sql.startsWith('SELECT id, type, name')) return { rows: [{ id: 10, type: 'season' }, { id: 11, type: 'regular' }] };

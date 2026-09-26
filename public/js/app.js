@@ -1540,7 +1540,7 @@ const App = {
         && shot !== 'feedback-capture-failed'
         && shot !== 'feedback-required' && shot !== 'feedback-choose'
         && shot !== 'feedback-choose-missed'
-        && shot !== 'feedback-first') return;
+        && shot !== 'feedback-first' && shot !== 'feedback-sent') return;
     const spent = shot === 'feedback-spent';
     // #1054: the two offline variants. `feedback-offline` is the dialog as a
     // disconnected user meets it (the hint, and Submit reading "Save for
@@ -1603,7 +1603,11 @@ const App = {
         },
       }]);
     }
-    if (shot === 'feedback-first') window.FeedbackQueue?.seedDisplayOnly?.([]);
+    // #3186: `feedback-sent` is every other filed report's confirmation, with
+    // its "See your feedback". Filing needs GitHub, which a preview does not
+    // have, so like `feedback-first` it is posed through the controller's own
+    // hook and writes nothing.
+    if (shot === 'feedback-first' || shot === 'feedback-sent') window.FeedbackQueue?.seedDisplayOnly?.([]);
     if (offline) {
       try { window.Offline?.forceOffline(); } catch (err) { /* ignore */ }
     }
@@ -1656,6 +1660,16 @@ const App = {
             if (--firstTries > 0) setTimeout(showFirst, App.IMPROVE_SHOT_INTERVAL_MS);
           };
           setTimeout(showFirst, 50);
+        }
+        if (shot === 'feedback-sent') {
+          let sentTries = App.IMPROVE_SHOT_TRIES;
+          const showSent = () => {
+            const sent = document.getElementById('feedback-sent');
+            if (sent && !sent.classList.contains('hidden')) return;
+            App._simulateFeedbackSent?.();
+            if (--sentTries > 0) setTimeout(showSent, App.IMPROVE_SHOT_INTERVAL_MS);
+          };
+          setTimeout(showSent, 50);
         }
         if (captureFailed) {
           const text = document.getElementById('feedback-text');

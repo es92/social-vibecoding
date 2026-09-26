@@ -133,8 +133,11 @@ test('#2837: the CSS puts the chip left of the pill, on its row, without moving 
   // as the chip's menu.
   assert.match(CSS, /\.dev-ws\[data-ws-scope-inline\] > \.dev-ws-scope > \[role='menu'\] \{ max-width: 420px; \}/);
   // The chip is 36px tall (`h-9`) because the desktop pill's track is 36px:
-  // 32px tabs plus 2px padding on each side. `top: 0` depends on that.
-  assert.match(CSS, /\.dev-ws-tabtrack \{\n    display: inline-flex; align-items: center; gap: 2px;\n    padding: 2px;/);
+  // 32px tabs plus 2px padding on each side. `top: 0` depends on that. The
+  // padding is the pill's and the "+"'s own since #2934, which drew the "+"
+  // as a circle of its own beside the pill; the track only lines the two up.
+  assert.match(CSS, /\.dev-ws-tabtrack \{\n    display: inline-flex; align-items: center; gap: 6px;\n  \}/);
+  assert.match(CSS, /\.dev-ws-tablist, \.dev-ws-tabtrack > \.dev-ws-plus \{\n    padding: 2px;/);
   assert.match(CSS, /\.dev-ws-tab \{\n    flex: 0 0 auto; flex-direction: row; gap: 7px;\n    height: 32px;/);
 });
 

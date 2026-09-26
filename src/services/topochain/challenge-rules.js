@@ -407,6 +407,36 @@ function nextDueAt(rule, { defaultMinutes } = {}) {
   return last + minutes * 60000;
 }
 
+// What a participant's card says about the schedule (#3185): how often this
+// challenge is counted, and when it last was. Progress on a scored challenge
+// moves only when a run writes credits, so without this a card can sit on
+// "1/3" for a whole interval and read as broken.
+//
+// `ruleList` is every enabled rule bound to the challenge or its template,
+// each shaped like the rule the scorer builds, plus its cadence fields. Only
+// a rule that would score the challenge right now counts — skipReason null,
+// and a schedule that runs it — so a card never promises an update the
+// scorer is not going to make. Two rules can pay into one challenge (one on
+// its template, one on the challenge), and progress moves whenever either
+// runs: the shorter interval and the more recent complete pass.
+//
+// null when nothing counts it, and when nothing has yet: a rule that has
+// never run is due on the next beat, and has no time worth printing.
+function cadenceOf(ruleList, row, { now = Date.now(), defaultMinutes } = {}) {
+  let minutes = null;
+  let last = null;
+  for (const rule of ruleList || []) {
+    if (skipReason(rule, row, { now })) continue;
+    const every = effectiveInterval(rule, defaultMinutes);
+    if (every == null) continue;
+    minutes = minutes == null ? every : Math.min(minutes, every);
+    const at = toMs(rule.lastScoredAt);
+    if (at != null) last = last == null ? at : Math.max(last, at);
+  }
+  if (minutes == null || last == null) return null;
+  return { intervalMinutes: minutes, lastScoredAt: last };
+}
+
 // The order one run takes its rules in. Two things ride on it:
 //
 //   Cheap before expensive. A graded rule can spend most of a minute on
@@ -445,5 +475,6 @@ module.exports = {
   effectiveInterval,
   isDue,
   nextDueAt,
+  cadenceOf,
   runOrder,
 };

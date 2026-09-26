@@ -20,7 +20,7 @@ const MAX_LOCATOR_VALUE = 256;
 const MAX_PATH = 512;
 
 const IMPACTS = Object.freeze(['ui', 'motion', 'none']);
-const PERSONAS = Object.freeze(['member', 'read_only_admin']);
+const PERSONAS = Object.freeze(['member', 'read_only_admin', 'full_admin']);
 const ANIMATIONS = Object.freeze(['none', 'steps', 'motion']);
 const CONTROLLED_FAILURE_LABEL = 'Controlled test: deliberately block the declared API GET on both revisions.';
 const LOCATOR_KINDS = Object.freeze(['testId', 'role', 'label', 'placeholder', 'text', 'css']);

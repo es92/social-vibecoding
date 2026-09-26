@@ -74,6 +74,10 @@ function dockerImageName(app, sha) {
   return `usernode-evidence-${appId}:${exactSha(sha).slice(0, 16)}-${IMAGE_RECIPE}`;
 }
 
+function evidenceCapacityEnv(config, app) {
+  return app?.slug === config?.selfAppSlug ? { MAX_APPS: '0' } : {};
+}
+
 async function git(args, options = {}) {
   return docker.execFileAsync('git', args, { timeout: options.timeout || 120_000, maxBuffer: 4 * 1024 * 1024 });
 }
@@ -293,6 +297,12 @@ async function resetPair(config, pair, { onProgress = null } = {}) {
     onProgress?.({ stage: 'deploy_pair' });
     const deployments = await allSettledValues(['base', 'head'].map(async (side) => {
       const spec = pair.sides[side];
+      // A production clone can legitimately sit at the platform's app cap.
+      // That makes ordinary create-dialog stories unreachable even though
+      // the feature works for a member on a server with capacity. Disable
+      // only this self-app limit inside disposable evidence runtimes; neither
+      // production nor an ordinary staging preview receives the override.
+      const evidenceEnv = evidenceCapacityEnv(config, pair.app);
       const deployed = await applicationRuntime.deploy(config, {
         app: pair.app,
         environment: 'staging',
@@ -304,6 +314,7 @@ async function resetPair(config, pair, { onProgress = null } = {}) {
         env: {
           DATABASE_URL: dbManager.connectionUrl(spec.dbName, cloneBySide[side].password),
           ...spec.env,
+          ...evidenceEnv,
         },
         port: 3000,
         memory: docker.STAGING_MEMORY,
@@ -311,7 +322,7 @@ async function resetPair(config, pair, { onProgress = null } = {}) {
         labels: {
           [EVIDENCE_LABEL]: pair.runId,
           [EVIDENCE_SIDE_LABEL]: side,
-          [stagingEnv.LABEL_ENV_FP]: stagingEnv.envFingerprint(spec.env),
+          [stagingEnv.LABEL_ENV_FP]: stagingEnv.envFingerprint({ ...spec.env, ...evidenceEnv }),
         },
       });
       return [side, deployed];
@@ -320,11 +331,17 @@ async function resetPair(config, pair, { onProgress = null } = {}) {
     let fixtureProfile = null;
     let availableFixtures = [];
     if (pair.app.slug === config.selfAppSlug) {
-      onProgress?.({ stage: 'inspect_evidence_fixtures' });
+      const fixtureProfiles = [];
       const fixtureInputs = Object.fromEntries(['base', 'head'].map((side) => [side, {
         databaseUrl: dbManager.connectionUrl(pair.sides[side].dbName, cloneBySide[side].password),
         slug: pair.app.slug, runId: pair.runId, side,
       }]));
+      onProgress?.({ stage: 'seed_evidence_identities' });
+      const admins = await allSettledValues(['base', 'head'].map((side) =>
+        evidenceFixtures.ensureFullAdminIdentity(fixtureInputs[side])));
+      fixtureProfiles.push(evidenceFixtures.FULL_ADMIN_PROFILE);
+      availableFixtures.push(admins[0]);
+      onProgress?.({ stage: 'inspect_evidence_fixtures' });
       const ready = await allSettledValues(['base', 'head'].map((side) =>
         evidenceFixtures.canCopyMemberAgentSession(fixtureInputs[side])));
       // A fixture must exist on BOTH exact revisions. Never insert a state
@@ -335,9 +352,10 @@ async function resetPair(config, pair, { onProgress = null } = {}) {
           evidenceFixtures.copyMemberAgentSession({
             ...fixtureInputs[side], selfAppSlug: config.selfAppSlug,
           })));
-        fixtureProfile = evidenceFixtures.PROFILE;
-        availableFixtures = [seeded[0]];
+        fixtureProfiles.push(evidenceFixtures.PROFILE);
+        availableFixtures.push(seeded[0]);
       }
+      fixtureProfile = fixtureProfiles.join('+');
     }
     if (pair.fixtureProfileSet && pair.fixtureProfile !== fixtureProfile) {
       throw new VisualEvidenceEnvironmentError('evidence_fixture_mismatch',
@@ -399,6 +417,7 @@ module.exports = {
   repoParts,
   runtimeName,
   dockerImageName,
+  evidenceCapacityEnv,
   checkoutExactRevision,
   resolvedStagingEnv,
   buildRevision,

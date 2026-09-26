@@ -1632,8 +1632,27 @@ function parseGithubUrl(input) {
   return { owner, repo };
 }
 
-// Find a pending invitation for *this exact repo* and accept it. Used
-// only as a side-effect of the import-flow pre-flight, never as a
+// The bot's own PAT client for the import pre-flight. The test seam
+// (_setOctokitFactoryForTests) stands in for it so the invitation and
+// permission logic below can be unit-tested with stubbed GitHub responses.
+async function botPatOctokit() {
+  if (_octokitFactoryForTests) return _octokitFactoryForTests(null);
+  const pat = process.env.GITHUB_BOT_TOKEN;
+  if (!pat) return null;
+  const { Octokit } = await import('@octokit/rest');
+  return new Octokit({ auth: pat });
+}
+
+// GET /user/repository_invitations returns 30 invitations per page by
+// default, oldest first. usernode-bot is ONE account every importer
+// invites, and invitations nobody finished importing linger until they
+// expire, so the invitation a user sent a minute ago routinely sat past the
+// first page and was never found (#3021). Walk every page, 100 at a time.
+const INVITATION_PAGE_SIZE = 100;
+const INVITATION_MAX_PAGES = 20;
+
+// Find the pending invitation(s) for *this exact repo* and accept them.
+// Used only as a side-effect of the import-flow pre-flight, never as a
 // background poller — that's the user-confirmed scoping rule.
 //
 // Returns true if an invitation was found+accepted, false otherwise.
@@ -1641,19 +1660,39 @@ function parseGithubUrl(input) {
 // invitation-list failure doesn't mask the real problem on the get-repo
 // call that follows.
 async function acceptInvitationFor(owner, repo) {
-  const pat = process.env.GITHUB_BOT_TOKEN;
-  if (!pat) return false;
-  const { Octokit } = await import('@octokit/rest');
-  const octokit = new Octokit({ auth: pat });
-  const invites = await octokit.rest.repos.listInvitationsForAuthenticatedUser();
-  const match = invites.data.find(
-    (i) => i.repository.owner.login.toLowerCase() === owner.toLowerCase()
-        && i.repository.name.toLowerCase() === repo.toLowerCase()
-  );
-  if (!match) return false;
-  await octokit.rest.repos.acceptInvitationForAuthenticatedUser({ invitation_id: match.id });
-  log.info('github', 'Accepted repo invitation', { repo: `${owner}/${repo}`, id: match.id });
-  return true;
+  const octokit = await botPatOctokit();
+  if (!octokit) return false;
+  const matches = [];
+  for (let page = 1; page <= INVITATION_MAX_PAGES; page++) {
+    const { data } = await octokit.rest.repos.listInvitationsForAuthenticatedUser({
+      per_page: INVITATION_PAGE_SIZE, page,
+    });
+    const invites = Array.isArray(data) ? data : [];
+    for (const i of invites) {
+      const r = i && i.repository;
+      if (r && r.owner && r.owner.login.toLowerCase() === owner.toLowerCase()
+          && r.name.toLowerCase() === repo.toLowerCase()) {
+        matches.push(i);
+      }
+    }
+    if (invites.length < INVITATION_PAGE_SIZE) break;
+  }
+  // A user who re-invites after an earlier invitation lapsed leaves BOTH
+  // on the list; accepting the expired one first fails and used to end the
+  // attempt with the live one still pending. Skip expired invitations.
+  const live = matches.filter((i) => i.expired !== true);
+  if (live.length === 0) return false;
+  let accepted = false;
+  for (const invite of live) {
+    try {
+      await octokit.rest.repos.acceptInvitationForAuthenticatedUser({ invitation_id: invite.id });
+      log.info('github', 'Accepted repo invitation', { repo: `${owner}/${repo}`, id: invite.id });
+      accepted = true;
+    } catch (err) {
+      log.warn('github', 'Accepting repo invitation failed', { repo: `${owner}/${repo}`, id: invite.id, err: err.message });
+    }
+  }
+  return accepted;
 }
 
 // The pre-flight that gates POST /api/apps when repoUrl is set. The
@@ -1661,15 +1700,13 @@ async function acceptInvitationFor(owner, repo) {
 // just forwards `{ status, error: message }` to the client when ok is
 // false, so the modal can show an actionable hint and stay open.
 async function verifyBotAccess(owner, repo) {
-  const pat = process.env.GITHUB_BOT_TOKEN;
-  if (!pat) {
+  const octokit = await botPatOctokit();
+  if (!octokit) {
     return {
       ok: false, status: 500, code: 'no_token',
       message: 'GitHub bot token not configured on the platform.',
     };
   }
-  const { Octokit } = await import('@octokit/rest');
-  const octokit = new Octokit({ auth: pat });
 
   // Greedy first pass: if the user just invited the bot moments before
   // clicking submit, the invitation accept turns this into a one-step
@@ -1684,9 +1721,11 @@ async function verifyBotAccess(owner, repo) {
     resp = await octokit.rest.repos.get({ owner, repo });
   } catch (err) {
     if (err.status === 404) {
+      // A private repo is refused below even once the bot can see it, so
+      // this hint must not suggest that inviting the bot makes one work.
       return {
         ok: false, status: 404, code: 'not_found',
-        message: `Couldn't see ${owner}/${repo}. If it's private, invite \`usernode-bot\` as a collaborator with Write access and resubmit.`,
+        message: `Couldn't find ${owner}/${repo}. Check the URL. Homeroom imports public repositories only.`,
       };
     }
     if (err.status === 401) {
@@ -1712,9 +1751,23 @@ async function verifyBotAccess(owner, repo) {
   }
 
   // permissions.push covers everyone the bot would actually be able to
-  // commit through (Write, Maintain, Admin all set push:true).
+  // commit through (Write, Maintain, Admin all set push:true). It is never
+  // relaxed: read-only is refused for every owner type.
   const perms = resp.data.permissions || {};
   if (!perms.push) {
+    // A repository owned by a personal account has no permission levels:
+    // every collaborator on it can push (GitHub docs, "Permission levels
+    // for a personal account repository"). So push:false on a User-owned
+    // repo means the bot is not a collaborator YET — its invitation was
+    // never sent, has lapsed, or could not be accepted — and telling that
+    // user to "grant Write" names a setting their repo does not have.
+    const ownerType = resp.data.owner && resp.data.owner.type;
+    if (ownerType === 'User') {
+      return {
+        ok: false, status: 403, code: 'not_collaborator',
+        message: `\`usernode-bot\` is not a collaborator on ${owner}/${repo} yet. On a personal repository every collaborator can push, so no permission level is needed: invite \`usernode-bot\` under Settings → Collaborators (GitHub invitations expire after 7 days, so re-invite if yours is older) and check again.`,
+      };
+    }
     return {
       ok: false, status: 403, code: 'no_push',
       message: `\`usernode-bot\` has read-only access to ${owner}/${repo}. Grant Write/Maintain and resubmit.`,

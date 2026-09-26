@@ -12,6 +12,8 @@ const { getPool } = require('../db/pool');
 const { sniffImageType } = require('../services/attachments');
 const { feedbackTitleLimiter, feedbackSubmitLimiter, issueScreenshotLimiter } = require('../middleware/rate-limits');
 
+const IS_STAGING = process.env.USERNODE_ENV === 'staging';
+
 // #683: feedback-modal screenshot attachments. Uploads are raw bytes
 // (application/octet-stream — deliberately sidesteps the global 100 KB
 // express.json() parser, same reasoning as dev-chat attachments), sniffed
@@ -198,6 +200,134 @@ async function recordFeedbackReport(pool, { user, app, owner, repo, issueNumber,
   } catch (err) {
     log.warn('feedback', 'Feedback report record failed', { issueNumber, message: err.message });
   }
+}
+
+// ── "Your feedback" (#3186) ─────────────────────────────────────────────
+//
+// GET /api/feedback/mine reads the caller's own feedback_reports back to
+// them, newest first, with the status the Me screen's list shows. Scoped to
+// `req.user.id` in the WHERE clause and nowhere else: there is no parameter
+// that could ask for somebody else's rows.
+//
+// Two statuses, not three. "Received" is the row itself, which exists only
+// once the GitHub issue was filed. "Counted" is a challenge credit the
+// automatic scorer wrote for it: USEFUL_FEEDBACK names every credit
+// `feedback:<report id>` in `metadata.source_key`
+// (services/topochain/challenge-scorer.js), so the join below is exact.
+// A "reviewed" state between them would need to know whether a maintainer
+// closed or acted on the issue, and the platform keeps no durable record of
+// that: an issue's open/closed state lives on GitHub and in a five-minute
+// in-memory cache whose open list is truncated on a busy repo, so "missing
+// from the open list" is not "closed". A status that is sometimes wrong is
+// worse than one fewer status, so this says only what it can prove.
+//
+// The totals are window counts over the whole set, taken before the LIMIT,
+// so the Me row's "4 sent · 1 counted" is true even when the list is capped.
+const MY_FEEDBACK_LIMIT = 50;
+
+const MY_FEEDBACK_SQL = `
+  SELECT fr.id, fr.target, fr.title, fr.issue_owner, fr.issue_repo, fr.issue_number,
+         fr.created_at, a.slug AS app_slug, a.name AS app_name,
+         cr.points AS credited_points,
+         COUNT(*) OVER () AS total_sent,
+         COUNT(cr.source_key) OVER () AS total_counted
+    FROM feedback_reports fr
+    LEFT JOIN apps a ON a.id = fr.app_id
+    LEFT JOIN (
+      SELECT ua.metadata->>'source_key' AS source_key, SUM(ua.points) AS points
+        FROM user_activities ua
+       WHERE ua.user_id = $1
+         AND ua.metadata->>'source_key' LIKE 'feedback:%'
+       GROUP BY ua.metadata->>'source_key'
+    ) cr ON cr.source_key = 'feedback:' || fr.id
+   WHERE fr.user_id = $1
+   ORDER BY fr.created_at DESC, fr.id DESC
+   LIMIT $2
+`;
+
+// Platform feedback files into the platform repo, which is the self-hosted
+// app's own repository, so its requests live on that app's board. Read once
+// per request, and used only when its repo is the one the report went to.
+const MY_FEEDBACK_SELF_APP_SQL = `
+  SELECT slug, name, repo_url
+    FROM apps
+   WHERE self_hosted = TRUE
+   ORDER BY id ASC
+   LIMIT 1
+`;
+
+// Pure (exported for tests): whether `repoUrl` is github.com/<owner>/<repo>,
+// with the case and `.git` tolerance findAppByRepo applies.
+function repoMatches(repoUrl, owner, repo) {
+  const [, o, r] = String(repoUrl || '').match(/github\.com\/([^/]+)\/([^/]+)/) || [];
+  if (!o || !r || !owner || !repo) return false;
+  const norm = (s) => String(s).replace(/\.git$/, '').toLowerCase();
+  return norm(o) === norm(owner) && norm(r) === norm(repo);
+}
+
+// Pure (exported for tests): the rows → the response body.
+function shapeMyFeedback(rows, selfApp) {
+  const list = Array.isArray(rows) ? rows : [];
+  const first = list[0] || {};
+  const reports = list.map((r) => {
+    const platform = r.target === 'platform';
+    const onSelf = platform && !!selfApp && repoMatches(selfApp.repo_url, r.issue_owner, r.issue_repo);
+    const n = Number(r.issue_number);
+    const counted = r.credited_points != null;
+    return {
+      id: Number(r.id),
+      title: r.title ? String(r.title) : null,
+      target: platform ? 'platform' : 'app',
+      appSlug: platform ? (onSelf ? selfApp.slug : null) : (r.app_slug || null),
+      appName: platform ? 'Homeroom' : (r.app_name || r.app_slug || null),
+      issueNumber: Number.isSafeInteger(n) && n > 0 ? n : null,
+      createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
+      status: counted ? 'counted' : 'received',
+      points: counted ? Number(r.credited_points) || 0 : null,
+    };
+  });
+  const sent = Number(first.total_sent) || 0;
+  return {
+    sent,
+    counted: Number(first.total_counted) || 0,
+    reports,
+    ...(sent > reports.length ? { truncated: true } : {}),
+  };
+}
+
+// Staging-only ?demo=1 rows. `feedback_reports` is staging:private, so a
+// prod-cloned preview has none and the list could only ever show its empty
+// state. These are four of the mock requests routes/issues.js serves on
+// staging (stagingMockIssues), by number and title, so each row opens the
+// very request it names; one is counted, so both statuses are on screen.
+// REAL DATA WINS: a staging viewer who filed feedback sees their own rows.
+const DEMO_FEEDBACK = [
+  { issueNumber: 900006, days: 0, points: null, title: '[Mock] Voting buttons need a clearer disabled state' },
+  { issueNumber: 900003, days: 2, points: 180, title: '[Mock] Topic cards overflow on narrow phones' },
+  { issueNumber: 900002, days: 9, points: null, title: '[Mock] Add a keyboard shortcut for voting' },
+  { issueNumber: 900001, days: 20, points: null, title: '[Mock] Dark mode toggle resets after refresh' },
+];
+
+// Pure (exported for tests): the ?demo=1 overlay.
+function withDemoFeedback(body, selfApp, now = Date.now()) {
+  if (!selfApp || body.sent > 0 || body.reports.length > 0) return body;
+  const reports = DEMO_FEEDBACK.map((d, i) => ({
+    id: -(i + 1),
+    title: d.title,
+    target: 'platform',
+    appSlug: selfApp.slug,
+    appName: 'Homeroom',
+    issueNumber: d.issueNumber,
+    createdAt: new Date(now - d.days * 86400000).toISOString(),
+    status: d.points ? 'counted' : 'received',
+    points: d.points,
+  }));
+  return {
+    sent: reports.length,
+    counted: reports.filter((r) => r.status === 'counted').length,
+    reports,
+    demo: true,
+  };
 }
 
 // The issue already exists. A failed acknowledgement must never turn a
@@ -485,7 +615,10 @@ function feedbackRoutes(config) {
       // (LLM disabled, credits exhausted, API error) the issue is still
       // filed with the fallback template — feedback must never block on
       // LLM availability — and `titleFallback` drives a title_heal_queue
-      // row below so the sweeper regenerates the title later.
+      // row below so the sweeper regenerates the title later. Feedback the
+      // model finds nothing to title in ("Lfg") is not a failure: it comes
+      // back as the reporter's own words with `actionable: false` (#3193),
+      // files as-is, and queues no heal, since a retry gets the same answer.
       let title = llm.FEEDBACK_FALLBACK_TITLE;
       let titleFallback = true;
       if (customTitle) {
@@ -680,11 +813,39 @@ function feedbackRoutes(config) {
     }
   });
 
+  // #3186: the caller's own reports, for "Your feedback" on the Me screen.
+  // See MY_FEEDBACK_SQL above for the two statuses and why there are two.
+  router.get('/api/feedback/mine', async (req, res) => {
+    if (!req.user?.id) return res.status(401).json({ error: 'Not authenticated' });
+    try {
+      const { rows } = await pool.query(MY_FEEDBACK_SQL, [req.user.id, MY_FEEDBACK_LIMIT]);
+      const demo = IS_STAGING && req.query.demo === '1';
+      let selfApp = null;
+      if (demo || rows.some((r) => r.target === 'platform')) {
+        const { rows: selfRows } = await pool.query(MY_FEEDBACK_SELF_APP_SQL);
+        selfApp = selfRows[0] || null;
+      }
+      let body = shapeMyFeedback(rows, selfApp);
+      if (demo) body = withDemoFeedback(body, selfApp);
+      res.set('Cache-Control', 'no-store');
+      return res.json(body);
+    } catch (err) {
+      log.error('feedback', 'Own feedback read failed', { userId: req.user.id, message: err.message });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   return router;
 }
 
 module.exports = {
   feedbackRoutes,
+  // #3186: pure helpers exported for tests/feedback-mine.test.js.
+  shapeMyFeedback,
+  withDemoFeedback,
+  repoMatches,
+  DEMO_FEEDBACK,
+  MY_FEEDBACK_LIMIT,
   // #683: pure helpers exported for tests/issue-screenshots.test.js.
   validateScreenshotUpload,
   buildScreenshotEmbed,

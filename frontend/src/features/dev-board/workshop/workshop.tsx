@@ -80,6 +80,15 @@ import { useWorkshopGroup } from './group-mode-store';
 import { AppWorkshopScope } from '../../workshop/workshop-chrome';
 import { CommunityCard } from './community-card';
 import { readAskStream } from './ask-stream';
+import {
+  commitDistance,
+  swipeAxis,
+  swipeProgress,
+  swipeSide,
+  swipeVerdict,
+  type SwipeAxis,
+  type SwipeSide,
+} from './swipe-vote';
 
 export type SortKey = 'people' | 'activity' | 'open';
 type TabKey = 'status' | 'needs' | 'all';
@@ -1004,6 +1013,18 @@ function sinceWords(s: NonNullable<DevWorkshopView['since']>): string {
  * the pin, and the scroller re-syncs to the row you are on BY KEY, so a row
  * leaving above you never shifts what you are reading.
  *
+ * ── Swipe to vote, on a phone (#3052) ────────────────────────────────
+ *
+ * Below 700px a proposal card the viewer can vote on also answers to a
+ * SIDEWAYS drag: right is Yes, left is No, and a faint "Yes" or "No" fades
+ * in as the card travels. Short of the threshold it snaps back and nothing
+ * is sent; past it the card waits at the line while `answer()` runs, which
+ * is the Vote sheet's own path: castVote asks a No for its line, and a
+ * dismissed prompt casts nothing. The axis is picked once per press
+ * (./swipe-vote.ts), so an upward drag still pages, a tap is still a tap,
+ * and the wide layout never sees any of it. The Vote sheet's buttons stay
+ * the way to vote without a gesture.
+ *
  * ── The end card (#2172) ─────────────────────────────────────────────
  *
  * One card PAST the last item, always: the swipe that would have hit the
@@ -1287,7 +1308,7 @@ function BeforeAfter({ v, near, onFull }: {
  * or a callback the feed keeps stable (`openFull`), so an item renders again
  * only when something it draws changed.
  */
-const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, wide, slug, onFull }: {
+const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, wide, swipe, slug, onFull }: {
   row: QueueRow;
   index: number;
   count: number;
@@ -1296,6 +1317,8 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
   near: boolean;
   voted: string | null;
   wide: boolean;
+  /** Takes the sideways swipe to vote (see `useSwipeVote`). */
+  swipe: boolean;
   slug: string;
   onFull: (el: HTMLElement) => void;
 }): ReactNode {
@@ -1306,7 +1329,13 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
   const summary = isVote ? row.summary : (row.body || null);
   const pct = Math.max(2, Math.round(((index + 1) / Math.max(1, count)) * 100));
   return (
-    <section className="dev-ws-item" data-ws-item={row.key} data-ws-kind={row.kind} data-ws-tint={tint}>
+    <section
+      className="dev-ws-item"
+      data-ws-item={row.key}
+      data-ws-kind={row.kind}
+      data-ws-tint={tint}
+      data-ws-swipeable={swipe ? '' : undefined}
+    >
       <div className="dev-ws-item-progress" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
       <div className="dev-ws-item-top">
         {voted ? (
@@ -1356,6 +1385,11 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
           </div>
         ) : null}
       </div>
+      {/* The swipe's two hints, last so the item's reading order is
+          untouched. Hidden until a drag fades one in (app.css), and
+          aria-hidden: the Vote sheet's buttons are the accessible way. */}
+      {swipe ? <span className="dev-ws-swipe-hint dev-ws-swipe-yes" aria-hidden="true">Yes</span> : null}
+      {swipe ? <span className="dev-ws-swipe-hint dev-ws-swipe-no" aria-hidden="true">No</span> : null}
     </section>
   );
 });
@@ -1434,6 +1468,221 @@ function DoneItem({ total, acted, left, leftVotes, onDone, onBack }: {
       ) : null}
     </section>
   );
+}
+
+/* ── Swipe to vote (#3052) ───────────────────────────────────────────── */
+
+/**
+ * Which rows take the swipe: a proposal whose Yes and No both cast a vote.
+ * A governance item carries no pair here and an issue's "Let's take it" is
+ * not a vote, so neither is swiped. NeedsFeed narrows it further to the
+ * phone layout and to a card not already answered.
+ */
+function canSwipeVote(row: QueueRow): boolean {
+  return row.kind === 'vote' && !!(row.yes && row.yes.act) && !!(row.no && row.no.act);
+}
+
+/**
+ * What the gesture asks of the feed, read at the moment of asking, so the
+ * listeners below never close over a stale row. `can` is asked on the press;
+ * `commit` once the drag has crossed the line, and it calls `settled` when
+ * the card may go back to rest (the vote is on its way, or it was not cast).
+ */
+interface SwipeVoteHandle {
+  can: (key: string) => boolean;
+  commit: (key: string, which: SwipeSide, settled: () => void) => void;
+}
+
+/** The spring back's length in app.css, and a little over. */
+const SWIPE_REST_MS = 320;
+
+/**
+ * The kit's gesture arbiter, through PlatformUI (`gestures()`): one owner per
+ * finger, shared with the kit's own recognizers, the Dev scroller's
+ * pull-to-refresh among them. Null where the kit is not loaded.
+ */
+type GestureArbiter = { claim: (seq: string | number, token: unknown) => boolean };
+function gestureArbiter(): GestureArbiter | null {
+  const ui = (typeof window !== 'undefined' ? window.PlatformUI : undefined) as
+    { gestures?: () => GestureArbiter | null } | undefined;
+  try {
+    const g = ui && typeof ui.gestures === 'function' ? ui.gestures() : null;
+    return g && typeof g.claim === 'function' ? g : null;
+  } catch {
+    return null;
+  }
+}
+const SWIPE_VOTE_TOKEN = 'workshop-swipe-vote';
+
+/**
+ * The sideways drag on a Needs-you card, as native pointer listeners on the
+ * feed's scroller.
+ *
+ * VERTICAL STAYS THE BROWSER'S. The card says `touch-action: pan-y`
+ * (app.css), so a drag that starts upward is still the scroller's snap
+ * paging, which takes the touch with a `pointercancel`, and one that starts
+ * sideways is left to this. A press decides once, at `SWIPE_LOCK_PX`
+ * (./swipe-vote.ts): until then it is still a tap, and a `y` verdict lets go
+ * of it for good. A mouse drag on a narrow window goes the same way; the
+ * wide layout binds nothing.
+ *
+ * THE CARD MOVES BY CUSTOM PROPERTIES, not by state: a render per pointer
+ * move would re-render the feed, and `FeedItem` is memo()'d to avoid exactly
+ * that. `data-ws-swiping` is up while the finger is down (no transition, no
+ * text selection); `data-ws-swipe` says which hint is showing; both are
+ * taken off once the card is back at rest, so a card nobody touched carries
+ * no transform. How far it moves, and whether it moves at all where motion
+ * is unwelcome, is app.css's decision.
+ *
+ * PAST THE LINE the card waits there, its hint at full strength, until
+ * `commit` settles. For a No that is the whole of the "What's not working
+ * for you?" prompt, so the reader can see what they are giving a reason
+ * for, and a cancel springs it back with nothing sent. A sideways drag
+ * never also clicks what it started on: the one click it would produce with
+ * a mouse is swallowed.
+ */
+function useSwipeVote(
+  scrollRef: { current: HTMLElement | null },
+  enabled: boolean,
+  handleRef: { current: SwipeVoteHandle },
+) {
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!enabled || !scroller || typeof window === 'undefined') return undefined;
+    let drag: {
+      id: number; el: HTMLElement; key: string;
+      x0: number; y0: number; width: number; axis: SwipeAxis | null;
+    } | null = null;
+    // The card waiting at the line while its vote is asked for.
+    let held: HTMLElement | null = null;
+    let swallow = false;
+    let restTimer = 0;
+    let resting: HTMLElement | null = null;
+
+    const paint = (el: HTMLElement, x: number, p: number, side: SwipeSide | null) => {
+      el.style.setProperty('--ws-swipe-x', `${Math.round(x)}px`);
+      el.style.setProperty('--ws-swipe-p', p.toFixed(3));
+      if (side) el.setAttribute('data-ws-swipe', side);
+    };
+    const clear = (el: HTMLElement) => {
+      el.removeAttribute('data-ws-swiping');
+      el.removeAttribute('data-ws-swipe');
+      el.style.removeProperty('--ws-swipe-x');
+      el.style.removeProperty('--ws-swipe-p');
+    };
+    // Cut a spring back short: the card about to move again keeps its
+    // properties, any other is cleaned at once.
+    const stopResting = (keep: HTMLElement | null) => {
+      window.clearTimeout(restTimer);
+      if (resting && resting !== keep) clear(resting);
+      resting = null;
+    };
+    // Back to rest: to zero first, so app.css's transition runs, then clean.
+    const rest = (el: HTMLElement) => {
+      stopResting(el);
+      el.removeAttribute('data-ws-swiping');
+      paint(el, 0, 0, null);
+      resting = el;
+      restTimer = window.setTimeout(() => {
+        if (resting === el) clear(el);
+        resting = null;
+      }, SWIPE_REST_MS);
+    };
+
+    const onDown = (e: PointerEvent) => {
+      if (held || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      // A new primary press means the last one is over, whether or not its
+      // end reached this scroller (a mouse let go outside it, before a lock).
+      if (drag) {
+        if (drag.axis === 'x') rest(drag.el);
+        drag = null;
+      }
+      const t = e.target as Element | null;
+      const el = t && typeof t.closest === 'function' ? t.closest<HTMLElement>('[data-ws-swipeable]') : null;
+      if (!el || !scroller.contains(el)) return;
+      const key = el.getAttribute('data-ws-item') || '';
+      if (!handleRef.current.can(key)) return;
+      drag = { id: e.pointerId, el, key, x0: e.clientX, y0: e.clientY, width: el.clientWidth, axis: null };
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x0;
+      if (!drag.axis) {
+        const axis = swipeAxis(dx, e.clientY - drag.y0);
+        if (!axis) return;
+        // Upward or downward: the feed's own gesture. Let go of this press.
+        if (axis === 'y') { drag = null; return; }
+        // Sideways: claim the finger at the lock, as the kit asks of an app
+        // gesture, and back off if a kit recognizer already has it. The
+        // arbiter lets go by itself on pointerup and pointercancel.
+        const g = gestureArbiter();
+        if (g && !g.claim(e.pointerType === 'touch' ? 'touch' : e.pointerId, SWIPE_VOTE_TOKEN)) { drag = null; return; }
+        drag.axis = axis;
+        stopResting(drag.el);
+        drag.el.setAttribute('data-ws-swiping', '');
+        try { drag.el.setPointerCapture(e.pointerId); } catch { /* still tracked while over the card */ }
+        // A mouse drag that began on text had started a selection.
+        const sel = window.getSelection ? window.getSelection() : null;
+        if (sel && !sel.isCollapsed) sel.removeAllRanges();
+      }
+      paint(drag.el, dx, swipeProgress(dx, drag.width), swipeSide(dx));
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const { el, key, width, axis } = drag;
+      const dx = e.clientX - drag.x0;
+      drag = null;
+      if (axis !== 'x') return;
+      swallow = true;
+      window.setTimeout(() => { swallow = false; }, 0);
+      const which = swipeVerdict(dx, width);
+      if (!which) { rest(el); return; }
+      held = el;
+      el.removeAttribute('data-ws-swiping');
+      paint(el, which === 'yes' ? commitDistance(width) : -commitDistance(width), 1, which);
+      let done = false;
+      handleRef.current.commit(key, which, () => {
+        if (done) return;
+        done = true;
+        if (held === el) held = null;
+        rest(el);
+      });
+    };
+    const onCancel = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const { el, axis } = drag;
+      drag = null;
+      if (axis === 'x') rest(el);
+    };
+    const onClick = (e: MouseEvent) => {
+      if (!swallow) return;
+      swallow = false;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    // A mouse drag that began on the title's link or the picture would
+    // otherwise start the browser's own drag and cancel this one.
+    const onDragStart = (e: DragEvent) => { if (drag) e.preventDefault(); };
+
+    scroller.addEventListener('pointerdown', onDown);
+    scroller.addEventListener('pointermove', onMove);
+    scroller.addEventListener('pointerup', onUp);
+    scroller.addEventListener('pointercancel', onCancel);
+    scroller.addEventListener('click', onClick, true);
+    scroller.addEventListener('dragstart', onDragStart);
+    return () => {
+      scroller.removeEventListener('pointerdown', onDown);
+      scroller.removeEventListener('pointermove', onMove);
+      scroller.removeEventListener('pointerup', onUp);
+      scroller.removeEventListener('pointercancel', onCancel);
+      scroller.removeEventListener('click', onClick, true);
+      scroller.removeEventListener('dragstart', onDragStart);
+      stopResting(null);
+      scroller.querySelectorAll<HTMLElement>('[data-ws-swipe], [data-ws-swiping]').forEach(clear);
+      drag = null;
+      held = null;
+    };
+  }, [enabled, scrollRef, handleRef]);
 }
 
 /* ── The feed ────────────────────────────────────────────────────────── */
@@ -1701,8 +1950,14 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
    * then the rail says it is sending, a cancel leaves the card exactly as it
    * was (and drops a pin this press added), and a refusal or a network
    * failure is reported by `castVote`'s own toast.
+   *
+   * `settled` is the swipe's (#3052): called once the vote is on its way or
+   * was not cast, whichever comes first, so a card held at the line goes
+   * back as soon as the prompt closes. The swipe only reaches a vote row
+   * with both acts and none in flight (`swipeHandle` checks), which is the
+   * one path below that calls it.
    */
-  const answer = (which: 'yes' | 'no') => {
+  const answer = (which: 'yes' | 'no', settled?: () => void) => {
     if (!row) return;
     const spec = which === 'yes' ? row.yes : row.no;
     if (!spec) return;
@@ -1733,7 +1988,10 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
     // options bag fourth (VoteButton's VOTE_ARITY does the same).
     const args = [...(spec.act.args as unknown[])];
     while (args.length < 3) args.push(null);
-    const onSend = () => setSending((cur) => ({ ...cur, [key]: which }));
+    const onSend = () => {
+      setSending((cur) => ({ ...cur, [key]: which }));
+      if (settled) settled();
+    };
     Promise.resolve(callAppView(spec.act.fn, ...args, { onSend }))
       .catch(() => false)
       .then((ok) => {
@@ -1750,8 +2008,29 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
           pinsRef.current.delete(key);
           setPinsVersion((v) => v + 1);
         }
+        if (settled) settled();
       });
   };
+
+  /**
+   * The swipe's way in (#3052): the card in view, when it is one the viewer
+   * can vote on and has not answered here, with no vote of its own already
+   * on the way. A commit that finds that no longer true (the feed moved, a
+   * press got there first) lets the card go rather than leaving it held.
+   */
+  const swipeOk = (key: string) => !!(row && row.key === key && canSwipeVote(row)
+    && !answered[key] && !sendingRef.current.has(key));
+  const swipeHandle = useRef<SwipeVoteHandle>({ can: () => false, commit: (_k, _w, settled) => settled() });
+  useLayoutEffect(() => {
+    swipeHandle.current = {
+      can: swipeOk,
+      commit: (key, which, settled) => {
+        if (!swipeOk(key)) { settled(); return; }
+        answer(which, settled);
+      },
+    };
+  });
+  useSwipeVote(scrollRef, !wide, swipeHandle);
 
   const preview = row ? (row.card.rail.preview || row.card.actionPreview || null) : null;
   const canTry = !!(preview && preview.state === 'live');
@@ -1991,6 +2270,7 @@ function NeedsFeed({ rows, total, models, slug, canPost, onDone }: {
             near={Math.abs(k - i) <= 1}
             voted={answered[r.key] || null}
             wide={wide}
+            swipe={!wide && canSwipeVote(r) && !answered[r.key]}
             slug={slug}
             onFull={openFull}
           />
@@ -2764,7 +3044,7 @@ function useTabMarker(
     const ro = new ResizeObserver(() => measure(false));
     ro.observe(bar);
     // ...AND THE TAB LIST, which can resize while the bar does not: on a phone
-    // the "+" shares the pill with it, so the "+" arriving or leaving (it is
+    // the "+" shares the row with it, so the "+" arriving or leaving (it is
     // hidden for a read-only viewer of the self-hosted app) moves every tab
     // inside a bar of unchanged size, and an observer on the bar alone would
     // leave the marker where the tabs used to be.
@@ -3001,12 +3281,13 @@ export function DevWorkshop(): ReactNode {
      rendered here and nowhere else on this surface, which is what keeps
      `#dev-plus-btn` / `#dev-plus-menu` unique for `_wirePlusMenu`.
 
-     It is the strip's last item, INSIDE the pill: on a phone the nav itself
-     is the full-width pill and the "+" takes a 40px cell at its end; above
-     700px the track is the pill and the "+" is its last segment. Either way
-     it is drawn on the tabs' own metrics and ink (app.css
-     `.dev-ws-plus-btn`), so it reads as part of the bar rather than as the
-     violet floating action it was.
+     It is the strip's last item, on the pill's row but in a circle of its
+     own a small gap after it (#2934), so it reads as a button rather than as
+     a fourth tab. The pill's material is drawn by the tab list and by the
+     "+"'s wrapper, not by the nav or the track, which is what opens the gap
+     without moving a node. At both widths it is drawn on the tabs' own
+     metrics and ink (app.css `.dev-ws-plus-btn`), so it reads as part of the
+     strip rather than as the violet floating action it was.
 
      WHY THE TAB LIST MOVED IN A LEVEL. The nav carried `role="tablist"`, and
      a tab list owns tabs: a menu button inside it is announced as a fourth
@@ -3056,19 +3337,18 @@ export function DevWorkshop(): ReactNode {
           />
           {/* The TRACK, separate from the nav, and `display: contents` on a
               phone so the bar there is what it was: the nav itself is the
-              pill, edge to edge, with the tab list and the "+" its two items.
+              row, edge to edge, with the tab list and the "+" its two items.
 
               Above 700px the two have different jobs. The nav is the POSITIONING
               box — it inherits the 760px reading column and its centring, which
               is what keeps the strip anchored to the same left edge whether the
               pane beside it is the 760px category list or the full-bleed board.
-              The track is the pill, and it hugs its three labels and the "+": a
-              segmented control spanning the reading column would read as a
-              header bar rather than as a control, which is the same reason
-              @/components/ui/tabs.tsx makes SECTION_TABS_LIST `inline-flex`.
-              Because the "+" is INSIDE the track, the ear's measured inset
-              (useEarInset reads the track's right edge) clears it with no
-              change of its own. */}
+              The track hugs the pill and the "+": a segmented control spanning
+              the reading column would read as a header bar rather than as a
+              control, which is the same reason @/components/ui/tabs.tsx makes
+              SECTION_TABS_LIST `inline-flex`. Because the "+" is INSIDE the
+              track, the ear's measured inset (useEarInset reads the track's
+              right edge) clears it with no change of its own. */}
           <div className="dev-ws-tabtrack">
           {/* The tab list: the three tabs and nothing else — a real box at
               both widths, so the role never sits on a `display: contents`

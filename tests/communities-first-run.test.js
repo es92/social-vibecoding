@@ -80,8 +80,13 @@ test('one filled button that says what it will do, and a quiet Skip for now', ()
   assert.match(GATE, /PlatformUI\.modal\(\{ contentEl: panel, dismissible: false \}\)/);
   assert.match(GATE, /n === 0 \? 'Pick at least one'/);
   assert.match(GATE, /`Join \$\{n\} \$\{n === 1 \? 'community' : 'communities'\}`/);
-  assert.match(GATE, /'What communities do you want to join\?'/);
-  assert.match(GATE, /'You can join or leave any time from Discover\.'/);
+  // A welcome and what the place is, then the question.
+  assert.ok(GATE.indexOf("'Welcome to Homeroom!'") > 0);
+  assert.match(GATE, /'Homeroom is a place where communities build the apps they use together\.'/);
+  assert.ok(GATE.indexOf("'Welcome to Homeroom!'") < GATE.indexOf("'What communities do you want to join?'"));
+  assert.match(GATE, /'You can join or leave any time from Discover, and start your own group or community once you are in\.'/);
+  // A row with no description of its own is just its name: no empty line.
+  assert.match(GATE, /if \(c\.detail\) \{\s*\n\s*text\.appendChild\(el\('div', 'mt-0\.5 line-clamp-2/);
   // In the screen's order, so the first one ticked is the card's.
   assert.match(GATE, /join: list\.map\(\(c\) => c\.slug\)\.filter\(\(s\) => picked\.has\(s\)\)/);
   // Skip is an answer: it posts `{ skip: true }` through the same path.
@@ -212,4 +217,27 @@ test('the join screen is re-offered once a snapshot boot confirms the session', 
   // And the card reads the confirmed session's showGettingStarted.
   assert.match(CARD_SRC, /document\.addEventListener\('sv:session', onChange\);/);
   assert.match(APP_JS, /document\.dispatchEvent\(new CustomEvent\('sv:session', \{/);
+});
+
+test('what the join screen says under each name', () => {
+  const { suggestionDetail } = require('../src/services/onboarding');
+  assert.equal(suggestionDetail({ self_hosted: true, description: 'ignored' }), 'Contribute to the Homeroom platform');
+  assert.equal(suggestionDetail({ invited_by: 'ada', description: 'ignored' }), 'Invited by @ada');
+  assert.equal(suggestionDetail({ description: 'A garden\n\nfor   everyone.' }), 'A garden for everyone.');
+  assert.equal(suggestionDetail({ description: null }), '');
+  assert.equal(suggestionDetail({ member_count: 40, audience: 'open' }), '', 'no "Community · N members"');
+  // A starter line stands in until the community writes its own, and never
+  // over it.
+  assert.equal(suggestionDetail({ slug: 'gym-tracker-9de81f', description: null }), 'Log your workouts');
+  assert.equal(suggestionDetail({ slug: 'gym-tracker-9de81f', description: '  ' }), 'Log your workouts');
+  assert.equal(suggestionDetail({ slug: 'gym-tracker-9de81f', description: 'Lift, log, repeat.' }), 'Lift, log, repeat.');
+  assert.equal(suggestionDetail({ slug: 'gym-tracker-9de81f', invited_by: 'ada' }), 'Invited by @ada');
+  const { STARTER_DETAILS } = require('../src/services/onboarding');
+  for (const [slug, line] of Object.entries(STARTER_DETAILS)) {
+    const words = line.split(' ').length;
+    assert.ok(words >= 2 && words <= 4, `${slug}: a starter line is a few words, not a sentence ("${line}")`);
+    assert.doesNotMatch(line, /\.$/, `${slug}: no full stop on a few words`);
+  }
+  const long = suggestionDetail({ description: 'word '.repeat(60) });
+  assert.ok(long.length <= 100 && long.endsWith('…'), 'two lines at most on a phone');
 });

@@ -12266,6 +12266,8 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
 
 #create-card[data-mode="import"] #create-name-block { display: none; }
 #create-card[data-mode="import"][data-import-state="ok"] #create-name-block { display: block; }
+/* An import's own dapp.json says what it is: the name card is one row. */
+#create-card[data-mode="import"] .create-describe-row { display: none; }
 
 /* THE STEPS UNFOLD IN ONE CARD (#1911; four of them since communities,
    stage 3). Every step's section ships on every step — the declared checks
@@ -15679,16 +15681,15 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      RELATIVE, not static: the bar is the containing block for the selection
      marker and the element workshop.tsx measures `offsetLeft`/`offsetTop`
      against. Not sticky: the pane head below it is the part that pins, and
-     two sticky bands at `top: 0` would stack on each other. */
+     two sticky bands at `top: 0` would stack on each other.
+
+     A ROW, NOT A SURFACE (#2934). This was the pill itself, with the "+" as
+     its last cell, and the "+" read as a fourth tab. The pill's material
+     moved onto its two items (the tab list and the "+", below), and this gap
+     is the air between them. */
   order: 0;
   position: relative;
-  display: flex; gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
-  border: 1px solid var(--app-sheet-line);
-  background-color: var(--dc-sheet-fill);
-  backdrop-filter: var(--dc-frost);
-  -webkit-backdrop-filter: var(--dc-frost);
+  display: flex; gap: 6px;
 }
 /* A GLYPH BESIDE ITS LABEL, 40px tall. It was a glyph OVER its label, 58px,
    while this was a thumb bar at the foot of the window; at the head of the
@@ -15701,12 +15702,14 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
   /* CONTENT-WEIGHTED, not equal thirds: "Current status" is twice "All
      items", and three equal cells ellipsized it at 390px while the other two
      sat in air. The spare width is still shared out, so the pill stays full.
-     THE "+" TAKES A 40px CELL AT THE PILL'S END, and the tabs pay for it out
-     of their own padding (8px to 4px a side) and glyph gap (5px to 4px), not
-     out of their labels: at 390px, measured in the headless harness's
-     DejaVu Sans — wider than SF Pro or Roboto — the three labels need 316px
-     at rest and the pill leaves them 324, so "Current status" is still whole
-     beside the "+" and the spare 8px is shared back out. */
+     THE "+" TAKES A 50px CIRCLE AFTER THE PILL, 6px off it (#2934; it was a
+     40px cell inside it), and the tabs pay for it out of their own padding
+     (8px to 4px a side) and glyph gap (5px to 4px), not out of their labels:
+     at 400px, the narrowest width that draws the glyphs, measured in the
+     headless harness's DejaVu Sans — wider than SF Pro or Roboto — the three
+     labels need 316px at rest and the pill leaves them 322, so "Current
+     status" is still whole beside the "+" and the spare 6px is shared back
+     out. */
   flex: 1 1 auto; min-width: 0;
   display: inline-flex; flex-direction: row;
   align-items: center; justify-content: center; gap: 4px;
@@ -15718,27 +15721,45 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
   white-space: nowrap; overflow: hidden;
   cursor: pointer;
 }
-/* THE TRACK IS INERT ON A PHONE. `.dev-ws-tabs` is itself the pill there,
-   full width, so the wrapper the desktop layout needs must not introduce a
+/* THE TRACK IS INERT ON A PHONE. `.dev-ws-tabs` is itself the full-width
+   row there, so the wrapper the desktop layout needs must not introduce a
    box. `display: contents` removes it from the layout entirely and its two
    children — the tab list and the "+" — are the nav's flex items. */
 .dev-ws-tabtrack { display: contents; }
-/* THE TAB LIST takes the pill's width less the "+" cell. A real box at both
-   widths (the `tablist` role lives here, and a role on a `display: contents`
-   node is one some screen readers drop), and not positioned: the tabs'
-   `offsetLeft` must keep resolving against the nav, where the marker is.
-   2px between segments, the desktop track's own step. */
+/* THE TAB LIST takes the row's width less the "+" and the gap before it. A
+   real box at both widths (the `tablist` role lives here, and a role on a
+   `display: contents` node is one some screen readers drop), and not
+   positioned: the tabs' `offsetLeft` must keep resolving against the nav,
+   where the marker is. 2px between segments, the desktop track's own step. */
 .dev-ws-tablist { flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; }
-/* ── The "+", closing the strip ──────────────────────────────────────
+/* ── The "+", ending the strip ───────────────────────────────────────
    The prototype's `.tplus`: the last item of the tab row, a bare glyph in the
-   selected tab's ink with no ground of its own, so it reads as part of the
-   bar rather than as a floating action (it was a violet filled square at the
-   end of All items' search row). The tab's own height and radius, so it sits
-   in the pill as one more cell; the MARKER's tint and ring when its menu is
-   open, which is how the strip already says "this one is active".
+   selected tab's ink, drawn in the strip's own material so it reads as part
+   of the strip rather than as a floating action (it was a violet filled
+   square at the end of All items' search row). The tab's own height and
+   radius; the MARKER's tint and ring when its menu is open, which is how the
+   strip already says "this one is active".
    The wrapper is the dropdown's containing block (actions-row.tsx hangs
    `#dev-plus-menu` off its right edge). */
 .dev-ws-plus { position: relative; flex: none; display: flex; }
+/* TWO SURFACES, ONE ROW (#2934). The pill's material — padding, hairline,
+   fill, rounding — is drawn by the tab list and by the "+"'s wrapper rather
+   than by the nav, so the "+" is a round button of its own, a gap after the
+   pill, instead of a fourth cell inside it. Everything else is #2914's: the
+   same row, the same place, the same metrics. The "+" still sits in a 4px
+   ring as a tab does, its tint lands where the marker would, and the row is
+   as tall as the pill was (1 + 4 + 40 + 4 + 1).
+   ONLY THE STRIP'S "+": the unreachable Board still renders the same
+   wrapper at the end of `#dev-actions`, and that surface stays unchanged.
+   NO FROST HERE, on purpose: a backdrop-filter makes the tab list a
+   stacking context, and the marker, painted before it at `z-index: 0`,
+   would go under its fill. `--dc-frost` is `none` everywhere anyway. */
+.dev-ws-tablist, .dev-ws-tabtrack > .dev-ws-plus {
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--app-sheet-line);
+  background-color: var(--dc-sheet-fill);
+}
 .dev-ws-plus-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 40px; height: 40px; padding: 0;
@@ -15764,10 +15785,11 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
    that is trying to fit squeezes itself, not the glyph. */
 .dev-ws-tab-glyph { width: 16px; height: 16px; flex: none; }
 /* UNDER 400px THE LABELS WIN THE WIDTH. The three labels and their glyphs
-   need 316px beside the "+", which a 390px phone has and a 360-375px one
+   need 316px beside the "+", which a 400px phone has and a 360-390px one
    does not: there "Current status" came out "Current sta…" with its glyph
    still whole, which spends the width on the half a reader cannot read.
-   Without the glyphs the labels fit whole down to 320px. */
+   Without the glyphs the labels fit whole down to 340px in DejaVu Sans, and
+   down to 320px in Arial's metrics, which are close to SF Pro's and Roboto's. */
 @media (max-width: 399px) {
   .dev-ws-tab-glyph { display: none; }
 }
@@ -15817,7 +15839,7 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 .dev-ws-tab { position: relative; z-index: 1; }
 /* WHILE THE "+" MENU IS OPEN the strip outranks the pane head below it. The
    dropdown hangs out of the strip over the tab body, and the strip is a
-   stacking context (sticky above 700px, frosted below it), so the menu's own
+   stacking context (sticky at `z-index: 30` above 700px), so the menu's own
    `z-30` counts only inside it — and the pane head, which pins at `z-index:
    31` wide and 20 narrow, painted over the menu's rows on All items. Only
    while it is open: at rest the ear, which hangs into the strip's band from
@@ -16073,6 +16095,56 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
 .dev-ws-chip-warn { background: var(--state-attention-bg); color: var(--state-attention); }
 .dev-ws-chip-blocked { background: var(--state-blocked-bg); color: var(--state-blocked); }
 .dev-ws-chip-info { background: var(--accent-tint); color: var(--accent-wash-ink); }
+
+/* ── Swipe to vote, on a phone (#3052) ─────────────────────────────────
+   workshop.tsx's `useSwipeVote` is the gesture; this is how it looks. A
+   card the viewer can vote on is `[data-ws-swipeable]`, and while a drag is
+   on it carries `--ws-swipe-x` (px, right is Yes), `--ws-swipe-p` (0 to 1,
+   how near the line) and `[data-ws-swipe]` naming the side. Both come off
+   once it is back at rest, so an untouched card has no transform.
+
+   `touch-action: pan-y` hands the vertical drag to the scroller, as ever,
+   and keeps the sideways one for the gesture. Anything narrower would take
+   the pan the feed pages on away from every touch that starts on a card,
+   the trap #1762 fell into on Home.
+
+   The hints are stamps half way down the card, on the side the card is
+   leaving from, where the title and summary are not: the text sits at the
+   top and the middle is the picture or air. Each is laid on the page
+   colour, so it reads the same over a dark capture as over the tint, and it
+   fades in with the drag, never past 0.9. Where motion is unwelcome the
+   card itself does not travel or spring: only the hint says what letting
+   go would do. */
+.dev-ws-swipe-hint {
+  position: absolute; top: 50%; z-index: 2;
+  padding: 3px 14px; border: 2px solid currentColor; border-radius: 12px;
+  font-size: 28px; font-weight: 800; line-height: 1.2; letter-spacing: .05em;
+  text-transform: uppercase;
+  background-color: var(--bg-primary);
+  opacity: 0; pointer-events: none;
+}
+.dev-ws-swipe-yes {
+  left: 20px; color: var(--state-ok);
+  background-image: linear-gradient(var(--state-ok-bg), var(--state-ok-bg));
+  transform: translateY(-50%) rotate(-10deg);
+}
+.dev-ws-swipe-no {
+  right: 90px; color: var(--state-blocked);
+  background-image: linear-gradient(var(--state-blocked-bg), var(--state-blocked-bg));
+  transform: translateY(-50%) rotate(10deg);
+}
+.dev-ws-item[data-ws-swipe="yes"] > .dev-ws-swipe-yes,
+.dev-ws-item[data-ws-swipe="no"] > .dev-ws-swipe-no { opacity: calc(var(--ws-swipe-p, 0) * .9); }
+@media (max-width: 699.98px) {
+  .dev-ws-needs-scroll { overflow-x: hidden; }
+  .dev-ws-item[data-ws-swipeable] { touch-action: pan-y; }
+  .dev-ws-item[data-ws-swiping] { user-select: none; -webkit-user-select: none; }
+}
+@media (max-width: 699.98px) and (prefers-reduced-motion: no-preference) {
+  .dev-ws-item[data-ws-swipe] { transform: translateX(var(--ws-swipe-x, 0px)); }
+  .dev-ws-item[data-ws-swipe]:not([data-ws-swiping]) { transition: transform .26s cubic-bezier(.2, .8, .2, 1); }
+  .dev-ws-item[data-ws-swipe]:not([data-ws-swiping]) > .dev-ws-swipe-hint { transition: opacity .2s ease; }
+}
 
 /* ── The picture: the two stills, cropped to what changed ──────────────
    The view is the box the still is placed in; the still keeps its natural
@@ -16649,9 +16721,17 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
     background-color: var(--dc-sheet);
     border-top-left-radius: 0;
   }
+  /* THE TRACK HOLDS THE PILL AND THE "+", 6px apart, and draws neither
+     (#2934): it hugs the two so the ear's measured inset, read off its right
+     edge, still clears the "+". The surface is the phone rule's two items at
+     this width's metrics — a 2px ring in the raised sheet, no hairline — so
+     the pill is 36px as the track was, and the "+" a 36px circle beside it. */
   .dev-ws-tabtrack {
-    display: inline-flex; align-items: center; gap: 2px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .dev-ws-tablist, .dev-ws-tabtrack > .dev-ws-plus {
     padding: 2px;
+    border: 0;
     border-radius: 9999px;
     background-color: var(--dc-sheet-raise);
   }
@@ -16664,10 +16744,10 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
   /* #2915: the dot follows the label here, a little further off it than the
      tab's own gap, and centred on it. */
   .dev-ws-tab-dot { order: 0; margin: 0 0 0 6px; transform: none; }
-  /* The tab list hugs its three segments inside the track, and the "+" is
-     the track's last segment: a 32px round cell, the tabs' own height, so
-     the pill ends on it — Current status · Needs you · All items · + — and
-     the ear's measured inset, read off the track's right edge, clears it. */
+  /* The tab list hugs its three segments, and the "+" is the track's last
+     item: a 32px round button, the tabs' own height, in its own circle after
+     the pill — Current status · Needs you · All items   + — and the ear's
+     measured inset, read off the track's right edge, clears it. */
   .dev-ws-tablist { flex: 0 0 auto; }
   .dev-ws-plus-btn { width: 32px; height: 32px; }
   .dev-ws-plus-glyph { width: 18px; height: 18px; }

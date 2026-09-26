@@ -551,6 +551,42 @@
   // seconds a slow capturer takes to deliver a frame.
   const REGISTRATION_VEIL_ALPHA = 0.8;
 
+  // #3011: how a refused getDisplayMedia is reported. Only NotAllowedError is
+  // the viewer (or the OS) saying no, which every engine uses for a closed or
+  // denied picker. Firefox also refuses for reasons nobody chose: InvalidStateError
+  // when the call lost its click's activation, NotFoundError when it has no
+  // surface it can offer (on a Mac, what a missing screen-recording permission
+  // looks like), NotReadableError / AbortError when the capturer would not
+  // start. Calling those "declined" told a viewer who had pressed Allow, or
+  // never saw a prompt at all, that they had cancelled.
+  function classifyDisplayMediaError(err) {
+    return err && err.name === 'NotAllowedError' ? 'denied' : 'capture_failed';
+  }
+
+  // #3011: resolve with `promise`'s value, or with TIMED_OUT once `ms` pass
+  // first. A rejection still rejects. `video.play()` on a capture stream only
+  // settles once the first frame arrives, and a window or screen share that
+  // never delivers one (a capturer that failed to start — on a Mac, a browser
+  // without screen-recording permission) left it pending for good: no
+  // overlay, no notice, the attach buttons disabled and the browser's sharing
+  // indicator still on. Only a window/screen share can do that, and a window
+  // or screen share is all Firefox offers, so Firefox is where it showed.
+  const TIMED_OUT = Symbol('timed out');
+  function settleWithin(promise, ms, setTimer = setTimeout, clearTimer = clearTimeout) {
+    let timer;
+    const bound = new Promise((resolve) => { timer = setTimer(() => resolve(TIMED_OUT), ms); });
+    return Promise.race([Promise.resolve(promise), bound]).finally(() => clearTimer(timer));
+  }
+
+  // How long the capture video gets to start (play()) and then to report a
+  // frame size (loadedmetadata) before the share counts as sending nothing.
+  // Generous on purpose: a slow capturer that does deliver must not be cut
+  // off, and before this bound existed a share with no frame after play()
+  // plus the metadata wait already failed, only later. `resume` bounds the
+  // re-plays inside registration (a paused or re-attached video), which
+  // proceed to grab whatever is there once it passes.
+  const FIRST_FRAME_TIMEOUTS_MS = { play: 8000, metadata: 1500, resume: 1500 };
+
   const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // mirrors the server cap
   const SUPPORTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
 
@@ -584,6 +620,10 @@
     REGISTRATION_VEIL_ALPHA,
     displayMediaOptions,
     isTabCapture,
+    classifyDisplayMediaError,
+    settleWithin,
+    TIMED_OUT,
+    FIRST_FRAME_TIMEOUTS_MS,
     MAX_UPLOAD_BYTES,
     markerCssCenters,
     directMapping,
@@ -784,8 +824,11 @@
     try {
       stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions());
     } catch (err) {
-      void err;
-      throw fail('denied', 'Screen capture was declined');
+      const code = classifyDisplayMediaError(err);
+      if (code === 'denied') throw fail('denied', 'Screen capture was declined');
+      // The reason itself is what a bug report needs.
+      console.warn('[screenshot] getDisplayMedia failed:', err && err.name, err && err.message);
+      throw fail(code, `Screen capture could not start (${(err && err.name) || 'unknown error'})`);
     }
 
     const track = stream.getVideoTracks()[0];
@@ -815,12 +858,21 @@
     cleanupBits.push(() => stream.getTracks().forEach((t) => t.stop()));
 
     try {
-      await video.play();
+      // Bounded (#3011): see settleWithin. A rejection still fails the
+      // capture, as it always did.
+      await settleWithin(video.play(), FIRST_FRAME_TIMEOUTS_MS.play);
       if (!video.videoWidth) {
         await new Promise((resolve) => {
           video.addEventListener('loadedmetadata', resolve, { once: true });
-          setTimeout(resolve, 1500);
+          setTimeout(resolve, FIRST_FRAME_TIMEOUTS_MS.metadata);
         });
+      }
+      // Still no frame: the share is sending nothing. Say so now, while the
+      // dialog is still up, rather than after the viewer has dragged out a
+      // selection there is no picture to cut from — and stop the share
+      // (cleanup, below) rather than leave the browser's indicator on.
+      if (!video.videoWidth) {
+        throw fail('capture_blank', 'The shared window or screen sent no picture');
       }
 
       if (typeof opts.onCaptureStart === 'function') opts.onCaptureStart();
@@ -982,7 +1034,7 @@
           return registerFromFrames(async () => {
             if (!first) await waitFrames(video, 1);
             first = false;
-            if (video.paused) { try { await video.play(); } catch { /* grab what is there */ } }
+            if (video.paused) { try { await settleWithin(video.play(), FIRST_FRAME_TIMEOUTS_MS.resume); } catch { /* grab what is there */ } }
             const reg = grabFrame(video);
             return reg && reg.ctx.getImageData(0, 0, reg.width, reg.height);
           }, markerCssCenters(viewportW, viewportH));
@@ -995,7 +1047,7 @@
           console.warn('[screenshot] capture video not advancing, re-attaching:', solved.reason);
           video.srcObject = null;
           video.srcObject = stream;
-          try { await video.play(); } catch { /* the grab below reports it */ }
+          try { await settleWithin(video.play(), FIRST_FRAME_TIMEOUTS_MS.resume); } catch { /* the grab below reports it */ }
           await waitFrames(video, 2);
           solved = await register();
         }

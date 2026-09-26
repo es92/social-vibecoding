@@ -183,6 +183,21 @@ const CHALLENGES = [
   },
 ];
 
+// Automatic scoring rules (#3185). One on challenge 10's template, which the
+// list must report; one on challenge 11 itself, which the organiser has
+// closed, so the scorer skips it and the card must promise nothing.
+const LAST_SCORED = new Date(NOW - 7 * 60 * 1000);
+const SCORING_RULES = [
+  {
+    id: 1, measure: 'USEFUL_FEEDBACK', target: null, points: null, enabled: true,
+    challenge_id: null, challenge_template_id: 1, interval_minutes: 15, last_scored_at: LAST_SCORED,
+  },
+  {
+    id: 2, measure: 'PROPOSAL_SENT', target: null, points: '100.00', enabled: true,
+    challenge_id: 11, challenge_template_id: null, interval_minutes: null, last_scored_at: LAST_SCORED,
+  },
+];
+
 const USER_ACTIVITIES = [
   { id: 1, user_id: 2, season_event_id: 100, activity_type: 'block_produced', points: '100.00', description: 'Produced a block', activity_at: T(-3), metadata: {}, challenge_id: 11 },
   { id: 2, user_id: 4, season_event_id: 100, activity_type: 'block_produced', points: '150.00', description: 'Produced a block', activity_at: T(-2), metadata: {}, challenge_id: 11 },
@@ -300,6 +315,17 @@ function makeMockPool() {
   async function query(rawSql, params = []) {
     const sql = collapse(rawSql);
     if (sql.startsWith('/* challenge onboarding */')) return { rows: [] };
+    // GET /season-events/{id}/challenges: the scoring rules bound to the
+    // list's challenges or their templates, beside the event's dates (#3185).
+    if (sql.startsWith('/* challenge scoring cadence */')) {
+      const [eventId, challengeIds, templateIds] = params;
+      const event = SEASON_EVENTS.find((e) => e.id === eventId && !e.internal && e.is_active);
+      if (!event) return { rows: [] };
+      const rows = SCORING_RULES
+        .filter((r) => r.enabled && (challengeIds.includes(r.challenge_id) || templateIds.includes(r.challenge_template_id)))
+        .map((r) => ({ ...r, event_starts_at: event.starts_at, event_ends_at: event.ends_at }));
+      return { rows };
+    }
 
     // GET /season-events: the viewer's season history (#2495). Mirrors the
     // route's three-table EXISTS against the fixtures, season by season;
@@ -1161,6 +1187,26 @@ test('GET /season-events/:id/challenges: publishes the organiser `completed` fla
   const open = body.data.find((c) => c.id === 10);
   assert.equal(open.completed, false);
   assert.ok('completed' in open, 'the key is always present, never omitted');
+});
+
+// #3185: progress on a scored challenge moves only when the background scorer
+// runs, and the card used to sit on "1/3" with nothing saying so. The list
+// now carries the schedule the admin screen already showed: the interval and
+// the last complete pass, for a challenge a rule counts right now.
+test('GET /season-events/:id/challenges: a challenge the scorer counts says how often, and when it last did', async () => {
+  const res = await get('/api/v4/season-events/100/challenges');
+  assert.equal(res.status, 200);
+  const body = await res.json();
+
+  const counted = body.data.find((c) => c.id === 10);
+  assert.deepEqual(counted.scoring, {
+    interval_minutes: 15,
+    last_scored_at: LAST_SCORED.toISOString().replace('Z', '+00:00'),
+  }, 'the rule on its template: its own interval and last pass, in the v4 timestamp shape');
+
+  const closed = body.data.find((c) => c.id === 11);
+  assert.equal(closed.scoring, null, 'a rule the scorer skips (the challenge is closed) promises nothing');
+  assert.ok('scoring' in closed, 'the key is always present, never omitted');
 });
 
 test('GET /season-events/:id/challenges: internal event -> 404', async () => {

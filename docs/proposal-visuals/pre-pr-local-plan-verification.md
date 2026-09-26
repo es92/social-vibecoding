@@ -54,8 +54,12 @@ a plan that changes the intent. The plan schema and examples are in
    the same member conversation fixture to each disposable database after its
    exact-revision image boots, but only when that revision supplied the source
    staging conversation. This allows a member story to open a real Messages
-   row and load its transcript. The fixture never changes the running app's
-   database or a production account.
+   row and load its transcript. They also create a non-loginable full-admin
+   identity only in those disposable databases and disable the server-wide app
+   cap only in those evidence runtimes, so write-only admin controls and app
+   creation flows can be exercised without changing production or ordinary
+   staging. None of these fixtures changes the running app's database or a
+   production account.
 4. On success, inspect the PNGs and any WebM in
    `.local-visual-evidence/pre-pr-<run-id>/`. Confirm that the captures show
    the claim; replay success alone only proves the steps ran reproducibly and
@@ -87,7 +91,9 @@ production conversations. Other required states may still be absent. In that
 case, the author must create representative *local* test state or report that
 the evidence cannot yet be verified. Declared `dapp.json` checks use the
 read-only administrator identity, so a route that those checks can open is
-not proof that a member can open it.
+not proof that a member can open it. Use the `full_admin` persona only when
+the claim requires a Homeroom control that the read-only administrator is
+deliberately forbidden to use.
 
 ## Scope
 

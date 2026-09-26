@@ -68,7 +68,7 @@ test('hosted evidence dispatch forwards worker lifecycle diagnostics through the
       branch_name: 'proposal', agent_backend: 'claude_code',
     },
     runId: '1'.repeat(32), origins: { base: 'http://base.test/', head: 'http://head.test/' },
-    authTokens: { member: 'private-token', read_only_admin: 'private-token' },
+    authTokens: { member: 'private-token', read_only_admin: 'private-token', full_admin: 'private-token' },
     onEvidenceDiagnostic: (event) => events.push(event),
   }, { workerService });
   assert.equal(result.backend, 'claude_code');
@@ -88,7 +88,7 @@ test('Codex evidence receives the planning contract as developer context in a fr
       agent_model: 'z-ai/glm-test', agent_thread_id: 'coding-thread',
     },
     runId: '1'.repeat(32), origins: { base: 'http://base.test/', head: 'http://head.test/' },
-    authTokens: { member: 'private-token', read_only_admin: 'private-token' },
+    authTokens: { member: 'private-token', read_only_admin: 'private-token', full_admin: 'private-token' },
     resumeThreadId: null,
   }, {
     workerService: {
@@ -165,7 +165,7 @@ test('a second hosted dispatch receives an explicit repair task through the norm
       branch_name: 'proposal', agent_backend: 'claude_code',
     },
     runId: '1'.repeat(32), origins: { base: 'http://base.test/', head: 'http://head.test/' },
-    authTokens: { member: 'private-token', read_only_admin: 'private-token' },
+    authTokens: { member: 'private-token', read_only_admin: 'private-token', full_admin: 'private-token' },
     resumeThreadId: 'evidence-thread', repairAttempt: 1,
   }, { workerService });
   assert.equal(prompts.length, 1);

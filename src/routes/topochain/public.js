@@ -65,6 +65,7 @@ const { TEMPLATE_JOIN_COLUMNS_SQL, buildChallengeListItem } = require('./challen
 const {
   loadOnboarding, visibleChallenges, challengeCategory, resolveProgress, loadEventBlocks,
 } = require('../../services/topochain/challenge-onboarding');
+const { loadCadence, intervalMinutes } = require('../../services/topochain/challenge-scorer');
 const events = require('../../services/events');
 const seasonHistory = require('../../services/topochain/season-history');
 
@@ -781,10 +782,24 @@ function topochainPublicRoutes(config) {
         ? await loadEventBlocks(pool, req.user.id, [id])
         : new Map();
 
+      // How often the background scorer counts each challenge, and when it
+      // last did (#3185). Progress on a scored challenge moves only when a
+      // run writes credits, so a card could sit on "1/3" for an interval
+      // with nothing saying why, and people redid what they had finished.
+      // The admin route had these two times; the card had neither. Not per
+      // viewer — the schedule is the challenge's — so one read for the list.
+      const cadence = await loadCadence(pool, id, visible, { defaultMinutes: intervalMinutes(config) });
+
       const data = visible
         .map((r) => {
           const item = buildChallengeListItem(r);
           item.metric = metricOf(r);
+          // `{ interval_minutes, last_scored_at }` for a challenge the scorer
+          // counts right now, else null; always present, like `completed`.
+          const counted = cadence.get(Number(item.id));
+          item.scoring = counted
+            ? { interval_minutes: counted.intervalMinutes, last_scored_at: iso(counted.lastScoredAt) }
+            : null;
           const category = challengeCategory(item.id, item.activity_type.category, onboarding);
           item.activity_type.category = category;
           item.card_preview.label = (category || '').toUpperCase();

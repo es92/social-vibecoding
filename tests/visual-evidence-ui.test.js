@@ -63,6 +63,13 @@ test('motion evidence labels its recording as an animation', () => {
   assert.doesNotMatch(html, /Play interaction/);
 });
 
+test('a privileged evidence claim is explicitly labelled as full admin', () => {
+  const value = evidence();
+  value.claims[0].persona = 'full_admin';
+  const html = AppView.visualEvidenceHtml(value, { sessionId: 42 });
+  assert.match(html, /desktop · full admin/);
+});
+
 test('a static verified claim shows before and after PNGs without suggesting a video', () => {
   const value = evidence();
   value.claims[0].animation = 'none';

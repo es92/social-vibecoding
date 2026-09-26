@@ -3543,13 +3543,15 @@ test('a read-only viewer of the self-hosted app gets no "+" in the strip, and th
 
 test('the "+" is drawn as part of the strip, not as a floating action', () => {
   const decls = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
-  // THE PHONE: one more 40px cell in the full-width pill — the tabs' own
-  // height and radius — a bare glyph in the selected tab's ink, no ground.
+  // THE PHONE: a 40px button — the tabs' own height and radius — a bare
+  // glyph in the selected tab's ink. The button draws no ground: the circle
+  // around it is its wrapper's (#2934, the next test), as the pill is the
+  // tab list's.
   const btn = /\n\.dev-ws-plus-btn \{([\s\S]*?)\n\}/.exec(decls);
   assert.ok(btn, 'the "+" has its own rule beside the tabs');
   assert.match(btn[1], /width: 40px; height: 40px;/, 'the tab height');
   assert.match(btn[1], /border: 0; border-radius: 999px;/, "the tab's radius and no border");
-  assert.match(btn[1], /background: transparent;/, 'no ground of its own');
+  assert.match(btn[1], /background: transparent;/, 'no ground on the button itself');
   assert.match(btn[1], /color: var\(--lit-ink\);/, "the selected tab's ink");
   // Open, it wears the marker's tint and ring: the strip's own "this one".
   assert.match(decls,
@@ -3560,15 +3562,15 @@ test('the "+" is drawn as part of the strip, not as a floating action', () => {
   assert.ok(!ACTIONS_ROW.includes('bg-violet-600'), 'no primary fill on the "+"');
   assert.match(ACTIONS_ROW, /className="dev-ws-plus-btn un-touch-target"/, 'still a 44px hit box');
   // THE ROOM IT TAKES, paid out of the tabs' padding and glyph gap rather
-  // than their labels — measured at 390px, "Current status" stays whole.
+  // than their labels — measured at 400px, "Current status" stays whole.
   const tab = /\n\.dev-ws-tab \{([\s\S]*?)\n\}/.exec(decls);
   assert.match(tab[1], /gap: 4px;/);
   assert.match(tab[1], /height: 40px; padding: 0 4px;/);
   assert.match(decls, /\.dev-ws-tablist \{ flex: 1 1 auto; min-width: 0; display: flex; gap: 2px; \}/,
-    'the list takes the pill less the "+" cell');
+    'the list takes the row less the "+" and the gap');
   assert.match(decls, /\.dev-ws-plus \{ position: relative; flex: none; display: flex; \}/,
     "the dropdown's containing block, never squeezed");
-  // A WIDE WINDOW: the pill's last segment, at the desktop tabs' 32px.
+  // A WIDE WINDOW: the strip's last item, at the desktop tabs' 32px.
   const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS);
   assert.match(wide[1], /\.dev-ws-tablist \{ flex: 0 0 auto; \}/);
   assert.match(wide[1], /\.dev-ws-plus-btn \{ width: 32px; height: 32px; \}/);
@@ -3577,8 +3579,59 @@ test('the "+" is drawn as part of the strip, not as a floating action', () => {
   assert.match(WORKSHOP,
     /<div className="dev-ws-tabtrack">[\s\S]*?<div className="dev-ws-tablist" role="tablist" aria-label="Workshop sections">[\s\S]*?<\/div>\s*<DevPlusMenu[\s\S]*?\/>\s*<\/div>/);
   assert.match(WORKSHOP, /const wanted = Math\.max\(0, t\.right - p\.left \+ EAR_GAP_PX\);/);
-  // The dropdown hangs 8px under the button at either size of the strip.
+  // The dropdown hangs 8px under the "+"'s circle at either size of the strip.
   assert.match(ACTIONS_ROW, /id="dev-plus-menu"\s+className="hidden absolute right-0 top-full mt-2 z-30 w-64 /);
+});
+
+test('#2934: the "+" is a round button of its own, a small gap after the tab pill', () => {
+  // #2914 put the "+" INSIDE the pill as its last cell, and it read as a
+  // fourth tab. The owner kept its row, place and behaviour and asked for a
+  // visible gap, so the pill's material moved from the box that held both
+  // onto each of them: the tab list is the pill, the "+"'s wrapper is a
+  // circle, and the row between them is air. No node moved (the markup
+  // assertions above and dapp.json's selectors still hold).
+  const decls = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // THE PHONE. The nav is a row: position and gap, no surface of its own.
+  const rail = /\n\.dev-ws-tabs \{([\s\S]*?)\n\}/.exec(decls);
+  assert.ok(rail, 'the rail rule exists');
+  assert.match(rail[1], /display: flex; gap: 6px;/, 'a 6px gap between the pill and the "+"');
+  assert.ok(!/background|border|padding|backdrop-filter/.test(rail[1]),
+    'the nav draws nothing, or the gap would be filled in');
+  // Both items wear what the nav used to: a 4px ring, the hairline, the fill
+  // and the round ends, so the "+" is as tall as the pill (1 + 4 + 40 + 4 + 1).
+  const surface = /\n\.dev-ws-tablist, \.dev-ws-tabtrack > \.dev-ws-plus \{([\s\S]*?)\n\}/.exec(decls);
+  assert.ok(surface, 'the tab list and the "+" share one surface rule');
+  // Scoped to the strip's "+": the unreachable Board renders the same
+  // wrapper at the end of `#dev-actions`, and that surface stays as it was.
+  assert.match(decls, /\n\.dev-ws-plus \{ position: relative; flex: none; display: flex; \}/,
+    'the bare wrapper rule draws nothing');
+  assert.match(surface[1], /padding: 4px;/);
+  assert.match(surface[1], /border-radius: 999px;/);
+  assert.match(surface[1], /border: 1px solid var\(--app-sheet-line\);/);
+  assert.match(surface[1], /background-color: var\(--dc-sheet-fill\);/);
+  // NO FROST on the tab list: a backdrop-filter would make it a stacking
+  // context, and the marker, painted before it at z-index 0, would go under
+  // its fill.
+  assert.ok(!/backdrop-filter/.test(surface[1]), 'the tab list must not become a stacking context');
+
+  // A WIDE WINDOW. The track only lines the two up, 6px apart; each draws the
+  // raised sheet in a 2px ring, so the pill stays 36px and the "+" is a
+  // 36px circle beside it.
+  const wide = /@media \(min-width: 700px\) \{([\s\S]*?)\n\}/.exec(CSS);
+  const wideDecls = wide[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(wideDecls, /\.dev-ws-tabtrack \{\s*display: inline-flex; align-items: center; gap: 6px;\s*\}/);
+  const wideSurface = /\n  \.dev-ws-tablist, \.dev-ws-tabtrack > \.dev-ws-plus \{([\s\S]*?)\n  \}/.exec(wideDecls);
+  assert.ok(wideSurface, 'restated at this width');
+  assert.match(wideSurface[1], /padding: 2px;/);
+  assert.match(wideSurface[1], /border: 0;/, 'no hairline, as the track had none');
+  assert.match(wideSurface[1], /background-color: var\(--dc-sheet-raise\);/);
+
+  // The marker still measures against the nav: the surface rules position
+  // nothing. (The "+"'s wrapper is positioned by its own rule, as the
+  // dropdown's containing block, and holds no tab.)
+  assert.ok(!/position/.test(surface[1]) && !/position/.test(wideSurface[1]),
+    'the surfaces add no containing block of their own');
 });
 
 test('while the "+" menu is open the strip outranks the pane head, and only then', () => {
@@ -4767,11 +4820,18 @@ test('a wide window reads the tabs at the top, as a segmented control', () => {
     'the frost belongs to the floating phone bar, not to a strip in the flow');
 
   const track = /\.dev-ws-tabtrack \{([\s\S]*?)\n  \}/.exec(wide[1]);
-  assert.ok(track, 'the track is the pill');
+  assert.ok(track, 'the track holds the pill and the "+"');
   // `inline-flex` so it hugs its three labels: a segmented control spanning
   // the reading column reads as a header bar rather than as a control, which
   // is the same reason SECTION_TABS_LIST is inline-flex.
   assert.match(track[1], /display: inline-flex;/, 'it hugs its labels');
+  // #2934: THE TRACK DRAWS NOTHING. It was the pill, with the "+" as its last
+  // segment; the pill's material moved onto the tab list and the "+"'s
+  // wrapper, so the "+" is its own circle a gap after the pill.
+  assert.ok(!/background|padding|border-radius/.test(track[1]),
+    'the surface is on its two items, not on the track');
+  const pill = /\n  \.dev-ws-tablist, \.dev-ws-tabtrack > \.dev-ws-plus \{([\s\S]*?)\n  \}/.exec(wide[1]);
+  assert.ok(pill, 'the tab list and the "+" draw the surface at this width');
 
   // THE AIR ABOVE AND BELOW IS ONE NUMBER. `.dev-ws` is a flex column with
   // `gap: 10px`, so a `margin-bottom` on the nav STACKS on it — 14px below
@@ -4782,12 +4842,12 @@ test('a wide window reads the tabs at the top, as a segmented control', () => {
   assert.ok(!/margin-bottom: 4px;/.test(rail[1]), 'no margin stacked on the column gap');
   assert.match(wide[1], /#dev-body:has\(> #dev-workshop\) \{ padding-top: 10px; \}/,
     'and the space above equals it');
-  assert.match(track[1], /border-radius: 9999px;/);
+  assert.match(pill[1], /border-radius: 9999px;/);
   // A TOKEN, NOT A LITERAL WHITE. The mock that sold this option hardcoded
   // #ffffff and rendered a glaring slab in dark mode; --dc-sheet-raise is the
   // raised surface the category cards already use and carries both values.
-  assert.match(track[1], /background-color: var\(--dc-sheet-raise\);/);
-  assert.ok(!/#fff/i.test(track[1]), 'no literal white to strand dark mode');
+  assert.match(pill[1], /background-color: var\(--dc-sheet-raise\);/);
+  assert.ok(!/#fff/i.test(pill[1]), 'no literal white to strand dark mode');
 
   const tab = /\.dev-ws-tab \{([\s\S]*?)\n  \}/.exec(wide[1]);
   assert.ok(tab, 'the tab is restyled too');
@@ -5391,6 +5451,35 @@ test('the Needs-you card is marked voted only once the server has the vote (QA 2
   const castBody = cast.slice(0, cast.indexOf('\n  },\n'));
   assert.match(castBody, /if \(reason === false\) \{\s*AppView\._voteInFlight\.delete\(key\);\s*return false;/);
   assert.match(castBody, /return true;/);
+});
+
+test('#3052: on a phone a card the viewer can vote on takes the swipe; an issue or a pairless row does not', () => {
+  // The vm the feed renders in has no matchMedia, so this is the layout
+  // below 700px: the one the gesture is for. (The wiring and the gesture's
+  // arithmetic are tests/workshop-swipe-vote.test.js.)
+  const AppView = makeAppView();
+  seed(AppView);
+  const opening = (html, kind) => (html.match(/<section class="dev-ws-item"[^>]*>/g) || [])
+    .filter((s) => s.includes(`data-ws-kind="${kind}"`));
+  const html = workshopHtml(AppView, 'needs');
+  assert.equal(opening(html, 'vote').length, 1);
+  assert.ok(opening(html, 'vote').every((s) => s.includes('data-ws-swipeable=""')),
+    'the proposal owed a vote is swipeable');
+  assert.equal(opening(html, 'claim').length, 2);
+  assert.ok(opening(html, 'claim').every((s) => !s.includes('data-ws-swipeable')),
+    'an issue\'s "Let\'s take it" is not a vote, so its card is not swiped');
+  // Its two hints, once each, hidden from assistive tech: the Vote sheet's
+  // buttons are the way to vote without a gesture.
+  assert.equal((html.match(/<span class="dev-ws-swipe-hint dev-ws-swipe-yes" aria-hidden="true">Yes<\/span>/g) || []).length, 1);
+  assert.equal((html.match(/<span class="dev-ws-swipe-hint dev-ws-swipe-no" aria-hidden="true">No<\/span>/g) || []).length, 1);
+
+  // A vote row with no Yes/No pair (a governance item's shape here) is not
+  // one the viewer can vote on from the card, so it takes no gesture either.
+  AppView._cardVoteButtonSpecs = () => [];
+  const bare = workshopHtml(AppView, 'needs');
+  assert.equal(opening(bare, 'vote').length, 1);
+  assert.ok(opening(bare, 'vote').every((s) => !s.includes('data-ws-swipeable')));
+  assert.ok(!bare.includes('dev-ws-swipe-hint'));
 });
 
 test('the ear re-measures on every render, or a grouping switch leaves it stale', () => {

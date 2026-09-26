@@ -309,9 +309,16 @@ connector registered under some other name.
 // rule's source of truth, so the repository says what the row says from its
 // first commit. The default rule writes nothing: dapp.json stays
 // `{ "secrets": [] }`.
-function getTemplateFiles(appName, slug, dbUrl, repoUrl = null, { governance = null } = {}) {
+//
+// `description` is the create screen's optional "What is it?" line. It
+// becomes dapp.json's top-level `description` (what the join screen,
+// Discover and the project's page show) and the first sentence of
+// CLAUDE.md's About section, so the coding agent starts from the same
+// intent. Absent, both stay as they were.
+function getTemplateFiles(appName, slug, dbUrl, repoUrl = null, { governance = null, description = null } = {}) {
   const canonicalRepoFile = getCanonicalRepoFile(repoUrl);
   const governanceBlock = require('./create-options').governanceBlock(governance);
+  const about = typeof description === 'string' && description.trim() ? description.trim() : null;
   return [
     {
       path: 'CLAUDE.md',
@@ -405,8 +412,8 @@ tables you've marked private), etc.
 
 ## About ${appName}
 
-_(add a sentence or two of product context here so Claude Code has a
-shared understanding of what this app is for)_
+${about ? `${about}\n\n_(add a sentence or two more of product context here so Claude Code has a\nshared understanding of what this app is for)_` : `_(add a sentence or two of product context here so Claude Code has a
+shared understanding of what this app is for)_`}
 
 ## App-specific conventions
 
@@ -620,7 +627,11 @@ value = "build"
       // can't appear in this list.
       path: 'dapp.json',
       content: JSON.stringify(
-        governanceBlock ? { secrets: [], governance: governanceBlock } : { secrets: [] },
+        {
+          ...(about ? { description: about } : {}),
+          secrets: [],
+          ...(governanceBlock ? { governance: governanceBlock } : {}),
+        },
         null,
         2,
       ),

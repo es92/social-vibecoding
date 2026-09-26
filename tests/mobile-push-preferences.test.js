@@ -46,6 +46,9 @@ const CURRENT_KINDS = [
   // #2386's two: a friend request and its acceptance — one person reaching
   // you directly, so they join direct_interactions.
   'friend_request', 'friend_accept',
+  // A server-wide cap nearing its ceiling, for full admins only. Joins
+  // app_alerts beside app_health (services/platform-limit-alerts.js).
+  'platform_limit',
 ];
 
 test('every current inbox kind maps exactly once to one closed category', () => {

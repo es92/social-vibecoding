@@ -19,6 +19,9 @@
 // historical render-only kind now that successful issuance is routine.
 // #2387 adds 'thread_reply': a reply in an app-chat reply thread you started
 // or replied in (chat_message_id is the reply; its thread_ref the root).
+// 'platform_limit' tells full admins a server-wide cap (MAX_APPS,
+// MAX_GLOBAL_SESSIONS) is nearly or completely used; `detail` carries the
+// cap, level and figures (services/platform-limit-alerts.js).
 
 const log = require('./logger');
 const usernames = require('./usernames');
@@ -728,6 +731,40 @@ async function createManagedOpenRouterReviewNotifications(pool, {
         )
      RETURNING id, user_id, source_user_id, kind, detail, created_at`,
     [sourceUserId, String(managedKeyId).slice(0, 32)],
+  );
+  return rows;
+}
+
+// A server-wide cap (MAX_APPS, MAX_GLOBAL_SESSIONS) reached its warning line
+// or its ceiling — services/platform-limit-alerts.js decides when. Full
+// admins only: they are the people who can raise a cap or free room under
+// it, so a view-only admin is not paged about something they cannot act on.
+// `detail` is that module's "<limit>_<level>:<used>:<cap>" token. No app:
+// the cap belongs to the server, and an app_id would let opening the
+// platform's own app mark the alert read unseen (markReadForApp).
+//
+// De-dupe: an admin still holding an UNREAD alert for the same cap and level
+// gets no second one — the counts in the first are already stale, and a
+// pile of them says nothing the first did not.
+async function createPlatformLimitNotifications(pool, { detail }) {
+  const token = String(detail || '').slice(0, 32);
+  const sep = token.indexOf(':');
+  if (sep <= 0) return [];
+  const { rows } = await pool.query(
+    `INSERT INTO notifications (user_id, source_user_id, kind, detail)
+     SELECT admin.id, NULL, 'platform_limit', $1::varchar(32)
+       FROM users admin
+      WHERE admin.is_admin = TRUE
+        AND admin.admin_readonly = FALSE
+        AND NOT EXISTS (
+          SELECT 1 FROM notifications existing
+           WHERE existing.user_id = admin.id
+             AND existing.kind = 'platform_limit'
+             AND split_part(existing.detail, ':', 1) = $2
+             AND existing.read_at IS NULL
+        )
+     RETURNING id, user_id, source_user_id, kind, detail, created_at`,
+    [token, token.slice(0, sep)],
   );
   return rows;
 }
@@ -1475,6 +1512,7 @@ module.exports = {
   createProposalVoteNotification,
   createRevisionRecheckNotifications,
   createAppHealthNotification,
+  createPlatformLimitNotifications,
   createCheckFailedNotification,
   createSessionDoneNotification,
   createSessionStalledNotification,

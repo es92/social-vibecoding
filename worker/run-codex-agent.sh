@@ -54,6 +54,7 @@ die() {
 : "${EVIDENCE_HEAD_ORIGIN:=}"
 : "${EVIDENCE_MEMBER_TOKEN:=}"
 : "${EVIDENCE_ADMIN_TOKEN:=}"
+: "${EVIDENCE_FULL_ADMIN_TOKEN:=}"
 : "${SYSTEM_PROMPT_FILE:=}"
 # Scout must NEVER receive push authority (review #4): WORKER_JWT is
 # required for build (to push) but must be empty for scout.
@@ -145,7 +146,7 @@ if [ "$MODE" = "evidence" ]; then
   echo "__USERNODE_PHASE__ evidence_browser_bootstrap"
   node /usr/local/bin/evidence-browser-bootstrap.js \
     || die "evidence browser authentication failed"
-  unset EVIDENCE_MEMBER_TOKEN EVIDENCE_ADMIN_TOKEN
+  unset EVIDENCE_MEMBER_TOKEN EVIDENCE_ADMIN_TOKEN EVIDENCE_FULL_ADMIN_TOKEN
 fi
 
 # TOML-safe escaping (quotes/backslashes/newlines) so attacker-controlled
@@ -291,6 +292,7 @@ TOML
     ESCAPED_PROXY=$(toml_escape "$EVIDENCE_PROXY_SERVER")
     ESCAPED_MEMBER_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/member.json")
     ESCAPED_ADMIN_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/read_only_admin.json")
+    ESCAPED_FULL_ADMIN_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/full_admin.json")
     cat <<'TOML'
 
 [mcp_servers.evidence]
@@ -315,6 +317,16 @@ tool_timeout_sec = 60
 command = "node"
 TOML
     printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"]\n' "$ESCAPED_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY"
+    cat <<'TOML'
+env_vars = ["EVIDENCE_ALLOWED_ORIGINS", "EVIDENCE_BROWSER_DIAGNOSTIC_FILE", "EVIDENCE_NAVIGATION_HINTS"]
+enabled_tools = ["browser_navigate", "browser_navigate_back", "browser_snapshot", "browser_take_screenshot", "browser_click", "browser_type", "browser_fill_form", "browser_press_key", "browser_select_option", "browser_hover", "browser_mouse_move_xy", "browser_drag", "browser_resize", "browser_wait_for", "browser_console_messages", "browser_network_requests", "browser_tabs", "browser_close"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.browser_full_admin]
+command = "node"
+TOML
+    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "full_admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"]\n' "$ESCAPED_FULL_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY"
     cat <<'TOML'
 env_vars = ["EVIDENCE_ALLOWED_ORIGINS", "EVIDENCE_BROWSER_DIAGNOSTIC_FILE", "EVIDENCE_NAVIGATION_HINTS"]
 enabled_tools = ["browser_navigate", "browser_navigate_back", "browser_snapshot", "browser_take_screenshot", "browser_click", "browser_type", "browser_fill_form", "browser_press_key", "browser_select_option", "browser_hover", "browser_mouse_move_xy", "browser_drag", "browser_resize", "browser_wait_for", "browser_console_messages", "browser_network_requests", "browser_tabs", "browser_close"]

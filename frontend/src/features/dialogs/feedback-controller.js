@@ -166,6 +166,9 @@ export function init() {
     const firstFix = document.getElementById('feedback-first-fix');
     const firstFixNote = document.getElementById('feedback-first-fix-note');
     const firstBoard = document.getElementById('feedback-first-board');
+    // #3186: the ordinary confirmation; see showSent below.
+    const sentSection = document.getElementById('feedback-sent');
+    const sentNotice = document.getElementById('feedback-sent-notice');
     let firstFeedback = null;
     let pendingFirstFeedback = null;
     let closeTimer = null;
@@ -190,6 +193,9 @@ export function init() {
         : 'Start with a draft you can edit before sending it to the coding agent.';
       firstNotice.textContent = notice || 'Your feedback has been sent.';
       feedbackForm.classList.add('hidden');
+      // A queued first report can land while a filed one's confirmation is
+      // up; the moment replaces it rather than stacking under it.
+      sentSection?.classList.add('hidden');
       firstSuccess.classList.remove('hidden');
       firstSuccess.focus();
       return true;
@@ -197,6 +203,46 @@ export function init() {
 
     const closeFeedback = () => document.getElementById('feedback-cancel').click();
     document.getElementById('feedback-first-done')?.addEventListener('click', closeFeedback);
+
+    // #3186: "See your feedback", in both confirmations: the ordinary one
+    // (#feedback-sent) and the first-feedback moment (#feedback-first-mine).
+    // Both open the Me screen's "Your feedback" list by its address, which
+    // Profile.open() honours, so the report just filed is on screen with its
+    // status one tap after sending.
+    //
+    // The ordinary confirmation used to be the status line, and the dialog
+    // closed itself 1.5 s later: "it vanished", in the report this answers,
+    // and too soon to reach a link in. It is a section of its own now, drawn
+    // the way the first-feedback moment is (the form hidden, the outcome, the
+    // way on, Done), and it stays until Done, the backdrop, Escape or the
+    // link. Only a FILED report gets it: the save-for-later path below still
+    // closes on its own, because a saved report is not in the list yet.
+    //
+    // The address is written BEFORE the dialog closes, not after. Closing
+    // spends the dialog's back-button record with a history.back() that lands
+    // a task later; written after it, the new address was undone by that
+    // traversal and the viewer ended up back where they sent the report from.
+    // Closing second finds the page already moved off the record, and
+    // lib/back-stack.ts leaves a record it is not standing on alone.
+    const SEE_MINE_ROUTE = '#profile?feedback';
+    const openMine = () => {
+      location.hash = SEE_MINE_ROUTE;
+      closeFeedback();
+    };
+    document.getElementById('feedback-sent-mine')?.addEventListener('click', openMine);
+    document.getElementById('feedback-first-mine')?.addEventListener('click', openMine);
+    document.getElementById('feedback-sent-done')?.addEventListener('click', closeFeedback);
+    const showSent = (notice) => {
+      sentNotice.textContent = notice;
+      feedbackForm.classList.add('hidden');
+      sentSection.classList.remove('hidden');
+      // Off the composer, as the first-feedback moment's focus() is: the
+      // keyboard comes down once, now, rather than whenever the viewer closes.
+      sentSection.focus();
+    };
+    const hideSent = () => {
+      sentSection?.classList.add('hidden');
+    };
     firstBoard?.addEventListener('click', () => {
       const moment = firstFeedback;
       if (!moment || firstBoard.disabled || Number(moment.userId) !== Number(App.user?.id)) return;
@@ -1058,9 +1104,10 @@ export function init() {
 
     // Save `body` (the exact /api/feedback payload) for later, with the
     // screenshot bytes if one is attached. Mirrors the successful-submit
-    // cleanup: the draft is consumed, the dialog locks, and it closes after
-    // the same 1500 ms grace window — because from the user's side the job IS
-    // done. Only the wording differs.
+    // cleanup: the draft is consumed and the dialog locks. It closes after a
+    // 1500 ms grace window, because from the user's side the job IS done; a
+    // filed report stays on its confirmation instead (#3186), because it has
+    // somewhere to go, "Your feedback", and a saved one is not there yet.
     const saveForLater = async (body) => {
       if (!window.FeedbackQueue) {
         showFeedbackNotice('Network error', true);
@@ -1323,12 +1370,12 @@ export function init() {
           // #2796: sent — the only thing that ends a saved draft.
           clearSavedDraft();
           // Discard any in-flight title preview so it can't repopulate
-          // the cleared field during the "Thanks!" grace window.
+          // the cleared field while the "Thanks!" confirmation is up.
           resetTitleGenState();
           // #683: the screenshot now belongs to the filed issue.
           resetScreenshotState();
-          // Lock the textarea and keep the submit button disabled for
-          // the 1500ms "Thanks!" grace window so a user can't keep
+          // Lock the textarea and keep the submit button disabled while
+          // the "Thanks!" confirmation is up so a user can't keep
           // typing (or re-fire cmd+enter) after their feedback has
           // already been filed — fixes #32. Both controls are
           // re-enabled when the modal is reopened below.
@@ -1346,8 +1393,10 @@ export function init() {
                 || (target === 'platform' && AppView?.appData?.self_hosted))) {
             AppView.refreshDevData('issue');
           }
+          // #3186: the confirmation stays, with "See your feedback" in it,
+          // instead of closing itself (see showSent above).
           if (!showFirstFeedback(data.firstFeedback, feedbackStatus.textContent)) {
-            closeTimer = setTimeout(() => document.getElementById('feedback-cancel').click(), 1500);
+            showSent(feedbackStatus.textContent);
           }
           return;
         }
@@ -1386,6 +1435,8 @@ export function init() {
       const heading = feedbackForm?.querySelector('h2');
       if (heading) heading.textContent = opts.intent === 'issue' ? 'File an issue' : 'Send feedback';
       firstSuccess?.classList.add('hidden');
+      // #3186: the last filed report's confirmation never greets the next open.
+      hideSent();
       feedbackForm?.classList.remove('hidden');
       // Opening a queued success must not consume a failed outbox draft or
       // start screenshot/title probes behind the confirmation.
@@ -1547,11 +1598,11 @@ export function init() {
     // navigateToAdminConsole re-checks the flag, so a stray programmatic
     // hash change can't open it either.
     // The state half of the dismiss path, called by the island's onClose.
-    // The Cancel button, the backdrop click, a kit dismiss and the two
-    // `#feedback-cancel`.click() calls the success and save-for-later paths
-    // fire after their 1500 ms grace window all arrive here now. The
-    // classList.add('hidden') that used to be this handler's first line
-    // belongs to useStaticModal.
+    // The Cancel button, the backdrop click, a kit dismiss, and every
+    // `#feedback-cancel`.click() (the confirmations' own buttons, and the
+    // save-for-later path after its 1500 ms grace window) all arrive here
+    // now. The classList.add('hidden') that used to be this handler's first
+    // line belongs to useStaticModal.
     Feedback._reset = () => {
       presentation += 1;
       clearTimeout(closeTimer);
@@ -1574,6 +1625,7 @@ export function init() {
         clearCaptureDraft();
       }
       setComposerLocked(false);
+      hideSent();
       // #2707: a stale teardown mid-capture must not drop the question — the
       // same dialog, with the same unanswered row, is about to be presented
       // again.
@@ -1682,4 +1734,12 @@ export function init() {
     userId: App.user?.id, appSlug: App.currentApp || 'usernode-2d5619',
     issueNumber: 900008, canFix: true,
   }, 'Your feedback has been sent.');
+
+  // #3186: ?shot=feedback-sent. The composer locks as a real send locks it,
+  // and the confirmation reads what a platform report's does. Writes nothing.
+  App._simulateFeedbackSent = () => {
+    setComposerLocked(true);
+    disableSubmit();
+    showSent('Thanks! Filed against Homeroom.');
+  };
 }

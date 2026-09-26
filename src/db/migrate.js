@@ -3139,6 +3139,14 @@ async function seedStagingAgentSession(pool, config) {
     [STAGING_AGENT_CHANGE_ID, app.id, owner.id, STAGING_AGENT_SESSION_ID]
   );
   await pool.query('UPDATE agent_sessions SET active_change_id = $2 WHERE id = $1', [STAGING_AGENT_SESSION_ID, STAGING_AGENT_CHANGE_ID]);
+  // #3180: its checks were skipped, with the reason a real skip records, so
+  // the staging card and the changes drawer say "Checks skipped" and why.
+  // Put back on every boot, as the card's expiry is.
+  await pool.query(
+    `UPDATE chat_sessions SET check_state = 'skipped', check_error_detail = $2, test_results = '[]'::jsonb
+      WHERE id = $1`,
+    [STAGING_AGENT_CHANGE_ID, 'branch has no commits beyond main, so there is nothing to test']
+  );
 
   const card = {
     id: STAGING_AGENT_CARD_ID,

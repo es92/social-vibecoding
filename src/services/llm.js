@@ -1597,12 +1597,94 @@ Respond with ONLY a JSON object: {"replies": ["...", "..."]}. No prose before or
 // serializers all agree on the exact string they mark/detect.
 const FEEDBACK_FALLBACK_TITLE = 'Feedback from Homeroom';
 
+// #3193: the title a feedback issue files with when the model names no
+// change to make ("Lfg", "I like this website") or its reply fails
+// issueTitleRejection below — the reporter's own words, on one line and
+// capped, behind a "Feedback:" label. Never the model's words.
+const FEEDBACK_EXCERPT_CHARS = 60;
+
+function feedbackTitleFromDescription(description) {
+  const words = String(description == null ? '' : description).replace(/\s+/g, ' ').trim();
+  if (!words) return FEEDBACK_FALLBACK_TITLE;
+  let excerpt = words;
+  if (words.length > FEEDBACK_EXCERPT_CHARS) {
+    // Cut at the last word boundary, unless that throws away most of it.
+    const cut = words.lastIndexOf(' ', FEEDBACK_EXCERPT_CHARS);
+    excerpt = `${words.slice(0, cut > FEEDBACK_EXCERPT_CHARS / 2 ? cut : FEEDBACK_EXCERPT_CHARS).trimEnd()}…`;
+  }
+  return `Feedback: ${stripLoneSurrogates(excerpt)}`;
+}
+
+// Bounds on a generated title. The prompt asks for 5-10 words, 15 for a
+// multi-issue title; the word cap sits a little above that so a slight
+// overshoot keeps its real title.
+const ISSUE_TITLE_MAX_CHARS = 120;
+const ISSUE_TITLE_MAX_WORDS = 20;
+// Phrasing that marks a reply addressed to the reporter rather than a
+// title. #3193's four published examples all opened "I need…" / "I don't
+// have enough…", named the "issue title" they were declining to write, and
+// went on to "Could you provide…".
+const ISSUE_TITLE_REFUSALS = [
+  /^I\b/, // a title starts with a verb, never with "I"
+  /\bI (?:need|don['’]t|do not|can['’]t|cannot|am unable|would need)\b/i,
+  /^(?:sorry|unfortunately)\b/i,
+  /\b(?:could|can|would) you (?:please )?(?:provide|share|clarify|describe|give|tell|explain|elaborate)\b/i,
+  /\bplease (?:provide|share|clarify|describe|elaborate)\b/i,
+  /\bissue title\b/i,
+  /\btoo vague\b/i,
+];
+
+// Why `title` can't be published as an issue title, or null when it can.
+function issueTitleRejection(title) {
+  const t = typeof title === 'string' ? title.trim() : '';
+  if (!t) return 'empty';
+  if (/[\r\n\u2028\u2029]/.test(t)) return 'multi-line';
+  if (t.length > ISSUE_TITLE_MAX_CHARS || t.split(/\s+/).length > ISSUE_TITLE_MAX_WORDS) return 'too long';
+  if (t.endsWith('?')) return 'question';
+  if (ISSUE_TITLE_REFUSALS.some((re) => re.test(t))) return 'refusal';
+  return null;
+}
+
+// Structured output for generateIssueTitle. `actionable` comes first so
+// the model decides whether there is anything to title before it writes
+// one, and a "no" has a field to go in instead of an explanation.
+const ISSUE_TITLE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    actionable: { type: 'boolean' },
+    title: { type: 'string' },
+  },
+  required: ['actionable', 'title'],
+};
+
+// Reads the { actionable, title } reply. Off-schema text (a refusal or an
+// older model) is read as a bare title so issueTitleRejection still has
+// the final say; a cut-off JSON object is never a title.
+function parseIssueTitleReply(raw) {
+  const text = raw.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object') {
+      return { actionable: parsed.actionable !== false, title: typeof parsed.title === 'string' ? parsed.title : '' };
+    }
+  } catch { /* not JSON — fall through */ }
+  if (text.startsWith('{')) return { actionable: false, title: '' };
+  return { actionable: true, title: text };
+}
+
 // One-shot Haiku call that titles a GitHub issue from its feedback
 // description. Shared by routes/feedback.js (at filing time) and
 // services/title-heal.js (when retrying a fallback-titled issue). Throws
 // on any failure — LLM disabled, API error, empty response — and callers
 // decide whether that means "file with the fallback title" or "back off
 // and retry later".
+//
+// A reply that is not a usable title does NOT throw (#3193): the model
+// answered, and asking again gets the same answer. It resolves with the
+// reporter's own words (feedbackTitleFromDescription) and
+// `actionable: false`, so no caller ever publishes a refusal and none
+// queues a retry for it.
 async function generateIssueTitle({ description, apiKey, telemetryContext }) {
   const activeClient = apiKey ? new Anthropic({ apiKey }) : client;
   if (!activeClient) throw new Error('LLM not initialized');
@@ -1620,19 +1702,34 @@ If the feedback describes one problem, keep the title to 5-10 words. A single pr
 
 If the feedback describes more than one distinct problem, the title must convey that instead of describing only the first. When the problems share a topic, name the topic and gist the problems (e.g. "Fix multiple leaderboard issues: broken sort and stale totals"). When they share no topic, gist each briefly (e.g. "Fix multiple issues: leaderboard sort, dark-mode persistence, export 404"). Multi-issue titles may run up to 15 words.
 
-Respond with only the title.
+Some feedback names nothing to change: a single word, a greeting, or praise with nothing to fix (e.g. "Lfg", "I like this website"). For that, set actionable to false and title to "". Never explain, apologise, ask for more detail or mention the title itself: the title is published exactly as you write it.
+
+Respond with only a JSON object: {"actionable": true, "title": "..."}.
 
 FEEDBACK:
 ${stripLoneSurrogates(description).trim()}`,
       }],
+      // Structured output (as generateQuickReplies): the answer is always
+      // { actionable, title }, never free text a refusal can hide in.
+      output_config: { format: { type: 'json_schema', schema: ISSUE_TITLE_SCHEMA } },
     },
     telemetryContext,
     defaults: { backend: 'helper', component: 'issue_title' },
     apiKey,
   });
-  const title = ((resp.content || []).find((b) => b.type === 'text')?.text || '').trim();
-  if (!title) throw new Error('Empty issue title response');
-  return { title, usage: resp.usage, model };
+  const raw = ((resp.content || []).find((b) => b.type === 'text')?.text || '').trim();
+  // A declined or cut-off answer is never a title, whatever text it holds.
+  const cutShort = resp.stop_reason === 'refusal' || resp.stop_reason === 'max_tokens';
+  if (!raw && !cutShort) throw new Error('Empty issue title response');
+  const reply = parseIssueTitleReply(raw);
+  const rejection = cutShort ? resp.stop_reason
+    : !reply.actionable ? 'not actionable'
+      : issueTitleRejection(reply.title);
+  if (rejection) {
+    log.info('llm', 'Issue title reply unusable; titling from the feedback itself', { reason: rejection });
+    return { title: feedbackTitleFromDescription(description), actionable: false, usage: resp.usage, model };
+  }
+  return { title: reply.title.trim(), actionable: true, usage: resp.usage, model };
 }
 
 // ── AI progress report (Reporting tab) ─────────────────────────────────
@@ -2471,6 +2568,8 @@ module.exports = {
   RUN_LENGTH_PRIORS, RUN_LENGTH_PRIORS_SNAPSHOT, renderPriorsGuidance,
   PROMPT_VERSION, isCompletionClaim,
   stripLoneSurrogates, generateIssueTitle, FEEDBACK_FALLBACK_TITLE,
+  // #3193: the guard between the title model and a published issue title.
+  issueTitleRejection, feedbackTitleFromDescription, ISSUE_TITLE_SCHEMA,
   // AI progress report (Reporting tab) — see services/report-ai.js.
   generateReportSummary, sanitizeReportSummary, REPORT_SUMMARY_SCHEMA,
   // Workshop themes (the Dev screen's lander) — see services/workshop-themes.js.

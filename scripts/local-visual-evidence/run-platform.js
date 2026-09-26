@@ -189,7 +189,11 @@ async function main() {
       environment: localEnvironment(fixture, network, imageDigest, fingerprint),
       identities: {
         async mintEvidenceAuthTokens() {
-          return { member: 'local-member-fixture', read_only_admin: 'local-admin-fixture' };
+          return {
+            member: 'local-member-fixture',
+            read_only_admin: 'local-admin-fixture',
+            full_admin: 'local-full-admin-fixture',
+          };
         },
       },
       worker: { isInFlight() { return false; } },

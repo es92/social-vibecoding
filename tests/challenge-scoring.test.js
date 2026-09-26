@@ -1072,3 +1072,99 @@ test('the schema carries the cadence columns', () => {
   assert.match(schema, /ALTER TABLE challenge_scoring_rules ADD COLUMN IF NOT EXISTS last_scored_at TIMESTAMPTZ/);
   assert.match(schema, /ALTER TABLE challenge_scoring_rules ADD COLUMN IF NOT EXISTS last_pass JSONB/);
 });
+
+// ─── What a participant's card says about the schedule (#3185) ─────────
+//
+// Progress on a scored challenge moves only when a run writes credits, so the
+// card says how often that is and when it last happened. The rule it states
+// must be one that really scores the challenge now: a card that promised an
+// update the scorer is not going to make would be worse than no line.
+
+const cadenceRule = (extra = {}) => rule({ intervalMinutes: 15, lastScoredAt: iso(NOW - 5 * MIN), ...extra });
+
+test('a card is told its rule\'s interval and when it last ran to its end', () => {
+  assert.deepEqual(rules.cadenceOf([cadenceRule()], challengeRow(), { now: NOW, defaultMinutes: 10 }),
+    { intervalMinutes: 15, lastScoredAt: NOW - 5 * MIN });
+  assert.equal(rules.cadenceOf([cadenceRule({ intervalMinutes: null })], challengeRow(), { now: NOW, defaultMinutes: 10 })
+    .intervalMinutes, 10, 'blank follows the deployment default, as the scheduler does');
+  assert.equal(rules.cadenceOf([cadenceRule({ intervalMinutes: 3 })], challengeRow(), { now: NOW, defaultMinutes: 10 })
+    .intervalMinutes, 10, 'an interval off the list is not the one it runs on');
+});
+
+test('a card is told nothing the scorer is not going to do', () => {
+  const at = { now: NOW, defaultMinutes: 10 };
+  assert.equal(rules.cadenceOf([], challengeRow(), at), null, 'no rule counts it');
+  assert.equal(rules.cadenceOf(undefined, challengeRow(), at), null);
+  assert.equal(rules.cadenceOf([cadenceRule()], challengeRow(), { now: NOW, defaultMinutes: 0 }), null,
+    'the schedule is switched off');
+  assert.equal(rules.cadenceOf([cadenceRule({ lastScoredAt: null })], challengeRow(), at), null,
+    'never run yet: due on the next beat, no time to print');
+  assert.equal(rules.cadenceOf([cadenceRule({ enabled: false })], challengeRow(), at), null, 'rule switched off');
+  assert.equal(rules.cadenceOf([cadenceRule()], challengeRow({ completed: true }), at), null, 'challenge closed');
+  assert.equal(rules.cadenceOf([cadenceRule()], challengeRow({ schedule_start: iso(NOW + DAY) }), at), null,
+    'window not open yet');
+  assert.equal(rules.cadenceOf([cadenceRule()], challengeRow({ reward: 'Up to 500 pts / app', t_reward: null }), at), null,
+    'a rule the scorer skips as misconfigured');
+});
+
+test('two rules on one challenge: the shorter interval and the more recent pass', () => {
+  const both = [
+    cadenceRule({ id: 1, intervalMinutes: 30, lastScoredAt: iso(NOW - 2 * MIN) }),
+    cadenceRule({ id: 2, intervalMinutes: 5, lastScoredAt: iso(NOW - 4 * MIN) }),
+  ];
+  assert.deepEqual(rules.cadenceOf(both, challengeRow(), { now: NOW, defaultMinutes: 10 }),
+    { intervalMinutes: 5, lastScoredAt: NOW - 2 * MIN });
+  const oneSkipped = [both[0], { ...both[1], enabled: false }];
+  assert.deepEqual(rules.cadenceOf(oneSkipped, challengeRow(), { now: NOW, defaultMinutes: 10 }),
+    { intervalMinutes: 30, lastScoredAt: NOW - 2 * MIN }, 'a rule that does not score it says nothing');
+});
+
+test('the challenge list reads every card\'s cadence in one query, and none with the schedule off', async () => {
+  const calls = [];
+  const ruleRows = [
+    // Bound to challenge 74's template: covers it.
+    { id: 1, measure: 'TRY_APPS', target: null, points: null, challenge_id: null, challenge_template_id: 5,
+      interval_minutes: 15, last_scored_at: new Date(NOW - 5 * MIN),
+      event_starts_at: new Date(NOW - 10 * DAY), event_ends_at: new Date(NOW + 10 * DAY) },
+    // Bound to challenge 75 itself, but its reward is prose: skipped, so no line.
+    { id: 2, measure: 'PROPOSAL_SENT', target: null, points: null, challenge_id: 75, challenge_template_id: null,
+      interval_minutes: null, last_scored_at: new Date(NOW - MIN),
+      event_starts_at: new Date(NOW - 10 * DAY), event_ends_at: new Date(NOW + 10 * DAY) },
+  ];
+  const pool = { query: async (sql, params) => { calls.push({ sql, params }); return { rows: ruleRows }; } };
+  const rows = [
+    challengeRow({ id: 74, challenge_template_id: 5 }),
+    challengeRow({ id: 75, challenge_template_id: 6, reward: 'Half of your credits', t_reward: null }),
+    challengeRow({ id: 76, challenge_template_id: 7 }),
+  ];
+  const out = await scorer.loadCadence(pool, 10, rows, { defaultMinutes: 10, now: NOW });
+  assert.equal(calls.length, 1, 'one read for the whole list');
+  assert.deepEqual(calls[0].params, [10, [74, 75, 76], [5, 6, 7]]);
+  assert.equal(calls[0].sql, scorer.CADENCE_RULES_SQL);
+  assert.deepEqual([...out.keys()], [74], 'only the challenges something counts');
+  assert.deepEqual(out.get(74), { intervalMinutes: 15, lastScoredAt: NOW - 5 * MIN });
+
+  // A challenge with no dates of its own takes its window from the event the
+  // query read beside the rules.
+  const undated = challengeRow({ id: 74, challenge_template_id: 5, schedule_start: null, schedule_end: null });
+  const future = [{ ...ruleRows[0], event_starts_at: new Date(NOW + DAY) }];
+  const quiet = { query: async () => ({ rows: future }) };
+  assert.equal((await scorer.loadCadence(quiet, 10, [undated], { defaultMinutes: 10, now: NOW })).size, 0,
+    'an event that has not started is not being counted');
+
+  calls.length = 0;
+  assert.equal((await scorer.loadCadence(pool, 10, rows, { defaultMinutes: 0, now: NOW })).size, 0);
+  assert.equal((await scorer.loadCadence(pool, 10, [], { defaultMinutes: 10, now: NOW })).size, 0);
+  assert.equal(calls.length, 0, 'the schedule off, or nothing listed: Postgres is not asked');
+});
+
+test('the cadence read is scoped the way the scorer\'s own is', () => {
+  const sql = scorer.CADENCE_RULES_SQL.replace(/\s+/g, ' ');
+  assert.match(sql, /^ \/\* challenge scoring cadence \*\//, 'labelled, so a scripted pool can answer it');
+  assert.match(sql, /WHERE r\.enabled = TRUE/, 'a switched-off rule counts nothing');
+  assert.match(sql, /r\.challenge_id = ANY\(\$2::bigint\[\]\) OR r\.challenge_template_id = ANY\(\$3::bigint\[\]\)/,
+    'both bindings, the list\'s own challenges and templates');
+  assert.match(sql, /se\.is_active = TRUE AND COALESCE\(s\.is_active, FALSE\) = TRUE/,
+    'the live events RULE_CHALLENGES_SQL scores, and no others');
+  assert.match(scorer.RULE_CHALLENGES_SQL.replace(/\s+/g, ' '), /se\.is_active = TRUE AND COALESCE\(s\.is_active, FALSE\) = TRUE/);
+});

@@ -184,9 +184,10 @@ function PlusRow({
  * On the Workshop, as the LAST ITEM OF THE VIEW-TAB STRIP (workshop.tsx's
  * rail): Current status · Needs you · All items · +, on every tab. It is the
  * strip's own trailing control, drawn on the strip's metrics — app.css
- * `.dev-ws-plus-btn`, beside `.dev-ws-tab` — so it reads as part of the bar
- * rather than as the violet floating action it used to be at the end of All
- * items' search row. It is NOT inside the `role="tablist"`: a tab list owns
+ * `.dev-ws-plus-btn`, beside `.dev-ws-tab`, in a circle of its own a small
+ * gap after the tab pill (#2934) — so it reads as part of the strip rather
+ * than as the violet floating action it used to be at the end of All items'
+ * search row. It is NOT inside the `role="tablist"`: a tab list owns
  * tabs, and a menu button among them is announced as a fourth tab that does
  * not select anything.
  *
@@ -273,11 +274,12 @@ export function DevPlusMenu({
         <PlusIcon className="dev-ws-plus-glyph" aria-hidden="true" />
       </button>
       {/*
-          The desktop dropdown. `right-0` hangs it off the button's right
-          edge, so it opens leftward into the column from the end of the
-          strip, and `top-full mt-2` sets it 8px under the button at either
-          size of the strip. On touch `_wirePlusMenu` presents the same rows
-          as the kit's action sheet instead and this stays hidden.
+          The desktop dropdown. `right-0` hangs it off the right edge of the
+          "+"'s circle (this wrapper, #2934), so it opens leftward into the
+          column from the end of the strip, and `top-full mt-2` sets it 8px
+          under that circle at either size of the strip. On touch
+          `_wirePlusMenu` presents the same rows as the kit's action sheet
+          instead and this stays hidden.
       */}
       <div
         id="dev-plus-menu"

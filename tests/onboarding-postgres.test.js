@@ -67,6 +67,9 @@ test('the first run: join screen and Getting started, against the full schema', 
   // The smallest open community, but one an admin has featured.
   const chess = await app('Chess club', { slug: 'chess-club' });
   await pool.query('INSERT INTO featured_apps (app_id, sort_order) VALUES ($1, 0)', [chess.id]);
+  // The garden describes itself in its dapp.json; the soccer club does not.
+  await pool.query(`UPDATE apps SET manifest_snapshot = $2 WHERE id = $1`,
+    [garden.id, { description: '  Swap seeds and   plan the shared plots.  ' }]);
   // Members, so the open communities sort by size: the garden is bigger.
   await pool.query(
     `INSERT INTO community_members (community_id, user_id, source) VALUES ($1, $3, 'joined'), ($2, $3, 'joined'), ($1, $4, 'joined')`,
@@ -106,11 +109,13 @@ test('the first run: join screen and Getting started, against the full schema', 
     assert.deepEqual(list.map((c) => c.slug), ['homeroom', 'book-club', 'chess-club', 'city-garden', 'pickup-soccer'],
       'the featured community leads the open ones, however small');
     list.splice(2, 1);
-    assert.equal(list[0].detail, 'Build the platform you are using');
+    assert.equal(list[0].detail, 'Contribute to the Homeroom platform');
     assert.equal(list[0].checked, true, 'already in Homeroom, so it arrives ticked');
     assert.equal(list[1].detail, 'Invited by @grace');
     assert.equal(list[1].checked, true, 'an invite arrives ticked');
-    assert.equal(list[2].detail, 'Community · 2 members');
+    assert.equal(list[2].detail, 'Swap seeds and plan the shared plots.',
+      'a community says what it is, in its own dapp.json description, tidied');
+    assert.equal(list[3].detail, '', 'and says nothing when it has none, rather than the same words on every row');
     assert.equal(list[2].checked, false);
     assert.ok(!list.some((c) => c.slug === diary.slug), 'a private project nobody invited you to is never offered');
     assert.ok(!list.some((c) => c.slug === broken.slug), 'nor a project that is not running');

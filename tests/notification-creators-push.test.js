@@ -177,6 +177,36 @@ test('managed OpenRouter notifications are actionable review alerts for full adm
   assert.equal(rows.length, 1);
 });
 
+// ── platform limits ────────────────────────────────────────────────────
+
+test('platform limit alerts go to full admins, once per unread cap and level, and may push', async () => {
+  const pool = fakePool({});
+  const rows = await notifications.createPlatformLimitNotifications(pool, {
+    detail: 'apps_warn:40:50',
+  });
+  const insert = pool.state.inserts[0];
+
+  assert.equal(ALLOWED_KINDS.has('platform_limit'), true,
+    'a cap about to refuse people is worth a phone push to the admins who can raise it');
+  assert.match(insert.sql, /SELECT admin\.id, NULL, 'platform_limit', \$1::varchar\(32\)/);
+  assert.match(insert.sql, /admin\.is_admin = TRUE AND admin\.admin_readonly = FALSE/,
+    'view-only admins cannot raise a cap, so they are not paged');
+  assert.match(insert.sql,
+    /existing\.kind = 'platform_limit' AND split_part\(existing\.detail, ':', 1\) = \$2 AND existing\.read_at IS NULL/,
+    'one unread alert per admin, cap and level; a new level still gets through');
+  assert.doesNotMatch(insert.sql, /app_id/, 'the cap belongs to the server, not an app');
+  assert.deepEqual(insert.params, ['apps_warn:40:50', 'apps_warn']);
+  assert.equal(rows.length, 1);
+});
+
+test('platform limit alerts need a well-formed token', async () => {
+  for (const input of [{}, { detail: '' }, { detail: 'apps_warn' }, { detail: ':1:2' }]) {
+    const pool = fakePool({});
+    assert.deepEqual(await notifications.createPlatformLimitNotifications(pool, input), []);
+    assert.equal(pool.state.queries.length, 0);
+  }
+});
+
 test('managed OpenRouter review alerts require both an owner and a key', async () => {
   for (const input of [{ sourceUserId: 7 }, { managedKeyId: 19 }, {}]) {
     const pool = fakePool({});

@@ -3,7 +3,7 @@
 // Links into the public MARKETING site, as opposed to links into the app.
 //
 // The distinction matters because the two hosts answer different questions.
-// `my.onhomeroom.com` is the shell: it boots the SPA, asks for a token, and
+// `app.onhomeroom.com` is the shell: it boots the SPA, asks for a token, and
 // renders `#waitlist` for somebody who is already looking at the product.
 // The marketing site is what a stranger should meet — an invite link is
 // almost always pasted into a group chat, opened on a phone by somebody who

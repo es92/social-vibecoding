@@ -20,7 +20,8 @@ function fixtureServer(side, hostedOrigin) {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://fixture.invalid');
     const persona = url.searchParams.get('token') === 'member.jwt' ? 'member'
-      : url.searchParams.get('token') === 'admin.jwt' ? 'admin' : null;
+      : url.searchParams.get('token') === 'admin.jwt' ? 'admin'
+        : url.searchParams.get('token') === 'full-admin.jwt' ? 'full_admin' : null;
     if (persona) {
       response.setHeader('Set-Cookie', `session=${side}-${persona}; Path=/; HttpOnly; Secure; SameSite=Lax`);
       response.setHeader('Content-Type', 'text/html');
@@ -29,7 +30,8 @@ function fixtureServer(side, hostedOrigin) {
     }
     const stored = /(?:^|;\s*)session=([^;]+)/.exec(request.headers.cookie || '')?.[1];
     const matched = stored === `${side}-member` ? 'member'
-      : stored === `${side}-admin` ? 'admin' : null;
+      : stored === `${side}-admin` ? 'admin'
+        : stored === `${side}-full_admin` ? 'full_admin' : null;
     if (url.pathname === '/api/apps') {
       response.statusCode = matched === 'member' ? 200 : 401;
       response.setHeader('Content-Type', 'application/json');
@@ -128,6 +130,7 @@ async function main() {
       EVIDENCE_BROWSER_STATE_DIR: stateDir,
       EVIDENCE_HOSTED_ORIGINS_FILE: hostedFile,
       EVIDENCE_MEMBER_TOKEN: 'member.jwt', EVIDENCE_ADMIN_TOKEN: 'admin.jwt',
+      EVIDENCE_FULL_ADMIN_TOKEN: 'full-admin.jwt',
     };
     const bootstrap = await execFileAsync(process.execPath, [path.join(__dirname, 'evidence-browser-bootstrap.js')], {
       env, timeout: 90_000,
@@ -150,6 +153,7 @@ async function main() {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     for (const [persona, serverName] of [
       ['member', 'browser_member'], ['admin', 'browser_admin'],
+      ['full_admin', 'browser_full_admin'],
     ]) {
       const checks = origins.map((origin, index) => ({
         url: `${origin}/status`,
@@ -161,7 +165,7 @@ async function main() {
         throw new Error(`${persona} browser failed (${error.message}); proxy exit=${proxy.exitCode}; ${proxyError}`);
       }
     }
-    process.stdout.write('Both planner personas retained authenticated sessions and loaded an approved child frame on both private revisions.\n');
+    process.stdout.write('All planner personas retained authenticated sessions and loaded an approved child frame on both private revisions.\n');
   } finally {
     if (proxy && proxy.exitCode === null) {
       proxy.kill('SIGTERM');

@@ -712,7 +712,37 @@ const TopochainChallenges = {
       deadline: TopochainChallenges._isDone(c) || !TopochainChallenges._isOpen(c)
         || (TopochainChallenges._grouped() && TopochainChallenges._groupOf(c).key !== 'setup')
         ? null : TopochainChallenges._deadlineOf(c),
+      cadence: TopochainChallenges._cadenceOf(c),
     };
+  },
+
+  // The line under the rail of a challenge the background scorer counts
+  // (#3185): "Updates every 15 min · last 10:42". Progress on such a card
+  // moves only when a run writes credits, so it can sit on "1/3" for a whole
+  // interval — and a viewer who is not told that redoes what they finished.
+  //
+  // From the row's `scoring` ({ interval_minutes, last_scored_at }), which
+  // the server sends only for a challenge a rule counts right now. null — no
+  // line — when it sends none, when either field is missing or malformed, and
+  // on a finished card, whose count has nothing left to move. The time is in
+  // the viewer's own locale and zone, with the date added once it is not
+  // today's, so a stalled schedule reads as stale rather than as this
+  // morning. Short on purpose: it is one truncating line, like the rail's.
+  _cadenceOf(c, now = Date.now()) {
+    const s = c && c.scoring;
+    if (!s || TopochainChallenges._isDone(c)) return null;
+    const minutes = Number(s.interval_minutes);
+    const last = s.last_scored_at ? Date.parse(s.last_scored_at) : NaN;
+    if (!Number.isInteger(minutes) || minutes <= 0 || !Number.isFinite(last)) return null;
+    let every = `${minutes} min`;
+    if (minutes === 1) every = 'minute';
+    else if (minutes === 60) every = 'hour';
+    else if (minutes % 60 === 0) every = `${minutes / 60} hours`;
+    const at = new Date(last);
+    const time = at.toDateString() === new Date(now).toDateString()
+      ? at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : at.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return `Updates every ${every} · last ${time}`;
   },
 
   // Open right now, by the rule Home's server applies (OPEN_ONLY_WHERE in
@@ -1280,6 +1310,13 @@ const TopochainChallenges = {
     return !!(c.card_preview && c.card_preview.illustration === 'block-production');
   },
 
+  // Whether a list row is the feedback challenge ("Send useful feedback"),
+  // whose count is made of the viewer's own reports (#3186). No metric names
+  // it, so the artwork does, the last clue _isBlockProduction takes too.
+  _isFeedback(c) {
+    return !!(c && c.card_preview && c.card_preview.illustration === 'useful-feedback');
+  },
+
   _renderDetailOverlay() {
     if (!TopochainChallenges._detailChallenge) return;
     TopochainChallenges._store?.set({ detail: TopochainChallenges.detailView() });
@@ -1376,7 +1413,14 @@ const TopochainChallenges = {
       stateLabel: rail.stateLabel,
       fill: rail.fill,
       counted: !!rail.counted,
+      // The card's line under the rail, under the page's rail too.
+      cadence: TopochainChallenges._cadenceOf(challenge),
       cta: TopochainChallenges.ctaView(dm, challenge),
+      // #3186: on the feedback challenge, the way to what the viewer sent
+      // and which of it counted, beside the count that says how many did.
+      // A flag, not an href: the page's one computed href stays the guarded
+      // CTA, and this link's address is a constant in the pane.
+      feedbackLink: TopochainChallenges._isFeedback(challenge),
       description: dm.description ? str(dm.description) : null,
       requirements: dm.requirements ? str(dm.requirements) : null,
       scoring: dm.reward_logic ? str(dm.reward_logic) : null,

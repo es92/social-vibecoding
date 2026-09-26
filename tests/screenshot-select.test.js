@@ -661,3 +661,110 @@ test('without the veil the same page content is detected — the dim is load-bea
   const { frame } = veiledPageFrame(0);
   assert.equal(detectMarkers(frame).length, 7);
 });
+
+// ── #3011: a window/screen share that never starts, and refusals nobody chose
+
+test('classifyDisplayMediaError: only NotAllowedError is a decline', () => {
+  const { classifyDisplayMediaError } = loadScreenshotSelect();
+  assert.equal(classifyDisplayMediaError({ name: 'NotAllowedError' }), 'denied');
+  // Firefox's refusals for reasons the viewer did not choose.
+  for (const name of ['InvalidStateError', 'NotFoundError', 'NotReadableError', 'AbortError', 'TypeError']) {
+    assert.equal(classifyDisplayMediaError({ name }), 'capture_failed', name);
+  }
+  assert.equal(classifyDisplayMediaError(undefined), 'capture_failed');
+});
+
+test('settleWithin: passes a value through, times out a pending promise, keeps a rejection', async () => {
+  const { settleWithin, TIMED_OUT } = loadScreenshotSelect();
+  assert.equal(await settleWithin(Promise.resolve(7), 50), 7);
+  assert.equal(await settleWithin(new Promise(() => {}), 5), TIMED_OUT);
+  await assert.rejects(settleWithin(Promise.reject(new Error('nope')), 50), /nope/);
+});
+
+// The real start(), run against a fake browser: the module's IIFE reads
+// window / navigator / document as free names, so they can be handed in.
+function loadBrowserScreenshotSelect({ getDisplayMedia, video }) {
+  const stopped = [];
+  const appended = [];
+  const el = () => ({
+    style: {}, children: [], appendChild(c) { this.children.push(c); }, remove() {},
+    addEventListener() {}, setAttribute() {},
+  });
+  const document = {
+    createElement: (tag) => (tag === 'video' ? video : el()),
+    body: { appendChild: (n) => appended.push(n) },
+    documentElement: { style: {} },
+    addEventListener() {}, removeEventListener() {},
+  };
+  const track = { getSettings: () => ({}), addEventListener() {}, stop() { stopped.push('video'); } };
+  const stream = { getVideoTracks: () => [track], getTracks: () => [track] };
+  const navigator = { mediaDevices: { getDisplayMedia: (opts) => getDisplayMedia(opts, stream) } };
+  const window = { innerWidth: 800, innerHeight: 600 };
+  const mod = { exports: {} };
+  // eslint-disable-next-line no-new-func
+  new Function('module', 'exports', 'window', 'navigator', 'document', fs.readFileSync(SRC, 'utf8'))(
+    mod, mod.exports, window, navigator, document,
+  );
+  return { api: window.ScreenshotSelect, stopped, appended };
+}
+
+function silentVideo() {
+  // A capture stream with no first frame: play() never settles and the
+  // element never learns a frame size.
+  return {
+    style: {}, videoWidth: 0, videoHeight: 0, muted: false, playsInline: false, srcObject: null,
+    play: () => new Promise(() => {}),
+    addEventListener() {}, remove() {},
+  };
+}
+
+test('start(): a share that never delivers a frame fails as blank instead of hanging (#3011)', async () => {
+  const { api, stopped, appended } = loadBrowserScreenshotSelect({
+    getDisplayMedia: async (_opts, stream) => stream,
+    video: silentVideo(),
+  });
+  api.FIRST_FRAME_TIMEOUTS_MS.play = 20;
+  api.FIRST_FRAME_TIMEOUTS_MS.metadata = 20;
+  let started = false;
+  const outcome = await Promise.race([
+    api.start({ onCaptureStart: () => { started = true; } }).then(
+      () => ({ ok: true }),
+      (err) => ({ ok: false, code: err.code }),
+    ),
+    new Promise((resolve) => setTimeout(() => resolve({ hung: true }), 2000)),
+  ]);
+  assert.deepEqual(outcome, { ok: false, code: 'capture_blank' });
+  // Nothing was put over the page for a selection that could never be cut
+  // out, and the share was ended rather than left running.
+  assert.equal(started, false, 'the dialog is not hidden for a capture that cannot happen');
+  assert.equal(appended.length, 1, 'only the capture video was added, and it was removed again');
+  assert.deepEqual(stopped, ['video']);
+});
+
+test('start(): a refusal the viewer did not choose is a failure, not "declined" (#3011)', async () => {
+  for (const [name, code] of [['NotAllowedError', 'denied'], ['NotFoundError', 'capture_failed'], ['InvalidStateError', 'capture_failed']]) {
+    const { api } = loadBrowserScreenshotSelect({
+      getDisplayMedia: async () => { const e = new Error(name); e.name = name; throw e; },
+      video: silentVideo(),
+    });
+    await assert.rejects(api.start(), (err) => err.code === code, name);
+  }
+});
+
+test('start(): a play() that rejects still fails the capture and ends the share', async () => {
+  const video = { ...silentVideo(), play: () => Promise.reject(new Error('play refused')) };
+  const { api, stopped } = loadBrowserScreenshotSelect({
+    getDisplayMedia: async (_opts, stream) => stream,
+    video,
+  });
+  await assert.rejects(api.start(), /play refused/);
+  assert.deepEqual(stopped, ['video']);
+});
+
+test('no capture path awaits video.play() without a bound (#3011)', () => {
+  // Registration re-plays a paused or re-attached video too; any of these
+  // waiting on a share that sends nothing is the same hang.
+  const src = fs.readFileSync(SRC, 'utf8');
+  assert.doesNotMatch(src, /await\s+video\.play\(\)/);
+  assert.equal((src.match(/settleWithin\(video\.play\(\)/g) || []).length, 3);
+});

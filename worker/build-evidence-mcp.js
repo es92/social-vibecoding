@@ -25,7 +25,8 @@ const viewport = z.object({
 const story = z.object({
   id: z.string().min(1).max(96),
   claim: z.string().min(1).max(1000),
-  persona: z.enum(['member', 'read_only_admin']),
+  persona: z.enum(['member', 'read_only_admin', 'full_admin'])
+    .describe('Use full_admin only for Homeroom controls that are hidden from read-only administrators; that identity exists only inside disposable evidence environments.'),
   viewports: z.array(viewport).min(1).max(2),
   intent: z.object({
     startPath: z.string().min(1).max(512)

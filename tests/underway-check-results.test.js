@@ -86,3 +86,24 @@ test('results render paths, reasons and console errors as visible escaped text',
     assert.ok(!html.includes('<script>'));
   } finally { global.window = previous; }
 });
+
+// #3180: "skipped" is never a bare word. The panel prints why as text, not
+// only in the status pill's tooltip that a touch screen cannot open, and a
+// row that recorded no reason reads the fallback line.
+test('a skipped run says why in the panel, with or without a recorded reason', () => {
+  const previous = global.window;
+  global.window = { AppView: appView() };
+  try {
+    const { SessionCheckResults } = loadTsx('tests/fixtures/dev-card-api.ts');
+    const skipped = { id: 124, user_id: 42, status: 'active', check_state: 'skipped', test_results: [] };
+    const render = (session) => renderToHtml(createElement(SessionCheckResults, { session }));
+    const withReason = render({ ...skipped, check_error_detail: 'branch has no commits beyond main, so there is nothing to test' });
+    assert.match(withReason, /data-note="checks"[\s\S]*Checks skipped\.[\s\S]*Automated checks were skipped: branch has no commits beyond main, so there is nothing to test\. This does not block the merge\./);
+    assert.equal(withReason.split('branch has no commits beyond main').length, 2, 'said once, not repeated under the note');
+    assert.doesNotMatch(withReason, /No check results have been recorded yet/);
+    for (const check_error_detail of [null, undefined, '']) {
+      const bare = render({ ...skipped, check_error_detail });
+      assert.match(bare, /Checks skipped\.[\s\S]*Automated checks were skipped: there was nothing to test\. This does not block the merge\./);
+    }
+  } finally { global.window = previous; }
+});

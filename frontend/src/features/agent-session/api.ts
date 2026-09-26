@@ -13,6 +13,8 @@ export interface AgentChange {
   checkState?: string | null;
   /** Checks that failed on the last run. */
   checkFailing?: number;
+  /** Why the checks were skipped, when they were and a reason was recorded. */
+  checkSkipReason?: string | null;
   /** The change is to the platform's own (self-hosted) app. */
   appSelfHosted?: boolean;
   /** Its visual change preview, while one is being captured. */

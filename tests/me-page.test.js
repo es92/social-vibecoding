@@ -44,11 +44,13 @@ test('the More rows say what is behind them, from the data only', () => {
   const { moreRowsView } = loadTsx(STORE);
   assert.deepEqual(moreRowsView({
     ranking: { season_name: 'Season 3', rank: 3 }, summary: SUMMARY,
-  }), { challenges: 'Season 3 · rank #3 · 2 of 7 done', kudos: '3 received' });
+    feedback: { sent: 4, counted: 1, reports: [] },
+  }), { challenges: 'Season 3 · rank #3 · 2 of 7 done', kudos: '3 received', feedback: '4 sent · 1 counted' });
   // No rank yet (signed-in newcomer): the season and the tally, no invented rank.
-  assert.deepEqual(moreRowsView({ ranking: {}, summary: SUMMARY }),
-    { challenges: 'Season 3 · 2 of 7 done', kudos: '3 received' });
-  assert.deepEqual(moreRowsView({ ranking: null, summary: null }), { challenges: null, kudos: null });
+  assert.deepEqual(moreRowsView({ ranking: {}, summary: SUMMARY, feedback: { sent: 0, counted: 0, reports: [] } }),
+    { challenges: 'Season 3 · 2 of 7 done', kudos: '3 received', feedback: 'Nothing sent yet' });
+  // #3186: a feedback read that failed is not a claim that none was sent.
+  assert.deepEqual(moreRowsView({ ranking: null, summary: null }), { challenges: null, kudos: null, feedback: null });
 });
 
 test('the card\'s one line of facts: @handle, building since, apps', () => {

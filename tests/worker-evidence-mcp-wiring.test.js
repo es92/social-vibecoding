@@ -55,7 +55,7 @@ test('both evidence backends launch Playwright through the content-free timing o
   assert.match(codexRunner, /command -v mcp-server-playwright[^\n]*\n\s*\|\| die/);
   assert.match(dockerfile, /COPY evidence-browser-observer\.js \/usr\/local\/bin\/evidence-browser-observer\.js/);
   assert.ok((codexRunner.match(/command = "node"/g) || []).length >= 2);
-  assert.equal((codexRunner.match(/evidence-browser-observer\.js/g) || []).length, 2);
+  assert.equal((codexRunner.match(/evidence-browser-observer\.js/g) || []).length, 3);
   assert.match(claudeRunner, /EVIDENCE_BROWSER_DIAGNOSTIC_FILE/);
   assert.match(codexRunner, /EVIDENCE_BROWSER_DIAGNOSTIC_FILE/);
 
@@ -82,6 +82,7 @@ test('both evidence backends launch Playwright through the content-free timing o
     for (const [server, state] of [
       ['browser_member', 'member.json'],
       ['browser_admin', 'read_only_admin.json'],
+      ['browser_full_admin', 'full_admin.json'],
     ]) {
       assert.equal(config.mcpServers[server].command, command);
       assert.equal(config.mcpServers[server].args[0], '/usr/local/bin/evidence-browser-observer.js');
@@ -91,13 +92,13 @@ test('both evidence backends launch Playwright through the content-free timing o
       assert.ok(config.mcpServers[server].args.includes('--caps'));
       assert.ok(config.mcpServers[server].args.includes('vision'));
     }
-    assert.equal((codexRunner.match(/"--no-sandbox"/g) || []).length, 3);
+    assert.equal((codexRunner.match(/"--no-sandbox"/g) || []).length, 4);
     assert.match(read('worker-run.sh'), /"--browser", "chromium", "--headless", "--isolated", "--no-sandbox"/);
     assert.match(claudeRunner, /EVIDENCE_HOSTED_ORIGINS_FILE/);
     assert.match(codexRunner, /EVIDENCE_HOSTED_ORIGINS_FILE/);
     assert.match(codexRunner, /env_vars = \[[^\n]*"EVIDENCE_HOSTED_ORIGINS_FILE"/);
     assert.match(codexRunner, /evidence-hosted-origins\.js/);
-    assert.equal((codexRunner.match(/"browser_mouse_move_xy"/g) || []).length, 2);
+    assert.equal((codexRunner.match(/"browser_mouse_move_xy"/g) || []).length, 3);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

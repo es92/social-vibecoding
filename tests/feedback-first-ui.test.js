@@ -111,11 +111,55 @@ test('view-only access keeps the board usable and explains the disabled fix', as
   assert.match(h.el('feedback-first-fix-note').textContent, /collaborator access/);
   h.el('feedback-first-fix').click(); await settle(); assert.equal(h.fixes.length, 0);
 });
-test('ordinary successful feedback retains the brief confirmation and auto-close', async () => {
-  const h = harness({ response: {} }); await h.submit();
-  assert.equal(h.shown(), false);
+// #3186: the ordinary confirmation used to close itself after 1.5 s, which
+// read as the report vanishing and left no time to reach "See your feedback".
+test('ordinary successful feedback stays on its own confirmation, with the way to Your feedback', async () => {
+  const h = harness({ response: { bounty: { placed: true, remaining: 4 } } }); await h.submit();
+  assert.equal(h.shown(), false, 'not the first-feedback moment');
+  const sent = h.el('feedback-sent');
+  assert.equal(sent.classList.contains('hidden'), false);
+  assert.ok(sent.focused, 'focus leaves the composer, so the keyboard comes down once');
+  assert.ok(h.el('feedback-form').classList.contains('hidden'));
+  assert.match(h.el('feedback-sent-notice').textContent, /^Thanks! Filed against Homeroom\. Pledged 1 kudos.*4 left/);
+  for (const id of ['feedback-text', 'feedback-title']) assert.equal(h.el(id).readOnly, true);
   await h.fireTimers(1500);
+  assert.equal(h.el('feedback-modal').classList.contains('hidden'), false, 'no auto-close');
+  h.el('feedback-sent-mine').click();
   assert.ok(h.el('feedback-modal').classList.contains('hidden'));
+  assert.equal(h.sandbox.location.hash, '#profile?feedback');
+  // The next open is the form again, not the last confirmation.
+  h.sandbox.App.openFeedbackModal();
+  assert.ok(sent.classList.contains('hidden'));
+  assert.equal(h.el('feedback-form').classList.contains('hidden'), false);
+});
+test('?shot=feedback-sent poses the sent confirmation without filing anything', async () => {
+  const h = harness({ response: {} });
+  h.sandbox.App._simulateFeedbackSent();
+  assert.equal(h.el('feedback-sent').classList.contains('hidden'), false);
+  assert.equal(h.el('feedback-sent-notice').textContent, 'Thanks! Filed against Homeroom.');
+  assert.equal(h.el('feedback-text').readOnly, true);
+  assert.equal(h.el('feedback-submit').disabled, true);
+  assert.equal(h.calls.filter((c) => c.url === '/api/feedback').length, 0);
+  const app = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
+  assert.match(app, /shot !== 'feedback-sent'\) return;/, 'the shot name is accepted');
+  assert.match(app, /App\._simulateFeedbackSent\?\.\(\);/);
+});
+test('Done closes the sent confirmation and goes nowhere', async () => {
+  const h = harness({ response: {} }); await h.submit();
+  h.el('feedback-sent-done').click();
+  assert.ok(h.el('feedback-modal').classList.contains('hidden'));
+  assert.equal(h.sandbox.location.hash, '');
+  assert.ok(h.el('feedback-sent').classList.contains('hidden'));
+});
+test('the first-feedback moment offers Your feedback too, and replaces a sent confirmation', async () => {
+  const h = harness(); await h.submit();
+  h.el('feedback-first-mine').click();
+  assert.ok(h.el('feedback-modal').classList.contains('hidden'));
+  assert.equal(h.sandbox.location.hash, '#profile?feedback');
+  const q = harness({ response: {} }); await q.submit();
+  q.flush();
+  assert.ok(q.shown());
+  assert.ok(q.el('feedback-sent').classList.contains('hidden'), 'one confirmation at a time');
 });
 test('a rejected submission never congratulates the user', async () => {
   const h = harness({ ok: false, response: { error: 'Try again' } }); await h.submit();

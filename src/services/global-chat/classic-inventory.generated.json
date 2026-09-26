@@ -5990,7 +5990,8 @@
       "mobileSupported": true,
       "classicPath": "#apps",
       "clientReferences": [
-        "frontend/src/features/dialogs/feedback-controller.js"
+        "frontend/src/features/dialogs/feedback-controller.js",
+        "frontend/src/features/profile/profile.js"
       ]
     },
     {
@@ -6009,6 +6010,7 @@
       "classicPath": "#apps",
       "clientReferences": [
         "frontend/src/features/dialogs/feedback-controller.js",
+        "frontend/src/features/profile/profile.js",
         "public/js/feedback-queue.js"
       ]
     },
@@ -6037,6 +6039,24 @@
         "frontend/src/features/workshop/workshop-chrome.tsx",
         "public/js/app-view.js",
         "public/js/feedback-queue.js"
+      ]
+    },
+    {
+      "source": "src/routes/feedback.js",
+      "method": "GET",
+      "path": "/api/feedback/mine",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "apps.get.feedback.mine.6b924f84",
+      "domain": "apps",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "app",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#apps",
+      "clientReferences": [
+        "frontend/src/features/profile/profile.js"
       ]
     },
     {

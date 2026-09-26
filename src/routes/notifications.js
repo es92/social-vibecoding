@@ -129,12 +129,28 @@ function stagingMockNotifications() {
     // arrange on demand, so this row is how the new bell row is reviewable.
     {
       ...base,
-      id: 990210, kind: 'session_stalled',
+      id: 990211, kind: 'session_stalled',
       createdAt: new Date(now - 6 * 60 * 1000).toISOString(),
       sessionId: 990110,
       sessionTitle: '[Mock] Session that stopped before finishing',
       prTitle: null, branchName: 'dev/mockuser-1700000000004',
       prNumber: null, headlessIssueNumber: null,
+    },
+    // A platform limit alert (services/platform-limit-alerts.js). A preview
+    // never sends a real one — its users are a production clone, so the
+    // service records the level there and notifies nobody — which leaves this
+    // row the only way a reviewer or a declared check sees the kind render.
+    // No app, like the real row: the cap belongs to the server. Its copy is
+    // built from the detail token, so the figures stand in for "[Mock]".
+    // Placed after 990201 (and timed between it and 990202) so the message
+    // pair above still leads and stays consecutive.
+    {
+      ...base,
+      id: 990210, kind: 'platform_limit',
+      createdAt: new Date(now - 8 * 60 * 1000).toISOString(),
+      appId: null, appSlug: null, appName: null,
+      detail: 'apps_warn:40:50',
+      sessionId: null, prTitle: null, prNumber: null, headlessIssueNumber: null,
     },
     {
       ...base,

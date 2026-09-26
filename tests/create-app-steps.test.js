@@ -70,6 +70,11 @@ test('the wire body says who it is for, whom to invite and who approves', () => 
     { name: 'Book club', audience: 'open', repoUrl: 'https://github.com/o/r' }, 'an import sends no rule');
   assert.equal(createBody({ ...base, audience: 'open', approvers: 'invited', approvals: 'atLeast', approvalsN: 99 }).governance.approvals,
     'default', 'an out-of-range number falls back rather than being refused by the server');
+  assert.equal(createBody({ ...base, audience: 'open', description: '  Swap seeds \n and plan  ' }).description,
+    'Swap seeds and plan', 'What is it? is one tidied line');
+  assert.equal(createBody({ ...base, audience: 'open', description: '   ' }).description, undefined, 'blank sends nothing');
+  assert.equal(createBody({ ...base, mode: 'import', repoUrl: 'https://github.com/o/r', audience: 'open', description: 'Ours' }).description,
+    undefined, 'an import\'s own dapp.json describes it');
   const submit = SRC.slice(SRC.indexOf('async function submit(event: FormEvent) {'), SRC.indexOf('  const stepIndex'));
   assert.match(submit, /const body = createBody\(\{/);
   assert.match(submit, /body: JSON\.stringify\(body\)/);
@@ -126,6 +131,13 @@ test('the details step keeps the import block and the name card, and runs the gu
   assert.match(details, /id="import-check"/);
   assert.match(details, /id="app-name"/);
   assert.match(details, /Project name/);
+  assert.ok(details.indexOf('id="app-name"') < details.indexOf('id="app-description"'),
+    'What is it? sits under the name, in the same card');
+  assert.match(details, /What is it\? \(optional\)/);
+  assert.match(details, /maxLength=\{100\}/);
+  assert.match(details, /create-describe-row/);
+  assert.match(CSS, /#create-card\[data-mode="import"\] \.create-describe-row \{ display: none; \}/,
+    'an import has no What is it? row');
   assert.match(details, /create-import-rule-note/, 'an import says why there is no approval step');
   const next = SRC.slice(SRC.indexOf('function next() {'), SRC.indexOf('/** One entry point'));
   assert.match(next, /Paste a GitHub repo URL first\./);

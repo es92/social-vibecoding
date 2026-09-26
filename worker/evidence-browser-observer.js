@@ -108,7 +108,7 @@ function createObserver({ persona, origins, hints = {}, emit, now = () => perfor
   const active = new Map();
   const routes = new Map();
   let callOrdinal = 0;
-  const safePersona = persona === 'admin' ? 'admin' : 'member';
+  const safePersona = ['admin', 'full_admin'].includes(persona) ? persona : 'member';
   const originList = Array.isArray(origins) ? origins.map((value) => {
     try { return new URL(value).origin; } catch { return null; }
   }) : [];
@@ -227,7 +227,7 @@ function start({ persona, args, binary = 'mcp-server-playwright',
 
 if (require.main === module) {
   const persona = process.argv[2];
-  if (!['member', 'admin'].includes(persona)) process.exit(2);
+  if (!['member', 'admin', 'full_admin'].includes(persona)) process.exit(2);
   start({ persona, args: process.argv.slice(3) });
 }
 

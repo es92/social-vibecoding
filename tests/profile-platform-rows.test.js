@@ -42,10 +42,12 @@ function rowSource(src, id) {
 const ROWS = [
   ['profile-row-challenges', '#leaderboard/challenges'],
   ['profile-row-kudos', '#leaderboard/kudos'],
+  // #3186: the card over Me, by the address Profile.open() honours.
+  ['profile-row-feedback', '#profile?feedback'],
   ['profile-row-settings', '#settings'],
 ];
 
-test('the three rows are anchors to their destinations', () => {
+test('the rows are anchors to their destinations', () => {
   for (const [id, href] of ROWS) {
     assert.ok(CODE.indexOf(`id="${id}"`) > 0, `#${id} must be a row of Me's "More" list`);
     const row = rowSource(CODE, id);
@@ -58,7 +60,7 @@ test('the three rows are anchors to their destinations', () => {
   }
 });
 
-test('in the prototype\'s order: Challenges & standings, Kudos, Settings', () => {
+test('in the prototype\'s order: Challenges & standings, Kudos, Your feedback, Settings', () => {
   const order = ROWS.map(([id]) => CODE.indexOf(`id="${id}"`));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
 });

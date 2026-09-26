@@ -28,8 +28,11 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const svc = require('../src/services/external-agent-tasks');
 const evidenceContract = require('../src/services/visual-evidence-plan');
@@ -1693,6 +1696,158 @@ test('a format-patch mbox is told apart from a plain diff', () => {
   );
   assert.equal(patchSvc.isMbox('diff --git a/x b/x\n'), false);
   assert.equal(patchSvc.isMbox(''), false);
+});
+
+// ── The growth check, against a real scratch repository (#3198) ────────
+//
+// What broke was a MEASUREMENT of the scratch repository, so these apply
+// patches for real. The "app repository" is a local bare repo, reached by
+// pointing the remote builder at it, and its base commit carries an
+// incompressible blob just over MAX_PATCH_GROWTH_BYTES: the shape of the
+// platform's own repository, whose depth-1 fetch alone packs to ~16 MB. It is
+// built once for both cases, because it is the one expensive thing here.
+
+function gitIn(dir, args) {
+  const result = spawnSync('git', [
+    '-C', dir,
+    '-c', 'user.name=Local Tester', '-c', 'user.email=test@example.invalid',
+    '-c', 'commit.gpgsign=false',
+    ...args,
+  ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  if (result.status !== 0) throw new Error(result.stderr || `git ${args[0]} failed`);
+  return result.stdout;
+}
+
+function buildLargeAppRepo(root) {
+  const patchSvc = require('../src/services/external-agent-patch');
+  const work = path.join(root, 'work');
+  const bare = path.join(root, 'app.git');
+  fs.mkdirSync(work);
+  gitIn(work, ['init', '-q']);
+  fs.writeFileSync(path.join(work, 'README.md'), '# Recipe box\n');
+  // More objects than git's fetch.unpackLimit (100), so the scratch
+  // repository keeps the fetch as a pack, as it does for any real app,
+  // instead of exploding a handful of objects into loose ones.
+  fs.mkdirSync(path.join(work, 'recipes'));
+  for (let n = 0; n < 120; n += 1) {
+    fs.writeFileSync(path.join(work, 'recipes', `recipe-${n}.md`), `# Recipe ${n}\n`);
+  }
+  fs.writeFileSync(
+    path.join(work, 'base.bin'),
+    crypto.randomBytes(patchSvc.MAX_PATCH_GROWTH_BYTES + 256 * 1024)
+  );
+  // Random bytes do not compress, so do not spend time trying. Only here:
+  // a binary patch is deflated at this level too.
+  const store = ['-c', 'core.compression=0'];
+  gitIn(work, [...store, 'add', '-A']);
+  gitIn(work, ['commit', '-qm', 'Base']);
+  gitIn(work, [...store, 'repack', '-a', '-d', '-q']);
+  gitIn(root, ['clone', '--bare', '-q', work, bare]);
+  return { work, bare, base: gitIn(work, ['rev-parse', 'HEAD']).trim() };
+}
+
+// Commit each edit on top of the base commit, export the result the way the
+// work order tells an agent to, and put the working repo back.
+function patchFromBase(app, { mbox }, ...edits) {
+  gitIn(app.work, ['checkout', '-q', '--detach', app.base]);
+  try {
+    edits.forEach((edit, index) => {
+      edit(app.work);
+      gitIn(app.work, ['add', '-A']);
+      gitIn(app.work, ['commit', '-qm', `Change ${index + 1}`]);
+    });
+    return mbox
+      ? gitIn(app.work, ['format-patch', '--stdout', `${app.base}..HEAD`])
+      : gitIn(app.work, ['diff', '--binary', app.base, 'HEAD']);
+  } finally {
+    gitIn(app.work, ['checkout', '-q', '-f', '--detach', app.base]);
+    gitIn(app.work, ['clean', '-fdq']);
+  }
+}
+
+// applyPatch fetches from and pushes to the app's GitHub repository; here
+// both go to the local bare repo instead.
+async function applyToLocalApp(app, patch, taskId) {
+  const patchSvc = require('../src/services/external-agent-patch');
+  const headSvc = require('../src/services/external-agent-head');
+  const realRemote = headSvc.authenticatedRemote;
+  const realToken = process.env.GITHUB_BOT_TOKEN;
+  headSvc.authenticatedRemote = () => `file://${app.bare}`;
+  process.env.GITHUB_BOT_TOKEN = 'local-test-token';
+  try {
+    return await patchSvc.applyPatch({
+      owner: 'usernode-bot', repo: 'recipe-box', patch, baseSha: app.base, userId: 3, taskId,
+    });
+  } finally {
+    headSvc.authenticatedRemote = realRemote;
+    if (realToken === undefined) delete process.env.GITHUB_BOT_TOKEN;
+    else process.env.GITHUB_BOT_TOKEN = realToken;
+  }
+}
+
+test('the growth check measures what a patch ADDS, not the repository it is applied in', async (t) => {
+  const patchSvc = require('../src/services/external-agent-patch');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sv-patch-growth-'));
+  try {
+    const app = buildLargeAppRepo(root);
+
+    await t.test('a small patch applies on a base that ALREADY packs to more than the limit', async () => {
+      // The precondition of the bug: the base commit alone is over the limit.
+      const counted = gitIn(app.bare, ['count-objects', '-v']);
+      assert.ok(
+        Number(/size-pack: (\d+)/.exec(counted)[1]) * 1024 > patchSvc.MAX_PATCH_GROWTH_BYTES,
+        'the fixture reproduces a base pack over the limit'
+      );
+
+      // The shape of the change that was refused: a few KB across two files.
+      const patch = patchFromBase(app, { mbox: true }, (work) => {
+        fs.appendFileSync(path.join(work, 'README.md'), '\nRecipes can carry tags now.\n');
+        fs.mkdirSync(path.join(work, 'src'));
+        const tags = Array.from({ length: 400 }, (_, n) => `tag-${n}`);
+        fs.writeFileSync(path.join(work, 'src', 'tags.js'), `module.exports = ${JSON.stringify(tags)};\n`);
+      });
+      assert.ok(patchSvc.isMbox(patch));
+      assert.ok(Buffer.byteLength(patch) < 16 * 1024);
+
+      const result = await applyToLocalApp(app, patch, 31);
+      assert.equal(result.ok, true, `${result.code}: ${result.message}`);
+      assert.match(result.branch, /^usernode\/patch-u3-t31-/);
+      assert.equal(gitIn(app.bare, ['rev-parse', `refs/heads/${result.branch}`]).trim(), result.headSha);
+      assert.match(gitIn(app.bare, ['show', `${result.headSha}:src/tags.js`]), /tag-399/);
+    });
+
+    await t.test('a patch that inflates to more than the limit is still refused, and pushes nothing', async () => {
+      const refsBefore = gitIn(app.bare, ['for-each-ref', '--format=%(refname)']);
+      // Zeros deflate to almost nothing, so a binary patch carrying more than
+      // the limit gets past the patch-size guard: the growth has to be
+      // measured on what the patch INFLATES to, not on its text or on a
+      // compressed pack.
+      const inflated = Buffer.alloc(patchSvc.MAX_PATCH_GROWTH_BYTES + 1024 * 1024);
+      const addBig = (work) => fs.writeFileSync(path.join(work, 'big.bin'), inflated);
+
+      const diff = patchFromBase(app, { mbox: false }, addBig);
+      assert.equal(patchSvc.isMbox(diff), false);
+      assert.ok(Buffer.byteLength(diff) < patchSvc.MAX_PATCH_BYTES, 'under the patch-size guard');
+      const plain = await applyToLocalApp(app, diff, 32);
+      assert.equal(plain.ok, false);
+      assert.equal(plain.code, 'patch_too_large');
+      assert.equal(plain.retryable, false);
+      assert.match(plain.message, /adds more than 8 MB/);
+
+      // A later commit deleting the file does not hide it: every commit in a
+      // format-patch series is pushed, so the history still carries it.
+      const series = patchFromBase(app, { mbox: true }, addBig,
+        (work) => fs.rmSync(path.join(work, 'big.bin')));
+      assert.ok(Buffer.byteLength(series) < patchSvc.MAX_PATCH_BYTES, 'under the patch-size guard');
+      const history = await applyToLocalApp(app, series, 33);
+      assert.equal(history.ok, false);
+      assert.equal(history.code, 'patch_too_large');
+
+      assert.equal(gitIn(app.bare, ['for-each-ref', '--format=%(refname)']), refsBefore, 'no branch was pushed');
+    });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test('a patch without a taskId is refused — there is no commit to apply it at', async () => {

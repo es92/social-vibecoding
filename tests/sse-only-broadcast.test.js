@@ -202,8 +202,9 @@ test('/status exposes stopping so a reload repaints the Stopping button', () => 
   assert.match(SRC, /const\s+durableStop\s*=\s*turnLifecycle\.stopRequestOf\(durableTurn\);/,
     'and the durable half comes from the turn record via stopRequestOf');
   // Window widened from 200 in #907, which added runner/runnerLabel/
-  // localAgent as siblings; the assertion below is key presence, not size.
-  const payload = SRC.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,400}?\}\);/);
+  // localAgent as siblings, and again for #3177's optional `delivery`; the
+  // assertion below is key presence, not size.
+  const payload = SRC.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,600}?\}\);/);
   assert.ok(payload, 'found the /status res.json payload');
   assert.match(payload[0], /\bstopping\b/, 'stopping is included in the /status payload');
 });

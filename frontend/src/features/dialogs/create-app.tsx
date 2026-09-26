@@ -148,6 +148,8 @@ export function stepsFor(audience: Audience, mode: Mode): readonly Step[] {
  */
 export function createBody(answers: {
   name: string;
+  /** "What is it?": one optional line, for a project made new. */
+  description?: string;
   mode: Mode;
   repoUrl?: string;
   audience: Audience;
@@ -158,6 +160,9 @@ export function createBody(answers: {
 }): Record<string, unknown> {
   const body: Record<string, unknown> = { name: answers.name, audience: answers.audience };
   if (answers.mode === 'import' && answers.repoUrl) body.repoUrl = answers.repoUrl;
+  // An import's own dapp.json describes it, so only a new project sends one.
+  const description = (answers.description || '').replace(/\s+/g, ' ').trim();
+  if (answers.mode === 'new' && description) body.description = description;
   if (answers.audience === 'invited') {
     const people = (answers.invitees || '')
       .split(/[\s,]+/)
@@ -288,6 +293,7 @@ function WhoGlyph({ audience }: { audience: Audience }) {
 export function CreateAppDialog() {
   const formRef = useRef<HTMLFormElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const describeRef = useRef<HTMLInputElement>(null);
   const urlRef = useRef<HTMLInputElement>(null);
   const inviteesRef = useRef<HTMLInputElement>(null);
   const approvalsNRef = useRef<HTMLInputElement>(null);
@@ -572,6 +578,7 @@ export function CreateAppDialog() {
 
     const body = createBody({
       name,
+      description: describeRef.current?.value || '',
       mode,
       repoUrl,
       audience,
@@ -877,7 +884,7 @@ export function CreateAppDialog() {
               <code className="font-mono text-xs">
                 usernode-bot
               </code>
-              {' as a collaborator with Write access.'}
+              {' as a collaborator (Write access on an organization repo).'}
             </p>
             {/*
                 Inline status row: spinner while checking, green check on
@@ -911,6 +918,25 @@ export function CreateAppDialog() {
                 autoComplete="off"
                 {...FIELD}
                 placeholder="my cool app"
+              />
+            </div>
+            {/* What it is: optional, and only for a project made new (an
+                import's own dapp.json describes it; app.css hides the row).
+                Written into the new repository's dapp.json, where people
+                read it on the join screen, in Discover and on its page. */}
+            <div className={ROW + ' create-describe-row shadow-[inset_0_1px_0_var(--app-sheet-line)]'}>
+              <label htmlFor="app-description" className={LABEL}>
+                What is it? (optional)
+              </label>
+              <Input
+                id="app-description"
+                ref={describeRef}
+                name="description"
+                type="text"
+                autoComplete="off"
+                maxLength={100}
+                {...FIELD}
+                placeholder="Shared shopping list"
               />
             </div>
           </div>

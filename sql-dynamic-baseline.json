@@ -1090,7 +1090,7 @@
     {
       "source": "src/services/onboarding.js",
       "kind": "structural-template",
-      "fingerprint": "c5ee4477c0e4a3f7c3eb",
+      "fingerprint": "0152c7e9ae8c38c179bb",
       "count": 1,
       "preview": "`SELECT a.id, a.slug, a.name, a.icon_emoji, a.icon_image_id, a.self_hosted, ${members}::int AS member_count, ${communities.audienceSql('a', members)} AS audienc"
     },

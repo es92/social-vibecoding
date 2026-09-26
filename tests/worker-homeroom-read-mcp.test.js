@@ -40,11 +40,13 @@ const GRANT = `svmcd_${'A'.repeat(43)}`;
 test('the grant rides only on build and scout turns, on either backend', () => {
   const claude = (mode) => worker.buildTurnSecretEnv({
     mode, agentBackend: 'claude_code', workerSessionJwt: 'w', issuesReadJwt: 'i', anthropicProxyJwt: 'p',
-    evidenceJwt: 'e', evidenceMemberToken: 'm', evidenceAdminToken: 'a', homeroomMcpToken: GRANT,
+    evidenceJwt: 'e', evidenceMemberToken: 'm', evidenceAdminToken: 'a',
+    evidenceFullAdminToken: 'f', homeroomMcpToken: GRANT,
   });
   const codex = (mode) => worker.buildTurnSecretEnv({
     mode, agentBackend: 'codex_openrouter', workerPushJwt: 'w', issuesReadJwt: 'i', openrouterApiKey: 'k',
-    evidenceJwt: 'e', evidenceMemberToken: 'm', evidenceAdminToken: 'a', homeroomMcpToken: GRANT,
+    evidenceJwt: 'e', evidenceMemberToken: 'm', evidenceAdminToken: 'a',
+    evidenceFullAdminToken: 'f', homeroomMcpToken: GRANT,
   });
   for (const mode of ['build', 'scout']) {
     assert.equal(claude(mode).HOMEROOM_MCP_TOKEN, GRANT);

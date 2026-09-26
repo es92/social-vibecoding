@@ -18,7 +18,7 @@ function input(overrides = {}) {
       baseSha: 'b'.repeat(40), headSha: 'c'.repeat(40),
       fixtureFingerprint: 'fixture-123', baseImageDigest: 'sha256:base', headImageDigest: 'sha256:head',
     },
-    authTokens: { member: 'member.jwt', read_only_admin: 'admin.jwt' },
+    authTokens: { member: 'member.jwt', read_only_admin: 'admin.jwt', full_admin: 'full-admin.jwt' },
     plan: plan(),
     ...overrides,
   };

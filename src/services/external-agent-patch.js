@@ -24,7 +24,8 @@
 //
 //   * the caller's caps (promoted sessions, proposals/day) are checked by
 //     the caller BEFORE this runs, so a refused submit leaves no branch;
-//   * the patch is size-bounded before a single git command runs;
+//   * the patch is size-bounded before a single git command runs, and what
+//     it adds, inflated, is bounded again before anything is pushed;
 //   * `.github/**` is refused outright — the work order forbids CI edits,
 //     and this is the one path where such an edit would be committed with
 //     platform credentials rather than a contributor's;
@@ -94,6 +95,44 @@ function parseNumstat(stdout) {
     }
   }
   return files;
+}
+
+// What the applied patch ADDS to the repository (#3198): the size of every
+// blob the new commits reach that the base commit does not.
+//
+// `rev-list --objects HEAD ^base` walks exactly those, through every commit
+// `git am` wrote rather than only the last, so a file added in one commit and
+// deleted in the next still counts: both commits are pushed. Sizes are
+// UNCOMPRESSED, like the changed-file total services/proposal-commit-upload.js
+// caps. A binary patch carries its content deflated, so a few KB of patch
+// text can inflate to a file of any size, and an on-disk measure (a pack or a
+// loose object) would see only the few KB. Only blobs count: the trees and
+// commits around them are bookkeeping, bounded by the file-count and
+// patch-size limits, and a tree's size is its directory's listing rather than
+// anything the patch wrote.
+//
+// This replaced `count-objects`'s `size-pack`, which measured the whole
+// scratch repository. That is mostly the base commit fetched to apply
+// against, and none of the patch, whose objects `git am` and `git add` write
+// loose. It asked whether the APP was over the limit, and the platform's own
+// repository always is.
+async function patchGrowthBytes(git, baseSha) {
+  const { stdout: listed } = await git(['rev-list', '--objects', 'HEAD', `^${baseSha}`]);
+  const ids = String(listed || '').split('\n').map((line) => line.split(' ')[0]).filter(Boolean);
+  if (!ids.length) return 0;
+  // `git` is the promisified execFile, whose promise carries the child.
+  const sizing = git(['cat-file', '--batch-check=%(objecttype) %(objectsize)']);
+  // A cat-file that exits early rejects `sizing` itself; without a listener
+  // the EPIPE on its stdin would throw out of the process instead.
+  sizing.child.stdin.on('error', () => {});
+  sizing.child.stdin.end(`${ids.join('\n')}\n`);
+  const { stdout: sizes } = await sizing;
+  let total = 0;
+  for (const line of String(sizes || '').split('\n')) {
+    const [type, size] = line.split(' ');
+    if (type === 'blob') total += Number(size) || 0;
+  }
+  return total;
 }
 
 // Apply a caller-supplied patch at the recorded base commit and push the
@@ -213,9 +252,7 @@ async function applyPatch({
         e.count = grown;
         throw e;
       }
-      const { stdout: sizeOut } = await git(['count-objects', '-v']);
-      const sizeKb = Number((/size-pack: (\d+)/.exec(sizeOut) || [])[1] || 0);
-      if (sizeKb * 1024 > MAX_PATCH_GROWTH_BYTES) {
+      if (await patchGrowthBytes(git, baseSha) > MAX_PATCH_GROWTH_BYTES) {
         const e = new Error('patch_too_large');
         throw e;
       }

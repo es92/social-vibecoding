@@ -106,7 +106,9 @@ function setup({ dispatch, storeArtifacts } = {}) {
       },
       cleanupPair: async () => { calls.cleaned += 1; },
     },
-    identities: { mintEvidenceAuthTokens: async () => ({ member: 'member.jwt', read_only_admin: 'admin.jwt' }) },
+    identities: { mintEvidenceAuthTokens: async () => ({
+      member: 'member.jwt', read_only_admin: 'admin.jwt', full_admin: 'full-admin.jwt',
+    }) },
     replay: {
       runPass: async (_config, _sessionId, input) => {
         calls.passes.push(input.pass);
@@ -896,10 +898,10 @@ test('a planner timeout keeps a bounded, content-free record of its last active 
   assert.doesNotMatch(JSON.stringify(trace.agentActivity), /private|token|secret|url/i);
 });
 
-test('planner authentication records both personas and sides without retaining credentials', async () => {
+test('planner authentication records every persona and side without retaining credentials', async () => {
   const fixture = setup({
     dispatch: async (options) => {
-      for (const persona of ['member', 'admin']) {
+      for (const persona of ['member', 'admin', 'full_admin']) {
         for (const side of ['base', 'head']) {
           options.onEvidenceDiagnostic({
             kind: 'auth_bootstrap', persona, side, attempted: true,
@@ -915,9 +917,10 @@ test('planner authentication records both personas and sides without retaining c
   await assert.rejects(execute(fixture), { code: 'missing_evidence_replay' });
   const events = fixture.transitions.at(-1).patch.traceSummary.agentActivity.events
     .filter((event) => event.kind === 'auth_bootstrap');
-  assert.equal(events.length, 4);
+  assert.equal(events.length, 6);
   assert.deepEqual(events.map(({ persona, side }) => [persona, side]), [
     ['member', 'base'], ['member', 'head'], ['admin', 'base'], ['admin', 'head'],
+    ['full_admin', 'base'], ['full_admin', 'head'],
   ]);
   assert.ok(events.every((event) => event.responseStatus === 200
     && event.sessionCookieInstalled && event.sessionCookiePresent));

@@ -28,6 +28,8 @@
 //     stopRequestedAt: number|null, // ms epoch, for the client's ladder
 //     confirming: boolean,          // a confirmStopLanded loop is running
 //     send: (type, data) => void,   // fan-out to this session's listeners
+//     userMessageId: number|null,   // #3177: the stored message a chat turn
+//                                   // answers (absent on an adopted turn)
 //   }
 //
 // Phase 'mayor2' is intentionally stop-proof — by then the coding agent has

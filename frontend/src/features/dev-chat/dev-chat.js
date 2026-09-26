@@ -5080,6 +5080,10 @@ const DevChat = {
     DevChat.scrollToBottom();
 
     DevChat._abortController = new AbortController();
+    // #3177: set by the stream's `accepted` event, which the server writes
+    // once the message is stored. A stream that breaks after it lost a
+    // connection, not the message.
+    let accepted = false;
 
     try {
       const sessionId = DevChat.currentSession.id;
@@ -5249,6 +5253,12 @@ const DevChat = {
             // enabled Send button.
             DevChat._noteLiveTurnEvent(data, sessionId);
             switch (data.type) {
+              case 'accepted':
+                // #3177: the message is stored and its turn has started. Its
+                // _seq, recorded above, is where the resumable stream picks
+                // the turn up if this one breaks.
+                accepted = true;
+                break;
               case 'token':
                 gotFirstToken = true;
                 // #990: the reply is arriving — the dots have done their job.
@@ -5538,7 +5548,11 @@ const DevChat = {
         }
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      // #3177: after `accepted` a broken stream is a delivered message on a
+      // lost connection. The turn is still running, so its live cue stays up
+      // while the fallback below resumes it; only a stream that broke before
+      // the server took the message drops the cue.
+      if (err.name !== 'AbortError' && !accepted) {
         DevChat._removeSpinner();
       }
     }

@@ -133,6 +133,55 @@ test('observer forwards MCP JSON-RPC unchanged through a child server', async ()
   }
 });
 
+test('observer command-line entry point accepts the full-admin evidence persona', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'evidence-browser-observer-cli-'));
+  const diagnosticFile = path.join(dir, 'diagnostics.log');
+  const stubPath = path.join(dir, 'mcp-server-playwright');
+  fs.writeFileSync(diagnosticFile, '');
+  fs.writeFileSync(stubPath, `#!/usr/bin/env node
+process.stdin.setEncoding('utf8');
+let buffer = '';
+process.stdin.on('data', chunk => {
+  buffer += chunk;
+  let end;
+  while ((end = buffer.indexOf('\\n')) >= 0) {
+    const message = JSON.parse(buffer.slice(0, end));
+    buffer = buffer.slice(end + 1);
+    process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id,
+      result: { content: [{ type: 'text', text: '- heading "ok"' }] } }) + '\\n');
+  }
+});
+`, { mode: 0o755 });
+  try {
+    const observerPath = path.join(__dirname, '..', 'worker', 'evidence-browser-observer.js');
+    const child = spawn(process.execPath, [observerPath, 'full_admin'], {
+      env: {
+        ...process.env,
+        PATH: `${dir}${path.delimiter}${process.env.PATH || ''}`,
+        EVIDENCE_BROWSER_DIAGNOSTIC_FILE: diagnosticFile,
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const stdout = [];
+    const stderr = [];
+    child.stdout.on('data', chunk => stdout.push(chunk));
+    child.stderr.on('data', chunk => stderr.push(chunk));
+    child.stdin.end(`${JSON.stringify({ jsonrpc: '2.0', id: 11, method: 'tools/call',
+      params: { name: 'browser_snapshot', arguments: {} } })}\n`);
+    const [code] = await once(child, 'close');
+    assert.equal(code, 0, Buffer.concat(stderr).toString());
+    assert.equal(JSON.parse(Buffer.concat(stdout).toString()).id, 11);
+    const diagnostics = fs.readFileSync(diagnosticFile, 'utf8').trim().split('\n')
+      .map(line => JSON.parse(line.slice(MARKER.length)));
+    assert.equal(diagnostics[0].persona, 'full_admin');
+    assert.deepEqual(diagnostics.map(event => event.kind), [
+      'browser_call_start', 'browser_call_end', 'browser_server_exit',
+    ]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('observer exits after a client stops the browser while stdin remains open', async () => {
   const observerPath = path.join(__dirname, '..', 'worker', 'evidence-browser-observer.js');
   const stub = `process.stdin.on('data',chunk=>{const m=JSON.parse(chunk.toString());process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:m.id,result:{content:[]}})+'\\n')});`;

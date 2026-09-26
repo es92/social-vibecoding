@@ -173,6 +173,15 @@ const Profile = {
   },
 
   async open(targetUsername = null) {
+    // #3186: `#profile?feedback` asks for the "Your feedback" list. Taken
+    // before the early return below, so the second of a double entry cannot
+    // find the address already rewritten and drop the request. Someone else's
+    // page is not where the list belongs, so going there closes it rather
+    // than leaving it to come back over the next visit to your own.
+    if (targetUsername) {
+      Profile._feedbackRequested = false;
+      Profile._dismissFeedback();
+    } else if (Profile._takeFeedbackRoute()) Profile._feedbackRequested = true;
     // One entry into #profile reaches here TWICE: popstate and hashchange both
     // run restoreFromHash, and the second run finds the screen mounted and
     // goes through App._routeMountedProfile, which opens it again. That used
@@ -188,10 +197,14 @@ const Profile = {
     Profile._targetUsername = targetUsername || null;
     Profile._data = Profile._targetUsername ? null : Profile._cachedOwnData();
     Profile._render();
+    // A cached profile is on screen already, so the list can open over it now
+    // rather than after four requests; otherwise it waits for the load.
+    Profile._maybeOpenFeedback();
     const token = ++Profile._loadToken;
     await Profile._load(token);
     if (Profile._open && token === Profile._loadToken && !Profile._targetUsername) {
       Profile._maybeOpenShot();
+      Profile._maybeOpenFeedback();
     }
   },
 
@@ -207,7 +220,9 @@ const Profile = {
     Profile._open = false;
     Profile._targetUsername = null;
     Profile._loadToken++;
+    Profile._feedbackRequested = false;
     Profile._dismissSheet();
+    Profile._dismissFeedback();
     Profile._render();
   },
 
@@ -288,13 +303,19 @@ const Profile = {
       // The friends lists (#2386) back the private Friends section. Non-fatal
       // like the two above: a failure draws "could not be loaded" there and
       // leaves the rest of the screen alone.
+      //
+      // The viewer's own feedback (#3186) is the "Your feedback" row's line
+      // and the list it opens, so opening the list costs no request of its
+      // own. Non-fatal the same way: the row falls back to its plain line and
+      // the list says it could not be loaded.
       const demo = Profile._demoQuery();
-      const [ranking, summary, ownerPublicProfile, friends] = await Promise.all([
+      const [ranking, summary, ownerPublicProfile, friends, feedback] = await Promise.all([
         Profile._fetchJson('/challenges-api/me/ranking?season_id=active'),
         Profile._fetchJson(`/api/me/summary${demo}`).catch(() => null),
         Profile._fetchJson('/api/me/public-profile').catch(() => null),
         // The friends client carries `?demo=1` itself.
         listFriends().catch(() => null),
+        Profile._fetchJson(`/api/feedback/mine${demo}`).catch(() => null),
       ]);
 
       // Written before the staleness check: a load that finished after the
@@ -308,6 +329,7 @@ const Profile = {
         summary,
         ownerPublicProfile,
         friends,
+        feedback,
       };
       if (username) Profile._ownCache = { username, data };
       if (token !== Profile._loadToken || Profile._targetUsername) return;
@@ -495,6 +517,66 @@ const Profile = {
     } catch (_) {
       return { ok: false, status: 'Could not send the report. Try again.' };
     }
+  },
+
+  // ── "Your feedback" (#3186) ─────────────────────────────────────────
+  //
+  // The viewer's own feedback and its status, as a card over Me: the same
+  // presentation as the edit sheet below (./feedback-sheet.tsx, lifted into
+  // the kit's modal by lib/kit-surface.ts), and the same claim on the back
+  // button. Its rows come from the load above, so opening it is a store push.
+  //
+  // It has an address, `#profile?feedback`, because two places outside Me
+  // open it: the confirmation after sending feedback
+  // (features/dialogs/feedback-controller.js) and the feedback challenge's
+  // page (features/leaderboard/topochain-challenges.js). open() takes the
+  // query, puts the address back to plain `#profile` so a reload or a later
+  // Back does not reopen a list the viewer closed, and opens the list as
+  // soon as the viewer's own profile is on screen.
+  _feedbackRequested: false,
+  _releaseFeedback: null,
+
+  showFeedback() {
+    if (profileStore.get().feedbackOpen) return;
+    profileStore.set({ feedbackOpen: true });
+    Profile._releaseFeedback = pushDismissible(() => {
+      Profile._releaseFeedback = null;
+      Profile._dismissFeedback();
+      return true;
+    });
+  },
+
+  _dismissFeedback() {
+    // Navigating, as _dismissSheet is: a row of the list is a link to the
+    // request it became, and leaving the screen closes it too.
+    const release = Profile._releaseFeedback;
+    Profile._releaseFeedback = null;
+    if (release) release({ navigating: true });
+    if (profileStore.get().feedbackOpen) profileStore.set({ feedbackOpen: false });
+  },
+
+  /** Whether the address asks for the list; takes the ask off it if so. */
+  _takeFeedbackRoute() {
+    let hash = '';
+    try { hash = String(location.hash || ''); } catch (_) { return false; }
+    const m = /^#profile\/?\?(.*)$/.exec(hash);
+    if (!m) return false;
+    let asked = false;
+    try { asked = new URLSearchParams(m[1]).has('feedback'); } catch (_) { return false; }
+    if (!asked) return false;
+    try {
+      history.replaceState(history.state, '', `${location.pathname}${location.search}#profile`);
+    } catch (_) { /* the list still opens; only the address keeps the ask */ }
+    return true;
+  },
+
+  _maybeOpenFeedback() {
+    if (!Profile._feedbackRequested || !Profile._open || Profile._targetUsername) return;
+    const d = Profile._data;
+    if (!d) return; // still loading: the post-load call opens it
+    Profile._feedbackRequested = false;
+    if (d.signedOut || d.error || d.publicProfile || d.publicNotFound) return;
+    Profile.showFeedback();
   },
 
   // ── edit sheet ────────────────────────────────────────────────────────

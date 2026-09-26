@@ -2132,7 +2132,7 @@ async function runMcp(args, launcherPath) {
     stories: z.array(z.object({
       id: z.string().regex(/^[a-z0-9](?:[a-z0-9_-]{0,94}[a-z0-9])?$/),
       claim: z.string().min(1).max(1000),
-      persona: z.enum(['member', 'read_only_admin']),
+      persona: z.enum(['member', 'read_only_admin', 'full_admin']),
       viewports: z.array(visualEvidenceViewportSchema).min(1).max(2),
       intent: z.object({
         startPath: z.string().min(1).max(512),

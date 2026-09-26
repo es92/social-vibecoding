@@ -196,11 +196,11 @@ session previews (`USERNODE_APPS_DOMAIN`). When empty, it defaults to
 
 ```yaml
 config:
-  domain: my.onhomeroom.com
+  domain: app.onhomeroom.com
   appsDomain: onhomeroom.com
 ```
 
-This serves the platform at `my.onhomeroom.com`, production apps at
+This serves the platform at `app.onhomeroom.com`, production apps at
 `<slug>.onhomeroom.com`, and previews at `<slug>--s<sessionId>.onhomeroom.com`.
 Platform links, CLI authentication, and access-grant redirects continue to use
 `config.domain`. The platform hostname is reserved: app deployment rejects a

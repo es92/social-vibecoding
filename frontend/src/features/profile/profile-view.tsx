@@ -32,6 +32,7 @@ import {
 } from './profile-store.js';
 import { Profile } from './profile.js';
 import { MorePanel } from './account-panel';
+import { FeedbackSheet } from './feedback-sheet';
 import { FriendsSection } from './friends-section';
 import { ProfileEditSheet } from './profile-edit-sheet';
 import { PublicProfileCard } from './public-profile-card';
@@ -248,7 +249,7 @@ function Contributions({ view }: { view: any }): ReactNode {
  *
  * It was the words "Loading profile…" centred in an otherwise empty screen.
  * What arrives now is the prototype's Me: the profile card, three stat cards,
- * the three "More" rows and the contributions list, and this stands in for
+ * the four "More" rows and the contributions list, and this stands in for
  * each at its own geometry — the card's `rounded-2xl p-4` face with the 56px
  * avatar, a name and a facts line, and the Edit button's shape at its right
  * end (leaving it out would let the name line run to an edge the real card
@@ -278,7 +279,7 @@ function ProfileSkeleton(): ReactNode {
         ))}
       </div>
       {/* "More", then "Your contributions": rows with a tile and two lines. */}
-      {[3, 2].map((count, group) => (
+      {[4, 2].map((count, group) => (
         <div key={group} className={`mt-8 rounded-2xl ${PLANE_FILL}`}>
           {Array.from({ length: count }, (_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3.5">
@@ -356,11 +357,13 @@ export function ProfileRoot(): ReactNode {
           previewOpen={state.previewOpen}
         />
       ) : null}
+      {/* #3186: "Your feedback", the list the More row opens. */}
+      {state.feedbackOpen ? <FeedbackSheet view={view.feedback} /> : null}
       <IdentityCard identity={view.identity} />
       <StatCards stats={view.stats} />
       {/*
-          "More": Challenges & standings, Kudos and Settings — the prototype's
-          three rows, each saying what is behind it. Admin & moderation, the
+          "More": Challenges & standings, Kudos, Your feedback (#3186) and
+          Settings, each saying what is behind it. Admin & moderation, the
           native node / wallet / staking rows and Log out are in Settings now
           (features/settings/account-rows.tsx).
       */}

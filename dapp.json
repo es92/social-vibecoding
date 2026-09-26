@@ -90,6 +90,18 @@
       "description": "Emergency kill switch for agent-authored proposal evidence. The mechanism is enabled by default; set exactly false only to stop intent collection, paired replay, and reviewer presentation together. Proposal checks and previews continue, and legacy default-route screenshots are not restored."
     },
     {
+      "key": "MAX_APPS",
+      "group": "Scaling",
+      "default": "50",
+      "description": "Ceiling on live (non-errored) apps across the whole server. Past it, everyone but full admins is refused with \"This server is at its app limit\". 0 or less turns the cap off. Full admins are alerted as it nears the ceiling (PLATFORM_LIMIT_WARN_PERCENT)."
+    },
+    {
+      "key": "PLATFORM_LIMIT_WARN_PERCENT",
+      "group": "Scaling",
+      "default": "80",
+      "description": "Percentage of MAX_APPS or MAX_GLOBAL_SESSIONS at which full admins are alerted that the server is nearing that cap; they are alerted again when it is full. One alert per crossing: it re-arms once usage falls back 10% under the line."
+    },
+    {
       "key": "MAX_GLOBAL_SESSIONS",
       "group": "Scaling",
       "default": "75",
@@ -617,10 +629,18 @@
       "expectSelector": "#profile-screen:not(.hidden) #profile-identity-card:has(#profile-edit-btn) + #profile-stats > [data-profile-stat=\"merged\"] + [data-profile-stat=\"kudos\"] + [data-profile-stat=\"challenges\"]"
     },
     {
-      "name": "Me: the \"More\" list is the prototype's three rows: Challenges & standings, Kudos, Settings",
-      "path": "/?demo=1#profile",
-      "expectText": "Challenges & standings",
-      "expectSelector": "#profile-screen:not(.hidden) #profile-more #profile-row-challenges[href=\"#leaderboard/challenges\"] + #profile-row-kudos[href=\"#leaderboard/kudos\"] + #profile-row-settings[href=\"#settings\"]"
+      "id": "profile.feedback-list",
+      "name": "Me: the \"More\" list is Challenges & standings, Kudos, Your feedback and Settings, and Your feedback lists what you sent with its status (#3186)",
+      "path": "/?demo=1#profile?feedback",
+      "expectText": "Counted",
+      "expectSelector": "body:has(#profile-feedback-sheet a[data-feedback-status=\"received\"] ~ a[data-feedback-status=\"counted\"]) #profile-more #profile-row-challenges + #profile-row-kudos + #profile-row-feedback[href=\"#profile?feedback\"] + #profile-row-settings",
+      "visual": true,
+      "impact": [
+        "frontend/src/features/profile/feedback-sheet.tsx",
+        "frontend/src/features/profile/account-panel.tsx",
+        "frontend/src/features/profile/profile-store.js",
+        "src/routes/feedback.js"
+      ]
     },
     {
       "name": "Me: Your contributions lists merged proposals, each opening its proposal, and See all",
@@ -703,9 +723,9 @@
       "expectText": "Congratulations on your first feedback!"
     },
     {
-      "name": "First feedback offers an editable fix and this app's board (#1583)",
+      "name": "First feedback offers an editable fix, this app's board and Your feedback (#1583, #3186)",
       "path": "/?shot=feedback-first#app/usernode-2d5619/dev",
-      "expectSelector": "#feedback-first-success:not(.hidden):has(#feedback-first-fix:not(:disabled)) #feedback-first-board:not(:disabled)",
+      "expectSelector": "#feedback-first-success:not(.hidden):has(#feedback-first-fix:not(:disabled)) #feedback-first-board:not(:disabled) + #feedback-first-mine",
       "expectText": "Try a fix yourself"
     },
     {
@@ -2472,7 +2492,7 @@
     {
       "name": "A Needs-you item leads with its title, then the sentence a voter reads, then the caption with who and when",
       "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop [data-ws-needs] > .dev-ws-needs-scroll > [data-ws-item][data-ws-kind=\"vote\"] > .dev-ws-item-title + .dev-ws-item-summary ~ .dev-ws-item-caption > .dev-ws-item-by"
+      "expectSelector": "#dev-workshop [data-ws-needs] > .dev-ws-needs-scroll > [data-ws-item][data-ws-kind=\"vote\"]:not([data-ws-swipeable]) > .dev-ws-item-title + .dev-ws-item-summary ~ .dev-ws-item-caption > .dev-ws-item-by"
     },
     {
       "name": "The Needs-you feed's rail offers Ask, which opens the question box about the item in front of you",
@@ -2813,12 +2833,13 @@
     {
       "name": "The Notifications sheet renders notification rows (Streamlined Concept)",
       "path": "/?demo=1#notifications",
-      "expectSelector": "#notifications-sheet[data-open] [data-notif-id]"
+      "expectSelector": "#notifications-sheet[data-open]:has([data-notif-id=\"990210\"]) [data-notif-id]",
+      "expectText": "40 of 50 apps in use."
     },
     {
       "name": "A notification row says what kind it is, then which one, then where it came from",
       "path": "/?shot=notifications&demo=1",
-      "expectSelector": "#notifications-sheet[data-open]:has([data-notif-id=\"990210\"] > span:nth-child(2) > span:nth-child(3)) [data-notif-id=\"990201\"] > span:nth-child(2) > span:nth-child(3)",
+      "expectSelector": "#notifications-sheet[data-open]:has([data-notif-id=\"990211\"] > span:nth-child(2) > span:nth-child(3)) [data-notif-id=\"990201\"] > span:nth-child(2) > span:nth-child(3)",
       "expectText": "Session finished"
     },
     {
@@ -5191,9 +5212,9 @@
       ]
     },
     {
-      "name": "#2779: an agent session's staging builds are cards: an older build is superseded, the newest offers Open preview and View change",
+      "name": "#2779: an agent session's staging builds are cards: an older build is superseded, the newest offers Open preview and View change, and says in words why its checks were skipped (#3180)",
       "path": "/#messages/agent/990801",
-      "expectSelector": "[data-agent-session-thread=\"990801\"] [data-agent-session-preview=\"superseded\"] ~ [data-agent-session-preview=\"deployed\"] [data-agent-session-preview-open] + [data-agent-session-preview-change]",
+      "expectSelector": "[data-agent-session-thread=\"990801\"] [data-agent-session-preview=\"superseded\"] ~ [data-agent-session-preview=\"deployed\"]:has(> [data-agent-session-checks-reason]) [data-agent-session-preview-open] + [data-agent-session-preview-change]",
       "expectText": "Superseded by a newer preview"
     },
     {
@@ -5285,9 +5306,9 @@
       "expectText": "Invitation pending"
     },
     {
-      "name": "An agent session's own screen shows its app, its change and a Changes button, and the drawer links the active change to its proposal page (#2779)",
+      "name": "An agent session's own screen shows its app, its change and a Changes button, and the drawer links the active change to its proposal page (#2779) and says why its checks were skipped (#3180)",
       "path": "/#agent/990801/changes",
-      "expectSelector": "#agent-session-screen:not(.hidden):has([data-agent-session-focus] ~ [data-agent-session-change-pill] ~ [data-agent-session-changes-button]) [data-agent-session-drawer] [data-agent-session-active-change] a[href$=\"/dev/proposals/990802\"]"
+      "expectSelector": "#agent-session-screen:not(.hidden):has([data-agent-session-focus] ~ [data-agent-session-change-pill] ~ [data-agent-session-changes-button]) [data-agent-session-active-change]:has([data-agent-session-checks-reason]) a[href$=\"/dev/proposals/990802\"]"
     }
   ],
   "governance": {

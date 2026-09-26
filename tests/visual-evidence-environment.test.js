@@ -24,6 +24,14 @@ test('evidence image tags key the exact revision and recipe', () => {
   assert.throws(() => environment.dockerImageName({ id: 42 }, 'main'), /exact 40-character/);
 });
 
+test('only the Homeroom self-app evidence runtime bypasses the server app cap', () => {
+  const config = { selfAppSlug: 'usernode-2d5619' };
+  assert.deepEqual(environment.evidenceCapacityEnv(config, { slug: 'usernode-2d5619' }), {
+    MAX_APPS: '0',
+  });
+  assert.deepEqual(environment.evidenceCapacityEnv(config, { slug: 'another-app' }), {});
+});
+
 test('only canonical HTTPS GitHub repositories are accepted', () => {
   assert.deepEqual(environment.repoParts('https://github.com/Usernode-Labs/example.git'), {
     owner: 'Usernode-Labs', repo: 'example',
@@ -54,6 +62,7 @@ test('each paired reset serializes clones and adds the same member fixture to bo
   const original = {
     remove: runtime.remove, deploy: runtime.deploy, appOrigin: runtime.appOrigin,
     clone: dbManager.cloneFromPreparedSource, connectionUrl: dbManager.connectionUrl,
+    fullAdmin: fixtures.ensureFullAdminIdentity,
     inspect: fixtures.canCopyMemberAgentSession, copy: fixtures.copyMemberAgentSession,
   };
   const runId = '2'.repeat(32);
@@ -68,10 +77,14 @@ test('each paired reset serializes clones and adds the same member fixture to bo
     }])),
   };
   const order = [];
+  const deployedEnvs = [];
   let cloneActive = false;
   try {
     runtime.remove = async () => {};
-    runtime.deploy = async (_config, spec) => ({ runtimeName: spec.runtimeName });
+    runtime.deploy = async (_config, spec) => {
+      deployedEnvs.push(spec.env);
+      return { runtimeName: spec.runtimeName };
+    };
     runtime.appOrigin = (_config, deployment) => `http://${deployment.runtimeName}`;
     dbManager.cloneFromPreparedSource = async (_source, dbName, { onProgress }) => {
       assert.equal(cloneActive, false, 'the next clone must wait for the prior redaction pass');
@@ -84,6 +97,9 @@ test('each paired reset serializes clones and adds the same member fixture to bo
       return { password: 'disposable' };
     };
     dbManager.connectionUrl = (dbName) => `postgres://fixture@db/${dbName}`;
+    fixtures.ensureFullAdminIdentity = async ({ side }) => ({
+      id: fixtures.FULL_ADMIN_PROFILE, persona: 'full_admin', path: '/#admin/users', side,
+    });
     fixtures.canCopyMemberAgentSession = async () => true;
     fixtures.copyMemberAgentSession = async ({ side }) => ({ id: fixtures.PROFILE,
       persona: 'member', path: '/#messages/agent/990899', side });
@@ -95,16 +111,21 @@ test('each paired reset serializes clones and adds the same member fixture to bo
       'clone_base', 'clone_base_copy_template', 'clone_base_scrub_private',
       'clone_head', 'clone_head_copy_template', 'clone_head_scrub_private',
     ]);
-    assert.equal(deployment.availableFixtures.length, 1);
-    assert.equal(deployment.availableFixtures[0].persona, 'member');
+    assert.equal(deployment.availableFixtures.length, 2);
+    assert.equal(deployment.availableFixtures[0].persona, 'full_admin');
+    assert.equal(deployment.availableFixtures[1].persona, 'member');
+    assert.equal(deployedEnvs.length, 2);
+    assert.ok(deployedEnvs.every((env) => env.MAX_APPS === '0'));
+    assert.ok(progress.includes('seed_evidence_identities'));
     assert.equal(deployment.fixtureFingerprint, crypto.createHash('sha256')
-      .update(`source-fingerprint\n${fixtures.PROFILE}`).digest('hex'));
+      .update(`source-fingerprint\n${fixtures.FULL_ADMIN_PROFILE}+${fixtures.PROFILE}`).digest('hex'));
   } finally {
     runtime.remove = original.remove;
     runtime.deploy = original.deploy;
     runtime.appOrigin = original.appOrigin;
     dbManager.cloneFromPreparedSource = original.clone;
     dbManager.connectionUrl = original.connectionUrl;
+    fixtures.ensureFullAdminIdentity = original.fullAdmin;
     fixtures.canCopyMemberAgentSession = original.inspect;
     fixtures.copyMemberAgentSession = original.copy;
   }

@@ -721,6 +721,64 @@ async function dueRuleIds(pool, { now = Date.now(), defaultMinutes } = {}) {
   return due;
 }
 
+// ── What the challenge list says about the schedule ────────────────────
+//
+// The public challenge list tells a participant, under each card's rail, how
+// often the challenge is counted and when it last was (#3185;
+// rules.cadenceOf). One read for the whole list: the enabled rules bound to
+// any of its challenges or their templates, beside the event's dates, which a
+// challenge with none of its own takes its window from. Scoped the way
+// RULE_CHALLENGES_SQL is, so an event the scorer never looks at returns no
+// rules and its cards promise nothing.
+const CADENCE_RULES_SQL = `
+  /* challenge scoring cadence */
+  SELECT r.id, r.measure, r.target, r.points, r.challenge_id, r.challenge_template_id,
+         r.interval_minutes, r.last_scored_at,
+         se.starts_at AS event_starts_at, se.ends_at AS event_ends_at
+    FROM challenge_scoring_rules r
+    JOIN season_events se ON se.id = $1
+    LEFT JOIN seasons s ON s.id = se.season_id
+   WHERE r.enabled = TRUE
+     AND (r.challenge_id = ANY($2::bigint[]) OR r.challenge_template_id = ANY($3::bigint[]))
+     AND se.internal = FALSE
+     AND se.is_active = TRUE AND COALESCE(s.is_active, FALSE) = TRUE
+   ORDER BY r.id ASC
+`;
+
+// `rows` are the list's own joined challenge rows (challenge columns bare,
+// template columns `t_`), which carry every field skipReason reads. Returns a
+// Map of challenge id -> { intervalMinutes, lastScoredAt }, holding only the
+// challenges something counts. Asks Postgres nothing when the schedule is off
+// (a default of 0 runs no rule at all) or the list is empty.
+async function loadCadence(pool, eventId, rows, { defaultMinutes, now = Date.now() } = {}) {
+  const out = new Map();
+  if (!(Number(defaultMinutes) > 0) || !rows || !rows.length) return out;
+  const templateIds = [...new Set(rows.map((r) => r.challenge_template_id)
+    .filter((v) => v != null).map(Number))];
+  const { rows: ruleRows } = await pool.query(CADENCE_RULES_SQL, [
+    eventId, rows.map((r) => Number(r.id)), templateIds,
+  ]);
+  if (!ruleRows.length) return out;
+  const { event_starts_at, event_ends_at } = ruleRows[0];
+  for (const row of rows) {
+    const bound = ruleRows
+      .filter((r) => (r.challenge_id != null && Number(r.challenge_id) === Number(row.id))
+        || (r.challenge_template_id != null && Number(r.challenge_template_id) === Number(row.challenge_template_id)))
+      .map((r) => ({
+        id: r.id,
+        measure: r.measure,
+        target: r.target,
+        points: r.points,
+        enabled: true,
+        intervalMinutes: r.interval_minutes,
+        lastScoredAt: r.last_scored_at,
+      }));
+    const cadence = rules.cadenceOf(bound, { ...row, event_starts_at, event_ends_at }, { now, defaultMinutes });
+    if (cadence) out.set(Number(row.id), cadence);
+  }
+  return out;
+}
+
 // When this process last looked at the standings. In memory, and per process,
 // because all it guards is a rebuild that produces nothing: a deployment with
 // no event to score has no snapshot, `maybeAggregate` finds none and tries
@@ -816,12 +874,14 @@ module.exports = {
   loadCandidates,
   loadCredited,
   dueRuleIds,
+  loadCadence,
   intervalMinutes,
   aggregateHours,
   MAX_CREDITS_PER_RUN,
   MAX_GRADES_PER_RUN,
   CANDIDATE_LIMIT,
   RULE_CHALLENGES_SQL,
+  CADENCE_RULES_SQL,
   CREDITED_SQL,
   MEASURE_SQL,
   dateToIso,

@@ -14,9 +14,9 @@
  * used to do from outside React, and Cancel and the backdrop click are
  * rendered handlers rather than listeners `App.bindEvents` attached.
  *
- * DOES NOT OWN: anything inside the card, including the first-feedback
- * confirmation. The target pills, the title and
- * description fields, the screenshot row, the two opt-in rows and the status
+ * DOES NOT OWN: anything inside the card, including the two confirmations
+ * (the first-feedback moment and #3186's sent one). The target pills, the
+ * title and description fields, the screenshot row, the two opt-in rows and the status
  * line are written by `./feedback-controller` — the retired ~810-line block
  * from `App.bindEvents`, whose header explains why it is still imperative.
  * React renders this tree once and never reconciles inside it, which is what
@@ -345,7 +345,30 @@ export function FeedbackDialog() {
               Start with a draft you can edit before sending it to the coding agent.
             </p>
             <Button id="feedback-first-board" variant="neutral" ink="neutral" disabledStyle="block" className="min-h-[44px]">See this app’s board</Button>
+            {/* #3186: the Me screen's list, where this report now is. */}
+            <Button id="feedback-first-mine" variant="neutral" ink="neutral" className="min-h-[44px]">See your feedback</Button>
             <Button id="feedback-first-done" variant="unstyled" ink="muted" className="min-h-[44px]">Done</Button>
+          </div>
+        </section>
+        {/*
+            #3186: every other filed report's confirmation. It was the status
+            line, and the dialog closed itself 1.5 s later; now it is this
+            section, drawn like the first-feedback moment above, and it stays
+            until Done. The controller fills the notice (the "Thanks! Filed
+            against …" line, with any bounty outcome) and reveals it, so it
+            renders empty and hidden for the reason #feedback-status does.
+        */}
+        <section id="feedback-sent" className="hidden" aria-labelledby="feedback-sent-title" tabIndex={-1}>
+          <h2 id="feedback-sent-title" className="text-lg font-bold mb-3">
+            Feedback sent
+          </h2>
+          <p id="feedback-sent-notice" className="text-sm text-emerald-700 dark:text-emerald-400 mb-2" role="status"></p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+            It is in Your feedback on your profile, with its status.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button id="feedback-sent-mine" variant="neutral" ink="neutral" className="min-h-[44px]">See your feedback</Button>
+            <Button id="feedback-sent-done" variant="unstyled" ink="muted" className="min-h-[44px]">Done</Button>
           </div>
         </section>
       </DialogCard>

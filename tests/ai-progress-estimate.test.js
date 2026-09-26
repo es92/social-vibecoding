@@ -290,8 +290,9 @@ test('/status response carries the estimate for the polling fallback', () => {
   // invariant is that `estimate` ships alongside the polling basics, not
   // the order they're written in. The window was 200 until #907 added
   // runner/runnerLabel/localAgent and pushed the object past it; widened
-  // rather than trimmed, since the length was never the point.
-  const payload = sessions.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,400}?\}\);/);
+  // rather than trimmed, since the length was never the point. Widened
+  // again for #3177's optional `delivery` key.
+  const payload = sessions.match(/res\.json\(\{\s*\n?\s*busy,[\s\S]{0,600}?\}\);/);
   assert.ok(payload, 'found the /status res.json payload');
   for (const key of ['busy', 'progress', 'phase', 'estimate']) {
     assert.match(payload[0], new RegExp(`\\b${key}\\b`), `/status payload must include ${key}`);

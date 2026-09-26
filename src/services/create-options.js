@@ -41,6 +41,16 @@
  * silently dropped rule would be a project that approves changes
  * differently from what its creator chose. Not for an import: an existing
  * repository's own dapp.json decides that on its first deploy.
+ *
+ * ── What it is ─────────────────────────────────────────────────────────
+ *
+ * `description` is dapp.json's top-level one line about what the project
+ * is, optional, and written where the approval rule is: the new
+ * repository's dapp.json, so a community changes it later with a vote like
+ * any other line there. The join screen, Discover and the project's page
+ * read it off the manifest snapshot. Whitespace collapses to single spaces;
+ * at most DESCRIPTION_MAX characters, the length the join screen shows
+ * whole. Not for an import either: its own dapp.json describes it.
  */
 
 const AUDIENCES = new Set(['solo', 'invited', 'open']);
@@ -48,6 +58,7 @@ const VISIBILITIES = new Set(['public', 'private']);
 const MAX_INVITEES = 20;
 const MAX_APPROVALS_REQUIRED = 50;
 const USERNAME_MAX = 64;
+const DESCRIPTION_MAX = 100;
 
 /** The two visibility columns an audience implies. */
 function visibilityForAudience(audience) {
@@ -112,10 +123,23 @@ function parseGovernance(raw) {
   return { governance: { approverPolicy: approvers, approvalsRequired } };
 }
 
+/** The one line, tidied, or null when blank. */
+function parseDescription(raw) {
+  if (raw == null) return { description: null };
+  if (typeof raw !== 'string') return { error: 'description must be a line of text' };
+  const text = raw.replace(/[\s\p{Cc}]+/gu, ' ').trim();
+  if (!text) return { description: null };
+  if (text.length > DESCRIPTION_MAX) {
+    return { error: `Say what it is in ${DESCRIPTION_MAX} characters or fewer.` };
+  }
+  return { description: text };
+}
+
 /**
  * Everything POST /api/apps needs to know about who a new project is for.
  * Returns `{ error }` for a 400, otherwise
- * `{ audience, collabVisibility, viewVisibility, invitees, governance }`.
+ * `{ audience, collabVisibility, viewVisibility, invitees, governance,
+ * description }`.
  */
 function parseCreateOptions(body = {}, { imported = false } = {}) {
   let audience = null;
@@ -144,12 +168,19 @@ function parseCreateOptions(body = {}, { imported = false } = {}) {
     return { error: 'An imported repo’s own dapp.json decides who approves changes.' };
   }
 
+  const desc = parseDescription(body.description);
+  if (desc.error) return { error: desc.error };
+  if (desc.description && imported) {
+    return { error: 'An imported repo’s own dapp.json describes it.' };
+  }
+
   return {
     audience,
     collabVisibility,
     viewVisibility,
     invitees: inv.invitees,
     governance: gov.governance,
+    description: desc.description,
   };
 }
 
@@ -172,6 +203,7 @@ function governanceBlock(governance) {
 module.exports = {
   AUDIENCES,
   MAX_INVITEES,
+  DESCRIPTION_MAX,
   parseCreateOptions,
   governanceBlock,
   visibilityForAudience,

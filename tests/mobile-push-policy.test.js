@@ -412,6 +412,30 @@ test('app health alerts say what happened and what to do (#2253, #2273)', () => 
   });
 });
 
+test('platform limit alerts name the cap, how full it is, and the lever', () => {
+  // Full admins only, and no app: the title carries no " · App" suffix.
+  const copy = (detail) => buildMessage({
+    ...INPUT, kind: 'platform_limit', context: { detail },
+  }).notification;
+  assert.deepEqual(copy('apps_warn:40:50'), {
+    title: 'Nearing the app limit',
+    body: '40 of 50 apps are in use. Raise MAX_APPS in Platform variables before new apps are refused',
+  });
+  assert.deepEqual(copy('apps_full:50:50'), {
+    title: 'App limit reached',
+    body: '50 of 50 apps are in use. New apps are refused until an admin raises MAX_APPS or removes one',
+  });
+  assert.deepEqual(copy('sessions_warn:60:75'), {
+    title: 'Nearing the session limit',
+    body: '60 of 75 coding sessions are running. At the limit, idle sessions are paused to make room',
+  });
+  assert.equal(copy('sessions_full:75:75').title, 'Session limit reached');
+  assert.match(copy('sessions_full:75:75').body, /MAX_GLOBAL_SESSIONS/);
+  // An unreadable token still says what kind of alert it is.
+  assert.equal(copy('disk_warn:1:2').title, 'Platform limit');
+  assert.equal(copy(undefined).title, 'Platform limit');
+});
+
 test('#2386: a friend request and its acceptance name the person and what to do', () => {
   const request = buildMessage({ ...INPUT, kind: 'friend_request', context: { sourceUsername: 'lin' } });
   assert.deepEqual(request.notification, {

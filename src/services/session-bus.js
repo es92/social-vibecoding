@@ -92,6 +92,18 @@ function subscribe(sessionId, cb, sinceSeq) {
   };
 }
 
+// The newest buffered event matching `predicate`, or null. Read-only: an
+// unknown session gets no buffer. #3177 uses it to find a stored message's
+// `accepted` event, whose `_seq` is where that turn's replay starts.
+function findLast(sessionId, predicate) {
+  const b = buffers.get(sessionId);
+  if (!b) return null;
+  for (let i = b.events.length - 1; i >= 0; i -= 1) {
+    if (predicate(b.events[i])) return b.events[i];
+  }
+  return null;
+}
+
 // Chat handler calls this at the end of a run so we can drop the ring
 // buffer promptly rather than waiting for the idle TTL.
 function clearSession(sessionId) {
@@ -111,4 +123,4 @@ function subscriberCount(sessionId) {
   return b ? b.subs.size : 0;
 }
 
-module.exports = { publish, subscribe, clearSession, subscriberCount };
+module.exports = { publish, subscribe, findLast, clearSession, subscriberCount };

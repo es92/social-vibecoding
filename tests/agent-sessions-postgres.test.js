@@ -69,6 +69,8 @@ async function connect(t, { beforeMigration = null } = {}) {
       status VARCHAR(32) NOT NULL DEFAULT 'active', source TEXT,
       pr_number INTEGER, pr_title VARCHAR(256), session_title TEXT,
       staging_url TEXT, check_state VARCHAR(32), test_results JSONB NOT NULL DEFAULT '[]',
+      -- Why a skipped run was skipped (activeChange.checkSkipReason, #3180).
+      check_error_detail TEXT,
       visual_evidence_state VARCHAR(24), visual_evidence_run_id VARCHAR(32));
     -- The active change's running preview (activeChange.previewCapture).
     CREATE TABLE visual_evidence_runs (
@@ -208,6 +210,20 @@ test('every row a change writes lands in its conversation, whoever inserts it', 
     assert.equal(detail.activeChange.id, child.id);
     assert.equal(detail.activeChange.title, 'Dark mode');
     assert.deepEqual(detail.changes.map((c) => c.id), [child.id]);
+    assert.equal(detail.activeChange.checkSkipReason, null, 'no verdict, no reason');
+
+    // #3180: a skipped run carries why; any other verdict's detail stays out.
+    await client.query(
+      "UPDATE chat_sessions SET check_state = 'skipped', check_error_detail = 'nothing to test' WHERE id = $1", [child.id]
+    );
+    const skipped = await agentSessions.getAgentSession(client, { userId: 7, id: session.id });
+    assert.equal(skipped.activeChange.checkSkipReason, 'nothing to test');
+    assert.equal(skipped.changes[0].checkSkipReason, 'nothing to test');
+    assert.equal((await agentSessions.listAgentSessions(client, { userId: 7 })).sessions
+      .find((s) => s.id === session.id).activeChange.checkSkipReason, 'nothing to test');
+    await client.query("UPDATE chat_sessions SET check_state = 'error' WHERE id = $1", [child.id]);
+    const errored = await agentSessions.getAgentSession(client, { userId: 7, id: session.id });
+    assert.equal(errored.activeChange.checkSkipReason, null);
 
     // An explicit conversation id is never overwritten by the trigger.
     const other = await agentSessions.createAgentSession(client, { user: { id: 7 } });

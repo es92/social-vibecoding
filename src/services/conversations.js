@@ -1374,17 +1374,22 @@ async function sendMessage(pool, user, conversationId, input) {
     }
     const notifications = [];
     for (const member of members.rows) {
+      const mentioned = mentionsUsername(content, member.username);
       let kind = 'conversation_message';
-      if (member.user_id === replyAuthorId) kind = 'conversation_reply';
-      else if (mentionsUsername(content, member.username)) kind = 'conversation_mention';
+      if (membership.kind === 'channel') {
+        // A channel is everybody (#2783): anything but an @mention there
+        // rings bells nobody asked for (#3188). An ordinary message, a reply
+        // to yours and a thread you are in stay silent; a reply or thread
+        // reply that @mentions you is a mention.
+        if (!mentioned) continue;
+        kind = 'conversation_mention';
+      } else if (member.user_id === replyAuthorId) kind = 'conversation_reply';
+      else if (mentioned) kind = 'conversation_mention';
       else if (threadRoot) {
         // One row per person: a quote or an @mention above outranks this.
         if (!threadParticipants.has(member.user_id)) continue;
         kind = 'conversation_thread_reply';
       }
-      // A channel is everybody (#2783): an ordinary message there would ring
-      // every bell on the platform. Only a reply or an @mention does.
-      if (membership.kind === 'channel' && kind === 'conversation_message') continue;
       notifications.push(await insertNotification(db, {
         userId: member.user_id, conversationId, messageId,
         sourceUserId: user.id, kind,
@@ -1535,7 +1540,8 @@ async function toggleReaction(pool, user, conversationId, messageId, rawEmoji) {
          VALUES ($1, $2, $3)`, [messageId, user.id, emoji]
       );
       const authorId = message.rows[0].sender_id;
-      if (authorId && authorId !== user.id) {
+      // #3188: a channel rings only for an @mention, and a reaction is not one.
+      if (authorId && authorId !== user.id && membership.kind !== 'channel') {
         notifications.push(await insertNotification(db, {
           userId: authorId, conversationId, messageId,
           sourceUserId: user.id, kind: 'conversation_reaction', detail: emoji,

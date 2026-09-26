@@ -1,6 +1,6 @@
 /**
- * The "More" list on the Me screen — the prototype's three rows, each with a
- * line that says what is behind it.
+ * The "More" list on the Me screen — the prototype's three rows, plus Your
+ * feedback (#3186), each with a line that says what is behind it.
  *
  * ── How the rows got here ──────────────────────────────────────────────
  *
@@ -31,6 +31,14 @@
  * anchor with an href gets them. Every one is a plain hash route the shell's
  * router already resolves, so there is no click handler to write.
  *
+ * #profile-row-feedback (#3186) is the one row with a handler. What it opens
+ * is a card over this screen, "Your feedback" (./feedback-sheet.tsx), not a
+ * screen of its own, so a plain click opens it in place rather than
+ * re-entering the route and re-reading the whole profile. It is still an
+ * anchor, to the card's own address (`#profile?feedback`, which
+ * Profile.open() honours), so every modified click keeps the browser's
+ * behaviour.
+ *
  * Nothing here is in the prerendered shell: ProfileRoot returns null until its
  * store has data, so the admin flag read below cannot disagree with a first
  * render.
@@ -40,16 +48,19 @@ import { type ReactNode } from 'react';
 
 import { GroupedList, ListRow, SectionHeader } from '@/components/ui/grouped-list';
 import { IconTile } from '@/components/ui/icon-tile';
-import { CogIcon, ThumbsUpIcon, TrophyIcon } from '@/components/ui/icons';
+import { ChatIcon, CogIcon, ThumbsUpIcon, TrophyIcon } from '@/components/ui/icons';
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibility } from '../../lib/visibility-store';
 import { walletSheetStore } from '../header/wallet-sheet-store';
+import { Profile } from './profile.js';
 
 /** The rows' two lines are the primitive's, a size down, as the prototype sets them. */
 const TITLE = 'text-base font-semibold';
 const SUBTITLE = 'text-[0.8125rem]';
 
-export function MorePanel({ rows }: { rows: { challenges: string | null; kudos: string | null } }): ReactNode {
+export function MorePanel({ rows }: {
+  rows: { challenges: string | null; kudos: string | null; feedback?: string | null };
+}): ReactNode {
   // A CAPABILITY, published rather than fetched: App.renderAdminButton in
   // public/js/app.js writes it after the session resolves. The Admin console
   // is a Settings row now; the flag only decides whether the Settings row's
@@ -85,6 +96,22 @@ export function MorePanel({ rows }: { rows: { challenges: string | null; kudos: 
           title="Kudos"
           titleClassName={TITLE}
           subtitle={rows.kudos || 'Kudos on your proposals'}
+          subtitleClassName={SUBTITLE}
+        />
+        <ListRow
+          as="a"
+          id="profile-row-feedback"
+          href="#profile?feedback"
+          onClick={(event) => {
+            if (event.defaultPrevented || event.button !== 0
+              || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            Profile.showFeedback();
+          }}
+          leading={<IconTile size="sm"><ChatIcon /></IconTile>}
+          title="Your feedback"
+          titleClassName={TITLE}
+          subtitle={rows.feedback || 'What you sent, and whether it counted'}
           subtitleClassName={SUBTITLE}
         />
         <ListRow

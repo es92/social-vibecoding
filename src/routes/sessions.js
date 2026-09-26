@@ -35,6 +35,7 @@ const workerProgress = require('../services/worker-progress');
 const sessionLifecycle = require('../services/session-lifecycle');
 const stagingRecovery = require('../services/staging-recovery');
 const sessionBus = require('../services/session-bus');
+const chatDelivery = require('../services/chat-delivery');
 const { drainGuard } = require('../services/lifecycle');
 const unitSuiteRow = require('../services/unit-suite-row');
 const {
@@ -5009,6 +5010,15 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
   // chatLimiter caps a single user at 30 chat turns/min so a runaway
   // script can't drain their daily LLM cap before checkBudget() can
   // even respond. See src/middleware/rate-limits.js.
+  //
+  // Delivery (#3177, services/chat-delivery.js): the stream's first event
+  // is `accepted` { messageId, clientMessageId }, written once the message
+  // is stored, so a client whose stream breaks after it knows the message
+  // arrived. To resume, open GET /api/sessions/:id/events?since=<that
+  // event's _seq>. An optional `client_message_id` makes a retry safe: the
+  // same id again answers with the stored message's `accepted` event
+  // (duplicate: true) instead of starting a second turn, and
+  // GET /api/sessions/:id/status?client_message_id=<id> looks it up.
   router.post('/api/sessions/:id/chat', chatLimiter, drainGuard, async (req, res) => {
     const { message, model, attachmentIds } = req.body;
 
@@ -5017,6 +5027,11 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
     if (attIds === null) {
       return res.status(400).json({ error: `Bad attachments (max ${attachmentsSvc.MAX_PER_MESSAGE} per message)` });
     }
+    const clientId = chatDelivery.readClientMessageId(req.body);
+    if (clientId.present && !clientId.value) {
+      return res.status(400).json({ error: chatDelivery.BAD_CLIENT_MESSAGE_ID });
+    }
+    const clientMessageId = clientId.value;
     if (!message?.trim() && !attIds.length) {
       return res.status(400).json({ error: 'Message required' });
     }
@@ -5090,6 +5105,15 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           error: 'This change belongs to an agent session. Continue it there.',
           agentSessionId: session.agent_session_id,
         });
+      }
+      // #3177: ahead of the billing and attachment gates, which a retry
+      // must not trip: its turn was paid for once and its attachments are
+      // already linked to the stored message.
+      if (clientMessageId) {
+        const delivery = await chatDelivery.lookup(pool, {
+          sessionId: session.id, clientMessageId, viewer: req.user,
+        });
+        if (delivery.received) return chatDelivery.answerDuplicate(res, delivery);
       }
       const isOpenRouterSession = registry.resolveBackend(session.agent_backend) === 'codex_openrouter';
 
@@ -5206,11 +5230,22 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           }
         : {};
 
+      // #3177: ON CONFLICT covers two retries racing past the lookup above;
+      // the one that loses answers as a duplicate. A row without a
+      // client_message_id never conflicts.
       const { rows: userMsgRows } = await pool.query(
-        `INSERT INTO chat_session_messages (session_id, role, content, metadata)
-         VALUES ($1, 'user', $2, $3) RETURNING id`,
-        [session.id, messageText, JSON.stringify(userMeta)]
+        `INSERT INTO chat_session_messages (session_id, role, content, metadata, client_message_id)
+         VALUES ($1, 'user', $2, $3, $4)
+         ON CONFLICT (session_id, client_message_id) WHERE client_message_id IS NOT NULL DO NOTHING
+         RETURNING id`,
+        [session.id, messageText, JSON.stringify(userMeta), clientMessageId]
       );
+      if (clientMessageId && !userMsgRows.length) {
+        return chatDelivery.answerDuplicate(res, await chatDelivery.lookup(pool, {
+          sessionId: session.id, clientMessageId, viewer: req.user,
+        }));
+      }
+      const userMessageId = userMsgRows[0]?.id ?? null;
       if (turnAttachments.length) {
         await pool.query(
           `UPDATE chat_session_attachments SET message_id = $1 WHERE id = ANY($2)`,
@@ -5256,6 +5291,8 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
         turnAttachments,
         scheduleInteractiveRecovery,
         userApiKey,
+        userMessageId,
+        clientMessageId,
       }, MAYOR_TURN_DEPS);
     } catch (err) {
       log.error('sessions', 'Chat setup error', { message: err.message });
@@ -5643,8 +5680,21 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
   }
 
   // Check if a session has an active worker + get latest progress
+  //
+  // #3177: `?client_message_id=<id>` (or `clientMessageId`) adds `delivery`,
+  // the lookup for a message sent with that id through POST /chat:
+  // { clientMessageId, received: false } when no such message is stored (or
+  // the caller does not own the session), else { clientMessageId,
+  // received: true, messageId, state: 'received' | 'running' | 'done',
+  // since }. `since` is the message's `accepted` _seq while this process
+  // still buffers it, for GET /events?since=; null means reload the
+  // transcript instead. `delivery` is null when the lookup itself failed.
   router.get('/api/sessions/:id/status', async (req, res) => {
     const sessionId = parseInt(req.params.id);
+    const deliveryId = chatDelivery.readClientMessageId(req.query);
+    if (deliveryId.present && !deliveryId.value) {
+      return res.status(400).json({ error: chatDelivery.BAD_CLIENT_MESSAGE_ID });
+    }
     // "busy" = a CC/scout dispatch is actively running for this
     // session right now. We deliberately do NOT key on
     // `containerStatus === 'running'` here — since the warm-CC commit
@@ -5813,13 +5863,26 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
       attached = demo.localAgent;
     }
 
+    let delivery;
+    if (deliveryId.value) {
+      try {
+        delivery = await chatDelivery.lookup(pool, {
+          sessionId, clientMessageId: deliveryId.value, viewer: req.user,
+        });
+      } catch (err) {
+        log.warn('sessions', 'Delivery lookup failed', { sessionId, err: err.message });
+        delivery = null;
+      }
+    }
+
     // #252: in-flight sync-with-main state ({ phase, startedAt } |
     // null) — the dev-chat sync banner's reload recovery and poll
     // fallback read this the same way the resolving banner reads
     // `resolving`.
     // Keys: busy, progress, phase, stopping, stopRequestedAt, stoppable,
     // estimate
-    // (+ resolving, sync, status). `estimate` is { text, remainingSeconds,
+    // (+ resolving, sync, status, and `delivery` when asked for, #3177).
+    // `estimate` is { text, remainingSeconds,
     // estimatedAt } | null — see workerProgress.setEstimate /
     // clearEstimate. `stopRequestedAt` is epoch ms | null (#937) and drives
     // the client's stop-escalation ladder across reloads.
@@ -5832,6 +5895,7 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
       sync: syncMainSvc.getSyncState(sessionId),
       status: mergeStatus,
       runner, runnerLabel, localAgent: attached,
+      ...(delivery !== undefined ? { delivery } : {}),
     });
   });
 
@@ -6087,6 +6151,14 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
   // The client may also pass `?since=<seq>` explicitly on the first
   // connect to replay from a specific point (e.g. the last _seq it saw
   // on the POST stream before it died).
+  //
+  // #3177: every turn's first event is `accepted`, so a client whose POST
+  // stream broke after any bytes at all has a `since` to resume from, and
+  // `since=<accepted _seq>` replays the whole turn from its start. The
+  // buffer is per process and cleared ~30s after a turn ends, so a resume
+  // after a restart or long after the turn replays nothing: GET /status
+  // (`busy`, and `delivery` for a client_message_id) says whether the turn
+  // is still running, and GET /api/sessions/:id has the stored transcript.
   router.get('/api/sessions/:id/events', async (req, res) => {
     const sessionId = parseInt(req.params.id, 10);
     if (!sessionId) return res.status(400).end();

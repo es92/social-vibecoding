@@ -52,13 +52,38 @@ test('every build is a card, a failed one too; only a change\'s newest is live',
 
 test('the checks, as the card says them', () => {
   assert.deepEqual(transcript.checksSummary('passing', 0), { key: 'passing', text: 'Checks passing' });
-  assert.deepEqual(transcript.checksSummary('skipped', 0), { key: 'passing', text: 'Checks passing' }, 'skipped passes the gate');
+  // #3180: skipped passes the gate but tested nothing, so it never reads as
+  // passing, and it says why.
+  assert.deepEqual(transcript.checksSummary('skipped', 0, 'branch has no commits beyond main, so there is nothing to test'), {
+    key: 'skipped', text: 'Checks skipped',
+    reason: 'Automated checks were skipped: branch has no commits beyond main, so there is nothing to test. This does not block the merge.',
+  });
+  assert.deepEqual(transcript.checksSummary('skipped', 0), {
+    key: 'skipped', text: 'Checks skipped',
+    reason: 'Automated checks were skipped: there was nothing to test. This does not block the merge.',
+  }, 'no recorded reason: the fallback line');
   assert.deepEqual(transcript.checksSummary('failing', 2), { key: 'failing', text: '2 checks failing' });
   assert.deepEqual(transcript.checksSummary('failing', 1), { key: 'failing', text: '1 check failing' });
   assert.deepEqual(transcript.checksSummary('failing', 0), { key: 'failing', text: 'Checks failing' });
   assert.deepEqual(transcript.checksSummary('pending', 0), { key: 'running', text: 'Checks running' });
   assert.equal(transcript.checksSummary('error', 0).key, 'error');
   assert.equal(transcript.checksSummary(null, 0), null, 'no run yet, nothing said');
+});
+
+test('why checks were skipped is one sentence, the same fallback the panel and the pill use (#3180)', () => {
+  const { skippedChecksReason } = transcript;
+  assert.equal(skippedChecksReason('mock GitHub preview: automated checks not run'),
+    'Automated checks were skipped: mock GitHub preview: automated checks not run. This does not block the merge.');
+  assert.equal(skippedChecksReason('  nothing to test.  '),
+    'Automated checks were skipped: nothing to test. This does not block the merge.', 'no doubled full stop');
+  const fallback = 'Automated checks were skipped: there was nothing to test. This does not block the merge.';
+  for (const none of [null, undefined, '', '   ']) assert.equal(skippedChecksReason(none), fallback);
+  assert.ok(skippedChecksReason('x'.repeat(1000)).length < 360, 'capped as the panel caps it');
+  // The panel's note and the status pill's tooltip carry the same fallback.
+  assert.ok(read('public/js/merge-status.js').includes(`'${fallback}'`), 'merge-status.js 6b');
+  const appView = read('public/js/app-view.js');
+  assert.ok(appView.includes(": 'there was nothing to test';")
+    && appView.includes('`Automated checks were skipped: ${reason}. This does not block the merge.`'), 'AppView._checksStatusNotes');
 });
 
 test('the card: its actions for each state, and nothing on a superseded one', () => {
@@ -93,6 +118,16 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   assert.match(voting, />View proposal</);
   assert.doesNotMatch(voting, /Propose to group/, 'proposed once');
   assert.match(voting, /data-agent-session-checks="passing"/);
+  assert.doesNotMatch(voting, /data-agent-session-checks-reason/, 'a real verdict needs no reason line');
+  // #3180: a skipped run says so, and why, as text under the line (a touch
+  // screen cannot open a tooltip); a row with no reason reads the fallback.
+  const skipped = render({ change: change({ checkState: 'skipped', checkSkipReason: 'branch has no commits beyond main, so there is nothing to test' }) });
+  assert.match(skipped, /data-agent-session-checks="skipped"[^>]*>Checks skipped</);
+  assert.doesNotMatch(skipped, /Checks passing/);
+  assert.match(skipped, /<p[^>]*data-agent-session-checks-reason[^>]*>Automated checks were skipped: branch has no commits beyond main, so there is nothing to test\. This does not block the merge\.<\/p>/);
+  assert.doesNotMatch(skipped, /Re-run checks/, 'skipped passes the gate: nothing to re-run from the card');
+  const skippedBare = render({ change: change({ checkState: 'skipped', checkSkipReason: null }) });
+  assert.match(skippedBare, /data-agent-session-checks-reason[^>]*>Automated checks were skipped: there was nothing to test\. This does not block the merge\.</);
   const merged = render({ change: change({ status: 'merged' }) });
   assert.match(merged, />Merged</);
   assert.match(merged, />View proposal</, 'a merged change is no draft');
@@ -344,4 +379,52 @@ test('a change carries its failing count and its app\'s kind, from the rows it h
   assert.equal(sessions[0].activeChange.checkFailing, 3);
   assert.equal(sessions[0].activeChange.appSelfHosted, true);
   assert.match(calls[0], /jsonb_typeof\(c\.test_results\) = 'array'/, 'an odd legacy row cannot break the list');
+});
+
+// #3180: a skipped run's reason reaches the card and the drawer. Only a
+// skipped run's: the detail an error leaves is the checks panel's to show.
+test('a skipped change carries why, and no other verdict carries its detail', async () => {
+  const agentSessions = require('../src/services/agent-sessions');
+  const calls = [];
+  const change = {
+    change_id: 50, change_status: 'active', change_app_slug: 'notes', change_check_state: 'skipped',
+    change_check_skip_reason: 'branch has no commits beyond main, so there is nothing to test',
+  };
+  const pool = {
+    async query(sql) {
+      calls.push(sql);
+      if (/FROM agent_sessions s/.test(sql)) return { rows: [{ id: 7, user_id: 4, title: 't', title_source: 'auto', status: 'open', ...change }] };
+      if (/FROM chat_sessions c JOIN apps a/.test(sql)) return { rows: [change, { ...change, change_id: 49, change_check_state: 'passing', change_check_skip_reason: null }] };
+      return { rows: [] };
+    },
+  };
+  const session = await agentSessions.getAgentSession(pool, { userId: 4, id: 7 });
+  assert.equal(session.activeChange.checkSkipReason, 'branch has no commits beyond main, so there is nothing to test');
+  assert.deepEqual(session.changes.map((c) => [c.id, c.checkState, c.checkSkipReason]),
+    [[50, 'skipped', 'branch has no commits beyond main, so there is nothing to test'], [49, 'passing', null]]);
+  await agentSessions.listAgentSessions(pool, { userId: 4 });
+  assert.equal(calls.length, 3);
+  for (const sql of calls) {
+    assert.match(sql, /CASE WHEN c\.check_state = 'skipped' THEN c\.check_error_detail END AS change_check_skip_reason/);
+    assert.doesNotMatch(sql.replace(/CASE WHEN c\.check_state = 'skipped' THEN c\.check_error_detail END/g, ''), /check_error_detail/,
+      'the detail is read for a skipped run only');
+  }
+});
+
+test('the changes drawer says why the active change\'s checks were skipped, in words (#3180)', () => {
+  const api = loadTsx('tests/fixtures/agent-session-api.ts');
+  const session = (activeChange) => ({
+    id: 7, title: 'Dark mode', status: 'open', focusApp: null, focusContext: {}, busy: false,
+    activeChange, changes: [], lastActivityAt: null, createdAt: null,
+  });
+  const base = { id: 50, appSlug: 'notes', appName: 'Notes', status: 'active', title: 'Dark mode', prNumber: 14 };
+  const skipped = renderToHtml(createElement(api.ChangesDrawer, {
+    session: session({ ...base, checkState: 'skipped', checkSkipReason: 'mock GitHub preview: automated checks not run' }),
+  }));
+  assert.match(skipped, />Checks: skipped<\/p><p[^>]*data-agent-session-checks-reason[^>]*>Automated checks were skipped: mock GitHub preview: automated checks not run\. This does not block the merge\.<\/p>/);
+  const bare = renderToHtml(createElement(api.ChangesDrawer, { session: session({ ...base, checkState: 'skipped' }) }));
+  assert.match(bare, /data-agent-session-checks-reason[^>]*>Automated checks were skipped: there was nothing to test\. This does not block the merge\.</);
+  const passing = renderToHtml(createElement(api.ChangesDrawer, { session: session({ ...base, checkState: 'passing' }) }));
+  assert.match(passing, />Checks: passing</);
+  assert.doesNotMatch(passing, /data-agent-session-checks-reason/);
 });

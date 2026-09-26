@@ -255,7 +255,7 @@ test('no row can reach the renderer with an empty kind line', async () => {
     'reply', 'openrouter_key_created', 'openrouter_key_review',
     'conversation_message', 'conversation_invite', 'conversation_mention',
     'conversation_reply', 'conversation_reaction', 'app_delete_attempted', 'app_deleted',
-    'something_unheard_of'];
+    'platform_limit', 'something_unheard_of'];
   for (const kind of kinds) {
     const view = (await load())({ ...ROW, kind });
     assert.equal(typeof view.label, 'string', `${kind} has a label`);
@@ -277,6 +277,37 @@ test('OpenRouter key rows name the provider, owner, and no false actor', async (
   assert.equal(legacy.label, 'OpenRouter access enabled');
   assert.equal(legacy.subject, '@grace');
   assert.equal(legacy.meta, 'Admin · 4m ago', 'no by-line');
+});
+
+test('platform limit rows say which cap, how full, and what happens next', async () => {
+  // Full admins only and no app, so the meta line names Admin like the other
+  // admin kinds, and nobody is credited with having done anything.
+  const near = await lines({ kind: 'platform_limit', detail: 'apps_warn:40:50',
+    appName: null, sourceUsername: null });
+  assert.equal(near.label, 'Nearing the app limit');
+  assert.match(near.subject, /^40 of 50 apps in use\. +Raise MAX_APPS before new apps are refused\.$/);
+  assert.equal(near.meta, 'Admin · 4m ago');
+
+  const full = await lines({ kind: 'platform_limit', detail: 'apps_full:50:50',
+    appName: null, sourceUsername: null });
+  assert.equal(full.label, 'App limit reached');
+  assert.match(full.subject, /^50 of 50 apps in use\. +New apps are refused until MAX_APPS is raised/);
+
+  const sessions = await lines({ kind: 'platform_limit', detail: 'sessions_warn:60:75',
+    appName: null, sourceUsername: null });
+  assert.equal(sessions.label, 'Nearing the session limit');
+  assert.match(sessions.subject, /^60 of 75 coding sessions in use\./);
+
+  const sessionsFull = await lines({ kind: 'platform_limit', detail: 'sessions_full:75:75',
+    appName: null, sourceUsername: null });
+  assert.equal(sessionsFull.label, 'Session limit reached');
+  assert.match(sessionsFull.subject, /MAX_GLOBAL_SESSIONS/);
+
+  // A token this build cannot read still says what kind of alert it is.
+  const odd = await lines({ kind: 'platform_limit', detail: 'disk_warn:1:2',
+    appName: null, sourceUsername: null });
+  assert.equal(odd.label, 'Platform limit');
+  assert.ok(odd.subject.length > 0);
 });
 
 // ─── 3. The renderer draws them in that order ───────────────────────────

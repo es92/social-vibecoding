@@ -440,13 +440,30 @@ export function buildTranscript(
 }
 
 /**
- * A change's checks, as its staging card says them (#2779 follow-up). They
- * gate merge, so the card says where they stand before you propose.
+ * Why a change's checks were skipped, as one sentence (#3180). The server
+ * records the reason in check_error_detail. A row without one reads the same
+ * fallback as the checks panel (AppView._checksStatusNotes) and the status
+ * pill (merge-status.js, state 6b), so the three never word it differently.
  */
-export function checksSummary(checkState: string | null | undefined, checkFailing: number | null | undefined):
-  { key: 'passing' | 'failing' | 'running' | 'error'; text: string } | null {
+export function skippedChecksReason(detail: string | null | undefined): string {
+  const reason = typeof detail === 'string' ? detail.trim().slice(0, 280).replace(/[\s.]+$/, '') : '';
+  return `Automated checks were skipped: ${reason || 'there was nothing to test'}. This does not block the merge.`;
+}
+
+/**
+ * A change's checks, as its staging card says them (#2779 follow-up). They
+ * gate merge, so the card says where they stand before you propose. A skipped
+ * run passes the gate but tested nothing, so it says that, and why (#3180):
+ * it used to read "Checks passing".
+ */
+export function checksSummary(
+  checkState: string | null | undefined,
+  checkFailing: number | null | undefined,
+  skipReason?: string | null,
+): { key: 'passing' | 'failing' | 'running' | 'error' | 'skipped'; text: string; reason?: string } | null {
   if (!checkState) return null;
-  if (checkState === 'passing' || checkState === 'skipped') return { key: 'passing', text: 'Checks passing' };
+  if (checkState === 'passing') return { key: 'passing', text: 'Checks passing' };
+  if (checkState === 'skipped') return { key: 'skipped', text: 'Checks skipped', reason: skippedChecksReason(skipReason) };
   if (checkState === 'failing') {
     const n = Number(checkFailing) || 0;
     return { key: 'failing', text: n > 0 ? `${n} check${n === 1 ? '' : 's'} failing` : 'Checks failing' };

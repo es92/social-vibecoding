@@ -513,7 +513,7 @@ test('a hosted Codex evidence turn cannot dispatch without the planning contract
         systemPrompt: null,
         evidenceRunId: '1'.repeat(32),
         evidenceOrigins: { base: 'http://base.test/', head: 'http://head.test/' },
-        evidenceAuthTokens: { member: 'member', read_only_admin: 'admin' },
+        evidenceAuthTokens: { member: 'member', read_only_admin: 'admin', full_admin: 'full-admin' },
       }),
       /hosted Codex evidence requires systemPrompt/,
     );
@@ -536,7 +536,7 @@ test('Codex evidence dispatch carries the planning contract file to its runner',
       openrouterApiKey: 'sk-or-must-not-appear-in-argv',
       evidenceRunId: '1'.repeat(32),
       evidenceOrigins: { base: 'http://base.test/', head: 'http://head.test/' },
-      evidenceAuthTokens: { member: 'member', read_only_admin: 'admin' },
+      evidenceAuthTokens: { member: 'member', read_only_admin: 'admin', full_admin: 'full-admin' },
     });
     const dispatch = calls.find(isDispatch);
     assert.ok(dispatch, 'Codex evidence turn was dispatched');

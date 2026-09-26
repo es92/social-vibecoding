@@ -21,7 +21,8 @@ function cleanClaims(value) {
   return value.slice(0, 3).map((claim) => ({
     id: String(claim?.id || '').slice(0, 96),
     claim: String(claim?.claim || '').slice(0, 1000),
-    persona: ['member', 'read_only_admin'].includes(claim?.persona) ? claim.persona : 'member',
+    persona: ['member', 'read_only_admin', 'full_admin'].includes(claim?.persona)
+      ? claim.persona : 'member',
     viewports: Array.isArray(claim?.viewports)
       ? claim.viewports.slice(0, 2).map((name) => String(name).slice(0, 32))
       : [],

@@ -455,6 +455,10 @@ function evidenceContext({ run, session, revision, pair, deployment, intent }) {
     personas: {
       member: { browserServer: 'browser_member', description: 'ordinary seeded app member' },
       read_only_admin: { browserServer: 'browser_admin', description: 'seeded administrator with read-only admin rights' },
+      full_admin: {
+        browserServer: 'browser_full_admin',
+        description: 'non-loginable full administrator present only in the disposable paired evidence databases',
+      },
     },
     changedFiles: {
       items: revision.files.slice(0, 200),
@@ -741,7 +745,7 @@ function recordAgentDiagnostic(metrics, raw) {
     event.outcome = raw.outcome;
   }
   for (const key of ['mcpServerCount', 'toolDefinitionCount', 'browserMemberToolCount',
-    'browserAdminToolCount', 'storyCount', 'callOrdinal', 'headingCount',
+    'browserAdminToolCount', 'browserFullAdminToolCount', 'storyCount', 'callOrdinal', 'headingCount',
     'buttonCount', 'linkCount', 'imageBlocks', 'exitCode', 'checkRank',
     'documentOrdinal', 'httpStatus', 'requestOrdinal', 'chunkCount', 'hitOrdinal',
     'count', 'catalogCount']) {
@@ -767,7 +771,7 @@ function recordAgentDiagnostic(metrics, raw) {
   }
   if (raw.signal === 'SIGTERM' || raw.signal === 'SIGINT') event.signal = raw.signal;
   if (['base', 'head', 'hosted', 'outside'].includes(raw.side)) event.side = raw.side;
-  if (raw.persona === 'member' || raw.persona === 'admin') event.persona = raw.persona;
+  if (['member', 'admin', 'full_admin'].includes(raw.persona)) event.persona = raw.persona;
   if (['intent_start', 'declared_check', 'other'].includes(raw.routeHint)) {
     event.routeHint = raw.routeHint;
   }
@@ -795,7 +799,7 @@ function recordAgentDiagnostic(metrics, raw) {
       || kind === 'browser_call_start' || kind === 'browser_call_pending'
       || kind === 'browser_call_end') {
     event.tool = AGENT_DIAGNOSTIC_TOOLS.has(raw.tool) ? raw.tool : 'other';
-    if (raw.persona === 'member' || raw.persona === 'admin') event.persona = raw.persona;
+    if (['member', 'admin', 'full_admin'].includes(raw.persona)) event.persona = raw.persona;
     if (['base', 'head', 'outside'].includes(raw.side)) event.side = raw.side;
     if (Number.isSafeInteger(raw.routeOrdinal) && raw.routeOrdinal > 0
         && raw.routeOrdinal <= 1000) event.routeOrdinal = raw.routeOrdinal;

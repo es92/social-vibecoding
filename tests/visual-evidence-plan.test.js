@@ -13,6 +13,12 @@ test('semantic intent accepts a bounded visible-change story and fills safe defa
   assert.deepEqual(parsed.stories[0].viewports[0], { name: 'desktop', width: 1280, height: 800 });
 });
 
+test('semantic intent can require the isolated full-admin evidence persona', () => {
+  const candidate = intent();
+  candidate.stories[0].persona = 'full_admin';
+  assert.equal(evidence.parseIntent(candidate).stories[0].persona, 'full_admin');
+});
+
 test('new UI may explicitly label base absence without treating missing media as proof', () => {
   const candidate = intent();
   candidate.stories[0].intent.baseState = 'not_present';

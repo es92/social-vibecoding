@@ -1185,9 +1185,16 @@ async function storeChecks(pool, sessionId, commitSha, result, errorDetail = nul
 // that a branch has no commits beyond a newer main commit. In that case it
 // atomically replaces the prior pin with the compared base SHA without
 // allowing a concurrent newer build to be overwritten.
+//
+// #3180: a skipped verdict always carries a reason. The checks panel, the
+// status pill and the agent session's card each print it as "Automated
+// checks were skipped: <reason>.", so a caller that passes none records the
+// same fallback those surfaces show for a row without one.
+const DEFAULT_CHECKS_SKIPPED_REASON = 'there was nothing to test';
 async function storeChecksSkipped(
   pool, sessionId, commitSha, reason, expectedCommitSha = commitSha
 ) {
+  const detail = (typeof reason === 'string' && reason.trim()) || DEFAULT_CHECKS_SKIPPED_REASON;
   const write = await pool.query(
     `UPDATE chat_sessions
        SET check_state = 'skipped', test_results = '[]', checks_commit_sha = $1::text,
@@ -1203,7 +1210,7 @@ async function storeChecksSkipped(
      WHERE id = $3
        AND status IN ('active', 'paused', 'promoted', 'merging')
        AND checks_commit_sha IS NOT DISTINCT FROM $4::text`,
-    [commitSha || null, reason || null, sessionId, expectedCommitSha || null]
+    [commitSha || null, detail, sessionId, expectedCommitSha || null]
   );
   return write.rowCount !== 0;
 }
@@ -3728,6 +3735,7 @@ module.exports = {
   overCeilingCheckRow,
   storeChecks,
   storeChecksSkipped,
+  DEFAULT_CHECKS_SKIPPED_REASON,
   setChecksPending,
   notifyChecksPending, makeChecksProgressTracker, makeChecksProgressState, setChecksProgress, notifyChecksProgress,
   setChecksBuildProgress, notifyChecksBuildProgress, buildProgressFromTimings, BUILD_STEP_KEYS,

@@ -178,6 +178,26 @@ export function ProgressRail({ state, label, fill, name, counted = false, size =
   );
 }
 
+// The line under a scored challenge's rail (#3185): "Updates every 15 min ·
+// last 10:42", composed in ./topochain-challenges.js (`_cadenceOf`) from the
+// schedule the server sends. It is the rail's footnote, so it sits tight
+// under it — the negative top margin takes back half of the gap above — in
+// the deadline's quiet ink, and like every line on the card it truncates
+// rather than wraps. Nothing to say is no line at all, so a challenge nothing
+// counts in the background draws exactly the card it always did.
+const CADENCE: Record<PartSize, string> = {
+  md: '-mt-1 min-w-0 truncate text-xs leading-4 text-zinc-500 dark:text-zinc-400',
+  lg: '-mt-2 min-w-0 truncate text-[0.8125rem] leading-5 text-zinc-500 dark:text-zinc-400',
+};
+
+export function ProgressCadence({ text = null, size = 'md' }: {
+  text?: string | null;
+  size?: PartSize;
+}): ReactNode {
+  if (!text) return null;
+  return <div className={CADENCE[size]}>{text}</div>;
+}
+
 // The meta line: "5d left · 500 pts". `text` is the amount — the reward on
 // offer, or with `earned` what the viewer earned, in emerald. Nothing to say
 // is no line at all, never a stray dot.
@@ -257,6 +277,8 @@ export type ChallengeCardView = {
   /** "5d left"; null on a finished card or with no end in the future. */
   deadline?: string | null;
   earned: string | null;
+  /** "Updates every 15 min · last 10:42" under the rail; absent or null draws no line. */
+  cadence?: string | null;
 };
 
 // The corners are concentric: the card's 24px (`rounded-3xl`, 1.5rem in
@@ -276,15 +298,16 @@ const CARD = CHALLENGE_CARD_FACE
   + ' cursor-pointer hover:border-violet-400 dark:hover:border-violet-600 transition-colors';
 
 // The card: tile, then title, the meta line ("5d left · 500 pts") and the
-// rail — nothing else. The task is not on the card (the tab's detail overlay
-// carries it in full).
+// rail — nothing else, except, on a challenge the background scorer counts,
+// the one line under the rail that says how often (ProgressCadence). The task
+// is not on the card (the tab's detail overlay carries it in full).
 //
 // TITLE AND RAIL ARE ONE GROUP. The title and its meta line sit 8px above the
 // rail and the whole group is centred against the tile as a unit, rather than
 // stretched to the tile's top and bottom edges: the title belongs to its
 // rail, not to the illustration beside it. With a meta line the group is 88px
-// against the 80px tile, without one 68px, at every width — nothing in it
-// wraps.
+// against the 80px tile, without one 68px, and the cadence line adds 20px, at
+// every width — nothing in it wraps.
 //
 // A card that opens something IS a button (#1918): role="button", in the tab
 // order, and Enter/Space open it like a click. The role is also what gives a
@@ -328,6 +351,7 @@ export function ChallengeCard({ view, className, onClick, onKeyDown, ...rest }: 
           name={view.goal}
           counted={!!view.counted}
         />
+        <ProgressCadence text={view.cadence} />
       </div>
     </div>
   );
