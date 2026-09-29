@@ -580,7 +580,7 @@ test('capture runtime uses a bounded Job and caps log retrieval', async () => {
   assert.equal(result.stdout, 'result');
 });
 
-for (const kind of ['Capture', 'UnitSuite', 'Evidence']) {
+for (const kind of ['Capture', 'UnitSuite']) {
   for (const [cpus, memory, expectedMemory, expectedRequestMemory] of [
     ['6', '6g', '6Gi', kind === 'UnitSuite' ? '1Gi' : '3Gi'],
     ['0.5', '512m', '512Mi', '512Mi'],
@@ -623,7 +623,7 @@ test('check kinds and sessions share one spread group without including resident
       async readNamespacedPodLog() { return 'passed'; },
     },
   });
-  for (const [index, kind] of ['Capture', 'UnitSuite', 'Evidence'].entries()) {
+  for (const [index, kind] of ['Capture', 'UnitSuite'].entries()) {
     await kubernetes[`run${kind}Job`](config(), { sessionId: 42 + index, env: {}, previewRunId: `run-${index}` });
   }
   const expected = {

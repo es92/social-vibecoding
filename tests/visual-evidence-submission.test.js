@@ -9,7 +9,7 @@ const evidenceState = require('../src/services/visual-evidence-state');
 const handoff = require('../src/routes/proposal-handoff');
 const votes = require('../src/routes/votes');
 const contract = require('../src/services/visual-evidence-plan');
-const { intent, plan } = require('./fixtures/visual-evidence');
+const { intent, motionIntent } = require('./fixtures/visual-evidence');
 
 const HEAD = 'a'.repeat(40);
 
@@ -108,23 +108,27 @@ test('PR import records the declaration on its existing transaction client', () 
     'the uncommitted session row and its evidence are written atomically');
   assert.doesNotMatch(transaction, /recordIntent\(\s*importClient/,
     'the pool-owning helper must not receive an already checked-out PoolClient');
-  assert.match(transaction, /createRunInTransaction\(importClient/,
-    'the submitted plan is durable before the import transaction commits');
+  // The declaration is all an import stores. The preview agent's run is
+  // created later from it; no author-supplied plan or run rides the import.
+  assert.doesNotMatch(transaction, /createRunInTransaction|authorPlan|visualEvidencePlan/);
 });
 
-test('PR import validates an author plan against the actual pull request revisions', () => {
-  const baseSha = 'b'.repeat(40);
-  const headSha = 'a'.repeat(40);
-  const visualEvidence = intent();
-  const visualEvidencePlan = { baseSha, headSha, planHash: contract.planHash(plan()), plan: plan() };
-  assert.deepEqual(votes.parseImportVisualEvidencePlan({ visualEvidencePlan }, visualEvidence,
-    { baseSha, headSha }), {
-    ...visualEvidencePlan, plan: contract.parseReplayPlan(visualEvidencePlan.plan),
-  });
-  assert.throws(() => votes.parseImportVisualEvidencePlan({ visualEvidencePlan }, visualEvidence,
-    { baseSha, headSha: 'c'.repeat(40) }), /imported pull request headSha/);
-  assert.throws(() => votes.parseImportVisualEvidencePlan({ visualEvidencePlan }, undefined,
-    { baseSha, headSha }), /matching visualEvidence intent/);
+test('PR import parses only the declaration; an author plan in the body is ignored', () => {
+  const declared = motionIntent();
+  const stalePlan = { baseSha: 'b'.repeat(40), headSha: 'a'.repeat(40), planHash: 'c'.repeat(64), plan: {} };
+  assert.deepEqual(
+    votes.parseImportVisualEvidence({ visualEvidence: declared, visualEvidencePlan: stalePlan }),
+    contract.parseIntent(declared),
+    'the strict v1 parser owns the import boundary, whatever else the body carries'
+  );
+  // Absent stays absent, so a browser import writes exactly what it did.
+  assert.equal(votes.parseImportVisualEvidence({ visualEvidencePlan: stalePlan }), undefined);
+  assert.equal(votes.parseImportVisualEvidence(undefined), undefined);
+  // An invalid declaration is still refused rather than stored.
+  const bad = intent();
+  bad.stories[0].intent.startPath = 'https://evil.example';
+  assert.throws(() => votes.parseImportVisualEvidence({ visualEvidence: bad }), /relative in-app path/);
+  assert.equal(votes.parseImportVisualEvidencePlan, undefined, 'the plan parser is gone');
 });
 
 test('PR import evidence failures expose a safe stage and field without leaking the database error', () => {
@@ -142,10 +146,9 @@ test('PR import evidence failures expose a safe stage and field without leaking 
   assert.deepEqual(votes.prImportFailureBody(new Error('private')), {
     error: 'Internal server error',
   });
+  // The import no longer records a plan, so that stage is not a boundary a
+  // caller can act on: it reads as any other internal failure.
   const planError = new Error('password=not-for-callers');
   planError.prImportStage = 'visual_evidence_plan';
-  assert.deepEqual(votes.prImportFailureBody(planError), {
-    error: 'PR import failed while recording visualEvidencePlan.',
-    stage: 'visual_evidence_plan', field: 'visualEvidencePlan', retryable: true,
-  });
+  assert.deepEqual(votes.prImportFailureBody(planError), { error: 'Internal server error' });
 });

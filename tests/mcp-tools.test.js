@@ -1583,36 +1583,104 @@ test('submit_work carries the request its work order named into the import', () 
   assert.match(block, /: \{\}\),\s*\}\s*\);/);
 });
 
-test('submit_work documents direct v1 evidence input when the helper tool is absent', () => {
+test('submit_work documents the v1 declaration it takes directly when the helper tool is absent', () => {
+  // A connector session has no record_visual_evidence_intent, so the input's
+  // own description is the only place an external agent learns the shape.
   const block = registration('submit_work');
-  assert.match(block, /construct that documented v1 shape directly when the helper is not exposed/);
-  assert.match(block, /validates both paths identically/);
+  assert.match(block, /record_visual_evidence_intent, or build that shape directly/);
+  assert.match(block, /1-3 declared changes/);
+  assert.match(block, /optional hints \{setup, expectText, focusTarget\}/);
+  assert.match(block, /before and after shot, plus a short clip for animation "motion"/);
 });
 
-test('submit_work validates and forwards a local plan with the first import', () => {
+test('submit_work validates the declared changes and forwards only them — no author plan', () => {
+  // The replay plan an author used to hand over beside the declaration is
+  // gone: the preview agent takes the shots, so the tool has one evidence
+  // input, validated by the same parser the hosted helper uses.
   const block = registration('submit_work');
-  assert.match(block, /parseAuthorPlanSubmission\(/);
-  assert.match(block, /visualEvidencePlan: acceptedVisualEvidencePlan/);
-  assert.match(block, /extra\.visualEvidencePlan \? \{ visualEvidencePlan: extra\.visualEvidencePlan \}/);
-  assert.match(block, /atomic author-plan handoff currently applies to a new PR import/);
+  assert.match(block, /visualEvidencePlan\.parseIntent\(visualEvidence\)/);
+  assert.match(block, /toolError\('invalid_visual_evidence', err\.message\)/);
+  assert.match(block, /extra\.visualEvidence \? \{ visualEvidence: extra\.visualEvidence \}/);
+  assert.doesNotMatch(block, /parseAuthorPlanSubmission|acceptedVisualEvidencePlan/);
+  assert.doesNotMatch(block, /visualEvidencePlan: /,
+    'neither an input field nor a forwarded key carries a plan');
+  assert.doesNotMatch(block, /submit_visual_evidence_plan/);
 });
 
-test('submit_visual_evidence_plan forwards the exact typed flow to the owner-scoped platform route', async () => {
-  const c = connector((method, pathname) => {
-    assert.equal(method, 'POST');
-    assert.equal(pathname, '/api/apps/demo/proposals/42/evidence/plan');
-    return { runId: '1'.repeat(32), headSha: 'b'.repeat(40), visualEvidenceState: 'planned' };
-  }, { scopes: [READ_SCOPE, WRITE_SCOPE] });
+// The update shape, stood up the way the #1217 test above stands it up.
+function evidenceUpdateConnector(platformAnswer) {
+  const gh = require('../src/services/github');
+  const githubLink = require('../src/services/github-link');
+  const real = { gh: gh.isEnabled, link: githubLink.isEnabled };
+  gh.isEnabled = () => true;
+  githubLink.isEnabled = () => true;
+  const pool = { async query() { return { rows: [{ app_slug: 'recipe-box' }] }; } };
+  const c = connector(() => platformAnswer, { scopes: [READ_SCOPE, WRITE_SCOPE], pool });
+  return {
+    ...c,
+    restore() { c.restore(); gh.isEnabled = real.gh; githubLink.isEnabled = real.link; },
+  };
+}
+
+test('submit_work accepts a v1 declaration and carries the parsed copy to the platform', async () => {
+  const fixture = require('./fixtures/visual-evidence');
+  const declared = fixture.motionIntent();
+  const c = evidenceUpdateConnector({
+    updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,
+    headSha: 'b'.repeat(40), votesCleared: 0, submittedVia: 'update_branch',
+    visualEvidenceState: 'planned', visualEvidenceAccepted: true,
+    visualEvidenceRequired: true, visualEvidenceNextStep: 'await_visual_evidence',
+  });
   try {
-    const replayPlan = require('./fixtures/visual-evidence').plan();
-    const result = await c.handlers.get('submit_visual_evidence_plan')({
-      proposalId: 42, slug: 'demo', headSha: 'b'.repeat(40), plan: replayPlan,
+    const res = await c.handlers.get('submit_work')({
+      proposalId: 3140, branch: 'my-fix', visualEvidence: declared,
+      // A stale caller may still send the retired field. It is not an input
+      // any more, so nothing of it reaches the platform.
+      visualEvidencePlan: { baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40), plan: {} },
     });
-    assert.equal(result.isError, undefined);
-    assert.equal(result.structuredContent.runId, '1'.repeat(32));
-    assert.equal(c.calls.length, 1);
-    assert.deepEqual(c.calls[0].body.plan, replayPlan,
-      'the connector does not crop, transcode, or substitute the author flow');
+    assert.notEqual(res.isError, true);
+    const sent = c.calls.at(-1);
+    assert.equal(sent.pathname, '/api/apps/recipe-box/proposals/3140/update-from-fork');
+    assert.deepEqual(sent.body.visualEvidence,
+      require('../src/services/visual-evidence-plan').parseIntent(declared),
+      'the validated declaration travels, not the raw argument');
+    assert.equal('visualEvidencePlan' in sent.body, false);
+    const out = res.structuredContent;
+    assert.equal(out.visualEvidenceAccepted, true);
+    assert.equal(out.visualEvidenceState, 'planned');
+    assert.equal(out.visualEvidenceRequired, true);
+    assert.equal(out.visualEvidenceNextStep, 'await_visual_evidence');
+    const { z } = require('zod');
+    assert.equal(z.object(c.specs.get('submit_work').outputSchema).safeParse(out).success, true,
+      'the answer satisfies the tool\'s own outputSchema');
+  } finally { c.restore(); }
+});
+
+test('submit_work refuses an invalid declaration before anything reaches the platform', async () => {
+  const c = evidenceUpdateConnector({ updated: true });
+  try {
+    const res = await c.handlers.get('submit_work')({
+      proposalId: 3140, branch: 'my-fix',
+      visualEvidence: { version: 1, impact: 'ui', stories: [] },
+    });
+    assert.equal(res.isError, true);
+    assert.match(res.content[0].text, /invalid_visual_evidence/);
+    assert.equal(c.calls.length, 0, 'refused before any platform call');
+  } finally { c.restore(); }
+});
+
+test('submit_work reports no evidence fields when no declaration was sent', async () => {
+  const c = evidenceUpdateConnector({
+    updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,
+    headSha: 'b'.repeat(40), votesCleared: 0, submittedVia: 'update_branch',
+    visualEvidenceState: 'planned', visualEvidenceAccepted: true,
+  });
+  try {
+    const res = await c.handlers.get('submit_work')({ proposalId: 3140, branch: 'my-fix' });
+    assert.equal('visualEvidence' in c.calls.at(-1).body, false);
+    assert.equal(res.structuredContent.visualEvidenceAccepted, null,
+      'null says "you sent none", not "it was refused"');
+    assert.equal(res.structuredContent.visualEvidenceNextStep, null);
   } finally { c.restore(); }
 });
 
@@ -1777,7 +1845,7 @@ test('the registered tool surface is exactly this, and nothing more', () => {
     'recheck_change',
     'release_request',
     'start_change',
-    'start_platform_build', 'submit_platform_build', 'submit_visual_evidence_plan', 'submit_work',
+    'start_platform_build', 'submit_platform_build', 'submit_work',
     'sync_change',
     'update_proposal_issues', 'whoami',
     'withdraw_change',
@@ -1947,7 +2015,7 @@ test('ACTING_TOOLS names every user-directed action, and every one is a write', 
     'create_request', 'demo_mode', 'demo_promote', 'demo_propose', 'demo_reset', 'demo_vote',
     'prepare_work', 'promote_change', 'propose_close_request', 'recheck_change', 'start_change',
     'start_platform_build',
-    'submit_platform_build', 'submit_visual_evidence_plan', 'submit_work', 'sync_change',
+    'submit_platform_build', 'submit_work', 'sync_change',
     'update_proposal_issues', 'withdraw_change',
   ]);
   for (const name of tools.ACTING_TOOLS) {
@@ -2080,7 +2148,7 @@ test('whoami hands the model the canonical name and the exact shipped rules', ()
 
 test('every write tool checks its scope before it does anything', () => {
   const writeTools = [
-    'create_request', 'prepare_work', 'submit_work', 'submit_visual_evidence_plan',
+    'create_request', 'prepare_work', 'submit_work',
     'start_platform_build', 'answer_questions', 'submit_platform_build',
     'demo_mode', 'demo_propose', 'demo_promote', 'demo_vote', 'demo_reset',
   ];
@@ -2641,8 +2709,8 @@ test('a submission whose every route is rejected is told so in its own answer', 
   assert.equal(shaped.rejectedPaths.length, 2);
   const note = tools.testingRouteNote(shaped, false);
   assert.match(note, /could not use any of the testingPaths/);
-  assert.match(note, /does not substitute|use visualEvidence/i,
-    'the answer points to semantic evidence without promising a root fallback');
+  assert.match(note, /declare visualEvidence for the before\/after shots/,
+    'the answer points to the declared changes without promising a root fallback');
   assert.doesNotMatch(note, /default.*home page/i);
 });
 
@@ -3404,6 +3472,64 @@ test('#2137 — the phases the connector admits are the phases the platform stor
     const revising = require('../src/services/mcp-charter').CHARTER_SECTIONS
       .find((s) => s.id === 'revising-a-proposal');
     assert.match(revising.text, /`checks\.phase` of `deferred`/);
+  } finally { c.restore(); }
+});
+
+test('get_proposal carries before/after shot results through its own output schema', async () => {
+  // A verified shots run: one change ready (a before and an after still, and
+  // the two clips of a motion change), one skipped with the agent's reason.
+  const shot = (id, side, media, variant) => ({
+    id, storyId: 'saved-toast', viewport: 'desktop', side, variant, media,
+    contentType: media === 'png' ? 'image/png' : 'video/webm',
+    width: media === 'png' ? 1280 : null, height: media === 'png' ? 800 : null,
+    bytes: 2048, focusRect: null, stageLabels: null,
+    url: `/api/apps/recipe-box/proposals/4301/evidence/artifacts/${id}`,
+  });
+  const evidence = {
+    state: 'verified', required: true, impact: 'motion',
+    rationale: 'Saving now confirms with a toast.',
+    claims: [{
+      id: 'saved-toast', claim: 'Saving slides a toast in from the bottom.', persona: 'member',
+      viewports: ['desktop'], steps: ['Press Save'], baseState: 'not_present', animation: 'motion',
+    }],
+    baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40),
+    failureCode: null, failureReason: null, repairAvailable: false,
+    planHash: 'c'.repeat(64), verifiedReason: null,
+    shotResults: [
+      { id: 'saved-toast', status: 'ready', reason: null },
+      { id: 'invite-suggestions', status: 'skipped', reason: 'The Members tab needs a second account.' },
+    ],
+    overriddenBy: null, overriddenAt: null, overrideReason: null,
+    artifacts: [
+      shot('1'.repeat(32), 'base', 'png', 'context'),
+      shot('2'.repeat(32), 'head', 'png', 'context'),
+      shot('3'.repeat(32), 'base', 'webm', 'animation'),
+      shot('4'.repeat(32), 'head', 'webm', 'animation'),
+    ],
+    updatedAt: '2026-09-28T10:00:00.000Z',
+  };
+  const c = connector(() => ({ session: { id: 4301, app_slug: 'recipe-box', visualEvidence: evidence } }));
+  try {
+    const result = await c.handlers.get('get_proposal')({ proposalId: 4301 });
+    assert.ok(!result.isError);
+    const parsed = validateOutput(c.specs.get('get_proposal'), result);
+    assert.ok(parsed.success, parsed.success ? '' : parsed.error.message);
+    assert.deepEqual(parsed.data.visualEvidence.shotResults, evidence.shotResults);
+    assert.deepEqual(parsed.data.visualEvidence.artifacts.map((a) => `${a.side}/${a.media}`),
+      ['base/png', 'head/png', 'base/webm', 'head/webm'], 'a clip is stored per side');
+
+    // The replay-era fields are not part of the contract any more, and a
+    // status outside ready/skipped is refused rather than passed through.
+    const shape = z.object(c.specs.get('get_proposal').outputSchema).shape.visualEvidence
+      .unwrap().shape;
+    assert.ok('shotResults' in shape);
+    for (const gone of ['captureMode', 'claimResults', 'replayCount', 'repairCount']) {
+      assert.equal(gone in shape, false, `${gone} is not in the schema`);
+    }
+    const blocked = { ...evidence, shotResults: [{ id: 'saved-toast', status: 'blocked', reason: null }] };
+    assert.equal(shape.shotResults.safeParse(blocked.shotResults).success, false);
+    assert.match(c.specs.get('get_proposal').description, /before\/after shots of each declared change/);
+    assert.match(c.specs.get('get_proposal').description, /`shotResults` says which changes it skipped/);
   } finally { c.restore(); }
 });
 

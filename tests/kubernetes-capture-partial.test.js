@@ -171,57 +171,43 @@ for (const scenario of ['opt-out', 'unit-suite']) {
   });
 }
 
-test('two evidence passes in one run create distinct Jobs and input Secrets', async (t) => {
-  const jobs = new Set();
-  const secrets = new Set();
+// Before/after shots are taken by a preview agent in an evidence worker, not
+// by a capture-image Job, so there is one check Job kind fewer: the replay
+// Job (and its per-pass random names) is gone, and a capture Job keeps its
+// deterministic, run-scoped name.
+test('a capture Job is named for its run and reads its input from a matching Secret', async (t) => {
   const jobBodies = [];
   const secretNames = [];
   kubernetes._setClientsForTest({
     batch: {
-      createNamespacedJob: async ({ body }) => {
-        const name = body.metadata.name;
-        if (jobs.has(name)) throw Object.assign(new Error('Job already exists'), { code: 409 });
-        jobs.add(name);
-        jobBodies.push(body);
-        return { metadata: { uid: `uid-${jobs.size}` } };
-      },
+      createNamespacedJob: async ({ body }) => { jobBodies.push(body); return { metadata: { uid: 'uid-1' } }; },
       readNamespacedJob: async () => ({ status: { succeeded: 1 } }),
     },
     core: {
-      createNamespacedSecret: async ({ body }) => {
-        const name = body.metadata.name;
-        if (secrets.has(name)) throw Object.assign(new Error('Secret already exists'), { code: 409 });
-        secrets.add(name);
-        secretNames.push(name);
-      },
+      createNamespacedSecret: async ({ body }) => { secretNames.push(body.metadata.name); },
       readNamespacedSecret: async () => ({ metadata: {} }),
       replaceNamespacedSecret: async () => ({}),
-      deleteNamespacedSecret: async ({ name }) => { secrets.delete(name); },
-      listNamespacedPod: async () => ({ items: [{ metadata: { name: 'evidence-pod' } }] }),
-      readNamespacedPodLog: async () => 'evidence output\n',
+      deleteNamespacedSecret: async () => ({}),
+      listNamespacedPod: async () => ({ items: [{ metadata: { name: 'capture-pod' } }] }),
+      readNamespacedPodLog: async () => 'capture output\n',
     },
   });
   t.after(() => kubernetes._setClientsForTest(null));
 
-  const options = {
-    sessionId: 42, env: {}, stdinPayload: '{}', salvagePartial: true,
-    previewRunId: 'a'.repeat(32),
-  };
-  const first = await kubernetes.runEvidenceJob(config, options);
-  const second = await kubernetes.runEvidenceJob(config, options);
-  assert.equal(first.stdout, 'evidence output\n');
-  assert.equal(second.stdout, 'evidence output\n');
-  assert.equal(jobBodies.length, 2);
-  assert.notEqual(jobBodies[0].metadata.name, jobBodies[1].metadata.name);
-  assert.equal(jobs.size, 2, 'the first finished Job remains while pass two starts');
-  assert.deepEqual(jobBodies.map(body => body.metadata.labels['social.usernode.io/preview-run-id']),
-    [options.previewRunId, options.previewRunId]);
-  for (let index = 0; index < jobBodies.length; index += 1) {
-    const jobName = jobBodies[index].metadata.name;
-    assert.ok(jobName.startsWith('sv-evidence-s42-'));
-    assert.ok(jobName.length <= 57);
-    assert.equal(secretNames[index], `${jobName}-input`);
-  }
+  const previewRunId = 'a'.repeat(32);
+  const result = await kubernetes.runCaptureJob(config, {
+    sessionId: 42, env: {}, stdinPayload: '{}', salvagePartial: true, previewRunId,
+  });
+  assert.equal(result.stdout, 'capture output\n');
+  assert.equal(jobBodies.length, 1);
+  const [body] = jobBodies;
+  assert.equal(body.metadata.name, `sv-capture-s42-${previewRunId}`);
+  assert.equal(body.metadata.labels['social.usernode.io/preview-run-id'], previewRunId);
+  assert.deepEqual(secretNames, [`${body.metadata.name}-input`]);
+  const [container] = body.spec.template.spec.containers;
+  assert.deepEqual(container.args, ['exec node /app/capture.js < /var/run/usernode-capture/tests.json']);
+  assert.doesNotMatch(JSON.stringify(body), /evidence-replay|sv-evidence/);
+  assert.equal(kubernetes.runEvidenceJob, undefined, 'there is no replay Job kind to launch');
 });
 
 test('a Kubernetes API conflict is reported as a launcher error, not a container exit', async (t) => {
@@ -236,7 +222,7 @@ test('a Kubernetes API conflict is reported as a launcher error, not a container
   });
   t.after(() => kubernetes._setClientsForTest(null));
 
-  await assert.rejects(kubernetes.runEvidenceJob(config, {
+  await assert.rejects(kubernetes.runCaptureJob(config, {
     sessionId: 42, env: {}, stdinPayload: '{}', salvagePartial: true,
     previewRunId: 'a'.repeat(32),
   }), (error) => {

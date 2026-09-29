@@ -567,6 +567,19 @@ function safeDiagnosticValue(value, depth = 0) {
     .map(([key, item]) => [key, safeDiagnosticValue(item, depth + 1)]));
 }
 
+// An error's own structured detail (a reset or sign-in step, validation
+// issues), redacted and bounded for the owner-only diagnostics.
+function boundedErrorDetail(error) {
+  try {
+    const value = error?.detail || (error?.issues ? { issues: error.issues } : null);
+    if (value == null) return null;
+    const serialized = JSON.stringify(safeDiagnosticValue(value));
+    return serialized.length <= 16000
+      ? JSON.parse(serialized)
+      : { truncated: true, excerpt: serialized.slice(0, 8000) };
+  } catch { return null; }
+}
+
 const AGENT_DIAGNOSTIC_KINDS = new Set([
   'worker_prepare_start', 'worker_prepare_end', 'backend_selected',
   'turn_start', 'turn_end', 'provider_dispatched', 'provider_init',
@@ -1129,6 +1142,7 @@ async function executeRun(config, options, injected = {}) {
   } catch (error) {
     const control = registration?.control;
     const toolFailure = control?.lastToolFailure;
+    const detail = boundedErrorDetail(error);
     const failureTrace = traceSummary(metrics, {
       terminalFailureClass: errorCode(error),
       ...(metrics.agentFinalResponse ? { agentFinalResponse: metrics.agentFinalResponse } : {}),
@@ -1141,6 +1155,7 @@ async function executeRun(config, options, injected = {}) {
           toolCode: errorCode(toolFailure.error),
           toolMessage: visibleError(toolFailure.error),
         } : {}),
+        ...(detail ? { detail } : {}),
       },
       ...(control ? { control: {
         savedFiles: control.saved.size,

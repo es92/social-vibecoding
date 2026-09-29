@@ -6,6 +6,7 @@ const appAccess = require('../services/app-access');
 const appAdmins = require('../services/app-admins');
 const log = require('../services/logger');
 const orchestrator = require('../services/visual-evidence-orchestrator');
+const shots = require('../services/visual-evidence-shots');
 const plan = require('../services/visual-evidence-plan');
 const state = require('../services/visual-evidence-state');
 const view = require('../services/visual-evidence-view');
@@ -158,7 +159,8 @@ function visualEvidenceRoutes(config) {
         },
         // The hash of exactly which shots were published.
         planHash: run.plan_hash,
-        shotResults: Array.isArray(run.hard_verdict?.stories) ? run.hard_verdict.stories : [],
+        shotResults: shots.isShotsVerdict(run.hard_verdict) && Array.isArray(run.hard_verdict.stories)
+          ? run.hard_verdict.stories : [],
         artifacts: artifacts.rows.map((artifact) => ({
           storyId: artifact.story_id,
           viewport: artifact.viewport,

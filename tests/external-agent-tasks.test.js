@@ -910,11 +910,9 @@ test('submit_work opens the cross-fork PR when the mirror is unavailable, and st
     },
   });
   const visualEvidence = evidenceContract.parseIntent(evidenceFixture.intent());
-  const visualEvidencePlan = {
-    baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40),
-    planHash: evidenceContract.planHash(evidenceFixture.plan()),
-    plan: evidenceContract.parseReplayPlan(evidenceFixture.plan()),
-  };
+  // A caller still sending the retired author plan. Nothing reads it now:
+  // the preview agent takes the shots, so only the declaration travels.
+  const visualEvidencePlan = { baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40), plan: {} };
 
   const result = await withMirrorUnavailable(() => withFetch(PUSHED_BRANCH, calls, () => svc.submitWork(
     { pool: submitPool(queries), config: {}, gh, githubLink: linkedAs('someuser'), limits: okLimits },
@@ -943,7 +941,8 @@ test('submit_work opens the cross-fork PR when the mirror is unavailable, and st
   assert.equal(imports[0].slug, 'recipe-box');
   assert.equal(imports[0].prNumber, 88);
   assert.deepEqual(imports[0].extra.visualEvidence, visualEvidence);
-  assert.deepEqual(imports[0].extra.visualEvidencePlan, visualEvidencePlan);
+  assert.equal('visualEvidencePlan' in imports[0].extra, false, 'an author plan is never forwarded');
+  assert.doesNotMatch(SRC, /visualEvidencePlan/);
   assert.doesNotMatch(SRC, /INSERT INTO chat_sessions/);
 
   // The only thing stamped afterwards is the badge column, scoped to the
@@ -2818,6 +2817,41 @@ test('the work order scopes the local test run to the files the change touched',
   // runs before `npm ci`, and the paragraph sits with the other setup.
   assert.ok(block.indexOf('npm ci') < block.indexOf('npm run test:changed'));
   assert.ok(block.indexOf('npm run test:changed') < block.indexOf('fatal: not a valid object name'));
+});
+
+// Both closing trees tell the agent how to declare its visible changes for
+// before/after shots. The replay-era instructions (a typed plan, a local
+// replay, a separate plan tool) are gone, and a stale copy would send an
+// agent looking for a tool that no longer exists.
+test('the work order explains declared changes for before/after shots, and nothing of replay', () => {
+  const create = fullOrder();
+  const update = fullOrder({ targetProposal: { id: 512, targetKind: 'proposal', branchHome: 'app_repo' } });
+  for (const [label, order] of [['create', create], ['update', update]]) {
+    assert.match(order, /`visualEvidence` for this (exact )?revision: the changes a\s+(person will )?/,
+      `${label}: names the field and what it is for`);
+    assert.match(order, /before\/after shots/, `${label}: in the new words`);
+    assert.match(order, /record_visual_evidence_intent/, `${label}: the helper, when present`);
+    assert.match(order, /helper is not exposed[\s\S]*documented version-1 object directly/,
+      `${label}: and the direct shape when it is not`);
+    assert.match(order, /blocker/, `${label}: a state that cannot be reached is reported, not declared none`);
+    assert.match(order, /one to three(\s+)declared(\s+)changes/, `${label}: declared changes`);
+    assert.match(order, /intent\.controlledFailurePath/, `${label}: the controlled failure stays`);
+    assert.match(order, /"Controlled test: deliberately block the declared API GET on\s+both revisions\."/);
+    for (const gone of [/visualEvidencePlan/, /submit_visual_evidence_plan/, /replay/i,
+      /executable flow/, /submission\.json/, /evidence agent/]) {
+      assert.doesNotMatch(order, gone, `${label}: no ${gone}`);
+    }
+  }
+  // The create path spells out each field of a declared change, including
+  // the motion clip and the optional hints.
+  assert.match(create, /\(motion gets a short before\/after clip\)/);
+  assert.match(create, /Optional hints help\s+the preview agent go straight there/);
+  assert.match(create, /setup \(data to create first\)/);
+  assert.match(create, /expectText \(words visible once it shows\)/);
+  assert.match(create, /focusTarget \(a locator\)/);
+  assert.match(create, /Never include secrets or personal data/);
+  // The update path says the shots are fresh for every new revision.
+  assert.match(update, /preview agent takes fresh\s+before\/after shots of every new revision/);
 });
 
 // ── Caller-supplied branch and fork name ───────────────────────────────

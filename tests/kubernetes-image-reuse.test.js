@@ -22,7 +22,7 @@ function repository(t) {
     fs.writeFileSync(path.join(cwd, file), contents);
   };
   for (const file of ['worker/Dockerfile', 'worker/worker-run.sh', 'capture/Dockerfile',
-    'capture/capture.js', 'evidence/replay-runner.js', 'src/services/visual-evidence-plan.js',
+    'capture/capture.js', 'evidence/hosted-app-fixture.js', 'src/services/visual-evidence-plan.js',
     '.github/workflows/build-kubernetes-images.yml',
     'scripts/resolve-kubernetes-image.js', 'frontend/ui.js']) write(file, `original ${file}\n`);
   // Real Git trees, without commits or user Git signing hooks/configuration.
@@ -99,14 +99,18 @@ test('worker and capture inputs are independent', t => {
   const repo = repository(t);
   const worker = resolve(repo).reuse_tag;
   let capture = resolve(repo, { component: 'capture' }).reuse_tag;
-  for (const file of ['capture/capture.js', 'evidence/replay-runner.js',
-    'src/services/visual-evidence-plan.js']) {
+  for (const file of ['capture/capture.js', 'evidence/hosted-app-fixture.js']) {
     repo.write(file, `new ${file} behavior\n`);
     const next = resolve(repo, { component: 'capture' }).reuse_tag;
     assert.equal(resolve(repo).reuse_tag, worker);
     assert.notEqual(next, capture);
     capture = next;
   }
+  // The capture image no longer carries the replay runner or the evidence
+  // declaration schema, so a change to that schema rebuilds neither image.
+  repo.write('src/services/visual-evidence-plan.js', 'new declaration schema\n');
+  assert.equal(resolve(repo, { component: 'capture' }).reuse_tag, capture);
+  assert.equal(resolve(repo).reuse_tag, worker);
 });
 
 test('the resolved Claude Code version invalidates only the worker image', t => {

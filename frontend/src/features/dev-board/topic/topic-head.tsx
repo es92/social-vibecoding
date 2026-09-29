@@ -936,7 +936,7 @@ function BeforeAfter({ body }: { body: TopicBody }): ReactNode {
     return (
       <p className="dev-topic-hero-evidence" data-evidence-state={ev.state}>
         <span className="dc-status-spinner-arc" aria-hidden="true"></span>
-        <span>Building before/after photos</span>
+        <span>Taking before/after shots</span>
       </p>
     );
   }

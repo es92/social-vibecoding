@@ -115,12 +115,16 @@ function buildEvidenceBlock({ intent, appSlug, sessionId, domain }) {
     for (const claim of claims) lines.push(`- ${claim}`);
     lines.push('');
   }
-  lines.push(
-    `[See the before/after shots of this exact revision in Homeroom](${url})`,
-    '',
-    '_The shots are private to Homeroom and tied to this revision, so they are not embedded in this public PR body._',
-    EVIDENCE_MARKER_END
-  );
+  if (intent.impact === 'none') {
+    lines.push(`[Open this proposal in Homeroom](${url})`, EVIDENCE_MARKER_END);
+  } else {
+    lines.push(
+      `[See the before/after shots of this exact revision in Homeroom](${url})`,
+      '',
+      '_The shots are private to Homeroom and tied to this revision, so they are not embedded in this public PR body._',
+      EVIDENCE_MARKER_END
+    );
+  }
   return lines.join('\n');
 }
 

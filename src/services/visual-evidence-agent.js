@@ -64,6 +64,10 @@ For each declared change and each of its screen sizes (viewports):
    call save_clip with the change, screen and side. Each browser_close ends
    one recording; keep clips short.
 
+If a change declares intent.controlledFailurePath, call fail_request with
+that path and enabled true just before the step that triggers it, and with
+enabled false once the error is on screen.
+
 If you cannot reach a change, for example the persona cannot see or create
 the data it needs, call skip_change with that change id and what you saw,
 then carry on with the others. You do not need to judge whether a change is
@@ -354,7 +358,7 @@ async function dispatch(config, options, injected = {}) {
         throw error;
       }
     }
-    // A model without tool support cannot explore or submit a plan. Use the
+    // A model without tool support cannot take shots. Use the
     // platform preview agent rather than attributing work to that model.
     const fallbackReason = runtime?.error ? 'codex_runtime_unavailable' : 'model_without_tools';
     return {

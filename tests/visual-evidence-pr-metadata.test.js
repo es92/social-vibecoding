@@ -22,14 +22,17 @@ function intent() {
   };
 }
 
-test('PR evidence metadata contains claims and one secure Homeroom link, never protected media', () => {
+test('PR evidence metadata contains the declared changes and one secure Homeroom link, never protected media', () => {
   const block = metadata.buildEvidenceBlock({
     intent: intent(), appSlug: 'demo-app', sessionId: 42, domain: 'my.onhomeroom.com',
   });
-  assert.match(block, /## Visual change preview/);
+  assert.match(block, /^<!-- usernode:visual-evidence -->\n## Before\/after shots\n/);
+  assert.doesNotMatch(block, /Visual change preview/);
+  assert.match(block, /^- .*now shows suggestions$/m);
   assert.match(block, /@\u200beveryone/);
   assert.match(block, /\\\[click\\\]\\\(javascript:alert\\\(1\\\)\\\)/);
   assert.match(block, /https:\/\/my\.onhomeroom\.com\/#app\/demo-app\/dev\/proposals\/42/);
+  assert.equal((block.match(/https:\/\//g) || []).length, 1, 'exactly one link');
   assert.doesNotMatch(block, /!\[|\/visuals\/|\/evidence\/[0-9a-f]{32}/);
 });
 
@@ -53,6 +56,8 @@ test('no-impact PR metadata explains the rationale without manufacturing screens
     intent: { version: 1, impact: 'none', rationale: 'Only retry accounting changed.', stories: [] },
     appSlug: 'demo-app', sessionId: 42, domain: 'my.onhomeroom.com',
   });
+  assert.match(block, /## Before\/after shots/);
   assert.match(block, /No user-visible change declared: Only retry accounting changed\./);
-  assert.doesNotMatch(block, /Before|After|!\[/);
+  assert.doesNotMatch(block, /^- /m, 'no declared change is invented');
+  assert.doesNotMatch(block, /!\[|<img|\/evidence\/[0-9a-f]{32}/);
 });

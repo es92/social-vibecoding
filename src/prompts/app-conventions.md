@@ -87,12 +87,10 @@ Ordered by how badly an agent working offline gets each one wrong.
    renders against an empty staging database, so seed what it needs.
    Demo routes are fine for regression tests, but never add a
    screenshot-only query parameter. After a visible change, call
-   `record_visual_evidence_intent` to declare the change: what it is in plain
-   words, the real steps to reach it, the focus, persona, viewports, and
-   `animation: "motion"` when a still cannot show it. Homeroom's preview agent
-   follows those steps on the exact before and after builds and takes
-   before/after shots (plus short clips for motion). For a non-visual
-   change, record `impact: "none"` with a specific rationale.
+   `record_visual_evidence_intent` with the change, real steps, focus,
+   persona, viewports, and animation (`motion` gets clips). Homeroom takes
+   before/after shots of it on the exact builds. For a non-visual change,
+   record `impact: "none"` with a specific rationale.
 6. **Auth is iframe token injection — do not roll your own login.** The
    shell mints an RS256 JWT per user per app and injects it as
    `?token=`; the app verifies it with `USERNODE_JWT_PUBLIC_KEY`,

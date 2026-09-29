@@ -56,3 +56,6 @@ hackathon-data/
 __*.png
 __*.html
 public/__*.html
+
+# Local before/after shots dry runs (scripts/shots-dry-run.js)
+.shots-dry-run/

@@ -16,6 +16,7 @@
     "test": "node --require ./tests/lib/test-net.js --test --test-force-exit --test-timeout=180000 tests/*.test.js",
     "pretest:changed": "node scripts/ensure-shell-artifacts.js --html-only",
     "test:changed": "node scripts/test-changed.js",
+    "shots:dry-run": "node scripts/shots-dry-run.js",
     "test:shell-upgrade:browser": "node scripts/verify-shell-upgrade.js",
     "global-chat:inventory": "node scripts/generate-global-chat-inventory.js",
     "global-chat:inventory:check": "node scripts/generate-global-chat-inventory.js --check",

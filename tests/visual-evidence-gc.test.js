@@ -35,28 +35,23 @@ test('recovery starts settled intent-only proposals once for their current check
   assert.match(queryText, /recoveryAttemptAt/);
 });
 
-test('recovery also starts an import-time author plan whose checks settled after a restart', async () => {
-  const head = 'a'.repeat(40);
+test('recovery starts only run-less declarations and treats every stalled planned run alike', async () => {
+  // Author-submitted plans are gone, so a planned run is never waiting on an
+  // import-time plan: recovery neither schedules one nor spares it.
   const queries = [];
-  const calls = [];
-  const pool = { query: async (sql) => {
+  await gc.recoverUnstarted({ visualEvidence: { execute: true } }, { query: async (sql) => {
     queries.push(String(sql));
-    return { rows: [{ id: 45, source: 'imported', imported_pr_head_sha: head,
-      checks_commit_sha: head }] };
-  } };
-  const result = await gc.recoverUnstarted({ visualEvidence: { execute: true } }, pool, {
-    schedule: async (_config, options) => { calls.push(options); return { scheduled: true }; },
-  });
-  assert.deepEqual(result, { examined: 1, scheduled: 1 });
-  assert.equal(calls[0].sessionId, 45);
-  assert.match(queries[0], /LEFT JOIN visual_evidence_runs r ON r\.id = cs\.visual_evidence_run_id/);
-  assert.match(queries[0], /r\.state = 'planned' AND r\.author_plan IS NOT NULL/);
+    return { rows: [] };
+  } }, { schedule: async () => { throw new Error('nothing to schedule'); } });
+  assert.match(queries[0], /cs\.visual_evidence_run_id IS NULL/);
+  assert.doesNotMatch(queries[0], /author_plan|JOIN visual_evidence_runs/);
   const interrupted = [];
   await gc.recoverInterrupted({ visualEvidence: {} }, { query: async (sql) => {
     interrupted.push(String(sql));
     return { rows: [] };
   } });
-  assert.match(interrupted[0], /NOT \(r\.state = 'planned' AND r\.author_plan IS NOT NULL\)/);
+  assert.match(interrupted[0], /r\.state IN \('planned','provisioning','exploring','replaying','reviewing'\)/);
+  assert.doesNotMatch(interrupted[0], /author_plan/);
 });
 
 test('an unlaunchable planned claim is deferred so it cannot starve later claims', async () => {

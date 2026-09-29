@@ -562,11 +562,6 @@ async function heartbeatRun(pool, runId, phase, progress = null) {
     throw new VisualEvidenceStateError('invalid_evidence_heartbeat', 'Evidence heartbeat identity or phase is invalid.', 400);
   }
   const progressPatch = progress == null ? null : JSON.stringify({
-    ...(progress.lastReplayEvent || Array.isArray(progress.replayEvents) ? {
-      lastReplayEvent: progress.lastReplayEvent || null,
-      replayEvents: Array.isArray(progress.replayEvents)
-        ? progress.replayEvents.slice(-40) : [],
-    } : {}),
     ...(progress.agentActivity ? { agentActivity: progress.agentActivity } : {}),
     ...(progress.agentFinalResponse ? { agentFinalResponse: progress.agentFinalResponse } : {}),
     ...(progress.heartbeat ? { heartbeat: progress.heartbeat } : {}),

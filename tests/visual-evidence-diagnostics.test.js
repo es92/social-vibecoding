@@ -14,11 +14,11 @@ test('evidence worker reports the last browser tool without retaining its inputs
   worker.parseLine(JSON.stringify({
     type: 'system', subtype: 'init', session_id: 'private-session',
     mcp_servers: [
-      { name: 'evidence' }, { name: 'browser_member' }, { name: 'browser_admin' },
+      { name: 'shots' }, { name: 'browser_member' }, { name: 'browser_admin' },
       { name: 'browser_full_admin' },
     ],
-    tools: ['mcp__evidence__evidence_get_context', 'mcp__evidence__evidence_run_plan',
-      'mcp__evidence__evidence_report_blocker', 'private-tool-definition'],
+    tools: ['mcp__shots__get_brief', 'mcp__shots__save_shot',
+      'mcp__shots__skip_change', 'private-tool-definition'],
   }), progress, state);
   worker.parseLine(JSON.stringify({ type: 'stream_event', event: { type: 'message_start', private: 'private-token' } }), progress, state);
   worker.parseLine(JSON.stringify({
@@ -37,8 +37,8 @@ test('evidence worker reports the last browser tool without retaining its inputs
   assert.deepEqual(events, [
     { kind: 'runner_phase', phase: 'evidence_browser_bootstrap' },
     { kind: 'provider_init', mcpServerCount: 4, toolDefinitionCount: 4,
-      evidenceGetContextAvailable: true, evidenceRunPlanAvailable: true,
-      evidenceReportBlockerAvailable: true,
+      briefToolAvailable: true, saveShotToolAvailable: true,
+      skipChangeToolAvailable: true,
       browserMemberToolCount: 0, browserAdminToolCount: 0, browserFullAdminToolCount: 0 },
     { kind: 'first_stream' },
     { kind: 'first_output' },
@@ -48,17 +48,19 @@ test('evidence worker reports the last browser tool without retaining its inputs
   assert.doesNotMatch(JSON.stringify(events), /private|example\.invalid|session|url/i);
 });
 
-test('provider init distinguishes unavailable evidence tools from absent tool metadata', () => {
+test('provider init distinguishes unavailable shots tools from absent tool metadata', () => {
   const events = [];
   const state = worker.newWatchState();
   state.evidenceDiagnosticObserver = (event) => events.push(event);
+  // The retired evidence tools do not count as the shots tools.
   worker.parseLine(JSON.stringify({
-    type: 'system', subtype: 'init', tools: ['mcp__browser_member__browser_navigate'],
+    type: 'system', subtype: 'init', tools: ['mcp__browser_member__browser_navigate',
+      'mcp__evidence__evidence_get_context', 'mcp__evidence__evidence_capture'],
   }), () => {}, state);
   assert.deepEqual(events, [{
-    kind: 'provider_init', mcpServerCount: null, toolDefinitionCount: 1,
-    evidenceGetContextAvailable: false, evidenceRunPlanAvailable: false,
-    evidenceReportBlockerAvailable: false,
+    kind: 'provider_init', mcpServerCount: null, toolDefinitionCount: 3,
+    briefToolAvailable: false, saveShotToolAvailable: false,
+    skipChangeToolAvailable: false,
     browserMemberToolCount: 1, browserAdminToolCount: 0, browserFullAdminToolCount: 0,
   }]);
 
@@ -68,27 +70,27 @@ test('provider init distinguishes unavailable evidence tools from absent tool me
   worker.parseLine(JSON.stringify({ type: 'system', subtype: 'init' }), () => {}, missingState);
   assert.deepEqual(missing, [{
     kind: 'provider_init', mcpServerCount: null, toolDefinitionCount: null,
-    evidenceGetContextAvailable: null, evidenceRunPlanAvailable: null,
-    evidenceReportBlockerAvailable: null,
+    briefToolAvailable: null, saveShotToolAvailable: null,
+    skipChangeToolAvailable: null,
     browserMemberToolCount: null, browserAdminToolCount: null,
     browserFullAdminToolCount: null,
   }]);
 });
 
-test('context tool result reports its shape and normal model exit without retaining content', () => {
+test('the brief result reports its shape and normal model exit without retaining content', () => {
   const events = [];
   const state = worker.newWatchState();
   state.evidenceDiagnosticObserver = (event) => events.push(event);
   const progress = () => {};
   worker.parseLine(JSON.stringify({
     type: 'assistant', message: { content: [{
-      type: 'tool_use', id: 'context-call', name: 'mcp__evidence__evidence_get_context', input: {},
+      type: 'tool_use', id: 'context-call', name: 'mcp__shots__get_brief', input: {},
     }] },
   }), progress, state);
   const context = {
-    acceptedIntent: { stories: [{ id: 'one' }, { id: 'two' }] },
-    origins: { base: 'http://base.invalid', head: 'http://head.invalid' },
-    revisions: { baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40) },
+    declaredChanges: [{ id: 'one' }, { id: 'two' }],
+    addresses: { before: 'http://base.invalid', after: 'http://head.invalid' },
+    revisions: { before: 'a'.repeat(12), after: 'b'.repeat(12) },
     secret: 'private-token',
   };
   worker.parseLine(JSON.stringify({
@@ -103,14 +105,32 @@ test('context tool result reports its shape and normal model exit without retain
   }), progress, state);
   assert.deepEqual(events, [
     { kind: 'first_output' },
-    { kind: 'tool_start', sequence: 1, tool: 'evidence_get_context' },
+    { kind: 'tool_start', sequence: 1, tool: 'get_brief' },
     { kind: 'context_result', outcome: 'ok', responseCharacters: JSON.stringify(context).length,
-      jsonValid: true, acceptedIntentPresent: true, originsPresent: true,
+      jsonValid: true, declaredChangesPresent: true, addressesPresent: true,
       revisionsPresent: true, storyCount: 2 },
-    { kind: 'tool_end', sequence: 1, tool: 'evidence_get_context', outcome: 'ok' },
+    { kind: 'tool_end', sequence: 1, tool: 'get_brief', outcome: 'ok' },
     { kind: 'provider_result', outcome: 'ok', resultSubtype: 'success', providerStopReason: 'end_turn' },
   ]);
   assert.doesNotMatch(JSON.stringify(events), /private-token|base\.invalid|head\.invalid/);
+});
+
+test('the shots tools are named in diagnostics; the retired evidence tools are not', () => {
+  const events = [];
+  const state = worker.newWatchState();
+  state.evidenceDiagnosticObserver = (event) => events.push(event);
+  const names = ['get_brief', 'save_shot', 'save_clip', 'skip_change', 'fail_request',
+    'evidence_get_context', 'evidence_run_plan', 'evidence_finish', 'evidence_capture', 'evidence_report_blocker'];
+  worker.parseLine(JSON.stringify({
+    type: 'assistant', message: { content: names.map((name, index) => ({
+      type: 'tool_use', id: `call-${index}`, name: `mcp__shots__${name}`, input: { change: 'private-change' },
+    })) },
+  }), () => {}, state);
+  assert.deepEqual(events.filter((event) => event.kind === 'tool_start').map(({ tool }) => tool), [
+    'get_brief', 'save_shot', 'save_clip', 'skip_change', 'fail_request',
+    'other', 'other', 'other', 'other', 'other',
+  ]);
+  assert.doesNotMatch(JSON.stringify(events), /private-change/);
 });
 
 test('evidence diagnostics classify unknown tools and phases without copying their names', () => {
@@ -141,44 +161,42 @@ test('Codex MCP events report the tool lifecycle without recording its arguments
     topLevelCustomToolCount: 0, topLevelOtherToolCount: 1,
     nestedToolDefinitionCount: 58, nestedFunctionToolCount: 58,
     nestedCustomToolCount: 0, nestedOtherToolCount: 0,
-    evidenceToolDefinitionCount: 4, otherMcpServerCount: 0,
+    shotsToolDefinitionCount: 5, otherMcpServerCount: 0,
     forwardedToolDefinitionCount: 13,
-    evidenceGetContextAvailable: true, evidenceRunPlanAvailable: true,
-    evidenceReportBlockerAvailable: true,
+    briefToolAvailable: true, saveShotToolAvailable: true,
+    skipChangeToolAvailable: true,
     browserMemberToolCount: 18, browserAdminToolCount: 18,
-    browserFullAdminToolCount: 18, completionReminder: false,
-    terminalToolChoiceRequired: false, toolSurfaceFiltered: false,
+    browserFullAdminToolCount: 18,
   })}`, () => {}, state);
   worker.parseLine(JSON.stringify({
     type: 'item.started', item: {
       id: 'private-item', type: 'mcp_tool_call',
-      tool: 'evidence.evidence_get_context', arguments: { token: 'private-token' },
+      tool: 'shots.get_brief', arguments: { token: 'private-token' },
     },
   }), () => {}, state);
   worker.parseLine(JSON.stringify({
     type: 'item.completed', item: {
       id: 'private-item', type: 'mcp_tool_call',
-      tool: 'evidence.evidence_get_context', status: 'completed',
+      tool: 'shots.get_brief', status: 'completed',
       result: { token: 'private-token' },
     },
   }), () => {}, state);
   assert.deepEqual(events, [
-    { kind: 'provider_init', completionReminder: false },
+    { kind: 'provider_init' },
     { kind: 'provider_tool_config', mcpServerCount: 4, toolDefinitionCount: 13,
       topLevelFunctionToolCount: 8, topLevelNamespaceToolCount: 4,
       topLevelCustomToolCount: 0, topLevelOtherToolCount: 1,
       nestedToolDefinitionCount: 58, nestedFunctionToolCount: 58,
       nestedCustomToolCount: 0, nestedOtherToolCount: 0,
-      evidenceToolDefinitionCount: 4, otherMcpServerCount: 0,
+      shotsToolDefinitionCount: 5, otherMcpServerCount: 0,
       forwardedToolDefinitionCount: 13,
-      evidenceGetContextAvailable: true, evidenceRunPlanAvailable: true,
-      evidenceReportBlockerAvailable: true,
+      briefToolAvailable: true, saveShotToolAvailable: true,
+      skipChangeToolAvailable: true,
       browserMemberToolCount: 18, browserAdminToolCount: 18,
-      browserFullAdminToolCount: 18, completionReminder: false,
-      terminalToolChoiceRequired: false, toolSurfaceFiltered: false },
+      browserFullAdminToolCount: 18 },
     { kind: 'first_output' },
-    { kind: 'tool_start', sequence: 1, tool: 'evidence_get_context' },
-    { kind: 'tool_end', sequence: 1, tool: 'evidence_get_context', outcome: 'ok' },
+    { kind: 'tool_start', sequence: 1, tool: 'get_brief' },
+    { kind: 'tool_end', sequence: 1, tool: 'get_brief', outcome: 'ok' },
   ]);
   assert.doesNotMatch(JSON.stringify(events), /private/);
 });

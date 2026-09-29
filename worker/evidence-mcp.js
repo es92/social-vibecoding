@@ -90,9 +90,11 @@ function savedScreenshot(file) {
 }
 
 // The clip the change's browser most recently finished writing: a browser
-// session's recording is saved when it closes. Taking one also retires every
+// session's recording is saved when it closes. Choosing one retires every
 // older recording in that directory (for example the session the stills were
-// taken in), so a later call can never publish one of those instead.
+// taken in), so a later call can never publish one of those instead. The
+// chosen recording itself is retired once Homeroom accepts it, so a refused
+// save (a mistyped screen name) can be retried without recording again.
 const retired = new Set();
 function latestClip(persona) {
   if (!shotsDir) throw refused('shots_not_configured', 'Saving clips is not set up for this turn.');
@@ -112,7 +114,7 @@ function latestClip(persona) {
     throw refused('clip_not_found', 'No new clip was recorded. Call browser_close to end the recording, then save_clip.');
   }
   clips.sort((a, b) => a.mtimeMs - b.mtimeMs || a.file.localeCompare(b.file));
-  for (const clip of clips) retired.add(clip.file);
+  for (const clip of clips.slice(0, -1)) retired.add(clip.file);
   return clips[clips.length - 1].file;
 }
 
@@ -171,9 +173,11 @@ server.registerTool('save_clip', {
     if (declared.intent?.animation !== 'motion') {
       throw refused('clip_not_needed', `${change} is not declared as motion; save still shots for it.`);
     }
-    const clip = fs.readFileSync(latestClip(declared.persona));
+    const file = latestClip(declared.persona);
     const query = new URLSearchParams({ change, screen, side, kind: 'clip' });
-    return resultContent((await request(`/shot?${query}`, { method: 'POST', binary: clip })).result);
+    const result = (await request(`/shot?${query}`, { method: 'POST', binary: fs.readFileSync(file) })).result;
+    retired.add(file);
+    return resultContent(result);
   } catch (error) { return toolError(error); }
 });
 

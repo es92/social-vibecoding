@@ -210,6 +210,20 @@ and reason, and a bounded trace:
 - `trace.agentFinalResponse(s)` holds the agent's own last words (private
   to this route).
 
+## Dry run on local builds
+
+`npm run shots:dry-run -- --intent FILE --before URL --after URL` takes the
+shots outside Homeroom, on two builds you already have running. Everything
+between the agent and the saved files is the production code: the preview
+agent's prompts, the shots bridge, the internal routes and the run control.
+The browsers are Playwright MCP with the worker's flags, and the agent is
+your local `claude` CLI, with no built-in tools and only the shots and
+browser servers allowed. `--state-dir` supplies each persona's signed-in
+storage state; `--base-sha`/`--head-sha` fill in the brief's changed files
+and diff. It writes an `index.html` with every change side by side, plus
+`result.json`, the files, and the agent's stream, under `.shots-dry-run/`.
+`--help` lists the rest. It uses no database and publishes nothing.
+
 ## Not yet known
 
 The pipeline has been exercised end to end with real processes: Playwright

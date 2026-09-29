@@ -18287,16 +18287,22 @@ const AppView = {
     // it neither spins nor promises shots are being taken. It reads as its
     // own state, with whatever reason the server recorded.
     const notStarted = AppView._evidenceNotStarted(evidence);
+    const running = !notStarted
+      && ['planned', 'provisioning', 'exploring', 'replaying', 'reviewing'].includes(state);
     return {
       state,
       verified: state === 'verified',
       notStarted,
       label: state === 'verified' ? 'Shots ready' : copy[0],
+      // A reason the server recorded is quoted as written; only a run that
+      // is still under way promises shots.
       sentence: notStarted
-        ? `Before/after shots: ${detail.charAt(0).toLowerCase()}${detail.slice(1)}. None have been taken for this commit yet.`
+        ? `${copy[0]}. ${detail}. None have been taken for this commit yet.`
         : settled
           ? `${detail}.`
-          : `Before/after shots: ${detail.charAt(0).toLowerCase()}${detail.slice(1)}. Homeroom shows each declared change before and after, on this exact proposal build.`,
+          : running
+            ? `Before/after shots: ${detail.charAt(0).toLowerCase()}${detail.slice(1)}. Homeroom shows each declared change before and after, on this exact proposal build.`
+            : `${copy[0]}. ${detail}.`,
       claims,
     };
   },
