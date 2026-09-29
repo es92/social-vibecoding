@@ -95,10 +95,14 @@ function claimsFromIntent(intent) {
     : [];
 }
 
+// The changed-file heuristic only decides whether a MISSING declaration is
+// needed. It cannot overrule an explicit `impact: none`: that intent has no
+// stories by contract, so a run it forced could never submit a plan and always
+// ended as `missing_evidence_replay` after building two environments. Nearly
+// every platform change touches a .js file, so that was most no-UI proposals.
 function requiredForIntent(intent, { heuristicUi = false } = {}) {
   if (!intent) return !!heuristicUi;
-  if (intent.impact === 'none') return !!heuristicUi;
-  return true;
+  return intent.impact !== 'none';
 }
 
 function pendingDetail(intent, options = {}) {
@@ -370,7 +374,7 @@ async function createRunWithClient(client, {
     throw new VisualEvidenceStateError('evidence_intent_mismatch', 'The author plan changes the accepted visual evidence intent.', 400);
   }
   const required = requiredForIntent(intent, { heuristicUi });
-  const initialState = intent.impact === 'none' && !required ? 'not_required' : 'planned';
+  const initialState = required ? 'planned' : 'not_required';
   const id = newId();
 
   const locked = await client.query(
@@ -669,8 +673,7 @@ async function markStaleForHead(pool, sessionId, headSha, reason = 'A newer prop
         // run-derived field. The next exact revision needs a new plan and two
         // new clean replays, but the author should not have to restate what
         // the change is meant to prove after every push.
-        const heuristicUi = previous.required === true && intent.impact === 'none';
-        detail = pendingDetail(intent, { heuristicUi, headSha, reason });
+        detail = pendingDetail(intent, { headSha, reason });
         nextState = intent.impact === 'none' && detail.required === false
           ? 'not_required' : 'planned';
       } else {
@@ -760,7 +763,6 @@ async function getRun(pool, runId, { forUpdate = false } = {}) {
 // unique index guarantees there is still one reviewer-visible owner.
 async function rerunSameHead(pool, runId, {
   trigger = 'manual-rerun', intent: replacementIntent = null, authorPlan: replacementPlan = undefined,
-  heuristicUi = undefined,
 } = {}) {
   return withTransaction(pool, async (client) => {
     const old = await getRun(client, runId, { forUpdate: true });
@@ -777,14 +779,8 @@ async function rerunSameHead(pool, runId, {
         !== planContract.canonicalJson(intent)) {
       throw new VisualEvidenceStateError('evidence_intent_mismatch', 'The replacement plan changes the accepted visual evidence intent.', 400);
     }
-    if (intent.impact === 'none' && typeof heuristicUi !== 'boolean') {
-      throw new VisualEvidenceStateError(
-        'evidence_change_set_unverified',
-        'The original changed files must be checked before retrying a no-visual-change declaration.'
-      );
-    }
-    const required = requiredForIntent(intent, { heuristicUi });
-    const initialState = intent.impact === 'none' && !required ? 'not_required' : 'planned';
+    const required = requiredForIntent(intent);
+    const initialState = required ? 'planned' : 'not_required';
     await client.query(
       `UPDATE visual_evidence_runs
           SET state = 'stale', completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()

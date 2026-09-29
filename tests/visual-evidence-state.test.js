@@ -78,7 +78,9 @@ test('terminal-state and required-evidence policy distinguish an explicit no-imp
   assert.equal(state.isTerminal('reviewing'), false);
   const none = { version: 1, impact: 'none', rationale: 'Backend-only.', stories: [] };
   assert.equal(state.requiredForIntent(none), false);
-  assert.equal(state.requiredForIntent(none, { heuristicUi: true }), true);
+  assert.equal(state.requiredForIntent(none, { heuristicUi: true }), false);
+  assert.equal(state.requiredForIntent(null, { heuristicUi: true }), true);
+  assert.equal(state.requiredForIntent(null), false);
   assert.equal(state.requiredForIntent({ ...none, impact: 'ui' }), true);
   assert.deepEqual(state.missingIntentDetail({ headSha: 'a'.repeat(40) }), {
     version: 1,

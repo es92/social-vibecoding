@@ -15,7 +15,7 @@ const orchestrator = require('../src/services/visual-evidence-orchestrator');
 const state = require('../src/services/visual-evidence-state');
 const planContract = require('../src/services/visual-evidence-plan');
 
-test('retry classifies the original exact revisions before deciding a no-impact claim', async (t) => {
+test('retry of a no-impact claim settles as not required without reclassifying files', async (t) => {
   const base = 'a'.repeat(40);
   const head = 'b'.repeat(40);
   const runId = '1'.repeat(32);
@@ -24,29 +24,47 @@ test('retry classifies the original exact revisions before deciding a no-impact 
     id: 42, app_id: 9, user_id: 7, source: 'imported', status: 'merged',
     imported_pr_head_sha: head, visual_evidence_state: 'failed', visual_evidence_run_id: runId,
   };
-  const pool = { query: async (sql) => {
-    if (String(sql).includes('FROM chat_sessions cs')) return { rows: [session] };
-    throw new Error(`Unexpected query: ${String(sql).slice(0, 80)}`);
+  const oldRun = {
+    id: runId, session_id: 42, base_sha: base, head_sha: head, state: 'failed',
+    intent: declaration, author_plan: null, current_run_id: runId,
+    failure_code: 'missing_evidence_replay', repair_attempt: 0,
+  };
+  const inserted = [];
+  const sessionUpdates = [];
+  const pool = { query: async (sql, params) => {
+    const text = String(sql);
+    if (text.includes('FROM chat_sessions cs')) return { rows: [session] };
+    if (text.includes('FROM visual_evidence_runs r') && text.includes('JOIN chat_sessions s')) {
+      return { rows: [oldRun] };
+    }
+    if (text.includes('UPDATE visual_evidence_runs')) return { rowCount: 1, rows: [] };
+    if (text.includes('INSERT INTO visual_evidence_runs')) {
+      const row = {
+        id: params[0], session_id: params[1], base_sha: params[2], head_sha: params[3],
+        intent: JSON.parse(params[5]), author_plan: null, state: params[6], trigger: params[7],
+      };
+      inserted.push(row);
+      return { rows: [row] };
+    }
+    if (text.includes('UPDATE chat_sessions')) {
+      sessionUpdates.push({ state: params[1], detail: JSON.parse(params[3]) });
+      return { rowCount: 1, rows: [] };
+    }
+    throw new Error(`Unexpected query: ${text.slice(0, 80)}`);
   } };
   const saved = {
     pool: db.getPool, access: appAccess.getAppForUser, compare: github.compareRefs,
-    getRun: state.getRun, rerun: state.rerunSameHead, schedule: orchestrator.scheduleForSession,
+    schedule: orchestrator.scheduleForSession,
   };
   db.getPool = () => pool;
   appAccess.getAppForUser = async () => ({ id: 9, slug: 'demo', repo_url: 'https://github.com/Usernode-Labs/social-vibecoding' });
-  state.getRun = async () => ({ id: runId, base_sha: base, head_sha: head, intent: declaration });
-  const comparisons = [];
-  let files = ['src/routes/sessions.js'];
-  github.compareRefs = async (owner, repo, range) => {
-    comparisons.push({ owner, repo, range });
-    return { files, filesComplete: true };
+  let comparisons = 0;
+  github.compareRefs = async () => { comparisons += 1; return { files: [], filesComplete: true }; };
+  const scheduled = [];
+  orchestrator.scheduleForSession = async (_config, options) => {
+    scheduled.push(options.headSha);
+    return { scheduled: false, reason: 'not_required' };
   };
-  const decisions = [];
-  state.rerunSameHead = async (_pool, _runId, options) => {
-    decisions.push(options.heuristicUi);
-    return { id: '2'.repeat(32), head_sha: head, state: options.heuristicUi ? 'planned' : 'not_required' };
-  };
-  orchestrator.scheduleForSession = async () => ({ scheduled: false, reason: 'not_required' });
   const routePath = require.resolve('../src/routes/visual-evidence');
   delete require.cache[routePath];
   const isolatedRoutes = require('../src/routes/visual-evidence');
@@ -60,31 +78,20 @@ test('retry classifies the original exact revisions before deciding a no-impact 
     db.getPool = saved.pool;
     appAccess.getAppForUser = saved.access;
     github.compareRefs = saved.compare;
-    state.getRun = saved.getRun;
-    state.rerunSameHead = saved.rerun;
     orchestrator.scheduleForSession = saved.schedule;
     delete require.cache[routePath];
   });
   const url = `http://127.0.0.1:${server.address().port}/api/apps/demo/proposals/42/evidence/rerun`;
-  const retry = async () => {
-    const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-    return { status: response.status, body: await response.json() };
-  };
-  assert.deepEqual(await retry(), {
-    status: 202, body: { ok: true, runId: '2'.repeat(32), visualEvidenceState: 'not_required' },
-  });
-  files = ['frontend/src/features/dev-board/topic/topic-head.tsx'];
-  assert.equal((await retry()).body.visualEvidenceState, 'planned');
-  assert.deepEqual(decisions, [false, true]);
-  assert.deepEqual(comparisons, [
-    { owner: 'Usernode-Labs', repo: 'social-vibecoding', range: `${base}...${head}` },
-    { owner: 'Usernode-Labs', repo: 'social-vibecoding', range: `${base}...${head}` },
-  ]);
-  github.compareRefs = async () => ({ files: [], filesComplete: false });
-  const incomplete = await retry();
-  assert.equal(incomplete.status, 409);
-  assert.equal(incomplete.body.error, 'evidence_change_set_incomplete');
-  assert.deepEqual(decisions, [false, true], 'an incomplete changed-file list cannot reclassify a run');
+  const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  const body = await response.json();
+  assert.equal(response.status, 202);
+  assert.equal(body.visualEvidenceState, 'not_required');
+  assert.equal(inserted.length, 1);
+  assert.equal(inserted[0].state, 'not_required', 'a zero-story declaration never becomes a planner run');
+  assert.equal(sessionUpdates.at(-1).state, 'not_required');
+  assert.equal(sessionUpdates.at(-1).detail.required, false);
+  assert.equal(comparisons, 0, 'the declaration is trusted; GitHub is not consulted');
+  assert.deepEqual(scheduled, [head]);
 });
 
 test('artifact range parsing supports full, open, and suffix ranges and fails closed', () => {

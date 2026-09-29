@@ -202,7 +202,7 @@ test('the eight visible acceptance fixtures compile to strict bounded replay pla
     }), fixture.name);
   }
 });
-test('backend-only fixture is not required unless the UI heuristic contradicts it', () => {
+test('an explicit no-impact declaration is not required, whatever files it touched', () => {
   const intent = contract.parseIntent({
     version: 1,
     impact: 'none',
@@ -210,7 +210,9 @@ test('backend-only fixture is not required unless the UI heuristic contradicts i
     stories: [],
   });
   assert.equal(state.requiredForIntent(intent, { heuristicUi: false }), false);
-  assert.equal(state.requiredForIntent(intent, { heuristicUi: true }), true);
+  // A heuristic veto only ever produced a run with zero stories, which can
+  // never submit a plan and always failed as missing_evidence_replay.
+  assert.equal(state.requiredForIntent(intent, { heuristicUi: true }), false);
   assert.throws(() => contract.parseReplayPlan({ ...intent }), { code: 'invalid_visual_evidence' });
 });
 
