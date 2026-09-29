@@ -223,6 +223,8 @@ storage state; `--base-sha`/`--head-sha` fill in the brief's changed files
 and diff. It writes an `index.html` with every change side by side, plus
 `result.json`, the files, and the agent's stream, under `.shots-dry-run/`.
 `--help` lists the rest. It uses no database and publishes nothing.
+[dry-run-evaluation.md](dry-run-evaluation.md) is the plan for running it on
+real proposals.
 
 ## Not yet known
 
