@@ -20,7 +20,9 @@ const TERMINAL_STATES = new Set([
 const TRANSITIONS = Object.freeze({
   planned: new Set(['provisioning', 'failed', 'cancelled']),
   provisioning: new Set(['exploring', 'failed', 'cancelled']),
-  exploring: new Set(['replaying', 'failed', 'cancelled']),
+  // exploring -> reviewing is the capture-mode path: the agent's own
+  // screenshots are stored without a replay.
+  exploring: new Set(['replaying', 'reviewing', 'failed', 'cancelled']),
   replaying: new Set(['replaying', 'reviewing', 'failed', 'cancelled']),
   reviewing: new Set(['replaying', 'verified', 'failed', 'cancelled']),
   verified: new Set(['stale']),
@@ -348,6 +350,16 @@ function runSummary(row, artifactSummary = []) {
     repairCount: Number.isInteger(Number(row.repair_attempt))
       ? Math.max(0, Math.min(1, Number(row.repair_attempt))) : 0,
     relativePointer: trace?.relativePointer === true,
+    // Capture-mode runs publish the agent's own screenshots, one claim at a
+    // time; reviewers are told so, and why any claim has no images.
+    captureMode: row.hard_verdict?.mode === 'agent_capture',
+    claimResults: row.hard_verdict?.mode === 'agent_capture' && Array.isArray(row.hard_verdict.stories)
+      ? row.hard_verdict.stories.map((story) => ({
+        id: story?.id,
+        status: story?.status === 'captured' ? 'captured' : 'blocked',
+        reason: story?.status === 'captured' ? null : (story?.reason || null),
+      }))
+      : [],
     progress: progress && typeof progress.phase === 'string'
       && /^[a-z][a-z0-9_-]{0,63}$/.test(progress.phase)
       ? { phase: progress.phase, at: progress.at || null } : null,

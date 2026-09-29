@@ -277,3 +277,49 @@ test('Kubernetes evidence tools call the Pod that owns their in-memory replay co
   assert.match(source, /PLATFORM_URL: mode === 'evidence' \? evidenceControlUrl\(\) : PLATFORM_INTERNAL_URL/);
   assert.match(chart, /name: POD_IP\s+valueFrom: \{fieldRef: \{fieldPath: status\.podIP\}\}/);
 });
+
+test('a capture-mode dispatch asks for screenshots, not a replay program, on both backends', async () => {
+  const seen = [];
+  const workerService = {
+    ensureWorker: async () => 'warm-worker',
+    execInWorker: async (_sessionId, options) => {
+      seen.push(options);
+      return { exitCode: 0, sessionId: 'capture-thread', agentThreadId: 'capture-thread' };
+    },
+  };
+  const base = {
+    pool: {}, runId: '1'.repeat(32), origins: { base: 'http://base.test/', head: 'http://head.test/' },
+    authTokens: { member: 'private-token', read_only_admin: 'private-token', full_admin: 'private-token' },
+    resumeThreadId: null, captureMode: true,
+  };
+  await agent.dispatch({ visualEvidence: { maxAgentMs: 500 } }, {
+    ...base,
+    session: { id: 42, repo_url: 'https://github.com/acme/demo.git', branch_name: 'proposal', agent_backend: 'claude_code' },
+  }, { workerService });
+  await agent.dispatch({ visualEvidence: { maxAgentMs: 500 } }, {
+    ...base,
+    session: {
+      id: 42, user_id: 7, repo_url: 'https://github.com/acme/demo.git',
+      branch_name: 'proposal', agent_backend: 'codex_openrouter', agent_model: 'z-ai/glm-test',
+    },
+  }, {
+    workerService,
+    agentTurn: {
+      resolveCodexRuntimeContext: async () => ({ agentModel: 'z-ai/glm-test', agentModelMetadata: { supportsTools: true } }),
+      startCodexAttempt: async () => ({ turnUuid: 'attempt-1', journal: '/tmp/attempt-1' }),
+      completeCodexAttempt: async () => {},
+      usageTotalFromResult: () => null,
+    },
+  });
+  assert.equal(seen.length, 2);
+  for (const options of seen) {
+    assert.equal(options.evidenceMode, 'capture');
+    assert.equal(options.systemPrompt, agent.CAPTURE_SYSTEM_PROMPT);
+    assert.equal(options.prompt, agent.CAPTURE_PROMPT);
+    assert.match(options.systemPrompt, /browser_take_screenshot/);
+    assert.match(options.systemPrompt, /evidence_capture/);
+    assert.match(options.systemPrompt, /evidence_report_blocker with that storyId/);
+    assert.doesNotMatch(options.systemPrompt, /evidence_run_plan/);
+  }
+  assert.doesNotMatch(agent.CAPTURE_SYSTEM_PROMPT, /[—]/, 'no em dashes in model copy either');
+});

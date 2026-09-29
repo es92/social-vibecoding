@@ -7,6 +7,7 @@
 // orphan model process.
 
 const planContract = require('./visual-evidence-plan');
+const capture = require('./visual-evidence-capture');
 
 const controls = new Map();
 const FINISH_STATUSES = new Set(['verified', 'not_relevant', 'failed']);
@@ -88,11 +89,16 @@ function preservesAssertionLocatorRepair(rejected, corrected, failure) {
 }
 
 class RunControl {
-  constructor({ runId, sessionId, intent, context, resetPair, runPlan, expiresAt }) {
+  constructor({ runId, sessionId, intent, context, resetPair, runPlan, expiresAt, mode = 'replay' }) {
     this.runId = runId;
     this.sessionId = Number(sessionId);
     this.intent = planContract.parseIntent(intent);
     this.context = cloneJson(context);
+    // 'capture' runs publish the agent's own screenshots; 'replay' runs
+    // publish only what two platform replays of a submitted plan produced.
+    this.mode = mode === 'capture' ? 'capture' : 'replay';
+    this.captures = new Map();
+    this.storyBlockers = new Map();
     this.resetPairCallback = resetPair;
     // During a rolling deploy an older evidence worker may still call the
     // retired one-side endpoint twice, once for base and once for head. Keep
@@ -133,6 +139,8 @@ class RunControl {
     this.assertLive();
     return cloneJson({
       ...this.context,
+      mode: this.mode,
+      ...(this.mode === 'capture' ? { captureStatus: this.captureStatus() } : {}),
       attempt: this.planCalls + 1,
       repairReason: this.repairReason,
       ...(this.repairFailure ? {
@@ -338,6 +346,77 @@ class RunControl {
     for (const resolve of this.waiters) resolve(cloneJson(this.finished));
     this.waiters.clear();
     return cloneJson(this.finished);
+  }
+
+  assertCaptureMode() {
+    this.assertLive();
+    if (this.mode !== 'capture') {
+      throw new EvidenceControlError('evidence_capture_unavailable', 'This evidence run replays a submitted plan; it does not accept screenshots.');
+    }
+    if (this.finished) throw new EvidenceControlError('evidence_turn_finished', 'This evidence turn is already finished.');
+  }
+
+  // One screenshot the agent took on the base or head preview, addressed to
+  // an accepted claim and viewport. A later submission for the same slot
+  // replaces the earlier one, so the agent can retake a poor shot.
+  submitCapture(rawTarget, buffer) {
+    try {
+      this.assertCaptureMode();
+      const target = capture.captureTarget(this.intent, rawTarget);
+      const info = capture.inspectPng(buffer);
+      this.captures.set(capture.captureKey(target), capture.artifactFor(target, buffer, info));
+      return {
+        accepted: true,
+        ...target,
+        width: info.width,
+        height: info.height,
+        bytes: info.bytes,
+        ...this.captureStatus(),
+      };
+    } catch (error) {
+      this.lastToolFailure = { operation: 'capture', error };
+      throw error;
+    }
+  }
+
+  // The agent could not reach one claim's state. The reason is shown on the
+  // proposal for that claim; the claims it did capture are still published.
+  blockStory({ storyId, reason } = {}) {
+    try {
+      this.assertCaptureMode();
+      const story = this.intent.stories.find((candidate) => candidate.id === String(storyId || ''));
+      if (!story) {
+        throw new EvidenceControlError('unknown_capture_story', `Story ${JSON.stringify(String(storyId || ''))} is not in the accepted intent.`, 400);
+      }
+      this.storyBlockers.set(story.id, capture.blockerReason(reason));
+      return { accepted: true, storyId: story.id, ...this.captureStatus() };
+    } catch (error) {
+      this.lastToolFailure = { operation: 'block-story', error };
+      throw error;
+    }
+  }
+
+  captureSummary() {
+    // A whole-run blocker explains every claim that has no reason of its own.
+    const blockers = new Map(this.storyBlockers);
+    if (this.finished?.status === 'failed') {
+      for (const story of this.intent.stories) {
+        if (!blockers.has(story.id)) blockers.set(story.id, this.finished.reason);
+      }
+    }
+    return capture.summarize(this.intent, this.captures, blockers);
+  }
+
+  captureStatus() {
+    const summary = capture.summarize(this.intent, this.captures, this.storyBlockers);
+    return {
+      stories: summary.stories.map((story) => ({
+        id: story.id,
+        status: story.status === 'captured' ? 'captured'
+          : this.storyBlockers.has(story.id) ? 'blocked' : 'missing',
+        ...(story.status === 'captured' ? {} : { detail: story.reason }),
+      })),
+    };
   }
 
   allowRepair(reason, failure) {

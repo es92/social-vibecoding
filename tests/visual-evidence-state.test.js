@@ -381,3 +381,9 @@ test('a stored reason is bounded, so no log line or upstream message can grow th
   await state.recordNotStarted(pool, 42, 'x'.repeat(5000));
   assert.equal(seen[0][1].length, 300);
 });
+
+test('capture-mode media moves from exploring straight to reviewing, never skipping the verdict', () => {
+  assert.doesNotThrow(() => state.assertTransition('exploring', 'reviewing'));
+  assert.throws(() => state.assertTransition('provisioning', 'reviewing'), { code: 'invalid_evidence_transition' });
+  assert.throws(() => state.assertTransition('exploring', 'verified'), { code: 'invalid_evidence_transition' });
+});

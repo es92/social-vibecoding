@@ -1431,6 +1431,12 @@ function registerTools(server, ctx) {
     repairAvailable: z.boolean(),
     planHash: z.string().nullable(),
     verifiedReason: z.string().nullable(),
+    // Capture-mode runs: the agent published its own screenshots, and any
+    // claim it could not reach carries its reason.
+    captureMode: z.boolean().optional(),
+    claimResults: z.array(z.object({
+      id: z.string(), status: z.enum(['captured', 'blocked']), reason: z.string().nullable(),
+    })).optional(),
     overriddenBy: z.number().nullable(),
     overriddenAt: z.string().nullable(),
     overrideReason: z.string().nullable(),

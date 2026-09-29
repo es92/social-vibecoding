@@ -90,6 +90,12 @@
       "description": "Emergency kill switch for agent-authored proposal evidence. The mechanism is enabled by default; set exactly false only to stop intent collection, paired replay, and reviewer presentation together. Proposal checks and previews continue, and legacy default-route screenshots are not restored."
     },
     {
+      "key": "VISUAL_EVIDENCE_CAPTURE_MODE",
+      "group": "Platform",
+      "default": "off",
+      "description": "Set to on to trial capture-first visual evidence: the hosted evidence agent follows the author's accepted steps on the exact base and head previews and publishes its own before and after screenshots, one claim at a time, instead of writing a replay plan the platform must reproduce twice. Author-supplied replay plans still replay. Off keeps the replay pipeline."
+    },
+    {
       "key": "MAX_APPS",
       "group": "Scaling",
       "default": "50",

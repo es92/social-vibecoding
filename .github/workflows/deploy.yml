@@ -267,6 +267,9 @@ jobs:
           # Default-on evidence v2 has one emergency kill switch. A repo
           # variable set to the string "false" stops it on the next deploy.
           VISUAL_EVIDENCE_V2_ENABLED=${{ vars.VISUAL_EVIDENCE_V2_ENABLED || 'true' }}
+          # "on" trials capture-first evidence: the agent publishes its own
+          # screenshots instead of a plan the platform replays twice.
+          VISUAL_EVIDENCE_CAPTURE_MODE=${{ vars.VISUAL_EVIDENCE_CAPTURE_MODE || 'off' }}
           LOG_LEVEL=INFO
           GIT_SHA=${{ github.sha }}
           # Scaling tunables (see README scaling notes). Committed defaults

@@ -34,6 +34,17 @@ function cleanClaims(value) {
   })).filter((claim) => claim.id && claim.claim);
 }
 
+function cleanClaimResults(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 3).filter((result) => STORY_ID_RE.test(String(result?.id || '')))
+    .map((result) => ({
+      id: String(result.id),
+      status: result.status === 'captured' ? 'captured' : 'blocked',
+      reason: result.status === 'captured' || typeof result.reason !== 'string'
+        ? null : result.reason.slice(0, 1000),
+    }));
+}
+
 function artifactUrl(slug, sessionId, artifactId) {
   if (!ARTIFACT_ID_RE.test(String(artifactId || ''))) return null;
   return `/api/apps/${encodeURIComponent(slug)}/proposals/${Number(sessionId)}/evidence/${artifactId}`;
@@ -107,6 +118,8 @@ function fromSnapshot(session, currentHead) {
     replayCount: Number.isInteger(detail.replayCount) ? Math.max(0, Math.min(2, detail.replayCount)) : null,
     repairCount: Number.isInteger(detail.repairCount) ? Math.max(0, Math.min(1, detail.repairCount)) : 0,
     relativePointer: detail.relativePointer === true,
+    captureMode: false,
+    claimResults: [],
     progress: null,
     verifiedReason: null,
     overriddenBy: Number.isInteger(detail.overriddenBy) ? detail.overriddenBy : null,
@@ -139,6 +152,8 @@ function serialize(run, session, slug, currentHead) {
     replayCount: Number.isInteger(run.replayCount) ? Math.max(0, Math.min(2, run.replayCount)) : null,
     repairCount: Number.isInteger(run.repairCount) ? Math.max(0, Math.min(1, run.repairCount)) : 0,
     relativePointer: run.relativePointer === true,
+    captureMode: run.captureMode === true,
+    claimResults: matchesCurrent && run.state === 'verified' ? cleanClaimResults(run.claimResults) : [],
     progress: matchesCurrent && PUBLIC_STATES.has(run.state) ? (run.progress || null) : null,
     verifiedReason: null,
     overriddenBy: run.overriddenBy || null,
@@ -197,6 +212,7 @@ async function getForSessions(pool, sessions, slug) {
 module.exports = {
   PUBLIC_STATES,
   cleanClaims,
+  cleanClaimResults,
   cleanArtifacts,
   artifactUrl,
   notStartedReason,

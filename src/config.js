@@ -557,6 +557,10 @@ function load() {
         execute: enabled,
         present: enabled,
         enforce: false,
+        // Capture-first mode: the hosted agent follows the author's accepted
+        // steps and publishes its own screenshots instead of writing a replay
+        // program that must pass two strict replays. Off until trialled.
+        captureMode: process.env.VISUAL_EVIDENCE_CAPTURE_MODE === 'on',
         maxRunMs: boundedInt('VISUAL_EVIDENCE_MAX_RUN_MS', 1_440_000, 60_000),
         maxAgentMs: boundedInt('VISUAL_EVIDENCE_MAX_AGENT_MS', 480_000, 30_000),
         maxRepairAgentMs: boundedInt('VISUAL_EVIDENCE_MAX_REPAIR_AGENT_MS', 240_000, 30_000),
@@ -918,7 +922,7 @@ function load() {
   }
   console.log(`  WORKER_MEMORY=${config.workerMemory} WORKER_CPUS=${config.workerCpus}`);
   console.log(`  APP_RUNTIME=${config.appRuntime} WORKER_RUNTIME=${config.workerRuntime} CAPTURE_RUNTIME=${config.captureRuntime}`);
-  console.log(`  VISUAL_EVIDENCE_V2=collect:${config.visualEvidence.collect} execute:${config.visualEvidence.execute} present:${config.visualEvidence.present} enforce:${config.visualEvidence.enforce}`);
+  console.log(`  VISUAL_EVIDENCE_V2=collect:${config.visualEvidence.collect} execute:${config.visualEvidence.execute} present:${config.visualEvidence.present} enforce:${config.visualEvidence.enforce} capture:${config.visualEvidence.captureMode ? 'on' : 'off'}`);
   console.log(`  DB_POOL_MAX=${config.dbPoolMax}`);
   console.log(`  SESSION_AUTOPAUSE_IDLE_MS=${config.sessionAutopauseIdleMs}${config.sessionAutopauseIdleMs === 0 ? ' (disabled)' : ''}`);
   console.log(`  STAGING_IDLE_TEARDOWN_MS=${config.stagingIdleTeardownMs}${config.stagingIdleTeardownMs === 0 ? ' (disabled)' : ''}`);

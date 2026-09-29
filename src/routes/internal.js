@@ -1,6 +1,6 @@
 'use strict';
 
-const { Router } = require('express');
+const { Router, raw } = require('express');
 const { rateLimit } = require('express-rate-limit');
 const { getPool } = require('../db/pool');
 const { internalAuth, internalAuthPurpose } = require('../middleware/internal-auth');
@@ -217,6 +217,30 @@ function internalRoutes(_config) {
   router.post('/api/internal/evidence/:runId/finish', evidenceAuth, evidenceLimiter, (req, res) => {
     try {
       const result = evidenceControlForRequest(req).finish(req.body || {});
+      return res.json({ ok: true, result });
+    } catch (err) { return evidenceError(res, err); }
+  });
+
+  // Capture-mode evidence: one PNG the agent took on a paired preview. The
+  // image travels as the raw body (the global JSON parser ignores it) and
+  // its claim/viewport/side addressing as query fields. The parser limit sits
+  // above the capture limit so the structured capture_too_large code wins.
+  const captureBody = raw({ type: 'application/octet-stream', limit: '7mb' });
+  router.post('/api/internal/evidence/:runId/capture', evidenceAuth, evidenceLimiter, captureBody, (req, res) => {
+    try {
+      const result = evidenceControlForRequest(req).submitCapture({
+        storyId: req.query.storyId,
+        viewport: req.query.viewport,
+        side: req.query.side,
+        variant: req.query.variant,
+      }, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0));
+      return res.json({ ok: true, result });
+    } catch (err) { return evidenceError(res, err); }
+  });
+
+  router.post('/api/internal/evidence/:runId/block-story', evidenceAuth, evidenceLimiter, (req, res) => {
+    try {
+      const result = evidenceControlForRequest(req).blockStory(req.body || {});
       return res.json({ ok: true, result });
     } catch (err) { return evidenceError(res, err); }
   });

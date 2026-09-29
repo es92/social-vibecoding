@@ -7716,16 +7716,29 @@ const AppView = {
       // null suppresses the legacy capture instead of substituting a picture
       // that may have nothing to do with the claim.
       if (evidence.state !== 'verified') return null;
-      const claim = Array.isArray(evidence.claims) ? evidence.claims[0] : null;
-      const viewport = claim && Array.isArray(claim.viewports) && claim.viewports[0]
-        ? String(claim.viewports[0]) : 'desktop';
       const urlOk = (url) => /^\/api\/apps\/[^/?#]+\/proposals\/\d+\/evidence\/[0-9a-f]{32}$/.test(String(url || ''));
-      const find = (side) => (Array.isArray(evidence.artifacts) ? evidence.artifacts : []).find((a) => (
-        a && a.storyId === claim?.id && a.viewport === viewport
-        && a.side === side && a.variant === 'focus' && a.media === 'png' && urlOk(a.url)
+      const find = (claimValue, viewportName, side, variant) => (Array.isArray(evidence.artifacts) ? evidence.artifacts : []).find((a) => (
+        a && a.storyId === claimValue?.id && a.viewport === viewportName
+        && a.side === side && a.variant === variant && a.media === 'png' && urlOk(a.url)
       ));
-      const before = find('base');
-      const after = find('head');
+      // The first claim that has images: a capture-mode run can publish a
+      // later claim while an earlier one is blocked. A focus crop is optional
+      // there, so fall back to the viewport capture.
+      let claim = null;
+      let viewport = 'desktop';
+      let before = null;
+      let after = null;
+      for (const candidate of (Array.isArray(evidence.claims) ? evidence.claims : [])) {
+        const name = Array.isArray(candidate?.viewports) && candidate.viewports[0]
+          ? String(candidate.viewports[0]) : 'desktop';
+        const pick = (side) => find(candidate, name, side, 'focus') || find(candidate, name, side, 'context');
+        const beforeCandidate = pick('base');
+        const afterCandidate = pick('head');
+        if (beforeCandidate || afterCandidate) {
+          claim = candidate; viewport = name; before = beforeCandidate; after = afterCandidate;
+          break;
+        }
+      }
       if (!before && !after) return null;
       return {
         path: claim?.claim || 'Captured visual change preview',
@@ -18342,7 +18355,17 @@ const AppView = {
       && a.variant === variant && (!media || a.media === media) && evidenceUrl(a.url)
     ));
     const rendered = [];
+    const captureMode = evidence.captureMode === true;
+    const claimResults = Array.isArray(evidence.claimResults) ? evidence.claimResults : [];
     for (const claim of claims) {
+      const result = claimResults.find((entry) => entry && entry.id === claim.id);
+      if (captureMode && result && result.status === 'blocked') {
+        rendered.push(`<article data-evidence-story="${attr(claim.id || '')}" data-evidence-claim-status="blocked" class="rounded-lg border border-zinc-200 bg-zinc-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+        <div class="flex items-start justify-between gap-3"><strong class="text-sm leading-snug">${esc(claim.claim || '')}</strong><span class="dev-badge bg-zinc-500/10 text-zinc-600 dark:text-zinc-400">Not captured</span></div>
+        <p class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">${esc(result.reason || 'The preview agent could not reach this state.')}</p>
+      </article>`);
+        continue;
+      }
       const viewports = Array.isArray(claim.viewports) && claim.viewports.length
         ? claim.viewports.slice(0, 2) : ['desktop'];
       const flow = Array.isArray(claim.steps) ? claim.steps.slice(0, 40).map((s) => esc(s)).join(' <span aria-hidden="true">→</span> ') : '';
@@ -18354,8 +18377,9 @@ const AppView = {
         const baseContext = by(claim.id, viewport, 'base', 'context');
         const headContext = by(claim.id, viewport, 'head', 'context');
         const animation = by(claim.id, viewport, 'paired', 'animation', 'webm');
-        const baseUrl = baseFocus ? evidenceUrl(baseFocus.url) : '';
-        const headUrl = headFocus ? evidenceUrl(headFocus.url) : '';
+        // Capture-mode claims may publish only the viewport image.
+        const baseUrl = baseFocus ? evidenceUrl(baseFocus.url) : (baseContext ? evidenceUrl(baseContext.url) : '');
+        const headUrl = headFocus ? evidenceUrl(headFocus.url) : (headContext ? evidenceUrl(headContext.url) : '');
         const beforeContextUrl = baseContext ? evidenceUrl(baseContext.url) : baseUrl;
         const afterContextUrl = headContext ? evidenceUrl(headContext.url) : headUrl;
         const compareAttrs = `data-before-url="${attr(beforeContextUrl)}" data-head-url="${attr(afterContextUrl)}" data-claim="${attr(claim.claim || '')}" data-viewport="${attr(viewport)}" data-base-absent="${baseAbsent ? '1' : '0'}"`;
@@ -18385,7 +18409,7 @@ const AppView = {
         ${flow ? `<div class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">${flow}</div>` : ''}
         ${viewportRows.join('')}
         <details class="mt-2 text-xs text-zinc-600 dark:text-zinc-400"><summary class="cursor-pointer font-medium">View capture details</summary>
-          <div class="mt-1 flex flex-wrap gap-2">${provenance}<span>plan <code>${esc(String(evidence.planHash || '').slice(0, 12) || 'unknown')}</code></span>${evidence.replayCount === 2 ? '<span>2 clean replays</span>' : ''}${evidence.repairCount === 1 ? '<span>1 bounded repair</span>' : ''}${evidence.relativePointer === true ? '<span>relative-pointer flow</span>' : ''}</div>
+          <div class="mt-1 flex flex-wrap gap-2">${provenance}<span>plan <code>${esc(String(evidence.planHash || '').slice(0, 12) || 'unknown')}</code></span>${captureMode ? '<span>captured by the preview agent, not replayed</span>' : evidence.replayCount === 2 ? '<span>2 clean replays</span>' : ''}${evidence.repairCount === 1 ? '<span>1 bounded repair</span>' : ''}${evidence.relativePointer === true ? '<span>relative-pointer flow</span>' : ''}</div>
         </details>
       </article>`);
     }
@@ -18395,7 +18419,10 @@ const AppView = {
     const mediaCopy = artifacts.some((artifact) => artifact?.variant === 'animation')
       ? 'Review the images and video to decide whether they show the claimed change.'
       : 'Review the before-and-after images to decide whether they show the claimed change.';
-    return `<section data-visual-evidence="1" data-evidence-state="verified" aria-label="Captured visual change preview" class="space-y-3"><p class="text-xs text-zinc-600 dark:text-zinc-400">These captures passed replay checks. ${mediaCopy}</p>${rendered.join('')}</section>`;
+    const provenanceCopy = captureMode
+      ? 'The preview agent took these on the exact base and proposal builds.'
+      : 'These captures passed replay checks.';
+    return `<section data-visual-evidence="1" data-evidence-state="verified" aria-label="Captured visual change preview" class="space-y-3"><p class="text-xs text-zinc-600 dark:text-zinc-400">${provenanceCopy} ${mediaCopy}</p>${rendered.join('')}</section>`;
   },
 
   // Authenticated evidence uses full relative URLs rather than public

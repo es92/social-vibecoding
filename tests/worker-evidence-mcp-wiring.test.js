@@ -134,3 +134,68 @@ test('both evidence backends launch Playwright through the content-free timing o
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('capture mode saves each persona\'s named screenshots where only the evidence bridge reads them', () => {
+  const claudeRunner = read('run-cc.sh');
+  const codexRunner = read('run-codex-agent.sh');
+  const evidenceMcp = read('evidence-mcp.js');
+  for (const runner of [claudeRunner, codexRunner]) {
+    assert.match(runner, /if \[ "\$\{EVIDENCE_MODE:-\}" = "capture" \]; then\n\s*export EVIDENCE_SHOTS_DIR="\$EVIDENCE_TMP\/shots"/);
+    assert.match(runner, /mkdir -p "\$EVIDENCE_SHOTS_DIR\/member" "\$EVIDENCE_SHOTS_DIR\/admin" "\$EVIDENCE_SHOTS_DIR\/full_admin"/);
+  }
+  assert.match(codexRunner, /\[mcp_servers\.evidence\][\s\S]*?env_vars = \[[^\n]*"EVIDENCE_MODE", "EVIDENCE_SHOTS_DIR"\]/);
+  assert.match(codexRunner, /enabled_tools = \["evidence_get_context", "evidence_set_request_failure", "evidence_run_plan", "evidence_capture", "evidence_report_blocker"\]/);
+  assert.equal((codexRunner.match(/"--timeout-navigation", "30000"%s\]\\n'/g) || []).length, 3);
+  for (const variable of ['SHOTS_MEMBER', 'SHOTS_ADMIN', 'SHOTS_FULL_ADMIN']) {
+    assert.match(codexRunner, new RegExp(`"\\$ESCAPED_PROXY" "\\$${variable}"`));
+  }
+
+  // The bridge offers the capture tool only in capture mode, and the replay
+  // tool only outside it, so one turn never sees both contracts.
+  assert.match(evidenceMcp, /const captureMode = process\.env\.EVIDENCE_MODE === 'capture';/);
+  assert.match(evidenceMcp, /if \(captureMode\) \{\n\s*server\.registerTool\('evidence_capture'/);
+  assert.match(evidenceMcp, /if \(!captureMode\) server\.registerTool\('evidence_run_plan'/);
+  // A filename is reduced to its basename and must be a plain .png inside a
+  // persona's output directory; storage state is never reachable.
+  assert.match(evidenceMcp, /const name = path\.basename\(String\(file \|\| ''\)\);/);
+  assert.match(evidenceMcp, /\^\[A-Za-z0-9\]\[A-Za-z0-9\._-\]\{0,150\}\\\.png\$/);
+  assert.match(evidenceMcp, /for \(const persona of \['member', 'admin', 'full_admin'\]\)/);
+  assert.match(evidenceMcp, /fs\.lstatSync\(candidate\)/);
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'evidence-capture-config-'));
+  try {
+    const hostedFile = path.join(dir, 'hosted-origins.json');
+    fs.writeFileSync(hostedFile, JSON.stringify({
+      version: 2, baseOrigin: 'http://base.example.invalid', headOrigin: 'http://head.example.invalid', apps: [],
+    }));
+    const env = {
+      ...process.env,
+      EVIDENCE_BROWSER_STATE_DIR: path.join(dir, 'state'),
+      EVIDENCE_PROXY_SERVER: 'http://127.0.0.1:17891',
+      EVIDENCE_BASE_ORIGIN: 'http://base.example.invalid',
+      EVIDENCE_HEAD_ORIGIN: 'http://head.example.invalid',
+      EVIDENCE_HOSTED_ORIGINS_FILE: hostedFile,
+    };
+    const write = (extra) => {
+      const output = path.join(dir, `mcp-${Object.keys(extra).length}.json`);
+      execFileSync(process.execPath, [path.join(workerDir, 'write-evidence-mcp-config.js'), output], {
+        env: { ...env, ...extra },
+      });
+      return JSON.parse(fs.readFileSync(output, 'utf8'));
+    };
+    const replay = write({ EVIDENCE_SHOTS_DIR: '' });
+    for (const server of ['browser_member', 'browser_admin', 'browser_full_admin']) {
+      assert.equal(replay.mcpServers[server].args.includes('--output-dir'), false);
+    }
+    const shots = path.join(dir, 'shots');
+    const captureConfig = write({ EVIDENCE_SHOTS_DIR: shots, EVIDENCE_MODE: 'capture' });
+    for (const [server, persona] of [
+      ['browser_member', 'member'], ['browser_admin', 'admin'], ['browser_full_admin', 'full_admin'],
+    ]) {
+      const args = captureConfig.mcpServers[server].args;
+      assert.equal(args[args.indexOf('--output-dir') + 1], path.join(shots, persona));
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

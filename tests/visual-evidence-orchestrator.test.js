@@ -304,6 +304,7 @@ async function execute(fixture, options = {}) {
       maxRunMs: 60_000,
       maxAgentMs: options.maxAgentMs || 10_000,
       maxRepairAgentMs: options.maxRepairAgentMs || 10_000,
+      ...(options.captureMode ? { captureMode: true } : {}),
     },
   }, {
     pool: fixture.pool,
@@ -340,6 +341,118 @@ test('a successful agent plan publishes captured media without a model verdict',
     ['provisioning', 'exploring', 'replaying', 'reviewing', 'verified']);
   assert.equal(Object.hasOwn(fixture.transitions.at(-1).patch, 'semanticVerdict'), false);
   assert.equal(fixture.calls.workerReleased, 0, 'an active native coding session retains its memory');
+});
+
+const { PNG } = require('pngjs');
+
+function capturePng(shade = 0) {
+  const image = new PNG({ width: 8, height: 6 });
+  image.data.fill(shade);
+  return PNG.sync.write(image);
+}
+
+function twoClaimIntent() {
+  const semantic = fixtures.intent();
+  return contract.parseIntent({
+    ...semantic,
+    stories: [
+      semantic.stories[0],
+      { ...semantic.stories[0], id: 'invite-empty', claim: 'An empty search says no users match.' },
+    ],
+  });
+}
+
+test('capture mode publishes the agent\'s own screenshots without replaying a plan', async () => {
+  let stored = null;
+  let dispatchOptions = null;
+  const fixture = setup({
+    storeArtifacts: async (_pool, runId, artifacts, fence) => { stored = { runId, artifacts, fence }; },
+    dispatch: async (options) => {
+      dispatchOptions = options;
+      const control = controlPlane.forRequest({ runId: options.runId, sessionId: 42 });
+      assert.equal(control.getContext().mode, 'capture');
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'base' }, capturePng(10));
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'head' }, capturePng(200));
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'head', variant: 'focus' }, capturePng(90));
+      return { backend: 'claude_code', threadId: 'capture-thread' };
+    },
+  });
+  const result = await execute(fixture, { captureMode: true });
+  assert.equal(result.state, 'verified');
+  assert.equal(dispatchOptions.captureMode, true);
+  assert.deepEqual(fixture.calls.passes, [], 'nothing is replayed');
+  assert.equal(fixture.calls.resets, 1, 'only the exploration reset');
+  assert.deepEqual(fixture.transitions.map((entry) => entry.next),
+    ['provisioning', 'exploring', 'reviewing', 'verified']);
+  const reviewing = fixture.transitions.find((entry) => entry.next === 'reviewing').patch;
+  assert.equal(reviewing.hardVerdict.mode, 'agent_capture');
+  assert.equal(reviewing.hardVerdict.runs, 1);
+  assert.deepEqual(reviewing.hardVerdict.stories, [{ id: 'invite-suggestions', status: 'captured', captures: 3 }]);
+  assert.equal(stored.runId, RUN_ID);
+  assert.deepEqual(stored.fence, { headSha: HEAD, planHash: reviewing.planHash });
+  assert.deepEqual(stored.artifacts.map(({ side, variant, media }) => `${side}:${variant}:${media}`).sort(),
+    ['base:context:png', 'head:context:png', 'head:focus:png']);
+  const verified = fixture.transitions.at(-1).patch;
+  assert.equal(verified.planHash, reviewing.planHash);
+  assert.equal(verified.traceSummary.runs, 1);
+  assert.equal(verified.traceSummary.planSource, 'agent_capture');
+  assert.equal(fixture.calls.cleaned, 1);
+});
+
+test('capture mode publishes the claims it reached and explains the blocked one', async () => {
+  const fixture = setup({
+    dispatch: async (options) => {
+      const control = controlPlane.forRequest({ runId: options.runId, sessionId: 42 });
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'base' }, capturePng(1));
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'head' }, capturePng(2));
+      control.blockStory({ storyId: 'invite-empty', reason: 'The member fixture has no list to search.' });
+      return { backend: 'claude_code', threadId: 'capture-thread' };
+    },
+  });
+  fixture.run.intent = twoClaimIntent();
+  const result = await execute(fixture, { captureMode: true });
+  assert.equal(result.state, 'verified');
+  const verdict = fixture.transitions.find((entry) => entry.next === 'reviewing').patch.hardVerdict;
+  assert.deepEqual(verdict.stories.map(({ id, status }) => `${id}:${status}`),
+    ['invite-suggestions:captured', 'invite-empty:blocked']);
+  assert.equal(verdict.stories[1].reason, 'The member fixture has no list to search.');
+});
+
+test('capture mode with nothing publishable fails with each claim\'s reason', async () => {
+  const fixture = setup({
+    dispatch: async (options) => {
+      const control = controlPlane.forRequest({ runId: options.runId, sessionId: 42 });
+      control.submitCapture({ storyId: 'invite-suggestions', viewport: 'desktop', side: 'head' }, capturePng(3));
+      control.blockStory({ storyId: 'invite-suggestions', reason: 'Base never loads the members list.' });
+      return { backend: 'claude_code', threadId: 'capture-thread' };
+    },
+  });
+  await assert.rejects(execute(fixture, { captureMode: true }), (error) => {
+    assert.equal(error.code, 'evidence_capture_incomplete');
+    assert.match(error.message, /Base never loads the members list/);
+    return true;
+  });
+  assert.deepEqual(fixture.transitions.map((entry) => entry.next), ['provisioning', 'exploring', 'failed']);
+  assert.equal(fixture.calls.stored, 0);
+});
+
+test('capture mode surfaces a planner timeout when nothing was captured or explained', async () => {
+  const fixture = setup({
+    dispatch: async () => {
+      throw Object.assign(new Error('The visual evidence agent exceeded its bounded exploration time.'),
+        { code: 'evidence_agent_timeout' });
+    },
+  });
+  await assert.rejects(execute(fixture, { captureMode: true }), { code: 'evidence_agent_timeout' });
+  assert.equal(fixture.calls.dispatches, 1, 'a capture turn is not followed by a replay reminder');
+});
+
+test('an author plan still replays twice while capture mode is on', async () => {
+  const fixture = setup();
+  const result = await execute(fixture, { captureMode: true, authorPlan: fixtures.plan() });
+  assert.equal(result.state, 'verified');
+  assert.deepEqual(fixture.calls.passes, [1, 2]);
+  assert.equal(fixture.calls.dispatches, 0);
 });
 
 test('a pure network change retries the same pass without spending a model repair', async () => {

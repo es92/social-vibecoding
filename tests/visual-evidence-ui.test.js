@@ -127,3 +127,39 @@ test('a running preview offers Stop, and a stopped one reads stopped with Retry'
   assert.match(stopped, /Retry visual change preview/);
   assert.doesNotMatch(stopped, /data-evidence-stop/);
 });
+
+test('a capture-mode card says who took the images and explains a claim it could not reach', () => {
+  const value = evidence({
+    captureMode: true,
+    replayCount: 1,
+    repairCount: 0,
+    claims: [
+      { ...evidence().claims[0], animation: 'none' },
+      { id: 'empty', claim: 'An empty <search> says no users match.', persona: 'member',
+        viewports: ['desktop'], steps: ['Type zz'], baseState: 'present', animation: 'none' },
+    ],
+    claimResults: [
+      { id: 'dialog', status: 'captured', reason: null },
+      { id: 'empty', status: 'blocked', reason: 'The member fixture has no <list> to search.' },
+    ],
+    // Capture mode may publish only the viewport images; thumbnails use them.
+    artifacts: evidence().artifacts.filter((artifact) => artifact.variant === 'context'),
+  });
+  const html = AppView.visualEvidenceHtml(value, { sessionId: 42 });
+  assert.match(html, /The preview agent took these on the exact base and proposal builds\./);
+  assert.doesNotMatch(html, /passed replay checks|2 clean replays/);
+  assert.match(html, /captured by the preview agent, not replayed/);
+  assert.match(html, new RegExp(`<img src="${url('3')}"`), 'base context stands in for a missing focus crop');
+  assert.match(html, new RegExp(`<img src="${url('4')}"`));
+  assert.match(html, /data-evidence-story="empty" data-evidence-claim-status="blocked"/);
+  assert.match(html, /The member fixture has no &lt;list&gt; to search\./);
+  assert.match(html, /Not captured/);
+
+  const summary = AppView._workshopVisuals(null, {
+    ...value,
+    claims: [value.claims[1], value.claims[0]],
+  });
+  assert.equal(summary.claim, value.claims[0].claim, 'the feed skips a blocked claim with no images');
+  assert.equal(summary.before, url('3'));
+  assert.equal(summary.after, url('4'));
+});

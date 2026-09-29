@@ -121,3 +121,57 @@ test('the authenticated plan endpoint responds before paired replay finishes', a
   assert.equal(replayCalls, 1);
   assert.equal(registration.control.latestHard.passed, true);
 });
+
+test('capture mode accepts an agent screenshot as a raw PNG body and a per-claim blocker', async (t) => {
+  const { PNG } = require('pngjs');
+  controlPlane._clearForTests();
+  const runId = 'c'.repeat(32);
+  const sessionId = 44;
+  const registration = controlPlane.registerRun({
+    runId, sessionId, intent: fixtures.intent(), context: {}, mode: 'capture',
+    expiresAt: Date.now() + 10_000,
+  });
+  t.after(() => { registration.unregister(); controlPlane._clearForTests(); });
+  const app = express();
+  // The global JSON parser runs first in production; an octet-stream body
+  // must pass through it untouched to the route's own raw parser.
+  app.use(express.json());
+  app.use(internalRoutes({ jwtSecret: process.env.JWT_SECRET }));
+  const server = await listen(app, t);
+  const token = platformJwt.signEvidenceToken({ runId, sessionId });
+  const base = `http://127.0.0.1:${server.address().port}/api/internal/evidence/${runId}`;
+  const image = new PNG({ width: 5, height: 4 });
+  image.data.fill(40);
+  const body = PNG.sync.write(image);
+  const post = (query, payload, type = 'application/octet-stream') => fetch(`${base}/capture?${query}`, {
+    method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': type }, body: payload,
+  });
+
+  const accepted = await post('storyId=invite-suggestions&viewport=desktop&side=head', body);
+  assert.equal(accepted.status, 200);
+  const payload = await accepted.json();
+  assert.equal(payload.ok, true);
+  assert.equal(payload.result.width, 5);
+  assert.equal(payload.result.variant, 'context');
+  assert.equal(registration.control.captures.size, 1);
+
+  const wrongViewport = await post('storyId=invite-suggestions&viewport=phone&side=head', body);
+  assert.equal(wrongViewport.status, 400);
+  assert.equal((await wrongViewport.json()).code, 'unknown_capture_viewport');
+  const notPng = await post('storyId=invite-suggestions&viewport=desktop&side=base', Buffer.from('x'.repeat(64)));
+  assert.equal((await notPng.json()).code, 'invalid_capture_image');
+
+  const blocker = await fetch(`${base}/block-story`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ storyId: 'invite-suggestions', reason: 'Base shows a sign-in page.' }),
+  });
+  assert.equal(blocker.status, 200);
+  assert.equal(registration.control.storyBlockers.get('invite-suggestions'), 'Base shows a sign-in page.');
+
+  const other = platformJwt.signEvidenceToken({ runId: 'd'.repeat(32), sessionId });
+  const foreign = await fetch(`${base}/capture?storyId=invite-suggestions&viewport=desktop&side=base`, {
+    method: 'POST', headers: { authorization: `Bearer ${other}`, 'content-type': 'application/octet-stream' }, body,
+  });
+  assert.equal(foreign.status, 403, 'a token scoped to another run cannot publish here');
+});

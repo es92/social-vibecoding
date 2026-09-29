@@ -133,6 +133,13 @@ if [ "$MODE" = "evidence" ] && [ "$EVIDENCE_COMPLETION_REMINDER" != "1" ]; then
   export EVIDENCE_HOSTED_ORIGINS_FILE="$EVIDENCE_BROWSER_STATE_DIR/hosted-origins.json"
   export EVIDENCE_BROWSER_DIAGNOSTIC_FILE="$EVIDENCE_TMP/browser-diagnostics.log"
   : > "$EVIDENCE_BROWSER_DIAGNOSTIC_FILE"
+  # Capture mode: each persona's browser saves named screenshots here and the
+  # evidence bridge reads them back by name to publish them.
+  if [ "${EVIDENCE_MODE:-}" = "capture" ]; then
+    export EVIDENCE_SHOTS_DIR="$EVIDENCE_TMP/shots"
+    mkdir -p "$EVIDENCE_SHOTS_DIR/member" "$EVIDENCE_SHOTS_DIR/admin" "$EVIDENCE_SHOTS_DIR/full_admin" \
+      || die "could not create evidence screenshot directories"
+  fi
   tail -n +1 -s 0.2 -f "$EVIDENCE_BROWSER_DIAGNOSTIC_FILE" &
   EVIDENCE_DIAGNOSTIC_TAIL_PID=$!
   export EVIDENCE_PROXY_PORT=17891
@@ -310,20 +317,29 @@ TOML
     ESCAPED_MEMBER_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/member.json")
     ESCAPED_ADMIN_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/read_only_admin.json")
     ESCAPED_FULL_ADMIN_STATE=$(toml_escape "$EVIDENCE_BROWSER_STATE_DIR/full_admin.json")
+    # Capture mode saves each persona's named screenshots for the bridge.
+    SHOTS_MEMBER=""
+    SHOTS_ADMIN=""
+    SHOTS_FULL_ADMIN=""
+    if [ -n "${EVIDENCE_SHOTS_DIR:-}" ]; then
+      SHOTS_MEMBER=", \"--output-dir\", \"$(toml_escape "$EVIDENCE_SHOTS_DIR/member")\""
+      SHOTS_ADMIN=", \"--output-dir\", \"$(toml_escape "$EVIDENCE_SHOTS_DIR/admin")\""
+      SHOTS_FULL_ADMIN=", \"--output-dir\", \"$(toml_escape "$EVIDENCE_SHOTS_DIR/full_admin")\""
+    fi
     cat <<'TOML'
 
 [mcp_servers.evidence]
 command = "node"
 args = ["/usr/local/bin/evidence-mcp.js"]
-env_vars = ["EVIDENCE_JWT", "EVIDENCE_RUN_ID", "PLATFORM_URL", "EVIDENCE_PROXY_SERVER", "EVIDENCE_PROXY_CONTROL_TOKEN", "EVIDENCE_HOSTED_ORIGINS_FILE"]
-enabled_tools = ["evidence_get_context", "evidence_set_request_failure", "evidence_run_plan", "evidence_report_blocker"]
+env_vars = ["EVIDENCE_JWT", "EVIDENCE_RUN_ID", "PLATFORM_URL", "EVIDENCE_PROXY_SERVER", "EVIDENCE_PROXY_CONTROL_TOKEN", "EVIDENCE_HOSTED_ORIGINS_FILE", "EVIDENCE_MODE", "EVIDENCE_SHOTS_DIR"]
+enabled_tools = ["evidence_get_context", "evidence_set_request_failure", "evidence_run_plan", "evidence_capture", "evidence_report_blocker"]
 startup_timeout_sec = 15
 tool_timeout_sec = 720
 
 [mcp_servers.browser_member]
 command = "node"
 TOML
-    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "member", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"]\n' "$ESCAPED_MEMBER_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY"
+    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "member", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"%s]\n' "$ESCAPED_MEMBER_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY" "$SHOTS_MEMBER"
     cat <<'TOML'
 env_vars = ["EVIDENCE_ALLOWED_ORIGINS", "EVIDENCE_BROWSER_DIAGNOSTIC_FILE", "EVIDENCE_NAVIGATION_HINTS"]
 enabled_tools = ["browser_navigate", "browser_navigate_back", "browser_snapshot", "browser_take_screenshot", "browser_click", "browser_type", "browser_fill_form", "browser_press_key", "browser_select_option", "browser_hover", "browser_mouse_move_xy", "browser_drag", "browser_resize", "browser_wait_for", "browser_console_messages", "browser_network_requests", "browser_tabs", "browser_close"]
@@ -333,7 +349,7 @@ tool_timeout_sec = 60
 [mcp_servers.browser_admin]
 command = "node"
 TOML
-    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"]\n' "$ESCAPED_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY"
+    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"%s]\n' "$ESCAPED_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY" "$SHOTS_ADMIN"
     cat <<'TOML'
 env_vars = ["EVIDENCE_ALLOWED_ORIGINS", "EVIDENCE_BROWSER_DIAGNOSTIC_FILE", "EVIDENCE_NAVIGATION_HINTS"]
 enabled_tools = ["browser_navigate", "browser_navigate_back", "browser_snapshot", "browser_take_screenshot", "browser_click", "browser_type", "browser_fill_form", "browser_press_key", "browser_select_option", "browser_hover", "browser_mouse_move_xy", "browser_drag", "browser_resize", "browser_wait_for", "browser_console_messages", "browser_network_requests", "browser_tabs", "browser_close"]
@@ -343,7 +359,7 @@ tool_timeout_sec = 60
 [mcp_servers.browser_full_admin]
 command = "node"
 TOML
-    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "full_admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"]\n' "$ESCAPED_FULL_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY"
+    printf 'args = ["/usr/local/bin/evidence-browser-observer.js", "full_admin", "--browser", "chromium", "--headless", "--isolated", "--no-sandbox", "--caps", "vision", "--storage-state", "%s", "--allowed-origins", "%s", "--block-service-workers", "--image-responses", "allow", "--proxy-server", "%s", "--timeout-action", "10000", "--timeout-navigation", "30000"%s]\n' "$ESCAPED_FULL_ADMIN_STATE" "$ESCAPED_BROWSER_ALLOWED_ORIGINS" "$ESCAPED_PROXY" "$SHOTS_FULL_ADMIN"
     cat <<'TOML'
 env_vars = ["EVIDENCE_ALLOWED_ORIGINS", "EVIDENCE_BROWSER_DIAGNOSTIC_FILE", "EVIDENCE_NAVIGATION_HINTS"]
 enabled_tools = ["browser_navigate", "browser_navigate_back", "browser_snapshot", "browser_take_screenshot", "browser_click", "browser_type", "browser_fill_form", "browser_press_key", "browser_select_option", "browser_hover", "browser_mouse_move_xy", "browser_drag", "browser_resize", "browser_wait_for", "browser_console_messages", "browser_network_requests", "browser_tabs", "browser_close"]

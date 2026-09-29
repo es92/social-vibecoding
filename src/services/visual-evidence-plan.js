@@ -156,6 +156,15 @@ const intentSchema = z.object({
   baseState: z.enum(['present', 'not_present']).default('present'),
   animation: z.enum(ANIMATIONS).default('none'),
   controlledFailurePath: controlledFailurePathSchema.optional(),
+  // Optional shot-list hints from the author, who already reached this
+  // state while building it. They steer the hosted capture agent straight to
+  // the screen instead of rediscovering it from the diff; nothing here is
+  // executed or trusted as proof.
+  hints: z.object({
+    setup: textField(500).optional(),
+    expectText: z.array(textField(120)).min(1).max(5).optional(),
+    focusTarget: locatorSchema.optional(),
+  }).strict().optional(),
 }).strict();
 
 const storyIntentObject = z.object({

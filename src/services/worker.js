@@ -505,6 +505,7 @@ function safeResultSubtype(value) {
 const EVIDENCE_DIAGNOSTIC_TOOLS = new Set([
   'evidence_get_context', 'evidence_reset_pair', 'evidence_reset_side',
   'evidence_set_request_failure', 'evidence_run_plan', 'evidence_report_blocker',
+  'evidence_capture',
   'browser_navigate', 'browser_navigate_back', 'browser_snapshot',
   'browser_take_screenshot', 'browser_click', 'browser_type',
   'browser_fill_form', 'browser_press_key', 'browser_select_option',
@@ -2792,6 +2793,9 @@ async function execInWorker(sessionId, {
   evidenceAuthTokens = null,
   evidenceNavigationHints = null,
   evidenceCompletionReminder = false,
+  // 'capture': the agent publishes its own screenshots (evidence_capture);
+  // anything else keeps the replay-plan tool contract.
+  evidenceMode = 'replay',
   turnUuid = null,
   logicalTurnId = null,
   attemptNumber = null,
@@ -3049,6 +3053,7 @@ async function execInWorker(sessionId, {
       EVIDENCE_HEAD_ORIGIN: new URL(evidenceOrigins.head).origin,
       EVIDENCE_NAVIGATION_HINTS: JSON.stringify(evidenceNavigationHints || {}),
       EVIDENCE_COMPLETION_REMINDER: evidenceCompletionReminder ? '1' : '0',
+      EVIDENCE_MODE: evidenceMode === 'capture' ? 'capture' : 'replay',
     } : {}),
     ...(isClaude ? {
       MODEL: models.resolve(model),

@@ -39,6 +39,21 @@ const story = z.object({
     animation: z.enum(['none', 'steps', 'motion']),
     controlledFailurePath: z.string().min(6).max(512).optional()
       .describe('Only for an error state: exact same-origin /api/ GET path to block on both revisions. Set the FIRST intent.steps entry exactly to "Controlled test: deliberately block the declared API GET on both revisions." so reviewers see the condition. Replay requires a real matching request on both sides.'),
+    hints: z.object({
+      setup: z.string().min(1).max(500).optional()
+        .describe('Data or state the screen needs and how to create it through the UI as this persona, e.g. "Create a request from the + button first".'),
+      expectText: z.array(z.string().min(1).max(120)).min(1).max(5).optional()
+        .describe('Short visible text that proves the head checkpoint was reached.'),
+      focusTarget: z.object({
+        by: z.enum(['testId', 'role', 'label', 'placeholder', 'text', 'css']),
+        value: z.string().min(1).max(256).optional(),
+        role: z.string().min(1).max(64).optional(),
+        name: z.string().min(1).max(256).optional(),
+        exact: z.boolean().optional(),
+      }).strict().optional()
+        .describe('The element you would point a reviewer at, as you located it while building.'),
+    }).strict().optional()
+      .describe('Optional shot-list hints from what you observed while building, so the preview agent can go straight to this state.'),
   }).strict(),
 }).strict();
 const intentSchema = {

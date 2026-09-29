@@ -157,3 +157,32 @@ test('a planned run with nothing recorded reports no reason rather than an empty
   }), HEAD);
   assert.equal(snapshot.notStartedReason, null);
 });
+
+test('capture-mode runs expose per-claim results only while verified for the current head', () => {
+  const view = require('../src/services/visual-evidence-view');
+  const state = require('../src/services/visual-evidence-state');
+  const row = {
+    state: 'verified', base_sha: 'a'.repeat(40), head_sha: 'b'.repeat(40), plan_hash: 'c'.repeat(64),
+    intent: null, trace_summary: { runs: 1 },
+    hard_verdict: { passed: true, mode: 'agent_capture', runs: 1, stories: [
+      { id: 'dialog', status: 'captured', captures: 2 },
+      { id: 'empty', status: 'blocked', reason: 'No list exists for this persona.' },
+    ] },
+  };
+  const summary = state.runSummary(row);
+  assert.equal(summary.captureMode, true);
+  assert.equal(summary.replayCount, 1);
+  const session = { id: 42, visual_evidence_detail: {} };
+  const current = view.serialize(summary, session, 'demo', 'b'.repeat(40));
+  assert.equal(current.captureMode, true);
+  assert.deepEqual(current.claimResults, [
+    { id: 'dialog', status: 'captured', reason: null },
+    { id: 'empty', status: 'blocked', reason: 'No list exists for this persona.' },
+  ]);
+  assert.deepEqual(view.serialize(summary, session, 'demo', 'd'.repeat(40)).claimResults, [],
+    'a superseded run publishes no per-claim results');
+  const replayRun = state.runSummary({ ...row, hard_verdict: { passed: true, runs: 2, stories: [] } });
+  assert.equal(replayRun.captureMode, false);
+  assert.deepEqual(replayRun.claimResults, []);
+  assert.deepEqual(view.fromSnapshot({ visual_evidence_state: 'planned', visual_evidence_detail: { required: true } }, null).claimResults, []);
+});

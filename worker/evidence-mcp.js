@@ -9,6 +9,8 @@
 const { McpServer } = require('/usr/local/lib/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/mcp.js');
 const { StdioServerTransport } = require('/usr/local/lib/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/stdio.js');
 const { z } = require('/usr/local/lib/node_modules/zod');
+const fs = require('node:fs');
+const path = require('node:path');
 const { hostedAppSlugs } = require('./evidence-hosted-origins');
 
 const platform = String(process.env.PLATFORM_URL || '').replace(/\/$/, '');
@@ -16,19 +18,24 @@ const runId = String(process.env.EVIDENCE_RUN_ID || '');
 const token = String(process.env.EVIDENCE_JWT || '');
 const proxy = String(process.env.EVIDENCE_PROXY_SERVER || '');
 const proxyControlToken = String(process.env.EVIDENCE_PROXY_CONTROL_TOKEN || '');
+// Capture mode: the agent screenshots the paired previews itself and hands
+// the files the browser servers saved in this directory to the platform.
+const captureMode = process.env.EVIDENCE_MODE === 'capture';
+const shotsDir = String(process.env.EVIDENCE_SHOTS_DIR || '');
 if (!/^https?:\/\//.test(platform) || !/^[0-9a-f]{32}$/.test(runId) || !token) {
   process.stderr.write('Evidence MCP configuration is incomplete.\n');
   process.exit(1);
 }
 
-async function request(path, { method = 'GET', body = null, timeoutMs = 720_000 } = {}) {
+async function request(path, { method = 'GET', body = null, binary = null, timeoutMs = 720_000 } = {}) {
   const response = await fetch(`${platform}/api/internal/evidence/${runId}${path}`, {
     method,
     headers: {
       authorization: `Bearer ${token}`,
-      ...(body == null ? {} : { 'content-type': 'application/json' }),
+      ...(binary != null ? { 'content-type': 'application/octet-stream' }
+        : body == null ? {} : { 'content-type': 'application/json' }),
     },
-    body: body == null ? undefined : JSON.stringify(body),
+    body: binary != null ? binary : body == null ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
   });
   let payload;
@@ -108,7 +115,52 @@ server.registerTool('evidence_set_request_failure', {
   } catch (error) { return toolError(error); }
 });
 
-server.registerTool('evidence_run_plan', {
+// Resolves a screenshot the browser tool saved. Only a file directly inside
+// one persona's output directory is readable: the agent names it, it cannot
+// point this bridge at browser storage state or any other file.
+function savedScreenshot(file) {
+  if (!shotsDir) throw new Error('Screenshot capture is not configured for this evidence turn.');
+  const name = path.basename(String(file || ''));
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,150}\.png$/.test(name)) {
+    const error = new Error('Name the .png file browser_take_screenshot saved, e.g. "story-desktop-head.png".');
+    error.code = 'invalid_capture_file';
+    throw error;
+  }
+  for (const persona of ['member', 'admin', 'full_admin']) {
+    const candidate = path.join(shotsDir, persona, name);
+    try {
+      const stat = fs.lstatSync(candidate);
+      if (stat.isFile()) return fs.readFileSync(candidate);
+    } catch { /* try the next persona's directory */ }
+  }
+  const error = new Error(`No saved screenshot named ${name}. Pass the same filename to browser_take_screenshot first.`);
+  error.code = 'capture_file_not_found';
+  throw error;
+}
+
+if (captureMode) {
+  server.registerTool('evidence_capture', {
+    description: 'Publish one screenshot you took for a claim. First call the browser tool browser_take_screenshot with a filename (a viewport screenshot for variant "context"; an element screenshot for variant "focus"), then pass that filename here with the accepted story id, viewport name, and side ("base" for the base origin, "head" for the head origin). Every accepted viewport needs a base and a head context image. Submitting the same slot again replaces it.',
+    inputSchema: {
+      storyId: z.string().min(1).max(96),
+      viewport: z.string().min(1).max(32),
+      side: z.enum(['base', 'head']),
+      variant: z.enum(['context', 'focus']).optional(),
+      file: z.string().min(1).max(512),
+    },
+    annotations,
+  }, async ({ storyId, viewport, side, variant = 'context', file }) => {
+    try {
+      const image = savedScreenshot(file);
+      const query = new URLSearchParams({ storyId, viewport, side, variant });
+      return resultContent((await request(`/capture?${query}`, {
+        method: 'POST', binary: image, timeoutMs: 60_000,
+      })).result);
+    } catch (error) { return toolError(error); }
+  });
+}
+
+if (!captureMode) server.registerTool('evidence_run_plan', {
   description: 'Submit exactly one {id,replay} per accepted story id. replay contains before:{startPath,actions}, after:{startPath,actions}, checkpoint:{id,label,focus:{before,after},assertions:{before,after},animation}. Each action needs lowercase slug id and stage plus a supported type and its exact fields. Example click: {"id":"open-menu","stage":"menu","type":"click","target":{"by":"role","role":"button","name":"Menu"}}. Read validation field paths and correct them before retrying. Do not change frozen intent. Acceptance is not a replay verdict; finish after acceptance.',
   // Keep the bridge permissive inside replay. The platform's one versioned
   // contract validates action variants and returns field-level failures;
@@ -123,14 +175,22 @@ server.registerTool('evidence_run_plan', {
 });
 
 server.registerTool('evidence_report_blocker', {
-  description: 'End this evidence attempt without a replay only when observations from the supplied revisions prove that an honest plan cannot be submitted. State the concrete missing fixture, inaccessible state, or unsupported interaction. Do not use this for uncertainty, a validation error, or to avoid submitting a known flow.',
+  description: captureMode
+    ? 'Report that a claim\'s state cannot be reached on the supplied revisions, with the concrete missing data, access, or interaction. Pass storyId to block only that claim; its reason is shown to reviewers and the claims you captured are still published. Omit storyId only when nothing can be captured at all.'
+    : 'End this evidence attempt without a replay only when observations from the supplied revisions prove that an honest plan cannot be submitted. State the concrete missing fixture, inaccessible state, or unsupported interaction. Do not use this for uncertainty, a validation error, or to avoid submitting a known flow.',
   inputSchema: {
     reason: z.string().trim().min(1).max(1000)
       .describe('Concise user-visible explanation of the observed blocker and the exact state or capability that is missing.'),
+    ...(captureMode ? { storyId: z.string().min(1).max(96).optional() } : {}),
   },
   annotations,
-}, async ({ reason }) => {
+}, async ({ reason, storyId }) => {
   try {
+    if (captureMode && storyId) {
+      return resultContent((await request('/block-story', {
+        method: 'POST', body: { storyId, reason }, timeoutMs: 30_000,
+      })).result);
+    }
     return resultContent((await request('/finish', {
       method: 'POST', body: { status: 'failed', reason }, timeoutMs: 30_000,
     })).result);

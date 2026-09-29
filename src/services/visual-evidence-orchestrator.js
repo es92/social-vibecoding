@@ -889,6 +889,7 @@ const AGENT_DIAGNOSTIC_PHASES = new Set([
 const AGENT_DIAGNOSTIC_TOOLS = new Set([
   'evidence_get_context', 'evidence_reset_pair', 'evidence_reset_side',
   'evidence_set_request_failure', 'evidence_run_plan', 'evidence_report_blocker',
+  'evidence_capture',
   'browser_navigate', 'browser_navigate_back', 'browser_snapshot',
   'browser_take_screenshot', 'browser_click', 'browser_type',
   'browser_fill_form', 'browser_press_key', 'browser_select_option',
@@ -1239,7 +1240,11 @@ async function executeRun(config, options, injected = {}) {
     const authorPlan = options.authorPlan == null
       ? (run.author_plan == null ? null : planContract.parseReplayPlan(run.author_plan))
       : planContract.parseReplayPlan(options.authorPlan);
-    metrics.planSource = authorPlan ? 'author' : 'hosted_planner';
+    // Capture mode publishes the hosted agent's own screenshots instead of
+    // replaying a program it wrote. An author-supplied plan is already a
+    // deterministic program, so it keeps the replay path either way.
+    const captureMode = !authorPlan && config.visualEvidence?.captureMode === true;
+    metrics.planSource = authorPlan ? 'author' : captureMode ? 'agent_capture' : 'hosted_planner';
     if (authorPlan && planContract.canonicalJson(planContract.semanticIntentFromPlan(authorPlan))
         !== planContract.canonicalJson(intent)) {
       throw new VisualEvidenceOrchestrationError(
@@ -1342,6 +1347,7 @@ async function executeRun(config, options, injected = {}) {
       sessionId: session.id,
       intent,
       context,
+      mode: captureMode ? 'capture' : 'replay',
       expiresAt: Date.now() + (config.visualEvidence?.maxRunMs || 1_440_000),
       resetPair: async () => {
         const reset = await deps.environment.resetPair(config, pair, { onProgress });
@@ -1562,6 +1568,7 @@ async function executeRun(config, options, injected = {}) {
           forceBackend,
           repairAttempt,
           completionReminder,
+          captureMode,
           timeoutMs: dispatchTimeoutMs,
           suspendedMs,
         }, injected.agentDependencies || {});
@@ -1609,6 +1616,54 @@ async function executeRun(config, options, injected = {}) {
       // the typed plan; the same platform-owned two-pass replay and storage
       // decide whether the captured media is reproducible and complete.
       await registration.control.runPlan(authorPlan);
+    } else if (captureMode) {
+      progress('The preview agent is capturing the declared claims on both revisions…');
+      agentOutcome = await dispatchOnce();
+      if (agentOutcome.error && registration.control.captures.size === 0
+          && session.agent_backend === 'codex_openrouter'
+          && !metrics.agentActivity.counts.provider_dispatched) {
+        progress('The selected Codex model could not start the capture; using the platform evidence agent…');
+        agentOutcome = await dispatchOnce('claude_code');
+      }
+      // Publish every claim that has a complete base/head set, even when the
+      // turn timed out or another claim was blocked. Only a run with nothing
+      // publishable fails, and it says why for each claim.
+      const summary = registration.control.captureSummary();
+      if (!summary.hardVerdict.passed) {
+        const reasons = [...new Set(summary.stories.map((story) => story.reason).filter(Boolean))];
+        if (agentOutcome.error && !registration.control.storyBlockers.size
+            && !registration.control.finished) {
+          throw agentOutcome.error;
+        }
+        throw new VisualEvidenceOrchestrationError(
+          'evidence_capture_incomplete',
+          reasons.join(' ').slice(0, 1800) || 'The preview agent did not capture a complete before and after pair.'
+        );
+      }
+      failurePhase = 'persist_capture_verdict';
+      stage(failurePhase);
+      await deps.state.transitionRun(pool, run.id, 'reviewing', {
+        hardVerdict: summary.hardVerdict,
+        planHash: summary.manifestHash,
+        traceSummary: traceSummary(metrics, {
+          planHash: summary.manifestHash,
+          runs: 1,
+          stories: summary.hardVerdict.stories,
+        }),
+      });
+      notifyEvidence(session, app, 'reviewing');
+      const artifactPersistStartedAt = Date.now();
+      failurePhase = 'store_artifacts';
+      stage(failurePhase);
+      await deps.replay.storeArtifacts(pool, run.id, summary.artifacts, {
+        headSha: run.head_sha,
+        planHash: summary.manifestHash,
+      });
+      addTiming(metrics, 'artifactPersist', artifactPersistStartedAt);
+      metrics.artifactBytes = summary.artifacts.reduce((sum, artifact) => sum + artifact.bytes, 0);
+      latestArtifacts = summary.artifacts;
+      latestPlanHash = summary.manifestHash;
+      latestHardVerdict = summary.hardVerdict;
     } else {
       progress('The proposal agent is exploring the changed UI…');
       agentOutcome = await dispatchOnce();
@@ -1777,7 +1832,7 @@ async function executeRun(config, options, injected = {}) {
     }
     const finalTrace = traceSummary(metrics, {
       planHash: latestPlanHash,
-      runs: 2,
+      runs: captureMode ? 1 : 2,
       stories: latestHardVerdict?.stories || [],
       relativePointer: latestHardVerdict?.relativePointer === true,
       terminalFailureClass: null,

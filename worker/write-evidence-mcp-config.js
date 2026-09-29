@@ -15,16 +15,23 @@ if (!output || !stateDir || !proxy || !hostedFile) {
 const baseOrigin = new URL(process.env.EVIDENCE_BASE_ORIGIN).origin;
 const headOrigin = new URL(process.env.EVIDENCE_HEAD_ORIGIN).origin;
 const origins = browserAllowedOrigins(baseOrigin, headOrigin, hostedFile);
-const browserArgs = (persona) => [
-  '/usr/local/bin/evidence-browser-observer.js',
-  persona === 'read_only_admin' ? 'admin' : persona,
-  '--browser', 'chromium', '--headless', '--isolated', '--no-sandbox', '--caps', 'vision',
-  '--storage-state', path.join(stateDir, `${persona}.json`),
-  '--allowed-origins', origins.join(';'),
-  '--block-service-workers', '--image-responses', 'allow',
-  '--proxy-server', proxy,
-  '--timeout-action', '10000', '--timeout-navigation', '30000',
-];
+// Screenshots a capture-mode agent saves land in one directory per persona,
+// where the evidence bridge (and nothing else) reads them back by name.
+const shotsDir = process.env.EVIDENCE_SHOTS_DIR || '';
+const browserArgs = (persona) => {
+  const observed = persona === 'read_only_admin' ? 'admin' : persona;
+  return [
+    '/usr/local/bin/evidence-browser-observer.js',
+    observed,
+    '--browser', 'chromium', '--headless', '--isolated', '--no-sandbox', '--caps', 'vision',
+    '--storage-state', path.join(stateDir, `${persona}.json`),
+    '--allowed-origins', origins.join(';'),
+    '--block-service-workers', '--image-responses', 'allow',
+    '--proxy-server', proxy,
+    '--timeout-action', '10000', '--timeout-navigation', '30000',
+    ...(shotsDir ? ['--output-dir', path.join(shotsDir, observed)] : []),
+  ];
+};
 const browserEnv = {
   EVIDENCE_ALLOWED_ORIGINS: JSON.stringify([baseOrigin, headOrigin]),
   EVIDENCE_BROWSER_DIAGNOSTIC_FILE: process.env.EVIDENCE_BROWSER_DIAGNOSTIC_FILE || '',
