@@ -1081,7 +1081,14 @@ async function becomeLeader() {
     .then(({ scheduled }) => {
       if (scheduled) log.info('visual-evidence', 'Recovered unstarted visual evidence claims', { scheduled });
     })
-    .catch((err) => log.warn('visual-evidence', 'Unstarted evidence recovery failed', { err: err.message }));
+    .catch((err) => log.warn('visual-evidence', 'Unstarted evidence recovery failed', { err: err.message }))
+    // A rollout interrupts runs through no fault of the proposal; start the
+    // same head again (bounded) rather than waiting for someone to click Retry.
+    .then(() => visualEvidenceGc.retryInterrupted(config, getPool(config)))
+    .then((result) => {
+      if (result?.scheduled) log.info('visual-evidence', 'Retried interrupted visual evidence runs', result);
+    })
+    .catch((err) => log.warn('visual-evidence', 'Interrupted evidence retry failed', { err: err.message }));
   runUnstartedEvidence();
   setInterval(runUnstartedEvidence, 2 * 60 * 1000).unref?.();
 

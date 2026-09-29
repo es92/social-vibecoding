@@ -204,6 +204,58 @@ async function recoverUnstarted(config, pool, { limit = 10, minAgeMs = 60_000, s
   return { examined: rows.length, scheduled };
 }
 
+// Production redeploys on every merge to main, and a run lives in the web
+// process that scheduled it, so a rollout interrupts whatever is in flight.
+// Nothing about the proposal is wrong when that happens. Give the current
+// head a bounded number of fresh runs instead of leaving a failure that only
+// a person clicking Retry can clear. `rerunSameHead` keeps the interrupted
+// row as the audit record and the planned -> provisioning claim in
+// scheduleForSession still guarantees one live runner.
+const INTERRUPTED_RETRY_TRIGGER = 'interrupted-retry';
+const MAX_INTERRUPTED_RETRIES = 2;
+
+async function retryInterrupted(config, pool, {
+  limit = 10, minAgeMs = 30_000, maxRetries = MAX_INTERRUPTED_RETRIES,
+  schedule = null, stateService = state,
+} = {}) {
+  if (!config.visualEvidence?.execute) return { examined: 0, scheduled: 0 };
+  const { rows } = await pool.query(
+    `SELECT r.id AS run_id, r.head_sha, cs.id, cs.source, cs.imported_pr_head_sha,
+            cs.reviewed_head_sha, cs.checks_commit_sha, cs.handoff_head_sha
+       FROM chat_sessions cs
+       JOIN visual_evidence_runs r ON r.id = cs.visual_evidence_run_id
+      WHERE r.state = 'failed'
+        AND r.failure_code = 'evidence_run_interrupted'
+        AND cs.status NOT IN ('merged', 'archived')
+        AND r.updated_at < NOW() - ($1::bigint * INTERVAL '1 millisecond')
+        AND (SELECT COUNT(*) FROM visual_evidence_runs prior
+              WHERE prior.session_id = cs.id AND prior.head_sha = r.head_sha
+                AND prior.trigger = $3) < $4
+      ORDER BY r.updated_at ASC LIMIT $2`,
+    [Math.max(0, Number(minAgeMs) || 0), Math.max(1, Math.min(50, Number(limit) || 10)),
+      INTERRUPTED_RETRY_TRIGGER, Math.max(0, Number(maxRetries) || 0)]
+  );
+  const dispatch = schedule || require('./visual-evidence-orchestrator').scheduleForSession;
+  let scheduled = 0;
+  for (const row of rows) {
+    // A newer commit owns the proposal now; its own checks start evidence.
+    if (!sameSha(visualHeadForSession(row), row.head_sha)) continue;
+    try {
+      await stateService.rerunSameHead(pool, row.run_id, { trigger: INTERRUPTED_RETRY_TRIGGER });
+      const result = await dispatch(config, {
+        pool, sessionId: row.id, headSha: row.head_sha, trigger: INTERRUPTED_RETRY_TRIGGER,
+      });
+      if (result.scheduled) scheduled += 1;
+    } catch (error) {
+      // Another pod or a person may have retried it first; both are fine.
+      log.warn('visual-evidence', 'Could not retry an interrupted visual evidence run', {
+        sessionId: row.id, runId: row.run_id, code: error.code, error: error.message,
+      });
+    }
+  }
+  return { examined: rows.length, scheduled };
+}
+
 async function prune(pool, config = {}) {
   const failedMediaHours = Math.max(1,
     Number(config.visualEvidence?.failedArtifactRetentionHours) || FAILED_MEDIA_HOURS);
@@ -303,6 +355,9 @@ module.exports = {
   cleanupRunResources,
   recoverInterrupted,
   recoverUnstarted,
+  retryInterrupted,
+  MAX_INTERRUPTED_RETRIES,
+  INTERRUPTED_RETRY_TRIGGER,
   prune,
   sweepOrphanCheckouts,
   sweep,
