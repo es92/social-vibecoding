@@ -15,9 +15,16 @@ if (!output || !stateDir || !proxy || !hostedFile) {
 const baseOrigin = new URL(process.env.EVIDENCE_BASE_ORIGIN).origin;
 const headOrigin = new URL(process.env.EVIDENCE_HEAD_ORIGIN).origin;
 const origins = browserAllowedOrigins(baseOrigin, headOrigin, hostedFile);
-// Screenshots a capture-mode agent saves land in one directory per persona,
-// where the evidence bridge (and nothing else) reads them back by name.
-const shotsDir = process.env.EVIDENCE_SHOTS_DIR || '';
+// Each persona's browser saves the preview agent's named screenshots, and
+// its clips when a browser session closes, into its own directory, where the
+// shots bridge (and nothing else) reads them back. Video is recorded only
+// when a declared change is motion a still cannot show.
+const shotsDir = process.env.EVIDENCE_SHOTS_DIR;
+if (!shotsDir) throw new Error('Evidence MCP config inputs are incomplete.');
+const recordClips = process.env.EVIDENCE_RECORD_CLIPS === '1';
+for (const persona of ['member', 'admin', 'full_admin']) {
+  fs.mkdirSync(path.join(shotsDir, persona), { recursive: true, mode: 0o700 });
+}
 const browserArgs = (persona) => {
   const observed = persona === 'read_only_admin' ? 'admin' : persona;
   return [
@@ -29,7 +36,8 @@ const browserArgs = (persona) => {
     '--block-service-workers', '--image-responses', 'allow',
     '--proxy-server', proxy,
     '--timeout-action', '10000', '--timeout-navigation', '30000',
-    ...(shotsDir ? ['--output-dir', path.join(shotsDir, observed)] : []),
+    '--output-dir', path.join(shotsDir, observed),
+    ...(recordClips ? ['--save-video=1280x800'] : []),
   ];
 };
 const browserEnv = {
@@ -39,7 +47,7 @@ const browserEnv = {
 };
 const config = {
   mcpServers: {
-    evidence: { command: 'node', args: ['/usr/local/bin/evidence-mcp.js'] },
+    shots: { command: 'node', args: ['/usr/local/bin/evidence-mcp.js'] },
     browser_member: { command: 'node', args: browserArgs('member'), env: browserEnv },
     browser_admin: { command: 'node', args: browserArgs('read_only_admin'), env: browserEnv },
     browser_full_admin: { command: 'node', args: browserArgs('full_admin'), env: browserEnv },

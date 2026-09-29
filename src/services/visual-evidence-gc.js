@@ -49,7 +49,6 @@ async function recoverInterrupted(config, pool, {
        JOIN chat_sessions s ON s.id = r.session_id
        JOIN apps a ON a.id = s.app_id
       WHERE r.state IN ('planned','provisioning','exploring','replaying','reviewing')
-        AND NOT (r.state = 'planned' AND r.author_plan IS NOT NULL)
         AND r.updated_at < NOW() - (
           (CASE WHEN COALESCE(r.trace_summary, '{}'::jsonb) ? 'progress'
             THEN $1 ELSE $3 END)::bigint * INTERVAL '1 millisecond')
@@ -73,7 +72,7 @@ async function recoverInterrupted(config, pool, {
       try {
         await stateService.transitionRun(pool, run.id, 'failed', {
           failureCode: 'evidence_run_interrupted',
-          failureReason: 'The visual change preview stopped reporting progress before it completed. The cause is not recorded; you can retry the preview run.',
+          failureReason: 'The before/after shots stopped reporting progress before they finished. The cause is not recorded; you can take them again.',
           recoveryMinIdleMs: minIdleMs,
         });
         failed += 1;
@@ -93,7 +92,7 @@ async function recoverInterrupted(config, pool, {
       const result = await pool.query(
         `UPDATE visual_evidence_runs r
             SET state = 'cancelled', failure_code = 'evidence_run_interrupted',
-              failure_reason = 'The visual change preview worker stopped before the run completed.',
+              failure_reason = 'The preview agent stopped before the shots were finished.',
               completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
            FROM chat_sessions s
           WHERE r.id = $3 AND s.id = r.session_id
@@ -148,10 +147,9 @@ async function recoverInterrupted(config, pool, {
   return { examined: rows.length, failed, cancelled, cleanupRetried };
 }
 
-// Intent is written before checks finish. The ordinary checks completion
-// event starts evidence, but a process can die between those two writes.
-// A submitted author plan already has a durable planned run at import;
-// both that case and an intent-only proposal need the same recovery handoff.
+// A declaration is written before checks finish. The ordinary checks
+// completion event starts the shots, but a process can die between those
+// two writes; this hands such a proposal to a run within minutes.
 async function recoverUnstarted(config, pool, { limit = 10, minAgeMs = 60_000, schedule = null } = {}) {
   if (!config.visualEvidence?.execute) return { examined: 0, scheduled: 0 };
   const retryAfterMs = 10 * 60_000;
@@ -159,10 +157,8 @@ async function recoverUnstarted(config, pool, { limit = 10, minAgeMs = 60_000, s
     `SELECT cs.id, cs.source, cs.imported_pr_head_sha, cs.reviewed_head_sha,
             cs.checks_commit_sha, cs.handoff_head_sha
        FROM chat_sessions cs
-       LEFT JOIN visual_evidence_runs r ON r.id = cs.visual_evidence_run_id
       WHERE cs.visual_evidence_state = 'planned'
-        AND (cs.visual_evidence_run_id IS NULL
-             OR (r.state = 'planned' AND r.author_plan IS NOT NULL))
+        AND cs.visual_evidence_run_id IS NULL
         AND cs.status IN ('active', 'promoted')
         AND cs.visual_evidence_detail->>'required' = 'true'
         AND jsonb_typeof(cs.visual_evidence_detail->'intent') = 'object'

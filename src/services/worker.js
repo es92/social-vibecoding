@@ -503,9 +503,7 @@ function safeResultSubtype(value) {
 // text, tool arguments/results, URLs, provider messages and journal lines can
 // contain private app data or credentials and must never enter a run trace.
 const EVIDENCE_DIAGNOSTIC_TOOLS = new Set([
-  'evidence_get_context', 'evidence_reset_pair', 'evidence_reset_side',
-  'evidence_set_request_failure', 'evidence_run_plan', 'evidence_report_blocker',
-  'evidence_capture',
+  'get_brief', 'save_shot', 'save_clip', 'skip_change', 'fail_request',
   'browser_navigate', 'browser_navigate_back', 'browser_snapshot',
   'browser_take_screenshot', 'browser_click', 'browser_type',
   'browser_fill_form', 'browser_press_key', 'browser_select_option',
@@ -628,7 +626,7 @@ function evidenceToolAvailable(tools, toolName) {
   const names = Array.isArray(tools)
     ? tools.map((item) => typeof item === 'string' ? item : item?.name)
     : Object.keys(tools);
-  return names.some((name) => name === toolName || name === `mcp__evidence__${toolName}`);
+  return names.some((name) => name === toolName || name === `mcp__shots__${toolName}`);
 }
 
 function mcpToolCount(tools, serverName) {
@@ -650,10 +648,10 @@ function evidenceContextResultShape(content) {
   return {
     responseCharacters,
     jsonValid: !!object,
-    acceptedIntentPresent: !!object?.acceptedIntent,
-    originsPresent: !!(object?.origins?.base && object?.origins?.head),
-    revisionsPresent: !!(object?.revisions?.baseSha && object?.revisions?.headSha),
-    storyCount: Array.isArray(object?.acceptedIntent?.stories) ? object.acceptedIntent.stories.length : null,
+    declaredChangesPresent: Array.isArray(object?.declaredChanges),
+    addressesPresent: !!(object?.addresses?.before && object?.addresses?.after),
+    revisionsPresent: !!(object?.revisions?.before && object?.revisions?.after),
+    storyCount: Array.isArray(object?.declaredChanges) ? object.declaredChanges.length : null,
   };
 }
 
@@ -811,9 +809,9 @@ function applyStreamEvent(event, onProgress, state) {
       kind: 'provider_init',
       mcpServerCount: collectionCount(systemEvent.mcp_servers ?? systemEvent.mcpServers),
       toolDefinitionCount: collectionCount(systemEvent.tools),
-      evidenceGetContextAvailable: evidenceToolAvailable(systemEvent.tools, 'evidence_get_context'),
-      evidenceRunPlanAvailable: evidenceToolAvailable(systemEvent.tools, 'evidence_run_plan'),
-      evidenceReportBlockerAvailable: evidenceToolAvailable(systemEvent.tools, 'evidence_report_blocker'),
+      briefToolAvailable: evidenceToolAvailable(systemEvent.tools, 'get_brief'),
+      saveShotToolAvailable: evidenceToolAvailable(systemEvent.tools, 'save_shot'),
+      skipChangeToolAvailable: evidenceToolAvailable(systemEvent.tools, 'skip_change'),
       browserMemberToolCount: mcpToolCount(systemEvent.tools, 'browser_member'),
       browserAdminToolCount: mcpToolCount(systemEvent.tools, 'browser_admin'),
       browserFullAdminToolCount: mcpToolCount(systemEvent.tools, 'browser_full_admin'),
@@ -890,7 +888,7 @@ function applyStreamEvent(event, onProgress, state) {
       if (block.type !== 'tool_result') continue;
       const diagnosticStart = block.tool_use_id == null ? null
         : state.evidenceDiagnosticStarts?.get(String(block.tool_use_id));
-      if (diagnosticStart?.tool === 'evidence_get_context') {
+      if (diagnosticStart?.tool === 'get_brief') {
         emitEvidenceDiagnostic(state, {
           kind: 'context_result',
           outcome: block.is_error === true ? 'error' : 'ok',
@@ -1212,11 +1210,7 @@ function parseLine(line, onProgress, state) {
         const isToolCompletion = ['command_completed', 'file_read_completed', 'mcp_completed'].includes(ev.kind)
           || (ev.kind === 'file_changed' && ev.lifecycle === 'completed');
         if (ev.kind === 'phase' && ev.lifecycle === 'turn_started') {
-          const completionReminder = state.evidenceCompletionReminder === true;
-          emitEvidenceDiagnostic(state, {
-            kind: 'provider_init',
-            completionReminder,
-          });
+          emitEvidenceDiagnostic(state, { kind: 'provider_init' });
         }
         if ((ev.kind === 'agent_message' || isToolStart) && !state.evidenceFirstOutputSeen) {
           state.evidenceFirstOutputSeen = true;
@@ -2792,10 +2786,9 @@ async function execInWorker(sessionId, {
   evidenceOrigins = null,
   evidenceAuthTokens = null,
   evidenceNavigationHints = null,
-  evidenceCompletionReminder = false,
-  // 'capture': the agent publishes its own screenshots (evidence_capture);
-  // anything else keeps the replay-plan tool contract.
-  evidenceMode = 'replay',
+  // Record browser video for this turn: only when a declared change is
+  // motion a still cannot show.
+  evidenceRecordClips = false,
   turnUuid = null,
   logicalTurnId = null,
   attemptNumber = null,
@@ -2944,8 +2937,8 @@ async function execInWorker(sessionId, {
         throw new Error(`execInWorker: invalid ${side} evidence origin`);
       }
     }
-    if (typeof evidenceCompletionReminder !== 'boolean') {
-      throw new Error('execInWorker: evidence completion reminder must be boolean');
+    if (typeof evidenceRecordClips !== 'boolean') {
+      throw new Error('execInWorker: evidence clip recording must be boolean');
     }
   }
   const useAnthropicProxy = isClaude && !anthropicApiKey;
@@ -3052,8 +3045,7 @@ async function execInWorker(sessionId, {
       EVIDENCE_BASE_ORIGIN: new URL(evidenceOrigins.base).origin,
       EVIDENCE_HEAD_ORIGIN: new URL(evidenceOrigins.head).origin,
       EVIDENCE_NAVIGATION_HINTS: JSON.stringify(evidenceNavigationHints || {}),
-      EVIDENCE_COMPLETION_REMINDER: evidenceCompletionReminder ? '1' : '0',
-      EVIDENCE_MODE: evidenceMode === 'capture' ? 'capture' : 'replay',
+      EVIDENCE_RECORD_CLIPS: evidenceRecordClips ? '1' : '0',
     } : {}),
     ...(isClaude ? {
       MODEL: models.resolve(model),
@@ -3295,7 +3287,6 @@ async function execInWorker(sessionId, {
     if (mode === 'evidence') {
       state.evidenceOrigins = evidenceOrigins;
       state.evidenceNavigationHints = evidenceNavigationHints;
-      state.evidenceCompletionReminder = evidenceCompletionReminder === true;
     }
     if (mode === 'evidence' && typeof onEvidenceDiagnostic === 'function') {
       state.evidenceDiagnosticObserver = onEvidenceDiagnostic;

@@ -133,7 +133,7 @@ function shapeChangeRow(row) {
     // checks panel's to show.
     checkSkipReason: row.change_check_skip_reason || null,
     appSelfHosted: !!row.change_app_self_hosted,
-    // The visual change preview being captured now, which the conversation
+    // The before/after shots being taken now, which the conversation
     // shows with a Stop. Null once it settles, and on the changes-list rows,
     // which do not read it.
     previewCapture: CAPTURING_STATES.has(row.change_evidence_state)

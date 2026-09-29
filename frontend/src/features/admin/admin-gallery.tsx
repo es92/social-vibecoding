@@ -358,13 +358,13 @@ function GallerySection() {
 
   return (
     <div id="admin-gallery-root">
-      <h2 className="text-lg font-semibold mb-4">Visual change preview gallery</h2>
+      <h2 className="text-lg font-semibold mb-4">Before/after shots gallery</h2>
       {gate ? <div id="admin-gallery-gate" className="text-zinc-500 dark:text-zinc-400 text-center py-20">{gate}</div> : null}
 
       {ready ? (
         <main id="admin-gallery-content" className="space-y-4">
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Claim-labelled, exact-revision previews for merged proposals, newest first.
+            Before/after shots of each declared change on merged proposals, newest first.
             Historical proposals retain their legacy capture diagnostics.
           </p>
 

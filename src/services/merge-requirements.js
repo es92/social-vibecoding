@@ -82,7 +82,7 @@ const GATES = [
   },
   {
     key: 'visual_evidence',
-    label: 'Visual change preview is captured',
+    label: 'Before/after shots are ready',
     actor: 'author',
     // Independently reversible rollout gate. Proposals created before v2
     // enrollment do not acquire a fictional requirement merely because the
@@ -514,14 +514,14 @@ function provisional(session) {
     const accepted = exactHead && ['verified', 'not_required', 'overridden'].includes(evidenceState);
     out.push({
       key: 'visual_evidence',
-      label: 'Visual change preview is captured',
+      label: 'Before/after shots are ready',
       actor: 'author',
       state: accepted ? 'done' : evidenceState === 'failed' ? 'blocked' : 'active',
       detail: accepted
         ? { state: evidenceState }
         : { state: evidenceState, note: exactHead
-          ? (detail.failureReason || `the visual change preview is ${String(evidenceState).replace(/_/g, ' ')}`)
-          : 'the visual change preview has not been captured for the current commit' },
+          ? (detail.failureReason || `the before/after shots are ${String(evidenceState).replace(/_/g, ' ')}`)
+          : 'the before/after shots have not been taken for the current commit' },
     });
   }
 

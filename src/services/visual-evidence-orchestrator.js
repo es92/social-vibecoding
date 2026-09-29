@@ -1,10 +1,10 @@
 'use strict';
 
-// #2380 — end-to-end coordinator for exact-revision visual evidence. This
-// module deliberately separates model exploration from deterministic replay:
-// the evidence agent can submit a plan through RunControl, while only these
-// callbacks may reset fixtures, execute the plan twice, store bytes, or move
-// the durable run to verified.
+// End-to-end coordinator for a proposal's before/after shots. The platform
+// builds the exact before (base) and after (head) revisions with fixture data
+// and signed-in fixture users; the preview agent follows each declared change
+// on both and saves what it sees through RunControl; this module then
+// publishes every change that has a complete before/after set.
 
 const appManifest = require('./app-manifest');
 const crypto = require('node:crypto');
@@ -17,7 +17,6 @@ const evidenceControl = require('./visual-evidence-control');
 const environment = require('./visual-evidence-environment');
 const identities = require('./visual-evidence-identities');
 const planContract = require('./visual-evidence-plan');
-const replay = require('./visual-evidence-replay');
 const state = require('./visual-evidence-state');
 const turnLifecycle = require('./turn-lifecycle');
 const { isUiAffecting: uiFileHeuristic } = require('./visual-file-classifier');
@@ -25,7 +24,7 @@ const worker = require('./worker');
 
 const ACTIVE_STATES = new Set(['planned', 'provisioning', 'exploring', 'replaying', 'reviewing']);
 const CLOSED_STATUSES = new Set(['merged', 'archived']);
-const EVIDENCE_STOPPED_REASON = 'Stopped before it finished. Nothing was captured for this commit; run it again from the proposal to capture it.';
+const EVIDENCE_STOPPED_REASON = 'Stopped before it finished. No shots were taken for this commit; take them again from the proposal.';
 // Runs a person stopped while this process executes them. The stop already
 // made the run terminal in the database; this keeps its runner from handing
 // the preview agent another turn before a state transition refuses it.
@@ -37,168 +36,9 @@ const liveHeartbeats = new Map();
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const EVIDENCE_PROCESS_ID = crypto.randomBytes(8).toString('hex');
 const EVIDENCE_PROCESS_STARTED_AT = new Date().toISOString();
-const MAX_REPLAY_EVENTS = 40;
 const MAX_AGENT_EVENTS = 128;
-const REPAIRABLE_LOCATOR_CODES = new Set([
-  'ambiguous_locator', 'locator_not_found', 'locator_not_visible',
-]);
-const ACTIONABILITY_METHODS = Object.freeze({
-  click: 'click',
-  fill: 'fill',
-  press: 'press',
-  select: 'selectOption',
-  check: 'check',
-  uncheck: 'uncheck',
-  hover: 'hover',
-  drag: 'dragTo',
-});
-const MAX_REPAIR_ATTEMPTS = 2;
-const MAX_TRANSIENT_REPLAY_RETRIES = 1;
-const MAX_REPAIR_COMPLETION_RESERVE_MS = 90_000;
 const SESSION_IDLE_WAIT_MS = 120_000;
 const EVIDENCE_RECOVERY_WAIT_MS = 240_000;
-
-function repairCompletionReserveMs(budgetMs) {
-  const bounded = Math.max(2, Number(budgetMs) || 2);
-  return Math.min(MAX_REPAIR_COMPLETION_RESERVE_MS, Math.floor(bounded / 2));
-}
-
-function transientNetworkReplayFailure(error) {
-  const diagnostics = error?.detail?.browserDiagnostics;
-  if (!diagnostics || typeof diagnostics !== 'object') return null;
-  const failedRequests = Array.isArray(diagnostics.failedRequests)
-    ? diagnostics.failedRequests : [];
-  const consoleErrors = Array.isArray(diagnostics.consoleErrors)
-    ? diagnostics.consoleErrors : [];
-  const httpErrors = Array.isArray(diagnostics.httpErrors) ? diagnostics.httpErrors : [];
-  const blockedRequests = Array.isArray(diagnostics.blockedRequests)
-    ? diagnostics.blockedRequests : [];
-  if (!failedRequests.length
-      || failedRequests.some((item) => !/\bnet::ERR_NETWORK_CHANGED\b/i.test(item?.error || ''))
-      || consoleErrors.some((item) => !/\bnet::ERR_NETWORK_CHANGED\b/i.test(item?.message || ''))
-      || Number(diagnostics.httpErrorCount || 0) > 0 || httpErrors.length
-      || Number(diagnostics.blockedRequestCount || 0) > 0 || blockedRequests.length) return null;
-  return {
-    kind: 'network_changed',
-    code: errorCode(error),
-    ...(typeof error.detail.storyId === 'string' ? { storyId: error.detail.storyId } : {}),
-    ...(['base', 'head'].includes(error.detail.side) ? { side: error.detail.side } : {}),
-    failedRequestCount: failedRequests.length,
-    consoleErrorCount: consoleErrors.length,
-    pageErrorCount: Array.isArray(diagnostics.pageErrors) ? diagnostics.pageErrors.length : 0,
-  };
-}
-
-function replayRepairKind(error, plan) {
-  const code = errorCode(error);
-  // The deterministic runner already retries a pure network-change pass once.
-  // A repeated transport failure cannot be repaired by changing the plan, so
-  // preserve it as infrastructure diagnostics instead of spending a model
-  // correction turn on a locator that only disappeared with the page bundle.
-  if (transientNetworkReplayFailure(error)) return null;
-  if (REPAIRABLE_LOCATOR_CODES.has(code)) return 'locator';
-  // Playwright can resolve one attached, visible target and still time out
-  // waiting for it to become actionable. A modal, tour, disabled state, or
-  // moving surface usually means the replay omitted an observed setup action
-  // or readiness wait. Give the planner the exact fresh-page diagnostics so
-  // it can correct that flow. Keep arbitrary replay failures hard: page exits,
-  // browser crashes, network faults, and missing/ambiguous locators must use
-  // their own classifications instead of spending a model repair turn here.
-  const actionabilityMethod = ACTIONABILITY_METHODS[error?.detail?.actionType];
-  const targetStates = Array.isArray(error?.detail?.targetStates)
-    ? error.detail.targetStates : [];
-  if (code === 'replay_failed'
-      && error?.detail?.phase === 'action'
-      && actionabilityMethod
-      && targetStates.length > 0
-      && targetStates.every((target) => target?.matchedCount === 1
-        && target.visibleCount === 1 && target.attachedCount === 1)
-      && new RegExp(`^locator\\.${actionabilityMethod}: Timeout \\d+ms exceeded\\b`)
-        .test(String(error?.message || ''))) return 'actionability';
-  if (code === 'controlled_failure_unused') return 'controlled_failure';
-  if (code === 'browser_diagnostics' && error?.detail?.phase === 'browser_diagnostics') {
-    const diagnostics = error.detail.browserDiagnostics || error.detail;
-    const httpErrors = diagnostics.httpErrors || [];
-    const consoleErrors = diagnostics.consoleErrors || [];
-    // A same-origin API 404 can mean the planner followed a check fixture
-    // under the wrong persona. Give it a bounded chance to find real data.
-    // Browser errors and blocked origins always invalidate this replay; a
-    // hosted-app story may instead select another real app on a fresh pass.
-    if (httpErrors.length > 0
-        && httpErrors.every((item) => item.status === 404
-          && item.location?.sameOrigin === true
-          && String(item.location?.pathname || '').startsWith('/api/'))
-        && consoleErrors.every((item) => item.source?.sameOrigin === true
-          && httpErrors.some((response) => response.location.pathname === item.source.pathname)
-          && /^Failed to load resource: the server responded with a status of 404 \(Not Found\)$/.test(item.message || ''))
-        && !(diagnostics.pageErrors || []).length
-        && !(diagnostics.failedRequests || []).length
-        && !(diagnostics.blockedRequests || []).length) return 'route_data';
-    const story = plan?.stories?.find((item) => item.id === error.detail.storyId);
-    const openedHostedApp = ['before', 'after'].some((side) =>
-      story?.replay?.[side]?.actions?.some((action) => action.type === 'waitForHostedApp'));
-    if (openedHostedApp && error.detail.hostedAppSlugs?.length
-        && (diagnostics.blockedRequests?.some((item) => item.embedded === true)
-          || diagnostics.pageErrors?.some((item) => item.sourceKind === 'hosted_app')
-          || diagnostics.consoleErrors?.some((item) => item.sourceKind === 'hosted_app'))) return 'hosted_app';
-  }
-  if (code === 'unstable_checkpoint' && error?.detail?.phase === 'capture_checkpoint'
-      && error.detail.sampleCount >= 3) {
-    const story = plan?.stories?.find((item) => item.id === error.detail.storyId);
-    if (story && story.intent.animation !== 'motion') return 'static_timing';
-  }
-  // A missing element in a positive assertion or more than one match for an
-  // assertion that requires a unique target is another locator error. A
-  // positive count assertion may also have selected the wrong accessible
-  // target. Its correction is safe only because RunControl pins every plan
-  // field except this exact failed assertion's target: the expected count,
-  // value, actions, focus, and sibling assertions cannot be weakened. Keep
-  // negative count and detached failures hard; changing their selector until
-  // nothing matches would not prove the intended element disappeared. Wrong
-  // values and states remain hard except for the bounded cases below.
-  if (code !== 'assertion_failed' || error?.detail?.phase !== 'assertion') return null;
-  const detail = error.detail;
-  const story = plan?.stories?.find((item) => item.id === detail.storyId);
-  const side = detail.side === 'base' ? 'before' : detail.side === 'head' ? 'after' : null;
-  const assertion = side && Number.isInteger(detail.assertionIndex)
-    ? story?.replay?.checkpoint?.assertions?.[side]?.[detail.assertionIndex] : null;
-  if (!assertion
-      || planContract.canonicalJson(assertion) !== planContract.canonicalJson(detail.assertion)) return null;
-  const positiveUniqueAssertion = ['visible', 'attached', 'checked', 'text', 'value', 'focusWithin']
-    .includes(assertion.type);
-  if ((Number.isInteger(detail.count) && detail.count > 1
-        && (positiveUniqueAssertion || assertion.type === 'hidden'))
-      || (detail.count === 0 && positiveUniqueAssertion)
-      || (assertion.type === 'count' && assertion.count > 0
-        && Number.isInteger(detail.count) && detail.count !== assertion.count)) {
-    return 'assertion_locator';
-  }
-  const siblingBaseAssertions = Array.isArray(story?.replay?.checkpoint?.assertions?.before)
-    ? story.replay.checkpoint.assertions.before : [];
-  const preservesBaseAbsenceProof = siblingBaseAssertions.some((candidate, index) =>
-    index !== detail.assertionIndex && (
-      candidate?.type === 'hidden'
-      || candidate?.type === 'detached'
-      || (candidate?.type === 'count' && candidate.count === 0)
-    ));
-  if (detail.side === 'base'
-      && story?.intent?.baseState === 'not_present'
-      && assertion.type === 'visible'
-      && detail.count === 1
-      && targetStates.length === 1
-      && targetStates[0]?.matchedCount === 1
-      && targetStates[0]?.attachedCount === 1
-      && targetStates[0]?.visibleCount === 0
-      && preservesBaseAbsenceProof) return 'supporting_visibility';
-  if (story?.intent?.animation !== 'motion') return null;
-  // A motion marker can still be visible at the checkpoint even though it
-  // will settle moments later. Permit one bounded plan correction, but only
-  // when the exact recorded assertion failed for that transient state.
-  if (assertion.type === 'hidden' && detail.count === 1 && detail.actual === true) return 'motion_timing';
-  if (assertion.type === 'count' && assertion.count === 0
-      && Number.isInteger(detail.count) && detail.count > 0) return 'motion_timing';
-  return null;
-}
 
 function progressPhase(event) {
   if (!event || typeof event !== 'object') return null;
@@ -219,9 +59,6 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
   let stopped = false;
   let writing = false;
   let pending = false;
-  let lastReplayEvent = null;
-  const replayEvents = [];
-  let lastReplayFlushAt = 0;
   let agentActivity = null;
   let agentFinalResponse = null;
   let lastAgentFlushAt = 0;
@@ -249,7 +86,6 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
             poolWaiting: Number.isInteger(pool.waitingCount) ? pool.waitingCount : null,
             previousWriteMs: lastHeartbeatWriteMs,
           },
-          ...(lastReplayEvent ? { lastReplayEvent, replayEvents: replayEvents.slice(-MAX_REPLAY_EVENTS) } : {}),
           ...(agentActivity ? { agentActivity } : {}),
           ...(agentFinalResponse ? { agentFinalResponse } : {}),
         };
@@ -298,22 +134,6 @@ function startRunHeartbeat(pool, runId, stateService, observer = null, intervalM
       if (stopped || !summary || typeof summary !== 'object') return;
       agentFinalResponse = summary;
       flush();
-    },
-    onReplayEvent(event) {
-      if (stopped || !event || typeof event !== 'object') return;
-      lastReplayEvent = event;
-      replayEvents.push(event);
-      if (replayEvents.length > MAX_REPLAY_EVENTS) replayEvents.shift();
-      // Persist an action start immediately: if its browser call hangs or the
-      // pod exits, this identifies the exact unfinished step. Less important
-      // progress is throttled to avoid one database write per emitted event.
-      if (event.type === 'action_started' || event.type === 'side_failed'
-          || event.type === 'animation_started' || event.type === 'navigation_retry'
-          || event.type === 'result'
-          || Date.now() - lastReplayFlushAt >= 5000) {
-        lastReplayFlushAt = Date.now();
-        flush();
-      }
     },
     onProgress(event) {
       if (typeof observer === 'function') {
@@ -424,7 +244,7 @@ async function resolveRevisionContext(session, explicitHead = null, githubServic
   if (!headSha) {
     throw new VisualEvidenceOrchestrationError(
       'missing_evidence_head',
-      'The visual change preview cannot start until the proposal has an exact submitted head commit.'
+      'The before/after shots cannot start until the proposal has an exact submitted commit.'
     );
   }
   const { owner, repo } = environment.repoParts(session.repo_url);
@@ -538,25 +358,28 @@ function declaredCheckSummary(checkout, intent = null, testingPaths = []) {
   }
 }
 
-function evidenceContext({ run, session, revision, pair, deployment, intent }) {
+// What the preview agent reads first: the declared changes, the two
+// addresses to shoot, which browser to use for whom, and background it may
+// use to find the screens. Everything from the proposal is marked untrusted.
+function shotsBrief({ run, session, revision, pair, deployment, intent }) {
   const testingPaths = testingPathsForSession(session);
   return {
-    version: 1,
+    version: 2,
     runId: run.id,
-    acceptedIntent: intent,
-    revisions: {
-      baseSha: revision.baseSha,
-      headSha: revision.headSha,
-      baseLabel: revision.baseSha.slice(0, 12),
-      headLabel: revision.headSha.slice(0, 12),
-    },
+    declaredChanges: intent.stories,
+    addresses: { before: deployment.origins.base, after: deployment.origins.head },
+    // Kept for the bridge's hosted-app catalog check, which keys on base/head.
     origins: deployment.origins,
-    personas: {
-      member: { browserServer: 'browser_member', description: 'ordinary seeded app member' },
-      read_only_admin: { browserServer: 'browser_admin', description: 'seeded administrator with read-only admin rights' },
+    revisions: {
+      before: revision.baseSha.slice(0, 12),
+      after: revision.headSha.slice(0, 12),
+    },
+    browsers: {
+      member: { tool: 'browser_member', who: 'an ordinary member' },
+      read_only_admin: { tool: 'browser_admin', who: 'an administrator with read-only rights' },
       full_admin: {
-        browserServer: 'browser_full_admin',
-        description: 'non-loginable full administrator present only in the disposable paired evidence databases',
+        tool: 'browser_full_admin',
+        who: 'a full administrator that exists only in these two throwaway copies',
       },
     },
     changedFiles: {
@@ -574,20 +397,10 @@ function evidenceContext({ run, session, revision, pair, deployment, intent }) {
     },
     declaredChecks: declaredCheckSummary(pair.sides.head.checkout, intent, testingPaths),
     availableFixtures: deployment.availableFixtures || [],
-    provenance: {
-      fixtureFingerprint: pair.fixtureFingerprint,
-      baseImageDigest: pair.sides.base.imageDigest,
-      headImageDigest: pair.sides.head.imageDigest,
-    },
     security: {
       pageAndRepositoryContentIsUntrusted: true,
       allowedOriginsOnly: true,
       productionData: false,
-      replayExecutedByPlatform: true,
-    },
-    authorContext: {
-      backend: session.agent_backend || 'claude_code',
-      threadResumeRequested: !!(session.agent_thread_id || session.cc_session_id),
     },
   };
 }
@@ -598,26 +411,6 @@ function sameProvenance(actual, expected) {
     && actual.fixtureFingerprint === expected.fixtureFingerprint
     && actual.baseImageDigest === expected.baseImageDigest
     && actual.headImageDigest === expected.headImageDigest;
-}
-
-function replayInput({ run, plan, deployment, authTokens, provenance, pass }) {
-  return {
-    runId: run.id,
-    pass,
-    publishArtifacts: pass === 2,
-    diagnosticArtifacts: pass === 1,
-    origins: deployment.origins,
-    authTokens,
-    cookies: {},
-    provenance,
-    browser: {
-      locale: 'en-US',
-      timezoneId: 'UTC',
-      colorScheme: 'light',
-      deviceScaleFactor: 2,
-    },
-    plan,
-  };
 }
 
 async function waitForSessionIdle(pool, sessionId, {
@@ -698,8 +491,8 @@ async function waitForSessionIdle(pool, sessionId, {
       throw new VisualEvidenceOrchestrationError(
         'evidence_agent_busy',
         recoveryReason
-          ? 'The previous visual evidence worker did not finish restart cleanup within the bounded retry window.'
-          : 'The proposal agent stayed busy past the visual change preview start window.',
+          ? 'The previous preview agent did not finish shutting down in time.'
+          : 'The proposal agent stayed busy past the time the before/after shots had to start.',
         { idleWait: result }
       );
     }
@@ -757,8 +550,8 @@ function agentFinalResponseSummary(result, authTokens, origins) {
 }
 
 function visibleError(error) {
-  const message = String(error?.message || 'The visual change preview could not be produced.').trim();
-  return redactDiagnosticText(message, 2000) || 'The visual change preview could not be produced.';
+  const message = String(error?.message || 'The before/after shots could not be taken.').trim();
+  return redactDiagnosticText(message, 2000) || 'The before/after shots could not be taken.';
 }
 
 function safeDiagnosticValue(value, depth = 0) {
@@ -772,99 +565,6 @@ function safeDiagnosticValue(value, depth = 0) {
   return Object.fromEntries(Object.entries(value).slice(0, 24)
     .filter(([key]) => !/^(?:token|authorization|cookie|password|secret|payload|data)$/i.test(key))
     .map(([key, item]) => [key, safeDiagnosticValue(item, depth + 1)]));
-}
-
-function boundedReplayDetail(error) {
-  try {
-    const value = error?.detail || (error?.issues ? { issues: error.issues } : null);
-    if (value == null) return null;
-    const serialized = JSON.stringify(safeDiagnosticValue(value));
-    return serialized.length <= 16000
-      ? JSON.parse(serialized)
-      : { truncated: true, excerpt: serialized.slice(0, 8000) };
-  } catch { return null; }
-}
-
-function replayProgressEvent(event, pass) {
-  const type = String(event?.type || 'unknown');
-  const storyId = String(event?.storyId || '');
-  const viewport = String(event?.viewport || '');
-  const side = String(event?.side || '');
-  const phase = String(event?.phase || '');
-  const actionId = String(event?.actionId || '');
-  const actionStage = String(event?.actionStage || '');
-  const actionType = String(event?.actionType || '');
-  const assertionType = String(event?.assertionType || '');
-  const location = event?.location && typeof event.location === 'object'
-    ? {
-      sameOrigin: event.location.sameOrigin === true,
-      ...(typeof event.location.pathname === 'string'
-        ? { pathname: safeDiagnosticValue(event.location.pathname) } : {}),
-      ...(typeof event.location.hash === 'string'
-        ? { hash: safeDiagnosticValue(event.location.hash) } : {}),
-      queryKeys: Array.isArray(event.location.queryKeys)
-        ? event.location.queryKeys.slice(0, 12).map((value) => safeDiagnosticValue(String(value))) : [],
-    } : null;
-  return {
-    pass,
-    type: /^[a-z_]{1,40}$/.test(type) ? type : 'unknown',
-    ...(/^[a-z0-9][a-z0-9_-]{0,95}$/.test(storyId) ? { storyId } : {}),
-    ...(/^[a-z0-9][a-z0-9_-]{0,31}$/.test(viewport) ? { viewport } : {}),
-    ...(['base', 'head'].includes(side) ? { side } : {}),
-    ...(/^[a-z_]{1,40}$/.test(phase) ? { phase } : {}),
-    ...(/^[a-z0-9][a-z0-9_-]{0,95}$/.test(actionId) ? { actionId } : {}),
-    ...(/^[a-z0-9][a-z0-9_-]{0,63}$/.test(actionStage) ? { actionStage } : {}),
-    ...(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.test(actionType) ? { actionType } : {}),
-    ...(Number.isInteger(event?.assertionIndex) && event.assertionIndex >= 0
-      ? { assertionIndex: event.assertionIndex } : {}),
-    ...(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.test(assertionType) ? { assertionType } : {}),
-    ...(Number.isInteger(event?.durationMs) && event.durationMs >= 0
-      ? { durationMs: event.durationMs } : {}),
-    ...(type === 'navigation_retry' && event?.attempt === 2 ? { attempt: 2 } : {}),
-    ...(['actionCount', 'assertionCount', 'recordedFrameCount', 'httpErrorCount',
-      'recoveredRequestCount', 'recoveredNetworkChanges', 'controlledFailureHits',
-      'expectedFailureConsoleCount', 'expectedSandboxWarnings', 'baseFrames', 'headFrames', 'bytes'].reduce((counts, key) => {
-      if (Number.isInteger(event?.[key]) && event[key] >= 0) counts[key] = event[key];
-      return counts;
-    }, {})),
-    ...(type === 'checkpoint_stability' ? {
-      mode: event.mode === 'motion' ? 'motion' : 'static',
-      networkQuiet: event.networkQuiet === true,
-      ...(['sampleCount', 'networkWaitMs', 'captureWaitMs'].reduce((values, key) => {
-        if (Number.isInteger(event?.[key]) && event[key] >= 0) values[key] = event[key];
-        return values;
-      }, {})),
-      samples: Array.isArray(event.samples) ? event.samples.slice(0, 6).map((sample) => ({
-        ...(['settleMs', 'screenshotMs', 'hashMs', 'distance'].reduce((values, key) => {
-          if (Number.isInteger(sample?.[key]) && sample[key] >= 0) values[key] = sample[key];
-          return values;
-        }, {})),
-      })) : [],
-    } : {}),
-    ...(type === 'session_bootstrap' ? {
-      attempted: event.attempted === true,
-      cookieAlreadyPresent: event.cookieAlreadyPresent === true,
-      sessionCookieInstalled: event.sessionCookieInstalled === true,
-      ...(Number.isInteger(event.responseStatus) ? { responseStatus: event.responseStatus } : {}),
-    } : {}),
-    ...(['steps', 'motion'].includes(event?.animation) ? { animation: event.animation } : {}),
-    ...(Number.isInteger(event?.status) && event.status >= 100 && event.status <= 599
-      ? { status: event.status } : {}),
-    ...(location ? { location } : {}),
-    ...(typeof event?.code === 'string' && /^[a-z0-9_]{1,80}$/.test(event.code)
-      ? { code: event.code } : {}),
-    ...(type === 'result' && event?.passed === true ? {
-      passed: true,
-      ...(Number.isInteger(event.artifactCount) ? { artifactCount: event.artifactCount } : {}),
-      ...(Array.isArray(event.stories) ? { storyCount: event.stories.length } : {}),
-    } : {}),
-    ...(type === 'result' && event?.passed === false ? {
-      passed: false,
-      code: /^[a-z0-9_]{1,80}$/.test(String(event.code || '')) ? String(event.code) : 'replay_failed',
-      message: safeDiagnosticValue(String(event.message || 'Evidence replay failed.')),
-      ...(event.detail != null ? { detail: boundedReplayDetail({ detail: event.detail }) } : {}),
-    } : {}),
-  };
 }
 
 const AGENT_DIAGNOSTIC_KINDS = new Set([
@@ -887,9 +587,7 @@ const AGENT_DIAGNOSTIC_PHASES = new Set([
   'evidence_mcp_ready', 'claude', 'agent', 'done',
 ]);
 const AGENT_DIAGNOSTIC_TOOLS = new Set([
-  'evidence_get_context', 'evidence_reset_pair', 'evidence_reset_side',
-  'evidence_set_request_failure', 'evidence_run_plan', 'evidence_report_blocker',
-  'evidence_capture',
+  'get_brief', 'save_shot', 'save_clip', 'skip_change', 'fail_request',
   'browser_navigate', 'browser_navigate_back', 'browser_snapshot',
   'browser_take_screenshot', 'browser_click', 'browser_type',
   'browser_fill_form', 'browser_press_key', 'browser_select_option',
@@ -918,12 +616,12 @@ function recordAgentDiagnostic(metrics, raw) {
   for (const key of ['mcpServerCount', 'toolDefinitionCount', 'topLevelFunctionToolCount',
     'topLevelNamespaceToolCount', 'topLevelCustomToolCount', 'topLevelOtherToolCount',
     'nestedToolDefinitionCount', 'nestedFunctionToolCount', 'nestedCustomToolCount',
-    'nestedOtherToolCount', 'evidenceToolDefinitionCount', 'otherMcpServerCount',
+    'nestedOtherToolCount', 'shotsToolDefinitionCount', 'otherMcpServerCount',
     'forwardedToolDefinitionCount', 'removedToolDefinitionCount', 'browserMemberToolCount',
     'browserAdminToolCount', 'browserFullAdminToolCount', 'storyCount', 'callOrdinal', 'headingCount',
     'buttonCount', 'linkCount', 'imageBlocks', 'exitCode', 'checkRank',
     'documentOrdinal', 'httpStatus', 'requestOrdinal', 'chunkCount', 'hitOrdinal',
-    'count', 'catalogCount', 'terminalToolDefinitionCount']) {
+    'count', 'catalogCount']) {
     if (Number.isSafeInteger(raw[key]) && raw[key] >= 0 && raw[key] <= 1000) {
       event[key] = raw[key];
     }
@@ -953,15 +651,10 @@ function recordAgentDiagnostic(metrics, raw) {
   if (['await_headers', 'await_first_byte', 'streaming'].includes(raw.stage)) {
     event.stage = raw.stage;
   }
-  for (const key of ['evidenceGetContextAvailable', 'evidenceRunPlanAvailable',
-    'evidenceReportBlockerAvailable', 'completionReminder', 'terminalToolChoiceRequired',
-    'toolSurfaceFiltered']) {
+  for (const key of ['briefToolAvailable', 'saveShotToolAvailable', 'skipChangeToolAvailable']) {
     if (typeof raw[key] === 'boolean') event[key] = raw[key];
   }
-  if (raw.terminalToolWireFormat === 'namespace' || raw.terminalToolWireFormat === 'flat') {
-    event.terminalToolWireFormat = raw.terminalToolWireFormat;
-  }
-  for (const key of ['jsonValid', 'acceptedIntentPresent', 'originsPresent', 'revisionsPresent']) {
+  for (const key of ['jsonValid', 'declaredChangesPresent', 'addressesPresent', 'revisionsPresent']) {
     if (typeof raw[key] === 'boolean') event[key] = raw[key];
   }
   if (kind === 'auth_bootstrap') {
@@ -1033,15 +726,9 @@ function newRunMetrics() {
       idleWait: 0,
       provisioning: 0,
       agentExploration: 0,
-      replay: 0,
       artifactPersist: 0,
       cleanup: 0,
     },
-    replayPasses: [],
-    replayRetries: [],
-    replayRuntime: null,
-    lastReplayEvent: null,
-    replayEvents: [],
     agentAttempts: 0,
     agentDispatches: [],
     agentFinalResponses: [],
@@ -1049,10 +736,6 @@ function newRunMetrics() {
       browserCallCounts: {}, browserPending: new Map(), documentPending: new Map(),
       providerPending: new Map(), providerToolConfigs: [], budgetMs: null },
     agentFinalResponse: null,
-    repairCount: 0,
-    repairTrigger: null,
-    repairTriggers: [],
-    fixtureResets: [],
     artifactBytes: 0,
     idleWait: null,
     tokenUsage: {},
@@ -1104,21 +787,12 @@ function traceSummary(metrics, extra = {}) {
       ...metrics.timingsMs,
       total: Math.max(0, Date.now() - metrics.startedAtMs),
     },
-    replayPasses: metrics.replayPasses.slice(0, 12),
-    replayRetries: metrics.replayRetries.slice(0, 6),
-    replayRuntime: metrics.replayRuntime,
     idleWait: metrics.idleWait,
-    lastReplayEvent: metrics.lastReplayEvent,
-    replayEvents: metrics.replayEvents.slice(-MAX_REPLAY_EVENTS),
-    fixtureResets: metrics.fixtureResets.slice(0, 12),
     agentAttempts: metrics.agentAttempts,
     agentDispatches: metrics.agentDispatches.slice(0, 8),
     ...(metrics.agentFinalResponses.length
       ? { agentFinalResponses: metrics.agentFinalResponses.slice(0, 8) } : {}),
     agentActivity: agentActivitySummary(metrics),
-    repairCount: metrics.repairCount,
-    ...(metrics.repairTrigger ? { repairTrigger: metrics.repairTrigger } : {}),
-    repairTriggers: metrics.repairTriggers.slice(0, MAX_REPAIR_ATTEMPTS),
     artifactBytes: metrics.artifactBytes,
     planSource: metrics.planSource || null,
     ...(Object.keys(metrics.tokenUsage).length ? { tokenUsage: { ...metrics.tokenUsage } } : {}),
@@ -1182,7 +856,6 @@ async function executeRun(config, options, injected = {}) {
     state: injected.state || state,
     environment: injected.environment || environment,
     identities: injected.identities || identities,
-    replay: injected.replay || replay,
     evidenceAgent: injected.evidenceAgent || evidenceAgent,
     evidenceControl: injected.evidenceControl || evidenceControl,
     worker: injected.worker || worker,
@@ -1194,37 +867,16 @@ async function executeRun(config, options, injected = {}) {
   let app = options.app;
   let pair = null;
   let registration = null;
-  let latestArtifacts = null;
-  let latestPlanHash = null;
-  let latestHardVerdict = null;
   let failurePhase = 'load_run';
   let temporaryWorkerAttempted = false;
-  // The first planning turn must not inherit the proposal's coding history.
-  // Subsequent locator-repair turns resume only this run's evidence thread.
-  let agentThreadId = null;
   const metrics = newRunMetrics();
-  metrics.replayRuntime = String(config.captureRuntime || process.env.CAPTURE_RUNTIME || config.appRuntime || 'docker').slice(0, 32);
+  metrics.planSource = 'preview_agent';
   const agentBudgetMs = config.visualEvidence?.maxAgentMs || 480_000;
-  const repairAgentBudgetMs = config.visualEvidence?.maxRepairAgentMs || 240_000;
-  const agentWindows = new Map();
   metrics.agentActivity.budgetMs = agentBudgetMs;
-  let replayBudgetStartedAt = null;
-  let replaySuspendedMs = 0;
-  const suspendedMs = () => replaySuspendedMs
-    + (replayBudgetStartedAt == null ? 0 : Date.now() - replayBudgetStartedAt);
   const progress = (message) => {
     if (typeof onProgress === 'function') onProgress(message);
   };
   const stage = (name) => progress({ stage: name });
-  const recordReplayEvent = (event, pass) => {
-    const summary = replayProgressEvent(event, pass);
-    summary.elapsedMs = Math.max(0, Date.now() - metrics.startedAtMs);
-    metrics.lastReplayEvent = summary;
-    metrics.replayEvents.push(summary);
-    if (metrics.replayEvents.length > MAX_REPLAY_EVENTS) metrics.replayEvents.shift();
-    if (typeof options.onReplayEvent === 'function') options.onReplayEvent(summary);
-    progress(`Evidence pass ${pass}: ${summary.type}`);
-  };
 
   try {
     if (!run || !session || !app) {
@@ -1234,29 +886,16 @@ async function executeRun(config, options, injected = {}) {
       run = current;
     }
     if (run.current_run_id && run.current_run_id !== run.id) {
-      throw new VisualEvidenceOrchestrationError('stale_evidence_operation', 'This visual change preview run was superseded before it started.');
+      throw new VisualEvidenceOrchestrationError('stale_evidence_operation', 'A newer run took over these before/after shots before this one started.');
     }
     const intent = planContract.parseIntent(run.intent || intentForSession(session));
-    const authorPlan = options.authorPlan == null
-      ? (run.author_plan == null ? null : planContract.parseReplayPlan(run.author_plan))
-      : planContract.parseReplayPlan(options.authorPlan);
-    // Capture mode publishes the hosted agent's own screenshots instead of
-    // replaying a program it wrote. An author-supplied plan is already a
-    // deterministic program, so it keeps the replay path either way.
-    const captureMode = !authorPlan && config.visualEvidence?.captureMode === true;
-    metrics.planSource = authorPlan ? 'author' : captureMode ? 'agent_capture' : 'hosted_planner';
-    if (authorPlan && planContract.canonicalJson(planContract.semanticIntentFromPlan(authorPlan))
-        !== planContract.canonicalJson(intent)) {
-      throw new VisualEvidenceOrchestrationError(
-        'evidence_intent_mismatch',
-        'The author plan must preserve the proposal’s accepted visual claims.'
-      );
-    }
     if (run.state === 'not_required') return deps.state.getForSession(pool, session.id, { headSha: run.head_sha });
     if (intent.impact === 'none') {
+      // State settles these as not_required; a legacy row must not start an
+      // agent with nothing to shoot.
       throw new VisualEvidenceOrchestrationError(
         'visual_evidence_intent_conflict',
-        'This revision changes browser UI files but declares no visual change. The author must provide a visible claim and replayable steps, or revise the change or declaration before evidence can run.'
+        'This proposal declares no visible change, so there is nothing to shoot.'
       );
     }
 
@@ -1276,7 +915,7 @@ async function executeRun(config, options, injected = {}) {
           metrics.idleWait = observation;
           if (observation.waitClass === 'evidence_recovery' && !recoveryWaitReported) {
             recoveryWaitReported = true;
-            progress('Waiting for the interrupted visual evidence worker to finish cleanup…');
+            progress('Waiting for the interrupted preview agent to finish cleaning up…');
           }
         },
       });
@@ -1286,15 +925,11 @@ async function executeRun(config, options, injected = {}) {
     } finally {
       addTiming(metrics, 'idleWait', idleStartedAt);
     }
-    if (!authorPlan) {
-      // A timeout stops the prior hosted turn and leaves its worker stop
-      // marker intact. This is a new evidence run, so retire that marker
-      // once, after the prior turn is idle and before this run provisions.
-      // Do not clear it in dispatchOnce: a stop during this run's setup must
-      // still prevent its first dispatch, fallback, and repair turns.
-      deps.worker.clearPendingStop(session.id);
-    }
-    progress('Preparing exact base and head revisions for visual evidence…');
+    // A timeout stops the prior turn and leaves its worker stop marker. This
+    // is a new run, so retire that marker once, after the prior turn is idle
+    // and before this run provisions; a stop during setup still wins.
+    deps.worker.clearPendingStop(session.id);
+    progress('Building the exact before and after versions…');
     failurePhase = 'prepare_pair';
     stage(failurePhase);
     const provisioningStartedAt = Date.now();
@@ -1302,7 +937,7 @@ async function executeRun(config, options, injected = {}) {
       await deps.state.transitionRun(pool, run.id, 'provisioning', { startedAt: new Date() });
     } else if (run.state !== 'provisioning') {
       throw new VisualEvidenceOrchestrationError(
-        'stale_evidence_operation', 'This visual evidence run is no longer available for provisioning.'
+        'stale_evidence_operation', 'This run is no longer available to build.'
       );
     }
     notifyEvidence(session, app, 'provisioning');
@@ -1318,7 +953,7 @@ async function executeRun(config, options, injected = {}) {
       headImageDigest: pair.sides.head.imageDigest,
     };
     if (!sameProvenance(exploration, expectedProvenance)) {
-      throw new VisualEvidenceOrchestrationError('evidence_provenance_mismatch', 'The paired exploration environment did not match its prepared fixture and images.');
+      throw new VisualEvidenceOrchestrationError('evidence_provenance_mismatch', 'The before and after builds did not match their fixture and images.');
     }
     failurePhase = 'mint_fixture_identities';
     stage(failurePhase);
@@ -1334,12 +969,13 @@ async function executeRun(config, options, injected = {}) {
     notifyEvidence(session, app, 'exploring');
     stage('exploring');
 
-    const context = evidenceContext({ run, session, revision, pair, deployment: exploration, intent });
+    const context = shotsBrief({ run, session, revision, pair, deployment: exploration, intent });
     const navigationHints = {
       intentPaths: intent.stories.map((story) => story.intent.startPath),
       testingPaths: context.changeContext.testingPaths,
       declaredPaths: context.declaredChecks.map((check) => check.path),
     };
+    const recordClips = intent.stories.some((story) => planContract.needsClip(story));
     failurePhase = 'register_control';
     stage(failurePhase);
     registration = deps.evidenceControl.registerRun({
@@ -1347,208 +983,30 @@ async function executeRun(config, options, injected = {}) {
       sessionId: session.id,
       intent,
       context,
-      mode: captureMode ? 'capture' : 'replay',
-      expiresAt: Date.now() + (config.visualEvidence?.maxRunMs || 1_440_000),
-      resetPair: async () => {
-        const reset = await deps.environment.resetPair(config, pair, { onProgress });
-        if (!sameProvenance(reset, expectedProvenance)) {
-          throw new VisualEvidenceOrchestrationError('evidence_provenance_mismatch', 'The exploration reset changed the paired fixture or image.');
-        }
-        return { origins: reset.origins, bothSidesReset: true };
-      },
-      runPlan: async (plan, { attempt }) => {
-        const replayStartedAt = Date.now();
-        replayBudgetStartedAt = replayStartedAt;
-        try {
-          progress(attempt === 1
-            ? (authorPlan
-              ? 'Replaying the change author’s submitted UI flow twice…'
-              : 'Replaying the agent-authored UI flow twice…')
-            : 'Replaying the corrected UI flow twice…');
-          failurePhase = 'persist_replay_plan';
-          stage(failurePhase);
-          await deps.state.transitionRun(pool, run.id, 'replaying', {
-            replayPlan: plan,
-            planHash: planContract.planHash(plan),
-            repairAttempt: attempt - 1,
-          });
-          notifyEvidence(session, app, 'replaying');
-          const planHash = planContract.planHash(plan);
-          const prepareCase = (pass) => async ({ storyId, viewport }) => {
-            failurePhase = `reset_pass_${pass}`;
-            stage(failurePhase);
-            const resetStartedAt = Date.now();
-            const deployment = await deps.environment.resetPair(config, pair, { onProgress });
-            if (!sameProvenance(deployment, expectedProvenance)) {
-              throw new VisualEvidenceOrchestrationError('evidence_provenance_mismatch',
-                `Replay pass ${pass} did not use the prepared fixture and images.`);
-            }
-            metrics.fixtureResets.push({ pass, storyId, viewport,
-              durationMs: Math.max(0, Date.now() - resetStartedAt) });
-            failurePhase = `pass_${pass}`;
-            stage(failurePhase);
-            return deployment;
-          };
-          const runReplayPass = async (pass) => {
-            let retries = 0;
-            while (true) {
-              const passStartedAt = Date.now();
-              failurePhase = `pass_${pass}`;
-              stage(failurePhase);
-              try {
-                const result = await deps.replay.runPassCases(
-                  config,
-                  session.id,
-                  replayInput({ run, plan, deployment: exploration,
-                    authTokens, provenance: expectedProvenance, pass }),
-                  { prepareCase: prepareCase(pass), onEvent: (event) => {
-                    recordReplayEvent(event, pass);
-                  }, previewRunId: run.id }
-                );
-                metrics.replayPasses.push({
-                  attempt,
-                  pass,
-                  durationMs: Math.max(0, Date.now() - passStartedAt),
-                });
-                return result;
-              } catch (error) {
-                const transient = transientNetworkReplayFailure(error);
-                if (!transient || retries >= MAX_TRANSIENT_REPLAY_RETRIES) throw error;
-                retries += 1;
-                metrics.replayRetries.push({
-                  attempt, pass, retry: retries,
-                  durationMs: Math.max(0, Date.now() - passStartedAt),
-                  ...transient,
-                });
-                recordReplayEvent({
-                  type: 'pass_retry', code: transient.kind,
-                  storyId: transient.storyId, side: transient.side,
-                }, pass);
-                progress(`Evidence pass ${pass} hit a temporary network change; replaying the same plan once…`);
-              }
-            }
-          };
-          const first = await runReplayPass(1);
-          const second = await runReplayPass(2);
-          failurePhase = 'compare';
-          stage(failurePhase);
-          const hardVerdict = deps.replay.comparePasses(first, second, {
-            plan,
-            provenance: expectedProvenance,
-            runId: run.id,
-          });
-          if (!hardVerdict.passed) {
-            if (hardVerdict.code === 'non_reproducible' && hardVerdict.detail?.side) {
-              try {
-                await deps.replay.storeDiagnosticArtifacts(pool, run.id, first.artifacts, second.artifacts, {
-                  headSha: run.head_sha,
-                  planHash,
-                  attempt,
-                  comparison: hardVerdict.detail,
-                });
-              } catch (diagnosticError) {
-                log.warn('visual-evidence', 'Could not retain private comparison images', {
-                  sessionId: session.id, runId: run.id,
-                  code: errorCode(diagnosticError),
-                  message: visibleError(diagnosticError),
-                });
-              }
-            }
-            throw new VisualEvidenceOrchestrationError(hardVerdict.code, hardVerdict.reason, hardVerdict.detail || null);
-          }
-          const replayTrace = traceSummary(metrics, {
-            planHash,
-            runs: 2,
-            stories: hardVerdict.stories,
-            relativePointer: hardVerdict.relativePointer,
-          });
-          failurePhase = 'persist_replay_verdict';
-          stage(failurePhase);
-          await deps.state.transitionRun(pool, run.id, 'reviewing', {
-            hardVerdict,
-            traceSummary: replayTrace,
-            repairAttempt: attempt - 1,
-          });
-          notifyEvidence(session, app, 'reviewing');
-          const artifactPersistStartedAt = Date.now();
-          failurePhase = 'store_artifacts';
-          stage(failurePhase);
-          await deps.replay.storeArtifacts(pool, run.id, second.artifacts, {
-            headSha: run.head_sha,
-            planHash,
-          });
-          addTiming(metrics, 'artifactPersist', artifactPersistStartedAt);
-          addTiming(metrics, 'replay', replayStartedAt);
-          metrics.artifactBytes = second.artifacts.reduce(
-            (sum, artifact) => sum + Math.max(0, Number(artifact.bytes) || artifact.data?.length || 0),
-            0
-          );
-          latestArtifacts = second.artifacts;
-          latestPlanHash = planHash;
-          latestHardVerdict = hardVerdict;
-          failurePhase = 'agent_exploration';
-          stage(failurePhase);
-          return {
-            hardVerdict,
-            planHash,
-            traceSummary: traceSummary(metrics, {
-              planHash,
-              runs: 2,
-              stories: hardVerdict.stories,
-              relativePointer: hardVerdict.relativePointer,
-            }),
-          };
-        } finally {
-          replaySuspendedMs += Date.now() - replayStartedAt;
-          replayBudgetStartedAt = null;
-        }
-      },
+      expiresAt: Date.now() + runBudgetMs,
     });
 
-    const dispatchOnce = async (
-      forceBackend = null,
-      repairAttempt = 0,
-      completionReminder = false,
-      timeoutLimitMs = null
-    ) => {
+    const agentStartedAt = Date.now();
+    const dispatchOnce = async (forceBackend = null) => {
       if (stopRequested.has(run.id)) {
         throw new VisualEvidenceOrchestrationError('evidence_stopped', EVIDENCE_STOPPED_REASON);
       }
-      let window = agentWindows.get(repairAttempt);
-      if (!window) {
-        window = { startedAt: Date.now(), suspendedAt: suspendedMs() };
-        agentWindows.set(repairAttempt, window);
-      }
-      const dispatchStartedAt = Date.now();
-      const suspendedAtStart = suspendedMs();
       metrics.agentAttempts += 1;
       const dispatchTrace = {
         requestedBackend: String(forceBackend || session.agent_backend || 'unknown').slice(0, 64),
         requestedModel: safeModelId(session.agent_model || session.model),
-        repairAttempt,
-        ...(completionReminder ? { completionReminder: true } : {}),
-        budgetMs: repairAttempt > 0 ? repairAgentBudgetMs : agentBudgetMs,
+        budgetMs: agentBudgetMs,
       };
       metrics.agentDispatches.push(dispatchTrace);
+      const dispatchStartedAt = Date.now();
       try {
-        // Provisioning and deterministic replay are platform work. Starting
-        // this clock before the paired images/fixtures were ready spent the
-        // agent's four minutes before it could even open its first page.
-        const remainingAgentMs = dispatchTrace.budgetMs
-          - (Date.now() - window.startedAt
-            - (suspendedMs() - window.suspendedAt));
-        const dispatchTimeoutMs = timeoutLimitMs == null
-          ? remainingAgentMs
-          : Math.min(remainingAgentMs, Math.max(1, Number(timeoutLimitMs) || 1));
-        dispatchTrace.timeoutMs = Math.max(0, dispatchTimeoutMs);
-        if (repairAttempt > 0 && !completionReminder && timeoutLimitMs != null) {
-          dispatchTrace.completionReserveMs = Math.max(0,
-            dispatchTrace.budgetMs - dispatchTrace.timeoutMs);
-        }
-        if (remainingAgentMs <= 0) {
+        // Provisioning is platform work; the agent's budget starts here and
+        // is shared by the first dispatch and any backend fallback.
+        const remainingMs = agentBudgetMs - (Date.now() - agentStartedAt);
+        dispatchTrace.timeoutMs = Math.max(0, remainingMs);
+        if (remainingMs <= 0) {
           throw new VisualEvidenceOrchestrationError(
-            'evidence_agent_timeout',
-            'The preview agent used its bounded exploration time.'
+            'evidence_agent_timeout', 'The preview agent ran out of time.'
           );
         }
         if (evidenceAgent.temporaryEvidenceWorker(session)) temporaryWorkerAttempted = true;
@@ -1559,36 +1017,28 @@ async function executeRun(config, options, injected = {}) {
           origins: exploration.origins,
           authTokens,
           navigationHints,
-          onProgress: (line) => progress(`Evidence agent: ${line}`),
+          recordClips,
+          onProgress: (line) => progress(`Preview agent: ${line}`),
           onEvidenceDiagnostic: (event) => {
             recordAgentDiagnostic(metrics, event);
             options.onAgentDiagnostic?.(agentActivitySummary(metrics), event?.kind);
           },
-          resumeThreadId: agentThreadId,
+          resumeThreadId: null,
           forceBackend,
-          repairAttempt,
-          completionReminder,
-          captureMode,
-          timeoutMs: dispatchTimeoutMs,
-          suspendedMs,
+          timeoutMs: remainingMs,
         }, injected.agentDependencies || {});
         addAgentUsage(metrics, dispatched);
-        agentThreadId = dispatched.threadId || agentThreadId || null;
         dispatchTrace.backend = String(dispatched.backend || dispatchTrace.requestedBackend).slice(0, 64);
         dispatchTrace.model = safeModelId(dispatched.model);
         if (dispatched.fallbackReason) dispatchTrace.fallbackReason = String(dispatched.fallbackReason).slice(0, 64);
         dispatchTrace.outcome = 'completed';
-        if (!latestHardVerdict?.passed) {
-          metrics.agentFinalResponse = agentFinalResponseSummary(
-            dispatched.result, authTokens, exploration.origins
-          );
-          metrics.agentFinalResponses.push({
-            dispatch: metrics.agentDispatches.length,
-            ...(completionReminder ? { completionReminder: true } : {}),
-            ...metrics.agentFinalResponse,
-          });
-          options.onAgentFinalResponse?.(metrics.agentFinalResponse);
-        }
+        metrics.agentFinalResponse = agentFinalResponseSummary(
+          dispatched.result, authTokens, exploration.origins
+        );
+        metrics.agentFinalResponses.push({
+          dispatch: metrics.agentDispatches.length, ...metrics.agentFinalResponse,
+        });
+        options.onAgentFinalResponse?.(metrics.agentFinalResponse);
         return { dispatched, error: null };
       } catch (error) {
         if (error?.evidenceBackend) dispatchTrace.backend = String(error.evidenceBackend).slice(0, 64);
@@ -1597,283 +1047,105 @@ async function executeRun(config, options, injected = {}) {
         dispatchTrace.code = errorCode(error);
         return { dispatched: null, error };
       } finally {
-        metrics.timingsMs.agentExploration += Math.max(0,
-          Date.now() - dispatchStartedAt - (suspendedMs() - suspendedAtStart));
+        metrics.timingsMs.agentExploration += Math.max(0, Date.now() - dispatchStartedAt);
       }
-    };
-
-    const awaitSubmittedReplay = async () => {
-      if (!registration.control.planCalls) return;
-      try { await registration.control.waitForPlan(); }
-      catch { /* The control retains the exact replay error for repair or failure. */ }
     };
 
     failurePhase = 'agent_exploration';
     stage(failurePhase);
-    let agentOutcome = null;
-    if (authorPlan) {
-      // The implementing agent already knows the UI flow. It supplies only
-      // the typed plan; the same platform-owned two-pass replay and storage
-      // decide whether the captured media is reproducible and complete.
-      await registration.control.runPlan(authorPlan);
-    } else if (captureMode) {
-      progress('The preview agent is capturing the declared claims on both revisions…');
-      agentOutcome = await dispatchOnce();
-      if (agentOutcome.error && registration.control.captures.size === 0
-          && session.agent_backend === 'codex_openrouter'
-          && !metrics.agentActivity.counts.provider_dispatched) {
-        progress('The selected Codex model could not start the capture; using the platform evidence agent…');
-        agentOutcome = await dispatchOnce('claude_code');
-      }
-      // Publish every claim that has a complete base/head set, even when the
-      // turn timed out or another claim was blocked. Only a run with nothing
-      // publishable fails, and it says why for each claim.
-      const summary = registration.control.captureSummary();
-      if (!summary.hardVerdict.passed) {
-        const reasons = [...new Set(summary.stories.map((story) => story.reason).filter(Boolean))];
-        if (agentOutcome.error && !registration.control.storyBlockers.size
-            && !registration.control.finished) {
-          throw agentOutcome.error;
-        }
-        throw new VisualEvidenceOrchestrationError(
-          'evidence_capture_incomplete',
-          reasons.join(' ').slice(0, 1800) || 'The preview agent did not capture a complete before and after pair.'
-        );
-      }
-      failurePhase = 'persist_capture_verdict';
-      stage(failurePhase);
-      await deps.state.transitionRun(pool, run.id, 'reviewing', {
-        hardVerdict: summary.hardVerdict,
-        planHash: summary.manifestHash,
-        traceSummary: traceSummary(metrics, {
-          planHash: summary.manifestHash,
-          runs: 1,
-          stories: summary.hardVerdict.stories,
-        }),
-      });
-      notifyEvidence(session, app, 'reviewing');
-      const artifactPersistStartedAt = Date.now();
-      failurePhase = 'store_artifacts';
-      stage(failurePhase);
-      await deps.replay.storeArtifacts(pool, run.id, summary.artifacts, {
-        headSha: run.head_sha,
-        planHash: summary.manifestHash,
-      });
-      addTiming(metrics, 'artifactPersist', artifactPersistStartedAt);
-      metrics.artifactBytes = summary.artifacts.reduce((sum, artifact) => sum + artifact.bytes, 0);
-      latestArtifacts = summary.artifacts;
-      latestPlanHash = summary.manifestHash;
-      latestHardVerdict = summary.hardVerdict;
-    } else {
-      progress('The proposal agent is exploring the changed UI…');
-      agentOutcome = await dispatchOnce();
-      if (agentOutcome.error && !latestHardVerdict
-          && registration.control.planCalls === 0
-          && session.agent_backend === 'codex_openrouter'
-          && !metrics.agentActivity.counts.provider_dispatched) {
-        progress('The selected Codex model could not start the evidence flow; using the platform evidence planner…');
-        agentOutcome = await dispatchOnce('claude_code');
-      }
-      if (!agentOutcome.error && !latestHardVerdict
-          && registration.control.planCalls === 0
-          && !registration.control.finished
-          && agentOutcome.dispatched?.result && agentThreadId) {
-        // Some tool-capable models finish with prose saying they are about to
-        // submit, but omit the tool call. Reuse the same thread and the
-        // remainder of the original agent budget for one explicit reminder;
-        // this is not another full exploration allowance.
-        progress('The evidence planner finished without submitting its replay; asking it to complete the tool call…');
-        const priorBackend = metrics.agentDispatches.at(-1)?.backend;
-        agentOutcome = await dispatchOnce(
-          priorBackend === 'claude_code' ? 'claude_code' : null,
-          0,
-          true
-        );
-      }
-      // The hosted tool acknowledges an accepted plan immediately. Its HTTP
-      // request must never wait through a full paired browser replay, which
-      // can exceed ingress and MCP idle timeouts. The platform owns and awaits
-      // the replay here, even if the planning agent has already exited.
-      await awaitSubmittedReplay();
-      while (!latestHardVerdict
-          && registration.control.planCalls === metrics.repairCount + 1
-          && metrics.repairCount < MAX_REPAIR_ATTEMPTS
-          && ['pass_1', 'pass_2'].includes(failurePhase)
-          && replayRepairKind(registration.control.lastReplayFailure?.error,
-            registration.control.lastSubmittedPlan)) {
-        const replayFailure = registration.control.lastReplayFailure.error;
-        const repairKind = replayRepairKind(replayFailure, registration.control.lastSubmittedPlan);
-        // A wrong locator, non-actionable control, or premature checkpoint can
-        // get a bounded correction turn. No failed media is published; the
-        // replacement must still pass both clean, provenance-fenced passes.
-        const failureDetail = boundedReplayDetail(replayFailure);
-        registration.control.allowRepair(
-          repairKind === 'motion_timing'
-            ? 'A motion checkpoint ran while an observed element was still visible. Inspect both revisions and add an observed, bounded wait without changing the checkpoint assertions or interactions.'
-            : repairKind === 'static_timing'
-              ? 'The static checkpoint kept changing after at least three pixel samples. Inspect both revisions and wait for an observed settled state. Keep the original interactions, focus, and assertions.'
-            : repairKind === 'assertion_locator'
-              ? 'A positive checkpoint assertion selected the wrong element or cardinality. Inspect the failed target on both fresh revisions and correct only that assertion target. Its assertion type and expected count or value, every action, route, focus target, and every other assertion are locked.'
-            : repairKind === 'supporting_visibility'
-              ? 'A supporting base-side visibility assertion matched one attached but hidden element while another assertion still proves the accepted change is absent on base. Inspect both fresh revisions. Correct or remove only that unsupported context assertion, retain the separate base absence proof and every accepted interaction and claim, and report a blocker if the hidden element is actually required.'
-            : repairKind === 'actionability'
-              ? 'The planned target existed and was visible, but it did not become actionable. Inspect both fresh revisions for a blocking dialog, tour, disabled state, or unfinished transition. Add explicit semantic actions or bounded observed-state waits, then keep the original claimed interaction. Do not force the action or bypass the user flow.'
-            : repairKind === 'hosted_app'
-              ? 'The selected hosted app loaded but had browser errors or blocked external requests. Inspect a different deployed public app on both revisions, keep the original platform interaction and assertions, and use it only if its runtime loads cleanly. Do not widen the network policy or suppress browser errors.'
-            : repairKind === 'route_data'
-              ? 'The planned route produced same-origin API 404s. Inspect the accepted persona on both revisions, choose real accessible data, and follow the claimed user flow. Do not use an error page or a shell with missing content as evidence.'
-            : 'A planned locator did not match the intended visible element during replay. Inspect its actual state on both revisions and correct the replays.',
-          {
-            kind: repairKind,
-            code: errorCode(replayFailure),
-            message: visibleError(replayFailure),
-            detail: failureDetail,
-          }
-        );
-        metrics.repairTrigger = {
-          kind: repairKind,
-          code: errorCode(replayFailure),
-          ...(Number.isInteger(metrics.lastReplayEvent?.pass)
-            ? { pass: metrics.lastReplayEvent.pass } : {}),
-          ...(['base', 'head'].includes(failureDetail?.side)
-            ? { side: failureDetail.side } : {}),
-          ...(/^[a-z0-9][a-z0-9_-]{0,95}$/.test(String(failureDetail?.actionId || ''))
-            ? { actionId: failureDetail.actionId } : {}),
-          ...(Number.isInteger(failureDetail?.assertionIndex)
-            ? { assertionIndex: failureDetail.assertionIndex } : {}),
-        };
-        metrics.repairTriggers.push(metrics.repairTrigger);
-        // The failed pass may have changed its fixture. Restore the same
-        // pinned pair before the planner inspects the control again.
-        failurePhase = 'repair_reset';
-        const repairResetStartedAt = Date.now();
-        try { await registration.control.resetPair(); }
-        finally { replaySuspendedMs += Date.now() - repairResetStartedAt; }
-        metrics.repairCount += 1;
-        failurePhase = 'agent_repair';
-        progress(repairKind === 'motion_timing'
-          ? 'A motion checkpoint ran before the animation settled; the evidence agent is checking the timing…'
-          : repairKind === 'static_timing'
-            ? 'The static checkpoint kept changing; the evidence agent is checking the settled state…'
-          : repairKind === 'assertion_locator'
-            ? 'A checkpoint assertion selected the wrong element; the evidence agent is correcting only that locator…'
-          : repairKind === 'supporting_visibility'
-            ? 'A supporting base checkpoint assertion was hidden; the evidence agent is checking the real surrounding state…'
-          : repairKind === 'actionability'
-            ? 'A visible control was blocked or not ready; the evidence agent is correcting the setup flow…'
-          : repairKind === 'hosted_app'
-            ? 'The selected app had browser errors; the evidence agent is checking another deployed app…'
-          : repairKind === 'route_data'
-            ? 'The planned route could not load its data; the evidence agent is checking the account and fixture…'
-          : 'A planned control did not match the page; the evidence agent is inspecting and correcting it…');
-        const priorBackend = metrics.agentDispatches.at(-1)?.requestedBackend;
-        const repairBackend = priorBackend === 'claude_code' ? 'claude_code' : null;
-        const completionReserveMs = repairCompletionReserveMs(repairAgentBudgetMs);
-        agentOutcome = await dispatchOnce(
-          repairBackend,
-          metrics.repairCount,
-          false,
-          repairAgentBudgetMs - completionReserveMs
-        );
-        await awaitSubmittedReplay();
-        if (!latestHardVerdict
-            && registration.control.planCalls === metrics.repairCount
-            && !registration.control.finished
-            && agentThreadId
-            && (!agentOutcome.error
-              || errorCode(agentOutcome.error) === 'evidence_agent_timeout')) {
-          // A slower tool-capable model may use the whole repair exploration
-          // window while actively inspecting the failed target. Reserve part
-          // of the same bounded budget for a terminal-only continuation so it
-          // must submit the correction it found or report the blocker. This
-          // does not grant a second exploration allowance or weaken replay.
-          progress('The evidence correction did not submit its replay; asking it to complete the tool call…');
-          agentOutcome = await dispatchOnce(
-            repairBackend,
-            metrics.repairCount,
-            true,
-            completionReserveMs
-          );
-          await awaitSubmittedReplay();
-        }
-        if (registration.control.planCalls === metrics.repairCount) break;
-      }
-      if (agentOutcome.error && !latestHardVerdict) {
-        if (metrics.repairCount > 0 && registration.control.planCalls === metrics.repairCount) {
-          throw agentOutcome.error;
-        }
-        throw registration.control.lastReplayFailure?.error
-          || registration.control.lastToolFailure?.error || agentOutcome.error;
-      }
+    progress('The preview agent is taking before/after shots…');
+    let agentOutcome = await dispatchOnce();
+    if (agentOutcome.error && registration.control.saved.size === 0
+        && session.agent_backend === 'codex_openrouter'
+        && !metrics.agentActivity.counts.provider_dispatched) {
+      progress('The selected Codex model could not start; using the platform preview agent…');
+      agentOutcome = await dispatchOnce('claude_code');
     }
 
-    if (!latestHardVerdict?.passed || !latestArtifacts || !latestPlanHash) {
-      // The run-plan tool can fail while the model turn itself exits normally.
-      // Preserve that platform replay error instead of replacing it with the
-      // unhelpful "missing replay" fallback.
-      if (registration.control.lastReplayFailure) throw registration.control.lastReplayFailure.error;
-      if (registration.control.lastToolFailure) throw registration.control.lastToolFailure.error;
-      if (registration.control.finished?.status === 'failed') {
-        throw new VisualEvidenceOrchestrationError('evidence_agent_reported_failure', registration.control.finished.reason);
+    // Publish every change with a complete before/after set, even when the
+    // turn ran out of time or another change was skipped. Only a run with
+    // nothing to publish fails, and it says why for each change.
+    const summary = registration.control.summary();
+    if (!summary.verdict.passed) {
+      const reasons = [...new Set(summary.stories.map((story) => story.reason).filter(Boolean))];
+      if (agentOutcome.error && !registration.control.skipped.size && !registration.control.skippedAll) {
+        throw agentOutcome.error;
       }
-      throw new VisualEvidenceOrchestrationError('missing_evidence_replay', 'The visual evidence replay did not produce a passing plan.');
+      throw new VisualEvidenceOrchestrationError(
+        'evidence_capture_incomplete',
+        reasons.join(' ').slice(0, 1800) || 'The preview agent did not save a before and after shot.'
+      );
     }
+    failurePhase = 'persist_shots';
+    stage(failurePhase);
+    await deps.state.transitionRun(pool, run.id, 'reviewing', {
+      hardVerdict: summary.verdict,
+      planHash: summary.manifestHash,
+      traceSummary: traceSummary(metrics, {
+        planHash: summary.manifestHash, runs: 1, stories: summary.verdict.stories,
+      }),
+    });
+    notifyEvidence(session, app, 'reviewing');
+    const artifactPersistStartedAt = Date.now();
+    failurePhase = 'store_artifacts';
+    stage(failurePhase);
+    await deps.state.storeArtifacts(pool, run.id, summary.files, {
+      headSha: run.head_sha,
+      planHash: summary.manifestHash,
+    });
+    addTiming(metrics, 'artifactPersist', artifactPersistStartedAt);
+    metrics.artifactBytes = summary.files.reduce((sum, file) => sum + file.bytes, 0);
 
-    // A successful run tears down its exact-revision environment before it
-    // becomes reviewer-visible. Cleanup is part of the durable timing trace,
-    // and no verified row can leave private fixture runtimes live.
-    if (pair) {
-      failurePhase = 'cleanup';
-      stage(failurePhase);
-      const cleanupStartedAt = Date.now();
-      await deps.environment.cleanupPair(config, pair);
-      addTiming(metrics, 'cleanup', cleanupStartedAt);
-      pair = null;
-    }
+    // Tear the before/after builds down before the shots become visible, so
+    // no published run can leave private fixture runtimes live.
+    failurePhase = 'cleanup';
+    stage(failurePhase);
+    const cleanupStartedAt = Date.now();
+    await deps.environment.cleanupPair(config, pair);
+    addTiming(metrics, 'cleanup', cleanupStartedAt);
+    pair = null;
     const finalTrace = traceSummary(metrics, {
-      planHash: latestPlanHash,
-      runs: captureMode ? 1 : 2,
-      stories: latestHardVerdict?.stories || [],
-      relativePointer: latestHardVerdict?.relativePointer === true,
+      planHash: summary.manifestHash,
+      runs: 1,
+      stories: summary.verdict.stories,
       terminalFailureClass: null,
     });
     failurePhase = 'verify';
     stage(failurePhase);
     await deps.state.transitionRun(pool, run.id, 'verified', {
-      hardVerdict: latestHardVerdict,
-      planHash: latestPlanHash,
-      repairAttempt: Math.max(0, registration.control.planCalls - 1),
+      hardVerdict: summary.verdict,
+      planHash: summary.manifestHash,
       traceSummary: finalTrace,
     });
     const { agentFinalResponses: _privateResponses, ...logFinalTrace } = finalTrace;
-    log.info('visual-evidence', 'Visual evidence captures stored', {
+    log.info('visual-evidence', 'Before/after shots published', {
       sessionId: session.id,
       runId: run.id,
       trace: logFinalTrace,
     });
     notifyEvidence(session, app, 'verified');
-    progress('Visual evidence captured for human review.');
+    progress('Before/after shots are ready.');
     return deps.state.getForSession(pool, session.id, { headSha: run.head_sha });
   } catch (error) {
     const control = registration?.control;
-    const toolFailure = control?.lastReplayFailure || control?.lastToolFailure;
-    const diagnosticError = toolFailure?.error || error;
-    const replayDetail = boundedReplayDetail(diagnosticError);
+    const toolFailure = control?.lastToolFailure;
     const failureTrace = traceSummary(metrics, {
       terminalFailureClass: errorCode(error),
       ...(metrics.agentFinalResponse ? { agentFinalResponse: metrics.agentFinalResponse } : {}),
       failure: {
-        phase: toolFailure?.operation === 'run-plan' && control.planCalls === 0
-          ? 'plan_validation' : failurePhase,
-        code: errorCode(diagnosticError),
-        message: visibleError(diagnosticError),
-        ...(toolFailure ? { tool: toolFailure.operation } : {}),
-        ...(replayDetail ? { detail: replayDetail } : {}),
+        phase: failurePhase,
+        code: errorCode(error),
+        message: visibleError(error),
+        ...(toolFailure ? {
+          tool: toolFailure.operation,
+          toolCode: errorCode(toolFailure.error),
+          toolMessage: visibleError(toolFailure.error),
+        } : {}),
       },
       ...(control ? { control: {
-        planCalls: control.planCalls,
-        finishStatus: control.finished?.status || null,
-        finishReason: control.finished?.reason || null,
+        savedFiles: control.saved.size,
+        skippedChanges: control.skipped.size,
+        skippedAll: control.skippedAll ? true : false,
       } } : {}),
     });
     const failed = await failCurrentRun(
@@ -1893,7 +1165,7 @@ async function executeRun(config, options, injected = {}) {
       agentFinalResponses: _privateResponses,
       ...logTrace
     } = failureTrace;
-    log.warn('visual-evidence', 'Visual evidence run ended without captured evidence', {
+    log.warn('visual-evidence', 'Before/after run ended without shots', {
       sessionId: session?.id || null,
       runId: run?.id || options.runId || null,
       code: errorCode(error),
@@ -1909,7 +1181,7 @@ async function executeRun(config, options, injected = {}) {
         try { await deps.environment.cleanupPair(config, pair); }
         finally {
           addTiming(metrics, 'cleanup', cleanupStartedAt);
-          log.info('visual-evidence', 'Visual evidence environment cleanup finished', {
+          log.info('visual-evidence', 'Before/after build cleanup finished', {
             sessionId: session?.id || null,
             runId: run?.id || options.runId || null,
             cleanupMs: metrics.timingsMs.cleanup,
@@ -1917,18 +1189,16 @@ async function executeRun(config, options, injected = {}) {
         }
       }
     } finally {
-      // Repair attempts resume the same evidence thread, so keep the worker
-      // through the entire run and release it only after the last attempt.
       if (temporaryWorkerAttempted) {
         try {
           await deps.worker.destroyCcVolume(session.id);
-          log.info('visual-evidence', 'Temporary evidence worker released', {
+          log.info('visual-evidence', 'Temporary preview worker released', {
             sessionId: session.id, runId: run?.id || options.runId || null,
           });
         } catch (error) {
-          // Cleanup must not replace the replay verdict. The Kubernetes
+          // Cleanup must not replace the run's outcome. The Kubernetes
           // error is still logged so operators can investigate a leak.
-          log.warn('visual-evidence', 'Temporary evidence worker cleanup failed', {
+          log.warn('visual-evidence', 'Temporary preview worker cleanup failed', {
             sessionId: session.id, runId: run?.id || options.runId || null,
             error: error.message,
           });
@@ -1943,10 +1213,10 @@ async function executeRun(config, options, injected = {}) {
 // here on purpose — neither is a run that failed to start, and a run with a
 // state of its own says more than any note could.
 const NOT_STARTED_REASONS = Object.freeze({
-  disabled: 'Visual change previews are not being run on this deployment, so nothing picked this one up.',
-  missing_intent: 'This proposal has no visual change preview claim recorded, so there was nothing to run.',
+  disabled: 'Before/after shots are not being taken on this deployment, so nothing picked this one up.',
+  missing_intent: 'This proposal has no declared change recorded, so there was nothing to shoot.',
   no_revision: 'The proposal revision to preview could not be resolved, so the run never started.',
-  no_staging_preview: 'No staging preview was built for this commit, so there was nothing to record a visual change preview against.',
+  no_staging_preview: 'No staging preview was built for this commit, so there was nothing to take before/after shots of.',
 });
 
 // Store the refusal on the proposal and say so at info level. Both halves
@@ -1967,7 +1237,7 @@ async function noteNotStarted(pool, sessionId, reason, injected = {}) {
 
 async function scheduleForSession(config, options, injected = {}) {
   const { pool, sessionId, headSha = null, trigger = 'preview-ready',
-    onProgress = null, authorPlan = null } = options;
+    onProgress = null } = options;
   if (!config.visualEvidence?.execute) {
     await noteNotStarted(pool, sessionId, 'disabled', injected);
     return { scheduled: false, reason: 'disabled' };
@@ -2002,15 +1272,8 @@ async function scheduleForSession(config, options, injected = {}) {
     intent,
     trigger,
     heuristicUi,
-    authorPlan,
   });
   const run = created.run;
-  if (run.author_plan) {
-    log.info('visual-evidence', 'Scheduling submitted author plan', {
-      sessionId, runId: run.id, headSha: run.head_sha,
-      planHash: planContract.planHash(run.author_plan),
-    });
-  }
   notifyEvidence(session, publicSessionAndApp(session).app, run.state);
   require('./pr-metadata').syncEvidencePrBlock(pool, sessionId).catch((error) => {
     log.warn('visual-evidence', 'Could not publish the authenticated evidence link to the PR', {
@@ -2054,8 +1317,6 @@ async function scheduleForSession(config, options, injected = {}) {
     onProgress: heartbeat.onProgress,
     onAgentDiagnostic: heartbeat.onAgentDiagnostic,
     onAgentFinalResponse: heartbeat.onAgentFinalResponse,
-    onReplayEvent: heartbeat.onReplayEvent,
-    authorPlan: run.author_plan || authorPlan,
   }, injected).catch((error) => {
     log.warn('visual-evidence', 'Visual evidence run failed', {
       sessionId,
@@ -2096,7 +1357,7 @@ function inFlightRunFor(sessionId) {
   return null;
 }
 
-// A person's Stop on the change's running visual change preview. The run is
+// A person's Stop on the change's running before/after shots. The run is
 // failed at once, with its own code, so the proposal reads "stopped" and an
 // automatic trigger for the same head does not start it again (a person's
 // Rerun still does). The preview agent is killed only when the change's
@@ -2130,7 +1391,7 @@ async function stopForSession(pool, sessionId, injected = {}) {
       log.warn('visual-evidence', 'Could not stop the preview agent', { sessionId, runId: run.id, error: error.message });
     });
   }
-  log.info('visual-evidence', 'Visual change preview stopped', { sessionId, runId: run.id, from: run.state });
+  log.info('visual-evidence', 'Before/after shots stopped', { sessionId, runId: run.id, from: run.state });
   notifyEvidence(session, publicSessionAndApp(session).app, 'failed', { failureCode: 'evidence_stopped' });
   return { stopped: true, runId: run.id };
 }
@@ -2144,19 +1405,14 @@ module.exports = {
   loadSession,
   resolveRevisionContext,
   declaredCheckSummary,
-  evidenceContext,
+  shotsBrief,
   sameProvenance,
-  replayInput,
   waitForSessionIdle,
   newRunMetrics,
   addTiming,
   addAgentUsage,
   traceSummary,
   progressPhase,
-  replayProgressEvent,
-  replayRepairKind,
-  repairCompletionReserveMs,
-  transientNetworkReplayFailure,
   startRunHeartbeat,
   liveRunObserver,
   notifyEvidence,

@@ -53,7 +53,7 @@ function inputKey({ component, revision, ref, claudeCodeVersion }, { cwd, run = 
   // resolver changes invalidate the build recipe. Keep candidate branches
   // separate from main, even for identical inputs.
   const componentInputs = component === 'capture'
-    ? ['capture', 'evidence', 'src/services/visual-evidence-plan.js']
+    ? ['capture', 'evidence']
     : [component];
   const objects = [...componentInputs, WORKFLOW, RESOLVER].map(path =>
     run('git', ['rev-parse', `${revision}:${path}`], cwd));

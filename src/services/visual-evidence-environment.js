@@ -54,7 +54,7 @@ function exactSha(value, label = 'revision') {
 
 function repoParts(repoUrl) {
   const match = String(repoUrl || '').match(/^https:\/\/github\.com\/([^/]+)\/([^/#]+?)(?:\.git)?$/i);
-  if (!match) throw new VisualEvidenceEnvironmentError('invalid_evidence_repository', 'The visual change preview requires an HTTPS GitHub repository.');
+  if (!match) throw new VisualEvidenceEnvironmentError('invalid_evidence_repository', 'Before/after shots need an HTTPS GitHub repository.');
   return { owner: match[1], repo: match[2] };
 }
 
@@ -345,7 +345,7 @@ async function stopPair(config, pair, { strict = false } = {}) {
   if (strict && errors.length) {
     throw new VisualEvidenceEnvironmentError(
       'evidence_runtime_reset_failed',
-      'The previous evidence runtimes could not be stopped cleanly.',
+      'The previous before and after builds could not be stopped cleanly.',
       errors.map((err) => err.message).slice(0, 4)
     );
   }

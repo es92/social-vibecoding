@@ -1,8 +1,8 @@
 'use strict';
 
 // One public shape for every reviewer surface. Binary bytes, internal
-// origins, fixture names, tokens, raw plans, and model transcripts never
-// enter this view model.
+// origins, fixture names, tokens, and model transcripts never enter this
+// view model.
 
 const state = require('./visual-evidence-state');
 const { visualHeadForSession } = require('./pr-vote-revision');
@@ -34,13 +34,15 @@ function cleanClaims(value) {
   })).filter((claim) => claim.id && claim.claim);
 }
 
-function cleanClaimResults(value) {
+// One result per declared change: its shots are ready, or the preview agent
+// skipped it and says why.
+function cleanShotResults(value) {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 3).filter((result) => STORY_ID_RE.test(String(result?.id || '')))
     .map((result) => ({
       id: String(result.id),
-      status: result.status === 'captured' ? 'captured' : 'blocked',
-      reason: result.status === 'captured' || typeof result.reason !== 'string'
+      status: result.status === 'ready' ? 'ready' : 'skipped',
+      reason: result.status === 'ready' || typeof result.reason !== 'string'
         ? null : result.reason.slice(0, 1000),
     }));
 }
@@ -60,7 +62,11 @@ function cleanArtifacts(items, { slug, sessionId, verified }) {
         || !['focus', 'context', 'animation'].includes(artifact.variant)
         || !Object.hasOwn(MEDIA_TYPE, artifact.media)
         || artifact.contentType !== MEDIA_TYPE[artifact.media]) return false;
-    if (artifact.variant === 'animation') return artifact.side === 'paired' && artifact.media !== 'png';
+    // A clip is one recording per side; older runs stored one paired
+    // before/after animation instead.
+    if (artifact.variant === 'animation') {
+      return artifact.side === 'paired' ? artifact.media !== 'png' : artifact.media === 'webm';
+    }
     return artifact.side !== 'paired' && artifact.media === 'png';
   }).map((artifact) => ({
     id: String(artifact.id || ''),
@@ -110,16 +116,12 @@ function fromSnapshot(session, currentHead) {
     headSha: recordedHead,
     failureCode: typeof detail.failureCode === 'string' ? detail.failureCode : null,
     failureReason: mismatched
-      ? 'A newer proposal revision superseded this evidence.'
+      ? 'A newer revision of this proposal replaced these shots.'
       : (typeof detail.failureReason === 'string' ? detail.failureReason.slice(0, 2000) : null),
     notStartedReason: notStartedReason(session, mismatched),
     repairAvailable: detail.repairAvailable === true,
     planHash: typeof detail.planHash === 'string' ? detail.planHash : null,
-    replayCount: Number.isInteger(detail.replayCount) ? Math.max(0, Math.min(2, detail.replayCount)) : null,
-    repairCount: Number.isInteger(detail.repairCount) ? Math.max(0, Math.min(1, detail.repairCount)) : 0,
-    relativePointer: detail.relativePointer === true,
-    captureMode: false,
-    claimResults: [],
+    shotResults: [],
     progress: null,
     verifiedReason: null,
     overriddenBy: Number.isInteger(detail.overriddenBy) ? detail.overriddenBy : null,
@@ -145,15 +147,11 @@ function serialize(run, session, slug, currentHead) {
     failureCode: matchesCurrent ? (run.failureCode || null) : 'superseded',
     failureReason: matchesCurrent
       ? (run.failureReason || null)
-      : 'A newer proposal revision superseded this evidence.',
+      : 'A newer revision of this proposal replaced these shots.',
     notStartedReason: notStartedReason(session, !matchesCurrent),
     repairAvailable: matchesCurrent && run.repairAvailable === true,
     planHash: run.planHash || null,
-    replayCount: Number.isInteger(run.replayCount) ? Math.max(0, Math.min(2, run.replayCount)) : null,
-    repairCount: Number.isInteger(run.repairCount) ? Math.max(0, Math.min(1, run.repairCount)) : 0,
-    relativePointer: run.relativePointer === true,
-    captureMode: run.captureMode === true,
-    claimResults: matchesCurrent && run.state === 'verified' ? cleanClaimResults(run.claimResults) : [],
+    shotResults: matchesCurrent && run.state === 'verified' ? cleanShotResults(run.shotResults) : [],
     progress: matchesCurrent && PUBLIC_STATES.has(run.state) ? (run.progress || null) : null,
     verifiedReason: null,
     overriddenBy: run.overriddenBy || null,
@@ -212,7 +210,7 @@ async function getForSessions(pool, sessions, slug) {
 module.exports = {
   PUBLIC_STATES,
   cleanClaims,
-  cleanClaimResults,
+  cleanShotResults,
   cleanArtifacts,
   artifactUrl,
   notStartedReason,

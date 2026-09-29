@@ -1487,7 +1487,7 @@ export async function stopAgentTurn() {
   }
 }
 
-/** Stop the active change's visual change preview; the conversation re-reads to drop it. */
+/** Stop the active change's before/after shots; the conversation re-reads to drop them. */
 export async function stopPreviewCapture() {
   const id = state.id;
   const change = state.session?.activeChange;

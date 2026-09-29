@@ -108,7 +108,7 @@ function buildEvidenceBlock({ intent, appSlug, sessionId, domain }) {
     : [];
   if (intent.impact !== 'none' && !claims.length) return '';
   const url = `https://${domain}/#app/${encodeURIComponent(appSlug)}/dev/proposals/${Number(sessionId)}`;
-  const lines = [EVIDENCE_MARKER_START, '## Visual change preview', ''];
+  const lines = [EVIDENCE_MARKER_START, '## Before/after shots', ''];
   if (intent.impact === 'none') {
     lines.push(`No user-visible change declared: ${safeMarkdownText(intent.rationale, 1000)}`, '');
   } else {
@@ -116,9 +116,9 @@ function buildEvidenceBlock({ intent, appSlug, sessionId, domain }) {
     lines.push('');
   }
   lines.push(
-    `[Review the current exact-revision visual change preview in Homeroom](${url})`,
+    `[See the before/after shots of this exact revision in Homeroom](${url})`,
     '',
-    '_The visual change preview is authenticated and revision-scoped; protected images are not embedded in this public PR body._',
+    '_The shots are private to Homeroom and tied to this revision, so they are not embedded in this public PR body._',
     EVIDENCE_MARKER_END
   );
   return lines.join('\n');

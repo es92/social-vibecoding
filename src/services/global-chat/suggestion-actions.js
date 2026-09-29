@@ -151,7 +151,7 @@ function contextualCopy(actionId, definition, parameters, requestedTarget) {
     'issue.comments': [`Comments on ${target}`, `Here are the comments on ${target}.`],
     'governance.detail': [`Open ${target}`, `Here are the details for ${target}.`],
     'proposal.detail': [`Open ${target}`, `Here are the details for ${target}.`],
-    'proposal.evidence': [`Visual change preview for ${target}`, `Here is the visual change preview for ${target}.`],
+    'proposal.evidence': [`Before/after shots for ${target}`, `Here are the before/after shots for ${target}.`],
     'session.detail': [`Details for ${target}`, `Here are the details for ${target}.`],
     'session.checks': [`Checks for ${target}`, `Here are the checks for ${target}.`],
     'conversation.detail': [`Open ${target}`, `Here are the details for ${target}.`],
@@ -637,7 +637,7 @@ const ACTIONS = Object.freeze({
     )],
   }),
   'proposal.evidence': Object.freeze({
-    label: 'Proposal visual change preview', message: 'Here is the proposal visual change preview.', domain: 'governance',
+    label: 'Proposal before/after shots', message: 'Here are the proposal before/after shots.', domain: 'governance',
     parameters: (value) => exactParameters(value, {
       appSlug: APP_SLUG_RE, proposalId: NUMERIC_ID_RE,
     }),

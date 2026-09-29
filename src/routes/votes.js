@@ -43,8 +43,8 @@ const VISUAL_EVIDENCE_GATE_STATES = new Set(['verified', 'not_required', 'overri
 // Evidence enforcement is deliberately scoped to proposals that have entered
 // the v2 contract. Historical proposals with no declaration keep their old
 // voting lifecycle; a proposal whose detail says evidence is required must
-// have replay-checked captures for the exact current head. People review
-// whether those captures support the claim. The artifact route
+// have before/after shots for the exact current head. People look at
+// whether those shots show the declared change. The artifact route
 // independently enforces the same revision fence.
 function visualEvidenceGateForSession(config, session) {
   if (!config?.visualEvidence?.enforce) return { applies: false, allowed: true, state: null };
@@ -60,10 +60,10 @@ function visualEvidenceGateForSession(config, session) {
   }
   const allowed = exactHead && VISUAL_EVIDENCE_GATE_STATES.has(evidenceState);
   const reason = !exactHead
-    ? 'The visual change preview has not been captured for the proposal’s current commit.'
+    ? 'The before/after shots have not been taken for the proposal’s current commit.'
     : evidenceState === 'failed'
-      ? (detail.failureReason || 'The visual change preview failed and must be retried or overridden by an app administrator.')
-      : `The visual change preview is ${String(evidenceState).replace(/_/g, ' ')}.`;
+      ? (detail.failureReason || 'The before/after shots could not be taken; take them again, or an app administrator can waive them.')
+      : `The before/after shots are ${String(evidenceState).replace(/_/g, ' ')}.`;
   return { applies: true, allowed, state: evidenceState, currentHead, recordedHead, reason };
 }
 
@@ -1807,16 +1807,6 @@ function parseImportVisualEvidence(body) {
   return visualEvidencePlan.parseIntent(body.visualEvidence);
 }
 
-function parseImportVisualEvidencePlan(body, intent, revisions) {
-  if (!body || body.visualEvidencePlan === undefined) return undefined;
-  if (!intent) {
-    throw new visualEvidencePlan.VisualEvidenceValidationError([{
-      path: ['visualEvidencePlan'], message: 'A matching visualEvidence intent is required',
-    }]);
-  }
-  return visualEvidencePlan.parseAuthorPlanSubmission(body.visualEvidencePlan, intent, revisions);
-}
-
 // Keep internal failures opaque, but name the import boundary a caller can
 // act on. The connector turns these fields into an `import_failed` response,
 // so an agent can retry the SAME open pull request instead of manufacturing a
@@ -1827,14 +1817,6 @@ function prImportFailureBody(err) {
       error: 'PR import failed while recording visualEvidence.',
       stage: 'visual_evidence_intent',
       field: 'visualEvidence',
-      retryable: true,
-    };
-  }
-  if (err?.prImportStage === 'visual_evidence_plan') {
-    return {
-      error: 'PR import failed while recording visualEvidencePlan.',
-      stage: 'visual_evidence_plan',
-      field: 'visualEvidencePlan',
       retryable: true,
     };
   }
@@ -2993,19 +2975,16 @@ function voteRoutes(config) {
       // Absent (the browser's import button never sends them) leaves all
       // three columns NULL, exactly as before.
       const importTesting = parseImportTesting(req.body);
+      // A `visualEvidencePlan` from an older agent is ignored: before/after
+      // shots are taken by the preview agent from the declared changes.
       let importVisualEvidence;
-      let importVisualEvidencePlan;
       try {
         importVisualEvidence = parseImportVisualEvidence(req.body);
-        importVisualEvidencePlan = parseImportVisualEvidencePlan(req.body, importVisualEvidence, { baseSha, headSha });
       } catch (err) {
         return res.status(400).json({
           error: err.code || 'invalid_visual_evidence',
           message: err.message,
         });
-      }
-      if (importVisualEvidencePlan && !config.visualEvidence?.collect) {
-        return res.status(503).json({ error: 'visual_evidence_disabled' });
       }
       // The request this pull request implements (#1217). A submission
       // prepared from a request knows its number — prepare_work records it,
@@ -3095,30 +3074,6 @@ function voteRoutes(config) {
             throw err;
           }
         }
-        if (importVisualEvidencePlan) {
-          try {
-            const { run } = await visualEvidenceState.createRunInTransaction(importClient, {
-              sessionId: inserted[0].id,
-              baseSha, headSha, intent: importVisualEvidence,
-              authorPlan: importVisualEvidencePlan.plan, trigger: 'import-author-plan',
-            });
-            visualEvidenceResult = {
-              ...visualEvidenceResult,
-              state: run.state,
-              runId: run.id,
-              detail: {
-                ...visualEvidenceState.pendingDetail(importVisualEvidence, { headSha }),
-                runId: run.id, baseSha, state: run.state,
-              },
-            };
-          } catch (err) {
-            if (err && typeof err === 'object') {
-              err.prImportStage = 'visual_evidence_plan';
-              err.prImportField = 'visualEvidencePlan';
-            }
-            throw err;
-          }
-        }
         await importClient.query('COMMIT');
       } catch (err) {
         await importClient.query('ROLLBACK').catch(() => {});
@@ -3127,13 +3082,6 @@ function voteRoutes(config) {
         importClient.release();
       }
       const sessionId = inserted[0].id;
-      if (importVisualEvidencePlan) {
-        log.info('votes', 'PR imported with author visual evidence plan', {
-          sessionId, prNumber, baseSha, headSha,
-          planHash: importVisualEvidencePlan.planHash,
-          runId: visualEvidenceResult.runId,
-        });
-      }
       const session = {
         id: sessionId, app_id: app.id, app_slug: app.slug, user_id: req.user.id,
         branch_name: headBranch, pr_number: prNumber, pr_title: pr.title || null,
@@ -7122,7 +7070,6 @@ module.exports = {
   // Connector-submitted testing metadata on an import, unit-tested directly.
   parseImportTesting,
   parseImportVisualEvidence,
-  parseImportVisualEvidencePlan,
   prImportFailureBody,
   visualEvidenceGateForSession,
   readVisualEvidenceGate,

@@ -1032,7 +1032,7 @@ function recoveredRunState(agentSessionId, changeId, deps = {}) {
   if (stopRegistry.has(agentSessionId) || !changeId) return null;
   const d = defaults(deps);
   if (!d.isChangeBusy(changeId)) return null;
-  // The change's visual change preview is not the coding agent: the
+  // The change's before/after shots are not the coding agent: the
   // conversation shows it as its own capture (activeChange.previewCapture).
   if (d.activeTurnMode(changeId) === 'evidence') return null;
   return { phase: 'cc', stopping: false, changeId };

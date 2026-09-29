@@ -16,7 +16,6 @@ const VISUAL_FLAGS = [
 const VISUAL_BUDGETS = [
   'VISUAL_EVIDENCE_MAX_RUN_MS',
   'VISUAL_EVIDENCE_MAX_AGENT_MS',
-  'VISUAL_EVIDENCE_MAX_REPAIR_AGENT_MS',
 ];
 
 function loadVisualConfig(overrides = {}) {
@@ -61,10 +60,10 @@ test('visual evidence collection, execution, and presentation are advisory and o
   });
 });
 
-test('the diagnostic window gives the planner eight minutes and keeps run/recovery budgets aligned', () => {
+test('the preview agent gets eight minutes and the run/recovery budget stays aligned', () => {
   const visual = loadVisualConfig();
   assert.equal(visual.maxAgentMs, 480_000);
-  assert.equal(visual.maxRepairAgentMs, 240_000);
+  assert.equal(visual.maxRepairAgentMs, undefined);
   assert.equal(visual.maxRunMs, 1_440_000);
   const override = loadVisualConfig({ VISUAL_EVIDENCE_MAX_AGENT_MS: '300000' });
   assert.equal(override.maxAgentMs, 300_000);

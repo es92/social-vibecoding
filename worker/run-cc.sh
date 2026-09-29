@@ -390,13 +390,12 @@ if [ "$MODE" = "evidence" ]; then
   export EVIDENCE_HOSTED_ORIGINS_FILE="$EVIDENCE_BROWSER_STATE_DIR/hosted-origins.json"
   export EVIDENCE_BROWSER_DIAGNOSTIC_FILE="$EVIDENCE_TMP/browser-diagnostics.log"
   : > "$EVIDENCE_BROWSER_DIAGNOSTIC_FILE"
-  # Capture mode: each persona's browser saves named screenshots here and the
-  # evidence bridge reads them back by name to publish them.
-  if [ "${EVIDENCE_MODE:-}" = "capture" ]; then
-    export EVIDENCE_SHOTS_DIR="$EVIDENCE_TMP/shots"
-    mkdir -p "$EVIDENCE_SHOTS_DIR/member" "$EVIDENCE_SHOTS_DIR/admin" "$EVIDENCE_SHOTS_DIR/full_admin" \
-      || die "could not create evidence screenshot directories"
-  fi
+  # Each persona's browser saves the preview agent's named screenshots (and
+  # clips, when a motion change is declared) here; the shots bridge reads
+  # them back by name to publish them.
+  export EVIDENCE_SHOTS_DIR="$EVIDENCE_TMP/shots"
+  mkdir -p "$EVIDENCE_SHOTS_DIR/member" "$EVIDENCE_SHOTS_DIR/admin" "$EVIDENCE_SHOTS_DIR/full_admin" \
+    || die "could not create the shots directories"
   tail -n +1 -s 0.2 -f "$EVIDENCE_BROWSER_DIAGNOSTIC_FILE" &
   EVIDENCE_DIAGNOSTIC_TAIL_PID=$!
   export EVIDENCE_PROXY_PORT=17891

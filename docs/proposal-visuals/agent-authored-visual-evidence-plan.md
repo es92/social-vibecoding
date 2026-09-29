@@ -1,5 +1,13 @@
 # Agent-authored visual evidence for proposal reviews
 
+> **Superseded (2026-09-29):** the replay half of this design is gone. The
+> preview agent now takes before/after shots itself (plus clips for motion)
+> and nothing replays them; see [before-after-shots.md](before-after-shots.md).
+> The declaration contract (version 1 intent), paired provisioning, fixtures,
+> identities, artifact authorization and the security boundaries below still
+> describe current behavior. The plan contract, `evidence_run_plan`, the
+> replay engine, two-pass comparison and repair turn do not.
+
 > **Implementation update (2026-09-21):** The semantic image-review gate
 > described below has been removed. The implementing agent can submit the
 > bounded interaction plan; otherwise an evidence agent explores and submits

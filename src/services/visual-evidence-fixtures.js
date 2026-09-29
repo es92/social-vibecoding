@@ -112,7 +112,7 @@ async function installFullAdminFixture(client, slug) {
   // Make the isolated full-admin identity a real member of the self app so
   // evidence can exercise the same channel rows a human app member sees.
   // This row exists only in the paired disposable databases and is added
-  // symmetrically to base and head on every clean replay reset.
+  // symmetrically to base and head on every reset before the shots.
   await client.query(
     `INSERT INTO app_collaborators
        (app_id, user_id, status, invited_by, accepted_at)

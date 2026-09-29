@@ -17,7 +17,7 @@ export interface AgentChange {
   checkSkipReason?: string | null;
   /** The change is to the platform's own (self-hosted) app. */
   appSelfHosted?: boolean;
-  /** Its visual change preview, while one is being captured. */
+  /** Its before/after shots, while they are being taken. */
   previewCapture?: { state: string; startedAt: string | null } | null;
 }
 
@@ -562,7 +562,7 @@ export async function stopTurn(id: number): Promise<{ stopped: boolean; reason?:
   return body;
 }
 
-/** Stop the change's running visual change preview (the proposal's Rerun starts it again). */
+/** Stop the change's running before/after shots (the proposal's Take again starts them again). */
 export async function stopPreviewCapture(appSlug: string, changeId: number): Promise<{ stopped: boolean; reason?: string }> {
   return json<{ stopped: boolean; reason?: string }>(
     await request(`/api/apps/${encodeURIComponent(appSlug)}/proposals/${changeId}/evidence/stop`, { method: 'POST', body: '{}' }),

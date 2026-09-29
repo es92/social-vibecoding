@@ -119,7 +119,7 @@ Use the matching skill whenever its description fits:
 - `usernode-proposal` — run a locally authored native proposal through
   staging, checks, and optional promotion from an agent on the user's own
   machine. This skill does not apply inside a Homeroom hosted dev-chat worker:
-  that worker commits on its assigned branch, records visual evidence intent
+  that worker commits on its assigned branch, declares its visible changes
   with its supplied tool, and leaves push, PR, and staging to the harness.
 - `react-shell-migration` — convert a legacy-owned shell region to React.
 - `mobile-push-testing` — verify push delivery through a real phone.
@@ -161,50 +161,39 @@ selects a skill.
   (the slowest file takes about twelve seconds); a test that never settles
   fails after three minutes instead of holding the summary open.
 
-## Verify author-written visual evidence before opening a PR
+## Declare visible changes for before/after shots
 
-This section applies to an external agent authoring a PR from a local
-checkout. A Homeroom hosted dev-chat worker records semantic intent through
-its supplied tool and lets the platform create and replay the evidence plan.
+Every proposal that changes something people can see gets before/after shots.
+A hosted dev-chat worker declares its changes with its supplied tool. An
+external agent sends the same version-1 object as `visualEvidence` on
+`submit_work`. Homeroom's preview agent then follows each declared change on
+the exact before and after builds and saves what it sees: a still for each
+screen size and side, plus a short clip of each side for
+`animation: "motion"`. People look at the shots to judge the change. There
+is no replay plan to write and nothing to verify locally.
+`docs/proposal-visuals/before-after-shots.md` describes the whole flow.
 
-`impact: none` applies only when no user-visible state changes. Changed text,
-counts, loading, error, and status states need a `ui` claim even if the code
-reuses existing markup and styles. If a required fixture or failure state is
-missing, report that blocker instead of declaring `none` to skip evidence.
-For an error state caused by a failed API request, the author may declare
-`intent.controlledFailurePath` as one exact same-origin `GET /api/...` path.
-The replay must enable that failure before the triggering action on both
-revisions; it fails if the request never occurs. The reviewer sees a clear
-controlled-test label when the first `intent.steps` entry is exactly
-`Controlled test: deliberately block the declared API GET on both revisions.`
-The intent validator requires this label. Do not use this for a normal
-success-state claim.
-
-Before opening a PR for a platform UI change with `visualEvidence` impact
-`ui` or `motion`, write the semantic intent and replay plan locally, then run
-`npm run verify:visual-evidence:local -- --base <40-char-sha> --head <40-char-sha> --intent <file> --plan <file>`
-against the final committed head. The command uses the local development
-database and the production browser replay/encoder on exact base and head
-builds. Read its manifest and inspect the resulting PNGs and any WebM before
-submitting the plan. If an action, assertion, reproducibility check, or media
-generation fails, correct the plan or app and run it again. Any head commit
-change requires another run. If local data cannot represent the claim, report
-that blocker before opening the PR. Do not submit a guessed plan or claim
-local verification from schema validation or the synthetic fixture harness.
-On a successful pass, send the generated `submission.json` fields
-`visualEvidence` and `visualEvidencePlan` together in the first `submit_work`
-that imports the PR. The plan carries exact base/head SHAs and its content
-hash; the import rejects a mismatch and stores the plan before the platform
-starts the evidence run. If the steps need clarification, edit the typed
-actions, locators, and assertions and rerun locally before submitting. The
-platform executes this plan directly rather than asking a hosted agent to
-reinterpret prose.
-
-This local verifier currently supports this platform repository and its
-running local Homeroom stack. Other apps need their own local runtime and
-representative fixture before the same gate can be claimed. See
-`docs/proposal-visuals/pre-pr-local-plan-verification.md` for setup and the
-remaining live-proposal boundary.
+- Declare one to three changes, each as a person would say it, with the real
+  `startPath` and `steps` that reach it and the persona and screen sizes
+  it needs. Declare only a state you actually reached in the running app.
+- Add `intent.hints` when you learned something the preview agent would
+  otherwise have to rediscover. `setup` names data to create through the UI
+  first, `expectText` gives short text that shows the state was reached, and
+  `focusTarget` locates the element to point at. Hints guide; they are never
+  executed.
+- `impact: none` applies only when no user-visible state changes. Changed
+  text, counts, loading, error, and status states need a `ui` change even if
+  the code reuses existing markup and styles. If a required fixture or state
+  is missing, report that blocker instead of declaring `none`.
+- For an error state caused by a failed API request, declare
+  `intent.controlledFailurePath` as one exact same-origin `GET /api/...`
+  path, and make the first `intent.steps` entry exactly
+  `Controlled test: deliberately block the declared API GET on both revisions.`
+  The preview agent blocks that request on both builds, and people see the
+  controlled-test label. Do not use this for a normal success state.
+- A change the preview agent cannot reach is shown as skipped with its
+  reason, and the other changes still publish. Better steps or hints, then
+  "Take the shots again", is the fix.
 
 ## Communities own projects — name them the way the screen does
 

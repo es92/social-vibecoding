@@ -1,12 +1,14 @@
 'use strict';
 
-// #2380 — durable lifecycle for agent-authored visual evidence. All state
-// changes pass through this module so a new head invalidates old media before
-// any serializer can return it. A verified run attests to reproducible,
-// complete captures; people decide whether those captures prove the claim.
+// #2380 — durable lifecycle for before/after shots of a proposal's declared
+// changes. All state changes pass through this module so a new head
+// invalidates old shots before any serializer can return them. A verified run
+// means at least one declared change has a complete set of shots on the exact
+// revisions; people decide whether those shots show the change.
 
 const crypto = require('crypto');
 const planContract = require('./visual-evidence-plan');
+const shots = require('./visual-evidence-shots');
 
 const STATES = Object.freeze([
   'planned', 'provisioning', 'exploring', 'replaying', 'reviewing',
@@ -20,11 +22,12 @@ const TERMINAL_STATES = new Set([
 const TRANSITIONS = Object.freeze({
   planned: new Set(['provisioning', 'failed', 'cancelled']),
   provisioning: new Set(['exploring', 'failed', 'cancelled']),
-  // exploring -> reviewing is the capture-mode path: the agent's own
-  // screenshots are stored without a replay.
-  exploring: new Set(['replaying', 'reviewing', 'failed', 'cancelled']),
-  replaying: new Set(['replaying', 'reviewing', 'failed', 'cancelled']),
-  reviewing: new Set(['replaying', 'verified', 'failed', 'cancelled']),
+  // exploring -> reviewing: the preview agent's shots are stored, then
+  // published. 'replaying' remains only so rows from the retired replay
+  // mode can still be failed or cancelled by recovery.
+  exploring: new Set(['reviewing', 'failed', 'cancelled']),
+  replaying: new Set(['failed', 'cancelled']),
+  reviewing: new Set(['verified', 'failed', 'cancelled']),
   verified: new Set(['stale']),
   failed: new Set(['stale']),
   not_required: new Set(['stale']),
@@ -34,7 +37,6 @@ const TRANSITIONS = Object.freeze({
 });
 
 const PATCH_COLUMNS = Object.freeze({
-  replayPlan: 'replay_plan',
   planHash: 'plan_hash',
   traceSummary: 'trace_summary',
   hardVerdict: 'hard_verdict',
@@ -43,7 +45,6 @@ const PATCH_COLUMNS = Object.freeze({
   fixtureFingerprint: 'fixture_fingerprint',
   baseImageDigest: 'base_image_digest',
   headImageDigest: 'head_image_digest',
-  repairAttempt: 'repair_attempt',
   startedAt: 'started_at',
   completedAt: 'completed_at',
 });
@@ -99,8 +100,8 @@ function claimsFromIntent(intent) {
 
 // The changed-file heuristic only decides whether a MISSING declaration is
 // needed. It cannot overrule an explicit `impact: none`: that intent has no
-// stories by contract, so a run it forced could never submit a plan and always
-// ended as `missing_evidence_replay` after building two environments. Nearly
+// stories by contract, so a run it forced had nothing to shoot and always
+// failed (then `missing_evidence_replay`) after building two environments. Nearly
 // every platform change touches a .js file, so that was most no-UI proposals.
 function requiredForIntent(intent, { heuristicUi = false } = {}) {
   if (!intent) return !!heuristicUi;
@@ -130,7 +131,7 @@ function missingIntentDetail({ headSha = null, reason = null } = {}) {
     claims: [],
     ...(headSha ? { headSha } : {}),
     reason: clip(reason, 1000)
-      || 'This proposal appears to change the UI but has no visual change preview declaration yet.',
+      || 'This proposal appears to change the UI but has not declared the change for before/after shots yet.',
   };
 }
 
@@ -200,7 +201,7 @@ async function recordIntentWithClient(client, sessionId, intent, detail, state, 
             END,
             failure_reason = CASE
               WHEN state IN ('planned','provisioning','exploring','replaying','reviewing')
-                THEN 'The author changed the visual change preview declaration.'
+                THEN 'The author changed the declared changes.'
               ELSE failure_reason
             END,
             completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
@@ -304,7 +305,7 @@ async function requireIntentForUiChange(pool, sessionId, options = {}) {
               END,
               failure_reason = CASE
                 WHEN state IN ('planned','provisioning','exploring','replaying','reviewing')
-                  THEN 'The UI change has no visual change preview declaration.'
+                  THEN 'The UI change has no declared change for before/after shots.'
                 ELSE failure_reason
               END,
               completed_at = COALESCE(completed_at, NOW()), updated_at = NOW()
@@ -342,22 +343,17 @@ function runSummary(row, artifactSummary = []) {
     headSha: row.head_sha,
     failureCode: row.failure_code || null,
     failureReason: row.failure_reason || null,
-    repairAvailable: row.state === 'failed'
-      && row.failure_code !== 'visual_evidence_intent_conflict'
-      && Number(row.repair_attempt || 0) < 1,
+    // Any finished run on the current head can be taken again; an explicit
+    // no-visible-change declaration or a stop has nothing to retry.
+    repairAvailable: row.state === 'failed' && row.failure_code !== 'visual_evidence_intent_conflict',
     planHash: row.plan_hash || null,
-    replayCount: Number.isInteger(trace?.runs) ? Math.max(0, Math.min(2, trace.runs)) : null,
-    repairCount: Number.isInteger(Number(row.repair_attempt))
-      ? Math.max(0, Math.min(1, Number(row.repair_attempt))) : 0,
-    relativePointer: trace?.relativePointer === true,
-    // Capture-mode runs publish the agent's own screenshots, one claim at a
-    // time; reviewers are told so, and why any claim has no images.
-    captureMode: row.hard_verdict?.mode === 'agent_capture',
-    claimResults: row.hard_verdict?.mode === 'agent_capture' && Array.isArray(row.hard_verdict.stories)
+    // One result per declared change: ready, or skipped with the reason
+    // people see on the proposal. Runs from before shots have none.
+    shotResults: shots.isShotsVerdict(row.hard_verdict) && Array.isArray(row.hard_verdict.stories)
       ? row.hard_verdict.stories.map((story) => ({
         id: story?.id,
-        status: story?.status === 'captured' ? 'captured' : 'blocked',
-        reason: story?.status === 'captured' ? null : (story?.reason || null),
+        status: story?.status === 'ready' ? 'ready' : 'skipped',
+        reason: story?.status === 'ready' ? null : (story?.reason || null),
       }))
       : [],
     progress: progress && typeof progress.phase === 'string'
@@ -374,17 +370,11 @@ function runSummary(row, artifactSummary = []) {
 
 async function createRunWithClient(client, {
   sessionId, baseSha, headSha, intent: rawIntent, trigger = null, heuristicUi = false,
-  authorPlan: rawAuthorPlan = null,
 }) {
   if (!validSha(baseSha) || !validSha(headSha)) {
     throw new VisualEvidenceStateError('invalid_evidence_revision', 'Visual evidence requires exact 40-character base and head SHAs.', 400);
   }
   const intent = planContract.parseIntent(rawIntent);
-  const authorPlan = rawAuthorPlan == null ? null : planContract.parseReplayPlan(rawAuthorPlan);
-  if (authorPlan && planContract.canonicalJson(planContract.semanticIntentFromPlan(authorPlan))
-      !== planContract.canonicalJson(intent)) {
-    throw new VisualEvidenceStateError('evidence_intent_mismatch', 'The author plan changes the accepted visual evidence intent.', 400);
-  }
   const required = requiredForIntent(intent, { heuristicUi });
   const initialState = required ? 'planned' : 'not_required';
   const id = newId();
@@ -401,20 +391,7 @@ async function createRunWithClient(client, {
       ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
     [sessionId, headSha]
   );
-  if (existing.rows[0]) {
-    const run = existing.rows[0];
-    if (!authorPlan) return { created: false, run };
-    if (run.state !== 'planned') return { created: false, run };
-    if (run.base_sha !== baseSha || planContract.canonicalJson(run.intent) !== planContract.canonicalJson(intent)) {
-      throw new VisualEvidenceStateError('evidence_revision_mismatch', 'The existing evidence run belongs to another revision or claim.');
-    }
-    const updated = await client.query(
-      `UPDATE visual_evidence_runs SET author_plan = $2::jsonb, updated_at = NOW()
-        WHERE id = $1 RETURNING *`,
-      [run.id, JSON.stringify(authorPlan)]
-    );
-    return { created: false, run: updated.rows[0] };
-  }
+  if (existing.rows[0]) return { created: false, run: existing.rows[0] };
 
   // In-flight work for an older revision is cancelled; a terminal verdict
   // becomes stale. Both happen before the session pointer moves.
@@ -433,14 +410,13 @@ async function createRunWithClient(client, {
 
   const inserted = await client.query(
     `INSERT INTO visual_evidence_runs
-       (id, session_id, base_sha, head_sha, plan_version, intent, author_plan, state,
+       (id, session_id, base_sha, head_sha, plan_version, intent, state,
         trigger, completed_at)
-     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $9::jsonb, $7::varchar(24), $8,
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::varchar(24), $8,
         CASE WHEN $7::varchar(24) = 'not_required' THEN NOW() END)
      RETURNING *`,
     [id, sessionId, baseSha, headSha, planContract.PLAN_VERSION,
-     JSON.stringify(intent), initialState, clip(trigger, 32),
-     authorPlan ? JSON.stringify(authorPlan) : null]
+     JSON.stringify(intent), initialState, clip(trigger, 32)]
   );
   const run = inserted.rows[0];
   const detail = {
@@ -466,35 +442,17 @@ async function createRun(pool, options) {
   return withTransaction(pool, (client) => createRunWithClient(client, options));
 }
 
-// Import already owns the session INSERT transaction. Store the typed plan
-// with the run before committing that session, so no checks/recovery worker
-// can start a different planner in the gap after import.
-async function createRunInTransaction(client, options) {
-  if (!client || typeof client.query !== 'function') throw new TypeError('A transaction client is required');
-  return createRunWithClient(client, options);
-}
 
 function assertTransitionPayload(row, next, patch) {
   const hard = patch.hardVerdict ?? row.hard_verdict;
   const planHash = patch.planHash ?? row.plan_hash;
-  const replayPlan = patch.replayPlan ?? row.replay_plan;
 
-  if (next === 'replaying') {
-    if (!replayPlan) throw new VisualEvidenceStateError('missing_replay_plan', 'A validated replay plan is required before replay starts.');
-    const parsed = planContract.parseReplayPlan(replayPlan);
-    const expectedHash = planContract.planHash(parsed);
-    if (planHash && planHash !== expectedHash) {
-      throw new VisualEvidenceStateError('evidence_plan_hash_mismatch', 'The replay plan hash does not match its canonical plan.');
-    }
-    patch.replayPlan = parsed;
-    patch.planHash = expectedHash;
-  }
   if (next === 'reviewing' && hard?.passed !== true) {
-    throw new VisualEvidenceStateError('evidence_hard_verdict_required', 'Captured media requires a passing hard replay verdict.');
+    throw new VisualEvidenceStateError('evidence_hard_verdict_required', 'Publishing shots requires at least one ready change.');
   }
   if (next === 'verified') {
     if (!planHash || hard?.passed !== true) {
-      throw new VisualEvidenceStateError('evidence_verdict_required', 'Verified captures require a matching plan and passing hard replay verdict.');
+      throw new VisualEvidenceStateError('evidence_verdict_required', 'Published shots require a manifest and at least one ready change.');
     }
     patch.completedAt = patch.completedAt || new Date();
   }
@@ -521,7 +479,7 @@ async function transitionRun(pool, runId, nextState, rawPatch = {}) {
       [runId]
     );
     const row = selected.rows[0];
-    if (!row) throw new VisualEvidenceStateError('evidence_run_not_found', 'Visual change preview run not found.', 404);
+    if (!row) throw new VisualEvidenceStateError('evidence_run_not_found', 'Before/after shots run not found.', 404);
     if (row.current_run_id !== row.id) {
       throw new VisualEvidenceStateError(
         'stale_evidence_operation',
@@ -535,28 +493,20 @@ async function transitionRun(pool, runId, nextState, rawPatch = {}) {
       const idleMs = Date.now() - new Date(row.updated_at).getTime();
       if (!Number.isFinite(idleMs) || idleMs < patch.recoveryMinIdleMs) {
         throw new VisualEvidenceStateError(
-          'evidence_run_active', 'This visual evidence run is still active.'
+          'evidence_run_active', 'These before/after shots are still being taken.'
         );
       }
       delete patch.recoveryMinIdleMs;
     }
     assertTransition(row.state, nextState);
     assertTransitionPayload(row, nextState, patch);
-    if (row.state === 'replaying' && nextState === 'replaying'
-        && (patch.repairAttempt !== 1 || Number(row.repair_attempt || 0) !== 0
-          || patch.planHash === row.plan_hash)) {
-      throw new VisualEvidenceStateError(
-        'invalid_evidence_repair',
-        'Only one changed replay plan may replace a failed first replay.'
-      );
-    }
 
     const sets = ['state = $2', 'updated_at = NOW()'];
     const values = [runId, nextState];
     for (const [key, column] of Object.entries(PATCH_COLUMNS)) {
       if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
       let value = patch[key];
-      if (['replayPlan', 'traceSummary', 'hardVerdict'].includes(key)) {
+      if (['traceSummary', 'hardVerdict'].includes(key)) {
         value = value == null ? null : JSON.stringify(value);
         values.push(value);
         sets.push(`${column} = $${values.length}::jsonb`);
@@ -640,7 +590,7 @@ async function heartbeatRun(pool, runId, phase, progress = null) {
   return { active: (result.rowCount || 0) > 0 };
 }
 
-async function markStaleForHead(pool, sessionId, headSha, reason = 'A newer proposal revision superseded this visual change preview.') {
+async function markStaleForHead(pool, sessionId, headSha, reason = 'A newer revision of this proposal replaced these shots.') {
   if (!validSha(headSha)) throw new VisualEvidenceStateError('invalid_evidence_revision', 'A valid head SHA is required.', 400);
   return withTransaction(pool, async (client) => {
     const selected = await client.query(
@@ -681,10 +631,9 @@ async function markStaleForHead(pool, sessionId, headSha, reason = 'A newer prop
       let detail;
       let nextState = 'planned';
       if (intent) {
-        // Keep the already-validated semantic intent while dropping every
-        // run-derived field. The next exact revision needs a new plan and two
-        // new clean replays, but the author should not have to restate what
-        // the change is meant to prove after every push.
+        // Keep the already-validated declaration while dropping every
+        // run-derived field. The next exact revision needs new shots, but the
+        // author should not have to restate the change after every push.
         detail = pendingDetail(intent, { headSha, reason });
         nextState = intent.impact === 'none' && detail.required === false
           ? 'not_required' : 'planned';
@@ -724,9 +673,9 @@ async function overrideRun(pool, runId, { userId, reason }) {
       [runId]
     );
     const row = selected.rows[0];
-    if (!row) throw new VisualEvidenceStateError('evidence_run_not_found', 'Visual change preview run not found.', 404);
+    if (!row) throw new VisualEvidenceStateError('evidence_run_not_found', 'Before/after shots run not found.', 404);
     if (row.current_run_id !== row.id) {
-      throw new VisualEvidenceStateError('stale_evidence_operation', 'Only the proposal’s current evidence run can be overridden.');
+      throw new VisualEvidenceStateError('stale_evidence_operation', 'Only the proposal’s current before/after shots can be waived.');
     }
     if (!['planned', 'provisioning', 'exploring', 'replaying', 'reviewing', 'failed'].includes(row.state)) {
       throw new VisualEvidenceStateError('invalid_evidence_override_state', `Evidence in state ${row.state} cannot be overridden.`);
@@ -766,7 +715,7 @@ async function getRun(pool, runId, { forUpdate = false } = {}) {
       WHERE r.id = $1${forUpdate ? ' FOR UPDATE OF r, s' : ''}`,
     [runId]
   );
-  if (!result.rows[0]) throw new VisualEvidenceStateError('evidence_run_not_found', 'Visual change preview run not found.', 404);
+  if (!result.rows[0]) throw new VisualEvidenceStateError('evidence_run_not_found', 'Before/after shots run not found.', 404);
   return result.rows[0];
 }
 
@@ -774,23 +723,17 @@ async function getRun(pool, runId, { forUpdate = false } = {}) {
 // row. This preserves the failed/verified audit record while the partial
 // unique index guarantees there is still one reviewer-visible owner.
 async function rerunSameHead(pool, runId, {
-  trigger = 'manual-rerun', intent: replacementIntent = null, authorPlan: replacementPlan = undefined,
+  trigger = 'manual-rerun', intent: replacementIntent = null,
 } = {}) {
   return withTransaction(pool, async (client) => {
     const old = await getRun(client, runId, { forUpdate: true });
     if (!['failed', 'verified', 'overridden', 'not_required'].includes(old.state)) {
-      throw new VisualEvidenceStateError('evidence_rerun_in_flight', 'Wait for the current evidence run to finish before rerunning it.');
+      throw new VisualEvidenceStateError('evidence_rerun_in_flight', 'Wait for the current shots to finish before taking them again.');
     }
     if (old.current_run_id !== old.id) {
-      throw new VisualEvidenceStateError('stale_evidence_operation', 'Only the proposal\'s current evidence run can be rerun.');
+      throw new VisualEvidenceStateError('stale_evidence_operation', 'Only the proposal\'s current before/after shots can be taken again.');
     }
     const intent = planContract.parseIntent(replacementIntent || old.intent);
-    const authorPlan = replacementPlan === undefined ? old.author_plan
-      : (replacementPlan == null ? null : planContract.parseReplayPlan(replacementPlan));
-    if (authorPlan && planContract.canonicalJson(planContract.semanticIntentFromPlan(authorPlan))
-        !== planContract.canonicalJson(intent)) {
-      throw new VisualEvidenceStateError('evidence_intent_mismatch', 'The replacement plan changes the accepted visual evidence intent.', 400);
-    }
     const required = requiredForIntent(intent);
     const initialState = required ? 'planned' : 'not_required';
     await client.query(
@@ -802,14 +745,13 @@ async function rerunSameHead(pool, runId, {
     const id = newId();
     const inserted = await client.query(
       `INSERT INTO visual_evidence_runs
-         (id, session_id, base_sha, head_sha, plan_version, intent, author_plan, state,
+         (id, session_id, base_sha, head_sha, plan_version, intent, state,
           trigger, completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $9::jsonb, $7::varchar(24), $8,
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::varchar(24), $8,
           CASE WHEN $7::varchar(24) = 'not_required' THEN NOW() END)
        RETURNING *`,
       [id, old.session_id, old.base_sha, old.head_sha, planContract.PLAN_VERSION,
-       JSON.stringify(intent), initialState, clip(trigger, 32),
-       authorPlan ? JSON.stringify(authorPlan) : null]
+       JSON.stringify(intent), initialState, clip(trigger, 32)]
     );
     const next = inserted.rows[0];
     const updated = await client.query(
@@ -913,7 +855,54 @@ async function clearNotStarted(pool, sessionId) {
   return { cleared: rows.length > 0 };
 }
 
+// Publishes a run's before/after files in one transaction, fenced by the
+// exact head and the run's manifest hash: a run that lost its proposal slot
+// (a newer commit, a stop) cannot publish into it.
+async function storeArtifacts(pool, runId, artifacts, { headSha, planHash } = {}) {
+  if (!/^[0-9a-f]{32}$/.test(String(runId || ''))) {
+    throw new VisualEvidenceStateError('invalid_evidence_run', 'Invalid preview run id.', 400);
+  }
+  if (!validSha(headSha) || !/^[0-9a-f]{64}$/.test(String(planHash || ''))) {
+    throw new VisualEvidenceStateError('invalid_artifact_fence', 'Publishing shots requires the exact head SHA and manifest hash.');
+  }
+  return withTransaction(pool, async (client) => {
+    const selected = await client.query(
+      `SELECT r.id
+         FROM visual_evidence_runs r
+         JOIN chat_sessions s ON s.id = r.session_id
+        WHERE r.id = $1 AND r.head_sha = $2 AND r.plan_hash = $3
+          AND r.state = 'reviewing'
+          AND s.visual_evidence_run_id = r.id
+          AND s.visual_evidence_state = 'reviewing'
+        FOR UPDATE`,
+      [runId, headSha, planHash]
+    );
+    if (!selected.rowCount) {
+      throw new VisualEvidenceStateError(
+        'stale_evidence_operation',
+        'This run no longer owns the proposal\'s before/after slot; its shots were discarded.'
+      );
+    }
+    await client.query('DELETE FROM visual_evidence_artifacts WHERE run_id = $1', [runId]);
+    for (const artifact of artifacts) {
+      await client.query(
+        `INSERT INTO visual_evidence_artifacts
+           (id, run_id, story_id, viewport, side, variant, media, content_type,
+            data, width, height, bytes, sha256, focus_rect, stage_labels)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::jsonb)`,
+        [newId(), runId, artifact.storyId, artifact.viewport,
+         artifact.side, artifact.variant, artifact.media, artifact.contentType, artifact.data,
+         artifact.width, artifact.height, artifact.bytes, artifact.sha256,
+         artifact.focusRect ? JSON.stringify(artifact.focusRect) : null,
+         artifact.stageLabels ? JSON.stringify(artifact.stageLabels) : null]
+      );
+    }
+    return artifacts.length;
+  });
+}
+
 module.exports = {
+  storeArtifacts,
   STATES,
   TRANSITIONS,
   TERMINAL_STATES,
@@ -933,7 +922,6 @@ module.exports = {
   requireIntentForUiChange,
   clearIntent,
   createRun,
-  createRunInTransaction,
   transitionRun,
   heartbeatRun,
   markStaleForHead,

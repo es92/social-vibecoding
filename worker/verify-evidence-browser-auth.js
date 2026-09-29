@@ -131,6 +131,7 @@ async function main() {
       EVIDENCE_HOSTED_ORIGINS_FILE: hostedFile,
       EVIDENCE_MEMBER_TOKEN: 'member.jwt', EVIDENCE_ADMIN_TOKEN: 'admin.jwt',
       EVIDENCE_FULL_ADMIN_TOKEN: 'full-admin.jwt',
+      EVIDENCE_SHOTS_DIR: path.join(dir, 'shots'),
     };
     const bootstrap = await execFileAsync(process.execPath, [path.join(__dirname, 'evidence-browser-bootstrap.js')], {
       env, timeout: 90_000,

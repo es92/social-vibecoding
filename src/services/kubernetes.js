@@ -1631,10 +1631,6 @@ async function runCaptureJob(config, options) {
   return runCheckJob(config, { memory: '6g', cpus: '8', ...options }, 'capture');
 }
 
-async function runEvidenceJob(config, options) {
-  return runCheckJob(config, { memory: '6g', cpus: '8', ...options }, 'evidence');
-}
-
 async function runUnitSuiteJob(config, options) {
   return runCheckJob(config, options, 'unit-suite');
 }
@@ -1650,7 +1646,6 @@ async function cancelPreviewChecks(config, sessionId, previewRunId = null) {
   await Promise.all((jobs.items || []).map(async job => {
     const name = job.metadata.name;
     if (!name.startsWith(`sv-capture-s${sessionId}-`)
-        && !name.startsWith(`sv-evidence-s${sessionId}-`)
         && !name.startsWith(`sv-unit-suite-s${sessionId}-`)) return;
     if (previewRunId && job.metadata.labels?.['social.usernode.io/preview-run-id'] !== previewRunId) return;
     const podsStopped = async () => {
@@ -1752,7 +1747,6 @@ async function runCheckJob(config, {
 }, kind) {
   const cfg = config.kubernetes;
   const unitSuite = kind === 'unit-suite';
-  const evidence = kind === 'evidence';
   const cpuLimit = String(cpus);
   const memoryLimit = String(memory).replace(/g$/i, 'Gi').replace(/m$/i, 'Mi');
   const resources = {
@@ -1767,12 +1761,7 @@ async function runCheckJob(config, {
   if (!image?.includes('@sha256:')) throw new Error(`${unitSuite ? 'KUBERNETES_WORKER_IMAGE' : 'KUBERNETES_CAPTURE_IMAGE'} must be an immutable digest`);
   const namespace = cfg.workerNamespace;
   const runName = `sv-${kind}-s${sessionId}-${previewRunId || Date.now().toString(36)}`;
-  // One evidence run launches two clean replay passes, and a repair may
-  // launch more. Finished Jobs remain for their TTL, so the run id is a
-  // correlation label, not a unique Job name. Keep the suffix even if the
-  // base must be truncated to fit Kubernetes' DNS name limit. Reserve room
-  // for the input Secret's "-input" suffix without truncating the nonce.
-  const name = evidence ? withSuffix(runName, crypto.randomBytes(8).toString('hex'), 57) : dnsName(runName);
+  const name = dnsName(runName);
   const inputSecretName = !unitSuite && stdinPayload == null ? null : withSuffix(name, 'input');
   if (stdinPayload != null && Buffer.byteLength(String(stdinPayload), 'utf8') > 900 * 1024) {
     throw new Error('Capture stdin payload exceeds the Kubernetes Secret transport limit');
@@ -1792,9 +1781,7 @@ async function runCheckJob(config, {
   const podVolumes = [];
   if (!unitSuite && inputSecretName) {
     container.command = ['sh', '-c'];
-    container.args = [evidence
-      ? 'exec node /app/evidence-replay.js < /var/run/usernode-capture/tests.json'
-      : 'exec node /app/capture.js < /var/run/usernode-capture/tests.json'];
+    container.args = ['exec node /app/capture.js < /var/run/usernode-capture/tests.json'];
     container.volumeMounts = [{
       name: 'capture-input', mountPath: '/var/run/usernode-capture', readOnly: true,
     }];
@@ -2298,7 +2285,7 @@ module.exports = {
   dnsName, withSuffix, labels, appResourceName, createBuild, deployApplication, getApplicationStatus, inspectApplication,
   getApplicationLogs, getDebugLogs, restartApplication, deleteApplication, deleteBuilds, deleteFailedBuilds, ensureWorker,
   listManagedBuilds, readBuild, deleteBuildSnapshot,
-  runCaptureJob, runEvidenceJob, runUnitSuiteJob, cancelPreviewChecks, findCheckJobs, collectCheckJob,
+  runCaptureJob, runUnitSuiteJob, cancelPreviewChecks, findCheckJobs, collectCheckJob,
   execInWorker, _getClients: getClients,
   getWorkerStatus, getWorkerContractVersion, getWorkerRuntimeMetadata, deleteWorker, eraseWorker, listWorkers, cloneWorkerVolume,
   listWorkerVolumes, isQuotaExceeded,

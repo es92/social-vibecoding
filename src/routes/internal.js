@@ -187,60 +187,26 @@ function internalRoutes(_config) {
     catch (err) { return evidenceError(res, err); }
   });
 
-  router.post('/api/internal/evidence/:runId/reset-pair', evidenceAuth, evidenceLimiter, async (req, res) => {
+  // One shot or clip the preview agent saved on the before or after build.
+  // The file travels as the raw body (the global JSON parser ignores it) and
+  // its change/screen/side/kind as query fields. The parser limit sits above
+  // the clip limit so the structured clip_too_large code wins.
+  const shotBody = raw({ type: 'application/octet-stream', limit: '21mb' });
+  router.post('/api/internal/evidence/:runId/shot', evidenceAuth, evidenceLimiter, shotBody, (req, res) => {
     try {
-      const result = await evidenceControlForRequest(req).resetPair();
-      return res.json({ ok: true, result });
-    } catch (err) { return evidenceError(res, err); }
-  });
-
-  // Kept for an older worker during a rolling deployment. RunControl serves
-  // the base/head companion calls from one atomic reset so the second request
-  // cannot invalidate the first request's origin.
-  router.post('/api/internal/evidence/:runId/reset-side', evidenceAuth, evidenceLimiter, async (req, res) => {
-    try {
-      const result = await evidenceControlForRequest(req).resetSide(req.body?.side);
-      return res.json({ ok: true, result });
-    } catch (err) { return evidenceError(res, err); }
-  });
-
-  router.post('/api/internal/evidence/:runId/run-plan', evidenceAuth, evidenceLimiter, (req, res) => {
-    try {
-      const control = evidenceControlForRequest(req);
-      const result = Object.hasOwn(req.body || {}, 'replays')
-        ? control.submitReplays(req.body.replays)
-        : control.submitPlan(req.body?.plan);
-      return res.json({ ok: true, result });
-    } catch (err) { return evidenceError(res, err); }
-  });
-
-  router.post('/api/internal/evidence/:runId/finish', evidenceAuth, evidenceLimiter, (req, res) => {
-    try {
-      const result = evidenceControlForRequest(req).finish(req.body || {});
-      return res.json({ ok: true, result });
-    } catch (err) { return evidenceError(res, err); }
-  });
-
-  // Capture-mode evidence: one PNG the agent took on a paired preview. The
-  // image travels as the raw body (the global JSON parser ignores it) and
-  // its claim/viewport/side addressing as query fields. The parser limit sits
-  // above the capture limit so the structured capture_too_large code wins.
-  const captureBody = raw({ type: 'application/octet-stream', limit: '7mb' });
-  router.post('/api/internal/evidence/:runId/capture', evidenceAuth, evidenceLimiter, captureBody, (req, res) => {
-    try {
-      const result = evidenceControlForRequest(req).submitCapture({
-        storyId: req.query.storyId,
-        viewport: req.query.viewport,
+      const result = evidenceControlForRequest(req).saveShot({
+        change: req.query.change,
+        screen: req.query.screen,
         side: req.query.side,
-        variant: req.query.variant,
+        kind: req.query.kind,
       }, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0));
       return res.json({ ok: true, result });
     } catch (err) { return evidenceError(res, err); }
   });
 
-  router.post('/api/internal/evidence/:runId/block-story', evidenceAuth, evidenceLimiter, (req, res) => {
+  router.post('/api/internal/evidence/:runId/skip', evidenceAuth, evidenceLimiter, (req, res) => {
     try {
-      const result = evidenceControlForRequest(req).blockStory(req.body || {});
+      const result = evidenceControlForRequest(req).skipChange(req.body || {});
       return res.json({ ok: true, result });
     } catch (err) { return evidenceError(res, err); }
   });

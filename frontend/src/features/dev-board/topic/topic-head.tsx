@@ -910,8 +910,8 @@ const EVIDENCE_BUILDING = new Set(['planned', 'provisioning', 'exploring', 'repl
 /**
  * The before/after: the verified evidence card (or the legacy capture
  * tiles) once the run has it; until then one quiet line with the shell's
- * own spinner — no panel and no state label, because "Visual preview in
- * progress" in a box read as a verdict. A run that failed, or was waived,
+ * own spinner — no panel and no state label, because "Taking the shots"
+ * in a box read as a verdict. A run that failed, or was waived,
  * keeps its strip: that is a fact a voter weighs.
  *
  * #2601/#2558: a run that never started keeps the PANEL rather than the

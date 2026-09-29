@@ -2,8 +2,9 @@
 'use strict';
 
 // Image-build smoke test for the exact browser MCP command and flags used by
-// evidence turns. Listing tools catches a missing MCP binary; calling a
-// browser tool also catches Chromium startup failures in the worker image.
+// before/after turns. Listing tools catches a missing MCP binary; calling a
+// browser tool also catches Chromium startup failures in the worker image,
+// and a named screenshot proves shots land where the shots bridge reads them.
 
 const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
@@ -77,6 +78,16 @@ function verifyBrowser(server, navigationChecks = []) {
           if (message.error || message.result?.isError) {
             return finish(new Error(`Browser MCP coordinate hover failed: ${JSON.stringify(message.error || message.result).slice(0, 1200)}`));
           }
+          phase = 'browser_take_screenshot';
+          child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 90, method: 'tools/call', params: {
+            name: 'browser_take_screenshot', arguments: { filename: 'image-smoke.png' },
+          } })}\n`);
+        } else if (message.id === 90) {
+          const outputDir = server.args[server.args.indexOf('--output-dir') + 1];
+          if (message.error || message.result?.isError || !server.args.includes('--output-dir')
+              || !fs.existsSync(path.join(outputDir, 'image-smoke.png'))) {
+            return finish(new Error(`Browser MCP did not save a named screenshot in its shots directory: ${JSON.stringify(message.error || message.result).slice(0, 600)}`));
+          }
           if (navigationChecks.length) {
             phase = 'browser_navigate';
             child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: {
@@ -134,8 +145,14 @@ async function main() {
         EVIDENCE_BASE_ORIGIN: 'http://base.example.invalid',
         EVIDENCE_HEAD_ORIGIN: 'http://head.example.invalid',
         EVIDENCE_HOSTED_ORIGINS_FILE: hostedFile,
+        EVIDENCE_SHOTS_DIR: path.join(dir, 'shots'),
+        // Exercise the clip-recording flag too; motion changes turn it on.
+        EVIDENCE_RECORD_CLIPS: '1',
       },
     });
+    for (const persona of ['member', 'admin', 'full_admin']) {
+      fs.mkdirSync(path.join(dir, 'shots', persona), { recursive: true });
+    }
     const config = JSON.parse(fs.readFileSync(output, 'utf8'));
     for (const persona of ['browser_member', 'browser_admin', 'browser_full_admin']) {
       fs.writeFileSync(diagnosticFile, '');

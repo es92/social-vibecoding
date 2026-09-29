@@ -6914,7 +6914,7 @@
     {
       "source": "src/routes/internal.js",
       "method": "POST",
-      "path": "/api/internal/evidence/:runId/reset-pair",
+      "path": "/api/internal/evidence/:runId/shot",
       "expression": null,
       "status": "exempt",
       "reason": "platform-to-worker/internal service protocol"
@@ -6922,39 +6922,7 @@
     {
       "source": "src/routes/internal.js",
       "method": "POST",
-      "path": "/api/internal/evidence/:runId/reset-side",
-      "expression": null,
-      "status": "exempt",
-      "reason": "platform-to-worker/internal service protocol"
-    },
-    {
-      "source": "src/routes/internal.js",
-      "method": "POST",
-      "path": "/api/internal/evidence/:runId/run-plan",
-      "expression": null,
-      "status": "exempt",
-      "reason": "platform-to-worker/internal service protocol"
-    },
-    {
-      "source": "src/routes/internal.js",
-      "method": "POST",
-      "path": "/api/internal/evidence/:runId/finish",
-      "expression": null,
-      "status": "exempt",
-      "reason": "platform-to-worker/internal service protocol"
-    },
-    {
-      "source": "src/routes/internal.js",
-      "method": "POST",
-      "path": "/api/internal/evidence/:runId/capture",
-      "expression": null,
-      "status": "exempt",
-      "reason": "platform-to-worker/internal service protocol"
-    },
-    {
-      "source": "src/routes/internal.js",
-      "method": "POST",
-      "path": "/api/internal/evidence/:runId/block-story",
+      "path": "/api/internal/evidence/:runId/skip",
       "expression": null,
       "status": "exempt",
       "reason": "platform-to-worker/internal service protocol"
@@ -13250,14 +13218,6 @@
     {
       "source": "src/routes/visual-evidence.js",
       "method": "GET",
-      "path": "/api/apps/:slug/proposals/:sessionId/evidence/diagnostics/:artifactId",
-      "expression": null,
-      "status": "exempt",
-      "reason": "private binary comparison image represented by proposal evidence diagnostics"
-    },
-    {
-      "source": "src/routes/visual-evidence.js",
-      "method": "GET",
       "path": "/api/apps/:slug/proposals/:sessionId/evidence/:artifactId",
       "expression": null,
       "status": "mapped",
@@ -13274,23 +13234,6 @@
         "public/js/app-view.js",
         "public/js/app-view.js"
       ]
-    },
-    {
-      "source": "src/routes/visual-evidence.js",
-      "method": "POST",
-      "path": "/api/apps/:slug/proposals/:sessionId/evidence/plan",
-      "expression": null,
-      "status": "mapped",
-      "reviewReason": "Reviewed platform operation with no exact static client reference.",
-      "capabilityId": "governance.post.apps.item.proposals.item.evidence.plan.5727f580",
-      "domain": "governance",
-      "risk": "external_write",
-      "confirmation": "required",
-      "renderer": "proposal",
-      "transport": "server_loopback",
-      "mobileSupported": true,
-      "classicPath": "#app/:slug/dev/proposals/:sessionId",
-      "clientReferences": []
     },
     {
       "source": "src/routes/visual-evidence.js",

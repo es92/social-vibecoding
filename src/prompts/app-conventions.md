@@ -87,10 +87,12 @@ Ordered by how badly an agent working offline gets each one wrong.
    renders against an empty staging database, so seed what it needs.
    Demo routes are fine for regression tests, but never add a
    screenshot-only query parameter. After a visible change, call
-   `record_visual_evidence_intent` with the claim, real user flow, focus,
-   persona, viewports, and optional animation. Homeroom performs it against
-   exact base/head revisions and replays it twice. For a non-visual change,
-   record `impact: "none"` with a specific rationale.
+   `record_visual_evidence_intent` to declare the change: what it is in plain
+   words, the real steps to reach it, the focus, persona, viewports, and
+   `animation: "motion"` when a still cannot show it. Homeroom's preview agent
+   follows those steps on the exact before and after builds and takes
+   before/after shots (plus short clips for motion). For a non-visual
+   change, record `impact: "none"` with a specific rationale.
 6. **Auth is iframe token injection — do not roll your own login.** The
    shell mints an RS256 JWT per user per app and injects it as
    `?token=`; the app verifies it with `USERNODE_JWT_PUBLIC_KEY`,
@@ -552,10 +554,10 @@ the closest thing to production the gate can reach.
 
 Legacy proposals could only navigate to a URL, so this section historically
 required a query/hash parameter that forced an interaction-only state open.
-Agent-authored visual evidence removes that requirement: the evidence agent
-can perform the real clicks, typing, keyboard input, selection, hover,
-scrolling, and bounded pointer gestures, then ordinary platform code replays
-the accepted plan twice. It never falls back to the home screen.
+Before/after shots remove that requirement: the preview agent performs the
+real clicks, typing, keyboard input, selection, hover, scrolling, and pointer
+gestures on both builds, then takes the shots itself. It never falls back to
+the home screen.
 
 Do **not** add a screenshot-only route for a modal, bottom sheet, wizard, game
 state, or menu. Call `record_visual_evidence_intent` instead and describe how a
@@ -693,12 +695,12 @@ Per-test fields:
   `dapp.json`, not in source functions.
 
 Visual scenario metadata remains useful executable documentation and durable
-regression coverage. Reviewer-facing visual evidence is proposal-specific:
-the authoring agent declares up to three claims and can submit the typed UI
-flow it used during implementation. A purpose-bound evidence agent can also
-explore the exact base/head previews to produce a plan. The platform replays
-either plan twice and verifies the generated media. No matching scenario and no
-submitted legacy route is ever permission to publish `/` as a fallback.
+regression coverage. Before/after shots are proposal-specific: the authoring
+agent declares up to three changes, with the steps and optional hints it used
+during implementation, and a purpose-bound preview agent follows them on the
+exact before and after builds and saves what it sees. People look at the
+shots to judge the change. No matching scenario and no submitted legacy route
+is ever permission to publish `/` as a fallback.
 
 When you add or change a user-visible screen, **add or extend a test for
 it** in the same commit, pointing it at the same route(s) you put in the
@@ -3134,9 +3136,10 @@ catching a blank page, a JS crash on load, a broken layout, or a failing
 API call that source-reading alone would miss — and fix it before
 committing.
 
-Use it before declaring a `ui` or `motion` visual evidence story. A story
-must describe a checkpoint you actually reached in the local app, including
-the state the evidence runner will need to reproduce. For backend-only,
+Use it before declaring a `ui` or `motion` change for before/after shots.
+A declared change must describe a checkpoint you actually reached in the
+local app, including the state the preview agent will need to reach it
+again (put that in `hints.setup`). For backend-only,
 refactor, or docs work, rendering may tell you nothing and the browser is
 optional. Chromium only launches on the first browser tool call. Scout and
 sync turns have no browser at all.
@@ -3158,10 +3161,10 @@ locally inside the worker the same way a staging container does:
 - Navigate to `http://127.0.0.1:$INLOOP_PORT` at the real starting route for
   the flow you will declare. Self-app app screens stay under
   `/app/<slug>/...`; put its other SPA routes after the `#`.
-- Exercise the real interaction and make the evidence intent concrete. For a
+- Exercise the real interaction and make the declared change concrete. For a
   mobile-only change, resize to the viewport you will declare (for example
-  390×844). This local check helps you fix the head revision; the later paired
-  evidence run independently explores and replays both revisions.
+  390×844). This local check helps you fix the after build; the later preview
+  agent independently follows your steps on both builds.
 - A **blank or empty page usually means missing seed data, not a bug** —
   the local DB starts empty. Check the app's existing staging fixtures or
   `?demo=1` route first. A sign-in screen means this browser is signed out;
@@ -3170,16 +3173,15 @@ locally inside the worker the same way a staging container does:
 - Keep it tight (a couple of launch→check→fix cycles, a minute or two).
   **If the app won't boot** — no local Postgres, a missing required
   secret, a crash on start — report the blocker. You can still finish
-  non-visual work, but do not submit an unverified visible story. If the
-  claim needs data or a fault that the local app cannot reproduce, add a
+  non-visual work, but do not declare a visible change you did not see. If
+  the change needs data or a fault that the local app cannot reproduce, add a
   representative fixture exercised by the normal test route. Do not add a
-  screenshot-only route or invent a state just to get a capture.
+  screenshot-only route or invent a state just to get a shot.
 
-This is an agent-facing quality gate for the claimed head state. Before
-finishing a user-visible build, call `record_visual_evidence_intent` only for
-a flow you actually reached. The exact-revision paired replay still verifies
-both sides independently, and the "Test this change" action remains a
-separate manual aid.
+This is an agent-facing quality check on the after build. Before finishing a
+user-visible build, call `record_visual_evidence_intent` only for a flow you
+actually reached. The preview agent still takes both sides itself, and the
+"Test this change" action remains a separate manual aid.
 
 ## Writing user-facing copy: no em dashes
 

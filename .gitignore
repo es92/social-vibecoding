@@ -25,7 +25,6 @@ hackathon-data/
 .playwright-mcp/
 # Generated browser captures; selected PR images live in docs/reviews/.
 /artifacts/mobile-density/
-.local-visual-evidence/
 .superpowers/
 
 # Machine-local Codex MCP wiring (absolute checkout/runtime paths).

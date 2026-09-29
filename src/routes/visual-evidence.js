@@ -1,6 +1,6 @@
 'use strict';
 
-const { Router, json } = require('express');
+const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const appAccess = require('../services/app-access');
 const appAdmins = require('../services/app-admins');
@@ -38,7 +38,7 @@ function sendError(res, err) {
   const status = Number(err?.status) || (err?.code === 'invalid_visual_evidence' ? 400 : 409);
   return res.status(status).json({
     error: err?.code || 'visual_evidence_error',
-    message: String(err?.message || 'The visual change preview could not be updated.').slice(0, 2000),
+    message: String(err?.message || 'The before/after shots could not be updated.').slice(0, 2000),
   });
 }
 
@@ -115,21 +115,16 @@ function visualEvidenceRoutes(config) {
         return res.status(404).json({ error: 'Evidence diagnostics not found' });
       }
       const { rows } = await pool.query(
-        `SELECT id, base_sha, head_sha, state, replay_plan, plan_hash,
+        `SELECT id, base_sha, head_sha, state, plan_hash, hard_verdict,
                 trace_summary, failure_code, failure_reason, trigger,
-                author_plan IS NOT NULL AS author_plan_supplied,
                 fixture_fingerprint, base_image_digest, head_image_digest,
-                repair_attempt, created_at, started_at, completed_at, updated_at
+                created_at, started_at, completed_at, updated_at
            FROM visual_evidence_runs
           WHERE id = $1 AND session_id = $2`,
         [runId, id]
       );
       const run = rows[0];
       if (!run) return res.status(404).json({ error: 'Evidence diagnostics not found' });
-      const replayPlan = run.replay_plan ? plan.parseReplayPlan(run.replay_plan) : null;
-      if (replayPlan && plan.planHash(replayPlan) !== run.plan_hash) {
-        throw new Error('Stored evidence replay plan hash does not match its plan.');
-      }
       const trace = run.trace_summary && typeof run.trace_summary === 'object'
         ? run.trace_summary : {};
       const artifacts = await pool.query(
@@ -138,15 +133,6 @@ function visualEvidenceRoutes(config) {
           WHERE run_id = $1
           ORDER BY story_id, viewport, side, variant
           LIMIT 256`,
-        [run.id]
-      );
-      const diagnosticArtifacts = await pool.query(
-        `SELECT id, attempt, pass, story_id, viewport, side, variant,
-                bytes, width, height, sha256
-           FROM visual_evidence_diagnostic_artifacts
-          WHERE run_id = $1
-          ORDER BY attempt, pass, story_id, viewport, side, variant
-          LIMIT 32`,
         [run.id]
       );
       res.set({
@@ -161,19 +147,18 @@ function visualEvidenceRoutes(config) {
         baseSha: run.base_sha,
         headSha: run.head_sha,
         trigger: run.trigger || null,
-        authorPlanSupplied: run.author_plan_supplied === true,
         createdAt: run.created_at || null,
         startedAt: run.started_at || null,
         completedAt: run.completed_at || null,
         updatedAt: run.updated_at || null,
-        repairAttempt: Number(run.repair_attempt || 0),
         provenance: {
           fixtureFingerprint: run.fixture_fingerprint || null,
           baseImageDigest: run.base_image_digest || null,
           headImageDigest: run.head_image_digest || null,
         },
+        // The hash of exactly which shots were published.
         planHash: run.plan_hash,
-        replayPlan,
+        shotResults: Array.isArray(run.hard_verdict?.stories) ? run.hard_verdict.stories : [],
         artifacts: artifacts.rows.map((artifact) => ({
           storyId: artifact.story_id,
           viewport: artifact.viewport,
@@ -185,20 +170,6 @@ function visualEvidenceRoutes(config) {
           height: artifact.height,
           sha256: artifact.sha256,
         })),
-        diagnosticArtifacts: diagnosticArtifacts.rows.map((artifact) => ({
-          id: artifact.id,
-          attempt: artifact.attempt,
-          pass: artifact.pass,
-          storyId: artifact.story_id,
-          viewport: artifact.viewport,
-          side: artifact.side,
-          variant: artifact.variant,
-          bytes: artifact.bytes,
-          width: artifact.width,
-          height: artifact.height,
-          sha256: artifact.sha256,
-          url: `/api/apps/${encodeURIComponent(ctx.app.slug)}/proposals/${id}/evidence/diagnostics/${artifact.id}`,
-        })),
         failureCode: run.failure_code,
         failureReason: run.failure_reason,
         observer: orchestrator.liveRunObserver(run.id, pool),
@@ -207,26 +178,16 @@ function visualEvidenceRoutes(config) {
           heartbeat: trace.heartbeat || null,
           timingsMs: trace.timingsMs || null,
           idleWait: trace.idleWait || null,
-          replayPasses: trace.replayPasses || [],
-          replayRetries: trace.replayRetries || [],
-          replayRuntime: trace.replayRuntime || null,
-          lastReplayEvent: trace.lastReplayEvent || null,
-          replayEvents: trace.replayEvents || [],
-          fixtureResets: trace.fixtureResets || [],
           agentAttempts: trace.agentAttempts || 0,
           agentDispatches: trace.agentDispatches || [],
           agentActivity: trace.agentActivity || null,
           agentFinalResponse: trace.agentFinalResponse || null,
           agentFinalResponses: trace.agentFinalResponses || [],
-          repairCount: trace.repairCount || 0,
-          repairTrigger: trace.repairTrigger || null,
-          repairTriggers: trace.repairTriggers || [],
           planSource: trace.planSource || null,
           tokenUsage: trace.tokenUsage || null,
           artifactBytes: trace.artifactBytes || 0,
           runs: trace.runs || 0,
           stories: trace.stories || [],
-          relativePointer: trace.relativePointer === true,
           terminalFailureClass: trace.terminalFailureClass || null,
           failure: trace.failure || null,
           control: trace.control || null,
@@ -234,42 +195,6 @@ function visualEvidenceRoutes(config) {
       } });
     } catch (err) {
       log.error('visual-evidence', 'Evidence diagnostics read failed', { sessionId: id, err: err.message });
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
-  router.get('/api/apps/:slug/proposals/:sessionId/evidence/diagnostics/:artifactId', async (req, res) => {
-    const id = sessionId(req.params.sessionId);
-    if (!config.visualEvidence?.present || !id || !ARTIFACT_ID_RE.test(String(req.params.artifactId || ''))) {
-      return res.status(404).json({ error: 'Evidence diagnostic image not found' });
-    }
-    try {
-      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view');
-      if (!ctx || (ctx.session.user_id !== req.user?.id
-          && !(await appAdmins.canManageApp(pool, ctx.app, req.user)))) {
-        return res.status(404).json({ error: 'Evidence diagnostic image not found' });
-      }
-      const { rows } = await pool.query(
-        `SELECT a.data, a.bytes, a.sha256
-           FROM visual_evidence_diagnostic_artifacts a
-           JOIN visual_evidence_runs r ON r.id = a.run_id
-          WHERE a.id = $1 AND r.session_id = $2`,
-        [req.params.artifactId, id]
-      );
-      if (!rows[0]) return res.status(404).json({ error: 'Evidence diagnostic image not found' });
-      const data = Buffer.isBuffer(rows[0].data) ? rows[0].data : Buffer.from(rows[0].data || '');
-      res.set({
-        'Content-Type': 'image/png',
-        'Content-Length': String(data.length),
-        'Cache-Control': 'private, no-store',
-        ETag: `"${rows[0].sha256}"`,
-        Vary: 'Cookie, Authorization',
-        'X-Content-Type-Options': 'nosniff',
-        'Content-Disposition': 'inline',
-      });
-      return res.end(data);
-    } catch (err) {
-      log.error('visual-evidence', 'Evidence diagnostic image read failed', { sessionId: id, err: err.message });
       return res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -333,83 +258,6 @@ function visualEvidenceRoutes(config) {
     }
   });
 
-  // The agent that wrote the revision may submit its executable UI flow.
-  // It cannot submit media or a verdict: the ordinary paired replay generates
-  // and checks every PNG/WebM artifact; people review what the media shows.
-  router.post('/api/apps/:slug/proposals/:sessionId/evidence/plan',
-    json({ limit: '512kb' }), async (req, res) => {
-      const id = sessionId(req.params.sessionId);
-      if (!id) return res.status(404).json({ error: 'Proposal not found' });
-      if (!config.visualEvidence?.execute) {
-        return res.status(503).json({ error: 'visual_evidence_disabled' });
-      }
-      try {
-        const ctx = await loadContext(pool, req.params.slug, id, req.user, 'collab');
-        if (!ctx || ctx.session.user_id !== req.user?.id) {
-          return res.status(404).json({ error: 'Proposal not found' });
-        }
-        if (!['active', 'paused', 'promoted'].includes(ctx.session.status)) {
-          return res.status(409).json({ error: 'proposal_not_open' });
-        }
-        const currentHead = visualHeadForSession(ctx.session);
-        if (!currentHead || req.body?.headSha !== currentHead) {
-          return res.status(409).json({
-            error: 'evidence_head_moved',
-            message: 'Read the proposal’s current head and submit a plan for that exact commit.',
-          });
-        }
-        const accepted = ctx.session.visual_evidence_detail?.intent;
-        if (!accepted) {
-          return res.status(409).json({ error: 'missing_visual_evidence_intent' });
-        }
-        const executable = plan.parseReplayPlan(req.body?.plan);
-        if (plan.canonicalJson(plan.semanticIntentFromPlan(executable))
-            !== plan.canonicalJson(plan.parseIntent(accepted))) {
-          return res.status(409).json({
-            error: 'evidence_intent_mismatch',
-            message: 'The replay plan must preserve the accepted visual claims.',
-          });
-        }
-        if (ctx.session.visual_evidence_run_id) {
-          if (ctx.session.visual_evidence_state === 'failed') {
-            await state.rerunSameHead(pool, ctx.session.visual_evidence_run_id, {
-              trigger: 'author-plan',
-              authorPlan: executable,
-            });
-          } else if (ctx.session.visual_evidence_state !== 'planned') {
-            return res.status(409).json({
-              error: 'evidence_run_in_progress',
-              message: 'The current visual evidence run must finish before the author can resubmit its plan.',
-            });
-          }
-        }
-        const scheduled = await orchestrator.scheduleForSession(config, {
-          pool, sessionId: id, headSha: currentHead, trigger: 'author-plan',
-          authorPlan: executable,
-        });
-        if (!scheduled.scheduled) {
-          if (scheduled.reason === 'head_moved') {
-            return res.status(409).json({
-              error: 'evidence_head_moved',
-              message: 'The proposal head moved while the replay was being scheduled.',
-            });
-          }
-          return res.status(409).json({
-            error: 'evidence_run_in_progress',
-            message: `The visual evidence run could not start (${scheduled.reason}).`,
-          });
-        }
-        return res.status(202).json({
-          ok: true, runId: scheduled.runId, visualEvidenceState: 'provisioning',
-          headSha: currentHead,
-        });
-      } catch (err) {
-        if (err?.code || err instanceof plan.VisualEvidenceValidationError) return sendError(res, err);
-        log.error('visual-evidence', 'Author replay plan failed', { sessionId: id, err: err.message });
-        return res.status(500).json({ error: 'Internal server error' });
-      }
-    });
-
   router.post('/api/apps/:slug/proposals/:sessionId/evidence/rerun', async (req, res) => {
     const id = sessionId(req.params.sessionId);
     if (!id) return res.status(404).json({ error: 'Proposal not found' });
@@ -432,7 +280,7 @@ function visualEvidenceRoutes(config) {
       } else if (!ctx.session.visual_evidence_detail?.intent) {
         return res.status(409).json({
           error: 'missing_visual_evidence_intent',
-          message: 'Add a visual change preview claim and user flow before rerunning it.',
+          message: 'Declare the change and how to reach it before taking the shots again.',
         });
       }
       const scheduled = await orchestrator.scheduleForSession(config, {
@@ -450,8 +298,8 @@ function visualEvidenceRoutes(config) {
     }
   });
 
-  // Stop the running visual change preview. The same people as Rerun, which
-  // is how a stopped run is started again.
+  // Stop the running before/after shots. The same people as Rerun, which is
+  // how a stopped run is started again.
   router.post('/api/apps/:slug/proposals/:sessionId/evidence/stop', async (req, res) => {
     const id = sessionId(req.params.sessionId);
     if (!id) return res.status(404).json({ error: 'Proposal not found' });
@@ -480,7 +328,7 @@ function visualEvidenceRoutes(config) {
         return res.status(404).json({ error: 'Proposal not found' });
       }
       if (!ctx.session.visual_evidence_run_id) {
-        return res.status(409).json({ error: 'visual_evidence_run_missing', message: 'There is no current visual change preview run to override.' });
+        return res.status(409).json({ error: 'visual_evidence_run_missing', message: 'There are no current before/after shots to override.' });
       }
       const run = await state.overrideRun(pool, ctx.session.visual_evidence_run_id, {
         userId: req.user.id,

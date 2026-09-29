@@ -1,19 +1,18 @@
-# Reading a hosted visual-evidence planner timeout
+# Reading a preview agent timeout
 
-The owner-only evidence run trace records `agentActivity` while the planner
-works, including before the turn exits. Its `budgetMs` records the *effective*
-configured planner budget. The default is 480,000 ms (8 minutes); an
-environment override can change it. A repair turn has a separate 240,000 ms
-default. The run's default recovery window is 1,440,000 ms (24 minutes).
+The owner-only before/after run trace records `agentActivity` while the
+preview agent works, including before the turn exits. Its `budgetMs` records the *effective*
+configured agent budget. The default is 480,000 ms (8 minutes); an
+environment override can change it. The run's default recovery window is 1,440,000 ms (24 minutes).
 
 Before model exploration, `auth_bootstrap` records one fixed-shape event for
 each persona and revision. `responseStatus`, `sessionCookieInstalled`, and
 `sessionCookiePresent` show whether the private preview accepted its
-app-scoped identity and the planner browser retained the resulting session.
+app-scoped identity and the preview agent's browser retained the resulting
+session.
 The trace never contains the identity token, cookie, URL, or page content.
 An HTTP preview that issues a Secure session cookie needs the explicit
-private-context exchange used by replay; otherwise the planner sees a sign-in
-screen even when the replay browser could authenticate.
+private-context exchange; otherwise the preview agent sees a sign-in screen.
 
 For a timeout, look at the last `events` and the three pending lists:
 
@@ -39,7 +38,7 @@ start or a declared check, with only an ordinal for its route. Browser result
 shape counts headings, buttons, links, image blocks, and response size. These
 fields help spot repeated navigation or a blank/error page without retaining
 URLs, page text, prompts, model output, credentials, or screenshots in the
-diagnostic trace. The evidence artifacts remain the place for human review.
+diagnostic trace. The shots themselves remain the place for human review.
 
 These counters diagnose the *next* run. They do not retroactively explain an
 older timeout, and longer budgets do not by themselves repair a stuck model,

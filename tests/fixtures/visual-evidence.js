@@ -1,5 +1,7 @@
 'use strict';
 
+const { PNG } = require('pngjs');
+
 function intent(overrides = {}) {
   return {
     version: 1,
@@ -22,37 +24,44 @@ function intent(overrides = {}) {
   };
 }
 
-function plan(overrides = {}) {
-  const semantic = intent();
-  const actions = [
-    { id: 'open-members', stage: 'members', type: 'click', target: { by: 'role', role: 'button', name: 'Members', exact: true } },
-    { id: 'open-invite', stage: 'invite', type: 'click', target: { by: 'testId', value: 'invite-member' } },
-    { id: 'type-query', stage: 'query', type: 'fill', target: { by: 'label', value: 'Username', exact: true }, value: 'ma' },
-  ];
-  return {
-    ...semantic,
-    stories: semantic.stories.map((story) => ({
-      ...story,
-      replay: {
-        before: { startPath: '/lists/demo', actions },
-        after: { startPath: '/lists/demo', actions },
-        checkpoint: {
-          id: 'suggestions-open',
-          label: 'Username suggestions visible',
-          focus: {
-            before: { by: 'role', role: 'dialog', name: 'Invite member', exact: true },
-            after: { by: 'role', role: 'dialog', name: 'Invite member', exact: true },
-          },
-          assertions: {
-            before: [{ type: 'hidden', target: { by: 'role', role: 'listbox' } }],
-            after: [{ type: 'visible', target: { by: 'role', role: 'listbox' } }],
-          },
-          animation: 'steps',
-        },
+// A declaration with one still change and one motion change, the case that
+// needs clips as well as shots.
+function motionIntent(overrides = {}) {
+  const still = intent().stories[0];
+  return intent({
+    impact: 'motion',
+    stories: [still, {
+      id: 'saved-toast',
+      claim: 'Saving slides a toast in from the bottom.',
+      persona: 'member',
+      viewports: [{ name: 'desktop', width: 1280, height: 800 }],
+      intent: {
+        startPath: '/lists/demo',
+        steps: ['Press Save'],
+        checkpoint: 'The toast has slid in',
+        focus: 'Saved toast',
+        animation: 'motion',
       },
-    })),
+    }],
     ...overrides,
-  };
+  });
 }
 
-module.exports = { intent, plan };
+// One complete PNG, as browser_take_screenshot saves it.
+function png({ width = 4, height = 3, shade = 0 } = {}) {
+  const image = new PNG({ width, height });
+  for (let i = 0; i < image.data.length; i += 4) {
+    image.data[i] = shade; image.data[i + 1] = 40; image.data[i + 2] = 90; image.data[i + 3] = 255;
+  }
+  return PNG.sync.write(image);
+}
+
+// Enough of a WebM for the platform's structural check: the EBML magic and a
+// plausible size. The platform does not decode clips.
+function webm(bytes = 2048, fill = 7) {
+  const buffer = Buffer.alloc(bytes, fill);
+  Buffer.from([0x1a, 0x45, 0xdf, 0xa3]).copy(buffer, 0);
+  return buffer;
+}
+
+module.exports = { intent, motionIntent, png, webm };

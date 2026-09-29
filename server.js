@@ -5831,7 +5831,7 @@ async function cleanup() {
     const marking = Promise.allSettled(interruptedEvidence.map((runId) =>
       require('./src/services/visual-evidence-state').transitionRun(shutdownPool, runId, 'failed', {
         failureCode: 'evidence_run_interrupted',
-        failureReason: 'The platform process shut down while this visual change preview was running. You can retry the preview run.',
+        failureReason: 'The platform restarted while these before/after shots were being taken. You can take them again.',
       })
     ));
     const result = await Promise.race([

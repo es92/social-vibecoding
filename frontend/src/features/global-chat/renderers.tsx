@@ -288,7 +288,7 @@ function directItemActions(
     const proposalId = first(item, ['proposalId', 'proposal_id', 'id', 'sessionId', 'session_id'], 80);
     if (proposalId) return [
       itemAction('Details', `Open ${targetLabel}`, 'proposal.detail', { appSlug: slug, proposalId }, 'inline'),
-      itemAction('Change preview', `Visual change preview for ${targetLabel}`, 'proposal.evidence', { appSlug: slug, proposalId }, 'inline'),
+      itemAction('Before/after shots', `Before/after shots for ${targetLabel}`, 'proposal.evidence', { appSlug: slug, proposalId }, 'inline'),
     ];
   }
   if (result.renderer === 'session') {

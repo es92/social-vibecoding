@@ -1248,7 +1248,7 @@ const CAPTURE_STEPS: Record<string, string> = {
 };
 
 /**
- * The active change's visual change preview while it is captured: after the
+ * The active change's before/after shots while they are taken: after the
  * coding agent finished, Homeroom records before-and-after captures of the
  * proposal, and that is not the coding agent working. Stop ends it; the
  * proposal's Rerun starts it again.

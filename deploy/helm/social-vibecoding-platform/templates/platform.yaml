@@ -86,7 +86,6 @@ spec:
             - {name: APP_RUNTIME, value: kubernetes}
             - {name: PREVIEW_LIFECYCLE_ENABLED, value: {{ .Values.platform.previewLifecycleEnabled | default false | quote }}}
             - {name: VISUAL_EVIDENCE_V2_ENABLED, value: {{ .Values.platform.visualEvidenceV2Enabled | quote }}}
-            - {name: VISUAL_EVIDENCE_CAPTURE_MODE, value: {{ .Values.platform.visualEvidenceCaptureMode | default "off" | quote }}}
             - {name: WORKER_RUNTIME, value: kubernetes}
             - {name: CAPTURE_RUNTIME, value: kubernetes}
             {{- $previewCluster := "" }}
