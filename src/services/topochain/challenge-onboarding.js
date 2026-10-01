@@ -8,7 +8,7 @@
 // tour, then these, each ticking from a credit the moment it is earned
 // (src/services/onboarding.js draws the card from `steps` below). Four, up
 // from three, because the list grew a step: Join a community, Try an app,
-// Vote on a change, Suggest an improvement. The NAMES are the admin's data,
+// Vote on an app, Send feedback. The NAMES are the admin's data,
 // never this file's: whatever four come first is the list.
 //
 // WHO IS GATED. Until the tour is done (finished or skipped) and every one of

@@ -12861,7 +12861,7 @@ async function seedStagingFirstChallenges(pool) {
          (900510, 'ONBOARDING', 'Vote on an app (staging demo)',
           'Vote on a change somebody proposed.', '250 pts',
           'First challenge fixture (Getting started).', 'See what needs you', '#communities', NOW(), NOW()),
-         (900511, 'ONBOARDING', 'Suggest an improvement (staging demo)',
+         (900511, 'ONBOARDING', 'Send feedback (staging demo)',
           'Tell a community what would make it better.', '250 pts',
           'First challenge fixture (Getting started).', NULL, NULL, NOW(), NOW())
        ON CONFLICT (id) DO NOTHING`

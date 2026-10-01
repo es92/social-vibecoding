@@ -13,7 +13,7 @@
  *                               skipped on any device (#3240); pays nothing
  *   2.. the season's First challenges, in the admin's order, with their own
  *       titles, tasks and rewards (Join a community, Try an app, Vote on an
- *       app, Suggest an improvement, as evan sets them up). NOTHING HERE
+ *       app, Send feedback, as evan sets them up). NOTHING HERE
  *       NAMES THEM: the server sends whatever the season holds
  *       (GET /api/me/getting-started, src/services/onboarding.js).
  *
@@ -195,7 +195,7 @@ const FIXTURE_STEPS: Array<Omit<GettingStartedStep, 'done' | 'earned_points'>> =
   },
   {
     id: 'challenge-44', kind: 'challenge', action: 'suggest', challenge_id: 44, event_id: 7,
-    title: 'Suggest an improvement', detail: 'Tell a community what would make it better.',
+    title: 'Send feedback', detail: 'Tell a community what would make it better.',
     href: null, reward: '250 pts',
   },
 ];
