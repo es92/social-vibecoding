@@ -171,6 +171,8 @@ async function migrate(config) {
   // failing verdict onto an existing staging proposal.
   await seedStagingPlatformEnv(pool, config);
   await seedStagingTopochain(pool, config);
+  // After it: the First challenges hang off its season-type event.
+  await seedStagingFirstChallenges(pool);
   // Must run AFTER seedStagingTopochain (it decorates the same three viewer
   // identities) and AFTER seedStagingLeaderboardProfile (it decorates that
   // seed's 900001 / 900002 fixture accounts).
@@ -12809,6 +12811,76 @@ async function seedStagingTopochain(pool, config) {
   }
 }
 
+// The staging season's First challenges (2026-10-01).
+//
+// A new account's Getting started card on Home IS the season's first four
+// ONBOARDING challenges, and until they and the tour are done the rest of
+// the season is hidden from it (src/services/topochain/challenge-onboarding.js).
+// The fixture season above has no ONBOARDING challenge, so in a preview the
+// card had only its tour row and the gate had nothing to hold anyone at.
+// These four are the list evan sets up in production (join, try, vote,
+// suggest), under obviously-staging names, on the fixture season's own
+// season-type event (EVENT_SEASON_ID, whose window seedStagingTopochain keeps
+// on "now") and with no schedule of their own, so they never close. The
+// staging mark comes AFTER the action ("Try an app (staging demo)"), not
+// before it as the fixture's other names have it: the card's row truncates
+// on a phone, and four rows reading "Staging demo challenge …" were four
+// rows nobody could tell apart.
+//
+// DATA ONLY, NO SIGNAL (platform conventions, "Seeded data must not
+// fabricate a signal your logic reads"): no credits, for anybody, and no
+// scoring rules, so nothing scores a cloned account on them behind its back.
+// A reviewer who signs up in the preview ticks them by doing them, or an
+// admin credits them from the console. Without a rule a row goes where its
+// call-to-action says (onboarding.js stepAction), so the first three carry
+// one; the fourth has none and opens its own page on the Challenges tab.
+//
+// Its own function rather than a block in seedStagingTopochain, whose seeded
+// template and challenge counts its test pins; its own failure domain too, so
+// a clone that lacks the fixture event skips only this. Fixed ids above every
+// range the fixture uses (templates 900508-900511, challenges 900720-900723,
+// clear of the viewer window at 900520-900579), and ON CONFLICT (id) DO
+// NOTHING, so a reboot changes nothing.
+async function seedStagingFirstChallenges(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  const EVENT_SEASON_ID = 900501;
+  try {
+    await pool.query(
+      `INSERT INTO challenge_templates
+         (id, category, goal, task, reward, description, cta_label, cta_link, created_at, updated_at)
+       VALUES
+         (900508, 'ONBOARDING', 'Join a community (staging demo)',
+          'Join any community that is not Homeroom.', '500 pts',
+          'First challenge fixture (Getting started).', 'Find a community', '#apps', NOW(), NOW()),
+         (900509, 'ONBOARDING', 'Try an app (staging demo)',
+          'Open an app somebody else made and try it.', '500 pts',
+          'First challenge fixture (Getting started).', 'Find an app', '#apps', NOW(), NOW()),
+         (900510, 'ONBOARDING', 'Vote on a change (staging demo)',
+          'Vote on a change somebody proposed.', '250 pts',
+          'First challenge fixture (Getting started).', 'See what needs you', '#communities', NOW(), NOW()),
+         (900511, 'ONBOARDING', 'Suggest an improvement (staging demo)',
+          'Tell a community what would make it better.', '250 pts',
+          'First challenge fixture (Getting started).', NULL, NULL, NOW(), NOW())
+       ON CONFLICT (id) DO NOTHING`
+    );
+    await pool.query(
+      `INSERT INTO challenges
+         (id, season_event_id, challenge_template_id, enabled, display_order, completed,
+          created_at, updated_at)
+       VALUES
+         (900720, $1, 900508, TRUE, 1, FALSE, NOW(), NOW()),
+         (900721, $1, 900509, TRUE, 2, FALSE, NOW(), NOW()),
+         (900722, $1, 900510, TRUE, 3, FALSE, NOW(), NOW()),
+         (900723, $1, 900511, TRUE, 4, FALSE, NOW(), NOW())
+       ON CONFLICT (id) DO NOTHING`,
+      [EVENT_SEASON_ID]
+    );
+    log.info('db', 'Staging First challenges seeded', { event: EVENT_SEASON_ID });
+  } catch (err) {
+    log.warn('db', 'Staging First challenges seed skipped', { message: err.message });
+  }
+}
+
 // Profile customization fixtures (issue #982).
 //
 // TWO of the three "missing in staging" categories apply here:
@@ -13415,7 +13487,7 @@ async function seedStagingPlatformMail(pool) {
 // regex) without running the entire migrate() boot sequence. It is not
 // meant to be called from anywhere else in the app.
 module.exports = {
-  migrate, seedStagingTopochain, seedStagingProfileCustomization,
+  migrate, seedStagingTopochain, seedStagingFirstChallenges, seedStagingProfileCustomization,
   seedStagingPlatformMail, auditDuplicatePrSessions,
   migrateWaitlistCountryCodes,
   clearAutomatedChannelLines,

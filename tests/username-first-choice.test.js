@@ -297,9 +297,10 @@ test('the users INSERT no longer puts the email in the username column', () => {
 
 test('the created row is marked as still needing a choice', () => {
   // Communities, stage 5 added the join screen's flag to the same INSERT,
-  // one step later in the same first run: TRUE for both.
+  // one step later in the same first run: TRUE for both. The one list
+  // (2026-10-01) added the new account's Getting started gate beside them.
   assert.match(signupJs,
-    /needs_username_choice, needs_communities_choice\)\s*\n\s*VALUES \(\$1, \$2, \$3, TRUE, NOW\(\), FALSE, FALSE, TRUE, TRUE\)/);
+    /needs_username_choice, needs_communities_choice,\s*\n\s*getting_started_gate\)\s*\n\s*VALUES \(\$1, \$2, \$3, TRUE, NOW\(\), FALSE, FALSE, TRUE, TRUE, TRUE\)/);
 });
 
 test('the username is an opaque placeholder, never derived from the address (#3575)', () => {

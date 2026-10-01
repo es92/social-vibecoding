@@ -26,6 +26,9 @@ const DDL = `
     needs_username_choice BOOLEAN NOT NULL DEFAULT FALSE,
     -- Communities, stage 5: the join screen's flag, set by the same INSERT.
     needs_communities_choice BOOLEAN NOT NULL DEFAULT FALSE,
+    -- The one list (2026-10-01): a new account's Getting started gate, set
+    -- by the same INSERT.
+    getting_started_gate BOOLEAN NOT NULL DEFAULT FALSE,
     -- chooseFirstUsername stamps it (QA 2026-09-24 Q12's handle choice).
     updated_at TIMESTAMPTZ
   );
@@ -228,13 +231,15 @@ test('real PostgreSQL web signup keeps authority in HttpOnly cookies', async (t)
       // opaque placeholder — not `newuser`, which is what the local part
       // `New.User` used to become — and is marked as still owing a choice.
       const pendingRow = (await pool.query(
-        'SELECT username, needs_username_choice, needs_communities_choice FROM users WHERE email = $1',
+        'SELECT username, needs_username_choice, needs_communities_choice, getting_started_gate FROM users WHERE email = $1',
         ['new.user@example.com'],
       )).rows[0];
       assert.match(pendingRow.username, /^member_[0-9a-f]{18}$/);
       assert.equal(pendingRow.needs_username_choice, true);
       assert.equal(pendingRow.needs_communities_choice, true,
         'a new account is asked which communities to join, after its username');
+      assert.equal(pendingRow.getting_started_gate, true,
+        'and starts on the Getting started list that gates its season (2026-10-01)');
 
       const setPassword = (payload) => fetch(`${base}/api/auth/otp/set-password`, {
         method: 'POST',

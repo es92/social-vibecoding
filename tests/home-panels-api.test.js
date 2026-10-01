@@ -699,41 +699,50 @@ test('POST visibility is retired and never mutates saved preferences', async () 
 
 // ─── Onboarding gate: the locked count ───────────────────────────────
 //
-// While the season's three setup steps are unfinished, Home shows only those
-// steps and a dashed "N challenges locked" placeholder. N is the additive
-// `onboarding.hidden_count`: the season's OPEN challenges the gate hides,
-// counted by the totals statement, never by the capped row page.
+// While a new account's Getting started list is unfinished (its four First
+// challenges and the tour, 2026-10-01), Home shows one dashed locked card in
+// place of the season. Its count is the additive `onboarding.hidden_count`:
+// the season's OPEN challenges the gate hides, counted by the totals
+// statement, never by the capped row page; its second line names the first
+// two of them (`hidden_names`, from the same statement). Only a new account
+// is gated: an existing member's payload has no `onboarding` at all.
 
-// loadOnboarding's rows for setup steps 1-3; one activity each finishes them.
-const onboardingRows = (activityCount) => [1, 2, 3].map((id) => ({
+// loadOnboarding's rows for First challenges 1-4, each carrying the viewer's
+// gate facts (a newcomer, tour done, by default); one activity each finishes
+// them.
+const NEWCOMER = { gate: true, tour_done: true, unlocked: false };
+const onboardingRows = (activityCount, viewer = NEWCOMER) => [1, 2, 3, 4].map((id) => ({
   id, season_event_id: 100, challenge_template_id: id + 100, display_order: id,
   enabled: true, completed: false, schedule_start: null, schedule_end: null,
   metric_type: null, metric_target: null, activity_count: activityCount,
-  completion_recorded: false, blocks: null,
+  completion_recorded: false, blocks: null, ...viewer,
 }));
 
-test('GET /api/home-panels: while setup gates the season, onboarding carries hidden_count', async () => {
-  // Ten open challenges, three of them the setup steps: seven are hidden,
-  // more than the setup rows the page carries, so a count taken from the rows would lie.
+test('GET /api/home-panels: while Getting started gates the season, onboarding carries hidden_count', async () => {
+  // Ten open challenges, four of them First challenges: six are hidden,
+  // more than the gate's rows the page carries, so a count taken from the rows would lie.
   const allRows = Array.from({ length: 10 }, (_, i) => row({ id: i + 1, display_order: i + 1 }));
   for (const url of ['/api/home-panels', '/api/home-panels?expand=challenges']) {
     const { app, calls } = makeApp(
-      { season: SEASON, rows: allRows.slice(0, 3), allRows, onboardingRows: onboardingRows(0) },
+      { season: SEASON, rows: allRows.slice(0, 4), allRows, onboardingRows: onboardingRows(0) },
       { user: USER }
     );
     const { body } = await get(app, url);
     const panel = body.panels[0];
     assert.deepEqual(panel.onboarding,
-      { total: 3, completed: 0, unlocked: false, event_id: 100, hidden_count: 7 },
-      `${url}: the summary is unchanged apart from the additive count`);
-    assert.equal(panel.total, 3, `${url}: total still counts only the setup steps`);
-    assert.deepEqual(panel.challenges.map((c) => c.id), [1, 2, 3]);
+      { total: 4, completed: 0, unlocked: false, event_id: 100, hidden_count: 6, hidden_names: [] },
+      `${url}: the summary is unchanged apart from the additive count and names`);
+    assert.equal(panel.total, 4, `${url}: total still counts only the First challenges`);
+    assert.deepEqual(panel.challenges.map((c) => c.id), [1, 2, 3, 4]);
 
     const rowQuery = calls.find((c) => c.sql.includes('LIMIT $3'));
     const totals = calls.find((c) => c.sql.includes('AS all_total'));
     assert.match(rowQuery.sql.slice(rowQuery.sql.lastIndexOf('WHERE se.season_id')),
       /AND c\.id = ANY\(\$4::bigint\[\]\)/, `${url}: the rows stay gated`);
-    assert.deepEqual(totals.params, [USER.id, SEASON.id, [1, 2, 3], []]);
+    assert.deepEqual(totals.params, [USER.id, SEASON.id, [1, 2, 3, 4], []]);
+    // The names come from the same statement and the same FILTER as the
+    // count, in the block's order, the first two of them.
+    assert.match(totals.sql, /\(array_agg\(COALESCE\(c\.goal, ct\.goal\) ORDER BY c\.featured DESC, COALESCE\(c\.featured_order, 2147483647\), c\.display_order, c\.id\) FILTER \(WHERE \( c\.completed = FALSE[\s\S]*?AND NOT \(c\.id = ANY\(\$3::bigint\[\]\)\)\)\)\[1:2\] AS hidden_names/);
     // The totals statement reads the unrestricted season and gates each
     // aggregate, which is what lets it see the challenges it hides.
     const outerWhere = totals.sql.slice(totals.sql.lastIndexOf('WHERE se.season_id'));
@@ -757,14 +766,41 @@ test('GET /api/home-panels: unlocked or without setup steps, there is no hidden_
   );
   const { body } = await get(app, '/api/home-panels');
   assert.deepEqual(body.panels[0].onboarding,
-    { total: 3, completed: 3, unlocked: true, event_id: 100 });
+    { total: 4, completed: 4, unlocked: true, event_id: 100 },
+    'the read that opens the gate says so');
   const totals = calls.find((c) => c.sql.includes('AS all_total'));
-  assert.doesNotMatch(totals.sql, /hidden_count/, 'unlocked, the totals statement is what it was');
+  assert.doesNotMatch(totals.sql, /hidden_count|hidden_names/, 'unlocked, the totals statement is what it was');
   assert.match(totals.sql, /COUNT\(\*\)::int AS all_total/);
 
   const { app: plain } = makeApp({ season: SEASON, rows: allRows, allRows }, { user: USER });
   const { body: plainBody } = await get(plain, '/api/home-panels');
   assert.equal(plainBody.panels[0].onboarding, undefined);
+});
+
+test('GET /api/home-panels: an existing member is never gated, and gets no gate summary', async () => {
+  // The same season and the same unfinished First challenges as the locked
+  // test above, for an account made before the list shipped (and for one
+  // whose gate opened on an earlier read): every challenge, no locked card.
+  const allRows = Array.from({ length: 10 }, (_, i) => row({ id: i + 1, display_order: i + 1 }));
+  for (const viewer of [
+    { gate: false, tour_done: false, unlocked: false },
+    { gate: true, tour_done: true, unlocked: true },
+  ]) {
+    const { app, calls } = makeApp(
+      { season: SEASON, rows: allRows, allRows, onboardingRows: onboardingRows(0, viewer) },
+      { user: USER }
+    );
+    const { body } = await get(app, '/api/home-panels');
+    const panel = body.panels[0];
+    assert.equal(panel.onboarding, undefined, JSON.stringify(viewer));
+    assert.equal(panel.challenges.length, 10);
+    const rowQuery = calls.find((c) => c.sql.includes('LIMIT $3'));
+    assert.doesNotMatch(rowQuery.sql.slice(rowQuery.sql.lastIndexOf('WHERE se.season_id')),
+      /AND c\.id = ANY\(\$4::bigint\[\]\)/, 'the rows are not gated');
+    // The First challenges still read done from every credit on the
+    // template, for everyone (the lifetime rule), and are grouped as such.
+    assert.equal(panel.challenges.find((c) => c.id === 1).label, 'COMMUNITY');
+  }
 });
 
 // ─── Expand mode ──────────────────────────────────────────────────────

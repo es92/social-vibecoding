@@ -93,6 +93,11 @@ function makeMockPool(state) {
       if (sql.includes('FROM seasons')) {
         return { rows: state.anySeason ? [state.anySeason] : [] };
       }
+      // The season's First challenges (profile.js viewerDoneRule,
+      // 2026-10-01): loadOnboarding's rows, none unless a test brings them.
+      if (sql.startsWith('/* challenge onboarding */')) {
+        return { rows: state.onboardingRows || [] };
+      }
       if (sql.includes('COUNT(*)::int AS total')) {
         const all = state.rows || [];
         return {
@@ -387,7 +392,8 @@ test('the per-user aggregates key on the SESSION user id', async () => {
   }, { user: USER });
   await fetchCompleted(app);
   const rowQuery = calls.find((c) => c.sql.includes('FROM challenges c')
-    && !c.sql.includes('COUNT(*)::int AS total'));
+    && !c.sql.includes('COUNT(*)::int AS total')
+    && !c.sql.startsWith('/* challenge onboarding */'));
   assert.equal(rowQuery.params[0], USER.id);
   assert.match(rowQuery.sql, /ua\.user_id = \$1/);
   // Nothing client-supplied may reach the query — the season comes from
@@ -430,10 +436,43 @@ test('Me counts the SAME completions, through the one totals query', () => {
   assert.match(summary, /readChallengeTotals\(pool, req\.user\.id, season\.id\)/);
   const completed = route.slice(route.indexOf("router.get('/api/me/challenges/completed'"),
     route.indexOf("router.get('/api/me/summary'"));
-  assert.match(completed, /readChallengeTotals\(pool, req\.user\.id, season\.id\)/,
+  // The completed list reads the viewer's done rule once and hands it to the
+  // totals (2026-10-01), so the list and its "N of M done" are one answer.
+  assert.match(completed, /readChallengeTotals\(pool, req\.user\.id, season\.id, rule\)/,
     'and the completed list\'s "N of M done" reads the same helper');
-  assert.equal((route.match(/COUNT\(\*\) FILTER \(WHERE \$\{DONE_EXPR\}\)/g) || []).length, 1,
+  // The rule is DONE_EXPR with the First challenges' lifetime answer over it
+  // (home-panels.js onboardingDoneExpr), the one Home counts with.
+  assert.equal((route.match(/COUNT\(\*\) FILTER \(WHERE \$\{done\.sql\(3\)\}\)/g) || []).length, 1,
     'one copy of the totals SQL');
+  assert.match(route, /sql: \(n\) => onboardingDoneExpr\(`\$\$\{n\}`, `\$\$\{n \+ 1\}`\),/);
+  assert.match(route, /if \(!onboarding\) return \{ sql: \(\) => DONE_EXPR, params: \[\] \};/);
   const client = read('frontend/src/features/profile/profile.js');
   assert.match(client, /\/api\/me\/summary/);
+});
+
+// 2026-10-01: a First challenge counts done on Me the way it does on Home and
+// on the Getting started card: from every credit on its TEMPLATE, an earlier
+// season's included (loadOnboarding's lifetime answer), not only from credits
+// on this season's row. Both statements splice the same rule, with the gate's
+// ids and the done ones as their last two parameters.
+test('a First challenge done from an earlier season counts on Me as it does on Home', async () => {
+  const first = (id, activityCount) => ({
+    id, season_event_id: 100, challenge_template_id: id + 100, display_order: id,
+    enabled: true, completed: false, schedule_start: null, schedule_end: null,
+    metric_type: null, metric_target: null, activity_count: activityCount,
+    completion_recorded: false, blocks: null, gate: false, tour_done: false, unlocked: false,
+  });
+  const { app, calls } = makeApp({
+    activeSeason: SEASON,
+    rows: [row({ id: 1, my_done: true })],
+    onboardingRows: [first(1, 1), first(2, 0)],
+  }, { user: USER });
+  const res = await fetchCompleted(app);
+  assert.equal(res.status, 200);
+  const totals = calls.find((c) => c.sql.includes('COUNT(*)::int AS total'));
+  assert.deepEqual(totals.params, [USER.id, SEASON.id, [1, 2], [1]]);
+  assert.match(totals.sql, /COUNT\(\*\) FILTER \(WHERE CASE WHEN c\.id = ANY\(\$3::bigint\[\]\) THEN c\.id = ANY\(\$4::bigint\[\]\) ELSE/);
+  const list = calls.find((c) => c.sql.includes('AS my_last_activity_at'));
+  assert.deepEqual(list.params.slice(3), [[1, 2], [1]], 'the list after its own three parameters');
+  assert.match(list.sql, /CASE WHEN c\.id = ANY\(\$4::bigint\[\]\) THEN c\.id = ANY\(\$5::bigint\[\]\) ELSE/);
 });

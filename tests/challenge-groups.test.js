@@ -374,7 +374,8 @@ test('while setup gates the rest the progress is the First challenges group’s 
   let grid = gridOf(store);
   assert.deepEqual({ ...grid.progress }, { done: 1, total: 2, caption: 'done in First challenges' });
   assert.deepEqual(headers(grid), { setup: { meta: '1/2', allDone: false, collapsed: false } });
-  assert.equal(grid.notice, 'Finish these to unlock the rest of the season.');
+  // 2026-10-01: what a new account finishes is its Getting started list.
+  assert.equal(grid.notice, 'Finish Getting started to unlock the rest of the season.');
   assert.equal(grid.onboardingEventId, null, 'the setup cards are here');
   assert.equal(grid.lockedCount, 0, 'a payload without hidden_count locks nothing it can count');
 
@@ -503,18 +504,27 @@ test('while locked the pane draws the placeholder after the last grid instead of
   assert.match(PANE, /<div className=\{`mt-3 \$\{GRID\}`\}>\s*<LockedChallengesCard /,
     'the source names the shared GRID constant, not a copy of its classes');
   assert.ok(afterLastCard(locked, placeholder), 'after the First challenges grid and its cards');
-  assert.match(locked, />6 challenges locked</);
-  assert.match(locked, />Finish setup to unlock</);
-  assert.doesNotMatch(locked, /role="status"/, 'its second line is the note, so the note is not repeated');
+  // 2026-10-01: the words name the Getting started list on Home (only a new
+  // account is gated, and the tour counts too), not "setup", and the second
+  // line names the first few of what it hides when the server sends them.
+  assert.match(locked, />6 challenges unlock after Getting started</);
+  assert.match(locked, />Finish Getting started on Home to see them</, 'without names, what to do');
+  assert.doesNotMatch(locked, /role="status"/, 'its first line is the note, so the note is not repeated');
   assert.doesNotMatch(locked, /unlock the rest of the season/);
   assert.ok(locked.indexOf('id="tc-se-challenge-summary"') < locked.indexOf('tc-se-card'), 'the progress still leads');
 
+  const named = render({
+    total: 2, completed: 1, unlocked: false, event_id: 10, hidden_count: 6,
+    hidden_names: ['Make your first proposal', 'Invite a friend'],
+  });
+  assert.match(named, />Make your first proposal, Invite a friend and 4 more</);
+
   const one = render({ total: 2, completed: 1, unlocked: false, event_id: 10, hidden_count: 1 });
-  assert.match(one, />1 challenge locked</);
+  assert.match(one, />1 challenge unlocks after Getting started</);
 
   const uncounted = render({ total: 2, completed: 1, unlocked: false, event_id: 10 });
   assert.doesNotMatch(uncounted, /border-dashed/, 'no count, no placeholder');
-  const note = uncounted.search(/<p class="mt-3 [^"]*" role="status">Finish these to unlock the rest of the season\.<\/p>/);
+  const note = uncounted.search(/<p class="mt-3 [^"]*" role="status">Finish Getting started to unlock the rest of the season\.<\/p>/);
   assert.ok(note !== -1, 'the note, with its text and role');
   assert.ok(afterLastCard(uncounted, note), 'below the challenges, not above them');
 

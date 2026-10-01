@@ -145,6 +145,9 @@ const USERNAME_INSERT_ATTEMPTS = 3;
  * makes that step ask. `needs_communities_choice` is TRUE for the same
  * reason one step later: a new account is asked which communities to join
  * before its first Home (communities, stage 5; src/services/onboarding.js).
+ * `getting_started_gate` is TRUE because it is a NEW account: its Getting
+ * started card is the season's First challenges, and the rest of the season
+ * waits on them (the note beside the column in src/db/schema.sql).
  *
  * The retry loop is a backstop for a 72-bit placeholder colliding, which
  * should never happen; it was load-bearing when the first candidate was a
@@ -163,8 +166,9 @@ async function insertEmailUser(client, email, passwordHash) {
       const { rows } = await client.query(
         `INSERT INTO users
            (username, password, email, email_confirmed, email_confirmed_at,
-            password_set, is_admin, needs_username_choice, needs_communities_choice)
-         VALUES ($1, $2, $3, TRUE, NOW(), FALSE, FALSE, TRUE, TRUE)
+            password_set, is_admin, needs_username_choice, needs_communities_choice,
+            getting_started_gate)
+         VALUES ($1, $2, $3, TRUE, NOW(), FALSE, FALSE, TRUE, TRUE, TRUE)
          RETURNING id, username, is_admin, password_set, needs_username_choice`,
         [candidate, passwordHash, email]
       );

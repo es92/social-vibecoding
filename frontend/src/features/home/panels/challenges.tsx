@@ -58,21 +58,25 @@
  * the season progress and the body. The Done header alone carries a class of
  * its own, `home-challenge-done-head`, which the #2490 check selects on.
  *
- * ── While setup gates the season ──────────────────────────────────────
+ * ── While Getting started gates the season ────────────────────────────
  *
- * The server sends only setup's challenges until setup is finished, plus how
- * many it holds back (`lockedCount`). Those draw as ONE dashed placeholder
- * after the last card, inside `.home-panel-rows` so it keeps the cards' 10px
- * step, but it is not a `.home-challenge-card`: the declared checks and the
- * tests count and select real cards. Its second line ("Finish setup to
- * unlock") is the unlock note, so the note is not drawn beside it.
+ * Only a NEW account's season is gated (2026-10-01): until its Getting
+ * started list (the tour and the First challenges) is done, the server sends
+ * only the First challenges, plus how many it holds back and the first few of
+ * their names. That list is the card on top of Home (../getting-started.tsx),
+ * so this block does not draw it again: it draws ONE dashed locked card, "6
+ * challenges unlock after Getting started", "Make a proposal, Invite a friend
+ * and 4 more", and nothing else (`view.locked`). The card sits inside
+ * `.home-panel-rows`, where the cards it stands in for would, but it is not a
+ * `.home-challenge-card`: the declared checks and the tests count and select
+ * real cards. Every existing member, and every account once its list is done,
+ * gets the normal groups below.
  *
- * The note itself sits UNDER the challenges, after `.home-panel-body`: the
- * season progress leads, then the cards, then what they unlock. That keeps
- * `.home-panel-season + .home-panel-body` adjacent in every state. It shows
- * only while setup is locked and no placeholder draws (no count to draw):
- * "Finish these to unlock the rest of the season." Once unlocked there is no
- * note.
+ * The unlock note is what is left of the old arrangement: a closed gate with
+ * nothing hidden to count (a season of First challenges only) draws those
+ * cards as before, with the note UNDER them, after `.home-panel-body`, which
+ * keeps `.home-panel-season + .home-panel-body` adjacent: "Finish Getting
+ * started to unlock the rest of the season." Once unlocked there is no note.
  *
  * ── The standings preview is GONE ─────────────────────────────────────
  *
@@ -99,6 +103,26 @@ import type { ChallengeGroupView, ChallengesView } from '../panels-store';
 import { PanelFooter, PanelShell, panels } from './ui';
 
 export function ChallengesPanel({ view }: { view: ChallengesView }) {
+  if (view.locked) {
+    // While Getting started gates the season: the one locked card, alone.
+    // Inside `.home-panel-rows` like the cards it stands in for, so it keeps
+    // their place and the column's rhythm, but it is not a
+    // `.home-challenge-card` and `data-rows` stays 0: the declared checks and
+    // the tests count real cards.
+    return (
+      <PanelShell panelKey={view.key} expanded={false} plate="none" stamps={{ rows: 0 }}>
+        <div className="home-panel-body pt-2">
+          <div className="home-panel-rows flex flex-col gap-2.5">
+            <LockedChallengesCard
+              count={view.lockedCount ?? 0}
+              names={view.lockedNames}
+              className="home-challenge-locked"
+            />
+          </div>
+        </div>
+      </PanelShell>
+    );
+  }
   if (!view.rows.length) {
     // The line's hover is a text colour, not a tint: with no plate and no
     // inset a background would fill a square box starting at the first glyph,
@@ -130,9 +154,10 @@ export function ChallengesPanel({ view }: { view: ChallengesView }) {
 
   const groups: ChallengeGroupView[] = view.groups
     ?? [{ key: 'all', heading: null, meta: null, rows: view.rows }];
-  const lockedCount = view.lockedCount ?? 0;
   const hasFooter = view.expandable !== false;
-  const hasNote = !!view.onboardingNote && !(lockedCount > 0);
+  // The locked card is the `view.locked` branch above, alone; here the note
+  // is the only thing a closed gate adds.
+  const hasNote = !!view.onboardingNote;
 
   return (
     <PanelShell
@@ -171,13 +196,11 @@ export function ChallengesPanel({ view }: { view: ChallengesView }) {
               ))}
             </Fragment>
           ))}
-          <LockedChallengesCard count={lockedCount} className="home-challenge-locked" />
         </div>
       </div>
       {/* #1915 kept this line off its neighbours. It still is, by the column's
           one rhythm (`pt-2 pb-1.5`, see the header) rather than by a padding
-          of its own against a hairline that is gone. It follows the cards,
-          and the placeholder's own second line stands in for it. */}
+          of its own against a hairline that is gone. It follows the cards. */}
       {hasNote ? (
         <p className="pt-2 pb-1.5 text-sm text-zinc-500 dark:text-zinc-400" role="status">
           {view.onboardingNote}

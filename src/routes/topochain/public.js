@@ -64,6 +64,7 @@ const {
 const { TEMPLATE_JOIN_COLUMNS_SQL, buildChallengeListItem } = require('./challenge-view');
 const {
   loadOnboarding, visibleChallenges, challengeCategory, resolveProgress, loadEventBlocks,
+  isLocked, gateSummary,
 } = require('../../services/topochain/challenge-onboarding');
 const { loadCadence, intervalMinutes } = require('../../services/topochain/challenge-scorer');
 const events = require('../../services/events');
@@ -823,11 +824,23 @@ function topochainPublicRoutes(config) {
 
       // This list now carries the signed-in viewer's onboarding state. While
       // the gate is closed it also says how many of THIS event's challenges
-      // it hides (additive `hidden_count`, the tab's "N challenges locked"
-      // placeholder); unlocked, the summary is exactly what it was.
-      const summary = onboarding && !onboarding.summary.unlocked
-        ? { ...onboarding.summary, hidden_count: listed.length - visible.length }
-        : onboarding?.summary;
+      // it hides and the first few of their names (additive `hidden_count`
+      // and `hidden_names`, the tab's locked placeholder, which names them
+      // the way Home's does); unlocked, the summary is exactly what it was.
+      // Only a new account on its Getting started list is gated at all
+      // (2026-10-01): an existing member and a signed-out visitor get the
+      // whole event and no summary, as for a season with no First challenges.
+      const gate = gateSummary(onboarding);
+      const summary = gate && isLocked(onboarding)
+        ? {
+          ...gate,
+          hidden_count: listed.length - visible.length,
+          hidden_names: listed.filter((r) => !visible.includes(r))
+            // Two, as Home's (home-panels.js HIDDEN_NAMES): what the card's
+            // second line holds on a phone with the count after them.
+            .map((r) => String(r.goal ?? r.t_goal ?? '').trim()).filter(Boolean).slice(0, 2),
+        }
+        : gate;
       res.set('Cache-Control', 'private, no-store');
       return ok(res, { data, ...(summary ? { onboarding: summary } : {}) });
     } catch (err) {

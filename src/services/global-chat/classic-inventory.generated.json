@@ -6659,21 +6659,6 @@
     {
       "source": "src/routes/onboarding.js",
       "method": "POST",
-      "path": "/api/me/getting-started/seen",
-      "expression": null,
-      "status": "mapped",
-      "capabilityId": "apps.post.me.getting.started.seen.eda38e89",
-      "domain": "apps",
-      "risk": "external_write",
-      "confirmation": "required",
-      "renderer": "app",
-      "transport": "server_loopback",
-      "mobileSupported": true,
-      "classicPath": "#apps"
-    },
-    {
-      "source": "src/routes/onboarding.js",
-      "method": "POST",
       "path": "/api/me/getting-started/close",
       "expression": null,
       "status": "mapped",

@@ -181,7 +181,8 @@ test('onboarding progress uses personal completion and explains the later unlock
   const grid = store.get().grid;
   assert.deepEqual({ ...grid.progress }, { done: 2, total: 3, caption: 'done in First challenges' },
     'setup is its own scope while it gates the rest');
-  assert.equal(grid.notice, 'Finish these to unlock the rest of the season.');
+  // 2026-10-01: what a new account finishes is its Getting started list.
+  assert.equal(grid.notice, 'Finish Getting started to unlock the rest of the season.');
   assert.equal(grid.lockedCount, 0, 'no hidden_count in this payload, so no placeholder');
   assert.equal(grid.groups.length, 1);
   assert.equal(grid.groups[0].heading, 'First challenges', 'the setup group’s heading (key `setup`)');

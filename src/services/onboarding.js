@@ -10,8 +10,8 @@
  * The first two steps were already there (frontend/src/features/auth/
  * username-first-run.js, frontend/src/features/settings/terms-first-run.js).
  * This module is the server half of the other two: which communities the
- * join screen offers and what answering it does, and the four first steps
- * the card on Home ticks off.
+ * join screen offers and what answering it does, and the list the card on
+ * Home ticks off.
  *
  * ── Who is asked ────────────────────────────────────────────────────────
  *
@@ -38,25 +38,37 @@
  * "Skip for now" is an answer too: it joins and leaves nothing, and the
  * screen does not come back. Discover is where to join later.
  *
- * ── The card ───────────────────────────────────────────────────────────
+ * ── The card IS the First challenges ───────────────────────────────────
  *
- * The tour, then three steps in ONE community, the first one the person
- * joined on that screen (or Homeroom when that is all they picked), each of
- * which ticks off from something the person actually did rather than from a
- * checkbox:
+ * Home used to open on two first-run lists that did not know about each
+ * other: this card (the tour, then say hi, vote and explore in one
+ * community, paying nothing) and the Challenges block's First challenges (the
+ * season's first ONBOARDING challenges, paying points and hiding the rest of
+ * the season from everyone). They overlapped, and disagreed on "done". Since
+ * evan's "one list" decision (2026-10-01) there is one:
  *
- *   tour     the welcome tour finished or skipped, on any device
- *            (`users.tour_done_at`, #3237). It used to start by itself after
- *            the join screen; since #3240 this row is where it is offered;
- *   say-hi   a message of theirs in its chat;
- *   vote     a vote of theirs on a change or a request, or, when nothing
- *            there is waiting on one, a visit to the Workshop;
- *   explore  a visit to the app (app_activity), or for Homeroom, which has
- *            no app of its own to open, joining a second community or a
- *            visit to Discover.
+ *   1. Take the 1-minute tour   the welcome tour finished or skipped, on any
+ *                               device (`users.tour_done_at`, #3237). Code,
+ *                               not a challenge: it pays nothing.
+ *   2.. the season's First challenges, in the admin's display order
+ *       (services/topochain/challenge-onboarding.js): their titles, tasks and
+ *       rewards are DATA, renamed, reordered and added to in the admin
+ *       console, so nothing here names them. Each ticks the moment its credit
+ *       is written (the instant scoring of #3593 and its successors), from
+ *       the same progress the Challenges tab and Home's block read.
  *
- * The two visits leave no row of their own, so the card records them
- * (`users.getting_started_seen`) while it is showing, and only then.
+ * Pressing a row goes to where its action is, chosen by the MEASURE of the
+ * scoring rule bound to its challenge (stepAction below), and never ticks it.
+ *
+ * Who sees it: an account made since the list shipped
+ * (`users.getting_started_gate`) that has come through the join screen, until
+ * it closes the card, which it can do once the list is done. The same
+ * accounts, and only they, find the rest of the season locked until then;
+ * everyone who was already here sees the whole season and no card. An
+ * account that signs up from an invite link is a new account like any other:
+ * the email sign-up sets both flags, the invite joins it to its community,
+ * and the join screen still asks, with that community already ticked, so it
+ * gets the card too.
  *
  * ── The tour ───────────────────────────────────────────────────────────
  *
@@ -66,6 +78,8 @@
  */
 
 const communities = require('./communities');
+const { loadOnboarding } = require('./topochain/challenge-onboarding');
+const { fetchCurrentSeason, gateUnlocks } = require('../routes/home-panels');
 
 // How many communities the join screen lists. Homeroom and the invites come
 // first, so this is the room left for the open communities.
@@ -73,8 +87,8 @@ const SUGGESTION_LIMIT = 8;
 // The most the screen can join in one answer. It lists eight; the cap is
 // only there so the endpoint is not a bulk-join API.
 const MAX_JOIN = 20;
-// The two visits the card records.
-const SEEN_KEYS = new Set(['workshop', 'discover']);
+// How many of the challenges the list unlocks its done state names.
+const UNLOCK_NAMES = 4;
 
 function iconUrl(row) {
   return row.icon_image_id ? `/app-icons/${row.icon_image_id}` : null;
@@ -269,10 +283,11 @@ async function answerJoin(pool, user, body, { showSelfHosted = false, acceptInvi
 }
 
 /**
- * The one community the card's three steps are about: the first the person
- * joined on the join screen, else the first they joined at all, else
- * Homeroom. Their own projects are not it: "say hi" in something you
- * started alone is not a first step.
+ * The community a first step goes to when it needs one ("Try an app" opens
+ * its app): the first the person joined on the join screen, else the first
+ * they joined at all, else Homeroom. Their own projects are not it: trying
+ * an app you started alone is not what the step asks, and the measure behind
+ * it does not count one.
  */
 async function focusCommunity(pool, userId, { showSelfHosted = false } = {}) {
   const { rows } = await pool.query(
@@ -291,117 +306,144 @@ async function focusCommunity(pool, userId, { showSelfHosted = false } = {}) {
   return rows[0] || null;
 }
 
+// The words the tour's row carries. Code, not a challenge: the tour pays
+// nothing, and there is nothing for an admin to rename.
+const TOUR_STEP = Object.freeze({
+  title: 'Take the 1-minute tour',
+  detail: 'See how Homeroom works.',
+});
+
 /**
- * The card: `{ show, community, steps, done, total }`. `show` is false once
- * the card is closed, and for an account that never came through the join
- * screen; the client draws nothing then.
+ * Where pressing a First challenge's row goes: to where its action is, never
+ * to a tick (a row is done when its credit is written, not when it is
+ * pressed). Chosen by the MEASURE of the scoring rule bound to the challenge,
+ * which is the one thing about a step that says what it asks for: the title,
+ * the task and the order are the admin's prose, and change.
+ *
+ *   COMMUNITY_JOINED          Discover, where communities are joined
+ *   TRY_APPS                  the app of the community the person joined
+ *                             first, else Discover (Homeroom has no app of
+ *                             its own to open, and the measure does not count
+ *                             your own)
+ *   VOTE_CAST                 the Communities tab, whose page opens on Needs
+ *                             you: what is waiting for a vote
+ *   FEEDBACK_SENT             the "Ask for a change" dialog itself
+ *   USEFUL_FEEDBACK           (`action: 'feedback'`; the measure "Suggest an
+ *                             improvement" is scored by until an admin
+ *                             rebinds it to FEEDBACK_SENT)
+ *
+ * Anything else (no rule, or a measure added later) goes where the challenge
+ * itself says: its call-to-action when that is a place in the shell (a `#`
+ * route), else its own page on the Challenges tab, which carries the CTA
+ * whatever it is. An admin-typed URL is never followed from here.
+ */
+function stepAction(step, focus) {
+  switch (String(step.measure || '').trim().toUpperCase()) {
+    case 'COMMUNITY_JOINED': return { href: '#apps' };
+    case 'TRY_APPS':
+      return focus && !focus.self_hosted ? { href: null, slug: focus.slug } : { href: '#apps' };
+    case 'VOTE_CAST': return { href: '#communities' };
+    case 'FEEDBACK_SENT':
+    case 'USEFUL_FEEDBACK':
+      return { href: null, action: 'feedback' };
+    default: break;
+  }
+  const cta = typeof step.cta_link === 'string' ? step.cta_link.trim() : '';
+  if (/^#[a-z]/i.test(cta)) return { href: cta };
+  return { href: `#leaderboard/challenges/${Number(step.season_event_id)}/${Number(step.id)}` };
+}
+
+// The answer for an account the card is not showing for: the same shape,
+// nothing in it.
+function noCard() {
+  return {
+    show: false, complete: false, steps: [], done: 0, total: 0, earned_points: 0,
+    unlocks: { count: 0, names: [] },
+  };
+}
+
+/**
+ * The card: `{ show, complete, steps, done, total, earned_points, unlocks }`.
+ *
+ * `show` is false for an account the card is not for (one made before the
+ * list shipped, or one that has not answered the join screen yet) and once it
+ * is closed; the client draws nothing then, and nothing else is read.
+ *
+ * `steps` is the tour, then the season's First challenges in the admin's
+ * order, each `{ id, kind, title, detail, done, href, slug?, action?,
+ * reward, earned_points, challenge_id?, event_id? }`. `kind` is 'tour' or
+ * 'challenge'; `reward` is the challenge's own words ("500 pts", or prose),
+ * null for the tour; `earned_points` is what the person has been paid on it,
+ * this season or an earlier one, the same credits its "done" reads.
+ *
+ * `complete` is the gate's own answer (challenge-onboarding.js `finished`):
+ * the tour and every challenge done, or let through on an earlier read. It is
+ * the card's "You’re all set" state, and only then does the client offer the
+ * close button.
+ *
+ * `unlocks` is what finishing lets the person see: how many of the season's
+ * open challenges are not First challenges, and the first few of their names
+ * (home-panels.js gateUnlocks, the set the gate hides while it is closed).
+ * Zero where nothing is gated: a season with no First challenges, or none at
+ * all.
  */
 async function gettingStarted(pool, userId, { showSelfHosted = false } = {}) {
   const { rows: userRows } = await pool.query(
-    `SELECT communities_onboarded_at, getting_started_closed_at, getting_started_seen,
+    `SELECT communities_onboarded_at, getting_started_closed_at, getting_started_gate,
             tour_done_at
        FROM users WHERE id = $1`,
     [userId]
   );
   const u = userRows[0];
-  const show = !!(u && u.communities_onboarded_at && !u.getting_started_closed_at);
-  const seen = (u && u.getting_started_seen && typeof u.getting_started_seen === 'object')
-    ? u.getting_started_seen : {};
-  const focus = await focusCommunity(pool, userId, { showSelfHosted });
-  const appId = focus ? focus.id : null;
+  const show = !!(u && u.getting_started_gate && u.communities_onboarded_at && !u.getting_started_closed_at);
+  if (!show) return noCard();
+  const tourDone = !!u.tour_done_at;
 
-  const { rows: facts } = await pool.query(
-    `SELECT
-       EXISTS (SELECT 1 FROM chat_messages m
-                WHERE m.app_id = $2 AND m.user_id = $1
-                  AND m.msg_type = 'message' AND m.deleted_at IS NULL) AS said_hi,
-       (EXISTS (SELECT 1 FROM pr_votes v WHERE v.user_id = $1)
-        OR EXISTS (SELECT 1 FROM issue_votes v WHERE v.user_id = $1)) AS voted,
-       (SELECT COUNT(*)::int FROM chat_sessions cs
-         WHERE cs.app_id = $2 AND cs.status = 'promoted'
-           AND NOT EXISTS (SELECT 1 FROM pr_votes v
-                            WHERE v.session_id = cs.id AND v.user_id = $1)) AS waiting,
-       EXISTS (SELECT 1 FROM app_activity x WHERE x.app_id = $2 AND x.user_id = $1) AS opened,
-       EXISTS (SELECT 1 FROM community_members m JOIN apps a ON a.community_id = m.community_id
-                WHERE m.user_id = $1 AND NOT a.self_hosted) AS in_another`,
-    [userId, appId]
-  );
-  const f = facts[0] || {};
-  const name = focus ? focus.name : 'Homeroom';
-  const slug = focus ? focus.slug : null;
-  const waiting = Number(f.waiting) || 0;
+  const season = await fetchCurrentSeason(pool);
+  const onboarding = season ? await loadOnboarding(pool, userId, { seasonId: season.id }) : null;
+  // The community only a TRY_APPS step goes to, so only read for one.
+  const focus = onboarding && onboarding.steps.some((s) => String(s.measure || '').trim().toUpperCase() === 'TRY_APPS')
+    ? await focusCommunity(pool, userId, { showSelfHosted }) : null;
 
-  const steps = [
-    {
-      // The client draws this row with a Start button and asks for the tour
-      // itself; there is nowhere to navigate, so no href.
-      id: 'tour',
-      title: 'Take the 1-minute tour',
-      detail: 'See how Homeroom works.',
-      done: !!(u && u.tour_done_at),
-      href: null,
-    },
-    {
-      id: 'say-hi',
-      title: `Say hi in ${name}`,
-      detail: 'Post in its chat.',
-      done: !!f.said_hi,
-      href: slug ? `#messages/app/${encodeURIComponent(slug)}` : '#messages',
-    },
-    waiting > 0
-      ? {
-        id: 'vote',
-        title: 'Vote on what needs you',
-        detail: `${waiting} waiting in ${name}`,
-        done: !!f.voted,
-        href: '#workshop',
-      }
-      : {
-        id: 'vote',
-        title: 'Look around the Workshop',
-        detail: 'See what people are building.',
-        done: !!f.voted || !!seen.workshop,
-        href: '#workshop',
-      },
-    focus && !focus.self_hosted
-      ? {
-        id: 'explore',
-        title: `Open ${name} and try it`,
-        detail: 'Changes voted in ship here.',
-        done: !!f.opened,
-        href: null,
-        slug,
-      }
-      : {
-        id: 'explore',
-        title: 'Find another community',
-        detail: 'Join one in Discover.',
-        done: !!f.in_another || !!seen.discover,
-        href: '#apps',
-      },
-  ];
+  const steps = [{
+    // The client draws this row with a Start button and asks for the tour
+    // itself; there is nowhere to navigate, so no href.
+    id: 'tour',
+    kind: 'tour',
+    title: TOUR_STEP.title,
+    detail: TOUR_STEP.detail,
+    done: tourDone,
+    href: null,
+    reward: null,
+    earned_points: 0,
+  }];
+  for (const s of (onboarding ? onboarding.steps : [])) {
+    const progress = onboarding.progress.get(Number(s.id));
+    steps.push({
+      id: `challenge-${Number(s.id)}`,
+      kind: 'challenge',
+      challenge_id: Number(s.id),
+      event_id: Number(s.season_event_id),
+      title: String(s.goal || '').trim(),
+      detail: String(s.task || '').trim(),
+      done: !!(progress && progress.done),
+      reward: s.reward == null ? null : String(s.reward).trim() || null,
+      earned_points: Number(s.earned_points) || 0,
+      ...stepAction(s, focus),
+    });
+  }
+  const unlocks = onboarding && season
+    ? await gateUnlocks(pool, season.id, onboarding.ids, { limit: UNLOCK_NAMES })
+    : { count: 0, names: [] };
   return {
     show,
-    community: focus ? { slug: focus.slug, name: focus.name, self_hosted: !!focus.self_hosted } : null,
+    complete: onboarding ? onboarding.finished : tourDone,
     steps,
     done: steps.filter((s) => s.done).length,
     total: steps.length,
+    earned_points: steps.reduce((sum, s) => sum + (Number(s.earned_points) || 0), 0),
+    unlocks,
   };
-}
-
-/** Record a visit the card asked for. Only while the card is showing. */
-async function markSeen(pool, userId, what) {
-  if (!SEEN_KEYS.has(what)) return { ok: false, status: 400, error: 'Unknown step' };
-  await pool.query(
-    `UPDATE users
-        SET getting_started_seen = COALESCE(getting_started_seen, '{}'::jsonb)
-                                   || jsonb_build_object($2::text, NOW())
-      WHERE id = $1
-        AND communities_onboarded_at IS NOT NULL
-        AND getting_started_closed_at IS NULL`,
-    [userId, what]
-  );
-  return { ok: true };
 }
 
 /**
@@ -415,6 +457,13 @@ async function markSeen(pool, userId, what) {
  * Home tiles, username and terms answer stay as they are. The join screen
  * shows what it is already in, ticked. Returns `{ id, username }`, or null
  * when there is no such account.
+ *
+ * It also puts the account on the Getting started list as a NEW account
+ * (`getting_started_gate`, and the gate closed again: `_unlocked_at`), so the
+ * card, and the season it gates, follow the join screen whatever the account
+ * was made before. That is how an admin tries the first run on an existing
+ * account. Credits it already earned stay: a First challenge it has done is
+ * still ticked.
  */
 async function resetFirstRun(pool, userId) {
   const { rows } = await pool.query(
@@ -423,7 +472,9 @@ async function resetFirstRun(pool, userId) {
             communities_onboarded_at = NULL,
             getting_started_closed_at = NULL,
             getting_started_seen = NULL,
-            tour_done_at = NULL
+            tour_done_at = NULL,
+            getting_started_gate = TRUE,
+            getting_started_unlocked_at = NULL
       WHERE id = $1
       RETURNING id, username`,
     [userId]
@@ -431,8 +482,17 @@ async function resetFirstRun(pool, userId) {
   return rows[0] || null;
 }
 
-/** The card's close button. */
-async function closeCard(pool, userId) {
+/**
+ * The card's close button, which the card offers only once its list is done
+ * ("You’re all set"). Refused before that: the list is what the rest of the
+ * season waits on, and a card closed half-way would leave the season locked
+ * behind a list nobody can see any more.
+ */
+async function closeCard(pool, userId, opts = {}) {
+  const card = await gettingStarted(pool, userId, opts);
+  if (card.show && !card.complete) {
+    return { ok: false, status: 409, error: 'Finish Getting started first.' };
+  }
   await pool.query(
     `UPDATE users SET getting_started_closed_at = NOW()
       WHERE id = $1 AND getting_started_closed_at IS NULL`,
@@ -465,8 +525,8 @@ module.exports = {
   parseJoin,
   answerJoin,
   focusCommunity,
+  stepAction,
   gettingStarted,
-  markSeen,
   closeCard,
   markTourDone,
   resetFirstRun,

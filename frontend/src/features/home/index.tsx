@@ -203,11 +203,12 @@ export function HomeScreen() {
             there.
         */}
         {/*
-            GETTING STARTED (communities, stage 5): three first steps for an
-            account that has just come through "What communities do you want
-            to join?", on top of everything until it is closed. Ships empty
-            and hidden, like the widget strip below it: whether to draw it is
-            known only after the session is read (./getting-started.tsx).
+            GETTING STARTED (communities, stage 5): the tour and the season's
+            First challenges, for a new account that has just come through
+            "What communities do you want to join?", on top of everything
+            until it is done and closed (the one list, 2026-10-01). Ships
+            empty and hidden, like the widget strip below it: whether to draw
+            it is known only after the session is read (./getting-started.tsx).
         */}
         <GettingStarted />
         <WidgetStrip />

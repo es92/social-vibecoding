@@ -3583,10 +3583,10 @@
     },
     {
       "id": "home.getting-started-card",
-      "name": "Home opens on a Getting started card that offers the tour first, then three steps that tick off from what the person did (communities, stage 5; #3240)",
+      "name": "Home opens on a Getting started card: the tour first, then the season’s First challenges with their points, and what finishing unlocks (communities, stage 5; #3240; one list, 2026-10-01)",
       "path": "/?shot=getting-started",
-      "expectSelector": "#home-getting-started:not(.hidden) [data-getting-started=\"1/4\"] [data-getting-started-step=\"tour\"][data-done=\"false\"] ~ [data-getting-started-step=\"say-hi\"][data-done=\"true\"] ~ [data-getting-started-step=\"vote\"]",
-      "expectText": "Take the 1-minute tour",
+      "expectSelector": "#home-getting-started:not(.hidden) [data-getting-started=\"1/5\"] [data-getting-started-step=\"tour\"][data-next] ~ [data-getting-started-step=\"challenge\"][data-done=\"true\"] ~ [data-getting-started-step=\"challenge\"][data-done=\"false\"]",
+      "expectText": "Finish all 5 to unlock 5 more challenges",
       "visual": true,
       "impact": [
         "frontend/src/features/home/getting-started.tsx",

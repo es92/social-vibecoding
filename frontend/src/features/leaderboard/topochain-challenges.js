@@ -618,14 +618,18 @@ const TopochainChallenges = {
         ? onboarding.event_id : null,
       // While the gate is closed: the note, and how many of this event's
       // challenges it hides, the server's additive `hidden_count`, which the
-      // pane draws as one locked placeholder after the groups. The
-      // placeholder's second line is the note, so the pane draws the note only
-      // without one; a payload without the field (an older server) is 0,
-      // which draws no placeholder. Unlocked, nothing hides and there is
-      // nothing to say: no notice, no count.
+      // pane draws as one locked placeholder after the groups, naming the
+      // first few (`hidden_names`) as Home's does. The placeholder says what
+      // opens them, so the pane draws the note only without one; a payload
+      // without the field (an older server) is 0, which draws no placeholder.
+      // Unlocked, nothing hides and there is nothing to say: no notice, no
+      // count. Only a new account is gated at all, and what it finishes is
+      // its Getting started list on Home (the tour as well as these), so
+      // that is what the words name (2026-10-01).
       ...(onboarding.unlocked ? {} : {
-        notice: 'Finish these to unlock the rest of the season.',
+        notice: 'Finish Getting started to unlock the rest of the season.',
         lockedCount: Number(onboarding.hidden_count) || 0,
+        lockedNames: Array.isArray(onboarding.hidden_names) ? onboarding.hidden_names : [],
       }),
       groups,
     };

@@ -37,23 +37,37 @@ test('the onboarding status line has top padding as well as bottom', () => {
   assert.ok(bottom, `expected bottom padding, got "${m[1]}"`);
 });
 
+// 2026-10-01: while Getting started gates a new account's season, the block
+// draws ONE locked card and nothing else (`view.locked`, its own early
+// return, above the cards' branch), because the card on top of Home lists
+// the First challenges. The note is what a closed gate with nothing to count
+// still draws, after the cards. So the cards' branch no longer holds the
+// placeholder, and the note has no placeholder to give way to.
+const CARDS_BRANCH = SRC.slice(SRC.indexOf('const groups: ChallengeGroupView[]'));
+
 test('the onboarding status line follows the challenges, not the season progress', () => {
-  const note = SRC.search(NOTE);
+  const note = CARDS_BRANCH.search(NOTE);
   // The JSX's own class, not the header comment's mention of it: `hasNote`
   // reads `view.onboardingNote` above the markup.
-  const season = SRC.indexOf('home-panel-season pt-2');
+  const season = CARDS_BRANCH.indexOf('home-panel-season pt-2');
   // The body's class is one of two complete literals (it closes on `pb-1.5`
   // only when a band follows it), so find its first spelling.
-  const body = SRC.search(/['"]home-panel-body /);
-  const locked = SRC.indexOf('<LockedChallengesCard');
+  const body = CARDS_BRANCH.search(/['"]home-panel-body /);
+  const rows = CARDS_BRANCH.indexOf('home-panel-rows');
   assert.ok(season > 0 && body > season, 'the season progress leads the body');
-  assert.ok(locked > body, 'the locked placeholder is inside the body');
-  assert.ok(note > locked, 'the note comes after the body and its placeholder');
-  assert.doesNotMatch(SRC.slice(season, body), /onboardingNote/,
+  assert.ok(rows > body && note > rows, 'the note comes after the body and its cards');
+  assert.doesNotMatch(CARDS_BRANCH.slice(season, body), /onboardingNote/,
     'nothing sits between the season progress and the body');
 });
 
-test('the note is not drawn beside the placeholder that already says it', () => {
-  assert.match(SRC, /const hasNote = !!view\.onboardingNote && !\(lockedCount > 0\);/);
-  assert.match(SRC, /\{hasNote \? \(/);
+test('the locked card is its own branch, alone; the cards\' branch only adds the note', () => {
+  assert.doesNotMatch(CARDS_BRANCH, /<LockedChallengesCard/, 'no placeholder under the cards');
+  assert.match(CARDS_BRANCH, /const hasNote = !!view\.onboardingNote;/);
+  assert.match(CARDS_BRANCH, /\{hasNote \? \(/);
+  const locked = SRC.slice(SRC.indexOf('if (view.locked) {'), SRC.indexOf('const groups: ChallengeGroupView[]'));
+  assert.match(locked, /<div className="home-panel-rows flex flex-col gap-2\.5">\s*<LockedChallengesCard/,
+    'inside the rows list, where the cards it stands in for would be');
+  assert.match(locked, /names=\{view\.lockedNames\}/);
+  assert.match(locked, /className="home-challenge-locked"/);
+  assert.doesNotMatch(locked, /SeasonProgress|PanelFooter|onboardingNote/, 'and nothing else');
 });

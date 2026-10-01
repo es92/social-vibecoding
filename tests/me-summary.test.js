@@ -127,6 +127,10 @@ function mockPool(state) {
       if (sql.includes('FROM apps WHERE self_hosted = TRUE')) return { rows: state.selfApp ? [state.selfApp] : [] };
       if (sql.includes('FROM seasons')) return { rows: state.season ? [state.season] : [] };
       if (sql.includes('COUNT(*)::int AS total')) return { rows: [state.totals || { total: 0, done: 0 }] };
+      // The season's First challenges, read so a First challenge done counts
+      // the way Home counts it (profile.js viewerDoneRule, 2026-10-01). None
+      // here: the totals are DONE_EXPR's alone.
+      if (sql.startsWith('/* challenge onboarding */')) return { rows: state.onboardingRows || [] };
       throw new Error(`unexpected query: ${sql.slice(0, 80)}`);
     },
   };

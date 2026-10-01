@@ -9,9 +9,14 @@
 //   GET  /api/me/join-suggestions          what the join screen lists
 //   POST /api/me/communities               answer it: { join: [slug] }
 //   POST /api/me/tour-done                 the tour's Finish and Skip
-//   GET  /api/me/getting-started           the card's three steps
-//   POST /api/me/getting-started/seen      { step: 'workshop' | 'discover' }
-//   POST /api/me/getting-started/close     the card's close button
+//   GET  /api/me/getting-started           the card: the tour, then the
+//                                          season's First challenges
+//   POST /api/me/getting-started/close     the card's close button, once
+//                                          its list is done
+//
+// POST /api/me/getting-started/seen is gone (2026-10-01). It recorded the two
+// visits the old card's steps ticked from (the Workshop, Discover); the card's
+// steps are the First challenges now, and each ticks from its own credit.
 
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
@@ -55,8 +60,9 @@ function onboardingRoutes(config) {
         });
       }
       // Once for the whole answer, not per community: the first thing this
-      // screen leads to is Home, whose First challenges block should already
-      // have "Find people to build with" ticked (#3564). Never throws.
+      // screen leads to is Home, whose Getting started card should already
+      // have its join step ("Find people to build with", #3564) ticked.
+      // Never throws.
       if (result.joined.length) await challengeScorer.scoreOnJoin(pool, config);
       res.json(result);
     } catch (err) {
@@ -86,20 +92,13 @@ function onboardingRoutes(config) {
     }
   });
 
-  router.post('/api/me/getting-started/seen', drainGuard, sameOriginBrowserOnly, async (req, res) => {
-    try {
-      const result = await onboarding.markSeen(pool, req.user.id, req.body?.step);
-      if (!result.ok) return res.status(result.status).json({ error: result.error });
-      res.json(result);
-    } catch (err) {
-      log.error('onboarding', 'getting started seen failed', { message: err.message });
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
   router.post('/api/me/getting-started/close', drainGuard, sameOriginBrowserOnly, async (req, res) => {
     try {
-      res.json(await onboarding.closeCard(pool, req.user.id));
+      const result = await onboarding.closeCard(pool, req.user.id, {
+        showSelfHosted: showSelfHosted(req.user),
+      });
+      if (!result.ok) return res.status(result.status).json({ error: result.error });
+      res.json(result);
     } catch (err) {
       log.error('onboarding', 'getting started close failed', { message: err.message });
       res.status(500).json({ error: 'Internal server error' });

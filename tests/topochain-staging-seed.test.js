@@ -855,3 +855,40 @@ test("the viewer's leaderboard row does not claim a contradictory rank 1", () =>
   // the screen. Rank 2 on 350 points ties an existing fixture user.
   assert.match(snapshot.slice(0, snapshot.indexOf('ON CONFLICT')), /\$1, 2, 350,/);
 });
+
+// ─── The staging season's First challenges (2026-10-01) ────────────────
+//
+// A new account's Getting started card is the season's first four ONBOARDING
+// challenges, so a preview needs some to show the card and the gate. Its own
+// function (seedStagingFirstChallenges), after seedStagingTopochain, whose
+// pinned counts above it leaves alone. Data only: never a credit and never a
+// scoring rule, so nothing in it can fabricate progress for a cloned account.
+test('the First challenges seed: staging only, idempotent, four ONBOARDING rows and no signal', async () => {
+  const { seedStagingFirstChallenges } = require('../src/db/migrate');
+  process.env.USERNODE_ENV = 'production';
+  const off = mockPool();
+  await seedStagingFirstChallenges(off);
+  assert.equal(off.calls.length, 0, 'no query outside staging');
+
+  process.env.USERNODE_ENV = 'staging';
+  const pool = mockPool();
+  await seedStagingFirstChallenges(pool);
+  assert.equal(pool.calls.length, 2);
+  for (const call of pool.calls) {
+    assert.match(call.sql, /ON CONFLICT \(id\) DO NOTHING/);
+    assert.doesNotMatch(call.sql, /user_activities|challenge_scoring_rules/, 'data only, no signal');
+  }
+  const [templates, challenges] = pool.calls;
+  assert.match(templates.sql, /^\s*INSERT INTO challenge_templates/);
+  assert.equal((templates.sql.match(/'ONBOARDING', '[A-Z][a-z ]+ \(staging demo\)'/g) || []).length, 4,
+    'four ONBOARDING templates, under obviously-staging names');
+  assert.match(challenges.sql, /^\s*INSERT INTO challenges/);
+  assert.deepEqual(challenges.params, [900501], 'on the fixture season\'s season-type event');
+  assert.deepEqual([...challenges.sql.matchAll(/\((9007\d\d), \$1, (9005\d\d), TRUE, (\d), FALSE/g)]
+    .map((m) => [Number(m[1]), Number(m[2]), Number(m[3])]),
+  [[900720, 900508, 1], [900721, 900509, 2], [900722, 900510, 3], [900723, 900511, 4]],
+  'fixed ids clear of the viewer window, in the list\'s order');
+  // And it runs after the fixture it hangs off.
+  const boot = src.indexOf('await seedStagingTopochain(pool, config);');
+  assert.ok(boot > 0 && src.indexOf('await seedStagingFirstChallenges(pool);', boot) > boot);
+});

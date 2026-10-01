@@ -137,9 +137,11 @@ type GridView =
     progress: SeasonProgressView;
     notice?: string;
     onboardingEventId?: number | null;
-    // While setup gates the event: how many challenges it hides (0 = none
-    // to show, and on an older server without the count).
+    // While Getting started gates the event: how many challenges it hides
+    // (0 = none to show, and on an older server without the count), and the
+    // first few of their names.
     lockedCount?: number;
+    lockedNames?: string[];
     groups: GroupView[];
   };
 
@@ -377,7 +379,7 @@ function Grid({ view }: { view: GridView | null }): ReactNode {
           className="mb-3 text-sm font-medium text-violet-700 dark:text-violet-400 hover:underline"
           onClick={() => controller()?._toOnboarding(view.onboardingEventId!)}
         >
-          Go to onboarding challenges
+          Go to First challenges
         </button>
       ) : null}
       {/*
@@ -417,9 +419,9 @@ function Grid({ view }: { view: GridView | null }): ReactNode {
         </Fragment>
       )))}
       {/*
-          After the challenges, what setup still hides and what opens it: the
-          locked placeholder, whose second line IS the unlock note, so the
-          note paragraph draws only when there is no placeholder (a locked
+          After the challenges, what Getting started still hides and what
+          opens it: the locked placeholder, whose first line IS the unlock
+          note, so the note paragraph draws only when there is no placeholder (a locked
           event on a server without the count; unlocked, there is no note). Both
           sit under the last card at the grid's own 12px gap. The placeholder's
           wrapper is a GRID too, so on a wide pane it takes one column like a
@@ -427,7 +429,7 @@ function Grid({ view }: { view: GridView | null }): ReactNode {
       */}
       {locked ? (
         <div className={`mt-3 ${GRID}`}>
-          <LockedChallengesCard count={view.lockedCount!} />
+          <LockedChallengesCard count={view.lockedCount!} names={view.lockedNames} />
         </div>
       ) : null}
       {view.notice && !locked ? (

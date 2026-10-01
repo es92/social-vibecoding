@@ -1,77 +1,151 @@
 'use strict';
 
+// The First challenges gate (services/topochain/challenge-onboarding.js).
+//
+// 2026-10-01 (evan's "one list" decision): the gate is FOUR challenges, up
+// from three, because the Getting started card on Home is now the tour plus
+// the season's First challenges (Join, Try, Vote, Suggest); "done" is the
+// tour AND every one of them; and it applies only to a NEW account
+// (`users.getting_started_gate`, set at sign-up) that has come through the
+// join screen. An existing member and a signed-out visitor see the whole
+// season and get no gate summary. Once a gated account's list is done the
+// gate stays open (`getting_started_unlocked_at`), even if an admin adds an
+// ONBOARDING challenge later. The fixtures below carry the viewer's three
+// facts on every row, as loadOnboarding's join on `users` does.
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 const {
   buildOnboarding, loadOnboarding, visibleChallenges, challengeCategory,
+  isLocked, gateSummary, ONBOARDING_LIMIT,
 } = require('../src/services/topochain/challenge-onboarding');
 
+// A new account on its Getting started list, tour done: what most tests
+// below are about. `viewer` overrides it.
+const NEWCOMER = { gate: true, tour_done: true, unlocked: false };
 const step = (id, extra = {}) => ({
   id, season_event_id: 10, challenge_template_id: id + 100,
   display_order: id, enabled: true, completed: false,
   metric_type: null, metric_target: null, activity_count: 0,
+  ...NEWCOMER,
   ...extra,
 });
-const intro = (counts = [0, 0, 0]) => [
-  step(1, { metric_type: 'count', metric_target: 3, activity_count: counts[0] }),
-  step(2, { activity_count: counts[1] }),
-  step(3, { activity_count: counts[2] }),
-  step(4), step(5),
+const intro = (counts = [0, 0, 0, 0], viewer = {}) => [
+  step(1, { metric_type: 'count', metric_target: 3, activity_count: counts[0], ...viewer }),
+  step(2, { activity_count: counts[1], ...viewer }),
+  step(3, { activity_count: counts[2], ...viewer }),
+  step(4, { activity_count: counts[3], ...viewer }),
+  step(5, viewer),
 ];
 
-test('new users see exactly three introductory challenges out of the nine-card catalog', () => {
+test('new users see exactly four introductory challenges out of the nine-card catalog', () => {
+  assert.equal(ONBOARDING_LIMIT, 4, 'Join, Try, Vote and Suggest (2026-10-01)');
   const state = buildOnboarding(intro());
-  assert.deepEqual(state.ids, [1, 2, 3]);
-  assert.deepEqual(state.summary, { total: 3, completed: 0, unlocked: false, event_id: 10 });
+  assert.deepEqual(state.ids, [1, 2, 3, 4]);
+  assert.deepEqual(state.summary, { total: 4, completed: 0, unlocked: false, event_id: 10 });
+  assert.equal(state.gated, true);
+  assert.equal(isLocked(state), true);
   assert.deepEqual(visibleChallenges(Array.from({ length: 9 }, (_, i) => ({ id: i + 1 })), state),
-    [{ id: 1 }, { id: 2 }, { id: 3 }]);
+    [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }]);
 });
 
 test('partial credit on the counted step cannot unlock persistent or weekly challenges', () => {
-  const state = buildOnboarding(intro([2, 1, 1]));
-  assert.equal(state.summary.completed, 2);
+  const state = buildOnboarding(intro([2, 1, 1, 1]));
+  assert.equal(state.summary.completed, 3);
   assert.equal(state.summary.unlocked, false);
   assert.deepEqual(state.progress.get(1), { done: false, current: 2, target: 3 });
 });
 
-test('all three completed steps unlock both groups and retain the completed introduction', () => {
-  const state = buildOnboarding(intro([3, 1, 1]));
+test('all four completed steps unlock both groups and retain the completed introduction', () => {
+  const state = buildOnboarding(intro([3, 1, 1, 1]));
   const items = Array.from({ length: 9 }, (_, i) => ({ id: i + 1 }));
   assert.equal(state.summary.unlocked, true);
+  assert.equal(state.finished, true);
+  assert.equal(state.opened, true, 'the read that first finds it done, which loadOnboarding records');
   assert.equal(visibleChallenges(items, state).length, 9);
   assert.equal(challengeCategory(1, 'ONBOARDING', state), 'ONBOARDING');
-  assert.equal(challengeCategory(4, 'ONBOARDING', state), 'PERSISTENT');
+  assert.equal(challengeCategory(4, 'ONBOARDING', state), 'ONBOARDING');
   assert.equal(challengeCategory(5, 'ONBOARDING', state), 'PERSISTENT');
-  assert.equal(challengeCategory(6, 'WEEKLY', state), 'WEEKLY');
+  assert.equal(challengeCategory(6, 'ONBOARDING', state), 'PERSISTENT');
+  assert.equal(challengeCategory(7, 'WEEKLY', state), 'WEEKLY');
+});
+
+test('the tour is part of the list: every challenge done is not done until the tour is', () => {
+  const state = buildOnboarding(intro([3, 1, 1, 1], { tour_done: false }));
+  assert.equal(state.summary.completed, 4, 'the challenges\' own numbers leave the tour out');
+  assert.equal(state.summary.unlocked, false, 'but the gate waits on it');
+  assert.equal(state.finished, false);
+  assert.equal(state.opened, false);
+  // A tour finished with nothing else done opens nothing either.
+  assert.equal(buildOnboarding(intro([0, 0, 0, 0])).summary.unlocked, false);
+});
+
+test('only a new account is gated: an existing member and a signed-out visitor see the whole season', () => {
+  const items = Array.from({ length: 9 }, (_, i) => ({ id: i + 1 }));
+  for (const [who, viewer] of [
+    ['an existing member', { gate: false, tour_done: false, unlocked: false }],
+    ['a signed-out visitor', { gate: null, tour_done: null, unlocked: null }],
+  ]) {
+    const state = buildOnboarding(intro([0, 0, 0, 0], viewer));
+    assert.equal(state.gated, false, who);
+    assert.equal(state.summary.unlocked, true, `${who}: nothing is locked`);
+    assert.equal(isLocked(state), false, who);
+    assert.equal(visibleChallenges(items, state).length, 9, `${who}: every challenge`);
+    assert.equal(gateSummary(state), null, `${who}: and no gate summary to explain`);
+    assert.equal(state.opened, false, `${who}: nothing to record`);
+    // The grouping is everyone's: the first four are First challenges, the
+    // rest of ONBOARDING is always open.
+    assert.equal(challengeCategory(4, 'ONBOARDING', state), 'ONBOARDING', who);
+    assert.equal(challengeCategory(5, 'ONBOARDING', state), 'PERSISTENT', who);
+  }
+  const newcomer = buildOnboarding(intro());
+  assert.deepEqual(gateSummary(newcomer), newcomer.summary, 'a newcomer gets the summary');
+});
+
+test('once open, open for good: a challenge added later does not lock a finished account again', () => {
+  // The account's list was done on an earlier read (getting_started_unlocked_at
+  // set), and an admin has since put a new ONBOARDING challenge first.
+  const rows = intro([3, 1, 1, 1], { unlocked: true });
+  rows.unshift(step(9, { display_order: 0, unlocked: true }));
+  const state = buildOnboarding(rows);
+  assert.deepEqual(state.ids, [9, 1, 2, 3], 'the new one is a First challenge now');
+  assert.equal(state.summary.completed, 3);
+  assert.equal(state.gated, false, 'but the gate does not apply any more');
+  assert.equal(state.summary.unlocked, true);
+  assert.equal(state.finished, true, 'the card stays "all set"');
+  assert.equal(state.opened, false, 'nothing to record again');
+  assert.equal(visibleChallenges([{ id: 7 }], state).length, 1);
 });
 
 test('completed steps never rotate out and pull identity into onboarding', () => {
-  const state = buildOnboarding(intro([3, 1, 0]));
-  assert.deepEqual(state.ids, [1, 2, 3]);
+  const state = buildOnboarding(intro([3, 1, 0, 1]));
+  assert.deepEqual(state.ids, [1, 2, 3, 4]);
   assert.equal(state.summary.unlocked, false);
 });
 
 test('an explicit completion credit finishes a counted step even when awarded in one batch', () => {
-  const rows = intro([1, 1, 1]);
+  const rows = intro([1, 1, 1, 1]);
   rows[0].completion_recorded = true;
   const state = buildOnboarding(rows);
   assert.equal(state.summary.unlocked, true);
   assert.deepEqual(state.progress.get(1), { done: true, current: 3, target: 3 });
 });
 
-test('disabled, retired and unavailable steps do not block users or replace the original three', () => {
+test('disabled, retired and unavailable steps do not block users or replace the original four', () => {
   for (const availability of [
     { enabled: false }, { completed: true },
     { schedule_end: '2020-01-01T00:00:00Z' },
     { schedule_start: '2100-01-01T00:00:00Z' },
   ]) {
-    const rows = intro([0, 1, 1]);
+    const rows = intro([0, 1, 1, 1]);
     Object.assign(rows[0], availability);
     const state = buildOnboarding(rows);
-    assert.deepEqual(state.ids, [1, 2, 3]);
-    assert.equal(state.summary.total, 2);
+    assert.deepEqual(state.ids, [1, 2, 3, 4]);
+    assert.equal(state.summary.total, 3);
     assert.equal(state.summary.unlocked, true);
+    // The card lists only the steps that can be done.
+    assert.deepEqual(state.steps.map((r) => r.id), [2, 3, 4]);
     // An organiser's completed flag did not create a personal completion.
     assert.equal(state.progress.get(1).done, false);
   }
@@ -81,36 +155,90 @@ test('selection follows organiser order and deduplicates repeated template insta
   const rows = intro();
   rows.push(step(9, { challenge_template_id: 101, display_order: 1 }));
   const state = buildOnboarding(rows.reverse());
-  assert.deepEqual(state.ids, [1, 2, 3]);
+  assert.deepEqual(state.ids, [1, 2, 3, 4]);
 });
 
 test('seasons without onboarding keep their existing challenge lists', () => {
   const items = [{ id: 6, category: 'WEEKLY' }];
   assert.equal(buildOnboarding([]), null);
   assert.equal(visibleChallenges(items, null), items);
+  assert.equal(gateSummary(null), null);
+  assert.equal(isLocked(null), false);
 });
 
 test('event-scoped reads resolve onboarding across the season and reuse prior template credits', async () => {
   let query;
   const state = await loadOnboarding({ query: async (sql, params) => {
     query = { sql, params };
-    return { rows: intro([3, 1, 1]) };
+    return { rows: intro([3, 1, 1, 1], { unlocked: true }) };
   } }, 42, { eventId: 11 });
   assert.deepEqual(query.params, [42, 11]);
   assert.match(query.sql, /se\.season_id = \(SELECT season_id FROM season_events WHERE id = \$2\)/);
   assert.match(query.sql, /credited\.challenge_template_id = c\.challenge_template_id/);
   assert.match(query.sql, /ua\.user_id = \$1/);
+  // The viewer's gate rides the same read: the flag needs the join screen
+  // answered too, since the card that IS the list only shows after it.
+  assert.match(query.sql, /\(u\.getting_started_gate AND u\.communities_onboarded_at IS NOT NULL\) AS gate/);
+  assert.match(query.sql, /\(u\.tour_done_at IS NOT NULL\) AS tour_done/);
+  assert.match(query.sql, /\(u\.getting_started_unlocked_at IS NOT NULL\) AS unlocked/);
+  assert.match(query.sql, /FROM users u WHERE u\.id = \$1\s*\) viewer ON TRUE/);
+  // And what the card draws: the challenge's words over its template's, the
+  // points paid on the template, and the bound rule's measure.
+  assert.match(query.sql, /COALESCE\(c\.goal, ct\.goal\) AS goal/);
+  assert.match(query.sql, /COALESCE\(SUM\(ua\.points\), 0\) AS earned_points/);
+  assert.match(query.sql, /SELECT r\.measure FROM challenge_scoring_rules r/);
   assert.equal(state.summary.unlocked, true);
+});
+
+test('the read that opens the gate records it, once, and a failed write never fails the read', async () => {
+  const calls = [];
+  let unlocked = false;
+  let failWrite = true;
+  const pool = { query: async (sql, params) => {
+    calls.push({ sql: sql.replace(/\s+/g, ' ').trim(), params });
+    if (/^UPDATE users SET getting_started_unlocked_at/.test(sql.trim())) {
+      if (failWrite) throw new Error('connection reset');
+      unlocked = true;
+      return { rows: [] };
+    }
+    return { rows: intro([3, 1, 1, 1], { unlocked }) };
+  } };
+  // The write fails: the read still answers, with the gate open.
+  let state = await loadOnboarding(pool, 7, { seasonId: 2 });
+  assert.equal(state.summary.unlocked, true);
+  assert.equal(calls.length, 2);
+  // The next read tries again, and this time it lands.
+  failWrite = false;
+  state = await loadOnboarding(pool, 7, { seasonId: 2 });
+  assert.equal(calls.length, 4);
+  assert.equal(calls[3].sql,
+    'UPDATE users SET getting_started_unlocked_at = NOW() WHERE id = $1 AND getting_started_gate AND getting_started_unlocked_at IS NULL');
+  assert.deepEqual(calls[3].params, [7]);
+  assert.equal(unlocked, true);
+  // From then on the account is not gated, and nothing is written.
+  state = await loadOnboarding(pool, 7, { seasonId: 2 });
+  assert.equal(calls.length, 5);
+  assert.equal(state.gated, false);
+  // A signed-out read never writes.
+  const anon = { query: async (sql) => {
+    assert.doesNotMatch(sql, /UPDATE/);
+    return { rows: intro([3, 1, 1, 1], { gate: null, tour_done: null, unlocked: null }) };
+  } };
+  assert.equal((await loadOnboarding(anon, null, { seasonId: 2 })).gated, false);
 });
 
 // HTTP coverage of the actual list handlers. Authentication has dedicated
 // suites; inject an authenticated identity here and exercise the same handler
 // registered for web sessions and native tokens against one catalog/ledger.
-function makeApp(counts = [0, 0, 0], credits = {}) {
+//
+// `viewer` is the account's gate facts (a newcomer by default; `unlocked`
+// follows the write the opening read makes, as the column would), and
+// `user: null` is a signed-out visitor.
+function makeApp(counts = [0, 0, 0, 0], credits = {}, { viewer = NEWCOMER, user = { id: 7, username: 'viewer' } } = {}) {
   // `blocks` is the viewer's newest leaderboard snapshot for the event — the
   // only place a block score is ever written, and what challenge 9 below is
   // counted from.
-  const state = { counts, credits, blocks: 0 };
+  const state = { counts, credits, blocks: 0, viewer: { ...viewer }, writes: 0 };
   const rows = Array.from({ length: 9 }, (_, i) => {
     const id = i + 1;
     return {
@@ -134,7 +262,16 @@ function makeApp(counts = [0, 0, 0], credits = {}) {
       return { rows: (params[1] || []).map((eventId) => ({ season_event_id: eventId, blocks: state.blocks })) };
     }
     if (sql.startsWith('/* challenge onboarding */')) {
-      return { rows: intro(params[0] === 7 ? state.counts : [0, 0, 0]) };
+      // No `users` row joins for a signed-out viewer: all three facts NULL.
+      return { rows: params[0] === 7
+        ? intro(state.counts, state.viewer)
+        : intro([0, 0, 0, 0], { gate: null, tour_done: null, unlocked: null }) };
+    }
+    if (sql.startsWith('UPDATE users SET getting_started_unlocked_at')) {
+      assert.deepEqual(params, [7]);
+      state.writes += 1;
+      if (state.viewer.gate) state.viewer.unlocked = true;
+      return { rows: [] };
     }
     // The public list's scoring-cadence read (#3185). No rule scores anything
     // in this fixture, so every card's `scoring` is null.
@@ -203,7 +340,7 @@ function makeApp(counts = [0, 0, 0], credits = {}) {
   const original = poolModule.getPool;
   poolModule.getPool = () => pool;
   const app = express();
-  app.use((req, _res, next) => { req.user = { id: 7, username: 'viewer' }; next(); });
+  app.use((req, _res, next) => { if (user) req.user = user; next(); });
   try {
     for (const [file, factory] of [
       ['topochain/public', 'topochainPublicRoutes'],
@@ -239,36 +376,88 @@ async function withServer(app, fn) {
   } finally { server.close(); }
 }
 
-test('public, web-session, and mobile lists unlock on the third completion', async () => {
-  const { app, state } = makeApp([2, 1, 1]);
+test('public, web-session, and mobile lists unlock on the fourth completion', async () => {
+  const { app, state } = makeApp([2, 1, 1, 1]);
   await withServer(app, async (get) => {
     for (const path of ['/api/v4/season-events/10/challenges',
       '/challenges-api/challenges?season_id=2', '/api/v4/mobile/challenges?season_id=2']) {
       const locked = await get(path);
-      assert.deepEqual(locked.data.map((c) => c.id), [1, 2, 3]);
-      assert.equal(locked.onboarding.completed, 2);
+      assert.deepEqual(locked.data.map((c) => c.id), [1, 2, 3, 4]);
+      assert.equal(locked.onboarding.completed, 3);
       assert.equal(locked.data[0].progress.done, false);
       // The web's event list says how many of its challenges the gate hides
-      // (the "6 challenges locked" placeholder). The native lists keep their
-      // exact summary shape.
-      if (path.startsWith('/api/v4/season-events/')) assert.equal(locked.onboarding.hidden_count, 6);
-      else assert.equal('hidden_count' in locked.onboarding, false, path);
+      // and names the first few (the locked placeholder, 2026-10-01). The
+      // native lists keep their exact summary shape.
+      if (path.startsWith('/api/v4/season-events/')) {
+        assert.equal(locked.onboarding.hidden_count, 5);
+        assert.deepEqual(locked.onboarding.hidden_names, ['Identity Level 2', 'Weekly 6']);
+      } else {
+        assert.equal('hidden_count' in locked.onboarding, false, path);
+        assert.equal('hidden_names' in locked.onboarding, false, path);
+      }
     }
     // Scoped to THIS event: event 11 lists four weekly challenges, all hidden.
     const weekly = await get('/api/v4/season-events/11/challenges');
     assert.deepEqual(weekly.data, []);
     assert.equal(weekly.onboarding.hidden_count, 4);
-    state.counts = [3, 1, 1];
+    assert.equal(state.writes, 0, 'nothing recorded while the list is not done');
+    state.counts = [3, 1, 1, 1];
+    // The read that finishes the list opens the gate, says so, and records it.
+    const opened = await get('/api/v4/season-events/10/challenges');
+    assert.equal(opened.data.length, 9);
+    assert.equal(opened.onboarding.unlocked, true);
+    assert.equal('hidden_count' in opened.onboarding, false);
+    assert.equal(state.writes, 1);
+    // From then on the account is like any member's: every challenge, and no
+    // gate summary, on every list.
     for (const path of ['/api/v4/season-events/10/challenges', '/api/v4/mobile/challenges?season_id=2']) {
       const unlocked = await get(path);
       assert.equal(unlocked.data.length, 9);
-      assert.equal(unlocked.onboarding.unlocked, true);
-      assert.equal('hidden_count' in unlocked.onboarding, false, path);
-      const identity = unlocked.data.find((c) => c.id === 4);
+      assert.equal('onboarding' in unlocked, false, path);
+      const identity = unlocked.data.find((c) => c.id === 5);
       assert.equal(identity.category || identity.activity_type.category, 'PERSISTENT');
       assert.equal(unlocked.data[0].progress.done, true);
     }
+    assert.equal(state.writes, 1, 'recorded once');
   });
+});
+
+test('the tour holds the gate too: four challenges done, tour not taken, still locked', async () => {
+  const { app } = makeApp([3, 1, 1, 1], {}, { viewer: { ...NEWCOMER, tour_done: false } });
+  await withServer(app, async (get) => {
+    const body = await get('/api/v4/season-events/10/challenges');
+    assert.deepEqual(body.data.map((c) => c.id), [1, 2, 3, 4]);
+    assert.deepEqual([body.onboarding.completed, body.onboarding.total, body.onboarding.unlocked], [4, 4, false]);
+  });
+});
+
+test('an existing member and a signed-out visitor see the whole season, with no gate summary', async () => {
+  for (const [who, opts] of [
+    ['an existing member', { viewer: { gate: false, tour_done: false, unlocked: false } }],
+    ['a member who never answered the join screen', { viewer: { gate: false, tour_done: true, unlocked: false } }],
+    ['a signed-out visitor', { user: null }],
+  ]) {
+    const { app, state } = makeApp([0, 0, 0, 0], {}, opts);
+    // eslint-disable-next-line no-await-in-loop
+    await withServer(app, async (get) => {
+      const paths = opts.user === null
+        ? ['/api/v4/season-events/10/challenges']
+        : ['/api/v4/season-events/10/challenges', '/challenges-api/challenges?season_id=2',
+          '/api/v4/mobile/challenges?season_id=2', '/api/home-panels'];
+      for (const path of paths) {
+        const body = await get(path);
+        const list = path === '/api/home-panels'
+          ? body.panels.find((p) => p.key === 'challenges') : body;
+        const rows = list.challenges || list.data;
+        assert.equal(rows.length, 9, `${who}, ${path}: every challenge`);
+        assert.equal('onboarding' in list, false, `${who}, ${path}: no gate to explain`);
+        // The grouping is everyone's: four First challenges, the fifth always open.
+        const fifth = rows.find((c) => c.id === 5);
+        assert.equal(fifth.label || fifth.category || fifth.activity_type.category, 'PERSISTENT', `${who}, ${path}`);
+      }
+      assert.equal(state.writes, 0, `${who}: nothing to record`);
+    });
+  }
 });
 
 test('weekly-event selection and nested seasons cannot skip onboarding', async () => {
@@ -278,34 +467,38 @@ test('weekly-event selection and nested seasons cannot skip onboarding', async (
     assert.deepEqual(weekly.data, []);
     assert.equal(weekly.onboarding.event_id, 10);
     const nested = await get('/api/v4/mobile/seasons?season_id=2');
-    assert.equal(nested.data[0].season_challenges.length, 3);
+    assert.equal(nested.data[0].season_challenges.length, 4);
     assert.equal(nested.data[0].events[1].challenges.length, 0);
-    state.counts = [3, 1, 1];
+    state.counts = [3, 1, 1, 1];
     const filtered = await get('/api/v4/mobile/seasons?season_id=2&challenge_category=PERSISTENT');
-    assert.deepEqual(filtered.data[0].season_challenges.map((c) => c.challenge_id), [4, 5]);
+    assert.deepEqual(filtered.data[0].season_challenges.map((c) => c.challenge_id), [5]);
     assert.equal((await get('/api/v4/mobile/challenges?season_event_id=11')).data.length, 4);
   });
 });
 
 test('home counts and expanded lists respect the same gate and existing lifetime credits', async () => {
-  const { app, state } = makeApp([2, 1, 1]);
+  const { app, state } = makeApp([2, 1, 1, 1]);
   await withServer(app, async (get) => {
     for (const path of ['/api/home-panels', '/api/home-panels?expand=challenges']) {
       const panel = (await get(path)).panels.find((p) => p.key === 'challenges');
-      assert.equal(panel.total, 3);
-      assert.equal(panel.done, 2);
+      assert.equal(panel.total, 4);
+      assert.equal(panel.done, 3);
       assert.equal(panel.points_remaining, 500);
-      assert.deepEqual(panel.challenges.map((c) => c.id).sort(), [1, 2, 3]);
-      assert.equal(panel.onboarding.hidden_count, 6, path);
+      assert.deepEqual(panel.challenges.map((c) => c.id).sort(), [1, 2, 3, 4]);
+      assert.equal(panel.onboarding.hidden_count, 5, path);
     }
-    state.counts = [3, 1, 1];
-    const panel = (await get('/api/home-panels?expand=challenges')).panels.find((p) => p.key === 'challenges');
+    state.counts = [3, 1, 1, 1];
+    let panel = (await get('/api/home-panels?expand=challenges')).panels.find((p) => p.key === 'challenges');
     assert.equal(panel.total, 9);
-    assert.equal(panel.done, 3);
-    assert.equal(panel.onboarding.unlocked, true);
+    assert.equal(panel.done, 4);
+    assert.equal(panel.onboarding.unlocked, true, 'the opening read still says so');
     assert.equal('hidden_count' in panel.onboarding, false);
-    assert.equal(panel.challenges.find((c) => c.id === 4).label, 'PERSISTENT');
+    assert.equal(panel.challenges.find((c) => c.id === 5).label, 'PERSISTENT');
     assert.equal(panel.challenges.find((c) => c.id === 1).progress.done, true);
+    panel = (await get('/api/home-panels')).panels.find((p) => p.key === 'challenges');
+    assert.equal('onboarding' in panel, false, 'and after it, no gate at all');
+    assert.equal(panel.challenges.find((c) => c.id === 1).progress.done, true,
+      'the lifetime answer still holds for the First challenges');
   });
 });
 
@@ -316,7 +509,7 @@ test('a finished challenge outside the gate reports done, not merely started', (
   // finished AND been paid for showed "Started" for good. Automatic scoring
   // makes that the normal state of most of a season, so every challenge now
   // carries the viewer's progress.
-  const { app, state } = makeApp([3, 1, 1], { 6: 1, 7: 2 });
+  const { app, state } = makeApp([3, 1, 1, 1], { 6: 1, 7: 2 });
   return withServer(app, async (get) => {
     for (const path of ['/api/v4/season-events/10/challenges', '/challenges-api/challenges?season_id=2']) {
       const body = await get(path);
@@ -337,7 +530,7 @@ test('a block-production card carries the snapshot count, as Home always has (#2
   // `blocks_produced` challenge and its card drew a ring with nothing beside
   // it — while Home, reading the same snapshot, showed "180/500 blocks" for
   // the very same challenge. The row now carries the count itself.
-  const { app, state } = makeApp([3, 1, 1]);
+  const { app, state } = makeApp([3, 1, 1, 1]);
   state.blocks = 180;
   return withServer(app, async (get) => {
     for (const path of ['/api/v4/season-events/10/challenges',

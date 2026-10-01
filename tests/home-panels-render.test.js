@@ -541,9 +541,11 @@ test('challengesView: the finished fill sits last under one Done header, with no
 test('challengesView: while setup gates the season, its finished card moves under Done', () => {
   const { HP } = makeHomePanels({ slots: [] });
   const done = { done: true, current: null, target: null };
+  // With nothing hidden to count (the season holds First challenges only),
+  // a closed gate still draws them, in their groups.
   const view = HP.challengesView(panel({
     total: 2,
-    onboarding: { total: 2, completed: 1, unlocked: false, hidden_count: 7 },
+    onboarding: { total: 2, completed: 1, unlocked: false, hidden_count: 0 },
     challenges: [
       challenge({ id: 1, label: 'ONBOARDING', display_order: 0, progress: done }),
       challenge({ id: 2, label: 'ONBOARDING', display_order: 1 }),
@@ -551,7 +553,23 @@ test('challengesView: while setup gates the season, its finished card moves unde
   }));
   assert.deepEqual([...view.groups].map((g) => [g.heading, [...g.rows].map((r) => r.id)]),
     [['First challenges', ['2']], ['Done', ['1']]]);
-  assert.equal(view.lockedCount, 7, 'the locked placeholder still follows the cards');
+  assert.equal(view.locked, undefined);
+  assert.equal(view.lockedCount, 0);
+  // With a count (2026-10-01), the block is the one locked card instead: the
+  // Getting started card on top of Home already lists the First challenges.
+  const locked = HP.challengesView(panel({
+    total: 2,
+    onboarding: { total: 2, completed: 1, unlocked: false, hidden_count: 7, hidden_names: ['A', ' ', 'B'] },
+    challenges: [
+      challenge({ id: 1, label: 'ONBOARDING', display_order: 0, progress: done }),
+      challenge({ id: 2, label: 'ONBOARDING', display_order: 1 }),
+    ],
+  }));
+  assert.equal(locked.locked, true);
+  assert.deepEqual([locked.rows.length, locked.groups.length, locked.season], [0, 0, null]);
+  assert.equal(locked.lockedCount, 7);
+  assert.deepEqual([...locked.lockedNames], ['A', 'B'], 'blank names dropped');
+  assert.equal(locked.expandable, false, 'no footer under the one card');
 });
 
 // The #2490 report: one member's Pre Season 2 board while it was open. This
@@ -1395,63 +1413,66 @@ test('the season progress: nothing filled at zero, and setup is its own scope', 
     panels: [panel({ total: 3, done: 0, onboarding: { total: 3, completed: 1, unlocked: false, event_id: 1 } })],
   }).html;
   assert.match(gated, />1\/3<\/span><span[^>]*>done in First challenges</);
-  assert.match(gated, />Finish these to unlock the rest of the season\.</);
+  assert.match(gated, />Finish Getting started to unlock the rest of the season\.</);
   assert.doesNotMatch(gated, /onboarding challenges completed/, 'the count is not said twice');
 });
 
 // S8 (owner decision, 2026-09-15): while setup gates the season the server
 // sends how many challenges it holds back (`onboarding.hidden_count`), and the
-// block draws them as ONE dashed placeholder after the last setup card. The
-// placeholder's second line is the unlock note, so the note is not drawn too;
-// without a count the note still shows, now UNDER the challenges.
-test('locked setup: one dashed placeholder after the cards, and no second unlock note', () => {
-  const onboarding = (over) => ({ total: 3, completed: 1, unlocked: false, event_id: 1, ...over });
+// block draws them as ONE dashed placeholder. 2026-10-01 (evan's "one list"):
+// the gate is a new account's Getting started list, which the card on top of
+// Home draws in full, so while it is closed the block draws the placeholder
+// ALONE, in place of the First challenges, and names the first two it hides
+// (`hidden_names`). Without a count the cards and the note still show, the
+// note UNDER the challenges.
+test('locked setup: one dashed placeholder alone, in place of the First challenges', () => {
+  const onboarding = (over) => ({ total: 4, completed: 1, unlocked: false, event_id: 1, ...over });
   const locked = panel({
     total: 2, done: 0,
-    onboarding: onboarding({ hidden_count: 6 }),
+    onboarding: onboarding({ hidden_count: 6, hidden_names: ['Make your first proposal', 'Invite a friend'] }),
     challenges: [challenge({ id: 1, label: 'ONBOARDING' }), challenge({ id: 2, label: 'ONBOARDING' })],
   });
   const { HP } = makeHomePanels({ slots: [] });
   assert.equal(HP.challengesView(locked).lockedCount, 6);
 
   const { html } = renderWith({ registry: [], hidden: [], panels: [locked] });
-  // Two setup cards and nothing behind them: no footer, so the rows list runs
-  // to the end of the block.
+  // No cards, no season progress over it, no footer under it.
   assert.doesNotMatch(html, /home-panel-footer/);
-  const rows = html.slice(html.indexOf('home-panel-rows'), html.indexOf('</article>'));
+  assert.doesNotMatch(html, /home-panel-season/, 'the card above counts the list');
+  assert.equal((html.match(/home-challenge-card/g) || []).length, 0, 'the First challenges are not drawn twice');
   assert.equal((html.match(/home-challenge-locked/g) || []).length, 1, 'one placeholder');
-  assert.ok(rows.indexOf('home-challenge-locked') > rows.lastIndexOf('home-challenge-card'),
-    'the placeholder follows the last card, inside the rows list');
+  const rows = html.slice(html.indexOf('home-panel-rows'), html.indexOf('</article>'));
+  assert.ok(rows.indexOf('home-challenge-locked') > 0, 'inside the rows list, where the cards would be');
+  assert.match(html, /data-rows="0"/, 'and not counted as a card');
   assert.match(html, /home-challenge-locked [^"]*rounded-3xl[^"]*border-dashed/);
-  assert.match(html, />6 challenges locked</);
-  assert.match(html, />Finish setup to unlock</);
-  assert.equal((html.match(/home-challenge-card/g) || []).length, 2,
-    'the placeholder is not counted as a challenge card');
-  assert.doesNotMatch(html, /Finish these to unlock the rest of the season/,
+  assert.match(html, />6 challenges unlock after Getting started</);
+  assert.match(html, />Make your first proposal, Invite a friend and 4 more</);
+  assert.doesNotMatch(html, /unlock the rest of the season/,
     'the placeholder already says what unlocks them');
-  assert.match(html, /home-panel-season[\s\S]*?<\/div><div class="home-panel-body/,
-    'the season progress and the body stay adjacent');
 
   const one = renderWith({
     registry: [], hidden: [],
     panels: [panel({ onboarding: onboarding({ hidden_count: 1 }) })],
   }).html;
-  assert.match(one, />1 challenge locked</);
+  assert.match(one, />1 challenge unlocks after Getting started</);
+  assert.match(one, />Finish Getting started on Home to see them</, 'no names: what to do');
 
   // Locked, but a payload with no count (an older server) or a zero count:
-  // no placeholder, and the note sits under the challenges, last in the block
+  // no placeholder, the cards, and the note under them, last in the block
   // (before the footer when the block draws one; a short list draws none).
   for (const hidden of [undefined, 0, 'wat']) {
     const p = panel({ onboarding: onboarding({ hidden_count: hidden }) });
     assert.equal(HP.challengesView(p).lockedCount, 0, `hidden_count ${hidden}`);
     const out = renderWith({ registry: [], hidden: [], panels: [p] }).html;
     assert.doesNotMatch(out, /home-challenge-locked/, `hidden_count ${hidden}: no placeholder`);
-    const note = out.indexOf('Finish these to unlock the rest of the season.');
+    const note = out.indexOf('Finish Getting started to unlock the rest of the season.');
     assert.ok(note > out.lastIndexOf('home-challenge-card'), `hidden_count ${hidden}: the note follows the cards`);
     const footer = out.indexOf('home-panel-footer');
     assert.ok(note < (footer > -1 ? footer : out.indexOf('</article>', note)),
       `hidden_count ${hidden}: and closes the block, before any footer`);
-    assert.match(out, /<p class="pt-2 pb-1\.5 text-sm text-zinc-500 dark:text-zinc-400" role="status">Finish these/);
+    assert.match(out, /<p class="pt-2 pb-1\.5 text-sm text-zinc-500 dark:text-zinc-400" role="status">Finish Getting started/);
+    assert.match(out, /home-panel-season[\s\S]*?<\/div><div class="home-panel-body/,
+      'the season progress and the body stay adjacent');
   }
 
   // Unlocked: a stray count draws nothing, and there is no note at all (S10).
@@ -1459,7 +1480,7 @@ test('locked setup: one dashed placeholder after the cards, and no second unlock
   assert.equal(HP.challengesView(open).lockedCount, 0);
   assert.equal(HP.challengesView(open).onboardingNote, null, 'nothing to say once unlocked');
   const unlocked = renderWith({ registry: [], hidden: [], panels: [open] }).html;
-  assert.doesNotMatch(unlocked, /home-challenge-locked|challenges locked/);
+  assert.doesNotMatch(unlocked, /home-challenge-locked|unlock after Getting started/);
   assert.doesNotMatch(unlocked, /are unlocked|unlock the rest/, 'no unlock note');
 });
 
