@@ -108,7 +108,10 @@ const STARTER_DETAILS = Object.freeze({
 // community sets and changes by a voted change like any other line there.
 // Without one, its starter line if it has one, else nothing at all.
 // "Community · N members" was the same words on every row, and the count
-// said little about what the thing is.
+// said little about what the thing is. The count is back since, as a figure
+// of its own at the row's end (`member_count`, drawn by
+// frontend/src/features/auth/communities-first-run.js): beside these words,
+// never instead of them.
 function suggestionDetail(row) {
   if (row.self_hosted) return 'Contribute to the Homeroom platform';
   if (row.invited_by) return `Invited by @${row.invited_by}`;

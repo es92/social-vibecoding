@@ -19,10 +19,13 @@
 // GET /api/me/join-suggestions: Homeroom first (the platform's own project,
 // which a new account is already in, so it arrives ticked), then any group
 // the person was invited into (ticked), then the open communities with the
-// most members. One button, which says what it will do: "Join 3
-// communities". Unticking everything is allowed to be a dead end on
-// purpose ("Pick at least one"): a newcomer in no community has nothing on
-// Home and nothing in the Workshop, and the screen exists to prevent that.
+// most members. Each row ends in how many members the community has, a
+// people glyph and a figure just before the tick (`_members`), beside the
+// line under the name rather than instead of it. One button, which says
+// what it will do: "Join 3 communities". Unticking everything is allowed to
+// be a dead end on purpose ("Pick at least one"): a newcomer in no community
+// has nothing on Home and nothing in the Workshop, and the screen exists to
+// prevent that.
 //
 // ── Blocking, like the username step ───────────────────────────────────
 //
@@ -46,13 +49,14 @@
   const SHOT = 'join-communities';
   const SHOT_LIST = [
     { slug: 'homeroom', name: 'Homeroom', icon_emoji: '🏠', self_hosted: true, checked: true,
-      detail: 'Contribute to the Homeroom platform' },
+      detail: 'Contribute to the Homeroom platform', member_count: 1284 },
     { slug: 'book-club', name: 'Book club', icon_emoji: '📚', checked: true,
-      detail: 'Invited by @grace', invited_by: 'grace' },
+      detail: 'Invited by @grace', invited_by: 'grace', member_count: 6 },
     { slug: 'city-garden', name: 'City garden', icon_emoji: '🌱', checked: false,
-      detail: 'Swap seeds and plan the shared plots.' },
+      detail: 'Swap seeds and plan the shared plots.', member_count: 41 },
     // No description of its own: the row is just the name.
-    { slug: 'pickup-soccer', name: 'Pickup soccer', icon_emoji: '⚽', checked: false, detail: '' },
+    { slug: 'pickup-soccer', name: 'Pickup soccer', icon_emoji: '⚽', checked: false, detail: '',
+      member_count: 12 },
   ];
 
   const SETTLE_DELAY_MS = 450;
@@ -62,6 +66,13 @@
   // action colour in this palette (tailwind.config.js).
   const TICK_ON = 'join-community-tick flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-violet-600 text-white';
   const TICK_OFF = 'join-community-tick flex items-center justify-center w-6 h-6 rounded-full shrink-0 border-2 border-zinc-300 dark:border-zinc-600 text-transparent';
+
+  // The people glyph in front of a row's member count: the shell's own
+  // UserGroupIcon (frontend/@/components/ui/icons.tsx), path for path, the
+  // mark an app's menu already draws beside "Go to community". This screen
+  // builds its DOM by hand, so the path is copied rather than imported;
+  // tests/communities-first-run.test.js keeps the two equal.
+  const MEMBERS_GLYPH = 'M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8-1a3 3 0 010 6m4 5v-2a4 4 0 00-3-3.9';
 
   const CommunitiesFirstRun = {
     _presented: false,
@@ -198,6 +209,51 @@
       return tile;
     },
 
+    // A member count as the row shows it: whole up to 999, then one decimal
+    // to 9.9k and whole thousands after that (1.2k, 12k), then the same in
+    // millions. Rounded down, so a figure never claims a member the
+    // community does not have, and 999,999 reads 999k rather than 1000k.
+    // Counted in whole tenths: 2300 / 1000 * 10 is 22.999... in floating
+    // point, which would round 2,300 down to "2.2k".
+    _count(n) {
+      if (n < 1000) return String(n);
+      const [unit, suffix] = n < 1e6 ? [1e3, 'k'] : [1e6, 'm'];
+      const tenths = Math.floor((n * 10) / unit);
+      return `${tenths < 100 ? tenths / 10 : Math.floor(tenths / 10)}${suffix}`;
+    },
+
+    // How many members a row's community has, at the row's end, before the
+    // tick: the people glyph and the short figure, both hidden from a screen
+    // reader, which hears the whole number instead ("1,284 members"). No
+    // count, or none yet, and the row has no figure at all: a "0" on a
+    // newcomer's first screen says nothing worth saying.
+    _members(c, el) {
+      const n = Math.floor(Number(c.member_count));
+      if (!Number.isFinite(n) || n < 1) return null;
+      const wrap = el('span',
+        'flex items-center gap-1 shrink-0 text-[0.8125rem] leading-[1.125rem] tabular-nums text-zinc-500 dark:text-zinc-400');
+      wrap.setAttribute('data-join-community-members', String(n));
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('class', 'w-3.5 h-3.5');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', 'currentColor');
+      svg.setAttribute('stroke-width', '2');
+      svg.setAttribute('aria-hidden', 'true');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', MEMBERS_GLYPH);
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(path);
+      wrap.appendChild(svg);
+      const figure = el('span', null, CommunitiesFirstRun._count(n));
+      figure.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(figure);
+      wrap.appendChild(el('span', 'sr-only',
+        `${n.toLocaleString('en-US')} ${n === 1 ? 'member' : 'members'}`));
+      return wrap;
+    },
+
     _tick(el) {
       const tick = el('span', TICK_OFF);
       tick.setAttribute('aria-hidden', 'true');
@@ -287,9 +343,11 @@
         if (c.detail) {
           text.appendChild(el('div', 'mt-0.5 line-clamp-2 text-[0.8125rem] leading-[1.125rem] text-zinc-500 dark:text-zinc-400', c.detail));
         }
+        const members = CommunitiesFirstRun._members(c, el);
         const tick = CommunitiesFirstRun._tick(el);
         row.appendChild(CommunitiesFirstRun._icon(c, el));
         row.appendChild(text);
+        if (members) row.appendChild(members);
         row.appendChild(tick);
         const paint = () => {
           const on = picked.has(c.slug);
