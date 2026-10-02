@@ -87,7 +87,11 @@ function summarize(trials, { stage, k }) {
     accuracy: pass + fail ? pass / (pass + fail) : null,
     passK: stats.passHatK(attempts, k),
     costUsd: cost,
+    // Per task counts all k of a task's attempts; per attempt is the unit a
+    // success is counted in, so the two read side by side: a success costs
+    // at least an attempt, failed attempts included.
     costPerTask: tasks.size ? cost / tasks.size : null,
+    costPerAttempt: attempted ? cost / attempted : null,
     costPerSuccess: pass ? cost / pass : null,
     p50Ms: stats.percentile(durations, 50),
     p95Ms: stats.percentile(durations, 95),
@@ -140,7 +144,7 @@ async function runReport(pool, runId, { slice = 'verdict' } = {}) {
       if (!mine.length) continue;
       const row = { stage, model, baseline: model === run.baseline_model, ...summarize(mine, { stage, k }) };
       rows.push(row);
-      points.push({ key: `${stage}|${model}`, stage, model, cost: row.costPerTask, accuracy: row.accuracy });
+      points.push({ key: `${stage}|${model}`, stage, model, cost: row.costPerAttempt, accuracy: row.accuracy });
       if (model !== run.baseline_model) {
         const scores = taskScores(mine);
         const pairs = [...scores].filter(([task]) => baseline.has(task))

@@ -18,7 +18,7 @@ import { AdminUI } from './admin-console.js';
 //            each: context window, price, the stages it is entered for),
 //            stages, repeats, the dollar cap ($50 unless changed).
 //   Runs     progress, spend against the cap, cancel.
-//   Results  per stage and model: accuracy, pass^k, cost per task and per
+//   Results  per stage and model: accuracy, pass^k, cost per attempt and per
 //            success, p50/p95 time, timeouts and platform faults apart,
 //            the paired difference from the baseline with its 95% interval,
 //            a cost-vs-quality chart with the Pareto frontier, slices by a
@@ -58,7 +58,7 @@ interface Run {
 interface Row {
   stage: Stage; model: string; baseline: boolean; trials: number; graded: number; pass: number; pending: number;
   unlabelled: number; notApplicable: number; skippedCap: number; accuracy: number | null;
-  passK: { k: number; tasks: number; value: number | null }; costUsd: number; costPerTask: number | null;
+  passK: { k: number; tasks: number; value: number | null }; costUsd: number; costPerTask: number | null; costPerAttempt: number | null;
   costPerSuccess: number | null; p50Ms: number | null; p95Ms: number | null; timeoutRate: number | null; infraRate: number | null;
 }
 interface Paired { stage: Stage; model: string; baselineModel: string; n: number; apps: number; diff: number | null; low: number | null; high: number | null }
@@ -113,7 +113,7 @@ async function send(url: string, method: string, body?: unknown) {
 }
 
 /**
- * Cost per task against accuracy, one point per model, for one stage. Model
+ * Cost per attempt against accuracy, one point per model, for one stage. Model
  * identity is the direct label beside each point, not a colour; the Pareto
  * frontier is the filled points and the line through them. A native title
  * on each point is its tooltip; the results table above is its table view.
@@ -130,7 +130,7 @@ export function ParetoChart({ points, models }: { points: Point[]; models: Model
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-2xl h-auto text-zinc-500 dark:text-zinc-400" role="img"
       aria-labelledby="admin-homeroom-bench-pareto-title" id="admin-homeroom-bench-pareto">
-      <title id="admin-homeroom-bench-pareto-title">Cost per task against accuracy; filled points are the Pareto frontier</title>
+      <title id="admin-homeroom-bench-pareto-title">Cost per attempt against accuracy; filled points are the Pareto frontier</title>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke="currentColor" strokeOpacity="0.15" strokeWidth="1" />
@@ -141,14 +141,14 @@ export function ParetoChart({ points, models }: { points: Point[]; models: Model
       {[0, 0.5, 1].map((f) => (
         <text key={f} x={x(maxCost * f)} y={H - B + 16} textAnchor="middle" fontSize="11" fill="currentColor">{`$${(maxCost * f).toFixed(maxCost * f < 1 ? 2 : 1)}`}</text>
       ))}
-      <text x={(L + W - R) / 2} y={H - 4} textAnchor="middle" fontSize="11" fill="currentColor">Cost per task</text>
+      <text x={(L + W - R) / 2} y={H - 4} textAnchor="middle" fontSize="11" fill="currentColor">Cost per attempt</text>
       {frontier.length > 1 ? (
         <polyline points={frontier.map((p) => `${x(p.cost)},${y(p.accuracy)}`).join(' ')}
           fill="none" stroke="#2a78d6" strokeWidth="2" strokeOpacity="0.6" />
       ) : null}
       {usable.map((p) => (
         <g key={p.key} data-pareto-point={p.model} data-frontier={p.frontier ? 'true' : 'false'}>
-          <title>{`${shortModel(p.model, models)}: ${pct(p.accuracy)} at ${usd(p.cost, 3)} a task${p.frontier ? ', on the frontier' : ''}`}</title>
+          <title>{`${shortModel(p.model, models)}: ${pct(p.accuracy)} at ${usd(p.cost, 3)} an attempt${p.frontier ? ', on the frontier' : ''}`}</title>
           <circle cx={x(p.cost)} cy={y(p.accuracy)} r="9" fill="transparent" />
           <circle cx={x(p.cost)} cy={y(p.accuracy)} r="5" strokeWidth="2"
             stroke={p.frontier ? '#2a78d6' : 'currentColor'} fill={p.frontier ? '#2a78d6' : 'none'} />
@@ -529,7 +529,7 @@ function Results({ runId, models, canWrite, say }: { runId: number; models: Mode
                     <span className={`${AdminUI.muted} block`}>{!notApplicable && r.passK.k > 1 ? `all ${r.passK.k} right, of ${r.passK.tasks} tasks` : ''}</span>
                   </td>
                   <td className={DENSE_TD}>
-                    {notApplicable ? '' : `${usd(r.costPerTask, 3)} a task`}
+                    {notApplicable ? '' : `${usd(r.costPerAttempt, 3)} an attempt`}
                     <span className={`${AdminUI.muted} block`}>{notApplicable ? '' : r.costPerSuccess == null ? 'no success yet' : `${usd(r.costPerSuccess, 3)} a success`}</span>
                   </td>
                   <td className={`${DENSE_TD} whitespace-nowrap`}>

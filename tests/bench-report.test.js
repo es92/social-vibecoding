@@ -69,7 +69,9 @@ test('a row: platform faults out of accuracy, timeouts in it, every attempt\'s c
   assert.equal(row.notApplicable, 1);
   assert.equal(Math.round(row.costUsd * 100) / 100, 0.8);
   assert.equal(Math.round(row.costPerTask * 100) / 100, 0.4, 'two tasks attempted');
+  assert.equal(Math.round(row.costPerAttempt * 1000) / 1000, 0.133, 'six attempts, the platform fault included');
   assert.equal(Math.round(row.costPerSuccess * 1000) / 1000, 0.267, 'failed attempts included in the cost of a success');
+  assert.ok(row.costPerSuccess >= row.costPerAttempt, 'a success never costs less than an attempt');
   assert.deepEqual(row.passK, { k: 3, tasks: 1, passAll: 1, value: 1 });
 });
 
@@ -96,7 +98,7 @@ test('the chart: the frontier filled and joined, each point named in words, a ti
   assert.equal((html.match(/data-frontier="true"/g) || []).length, 2);
   assert.match(html, /<polyline/);
   for (const name of ['Cheap', 'Best', 'Meh']) assert.match(html, new RegExp(`>${name}</text>`), `${name} is labelled in words`);
-  assert.match(html, /<title>Best: 90% at \$0\.300 a task, on the frontier<\/title>/);
+  assert.match(html, /<title>Best: 90% at \$0\.300 an attempt, on the frontier<\/title>/);
   assert.match(renderToHtml(createElement(ParetoChart, { models, points: [] })), /No graded results at this stage yet/);
   // Its first render, before any data: the cards' hosts, and nothing else.
   const area = renderToHtml(createElement(BenchmarkArea, { canWrite: true }));
