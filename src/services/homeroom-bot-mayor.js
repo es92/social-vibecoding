@@ -1743,8 +1743,9 @@ async function turn(pool, config, { bot, user, settings, conversationId, message
   // flight each one points at its own. #3772: a later try at the same
   // message (deferAttempt) answers under a key of its own.
   const key = `hrbot-mayor-${message.id}${deps.deferAttempt ? `-d${deps.deferAttempt}` : ''}`;
+  // B4: every one of these answers what they just wrote, so it rings as a reply.
   const say = (content, extra = {}) => dm.sendDm(pool, {
-    bot, userId: user.id, content, idempotencyKey: key, replyToId: message.id, ...extra,
+    bot, userId: user.id, content, idempotencyKey: key, replyToId: message.id, moment: 'reply', ...extra,
   });
   const state = { recorded: false };
   try {

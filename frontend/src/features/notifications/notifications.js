@@ -1820,12 +1820,15 @@ function collapseConversationRuns(items) {
   for (const n of items) {
     const prev = runs[runs.length - 1];
     const id = n && n.conversationId != null ? Number(n.conversationId) : null;
+    // B4: the bot's moments are each their own news ("I have a question",
+    // then "is live"), so none of them folds into a run or takes one in.
+    const moment = !!(n && /^hrbot:[a-z_]{1,20}:/.test(String(n.detail || '')));
     if (prev && id !== null && prev.conversationId === id
-        && prev.read === !!n.readAt) {
+        && prev.read === !!n.readAt && !moment && !prev.moment) {
       prev.count += 1;
       continue;
     }
-    runs.push({ item: n, conversationId: id, read: !!(n && n.readAt), count: 1 });
+    runs.push({ item: n, conversationId: id, read: !!(n && n.readAt), count: 1, moment });
   }
   return runs;
 }
@@ -1916,6 +1919,38 @@ const AGENT_NOTIF_KINDS = new Set([
 // session — has no actor and no `by` either.
 // The two lines of a row's own copy. Spread into the view — `...headline(…)`
 // — rather than assigned to one field, because it fills two.
+// B4: the Homeroom bot's four moments, and its answer to what somebody just
+// wrote to it, as notifications.detail carries them ("hrbot:<moment>:<app>").
+// The same words as the push (services/mobile-push-policy.js botMomentCopy;
+// tests/homeroom-bot-notify.test.js holds the two together), under the bot's
+// name instead of "Replied" over "@homeroom_bot".
+const BOT_DETAIL_RE = /^hrbot:([a-z_]{1,20}):(.*)$/;
+function plainMarkdown(value) {
+  return String(value || '')
+    .replace(/!?\[([^\]\n]*)\]\([^)\s]*\)/g, '$1')
+    .replace(/(\*\*|__|~~)(?=\S)([\s\S]*?\S)\1/g, '$2')
+    .replace(/`+([^`\n]*)`+/g, '$1')
+    .replace(/^[ \t]{0,3}(?:#{1,6}[ \t]+|>[ \t]?)/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function botMomentLine(detail, message) {
+  const m = BOT_DETAIL_RE.exec(typeof detail === 'string' ? detail : '');
+  if (!m) return null;
+  const app = m[2].replace(/\s+/g, ' ').trim();
+  const words = {
+    question: app ? `${app}: I have a question` : 'I have a question',
+    ready: app ? `${app} is ready to try` : 'Your change is ready to try',
+    ready_group: app ? `Your change to ${app} is ready to try` : 'Your change is ready to try',
+    stopped: app ? `${app}: your change didn't finish` : 'Your change didn\'t finish',
+    held: app ? `${app}: I'll start it on Monday` : 'I\'ve paused until Monday',
+    live: app ? `Your change to ${app} is live` : 'Your change is live',
+    live_first: app ? `${app} is live` : 'Your project is live',
+    reply: plainMarkdown(message).slice(0, 140),
+  }[m[1]];
+  return words || null;
+}
+
 function headline(label, subject) {
   return {
     label,
@@ -2018,6 +2053,23 @@ function rowView(n) {
       conversation_thread_reply: '🧵',
       conversation_reaction: n.detail || '❤️',
     };
+    // B4: one of the bot's moments says what happened, in its own words,
+    // from "Homeroom bot". The name leads, so the meta line drops the
+    // "by @homeroom_bot" that would say it twice.
+    const bot = n.kind === 'conversation_reaction' ? null : botMomentLine(n.detail, n.messageContent);
+    if (bot) {
+      return {
+        ...base,
+        wrap: true,
+        icon: icons[n.kind],
+        by: null,
+        conversation: true,
+        conversationId: n.conversationId != null ? Number(n.conversationId) : null,
+        appLine: 'Messages',
+        botMoment: true,
+        ...headline('Homeroom bot', bot),
+      };
+    }
     return {
       ...base,
       wrap: true,
@@ -2539,6 +2591,8 @@ function stampFields(ts) {
 // is what keeps ./notifications-list.tsx presentational, and it is what let the
 // list be lifted wholesale into the hamburger without this module noticing.
 Notifications._rowView = rowView;
+// B4: the sheet's rows, folded, for tests (a bot moment never folds).
+Notifications._screenViews = screenViews;
 
 // Published exactly where the classic <script> published it: at module
 // evaluation, which for the React entry is still before DOMContentLoaded. The

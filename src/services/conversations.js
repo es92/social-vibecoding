@@ -1446,7 +1446,11 @@ function mentionsUsername(content, username) {
   return pattern.test(content);
 }
 
-async function sendMessage(pool, user, conversationId, input, { metadata = null } = {}) {
+// B4: `notify: false` stores a message that counts as unread but rings no
+// bell and sends no push (the Homeroom bot's progress, which is not news on
+// its own). `notificationDetail` rides on each notification it does make, as
+// notifications.detail, for the push and the bell to word it by.
+async function sendMessage(pool, user, conversationId, input, { metadata = null, notify = true, notificationDetail = null } = {}) {
   const attachmentIds = normalizeAttachmentIds(input.attachment_ids ?? input.attachmentIds);
   const refsRaw = input.objects ?? (input.object ? [input.object] : []);
   if (!Array.isArray(refsRaw) || refsRaw.length > MAX_OBJECTS || !attachmentIds) return null;
@@ -1620,6 +1624,7 @@ async function sendMessage(pool, user, conversationId, input, { metadata = null 
     }
     const notifications = [];
     for (const member of members.rows) {
+      if (!notify) break;
       const mentioned = mentionsUsername(content, member.username);
       let kind = 'conversation_message';
       if (membership.kind === 'channel') {
@@ -1638,7 +1643,7 @@ async function sendMessage(pool, user, conversationId, input, { metadata = null 
       }
       notifications.push(await insertNotification(db, {
         userId: member.user_id, conversationId, messageId,
-        sourceUserId: user.id, kind,
+        sourceUserId: user.id, kind, detail: notificationDetail,
       }));
     }
     return { messageId, memberIds: [user.id, ...members.rows.map((row) => row.user_id)], notifications, duplicate: false };

@@ -1781,7 +1781,16 @@ function resolveCaptureScale(row) {
 // leaves every other proposal alone after one indexed read).
 // Fire-and-forget; a non-failing verdict costs nothing.
 function noteBotChecksAfterChecks(pool, session, state) {
-  if (state !== 'failing' || !session?.id) return;
+  if (!session?.id) return;
+  // B4: a change of the Homeroom bot's that passed (or skipped) its checks
+  // is ready to try, and its requester hears it now, not when it went up.
+  if (state === 'passing' || state === 'skipped') {
+    Promise.resolve()
+      .then(() => require('./homeroom-bot-dm').noteChangeReady(pool, session.id))
+      .catch(() => {});
+    return;
+  }
+  if (state !== 'failing') return;
   Promise.resolve()
     // Lazy: the bot module loads its live and follow-up modules.
     .then(() => require('./homeroom-bot').noteProposalChecks(pool, { sessionId: session.id }))

@@ -53,6 +53,44 @@ function cleanText(value) {
   return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+// B4: a chat message's markdown, read as the words it shows. A push is
+// plain text, and "**Plant Pal** · request #4" spent half its body on
+// asterisks. Links keep their words, code its text, a heading or a quote its
+// line. Returns '' for anything that is not a string.
+function plainMarkdown(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/!?\[([^\]\n]*)\]\([^)\s]*\)/g, '$1')
+    .replace(/(\*\*|__|~~)(?=\S)([\s\S]*?\S)\1/g, '$2')
+    .replace(/`+([^`\n]*)`+/g, '$1')
+    .replace(/^[ \t]{0,3}(?:#{1,6}[ \t]+|>[ \t]?)/gm, '');
+}
+
+// B4: the Homeroom bot's four moments, and its answer to what somebody just
+// wrote to it, as notifications.detail carries them ("hrbot:<moment>:<app>",
+// services/homeroom-bot-dm.js notificationDetail). Said in a few words, from
+// "Homeroom bot", instead of "@homeroom_bot replied to you" over the start of
+// its message. The bell words the same moments the same way
+// (frontend/src/features/notifications/notifications.js botMomentLine), and
+// tests/homeroom-bot-notify.test.js holds the two together.
+const BOT_DETAIL_RE = /^hrbot:([a-z_]{1,20}):(.*)$/;
+function botMomentCopy(detail, message) {
+  const m = BOT_DETAIL_RE.exec(typeof detail === 'string' ? detail : '');
+  if (!m) return null;
+  const app = cleanText(m[2]);
+  const words = {
+    question: app ? `${app}: I have a question` : 'I have a question',
+    ready: app ? `${app} is ready to try` : 'Your change is ready to try',
+    ready_group: app ? `Your change to ${app} is ready to try` : 'Your change is ready to try',
+    stopped: app ? `${app}: your change didn't finish` : 'Your change didn\'t finish',
+    held: app ? `${app}: I'll start it on Monday` : 'I\'ve paused until Monday',
+    live: app ? `Your change to ${app} is live` : 'Your change is live',
+    live_first: app ? `${app} is live` : 'Your project is live',
+    reply: message,
+  }[m[1]];
+  return words ? { title: 'Homeroom bot', body: words } : null;
+}
+
 function truncate(value, max) {
   if (value.length <= max) return value;
   return `${value.slice(0, max - 1).trimEnd()}…`;
@@ -112,8 +150,15 @@ function buildCopy(kind, context, now) {
   const app = cleanText(context.appName);
   const conversation = cleanText(context.conversationTitle);
   const actor = cleanText(context.sourceUsername);
-  const message = cleanText(context.messageContent);
+  const message = cleanText(plainMarkdown(context.messageContent));
   const detail = cleanText(context.detail);
+  // B4: only the platform's own account (the Homeroom bot) words a message
+  // by its moment; anybody else's message is theirs, as written.
+  if (context.sourceIsSynthetic === true
+    && (kind === 'conversation_message' || kind === 'conversation_reply' || kind === 'conversation_mention')) {
+    const bot = botMomentCopy(detail, message);
+    if (bot) return bot;
+  }
   // #971 preference order, same as the in-app dropdown renderers — except
   // that a machine-generated branch name is worse than no label at all.
   const branch = cleanText(context.branchName);
@@ -540,6 +585,9 @@ function buildBadgeMessage({ token, unreadCount, now = new Date() }) {
 
 module.exports = {
   ALLOWED_KINDS,
+  botMomentCopy,
+  buildNotificationCopy,
+  plainMarkdown,
   MAX_TTL_MS,
   RECIPIENT_CONTEXT,
   PUSH_ENV_RE,

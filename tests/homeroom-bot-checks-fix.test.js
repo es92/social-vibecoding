@@ -369,7 +369,10 @@ test('a failing verdict on the bot\'s proposal queues its issue; anything else d
 
 test('every settled failing verdict reaches the bot, from each place a verdict settles', () => {
   const visuals = read('src/services/visuals.js');
-  assert.match(visuals, /function noteBotChecksAfterChecks\(pool, session, state\) \{\n\s+if \(state !== 'failing' \|\| !session\?\.id\) return;/);
+  assert.match(visuals, /function noteBotChecksAfterChecks\(pool, session, state\) \{\n\s+if \(!session\?\.id\) return;/);
+  // B4: a passing or skipped one is the bot's change being ready to try.
+  assert.match(visuals, /if \(state === 'passing' \|\| state === 'skipped'\) \{[\s\S]*?noteChangeReady\(pool, session\.id\)[\s\S]*?return;\n\s+\}\n\s+if \(state !== 'failing'\) return;/);
+  assert.match(read('src/services/staging-recovery.js'), /visuals\.noteBotChecksAfterChecks\?\.\(pool, session, 'skipped'\);/);
   assert.match(visuals, /require\('\.\/homeroom-bot'\)\.noteProposalChecks\(pool, \{ sessionId: session\.id \}\)/);
   assert.match(visuals, /maybeAutoMergeAfterChecks\(config, getPool\(config\), session, completed\.state\);\n\s+noteBotChecksAfterChecks\(getPool\(config\), session, completed\.state\);/);
   assert.match(visuals, /maybeAutoMergeAfterChecks\(config, pool, session, checksResult\.state\);\n\s+noteBotChecksAfterChecks\(pool, session, checksResult\.state\);/);
@@ -378,14 +381,19 @@ test('every settled failing verdict reaches the bot, from each place a verdict s
   assert.match(schema, /ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS checks_head_sha TEXT;/);
 });
 
-test('a failing verdict hook costs a passing verdict nothing', async () => {
+test('a failing verdict hook costs an error verdict nothing, and a passing one only the ready check', async () => {
   const visuals = require('../src/services/visuals');
   const asked = [];
   const pool = { async query(sql) { asked.push(String(sql)); return { rows: [] }; } };
-  visuals.noteBotChecksAfterChecks(pool, { id: 5001 }, 'passing');
   visuals.noteBotChecksAfterChecks(pool, { id: 5001 }, 'error');
   await new Promise((r) => setImmediate(r));
   assert.equal(asked.length, 0);
+  // B4: passing asks whether the change is ready to try, and nothing else.
+  visuals.noteBotChecksAfterChecks(pool, { id: 5001 }, 'passing');
+  for (let i = 0; i < 20 && !asked.length; i += 1) await new Promise((r) => setImmediate(r));
+  assert.deepEqual(asked.map((s) => s.replace(/\s+/g, ' ').trim()),
+    ['SELECT status, check_state, approval_epoch FROM chat_sessions WHERE id = $1']);
+  asked.length = 0;
   visuals.noteBotChecksAfterChecks(pool, { id: 5001 }, 'failing');
   for (let i = 0; i < 20 && !asked.length; i += 1) await new Promise((r) => setImmediate(r));
   assert.ok(asked.some((s) => /AS looked/.test(s)), 'a failing one is looked up');

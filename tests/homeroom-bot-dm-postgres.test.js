@@ -179,15 +179,17 @@ test('the Homeroom bot DM against the full PostgreSQL schema', { timeout: 180000
   await t.test('#3707: the bot quotes the message it answers: only the person\'s own, in their DM, still there to read', async () => {
     const { conversationId } = await conversations.ensureAdmittedDirect(pool, bot.id, ada.id);
     const asked = await conversations.sendMessage(pool, ada, conversationId, { content: 'Can you sort my list?' });
-    const answered = await dm.sendDm(pool, { bot, userId: ada.id, content: 'On it.', replyToId: asked.message.id });
+    // B4: an answer to what she wrote rings as a reply.
+    const answered = await dm.sendDm(pool, { bot, userId: ada.id, content: 'On it.', replyToId: asked.message.id, moment: 'reply' });
     const said = await conversations.getMessage(pool, ada, conversationId, answered.messageId);
     assert.equal(said.reply.id, asked.message.id);
     assert.equal(said.reply.content, 'Can you sort my list?');
     assert.equal(said.reply.sender.id, ada.id);
     const { rows: [bell] } = await pool.query(
-      'SELECT kind FROM notifications WHERE user_id = $1 AND conversation_message_id = $2', [ada.id, answered.messageId],
+      'SELECT kind, detail FROM notifications WHERE user_id = $1 AND conversation_message_id = $2', [ada.id, answered.messageId],
     );
     assert.equal(bell.kind, 'conversation_reply', 'she hears the bot replied to her, as from a person');
+    assert.equal(bell.detail, 'hrbot:reply:', 'worded as the bot\'s answer');
 
     // Anything else is left off, never the message.
     const samDm = await conversations.ensureAdmittedDirect(pool, bot.id, sam.id);
@@ -664,8 +666,9 @@ test('the Homeroom bot DM against the full PostgreSQL schema', { timeout: 180000
     const onlyDm = (seen, why) => {
       assert.equal(seen.thread.content, `@${sam.username} Building it now.`, `${why}: not tagged on the request`);
       assert.equal(seen.dms.length, 1, `${why}: told in the DM`);
-      assert.deepEqual(seen.bells, [{ kind: 'conversation_message', chat_message_id: null, conversation_message_id: seen.dms[0] }],
-        `${why}: one bell, the DM's`);
+      // B4: "I'm building it now" is progress, not one of the moments that
+      // ring: told in the DM, it rings nothing, and the post tags nobody.
+      assert.deepEqual(seen.bells, [], `${why}: no bell, the DM is where it is`);
     };
     const onlyMention = (seen, who, why) => {
       assert.equal(seen.thread.content, `@${who.username} @${sam.username} Building it now.`, `${why}: tagged on the request`);
@@ -775,7 +778,9 @@ test('the Homeroom bot DM against the full PostgreSQL schema', { timeout: 180000
     assert.deepEqual(await dms(), []);
 
     // Run A's own proposal is still told, though run B is newer: it is the
-    // one people vote on, and its news must reach her.
+    // one people vote on, and its news must reach her (B4: once it is ready
+    // to try, its checks passed).
+    await pool.query(`UPDATE chat_sessions SET check_state = 'passing' WHERE id = $1`, [first]);
     const told = await dm.relayIssuePost({
       pool, app, issueNumber: 3783, kind: 'proposal', runId: a, postId: 37833, bot,
       dm: { link: `https://app.onhomeroom.com/#app/seed-swap/dev/proposals/${first}`, sessionId: first },

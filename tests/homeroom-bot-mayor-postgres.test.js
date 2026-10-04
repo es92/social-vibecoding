@@ -709,6 +709,8 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const elsewhere = await dm.relayIssuePost({ pool, app: seeds, issueNumber: 3, kind: 'spec', postId: 37072, bot, dm: { building: true } });
     assert.equal((await read(elsewhere)).reply, null);
     await conversations.deleteMessage(pool, ada, opened.conversationId, ask.id);
+    // B4: "it's built" is said once it is ready to try.
+    await pool.query(`UPDATE chat_sessions SET status = 'promoted', check_state = 'passing' WHERE id = $1`, [built.id]);
     const proposed = await dm.relayIssuePost({
       pool, app: notes, issueNumber: n, kind: 'proposal', postId: 37073, bot,
       dm: { link: 'https://app.onhomeroom.com/#app/note-board/dev/proposals/1', sessionId: built.id },

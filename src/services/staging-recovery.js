@@ -677,6 +677,8 @@ async function recordChecksSkipped({
     log.warn('staging-recovery', 'skipped-verdict notify failed', { sessionId: session.id, err: err.message });
   }
   visuals.maybeAutoMergeAfterChecks(config, pool, session, 'skipped');
+  // B4: skipped checks make a bot's change ready to try, as passing ones do.
+  visuals.noteBotChecksAfterChecks?.(pool, session, 'skipped');
 }
 
 // #237: record a staging build/boot failure as a terminal proposal-checks
@@ -764,6 +766,11 @@ async function recordStagingBootFailure({ config, pool, session, commitHash, err
   // person who can act on it is the platform owner, who gets the escalation
   // the 'error' state already carries. The stamp above still runs, so the
   // backoff retries stay quiet either way.
+  // B4: a change the Homeroom bot built for somebody is not ready to try
+  // while its preview will not start, and its requester hears that, once per
+  // failure streak, rather than nothing (they hear "ready" only when it is).
+  require('./homeroom-bot-dm').noteChangeStopped(pool, session.id, { why: 'preview' }).catch(() => null);
+
   if (infrastructure) {
     log.warn('staging-recovery', 'Boot failure is infrastructure — author not nudged', {
       sessionId: session.id, detail,
