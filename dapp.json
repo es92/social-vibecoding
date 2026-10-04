@@ -913,9 +913,9 @@
       "expectText": "Re-run checks"
     },
     {
-      "name": "Addresses is one line under the summary: the label, then the issue as a chip with its number bold and its title after it",
+      "name": "Addresses is one line under the summary (after the Tested line, B10b): the label, then the issue as a chip with its number bold and its title after it",
       "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000013",
-      "expectSelector": "#gc-thread-head .dev-topic-hero > .dev-topic-hero-summary + .dev-topic-hero-issues > .dev-topic-hero-issues-line > .dev-topic-hero-issues-k + a.dev-ws-chip.dev-topic-issue[href*=\"/dev/issues/900017\"] > b + span",
+      "expectSelector": "#gc-thread-head .dev-topic-hero > .dev-topic-hero-summary ~ .dev-topic-hero-issues > .dev-topic-hero-issues-line > .dev-topic-hero-issues-k + a.dev-ws-chip.dev-topic-issue[href*=\"/dev/issues/900017\"] > b + span",
       "expectText": "Addresses"
     },
     {
@@ -2862,13 +2862,13 @@
       "expectText": "prepare checks (waiting for an earlier run)"
     },
     {
-      "name": "Checks card says an author's commit started the run (#1144)",
-      "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000022",
+      "name": "Checks card says an author's commit started the run (#1144), in Details (B10b)",
+      "path": "/?demo=1&details=1#app/usernode-2d5619/dev/proposals/9000022",
       "expectText": "Triggered by a new commit on this proposal."
     },
     {
-      "name": "Checks card owns up to a platform-restarted run (#1144)",
-      "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000026",
+      "name": "Checks card owns up to a platform-restarted run (#1144), in Details (B10b)",
+      "path": "/?demo=1&details=1#app/usernode-2d5619/dev/proposals/9000026",
       "expectText": "Restarted automatically by the platform."
     },
     {
@@ -3853,9 +3853,9 @@
       "expectText": "Preview unavailable"
     },
     {
-      "name": "Freshness (#1442): a conflicted proposal says so in one short line on its merge step",
-      "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000034",
-      "expectSelector": "#gc-thread-head [data-note=\"mergeability\"]",
+      "name": "Freshness (#1442): a conflicted proposal says so in one short line on its merge step, in Details (B10b)",
+      "path": "/?demo=1&details=1#app/usernode-2d5619/dev/proposals/9000034",
+      "expectSelector": ".dev-details-card [data-note=\"mergeability\"]",
       "expectText": "Conflict in 7 files"
     },
     {
