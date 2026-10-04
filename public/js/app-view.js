@@ -4724,8 +4724,8 @@ const AppView = {
         onBand.push({
           key: 'build', cls: 'gc-vote-btn', label: body.build.label,
           title: body.build.kind === 'owner'
-            ? 'Open the dev session behind this change'
-            : 'Read the dev chat that built this change',
+            ? 'Open the agent session behind this change'
+            : 'Read the agent session that built this change',
           act: { fn: 'openChangeWorkspace', args: [item.id] },
         });
       }
@@ -5542,7 +5542,7 @@ const AppView = {
       if (mine && item.source !== 'imported') {
         pills.push({
           key: 'session', cls: 'gc-vote-btn', label: 'Continue building',
-          title: 'Open the dev session behind this proposal',
+          title: 'Open the agent session behind this change',
           act: { fn: 'openChangeWorkspace', args: [item.id] },
         });
       }
@@ -6220,7 +6220,7 @@ const AppView = {
   // groups — the long copy became the label's tooltip, and the row
   // builders in _mySessionsRows / _inProgressRows supply both.
 
-  EXPLORE_CHAT_TITLE: 'Open a dev chat with a message about this PR ready to edit and send',
+  EXPLORE_CHAT_TITLE: 'Open an agent session with a message about this change ready to edit and send',
 
   // #827: the closing paragraph of every exploration seed. Load-bearing —
   // it is what keeps an UNEDITED send from making the Mayor dispatch the
@@ -12061,7 +12061,7 @@ const AppView = {
   // muted shell, so the information survives at a fraction of the height.
   PRIVATE_DIVIDER_TITLE: 'Only you can see your active sessions.',
   VISIBLE_DIVIDER_TITLE: 'Visible to everyone, including a live preview of your changes.',
-  OTHERS_DIVIDER_TITLE: 'Dev sessions other people have made visible.',
+  OTHERS_DIVIDER_TITLE: 'Agent sessions other people have made visible.',
 
   _privateDividerRow() {
     return { t: 'divider', key: 'div:private', d: { label: 'Yours · private', title: AppView.PRIVATE_DIVIDER_TITLE } };
@@ -12097,7 +12097,7 @@ const AppView = {
     return {
       t: 'note',
       key: 'note:session-filter',
-      text: `Regular dev sessions don't carry priority, category or assignee. The ${sessionCount} `
+      text: `Agent sessions don't carry priority, category or assignee. The ${sessionCount} `
         + `session card${sessionCount === 1 ? '' : 's'} below ${sessionCount === 1 ? 'is' : 'are'} not filtered by ${list}.`,
     };
   },
@@ -12572,7 +12572,7 @@ const AppView = {
       label: cached
         || ((typeof SessionTranscript !== 'undefined' && SessionTranscript.headerText)
           ? SessionTranscript.headerText(item, { expanded: false })
-          : 'Read the dev chat'),
+          : 'Read the agent session'),
       expanded,
     };
   },
@@ -12633,7 +12633,7 @@ const AppView = {
     if (!content) return false;
     const label = (typeof SessionTranscript !== 'undefined' && SessionTranscript.headerText)
       ? SessionTranscript.headerText(data.session, { expanded: true })
-      : 'Dev chat';
+      : 'Agent session';
     content.innerHTML = `
       <div class="dev-session-read">
         <div class="st-section" data-transcript-section="${id}">
@@ -13429,7 +13429,7 @@ const AppView = {
       items.push({
         label: 'Open session',
         icon: 'session',
-        title: 'Open the dev session behind this proposal',
+        title: 'Open the agent session behind this change',
         act: () => AppView.openProposalSession(pr.id),
       });
     }
@@ -14273,7 +14273,7 @@ const AppView = {
     // passes) unless the lane has recorded that it tried and could not.
     const served = (pr.integration && Array.isArray(pr.integration.blockReasons))
       ? pr.integration.blockReasons : [];
-    const sync = ': open the session’s dev-chat and run "Sync with main".';
+    const sync = ': open the agent session and run "Sync with main".';
     // QA 2026-09-24: `lead` is the sentence about what the PLATFORM does and
     // `rest` is what a person can do. `parts` is both, as before. The
     // proposal's "Sync with main" step already opens with its own sentence
@@ -14287,7 +14287,7 @@ const AppView = {
         rest = [{ b: creator }, ' needs to resolve it: run "Sync with main" from the session\'s dev-chat.'];
       } else if (mode === 'conflict') {
         lead = 'Automatic resolution may not run for this proposal. ';
-        rest = [{ b: creator }, ' needs to finish the merge: open the session\'s dev-chat and run "Sync with main".'];
+        rest = [{ b: creator }, ' needs to bring it up to date: open the agent session and run "Sync with main".'];
       } else if (served.includes('integrating')) {
         lead = 'The platform is resolving it now. ';
         rest = ['Nobody needs to do anything.'];
@@ -14317,8 +14317,8 @@ const AppView = {
     // has always carried; an imported one gets the note's sentence, since
     // that is the first time the pill has had anything true to say about it.
     const nativeDetail = {
-      failed: 'The proposal’s owner needs to resolve it manually from their dev session.',
-      conflict: 'Its creator needs to finish the merge from their dev session ("Sync with main").',
+      failed: 'The change’s owner needs to resolve it from their agent session.',
+      conflict: 'Its creator needs to bring it up to date from their agent session ("Sync with main").',
     };
     // WHO RESOLVES IT DECIDES HOW THE TAG LOOKS, and it is decided right
     // here (#2221/#2222). The tag used to carry a fixed string and the
@@ -20453,7 +20453,7 @@ const AppView = {
     if (s.key === 'in_review') {
       main = `${subj} ${has} put this up for review as a proposal, so it is waiting on reviewers rather than on more work.`;
     } else if (s.key === 'working') {
-      main = `${subj} ${is} working on this in a dev session${age ? `, last active ${age}` : ''}.`;
+      main = `${subj} ${is} working on this in an agent session${age ? `, last active ${age}` : ''}.`;
     } else if (s.key === 'bot') {
       // B8: and who asked it to, when somebody did.
       if (s.bot === 'queued') {
@@ -21959,7 +21959,7 @@ const AppView = {
       AppView._finishStagingTelemetry(pending.telemetryAttempt, 'failure', { errorCode: 'unavailable' });
       AppView._setStagingLoader(true, {
         title: 'Preview couldn’t be rebuilt',
-        sub: error || 'The staging build failed. See the dev chat for details.',
+        sub: error || 'The preview failed to build. See the agent session for details.',
         ...AppView._offerStagingPreviewRetry(pending.retry),
       });
       return;
@@ -23979,7 +23979,7 @@ const AppView = {
         purpose: info.llm?.purpose ? String(info.llm.purpose) : null,
         intro: byokOnly
           ? `This lets ${appName} use your own Anthropic API key, without exposing the key to the app.`
-          : `This lets ${appName} spend from your daily AI budget (the same one your dev chats use) up to the daily cap below.`,
+          : `This lets ${appName} spend from your daily AI budget (the same one your agent sessions use) up to the daily cap below.`,
         capacity: noCapacity
           ? { t: 'blocked', eligibilityUnavailable }
           : {

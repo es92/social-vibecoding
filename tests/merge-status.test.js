@@ -188,7 +188,7 @@ test("state 4b — 'conflict' (merge attempt failed) is red and says the creator
   assert.equal(life.key, 'merge_conflict');
   assert.equal(life.label, 'Merge failed: conflict');
   assert.equal(life.tone, 'red');
-  assert.match(life.title, /creator needs to finish the merge/);
+  assert.match(life.title, /creator needs to bring it up to date/);
   assert.match(life.title, /Sync with main/);
   // While the auto-resolver actually runs, the in-flight state wins so the
   // card shows progress, not a stale failure.

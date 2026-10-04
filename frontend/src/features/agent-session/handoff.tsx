@@ -233,7 +233,7 @@ export function HandoffPanel({ agent, onClose }: { agent: HandoffAgent; onClose:
     <div className="flex flex-col gap-3 text-sm text-zinc-900 dark:text-zinc-100" data-agent-session-handoff={agent}>
       {target ? <p className="px-1 leading-snug text-zinc-600 dark:text-zinc-300">{lead(agent, target)}</p> : (
         <p className="px-1 leading-snug text-zinc-600 dark:text-zinc-300" data-agent-session-handoff-empty>
-          There is nothing to hand over yet. Tell the Mayor which app to change first, then come back here.
+          There is nothing to hand over yet. Tell the agent which app to change first, then come back here.
         </p>
       )}
       {error ? <p role="alert" className="px-1 text-red-700 dark:text-red-300">{error}</p> : null}

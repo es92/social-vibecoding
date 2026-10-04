@@ -822,7 +822,7 @@ test('priority / category are a VISIBLE no-op on session cards', () => {
   // A dev session carries no such metadata, so hiding it would be silently
   // wrong — it stays, and the column SAYS why the filter didn't apply.
   assert.match(html, /Dark mode work/, 'the session survives an inapplicable filter');
-  assert.match(html, /Regular dev sessions don&#x27;t carry priority, category or assignee/);
+  assert.match(html, /Agent sessions don&#x27;t carry priority, category or assignee/);
   assert.match(html, /not filtered by priority/);
 
   // The predicate itself keeps the attribute filters as an explicit no-op.

@@ -189,8 +189,8 @@ test('empty and truncated states read clearly', () => {
 test('headerText labels both the collapsed and expanded states', () => {
   const ST = load();
   const s = { username: 'alice', message_count: 24 };
-  assert.strictEqual(ST.headerText(s, { expanded: false }), 'Read the dev chat (24 messages)');
-  assert.strictEqual(ST.headerText(s, { expanded: true }), 'Dev chat by alice · 24 messages');
+  assert.strictEqual(ST.headerText(s, { expanded: false }), 'Read the agent session (24 messages)');
+  assert.strictEqual(ST.headerText(s, { expanded: true }), 'Agent session by alice · 24 messages');
   // NOT "· read-only": the toggle renders a `.st-readonly-tag` chip saying so
   // immediately after this line, and carrying it in both places printed
   // "read-only read-only" on every opened transcript.
@@ -201,8 +201,8 @@ test('headerText labels both the collapsed and expanded states', () => {
   // Singular, and a missing count degrades rather than printing "0 messages".
   assert.strictEqual(
     ST.headerText({ username: 'alice', message_count: 1 }, { expanded: true }),
-    'Dev chat by alice · 1 message', 'singular, and nothing after it');
-  assert.strictEqual(ST.headerText({}, { expanded: false }), 'Read the dev chat');
+    'Agent session by alice · 1 message', 'singular, and nothing after it');
+  assert.strictEqual(ST.headerText({}, { expanded: false }), 'Read the agent session');
 });
 
 test('falls back to escaped text when DevChat markdown is unavailable', () => {

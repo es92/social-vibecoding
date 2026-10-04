@@ -331,7 +331,7 @@ function SessionBar({ session, about, embedded, action }: {
   // The row is `min-w-0`, so whatever it holds it cannot widen the panel
   // (#3016). The Messages pane's title is a line of its own above it rather
   // than a sibling the pills wrap around.
-  const focusTitle = 'The app this conversation is about when a request does not name one. The Mayor moves it when you ask.';
+  const focusTitle = 'The app this conversation is about when a request does not name one. The agent moves it when you ask.';
   const changeText = active
     ? changeStatusLabel(active.status, building)
     : 'No change yet';
@@ -463,11 +463,11 @@ function JoinToRetry({ card, join }: { card: CardView; join: { slug: string; nam
   return (
     <div className="mt-3 flex flex-col gap-2" data-agent-session-join={join.slug}>
       <p className="text-sm text-zinc-700 dark:text-zinc-300">
-        Only members of {join.name} can do this. Join it, and the Mayor will try again.
+        Only members of {join.name} can do this. Join it, and the agent will try again.
       </p>
       {state === 'joined' ? (
         <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-600 dark:text-zinc-300" data-agent-session-joined="">
-          <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" /> Joined. Asked the Mayor to try again.
+          <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" /> Joined. Asked the agent to try again.
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
@@ -539,7 +539,7 @@ function Card({ card, live = false }: { card: CardView; live?: boolean }) {
           </Button>
         </div>
       ) : null}
-      {live ? <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Waiting for the Mayor to finish…</p> : null}
+      {live ? <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Waiting for the agent to finish…</p> : null}
       {card.status === 'running' ? (
         <p className="mt-3 inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300"><SpinnerArcIcon className="h-4 w-4 animate-spin" aria-hidden="true" /> Running…</p>
       ) : null}
@@ -578,7 +578,7 @@ const Item = memo(function Item({ item, sessionId = null }: { item: TranscriptIt
       return (
         <article data-agent-session-mayor>
           <p className="mb-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-            Mayor
+            Agent
             {item.cost ? (
               <span className="font-normal text-zinc-500 dark:text-zinc-400" data-agent-session-reply-cost>{` · ${item.cost}`}</span>
             ) : null}
@@ -1282,7 +1282,7 @@ function OutboxRows() {
                   type="button"
                   className={`${action} text-violet-700 dark:text-violet-300`}
                   disabled={busy}
-                  title={busy ? 'The Mayor is still working. You can send this when it finishes' : 'Send this again'}
+                  title={busy ? 'The agent is still working. You can send this when it finishes' : 'Send this again'}
                   data-agent-session-outbox-retry
                   onClick={() => retryOutbox(item.clientId)}
                 >
@@ -1352,7 +1352,7 @@ function LiveTurn({ runShown }: { runShown: boolean }) {
     <>
       {said || working ? (
         <article data-agent-session-live>
-          <p className="mb-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Mayor</p>
+          <p className="mb-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">Agent</p>
           {turn.streamText ? <MayorText text={turn.streamText} /> : null}
           {cards.map((card) => <Card key={card.id} card={card} live />)}
           {working ? (
@@ -1362,7 +1362,7 @@ function LiveTurn({ runShown }: { runShown: boolean }) {
               aria-live="polite"
             >
               <TypingDots />
-              {status ? <span className="min-w-0 truncate">{status}</span> : <span className="sr-only">The Mayor is thinking</span>}
+              {status ? <span className="min-w-0 truncate">{status}</span> : <span className="sr-only">The agent is thinking</span>}
               {turn.phase === 'cc' ? <span className="shrink-0 tabular-nums text-xs">{Math.floor(seconds / 60)}m {seconds % 60}s</span> : null}
             </div>
           ) : null}
@@ -1453,7 +1453,7 @@ function EmptyState({ about, request }: { about: About; request: DraftRequest | 
         ) : null}
         <p className="mt-2 max-w-sm text-sm text-zinc-600 dark:text-zinc-300">
           {app ? <>On <strong>{app}</strong>. </> : null}
-          Send the message below to start. The Mayor reads the request, plans the change with you, and asks the group for approval when you say so.
+          Send the message below to start. The agent reads the request, plans the change with you, and asks the group for approval when you say so.
         </p>
       </section>
     );
@@ -1466,7 +1466,7 @@ function EmptyState({ about, request }: { about: About; request: DraftRequest | 
       <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">New agent session</h3>
       <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-300">
         {app ? <>Started from <strong>{app}</strong>. </> : null}
-        Start a change on any app. The Mayor plans it, builds it, and asks the group for approval when you say so.
+        Start a change on any app. The agent plans it, builds it, and asks the group for approval when you say so.
       </p>
     </section>
   );
@@ -1578,7 +1578,7 @@ function useCredit(): CreditView | null {
   return mounted ? creditView(figures) : null;
 }
 
-const BUSY_PLACEHOLDER = 'The Mayor is working. Type your next message and save it for later.';
+const BUSY_PLACEHOLDER = 'The agent is working. Type your next message and save it for later.';
 const SAVE_TITLE = 'Save this as a draft (Enter). It stays here until you send it';
 
 /**
@@ -1606,7 +1606,7 @@ export function SavedDrafts({ drafts, busy, onSend, onEdit }: {
         <span className="font-semibold uppercase tracking-wide">{`Saved drafts (${drafts.length})`}</span>
         <span>· on all your devices</span>
         {busy
-          ? <span className="ml-auto">sending unlocks when the Mayor finishes</span>
+          ? <span className="ml-auto">sending unlocks when the agent finishes</span>
           : <span className="ml-auto font-semibold text-violet-700 dark:text-violet-300" data-agent-session-drafts-ready>Ready to send</span>}
       </p>
       <ul className="flex flex-col gap-1">
@@ -1621,7 +1621,7 @@ export function SavedDrafts({ drafts, busy, onSend, onEdit }: {
               type="button"
               className={`${button} hover:text-emerald-700 dark:hover:text-emerald-400`}
               aria-label="Send this draft"
-              title={busy ? 'The Mayor is still working. You can send this when it finishes' : 'Send this draft now'}
+              title={busy ? 'The agent is still working. You can send this when it finishes' : 'Send this draft now'}
               disabled={busy}
               data-agent-session-draft-send
               onClick={() => onSend(draft)}
@@ -1916,7 +1916,7 @@ function Composer({ id }: { id: string }) {
         // the Mayor works, Enter and the button keep this as a draft. It is
         // not sent, and nothing sends it on its own.
         <p className="px-2 text-[13px] text-zinc-600 dark:text-zinc-300" data-agent-session-save-note>
-          The Mayor is still working, so this will be <span className="font-semibold">saved as a draft, not sent</span>. Send it from your drafts when it finishes.
+          The agent is still working, so this will be <span className="font-semibold">saved as a draft, not sent</span>. Send it from your drafts when it finishes.
         </p>
       ) : null}
       <textarea
@@ -1927,7 +1927,7 @@ function Composer({ id }: { id: string }) {
         value={value}
         disabled={archived || snapshot.phase === 'loading'}
         placeholder={placeholder}
-        aria-label="Message the Mayor"
+        aria-label="Message the agent"
         className="agent-session-composer-input max-h-36 min-h-[2.5rem] w-full resize-none bg-transparent px-2 py-1.5 text-base text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-400"
         onChange={(event) => update(event.target.value)}
         onPaste={(event) => {
@@ -2128,7 +2128,7 @@ export function ChangesDrawer({ session }: { session: AgentSession }) {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No active change. Ask the Mayor to start one.</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">No active change. Ask the agent to start one.</p>
         )}
         {others.length ? (
           <>

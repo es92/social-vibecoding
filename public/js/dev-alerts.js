@@ -183,7 +183,7 @@
     //  - Browser: a Web Notification, only when permission is granted.
     systemNotify(info) {
       if (!DevAlerts.enabled() || !info) return;
-      const title = info.title || 'Dev chat';
+      const title = info.title || 'Agent session';
       const body = info.body || '';
       if (DevAlerts._isNative()) {
         // The canonical notification already has an FCM delivery. Avoid a
@@ -256,7 +256,7 @@
       const info = {
         kind: 'test_alert',
         title: 'Homeroom test alert',
-        body: 'This is a test of your dev-chat sound & alerts.',
+        body: 'This is a test of your agent session sound and alerts.',
       };
       setTimeout(() => {
         // A native background test is delivered by the server, even when

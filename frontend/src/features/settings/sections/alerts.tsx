@@ -28,14 +28,14 @@ export function AlertsSection() {
   return (
     <div data-settings-section="alerts" className="hidden">
       <div id="settings-alerts-section">
-        <SectionHeading title={<>Dev-chat sound &amp; alerts</>}>
-          Get a heads-up when a dev-chat AI agent finishes and is waiting for your reply.
+        <SectionHeading title={<>Agent session sound &amp; alerts</>}>
+          Get a heads-up when an agent session finishes and is waiting for your reply.
         </SectionHeading>
         <SwitchRow id="devchat-alerts-toggle">
           Play a sound, and notify me when the app is in the background
         </SwitchRow>
         <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
-          When you're in the app a soft chime plays. A browser can show notifications while its tab stays open. To receive push notifications with the mobile app backgrounded or closed, enable Activity notifications on your phone and Developer sessions below. The test queues a phone push with a 10-second delay so you can switch away.
+          When you're in the app a soft chime plays. A browser can show notifications while its tab stays open. To receive push notifications with the mobile app backgrounded or closed, enable Activity notifications on your phone and Agent sessions below. The test queues a phone push with a 10-second delay so you can switch away.
         </p>
         <button
           id="devchat-alerts-test"
@@ -89,8 +89,8 @@ export function AlertsSection() {
             </label>
             <label className="flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="developer_sessions">
               <span>
-                <span className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">Developer sessions</span>
-                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Interactive and unattended coding sessions that finish while you are away.</span>
+                <span className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">Agent sessions</span>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Agent sessions and unattended runs that finish while you are away.</span>
               </span>
               <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
             </label>

@@ -147,7 +147,7 @@ function SocialPush({ s }: { s: UsernodeSectionState }): ReactNode {
   return (
     <UnSection
       title="Homeroom app: activity notifications"
-      description="Get a device notification when a dev session or auto-solve run finishes. Notification content is loaded only after you open Social."
+      description="Get a device notification when an agent session or unattended run finishes. Notification content is loaded only after you open Social."
     >
       {p.kind === 'checking' ? <UnP note={{ text: 'Checking status…' }} /> : null}
       {p.kind === 'unavailable' ? (

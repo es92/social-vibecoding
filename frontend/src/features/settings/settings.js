@@ -640,7 +640,7 @@
             const pushStatus = result.queued
               ? 'Phone push queued. Background or close the mobile app to check for a notification.'
               : result.reason === 'preference_disabled'
-                ? 'Phone push was not queued. Enable Developer sessions under Mobile push categories and try again.'
+                ? 'Phone push was not queued. Enable Agent sessions under Mobile push categories and try again.'
                 : 'Phone push was not queued. Sign in on your phone and enable Activity notifications and notification permission. Push delivery must also be available on the server.';
             let remaining = Math.ceil(result.delayMs / 1000);
             const render = () => {

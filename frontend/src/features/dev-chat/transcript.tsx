@@ -664,7 +664,7 @@ function Bubble({ r }: { r: Extract<TranscriptRow, { t: 'msg' }> }): ReactNode {
           data-persist-id={r.reasoning.details.persistId}
           open={reasoning.open} onToggle={reasoning.onToggle}
         >
-          <summary className="dc-cc-log-toggle">Mayor reasoning (raw)</summary>
+          <summary className="dc-cc-log-toggle">Agent reasoning (raw)</summary>
           <pre className="dc-cc-log-content">{r.reasoning.raw}</pre>
         </details>
       ) : null}

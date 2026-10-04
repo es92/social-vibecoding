@@ -252,8 +252,8 @@
     if (mcs === 'conflict') {
       return descriptor('merge_conflict', 'Merge failed: conflict', 'red', false, {
         glyph: '⚠', votes: votes,
-        title: 'A merge was attempted but this proposal conflicts with main. '
-          + 'The proposal\u2019s creator needs to finish the merge from their dev session ("Sync with main").',
+        title: 'Going live was attempted but this change conflicts with main. '
+          + 'The change\u2019s creator needs to bring it up to date from their agent session ("Sync with main").',
       });
     }
     // 4c (#1442) — GitHub predicts the NEXT merge will conflict. States 4/4b
@@ -272,12 +272,12 @@
       // once beforehand, unasked), so the creator is never the ONLY way out
       // unless the lane has said so.
       var who = served.indexOf('unresolvable') !== -1
-        ? 'The platform tried to resolve it and could not. The proposal\u2019s creator needs to bring it up to date from their dev session ("Sync with main").'
+        ? 'The platform tried to resolve it and could not. The change\u2019s creator needs to bring it up to date from their agent session ("Sync with main").'
         : served.indexOf('fork_head') !== -1
           ? 'Its branch lives on the creator\u2019s own fork, which the platform cannot write to, so only the creator can bring it up to date.'
           : served.indexOf('awaiting_approval') !== -1
-            ? 'The platform resolves it once the vote passes. The creator can bring it up to date sooner from their dev session ("Sync with main").'
-            : 'The platform resolves it automatically. The creator can also bring it up to date from their dev session ("Sync with main").';
+            ? 'The platform resolves it once the vote passes. The creator can bring it up to date sooner from their agent session ("Sync with main").'
+            : 'The platform resolves it automatically. The creator can also bring it up to date from their agent session ("Sync with main").';
       return descriptor('mergeability_conflict',
         nf ? 'Conflicts with main · ' + nf : 'Conflicts with main', 'red', false, {
           glyph: '⚠', votes: votes,

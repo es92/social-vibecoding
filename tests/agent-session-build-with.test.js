@@ -102,7 +102,7 @@ test('#3078: the Homeroom tab says who builds it and lists the models once, unde
     value: 'openrouter:z-ai/glm-5', onPick() {}, credit: null,
     effort: { value: '', options: [{ value: '', label: 'High', isDefault: true }], onPick() {} },
   }));
-  assert.match(body, /^<div[^>]*><p[^>]*>The Mayor builds it here, on your Homeroom credits\.<\/p>/);
+  assert.match(body, /^<div[^>]*><p[^>]*>The agent builds it here, on your Homeroom credits\.<\/p>/);
   assert.equal((body.match(/>Model<\/p>/g) || []).length, 1, 'one list');
   assert.doesNotMatch(body, />Claude Code<|>Codex</, 'no agent headings: those are the other tabs');
   assert.ok(body.indexOf('Sonnet 5.5') < body.indexOf('GLM 5'), 'Claude first, as before');

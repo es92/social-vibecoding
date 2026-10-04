@@ -728,13 +728,13 @@ export async function sendTurn(
     signal,
   });
   if (!response.ok) {
-    await json(response, 'The Mayor could not take that message.');
+    await json(response, 'The agent could not take that message.');
     return { duplicate: false };
   }
   // The stream is the answer; JSON is the exception: the server already had
   // this message (a retry after a dropped connection).
   if (/application\/json/.test(response.headers?.get?.('Content-Type') || '')) {
-    const body = await json<{ duplicate?: boolean; messageId?: number }>(response, 'The Mayor could not take that message.');
+    const body = await json<{ duplicate?: boolean; messageId?: number }>(response, 'The agent could not take that message.');
     return { duplicate: !!body.duplicate, messageId: body.messageId ?? null };
   }
   await readEventStream(response, onEvent);

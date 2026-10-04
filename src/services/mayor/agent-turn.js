@@ -54,7 +54,7 @@ const LEASE_RENEW_MS = 15_000;
 const EMPTY_REPLY_TEXT = 'I could not put an answer together that time. Could you say that again?';
 // What the conversation says about a turn that ended with its process: a
 // deploy replacing the platform's pod, or a crash. The screen offers Retry.
-const INTERRUPTED_TEXT = 'The Mayor was interrupted by a platform update before it finished. Retry to pick it up again.';
+const INTERRUPTED_TEXT = 'The agent was interrupted by a platform update before it finished. Retry to pick it up again.';
 // What the model is told on Retry: its last attempt at this turn left no
 // answer, and the user asked for one.
 const RETRY_NOTE = '[HOMEROOM] Your last answer to this was cut off by a platform restart before it finished, and '
@@ -204,7 +204,7 @@ async function resolveAgentMayor({ pool, config, userId, agentSessionId, request
     if (resolved.error) {
       return {
         ok: false, status: 503, code: 'mayor_unavailable',
-        error: `Your OpenRouter setup cannot run the Mayor (${resolved.error}). Check your coding agent in Settings.`,
+        error: `Your OpenRouter setup cannot run the agent (${resolved.error}). Check your coding agent in Settings.`,
       };
     }
     if (resolved.usesIncludedKey) {
@@ -968,7 +968,7 @@ async function runAgentTurn({
       }).catch(() => {});
     } else {
       log.error('agent-mayor', 'Agent turn failed', { agentSessionId, err: err.message });
-      send('error', { error: 'The Mayor could not finish this turn. Try again.' });
+      send('error', { error: 'The agent could not finish this turn. Try again.' });
       await d.agentSessions.appendConversationEvent(pool, {
         agentSessionId,
         content: 'The last turn did not finish.',

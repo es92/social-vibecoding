@@ -300,7 +300,7 @@ test('the composer keeps what was typed per conversation, and the drafts list of
   assert.match(busy, /data-agent-session-drafts="2"/);
   assert.match(busy, />Saved drafts \(2\)</);
   assert.match(busy, /on all your devices/);
-  assert.match(busy, /sending unlocks when the Mayor finishes/);
+  assert.match(busy, /sending unlocks when the agent finishes/);
   assert.equal((busy.match(/aria-label="Send this draft"[^>]*disabled=""/g) || []).length, 2, 'no send mid-turn');
   const idle = renderToHtml(createElement(SavedDrafts, { drafts, busy: false, onSend() {}, onEdit() {} }));
   assert.doesNotMatch(idle, /disabled=""/);
@@ -314,7 +314,7 @@ test('the composer keeps what was typed per conversation, and the drafts list of
     'Save only with something typed, and never while stopping: Stop fills the box under its own click');
   assert.match(panel, /key="save"\s+type="submit"/, 'Save and Stop are different buttons, so a type flip never lands on one click');
   assert.match(panel, /if \(running\) \{\s*if \(saveComposerDraft\(text\)\) update\(''\);\s*return;\s*\}/, 'Enter mid-turn parks, never sends');
-  assert.match(panel, /The Mayor is working\. Type your next message and save it for later\./);
+  assert.match(panel, /The agent is working\. Type your next message and save it for later\./);
 });
 
 // ── 4. What a typical change costs ─────────────────────────────────────
@@ -420,7 +420,7 @@ test('the outline is the card\'s in every engine; the Mayor at work is three dot
   assert.match(panel, /className="agent-session-composer-input /);
   assert.doesNotMatch(panel, /rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700/, 'the full-width bubble is gone');
   assert.match(panel, /<TypingDots \/>/);
-  assert.match(panel, /<span className="sr-only">The Mayor is thinking<\/span>/, 'said to a screen reader when the dots say it alone');
+  assert.match(panel, /<span className="sr-only">The agent is thinking<\/span>/, 'said to a screen reader when the dots say it alone');
 
   const devChat = read('frontend/src/features/dev-chat/dev-chat.js');
   assert.match(devChat, /\|\| \(DevChat\._agentSessionThinking \? 'thinking' : null\)/, 'one title writer, one marker');

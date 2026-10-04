@@ -18,7 +18,7 @@ const CATEGORIES = [
   ['direct_interactions', 'Direct interactions', true],
   ['invitations', 'Invitations', true],
   ['shared_work', 'Shared work', true],
-  ['developer_sessions', 'Developer sessions', true],
+  ['developer_sessions', 'Agent sessions', true],
   ['proposal_alerts', 'Change alerts', true],
   ['app_alerts', 'App alerts', true],
   ['lightweight_activity', 'Lightweight activity', false],

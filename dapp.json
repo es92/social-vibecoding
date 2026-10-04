@@ -1119,7 +1119,7 @@
     {
       "name": "Dev board cards offer Explore in a coding agent — on the card face or in its ⋯ menu (#827, #1135)",
       "path": "/?demo=1&shot=card-menu&card=proposal:9000043&cards=open#app/usernode-2d5619/board",
-      "expectSelector": "[data-proposal-id=\"9000043\"][title^=\"Open a dev chat with a message about this PR\"], .dev-card-menu [data-menu-idx][title^=\"Open a dev chat with a message about this PR\"]",
+      "expectSelector": "[data-proposal-id=\"9000043\"][title^=\"Open an agent session with a message about this change\"], .dev-card-menu [data-menu-idx][title^=\"Open an agent session with a message about this change\"]",
       "expectText": "Explore in a coding agent"
     },
     {

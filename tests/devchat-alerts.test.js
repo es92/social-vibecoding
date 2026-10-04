@@ -488,7 +488,7 @@ test('settings reports queue outcomes and never turns a countdown into a deliver
   const end = src.indexOf('// Account-level remote-push categories', start);
   for (const [result, expected] of [
     [{ queued: true, delayMs: 10000 }, /queued for delivery/],
-    [{ queued: false, reason: 'preference_disabled', delayMs: 10000 }, /Enable Developer sessions/],
+    [{ queued: false, reason: 'preference_disabled', delayMs: 10000 }, /Enable Agent sessions/],
     [{ queued: false, reason: 'no_eligible_device', delayMs: 10000 }, /Sign in on your phone/],
     [new Error('Please wait a minute'), /Please wait a minute/],
   ]) {

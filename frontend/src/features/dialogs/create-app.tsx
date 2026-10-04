@@ -1587,7 +1587,7 @@ export function CreateAppDialog() {
             >
               <span className="min-w-0 flex-1">
                 <span className={CHOICE_TITLE}>Import a GitHub repo</span>
-                <span className={CHOICE_CAPTION}>Bring an app that already exists. You will invite the bot to it first.</span>
+                <span className={CHOICE_CAPTION}>Bring an app that already exists. First you add our GitHub account, usernode-bot, to the repo.</span>
               </span>
               <span className={CHOICE_CHANGE}>Change</span>
             </button>

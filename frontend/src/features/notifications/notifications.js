@@ -1791,8 +1791,8 @@ function completionAlertInfo(n) {
     appSlug: n.appSlug || null,
     sessionId: n.sessionId || null,
     headlessIssueNumber: null,
-    title: 'Dev session finished',
-    body: `Your dev session in ${appName} finished: ${label}`,
+    title: 'Agent session finished',
+    body: `Your agent session in ${appName} finished: ${label}`,
   };
 }
 

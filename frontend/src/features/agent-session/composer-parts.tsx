@@ -238,7 +238,7 @@ export function ModelSheetBody({ options, value, onPick, effort, credit }: {
   const row = 'flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700/60';
   return (
     <div className="flex flex-col gap-3" data-agent-session-model-sheet>
-      <p className="px-1 text-sm leading-snug text-zinc-600 dark:text-zinc-300">The Mayor builds it here, on your Homeroom credits.</p>
+      <p className="px-1 text-sm leading-snug text-zinc-600 dark:text-zinc-300">The agent builds it here, on your Homeroom credits.</p>
       {options.length ? (
         <div className="flex flex-col gap-1">
           <p className="px-1 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Model</p>

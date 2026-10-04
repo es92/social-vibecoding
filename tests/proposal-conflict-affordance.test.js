@@ -86,7 +86,7 @@ test("card: a 'conflict' snapshot (merge attempt failed) shows a red 'needs auth
   }));
   assert.match(html, /<span class="dev-badge [^"]*red[^"]*"[^>]*>Needs author to sync with main<\/span>/,
     'the tag names the conflict after a real attempt');
-  assert.match(html, /creator needs to finish the merge/, 'tooltip names the way out');
+  assert.match(html, /creator needs to bring it up to date/, 'tooltip names the way out');
   assert.doesNotMatch(html, /gc-vote-count-blocked/, 'the bar is the vote');
   // "Outranks" was a rule the BAR needed, because it had one slot. Tags have
   // no such scarcity: both facts are true, so both are drawn, worst first.
@@ -141,7 +141,7 @@ test("detail: a 'conflict' snapshot renders the merge-failed detail box naming t
   }));
   assert.match(html, /A merge was attempted, but this proposal conflicts with main\./, 'merge-failed heading present');
   assert.match(html, /src\/app\.js/, 'lists the conflicting files');
-  assert.match(html, /me<\/span> needs to finish the merge/, 'names the creator as the one who must act');
+  assert.match(html, /me<\/span> needs to bring it up to date/, 'names the creator as the one who must act');
   assert.match(html, /Sync with main/, 'points at the dev-chat sync action');
 });
 
@@ -237,13 +237,13 @@ test('pill: the block reason for an imported proposal carries the same remedy', 
   const mirror = AppView.blockReasons(mirrorProposal({ merge_conflict_state: 'conflict' }));
   assert.equal(mirror[0].key, 'merge_conflict');
   assert.match(mirror[0].detail, /Homeroom keeps this branch itself/);
-  assert.doesNotMatch(mirror[0].detail, /dev session/);
+  assert.doesNotMatch(mirror[0].detail, /agent session/);
   const fork = AppView.blockReasons(forkProposal({ merge_conflict_state: 'failed' }));
   assert.equal(fork[0].key, 'conflict_failed');
   assert.match(fork[0].detail, /cannot write to/);
   // A native row keeps the sentence the pill has always carried.
   const native = AppView.blockReasons(baseProposal({ merge_conflict_state: 'conflict' }));
-  assert.match(native[0].detail, /Its creator needs to finish the merge from their dev session/);
+  assert.match(native[0].detail, /Its creator needs to bring it up to date from their agent session/);
 });
 
 test("detail: a 'conflict' snapshot with the resolver in flight renders nothing (progress badge covers it)", () => {

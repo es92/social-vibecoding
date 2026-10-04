@@ -38,8 +38,8 @@ const CATEGORY_DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     key: 'developer_sessions',
-    label: 'Developer sessions',
-    description: 'Interactive and unattended coding sessions that finish while you are away.',
+    label: 'Agent sessions',
+    description: 'Agent sessions and unattended runs that finish while you are away.',
     defaultEnabled: true,
     // #1405's two join this category rather than getting one of their own:
     // both are "a coding session did something while you were away", which is

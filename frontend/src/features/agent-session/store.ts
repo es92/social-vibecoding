@@ -443,7 +443,7 @@ function inFlight(): Set<string> {
 }
 
 const NOT_SENT_TEXT = 'Could not reach Homeroom, so this was not sent.';
-const BUSY_REFUSED_TEXT = 'The Mayor was still answering, so this was not sent.';
+const BUSY_REFUSED_TEXT = 'The agent was still answering, so this was not sent.';
 const STRANDED_TEXT = 'This was not sent.';
 
 /**
@@ -795,7 +795,7 @@ export function handleEvent(id: number, event: AgentTurnEvent) {
       break;
     case 'error':
       if (!fromChange) {
-        publish({ error: typeof event.error === 'string' ? event.error : 'The Mayor could not finish this turn.' });
+        publish({ error: typeof event.error === 'string' ? event.error : 'The agent could not finish this turn.' });
         void requestSync(id);
       }
       break;
@@ -1330,7 +1330,7 @@ export async function sendAgentMessage(text: string, { retryOf = null }: { retry
           } else if ((error as { body?: { busy?: boolean } }).body?.busy) {
             fail(BUSY_REFUSED_TEXT);
           } else {
-            fail(errorText(error, 'The Mayor could not take this, so it was not sent.'));
+            fail(errorText(error, 'The agent could not take this, so it was not sent.'));
           }
         }
       } else if (!taken) {

@@ -242,10 +242,10 @@
     const count = Number(s.message_count);
     const n = Number.isFinite(count) && count > 0 ? count : null;
     if (opts && opts.expanded) {
-      return 'Dev chat by ' + (s.username || 'them')
+      return 'Agent session by ' + (s.username || 'them')
         + (n ? ' · ' + n + ' message' + (n === 1 ? '' : 's') : '');
     }
-    return n ? 'Read the dev chat (' + n + ' messages)' : 'Read the dev chat';
+    return n ? 'Read the agent session (' + n + ' messages)' : 'Read the agent session';
   }
 
   window.SessionTranscript = { renderHtml, headerText, _esc: esc };
