@@ -1006,14 +1006,10 @@ function ChangeHero({ id, card, body, linkedIssues, onIssuesSaved }: {
   return (
     <section className="dev-topic-sheet dev-topic-hero" data-topic-sheet="hero" data-ws-tint={h.tint}>
       <div className="dev-topic-hero-top">
+        {/* B10b: what the page is and where it stands. The pull request it
+            names is in Details. */}
         <span className="dev-ws-eyebrow dev-topic-hero-eyebrow">
-          {h.ref ? (
-            <>
-              {`${h.kind} · `}
-              {h.ref.href ? <a href={h.ref.href} target="_blank" rel="noopener">{h.ref.s}</a> : <span>{h.ref.s}</span>}
-              {h.status ? <span>{` · ${h.status}`}</span> : null}
-            </>
-          ) : (h.status ? `${h.kind} · ${h.status}` : h.kind)}
+          {h.status ? `${h.kind} · ${h.status}` : h.kind}
         </span>
         {h.age ? <span className="dev-ws-item-of" title={h.age.title}>{h.age.s}</span> : null}
       </div>
@@ -1059,6 +1055,7 @@ function ChangeHero({ id, card, body, linkedIssues, onIssuesSaved }: {
       {body.summaryStale && body.summaryHtml
         ? <p className="dev-topic-note" role="note">This summary may describe an earlier revision.</p>
         : null}
+      {body.tested && id ? <TestedLine id={id} t={body.tested} /> : null}
       {hasIssues ? (
         <IssueAssociations
           proposalId={Number(id)}
@@ -1072,6 +1069,27 @@ function ChangeHero({ id, card, body, linkedIssues, onIssuesSaved }: {
       <BeforeAfter body={body} />
       {body.note ? <div className="dev-topic-note">{body.note}</div> : null}
     </section>
+  );
+}
+
+/** B10b: the Tested line's mark, in the steps' own glyphs. */
+const TESTED_MARK: Record<string, string> = {
+  passed: '✓', failed: '✕', skipped: '·', broken: '!',
+};
+
+/**
+ * B10b: one line for what testing found, where the steps list and its checks
+ * used to be. A tap opens Details at the Checks part.
+ */
+function TestedLine({ id, t }: { id: number; t: NonNullable<TopicBody['tested']> }): ReactNode {
+  const open = () => (window as any).AppView?.openTechnicalDetails(id, 'checks');
+  return (
+    <button type="button" className="dev-topic-tested" data-tested={t.state} onClick={open}>
+      <span className={`dev-topic-tested-mark dev-topic-tested-mark-${t.state}`} aria-hidden="true">
+        {t.state === 'running' ? <Spinner /> : (TESTED_MARK[t.state] || '·')}
+      </span>
+      <span>{t.text}</span>
+    </button>
   );
 }
 
@@ -1311,16 +1329,72 @@ function StepsSheet({ s, help }: { s: StepsView; help: boolean }): ReactNode {
 }
 
 /**
- * Technical details — the pull request's description, or the spec a change
- * under way is built from — as a sheet over the page, opened from the ⋯
- * menu's row (`AppView.openTechnicalDetails`, the same event shape the Build
- * sheet listens for). Portalled to the body like the vote picker: a
- * `position: fixed` box inside a frosted sheet would be contained by it.
+ * B10b: what a builder reviews, one tap down from the page: the pull request
+ * and its GitHub link, the steps with their checks (the sheet that sat under
+ * the hero, whole: every id, data-note and control is as it was), and the
+ * description, or the spec a change under way is built from.
  */
-function DetailsSheet({ id, html }: { id: number; html: string }): ReactNode {
-  const [open, setOpen] = useState(false);
+export function DetailsBody({ prRef, steps, help, html }: {
+  prRef: HeroView['ref'];
+  steps: StepsView | null | undefined;
+  help: boolean;
+  html: string;
+}): ReactNode {
+  return (
+    <>
+      {prRef ? (
+        <p className="dev-details-pr" data-details-part="pr">
+          <span>{prRef.s}</span>
+          {prRef.href ? <a href={prRef.href} target="_blank" rel="noopener">Open on GitHub</a> : null}
+        </p>
+      ) : null}
+      {steps ? <StepsSheet s={steps} help={help} /> : null}
+      {html ? (
+        <section className="dev-details-part" data-details-part="description">
+          <h5 className="dev-details-sub">Description</h5>
+          {/* DevChat.renderMarkdown's output — sanitised where it is built. */}
+          <Html className="dev-issue-body dev-topic-details-body" html={html} />
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+// B10b: `?details=1` opens the first change page's Details as it loads, so a
+// declared check can read what moved there. Once: a later page opens shut.
+let detailsFromUrl = typeof window !== 'undefined'
+  && /(?:^|[?&])details=1(?:&|$)/.test(String(window.location?.search || ''));
+
+/**
+ * Details as a sheet over the page, opened from the ⋯ menu's row or the
+ * Tested line (`AppView.openTechnicalDetails`, with the part to open at).
+ * Portalled to the body like the vote picker: a `position: fixed` box inside
+ * a frosted sheet would be contained by it. It stays mounted, hidden while
+ * shut, so the steps it carries are on the page for whoever reads them by
+ * selector.
+ */
+function DetailsSheet({ id, prRef, steps, help, html }: {
+  id: number;
+  prRef: HeroView['ref'];
+  steps: StepsView | null | undefined;
+  help: boolean;
+  html: string;
+}): ReactNode {
+  const [open, setOpen] = useState(() => {
+    if (!detailsFromUrl) return false;
+    detailsFromUrl = false;
+    return true;
+  });
+  const [part, setPart] = useState<string | null>(null);
+  const card = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const onOpen = (event: Event) => { if (Number((event as CustomEvent).detail) === id) setOpen(true); };
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      const target = detail && typeof detail === 'object' ? Number(detail.id) : Number(detail);
+      if (target !== id) return;
+      setPart(detail && typeof detail === 'object' && detail.part ? String(detail.part) : null);
+      setOpen(true);
+    };
     window.addEventListener('change-details-open', onOpen);
     return () => window.removeEventListener('change-details-open', onOpen);
   }, [id]);
@@ -1330,18 +1404,23 @@ function DetailsSheet({ id, html }: { id: number; html: string }): ReactNode {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
-  if (!open || typeof document === 'undefined') return null;
+  useEffect(() => {
+    if (!open || !card.current) return;
+    if (!part) { card.current.scrollTop = 0; return; }
+    const at = card.current.querySelector(`[data-note="${part}"]`) as HTMLElement | null;
+    if (at && typeof at.scrollIntoView === 'function') at.scrollIntoView({ block: 'start' });
+  }, [open, part]);
+  if (typeof document === 'undefined') return null;
   return createPortal(
-    <div className="dev-details-scrim" data-change-details={id} onClick={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <div className="dev-details-card" role="dialog" aria-modal="true" aria-label="Technical details">
+    <div className="dev-details-scrim" hidden={!open} data-change-details={id} onClick={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+      <div ref={card} className="dev-details-card" role="dialog" aria-modal="true" aria-label="Details">
         <div className="dev-details-head">
-          <h4 className="dev-topic-h">Technical details</h4>
+          <h4 className="dev-topic-h">Details</h4>
           <button type="button" className="dev-details-close" aria-label="Close" onClick={() => setOpen(false)}>
             <XIcon className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
-        {/* DevChat.renderMarkdown's output — sanitised where it is built. */}
-        <Html className="dev-issue-body dev-topic-details-body" html={html} />
+        <DetailsBody prRef={prRef} steps={steps} help={help} html={html} />
       </div>
     </div>,
     document.body,
@@ -1454,7 +1533,6 @@ export function ChangeDetail({ card: initialCard, body: initialBody, item, owner
       {changePage ? (
         <>
           <ChangeHero id={id ? Number(id) : null} card={card} body={body} linkedIssues={linkedIssues} onIssuesSaved={applyLinkedIssues} />
-          {body.steps ? <StepsSheet s={body.steps} help={!!(body.details && body.details.help)} /> : null}
           {/* #2605: a change's page carries NO build surface — not the Build
               sheet, and not the published chat's disclosure that used to sit
               beside it. Both are the dev session page's now, behind the
@@ -1463,7 +1541,15 @@ export function ChangeDetail({ card: initialCard, body: initialBody, item, owner
           {/* The GitHub thread's host (issue-comments.tsx mounts into it):
               a body that carries one gets it whatever page it is on. */}
           {body.comments ? <div id="dev-issue-comments" className="dev-topic-sheet dev-topic-comments"></div> : null}
-          {body.proposalBody && id ? <DetailsSheet id={Number(id)} html={body.proposalBody.html} /> : null}
+          {id ? (
+            <DetailsSheet
+              id={Number(id)}
+              prRef={body.hero?.ref || null}
+              steps={body.steps}
+              help={!!(body.details && body.details.help)}
+              html={body.proposalBody?.html || ''}
+            />
+          ) : null}
           {id && active && av?._canEditDescription(session) ? <DescriptionEditor key={id} id={Number(id)} onSaved={(data) => {
             const patch = { pr_summary_md: data.description, pr_summary_input_version: data.version,
               pr_summary_source: 'author', pr_summary_stale: data.stale, pr_body: data.prBody ?? session?.pr_body };

@@ -124,7 +124,11 @@ const BLANK_CARD = {
 function detailsHtml(AppView, pr) {
   const body = { actions: null, changeId: pr.id || 1, details: AppView._proposalDetailsView(pr) };
   body.steps = AppView._topicStepsView(pr, BLANK_CARD, body);
-  return topicHeadHtml(BLANK_CARD, body);
+  // B10b: the steps are drawn in Details (topic-head.tsx DetailsBody), the
+  // sheet the page keeps mounted beside it; the page and the sheet, in the
+  // order the document holds them.
+  return topicHeadHtml(BLANK_CARD, body)
+    + renderToHtml(createElement(mod().DetailsBody, { prRef: null, steps: body.steps, help: !!body.details.help, html: '' }));
 }
 
 /** The detail ACTION block alone — the pills, the reasons, the visuals. */

@@ -4609,6 +4609,7 @@ const AppView = {
     if (body.changeId) {
       body.hero = AppView._topicHeroView(t.kind, item);
       body.steps = AppView._topicStepsView(item, card, body);
+      body.tested = AppView._testedLine(item);
     }
     body.aboutTitle = { issue: 'About this issue', proposal: 'About this change', session: 'About this change', gov: 'About this proposal' }[t.kind] || 'About';
     return { card, body };
@@ -4737,29 +4738,27 @@ const AppView = {
           }] },
         });
       }
-      // The rows the band now carries leave the menu — with one guard. The
-      // ⋯ is where the band's pills fold on a narrow screen, and a trigger
-      // over no rows is a dead button, so it never opens empty: when nothing
-      // of the menu's own would be left (no GitHub link, no admin or owner
-      // row), Share stays a ⋯ row rather than becoming the band's last pill.
+      // The rows the band now carries leave the menu. The ⋯ is where the
+      // band's pills fold on a narrow screen, and a trigger over no rows is a
+      // dead button; Details is always one of its rows on a change page
+      // (below), so it never opens empty.
       const shareRow = menu.find((a) => a.icon === 'share') || null;
       for (let i = menu.length - 1; i >= 0; i -= 1) if (['explore', 'kudos'].includes(menu[i].icon)) menu.splice(i, 1);
-      const ownRows = menu.some((a) => a !== shareRow) || !!gh;
-      if (shareRow && ownRows) menu.splice(menu.indexOf(shareRow), 1);
-      const band = shareRow && !ownRows ? onBand.filter((a) => a.key !== 'share') : onBand;
+      if (shareRow) menu.splice(menu.indexOf(shareRow), 1);
       card.actions = [
         ...(card.actions || []).filter((a) => a.explore == null && a.kudos == null),
-        ...band,
+        ...onBand,
       ];
     }
-    // The technical half — the pull request's description, or the spec a
-    // change under way is built from — is a ⋯ row that opens a sheet over
-    // the page (topic-head.tsx DetailsSheet). A voter reads the summary on
-    // the page; whoever reviews the code opens this.
-    if (body.changeId && body.proposalBody) {
+    // B10b: the technical half is one tap down. The pull request and its
+    // GitHub link, the steps with their checks, and the description (or the
+    // spec a change under way is built from) are a sheet the ⋯ row opens over
+    // the page (topic-head.tsx DetailsSheet). A voter reads the summary and
+    // the Tested line on the page; whoever reviews the code opens this.
+    if (body.changeId) {
       menu.unshift({
-        label: 'Technical details', icon: 'details',
-        title: 'What changed and why, as the pull request describes it',
+        label: 'Details', icon: 'details',
+        title: 'The pull request, its steps and checks, and its description',
         act: () => AppView.openTechnicalDetails(item.id),
       });
     }
@@ -4769,7 +4768,7 @@ const AppView = {
         act: () => window.dispatchEvent(new CustomEvent('change-description-edit', { detail: Number(item.id) })),
       });
     }
-    if (gh && !menu.some((a) => a.label === 'Open on GitHub')) {
+    if (gh && !body.changeId && !menu.some((a) => a.label === 'Open on GitHub')) {
       menu.push({ label: 'Open on GitHub', icon: 'github', act: () => window.open(gh, '_blank', 'noopener') });
     }
     card.rail.menuKey = AppView._registerCardMenu(`detail:${kind}:${item.id || item.number}`, menu);
@@ -4820,7 +4819,9 @@ const AppView = {
     if (agent) bits.push(`built with ${agent}`);
     if (item.source === 'maintenance') bits.push('platform maintenance');
     return {
-      kind: kind === 'session' ? 'Change' : 'Proposal',
+      // B10b: the eyebrow is "Change · Waiting for approval"; the pull
+      // request it names moved into Details (`ref`, drawn there).
+      kind: 'Change',
       ref: n ? { s: `PR#${n}`, href: item.pr_url || null } : null,
       status,
       age: age ? { s: age.s, title: age.title } : null,
@@ -5230,9 +5231,9 @@ const AppView = {
     const specStandIn = !body.proposalBody && mine && underway && !!item.spec_md;
     if (specStandIn) body.proposalBody = AppView._proposalBodyView({ ...item, pr_body: item.spec_md });
     body.summaryHtml ||= specStandIn
-      ? '<p>No short summary has been added yet. The spec this change is built from is under Technical details.</p>'
+      ? '<p>No short summary has been added yet. The spec this change is built from is under Details.</p>'
       : body.proposalBody
-        ? '<p>No short summary has been added yet. The current description is under Technical details.</p>'
+        ? '<p>No short summary has been added yet. The current description is under Details.</p>'
         : '<p>No change summary has been added yet.</p>';
     const md = item.testing_md || '';
     body.testing = { html: md ? AppView._proposalBodyView({ pr_body: md })?.html : null, path: item.testing_path || null };
@@ -5372,8 +5373,23 @@ const AppView = {
 
   // The ⋯ row's call: the change page's DetailsSheet (topic-head.tsx)
   // listens for its own change id.
-  openTechnicalDetails(id) {
-    window.dispatchEvent(new CustomEvent('change-details-open', { detail: Number(id) }));
+  // B10b: Details opens at the top, or at one part (`'checks'`, from the
+  // Tested line).
+  openTechnicalDetails(id, part = null) {
+    window.dispatchEvent(new CustomEvent('change-details-open', { detail: part ? { id: Number(id), part } : Number(id) }));
+  },
+
+  // B10b: the one Tested line a change page shows, in place of the steps
+  // list and its checks: what testing found, in words, from the latest run.
+  // A tap opens Details at the Checks part. Nothing before the first run.
+  _testedLine(item) {
+    const state = item && item.check_state;
+    if (!state) return null;
+    if (state === 'passing') return { state: 'passed', text: 'Tested · All checks passed' };
+    if (state === 'pending') return { state: 'running', text: 'Testing it…' };
+    if (state === 'failing') return { state: 'failed', text: 'Testing found a problem' };
+    if (state === 'skipped') return { state: 'skipped', text: 'Not tested' };
+    return { state: 'broken', text: 'Testing couldn’t finish' };
   },
 
   _canEditDescription(item) {

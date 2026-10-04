@@ -67,34 +67,49 @@ const PR = {
 };
 
 const plain = (o) => JSON.parse(JSON.stringify(o));
+// B10b: the steps, the pull request and the description are Details, a
+// sheet the page keeps mounted in the body (DetailsSheet portals, so a
+// server render of the page has none of it). `page` is the page, `details`
+// the sheet's contents, and `html` both, in the order the document holds
+// them.
 const render = (av, item, kind = 'proposal') => {
-  const { ChangeDetail } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
+  const { ChangeDetail, DetailsBody } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
   const v = av._topicViewFor(kind, item);
-  return { v, html: renderToHtml(createElement(ChangeDetail, { card: v.card, body: v.body, item, conversation: true })) };
+  const page = renderToHtml(createElement(ChangeDetail, { card: v.card, body: v.body, item, conversation: true }));
+  const details = renderToHtml(createElement(DetailsBody, {
+    prRef: v.body.hero ? v.body.hero.ref : null, steps: v.body.steps,
+    help: !!(v.body.details && v.body.details.help), html: v.body.proposalBody ? v.body.proposalBody.html : '',
+  }));
+  return { v, page, details, html: page + details };
 };
 
-test('the page is the hero, the steps sheet and the Discussion, in that order, and nothing the old shape had', () => {
+test('the page is the hero and the Discussion, the steps are in Details, and nothing the old shape had', () => {
   const av = context();
-  const { html } = render(av, PR);
-  const at = (s) => { const i = html.indexOf(s); assert.ok(i >= 0, s); return i; };
-  assert.ok(at('class="dev-topic-sheet dev-topic-hero"') < at('class="dev-topic-sheet dev-topic-steps"'));
-  assert.ok(at('dev-topic-steps') < at('data-change-conversation="4090"'));
+  const { html, page, details } = render(av, PR);
+  const at = (s) => { const i = page.indexOf(s); assert.ok(i >= 0, s); return i; };
+  assert.ok(at('class="dev-topic-sheet dev-topic-hero"') < at('data-change-conversation="4090"'));
+  // B10b: the steps moved one tap down, whole.
+  assert.ok(!page.includes('dev-topic-steps'), 'no steps sheet on the page');
+  assert.ok(details.includes('class="dev-topic-sheet dev-topic-steps"'));
   for (const gone of ['dev-topic-card"', 'dev-topic-about"', 'dev-topic-ledger', 'dev-topic-more', 'About this change',
     'What changes for you', 'Where it stands', 'More about this change', 'Testing instructions', 'dev-topic-fold']) {
     assert.ok(!html.includes(gone), `${gone} is not on the page`);
   }
 });
 
-test('the hero: the eyebrow with the pull request and its state, the age, the title, the by-line, the tags as chips', () => {
+test('the hero: the eyebrow with its state, the age, the title, the by-line, the tags as chips', () => {
   const av = context();
-  const { v, html } = render(av, PR);
+  const { v, html, page, details } = render(av, PR);
   const hero = plain(v.body.hero);
   assert.deepEqual(hero, {
-    kind: 'Proposal', ref: { s: 'PR#12', href: 'https://github.com/example/app/pull/12' }, status: 'Waiting for approval',
+    kind: 'Change', ref: { s: 'PR#12', href: 'https://github.com/example/app/pull/12' }, status: 'Waiting for approval',
     age: hero.age, author: 'maya', verb: 'proposed', provenance: null, tint: 'b',
   });
   assert.ok(v.body.hero.age && v.body.hero.age.s, 'the age is the card meta line’s own part');
-  assert.match(html, /<span class="dev-ws-eyebrow dev-topic-hero-eyebrow">Proposal · <a href="https:\/\/github\.com\/example\/app\/pull\/12" target="_blank" rel="noopener">PR#12<\/a><span> · Waiting for approval<\/span><\/span><span class="dev-ws-item-of"[^>]*>/);
+  // B10b: "Change · Waiting for approval"; the pull request is Details'.
+  assert.match(page, /<span class="dev-ws-eyebrow dev-topic-hero-eyebrow">Change · Waiting for approval<\/span><span class="dev-ws-item-of"[^>]*>/);
+  assert.ok(!page.includes('PR#12') && !page.includes('github.com/example/app/pull/12'), 'no pull request on the page');
+  assert.match(details, /^<p class="dev-details-pr" data-details-part="pr"><span>PR#12<\/span><a href="https:\/\/github\.com\/example\/app\/pull\/12" target="_blank" rel="noopener">Open on GitHub<\/a><\/p>/);
   assert.match(html, /<h2 class="dev-ws-item-title dev-topic-hero-title">Authenticate previews<\/h2>/);
   assert.match(html, /<p class="dev-ws-item-by dev-topic-hero-by"><span class="dev-ws-item-avatar" style="background:#[0-9a-f]{6}" aria-hidden="true">M<\/span><span><b>maya<\/b><span> · proposed /);
   // The chips are the card's own tag specs (their tints ride along), and
@@ -121,7 +136,7 @@ test('a stale flag without any saved summary points to the current description',
   const av = context();
   const { html } = render(av, { ...PR, pr_summary_md: null, pr_summary_stale: true });
   const hero = html.slice(html.indexOf('data-topic-sheet="hero"'), html.indexOf('data-topic-sheet="steps"'));
-  assert.match(hero, /The current description is under Technical details\./);
+  assert.match(hero, /The current description is under Details\./);
   assert.doesNotMatch(hero, /This summary may describe an earlier revision\./);
 });
 
@@ -141,25 +156,45 @@ test('the hero draws the card’s two rows: the status pill with Vote at its end
   assert.match(band, /data-card-menu="detail:proposal:4090"[^>]*>[\s\S]*<\/button><\/div><\/div>$/, 'the ⋯ closes the band');
 });
 
-test('the ⋯ menu carries Technical details as a row of its own, which opens the sheet', () => {
+test('the ⋯ menu carries Details as a row of its own, which opens the sheet', () => {
   const av = context();
-  const { v, html } = render(av, PR);
+  const { v, page, details } = render(av, PR);
   const menu = av._cardMenuItems(v.card.rail.menuKey);
-  assert.equal(menu[0].label, 'Technical details');
+  assert.equal(menu[0].label, 'Details');
   assert.equal(menu[0].icon, 'details');
   assert.ok(av.MENU_ICONS.details, 'the glyph resolves');
-  assert.ok(menu.some((a) => a.label === 'Open on GitHub'));
-  // Closed until asked: the sheet renders nothing on the page itself.
-  assert.ok(!html.includes('technical prose'));
-  assert.ok(!html.includes('dev-details-card'));
+  assert.ok(!menu.some((a) => a.label === 'Open on GitHub'), 'B10b: GitHub is in Details');
+  // The sheet is body-mounted: the page itself renders none of it.
+  assert.ok(!page.includes('technical prose'));
+  assert.ok(!page.includes('dev-details-card'));
+  assert.match(details, /<section class="dev-details-part" data-details-part="description"><h5 class="dev-details-sub">Description<\/h5><div class="dev-issue-body dev-topic-details-body">[\s\S]*technical prose/);
   const src = read('public/js/app-view.js');
-  assert.match(src, /openTechnicalDetails\(id\) \{\n\s+window\.dispatchEvent\(new CustomEvent\('change-details-open', \{ detail: Number\(id\) \}\)\);/);
+  assert.match(src, /openTechnicalDetails\(id, part = null\) \{\n\s+window\.dispatchEvent\(new CustomEvent\('change-details-open', \{ detail: part \? \{ id: Number\(id\), part \} : Number\(id\) \}\)\);/);
   const tsx = read('frontend/src/features/dev-board/topic/topic-head.tsx');
   assert.match(tsx, /window\.addEventListener\('change-details-open', onOpen\)/);
-  assert.match(tsx, /createPortal\(\n\s+<div className="dev-details-scrim"/, 'body-mounted: a frosted sheet would contain a fixed box');
-  // No row without a technical half to open.
+  assert.match(tsx, /createPortal\(\n\s+<div className="dev-details-scrim" hidden=\{!open\}/, 'body-mounted: a frosted sheet would contain a fixed box; mounted while shut');
+  assert.ok(tsx.includes('/(?:^|[?&])details=1(?:&|$)/'), '?details=1 opens it as the page loads');
+  // A change with nothing written about it still has its steps there.
   const bare = av._topicViewFor('proposal', { ...PR, pr_body: null, pr_summary_md: null, spec_md: null });
-  assert.ok(!av._cardMenuItems(bare.card.rail.menuKey).some((a) => a.label === 'Technical details'));
+  assert.equal(av._cardMenuItems(bare.card.rail.menuKey)[0].label, 'Details');
+});
+
+test('B10b: the Tested line says what testing found, and opens Details at the Checks part', () => {
+  const av = context();
+  const said = (check_state) => av._testedLine({ ...PR, check_state });
+  assert.deepEqual(plain(said('passing')), { state: 'passed', text: 'Tested · All checks passed' });
+  assert.deepEqual(plain(said('pending')), { state: 'running', text: 'Testing it…' });
+  assert.deepEqual(plain(said('failing')), { state: 'failed', text: 'Testing found a problem' });
+  assert.deepEqual(plain(said('skipped')), { state: 'skipped', text: 'Not tested' });
+  assert.deepEqual(plain(said('error')), { state: 'broken', text: 'Testing couldn’t finish' });
+  assert.equal(said(null), null, 'nothing before the first run');
+  const { page } = render(av, PR);
+  assert.match(page, /<button type="button" class="dev-topic-tested" data-tested="passed"><span class="dev-topic-tested-mark dev-topic-tested-mark-passed" aria-hidden="true">✓<\/span><span>Tested · All checks passed<\/span><\/button>/);
+  // Under the summary, before the issue it addresses.
+  assert.ok(page.indexOf('data-topic-part="summary"') < page.indexOf('dev-topic-tested'));
+  const tsx = read('frontend/src/features/dev-board/topic/topic-head.tsx');
+  assert.ok(tsx.includes("AppView?.openTechnicalDetails(id, 'checks')"));
+  assert.ok(tsx.includes('querySelector(`[data-note="${part}"]`)'), 'and scrolls to that part');
 });
 
 test('the steps sheet is the strip expanded: its headline and count, one short step per gate in the gate’s order', () => {
@@ -356,7 +391,7 @@ test('before review the page is the same shape: the change’s own status in the
   assert.equal((html.match(/>Submit for review</g) || []).length, 1);
   assert.match(html, />Continue building</);
   // The spec stands in for the technical half, behind the ⋯ row.
-  assert.ok(av._cardMenuItems(v.card.rail.menuKey).some((a) => a.label === 'Technical details'));
+  assert.ok(av._cardMenuItems(v.card.rail.menuKey).some((a) => a.label === 'Details'));
 });
 
 test('a draft’s steps: who is waiting, what the checks are doing, and Sync with main only for the owner of a conflicting draft', () => {

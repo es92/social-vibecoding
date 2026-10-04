@@ -165,7 +165,7 @@ test('before review the author reads the spec under About this change (#2371)', 
   const own = av._topicViewFor('session', draft);
   assert.ok(own.body.proposalBody, 'the spec stands in for the technical details');
   assert.match(own.body.proposalBody.html, /Authenticate previews/);
-  assert.match(own.body.summaryHtml, /spec this change is built from is under Technical details/);
+  assert.match(own.body.summaryHtml, /spec this change is built from is under Details/);
 
   // A real PR body wins, and a summary is never replaced.
   const withBody = av._topicViewFor('session', { ...draft, pr_body: 'The PR body', pr_summary_md: 'Previews wait for sign-in.' });
@@ -272,9 +272,12 @@ test('private changes retain sharing controls and do not pretend to have a publi
 test('actual shared component renders the entire card and escapes the issue title', () => {
   const av = context();
   av._ghIssues[0].title = '<script>issue</script>';
-  const { ChangeDetail } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
+  const { ChangeDetail, DetailsBody } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
   const v = av._topicViewFor('session', failing);
-  const html = renderToHtml(createElement(ChangeDetail, { ...v, item: failing, conversation: true }));
+  // B10b: the steps are in Details, a body-mounted sheet the page keeps; it
+  // is drawn here after the page, as the document holds it.
+  const html = renderToHtml(createElement(ChangeDetail, { ...v, item: failing, conversation: true }))
+    + renderToHtml(createElement(DetailsBody, { prRef: v.body.hero.ref, steps: v.body.steps, help: false, html: '' }));
   // The Needs-you page: the summary, the issues line, the steps sheet (with
   // the failing check's reason behind its door), and the Discussion. The
   // Build is a pill that LEAVES this page (#2605), not a sheet on it.
@@ -610,7 +613,8 @@ test('full card has one submission, one preview, contextual recovery and an inde
   assert.equal(v.card.rail.preview, null);
   assert.equal(row(v, 'review').actions, undefined);
   const menu = av._cardMenuItems(v.card.rail.menuKey);
-  assert.equal(menu.filter((a) => /GitHub/.test(a.label)).length, 1);
+  assert.equal(menu.filter((a) => /GitHub/.test(a.label)).length, 0, 'B10b: GitHub is in Details');
+  assert.ok(menu.some((a) => a.label === 'Details'));
   assert.ok(menu.some((a) => a.label === 'Make visible'));
   assert.ok(!menu.some((a) => ['View checks', 'Re-run checks', 'Open session'].includes(a.label)));
   assert.ok(compactMenu.some((a) => a.label === 'View checks'));

@@ -359,11 +359,11 @@ export interface IssueProposalRef {
  * them.
  */
 export interface HeroView {
-  /** The eyebrow's first word — "Proposal", or "Change" before review. */
+  /** The eyebrow's first word, "Change" (B10b). */
   kind: string;
-  /** "PR#2473", linking to GitHub when the change has a pull request. */
+  /** "PR#2473", linking to GitHub when the change has a pull request. Drawn in Details (B10b). */
   ref: { s: string; href: string | null } | null;
-  /** "In review", "Merged", "Private change", "Visible to the group". */
+  /** "Waiting for approval", "Merged", "Private change", "Visible to the group". */
   status: string;
   /** "5h ago", with the full stamp as its title. */
   age: { s: string; title?: string } | null;
@@ -546,9 +546,11 @@ export interface TopicBody {
    */
   proposalBody?: { id: number | null; open: boolean; html: string } | null;
   details?: ProposalDetails | null;
-  /** A change page's hero, and the steps under it. Set with `changeId`. */
+  /** A change page's hero, and its steps (drawn in Details, B10b). Set with `changeId`. */
   hero?: HeroView | null;
   steps?: StepsView | null;
+  /** B10b: the hero's one Tested line, from the latest checks run (`AppView._testedLine`). */
+  tested?: { state: 'passed' | 'running' | 'failed' | 'skipped' | 'broken'; text: string } | null;
   /** The one-line explainer under a session or governance card. */
   note?: string | null;
   /**

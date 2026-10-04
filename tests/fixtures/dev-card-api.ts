@@ -20,7 +20,7 @@ export { DevKanban } from '../../frontend/src/features/dev-board/card/dev-kanban
 // wants the read-only viewer has to reach the instance the rendered tree
 // reads — which is this bundle's, not a second copy of the module.
 export { improveStore } from '../../frontend/src/features/improve/improve-store.js';
-export { TopicHead, TopicBodySections, NoteBoxView, ChecksVerdictView, ProposalBody } from '../../frontend/src/features/dev-board/topic/topic-head';
+export { TopicHead, TopicBodySections, NoteBoxView, ChecksVerdictView, ProposalBody, DetailsBody } from '../../frontend/src/features/dev-board/topic/topic-head';
 export { topicHeadStore } from '../../frontend/src/features/dev-board/topic/topic-store';
 export { ListRowView } from '../../frontend/src/features/dev-board/card/list-rows';
 export {
