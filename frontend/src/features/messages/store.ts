@@ -12,6 +12,7 @@ import type {
   ConversationEvent,
   ConversationMessage,
   ConversationSummary,
+  HomeroomBotAction,
   MessagesAgentThread,
   MessagesSnapshot,
   ReplyThreadState,
@@ -1355,6 +1356,34 @@ export async function answerBotQuestion(question: ConversationMessage, answer: s
   if (draft) setDraft(scope, draft);
   if (staged && staged.id !== question.id) setReply(scope, staged);
   await sending;
+}
+
+/**
+ * B3: press one of a bot message's buttons (types.ts HomeroomBotAction).
+ * A `server` one is decided once on the server (api.decideBotAction), which
+ * updates the message on every device; `prompt` sends its words as the
+ * person's own message, quoting nothing; `open` goes to its in-app address.
+ * Rejects when a `server` press was refused (a 409: decided already).
+ */
+export async function tapBotAction(message: ConversationMessage, action: HomeroomBotAction): Promise<void> {
+  if (action.type === 'open') {
+    if (action.target && action.target.startsWith('#app/')) window.location.hash = action.target;
+    return;
+  }
+  if (action.type === 'prompt') {
+    const conversationId = state.route.conversationId;
+    if (!conversationId || conversationId !== message.conversationId) return;
+    const scope = scopeKey(conversationId, null);
+    const staged = replyFor(scope);
+    if (staged) setReply(scope, null);
+    const sending = send({ content: action.label });
+    if (staged) setReply(scope, staged);
+    await sending;
+    return;
+  }
+  const actionId = message.metadata?.homeroomBot?.actionId;
+  if (!actionId) throw new Error('This choice has nothing to decide');
+  await api.decideBotAction(actionId, action.id);
 }
 
 function idempotencyKey(): string {

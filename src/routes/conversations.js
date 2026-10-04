@@ -161,6 +161,33 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
     }
   });
 
+  // B3: a tap on one of a Homeroom bot message's buttons (its metadata's
+  // `actions`), decided on the server as the person it was offered to, once
+  // (services/homeroom-bot-mayor.js decideOfferTap). It used to be the
+  // button's label sent as a message from them, which the server read back.
+  //
+  //   POST /api/conversations/homeroom-bot/actions/:actionId  { choice }
+  //   → 200 { ok, choice, label } | 409 { error: 'already_decided' } | 404
+  //
+  // A browser's own tap only: same-origin, and on no connector's list
+  // (services/cli-api-policy.js is fail-closed), so nothing but the person
+  // in the app decides what the bot does for them.
+  router.post('/api/conversations/homeroom-bot/actions/:actionId', conversationMessageLimiter, sameOriginBrowserOnly, async (req, res) => {
+    try {
+      const actionId = Number(req.params.actionId);
+      const choice = typeof req.body?.choice === 'string' ? req.body.choice : null;
+      if (!Number.isInteger(actionId) || actionId <= 0) return res.status(404).json({ error: 'No such choice' });
+      // The staging demo's offers are fixtures: there is nothing to decide.
+      if (isDemo(req)) return res.json({ ok: true, choice, demo: true });
+      const out = await require('../services/homeroom-bot-mayor').decideOfferTap(pool, config, { user: req.user, actionId, choice });
+      if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
+      return res.json(out);
+    } catch (err) {
+      log.error('conversations', 'homeroom bot action failed', { err: err.message, userId: req.user?.id });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // #3660: what the Homeroom links in a message are, for this viewer.
   //
   //   POST /api/link-cards  { refs: [{ type, app_slug, issue_number |

@@ -56,6 +56,14 @@ const META = conversations.BOT_METADATA_KEY;
 // carries suggested answers, and a reply without a quote answers the
 // newest one still open.
 const QUESTION_KINDS = new Set(['question', 'followup_ask']);
+// B3: the news a reply quoting it is posted on the request's public
+// discussion for: a question, and the three that ask for a reply to look
+// again with ("Reply to this message with more detail"). A reply to anything
+// else the bot said about a request (an activity card, a ready or live
+// message) stays in the DM and is read by the bot: quoting a progress card
+// to ask "can the reminder be at 9am?" used to post that on the request.
+// The client's reply bar reads the same list (messages/bot-question.tsx).
+const MIRRORED_KINDS = new Set([...QUESTION_KINDS, 'blocked', 'person', 'empty']);
 // The most a project description may hold. Long enough for a real brief,
 // short enough to be one request body.
 const MAX_BRIEF_CHARS = 4000;
@@ -933,7 +941,7 @@ async function relayIssuePost({ pool, ws = null, app, issueNumber, kind, runId =
     ...(context.issueTitle ? { issueTitle: context.issueTitle } : {}),
     ...(context.firstVersion ? { firstVersion: true } : {}),
     // A reply to this message is posted on the request, publicly.
-    mirrors: true,
+    ...(MIRRORED_KINDS.has(kind) ? { mirrors: true } : {}),
     ...(asks ? { question: clip(dm.question, 2000), answers, status: 'open' } : {}),
     ...(dm.link ? { link: dm.link } : {}),
   };
@@ -1320,8 +1328,10 @@ async function answerUserMessage(pool, config, { bot, user, settings, conversati
   if (quoted) {
     const decided = await mayor.decideOffer(pool, config, { bot, user, settings, conversationId, message, deps });
     if (decided) return decided;
+    // B3: only an answer to a question, or a reply a message asked for, goes
+    // on the request; any other quote is for the bot (MIRRORED_KINDS).
     const target = await quotedTarget(pool, user.id, quoted);
-    if (target) return answerOnRequest(pool, { bot, user, target, message, deps });
+    if (target && MIRRORED_KINDS.has(target.kind)) return answerOnRequest(pool, { bot, user, target, message, deps });
   }
   // #3772: "file it" typed under a draft decides it as the tap does. Typed,
   // it went to the model, which answered "Filed: … #14" for a request that
@@ -1335,7 +1345,9 @@ async function answerUserMessage(pool, config, { bot, user, settings, conversati
   if (settings.dmChat !== false) {
     return mayor.runDmTurn(pool, config, { bot, user, settings, conversationId, message, deps: turnDeps });
   }
-  const target = await newestOpenQuestion(pool, user.id);
+  // A quote of anything but a question is not an answer to some other open
+  // question (MIRRORED_KINDS): without the model, it gets the help text.
+  const target = quoted ? null : await newestOpenQuestion(pool, user.id);
   if (!target) {
     // Once in a while, not after every message.
     const window = Math.floor(Date.now() / HELP_EVERY_MS);
@@ -1630,6 +1642,7 @@ function firstSentence(text, max = 90) {
 module.exports = {
   BOT_USERNAME,
   QUESTION_KINDS,
+  MIRRORED_KINDS,
   MAX_BRIEF_CHARS,
   MIN_BRIEF_CHARS,
   HELP_TEXT,

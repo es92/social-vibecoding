@@ -518,6 +518,82 @@ test('a question in the DM draws its answers, the default marked, and says an an
   assert.match(renderToHtml(createElement(BotQuestion, { message: chose, conversationId: 3 })), /You chose: File it/);
 });
 
+test('B3: an offer\'s buttons are real: drawn from its actions, pressed once, then one quiet line', async () => {
+  const taps = [];
+  const { BotQuestion, MIRRORED_KINDS, mirrorsReplies } = loadTsx('frontend/src/features/messages/bot-question.tsx', {
+    stubs: { './store': { answerBotQuestion() {}, scopeKey: () => 'k', setReply() {}, async tapBotAction(m, a) { taps.push(a.id); } } },
+  });
+  const offer = {
+    id: 5, conversationId: 3, content: 'Here is the request I\'d file.', createdAt: 'now', reactions: [], attachments: [], objects: [],
+    sender: { id: 2, username: 'homeroom_bot', bot: true },
+    metadata: { homeroomBot: {
+      kind: 'confirm', appName: 'Plant Pal', question: 'File this as a request on Plant Pal?', status: 'open', actionId: 41,
+      answers: ['File it', 'Not now'],
+      actions: [
+        { id: 'yes', label: 'File it', style: 'primary', type: 'server' },
+        { id: 'no', label: 'Not now', style: 'secondary', type: 'server' },
+      ],
+    } },
+  };
+  const html = renderToHtml(createElement(BotQuestion, { message: offer, conversationId: 3 }));
+  // The same look and the same structure the declared check reads.
+  assert.match(html, /aria-label="File this as a request on Plant Pal\?"/);
+  assert.match(html, /<button type="button" class="messages-bot-primary" data-bot-answer="default"><span>File it<\/span><\/button><button type="button" class="messages-bot-secondary" data-bot-answer="other"><span>Not now<\/span><\/button><\/div>/);
+  assert.doesNotMatch(html, /Something else|public discussion/);
+  // Decided, here or on another device: the buttons go, one line stays.
+  const chose = { ...offer, metadata: { homeroomBot: { ...offer.metadata.homeroomBot, status: 'answered', answer: 'File it', chosen: 'yes' } } };
+  const after = renderToHtml(createElement(BotQuestion, { message: chose, conversationId: 3 }));
+  assert.doesNotMatch(after, /<button/);
+  assert.match(after, /<p class="messages-bot-answered">You chose File it<\/p>/);
+
+  // A reply is public only for a question, or news that asks for a reply;
+  // never for an activity card or a ready message, whatever older messages say.
+  assert.equal(mirrorsReplies({ kind: 'question', mirrors: true }), true);
+  assert.equal(mirrorsReplies({ kind: 'blocked', mirrors: true }), true);
+  assert.equal(mirrorsReplies({ kind: 'activity', mirrors: true }), false);
+  assert.equal(mirrorsReplies({ kind: 'proposal', mirrors: true }), false);
+  assert.equal(mirrorsReplies({ kind: 'question' }), false);
+  assert.deepEqual([...MIRRORED_KINDS].sort(), [...dm.MIRRORED_KINDS].sort(), 'the reply bar and the server agree');
+});
+
+test('B3: the client keeps a bot message\'s buttons, at most three and one primary, and never a link out', () => {
+  const { normalizeBotMeta } = loadTsx('frontend/src/features/messages/api.ts');
+  const meta = normalizeBotMeta({ homeroomBot: {
+    kind: 'confirm', actionId: 41, chosen: 'yes', startedAt: '2026-10-04T10:00:00Z', live: true,
+    actions: [
+      { id: 'yes', label: 'File it', style: 'primary', type: 'server' },
+      { id: 'also', label: 'Second primary', style: 'primary', type: 'server' },
+      { id: 'web', label: 'Elsewhere', style: 'secondary', type: 'open', target: 'https://example.com' },
+      { id: 'mystery', label: 'Unknown', style: 'secondary', type: 'teleport' },
+      { id: 'try', label: 'Try it', style: 'secondary', type: 'open', target: '#app/plant-pal' },
+      { id: 'more', label: 'One too many', style: 'secondary', type: 'prompt' },
+    ],
+  } }).homeroomBot;
+  assert.equal(meta.actionId, 41);
+  assert.equal(meta.chosen, 'yes');
+  assert.equal(meta.startedAt, '2026-10-04T10:00:00Z');
+  assert.equal(meta.live, true);
+  assert.deepEqual(meta.actions, [
+    { id: 'yes', label: 'File it', style: 'primary', type: 'server' },
+    { id: 'also', label: 'Second primary', style: 'secondary', type: 'server' },
+    { id: 'try', label: 'Try it', style: 'secondary', type: 'open', target: '#app/plant-pal' },
+  ]);
+});
+
+test('B3: a tap is decided by its own browser-only route, never by the label sent as a message', () => {
+  const routes = read('src/routes/conversations.js');
+  assert.match(routes, /router\.post\('\/api\/conversations\/homeroom-bot\/actions\/:actionId', conversationMessageLimiter, sameOriginBrowserOnly,/);
+  const policy = read('src/services/cli-api-policy.js');
+  assert.doesNotMatch(policy, /homeroom-bot\/actions/, 'no connector or agent presses a person\'s buttons');
+  const store = read('frontend/src/features/messages/store.ts');
+  const tap = store.slice(store.indexOf('export async function tapBotAction'), store.indexOf('function idempotencyKey'));
+  assert.match(tap, /await api\.decideBotAction\(actionId, action\.id\)/);
+  assert.doesNotMatch(tap, /content: action\.id/);
+  // The demo's offer carries the same buttons a live one does.
+  const fixtures = read('src/services/staging-messages.js');
+  assert.match(fixtures, /actions: \[\s+\{ id: 'yes', label: 'File it', style: 'primary', type: 'server' \},\s+\{ id: 'no', label: 'Not now', style: 'secondary', type: 'server' \},\s+\]/);
+});
+
 test('the Messages client keeps the bot\'s mark and its question, which it builds field by field', () => {
   // The first staging run showed the question as plain text: this
   // normalizer dropped both fields before the screen ever saw them.
@@ -543,7 +619,7 @@ test('the Messages client keeps the bot\'s mark and its question, which it build
 
 test('the DM screen draws the bot\'s question and badge, and the reply bar names where a reply goes', () => {
   const row = read('frontend/src/features/messages/message-row.tsx');
-  assert.match(row, /message\.sender\.bot && message\.metadata\?\.homeroomBot\?\.question \? <BotQuestion/);
+  assert.match(row, /message\.sender\.bot && \(message\.metadata\?\.homeroomBot\?\.question \|\| message\.metadata\?\.homeroomBot\?\.actions\?\.length\)\s*\? <BotQuestion/);
   assert.match(row, /messages-bot-badge/);
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.match(composer, /Your reply is posted on \$\{requestPlace\(reply\.metadata\.homeroomBot\)\}’s public discussion\./);

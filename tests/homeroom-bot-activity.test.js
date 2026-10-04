@@ -223,7 +223,7 @@ test('starting work sends the requester ONE card, keyed by the queue row it was 
   assert.equal(card.idempotencyKey, 'hrbot-activity-345', 'a look handed back and started again keeps its card');
   assert.equal(card.replyToId, 77, 'it quotes the message the request started from, as the bot\'s other news does');
   assert.deepEqual(card.metadata, {
-    kind: 'activity', appSlug: 'ear-trainer', appName: 'Ear Trainer', issueNumber: 12, issueTitle: 'Sort by date', mirrors: true,
+    kind: 'activity', appSlug: 'ear-trainer', appName: 'Ear Trainer', issueNumber: 12, issueTitle: 'Sort by date',
   });
   assert.match(card.content, /^\*\*Ear Trainer\*\* · request #12: Sort by date\n\nI'm working on this now\. This card updates as I go\.$/);
   const insert = queries.find(([sql]) => /INSERT INTO homeroom_bot_dm_messages/.test(sql));

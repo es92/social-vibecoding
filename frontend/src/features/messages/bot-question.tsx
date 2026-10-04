@@ -2,8 +2,8 @@ import { useState } from 'react';
 
 import { InfoCircleIcon } from '@/components/ui/icons';
 
-import { answerBotQuestion, scopeKey, setReply } from './store';
-import type { ConversationMessage, HomeroomBotMeta } from './types';
+import { answerBotQuestion, scopeKey, setReply, tapBotAction } from './store';
+import type { ConversationMessage, HomeroomBotAction, HomeroomBotMeta } from './types';
 
 /*
  * #3624: what hangs under a message from the Homeroom bot.
@@ -29,7 +29,26 @@ import type { ConversationMessage, HomeroomBotMeta } from './types';
  * it. A question's answers keep one look: none of them is the act.
  * #11 (WP3): an offer to withdraw one of the bot's proposals is the same
  * pair, Withdraw it and Keep it, named by its own question.
+ *
+ * B3: buttons are real now. A message that carries `actions` draws them
+ * (BotActions), and a tap is decided on the server, once, rather than sent
+ * as the button's words in the person's name (store.tapBotAction). Then the
+ * buttons give way to one quiet line, "You chose File it", on every device.
+ * A message from before carries `answers` only and works as it did.
  */
+
+/**
+ * B3: the bot's news a reply is posted publicly for (services/homeroom-bot-
+ * dm.js MIRRORED_KINDS): a question, and a message that asks for a reply to
+ * look again with. A reply to any other news stays in the DM. Older messages
+ * say `mirrors` on everything, so the kind decides here too.
+ */
+export const MIRRORED_KINDS: ReadonlySet<string> = new Set(['question', 'followup_ask', 'blocked', 'person', 'empty']);
+
+/** Whether a reply quoting this bot message is posted on its request. */
+export function mirrorsReplies(meta: HomeroomBotMeta | null | undefined): meta is HomeroomBotMeta {
+  return !!meta?.mirrors && MIRRORED_KINDS.has(meta.kind);
+}
 
 export function botMeta(message: ConversationMessage): HomeroomBotMeta | null {
   if (!message.sender.bot) return null;
@@ -47,6 +66,7 @@ export function BotQuestion({ message, conversationId }: { message: Conversation
   const meta = botMeta(message);
   // The answer tapped here, until the server's own state comes back.
   const [chosen, setChosen] = useState<string | null>(null);
+  if (meta?.actions?.length) return <BotActions message={message} meta={meta} />;
   if (!meta || !meta.question) return null;
   const answers = (meta.answers || []).filter((a) => typeof a === 'string' && a.trim());
   const open = meta.status === 'open' && !chosen && !message.deleted;
@@ -87,13 +107,61 @@ export function BotQuestion({ message, conversationId }: { message: Conversation
         </div>
       ) : null}
       {answered ? <p className="messages-bot-answered">{offer ? `You chose: ${answered}` : `You answered: ${answered}`}</p> : null}
-      {(open || chosen) && meta.mirrors ? (
+      {(open || chosen) && mirrorsReplies(meta) ? (
         <p className="messages-bot-note">
           <InfoCircleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span>{`Your answer is posted on ${requestPlace(meta)}’s public discussion, where the group can see it.`}</span>
         </p>
       ) : null}
       {meta.status === 'closed' && !answered ? <p className="messages-bot-answered">No longer needed.</p> : null}
+    </div>
+  );
+}
+
+/**
+ * B3: a bot message's buttons (types.ts HomeroomBotAction). The act is
+ * filled in the accent, the rest beside it in the neutral fill. A `server`
+ * button is pressed once: the buttons go at once, the line says what was
+ * chosen, and the message's own update (decided here or on another device)
+ * keeps it that way. A refused press (decided already elsewhere) brings
+ * nothing back: that device's choice arrives with the update.
+ */
+function BotActions({ message, meta }: { message: ConversationMessage; meta: HomeroomBotMeta }) {
+  // The button pressed here, until the server's own state comes back.
+  const [pressed, setPressed] = useState<HomeroomBotAction | null>(null);
+  const actions = meta.actions || [];
+  const settled = meta.status === 'answered' || meta.status === 'closed';
+  const open = !settled && !pressed && !message.deleted;
+  const chosen = meta.status === 'answered' ? (meta.answer || null) : (pressed ? pressed.label : null);
+
+  function press(action: HomeroomBotAction) {
+    if (action.type !== 'server') {
+      void tapBotAction(message, action).catch(() => {});
+      return;
+    }
+    setPressed(action);
+    void tapBotAction(message, action).catch(() => setPressed(null));
+  }
+
+  return (
+    <div className="messages-bot-question" data-bot-question={meta.status || 'open'}>
+      {open ? (
+        <div className="messages-bot-answers" role="group" aria-label={meta.question || 'Choices'}>
+          {actions.map((action, index) => (
+            <button
+              key={action.id}
+              type="button"
+              className={action.style === 'primary' ? 'messages-bot-primary' : 'messages-bot-secondary'}
+              data-bot-answer={index === 0 ? 'default' : 'other'}
+              onClick={() => press(action)}
+            >
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {chosen ? <p className="messages-bot-answered">{`You chose ${chosen}`}</p> : null}
+      {meta.status === 'closed' && !chosen ? <p className="messages-bot-answered">No longer needed.</p> : null}
     </div>
   );
 }

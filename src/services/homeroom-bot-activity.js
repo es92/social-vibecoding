@@ -157,9 +157,8 @@ async function sendCard(pool, {
       issueNumber,
       ...(context.issueTitle ? { issueTitle: context.issueTitle } : {}),
       ...(context.firstVersion ? { firstVersion: true } : {}),
-      // A reply to it is about the request, as a reply to the bot's other
-      // news about one is: posted on its discussion (homeroom-bot-dm.js).
-      mirrors: true,
+      // B3: a reply to it stays in the DM, for the bot to read: a card is
+      // progress, not a question (homeroom-bot-dm.js MIRRORED_KINDS).
       ...(startedAt ? { startedAt } : {}),
     },
     idempotencyKey: key,

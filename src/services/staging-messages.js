@@ -456,6 +456,9 @@ async function ensureFixtures(pool, user) {
 const BOT_DM_LEGACY_ID = 910005;
 const BOT_DM_QUESTION_KEY = 'staging-hrbot-question';
 const BOT_DM_OFFER_KEY = 'staging-hrbot-offer';
+// B3: the action id the demo offer's buttons name. No homeroom_bot_dm_actions
+// row stands behind it: the action endpoint answers the demo without one.
+const BOT_DM_DEMO_ACTION_ID = 990001;
 const BOT_DM_ASK_KEY = 'staging-hrbot-ask';
 
 async function ensureBotDmFixture(pool, user) {
@@ -511,6 +514,13 @@ async function ensureBotDmFixture(pool, user) {
           kind: 'confirm', appName: 'Staging demo app', status: 'open', mirrors: false,
           question: 'File this as a request on Staging demo app?',
           answers: ['File it', 'Not now'],
+          // B3: its buttons, as a live offer carries them (homeroom-bot-mayor.js
+          // offerActions). The demo's action endpoint decides nothing.
+          actionId: BOT_DM_DEMO_ACTION_ID,
+          actions: [
+            { id: 'yes', label: 'File it', style: 'primary', type: 'server' },
+            { id: 'no', label: 'Not now', style: 'secondary', type: 'server' },
+          ],
         },
       },
     });

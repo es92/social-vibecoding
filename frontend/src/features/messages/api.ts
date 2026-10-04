@@ -7,6 +7,7 @@ import type {
   HomeroomBotActivity,
   HomeroomBotActivityOutcome,
   HomeroomBotJob,
+  HomeroomBotAction,
   HomeroomBotMeta,
   HomeroomBotPastJob,
   HomeroomBotPhase,
@@ -84,6 +85,30 @@ export function normalizeUser(input: unknown): ConversationUser {
 }
 
 const BOT_QUESTION_STATES = new Set(['open', 'answered', 'closed']);
+// B3: the kinds of button the client knows how to press (types.ts
+// HomeroomBotAction). An unknown one is dropped, never drawn as a dead button.
+const BOT_ACTION_TYPES = new Set(['server', 'open', 'prompt']);
+const MAX_BOT_ACTIONS = 3;
+
+/** B3: a bot message's buttons, as types.ts HomeroomBotAction: at most three, one primary. */
+function normalizeBotActions(input: unknown): HomeroomBotAction[] {
+  const out: HomeroomBotAction[] = [];
+  let primary = false;
+  for (const entry of array(input)) {
+    if (out.length >= MAX_BOT_ACTIONS) break;
+    const row = record(entry);
+    const id = text(pick(row, 'id')).slice(0, 40);
+    const label = text(pick(row, 'label')).slice(0, 60);
+    const type = text(pick(row, 'type'));
+    if (!id || !label || !BOT_ACTION_TYPES.has(type)) continue;
+    const target = type === 'open' ? inAppHref(pick(row, 'target')) : null;
+    if (type === 'open' && !target) continue;
+    const style = pick(row, 'style') === 'primary' && !primary ? 'primary' : 'secondary';
+    if (style === 'primary') primary = true;
+    out.push({ id, label, style, type: type as HomeroomBotAction['type'], ...(target ? { target } : {}) });
+  }
+  return out;
+}
 
 /**
  * #3624: the Homeroom bot's structured part of a message (services/
@@ -99,6 +124,8 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
   const status = text(pick(bot, 'status'));
   const optional = (key: string) => text(pick(bot, key)) || undefined;
   const answers = array(pick(bot, 'answers')).filter((a): a is string => typeof a === 'string' && !!a.trim()).slice(0, 6);
+  const actions = normalizeBotActions(pick(bot, 'actions'));
+  const actionId = strictId(pick(bot, 'actionId'));
   return {
     homeroomBot: {
       kind,
@@ -113,6 +140,11 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       ...(BOT_QUESTION_STATES.has(status) ? { status: status as HomeroomBotMeta['status'] } : {}),
       answer: optional('answer'),
       link: optional('link'),
+      ...(actionId ? { actionId } : {}),
+      ...(actions.length ? { actions } : {}),
+      chosen: optional('chosen'),
+      startedAt: optional('startedAt'),
+      ...(pick(bot, 'live') === true ? { live: true } : {}),
     },
   };
 }
@@ -607,6 +639,18 @@ export async function setMessageSaved(
   await request<unknown>(`/api/conversations/${conversationId}/messages/${messageId}/bookmark`, {
     method: saved ? 'PUT' : 'DELETE', ...(saved ? { body: '{}' } : {}),
   });
+}
+
+/**
+ * B3: press one of a bot message's `server` buttons. Decided once, by the
+ * person it was offered to: a 409 means it was decided already (on another
+ * device, say), and the message's own update shows how.
+ */
+export async function decideBotAction(actionId: number, choice: string): Promise<{ label: string | null }> {
+  const data = record(await request<unknown>(`/api/conversations/homeroom-bot/actions/${actionId}`, {
+    method: 'POST', body: JSON.stringify({ choice }),
+  }));
+  return { label: text(pick(data, 'label')) || null };
 }
 
 export async function setBlock(userId: number, blocked: boolean): Promise<void> {

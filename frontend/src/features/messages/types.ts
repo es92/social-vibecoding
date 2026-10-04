@@ -34,6 +34,28 @@ export interface HomeroomBotMeta {
   status?: 'open' | 'answered' | 'closed';
   answer?: string;
   link?: string;
+  // B3: the decision a message's `server` buttons settle
+  // (homeroom_bot_dm_actions.id), the buttons themselves, and which one was
+  // chosen. An activity card's start and its live state ride along too.
+  actionId?: number;
+  actions?: HomeroomBotAction[];
+  chosen?: string;
+  startedAt?: string;
+  live?: boolean;
+}
+
+/**
+ * B3: one of a bot message's buttons. `server` is decided by the action
+ * endpoint, once (store.tapBotAction); `open` goes to an in-app address
+ * (`target`, always `#app/…`); `prompt` sends its label as the person's own
+ * message. At most three, at most one `primary`.
+ */
+export interface HomeroomBotAction {
+  id: string;
+  label: string;
+  style: 'primary' | 'secondary';
+  type: 'server' | 'open' | 'prompt';
+  target?: string;
 }
 
 /**

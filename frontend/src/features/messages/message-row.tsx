@@ -258,7 +258,8 @@ export const MessageRow = memo(function MessageRow({
   // reactions, the thread under it and the status line.
   const extras = (
     <>
-      {message.sender.bot && message.metadata?.homeroomBot?.question ? <BotQuestion message={message} conversationId={conversationId} /> : null}
+      {message.sender.bot && (message.metadata?.homeroomBot?.question || message.metadata?.homeroomBot?.actions?.length)
+        ? <BotQuestion message={message} conversationId={conversationId} /> : null}
       {message.attachments.length ? <div className="messages-attachments">{message.attachments.map((attachment) => <Attachment key={attachment.id} attachment={attachment} />)}</div> : null}
       {message.objects.length ? <div className="messages-object-list">{message.objects.map((object, index) => <ObjectCard key={`${object.type}-${index}`} object={object} />)}</div> : null}
       {/* #3660: a link in the words to one of Homeroom's own pages, as the

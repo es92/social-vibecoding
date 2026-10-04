@@ -166,6 +166,21 @@ const OFFER_ANSWERS = Object.freeze({
   file_request: Object.freeze([FILE_IT, NOT_NOW]),
   withdraw_proposal: Object.freeze([WITHDRAW_IT, KEEP_IT]),
 });
+
+/**
+ * B3: an offer's buttons, carried in the message itself (metadata.actions):
+ * the act first and filled, the other beside it. A tap is decided by the
+ * action endpoint (routes/conversations.js, decideOfferTap) rather than by
+ * its words sent as a message from the person, which is what a tap used to
+ * do. The words still decide it when typed or quoted (decideOffer).
+ */
+function offerActions(kind) {
+  const [yes, no] = OFFER_ANSWERS[kind] || OFFER_ANSWERS.file_request;
+  return [
+    { id: 'yes', label: yes, style: 'primary', type: 'server' },
+    { id: 'no', label: no, style: 'secondary', type: 'server' },
+  ];
+}
 // #11: what a reply that promised to come back to something later says
 // instead, when nothing it did this turn will.
 const CANT_LOOK_TEXT = 'I can\'t look into that myself from here.';
@@ -2028,7 +2043,8 @@ async function offer(pool, { bot, user, conversationId, message, text, offer: o,
     metadata: {
       kind: 'confirm', appSlug: o.app.slug, appName: name, actionId: action.id,
       question: withdraw ? `Withdraw this proposal on ${name}?` : `File this as a request on ${name}?`,
-      answers: [...OFFER_ANSWERS[kind]], status: 'open', mirrors: false,
+      // `answers` for a client that predates `actions`.
+      answers: [...OFFER_ANSWERS[kind]], actions: offerActions(kind), status: 'open', mirrors: false,
     },
   });
   if (sent?.messageId) {
@@ -2130,13 +2146,60 @@ async function decideOffer(pool, config, { bot, user, settings, message, deps = 
     action = rows[0];
   }
   if (!action) return null;
-  const dm = dmModule(deps);
   const [yesWord, noWord] = OFFER_ANSWERS[action.kind] || OFFER_ANSWERS.file_request;
   const yes = typed ? typed.yes : said(message.content, yesWord);
   const no = typed ? !typed.yes : said(message.content, noWord);
   if (!yes && !no) return null;
+  return settleOffer(pool, config, {
+    bot, user, settings, action, yes, deps, replyToId: message.id, ackKey: `hrbot-offer-${message.id}`,
+  });
+}
+
+/**
+ * B3: a tap on an offer's button (POST /api/conversations/homeroom-bot/
+ * actions/:actionId), decided exactly as its typed words are, by the person
+ * it was offered to and only once: a second tap, on this device or another,
+ * is a 409 and does nothing, and every device already shows the choice
+ * (setQuestionState). Resolves { ok: true, choice, label } or
+ * { ok: false, status, error }.
+ */
+async function decideOfferTap(pool, config, { user, actionId, choice, deps = {} }) {
+  if (choice !== 'yes' && choice !== 'no') return { ok: false, status: 400, error: 'choice must be yes or no' };
+  const id = Number(actionId);
+  if (!user?.id || !Number.isInteger(id) || id <= 0) return { ok: false, status: 404, error: 'No such choice' };
+  const { rows } = await pool.query('SELECT * FROM homeroom_bot_dm_actions WHERE id = $1 AND user_id = $2', [id, user.id]);
+  const action = rows[0];
+  if (!action || !OFFER_ANSWERS[action.kind]) return { ok: false, status: 404, error: 'No such choice' };
+  if (action.status !== 'open') return { ok: false, status: 409, error: 'already_decided', decided: action.status };
+  const dm = dmModule(deps);
+  const bot = deps.bot || await dm.botAccount(pool);
+  if (!bot) return { ok: false, status: 503, error: 'Homeroom bot is not available' };
+  const settings = await botModule(deps).readSettings(pool);
+  const yes = choice === 'yes';
+  const sent = await settleOffer(pool, config, {
+    bot, user, settings, action, yes, deps, replyToId: null, ackKey: `hrbot-offer-tap-${action.id}`, tapped: true,
+  });
+  if (sent?.alreadyDecided) return { ok: false, status: 409, error: 'already_decided' };
+  const [yesWord, noWord] = OFFER_ANSWERS[action.kind];
+  return { ok: true, choice, label: yes ? yesWord : noWord };
+}
+
+/**
+ * Decide `action` (an offer still open) once, as `yes` or not, and do what
+ * it says: file the request, or withdraw the proposal, or nothing. The
+ * first decision wins; a later one is told what happened when it was typed
+ * or quoted. A tap (`tapped`) is answered by its button instead: a second
+ * one says nothing (every device shows the first), and a "no" needs no
+ * reply, since the line under the buttons already says what was chosen.
+ */
+async function settleOffer(pool, config, {
+  bot, user, settings, action, yes, deps = {}, replyToId = null, ackKey, tapped = false,
+}) {
+  const dm = dmModule(deps);
+  const no = !yes;
+  const [yesWord, noWord] = OFFER_ANSWERS[action.kind] || OFFER_ANSWERS.file_request;
   const ack = (content, extra = {}) => dm.sendDm(pool, {
-    bot, userId: user.id, content, idempotencyKey: `hrbot-offer-${message.id}`, replyToId: message.id, ...extra,
+    bot, userId: user.id, content, idempotencyKey: ackKey, replyToId, ...extra,
   });
   // Decided once: the first tap wins, and a second says what happened.
   const { rows: claimed } = await pool.query(
@@ -2145,13 +2208,18 @@ async function decideOffer(pool, config, { bot, user, settings, message, deps = 
     [action.id, user.id, yes ? 'done' : 'declined'],
   );
   if (!claimed.length) {
+    if (tapped) return { alreadyDecided: true };
     return ack(action.status === 'done' && action.issue_number
       ? `I already filed that as request #${action.issue_number}.`
       : 'That one is already decided.');
   }
-  await dm.setQuestionState(pool, quoted, { status: 'answered', answer: yes ? yesWord : noWord }, {
-    conversationId: action.conversation_id, userId: user.id,
-  }).catch(() => {});
+  // The buttons give way to the choice on every device it is open on.
+  if (action.message_id) {
+    await dm.setQuestionState(pool, Number(action.message_id), {
+      status: 'answered', answer: yes ? yesWord : noWord, chosen: yes ? 'yes' : 'no',
+    }, { conversationId: action.conversation_id, userId: user.id }).catch(() => {});
+  }
+  if (no && tapped) return { declined: true };
   if (action.kind === 'withdraw_proposal') return decideWithdraw(pool, { bot, user, action, yes, ack, deps });
   if (no) return ack('OK, I won\'t file it.');
   const { rows: apps } = await pool.query(
@@ -2997,6 +3065,8 @@ module.exports = {
   runTool,
   runDmTurn,
   decideOffer,
+  decideOfferTap,
+  offerActions,
   decideTyped,
   typedDecision,
   fileRequest,

@@ -162,7 +162,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     const message = await conversations.getMessage(pool, asAda, first.conversationId, first.messageId);
     assert.equal(message.sender.id, bot.id);
     assert.deepEqual(message.metadata.homeroomBot, {
-      kind: 'activity', appSlug: 'seed-swap', appName: 'Seed swap', issueNumber: 3, issueTitle: 'Sort by date', mirrors: true,
+      kind: 'activity', appSlug: 'seed-swap', appName: 'Seed swap', issueNumber: 3, issueTitle: 'Sort by date',
     });
     assert.match(message.content, /^\*\*Seed swap\*\* · request #3: Sort by date\n\nI'm working on this now\./);
     assert.equal(message.reply, null);
