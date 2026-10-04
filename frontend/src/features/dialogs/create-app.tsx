@@ -1352,7 +1352,7 @@ export function CreateAppDialog() {
             // decide what the view says comes next.
             builder={botChat ? 'bot' : (mode !== 'import' ? 'request' : null)}
             audience={audience ?? 'solo'}
-            openLabel={botChat ? 'Open my chat with Homeroom bot' : 'Open project'}
+            openLabel={botChat ? 'Open chat' : 'Open project'}
             onOpenApp={() => {
               // Both destinations write an address right after the close,
               // so the close must not spend its back-press record: a queued

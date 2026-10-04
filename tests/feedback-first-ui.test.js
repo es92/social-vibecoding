@@ -168,7 +168,7 @@ test('?shot=feedback-sent poses the sent confirmation without filing anything', 
   assert.equal(h.el('feedback-submit').disabled, true);
   assert.equal(h.calls.filter((c) => c.url === '/api/feedback').length, 0);
   const app = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
-  assert.match(app, /shot !== 'feedback-sent'\) return;/, 'the shot name is accepted');
+  assert.match(app, /shot !== 'feedback-sent' && shot !== 'feedback-bot'\) return;/, 'the shot names are accepted');
   assert.match(app, /App\._simulateFeedbackSent\?\.\(\);/);
 });
 test('Done closes the sent confirmation and goes nowhere', async () => {
@@ -256,4 +256,45 @@ test('a stale submission does not overwrite a reopened draft', async () => {
   h.el('feedback-cancel').click(); h.sandbox.App.openFeedbackModal(); h.el('feedback-text').value = 'New draft';
   finish({ firstFeedback: moment }); await settle();
   assert.equal(h.shown(), false); assert.equal(h.el('feedback-text').value, 'New draft');
+});
+
+// ── B8: Homeroom bot is on it ────────────────────────────────────────────
+const BOT = { botWillBuild: true, typicalMinutes: 6, canFix: true, appSlug: 'filed-app', issueNumber: 41 };
+test('B8: a request Homeroom bot builds is answered with Got it, how long it takes and Open chat, first request or not', async () => {
+  const opened = [];
+  const h = harness({ response: { firstFeedback: moment, homeroomBot: BOT } });
+  h.sandbox.UsernodeReact.messages = { openBot() { opened.push(true); } };
+  await h.submit();
+  assert.equal(h.shown(), false, 'not the first-request moment: the bot is on it');
+  assert.equal(h.el('feedback-sent').classList.contains('hidden'), false);
+  assert.equal(h.el('feedback-sent-title').textContent, 'Got it');
+  assert.equal(h.el('feedback-sent-line').textContent, 'Homeroom bot is on it, usually about 6 minutes.');
+  assert.equal(h.el('feedback-sent-chat').classList.contains('hidden'), false, 'Open chat leads');
+  assert.ok(h.el('feedback-sent-mine').classList.contains('hidden'), 'the chat is where to find it');
+  assert.equal(h.el('feedback-sent-fix').classList.contains('hidden'), false, 'building it yourself is the small link');
+  h.el('feedback-sent-chat').click();
+  assert.deepEqual(opened, [true]);
+  assert.ok(h.el('feedback-modal').classList.contains('hidden'));
+});
+test('B8: Build it yourself opens the request on the board and starts a change from it', async () => {
+  const h = harness({ response: { homeroomBot: BOT } });
+  await h.submit();
+  h.el('feedback-sent-fix').click(); await settle();
+  assert.deepEqual(h.nav, [['filed-app', 'dev', 41, 'issues']]);
+  assert.deepEqual(h.fixes, [41]);
+});
+test('B8: no link for somebody who could not build it, and the ordinary words when the bot is not on it', async () => {
+  const h = harness({ response: { homeroomBot: { ...BOT, canFix: false } } });
+  await h.submit();
+  assert.ok(h.el('feedback-sent-fix').classList.contains('hidden'));
+  const plain = harness({ response: {} });
+  await plain.submit();
+  assert.equal(plain.el('feedback-sent-line').textContent, 'Find it on your profile, under Your requests.');
+  assert.ok(plain.el('feedback-sent-chat').classList.contains('hidden'));
+  assert.equal(plain.el('feedback-sent-mine').classList.contains('hidden'), false);
+  // ?shot=feedback-bot poses it without filing anything.
+  const shot = harness({ response: {} });
+  shot.sandbox.App._simulateFeedbackBot();
+  assert.equal(shot.el('feedback-sent-title').textContent, 'Got it');
+  assert.equal(shot.calls.filter((c) => c.url === '/api/feedback').length, 0);
 });

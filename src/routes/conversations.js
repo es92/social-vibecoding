@@ -161,6 +161,25 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
     }
   });
 
+  // B8: the signed-in person's chat with Homeroom bot, made the first time:
+  // where every "ask Homeroom bot" door leads (Messages' +, a request's page,
+  // a change's page). Their own DM only; it takes no user.
+  //
+  //   POST /api/conversations/homeroom-bot  → { conversationId }
+  router.post('/api/conversations/homeroom-bot', conversationMessageLimiter, sameOriginBrowserOnly, async (req, res) => {
+    try {
+      if (!req.user?.id || req.user.isSynthetic) return res.status(403).json({ error: 'forbidden' });
+      const bot = await require('../services/homeroom-bot-dm').botAccount(pool);
+      if (!bot) return res.status(404).json({ error: 'Homeroom bot is not available' });
+      const opened = await conversations.ensureAdmittedDirect(pool, bot.id, req.user.id);
+      if (!opened?.conversationId) return res.status(409).json({ error: 'Could not open the chat' });
+      return res.json({ conversationId: opened.conversationId });
+    } catch (err) {
+      log.error('conversations', 'opening the Homeroom bot chat failed', { err: err.message, userId: req.user?.id });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // B3: a tap on one of a Homeroom bot message's buttons (its metadata's
   // `actions`), decided on the server as the person it was offered to, once
   // (services/homeroom-bot-mayor.js decideOfferTap). It used to be the

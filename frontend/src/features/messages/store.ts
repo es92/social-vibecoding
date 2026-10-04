@@ -1125,6 +1125,19 @@ export function open(conversationId?: number | null): void {
   else window.location.hash = target;
 }
 
+/**
+ * B8: open the signed-in person's chat with Homeroom bot, from any door that
+ * says "ask Homeroom bot". It is made the first time; until the server
+ * answers, Messages opens on its list.
+ */
+export async function openBot(): Promise<void> {
+  let id: number | null = state.conversations.find((item) => item.homeroomBot)?.id || null;
+  if (!id) {
+    try { id = await api.openBotConversation(); } catch { id = null; }
+  }
+  open(id);
+}
+
 /** The app-channel message link last revealed (see revealAppFocus). */
 let revealedAppFocus: string | null = null;
 
@@ -2054,6 +2067,8 @@ function paintSaved(messageId: number, saved: boolean): void {
 
 export const messagesController = {
   open,
+  // B8: the chat with Homeroom bot (app-view.js's doors to it).
+  openBot: () => { void openBot(); },
   openAddress,
   openDiscussion,
   openThread,

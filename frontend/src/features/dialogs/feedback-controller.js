@@ -236,8 +236,25 @@ export function init() {
     // under it carries only what else happened (a bounty, the app's state),
     // and says nothing when nothing did.
     const sentTitle = document.getElementById('feedback-sent-title');
-    const showSent = (title, notice = '') => {
-      if (sentTitle) sentTitle.textContent = title;
+    // B8: the bot's version of it. `bot` is the post's `homeroomBot`
+    // ({ botWillBuild, typicalMinutes, canFix, appSlug, issueNumber }).
+    const sentLine = document.getElementById('feedback-sent-line');
+    const sentChat = document.getElementById('feedback-sent-chat');
+    const sentFix = document.getElementById('feedback-sent-fix');
+    const sentMine = document.getElementById('feedback-sent-mine');
+    const SENT_LINE = 'Find it on your profile, under Your requests.';
+    let sentBot = null;
+    const showSent = (title, notice = '', bot = null) => {
+      const building = !!bot?.botWillBuild;
+      sentBot = building ? bot : null;
+      if (sentTitle) sentTitle.textContent = building ? 'Got it' : title;
+      if (sentLine) {
+        const minutes = Number(bot?.typicalMinutes) > 0 ? Number(bot.typicalMinutes) : 8;
+        sentLine.textContent = building ? `Homeroom bot is on it, usually about ${minutes} minutes.` : SENT_LINE;
+      }
+      sentChat?.classList.toggle('hidden', !building);
+      sentMine?.classList.toggle('hidden', building);
+      sentFix?.classList.toggle('hidden', !(building && bot.canFix));
       sentNotice.textContent = notice;
       sentNotice.classList.toggle('hidden', !notice);
       feedbackForm.classList.add('hidden');
@@ -249,6 +266,27 @@ export function init() {
     const hideSent = () => {
       sentSection?.classList.add('hidden');
     };
+    // B8: Open chat is the chat with Homeroom bot, where the request's card is.
+    sentChat?.addEventListener('click', () => {
+      closeFeedback();
+      window.UsernodeReact?.messages?.openBot?.();
+    });
+    // B8: building it yourself instead, as the first-request moment's Try a
+    // fix yourself does: the request on the board, and a change from it.
+    sentFix?.addEventListener('click', async () => {
+      const bot = sentBot;
+      if (!bot?.canFix || !bot.appSlug || !Number.isSafeInteger(bot.issueNumber)) return;
+      try {
+        const opening = App.navigateToApp(bot.appSlug, 'dev', bot.issueNumber, 'issues');
+        closeFeedback();
+        await opening;
+        if (App.currentApp === bot.appSlug && AppView.appData?.slug === bot.appSlug) {
+          await AppView.createPrForIssue(bot.issueNumber);
+        }
+      } catch (err) {
+        PlatformUI.toast('Could not open a fix just now. You can try again from the request on the board.');
+      }
+    });
     // The first-request moment's two ways on write their address before the
     // dialog closes too, for the reason openMine does above (#3683).
     firstBoard?.addEventListener('click', () => {
@@ -1532,10 +1570,18 @@ export function init() {
                 || (target === 'platform' && AppView?.appData?.self_hosted))) {
             AppView.refreshDevData('issue');
           }
+          // B8: Homeroom bot is on it: its confirmation, first request or not.
+          if (data.homeroomBot?.botWillBuild) {
+            showSent(postedTo, `${bountyNotice}${stateNotice}`.trim(), data.homeroomBot);
+            return;
+          }
+          // B8: the bot is theirs but does not build here: it went to the group.
+          const toGroup = data.homeroomBot && target === 'app'
+            ? `Sent to ${AppView?.appData?.name || 'this app'}'s group as a request` : postedTo;
           // #3186: the confirmation stays, with "See your requests" in it,
           // instead of closing itself (see showSent above).
           if (!showFirstFeedback(data.firstFeedback, feedbackStatus.textContent)) {
-            showSent(postedTo, `${bountyNotice}${stateNotice}`.trim());
+            showSent(toGroup, `${bountyNotice}${stateNotice}`.trim());
           }
           return;
         }
@@ -1893,5 +1939,16 @@ export function init() {
     setComposerLocked(true);
     disableSubmit();
     showSent('Posted to Homeroom');
+  };
+
+  // B8: ?shot=feedback-bot, what a request Homeroom bot builds is answered
+  // with. Writes nothing.
+  App._simulateFeedbackBot = () => {
+    setComposerLocked(true);
+    disableSubmit();
+    showSent('', '', {
+      botWillBuild: true, typicalMinutes: 8, canFix: true,
+      appSlug: App.currentApp || 'usernode-2d5619', issueNumber: 900008,
+    });
   };
 }

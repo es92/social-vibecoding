@@ -167,10 +167,12 @@ export const TOUR_STEPS: readonly TourStep[] = [
     // (`#improve-quick-actions`, ../../improve/actions.tsx). It was Give
     // feedback and New change side by side, and people found both
     // confusing; the step says what the button does and where making the
-    // change yourself went (Start a new change, under Agent sessions).
+    // change yourself went. B8: the request goes to Homeroom bot, which
+    // builds it (or, where it does not build, it goes to the group), and
+    // making it yourself is Build it yourself.
     id: 'menu-actions',
     title: 'Ask for a change',
-    body: 'Post a request the members can see, vote on and pick up. To make a change yourself, use Start a new change under Agent sessions.',
+    body: 'Tell Homeroom bot what should change. It builds it for you, or passes it to the group as a request. To build it yourself with a coding agent, tap Build it yourself.',
     targets: ['#improve-quick-actions', '#improve-row-feedback'],
     needsPanel: true,
   },

@@ -48,8 +48,9 @@ test('index.html carries the starter-notice sentinel block before the example ca
   assert.match(block, /Starter template/, 'hero badge names the starter template');
   // #3573: it named the Improve pill, which #2718 retired. It names the
   // Homeroom mark's menu and its row now, by the row's own label.
-  assert.match(block, /Tap the <strong[^>]*>Homeroom icon<\/strong> in the header and choose <strong[^>]*>Start a new change<\/strong> to start building your app\./,
-    'hero copy names the Homeroom icon and its Start a new change row');
+  // B8: changing it is asking Homeroom bot, through the menu's Ask for a change.
+  assert.match(block, /To change this app, ask Homeroom bot: tap the <strong[^>]*>Homeroom icon<\/strong>, then <strong[^>]*>Ask for a change<\/strong>\./,
+    'hero copy names the Homeroom icon and its Ask for a change button');
   assert.doesNotMatch(block, /Improve/, 'no Improve button to point at any more');
   assert.match(block, /What's already working/, 'explainer card inside the sentinel block');
   // #1418: the welcome copy is product-focused — it describes the outcome,
@@ -83,8 +84,8 @@ test('the scaffold ships a README that names the app and the template state', ()
   assert.match(readme, /Starter template/, 'README states this is the starter template');
   // #3573: Start a new change in the Homeroom mark's menu, not the retired
   // Improve pill (#2718).
-  assert.match(readme, /tap the Homeroom icon in the header, choose\n\*\*Start a new change\*\*, and describe the app you want/,
-    'README says Start a new change is how to replace it');
+  assert.match(readme, /To change this app, ask Homeroom bot: open the app on Homeroom, tap the\nHomeroom icon in the header, then \*\*Ask for a change\*\*, and describe the\napp you want/,
+    'README says asking Homeroom bot is how to replace it');
   assert.doesNotMatch(readme, /Improve/);
   assert.match(readme, /rewrite this README/i,
     'README instructs its own rewrite once the real app exists');
@@ -104,8 +105,11 @@ test('the starter copy names the row the Homeroom mark\'s menu really has', () =
   const path = require('node:path');
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   const sheet = read('frontend/src/features/app-context/app-context-sheet.tsx');
-  assert.match(sheet, /id="improve-row-new-session"[\s\S]{0,400}label="Start a new change"/,
-    'the menu row is still called Start a new change');
+  // B8: the menu leads with Ask for a change; making it yourself is its own row.
+  assert.match(read('frontend/src/features/improve/actions.tsx'), /id="improve-row-feedback"\s+label="Ask for a change"/,
+    'the menu still has Ask for a change');
+  assert.match(sheet, /id="improve-row-new-session"[\s\S]{0,600}label="Build it yourself"/,
+    'and the agent-session row is called Build it yourself');
   assert.match(read('frontend/src/features/header/platform-mark.tsx'), /aria-label="Homeroom menu"/,
     'the header control is still the Homeroom mark');
 });

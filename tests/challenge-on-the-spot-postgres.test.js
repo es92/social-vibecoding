@@ -357,6 +357,12 @@ test('the First challenges count on the spot, against the full PostgreSQL schema
     // asks GitHub only when it is switched on.
     await new Promise((r) => setTimeout(r, 300));
     as = await user();
+    // B8: a request on a project is filed by its members.
+    await pool.query(
+      `INSERT INTO community_members (community_id, user_id)
+       SELECT community_id, $2 FROM apps WHERE id = $1 ON CONFLICT DO NOTHING`,
+      [arena.id, as.id],
+    );
     const send = (description) => call('POST', '/api/feedback', {
       description, title: 'A report', target: 'app', appSlug: arena.slug,
     });

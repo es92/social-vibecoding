@@ -657,6 +657,12 @@ export async function decideBotAction(actionId: number, choice: string): Promise
   return { label: text(pick(data, 'label')) || null };
 }
 
+/** B8: the signed-in person's chat with Homeroom bot, made the first time. */
+export async function openBotConversation(): Promise<number | null> {
+  const data = record(await request<unknown>('/api/conversations/homeroom-bot', { method: 'POST', body: '{}' }));
+  return strictId(pick(data, 'conversationId')) || null;
+}
+
 export async function setBlock(userId: number, blocked: boolean): Promise<void> {
   await request<unknown>(`/api/me/blocks/${userId}`, { method: blocked ? 'PUT' : 'DELETE', ...(blocked ? { body: '{}' } : {}) });
 }

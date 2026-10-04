@@ -388,12 +388,20 @@ export function FeedbackDialog() {
             Request posted
           </h2>
           <p id="feedback-sent-notice" className="hidden text-sm text-emerald-700 dark:text-emerald-400 mb-2" role="status"></p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+          {/* B8: where Homeroom bot builds it, this says so ("Homeroom bot is
+              on it, usually about 8 minutes."), Open chat leads, and building
+              it yourself is the small link at the foot. The controller words
+              the line and shows the two. */}
+          <p id="feedback-sent-line" className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
             Find it on your profile, under Your requests.
           </p>
           <div className="flex flex-col gap-3">
+            <Button id="feedback-sent-chat" className="hidden min-h-[44px]">Open chat</Button>
             <Button id="feedback-sent-mine" variant="neutral" ink="neutral" className="min-h-[44px]">See your requests</Button>
             <Button id="feedback-sent-done" variant="unstyled" ink="muted" className="min-h-[44px]">Done</Button>
+            <button id="feedback-sent-fix" type="button" className="hidden self-center text-xs text-zinc-500 underline underline-offset-2 dark:text-zinc-400">
+              Build it yourself with a coding agent
+            </button>
           </div>
         </section>
       </DialogCard>

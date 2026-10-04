@@ -729,7 +729,8 @@ dependencies"; etc.)_
     // That was "tap Improve in the header" until #2718 retired the Improve
     // pill; since #3573 it names what is there now, the Homeroom mark's menu
     // and its "Start a new change" row (frontend/src/features/app-context/
-    // app-context-sheet.tsx). "Homeroom icon" is what the mark looks like (the
+    // app-context-sheet.tsx); since B8, its "Ask for a change" button, which
+    // goes to Homeroom bot. "Homeroom icon" is what the mark looks like (the
     // platform's own copy calls its menu "the Homeroom menu", its
     // aria-label), and one starter serves every new app, so it says "your
     // app". Only new repositories get this: an existing app keeps the copy it
@@ -757,9 +758,10 @@ The scaffold is a small working demo that proves the plumbing works:
 
 ## Replacing the template
 
-Open the app on Homeroom, tap the Homeroom icon in the header, choose
-**Start a new change**, and describe the app you want in plain English.
-The template will be replaced with your real app. You can also run
+To change this app, ask Homeroom bot: open the app on Homeroom, tap the
+Homeroom icon in the header, then **Ask for a change**, and describe the
+app you want in plain English. The template will be replaced with your
+real app. You can also run
 Claude Code against this repo directly; start with \`CLAUDE.md\`, which
 carries the app-specific notes and points at the platform rules.
 
@@ -1214,7 +1216,7 @@ ${server.start}start().catch(err => { console.error(err); process.exit(1); });
       <span class="rounded-full bg-raised px-3 py-1 text-small font-medium text-muted">Starter template</span>
       <h1 class="text-title">${escapeHtml(appName)}</h1>
       <p class="text-body text-muted">Welcome to your new app! Everything on this screen is placeholder content that came with it.</p>
-      <p class="text-body text-muted">Tap the <strong class="font-semibold text-fg">Homeroom icon</strong> in the header and choose <strong class="font-semibold text-fg">Start a new change</strong> to start building your app. Describe what you'd like in plain English, and it will be turned into your real app.</p>
+      <p class="text-body text-muted">To change this app, ask Homeroom bot: tap the <strong class="font-semibold text-fg">Homeroom icon</strong>, then <strong class="font-semibold text-fg">Ask for a change</strong>. Describe what you'd like in plain English, and it will be turned into your real app.</p>
     </section>
 
     <section>
@@ -1423,9 +1425,9 @@ And what every Homeroom app gets:
 
 ## Changing it
 
-Open the app on Homeroom, tap the Homeroom icon in the header, choose
-**Start a new change**, and describe what you want in plain English. You
-can also run Claude Code against this repo directly; start with
+To change this app, ask Homeroom bot: open the app on Homeroom, tap the
+Homeroom icon in the header, then **Ask for a change**, and describe what
+you want in plain English. You can also run Claude Code against this repo directly; start with
 \`CLAUDE.md\`, which carries the app-specific notes and points at the
 platform rules.
 `;

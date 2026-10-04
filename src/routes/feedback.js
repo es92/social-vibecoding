@@ -7,6 +7,7 @@ const limits = require('../services/limits');
 const github = require('../services/github');
 const { announceIssueCreated, findAppByRepo } = require('../services/issue-announce');
 const appAccess = require('../services/app-access');
+const communities = require('../services/communities');
 const { placeBounty } = require('../services/bounties');
 const { getPool } = require('../db/pool');
 const { sniffImageType } = require('../services/attachments');
@@ -608,6 +609,16 @@ function feedbackRoutes(config) {
       if (!appRow) {
         return res.status(404).json({ error: 'App not found' });
       }
+      // B8: a request on a project is filed by its members, as every other
+      // way of filing one is (communities.js). A non-member is asked to join
+      // first (lib/join-required.ts), and nothing is filed until they do.
+      try {
+        const join = await communities.appNeedsJoin(pool, appSlug, req.user);
+        if (join) return res.status(403).json(join);
+      } catch (err) {
+        log.error('feedback', 'Membership check failed', { message: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
+      }
       const [, owner, repo] = (appRow.repo_url || '').match(/github\.com\/([^/]+)\/([^/]+)/) || [];
       if (!owner || !repo) {
         return res.status(409).json({ error: 'This app has no repository yet. Try platform feedback instead' });
@@ -762,10 +773,26 @@ function feedbackRoutes(config) {
         const firstFeedback = await firstFeedbackMoment(pool, {
           user: req.user, app: appContext, owner: issueOwner, repo: issueRepo, issueNumber: issue.number,
         });
+        // B8: Homeroom bot takes it from here where it builds, and the
+        // confirmation says so (dialogs/feedback-controller.js).
+        const homeroomBot = await require('../services/homeroom-bot-dm').noteRequestFiled(pool, {
+          app: appContext, user: req.user, issueNumber: issue.number, title, askedText: description.trim(),
+        });
+        // Its confirmation's small "Build it yourself" link, for somebody who
+        // could start a change here (the first-request moment's canFix rule).
+        if (homeroomBot?.botWillBuild) {
+          let canFix = false;
+          try {
+            const fixApp = await appAccess.getAppForUser(pool, appContext.slug, req.user, 'view', appAccess.ACCESS_COLUMNS);
+            canFix = !!fixApp && await appAccess.checkAppAccess(pool, fixApp, req.user, 'collab');
+          } catch { canFix = false; }
+          Object.assign(homeroomBot, { canFix, appSlug: appContext.slug, issueNumber: issue.number });
+        }
         return res.json({
           url: issue.html_url, title, titleFallback,
           ...(bounty ? { bounty } : {}),
           ...(firstFeedback ? { firstFeedback } : {}),
+          ...(homeroomBot ? { homeroomBot } : {}),
         });
       }
 

@@ -849,9 +849,11 @@ export function AppsSwitcherSheet(): ReactNode {
                 className={`${ROW} w-full text-left`}
                 onClick={() => Improve.startSession()}
               >
+                {/* B8: Ask for a change (above) goes to Homeroom bot; this
+                    is building it yourself, with a coding agent. */}
                 <RowBody
                   icon={<PlusIcon className="text-violet-600 dark:text-violet-400" />}
-                  label="Start a new change"
+                  label="Build it yourself"
                 />
               </button>
             )}

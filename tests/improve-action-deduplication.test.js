@@ -36,10 +36,11 @@ const board = (props = {}) => renderToHtml(createElement(DevActionsRow, { ...BAS
 const actions = (html) => [...html.matchAll(/<button data-plus="([^"]+)"/g)].map((m) => m[1]);
 
 test('the rendered + menu keeps only distinct actions, including app-management gates', () => {
-  assert.deepEqual(actions(board()), ['new-change', 'issue', 'import-pr', 'members', 'rename', 'secrets', 'fork']);
-  assert.deepEqual(actions(board({ showsMembers: false })), ['new-change', 'issue', 'import-pr', 'rename', 'secrets', 'fork']);
+  // B8: Ask for a change leads; Build it yourself is second.
+  assert.deepEqual(actions(board()), ['issue', 'new-change', 'import-pr', 'members', 'rename', 'secrets', 'fork']);
+  assert.deepEqual(actions(board({ showsMembers: false })), ['issue', 'new-change', 'import-pr', 'rename', 'secrets', 'fork']);
   const platform = board({ selfHosted: true });
-  assert.deepEqual(actions(platform), ['new-change', 'issue', 'import-pr', 'members', 'rename', 'secrets']);
+  assert.deepEqual(actions(platform), ['issue', 'new-change', 'import-pr', 'members', 'rename', 'secrets']);
   assert.match(platform, /Proposal approvals/);
   assert.match(platform, /Platform variables/);
   assert.doesNotMatch(platform, /Members &amp; visibility/);
@@ -69,7 +70,7 @@ test('hiding import leaves Ask for a change first, so the settings divider under
   // heading any more: it is the menu's first, and "Settings & rules" says
   // where the rest begins.
   const html = board({ canCollaborate: false });
-  assert.deepEqual(actions(html), ['new-change', 'issue', 'members', 'rename', 'secrets', 'fork']);
+  assert.deepEqual(actions(html), ['issue', 'new-change', 'members', 'rename', 'secrets', 'fork']);
   assert.doesNotMatch(html, /data-plus-group="build"/);
   assert.doesNotMatch(html, /Add to the board/);
   const settings = html.match(/<div data-plus-group="settings"[^>]*>/);
@@ -203,7 +204,7 @@ for (const touch of [false, true]) {
         assert.equal(h.sheets.length, index + 1, 'one sheet per click after re-wiring');
         const sheet = h.sheets.at(-1);
         assert.deepEqual(Array.from(sheet.actions, (item) => item.label), [
-          'Start a new change', 'Ask for a change', 'Import Feature from a PR', 'Settings & rules',
+          'Ask for a change', 'Build it yourself', 'Import Feature from a PR', 'Settings & rules',
           'Members & approvals', 'App display name', 'App secrets', 'Fork this app',
         ]);
         // #1930: every action row carries its own glyph, class-stripped.
@@ -212,9 +213,9 @@ for (const touch of [false, true]) {
           assert.equal(item.iconEl.classRemoved, true, `${item.label}'s icon drops its Tailwind classes`);
         }
         assert.ok(h.classes.has('hidden'), 'touch never opens the desktop dropdown');
-        // Start a new change is React's own onClick (the sheet's handler
+        // Build it yourself is React's own onClick (the sheet's handler
         // clicks the row), so _wirePlusMenu dispatches the rest.
-        sheet.actions.filter((item) => !item.heading && item.label !== 'Start a new change')[index].handler();
+        sheet.actions.filter((item) => !item.heading && item.label !== 'Build it yourself')[index].handler();
       } else {
         assert.equal(h.attributes['aria-expanded'], 'true');
         assert.equal(h.classes.has('hidden'), false);
@@ -246,7 +247,8 @@ test('Ask for a change and Start a new change each exist once, and the read-only
   assert.ok(!MENU.includes('giveFeedback'),
     'the menu does not keep a second caller of the same method');
   assert.equal(MENU.split('id="improve-row-new-session"').length - 1, 1);
-  assert.match(MENU, /id="improve-row-new-session"[\s\S]{0,160}onClick=\{\(\) => Improve\.startSession\(\)\}[\s\S]{0,240}label="Start a new change"/);
+  // B8: the row is Build it yourself, beside Ask for a change going to Homeroom bot.
+  assert.match(MENU, /id="improve-row-new-session"[\s\S]{0,160}onClick=\{\(\) => Improve\.startSession\(\)\}[\s\S]{0,480}label="Build it yourself"/);
   // A read-only viewer may not start a change, as the button's gate was.
   assert.match(MENU, /\{readOnly \? null : \(\s*<button\s+id="improve-row-new-session"/);
   // #852 review: the hub's ⋯ leads with it too, calling the same method, and
@@ -273,9 +275,9 @@ test('Ask for a change is a real button[data-plus] row that leads the writeable 
   // It needs nothing of the viewer beyond a writeable board: present without
   // the collaborator bit, absent for the read-only viewer, who keeps Fork —
   // and on the platform app no "+" at all, as before.
-  // Second, under Start a new change (#852 review), and ahead of the rest.
-  assert.deepEqual(actions(html).slice(0, 2), ['new-change', 'issue'], 'it follows Start a new change');
-  assert.deepEqual(actions(board({ canCollaborate: false })).slice(0, 2), ['new-change', 'issue']);
+  // B8: first, with Build it yourself under it, and ahead of the rest.
+  assert.deepEqual(actions(html).slice(0, 2), ['issue', 'new-change'], 'it leads, Build it yourself second');
+  assert.deepEqual(actions(board({ canCollaborate: false })).slice(0, 2), ['issue', 'new-change']);
   assert.deepEqual(actions(board({ readOnly: true, canCollaborate: false })), ['fork']);
   assert.deepEqual(actions(board({ selfHosted: true, readOnly: true, canCollaborate: false })), []);
   // Nothing outside React lifts the dialog for it: the row is wired by the

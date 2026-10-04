@@ -1518,16 +1518,16 @@
       "expectSelector": ".dev-ws-hero #dev-plus-menu [data-plus=\"import-pr\"]"
     },
     {
-      "name": "The hub's ⋯ menu leads with Start a new change and Ask for a change, then names its settings group (#1900, #852 review)",
+      "name": "The hub's ⋯ menu leads with Ask for a change, then Build it yourself, then names its settings group (#1900, #852 review, B8)",
       "path": "/?demo=1&ws=status&shot=plus-menu#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-plus-menu > button[data-plus=\"new-change\"]:first-child + button[data-plus=\"issue\"] ~ [data-plus-group=\"settings\"]",
+      "expectSelector": "#dev-plus-menu > button[data-plus=\"issue\"]:first-child + button[data-plus=\"new-change\"] ~ [data-plus-group=\"settings\"]",
       "expectText": "Ask for a change"
     },
     {
-      "name": "Start a new change leads the menu's Agent sessions, where New change went (#1490, #2718 review, UI overhaul)",
+      "name": "Build it yourself leads the menu's Agent sessions, where New change went (#1490, #2718 review, UI overhaul, B8)",
       "path": "/?demo=1&shot=improve#app/usernode-2d5619/board",
       "expectSelector": "#apps-switcher-sheet[data-open] #app-menu-sessions > #improve-row-new-session",
-      "expectText": "Start a new change"
+      "expectText": "Build it yourself"
     },
     {
       "name": "Ask for a change is the menu's one button, in exactly one place (#1490, #2718, UI overhaul)",
@@ -2307,7 +2307,7 @@
       "expectSelector": "#apps-switcher-sheet #switcher-nav > a#app-menu-row-workshop[data-context-row=\"workshop\"]"
     },
     {
-      "name": "The app-context sheet carries Start a new change under Agent sessions (Streamlined Concept, UI overhaul)",
+      "name": "The app-context sheet carries Build it yourself under Agent sessions (Streamlined Concept, UI overhaul, B8)",
       "path": "/?demo=1#app/usernode-2d5619/dev",
       "expectSelector": "#app-menu-sessions #improve-row-new-session"
     },
@@ -2621,9 +2621,9 @@
       "expectText": "Communities"
     },
     {
-      "name": "The hub's discussion is a preview (its last two messages and Open, the Discussion tab, with no composer), and Start a new change leads the hero's ⋯ rather than ending the hub (#852 review)",
+      "name": "The hub's discussion is a preview (its last two messages and Open, the Discussion tab, with no composer), and Ask for a change leads the hero's ⋯, Build it yourself next, rather than ending the hub (#852 review, B8)",
       "path": "/?demo=1&ws=status#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"status\"]:has(section[data-ws-channel=\"preview\"] button[data-ws-channel-open]):not(:has(section[data-ws-channel=\"preview\"] form)):not(:has([data-ws-start-change])) #dev-plus-menu > [data-plus=\"new-change\"]:first-child",
+      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"status\"]:has(section[data-ws-channel=\"preview\"] button[data-ws-channel-open]):not(:has(section[data-ws-channel=\"preview\"] form)):not(:has([data-ws-start-change])) #dev-plus-menu > [data-plus=\"issue\"]:first-child",
       "expectText": "Discussion"
     },
     {
@@ -3320,7 +3320,7 @@
       "expectText": "Go to community"
     },
     {
-      "name": "Agent sessions leads with Start a new change, sessions or none (UI overhaul; it was Continue)",
+      "name": "Agent sessions leads with Build it yourself, sessions or none (UI overhaul; it was Continue; B8)",
       "path": "/?shot=app-context&demo=1#app/usernode-2d5619/dev",
       "expectSelector": "#apps-switcher-sheet[data-open] #switcher-nav > #app-menu-sessions > #improve-row-new-session:nth-child(2)",
       "expectText": "Agent sessions"

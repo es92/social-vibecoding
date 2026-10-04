@@ -165,7 +165,8 @@ test('the "+" is back at the strip\'s trailing end, and opens a choice rather th
   // THE VOTE POPUP'S MECHANICS, shared rather than copied: placement from
   // the button's rect, dismissal on outside click / Escape / scroll / resize.
   assert.match(fn, /useAnchoredDismiss\(open, \[btnRef, popRef\], shut\);/);
-  assert.match(fn, /placeUnderAnchor\(rect, \{ width: 240, height: 164 \}/);
+  // B8: sized to its rows, which are four with Homeroom bot and three without.
+  assert.match(fn, /placeUnderAnchor\(rect, \{ width: 260, height: 54 \* newChoices\(\)\.length \+ 2 \}/);
   assert.match(fn, /createPortal\(/, 'portalled, so the list\'s scroller cannot clip it');
   assert.match(fn, /role="menu"/);
   assert.match(fn, /pu\.actionSheet\(\{/, 'a phone gets the kit\'s action sheet');
@@ -175,10 +176,14 @@ test('the "+" is back at the strip\'s trailing end, and opens a choice rather th
 
   assert.match(SCREEN, /\{ key: 'direct', label: 'Direct message'/);
   assert.match(SCREEN, /\{ key: 'group', label: 'Group chat'/);
-  assert.match(SCREEN, /\{ key: 'agent', label: 'Agent session'/);
+  // B8: building it yourself, beside Homeroom bot, which leads for somebody who has it.
+  assert.match(SCREEN, /\{ key: 'agent', label: 'Build it yourself', hint: 'Plan and build a change with a coding agent' \}/);
+  assert.match(SCREEN, /\{ key: 'bot', label: 'Homeroom bot', hint: 'Make an app or ask for a change' \}/);
+  assert.match(SCREEN, /return NEW_CHOICES\.filter\(\(item\) => item\.key !== 'bot' \|\| hasHomeroomBot\(\)\);/);
   const start = SCREEN.slice(SCREEN.indexOf('function startNew'));
   const starter = start.slice(0, start.indexOf('\n}\n'));
-  assert.match(starter, /if \(choice === 'agent'\) void startAgentSession\(\{ entry: 'messages' \}\);/,
+  assert.match(starter, /if \(choice === 'bot'\) void openBot\(\);/, 'Homeroom bot opens the chat with it');
+  assert.match(starter, /else if \(choice === 'agent'\) void startAgentSession\(\{ entry: 'messages' \}\);/,
     'Agent opens one new conversation with the Mayor, with no app to pick first (#2779)');
   assert.match(starter, /else openDialog\('messagesCreate', choice\);/,
     'DM and group open the create flow on the matching tab');

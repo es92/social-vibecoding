@@ -1594,6 +1594,76 @@ async function answerUserMessage(pool, config, { bot, user, settings, conversati
   return answerOnRequest(pool, { bot, user, target, message, deps });
 }
 
+// ── A request filed elsewhere ────────────────────────────────────────────
+
+// B8: how long the bot usually takes from starting on a request to its change
+// being ready to try, when there is not enough of its own record to say.
+const TYPICAL_BUILD_MINUTES = 8;
+
+/**
+ * B8: about how many minutes the bot takes from reading a request to the
+ * change it builds going up: the median over its last 30 days, once it has
+ * built at least five, else TYPICAL_BUILD_MINUTES. Never throws.
+ */
+async function typicalMinutes(pool) {
+  const { rows } = await pool.query(
+    `SELECT percentile_cont(0.5) WITHIN GROUP (
+              ORDER BY EXTRACT(EPOCH FROM (cs.promoted_at - r.created_at)) / 60.0
+              + COALESCE(r.duration_ms, 0) / 60000.0) AS minutes,
+            COUNT(*)::int AS built
+       FROM homeroom_bot_runs r JOIN chat_sessions cs ON cs.id = r.proposal_session_id
+      WHERE r.mode = 'live' AND cs.promoted_at IS NOT NULL AND cs.promoted_at >= r.created_at
+        AND r.created_at > NOW() - INTERVAL '30 days'`,
+  ).catch(() => ({ rows: [] }));
+  const row = rows[0];
+  if (!row || Number(row.built) < 5 || !Number.isFinite(Number(row.minutes))) return TYPICAL_BUILD_MINUTES;
+  return Math.min(60, Math.max(2, Math.round(Number(row.minutes))));
+}
+
+/**
+ * B8: a request somebody filed through Ask for a change (routes/feedback.js),
+ * told to the bot the way its own filing from a DM is (homeroom-bot-mayor.js
+ * fileRequest): recorded as theirs, in their own words, and, on a project the
+ * bot builds on, put first in its queue with its card in their DM. Resolves
+ * { botWillBuild, typicalMinutes } for the confirmation, or null when they
+ * are not somebody the bot talks to. Never throws.
+ */
+async function noteRequestFiled(pool, { app, user, issueNumber, title = null, askedText = null }) {
+  try {
+    const n = Number(issueNumber);
+    if (!app?.id || !user?.id || user.isSynthetic || !Number.isInteger(n) || n <= 0) return null;
+    const settings = await settingsModule().readSettings(pool);
+    if (!hasBot(settings, user)) return null;
+    await pool.query(
+      `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, asked_text)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (app_id, issue_number) DO UPDATE SET user_id = EXCLUDED.user_id,
+         issue_title = COALESCE(EXCLUDED.issue_title, homeroom_bot_requesters.issue_title),
+         asked_text = COALESCE(EXCLUDED.asked_text, homeroom_bot_requesters.asked_text)`,
+      [app.id, n, user.id, clip(title, 300) || null, clip(askedText, 2000) || null],
+    );
+    if (!require('./homeroom-bot-live').isLiveFor(settings, app)) return { botWillBuild: false };
+    const queued = await settingsModule().enqueueFront(pool, {
+      appId: app.id, issueNumber: n, userId: user.id, reason: 'asked', payerId: user.id,
+    });
+    const bot = await botAccount(pool);
+    if (queued?.id && bot) {
+      await require('./homeroom-bot-activity').startCard(pool, {
+        app, issueNumber: n, bot, jobKey: Number(queued.id), settings, filed: true,
+        requester: {
+          userId: user.id, username: user.username, issueTitle: title, firstVersion: false, askedText,
+          isSynthetic: !!user.isSynthetic, hasPlatformAccess: !!user.hasPlatformAccess, isAdmin: !!user.isAdmin,
+        },
+      });
+    }
+    log.info('homeroom-bot-dm', 'A request asked for on the platform goes to the bot first', { app: app.slug, issueNumber: n, userId: user.id });
+    return { botWillBuild: true, typicalMinutes: await typicalMinutes(pool) };
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not hand a filed request to the bot', { app: app?.slug, issueNumber, err: err.message });
+    return null;
+  }
+}
+
 // ── Saying hello ─────────────────────────────────────────────────────────
 
 // B5: the bot introduces itself once per person, ever, and offers a few
@@ -1980,6 +2050,9 @@ module.exports = {
   notificationDetail,
   askedLine,
   hasOthers,
+  TYPICAL_BUILD_MINUTES,
+  typicalMinutes,
+  noteRequestFiled,
   MAKER_HELLO,
   MAKER_PROMPTS,
   MEMBER_PROMPTS,

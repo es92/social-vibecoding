@@ -233,6 +233,19 @@ function requireIssueMembership(pool) {
   }, 'issue');
 }
 
+// B8: Ask for a change (POST /api/feedback) files a request on the app its
+// body names rather than one in the path: the same gate, by slug. Returns the
+// join_required body to answer with, or null to let it through.
+async function appNeedsJoin(pool, slug, user) {
+  if (!slug || user?.isAdmin) return null;
+  const { rows } = await pool.query(
+    `SELECT ${GATE_COLUMNS} FROM apps a WHERE a.slug = $1`,
+    [slug, user?.id || null]
+  );
+  const app = rows[0];
+  return (await refusesToJoin(pool, app, user)) ? joinRequiredBody(app) : null;
+}
+
 // The WebSocket chat write (src/services/ws.js, a 'chat' message). Returns
 // the join_required body to send back to that one client, or null to let the
 // message through. Only 'chat' is gated: typing indicators and reactions are
@@ -526,6 +539,7 @@ async function activitySummary(pool, appId) {
 }
 
 module.exports = {
+  appNeedsJoin,
   channelSummary,
   generalChannelSummary,
   activitySummary,

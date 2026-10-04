@@ -325,18 +325,20 @@ export function DevPlusMenu({
                 the ⋯'s now. The Homeroom menu's own action
                 (Improve.startSession), which keeps its row there too.
             */}
-            <PlusRow
-              data-plus="new-change"
-              icon={<PencilSparklesIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
-              title="Start a new change"
-              sub="Build it with an agent, then put it to a vote"
-              onClick={() => { callAppView('_closePlusMenu'); void Improve.startSession(); }}
-            />
+            {/* B8: Ask for a change leads (it goes to Homeroom bot, or to
+                the group as a request); building it yourself is second. */}
             <PlusRow
               data-plus="issue"
               icon={<LightBulbIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
               title="Ask for a change"
               sub="Report a problem or idea without building it yourself"
+            />
+            <PlusRow
+              data-plus="new-change"
+              icon={<PencilSparklesIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
+              title="Build it yourself"
+              sub="With a coding agent, then ask for approval"
+              onClick={() => { callAppView('_closePlusMenu'); void Improve.startSession(); }}
             />
             {canCollaborate ? (
               <PlusRow
