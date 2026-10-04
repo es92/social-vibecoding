@@ -181,7 +181,13 @@ test('a card that joined work under way starts when that work began, not when th
   // The read pairs each card with the first run from that moment, and reads
   // past a build a restart sent back to be looked at again.
   const service = read('src/services/homeroom-bot-activity.js');
-  assert.match(service, /COALESCE\(CASE WHEN m\.metadata->'homeroomBot'->>'startedAt'/);
+  assert.match(service, /CASE WHEN m\.metadata->'homeroomBot'->>'startedAt'/);
+  // B4: a card carried on through several looks is read from the newest
+  // look's start, and counts its time from the first.
+  assert.match(service, /CASE WHEN m\.metadata->'homeroomBot'->>'lookAt'/);
+  assert.match(service, /COALESCE\(started_at, created_at\) AS first_at,\s+COALESCE\(look_at, started_at, created_at\) AS began/);
+  assert.equal(activity.cardOf({ ...row, first_at: '2026-10-02T10:00:00Z' }, { project: 'x', number: 3, stage: 'planning' }).startedAt,
+    '2026-10-02T10:00:00.000Z');
   assert.match(service, /AND r\.created_at >= c\.began\s+AND \(nxt\.began IS NULL OR r\.created_at < nxt\.began\)/);
   assert.match(service, /AND NOT \(r\.build_ok IS FALSE AND right\(COALESCE\(r\.build_error, ''\), char_length\(\$3::text\)\) = \$3::text\)/);
   const bot = read('src/services/homeroom-bot.js');

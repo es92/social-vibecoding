@@ -1002,7 +1002,9 @@ async function relayIssuePost({
   // request carries the request's card again under it. Said to the post as
   // told (it is in front of them), so the post does not tag them instead.
   const shown = await cardShown(pool, requester.userId, app.id, issueNumber);
-  if (shown?.current && CARD_SAYS.has(kind)) {
+  // B4: one card follows a request through every look, so while it has one,
+  // that card says it, wherever it sits.
+  if (shown && CARD_SAYS.has(kind)) {
     return {
       conversationId: shown.conversationId, messageId: shown.messageId, duplicate: true,
       userId: requester.userId, username: requester.username, card: true,

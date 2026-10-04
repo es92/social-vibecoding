@@ -219,7 +219,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     assert.equal((await byId(asAda, first.messageId)).outcome, 'live');
   });
 
-  await t.test('a question ends a card; the next look at the request is a card of its own', async () => {
+  await t.test('B4: a question ends a look; the next look at the request carries on in the same card', async () => {
     const asking = await activity.startCard(pool, {
       app: seeds, issueNumber: 4, requester: requester(ada, 'Dark mode'), bot, jobKey: await claim(seeds, 4), settings,
     });
@@ -228,17 +228,26 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     const asked = await byId(asAda, asking.messageId);
     assert.equal(asked.state, 'done');
     assert.equal(asked.outcome, 'question');
+    const { rows: [{ n: messagesBefore }] } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM conversation_messages WHERE sender_id = $1', [bot.id],
+    );
 
-    // Answered: the bot looks again, and that is a new piece of work.
+    // Answered: the bot looks again, and the same card follows it, where it
+    // first appeared, from when this look began. Nothing new is sent.
+    await new Promise((resolve) => setTimeout(resolve, 5));
     const again = await activity.startCard(pool, {
       app: seeds, issueNumber: 4, requester: requester(ada, 'Dark mode'), bot, jobKey: await claim(seeds, 4), settings,
     });
-    assert.notEqual(again.messageId, asking.messageId);
-    const cards = await cardsOf(asAda);
-    assert.deepEqual(cards.slice(0, 2).map((c) => c.messageId), [again.messageId, asking.messageId], 'newest first');
-    assert.equal(cards[0].state, 'working');
-    assert.equal(cards[0].stage, 'reading');
-    assert.equal(cards[1].outcome, 'question', 'the card before keeps what it came to');
+    assert.equal(again.messageId, asking.messageId);
+    assert.equal(again.continued, true);
+    const { rows: [{ n: messagesAfter }] } = await pool.query(
+      'SELECT COUNT(*)::int AS n FROM conversation_messages WHERE sender_id = $1', [bot.id],
+    );
+    assert.equal(messagesAfter, messagesBefore, 'no second card');
+    const card = await byId(asAda, asking.messageId);
+    assert.equal(card.state, 'working');
+    assert.equal(card.stage, 'reading');
+    assert.equal(card.startedAt, asked.startedAt, 'its time counts from the first look');
 
     // A look that ended with nothing recorded (its row gone, no run): stopped.
     const lost = await activity.startCard(pool, {
@@ -266,11 +275,12 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
        VALUES ($1, 8, 'live', 'ready', NOW()) RETURNING id`,
       [seeds.id],
     );
-    // A second look at the same request begins, with a card of its own.
+    // A second look at the same request begins: B4, the same card, which
+    // goes on following the build until it ends.
     const second = await activity.startCard(pool, {
       app: seeds, issueNumber: 8, requester: requester(ada, 'Watering log'), bot, jobKey: await claim(seeds, 8), settings,
     });
-    assert.notEqual(second.messageId, card.messageId);
+    assert.equal(second.messageId, card.messageId);
     let read = await byId(asAda, card.messageId);
     assert.deepEqual([read.state, read.stage, read.doing], ['working', 'build_queued', 'ready to build; waiting its turn to be built'],
       'its build waits its turn: not stopped');
@@ -295,10 +305,12 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     assert.equal((await byId(asAda, card.messageId)).outcome, 'closed');
 
     // A build that ended with nothing recorded is not working for ever: its
-    // session put away, the card before the newer one stopped.
+    // session put away, the card stopped. B4: the look that started it
+    // carried on in the same card, which reads from that look's start.
     const third = await activity.startCard(pool, {
       app: seeds, issueNumber: 8, requester: requester(ada, 'Watering log'), bot, jobKey: 'wp1-third', settings,
     });
+    assert.equal(third.messageId, card.messageId);
     const { rows: [lost] } = await pool.query(
       `INSERT INTO chat_sessions (app_id, user_id, branch_name, status, archived_at, session_title)
        VALUES ($1, $2, 'bot-build-8b', 'archived', NOW(), 'Watering log') RETURNING id`,
@@ -309,16 +321,14 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
        VALUES ($1, 8, 'live', 'ready', $2)`,
       [seeds.id, lost.id],
     );
-    // Its run is the third card's: it began after that card, before the next.
+    // Its run is the newest look's: it began after that look did.
     const { rows: [order] } = await pool.query(
       `SELECT (SELECT created_at FROM homeroom_bot_runs WHERE build_session_id = $1)
-                > (SELECT created_at FROM homeroom_bot_dm_messages WHERE message_id = $2) AS after`,
+                >= (SELECT (metadata->'homeroomBot'->>'lookAt')::timestamptz FROM conversation_messages WHERE id = $2) AS after`,
       [lost.id, third.messageId],
     );
     assert.equal(order.after, true);
-    await activity.startCard(pool, {
-      app: seeds, issueNumber: 8, requester: requester(ada, 'Watering log'), bot, jobKey: 'wp1-later', settings,
-    });
+    await pool.query('DELETE FROM homeroom_bot_queue WHERE app_id = $1 AND issue_number = 8', [seeds.id]);
     assert.equal((await byId(asAda, third.messageId)).outcome, 'stopped');
     await pool.query('DELETE FROM homeroom_bot_queue WHERE app_id = $1 AND issue_number = 8', [seeds.id]);
   });

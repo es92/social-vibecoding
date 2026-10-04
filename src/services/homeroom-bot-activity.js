@@ -21,14 +21,18 @@
 // homeroom_bot_dm_messages like the bot's other news about a request, so a
 // reply quoting it is about that request, as a reply to any of them is.
 //
-// ONE PER PIECE OF WORK. A piece of work is one look at a request, from the
-// queue row it was claimed from to what came of it, and that row is its
-// key: a look the platform hands back and starts again (a fault, a restart)
-// keeps its card, and the next look at the same request (after an answer,
-// say) gets a card of its own, further down. The bot's follow-ups on a
-// proposal already up for a vote start none (they return before the
-// "looking" post): they answer what the group said on the proposal, and the
-// card before them already ended at "proposal up".
+// ONE PER REQUEST (B4). A piece of work is one look at a request, from the
+// queue row it was claimed from to what came of it, and that row keys the
+// card the first look sends. The next look at the same request (after an
+// answer, a restart, a re-read) carries on in the SAME card rather than
+// starting another further down (continueCard): the card's `lookAt` moves
+// to when that look began, so it is read from then, and nothing new is sent,
+// so nothing rings and the inbox keeps its order. Before, an answered
+// question left a card saying "Needs you" above a second card reading on.
+// The card stays where it first appeared; the tray above the transcript and
+// the card itself show where the request is now. The bot's follow-ups on a
+// proposal already up for a vote start no look (they return before the
+// "looking" post): they answer what the group said on the proposal.
 //
 // WHAT IT SAYS IS READ, NEVER WRITTEN. Nothing updates a card as the work
 // moves on; `cardsFor` reads each card's state from the platform's own
@@ -178,8 +182,41 @@ async function recordCard(pool, sent, { userId, appId, issueNumber }) {
 }
 
 /**
+ * B4: the card that already follows one of `userId`'s requests, its newest
+ * still in the DM: { messageId, conversationId, lookAt }, or null.
+ */
+async function requestCard(pool, { userId, appId, issueNumber }) {
+  const { rows } = await pool.query(
+    `SELECT d.message_id, d.conversation_id, m.metadata->'homeroomBot'->>'lookAt' AS look_at
+       FROM homeroom_bot_dm_messages d
+       JOIN conversation_messages m ON m.id = d.message_id AND m.deleted_at IS NULL
+      WHERE d.user_id = $1 AND d.app_id = $2 AND d.issue_number = $3 AND d.kind = 'activity'
+      ORDER BY d.message_id DESC LIMIT 1`,
+    [userId, appId, issueNumber],
+  );
+  if (!rows[0]) return null;
+  return { messageId: Number(rows[0].message_id), conversationId: Number(rows[0].conversation_id) || null, lookAt: rows[0].look_at || null };
+}
+
+/**
+ * B4: a new look at a request carries on in the card that already follows
+ * it: its `lookAt` moves forward to when the look began (`lookAt`, now by
+ * default), and every device reading the card hears it changed. Never moves
+ * it back. Resolves the card as startCard does: { messageId, conversationId,
+ * duplicate: true, continued: true }.
+ */
+async function continueCard(pool, card, { userId, lookAt = null, dm }) {
+  const at = iso(lookAt) || new Date().toISOString();
+  if ((!card.lookAt || card.lookAt < at) && typeof dm.setQuestionState === 'function') {
+    await dm.setQuestionState(pool, card.messageId, { lookAt: at }, { conversationId: card.conversationId, userId });
+  }
+  return { messageId: card.messageId, conversationId: card.conversationId, duplicate: true, continued: true };
+}
+
+/**
  * The bot started a piece of work on one of `requester`'s requests: their
  * card, in their DM with it, when they are somebody it talks to there.
+ * B4: a request that already has a card carries on in it (continueCard).
  * `jobKey` is the queue row the work was claimed from. #3767: a request
  * filed from the DM gets its card when it is filed (`filed`), under the key
  * the work will start from, so the start finds it already sent. A request
@@ -195,6 +232,16 @@ async function startCard(pool, { app, issueNumber, requester, bot, jobKey, setti
     const dm = dmModule(deps);
     const s = settings || await settingsModule(deps).readSettings(pool);
     if (!dm.hasBot(s, requester)) return null;
+    const existing = await requestCard(pool, { userId: requester.userId, appId: app.id, issueNumber: n });
+    if (existing) {
+      // WP1 (#9): a build still waiting its turn or running is what the card
+      // follows until it ends, whatever look began after it.
+      const row = (await cardRows(pool, requester.userId)).find((r) => Number(r.message_id) === existing.messageId);
+      if (row && !outcomeOf(row) && buildUnderWay(row)) {
+        return { messageId: existing.messageId, conversationId: existing.conversationId, duplicate: true, continued: true };
+      }
+      return await continueCard(pool, existing, { userId: requester.userId, dm });
+    }
     const lowAllowance = typeof dm.allowanceLow === 'function'
       ? await dm.allowanceLow(pool, s, requester.userId).catch(() => false) : false;
     const sent = await sendCard(pool, {
@@ -273,6 +320,10 @@ function buildUnderWay(row) {
     && !row.cap_suppressed && (!!row.build_waiting_at || row.build_status === 'active' || row.build_status === 'paused');
 }
 
+// The progress stages (homeroom-bot-progress.js) that are a ready verdict's
+// build: its plan, the build, the proposal it opens.
+const BUILD_STAGES = new Set(['build_queued', 'starting', 'planning', 'building', 'proposing']);
+
 /**
  * Pure: one card, from its row and (while it has no outcome) the person's
  * progress entry for its request, or null when there is none.
@@ -281,8 +332,9 @@ function cardOf(row, entry) {
   const base = {
     messageId: Number(row.message_id),
     // When its work began: the card's own moment, or for a card that joined
-    // work already under way, when that work started.
-    startedAt: iso(row.began || row.created_at),
+    // work already under way, when that work started. B4: a card that
+    // carried on through several looks counts from the first.
+    startedAt: iso(row.first_at || row.began || row.created_at),
     links: linksOf(row),
   };
   let outcome = outcomeOf(row);
@@ -291,7 +343,9 @@ function cardOf(row, entry) {
   // something else: it used to read "Didn't finish" the moment a second look
   // at its request started, with its build healthy and nothing said.
   const building = !outcome && buildUnderWay(row);
-  if (building && (row.next_at || !entry)) {
+  // B4: with one card per request, a newer look's progress (reading the
+  // request again) is not this build's; the build's own stages are.
+  if (building && (row.next_at || !entry || !BUILD_STAGES.has(entry.stage))) {
     return {
       ...base,
       state: 'working',
@@ -332,17 +386,24 @@ function cardOf(row, entry) {
 async function cardRows(pool, userId, limit = MAX_CARDS) {
   const { RESTARTED_BUILD_NOTE } = require('./homeroom-bot');
   const { rows } = await pool.query(
-    `WITH cards AS (
+    `WITH stamped AS (
        SELECT d.message_id, d.app_id, d.issue_number, d.created_at,
-              COALESCE(CASE WHEN m.metadata->'homeroomBot'->>'startedAt'
-                                 ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$'
-                            THEN (m.metadata->'homeroomBot'->>'startedAt')::timestamptz END,
-                       d.created_at) AS began
+              CASE WHEN m.metadata->'homeroomBot'->>'startedAt'
+                        ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$'
+                   THEN (m.metadata->'homeroomBot'->>'startedAt')::timestamptz END AS started_at,
+              CASE WHEN m.metadata->'homeroomBot'->>'lookAt'
+                        ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$'
+                   THEN (m.metadata->'homeroomBot'->>'lookAt')::timestamptz END AS look_at
          FROM homeroom_bot_dm_messages d
          JOIN conversation_messages m ON m.id = d.message_id
         WHERE d.user_id = $1 AND d.kind = 'activity'
+     ), cards AS (
+       SELECT message_id, app_id, issue_number, created_at,
+              COALESCE(started_at, created_at) AS first_at,
+              COALESCE(look_at, started_at, created_at) AS began
+         FROM stamped
      )
-     SELECT c.message_id, c.app_id, c.issue_number, c.created_at, c.began, a.slug, a.name,
+     SELECT c.message_id, c.app_id, c.issue_number, c.created_at, c.first_at, c.began, a.slug, a.name,
             nxt.began AS next_at,
             run.id AS run_id, run.verdict, run.build_ok, run.build_error, run.cap_suppressed,
             run.created_at AS run_at, run.proposal_session_id,
@@ -577,11 +638,31 @@ async function catchUpCards(pool, { user, settings = null, deps = {}, now = new 
       );
       const recorded = new Map(theirs.map((r) => [`${Number(r.app_id)}#${Number(r.issue_number)}`, r]));
       const allowed = await viewableSlugs(pool, user, [...new Set(wanted.map(({ row }) => row.slug))]);
-      const followed = followedRequests(await cardRows(pool, userId, COVER_LIMIT));
+      const covered = await cardRows(pool, userId, COVER_LIMIT);
+      const followed = followedRequests(covered);
       wanted = wanted.filter(({ row }) => {
         const key = `${Number(row.app_id)}#${Number(row.issue_number)}`;
         return recorded.has(key) && allowed.has(row.slug) && !followed.has(key);
       });
+      if (!wanted.length) return 0;
+      // B4: a request whose card has ended carries on in it, from when this
+      // work began, rather than getting a second card at the end.
+      const newest = new Map();
+      for (const row of covered) {
+        const key = `${Number(row.app_id)}#${Number(row.issue_number)}`;
+        if (!newest.has(key)) newest.set(key, row);
+      }
+      const fresh = [];
+      for (const item of wanted) {
+        const card = newest.get(`${Number(item.row.app_id)}#${Number(item.row.issue_number)}`);
+        if (!card) { fresh.push(item); continue; }
+        await continueCard(pool, { messageId: Number(card.message_id), conversationId: null, lookAt: iso(card.began) }, {
+          userId, lookAt: item.piece.startedAt, dm,
+        }).catch((err) => log.warn('homeroom-bot-activity', 'Could not carry a card on', {
+          app: item.row.slug, issueNumber: item.row.issue_number, userId, err: err.message,
+        }));
+      }
+      wanted = fresh;
       if (!wanted.length) return 0;
       const bot = await dm.botAccount(pool);
       if (!bot) return 0;
@@ -687,6 +768,8 @@ module.exports = {
   DEMO_UNDER_WAY,
   cardText,
   jobCardKey,
+  requestCard,
+  continueCard,
   startCard,
   outcomeOf,
   endedAt,

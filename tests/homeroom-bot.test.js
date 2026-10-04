@@ -1228,7 +1228,7 @@ test('a new request on a live app gets its card when it is queued, under the key
     async query(sql, params) {
       const s = String(sql);
       if (/FROM issue_claims|UNNEST\(cs\.linked_issues\)|headless_issue_number AS n|created_from_issue_number AS n|FROM chat_messages/.test(s)) return { rows: [] };
-      if (/FROM homeroom_bot_dm_projects|FROM homeroom_bot_runs/.test(s)) return { rows: [] };
+      if (/FROM homeroom_bot_dm_projects|FROM homeroom_bot_runs|FROM homeroom_bot_dm_messages/.test(s)) return { rows: [] };
       if (/INSERT INTO homeroom_bot_queue/.test(s)) return { rows: [{ id: 400 + params[1], inserted: params[1] !== 2 }] };
       if (/DELETE FROM homeroom_bot_queue/.test(s)) return { rowCount: 0, rows: [] };
       throw new Error(`unexpected query: ${s.slice(0, 60)}`);

@@ -372,6 +372,27 @@ test('the Homeroom bot DM gives work already under way its activity card: once, 
     await dequeue(seeds, 10);
   });
 
+  await t.test('B4: work under way on a request whose card ended carries on in that card, with no second', async () => {
+    await requested(seeds, 12, ada, 'Rename notes');
+    await queued(seeds, 12, { minutesAgo: 30 });
+    assert.deepEqual(await catchUp(asAda), { added: 1 });
+    const message = (await cardMessages(ada)).at(-1);
+    await dequeue(seeds, 12);
+    await run(seeds, 12, { verdict: 'question', minutesAgo: 20 });
+    assert.equal((await cardOf(asAda, message.id)).outcome, 'question');
+
+    // Answered, and read again: the same card follows it, from then.
+    const count = (await cardMessages(ada)).length;
+    const again = await queued(seeds, 12, { minutesAgo: 5 });
+    assert.deepEqual(await catchUp(asAda), { added: 0 }, 'no second card');
+    assert.equal((await cardMessages(ada)).length, count);
+    const card = await cardOf(asAda, message.id);
+    assert.deepEqual([card.state, card.stage], ['working', 'reading']);
+    const { rows: [stored] } = await pool.query('SELECT metadata FROM conversation_messages WHERE id = $1', [message.id]);
+    assert.equal(stored.metadata.homeroomBot.lookAt, again.started_at.toISOString(), 'read from when this look began');
+    await dequeue(seeds, 12);
+  });
+
   await t.test('two openings at once send one card, and the bot switched off has nothing under way', async () => {
     const before = (await cardMessages(ada)).length;
     const share = await queued(seeds, 11);
