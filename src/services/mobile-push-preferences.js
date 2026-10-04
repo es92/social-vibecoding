@@ -70,6 +70,8 @@ const CATEGORY_DEFINITIONS = Object.freeze([
     kinds: Object.freeze([
       'stale_pr', 'check_failed', 'pr_proposed', 'proposal_vote', 'pr_merged', 'vote_digest',
       'revision_recheck', 'weekly_digest',
+      // B7: a change you can approve is ready to try.
+      'change_ready',
     ]),
   }),
   Object.freeze({

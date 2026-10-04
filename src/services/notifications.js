@@ -911,6 +911,35 @@ async function createPrProposedNotifications(pool, { appId, sessionId, proposerI
   return rows;
 }
 
+/**
+ * B7: "<Name>'s change to <App> is ready to try" (kind 'change_ready'), to
+ * the people whose Yes one of Homeroom bot's changes still needs
+ * (homeroom-bot-dm.js needsYesFrom), from whoever asked for it. Once per
+ * approval epoch (`detail`), so a new version asks again and a retry does
+ * not. Its category is on by default and push-eligible.
+ */
+async function createChangeReadyNotifications(pool, { appId, sessionId, sourceUserId = null, recipientIds = [], epoch = 0 }) {
+  if (!appId || !sessionId) return [];
+  let ids = [...new Set((recipientIds || []).map(Number).filter((n) => Number.isInteger(n) && n > 0))];
+  if (sourceUserId) ids = ids.filter((n) => n !== Number(sourceUserId));
+  if (!ids.length) return [];
+  ids = await notificationPreferences.filterUsersByCategory(pool, { userIds: ids, appId, categoryKey: 'changes_ready' });
+  if (!ids.length) return [];
+  const detail = `epoch:${Number(epoch) || 0}`;
+  const { rows } = await pool.query(
+    `INSERT INTO notifications (user_id, app_id, session_id, source_user_id, kind, detail)
+     SELECT u, $2, $3, $4, 'change_ready', $5::text
+       FROM UNNEST($1::int[]) AS u
+      WHERE NOT EXISTS (
+        SELECT 1 FROM notifications n
+         WHERE n.user_id = u AND n.session_id = $3 AND n.kind = 'change_ready' AND n.detail = $5::text
+      )
+     RETURNING id, user_id, app_id, session_id, source_user_id, kind, detail, created_at`,
+    [ids, appId, sessionId, sourceUserId || null, detail]
+  );
+  return rows;
+}
+
 // Collaborator-invite notification (kind='collab_invite'). One row per
 // outstanding invite; the actionable accept/decline UI lives in the
 // drawer's pinned Invites section (driven by listPendingInvites below,
@@ -1227,7 +1256,8 @@ async function countUnread(pool, userId) {
 const ACTION_COMPLETIONS = {
   // #1688: a vote also answers the re-confirm ask for that proposal — the
   // row's "Still yes" is a vote, and so is a plain Yes or No on the card.
-  vote_cast: { kinds: ['pr_proposed', 'stale_pr', 'revision_recheck'], scope: 'session_id' },
+  // B7: and "ready to try", which asked for exactly that vote.
+  vote_cast: { kinds: ['pr_proposed', 'stale_pr', 'revision_recheck', 'change_ready'], scope: 'session_id' },
   // #2387: 'thread_reply' is a chat-actionable kind like the other three —
   // posting in the app clears it, and it lights the message's unread dot.
   message_sent: { kinds: ['mention', 'reply', 'reaction', 'thread_reply'], scope: 'app_id' },
@@ -1525,6 +1555,7 @@ module.exports = {
   notifyManagedOpenRouterReviewAdmins,
   hydrateAndPush,
   createPrProposedNotifications,
+  createChangeReadyNotifications,
   createAppDeleteAttemptNotifications,
   createAppDeletedNotifications,
   createCollabInviteNotification,

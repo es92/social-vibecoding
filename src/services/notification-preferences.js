@@ -53,6 +53,17 @@
  * would be offering to mute something they were never going to receive.
  */
 const APP_CATEGORY_DEFINITIONS = Object.freeze([
+  // B7: a change Homeroom bot built is ready to try and needs your Yes. ON:
+  // it is asked of the few whose approval it needs (on a public community,
+  // only the approvers a project names), so it is no broadcast; and it is
+  // how they hear at all, since new_proposals below is off.
+  Object.freeze({
+    key: 'changes_ready',
+    label: 'Changes ready for you to try',
+    description: 'A change on this app needs your approval and is ready for you to try.',
+    defaultEnabled: true,
+    kinds: Object.freeze(['change_ready']),
+  }),
   Object.freeze({
     key: 'new_proposals',
     label: 'New proposals to vote on',

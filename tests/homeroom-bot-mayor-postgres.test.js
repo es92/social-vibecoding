@@ -694,7 +694,8 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     };
     const live = await dm.noteProposalMerged(pool, { id: built.id }, { config: {}, sha: 'a'.repeat(40), deps: healthy });
     const liveMessage = await read(live);
-    assert.equal(liveMessage.content, `**Note board** · request #${n}: Tags\n\nIt's live now. Open Note board below to try it.`);
+    // B7: a change to a project is "your change".
+    assert.equal(liveMessage.content, `**Note board** · request #${n}: Tags\n\nYour change is live now. Open Note board below to try it.`);
     assert.deepEqual(probed, ['app-note-board']);
     assert.equal(liveMessage.reply.id, ask.id);
     assert.equal(liveMessage.metadata.homeroomBot.link, '#app/note-board');

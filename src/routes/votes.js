@@ -3462,6 +3462,9 @@ function voteRoutes(config) {
           sessionId: session.id, userId: req.user.id, err: err.message,
         });
       }
+      // B7: a Yes settles the "ready to try" card Homeroom bot sent this
+      // voter about the change, on every device. Never throws.
+      if (vote === 'yes') void require('../services/homeroom-bot-dm').noteApproved(pool, session.id, req.user.id);
 
       if (unchanged) {
         log.debug('votes', 'Vote unchanged, skipping broadcast+merge', {

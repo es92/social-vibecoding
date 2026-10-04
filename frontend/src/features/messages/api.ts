@@ -91,7 +91,9 @@ export function normalizeUser(input: unknown): ConversationUser {
 const BOT_QUESTION_STATES = new Set(['open', 'answered', 'closed']);
 // B3: the kinds of button the client knows how to press (types.ts
 // HomeroomBotAction). An unknown one is dropped, never drawn as a dead button.
-const BOT_ACTION_TYPES = new Set(['server', 'open', 'prompt']);
+// B7: a change's ready card adds three: its preview (Try it), the person's
+// own Yes (Approve) and a reply quoting the card (Change something).
+const BOT_ACTION_TYPES = new Set(['server', 'open', 'prompt', 'preview', 'vote', 'reply']);
 const MAX_BOT_ACTIONS = 3;
 
 /** B3: a bot message's buttons, as types.ts HomeroomBotAction: at most three, one primary. */
@@ -107,9 +109,18 @@ function normalizeBotActions(input: unknown): HomeroomBotAction[] {
     if (!id || !label || !BOT_ACTION_TYPES.has(type)) continue;
     const target = type === 'open' ? inAppHref(pick(row, 'target')) : null;
     if (type === 'open' && !target) continue;
+    // B7: the change a preview or a vote is of, and the version a vote is for.
+    const sessionId = type === 'preview' || type === 'vote' ? strictId(pick(row, 'sessionId')) : null;
+    if ((type === 'preview' || type === 'vote') && !sessionId) continue;
+    const epoch = type === 'vote' && Number.isInteger(pick(row, 'epoch')) ? Number(pick(row, 'epoch')) : null;
     const style = pick(row, 'style') === 'primary' && !primary ? 'primary' : 'secondary';
     if (style === 'primary') primary = true;
-    out.push({ id, label, style, type: type as HomeroomBotAction['type'], ...(target ? { target } : {}) });
+    out.push({
+      id, label, style, type: type as HomeroomBotAction['type'],
+      ...(target ? { target } : {}),
+      ...(sessionId ? { sessionId } : {}),
+      ...(epoch !== null ? { epoch } : {}),
+    });
   }
   return out;
 }
@@ -153,6 +164,13 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
   const plan = normalizePlan(pick(bot, 'plan'));
   const questions = normalizePlanQuestions(pick(bot, 'questions'));
   const choices = array(pick(bot, 'choices')).filter((c): c is string => typeof c === 'string').slice(0, 2);
+  const readyRow = pick(bot, 'ready');
+  const ready = readyRow && typeof readyRow === 'object' ? {
+    group: pick(record(readyRow), 'group') === true,
+    last: pick(record(readyRow), 'last') === true,
+    waitingOn: array(pick(record(readyRow), 'waitingOn')).filter((u): u is string => typeof u === 'string' && !!u).slice(0, 3),
+    more: Math.max(Number(pick(record(readyRow), 'more')) || 0, 0),
+  } : null;
   return {
     homeroomBot: {
       kind,
@@ -181,6 +199,11 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       ...(pick(bot, 'stopped') === true ? { stopped: true } : {}),
       ...(pick(bot, 'changing') === true ? { changing: true } : {}),
       ...(choices.length ? { choices } : {}),
+      // B7: a change ready to try, drawn as its card.
+      ...(ready ? { ready } : {}),
+      ...(strictId(pick(bot, 'sessionId')) ? { sessionId: strictId(pick(bot, 'sessionId'))! } : {}),
+      ...(Number.isInteger(pick(bot, 'epoch')) ? { epoch: Number(pick(bot, 'epoch')) } : {}),
+      ...(pick(bot, 'updated') === true ? { updated: true } : {}),
     },
   };
 }
@@ -682,6 +705,31 @@ export async function setMessageSaved(
  * person it was offered to: a 409 means it was decided already (on another
  * device, say), and the message's own update shows how.
  */
+/**
+ * B7: Approve, from a change's ready card: the person's own Yes, cast from
+ * their own browser on the version the card was sent for, as the change
+ * page's vote is. `stale` when that version was replaced (a 409 that says
+ * so), with the version it is at now.
+ */
+export async function approveChange(sessionId: number, epoch: number | null): Promise<{ ok: boolean; stale: boolean; epoch: number | null; error: string | null }> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/sessions/${sessionId}/vote`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(epoch === null ? { vote: 'yes' } : { vote: 'yes', expectedEpoch: epoch }),
+    });
+  } catch {
+    return { ok: false, stale: false, epoch: null, error: 'Couldn’t reach Homeroom. Try again.' };
+  }
+  const data = record(await response.json().catch(() => ({})));
+  if (response.ok) return { ok: true, stale: false, epoch, error: null };
+  const stale = response.status === 409 && pick(data, 'headChanged') === true;
+  const next = Number.isInteger(pick(data, 'approvalEpoch')) ? Number(pick(data, 'approvalEpoch')) : null;
+  return { ok: false, stale, epoch: next, error: stale ? null : (text(pick(data, 'message')) || text(pick(data, 'error')) || 'Couldn’t approve it just now.') };
+}
+
 export async function decideBotAction(actionId: number, choice: string, answers?: string[]): Promise<{ label: string | null }> {
   // B6: Build it under a plan carries the answers tapped, in order.
   const data = record(await request<unknown>(`/api/conversations/homeroom-bot/actions/${actionId}`, {

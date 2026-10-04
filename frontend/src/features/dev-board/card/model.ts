@@ -152,6 +152,12 @@ export interface ActionSpec {
    */
   solo?: boolean;
   /**
+   * B7: on the Yes spec of a change, the project is just the viewer's and
+   * their Yes is the one it needs: there is nobody to vote with, so the
+   * button is one tap, "Approve", and its No is "Don't approve" in ⋯.
+   */
+  approve?: boolean;
+  /**
    * On the Yes spec: the viewer is a test account and a real person made this
    * app, so their vote is recorded and shown but not counted. The picker says
    * so in one line.

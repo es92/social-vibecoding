@@ -1032,6 +1032,20 @@
       "preview": "`SELECT COUNT(*) as cnt FROM ${table} WHERE ${keyCol} = $1 AND vote = '${noVal}'${epochClause}`"
     },
     {
+      "source": "src/services/homeroom-bot-dm.js",
+      "kind": "structural-template",
+      "fingerprint": "ed24ad3703716df52e4f",
+      "count": 1,
+      "preview": "`SELECT cs.id, cs.app_id, cs.user_id, cs.approval_epoch, COALESCE(cs.promoted_at, cs.created_at) AS opened_at, ${communities.audienceSql('a', '(SELECT COUNT(*) "
+    },
+    {
+      "source": "src/services/homeroom-bot-dm.js",
+      "kind": "structural-template",
+      "fingerprint": "fea4cb14181f808e6168",
+      "count": 1,
+      "preview": "`SELECT pv.user_id FROM pr_votes pv JOIN chat_sessions cs ON cs.id = pv.session_id WHERE pv.session_id = $1 AND pv.vote = 'yes' AND ${countedVotePredicateSql('p"
+    },
+    {
       "source": "src/services/homeroom-bot-mayor.js",
       "kind": "structural-template",
       "fingerprint": "7c68d039fac8e1650efb",

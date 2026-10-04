@@ -571,7 +571,8 @@ test('the row draws a bot\'s activity message as the card, in place of its words
   // B5: led by the bot's hello, on the first card it sends somebody.
   // B6: then a plan and two questions at once, which stand in place of their words too.
   assert.match(row, /\) : isActivityMessage\(message\) \? \([\s\S]{0,600}homeroomBot\?\.hello \? <p className="messages-bot-hello">[\s\S]{0,120}<BotActivityCard message=\{message\} words=\{words\} \/>\s*<\/>\s*\) : isPlanMessage\(message\) \? \(/);
-  assert.match(row, /<BotPlanCard message=\{message\} conversationId=\{conversationId\} \/>\s*\) : isTwoQuestions\(message\) \? \(\s*<BotTwoQuestions message=\{message\} conversationId=\{conversationId\} \/>\s*\) : words\}/);
+  // B7: and a change ready to try.
+  assert.match(row, /<BotPlanCard message=\{message\} conversationId=\{conversationId\} \/>\s*\) : isTwoQuestions\(message\) \? \(\s*<BotTwoQuestions message=\{message\} conversationId=\{conversationId\} \/>\s*\) : isReadyMessage\(message\) \? \([\s\S]{0,120}<BotReadyCard message=\{message\} conversationId=\{conversationId\} \/>\s*\) : words\}/);
 });
 
 // ── #3770: an older card keeps its words ──

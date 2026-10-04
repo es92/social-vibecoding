@@ -226,6 +226,11 @@ test('#7 (WP3): "live now" only once the app answered on the merge it deployed, 
   assert.equal(dm.mergedText({ line, appName: 'Homeroom', live: false, platform: true }),
     `${line}\n\nIt's going live now and will be ready in a few minutes.`);
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, card: false }), `${line}\n\nIt's live now.`);
+  // B7: a change to a project is "your change"; a first version is the project itself.
+  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, change: true }),
+    `${line}\n\nYour change is live now. Open Plant Pal below to try it.`);
+  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: false, change: true, card: false }),
+    `${line}\n\nYour change is going live now and will be ready in a few minutes.`);
   for (const live of [true, false]) assert.doesNotMatch(dm.mergedText({ line, appName: 'Plant Pal', live }), DASH);
   // The app first, to open it, then the proposal; the platform's own, its proposal alone.
   assert.deepEqual(dm.cardsFor('merged', { sessionId: 9, appCard: true }, { id: 3 }, 7),
@@ -631,7 +636,8 @@ test('the Messages client keeps the bot\'s mark and its question, which it build
 test('the DM screen draws the bot\'s question and badge, and the reply bar names where a reply goes', () => {
   const row = read('frontend/src/features/messages/message-row.tsx');
   // B6: two questions at once draw their own card (./bot-plan.tsx) instead.
-  assert.match(row, /message\.sender\.bot && \(message\.metadata\?\.homeroomBot\?\.question \|\| message\.metadata\?\.homeroomBot\?\.actions\?\.length\)\s*&& !isTwoQuestions\(message\)\s*\? <BotQuestion/);
+  // B7: nor does a change's ready card (./bot-ready.tsx), whose buttons are its own.
+  assert.match(row, /message\.sender\.bot && \(message\.metadata\?\.homeroomBot\?\.question \|\| message\.metadata\?\.homeroomBot\?\.actions\?\.length\)\s*&& !isTwoQuestions\(message\) && !isReadyMessage\(message\)\s*\? <BotQuestion/);
   assert.match(row, /messages-bot-badge/);
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.match(composer, /Your reply is posted on \$\{requestPlace\(reply\.metadata\.homeroomBot\)\}’s public discussion\./);
@@ -786,7 +792,7 @@ test('#3772: "needs a person" says what to do about it, and a card already showi
   assert.match(dm.dmText('followup_person', { reason: 'x' }, ctx), /so I've left it for the group: x$/);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
   assert.match(src, /const CARD_SAYS = new Set\(\['spec'\]\);/);
-  assert.match(src, /objects: cardsFor\(kind, dm, app, issueNumber\)\.filter\(\(c\) => !\(shown && c\.type === 'issue'\)\),/);
+  assert.match(src, /objects: dm\.card \? \[\] : cardsFor\(kind, dm, app, issueNumber\)\.filter\(\(c\) => !\(shown && c\.type === 'issue'\)\),/);
 });
 
 test('"typing" goes out before the answer starts, bounded', () => {

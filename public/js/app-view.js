@@ -4884,6 +4884,8 @@ const AppView = {
     const majority = (Number.isFinite(snap) && snap > 0) ? snap : (parseInt(ctx.majority) || 1);
     const vote = { yes, no, majority, pill: card.pill ? card.pill.state : null,
       was: AppView.thresholdWasNote(item, majority) };
+    // B7: on a project that is just the viewer's, the step is their approval.
+    const voteStep = AppView._approveSolo(item) ? 'Your approval' : 'Vote';
     // #2588: the two rows this carve-out existed for — the imported note and
     // the built-with note — are gone from the ledger, because neither was a
     // step waiting on anyone and the hero above the card already says where
@@ -4892,7 +4894,7 @@ const AppView = {
     const noteStep = (r) => ({
       key: r.key, gate: null,
       state: stateOf(r),
-      label: r.key === 'votes' ? 'Vote' : r.label, actor: null,
+      label: r.key === 'votes' ? voteStep : r.label, actor: null,
       note: null, action: null, row: r, vote: r.key === 'votes' ? vote : null,
     });
 
@@ -4907,7 +4909,7 @@ const AppView = {
         state: g.state,
         // The vote step says what it is; the gate's "Enough approvals" is
         // what it needs, which the tally under it says in numbers.
-        label: g.key === 'approvals' ? 'Vote' : g.label,
+        label: g.key === 'approvals' ? voteStep : g.label,
         actor: AppView.STEP_ACTORS[g.actor] || g.actor || null,
         note: useRow ? null : (g.note || (row ? said(row) : null) || null),
         action: g.action ? { key: `req:${g.key}`, cls: 'gc-vote-btn', label: g.action.label, title: g.action.title, act: g.action.act } : null,
@@ -12999,6 +13001,8 @@ const AppView = {
       isAdmin: !!(typeof App !== 'undefined' && App.user && App.user.canAdminWrite)
         || !!AppView._proposalsCtx?.isAppAdmin,
       hasVoted: !!p.my_vote,
+      // B7: on a project that is just theirs, it waits for their approval.
+      approveSolo: AppView._approveSolo(p),
     };
     const live = AppView._withLiveState(gates, p);
     const s = AppView._summarizeRequirements(live, viewer);
@@ -13263,7 +13267,7 @@ const AppView = {
     const roles = {
       author: { them: 'Waiting on the author', you: 'Waiting on you', is: !!v.isAuthor },
       admin: { them: 'Waiting on an admin', you: 'Waiting on you', is: !!v.isAdmin },
-      group: { them: 'Waiting on the group', you: 'Waiting on your vote', is: !v.hasVoted },
+      group: { them: 'Waiting on the group', you: v.approveSolo ? 'Waiting for your approval' : 'Waiting on your vote', is: !v.hasVoted },
     };
     const role = roles[current.actor];
     if (!role) {
@@ -13305,6 +13309,17 @@ const AppView = {
     return AppView.appData?.audience === 'solo' ? { solo: true } : {};
   },
 
+  // B7: a change on a project that is just the viewer's, whose one Yes is
+  // the one it needs (votes_required 1, and the viewer's vote counts): the
+  // vote is "Approve", one tap, and "Waiting on your vote" is "Waiting for
+  // your approval". A project with more people, a rule asking for more Yes
+  // votes, or a test account's uncounted vote keeps the vote as it is.
+  _approveSolo(pr) {
+    if (AppView.appData?.audience !== 'solo' || !pr || pr.my_vote_uncounted === true) return false;
+    const needed = parseInt(pr.votes_required, 10);
+    return !Number.isFinite(needed) || needed <= 1;
+  },
+
   // The card's Yes/No pair, and ONLY that pair. voteButtonsHtml stays as it
   // is — group-chat.js's inline activity rows, the work drawer and the home
   // strip all consume it, and its Preview/Retry/Admin-merge concatenation is
@@ -13343,6 +13358,7 @@ const AppView = {
         act: { fn: 'castVote', args: [pr.id, 'yes', ...rev] },
         ...prior,
         ...AppView._voteSolo(),
+        ...(AppView._approveSolo(pr) ? { approve: true } : {}),
         ...uncounted,
       },
       {
@@ -13500,6 +13516,19 @@ const AppView = {
         icon: 'github',
         title: pr.pr_url,
         act: () => window.open(pr.pr_url, '_blank', 'noopener'),
+      });
+    }
+    // B7: on a project that is just the viewer's, the vote is one-tap
+    // Approve, and its No lives here, last and red: today's No, with its
+    // line asked for as any No's is.
+    if (!ro && pr.status === 'promoted' && pr.my_vote !== 'no' && AppView._approveSolo(pr)) {
+      const epoch = Number.isFinite(parseInt(pr.approval_epoch, 10)) ? parseInt(pr.approval_epoch, 10) : null;
+      items.push({
+        label: 'Don’t approve',
+        icon: 'withdraw',
+        title: 'Say no to this change, with a line on why',
+        danger: true,
+        act: () => AppView.castVote(pr.id, 'no', ...(epoch === null ? [] : [epoch])),
       });
     }
     return items;
@@ -19120,6 +19149,11 @@ const AppView = {
     }
     // 5 — needs your vote. Absorbs the standalone pulsing "Vote" badge.
     if (p.status === 'promoted' && !p.my_vote && !AppView.readOnly) {
+      // B7: on a project that is just the viewer's, it waits for their approval.
+      if (AppView._approveSolo(p)) {
+        return { ...base, tier: 5, key: 'needs_vote', label: 'Waiting for your approval', tone: 'progress', fill: true, dot: true, reasons,
+          title: 'Approve it, and it goes live' };
+      }
       return { ...base, tier: 5, key: 'needs_vote', label: `Vote · ${yes}/${maj}`, tone: 'progress', fill: true, dot: true, reasons,
         title: 'You haven’t voted on this yet' };
     }

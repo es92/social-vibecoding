@@ -37,11 +37,12 @@ test('every gated kind is also push-eligible, or the two could disagree', () => 
   assert.deepEqual(missing, []);
 });
 
-test('the eight app categories are the ones that were agreed', () => {
+test('the nine app categories are the ones that were agreed', () => {
   // #1688 adds two: the re-confirm ask after a proposal you backed gets a
-  // new version, and the weekly "this week on <app>" card.
+  // new version, and the weekly "this week on <app>" card. B7 adds the
+  // first: a change you can approve is ready to try, on by default.
   assert.deepEqual([...prefs.APP_CATEGORY_KEYS], [
-    'new_proposals', 'new_issues', 'proposal_status',
+    'changes_ready', 'new_proposals', 'new_issues', 'proposal_status',
     'thread_replies', 'proposal_votes', 'revision_recheck', 'weekly_digest', 'app_health',
   ]);
 });
@@ -65,7 +66,7 @@ test('new proposals and new issues default OFF, everything else ON', () => {
   assert.equal(prefs.isKindEnabled('pr_proposed', {}), false);
   assert.equal(prefs.isKindEnabled('issue_opened', {}), false);
 
-  for (const kind of ['check_failed', 'stale_pr', 'pr_merged', 'reply', 'proposal_vote', 'app_health']) {
+  for (const kind of ['change_ready', 'check_failed', 'stale_pr', 'pr_merged', 'reply', 'proposal_vote', 'app_health']) {
     assert.equal(prefs.isKindEnabled(kind, {}), true, kind);
   }
 });

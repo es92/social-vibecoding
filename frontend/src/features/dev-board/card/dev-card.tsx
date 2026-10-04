@@ -705,6 +705,25 @@ export function VoteButton({ yes, no }: { yes: ActionSpec; no: ActionSpec }): Re
     </div>,
     sheetEl,
   ) : null;
+  // B7: a change on a project that is just the viewer's, whose Yes is the
+  // one it needs: nobody to vote with, so one tap approves it, which makes
+  // it live. Its No is "Don't approve" in ⋯, with its line, as any No.
+  if (yes.approve && yes.act?.fn === 'castVote') {
+    const approved = mine === 'yes';
+    return (
+      <button
+        type="button"
+        className={`dev-vote-btn dev-vote-btn-approve${approved ? ' dev-vote-btn-yes' : ''}`}
+        data-vote-btn={approved ? 'approved' : 'approve'}
+        title={approved ? 'You approved it.' : 'Approve it, and it goes live.'}
+        disabled={disabled || approved}
+        onClick={(e) => { e.stopPropagation(); send(yes, null); }}
+      >
+        {approved ? <CheckIcon aria-hidden="true" /> : null}
+        {approved ? 'Approved' : 'Approve'}
+      </button>
+    );
+  }
   return (
     <>
       <button

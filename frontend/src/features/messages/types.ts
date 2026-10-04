@@ -62,6 +62,24 @@ export interface HomeroomBotMeta {
   stopped?: boolean;
   changing?: boolean;
   choices?: string[];
+  /**
+   * B7: a change ready to try (kind `proposal`), drawn as its card: whether
+   * others are in its project, whether the person's Yes would be the last
+   * one needed, and who else it waits on. `sessionId` and `epoch` are the
+   * change and the version the card was sent for; `updated` when a newer
+   * version's card replaced it.
+   */
+  ready?: HomeroomBotReady;
+  sessionId?: number;
+  epoch?: number;
+  updated?: boolean;
+}
+
+export interface HomeroomBotReady {
+  group: boolean;
+  last: boolean;
+  waitingOn: string[];
+  more: number;
 }
 
 /** B6: one of a plan's choices, or one of two questions: the suggested answer first. */
@@ -85,8 +103,11 @@ export interface HomeroomBotAction {
   id: string;
   label: string;
   style: 'primary' | 'secondary';
-  type: 'server' | 'open' | 'prompt';
+  /** B7: `preview` opens a change's preview, `vote` casts the person's own Yes, `reply` quotes the card. */
+  type: 'server' | 'open' | 'prompt' | 'preview' | 'vote' | 'reply';
   target?: string;
+  sessionId?: number;
+  epoch?: number;
 }
 
 /**

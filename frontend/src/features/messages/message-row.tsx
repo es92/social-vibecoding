@@ -15,6 +15,7 @@ import { fileSize, fullTime, MessageMarkdown, ObjectCard, UserAvatar, senderName
 import { BotActivityCard, isActivityMessage } from './bot-activity';
 import { BotQuestion, botMeta } from './bot-question';
 import { BotPlanCard, BotTwoQuestions, isPlanMessage, isTwoQuestions } from './bot-plan';
+import { BotReadyCard, isReadyMessage } from './bot-ready';
 import { LinkEmbeds } from './link-cards';
 import { plainText } from './plain-text';
 import { confirmAction } from '../../lib/confirm';
@@ -261,6 +262,9 @@ export const MessageRow = memo(function MessageRow({
         <BotPlanCard message={message} conversationId={conversationId} />
       ) : isTwoQuestions(message) ? (
         <BotTwoQuestions message={message} conversationId={conversationId} />
+      ) : isReadyMessage(message) ? (
+        // B7: a change ready to try, with Try it, Approve and Change something.
+        <BotReadyCard message={message} conversationId={conversationId} />
       ) : words}
     </>
   );
@@ -270,7 +274,7 @@ export const MessageRow = memo(function MessageRow({
   const extras = (
     <>
       {message.sender.bot && (message.metadata?.homeroomBot?.question || message.metadata?.homeroomBot?.actions?.length)
-        && !isTwoQuestions(message)
+        && !isTwoQuestions(message) && !isReadyMessage(message)
         ? <BotQuestion message={message} conversationId={conversationId} /> : null}
       {message.attachments.length ? <div className="messages-attachments">{message.attachments.map((attachment) => <Attachment key={attachment.id} attachment={attachment} />)}</div> : null}
       {message.objects.length ? <div className="messages-object-list">{message.objects.map((object, index) => <ObjectCard key={`${object.type}-${index}`} object={object} />)}</div> : null}

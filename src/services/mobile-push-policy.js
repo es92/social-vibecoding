@@ -313,6 +313,12 @@ function buildCopy(kind, context, now) {
         body: AUTO_SOLVE_BODIES[detail] || '',
       };
     }
+    // B7: "Ben's change to Supper Club is ready to try", with its title under it.
+    case 'change_ready':
+      return {
+        title: `${actor ? `@${actor}'s change` : 'A change'}${app ? ` to ${app}` : ''} is ready to try`,
+        body: label ? truncate(label, TITLE_EMBED_MAX) : 'Try it, and approve it if you\'re happy with it',
+      };
     case 'pr_proposed':
       return actor && {
         title: withApp(quotedTitle ? `@${actor} proposed ${quotedTitle}` : `@${actor} proposed a change`),

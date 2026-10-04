@@ -5090,6 +5090,8 @@ INSERT INTO mobile_push_kind_categories (kind, category, default_enabled) VALUES
   -- per-app switch in services/notification-preferences.js is the first gate.
   ('revision_recheck', 'proposal_alerts', TRUE),
   ('weekly_digest', 'proposal_alerts', TRUE),
+  -- B7: a change you can approve is ready to try. Proposal lifecycle.
+  ('change_ready', 'proposal_alerts', TRUE),
   ('issue_opened', 'app_alerts', TRUE),
   ('app_health', 'app_alerts', TRUE),
   -- A server-wide cap nearing its ceiling, for full admins only
@@ -5125,6 +5127,8 @@ DELETE FROM mobile_push_kind_categories
    'proposal_vote', 'pr_merged', 'vote_digest', 'issue_opened', 'app_health',
    -- #1688's two.
    'revision_recheck', 'weekly_digest',
+   -- B7.
+   'change_ready',
    'conversation_invite', 'conversation_message', 'conversation_mention',
    'conversation_reply', 'conversation_reaction',
    -- #2386's two.

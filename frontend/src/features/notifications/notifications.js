@@ -1048,9 +1048,10 @@ const Notifications = {
       // one of them.
       // #1688: the re-confirm ask names one proposal and opens it; the
       // weekly card is a chat message, so its row opens the chat it is in.
+      // B7: "ready to try" opens the change, its preview one tap away.
       const proposalKinds = new Set([
         'pr_proposed', 'stale_pr', 'kudos', 'check_failed',
-        'pr_merged', 'proposal_vote', 'vote_digest', 'revision_recheck',
+        'pr_merged', 'proposal_vote', 'vote_digest', 'revision_recheck', 'change_ready',
       ]);
       const toProposals = proposalKinds.has(item.kind);
       // A new issue opens THAT ISSUE. `detail` is its number (the producer
@@ -2262,6 +2263,17 @@ function rowView(n) {
       icon: '\u{1F5F3}️',
       by: n.sourceUsername || null,
       ...headline('New proposal', prLabel || 'a PR'),
+    };
+  }
+
+  // B7: a change Homeroom bot built for somebody is ready to try, and it
+  // needs this reader's Yes. Who asked for it is the row's `by`.
+  if (n.kind === 'change_ready') {
+    return {
+      ...base,
+      icon: '\u{1F440}',
+      by: n.sourceUsername || null,
+      ...headline('Ready to try', prLabel || n.sessionTitle || 'a change'),
     };
   }
 
