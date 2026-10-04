@@ -1664,6 +1664,88 @@ async function noteRequestFiled(pool, { app, user, issueNumber, title = null, as
   }
 }
 
+// ── Asking it to build a request ─────────────────────────────────────────
+
+/**
+ * B8: whether a request's page offers `user` "Ask Homeroom bot to build
+ * this": Homeroom bot is theirs, and it builds on `app`. Resolves
+ * { typicalMinutes } or null. Never throws.
+ */
+async function botDoorFor(pool, app, user) {
+  try {
+    if (!app?.slug || !user?.id || user.isSynthetic) return null;
+    const settings = await settingsModule().readSettings(pool);
+    if (!hasBot(settings, user) || !require('./homeroom-bot-live').isLiveFor(settings, app)) return null;
+    return { typicalMinutes: await typicalMinutes(pool) };
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not read whether the bot builds here', { app: app?.slug, err: err.message });
+    return null;
+  }
+}
+
+/**
+ * B8: somebody pressed "Ask Homeroom bot to build this" on request
+ * `issueNumber` of `app` (routes/issues.js): it goes first in the bot's
+ * queue, paid from their building time (B2). The request stays its asker's:
+ * whoever it is recorded for keeps it, and its card and news reach them; a
+ * request nobody is recorded for becomes this person's. Resolves
+ * { ok: true, typicalMinutes, mine } or { ok: false, status, error, code }.
+ */
+async function askBotToBuild(pool, { app, user, issueNumber }) {
+  const n = Number(issueNumber);
+  if (!Number.isInteger(n) || n <= 0) return { ok: false, status: 400, error: 'Invalid request number' };
+  if (!app?.id || !user?.id || user.isSynthetic) return { ok: false, status: 403, error: 'forbidden' };
+  const settings = await settingsModule().readSettings(pool);
+  if (!hasBot(settings, user)) return { ok: false, status: 403, error: 'Homeroom bot is not on for you yet.' };
+  if (!require('./homeroom-bot-live').isLiveFor(settings, app)) {
+    return { ok: false, status: 409, error: 'Homeroom bot does not build on this project.', code: 'not_building' };
+  }
+  const busy = (await require('./homeroom-bot-progress').botWorkByIssue(pool, app.id)).get(n);
+  if (busy) return { ok: false, status: 409, error: 'Homeroom bot is already on it.', code: 'already_building' };
+  let requester = await requesterOf(pool, app.id, n);
+  if (!requester) {
+    const { rows } = await pool.query(
+      `SELECT title FROM issues WHERE app_id = $1 AND github_issue_number = $2 ORDER BY id DESC LIMIT 1`,
+      [app.id, n],
+    );
+    await pool.query(
+      `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title)
+       VALUES ($1, $2, $3, $4) ON CONFLICT (app_id, issue_number) DO NOTHING`,
+      [app.id, n, user.id, clip(rows[0]?.title, 300) || null],
+    );
+    requester = await requesterOf(pool, app.id, n);
+  }
+  const queued = await settingsModule().enqueueFront(pool, {
+    appId: app.id, issueNumber: n, userId: user.id, reason: 'asked', payerId: user.id,
+  });
+  // A look already started on it holds the row, and nothing is queued again.
+  if (!queued?.id) return { ok: false, status: 409, error: 'Homeroom bot is already on it.', code: 'already_building' };
+  const bot = await botAccount(pool);
+  if (bot && requester) {
+    await require('./homeroom-bot-activity').startCard(pool, {
+      app, issueNumber: n, bot, jobKey: Number(queued.id), settings, queued: true, requester,
+    });
+  }
+  log.info('homeroom-bot-dm', 'Asked to build a request from its page', { app: app.slug, issueNumber: n, userId: user.id });
+  return { ok: true, typicalMinutes: await typicalMinutes(pool), mine: Number(requester?.userId) === Number(user.id) };
+}
+
+/**
+ * B8: who each of `numbers` on `app` is being built for, for the request
+ * page's note ("Ada asked Homeroom bot to build this"): Map(number →
+ * { username, userId }). Never throws.
+ */
+async function askersOf(pool, appId, numbers) {
+  const list = [...new Set((numbers || []).map(Number).filter((x) => Number.isInteger(x) && x > 0))];
+  if (!list.length) return new Map();
+  const { rows } = await pool.query(
+    `SELECT q.issue_number, q.user_id, u.username FROM homeroom_bot_requesters q JOIN users u ON u.id = q.user_id
+      WHERE q.app_id = $1 AND q.issue_number = ANY($2::int[])`,
+    [appId, list],
+  ).catch(() => ({ rows: [] }));
+  return new Map(rows.map((r) => [Number(r.issue_number), { username: r.username, userId: Number(r.user_id) }]));
+}
+
 // ── Saying hello ─────────────────────────────────────────────────────────
 
 // B5: the bot introduces itself once per person, ever, and offers a few
@@ -2053,6 +2135,9 @@ module.exports = {
   TYPICAL_BUILD_MINUTES,
   typicalMinutes,
   noteRequestFiled,
+  botDoorFor,
+  askBotToBuild,
+  askersOf,
   MAKER_HELLO,
   MAKER_PROMPTS,
   MEMBER_PROMPTS,

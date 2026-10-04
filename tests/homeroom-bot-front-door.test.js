@@ -36,7 +36,9 @@ test('B8: the doors that open the chat with Homeroom bot, and what they are call
   assert.match(read('frontend/src/features/home/tour/tour-steps.ts'), /body: 'Tell Homeroom bot what should change\. It builds it for you, or passes it to the group as a request\. To build it yourself with a coding agent, tap Build it yourself\.'/);
   assert.match(read('frontend/src/features/dialogs/create-app.tsx'), /openLabel=\{botChat \? 'Open chat' : 'Open project'\}/);
   const store = read('frontend/src/features/messages/store.ts');
-  assert.match(store, /openBot: \(\) => \{ void openBot\(\); \},/);
+  assert.match(store, /openBot: \(reference\?: SharedObjectReference \| null\) => \{ void openBot\(reference\); \},/);
+  // B8: Ask for changes stages the change on the composer, as Share does.
+  assert.match(store, /if \(reference\) pendingShare = reference;/);
   for (const f of ['game-2d', 'game-3d', 'multimedia-social', 'social-productivity']) {
     assert.match(read(`app-templates/${f}/public/index.html`), /To change this app, ask Homeroom bot: tap the Homeroom icon, then <strong class="font-semibold">Ask for a change<\/strong>\./, f);
   }
@@ -129,6 +131,30 @@ test('B8: filing, against the full PostgreSQL schema', { timeout: 180000 }, asyn
     const { rows: [mine] } = await pool.query('SELECT asked_text FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = 3', [quiet.id]);
     assert.equal(mine.asked_text, 'Tags please', 'still recorded as hers, for when it does');
     assert.equal(await dm.noteRequestFiled(pool, { app: plantPal, user: sam, issueNumber: 13, title: 'x', askedText: 'y' }), null);
+  });
+
+  await t.test('B8: a request\'s page asks the bot to build it: once, first in line, paid by whoever asked', async () => {
+    const live = { id: plantPal.id, slug: plantPal.slug, name: plantPal.name };
+    assert.deepEqual(await dm.botDoorFor(pool, live, maya), { typicalMinutes: dm.TYPICAL_BUILD_MINUTES });
+    assert.equal(await dm.botDoorFor(pool, quiet, maya), null, 'not where it does not build');
+    assert.equal(await dm.botDoorFor(pool, live, sam), null, 'nor for somebody it does not talk to');
+
+    const asked = await dm.askBotToBuild(pool, { app: live, user: maya, issueNumber: 20 });
+    assert.deepEqual(asked, { ok: true, typicalMinutes: dm.TYPICAL_BUILD_MINUTES, mine: true });
+    const { rows: [q] } = await pool.query(
+      'SELECT priority, reason, requested_by, payer_user_id FROM homeroom_bot_queue WHERE app_id = $1 AND issue_number = 20', [plantPal.id],
+    );
+    assert.deepEqual(q, { priority: 0, reason: 'asked', requested_by: maya.id, payer_user_id: maya.id });
+    const { rows: [mine] } = await pool.query('SELECT user_id FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = 20', [plantPal.id]);
+    assert.equal(mine.user_id, maya.id, 'nobody was recorded for it, so it is hers now');
+    const work = await require('../src/services/homeroom-bot-progress').botWorkByIssue(pool, plantPal.id);
+    assert.equal(work.get(20).what, 'queued', 'waiting for a builder, it is the bot\'s already');
+    const again = await dm.askBotToBuild(pool, { app: live, user: maya, issueNumber: 20 });
+    assert.deepEqual([again.ok, again.status, again.code], [false, 409, 'already_building']);
+    assert.deepEqual([...(await dm.askersOf(pool, plantPal.id, [20, 21]))], [[20, { username: 'maya', userId: maya.id }]]);
+
+    assert.equal((await dm.askBotToBuild(pool, { app: quiet, user: maya, issueNumber: 4 })).code, 'not_building');
+    assert.equal((await dm.askBotToBuild(pool, { app: live, user: sam, issueNumber: 21 })).status, 403);
   });
 
   await t.test('how long it usually takes is the median of its own record, once there is enough of it', async () => {

@@ -280,7 +280,7 @@ test('issue card: the state-driven primary + the in-progress toggle; kudos / clo
   assert.match(html, /gc-card-actions/, 'shared action row present');
   // The state-driven primary for a never-started issue.
   assert.ok(hasAction(model, 'chooseIssueWork', 5), 'the primary is wired');
-  assert.match(html, />Start work</);
+  assert.match(html, />Build it yourself</);
   // …plus the promoted claim toggle. The card reserves an action band on
   // every row now, and this issue card had one button to put in it; claiming
   // is what a reader does with an issue before writing any code, and the
@@ -437,7 +437,7 @@ test('proposal card: the vote is ONE button beside the bar, and the band holds o
   // that _fillKudosHosts writes "Thank <author> for putting this up" or the
   // count into. The band's other seats stay: Preview and the hamburger.
   assert.ok(!html.includes('gc-explore-chat-btn'), 'Explore is not a face pill');
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'it is a ⋯ row');
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/), 'it is a ⋯ row');
   assertCardActionContract(AppView, html, { primary: 1, menu: true });
   assert.match(html, /<div class="gc-card-actions"[^>]*><span class="contents" data-kudos-host="7"><\/span>/,
     'the kudos slot is the band\'s first and only pill');
@@ -485,7 +485,7 @@ test('proposal card (admin, not author): Admin merge / kudos stay in ⋯, Explor
   assert.match(html, /data-kudos-host="7"/, 'the slot is the face');
   // One action, one place, and since #1787 round four that place is ⋯.
   assert.ok(!html.includes('gc-explore-chat-btn'), 'no Explore pill on the card face');
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'Explore in ⋯');
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/), 'Explore in ⋯');
 });
 
 test('proposal card (author): Open session + Withdraw move to ⋯', () => {
@@ -494,7 +494,7 @@ test('proposal card (author): Open session + Withdraw move to ⋯', () => {
   const html = cardHtml(model);
   assert.ok(menuHas(AppView, html, /Open session/), 'Open session in ⋯');
   assert.ok(menuHas(AppView, html, /Withdraw/), 'Withdraw in ⋯');
-  assert.ok(!menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(!menuHas(AppView, html, /Explore in a coding agent/),
     'owners reach the Mayor via Open session, so no Explore row on their own PR');
   assertCardActionContract(AppView, html, { primary: 1, menu: true });
 });
@@ -513,7 +513,7 @@ test('proposal card (author of an imported PR): Withdraw and Explore in ⋯, no 
   const html = cardHtml(model);
   assert.ok(menuHas(AppView, html, /Withdraw/), 'Withdraw in ⋯');
   assert.ok(!menuHas(AppView, html, /Open session/), 'no dev session behind an imported PR');
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/),
     'Explore in ⋯ — the owner\'s only AI affordance (#1045)');
   assert.ok(!html.includes('gc-explore-chat-btn'), 'one action, one place: not also a face pill');
   assert.match(html, /gc-card-actions/, 'the reserved band is still emitted, holding the kudos slot');
@@ -586,7 +586,7 @@ test('merged card: kudos is the single promoted pill; Undo / Explore stay in ⋯
     'the kudos slot fills the band');
   assert.ok(menuHas(AppView, html, /Undo/), 'Undo in ⋯');
   assert.ok(!menuHas(AppView, html, /kudos/i), 'kudos is on the face, so not also in ⋯');
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'Explore in dev chat in ⋯');
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/), 'Explore in a coding agent in ⋯');
 });
 
 // Read-only: the promotion moves an action, it does not grant one.
@@ -741,4 +741,46 @@ test('a rejected vote re-arms from the epoch the server named', async () => {
   await AppView.castVote(7, 'yes', 3);
   assert.deepEqual(sent.map((b) => b.expectedEpoch), [3, 9],
     'the second click must carry the epoch the rejection named, not the stale one');
+});
+
+// ── B8: Homeroom bot's door on a request, and on a change it built ───────
+
+test('B8: where Homeroom bot builds, asking it is the card\'s act, and building it yourself is the ≡\'s first row', () => {
+  const AppView = makeAppView(ME);
+  AppView._ghIssuesMeta = { homeroomBot: { typicalMinutes: 7 } };
+  const model = AppView._issueCardModel(baseIssue());
+  const html = cardHtml(model);
+  assert.ok(hasAction(model, 'askBotToBuild', 5), 'the bot button is wired');
+  assert.match(html, />Ask Homeroom bot to build this</);
+  assert.equal(menuLabels(AppView, html)[0], 'Build it yourself', 'the same launcher, first in ≡');
+  assert.ok(menuHas(AppView, html, /^Build it yourself$/));
+  // On the request's own page, its hint is the line under it.
+  const head = AppView._issueCardModel(baseIssue(), { noNav: true });
+  assert.ok(head.extra.some((e) => e.key === 'bot-door' && e.text === 'Usually ready to try in about 7 minutes.'));
+  // While the bot is on it there is nothing to start: the asker can follow
+  // it, everybody else reads who asked; and no Build it yourself.
+  const mineOn = AppView._issueCardModel(baseIssue({ bot: { what: 'building', since: null, askedBy: 'maya', mine: true } }));
+  assert.ok(hasAction(mineOn, 'openBotChatFromRequest'), 'See progress');
+  assert.match(cardHtml(mineOn), />See progress</);
+  const theirs = AppView._issueCardModel(baseIssue({ bot: { what: 'queued', since: null, askedBy: 'maya', mine: false } }));
+  const theirsHtml = cardHtml(theirs);
+  assert.match(theirsHtml, />Homeroom bot is on it</);
+  assert.ok(!menuHas(AppView, theirsHtml, /^Build it yourself$/), 'never built twice');
+  const note = AppView._issueWorkState(baseIssue({ bot: { what: 'queued', since: null, askedBy: 'maya', mine: false } })).note;
+  assert.match(note, /^maya asked Homeroom bot to build this\. It starts as soon as a builder is free/);
+  // Where it does not build, building it yourself is the card's act, as Start work was.
+  const plain = makeAppView(ME);
+  const plainModel = plain._issueCardModel(baseIssue());
+  assert.ok(hasAction(plainModel, 'chooseIssueWork', 5));
+  assert.match(cardHtml(plainModel), />Build it yourself</);
+});
+
+test('B8: a change Homeroom bot built is recognised by its author', () => {
+  const AppView = makeAppView(ME);
+  assert.equal(AppView._botBuilt({ username: 'homeroom_bot' }), true);
+  assert.equal(AppView._botBuilt({ username: 'ada' }), false);
+  const src = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'app-view.js'), 'utf8');
+  assert.match(src, /key: 'ask-bot', cls: 'gc-vote-btn', label: 'Ask for changes',/);
+  assert.match(src, /if \(proposal && !botBuilt && AppView\._showExplorePill\(item\) && !AppView\.readOnly\)/,
+    'its band drops the explore pill; the ⋯ keeps Explore in a coding agent');
 });

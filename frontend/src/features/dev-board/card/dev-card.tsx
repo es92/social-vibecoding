@@ -868,7 +868,7 @@ export function ActionButton({ a, fold, hidden }: { a: ActionSpec; fold?: number
         onClick={(e) => call({ fn: 'exploreProposalInDevChat', args: [a.explore!] }, e.currentTarget)}
       >
         <span aria-hidden="true">{'✨'}</span>
-        {' Explore in dev chat'}
+        {' Explore in a coding agent'}
       </button>
     );
   }

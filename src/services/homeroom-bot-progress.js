@@ -604,6 +604,19 @@ async function botWorkByIssue(pool, appId) {
     if (out.get(n)?.what === 'building') continue;
     out.set(n, { what: 'building', since: b.since });
   }
+  // B8: somebody asked the bot to build it (its page, their chat, Ask for a
+  // change) and it waits for a free builder: it is the bot's already, and
+  // nobody starts it a second time.
+  const { rows: asked } = await pool.query(
+    `SELECT issue_number, enqueued_at FROM homeroom_bot_queue
+      WHERE app_id = $1 AND priority = 0 AND started_at IS NULL
+        AND (held_until IS NULL OR held_until <= NOW())`,
+    [id],
+  );
+  for (const q of asked) {
+    const n = Number(q.issue_number);
+    if (!out.has(n)) out.set(n, { what: 'queued', since: q.enqueued_at });
+  }
   return out;
 }
 

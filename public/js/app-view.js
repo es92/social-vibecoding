@@ -4632,11 +4632,22 @@ const AppView = {
       // Admin merge, GitHub.
       const onBand = [];
       const proposal = kind === 'proposal';
-      if (proposal && AppView._showExplorePill(item) && !AppView.readOnly) {
+      // B8: on a change Homeroom bot built, asking it for changes leads the
+      // band, and exploring it in a coding agent is the ⋯'s
+      // (_proposalMenuItems keeps that row).
+      const botBuilt = proposal && AppView._botBuilt(item);
+      if (botBuilt && !AppView.readOnly) {
+        onBand.push({
+          key: 'ask-bot', cls: 'gc-vote-btn', label: 'Ask for changes',
+          title: 'Ask Homeroom bot to change this, in your chat with it',
+          act: { fn: 'askBotForChanges', args: [item.id, item.session_title || item.pr_title || null] },
+        });
+      }
+      if (proposal && !botBuilt && AppView._showExplorePill(item) && !AppView.readOnly) {
         // `explore` is what the band draws (the gc-explore-chat-btn pill);
         // `act` is what the pill becomes when the band folds it into ⋯.
         onBand.push({
-          key: 'explore', label: 'Explore in dev chat', title: AppView.EXPLORE_CHAT_TITLE, explore: item.id,
+          key: 'explore', label: 'Explore in a coding agent', title: AppView.EXPLORE_CHAT_TITLE, explore: item.id,
           act: { fn: 'exploreProposalInDevChat', args: [item.id, null] },
         });
       }
@@ -5453,7 +5464,7 @@ const AppView = {
       // no session behind the row above (#687), so Explore is its only AI
       // affordance (#1045). The shared predicate owns that rule.
       if (AppView._showExplorePill(item) && !AppView.readOnly) {
-        pills.push({ key: 'explore', label: 'Explore in dev chat', title: AppView.EXPLORE_CHAT_TITLE, explore: item.id });
+        pills.push({ key: 'explore', label: 'Explore in a coding agent', title: AppView.EXPLORE_CHAT_TITLE, explore: item.id });
       }
       if (!AppView.readOnly && !isMerged && mine && item.status === 'promoted') {
         // #3114: the non-destructive counterpart to Withdraw. The PR stays
@@ -5591,7 +5602,7 @@ const AppView = {
     // collab-gated — nothing to offer read-only viewers.
     if (AppView.readOnly) return '';
     return `<button type="button" class="gc-vote-btn gc-explore-chat-btn" data-proposal-id="${pr.id}"
-      title="${escapeAttr(AppView.EXPLORE_CHAT_TITLE)}"><span aria-hidden="true">✨</span> Explore in dev chat</button>`;
+      title="${escapeAttr(AppView.EXPLORE_CHAT_TITLE)}"><span aria-hidden="true">✨</span> Explore in a coding agent</button>`;
   },
 
 
@@ -5690,6 +5701,8 @@ const AppView = {
     const icon = fn === 'markIssueInProgress' ? 'progress'
       : fn === 'clearIssueClaim' ? 'clear'
         : fn === 'exploreProposalInDevChat' ? 'explore'
+          // B8: asking Homeroom bot to build, or to change, is new work too.
+          : fn === 'askBotToBuild' || fn === 'askBotForChanges' ? 'generate'
           : fn === '_shareCardToMessages' ? 'share'
           : fn === 'openChangeWorkspace' ? 'session'
           : fn === '_setSessionShared' ? (a.act.args && a.act.args[1] ? 'visible' : 'hide')
@@ -7196,7 +7209,10 @@ const AppView = {
   // the flag when USERNODE_ENV === 'staging', so this is inert in
   // production no matter what's in the URL.
   _demoQS() {
-    return new URLSearchParams(location.search).get('demo') === '1' ? '?demo=1' : '';
+    const params = new URLSearchParams(location.search);
+    if (params.get('demo') !== '1') return '';
+    // B8: &bot=1 draws Homeroom bot's door on the demo's requests.
+    return params.get('bot') === '1' ? '?demo=1&bot=1' : '?demo=1';
   },
 
   // `?<query>`, with the staging demo flag after it when this page has one.
@@ -7620,6 +7636,8 @@ const AppView = {
           stale: !!(ghData && ghData.stale),
           repoUrl: (AppView.appData && AppView.appData.repo_url) || null,
           myRemaining: (ghData && typeof ghData.myRemaining === 'number') ? ghData.myRemaining : null,
+          // B8: Homeroom bot builds requests here, for this viewer ({ typicalMinutes }).
+          homeroomBot: (ghData && ghData.homeroomBot && typeof ghData.homeroomBot === 'object') ? ghData.homeroomBot : null,
         };
       }
       // GitHub twins of open env-var proposals render as governance
@@ -13373,7 +13391,8 @@ const AppView = {
     // and the row would then be a duplicate of the button beside it.
     if (AppView._showExplorePill(pr) && !ro && !st.exploreOnFace) {
       items.push({
-        label: 'Explore in dev chat',
+        // B8: a coding agent, beside asking Homeroom bot.
+        label: 'Explore in a coding agent',
         icon: 'explore',
         title: AppView.EXPLORE_CHAT_TITLE,
         act: () => AppView.exploreProposalInDevChat(pr.id, null),
@@ -17076,6 +17095,10 @@ const AppView = {
     if (workState) {
       extra.push({ t: 'note', key: 'work', text: workState.note, workState: workState.key });
     }
+    // B8: under the bot's button on the request's page, how long it takes.
+    if (noNav && !closed && !issue.bot && AppView._botDoor() && !AppView.readOnly) {
+      extra.push({ t: 'note', key: 'bot-door', text: AppView._botDoorHint(AppView._botDoor()) });
+    }
     // Topic-view-only admin escape hatch: the live claimer list with a
     // per-claim clear control, so a stuck claim can be removed without SQL.
     // The DELETE route is the authoritative gate (claimer or write-admin);
@@ -17180,9 +17203,18 @@ const AppView = {
     // nothing to start, and a second session would build it twice.
     if (issue.bot) {
       const reading = AppView._botWorkReading(issue.bot);
+      // B8: whoever it is being built for can follow it in their chat.
+      if (issue.bot.mine) {
+        return {
+          key: 'primary', cls: 'gc-vote-btn', label: 'See progress',
+          title: 'Open your chat with Homeroom bot, where this request\'s card is',
+          act: { fn: 'openBotChatFromRequest', args: [] },
+        };
+      }
       return {
         key: 'primary', cls: 'gc-vote-btn', disabled: true,
-        label: reading ? 'Homeroom bot is reading…' : 'Homeroom bot is building…',
+        // B8: asked, and waiting for a free builder.
+        label: issue.bot.what === 'queued' ? 'Homeroom bot is on it' : reading ? 'Homeroom bot is reading…' : 'Homeroom bot is building…',
         title: reading
           ? 'The Homeroom bot is reading this request now'
           : 'The Homeroom bot is building this request now',
@@ -17252,6 +17284,16 @@ const AppView = {
         act: { fn: 'startFromAutoSession', args: [h.sessionId, n] },
       };
     }
+    // B8: where Homeroom bot builds, asking it is the card's one act, and
+    // building it yourself is the first row of its ≡ (_issueMenuItems).
+    const door = AppView._botDoor();
+    if (door) {
+      return {
+        key: 'primary', cls: 'gc-vote-btn', label: 'Ask Homeroom bot to build this',
+        title: AppView._botDoorHint(door),
+        act: { fn: 'askBotToBuild', args: [n] },
+      };
+    }
     // #287: strictly per-viewer, and reverts to "Create proposal" once the
     // session is archived (the server filters archived rows out of
     // myPrSessionId).
@@ -17262,10 +17304,78 @@ const AppView = {
         act: { fn: 'chooseIssueWork', args: [n] },
       }
       : {
-        key: 'primary', cls: 'gc-vote-btn', label: 'Start work',
+        // B8: building it yourself, with a coding agent, beside asking the bot.
+        key: 'primary', cls: 'gc-vote-btn', label: 'Build it yourself',
         title: 'Start an agent session on this request',
         act: { fn: 'chooseIssueWork', args: [n] },
       };
+  },
+
+  /** B8: whether a change is one Homeroom bot built (its author is the bot's account). */
+  _botBuilt(item) {
+    return !!item && String(item.username || item.author || '').toLowerCase() === 'homeroom_bot';
+  },
+
+  /**
+   * B8: "Ask for changes" on a change Homeroom bot built: the viewer's chat
+   * with it, with this change staged as a card to write about.
+   */
+  askBotForChanges(sessionId, title) {
+    const messages = window.UsernodeReact && window.UsernodeReact.messages;
+    const reference = { type: 'proposal', sessionId: Number(sessionId), title: title || null };
+    if (messages && typeof messages.openBot === 'function') messages.openBot(reference);
+    else location.hash = '#messages';
+  },
+
+  /** B8: whether Homeroom bot builds requests here, for this viewer ({ typicalMinutes }), or null. */
+  _botDoor() {
+    if (AppView.readOnly) return null;
+    const door = AppView._ghIssuesMeta && AppView._ghIssuesMeta.homeroomBot;
+    return door && typeof door === 'object' ? door : null;
+  },
+
+  /** B8: the line under the bot's button: how long it usually takes. */
+  _botDoorHint(door) {
+    const minutes = Number(door && door.typicalMinutes) > 0 ? Number(door.typicalMinutes) : 8;
+    return `Usually ready to try in about ${minutes} minutes.`;
+  },
+
+  /**
+   * B8: "Ask Homeroom bot to build this". It goes first in the bot's queue,
+   * paid from the viewer's building time, and its card arrives in the chat
+   * of whoever it is for; the page shows the bot on it at the next read.
+   */
+  async askBotToBuild(issueNumber) {
+    const slug = AppView.appData && AppView.appData.slug;
+    if (!slug || AppView._askingBot) return;
+    AppView._askingBot = true;
+    try {
+      const resp = await fetch(`/api/apps/${encodeURIComponent(slug)}/issues/${Number(issueNumber)}/homeroom-bot${AppView._demoQS()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        PlatformUI.toast(data.error || `Couldn't ask Homeroom bot just now (HTTP ${resp.status}).`);
+        return;
+      }
+      PlatformUI.toast(data.mine
+        ? 'Homeroom bot is on it. Its card is in your chat with it.'
+        : 'Homeroom bot is on it.');
+      AppView.refreshDevData('issue');
+    } catch (err) {
+      PlatformUI.toast(`Couldn't ask Homeroom bot just now: ${err.message}`);
+    } finally {
+      AppView._askingBot = false;
+    }
+  },
+
+  /** B8: "See progress": the viewer's chat with Homeroom bot, where the request's card is. */
+  openBotChatFromRequest() {
+    const messages = window.UsernodeReact && window.UsernodeReact.messages;
+    if (messages && typeof messages.openBot === 'function') messages.openBot();
+    else location.hash = '#messages';
   },
 
   // The issue card's SECOND action: the claim toggle, promoted out of the
@@ -17318,6 +17428,12 @@ const AppView = {
       // Not while the Homeroom bot is building it: that would build it twice.
       if (h?.status === 'ready' && !h.mySessionId && !issue.bot) items.push({
         label: 'Start more work', icon: 'generate', act: () => AppView.chooseIssueWork(n),
+      });
+      // B8: with Homeroom bot's button on the face, building it yourself is
+      // the ≡'s first row, the same launcher; left out while the bot is on
+      // it, as Start work is, so it is never built twice.
+      else if (AppView._botDoor() && !issue.bot) items.unshift({
+        label: 'Build it yourself', icon: 'generate', act: () => AppView.chooseIssueWork(n),
       });
       // "Pledge kudos" disables once the viewer has an open bounty here or
       // has spent their shared weekly allowance.
@@ -20148,7 +20264,8 @@ const AppView = {
       answer_needed: 'Needs an answer',
       draft_ready: 'Draft ready to review',
       claimed: 'Claimed',
-      bot: AppView._botWorkReading(bot) ? 'Homeroom bot is reading this' : 'Homeroom bot is building this',
+      bot: bot && bot.what === 'queued' ? 'Homeroom bot will build this'
+        : AppView._botWorkReading(bot) ? 'Homeroom bot is reading this' : 'Homeroom bot is building this',
     };
     // The bot states name nobody: there is no person to name, and
     // "Auto-solving… · maya" would imply maya is at a keyboard.
@@ -20162,6 +20279,7 @@ const AppView = {
 
     const note = AppView._workStateNote({
       key, who, at, clearAt, claimUsers, headlessLive, bot: bot ? (bot.what || 'building') : null,
+      botAskedBy: bot ? (bot.mine ? 'You' : (bot.askedBy || null)) : null,
       otherClaims: key !== 'claimed' && claims.length > 0,
     });
     return { key, label, tone, spinner, who, people, at, clearAt, tip: note, note };
@@ -20209,7 +20327,14 @@ const AppView = {
     } else if (s.key === 'working') {
       main = `${subj} ${is} working on this in a dev session${age ? `, last active ${age}` : ''}.`;
     } else if (s.key === 'bot') {
-      main = `The Homeroom bot started ${s.bot === 'reading' ? 'reading' : 'building'} this request${when}, so nobody needs to claim it.`;
+      // B8: and who asked it to, when somebody did.
+      if (s.bot === 'queued') {
+        main = `${s.botAskedBy ? `${s.botAskedBy} asked` : 'Somebody asked'} Homeroom bot to build this. It starts as soon as a builder is free, so nobody needs to claim it.`;
+      } else {
+        main = s.botAskedBy
+          ? `${s.botAskedBy} asked Homeroom bot to build this. It started ${s.bot === 'reading' ? 'reading' : 'building'} it${when}, so nobody needs to claim it.`
+          : `The Homeroom bot started ${s.bot === 'reading' ? 'reading' : 'building'} this request${when}, so nobody needs to claim it.`;
+      }
     } else if (s.key === 'auto_solving') {
       main = 'An auto-solve run is working on this right now.';
     } else if (s.key === 'paused') {

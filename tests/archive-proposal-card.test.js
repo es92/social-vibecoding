@@ -122,7 +122,7 @@ test('my own rename PR proposal renders Withdraw', () => {
 test("someone else's proposal offers Explore-in-dev-chat from ⋯", () => {
   const AppView = makeAppView(ME);
   const html = proposalCardHtml(AppView, baseProposal({ user_id: 999 }));
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/),
     'Explore offered from ⋯ on a foreign proposal');
   assert.ok(!html.includes('gc-explore-chat-btn'), 'and not as a pill on the face, so never both');
   assert.equal(html.match(/data-card-menu="([^"]+)"/)[1], 'proposal:7', 'menu keyed by the proposal id');
@@ -131,13 +131,13 @@ test("someone else's proposal offers Explore-in-dev-chat from ⋯", () => {
 test('my own proposal does NOT render the Explore-in-dev-chat card button', () => {
   const AppView = makeAppView(ME);
   const html = proposalCardHtml(AppView, baseProposal());
-  assert.ok(!menuHas(AppView, html, /Explore in dev chat/), 'own card has none (Open session covers it)');
+  assert.ok(!menuHas(AppView, html, /Explore in a coding agent/), 'own card has none (Open session covers it)');
 });
 
 test("someone else's merged proposal renders the Explore-in-dev-chat button", () => {
   const AppView = makeAppView(ME);
   const html = proposalCardHtml(AppView, baseProposal({ user_id: 999, status: 'merged' }));
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/), 'Explore offered from ⋯ on a foreign merged card');
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/), 'Explore offered from ⋯ on a foreign merged card');
 });
 
 // #1045: the exception to "own cards have none". An imported proposal has no
@@ -146,7 +146,7 @@ test("someone else's merged proposal renders the Explore-in-dev-chat button", ()
 test('my own IMPORTED proposal DOES render the Explore-in-dev-chat button (#1045)', () => {
   const AppView = makeAppView(ME);
   const html = proposalCardHtml(AppView, baseProposal({ source: 'imported' }));
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/),
     'Explore offered from ⋯ on my imported proposal');
   assert.doesNotMatch(html, /openProposalSession/,
     'still no Open session — an imported PR has no dev session (#687)');

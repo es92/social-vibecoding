@@ -238,7 +238,7 @@ test('proposal, foreign, plain collaborator', () => {
   // Explore is a ⋯ row again (#1787 round four): a door to a side conversation
   // about the proposal rather than one of the things you do to it, and the
   // widest pill on the card when it rode the face.
-  assert.ok(labels.some((l) => /Explore in dev chat/.test(l)), 'offered from ⋯');
+  assert.ok(labels.some((l) => /Explore in a coding agent/.test(l)), 'offered from ⋯');
   assert.ok(!proposalCardHtml(AppView, PR()).includes('gc-explore-chat-btn'),
     '…and nowhere on the face');
   // Kudos went the other way (#1688): the slot is the band's one pill —
@@ -276,7 +276,7 @@ test('proposal, author: Open session + Withdraw, and no Explore', () => {
   const labels = menuLabels(AppView, proposalCardHtml(AppView, PR({ user_id: ME })));
   assert.ok(labels.some((l) => /Open session/.test(l)));
   assert.ok(labels.some((l) => /^Withdraw$/.test(l)));
-  assert.ok(!labels.some((l) => /Explore in dev chat/.test(l)));
+  assert.ok(!labels.some((l) => /Explore in a coding agent/.test(l)));
 });
 
 test('proposal, author, imported PR: no Open session (there is no in-app session)', () => {
@@ -788,8 +788,8 @@ test('the ✨ that used to live inside the Explore label is now its icon', () =>
   // the merged board is where the ⋯ row still lives.
   const item = menuItems(AppView, mergedCardHtml(AppView, 
     PR({ status: 'merged', chat_count: 0 }), 3))
-    .find((i) => /Explore in dev chat/.test(i.label));
-  assert.equal(item.label, 'Explore in dev chat', 'no glyph baked into the label');
+    .find((i) => /Explore in a coding agent/.test(i.label));
+  assert.equal(item.label, 'Explore in a coding agent', 'no glyph baked into the label');
   assert.equal(AppView._menuIconGlyph(item), AppView.MENU_ICONS.explore);
 });
 

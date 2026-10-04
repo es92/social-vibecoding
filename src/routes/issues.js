@@ -1108,6 +1108,30 @@ function issueRoutes(config) {
   // Create an issue / proposal — kinds per VALID_KINDS above (general is
   // the default). Rate-limited per kind: close_issue proposals draw from
   // their own bucket, everything else from issue-create.
+  // B8: "Ask Homeroom bot to build this" on a request's page. It goes first
+  // in the bot's queue, paid from the asker's building time; the request
+  // stays whoever's it is (services/homeroom-bot-dm.js askBotToBuild). A
+  // member's own tap only: same-origin, and on no connector's list.
+  //
+  //   POST /api/apps/:slug/issues/:number/homeroom-bot → { ok, typicalMinutes, mine }
+  router.post('/api/apps/:slug/issues/:number/homeroom-bot', issueKindLimiter, sameOriginBrowserOnly,
+    communities.requireAppMembership(pool), async (req, res) => {
+      try {
+        const n = Number(req.params.number);
+        if (!Number.isInteger(n) || n <= 0) return res.status(400).json({ error: 'Invalid request number' });
+        // The demo's door decides nothing.
+        if (IS_STAGING && req.query.demo === '1') return res.json({ ok: true, demo: true, typicalMinutes: 8, mine: true });
+        const app = await appAccess.getAppForUser(pool, req.params.slug, req.user, 'view', appAccess.ACCESS_COLUMNS);
+        if (!app) return res.status(404).json({ error: 'App not found' });
+        const out = await require('../services/homeroom-bot-dm').askBotToBuild(pool, { app, user: req.user, issueNumber: n });
+        if (!out.ok) return res.status(out.status || 400).json({ error: out.error, ...(out.code ? { code: out.code } : {}) });
+        return res.json(out);
+      } catch (err) {
+        log.error('issues', 'Asking Homeroom bot to build failed', { message: err.message, slug: req.params.slug });
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
   router.post('/api/apps/:slug/issues', issueKindLimiter, communities.requireAppMembership(pool), async (req, res) => {
     let { title, description, kind = 'general', payload = {} } = req.body || {};
 
@@ -1946,6 +1970,23 @@ function issueRoutes(config) {
         pool, app.id, (result.issues || []).map((i) => i.number), req.user.id
       );
       const botByNumber = await botWorkFor(pool, app.id);
+      // B8: who each request the bot is on is being built for, and whether
+      // the bot builds here for this viewer (the page's "Ask Homeroom bot to
+      // build this").
+      const botDm = require('../services/homeroom-bot-dm');
+      const askers = await botDm.askersOf(pool, app.id, [...botByNumber.keys()]);
+      const botAsked = (n) => {
+        const work = botByNumber.get(n);
+        if (!work) return null;
+        const asker = askers.get(n);
+        return asker ? { ...work, askedBy: asker.username, mine: asker.userId === req.user.id } : work;
+      };
+      let botDoor = await botDm.botDoorFor(pool, app, req.user);
+      // The staging demo never runs the bot; its door is drawn to be seen
+      // when the page asks for it (?demo=1&bot=1).
+      if (!botDoor && IS_STAGING && req.query.demo === '1' && req.query.bot === '1') {
+        botDoor = { typicalMinutes: botDm.TYPICAL_BUILD_MINUTES, demo: true };
+      }
 
       const issues = (result.issues || []).map((issue) => {
         const b = byNumber.get(issue.number);
@@ -1971,7 +2012,7 @@ function issueRoutes(config) {
           // The Homeroom bot reading or building this request right now
           // ({ what, since }), or null. Its own field, like `headless`: the
           // bot is never `in_progress`.
-          bot: botByNumber.get(issue.number) || null,
+          bot: botAsked(issue.number),
           // #287: per-viewer proposal session id, or null. Drives the
           // "Create proposal" → "Create new proposal" swap on the issue row.
           myPrSessionId: myPrSessionByNumber.get(issue.number) || null,
@@ -2246,6 +2287,7 @@ function issueRoutes(config) {
           : {}),
         myRemaining,
         limit: WEEKLY_BOUNTY_LIMIT,
+        ...(botDoor ? { homeroomBot: botDoor } : {}),
       });
     } catch (err) {
       log.error('issues', 'Failed to list GitHub issues', { message: err.message });
@@ -2350,6 +2392,11 @@ function issueRoutes(config) {
       let bot = null;
       if (issue.state !== 'closed') {
         bot = (await botWorkFor(pool, app.id)).get(number) || null;
+        // B8: and who it is being built for, as the list says.
+        if (bot) {
+          const asker = (await require('../services/homeroom-bot-dm').askersOf(pool, app.id, [number])).get(number);
+          if (asker) bot = { ...bot, askedBy: asker.username, mine: asker.userId === req.user.id };
+        }
         if (!bot && mock && number === 900018) bot = stagingMockBotWork();
       }
 

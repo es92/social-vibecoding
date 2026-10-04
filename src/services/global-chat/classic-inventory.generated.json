@@ -6473,6 +6473,21 @@
     {
       "source": "src/routes/issues.js",
       "method": "POST",
+      "path": "/api/apps/:slug/issues/:number/homeroom-bot",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "issues.post.apps.item.issues.item.homeroom.bot.fe84ee1f",
+      "domain": "issues",
+      "risk": "external_write",
+      "confirmation": "required",
+      "renderer": "issue",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#app/:slug/dev/issues/:number"
+    },
+    {
+      "source": "src/routes/issues.js",
+      "method": "POST",
       "path": "/api/apps/:slug/issues",
       "expression": null,
       "status": "mapped",

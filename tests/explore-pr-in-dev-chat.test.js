@@ -232,7 +232,7 @@ test('the card pill carries the class, the proposal id and the label', () => {
   const html = AppView._exploreChatBtnHtml(PR);
   assert.match(html, /gc-explore-chat-btn/);
   assert.match(html, /data-proposal-id="7"/);
-  assert.match(html, /Explore in dev chat/);
+  assert.match(html, /Explore in a coding agent/);
 });
 
 test('read-only viewers get no pill — the dev chat is collab-gated (#621)', () => {
@@ -354,7 +354,7 @@ test('proposal card: my own IMPORTED proposal offers Explore from ⋯, and no Op
   const html = proposalCardHtml(AppView, MY_IMPORT);
   // #1787 round four put Explore back in ⋯ on cards; _showExplorePill's rule
   // about WHO is offered it (#1045) is untouched, only WHERE.
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/),
     'the ⋯ row is the owner\'s only AI affordance here');
   assert.ok(!html.includes('gc-explore-chat-btn'), 'and not also a face pill');
   assert.ok(!menuHas(AppView, html, /Open session/),
@@ -366,7 +366,7 @@ test('proposal card: my own NATIVE proposal is unchanged — Open session, no pi
   const AppView = cardHarness();
   const html = proposalCardHtml(AppView, { ...MY_IMPORT, source: undefined, imported_pr_author: undefined });
   assert.doesNotMatch(html, /gc-explore-chat-btn/, 'no pill on the face');
-  assert.ok(!menuHas(AppView, html, /Explore in dev chat/), 'and no ⋯ row either');
+  assert.ok(!menuHas(AppView, html, /Explore in a coding agent/), 'and no ⋯ row either');
   assert.ok(menuHas(AppView, html, /Open session/), 'Open session is the ⋯ door to the same chat');
 });
 
@@ -374,7 +374,7 @@ test('merged card: my own IMPORTED completed proposal renders the pill', () => {
   const AppView = cardHarness();
   const html = mergedCardHtml(AppView, { ...MY_IMPORT, status: 'merged' }, 1);
   // On a merged card the action band belongs to kudos, so Explore is a ⋯ row.
-  assert.ok(menuHas(AppView, html, /Explore in dev chat/),
+  assert.ok(menuHas(AppView, html, /Explore in a coding agent/),
     'Explore offered from ⋯ on my own imported completed proposal');
 });
 
@@ -384,7 +384,7 @@ test('merged card: my own NATIVE completed proposal still renders no pill', () =
     { ...MY_IMPORT, source: undefined, imported_pr_author: undefined, status: 'merged' }, 1
   );
   assert.doesNotMatch(html, /gc-explore-chat-btn/);
-  assert.ok(!menuHas(AppView, html, /Explore in dev chat/), 'no ⋯ row on my own native merged PR');
+  assert.ok(!menuHas(AppView, html, /Explore in a coding agent/), 'no ⋯ row on my own native merged PR');
 });
 
 // ── The availability probe forwards ?demo=1 ─────────────────────────────────

@@ -175,7 +175,7 @@ test('a closed issue page offers no claim, kudos, close or start-work actions', 
   const openKeys = AppView._detailActionsView('issue', open).pills.map((p) => p.key);
   for (const key of ['claim', 'bounty', 'close']) assert.ok(openKeys.includes(key), `open issue keeps ${key}`);
   const openCard = AppView._issueCardModel(open, { noNav: true });
-  assert.ok(openCard.actions.some((a) => a.label === 'Start work'), 'open issue keeps Start work');
+  assert.ok(openCard.actions.some((a) => a.label === 'Build it yourself'), 'open issue keeps Build it yourself (B8)');
   assert.ok(!openCard.badges.some((b) => b.label === 'Closed'));
 });
 

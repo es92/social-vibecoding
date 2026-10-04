@@ -1130,12 +1130,19 @@ export function open(conversationId?: number | null): void {
  * says "ask Homeroom bot". It is made the first time; until the server
  * answers, Messages opens on its list.
  */
-export async function openBot(): Promise<void> {
+export async function openBot(reference?: SharedObjectReference | null): Promise<void> {
   let id: number | null = state.conversations.find((item) => item.homeroomBot)?.id || null;
   if (!id) {
     try { id = await api.openBotConversation(); } catch { id = null; }
   }
+  // B8: a change to write about ("Ask for changes"), staged on the composer
+  // as Share stages one (see share below).
+  if (reference) pendingShare = reference;
+  const already = !!id && state.route.conversationId === id;
   open(id);
+  if (reference && already && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('usernode:messages-share', { detail: pendingShare }));
+  }
 }
 
 /** The app-channel message link last revealed (see revealAppFocus). */
@@ -2068,7 +2075,7 @@ function paintSaved(messageId: number, saved: boolean): void {
 export const messagesController = {
   open,
   // B8: the chat with Homeroom bot (app-view.js's doors to it).
-  openBot: () => { void openBot(); },
+  openBot: (reference?: SharedObjectReference | null) => { void openBot(reference); },
   openAddress,
   openDiscussion,
   openThread,
