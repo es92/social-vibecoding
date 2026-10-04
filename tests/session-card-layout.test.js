@@ -247,7 +247,7 @@ test('an imported PR detail header shows all three editable attribute slots', ()
     source: 'imported', imported_pr_author: 'octo-contributor', username: 'maya',
   }), { noNav: true });
   assert.match(html, /Set priority/);
-  assert.match(html, /Unassigned/);
+  assert.doesNotMatch(html, /Unassigned/, 'B10c: who is on it shows only when somebody is');
   assert.match(html, /Set category/);
   assert.doesNotMatch(html, />Yes \(|>No \(/);
 });
@@ -566,7 +566,7 @@ test('kanban Underway: only the issue row carries the work-state chip', () => {
   assert.match(html, /working…/, 'the busy session still says working…');
   assert.doesNotMatch(html, />paused</, 'a paused session is not labelled so (#2779 follow-up)');
   // …and none of the seven issue-state labels leaked onto a session row.
-  for (const label of ['Being worked on', 'In review', 'Claimed', 'Needs an answer',
+  for (const label of ['Being worked on', 'Waiting for approval', 'Picked up', 'Needs an answer',
     'Draft ready to review']) {
     assert.ok(!html.includes(label), `session rows must not say "${label}"`);
   }

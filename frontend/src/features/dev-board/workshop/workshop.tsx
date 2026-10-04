@@ -536,7 +536,7 @@ function EmptyNote({ filtered, loadFailed, underStartHere = false, onHub = false
         'Nothing here matches the current search and filters.'
       ) : (
         <>
-          {loadFailed ? "Couldn't load open issues right now. " : ''}
+          {loadFailed ? "Couldn't load open requests right now. " : ''}
           {readOnly ? 'Nothing on the board yet.' : (
             <>
               {'Nothing on the board yet. Press '}
@@ -1149,7 +1149,7 @@ function sinceWords(s: NonNullable<DevWorkshopView['since']>): string {
   if (!s.rows.length) return 'nothing has changed';
   const bits = [
     s.shipped ? `${s.shipped} ${s.shipped === 1 ? 'change' : 'changes'} landed` : null,
-    s.opened ? `${s.opened} new ${s.opened === 1 ? 'issue' : 'issues'}` : null,
+    s.opened ? `${s.opened} new ${s.opened === 1 ? 'request' : 'requests'}` : null,
     s.proposed ? `${s.proposed} new ${s.proposed === 1 ? 'proposal' : 'proposals'}` : null,
   ].filter(Boolean);
   // `total`, not `rows.length`: the rows are capped for drawing and this
@@ -1866,7 +1866,7 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
           </span>
         ) : (
           <span className="dev-ws-eyebrow">
-            {!isVote ? 'Open issue · nobody on it'
+            {!isVote ? 'Request'
               : row.card.attrs && row.card.attrs['data-gov-row'] ? 'Group decision · needs your vote'
                 : 'Proposal · needs your vote'}
           </span>
@@ -1896,7 +1896,7 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
         <p className="dev-ws-item-summary" ref={summaryRef}>{summary}</p>
       ) : (
         <p className="dev-ws-item-summary dev-ws-item-nosummary" ref={summaryRef}>
-          {isVote ? 'No plain-language summary was written for this change.' : 'This issue has no description.'}
+          {isVote ? 'No plain-language summary was written for this change.' : 'This request has no description.'}
         </p>
       )}
       {shots && row.visuals ? <ShotsPicture v={row.visuals} near={near} wide={wide} />
@@ -1972,7 +1972,7 @@ function DoneItem({ total, acted, left, leftVotes, onDone, onBack, doneLabel }: 
   if (acted > 0) parts.push(`You voted on ${plural(acted, 'proposal', 'proposals')} this time.`);
   if (left > 0) parts.push(`You skipped ${left}. ${left === 1 ? 'It stays' : 'They stay'} above if you change your mind.`);
   else if (acted > 0) parts.push('Nothing else needs you right now.');
-  else parts.push('Every proposal you can vote on has your answer, and every open issue has somebody on it.');
+  else parts.push('Every proposal you can vote on has your answer, and every open request has somebody on it.');
   return (
     <section
       className="dev-ws-item dev-ws-needs-done"
@@ -3119,7 +3119,7 @@ export function NeedsFeed({ rows, total, models, slug, canPost, onDone, doneLabe
       <section className="dev-ws-ask dev-ws-sheet-card" data-ws-ask="">
         <span className="dev-ws-sheet-handle" aria-hidden="true" />
         <div className="dev-ws-sheet-head">
-          <span><span className="dev-ws-sheet-title">{row.kind === 'vote' ? 'Ask about this change' : 'Ask about this issue'}</span><span className="dev-ws-sheet-sub">private to you</span></span>
+          <span><span className="dev-ws-sheet-title">{row.kind === 'vote' ? 'Ask about this change' : 'Ask about this request'}</span><span className="dev-ws-sheet-sub">private to you</span></span>
           <button type="button" className="dev-ws-sheet-x" onClick={closeSheet}>Close</button>
         </div>
         <div className="dev-ws-ask-log" data-ws-ask-log="">
@@ -3198,7 +3198,7 @@ export function NeedsFeed({ rows, total, models, slug, canPost, onDone, doneLabe
       <section className="dev-ws-sheet-card" data-ws-comments="">
         <span className="dev-ws-sheet-handle" aria-hidden="true" />
         <div className="dev-ws-sheet-head">
-          <span><span className="dev-ws-sheet-title">{commentCount ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}</span><span className="dev-ws-sheet-sub">{row.kind === 'vote' ? 'on this change' : 'on this issue'}</span></span>
+          <span><span className="dev-ws-sheet-title">{commentCount ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comments'}</span><span className="dev-ws-sheet-sub">{row.kind === 'vote' ? 'on this change' : 'on this request'}</span></span>
           <button type="button" className="dev-ws-sheet-x" onClick={closeSheet}>Close</button>
         </div>
         <div className="dev-ws-sheet-body" ref={commentsRef}>
@@ -3246,14 +3246,14 @@ export function NeedsFeed({ rows, total, models, slug, canPost, onDone, doneLabe
             </div>
           ) : null}
           <div className="dev-ws-desc-part">
-            <h4 className="dev-ws-desc-head">{row.kind === 'vote' ? 'Summary' : 'The issue'}</h4>
+            <h4 className="dev-ws-desc-head">{row.kind === 'vote' ? 'Summary' : 'The request'}</h4>
             {row.descriptionHtml ? (
               <Html className="dev-ws-desc-body" html={row.descriptionHtml} />
             ) : (
-              <p className="dev-ws-ask-hint">{row.kind === 'vote' ? 'No plain-language summary was written for this change.' : 'This issue has no description.'}</p>
+              <p className="dev-ws-ask-hint">{row.kind === 'vote' ? 'No plain-language summary was written for this change.' : 'This request has no description.'}</p>
             )}
           </div>
-          {cardHref ? <a className="dev-ws-desc-open" href={cardHref}>{row.kind === 'vote' ? 'Open the proposal' : 'Open the issue'}</a> : null}
+          {cardHref ? <a className="dev-ws-desc-open" href={cardHref}>{row.kind === 'vote' ? 'Open the proposal' : 'Open the request'}</a> : null}
         </div>
       </section>
       </div>

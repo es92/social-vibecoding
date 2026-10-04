@@ -734,7 +734,7 @@ function IssueAssociations({
   const changed = selectedSignature !== signature;
   const optionsByNumber = new Map([...issueOptions, ...issues].map((issue) => [issue.n, issue]));
   const selectedIssues = selected.map((n) => optionsByNumber.get(n) || {
-    n, title: `Issue #${n}`, href: `#${n}`,
+    n, title: `Request #${n}`, href: `#${n}`,
   });
   const suggestions = filterIssueOptions(query, issueOptions, selected);
   const exact = parseExactIssueNumber(query);
@@ -758,7 +758,7 @@ function IssueAssociations({
   const addIssue = (issue: number) => {
     if (selected.includes(issue)) return;
     if (selected.length >= MAX_LINKED_ISSUES) {
-      setError(`A proposal can link at most ${MAX_LINKED_ISSUES} issues.`);
+      setError(`A change can link at most ${MAX_LINKED_ISSUES} requests.`);
       return;
     }
     setSelected((current) => normalizeLinkedIssues([...current, issue]));
@@ -795,7 +795,7 @@ function IssueAssociations({
         body: JSON.stringify({ addIssues, removeIssues }),
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.message || body.error || 'Could not update issues.');
+      if (!response.ok) throw new Error(body.message || body.error || 'Couldn\'t update the requests.');
       const saved = Array.isArray(body.linkedIssues) ? body.linkedIssues.map(Number) : selected;
       onSaved(saved);
       setSelected(normalizeLinkedIssues(saved));
@@ -812,7 +812,7 @@ function IssueAssociations({
   }
 
   return (
-    <aside className="dev-topic-hero-issues" aria-label="Issues this change addresses">
+    <aside className="dev-topic-hero-issues" aria-label="Requests this change addresses">
       {!editing ? (
         <div className="dev-topic-hero-issues-line">
           {/* One line under the summary: "Addresses", then each issue as a
@@ -832,7 +832,7 @@ function IssueAssociations({
                 event.preventDefault(); call('openTopic', 'issue', issue.n);
               }}
             ><b>{`#${issue.n}`}</b><span>{issue.title}</span></a>
-          )) : <span className="dev-topic-note">No issues linked yet.</span>}
+          )) : <span className="dev-topic-note">No requests linked yet.</span>}
           {editable ? <Button
             type="button"
             variant="unstyled"
@@ -844,7 +844,7 @@ function IssueAssociations({
           >
             {issues.length ? <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
               : <PlusIcon className="h-4 w-4" aria-hidden="true" />}
-            {issues.length ? 'Edit issues' : 'Add issue'}
+            {issues.length ? 'Edit requests' : 'Add request'}
           </Button> : null}
         </div>
       ) : null}
@@ -864,11 +864,11 @@ function IssueAssociations({
                 onClick={() => removeIssue(issue.n)}
               ><XIcon className="h-4 w-4" aria-hidden="true" /></button>
             </div>
-          ))}</div> : <p className="rounded-xl bg-zinc-100/80 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">No issues selected.</p>}
+          ))}</div> : <p className="rounded-xl bg-zinc-100/80 px-3 py-2 text-sm text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">No requests selected.</p>}
         </div>
         <div>
           <label htmlFor={`linked-issues-${proposalId}`} className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            Add another issue
+            Add another request
           </label>
           <div className="relative mt-1.5">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
@@ -883,7 +883,7 @@ function IssueAssociations({
               autoFocus
             />
           </div>
-          {query.trim() ? <div className="mt-2 overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800" aria-label="Matching issues">
+          {query.trim() ? <div className="mt-2 overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800" aria-label="Matching requests">
             {suggestions.map((issue) => (
               <button
                 key={issue.n}
@@ -896,17 +896,17 @@ function IssueAssociations({
             {exactOption ? <button
               type="button"
               className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-left hover:bg-zinc-200 dark:hover:bg-zinc-700"
-              aria-label={`Add issue #${exactOption.n}`}
+              aria-label={`Add request #${exactOption.n}`}
               onClick={() => addIssue(exactOption.n)}
             ><IssueIdentity label={`#${exactOption.n}`} title={exactOption.title} /><PlusIcon className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-300" aria-hidden="true" /></button> : null}
-            {!suggestions.length && !exactOption ? <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">No matching open issues. Enter an exact issue number to add it.</p> : null}
+            {!suggestions.length && !exactOption ? <p className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">No matching open requests. Enter a request number to add it.</p> : null}
           </div> : null}
-          <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">Searches open issues in this app. Exact issue numbers can always be added.</p>
+          <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">Searches open requests in this project. You can always add one by its number.</p>
         </div>
         {error ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{error}</p> : null}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="pillNeutral" size="xsText" ink="neutral" onClick={cancelEditor} disabled={saving}>Cancel</Button>
-          <Button type="submit" variant="pillAccent" size="xsText" disabledStyle="dim" disabled={saving || !changed}>{saving ? 'Saving…' : 'Save issues'}</Button>
+          <Button type="submit" variant="pillAccent" size="xsText" disabledStyle="dim" disabled={saving || !changed}>{saving ? 'Saving…' : 'Save requests'}</Button>
         </div>
       </form> : null}
       {!editing && notice ? <p role="status" className="dev-topic-note">{notice}</p> : null}
@@ -1603,7 +1603,7 @@ function IssueBody(
     const av = typeof window !== 'undefined' ? (window as any).AppView : null;
     const slug = av?.appData?.slug;
     if (!slug) {
-      setError('This issue is not available right now.');
+      setError('This request is not available right now.');
       return;
     }
     setSaving(true);
@@ -1615,7 +1615,7 @@ function IssueBody(
         body: JSON.stringify({ body: draft }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'Failed to update the issue body.');
+      if (!response.ok) throw new Error(result.error || 'Couldn’t save the request.');
       const savedBody = typeof result.body === 'string' ? result.body : draft;
       const rendered = typeof av?._cacheIssueBody === 'function'
         ? av._cacheIssueBody(editor.issue, savedBody)
@@ -1625,7 +1625,7 @@ function IssueBody(
       setEditing(false);
       if (typeof av?._renderTopicHead === 'function') av._renderTopicHead();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update the issue body.');
+      setError(err instanceof Error ? err.message : 'Couldn’t save the request.');
     } finally {
       setSaving(false);
     }
@@ -1634,13 +1634,13 @@ function IssueBody(
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <h4 id="dev-issue-body-heading" className="dev-topic-h">About this issue</h4>
+        <h4 id="dev-issue-body-heading" className="dev-topic-h">About this request</h4>
         {editor.canEdit && !editing ? (
           <button
             type="button"
             className="shrink-0 text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors dark:text-zinc-400"
-            title="Edit this issue's body (you created it)"
-            aria-label="Edit issue body"
+            title="Edit this request (you asked for it)"
+            aria-label="Edit request"
             data-issue-body-edit={editor.issue}
             onClick={() => { setError(''); setEditing(true); }}
           >

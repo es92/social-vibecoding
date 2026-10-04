@@ -36,15 +36,15 @@ test('no Workshop row sheet calls a vote row a proposal', () => {
 
 test('the sheets that name a vote row all say "change"', () => {
   // The Comments sheet subtitle — the one that disagreed.
-  assert.match(SRC, /kind === 'vote' \? 'on this change' : 'on this issue'/);
+  assert.match(SRC, /kind === 'vote' \? 'on this change' : 'on this request'/);
   // The two that were already right, kept so the pair cannot drift apart.
-  assert.match(SRC, /kind === 'vote' \? 'Ask about this change' : 'Ask about this issue'/);
+  assert.match(SRC, /kind === 'vote' \? 'Ask about this change' : 'Ask about this request'/);
   assert.match(SRC, /Ask about this change<\/label>/);
   assert.match(SRC, /No plain-language summary was written for this change\./);
 });
 
 test('an issue row is still an issue', () => {
-  assert.match(SRC, /'on this issue'/);
-  assert.match(SRC, /'Ask about this issue'/);
-  assert.match(SRC, /This issue has no description\./);
+  assert.match(SRC, /'on this request'/);
+  assert.match(SRC, /'Ask about this request'/);
+  assert.match(SRC, /This request has no description\./);
 });

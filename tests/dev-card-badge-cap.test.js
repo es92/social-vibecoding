@@ -185,13 +185,14 @@ test('a partially-set card renders only what is set', () => {
   assert.doesNotMatch(html, /Unassigned/);
 });
 
-test('the DETAIL head keeps all three, including unset ones', () => {
+test('the DETAIL head keeps the unset ones it can set, and who is on it only when somebody is', () => {
   const AppView = makeAppView();
   const headModel = AppView._issueCardModel(ISSUE(), { noNav: true });
   const head = cardHtml(headModel);
   assert.match(head, /Set priority/, 'the detail view is where metadata gets set');
   assert.match(head, /Set category/);
-  assert.match(head, /Unassigned/);
+  // B10c: no grey "Unassigned" chip; the ⋯ row "Assign someone…" sets it.
+  assert.doesNotMatch(head, /Unassigned|data-attr-field="assignee"/);
 });
 
 test('_attrChipSpecs: omitUnset and the field ORDER', () => {
@@ -208,7 +209,7 @@ test('_attrChipSpecs: omitUnset and the field ORDER', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(arr.map((c) => c.field))),
     ['priority', 'assignee', 'category']);
   assert.equal(AppView._attrChipSpecs('issue', 5, {}, { omitUnset: true }).length, 0);
-  assert.equal(AppView._attrChipSpecs('issue', 5, {}, {}).length, 3);
+  assert.equal(AppView._attrChipSpecs('issue', 5, {}, {}).length, 2, 'B10c: an unset assignee draws no chip');
 });
 
 test('the setting entry points move into ⋯, wording by set/unset', () => {

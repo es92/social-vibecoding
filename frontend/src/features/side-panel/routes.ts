@@ -272,7 +272,7 @@ export function samePage(a: string | null | undefined, b: string | null | undefi
 const KIND_TITLE: Record<PanelKind, string> = {
   workshop: 'Workshop',
   proposal: 'Proposal',
-  issue: 'Issue',
+  issue: 'Request',
   change: 'Change',
   'new-change': 'New change',
   thread: 'Messages',

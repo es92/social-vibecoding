@@ -401,9 +401,9 @@ test('merged proposal: completed-task attributes stay editable for collaborators
   const detailModel = AppView._proposalCardModel(PR({ status: 'merged', chat_count: 0 }), { noNav: true });
   const detail = cardHtml(detailModel);
   assert.match(detail, /Set priority/);
-  assert.match(detail, /Unassigned/);
+  assert.doesNotMatch(detail, /Unassigned/, 'B10c: who is on it shows only when somebody is');
   assert.match(detail, /Set category/);
-  assert.equal((detail.match(/data-attr-chip/g) || []).length, 3);
+  assert.equal((detail.match(/data-attr-chip/g) || []).length, 2);
 });
 
 test('merged proposal: completed-task attributes remain read-only without collaboration access', () => {
@@ -429,7 +429,7 @@ test('issue: the full demoted set, and Open on GitHub last', () => {
   assert.equal(labels[0], 'Pledge kudos');
   assert.ok(labels.some((l) => /Pledge kudos/.test(l)));
   // The claim toggle is PROMOTED to the action band, so it left the menu.
-  assert.ok(!labels.some((l) => /Claim this issue/.test(l)), 'promoted onto the face');
+  assert.ok(!labels.some((l) => /I'll work on this/.test(l)), 'promoted onto the face');
   assert.ok(hasAction(AppView._issueCardModel(ISSUE()), 'markIssueInProgress'),
     'and is wired on the face instead');
   assert.ok(labels.some((l) => /Propose to close/.test(l)));

@@ -87,7 +87,7 @@ function first(item: JsonObject, keys: string[], max?: number) {
 
 function rendererLabel(renderer: string) {
   const labels: Record<string, string> = {
-    app: 'App', issue: 'Issue', proposal: 'Proposal', session: 'Development',
+    app: 'App', issue: 'Request', proposal: 'Proposal', session: 'Development',
     conversation: 'Conversation', notification: 'Notification', profile: 'Profile',
     leaderboard: 'Leaderboard', challenge: 'Challenge', wallet: 'Wallet',
     staking: 'Staking', setting: 'Setting', admin_record: 'Admin', status: 'Result',

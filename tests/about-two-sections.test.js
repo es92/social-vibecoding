@@ -75,7 +75,7 @@ test('an issue author gets the body edit control in the About sheet (#2427)', ()
     issueBodyEditor: { issue: 900008, markdown: 'The button does nothing.', canEdit: true },
   });
   assert.match(html, /data-issue-body-edit="900008"/);
-  assert.match(html, /aria-label="Edit issue body"/);
+  assert.match(html, /aria-label="Edit request"/);
   assert.match(html, /The button does nothing/);
   assert.doesNotMatch(html, /data-issue-body-editor=/, 'the textarea opens only after the author asks');
 });

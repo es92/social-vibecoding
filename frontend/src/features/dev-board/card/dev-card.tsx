@@ -985,7 +985,7 @@ export function TitleContent({ t }: { t: TitleSpec }): ReactNode {
       <div className="flex flex-wrap items-center gap-2">
         <Input
           id={`dev-${kind}-title-input`}
-          aria-label={session ? 'Proposal title' : 'Issue title'}
+          aria-label={session ? 'Proposal title' : 'Request title'}
           type="text"
           maxLength={session ? 256 : 200}
           defaultValue={t.editing.initial}
@@ -1017,7 +1017,7 @@ export function TitleContent({ t }: { t: TitleSpec }): ReactNode {
           <button
             type="button"
             className="align-middle text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors dark:text-zinc-400"
-            title={editSession ? 'Edit this proposal title' : "Edit this issue's title (you created it)"}
+            title={editSession ? 'Edit this proposal title' : "Edit this request's title (you asked for it)"}
             aria-label="Edit title"
             onClick={() => call({
               fn: editSession ? 'beginSessionTitleEdit' : 'beginIssueTitleEdit',

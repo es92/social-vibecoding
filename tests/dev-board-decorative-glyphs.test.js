@@ -62,7 +62,7 @@ test('the archived caret is hidden — aria-expanded already says it', () => {
 });
 
 test('both edit pencils are hidden, and their buttons keep their labels', () => {
-  for (const [key, label] of [[F.card, 'Edit title'], [F.head, 'Edit issue body']]) {
+  for (const [key, label] of [[F.card, 'Edit title'], [F.head, 'Edit request']]) {
     const src = read(key);
     assert.match(openingTag(src, 'PencilSquareIcon'), /aria-hidden="true"/);
     assert.ok(src.includes(`aria-label="${label}"`), `${key}: button keeps its name`);

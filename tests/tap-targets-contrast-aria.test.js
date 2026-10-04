@@ -219,10 +219,10 @@ test('Q20: form controls the audit found unnamed have names', () => {
   assert.match(read('frontend/src/features/messages/message-row.tsx'),
     /<textarea ref=\{editRef\} aria-label="Edit message"/, 'the message edit box');
   assert.match(read('frontend/src/features/dev-board/card/dev-card.tsx'),
-    /id=\{`dev-\$\{kind\}-title-input`\}\n\s*aria-label=\{session \? 'Proposal title' : 'Issue title'\}/,
+    /id=\{`dev-\$\{kind\}-title-input`\}\n\s*aria-label=\{session \? 'Proposal title' : 'Request title'\}/,
     'the card title editor, named by kind');
   const topicHead = read('frontend/src/features/dev-board/topic/topic-head.tsx');
-  assert.match(topicHead, /<h4 id="dev-issue-body-heading" className="dev-topic-h">About this issue<\/h4>/);
+  assert.match(topicHead, /<h4 id="dev-issue-body-heading" className="dev-topic-h">About this request<\/h4>/);
   assert.match(topicHead, /id="dev-issue-body-input"\n\s*aria-labelledby="dev-issue-body-heading"/,
     'the issue body editor is named after its heading');
   const wallet = read('frontend/src/features/header/wallet-sheet-body.tsx');

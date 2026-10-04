@@ -989,7 +989,7 @@ test('a repaint republishes the whole strip: count and chips track the filters',
     [
       { key: 'q', label: 'Search: ripple' },
       { key: 'priority', label: 'High priority' },
-      { key: 'assignee', label: 'Unassigned' },
+      { key: 'assignee', label: 'Nobody yet' },
       { key: 'needsVote', label: 'Waiting on you' },
     ],
   );

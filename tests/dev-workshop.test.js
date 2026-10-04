@@ -1519,7 +1519,7 @@ test('#1934: the rest of the unclaimed issues are the rest of the deck', () => {
   // which opens on a press; at rest an item says what kind of thing it is.
   const needs = workshopHtml(AppView, 'needs');
   assert.match(needs, /data-ws-item="vote:[^"]+" data-ws-kind="vote"[\s\S]*?Proposal · needs your vote/, 'the first item is a vote');
-  assert.match(needs, /data-ws-kind="claim"[\s\S]*?Open issue · nobody on it/, 'the claims follow');
+  assert.match(needs, /data-ws-kind="claim"[\s\S]*?>Request</, 'the claims follow');
   assert.ok(!needs.includes('data-ws-ask-q'), 'the question is on the sheet, not on the item');
   assert.ok(!needs.includes('data-ws-next-more'), 'the vertical reveal is long retired');
 
@@ -2443,7 +2443,7 @@ test('#2172: one card past the last item is the summary, and it is the screen wh
   const only = empty.match(/ data-ws-item="/g) || [];
   assert.equal(only.length, 1, 'the end card alone');
   assert.match(empty, /dev-ws-needs-done-line">You’re all caught up\.</);
-  assert.match(empty, /Every proposal you can vote on has your answer, and every open issue has somebody on it\./);
+  assert.match(empty, /Every proposal you can vote on has your answer, and every open request has somebody on it\./);
   assert.ok(!empty.includes('data-ws-done-back'), 'nothing to go back to');
   assert.ok(!empty.includes('data-ws-rail'), 'and no rail');
 });

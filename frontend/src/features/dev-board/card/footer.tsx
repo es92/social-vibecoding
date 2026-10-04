@@ -31,7 +31,7 @@ export function FooterView({ f }: { f: FooterSpec }): ReactNode {
   if (f.kind === 'github') {
     return (
       <a href={f.href} target="_blank" rel="noopener" className="text-xs text-violet-700 hover:underline dark:text-violet-400">
-        {'More open issues on GitHub →'}
+        {'More open requests →'}
       </a>
     );
   }

@@ -90,7 +90,7 @@ test('the two declared checks select on data-act, not on an inline onclick', () 
   assert.match(declaredCheck('_setSessionShared').expectSelector, /\[data-act="_setSessionShared"\]/);
 });
 
-test('an unclaimed issue card offers "Claim this issue" in the action band', () => {
+test('an unclaimed issue card offers "I\'ll work on this" in the action band', () => {
   const check = declaredCheck('markIssueInProgress');
   const html = issueCardHtml(makeAppView(), {
     number: 12, title: 'Cards are cramped on mobile', user_id: 7, username: 'someone',
@@ -99,8 +99,8 @@ test('an unclaimed issue card offers "Claim this issue" in the action band', () 
 
   const band = actionBand(html);
   assert.match(band, /data-act="markIssueInProgress"/, 'the claim pill is on the card FACE');
-  assert.match(band, /Claim this issue/, `and carries the check's expectText: ${check.expectText}`);
-  assert.equal(check.expectText, 'Claim this issue');
+  assert.match(band, /I&#x27;ll work on this/, `and carries the check's expectText: ${check.expectText}`);
+  assert.equal(check.expectText, 'I\'ll work on this');
 });
 
 test('the claim pill flips to a release pill once the claim is yours', () => {

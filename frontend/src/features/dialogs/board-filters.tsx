@@ -179,7 +179,7 @@ export function BoardFiltersDialog() {
                 Anyone
               </option>
               <option value={unassigned}>
-                Unassigned
+                Nobody yet
               </option>
               {assignees.map((name) => (
                 <option key={name} value={name}>

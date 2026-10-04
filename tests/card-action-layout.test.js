@@ -286,7 +286,7 @@ test('issue card: the state-driven primary + the in-progress toggle; kudos / clo
   // is what a reader does with an issue before writing any code, and the
   // chip it toggles is right above it in the status band.
   assert.ok(hasAction(model, 'markIssueInProgress', 5), 'the claim toggle is wired');
-  assert.match(html, />Claim this issue</);
+  assert.match(html, />I&#x27;ll work on this</);
   assertCardActionContract(AppView, html, { primary: 2, menu: true, previewIcon: false });
   // Generating a headless proposal spends the viewer's credits, so it is a
   // chosen ⋯ action rather than the card's most prominent button.
@@ -295,7 +295,7 @@ test('issue card: the state-driven primary + the in-progress toggle; kudos / clo
   assert.ok(menuHas(AppView, html, /Propose to close/), 'Propose to close in ⋯');
   assert.ok(menuHas(AppView, html, /Set priority/), 'Set priority… in ⋯');
   // Promoted, so it is NOT also a menu row — one action, one place.
-  assert.ok(!menuHas(AppView, html, /Claim this issue/),
+  assert.ok(!menuHas(AppView, html, /I'll work on this/),
     'the claim toggle is on the face, so not duplicated in ⋯');
   // …and the ones that stayed demoted are not on the card face.
   assert.ok(!hasAction(model, 'giveIssueBounty'), 'no kudos pill');
@@ -311,9 +311,9 @@ test('issue card: the promoted claim toggle flips to Clear for the viewer\'s own
   }));
   const html = cardHtml(model);
   assert.ok(hasAction(model, 'clearIssueClaim', 5), 'the release toggle is wired');
-  assert.match(html, />Release my claim</);
+  assert.match(html, />Stop working on this</);
   assert.ok(!hasAction(model, 'markIssueInProgress'), 'not both states at once');
-  assert.ok(!menuHas(AppView, html, /Release my claim/), 'and not duplicated in ⋯');
+  assert.ok(!menuHas(AppView, html, /Stop working on this/), 'and not duplicated in ⋯');
 });
 
 // A read-only viewer can't claim anything, so the promoted button is absent

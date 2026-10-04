@@ -141,7 +141,7 @@ export function UserAvatar({ user, title, size = 'md', shape = 'circle' }: {
 
 const OBJECT_LABELS: Record<SharedObjectCard['type'], string> = {
   // B4: a code proposal is a change, as the bot and the rest of the shell say.
-  app: 'App', issue: 'Issue', proposal: 'Change', governance: 'Governance proposal', spec: 'Spec version',
+  app: 'App', issue: 'Request', proposal: 'Change', governance: 'Governance proposal', spec: 'Spec version',
   // #3660: the two pages a pasted Homeroom link can name that are not items.
   hub: 'Community hub', discussion: 'Discussion',
 };

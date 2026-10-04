@@ -285,7 +285,7 @@ test('actual shared component renders the entire card and escapes the issue titl
   assert.ok(!html.includes('Where it stands'), 'a draft draws the same short steps as a proposal');
   assert.ok(html.includes('&lt;script&gt;issue&lt;/script&gt;'));
   assert.ok(!html.includes('<script>issue</script>'));
-  assert.match(html, />Edit issues</, 'the owner can manage associations after creation');
+  assert.match(html, />Edit requests</, 'the owner can manage associations after creation');
   // The issue is a chip on the "Addresses" line, in the Needs-you chip's
   // accent tint: the number bold, the title after it, the issue's own page
   // behind it.
@@ -688,15 +688,15 @@ test('an unlinked owner gets the empty editor affordance while a reader sees no 
   const v = av._topicViewFor('session', item);
   const { ChangeDetail } = loadTsx('frontend/src/features/dev-board/topic/topic-head.tsx');
   const html = renderToHtml(createElement(ChangeDetail, { ...v, item, conversation: true }));
-  assert.match(html, /No issues linked yet/);
-  assert.match(html, />Add issue</);
+  assert.match(html, /No requests linked yet/);
+  assert.match(html, />Add request</);
 
   const reader = context({ id: 99 });
   const readView = reader._topicViewFor('session', item);
   const readHtml = renderToHtml(createElement(ChangeDetail, {
     ...readView, item, conversation: true,
   }));
-  assert.doesNotMatch(readHtml, /No issues linked yet|Issues this change addresses|Edit issues/);
+  assert.doesNotMatch(readHtml, /No requests linked yet|Requests this change addresses|Edit requests/);
 });
 
 test('imported underway PR archive is owner-only and works from compact and full cards', async () => {

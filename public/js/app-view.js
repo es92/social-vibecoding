@@ -4611,7 +4611,7 @@ const AppView = {
       body.steps = AppView._topicStepsView(item, card, body);
       body.tested = AppView._testedLine(item);
     }
-    body.aboutTitle = { issue: 'About this issue', proposal: 'About this change', session: 'About this change', gov: 'About this proposal' }[t.kind] || 'About';
+    body.aboutTitle = { issue: 'About this request', proposal: 'About this change', session: 'About this change', gov: 'About this proposal' }[t.kind] || 'About';
     return { card, body };
   },
 
@@ -5586,14 +5586,14 @@ const AppView = {
       // building the request: a claim would only tell it to step back.
       if (myClaim) {
         pills.push({
-          key: 'claim', cls: 'gc-vote-btn', label: 'Release my claim',
-          title: 'Give up your claim on this issue so somebody else can take it',
+          key: 'claim', cls: 'gc-vote-btn', label: 'Stop working on this',
+          title: 'Stop working on this so somebody else can pick it up',
           act: { fn: 'clearIssueClaim', args: [item.number] },
         });
       } else if (!item.bot) {
         pills.push({
-          key: 'claim', cls: 'gc-vote-btn', label: 'Claim this issue',
-          title: "Tell everyone you're taking this issue. A claim, not a promise of progress",
+          key: 'claim', cls: 'gc-vote-btn', label: 'I\'ll work on this',
+          title: "Let everyone know you'll work on this. It's not a promise of progress",
           act: { fn: 'markIssueInProgress', args: [item.number] },
         });
       }
@@ -5601,7 +5601,7 @@ const AppView = {
       pills.push({
         key: 'bounty', cls: 'gc-vote-btn',
         label: item.my_bounty ? '★ Bountied' : 'Pledge kudos',
-        title: "Pledge a kudos bounty, paid to whoever's merged PR closes this issue",
+        title: "Pledge kudos to whoever's change makes this happen",
         disabled: !!(item.my_bounty || meta.myRemaining === 0),
         act: { fn: 'giveIssueBounty', args: [item.number] },
       });
@@ -5615,7 +5615,7 @@ const AppView = {
         }
         : {
           key: 'close', cls: 'gc-vote-btn', label: 'Propose to close',
-          title: 'Propose closing this issue. The group votes; if it passes, the issue is closed here and on GitHub',
+          title: 'Ask the group to close this request. If they approve, it\'s closed',
           act: { fn: 'promptCloseIssue', args: [item.number] },
         });
     }
@@ -11174,7 +11174,7 @@ const AppView = {
     if (f.assignee) {
       chips.push({
         key: 'assignee',
-        label: f.assignee === AppView.KANBAN_ASSIGNEE_UNASSIGNED ? 'Unassigned' : f.assignee,
+        label: f.assignee === AppView.KANBAN_ASSIGNEE_UNASSIGNED ? 'Nobody yet' : f.assignee,
       });
     }
     if (f.needsVote) chips.push({ key: 'needsVote', label: 'Waiting on you' });
@@ -16389,6 +16389,9 @@ const AppView = {
       const placed = field === 'category' && !(summary && summary.top)
         && !!AppView._placedCategoryFor(targetType, targetRef);
       if (omitUnset && !(summary && summary.top) && !placed) continue;
+      // B10c: who is on it shows only when somebody is. "Unassigned" was a
+      // grey chip saying nothing; the ⋯ row "Assign someone…" sets it.
+      if (field === 'assignee' && !(summary && summary.top)) continue;
       out.push(AppView._attrChipSpec(field, targetType, targetRef, summary, readonly));
     }
     return out;
@@ -17115,7 +17118,7 @@ const AppView = {
     if (issue.created_by_username) meta.push({ t: 'text', s: issue.created_by_username });
     if (issue.bounty_count) {
       meta.push({
-        t: 'span', cls: 'text-amber-800 dark:text-amber-300', title: 'Kudos bounties pledged on this issue',
+        t: 'span', cls: 'text-amber-800 dark:text-amber-300', title: 'Kudos pledged on this request',
         s: `★ ${parseInt(issue.bounty_count, 10) || 0}`,
       });
     }
@@ -17169,7 +17172,7 @@ const AppView = {
       ? {
         t: 'chip', key: 'closed', cls: `dev-badge ${AppView._WORK_TONE_CLS.zinc}`,
         label: 'Closed',
-        title: issue.closedAt ? `Closed ${relTime(issue.closedAt)}` : 'This issue is closed',
+        title: issue.closedAt ? `Closed ${relTime(issue.closedAt)}` : 'This request is closed',
       }
       : null;
 
@@ -17250,7 +17253,7 @@ const AppView = {
     const attrs = { 'data-ref-issue': String(n) };
     if (!noNav) {
       attrs['data-issue-row'] = String(n);
-      attrs.title = "Open this issue's discussion";
+      attrs.title = 'Open this request';
     }
     return {
       key: `issue:${n}`,
@@ -17520,13 +17523,13 @@ const AppView = {
     if (!mine && issue.bot) return null;
     return mine
       ? {
-        key: 'claim', cls: 'gc-vote-btn', label: 'Release my claim',
-        title: 'Give up your claim on this issue so somebody else can take it',
+        key: 'claim', cls: 'gc-vote-btn', label: 'Stop working on this',
+        title: 'Stop working on this so somebody else can pick it up',
         act: { fn: 'clearIssueClaim', args: [n] },
       }
       : {
-        key: 'claim', cls: 'gc-vote-btn', label: 'Claim this issue',
-        title: "Tell everyone you're taking this issue. A claim, not a promise of progress. Clears on its own after ~7 days without activity; discussion in the issue's thread keeps it alive.",
+        key: 'claim', cls: 'gc-vote-btn', label: 'I\'ll work on this',
+        title: "Let everyone know you'll work on this. It's not a promise of progress. It clears itself after about 7 days with no activity; talking about it in the request's thread keeps it going.",
         act: { fn: 'markIssueInProgress', args: [n] },
       };
   },
@@ -17565,7 +17568,7 @@ const AppView = {
         label: issue.my_bounty ? 'Bountied' : 'Pledge kudos',
         icon: 'kudos',
         title: kudosReason
-          || 'Pledge a kudos bounty, paid to whoever’s merged PR closes this issue',
+          || 'Pledge kudos to whoever’s change makes this happen',
         disabled: !!kudosReason,
         act: kudosReason ? null : () => AppView.giveIssueBounty(n),
       });
@@ -17583,15 +17586,15 @@ const AppView = {
       if (!st.progressOnFace && (myClaim || !issue.bot)) {
         items.push(myClaim
           ? {
-            label: 'Release my claim',
+            label: 'Stop working on this',
             icon: 'clear',
-            title: 'Give up your claim on this issue so somebody else can take it',
+            title: 'Stop working on this so somebody else can pick it up',
             act: () => AppView.clearIssueClaim(n),
           }
           : {
-            label: 'Claim this issue',
+            label: 'I\'ll work on this',
             icon: 'progress',
-            title: 'Tell everyone you’re taking this issue. A claim, not a promise of progress. Clears on its own after ~7 days without activity; discussion in the issue’s thread keeps it alive.',
+            title: 'Let everyone know you’ll work on this. It’s not a promise of progress. It clears itself after about 7 days with no activity; talking about it in the request’s thread keeps it going.',
             act: () => AppView.markIssueInProgress(n),
           });
       }
@@ -17622,7 +17625,7 @@ const AppView = {
           : {
             label: 'Propose to close',
             icon: 'close',
-            title: 'Propose closing this issue. The group votes; if it passes, the issue is closed here and on GitHub',
+            title: 'Ask the group to close this request. If they approve, it\'s closed',
             danger: true,
             act: () => AppView.promptCloseIssue(n),
           });
@@ -17633,7 +17636,7 @@ const AppView = {
     items.push({
       label: 'Share to…',
       icon: 'share',
-      title: 'Share this issue card to a chat or a discussion',
+      title: 'Share this request to a chat or a discussion',
       act: () => AppView._shareCardToMessages({ type: 'issue', issueNumber: n, title: issue.title || null }),
     });
     if (issue.htmlUrl) {
@@ -18110,7 +18113,7 @@ const AppView = {
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        PlatformUI.toast(data.error || `Couldn't claim this issue (HTTP ${resp.status}).`);
+        PlatformUI.toast(data.error || `Couldn't pick this up (HTTP ${resp.status}).`);
         return;
       }
       const issue = (AppView._ghIssues || []).find((i) => i.number === issueNumber);
@@ -18130,7 +18133,7 @@ const AppView = {
         if (document.getElementById('gc-thread-head')) AppView._renderTopicHead();
       }
     } catch (err) {
-      PlatformUI.toast(`Couldn't claim this issue: ${err.message}`);
+      PlatformUI.toast(`Couldn't pick this up: ${err.message}`);
     }
   },
 
@@ -18153,7 +18156,7 @@ const AppView = {
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        PlatformUI.toast(data.error || `Couldn't release the claim (HTTP ${resp.status}).`);
+        PlatformUI.toast(data.error || `Couldn't stop working on this (HTTP ${resp.status}).`);
         return;
       }
       const issue = (AppView._ghIssues || []).find((i) => i.number === issueNumber);
@@ -18171,7 +18174,7 @@ const AppView = {
         if (document.getElementById('gc-thread-head')) AppView._renderTopicHead();
       }
     } catch (err) {
-      PlatformUI.toast(`Couldn't release the claim: ${err.message}`);
+      PlatformUI.toast(`Couldn't stop working on this: ${err.message}`);
     }
   },
 
@@ -20388,7 +20391,7 @@ const AppView = {
       paused: 'Started',
       answer_needed: 'Needs an answer',
       draft_ready: 'Draft ready to review',
-      claimed: 'Claimed',
+      claimed: 'Picked up',
       bot: bot && bot.what === 'queued' ? 'Homeroom bot will build this'
         : AppView._botWorkReading(bot) ? 'Homeroom bot is reading this' : 'Homeroom bot is building this',
     };
@@ -20470,12 +20473,13 @@ const AppView = {
     } else if (s.key === 'draft_ready') {
       main = 'An auto-solve run finished and left a draft here for someone to look over.';
     } else {
-      main = `${subj} claimed this issue${when} but ${has} not started a dev session on it yet.`
-        + (clears ? ` The claim clears itself on ${clears}.` : '');
+      // B10c: in the words of the button that said it.
+      main = `${subj} said ${isYou ? 'you' : 'they'}'d work on this${when} but ${isYou ? 'haven' : 'hasn'}'t started building it yet.`
+        + (clears ? ` It opens up for others again on ${clears} if nothing happens.` : '');
     }
     const also = [];
     if (s.otherClaims && s.claimUsers && s.claimUsers.length) {
-      also.push(`claimed by ${s.claimUsers.join(', ')}`);
+      also.push(`picked up by ${s.claimUsers.join(', ')}`);
     }
     if (s.headlessLive && s.key !== 'auto_solving' && s.key !== 'answer_needed' && s.key !== 'draft_ready') {
       also.push('an auto-solve run is on it too');

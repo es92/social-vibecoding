@@ -191,7 +191,7 @@ test('the title is the page\'s own header title, except where that would only na
   assert.equal(R.titleFor('app/notes-ab12/workshop', 'Notes'), 'Workshop', 'the Workshop is the Workshop, as the prototype titles it');
   assert.equal(R.titleFor('messages', 'Inbox'), 'Messages', 'and the inbox is Messages');
   assert.equal(R.titleFor('app/notes-ab12/dev/proposals/12', 'Notes'), 'Proposal');
-  assert.equal(R.titleFor('app/notes-ab12/dev/issues/7', 'Notes'), 'Issue');
+  assert.equal(R.titleFor('app/notes-ab12/dev/issues/7', 'Notes'), 'Request');
   assert.equal(R.titleFor('app/notes-ab12/dev/sessions/41', 'Notes'), 'Change');
   assert.equal(R.titleFor('app/notes-ab12/dev/sessions/new', 'Notes'), 'New change');
   // Derived from the route while the document has said nothing yet.

@@ -984,7 +984,7 @@
       "name": "Dev board, round three: a second action pill can fold into the menu (one-line band)",
       "path": "/?demo=1&view=kanban&cards=open#app/usernode-2d5619/dev",
       "expectSelector": "#dev-kanban-col-issues [data-issue-row] .gc-card-actions > .gc-vote-btn[data-act=\"markIssueInProgress\"][data-fold]",
-      "expectText": "Claim this issue"
+      "expectText": "I'll work on this"
     },
     {
       "name": "A Workshop row unfolds into the Activity sheet: the card, its thread, the send disc",
@@ -1020,7 +1020,7 @@
       "name": "Dev board: an issue card offers its claim toggle as a pill, not only in ⋯",
       "path": "/?demo=1&cards=open#app/usernode-2d5619/board",
       "expectSelector": "#dev-body [data-issue-row] .gc-card-actions .gc-vote-btn[data-act=\"markIssueInProgress\"]",
-      "expectText": "Claim this issue"
+      "expectText": "I'll work on this"
     },
     {
       "name": "Dev board: the Underway column names the exact state — a paused session says \"Paused\", not \"In progress\" (#1112)",
@@ -1106,7 +1106,7 @@
       "expectSelector": "#dev-kanban button.attr-chip.dev-badge[data-attr-field=\"priority\"]"
     },
     {
-      "name": "Issue detail renders the Set priority / Set category / Unassigned metadata chips",
+      "name": "Request detail renders the Set priority / Set category metadata chips; who is on it shows only when somebody is (B10c)",
       "path": "/?demo=1#app/usernode-2d5619/dev/issues/900008",
       "expectSelector": "button.attr-chip[data-attr-field=\"priority\"]",
       "expectText": "Set priority"

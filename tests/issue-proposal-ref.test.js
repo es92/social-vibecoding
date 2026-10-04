@@ -298,12 +298,12 @@ test('the issue topic page renders the reference as a navigable row', () => {
   // Nothing linked: no box, no heading, no empty placeholder.
   const bare = render({ addressed_by: null });
   assert.ok(!bare.includes('dev-change-issues'));
-  for (const label of ['Closed by', 'Addressed by', 'In review', 'Work underway']) {
+  for (const label of ['Closed by', 'Addressed by', 'Waiting for approval', 'Work underway']) {
     assert.ok(!bare.includes(`>${label}<`), label);
   }
   // …and the rest of the issue page is untouched by its absence.
   assert.match(bare, /id="dev-issue-comments"/);
-  assert.ok(bare.includes('About this issue'));
+  assert.ok(bare.includes('About this request'));
 });
 
 test('a proposal title from the API is escaped, never rendered as markup', () => {
