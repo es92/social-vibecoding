@@ -132,7 +132,7 @@ test('a full admin gets the raised proposal ceiling through the connector too', 
 
   const full = await limits.checkPromotedCap(poolCounting(caps.promotedSessions), {}, admin);
   assert.equal(full.code, 'at_capacity');
-  assert.match(full.message, new RegExp(`${caps.promotedSessions} PRs up for vote`));
+  assert.match(full.message, new RegExp(`${caps.promotedSessions} changes waiting for approval`));
 });
 
 // ── The platform-build fallback ────────────────────────────────────────

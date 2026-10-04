@@ -311,7 +311,7 @@ test('every step not done has a button, a verb and an arrow, about the default a
     ['Nothing in City garden yet; 2 changes are waiting in Night owls.', 'Vote', 'Vote in Night owls',
       'Vote in Night owls', true, { to: 'needs', slug: 'night-owls' }]);
   assert.deepEqual(view(step('vote'), model({ kind: 'workshop', app: garden, count: 0 })),
-    ['Nothing is up for a vote yet. See what people are building.', 'Look', 'See what City garden is building',
+    ['Nothing is waiting for approval yet. See what people are building.', 'Look', 'See what City garden is building',
       'See what City garden is building', true, { to: 'workshop', slug: 'city-garden' }]);
   // THE ONE GATE (first-session test, 2026-10-03): the three are locked
   // while Join is to do, the server's `needs_join`, whether or not there is

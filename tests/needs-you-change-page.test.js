@@ -90,11 +90,11 @@ test('the hero: the eyebrow with the pull request and its state, the age, the ti
   const { v, html } = render(av, PR);
   const hero = plain(v.body.hero);
   assert.deepEqual(hero, {
-    kind: 'Proposal', ref: { s: 'PR#12', href: 'https://github.com/example/app/pull/12' }, status: 'In review',
+    kind: 'Proposal', ref: { s: 'PR#12', href: 'https://github.com/example/app/pull/12' }, status: 'Waiting for approval',
     age: hero.age, author: 'maya', verb: 'proposed', provenance: null, tint: 'b',
   });
   assert.ok(v.body.hero.age && v.body.hero.age.s, 'the age is the card meta line’s own part');
-  assert.match(html, /<span class="dev-ws-eyebrow dev-topic-hero-eyebrow">Proposal · <a href="https:\/\/github\.com\/example\/app\/pull\/12" target="_blank" rel="noopener">PR#12<\/a><span> · In review<\/span><\/span><span class="dev-ws-item-of"[^>]*>/);
+  assert.match(html, /<span class="dev-ws-eyebrow dev-topic-hero-eyebrow">Proposal · <a href="https:\/\/github\.com\/example\/app\/pull\/12" target="_blank" rel="noopener">PR#12<\/a><span> · Waiting for approval<\/span><\/span><span class="dev-ws-item-of"[^>]*>/);
   assert.match(html, /<h2 class="dev-ws-item-title dev-topic-hero-title">Authenticate previews<\/h2>/);
   assert.match(html, /<p class="dev-ws-item-by dev-topic-hero-by"><span class="dev-ws-item-avatar" style="background:#[0-9a-f]{6}" aria-hidden="true">M<\/span><span><b>maya<\/b><span> · proposed /);
   // The chips are the card's own tag specs (their tints ride along), and
@@ -166,7 +166,7 @@ test('the steps sheet is the strip expanded: its headline and count, one short s
   const av = context();
   const { v, html } = render(av, PR);
   const s = plain(v.body.steps);
-  assert.equal(s.headline, 'Waiting on your vote');
+  assert.equal(s.headline, 'Waiting for your approval');
   assert.equal(s.detail, null, 'no detail on the page: the current step says it');
   assert.equal(s.simple, true);
   assert.deepEqual([s.done, s.total], [3, 5]);
@@ -185,7 +185,7 @@ test('the steps sheet is the strip expanded: its headline and count, one short s
   }
   assert.equal(s.rows[0].votes, 'Loading votes…', 'the Votes step names who voted, once the roster answers');
   assert.equal(s.rows[0].help, true);
-  assert.match(html, /<div class="dev-steps-head"><span class="dev-steps-headline">Waiting on your vote<\/span><span class="dev-steps-count">3\/5<\/span><\/div>/);
+  assert.match(html, /<div class="dev-steps-head"><span class="dev-steps-headline">Waiting for your approval<\/span><span class="dev-steps-count">3\/5<\/span><\/div>/);
   assert.match(html, /<li class="dev-step dev-step-waiting" data-note="votes" data-req-gate="approvals" data-req-state="waiting"><span class="dev-step-mark dev-step-mark-waiting" aria-hidden="true">!<\/span><span class="dev-step-main"><span class="dev-step-label">Votes<\/span><span class="dev-ledger-review-line"><span class="dev-ledger-roster dev-step-line">Loading votes…<\/span><span class="dev-ledger-help voting-help-hint"><button type="button" class="voting-help-btn un-touch-target" data-voting-help=""/);
   assert.doesNotMatch(html, /dev-step-actor|dev-step-vote-bar|dev-step-vote-tally|dev-ledger-text/, 'none of the old step furniture');
   // Checks opens onto its run; a finished run starts closed.
@@ -221,7 +221,7 @@ test('a step the recording did not reach takes what the columns already know', (
   const state = (k) => spec.gates.find((g) => g.key === k).state;
   assert.equal(state('integration'), 'done');
   assert.equal(state('checks'), 'active', 'a live run is not "not reached"');
-  assert.equal(spec.headline, 'Waiting on your vote', 'the current step is still the vote');
+  assert.equal(spec.headline, 'Waiting for your approval', 'the current step is still the vote');
 });
 
 // #3234: the threshold counts active members live, so it can move while the
@@ -250,7 +250,7 @@ test('a failing check opens its step onto the run, with each failure’s door; t
   };
   const { v, html } = render(av, item);
   const s = plain(v.body.steps);
-  assert.equal(s.headline, 'Waiting on your vote', 'the strip names the first outstanding step: the vote comes before the sync');
+  assert.equal(s.headline, 'Waiting for your approval', 'the strip names the first outstanding step: the vote comes before the sync');
   const sync = s.rows.find((r) => r.gate === 'integration');
   assert.equal(sync.key, 'mergeability', 'the ledger row’s key is the data-note, so the declared checks still find it');
   assert.equal(sync.state, 'active');

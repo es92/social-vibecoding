@@ -156,9 +156,9 @@ export function audienceLine(p: Pick<CommunityPayload, 'audience' | 'audience_la
  */
 export function audienceChangeLine(title: string | null | undefined): string {
   const t = String(title || '');
-  if (/ public$/.test(t)) return 'Making it a public community is up for a vote';
-  if (/private \(collaborators only\)$/.test(t)) return 'Making it a private community is up for a vote';
-  return 'A change to who it is for is up for a vote';
+  if (/ public$/.test(t)) return 'Making it a public community is waiting for approval';
+  if (/private \(collaborators only\)$/.test(t)) return 'Making it a private community is waiting for approval';
+  return 'A change to who it is for is waiting for approval';
 }
 
 function AudienceGlyph({ audience }: { audience: Audience }) {

@@ -443,7 +443,7 @@ test('issue: a disabled row still EXPLAINS itself rather than vanishing', () => 
   const closed = menuItems(AppView, issueCardHtml(AppView, ISSUE()))
     .find((i) => /Close proposed/.test(i.label));
   assert.ok(closed.disabled);
-  assert.match(closed.title, /up for vote/);
+  assert.match(closed.title, /waiting for approval/);
   assert.ok(!closed.act, 'a disabled row carries no handler');
 
   // Weekly kudos allowance spent.

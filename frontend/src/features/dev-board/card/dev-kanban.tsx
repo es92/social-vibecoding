@@ -229,7 +229,7 @@ function Column(
               variant="unstyled"
               size="none"
               ink="muted"
-              aria-label={`Sort In review: ${sortLabel}. Switch to ${nextSortLabel}.`}
+              aria-label={`Sort Waiting for approval: ${sortLabel}. Switch to ${nextSortLabel}.`}
               title={`${col.reviewSort === 'priority'
                 ? 'Unvoted first, then fewest qualifying votes still needed. Within each vote group, already-qualified proposals follow those still short. Newest breaks ties.'
                 : 'Most recently submitted for review first.'} Click to switch to ${nextSortLabel}.`}

@@ -114,7 +114,7 @@ test('a row the gate has never run against still says what it can', () => {
   assert.equal(block.evaluated, false);
   assert.deepEqual(block.gates.map((g) => `${g.key}:${g.state}`),
     ['approvals:waiting', 'integration:done', 'checks:done', 'github:pending']);
-  assert.equal(requirements.summarize(block.gates, { hasVoted: false }).headline, 'Waiting on your vote');
+  assert.equal(requirements.summarize(block.gates, { hasVoted: false }).headline, 'Waiting for your approval');
 });
 
 test('the provisional list never guesses a gate only the merge gate can answer', () => {

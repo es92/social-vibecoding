@@ -61,7 +61,7 @@ test('each Agent sessions row says the app it is on and where it stands, under i
     conversation({ id: 2, lastActivityAt: '2026-09-24T11:00:00Z', focusApp: { slug: 'run', name: 'Run Club' }, activeChange: { appSlug: 'run', status: 'promoted', title: 'y' } }),
     conversation({ id: 3, lastActivityAt: '2026-09-24T10:00:00Z', focusApp: null, activeChange: { appSlug: null, status: 'active', title: 'z' } }),
   ]);
-  assert.deepEqual(rows.map((r) => r.sub), ['Run Club · in progress', 'Run Club · in vote', 'In progress'],
+  assert.deepEqual(rows.map((r) => r.sub), ['Run Club · in progress', 'Run Club · waiting for approval', 'In progress'],
     'the change\'s app, else the one it started from; alone, where it stands');
   assert.equal(model.agentSub('Notes', 'Agent session'), 'Notes · agent session');
 });

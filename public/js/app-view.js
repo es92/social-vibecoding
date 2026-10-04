@@ -2982,8 +2982,9 @@ const AppView = {
       // Nothing more to say under the step: the card is what comes next.
     } else if (mine && fv.question) lines.push('Homeroom bot has a question for you.');
     else if (fv.ready) {
-      lines.push(mine ? 'Its first version is ready. Try it and vote on it from your chat.'
-        : 'Its first version is up for a vote.');
+      // B10a: waiting for approval, in one word everywhere.
+      lines.push(mine ? 'Its first version is ready. Try it from your chat.'
+        : 'Its first version is waiting for approval.');
     } else {
       lines.push(mine ? 'We’ll message you when it’s ready.' : 'It opens here once it’s ready.');
     }
@@ -4629,7 +4630,7 @@ const AppView = {
     const slug = (AppView.appData && AppView.appData.slug) || App.currentApp;
     const heading = ref.state === 'merged'
       ? (issue.state === 'closed' ? 'Closed by' : 'Addressed by')
-      : ref.state === 'review' ? 'In review' : 'Work underway';
+      : ref.state === 'review' ? 'Waiting for approval' : 'Work underway';
     const n = parseInt(ref.prNumber, 10) || 0;
     return {
       heading,
@@ -4680,7 +4681,7 @@ const AppView = {
     // compact card so filtering shortcuts here cannot change the board.
     const gh = kind === 'issue' ? item.htmlUrl : item.pr_url;
     const shortcuts = ['View checks', 'Re-run checks', 'Open public discussion',
-      'Continue building', 'Open session', 'Put up for vote', 'View PR on GitHub',
+      'Continue building', 'Open session', 'Ask for approval', 'View PR on GitHub',
       'Retry preview', 'Before/after screenshots', 'Before & after'];
     const menu = [...(AppView._cardMenus[card.rail.menuKey] || [])]
       .filter((a) => !body.changeId || !shortcuts.some((label) =>
@@ -4805,7 +4806,8 @@ const AppView = {
     const n = parseInt(item.pr_number, 10) || 0;
     const status = underway
       ? (item.shared_at ? 'Visible to the group' : 'Private change')
-      : ({ promoted: 'In review', merging: 'Merging', merged: 'Merged', closed: 'Closed' }[item.status]
+      : item.status === 'promoted' ? AppView._waitingWords(item)
+        : ({ merging: 'Merging', merged: 'Merged', closed: 'Closed' }[item.status]
         || String(item.status || ''));
     const age = item.created_at ? AppView._agePart(item.created_at) : null;
     const author = item.username || (kind === 'session' && App.user ? App.user.username : null) || null;
@@ -5236,7 +5238,7 @@ const AppView = {
     body.testing = { html: md ? AppView._proposalBodyView({ pr_body: md })?.html : null, path: item.testing_path || null };
     body.workspace = mine && item.source !== 'imported' ? item.id : null;
     body.discussion = underway && !item.shared_at ? 'Make this change visible to the group to start a public discussion. The agent workspace stays private unless you share it separately.' : null;
-    card.meta = [...(card.meta || []), { t: 'text', s: underway ? (item.shared_at ? 'Visible to the group' : 'Private change') : (item.status === 'promoted' ? 'In review' : item.status) }];
+    card.meta = [...(card.meta || []), { t: 'text', s: underway ? (item.shared_at ? 'Visible to the group' : 'Private change') : (item.status === 'promoted' ? AppView._waitingWords(item) : item.status) }];
     // The Preview pill on the card says whether there is one to open, and
     // the checks row says what ran on it, so a "Preview: available" row was
     // the same fact a third time. The row stays for a preview that FAILED,
@@ -5553,8 +5555,8 @@ const AppView = {
       const mine = item.user_id == null || !!(App.user && item.user_id === App.user.id);
       if (!AppView.readOnly && mine && item.status === 'active') {
         pills.push({
-          key: 'promote', cls: 'gc-vote-btn', label: 'Put up for vote',
-          title: 'Put this imported pull request up for vote',
+          key: 'promote', cls: 'gc-vote-btn', label: 'Ask for approval',
+          title: 'Ask the group to approve this imported change',
           act: { fn: 'promoteImportedSession', args: [item.id] }, passNode: true,
         });
       }
@@ -5593,7 +5595,7 @@ const AppView = {
       pills.push(hasCloseProposal
         ? {
           key: 'close', cls: 'gc-vote-btn', label: 'Close proposed', disabled: true,
-          title: 'A close proposal for this issue is up for vote',
+          title: 'Closing this request is waiting for approval',
         }
         : {
           key: 'close', cls: 'gc-vote-btn', label: 'Propose to close',
@@ -9607,7 +9609,7 @@ const AppView = {
 
     // ── Themes ──
     const laneOrder = [
-      { key: 'review', title: 'In review' },
+      { key: 'review', title: 'Waiting for approval' },
       { key: 'underway', title: 'Underway' },
       { key: 'open', title: 'Open' },
       { key: 'shipped', title: 'Shipped this week' },
@@ -11422,7 +11424,7 @@ const AppView = {
         hint: 'Somebody or something is on these: being worked on, auto-solving, paused, waiting on an answer, or just claimed. The chip on each card says which.',
       },
       {
-        key: 'inreview', title: 'In review', count: kInReview.length,
+        key: 'inreview', title: 'Waiting for approval', count: kInReview.length,
         reviewSort,
         rows: cardRows(
           kInReview,
@@ -11807,7 +11809,7 @@ const AppView = {
     const preview = AppView._cardPreviewSpec(s, { kind: 'own-session', sessionId: s.id });
     const author = s.imported_pr_author || 'unknown author';
     const subtitle = imported
-      ? `Imported pull request by ${author} · not up for vote yet`
+      ? `Imported by ${author} · not waiting for approval yet`
       : (shared
         ? (transcriptShared ? 'Visible to everyone · chat readable' : 'Visible to everyone')
         : 'Only you can see this');
@@ -11825,8 +11827,8 @@ const AppView = {
     const actions = [];
     if (imported && !AppView.readOnly) {
       actions.push({
-        key: 'promote', cls: 'gc-vote-btn', label: 'Put up for vote',
-        title: 'Put this imported pull request up for vote',
+        key: 'promote', cls: 'gc-vote-btn', label: 'Ask for approval',
+        title: 'Ask the group to approve this imported change',
         act: { fn: 'promoteImportedSession', args: [s.id] }, passNode: true,
       });
     } else if (!imported && !AppView.readOnly) {
@@ -13267,7 +13269,7 @@ const AppView = {
     const roles = {
       author: { them: 'Waiting on the author', you: 'Waiting on you', is: !!v.isAuthor },
       admin: { them: 'Waiting on an admin', you: 'Waiting on you', is: !!v.isAdmin },
-      group: { them: 'Waiting on the group', you: v.approveSolo ? 'Waiting for your approval' : 'Waiting on your vote', is: !v.hasVoted },
+      group: { them: 'Waiting on the group', you: 'Waiting for your approval', is: !v.hasVoted },
     };
     const role = roles[current.actor];
     if (!role) {
@@ -13318,6 +13320,13 @@ const AppView = {
     if (AppView.appData?.audience !== 'solo' || !pr || pr.my_vote_uncounted === true) return false;
     const needed = parseInt(pr.votes_required, 10);
     return !Number.isFinite(needed) || needed <= 1;
+  },
+
+  // B10a: what a change waiting on its Yes votes is called, one word
+  // everywhere: "Waiting for approval", and on a project that is just you,
+  // whose one Yes is yours, "Waiting for your approval".
+  _waitingWords(pr) {
+    return AppView._approveSolo(pr) ? 'Waiting for your approval' : 'Waiting for approval';
   },
 
   // The card's Yes/No pair, and ONLY that pair. voteButtonsHtml stays as it
@@ -15919,7 +15928,7 @@ const AppView = {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         if (window.PlatformUI && PlatformUI.toast) {
-          PlatformUI.toast(data.error || `Could not put this PR up for vote (HTTP ${resp.status}).`);
+          PlatformUI.toast(data.error || `Could not ask for approval on this change (HTTP ${resp.status}).`);
         }
         if (btn) {
           btn.disabled = false;
@@ -15930,7 +15939,7 @@ const AppView = {
       await AppView.openTopic('proposal', sessionId);
     } catch (err) {
       if (window.PlatformUI && PlatformUI.toast) {
-        PlatformUI.toast(`Could not put this PR up for vote: ${err.message}`);
+        PlatformUI.toast(`Could not ask for approval on this change: ${err.message}`);
       }
       if (btn) {
         btn.disabled = false;
@@ -17132,7 +17141,7 @@ const AppView = {
       : closeProposal
         ? {
           t: 'chip', key: 'close', cls: 'gc-checks-running-badge',
-          label: 'Close proposed', title: 'A close proposal for this issue is up for vote',
+          label: 'Close proposed', title: 'Closing this request is waiting for approval',
         }
         : null;
 
@@ -17591,7 +17600,7 @@ const AppView = {
           ? {
             label: 'Close proposed',
             icon: 'close',
-            title: 'A close proposal for this issue is up for vote',
+            title: 'Closing this request is waiting for approval',
             disabled: true,
           }
           : {
@@ -20352,7 +20361,7 @@ const AppView = {
     }
 
     const LABELS = {
-      in_review: 'In review',
+      in_review: 'Waiting for approval',
       working: 'Being worked on',
       auto_solving: 'Auto-solving…',
       // The key stays 'paused' (it orders the states and dates the

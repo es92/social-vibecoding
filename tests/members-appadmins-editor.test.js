@@ -406,7 +406,7 @@ test('a 409 repaints with the already-up-for-vote state', async () => {
   await new Promise((r) => setImmediate(r));
   await new Promise((r) => setImmediate(r));
   const l = h.live();
-  assert.match(l.status.textContent, /already up for vote/);
+  assert.match(l.status.textContent, /already waiting for approval/);
   assert.equal(l.edit.classList.contains('hidden'), true);
 });
 
@@ -421,7 +421,7 @@ test('an existing openProposal locks the editor and says so', () => {
   const l = h.live();
   assert.equal(l.edit.classList.contains('hidden'), true, 'editor hidden');
   assert.doesNotMatch(l.list.innerHTML, /data-remove-appadmin/, 'rows read-only');
-  assert.match(l.status.textContent, /already up for vote/);
+  assert.match(l.status.textContent, /already waiting for approval/);
 });
 
 test('the self-app stays read-only even for a manager (and hides when empty)', () => {

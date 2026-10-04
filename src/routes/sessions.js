@@ -3788,6 +3788,12 @@ function sessionRoutes(config, { scheduleInteractiveRecovery = null } = {}) {
           rows[0].qualified_yes_count = gate.qualifiedYes;
           rows[0].qualified_no_count = gate.qualifiedNo;
         } catch { /* pill falls back to the raw tallies */ }
+        // B10a: a project that is just you reads "Waiting for your approval"
+        // where a group's reads "Waiting for approval" (MergeStatus.lifecycle).
+        try {
+          const membership = await communities.getMembership(pool, { id: rows[0].app_id }, req.user.id);
+          rows[0].app_audience = membership ? membership.audience : null;
+        } catch { /* the pill keeps the group's words */ }
       }
 
       // A GET on this route is NOT by itself evidence that the user opened

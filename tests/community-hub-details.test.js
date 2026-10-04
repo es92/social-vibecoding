@@ -195,10 +195,10 @@ test('a person who has not joined sees "Recently" over the same rows', () => {
 
 test('Make it public is the hero\'s, Make it private is the ⋯\'s, and both are a proposal', () => {
   const { audienceChangeLine, canMakePrivate } = loadTsx(CARD);
-  assert.equal(audienceChangeLine('Make this app public'), 'Making it a public community is up for a vote');
-  assert.equal(audienceChangeLine('Make this app private (collaborators only)'), 'Making it a private community is up for a vote');
-  assert.equal(audienceChangeLine('Make this app invite-only build, public to view'), 'A change to who it is for is up for a vote');
-  assert.equal(audienceChangeLine(null), 'A change to who it is for is up for a vote');
+  assert.equal(audienceChangeLine('Make this app public'), 'Making it a public community is waiting for approval');
+  assert.equal(audienceChangeLine('Make this app private (collaborators only)'), 'Making it a private community is waiting for approval');
+  assert.equal(audienceChangeLine('Make this app invite-only build, public to view'), 'A change to who it is for is waiting for approval');
+  assert.equal(audienceChangeLine(null), 'A change to who it is for is waiting for approval');
 
   // One proposal for both directions.
   const propose = CARD_SRC.slice(CARD_SRC.indexOf('export async function proposeAudience('), CARD_SRC.indexOf('export const MAKE_PRIVATE_LINE'));

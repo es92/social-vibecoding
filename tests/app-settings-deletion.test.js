@@ -72,7 +72,7 @@ test('an existing visibility proposal is reported and prevents a duplicate retry
   let calls=0;const s=setup(async()=>{calls++;return {ok:false,status:409,json:async()=>({sessionId:55})};});
   await s.proposeAccess();
   assert.equal(s.accessProposalOpen,true);
-  assert.match(s.accessMessage,/already up for vote/);
+  assert.match(s.accessMessage,/already waiting for approval/);
   await s.proposeAccess();
   assert.equal(calls,1);
 });

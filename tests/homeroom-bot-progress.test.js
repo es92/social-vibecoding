@@ -226,7 +226,7 @@ test('WP1: another build of a request, and the build before, in plain words', ()
   assert.equal(progress.buildUnderWay({ build_session_id: 5, build_status: 'promoted', proposal_session_id: 5 }), false, 'proposed');
 
   const said = (run) => progress.attemptOutcome(run);
-  assert.equal(said({ proposal_session_id: 6190, proposal_status: 'promoted' }), 'built; its proposal is up for a vote');
+  assert.equal(said({ proposal_session_id: 6190, proposal_status: 'promoted' }), 'built; it\'s waiting for approval');
   assert.equal(said({ proposal_session_id: 6190, proposal_status: 'merged' }), 'built; approved and live');
   assert.equal(said({ proposal_session_id: 6190, proposal_status: 'merging' }), 'built; its proposal is being merged');
   assert.equal(said({ proposal_session_id: 6191, proposal_status: 'archived' }), 'built; its proposal was closed');

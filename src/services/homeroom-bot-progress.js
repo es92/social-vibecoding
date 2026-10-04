@@ -429,7 +429,7 @@ function attemptOutcome(run) {
   const why = (prefix) => String(run.build_error || '').replace(prefix, '').slice(0, 200);
   if (run.proposal_session_id) {
     if (run.proposal_status === 'merged') return 'built; approved and live';
-    if (run.proposal_status === 'promoted') return 'built; its proposal is up for a vote';
+    if (run.proposal_status === 'promoted') return 'built; it\'s waiting for approval';
     if (run.proposal_status === 'merging') return 'built; its proposal is being merged';
     return 'built; its proposal was closed';
   }

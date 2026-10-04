@@ -115,7 +115,7 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   assert.match(narrow, /<button[^>]*data-agent-session-preview-open[^>]*>Open preview<\/button>/, 'narrow: over the chat, not a new tab');
   assert.doesNotMatch(narrow, /target="_blank"/);
   const voting = render({ change: change({ status: 'promoted', checkState: 'passing' }) });
-  assert.match(voting, /data-agent-session-preview-status[^>]*>In vote</);
+  assert.match(voting, /data-agent-session-preview-status[^>]*>Waiting for approval</);
   assert.match(voting, />View proposal</);
   assert.doesNotMatch(voting, /Propose to group/, 'proposed once');
   assert.match(voting, /data-agent-session-checks="passing"/);

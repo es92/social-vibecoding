@@ -371,9 +371,10 @@ test('the promoted-session cap the import route lacks is applied by the connecto
   const LIMITS_SRC = fs.readFileSync(
     path.join(__dirname, '../src/services/connector-limits.js'), 'utf8'
   );
-  const wording = /You already have \$\{caps\.promotedSessions\} PRs up for vote\./;
+  // B10a: "waiting for approval", the browser's words and the connector's.
+  const wording = /You already have \$\{caps\.promotedSessions\} changes waiting for approval\./;
   assert.match(LIMITS_SRC, wording, 'the connector says what the browser says');
-  assert.match(VOTES_SRC, /You already have \$\{caps\.promotedSessions\} PRs up for vote/);
+  assert.match(VOTES_SRC, /You already have \$\{caps\.promotedSessions\} changes waiting for approval/);
   // Both count the same rows: promoted + merging, headless excluded.
   assert.match(
     LIMITS_SRC,

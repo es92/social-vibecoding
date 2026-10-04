@@ -173,7 +173,7 @@ export function AppSettingsDialog() {
       const data = await response.json().catch(() => ({}));
       if (response.status === 409) {
         setAccessProposalOpen(true);
-        setAccessMessage('A visibility change is already up for vote. See it in the Dev board.');
+        setAccessMessage('A visibility change is already waiting for approval. See it in the Workshop.');
         return;
       }
       if (!response.ok) throw new Error(data.error || 'Could not open the visibility proposal.');

@@ -722,7 +722,7 @@ const MembersDialog = {
       const data = await res.json().catch(() => ({}));
       if (res.status === 409) {
         AppView._renderMembersGovPills();
-        setStatus('A governance change is already up for vote. See the proposal in the Dev tab\'s vote panel.', false);
+        setStatus('A change to who runs this app is already waiting for approval. See it in the Workshop.', false);
         return;
       }
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -940,7 +940,7 @@ const MembersDialog = {
     // Callers wanting a custom message (Propose result) overwrite after
     // rendering.
     if (editable && d.openProposal) {
-      AppView._setAppAdminsStatus('An app-admins change is already up for vote. See the proposal in the Dev tab.', false);
+      AppView._setAppAdminsStatus('A change to the app\'s admins is already waiting for approval. See it in the Workshop.', false);
     } else if (editable && noRepo) {
       AppView._setAppAdminsStatus('Admin changes are proposed as a dapp.json pull request, and this app has no GitHub repository, so they\'re unavailable.', false);
     } else {

@@ -2236,7 +2236,7 @@ function voteRoutes(config) {
       );
       if (parseInt(promotedRows[0].cnt) >= caps.promotedSessions) {
         return res.status(429).json({
-          error: `You already have ${caps.promotedSessions} PRs up for vote. Wait for one to merge, or archive one first.`,
+          error: `You already have ${caps.promotedSessions} changes waiting for approval. Wait for one to go live, or archive one first.`,
         });
       }
 
@@ -2434,7 +2434,7 @@ function voteRoutes(config) {
           if (pr && pr.state === 'closed') {
             if (imported) {
               return res.status(409).json({
-                error: `PR #${session.pr_number} is closed on GitHub and cannot be put up for vote.`,
+                error: 'This change was closed on GitHub, so it can\'t ask for approval.',
               });
             }
             try {

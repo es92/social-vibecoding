@@ -274,7 +274,7 @@ export function ImportPrDialog() {
           Import a pull request
         </h2>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-          Pick an open pull request to add to In progress. It stays there until you put it up for vote.
+          Pick an open pull request to add to In progress. It stays there until you ask for approval.
         </p>
         {/*
             #866: two expectations worth setting before the import, both of

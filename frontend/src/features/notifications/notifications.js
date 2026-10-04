@@ -2430,8 +2430,8 @@ function rowView(n) {
       ...base,
       icon: '\u{1F5F3}\uFE0F',
       ...headline(
-        'Waiting on your vote',
-        count === 1 ? '1 proposal' : `${count} proposals`,
+        'Waiting for your approval',
+        count === 1 ? '1 change' : `${count} changes`,
       ),
     };
   }

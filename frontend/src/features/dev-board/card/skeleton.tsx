@@ -107,7 +107,7 @@ export function CountSkeleton(): ReactNode {
  * column and it is filling". Only the counts are unknown, so only the counts
  * pulse — see `COUNT_BAR` below, the string form of <CountSkeleton/>.
  */
-const KANBAN_COLS = ['Requests', 'Underway', 'In review', 'Done'];
+const KANBAN_COLS = ['Requests', 'Underway', 'Waiting for approval', 'Done'];
 
 /** <CountSkeleton/> as a string, for the HTML builders below. */
 const COUNT_BAR =

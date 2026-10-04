@@ -426,7 +426,7 @@ test('the Getting started buttons: default app, where Vote goes, and the Worksho
         'not "1 change is waiting in Plant Pal"');
       assert.deepEqual(rows(c).slice(2), [
         ['try', 'Spend 10 seconds in City garden.', 'Try'],
-        ['vote', 'Nothing is up for a vote yet. See what people are building.', 'Look'],
+        ['vote', 'Nothing is waiting for approval yet. See what people are building.', 'Look'],
         ['suggest', 'Tell City garden’s builders what would make it better.', 'Suggest'],
       ]);
       // So the Look is the step, and the waiting build does not refuse it.

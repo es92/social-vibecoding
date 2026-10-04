@@ -453,7 +453,7 @@ export function stepView(
   }
   const long = `See what ${vote.app.name} is building`;
   return {
-    detail: 'Nothing is up for a vote yet. See what people are building.',
+    detail: 'Nothing is waiting for approval yet. See what people are building.',
     button: { short: 'Look', long, aria: long, app: vote.app, arrow: true, go: { to: 'workshop', slug: vote.app.slug } },
   };
 }

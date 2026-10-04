@@ -213,11 +213,11 @@ test('an owned imported PR shows proposal metadata with one promotion action', (
   assert.match(html, /High/);
   assert.match(html, /@tester/);
   assert.match(html, />Bug</);
-  assert.match(html, /Imported pull request by octo-contributor · not up for vote yet/);
+  assert.match(html, /Imported by octo-contributor · not waiting for approval yet/);
   // `passNode` appends the clicked button, which the model cannot hold.
   assert.ok(hasAction(model, 'promoteImportedSession', 88), 'the promote pill is wired');
   assert.ok(model.actions.find((a) => a.key === 'promote').passNode);
-  assert.match(html, />Put up for vote</);
+  assert.match(html, />Ask for approval</);
   assert.doesNotMatch(html, />Yes \(|>No \(/, 'voting stays hidden until promotion');
   assert.doesNotMatch(html, /Make visible|>Hide<|Share chat/);
   assert.equal(menuLabels(AppView, html).join('|'),
@@ -236,7 +236,7 @@ test('another user’s imported PR names its people and exposes proposal attribu
   assert.match(html, /Imported PR/);
   assert.match(html, /@sam/);
   assert.match(html, /Imported pull request by octo-contributor · imported by maya/);
-  assert.doesNotMatch(html, /Put up for vote|is working on this/);
+  assert.doesNotMatch(html, /Ask for approval|is working on this/);
   assert.ok(menuHas(AppView, html, /Change assignee/));
   assert.ok(menuHas(AppView, html, /View PR on GitHub/));
 });

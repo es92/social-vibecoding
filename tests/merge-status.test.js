@@ -259,7 +259,7 @@ test('state 10 — in vote (below majority)', () => {
     { majority: 3 }
   );
   assert.equal(life.key, 'in_vote');
-  assert.equal(life.label, 'In vote');
+  assert.equal(life.label, 'Waiting for approval');
   assert.equal(life.tone, 'violet');
   // votes ride along for the pill renderer.
   assert.deepEqual(life.votes, { yes: 1, majority: 3, reached: false });
@@ -304,10 +304,10 @@ test('pillHtml: in-vote pill appends the tally; badgeHtml does not', () => {
   );
   const pill = MergeStatus.pillHtml(life);
   assert.match(pill, /ms-pill-violet/);
-  assert.match(pill, /In vote · 2\/5/);
+  assert.match(pill, /Waiting for approval · 2\/5/);
   // The text-style badge stays compact (the surfaces that use it show a
   // separate vote pill), so it must NOT carry the tally.
-  assert.match(MergeStatus.badgeHtml(life), /In vote/);
+  assert.match(MergeStatus.badgeHtml(life), /Waiting for approval/);
   assert.doesNotMatch(MergeStatus.badgeHtml(life), /2\/5/);
 });
 
@@ -365,7 +365,7 @@ test('#695 — pillHtml appends the muted +N advisory suffix to the in-vote tall
   });
   assert.equal(life.key, 'in_vote');
   const pill = MergeStatus.pillHtml(life);
-  assert.match(pill, /In vote · 1\/2/);
+  assert.match(pill, /Waiting for approval · 1\/2/);
   assert.match(pill, /ms-advisory/);
   assert.match(pill, /\+2</);
   // The compact text badge (separate vote pill beside it) stays tally-free.
@@ -495,4 +495,21 @@ test('#1442 — junk in the freshness block cannot throw', () => {
   for (const freshness of ['nope', 42, [], { mergeabilityFiles: 'oops' }, null]) {
     assert.doesNotThrow(() => MergeStatus.lifecycle({ status: 'promoted', freshness }));
   }
+});
+
+// B10a: one word for a change that waits on its Yes votes, and the
+// creator's own words on a project that is just them.
+test('B10a: waiting for approval, and for your approval on a project that is just you', () => {
+  const p = { status: 'promoted', check_state: 'passing', yes_count: 0, votes_required: 1 };
+  assert.equal(MergeStatus.lifecycle(p).label, 'Waiting for approval');
+  assert.equal(MergeStatus.lifecycle({ ...p, app_audience: 'solo' }).label, 'Waiting for your approval');
+  assert.equal(MergeStatus.lifecycle(p, { audience: 'solo' }).label, 'Waiting for your approval');
+  assert.equal(MergeStatus.lifecycle({ ...p, app_audience: 'solo', votes_required: 2 }).label, 'Waiting for approval',
+    'a rule asking for two Yes votes is not one tap of yours');
+  assert.equal(MergeStatus.lifecycle({ ...p, app_audience: 'invited' }).label, 'Waiting for approval');
+});
+
+test('B10a: the session payload says whose project it is, so the header pill can say "your approval"', () => {
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'src', 'routes', 'sessions.js'), 'utf8');
+  assert.match(src, /const membership = await communities\.getMembership\(pool, \{ id: rows\[0\]\.app_id \}, req\.user\.id\);\n\s+rows\[0\]\.app_audience = membership \? membership\.audience : null;/);
 });

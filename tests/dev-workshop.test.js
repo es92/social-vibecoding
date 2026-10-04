@@ -4948,7 +4948,7 @@ test('the read-only demo check names the pane its proposal is actually on', () =
   assert.match(p, /[?&]col=inreview(&|$)/, 'the column a promoted proposal buckets into');
   // The bucketing this leans on, pinned here so moving `promoted` to another
   // column fails locally rather than as a red check on somebody's proposal.
-  assert.match(APP_VIEW_SRC, /key: 'inreview', title: 'In review'/);
+  assert.match(APP_VIEW_SRC, /key: 'inreview', title: 'Waiting for approval'/);
   assert.match(APP_VIEW_SRC, /rows: cardRows\(\s*kInReview,\s*\(x\) => \(x\.kind === 'proposal'/);
 });
 

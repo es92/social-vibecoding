@@ -199,7 +199,7 @@ test('an open admins PR dedupes to 409 with a pointer at it', async () => {
   const body = await res.json();
   assert.equal(body.sessionId, 88);
   assert.equal(body.prNumber, 654);
-  assert.match(body.error, /already up for vote/);
+  assert.match(body.error, /already waiting for approval/);
 });
 
 // ── success paths ────────────────────────────────────────────────────

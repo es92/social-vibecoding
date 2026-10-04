@@ -354,7 +354,7 @@ function summarize(list, viewer) {
   const byActor = {
     author: { headline: 'Waiting on the author', mine: 'Waiting on you', opensFor: 'author', is: !!v.isAuthor },
     admin: { headline: 'Waiting on an admin', mine: 'Waiting on you', opensFor: 'admin', is: !!v.isAdmin },
-    group: { headline: 'Waiting on the group', mine: 'Waiting on your vote', opensFor: 'voter', is: !v.hasVoted },
+    group: { headline: 'Waiting on the group', mine: 'Waiting for your approval', opensFor: 'voter', is: !v.hasVoted },
   }[current.actor] || null;
 
   if (!byActor) {

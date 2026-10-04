@@ -84,7 +84,7 @@ test('B7: the button, the status, the step and ⋯ on a project that is just you
   assert.equal(summary.headline, 'Waiting for your approval');
   assert.equal(AppView._summarizeRequirements(
     [{ key: 'approvals', state: 'waiting', actor: 'group', label: 'Enough approvals' }], { hasVoted: false },
-  ).headline, 'Waiting on your vote', 'a group keeps its words');
+  ).headline, 'Waiting for your approval', 'B10a: a group\'s says it the same way');
   const items = AppView._proposalMenuItems(change(), {});
   const last = items[items.length - 1];
   assert.equal(last.label, 'Don’t approve');
@@ -94,6 +94,13 @@ test('B7: the button, the status, the step and ⋯ on a project that is just you
   assert.equal(AppView.statusPillState(change({ votes_required: 2 })).label, 'Vote · 0/2');
   assert.ok(!AppView._proposalMenuItems(change(), {}).some((i) => i.label === 'Don’t approve'));
   assert.match(SRC, /const voteStep = AppView\._approveSolo\(item\) \? 'Your approval' : 'Vote';/);
+  // B10a: the change page's eyebrow and the card's meta line say it the same way.
+  AppView.appData = { slug: 'plant-pal', audience: 'solo' };
+  assert.equal(AppView._waitingWords(change()), 'Waiting for your approval');
+  AppView.appData = { slug: 'plant-pal', audience: 'open' };
+  assert.equal(AppView._waitingWords(change()), 'Waiting for approval');
+  assert.match(SRC, /: item\.status === 'promoted' \? AppView\._waitingWords\(item\)/);
+  assert.match(SRC, /\(item\.status === 'promoted' \? AppView\._waitingWords\(item\) : item\.status\)/);
 });
 
 test('B7: Approve is one tap, the viewer\'s own Yes, and reads Approved once it is in', () => {

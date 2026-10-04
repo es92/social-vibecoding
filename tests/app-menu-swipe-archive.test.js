@@ -93,7 +93,7 @@ test('#3515: a swiped session is archived through the ⋯\'s own confirm and rou
     assert.equal(archived, true);
     assert.deepEqual(asked, [{
       title: 'Archive this session?',
-      message: 'It leaves your lists and its change is paused. A change up for a vote keeps its vote, and you can unarchive the session at any time.',
+      message: 'It leaves your lists and its change is paused. A change waiting for approval keeps its approvals, and you can unarchive the session at any time.',
       confirmLabel: 'Archive',
     }], 'the same question the session screen\'s ⋯ asks, word for word');
     assert.deepEqual(requests[0], ['POST', '/api/agent-sessions/2/archive'], 'Archive, not a delete: the route the ⋯ uses');

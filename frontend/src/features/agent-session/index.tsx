@@ -767,7 +767,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
         <p className={`text-sm font-medium ${item.failed ? 'text-red-700 dark:text-red-300' : 'text-zinc-800 dark:text-zinc-100'}`}>{heading}</p>
         {inVote || merged ? (
           <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300" data-agent-session-preview-status>
-            {merged ? 'Merged' : 'In vote'}
+            {merged ? 'Merged' : 'Waiting for approval'}
           </span>
         ) : null}
         {checks ? (
@@ -1454,7 +1454,7 @@ function EmptyState({ about, request }: { about: About; request: DraftRequest | 
         ) : null}
         <p className="mt-2 max-w-sm text-sm text-zinc-600 dark:text-zinc-300">
           {app ? <>On <strong>{app}</strong>. </> : null}
-          Send the message below to start. The Mayor reads the request, plans the change with you, and puts it up for a vote when you say so.
+          Send the message below to start. The Mayor reads the request, plans the change with you, and asks the group for approval when you say so.
         </p>
       </section>
     );
@@ -1467,7 +1467,7 @@ function EmptyState({ about, request }: { about: About; request: DraftRequest | 
       <h3 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">New agent session</h3>
       <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-300">
         {app ? <>Started from <strong>{app}</strong>. </> : null}
-        Start a change on any app. The Mayor plans it, builds it, and puts it up for a vote when you say so.
+        Start a change on any app. The Mayor plans it, builds it, and asks the group for approval when you say so.
       </p>
     </section>
   );

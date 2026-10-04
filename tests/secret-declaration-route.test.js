@@ -70,7 +70,7 @@ test('collisions are checked against manifest, store and live proposals', () => 
   assert.match(route, /FROM platform_env_values WHERE app_id = \$1 AND key = \$2/);
   assert.match(route, /FROM app_secrets WHERE app_id = \$1 AND key = \$2/);
   assert.match(route, /pendingSecrets\.findLiveByKey\(pool, app\.id, key\)/);
-  assert.match(route, /is already up for vote/);
+  assert.match(route, /is already waiting for approval/);
   assert.match(route, /res\.status\(409\)/, 'a collision is a conflict, not a validation error');
 });
 

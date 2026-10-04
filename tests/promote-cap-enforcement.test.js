@@ -181,7 +181,7 @@ async function promoteAs({ user, promotedCount, config, status }) {
 test('regular user is refused at the base cap of 5, and the message quotes 5', async () => {
   const { status, body } = await promoteAs({ user: USER, promotedCount: 5 });
   assert.strictEqual(status, 429);
-  assert.match(body.error, /already have 5 PRs up for vote/);
+  assert.match(body.error, /already have 5 changes waiting for approval/);
 });
 
 test('full admin is admitted past 5 — the cap check does not stop them there', async () => {
@@ -197,24 +197,24 @@ test('full admin is admitted past 5 — the cap check does not stop them there',
 test('full admin is refused at the raised cap of 8, and the message quotes 8', async () => {
   const { status, body } = await promoteAs({ user: FULL_ADMIN, promotedCount: 8 });
   assert.strictEqual(status, 429);
-  assert.match(body.error, /already have 8 PRs up for vote/);
+  assert.match(body.error, /already have 8 changes waiting for approval/);
 });
 
 test('view-only admin is refused at the base cap of 5 like a regular user', async () => {
   const { status, body } = await promoteAs({ user: VIEW_ADMIN, promotedCount: 5 });
   assert.strictEqual(status, 429);
-  assert.match(body.error, /already have 5 PRs up for vote/);
+  assert.match(body.error, /already have 5 changes waiting for approval/);
 });
 
 test('a tuned promoted cap is enforced and quoted per tier', async () => {
   const config = { maxUserPromotedSessions: 2, maxAdminUserPromotedSessions: 4 };
   const user = await promoteAs({ user: USER, promotedCount: 2, config });
   assert.strictEqual(user.status, 429);
-  assert.match(user.body.error, /already have 2 PRs up for vote/);
+  assert.match(user.body.error, /already have 2 changes waiting for approval/);
 
   const admin = await promoteAs({ user: FULL_ADMIN, promotedCount: 4, config });
   assert.strictEqual(admin.status, 429);
-  assert.match(admin.body.error, /already have 4 PRs up for vote/);
+  assert.match(admin.body.error, /already have 4 changes waiting for approval/);
 });
 
 // Ordering guard: an over-cap promote must not leave an orphan PR behind.

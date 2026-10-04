@@ -237,7 +237,7 @@ test('reply suggestions belong to the last thing said, and only while it is last
 test('the header pill and the live line say where things stand in words', () => {
   assert.equal(transcript.changeStatusLabel('active'), 'In progress');
   assert.equal(transcript.changeStatusLabel('paused'), 'In progress', 'paused is bookkeeping, never shown');
-  assert.equal(transcript.changeStatusLabel('promoted'), 'In vote');
+  assert.equal(transcript.changeStatusLabel('promoted'), 'Waiting for approval');
   assert.equal(transcript.changeStatusLabel(null), 'No active change');
   assert.equal(transcript.changeStatusLabel('active', true), 'Building');
   assert.equal(transcript.toolActivity('dispatch_coding_agent'), 'The coding agent is building');

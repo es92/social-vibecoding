@@ -353,9 +353,9 @@ test('#15: a question waiting on the creator, and a first version up for its vot
   assert.deepEqual(asked.lines, ['Step 2 of 7: Read the description', 'Homeroom bot has a question for you.']);
   assert.equal(asked.action.key, 'botChat', 'the chat is where it is answered');
   const ready = view(AppView, firstVersionApp({}, { step: 6, stepName: 'Group vote', ready: true }));
-  assert.deepEqual(ready.lines, ['Step 6 of 7: Group vote', 'Its first version is ready. Try it and vote on it from your chat.']);
+  assert.deepEqual(ready.lines, ['Step 6 of 7: Group vote', 'Its first version is ready. Try it from your chat.']);
   const theirs = view(AppView, firstVersionApp({}, { mine: false, step: 6, stepName: 'Group vote', ready: true }));
-  assert.equal(theirs.lines[1], 'Its first version is up for a vote.');
+  assert.equal(theirs.lines[1], 'Its first version is waiting for approval.');
 });
 
 test('#15: while the project is still being set up there is no starter to offer', () => {

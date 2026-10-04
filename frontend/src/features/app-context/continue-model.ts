@@ -84,7 +84,7 @@ export function agentSub(app: string | null, detail: string): string {
 function agentDetail(session: ContinueAgentSession): string {
   const change = session.activeChange;
   if (!change) return 'Agent session';
-  if (change.status === 'promoted') return 'In vote';
+  if (change.status === 'promoted') return 'Waiting for approval';
   if (change.status === 'merged') return 'Merged';
   return 'In progress';
 }

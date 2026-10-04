@@ -66,7 +66,8 @@ function ageText(since, now = new Date()) {
 /** Pure: one hold, as a clause. */
 function holdClause(hold, now) {
   const who = hold.username || 'Somebody';
-  if (hold.kind === 'proposal') return `${who}'s proposal for it is up for a vote`;
+  // B10a: plain words, as every shared screen says it.
+  if (hold.kind === 'proposal') return `${who}'s change for it is waiting for approval`;
   if (hold.kind === 'session') return `${who} has a change in progress for it (last worked on ${ageText(hold.since, now)})`;
   return `${who} claimed this request ${ageText(hold.since, now)}`;
 }

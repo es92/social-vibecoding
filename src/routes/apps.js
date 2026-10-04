@@ -2074,7 +2074,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       const alreadyPending = await pendingSecrets.findLiveByKey(pool, app.id, key);
       if (alreadyPending) {
         return res.status(409).json({
-          error: `${key} is already up for vote`,
+          error: `${key} is already waiting for approval`,
           sessionId: alreadyPending.sessionId,
           prNumber: alreadyPending.prNumber,
           prUrl: alreadyPending.prUrl,
@@ -2495,7 +2495,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       const existing = await renamePr.findVisibilityPr(pool, app.id);
       if (existing) {
         return res.status(409).json({
-          error: 'A visibility change is already up for vote',
+          error: 'A visibility change is already waiting for approval',
           sessionId: existing.id,
           prNumber: existing.pr_number,
           prUrl: existing.pr_url,
@@ -2742,7 +2742,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       const existing = await renamePr.findAdminsPr(pool, app.id);
       if (existing) {
         return res.status(409).json({
-          error: 'An app-admins change is already up for vote',
+          error: 'A change to the app\'s admins is already waiting for approval',
           sessionId: existing.id,
           prNumber: existing.pr_number,
           prUrl: existing.pr_url,
@@ -2841,7 +2841,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       const existing = await renamePr.findGovernancePr(pool, app.id);
       if (existing) {
         return res.status(409).json({
-          error: 'A governance change is already up for vote',
+          error: 'A change to who runs this app is already waiting for approval',
           sessionId: existing.id,
           prNumber: existing.pr_number,
           prUrl: existing.pr_url,

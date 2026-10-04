@@ -146,7 +146,7 @@ test('_issueWorkState names each of the seven states with its own tone', () => {
 
   const inReview = st({ in_progress: ip({ sessions: [sess({ status: 'promoted' })] }) });
   assert.equal(inReview.key, 'in_review');
-  assert.equal(inReview.label, 'In review · maya');
+  assert.equal(inReview.label, 'Waiting for approval · maya');
   assert.equal(inReview.tone, 'violet');
   assert.equal(inReview.spinner, false);
 

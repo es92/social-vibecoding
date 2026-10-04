@@ -904,7 +904,7 @@
       "name": "Proposal page as a Needs-you item: the hero (the eyebrow with the pull request and its state, the age at its right, the title, the by-line, the tags, the band with the ⋯ last), then the steps sheet, then the Discussion",
       "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000043",
       "expectSelector": "#gc-thread-head .dev-topic > .dev-topic-hero:has(> .dev-topic-hero-top > .dev-ws-eyebrow + .dev-ws-item-of):has(> .dev-topic-hero-chips + .dev-topic-hero-actions > .gc-card-actions > [data-card-menu]:last-child) + .dev-topic-steps + .dev-conversation",
-      "expectText": "In review"
+      "expectText": "Waiting for approval"
     },
     {
       "name": "Vote sits at the end of the hero's status pill, as on a card; Re-run checks is the blocked Checks step's accent pill",
@@ -1440,7 +1440,7 @@
       "expectText": "never returns a secret"
     },
     {
-      "name": "A declaration up for vote renders as an \"Up for vote\" row (STAGING_DEMO_PROPOSED)",
+      "name": "A declaration waiting for approval renders as a \"Waiting for approval\" row (STAGING_DEMO_PROPOSED)",
       "path": "/?shot=secrets#app/usernode-2d5619/dev",
       "expectText": "STAGING_DEMO_PROPOSED"
     },

@@ -104,8 +104,8 @@ async function checkPromotedCap(pool, config, user) {
   if (count >= caps.promotedSessions) {
     return limitError(
       'at_capacity',
-      `You already have ${caps.promotedSessions} PRs up for vote. `
-      + 'Wait for one to merge, or archive one first.'
+      `You already have ${caps.promotedSessions} changes waiting for approval. `
+      + 'Wait for one to go live, or archive one first.'
     );
   }
   return null;

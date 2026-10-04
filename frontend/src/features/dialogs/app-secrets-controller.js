@@ -190,7 +190,7 @@ const Secrets = {
     unset: { label: 'Not set', cls: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' },
     managed: { label: 'Deploy-managed', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
     orphan: { label: 'No longer declared', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
-    proposed: { label: 'Up for vote', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
+    proposed: { label: 'Waiting for approval', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
   },
 
   // The group heading the server files GitHub-Actions rows under. Kept in
@@ -448,11 +448,11 @@ const Secrets = {
         ${!isGithubRow && s.githubSecret ? `<p class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
           ${alsoGithub(s.githubSecret)}</p>` : ''}
         ${isProposed ? `<p class="text-xs text-violet-700 dark:text-violet-300 mb-2">
-          Not declared yet. A proposal adding it to <code class="text-[0.65rem]">dapp.json</code>
-          is up for vote${s.pending && s.pending.proposedBy
+          Not declared yet. A change adding it to <code class="text-[0.65rem]">dapp.json</code>
+          is waiting for approval${s.pending && s.pending.proposedBy
     ? ` (opened by ${escapeHtml(s.pending.proposedBy)})` : ''}.</p>` : ''}
         ${!isProposed && s.pending ? `<p class="text-xs text-violet-700 dark:text-violet-300 mb-2">
-          Value set · its declaration is up for vote${s.pending.prNumber
+          Value set · its declaration is waiting for approval${s.pending.prNumber
     ? ` (PR #${escapeHtml(String(s.pending.prNumber))})` : ''}.</p>` : ''}
         ${s.state === 'orphan' ? `<p class="text-xs text-amber-800 dark:text-amber-400 mb-2">
           No longer declared in <code class="text-[0.65rem]">dapp.json</code>. Its value is kept so a
@@ -512,7 +512,7 @@ const Secrets = {
     ? escapeHtml(data.declareDisabledReason || 'Unavailable right now.')
     : (canWrite
       ? 'Declares it in dapp.json (a proposal) and stores your value now.'
-      : 'Declaration and value go up for vote together.')}</span>
+      : 'Declaration and value wait for approval together.')}</span>
         </div>`;
       document.getElementById('app-secrets-declare-open')?.addEventListener('click', () => {
         Secrets.declareOpen = true;

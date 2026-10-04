@@ -588,7 +588,7 @@ export function changeStatusLabel(status: string | null | undefined, busy = fals
     // pauses by itself when idle and resumes by itself when used.
     case 'active':
     case 'paused': return 'In progress';
-    case 'promoted': return 'In vote';
+    case 'promoted': return 'Waiting for approval';
     case 'merging': return 'Merging';
     case 'merged': return 'Merged';
     case 'archived': return 'Closed';

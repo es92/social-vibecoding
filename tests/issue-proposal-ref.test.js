@@ -237,7 +237,7 @@ test('the heading needs the ISSUE state, which is why the server does not word i
   assert.equal(heading({ state: 'open', closedAt: null }), 'Addressed by',
     'a merged change on an issue still open has not closed it');
   assert.equal(heading({ state: 'open', closedAt: null, addressed_by: addressed({ state: 'review' }) }),
-    'In review');
+    'Waiting for approval');
   assert.equal(heading({ state: 'open', closedAt: null, addressed_by: addressed({ state: 'underway' }) }),
     'Work underway');
 });

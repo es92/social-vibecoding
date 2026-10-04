@@ -75,7 +75,7 @@ test('a proposal up for a vote is left to the vote, however often the bot is ask
   const first = holds.decide({ holds: [proposal, claim('chinchan8', DAYS3)], mentions: [mention('evan', 5)] });
   assert.equal(first.action, 'leave');
   assert.equal(holds.leavingText(first.holds, NOW),
-    'chinchan8\'s proposal for it is up for a vote, so Homeroom bot is leaving it to the vote.');
+    'chinchan8\'s change for it is waiting for approval, so Homeroom bot is leaving it to the vote.');
   const again = holds.decide({
     holds: [proposal], notes: [note(holds.LEAVING_KIND, 4)], mentions: [mention('evan', 5), mention('evan', 1)],
   });

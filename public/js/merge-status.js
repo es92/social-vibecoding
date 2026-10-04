@@ -417,7 +417,11 @@
     // is unchanged — but carries an explanatory tooltip and the
     // `explicitApproval` flag so callers can render the amber chip.
     if (status === 'promoted') {
-      return descriptor('in_vote', 'In vote', 'violet', false, {
+      // B10a: one word for a change that waits on the group, and the
+      // creator's own words on a project that is just them, whose one Yes is
+      // the Yes it needs.
+      var solo = (opts.audience || p.app_audience) === 'solo' && majority <= 1;
+      return descriptor('in_vote', solo ? 'Waiting for your approval' : 'Waiting for approval', 'violet', false, {
         votes: votes,
         title: p.requires_explicit_approval
           ? 'This changes who can administer the app, so it won’t merge on a timer. It needs real Yes votes to reach the app’s normal threshold.'

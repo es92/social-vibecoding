@@ -1600,7 +1600,7 @@ export async function renameCurrentSession() {
 async function confirmArchive(): Promise<boolean> {
   return !!(await window.PlatformUI?.confirm?.({
     title: 'Archive this session?',
-    message: 'It leaves your lists and its change is paused. A change up for a vote keeps its vote, and you can unarchive the session at any time.',
+    message: 'It leaves your lists and its change is paused. A change waiting for approval keeps its approvals, and you can unarchive the session at any time.',
     confirmLabel: 'Archive',
   }));
 }

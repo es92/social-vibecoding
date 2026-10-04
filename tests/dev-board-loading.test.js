@@ -227,7 +227,7 @@ test('an unloaded board draws placeholders, not four empty columns', () => {
   // Every column says so, not just the one the mobile strip shows.
   // The first column is "Requests" since the UI overhaul (it was "Issues");
   // its key stays `issues`.
-  for (const col of ['Requests', 'Underway', 'In review', 'Done']) {
+  for (const col of ['Requests', 'Underway', 'Waiting for approval', 'Done']) {
     assert.ok(html.includes(`Loading ${col}`), `${col} announces itself as loading`);
   }
 });
