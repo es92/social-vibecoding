@@ -1008,9 +1008,18 @@ async function cardShown(pool, userId, appId, issueNumber) {
  * went to ({ conversationId, messageId, duplicate, userId, username }), or
  * null when nothing reached them.
  */
+// B9: what the bot's news about a request says on the chat message it was
+// asked in, if it was (homeroom-bot-chat.js): building, or stopped.
+const CHAT_STATUS_OF_KIND = Object.freeze({
+  spec: 'building', build_failed: 'stopped', blocked: 'stopped', person: 'stopped', empty: 'stopped',
+});
+
 async function relayIssuePost({
   pool, ws = null, app, issueNumber, kind, runId = null, postId = null, bot, dm, ready = false, key = null,
 }) {
+  if (CHAT_STATUS_OF_KIND[kind] && app?.id) {
+    await require('./homeroom-bot-chat').noteRequestStatus(pool, { appId: app.id, issueNumber, status: CHAT_STATUS_OF_KIND[kind] });
+  }
   if (!dm || !bot?.id) return null;
   const settings = await settingsModule().readSettings(pool);
   const requester = await requesterOf(pool, app.id, issueNumber);
@@ -1495,6 +1504,10 @@ async function noteChangeReady(pool, sessionId, deps = {}) {
       },
     });
     if (approval) await noteApproversReady(pool, { sessionId: id, epoch: state.epoch, requesterId: requester?.userId || null, state: approval });
+    // B9: and the chat message it was asked in, if it was, says Try it.
+    await require('./homeroom-bot-chat').noteRequestStatus(pool, {
+      appId: run.id, issueNumber: Number(run.issue_number), status: 'ready', sessionId: id,
+    });
     return told;
   } catch (err) {
     log.warn('homeroom-bot-dm', 'Could not tell the requester their change is ready', { sessionId: id, err: err.message });
@@ -1818,6 +1831,8 @@ async function noteProposalMerged(pool, session, { config = null, sha = null, de
   );
   if (!rows.length) return null;
   const run = rows[0];
+  // B9: the chat message it was asked in, if it was, says it is live.
+  await require('./homeroom-bot-chat').noteRequestStatus(pool, { appId: run.app_id, issueNumber: Number(run.issue_number), status: 'live' });
   const requester = await requesterOf(pool, run.app_id, run.issue_number);
   // #8: their activity tray reads again, whether or not the DM says it.
   if (requester) require('./homeroom-bot-tray').noteWorkChanged(requester.userId, deps);

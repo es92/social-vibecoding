@@ -9727,6 +9727,32 @@ ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS plan_change TEXT;
 CREATE INDEX IF NOT EXISTS homeroom_bot_runs_awaiting_go_idx
   ON homeroom_bot_runs(awaiting_go_at) WHERE awaiting_go_at IS NOT NULL;
 
+-- B9: a request asked for in a project's group chat, by mentioning Homeroom
+-- bot or by "Make this a request" on your own message. The message stays
+-- the person's own, and the bot writes nothing into the chat: how it is
+-- going rides on the message's metadata (`botRequest`) for everyone, and
+-- the card under it is drawn for its requester alone, from these rows
+-- (GET /api/apps/:slug/my-bot-requests), never from chat_messages. `kind`:
+-- filed (the bot builds it), group (filed for the group, where the bot does
+-- not build), unsure (asks the person first), question (pointed at the
+-- bot's own chat), dismissed (they said not now).
+CREATE TABLE IF NOT EXISTS chat_bot_requests (
+  chat_message_id INTEGER PRIMARY KEY REFERENCES chat_messages(id) ON DELETE CASCADE,
+  app_id          INTEGER NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  requester_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind            TEXT NOT NULL,
+  issue_number    INTEGER,
+  title           TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT chat_bot_requests_kind_check CHECK (kind IN ('filed', 'group', 'unsure', 'question', 'dismissed'))
+);
+CREATE INDEX IF NOT EXISTS idx_chat_bot_requests_requester
+  ON chat_bot_requests(requester_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_bot_requests_issue
+  ON chat_bot_requests(app_id, issue_number) WHERE issue_number IS NOT NULL;
+COMMENT ON TABLE chat_bot_requests IS 'staging:private';
+
 -- Weekly building time (homeroom-bot-dm.js weeklySpentCents). A run counts
 -- toward one person's week only when it is `charged`, and against its
 -- `payer`: the person whose action started it (the requester unless

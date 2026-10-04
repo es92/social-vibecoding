@@ -9,6 +9,11 @@ const GroupChat = {
   ws: null,
   appSlug: null,
   messages: [],
+  // B9: the cards under the viewer's own messages that asked Homeroom bot
+  // for something (message id → card), theirs alone; and whether the bot
+  // answers them on this project at all (it offers "Make this a request").
+  _botCards: new Map(),
+  _botHere: false,
   typingUsers: new Map(),
   typingTimeout: null,
   oldestMessageId: null,
@@ -264,6 +269,9 @@ const GroupChat = {
     GroupChat.appSlug = appSlug;
     GroupChat.messages = [];
     GroupChat.threads = new Map();
+    // B9: another project's cards and door are not this one's.
+    GroupChat._botCards = new Map();
+    GroupChat._botHere = false;
     GroupChat.activeThread = null;
     GroupChat.oldestMessageId = null;
     GroupChat.hasMore = true;
@@ -481,6 +489,8 @@ const GroupChat = {
         GroupChat.scrollToBottom();
         GroupChat._didInitialScroll = true;
         GroupChat._applyPendingReveal();
+        // B9: the viewer's own cards under their requests, and the bot's door.
+        void GroupChat._loadBotCards();
         // #2387: opening the channel reads it.
         void GroupChat.markRead();
       } else if (container) {
@@ -540,6 +550,11 @@ const GroupChat = {
       case 'reaction': {
         // #25: authoritative reaction aggregate for one message.
         GroupChat._updateMessageReactions(msg.messageId, msg.reactions || []);
+        break;
+      }
+      case 'bot_request_status': {
+        // B9: a request asked of Homeroom bot here moved on.
+        GroupChat._applyBotRequestStatus(msg);
         break;
       }
       case 'moderation_changed': {
@@ -905,6 +920,16 @@ const GroupChat = {
       // from its own user, and its card hangs under the bubble. Only that
       // metadata, never a "PR #N" in the words, which anybody can type; and
       // a person's post cannot set it (handleMessage builds its metadata).
+      // B9: how a request asked of Homeroom bot is going, on the message
+      // everybody sees (its metadata, set by the server alone), and the card
+      // under it for its writer alone (GroupChat._botCards).
+      botRequest: GroupChat._botRequestView(kind === 'message' && !deleted ? meta.botRequest : null),
+      botCard: kind === 'message' && !deleted && (msg.userId === App.user?.id || msg.user_id === App.user?.id)
+        ? (GroupChat._botCards.get(Number(msg.id)) || null) : null,
+      canAskBot: GroupChat._botHere && kind === 'message' && !deleted && !threadType && msg.id != null
+        && (msg.userId === App.user?.id || msg.user_id === App.user?.id)
+        && !(meta.botRequest) && !GroupChat._botCards.has(Number(msg.id))
+        && !/(^|[^\w])@(homeroom_bot\b|homeroom\s+bot\b)/i.test(String(msg.content || '')),
       voteRef: isVote || (kind === 'message' && !deleted && !!(meta.vote && meta.vote.sessionId))
         ? (([sessionId, prNumber]) => ({ sessionId, prNumber }))(GroupChat._voteRef(msg))
         : null,
@@ -1926,6 +1951,120 @@ const GroupChat = {
   // Apply a fresh reaction aggregate (from the WS 'reaction' broadcast or
   // history) to a message — update state + patch just its pill row. The
   // message may live in the general stream or any cached thread (#194).
+  // B9: the chip a request's message wears, from its metadata: reading,
+  // building, ready (with the change to try), live. Null for none.
+  _botRequestView(value) {
+    if (!value || typeof value !== 'object') return null;
+    const status = ['reading', 'building', 'ready', 'live'].includes(value.status) ? value.status : null;
+    if (!status) return null;
+    return {
+      status,
+      issueNumber: Number(value.issueNumber) || null,
+      sessionId: Number(value.sessionId) || null,
+    };
+  },
+
+  // B9: one row's chat-request fields again, after a frame moved them.
+  _repaintBotRequest(messageId) {
+    const msg = GroupChat.messages.find((m) => String(m.id) === String(messageId));
+    if (!msg) return;
+    const view = GroupChat._messageView(msg);
+    GroupChat._react()?.patchTranscriptMessage(Number(messageId), {
+      botRequest: view.botRequest, botCard: view.botCard, canAskBot: view.canAskBot,
+    });
+  },
+
+  // B9: the room said a request's status moved (`bot_request_status`).
+  _applyBotRequestStatus(frame) {
+    const msg = GroupChat.messages.find((m) => String(m.id) === String(frame.messageId));
+    if (!msg) return;
+    const meta = { ...(msg.metadata || msg.meta || {}) };
+    if (frame.botRequest) meta.botRequest = frame.botRequest;
+    else delete meta.botRequest;
+    msg.metadata = meta;
+    GroupChat._repaintBotRequest(frame.messageId);
+  },
+
+  // B9: the viewer's own card under one of their messages, pushed to their
+  // sockets (`bot_request_card`) or answered by a request of theirs.
+  applyBotRequestCard(frame) {
+    const card = frame && frame.card;
+    if (!card || !card.messageId) return;
+    if (frame.appSlug && frame.appSlug !== GroupChat.appSlug) return;
+    GroupChat._botCards.set(Number(card.messageId), card);
+    GroupChat._repaintBotRequest(card.messageId);
+  },
+
+  // B9: read the viewer's cards again (after a load), and whether the bot
+  // answers them here. Theirs alone, from their own requests.
+  async _loadBotCards() {
+    const slug = GroupChat.appSlug;
+    if (!slug || !(window.App && App.user)) return;
+    try {
+      const res = await fetch(`/api/apps/${encodeURIComponent(slug)}/my-bot-requests`);
+      if (!res.ok || GroupChat.appSlug !== slug) return;
+      const data = await res.json();
+      GroupChat._botHere = !!data.bot;
+      GroupChat._botCards = new Map((Array.isArray(data.cards) ? data.cards : [])
+        .filter((card) => card && card.messageId).map((card) => [Number(card.messageId), card]));
+      GroupChat.render();
+    } catch { /* offline: the cards come back on the next load */ }
+  },
+
+  // B9: "Make this a request", or File it under the card that asked first.
+  async makeBotRequest(messageId) {
+    const slug = GroupChat.appSlug;
+    if (!slug || !messageId) return;
+    try {
+      const res = await fetch(`/api/apps/${encodeURIComponent(slug)}/messages/${Number(messageId)}/request`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data && data.card) GroupChat.applyBotRequestCard({ appSlug: slug, card: data.card });
+      else if (!res.ok && window.PlatformUI) PlatformUI.toast(data.error || 'Couldn’t ask Homeroom bot just now.');
+    } catch {
+      if (window.PlatformUI) PlatformUI.toast('Couldn’t ask Homeroom bot just now.');
+    }
+  },
+
+  // B9: Not now, under the card that asked first. The card goes for good.
+  async dismissBotRequest(messageId) {
+    const slug = GroupChat.appSlug;
+    if (!slug || !messageId) return;
+    GroupChat._botCards.delete(Number(messageId));
+    GroupChat._repaintBotRequest(messageId);
+    try {
+      await fetch(`/api/apps/${encodeURIComponent(slug)}/messages/${Number(messageId)}/request`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dismiss: true }),
+      });
+    } catch { /* it comes back on the next load, and can be dismissed again */ }
+  },
+
+  // B9: the chat with Homeroom bot (See progress, Open chat).
+  openBotChat() {
+    const messages = window.UsernodeReact && window.UsernodeReact.messages;
+    if (messages && typeof messages.openBot === 'function') messages.openBot();
+    else location.hash = '#messages';
+  },
+
+  // B9: a request asked here, on its request page (See request).
+  openBotRequest(issueNumber) {
+    const n = Number(issueNumber);
+    if (!GroupChat.appSlug || !n) return;
+    location.hash = `#app/${encodeURIComponent(GroupChat.appSlug)}/dev/issues/${n}`;
+  },
+
+  // B9: Try it, on a request's message once its change is ready: its preview.
+  tryBotChange(sessionId) {
+    const id = Number(sessionId);
+    if (!id) return;
+    if (typeof AppView !== 'undefined' && typeof AppView.swapToStagingForSession === 'function') {
+      AppView.swapToStagingForSession(id, '');
+      return;
+    }
+    if (GroupChat.appSlug) location.hash = `#app/${encodeURIComponent(GroupChat.appSlug)}/dev/proposals/${id}`;
+  },
+
   _updateMessageReactions(messageId, reactions) {
     let msg = GroupChat.messages.find((m) => String(m.id) === String(messageId));
     if (!msg) {
@@ -3847,7 +3986,8 @@ function knownChannelHandles() {
 function renderWithMentions(raw) {
   const escaped = escapeHtml(raw || '');
   const me = (App.user?.username || '').toLowerCase();
-  const withMentions = escaped.replace(/(^|[^\w])@([A-Za-z0-9_]{1,32})/g, (_m, pre, name) => {
+  // B9: "@Homeroom bot" is one mention, the bot's display form.
+  const withMentions = escaped.replace(/(^|[^\w])@([A-Za-z0-9_]{1,32}(?:(?<=homeroom) bot\b)?)/gi, (_m, pre, name) => {
     const isMe = name.toLowerCase() === me;
     const cls = isMe ? 'gc-mention gc-mention-self' : 'gc-mention';
     return `${pre}<span class="${cls}">@${name}</span>`;
@@ -3994,7 +4134,8 @@ function tokenizeMentionsAndRefs(text, me, channels) {
   // #2783: a third alternative, `#name` for a channel — a letter first, so it
   // never competes with `#123`. Only a handle in `channels` is one; any other
   // `#word` is left as text.
-  const RE = /(^|[^\w])(@([A-Za-z0-9_]{1,32})|(pr ?#|#)(\d{1,7})(?!\w)|#([A-Za-z][A-Za-z0-9-]{0,39})(?![\w-]))/gi;
+  // B9: "@Homeroom bot", the bot's display form, is one mention too.
+  const RE = /(^|[^\w])(@([A-Za-z0-9_]{1,32}(?:(?<=homeroom) bot\b)?)|(pr ?#|#)(\d{1,7})(?!\w)|#([A-Za-z][A-Za-z0-9-]{0,39})(?![\w-]))/gi;
   const known = channels || new Set();
   const segs = [];
   let pos = 0;
@@ -4123,11 +4264,12 @@ const MentionAutocomplete = {
     try {
       const res = await fetch(`/api/apps/${slug}/mention-suggestions`);
       if (!res.ok) return;
-      const { users } = await res.json();
+      const { users, bot } = await res.json();
       const names = Array.isArray(users)
         ? users.map((u) => (u && u.username) || '').filter(Boolean)
         : [];
-      MentionAutocomplete._cacheBySlug.set(slug, { users: names, fetchedAt: Date.now() });
+      // B9: Homeroom bot, when it answers this viewer on this project.
+      MentionAutocomplete._cacheBySlug.set(slug, { users: names, bot: !!(bot && bot.username), fetchedAt: Date.now() });
       // What prefix lookups found is as old as the list it widened.
       MentionAutocomplete._prefixBySlug.delete(slug);
       // If the user already has an open `@token` while we were fetching,
@@ -4204,10 +4346,20 @@ const MentionAutocomplete = {
     return { start, query };
   },
 
+  // B9: the bot's row in the list (its handle; it inserts its display form).
+  BOT: 'homeroom_bot',
+  BOT_NAME: 'Homeroom bot',
+
   _filter(query) {
     const q = query.toLowerCase();
     const out = [];
+    // B9: Homeroom bot leads whenever what was typed matches it (a bare @ does).
+    const c = MentionAutocomplete._cacheBySlug.get(MentionAutocomplete._slug);
+    if (c && c.bot && (MentionAutocomplete.BOT.startsWith(q) || MentionAutocomplete.BOT_NAME.toLowerCase().replace(' ', '').startsWith(q))) {
+      out.push(MentionAutocomplete.BOT);
+    }
     for (const name of MentionAutocomplete._candidates()) {
+      if (name.toLowerCase() === MentionAutocomplete.BOT) continue;
       if (!q || name.toLowerCase().startsWith(q)) {
         out.push(name);
         if (out.length >= MentionAutocomplete.MAX_RESULTS) break;
@@ -4261,6 +4413,8 @@ const MentionAutocomplete = {
         username: name,
         // Decided here, where the viewer is known.
         you: name.toLowerCase() === me,
+        // B9: Homeroom bot's row wears its name, its mark and its AI badge.
+        ...(name === MentionAutocomplete.BOT ? { bot: true, displayName: MentionAutocomplete.BOT_NAME } : {}),
       })),
       MentionAutocomplete._active
     );
@@ -4375,7 +4529,8 @@ const MentionAutocomplete = {
     const value = input.value;
     const before = value.slice(0, MentionAutocomplete._tokenStart);
     const after = value.slice(caret);
-    const insert = `@${username} `;
+    // B9: the bot goes in as "@Homeroom bot", which the server reads as it.
+    const insert = `@${username === MentionAutocomplete.BOT ? MentionAutocomplete.BOT_NAME : username} `;
     const next = before + insert + after;
 
     const max = parseInt(input.getAttribute('maxlength') || '0', 10);

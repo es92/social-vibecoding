@@ -96,6 +96,27 @@ export interface Quote {
 
 export type MessageKind = 'message' | 'system' | 'vote' | 'spec_share';
 
+/** B9: a request's chip on its message (homeroom-bot-chat.js setStatus). */
+export interface BotRequestChip {
+  status: 'reading' | 'building' | 'ready' | 'live';
+  issueNumber: number | null;
+  sessionId: number | null;
+}
+
+/**
+ * B9: the card under a message of the viewer's that asked Homeroom bot for
+ * something (homeroom-bot-chat.js cardOf): filed (it builds it), group (filed
+ * for the group), unsure (asks first), question (pointed at its chat), busy
+ * (too many this hour), failed (could not file it).
+ */
+export interface BotRequestCard {
+  messageId: number;
+  kind: 'filed' | 'group' | 'unsure' | 'question' | 'busy' | 'failed';
+  title: string | null;
+  issueNumber: number | null;
+  typicalMinutes?: number;
+}
+
 /**
  * One of the two proposal events the general chat draws: a proposal put up
  * for a vote, or a proposal merged. Decided by `GroupChat._proposalEvent`
@@ -282,6 +303,16 @@ export interface TranscriptMessage {
   voteRowClass: string;
   /** Vote rows only: what the controls host is about. Null on every other kind. */
   voteRef: VoteRef | null;
+  /**
+   * B9: how a request asked of Homeroom bot on this message is going, which
+   * everybody in the room sees (metadata the server alone sets): reading,
+   * building, ready (with its change to try), live. Null for none.
+   */
+  botRequest?: BotRequestChip | null;
+  /** B9: the card under the viewer's own message about it, theirs alone. */
+  botCard?: BotRequestCard | null;
+  /** B9: "Make this a request" is offered on this message (theirs, and the bot answers them here). */
+  canAskBot?: boolean;
   /** Spec-share rows only — see SpecShareView. Null on every other kind. */
   specShare: SpecShareView | null;
   /**

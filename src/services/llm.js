@@ -1900,6 +1900,64 @@ ${stripLoneSurrogates(description).trim()}`,
   return { title: reply.title.trim(), actionable: true, usage: resp.usage, model };
 }
 
+// ── B9: a message to Homeroom bot in a project's group chat ────────────
+//
+// Somebody wrote "@Homeroom bot …" in a project's chat. One quick Haiku read
+// says whether it asks for a change to the app (filed at once, in their
+// words), asks a question or just chats (pointed at the bot's own chat), or
+// could be either (they are asked first), and titles a change the way a
+// request is titled. Structured output, as generateIssueTitle's.
+const CHAT_ASK_KINDS = Object.freeze(['change', 'question', 'unsure']);
+const CHAT_ASK_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    kind: { type: 'string', enum: [...CHAT_ASK_KINDS] },
+    title: { type: 'string' },
+  },
+  required: ['kind', 'title'],
+};
+
+async function readChatAsk({ text, appName = null, apiKey, telemetryContext }) {
+  const activeClient = apiKey ? new Anthropic({ apiKey }) : client;
+  if (!activeClient) throw new Error('LLM not initialized');
+  const model = 'claude-haiku-4-5';
+  const resp = await createMessageWithTelemetry({
+    activeClient,
+    params: {
+      model,
+      max_tokens: 80,
+      messages: [{
+        role: 'user',
+        content: `Somebody wrote this to Homeroom bot in the group chat of ${appName ? `"${stripLoneSurrogates(String(appName)).slice(0, 80)}"` : 'a project'}. Homeroom bot builds changes to the project's app.
+
+Decide what it is:
+- "change": it asks for a change to the app: something new, something fixed, or something to look or work differently.
+- "question": it asks a question, or chats, and asks for nothing to change.
+- "unsure": it could be either.
+
+For a change, write a short title for it as a request: an imperative action starting with a verb, 5 to 10 words (e.g. "Add a Sunday watering reminder"). Otherwise the title is "".
+
+Respond with only a JSON object: {"kind": "change", "title": "..."}.
+
+MESSAGE:
+${stripLoneSurrogates(String(text || '')).trim().slice(0, 4000)}`,
+      }],
+      output_config: { format: { type: 'json_schema', schema: CHAT_ASK_SCHEMA } },
+    },
+    telemetryContext,
+    defaults: { backend: 'helper', component: 'chat_ask' },
+    apiKey,
+  });
+  const raw = ((resp.content || []).find((b) => b.type === 'text')?.text || '').trim();
+  let parsed = null;
+  try { parsed = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim()); } catch { parsed = null; }
+  const kind = parsed && CHAT_ASK_KINDS.includes(parsed.kind) ? parsed.kind : 'unsure';
+  const title = kind === 'change' && typeof parsed?.title === 'string' && !issueTitleRejection(parsed.title)
+    ? parsed.title.trim() : null;
+  return { kind, title, usage: resp.usage, model };
+}
+
 // ── AI progress report (Reporting tab) ─────────────────────────────────
 //
 // One Haiku call turns the server-built report input (report-ai.js) into
@@ -2790,6 +2848,8 @@ module.exports = {
   stripLoneSurrogates, generateIssueTitle, FEEDBACK_FALLBACK_TITLE,
   // #3193: the guard between the title model and a published issue title.
   issueTitleRejection, feedbackTitleFromDescription, ISSUE_TITLE_SCHEMA,
+  // B9
+  readChatAsk, CHAT_ASK_SCHEMA,
   // AI progress report (Reporting tab) — see services/report-ai.js.
   generateReportSummary, sanitizeReportSummary, REPORT_SUMMARY_SCHEMA,
   // Workshop themes (the Dev screen's lander) — see services/workshop-themes.js.

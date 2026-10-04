@@ -61,7 +61,10 @@ const MAX_USERNAME_LEN = 32;
 // Matched on the lowercased name with the separators stripped, so
 // `usernode_capture` and `UserNodeCapture` are refused alongside the
 // literal seeds.
-const RESERVED_PREFIXES = ['usernode', 'staging'];
+// B9 (E8): and `homeroom`, so "@Homeroom bot" (the platform's bot, mentioned
+// in a project's chat) can never notify a person who took the name. People
+// who already hold such a name keep it; only new names are refused.
+const RESERVED_PREFIXES = ['usernode', 'staging', 'homeroom'];
 
 // Accounts that may never be renamed AT ALL, in either direction. These are
 // the seeded service identities: their username IS the lookup key that

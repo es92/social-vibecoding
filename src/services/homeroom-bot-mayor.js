@@ -2318,7 +2318,9 @@ async function askedFor(pool, action, userId) {
  * reaches their DM, and on a project the bot acts on it goes to the front
  * of the queue.
  */
-async function fileRequest(pool, config, { user, app, title, details, settings, deps = {}, askedText = null }) {
+async function fileRequest(pool, config, {
+  user, app, title, details, settings, deps = {}, askedText = null, footer = null, reason = 'dm_request',
+}) {
   const github = deps.github || require('./github');
   const ws = deps.ws || require('./ws');
   const notifications = deps.notifications || require('./notifications');
@@ -2328,7 +2330,8 @@ async function fileRequest(pool, config, { user, app, title, details, settings, 
     details || '',
     '',
     '---',
-    `Filed from ${user.username}'s chat with Homeroom bot.`,
+    // B9: where it was asked, when not in their chat with the bot.
+    footer || `Filed from ${user.username}'s chat with Homeroom bot.`,
   ].join('\n').trim();
   const created = await github.createIssue(m[1], m[2], {
     title, body: typeof github.safeMention === 'function' ? github.safeMention(body) : body,
@@ -2358,7 +2361,7 @@ async function fileRequest(pool, config, { user, app, title, details, settings, 
   ws.pushIssueUpdate?.({ action: 'created', appSlug: app.slug, appId: app.id, issueId: issueRows[0]?.id, kind: 'general' });
   let queueId = null;
   if (liveModule(deps).isLiveFor(settings, app)) {
-    const queued = await botModule(deps).enqueueFront(pool, { appId: app.id, issueNumber, userId: user.id, reason: 'dm_request' })
+    const queued = await botModule(deps).enqueueFront(pool, { appId: app.id, issueNumber, userId: user.id, reason })
       .catch((err) => {
         log.warn('homeroom-bot-mayor', 'Could not queue a filed request', { err: err.message });
         return null;

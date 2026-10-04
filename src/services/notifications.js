@@ -168,7 +168,17 @@ async function createMentionNotifications(pool, { appId, chatMessageId, senderId
   const names = parseMentions(content);
   if (!names.length) return [];
 
-  const users = await resolveUsers(pool, names);
+  let users = await resolveUsers(pool, names);
+  // B9: a platform account (the Homeroom bot) reads no notifications: a
+  // mention of it is a request to it (homeroom-bot-chat.js), and the rows
+  // written for it were never read.
+  if (users.length) {
+    const { rows: people } = await pool.query(
+      'SELECT id FROM users WHERE id = ANY($1::int[]) AND is_synthetic = FALSE', [users.map((u) => u.id)],
+    );
+    const real = new Set(people.map((r) => r.id));
+    users = users.filter((u) => real.has(u.id));
+  }
   // Self-mentions are allowed (useful for testing and also as a "remind
   // me" pattern). If this becomes noisy we can put it behind a flag.
   // For collab-private apps, drop mentioned users who aren't members —

@@ -34,6 +34,9 @@ import { createStore } from '../../lib/plain-store.js';
 export interface MentionOption {
   username: string;
   you: boolean;
+  /** B9: Homeroom bot's row: its name in place of a handle, its mark and an AI badge. */
+  bot?: boolean;
+  displayName?: string;
 }
 
 export interface RefOption {

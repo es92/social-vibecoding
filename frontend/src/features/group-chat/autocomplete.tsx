@@ -67,9 +67,19 @@ export function MentionMenuView({ items, active }: AutocompleteSlot<MentionOptio
           data-username={item.username}
           data-index={i}
         >
-          <span className="gc-mention-option-at">@</span>
-          {item.username}
-          {item.you ? <span className="gc-mention-option-you">you</span> : null}
+          {item.bot ? (
+            <>
+              <img className="gc-mention-option-mark" src="/brand/homeroom-mark.png" alt="" aria-hidden="true" />
+              {item.displayName || item.username}
+              <span className="messages-bot-badge">AI</span>
+            </>
+          ) : (
+            <>
+              <span className="gc-mention-option-at">@</span>
+              {item.username}
+              {item.you ? <span className="gc-mention-option-you">you</span> : null}
+            </>
+          )}
         </div>
       ))}
     </>

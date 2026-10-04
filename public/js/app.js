@@ -2629,6 +2629,11 @@ const App = {
             }
             window.AiCredit?.Budget?.applyPush?.(data.budget);
             break;
+          case 'bot_request_card':
+            // B9: the card under a message of this person's that asked
+            // Homeroom bot for something: theirs alone, on every tab.
+            window.GroupChat?.applyBotRequestCard?.(data);
+            break;
           case 'notification_new':
             if (window.Notifications) Notifications.handleIncoming(data.notification);
             // A mention/reply/reaction may have arrived for a message in

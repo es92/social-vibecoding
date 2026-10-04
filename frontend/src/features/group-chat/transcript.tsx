@@ -58,7 +58,7 @@ import { Button } from '@/components/ui/button';
 import { ChatMessageRow, groupsWithPrevious } from '@/components/ui/chat';
 import { Avatar, ReactionPill } from '@/components/ui/feed';
 import {
-  BookmarkIcon, BookmarkSolidIcon, CopyIcon, DraftTrashIcon, EnvelopeIcon, FlagIcon, LinkIcon, NoSymbolIcon,
+  BookmarkIcon, BookmarkSolidIcon, ChatIcon, CopyIcon, DraftTrashIcon, EnvelopeIcon, FlagIcon, LinkIcon, NoSymbolIcon,
   PencilSquareIcon, ReplyArrowIcon, ThreadIcon,
 } from '@/components/ui/icons';
 
@@ -66,6 +66,7 @@ import { confirmAction } from '../../lib/confirm';
 import { timeOfDay } from '../../lib/timestamp';
 import { useStoreState } from '../../lib/use-store-state';
 import { PostedViaChip } from './posted-via-chip';
+import { BotRequestCardView, BotStatusChip } from './bot-request';
 import { ImageViewer, openInViewer } from '../image-viewer/image-viewer';
 import { EventRow } from './proposal-event';
 import { QuietCard } from './quiet-card';
@@ -306,9 +307,18 @@ export function Attachments({ items }: { items: Attachment[] }) {
  * the border width), so the affordance had quietly gone missing.
  */
 export function Reactions({ msg }: { msg: TranscriptMessage }) {
-  if (!msg.reactions.length) return <div className="gc-reactions" id={`gc-react-${msg.id ?? ''}`} />;
+  if (!msg.reactions.length && !msg.botRequest) return <div className="gc-reactions" id={`gc-react-${msg.id ?? ''}`} />;
   return (
     <div className="gc-reactions" id={`gc-react-${msg.id ?? ''}`}>
+      {/* B9: a request asked of Homeroom bot here, first and in its own colour (./bot-request.tsx). */}
+      {msg.botRequest ? (
+        <BotStatusChip
+          chip={msg.botRequest}
+          mine={msg.mine}
+          onTry={(sessionId) => controller()?.tryBotChange?.(sessionId)}
+          onProgress={() => controller()?.openBotChat?.()}
+        />
+      ) : null}
       {msg.reactions.map((r) => (
         <ReactionPill
           key={r.emoji}
@@ -622,6 +632,10 @@ export function messageMenuItems(
   const id = msg.id;
   if (!id) return [];
   const items: MenuItem[] = [];
+  // B9: hand one of your own messages to Homeroom bot, in your words.
+  if (surface === 'main' && msg.canAskBot) {
+    items.push({ key: 'ask-bot', label: 'Make this a request', icon: ChatIcon, onSelect: () => { void chat?.makeBotRequest?.(id); } });
+  }
   if (surface === 'main' && msg.canThread) {
     items.push({ key: 'thread', label: msg.thread ? 'View thread' : 'Reply in thread', icon: ThreadIcon, onSelect: () => chat?.openReplyThread?.(id) });
   }
@@ -766,6 +780,19 @@ export const MessageRow = memo(function MessageRow({ msg, grouped = false, surfa
             <span className="gc-msg-edited" title={msg.editedTitle}>edited</span>
           ) : null}
           <Reactions msg={msg} />
+          {/* B9: the card under your own message that asked Homeroom bot, yours alone. */}
+          {msg.mine && msg.botCard ? (
+            <BotRequestCardView
+              card={msg.botCard}
+              actions={{
+                onProgress: () => chat?.openBotChat?.(),
+                onRequest: (n) => chat?.openBotRequest?.(n),
+                onFile: () => chat?.makeBotRequest?.(msg.id),
+                onDismiss: () => chat?.dismissBotRequest?.(msg.id),
+                onOpenChat: () => chat?.openBotChat?.(),
+              }}
+            />
+          ) : null}
         </>
       )}
       {msg.thread && surface === 'main' && msg.id ? (

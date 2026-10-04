@@ -882,6 +882,15 @@ async function handleMessage(pool, client, msg) {
       };
 
       await broadcastFromSender(pool, client.appId, outMsg, client.user.id);
+      // B9: a message in the main stream that mentions Homeroom bot asks it
+      // for something (services/homeroom-bot-chat.js). Not awaited: the read
+      // takes a moment, and the room has the message already. Never an edit
+      // (that is chat_edit), and never a connector's post.
+      if (!thread) {
+        void require('./homeroom-bot-chat').noteChatMessage(pool, null, {
+          appId: client.appId, userId: client.user.id, messageId: rows[0].id, content, thread, postedVia,
+        });
+      }
       // A person answering on an issue's thread is exactly what the Homeroom
       // bot waits for; a system row (a claim, a bounty) is not a message.
       if (thread && thread.type === 'issue') noteIssueActivityForBot(client.appId, thread.ref, 'thread');

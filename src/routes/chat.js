@@ -977,6 +977,56 @@ function chatRoutes(config) {
     }
   });
 
+  // ── B9: asking Homeroom bot from the chat ───────────────────────────
+  //
+  // A message that mentions Homeroom bot is handed to it by the room itself
+  // (services/ws.js, homeroom-bot-chat.js). These two are the rest:
+  //
+  //   GET  /api/apps/:slug/my-bot-requests
+  //     → { bot, builds, cards }: the cards under the viewer's OWN messages
+  //       that asked the bot for something, for the chat to draw again after
+  //       a reload. Read from chat_bot_requests by requester, never from
+  //       chat_messages, so nobody else's card can come back.
+  //   POST /api/apps/:slug/messages/:id/request  { dismiss? }
+  //     → "Make this a request" on a message of the viewer's own (or File it
+  //       under the card that asked first): the same as a mention, without
+  //       the read. `dismiss` is Not now. Members only, from the person's own
+  //       browser, and capped per person by the service.
+  router.get('/api/apps/:slug/my-bot-requests', appChatReadLimiter, async (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const app = await appAccess.getAppForUser(pool, req.params.slug, req.user, 'view', appAccess.ACCESS_COLUMNS);
+      if (!app) return res.status(404).json({ error: 'App not found' });
+      const out = await require('../services/homeroom-bot-chat').myRequests(pool, { app, user: req.user });
+      return res.json(out);
+    } catch (err) {
+      log.error('chat', 'Failed to read the viewer\'s chat requests', { slug: req.params.slug, message: err.message });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  router.post('/api/apps/:slug/messages/:id/request', groupChatWriteLimiter, sameOriginBrowserOnly,
+    communities.requireAppMembership(pool), async (req, res) => {
+      res.set('Cache-Control', 'private, no-store');
+      if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+      try {
+        const app = await appAccess.getAppForUser(pool, req.params.slug, req.user, 'collab', appAccess.ACCESS_COLUMNS);
+        if (!app) return res.status(404).json({ error: 'App not found' });
+        const botChat = require('../services/homeroom-bot-chat');
+        const [project, person] = await Promise.all([botChat.appRow(pool, app.id), botChat.personRow(pool, req.user.id)]);
+        if (!project || !person) return res.status(404).json({ error: 'App not found' });
+        const out = await botChat.requestFromMessage(pool, config, {
+          app: project, user: person, messageId: req.params.id, dismiss: req.body?.dismiss === true,
+        });
+        if (!out.ok) return res.status(out.status || 400).json({ error: out.error, code: out.code || null, card: out.card || null });
+        return res.json(out);
+      } catch (err) {
+        log.error('chat', 'Failed to make a message a request', { slug: req.params.slug, message: err.message });
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
   // ── Group-chat file attachments (#694) ───────────────────────────
   //
   // Upload happens BEFORE send, mirroring dev-chat (#450,
@@ -1236,10 +1286,14 @@ function chatRoutes(config) {
         ]
       );
 
+      // B9: Homeroom bot, offered first when it answers this viewer here.
+      const botChat = require('../services/homeroom-bot-chat');
+      const here = await botChat.botFor(pool, { app, user: await botChat.personRow(pool, req.user.id) });
       res.json({
         users: rows.map((r) => (r.friend
           ? { username: r.username, friend: true }
           : { username: r.username })),
+        ...(here ? { bot: { username: 'homeroom_bot', displayName: 'Homeroom bot', builds: here.builds } } : {}),
       });
     } catch (err) {
       log.error('chat', 'Failed to load mention suggestions', { message: err.message });

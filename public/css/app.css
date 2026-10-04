@@ -9571,6 +9571,15 @@ a.gc-event-box:focus-visible { outline: 2px solid var(--accent); outline-offset:
   color: var(--accent);
 }
 .gc-mention-option-at { color: var(--accent); font-weight: 600; }
+/* B9: Homeroom bot's row: its mark at the line's height, before its name. */
+.gc-mention-option-mark {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.gc-mention-option .messages-bot-badge { margin-left: 6px; }
 
 /* #130: reference-autocomplete rows reuse the mention menu/option styling;
    these only add room for the PR#N / #N badge plus a truncating title. */

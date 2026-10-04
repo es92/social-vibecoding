@@ -120,10 +120,11 @@ test('the real-person rule leaves out admins, bots, restricted, deleted, service
     'u.is_admin IS NOT TRUE', 'u.is_synthetic IS NOT TRUE', 'u.participation_restricted_at IS NULL',
     'u.anonymised_at IS NULL', 'NOT (LOWER(u.username) LIKE ANY($3::text[]))', 'NOT (u.id = ANY($4::int[]))',
   ]) assert.ok(sql.includes(part), part);
-  assert.deepEqual(journey.RESERVED_PATTERNS, ['usernode%', 'staging%'],
+  // B9: 'homeroom' joined the reserved prefixes with the bot's @mention.
+  assert.deepEqual(journey.RESERVED_PATTERNS, ['usernode%', 'staging%', 'homeroom%'],
     'the reserved prefixes nobody else may take (src/services/usernames.js RESERVED_PREFIXES)');
   const usernames = fs.readFileSync(path.join(__dirname, '..', 'src', 'services', 'usernames.js'), 'utf8');
-  assert.match(usernames, /const RESERVED_PREFIXES = \['usernode', 'staging'\];/);
+  assert.match(usernames, /const RESERVED_PREFIXES = \['usernode', 'staging', 'homeroom'\];/);
   assert.deepEqual(journey.notRecorded('no record'), { recorded: false, reason: 'no record' });
 });
 

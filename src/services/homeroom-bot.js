@@ -2414,6 +2414,8 @@ async function runTriage(pool, config, { bot, app, item, mode, settings = null, 
     // not twice for a restart, and not for a backlog pass. Never throws.
     if (item.reason !== RESTART_REASON && item.reason !== APP_AGAIN_REASON) {
       await activity().startCard(pool, { app, issueNumber, requester, bot, jobKey: item.id, settings, deps: { dm: deps.dm } });
+      // B9: the chat message it was asked in, if it was, says it is read.
+      await require('./homeroom-bot-chat').noteRequestStatus(pool, { appId: app.id, issueNumber, status: 'reading' });
     }
     // B6: a plan still waiting for Build it is not what the bot thinks once
     // it reads the request again. Its buttons go now, so a tap while this

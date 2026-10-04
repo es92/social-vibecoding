@@ -50,7 +50,7 @@ const FEW_MOVES = 10;
 // account (the reserved name prefixes nobody else may take), and not on the
 // admin-edited left-out list. Every query that names people uses this, with
 // $3 = the reserved prefixes as LIKE patterns and $4 = the left-out ids.
-const RESERVED_PATTERNS = Object.freeze(['usernode%', 'staging%']);
+const RESERVED_PATTERNS = Object.freeze(['usernode%', 'staging%', 'homeroom%']);
 const REAL_PERSON_SQL = `u.is_admin IS NOT TRUE
   AND u.is_synthetic IS NOT TRUE
   AND u.participation_restricted_at IS NULL
