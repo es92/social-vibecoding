@@ -464,8 +464,8 @@ const BOT_DM_ASK_KEY = 'staging-hrbot-ask';
 async function ensureBotDmFixture(pool, user) {
   if (process.env.USERNODE_ENV !== 'staging' || !user?.id) return null;
   await pool.query(
-    `INSERT INTO users (username, password, is_synthetic)
-     VALUES ('homeroom_bot', 'staging-demo-not-a-login', TRUE)
+    `INSERT INTO users (username, password, is_synthetic, display_name)
+     VALUES ('homeroom_bot', 'staging-demo-not-a-login', TRUE, 'Homeroom bot')
      ON CONFLICT DO NOTHING`
   );
   const bot = (await pool.query(

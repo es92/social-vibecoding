@@ -133,12 +133,17 @@ function BotActions({ message, meta }: { message: ConversationMessage; meta: Hom
   const settled = meta.status === 'answered' || meta.status === 'closed';
   const open = !settled && !pressed && !message.deleted;
   const chosen = meta.status === 'answered' ? (meta.answer || null) : (pressed ? pressed.label : null);
+  // B5: a question offered to tap reads back as asked, a choice as chosen.
+  const chosenAction = actions.find((action) => action.id === meta.chosen) || pressed;
+  const prompts = actions.length > 0 && actions.every((action) => action.type === 'prompt');
 
   function press(action: HomeroomBotAction) {
-    if (action.type !== 'server') {
+    if (action.type === 'open') {
       void tapBotAction(message, action).catch(() => {});
       return;
     }
+    // A prompt is their own message; the buttons give way at once, and the
+    // server settles them on every device when it lands.
     setPressed(action);
     void tapBotAction(message, action).catch(() => setPressed(null));
   }
@@ -146,13 +151,15 @@ function BotActions({ message, meta }: { message: ConversationMessage; meta: Hom
   return (
     <div className="messages-bot-question" data-bot-question={meta.status || 'open'}>
       {open ? (
-        <div className="messages-bot-answers" role="group" aria-label={meta.question || 'Choices'}>
+        <div className="messages-bot-answers" role="group" aria-label={meta.question || (prompts ? 'Questions you can ask' : 'Choices')}>
           {actions.map((action, index) => (
             <button
               key={action.id}
               type="button"
-              className={action.style === 'primary' ? 'messages-bot-primary' : 'messages-bot-secondary'}
+              // B5: a prompt keeps the suggestion pill's look; a choice is filled.
+              className={action.type === 'prompt' ? undefined : action.style === 'primary' ? 'messages-bot-primary' : 'messages-bot-secondary'}
               data-bot-answer={index === 0 ? 'default' : 'other'}
+              data-bot-prompt={action.type === 'prompt' ? '' : undefined}
               onClick={() => press(action)}
             >
               <span>{action.label}</span>
@@ -160,7 +167,7 @@ function BotActions({ message, meta }: { message: ConversationMessage; meta: Hom
           ))}
         </div>
       ) : null}
-      {chosen ? <p className="messages-bot-answered">{`You chose ${chosen}`}</p> : null}
+      {chosen ? <p className="messages-bot-answered">{chosenAction?.type === 'prompt' ? `You asked: ${chosen}` : `You chose ${chosen}`}</p> : null}
       {meta.status === 'closed' && !chosen ? <p className="messages-bot-answered">No longer needed.</p> : null}
     </div>
   );

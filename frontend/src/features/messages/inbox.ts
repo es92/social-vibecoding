@@ -170,6 +170,11 @@ function byClock(a: InboxEntry, b: InboxEntry): number {
   return Number.isNaN(diff) ? 0 : diff;
 }
 
+/** B5: entries back in the order things happened, the bot's pin undone (search results). */
+export function inClockOrder<T extends InboxEntry>(entries: T[]): T[] {
+  return [...entries].sort(byClock);
+}
+
 /**
  * Merge the lists into one, filtered: the chats newest first, then the
  * channels — #general, then the app channels newest first.
@@ -228,5 +233,12 @@ export function buildInbox(input: {
   // Stable within a timestamp: `sort` is stable in every engine this ships
   // to, so two rows that happened in the same second keep the order their
   // own source gave them — which for conversations is the server's.
-  return chats.sort(byClock);
+  chats.sort(byClock);
+  // B5: the Homeroom bot's DM is always the first row, whatever was said
+  // last, on every filter that lists it. Not a general pin: it is the one
+  // conversation everybody has with the platform itself.
+  const bot = input.conversations.find((item) => item.homeroomBot && item.kind !== 'channel');
+  const at = bot ? chats.findIndex((entry) => entry.key === `person:${bot.id}`) : -1;
+  if (at > 0) chats.unshift(...chats.splice(at, 1));
+  return chats;
 }

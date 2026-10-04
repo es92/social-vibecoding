@@ -1939,19 +1939,23 @@ export function handleEvent(raw: ConversationEvent): void {
       const username = state.active?.id === conversationId
         ? state.active.members.find((member) => member.id === userId && member.status === 'member')?.username || ''
         : '';
+      // B5: the bot types as its name, "Homeroom bot is typing…".
+      const botPeer = state.active?.id === conversationId && state.active.peer?.bot && state.active.peer.id === userId
+        ? state.active.peer.displayName || '' : '';
       if (!userId || userId === currentUser().id || !username) break;
       const current = new Set(state.typing[conversationId] || []);
       const expiryKey = `${conversationId}:${userId}`;
       const existingExpiry = typingExpiry.get(expiryKey);
       if (existingExpiry && typeof window !== 'undefined') window.clearTimeout(existingExpiry);
       typingExpiry.delete(expiryKey);
-      if (event.typing === false) current.delete(username); else current.add(username);
+      const shown = botPeer || username;
+      if (event.typing === false) current.delete(shown); else current.add(shown);
       publish({ typing: { ...state.typing, [conversationId]: [...current] } });
       if (event.typing !== false && typeof window !== 'undefined') {
         typingExpiry.set(expiryKey, window.setTimeout(() => {
           typingExpiry.delete(expiryKey);
           const next = new Set(state.typing[conversationId] || []);
-          if (!next.delete(username)) return;
+          if (!next.delete(shown)) return;
           publish({ typing: { ...state.typing, [conversationId]: [...next] } });
         }, 6000));
       }

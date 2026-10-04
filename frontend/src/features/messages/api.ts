@@ -81,6 +81,8 @@ export function normalizeUser(input: unknown): ConversationUser {
     avatarUrl: text(pick(row, 'avatarUrl', 'avatar_url')) || null,
     // #3624: a platform account (the Homeroom bot). Named here, or dropped.
     ...(pick(row, 'bot') === true ? { bot: true } : {}),
+    // B5: and the name it is shown by, for a platform account only.
+    ...(pick(row, 'bot') === true && text(pick(row, 'displayName')) ? { displayName: text(pick(row, 'displayName')).slice(0, 80) } : {}),
   };
 }
 
@@ -145,6 +147,7 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       chosen: optional('chosen'),
       startedAt: optional('startedAt'),
       askedText: optional('askedText'),
+      hello: optional('hello'),
       ...(pick(bot, 'live') === true ? { live: true } : {}),
     },
   };

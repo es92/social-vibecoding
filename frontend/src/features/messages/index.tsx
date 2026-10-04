@@ -27,7 +27,7 @@ import { BotWorkButton, BotWorkPanel, BotWorkStatusLine, BotWorkSync, newestBotM
 import { MessageComposer } from './composer';
 import { CreateConversationDialog } from './create-dialog';
 import { ConversationMembersDialog } from './members-dialog';
-import { fullTime, UserAvatar } from './format';
+import { fullTime, UserAvatar, senderName } from './format';
 import { MessageRow } from './message-row';
 import { plainText } from './plain-text';
 import { useDismiss } from '../message-actions/use-dismiss';
@@ -95,10 +95,7 @@ import {
 import { Improve } from '../improve/improve-controller.js';
 import { improveStore } from '../improve/improve-store.js';
 import { SessionRow, type SessionRowView } from '../improve/session-row';
-import {
-  INBOX_FILTERS, buildInbox, sectionRuns,
-  type AgentChat, type AppDiscussion, type InboxFilter, type InboxSection,
-} from './inbox';
+import { INBOX_FILTERS, buildInbox, sectionRuns, type AgentChat, type AppDiscussion, type InboxFilter, type InboxSection, inClockOrder } from './inbox';
 import type { ConversationMessage, ConversationSummary, MessagesAgentThread } from './types';
 
 /*
@@ -182,7 +179,7 @@ const ConversationRow = memo(function ConversationRow({ conversation, active }: 
             unread row state itself three ways — bold name, accent time, count
             pill — without adding a third line. */}
         <div className="messages-row-line">
-          <span className="messages-row-name">{conversation.kind === 'direct' && peer ? `@${peer.username}` : conversation.title}{conversation.kind === 'group' && !invited ? <span className="messages-group-tag">{conversation.memberCount}</span> : null}</span>
+          <span className="messages-row-name">{conversation.kind === 'direct' && peer ? senderName(peer) : conversation.title}{conversation.kind === 'direct' && peer?.bot ? <span className="messages-bot-badge">AI</span> : null}{conversation.kind === 'group' && !invited ? <span className="messages-group-tag">{conversation.memberCount}</span> : null}</span>
           <time className={`messages-row-time ${unread ? 'messages-row-time-unread' : ''}`} dateTime={conversation.lastActivityAt} title={activity.title}>{activity.text}</time>
         </div>
         <div className="messages-row-line">
@@ -823,8 +820,11 @@ function ConversationList() {
   // that is open, which stays in view wherever it lives.
   const moreEntries = inbox.filter((entry) => entry.more);
   const openSlug = snap.route.appSlug;
-  const shown = inbox.filter(matches).filter((entry) => !entry.more || !!q || snap.showMoreChannels
+  const found = inbox.filter(matches).filter((entry) => !entry.more || !!q || snap.showMoreChannels
     || (entry.kind === 'app' && entry.key === `app:${openSlug}`));
+  // B5: search results stay in the order things happened; only the full
+  // list keeps the Homeroom bot first.
+  const shown = q ? inClockOrder(found) : found;
   const moreToggle = moreEntries.length && !q ? (
     <button
       key="more-channels"
@@ -1107,7 +1107,7 @@ function ThreadHeader() {
     // QA 2026-09-24 Q15: the app's own confirm (lib/confirm.ts), not the
     // browser's, which some webview hosts suppress.
     const ok = await confirmAction({
-      title: `Block @${peer.username}?`,
+      title: `Block ${senderName(peer)}?`,
       message: 'Their messages in shared chats and app discussions will be hidden, and they won’t be able to message you directly.',
       confirmLabel: 'Block',
       danger: true,
@@ -1169,7 +1169,7 @@ function ThreadHeader() {
         className="min-w-0 text-left flex-1"
         onClick={() => { if (active.kind === 'group') openDialog('messagesMembers'); }}
       >
-        <div className="messages-thread-name">{active.kind === 'direct' && person ? `@${person.username}` : channel ? `#${active.channelKey || active.title}` : active.title}</div>
+        <div className="messages-thread-name">{active.kind === 'direct' && person ? senderName(person) : channel ? `#${active.channelKey || active.title}` : active.title}{active.kind === 'direct' && person?.bot ? <span className="messages-bot-badge">AI</span> : null}</div>
         {botDm ? <BotWorkStatusLine /> : <div className="messages-thread-sub">{subtitle}</div>}
       </button>
       {active.kind === 'group' ? <button type="button" onClick={() => openDialog('messagesMembers')} className="messages-thread-action" aria-label="Group members" title="Group members"><UserGroupIcon aria-hidden="true" /></button> : null}
@@ -1185,9 +1185,9 @@ function ThreadHeader() {
             {active.kind === 'group'
               ? <button type="button" role="menuitem" onClick={() => { menuBtnRef.current?.focus({ preventScroll: true }); setMenu(false); openDialog('messagesMembers'); }}>Members &amp; invitations</button>
               : active.kind === 'direct'
-                ? <button type="button" role="menuitem" disabled={busy || !peer} onClick={() => void blockPeer()} className="text-red-700 dark:text-red-400">Block @{peer?.username}</button>
+                ? <button type="button" role="menuitem" disabled={busy || !peer} onClick={() => void blockPeer()} className="text-red-700 dark:text-red-400">Block {senderName(peer)}</button>
                 : null}
-            {peer ? <button type="button" role="menuitem" onClick={() => { menuBtnRef.current?.focus({ preventScroll: true }); setMenu(false); openReport({ targetType: 'user', target: peer.username, label: `@${peer.username}`, userId: peer.id }); }}>Report user</button> : null}
+            {peer ? <button type="button" role="menuitem" onClick={() => { menuBtnRef.current?.focus({ preventScroll: true }); setMenu(false); openReport({ targetType: 'user', target: peer.username, label: senderName(peer), userId: peer.id }); }}>Report user</button> : null}
             <button type="button" role="menuitem" onClick={() => { menuBtnRef.current?.focus({ preventScroll: true }); setMenu(false); void loadConversations(true); }}>Refresh conversation</button>
           </div>
         ) : null}

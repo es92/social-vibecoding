@@ -12,6 +12,8 @@ export interface ConversationUser {
   avatarUrl?: string | null;
   /** A platform account (the Homeroom bot), not a person (#3624). */
   bot?: boolean;
+  /** B5: a platform account's name, shown in place of its handle ("Homeroom bot"). */
+  displayName?: string;
 }
 
 /**
@@ -44,6 +46,8 @@ export interface HomeroomBotMeta {
   live?: boolean;
   /** B4: an activity card's request, in the words its person asked for it. */
   askedText?: string;
+  /** B5: the bot's hello, which leads the card it introduces. */
+  hello?: string;
 }
 
 /**

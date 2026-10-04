@@ -9544,6 +9544,23 @@ CREATE INDEX IF NOT EXISTS idx_homeroom_bot_requesters_user
 -- issue's title stays the bot's short name for it.
 ALTER TABLE homeroom_bot_requesters ADD COLUMN IF NOT EXISTS asked_text TEXT;
 
+-- B5: the bot is introduced once per person, ever: a maker at their first
+-- project, anybody else at their first request. Claimed by inserting the
+-- row, so two devices or a retry never greet twice. `kind` is 'maker',
+-- 'member', or 'known' for somebody the bot had already written to before
+-- greetings existed (no hello for them).
+CREATE TABLE IF NOT EXISTS homeroom_bot_hellos (
+  user_id     INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,
+  message_id  INTEGER REFERENCES conversation_messages(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT homeroom_bot_hellos_kind_check CHECK (kind IN ('maker', 'member', 'known'))
+);
+COMMENT ON TABLE homeroom_bot_hellos IS 'staging:private';
+-- B5: the name people see the bot by. Its username stays homeroom_bot.
+UPDATE users SET display_name = 'Homeroom bot'
+ WHERE username = 'homeroom_bot' AND is_synthetic = TRUE AND display_name IS DISTINCT FROM 'Homeroom bot';
+
 -- Every DM message the bot sent about a request, so a person's reply can
 -- be posted on the right request. A question is a row whose
 -- question_status is set: open until answered, or closed by newer news on

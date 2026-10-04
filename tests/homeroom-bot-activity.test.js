@@ -568,7 +568,8 @@ test('the row draws a bot\'s activity message as the card, in place of its words
   const row = read('frontend/src/features/messages/message-row.tsx');
   // #3770: handed the words a message is drawn with, for a card with nothing on record.
   assert.match(row, /const words = message\.content\s*\? <MessageMarkdown content=\{message\.content\} channels=\{channels\} appSlug=\{botMeta\(message\)\?\.appSlug\} \/>\s*: null;/);
-  assert.match(row, /\) : isActivityMessage\(message\) \? \([\s\S]{0,260}<BotActivityCard message=\{message\} words=\{words\} \/>\s*\) : words\}/);
+  // B5: led by the bot's hello, on the first card it sends somebody.
+  assert.match(row, /\) : isActivityMessage\(message\) \? \([\s\S]{0,600}homeroomBot\?\.hello \? <p className="messages-bot-hello">[\s\S]{0,120}<BotActivityCard message=\{message\} words=\{words\} \/>\s*<\/>\s*\) : words\}/);
 });
 
 // ── #3770: an older card keeps its words ──

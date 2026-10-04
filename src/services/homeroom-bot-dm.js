@@ -1542,6 +1542,8 @@ async function noteUserMessage(pool, config, { user, conversationId, message, de
   if (!bot || bot.id === user.id) return null;
   if (!(await isBotDirect(pool, conversationId, bot.id, user.id))) return null;
   const settings = await settingsModule().readSettings(pool);
+  // B5: words that are one of its open prompts settle those buttons.
+  await settlePrompt(pool, { botId: bot.id, userId: user.id, conversationId, content: message.content });
   if (!hasBot(settings, user)) {
     const hour = Math.floor(Date.now() / (NOT_ENABLED_KEY_HOURS * 3600 * 1000));
     return sendDm(pool, {
@@ -1592,6 +1594,90 @@ async function answerUserMessage(pool, config, { bot, user, settings, conversati
   return answerOnRequest(pool, { bot, user, target, message, deps });
 }
 
+// ── Saying hello ─────────────────────────────────────────────────────────
+
+// B5: the bot introduces itself once per person, ever, and offers a few
+// questions to tap (B3 `prompt` buttons: a tap sends the words as theirs,
+// and the bot answers them like any message). A maker hears it with their
+// first project; anybody else with their first request, above its card.
+const MAKER_HELLO = 'Hi, I\'m Homeroom bot. I build apps and changes from what you describe, and I\'ll message you '
+  + 'when something\'s ready to try.';
+const MAKER_PROMPTS = Object.freeze(['How long will this take?', 'What can I ask for?', 'How do I invite friends?']);
+const MEMBER_PROMPTS = Object.freeze(['What else can I ask for?', 'How long will this take?']);
+
+/** Pure: the hello somebody hears with their first request on a project they did not make. */
+function memberHello(appName) {
+  return `Hi, I'm Homeroom bot. I build the changes people in ${appName || 'this project'} ask for. Here's yours:`;
+}
+
+/** Pure: `labels` as prompt buttons (types.ts HomeroomBotAction), at most three. */
+function promptActions(labels) {
+  return labels.slice(0, 3).map((label, i) => ({ id: `ask-${i + 1}`, label, style: 'secondary', type: 'prompt' }));
+}
+
+/**
+ * B5: claim `userId`'s one hello, as `kind` ('maker' or 'member'). True only
+ * for the first claim: a second device, a retry or a later project gets
+ * false. Somebody the bot already wrote to before hellos existed is
+ * recorded as known and never greeted. Never throws.
+ */
+async function claimHello(pool, { userId, botId, kind }) {
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO homeroom_bot_hellos (user_id, kind)
+       SELECT $1::int, CASE WHEN EXISTS (
+                SELECT 1 FROM conversation_messages m
+                  JOIN conversations c ON c.id = m.conversation_id AND c.kind = 'direct'
+                  JOIN conversation_members cm ON cm.conversation_id = m.conversation_id AND cm.user_id = $1::int
+                 WHERE m.sender_id = $2::int
+              ) THEN 'known' ELSE $3::text END
+       ON CONFLICT (user_id) DO NOTHING
+       RETURNING kind`,
+      [Number(userId), Number(botId), kind],
+    );
+    return rows[0]?.kind === kind;
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not claim a hello (none sent)', { userId, err: err.message });
+    return false;
+  }
+}
+
+/** B5: which message a hello went out in, for the record. Never throws. */
+async function noteHelloSent(pool, userId, messageId) {
+  if (!messageId) return;
+  await pool.query('UPDATE homeroom_bot_hellos SET message_id = $2 WHERE user_id = $1', [userId, messageId]).catch(() => {});
+}
+
+/**
+ * B5: a person wrote the words of one of the bot's open prompts (tapped, or
+ * typed): those buttons give way to "You asked: ..." on every device. Never
+ * throws; resolves whether one was settled.
+ */
+async function settlePrompt(pool, { botId, userId, conversationId, content }) {
+  const said = String(content || '').trim().toLowerCase();
+  if (!said || !botId || !conversationId) return false;
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, metadata FROM conversation_messages
+        WHERE conversation_id = $1 AND sender_id = $2 AND deleted_at IS NULL
+          AND metadata->'homeroomBot'->>'status' = 'open'
+          AND jsonb_typeof(metadata->'homeroomBot'->'actions') = 'array'
+        ORDER BY id DESC LIMIT 5`,
+      [conversationId, botId],
+    );
+    for (const row of rows) {
+      const actions = row.metadata?.[META]?.actions || [];
+      const hit = actions.find((a) => a?.type === 'prompt' && String(a.label || '').trim().toLowerCase() === said);
+      if (!hit) continue;
+      await setQuestionState(pool, Number(row.id), { status: 'answered', answer: hit.label, chosen: hit.id }, { conversationId, userId });
+      return true;
+    }
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not settle a prompt', { userId, err: err.message });
+  }
+  return false;
+}
+
 // ── A project built from its description ─────────────────────────────────
 
 /** A description fit to build from, or null. */
@@ -1627,15 +1713,24 @@ async function startFirstVersion(pool, config, { app, user, brief }) {
     return null;
   }
   const name = app.name || app.slug;
+  // B5: a maker's first project is where the bot says hello, once.
+  const hello = await claimHello(pool, { userId: user.id, botId: bot.id, kind: 'maker' });
+  const off = settings.mode === 'off' ? '\n\nI\'m switched off right now, so this waits until I\'m back on.' : '';
   const sent = await sendDm(pool, {
     bot,
     userId: user.id,
     idempotencyKey: `hrbot-create-${app.id}`,
-    content: `**${name}**\n\nThanks! I'm setting up ${name} now. Once it's ready I'll build its first version from your `
-      + 'description and send it to you here to try. If anything is unclear, I\'ll ask you here first.'
-      + (settings.mode === 'off' ? '\n\nI\'m switched off right now, so this waits until I\'m back on.' : ''),
-    metadata: { kind: 'first_version_started', appSlug: app.slug, appName: name },
+    content: hello
+      ? `${MAKER_HELLO}\n\nI'm setting up **${name}** now. Once it's ready I'll build its first version from your `
+        + `description and send it to you here to try.${off}`
+      : `**${name}**\n\nThanks! I'm setting up ${name} now. Once it's ready I'll build its first version from your `
+        + `description and send it to you here to try. If anything is unclear, I'll ask you here first.${off}`,
+    metadata: {
+      kind: 'first_version_started', appSlug: app.slug, appName: name,
+      ...(hello ? { hello: MAKER_HELLO, actions: promptActions(MAKER_PROMPTS), status: 'open' } : {}),
+    },
   });
+  if (hello) await noteHelloSent(pool, user.id, sent?.messageId);
   log.info('homeroom-bot-dm', 'Project will be built from its description', { app: app.slug, userId: user.id });
   return sent ? { conversationId: sent.conversationId } : null;
 }
@@ -1885,6 +1980,14 @@ module.exports = {
   notificationDetail,
   askedLine,
   hasOthers,
+  MAKER_HELLO,
+  MAKER_PROMPTS,
+  MEMBER_PROMPTS,
+  memberHello,
+  promptActions,
+  claimHello,
+  noteHelloSent,
+  settlePrompt,
   READY_CHECKS,
   readyKey,
   changeReadiness,

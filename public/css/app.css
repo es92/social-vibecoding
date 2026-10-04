@@ -1384,6 +1384,10 @@ html:not(.dark) .messages-markdown .gc-ref-issue { background: rgba(16, 185, 129
   color: var(--text-muted);
   font-size: 13px;
 }
+/* B5: the bot's hello, above the first card it sends somebody. */
+.messages-bot-hello {
+  margin: 0 0 6px;
+}
 .messages-bot-note {
   display: flex;
   align-items: flex-start;

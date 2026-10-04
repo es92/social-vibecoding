@@ -21,7 +21,9 @@ const DDL = `
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     -- #3624: a platform account (the Homeroom bot) is drawn as one.
-    is_synthetic BOOLEAN NOT NULL DEFAULT FALSE
+    is_synthetic BOOLEAN NOT NULL DEFAULT FALSE,
+    -- B5: and named by its display name.
+    display_name VARCHAR(255)
   );
   CREATE TABLE user_avatars (
     id SERIAL PRIMARY KEY,

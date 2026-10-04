@@ -416,7 +416,7 @@ async function hydrateMessages(db, user, rows) {
         id: row.sender_id || 0,
         username: system ? 'Homeroom' : (row.sender_username || 'Deleted user'),
         avatarUrl: row.sender_avatar_id ? `/avatars/${row.sender_avatar_id}` : null,
-        ...(row.sender_is_synthetic && !system ? { bot: true } : {}),
+        ...(row.sender_is_synthetic && !system ? { bot: true, ...botName(row.sender_display_name) } : {}),
       },
       ...(system ? { system: true } : {}),
       ...(metadata ? { metadata } : {}),
@@ -430,6 +430,7 @@ async function hydrateMessages(db, user, rows) {
           id: row.reply_sender_id || 0,
           username: row.reply_sender_username || 'Deleted user',
           avatarUrl: row.reply_sender_avatar_id ? `/avatars/${row.reply_sender_avatar_id}` : null,
+          ...(row.reply_sender_is_synthetic ? { bot: true, ...botName(row.reply_sender_display_name) } : {}),
         },
         content: row.reply_deleted_at ? '' : (row.reply_content || ''),
         deleted: !!row.reply_deleted_at,
@@ -453,13 +454,26 @@ async function hydrateMessages(db, user, rows) {
   });
 }
 
+/**
+ * B5: a platform account's name as people see it (the Homeroom bot's
+ * "Homeroom bot"), sent beside its username for the client to show in its
+ * place. A person's display name is not sent here: Messages names people by
+ * their handle.
+ */
+function botName(displayName) {
+  const name = typeof displayName === 'string' ? displayName.trim() : '';
+  return name ? { displayName: name.slice(0, 80) } : {};
+}
+
 const MESSAGE_SELECT = `
   SELECT m.id, m.conversation_id, m.sender_id, m.content, m.created_at, m.edited_at,
          m.deleted_at, m.moderation_hidden_at, m.thread_root_id, m.msg_type, m.metadata,
          su.username AS sender_username, sua.id AS sender_avatar_id, su.is_synthetic AS sender_is_synthetic,
+         su.display_name AS sender_display_name,
          rm.id AS reply_id, rm.sender_id AS reply_sender_id, rm.content AS reply_content,
          rm.deleted_at AS reply_deleted_at,
          ru.username AS reply_sender_username, rua.id AS reply_sender_avatar_id,
+         ru.is_synthetic AS reply_sender_is_synthetic, ru.display_name AS reply_sender_display_name,
          tr.content AS thread_root_content, tr.deleted_at AS thread_root_deleted_at,
          tru.username AS thread_root_sender_username
     FROM conversation_messages m
@@ -745,6 +759,7 @@ async function conversationRow(db, user, conversationId) {
             inviter_avatar.id AS requester_avatar_id,
             peer.user_id AS peer_id, peer.status AS peer_status, peer_user.username AS peer_username,
             peer_avatar.id AS peer_avatar_id,
+            peer_user.is_synthetic AS peer_is_synthetic, peer_user.display_name AS peer_display_name,
             -- #3692: a direct conversation with the Homeroom bot's own
             -- account, which carries the bot's activity tray.
             (peer_user.is_synthetic IS TRUE AND peer_user.username = 'homeroom_bot') AS peer_is_homeroom_bot,
@@ -828,13 +843,17 @@ async function serializeConversation(db, user, row, { includeMembers = true } = 
     id: row.peer_id,
     username: row.peer_username,
     avatarUrl: row.peer_avatar_id ? `/avatars/${row.peer_avatar_id}` : null,
+    ...(row.peer_is_synthetic ? { bot: true, ...botName(row.peer_display_name) } : {}),
   } : null;
   const requester = row.invited_by ? {
     id: row.invited_by,
     username: row.requester_username,
     avatarUrl: row.requester_avatar_id ? `/avatars/${row.requester_avatar_id}` : null,
   } : null;
-  const title = row.kind === 'direct' ? (peer?.username || (row.deleted_peer ? 'Deleted user' : 'Direct message')) : row.title;
+  // B5: the bot's DM is titled by its name, not its handle.
+  const title = row.kind === 'direct'
+    ? ((peer?.bot && peer.displayName) || peer?.username || (row.deleted_peer ? 'Deleted user' : 'Direct message'))
+    : row.title;
   // QA 2026-09-24 Q2: the requester's side of a direct request the other
   // person has not accepted yet. They may send the one opening message and
   // nothing more (sendMessage answers `awaiting_acceptance` after that), so

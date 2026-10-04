@@ -95,6 +95,20 @@ export function swatchFor(name: string): string {
  * roster, which is what the dialogs show. A square wears the person's swatch
  * with white initials; a circle keeps the accent tint the dialogs had.
  */
+/**
+ * B5: how a sender or a peer is named. The Homeroom bot by its name ("Homeroom
+ * bot"), never its handle; a person by their @handle; nobody (a deleted
+ * account, the platform's own system line) by the word it carries.
+ */
+export function senderName(user?: Pick<ConversationUser, 'id' | 'username' | 'bot' | 'displayName'> | null): string {
+  if (!user) return '';
+  if (user.bot && user.displayName) return user.displayName;
+  return user.id ? `@${user.username}` : user.username;
+}
+
+/** B5: the bot's face, the Homeroom mark tile the header's menu button wears. */
+const BOT_AVATAR = '/brand/homeroom-mark.png';
+
 export function UserAvatar({ user, title, size = 'md', shape = 'circle' }: {
   user?: ConversationUser | null;
   title?: string;
@@ -105,6 +119,9 @@ export function UserAvatar({ user, title, size = 'md', shape = 'circle' }: {
   const sizeClass = size === 'sm' ? 'w-7 h-7 text-[10px]' : size === 'lg' ? 'w-11 h-11 text-sm' : 'w-9 h-9 text-xs';
   const square = shape === 'square';
   const radius = square ? (size === 'sm' ? 'rounded-lg' : 'rounded-xl') : 'rounded-full';
+  if (user?.bot) {
+    return <img src={BOT_AVATAR} alt="" className={`${sizeClass} ${radius} object-cover shrink-0`} data-bot-avatar="" />;
+  }
   if (user?.avatarUrl) {
     return <img src={user.avatarUrl} alt="" className={`${sizeClass} ${radius} object-cover bg-zinc-100 dark:bg-zinc-800 shrink-0`} />;
   }

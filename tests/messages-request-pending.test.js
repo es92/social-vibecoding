@@ -176,7 +176,8 @@ test('an unanswered direct request is named by its requester in the row and the 
   assert.match(row, /title=\{peer\?\.username \|\| conversation\.title\}/, 'the tile is theirs, not "DM"');
   const header = SCREEN.slice(SCREEN.indexOf('function ThreadHeader('), SCREEN.indexOf('/** The day a message was sent'));
   assert.match(header, /const person = directPerson\(active\);/);
-  assert.match(header, /active\.kind === 'direct' && person \? `@\$\{person\.username\}`/);
+  // B5: named as senderName names it, the @handle for a person.
+  assert.match(header, /active\.kind === 'direct' && person \? senderName\(person\)/);
   // The sender's own side of a request says it is pending too.
   assert.match(header, /active\.awaitingAcceptance \? 'Request pending' : 'Direct message'/);
 });

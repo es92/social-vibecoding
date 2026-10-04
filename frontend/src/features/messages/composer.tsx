@@ -5,7 +5,7 @@ import * as api from './api';
 import { channels, draftFor, notifyTyping, replyFor, scopeKey, send, setDraft, setReply, takePendingShare, useMessagesSnapshot } from './store';
 import { mirrorsReplies, requestPlace } from './bot-question';
 import type { ConversationUser, MessageAttachment, SharedObjectReference } from './types';
-import { fileSize } from './format';
+import { fileSize, senderName } from './format';
 import { plainText } from './plain-text';
 import { useAutoGrow } from '../../lib/use-auto-grow';
 import { prefixLookup, type PrefixLookup } from '../../lib/prefix-lookup';
@@ -431,7 +431,7 @@ export function MessageComposer({ threadRootId = null }: { threadRootId?: number
           inset (`platform-safe-bar`), so the card keeps its own padding on a
           notched phone instead of growing a tall blank foot. */}
       <div className="messages-composer-card">
-      {reply ? <div className="messages-reply-draft"><div className="min-w-0"><span className="font-semibold">Replying to @{reply.sender.username}</span><p className="truncate">{plainText(reply.content) || 'Attachment'}</p>{reply.sender.bot && mirrorsReplies(reply.metadata?.homeroomBot) ? <p className="messages-bot-note">{`Your reply is posted on ${requestPlace(reply.metadata.homeroomBot)}’s public discussion.`}</p> : null}</div><button type="button" onClick={() => setReply(scope, null)} aria-label="Cancel reply">×</button></div> : null}
+      {reply ? <div className="messages-reply-draft"><div className="min-w-0"><span className="font-semibold">Replying to {senderName(reply.sender)}</span><p className="truncate">{plainText(reply.content) || 'Attachment'}</p>{reply.sender.bot && mirrorsReplies(reply.metadata?.homeroomBot) ? <p className="messages-bot-note">{`Your reply is posted on ${requestPlace(reply.metadata.homeroomBot)}’s public discussion.`}</p> : null}</div><button type="button" onClick={() => setReply(scope, null)} aria-label="Cancel reply">×</button></div> : null}
       {object ? <div className="messages-pending-object"><span aria-hidden="true">◆</span><span className="truncate">{objectLabel(object)}</span><button type="button" onClick={() => setObject(null)} aria-label="Remove shared item">×</button></div> : null}
       {attachments.length || uploading ? <div className="dc-attach-strip dc-attach-strip-active">{attachments.map((item) => <div key={item.id} className="dc-attach-item"><div className="min-w-0"><div className="dc-attach-name">{item.name}</div><div className="dc-attach-size">{fileSize(item.size)}</div></div><button type="button" className="dc-attach-remove" onClick={() => setAttachments((items) => items.filter((candidate) => candidate.id !== item.id))} aria-label={`Remove ${item.name}`}>×</button></div>)}{uploading ? <span className="dc-attach-uploading">Uploading {uploading}…</span> : null}</div> : null}
       {channelShown && channelMatches ? <div className="messages-mention-menu" id={listId} role="listbox" aria-label="Channels">{channelMatches.map((item, index) => <button key={item.handle} id={optionId(index)} type="button" role="option" tabIndex={-1} aria-selected={index === activeOption} data-channel-option={item.handle} onMouseDown={(event) => event.preventDefault()} onMouseEnter={() => setHighlight(index)} onClick={() => insertChannel(item.handle)}>#{item.handle}{item.kind === 'app' && item.name.toLowerCase() !== item.handle ? <span className="messages-channel-option-name"> {item.name}</span> : null}</button>)}</div> : null}

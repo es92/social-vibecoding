@@ -143,6 +143,7 @@ function jobCardKey(jobKey) {
  */
 async function sendCard(pool, {
   app, issueNumber, requester, bot, key, startedAt = null, filed = false, queued = false, lowAllowance = false, dm,
+  hello = null,
 }) {
   const context = {
     appName: app.name || app.slug,
@@ -150,11 +151,14 @@ async function sendCard(pool, {
     issueTitle: requester.issueTitle || null,
     firstVersion: !!requester.firstVersion,
   };
+  const words = cardText(context, dm, { joined: !!startedAt, filed, queued, lowAllowance });
   return dm.sendDm(pool, {
     bot,
     userId: requester.userId,
-    content: cardText(context, dm, { joined: !!startedAt, filed, queued, lowAllowance }),
+    // B5: their hello leads the card it introduces, with its prompts under it.
+    content: hello ? `${hello}\n\n${words}` : words,
     metadata: {
+      ...(hello ? { hello, actions: dm.promptActions(dm.MEMBER_PROMPTS), status: 'open' } : {}),
       kind: KIND,
       appSlug: app.slug,
       appName: context.appName,
@@ -172,6 +176,12 @@ async function sendCard(pool, {
     // #3707: news about a request they started in the DM points back at it.
     replyToId: await dm.requestStart(pool, { userId: requester.userId, appId: app.id, issueNumber }),
   });
+}
+
+/** B5: whether somebody other than `userId` made `app`. Never throws. */
+async function madeBySomebodyElse(pool, app, userId) {
+  const { rows } = await pool.query('SELECT created_by FROM apps WHERE id = $1', [app.id]).catch(() => ({ rows: [] }));
+  return !!rows[0] && Number(rows[0].created_by) !== Number(userId);
 }
 
 /** Record a sent card as the bot's news about its request, once. */
@@ -247,9 +257,15 @@ async function startCard(pool, { app, issueNumber, requester, bot, jobKey, setti
     }
     const lowAllowance = typeof dm.allowanceLow === 'function'
       ? await dm.allowanceLow(pool, s, requester.userId).catch(() => false) : false;
+    // B5: somebody's first request on a project they did not make is where
+    // the bot says hello to them, once.
+    const hello = typeof dm.claimHello === 'function' && await madeBySomebodyElse(pool, app, requester.userId)
+      && await dm.claimHello(pool, { userId: requester.userId, botId: bot.id, kind: 'member' })
+      ? dm.memberHello(app.name || app.slug) : null;
     const sent = await sendCard(pool, {
-      app, issueNumber: n, requester, bot, key: jobCardKey(jobKey), filed, queued, lowAllowance, dm,
+      app, issueNumber: n, requester, bot, key: jobCardKey(jobKey), filed, queued, lowAllowance, dm, hello,
     });
+    if (hello) await dm.noteHelloSent(pool, requester.userId, sent?.messageId);
     if (!sent?.messageId || sent.duplicate) return sent || null;
     await recordCard(pool, sent, { userId: requester.userId, appId: app.id, issueNumber: n });
     log.info('homeroom-bot-activity', 'Started an activity card', { app: app.slug, issueNumber: n, userId: requester.userId, filed, queued });

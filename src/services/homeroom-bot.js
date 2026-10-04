@@ -65,6 +65,8 @@ function activity() { return require('./homeroom-bot-activity'); }
 
 // One name, in the live module, which compares thread authors against it.
 const { BOT_USERNAME } = live;
+// B5: what people see it called (users.display_name), in place of the handle.
+const BOT_DISPLAY_NAME = 'Homeroom bot';
 const MODES = Object.freeze(['off', 'shadow', 'live']);
 // `empty` (#2737) is the fourth: a request with nothing in it to build or
 // even to ask about. It exists because the prompt's unclear branch used to
@@ -893,6 +895,11 @@ async function ensureBotUser(pool, config = {}) {
       [DEFAULT_WEEKLY_LIMIT_CENTS, bot.id]);
     bot.weekly_limit_cents = DEFAULT_WEEKLY_LIMIT_CENTS;
   }
+  // B5: the name people see it by; its username stays what it is.
+  await pool.query(
+    'UPDATE users SET display_name = $2 WHERE id = $1 AND display_name IS DISTINCT FROM $2',
+    [bot.id, BOT_DISPLAY_NAME],
+  ).catch((err) => log.warn('homeroom-bot', 'Could not name the bot', { err: err.message }));
   try {
     const managedOpenRouter = require('./openrouter-managed-keys');
     const key = await managedOpenRouter.ensureIncludedKey({
@@ -6575,6 +6582,7 @@ async function enqueueNow(pool, { slug, issueNumber, actorId }) {
 }
 
 module.exports = {
+  BOT_DISPLAY_NAME,
   start,
   stop,
   runOnce,

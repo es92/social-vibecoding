@@ -219,7 +219,9 @@ test('an open channel lights Communities and hangs off its hub; Messages lists p
   assert.match(screen, /const channelOpen = !!snap\.route\.appSlug\s*\|\| \(!!snap\.route\.conversationId && snap\.active\?\.id === snap\.route\.conversationId && snap\.active\?\.kind === 'channel'\);/);
   const inbox = read('frontend/src/features/messages/inbox.ts');
   assert.match(inbox, /if \(item\.kind === 'channel'\) continue;/);
-  assert.match(inbox, /return chats\.sort\(byClock\);/);
+  assert.match(inbox, /chats\.sort\(byClock\);/);
+  // B5: the Homeroom bot's DM first, the rest in the order things happened.
+  assert.match(inbox, /if \(at > 0\) chats\.unshift\(\.\.\.chats\.splice\(at, 1\)\);\n\s+return chats;/);
 });
 
 test('#general needs the Homeroom community to post in; Homeroom\'s old channel takes no post', () => {
