@@ -132,7 +132,7 @@ test('new per-app notification kinds keep their context through provider handoff
   await worker.processDelivery(JOB);
   assert.deepEqual(calls.sent[0].notification, {
     title: '@alice voted no on "Fix login redirect loop" · MyPage',
-    body: 'Open the proposal to review their vote',
+    body: 'Open the change to see their vote',
   });
   assert.equal(calls.finished[0].status, 'sent');
 });

@@ -338,10 +338,10 @@ function buildCopy(kind, context, now) {
       return {
         title: withApp(quotedTitle
           ? `@${actor} voted ${direction} on ${quotedTitle}`
-          : `@${actor} voted ${direction} on your proposal`),
+          : `@${actor} voted ${direction} on your change`),
         body: voteReason
           ? `“${truncate(voteReason, VOTE_REASON_EMBED_MAX)}”`
-          : 'Open the proposal to review their vote',
+          : 'Open the change to see their vote',
       };
     }
     case 'pr_merged': {
@@ -357,9 +357,13 @@ function buildCopy(kind, context, now) {
         ? 'Your change will be live in a few minutes'
         : 'Your change is live';
       return {
-        title: withApp(quotedTitle ? `${quotedTitle} merged` : 'Your proposal merged'),
+        // B10d: live, in the words every screen uses; the platform's own
+        // change is approved now and live in a few minutes.
+        title: withApp(context.appSelfHosted === true
+          ? (quotedTitle ? `${quotedTitle} was approved` : 'Your change was approved')
+          : (quotedTitle ? `${quotedTitle} is live` : 'Your change is live')),
         body: detail === 'forced'
-          ? `An admin merged it. ${outcome}`
+          ? `${context.appSelfHosted === true ? 'An admin approved it.' : 'An admin made it live.'} ${outcome}`
           : detail
             ? `The vote carried. ${truncate(detail, 120)}`
             : `The vote carried. ${outcome}`,
@@ -370,7 +374,7 @@ function buildCopy(kind, context, now) {
     // the app carries the one tap that keeps it.
     case 'revision_recheck':
       return {
-        title: withApp(quotedTitle ? `Still good? ${quotedTitle} changed` : 'Still good? A proposal you backed changed'),
+        title: withApp(quotedTitle ? `Still good? ${quotedTitle} was updated` : 'Still good? A change you backed was updated'),
         body: actor
           ? `@${actor} pushed an update after your feedback. One tap keeps your yes`
           : 'A new version was pushed after your feedback. One tap keeps your yes',
@@ -386,7 +390,7 @@ function buildCopy(kind, context, now) {
         : `${merged} ${merged === 1 ? 'change' : 'changes'} went live.`;
       const waiting = open === 0
         ? ''
-        : ` ${open === 1 ? 'One proposal is' : `${open} proposals are`} waiting for eyes`;
+        : ` ${open === 1 ? 'One change is' : `${open} changes are`} waiting for approval`;
       return {
         title: app ? `This week on ${app}` : 'This week',
         body: `${shipped}${waiting}`.trim(),
@@ -395,29 +399,29 @@ function buildCopy(kind, context, now) {
     case 'issue_opened': {
       const issue = /^\d+$/.test(detail) ? ` #${detail}` : '';
       return {
-        title: withApp(actor ? `@${actor} filed issue${issue}` : `New issue${issue}`),
-        body: 'Open the issue to see what needs attention',
+        title: withApp(actor ? `@${actor} filed request${issue}` : `New request${issue}`),
+        body: 'Open the request to see what needs attention',
       };
     }
     case 'vote_digest': {
       const count = /^\d+$/.test(detail) ? Math.max(0, Number(detail)) : 0;
       return {
         title: count
-          ? `${count} ${count === 1 ? 'proposal is' : 'proposals are'} waiting for your vote`
-          : 'Proposals are waiting for your vote',
+          ? `${count} ${count === 1 ? 'change is' : 'changes are'} waiting for your approval`
+          : 'Changes are waiting for your approval',
         body: 'Open Dev to review them',
       };
     }
     case 'check_failed':
       return {
-        title: withApp(quotedTitle ? `Checks failed on ${quotedTitle}` : 'Proposal checks failed'),
-        body: 'Needs a fix before it can merge',
+        title: withApp(quotedTitle ? `Checks failed on ${quotedTitle}` : 'Checks failed on your change'),
+        body: 'Needs a fix before it can go live',
       };
     case 'stale_pr': {
       const days = daysSince(context.promotedAt, now);
       return {
         title: withApp(quotedTitle
-          ? `${quotedTitle} is waiting for eyes` : 'Your proposal needs attention'),
+          ? `${quotedTitle} is waiting for approval` : 'Your change needs attention'),
         body: days >= 1
           ? `Nobody has weighed in for ${days} ${days === 1 ? 'day' : 'days'}. Share the preview or ask a friend to try it`
           : 'Share the preview or ask a friend to try it',
@@ -478,8 +482,8 @@ function buildCopy(kind, context, now) {
       // (the image workflow, Argo CD, the rollout) has not delivered it.
       if (detail === 'release_stalled') {
         return {
-          title: withApp('Merged but not released'),
-          body: 'A merged change is not running yet. Open the board to see where the release stopped',
+          title: withApp('Approved but not live yet'),
+          body: 'An approved change is not live yet. Open the board to see where it stopped',
         };
       }
       return {

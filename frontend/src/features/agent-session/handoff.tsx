@@ -120,8 +120,8 @@ function lead(agent: HandoffAgent, target: HandoffTarget | null): string {
   const label = AGENT_LABELS[agent];
   const product = AGENT_PRODUCT[agent];
   const lands = target?.change
-    ? `its work comes back as an update to ${target.change.prNumber ? `PR #${target.change.prNumber}` : 'this change'}`
-    : `its work comes back as a new proposal${target?.appName ? ` on ${target.appName}` : ''}`;
+    ? 'its work comes back as an update to this change'
+    : `its work comes back as a new change${target?.appName ? ` on ${target.appName}` : ''}`;
   return `${label} builds on your own ${product} plan and pushes to your fork of the app; ${lands}. No Homeroom credits.`;
 }
 

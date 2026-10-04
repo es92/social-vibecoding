@@ -111,7 +111,7 @@ async function lines(n) {
 
 test('the kind is its own line, and the subject is the whole of the next', async () => {
   const l = await lines({ kind: 'pr_proposed', prTitle: 'Tighten the header spacing', prNumber: 42 });
-  assert.equal(l.label, 'New proposal');
+  assert.equal(l.label, 'New change');
   assert.equal(l.subject, 'Tighten the header spacing');
   // Nothing punctuates a line that no longer runs into another one.
   assert.ok(!l.label.endsWith(':'), 'the label lost the colon that joined them');
@@ -136,7 +136,7 @@ test('every kind names itself the same way for every row of that kind', async ()
       'Checks blocked', 'Rework the board'],
     [{ kind: 'kudos', prTitle: 'Fix the bell badge' }, 'Kudos', 'Fix the bell badge'],
     [{ kind: 'auto_solve_done', sourceUsername: null, headlessIssueNumber: 91, detail: 'question' },
-      'Proposal has a question', 'issue #91'],
+      'Change has a question', 'issue #91'],
     [{ kind: 'spec_shared', sessionTitle: 'Notifications overhaul' }, 'Spec shared', 'Notifications overhaul'],
     [{ kind: 'mention', messageContent: 'can you take a look at the board?' },
       'Mentioned you', 'can you take a look at the board?'],

@@ -79,7 +79,7 @@ export const FOLD_AT = 5;
 
 /** The groups that fold, and what their "Show all" says. */
 const FOLDS: Record<string, string> = {
-  'changes:merged': 'Show all merged',
+  'changes:merged': 'Show all live',
   'votes:decided': 'Show all',
 };
 

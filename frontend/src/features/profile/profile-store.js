@@ -254,7 +254,7 @@ export function statsView(summary) {
   const has = !!summary;
   const value = (n) => (has ? Number(n || 0).toLocaleString() : '–');
   return [
-    { key: 'merged', value: value(summary && summary.merged), label: 'merged' },
+    { key: 'merged', value: value(summary && summary.merged), label: 'live' },
     { key: 'kudos', value: value(summary && summary.kudos), label: 'kudos' },
     {
       key: 'challenges',
@@ -300,13 +300,13 @@ export function moreRowsView(data) {
 // falls back to saying what is behind it. Null whenever the read failed or
 // has not answered, for the same reason.
 
-/** "12 merged · 2 in progress", from GET /api/me/summary. */
+/** "12 live · 2 in progress", from GET /api/me/summary. */
 function changesLine(summary) {
   if (!summary || typeof summary !== 'object') return null;
   const parts = [];
   const merged = Number(summary.merged) || 0;
   const underway = Number(summary.inProgress) || 0;
-  if (merged) parts.push(`${merged.toLocaleString()} merged`);
+  if (merged) parts.push(`${merged.toLocaleString()} live`);
   if (underway) parts.push(`${underway.toLocaleString()} in progress`);
   return parts.length ? parts.join(' · ') : null;
 }
@@ -446,9 +446,9 @@ export function proposalsView(data, now = Date.now()) {
     const app = row.appName || row.appSlug;
     const when = mergedAgo(row.at, now);
     let where = when;
-    if (key === 'openForVote') where = 'in vote';
+    if (key === 'openForVote') where = 'waiting for approval';
     else if (key === 'inProgress') where = 'in progress';
-    else if (key === 'closed') where = 'closed without merging';
+    else if (key === 'closed') where = 'closed without going live';
     const slug = encodeURIComponent(row.appSlug);
     const id = Number(row.sessionId);
     return {
@@ -472,7 +472,7 @@ export function proposalsView(data, now = Date.now()) {
     .sort((x, y) => y.at - x.at);
   const sections = [
     { key: 'inProgress', label: 'In progress', rows: underway },
-    { key: 'merged', label: 'Merged', rows: rowsOf('merged').map(shape) },
+    { key: 'merged', label: 'Live', rows: rowsOf('merged').map(shape) },
     { key: 'closed', label: 'Closed', rows: rowsOf('closed').map(shape) },
   ].filter((section) => section.rows.length > 0);
   return { loaded: true, sections, empty: sections.length === 0 };
@@ -483,7 +483,7 @@ export function proposalsView(data, now = Date.now()) {
 const REQUEST_STATE = {
   waiting: 'nobody on it yet',
   underway: 'someone is on it',
-  shipped: 'shipped',
+  shipped: 'live',
   closed: 'closed',
 };
 
@@ -533,7 +533,7 @@ function voteOpen(item) {
 /** How it was decided, once it was. */
 function voteOutcome(item) {
   if (item.type === 'pr_vote') {
-    if (item.status === 'merged') return 'merged';
+    if (item.status === 'merged') return 'live';
     return 'closed';
   }
   return 'decided';

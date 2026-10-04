@@ -1740,13 +1740,13 @@ function completionAlertInfo(n) {
     let title;
     let body;
     if (n.detail === 'failed') {
-      title = 'Proposal failed';
+      title = 'Change failed';
       body = `Proposal for ${issue} in ${appName} failed. You can retry`;
     } else if (n.detail === 'question') {
-      title = 'Proposal has a question';
+      title = 'Change has a question';
       body = `Proposal for ${issue} in ${appName} is waiting for your input`;
     } else {
-      title = 'Proposal ready';
+      title = 'Change ready to try';
       body = `Proposal for ${issue} in ${appName} is ready`;
     }
     return {
@@ -2211,14 +2211,14 @@ function rowView(n) {
     };
   }
 
-  const prLabel = n.prTitle || (n.prNumber ? `PR #${n.prNumber}` : null);
+  const prLabel = n.prTitle || null;
 
   if (n.kind === 'kudos') {
     return {
       ...base,
       icon: '\u{1F44F}',
       by: n.sourceUsername || null,
-      ...headline('Kudos', prLabel || 'your PR'),
+      ...headline('Kudos', prLabel || 'your change'),
     };
   }
 
@@ -2239,7 +2239,7 @@ function rowView(n) {
     return {
       ...base,
       icon: '⏳',
-      ...headline('Needs votes', prLabel || n.sessionTitle || 'your PR'),
+      ...headline('Needs votes', prLabel || n.sessionTitle || 'your change'),
     };
   }
 
@@ -2249,7 +2249,7 @@ function rowView(n) {
     return {
       ...base,
       icon: '⚠️',
-      ...headline('Checks blocked', prLabel || n.sessionTitle || 'your proposal'),
+      ...headline('Checks blocked', prLabel || n.sessionTitle || 'your change'),
     };
   }
 
@@ -2262,7 +2262,7 @@ function rowView(n) {
       ...base,
       icon: '\u{1F5F3}️',
       by: n.sourceUsername || null,
-      ...headline('New proposal', prLabel || 'a PR'),
+      ...headline('New change', prLabel || 'a change'),
     };
   }
 
@@ -2288,8 +2288,8 @@ function rowView(n) {
   // the change those are the same event with very different meanings.
   if (n.kind === 'pr_merged') {
     const head = headline(
-      n.detail === 'forced' ? 'Merged by an admin' : 'Merged',
-      prLabel || n.sessionTitle || 'your proposal',
+      n.detail === 'forced' ? 'Made live by an admin' : 'Live',
+      prLabel || n.sessionTitle || 'your change',
     );
     // #1688: on a merge the vote carried, `detail` names who backed and
     // shaped it. An admin override's marker is not a sentence to show.
@@ -2308,7 +2308,7 @@ function rowView(n) {
   if (n.kind === 'proposal_vote') {
     const head = headline(
       n.detail === 'no' ? 'Voted no' : 'Voted yes',
-      prLabel || n.sessionTitle || 'your proposal',
+      prLabel || n.sessionTitle || 'your change',
     );
     // #1688: the voter's own line rides after the subject, quoted — the
     // proposer's first sight of an objection is the sentence, not the thumb.
@@ -2333,7 +2333,7 @@ function rowView(n) {
       ...base,
       by: n.sourceUsername || null,
       icon: '\u{1F501}',
-      ...headline('Still good?', prLabel || n.sessionTitle || 'a proposal you backed'),
+      ...headline('Still good?', prLabel || n.sessionTitle || 'a change you backed'),
       actions: n.readAt ? [] : [{ key: 'still_yes', label: 'Still yes', primary: true }],
     };
   }
@@ -2349,7 +2349,7 @@ function rowView(n) {
       ? 'Nothing landed this week'
       : `${merged} ${merged === 1 ? 'change' : 'changes'} went live`;
     const waiting = open
-      ? `${open} ${open === 1 ? 'proposal is' : 'proposals are'} waiting for eyes`
+      ? `${open} ${open === 1 ? 'change is' : 'changes are'} waiting for approval`
       : '';
     return {
       ...base,
@@ -2410,8 +2410,8 @@ function rowView(n) {
     // release_stalled: the platform's own app, a merged commit that has not
     // become the running release (services/release-watch.js).
     const APP_HEALTH_COPY = {
-      deploy_failed: 'a deploy failed',
-      release_stalled: 'a merged change has not gone live',
+      deploy_failed: 'an update did not go live',
+      release_stalled: 'an approved change has not gone live yet',
     };
     return {
       ...base,
@@ -2509,8 +2509,8 @@ function rowView(n) {
   // label says so.
   if (n.kind === 'auto_solve_done') {
     const failed = n.detail === 'failed';
-    const label = failed ? 'Proposal failed'
-      : (n.detail === 'question' ? 'Proposal has a question' : 'Proposal ready');
+    const label = failed ? 'Change failed'
+      : (n.detail === 'question' ? 'Change has a question' : 'Change ready to try');
     return {
       ...base,
       wrap: true,

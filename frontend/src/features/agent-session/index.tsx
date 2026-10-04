@@ -333,7 +333,7 @@ function SessionBar({ session, about, embedded, action }: {
   // than a sibling the pills wrap around.
   const focusTitle = 'The app this conversation is about when a request does not name one. The Mayor moves it when you ask.';
   const changeText = active
-    ? `${changeStatusLabel(active.status, building)}${active.prNumber ? ` · PR #${active.prNumber}` : ''}`
+    ? changeStatusLabel(active.status, building)
     : 'No change yet';
   return (
     <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-800" data-agent-session-bar>
@@ -372,7 +372,6 @@ function SessionBar({ session, about, embedded, action }: {
         >
           <span className="min-w-0 truncate">
             {active ? changeStatusLabel(active.status, building) : 'No change yet'}
-            {active?.prNumber ? <span className="[@container(max-width:24rem)]:hidden">{` · PR #${active.prNumber}`}</span> : null}
           </span>
         </span>
         <button
@@ -743,7 +742,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
   busy: boolean;
 }) {
   const prNumber = item.prNumber || change?.prNumber || null;
-  const heading = `${item.failed ? 'Staging build failed' : 'Staging deployed'}${prNumber ? ` · PR #${prNumber}` : ''}`;
+  const heading = item.failed ? 'The preview failed to build' : 'Preview ready';
   if (item.superseded) {
     return (
       <section className="rounded-2xl border border-zinc-200 px-3 py-2 dark:border-zinc-800" data-agent-session-preview="superseded">
@@ -767,7 +766,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
         <p className={`text-sm font-medium ${item.failed ? 'text-red-700 dark:text-red-300' : 'text-zinc-800 dark:text-zinc-100'}`}>{heading}</p>
         {inVote || merged ? (
           <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300" data-agent-session-preview-status>
-            {merged ? 'Merged' : 'Waiting for approval'}
+            {merged ? 'Live' : 'Waiting for approval'}
           </span>
         ) : null}
         {checks ? (
@@ -812,7 +811,7 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
         ) : null}
         {changeHref ? (
           <a className={CARD_BUTTON} href={changeHref} data-agent-session-preview-change>
-            {inVote || merged ? 'View proposal' : 'Open draft proposal'}
+            {inVote || merged ? 'View change' : 'Open draft change'}
           </a>
         ) : null}
         {proposable && item.changeId != null ? (
@@ -1481,7 +1480,7 @@ function starters(about: About, request: DraftRequest | null) {
   if (request) return [];
   const app = about?.focusApp?.name || null;
   const context = (about?.focusContext || {}) as { proposalId?: number };
-  const first = context.proposalId ? ['Tell me about this proposal'] : [];
+  const first = context.proposalId ? ['Tell me about this change'] : [];
   return [
     ...first,
     app ? `What's open on ${app}?` : 'What could I work on?',

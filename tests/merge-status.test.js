@@ -139,7 +139,7 @@ test('state 6b — checks skipped (#461) is neutral, terminal (no spinner) and c
   assert.equal(life.tone, 'neutral');
   assert.equal(life.spinner, false);
   assert.ok(/nothing to test/.test(life.title), 'tooltip carries the recorded reason');
-  assert.ok(/does not block/.test(life.title), 'tooltip says the merge is not blocked');
+  assert.ok(/can still go live/.test(life.title), 'tooltip says it is not blocked');
   // No recorded reason → generic non-blocking tooltip, never "undefined".
   const bare = MergeStatus.lifecycle({ status: 'promoted', check_state: 'skipped' });
   assert.equal(bare.key, 'checks_skipped');
@@ -161,7 +161,7 @@ test('state 10b — active draft with green checks says checks passed', () => {
   assert.equal(life.label, 'Checks passed');
   assert.equal(life.tone, 'green');
   assert.equal(life.spinner, false);
-  assert.match(life.title, /ready to propose/);
+  assert.match(life.title, /ready to send for approval/);
 });
 
 test('state 7 — behind main, with the commit count in the label', () => {
@@ -223,7 +223,7 @@ test('state 9 — ready: passed the vote with green checks and not behind', () =
     { majority: 3 }
   );
   assert.equal(life.key, 'ready');
-  assert.equal(life.label, 'Passed, merging shortly');
+  assert.equal(life.label, 'Approved, going live shortly');
   assert.equal(life.tone, 'green');
   // Past threshold but checks NOT passing → not ready (the gate blocks it).
   // #607: with no verdict recorded at all the row reads as checks-starting

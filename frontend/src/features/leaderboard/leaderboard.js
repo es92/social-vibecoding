@@ -531,7 +531,7 @@ const Leaderboard = {
     const subTabs = ['prs', 'users', 'history'].map((s) => ({
       key: s,
       active: s === Leaderboard.sub,
-      label: s === 'prs' ? 'Top PRs' : s === 'users' ? 'Top users' : 'My history',
+      label: s === 'prs' ? 'Top changes' : s === 'users' ? 'Top users' : 'My history',
     }));
     // The All-time / This week pills only apply to the leaderboard
     // tabs — history is always everything, newest first.
@@ -584,8 +584,8 @@ const Leaderboard = {
         kind: 'empty',
         message: `No kudos ${Leaderboard.window === 'week' ? 'this week ' : ''}yet. `
           + (Leaderboard.sub === 'prs'
-            ? 'When someone gives a PR kudos, it shows up here.'
-            : 'When a user gets kudos on a PR they authored, they show up here.'),
+            ? 'When someone gives a change kudos, it shows up here.'
+            : 'When someone gets kudos on a change they made, they show up here.'),
       };
     }
     return Leaderboard.sub === 'prs'
@@ -609,12 +609,12 @@ const Leaderboard = {
     const s = data.stats || {};
     const prsTotal = s.prs_total || 0;
     const stats = {
-      kudosMerged: `${s.kudos_merged || 0} on merged`,
+      kudosMerged: `${s.kudos_merged || 0} on live changes`,
       chips: [
-        { label: `${s.prs_merged || 0} merged`, title: 'PRs of theirs that landed' },
+        { label: `${s.prs_merged || 0} live`, title: 'Their changes that went live' },
         {
-          label: `${prsTotal} PR${prsTotal === 1 ? '' : 's'} proposed`,
-          title: 'Everything they put up for the group, including open and closed PRs',
+          label: `${prsTotal} change${prsTotal === 1 ? '' : 's'} made`,
+          title: 'Everything they put up for the group, including open and closed changes',
         },
       ],
     };
@@ -640,7 +640,7 @@ const Leaderboard = {
   profilePrRowViews(items) {
     return items.map((row, i) => ({
       key: `${row.app_slug}|${row.session_id}|${i}`,
-      title: row.pr_title || `PR #${row.pr_number || row.session_id}`,
+      title: row.pr_title || 'Untitled change',
       appName: row.app_name || row.app_slug || 'app',
       badge: Leaderboard._statusBadge(row.status),
       when: Leaderboard._fmtDate(row.created_at),
@@ -659,8 +659,8 @@ const Leaderboard = {
   // the voided-bounty chip uses. A {tone,label} pair now; ./kudos-pane.tsx
   // holds the one class table both this and the Top-PRs badge read from.
   _statusBadge(status) {
-    if (status === 'merged') return { tone: 'emerald', label: 'merged' };
-    if (status === 'merging') return { tone: 'amber', label: 'merging' };
+    if (status === 'merged') return { tone: 'emerald', label: 'live' };
+    if (status === 'merging') return { tone: 'amber', label: 'going live' };
     if (status === 'archived') return { tone: 'zinc', label: 'closed' };
     return { tone: 'violet', label: 'open' };
   },
@@ -730,7 +730,7 @@ const Leaderboard = {
 
       if (it.type === 'kudos') {
         marker = { kind: 'kudos' };
-        title = it.pr?.title || `PR #${it.pr?.number ?? it.pr?.sessionId ?? '?'}`;
+        title = it.pr?.title || 'Untitled change';
         metaBits.push({ kind: 'text', text: `by @${it.pr?.author || 'deleted user'}` });
         metaBits.push({ kind: 'text', text: appName });
       } else if (it.type === 'bounty') {
@@ -744,14 +744,14 @@ const Leaderboard = {
         } else if (it.status === 'voided') {
           metaBits.push({
             kind: 'badge', tone: 'zinc', text: 'voided',
-            title: 'Your own PR closed this issue, so the pledge was returned to your weekly allowance',
+            title: 'Your own change closed this request, so the pledge went back to your weekly allowance',
           });
         } else {
           metaBits.push({ kind: 'badge', tone: 'violet', text: 'open' });
         }
       } else if (it.type === 'pr_vote') {
         marker = { kind: 'pr_vote', yes: it.vote === 'yes' };
-        title = it.pr?.title || `PR #${it.pr?.number ?? it.pr?.sessionId ?? '?'}`;
+        title = it.pr?.title || 'Untitled change';
         metaBits.push({ kind: 'text', text: `by @${it.pr?.author || 'deleted user'}` });
         metaBits.push({ kind: 'text', text: appName });
         // pr_votes keeps only the standing vote; the timestamp is the
@@ -759,7 +759,7 @@ const Leaderboard = {
         metaBits.push({ kind: 'italic', text: 'current vote' });
       } else if (it.type === 'proposal_vote') {
         marker = { kind: 'proposal_vote', up: it.vote === 'up' };
-        title = it.issue?.title || `Proposal #${it.issue?.number ?? '?'}`;
+        title = it.issue?.title || `Request #${it.issue?.number ?? '?'}`;
         if (it.issue?.kind && it.issue.kind !== 'general') {
           metaBits.push({ kind: 'badge', tone: 'sky', text: Leaderboard._kindLabel(it.issue.kind) });
         }
@@ -824,7 +824,7 @@ const Leaderboard = {
     return items.map((row, i) => ({
       key: `${row.app_slug}|${row.session_id}|${i}`,
       rank: i + 1,
-      title: row.pr_title || `PR #${row.pr_number || row.session_id}`,
+      title: row.pr_title || 'Untitled change',
       author: row.author_username || 'unknown',
       appName: row.app_name || row.app_slug || 'app',
       // The Top-PRs strip has no 'archived' case — an archived PR is not on
@@ -845,13 +845,13 @@ const Leaderboard = {
       // The detail line is a list of bits with a "·" between them, so the
       // separators can't drift out of step with the bits they separate.
       // First bit is unconditional; each later one carries its own.
-      const meta = [{ text: `${row.prs_kudosed} PR${row.prs_kudosed === 1 ? '' : 's'} kudosed` }];
+      const meta = [{ text: `${row.prs_kudosed} change${row.prs_kudosed === 1 ? '' : 's'} given kudos` }];
       // prs_merged is all-time (no merge timestamp to window by), so only
       // show it in the all-time view to avoid implying a weekly figure.
       // Kept as a secondary detail now that ranking is by kudos, not
       // merge count.
       if (Leaderboard.window === 'all' && prsMerged > 0) {
-        meta.push({ text: `${prsMerged} merged` });
+        meta.push({ text: `${prsMerged} live` });
       }
       // Issues this user filed (issues.created_by). Correctly windowed by
       // created_at, so — unlike prs_merged — it's shown in both windows.

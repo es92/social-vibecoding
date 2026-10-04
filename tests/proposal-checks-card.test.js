@@ -189,7 +189,7 @@ test('checksBadgeHtml: "skipped" is grey, spinner-free and non-blocking', () => 
   }));
   assert.match(badge, /Checks skipped/);
   assert.match(badge, /gc-checks-running-badge/);
-  assert.match(badge, /does not block the merge/);
+  assert.match(badge, /can still go live/);
   assert.doesNotMatch(badge, /dc-status-spinner-arc/);
 });
 
@@ -212,7 +212,7 @@ test('the checks detail shows a skipped block with the reason and the re-run but
   }));
   assert.match(html, /Checks skipped/);
   assert.match(html, /nothing to test/);
-  assert.match(html, /does not block the merge/);
+  assert.match(html, /can still go live/);
   assert.match(html, /Re-run checks/);
 });
 

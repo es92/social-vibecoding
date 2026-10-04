@@ -95,7 +95,7 @@ test('a submission is a message from its proposer: their avatar, name and stamp 
   // Name and stamp on the header line, where a person's message puts them.
   assert.match(html, /<span class="truncate text-\[1\.0625rem\] font-bold text-zinc-900 dark:text-zinc-100"><span data-event-sender="">evan<\/span><\/span><span class="shrink-0 text-\[0\.9375rem\] text-zinc-500 dark:text-zinc-500"><span class="gc-msg-time" title="Sep 16, 2026, 09:05 AM">09:05 AM<\/span><\/span>/);
   // One box: the bare glyph, one line of text, the door's chevron.
-  assert.match(html, /<a class="gc-event-box" href="\/app\/recipe-app\/dev\/proposals\/5" title="Open this proposal"><span class="w-7 h-7 rounded-lg dev-card-icon bg-sky-500\/15 [^"]*">[\s\S]*?<\/span><span class="gc-event-text">Proposed PR #12 for a vote: Custom tier colors<\/span><svg class="w-4 h-4 text-zinc-500 dark:text-zinc-500 shrink-0"/);
+  assert.match(html, /<a class="gc-event-box" href="\/app\/recipe-app\/dev\/proposals\/5" title="Open this change"><span class="w-7 h-7 rounded-lg dev-card-icon bg-sky-500\/15 [^"]*">[\s\S]*?<\/span><span class="gc-event-text">Asked for approval: Custom tier colors<\/span><svg class="w-4 h-4 text-zinc-500 dark:text-zinc-500 shrink-0"/);
   // Nothing else: no controls host, no bookmark, no react button, no reactions.
   assert.doesNotMatch(html, /data-vote-controls|gc-msg-save|gc-react-add|gc-reactions|gc-msg-system|gc-msg[" ]/);
 });
@@ -107,12 +107,12 @@ test('a merge is a message from the app, its box saying how the change landed, w
   assert.match(html, /data-event="merged" data-session-id="" data-pr-number="12">/);
   assert.doesNotMatch(html, /data-open/, 'a merge is never open');
   assert.match(html, /<span data-event-sender="">Recipe App<\/span>/);
-  assert.match(html, /<div class="gc-event-box"><span class="w-7 h-7 rounded-lg dev-card-icon [^"]*">[\s\S]*?d="M5 13l4 4L19 7"[\s\S]*?<\/span><span class="gc-event-text">PR #12 went live with 2\/3 votes: Custom tier colors<\/span><\/div>/);
+  assert.match(html, /<div class="gc-event-box"><span class="w-7 h-7 rounded-lg dev-card-icon [^"]*">[\s\S]*?d="M5 13l4 4L19 7"[\s\S]*?<\/span><span class="gc-event-text">Custom tier colors went live with 2\/3 votes<\/span><\/div>/);
   assert.doesNotMatch(html, /<a |href=|<svg class="w-4 h-4 text-zinc-500/, 'a plain box, with no chevron promising a destination');
 
-  assert.equal(eventText(merged({ event: { ...merged().event, force: true, actor: 'dfk', sender: 'dfk', votes: '0/2' } })), 'Force-merged PR #12 with 0/2 votes: Custom tier colors');
-  assert.equal(eventText(merged({ event: { ...merged().event, title: '', votes: '' } })), 'PR #12 went live');
-  assert.equal(eventText(submitted('open', { event: { ...submitted().event, title: '' } })), 'Proposed PR #12 for a vote');
+  assert.equal(eventText(merged({ event: { ...merged().event, force: true, actor: 'dfk', sender: 'dfk', votes: '0/2' } })), 'An admin made “Custom tier colors” live (0/2 votes)');
+  assert.equal(eventText(merged({ event: { ...merged().event, title: '', votes: '' } })), 'A change went live');
+  assert.equal(eventText(submitted('open', { event: { ...submitted().event, title: '' } })), 'Asked for approval on a change');
   const settled = renderComponent(EVENT, 'EventRow', { msg: submitted('settled') });
   assert.doesNotMatch(settled, /data-open/, 'a submission whose vote is over is no longer marked open');
   assert.match(renderComponent(EVENT, 'EventRow', { msg: submitted('unknown') }), /data-open="1"/, 'and one whose phase is not known yet still is');

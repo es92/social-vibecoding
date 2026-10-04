@@ -55,44 +55,48 @@ import { swatchFor } from './swatch';
 import type { ProposalEvent, TranscriptMessage } from './transcript-store';
 
 /**
- * "Proposed PR #12 for a vote: Custom tier colors", "PR #12 went live with
- * 2/3 votes: Custom tier colors", "Force-merged PR #12 with 0/2 votes: …".
- * The number always leads; the title follows when the line carried one.
- * A merge on the platform's own app (`liveSoon`, follow-up to #2897) is
- * released after it merges, so it reads "PR #12 merged with 2/3 votes and
- * will be live in a few minutes: …" instead of claiming it is live.
+ * B10d: in the words every screen uses. "Asked for approval: Custom tier
+ * colors", "Custom tier colors went live with 2/3 votes", "An admin made
+ * “Custom tier colors” live (0/2 votes)". The pull request number is not
+ * said; a line with no title names "a change". A change on the platform's own
+ * app (`liveSoon`, follow-up to #2897) goes live after it is approved, so it
+ * reads "“Custom tier colors” was approved with 2/3 votes and will be live in
+ * a few minutes" instead of claiming it is live. These are drawn words: the
+ * stored server lines keep their old wording, and the parser that reads them
+ * (group-chat.js `_proposalEvent`) is unchanged.
  */
 export function eventText(msg: TranscriptMessage): string {
   const ev = msg.event;
   if (!ev) return '';
-  const pr = `PR #${ev.prNumber}`;
-  const title = ev.title ? `: ${ev.title}` : '';
+  const tally = ev.votes ? ` (${ev.votes} votes)` : '';
   const votes = ev.votes ? ` with ${ev.votes} votes` : '';
-  // On the proposal's own page the row names the act, not the proposal:
-  // the number and title are the page's heading.
+  const named = ev.title || 'A change';
+  const quoted = ev.title ? `“${ev.title}”` : 'a change';
+  // On the change's own page the row names the act, not the change: the
+  // title is the page's heading.
   if (ev.type === 'vote') return `Voted ${ev.vote || 'yes'}${ev.reason ? `: “${ev.reason}”` : ''}`;
   if (ev.type === 'notice') return ev.text || '';
-  if (ev.here && ev.type === 'submitted') return 'Proposed this change for a vote';
+  if (ev.here && ev.type === 'submitted') return 'Asked for approval';
   if (ev.here && ev.type === 'merged') {
-    if (ev.force) return `Force-merged this change${votes}`;
+    if (ev.force) return `An admin made this change live${tally}`;
     if (ev.liveSoon) {
-      if (ev.credits) return `This change merged and will be live in a few minutes. ${creditsSentence(ev.credits)}`;
-      return `This change merged${votes} and will be live in a few minutes`;
+      if (ev.credits) return `This change was approved and will be live in a few minutes. ${creditsSentence(ev.credits)}`;
+      return `This change was approved${votes} and will be live in a few minutes`;
     }
     if (ev.credits) return `This change is live. ${creditsSentence(ev.credits)}`;
     return `This change went live${votes}`;
   }
-  if (ev.type === 'submitted') return `Proposed ${pr} for a vote${title}`;
+  if (ev.type === 'submitted') return ev.title ? `Asked for approval: ${ev.title}` : 'Asked for approval on a change';
   if (ev.type === 'weekly') return `This week on ${ev.weekly?.app || 'the app'}`;
-  if (ev.force) return `Force-merged ${pr}${votes}${title}`;
-  // #1688: a merge that named its people reads as the sentence it was —
-  // the number and the tally move to the muted tail (see EventRow).
+  if (ev.force) return `An admin made ${quoted} live${tally}`;
+  // #1688: a change that named its people reads as the sentence it was;
+  // the tally moves to the muted tail (see EventRow).
   if (ev.liveSoon) {
-    if (ev.credits) return `${ev.title || pr} merged and will be live in a few minutes. ${creditsSentence(ev.credits)}`;
-    return `${pr} merged${votes} and will be live in a few minutes${title}`;
+    if (ev.credits) return `${named} was approved and will be live in a few minutes. ${creditsSentence(ev.credits)}`;
+    return `${ev.title ? quoted : named} was approved${votes} and will be live in a few minutes`;
   }
-  if (ev.credits) return `${ev.title || pr} is live. ${creditsSentence(ev.credits)}`;
-  return `${pr} went live${votes}${title}`;
+  if (ev.credits) return `${named} is live. ${creditsSentence(ev.credits)}`;
+  return `${named} went live${votes}`;
 }
 
 /** "alice", "alice and bob", "alice, bob and carol". */
@@ -111,7 +115,8 @@ export function creditsSentence(c: { author: string; backers: string[]; shapers:
 }
 
 /**
- * The muted tail after a named merge: "PR #41 · 3/5 votes". After a vote
+ * The muted tail after a named merge: "3/5 votes" (B10d: no pull request
+ * number). After a vote
  * that no longer counts because the proposal changed since (#3411):
  * "· on an earlier version, not counted", so the line agrees with the tally.
  */
@@ -119,7 +124,7 @@ export function eventTail(msg: TranscriptMessage): string {
   const ev = msg.event;
   if (ev && ev.type === 'vote' && ev.earlier) return '· on an earlier version, not counted';
   if (!ev || ev.type !== 'merged' || ev.force || !ev.credits) return '';
-  return [`PR #${ev.prNumber}`, ev.votes ? `${ev.votes} votes` : ''].filter(Boolean).join(' · ');
+  return ev.votes ? `${ev.votes} votes` : '';
 }
 
 /**
@@ -155,12 +160,11 @@ function WeeklyBox({ w }: { w: NonNullable<ProposalEvent['weekly']> }) {
       {w.openTotal > 0 ? (
         <div className="gc-weekly-section">
           <div className="gc-weekly-head gc-weekly-head-open">
-            {w.openTotal === 1 ? 'One proposal is waiting for eyes' : `${w.openTotal} proposals are waiting for eyes`}
+            {w.openTotal === 1 ? 'One change is waiting for approval' : `${w.openTotal} changes are waiting for approval`}
           </div>
           {w.open.map((o, i) => (
             <div key={o.id ?? `o${i}`} className="gc-weekly-line" data-weekly="open">
               <span className="gc-weekly-line-title">{o.title}</span>
-              {o.prNumber ? <span className="gc-weekly-line-who">{` · PR #${o.prNumber}`}</span> : null}
             </div>
           ))}
           {moreOpen > 0 ? <div className="gc-weekly-more">{`and ${moreOpen} more`}</div> : null}
@@ -235,7 +239,7 @@ export const EventRow = memo(function EventRow({ msg }: { msg: TranscriptMessage
       timestamp={<span className="gc-msg-time" title={msg.timeTitle}>{msg.time}</span>}
     >
       {href
-        ? <a className="gc-event-box" href={href} title="Open this proposal">{box}</a>
+        ? <a className="gc-event-box" href={href} title="Open this change">{box}</a>
         : <div className="gc-event-box">{box}</div>}
     </ChatMessageRow>
   );

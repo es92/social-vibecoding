@@ -924,8 +924,8 @@ test('metaLine: the line answers the question the active sort asked (#1383)', ()
   assert.equal(recommended, '4 users · Updated 1h ago', 'the default line is unchanged');
   assert.equal(Browse.metaLine(a, 'users'), recommended, 'so is the users line');
 
-  assert.equal(Browse.metaLine(a, 'active'), '4 users · 3 merged in 30d · Updated 1h ago');
-  assert.equal(Browse.metaLine(a, 'merged'), '4 users · 12 changes merged · Updated 1h ago');
+  assert.equal(Browse.metaLine(a, 'active'), '4 users · 3 live in 30d · Updated 1h ago');
+  assert.equal(Browse.metaLine(a, 'merged'), '4 users · 12 changes live · Updated 1h ago');
   assert.equal(Browse.metaLine(a, 'new'), '4 users · Created 3h ago',
     'sorting by age shows the age it sorted on, not the deploy');
 });
@@ -935,7 +935,7 @@ test('metaLine: a zero aggregate is dropped, not rendered as "0"', () => {
   const quiet = app({ active_users: 2, merged_prs: 0, merged_prs_recent: 0 });
   assert.equal(Browse.metaLine(quiet, 'active'), '2 users');
   assert.equal(Browse.metaLine(quiet, 'merged'), '2 users');
-  assert.match(Browse.metaLine(app({ merged_prs: 1 }), 'merged'), /1 change merged/,
+  assert.match(Browse.metaLine(app({ merged_prs: 1 }), 'merged'), /1 change live/,
     'and the one that is there is pluralised');
 });
 
@@ -944,7 +944,7 @@ test('metaLine: the rows carry the line the store says they were sorted with', (
   Browse._apps = [app({ slug: 'one', active_users: 2, merged_prs: 7 })];
   Browse.setSort('merged');
   assert.equal(state.sort, 'merged');
-  assert.match(rowFor(state, 'one').meta, /7 changes merged/,
+  assert.match(rowFor(state, 'one').meta, /7 changes live/,
     'the meta line and the data-sort anchor can never disagree');
 });
 

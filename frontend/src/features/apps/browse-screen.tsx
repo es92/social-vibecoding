@@ -84,7 +84,7 @@ const SORT_OPTIONS: Array<{ key: string; label: string }> = [
   { key: 'recommended', label: 'Recommended' },
   { key: 'users', label: 'Most users' },
   { key: 'active', label: 'Most active' },
-  { key: 'merged', label: 'Most changes merged' },
+  { key: 'merged', label: 'Most changes live' },
   { key: 'new', label: 'Newest' },
 ];
 

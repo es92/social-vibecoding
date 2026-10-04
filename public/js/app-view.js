@@ -14946,7 +14946,7 @@ const AppView = {
         : 'there was nothing to test';
       return [{
         key: 'checks', tone: 'neutral', heading: 'Checks skipped.',
-        rows: [{ t: 'line', parts: [`Automated checks were skipped: ${reason}. This does not block the merge.`] }],
+        rows: [{ t: 'line', parts: [`Checks were skipped: ${reason}. It can still go live.`] }],
         action: recheck,
       }];
     }
@@ -18860,9 +18860,9 @@ const AppView = {
     if (mainPause) {
       out.push({
         key: 'main_paused',
-        label: mainPause.confirming ? 'Merges paused · re-checking main' : 'Merges paused',
-        detail: `${mainPause.note ? mainPause.note.charAt(0).toUpperCase() + mainPause.note.slice(1) : 'Main’s unit suite is failing, so merges for this app are paused'}. `
-          + 'Nothing about this proposal is wrong; it merges once main is green again or an admin resumes merges.',
+        label: mainPause.confirming ? 'Going live is paused · re-checking main' : 'Going live is paused',
+        detail: `${mainPause.note ? mainPause.note.charAt(0).toUpperCase() + mainPause.note.slice(1) : 'Main’s unit suite is failing, so going live is paused for this app'}. `
+          + 'Nothing about this change is wrong; it goes live once the app is healthy again or an admin resumes.',
       });
     }
 
@@ -19458,8 +19458,8 @@ const AppView = {
       // #461: explicit terminal "nothing to test" verdict — grey, no
       // spinner, and NON-blocking (the merge gate treats it like passing).
       const why = pr.check_error_detail
-        ? `Automated checks were skipped: ${String(pr.check_error_detail).slice(0, 280)}. This does not block the merge.`
-        : 'Automated checks were skipped: there was nothing to test. This does not block the merge.';
+        ? `Checks were skipped: ${String(pr.check_error_detail).slice(0, 280)}. It can still go live.`
+        : 'Checks were skipped: there was nothing to test. It can still go live.';
       return `<span class="gc-checks-running-badge" title="${escapeHtml(why)}">Checks skipped</span>`;
     }
     // 'pending' (or anything else): tests are still running. #405: grey

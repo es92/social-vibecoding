@@ -96,8 +96,8 @@ export function AlertsSection() {
             </label>
             <label className="flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="proposal_alerts">
               <span>
-                <span className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">Proposal alerts</span>
-                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Proposals needing attention, failed previews, new proposals ready for voting, and votes or merges on your own.</span>
+                <span className="block text-sm font-medium text-zinc-800 dark:text-zinc-200">Change alerts</span>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Changes needing attention, failed previews, new changes waiting for approval, and votes on yours or yours going live.</span>
               </span>
               <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
             </label>

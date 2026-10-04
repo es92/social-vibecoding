@@ -1245,7 +1245,7 @@ test('a quiet theme is not told it has never been built in', () => {
   // is only that nothing is in flight RIGHT NOW, so a theme that shipped a
   // dozen changes read identically to one nobody has ever touched.
   assert.ok(!html.includes('nobody building yet'));
-  assert.match(html, /1 shipped this week, nothing in flight now/);
+  assert.match(html, /1 went live this week, nothing in progress now/);
 
   // …and with nothing shipped either, it says only what it knows.
   AppView._merged = [];

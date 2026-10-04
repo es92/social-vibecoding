@@ -229,7 +229,7 @@ export function ContributorsFold({ people, total, showAll, onToggle }: {
             >
               <Avatar who={c.who} size="sm" />
               <span className="flex-1 min-w-0 truncate font-medium">{`@${c.who}`}</span>
-              <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{`${c.merged} merged`}</span>
+              <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{`${c.merged} live`}</span>
             </a>
           ))}
         </div>
@@ -390,7 +390,7 @@ export function AboutPane({ label }: { label: string }): ReactNode {
               {pill ? (
                 <span
                   id="app-about-version"
-                  title={[shortSha ? `Version ${shortSha}` : null, updated?.title ? `deployed ${updated.title}` : null]
+                  title={[shortSha ? `Version ${shortSha}` : null, updated?.title ? `live since ${updated.title}` : null]
                     .filter(Boolean).join(', ') || undefined}
                   className="inline-flex items-center rounded-full bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 whitespace-nowrap"
                 >

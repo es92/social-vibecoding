@@ -174,21 +174,21 @@ test('each kind renders its own title and body from send-time context', () => {
       '@alice would love your eyes on this'],
     ['proposal_vote', CONTEXT,
       '@alice voted yes on "Fix login redirect loop" · MyPage',
-      'Open the proposal to review their vote'],
+      'Open the change to see their vote'],
     ['pr_merged', CONTEXT,
-      '"Fix login redirect loop" merged · MyPage',
+      '"Fix login redirect loop" is live · MyPage',
       'The vote carried. Your change is live'],
     ['issue_opened', { ...CONTEXT, detail: '2273' },
-      '@alice filed issue #2273 · MyPage',
-      'Open the issue to see what needs attention'],
+      '@alice filed request #2273 · MyPage',
+      'Open the request to see what needs attention'],
     ['vote_digest', { ...CONTEXT, detail: '3' },
-      '3 proposals are waiting for your vote',
+      '3 changes are waiting for your approval',
       'Open Dev to review them'],
     ['check_failed', CONTEXT,
       'Checks failed on "Fix login redirect loop" · MyPage',
-      'Needs a fix before it can merge'],
+      'Needs a fix before it can go live'],
     ['stale_pr', CONTEXT,
-      '"Fix login redirect loop" is waiting for eyes · MyPage',
+      '"Fix login redirect loop" is waiting for approval · MyPage',
       'Share the preview or ask a friend to try it'],
   ];
   for (const [kind, context, title, body] of cases) {
@@ -321,11 +321,11 @@ test('missing context degrades to the generic notification, never a throw', () =
   // actor, app or proposal label, so they never regress to generic activity.
   assert.deepEqual(
     buildMessage({ ...INPUT, kind: 'pr_merged', context: {} }).notification,
-    { title: 'Your proposal merged', body: 'The vote carried. Your change is live' }
+    { title: 'Your change is live', body: 'The vote carried. Your change is live' }
   );
   assert.deepEqual(
     buildMessage({ ...INPUT, kind: 'vote_digest', context: {} }).notification,
-    { title: 'Proposals are waiting for your vote', body: 'Open Dev to review them' }
+    { title: 'Changes are waiting for your approval', body: 'Open Dev to review them' }
   );
 });
 

@@ -121,7 +121,7 @@ const FIELD_LABELS: Record<string, string> = {
   slug: 'App',
   title: 'Change',
   changeId: 'Change',
-  proposalId: 'Proposal',
+  proposalId: 'Change',
   number: 'Request',
   linkedIssues: 'Links',
   body: 'Details',
@@ -479,7 +479,7 @@ export function buildTranscript(
  */
 export function skippedChecksReason(detail: string | null | undefined): string {
   const reason = typeof detail === 'string' ? detail.trim().slice(0, 280).replace(/[\s.]+$/, '') : '';
-  return `Automated checks were skipped: ${reason || 'there was nothing to test'}. This does not block the merge.`;
+  return `Checks were skipped: ${reason || 'there was nothing to test'}. It can still go live.`;
 }
 
 /**
@@ -563,7 +563,7 @@ const TOOL_ACTIVITY: Record<string, string> = {
   list_requests: 'Reading requests',
   get_request: 'Reading a request',
   get_discussion: 'Reading a discussion',
-  get_proposal: 'Reading a proposal',
+  get_proposal: 'Reading a change',
   list_my_proposals: 'Checking your proposals',
   get_change: 'Checking the change',
   get_platform_conventions: 'Reading the platform rules',
@@ -589,8 +589,8 @@ export function changeStatusLabel(status: string | null | undefined, busy = fals
     case 'active':
     case 'paused': return 'In progress';
     case 'promoted': return 'Waiting for approval';
-    case 'merging': return 'Merging';
-    case 'merged': return 'Merged';
+    case 'merging': return 'Going live';
+    case 'merged': return 'Live';
     case 'archived': return 'Closed';
     default: return 'No active change';
   }

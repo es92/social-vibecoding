@@ -37,7 +37,7 @@ const SUMMARY = {
 test('the three stat cards: merged, kudos, challenges — and a dash, not a zero, without data', () => {
   const { statsView } = loadTsx(STORE);
   assert.deepEqual(statsView(SUMMARY).map((s) => [s.key, s.value, s.label]),
-    [['merged', '9', 'merged'], ['kudos', '3', 'kudos'], ['challenges', '2', 'challenges']]);
+    [['merged', '9', 'live'], ['kudos', '3', 'kudos'], ['challenges', '2', 'challenges']]);
   assert.deepEqual(statsView(null).map((s) => s.value), ['–', '–', '–'],
     'a read that failed is not a claim of zero');
 });
@@ -55,7 +55,7 @@ test('the rows say what is behind them, from the data only', () => {
   assert.deepEqual(rows, {
     challenges: 'Season 3 · rank #3 · 2 of 7 done',
     kudos: '3 received',
-    changes: '9 merged · 2 in progress',
+    changes: '9 live · 2 in progress',
     requests: '2 open · 1 done',
     votes: 'Latest: Weekly distance leaderboard',
     friends: '1 request waiting',

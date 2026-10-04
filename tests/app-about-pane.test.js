@@ -39,31 +39,31 @@ const ui = loadTsx('tests/fixtures/about-pane-api.ts');
 // ── 1. The wording ───────────────────────────────────────────────────
 
 test('the note is true for each of the three approval regimes', () => {
-  const lead = 'Built by the group, one voted proposal at a time. ';
+  const lead = 'Built by the group, one approved change at a time. ';
   assert.equal(model.appNote({}),
-    `${lead}Anyone can propose; a proposal merges once the app’s active members back it in a vote and its checks pass.`,
+    `${lead}Anyone can suggest a change; it goes live once the app’s active members back it in a vote and its checks pass.`,
     'the default: the time-and-majority gate among active members');
   assert.equal(model.appNote({ approver_policy: 'invited' }),
-    `${lead}Anyone can propose; a proposal merges once the app’s invited approvers back it in a vote and its checks pass.`,
+    `${lead}Anyone can suggest a change; it goes live once the app’s invited approvers back it in a vote and its checks pass.`,
     'invited approvers: the same gate, only their votes count');
   assert.equal(model.appNote({ approvals_required: 3 }),
-    `${lead}Anyone can propose; a proposal merges once it has 3 yes votes and its checks pass.`,
+    `${lead}Anyone can suggest a change; it goes live once it has 3 yes votes and its checks pass.`,
     'at least N, anyone voting');
   assert.equal(model.appNote({ approver_policy: 'invited', approvals_required: 1 }),
-    `${lead}Anyone can propose; a proposal merges once one of the app’s invited approvers votes yes and its checks pass.`);
+    `${lead}Anyone can suggest a change; it goes live once one of the app’s invited approvers votes yes and its checks pass.`);
   assert.equal(model.appNote({ approver_policy: 'invited', approvals_required: '2', locked: true, collab_visibility: 'private' }),
-    `${lead}Its members can propose; a proposal merges once 2 of the app’s invited approvers vote yes, an admin votes yes, and its checks pass.`,
+    `${lead}Its members can suggest a change; it goes live once 2 of the app’s invited approvers vote yes, an admin votes yes, and its checks pass.`,
     'an invite-only build takes proposals from its members; a locked app needs an admin\'s yes');
   assert.equal(model.appNote(null), model.appNote({}), 'no row reads as the default, as on the server');
 });
 
 test('the platform\'s note: its own rules, or how it is built for a viewer who cannot propose', () => {
   assert.equal(model.platformNote({ approver_policy: 'invited', approvals_required: 1 }, false),
-    'The platform is built the same way as the apps on it: anyone can propose a change to the tabs, '
-    + 'the bell or the workshop, and it ships once one of the platform’s invited approvers votes yes '
+    'The platform is built the same way as the apps on it: anyone can suggest a change to the tabs, '
+    + 'the bell or the workshop, and it goes live once one of the platform’s invited approvers votes yes '
     + 'and its checks pass. This menu is the same one every app has.');
   const restricted = model.platformNote(null, true);
-  assert.doesNotMatch(restricted, /anyone can propose/, 'not an invitation the platform would refuse');
+  assert.doesNotMatch(restricted, /anyone can suggest/, 'not an invitation the platform would refuse');
   assert.match(restricted, /open to admins only/);
   assert.match(restricted, /This menu is the same one every app has\.$/);
 });
@@ -75,7 +75,7 @@ test('the pill, the cards, the rows and the Open button say what the design says
   assert.equal(model.shortVersionOf({ version: { shortSha: 'abc1234' } }), 'abc1234');
   assert.equal(model.shortVersionOf({ main_sha: 'abc1234def' }), 'abc1234');
   assert.deepEqual(model.statCards({ apps: 1, members: 2, merged: 0 }).map((c) => [c.key, c.value, c.label]),
-    [['apps', '1', 'app'], ['members', '2', 'members'], ['merged', '0', 'merged']]);
+    [['apps', '1', 'app'], ['members', '2', 'members'], ['merged', '0', 'live']]);
   assert.equal(model.taglineOf({ manifest_snapshot: { description: '  Sketch\n together. ' } }), 'Sketch together.');
   assert.equal(model.taglineOf({ manifest_snapshot: {} }), null);
   assert.deepEqual(model.contributorView({ username: 'dana', merged_count: '6' }), { who: 'dana', initial: 'D', merged: 6 });
@@ -141,7 +141,7 @@ test('an app\'s About, in the design\'s order', () => {
     'Open is an address, so a modified click still opens a tab');
   assert.match(html, /id="app-about-add"[^>]*data-added="false"[^>]*>(?:<[^>]+>)*Add to Shortcuts/);
   assert.match(html, /Loading contributors…/, 'the roster loads after the pane opens, never in a render');
-  assert.match(html, /Anyone can propose; a proposal merges once/);
+  assert.match(html, /Anyone can suggest a change; it goes live once/);
 });
 
 test('Open says Resume for the parked app, and is gone for the app already running', () => {
@@ -177,7 +177,7 @@ test('About Homeroom: the three figures instead of the actions, the platform\'s 
   for (const key of ['apps', 'members', 'merged']) {
     assert.match(html, new RegExp(`data-stat="${key}"`), `the ${key} card`);
   }
-  assert.match(html, /The platform is built the same way as the apps on it: anyone can propose/);
+  assert.match(html, /The platform is built the same way as the apps on it: anyone can suggest/);
   assert.match(html, /id="app-about-contributors"/);
   assert.match(html, /id="improve-row-share"/, 'Homeroom always has an address to share');
   assert.doesNotMatch(html, /app-about-fork/);

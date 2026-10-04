@@ -57,11 +57,11 @@ test('the checks, as the card says them', () => {
   // passing, and it says why.
   assert.deepEqual(transcript.checksSummary('skipped', 0, 'branch has no commits beyond main, so there is nothing to test'), {
     key: 'skipped', text: 'Checks skipped',
-    reason: 'Automated checks were skipped: branch has no commits beyond main, so there is nothing to test. This does not block the merge.',
+    reason: 'Checks were skipped: branch has no commits beyond main, so there is nothing to test. It can still go live.',
   });
   assert.deepEqual(transcript.checksSummary('skipped', 0), {
     key: 'skipped', text: 'Checks skipped',
-    reason: 'Automated checks were skipped: there was nothing to test. This does not block the merge.',
+    reason: 'Checks were skipped: there was nothing to test. It can still go live.',
   }, 'no recorded reason: the fallback line');
   assert.deepEqual(transcript.checksSummary('failing', 2), { key: 'failing', text: '2 checks failing' });
   assert.deepEqual(transcript.checksSummary('failing', 1), { key: 'failing', text: '1 check failing' });
@@ -74,17 +74,18 @@ test('the checks, as the card says them', () => {
 test('why checks were skipped is one sentence, the same fallback the panel and the pill use (#3180)', () => {
   const { skippedChecksReason } = transcript;
   assert.equal(skippedChecksReason('mock GitHub preview: automated checks not run'),
-    'Automated checks were skipped: mock GitHub preview: automated checks not run. This does not block the merge.');
+    'Checks were skipped: mock GitHub preview: automated checks not run. It can still go live.');
   assert.equal(skippedChecksReason('  nothing to test.  '),
-    'Automated checks were skipped: nothing to test. This does not block the merge.', 'no doubled full stop');
-  const fallback = 'Automated checks were skipped: there was nothing to test. This does not block the merge.';
+    'Checks were skipped: nothing to test. It can still go live.', 'no doubled full stop');
+  // B10d: in the words every screen uses.
+  const fallback = 'Checks were skipped: there was nothing to test. It can still go live.';
   for (const none of [null, undefined, '', '   ']) assert.equal(skippedChecksReason(none), fallback);
   assert.ok(skippedChecksReason('x'.repeat(1000)).length < 360, 'capped as the panel caps it');
   // The panel's note and the status pill's tooltip carry the same fallback.
   assert.ok(read('public/js/merge-status.js').includes(`'${fallback}'`), 'merge-status.js 6b');
   const appView = read('public/js/app-view.js');
   assert.ok(appView.includes(": 'there was nothing to test';")
-    && appView.includes('`Automated checks were skipped: ${reason}. This does not block the merge.`'), 'AppView._checksStatusNotes');
+    && appView.includes('`Checks were skipped: ${reason}. It can still go live.`'), 'AppView._checksStatusNotes');
 });
 
 test('the card: its actions for each state, and nothing on a superseded one', () => {
@@ -103,10 +104,11 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
 
   const live = render({});
   assert.match(live, /data-agent-session-preview="deployed"/);
-  assert.match(live, />Staging deployed · PR #14</);
+  assert.match(live, />Preview ready</);
+  assert.doesNotMatch(live, /PR #14/, 'B10d: no pull request number');
   assert.match(live, /data-agent-session-checks="failing"[^>]*>2 checks failing</);
   assert.match(live, /<button[^>]*data-agent-session-preview-open[^>]*>Open preview<\/button>/, 'wide: a button, for the side pane');
-  assert.match(live, /href="#app\/notes\/dev\/proposals\/50"[^>]*>Open draft proposal</, 'the change\'s own page, while it is a draft');
+  assert.match(live, /href="#app\/notes\/dev\/proposals\/50"[^>]*>Open draft change</, 'the change\'s own page, while it is a draft');
   assert.match(live, /data-agent-session-preview-propose[^>]*>Propose to group</);
 
   // Narrow (a phone, the side panel): the same button, and never a bare new
@@ -116,7 +118,7 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   assert.doesNotMatch(narrow, /target="_blank"/);
   const voting = render({ change: change({ status: 'promoted', checkState: 'passing' }) });
   assert.match(voting, /data-agent-session-preview-status[^>]*>Waiting for approval</);
-  assert.match(voting, />View proposal</);
+  assert.match(voting, />View change</);
   assert.doesNotMatch(voting, /Propose to group/, 'proposed once');
   assert.match(voting, /data-agent-session-checks="passing"/);
   assert.doesNotMatch(voting, /data-agent-session-checks-reason/, 'a real verdict needs no reason line');
@@ -125,18 +127,18 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   const skipped = render({ change: change({ checkState: 'skipped', checkSkipReason: 'branch has no commits beyond main, so there is nothing to test' }) });
   assert.match(skipped, /data-agent-session-checks="skipped"[^>]*>Checks skipped</);
   assert.doesNotMatch(skipped, /Checks passing/);
-  assert.match(skipped, /<p[^>]*data-agent-session-checks-reason[^>]*>Automated checks were skipped: branch has no commits beyond main, so there is nothing to test\. This does not block the merge\.<\/p>/);
+  assert.match(skipped, /<p[^>]*data-agent-session-checks-reason[^>]*>Checks were skipped: branch has no commits beyond main, so there is nothing to test\. It can still go live\.<\/p>/);
   assert.doesNotMatch(skipped, /Re-run checks/, 'skipped passes the gate: nothing to re-run from the card');
   const skippedBare = render({ change: change({ checkState: 'skipped', checkSkipReason: null }) });
-  assert.match(skippedBare, /data-agent-session-checks-reason[^>]*>Automated checks were skipped: there was nothing to test\. This does not block the merge\.</);
+  assert.match(skippedBare, /data-agent-session-checks-reason[^>]*>Checks were skipped: there was nothing to test\. It can still go live\.</);
   const merged = render({ change: change({ status: 'merged' }) });
-  assert.match(merged, />Merged</);
-  assert.match(merged, />View proposal</, 'a merged change is no draft');
+  assert.match(merged, />Live</);
+  assert.match(merged, />View change</, 'a merged change is no draft');
   assert.match(render({ action: 'propose', busy: true }), /disabled=""[^>]*data-agent-session-preview-propose[^>]*>Proposing…</);
 
   const failed = render({ item: item({ failed: true, url: null, error: 'npm ci failed', text: 'Staging build failed' }) });
   assert.match(failed, /data-agent-session-preview="failed"/);
-  assert.match(failed, />Staging build failed · PR #14</);
+  assert.match(failed, />The preview failed to build</);
   assert.match(failed, />npm ci failed</);
   assert.match(failed, /data-agent-session-preview-retry[^>]*>Retry</);
   assert.doesNotMatch(failed, /Open preview/, 'nothing to open');
@@ -422,9 +424,9 @@ test('the changes drawer says why the active change\'s checks were skipped, in w
   const skipped = renderToHtml(createElement(api.ChangesDrawer, {
     session: session({ ...base, checkState: 'skipped', checkSkipReason: 'mock GitHub preview: automated checks not run' }),
   }));
-  assert.match(skipped, />Checks: skipped<\/p><p[^>]*data-agent-session-checks-reason[^>]*>Automated checks were skipped: mock GitHub preview: automated checks not run\. This does not block the merge\.<\/p>/);
+  assert.match(skipped, />Checks: skipped<\/p><p[^>]*data-agent-session-checks-reason[^>]*>Checks were skipped: mock GitHub preview: automated checks not run\. It can still go live\.<\/p>/);
   const bare = renderToHtml(createElement(api.ChangesDrawer, { session: session({ ...base, checkState: 'skipped' }) }));
-  assert.match(bare, /data-agent-session-checks-reason[^>]*>Automated checks were skipped: there was nothing to test\. This does not block the merge\.</);
+  assert.match(bare, /data-agent-session-checks-reason[^>]*>Checks were skipped: there was nothing to test\. It can still go live\.</);
   const passing = renderToHtml(createElement(api.ChangesDrawer, { session: session({ ...base, checkState: 'passing' }) }));
   assert.match(passing, />Checks: passing</);
   assert.doesNotMatch(passing, /data-agent-session-checks-reason/);

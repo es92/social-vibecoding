@@ -292,8 +292,8 @@
       return descriptor('preview_failed', "Preview won't boot", 'red', false, {
         glyph: '⚠', votes: votes,
         title: p.staging_error
-          ? ('The staging preview failed to start, so automated checks can\u2019t run. Merge is blocked. Reason: ' + p.staging_error)
-          : 'The staging preview failed to start, so automated checks couldn\u2019t run. Merge is blocked until it boots cleanly.',
+          ? ('The preview failed to start, so it can\u2019t be tested. It can\u2019t go live until it starts. Reason: ' + p.staging_error)
+          : 'The preview failed to start, so it couldn\u2019t be tested. It can\u2019t go live until it starts.',
       });
     }
     if (check === 'error') {
@@ -317,7 +317,7 @@
       var label = n ? 'Checks failing · ' + n : 'Checks failing';
       return descriptor('checks_failing', label, 'amber', false, {
         glyph: '⚠', votes: votes,
-        title: 'Automated tests are not passing on the staging build. Merge is blocked until they pass.',
+        title: 'Checks are not passing on the preview. It can\u2019t go live until they pass.',
       });
     }
     // 6 — checks still running (not yet a verdict). Grey, not amber: it's
@@ -341,7 +341,7 @@
       return descriptor('checks_running',
         runningFor ? 'Checks running · ' + runningFor : 'Checks running…', 'neutral', true, {
         votes: votes,
-        title: 'Automated tests are still running on the staging build. Merge is blocked until they pass.',
+        title: 'Still testing the preview. It can\u2019t go live until the checks pass.',
       });
     }
     // 6a (#607) — a promoted proposal with NO verdict recorded at all: the
@@ -352,7 +352,7 @@
     if (!check && status === 'promoted' && !p.console_check_state) {
       return descriptor('checks_running', 'Checks starting…', 'neutral', true, {
         votes: votes,
-        title: 'The staging preview is being prepared and automated tests are about to run. Merge is blocked until they pass.',
+        title: 'The preview is being prepared and testing is about to start. It can\u2019t go live until the checks pass.',
       });
     }
     // 6b — checks explicitly skipped (#461): there was genuinely nothing to
@@ -363,8 +363,8 @@
       return descriptor('checks_skipped', 'Checks skipped', 'neutral', false, {
         votes: votes,
         title: p.check_error_detail
-          ? ('Automated checks were skipped: ' + p.check_error_detail + '. This does not block the merge.')
-          : 'Automated checks were skipped: there was nothing to test. This does not block the merge.',
+          ? ('Checks were skipped: ' + p.check_error_detail + '. It can still go live.')
+          : 'Checks were skipped: there was nothing to test. It can still go live.',
       });
     }
     // 7 — behind main. ('conflict' no longer falls through here — it has its
@@ -398,18 +398,18 @@
     // row says so, and the tooltip names the test and the way out.
     var mainPause = mainPauseOf(p);
     if (status === 'promoted' && reached && check === 'passing' && mainPause) {
-      return descriptor('main_paused', 'Passed, merges paused', 'amber', false, {
+      return descriptor('main_paused', 'Approved, going live is paused', 'amber', false, {
         votes: votes,
-        title: 'Votes passed and checks are green, but ' + (mainPause.note || 'main\u2019s unit suite is failing and merges for this app are paused')
-          + '. Nothing about this proposal is wrong; it merges once main is green again or an admin resumes merges.',
+        title: 'Approved and checks passed, but ' + (mainPause.note || 'main\u2019s unit suite is failing and going live is paused for this app')
+          + '. Nothing about this change is wrong; it goes live once the app is healthy again or an admin resumes.',
       });
     }
     // 9 — passed the vote, checks green, not behind: eligible and queued to
     // merge (one proposal per app merges at a time). The new explicit state.
     if (status === 'promoted' && reached && check === 'passing') {
-      return descriptor('ready', 'Passed, merging shortly', 'green', false, {
+      return descriptor('ready', 'Approved, going live shortly', 'green', false, {
         votes: votes,
-        title: 'Votes passed and checks are green. This is queued to merge.',
+        title: 'Approved and checks passed. It goes live shortly.',
       });
     }
     // 10 — proposed, still collecting votes. #788: a proposal that
@@ -438,7 +438,7 @@
     if (status === 'active' && check === 'passing') {
       return descriptor('checks_passed', 'Checks passed', 'green', false, {
         glyph: '✓',
-        title: 'Automated checks passed on the staging build. This draft is ready to propose.',
+        title: 'Checks passed on the preview. It is ready to send for approval.',
       });
     }
     // 11 — building; not yet proposed.

@@ -135,15 +135,15 @@ test('"Still good?" is its own row, with a "Still yes" button until it is read',
   const read = controller()._rowView({ ...ROW, kind: 'revision_recheck', readAt: AT });
   assert.deepEqual(read.actions, [], 'once read — by the button or by opening it — the button goes');
   const unnamed = controller()._rowView({ ...ROW, kind: 'revision_recheck', prTitle: null, prNumber: null, sessionTitle: null });
-  assert.equal(subjectOf(unnamed), 'a proposal you backed');
+  assert.equal(subjectOf(unnamed), 'a change you backed');
 });
 
 test('the Friday row counts the week; the vote row quotes the line; the merge row names the people', () => {
   const week = controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '3:2', sourceUsername: null });
   assert.equal(week.label, 'This week on Notes');
-  assert.equal(subjectOf(week), '3 changes went live · 2 proposals are waiting for eyes');
+  assert.equal(subjectOf(week), '3 changes went live · 2 changes are waiting for approval');
   assert.equal(week.icon, '\u{1F4F0}');
-  assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '1:1' })), '1 change went live · 1 proposal is waiting for eyes');
+  assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '1:1' })), '1 change went live · 1 change is waiting for approval');
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '0:0' })), 'Nothing landed this week');
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: null })), 'Nothing landed this week');
 
@@ -155,10 +155,10 @@ test('the Friday row counts the week; the vote row quotes the line; the merge ro
   assert.equal(subjectOf(yes), 'Tighten the header spacing', 'no line, no quote');
 
   const merged = controller()._rowView({ ...ROW, kind: 'pr_merged', detail: 'Backed by alice and bob, shaped by carol.' });
-  assert.equal(merged.label, 'Merged');
+  assert.equal(merged.label, 'Live');
   assert.equal(subjectOf(merged), 'Tighten the header spacing Backed by alice and bob, shaped by carol.');
   const forced = controller()._rowView({ ...ROW, kind: 'pr_merged', detail: 'forced' });
-  assert.equal(forced.label, 'Merged by an admin');
+  assert.equal(forced.label, 'Made live by an admin');
   assert.equal(subjectOf(forced), 'Tighten the header spacing', 'the override marker is not a sentence');
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'pr_merged', detail: null })), 'Tighten the header spacing');
 
@@ -210,19 +210,19 @@ test('the banners: still good, this week, the quoted line, the named merge', () 
   const banner = (kind, context) => buildMessage({ ...INPUT, kind, context }).notification;
 
   assert.deepEqual(banner('revision_recheck', CONTEXT), {
-    title: 'Still good? "Fix login redirect loop" changed · MyPage',
+    title: 'Still good? "Fix login redirect loop" was updated · MyPage',
     body: '@alice pushed an update after your feedback. One tap keeps your yes',
   });
   assert.deepEqual(banner('revision_recheck', {}), {
-    title: 'Still good? A proposal you backed changed',
+    title: 'Still good? A change you backed was updated',
     body: 'A new version was pushed after your feedback. One tap keeps your yes',
   });
   assert.deepEqual(banner('weekly_digest', { ...CONTEXT, detail: '3:1' }), {
     title: 'This week on MyPage',
-    body: '3 changes went live. One proposal is waiting for eyes',
+    body: '3 changes went live. One change is waiting for approval',
   });
   assert.deepEqual(banner('weekly_digest', { ...CONTEXT, detail: '1:0' }), { title: 'This week on MyPage', body: '1 change went live.' });
-  assert.deepEqual(banner('weekly_digest', { ...CONTEXT, detail: '0:2' }), { title: 'This week on MyPage', body: 'Nothing landed this week. 2 proposals are waiting for eyes' });
+  assert.deepEqual(banner('weekly_digest', { ...CONTEXT, detail: '0:2' }), { title: 'This week on MyPage', body: 'Nothing landed this week. 2 changes are waiting for approval' });
   assert.deepEqual(banner('weekly_digest', {}), { title: 'This week', body: 'Nothing landed this week.' });
 
   assert.deepEqual(banner('proposal_vote', { ...CONTEXT, detail: 'no', voteReason: 'The new colors clash on mobile.' }), {
@@ -231,32 +231,32 @@ test('the banners: still good, this week, the quoted line, the named merge', () 
   });
   assert.deepEqual(banner('proposal_vote', { ...CONTEXT, detail: 'yes' }), {
     title: '@alice voted yes on "Fix login redirect loop" · MyPage',
-    body: 'Open the proposal to review their vote',
+    body: 'Open the change to see their vote',
   });
   const long = banner('proposal_vote', { ...CONTEXT, detail: 'no', voteReason: 'x'.repeat(280) }).body;
   assert.ok(long.startsWith('“') && long.endsWith('”') && long.length <= 142, `a banner, not a paragraph: ${long.length}`);
 
   assert.deepEqual(banner('pr_merged', { ...CONTEXT, detail: 'Backed by alice and bob, shaped by carol.' }), {
-    title: '"Fix login redirect loop" merged · MyPage',
+    title: '"Fix login redirect loop" is live · MyPage',
     body: 'The vote carried. Backed by alice and bob, shaped by carol.',
   });
   assert.deepEqual(banner('pr_merged', { ...CONTEXT, detail: 'forced' }), {
-    title: '"Fix login redirect loop" merged · MyPage',
-    body: 'An admin merged it. Your change is live',
+    title: '"Fix login redirect loop" is live · MyPage',
+    body: 'An admin made it live. Your change is live',
   });
   assert.deepEqual(banner('pr_merged', CONTEXT), {
-    title: '"Fix login redirect loop" merged · MyPage',
+    title: '"Fix login redirect loop" is live · MyPage',
     body: 'The vote carried. Your change is live',
   });
   // #2897: the platform's own merge is released after it, so its banner
   // promises the change rather than claiming it is already running.
   assert.deepEqual(banner('pr_merged', { ...CONTEXT, appSelfHosted: true }), {
-    title: '"Fix login redirect loop" merged · MyPage',
+    title: '"Fix login redirect loop" was approved · MyPage',
     body: 'The vote carried. Your change will be live in a few minutes',
   });
   assert.deepEqual(banner('pr_merged', { ...CONTEXT, appSelfHosted: true, detail: 'forced' }), {
-    title: '"Fix login redirect loop" merged · MyPage',
-    body: 'An admin merged it. Your change will be live in a few minutes',
+    title: '"Fix login redirect loop" was approved · MyPage',
+    body: 'An admin approved it. Your change will be live in a few minutes',
   });
   assert.equal(
     banner('pr_merged', { ...CONTEXT, appSelfHosted: true, detail: 'Backed by alice and bob.' }).body,

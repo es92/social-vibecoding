@@ -80,10 +80,10 @@ export function mergeConditions(row: AppRow | null | undefined, who: string): st
 /** The build-by-vote note under an app's actions. */
 export function appNote(row: AppRow | null | undefined): string {
   const proposers = row && row.collab_visibility === 'private'
-    ? 'Its members can propose'
-    : 'Anyone can propose';
-  return 'Built by the group, one voted proposal at a time. '
-    + `${proposers}; a proposal merges once ${mergeConditions(row, 'the app’s')}.`;
+    ? 'Its members can suggest a change'
+    : 'Anyone can suggest a change';
+  return 'Built by the group, one approved change at a time. '
+    + `${proposers}; it goes live once ${mergeConditions(row, 'the app’s')}.`;
 }
 
 /**
@@ -96,14 +96,14 @@ export function platformNote(row: AppRow | null | undefined, restricted: boolean
   const tail = ' This menu is the same one every app has.';
   if (restricted) {
     return 'The platform is built the same way as the apps on it: every change to the tabs, '
-      + 'the bell or the workshop is proposed, voted on and merged once its checks pass. '
+      + 'the bell or the workshop is suggested, approved, and goes live once its checks pass. '
       + 'On this server its workshop is open to admins only.' + tail;
   }
   const proposers = row && row.collab_visibility === 'private'
-    ? 'its members can propose'
-    : 'anyone can propose';
+    ? 'its members can suggest'
+    : 'anyone can suggest';
   return `The platform is built the same way as the apps on it: ${proposers} a change to the `
-    + `tabs, the bell or the workshop, and it ships once ${mergeConditions(row, 'the platform’s')}.`
+    + `tabs, the bell or the workshop, and it goes live once ${mergeConditions(row, 'the platform’s')}.`
     + tail;
 }
 
@@ -156,7 +156,7 @@ export function statCards(stats: { apps?: number; members?: number; merged?: num
   return [
     { key: 'apps', value: apps.toLocaleString(), label: apps === 1 ? 'app' : 'apps' },
     { key: 'members', value: members.toLocaleString(), label: members === 1 ? 'member' : 'members' },
-    { key: 'merged', value: merged.toLocaleString(), label: 'merged' },
+    { key: 'merged', value: merged.toLocaleString(), label: 'live' },
   ];
 }
 

@@ -93,7 +93,8 @@ test('#3577: the session bar\'s pills are one row that never wraps; the naming p
   assert.ok(change.includes('min-w-[3.5rem]') && change.includes('whitespace-nowrap'));
   assert.ok(!change.includes('grow') && !change.includes('shrink-0'), 'it gives way only after the focus pill');
   assert.match(bar, /title=\{changeText\}/);
-  assert.match(bar, /<span className="\[@container\(max-width:24rem\)\]:hidden">\{` · PR #\$\{active\.prNumber\}`\}<\/span>/);
+  // B10d: the pill says where the change stands, with no pull request number.
+  assert.doesNotMatch(bar, /PR #\$\{active\.prNumber\}/);
 
   // The controls hold their width.
   assert.ok(classOf('data-agent-session-changes-button').includes('shrink-0'));

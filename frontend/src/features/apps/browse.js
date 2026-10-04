@@ -365,7 +365,7 @@ const Browse = {
     { key: 'recommended', label: 'Recommended' },
     { key: 'users', label: 'Most users' },
     { key: 'active', label: 'Most active' },
-    { key: 'merged', label: 'Most changes merged' },
+    { key: 'merged', label: 'Most changes live' },
     { key: 'new', label: 'Newest' },
   ],
 
@@ -688,10 +688,10 @@ const Browse = {
     bits.push(`${users} user${users === 1 ? '' : 's'}`);
     if (sort === 'active') {
       const recent = parseInt(app.merged_prs_recent || 0, 10) || 0;
-      if (recent > 0) bits.push(`${recent} merged in 30d`);
+      if (recent > 0) bits.push(`${recent} live in 30d`);
     } else if (sort === 'merged') {
       const merged = parseInt(app.merged_prs || 0, 10) || 0;
-      if (merged > 0) bits.push(`${merged} change${merged === 1 ? '' : 's'} merged`);
+      if (merged > 0) bits.push(`${merged} change${merged === 1 ? '' : 's'} live`);
     }
     if (sort === 'new') {
       const created = formatRelativeTime(app.created_at);

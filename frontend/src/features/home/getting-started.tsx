@@ -214,7 +214,7 @@ const FIXTURE_STEPS: Array<Omit<GettingStartedStep, 'done' | 'earned_points'>> =
   },
   {
     id: 'challenge-43', kind: 'challenge', action: 'vote', challenge_id: 43, event_id: 7,
-    title: 'Vote on an app', detail: 'Help decide what ships next.', href: null, reward: '250 pts',
+    title: 'Vote on an app', detail: 'Help decide what goes live next.', href: null, reward: '250 pts',
   },
   {
     id: 'challenge-44', kind: 'challenge', action: 'suggest', challenge_id: 44, event_id: 7,
@@ -228,7 +228,7 @@ const FIXTURE_STEPS: Array<Omit<GettingStartedStep, 'done' | 'earned_points'>> =
 // the block under it agree when a shot draws both.
 const FIXTURE_UNLOCKS = {
   count: 5,
-  names: ['Make your first proposal', 'Get a change merged', 'Invite a friend', 'Start a community'],
+  names: ['Make your first change', 'Get a change live', 'Invite a friend', 'Start a community'],
 };
 
 function fixture(doneIds: string[], vote: VoteTarget['kind'] = 'needs'): GettingStartedModel {

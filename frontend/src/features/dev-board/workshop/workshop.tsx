@@ -331,7 +331,7 @@ function ThemeCard({
   if (c.review) chips.push(<span key="review" className="dev-ws-cnt dev-ws-cnt-review"><span className="dev-ws-dot"></span><b>{c.review}</b> in review</span>);
   if (c.underway) chips.push(<span key="underway" className="dev-ws-cnt dev-ws-cnt-underway"><span className="dev-ws-dot"></span><b>{c.underway}</b> underway</span>);
   chips.push(<span key="open" className="dev-ws-cnt"><span className="dev-ws-dot"></span><b>{c.open}</b> open</span>);
-  if (c.shipped) chips.push(<span key="shipped" className="dev-ws-cnt dev-ws-cnt-shipped"><span className="dev-ws-dot"></span><b>{c.shipped}</b> shipped this week</span>);
+  if (c.shipped) chips.push(<span key="shipped" className="dev-ws-cnt dev-ws-cnt-shipped"><span className="dev-ws-dot"></span><b>{c.shipped}</b> live this week</span>);
 
   // `counts` rather than `rows.length`: the lane caps its rows at
   // WORKSHOP_LANE_MAX, so a theme with twelve underway used to report eight.
@@ -348,7 +348,7 @@ function ThemeCard({
   // where the theme shipped something this week it can say that instead, which
   // is the same fact with the history the old line was inventing.
   const idle = c.shipped
-    ? `${c.shipped} shipped this week, nothing in flight now`
+    ? `${c.shipped} went live this week, nothing in progress now`
     : (quietDays != null && quietDays > 14 ? `quiet for ${quietDays} days` : 'nothing in flight right now');
   const foot = `${theme.people.length} involved · ${bits.length ? bits.join(' · ') : idle}`;
 
@@ -780,10 +780,10 @@ function DashTiles({ d }: { d: Dash }): ReactNode {
     {
       key: 'shipped',
       n: d.shippedWeek,
-      label: 'shipped this week',
+      label: 'live this week',
       tone: d.shippedWeek ? 'good' : undefined,
       title: d.partial
-        ? 'At least this many: the merged history is longer than the page loaded.'
+        ? 'At least this many: there is more history than the page loaded.'
         : 'This calendar week, counted from Monday 00:00 UTC.',
     },
   ];

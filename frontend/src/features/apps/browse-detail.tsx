@@ -117,7 +117,7 @@ function ContributorRow({ row }: { row: ContributorRowView }): ReactNode {
       chevron={false}
       className="browse-contrib-row transition-colors hover:bg-zinc-500/5"
       data-username={row.who}
-      tooltip={`View @${row.who}’s proposals`}
+      tooltip={`View @${row.who}’s changes`}
       onClick={() => controller()?.openContributor(row.who)}
       // Rank and disc travel together as ONE leading element, so the 12px
       // between them survives the row's own 16px gap.
@@ -134,8 +134,8 @@ function ContributorRow({ row }: { row: ContributorRowView }): ReactNode {
       trailing={(
         <div
           className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${row.pillTint}`}
-          title="Proposals merged into this app"
-        >{`${row.merged} merged`}</div>
+          title="Their changes that went live in this app"
+        >{`${row.merged} live`}</div>
       )}
     />
   );
@@ -148,7 +148,7 @@ function Contributors({ view }: { view: ContributorsView }): ReactNode {
           doesn't jump when the fetch lands. */}
       <h3
         className={`relative px-4 py-2.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100 ${HEAD_RULE}`}
-        title="The app&rsquo;s creator, its members, and everyone whose proposal has been merged into it"
+        title="The app&rsquo;s creator, its members, and everyone with a change that went live in it"
       >
         Contributors
         {view.count == null ? null : (

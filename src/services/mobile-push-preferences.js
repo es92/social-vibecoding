@@ -56,8 +56,8 @@ const CATEGORY_DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     key: 'proposal_alerts',
-    label: 'Proposal alerts',
-    description: 'Proposals needing attention, failed previews, new proposals ready for voting, and votes or merges on your own.',
+    label: 'Change alerts',
+    description: 'Changes needing attention, failed previews, new changes waiting for approval, and votes on yours or yours going live.',
     defaultEnabled: true,
     // #1374 adds three: a vote on your proposal, your proposal merging, and
     // the daily "what needs your vote" summary. All three are proposal

@@ -327,18 +327,18 @@ test('votes passed, checks green, main paused: the card says so instead of "merg
 
   const s = MergeStatus.lifecycle(paused);
   assert.equal(s.key, 'main_paused');
-  assert.equal(s.label, 'Passed, merges paused', 'the same shape as "Passed, merging shortly", which it replaces');
+  assert.equal(s.label, 'Approved, going live is paused', 'the same shape as "Passed, merging shortly", which it replaces');
   assert.equal(s.tone, 'amber', 'a condition somebody may need to act on');
   assert.match(s.title, /shared-sessions returns linked_issues per row/, 'the tooltip names the test');
-  assert.match(s.title, /Nothing about this proposal is wrong/);
+  assert.match(s.title, /Nothing about this change is wrong/);
 
   // The board card: the bar is the vote, the tag is the pause, and the pill
   // carries the reason for the detail view.
   const tag = AppView.statusTagSpecs(paused, {}).find((t) => t.key === 'tag-main_paused');
   assert.ok(tag, 'the tag exists');
-  assert.equal(tag.label, 'Merges paused');
+  assert.equal(tag.label, 'Going live is paused');
   assert.match(tag.title, /^Main's unit suite is failing since fffffff/);
-  assert.match(tag.title, /Nothing about this proposal is wrong/);
+  assert.match(tag.title, /Nothing about this change is wrong/);
   assert.ok(!tag.spinner);
   assert.match(tag.cls, /red/, 'it stops the merge, so blocking tone');
   assert.ok(AppView.statusPillState(paused).reasons.some((r) => r.key === 'main_paused'));
@@ -346,7 +346,7 @@ test('votes passed, checks green, main paused: the card says so instead of "merg
   // A provisional pause says the re-run is on.
   const confirming = PR({ ...PASSED, mergeRequirements: { gates: [PAUSED_GATE({ confirming: true })] } });
   assert.equal(AppView.statusTagSpecs(confirming, {}).find((t) => t.key === 'tag-main_paused').label,
-    'Merges paused · re-checking main');
+    'Going live is paused · re-checking main');
   assert.equal(MergeStatus.lifecycle(confirming).key, 'main_paused');
 
   // Not paused: the pill it always was.

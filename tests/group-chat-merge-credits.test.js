@@ -178,7 +178,7 @@ const weekly = {
 };
 const weeklyRow = {
   id: 77, msg_type: 'system', metadata: { weekly },
-  content: 'This week on Recipe App: 5 changes went live: Custom tier colors (PR #41); … One proposal is waiting for eyes: Dark mode toggle (PR #12).',
+  content: 'This week on Recipe App: 5 changes went live: Custom tier colors (PR #41); … One change is waiting for approval: Dark mode toggle (PR #12).',
   created_at: '2026-09-18T15:00:00.000Z',
 };
 
@@ -247,14 +247,14 @@ test('eventText, eventTail, creditsSentence: a named merge is the sentence, the 
 
   const named = { ...base, id: 2, systemText: NAMED, event: mergedEvent() };
   assert.equal(eventText(named), 'Custom tier colors is live. Built by evan, backed by alice and bob, shaped by carol.');
-  assert.equal(eventTail(named), 'PR #41 · 3/5 votes');
+  assert.equal(eventTail(named), '3/5 votes');
   const untitled = { ...named, event: mergedEvent({ title: '' }) };
-  assert.equal(eventText(untitled), 'PR #41 is live. Built by evan, backed by alice and bob, shaped by carol.');
+  assert.equal(eventText(untitled), 'A change is live. Built by evan, backed by alice and bob, shaped by carol.');
   const older = { ...named, systemText: OLD, event: mergedEvent({ credits: null }) };
-  assert.equal(eventText(older), 'PR #41 went live with 3/5 votes: Custom tier colors', 'the older row reads as it did');
+  assert.equal(eventText(older), 'Custom tier colors went live with 3/5 votes', 'the older row reads as it did');
   assert.equal(eventTail(older), '');
   const forced = { ...named, event: mergedEvent({ force: true, actor: 'dfk', sender: 'dfk', votes: '0/2', credits: null }) };
-  assert.equal(eventText(forced), 'Force-merged PR #41 with 0/2 votes: Custom tier colors');
+  assert.equal(eventText(forced), 'An admin made “Custom tier colors” live (0/2 votes)');
   assert.equal(eventTail(forced), '');
   const card = { ...base, id: 3, event: { ...mergedEvent({ type: 'weekly', prNumber: '', title: '', votes: '', credits: null, icon: null }), weekly } };
   assert.equal(eventText(card), 'This week on Recipe App');
@@ -264,16 +264,16 @@ test('eventText, eventTail, creditsSentence: a named merge is the sentence, the 
 test('eventText: a self-hosted merge says it merged and will be live in a few minutes, never that it is live', () => {
   const { eventText, eventTail } = loadTsx(EVENT);
   const named = { ...base, id: 2, systemText: SOON, event: mergedEvent({ liveSoon: true }) };
-  assert.equal(eventText(named), 'Custom tier colors merged and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
-  assert.equal(eventTail(named), 'PR #41 · 3/5 votes');
+  assert.equal(eventText(named), 'Custom tier colors was approved and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
+  assert.equal(eventTail(named), '3/5 votes');
   assert.equal(eventText({ ...named, event: mergedEvent({ liveSoon: true, title: '' }) }),
-    'PR #41 merged and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
+    'A change was approved and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
   assert.equal(eventText({ ...named, event: mergedEvent({ liveSoon: true, credits: null }) }),
-    'PR #41 merged with 3/5 votes and will be live in a few minutes: Custom tier colors');
+    '“Custom tier colors” was approved with 3/5 votes and will be live in a few minutes');
   assert.equal(eventText({ ...named, event: mergedEvent({ liveSoon: true, credits: null, here: true }) }),
-    'This change merged with 3/5 votes and will be live in a few minutes');
+    'This change was approved with 3/5 votes and will be live in a few minutes');
   assert.equal(eventText({ ...named, event: mergedEvent({ liveSoon: true, here: true }) }),
-    'This change merged and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
+    'This change was approved and will be live in a few minutes. Built by evan, backed by alice and bob, shaped by carol.');
   // The older rows are untouched.
   assert.equal(eventText({ ...named, event: mergedEvent({ credits: null, here: true }) }), 'This change went live with 3/5 votes');
   assert.equal(eventText({ ...named, event: mergedEvent({ here: true }) }), 'This change is live. Built by evan, backed by alice and bob, shaped by carol.');
@@ -285,7 +285,7 @@ test('eventText: a self-hosted merge says it merged and will be live in a few mi
 test('EventRow draws the named merge with its muted tail, and the Friday card with its sections and door', () => {
   const named = renderComponent(EVENT, 'EventRow', { msg: { ...base, id: 2, event: mergedEvent(), eventHref: '/app/recipe-app/dev/proposals/9' } });
   assert.match(named, /data-event="merged"/);
-  assert.match(named, /Custom tier colors is live\. Built by evan, backed by alice and bob, shaped by carol\.<span class="gc-event-tail"> PR #41 · 3\/5 votes<\/span>/);
+  assert.match(named, /Custom tier colors is live\. Built by evan, backed by alice and bob, shaped by carol\.<span class="gc-event-tail"> 3\/5 votes<\/span>/);
   assert.match(named, /<a class="gc-event-box" href="\/app\/recipe-app\/dev\/proposals\/9"/);
   const older = renderComponent(EVENT, 'EventRow', { msg: { ...base, id: 2, event: mergedEvent({ credits: null }) } });
   assert.doesNotMatch(older, /gc-event-tail/, 'no tail without names');
@@ -301,8 +301,8 @@ test('EventRow draws the named merge with its muted tail, and the Friday card wi
   assert.match(card, /data-weekly="merged"><span class="gc-weekly-line-title">Custom tier colors<\/span><span class="gc-weekly-line-who"> · evan, backed by alice and bob<\/span>/);
   assert.match(card, /data-weekly="merged"><span class="gc-weekly-line-title">Mobile drag fix<\/span><span class="gc-weekly-line-who"> · carol<\/span>/);
   assert.match(card, /class="gc-weekly-more">and 3 more</, 'the totals say what the card does not list');
-  assert.match(card, /gc-weekly-head-open">One proposal is waiting for eyes</);
-  assert.match(card, /data-weekly="open"><span class="gc-weekly-line-title">Dark mode toggle<\/span><span class="gc-weekly-line-who"> · PR #44<\/span>/);
+  assert.match(card, /gc-weekly-head-open">One change is waiting for approval</);
+  assert.match(card, /data-weekly="open"><span class="gc-weekly-line-title">Dark mode toggle<\/span><\/div>/);
   assert.match(card, /<a class="gc-weekly-door" href="#app\/recipe-app\/dev">Open the Workshop ›<\/a>/);
   assert.doesNotMatch(card, /gc-event-text|data-open/, 'not a proposal row');
 
