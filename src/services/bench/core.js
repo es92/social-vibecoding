@@ -283,7 +283,7 @@ async function sourceRun(pool, spec, app) {
   if (!spec.source_run_id) return null;
   const { rows } = await pool.query(
     `SELECT id, app_id, issue_number, verdict, label_verdict, created_at,
-            question, question_default, missing_fact, question_answers
+            question, question_default, missing_fact, question_answers, plan
        FROM homeroom_bot_runs WHERE id = $1 AND app_id = $2 AND issue_number = $3`,
     [spec.source_run_id, app.id, spec.issue_number],
   );
@@ -446,6 +446,14 @@ function askedQuestion(run) {
   if (run.missing_fact) q.missing_fact = String(run.missing_fact).slice(0, 1000);
   if (Array.isArray(run.question_answers) && run.question_answers.length) {
     q.answers = run.question_answers.filter((a) => typeof a === 'string').map((a) => a.slice(0, 200)).slice(0, 6);
+  }
+  // B6: a read can ask a second question with the first.
+  const second = Array.isArray(run.plan?.questions) ? run.plan.questions[1] : null;
+  if (second && typeof second.question === 'string') {
+    q.second = {
+      text: second.question.slice(0, 300),
+      answers: (Array.isArray(second.answers) ? second.answers : []).filter((a) => typeof a === 'string').map((a) => a.slice(0, 200)).slice(0, 4),
+    };
   }
   return q.text || q.missing_fact ? q : null;
 }

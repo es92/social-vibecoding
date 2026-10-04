@@ -1453,6 +1453,8 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
               ready: !!state.ready,
               question: mine && !!state.question,
               conversationId: mine ? state.conversationId : null,
+              // B6: the plan it waits on, for its creator to build from here.
+              ...(mine && state.plan ? { plan: state.plan } : {}),
             };
           }
         } catch (err) {

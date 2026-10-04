@@ -849,9 +849,10 @@ const App = {
   _applyFirstVersionShot() {
     let shot = null;
     try { shot = new URLSearchParams(location.search).get('shot'); } catch (err) { /* ignore */ }
-    if (shot !== 'first-version') return;
+    // B6: `?shot=first-version-plan`, the same screen while its plan waits for Build it.
+    if (shot !== 'first-version' && shot !== 'first-version-plan') return;
     try {
-      if (typeof AppView !== 'undefined') AppView.showFirstVersionShot();
+      if (typeof AppView !== 'undefined') AppView.showFirstVersionShot(shot === 'first-version-plan');
     } catch (err) { /* ignore */ }
   },
 

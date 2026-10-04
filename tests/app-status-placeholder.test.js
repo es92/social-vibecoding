@@ -315,6 +315,28 @@ test('#15: the creator sees whose description it is, the step, and the way into 
   assert.doesNotMatch(out, /Start a new change/);
 });
 
+test('B6: while its plan waits, the creator gets the plan card in place of the chat button', () => {
+  const { AppView } = makeAppView();
+  const plan = {
+    bullets: ['A list of your plants'], questions: [{ question: 'How should it remind you?', answers: ['In the app', 'Phone alert'] }],
+    actionId: 7, messageId: 70, conversationId: 42,
+  };
+  const v = view(AppView, firstVersionApp({}, { plan }));
+  assert.deepEqual(v.lines, ['Step 3 of 7: Write a plan']);
+  assert.equal(v.action, null);
+  assert.deepEqual(v.plan, { appName: 'Plant Pal', slug: 'plant-pal', ...plan });
+  const out = html(v);
+  assert.match(out, /data-bot-plan="open"/);
+  assert.match(out, /Here’s my plan for Plant Pal:/);
+  assert.match(out, /data-bot-plan-build="">Build it<\/button>/);
+  assert.match(out, /data-bot-plan-change="">Change something<\/button>/);
+  assert.doesNotMatch(out, /app-first-version-chat/);
+  assert.match(out, /<button id="app-first-version-starter"/, 'the starter is still there');
+  // Only the creator's, and only a plan it can build.
+  assert.equal(view(AppView, firstVersionApp({}, { plan, mine: false, conversationId: null })).plan, undefined);
+  assert.equal(view(AppView, firstVersionApp({}, { plan: { ...plan, actionId: null } })).plan, undefined);
+});
+
 test('#15: anyone else is told whose description it is, and gets no chat of somebody else\'s', () => {
   const { AppView } = makeAppView();
   const v = view(AppView, firstVersionApp({}, { mine: false, conversationId: null, question: false }));

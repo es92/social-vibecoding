@@ -9708,6 +9708,21 @@ ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS live_build_waiting_at TIM
 CREATE INDEX IF NOT EXISTS homeroom_bot_runs_live_build_waiting_idx
   ON homeroom_bot_runs(live_build_waiting_at) WHERE live_build_waiting_at IS NOT NULL;
 
+-- B6: what a look planned, for its person to see before anything is built:
+-- { bullets, questions: [{ question, answers }], chosen }. A first version's
+-- plan (3 to 5 plain bullets and up to 2 choices, each with its suggested
+-- answer first) waits for its creator's Build it: its run waits with
+-- `awaiting_go_at` instead of live_build_waiting_at, which Build it then
+-- sets with the answers chosen written into build_note. A request the read
+-- has two questions about keeps them here too. `plan_change` is what the
+-- creator asked the plan changed with (Change something), in their words,
+-- for the next look at the request; it is never posted anywhere.
+ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS plan JSONB;
+ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS awaiting_go_at TIMESTAMPTZ;
+ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS plan_change TEXT;
+CREATE INDEX IF NOT EXISTS homeroom_bot_runs_awaiting_go_idx
+  ON homeroom_bot_runs(awaiting_go_at) WHERE awaiting_go_at IS NOT NULL;
+
 -- Weekly building time (homeroom-bot-dm.js weeklySpentCents). A run counts
 -- toward one person's week only when it is `charged`, and against its
 -- `payer`: the person whose action started it (the requester unless

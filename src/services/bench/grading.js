@@ -213,6 +213,10 @@ function candidateView(stage, trial) {
       verdict: p.verdict || null, question: p.question || null, default: p.questionDefault || null,
       answers: p.questionAnswers || null, plan: p.buildNote || null, reason: p.reason || null,
       assumptions: p.assumptions || [],
+      // B6: what its person would see first: a first version's bullets and
+      // choices, or a request's two questions.
+      ...(p.plan?.bullets?.length ? { bullets: p.plan.bullets } : {}),
+      ...(p.plan?.questions?.length ? { questions: p.plan.questions } : {}),
     };
   }
   if (stage === 'spec') return { spec: clipText(p.spec || '', MAX_CANDIDATE_CHARS) || null, blocked: p.blocked || null };

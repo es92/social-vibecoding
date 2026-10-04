@@ -160,13 +160,22 @@ function lookingText() {
     + 'something is unclear, a note if a person needs to decide, or a proposal if it can build it.';
 }
 
-function questionText({ question, questionDefault }) {
-  const lines = [
-    'Homeroom bot has a question before it can build this:',
-    '',
-    clipText(question) || '(no question text)',
-  ];
-  if (questionDefault) lines.push('', `If nobody answers, it would go with: ${clipText(questionDefault, 500)}`);
+// B6 (E5): no line saying what it would go with when nobody answers:
+// nothing applies a default to an unanswered question. B6: a read can ask
+// two at once.
+function questionText({ question, plan = null }) {
+  const two = Array.isArray(plan?.questions) && plan.questions.length > 1 ? plan.questions : null;
+  const lines = two
+    ? [
+      'Homeroom bot has two questions before it can build this:',
+      '',
+      ...two.map((q, i) => `${i + 1}. ${clipText(q.question, 500)}`),
+    ]
+    : [
+      'Homeroom bot has a question before it can build this:',
+      '',
+      clipText(question) || '(no question text)',
+    ];
   lines.push('', REPLY_HINT);
   return lines.join('\n');
 }
@@ -592,8 +601,9 @@ function specSnippet(spec, title) {
 /** The spec as a GitHub comment: said what it is for, then the document. */
 function specCommentText(spec) {
   return [
-    'Homeroom bot wrote a spec for this request and is building it now. It is here for reference: nobody needs '
-      + 'to approve it, and the proposal will be linked here when it is up.',
+    // B6: no approval talk while it builds. The change is linked once it can be tried.
+    'Homeroom bot wrote a spec for this request and is building it now. The change will be linked here when it\'s '
+      + 'ready to try.',
     '',
     '<details><summary>The spec</summary>',
     '',
@@ -611,7 +621,7 @@ function specCard({ sessionId, version, spec, bot, proposed = false }) {
   const title = specTitle(spec);
   const content = proposed
     ? `📋 The spec this proposal was built from${title ? `: "${title}"` : ''}.`
-    : `📋 Homeroom bot's spec for this request${title ? `: "${title}"` : ''}. It is building it now; this is for reference, not for approval.`;
+    : `📋 Homeroom bot's spec for this request${title ? `: "${title}"` : ''}. It is building it now.`;
   return {
     content,
     msgType: 'spec_share',

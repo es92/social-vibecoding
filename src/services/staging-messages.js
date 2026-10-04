@@ -460,6 +460,12 @@ const BOT_DM_OFFER_KEY = 'staging-hrbot-offer';
 // row stands behind it: the action endpoint answers the demo without one.
 const BOT_DM_DEMO_ACTION_ID = 990001;
 const BOT_DM_ASK_KEY = 'staging-hrbot-ask';
+// B6: a first version's plan, waiting for Build it, and a request the bot
+// has two questions about. Fixtures too: the plan's Build it names an action
+// no row stands behind, and nothing is posted on any request.
+const BOT_DM_PLAN_KEY = 'staging-hrbot-plan';
+const BOT_DM_PLAN_ACTION_ID = 990002;
+const BOT_DM_TWO_QUESTIONS_KEY = 'staging-hrbot-two-questions';
 
 async function ensureBotDmFixture(pool, user) {
   if (process.env.USERNODE_ENV !== 'staging' || !user?.id) return null;
@@ -521,6 +527,54 @@ async function ensureBotDmFixture(pool, user) {
             { id: 'yes', label: 'File it', style: 'primary', type: 'server' },
             { id: 'no', label: 'Not now', style: 'secondary', type: 'server' },
           ],
+        },
+      },
+    });
+  }
+  // B6: a new project's plan, and a request with two questions. Each is
+  // sent once, after what is already there.
+  const sentB6 = new Set((await pool.query(
+    `SELECT idempotency_key FROM conversation_messages
+      WHERE conversation_id = $1 AND sender_id = $2 AND idempotency_key = ANY($3::text[])`,
+    [opened.conversationId, bot.id, [BOT_DM_PLAN_KEY, BOT_DM_TWO_QUESTIONS_KEY]]
+  )).rows.map((row) => row.idempotency_key));
+  if (!sentB6.has(BOT_DM_PLAN_KEY)) {
+    const plan = {
+      bullets: [
+        'Staging demo: a list of your plants with how often each needs water',
+        'A Today view of the plants that need watering now',
+        'Tap a plant to mark it watered; its next date moves on by itself',
+      ],
+      questions: [{ question: 'How should it remind you?', answers: ['In the app', 'Phone alert'] }],
+    };
+    await conversations.sendMessage(pool, { id: bot.id }, opened.conversationId, {
+      content: require('./homeroom-bot-dm').planCardText({ appName: 'Staging demo plants', plan }),
+      idempotency_key: BOT_DM_PLAN_KEY,
+    }, {
+      metadata: {
+        homeroomBot: {
+          kind: 'plan', appName: 'Staging demo plants', issueNumber: 1, firstVersion: true,
+          plan, actionId: BOT_DM_PLAN_ACTION_ID, status: 'open',
+        },
+      },
+    });
+  }
+  if (!sentB6.has(BOT_DM_TWO_QUESTIONS_KEY)) {
+    const lead = '**Staging demo app** · request #16: Staging demo, a weekly reminder\n\n'
+      + 'I have two questions before I build this:';
+    const questions = [
+      { question: 'What time on Sunday?', answers: ['9 AM', '8 AM', '10 AM'] },
+      { question: 'How should it remind you?', answers: ['In the app', 'Phone alert'] },
+    ];
+    await conversations.sendMessage(pool, { id: bot.id }, opened.conversationId, {
+      content: `${lead}\n\n1. ${questions[0].question}\n2. ${questions[1].question}`,
+      idempotency_key: BOT_DM_TWO_QUESTIONS_KEY,
+    }, {
+      metadata: {
+        homeroomBot: {
+          kind: 'question', appName: 'Staging demo app', issueNumber: 16,
+          issueTitle: 'Staging demo, a weekly reminder', mirrors: true, status: 'open',
+          question: questions[0].question, answers: questions[0].answers, questions, lead,
         },
       },
     });

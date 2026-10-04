@@ -1374,6 +1374,10 @@ html:not(.dark) .messages-markdown .gc-ref-issue { background: rgba(16, 185, 129
    its Not now takes the neutral fill above. */
 .messages-bot-answers .messages-bot-primary { color: var(--accent-ink); background: var(--accent); }
 .messages-bot-answers .messages-bot-primary:hover { filter: none; background: var(--accent-light); }
+/* B6: an answer tapped as a choice (a plan's, or one of two questions)
+   takes the same accent fill. Nothing is sent until Build it. */
+.messages-bot-answers button[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); }
+.messages-bot-answers button[aria-pressed="true"]:hover { filter: none; background: var(--accent-light); }
 .messages-bot-default {
   font-size: 11px;
   font-weight: 600;

@@ -404,6 +404,8 @@ function triageResult({ turn, out, prompt, snapshot }) {
       question: parsed.question,
       questionDefault: parsed.questionDefault,
       questionAnswers: parsed.questionAnswers,
+      // B6: a first version's plan, or a second question.
+      plan: parsed.plan || null,
       buildNote: parsed.buildNote,
       reason: parsed.reason,
       assumptions: parsed.assumptions,

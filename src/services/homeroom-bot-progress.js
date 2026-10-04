@@ -79,6 +79,8 @@ const STEP_OF_STAGE = Object.freeze({
   queued: 'read',
   reading: 'read',
   question: 'read',
+  // B6: a first version's plan, waiting for its creator's Build it.
+  plan: 'plan',
   build_queued: 'plan',
   held: 'plan',
   starting: 'plan',
@@ -250,6 +252,13 @@ function stageOf(input, { now = new Date() } = {}) {
           : 'ready to build, but held back by the daily limit on questions and notes on this project',
       };
     }
+    // B6: a first version's plan, sent to its creator, waits for Build it.
+    if (row.plan_waiting_at && !row.build_waiting_at && !row.build_session_id) {
+      return {
+        stage: 'plan', since: row.plan_waiting_at, waitingOn: 'them',
+        doing: 'the plan is ready and waits for Build it',
+      };
+    }
     // Built after the turn that read it, one build per project at a time
     // (homeroom-bot.js buildLive): waiting its turn until its build starts.
     if (row.build_waiting_at && !row.build_session_id) {
@@ -366,7 +375,7 @@ async function requestRows(pool, userId) {
             run.id AS run_id, run.mode, run.verdict, run.created_at AS run_at, run.duration_ms AS run_duration_ms,
             run.cap_suppressed,
             run.build_ok, run.build_error, run.build_session_id, run.proposal_session_id AS run_proposal,
-            run.live_build_waiting_at AS build_waiting_at,
+            run.live_build_waiting_at AS build_waiting_at, run.awaiting_go_at AS plan_waiting_at,
             bs.status AS build_status, bs.created_at AS build_started_at, bs.last_activity_at AS build_last_activity,
             bs.active_turn->>'mode' AS build_turn_mode, bs.active_turn->>'startedAt' AS build_turn_at,
             spec.created_at AS spec_at,
@@ -379,7 +388,7 @@ async function requestRows(pool, userId) {
        LEFT JOIN homeroom_bot_queue q ON q.app_id = m.app_id AND q.issue_number = m.issue_number
        LEFT JOIN LATERAL (
          SELECT id, mode, verdict, created_at, duration_ms, cap_suppressed, build_ok, build_error, build_session_id,
-                proposal_session_id, live_build_waiting_at
+                proposal_session_id, live_build_waiting_at, awaiting_go_at
            FROM homeroom_bot_runs
           WHERE app_id = m.app_id AND issue_number = m.issue_number
           ORDER BY id DESC LIMIT 1
@@ -541,6 +550,8 @@ async function projectsBusy(pool, rows) {
         LEFT JOIN chat_sessions bs ON bs.id = r.build_session_id
        WHERE r.app_id = ANY($1::int[]) AND r.mode = 'live' AND r.verdict = 'ready' AND r.build_ok IS NULL
          AND r.cap_suppressed IS NULL AND r.proposal_session_id IS NULL AND r.live_build_waiting_at IS NULL
+         -- B6: a plan waiting for its Build it holds nothing up.
+         AND r.awaiting_go_at IS NULL
          AND r.created_at > NOW() - make_interval(hours => $3)
          AND (bs.id IS NULL OR bs.status = 'active')
        ORDER BY r.app_id, r.issue_number, r.id DESC)`,
@@ -607,10 +618,14 @@ async function botWorkByIssue(pool, appId) {
   // B8: somebody asked the bot to build it (its page, their chat, Ask for a
   // change) and it waits for a free builder: it is the bot's already, and
   // nobody starts it a second time.
+  // B6: and a first version's plan, waiting for its creator's Build it.
   const { rows: asked } = await pool.query(
     `SELECT issue_number, enqueued_at FROM homeroom_bot_queue
       WHERE app_id = $1 AND priority = 0 AND started_at IS NULL
-        AND (held_until IS NULL OR held_until <= NOW())`,
+        AND (held_until IS NULL OR held_until <= NOW())
+     UNION ALL
+     SELECT issue_number, awaiting_go_at FROM homeroom_bot_runs
+      WHERE app_id = $1 AND awaiting_go_at IS NOT NULL AND build_ok IS NULL`,
     [id],
   );
   for (const q of asked) {

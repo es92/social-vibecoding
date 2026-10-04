@@ -548,6 +548,7 @@ export async function loadThread(conversationId: number, force = false): Promise
     if (focus) focusLoaded = focus;
     publish({ active, messages, nextBefore: page.nextBefore, nextAfter: page.nextAfter, loadingThread: false, online: true });
     upsertConversation(active);
+    applyPendingQuote();
     // A link to a reply inside a thread opens that thread beside it.
     if (focus && page.threadRootId && state.route.threadRootId !== page.threadRootId) {
       publish({ route: { ...state.route, threadRootId: page.threadRootId } });
@@ -1142,6 +1143,41 @@ export async function openBot(reference?: SharedObjectReference | null): Promise
   open(id);
   if (reference && already && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('usernode:messages-share', { detail: pendingShare }));
+  }
+}
+
+// B6: a message of the bot's to quote in the composer once its chat has
+// loaded: the App tab's Change something, under a first version's plan.
+let pendingQuote: { conversationId: number; messageId: number } | null = null;
+
+/**
+ * B6: open the chat with Homeroom bot with one of its messages quoted in the
+ * composer, as a reply to it, and the caret after it. A message not in the
+ * chat's newest page is not quoted: the chat still opens.
+ */
+export async function quoteBotMessage(conversationId?: number | null, messageId?: number | null): Promise<void> {
+  let id: number | null = validId(conversationId) ? Number(conversationId) : null;
+  if (!id) id = state.conversations.find((item) => item.homeroomBot)?.id || null;
+  if (!id) {
+    try { id = await api.openBotConversation(); } catch { id = null; }
+  }
+  pendingQuote = id && validId(messageId) ? { conversationId: id, messageId: Number(messageId) } : null;
+  open(id);
+  applyPendingQuote();
+}
+
+/** Quote the pending message once its chat is the one on screen with it loaded. */
+function applyPendingQuote(): void {
+  const wanted = pendingQuote;
+  if (!wanted || state.route.conversationId !== wanted.conversationId || state.active?.id !== wanted.conversationId) return;
+  pendingQuote = null;
+  const message = state.messages.find((item) => item.id === wanted.messageId);
+  if (!message) return;
+  setReply(scopeKey(wanted.conversationId, null), message);
+  if (typeof window !== 'undefined') {
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLTextAreaElement>('.messages-composer-input')?.focus({ preventScroll: true });
+    });
   }
 }
 
@@ -2076,6 +2112,8 @@ export const messagesController = {
   open,
   // B8: the chat with Homeroom bot (app-view.js's doors to it).
   openBot: (reference?: SharedObjectReference | null) => { void openBot(reference); },
+  // B6: the App tab's Change something, under a first version's plan.
+  quoteBotMessage: (conversationId?: number | null, messageId?: number | null) => { void quoteBotMessage(conversationId, messageId); },
   openAddress,
   openDiscussion,
   openThread,

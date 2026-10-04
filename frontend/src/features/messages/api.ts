@@ -11,6 +11,8 @@ import type {
   HomeroomBotMeta,
   HomeroomBotPastJob,
   HomeroomBotPhase,
+  HomeroomBotPlan,
+  HomeroomBotPlanQuestion,
   HomeroomBotWork,
   MessageAttachment,
   MessageReaction,
@@ -112,6 +114,26 @@ function normalizeBotActions(input: unknown): HomeroomBotAction[] {
   return out;
 }
 
+/** B6: a plan's choices, or two questions: each with two to four answers, the suggested one first. */
+function normalizePlanQuestions(input: unknown): HomeroomBotPlanQuestion[] {
+  const out: HomeroomBotPlanQuestion[] = [];
+  for (const entry of array(input)) {
+    if (out.length >= 2) break;
+    const row = record(entry);
+    const question = text(pick(row, 'question')).slice(0, 300);
+    const answers = array(pick(row, 'answers')).filter((a): a is string => typeof a === 'string' && !!a.trim()).slice(0, 4);
+    if (question && answers.length >= 2) out.push({ question, answers });
+  }
+  return out;
+}
+
+/** B6: a first version's plan, or null: at most five bullets. */
+function normalizePlan(input: unknown): HomeroomBotPlan | null {
+  const row = record(input);
+  const bullets = array(pick(row, 'bullets')).filter((b): b is string => typeof b === 'string' && !!b.trim()).slice(0, 5);
+  return bullets.length ? { bullets, questions: normalizePlanQuestions(pick(row, 'questions')) } : null;
+}
+
 /**
  * #3624: the Homeroom bot's structured part of a message (services/
  * conversations.js publicMetadata), field by field like everything else
@@ -128,6 +150,9 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
   const answers = array(pick(bot, 'answers')).filter((a): a is string => typeof a === 'string' && !!a.trim()).slice(0, 6);
   const actions = normalizeBotActions(pick(bot, 'actions'));
   const actionId = strictId(pick(bot, 'actionId'));
+  const plan = normalizePlan(pick(bot, 'plan'));
+  const questions = normalizePlanQuestions(pick(bot, 'questions'));
+  const choices = array(pick(bot, 'choices')).filter((c): c is string => typeof c === 'string').slice(0, 2);
   return {
     homeroomBot: {
       kind,
@@ -149,6 +174,13 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       askedText: optional('askedText'),
       hello: optional('hello'),
       ...(pick(bot, 'live') === true ? { live: true } : {}),
+      // B6: a plan, or two questions at once, and how its buttons went.
+      ...(plan ? { plan } : {}),
+      ...(questions.length > 1 ? { questions, lead: optional('lead') } : {}),
+      ...(pick(bot, 'replaced') === true ? { replaced: true } : {}),
+      ...(pick(bot, 'stopped') === true ? { stopped: true } : {}),
+      ...(pick(bot, 'changing') === true ? { changing: true } : {}),
+      ...(choices.length ? { choices } : {}),
     },
   };
 }
@@ -650,9 +682,10 @@ export async function setMessageSaved(
  * person it was offered to: a 409 means it was decided already (on another
  * device, say), and the message's own update shows how.
  */
-export async function decideBotAction(actionId: number, choice: string): Promise<{ label: string | null }> {
+export async function decideBotAction(actionId: number, choice: string, answers?: string[]): Promise<{ label: string | null }> {
+  // B6: Build it under a plan carries the answers tapped, in order.
   const data = record(await request<unknown>(`/api/conversations/homeroom-bot/actions/${actionId}`, {
-    method: 'POST', body: JSON.stringify({ choice }),
+    method: 'POST', body: JSON.stringify(answers ? { choice, answers } : { choice }),
   }));
   return { label: text(pick(data, 'label')) || null };
 }

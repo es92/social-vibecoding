@@ -362,6 +362,14 @@ const FIRST_VERSION_NOTE = [
   'work in both looks (not the starter\'s default palette, unless chosen on purpose), ONE signature element',
   'drawn from the app\'s subject (for example a staff or a keyboard for an ear trainer, a proofing timeline for a',
   'bread app) and a rough layout. The spec settles the details; never ask about them.',
+  // B6: the creator sees the plan before anything is built, and taps Build
+  // it or asks for changes (homeroom-bot-dm.js sendPlanCard).
+  'Its creator sees your plan before anything is built, and taps Build it or asks for changes. So with `ready`, also',
+  'give `plan`: 3 to 5 bullets, each at most 80 characters, saying in their own terms what the first version will do:',
+  'what they will see and can do, with no file names, code, colours or jargon. And give `choices`: at most 2 decisions',
+  'you would otherwise make yourself that change what they will see or do, each a plain question with 2 to 4 short',
+  '`answers`, the one you suggest first. They can tap another; one they leave goes with yours. Only a choice they would',
+  'care about, never the look or the theme. Often there are none: then give `choices` as an empty list.',
 ].join('\n');
 
 let timer = null;
@@ -979,6 +987,47 @@ function suggestedAnswers(raw, fallback = null) {
   return out;
 }
 
+// B6: a plan its person sees before anything is built: at most this many
+// bullets, each at most this long (the prompt asks for 80), and at most two
+// questions, each with two to four answers (the suggested one first).
+const MAX_PLAN_BULLETS = 5;
+const PLAN_BULLET_MAX = 120;
+const MAX_PLAN_QUESTIONS = 2;
+const PLAN_QUESTION_MAX = 300;
+
+/** Pure (B6): a plan's bullets, plain one-liners, from what the read returned. */
+function planBullets(raw) {
+  const out = [];
+  for (const value of Array.isArray(raw) ? raw : []) {
+    if (typeof value !== 'string') continue;
+    const text = value.replace(/\s+/g, ' ').replace(/^[-*•]\s*/, '').trim();
+    if (!text) continue;
+    out.push(text.length > PLAN_BULLET_MAX ? `${text.slice(0, PLAN_BULLET_MAX - 1).trimEnd()}…` : text);
+    if (out.length >= MAX_PLAN_BULLETS) break;
+  }
+  return out;
+}
+
+/** Pure (B6): one question a person answers by tapping, or null: a question and two answers at least. */
+function planQuestion(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const question = String(raw.question || '').replace(/\s+/g, ' ').trim();
+  const answers = suggestedAnswers(raw.answers, raw.default);
+  if (!question || question.length > PLAN_QUESTION_MAX || answers.length < 2) return null;
+  return { question, answers };
+}
+
+/** Pure (B6): the questions of a plan, at most two. */
+function planQuestions(raw) {
+  const out = [];
+  for (const value of Array.isArray(raw) ? raw : []) {
+    const q = planQuestion(value);
+    if (q && !out.some((o) => o.question.toLowerCase() === q.question.toLowerCase())) out.push(q);
+    if (out.length >= MAX_PLAN_QUESTIONS) break;
+  }
+  return out;
+}
+
 function parseVerdict(text) {
   const raw = String(text || '');
   const candidates = [];
@@ -1017,6 +1066,20 @@ function parseVerdict(text) {
       }
     }
     const questionDefault = verdict === 'question' ? clip(obj.default, 1000) : null;
+    const questionAnswers = verdict === 'question' ? suggestedAnswers(obj.answers, questionDefault) : null;
+    // B6: a ready verdict's plan (a first version's, for its creator to see
+    // before it is built), or a question verdict's second question.
+    let plan = null;
+    if (verdict === 'ready') {
+      const bullets = planBullets(obj.plan);
+      if (bullets.length) plan = { bullets, questions: planQuestions(obj.choices) };
+    } else if (verdict === 'question') {
+      const first = planQuestion({ question: clip(obj.question, PLAN_QUESTION_MAX), answers: questionAnswers });
+      const second = planQuestion(obj.second_question);
+      if (first && second && second.question.toLowerCase() !== first.question.toLowerCase()) {
+        plan = { bullets: [], questions: [first, second] };
+      }
+    }
     return {
       verdict,
       determined: typeof obj.determined === 'boolean' ? obj.determined : null,
@@ -1024,7 +1087,8 @@ function parseVerdict(text) {
       question: verdict === 'question' ? clip(obj.question, 2000) : null,
       questionDefault,
       // #3624: the replies a person can tap to answer, the default first.
-      questionAnswers: verdict === 'question' ? suggestedAnswers(obj.answers, questionDefault) : null,
+      questionAnswers,
+      plan,
       buildNote: verdict === 'ready' ? noteWithAssumptions(clip(obj.build_note), assumptions) : null,
       assumptions: verdict === 'ready' ? assumptions : [],
       // `person` says which criterion fails; `empty` says what a person
@@ -1591,13 +1655,50 @@ function triageClosing(issueNumber) {
  * (prompts.runtimeReadsImages); a prompt rebuilt without it is the text-only
  * one every triage ran before it existed.
  */
-function triagePromptFor({ seed, issueNumber, firstVersion = false, readsImages = false, decider = null }) {
+function triagePromptFor({ seed, issueNumber, firstVersion = false, readsImages = false, decider = null, planChange = null }) {
   return [
     seed, live.screenshotNote(seed).join('\n').trim(), triagePrompt(),
     firstVersion ? FIRST_VERSION_NOTE : null,
+    firstVersion ? planChangeNote(planChange) : null,
     deciderNote(decider),
     triageReference({ readsImages }), triageClosing(issueNumber),
   ].filter(Boolean).join('\n\n');
+}
+
+/**
+ * B6: what a first version's creator asked its plan changed with (Change
+ * something, homeroom-bot-dm.js changePlan), every time, oldest first, and
+ * the newest plan they were shown: { bullets, changes }, or null when they
+ * asked for none. Their words are kept on the plan's run, never posted.
+ */
+async function planChangesFor(pool, appId, issueNumber) {
+  const { rows } = await pool.query(
+    `SELECT plan, plan_change FROM homeroom_bot_runs
+      WHERE app_id = $1 AND issue_number = $2 AND mode = 'live' AND plan IS NOT NULL
+      ORDER BY id`,
+    [appId, issueNumber],
+  );
+  const changes = rows.map((r) => String(r.plan_change || '').trim()).filter(Boolean);
+  if (!changes.length) return null;
+  const shown = [...rows].reverse().find((r) => Array.isArray(r.plan?.bullets) && r.plan.bullets.length);
+  return { bullets: shown ? shown.plan.bullets : [], changes };
+}
+
+/** Pure (B6): the triage's note of the changes a first version's creator asked for. */
+function planChangeNote(planChange) {
+  if (!planChange?.changes?.length) return null;
+  const who = planChange.requester ? `@${planChange.requester}` : 'Its creator';
+  return [
+    '==== THE CREATOR\'S CHANGES TO YOUR PLAN ====',
+    '',
+    `${who} was shown your plan for this first version and asked for changes, in a private chat with you. Their words`,
+    'below are what they want from the app, newest last: plan it again with them, within every rule above, keep what',
+    'they did not ask to change, and give a new `plan` and `choices`.',
+    '',
+    ...(planChange.bullets?.length ? ['The plan they were shown:', ...planChange.bullets.map((b) => `- ${b}`), ''] : []),
+    'What they asked:',
+    ...planChange.changes.map((c) => `- "${String(c).replace(/\s+/g, ' ').slice(0, 1500)}"`),
+  ].join('\n');
 }
 
 /**
@@ -1771,6 +1872,13 @@ async function insertRun(pool, run) {
       'UPDATE homeroom_bot_runs SET question_answers = $2 WHERE id = $1',
       [id, JSON.stringify(run.questionAnswers)],
     ).catch((err) => log.warn('homeroom-bot', 'Could not record a question\'s answers', { runId: id, err: err.message }));
+  }
+  // B6: its plan, or its two questions, the same way.
+  if (id && run.plan && typeof run.plan === 'object') {
+    await pool.query(
+      'UPDATE homeroom_bot_runs SET plan = $2 WHERE id = $1',
+      [id, JSON.stringify(run.plan)],
+    ).catch((err) => log.warn('homeroom-bot', 'Could not record a plan', { runId: id, err: err.message }));
   }
   return id;
 }
@@ -2307,6 +2415,10 @@ async function runTriage(pool, config, { bot, app, item, mode, settings = null, 
     if (item.reason !== RESTART_REASON && item.reason !== APP_AGAIN_REASON) {
       await activity().startCard(pool, { app, issueNumber, requester, bot, jobKey: item.id, settings, deps: { dm: deps.dm } });
     }
+    // B6: a plan still waiting for Build it is not what the bot thinks once
+    // it reads the request again. Its buttons go now, so a tap while this
+    // look runs builds nothing; this look sends a plan of its own.
+    await retireWaitingPlans(pool, { appId: app.id, issueNumber, why: 'the request was read again', deps: { dm: deps.dm } });
   }
   const seedReadAt = new Date().toISOString();
   const [{ comments = [] } = {}, thread, botUsername] = await Promise.all([
@@ -2326,7 +2438,18 @@ async function runTriage(pool, config, { bot, app, item, mode, settings = null, 
       return null;
     })
     : null;
-  const promptInput = { seed, issueNumber, firstVersion: !!requester?.firstVersion, decider };
+  // B6: what its creator asked a first version's plan changed with, in a
+  // private chat with the bot, so this look plans it again with that.
+  const planChange = liveMode && requester?.firstVersion
+    ? await planChangesFor(pool, app.id, issueNumber).catch((err) => {
+      log.warn('homeroom-bot', 'Could not read the changes asked to a plan', { app: app.slug, issueNumber, err: err.message });
+      return null;
+    })
+    : null;
+  const promptInput = {
+    seed, issueNumber, firstVersion: !!requester?.firstVersion, decider,
+    ...(planChange ? { planChange: { ...planChange, requester: requester.username } } : {}),
+  };
   // The prompt as it stands before the turn resolves its model. The one sent
   // is rendered at dispatch, for what that model can see, and replaces this
   // in the snapshot (below).
@@ -2622,6 +2745,7 @@ async function runTriage(pool, config, { bot, app, item, mode, settings = null, 
     appId: app.id, issueNumber, sessionId: session.id, mode: runMode,
     verdict: parsed.verdict, determined: parsed.determined, missingFact: parsed.missingFact,
     question: parsed.question, questionDefault: parsed.questionDefault, questionAnswers: parsed.questionAnswers,
+    plan: parsed.plan,
     buildNote: parsed.buildNote, reason: parsed.reason, capSuppressed,
     threadSeenAt: item.thread_seen_at || null, model, costUsd,
     inputTokens: usage.inputTokens, outputTokens: usage.outputTokens,
@@ -4699,21 +4823,32 @@ async function actOnVerdict({
     // #3624: `dm` carries the question to the requester's DM too, with the
     // answers they can tap (homeroom-bot-dm.js).
     await say('question', live.questionText(parsed), {
-      dm: { question: parsed.question, answers: parsed.questionAnswers || [] },
+      dm: {
+        question: parsed.question, answers: parsed.questionAnswers || [],
+        // B6: a read that asks two questions asks both at once.
+        ...(parsed.plan?.questions?.length > 1 ? { questions: parsed.plan.questions } : {}),
+      },
     });
   } else if (parsed.verdict === 'person') {
     await say('person', live.personText(parsed), { dm: { reason: parsed.reason } });
   } else if (parsed.verdict === 'empty') {
     await say('empty', live.emptyText(parsed), { dm: { reason: parsed.reason } });
   } else if (parsed.verdict === 'ready') {
-    // Built after this turn, in a slot of its own (buildLive, started by
-    // the lane), not inside it: the build held the project's one slot for
-    // the whole of its run (up to 50 minutes, 110 on the platform's own
-    // repository), and every other request on the project waited unread
-    // behind it, with nothing said. Recorded on the run, so a restart
-    // between the verdict and the build loses nothing.
-    await queueLiveBuild(pool, { runId, appId: app.id });
-    acted = 'build_queued';
+    // B6: a first version waits for its creator's Build it, under the plan
+    // they are sent first. When the plan could not reach them, it is built
+    // as it was before plans.
+    if (firstVersion && await awaitGo(pool, { runId, app, issueNumber, parsed, bot, deps })) {
+      acted = 'awaiting_go';
+    } else {
+      // Built after this turn, in a slot of its own (buildLive, started by
+      // the lane), not inside it: the build held the project's one slot for
+      // the whole of its run (up to 50 minutes, 110 on the platform's own
+      // repository), and every other request on the project waited unread
+      // behind it, with nothing said. Recorded on the run, so a restart
+      // between the verdict and the build loses nothing.
+      await queueLiveBuild(pool, { runId, appId: app.id });
+      acted = 'build_queued';
+    }
   }
   await live.advanceSeen({
     pool, github, threadContext: deps.threadContext, app, repo, issueNumber, runId,
@@ -4740,6 +4875,155 @@ async function queueLiveBuild(pool, { runId, appId }) {
   wake({ appId });
 }
 
+// ── B6: a first version's plan, before it is built ──────────────────────
+//
+// A ready verdict on a project's first version is not built at once: its
+// creator is sent the plan the read wrote (3 to 5 plain bullets, up to two
+// choices with the suggested answer first) with Build it and Change
+// something (homeroom-bot-dm.js sendPlanCard), and its run waits with
+// `awaiting_go_at`. Build it (goAhead) sets live_build_waiting_at, as a
+// ready verdict does, with the choices written into the build note.
+// Change something (dm.changePlan) and a new look at the request
+// (retireWaitingPlans) end the wait; so does a week with no tap
+// (settleStalePlans). A waiting plan is not a build: a new look at its
+// request replaces it with a new plan, and nothing is built twice.
+
+// Days a plan waits for Build it. The same week a live build is looked for.
+const PLAN_WAIT_DAYS = 7;
+
+/** Pure (B6): the plan a first version is shown: the read's, else its assumptions as bullets. */
+function planFor(parsed) {
+  if (parsed?.plan?.bullets?.length) {
+    return { bullets: parsed.plan.bullets, questions: Array.isArray(parsed.plan.questions) ? parsed.plan.questions : [] };
+  }
+  const bullets = planBullets(parsed?.assumptions || []);
+  return { bullets: bullets.length ? bullets : ['A first version of what you described, kept to its core'], questions: [] };
+}
+
+/**
+ * Pure (B6): the answer each of a plan's questions goes with: the one
+ * tapped, when it is one of its answers, else the suggested one (the first).
+ */
+function choicesFrom(questions, answers = []) {
+  return (Array.isArray(questions) ? questions : []).map((q, i) => {
+    const offered = Array.isArray(q?.answers) ? q.answers : [];
+    const tapped = Array.isArray(answers) && typeof answers[i] === 'string' ? answers[i] : null;
+    const answer = offered.includes(tapped) ? tapped : offered[0];
+    return { question: String(q?.question || ''), answer: answer || '', suggested: answer === offered[0] };
+  }).filter((c) => c.question && c.answer);
+}
+
+/**
+ * A first version's ready verdict waits for its creator's Build it, under the
+ * plan sent to them. Resolves true when it waits, false when the plan could
+ * not be shown to them (it is then built at once, as before plans). Never
+ * throws.
+ */
+async function awaitGo(pool, { runId, app, issueNumber, parsed, bot, deps = {} }) {
+  const plan = planFor(parsed);
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE homeroom_bot_runs SET awaiting_go_at = NOW(), plan = $2
+        WHERE id = $1 AND build_ok IS NULL AND build_session_id IS NULL AND live_build_waiting_at IS NULL`,
+      [runId, JSON.stringify(plan)],
+    );
+    if (!rowCount) return false;
+    const dm = deps.dm || require('./homeroom-bot-dm');
+    const sent = await dm.sendPlanCard(pool, { app, issueNumber, runId, plan, bot, ws: deps.ws || null });
+    if (sent?.messageId) {
+      log.info('homeroom-bot', 'A first version waits for its creator to check the plan', { app: app.slug, issueNumber, runId });
+      return true;
+    }
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not send a first version\'s plan (building it now)', { app: app.slug, issueNumber, runId, err: err.message });
+  }
+  await pool.query('UPDATE homeroom_bot_runs SET awaiting_go_at = NULL WHERE id = $1', [runId]).catch(() => {});
+  return false;
+}
+
+/**
+ * B6: Build it, under a first version's plan. The answers tapped (any left
+ * go with the suggested one) are written into the build note the build
+ * reads, and the build waits its turn as any ready verdict's does. Once: a
+ * plan already built, replaced or stopped is `gone`. Resolves { ok: true,
+ * appId, issueNumber, chosen } or { ok: false, why }.
+ */
+async function goAhead(pool, { runId, answers = [] }) {
+  const { rows: [run] } = await pool.query(
+    `SELECT plan FROM homeroom_bot_runs
+      WHERE id = $1 AND awaiting_go_at IS NOT NULL AND build_ok IS NULL AND build_session_id IS NULL`,
+    [runId],
+  );
+  if (!run) return { ok: false, why: 'gone' };
+  const chosen = choicesFrom(run.plan?.questions, answers);
+  const note = chosen.length
+    ? `\n\nThe creator chose, from the plan they were shown:\n${chosen.map((c) => `- ${c.question} ${c.answer}`).join('\n')}`
+    : '';
+  const { rows: [went] } = await pool.query(
+    `UPDATE homeroom_bot_runs
+        SET awaiting_go_at = NULL, live_build_waiting_at = NOW(), build_note = CONCAT(build_note, $2::text),
+            plan = COALESCE(plan, '{}'::jsonb) || jsonb_build_object('chosen', $3::jsonb)
+      WHERE id = $1 AND awaiting_go_at IS NOT NULL AND build_ok IS NULL AND build_session_id IS NULL
+      RETURNING app_id, issue_number`,
+    [runId, note, JSON.stringify(chosen)],
+  );
+  if (!went) return { ok: false, why: 'gone' };
+  wake({ appId: Number(went.app_id) });
+  log.info('homeroom-bot', 'Build it: a first version\'s plan goes ahead', {
+    appId: Number(went.app_id), issueNumber: Number(went.issue_number), runId, choices: chosen.length,
+  });
+  return { ok: true, appId: Number(went.app_id), issueNumber: Number(went.issue_number), chosen };
+}
+
+/**
+ * B6: end the wait of any plan on a request that still waits for Build it,
+ * as `why` (a new look at the request, a merge): recorded as not built,
+ * and its card's buttons go. Resolves the runs ended. Never throws.
+ */
+async function retireWaitingPlans(pool, { appId, issueNumber = null, issues = null, why, deps = {} }) {
+  const numbers = issues || [issueNumber];
+  let rows = [];
+  try {
+    ({ rows } = await pool.query(
+      `UPDATE homeroom_bot_runs SET awaiting_go_at = NULL, build_ok = FALSE, build_error = $3
+        WHERE app_id = $1 AND issue_number = ANY($2::int[]) AND awaiting_go_at IS NOT NULL
+          AND build_ok IS NULL AND build_session_id IS NULL
+        RETURNING id`,
+      [appId, numbers.map(Number), `skipped: ${why}`],
+    ));
+    if (rows.length) await (deps.dm || require('./homeroom-bot-dm')).closePlanCards(pool, rows.map((r) => Number(r.id)));
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not end a waiting plan', { appId, issueNumber, err: err.message });
+  }
+  return rows.map((r) => Number(r.id));
+}
+
+/**
+ * B6: a plan nobody tapped Build it under for PLAN_WAIT_DAYS stops waiting.
+ * Its card keeps its bullets and says so; a reply to it brings a new plan.
+ * Nothing notifies. Resolves how many stopped. Never throws.
+ */
+async function settleStalePlans(pool, deps = {}) {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE homeroom_bot_runs SET awaiting_go_at = NULL, build_ok = FALSE,
+              build_error = 'skipped: nobody tapped Build it within a week'
+        WHERE awaiting_go_at IS NOT NULL AND awaiting_go_at < NOW() - make_interval(days => $1)
+          AND build_ok IS NULL AND build_session_id IS NULL
+        RETURNING id, app_id, issue_number`,
+      [PLAN_WAIT_DAYS],
+    );
+    if (rows.length) {
+      await (deps.dm || require('./homeroom-bot-dm')).closePlanCards(pool, rows.map((r) => Number(r.id)), { stopped: true });
+      log.info('homeroom-bot', 'Plans nobody tapped Build it under stopped waiting', { runs: rows.map((r) => Number(r.id)) });
+    }
+    return rows.length;
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not stop the plans nobody answered', { err: err.message });
+    return 0;
+  }
+}
+
 /**
  * Build a live 'ready' verdict and say what came of it on the issue: the
  * spec as it is written, then the proposal, the request found impossible,
@@ -4758,7 +5042,7 @@ async function buildLive({
     notifications: deps.notifications || null, postedAt,
   });
   // The spec is posted on the issue the moment it is written, and the
-  // build goes straight on: it is there for reference, not for approval.
+  // build goes straight on: it is there to read, not to approve.
   const onSpec = async ({ sessionId, version, specMd }) => {
     if (version) await live.shareSpecVersion(pool, sessionId, version);
     await say('spec', live.specCommentText(specMd), {
@@ -5276,6 +5560,8 @@ async function noteRequestMerged(pool, session, deps = {}) {
         RETURNING r.id, r.build_session_id`,
       [appId, issues, why, Number(merged.id)],
     );
+    // B6: and a first version's plan still waiting for Build it.
+    out.skipped += (await retireWaitingPlans(pool, { appId, issues, why: why.replace(/^skipped:\s*/, ''), deps })).length;
     const worker = deps.worker || require('./worker');
     for (const run of settled) {
       if (!run.build_session_id) { out.skipped += 1; continue; }
@@ -5751,6 +6037,9 @@ async function runOnce(pool, config, deps = {}) {
       lastLiveSweepAt = now;
       const settledLive = await settleAbandonedLiveBuilds(pool, settings, deps);
       if (settledLive) out.liveBuildsSettled = settledLive;
+      // B6: and a plan nobody tapped Build it under for a week stops waiting.
+      const stalePlans = await settleStalePlans(pool, { dm: deps.dm });
+      if (stalePlans) out.plansStopped = stalePlans;
     }
 
     // Inside a platform-fault backoff nothing is dispatched (#3122). A wake
@@ -6642,6 +6931,16 @@ module.exports = {
   CLOSED_WHILE_BUILDING,
   noteRequestMerged,
   queueLiveBuild,
+  // B6: a first version's plan, before it is built.
+  PLAN_WAIT_DAYS,
+  planFor,
+  choicesFrom,
+  awaitGo,
+  goAhead,
+  retireWaitingPlans,
+  settleStalePlans,
+  planChangesFor,
+  planChangeNote,
   liveBuildCandidates,
   pickLiveBuilds,
   holdLiveBuildDuringRecovery,

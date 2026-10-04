@@ -630,7 +630,8 @@ test('the Messages client keeps the bot\'s mark and its question, which it build
 
 test('the DM screen draws the bot\'s question and badge, and the reply bar names where a reply goes', () => {
   const row = read('frontend/src/features/messages/message-row.tsx');
-  assert.match(row, /message\.sender\.bot && \(message\.metadata\?\.homeroomBot\?\.question \|\| message\.metadata\?\.homeroomBot\?\.actions\?\.length\)\s*\? <BotQuestion/);
+  // B6: two questions at once draw their own card (./bot-plan.tsx) instead.
+  assert.match(row, /message\.sender\.bot && \(message\.metadata\?\.homeroomBot\?\.question \|\| message\.metadata\?\.homeroomBot\?\.actions\?\.length\)\s*&& !isTwoQuestions\(message\)\s*\? <BotQuestion/);
   assert.match(row, /messages-bot-badge/);
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.match(composer, /Your reply is posted on \$\{requestPlace\(reply\.metadata\.homeroomBot\)\}’s public discussion\./);

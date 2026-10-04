@@ -288,6 +288,10 @@ function systemPrompt({ username, perPerson = 2, today = new Date(), platform = 
     '  are on (say it, for example "step 4 of 7: building it, 6 minutes so far"), what is happening, since when,',
     '  and who it waits on. For the whole list of their requests, call my_work. For ANY question about their',
     '  work, answer only from what these return. Use request_detail for the whole story of one request.',
+    // B6: a first version's plan is theirs to build or change, by its card.
+    '- A new project\'s plan waits for them before you build its first version (progress says so). They start it',
+    '  with Build it under the plan, or change it by replying to the plan with what to change; say so. You cannot',
+    '  press Build it for them.',
     '- When their message answers a question you asked them, pass it on (answer_question). Their message is posted',
     '  word for word on the request\'s public discussion, where the group can see it; say so.',
     '- Change one of your own proposals that is up for a vote when they clearly ask you to (revise_proposal). Their',
@@ -595,7 +599,10 @@ function statusOf(row) {
     case 'empty': return 'nothing to build in it yet';
     case 'failed': return 'your last look at it failed';
     case 'ready':
+      // B6: a first version's plan waits for them.
+      if (row.plan_waiting_at && row.build_ok == null) return 'its plan is waiting for them to tap Build it, or to reply with changes';
       if (row.build_ok !== false) return 'ready; the build is next';
+      if (/^skipped: nobody tapped Build it/.test(String(row.build_error || ''))) return 'its plan waited a week with no Build it; a reply to the plan picks it up again';
       // WP1: a build that was not needed (skipped) stopped; it did not fail.
       return /^skipped:/.test(String(row.build_error || '')) ? 'you stopped before building it: it was not needed' : 'you could not build it';
     case 'question': return 'asked a question, answered; waiting to look again';
@@ -651,14 +658,14 @@ async function myWork(pool, { userId, settings, config = null, deps = {} }) {
      )
      SELECT m.app_id, a.slug, a.name, m.issue_number, m.issue_title, m.first_version, m.recorded,
             q.id AS queue_id, q.started_at, q.enqueued_at,
-            run.verdict, run.created_at AS run_at, run.build_ok, run.build_error,
+            run.verdict, run.created_at AS run_at, run.build_ok, run.build_error, run.awaiting_go_at AS plan_waiting_at,
             prop.proposal_session_id, cs.status AS proposal_status,
             oq.message_id AS open_question
        FROM mine m
        JOIN apps a ON a.id = m.app_id
        LEFT JOIN homeroom_bot_queue q ON q.app_id = m.app_id AND q.issue_number = m.issue_number
        LEFT JOIN LATERAL (
-         SELECT verdict, created_at, build_ok, build_error FROM homeroom_bot_runs
+         SELECT verdict, created_at, build_ok, build_error, awaiting_go_at FROM homeroom_bot_runs
           WHERE app_id = m.app_id AND issue_number = m.issue_number AND mode = 'live'
           ORDER BY id DESC LIMIT 1
        ) run ON TRUE
@@ -2105,6 +2112,9 @@ async function decideTyped(pool, config, { bot, user, settings, conversationId, 
        JOIN conversation_messages m ON m.id = a.message_id AND m.deleted_at IS NULL
       WHERE a.user_id = $1 AND a.conversation_id = $2 AND a.status = 'open'
         AND a.created_at > NOW() - make_interval(mins => $3)
+        -- B6: a plan is built by its own button (or a reply to it), never by
+        -- a "yes" typed under some other offer's words.
+        AND a.kind <> 'build_plan'
       ORDER BY a.id DESC LIMIT 4`,
     [user.id, conversationId, OFFER_TYPED_MINUTES],
   );
@@ -2146,7 +2156,8 @@ async function decideOffer(pool, config, { bot, user, settings, message, deps = 
     );
     action = rows[0];
   }
-  if (!action) return null;
+  // B6: a reply to a plan is the plan's (homeroom-bot-dm.js changePlan).
+  if (!action || action.kind === 'build_plan') return null;
   const [yesWord, noWord] = OFFER_ANSWERS[action.kind] || OFFER_ANSWERS.file_request;
   const yes = typed ? typed.yes : said(message.content, yesWord);
   const no = typed ? !typed.yes : said(message.content, noWord);
@@ -2164,12 +2175,20 @@ async function decideOffer(pool, config, { bot, user, settings, message, deps = 
  * (setQuestionState). Resolves { ok: true, choice, label } or
  * { ok: false, status, error }.
  */
-async function decideOfferTap(pool, config, { user, actionId, choice, deps = {} }) {
-  if (choice !== 'yes' && choice !== 'no') return { ok: false, status: 400, error: 'choice must be yes or no' };
+async function decideOfferTap(pool, config, { user, actionId, choice, answers = [], deps = {} }) {
+  if (choice !== 'yes' && choice !== 'no' && choice !== 'build') {
+    return { ok: false, status: 400, error: 'choice must be yes, no or build' };
+  }
   const id = Number(actionId);
   if (!user?.id || !Number.isInteger(id) || id <= 0) return { ok: false, status: 404, error: 'No such choice' };
   const { rows } = await pool.query('SELECT * FROM homeroom_bot_dm_actions WHERE id = $1 AND user_id = $2', [id, user.id]);
   const action = rows[0];
+  // B6: Build it under a first version's plan, with the choices tapped.
+  if (action?.kind === 'build_plan') {
+    if (action.status !== 'open') return { ok: false, status: 409, error: 'already_decided', decided: action.status };
+    return dmModule(deps).decidePlanTap(pool, { user, action, choice, answers, deps });
+  }
+  if (choice === 'build') return { ok: false, status: 400, error: 'choice must be yes or no' };
   if (!action || !OFFER_ANSWERS[action.kind]) return { ok: false, status: 404, error: 'No such choice' };
   if (action.status !== 'open') return { ok: false, status: 409, error: 'already_decided', decided: action.status };
   const dm = dmModule(deps);

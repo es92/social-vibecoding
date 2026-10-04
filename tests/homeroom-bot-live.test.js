@@ -343,10 +343,17 @@ test('the answers tag whoever filed the issue and took part; the notice and a he
   assert.ok(!live.tagsPoster('held_proposals_per_app'));
 });
 
-test('what it says: the question with its default, notes that never close, a linked proposal', () => {
+test('what it says: the question, notes that never close, a linked proposal', () => {
   const q = live.questionText({ question: 'Which feed should it refresh?', questionDefault: 'All of them' });
   assert.match(q, /Which feed should it refresh\?/);
-  assert.match(q, /If nobody answers, it would go with: All of them/);
+  // B6 (E5): nothing applies a default to an unanswered question, so nothing says one would.
+  assert.ok(!/If nobody answers/.test(q));
+  // B6: and two questions are asked at once, numbered.
+  const two = live.questionText({
+    question: 'What time?',
+    plan: { bullets: [], questions: [{ question: 'What time?', answers: ['9 AM', '8 AM'] }, { question: 'How?', answers: ['In the app', 'Phone alert'] }] },
+  });
+  assert.match(two, /^Homeroom bot has two questions before it can build this:\n\n1\. What time\?\n2\. How\?\n\n/);
   assert.match(q, /Reply here \(or on the GitHub issue\) and it will look again\./);
   assert.match(live.personText({ reason: 'It changes who can see feeds.' }), /a person needs to decide this one: It changes who can see feeds\./);
   const empty = live.emptyText({ reason: 'The body is a placeholder.' });

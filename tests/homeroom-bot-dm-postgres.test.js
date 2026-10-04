@@ -580,10 +580,19 @@ test('the Homeroom bot DM against the full PostgreSQL schema', { timeout: 180000
       const messages = page.messages || page;
       // #3624 stage 2: a question, and a request it offers to file. #3707:
       // the offer answers the viewer's ask, between them, and quotes it.
-      // #3736: then two activity cards (tests/homeroom-bot-activity-postgres.test.js).
-      assert.equal(messages.length, 5, 'one question, one ask, one offer and two cards, not one per visit');
-      const [question, ask, offer, ...cards] = [...messages].sort((a, b) => a.id - b.id);
+      // B6: a new project's plan and a request with two questions. #3736:
+      // then two activity cards (tests/homeroom-bot-activity-postgres.test.js).
+      assert.equal(messages.length, 7, 'one question, one ask, one offer, a plan, two questions and two cards, not one per visit');
+      const [question, ask, offer, plan, two, ...cards] = [...messages].sort((a, b) => a.id - b.id);
       assert.deepEqual(cards.map((m) => m.metadata.homeroomBot.kind), ['activity', 'activity']);
+      assert.equal(plan.metadata.homeroomBot.kind, 'plan');
+      assert.equal(plan.metadata.homeroomBot.status, 'open');
+      assert.equal(plan.metadata.homeroomBot.plan.bullets.length, 3);
+      assert.deepEqual(plan.metadata.homeroomBot.plan.questions[0].answers, ['In the app', 'Phone alert']);
+      assert.match(plan.content, /^Here's my plan for \*\*Staging demo plants\*\*:/);
+      assert.equal(two.metadata.homeroomBot.kind, 'question');
+      assert.equal(two.metadata.homeroomBot.questions.length, 2);
+      assert.match(two.metadata.homeroomBot.lead, /I have two questions before I build this:$/);
       assert.equal(question.metadata.homeroomBot.kind, 'question');
       assert.equal(question.metadata.homeroomBot.status, 'open');
       assert.deepEqual(question.metadata.homeroomBot.answers, ['Newest first', 'Oldest first', 'Let me pick each time']);

@@ -542,8 +542,8 @@ function isStagingMockIssueNumber(number) {
 // a short spec here is how the request page could pass every check and
 // still show the raw markers on every real request.
 const MOCK_BOT_SPEC_COMMENT = [
-  '[Mock] Homeroom bot wrote a spec for this request and is building it now. It is here for reference: '
-    + 'nobody needs to approve it, and the proposal will be linked here when it is up.',
+  '[Mock] Homeroom bot wrote a spec for this request and is building it now. The change will be linked here '
+    + 'when it\'s ready to try.',
   '',
   '<details><summary>The spec</summary>',
   '',

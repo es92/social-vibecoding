@@ -185,8 +185,11 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
   // (services/homeroom-bot-mayor.js decideOfferTap). It used to be the
   // button's label sent as a message from them, which the server read back.
   //
-  //   POST /api/conversations/homeroom-bot/actions/:actionId  { choice }
-  //   → 200 { ok, choice, label } | 409 { error: 'already_decided' } | 404
+  //   POST /api/conversations/homeroom-bot/actions/:actionId  { choice, answers? }
+  //   → 200 { ok, choice, label } | 409 { error: 'already_decided' | 'plan_gone' } | 404
+  //
+  // B6: `build` under a first version's plan, with `answers` (the choices
+  // tapped, in order), from the DM's card or the App tab's.
   //
   // A browser's own tap only: same-origin, and on no connector's list
   // (services/cli-api-policy.js is fail-closed), so nothing but the person
@@ -195,10 +198,14 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
     try {
       const actionId = Number(req.params.actionId);
       const choice = typeof req.body?.choice === 'string' ? req.body.choice : null;
+      // B6: Build it under a plan carries the answers tapped, in order.
+      const answers = Array.isArray(req.body?.answers)
+        ? req.body.answers.slice(0, 2).map((a) => (typeof a === 'string' ? a.slice(0, 200) : null))
+        : [];
       if (!Number.isInteger(actionId) || actionId <= 0) return res.status(404).json({ error: 'No such choice' });
       // The staging demo's offers are fixtures: there is nothing to decide.
       if (isDemo(req)) return res.json({ ok: true, choice, demo: true });
-      const out = await require('../services/homeroom-bot-mayor').decideOfferTap(pool, config, { user: req.user, actionId, choice });
+      const out = await require('../services/homeroom-bot-mayor').decideOfferTap(pool, config, { user: req.user, actionId, choice, answers });
       if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
       return res.json(out);
     } catch (err) {

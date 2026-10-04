@@ -2827,7 +2827,7 @@ const AppView = {
   // the shot runs against. Nothing is behind it: the record has no address
   // and is not the routed app, so "Show the starter for now" frames nothing,
   // and the chat button opens Messages.
-  showFirstVersionShot() {
+  showFirstVersionShot(withPlan = false) {
     AppView.appData = {
       slug: 'staging-demo-first-version',
       name: 'Plant Pal',
@@ -2835,7 +2835,21 @@ const AppView = {
       status: 'running',
       url: null,
       self_hosted: false,
-      first_version: {
+      first_version: withPlan ? {
+        // B6: its plan waits for Build it. A shot: the action id stands for
+        // no plan, so a tap here decides nothing.
+        building: true, mine: true, step: 3, of: 7, stepName: 'Write a plan',
+        creator: null, ready: false, question: false, conversationId: null,
+        plan: {
+          bullets: [
+            'A list of your plants with a photo and how often each needs water',
+            'A Today view that shows which plants need watering now',
+            'Tap a plant to mark it watered, and its next date moves on by itself',
+          ],
+          questions: [{ question: 'How should it remind you?', answers: ['In the app', 'Phone alert'] }],
+          actionId: 990002, messageId: null, conversationId: null,
+        },
+      } : {
         building: true, mine: true, step: 4, of: 7, stepName: 'Build it',
         creator: null, ready: false, question: false, conversationId: null,
       },
@@ -2960,7 +2974,13 @@ const AppView = {
     if (Number.isInteger(fv.step) && Number.isInteger(fv.of) && fv.stepName) {
       lines.push(`Step ${fv.step} of ${fv.of}: ${fv.stepName}`);
     }
-    if (mine && fv.question) lines.push('Homeroom bot has a question for you.');
+    // B6: the plan it waits on, with Build it, in place of the chat's button
+    // (Change something goes to that chat). The step line says the rest.
+    const plan = mine && fv.plan && Array.isArray(fv.plan.bullets) && fv.plan.bullets.length
+      && Number.isInteger(fv.plan.actionId) ? fv.plan : null;
+    if (plan) {
+      // Nothing more to say under the step: the card is what comes next.
+    } else if (mine && fv.question) lines.push('Homeroom bot has a question for you.');
     else if (fv.ready) {
       lines.push(mine ? 'Its first version is ready. Try it and vote on it from your chat.'
         : 'Its first version is up for a vote.');
@@ -2972,7 +2992,18 @@ const AppView = {
       message: `${name} is being built from ${from}`,
       detail: null,
       lines,
-      action: mine
+      ...(plan ? {
+        plan: {
+          appName: name,
+          slug: appData.slug,
+          bullets: plan.bullets,
+          questions: Array.isArray(plan.questions) ? plan.questions : [],
+          actionId: plan.actionId,
+          messageId: Number.isInteger(plan.messageId) ? plan.messageId : null,
+          conversationId: Number.isInteger(plan.conversationId) ? plan.conversationId : null,
+        },
+      } : {}),
+      action: mine && !plan
         ? { key: 'botChat', label: 'Open my chat with Homeroom bot', slug: appData.slug,
           conversationId: Number.isInteger(fv.conversationId) ? fv.conversationId : null }
         : null,
@@ -2989,6 +3020,41 @@ const AppView = {
     const messages = window.UsernodeReact && window.UsernodeReact.messages;
     if (messages && typeof messages.open === 'function') messages.open(id);
     else location.hash = id ? `#messages/${id}` : '#messages';
+  },
+
+  /**
+   * B6: Build it, under the plan on the App tab: the same tap the plan's card
+   * in the chat sends, decided once on the server, with the choices tapped.
+   * The screen then reads the project again and shows the build's step.
+   */
+  async buildFirstVersion(slug, actionId, answers) {
+    const id = Number(actionId);
+    if (!slug || !Number.isInteger(id) || id <= 0) return;
+    try {
+      const resp = await fetch(`/api/conversations/homeroom-bot/actions/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ choice: 'build', answers: (Array.isArray(answers) ? answers : []).map((a) => a || '') }),
+      });
+      if (!resp.ok && resp.status !== 409) {
+        const data = await resp.json().catch(() => ({}));
+        PlatformUI.toast(data.error || `Couldn't start building just now (HTTP ${resp.status}).`);
+      }
+    } catch (err) {
+      PlatformUI.toast(`Couldn't start building just now: ${err.message}`);
+    }
+    const current = AppView.appData;
+    if (current && current.slug === slug) AppView._recheckFirstVersion(current);
+  },
+
+  /** B6: Change something: the chat with Homeroom bot, with the plan quoted in its composer. */
+  changeFirstVersionPlan(_slug, conversationId, messageId) {
+    const messages = window.UsernodeReact && window.UsernodeReact.messages;
+    if (messages && typeof messages.quoteBotMessage === 'function') {
+      messages.quoteBotMessage(conversationId, messageId);
+      return;
+    }
+    AppView.openBotChat(_slug, conversationId);
   },
 
   /** "Show the starter for now": the app as it runs, for this visit. */

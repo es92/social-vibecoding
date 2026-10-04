@@ -815,7 +815,14 @@ test('#15: the first-version screenshot state is self-contained, and mounts no f
   const appJs = read('public/js/app.js');
   const routeShots = appJs.slice(appJs.indexOf('  _applyRouteShots() {'), appJs.indexOf('\n  },', appJs.indexOf('  _applyRouteShots() {')));
   assert.match(routeShots, /App\._applyFirstVersionShot\(\);/, 'reached as ?shot=first-version');
-  assert.match(appJs, /if \(shot !== 'first-version'\) return;\s*try \{\s*if \(typeof AppView !== 'undefined'\) AppView\.showFirstVersionShot\(\);/);
+  // B6: and `?shot=first-version-plan`, the same screen while its plan waits.
+  assert.match(appJs, /if \(shot !== 'first-version' && shot !== 'first-version-plan'\) return;\s*try \{\s*if \(typeof AppView !== 'undefined'\) AppView\.showFirstVersionShot\(shot === 'first-version-plan'\);/);
+  AppView.showFirstVersionShot(true);
+  const planned = h.status();
+  assert.deepEqual([...planned.lines], ['Step 3 of 7: Write a plan'], 'the card says what comes next');
+  assert.equal(planned.action, null, 'Change something is the way into the chat');
+  assert.equal(planned.plan.bullets.length, 3);
+  assert.deepEqual([...planned.plan.questions[0].answers], ['In the app', 'Phone alert']);
 });
 
 // ── canEagerLaunch is a PREDICATE ────────────────────────────────────────
