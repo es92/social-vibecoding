@@ -42,6 +42,8 @@ export interface HomeroomBotMeta {
   chosen?: string;
   startedAt?: string;
   live?: boolean;
+  /** B4: an activity card's request, in the words its person asked for it. */
+  askedText?: string;
 }
 
 /**

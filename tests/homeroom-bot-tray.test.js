@@ -533,11 +533,11 @@ test('the panel: Now with the step it is at, Needs you, and History folded away'
   assert.match(unfolded, /aria-expanded="true" aria-controls="messages-bot-work-history" data-bot-work-history-toggle="">Hide history/);
   assert.match(unfolded, /<div id="messages-bot-work-history"/);
   assert.match(unfolded, /data-bot-work-tile="history" data-bot-work-tone="done"/);
-  assert.match(unfolded, /Built it\. The proposal is up for a vote · 1h ago/, 'the cards\' words');
-  assert.match(unfolded, />Open proposal<\/a>/);
+  assert.match(unfolded, /Built it\. Waiting for approval · 1h ago/, 'the cards\' words');
+  assert.match(unfolded, />Open change<\/a>/);
   assert.match(unfolded, /2 earlier runs/);
   assert.match(unfolded, /Ear Trainer first version/);
-  assert.match(unfolded, /Built it\. Approved and live/);
+  assert.match(unfolded, /Built it\. It’s live/);
   assert.match(unfolded, />Open project<\/a>/);
   assert.match(unfolded, /data-bot-work-tone="trouble"[\s\S]*Couldn’t finish building it/);
   assert.match(unfolded, /I’m not working on anything for you right now\./, 'nothing in hand and nothing waiting');

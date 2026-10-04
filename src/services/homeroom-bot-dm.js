@@ -149,6 +149,7 @@ function requesterFrom(row, overrides = {}) {
     username: row.username,
     firstVersion: !!row.first_version,
     issueTitle: row.issue_title,
+    askedText: row.asked_text || null,
     isSynthetic: !!row.is_synthetic,
     hasPlatformAccess: !!row.has_platform_access,
     isAdmin: !!row.is_admin,
@@ -352,14 +353,23 @@ async function notificationDetail(pool, moment, metadata) {
   let said = moment;
   if (moment === 'live' && metadata?.firstVersion) said = 'live_first';
   if (moment === 'ready' && !metadata?.firstVersion && metadata?.appSlug) {
-    const { rows } = await pool.query(
-      `SELECT (SELECT COUNT(*)::int FROM community_members m WHERE m.community_id = a.community_id) AS members
-         FROM apps a WHERE a.slug = $1`,
-      [metadata.appSlug],
-    ).catch(() => ({ rows: [] }));
-    if ((Number(rows?.[0]?.members) || 0) > 1) said = 'ready_group';
+    if (await hasOthers(pool, null, metadata.appSlug)) said = 'ready_group';
   }
   return `hrbot:${said}:${appName}`;
+}
+
+/**
+ * B4: whether anybody but one person is in a project's community: who
+ * approves a change to it, and how its news is worded. By id, or by slug.
+ * Never throws; false when it cannot tell.
+ */
+async function hasOthers(pool, appId, appSlug = null) {
+  const { rows } = await pool.query(
+    `SELECT (SELECT COUNT(*)::int FROM community_members m WHERE m.community_id = a.community_id) AS members
+       FROM apps a WHERE a.id = $1 OR ($1::int IS NULL AND a.slug = $2)`,
+    [appId == null ? null : Number(appId), appSlug],
+  ).catch(() => ({ rows: [] }));
+  return (Number(rows?.[0]?.members) || 0) > 1;
 }
 
 /**
@@ -536,7 +546,7 @@ async function whileTyping(pool, { botId, conversationId, ws = null }, work) {
 async function recordRequester(pool, { app, repo, issueNumber, issue = null }) {
   const title = issue?.title ? clip(issue.title, 300) : null;
   const { rows: found } = await pool.query(
-    `SELECT q.user_id, q.first_version, q.issue_title, u.username, u.is_synthetic, u.has_platform_access, u.is_admin
+    `SELECT q.user_id, q.first_version, q.issue_title, q.asked_text, u.username, u.is_synthetic, u.has_platform_access, u.is_admin
        FROM homeroom_bot_requesters q JOIN users u ON u.id = q.user_id
       WHERE q.app_id = $1 AND q.issue_number = $2`,
     [app.id, issueNumber],
@@ -554,12 +564,18 @@ async function recordRequester(pool, { app, repo, issueNumber, issue = null }) {
   const live = require('./homeroom-bot-live');
   const poster = await live.issuePoster(pool, { app, repo, issueNumber, issue });
   if (!poster) return null;
+  // B4: in their own words, when they wrote it here: the description of the
+  // request they filed on the platform (Ask for a change).
   const { rows } = await pool.query(
-    `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title)
-     SELECT $1, $2, u.id, $4 FROM users u
+    `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, asked_text)
+     SELECT $1, $2, u.id, $4,
+            (SELECT LEFT(NULLIF(BTRIM(i.description), ''), 2000) FROM issues i
+              WHERE i.app_id = $1 AND i.github_issue_number = $2 AND i.created_by = u.id
+              ORDER BY i.id DESC LIMIT 1)
+       FROM users u
       WHERE LOWER(u.username) = LOWER($3) AND u.is_synthetic = FALSE
      ON CONFLICT (app_id, issue_number) DO UPDATE SET issue_title = COALESCE(EXCLUDED.issue_title, homeroom_bot_requesters.issue_title)
-     RETURNING user_id, first_version, issue_title`,
+     RETURNING user_id, first_version, issue_title, asked_text`,
     [app.id, issueNumber, poster, title],
   );
   if (!rows.length) return null;
@@ -583,7 +599,7 @@ async function personOf(pool, userId) {
 
 async function requesterOf(pool, appId, issueNumber) {
   const { rows } = await pool.query(
-    `SELECT q.user_id, q.first_version, q.issue_title, u.username, u.is_synthetic, u.has_platform_access, u.is_admin
+    `SELECT q.user_id, q.first_version, q.issue_title, q.asked_text, u.username, u.is_synthetic, u.has_platform_access, u.is_admin
        FROM homeroom_bot_requesters q JOIN users u ON u.id = q.user_id
       WHERE q.app_id = $1 AND q.issue_number = $2`,
     [appId, issueNumber],
@@ -756,6 +772,20 @@ async function noteBuildRestarted(pool, { app, issueNumber, runId }) {
 
 // ── The request's news, in the DM ────────────────────────────────────────
 
+/**
+ * Pure (B4): what somebody asked for, in their own words, as one line of
+ * about `max` characters, cut at a word: what their activity card leads with.
+ * Null for nothing.
+ */
+function askedLine(text, max = 120) {
+  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!flat) return null;
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:]+$/, '')}…`;
+}
+
 function requestLine({ appName, issueNumber, issueTitle, firstVersion }) {
   if (firstVersion) return `**${appName}**, its first version`;
   return `**${appName}** · request #${issueNumber}${issueTitle ? `: ${clip(issueTitle, 140)}` : ''}`;
@@ -773,24 +803,30 @@ function dmText(kind, dm, context) {
     case 'question':
       return `${line}\n\nI have a question before I build ${it}:\n\n${clip(dm.question, 2000)}`;
     case 'followup_ask':
-      return `${line}\n\nI have a question before I change the proposal:\n\n${clip(dm.question, 2000)}`;
+      return `${line}\n\nI have a question before I update your change:\n\n${clip(dm.question, 2000)}`;
     case 'spec':
       return `${line}\n\nI'm building ${it} now. I'll message you here when it's ready to try.`;
-    // #20 (WP3): the proposal's card under the message is its link (cardsFor
+    // #20 (WP3): the change's card under the message is its link (cardsFor
     // attaches it whenever the news names its session), so the text points
     // at the card. The address is written out only when there is no card:
     // beside one it was a raw URL next to the same link, in the DM and in
-    // its push.
+    // its push. B4: sent once it is ready to try (noteChangeReady), and in
+    // plain words: on a project of theirs alone they approve it themselves;
+    // with others in it, it goes live once it is approved.
     case 'proposal':
-      return hasProposalCard(dm)
-        ? `${line}\n\nIt's built. Open the proposal below to try the preview and vote on it.\n\nIt goes live once it is approved.`
-        : `${line}\n\nIt's built. Open the proposal to try the preview and vote on it: ${dm.link}\n\n`
-          + 'It goes live once it is approved.';
+      if (hasProposalCard(dm)) {
+        return context.group
+          ? `${line}\n\nIt's ready to try. Open the change below to see the preview. It goes live once it's approved.`
+          : `${line}\n\nIt's ready to try. Open the change below to see the preview, and approve it when you're happy with it.`;
+      }
+      return context.group
+        ? `${line}\n\nIt's ready to try. See the preview here: ${dm.link}\n\nIt goes live once it's approved.`
+        : `${line}\n\nIt's ready to try. See the preview, and approve it when you're happy with it: ${dm.link}`;
     case 'followup_revise': {
       let look = '';
       if (hasProposalCard(dm)) look = '\n\nTake another look at it below.';
       else if (dm.link) look = `\n\nTake another look: ${dm.link}`;
-      return `${line}\n\nI changed the proposal after the latest replies: ${clip(dm.summary, 600)}${look}`;
+      return `${line}\n\nI updated your change after the latest replies: ${clip(dm.summary, 600)}${look}`;
     }
     case 'blocked':
       return `${line}\n\nI looked into this and can't build it as it's written: ${clip(dm.reason, 600)}\n\n`
@@ -967,6 +1003,8 @@ async function relayIssuePost({
     issueNumber,
     issueTitle: requester.issueTitle,
     firstVersion: requester.firstVersion,
+    // B4: whether others are in the project, for who approves it.
+    group: kind === 'proposal' ? await hasOthers(pool, app.id) : false,
   };
   const content = dmText(kind, dm, context);
   if (!content) return null;
@@ -1223,7 +1261,7 @@ async function noteProposalChanged(pool, sessionId, deps = {}) {
  * health could not be confirmed yet. `card`: the app's card goes under it.
  */
 function mergedText({ line, appName, live, platform = false, card = true }) {
-  const said = live ? 'It was approved and is live now.' : 'It was approved and merged, and it\'ll be live in a few minutes.';
+  const said = live ? 'It\'s live now.' : 'It\'s going live now and will be ready in a few minutes.';
   const open = card && !platform ? ` Open ${appName} below to try it${live ? '' : ' then'}.` : '';
   return `${line}\n\n${said}${open}`;
 }
@@ -1671,10 +1709,12 @@ async function fileFirstVersion(pool, config, appId, deps = {}) {
     );
     if (botBuilds) {
       await pool.query(
-        `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, first_version)
-         VALUES ($1, $2, $3, $4, TRUE)
-         ON CONFLICT (app_id, issue_number) DO UPDATE SET user_id = EXCLUDED.user_id, first_version = TRUE`,
-        [row.app_id, issueNumber, row.user_id, title],
+        `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, first_version, asked_text)
+         VALUES ($1, $2, $3, $4, TRUE, $5)
+         ON CONFLICT (app_id, issue_number) DO UPDATE SET user_id = EXCLUDED.user_id, first_version = TRUE,
+           asked_text = COALESCE(homeroom_bot_requesters.asked_text, EXCLUDED.asked_text)`,
+        // B4: the brief they wrote is what they asked for.
+        [row.app_id, issueNumber, row.user_id, title, clip(row.brief, 2000) || null],
       );
     }
     await pool.query(
@@ -1843,6 +1883,8 @@ module.exports = {
   MOMENTS,
   momentOf,
   notificationDetail,
+  askedLine,
+  hasOthers,
   READY_CHECKS,
   readyKey,
   changeReadiness,

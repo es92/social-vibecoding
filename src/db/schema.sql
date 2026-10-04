@@ -9537,6 +9537,12 @@ CREATE TABLE IF NOT EXISTS homeroom_bot_requesters (
 );
 CREATE INDEX IF NOT EXISTS idx_homeroom_bot_requesters_user
   ON homeroom_bot_requesters(user_id);
+-- B4: what the person asked for, in their own words: their message to the
+-- bot that the request was filed from, the description they wrote when they
+-- asked for a change, or a first version's brief. Their activity card leads
+-- with it ("You asked: ..."), and the bot's change credits them by it. The
+-- issue's title stays the bot's short name for it.
+ALTER TABLE homeroom_bot_requesters ADD COLUMN IF NOT EXISTS asked_text TEXT;
 
 -- Every DM message the bot sent about a request, so a person's reply can
 -- be posted on the right request. A question is a row whose

@@ -143,7 +143,7 @@ test('WP1: a card whose build still waits or runs is working, whatever began aft
 // its history says what each card shows, in the card's own words.
 test('WP1: a card in words, as the person reads it, in the client\'s own labels', () => {
   assert.equal(activity.cardWords({ state: 'done', outcome: 'stopped' }), 'Didn\'t finish: Stopped before it finished');
-  assert.equal(activity.cardWords({ state: 'done', outcome: 'proposed' }), 'Done: Built it. The proposal is up for a vote');
+  assert.equal(activity.cardWords({ state: 'done', outcome: 'proposed' }), 'Done: Built it. Waiting for approval');
   assert.equal(activity.cardWords({ state: 'working', step: 3, of: 6, stepName: 'Build it', doing: 'building it' }), 'Step 3 of 6 · Build it: building it');
   assert.equal(activity.cardWords({ state: 'working', step: null, of: null, doing: 'building it' }), 'Working on it: building it');
   assert.equal(activity.cardWords(null), null);
@@ -497,7 +497,7 @@ test('a card going: its step as a ring and in words, what it is doing, how long 
   assert.match(html, /<span role="status">Building it<\/span><span> · 9m so far<\/span>/,
     'only what it is doing is announced; the clock beside it is not, every half minute');
   assert.match(html, /<a href="#app\/ear-trainer\/dev\/issues\/12" class="[^"]*rounded-full[^"]*" data-bot-activity-link="">Request #12<\/a>/);
-  assert.doesNotMatch(html, /Open proposal/);
+  assert.doesNotMatch(html, /Open change/);
 
   const queued = draw({ card: working({ step: 1, stepName: 'Read the request', doing: 'waiting in the queue (number 3) to be read', startedAt: minutesAgo(75) }) });
   assert.match(queued, /Waiting in the queue \(number 3\) to be read<\/span><span> · 1h 15m so far/);
@@ -511,9 +511,9 @@ test('a card done: what it came to, at a glance and in words, how long it took, 
   const proposed = draw({ card: done('proposed', { links: { request: '#app/ear-trainer/dev/issues/12', proposal: '#app/ear-trainer/dev/proposals/40' } }) });
   assert.match(proposed, /data-bot-activity="done" data-bot-activity-outcome="proposed"/);
   assert.match(proposed, /data-bot-activity-eyebrow="">Done</);
-  assert.match(proposed, /<span role="status">Built it\. The proposal is up for a vote<\/span><span> · took 23m<\/span>/);
+  assert.match(proposed, /<span role="status">Built it\. Waiting for approval<\/span><span> · took 23m<\/span>/);
   assert.match(proposed, /d="M5 13l4 4L19 7"/, 'a check where the ring was');
-  assert.match(proposed, />Open proposal<\/a><a [^>]*>Request #12<\/a>/, 'the proposal first');
+  assert.match(proposed, />Open change<\/a><a [^>]*>Request #12<\/a>/, 'the change first');
   assert.doesNotMatch(proposed, /animate-ping|role="img"/);
 
   const asked = draw({ card: done('question') });

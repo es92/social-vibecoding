@@ -160,7 +160,14 @@ test('every kind the DM carries reads plainly, names the request, and has no em 
   }
   assert.equal(dm.dmText('looking', {}, context), null, 'not every post is DM news');
   assert.match(dm.dmText('spec', {}, { ...context, firstVersion: true }), /^\*\*Seed swap\*\*, its first version\n\nI'm building the first version now/);
-  assert.match(dm.dmText('proposal', KINDS.proposal, context), /try the preview and vote on it: https:/);
+  assert.match(dm.dmText('proposal', KINDS.proposal, context), /See the preview, and approve it when you're happy with it: https:/);
+  // B4: plain words in every kind: the change, never a proposal, a vote or its number.
+  for (const [kind, payload] of Object.entries(KINDS)) {
+    for (const group of [false, true]) {
+      const words = dm.dmText(kind, payload, { ...context, group }).replace(/https?:\S+/g, '');
+      assert.doesNotMatch(words, /proposal|vote|merged|PR #/i, kind);
+    }
+  }
   for (const text of [dm.HELP_TEXT, dm.NOT_ENABLED_TEXT, dm.mirroredText('x', { question: true })]) {
     assert.doesNotMatch(text, DASH);
   }
@@ -169,19 +176,23 @@ test('every kind the DM carries reads plainly, names the request, and has no em 
 test('#20 (WP3): beside the proposal\'s card the news points at the card; the address is written out only without one', () => {
   const context = { appName: 'Seed swap', issueNumber: 7, issueTitle: 'Sort by date', firstVersion: false };
   const withCard = { ...KINDS.proposal, sessionId: 9 };
+  // B4: on a project of theirs alone they approve it; with others, it goes live once it's approved.
   assert.equal(dm.dmText('proposal', withCard, context),
-    '**Seed swap** · request #7: Sort by date\n\nIt\'s built. Open the proposal below to try the preview and vote on it.\n\n'
-      + 'It goes live once it is approved.');
+    '**Seed swap** · request #7: Sort by date\n\nIt\'s ready to try. Open the change below to see the preview, '
+      + 'and approve it when you\'re happy with it.');
+  assert.equal(dm.dmText('proposal', withCard, { ...context, group: true }),
+    '**Seed swap** · request #7: Sort by date\n\nIt\'s ready to try. Open the change below to see the preview. '
+      + 'It goes live once it\'s approved.');
   assert.deepEqual(dm.cardsFor('proposal', withCard, { id: 3 }, 7), [{ type: 'proposal', appId: 3, sessionId: 9 }],
     'the card it points at is the one that goes under it');
   const revised = dm.dmText('followup_revise', { ...KINDS.followup_revise, sessionId: 9 }, context);
-  assert.match(revised, /I changed the proposal after the latest replies: Made it darker\.\n\nTake another look at it below\.$/);
+  assert.match(revised, /I updated your change after the latest replies: Made it darker\.\n\nTake another look at it below\.$/);
   for (const text of [dm.dmText('proposal', withCard, context), revised]) {
     assert.doesNotMatch(text, /https?:|onhomeroom/, 'no raw address beside the card, in the DM or its push');
     assert.doesNotMatch(text, DASH);
   }
   // No card (no session to name): the address is the way to it.
-  assert.match(dm.dmText('proposal', KINDS.proposal, context), /vote on it: https:\/\/app\.onhomeroom\.com\/#app\/x\/dev\/proposals\/9/);
+  assert.match(dm.dmText('proposal', KINDS.proposal, context), /happy with it: https:\/\/app\.onhomeroom\.com\/#app\/x\/dev\/proposals\/9/);
   assert.match(dm.dmText('followup_revise', KINDS.followup_revise, context), /Take another look: https:/);
 });
 
@@ -209,12 +220,12 @@ test('#20 (WP3): a message whose card cannot go says what it says without it', a
 test('#7 (WP3): "live now" only once the app answered on the merge it deployed, and the platform\'s own app says a few minutes', async () => {
   const line = '**Plant Pal** · request #3: Watering reminders';
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true }),
-    `${line}\n\nIt was approved and is live now. Open Plant Pal below to try it.`);
+    `${line}\n\nIt's live now. Open Plant Pal below to try it.`);
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: false }),
-    `${line}\n\nIt was approved and merged, and it'll be live in a few minutes. Open Plant Pal below to try it then.`);
+    `${line}\n\nIt's going live now and will be ready in a few minutes. Open Plant Pal below to try it then.`);
   assert.equal(dm.mergedText({ line, appName: 'Homeroom', live: false, platform: true }),
-    `${line}\n\nIt was approved and merged, and it'll be live in a few minutes.`);
-  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, card: false }), `${line}\n\nIt was approved and is live now.`);
+    `${line}\n\nIt's going live now and will be ready in a few minutes.`);
+  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, card: false }), `${line}\n\nIt's live now.`);
   for (const live of [true, false]) assert.doesNotMatch(dm.mergedText({ line, appName: 'Plant Pal', live }), DASH);
   // The app first, to open it, then the proposal; the platform's own, its proposal alone.
   assert.deepEqual(dm.cardsFor('merged', { sessionId: 9, appCard: true }, { id: 3 }, 7),

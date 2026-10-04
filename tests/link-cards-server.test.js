@@ -114,7 +114,8 @@ test('a change shows only where the change itself is visible', async () => {
   const pool = fakePool();
   assert.deepEqual(await sharedObjects.hydrateLink(pool, viewer, { type: 'proposal', app_slug: 'open', session_id: 41 }), {
     type: 'proposal', available: true, appId: 7, appSlug: 'open', subtitle: 'Open App',
-    sessionId: 41, title: 'Sort by date', state: 'promoted', author: 'ada',
+    // B4: where it is, in words.
+    sessionId: 41, title: 'Sort by date', state: 'waiting for approval', author: 'ada',
     href: '#app/open/dev/proposals/41',
   });
   assert.deepEqual(

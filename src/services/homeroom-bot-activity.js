@@ -161,6 +161,9 @@ async function sendCard(pool, {
       issueNumber,
       ...(context.issueTitle ? { issueTitle: context.issueTitle } : {}),
       ...(context.firstVersion ? { firstVersion: true } : {}),
+      // B4: what they asked for, in their own words, which the card leads with.
+      ...(typeof dm.askedLine === 'function' && dm.askedLine(requester.askedText)
+        ? { askedText: dm.askedLine(requester.askedText) } : {}),
       // B3: a reply to it stays in the DM, for the bot to read: a card is
       // progress, not a question (homeroom-bot-dm.js MIRRORED_KINDS).
       ...(startedAt ? { startedAt } : {}),
@@ -442,9 +445,9 @@ async function cardRows(pool, userId, limit = MAX_CARDS) {
 // that read "Didn't finish".
 const OUTCOME_LABELS = Object.freeze({
   question: 'Asked you a question',
-  proposed: 'Built it. The proposal is up for a vote',
-  live: 'Built it. Approved and live',
-  closed: 'Built it. The proposal was closed',
+  proposed: 'Built it. Waiting for approval',
+  live: 'Built it. It\'s live',
+  closed: 'Built it. The change was closed',
   blocked: 'Can\'t build it as it\'s written',
   build_failed: 'Couldn\'t finish building it',
   person: 'Left it for the group to decide',
@@ -452,8 +455,8 @@ const OUTCOME_LABELS = Object.freeze({
   failed: 'Couldn\'t finish looking at it',
   held: 'Ready, but held back for now',
   stopped: 'Stopped before it finished',
-  answer: 'Answered on its proposal',
-  revise: 'Changed its proposal',
+  answer: 'Answered on the change',
+  revise: 'Updated the change',
 });
 const OUTCOME_TONES = Object.freeze({
   proposed: 'done', live: 'done', answer: 'done', revise: 'done',
@@ -632,7 +635,7 @@ async function catchUpCards(pool, { user, settings = null, deps = {}, now = new 
       // Recorded as theirs, the way the loop decides whose card it is (an
       // issue they filed that the loop has not recorded yet is not, yet).
       const { rows: theirs } = await pool.query(
-        `SELECT app_id, issue_number, issue_title, first_version
+        `SELECT app_id, issue_number, issue_title, first_version, asked_text
            FROM homeroom_bot_requesters WHERE user_id = $1`,
         [userId],
       );
@@ -674,7 +677,10 @@ async function catchUpCards(pool, { user, settings = null, deps = {}, now = new 
           const sent = await sendCard(pool, {
             app: { id: row.app_id, slug: row.slug, name: row.name },
             issueNumber: n,
-            requester: { userId, issueTitle: mine.issue_title || row.issue_title || null, firstVersion: !!mine.first_version },
+            requester: {
+              userId, issueTitle: mine.issue_title || row.issue_title || null, firstVersion: !!mine.first_version,
+              askedText: mine.asked_text || null,
+            },
             bot, key: piece.key, startedAt: piece.startedAt, dm,
           });
           if (!sent?.messageId) continue;

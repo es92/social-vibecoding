@@ -343,7 +343,7 @@ function PanelNote({ children, className = '' }: { children: string; className?:
 /** Where a tile can be opened: its proposal once people can open it, its request, or its project. */
 function tileLinks(job: HomeroomBotJob): ReactNode[] {
   const links: ReactNode[] = [];
-  if (job.links.proposal) links.push(<ActivityLink key="proposal" data="bot-work" href={job.links.proposal}>Open proposal</ActivityLink>);
+  if (job.links.proposal) links.push(<ActivityLink key="proposal" data="bot-work" href={job.links.proposal}>Open change</ActivityLink>);
   if (job.links.request) {
     links.push(
       <ActivityLink key="request" data="bot-work" href={job.links.request}>

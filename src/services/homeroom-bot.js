@@ -4198,7 +4198,7 @@ async function runFollowUp(pool, config, {
   }
 
   const action = moved ? 'revise' : parsed.action;
-  const reply = parsed?.reply || 'It changed the proposal to follow the latest replies.';
+  const reply = parsed?.reply || 'It updated the change to follow the latest replies.';
   if (moved) await reconcileRevision({ config, pool, session, app, issueNumber, deps });
   // #3767: and its name, when the revision changed what it does. Ear Trainer's
   // size options were taken out and its proposal was still called "Lead size
@@ -4239,7 +4239,10 @@ async function runFollowUp(pool, config, {
       : action === 'person' ? { reason: reply }
         : null;
   const postedAt = [];
-  await say(`followup_${action}`, text, postedAt, dm ? { dm } : {})
+  // B4: an update carries the change's card in the thread, in place of an address.
+  const card = action === 'revise'
+    ? { msgType: 'vote', metadata: { vote: { sessionId: session.id, prNumber } } } : {};
+  await say(`followup_${action}`, text, postedAt, { ...card, ...(dm ? { dm } : {}) })
     .catch((err) => log.warn('homeroom-bot', 'Follow-up post failed', { err: err.message }));
   await live.advanceSeen({
     pool, github, threadContext, app, repo, issueNumber, runId, since: seedReadAt, postedAt,
@@ -4443,7 +4446,7 @@ async function runChecksFix(pool, config, {
   // Out of revisions: no turn, one note.
   if (!canRevise) {
     return handOff({
-      why: `it has already changed this proposal ${followup.MAX_REVISIONS} times, as many as it may on its own`,
+      why: `it has already updated this change ${followup.MAX_REVISIONS} times, as many as it may on its own`,
       verdict: 'person',
     });
   }
@@ -4502,7 +4505,7 @@ async function runChecksFix(pool, config, {
   });
   if (moved) {
     await reconcileRevision({ config, pool, session, app, issueNumber, deps });
-    const summary = parsed?.summary || parsed?.reply || 'It changed the proposal so its checks pass.';
+    const summary = parsed?.summary || parsed?.reply || 'It updated the change so its checks pass.';
     runId = await insertRun(pool, {
       ...billingOf(item, runMode),
       appId: app.id, issueNumber, mode: runMode, verdict: 'revise',

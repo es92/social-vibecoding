@@ -79,6 +79,17 @@ function parseRepo(url) {
   return match ? { owner: match[1], repo: match[2] } : null;
 }
 
+// B4: a change's status, as people read it on its card.
+const CHANGE_STATE_WORDS = Object.freeze({
+  active: 'in progress', paused: 'in progress', promoted: null, merging: 'going live', merged: 'live',
+  closed: 'closed', archived: 'closed',
+});
+// "Your" approval only for the one person a project is for, reading it.
+function changeStateWords(status, { yours = false } = {}) {
+  if (status === 'promoted') return yours ? 'waiting for your approval' : 'waiting for approval';
+  return Object.prototype.hasOwnProperty.call(CHANGE_STATE_WORDS, status) ? CHANGE_STATE_WORDS[status] : (status || null);
+}
+
 function unavailable(ref) {
   return {
     type: publicType(ref?.object_type || ref?.type || 'app'),
@@ -194,7 +205,11 @@ async function hydrateOne(pool, user, ref) {
     }
     if (ref.object_type === 'code_proposal') {
       const { rows } = await pool.query(
-        `SELECT cs.id, cs.session_title, cs.pr_title, cs.pr_number, cs.status, u.username
+        `SELECT cs.id, cs.session_title, cs.pr_title, cs.pr_number, cs.status, u.username, u.is_synthetic,
+                (SELECT COUNT(*)::int FROM community_members m JOIN apps a ON a.community_id = m.community_id
+                  WHERE a.id = cs.app_id) AS members,
+                EXISTS (SELECT 1 FROM community_members m JOIN apps a ON a.community_id = m.community_id
+                         WHERE a.id = cs.app_id AND m.user_id = $3) AS mine
           FROM chat_sessions cs LEFT JOIN users u ON u.id = cs.user_id
           WHERE cs.id = $1 AND cs.app_id = $2
             AND (cs.user_id = $3 OR cs.shared_at IS NOT NULL
@@ -204,8 +219,11 @@ async function hydrateOne(pool, user, ref) {
       if (!rows.length) return unavailable(ref);
       const row = rows[0];
       return {
-        ...base, sessionId: row.id, title: row.session_title || row.pr_title || `Proposal #${row.id}`,
-        state: row.status, author: row.username,
+        ...base, sessionId: row.id, title: row.session_title || row.pr_title || `Change #${row.id}`,
+        // B4: where the change is, in words, not its raw status; and no
+        // "by homeroom_bot" under one the bot built for somebody.
+        state: changeStateWords(row.status, { yours: row.mine === true && Number(row.members) === 1 }),
+        author: row.is_synthetic ? null : row.username,
         href: `#app/${encodeURIComponent(app.slug)}/dev/proposals/${row.id}`,
       };
     }

@@ -2232,7 +2232,11 @@ async function settleOffer(pool, config, {
     return ack('I couldn\'t file it: you need to be a member of that project first. You can join it from its page.');
   }
   try {
-    const filed = await fileRequest(pool, config, { user, app, title: action.title, details: action.details, settings, deps });
+    // B4: what they asked for, in their words: the message the offer answered.
+    const askedText = await askedFor(pool, action, user.id);
+    const filed = await fileRequest(pool, config, {
+      user, app, title: action.title, details: action.details, settings, deps, askedText,
+    });
     await pool.query('UPDATE homeroom_bot_dm_actions SET issue_number = $2 WHERE id = $1', [action.id, filed.issueNumber]);
     const name = app.name || app.slug;
     const builds = liveModule(deps).isLiveFor(settings, app);
@@ -2247,7 +2251,7 @@ async function settleOffer(pool, config, {
       const card = await activityModule(deps).startCard(pool, {
         app, issueNumber: filed.issueNumber, bot, jobKey: filed.queueId, settings, filed: true,
         requester: {
-          userId: user.id, username: user.username, issueTitle: action.title, firstVersion: false,
+          userId: user.id, username: user.username, issueTitle: action.title, firstVersion: false, askedText,
           // What dm.hasBot reads, from the signed-in person who tapped File it.
           isSynthetic: !!user.isSynthetic, hasPlatformAccess: !!user.hasPlatformAccess, isAdmin: !!user.isAdmin,
         },
@@ -2272,6 +2276,22 @@ async function settleOffer(pool, config, {
 }
 
 /**
+ * B4: the words a request offered in the DM was asked for in: the person's
+ * own message the offer answered, while it is still there. Null otherwise.
+ */
+async function askedFor(pool, action, userId) {
+  if (!action?.message_id) return null;
+  const { rows } = await pool.query(
+    `SELECT q.content FROM conversation_messages o
+       JOIN conversation_messages q ON q.id = o.reply_to_id AND q.sender_id = $2 AND q.deleted_at IS NULL
+      WHERE o.id = $1`,
+    [action.message_id, userId],
+  ).catch(() => ({ rows: [] }));
+  const text = String(rows[0]?.content || '').trim();
+  return text || null;
+}
+
+/**
  * File a request on `app` as `user`, the way POST /api/apps/:slug/issues
  * files a general one: its GitHub issue, the platform's row, the people
  * who follow new requests told, and a line in its own thread. It is
@@ -2279,7 +2299,7 @@ async function settleOffer(pool, config, {
  * reaches their DM, and on a project the bot acts on it goes to the front
  * of the queue.
  */
-async function fileRequest(pool, config, { user, app, title, details, settings, deps = {} }) {
+async function fileRequest(pool, config, { user, app, title, details, settings, deps = {}, askedText = null }) {
   const github = deps.github || require('./github');
   const ws = deps.ws || require('./ws');
   const notifications = deps.notifications || require('./notifications');
@@ -2303,10 +2323,11 @@ async function fileRequest(pool, config, { user, app, title, details, settings, 
     [app.id, issueNumber, title, body, user.id],
   );
   await pool.query(
-    `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (app_id, issue_number) DO UPDATE SET user_id = EXCLUDED.user_id, issue_title = EXCLUDED.issue_title`,
-    [app.id, issueNumber, user.id, title],
+    `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, asked_text)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (app_id, issue_number) DO UPDATE SET user_id = EXCLUDED.user_id, issue_title = EXCLUDED.issue_title,
+       asked_text = COALESCE(EXCLUDED.asked_text, homeroom_bot_requesters.asked_text)`,
+    [app.id, issueNumber, user.id, title, askedText ? clip(askedText, 2000) : null],
   );
   try {
     notifications.createIssueOpenedNotifications?.(pool, { appId: app.id, issueNumber, authorId: user.id })

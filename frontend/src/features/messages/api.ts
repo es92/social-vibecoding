@@ -144,6 +144,7 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       ...(actions.length ? { actions } : {}),
       chosen: optional('chosen'),
       startedAt: optional('startedAt'),
+      askedText: optional('askedText'),
       ...(pick(bot, 'live') === true ? { live: true } : {}),
     },
   };

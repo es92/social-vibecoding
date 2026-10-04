@@ -517,7 +517,14 @@ async function prepareProposal({ pool, bot, sessionId, spec = null, buildText = 
       log.warn('homeroom-bot', 'Could not name the proposal; the route names it', { sessionId, err: err.message });
     }
   }
-  const { ccOutput, description } = buildDescription({ text: buildText, spec });
+  const built = buildDescription({ text: buildText, spec });
+  const { ccOutput } = built;
+  // B4: the person who asked for it is credited in its description, which
+  // the summary the group reads first is built from (pr-metadata), and which
+  // a later revision of the bot's leaves in place. The change's author stays
+  // the bot.
+  const askedBy = await askerOf(pool, sessionId);
+  const description = built.description && askedBy ? creditedDescription(built.description, askedBy) : built.description;
   if (ccOutput) {
     try {
       await pool.query(
@@ -538,6 +545,36 @@ async function prepareProposal({ pool, bot, sessionId, spec = null, buildText = 
     }
   }
   return { title, description };
+}
+
+/**
+ * B4: the Homeroom username of the person a build of the bot's was asked
+ * for by: the requester of the request it is linked to. Null when there is
+ * none or it cannot be read. Never throws.
+ */
+async function askerOf(pool, sessionId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.username FROM chat_sessions cs
+         JOIN homeroom_bot_requesters q ON q.app_id = cs.app_id AND q.issue_number = ANY(cs.linked_issues)
+         JOIN users u ON u.id = q.user_id AND u.is_synthetic = FALSE
+        WHERE cs.id = $1
+        ORDER BY q.created_at
+        LIMIT 1`,
+      [Number(sessionId)],
+    );
+    return rows[0]?.username || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pure (B4): a change's description, ending with who asked for it, once. */
+function creditedDescription(description, username) {
+  const text = String(description || '').trim();
+  const line = `Asked for by @${username}`;
+  if (!username || text.split('\n').some((l) => l.trim() === line)) return text;
+  return `${text}\n\n${line}`;
 }
 
 /** The card's preview: the body after the title, as the share route cuts it. */
@@ -1815,6 +1852,8 @@ async function buildAndPropose({
 }
 
 module.exports = {
+  askerOf,
+  creditedDescription,
   BOT_USERNAME,
   isOwnMessage,
   isLiveFor,

@@ -53,9 +53,9 @@ export function BotActivitySync({ conversationId, newsKey }: { conversationId: n
 /** What each ending says, under the card's title. */
 export const ACTIVITY_OUTCOME_LABELS: Record<HomeroomBotActivityOutcome, string> = {
   question: 'Asked you a question',
-  proposed: 'Built it. The proposal is up for a vote',
-  live: 'Built it. Approved and live',
-  closed: 'Built it. The proposal was closed',
+  proposed: 'Built it. Waiting for approval',
+  live: 'Built it. It’s live',
+  closed: 'Built it. The change was closed',
   blocked: 'Can’t build it as it’s written',
   build_failed: 'Couldn’t finish building it',
   person: 'Left it for the group to decide',
@@ -63,8 +63,8 @@ export const ACTIVITY_OUTCOME_LABELS: Record<HomeroomBotActivityOutcome, string>
   failed: 'Couldn’t finish looking at it',
   held: 'Ready, but held back for now',
   stopped: 'Stopped before it finished',
-  answer: 'Answered on its proposal',
-  revise: 'Changed its proposal',
+  answer: 'Answered on the change',
+  revise: 'Updated the change',
 };
 
 export type ActivityTone = 'done' | 'you' | 'ended' | 'trouble';
@@ -196,6 +196,9 @@ export interface BotActivityCardViewProps {
 export function BotActivityCardView({ meta, card, loaded = false, failed = false, onRetry, now }: BotActivityCardViewProps) {
   const at = now || new Date();
   const title = activityTitle(meta);
+  // B4: their own words lead, and the project moves to the status line.
+  const asked = meta.askedText ? `You asked: ${meta.askedText}` : null;
+  const project = asked ? (meta.appName || meta.appSlug || null) : null;
   const working = card?.state === 'working';
   const tone: Tone | null = card && card.state === 'done' && card.outcome ? ACTIVITY_OUTCOME_TONES[card.outcome] : null;
 
@@ -209,6 +212,7 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
     const elapsed = spanText(card.startedAt, at);
     status = (
       <>
+        {project ? <span>{`${project} · `}</span> : null}
         <span role="status">{capitalized(card.doing || 'working on it')}</span>
         {elapsed ? <span>{` · ${elapsed} so far`}</span> : null}
       </>
@@ -219,6 +223,7 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
     const took = card.endedAt ? spanText(card.startedAt, new Date(card.endedAt)) : null;
     status = (
       <>
+        {project ? <span>{`${project} · `}</span> : null}
         <span role="status">{ACTIVITY_OUTCOME_LABELS[card.outcome]}</span>
         {took ? <span>{` · took ${took}`}</span> : null}
       </>
@@ -235,7 +240,7 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
   }
 
   const links = card ? [
-    card.links.proposal ? <CardLink key="proposal" href={card.links.proposal}>Open proposal</CardLink> : null,
+    card.links.proposal ? <CardLink key="proposal" href={card.links.proposal}>Open change</CardLink> : null,
     card.links.request ? <CardLink key="request" href={card.links.request}>{meta.firstVersion ? 'Open request' : `Request #${meta.issueNumber}`}</CardLink> : null,
   ].filter(Boolean) : [];
 
@@ -259,7 +264,11 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
             ) : null}
             <span className="truncate" data-bot-activity-eyebrow="">{eyebrow}</span>
           </div>
-          <div className="truncate text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100">{title}</div>
+          {asked ? (
+            <div className="line-clamp-2 text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100" data-bot-activity-asked="">{asked}</div>
+          ) : (
+            <div className="truncate text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100">{title}</div>
+          )}
           {status ? (
             <p className="text-[0.8125rem] leading-[1.125rem] text-zinc-500 dark:text-zinc-400" data-bot-activity-status="">{status}</p>
           ) : (
