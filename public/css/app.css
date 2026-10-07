@@ -3452,7 +3452,6 @@ html.un-ios.in-native-webview .dc-active-dot-busy.dc-active-dot-promoted {
    board's tab strip) — the scale makes adjacent cells appear to shift.
    Keep the brightness dim, drop the transform. */
 .create-template-pill:active,
-.create-kind-row:active,
 .create-mode-pill:active,
 .create-who-pill:active,
 .create-approver-pill:active,
@@ -12768,18 +12767,15 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
    A literal, with no dark step, for the reason the button carries none:
    white on #0a6ee0 is 4.9:1 in both themes, where the dark theme's lighter
    accent would not carry white text. */
-#create-card :is(.create-who-pill, .create-kind-row, .create-mode-pill, .create-template-pill, .create-approver-pill, .create-approvals-pill) {
+#create-card :is(.create-who-pill, .create-mode-pill, .create-template-pill, .create-approver-pill, .create-approvals-pill) {
   color: var(--text-primary);
   cursor: pointer;
 }
 #create-card .create-approvals-pill { color: var(--text-muted); }
 #create-card .create-approvals-pill:hover { color: var(--text-primary); }
-#create-card :is(.create-who-pill, .create-kind-row, .create-mode-pill, .create-template-pill, .create-approver-pill) .create-choice-caption {
+#create-card :is(.create-who-pill, .create-mode-pill, .create-template-pill, .create-approver-pill) .create-choice-caption {
   color: var(--text-muted);
 }
-/* A row that is there but cannot be pressed yet (Document, Video, a
-   template): it takes no fill and no pointer. */
-#create-card .create-soon-row { cursor: default; }
 /* NOTHING IS CHOSEN FOR THE PERSON, AND A ROW IS A SELECTION. Every answer
    starts empty (the attributes are ""), so no row is filled on arrival.
    Pressing a row fills it at once, on its own step, and Next (beside
@@ -12787,7 +12783,6 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
 #create-card[data-audience="solo"]      .create-who-pill[data-audience-pill="solo"],
 #create-card[data-audience="invited"]   .create-who-pill[data-audience-pill="invited"],
 #create-card[data-audience="open"]      .create-who-pill[data-audience-pill="open"],
-#create-card[data-kind="app"]           .create-kind-row[data-kind-pill="app"],
 #create-card[data-mode="new"]           .create-mode-pill[data-mode-pill="new"],
 #create-card[data-mode="template"]      .create-mode-pill[data-mode-pill="template"],
 #create-card[data-mode="import"]        .create-mode-pill[data-mode-pill="import"],
@@ -12804,7 +12799,6 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
 #create-card[data-audience="solo"]      .create-who-pill[data-audience-pill="solo"] .create-choice-caption,
 #create-card[data-audience="invited"]   .create-who-pill[data-audience-pill="invited"] .create-choice-caption,
 #create-card[data-audience="open"]      .create-who-pill[data-audience-pill="open"] .create-choice-caption,
-#create-card[data-kind="app"]           .create-kind-row[data-kind-pill="app"] .create-choice-caption,
 #create-card[data-mode="new"]           .create-mode-pill[data-mode-pill="new"] .create-choice-caption,
 #create-card[data-mode="template"]      .create-mode-pill[data-mode-pill="template"] .create-choice-caption,
 #create-card[data-mode="import"]        .create-mode-pill[data-mode-pill="import"] .create-choice-caption,
@@ -12814,17 +12808,17 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
   color: inherit;
   opacity: 0.9;
 }
-/* THE SELECTION MARKER (#24, D8). Who it is for and what you are making are
-   chosen, then Next moves on, so their rows end in a ring, like a radio's,
-   not in a chevron that promised a jump. The chosen row's ring fills with
+/* THE SELECTION MARKER (#24, D8). Who it is for is chosen, then Next moves
+   on, so its rows end in a ring, like a radio's, not in a chevron that
+   promised a jump. The chosen row's ring fills with
    its own ink (white on the accent) and its check takes the accent. Keyed
    off the row's aria-pressed, which the component renders from the same
    answer as the card's data attribute above. */
-#create-card :is(.create-who-pill, .create-kind-row)[aria-pressed="true"] > .create-choice-marker {
+#create-card .create-who-pill[aria-pressed="true"] > .create-choice-marker {
   background-color: currentColor;
   opacity: 1;
 }
-#create-card :is(.create-who-pill, .create-kind-row)[aria-pressed="true"] > .create-choice-marker > svg {
+#create-card .create-who-pill[aria-pressed="true"] > .create-choice-marker > svg {
   color: #0a6ee0; /* violet-600, the fill the row wears */
 }
 
@@ -12851,12 +12845,13 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
 /* The repo URL and its check belong to "Import a GitHub repo" alone. */
 #create-card:not([data-mode="import"]) .create-import-block { display: none; }
 
-/* THE STEPS UNFOLD IN ONE CARD (#1911; seven of them since the rework).
+/* THE STEPS UNFOLD IN ONE CARD (#1911; six of them since "What are you
+   making?" went, the make screen having asked it).
    Every step's section ships on every step — the declared checks select on
    the same ids whichever steps are showing — and #create-card[data-step] is
    the FURTHEST step reached: everything up to it is on screen, the rest is
    folded. Keyed on the CARD, like data-mode. The order is who, invite,
-   kind, start, details, about, approve.
+   start, details, about, approve.
 
    The invite step belongs to a private community, the one-line "about" step
    to a project made here (an import's repo describes it), and the approval
@@ -12865,9 +12860,8 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
    from the same rule: Cancel always; Next until the last step, then Create
    / Import (QA 2026-09-24 Q6: never two accent buttons at once). Either
    stays dimmed until its step is answered. */
-#create-card[data-step="who"]     :is([data-create-step="invite"], [data-create-step="kind"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="invite"]  :is([data-create-step="kind"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="kind"]    :is([data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
+#create-card[data-step="who"]     :is([data-create-step="invite"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
+#create-card[data-step="invite"]  :is([data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
 #create-card[data-step="start"]   :is([data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
 #create-card[data-step="details"] :is([data-create-step="about"], [data-create-step="approve"]),
 #create-card[data-step="about"]   [data-create-step="approve"],
@@ -12889,15 +12883,13 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
    the name, the description and the approval answers stay as they are,
    still editable. */
 #create-card[data-step="who"] [data-create-step="who"] .create-choice-change,
-#create-card:is([data-step="who"], [data-step="invite"], [data-step="kind"]) [data-create-step="kind"] .create-choice-change,
-#create-card:is([data-step="who"], [data-step="invite"], [data-step="kind"], [data-step="start"]) [data-create-step="start"] .create-choice-change {
+#create-card:is([data-step="who"], [data-step="invite"], [data-step="start"]) [data-create-step="start"] .create-choice-change {
   display: none;
 }
 #create-card:not([data-step="who"]) [data-create-step="who"] :is(.create-choice-marker, .create-choice-caption),
 #create-card:not([data-step="who"])[data-audience="solo"]    .create-who-pill:not([data-audience-pill="solo"]),
 #create-card:not([data-step="who"])[data-audience="invited"] .create-who-pill:not([data-audience-pill="invited"]),
 #create-card:not([data-step="who"])[data-audience="open"]    .create-who-pill:not([data-audience-pill="open"]),
-#create-card:is([data-step="start"], [data-step="details"], [data-step="about"], [data-step="approve"]) [data-create-step="kind"] :is(.create-choice-marker, .create-choice-caption, .create-kind-soon),
 #create-card:is([data-step="details"], [data-step="about"], [data-step="approve"]) [data-create-step="start"] :is(.create-choice-caption, .create-template-pill:not([aria-pressed="true"]), .create-import-hint),
 #create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="new"]      .create-mode-pill:not([data-mode-pill="new"]),
 #create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="template"] .create-mode-pill:not([data-mode-pill="template"]),
@@ -12905,7 +12897,6 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
   display: none;
 }
 #create-card:not([data-step="who"]) .create-who-pill,
-#create-card:is([data-step="start"], [data-step="details"], [data-step="about"], [data-step="approve"]) .create-kind-row,
 #create-card:is([data-step="details"], [data-step="about"], [data-step="approve"]) :is(.create-mode-pill, .create-template-pill) {
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;

@@ -194,12 +194,21 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
   // count glyphs are the same pair the app's own Workshop tab uses, which is
   // the point: the number on a row and the pane it counts wear one mark.
   const expected = [
-    // ── The create dialog's rework took four paths OUT of this list ──
+    // ── The create dialog's rework took four paths OUT of this list, ──
+    // ── and the make screen's More options put them back ─────────────
     //
     // "What are you making?" became rows like "Who is it for?", each with
     // its glyph, and the dialog prerenders every step: AppWindowIcon (two
-    // paths) on App, NewspaperIcon on Document and PlayIcon on Video are now
-    // in the static document.
+    // paths) on App, NewspaperIcon on Document and PlayIcon on Video were in
+    // the static document. The step went when the dialog became the make
+    // screen's More options (tests/create-front-door.test.js), which asks
+    // what you are making itself; AppWindowIcon and PlayIcon still draw
+    // behind state (the board, an agent chat, the Needs-you rail), and
+    // NewspaperIcon nowhere.
+    'M4 6a1 1 0 011-1h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V6z',
+    'M4 9.5h16',
+    'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z',
+    'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z',
     // ── #2718 moved paths across this line, in both directions ───────
     //
     // OUT OF IT, because the navigation change draws them unconditionally:

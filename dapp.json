@@ -1520,7 +1520,7 @@
       "expectText": "What should it do?"
     },
     {
-      "name": "Create-project dialog's how-to-start step, straight after what you are making, offers from scratch, a template or a GitHub repo, and the repo URL field and Check pill open under it in one white card (#1910)",
+      "name": "Create-project dialog's how-to-start step, straight after who it is for, offers from scratch, a template or a GitHub repo, and the repo URL field and Check pill open under it in one white card (#1910)",
       "path": "/?shot=create-import#create/options",
       "expectSelector": "#create-card[data-step=\"start\"][data-mode=\"import\"][data-import-state=\"idle\"] [data-mode-pill=\"new\"] + [data-mode-pill=\"template\"] + [data-mode-pill=\"import\"] + #create-import-block .rounded-2xl.bg-white #import-check.rounded-full",
       "expectText": "GitHub repo URL"
@@ -1538,7 +1538,7 @@
       "name": "Create-project dialog opens on who it is for, nothing chosen yet and Next dimmed beside Cancel: Just me, A private community and A public community, with a step count (communities, stage 3; the rework)",
       "path": "/#create/options",
       "expectSelector": ".un-modal #create-card[data-step=\"who\"][data-audience=\"\"][data-mode=\"\"]:has(#create-cancel + #create-next:disabled) .create-who-pill[data-audience-pill=\"solo\"] + .create-who-pill[data-audience-pill=\"invited\"] + .create-who-pill[data-audience-pill=\"open\"]",
-      "expectText": "Step 1 of 5"
+      "expectText": "Step 1 of 4"
     },
     {
       "name": "A public community's create dialog asks who approves changes last, after the short description: members vote, or people you pick (communities, stage 3)",

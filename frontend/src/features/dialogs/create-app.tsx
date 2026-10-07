@@ -13,14 +13,17 @@
  * through window.UsernodeReact.firstSession.made); an import, which
  * nothing builds from a description, keeps the progress view below.
  *
- * ── Seven questions, in the order a person answers them ───────────────
+ * ── Six questions, in the order a person answers them ─────────────────
  *
  * Communities, stage 3 asked who a project is FOR before anything else,
  * because that answer decides the rest. The create-dialog rework (drawn and
  * agreed as a clickable mock first) turned each question into a step of its
- * own. How to start then moved up to straight after what you are making, so
- * that what it should do is asked of everyone, and only of a project made
- * here (an import's repo already says what it is):
+ * own. How to start then moved up to straight after who it is for, so that
+ * what it should do is asked of everyone, and only of a project made here
+ * (an import's repo already says what it is). "What are you making?" (App,
+ * with Document and Video dimmed, saying Soon) went when this became the
+ * make screen's More options: by then the person has said what they are
+ * making, and App was the one answer it took.
  *
  *   who      Just me, A private community, or A public community: the
  *            audiences services/communities.js derives (`solo`, `invited`,
@@ -30,8 +33,6 @@
  *            address becomes a row that says "Will invite"
  *            (services/email-invites.js sends it and turns it into a project
  *            invite when that person signs up).
- *   kind     what you are making: App, with Document and Video there, dimmed,
- *            saying Soon.
  *   start    how to begin: from scratch, from a template, or from a GitHub
  *            repo. A template's four starters open under its row (#3521;
  *            services/app-templates.js); the repo's check opens under its
@@ -130,7 +131,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogCard, DialogRoot } from '@/components/ui/dialog';
 import {
-  AppWindowIcon, CheckIcon, EnvelopeIcon, InfoCircleIcon, LockIcon, NewspaperIcon, PlayIcon, PlusIcon,
+  CheckIcon, EnvelopeIcon, InfoCircleIcon, LockIcon, PlusIcon,
   SpinnerArcIcon, UserGroupIcon, UserIcon, XIcon,
 } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
@@ -160,7 +161,6 @@ type Mode = 'new' | 'template' | 'import';
 type ImportState = 'idle' | 'checking' | 'ok' | 'error';
 /** Who it is for: services/communities.js's audiences, by their internal names. */
 type Audience = 'solo' | 'invited' | 'open';
-type Kind = 'app';
 type Approvers = 'anyone' | 'invited';
 type Approvals = 'majority' | 'atLeast';
 /**
@@ -170,7 +170,7 @@ type Approvals = 'majority' | 'atLeast';
  * checks select on the same ids); app.css folds and unfolds them off
  * `#create-card[data-step]`. See the header for what each one asks.
  */
-type Step = 'who' | 'invite' | 'kind' | 'start' | 'details' | 'about' | 'approve';
+type Step = 'who' | 'invite' | 'start' | 'details' | 'about' | 'approve';
 
 /**
  * The starters "Start from a template" offers (#3521), in the order and the
@@ -199,11 +199,11 @@ export const EMAIL_RE = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;
 
 /**
  * The steps a given set of answers walks. A private community names its
- * people; how to begin comes straight after what you are making; a project
- * made here (not an import) is described in one line on a step of its own;
- * and a private or a public community says who approves changes, last. An
+ * people; how to begin comes straight after who it is for; a project made
+ * here (not an import) is described in one line on a step of its own; and a
+ * private or a public community says who approves changes, last. An
  * unanswered audience counts as Just me and an unanswered start as made
- * here, so the indicator reads "Step 1 of 5" before anything is chosen.
+ * here, so the indicator reads "Step 1 of 4" before anything is chosen.
  * Exported and pure: the indicator's "of N" and the footer's Next-or-Create
  * both read it.
  */
@@ -212,7 +212,6 @@ export function stepsFor(audience: Audience | null, mode: Mode | null = null): r
   return [
     'who',
     ...(who === 'invited' ? (['invite'] as const) : []),
-    'kind',
     'start',
     'details',
     ...(mode !== 'import' ? (['about'] as const) : []),
@@ -448,7 +447,6 @@ const IDLE_STATUS: ImportStatus = { tone: 'none', text: '' };
 interface ShotState {
   step: Step;
   audience: Audience | null;
-  kind: Kind | null;
   mode: Mode | null;
   approvers: Approvers | null;
   name: string;
@@ -473,23 +471,22 @@ interface ShotState {
  */
 function shotState(): ShotState {
   const open: ShotState = {
-    step: 'who', audience: null, kind: null, mode: null, approvers: null, name: '', brief: '', description: '',
+    step: 'who', audience: null, mode: null, approvers: null, name: '', brief: '', description: '',
   };
   try {
     const shot = new URLSearchParams(location.search).get('shot');
-    const app = { ...open, kind: 'app' as Kind };
     const described = {
-      ...app,
+      ...open,
       mode: 'new' as Mode,
       name: 'Seed swap',
       brief: 'Neighbours list the seeds they have spare and ask for the ones they want. A swap is agreed in the chat.',
       description: 'Swap spare seeds with your neighbours',
     };
     if (shot === 'create-group') return { ...open, step: 'invite', audience: 'invited' };
-    if (shot === 'create-start') return { ...app, step: 'start', audience: 'open' };
-    if (shot === 'create-template') return { ...app, step: 'start', audience: 'solo', mode: 'template' };
-    if (shot === 'create-import') return { ...app, step: 'start', audience: 'solo', mode: 'import' };
-    if (shot === 'create-details') return { ...open, step: 'details', audience: 'solo', kind: 'app', mode: 'new' };
+    if (shot === 'create-start') return { ...open, step: 'start', audience: 'open' };
+    if (shot === 'create-template') return { ...open, step: 'start', audience: 'solo', mode: 'template' };
+    if (shot === 'create-import') return { ...open, step: 'start', audience: 'solo', mode: 'import' };
+    if (shot === 'create-details') return { ...open, step: 'details', audience: 'solo', mode: 'new' };
     if (shot === 'create-about') return { ...described, step: 'about', audience: 'solo' };
     if (shot === 'create-approve' || shot === 'create-access') return { ...described, step: 'approve', audience: 'open' };
     return open;
@@ -572,9 +569,6 @@ function ChoiceMarker({ chosen }: { chosen: boolean }) {
 }
 /* The small numbered heading each unfolded step opens with. */
 const STEP_HEADING = 'text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 mb-2';
-/* A row that is there but cannot be pressed yet: dimmed, saying Soon. */
-const SOON = 'create-soon-row w-full text-left ' + CARD + ' px-4 py-3 flex items-center gap-3 text-zinc-500 dark:text-zinc-400';
-const SOON_TAG = 'shrink-0 text-xs font-medium text-zinc-500 dark:text-zinc-400';
 /* A starter under "Start from a template": a choice row, smaller, inset. */
 const TEMPLATE_CHOICE = 'create-template-pill w-full text-left ' + CARD + ' px-4 py-2.5 flex items-center gap-3 transition-colors';
 
@@ -894,7 +888,6 @@ export function CreateAppDialog() {
   // person (request #3160 and the rework after it).
   const [audience, setAudience] = useState<Audience | null>(null);
   const [people, setPeople] = useState<Invitee[]>([]);
-  const [kind, setKind] = useState<Kind | null>(null);
   const [name, setName] = useState('');
   const [describe, setDescribe] = useState('');
   const describeLeftText = descriptionLeft(describe.length);
@@ -955,7 +948,6 @@ export function CreateAppDialog() {
     switch (which) {
       case 'who': return audience != null;
       case 'invite': return people.length > 0;
-      case 'kind': return kind != null;
       case 'start': return mode != null && (mode !== 'import' || importState === 'ok') && (mode !== 'template' || template != null);
       case 'details': return name.trim().length > 0 && (importing || brief.trim().length >= BRIEF_MIN);
       case 'about': return describe.trim().length > 0;
@@ -996,7 +988,6 @@ export function CreateAppDialog() {
         brief: typeof draft?.brief === 'string' && draft.brief.trim() ? draft.brief.trim() : shot.brief,
       };
       setAudience(initial.audience);
-      setKind(initial.kind);
       applyMode(initial.mode);
       setApprovers(initial.approvers);
       setStep(initial.step);
@@ -1025,7 +1016,6 @@ export function CreateAppDialog() {
       applyMode(null);
       setAudience(null);
       setPeople([]);
-      setKind(null);
       setName('');
       setDescribe('');
       setBrief('');
@@ -1100,11 +1090,6 @@ export function CreateAppDialog() {
     setAudience(next);
   }
 
-  function chooseKind(next: Kind) {
-    setError('');
-    if (step !== 'kind') { setStep('kind'); return; }
-    setKind(next);
-  }
 
   function chooseStart(next: Mode) {
     setError('');
@@ -1390,7 +1375,6 @@ export function CreateAppDialog() {
     'data-import-state': importState,
     'data-step': step,
     'data-audience': audience ?? '',
-    'data-kind': kind ?? '',
     'data-approvers': approvers ?? '',
     'data-approvals': approvals ?? '',
     'data-final': isLast ? 'true' : 'false',
@@ -1487,8 +1471,8 @@ export function CreateAppDialog() {
         </h2>
         {/*
             How far the flow has unfolded, and how far it goes for the
-            answers so far: five steps for Just me, six for a public
-            community, seven for a private one, and one fewer for an
+            answers so far: four steps for Just me, five for a public
+            community, six for a private one, and one fewer for an
             import. The index is also on the attribute for the declared
             checks.
         */}
@@ -1548,52 +1532,13 @@ export function CreateAppDialog() {
             </p>
           </div>
           {/*
-              What it is: an App, the one kind there is today; Document and
-              Video are there, dimmed, saying Soon, because the question is
-              the one the screen will keep asking.
-          */}
-          <div data-create-step="kind" className="space-y-2">
-            <p className={STEP_HEADING}>{`${numberOf('kind')}. What are you making?`}</p>
-            <button
-              type="button"
-              data-kind-pill="app"
-              aria-pressed={kind === 'app'}
-              className={'create-kind-row ' + CHOICE_BASE}
-              onClick={() => chooseKind('app')}
-            >
-              <AppWindowIcon className="w-5 h-5 shrink-0 opacity-80" aria-hidden="true" />
-              <span className="min-w-0 flex-1">
-                <span className={CHOICE_TITLE}>App</span>
-                <span className={CHOICE_CAPTION}>Something you build and use together.</span>
-              </span>
-              <ChoiceMarker chosen={kind === 'app'} />
-              <span className={CHOICE_CHANGE}>Change</span>
-            </button>
-            <div className={SOON + ' create-kind-soon'} data-kind-pill="doc" aria-disabled="true">
-              <NewspaperIcon className="w-5 h-5 shrink-0 opacity-50" aria-hidden="true" />
-              <span className="min-w-0 flex-1">
-                <span className={CHOICE_TITLE}>Document</span>
-                <span className={CHOICE_CAPTION}>Pages you write and edit together.</span>
-              </span>
-              <span className={SOON_TAG}>Soon</span>
-            </div>
-            <div className={SOON + ' create-kind-soon'} data-kind-pill="video" aria-disabled="true">
-              <PlayIcon className="w-5 h-5 shrink-0 opacity-50" aria-hidden="true" />
-              <span className="min-w-0 flex-1">
-                <span className={CHOICE_TITLE}>Video</span>
-                <span className={CHOICE_CAPTION}>A video you make together, from script to cut.</span>
-              </span>
-              <span className={SOON_TAG}>Soon</span>
-            </div>
-          </div>
-          {/*
-              How to begin, straight after what you are making. From
-              scratch; from a template, whose four starters open under its
-              row; or from a GitHub repo, whose URL and Check open under its
-              row. The check also reads the repo's dapp.json, and the notice
-              under it names each earlier answer the repo replaces. Once the
-              card moves on, the step collapses to the chosen row (and the
-              chosen starter, or the repo), whose "Change" reopens it.
+              How to begin, straight after who it is for. From scratch; from
+              a template, whose four starters open under its row; or from a
+              GitHub repo, whose URL and Check open under its row. The check
+              also reads the repo's dapp.json, and the notice under it names
+              each earlier answer the repo replaces. Once the card moves on,
+              the step collapses to the chosen row (and the chosen starter,
+              or the repo), whose "Change" reopens it.
           */}
           <div data-create-step="start" className="space-y-2">
             <p className={STEP_HEADING}>{`${numberOf('start')}. How do you want to start?`}</p>

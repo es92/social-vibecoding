@@ -1,10 +1,11 @@
 // The create dialog is steps that UNFOLD in one card (#1911), not one page of
 // every choice. Since the rework (drawn and agreed as a clickable mock first)
-// it asks seven questions, each a step of its own:
+// it asks six questions, each a step of its own. "What are you making?" (App,
+// with Document and Video dimmed) went when the dialog became the make
+// screen's More options (tests/create-front-door.test.js), which asks it:
 //
 //   who      Just me, A private community, A public community
 //   invite   a private community only: one row per person, a @username or an email
-//   kind     App; Document and Video there, dimmed, saying Soon
 //   start    from scratch, from a template (its four starters open under its
 //            row, #3521), or from a GitHub repo, whose check also reads its
 //            dapp.json; collapses to the chosen row once the card moves on
@@ -44,21 +45,20 @@ const mod = () => loadTsx('frontend/src/features/dialogs/create-app.tsx');
 
 test('the steps a set of answers walks: five for Just me, six for a public community, seven for a private one, one fewer for an import', () => {
   const { stepsFor } = mod();
-  assert.deepEqual([...stepsFor(null)], ['who', 'kind', 'start', 'details', 'about'], 'unanswered counts as Just me, made here');
-  assert.deepEqual([...stepsFor('solo')], ['who', 'kind', 'start', 'details', 'about']);
-  assert.deepEqual([...stepsFor('solo', 'new')], ['who', 'kind', 'start', 'details', 'about']);
-  assert.deepEqual([...stepsFor('solo', 'template')], ['who', 'kind', 'start', 'details', 'about']);
-  assert.deepEqual([...stepsFor('open')], ['who', 'kind', 'start', 'details', 'about', 'approve']);
-  assert.deepEqual([...stepsFor('invited')], ['who', 'invite', 'kind', 'start', 'details', 'about', 'approve']);
+  assert.deepEqual([...stepsFor(null)], ['who', 'start', 'details', 'about'], 'unanswered counts as Just me, made here');
+  assert.deepEqual([...stepsFor('solo')], ['who', 'start', 'details', 'about']);
+  assert.deepEqual([...stepsFor('solo', 'new')], ['who', 'start', 'details', 'about']);
+  assert.deepEqual([...stepsFor('solo', 'template')], ['who', 'start', 'details', 'about']);
+  assert.deepEqual([...stepsFor('open')], ['who', 'start', 'details', 'about', 'approve']);
+  assert.deepEqual([...stepsFor('invited')], ['who', 'invite', 'start', 'details', 'about', 'approve']);
   // An import is named and nothing more: its repo describes it.
-  assert.deepEqual([...stepsFor('solo', 'import')], ['who', 'kind', 'start', 'details']);
-  assert.deepEqual([...stepsFor('open', 'import')], ['who', 'kind', 'start', 'details', 'approve']);
-  assert.deepEqual([...stepsFor('invited', 'import')], ['who', 'invite', 'kind', 'start', 'details', 'approve']);
+  assert.deepEqual([...stepsFor('solo', 'import')], ['who', 'start', 'details']);
+  assert.deepEqual([...stepsFor('open', 'import')], ['who', 'start', 'details', 'approve']);
+  assert.deepEqual([...stepsFor('invited', 'import')], ['who', 'invite', 'start', 'details', 'approve']);
   assert.match(SRC, /const steps = stepsFor\(audience, mode\);/, 'the indicator and the footer read the mode too');
   // Every answer starts empty, and the step is the first.
   for (const [what, re] of [
     ['audience', /useState<Audience \| null>\(null\)/],
-    ['kind', /useState<Kind \| null>\(null\)/],
     ['start', /useState<Mode \| null>\(null\)/],
     ['approvers', /useState<Approvers \| null>\(null\)/],
     ['approvals', /useState<Approvals \| null>\(null\)/],
@@ -69,21 +69,21 @@ test('the steps a set of answers walks: five for Just me, six for a public commu
   // of the root while presented. Each is "" until answered.
   assert.match(SRC, /id="create-modal"\s+ref=\{dialog\.rootRef\}\s+\{\.\.\.answers\}/);
   assert.match(SRC, /id="create-card"\s+\{\.\.\.answers\}/);
-  for (const attr of ['data-mode', 'data-import-state', 'data-step', 'data-audience', 'data-kind', 'data-approvers',
+  for (const attr of ['data-mode', 'data-import-state', 'data-step', 'data-audience', 'data-approvers',
     'data-approvals', 'data-final', 'data-repo-sets']) {
     assert.match(SRC, new RegExp(`'${attr}': `), attr);
   }
   assert.match(SRC, /'data-audience': audience \?\? ''/);
   assert.match(SRC, /'data-mode': mode \?\? ''/);
   // Close puts every answer back to empty.
-  assert.match(SRC, /formRef\.current\?\.reset\(\);[\s\S]*?applyMode\(null\);\s*setAudience\(null\);\s*setPeople\(\[\]\);\s*setKind\(null\);[\s\S]*?setStep\('who'\);\s*setApprovers\(null\);\s*setApprovals\(null\);/);
+  assert.match(SRC, /formRef\.current\?\.reset\(\);[\s\S]*?applyMode\(null\);\s*setAudience\(null\);\s*setPeople\(\[\]\);[\s\S]*?setStep\('who'\);\s*setApprovers\(null\);\s*setApprovals\(null\);/);
 });
 
 test('a row selects, and Next beside Cancel moves on once the step is answered', () => {
   const answered = SRC.slice(SRC.indexOf('function answered(which: Step)'), SRC.indexOf('const stepAnswered'));
   assert.match(answered, /case 'who': return audience != null;/);
   assert.match(answered, /case 'invite': return people\.length > 0;/);
-  assert.match(answered, /case 'kind': return kind != null;/);
+  assert.doesNotMatch(SRC, /'kind'|setKind|chooseKind|data-kind/, 'no "What are you making?" step: the make screen asks it');
   // #3521: from a template is answered once a starter is picked.
   assert.match(answered, /case 'start': return mode != null && \(mode !== 'import' \|\| importState === 'ok'\) && \(mode !== 'template' \|\| template != null\);/);
   // The name, and what it should do (BRIEF_MIN or more) unless importing.
@@ -93,7 +93,6 @@ test('a row selects, and Next beside Cancel moves on once the step is answered',
   assert.match(answered, /case 'approve': return repoGov != null \|\| \(approvers != null && \(approvers !== 'invited' \|\| approvals != null\)\);/);
   // On its own step a row only selects; a collapsed row reopens its step.
   assert.match(SRC, /function chooseAudience\(next: Audience\) \{\s*setError\(''\);\s*if \(step !== 'who'\) \{ setStep\('who'\); return; \}\s*setAudience\(next\);\s*\}/);
-  assert.match(SRC, /function chooseKind\(next: Kind\) \{\s*setError\(''\);\s*if \(step !== 'kind'\) \{ setStep\('kind'\); return; \}\s*setKind\(next\);\s*\}/);
   // How to start collapses too, so its rows (and a picked starter) reopen it.
   assert.match(SRC, /function chooseStart\(next: Mode\) \{\s*setError\(''\);\s*if \(step !== 'start'\) \{ setStep\('start'\); return; \}/);
   assert.match(SRC, /function chooseTemplate\(next: TemplateId\) \{\s*setError\(''\);\s*if \(step !== 'start'\) \{ setStep\('start'\); return; \}\s*setTemplate\(next\);\s*\}/);
@@ -298,16 +297,12 @@ test('the invite step: one row per person, suggestions from the user search, an 
   assert.ok(!EMAIL_RE.test('@sam'));
 });
 
-test('the kind step and how to start: rows, with what is not ready yet dimmed and saying Soon', () => {
-  const kind = SRC.slice(SRC.indexOf('data-create-step="kind"'), SRC.indexOf('data-create-step="start"'));
-  assert.match(kind, /data-kind-pill="app"/);
-  assert.match(kind, /Something you build and use together\./);
-  assert.match(kind, /data-kind-pill="doc" aria-disabled="true"/);
-  assert.match(kind, /Pages you write and edit together\./);
-  assert.match(kind, /data-kind-pill="video" aria-disabled="true"/);
-  assert.match(kind, /A video you make together, from script to cut\./);
-  // How to start comes straight after what you are making, before the name.
-  const order = ['who', 'invite', 'kind', 'start', 'details', 'about', 'approve']
+test('how to start: rows, straight after who it is for', () => {
+  // No "What are you making?" step any more (App, with Document and Video
+  // dimmed, saying Soon): the make screen asked it before More options.
+  assert.doesNotMatch(SRC, /data-create-step="kind"|data-kind-pill|create-soon-row|What are you making\?`/);
+  // How to start comes straight after who it is for, before the name.
+  const order = ['who', 'invite', 'start', 'details', 'about', 'approve']
     .map((step) => SRC.indexOf(`data-create-step="${step}"`));
   assert.deepEqual([...order].sort((x, y) => x - y), order, 'the sections in the order the steps unfold');
   const start = SRC.slice(SRC.indexOf('data-create-step="start"'), SRC.indexOf('data-create-step="details"'));
@@ -339,9 +334,8 @@ test('the kind step and how to start: rows, with what is not ready yet dimmed an
 test('app.css unfolds the steps in place, keeps each step to the answers it belongs to, and shapes the footer', () => {
   const rule = (sel) => new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   for (const sel of [
-    '#create-card[data-step="who"]     :is([data-create-step="invite"], [data-create-step="kind"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
-    '#create-card[data-step="invite"]  :is([data-create-step="kind"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
-    '#create-card[data-step="kind"]    :is([data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
+    '#create-card[data-step="who"]     :is([data-create-step="invite"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
+    '#create-card[data-step="invite"]  :is([data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
     '#create-card[data-step="start"]   :is([data-create-step="details"], [data-create-step="about"], [data-create-step="approve"])',
     '#create-card[data-step="details"] :is([data-create-step="about"], [data-create-step="approve"])',
     '#create-card[data-step="about"]   [data-create-step="approve"]',
@@ -356,12 +350,12 @@ test('app.css unfolds the steps in place, keeps each step to the answers it belo
   assert.doesNotMatch(CSS, /\[data-step="start"\]\) #create-next \{\s*display: none/, 'Next is never hidden on a question step now');
   // A question step collapses to its chosen row once the card moves past it.
   assert.match(CSS, rule('#create-card:not([data-step="who"])[data-audience="invited"] .create-who-pill:not([data-audience-pill="invited"])'));
-  assert.match(CSS, rule('#create-card:is([data-step="start"], [data-step="details"], [data-step="about"], [data-step="approve"]) [data-create-step="kind"] :is(.create-choice-marker, .create-choice-caption, .create-kind-soon)'));
+  assert.doesNotMatch(CSS, /data-step="kind"|data-create-step="kind"|create-kind-|create-soon-row/, 'no rule left for the step that went');
   assert.match(CSS, rule('#create-card:not([data-step="who"]) [data-create-step="who"] :is(.create-choice-marker, .create-choice-caption)'));
   // How to start does too, keeping a picked starter and the repo's check.
   assert.match(CSS, rule('#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="import"]   .create-mode-pill:not([data-mode-pill="import"])'));
   assert.match(CSS, rule('#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"]) [data-create-step="start"] :is(.create-choice-caption, .create-template-pill:not([aria-pressed="true"]), .create-import-hint)'));
-  assert.match(CSS, rule('#create-card:is([data-step="who"], [data-step="invite"], [data-step="kind"], [data-step="start"]) [data-create-step="start"] .create-choice-change'));
+  assert.match(CSS, rule('#create-card:is([data-step="who"], [data-step="invite"], [data-step="start"]) [data-create-step="start"] .create-choice-change'));
   // What an import's dapp.json decides is dimmed and tagged. The name comes
   // after the check and opens on the repo's own, so it is only ever tagged.
   assert.match(CSS, rule('#create-card[data-mode="import"][data-repo-sets~="gov"]  #create-approve-block'));
@@ -374,9 +368,7 @@ test('#24 (D8): a question\'s rows end in a selection marker, not a chevron, bec
   // The behaviour is select-then-Next, unchanged: the handlers above only
   // set the answer. What changed is the mark at each row's edge.
   const who = SRC.slice(SRC.indexOf('data-create-step="who"'), SRC.indexOf('data-create-step="invite"'));
-  const kind = SRC.slice(SRC.indexOf('data-create-step="kind"'), SRC.indexOf('data-create-step="start"'));
   assert.match(who, /<ChoiceMarker chosen=\{audience === choice\.key\} \/>\s*<span className=\{CHOICE_CHANGE\}>Change<\/span>/);
-  assert.match(kind, /<ChoiceMarker chosen=\{kind === 'app'\} \/>\s*<span className=\{CHOICE_CHANGE\}>Change<\/span>/);
   assert.doesNotMatch(SRC, /ChevronRightIcon|create-choice-chevron/, 'no chevron left on a row that only selects');
   // The marker is a ring, and the chosen row's carries the shell's own check
   // (an existing glyph, not one drawn here).
@@ -386,14 +378,14 @@ test('#24 (D8): a question\'s rows end in a selection marker, not a chevron, bec
   assert.doesNotMatch(marker, /<svg|<path/, 'no hand-drawn glyph');
   assert.match(SRC, /const CHOICE_MARKER = 'create-choice-marker [^']*rounded-full ring-\[1\.5px\] ring-inset ring-current[^']*';/);
   // The chosen ring fills with the row's ink and its check takes the accent.
-  assert.match(CSS, /#create-card :is\(\.create-who-pill, \.create-kind-row\)\[aria-pressed="true"\] > \.create-choice-marker \{\s*background-color: currentColor;\s*opacity: 1;\s*\}/);
-  assert.match(CSS, /#create-card :is\(\.create-who-pill, \.create-kind-row\)\[aria-pressed="true"\] > \.create-choice-marker > svg \{\s*color: #0a6ee0;/);
-  // And in the prerendered document: four rows with a marker (three
-  // audiences and App), none chosen yet, and no chevron among them.
+  assert.match(CSS, /#create-card \.create-who-pill\[aria-pressed="true"\] > \.create-choice-marker \{\s*background-color: currentColor;\s*opacity: 1;\s*\}/);
+  assert.match(CSS, /#create-card \.create-who-pill\[aria-pressed="true"\] > \.create-choice-marker > svg \{\s*color: #0a6ee0;/);
+  // And in the prerendered document: three rows with a marker (the three
+  // audiences), none chosen yet, and no chevron among them.
   const html = shellMarkup();
   const card = html.slice(html.indexOf('id="create-card"'), html.indexOf('id="rename-modal"'));
   const rows = card.slice(card.indexOf('data-create-step="who"'), card.indexOf('data-create-step="start"'));
-  assert.equal((rows.match(/class="create-choice-marker /g) || []).length, 4, 'every who and kind row has the marker');
+  assert.equal((rows.match(/class="create-choice-marker /g) || []).length, 3, 'every who row has the marker');
   assert.ok(!rows.includes('d="M9 5l7 7-7 7"'), 'and none draws the chevron');
   assert.ok(!rows.includes('d="M5 13l4 4L19 7"'), 'nothing is chosen on arrival, so no check yet');
 });
@@ -401,7 +393,7 @@ test('#24 (D8): a question\'s rows end in a selection marker, not a chevron, bec
 test('every selected choice wears the Create button\'s accent, the moment it is pressed', () => {
   const fill = CSS.slice(CSS.indexOf('#create-card[data-audience="solo"]      .create-who-pill[data-audience-pill="solo"],'));
   const block = fill.slice(0, fill.indexOf('}') + 1);
-  for (const sel of ['.create-who-pill[data-audience-pill="open"]', '.create-kind-row[data-kind-pill="app"]',
+  for (const sel of ['.create-who-pill[data-audience-pill="open"]',
     '.create-mode-pill[data-mode-pill="import"]', '.create-approver-pill[data-approver-pill="invited"]',
     '.create-approvals-pill[data-approvals-pill="atLeast"]']) {
     assert.ok(block.includes(sel), sel);
@@ -412,16 +404,16 @@ test('every selected choice wears the Create button\'s accent, the moment it is 
 
 test('the shot links land on the state they name, and each has a check', () => {
   assert.match(SRC, /if \(shot === 'create-group'\) return \{ \.\.\.open, step: 'invite', audience: 'invited' \};/);
-  assert.match(SRC, /if \(shot === 'create-start'\) return \{ \.\.\.app, step: 'start', audience: 'open' \};/);
-  assert.match(SRC, /if \(shot === 'create-template'\) return \{ \.\.\.app, step: 'start', audience: 'solo', mode: 'template' \};/);
-  assert.match(SRC, /if \(shot === 'create-import'\) return \{ \.\.\.app, step: 'start', audience: 'solo', mode: 'import' \};/);
-  assert.match(SRC, /if \(shot === 'create-details'\) return \{ \.\.\.open, step: 'details', audience: 'solo', kind: 'app', mode: 'new' \};/);
+  assert.match(SRC, /if \(shot === 'create-start'\) return \{ \.\.\.open, step: 'start', audience: 'open' \};/);
+  assert.match(SRC, /if \(shot === 'create-template'\) return \{ \.\.\.open, step: 'start', audience: 'solo', mode: 'template' \};/);
+  assert.match(SRC, /if \(shot === 'create-import'\) return \{ \.\.\.open, step: 'start', audience: 'solo', mode: 'import' \};/);
+  assert.match(SRC, /if \(shot === 'create-details'\) return \{ \.\.\.open, step: 'details', audience: 'solo', mode: 'new' \};/);
   assert.match(SRC, /if \(shot === 'create-about'\) return \{ \.\.\.described, step: 'about', audience: 'solo' \};/);
   assert.match(SRC, /if \(shot === 'create-approve' \|\| shot === 'create-access'\) return \{ \.\.\.described, step: 'approve', audience: 'open' \};/);
   const byPath = new Map(DAPP.tests.map((t) => [t.path, t]));
   // The dialog is the make screen's More options now, and #create/options
   // is its address (#create opens the make screen).
-  const first = DAPP.tests.find((t) => t.path === '/#create/options' && /Step 1 of 5/.test(t.expectText || ''));
+  const first = DAPP.tests.find((t) => t.path === '/#create/options' && /Step 1 of 4/.test(t.expectText || ''));
   assert.ok(first, 'a check reads the step count on a cold open');
   // Nothing chosen to start from either (#748's first-step check, folded in
   // when #create became the make screen's address).
@@ -455,13 +447,13 @@ test('the prerendered document starts on the first step, nothing chosen, with ev
   assert.match(card, /data-audience=""/);
   assert.match(card, /data-mode=""/);
   assert.match(card, /data-final="false"/);
-  const order = ['who', 'invite', 'kind', 'start', 'details', 'about', 'approve'];
+  const order = ['who', 'invite', 'start', 'details', 'about', 'approve'];
   for (const step of order) {
     assert.match(card, new RegExp(`data-create-step="${step}"`), step);
   }
   const at = order.map((step) => card.indexOf(`data-create-step="${step}"`));
   assert.deepEqual([...at].sort((x, y) => x - y), at, 'in the order they unfold');
-  assert.match(card, /Step 1 of 5/);
+  assert.match(card, /Step 1 of 4/);
   for (const id of ['create-step-indicator', 'create-invite-block', 'create-invitees', 'create-import-block',
     'create-name-block', 'create-approve-block', 'create-approvals-n', 'create-cancel', 'create-next',
     'create-submit', 'import-url', 'app-name', 'app-brief', 'app-description']) {
