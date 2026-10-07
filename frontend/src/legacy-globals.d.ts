@@ -293,6 +293,25 @@ declare global {
         string,
         { isOpen(): boolean; open(payload?: unknown): void; close(): void } | undefined
       >;
+      /**
+       * features/first-session: the first session's screens, and the one
+       * front door for a new project. `create` opens "What do you want to
+       * make?" from the Create button (false when it cannot); `made` hands
+       * the New project dialog's project to the made screen.
+       */
+      firstSession?: {
+        create?(): boolean;
+        made?(made: {
+          slug: string;
+          name: string;
+          emoji: string | null;
+          description: string | null;
+          example: null;
+          conversationId: number | null;
+          audience?: 'solo' | 'invited' | 'open';
+        }): boolean;
+        [key: string]: unknown;
+      };
       messages?: {
         open(conversationId?: number | null): void;
         route(conversationId?: number | null): void;

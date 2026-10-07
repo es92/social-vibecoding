@@ -288,7 +288,10 @@ test('the dialogs still publish controllers for the legacy call sites', () => {
   assert.match(USE_DIALOG, /dialogs\[name\] = controller/);
   const appJs = read('public/js/app.js');
   const appViewJs = read('public/js/app-view.js');
-  assert.match(appJs, /window\.UsernodeReact\?\.dialogs\?\.create\?\.open\(\)/);
+  // App.showCreateModal opens the make screen and falls back to this
+  // dialog through App.showCreateOptions, its More options
+  // (tests/create-front-door.test.js).
+  assert.match(appJs, /window\.UsernodeReact\?\.dialogs\?\.create\?\.open\(draft\)/);
   for (const name of ['rename', 'closeIssue', 'fork', 'importPr', 'share']) {
     assert.ok(appViewJs.includes(`dialogIsland('${name}')`),
       `app-view.js no longer forwards to the ${name} dialog island`);

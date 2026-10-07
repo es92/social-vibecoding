@@ -44,6 +44,14 @@ const appActivity = require('../services/app-activity');
 // (see that route below) — a sanity bound, not a product limit.
 const MAX_INITIAL_APPROVERS = 20;
 
+// The doors a project is made through from the platform's own screens, as
+// POST /api/apps's `from`: the first session's "What do you want to make?"
+// and the Create button's, which opens the same screen and the New project
+// dialog as its More options (frontend/src/features/first-session/make.tsx).
+// Both land on the made screen, so both get the idea's sketch; only the
+// first answers the join screen, and only it counts in the admin Journey.
+const MAKE_ORIGINS = new Set(['first-session', 'create']);
+
 // Validate a (collabVisibility, viewVisibility) pair against the
 // invariants (see schema.sql): both must be public|private, and
 // collab-public implies view-public. Returns an error string or null.
@@ -1216,19 +1224,25 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
           ...(rule ? { approverPolicy: rule.approverPolicy, approvalsRequired: rule.approvalsRequired } : {}),
           ...(description ? { described: true } : {}),
           ...(template !== appTemplates.DEFAULT_TEMPLATE ? { template } : {}),
-          // The admin Journey's first session (journey.js firstSession).
-          ...(req.body.from === 'first-session' ? { from: 'first-session' } : {}),
+          // Which door it came through: the first session's "What do you
+          // want to make?" (the admin Journey's first session, journey.js
+          // firstSession, counts only these) or the Create button's, which
+          // opens the same screen and its More options (MAKE_ORIGINS).
+          ...(MAKE_ORIGINS.has(req.body.from) ? { from: req.body.from } : {}),
         },
       });
 
-      // The first session's card of the idea, and with it the project's
-      // icon (services/app-sketch.js): started BEFORE creation, which waits a
+      // The card of the idea, and with it the project's icon
+      // (services/app-sketch.js): started BEFORE creation, which waits a
       // little for it so the repository's first commit can carry it. Only
-      // from "What do you want to make?", only with a description to make it
-      // from, and never a reason the create fails. `timeZone` is the maker's
-      // device's, so the card's "today" is theirs (an unknown or invalid zone
-      // reads as UTC there).
-      if (req.body.from === 'first-session' && !repoUrlNormalized
+      // from "What do you want to make?" or its More options (MAKE_ORIGINS:
+      // the first session's door and the Create button's, both of which
+      // land on the made screen that draws it), only with a description to
+      // make it from, and never a reason the create fails. A connector's
+      // create sends no `from`, so it costs no sketch. `timeZone` is the
+      // maker's device's, so the card's "today" is theirs (an unknown or
+      // invalid zone reads as UTC there).
+      if (MAKE_ORIGINS.has(req.body.from) && !repoUrlNormalized
           && require('../services/homeroom-bot-dm').normalizeBrief(req.body.brief)) {
         await require('../services/app-sketch').startSketch(pool, {
           app: appRow, user: req.user, brief: req.body.brief,

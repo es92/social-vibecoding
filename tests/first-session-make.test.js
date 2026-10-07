@@ -153,9 +153,15 @@ test('three examples, the same on the story and the make screen, each a whole st
 
 test('"Make it" makes a private community through the dialog\'s own route', () => {
   const make = read(`${DIR}/make.tsx`);
-  assert.match(make, /fetch\('\/api\/apps', \{/);
+  // The dialog's own request (../dialogs/post-create-app.ts), not a copy of it.
+  assert.match(make, /import \{ deviceTimeZone, postCreateApp \} from '\.\.\/dialogs\/post-create-app';/);
+  assert.match(make, /const reply = await postCreateApp\(\{/);
+  assert.doesNotMatch(make, /fetch\('\/api\/apps'/);
   assert.match(make, /audience: 'invited',\s+brief: brief\.trim\(\),/);
-  assert.match(make, /from: 'first-session',/);
+  // `from` is the door: 'first-session', or 'create' from the Create button.
+  assert.match(make, /from: entry,/);
+  assert.match(make, /export type MakeEntry = 'first-session' \| 'create';/);
+  assert.match(make, /entry = 'first-session'/, 'the first session is the default door');
   assert.match(make, /export const BRIEF_MIN = 10;/);
   assert.match(read('frontend/src/features/dialogs/create-app.tsx'), /BRIEF_MIN = 10/);
   for (const words of ['What do you want to make?', 'What should it do?', 'What should we call it?', 'It\'s your group\'s name too. You can change it later.', 'Look around first']) {
@@ -239,7 +245,8 @@ test('with the keyboard up nothing scrolls under the status bar: the bar stays, 
   // The bar holds the whole mark under the status bar's inset (on a notched
   // phone the mark used to hang 12px out of a 52px box), so what scrolls
   // stops below it.
-  assert.match(src, /<div className=\{`flex h-\[max\(52px,calc\(env\(safe-area-inset-top\)\+32px\)\)\] shrink-0 items-center justify-center pt-\[env\(safe-area-inset-top\)\] \$\{motion\}`\}>/);
+  // (`relative`: from Create, its ✕ sits at the bar's leading edge.)
+  assert.match(src, /<div className=\{`relative flex h-\[max\(52px,calc\(env\(safe-area-inset-top\)\+32px\)\)\] shrink-0 items-center justify-center pt-\[env\(safe-area-inset-top\)\] \$\{motion\}`\}>/);
   // The scroller's class string is constant.
   assert.match(src, /<div ref=\{scrollerRef\} data-first-session-make-scroll="" className="flex min-h-0 grow flex-col overflow-y-auto">/);
   // #3894's arrival is untouched: the bar and the form still rise in.
@@ -317,7 +324,7 @@ test('the make screen sends the device\'s time zone with Make it, so the sketch\
   const make = loadTsx(`${DIR}/make.tsx`);
   const zone = make.deviceTimeZone();
   assert.ok(zone === null || (typeof zone === 'string' && zone.length > 0));
-  assert.match(read(`${DIR}/make.tsx`), /from: 'first-session',\s+\/\/[^\n]*\n\s+\.\.\.\(timeZone \? \{ timeZone \} : \{\}\),/);
+  assert.match(read(`${DIR}/make.tsx`), /from: entry,\s+\/\/[^\n]*\n\s+\.\.\.\(timeZone \? \{ timeZone \} : \{\}\),/);
 });
 
 test('after Make it: the build\'s step, then one invite, and the second button says where it goes', () => {
@@ -327,7 +334,10 @@ test('after Make it: the build\'s step, then one invite, and the second button s
   assert.equal(made.buildLine(null, 'creating'), 'Setting it up…');
   assert.equal(made.buildLine(null, 'running'), 'Homeroom bot builds it from your description.');
   const src = read(`${DIR}/made.tsx`);
-  assert.match(src, /\{sent \? 'Go to the Homeroom app' : 'Invite people later'\}/);
+  // The first session's second button: on to the tour (continueLabel).
+  assert.equal(made.continueLabel('first-session', false, 'Page Turners'), 'Invite people later');
+  assert.equal(made.continueLabel('first-session', true, 'Page Turners'), 'Go to the Homeroom app');
+  assert.match(src, /\{continueLabel\(entry, sent, made\.name\)\}/);
   // The note is said to be the first message.
   assert.match(src, /body: JSON\.stringify\(\{ days: LINK_DAYS, maxUses: LINK_USES, note: note\.trim\(\) \|\| null \}\)/);
   // Every link's default, the first one's too: a link lets somebody new

@@ -364,7 +364,10 @@ test('create: mode, import check and POST /api/apps all moved', () => {
   // answer back to none, and a new answer there starts the check over.
   assert.match(src, /applyMode\(null\)/);
   assert.match(src, /\/api\/github\/verify-access\?url=/, 'the import URL check moved with it');
-  assert.match(src, /fetch\('\/api\/apps', \{/, 'the create POST moved with it');
+  // The POST itself is shared with the make screen since Create opens it
+  // (post-create-app.ts); the dialog sends through it.
+  assert.match(src, /await postCreateApp\(body\)/, 'the create POST moved with it');
+  assert.match(dialog('post-create-app.ts'), /fetch\('\/api\/apps', \{/);
   // A successful create/import no longer closes the dialog. #1418 covered
   // the async build with a toast over a CLOSED dialog, because the tile's
   // small "Spinning up…" was easy to miss; the dialog now stays open and
@@ -404,7 +407,8 @@ test('create: mode, import check and POST /api/apps all moved', () => {
   // Close resets the form, so a half-finished import is never inherited.
   assert.match(src, /formRef\.current\?\.reset\(\)/);
   // The home screen's "+" still opens it by name.
-  assert.match(APP, /window\.UsernodeReact\?\.dialogs\?\.create\?\.open\(\)/);
+  // Through App.showCreateOptions, the make screen's More options, with its draft.
+  assert.match(APP, /window\.UsernodeReact\?\.dialogs\?\.create\?\.open\(draft\)/);
 });
 
 test('rename: prefills the current name and PUTs to /rename', () => {

@@ -147,7 +147,11 @@ test('the wire body: who it is for, the people and addresses, and what an import
   assert.equal(createBody({ ...imp, repo: {}, template: 'game-2d' }).template, undefined);
   assert.equal(createBody({ ...base, mode: 'template', audience: 'solo', template: null }).template, undefined);
   const submit = SRC.slice(SRC.indexOf('async function submit(event: FormEvent) {'), SRC.indexOf('  const stepIndex'));
-  assert.match(submit, /const body = createBody\(\{/);
+  // Spread with the door it came through (routes/apps.js MAKE_ORIGINS:
+  // the Create button's) and the device's time zone, so its idea is
+  // sketched for the made screen it lands on, as Make it's is.
+  assert.match(submit, /const timeZone = deviceTimeZone\(\);\s*const body = \{\s*\.\.\.createBody\(\{/);
+  assert.match(submit, /from: 'create',\s*\.\.\.\(timeZone \? \{ timeZone \} : \{\}\),\s*\};/);
   // What it should do goes from everyone now, and an import, which never
   // showed the one-line step, sends no line from the dialog.
   assert.match(submit, /name: trimmed,\s*brief,\s*description,/);
@@ -156,9 +160,10 @@ test('the wire body: who it is for, the people and addresses, and what an import
   assert.match(submit, /if \(brief\.trim\(\)\.length < BRIEF_MIN\) return setError\('Say what it should do, in a sentence or two\.'\);/);
   assert.match(submit, /if \(!description\.trim\(\)\) return setError\('Say what it is in one line\.'\);/);
   assert.match(submit, /invitees: people,/);
-  assert.match(submit, /repo,\s*template,\s*\}\);/);
+  assert.match(submit, /repo,\s*template,\s*\}\),/);
   assert.match(submit, /await postCreateApp\(body\)/);
-  assert.match(SRC, /body: JSON\.stringify\(body\)/);
+  // The request itself is shared with the make screen (post-create-app.ts).
+  assert.match(read('frontend/src/features/dialogs/post-create-app.ts'), /body: JSON\.stringify\(body\)/);
 });
 
 test('an import names each answer its repo’s dapp.json replaces, and only answers given', () => {
@@ -414,23 +419,27 @@ test('the shot links land on the state they name, and each has a check', () => {
   assert.match(SRC, /if \(shot === 'create-about'\) return \{ \.\.\.described, step: 'about', audience: 'solo' \};/);
   assert.match(SRC, /if \(shot === 'create-approve' \|\| shot === 'create-access'\) return \{ \.\.\.described, step: 'approve', audience: 'open' \};/);
   const byPath = new Map(DAPP.tests.map((t) => [t.path, t]));
-  const first = DAPP.tests.find((t) => t.path === '/#create' && /Step 1 of 5/.test(t.expectText || ''));
+  // The dialog is the make screen's More options now, and #create/options
+  // is its address (#create opens the make screen).
+  const first = DAPP.tests.find((t) => t.path === '/#create/options' && /Step 1 of 5/.test(t.expectText || ''));
   assert.ok(first, 'a check reads the step count on a cold open');
-  assert.match(first.expectSelector, /\[data-step="who"\]\[data-audience=""\]:has\(#create-cancel \+ #create-next:disabled\)/);
-  const details = byPath.get('/?shot=create-details#create');
+  // Nothing chosen to start from either (#748's first-step check, folded in
+  // when #create became the make screen's address).
+  assert.match(first.expectSelector, /\[data-step="who"\]\[data-audience=""\]\[data-mode=""\]:has\(#create-cancel \+ #create-next:disabled\)/);
+  const details = byPath.get('/?shot=create-details#create/options');
   assert.match(details.expectSelector, /\[data-step="details"\]\[data-mode="new"\]:has\(#create-next:disabled\) #create-name-block/);
   assert.match(details.expectSelector, /\.create-brief-row #app-brief$/);
   assert.equal(details.expectText, 'What should it do?');
-  const approve = byPath.get('/?shot=create-approve#create');
+  const approve = byPath.get('/?shot=create-approve#create/options');
   assert.match(approve.expectSelector, /\[data-step="approve"\]\[data-audience="open"\]\[data-final="true"\] #create-approve-block/, 'the last step for a public community');
   assert.equal(approve.expectText, 'Who approves changes?');
-  const group = byPath.get('/?shot=create-group#create');
+  const group = byPath.get('/?shot=create-group#create/options');
   assert.match(group.expectSelector, /\[data-step="invite"\] \[data-create-step="invite"\] #create-invite-block #create-invitees/);
   assert.equal(group.expectText, 'Who do you want to invite?');
-  const imp = byPath.get('/?shot=create-import#create');
+  const imp = byPath.get('/?shot=create-import#create/options');
   assert.match(imp.expectSelector, /\[data-mode-pill="new"\] \+ \[data-mode-pill="template"\] \+ \[data-mode-pill="import"\] \+ #create-import-block/);
-  assert.equal(byPath.get('/?shot=create-access#create'), undefined, 'the retired step has no check left');
-  const tpl = byPath.get('/?shot=create-template#create');
+  assert.equal(byPath.get('/?shot=create-access#create/options'), undefined, 'the retired step has no check left');
+  const tpl = byPath.get('/?shot=create-template#create/options');
   assert.match(tpl.expectSelector, /\[data-mode="template"\]:has\(#create-next:disabled\) \[data-mode-pill="template"\]\[aria-pressed="true"\] \+ #create-template-block/,
     'how to start is not the last step any more: Next waits for a starter');
   assert.equal(tpl.expectText, 'Multimedia social');
@@ -480,7 +489,10 @@ test('Create sends one request at a time and shows it is busy', () => {
   assert.match(submit, /if \(submittingRef\.current\) return;\s*submittingRef\.current = true;\s*setSubmitting\(true\);\s*try \{/);
   assert.match(submit, /\} finally \{\s*submittingRef\.current = false;\s*setSubmitting\(false\);\s*\}/);
   assert.equal((submit.match(/postCreateApp\(/g) || []).length, 1);
-  assert.equal((SRC.match(/fetch\('\/api\/apps'/g) || []).length, 1);
+  // The one request is post-create-app.ts's, shared with the make screen;
+  // neither screen fetches the route itself.
+  assert.equal((SRC.match(/fetch\('\/api\/apps'/g) || []).length, 0);
+  assert.equal((read('frontend/src/features/dialogs/post-create-app.ts').match(/fetch\('\/api\/apps'/g) || []).length, 1);
   const button = SRC.slice(SRC.indexOf('id="create-submit"'), SRC.indexOf('</Button>', SRC.indexOf('id="create-submit"')));
   assert.match(button, /aria-busy=\{submitting \|\| undefined\}/, 'no aria-busy in the prerender');
   assert.match(button, /\{submitting \? <SpinnerArcIcon /);

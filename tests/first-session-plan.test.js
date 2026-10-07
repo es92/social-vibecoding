@@ -94,7 +94,8 @@ test('a waiting plan is one small "Needs you" card under the project, with the w
   const src = read(`${DIR}/made.tsx`);
   assert.doesNotMatch(src, /PlanCardView|decideBotAction|PlanSection|Build it'/, 'the made screen decides nothing');
   // Under the project card, never above it, so the sketch does not move when it lands.
-  const card = src.indexOf('{plan ? <PlanWaitsCard');
+  // (Not over a setup that stopped: its own card is the one thing to do then.)
+  const card = src.indexOf('{plan && !stalled ? <PlanWaitsCard');
   assert.ok(card > src.indexOf('<SketchCard made='), 'after the project card');
   assert.ok(card < src.indexOf('Invite people to ${made.name}`}</p>'), 'before the invite');
   assert.match(src, /onOpenChat=\{\(\) => onOpenChat\(plan\.conversationId \?\? made\.conversationId\)\}/);
@@ -105,14 +106,15 @@ test('while the plan waits, the build\'s note says so instead of promising a mes
   assert.equal(buildNote(true, true), 'Homeroom bot is waiting for your go-ahead.');
   assert.equal(buildNote(false, true), 'You or anyone you invite can build it from there.');
   const src = read(`${DIR}/made.tsx`);
-  assert.match(src, /const note = buildNote\(botBuilds, !!plan\);/);
+  assert.match(src, /const note = buildNote\(botBuilds, !!plan, stalled\);/);
   // Under the card of the idea (./sketch-card.tsx), and in the plain card
   // without one. The sketch's caption calling it the real app is gone.
   assert.match(src, /<SketchCard made=\{made\} sketch=\{sketch\} line=\{line\} note=\{note\} /);
   assert.match(src, /<p className="mt-1 text-\[13px\] text-zinc-500 dark:text-zinc-400">\{note\}<\/p>/);
   assert.doesNotMatch(src, /sketchCaption/);
   // Nothing is under way while it waits on them: no busy dot.
-  assert.match(src, /const busy = appStatus === 'creating' \|\| \(botBuilds && !\(fv && fv\.ready\) && !plan\);/);
+  // Nor on a setup that stopped (stalledOf).
+  assert.match(src, /const busy = appStatus === 'creating' \|\| \(botBuilds && !\(fv && fv\.ready\) && !plan && !stalled\);/);
 });
 
 test('a first version promises no time at all, and says in one plain line that it asks when it has questions', () => {
@@ -142,7 +144,8 @@ test('a first version promises no time at all, and says in one plain line that i
 
 test('Go to chat leaves the first session for the chat with Homeroom bot', () => {
   const index = read(`${DIR}/index.tsx`);
-  assert.match(index, /onOpenChat=\{\(conversationId\) => \{\s+markSeen\(made\.slug\);\s+rememberCommunity\(made\.slug\);\s+setMode\(\{ kind: 'none' \}\);\s+enterScreen\('bot', made\.slug, conversationId\);/);
+  // (From Create, its back press is handed back on the way: tests/create-front-door.test.js.)
+  assert.match(index, /onOpenChat=\{\(conversationId\) => \{\s+markSeen\(made\.slug\);\s+rememberCommunity\(made\.slug\);\s+setMode\(\{ kind: 'none' \}\);\s+if \(fromCreate\) leaveDoor\(true\);\s+enterScreen\('bot', made\.slug, conversationId\);/);
   assert.match(index, /else if \(screen === 'bot' && conversationId\) window\.location\.hash = `#messages\/\$\{conversationId\}`;/);
   assert.doesNotMatch(index, /changePlanInChat/);
 });

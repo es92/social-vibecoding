@@ -66,9 +66,13 @@ test('the reading: steps against the hour and the two-minute reward, the aha, op
 });
 
 test('the first session\'s create marks the project, and the sketch records its maker\'s first artefact', () => {
-  assert.match(read('frontend/src/features/first-session/make.tsx'), /from: 'first-session',/);
+  // The make screen sends its door: 'first-session' by default, 'create'
+  // from the Create button, which the Journey does not count (it reads
+  // `from = 'first-session'`).
+  assert.match(read('frontend/src/features/first-session/make.tsx'), /from: entry,/);
   const apps = read('src/routes/apps.js');
-  assert.match(apps, /\.\.\.\(req\.body\.from === 'first-session' \? \{ from: 'first-session' \} : \{\}\),/,
+  assert.match(apps, /const MAKE_ORIGINS = new Set\(\['first-session', 'create'\]\);/);
+  assert.match(apps, /\.\.\.\(MAKE_ORIGINS\.has\(req\.body\.from\) \? \{ from: req\.body\.from \} : \{\}\),/,
     'app_created carries it, and nothing else a client sends');
   assert.match(apps, /noteFirstArtefactShown\(pool, \{ appId: app\.id, userId: req\.user\.id \}\)/);
   assert.match(read('src/db/schema.sql'),

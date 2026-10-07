@@ -1502,33 +1502,33 @@
       "expectText": "STAGING_DEMO_PROPOSED"
     },
     {
-      "name": "Create-app modal opens on its first step with nothing chosen, the state on the presented card (#748), titled New project",
+      "name": "Create opens \"What do you want to make?\", the first session's own screen, as the one front door for a new project: a close, the examples, and More options for the New project dialog (re-pointed: #748's first-step check folded into the who-step check below)",
       "path": "/#create",
-      "expectSelector": ".un-modal #create-card[data-step=\"who\"][data-mode=\"\"][data-import-state=\"idle\"]",
-      "expectText": "New project"
+      "expectSelector": "[data-first-session-make][data-make-entry=\"create\"]:has([data-make-close]):has([data-first-session-example=\"run\"]) [data-make-more-options]",
+      "expectText": "What do you want to make?"
     },
     {
       "name": "Create-app modal shows current app quota and usage (#1611)",
-      "path": "/?shot=create-quota#create",
+      "path": "/?shot=create-quota#create/options",
       "expectSelector": ".un-modal #create-app-quota[data-quota-state=\"available\"]",
       "expectText": "1 of 2 app slots used"
     },
     {
       "name": "Create-project dialog's name step asks the name and what it should do in one rounded white card, after how to start, with Next dimmed until both are filled (#1910, #1911)",
-      "path": "/?shot=create-details#create",
+      "path": "/?shot=create-details#create/options",
       "expectSelector": ".un-modal #create-card[data-step=\"details\"][data-mode=\"new\"]:has(#create-next:disabled) #create-name-block.rounded-2xl.bg-white:has(#app-name.bg-transparent) .create-brief-row #app-brief",
       "expectText": "What should it do?"
     },
     {
       "name": "Create-project dialog's how-to-start step, straight after what you are making, offers from scratch, a template or a GitHub repo, and the repo URL field and Check pill open under it in one white card (#1910)",
-      "path": "/?shot=create-import#create",
+      "path": "/?shot=create-import#create/options",
       "expectSelector": "#create-card[data-step=\"start\"][data-mode=\"import\"][data-import-state=\"idle\"] [data-mode-pill=\"new\"] + [data-mode-pill=\"template\"] + [data-mode-pill=\"import\"] + #create-import-block .rounded-2xl.bg-white #import-check.rounded-full",
       "expectText": "GitHub repo URL"
     },
     {
       "id": "create.template-picker",
       "name": "Create-project dialog's \"Start from a template\" opens its four starters under its row, none picked yet and Next waiting for one (#3521)",
-      "path": "/?shot=create-template#create",
+      "path": "/?shot=create-template#create/options",
       "expectSelector": ".un-modal #create-card[data-mode=\"template\"]:has(#create-next:disabled) [data-mode-pill=\"template\"][aria-pressed=\"true\"] + #create-template-block:not(:has([aria-pressed=\"true\"])) [data-template-pill=\"social-productivity\"] ~ [data-template-pill=\"game-3d\"]",
       "expectText": "Multimedia social",
       "visual": true,
@@ -1536,19 +1536,19 @@
     },
     {
       "name": "Create-project dialog opens on who it is for, nothing chosen yet and Next dimmed beside Cancel: Just me, A private community and A public community, with a step count (communities, stage 3; the rework)",
-      "path": "/#create",
-      "expectSelector": ".un-modal #create-card[data-step=\"who\"][data-audience=\"\"]:has(#create-cancel + #create-next:disabled) .create-who-pill[data-audience-pill=\"solo\"] + .create-who-pill[data-audience-pill=\"invited\"] + .create-who-pill[data-audience-pill=\"open\"]",
+      "path": "/#create/options",
+      "expectSelector": ".un-modal #create-card[data-step=\"who\"][data-audience=\"\"][data-mode=\"\"]:has(#create-cancel + #create-next:disabled) .create-who-pill[data-audience-pill=\"solo\"] + .create-who-pill[data-audience-pill=\"invited\"] + .create-who-pill[data-audience-pill=\"open\"]",
       "expectText": "Step 1 of 5"
     },
     {
       "name": "A public community's create dialog asks who approves changes last, after the short description: members vote, or people you pick (communities, stage 3)",
-      "path": "/?shot=create-approve#create",
+      "path": "/?shot=create-approve#create/options",
       "expectSelector": ".un-modal #create-card[data-step=\"approve\"][data-audience=\"open\"][data-final=\"true\"] #create-approve-block .create-approver-pill[data-approver-pill=\"anyone\"] + .create-approver-pill[data-approver-pill=\"invited\"]",
       "expectText": "Who approves changes?"
     },
     {
       "name": "A private community names its people when it is created, on a step of its own: one row per person, typed as @username or an email (communities, stage 3; the rework)",
-      "path": "/?shot=create-group#create",
+      "path": "/?shot=create-group#create/options",
       "expectSelector": ".un-modal #create-card[data-audience=\"invited\"][data-step=\"invite\"] [data-create-step=\"invite\"] #create-invite-block #create-invitees",
       "expectText": "Who do you want to invite?"
     },

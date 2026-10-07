@@ -466,7 +466,9 @@ test('creation waits a little for the card, the route starts it with the maker\'
   assert.match(creator, /appSketch\.commitWhenReady\(pool, \{ appId, name, owner: botUsername, repo: slug \}\);/);
   assert.equal(sketch.SKETCH_WAIT_MS, 30 * 1000);
   const routes = read('src/routes/apps.js');
-  assert.match(routes, /if \(req\.body\.from === 'first-session' && !repoUrlNormalized\s+&& require\('\.\.\/services\/homeroom-bot-dm'\)\.normalizeBrief\(req\.body\.brief\)\) \{\s+await require\('\.\.\/services\/app-sketch'\)\.startSketch\(pool, \{/);
+  // Both doors that land on the made screen: the first session's and the
+  // Create button's (MAKE_ORIGINS; tests/create-front-door.test.js).
+  assert.match(routes, /if \(MAKE_ORIGINS\.has\(req\.body\.from\) && !repoUrlNormalized\s+&& require\('\.\.\/services\/homeroom-bot-dm'\)\.normalizeBrief\(req\.body\.brief\)\) \{\s+await require\('\.\.\/services\/app-sketch'\)\.startSketch\(pool, \{/);
   assert.match(routes, /app: appRow, user: req\.user, brief: req\.body\.brief,\s+timeZone: typeof req\.body\.timeZone === 'string' \? req\.body\.timeZone\.slice\(0, 64\) : null,/);
   assert.doesNotMatch(routes, /sketch\.html/, 'no framed page: the card is drawn by the made screen');
   const make = read('frontend/src/features/first-session/make.tsx');

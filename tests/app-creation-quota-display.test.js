@@ -159,7 +159,8 @@ test('the finite quota state has a deterministic visual-review path', () => {
   const manifest = JSON.parse(read('dapp.json'));
   const check = manifest.tests.find((entry) => entry.name.includes('quota and usage (#1611)'));
   assert.ok(check);
-  assert.equal(check.path, '/?shot=create-quota#create');
+  // The New project dialog's address since Create opens the make screen.
+  assert.equal(check.path, '/?shot=create-quota#create/options');
   assert.equal(check.expectText, '1 of 2 app slots used');
 });
 

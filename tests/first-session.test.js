@@ -609,7 +609,10 @@ test('the island draws the held frame at once, and only the frame goes when the 
 
 test('"You\'re in", drawn: the project under the welcome, and "is making" while it is built', () => {
   const saved = global.window;
-  global.window = { App: { user: { username: 'priya', displayName: 'Priya' } } };
+  // addEventListener: the island imports lib/back-stack.ts (the Create
+  // door's back press, tests/create-front-door.test.js), which listens for
+  // popstate on whatever window it finds when it loads.
+  global.window = { App: { user: { username: 'priya', displayName: 'Priya' } }, addEventListener() {} };
   try {
     const { YoureIn } = loadTsx(`${DIR}/index.tsx`);
     const { renderToHtml, createElement } = require('./lib/render-tsx');

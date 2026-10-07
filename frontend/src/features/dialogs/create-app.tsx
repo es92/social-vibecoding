@@ -1,6 +1,18 @@
 /**
  * Create-project dialog (#create-modal).
  *
+ * ── More options, behind the one front door ───────────────────────────
+ *
+ * The Create button no longer opens this: it opens "What do you want to
+ * make?" (../first-session/make.tsx), the screen the first session asks
+ * with, so every project starts the same way. This dialog is that screen's
+ * More options, opened with what was typed there (`onOpen`'s draft: the
+ * name and what it should do), and the #create/options deep link. It holds
+ * every answer those two questions leave out. A project made here from a
+ * description lands on the same made screen as Make it (`madeHandOff`,
+ * through window.UsernodeReact.firstSession.made); an import, which
+ * nothing builds from a description, keeps the progress view below.
+ *
  * ── Seven questions, in the order a person answers them ───────────────
  *
  * Communities, stage 3 asked who a project is FOR before anything else,
@@ -138,6 +150,7 @@ import {
   stopWatchingCreation,
   watchCreation,
 } from './creation-progress-store.js';
+import { deviceTimeZone, postCreateApp } from './post-create-app';
 import { normalizeRepositoryUrl } from './repository-url';
 import { askForPingWhileBotBuilds } from './ping-ask';
 import { open as openMessages } from '../messages/store';
@@ -378,35 +391,48 @@ export function createBody(answers: {
 }
 
 /**
- * POST /api/apps and say what came back. Three failures read differently: a
- * fetch that throws never reached Homeroom (a network error); a JSON reply
- * carries the server's own `error`; and a reply that is not JSON at all is an
- * error page from in front of the server (a deploy, a proxy), so it names
- * the status rather than blaming the network. Never throws.
+ * POST /api/apps and say what came back: ./post-create-app.ts, shared with
+ * "What do you want to make?" (../first-session/make.tsx), so the two read a
+ * failure the same way. Re-exported for the tests that pin it here.
  */
-export async function postCreateApp(
-  body: Record<string, unknown>,
-): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> {
-  let res: Response;
-  try {
-    res = await fetch('/api/apps', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    return { ok: false, error: 'Network error. Try again.' };
-  }
-  let data: Record<string, unknown> | null = null;
-  try {
-    const parsed: unknown = await res.json();
-    if (parsed && typeof parsed === 'object') data = parsed as Record<string, unknown>;
-  } catch {
-    /* not JSON: reported through the status below */
-  }
-  if (res.ok) return { ok: true, data: data || {} };
-  if (data && typeof data.error === 'string' && data.error) return { ok: false, error: data.error };
-  return { ok: false, error: `Homeroom couldn’t create the project (${res.status}). Try again in a moment.` };
+export { postCreateApp };
+
+/** What the made screen (../first-session/made.tsx) is handed for a project made here. */
+export interface MadeHandOff {
+  slug: string;
+  name: string;
+  emoji: null;
+  description: string | null;
+  example: null;
+  conversationId: number | null;
+  audience: Audience;
+}
+
+/**
+ * Whether a project this dialog just made goes on to the made screen, and
+ * with what: one made from a description (from scratch or a template), not
+ * an import, which keeps the progress view. Exported and pure for
+ * tests/create-front-door.test.js.
+ */
+export function madeHandOff(answers: {
+  mode: Mode | null;
+  slug: string | null | undefined;
+  name: string;
+  description: string;
+  conversationId: number | null;
+  audience: Audience;
+}): MadeHandOff | null {
+  if (!answers.slug || answers.mode === 'import') return null;
+  const line = answers.description.replace(/\s+/g, ' ').trim();
+  return {
+    slug: answers.slug,
+    name: answers.name,
+    emoji: null,
+    description: line || null,
+    example: null,
+    conversationId: answers.conversationId,
+    audience: answers.audience,
+  };
 }
 
 /** The inline row under the repo URL: spinner, green tick, or red error. */
@@ -956,12 +982,19 @@ export function CreateAppDialog() {
     if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
   }, [brief, step]);
 
-  const dialog = useDialog('create', {
-    onOpen: () => {
+  const dialog = useDialog<{ name?: string; brief?: string }>('create', {
+    onOpen: (draft) => {
       // A real open starts on the first step with nothing chosen; the shot
       // links land on the state they name. Focus follows: nothing on a
       // question step wants the keyboard, the name step's field does.
-      const initial = shotState();
+      // From the make screen's More options, what was typed there is
+      // carried in: the name, and what it should do.
+      const shot = shotState();
+      const initial = {
+        ...shot,
+        name: typeof draft?.name === 'string' && draft.name.trim() ? draft.name.trim() : shot.name,
+        brief: typeof draft?.brief === 'string' && draft.brief.trim() ? draft.brief.trim() : shot.brief,
+      };
       setAudience(initial.audience);
       setKind(initial.kind);
       applyMode(initial.mode);
@@ -973,7 +1006,10 @@ export function CreateAppDialog() {
       setBrief(initial.brief);
       if (describeRef.current) describeRef.current.value = initial.description;
       setDescribe(initial.description);
-      suggestion.current = { from: initial.brief.trim(), edited: false, seq: suggestion.current.seq + 1 };
+      // A line already given (a shot link's) was suggested from this brief;
+      // a brief carried in from the make screen has none yet, so the
+      // one-line step suggests one on arrival.
+      suggestion.current = { from: initial.description ? initial.brief.trim() : '', edited: false, seq: suggestion.current.seq + 1 };
       setSuggesting(false);
       setSuggestNote('');
       setBotChat(null);
@@ -1217,20 +1253,27 @@ export function CreateAppDialog() {
       if (importState !== 'ok') return setError('Click "Check" to verify bot access first.');
     }
 
-    const body = createBody({
-      name: trimmed,
-      brief,
-      description,
-      mode,
-      repoUrl,
-      audience: audience ?? 'solo',
-      invitees: people,
-      approvers,
-      approvals,
-      approvalsN,
-      repo,
-      template,
-    });
+    const timeZone = deviceTimeZone();
+    const body = {
+      ...createBody({
+        name: trimmed,
+        brief,
+        description,
+        mode,
+        repoUrl,
+        audience: audience ?? 'solo',
+        invitees: people,
+        approvers,
+        approvals,
+        approvalsN,
+        repo,
+        template,
+      }),
+      // Made through the Create button's door (routes/apps.js): its idea
+      // is sketched, as Make it's is, for the made screen it lands on.
+      from: 'create',
+      ...(timeZone ? { timeZone } : {}),
+    };
 
     // One request at a time (QA 2026-09-24 Q5). Claimed synchronously, before
     // the first await, so a second click in the same frame finds it taken.
@@ -1245,6 +1288,26 @@ export function CreateAppDialog() {
       // #3624: the bot is building it, and says so in its DM.
       const chat = Number(data.homeroomBot?.conversationId);
       setBotChat(Number.isInteger(chat) && chat > 0 ? chat : null);
+      // Made from a description: on to the made screen, the same one Make
+      // it ends on, which asks for the ping itself; the grid behind is
+      // refreshed for when it goes. Only when that screen takes it: else
+      // the progress view below reports on it, as for an import. The made
+      // screen claims the back press itself, so this close must not spend
+      // the record under its own (#3683, as Set secrets below).
+      const handOff = madeHandOff({
+        mode,
+        slug: data.app?.slug,
+        name: data.app?.name || trimmed,
+        description,
+        conversationId: Number.isInteger(chat) && chat > 0 ? chat : null,
+        audience: audience ?? 'solo',
+      });
+      const front = window.UsernodeReact?.firstSession;
+      if (handOff && typeof front?.made === 'function' && front.made(handOff)) {
+        dialog.closeForNavigation();
+        (window.Home?.load as (() => void) | undefined)?.();
+        return;
+      }
       // #12 (D10): it messages when it is ready, so offer the ping now.
       if (Number.isInteger(chat) && chat > 0) askForPingWhileBotBuilds();
       // The POST returns 201 with the row still in 'creating' — the build

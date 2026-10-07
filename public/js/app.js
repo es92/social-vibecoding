@@ -4761,9 +4761,10 @@ const App = {
 
       const parts = hash.split('/');
       if (parts[0] === 'create') {
-        // #create — deep link that opens the create-app modal over the
-        // home feed. Doubles as the addressable route the dapp.json
-        // regression test for the mode toggle uses (#748).
+        // #create — deep link that opens "What do you want to make?" over
+        // the home feed, as the Create button does; #create/options opens
+        // its More options, the New project dialog, which is the
+        // addressable route the dapp.json checks of its steps use (#748).
         App.setChromeless(false);
         // The same list as the `!hash` branch above (QA 2026-09-24 Q1).
         if (App.currentApp || App._inLeaderboard || App._inProfile
@@ -4777,7 +4778,8 @@ const App = {
           App.setHeaderTitle('Homeroom');
           Home.load();
         }
-        App.showCreateModal();
+        if (parts[1] === 'options') App.showCreateOptions();
+        else App.showCreateModal();
         return;
       }
       if (parts[0] === 'leaderboard') {
@@ -7598,16 +7600,28 @@ const App = {
     }
   },
 
-  // ── Create-app dialog ─────────────────────────────────────────────
-  // #1078 chunk I moved the whole thing — mode, visibility, the import
-  // pre-flight sub-state machine and the POST — into
-  // frontend/src/features/dialogs/create-app.tsx, where seven functions that
-  // read each other's state out of the document became four useState calls.
-  // This entry point stays because the home screen's empty-state and "+"
-  // buttons (frontend/src/features/home/home.js) and the #create deep link
-  // call `App.showCreateModal()` by name.
+  // ── Create a project ──────────────────────────────────────────────
+  // Every Create button (the launcher's tile, the Workshop, the community
+  // switcher, the account panel, a notification) and the #create deep link
+  // call `App.showCreateModal()` by name. It opens the one front door for a
+  // new project, "What do you want to make?"
+  // (frontend/src/features/first-session/make.tsx), the screen the first
+  // session asks with, so a second project starts the way the first did.
+  // When that island cannot open it (not mounted yet, or another of its
+  // screens holds the view), the New project dialog opens instead.
   showCreateModal() {
-    window.UsernodeReact?.dialogs?.create?.open();
+    const front = window.UsernodeReact?.firstSession;
+    if (front && typeof front.create === 'function' && front.create()) return;
+    App.showCreateOptions();
+  },
+
+  // The New project dialog (frontend/src/features/dialogs/create-app.tsx;
+  // #1078 chunk I moved the whole thing there): the make screen's More
+  // options, and #create/options. Every choice the two questions leave out:
+  // who it is for, a template, a GitHub import, who approves. `draft` is
+  // what the make screen had typed ({ name, brief }), or nothing.
+  showCreateOptions(draft) {
+    window.UsernodeReact?.dialogs?.create?.open(draft);
   },
 
   // ── Homescreen zoom transition ─────────────────────────────────────
