@@ -51,14 +51,16 @@ test('the two task kinds are stages of their own, made from a brief or a commit 
   assert.ok(!lane.SINGLE_ATTEMPT_STAGES.includes('first_version'), 'a first version is built `repeats` times');
 });
 
-test('a first version needs a name, a brief the create dialog would take and a known starter; a capture needs its commit', () => {
+test('a first version needs a name, a brief the make screen would take and a known starter; a capture needs its commit', () => {
   const ok = taste.validateInput('first_version', { appName: '  Ear   Trainer ', brief: EAR_TRAINER });
   assert.equal(ok.ok, true);
   assert.deepEqual(ok.input, { appName: 'Ear Trainer', brief: EAR_TRAINER, template: 'empty' }, 'the Empty starter by default');
   assert.equal(taste.validateInput('first_version', { appName: 'X', brief: 'short' }).status, 400);
   assert.equal(taste.validateInput('first_version', { appName: '', brief: EAR_TRAINER }).status, 400);
   assert.match(taste.validateInput('first_version', { appName: 'X', brief: EAR_TRAINER, template: 'nope' }).error, /Unknown starter/);
-  assert.equal(taste.validateInput('first_version', { appName: 'X', brief: EAR_TRAINER, template: 'game-2d' }).input.template, 'game-2d');
+  // The four starters were deleted (tests/app-templates.test.js): Empty is the one there is.
+  assert.equal(taste.validateInput('first_version', { appName: 'X', brief: EAR_TRAINER, template: 'empty' }).input.template, 'empty');
+  assert.match(taste.validateInput('first_version', { appName: 'X', brief: EAR_TRAINER, template: 'game-2d' }).error, /Unknown starter/);
   assert.match(taste.validateInput('capture', { appName: 'X', brief: EAR_TRAINER, sha: 'abc' }).error, /40-character commit/);
   const cap = taste.validateInput('capture', { appName: 'X', brief: EAR_TRAINER, sha: 'A'.repeat(40) });
   assert.equal(cap.input.sha, 'a'.repeat(40));

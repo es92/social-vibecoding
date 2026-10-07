@@ -11,9 +11,15 @@
  * because `PlatformUI.adoptStaticModal` moved their cards out of the DOM at
  * open time and a React re-render would have reconciled against the wrong
  * parent. Chunk I brought that lift inside React
- * (`frontend/src/lib/static-modal.ts`, driven by `./use-dialog`), so all nine
- * are stateful now and the open/close/submit behaviour lives here rather than
- * in app.js, app-view.js and the retired public/js/app-secrets.js.
+ * (`frontend/src/lib/static-modal.ts`, driven by `./use-dialog`), so all of
+ * them are stateful now and the open/close/submit behaviour lives here rather
+ * than in app.js, app-view.js and the retired public/js/app-secrets.js.
+ *
+ * The create-project dialog (#create-modal) was the first of the nine and is
+ * gone: the Create button opens "What do you want to make?"
+ * (../first-session/make.tsx), which also imports a GitHub repo, and every
+ * new project ends on its made screen. Its ids are recorded as retired in
+ * tests/shell-id-inventory.test.js.
  *
  * Two of them — members and feedback — keep their logic in a sibling
  * controller module rather than in JSX. That is a deliberate application of
@@ -25,7 +31,6 @@
 import { ReportDialog } from './report';
 import { AppSettingsDialog } from './app-settings';
 import { AppNotificationsDialog } from './app-notifications';
-import { CreateAppDialog } from './create-app';
 import { RenameAppDialog } from './rename-app';
 import { CloseIssueDialog } from './close-issue';
 import { ForkAppDialog } from './fork-app';
@@ -40,7 +45,6 @@ import { WalletRecoveryDialog } from './wallet-recovery';
 export function Dialogs() {
   return (
     <>
-      <CreateAppDialog />
       <RenameAppDialog />
       <CloseIssueDialog />
       <ForkAppDialog />
@@ -52,8 +56,8 @@ export function Dialogs() {
       {/*
           Streamlined Concept: the Board's filter selects + "Waiting on you"
           toggle, moved off the filter bar into a dialog. New markup (no
-          legacy baseline) appended LAST so the nine originals keep their
-          byte positions in the prerendered document.
+          legacy baseline) appended LAST so the originals keep their byte
+          positions in the prerendered document.
       */}
       <BoardFiltersDialog />
       {/*
@@ -69,7 +73,6 @@ export function Dialogs() {
 }
 
 export {
-  CreateAppDialog,
   RenameAppDialog,
   CloseIssueDialog,
   ForkAppDialog,

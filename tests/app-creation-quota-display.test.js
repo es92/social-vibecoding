@@ -116,19 +116,22 @@ test('full admins report usage with no limit, while view-only admins keep their 
     'view-only admins do not bypass the write-route quota');
 });
 
-test('the create dialog loads and renders the quota without reset copy', () => {
-  const source = read('frontend/src/features/dialogs/create-app.tsx');
+test('the make screen loads and renders the quota without reset copy', () => {
+  // The retired create dialog's quota row and rule, on Create's make screen.
+  const source = read('frontend/src/features/first-session/make.tsx');
   const shared = read('frontend/src/features/dialogs/app-allowance.tsx');
   const store = read('frontend/src/features/dialogs/app-allowance-store.js');
   assert.match(store, /fetcher\('\/api\/me\/app-allowance'/,
     'the dialog reads the independent current allowance endpoint');
-  assert.match(source, /id="create-app-quota"/);
+  assert.match(source, /id="make-app-quota"/);
   assert.match(shared, /`\$\{quota\.used\} of \$\{quota\.limit\} app/);
-  // Next is also dimmed until its step is answered (the create dialog's
-  // rework); the quota still dims it on its own.
-  assert.match(source, /id="create-next"[\s\S]{0,200}disabled=\{quotaBlocksCreation \|\| !stepAnswered\}/,
-    'the visible at-limit dialog must not offer a submit the server will refuse');
-  assert.match(source, /disabledStyle="block"/,
+  // Make it and Import it are pale at the limit, and only then or while busy.
+  assert.match(source, /const \{ blocked: quotaBlocks \} = useAppAllowance\(\);/);
+  assert.match(source, /disabled=\{busy \|\| quotaBlocks\}/,
+    'the visible at-limit screen must not offer a submit the server will refuse');
+  assert.match(source, /blocked=\{quotaBlocks\}/);
+  assert.match(read('frontend/src/features/first-session/import-repo.tsx'), /disabled=\{busy \|\| blocked\}/);
+  assert.match(source, /className="mt-6 flex items-center justify-center disabled:opacity-50"/,
     'the disabled submit must look unavailable, not only reject clicks');
 
   const quotaCopy = shared.slice(shared.indexOf('export function quotaHeadline'));
@@ -136,7 +139,7 @@ test('the create dialog loads and renders the quota without reset copy', () => {
     'app slots have no timed reset, so the quota copy must not claim one');
 });
 
-test('locked create entries still open the dialog so the quota is reachable', () => {
+test('locked create entries still open the make screen so the quota is reachable', () => {
   // Home's Create entry is the launcher grid's trailing tile now (it was a
   // section below Challenges); one button, both quota states.
   const panel = read('frontend/src/features/home/create-tile.tsx');
@@ -149,7 +152,7 @@ test('locked create entries still open the dialog so the quota is reachable', ()
   // app's options, so a Create entry at the top of it was the last of the
   // platform's own destinations still in there. Home's tile above is the
   // entry point, and App.showCreateModal() is still the one door — which is
-  // what keeps the quota reachable, since the dialog is where it is printed.
+  // what keeps the quota reachable, since the make screen prints it.
   const switcher = read('frontend/src/features/app-context/app-context-sheet.tsx');
   assert.ok(!switcher.includes('id="apps-switcher-create"'),
     'the menu does not offer Create any more');
@@ -159,8 +162,9 @@ test('the finite quota state has a deterministic visual-review path', () => {
   const manifest = JSON.parse(read('dapp.json'));
   const check = manifest.tests.find((entry) => entry.name.includes('quota and usage (#1611)'));
   assert.ok(check);
-  // The New project dialog's address since Create opens the make screen.
-  assert.equal(check.path, '/?shot=create-quota#create/options');
+  // On Create's make screen since the New project dialog was retired.
+  assert.equal(check.path, '/?shot=create-quota#create');
+  assert.match(check.expectSelector, /#make-app-quota\[data-quota-state="available"\]/);
   assert.equal(check.expectText, '1 of 2 app slots used');
 });
 

@@ -1,9 +1,8 @@
 /**
- * POST /api/apps, for every screen that makes a project: "What do you want
- * to make?" (../first-session/make.tsx), which both the first session and
- * the Create button open, and its More options, the New project dialog
- * (./create-app.tsx). One request, so the two say the same thing when it
- * fails.
+ * POST /api/apps, for "What do you want to make?" (../first-session/make.tsx),
+ * which both the first session and the Create button open, and its import
+ * form (../first-session/import-repo.tsx). It began as the retired New
+ * project dialog's own request.
  *
  * Three failures read differently: a fetch that throws never reached
  * Homeroom (a network error); a JSON reply carries the server's own `error`;

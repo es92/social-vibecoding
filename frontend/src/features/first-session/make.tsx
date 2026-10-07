@@ -18,10 +18,17 @@
  * starts the way the first one did and lands on the same made screen
  * (./made.tsx). `from` is the entry ('first-session' or 'create'): the
  * server sketches the idea for both, and only the first answers the join
- * screen and counts in the admin Journey (routes/apps.js). Everything the
- * two questions leave out — Just me or a public community, a template, a
- * GitHub import, who approves — is the New project dialog, which "More
- * options" opens with what has been typed so far (`onMoreOptions`).
+ * screen and counts in the admin Journey (routes/apps.js). It is the only
+ * door: the New project dialog it once had behind "More options" is gone,
+ * and with it choosing Just me, a public community or who approves at
+ * creation. Those are a project's own levers afterwards (Invite, "Make it
+ * public", Members & approvals).
+ *
+ * From Create, a small "Import from a GitHub repo" under Make it swaps the
+ * two questions for ./import-repo.tsx's (`mode` 'import'; #create/import
+ * opens it so, `startImport`): the repo and Check, then the name. It is
+ * the same private community through the same POST /api/apps, and it lands
+ * on the same made screen, Share invite and all (`imported`).
  *
  * "Look around first" is the first session's quiet way out: Home, with
  * nothing asked. It is an answer, like Make it: until one of the two, the
@@ -86,23 +93,22 @@ import { XIcon } from '@/components/ui/icons';
 import { Wordmark } from '@/components/ui/wordmark';
 
 import { useKeyboardSurface } from '../../lib/keyboard-surface';
-import { AppAllowance } from '../dialogs/app-allowance';
+import { AppAllowance, useAppAllowance } from '../dialogs/app-allowance';
 import { deviceTimeZone, postCreateApp } from '../dialogs/post-create-app';
 import { EXAMPLES, type Example } from './examples';
+import { ImportForm, type RepoManifest } from './import-repo';
 
 export { deviceTimeZone };
 
-/** create-app.tsx's BRIEF_MIN: the server's floor for a description. */
+/** The server's floor and ceiling for a description (services/homeroom-bot-dm.js MIN_/MAX_BRIEF_CHARS). */
 export const BRIEF_MIN = 10;
+export const BRIEF_MAX = 4000;
 
 /**
  * Which door it was opened through: the first session, or the Create
  * button. Sent as the create's `from`, which is the same two words.
  */
 export type MakeEntry = 'first-session' | 'create';
-
-/** What the New project dialog is opened with from More options: what has been typed so far. */
-export type MakeDraft = { name: string; brief: string };
 
 export type Made = {
   slug: string;
@@ -111,12 +117,8 @@ export type Made = {
   description: string | null;
   example: Example | null;
   conversationId: number | null;
-  /**
-   * Who it is for (services/communities.js), when it is not this screen's
-   * private community: More options can make it Just me (no one to invite)
-   * or a public community.
-   */
-  audience?: 'solo' | 'invited' | 'open';
+  /** Imported from a GitHub repo (./import-repo.tsx): nothing is built from a description. */
+  imported?: boolean;
 };
 
 const FIELD = 'px-4 pt-3 pb-2 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-zinc-200 dark:[&:not(:last-child)]:border-zinc-800';
@@ -126,7 +128,7 @@ const INPUT = 'w-full border-0 bg-transparent px-0 py-1 text-[17px] text-zinc-90
 const ARRIVING = 'translate-y-6 opacity-0 transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none';
 const ARRIVED = 'translate-y-0 opacity-100 transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none';
 const HINT = 'pb-1 text-xs text-zinc-500 dark:text-zinc-400';
-const NEEDED = 'pb-1 text-xs text-red-600 dark:text-red-400';
+const NEEDED = 'pb-1 text-xs text-red-700 dark:text-red-400';
 
 export type Missing = 'brief' | 'name' | null;
 
@@ -162,11 +164,12 @@ export function makeEyebrow(entry: MakeEntry, who: string): string {
   return who ? `Hi ${who}!` : 'You\'re in!';
 }
 
-/** Before More options, from Create: what the two questions leave out. */
-export const MORE_OPTIONS_LINE = 'Just for you, public, a template or a GitHub repo? ';
+/** The import form's heading and line (./import-repo.tsx). */
+export const IMPORT_TITLE = 'Import a GitHub repo';
+export const IMPORT_LINE = 'Bring an app that already exists. Your group builds on it from here.';
 
 export function MakeScreen({
-  who, onMade, onLookAround, entry = 'first-session', botBuilds = true, onClose, onMoreOptions,
+  who, onMade, onLookAround, entry = 'first-session', botBuilds = true, onClose, startImport = false,
 }: {
   who: string;
   onMade: (made: Made) => void;
@@ -177,10 +180,16 @@ export function MakeScreen({
   botBuilds?: boolean;
   /** From Create: ✕, or Escape. */
   onClose?: () => void;
-  /** From Create: the New project dialog, with what has been typed. */
-  onMoreOptions?: (draft: MakeDraft) => void;
+  /** From Create: open on the import form (#create/import). */
+  startImport?: boolean;
 }) {
   const fromCreate = entry === 'create';
+  // At the allowance's limit (or a full server), Make it and Import it are
+  // pale and the row above says why (the retired dialog's rule: never offer
+  // a submit the server will refuse). Never pale for a missing answer.
+  const { blocked: quotaBlocks } = useAppAllowance();
+  // Make it, or (from Create only) Import it.
+  const [mode, setMode] = useState<'make' | 'import'>(fromCreate && startImport ? 'import' : 'make');
   const [brief, setBrief] = useState('');
   const [name, setName] = useState('');
   const [picked, setPicked] = useState<Example | null>(null);
@@ -273,6 +282,29 @@ export function MakeScreen({
   }, [busy, picked, brief, name, entry, onMade]);
   const needed = neededLine(missing, brief);
 
+  // The import, through the same request: a private community, as Make it
+  // makes, from the repo; what it says about itself is its description.
+  const importRepo = useCallback(async ({ repoUrl, name: repoName, manifest }: { repoUrl: string; name: string; manifest: RepoManifest }) => {
+    const reply = await postCreateApp({ name: repoName, audience: 'invited', repoUrl, from: entry });
+    const data = (reply.ok ? reply.data : {}) as { app?: { slug?: string; name?: string } };
+    if (!reply.ok || !data.app?.slug) return reply.ok ? 'Could not import it. Try again.' : reply.error;
+    onMade({
+      slug: data.app.slug,
+      name: data.app.name || repoName,
+      emoji: null,
+      description: typeof manifest.description === 'string' && manifest.description ? manifest.description : null,
+      example: null,
+      conversationId: null,
+      imported: true,
+    });
+    return null;
+  }, [entry, onMade]);
+  const formClass = `mx-auto flex w-full max-w-sm grow flex-col px-4 pb-[max(34px,env(safe-area-inset-bottom))] ${motion}`;
+  // From Create, the allowance when it bears on Make it (the New project
+  // dialog's quiet row, #23): a returning maker can be at their limit, a new
+  // account never is. The wrapper goes with it when there is nothing to say.
+  const allowance = fromCreate ? <div className="mt-4 empty:hidden"><AppAllowance id="make-app-quota" surface="pane" quiet /></div> : null;
+
   return (
     <div
       role="dialog"
@@ -303,6 +335,22 @@ export function MakeScreen({
       {/* The scroller the keyboard surface reveals fields in. Its className
           stays constant: nothing here varies it. */}
       <div ref={scrollerRef} data-first-session-make-scroll="" className="flex min-h-0 grow flex-col overflow-y-auto">
+        {mode === 'import' ? (
+          <ImportForm
+            className={formClass}
+            header={(
+              <div className="text-center">
+                <p className="mt-4 text-[13px] font-semibold uppercase tracking-[0.8px] text-zinc-500 dark:text-zinc-400">{makeEyebrow(entry, who)}</p>
+                <h1 id="first-session-make-title" className="mt-2.5 text-balance text-[30px] font-extrabold leading-[34px]">{IMPORT_TITLE}</h1>
+                <p className="mt-2.5 text-pretty text-[16px] leading-[22px] text-zinc-500 dark:text-zinc-400">{IMPORT_LINE}</p>
+              </div>
+            )}
+            submit={importRepo}
+            blocked={quotaBlocks}
+            onDescribe={() => { setMode('make'); setTimeout(() => briefRef.current?.focus({ preventScroll: true }), 0); }}
+            allowance={allowance}
+          />
+        ) : (
         <form
           className={`mx-auto flex w-full max-w-sm grow flex-col px-4 pb-[max(34px,env(safe-area-inset-bottom))] ${motion}`}
           onSubmit={(e) => { e.preventDefault(); void make(); }}
@@ -342,6 +390,7 @@ export function MakeScreen({
                 ref={briefRef}
                 id="first-session-brief"
                 rows={3}
+                maxLength={BRIEF_MAX}
                 value={brief}
                 enterKeyHint="next"
                 aria-describedby={missing === 'brief' ? 'first-session-brief-needed' : undefined}
@@ -383,16 +432,12 @@ export function MakeScreen({
                 : <p id="first-session-name-hint" className={HINT}>It's your group's name too. You can change it later.</p>}
             </div>
           </div>
-          {/* From Create, the allowance when it bears on Make it (the New
-              project dialog's quiet row, #23): a returning maker can be at
-              their limit, a new account never is. The wrapper goes with it
-              when there is nothing to say. */}
-          {fromCreate ? <div className="mt-4 empty:hidden"><AppAllowance id="make-app-quota" surface="pane" quiet /></div> : null}
-          {error ? <p role="alert" className="mt-3 text-[14px] text-red-600 dark:text-red-400">{error}</p> : null}
+          {allowance}
+          {error ? <p role="alert" className="mt-3 text-[14px] text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="grow" />
           <Button
             type="submit"
-            disabled={busy}
+            disabled={busy || quotaBlocks}
             layout="full"
             variant="pillAccent"
             size="pillLg"
@@ -402,15 +447,15 @@ export function MakeScreen({
             {busy ? 'Making it…' : 'Make it'}
           </Button>
           {fromCreate ? (
-            <p className="mt-3 text-center text-[15px] text-zinc-500 dark:text-zinc-400">
-              {MORE_OPTIONS_LINE}
+            // Small, under Make it: the one other way to start a project.
+            <p className="mt-3 text-center">
               <button
                 type="button"
-                data-make-more-options=""
-                onClick={() => onMoreOptions?.({ name: name.trim(), brief: brief.trim() })}
-                className="font-medium text-violet-700 hover:underline dark:text-violet-400"
+                data-make-import-link=""
+                onClick={() => setMode('import')}
+                className="text-[13px] font-medium text-violet-700 hover:underline dark:text-violet-400"
               >
-                More options
+                Import from a GitHub repo
               </button>
             </p>
           ) : (
@@ -420,6 +465,7 @@ export function MakeScreen({
             </p>
           )}
         </form>
+        )}
       </div>
     </div>
   );

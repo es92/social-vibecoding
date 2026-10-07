@@ -3451,11 +3451,6 @@ html.un-ios.in-native-webview .dc-active-dot-busy.dc-active-dot-promoted {
    flush against siblings (segmented pills, theme mode pills, the Dev
    board's tab strip) — the scale makes adjacent cells appear to shift.
    Keep the brightness dim, drop the transform. */
-.create-template-pill:active,
-.create-mode-pill:active,
-.create-who-pill:active,
-.create-approver-pill:active,
-.create-approvals-pill:active,
 .members-vis-pill:active,
 [data-theme-mode]:active {
   transform: none;
@@ -12526,8 +12521,8 @@ a.drawer-ver--fork:hover {
 }
 
 /* ── Drawer theme selector: 3-segment toggle + sliding caret ──────
-   The first control in the drawer. Segment faces reuse the create-app
-   modal's segmented language verbatim (see .create-mode-pill below) so
+   The first control in the drawer. Segment faces reuse the segmented
+   language the retired create-app modal's mode pills had verbatim, so
    the platform has ONE segmented look; the caret underneath is what's
    new here, and it's the affordance that says "this one is selected"
    without relying on the raised face alone.
@@ -12599,231 +12594,8 @@ a.drawer-ver--fork:hover {
   }
 }
 
-/* ── The create-app dialog on the PANE GROUND (#1910) ──────────────────
-   The dialog is drawn in the widget language the shell's panes wear (see
-   the recipe in frontend/src/features/dialogs/create-app.tsx): white cards
-   floating on a grey ground. Presented, the card rides inside the kit's
-   modal shell, which neutralises the card's own chrome (`.un-modal
-   .platform-modal-card` above) and paints the surface itself from
-   `--un-sheet-bg` — so the ground has to come from the SHELL, and the
-   sanctioned way to restyle the kit is its variables, never its rules.
-   `:has()` scopes the override to the one shell that holds this card;
-   the other dialogs keep the kit's white. The token is `--dc-strip`, the
-   ground every `.dc-lift` sheet and the settings screen sit on.
-
-   Since #1839 the shell's kit modal is glass (`--dc-sheet-fill` over
-   `--dc-frost`, see "THE KIT'S SURFACES TAKE THE PANE GLASS"), so this
-   card's ground is the strip's frosted tint, `--dc-strip-fill`, the same
-   plane the dev screen's strip is drawn on; the opaque `--dc-strip` is the
-   no-backdrop-filter fallback, and stays on `--un-sheet-bg` for whatever
-   inside the kit still reads that. */
-.un-modal:has(> #create-card) {
-  --un-sheet-bg: var(--dc-strip);
-  --un-modal-width: var(--create-modal-width);
-  --un-modal-height: var(--create-modal-height);
-  --un-modal-max-height: var(--create-modal-height);
-  --un-modal-padding: var(--create-modal-padding);
-  --un-modal-radius: var(--create-modal-radius);
-  /* Centred, it floats over the dimmed page, and with no blur on any
-     platform a 38% fill would let that page read through: the strip's
-     colour, solid. Full screen sets its own ground below. */
-  background-color: var(--create-modal-fill, var(--dc-strip-solid));
-}
-
-/* Create / import fills mobile screens, including wide touch browsers and
-   the native webview. These optional layout tokens affect only this dialog;
-   on desktop the kit and the unadopted card keep their existing defaults.
-   Reserve safe areas INSIDE the full-screen surface and leave the keyboard
-   strip outside it. The surface remains the scroller on every step.
-
-   THE TOP INSET IS NOT PADDING (#25). Padding scrolls with the content, so
-   once the form scrolled, its fields slid up under the iOS status bar. The
-   top inset is `--create-modal-safe-top` instead, drawn as a border in the
-   screen's own ground (the rule after these two blocks): a border sits
-   outside the scrollport, so nothing scrolls under it.
-
-   FULL SCREEN IS OPAQUE (QA 2026-09-24 Q8). The centred desktop card
-   floats over a dimmed page, so the pane glass above (`--dc-strip-fill`,
-   38%) is legible there. Filling the viewport, the same 38% let the header,
-   the bell, "Your apps" and the "Get the app" strip read through behind the
-   dialog's own title, and even #2887's 95% for floating surfaces still
-   ghosted the strip's logo there. A screen that IS the page has nothing
-   worth showing through it, so `--create-modal-fill` is the opaque grey
-   ground itself, `--dc-strip`, on every platform alike, so the white
-   cards keep their contrast.
-   Being opaque and above the strip (z-45) is also why the top padding does
-   not add `--install-strip-h`: the strip is covered, not overlapped, which
-   is what that strip's own rule asks of a surface the person opened. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) {
-  :root {
-    --create-modal-fill: var(--dc-strip);
-    --create-modal-width: 100vw;
-    --create-modal-height: calc(100dvh - var(--un-kb-inset, 0px));
-    --create-modal-radius: 0px;
-    --create-modal-gutter: 0px;
-    --create-modal-align: flex-start;
-    --create-modal-overflow: auto;
-    --create-modal-overscroll: contain;
-    --create-modal-safe-top: var(--un-safe-inset-top, env(safe-area-inset-top, 0px));
-    --create-modal-padding: 20px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px))) calc(16px + env(safe-area-inset-left, 0px));
-  }
-}
-html.in-native-webview {
-  --create-modal-fill: var(--dc-strip);
-  --create-modal-width: 100vw;
-  --create-modal-height: calc(100dvh - var(--un-kb-inset, 0px));
-  --create-modal-radius: 0px;
-  --create-modal-gutter: 0px;
-  --create-modal-align: flex-start;
-  --create-modal-overflow: auto;
-  --create-modal-overscroll: contain;
-  --create-modal-safe-top: var(--un-safe-inset-top, env(safe-area-inset-top, 0px));
-  --create-modal-padding: 20px calc(16px + env(safe-area-inset-right, 0px)) calc(20px + var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px))) calc(16px + env(safe-area-inset-left, 0px));
-}
-/* The status-bar band (#25): the full-screen create screen's top inset, as
-   a border in its own ground on whichever box is the scroller, the kit's
-   shell or, without the kit, the card. Zero wherever the dialog is not full
-   screen, since only the two layouts above set the token. Kept apart from
-   the box-shadow rules below, which tests/transition-glitches.test.js pins. */
-.un-modal:has(> #create-card),
-#create-modal #create-card {
-  border-top: var(--create-modal-safe-top, 0px) solid var(--create-modal-fill, transparent);
-}
-/* FULL SCREEN HAS NOTHING BEHIND IT. With the keyboard up the screen ends
-   where the visible band does, and on iOS the keys and their accessory bar
-   are translucent: the strip between showed Home through them, dimmed —
-   "Challenges" under a form about a new app. The screen's own backdrop
-   takes its ground instead, so what shows below it is more of the screen.
-   It still fades in and out with the kit's backdrop, under a screen that
-   fades the same way. The centred desktop card keeps its dim. The screen's
-   lift shadow goes too: cast on that same ground it drew a line across the
-   strip where the screen ends. */
-@media (max-width: 767px), (hover: none) and (pointer: coarse) {
-  html .un-backdrop:has(+ .un-modal > #create-card) {
-    background: var(--create-modal-fill);
-  }
-  html .un-modal:has(> #create-card) {
-    box-shadow: none;
-  }
-}
-html.in-native-webview .un-backdrop:has(+ .un-modal > #create-card) {
-  background: var(--create-modal-fill);
-}
-html.in-native-webview .un-modal:has(> #create-card) {
-  box-shadow: none;
-}
-/* The native Android create screen always fills the viewport. Anchoring its
-   box directly gives the same bounds as 50% plus translate(-50%, -50%), but
-   avoids keeping the settled full-screen form on a transformed layer during
-   every keyboard resize. Its scale and fade still use the kit's timing.
-   Keep the normal shadow through the 260ms entrance (including overshoot),
-   then stop rendering it outside the viewport. Removing un-in restores it
-   before the exit begins. The frosted fill and blur stay unchanged. */
-html.in-native-webview.un-android .un-modal:has(> #create-card) {
-  left: 0;
-  top: 0;
-  transform: scale(1.04);
-  will-change: auto;
-}
-html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
-  transform: none;
-  animation: create-fullscreen-shadow-settled 1ms step-end 260ms forwards;
-}
-@keyframes create-fullscreen-shadow-settled {
-  to { box-shadow: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
-    animation-delay: 0s;
-  }
-}
-/* The same layout if the kit is unavailable. Keep max-width measurable:
-   adoption remembers that desktop width before it moves the card. */
-#create-modal > [data-modal-backdrop] {
-  padding: var(--create-modal-gutter, 1rem);
-  align-items: var(--create-modal-align, center);
-}
-#create-modal #create-card {
-  min-width: var(--create-modal-width, auto);
-  height: var(--create-modal-height, auto);
-  border-radius: var(--create-modal-radius, 1.5rem);
-  padding: var(--create-modal-padding, 1.5rem);
-  overflow-y: var(--create-modal-overflow, visible);
-  overscroll-behavior-y: var(--create-modal-overscroll, auto);
-}
-
-/* ── The create dialog's choices (communities, stage 3; the rework) ────
-   Every choice in #create-card is a white card (or a segment) that takes
-   ONE selected look: the accent fill with white ink. The selection is keyed
-   off the CARD's data attributes — data-audience, data-kind, data-mode,
-   data-approvers, data-approvals — so the component only flips an attribute
-   (no per-button class juggling, no race with the form-reset path). It must
-   be the CARD, not #create-modal: the native-kit modal adoption
-   (frontend/src/lib/static-modal.ts) lifts the card out of #create-modal
-   while presented, so selectors rooted at the modal stop matching.
-
-   THE FILL IS THE ACCENT THE CREATE BUTTON WEARS (#2566): Tailwind's
-   violet-600, which tailwind.config.js remaps to the platform blue #0a6ee0.
-   A literal, with no dark step, for the reason the button carries none:
-   white on #0a6ee0 is 4.9:1 in both themes, where the dark theme's lighter
-   accent would not carry white text. */
-#create-card :is(.create-who-pill, .create-mode-pill, .create-template-pill, .create-approver-pill, .create-approvals-pill) {
-  color: var(--text-primary);
-  cursor: pointer;
-}
-#create-card .create-approvals-pill { color: var(--text-muted); }
-#create-card .create-approvals-pill:hover { color: var(--text-primary); }
-#create-card :is(.create-who-pill, .create-mode-pill, .create-template-pill, .create-approver-pill) .create-choice-caption {
-  color: var(--text-muted);
-}
-/* NOTHING IS CHOSEN FOR THE PERSON, AND A ROW IS A SELECTION. Every answer
-   starts empty (the attributes are ""), so no row is filled on arrival.
-   Pressing a row fills it at once, on its own step, and Next (beside
-   Cancel on every step) moves on. */
-#create-card[data-audience="solo"]      .create-who-pill[data-audience-pill="solo"],
-#create-card[data-audience="invited"]   .create-who-pill[data-audience-pill="invited"],
-#create-card[data-audience="open"]      .create-who-pill[data-audience-pill="open"],
-#create-card[data-mode="new"]           .create-mode-pill[data-mode-pill="new"],
-#create-card[data-mode="template"]      .create-mode-pill[data-mode-pill="template"],
-#create-card[data-mode="import"]        .create-mode-pill[data-mode-pill="import"],
-#create-card                            .create-template-pill[aria-pressed="true"],
-#create-card[data-approvers="anyone"]   .create-approver-pill[data-approver-pill="anyone"],
-#create-card[data-approvers="invited"]  .create-approver-pill[data-approver-pill="invited"],
-#create-card[data-approvals="majority"] .create-approvals-pill[data-approvals-pill="majority"],
-#create-card[data-approvals="atLeast"]  .create-approvals-pill[data-approvals-pill="atLeast"] {
-  background: #0a6ee0; /* violet-600, as tailwind.config.js compiles it */
-  color: #ffffff;
-}
-/* 0.9 on the fill: the caption is 12px, and full white would outweigh the
-   title above it; 0.9 still clears AA on #0a6ee0. */
-#create-card[data-audience="solo"]      .create-who-pill[data-audience-pill="solo"] .create-choice-caption,
-#create-card[data-audience="invited"]   .create-who-pill[data-audience-pill="invited"] .create-choice-caption,
-#create-card[data-audience="open"]      .create-who-pill[data-audience-pill="open"] .create-choice-caption,
-#create-card[data-mode="new"]           .create-mode-pill[data-mode-pill="new"] .create-choice-caption,
-#create-card[data-mode="template"]      .create-mode-pill[data-mode-pill="template"] .create-choice-caption,
-#create-card[data-mode="import"]        .create-mode-pill[data-mode-pill="import"] .create-choice-caption,
-#create-card                            .create-template-pill[aria-pressed="true"] .create-choice-caption,
-#create-card[data-approvers="anyone"]   .create-approver-pill[data-approver-pill="anyone"] .create-choice-caption,
-#create-card[data-approvers="invited"]  .create-approver-pill[data-approver-pill="invited"] .create-choice-caption {
-  color: inherit;
-  opacity: 0.9;
-}
-/* THE SELECTION MARKER (#24, D8). Who it is for is chosen, then Next moves
-   on, so its rows end in a ring, like a radio's, not in a chevron that
-   promised a jump. The chosen row's ring fills with
-   its own ink (white on the accent) and its check takes the accent. Keyed
-   off the row's aria-pressed, which the component renders from the same
-   answer as the card's data attribute above. */
-#create-card .create-who-pill[aria-pressed="true"] > .create-choice-marker {
-  background-color: currentColor;
-  opacity: 1;
-}
-#create-card .create-who-pill[aria-pressed="true"] > .create-choice-marker > svg {
-  color: #0a6ee0; /* violet-600, the fill the row wears */
-}
-
-/* The Members modal's visibility pills keep the recessed-track look they
-   shared with the create dialog before #1910 restyled it; that dialog is
+/* The Members modal's visibility pills: the recessed-track look the
+   retired create dialog wore before #1910 restyled it. The Members modal is
    not in the pane language yet. */
 .members-vis-pill {
   color: var(--text-muted);
@@ -12842,117 +12614,10 @@ html.in-native-webview.un-android .un-modal.un-in:has(> #create-card) {
   cursor: not-allowed;
 }
 
-/* The repo URL and its check belong to "Import a GitHub repo" alone. */
-#create-card:not([data-mode="import"]) .create-import-block { display: none; }
-
-/* THE STEPS UNFOLD IN ONE CARD (#1911; six of them since "What are you
-   making?" went, the make screen having asked it).
-   Every step's section ships on every step — the declared checks select on
-   the same ids whichever steps are showing — and #create-card[data-step] is
-   the FURTHEST step reached: everything up to it is on screen, the rest is
-   folded. Keyed on the CARD, like data-mode. The order is who, invite,
-   start, details, about, approve.
-
-   The invite step belongs to a private community, the one-line "about" step
-   to a project made here (an import's repo describes it), and the approval
-   step to a private or a public community: Just me has nobody else to
-   approve anything. The footer follows data-final, which the component sets
-   from the same rule: Cancel always; Next until the last step, then Create
-   / Import (QA 2026-09-24 Q6: never two accent buttons at once). Either
-   stays dimmed until its step is answered. */
-#create-card[data-step="who"]     :is([data-create-step="invite"], [data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="invite"]  :is([data-create-step="start"], [data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="start"]   :is([data-create-step="details"], [data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="details"] :is([data-create-step="about"], [data-create-step="approve"]),
-#create-card[data-step="about"]   [data-create-step="approve"],
-#create-card:not([data-audience="invited"]) [data-create-step="invite"],
-#create-card:is([data-audience="solo"], [data-audience=""]) [data-create-step="approve"],
-#create-card[data-mode="import"] :is([data-create-step="about"], .create-brief-row) {
-  display: none;
-}
-#create-card[data-final="false"] #create-submit,
-#create-card[data-final="true"]  #create-next {
-  display: none;
-}
-
-/* A question step COLLAPSES to its chosen row once the card moves past it:
-   the other rows and the captions fold away, the marker gives way to
-   "Change", and pressing the row reopens the step, its answer still
-   picked. How to start collapses the same way, keeping the starter picked
-   under a template and the repo's check under an import. The invite rows,
-   the name, the description and the approval answers stay as they are,
-   still editable. */
-#create-card[data-step="who"] [data-create-step="who"] .create-choice-change,
-#create-card:is([data-step="who"], [data-step="invite"], [data-step="start"]) [data-create-step="start"] .create-choice-change {
-  display: none;
-}
-#create-card:not([data-step="who"]) [data-create-step="who"] :is(.create-choice-marker, .create-choice-caption),
-#create-card:not([data-step="who"])[data-audience="solo"]    .create-who-pill:not([data-audience-pill="solo"]),
-#create-card:not([data-step="who"])[data-audience="invited"] .create-who-pill:not([data-audience-pill="invited"]),
-#create-card:not([data-step="who"])[data-audience="open"]    .create-who-pill:not([data-audience-pill="open"]),
-#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"]) [data-create-step="start"] :is(.create-choice-caption, .create-template-pill:not([aria-pressed="true"]), .create-import-hint),
-#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="new"]      .create-mode-pill:not([data-mode-pill="new"]),
-#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="template"] .create-mode-pill:not([data-mode-pill="template"]),
-#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"])[data-mode="import"]   .create-mode-pill:not([data-mode-pill="import"]) {
-  display: none;
-}
-#create-card:not([data-step="who"]) .create-who-pill,
-#create-card:is([data-step="details"], [data-step="about"], [data-step="approve"]) :is(.create-mode-pill, .create-template-pill) {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-}
-/* The invite rows: one card, a hairline between rows (the GroupedList
-   recipe's inset sheet line). */
-#create-card .create-invite-list > * + * { box-shadow: inset 0 1px 0 var(--app-sheet-line); }
-#create-card .create-invitee-email { white-space: normal; overflow-wrap: break-word; }
-
-/* AN IMPORT'S DAPP.JSON WINS. Once the check has read it, each earlier
-   answer it replaces is dimmed and its heading says so; the notice under
-   the check names them (data-repo-sets lists them: name, vis, gov). The
-   name step comes after the check and opens on the repo's own name, so it
-   is never dimmed: a name typed over it is only tagged. The approval step
-   comes after it too: a repo that sets the rule dims the choices and says
-   so, in place of asking. */
-#create-card .create-repo-sets-tag { display: none; font-weight: 500; color: var(--text-muted); }
-#create-card[data-mode="import"][data-repo-sets~="vis"]  [data-repo-tag="vis"],
-#create-card[data-mode="import"][data-repo-sets~="gov"]  [data-repo-tag="gov"],
-#create-card[data-mode="import"][data-repo-sets~="name"] [data-repo-tag="details"] {
-  display: inline;
-}
-#create-card[data-mode="import"][data-repo-sets~="gov"]  #create-approve-block,
-#create-card[data-mode="import"][data-repo-sets~="vis"]  [data-create-step="who"] .create-who-pill {
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-/* "At least N" is a follow-up under "People I pick", and the number only
-   once it is chosen. */
-#create-card .create-approvals-block,
-#create-card .create-approvals-n-block { display: none; }
-#create-card[data-approvers="invited"] .create-approvals-block { display: block; }
-#create-card[data-approvers="invited"][data-approvals="atLeast"] .create-approvals-n-block { display: block; }
-
-/* Import status row — spinner on checking, green check on success,
-   red text on failure. JS sets the text + adds an --ok / --err
-   modifier on #import-status. */
-#import-status:empty { display: none; }
-#import-status.import-status--ok  { color: #10b981; }
-#import-status.import-status--err { color: #f87171; }
-/* The Members modal's invite status line reuses the same ok/err tones. */
+/* The Members modal's invite status line: ok and err tones, which
+   members-controller.js sets as classes. */
 #members-invite-status.import-status--ok  { color: #10b981; }
-#members-invite-status.import-status--err { color: #f87171; }
-#import-status .import-spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 6px;
-  border-radius: 50%;
-  border: 2px solid rgba(10, 124, 255, 0.25);
-  border-top-color: var(--accent);
-  animation: import-spin 0.8s linear infinite;
-  vertical-align: -2px;
-}
-@keyframes import-spin { to { transform: rotate(360deg); } }
+#members-invite-status.import-status--err { color: #f87171; } }
 
 /* ── Priority / assigned-person chips + dropdown (community-voted) ───── */
 /* Strip the <button> UA chrome so an interactive chip is pixel-identical
@@ -19340,8 +19005,8 @@ html[data-browser-scroller] .dev-ws[data-ws-tab="discussion"] {
    :active matches every ancestor of the pressed element, so without the
    :not(:has(...)) a press on the Vote button would tint the whole card
    behind it, for a press that toggles nothing. */
-/* The kit's scale-press, opted out of — the fourth entry in the list of
-   opt-outs up at `.create-mode-pill:active`, for a different reason. The
+/* The kit's scale-press, opted out of — like the list of opt-outs up at
+   `.members-vis-pill:active`, for a different reason. The
    kit gives every button an instant scale on press; the row carries
    role="button" so a keyboard can reach it and the open card is a plain
    div, so the scale landed on ONE of the two sizes. That is the inset a

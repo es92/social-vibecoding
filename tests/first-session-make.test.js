@@ -163,7 +163,7 @@ test('"Make it" makes a private community through the dialog\'s own route', () =
   assert.match(make, /export type MakeEntry = 'first-session' \| 'create';/);
   assert.match(make, /entry = 'first-session'/, 'the first session is the default door');
   assert.match(make, /export const BRIEF_MIN = 10;/);
-  assert.match(read('frontend/src/features/dialogs/create-app.tsx'), /BRIEF_MIN = 10/);
+  assert.equal(require('../src/services/homeroom-bot-dm').MIN_BRIEF_CHARS, 10, 'the server\'s floor');
   for (const words of ['What do you want to make?', 'What should it do?', 'What should we call it?', 'It\'s your group\'s name too. You can change it later.', 'Look around first']) {
     assert.ok(make.includes(words), words);
   }
@@ -189,7 +189,9 @@ test('"Make it" looks pale only while making: a press with an answer missing goe
     assert.doesNotMatch(line, /\u2014/, 'no em dash');
   }
   const src = read(`${DIR}/make.tsx`);
-  assert.match(src, /disabled=\{busy\}/, 'never disabled for a missing answer');
+  // Pale while making, or at the allowance's limit (the server would refuse
+  // it), never for a missing answer.
+  assert.match(src, /disabled=\{busy \|\| quotaBlocks\}/, 'never disabled for a missing answer');
   assert.doesNotMatch(src, /disabled=\{!valid/);
   // (preventScroll since 5 Oct 2026: the keyboard surface reveals the field, with Make it.)
   assert.match(src, /const gap = missingAnswer\(brief, name\);\s+if \(gap\) \{\s+setMissing\(gap\);\s+\(gap === 'brief' \? briefRef\.current : nameRef\.current\)\?\.focus\(\{ preventScroll: true \}\);\s+return;\s+\}/);
@@ -286,6 +288,8 @@ test('typing their own words into "What should it do?" lets go of the example; t
     useCallback(fn) { at++; return fn; },
     useEffect() { at++; },
     useLayoutEffect() { at++; },
+    // The allowance row's store (dialogs/app-allowance.tsx, which Make it reads for its limit).
+    useSyncExternalStore(subscribe, get) { at++; return get(); },
   };
   const { MakeScreen } = loadTsx(`${DIR}/make.tsx`, { stubs: { react: React } });
   const draw = () => { at = 0; return MakeScreen({ who: 'Jordan', onMade() {}, onLookAround() {} }); };

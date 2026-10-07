@@ -80,7 +80,7 @@ const DEV_CONSOLE_FORWARDER = `
 // Homeroom theme (#3257), not the OS: inside the platform's frame
 // `prefers-color-scheme` sees only the OS. The scaffold's screen already does
 // (the theme <script> after the bridge tag in public/index.html, the same one
-// every starter in app-templates/ ships); this is what its CLAUDE.md tells the
+// a starter under app-templates/ would ship); this is what its CLAUDE.md tells the
 // agent that replaces that screen, so the first real version keeps both.
 // Shared by the Empty scaffold's notes and every starter's. Empty's screen is
 // built from its design kit, whose colour tokens carry both looks, and its

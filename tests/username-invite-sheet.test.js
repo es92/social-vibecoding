@@ -93,7 +93,8 @@ test('1. what they\'ll get: "is making" while its first version is not live', ()
   // Live once a first version that was on its way is read as gone.
   assert.match(src, /if \(app\.firstVersion && !app\.firstVersion\.ready\) setBuilding\(true\);/);
   // A setup that stopped is not live either (tests/create-front-door.test.js).
-  assert.match(src, /const making = !!stalled \|\| !\(building && !fv\);/);
+  // An import is live once it runs (it has no first version).
+  assert.match(src, /const making = imported \? appStatus !== 'running' : \(!!stalled \|\| !\(building && !fv\)\);/);
 });
 
 // ── 2. The note is remembered ───────────────────────────────────────────

@@ -48,7 +48,9 @@ function walk(dir, out = []) {
 
 test('no user-facing copy says "Ask for a change" any more', () => {
   const offenders = [];
+  // (app-templates/ went with the four starters; read it if one comes back.)
   for (const dir of ['frontend/src', 'public/js', 'src', 'app-templates']) {
+    if (!fs.existsSync(path.join(ROOT, dir))) continue;
     for (const rel of walk(dir)) {
       const code = withoutComments(read(rel), path.extname(rel));
       code.split('\n').forEach((line, i) => {
@@ -86,10 +88,8 @@ test('a new app\'s starter page and README send its maker to Suggest an improvem
   const template = read('src/services/template.js');
   assert.match(template, /then <strong class="font-semibold text-fg">Suggest an improvement<\/strong>\./);
   assert.equal(template.split('then **Suggest an improvement**, and describe').length - 1, 2, 'both READMEs');
-  for (const kind of ['game-2d', 'game-3d', 'multimedia-social', 'social-productivity']) {
-    assert.match(read(`app-templates/${kind}/public/index.html`),
-      /tap the Homeroom icon, then <strong class="font-semibold">Suggest an improvement<\/strong>\./, kind);
-  }
+  // The four starters' own pages said the same; they were deleted with the
+  // create dialog (tests/app-templates.test.js).
 });
 
 test('Ask for changes on a built change is a different action, and keeps its words', () => {

@@ -461,23 +461,22 @@ test('rendering the progress view asks nothing', () => {
   assert.equal(asked, 0, 'the ask belongs to the Create answer, not to a render');
 });
 
-// ── 4. The create dialog's call site ───────────────────────────────────
+// ── 4. The call site: the made screen ──────────────────────────────────
+//
+// The create dialog that asked right after its POST is retired. Every new
+// project, from the first session and from Create, lands on the made screen
+// (frontend/src/features/first-session/made.tsx), drawn the moment POST
+// /api/apps answers, and that screen asks for a project the bot builds.
 
-test('the create dialog asks once POST /api/apps answers with the bot\'s chat', () => {
-  const src = read('frontend', 'src', 'features', 'dialogs', 'create-app.tsx');
-  const calls = src.split('askForPingWhileBotBuilds(').length - 1;
-  assert.equal(calls, 1, 'exactly one call site');
-  const at = src.indexOf('askForPingWhileBotBuilds()');
-  const post = src.indexOf('const reply = await postCreateApp(body);');
-  const failed = src.indexOf('if (!reply.ok) return setError(reply.error);');
-  const chat = src.indexOf('const chat = Number(data.homeroomBot?.conversationId);');
-  assert.ok(post > 0 && post < failed && failed < chat && chat < at,
-    'after a successful POST, once the bot\'s chat is known');
-  const line = src.slice(src.lastIndexOf('\n', at), src.indexOf('\n', at));
-  assert.match(line, /if \(Number\.isInteger\(chat\) && chat > 0\) askForPingWhileBotBuilds\(\);/,
-    'only for a project the Homeroom bot is building (D10)');
-  assert.doesNotMatch(src.slice(src.lastIndexOf('useEffect(', at), at), /askForPing/,
-    'not from an effect: the ask follows the Create answer, not a mount');
+test('the made screen asks once, for a project the Homeroom bot is building', () => {
+  const src = read('frontend', 'src', 'features', 'first-session', 'made.tsx');
+  assert.equal(src.split('askForPingWhileBotBuilds(').length - 1, 1, 'exactly one call site');
+  // botBuilds is the POST's answer: the bot's chat, which it has only when it builds.
+  assert.match(src, /const botBuilds = made\.conversationId != null;/);
+  assert.match(src, /useEffect\(\(\) => \{ if \(botBuilds\) askForPingWhileBotBuilds\(\); \}, \[botBuilds\]\);/,
+    'once per made screen, and only when the bot builds it (D10)');
+  assert.equal(require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'frontend/src/features/dialogs/create-app.tsx')), false,
+    'the retired dialog is not a second call site');
 });
 
 test('the door passes a reason native-chrome.js has copy for, and never throws', async () => {

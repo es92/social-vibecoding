@@ -1,5 +1,7 @@
-// #1604: the create-app import field should supply HTTPS for a bare GitHub
-// repository address, just as the waitlist URL field does.
+// #1604: the import field should supply HTTPS for a bare GitHub repository
+// address, just as the waitlist URL field does. The field was the create
+// dialog's; it is the make screen's import form now
+// (frontend/src/features/first-session/import-repo.tsx).
 //
 // Run with: node --test tests/create-app-repository-url.test.js
 'use strict';
@@ -12,7 +14,7 @@ const path = require('node:path');
 const { loadTsx } = require('./lib/render-tsx');
 
 const ROOT = path.join(__dirname, '..');
-const CREATE_APP = path.join(ROOT, 'frontend/src/features/dialogs/create-app.tsx');
+const IMPORT_FORM = path.join(ROOT, 'frontend/src/features/first-session/import-repo.tsx');
 const github = require('../src/services/github');
 
 test('client repository URL normalizer adds HTTPS only when appropriate', () => {
@@ -48,23 +50,19 @@ test('client repository URL normalizer adds HTTPS only when appropriate', () => 
 });
 
 test('import field normalizes on blur, Check, and submit before native URL validation', () => {
-  const source = fs.readFileSync(CREATE_APP, 'utf8');
-  const input = source.match(/<Input\s+[\s\S]*?id="import-url"[\s\S]*?\/>/)?.[0];
-  assert.ok(input, '#import-url is rendered');
+  const source = fs.readFileSync(IMPORT_FORM, 'utf8');
+  const input = source.match(/<input\s+[\s\S]*?id="make-import-url"[\s\S]*?\/>/)?.[0];
+  assert.ok(input, '#make-import-url is rendered');
   assert.match(input, /type="text"/);
   assert.match(input, /inputMode="url"/);
   assert.doesNotMatch(input, /type="url"/,
     'native URL validation must not run before React can normalize the value');
-  assert.match(input, /onBlur=\{\(\) => \{\s*normalizeRepositoryUrlInput\(\);\s*\}\}/,
+  assert.match(input, /onBlur=\{\(\) => setUrl\(\(typed\) => normalizeRepositoryUrl\(typed\)\)\}/,
     'leaving the field visibly canonicalizes it');
 
-  assert.match(source, /async function check\(\) \{\s*const url = normalizeRepositoryUrlInput\(\);/,
+  assert.match(source, /const check = useCallback\(async \(\) => \{\s*const normalized = normalizeRepositoryUrl\(url\);/,
     'Check sends the normalized URL even when blur did not run');
-  assert.match(
-    source,
-    /const repoUrl = mode === 'import' \? normalizeRepositoryUrlInput\(\) : '';/,
-    'submit uses the same normalized value'
-  );
+  assert.match(source, /submit\(\{ repoUrl: normalizeRepositoryUrl\(url\),/, 'submit uses the same normalized value');
 });
 
 test('server parser accepts scheme-less GitHub URLs and preserves existing forms', () => {

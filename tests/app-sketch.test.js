@@ -180,11 +180,8 @@ test('dapp.json gets the card\'s icon at the first commit, or in the late commit
   assert.deepEqual(JSON.parse(file(files, 'dapp.json')), { icon: { emoji: '🏃' }, secrets: [] });
   const plain = getTemplateFiles('Run Club', 'run-club-abc', 'postgres://x');
   assert.deepEqual(JSON.parse(file(plain, 'dapp.json')), { secrets: [] }, 'no card, no icon');
-  // A starter's own icon comes first.
-  const appTemplates = require('../src/services/app-templates');
-  const other = appTemplates.TEMPLATE_IDS.find((k) => k !== appTemplates.DEFAULT_TEMPLATE);
-  const starter = getTemplateFiles('Run Club', 'run-club-abc', 'postgres://x', null, { template: other, sketch: ROW });
-  assert.deepEqual(JSON.parse(file(starter, 'dapp.json')).icon, { emoji: appTemplates.get(other).icon });
+  // (A starter's own icon came first; the starters were deleted with the
+  // create dialog, so Empty and the card are all there is.)
   // The late commit's dapp.json: the icon added beside the description, or nothing.
   assert.deepEqual(JSON.parse(sketch.manifestWithIcon(JSON.stringify({ description: 'Runs', secrets: [] }), '🏃')),
     { description: 'Runs', icon: { emoji: '🏃' }, secrets: [] });

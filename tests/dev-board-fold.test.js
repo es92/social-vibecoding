@@ -1483,9 +1483,17 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // nothing to fold it into. The ceiling went 860 → 880 with it
   // (services/app-manifest.js), leaving 36 slots.
   //
+  // 844 → 839: −7 +2. The create-project dialog is retired: Create opens
+  // "What do you want to make?", which imports a GitHub repo in place, so
+  // its seven checks (#create/options: who it is for, the invite step, how
+  // to start, the template picker, the name step, who approves, the quota
+  // row) went with it. #create/import's check came in, and the quota row's
+  // came back on the make screen (/?shot=create-quota#create). 839 leaves
+  // 41 slots.
+  //
   // A mismatch says what the count is, what it is pinned at, and what to do
   // (tests/lib/check-cap.js) — it used to print only `812 !== 811`.
-  checkCap.assertPinned(DAPP.tests.length, 844);
+  checkCap.assertPinned(DAPP.tests.length, 839);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {
@@ -1830,7 +1838,9 @@ test('a press changes the fill and nothing else, and the row is the card minus i
   // pressed open card did not. Opted out the way this stylesheet already
   // opts the segmented pills out, keeping the kit's brightness dim.
   assert.match(CSS, /\.dev-ws-row:active \{ transform: none; \}/);
-  assert.match(CSS, /\.create-mode-pill:active,[\s\S]{0,160}\{\s*transform: none;\s*\}/,
+  // (The create dialog's pills that list began with went with the dialog;
+  // the Members modal's pills keep it.)
+  assert.match(CSS, /\.members-vis-pill:active,[\s\S]{0,160}\{\s*transform: none;\s*\}/,
     'the rule this one follows is still there to follow');
 
   // -- The three lines, and where each starts -------------------------

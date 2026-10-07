@@ -296,20 +296,11 @@ declare global {
       /**
        * features/first-session: the first session's screens, and the one
        * front door for a new project. `create` opens "What do you want to
-       * make?" from the Create button (false when it cannot); `made` hands
-       * the New project dialog's project to the made screen.
+       * make?" from the Create button, or its import form (`import`); false
+       * when another of its screens holds the view.
        */
       firstSession?: {
-        create?(): boolean;
-        made?(made: {
-          slug: string;
-          name: string;
-          emoji: string | null;
-          description: string | null;
-          example: null;
-          conversationId: number | null;
-          audience?: 'solo' | 'invited' | 'open';
-        }): boolean;
+        create?(opts?: { import?: boolean }): boolean;
         [key: string]: unknown;
       };
       messages?: {

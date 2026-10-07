@@ -285,37 +285,16 @@ test('the three unmounting surfaces close with release(); the dialogs keep dismi
 
 // ── 3. Full-screen Create app has nothing behind it ──────────────────────
 
-test('on a phone the create screen\'s own backdrop is its ground, and it casts no shadow', () => {
-  const phone = /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\) \{\s*html \.un-backdrop:has\(\+ \.un-modal > #create-card\) \{\s*background: var\(--create-modal-fill\);\s*\}\s*html \.un-modal:has\(> #create-card\) \{\s*box-shadow: none;\s*\}\s*\}/;
-  assert.match(APP_CSS, phone);
-  assert.match(APP_CSS, /html\.in-native-webview \.un-backdrop:has\(\+ \.un-modal > #create-card\) \{\s*background: var\(--create-modal-fill\);\s*\}/);
-  // --create-modal-fill is set only where the dialog is full screen, and the
-  // backdrop is the kit's own sibling right before the card's shell.
-  assert.match(read('public/usernode-native/v1/native.js'),
-    /document\.body\.appendChild\(backdrop\);\s*document\.body\.appendChild\(card\);/);
-});
-
-// #25: on an iPhone the form scrolled up under the status bar. The top inset
-// was the scroller's own padding, and padding scrolls with what it pads. It
-// is a border in the screen's ground now, which sits outside the scrollport,
-// on both the kit's shell and the card it falls back to, and in a rule of its
-// own rather than inside the box-shadow rules above.
-test('the full-screen create screen keeps the status bar\'s band out of its scroll (#25)', () => {
-  const pads = APP_CSS.match(/--create-modal-padding:[^;]+;/g) || [];
-  assert.equal(pads.length, 2, 'the two full-screen layouts');
-  for (const pad of pads) {
-    assert.doesNotMatch(pad, /safe-inset-top|safe-area-inset-top/, 'the top inset is not scrolling padding');
-    assert.match(pad, /^--create-modal-padding: 20px /, 'the top padding is the plain 20px');
-  }
-  const tops = APP_CSS.match(/--create-modal-safe-top:[^;]+;/g) || [];
-  assert.deepEqual(tops, Array(2).fill('--create-modal-safe-top: var(--un-safe-inset-top, env(safe-area-inset-top, 0px));'),
-    'set only where the dialog fills the screen');
-  assert.match(APP_CSS, /\n\.un-modal:has\(> #create-card\),\n#create-modal #create-card \{\n  border-top: var\(--create-modal-safe-top, 0px\) solid var\(--create-modal-fill, transparent\);\n\}/,
-    'one rule on both scrollers, zero wide when not full screen');
-  // Not folded into the backdrop and shadow rules pinned above.
-  for (const block of APP_CSS.match(/html(?:\.in-native-webview)? \.un-modal:has\(> #create-card\) \{[^}]*\}/g) || []) {
-    assert.doesNotMatch(block, /border-top/);
-  }
+// The create dialog's full-screen layouts (an opaque backdrop, no lift
+// shadow, the status bar's band as a border) are retired with it. Create
+// opens "What do you want to make?", which is its own full-screen surface
+// on the wallpaper (tests/first-session-make.test.js pins its bar and the
+// status bar's inset).
+test('Create\'s screen covers the whole page in its own ground, and the dialog\'s layouts are gone', () => {
+  const make = read('frontend/src/features/first-session/make.tsx');
+  assert.match(make, /className="platform-kb-surface fixed inset-0 z-\[9000\] flex flex-col /);
+  assert.match(make, /style=\{\{ background: 'var\(--home-wallpaper, #f4f2e4\)' \}\}/);
+  assert.doesNotMatch(APP_CSS, /#create-card|--create-modal-/);
 });
 
 // ── 4. The launch cover holds room for its spinner ───────────────────────

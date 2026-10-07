@@ -183,23 +183,25 @@ test('creating a project for someone, against the full schema', { timeout: 18000
     assert.equal(wrong.status, 400, 'only a group is created with invites');
   });
 
-  await t.test('a starter template is written to the row and reaches the build; Empty stays the default (#3521)', async () => {
+  await t.test('Empty is the only starter: it is stored as nothing, and a deleted starter is refused before anything exists (#3521)', async () => {
     viewer = { id: starter.id, username: starter.username, isAdmin: false, canAdminWrite: false };
-    const game = await create({ name: 'Star catch', audience: 'solo', template: 'game-2d' });
-    assert.equal(game.status, 201, JSON.stringify(game.data));
-    assert.equal(game.data.app.template, 'game-2d');
-    assert.equal(built.find((row) => row.id === game.data.app.id).template, 'game-2d',
-      'the build receives the row it scaffolds from, so a Retry writes the same starter');
     const plain = await create({ name: 'Plain', audience: 'solo' });
     assert.equal(plain.status, 201, JSON.stringify(plain.data));
     assert.equal(plain.data.app.template, null, 'no template is the empty starter, stored as nothing');
+    const named = await create({ name: 'Named empty', audience: 'solo', template: 'empty' });
+    assert.equal(named.status, 201, JSON.stringify(named.data));
+    assert.equal(named.data.app.template, null, 'naming the empty starter stores nothing either');
+    assert.equal(built.find((row) => row.id === named.data.app.id).template, null,
+      'the build reads no template as the empty starter');
+    // The four starters went with the create dialog (services/app-templates.js).
+    const game = await create({ name: 'Star catch', audience: 'solo', template: 'game-2d' });
+    assert.equal(game.status, 400);
+    assert.equal(game.data.error, 'template must be one of: empty');
     const unknown = await create({ name: 'Mystery', audience: 'solo', template: 'chess' });
     assert.equal(unknown.status, 400);
-    assert.match(unknown.data.error, /^template must be one of: empty, /);
     const imported = await create({ name: 'Imported', audience: 'solo', template: 'game-3d', repoUrl: 'https://github.com/o/r' });
     assert.equal(imported.status, 400);
-    assert.match(imported.data.error, /import keeps its own repository/);
-    const { rows } = await pool.query(`SELECT name FROM apps WHERE name IN ('Mystery', 'Imported')`);
+    const { rows } = await pool.query(`SELECT name FROM apps WHERE name IN ('Star catch', 'Mystery', 'Imported')`);
     assert.deepEqual(rows, [], 'a refused template creates nothing');
   });
 

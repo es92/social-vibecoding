@@ -118,7 +118,7 @@ test('a fixed size, and nothing in it scrolls', () => {
 test('the made screen draws the card, its emoji is the screen\'s icon, and nothing is framed', () => {
   const made = read(`${DIR}/made.tsx`);
   assert.match(made, /import \{ SketchCard, showsCard, useSketch \} from '\.\/sketch-card';/);
-  assert.match(made, /\{showsCard\(sketch\.state\) \? \(\n\s+<SketchCard made=\{made\} sketch=\{sketch\} line=\{line\} note=\{note\} busy=\{busy\} botBuilds=\{botBuilds && !stalled\} built=\{!making \|\| !!\(fv && fv\.ready\)\} \/>/);
+  assert.match(made, /\{card \? \(\n\s+<SketchCard made=\{made\} sketch=\{sketch\} line=\{line\} note=\{note\} busy=\{busy\} botBuilds=\{botBuilds && !stalled\} built=\{!making \|\| !!\(fv && fv\.ready\)\} \/>/);
   assert.match(made, /const tile = sketch\.card\?\.emoji \|\| made\.emoji \|\| made\.name\.slice\(0, 1\);/);
   assert.match(made, /made=\{sketch\.card \? \{ \.\.\.made, emoji: sketch\.card\.emoji \} : made\}/, 'the invite sheet shows it too');
   assert.doesNotMatch(made, /<iframe|sketch\.html|sketchCaption/);

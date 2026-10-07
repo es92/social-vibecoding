@@ -3,48 +3,33 @@
 /**
  * The starter templates a new project can begin from (#3521).
  *
- * `POST /api/apps` takes `template`, one of TEMPLATE_IDS, and the create
- * dialog's last step offers the same list under "Start from a template"
- * (frontend/src/features/dialogs/create-app.tsx keeps a copy of the ids and
- * the words; tests/app-templates.test.js keeps the two equal). Absent, the
+ * `POST /api/apps` takes `template`, one of TEMPLATE_IDS; absent, the
  * project starts from `empty`: the scaffold every project got before this
- * existed, byte for byte (services/template.js).
+ * existed, byte for byte (services/template.js). Strict, like the rest of
+ * create-options.js: an id not on the list is refused, not swapped.
  *
- * ── What a starter is ──────────────────────────────────────────────────
+ * ONLY `empty` IS LEFT. The four starters (social productivity, multimedia
+ * social, a 2D game, a 3D game) were offered by the create dialog's "Start
+ * from a template", and were deleted with that dialog: Create opens "What do
+ * you want to make?" (frontend/src/features/first-session/make.tsx), which
+ * describes a project for Homeroom bot to build, or imports a GitHub repo.
+ * The machinery stays, so a starter can come back as files and an entry:
  *
- * The platform plumbing is shared with `empty` and is not repeated here:
- * the Dockerfile, the Tailwind build, package.json and its lockfile, the
- * `.claude/` scaffold, and server.js's sign-in check, hosted-asset handler
- * and share-link fallback. A starter adds what differs, as real files under
- * `app-templates/<id>/` at the repository root:
+ *   app-templates/<id>/  at the repository root, outside src/ because
+ *                        scripts/check-sql.js validates every query under
+ *                        src/ against the platform's own catalog, and a
+ *                        starter's queries are against the app's database:
+ *     api.js             the app's own routes and tables (server.js mounts
+ *                        it after the sign-in check and awaits its migrate);
+ *     public/index.html  the screen, with `{{APP_NAME}}` and
+ *                        `{{DEV_CONSOLE_FORWARDER}}` filled in at creation;
+ *     public/app.js      the screen's script.
+ *   an entry below       its title, summary, icon, features, tables and the
+ *                        declared `tests` the new repository ships with.
  *
- *   api.js             the app's own routes and tables. server.js mounts it
- *                      after the sign-in check (`api.routes(app, pool)`) and
- *                      awaits `api.migrate(pool)` before it listens; a
- *                      staging preview also gets a few obviously fake rows.
- *   public/index.html  the screen, with `{{APP_NAME}}` and
- *                      `{{DEV_CONSOLE_FORWARDER}}` filled in at creation.
- *   public/app.js      the screen's script.
- *
- * They live OUTSIDE src/ on purpose: scripts/check-sql.js validates every
- * query under src/ against the platform's own catalog, and a starter's
- * queries are against the app's database, not this one.
- *
- * The metadata below is what the generated README, CLAUDE.md and dapp.json
- * say about each one. `tests` become the new repository's declared checks,
- * so every starter ships with checks that gate its first proposal; the
- * staging seed in its api.js is what they read.
- *
- * ── Rules every starter keeps ──────────────────────────────────────────
- *
- * The platform conventions apply to these like to any app: the bridge by
- * relative path and never vendored, no CDN, the platform's theme followed,
- * a graceful shutdown, staging seeds gated on USERNODE_ENV and owned by
- * fake identities, uploads through `usernode.uploadFile()` with only the
- * URL stored, and the content rules (the games have no combat or weapons;
- * a feed of posts keeps a way to report one). The 3D game draws with plain
- * WebGL rather than a vendored three.js: about 300 lines instead of a
- * 600 KB library in every new repository, and nothing to keep up to date.
+ * A project made from one of the deleted starters keeps its `apps.template`
+ * value; app-creator reads anything that is not on the list as `empty`, so
+ * a Retry after a failed create scaffolds the empty starter.
  */
 
 const fs = require('fs');
@@ -62,98 +47,6 @@ const TEMPLATES = Object.freeze([
     id: 'empty',
     title: 'Empty',
     summary: 'The starter screen with one example to replace.',
-  }),
-  Object.freeze({
-    id: 'social-productivity',
-    title: 'Social productivity',
-    summary: 'Shared lists that members add tasks to, claim and tick off.',
-    icon: '✅',
-    features: [
-      '**Shared lists**: anyone in the project can start a list and add tasks to it.',
-      '**Claim and finish**: "I\'ll do it" puts your name on a task; ticking it off records who did.',
-      '**Tidy up**: a task\'s author or its list\'s author can remove it; a list\'s author can remove the list.',
-    ],
-    tables: '`lists` and `tasks`',
-    tests: [
-      {
-        id: 'lists.board',
-        name: 'Lists load with their tasks',
-        path: '/',
-        expectSelector: '#lists [data-list] [data-task]',
-        visual: true,
-        impact: ['public/**', 'api.js'],
-      },
-      { name: 'A new list can be started', path: '/', expectSelector: '#new-list-form input[name="title"]' },
-    ],
-  }),
-  Object.freeze({
-    id: 'multimedia-social',
-    title: 'Multimedia social',
-    summary: 'A feed of posts with photos, likes and a way to report a post.',
-    icon: '📷',
-    features: [
-      '**Posts with photos**: a caption and an optional photo. Photos are uploaded through Homeroom\'s file storage (`usernode.uploadFile()`), shrunk in the browser first; the database keeps only the URL.',
-      '**Likes**: one per person per post.',
-      '**Report and delete**: anyone can report a post, and a post three people report is hidden; authors can delete their own.',
-    ],
-    tables: '`posts`, `post_likes` and `post_reports` (private to production)',
-    tests: [
-      {
-        id: 'feed.posts',
-        name: 'The feed shows posts with photos',
-        path: '/',
-        expectSelector: '#feed [data-post] img',
-        visual: true,
-        impact: ['public/**', 'api.js'],
-      },
-      { name: 'The composer is ready', path: '/', expectSelector: '#composer textarea[name="caption"]' },
-    ],
-  }),
-  Object.freeze({
-    id: 'game-2d',
-    title: '2D game',
-    summary: 'A canvas game played with keys or touch, with a leaderboard.',
-    icon: '⭐',
-    features: [
-      '**Star catcher**: move the basket with the arrow keys, A and D, or a finger, and catch falling stars. Three missed stars end the round.',
-      '**Game loop**: `requestAnimationFrame` with a frame-time step, so speed is the same on every screen.',
-      '**Leaderboard**: each player\'s best score, saved when a round ends.',
-    ],
-    tables: '`scores`',
-    tests: [
-      {
-        id: 'game.ready',
-        name: 'The game is ready to play',
-        path: '/',
-        expectSelector: '#game canvas[data-ready="true"]',
-        visual: true,
-        impact: ['public/**', 'api.js'],
-      },
-      { name: 'The leaderboard lists players', path: '/', expectSelector: '#leaderboard [data-score]' },
-    ],
-  }),
-  Object.freeze({
-    id: 'game-3d',
-    title: '3D game',
-    summary: 'A 3D scene drawn with WebGL, with controls and a leaderboard.',
-    icon: '💎',
-    features: [
-      '**Gem garden**: roll a ball around a garden with the arrow keys, WASD, or by dragging, and collect as many gems as you can in 45 seconds.',
-      '**Plain WebGL**: a small renderer in `public/app.js` (meshes, a camera, one light), with no library to load or keep up to date. Swap in three.js later if the game outgrows it; serve it from this repository rather than a CDN.',
-      '**Leaderboard**: each player\'s best score, saved when a round ends.',
-    ],
-    tables: '`scores`',
-    tests: [
-      {
-        id: 'game3d.ready',
-        name: 'The 3D scene is ready to play',
-        path: '/',
-        expectSelector: '#game canvas[data-ready="true"]',
-        visual: true,
-        impact: ['public/**', 'api.js'],
-      },
-      { name: 'The leaderboard lists players', path: '/', expectSelector: '#leaderboard [data-score]' },
-    ],
   }),
 ]);
 

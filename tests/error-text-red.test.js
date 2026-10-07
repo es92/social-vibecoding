@@ -25,7 +25,10 @@ const SLOTS = [
   ['frontend/src/features/dialogs/import-pr.tsx', ['const ERROR_CLASS', 'id="import-pr-error"']],
   ['frontend/src/features/dialogs/fork-app.tsx', ['id="fork-error"']],
   ['frontend/src/features/dialogs/close-issue.tsx', ['id="close-issue-error"']],
-  ['frontend/src/features/dialogs/create-app.tsx', ['id="create-error"']],
+  // The retired create dialog's #create-error is the make screen's and its
+  // import form's lines now (the alert, and what a field still needs).
+  ['frontend/src/features/first-session/make.tsx', ["const NEEDED = '", '<p role="alert" className="mt-3']],
+  ['frontend/src/features/first-session/import-repo.tsx', ["const NEEDED = '", '<p role="alert" className="mt-3']],
   ['frontend/src/features/dialogs/app-allowance.tsx', ['role="alert"']],
   ['frontend/src/features/dialogs/app-settings.tsx', ['role="alert"', "accessMessageIsError ? 'text-red"]],
   ['frontend/src/features/dialogs/wallet-recovery.tsx', ['role="alert"']],

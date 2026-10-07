@@ -194,6 +194,12 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
   // count glyphs are the same pair the app's own Workshop tab uses, which is
   // the point: the number on a row and the pane it counts wear one mark.
   const expected = [
+    // ── The create dialog is retired ───────────────────────────────────
+    //
+    // Its "A private community" row drew LockIcon in the static document;
+    // the lock still draws behind state (the signed-out landing, the hub's
+    // ⋯ menu, a community's card), so it is on this list again.
+    'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
     // ── The create dialog's rework took four paths OUT of this list, ──
     // ── and the make screen's More options put them back ─────────────
     //

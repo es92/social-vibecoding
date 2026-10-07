@@ -25,11 +25,11 @@
  *
  * The same island is the platform's one front door for a new project: the
  * Create button (App.showCreateModal, public/js/app.js) opens
- * "What do you want to make?" through `create()`, with `entry` 'create', and
- * the New project dialog (../dialogs/create-app.tsx), now its More options,
- * hands a project made from a description back through `made()`. From
- * there it ends on the project's hub rather than on the first session's
- * tour, and it answers nothing the first session asks (noteAnswered).
+ * "What do you want to make?" through `create()`, with `entry` 'create'
+ * (`create({ import: true })`, from #create/import, opens it on importing a
+ * GitHub repo). From there it ends on the project's hub rather than on the
+ * first session's tour, and it answers nothing the first session asks
+ * (noteAnswered).
  *
  * A sign-in from the invite's own page (Join, then the sheet) is followed in
  * the tick the signed-in shell starts, and the link's standing, which says
@@ -60,7 +60,7 @@ import { Wordmark } from '@/components/ui/wordmark';
 import { pushDismissible, type Release } from '../../lib/back-stack';
 import { invalidateAppAllowance } from '../dialogs/app-allowance-store.js';
 import { joinPicture, JoinedPicture } from './joined-picture';
-import { type Made, type MakeDraft, type MakeEntry, MakeScreen } from './make';
+import { type Made, type MakeEntry, MakeScreen } from './make';
 import { MadeScreen, madeAppOf, madeAppUrl } from './made';
 import { type FirstVersionStage, invitedSteps, makerSteps, privateSteps, type TourScreen, type TourStep } from './tour-steps';
 
@@ -124,9 +124,7 @@ type Legacy = {
   };
   Home?: { load?: () => void };
   Secrets?: { open?: (slug: string) => void };
-  UsernodeReact?: Record<string, unknown> & {
-    dialogs?: { create?: { open?: (draft?: MakeDraft) => void } };
-  };
+  UsernodeReact?: Record<string, unknown>;
 };
 const legacy = (): Legacy => window as unknown as Legacy;
 
@@ -652,7 +650,7 @@ export type Mode =
   | { kind: 'held' }
   | { kind: 'welcome'; info: FirstSessionInfo }
   // `entry` 'create' is the Create button's (see the header); none is the first session's.
-  | { kind: 'make'; entry?: MakeEntry }
+  | { kind: 'make'; entry?: MakeEntry; startImport?: boolean }
   | { kind: 'made'; made: Made; entry?: MakeEntry }
   | { kind: 'tour'; info: FirstSessionInfo; path: 'invited' | 'maker' | 'private' };
 
@@ -733,16 +731,16 @@ export function viewerBotBuilds(user: { homeroomBotDm?: boolean } | null | undef
 }
 
 /**
- * "What do you want to make?" from the Create button, over nothing else.
- * Answers whether it opened, so App.showCreateModal can fall back to the
- * New project dialog when something already holds the screen.
+ * "What do you want to make?" from the Create button, over nothing else, or
+ * open on importing a GitHub repo (`startImport`, #create/import). Answers
+ * whether it opened: something already holding the screen keeps it.
  */
-export function openCreate(setMode: Dispatch<SetStateAction<Mode>>): boolean {
+export function openCreate(setMode: Dispatch<SetStateAction<Mode>>, startImport = false): boolean {
   let opened = false;
   flushSync(() => setMode((prev) => {
     if (prev.kind !== 'none') return prev;
     opened = true;
-    return { kind: 'make', entry: 'create' };
+    return startImport ? { kind: 'make', entry: 'create', startImport: true } : { kind: 'make', entry: 'create' };
   }));
   if (opened) void invalidateAppAllowance();
   return opened;
@@ -847,16 +845,10 @@ export function FirstSession() {
         setMode((prev) => (prev.kind === 'make' && prev.entry !== 'create' ? { kind: 'none' } : prev));
       },
       // The Create button (App.showCreateModal): the one front door for a
-      // new project, for every signed-in viewer.
-      create(): boolean {
-        return openCreate(setMode);
-      },
-      // The New project dialog, after it made a project from a description
-      // (its More options path): the same made screen Make it ends on.
-      made(made: Made): boolean {
-        if (!made || !made.slug) return false;
-        setMode({ kind: 'made', made, entry: 'create' });
-        return true;
+      // new project, for every signed-in viewer; `import` opens it on
+      // importing a GitHub repo.
+      create(opts?: { import?: boolean }): boolean {
+        return openCreate(setMode, !!opts?.import);
       },
     };
     w.UsernodeReact.firstSession = api;
@@ -866,11 +858,11 @@ export function FirstSession() {
   const end = useCallback(() => setMode({ kind: 'none' }), []);
 
   // The Create door's screens own the device's back press, as the New
-  // project dialog they stand in for did (lib/back-stack.ts): back closes
-  // them, from the make screen or the made one (the claim is kept across
-  // Make it). Left any other way, the claim is handed back first (leaveDoor):
-  // as a navigating one when the way out goes somewhere (the hub, the chat,
-  // a dialog that claims its own), so its queued traversal cannot undo that.
+  // project dialog they replaced did (lib/back-stack.ts): back closes them,
+  // from the make screen or the made one (the claim is kept across Make it).
+  // Left any other way, the claim is handed back first (leaveDoor): as a
+  // navigating one when the way out goes somewhere (the hub, the chat, a
+  // dialog that claims its own), so its queued traversal cannot undo that.
   const createDoor = (mode.kind === 'make' || mode.kind === 'made') && mode.entry === 'create';
   const doorBack = useRef<Release | null>(null);
   useEffect(() => {
@@ -907,6 +899,7 @@ export function FirstSession() {
       <MakeScreen
         who={viewerName()}
         entry="create"
+        startImport={!!mode.startImport}
         botBuilds={viewerBotBuilds(legacy().App?.user)}
         // Nothing is answered: the tile behind is refreshed, so the new
         // project is in the grid when the made screen goes, and the
@@ -917,12 +910,6 @@ export function FirstSession() {
           setMode({ kind: 'made', made, entry: 'create' });
         }}
         onClose={() => leaveDoor(false)}
-        // The New project dialog, with what has been typed so far. It claims
-        // the back press itself, so this one goes as a navigating release.
-        onMoreOptions={(draft) => {
-          leaveDoor(true);
-          legacy().UsernodeReact?.dialogs?.create?.open?.(draft);
-        }}
       />
     );
   }

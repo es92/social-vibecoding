@@ -38,16 +38,17 @@ test('B8: the doors that open the chat with Homeroom bot, and what they are call
   // run-through, 5 Oct 2026). The hub's ⋯ still offers it, above.
   assert.match(read('frontend/src/features/home/tour/tour-steps.ts'), /body: 'Tell Homeroom bot what should change\. It builds it for you, or passes it to the group as a request\.',/);
   assert.doesNotMatch(read('frontend/src/features/home/tour/tour-steps.ts'), /tap Build it yourself/);
-  assert.match(read('frontend/src/features/dialogs/create-app.tsx'), /openLabel=\{botChat \? 'Open chat' : 'Open project'\}/);
+  // The made screen's plan card is the door after a new project (the
+  // retired create dialog's "Open chat" was before it).
+  assert.match(read('frontend/src/features/first-session/made.tsx'), /data-first-session-plan-chat=""[^>]*>\s*Go to chat/);
   const store = read('frontend/src/features/messages/store.ts');
   assert.match(store, /openBot: \(reference\?: StagedObject \| null\) => \{ void openBot\(reference\); \},/);
   // B8: Ask for changes attaches the change on the composer when it names
   // its project (tests/ask-for-changes-attach.test.js); anything less is
   // chosen in the Share item dialog, as Share stages one.
   assert.match(store, /else if \(reference\) pendingShare = reference;/);
-  for (const f of ['game-2d', 'game-3d', 'multimedia-social', 'social-productivity']) {
-    assert.match(read(`app-templates/${f}/public/index.html`), /To change this app, ask Homeroom bot: tap the Homeroom icon, then <strong class="font-semibold">Suggest an improvement<\/strong>\./, f);
-  }
+  // (The four starters' pages said the same; they were deleted with the
+  // create dialog, tests/app-templates.test.js.)
 });
 
 test('B8: filing, against the full PostgreSQL schema', { timeout: 180000 }, async (t) => {

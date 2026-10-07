@@ -203,15 +203,6 @@ test('what happens next follows who builds it and who it is for: a builder by au
   assert.deepEqual(nextOf(html({ phase: 'build' }, { mode: 'fork' })), [...nextSteps({ mode: 'fork' })]);
 });
 
-test('the create dialog says who builds it and who it is for', () => {
-  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../frontend/src/features/dialogs/create-app.tsx'), 'utf8');
-  assert.match(src, /builder=\{botChat \? 'bot' : \(mode !== 'import' \? 'request' : null\)\}/);
-  assert.match(src, /audience=\{audience \?\? 'solo'\}/);
-  // #13 with #15 in place: "Open app" goes to the app's own page, which
-  // says the first version is being built.
-  assert.match(src, /onViewApp=\{\(\) => \{[\s\S]{0,240}dialog\.closeForNavigation\(\);\s*\(window\.App\?\.navigateToApp [^;]*\?\.\(slug, 'app'\);/);
-});
-
 test('#13: the bot case also offers the app itself, under the bot\'s DM; nobody else gets a second button', () => {
   const live = { status: 'running' };
   const bot = html(live, {

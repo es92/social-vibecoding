@@ -261,15 +261,21 @@ is no replay plan to write and nothing to verify locally.
   should render a separate "community" layer for it. The table is bare on
   purpose; a name and an audience move onto it when a community can own
   more than one project.
-- **A project is created FOR someone.** The create dialog asks who it is for
-  first (Just me, A private community, A public community) and
-  `POST /api/apps` takes `audience`, a private community's `invitees` and
-  the approval rule as dapp.json's own `governance` block
-  (`src/services/create-options.js`). The rule is written
-  into the new repository's dapp.json by the template, so it is votable later
-  like any other line there; an import's own dapp.json decides instead. Every
-  project uses an app slot whatever its audience: each one is a real
-  container and database.
+- **A project is created FOR someone, and on screen that is a private
+  community.** Create opens "What do you want to make?"
+  (`frontend/src/features/first-session/make.tsx`, the first session's own
+  screen), which asks what it should do and what to call it, or imports a
+  GitHub repo in place (`import-repo.tsx`), and makes a private community
+  with nobody invited yet; inviting comes next, on its made screen. The
+  create dialog that asked who it is for and who approves is retired: those
+  are the project's own levers afterwards (Invite, "Make it public", Members
+  & approvals). `POST /api/apps` still takes `audience`, a private
+  community's `invitees` and the approval rule as dapp.json's own
+  `governance` block (`src/services/create-options.js`) for any other
+  caller; the rule is written into the new repository's dapp.json by the
+  template, so it is votable later like any other line there, and an
+  import's own dapp.json decides instead. Every project uses an app slot
+  whatever its audience: each one is a real container and database.
 - **Membership gates taking part, not reading.** Starting a change,
   proposing, filing a request, voting (on proposals and requests) and posting
   in an app's chat answer 403 `join_required` to a non-member
@@ -367,7 +373,7 @@ is no replay plan to write and nothing to verify locally.
   and screen visibility must be published through
   `frontend/src/lib/visibility-store.ts` rather than by toggling `.hidden` from
   outside React.
-- **The nine dialogs present themselves through
+- **The shell's dialogs present themselves through
   `frontend/src/lib/static-modal.ts` — nothing outside React lifts their
   cards.** That seam used to be `PlatformUI.adoptStaticModal`, which watched
   each root in `STATIC_MODAL_IDS` and, when `hidden` came off, lifted the card
@@ -375,7 +381,8 @@ is no replay plan to write and nothing to verify locally.
   kit's `presentModal` shell. Two owners wrote to those nodes, so the dialogs
   had to stay markup-only. #1078 chunk I moved the lift inside React
   (`useStaticModal`, driven by `features/dialogs/use-dialog.ts`) and retired the
-  `public/js/**` copy, which is what made all nine stateful. **Drive a dialog
+  `public/js/**` copy, which is what made them all stateful (the create
+  dialog, the first of the nine, has since been retired). **Drive a dialog
   only through `useDialog`** — it owns `hidden`, the kit hand-off, the
   backdrop-dismiss rule and the ghost-click guard, and it publishes the
   controller on `window.UsernodeReact.dialogs.<name>` for the legacy callers.

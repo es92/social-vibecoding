@@ -241,7 +241,11 @@ test('a staging server reads the page\'s header, or the address on a page load',
 });
 
 test('every starter\'s api() helper sends the page\'s time on a preview opened at a moment', () => {
-  for (const name of ['game-2d', 'game-3d', 'multimedia-social', 'social-productivity']) {
+  // The four starters were deleted with the create dialog
+  // (tests/app-templates.test.js); one that comes back keeps the rule.
+  const dir = require('node:path').join(__dirname, '..', 'app-templates');
+  const names = require('node:fs').existsSync(dir) ? require('node:fs').readdirSync(dir) : [];
+  for (const name of names) {
     const src = read(`app-templates/${name}/public/app.js`);
     assert.match(src,
       /if \(window\.usernode && window\.usernode\.previewNow\) headers\['x-usernode-now'\] = window\.usernode\.now\(\)\.toISOString\(\);/,

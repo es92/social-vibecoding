@@ -185,7 +185,7 @@ test('quiet, the create dialog\'s card shows only when the allowance bears on wh
   assert.match(renderPanel({ quota: QUOTA, server: null }, { surface: 'inset' }).html, /0 of 2 app slots used/);
 });
 
-test('allowanceWorthShowing is pure, and the create dialog is the one surface that is quiet', () => {
+test('allowanceWorthShowing is pure, and the make screen is the one surface that is quiet', () => {
   const { allowanceWorthShowing } = renderPanel({ quota: QUOTA, server: null }).mod;
   const roomy = { used: 10, limit: 50, remaining: 40, full: false };
   assert.equal(allowanceWorthShowing(QUOTA, null, null, ''), false);
@@ -203,7 +203,8 @@ test('allowanceWorthShowing is pure, and the create dialog is the one surface th
     'an unknown count is not read as one slot left');
   assert.equal(allowanceWorthShowing(null, null, null, ''), false);
   const read = (rel) => require('node:fs').readFileSync(require('node:path').join(__dirname, '..', rel), 'utf8');
-  assert.match(read('frontend/src/features/dialogs/create-app.tsx'), /<AppAllowance id="create-app-quota" surface="pane" quiet \/>/);
+  // The retired create dialog's quiet row, on Create's make screen now.
+  assert.match(read('frontend/src/features/first-session/make.tsx'), /<AppAllowance id="make-app-quota" surface="pane" quiet \/>/);
   assert.match(read('frontend/src/features/dialogs/fork-app.tsx'), /<AppAllowance \/>/, 'the fork dialog is unchanged');
 });
 

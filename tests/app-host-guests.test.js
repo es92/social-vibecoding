@@ -399,8 +399,13 @@ test('the scaffold: a guest reads, a guest’s write is account_required, a forg
 });
 
 test('starter read routes do not assume a person', () => {
-  for (const name of ['game-2d', 'game-3d', 'multimedia-social', 'social-productivity']) {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'app-templates', name, 'api.js'), 'utf8');
+  // The four starters under app-templates/ were deleted with the create
+  // dialog (tests/app-templates.test.js); a starter that comes back is held
+  // to the same rule, so the loop reads whatever directories are there.
+  const dir = path.join(__dirname, '..', 'app-templates');
+  const names = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  for (const name of names) {
+    const src = fs.readFileSync(path.join(dir, name, 'api.js'), 'utf8');
     for (const m of src.matchAll(/app\.get\([^]*?\n {2}\}\);/g)) {
       assert.doesNotMatch(m[0].replace(/req\.user \? req\.user\.(id|username) : null|!!req\.user && [^,]+|req\.user \? \{[^}]*\} : null/g, ''),
         /req\.user\./, `${name}: a read route reads req.user without a guard`);

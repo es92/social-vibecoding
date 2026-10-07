@@ -358,57 +358,28 @@ test('the controller is published by name and withdrawn on unmount', () => {
 
 // ── each dialog's own behaviour ──────────────────────────────────────────
 
-test('create: mode, import check and POST /api/apps all moved', () => {
-  const src = dialog('create-app.tsx');
-  // Every answer starts empty since the rework; close puts the start
-  // answer back to none, and a new answer there starts the check over.
-  assert.match(src, /applyMode\(null\)/);
-  assert.match(src, /\/api\/github\/verify-access\?url=/, 'the import URL check moved with it');
-  // The POST itself is shared with the make screen since Create opens it
-  // (post-create-app.ts); the dialog sends through it.
-  assert.match(src, /await postCreateApp\(body\)/, 'the create POST moved with it');
+test('create: retired, and what it did has a home', () => {
+  // The create dialog is gone (tests/create-front-door.test.js): Create
+  // opens "What do you want to make?", which imports a GitHub repo in place,
+  // through the request the dialog used (post-create-app.ts), and every new
+  // project lands on the made screen, which carries the dialog's progress
+  // view's Try again and Set secrets.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  assert.equal(fs.existsSync(path.join(__dirname, '..', 'frontend/src/features/dialogs/create-app.tsx')), false);
   assert.match(dialog('post-create-app.ts'), /fetch\('\/api\/apps', \{/);
-  // A successful create/import no longer closes the dialog. #1418 covered
-  // the async build with a toast over a CLOSED dialog, because the tile's
-  // small "Spinning up…" was easy to miss; the dialog now stays open and
-  // reports the phases app-creator broadcasts (features/dialogs/
-  // create-progress.tsx, tests/create-progress-view.test.js). The toast
-  // survives only on the path that has nothing to report on — a 201 with
-  // no slug to follow.
-  assert.match(src, /watchCreation\(slug\)/, 'the success path starts following the build');
-  assert.match(src, /setCreated\(\{ slug/, 'and swaps the card to the progress view');
-  assert.match(src, /if \(!slug\) \{/, 'a 201 we cannot follow falls back to the old close+toast');
-  assert.match(src, /window\.PlatformUI\?\.toast\?\.\(/, 'that fallback still raises the toast');
-  assert.match(src, /being imported/, 'import mode gets the imported wording');
-  assert.match(src, /being created/, 'new mode gets the created wording');
-  // The progress subtree must never reach the prerendered document — its
-  // ids are not in tests/baselines/shell-markup.json and its markup is
-  // not in dapp.json's declared selectors. `created` starting null
-  // is what guarantees that.
-  assert.match(src, /useState<\{ slug: string; name: string \} \| null>\(null\)/,
-    'the progress view is gated on state that starts null');
-  // #3683: the progress card's button closes the dialog AND navigates, so the
-  // close is a navigating one: a plain close queues a history.back() that
-  // lands after the new address and undoes it (tests/dialog-suspend-exit.test.js
-  // runs the hook). Both destinations, the bot's DM and the Workshop.
-  assert.match(src, /dialog\.closeForNavigation\(\);\s*openMessages\(chat\);/,
-    'opening the Homeroom bot DM does not spend the record under its own address');
-  assert.match(src, /dialog\.closeForNavigation\(\);\s*\(window\.App\?\.navigateToApp/,
-    'nor does opening the new project');
-  assert.doesNotMatch(src, /dialog\.close\(\);\s*(?:openMessages|\(window\.App\?\.navigateToApp)/);
-  // "Set secrets" too: the secrets dialog pushes its own back-button record
-  // as it opens, and a plain close's queued back() would land on that record
-  // and close it again. (tests/dialog-suspend-exit.test.js runs the fork
-  // dialog's twin of this card.)
-  const setSecrets = src.slice(src.indexOf('onSetSecrets={() => {'), src.indexOf('onRetry={() => {'));
-  assert.match(setSecrets, /dialog\.closeForNavigation\(\);[\s\S]*window\.Secrets\?\.open/,
-    'opening the secrets dialog does not spend the record under its own');
-  assert.doesNotMatch(setSecrets, /dialog\.close\(\);/);
-  // Close resets the form, so a half-finished import is never inherited.
-  assert.match(src, /formRef\.current\?\.reset\(\)/);
-  // The home screen's "+" still opens it by name.
-  // Through App.showCreateOptions, the make screen's More options, with its draft.
-  assert.match(APP, /window\.UsernodeReact\?\.dialogs\?\.create\?\.open\(draft\)/);
+  const form = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/first-session/import-repo.tsx'), 'utf8');
+  assert.match(form, /\/api\/github\/verify-access\?url=/, 'the import URL check moved with it');
+  const made = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/first-session/made.tsx'), 'utf8');
+  assert.match(made, /\/retry`, \{ method: 'POST'/);
+  // The make screen's ways out that open another surface hand the back
+  // press back as a navigating release (#3683): the secrets dialog pushes
+  // its own record as it opens.
+  const island = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/first-session/index.tsx'), 'utf8');
+  assert.match(island, /onSetSecrets=\{\(\) => \{\s+leaveDoor\(true\);\s+legacy\(\)\.Secrets\?\.open\?\.\(made\.slug\);/);
+  // The home screen's "+" still opens it by name, and nothing opens a dialog called create.
+  assert.match(APP, /showCreateModal\(opts\) \{\s+const front = window\.UsernodeReact\?\.firstSession;/);
+  assert.doesNotMatch(APP, /dialogs\?\.create\?\.open/);
 });
 
 test('rename: prefills the current name and PUTs to /rename', () => {

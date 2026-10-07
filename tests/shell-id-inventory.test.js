@@ -58,6 +58,28 @@ const withInteriors = `${after}\n${lazyInteriorsHtml()}`;
 
 // Ids a conversion chunk deliberately removed, each with the reason.
 const RETIRED_IDS = {
+  // ── The create-project dialog is retired ───────────────────────────
+  // Create opens "What do you want to make?" (features/first-session/
+  // make.tsx), the screen the first session asks with, for everyone. It
+  // imports a GitHub repo in place (import-repo.tsx), and every new project
+  // ends on its made screen. Who a project is for and who approves are its
+  // own levers afterwards (Invite, "Make it public", Members & approvals),
+  // and the starter templates are gone. The ids the dialog ADDED since the
+  // baseline (its step indicator, Next, the invite and approval steps, the
+  // brief and the one-line description) left ADDED_IDS with it.
+  'create-modal': 'The create-project dialog\'s root, one of the nine static dialogs. Create opens the make screen instead (App.showCreateModal → window.UsernodeReact.firstSession.create()); #create is its route and #create/import its import form.',
+  'create-card': 'The dialog\'s card, which carried every answer as data-* for app.css. The make screen has two questions and no steps to unfold.',
+  'create-title': 'The dialog\'s "New project" / "Import a project" title. The make screen says "New project" over "What do you want to make?", or "Import a GitHub repo".',
+  'create-form': 'The dialog\'s form. The make screen\'s two forms (make.tsx, import-repo.tsx) render only once it is opened, so they are not in the prerendered shell.',
+  'create-import-block': 'The repo URL and Check under "Import a GitHub repo". They are the make screen\'s import form now (#make-import-url, [data-make-import-check]), opened by its small "Import from a GitHub repo" or #create/import.',
+  'import-url': 'The repo URL field. #make-import-url in the import form.',
+  'import-check': 'The Check pill. [data-make-import-check] in the import form; GET /api/github/verify-access as before.',
+  'import-status': 'The check\'s status row. #make-import-status in the import form, which also says what is missing on a press of Import it.',
+  'create-name-block': 'The name (and "What should it do?") card. The make screen asks the same two, and the import form asks the name.',
+  'app-name': 'The project name field. #first-session-name on the make screen, #make-import-name on the import form.',
+  'create-error': 'The dialog\'s error line. Each form says its own (role="alert"), and POST /api/apps\'s answer is read by dialogs/post-create-app.ts for both.',
+  'create-cancel': 'Cancel. The make screen has ✕ ([data-make-close]), Escape and the device back press.',
+  'create-submit': 'Create / Import. Make it, or Import it, never pale for a missing answer.',
   // ── Communities, stage 3: the create dialog asks who it is for ─────
   'create-visibility-block': 'The create dialog\'s last step, two rails for who can build and who can see. The dialog now opens on who a project is FOR (Just me, A group, A community: #create-card[data-audience]), and each answer implies both columns (services/create-options.js); "public to use, invite-only building" stays in the project\'s settings. The approval rule a group or a community picks takes the last step instead (#create-approve-block).',
   'create-vis-hint': 'The rails\' "Apps everyone can build are always public to view" hint. With no rails there is no invalid combination left to explain.',
@@ -444,14 +466,6 @@ const ADDED_IDS = {
   'reg-password-hint': 'The same line under the password field: "At least 8 characters", the rule Change password already enforced and registration now does too, or the server\'s refusal when it is `field: "password"`.',
   // ── #3575: the person chooses the handle, and is told it is public ──
   'reg-username-public': '#3575: "Your username will be public to other users on Homeroom." directly under the register form\'s username field, ahead of #reg-username-hint. Its own element rather than a clause of the hint, because the hint is swapped whole for the server\'s refusal and this sentence has to stay beside the field while the person fixes the name. The input names both lines through aria-describedby. The email sign-up\'s set-password step and the first-run gate say the same sentence beside their fields.',
-  // ── #1911: the create-app dialog unfolds in steps ─────────────────
-  'create-step-indicator': 'The "Step N of M" line under the create dialog\'s title. The dialog used to show every choice on one page; its steps unfold in one card now (since communities, stage 3: who it is for, what and how to start, the details, and for a group or a community made new who approves), and this names how far it has unfolded and how far these answers go.',
-  'create-next': 'The create dialog\'s Next pill, which unfolds the next step. The details step runs the guards the old single page ran at submit, one step earlier. Hidden once the last step for the answers so far is showing (app.css keys it off #create-card[data-final]), when Create takes its place, and on the two question steps, where pressing a row moves on by itself (request #3160).',
-  // ── Communities, stage 3: who it is for, and who approves ─────────
-  'create-invite-block': 'The create dialog\'s "Invite people" card, under the collapsed "A group" row: a group names its people when it is created, and they are invited when it is (POST /api/apps `invitees`). Shown only for a group, by app.css off #create-card[data-audience].',
-  'create-invitees': 'The usernames a group is created with, comma separated, in an uncontrolled input so the prerender carries no value.',
-  'create-approve-block': 'The create dialog\'s last step for a group or a community made new: Members vote, or People I pick (starting with the creator), with "at least N yes votes" as its follow-up. Written into the new repository\'s dapp.json (POST /api/apps `governance`).',
-  'create-approvals-n': 'The "Yes votes needed" number under People I pick → At least a number (1 to 50).',
   // ── Communities, stage 5: the first run ─────────────────────────────
   'home-getting-started': 'Home\'s Getting started card: the welcome tour and the season\'s First challenges for a new account that came through "What communities do you want to join?", ticked off from their credits (GET /api/me/getting-started; the one list, 2026-10-01). Ships empty and hidden; a React island (features/home/getting-started.tsx).',
   // ── #1374: per-app notification settings ─────────────────────────
@@ -984,9 +998,6 @@ const ADDED_IDS = {
   // ── The prototype's Challenges page: a History segment ──────────────
   'leaderboard-history-root': 'The Leaderboard screen\'s fourth pane, the History tab (#leaderboard/seasons): the seasons that have ended, who won each, each event\'s winner and where the viewer finished — the navigation prototype\'s History segment. Ships EMPTY and hidden like the two other non-default pane roots, and Leaderboard._applySection toggles its `hidden` on a constant className; features/leaderboard/history-pane.tsx is the only writer below it.',
   'side-panel-divider': '#2886: the divider between the running app and the panel, as a handle on the panel\'s left edge — a vertical `separator` that drags (or takes the arrow keys, Home and End) to share the window differently, keeping at least 320px of panel and 480px of app, remembers the chosen width on this device, and resets to the default on a double-click. Ships with no value: the width is read in an effect, never in the first render.',
-  // ── The create dialog asks what the project is ──────────────────────
-  'app-description': 'The create dialog\'s "What is it?" line, on its own "Short description" step after the name (the `about` step), required there and suggested from "What should it do?" on arrival. A project made new sends it as `description`, which the template writes into the new repository\'s dapp.json — the line the join screen, Discover and the project\'s page show. An import skips the step (app.css folds it away): its own dapp.json describes it.',
-  'app-brief': 'The create dialog\'s "What should it do?", under Project name in #create-name-block. It was rendered only after a real open, for somebody the Homeroom bot builds for (#3624), so the prerender never carried it; it is asked of everyone making a project now, and required, so it ships in the shell like the name. A controlled textarea whose empty value prerenders as no text. POST /api/apps files it as the project\'s first request once the project runs. Folded away for an import (app.css).',
   // The channels moved out of Messages onto their communities' hubs, so the
   // Channels filter (#2783, added above as messages-filter-channels) is gone
   // with the section it narrowed to; it was never in the baseline.

@@ -53,15 +53,17 @@
  * does not, the description is the project's first request, for whoever
  * builds it. Nothing says how long a first version takes (buildNote).
  *
- * FROM CREATE TOO. Every project made from a description lands here, from
- * the Create button's make screen and from the New project dialog it calls
- * More options (`entry` 'create'; the dialog's own progress view is left to
- * a GitHub import, which nothing builds from a description). So this screen
- * also says what that view used to: a setup that stopped (status `error`,
- * with Try again, POST /api/apps/:slug/retry) or one waiting on its secrets
- * (`awaiting_secrets`, with Set secrets), in a card under the project like
- * the plan's (SetupStoppedCard). A project made for Just me has nobody to
- * invite, so it has no invite section, and its one button goes to it.
+ * FROM CREATE TOO, IMPORTS INCLUDED. Every new project lands here: from the
+ * first session, from the Create button's make screen, and from its import
+ * form (`made.imported`, ./import-repo.tsx), which is the retired New
+ * project dialog's last job. So this screen also says what that dialog's
+ * progress view used to: a setup that stopped (status `error`, with Try
+ * again, POST /api/apps/:slug/retry) or one waiting on its secrets
+ * (`awaiting_secrets`, with Set secrets, which an imported repo can declare),
+ * in a card under the project like the plan's (SetupStoppedCard). An import
+ * has no sketch and nothing built from a description: its lines say it is
+ * being imported, then that it runs (buildLine, buildNote). Every one is a
+ * private community, so every one ends on Share invite.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -154,11 +156,13 @@ export function stalledOf(appStatus: string | null): Stalled {
 }
 
 /** "Step 2 of 7: Read the description", or what to say without a build. */
-export function buildLine(fv: FirstVersion, appStatus: string | null, botBuilds = true): string {
+export function buildLine(fv: FirstVersion, appStatus: string | null, botBuilds = true, imported = false): string {
   // Before any step: nothing is built on a setup that stopped.
   const stalled = stalledOf(appStatus);
   if (stalled === 'failed') return 'Setting it up didn’t finish.';
   if (stalled === 'needs-secrets') return 'It needs its secrets before it can start.';
+  // An import has no first version: it is coming over, then it runs.
+  if (imported) return appStatus === 'running' ? 'Imported. It’s running.' : 'Importing it from GitHub…';
   if (fv && fv.ready) return 'Version one is ready to try.';
   if (fv && fv.step && fv.of) return `Step ${fv.step} of ${fv.of}${fv.stepName ? `: ${fv.stepName}` : ''}`;
   if (appStatus === 'creating') return 'Setting it up…';
@@ -183,9 +187,10 @@ export function buildLine(fv: FirstVersion, appStatus: string | null, botBuilds 
  * The plan, when it comes, has its own card under the project
  * (PlanWaitsCard), and while it waits this line says so instead.
  */
-export function buildNote(botBuilds: boolean, planWaits = false, stalled: Stalled = null): string {
+export function buildNote(botBuilds: boolean, planWaits = false, stalled: Stalled = null, imported = false): string {
   if (stalled === 'failed') return 'Trying again usually clears it. If it stops again, ask an admin.';
   if (stalled === 'needs-secrets') return 'Set them, and it finishes starting.';
+  if (imported) return 'Its repo says what it does. You and anyone you invite build on it from here.';
   if (!botBuilds) return 'You or anyone you invite can build it from there.';
   if (planWaits) return 'Homeroom bot is waiting for your go-ahead.';
   return 'Homeroom is making your app. It will message you when the first version is ready to try, or if it has any questions.';
@@ -452,11 +457,10 @@ export function SetupStoppedCard({ stalled, busy, onRetry, onSetSecrets }: {
 /**
  * The made screen's second button: on the first session, on to the tour
  * ("Invite people later", then "Go to the Homeroom app" once an invite is
- * out); from Create, to the project itself, and for Just me, where there is
- * nobody to invite, it is the only button.
+ * out); from Create, to the project itself.
  */
-export function continueLabel(entry: MakeEntry, sent: boolean, name: string, solo = false): string {
-  if (entry === 'create') return sent || solo ? `Go to ${name}` : 'Invite people later';
+export function continueLabel(entry: MakeEntry, sent: boolean, name: string): string {
+  if (entry === 'create') return sent ? `Go to ${name}` : 'Invite people later';
   return sent ? 'Go to the Homeroom app' : 'Invite people later';
 }
 
@@ -525,7 +529,7 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   const [inviting, setInviting] = useState(false);
   const [sent, setSent] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const solo = made.audience === 'solo';
+  const imported = !!made.imported;
   // Whether a first version has been read as on its way: once it has, a read
   // without one means it is live (or came to something else), and the
   // project is no longer "being made" (makerLine).
@@ -569,17 +573,21 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   // Not live yet: nothing read, still on its way, up for approval, or a
   // setup that stopped. That last reads no first version either, and is
   // nothing to try: the card said "Ready to try" over "Setting it up didn't
-  // finish" until it counted here.
-  const making = !!stalled || !(building && !fv);
+  // finish" until it counted here. An import has no first version at all:
+  // it is live once it runs.
+  const making = imported ? appStatus !== 'running' : (!!stalled || !(building && !fv));
 
   const botBuilds = made.conversationId != null;
   // WP-E: "Get a ping when it's ready?" in the Homeroom app, now that there
   // is something to be pinged about (features/dialogs/ping-ask.ts: it shows
   // nothing on the web, or once the phone's answer is decided).
   useEffect(() => { if (botBuilds) askForPingWhileBotBuilds(); }, [botBuilds]);
-  const note = buildNote(botBuilds, !!plan, stalled);
+  const note = buildNote(botBuilds, !!plan, stalled, imported);
   const sketch = useSketch(made.slug);
-  const line = buildLine(fv, appStatus, botBuilds);
+  // An import is never sketched: its plain card, not the sketch's frame
+  // while the (absent) sketch is read.
+  const card = !imported && showsCard(sketch.state);
+  const line = buildLine(fv, appStatus, botBuilds, imported);
   // Something is under way: the project being set up, or the bot's build
   // (not while its plan waits on them, nor on a setup that stopped: then
   // nothing is).
@@ -598,7 +606,7 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
         <Wordmark className="h-6 w-auto text-[color:var(--brand-ink)]" />
       </div>
       <div className="mx-auto flex w-full max-w-sm grow flex-col px-4 pb-[max(34px,env(safe-area-inset-bottom))]">
-        {showsCard(sketch.state) ? (
+        {card ? (
           <SketchCard made={made} sketch={sketch} line={line} note={note} busy={busy} botBuilds={botBuilds && !stalled} built={!making || !!(fv && fv.ready)} />
         ) : (
           <div className="mt-4 flex flex-col items-center rounded-[20px] bg-white px-6 py-7 text-center shadow-[inset_0_0_0_1px_var(--app-sheet-line)] dark:bg-zinc-900">
@@ -617,39 +625,28 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
           <SetupStoppedCard stalled={stalled} busy={retrying} onRetry={() => { void retry(); }} onSetSecrets={() => onSetSecrets?.()} />
         ) : null}
         {plan && !stalled ? <PlanWaitsCard name={made.name} onOpenChat={() => onOpenChat(plan.conversationId ?? made.conversationId)} /> : null}
-        {solo ? null : (
-          <div className="mt-6">
-            <p className="text-[17px] font-semibold">{`Invite people to ${made.name}`}</p>
-            <p className="mt-0.5 text-[14px] leading-snug text-zinc-500 dark:text-zinc-400">They can follow along and chat with you while it's being built.</p>
-            {sent ? sentLines(joined).map((line) => (
-              <p key={line} data-first-session-sent={joined ? 'joined' : ''} className="mt-2 text-[14px] font-semibold text-emerald-700 dark:text-emerald-400">
-                {line}
-              </p>
-            )) : null}
-          </div>
-        )}
+        <div className="mt-6">
+          <p className="text-[17px] font-semibold">{`Invite people to ${made.name}`}</p>
+          <p className="mt-0.5 text-[14px] leading-snug text-zinc-500 dark:text-zinc-400">They can follow along and chat with you while it's being built.</p>
+          {sent ? sentLines(joined).map((line) => (
+            <p key={line} data-first-session-sent={joined ? 'joined' : ''} className="mt-2 text-[14px] font-semibold text-emerald-700 dark:text-emerald-400">
+              {line}
+            </p>
+          )) : null}
+        </div>
         <div className="grow" />
         <div className="mt-6 flex flex-col gap-2.5">
-          {solo ? (
-            // Just me: nobody to invite, so the way to the project is the one button.
-            <Button type="button" data-first-session-continue="" onClick={() => onContinue(true)} layout="full" variant="pillAccent" size="pillLg" ink="solidLate" className="flex items-center justify-center">
-              {continueLabel(entry, sent, made.name, solo)}
-            </Button>
-          ) : (
-            <>
-              <Button type="button" onClick={() => setInviting(true)} layout="full" variant="pillAccent" size="pillLg" ink="solidLate" className="flex items-center justify-center">
-                Share invite
-              </Button>
-              <button
-                type="button"
-                data-first-session-continue=""
-                onClick={() => onContinue(!sent)}
-                className="flex h-11 w-full items-center justify-center rounded-full bg-white text-[16px] font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-              >
-                {continueLabel(entry, sent, made.name)}
-              </button>
-            </>
-          )}
+          <Button type="button" onClick={() => setInviting(true)} layout="full" variant="pillAccent" size="pillLg" ink="solidLate" className="flex items-center justify-center">
+            Share invite
+          </Button>
+          <button
+            type="button"
+            data-first-session-continue=""
+            onClick={() => onContinue(!sent)}
+            className="flex h-11 w-full items-center justify-center rounded-full bg-white text-[16px] font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          >
+            {continueLabel(entry, sent, made.name)}
+          </button>
         </div>
       </div>
       {inviting ? (

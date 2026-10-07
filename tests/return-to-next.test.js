@@ -420,13 +420,18 @@ test('Email & recovery: the address goes on to the password when one is asked fo
   assert.match(src, /id="account-email-password" autoComplete="current-password" enterKeyHint="send"/);
 });
 
-test('create a project: Return in the name goes on to what it should do, instead of through an error', () => {
-  const src = read('frontend/src/features/dialogs/create-app.tsx');
-  assert.match(src, /<div id="create-name-block" className=\{CARD\} onKeyDown=\{returnKeyHandler\(\)\}>/);
-  assert.match(src, /id="app-name"[\s\S]{0,160}enterKeyHint="next"/);
-  // The brief stays a multi-line field: no key of its own, so Return is a new line.
-  const brief = src.slice(src.indexOf('id="app-brief"'), src.indexOf('id="app-brief"') + 500);
-  assert.doesNotMatch(brief.slice(0, brief.indexOf('/>')), /enterKeyHint/);
+test('create a project: Return in what it should do goes on to the name, and the name makes it; an import checks, then names', () => {
+  // The create dialog is retired; Create opens the make screen
+  // (features/first-session/make.tsx), whose two fields are one sequence.
+  const src = read('frontend/src/features/first-session/make.tsx');
+  assert.match(src, /id="first-session-brief"[\s\S]{0,200}enterKeyHint="next"/);
+  assert.match(src, /if \(e\.key !== 'Enter' \|\| e\.shiftKey \|\| e\.nativeEvent\.isComposing\) return;\s+e\.preventDefault\(\);\s+nameRef\.current\?\.focus\(\{ preventScroll: true \}\);/,
+    'Return goes on to the name; Shift+Return is a new line');
+  assert.match(src, /id="first-session-name"[\s\S]{0,120}enterKeyHint="go"/);
+  // The import form: Return in the URL checks it, and once checked goes on to the name, which imports it.
+  const imp = read('frontend/src/features/first-session/import-repo.tsx');
+  assert.match(imp, /if \(state === 'ok'\) nameRef\.current\?\.focus\(\{ preventScroll: true \}\);\s+else void check\(\);/);
+  assert.match(imp, /id="make-import-name"[\s\S]{0,120}enterKeyHint="go"/);
 });
 
 test('admin sign-in providers: Return walks the single-line fields; the key and the client IDs keep their new lines', () => {
