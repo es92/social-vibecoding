@@ -3610,21 +3610,54 @@ function notifyVisualsReady(sessionId, visuals, send) {
 // the same lines as they stream past, so "checks running" can say how far
 // along it is. Dedup is by index, exactly as parseTests does, so a retried
 // frame counts once. Nothing here can change a verdict.
+//
+// The container's retry pass (capture.js, RETRY_INDEX_BASE) asks a failed
+// check again under NEW indices from a high base, each frame's payload naming
+// the check it is a second opinion on (`retryOf`). Those are not checks:
+// `expected` never counts them, so counting them as `ran` read 744 of 732
+// (#4287). A retry frame is held apart instead, and, as the verdict reads it
+// (parseTestFrames → passedOnRetry), a pass among them turns its check's
+// failure into a pass.
+const RETRY_FRAME_INDEX_BASE = 1000000;
 function makeChecksProgressTracker(expected) {
   const byIndex = new Map();
+  // check index -> true once one of its retries has passed.
+  const recovered = new Set();
+  // A retry header whose payload line (the next one) names its check.
+  let pendingRetry = null;
   let done = false;
   let doneRan = null;
   const total = Number.isInteger(expected) && expected >= 0 ? expected : null;
+  const isRetryIndex = (index) => index >= RETRY_FRAME_INDEX_BASE
+    || (total !== null && index >= total);
   return {
     // Returns true when the line advanced the state (a new frame, or done).
     feed(line) {
       const l = String(line || '');
+      if (pendingRetry && !l.startsWith('__USERNODE_')) {
+        const retry = pendingRetry;
+        pendingRetry = null;
+        if (retry.status !== 'pass') return false;
+        let of = null;
+        try {
+          const payload = JSON.parse(Buffer.from(l.trim(), 'base64').toString('utf8'));
+          of = payload && Number.isInteger(payload.retryOf) ? payload.retryOf : null;
+        } catch { of = null; }
+        if (of === null || recovered.has(of)) return false;
+        recovered.add(of);
+        return byIndex.get(of) === 'fail';
+      }
+      pendingRetry = null;
       if (l.startsWith('__USERNODE_TEST__ ')) {
         const m = /\bindex=(\d+)\b/.exec(l);
         const st = /\bstatus=(pass|fail)\b/.exec(l);
         if (!m) return false;
         const index = parseInt(m[1], 10);
         const status = st && st[1] === 'pass' ? 'pass' : 'fail';
+        if (isRetryIndex(index)) {
+          pendingRetry = { status };
+          return false;
+        }
         const before = byIndex.get(index);
         byIndex.set(index, status);
         return before !== status;
@@ -3640,7 +3673,9 @@ function makeChecksProgressTracker(expected) {
     snapshot() {
       let passed = 0;
       let failed = 0;
-      for (const st of byIndex.values()) { if (st === 'pass') passed++; else failed++; }
+      for (const [index, st] of byIndex) {
+        if (st === 'pass' || recovered.has(index)) passed++; else failed++;
+      }
       const ran = byIndex.size;
       return {
         ran, passed, failed,

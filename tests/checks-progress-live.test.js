@@ -123,6 +123,54 @@ test('the tracker dedupes by index, counts pass/fail, and reads the done sentine
   assert.ok(typeof s.updatedAt === 'string');
 });
 
+// #4287: "Checks running... 744/732". The container's retry pass asks a
+// failed check again under fresh indices from 1,000,000 up, so a run with
+// failures sent more frames than it had checks, and every one was counted.
+test('retry frames are second opinions, not checks: ran never passes expected (#4287)', () => {
+  const retryFrame = (index, status, retryOf) => [
+    `__USERNODE_TEST__ index=${index} status=${status} loadStatus=200`,
+    Buffer.from(JSON.stringify({ name: 'x', retryOf })).toString('base64'),
+    '__USERNODE_TEST_END__',
+  ];
+  const lines = (f) => f.split('\n').filter(Boolean);
+  const t = visuals.makeChecksProgressTracker(4);
+  for (const l of [...lines(frame(0, 'pass')), ...lines(frame(1, 'fail')),
+    ...lines(frame(2, 'fail')), ...lines(frame(3, 'pass'))]) t.feed(l);
+  // Check 1 is asked three times and recovers on the second; check 2 fails
+  // all three.
+  for (const [i, st, of] of [[1000000, 'fail', 1], [1000001, 'pass', 1], [1000002, 'pass', 1],
+    [1000003, 'fail', 2], [1000004, 'fail', 2], [1000005, 'fail', 2]]) {
+    for (const l of retryFrame(i, st, of)) t.feed(l);
+  }
+  let s = t.snapshot();
+  assert.equal(s.ran, 4, 'six retry frames add no checks');
+  assert.ok(s.ran <= s.expected);
+  assert.deepEqual([s.passed, s.failed], [3, 1], 'a pass on retry passes the check, as the verdict reads it');
+  t.feed('__USERNODE_TESTS_DONE__ ran=4 expected=4 deadline=0');
+  s = t.snapshot();
+  assert.equal(s.ran, 4);
+  assert.equal(s.reportedRan, undefined, 'the sentinel and the tracker agree');
+
+  // The same retry index with no `expected` known is still not a check.
+  const u = visuals.makeChecksProgressTracker(null);
+  u.feed('__USERNODE_TEST__ index=0 status=fail loadStatus=500');
+  for (const l of retryFrame(1000000, 'fail', 0)) u.feed(l);
+  assert.equal(u.snapshot().ran, 1);
+});
+
+test('the card never draws more run than expected, even from an old row (#4287)', () => {
+  const src = read('public/js/app-view.js');
+  const start = src.indexOf('  _checksProgressView(pr) {');
+  const end = src.indexOf('\n  },\n', start);
+  const body = src.slice(start, end + 4).replace(/^  _checksProgressView/, 'function _checksProgressView');
+  const ctx = { AppView: { _unitSuiteProgressView: () => null, _buildProgressView: () => null } };
+  vm.runInNewContext(`${body}\nthis.view = _checksProgressView;`, ctx);
+  const v = ctx.view({ checks_progress: { ran: 744, passed: 740, failed: 4, expected: 732 } });
+  assert.equal(v.bar.ran, 732);
+  assert.ok(v.bar.passed + v.bar.failed <= v.bar.expected);
+  assert.match(v.sentence, /^732 of 732 checks/);
+});
+
 test('setChecksProgress writes only while this run is the pending one', async () => {
   const queries = [];
   const pool = { query: async (sql, params) => { queries.push({ sql, params }); return { rows: [], rowCount: 1 }; } };

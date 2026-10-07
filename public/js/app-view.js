@@ -15343,8 +15343,13 @@ const AppView = {
     const p = pr && pr.checks_progress;
     if (!p || typeof p !== 'object') return null;
     const n = (v) => (Number.isInteger(v) && v >= 0 ? v : 0);
-    const ran = n(p.ran); const passed = n(p.passed); const failed = n(p.failed);
     const expected = Number.isInteger(p.expected) && p.expected > 0 ? p.expected : null;
+    // Never more run than there are checks (#4287). The tracker no longer
+    // counts retries, but a row written by an older server can still carry
+    // the over-count until its run settles.
+    const cap = (v) => (expected ? Math.min(v, expected) : v);
+    const ran = cap(n(p.ran)); const failed = cap(n(p.failed));
+    const passed = Math.min(n(p.passed), Math.max(0, ran - failed));
     const unit = AppView._unitSuiteProgressView(p.unit);
     const build = AppView._buildProgressView(p.build);
     if (!ran && !expected && !unit && !build) return null;
