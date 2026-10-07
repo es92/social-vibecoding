@@ -564,15 +564,19 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   const community = useCommunity(made.slug, sent);
   const joined = joinedLine(community);
   const plan = waitingPlan(fv);
-  // Not live yet: nothing read, still on its way, or up for approval.
-  const making = !(building && !fv);
+  // A setup that failed or waits on secrets (stalledOf).
+  const stalled = stalledOf(appStatus);
+  // Not live yet: nothing read, still on its way, up for approval, or a
+  // setup that stopped. That last reads no first version either, and is
+  // nothing to try: the card said "Ready to try" over "Setting it up didn't
+  // finish" until it counted here.
+  const making = !!stalled || !(building && !fv);
 
   const botBuilds = made.conversationId != null;
   // WP-E: "Get a ping when it's ready?" in the Homeroom app, now that there
   // is something to be pinged about (features/dialogs/ping-ask.ts: it shows
   // nothing on the web, or once the phone's answer is decided).
   useEffect(() => { if (botBuilds) askForPingWhileBotBuilds(); }, [botBuilds]);
-  const stalled = stalledOf(appStatus);
   const note = buildNote(botBuilds, !!plan, stalled);
   const sketch = useSketch(made.slug);
   const line = buildLine(fv, appStatus, botBuilds);
@@ -595,7 +599,7 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
       </div>
       <div className="mx-auto flex w-full max-w-sm grow flex-col px-4 pb-[max(34px,env(safe-area-inset-bottom))]">
         {showsCard(sketch.state) ? (
-          <SketchCard made={made} sketch={sketch} line={line} note={note} busy={busy} botBuilds={botBuilds} built={!making || !!(fv && fv.ready)} />
+          <SketchCard made={made} sketch={sketch} line={line} note={note} busy={busy} botBuilds={botBuilds && !stalled} built={!making || !!(fv && fv.ready)} />
         ) : (
           <div className="mt-4 flex flex-col items-center rounded-[20px] bg-white px-6 py-7 text-center shadow-[inset_0_0_0_1px_var(--app-sheet-line)] dark:bg-zinc-900">
             <span className="app-icon-tile flex h-20 w-20 items-center justify-center rounded-[22px] text-5xl" aria-hidden="true">{tile}</span>

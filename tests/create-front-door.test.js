@@ -287,3 +287,28 @@ test('the server sketches the idea for both doors, and only the first session an
   assert.match(journey, /e\.metadata->>'from' = 'first-session'/);
   assert.doesNotMatch(journey, /metadata->>'from' (?:IN|<>|!=)/);
 });
+
+// Found on the flow's own screenshots (local run, 7 October 2026): a setup
+// that stopped drew "Ready to try" on the card over "Setting it up didn't
+// finish", and a Just me project's sketch said it was "Shared with the
+// people you invite".
+test('a stopped setup is not "Ready to try", and a Just me sketch is shared with nobody', () => {
+  const src = read(`${DIR}/made.tsx`);
+  assert.match(src, /const stalled = stalledOf\(appStatus\);[\s\S]{0,400}const making = !!stalled \|\| !\(building && !fv\);/);
+  // Not the bot's "Being made" either: nothing is being made while it is stopped.
+  assert.match(src, /botBuilds=\{botBuilds && !stalled\} built=\{!making \|\| !!\(fv && fv\.ready\)\}/);
+  const { pillLabel } = loadTsx(`${DIR}/sketch-card.tsx`);
+  assert.equal(pillLabel('idea'), 'Not built yet');
+
+  const sketch = require('../src/services/app-sketch');
+  const brief = 'A tracker for our weekly miles, so we can see who is keeping up';
+  assert.ok(sketch.fallbackCard({ name: 'Run Club', brief }).points.includes(sketch.SHARED_POINT), 'a group\'s project still says so');
+  assert.ok(!sketch.fallbackCard({ name: 'Run Club', brief, solo: true }).points.includes(sketch.SHARED_POINT));
+  assert.deepEqual(sketch.fallbackCard({ name: 'Run Club', brief: '', solo: true }).points, [], 'not padded with it either');
+  const route = read('src/routes/apps.js');
+  assert.match(route, /solo: options\.audience === 'solo',\s+\}\)\.catch\(\(err\) => log\.warn\('apps', 'Sketch not started'/);
+  const service = read('src/services/app-sketch.js');
+  assert.match(service, /if \(points\.length < 2 && !solo\) points = distinctPoints\(\[\.\.\.points, SHARED_POINT\], tagline\);/);
+  assert.match(service, /card = parseCardReply\(reply\.text, \{ name, brief, today, solo \}\);/);
+  assert.match(service, /const work = generate\(pool, \{ app, user, brief, audience, solo, timeZone, deps \}\)/);
+});

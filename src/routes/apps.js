@@ -1247,6 +1247,8 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
         await require('../services/app-sketch').startSketch(pool, {
           app: appRow, user: req.user, brief: req.body.brief,
           timeZone: typeof req.body.timeZone === 'string' ? req.body.timeZone.slice(0, 64) : null,
+          // Just me, from More options: nobody to share it with.
+          solo: options.audience === 'solo',
         }).catch((err) => log.warn('apps', 'Sketch not started', { appId: appRow.id, err: err.message }));
       }
 
