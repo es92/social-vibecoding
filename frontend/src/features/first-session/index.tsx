@@ -1010,13 +1010,14 @@ const LOOK_AROUND_INFO: FirstSessionInfo = { slug: '', name: '' };
  * The tours' screenshot states. Only a brand-new account's first session
  * reaches a tour, so the before/after shots open one on demand (the owner's
  * ruling for first-run screens, 6 October 2026, as app-view.js draws
- * `?shot=first-version`): `?shot=tour-make`, `?shot=tour-join` and
- * `?shot=tour-look`, and `&step=N` to open it at its Nth card. Making and
- * joining are walked over the first project on the viewer's Home, and making
- * ends in their chat with Homeroom bot when they have one. Nothing is
+ * `?shot=first-version`): `?shot=tour-make`, `?shot=tour-join`,
+ * `?shot=tour-look` and `?shot=tour-private`, and `&step=N` to open it at
+ * its Nth card. Making, joining and a private member's tour are walked over
+ * the first project on the viewer's Home, and making ends in their chat
+ * with Homeroom bot when they have one. Nothing is
  * written: no answer to the question, no "seen" mark.
  */
-const TOUR_SHOTS: Record<string, TourPath> = { 'tour-make': 'maker', 'tour-join': 'invited', 'tour-look': 'look' };
+const TOUR_SHOTS: Record<string, TourPath> = { 'tour-make': 'maker', 'tour-join': 'invited', 'tour-look': 'look', 'tour-private': 'private' };
 
 export function tourShot(search: string): { path: TourPath; start: number } | null {
   let params: URLSearchParams;
@@ -1272,9 +1273,10 @@ export function FirstSession() {
         return true;
       },
       // The mark menu's "Go to Homeroom" for a private member (features/
-      // app-context): Home, and the first time, the four-step tour of it
-      // from the app they were in. From then on the app has its ✕ again
-      // (App._privateHomeVisited, public/js/app.js).
+      // app-context): Home, and the first time, the nine-step tour of the
+      // app they were in (#4398). The visit is noted before the tour starts,
+      // so the app has its ✕ again (App._privateHomeVisited, public/js/
+      // app.js) and the tour's ✕ step has its control: keep that order.
       goHome(info: { slug?: string | null; name?: string | null }): void {
         const app = legacy().App;
         const first = !app?._privateHomeVisited?.();

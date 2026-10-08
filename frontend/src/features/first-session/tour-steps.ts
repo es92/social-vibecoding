@@ -12,8 +12,10 @@
  * over (decision C); the invited one ends in Discussion. "Look around first"
  * has its own four cards on Home (decision E, #4072): where to start a
  * project later, and what the tab bar's places are. A private member, let in
- * by an invite link before the waitlist let them in, gets four cards in the
- * same words the first time they reach Home (#4080, privateSteps).
+ * by an invite link before the waitlist let them in, gets the maker's walk
+ * through the project, three cards reworded for someone invited, then
+ * Homeroom bot and the waitlist, the first time they reach Home (#4080,
+ * #4398, privateSteps).
  *
  * Every target is the product's own control or region, found by the
  * selectors the rest of the shell already pins (tests/baselines/
@@ -282,30 +284,26 @@ export function invitedSteps({ slug, name }: TourProject): TourStep[] {
  * A PRIVATE MEMBER's tour (users.private_member_since): an invite link let
  * them into a community's app before they were let in, and they reach the
  * rest of Homeroom only through the mark menu's "Go to Homeroom" (#4080).
- * The first time they do, four cards on the Home it opens, in the other
- * tours' words: the project, where to find it, Homeroom bot, and the
- * waitlist card that is how they make apps of their own. Each points at one
- * place and leads on with Next, as "Look around first" does: every step is
- * on the screen they are on.
+ * The first time they do, nine cards (request #4398): the maker's walk
+ * through the project (sharedSteps), with three cards reworded for someone
+ * who was invited rather than someone who made it (the app opened, Suggest
+ * an improvement in its menu, and the hub), then Homeroom bot and the
+ * waitlist card that is how they make apps of their own. The ✕ step has its
+ * control because goHome notes the Home visit before the tour starts
+ * (App._privateNoClose turns false), so the app has its ✕ again.
  */
 export function privateSteps({ slug, name }: TourProject): TourStep[] {
+  const [home, app, menu, suggest, close, communities, hub] = sharedSteps(slug, name);
   return [
+    home,
+    { ...app, text: 'You and everyone in its community use it, and make it better together.' },
+    menu,
+    { ...suggest, text: `Got an idea for ${name}? Suggest it here. Homeroom bot builds it, or brings it to the group, and you can follow along.` },
+    close,
+    communities,
+    { ...hub, text: 'Talk with the group here, and vote on what changes.' },
     {
-      screen: 'home',
-      target: `.app-card[data-slug="${slug}"]`,
-      ringed: true,
-      title: `${name} is on your Home`,
-      text: 'Open it any time from here.',
-    },
-    {
-      screen: 'home',
-      target: '#platform-tab-workshop',
-      ringed: true,
-      title: `You can find ${name} here`,
-      text: 'Communities lists every community you\'re in.',
-    },
-    {
-      screen: 'home',
+      screen: 'hub',
       target: '#platform-tab-messages',
       ringed: true,
       // What the bot is for, then where it is (#4397); the maker's and "Look

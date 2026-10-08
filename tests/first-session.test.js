@@ -1069,6 +1069,7 @@ test('each tour has a screenshot state, opened at any card, over a real project,
   assert.deepEqual(tourShot('?shot=tour-join&step=5'), { path: 'invited', start: 4 });
   assert.deepEqual(tourShot('?shot=tour-look&step=3'), { path: 'look', start: 2 });
   assert.deepEqual(tourShot('?shot=tour-look&step=x'), { path: 'look', start: 0 });
+  assert.deepEqual(tourShot('?shot=tour-private&step=4'), { path: 'private', start: 3 });
   assert.equal(tourShot('?shot=first-version'), null);
   assert.equal(tourShot(''), null);
   const src = read(`${DIR}/index.tsx`);
@@ -1153,14 +1154,12 @@ test('each step brings its target into view before ringing it, drawing a held-ba
 test('the App tab\'s card says where the app opens, and carries the attribute that hides the screen\'s own line', () => {
   const { makerSteps, invitedSteps, lookAroundSteps, privateSteps } = loadTsx(`${DIR}/tour-steps.ts`);
   const project = { slug: 'film', name: 'Friday Film Crew', conversationId: 12 };
-  for (const steps of [makerSteps(project), invitedSteps(project)]) {
+  for (const steps of [makerSteps(project), invitedSteps(project), privateSteps(project)]) {
     assert.deepEqual(steps.map((s) => !!s.saysWhereItOpens), steps.map((s, i) => i === 1));
     assert.equal(steps[1].screen, 'app');
     assert.equal(steps[1].title, 'Friday Film Crew opens here');
   }
-  for (const steps of [lookAroundSteps(), privateSteps(project)]) {
-    assert.ok(steps.every((s) => !s.saysWhereItOpens));
-  }
+  assert.ok(lookAroundSteps().every((s) => !s.saysWhereItOpens));
   const src = read(`${DIR}/index.tsx`);
   assert.match(src, /role="dialog"\s+aria-labelledby="first-session-tour-title"\s+data-tour-says-where-it-opens=\{step\.saysWhereItOpens \? '' : undefined\}/);
 });

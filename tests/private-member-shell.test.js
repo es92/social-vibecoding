@@ -2,11 +2,11 @@
 
 // A PRIVATE MEMBER in the shell (users.private_member_since): an invite link
 // lands them inside the group's app with no ✕, the mark menu's "Go to
-// Homeroom" is their way on, and its first use runs a four-step tour of a
-// Home that has Discover but no Challenges and no New project, and has the
-// waitlist card. The invite's Join that makes them asks for a name and a
-// phone first (tests/phone-invite-join.test.js). The server half is
-// tests/private-member-postgres.test.js and
+// Homeroom" is their way on, and its first use runs a nine-step tour of
+// their app, its hub and a Home that has Discover but no Challenges and no
+// New project, and has the waitlist card. The invite's Join that makes
+// them asks for a name and a phone first (tests/phone-invite-join.test.js).
+// The server half is tests/private-member-postgres.test.js and
 // tests/community-invites-postgres.test.js.
 
 const test = require('node:test');
@@ -20,37 +20,52 @@ const ROOT = path.join(__dirname, '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const APP = read('public/js/app.js');
 
-test('the private tour: four steps on Home, Next through each, ending on the waitlist card', () => {
-  const { privateSteps } = loadTsx('frontend/src/features/first-session/tour-steps.ts');
-  const steps = privateSteps({ slug: 'best-brunch', name: 'Best brunch spots' });
-  assert.deepEqual(steps.map((s) => s.screen), ['home', 'home', 'home', 'home']);
-  assert.deepEqual(steps.map((s) => !!s.tap), [false, false, false, false], 'nothing to press but Next');
+test('the private tour: the maker\'s nine cards, three reworded for someone invited, ending on the waitlist card', () => {
+  const { privateSteps, makerSteps, invitedSteps } = loadTsx('frontend/src/features/first-session/tour-steps.ts');
+  const project = { slug: 'best-brunch', name: 'Best brunch spots' };
+  const steps = privateSteps(project);
+  assert.deepEqual(steps.map((s) => s.screen), ['home', 'app', 'app', 'app', 'app', 'home', 'hub', 'hub', 'home']);
+  assert.deepEqual(steps.map((s) => s.tap || null), ['Tap it', null, 'Tap the menu', null, 'Tap ✕', 'Tap Communities', null, null, null]);
   assert.deepEqual(steps.map((s) => s.target), [
     '.app-card[data-slug="best-brunch"]',
+    '#app-view',
+    '#platform-mark-btn',
+    '#improve-row-feedback',
+    '#back-btn',
     '#platform-tab-workshop',
+    '#app-content',
     '#platform-tab-messages',
     '#home-waitlist-card',
   ]);
-  // The other tours' words (#4044): one short title and one short sentence,
-  // the project by its name and never "group" (the owner, 7 October 2026),
-  // but for the bot card, whose words the owner approved for #4397.
+  // The owner-approved words (#4398): the maker's where they match, the app,
+  // Suggest and hub cards said to someone who was invited, and the bot card
+  // whose words the owner approved for #4397.
   assert.deepEqual(steps.map((s) => [s.title, s.text]), [
     ['Best brunch spots is on your Home', 'Open it any time from here.'],
+    ['Best brunch spots opens here', 'You and everyone in its community use it, and make it better together.'],
+    ['Suggest an improvement', 'Every app has this menu. Tap it.'],
+    ['Suggest an improvement', 'Got an idea for Best brunch spots? Suggest it here. Homeroom bot builds it, or brings it to the group, and you can follow along.'],
+    ['✕ takes you back to Home', 'Open Best brunch spots again from Home any time.'],
     ['You can find Best brunch spots here', 'Communities lists every community you\'re in.'],
+    ['The Best brunch spots hub', 'Talk with the group here, and vote on what changes.'],
     ['Meet Homeroom bot', 'Tell it what Best brunch spots should do next, and it builds it for the group to try. It\'s always here in Messages.'],
     ['Your own apps start here', 'Join the waitlist to get your spot.'],
   ]);
-  // One short sentence a card; the Messages card says its second ("It's always here in Messages.").
-  for (const s of steps) assert.ok(s.text.split(/[.?]\s/).length <= (s.title === 'Meet Homeroom bot' ? 2 : 1), `short: ${s.text}`);
-  // Only the bot card says who tries what it builds, "the group" (#4397).
-  assert.doesNotMatch(JSON.stringify(steps.filter((s) => s.title !== 'Meet Homeroom bot').map((s) => [s.title, s.text])), /group/i);
-  assert.doesNotMatch(steps[2].title, /group/i);
-  // Each points at its place and leads on with Next, as "Look around first" does.
-  assert.deepEqual(steps.map((s) => !!s.ringed), [true, true, true, true]);
-  assert.deepEqual(steps.map((s) => !!s.last), [false, false, false, true]);
-  // No challenges, and no ✕ to teach: the invited tour's step about it is
-  // not in this one.
-  assert.doesNotMatch(JSON.stringify(steps), /challenge|points|✕|back-btn/i);
+  // The first seven are the maker's own steps, the same places and presses,
+  // with only the three reworded cards' text differing.
+  const maker = makerSteps({ ...project, conversationId: 12 }).slice(0, 7);
+  assert.deepEqual(maker, invitedSteps(project).slice(0, 7), 'which the join tour shares');
+  steps.slice(0, 7).forEach((s, i) => {
+    assert.deepEqual({ ...s, text: '' }, { ...maker[i], text: '' }, `step ${i + 1} is the maker's`);
+    if (![1, 3, 6].includes(i)) assert.equal(s.text, maker[i].text, `step ${i + 1} in the maker's words`);
+  });
+  // The Suggest card is the one in the menu, pointed at and not pressed.
+  assert.equal(steps[3].inMenu, true);
+  // The bot and waitlist cards point at their place and lead on with Next.
+  assert.deepEqual(steps.map((s) => !!s.ringed), [false, false, false, true, false, false, false, true, true]);
+  assert.deepEqual(steps.map((s) => !!s.last), [false, false, false, false, false, false, false, false, true]);
+  // No challenges or points.
+  assert.doesNotMatch(JSON.stringify(steps), /challenge|points/i);
   // Every target is one the shell draws: the tabs are the bar's own ids, the
   // card is the waitlist card's own section.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
