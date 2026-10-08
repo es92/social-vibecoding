@@ -393,6 +393,36 @@ export function useSurveyAnswered(token: string | null): boolean {
   );
 }
 
+/** The links RecaptchaLine draws: RECAPTCHA_LINE in ./recaptcha.ts. */
+export type RecaptchaLinks = {
+  lead: string;
+  privacy: { href: string; label: string };
+  sep: string;
+  terms: { href: string; label: string };
+};
+
+/**
+ * "Protected by reCAPTCHA · Google Privacy · Terms", the notice Google asks
+ * for where its badge is hidden (./recaptcha.ts), one step smaller and
+ * quieter than the terms line above it (#4379). `data` names the attribute
+ * a caller's checks select on.
+ */
+export function RecaptchaLine({ notice, className = '', data = {} }: {
+  notice: RecaptchaLinks;
+  className?: string;
+  data?: Record<string, string>;
+}) {
+  const linkClass = 'underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300';
+  return (
+    <p data-recaptcha-line="" {...data} className={`text-center text-[12px] leading-snug text-zinc-400 dark:text-zinc-500 ${className}`}>
+      {notice.lead}
+      <a href={notice.privacy.href} target="_blank" rel="noopener noreferrer" className={linkClass}>{notice.privacy.label}</a>
+      {notice.sep}
+      <a href={notice.terms.href} target="_blank" rel="noopener noreferrer" className={linkClass}>{notice.terms.label}</a>
+    </p>
+  );
+}
+
 /**
  * "By continuing, you agree to Homeroom's terms." under the sign-in screens'
  * main button (./sign-in-sheet.tsx, ./login.tsx). Continuing past it is the
@@ -402,33 +432,30 @@ export function useSurveyAnswered(token: string | null): boolean {
  * the line names the terms without one, which is also what the prerender
  * draws. Where a step runs reCAPTCHA with its badge hidden (./recaptcha.ts,
  * the sign-in sheet's phone and code steps), `recaptcha` (the sheet hands
- * its RECAPTCHA_NOTICE, for the links) folds in the notice Google asks for
- * in the badge's place: "...and Google's Privacy Policy and Terms of
- * Service (reCAPTCHA)." (#4207).
+ * its RECAPTCHA_LINE) adds Google's notice as a second, quieter line under
+ * it: "Protected by reCAPTCHA · Google Privacy · Terms" (#4207, #4379).
  */
 export function TermsNotice({ verb = 'continuing', className = '', recaptcha = null }: {
   verb?: string;
   className?: string;
-  recaptcha?: { privacy: { href: string; label: string }; terms: { href: string; label: string } } | null;
+  recaptcha?: RecaptchaLinks | null;
 }) {
   const link = useWaitlistOptions()?.terms_link || null;
   const linkClass = 'underline underline-offset-2 hover:text-zinc-700 dark:hover:text-zinc-200';
-  return (
+  const terms = (
     <p data-terms-notice={recaptcha ? 'recaptcha' : undefined} className={`text-center text-[13px] text-zinc-500 dark:text-zinc-400 ${className}`}>
       {`By ${verb}, you agree to Homeroom's `}
       {link ? (
         <a href={link} target="_blank" rel="noopener noreferrer" className={linkClass}>terms</a>
       ) : 'terms'}
-      {recaptcha ? (
-        <>
-          {' and Google\'s '}
-          <a href={recaptcha.privacy.href} target="_blank" rel="noopener noreferrer" className={linkClass}>{recaptcha.privacy.label}</a>
-          {' and '}
-          <a href={recaptcha.terms.href} target="_blank" rel="noopener noreferrer" className={linkClass}>{recaptcha.terms.label}</a>
-          {' (reCAPTCHA)'}
-        </>
-      ) : null}
       .
     </p>
+  );
+  if (!recaptcha) return terms;
+  return (
+    <>
+      {terms}
+      <RecaptchaLine notice={recaptcha} className="mt-1" />
+    </>
   );
 }

@@ -157,7 +157,7 @@ test('the sign-in screens say continuing is agreeing, linking the current terms'
   assert.match(shared, /export function TermsNotice\(/);
   assert.match(shared, /\{`By \$\{verb\}, you agree to Homeroom's `\}/);
   assert.match(shared, /const link = useWaitlistOptions\(\)\?\.terms_link \|\| null;/);
-  assert.match(read('frontend', 'src', 'features', 'auth', 'sign-in-sheet.tsx'), /<TermsNotice className="mt-3" recaptcha=\{step === 'phone' \|\| step === 'phone-code' \? RECAPTCHA_NOTICE : null\} \/>/);
+  assert.match(read('frontend', 'src', 'features', 'auth', 'sign-in-sheet.tsx'), /<TermsNotice className="mt-3" recaptcha=\{step === 'phone' \|\| step === 'phone-code' \? RECAPTCHA_LINE : null\} \/>/);
   assert.match(read('frontend', 'src', 'features', 'auth', 'login.tsx'),
     /Sign in\s*\n\s*<\/Button>\s*\n\s*<TermsNotice verb="signing in" \/>/);
   assert.match(read('src', 'routes', 'public-api.js'), /terms_link: await currentTermsLink\(\),/);

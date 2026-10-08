@@ -142,7 +142,7 @@ import { useIsomorphicLayoutEffect } from '../../lib/legacy-dom';
 import { inviteEmailFromToken, readAutoSend, writeAutoSend } from './login';
 import { NativeLoginDetailsLink } from './native-login-details';
 import { PhoneInput, readPhone } from './phone-input';
-import { phoneRecaptchaToken, RECAPTCHA_NOTICE } from './recaptcha';
+import { phoneRecaptchaToken, RECAPTCHA_LINE } from './recaptcha';
 import { SessionConfirmationNotice, useSessionConfirmation } from './session-confirmation';
 import {
   blockedOffline,
@@ -154,7 +154,7 @@ import {
   sessionMintFailureMessage,
   USERNAME_RULE,
 } from './shared';
-import { TermsNotice } from './waitlist-shared';
+import { RecaptchaLine, TermsNotice } from './waitlist-shared';
 
 type Step = 'choose' | 'email' | 'code' | 'account' | 'username' | 'password' | 'phone' | 'phone-code';
 
@@ -350,17 +350,7 @@ export function firstStepLine(from: 'invite' | 'story' | 'signin', phone = false
 
 /** The line Google asks for where its reCAPTCHA badge is not shown (./recaptcha.ts). */
 export function RecaptchaNotice() {
-  const n = RECAPTCHA_NOTICE;
-  const link = 'underline hover:text-zinc-700 dark:hover:text-zinc-300';
-  return (
-    <p data-sign-in-sheet-recaptcha="" className="text-center text-[12px] leading-snug text-zinc-500 dark:text-zinc-400">
-      {n.lead}
-      <a href={n.privacy.href} target="_blank" rel="noopener noreferrer" className={link}>{n.privacy.label}</a>
-      {n.and}
-      <a href={n.terms.href} target="_blank" rel="noopener noreferrer" className={link}>{n.terms.label}</a>
-      {n.tail}
-    </p>
-  );
+  return <RecaptchaLine notice={RECAPTCHA_LINE} data={{ 'data-sign-in-sheet-recaptcha': '' }} />;
 }
 
 /** Where a waitlist "you're in" link's sheet starts. */
@@ -1234,7 +1224,7 @@ export function SignInSheet({
         ) : null}
         {/* The first step's terms sit in its group (above); every later step keeps them here. */}
         {step === 'choose' || step === 'email' ? null : (
-          <TermsNotice className="mt-3" recaptcha={step === 'phone' || step === 'phone-code' ? RECAPTCHA_NOTICE : null} />
+          <TermsNotice className="mt-3" recaptcha={step === 'phone' || step === 'phone-code' ? RECAPTCHA_LINE : null} />
         )}
       </div>
     </div>
