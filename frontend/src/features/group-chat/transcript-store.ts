@@ -49,6 +49,7 @@
  */
 
 import { createStore } from '../../lib/plain-store.js';
+import type { ReleaseOutlook } from '../../lib/release-eta';
 
 export interface Reaction {
   emoji: string;
@@ -129,6 +130,12 @@ export interface BotRequestState {
   more?: number;
   missing?: number;
   needed?: number;
+  /**
+   * `approved`, on a merge of the platform's own app that is not live yet:
+   * when the platform's next release carries it (services/release-watch.js),
+   * which the card words (../../lib/release-eta.ts).
+   */
+  release?: ReleaseOutlook;
 }
 
 /**

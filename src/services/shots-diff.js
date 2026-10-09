@@ -23,6 +23,10 @@ const TOLERANCE = 28;
 // Equal rows this close together inside a change do not split it (the
 // identical middle row of a button, say).
 const JOIN_ROWS = 6;
+// An element shot covering at most this share of its screen still widens the
+// box it overlaps; a bigger one is the agent photographing a whole dialog or
+// sheet, and taking it in would outline the panel instead of the change.
+const FOCUS_MAX_SHARE = 0.5;
 
 function decode(buffer) {
   const png = PNG.sync.read(buffer);
@@ -227,6 +231,63 @@ function union(box, rect) {
   return [x, y, Math.max(box[0] + box[2], rect[0] + rect[2]) - x, Math.max(box[1] + box[3], rect[1] + rect[3]) - y];
 }
 
+// Two boxes overlap "a lot" when at least half of the smaller one lies inside
+// the other: whole-panel outlines stacked on the same panel read as one.
+function overlapsALot(p, q) {
+  const x0 = Math.max(p[0], q[0]);
+  const y0 = Math.max(p[1], q[1]);
+  const x1 = Math.min(p[0] + p[2], q[0] + q[2]);
+  const y1 = Math.min(p[1] + p[3], q[1] + q[3]);
+  const area = Math.max(0, x1 - x0) * Math.max(0, y1 - y0);
+  return area * 2 >= Math.min(p[2] * p[3], q[2] * q[3]);
+}
+
+// One region from two whose boxes sit almost on top of each other on a side,
+// or null when they do not. The merged box is the union per side; a side with
+// no box keeps the first mark found there; the story is the earliest of the
+// two on the screen.
+function mergedPair(a, b, order) {
+  const sides = ['a', 'b'].filter((side) => a[side] && b[side] && overlapsALot(a[side], b[side]));
+  if (!sides.length) return null;
+  const merged = { ...a };
+  for (const side of ['a', 'b']) {
+    merged[side] = a[side] && b[side] ? union(a[side], b[side]) : (a[side] || b[side]);
+    const mark = side === 'a' ? 'aMark' : 'bMark';
+    merged[mark] = merged[side] ? null : (a[mark] || b[mark] || null);
+  }
+  const rank = (id) => {
+    const at = order.indexOf(id);
+    return at === -1 ? order.length : at;
+  };
+  const stories = [a.story, b.story].filter((id) => id !== null);
+  merged.story = stories.length
+    ? stories.reduce((best, id) => (rank(id) < rank(best) ? id : best))
+    : null;
+  return merged;
+}
+
+// Regions whose boxes would sit almost on top of each other are one outline
+// on the card: several whole-panel boxes over one panel hide everything under
+// them. Runs until nothing merges; the lists are small.
+function mergeOverlapping(found, storyOrder) {
+  const regions = found.slice();
+  for (;;) {
+    let mergedAny = false;
+    for (let i = 0; i < regions.length - 1 && !mergedAny; i += 1) {
+      for (let j = i + 1; j < regions.length; j += 1) {
+        const merged = mergedPair(regions[i], regions[j], storyOrder || []);
+        if (merged) {
+          regions.splice(j, 1);
+          regions[i] = merged;
+          mergedAny = true;
+          break;
+        }
+      }
+    }
+    if (!mergedAny) return regions;
+  }
+}
+
 const areaOf = (region) => Math.max(
   region.b ? region.b[2] * region.b[3] : 0,
   region.a ? region.a[2] * region.a[3] : 0,
@@ -288,13 +349,26 @@ async function screensFor(stories, files) {
             region.story = story.id;
             // Only the pixels that differ are in the box, which can leave
             // out most of a button whose colour did not change. Take in the
-            // element the agent shot, on the side it overlaps.
-            if (overlaps(region.a, rects.head)) region.a = union(region.a, rects.head);
-            if (overlaps(region.b, rects.base)) region.b = union(region.b, rects.base);
+            // element the agent shot, on the side it overlaps — unless that
+            // element covers most of the screen (the agent photographed a
+            // whole dialog or sheet), where taking it in would outline the
+            // panel instead of the change inside it.
+            if (overlaps(region.a, rects.head)
+              && rects.head[2] * rects.head[3] <= FOCUS_MAX_SHARE * after.w * after.h) {
+              region.a = union(region.a, rects.head);
+            }
+            if (overlaps(region.b, rects.base)
+              && rects.base[2] * rects.base[3] <= FOCUS_MAX_SHARE * before.w * before.h) {
+              region.b = union(region.b, rects.base);
+            }
           }
         }
       }
-      const kept = found
+      // Several whole-panel outlines over the same panel are unreadable on
+      // the card: boxes that would sit almost on top of each other become
+      // one, numbered for the earliest change on the screen.
+      const merged = mergeOverlapping(found, group.stories.map((story) => story.id));
+      const kept = merged
         .map((region, index) => ({ region, index }))
         .sort((x, y) => (x.region.story === null) - (y.region.story === null) || areaOf(y.region) - areaOf(x.region))
         .slice(0, MAX_REGIONS)

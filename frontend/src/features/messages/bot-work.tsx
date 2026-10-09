@@ -7,8 +7,10 @@ import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { agoStamp } from '../../lib/timestamp';
 import * as api from './api';
 import {
-  ACTIVITY_OUTCOME_LABELS, ACTIVITY_OUTCOME_TONES, ActivityBadge, ActivityLead, ActivityLink, TONE_WORDS, spanText, type ActivityTone,
+  ACTIVITY_OUTCOME_LABELS, ACTIVITY_OUTCOME_TONES, ActivityBadge, ActivityLead, ActivityLink, TONE_WORDS, outcomeLabel, spanText,
+  type ActivityTone,
 } from './bot-activity';
+import { releaseSentence, releaseShort } from '../../lib/release-eta';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { POLL_MS } from './bot-activity-store';
 import { WORK_CHANGED_EVENT, jobName, jobTitle } from './bot-shared';
@@ -197,6 +199,30 @@ function capitalized(text: string): string {
   return text ? text[0].toUpperCase() + text.slice(1) : text;
 }
 
+function lowered(text: string): string {
+  return text ? text[0].toLowerCase() + text.slice(1) : text;
+}
+
+/**
+ * A merge of the platform's own app waits for the platform's next release,
+ * and the status line says when, where any other says "going live": "Working
+ * on Homeroom #12 · goes live in about 8 minutes", "Last: Homeroom #12 goes
+ * live in about 8 minutes" (../../lib/release-eta.ts).
+ */
+function releaseWords(job: HomeroomBotJob, now: Date): string | null {
+  const words = job.release ? releaseShort(job.release, now.getTime()) : null;
+  return words ? lowered(words) : null;
+}
+
+function phaseWords(job: HomeroomBotCurrentJob, now: Date): string {
+  return (job.phase === 'merging' && releaseWords(job, now)) || SHORT_PHASES[job.phase];
+}
+
+function lastWords(job: HomeroomBotPastJob, name: string, now: Date): string {
+  const release = job.outcome === 'going_live' ? releaseWords(job, now) : null;
+  return release ? `${name} ${release}` : LAST_WORDS[job.outcome as HomeroomBotActivityOutcome](name);
+}
+
 /** "#12", or the project's name for a first version: what the phone's status line names. */
 function shortName(job: Pick<HomeroomBotJob, 'appName' | 'issueNumber' | 'firstVersion'>): string {
   return !job.firstVersion && job.issueNumber ? `#${job.issueNumber}` : job.appName;
@@ -235,7 +261,7 @@ export function trayStatus(work: HomeroomBotWork | null, now: Date = new Date())
     let short = `Working on ${shortName(job)}`;
     if (queued) short = needs ? `Queued${needs}` : `${shortName(job)} queued`;
     else if (needs) short = `Working${needs}`;
-    return { kind: 'working', long: `Working on ${jobName(job)} · ${SHORT_PHASES[job.phase]}${needs}`, short };
+    return { kind: 'working', long: `Working on ${jobName(job)} · ${phaseWords(job, now)}${needs}`, short };
   }
   if (work.now.length) {
     let short = `Working on ${work.now.length}`;
@@ -254,8 +280,8 @@ export function trayStatus(work: HomeroomBotWork | null, now: Date = new Date())
   const when = ago ? ` · ${ago}` : '';
   return {
     kind: 'last',
-    long: `Last: ${LAST_WORDS[last.outcome](jobName(last))}${when}`,
-    short: `Last: ${LAST_WORDS[last.outcome](shortName(last))}${when}`,
+    long: `Last: ${lastWords(last, jobName(last), now)}${when}`,
+    short: `Last: ${lastWords(last, shortName(last), now)}${when}`,
   };
 }
 
@@ -460,7 +486,11 @@ function NowTile({ job, at, ago }: { job: HomeroomBotCurrentJob; at: Date; ago: 
       tone={null}
       lead={<ActivityLead step={job.step} of={job.of} stepName={job.stepName} working />}
       eyebrow={eyebrow}
-      status={withTime(capitalized(job.doing || PHASE_LABELS[job.phase]), elapsed ? `${elapsed} so far` : '')}
+      status={withTime(
+        (job.phase === 'merging' && job.release && releaseSentence(job.release, at.getTime()))
+          || capitalized(job.doing || PHASE_LABELS[job.phase]),
+        elapsed ? `${elapsed} so far` : '',
+      )}
       ago={ago}
     />
   );
@@ -489,9 +519,11 @@ export function AppStatusLead({ job, tone }: { job: HomeroomBotJob; tone: Activi
   );
 }
 
-function PastTile({ job, group, ago }: { job: HomeroomBotPastJob; group: 'you' | 'history'; ago: (value: string | null) => string }) {
+function PastTile({ job, group, at, ago }: {
+  job: HomeroomBotPastJob; group: 'you' | 'history'; at: Date; ago: (value: string | null) => string;
+}) {
   const tone: ActivityTone = group === 'you' ? 'you' : (job.outcome ? ACTIVITY_OUTCOME_TONES[job.outcome] : 'ended');
-  const said = job.outcome ? ACTIVITY_OUTCOME_LABELS[job.outcome] : capitalized(job.doing || 'waiting on you');
+  const said = job.outcome ? outcomeLabel(job, at.getTime()) : capitalized(job.doing || 'waiting on you');
   return (
     <Tile
       job={job}
@@ -559,7 +591,7 @@ export function BotWorkPanelView({ work, failed = false, historyOpen = false, on
             <>
               <SectionHeader className={work.now.length ? 'pt-4' : 'pt-3'}>Needs you</SectionHeader>
               <div className={TILE_GRID}>
-                {work.needsYou.map((job) => <PastTile key={job.key} job={job} group="you" ago={ago} />)}
+                {work.needsYou.map((job) => <PastTile key={job.key} job={job} group="you" at={at} ago={ago} />)}
               </div>
             </>
           ) : null}
@@ -579,7 +611,7 @@ export function BotWorkPanelView({ work, failed = false, historyOpen = false, on
               </button>
               {historyOpen ? (
                 <div id={HISTORY_ID} className={`${TILE_GRID} pt-2.5`}>
-                  {work.history.map((job) => <PastTile key={job.key} job={job} group="history" ago={ago} />)}
+                  {work.history.map((job) => <PastTile key={job.key} job={job} group="history" at={at} ago={ago} />)}
                 </div>
               ) : null}
             </>

@@ -93,6 +93,7 @@ import {
   useAgentSessions,
 } from '../agent-session/store';
 import type { AgentSession as MayorSession } from '../agent-session/api';
+import { changeRowWords } from '../agent-session/transcript';
 import {
   deactivateGlobalChat,
   getGlobalChatState,
@@ -1460,10 +1461,11 @@ const MayorSessionRow = memo(function MayorSessionRow({ session, active }: { ses
   const href = agentThreadAddress(thread);
   const change = session.activeChange;
   const mark = agentActivity(session);
+  // A merge of Homeroom itself says when the platform's next release
+  // carries it ("Goes live in about 8 minutes"), where any other change
+  // going live says "Going live" (changeRowWords).
   const status = change
-    ? `${change.title || (change.prNumber ? `PR #${change.prNumber}` : `Change ${change.id}`)} · ${
-      change.status === 'promoted' ? 'Waiting for approval' : change.status === 'merging' ? 'Going live'
-        : change.status === 'merged' ? 'Live' : 'In progress'}`
+    ? `${change.title || (change.prNumber ? `PR #${change.prNumber}` : `Change ${change.id}`)} · ${changeRowWords(change)}`
     : 'No active change';
   return (
     <a

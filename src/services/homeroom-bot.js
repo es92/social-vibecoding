@@ -2734,7 +2734,12 @@ async function runTriage(pool, config, {
     if (read && readsInFlight.get(readKey(app.id, issueNumber)) === read) readsInFlight.delete(readKey(app.id, issueNumber));
   };
 
-  const recordFailure = async (error, extra = {}, { infra = false } = {}) => {
+  // `collateral`: a turn killed by a stop on its session. Its row is kept,
+  // as a platform fault's is, but it says 'collateral' rather than 'infra',
+  // so it does not back off the whole bot (outcomeOf): it is one session's
+  // fallout, not an outage, and pausing every project for it was how a
+  // read started over mid-thread stopped all of them.
+  const recordFailure = async (error, extra = {}, { infra = false, collateral = false } = {}) => {
     endRead();
     if (REFUSAL_ERRORS.has(error)) return recordRefusal(error);
     // A platform fault the current streak already recorded gets no second
@@ -2756,7 +2761,7 @@ async function runTriage(pool, config, {
     }
     log.warn('homeroom-bot', 'Triage failed', { app: app.slug, issueNumber, error, infra });
     return infra
-      ? { ran: false, reason: 'infra', detail: error, runId: id }
+      ? { ran: false, reason: collateral ? 'collateral' : 'infra', detail: error, runId: id }
       : { ran: true, verdict: 'failed', runId: id };
   };
 
@@ -3049,6 +3054,21 @@ async function runTriage(pool, config, {
   );
   session.agent_thread_id = null;
   activeWorkers.add(session.id);
+  // A stop stays pending on the session after the turn it stopped has
+  // ended, and the worker skips every dispatch until a new turn clears it
+  // (#937). Nothing here cleared it, so the read started over after a
+  // person wrote mid-read was skipped at once, came back empty and was
+  // recorded as collateral, which paused the bot on every project
+  // (homeroom-maps #30, run 1250); a request read after a budget or
+  // verdict-block stop on the same session was skipped the same way. This
+  // turn is that new turn, as a build's is (#3396). Safe here: the session
+  // is the bot's own, this flow holds it (activeWorkers), and each flow
+  // that stops a turn on it awaits the stop before letting go of it, so a
+  // stop pending now was aimed at a turn that is over. Cleared before this
+  // turn's clock starts and its stop is wired up (read.stop), so a stop
+  // aimed at this turn is never the one erased; a turn somehow still in
+  // flight here keeps its stop.
+  if (!worker.isInFlight?.(session.id)) worker.clearPendingStop?.(session.id);
 
   // The budget (#2737). The wall clock ends the turn the same way a person's
   // Stop button does: the in-container kill plus the journal exit marker,
@@ -3255,6 +3275,12 @@ async function runTriage(pool, config, {
   // row stays this read's (`claimed`), and its reason says it was started
   // over, so it is not announced twice and not started over again.
   if (read.interrupted && !budgetHit) {
+    // The stop was this read's own, and its turn is over (the finally above
+    // awaited it), so it explains nothing about the read that starts over:
+    // that read's turn clears the stop it left pending (above), and its
+    // record is dropped here, so a reply that is genuinely empty is
+    // recorded as one rather than as collateral.
+    stoppedSessions.delete(Number(session.id));
     await pool.query('UPDATE homeroom_bot_queue SET reason = $2 WHERE id = $1', [item.id, READ_AGAIN_REASON]);
     return runTriage(pool, config, {
       bot, app, item: { ...item, reason: READ_AGAIN_REASON, claimed: true }, mode, settings, deps,
@@ -3328,11 +3354,12 @@ async function runTriage(pool, config, {
       // concurrently dies with it. Two of the first three budget stops took
       // a bystander issue down this way, each recorded as a permanent parse
       // failure a second after the stop. Put that issue back on the queue
-      // instead of burning its triage on somebody else's timeout.
+      // instead of burning its triage on somebody else's timeout, and
+      // without pausing the bot on every project for it.
       if (!budgetHit && wasStoppedRecently(session.id)) {
         return recordFailure('collateral: the session was stopped mid-dispatch', {
           sessionId: session.id, costUsd, ...usage,
-        }, { infra: true });
+        }, { infra: true, collateral: true });
       }
       // Otherwise say WHY it was empty. The worker's watch state already
       // knows — it was simply being thrown away, which left 21 of the first
@@ -7934,8 +7961,9 @@ function currentRefusals(now = Date.now()) {
 /**
  * What one finished piece of work means for the loop: counted, a refusal
  * noted, or the dispatch paused (the weekly cap, a platform fault, the mode
- * switched off). Returns { processed, refusals, budgets, paused, detail,
- * retryInMs, stop }.
+ * switched off). A 'collateral' failure is none of these: its row is back on
+ * the queue and the next pass takes it. Returns { processed, refusals,
+ * budgets, paused, detail, retryInMs, stop }.
  */
 function outcomeOf(r, { app, item }) {
   const o = { processed: 0, refusals: [], budgets: [], paused: null, stop: false };

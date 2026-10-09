@@ -205,6 +205,24 @@ function shapeChangeRow(row) {
   };
 }
 
+// A merged change of the platform's own app that is not live yet reads
+// 'merging' here, as one still being merged does (shapeChangeRow). What it
+// waits for is the platform's next release, and when that comes
+// (services/release-watch.js) is set on it as `release`, which the
+// conversation's pill, its changes drawer and the inbox's row say in words
+// ("Merged; goes live in the next release (about 8 minutes)"). A change
+// still being merged, or a child app's, has none. One read, only when one
+// of `changes` is a Homeroom change going live.
+async function withReleases(pool, changes) {
+  const waiting = changes.filter((change) => change && change.status === 'merging' && change.appSelfHosted);
+  if (!waiting.length) return;
+  const releases = await require('./release-watch').releasesFor(pool, waiting.map((change) => change.id));
+  for (const change of waiting) {
+    const release = releases.get(Number(change.id));
+    if (release) change.release = release;
+  }
+}
+
 function shapeSession(row) {
   return {
     id: row.id,
@@ -303,6 +321,7 @@ async function listAgentSessions(pool, { userId, status = 'open', limit = 20, be
     [userId, status, cursor, bounded + 1, TURN_LEASE_STALE_SECONDS]
   );
   const page = rows.slice(0, bounded).map(shapeSession);
+  await withReleases(pool, page.map((session) => session.activeChange));
   return {
     sessions: page,
     nextBefore: rows.length > bounded ? page[page.length - 1].lastActivityAt : null,
@@ -376,6 +395,7 @@ async function getAgentSession(pool, { userId, id }) {
     [sessionId, userId]
   );
   session.changes = changes.map(shapeChangeRow);
+  await withReleases(pool, [session.activeChange, ...session.changes]);
   return session;
 }
 

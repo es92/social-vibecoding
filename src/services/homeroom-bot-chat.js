@@ -583,15 +583,25 @@ async function cardsOf(pool, { appId, user, rows, builds = true, typical = true,
       });
     }
   }
+  const sessionOf = (row) => states.get(Number(row.chat_message_id))?.session_id ?? row.session_id ?? null;
+  // Approved and merged into the platform's own app, not live yet: it waits
+  // for the platform's next release (services/release-watch.js), and the
+  // card says when ("Merged; goes live in the next release (about 8
+  // minutes)"). Any other approved change is left out of the answer and its
+  // card says "It's going live", as before. One read, only for those.
+  const approved = rows.filter((row) => stageOfRow(row) === 'approved' && sessionOf(row)).map((row) => Number(sessionOf(row)));
+  const releases = approved.length ? await require('./release-watch').releasesFor(pool, approved) : new Map();
   return rows.map((row) => {
     const id = Number(row.chat_message_id);
     const stateRow = states.get(id);
     const stage = stageOfRow(row);
-    const sessionId = stateRow?.session_id ?? row.session_id ?? null;
+    const sessionId = sessionOf(row);
+    const release = stage === 'approved' && sessionId ? releases.get(Number(sessionId)) : null;
     const state = stage ? {
       stage,
       ...(sessionId ? { sessionId: Number(sessionId) } : {}),
       ...(approvals.get(id) || {}),
+      ...(release ? { release } : {}),
     } : null;
     return cardOf(row, {
       builds: row.kind === 'group' ? false : builds,

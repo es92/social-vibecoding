@@ -25,10 +25,13 @@
  * `AppView._changeThreadView`; this only draws.
  */
 
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Html } from '../../../lib/html';
+import { Diagram, readDiagram } from '../../../lib/diagram/diagram';
+import { releaseSentence } from '../../../lib/release-eta';
+import { useReleaseNow } from '../../../lib/use-release-now';
 import { Avatar } from '@/components/ui/feed';
 import { CheckIcon, EllipsisHorizontalIcon } from '@/components/ui/icons';
 import { swatchFor } from '../../group-chat/swatch';
@@ -76,6 +79,11 @@ function ChangeBar({ v, menuKey }: { v: ChangeThreadView; menuKey: string }): Re
  */
 function GateCard({ which, g, action, id }: { which: 'votes' | 'testing'; g: ChangeGateView; action: ReactNode; id: number | null }): ReactNode {
   const open = () => (window as any).AppView?.openTechnicalDetails?.(id, 'checks');
+  // A merge of Homeroom itself: when its release comes, counted down here
+  // rather than frozen when the page was read.
+  const now = useReleaseNow(g.release);
+  const release = g.release ? releaseSentence(g.release, now) : null;
+  const note = release ? [...g.note, `${release}.`] : g.note;
   return (
     <div className="dev-change-gate" data-change-gate={which} data-done={g.done ? 'true' : 'false'} data-tone={g.tone} role="group" aria-label={g.name}>
       <div className="dev-change-gate-main">
@@ -98,14 +106,14 @@ function GateCard({ which, g, action, id }: { which: 'votes' | 'testing'; g: Cha
       {g.noteDetail ? (
         <details className="dev-change-gate-note" data-change-gate-explanation="">
           <summary className="cursor-pointer rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500" title={g.noteDetail}>
-            {g.note.join(' ')}
+            {note.join(' ')}
           </summary>
           <p className="mt-2">{g.noteDetail}</p>
         </details>
-      ) : g.note.length || (g.details && id) ? (
-        <p className="dev-change-gate-note">
-          {g.note.join(' ')}
-          {g.details && id ? <>{g.note.length ? ' ' : ''}<button type="button" className="dev-change-gate-link" onClick={open}>See what failed</button></> : null}
+      ) : note.length || (g.details && id) ? (
+        <p className="dev-change-gate-note" data-change-release={release ? '' : undefined}>
+          {note.join(' ')}
+          {g.details && id ? <>{note.length ? ' ' : ''}<button type="button" className="dev-change-gate-link" onClick={open}>See what failed</button></> : null}
         </p>
       ) : null}
     </div>
@@ -182,6 +190,7 @@ export function ChangeThreadHead({ id, card, body, v, linkedIssues, onIssuesSave
           <h1 className="dev-request-title" data-change-title={id ?? ''}>
             <TitleContent t={card.title} />
           </h1>
+          <ChangeDiagram value={body.diagram} />
           <RequestWords html={body.summaryHtml || ''} />
           {body.summaryMore ? <SummaryMore m={body.summaryMore} /> : null}
           {body.summaryStale && body.summaryHtml
@@ -214,4 +223,28 @@ export function ChangeThreadHead({ id, card, body, v, linkedIssues, onIssuesSave
       </article>
     </>
   );
+}
+
+/**
+ * #4490: the change's diagram, leading its page above the description. A
+ * Mermaid diagram that cannot be drawn says so in a muted line, with the
+ * author's source one tap down, rather than leaving a hole.
+ */
+function ChangeDiagram({ value }: { value: unknown }): ReactNode {
+  const d = useMemo(() => readDiagram(value), [value]);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [d]);
+  if (!d) return null;
+  if (failed && d.kind === 'mermaid') {
+    return (
+      <div className="dev-change-diagram-failed" data-change-diagram-failed="">
+        <p>The author’s diagram could not be drawn.</p>
+        <details>
+          <summary>Show its text</summary>
+          <pre>{d.source}</pre>
+        </details>
+      </div>
+    );
+  }
+  return <Diagram d={d} source="author" onFail={() => setFailed(true)} className="dev-change-diagram" />;
 }

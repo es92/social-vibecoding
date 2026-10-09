@@ -709,6 +709,58 @@ merged proposal 900108 on the Screenshot gallery's demo app
 `/#app/staging-demo-gallery-app/dev/proposals/900108` and first in
 `#admin/gallery`.
 
+## A diagram, when there are no shots (#4490)
+
+A Needs-you card shows one picture under its summary, the first of these
+that exists:
+
+1. **Before & after shots**, when the change has verified ones. Shots
+   always come first: a diagram never replaces them on the card.
+2. **A diagram of the change**, when its author sent one, or a group
+   decision's, drawn from its own facts (a rename's old name → new name, a
+   closed request and its reason, a secret's key, never its value).
+3. A legacy capture pair, as before.
+4. **What it touches**: which parts of the project the change's files touch
+   (Screens, Server, Database, Tests, Docs, Other) and how much, plus
+   "Nothing on screen changes" when the author declared `impact: "none"`.
+   Computed from the files at the proposal's head
+   (`src/services/proposal-touches.js`), cached per head, no model call.
+5. The empty space, when GitHub could not list the files.
+
+The Communities → Needs you feed draws the same card, shots included.
+
+**The record** (`src/services/diagram.js`, shared with #4098's
+explanations) is data, never markup: `rename` (from, to, places, note),
+`flow` (before and after steps), `changes` (rows added / changed /
+removed) and `numbers` (before/after figures), every text 1-60 characters.
+A fifth kind, `mermaid`, takes Mermaid source and is accepted only when the
+same submission's visible changes say `impact: "none"`: a change people can
+see has shots, and one of the four kinds says the rest in words anyone can
+read. The server refuses directives, `click`, `href`, `callback`, `url(`
+and `<`/`>` outside arrows.
+
+**Who sends it**: an external agent passes `diagram` to `submit_work` (an
+invalid one fails the call with `invalid_diagram`); a hosted build calls
+`declare_diagram` beside `declare_visible_changes`
+(`POST /api/internal/sessions/:id/diagram`). The Homeroom bot does not draw
+one on an author's behalf. The pull request carries it as text under the
+summary (a ```` ```mermaid ```` block for Mermaid, which GitHub draws).
+
+**Drawing it** (`frontend/src/lib/diagram/`): the four kinds are React text
+in the shell's tokens. Mermaid is vendored (`public/vendor/`, provenance in
+its README), loaded on demand when a card near the reader or a change's page
+holds one, never precached, and run with `securityLevel: "strict"`,
+`htmlLabels: false` and a fatal-only log; its SVG passes DOMPurify before it
+is inserted, and over 30 nodes or edges counts as a failure. A Mermaid
+diagram that cannot be drawn falls back to "What it touches" on the card,
+and to "The author's diagram could not be drawn" with its text on the page.
+
+On staging, `?demo=1` holds a rename, a "What it touches" and a Mermaid
+change in Homeroom's own Needs you, and a "What changes", a "What it
+touches" and a group-decision rename in Communities → Needs you.
+`?shot=needs-diagram` and `?shot=needs-touches` open either feed on the
+first card showing that picture.
+
 ## A change of the Homeroom bot's
 
 The bot's build declares its changes with `declare_visible_changes`, as a dev

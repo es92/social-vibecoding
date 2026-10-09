@@ -1,3 +1,4 @@
+import type { ReleaseOutlook } from '../../lib/release-eta';
 import type { UnreadMark } from './unread-anchor';
 
 /**
@@ -213,6 +214,12 @@ export interface HomeroomBotJob {
   href: string | null;
   links: HomeroomBotLinks;
   earlier: HomeroomBotRun[];
+  /**
+   * Going live (Now's `merging`, or an ending of `going_live`), on a merge
+   * of the platform's own app: when the platform's next release carries it
+   * (services/release-watch.js), which the tray words. Absent otherwise.
+   */
+  release?: ReleaseOutlook;
 }
 
 /** What the bot is doing for them now: its step of the request's steps, what it is doing, since when. */
@@ -281,6 +288,12 @@ export interface HomeroomBotActivity {
   endedAt: string | null;
   /** How long the step it is at usually takes, in minutes, when it takes a while. */
   typicalMinutes?: { from: number; to: number };
+  /**
+   * `going_live`, on a merge of the platform's own app: when the platform's
+   * next release carries it (services/release-watch.js), which the card
+   * words (../../lib/release-eta.ts). Absent on any other change.
+   */
+  release?: ReleaseOutlook;
 }
 
 /**
@@ -304,6 +317,8 @@ export interface HomeroomBotReadyNow {
     more: number;
   };
   goesLive?: HomeroomBotGoesLive;
+  /** `going_live`, on a merge of the platform's own app: when its release comes (as HomeroomBotActivity's). */
+  release?: ReleaseOutlook;
 }
 
 /** One read of the bot DM's cards: its activity cards and its ready cards. */

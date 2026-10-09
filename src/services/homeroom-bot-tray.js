@@ -531,10 +531,38 @@ async function workFor(pool, { user, settings = null, deps = {} }) {
     ...entries.map((item) => ({ appSlug: item.project })),
     ...rows.map((row) => ({ appSlug: row.slug })),
   ]);
-  return withIcons(arrange(
-    entries.filter((item) => allowed.has(item.project)),
-    rows.filter((row) => allowed.has(row.slug)),
-  ), allowed);
+  const shown = entries.filter((item) => allowed.has(item.project));
+  const work = withIcons(arrange(shown, rows.filter((row) => allowed.has(row.slug))), allowed);
+  await withReleases(pool, work, shown);
+  return work;
+}
+
+/**
+ * A change of the bot's merged into the platform's own app and not live yet
+ * waits for the platform's next release (services/release-watch.js), and
+ * its entry says when (`release`, which bot-work.tsx words): an entry of Now
+ * going live (its progress entry names the proposal), and one of History or
+ * Needs you whose news is that it is going live. Any other change is left
+ * out of the answer, and its entry says "going live" as it did. One read,
+ * only when an entry is going live.
+ */
+async function withReleases(pool, work, entries) {
+  const going = new Map();
+  const proposalOf = new Map(entries
+    .filter((item) => item.stage === 'merging' && Number(item.proposal?.proposal))
+    .map((item) => [keyOf(item.project, item.number), Number(item.proposal.proposal)]));
+  for (const job of work.now) {
+    if (job.phase === 'merging' && proposalOf.has(job.key)) going.set(job, proposalOf.get(job.key));
+  }
+  for (const job of [...work.needsYou, ...work.history]) {
+    if (job.outcome === 'going_live' && job.proposalId) going.set(job, job.proposalId);
+  }
+  if (!going.size) return;
+  const releases = await require('./release-watch').releasesFor(pool, [...going.values()]);
+  for (const [job, sessionId] of going) {
+    const release = releases.get(sessionId);
+    if (release) job.release = release;
+  }
 }
 
 /**

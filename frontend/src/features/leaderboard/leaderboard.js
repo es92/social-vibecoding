@@ -642,7 +642,7 @@ const Leaderboard = {
       key: `${row.app_slug}|${row.session_id}|${i}`,
       title: row.pr_title || 'Untitled change',
       appName: row.app_name || row.app_slug || 'app',
-      badge: Leaderboard._statusBadge(row.status),
+      badge: Leaderboard._statusBadge(row.status, row.release),
       when: Leaderboard._fmtDate(row.created_at),
       // External GitHub link, when the PR has one. The row itself is a
       // div[role=button] (not <button>) because an <a> may not nest
@@ -658,9 +658,19 @@ const Leaderboard = {
   // badges, plus 'closed' (archived-after-promotion) in the zinc tone
   // the voided-bounty chip uses. A {tone,label} pair now; ./kudos-pane.tsx
   // holds the one class table both this and the Top-PRs badge read from.
-  _statusBadge(status) {
+  //
+  // `release`: a merge of the platform's own app, which waits for the
+  // platform's next release; the badge's title says when, in the one
+  // sentence every surface uses (frontend/src/lib/release-eta.ts, published
+  // as window.ReleaseEta): "Merged; goes live in the next release (about 8
+  // minutes)". Any other change going live has no title.
+  _statusBadge(status, release = null) {
     if (status === 'merged') return { tone: 'emerald', label: 'live' };
-    if (status === 'merging') return { tone: 'amber', label: 'going live' };
+    if (status === 'merging') {
+      const words = release && typeof window !== 'undefined' && window.ReleaseEta
+        ? window.ReleaseEta.releaseSentence(release) : null;
+      return words ? { tone: 'amber', label: 'going live', title: `${words}.` } : { tone: 'amber', label: 'going live' };
+    }
     if (status === 'archived') return { tone: 'zinc', label: 'closed' };
     return { tone: 'violet', label: 'open' };
   },
@@ -830,7 +840,7 @@ const Leaderboard = {
       // The Top-PRs strip has no 'archived' case — an archived PR is not on
       // this board at all — so it reads the same table minus that row.
       badge: Leaderboard._statusBadge(row.status === 'merged' || row.status === 'merging'
-        ? row.status : ''),
+        ? row.status : '', row.release),
       slug: row.app_slug,
       sessionId: row.session_id,
       kudos: row.kudos_count,

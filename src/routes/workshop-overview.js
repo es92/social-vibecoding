@@ -74,7 +74,11 @@
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const log = require('../services/logger');
-const { currentVotePredicateSql, countedVotePredicateSql } = require('../services/pr-vote-revision');
+const { currentVotePredicateSql, countedVotePredicateSql, visualHeadForSession } = require('../services/pr-vote-revision');
+const diagramContract = require('../services/diagram');
+const proposalTouches = require('../services/proposal-touches');
+const visualsService = require('../services/visuals');
+const shotsView = require('../services/shots-view');
 const { botRequestedBySql } = require('../services/bot-requested-by');
 const { governanceKindsSql } = require('../services/governance-kinds');
 const communities = require('../services/communities');
@@ -349,7 +353,23 @@ const NEEDS_FEED_SQL = `
                AND ${countedVotePredicateSql('pv', 'cs')})::int AS yes,
            (SELECT COUNT(*) FROM pr_votes pv
              WHERE pv.session_id = cs.id AND pv.vote = 'no'
-               AND ${countedVotePredicateSql('pv', 'cs')})::int AS no
+               AND ${countedVotePredicateSql('pv', 'cs')})::int AS no,
+           -- #4490: the card's picture, as a project's Needs you draws it:
+           -- the shots run and the heads its serializer checks, the legacy
+           -- capture pair, the author's diagram and "What it touches".
+           cs.shots_run_id::text AS shots_run_id, cs.shots_detail, cs.status::text AS status,
+           cs.source::text AS source, cs.imported_pr_head_sha::text AS imported_pr_head_sha,
+           cs.reviewed_head_sha::text AS reviewed_head_sha, cs.checks_commit_sha::text AS checks_commit_sha,
+           cs.handoff_head_sha::text AS handoff_head_sha,
+           cs.pr_diagram, cs.pr_diagram_source, cs.pr_touches, cs.pr_touches_sha,
+           (SELECT jsonb_object_agg(
+                     sv.kind || '_' || sv.capture_index || '_' || sv.media,
+                     jsonb_build_object(
+                       'id', sv.id, 'path', sv.captured_path, 'viewport', sv.captured_viewport,
+                       'commit', sv.commit_hash, 'scenarioId', sv.scenario_id,
+                       'scenarioFingerprint', sv.scenario_fingerprint, 'fellBack', sv.before_fell_back))
+              FROM session_visuals sv WHERE sv.session_id = cs.id) AS visuals_agg,
+           NULL::text AS decision_kind, NULL::jsonb AS decision_payload
       FROM chat_sessions cs
       LEFT JOIN users u ON u.id = cs.user_id
      WHERE ${OWED_PROPOSALS_WHERE}
@@ -357,14 +377,21 @@ const NEEDS_FEED_SQL = `
     SELECT 'governance', i.app_id, i.id, i.title::text,
            LEFT(COALESCE(i.description, ''), ${NEEDS_FEED_SUMMARY_MAX})::text,
            u.username::text, NULL::int, NULL::int, i.created_at,
-           NULL::int, NULL::int
+           NULL::int, NULL::int,
+           NULL::text, NULL::jsonb, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text,
+           NULL::jsonb, NULL::text, NULL::jsonb, NULL::text, NULL::jsonb,
+           i.kind::text, i.payload
       FROM issues i
       LEFT JOIN users u ON u.id = i.created_by
      WHERE ${OWED_GOVERNANCE_WHERE}
   )
   SELECT a.id AS app_id, a.slug, a.name, a.icon_image_id, a.icon_emoji,
          o.kind, o.id, o.title, o.summary, o.author, o.number, o.epoch,
-         o.at, o.yes, o.no,
+         o.at, o.yes, o.no, a.repo_url,
+         o.shots_run_id, o.shots_detail, o.status, o.source, o.imported_pr_head_sha,
+         o.reviewed_head_sha, o.checks_commit_sha, o.handoff_head_sha,
+         o.pr_diagram, o.pr_diagram_source, o.pr_touches, o.pr_touches_sha, o.visuals_agg,
+         o.decision_kind, o.decision_payload,
          (o.kind = 'proposal'
            AND (${communities.audienceSql('a', '(SELECT COUNT(*) FROM community_members m WHERE m.community_id = a.community_id)')}) = 'solo'
            AND counts_toward_outcome($1, a.id)) AS solo
@@ -484,6 +511,81 @@ function approvedAlone(row) {
   return !Number.isFinite(needed) || needed <= 1;
 }
 
+/**
+ * A group decision's own facts, the few fields its diagram is drawn from
+ * (frontend/src/lib/diagram/decision.ts), named one by one so nothing else
+ * in a payload reaches the feed. A secret change carries its key and action,
+ * never a value.
+ */
+function decisionFacts(kind, payload) {
+  const p = payload && typeof payload === 'object' ? payload : {};
+  const str = (v) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : null);
+  if (kind === 'rename') return str(p.newName) ? { kind, newName: str(p.newName) } : null;
+  if (kind === 'close_issue') {
+    const n = Number(p.issueNumber);
+    return { kind, issueNumber: Number.isInteger(n) && n > 0 ? n : null, issueTitle: str(p.issueTitle), reason: str(p.reason) };
+  }
+  if (kind === 'secret_change') {
+    return str(p.key) ? { kind, key: str(p.key), action: p.action === 'delete' ? 'delete' : 'set' } : null;
+  }
+  return null;
+}
+
+/**
+ * #4490: what a feed row needs to draw its picture: the shots run (attached
+ * by withPictures), the legacy capture pair, the author's diagram, "What it
+ * touches" for the head it was read at, and a group decision's facts.
+ */
+function pictureFields(row) {
+  if (row.kind === 'governance') {
+    const decision = decisionFacts(row.decision_kind, row.decision_payload);
+    if (decision && decision.kind === 'rename') decision.fromName = row.name || null;
+    return decision ? { decision } : {};
+  }
+  const head = visualHeadForSession(row);
+  const diagram = diagramContract.storedDiagram(row.pr_diagram);
+  const out = {};
+  if (row.shots && typeof row.shots === 'object') out.shots = row.shots;
+  if (row.visuals_agg) {
+    const shaped = visualsService.shapeAgg(row.visuals_agg, head);
+    if (shaped) out.visuals = shaped;
+  }
+  if (diagram) {
+    out.diagram = diagram;
+    out.diagram_source = row.pr_diagram_source || 'author';
+  }
+  if (head && row.pr_touches_sha === head) {
+    const touches = proposalTouches.storedTouches(row.pr_touches);
+    if (touches) out.touches = touches;
+  }
+  const impact = row.shots_detail && row.shots_detail.intent && row.shots_detail.intent.impact;
+  if (impact === 'none') out.nothing_visible = true;
+  return out;
+}
+
+/**
+ * Attach each proposal row's shots (the same serializer a project's list
+ * uses) and start "What it touches" for a head not yet read. Resolves the
+ * rows. Best-effort: a failed read leaves the row without a picture.
+ */
+async function withPictures(pool, rows, { shotsPresent = false } = {}) {
+  const proposals = rows.filter((r) => r.kind === 'proposal');
+  if (!proposals.length) return rows;
+  if (shotsPresent) {
+    try {
+      for (const r of proposals) r.app_slug = r.slug;
+      const bySession = await shotsView.getForSessions(pool, proposals, null);
+      for (const r of proposals) r.shots = bySession.get(Number(r.id)) || null;
+    } catch (err) {
+      log.warn('workshop-overview', 'Could not read the feed\'s shots', { message: err.message });
+    }
+  }
+  proposalTouches.scheduleRefresh(pool, proposals.map((r) => ({
+    id: r.id, repo_url: r.repo_url, pr_touches_sha: r.pr_touches_sha, head: visualHeadForSession(r),
+  })));
+  return rows;
+}
+
 /** Shape NEEDS_FEED_SQL's rows for the client. Exported for tests. */
 function shapeNeedsFeed(rows) {
   return rows.map((row) => ({
@@ -498,6 +600,8 @@ function shapeNeedsFeed(rows) {
     yes: row.yes == null ? null : Number(row.yes),
     no: row.no == null ? null : Number(row.no),
     ...(approvedAlone(row) ? { approve: true } : {}),
+    // #4490: the card's picture, the same as a project's Needs you draws.
+    ...pictureFields(row),
     app: {
       slug: row.slug,
       name: row.name || row.slug,
@@ -550,18 +654,41 @@ const DEMO_NEEDS_FEED = [
     kind: 'proposal', id: -103, title: 'Sort recipes by rating',
     summary: 'Adds a Rating option to the sort menu, highest first, and remembers the choice per person.',
     author: 'staging-demo-partner', number: null, epoch: 0, at: '2026-09-24T12:00:00Z', yes: 2, no: 0,
+    // #4490: its author's diagram, so the feed's picture can be seen on ?demo=1.
+    diagram: {
+      version: 1, kind: 'changes',
+      rows: [
+        { op: 'added', what: 'Sort by rating', detail: 'Highest rated first' },
+        { op: 'changed', what: 'The sort menu', detail: 'Remembers your choice' },
+      ],
+    },
+    diagram_source: 'author',
     app: { slug: 'staging-demo-your-app', name: 'Staging demo app', icon_url: null, icon_emoji: null },
   },
   {
     kind: 'proposal', id: -104, title: 'Let members share a shopping list',
     summary: 'A shared list on the app\'s home screen that any member can add to and tick off.',
     author: 'staging-demo-partner', number: null, epoch: 0, at: '2026-09-22T10:00:00Z', yes: 1, no: 1,
+    // #4490: no diagram, so its picture is "What it touches".
+    touches: {
+      version: 1, files: 5,
+      areas: [
+        { key: 'screens', label: 'Screens', files: 3, lines: 140 },
+        { key: 'server', label: 'Server', files: 1, lines: 46 },
+        { key: 'database', label: 'Database', files: 1, lines: 12 },
+        { key: 'tests', label: 'Tests', files: 0, lines: 0 },
+        { key: 'docs', label: 'Docs', files: 0, lines: 0 },
+        { key: 'other', label: 'Other', files: 0, lines: 0 },
+      ],
+    },
     app: { slug: 'staging-demo-your-app', name: 'Staging demo app', icon_url: null, icon_emoji: null },
   },
   {
     kind: 'governance', id: -105, title: 'Rename the app to Recipe Box',
     summary: 'A group decision: the new name shows everywhere once it passes.',
     author: 'staging-demo-partner', number: null, epoch: null, at: '2026-09-21T08:00:00Z', yes: null, no: null,
+    // #4490: a group decision's diagram is drawn from its own facts.
+    decision: { kind: 'rename', newName: 'Recipe Box', fromName: 'Staging demo app' },
     app: { slug: 'staging-demo-your-app', name: 'Staging demo app', icon_url: null, icon_emoji: null },
   },
   // #4313: a change on a Just-you project, which asks for your approval
@@ -711,6 +838,7 @@ function workshopOverviewRoutes(config) {
       const { rows } = await pool.query(NEEDS_FEED_SQL, [
         req.user.id, showSelfHosted, !!req.user.isAdmin, NEEDS_FEED_MAX,
       ]);
+      await withPictures(pool, rows, { shotsPresent: !!config.shots?.present });
       const items = shapeNeedsFeed(await withVotesRequired(pool, rows));
       if (IS_STAGING && req.query.demo === '1') {
         return res.json({ items: withDemoNeedsFeed(items), max: NEEDS_FEED_MAX });
@@ -728,7 +856,7 @@ function workshopOverviewRoutes(config) {
 module.exports = {
   workshopOverviewRoutes, demoNeedsVoteRoutes, withDemoCounts, DEMO_COUNTS, COUNTS_SQL,
   withDemoItems, DEMO_ITEMS, ITEMS_SQL, ITEMS_PER_APP, ITEMS_TOTAL, groupItems,
-  NEEDS_FEED_SQL, NEEDS_FEED_MAX, shapeNeedsFeed, withVotesRequired, DEMO_NEEDS_FEED, withDemoNeedsFeed,
+  NEEDS_FEED_SQL, NEEDS_FEED_MAX, shapeNeedsFeed, withVotesRequired, withPictures, pictureFields, decisionFacts, DEMO_NEEDS_FEED, withDemoNeedsFeed,
   isDemoNeedsProposal,
   OWED_BY_COMMUNITY_SQL, owedByCommunity,
   MY_SESSIONS_WHERE, MY_PROPOSALS_WHERE,

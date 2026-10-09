@@ -11281,6 +11281,10 @@ function buildHostedCodingWorkflowGuidance({ runLocally = false } = {}) {
   tool with concrete reviewer-facing claims and real user flows (or impact
   "none" with a specific reason for a non-visual change). If the tool fails,
   report the failure; never claim that intent was recorded when it was not.
+- When the change is a rename, a changed flow, a data or settings change, or
+  a measured improvement, also call declare_diagram once with that kind; it
+  is drawn on the change's card when it has no before/after shots. Mermaid
+  is only for a change declared with impact "none".
 - Implement the change, run focused checks, commit it on the existing session
   branch, and finish the turn. The Homeroom harness handles push, pull request
   creation, staging, checks, and scheduling the paired shots run after

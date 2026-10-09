@@ -33,6 +33,8 @@ const crypto = require('crypto');
 const log = require('./logger');
 const { changeWebPath } = require('./change-destination');
 const visibleChangesContract = require('./visible-changes');
+const diagramContract = require('./diagram');
+const proposalDiagram = require('./proposal-diagram');
 const unitSuiteRow = require('./unit-suite-row');
 const { sniffImageType } = require('./attachments');
 const requestSpecs = require('./request-specs');
@@ -1500,6 +1502,8 @@ function shapeProposal(session, origin, viewerId = null) {
     // clients.
     shots: (session.shots && typeof session.shots === 'object')
       ? session.shots : null,
+    // #4490: the author's diagram as stored, or null.
+    diagram: diagramContract.storedDiagram(session.pr_diagram),
     yesVotes: typeof session.yes_count === 'number' ? session.yes_count : null,
     noVotes: typeof session.no_count === 'number' ? session.no_count : null,
     votesRequired: typeof session.votes_required === 'number' ? session.votes_required : null,
@@ -3735,6 +3739,8 @@ function registerTools(server, ctx) {
         'Before/after shots of the declared changes on the current revision. A verified state means at least one change has its shots ready for people to look at; pending or '
         + 'failed entries never fall back to legacy route screenshots. Null means this proposal predates shots.'
       ),
+      diagram: z.record(z.unknown()).nullable().optional()
+        .describe('The diagram its author sent with submit_work (#4490), as stored, or null. Its Needs-you card draws it when there are no before & after shots.'),
       yesVotes: z.number().nullable(),
       noVotes: z.number().nullable(),
       votesRequired: z.number().nullable(),
@@ -5003,6 +5009,8 @@ function registerTools(server, ctx) {
         .describe('The changes a person will see, for before/after shots. Pass the version-1 object returned by declare_visible_changes, or build that shape directly: impact "ui" or "motion" with 1-3 declared changes (changes that show on the same screen are one; each: id, claim in plain words, persona, viewports, and intent {startPath, steps, checkpoint, focus, baseState, animation, optional hints {setup, expectText, focusTarget}}), or impact "none" with a short rationale when nothing visible changes. Homeroom’s shots agent follows each change on the exact before and after builds and saves a before and after shot, plus a short clip for animation "motion". On an app built on Homeroom no persona is the app’s creator or one of its admins (an app is told who is signed in, never their role), so a screen it keeps for particular accounts cannot be shot. Do not add screenshot-only routes or secrets.'),
       visualEvidence: z.unknown().optional()
         .describe('Older name for visibleChanges, still accepted. Send visibleChanges.'),
+      diagram: z.unknown().optional()
+        .describe('Optional (#4490): a small diagram of the change, which Homeroom draws on its Needs-you card when it has no before & after shots, leads its page with, and writes into the pull request as text. Send DATA, never SVG or HTML: {"version":1,"kind":"rename","from":"spec","to":"plan","places":["Chat cards","Buttons"],"note":"Only the words change."}, {"version":1,"kind":"flow","before":["Vote","Closes"],"after":["Vote","Checks","Closes"]}, {"version":1,"kind":"changes","rows":[{"op":"added|changed|removed","what":"…","detail":"…"}]} or {"version":1,"kind":"numbers","unit":"s","rows":[{"label":"Load time","before":2.4,"after":0.9}]}. Every text 1-60 characters; at most 8 places, 6 steps a side, 6 rows. Use one when the change is a rename, a changed flow, a data or settings change, or a measured improvement. Only when visibleChanges declares impact "none" in this same call and none of the four fits, {"version":1,"kind":"mermaid","source":"flowchart TD\\n  A[Copy] --> B[Retry]"} is accepted: at most 2000 characters and 40 lines, opening with flowchart, graph, sequenceDiagram, stateDiagram-v2, classDiagram or erDiagram, with no %%{ directives, click, href, callback, or < > outside arrows. An invalid one fails the call with invalid_diagram and nothing is written; an update replaces the stored one.'),
       expectedHeadSha: z.string().optional()
         .describe('Only for an update: the proposal’s current commit as you last read it, from get_proposal’s `branch.headSha`. Pass it and Homeroom refuses with `branch_moved` if somebody advanced the proposal while you were working, instead of building on a head you have not seen. Optional — omitted, your branch still has to sit on top of whatever the current head is. For an update by patch it is the commit the patch was made from, where it is applied; omitted, that is the update task’s base commit.'),
       recheck: z.boolean().optional()
@@ -5052,6 +5060,8 @@ function registerTools(server, ctx) {
         .describe('Whether this call persisted the supplied visibleChanges. Null when no intent was supplied or the target already existed.'),
       visibleChangesRejected: z.boolean().nullable()
         .describe('Whether supplied visibleChanges were not persisted (for example because collection is disabled). Validation errors fail the tool instead of silently returning true here.'),
+      diagramAccepted: z.boolean().nullable().optional()
+        .describe('Whether this call stored the supplied diagram. Null when none was supplied or nothing was written.'),
       shotsRequired: z.boolean().nullable()
         .describe('Whether the proposal gets before/after shots for its current revision.'),
       shotsNextStep: z.string().nullable()
@@ -5075,7 +5085,7 @@ function registerTools(server, ctx) {
     annotations: writeAnnotations,
   }, async ({
     taskId, slug, prNumber, proposalId, branch, forkRepo, patch, source, title, description, summary, agent,
-    testingPaths, testingSteps, visibleChanges, visualEvidence,
+    testingPaths, testingSteps, visibleChanges, visualEvidence, diagram,
     expectedHeadSha, propose, recheck, share, patchUploadId,
   }) => {
     const guard = scopeGuard(WRITE_SCOPE);
@@ -5087,6 +5097,18 @@ function registerTools(server, ctx) {
         acceptedVisibleChanges = visibleChangesContract.parseIntent(declared);
       } catch (err) {
         return toolError('invalid_visible_changes', err.message);
+      }
+    }
+    // #4490: the author's diagram, checked against THIS call's declared
+    // impact (Mermaid only beside impact "none") before anything is written.
+    let acceptedDiagram;
+    if (diagram !== undefined && diagram !== null) {
+      try {
+        acceptedDiagram = diagramContract.parseDiagram(diagram, {
+          impact: acceptedVisibleChanges ? acceptedVisibleChanges.impact : null,
+        });
+      } catch (err) {
+        return toolError('invalid_diagram', err.message);
       }
     }
     const updating = Number.isInteger(proposalId) && proposalId > 0;
@@ -5133,7 +5155,7 @@ function registerTools(server, ctx) {
     if (updating && !branch && !patch && propose === true) {
       const updateOnly = Object.entries({
         patchUploadId, prNumber, forkRepo, expectedHeadSha, recheck, title, description, summary,
-        testingPaths, testingSteps, visibleChanges: declared,
+        testingPaths, testingSteps, visibleChanges: declared, diagram: acceptedDiagram,
       }).filter(([, v]) => v !== undefined && v !== null && v !== false && v !== '').map(([k]) => k);
       if (updateOnly.length) {
         return toolError(
@@ -5285,6 +5307,15 @@ function registerTools(server, ctx) {
     // capture, so anything written after it would land too late to steer the
     // screenshots. One wiring point, and the route re-validates.
     const testing = shapeTestingNotes({ testingPaths, testingSteps, description });
+    // #4490: the pull request carries the diagram as text (a ```mermaid
+    // block GitHub draws itself), under the author's own description. Only
+    // when a description is sent: an update without one leaves the body as
+    // it is, and a bare block must never replace it.
+    if (acceptedDiagram && testing.description && testing.description.trim()) {
+      testing.description = diagramContract.upsertPrBlock(
+        testing.description, diagramContract.prBlock(acceptedDiagram, 'author'),
+      );
+    }
     // Measured here, on the text that is actually sent (a TESTING block is
     // already lifted out), because the two routes behind a share and an update
     // refuse a longer one. They refused it as a bare `invalid_request` after
@@ -5387,6 +5418,14 @@ function registerTools(server, ctx) {
         return platformError(result.platformResult, result.code || 'import_failed');
       }
       return serviceError(result);
+    }
+
+    // #4490: store the diagram on the proposal it landed on. Advisory: the
+    // work arrived whatever happens here, and the answer says whether it took.
+    let diagramAccepted = null;
+    if (acceptedDiagram && !result.alreadySubmitted) {
+      const target = Number(updating ? proposalId : (result.proposalId || result.sessionId));
+      diagramAccepted = await proposalDiagram.store(pool, target, acceptedDiagram, 'author');
     }
 
     // An UPDATE landed on a proposal that already exists, so there is no
@@ -5579,6 +5618,7 @@ function registerTools(server, ctx) {
         shotsState: result.shotsState || null,
         visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
         visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
+        diagramAccepted,
         shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
         shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
         // #2066. What this push actually set going, rather than what the
@@ -5631,6 +5671,7 @@ function registerTools(server, ctx) {
         shotsState: result.shotsState || null,
         visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
         visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
+        diagramAccepted,
         shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
         shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
         proposed: null,
@@ -5709,6 +5750,7 @@ function registerTools(server, ctx) {
       shotsState: result.shotsState || null,
       visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
       visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
+      diagramAccepted,
       shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
       shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
       // A first submission is promoted by the import itself — `propose` is

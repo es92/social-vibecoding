@@ -706,6 +706,7 @@ function kudosRoutes(config) {
            LIMIT ${limitParamIdx}`,
         params
       );
+      await withReleases(pool, rows);
       res.json({
         window: windowArg,
         weekStart: windowArg === 'week' ? weekStart : null,
@@ -917,6 +918,7 @@ function kudosRoutes(config) {
       const nextBefore = rows.length === limit
         ? rows[rows.length - 1].created_at
         : null;
+      await withReleases(pool, rows);
       res.json({
         user: { user_id: user.id, username: user.username },
         stats: statRows[0],
@@ -931,6 +933,21 @@ function kudosRoutes(config) {
   });
 
   return router;
+}
+
+// A change merged into the platform's own app and not live yet reads
+// 'merging' in these lists, whose badge says "going live". It waits for the
+// platform's next release (services/release-watch.js), and the badge's title
+// says when. Any other row is left as it is. One read, only when a row is
+// going live; never throws.
+async function withReleases(pool, rows) {
+  const going = rows.filter((row) => row.status === 'merging' && row.session_id != null);
+  if (!going.length) return;
+  const releases = await require('../services/release-watch').releasesFor(pool, going.map((row) => row.session_id));
+  for (const row of going) {
+    const release = releases.get(Number(row.session_id));
+    if (release) row.release = release;
+  }
 }
 
 function clampLimit(raw) {

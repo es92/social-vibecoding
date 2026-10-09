@@ -145,6 +145,10 @@ import './lib/transition-ground';
 // Publishes window.ResetTime: allowance resets worded in the viewer's own
 // clock, for the classic scripts that cannot import it (#3230).
 import './lib/reset-time';
+// Publishes window.ReleaseEta: when a merged change of the platform's own
+// app goes live, in the one sentence every surface says it in, for the board
+// and the change page's classic script (public/js/app-view.js).
+import './lib/release-eta';
 // #4177: the one place that re-reads what is on screen after a gap
 // (window.UsernodeReact.liveReads). Before DOMContentLoaded, because the
 // group chat registers with it the first time a channel connects.

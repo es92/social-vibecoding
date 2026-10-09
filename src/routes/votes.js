@@ -27,6 +27,8 @@ const { usesMockGithubForImports } = require('../config');
 const { drainGuard } = require('../services/lifecycle');
 const { isCliCredentialManagementSession } = require('../services/cli-api-policy');
 const visibleChangesContract = require('../services/visible-changes');
+const diagramContract = require('../services/diagram');
+const proposalTouches = require('../services/proposal-touches');
 const shotsState = require('../services/shots-state');
 const shotsView = require('../services/shots-view');
 const summaryFreshness = require('../services/summary-freshness');
@@ -1171,6 +1173,58 @@ function stagingMockProposals(viewer) {
       assignee: { top: 'maya-builder', count: 2, myValue: null },
       category: { top: 'staging demo onboarding', count: 3, myValue: null },
     },
+    // #4490: the picture a change shows when it has no before & after
+    // shots, reviewable on staging via ?demo=1 (Needs you, and the change's
+    // own page). The first carries its author's diagram, a rename; the second
+    // none, so it shows "What it touches", drawn from its files, and says
+    // nothing on screen changes. Newest of the mocks, so they lead the feed.
+    {
+      ...mk(9000490, 900490,
+        '[Mock] Diagram test: rename "spec" to "plan" everywhere people read it',
+        0.2, 1, 0, 0, { required: 3, windowEndsAt: null }),
+      pr_summary_md: 'Everywhere you used to see "spec" in the app, such as chat cards, buttons, requests, '
+        + 'notifications, sharing and Settings, it now says "plan".',
+      diagram: {
+        version: 1, kind: 'rename', from: 'spec', to: 'plan',
+        places: ['Chat cards', 'Buttons', 'Requests', 'Notifications', 'Sharing', 'Settings'],
+        note: 'Only the words change. Layout and behaviour stay the same.',
+      },
+      diagram_source: 'author',
+    },
+    {
+      ...mk(9000491, 900491,
+        '[Mock] What-it-touches test: retry brief database hiccups while shots copies are set up',
+        0.3, 1, 0, 0, { required: 3, windowEndsAt: null }),
+      pr_summary_md: 'Before & after shots no longer fail when the database blinks for a moment while '
+        + 'their copies are being made.',
+      shots_detail: { intent: { version: 1, impact: 'none', rationale: 'A retry inside the shots set-up; nothing on screen changes.', stories: [] } },
+      touches: {
+        version: 1,
+        files: 3,
+        areas: [
+          { key: 'screens', label: 'Screens', files: 0, lines: 0 },
+          { key: 'server', label: 'Server', files: 2, lines: 64 },
+          { key: 'database', label: 'Database', files: 0, lines: 0 },
+          { key: 'tests', label: 'Tests', files: 1, lines: 38 },
+          { key: 'docs', label: 'Docs', files: 0, lines: 0 },
+          { key: 'other', label: 'Other', files: 0, lines: 0 },
+        ],
+      },
+    },
+    // #4490: a change nobody sees, drawn from its author's Mermaid text.
+    {
+      ...mk(9000492, 900492,
+        '[Mock] Mermaid test: retry a copy that hiccups before the shots are taken',
+        0.4, 0, 0, 0, { required: 3, windowEndsAt: null }),
+      pr_summary_md: 'A shots copy that fails for a moment is tried again up to three times before the run gives up.',
+      shots_detail: { intent: { version: 1, impact: 'none', rationale: 'A retry inside the shots set-up; nothing on screen changes.', stories: [] } },
+      diagram: {
+        version: 1,
+        kind: 'mermaid',
+        source: 'flowchart TD\n  A[Copy database] --> B{Hiccup?}\n  B -- no --> C[Take shots]\n  B -- yes --> D[Retry up to 3 times]\n  D --> B\n  D -- still failing --> E[Report failure]',
+      },
+      diagram_source: 'author',
+    },
   ];
   // Spread the community-voted priority/assignee across a few rows (the mk
   // factory otherwise stamps every proposal high / staging-tester) so the
@@ -1228,6 +1282,9 @@ function stagingMockProposals(viewer) {
     return p;
   });
 }
+
+// The ?demo=1 merged change that waits for the platform's next release.
+const DEMO_GOING_LIVE_ID = 9100035;
 
 // #194: staging demo rows for the Completed (merged) list, mirroring
 // stagingMockProposals. Lets ?demo=1 verify the new clickable Completed
@@ -1382,7 +1439,20 @@ function stagingMockMerged(viewer) {
       '[Mock] Completed: legacy change with no recorded merge time', 95, 0),
     merged_at: null,
   };
-  return [autoMerged, inheritedAttrs, undone].concat(titles.map((t, i) => mk(
+  // A change merged into Homeroom itself a minute ago and not live yet: it
+  // goes live with the next release, which the gap puts eight minutes off
+  // (release-watch.js demoRelease). Its page says so where anyone can read
+  // it, "Merged; goes live in the next release (about 8 minutes)". The
+  // /merged demo block and the by-id read give it that release.
+  // 9100035 is DEMO_GOING_LIVE_ID, spelled out: this builder runs on its own
+  // (tests/staging-demo-id-ranges.test.js).
+  const goingLive = {
+    ...mk(9100035, 910135,
+      '[Mock] Going-live test: merged into Homeroom, live with the next release', 0, 0),
+    merged_at: new Date(Date.now() - 60 * 1000).toISOString(),
+    live_at: null,
+  };
+  return [autoMerged, goingLive, inheritedAttrs, undone].concat(titles.map((t, i) => mk(
     9100001 + i,
     910101 + i,
     `[Mock] Completed: ${t}`,
@@ -1554,6 +1624,21 @@ async function annotateDeploymentState(config, pool, app, rows) {
     }
   }
 
+  // When each change still going live does: the next release, worded by
+  // the board as "Merged; goes live in the next release (about 8 minutes)"
+  // (services/release-watch.js). The newest one's is the column's.
+  const deploying = prRows.filter((row) => row.deployment_state === 'deploying');
+  let newest = null;
+  if (deploying.length) {
+    const view = await releaseWatch.outlook(pool);
+    for (const row of deploying) {
+      const release = releaseWatch.releaseOf(view, { mergedAt: row.merged_at || row.created_at, id: row.id });
+      if (!release) continue;
+      row.release = release;
+      if (!newest || !isAfterDeploymentBoundary(newest, row)) newest = row;
+    }
+  }
+
   const pendingCount = Math.max(0, Number(boundary.pending_count) || 0);
   return {
     state: pendingCount > 0 ? (stall.stalled ? 'stalled' : 'deploying') : 'deployed',
@@ -1562,6 +1647,7 @@ async function annotateDeploymentState(config, pool, app, rows) {
     livePrNumber: Number(boundary.pr_number) || null,
     pendingCount,
     ...(stall.stalled ? { stall } : {}),
+    ...(pendingCount > 0 && !stall.stalled && newest ? { release: newest.release } : {}),
   };
 }
 
@@ -4190,7 +4276,7 @@ function voteRoutes(config) {
   router.get('/api/apps/:slug/promoted', async (req, res) => {
     try {
       const gatedApp = await appAccess.getAppForUser(
-        pool, req.params.slug, req.user, 'view', `${appAccess.ACCESS_COLUMNS}, locked`
+        pool, req.params.slug, req.user, 'view', `${appAccess.ACCESS_COLUMNS}, locked, repo_url`
       );
       if (!gatedApp) return res.status(404).json({ error: 'App not found' });
       const appRows = [gatedApp];
@@ -4205,6 +4291,9 @@ function voteRoutes(config) {
         `SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs.testing_path, cs.user_id, cs.status, cs.linked_issues, COALESCE(u.username, 'Deleted user') AS username, cs.created_at,
            cs.shots_state, cs.shots_run_id,
            cs.shots_detail, cs.shots_updated_at,
+           -- #4490: the card's picture when it has no shots: the author's
+           -- diagram, and "What it touches" for the head it was read at.
+           cs.pr_diagram, cs.pr_diagram_source, cs.pr_touches, cs.pr_touches_sha,
            -- #2779: the agent session the change was started from. Only its
            -- id, as mergedRowSelect carries it for a merged row: the
            -- conversation itself answers to its owner alone. This list was
@@ -4406,6 +4495,21 @@ function voteRoutes(config) {
         ? await shotsView.getForSessions(pool, rows, req.params.slug)
         : new Map();
       for (const row of rows) row.shots = shotsBySession.get(Number(row.id)) || null;
+
+      // #4490: the picture a card falls back to. The diagram is the
+      // author's, validated again on the way out; "What it touches" is
+      // shown only for the head it was read at, and a moved head is read
+      // again in the background for the next view.
+      proposalTouches.scheduleRefresh(pool, rows.map((row) => ({
+        id: row.id, repo_url: gatedApp.repo_url, pr_touches_sha: row.pr_touches_sha, head: visualHeadForSession(row),
+      })));
+      for (const row of rows) {
+        row.diagram = diagramContract.storedDiagram(row.pr_diagram);
+        row.diagram_source = row.diagram ? (row.pr_diagram_source || 'author') : null;
+        const head = visualHeadForSession(row);
+        row.touches = head && row.pr_touches_sha === head ? proposalTouches.storedTouches(row.pr_touches) : null;
+        delete row.pr_diagram; delete row.pr_diagram_source; delete row.pr_touches; delete row.pr_touches_sha;
+      }
 
       // Community-voted priority + assigned-person summary per proposal,
       // keyed by session id (target_type='proposal'). Same minimal shape
@@ -4943,6 +5047,12 @@ function voteRoutes(config) {
           unknownDemo.deployment_state = 'unknown';
           unknownDemo.deployment_kind = 'child';
         }
+        // The platform's own merge waiting for its next release.
+        const goingLiveDemo = rows.find((row) => row.row_type === 'pr' && Number(row.id) === DEMO_GOING_LIVE_ID);
+        if (goingLiveDemo) {
+          goingLiveDemo.deployment_state = 'deploying';
+          goingLiveDemo.release = require('../services/release-watch').demoRelease();
+        }
         deployment = {
           kind: 'child', state: 'pending',
           runningSha: 'dddddddddddddddddddddddddddddddddddddddd',
@@ -5051,6 +5161,12 @@ function voteRoutes(config) {
         proposal.shots = config.shots?.present
           ? await shotsView.getForSession(pool, proposal, req.params.slug)
           : null;
+        // #4490: the author's diagram, which leads the change's page.
+        const drawn = await pool.query(
+          'SELECT pr_diagram, pr_diagram_source FROM chat_sessions WHERE id = $1', [proposal.id]
+        ).catch(() => ({ rows: [] }));
+        proposal.diagram = diagramContract.storedDiagram(drawn.rows[0] && drawn.rows[0].pr_diagram);
+        proposal.diagram_source = proposal.diagram ? (drawn.rows[0].pr_diagram_source || 'author') : null;
         // #4452: how long testing usually takes here, for the change page's
         // one testing bar and its time left (services/checks-estimate.js).
         proposal.checks_estimate = await require('../services/checks-estimate').forApp(pool, gatedApp.id);
@@ -5144,6 +5260,21 @@ function voteRoutes(config) {
       if (!proposal) return res.status(404).json({ error: 'Proposal not found' });
       if (IS_STAGING && req.query.demo === '1' && proposal.checks_estimate == null) {
         proposal = { ...proposal, checks_estimate: require('../services/checks-estimate').DEMO_ESTIMATE };
+      }
+      // Merged into the platform's own app and not live yet: when the next
+      // release carries it (services/release-watch.js), which the page says
+      // as "Merged; goes live in the next release (about 8 minutes)". A
+      // child app's merge goes live with its own deploy and keeps its words.
+      if (proposal.status === 'merged' && proposal.live_at === null && !proposal.release) {
+        const releaseWatch = require('../services/release-watch');
+        if (IS_STAGING && req.query.demo === '1' && Number(proposal.id) === DEMO_GOING_LIVE_ID) {
+          proposal = { ...proposal, release: releaseWatch.demoRelease() };
+        } else if (gatedApp.self_hosted) {
+          const release = releaseWatch.releaseOf(await releaseWatch.outlook(pool), {
+            mergedAt: proposal.merged_at || proposal.created_at, id: proposal.id,
+          });
+          if (release) proposal = { ...proposal, release };
+        }
       }
       // `?results=failing`: the proposal page's own read, which lists passing
       // checks only when their fold is opened (services/list-test-results.js).

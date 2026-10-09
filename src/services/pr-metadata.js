@@ -10,6 +10,7 @@ const sessionTitles = require('./session-title');
 const proposalDescription = require('./proposal-description');
 const summaryFreshness = require('./summary-freshness');
 const { visualHeadForSession } = require('./pr-vote-revision');
+const diagramContract = require('./diagram');
 
 // Coerce an arbitrary array of "issue numbers" into a clean, deduped,
 // ascending list of positive integers (#75). Defensive against malformed
@@ -532,7 +533,7 @@ async function generatePrMetadataDraft({ userMessage, ccSummary, requests, summa
 }
 
 function renderPrMetadataDraft(draft, {
-  username, closingBlock, testingBlock, visualsBlock, shotsBlock,
+  username, closingBlock, testingBlock, visualsBlock, shotsBlock, diagramBlock = '',
 }) {
   // `closingBlock` (#75) is the deterministic `Closes #N` text,
   // `testingBlock` (#127) the deterministic "How to test" section, and
@@ -540,7 +541,10 @@ function renderPrMetadataDraft(draft, {
   // inserted between the body and the footer (testing first, closing last)
   // and are deliberately NOT fed into the LLM prompt below, so the model
   // can never drop, duplicate, or paraphrase them.
-  const suffix = (testingBlock ? `\n\n${testingBlock}` : '')
+  // #4490: the author's diagram as text leads the suffix, right under the
+  // summary and the model's bullets.
+  const suffix = (diagramBlock ? `\n\n${diagramBlock}` : '')
+    + (testingBlock ? `\n\n${testingBlock}` : '')
     + (shotsBlock ? `\n\n${shotsBlock}` : '')
     + (visualsBlock ? `\n\n${visualsBlock}` : '')
     + (closingBlock ? `\n\n${closingBlock}` : '');
@@ -610,6 +614,7 @@ async function gatherSessionContext(pool, sessionId, currentCcSummary, currentDe
     testingMd: null, testingPath: null, appliedTesting: null,
     visuals: null, appliedVisuals: null,
     shotsDetail: null, appSlug: null, currentPrBody: null,
+    diagram: null, diagramSource: null,
     appliedSummary: null, summaryStale: false, summarySource: null,
     summaryInputVersion: 0, summaryHead: null, summaryInputsChangedDuringGather: false,
     agentSessionChange: false, changeName: null, personTitle: null,
@@ -670,7 +675,7 @@ async function gatherSessionContext(pool, sessionId, currentCcSummary, currentDe
                 testing_md, testing_path, pr_testing_applied,
                 pr_visuals_applied, pr_summary_md, pr_summary_stale,
                 pr_summary_source, pr_summary_input_version, source,
-                shots_detail, pr_body,
+                shots_detail, pr_body, pr_diagram, pr_diagram_source,
                 (SELECT slug FROM apps WHERE id = chat_sessions.app_id) AS app_slug,
                 imported_pr_head_sha, reviewed_head_sha,
                 checks_commit_sha, handoff_head_sha, handoff_uploaded_sha,
@@ -704,6 +709,8 @@ async function gatherSessionContext(pool, sessionId, currentCcSummary, currentDe
       ctx.shotsDetail = (liveRows[0] && liveRows[0].shots_detail) || null;
       ctx.appSlug = (liveRows[0] && liveRows[0].app_slug) || null;
       ctx.currentPrBody = (liveRows[0] && liveRows[0].pr_body) || null;
+      ctx.diagram = (liveRows[0] && liveRows[0].pr_diagram) || null;
+      ctx.diagramSource = (liveRows[0] && liveRows[0].pr_diagram_source) || null;
 
       // Plain-language summary last written to pr_summary_md (the in-app
       // proposal view's source of truth). Read here so the drift gate below
@@ -823,7 +830,7 @@ async function applyPrMetadata({
     visuals, appliedVisuals, appliedSummary, summaryStale, summarySource,
     summaryInputVersion, summaryHead: recordedHead,
     summaryInputsChangedDuringGather,
-    shotsDetail, appSlug, currentPrBody,
+    shotsDetail, appSlug, currentPrBody, diagram: storedDiagram, diagramSource,
     agentSessionChange, changeName, personTitle,
   } = await gatherSessionContext(pool, session && session.id, ccSummary, currentDescription);
   if (summaryInputsChangedDuringGather) {
@@ -866,6 +873,8 @@ async function applyPrMetadata({
   const visualsBlock = visibleChanges
     ? ''
     : buildVisualsBlock(visuals, require('./caddy').USERNODE_DOMAIN);
+  // #4490: the author's diagram (declare_diagram), as text; '' for none.
+  const diagramBlock = diagramContract.prBlock(storedDiagram, diagramSource || 'author');
 
   const generationArgs = {
     userMessage, ccSummary, requests, summaries, descriptions, specs, username, apiKey,
@@ -883,7 +892,7 @@ async function applyPrMetadata({
   if (deterministic || (!allowModelGeneration && !effectTurnId)) {
     meta = renderPrMetadataDraft(
       deterministicPrMetadataDraft(generationArgs),
-      { username, closingBlock, testingBlock, visualsBlock, shotsBlock },
+      { username, closingBlock, testingBlock, visualsBlock, shotsBlock, diagramBlock },
     );
   } else if (effectTurnId) {
     try {
@@ -913,7 +922,7 @@ async function applyPrMetadata({
         : {};
       metadataBillingByok = !!settled.billingByok;
       meta = renderPrMetadataDraft(settled.draft, {
-        username, closingBlock, testingBlock, visualsBlock, shotsBlock,
+        username, closingBlock, testingBlock, visualsBlock, shotsBlock, diagramBlock,
       });
     } catch (err) {
       // Receipt uncertainty must keep the durable tail owned. Swallowing it
@@ -923,7 +932,7 @@ async function applyPrMetadata({
     }
   } else {
     meta = await generatePrMetadata({
-      ...generationArgs, closingBlock, testingBlock, visualsBlock, shotsBlock,
+      ...generationArgs, closingBlock, testingBlock, visualsBlock, shotsBlock, diagramBlock,
     });
   }
   const { title: generatedTitle, body: generatedBody } = meta;
@@ -985,6 +994,7 @@ async function applyPrMetadata({
   const visualsChanged = visualsBlock !== (appliedVisuals || '');
 
   const shotsChanged = shotsBlock !== extractShotsBlock(currentPrBody || session?.pr_body || '');
+  const diagramChanged = diagramBlock !== diagramContract.extractPrBlock(currentPrBody || session?.pr_body || '');
 
   // Same drift check for the plain-language summary: a revised summary must
   // reach the PR body on a title-unchanged turn (the summary leads the body),
@@ -1156,7 +1166,7 @@ async function applyPrMetadata({
   // title-unchanged turn, leaving the new `Closes #N` line / "How to
   // test" / "Before / after" section off the PR body.
   if (prTitle === session.pr_title && !issuesChanged && !testingChanged && !visualsChanged
-      && !shotsChanged && !summaryChanged) {
+      && !shotsChanged && !diagramChanged && !summaryChanged) {
     // Regenerating the same words still validates them against the current
     // inputs. No GitHub write is needed, but leaving the stale flag set would
     // make the freshness notice permanent after an unchanged refresh.
@@ -1226,5 +1236,6 @@ module.exports = {
   buildClosingBlock, buildTestingBlock, parseClosingKeywords,
   buildVisualsBlock, upsertVisualsBlock, extractVisualsBlock,
   buildShotsBlock, upsertShotsBlock, extractShotsBlock, syncShotsPrBlock,
+  renderPrMetadataDraft,
   applyIssueDeclarations, stripClosingLines, sameIssueSet, gatherSessionContext,
 };

@@ -26,6 +26,7 @@ import type {
   UserSearchResult,
 } from './types';
 import { countOf } from './approval-words';
+import { releaseOf } from '../../lib/release-eta';
 import type { HomeroomLink } from './homeroom-links';
 import { botRowPreview, plainText } from './plain-text';
 
@@ -898,8 +899,10 @@ function normalizeBotPastJob(entry: unknown): HomeroomBotPastJob | null {
   const known = ACTIVITY_OUTCOMES.has(outcome);
   const doing = text(pick(row, 'doing')) || null;
   if (!known && !doing && !outcome) return null;
+  const release = outcome === 'going_live' ? releaseOf(pick(row, 'release')) : null;
   return {
     ...normalizeBotJob(row),
+    ...(release ? { release } : {}),
     id: strictId(pick(row, 'id')) || 0,
     outcome: known ? outcome : (outcome ? 'failed' : null),
     doing,
@@ -915,8 +918,11 @@ export function normalizeBotWork(input: unknown): HomeroomBotWork {
     const step = strictId(pick(row, 'step'));
     const of = strictId(pick(row, 'of'));
     const whole = !!step && !!of && step <= of && of <= 12;
+    // A merge of Homeroom itself going live: when its release comes.
+    const release = phase === 'merging' ? releaseOf(pick(row, 'release')) : null;
     return {
       ...normalizeBotJob(row),
+      ...(release ? { release } : {}),
       phase: BOT_PHASES.has(phase) ? phase : 'looking',
       step: whole ? step : null,
       of: whole ? of : null,
@@ -963,6 +969,8 @@ export function normalizeBotActivity(input: unknown): HomeroomBotActivity[] {
     const to = strictId(pick(typical, 'to'));
     const workedFrom = text(pick(row, 'workedFrom'));
     const waitedFor = text(pick(row, 'waitedFor'));
+    // A merge of Homeroom itself going live: when its release comes.
+    const release = !working && outcome === 'going_live' ? releaseOf(pick(row, 'release')) : null;
     return {
       messageId,
       state: working ? 'working' : 'done',
@@ -979,6 +987,7 @@ export function normalizeBotActivity(input: unknown): HomeroomBotActivity[] {
       endedAt: working ? null : text(pick(row, 'endedAt')) || null,
       // Whole minutes, the shorter first, and under two hours.
       ...(working && from && to && from <= to && to <= 120 ? { typicalMinutes: { from, to } } : {}),
+      ...(release ? { release } : {}),
     };
   }).filter((card): card is HomeroomBotActivity => !!card);
 }
@@ -1002,6 +1011,8 @@ export function normalizeBotReadyNow(input: unknown): HomeroomBotReadyNow[] {
     const missing = approval ? countOf(pick(approval, 'missing')) : null;
     const needed = approval ? countOf(pick(approval, 'needed')) : null;
     const goesLive = normalizeGoesLive(pick(row, 'goesLive'));
+    // A merge of Homeroom itself going live: when its release comes.
+    const release = state === 'going_live' ? releaseOf(pick(row, 'release')) : null;
     return {
       messageId,
       state,
@@ -1018,6 +1029,7 @@ export function normalizeBotReadyNow(input: unknown): HomeroomBotReadyNow[] {
         },
       } : {}),
       ...(state === 'open' && goesLive ? { goesLive } : {}),
+      ...(release ? { release } : {}),
     };
   }).filter((entry): entry is HomeroomBotReadyNow => !!entry);
 }

@@ -224,7 +224,7 @@ tool_timeout_sec = 60
 command = "node"
 args = ["/usr/local/bin/visible-changes-mcp.js"]
 env_vars = ["WORKER_JWT", "SESSION_ID", "PLATFORM_URL"]
-enabled_tools = ["declare_visible_changes"]
+enabled_tools = ["declare_visible_changes", "declare_diagram"]
 startup_timeout_sec = 15
 tool_timeout_sec = 30
 TOML

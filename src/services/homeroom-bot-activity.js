@@ -866,7 +866,24 @@ async function activityCards(pool, { user, userId, settings, config, deps, now }
       return new Map();
     })
     : new Map();
-  return shown.map((row) => cardOf(row, entryOf(row), { firstVersion: firstVersions.get(Number(row.app_id)) || null }));
+  const cards = shown.map((row) => cardOf(row, entryOf(row), { firstVersion: firstVersions.get(Number(row.app_id)) || null }));
+  // A change merged into the platform's own app and not live yet waits for
+  // the platform's next release (services/release-watch.js): its card says
+  // when, "Merged; goes live in the next release (about 8 minutes)". Read
+  // only when a card is going live; any other change is left out of the
+  // answer and its card says "Going live now", as before.
+  const going = new Map();
+  shown.forEach((row, i) => {
+    if (cards[i].outcome === 'going_live' && row.proposal_session_id) going.set(cards[i], Number(row.proposal_session_id));
+  });
+  if (going.size) {
+    const releases = await require('./release-watch').releasesFor(pool, [...going.values()]);
+    for (const [card, sessionId] of going) {
+      const release = releases.get(sessionId);
+      if (release) card.release = release;
+    }
+  }
+  return cards;
 }
 
 // ── Work already under way without a card ──

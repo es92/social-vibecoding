@@ -112,6 +112,53 @@ test('changes on one screen share it, each area tied to the change whose element
   }
 });
 
+test('a focus shot covering most of the screen does not stretch the outline', async () => {
+  // A panel that covers more than half of the 300×200 screen: the agent
+  // photographed a whole dialog, so taking it into the box would outline
+  // the panel instead of the two rows added inside it.
+  const panel = [30, 30, 240, 140, [200, 200, 210]];
+  const before = screen(300, 200, [...glyphs(10, 10, 20), panel]);
+  const after = screen(300, 200, [...glyphs(10, 10, 20), panel, ...glyphs(50, 60, 10), ...glyphs(50, 120, 10)]);
+  const stories = [{ id: 'panel', viewports: [{ name: 'desktop' }] }];
+  const files = [
+    file('panel', 'desktop', 'base', 'context', before), file('panel', 'desktop', 'head', 'context', after),
+    file('panel', 'desktop', 'head', 'focus', crop(after, 30, 30, 240, 140)),
+  ];
+  const [shown] = await diff.screensFor(stories, files);
+  assert.equal(shown.regions.length, 2, 'the two added rows stay separate');
+  for (const region of shown.regions) {
+    assert.equal(region.story, 'panel', 'each row is tied to the change whose element shot holds it');
+    assert.ok(region.a[3] < 140, 'the box is much smaller than the crop, not stretched to it');
+    assert.notDeepEqual(region.a, [30, 30, 240, 140]);
+  }
+});
+
+test('overlapping whole-panel regions are merged into one, keeping the first change number', async () => {
+  // A panel under half the screen, so the box is still widened to it — but
+  // two changes whose element shot is the same panel then each yield the
+  // whole-panel box, and the card gets one outline, not a stack.
+  const panel = [30, 40, 160, 100, [200, 200, 210]];
+  const before = screen(240, 200, [...glyphs(10, 10, 20), panel]);
+  const after = screen(240, 200, [...glyphs(10, 10, 20), panel, ...glyphs(50, 60, 10), ...glyphs(50, 120, 10)]);
+  const focus = crop(after, 30, 40, 160, 100);
+  const stories = [
+    { id: 'first', viewports: [{ name: 'desktop' }] },
+    { id: 'second', viewports: [{ name: 'desktop' }] },
+  ];
+  const files = [
+    file('first', 'desktop', 'base', 'context', before), file('first', 'desktop', 'head', 'context', after),
+    file('first', 'desktop', 'head', 'focus', focus),
+    file('second', 'desktop', 'base', 'context', before), file('second', 'desktop', 'head', 'context', after),
+    file('second', 'desktop', 'head', 'focus', focus),
+  ];
+  const [shown] = await diff.screensFor(stories, files);
+  assert.equal(shown.regions.length, 1, 'one outline over the panel, not a stack');
+  const [region] = shown.regions;
+  assert.equal(region.story, 'first', "it carries the first change's number");
+  assert.ok(region.a[0] <= 30 && region.a[1] <= 40 && region.a[0] + region.a[2] >= 190
+    && region.a[1] + region.a[3] >= 140, 'the box covers the panel');
+});
+
 test('screens of different widths are shown without outlines rather than guessed', async () => {
   const stories = [{ id: 'x', viewports: [{ name: 'desktop' }] }];
   const files = [

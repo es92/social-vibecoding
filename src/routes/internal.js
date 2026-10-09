@@ -273,6 +273,44 @@ function internalRoutes(_config) {
   router.post('/api/internal/sessions/:sessionId/visual-evidence-intent',
     visibleChangesAuth, visibleChangesLimiter, declareVisibleChanges);
 
+  // #4490: a hosted build's diagram of its change (worker/visible-changes-mcp.js
+  // declare_diagram), on the same boundary as its visible changes: its own
+  // session only, the same validation submit_work applies, and Mermaid only
+  // when the session's declared impact is "none".
+  router.post('/api/internal/sessions/:sessionId/diagram',
+    visibleChangesAuth, visibleChangesLimiter, async (req, res) => {
+      const sessionId = Number(req.params.sessionId);
+      if (!Number.isInteger(sessionId) || sessionId <= 0) {
+        return res.status(400).json({ ok: false, code: 'bad_session_id', message: 'Invalid proposal session id.' });
+      }
+      if (Number(req.workerSession.sessionId) !== sessionId) {
+        return res.status(403).json({ ok: false, code: 'session_mismatch', message: 'The worker token does not own this proposal.' });
+      }
+      try {
+        const { rows } = await pool.query(
+          "SELECT shots_detail->'intent'->>'impact' AS impact FROM chat_sessions WHERE id = $1",
+          [sessionId]
+        );
+        if (!rows[0]) return res.status(404).json({ ok: false, code: 'not_found', message: 'No such proposal session.' });
+        let record;
+        try {
+          record = require('../services/diagram').parseDiagram(req.body?.diagram, { impact: rows[0].impact || null });
+        } catch (err) {
+          return res.status(400).json({ ok: false, code: 'invalid_diagram', message: err.message });
+        }
+        const proposalDiagram = require('../services/proposal-diagram');
+        const stored = await proposalDiagram.store(pool, sessionId, record, 'author');
+        if (!stored) return res.status(500).json({ ok: false, code: 'diagram_not_stored', message: 'The diagram could not be stored.' });
+        proposalDiagram.syncPrBlock(pool, sessionId).catch((err) => {
+          log.warn('internal-api', 'Could not write the diagram into the pull request', { sessionId, err: err.message });
+        });
+        return res.json({ ok: true, diagram: record });
+      } catch (err) {
+        log.error('internal-api', 'declare_diagram failed', { sessionId, err: err.message });
+        return res.status(500).json({ ok: false, code: 'internal_error', message: 'Could not record the diagram.' });
+      }
+    });
+
   // The app-host gate (services/edge-gate.js): Caddy's forward_auth and the
   // Kubernetes gate proxy (scripts/app-gate.js) both ask here.
   router.get('/__caddy/access', async (req, res) => {

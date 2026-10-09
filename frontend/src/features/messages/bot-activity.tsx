@@ -9,6 +9,8 @@ import {
   cardRecord, ensureBotActivity, loadBotActivity, readsAsked, useBotActivity, useBotActivitySync,
 } from './bot-activity-store';
 import { SPINNING_OUTCOMES, jobTitle } from './bot-shared';
+import { releaseSentence } from '../../lib/release-eta';
+import { useReleaseNow } from '../../lib/use-release-now';
 import { recordObjectOrigin } from './format';
 import type { ConversationMessage, HomeroomBotActivity, HomeroomBotActivityOutcome, HomeroomBotMeta } from './types';
 
@@ -71,6 +73,19 @@ export const ACTIVITY_OUTCOME_LABELS: Record<HomeroomBotActivityOutcome, string>
   // #4227: merged, not live yet.
   going_live: 'Built it. Going live now',
 };
+
+/**
+ * What a finished card says it came to: its outcome's words, except a merge
+ * of the platform's own app going live, which waits for the platform's next
+ * release and says when: "Built it. Merged; goes live in the next release
+ * (about 8 minutes)" (../../lib/release-eta.ts). A child app's merge goes
+ * live in a minute or two and keeps "Built it. Going live now".
+ */
+export function outcomeLabel(card: Pick<HomeroomBotActivity, 'outcome' | 'release'>, now: number = Date.now()): string {
+  const words = card.outcome === 'going_live' && card.release ? releaseSentence(card.release, now) : null;
+  if (words) return `Built it. ${words}`;
+  return card.outcome ? ACTIVITY_OUTCOME_LABELS[card.outcome] : '';
+}
 
 export type ActivityTone = 'done' | 'built' | 'you' | 'ended' | 'trouble';
 type Tone = ActivityTone;
@@ -282,7 +297,10 @@ export interface BotActivityCardViewProps {
 
 /** One card, from what was read: a pure render, so a test can draw every state. */
 export function BotActivityCardView({ meta, card, loaded = false, failed = false, onRetry, now }: BotActivityCardViewProps) {
-  const at = now || new Date();
+  // A merge of Homeroom itself going live counts down to its release.
+  const release = card && card.state === 'done' && card.outcome === 'going_live' ? card.release || null : null;
+  const tick = useReleaseNow(release);
+  const at = now || new Date(tick);
   const title = activityTitle(meta);
   // B4: their own words lead, and the project moves to the status line.
   const asked = meta.askedText ? `You asked: ${meta.askedText}` : null;
@@ -319,7 +337,7 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
     status = (
       <>
         {project ? <span>{`${project} · `}</span> : null}
-        <span role="status">{ACTIVITY_OUTCOME_LABELS[card.outcome]}</span>
+        <span role="status">{outcomeLabel(card, at.getTime())}</span>
         {took ? <span>{` · took ${took}${waited ? `, ${waited}` : ''}`}</span> : null}
       </>
     );

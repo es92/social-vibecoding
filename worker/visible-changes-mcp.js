@@ -114,6 +114,62 @@ server.registerTool('declare_visible_changes', {
   }
 });
 
+// #4490: a small diagram of the change, which Homeroom draws on its
+// Needs-you card when it has no before & after shots. Data, never markup:
+// src/services/diagram.js validates it, as it does submit_work's `diagram`.
+const short = z.string().min(1).max(60);
+const diagramSchema = {
+  diagram: z.union([
+    z.object({ version: z.literal(1), kind: z.literal('rename'), from: short, to: short,
+      places: z.array(short).max(8).optional(), note: short.optional() }).strict(),
+    z.object({ version: z.literal(1), kind: z.literal('flow'),
+      before: z.array(short).min(1).max(6), after: z.array(short).min(1).max(6), note: short.optional() }).strict(),
+    z.object({ version: z.literal(1), kind: z.literal('changes'),
+      rows: z.array(z.object({ op: z.enum(['added', 'changed', 'removed']), what: short, detail: short.optional() }).strict()).min(1).max(6) }).strict(),
+    z.object({ version: z.literal(1), kind: z.literal('numbers'), unit: z.string().min(1).max(12).optional(),
+      rows: z.array(z.object({ label: short, before: z.number(), after: z.number() }).strict()).min(1).max(6) }).strict(),
+    z.object({ version: z.literal(1), kind: z.literal('mermaid'), source: z.string().min(1).max(2000) }).strict(),
+  ]).describe('One of the four fixed kinds (rename, flow, changes, numbers), or mermaid only for a change you declared with impact "none".'),
+};
+
+async function recordDiagram(diagram) {
+  const response = await fetch(`${platform}/api/internal/sessions/${sessionId}/diagram`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ diagram }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  let payload;
+  try { payload = await response.json(); }
+  catch { payload = { ok: false, code: 'invalid_platform_response', message: 'Homeroom returned a non-JSON response.' }; }
+  if (!response.ok || payload?.ok !== true) {
+    const error = new Error(String(payload?.message || `Homeroom returned HTTP ${response.status}`).slice(0, 1000));
+    error.code = String(payload?.code || 'diagram_failed');
+    throw error;
+  }
+  return payload;
+}
+
+server.registerTool('declare_diagram', {
+  description: 'Optional. Declare a small diagram of the change, drawn by Homeroom on its Needs-you card when it has no before & after shots, and written into the pull request as text. Use it when the change is a rename (kind rename: from, to, the places it shows), a changed flow (kind flow: the old steps and the new), a data or settings change (kind changes: rows of added/changed/removed, each in plain words), or a measured improvement (kind numbers: before/after figures). Every text 1-60 characters. Only for a change you declared with declare_visible_changes impact "none", and only when none of the four fits, send kind mermaid with Mermaid source (at most 2000 characters and 40 lines, opening with flowchart, graph, sequenceDiagram, stateDiagram-v2, classDiagram or erDiagram; no %%{ directives, click, href, callback, or < > outside arrows). Call declare_visible_changes first. Calling again replaces the diagram.',
+  inputSchema: diagramSchema,
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+}, async ({ diagram }) => {
+  try {
+    const result = await recordDiagram(diagram);
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+  } catch (error) {
+    return {
+      isError: true,
+      content: [{ type: 'text', text: JSON.stringify({
+        ok: false,
+        code: String(error?.code || 'diagram_failed'),
+        message: String(error?.message || 'Could not record the diagram.').slice(0, 1000),
+      }) }],
+    };
+  }
+});
+
 server.connect(new StdioServerTransport()).catch((error) => {
   process.stderr.write(`${String(error?.message || error).slice(0, 1000)}\n`);
   process.exit(1);

@@ -76,7 +76,7 @@ import { kudosPaneStore } from './kudos-pane-store.js';
 
 type Tone = 'emerald' | 'amber' | 'zinc' | 'violet' | 'sky' | 'red';
 
-type Badge = { tone: Tone; label: string };
+type Badge = { tone: Tone; label: string; title?: string };
 
 type ChromeView =
   | { kind: 'profile'; who: string; initial: string; canMessage?: boolean }
@@ -200,7 +200,7 @@ const MORE_BTN = 'px-4 py-1.5 text-sm font-medium rounded-lg '
 const CLAP = '\u{1F44F}';
 
 function StatusBadge({ badge }: { badge: Badge }): ReactNode {
-  return <span className={`${BADGE} ${TONES[badge.tone]}`}>{badge.label}</span>;
+  return <span className={`${BADGE} ${TONES[badge.tone]}`} title={badge.title}>{badge.label}</span>;
 }
 
 /** The `·` between meta bits. A separate node, so `gap-1.5` spaces it. */

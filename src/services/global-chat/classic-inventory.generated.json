@@ -7383,6 +7383,14 @@
     },
     {
       "source": "src/routes/internal.js",
+      "method": "POST",
+      "path": "/api/internal/sessions/:sessionId/diagram",
+      "expression": null,
+      "status": "exempt",
+      "reason": "platform-to-worker/internal service protocol"
+    },
+    {
+      "source": "src/routes/internal.js",
       "method": "GET",
       "path": "/__caddy/access",
       "expression": null,

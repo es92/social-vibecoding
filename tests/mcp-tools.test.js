@@ -2470,6 +2470,60 @@ test('submit_work refuses an invalid declaration before anything reaches the pla
   } finally { c.restore(); }
 });
 
+// #4490: the author's diagram rides submit_work, checked against the same
+// call's declared impact before anything reaches the platform.
+test('submit_work refuses an invalid diagram, and Mermaid beside a visible change, before any platform call', async () => {
+  const fixture = require('./fixtures/shots');
+  for (const [args, why] of [
+    [{ diagram: { version: 1, kind: 'svg', svg: '<svg/>' } }, /rename, flow, changes or numbers/],
+    [{ diagram: { version: 1, kind: 'mermaid', source: 'flowchart TD\n  A --> B' }, visibleChanges: fixture.motionIntent() }, /only for a change nobody sees/],
+    [{ diagram: { version: 1, kind: 'mermaid', source: 'flowchart TD\n  A --> B' } }, /declares no visibleChanges/],
+  ]) {
+    const c = shotsUpdateConnector({ updated: true });
+    try {
+      const res = await c.handlers.get('submit_work')({ proposalId: 3140, branch: 'my-fix', ...args });
+      assert.equal(res.isError, true);
+      assert.match(res.content[0].text, /invalid_diagram/);
+      assert.match(res.content[0].text, why);
+      assert.equal(c.calls.length, 0, 'refused before any platform call');
+    } finally { c.restore(); }
+  }
+});
+
+test('submit_work stores the diagram on the proposal and carries its text in the description', async () => {
+  const gh = require('../src/services/github');
+  const githubLink = require('../src/services/github-link');
+  const real = { gh: gh.isEnabled, link: githubLink.isEnabled };
+  gh.isEnabled = () => true;
+  githubLink.isEnabled = () => true;
+  const writes = [];
+  const pool = {
+    async query(sql, params) {
+      if (/pr_diagram/.test(sql)) { writes.push({ sql, params }); return { rowCount: 1, rows: [] }; }
+      return { rows: [{ app_slug: 'recipe-box' }] };
+    },
+  };
+  const c = connector(() => ({
+    updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,
+    headSha: 'b'.repeat(40), votesCleared: 0, submittedVia: 'update_branch', descriptionUpdated: true,
+  }), { scopes: [READ_SCOPE, WRITE_SCOPE], pool });
+  try {
+    const diagram = { version: 1, kind: 'rename', from: 'spec', to: 'plan', places: ['Chat cards'] };
+    const res = await c.handlers.get('submit_work')({
+      proposalId: 3140, branch: 'my-fix', description: 'Renames spec to plan.', diagram,
+    });
+    assert.notEqual(res.isError, true);
+    assert.equal(res.structuredContent.diagramAccepted, true);
+    assert.equal(writes.length, 1);
+    assert.match(writes[0].sql, /UPDATE chat_sessions SET pr_diagram = \$2::jsonb, pr_diagram_source = \$3 WHERE id = \$1/);
+    assert.equal(writes[0].params[0], 3140);
+    assert.deepEqual(JSON.parse(writes[0].params[1]), diagram);
+    const sent = JSON.stringify(c.calls.at(-1).body);
+    assert.match(sent, /usernode:diagram/);
+    assert.match(sent, /spec → plan \(Chat cards\)/);
+  } finally { c.restore(); gh.isEnabled = real.gh; githubLink.isEnabled = real.link; }
+});
+
 test('submit_work reports no evidence fields when no declaration was sent', async () => {
   const c = shotsUpdateConnector({
     updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,

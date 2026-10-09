@@ -1,4 +1,6 @@
 import { waitingWords } from '../messages/approval-words';
+import { releaseSentence } from '../../lib/release-eta';
+import { useReleaseNow } from '../../lib/use-release-now';
 import type { BotRequestCard, BotRequestChip, BotRequestState } from './transcript-store';
 
 /*
@@ -138,8 +140,19 @@ export function approvalWords(state?: BotRequestState): string {
   return words ? `${words}.` : 'Waiting for approval.';
 }
 
+/**
+ * Pure: an approved change's next words. A merge of the platform's own app
+ * waits for the platform's next release and says when (`release`,
+ * ../../lib/release-eta.ts): "Merged; goes live in the next release (about 8
+ * minutes)." Any other approved change goes live in a minute or two.
+ */
+function goingLiveWords(state: BotRequestState | undefined, now: number): string {
+  const words = state?.release ? releaseSentence(state.release, now) : null;
+  return words ? `${words}.` : 'It’s going live.';
+}
+
 /** Pure: a request the bot builds, where it stands. */
-function filedWords(card: BotRequestCard, stays: string): string {
+function filedWords(card: BotRequestCard, stays: string, now: number): string {
   const title = card.title || 'your request';
   switch (card.state?.stage) {
     case 'waiting_first_version': return `Got it: ${title}. ${FIRST_VERSION_WAIT_LINE}${stays}`;
@@ -148,7 +161,7 @@ function filedWords(card: BotRequestCard, stays: string): string {
     case 'question': return 'I have a question about this. It’s in our chat.';
     case 'checking': return `Built: ${title}. Testing it now.`;
     case 'proposed': return `Built: ${title}. ${approvalWords(card.state)}`;
-    case 'approved': return `Approved: ${title}. It’s going live.`;
+    case 'approved': return `Approved: ${title}. ${goingLiveWords(card.state, now)}`;
     case 'live': return `Live: ${title}.`;
     case 'closed': return `Closed: ${title}. It won’t go live.`;
     case 'person': return 'I left this for the group to decide.';
@@ -165,7 +178,7 @@ function changeName(card: BotRequestCard): string {
 }
 
 /** Pure: a fix sent to one of the bot's changes, where it stands. */
-function reviseWords(card: BotRequestCard): string {
+function reviseWords(card: BotRequestCard, now: number): string {
   const it = changeName(card);
   const It = it.charAt(0).toUpperCase() + it.slice(1);
   switch (card.state?.stage) {
@@ -174,7 +187,7 @@ function reviseWords(card: BotRequestCard): string {
     case 'asked': return `I have a question about your fix. It’s in the discussion of ${it}.`;
     case 'answered': return `I answered you in the discussion of ${it}.`;
     case 'person': return `I left your fix to ${it} for the group to decide.`;
-    case 'approved': return `${It} was approved. It’s going live.`;
+    case 'approved': return `${It} was approved. ${goingLiveWords(card.state, now)}`;
     case 'live': return `${It} is live.`;
     case 'closed': return `${It} was closed. It won’t go live.`;
     case 'stopped': return `I couldn’t finish fixing ${it}.`;
@@ -183,13 +196,13 @@ function reviseWords(card: BotRequestCard): string {
 }
 
 /** Pure: what a card says. */
-export function cardWords(card: BotRequestCard): string {
+export function cardWords(card: BotRequestCard, now: number = Date.now()): string {
   const stays = card.first ? ` ${STAYS_LINE}` : '';
   switch (card.kind) {
     case 'filed':
-      return filedWords(card, stays);
+      return filedWords(card, stays, now);
     case 'revise':
-      return reviseWords(card);
+      return reviseWords(card, now);
     case 'revise_refused':
       return `I couldn’t change ${changeName(card)} just now. You can say what you want in its discussion.`;
     case 'group':
@@ -225,6 +238,8 @@ export interface BotRequestCardActions {
 const GOING = new Set(['waiting_first_version', 'reading', 'waiting', 'building', 'checking']);
 
 export function BotRequestCardView({ card, actions = {} }: { card: BotRequestCard; actions?: BotRequestCardActions }) {
+  // An approved merge of Homeroom itself counts down to the platform's next release.
+  const now = useReleaseNow(card.state?.stage === 'approved' ? card.state.release : null);
   const buttons: Array<{ key: string; label: string; primary?: boolean; act?: () => void }> = [];
   const stage = card.state?.stage;
   const change = card.state?.sessionId || card.sessionId || null;
@@ -263,7 +278,7 @@ export function BotRequestCardView({ card, actions = {} }: { card: BotRequestCar
         <img className="h-4 w-4 rounded" src="/brand/homeroom-mark.png" alt="" aria-hidden="true" />
         <span>Only you can see this</span>
       </div>
-      <p className="text-[0.9375rem] leading-[1.35] text-zinc-900 dark:text-zinc-100">{cardWords(card)}</p>
+      <p className="text-[0.9375rem] leading-[1.35] text-zinc-900 dark:text-zinc-100">{cardWords(card, now)}</p>
       {sharedNow(card) ? (
         <p className="text-[0.8125rem] leading-snug text-zinc-500 dark:text-zinc-400" data-bot-request-shared="">{SHARED_LINE}</p>
       ) : null}

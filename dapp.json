@@ -2499,9 +2499,9 @@
       "expectText": "Vote"
     },
     {
-      "name": "A Needs-you item leads with who and when, then its title, then the sentence a voter reads, then the caption",
+      "name": "A Needs-you item leads with who and when, then its title, then the sentence a voter reads, then the caption; a change with no shots shows its author's diagram under that sentence (#4490)",
       "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop [data-ws-needs] > .dev-ws-needs-scroll > [data-ws-item][data-ws-kind=\"vote\"]:not([data-ws-swipeable]) > .dev-ws-item-by + .dev-ws-item-title + .dev-ws-item-summary ~ .dev-ws-item-caption"
+      "expectSelector": "#dev-workshop [data-ws-needs]:has(.dev-ws-item-summary + [data-ws-diagram=rename]) > .dev-ws-needs-scroll > [data-ws-item][data-ws-kind=\"vote\"]:not([data-ws-swipeable]) > .dev-ws-item-by + .dev-ws-item-title + .dev-ws-item-summary ~ .dev-ws-item-caption"
     },
     {
       "name": "The Needs-you feed's rail offers Ask, which opens the question box about the item in front of you",
@@ -2705,6 +2705,12 @@
       "name": "Checks card says a built preview's run is waiting for a checks slot, and where it is in line",
       "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000054",
       "expectText": "Waiting for a checks slot (2 ahead)"
+    },
+    {
+      "name": "A change merged into Homeroom itself says when the next release carries it, on its page where anyone reads it, not a bare Going live (#4309 follow-up)",
+      "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9100035",
+      "expectSelector": "[data-change-gate=\"votes\"] .dev-change-gate-note[data-change-release]",
+      "expectText": "Merged; goes live in the next release (about"
     },
     {
       "name": "Checks card says an author's commit started the run (#1144), in Details (B10b)",

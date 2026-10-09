@@ -216,6 +216,7 @@ const EXEMPT = new Map([
   ['internal.js POST /api/internal/shots/:runId/note', TOKEN],
   ['internal.js POST /api/internal/shots/:runId/problem', TOKEN],
   ['internal.js POST /api/internal/sessions/:sessionId/visible-changes', TOKEN],
+  ['internal.js POST /api/internal/sessions/:sessionId/diagram', TOKEN],
   ['internal.js POST /api/internal/sessions/:sessionId/visual-evidence-intent', TOKEN],
   ['internal.js POST /api/internal/sessions/:sessionId/push', TOKEN],
   ['internal.js POST /api/internal/sessions/:sessionId/pr', TOKEN],

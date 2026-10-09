@@ -92,6 +92,8 @@ import { ProjectDiscussion } from './project-discussion';
 import { ProjectBand, type ProjectTabKey } from './project-band';
 import { SinceSummaryCard } from './since-summary-card';
 import { PlanPage } from './plan-page';
+import { Diagram, decisionDiagram, readDiagram, type DecisionFacts, type DiagramRecord, type DiagramSource } from '../../../lib/diagram/diagram';
+import { TouchesPicture, readTouches, type Touches } from './touches';
 import { PageBack } from './page-back';
 import { readAskStream } from './ask-stream';
 import { WorkList, type CardRow as WorkCardRow, type TopicRef } from './work-row';
@@ -1702,6 +1704,11 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
   // A run that worked out its screens IS the summary: the picture takes the
   // paragraph's room, and the words are one tap away in Description.
   const shots = !!(row.visuals && row.visuals.screens && row.visuals.screens.length);
+  // #4490: without shots, the change's picture, in order: its author's
+  // diagram (or a group decision's, from its own facts), a legacy capture
+  // pair, then "What it touches". A Mermaid diagram that cannot be drawn
+  // falls back to "What it touches".
+  const picture = usePicture(row, shots);
   // THE HEAD TAKES THE FULL WIDTH WHEN IT ENDS ABOVE THE RAIL. The rail sits
   // at the item's foot on a phone, so on most screens the by-line, title and
   // summary are nowhere near it, and keeping its lane free only wrapped them
@@ -1774,15 +1781,19 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
           has. Same route the Board's rows open. */}
       <h2 className="dev-ws-item-title" ref={titleRef}>{href ? <a href={href}>{title}</a> : title}</h2>
       {shots ? null : summary ? (
-        <p className="dev-ws-item-summary" ref={summaryRef}>{summary}</p>
+        <p className={picture.kind === 'diagram' || picture.kind === 'touches' ? 'dev-ws-item-summary dev-ws-item-summary-short' : 'dev-ws-item-summary'} ref={summaryRef}>{summary}</p>
       ) : (
         <p className="dev-ws-item-summary dev-ws-item-nosummary" ref={summaryRef}>
           {isVote ? 'No plain-language summary was written for this change.' : 'This request has no description.'}
         </p>
       )}
       {shots && row.visuals ? <ShotsPicture v={row.visuals} near={near} wide={wide} />
-        : row.visuals ? <BeforeAfter v={row.visuals} near={near} onFull={onFull} />
-          : <div className="dev-ws-item-spacer" aria-hidden="true" />}
+        : picture.kind === 'diagram' ? (
+          <Diagram d={picture.d} source={picture.source} onOpen={onDescribe} onFail={picture.fail} defer={!near} className="dev-ws-media-diagram" />
+        )
+          : row.visuals ? <BeforeAfter v={row.visuals} near={near} onFull={onFull} />
+            : picture.kind === 'touches' ? <TouchesPicture t={picture.t} nothingVisible={!!row.nothingVisible} onOpen={onDescribe} />
+              : <div className="dev-ws-item-spacer" aria-hidden="true" />}
       <div className="dev-ws-item-caption">
         {facts.length ? (
           <button type="button" className="dev-ws-item-facts" data-ws-facts="" aria-haspopup="dialog" onClick={onDescribe}>
@@ -1798,6 +1809,32 @@ const FeedItem = memo(function FeedItem({ row, index, count, tint, near, voted, 
     </section>
   );
 });
+
+type Picture =
+  | { kind: 'diagram'; d: DiagramRecord; source: DiagramSource; fail: () => void }
+  | { kind: 'touches'; t: Touches }
+  | { kind: 'none' };
+
+/**
+ * #4490: which picture a row shows when it has no shots. The author's
+ * diagram first (or a group decision's, drawn from its facts), then "What it
+ * touches"; a Mermaid diagram that failed to draw drops to the second. The
+ * legacy capture pair sits between the two in NeedsItem itself.
+ */
+function usePicture(row: QueueRow, shots: boolean): Picture {
+  const [failed, setFailed] = useState(false);
+  const authored = useMemo(() => readDiagram(row.diagram), [row.diagram]);
+  const decided = useMemo(
+    () => (authored ? null : decisionDiagram(row.decision as DecisionFacts | null, row.app ? row.app.name : null)),
+    [authored, row.decision, row.app],
+  );
+  const touches = useMemo(() => readTouches(row.touches), [row.touches]);
+  const fail = useCallback(() => setFailed(true), []);
+  if (shots) return { kind: 'none' };
+  const d = authored || decided;
+  if (d && !failed) return { kind: 'diagram', d, source: authored ? 'author' : 'decision', fail };
+  return touches ? { kind: 'touches', t: touches } : { kind: 'none' };
+}
 
 /**
  * The scroll position the end card is keyed under (see `curKeyRef` in
@@ -1815,14 +1852,27 @@ function wantsEnd(): boolean {
   try { return new URLSearchParams(window.location.search).get('shot') === 'needs-end'; } catch { return false; }
 }
 /**
- * `?shot=needs-approve` (#4313): open the feed on its first item that asks
- * for your approval (a project that is just yours), with its vote sheet up,
- * so a declared check can read the sheet's line ("Waiting for your
- * approval."). Read at mount, like `?shot=needs-end`.
+ * The `?shot=` an item is opened on, read at mount like `?shot=needs-end`.
+ * `needs-approve` (#4313): the first item that asks for your approval (a
+ * project that is just yours), with its vote sheet up, so a declared check
+ * can read the sheet's line ("Waiting for your approval."). And (#4490)
+ * `needs-diagram` / `needs-touches`, the first item whose picture is its
+ * author's diagram or "What it touches", for the declared check and the
+ * before & after shots of those pictures. Read at mount.
  */
-function wantsApprove(): boolean {
-  if (typeof window === 'undefined' || typeof window.location === 'undefined') return false;
-  try { return new URLSearchParams(window.location.search).get('shot') === 'needs-approve'; } catch { return false; }
+function shotTarget(): 'approve' | 'diagram' | 'touches' | null {
+  if (typeof window === 'undefined' || typeof window.location === 'undefined') return null;
+  try {
+    const shot = new URLSearchParams(window.location.search).get('shot');
+    return shot === 'needs-approve' ? 'approve' : shot === 'needs-diagram' ? 'diagram' : shot === 'needs-touches' ? 'touches' : null;
+  } catch { return null; }
+}
+/** Whether a row is the one a `?shot=` target opens on. */
+function shotMatches(target: 'approve' | 'diagram' | 'touches', r: QueueRow): boolean {
+  if (target === 'approve') return approves(r);
+  if (r.visuals && r.visuals.screens && r.visuals.screens.length) return false;
+  const drawn = !!readDiagram(r.diagram);
+  return target === 'diagram' ? drawn : !drawn && !!readTouches(r.touches);
 }
 
 /** "3 proposals", "1 proposal": a count with its noun. */
@@ -2190,7 +2240,7 @@ export function NeedsFeed({ rows, total, models, slug, canPost, onDone, doneLabe
   const endScrollRef = useRef<boolean>(endOnOpen);
   // Still owed the `?shot=needs-approve` open (the effect below): true until
   // a row that approves has landed and the scroller has a height.
-  const approveOpenRef = useRef<boolean>(!endOnOpen && wantsApprove());
+  const approveOpenRef = useRef<'approve' | 'diagram' | 'touches' | null>(endOnOpen ? null : shotTarget());
   const moreRef = useRef<HTMLButtonElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLElement>(null);
@@ -2323,16 +2373,19 @@ export function NeedsFeed({ rows, total, models, slug, canPost, onDone, doneLabe
    */
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!approveOpenRef.current || !el || !el.clientHeight) return;
-    const idx = items.findIndex((r) => approves(r));
+    const target = approveOpenRef.current;
+    if (!target || !el || !el.clientHeight) return;
+    const idx = items.findIndex((r) => shotMatches(target, r));
     if (idx < 0) return;
-    approveOpenRef.current = false;
+    approveOpenRef.current = null;
     curKeyRef.current = items[idx].key;
     setAt(idx);
     el.style.scrollBehavior = 'auto';
     el.scrollTop = idx * el.clientHeight;
     el.style.scrollBehavior = '';
     setLeaving(null);
+    // #4490: the picture targets open on the item alone, no sheet over it.
+    if (target !== 'approve') return;
     setSheet('vote');
     setVoteSide('yes');
     setVoteLine('');

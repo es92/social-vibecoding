@@ -2267,6 +2267,9 @@ async function readyStates(pool, { user }) {
   const viewable = new Map();
   const approvals = new Map();
   const out = [];
+  // Cards going live, by their change: a merge of Homeroom itself says
+  // when the platform's next release carries it (below).
+  const goingLive = new Map();
   for (const row of rows) {
     const appId = Number(row.id);
     if (!viewable.has(appId)) viewable.set(appId, await appAccess.checkAppAccess(pool, row, user, 'view').catch(() => false));
@@ -2286,7 +2289,21 @@ async function readyStates(pool, { user }) {
       if (!read) continue;
       Object.assign(state, read);
     }
+    if (state.state === 'going_live' && row.status === 'merged' && row.self_hosted) {
+      goingLive.set(state, Number(row.session_id));
+    }
     out.push(state);
+  }
+  // Merged into the platform's own app and not live yet: it waits for the
+  // platform's next release (services/release-watch.js), and the card says
+  // when, "Merged; goes live in the next release (about 8 minutes)". A child
+  // app's merge goes live in a minute or two, and keeps "going live now".
+  if (goingLive.size) {
+    const releases = await require('./release-watch').releasesFor(pool, [...goingLive.values()]);
+    for (const [state, sessionId] of goingLive) {
+      const release = releases.get(sessionId);
+      if (release) state.release = release;
+    }
   }
   return out;
 }

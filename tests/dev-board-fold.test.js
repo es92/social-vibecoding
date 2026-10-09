@@ -1607,9 +1607,14 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   //
   // 736 + (−4) → 732: both changes land together; 732 leaves 148 slots.
   //
+  // 732 → 733: +1 (#4309 follow-up): a change merged into Homeroom itself
+  // says on its page when the next release carries it ("Merged; goes live in
+  // the next release (about 8 minutes)"), on the ?demo=1 mock 9100035, a
+  // state no other check's route reaches. 733 leaves 147 slots.
+  //
   // A mismatch says what the count is, what it is pinned at, and what to do
   // (tests/lib/check-cap.js) — it used to print only `812 !== 811`.
-  checkCap.assertPinned(DAPP.tests.length, 732);
+  checkCap.assertPinned(DAPP.tests.length, 733);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

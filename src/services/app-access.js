@@ -77,7 +77,7 @@ const NON_SECRET_APP_COLUMNS = [
   'icon_image_id', 'icon_color', 'featured_illustration', 'forked_from', 'admin_usernames',
   'directory_review_status', 'directory_reviewed_at', 'directory_reviewed_sha',
   'main_check_state', 'main_check_sha', 'main_check_at', 'main_check_detail',
-  'main_check_resumed_sha', 'main_check_paused_sha', 'release_stall',
+  'main_check_resumed_sha', 'main_check_paused_sha', 'release_stall', 'release_run',
   // #2253: the per-app database storage cap's state. Operational, not
   // secret: the admin console shows all of it.
   'db_size_bytes', 'db_size_measured_at', 'db_storage_cap_bytes',

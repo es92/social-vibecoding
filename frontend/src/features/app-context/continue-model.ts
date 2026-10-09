@@ -29,6 +29,7 @@
 //     working at once are all listed, since each is something in progress.
 
 import { agentActivity, type AgentActivity } from '../agent-session/activity';
+import { changeRowWords } from '../agent-session/transcript';
 
 export interface ContinueAgentSession {
   id: number;
@@ -37,7 +38,14 @@ export interface ContinueAgentSession {
   lastActivityAt: string | null;
   createdAt?: string | null;
   focusApp: { slug: string | null; name?: string | null } | null;
-  activeChange: { appSlug: string | null; appName?: string | null; status: string | null; title: string | null } | null;
+  activeChange: {
+    appSlug: string | null;
+    appName?: string | null;
+    status: string | null;
+    title: string | null;
+    /** A merge of Homeroom itself not live yet: when its release comes (../../lib/release-eta.ts). */
+    release?: unknown;
+  } | null;
   busy?: boolean;
   doneUnseen?: boolean;
 }
@@ -83,18 +91,18 @@ export function agentSub(app: string | null, detail: string): string {
   return app ? `${app} · ${detail.charAt(0).toLowerCase()}${detail.slice(1)}` : detail;
 }
 
-function agentDetail(session: ContinueAgentSession): string {
+function agentDetail(session: ContinueAgentSession, now: number): string {
   const change = session.activeChange;
   if (!change) return 'Agent session';
-  if (change.status === 'promoted') return 'Waiting for approval';
-  if (change.status === 'merging') return 'Going live';
-  if (change.status === 'merged') return 'Live';
-  return 'In progress';
+  // A merge of Homeroom itself says when the platform's next release
+  // carries it: "Homeroom · goes live in about 8 minutes".
+  return changeRowWords(change, now);
 }
 
 export function continueRows(
   agentSessions: ContinueAgentSession[],
   max = CONTINUE_MAX,
+  now: number = Date.now(),
 ): ContinueList {
   const current = agentSessions
     .filter((session) => session.status === 'open' && (session.title || session.activeChange))
@@ -109,8 +117,8 @@ export function continueRows(
       sessionId: session.id,
       href: `#messages/agent/${session.id}`,
       title: session.title || (session.activeChange && session.activeChange.title) || 'Agent session',
-      detail: agentDetail(session),
-      sub: agentSub(agentApp(session), agentDetail(session)),
+      detail: agentDetail(session, now),
+      sub: agentSub(agentApp(session), agentDetail(session, now)),
       activity: agentActivity(session),
     }));
   return { rows, more: current.length > shown.length };

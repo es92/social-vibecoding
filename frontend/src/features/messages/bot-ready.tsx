@@ -5,6 +5,8 @@ import { IconTile } from '@/components/ui/icon-tile';
 import { ProgressRing } from '@/components/ui/progress-ring';
 
 import { changeHref } from '../../lib/change-href';
+import { releaseSentence } from '../../lib/release-eta';
+import { useReleaseNow } from '../../lib/use-release-now';
 
 import * as api from './api';
 import { afterYesWords, countOf, waitingWords } from './approval-words';
@@ -205,12 +207,22 @@ export function goesLiveFromReady(ready: HomeroomBotReady | undefined): Homeroom
   return { soon: false, at: null, missing, waitingOn: ready.waitingOn, more: ready.more };
 }
 
-/** What the line under a card that is not open says. `goesLive`: what happens next, once it is approved. */
+/**
+ * What the line under a card that is not open says. `goesLive`: what happens
+ * next, once it is approved. `release`: a merge of the platform's own app,
+ * which waits for the platform's next release and says when ("Merged; goes
+ * live in the next release (about 8 minutes)", ../../lib/release-eta.ts),
+ * where a child app's goes live in a minute or two and says so now.
+ */
 export function readyLine(
   state: ReadyCardState, goesLive: HomeroomBotGoesLive | null = null, now: Date = new Date(Date.now()), locale?: string,
+  release: unknown = null,
 ): string | null {
   if (state === 'live') return 'It’s live.';
-  if (state === 'going_live') return 'It’s approved and going live now.';
+  if (state === 'going_live') {
+    const words = release ? releaseSentence(release, now.getTime()) : null;
+    return words ? `${words}.` : 'It’s approved and going live now.';
+  }
   if (state === 'withdrawn') return 'This change was closed without going live.';
   if (state === 'approved') return goesLive ? approvedLine(goesLive, now, locale) : 'You approved it.';
   if (state === 'stale') return 'This change was updated. Try the new version first.';
@@ -291,7 +303,10 @@ export function ReadyCardView({
   const broken = state === 'open' ? brokenLine(meta.ready) : null;
   const what = changeLine(meta);
   const changeUrl = what ? changeLink(meta, actions) : null;
-  const line = readyLine(state, next, now || new Date(Date.now()), locale);
+  // A merge of Homeroom itself counts down to the platform's next release.
+  const release = state === 'going_live' ? fresh?.release || null : null;
+  const tick = useReleaseNow(release);
+  const line = readyLine(state, next, now || new Date(tick), locale, release);
   return (
     <div
       className="mt-1 flex max-w-[480px] flex-col gap-2.5 rounded-2xl bg-[color:var(--messages-surface)] px-3 py-2.5"

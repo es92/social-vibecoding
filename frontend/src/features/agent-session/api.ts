@@ -2,6 +2,8 @@
 // conversation screen reads and writes. Every route is owner-scoped on the
 // server (src/routes/agent-sessions.js); nothing here decides access.
 
+import type { ReleaseOutlook } from '../../lib/release-eta';
+
 /** A change's failing checks, as services/agent-sessions.js reads them (#3755). */
 export interface FailingChecks {
   /** When the failing verdict was stored: one run, one offer. */
@@ -31,6 +33,12 @@ export interface AgentChange {
   failingChecks?: FailingChecks | null;
   /** The change is to the platform's own (self-hosted) app. */
   appSelfHosted?: boolean;
+  /**
+   * Merged into the platform's own app and not live yet (it reads
+   * `merging`): when the platform's next release carries it, which
+   * ../../lib/release-eta.ts words. Absent on anything else.
+   */
+  release?: ReleaseOutlook | null;
   /** Its before/after shots, while they are being taken. */
   previewCapture?: { state: string; startedAt: string | null } | null;
 }

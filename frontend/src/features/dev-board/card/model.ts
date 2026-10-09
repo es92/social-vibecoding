@@ -558,6 +558,21 @@ export interface DevWorkshopView {
      */
     descriptionHtml?: string;
     /**
+     * #4490: the picture a change shows when it has no before & after shots,
+     * in this order: its author's diagram (services/diagram.js, drawn by
+     * lib/diagram), a group decision's own facts drawn the same way, then
+     * "What it touches" (services/proposal-touches.js). Each is untyped
+     * here and read defensively where it is drawn.
+     */
+    diagram?: unknown;
+    /** Who supplied `diagram`: its author. */
+    diagramSource?: string | null;
+    /** A group decision's facts its diagram is drawn from (lib/diagram/decision.ts). */
+    decision?: unknown;
+    touches?: unknown;
+    /** The author declared that nothing on screen changes (visible changes impact "none"). */
+    nothingVisible?: boolean;
+    /**
      * The item's picture: the first before/after capture pair the checks
      * shot, one still per side. Null when there is none, and the feed then
      * leaves the space under the summary empty rather than faking one.

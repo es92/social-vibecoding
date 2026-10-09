@@ -33,6 +33,7 @@ import { changeHref as changeLink } from '../../lib/change-href';
 import { renderSpecHtml, useSpecFrames, type SpecHtmlDoc } from '../../lib/spec-html';
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibilityHiddenClass } from '../../lib/visibility-store';
+import { useReleaseNow } from '../../lib/use-release-now';
 import type { AiBudgetState } from '../header/ai-budget';
 import { aiBudgetStore } from '../header/ai-budget-store.js';
 import { Attached } from '../dev-chat/transcript';
@@ -68,6 +69,7 @@ import {
   checksSummary,
   skippedChecksReason,
   cardView,
+  changeReleaseLine,
   changeStatusLabel,
   durationLabel,
   latestReplies,
@@ -336,9 +338,13 @@ function SessionBar({ session, about, embedded, action }: {
   // (#3016). The Messages pane's title is a line of its own above it rather
   // than a sibling the pills wrap around.
   const focusTitle = 'The app this conversation is about when a request does not name one. The agent moves it when you ask.';
-  const changeText = active
+  // A merge of Homeroom itself waiting for the platform's next release: the
+  // pill keeps "Going live" and its title says when.
+  const releaseNow = useReleaseNow(active?.release);
+  const releaseLine = building ? null : changeReleaseLine(active, releaseNow);
+  const changeText = releaseLine || (active
     ? changeStatusLabel(active.status, building)
-    : 'No change yet';
+    : 'No change yet');
   return (
     <div className="border-b border-zinc-200 px-4 py-2 dark:border-zinc-800" data-agent-session-bar>
       {embedded ? (
@@ -2114,6 +2120,10 @@ export function ChangesDrawer({ session }: { session: AgentSession }) {
   const active = session.activeChange;
   const others = (session.changes || []).filter((change) => !active || change.id !== active.id);
   const closed = new Set(['merged', 'archived']);
+  // A merge of Homeroom itself waits for the platform's next release, and
+  // the drawer says when, counting down while it is open.
+  const now = useReleaseNow(active?.release, ...others.map((change) => change.release));
+  const activeRelease = changeReleaseLine(active, now);
   return (
     <div
       className="absolute inset-0 z-20 flex flex-col justify-end bg-zinc-950/30 sm:items-end sm:justify-stretch"
@@ -2140,8 +2150,9 @@ export function ChangesDrawer({ session }: { session: AgentSession }) {
                 <p className="font-semibold text-zinc-900 dark:text-zinc-100">{active.title || changeRef(active)}</p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">{active.appName || active.appSlug} · {changeRef(active)}{active.prNumber ? ` (change ${active.id})` : ''}</p>
               </div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(active.status)}`}>{changeStatusLabel(active.status)}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(active.status)}`} title={activeRelease || undefined}>{changeStatusLabel(active.status)}</span>
             </div>
+            {activeRelease ? <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300" data-agent-session-release>{activeRelease}</p> : null}
             {active.checkState ? <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Checks: {active.checkState}</p> : null}
             {active.checkState === 'skipped'
               ? <p className={CHECK_REASON} data-agent-session-checks-reason>{skippedChecksReason(active.checkSkipReason)}</p> : null}
@@ -2189,7 +2200,7 @@ export function ChangesDrawer({ session }: { session: AgentSession }) {
                     <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{change.title || changeRef(change)}</p>
                     <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{change.appName || change.appSlug} · {changeRef(change)}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(change.status)}`}>{changeStatusLabel(change.status)}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone(change.status)}`} title={changeReleaseLine(change, now) || undefined}>{changeStatusLabel(change.status)}</span>
                   {!closed.has(change.status || '') ? (
                     <button type="button" className="shrink-0 text-sm font-semibold text-violet-700 hover:underline dark:text-violet-300" onClick={() => void switchActiveChange(change.id)}>
                       Switch to

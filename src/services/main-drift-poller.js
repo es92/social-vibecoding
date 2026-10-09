@@ -325,7 +325,7 @@ async function poll(config) {
   // Snapshot the candidate set once. Apps whose status changes during
   // the loop are filtered by the per-row claim above, not here.
   const { rows } = await pool.query(
-    `SELECT id, slug, repo_url, main_sha, self_hosted, release_stall, main_check_sha, main_check_state
+    `SELECT id, slug, repo_url, main_sha, self_hosted, release_stall, release_run, main_check_sha, main_check_state
        FROM apps
       WHERE repo_url IS NOT NULL AND status = 'running'`
   );
