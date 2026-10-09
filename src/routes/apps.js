@@ -3782,7 +3782,22 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
         return res.status(404).json({ error: 'App not found' });
       }
       const appId = appRows[0].id;
+      // #4600: whether this pin JOINED the app's community. A pin joins
+      // through the app_favorites trigger (schema.sql,
+      // sync_favorite_community_member), so Home's featured list's ⊕ is a
+      // join as much as /membership is, and is counted the same way: on the
+      // spot (scoreOnJoin), not on the rule's next pass, and said so in the
+      // answer (`joined`) so the client can tell its Challenges block and
+      // Getting started card to read again.
+      let joined = false;
       if (favorited) {
+        const { rows: joinRows } = await pool.query(
+          `SELECT (a.community_id IS NOT NULL AND NOT EXISTS (
+                    SELECT 1 FROM community_members m
+                     WHERE m.community_id = a.community_id AND m.user_id = $2)) AS joins
+             FROM apps a WHERE a.id = $1`,
+          [appId, req.user.id]
+        );
         // DO UPDATE (not DO NOTHING) so the same statement also clears a
         // member's hidden=TRUE opt-out row — "Add to Your apps" un-hides.
         await pool.query(
@@ -3790,6 +3805,9 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
            ON CONFLICT (app_id, user_id) DO UPDATE SET hidden = FALSE`,
           [appId, req.user.id]
         );
+        joined = joinRows[0]?.joins === true;
+        // Never throws, so the pin answers the same either way.
+        if (joined) await challengeScorer.scoreOnJoin(pool, config);
       } else if (await appAccess.isCollaborator(pool, appId, req.user.id)) {
         // #618: membership (creator or accepted invite) pins the app into
         // "Your apps", so a member's "remove" must persist as an explicit
@@ -3819,7 +3837,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
           metadata: { source: 'user_favorite_toggle' },
         });
       }
-      res.json({ ok: true, is_favorited: favorited });
+      res.json({ ok: true, is_favorited: favorited, joined });
     } catch (err) {
       log.error('apps', 'Failed to toggle favorite', { message: err.message });
       res.status(500).json({ error: 'Internal server error' });
@@ -4237,14 +4255,14 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       }
 
       // "Try an app" counts the heartbeat that takes this person's time in
-      // an app they did not make across TRY_APPS_MIN_SECONDS, not the rule's
-      // next pass (#3570; challengeScorer.scoreOnAppTime). Every other
+      // an app across TRY_APPS_MIN_SECONDS, not the rule's next pass (#3570;
+      // challengeScorer.scoreOnAppTime). An app they made counts only for the
+      // First challenge (#4602); the pass's own query decides that. Every other
       // heartbeat is answered without a scoring pass, and nearly all without
       // even a read: today's total, returned above, says whether this one can
       // be the crossing at all. Never throws.
       await challengeScorer.scoreOnAppTime(pool, config, {
         appId: appRows[0].id,
-        ownerId: appRows[0].created_by,
         userId: req.user.id,
         seconds,
         daySeconds: activityRows[0]?.seconds_spent,

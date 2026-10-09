@@ -122,9 +122,13 @@ import { GroupedList, ListRow } from '@/components/ui/grouped-list';
 import { CheckIcon, ChevronRightIcon, LockIcon, LockOpenIcon, PlayIcon, XIcon } from '@/components/ui/icons';
 
 import { useHiddenClass } from '../../lib/legacy-dom';
+import { FRESH } from '../../lib/live-reads';
 import { useVisibility } from '../../lib/visibility-store';
 import { TOUR_DONE_EVENT } from './tour/tour-done';
 import { requestTour } from './tour/tour-request';
+
+// Home.MEMBERSHIP_EVENT (./home.js): a join or leave has landed.
+const MEMBERSHIP_EVENT = 'sv:membership-changed';
 
 /** What a step's button does (onboarding.js stepAction). */
 export type StepAction = 'tour' | 'join' | 'try' | 'vote' | 'suggest' | 'other';
@@ -760,12 +764,18 @@ export function GettingStarted() {
   const homeVisible = useVisibility('home-screen', true);
   const wasComplete = useRef<boolean | null>(null);
 
-  const load = useCallback(async () => {
+  // `fresh`: the caller knows the server's answer just changed (a join it
+  // has counted), so the read asks the service worker to wait for the
+  // network rather than hand back its saved copy (FRESH, lib/live-reads.ts).
+  const load = useCallback(async (opts?: { fresh?: boolean }) => {
     const mode = shot();
     if (isShot(mode)) { setModel(SHOT_MODELS[mode]); return; }
     if (mode === 'skip' || !viewerWantsCard()) { setModel(null); return; }
     try {
-      const res = await fetch('/api/me/getting-started', { credentials: 'same-origin' });
+      const res = await fetch('/api/me/getting-started', {
+        credentials: 'same-origin',
+        ...(opts?.fresh ? FRESH : null),
+      });
       if (!res.ok) return;
       const body = (await res.json()) as GettingStartedModel;
       const next = body && body.show && Array.isArray(body.steps) ? body : null;
@@ -797,11 +807,17 @@ export function GettingStarted() {
     document.addEventListener('sv:communities-joined', onChange);
     // The tour's "done" has reached the account: its row ticks.
     document.addEventListener(TOUR_DONE_EVENT, onChange);
+    // #4600: a join from anywhere in the app (Discover's Join, Home's
+    // featured list's ⊕) has been counted by the server before it answered
+    // (Home.setMembership / toggleAdded), so "Join a community" ticks now.
+    const onMembership = () => { void load({ fresh: true }); };
+    document.addEventListener(MEMBERSHIP_EVENT, onMembership);
     return () => {
       document.removeEventListener('sv:authed', onChange);
       document.removeEventListener('sv:session', onChange);
       document.removeEventListener('sv:communities-joined', onChange);
       document.removeEventListener(TOUR_DONE_EVENT, onChange);
+      document.removeEventListener(MEMBERSHIP_EVENT, onMembership);
     };
   }, [load]);
   const wasVisible = useRef(homeVisible);

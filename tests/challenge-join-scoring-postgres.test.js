@@ -190,6 +190,20 @@ test('community challenges count a join at once, against the full PostgreSQL sch
       await call('POST', `/api/apps/${arena.slug}/membership`, { joined: true });
       assert.equal((await credits(as.id)).length, 1, 'never paid twice');
 
+      // Home's featured list: its ⊕ is a pin, which joins by trigger
+      // (#4600). The route counts the join before it answers, and says the
+      // pin was the join; a second pin joins nothing and says so.
+      as = await user();
+      got = await call('POST', `/api/apps/${arena.slug}/favorite`, { favorited: true });
+      assert.equal(got.status, 200);
+      assert.equal(got.body.joined, true, 'the pin was the join');
+      assert.equal((await credits(as.id)).length, 1, 'featured list: credited before the response');
+      assert.equal(await done(as.id), true);
+      await call('POST', `/api/apps/${arena.slug}/favorite`, { favorited: false });
+      got = await call('POST', `/api/apps/${arena.slug}/favorite`, { favorited: true });
+      assert.equal(got.body.joined, false, 'an unpin is not a leave, so pinning again joins nothing');
+      assert.equal((await credits(as.id)).length, 1, 'never paid twice');
+
       // The join screen, Homeroom ticked beside an open community.
       as = await user();
       got = await call('POST', '/api/me/communities', { join: [homeroom.slug, arena.slug] });

@@ -191,11 +191,42 @@ test('the First challenges count on the spot, against the full PostgreSQL schema
     await beat(second.slug, 12);
     assert.equal((await credits(as.id, TRY)).length, 1, 'never paid twice');
 
-    // An app they made never counts, and never runs a pass.
+    // An app they made crosses too since #4602 (it counts for the First
+    // challenge), and is still never a second credit.
     const own = await app({ createdBy: as.id });
-    const before = await lastScored(tryRule);
     await beat(own.slug, 30);
-    assert.equal((await lastScored(tryRule)).getTime(), before.getTime());
+    assert.equal((await credits(as.id, TRY)).length, 1, 'never paid twice, their own app or not');
+  });
+
+  await t.test('#4602: time in an app you made pays the First challenge, and nothing else', async () => {
+    // A repeatable "Try 1 app" beside the First challenges, on the same
+    // event: it keeps leaving your own apps out, so it cannot be farmed.
+    const { rows: [weeklyTemplate] } = await pool.query(
+      `INSERT INTO challenge_templates (category, goal, task, reward, metric_type, metric_target)
+       VALUES ('EXPLORE', 'Try one more app', 'Open an app', '100 pts', 'apps_tried', 1) RETURNING id`);
+    const { rows: [weekly] } = await pool.query(
+      `INSERT INTO challenges (season_event_id, challenge_template_id, display_order)
+       VALUES ($1, $2, 1) RETURNING id`, [event.id, weeklyTemplate.id]);
+    const { rows: [weeklyRule] } = await pool.query(
+      `INSERT INTO challenge_scoring_rules (name, measure, challenge_template_id)
+       VALUES ('Try one more app', 'TRY_APPS', $1) RETURNING id`, [weeklyTemplate.id]);
+    try {
+      as = await user();
+      const own = await app({ createdBy: as.id });
+      assert.equal((await beat(own.slug, 12)).status, 200);
+      const [credit] = await credits(as.id, TRY);
+      assert.ok(credit, 'the crossing in their own app paid "Try an app" before the heartbeat answered');
+      assert.equal(credit.metadata.source_key, `app:${own.id}`);
+      assert.equal(await done(as.id, TRY), true);
+      assert.deepEqual(await credits(as.id, Number(weekly.id)), [], 'the repeatable challenge leaves it out');
+      await scorer.score(pool, { only: new Set([Number(weeklyRule.id)]) });
+      assert.deepEqual(await credits(as.id, Number(weekly.id)), [], 'and the schedule agrees');
+      await beat(arena.slug, 12);
+      await scorer.score(pool, { only: new Set([Number(weeklyRule.id)]) });
+      assert.equal((await credits(as.id, Number(weekly.id))).length, 1, 'somebody else\'s app still counts there');
+    } finally {
+      await pool.query('UPDATE challenge_scoring_rules SET enabled = FALSE WHERE id = $1', [weeklyRule.id]);
+    }
   });
 
   await t.test('time added up over days crosses too', async () => {
@@ -236,7 +267,7 @@ test('the First challenges count on the spot, against the full PostgreSQL schema
     assert.equal((await lastScored(tryRule)).getTime(), stamped.getTime(), 'later batches do not score again');
     const own = await app({ createdBy: as.id });
     await send(batch([{ date: today, seconds: 12 }]), own.slug);
-    assert.equal((await lastScored(tryRule)).getTime(), stamped.getTime(), 'using your own app does not run scoring');
+    assert.equal((await credits(as.id, TRY)).length, 1, 'their own app crosses too, and is never a second credit');
   });
 
   await t.test('while the scorer\'s lock is held the crossing waits for the schedule, and is paid once', async () => {

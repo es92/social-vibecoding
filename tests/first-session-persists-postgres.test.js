@@ -90,6 +90,10 @@ test('the first session\'s question is owed until it is answered, against the fu
     const { user } = await (await fetch(`${base}/api/auth/me`, { headers: { Cookie: `session=${who.token}` } })).json();
     return { access: user.hasPlatformAccess, owed: user.needsCommunitiesChoice, make: user.storyFirstSession };
   };
+  const cardShows = async (who) => {
+    const { user } = await (await fetch(`${base}/api/auth/me`, { headers: { Cookie: `session=${who.token}` } })).json();
+    return user.showGettingStarted;
+  };
   const row = async (who) => (await pool.query(
     `SELECT needs_communities_choice AS owed, communities_onboarded_at,
             getting_started_seen->>'first_session' AS first_session,
@@ -124,8 +128,12 @@ test('the first session\'s question is owed until it is answered, against the fu
     await firstSession.answerJoinScreenByMaking(pool, maya.id);
     assert.deepEqual(await row(maya),
       { owed: false, communities_onboarded_at: null, first_session: 'sign_in', join_answer: 'sign_in', answer: 'made' },
-      'Journey still reads how it reached them; the answer sits beside it; no Getting started card');
+      'Journey still reads how it reached them; the answer sits beside it');
     assert.deepEqual(await boot(maya), { access: true, owed: false, make: false });
+    // #4601: a new account gets the Getting started card (and the gate it
+    // is) however it came in. The join screen was never answered, and it
+    // does not need to be.
+    assert.equal(await cardShows(maya), true, 'the card shows for a new account that made a project');
   });
 
   await t.test('"Look around first" ends it too, once', async () => {
@@ -154,6 +162,7 @@ test('the first session\'s question is owed until it is answered, against the fu
       `UPDATE users SET needs_communities_choice = FALSE,
               getting_started_seen = jsonb_build_object('join_answer', 'invite') WHERE id = $1`, [ivy.id]);
     assert.deepEqual(await boot(ivy), { access: true, owed: false, make: false });
+    assert.equal(await cardShows(ivy), true, '#4601: an invitee gets the card too');
     // Anything else that got them in first: a group they are a member of,
     // or a project made some other way. Asked the join screen, which lists
     // what they are in, rather than what to make.

@@ -53,9 +53,9 @@ test('only a new account is asked: a flag set at sign-up, false for everyone bef
   assert.match(AUTH, /wallet_link_token, wallet_link_expires_at,\s*\n\s*needs_communities_choice, getting_started_gate\)\s*\n\s*VALUES \(\$1, \$2, \$3, \$4, \$5, TRUE, TRUE\)/);
   assert.equal((AUTH.match(/INSERT INTO users/g) || []).length, 2, 'no third sign-up path that forgets it');
   // /api/auth/me carries both flags, failing toward no step and no card. The
-  // card is for a new account only.
+  // card is for a new account only, however it signed up (#4601).
   assert.match(AUTH, /let needsCommunitiesChoice = false;\s*\n\s*let showGettingStarted = false;/);
-  assert.match(AUTH, /\(u\.communities_onboarded_at IS NOT NULL\s*\n\s*AND u\.getting_started_closed_at IS NULL\s*\n\s*AND u\.getting_started_gate\) AS show_getting_started/);
+  assert.match(AUTH, /\(u\.getting_started_closed_at IS NULL\s*\n\s*AND u\.getting_started_gate\) AS show_getting_started/);
   assert.match(AUTH, /\n\s*needsCommunitiesChoice,\n/);
   assert.match(AUTH, /\n\s*showGettingStarted,\n/);
   // And whether the welcome tour is done on this account (#3237), next to
@@ -480,10 +480,10 @@ test('the card offers the tour as its first row, with a Start button until it is
   // Server: the first step, ticked from the account's tour_done_at.
   const svc = read('src/services/onboarding.js');
   const fn = svc.slice(svc.indexOf('async function gettingStarted('), svc.indexOf('/**\n * An admin\'s "Reset first run"'));
-  // Only for a new account (2026-10-01) that has answered the join screen;
-  // the rule is spelled once, for the card and for the Vote step's visit.
-  assert.match(svc, /SELECT communities_onboarded_at, getting_started_closed_at, getting_started_gate,\s*\n\s*tour_done_at/);
-  assert.match(svc, /return !!\(u && u\.getting_started_gate && u\.communities_onboarded_at && !u\.getting_started_closed_at\);/);
+  // Only for a new account (2026-10-01), however it signed up (#4601); the
+  // rule is spelled once, for the card and for the Vote step's visit.
+  assert.match(svc, /SELECT getting_started_closed_at, getting_started_gate,\s*\n\s*tour_done_at/);
+  assert.match(svc, /return !!\(u && u\.getting_started_gate && !u\.getting_started_closed_at\);/);
   assert.match(fn, /const \{ rows: userRows \} = await pool\.query\(CARD_SQL, \[userId\]\);[\s\S]{0,80}const show = cardShows\(u\);/);
   assert.match(fn, /const steps = \[\{[\s\S]*?id: 'tour',\s*kind: 'tour',\s*action: 'tour',\s*title: TOUR_STEP\.title,\s*detail: TOUR_STEP\.detail,\s*done: tourDone,\s*href: null,/);
   assert.match(svc, /title: 'Take the 1-minute tour',\s*\n\s*detail: 'See how Homeroom works\.',/);

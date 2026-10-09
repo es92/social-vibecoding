@@ -380,10 +380,16 @@ test('the Getting started buttons: default app, where Vote goes, and the Worksho
       await ask(plantPal, plant.id);
       await scorer.scoreOnFeedback(pool, config);
       assert.deepEqual(await creditsOf(plant.id, VOTE), [], 'voting on the bot\'s build of their own app pays nothing');
-      assert.deepEqual(await creditsOf(plant.id, SUGGEST), [], 'nor does asking for a change to it');
+      // #4603: asking for a change to their own "Just you" project DOES count
+      // for the First challenge's "Send feedback", which is paid once; it
+      // never counts for a repeatable or weekly feedback challenge.
+      assert.equal((await creditsOf(plant.id, SUGGEST)).length, 1, 'asking for a change to it is the First challenge\'s feedback');
       assert.deepEqual(await candidatesOf('VOTE_CAST', plant.id), [], 'and the schedule agrees');
-      assert.deepEqual(await candidatesOf('FEEDBACK_SENT', plant.id), []);
+      assert.deepEqual(await candidatesOf('FEEDBACK_SENT', plant.id), [], 'not on any other challenge');
       assert.deepEqual(await candidatesOf('USEFUL_FEEDBACK', plant.id), [], 'nor does the weekly feedback challenge');
+      const onFirst = (await scorer.loadCandidates(pool, 'FEEDBACK_SENT', window(), { ownApps: true }))
+        .filter((c) => Number(c.userId) === Number(plant.id));
+      assert.deepEqual(onFirst.map((c) => c.description), ['Sent feedback on Plant Pal'], 'on a First challenge it is a candidate');
       assert.equal((await card()).needs_join, true, 'still locked');
     } finally {
       viewer = { id: newbie.id, username: newbie.username, isAdmin: false };
@@ -427,7 +433,8 @@ test('the Getting started buttons: default app, where Vote goes, and the Worksho
       assert.deepEqual(rows(c).slice(2), [
         ['try', 'Spend 10 seconds in City garden.', 'Try'],
         ['vote', 'Nothing is waiting for approval yet. See what people are building.', 'Look'],
-        ['suggest', 'Tell City garden’s builders what would make it better.', 'Suggest'],
+        // Already done (#4603): their request on Plant Pal counted.
+        ['suggest', 'Tell a community what would make it better.', null],
       ]);
       // So the Look is the step, and the waiting build does not refuse it.
       const res = await call('POST', '/api/me/getting-started/workshop-visit');

@@ -68,14 +68,15 @@
  * visit is the credit (markWorkshopVisit below; VOTE_CAST counts it).
  *
  * Who sees it: an account made since the list shipped
- * (`users.getting_started_gate`) that has come through the join screen, until
- * it closes the card, which it can do once the list is done. The same
+ * (`users.getting_started_gate`), however it signed up (#4601: the join
+ * screen, "What do you want to make?" or an invite link), until it closes
+ * the card, which it can do once the list is done. The same
  * accounts, and only they, find the rest of the season locked until then;
  * everyone who was already here sees the whole season and no card. An
- * account that signs up from an invite link is a new account like any other:
- * the email sign-up sets both flags, the invite joins it to its community,
- * and the join screen still asks, with that community already ticked, so it
- * gets the card too.
+ * account that signs up from an invite link, or is asked "What do you want to
+ * make?" in place of the join screen, is a new account like any other: the
+ * sign-up sets the flag, and the flag alone decides (#4601), so it gets the
+ * card and the gate too.
  *
  * ── The tour ───────────────────────────────────────────────────────────
  *
@@ -311,8 +312,12 @@ async function answerJoin(pool, user, body, { showSelfHosted = false, acceptInvi
  *
  *   * Homeroom, the platform's own project: it has no app to open, so there
  *     is nothing to try in it, and every account is in it by default;
- *   * a project they made themselves: trying your own app is not what the
- *     step asks, and TRY_APPS does not count one;
+ *   * a project they made themselves: the Vote step is about somebody
+ *     else's change and VOTE_CAST does not count a vote in your own "Just
+ *     you" project, so the app the three steps share is somebody else's
+ *     where there is one. (Time in, and feedback on, an app they made does
+ *     count for the First challenges' Try and Suggest since #4602 and
+ *     #4603, so a newcomer who opens their own app first is not wasted.);
  *   * anything they could not open: an app that is not running, one
  *     moderation has suspended, a view-private one they are not a member of.
  *
@@ -468,15 +473,16 @@ function noCard() {
 }
 
 // Whether the card is showing for this account: a new account
-// (`getting_started_gate`) that has answered the join screen and not closed
-// the card. The one rule GET /api/auth/me's `showGettingStarted` spells too.
+// (`getting_started_gate`), however it signed up (#4601: the join screen,
+// "What do you want to make?" or an invite link), that has not closed the
+// card. The one rule GET /api/auth/me's `showGettingStarted` spells too.
 const CARD_SQL = `
-  SELECT communities_onboarded_at, getting_started_closed_at, getting_started_gate,
+  SELECT getting_started_closed_at, getting_started_gate,
          tour_done_at
     FROM users WHERE id = $1`;
 
 function cardShows(u) {
-  return !!(u && u.getting_started_gate && u.communities_onboarded_at && !u.getting_started_closed_at);
+  return !!(u && u.getting_started_gate && !u.getting_started_closed_at);
 }
 
 /**
@@ -484,8 +490,7 @@ function cardShows(u) {
  * needs_join, app, vote, try_seconds }`.
  *
  * `show` is false for an account the card is not for (one made before the
- * list shipped, or one that has not answered the join screen yet) and once it
- * is closed; the client draws nothing then, and nothing else is read.
+ * list shipped) and once it is closed; the client draws nothing then, and nothing else is read.
  *
  * `steps` is the tour, then the season's First challenges in the admin's
  * order, each `{ id, kind, action, title, detail, done, href, cta?, reward,
@@ -650,8 +655,8 @@ async function markWorkshopVisit(pool, userId, { showSelfHosted = false, isAdmin
  *
  * It also puts the account on the Getting started list as a NEW account
  * (`getting_started_gate`, and the gate closed again: `_unlocked_at`), so the
- * card, and the season it gates, follow the join screen whatever the account
- * was made before. That is how an admin tries the first run on an existing
+ * card, and the season it gates, come back whatever the account was made
+ * before. That is how an admin tries the first run on an existing
  * account. Credits it already earned stay: a First challenge it has done is
  * still ticked.
  */

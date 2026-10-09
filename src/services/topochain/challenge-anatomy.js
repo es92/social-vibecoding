@@ -33,7 +33,8 @@ const READS = {
     key: 'app:',
     keyLabel: 'app:<app id>',
     text: () => 'One row per person and app: apps they opened inside the window and spent at least '
-      + `${TRY_APPS_MIN_SECONDS} seconds in, added up across days. Apps they made themselves are left out.`,
+      + `${TRY_APPS_MIN_SECONDS} seconds in, added up across days. Apps they made themselves are left out, except on a First `
+      + 'challenge (the one-time Getting started list), where they count.',
   },
   USE_APPS_MINUTES: {
     tables: ['app_activity', 'apps'],
@@ -63,7 +64,8 @@ const READS = {
     keyLabel: 'feedback:<report id>',
     text: () => 'Reports sent inside the window that reached GitHub as an issue. One whose issue call '
       + 'failed helped nobody, and is left out. So is a report on a project they made, or on a "Just you" '
-      + 'project (the audience rule the Workshop labels them by): there is nobody else to tell.',
+      + 'project (the audience rule the Workshop labels them by): there is nobody else to tell. '
+      + 'On a First challenge (the one-time Getting started list) they count.',
   },
   CONNECT_ACCOUNTS: {
     tables: ['user_social_identities'],
@@ -122,7 +124,8 @@ const READS = {
     keyLabel: 'feedback:<report id>',
     text: () => 'The same reports as "Sent useful feedback": sent inside the window, reached GitHub '
       + 'as an issue, and not about a project they made or a "Just you" one. Nothing is graded; the first '
-      + 'one that gets past the junk filter is the credit.',
+      + 'one that gets past the junk filter is the credit. On a First challenge (the one-time Getting '
+      + 'started list) a report on their own project counts too.',
   },
 };
 
@@ -132,12 +135,13 @@ const READS = {
 // Keyed by the scorer's own door names; a test holds the two together.
 const ON_THE_SPOT_TEXT = {
   join: ' A join also runs it on the spot, so the interval only paces memberships that arrive without '
-    + 'one: a Home pin, or a queued invite whose person is let in.',
+    + 'one: a queued invite whose person is let in, or the dapp.json reconcile. A Home pin that joins '
+      + 'runs it too.',
   vote: ' Casting a vote, or the Getting started card\'s look at the Workshop, also runs it on the '
     + 'spot, so the interval only paces what that pass missed.',
   feedback: ' Sending a report also runs it on the spot, so the interval only paces what that pass '
     + 'missed.',
-  appTime: ` Using an app also runs it on the spot, the moment somebody's time in an app they did not make `
+  appTime: ` Using an app also runs it on the spot, the moment somebody's time in an app `
     + `first reaches ${TRY_APPS_MIN_SECONDS} seconds, so the interval only paces time that crosses the `
     + 'line another way: added up over days, or partly from before the window.',
 };

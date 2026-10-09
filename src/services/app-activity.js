@@ -147,7 +147,7 @@ async function recordActivityBatch(pool, { slug, user, request }) {
       return { duplicate: true };
     }
 
-    const scoring = { appId: app.id, ownerId: app.created_by, userId: user.id, seconds: 0, daySeconds: 0 };
+    const scoring = { appId: app.id, userId: user.id, seconds: 0, daySeconds: 0 };
     for (const entry of request.entries) {
       const activity = await client.query(
         `INSERT INTO app_activity (app_id, user_id, seconds_spent, date)

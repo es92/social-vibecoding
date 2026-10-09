@@ -132,7 +132,7 @@ const MEASURES = {
     label: 'Tried different apps',
     phrase: 'opens {target} different apps',
     phraseOne: 'opens an app they did not make',
-    summary: `Opened this many different apps and spent at least ${TRY_APPS_MIN_SECONDS} seconds in each. Apps they made themselves do not count.`,
+    summary: `Opened this many different apps and spent at least ${TRY_APPS_MIN_SECONDS} seconds in each. Apps they made themselves do not count, except on a First challenge, which is paid once.`,
     unit: 'app',
     targetUnit: 'apps',
     counted: true,
@@ -177,7 +177,7 @@ const MEASURES = {
   USEFUL_FEEDBACK: {
     label: 'Sent useful feedback',
     phrase: 'sends a report worth acting on',
-    summary: 'Filed a report through the feedback dialog inside the window, about the platform or somebody else\'s project. A report on a project they made, or one only they can see, does not count. Each one is graded on how easy it is to act on.',
+    summary: 'Filed a report through the feedback dialog inside the window, about the platform or somebody else\'s project. A report on a project they made, or one only they can see, does not count, except on a First challenge, which is paid once. Each one is graded on how easy it is to act on.',
     unit: 'report',
     targetUnit: 'reports',
     counted: true,
@@ -265,9 +265,16 @@ const MEASURES = {
   // (first-session test, 2026-10-03). The bot is the author of the proposal
   // it writes for a request, so "not your own proposal" let the requester's
   // vote on their own app's first version through, and the in-app "Ask for
-  // a change" on that app paid both feedback measures. Your own projects
-  // count for none of the First challenges: not Join, not Try, not Vote and
-  // not Suggest.
+  // a change" on that app paid both feedback measures.
+  //
+  // THE ONE EXCEPTION (evan, #4602 and #4603, 9 Oct 2026): on the First
+  // challenges, which are paid once in a life, time in an app you made
+  // counts for "Try an app" and a report on your own project counts for
+  // "Send feedback". A newcomer's first app is usually the one they just
+  // made, and the list is there to show them how each thing works. Every
+  // repeatable and weekly challenge keeps leaving your own projects out, so
+  // they cannot be farmed (challenge-scorer.js RULE_CHALLENGES_SQL's
+  // `first_challenge`). Join and Vote are unchanged.
   //
   // OR A LOOK AT THE WORKSHOP WHEN NOTHING WAS UP FOR A VOTE (evan,
   // 2026-10-01): a newcomer whose communities have nothing waiting cannot
@@ -295,7 +302,7 @@ const MEASURES = {
   FEEDBACK_SENT: {
     label: 'Sent feedback',
     phrase: 'sends a report',
-    summary: 'Sent a report through the feedback dialog inside the window, and it reached GitHub. A report too short to act on, a copy of one they already sent, or a report on a project they made or one only they can see does not count. One is enough, and it is not graded.',
+    summary: 'Sent a report through the feedback dialog inside the window, and it reached GitHub. A report too short to act on, a copy of one they already sent, or a report on a project they made or one only they can see does not count, except on a First challenge, which is paid once. One is enough, and it is not graded.',
     unit: 'report',
     targetUnit: null,
     counted: false,

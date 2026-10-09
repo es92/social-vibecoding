@@ -176,9 +176,10 @@ test('event-scoped reads resolve onboarding across the season and reuse prior te
   assert.match(query.sql, /se\.season_id = \(SELECT season_id FROM season_events WHERE id = \$2\)/);
   assert.match(query.sql, /credited\.challenge_template_id = c\.challenge_template_id/);
   assert.match(query.sql, /ua\.user_id = \$1/);
-  // The viewer's gate rides the same read: the flag needs the join screen
-  // answered too, since the card that IS the list only shows after it.
-  assert.match(query.sql, /\(u\.getting_started_gate AND u\.communities_onboarded_at IS NOT NULL\) AS gate/);
+  // The viewer's gate rides the same read: the flag alone decides, however
+  // the account signed up (#4601), as it does for the card.
+  assert.match(query.sql, /SELECT u\.getting_started_gate AS gate,/);
+  assert.doesNotMatch(query.sql, /communities_onboarded_at/);
   assert.match(query.sql, /\(u\.tour_done_at IS NOT NULL\) AS tour_done/);
   assert.match(query.sql, /\(u\.getting_started_unlocked_at IS NOT NULL\) AS unlocked/);
   assert.match(query.sql, /FROM users u WHERE u\.id = \$1\s*\) viewer ON TRUE/);

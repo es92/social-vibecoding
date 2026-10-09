@@ -192,8 +192,8 @@ test('a cohort by admit date: one row per person, the furthest step, and where e
     // The onboard column: the tour plus the season's First challenges, x of n.
     assert.deepEqual(by.ana.onboard, { shown: true, done: 2, total: 3, complete: false },
       'the tour and one of two First challenges');
-    assert.deepEqual(by.dee.onboard, { shown: false, done: null, total: null, complete: false },
-      'the card is drawn only after the join screen is answered');
+    assert.deepEqual(by.dee.onboard, { shown: true, done: 0, total: 3, complete: false },
+      'the card is drawn for every new account, join screen answered or not (#4601)');
     assert.equal(by['ben@example.test'].onboard, null, 'no account, no card');
     await credit(ana, firsts[1].id);
     const again = (await journey.firstMile(pool, { day: D, now, leftOutIds })).people.find((p) => p.name === 'ana');

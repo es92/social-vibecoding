@@ -1426,7 +1426,7 @@
     {
       "source": "src/services/topochain/challenge-onboarding.js",
       "kind": "structural-template",
-      "fingerprint": "f22572e0f628a0273eeb",
+      "fingerprint": "0fc6ef4929f71c2316c8",
       "count": 1,
       "preview": "`/* challenge onboarding */ SELECT c.id, c.season_event_id, c.challenge_template_id, c.display_order, c.enabled, c.completed, COALESCE(c.schedule_start, ct.sche"
     },

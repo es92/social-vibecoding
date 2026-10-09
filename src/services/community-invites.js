@@ -740,8 +740,9 @@ async function redeem(pool, { token, user, browser = null, requirePhone = false 
     // a new account answers ("What communities do you want to join?",
     // services/onboarding.js) is not put between them and it. Answered
     // as 'invite' for the admin Journey page, and communities_onboarded_at
-    // stays NULL, so the Getting started card stays out of their first
-    // session too.
+    // stays NULL. The Getting started card and the First-challenges gate
+    // follow `getting_started_gate` alone (#4601), so a new account that
+    // came by a link gets both like any other.
     await client.query(
       `UPDATE users
           SET needs_communities_choice = FALSE,

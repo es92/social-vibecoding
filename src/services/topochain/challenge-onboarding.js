@@ -15,8 +15,11 @@
 // those challenges is, the rest of the season is hidden from the viewer, but
 // only from an account that started on that list: `users.getting_started_gate`
 // (set at sign-up since the list shipped, FALSE for every account before it;
-// the note beside the column in src/db/schema.sql) on an account that came
-// through the join screen, whose card therefore shows. Everyone else, and
+// the note beside the column in src/db/schema.sql), however it signed up: the
+// join screen, "What do you want to make?" or an invite link (#4601, evan's
+// "lock every new account", 9 Oct 2026). Its card shows on Home whichever
+// door it came in by, so the gate never hides the season behind a list
+// nobody can see. Everyone else, and
 // every signed-out visitor, sees the whole season, and the lists send them no
 // gate summary at all: the same payload as a season with no ONBOARDING
 // challenges, which every client already draws.
@@ -209,12 +212,11 @@ async function loadOnboarding(pool, userId, { seasonId, eventId, record = true }
             AND credited.challenge_template_id = c.challenge_template_id
        ) credit
        -- The viewer's gate, in the same read. No row for a signed-out viewer,
-       -- so all three are NULL and nobody is gated. The gate needs the join
-       -- screen answered as well as the flag: the card shows only after it
-       -- (onboarding.js gettingStarted), and a gate with no card would hide
-       -- the season behind a list nobody can see.
+       -- so all three are NULL and nobody is gated. The flag alone decides,
+       -- as it does for the card (onboarding.js cardShows): every new
+       -- account, however it signed up (#4601).
        LEFT JOIN (
-         SELECT (u.getting_started_gate AND u.communities_onboarded_at IS NOT NULL) AS gate,
+         SELECT u.getting_started_gate AS gate,
                 (u.tour_done_at IS NOT NULL) AS tour_done,
                 (u.getting_started_unlocked_at IS NOT NULL) AS unlocked
            FROM users u WHERE u.id = $1

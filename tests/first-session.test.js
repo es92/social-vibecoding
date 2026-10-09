@@ -459,9 +459,12 @@ test('a join from the confirm reads Home\'s challenges again before the welcome 
 test('a link answers the join screen for the person it brings in', () => {
   const invites = read('src/services/community-invites.js');
   assert.match(invites, /SET needs_communities_choice = FALSE,\s+getting_started_seen = COALESCE\(getting_started_seen, '\{\}'::jsonb\)\s+\|\| jsonb_build_object\('join_answer', 'invite'\)\s+WHERE id = \$1 AND needs_communities_choice = TRUE/);
-  // communities_onboarded_at stays NULL, so the Getting started card, which
-  // needs it, stays out of their first session too.
+  // communities_onboarded_at stays NULL: it records the join screen itself.
+  // The Getting started card and the gate no longer need it (#4601): every
+  // new account gets them, however it signed up.
   assert.doesNotMatch(invites, /communities_onboarded_at = NOW\(\)/);
+  const onboarding = read('src/services/onboarding.js');
+  assert.match(onboarding, /return !!\(u && u\.getting_started_gate && !u\.getting_started_closed_at\);/);
 });
 
 test("You're in says that you joined, and shows the community: its app and its people (#4052)", () => {

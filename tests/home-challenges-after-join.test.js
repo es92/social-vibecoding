@@ -21,6 +21,12 @@
 // EventTarget for `document`, so the event Home sends is the one the block
 // hears.
 //
+// #4600: the same goes for a join from Home's featured list. Its ⊕ is
+// Home.toggleAdded, a PIN (POST /api/apps/:slug/favorite), which joins
+// through the app_favorites trigger; the route now counts that join on the
+// spot and answers `joined: true`, and toggleAdded says so on `document` as
+// setMembership does. A pin of something already joined says nothing.
+//
 // Run with: node --test tests/home-challenges-after-join.test.js
 'use strict';
 
@@ -101,6 +107,15 @@ function makeHome({ joinOk = true, holdPanels = false } = {}) {
         const body = JSON.parse(init.body);
         if (body.joined) server.joined = true;
         return { ok: true, status: 200, json: async () => ({ ok: true, member_count: 3 }) };
+      }
+      if (/\/favorite$/.test(url)) {
+        if (!joinOk) return { ok: false, status: 500, json: async () => ({ error: 'Internal server error' }) };
+        // #4600: a pin joins (the app_favorites trigger), the route counts
+        // it before it answers, and says whether this pin was the join.
+        const body = JSON.parse(init.body);
+        const joined = body.favorited && !server.joined;
+        if (body.favorited) server.joined = true;
+        return { ok: true, status: 200, json: async () => ({ ok: true, is_favorited: body.favorited, joined }) };
       }
       if (url.startsWith('/api/home-panels')) {
         const answer = panelsPayload(server.joined);
@@ -256,4 +271,37 @@ test('a forced read does not share a read that left before the join: it reads ag
   assert.deepEqual(panelReads(h.log), ['GET /api/home-panels', 'GET /api/home-panels']);
   assert.equal(h.joinCard().done, true);
   assert.equal(h.HP._queued, null);
+});
+
+test('#4600: a join from Home\'s featured list (a pin) ticks "Join a community" at once too', async () => {
+  const h = makeHome();
+  h.Home._apps = [{ slug: 'garden', name: 'City garden', is_member: false, is_favorited: false }];
+  await h.Home.toggleAdded('garden', true);
+  await h.settle();
+  assert.deepEqual(h.events.map((d) => ({ ...d })), [{ slug: 'garden', joined: true }]);
+  assert.deepEqual(h.log, [
+    'POST /api/apps/garden/favorite',
+    'refresh-intent',
+    'GET /api/home-panels',
+  ], 'the block reads again after the pin answered, and tells the worker first');
+  assert.equal(h.joinCard().done, true);
+});
+
+test('#4600: a pin that joined nothing (already a member) says nothing', async () => {
+  const h = makeHome();
+  h.server.joined = true;
+  h.Home._apps = [{ slug: 'garden', name: 'City garden', is_member: true, is_favorited: false }];
+  await h.Home.toggleAdded('garden', true);
+  await h.settle();
+  assert.deepEqual(h.events, []);
+  assert.deepEqual(panelReads(h.log), []);
+});
+
+test('#4600: a refused pin says nothing', async () => {
+  const h = makeHome({ joinOk: false });
+  h.Home._apps = [{ slug: 'garden', name: 'City garden', is_member: false, is_favorited: false }];
+  await h.Home.toggleAdded('garden', true);
+  await h.settle();
+  assert.deepEqual(h.events, []);
+  assert.deepEqual(panelReads(h.log), []);
 });

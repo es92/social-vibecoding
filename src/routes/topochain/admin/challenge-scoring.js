@@ -58,7 +58,7 @@ const RUNS_SQL = `
 // are the two mistakes an operator actually makes, and without this they
 // would show up as silence.
 async function ruleStatus(pool, now = Date.now()) {
-  const { rows } = await pool.query(scorer.RULE_CHALLENGES_SQL);
+  const { rows } = await pool.query(scorer.RULE_CHALLENGES_SQL, [scorer.ONBOARDING_LIMIT]);
   const byRule = new Map();
   for (const row of rows) {
     const rule = {

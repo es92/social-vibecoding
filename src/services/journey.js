@@ -633,7 +633,7 @@ async function cohorts(pool, { now = new Date(), leftOutIds = [] } = {}) {
 // onboarding.js cardShows() spells, without its "not closed yet", since a
 // card that was closed was shown.
 function cardWasShown(row) {
-  return row.user_id != null && row.getting_started_gate === true && row.communities_onboarded_at != null;
+  return row.user_id != null && row.getting_started_gate === true;
 }
 
 /**

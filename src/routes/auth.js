@@ -734,8 +734,9 @@ function authRoutes(config) {
     let usernameProvisional = false;
     // Communities, stage 5 (src/services/onboarding.js): the join screen a
     // new account answers after its username and the terms, and the
-    // Getting started card that follows it, for an account made since that
-    // card became the First challenges (`getting_started_gate`). Same
+    // Getting started card, for every account made since that card became
+    // the First challenges (`getting_started_gate`), however it signed up
+    // (#4601). Same
     // failure direction as the flag above: unreadable means no blocking step
     // and no card.
     let needsCommunitiesChoice = false;
@@ -774,8 +775,7 @@ function authRoutes(config) {
                 u.needs_username_choice,
                 u.needs_communities_choice,
                 (u.username_provisional_since IS NOT NULL) AS username_provisional,
-                (u.communities_onboarded_at IS NOT NULL
-                  AND u.getting_started_closed_at IS NULL
+                (u.getting_started_closed_at IS NULL
                   AND u.getting_started_gate) AS show_getting_started,
                 (u.tour_done_at IS NOT NULL) AS tour_done,
                 identity_needed(u.id) AS identity_needed,
@@ -919,8 +919,9 @@ function authRoutes(config) {
         // Only alongside storyFirstSession: the waitlist answer "What should
         // it do?" opens with (frontend/src/features/first-session/make.tsx).
         waitlistIdea,
-        // The Getting started card on Home: shown to an account that came
-        // through the join screen, until it is closed.
+        // The Getting started card on Home: shown to every new account
+        // (getting_started_gate), however it signed up (#4601), until it is
+        // closed.
         showGettingStarted,
         // The verified-identity rule holds this member to it (see above).
         identityNeeded,

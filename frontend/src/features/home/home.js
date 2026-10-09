@@ -2142,11 +2142,14 @@ const Home = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorited: desired }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       PlatformUI.toast(desired ? 'Added to My apps' : 'Removed from My apps');
+      // #4600: a pin that JOINED (the server says so: `joined`, after it has
+      // counted "Join a community") is a join, and says so as setMembership
+      // does, so Home's Challenges block and the Getting started card read
+      // again now rather than on their next refresh.
+      if (desired && data && data.joined === true) Home._announceMembership(slug, true);
       if (!desired) await Home._offerLeaveAfterUnpin(app);
     } catch (err) {
       app.is_favorited = prev.is_favorited;
@@ -2307,12 +2310,11 @@ const Home = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ favorited: desired }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       if (desired) Home._revealSlug = slug;
       PlatformUI.toast(desired ? 'Added to My apps' : 'Removed from My apps');
+      if (desired && data && data.joined === true) Home._announceMembership(slug, true);
     } catch (err) {
       Home._revealSlug = null;
       PlatformUI.toast(`Update failed: ${err.message}`);
