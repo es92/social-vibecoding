@@ -389,22 +389,24 @@ test('execInWorker writes the prompt file before the detached dispatch and never
   // No `PROMPT: <value>` env entry anywhere — the env carries only the
   // short constant path.
   assert.doesNotMatch(src, /PROMPT:\s*prompt/);
-  assert.match(src, /PROMPT_FILE:\s*TURN_PROMPT_PATH/);
+  // #4575: the turn's own files, named by its id (turnPromptPaths).
+  assert.match(src, /const promptPaths = turnPromptPaths\(durableTurnId\);/);
+  assert.match(src, /PROMPT_FILE:\s*promptPaths\.prompt/);
   assert.match(src, /RESUME_FALLBACK_PROMPT_FILE:\s*resumeFallbackPrompt/);
-  assert.match(src, /SYSTEM_PROMPT_FILE:\s*systemPrompt \? TURN_SYSTEM_PROMPT_PATH : ''/);
+  assert.match(src, /SYSTEM_PROMPT_FILE:\s*systemPrompt \? promptPaths\.system : ''/);
 
   // Ordering: the file write happens before the `docker exec -d`
   // dispatch inside execInWorker.
-  const writeIdx = src.indexOf('await writeTurnPrompt(sessionId, prompt)');
+  const writeIdx = src.indexOf('await writeTurnPrompt(sessionId, prompt, promptPaths.prompt)');
   const dispatchIdx = src.indexOf("'exec', '-d',");
   assert.ok(writeIdx !== -1, 'execInWorker awaits writeTurnPrompt');
   assert.ok(dispatchIdx !== -1, 'detached dispatch present');
   assert.ok(writeIdx < dispatchIdx, 'prompt file is written before the dispatch args are built');
-  const writeSystemIdx = src.indexOf('await writeTurnSystemPrompt(sessionId, systemPrompt)');
+  const writeSystemIdx = src.indexOf('await writeTurnSystemPrompt(sessionId, systemPrompt, promptPaths.system)');
   assert.ok(writeSystemIdx !== -1 && writeSystemIdx < dispatchIdx,
     'required system context is written before detached dispatch');
   const writeFallbackIdx = src.indexOf(
-    'await writeTurnResumeFallbackPrompt(sessionId, resumeFallbackPrompt)',
+    'await writeTurnResumeFallbackPrompt(sessionId, resumeFallbackPrompt, promptPaths.resumeFallback)',
   );
   assert.ok(writeFallbackIdx !== -1 && writeFallbackIdx < dispatchIdx,
     'the complete fresh fallback is written before detached dispatch');

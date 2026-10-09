@@ -151,8 +151,11 @@ for (const alreadyCleared of [false, true]) {
     assert.equal(fx.execs.length, 0, 'Kubernetes cleanup must not invoke Docker');
     assert.equal(calls.length, 1);
     assert.equal(calls[0].runtime, 'sv-worker-s2954');
+    // #4575: the turn's own prompt files too, named by its id.
+    const own = fx.worker.turnPromptPaths('logical-1');
     assert.deepEqual(calls[0].command, ['rm', '-f', journal, ...(alreadyCleared ? [] : [
       fx.worker.TURN_PROMPT_PATH, fx.worker.TURN_SYSTEM_PROMPT_PATH, fx.worker.TURN_RESUME_FALLBACK_PROMPT_PATH,
+      own.prompt, own.system, own.resumeFallback,
     ])]);
     assert.equal(calls[0].options.timeoutMs, 5000);
     assert.equal(fx.getActiveTurn(), null);

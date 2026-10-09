@@ -56,6 +56,7 @@ function loadWorker({ onExec = null, journalLines = null } = {}) {
 
   const calls = [];
   const dbCalls = [];
+  const stdinCalls = [];
   const realDocker = require('../src/services/docker');
   stub(ids.docker, {
     ...realDocker,
@@ -65,7 +66,10 @@ function loadWorker({ onExec = null, journalLines = null } = {}) {
       return { stdout: '', stderr: '' };
     },
     // execInWorker writes the turn prompt through this one.
-    execShellStdin: async () => ({ stdout: '', stderr: '' }),
+    execShellStdin: async (runtimeName, script, opts) => {
+      stdinCalls.push({ runtimeName, script, opts });
+      return { stdout: '', stderr: '' };
+    },
   });
   const noop = () => {};
   stub(ids.logger, { info: noop, warn: noop, error: noop, debug: noop });
@@ -139,7 +143,7 @@ function loadWorker({ onExec = null, journalLines = null } = {}) {
     }
     delete require.cache[require.resolve('../src/services/worker')];
   };
-  return { worker, calls, dbCalls, restore };
+  return { worker, calls, dbCalls, stdinCalls, activeTurns, restore };
 }
 
 // A warm worker execInWorker will accept a dispatch for.
@@ -652,8 +656,10 @@ test('a resumed Claude Code build on OpenRouter carries its complete fresh fallb
     warmSession(worker, 8311);
     await worker.execInWorker(8311, { ...args, resumeFallbackPrompt: 'the whole build prompt, then the nudge' });
     const withFallback = calls.filter(isDispatch).at(-1);
-    assert.equal(env(withFallback, 'RESUME_FALLBACK_PROMPT_FILE'),
-      `RESUME_FALLBACK_PROMPT_FILE=${worker.TURN_RESUME_FALLBACK_PROMPT_PATH}`);
+    // #4575: the turn's own file, named by its id, never a path another
+    // turn on the session shares.
+    assert.match(env(withFallback, 'RESUME_FALLBACK_PROMPT_FILE'),
+      /^RESUME_FALLBACK_PROMPT_FILE=\/home\/node\/\.claude\/turn-resume-fallback-prompt-[A-Za-z0-9-]+\.txt$/);
     assert.equal(env(withFallback, 'CLAUDE_RESUME_SESSION_ID'), 'CLAUDE_RESUME_SESSION_ID=claude-session-1');
 
     warmSession(worker, 8312);
@@ -738,4 +744,75 @@ test('immediate stop errors reach the caller, and its remote command has a short
     assert.match(calls[0].args[4], /kill -KILL/);
     assert.doesNotMatch(calls[0].args[4], /kill -TERM/);
   } finally { restore(); }
+});
+
+// #4575: the before & after shots lost a race with the Homeroom bot's turn
+// on the same session. The bot's turn held chat_sessions.active_turn, the
+// shots dispatch wrote its prompt and then could not claim the session, and
+// the card read "execInWorker: durable active turn could not be persisted".
+test('a dispatch that loses the session to another turn says why, and leaves the winner alone', async () => {
+  const { worker, calls, stdinCalls, activeTurns, restore } = loadWorker({
+    journalLines: ['__USERNODE_EXIT__ 0'],
+  });
+  try {
+    warmSession(worker, 8330);
+    // The winner: its durable record, and the in-memory state a previous
+    // turn left on the registry (its journal, an unpushed commit).
+    const winner = { turnId: 'bot-turn-1', phase: 'executing', mode: 'build',
+      journal: '/home/node/.claude/turn-bot-turn-1.log' };
+    activeTurns.set(8330, winner);
+    worker._registryUpsertForTests(8330, {
+      activeTurnMode: 'build', journal: winner.journal, activeTurnId: winner.turnId,
+      unpushed: { sha: 'abc' },
+    });
+
+    await assert.rejects(
+      () => worker.execInWorker(8330, {
+        ...DISPATCH_ARGS, mode: 'build', logicalTurnId: 'shots-turn-1',
+      }),
+      (err) => {
+        assert.equal(err.code, 'durable_turn_persist_failed');
+        assert.equal(err.persistCode, 'session_busy');
+        assert.equal(err.sessionBusy, true);
+        assert.match(err.message, /another turn already owns this session/);
+        return true;
+      },
+    );
+
+    assert.deepEqual(activeTurns.get(8330), winner, 'the winner keeps the session');
+    const own = worker.turnPromptPaths('shots-turn-1');
+    // The loser wrote only its own files, never the shared prompt path.
+    const written = stdinCalls.map((c) => c.script).join('\n');
+    assert.match(written, new RegExp(`> ${own.prompt}\n`));
+    assert.match(written, new RegExp(`> ${own.system}\n`));
+    assert.doesNotMatch(written, new RegExp(`> ${worker.TURN_PROMPT_PATH}\n`));
+    assert.doesNotMatch(written, new RegExp(`> ${worker.TURN_SYSTEM_PROMPT_PATH}\n`));
+    // ...and removed them again, since no turn will read them.
+    const rm = calls.find((c) => c.args?.[0] === 'exec' && c.args.includes('rm'));
+    assert.ok(rm && rm.args.includes(own.prompt) && rm.args.includes(own.system));
+    assert.ok(!calls.some(isDispatch), 'nothing was dispatched');
+    assert.equal(worker.isInFlight(8330), false);
+    // The in-memory record the dispatch replaced is put back: a Stop still
+    // writes its marker to the winner's own journal.
+    await worker.stopTurn(8330);
+    const stop = calls.find(isStopScript);
+    assert.ok(stop && stop.args[4].includes(winner.journal),
+      'the stop targets the journal the losing dispatch would have wiped');
+  } finally { restore(); }
+});
+
+test('concurrent turns on one session write their prompts to different files', () => {
+  const worker = require('../src/services/worker');
+  const a = worker.turnPromptPaths('11111111-1111-4111-8111-111111111111');
+  const b = worker.turnPromptPaths('22222222-2222-4222-8222-222222222222');
+  assert.notEqual(a.prompt, b.prompt);
+  assert.notEqual(a.system, b.system);
+  assert.notEqual(a.resumeFallback, b.resumeFallback);
+  for (const path of Object.values(a)) {
+    assert.match(path, /^\/home\/node\/\.claude\/turn-[a-z-]+-11111111-1111-4111-8111-111111111111\.txt$/);
+    // The dispatch wrapper's `rm -f turn-*.log` must never reach a prompt.
+    assert.doesNotMatch(path, /\.log$/);
+  }
+  // An id that is not path-safe falls back to the fixed paths.
+  assert.equal(worker.turnPromptPaths('../x').prompt, worker.TURN_PROMPT_PATH);
 });

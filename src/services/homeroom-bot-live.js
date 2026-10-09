@@ -2412,6 +2412,32 @@ async function recordNoChange(pool, { noChange, which = 'all', recovered = false
  * fresh thread would get the nudge alone, with no spec to build. Its
  * `telemetry` names the turn on its own ledger row.
  */
+const SHOTS_WAIT_MS = 6 * 60_000;
+
+/**
+ * #4575: wait, at most `deps.shotsWaitMs` (six minutes), for a before &
+ * after shots run in flight on the session to end. Resolves 'idle' when
+ * there was none, 'finished' or 'timeout'; never throws.
+ */
+async function waitOutShotsRun(sessionId, deps = {}) {
+  let run = null;
+  try {
+    run = (deps.shotsRunFor || require('./shots-orchestrator').inFlightRunFor)(Number(sessionId));
+  } catch { run = null; }
+  if (!run) return 'idle';
+  log.info('homeroom-bot', 'Turn waits for the before & after shots running on its session', { sessionId });
+  let timer = null;
+  const finished = await Promise.race([
+    Promise.resolve(run).then(() => true, () => true),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(false), deps.shotsWaitMs ?? SHOTS_WAIT_MS);
+      if (typeof timer.unref === 'function') timer.unref();
+    }),
+  ]);
+  clearTimeout(timer);
+  return finished ? 'finished' : 'timeout';
+}
+
 function buildTurnRunner({
   pool, config, bot, session, model, branchName, containerName, deps,
   harness = 'auto', telemetry = null, onProgress = null,
@@ -2424,6 +2450,12 @@ function buildTurnRunner({
   }) => {
     // A turn may go on the ledger under a name of its own (the nudge).
     const telemetry = turnTelemetry || runnerTelemetry;
+    // #4575: before & after shots on this session hold it from their first
+    // build until their agent finishes, but write no turn record until they
+    // dispatch. Let a run that is under way finish first, as the Mayor's
+    // dispatch does, so this turn does not take the session from under it;
+    // the wait is not charged to the turn's own clock.
+    await waitOutShotsRun(session.id, deps);
     let turnStopped = false;
     let stopping = null;
     const timer = setTimeout(() => {
@@ -3125,6 +3157,7 @@ async function reviewLanded({
 }
 
 module.exports = {
+  waitOutShotsRun,
   askerOf,
   creditedDescription,
   checkedDescription,

@@ -45,6 +45,20 @@ function agentDiedRetryable(error) {
     && RETRYABLE_AGENT_EXITS.has(error.shotsExitCause);
 }
 
+// #4575: the dispatch never started because another turn (the Homeroom
+// bot's, a person's) took the proposal's agent while the copies were
+// building: the worker refused a second turn, or the session's one-turn
+// record was already held. Nothing ran, so the run waits for the agent to
+// be free and dispatches again, at most MAX_AGENT_BUSY_RETRIES times.
+const MAX_AGENT_BUSY_RETRIES = 2;
+const AGENT_BUSY_RETRY_PROGRESS = 'The proposal\u2019s agent was busy, so the shots didn\u2019t start. Trying again\u2026';
+
+function agentBusyRetryable(error) {
+  if (!error) return false;
+  if (error.sessionBusy === true || error.persistCode === 'session_busy') return true;
+  return state.agentBusyCode(error.code);
+}
+
 // Runs a person stopped while this process executes them. The stop already
 // made the run terminal in the database; this keeps its runner from handing
 // the shots agent another turn before a state transition refuses it.
@@ -688,6 +702,7 @@ function agentFinalResponseSummary(result, authTokens, origins, phoneTestCode = 
 }
 
 function visibleError(error) {
+  if (state.agentBusyCode(error?.code)) return state.AGENT_BUSY_REASON;
   const message = String(error?.message || 'The before/after shots could not be taken.').trim();
   return redactDiagnosticText(message, 2000) || 'The before/after shots could not be taken.';
 }
@@ -954,6 +969,7 @@ function newRunMetrics() {
       cleanup: 0,
     },
     agentAttempts: 0,
+    agentBusyRetries: 0,
     agentDispatches: [],
     agentFinalResponses: [],
     agentActivity: { events: [], counts: {}, toolCounts: {}, firstAtMs: {}, pending: new Map(),
@@ -963,6 +979,7 @@ function newRunMetrics() {
     agentFinalResponse: null,
     artifactBytes: 0,
     idleWait: null,
+    dispatchIdleWait: null,
     tokenUsage: {},
   };
 }
@@ -1012,7 +1029,9 @@ function traceSummary(metrics, extra = {}) {
       total: Math.max(0, Date.now() - metrics.startedAtMs),
     },
     idleWait: metrics.idleWait,
+    ...(metrics.dispatchIdleWait ? { dispatchIdleWait: metrics.dispatchIdleWait } : {}),
     agentAttempts: metrics.agentAttempts,
+    ...(metrics.agentBusyRetries ? { agentBusyRetries: metrics.agentBusyRetries } : {}),
     agentDispatches: metrics.agentDispatches.slice(0, 8),
     ...(metrics.agentFinalResponses.length
       ? { agentFinalResponses: metrics.agentFinalResponses.slice(0, 8) } : {}),
@@ -1330,10 +1349,49 @@ async function executeRun(config, options, injected = {}) {
       }
     };
 
+    // The session was idle before the copies were built, minutes ago; a
+    // turn may have taken it since. Wait for it again right before each
+    // dispatch, within what is left of the agent's budget (#4575).
+    const waitIdleBeforeDispatch = async () => {
+      const remainingMs = agentBudgetMs - (Date.now() - agentStartedAt);
+      if (remainingMs <= 0) return;
+      const waitStartedAt = Date.now();
+      try {
+        metrics.dispatchIdleWait = await deps.waitForSessionIdle(pool, session.id, {
+          timeoutMs: Math.min(remainingMs, SESSION_IDLE_WAIT_MS),
+          recoveryTimeoutMs: Math.min(remainingMs, SHOTS_RECOVERY_WAIT_MS),
+          workerService: deps.worker,
+          onObservation: (observation) => { metrics.dispatchIdleWait = observation; },
+        });
+      } catch (error) {
+        if (error?.detail?.idleWait) metrics.dispatchIdleWait = error.detail.idleWait;
+        throw error;
+      } finally {
+        addTiming(metrics, 'idleWait', waitStartedAt);
+      }
+    };
+    const dispatchWhenIdle = async () => {
+      for (let busyRetries = 0; ; busyRetries += 1) {
+        await waitIdleBeforeDispatch();
+        const outcome = await dispatchOnce();
+        if (!agentBusyRetryable(outcome.error) || stopRequested.has(run.id)
+            || busyRetries >= MAX_AGENT_BUSY_RETRIES
+            || agentBudgetMs - (Date.now() - agentStartedAt) < MIN_AGENT_RETRY_MS) {
+          return outcome;
+        }
+        metrics.agentBusyRetries += 1;
+        log.warn('shots', 'The proposal\'s agent was busy at dispatch; waiting to dispatch again', {
+          sessionId: session.id, runId: run.id, code: errorCode(outcome.error),
+          persistCode: outcome.error?.persistCode || null,
+        });
+        progress(AGENT_BUSY_RETRY_PROGRESS);
+      }
+    };
+
     failurePhase = 'agent_exploration';
     stage(failurePhase);
     progress('The shots agent is taking before/after shots…');
-    let agentOutcome = await dispatchOnce();
+    let agentOutcome = await dispatchWhenIdle();
     // A Stop kills the shots agent mid-turn; its error is that stop.
     if (agentOutcome.error && stopRequested.has(run.id)) {
       throw new ShotsOrchestrationError('shots_stopped', SHOTS_STOPPED_REASON);
@@ -1348,7 +1406,7 @@ async function executeRun(config, options, injected = {}) {
         sessionId: session.id, runId: run.id, exitCause: agentOutcome.error.shotsExitCause,
       });
       progress('The shots agent stopped unexpectedly; starting it once more…');
-      agentOutcome = await dispatchOnce();
+      agentOutcome = await dispatchWhenIdle();
       if (agentOutcome.error && stopRequested.has(run.id)) {
         throw new ShotsOrchestrationError('shots_stopped', SHOTS_STOPPED_REASON);
       }
@@ -1759,6 +1817,9 @@ module.exports = {
   shotsBrief,
   sameProvenance,
   waitForSessionIdle,
+  agentBusyRetryable,
+  MAX_AGENT_BUSY_RETRIES,
+  visibleError,
   newRunMetrics,
   recordAgentDiagnostic,
   addTiming,

@@ -778,3 +778,21 @@ test('interruption budgets: rollouts spend only the ceiling, crashes keep the or
   assert.equal(allowed(state.MAX_INTERRUPTED_RETRIES, 0), false, 'but not forever');
   assert.equal(state.interruptedRetryAllowed({}), false, 'uncounted means no promise');
 });
+
+// #4575: a run that ended because another turn held the proposal's agent
+// says so in plain words, even one stored with the worker's own wording.
+test('a run the proposal\'s busy agent stopped reads in plain words, not the worker\'s', () => {
+  const row = {
+    state: 'failed', failure_code: 'durable_turn_persist_failed',
+    failure_reason: 'execInWorker: durable active turn could not be persisted',
+    intent: null, base_sha: 'a'.repeat(40), head_sha: 'b'.repeat(40),
+  };
+  for (const code of ['durable_turn_persist_failed', 'durable_retry_persist_failed', 'session_busy', 'TURN_IN_FLIGHT']) {
+    const summary = state.runSummary({ ...row, failure_code: code });
+    assert.equal(summary.failureReason, state.AGENT_BUSY_REASON, code);
+    assert.equal(summary.repairAvailable, true, 'Take the shots again stays');
+  }
+  assert.doesNotMatch(state.AGENT_BUSY_REASON, /execInWorker|durable|turn could not/);
+  assert.equal(state.runSummary({ ...row, failure_code: 'shots_capture_incomplete', failure_reason: 'No shot saved.' })
+    .failureReason, 'No shot saved.');
+});

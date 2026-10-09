@@ -95,6 +95,23 @@ function currentCode(code) {
   return RENAMED_CODES[code] || code.replace(/visual_evidence/g, 'shots').replace(/evidence/g, 'shots');
 }
 
+// #4575: the codes a dispatch fails with when another turn (the Homeroom
+// bot's, say) holds the proposal's agent. The worker's own wording ("durable
+// active turn could not be persisted") means nothing to a person reading the
+// card, so a run that ended on one of these says so in plain words, even one
+// stored before this copy existed.
+const AGENT_BUSY_CODES = new Set([
+  'session_busy',
+  'TURN_IN_FLIGHT',
+  'durable_turn_persist_failed',
+  'durable_retry_persist_failed',
+]);
+const AGENT_BUSY_REASON = 'The proposal\u2019s agent was busy with another turn, so the shots didn\u2019t start. Take the shots again.';
+
+function agentBusyCode(code) {
+  return typeof code === 'string' && AGENT_BUSY_CODES.has(code);
+}
+
 class ShotsStateError extends Error {
   constructor(code, message, status = 409) {
     super(message);
@@ -388,7 +405,9 @@ function runSummary(row, artifactSummary = []) {
     baseSha: row.base_sha,
     headSha: row.head_sha,
     failureCode: currentCode(row.failure_code) || null,
-    failureReason: row.failure_reason || null,
+    failureReason: agentBusyCode(row.failure_code)
+      ? AGENT_BUSY_REASON
+      : (row.failure_reason || null),
     // Any finished run on the current head can be taken again; an explicit
     // no-visible-change declaration or a stop has nothing to retry.
     repairAvailable: row.state === 'failed' && currentCode(row.failure_code) !== 'visible_changes_conflict',
@@ -1104,6 +1123,9 @@ async function storeArtifacts(pool, runId, artifacts, { headSha, planHash } = {}
 module.exports = {
   storeArtifacts,
   currentCode,
+  AGENT_BUSY_CODES,
+  AGENT_BUSY_REASON,
+  agentBusyCode,
   INTERRUPTED_RETRY_TRIGGER,
   MAX_INTERRUPTED_RETRIES,
   MAX_UNEXPLAINED_RETRIES,

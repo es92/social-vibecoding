@@ -160,6 +160,34 @@ test('a turn already running on the proposal: the fix waits before asking for a 
   assert.ok(until > Date.now() + 60_000 && until <= Date.now() + 2 * 60_000 + 1000, 'and until when: the first backoff, two minutes');
 });
 
+// #4575: before & after shots hold the proposal from their first build, but
+// write no turn record until their agent starts, minutes later. A follow-up
+// that started in that gap took the session, and the shots failed with
+// "durable active turn could not be persisted".
+test('a before & after shots run under way on the proposal: the follow-up waits for it, as for a turn', async (t) => {
+  const orchestrator = require('../src/services/shots-orchestrator');
+  const realRunFor = orchestrator.inFlightRunFor;
+  t.after(() => { orchestrator.inFlightRunFor = realRunFor; });
+  orchestrator.inFlightRunFor = (id) => (Number(id) === 5001 ? new Promise(() => {}) : null);
+  const h = harness();
+  const out = await triage(t, h);
+  assert.equal(out.reason, 'refused');
+  assert.equal(out.detail, 'session_busy');
+  assert.equal(h.calls.ensured, 0, 'no worker asked for while the shots hold the session');
+  assert.equal(h.calls.exec.length, 0);
+  assert.equal(bot.faultBackoff(), null, 'a wait, never a fault');
+  assert.ok(waitWrite(h), 'and the row says it waits');
+  // turnRunningOn reads the shots run for the session's own id.
+  const asked = [];
+  const running = await followup.turnRunningOn({
+    pool: { async query() { return { rows: [{ active_turn: null }] }; } },
+    session: { id: 5001 }, worker: { isInFlight: () => false }, activeWorkers: new Set(),
+    shotsRunFor: (id) => { asked.push(id); return null; },
+  });
+  assert.equal(running, false, 'no shots run and no turn: free');
+  assert.deepEqual(asked, [5001]);
+});
+
 test('the worker refusing to change its storage under a running turn is the same wait, not a platform fault', async (t) => {
   const thrown = Object.assign(new Error('Cannot change worker storage while a turn is running'), { code: 'session_busy' });
   const busy = harness({ ensureWorker: () => { throw thrown; } });
@@ -565,4 +593,25 @@ test('get_change says when the running turn started and what kind it is', async 
   const sessions = read('src/routes/sessions.js');
   assert.match(sessions, /const mark = require\('\.\.\/services\/homeroom-bot-followup'\)\.turnMarkOf\(durableTurn\);\n\s+turn = \{\n\s+startedAt: durableTurn\.startedAt \|\| null,\n\s+kind: mark \? `homeroom_bot_\$\{mark\.followUp\}` : \(durableTurn\.mode \|\| null\),/);
   assert.match(sessions, /busy, progress, phase, stopping, stopRequestedAt, stoppable, estimate, turn,/);
+});
+
+// #4575: the bot's build and review-fix turns on a session wait for a
+// before & after shots run under way there, bounded, as the Mayor's do.
+test('a bot turn waits out the shots run on its session, at most its bound', async () => {
+  assert.equal(await live.waitOutShotsRun(5001, { shotsRunFor: () => null }), 'idle');
+  let finish;
+  const run = new Promise((resolve) => { finish = resolve; });
+  const waiting = live.waitOutShotsRun(5001, { shotsRunFor: () => run, shotsWaitMs: 60_000 });
+  finish();
+  assert.equal(await waiting, 'finished');
+  // A failed run is over too.
+  assert.equal(await live.waitOutShotsRun(5001, {
+    shotsRunFor: () => Promise.reject(new Error('shots failed')), shotsWaitMs: 60_000,
+  }), 'finished');
+  assert.equal(await live.waitOutShotsRun(5001, {
+    shotsRunFor: () => new Promise(() => {}), shotsWaitMs: 5,
+  }), 'timeout');
+  // The runner calls it before its turn's clock starts.
+  assert.match(read('src/services/homeroom-bot-live.js'),
+    /await waitOutShotsRun\(session\.id, deps\);\n {4}let turnStopped = false;/);
 });
