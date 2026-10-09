@@ -571,8 +571,8 @@ test('after Make it: the build line, then one invite, and the second button says
   // Evan, 5 October 2026: the first invite is a link and nothing else. No
   // invite by username (somebody brand new knows nobody on Homeroom yet), and
   // no joining-rule line ("With one other person using it, a change goes
-  // live when you both say yes, …"): both stay in the project's own invite
-  // pane (features/app-context/invite-pane.tsx).
+  // live when you both say yes, …"). The project's own invite pane dropped
+  // the rule line too (#4599).
   assert.doesNotMatch(src, /joiningRule|setRule|Invite by username|\/invites`/);
   const sheet = renderToHtml(createElement(made.InviteSheet, {
     made: { slug: 'page-turners', name: 'Page Turners', emoji: '📚', description: null, example: null, conversationId: 3 },
@@ -582,7 +582,6 @@ test('after Make it: the build line, then one invite, and the second button says
   // tests/first-session-copy-link.test.js).
   assert.match(sheet, />Copy link</);
   assert.doesNotMatch(sheet, /username|say yes|goes live/i);
-  assert.match(read('frontend/src/features/app-context/invite-pane.tsx'), /joiningRule/, 'the project\'s own pane keeps the rule');
   assert.match(src, /When you share, your note also goes in the group chat as your first message\./);
   assert.match(src, /fetch\(`\/api\/apps\/\$\{encodeURIComponent\(made\.slug\)\}\/messages`/);
   const invites = require('../src/services/community-invites');

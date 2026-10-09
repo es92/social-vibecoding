@@ -300,7 +300,18 @@ test('the pane\'s first render is the answer the opener read', async () => {
   assert.match(html, /id="app-invite-url"[^>]*value="\/invite\/tok"|value="\/invite\/tok"[^>]*id="app-invite-url"/,
     'the link is there on the first render, so the kit measures the loaded pane');
   assert.doesNotMatch(html, /data-invite-loading/);
-  assert.match(html, /Changes go in when 2 people approve\./);
+  // #4599: the joining rule the read carries is not spelled out under the link.
+  assert.doesNotMatch(html, /Changes go in when 2 people approve\./);
+  assert.match(html, /id="app-invite-change-open"[^>]*>Change</, 'Change beside the links\' heading');
+});
+
+test('with no live links, the heading row and its Change are still there', async () => {
+  const api = loadTsx('tests/fixtures/invite-pane-api.ts');
+  const { fake } = stubFetch({ GET: { body: STATE }, POST: { status: 201, body: {} } });
+  await withFetch(fake, () => api.prepareInvite('notes-ab12'));
+  const html = renderToHtml(createElement(api.InvitePane, { slug: 'notes-ab12', label: 'Notes' }));
+  assert.match(html, />Your links</);
+  assert.match(html, /id="app-invite-change-open"/);
 });
 
 test('before the answer, the pane is its own rows in grey, never a one-line note', () => {
@@ -318,8 +329,7 @@ test('before the answer, the pane is its own rows in grey, never a one-line note
 test('the skeleton is built from the loaded pane\'s own rows', async () => {
   // Same containers, padding and type as the rows they stand for, so the
   // height comes from the same classes: the link field is the Input's own
-  // box, the buttons h-10, the small lines the small paragraphs' lines, the
-  // change row 40px, a link row 44px.
+  // box, the buttons h-10, the heading row with Change, a link row 44px.
   const api = loadTsx('tests/fixtures/invite-pane-api.ts');
   const { fake } = stubFetch({ GET: { body: { ...STATE, links: [LINK] } } });
   await withFetch(fake, () => api.prepareInvite('notes-ab12'));
@@ -331,11 +341,9 @@ test('the skeleton is built from the loaded pane\'s own rows', async () => {
   for (const row of [
     'class="px-5 pt-1"',
     'class="px-5 pt-3"',
-    'px-5 pt-2 text-[0.8125rem] leading-snug',
     'class="flex items-stretch gap-2 px-5 pt-3"',
-    'px-5 pt-3 text-[0.8125rem] leading-snug',
-    'w-full px-5 min-h-[40px] text-left text-sm font-medium',
-    'px-5 pt-4 pb-1 text-[0.7rem] font-semibold uppercase tracking-wide',
+    'flex items-center justify-between gap-3 px-5 pt-4 pb-1',
+    'text-[0.7rem] font-semibold uppercase tracking-wide',
     'flex items-center gap-3 px-5 min-h-[44px] text-sm w-full text-left',
   ]) {
     assert.ok(loaded.includes(row), `the loaded pane has ${row}`);

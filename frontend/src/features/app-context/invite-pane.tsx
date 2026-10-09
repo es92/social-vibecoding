@@ -8,14 +8,15 @@
  *   1. THE LINK. Your newest live link for this project, or a new one made
  *      the first time you open the pane: opening it again does not mint
  *      another. Copy, and Share where the device has a share sheet.
- *   2. WHAT IT DOES, in one sentence: who can use it, for how long, for how
- *      many people, and — what a new person meets — that somebody new to
- *      Homeroom joins straight away, as a private member, and goes straight
- *      into this project (services/community-invites.js redeem).
- *   3. CHANGE. How long and for how many, within the server's limits; a new
- *      link is made with them. The old one keeps working until turned off.
- *   4. YOUR LINKS. Every live one, with Turn off. Someone who manages the
- *      project sees everyone's, with who made each.
+ *   2. YOUR LINKS. Every live one, with Turn off. Someone who manages the
+ *      project sees everyone's, with who made each. How long each lasts and
+ *      how many it is for is on its row, so the pane spells out nothing
+ *      else (#4599: the sentence under the link, the line about newcomers
+ *      and the joining rule are gone).
+ *   3. CHANGE, a small link beside that heading: how long and for how many,
+ *      within the server's limits; a new link is made with them. The old one
+ *      keeps working until turned off. The heading row shows even with no
+ *      live links, so Change is always there.
  *
  * ── It is a PANE, for About's reason ──────────────────────────────────
  *
@@ -61,13 +62,13 @@ export type { InviteLink, InviteState } from './invite-data';
 
 const ROW = 'flex items-center gap-3 px-5 min-h-[44px] text-sm w-full text-left '
   + 'text-zinc-700 dark:text-zinc-200';
-const SECTION = 'px-5 pt-4 pb-1 text-[0.7rem] font-semibold uppercase tracking-wide '
+// The links' heading row: the small-caps label, and Change beside it.
+const SECTION_ROW = 'flex items-center justify-between gap-3 px-5 pt-4 pb-1';
+const SECTION = 'text-[0.7rem] font-semibold uppercase tracking-wide '
   + 'text-zinc-400 dark:text-zinc-500';
+const CHANGE_LINK = 'shrink-0 text-sm font-medium text-violet-700 dark:text-violet-400 hover:underline';
 const NOTE = 'px-5 py-2 text-sm text-zinc-500 dark:text-zinc-400';
 const TITLE = 'text-[0.9375rem] font-semibold text-zinc-900 dark:text-zinc-100';
-// The small lines under the link: what it does, who is new, the joining rule.
-const SMALL = 'text-[0.8125rem] leading-snug';
-const CHANGE_ROW = 'w-full px-5 min-h-[40px] text-left text-sm font-medium';
 const PRIMARY = 'inline-flex flex-1 basis-0 min-w-0 items-center justify-center gap-1.5 h-10 px-4 '
   + 'rounded-full text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors';
 const SECONDARY = 'inline-flex flex-1 basis-0 min-w-0 items-center justify-center gap-1.5 h-10 px-4 '
@@ -79,37 +80,12 @@ const NO_LIMIT = 0;
 const DAY_CHOICES = [1, 7, 30, NO_LIMIT];
 const USE_CHOICES = [1, 5, 10, 25, 50, 100, NO_LIMIT];
 
-/** The sentence under the link. */
-export function linkSentence(link: Pick<InviteLink, 'expiresAt' | 'maxUses' | 'uses'>, grant: string, now = Date.now()): string {
-  const who = grant === 'collaborator'
-    ? 'Anyone with this link can join and build with you.'
-    : 'Anyone with this link can join.';
-  if (link.expiresAt == null && link.maxUses == null) return `${who} It works until you turn it off.`;
-  const days = link.expiresAt == null ? null : daysUntil(link.expiresAt, now);
-  const when = days == null ? 'It has no end date' : days <= 1 ? 'It expires within a day' : `It expires in ${days} days`;
-  if (link.maxUses == null) return `${who} ${when}.`;
-  // Before anyone has used it, the number it was made for; after, what is
-  // left of it.
-  const count = link.uses ? Math.max(0, link.maxUses - link.uses) : link.maxUses;
-  const more = link.uses ? ' more' : '';
-  return `${who} ${when} and works for ${count}${more} ${count === 1 ? 'person' : 'people'}.`;
-}
-
 /** "3 of 25 used · 5 days left", for a row of Your links. */
 export function linkDetail(link: Pick<InviteLink, 'expiresAt' | 'maxUses' | 'uses'>, now = Date.now()): string {
   const used = link.maxUses == null ? `${link.uses} joined` : `${link.uses} of ${link.maxUses} used`;
   if (link.expiresAt == null) return `${used} · no end date`;
   const days = daysUntil(link.expiresAt, now);
   return `${used} · ${days <= 1 ? 'under a day left' : `${days} days left`}`;
-}
-
-/**
- * The line about people new to Homeroom: they join straight away, as private
- * members (services/community-invites.js redeem). It used to count the skips
- * past the waitlist a link could hand out, which private membership replaced.
- */
-export function newcomerLine(): string {
-  return 'Someone new to Homeroom joins straight away and goes right into this project.';
 }
 
 function absolute(path: string): string {
@@ -139,10 +115,8 @@ function SkeletonLine({ className, shape = 'muted' }: { className: string; shape
  * Each row keeps the container, padding and type of the row it stands for,
  * so its height comes from the same classes rather than a copied number: the
  * link field is the Input's own box, the buttons are h-10 like Copy and
- * Share, the lines are the small paragraphs' lines. What it cannot know is
- * how many links there are and how long each sentence runs, so it draws the
- * common case: one link of their own, two lines each for what the link does,
- * who is new, and the joining rule.
+ * Share, the heading row and a link row are theirs. What it cannot know is
+ * how many links there are, so it draws the common case: one of their own.
  */
 export function InviteSkeleton({ label, canShare }: { label: string; canShare: boolean }): ReactNode {
   return (
@@ -158,27 +132,13 @@ export function InviteSkeleton({ label, canShare }: { label: string; canShare: b
             <SkeletonLine shape="line" className="w-3/4" />
           </div>
         </div>
-        <div className={`px-5 pt-2 ${SMALL}`}>
-          <SkeletonLine className="w-full" />
-          <SkeletonLine className="w-1/2" />
-        </div>
         <div className="flex items-stretch gap-2 px-5 pt-3">
           <Skeleton shape="block" className="h-10 flex-1 basis-0 rounded-full" />
           {canShare ? <Skeleton shape="block" className="h-10 flex-1 basis-0 rounded-full" /> : null}
         </div>
-        <div className={`px-5 pt-3 ${SMALL}`}>
-          <SkeletonLine className="w-full" />
-          <SkeletonLine className="w-2/5" />
-        </div>
-        <div className={`px-5 pt-2 ${SMALL}`}>
-          <SkeletonLine className="w-full" />
-          <SkeletonLine className="w-3/5" />
-        </div>
-        <div className={`flex items-center ${CHANGE_ROW}`}>
-          <Skeleton className="w-1/2" />
-        </div>
-        <div className={SECTION}>
-          <SkeletonLine shape="line" className="w-16" />
+        <div className={SECTION_ROW}>
+          <span className={`${SECTION} flex-1`}><SkeletonLine shape="line" className="w-16" /></span>
+          <span className="text-sm"><SkeletonLine className="w-12" /></span>
         </div>
         <div className={ROW}>
           <Skeleton className="w-2/5" />
@@ -329,9 +289,6 @@ export function InvitePane({ slug, label }: { slug: string | null; label: string
               onFocus={(e) => e.currentTarget.select()}
             />
           </div>
-          <p id="app-invite-sentence" className={`px-5 pt-2 ${SMALL} text-zinc-600 dark:text-zinc-300`}>
-            {linkSentence(current, state.grant)}
-          </p>
           <div className="flex items-stretch gap-2 px-5 pt-3">
             <button id="app-invite-copy" type="button" className={PRIMARY} onClick={copy}>
               <CopyIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -346,75 +303,62 @@ export function InvitePane({ slug, label }: { slug: string | null; label: string
           </div>
         </>
       ) : null}
-      <p className={`px-5 pt-3 ${SMALL} text-zinc-500 dark:text-zinc-400`}>
-        {newcomerLine()}
-      </p>
-      {state.joiningRule ? (
-        <p data-invite-rule="" className={`px-5 pt-2 ${SMALL} text-zinc-500 dark:text-zinc-400`}>
-          {state.joiningRule}
-        </p>
-      ) : null}
       {error ? <p role="alert" className="px-5 pt-2 text-sm text-red-600 dark:text-red-400">{error}</p> : null}
 
-      {changing ? (
-        <div id="app-invite-change" className="px-5 pt-4 space-y-3">
-          <label className="block text-sm text-zinc-700 dark:text-zinc-200">
-            <span className="block pb-1">Expires after</span>
-            <Select value={String(days)} onChange={(e) => setDays(Number(e.target.value))}>
-              {DAY_CHOICES.filter((d) => d === NO_LIMIT || (d >= state.limits.minDays && d <= state.limits.maxDays)).map((d) => (
-                <option key={d} value={d}>{d === NO_LIMIT ? 'Until you turn it off' : d === 1 ? '1 day' : `${d} days`}</option>
-              ))}
-            </Select>
-          </label>
-          <label className="block text-sm text-zinc-700 dark:text-zinc-200">
-            <span className="block pb-1">Works for</span>
-            <Select value={String(uses)} onChange={(e) => setUses(Number(e.target.value))}>
-              {USE_CHOICES.filter((n) => n === NO_LIMIT || (n >= state.limits.minUses && n <= state.limits.maxUses)).map((n) => (
-                <option key={n} value={n}>{n === NO_LIMIT ? 'Anyone with the link' : n === 1 ? '1 person' : `${n} people`}</option>
-              ))}
-            </Select>
-          </label>
-          <div className="flex items-stretch gap-2">
-            <button type="button" className={SECONDARY} onClick={() => setChanging(false)}>Cancel</button>
-            <button id="app-invite-make" type="button" className={PRIMARY} disabled={busy} onClick={make}>
-              Make new link
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          id="app-invite-change-open"
-          type="button"
-          className={`${CHANGE_ROW} text-violet-700 dark:text-violet-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors`}
-          onClick={() => setChanging(true)}
-        >
-          Change how long or how many
-        </button>
-      )}
-
-      {state.links.length ? (
-        <div id="app-invite-links">
+      <div id="app-invite-links">
+        <div className={SECTION_ROW}>
           <h4 className={SECTION}>{state.manages ? 'Live links' : 'Your links'}</h4>
-          {state.links.map((link) => (
-            <div key={link.id} className={ROW} data-invite-link={link.id}>
-              <span className="flex-1 min-w-0">
-                <span className="block truncate">{linkDetail(link)}</span>
-                {!link.mine && link.createdBy ? (
-                  <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">{`by @${link.createdBy}`}</span>
-                ) : null}
-              </span>
-              <button
-                type="button"
-                className="shrink-0 text-sm font-medium text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
-                disabled={busy}
-                onClick={() => turnOff(link)}
-              >
-                Turn off
+          {changing ? null : (
+            <button id="app-invite-change-open" type="button" className={CHANGE_LINK} onClick={() => setChanging(true)}>
+              Change
+            </button>
+          )}
+        </div>
+        {changing ? (
+          <div id="app-invite-change" className="px-5 pt-2 pb-2 space-y-3">
+            <label className="block text-sm text-zinc-700 dark:text-zinc-200">
+              <span className="block pb-1">Expires after</span>
+              <Select value={String(days)} onChange={(e) => setDays(Number(e.target.value))}>
+                {DAY_CHOICES.filter((d) => d === NO_LIMIT || (d >= state.limits.minDays && d <= state.limits.maxDays)).map((d) => (
+                  <option key={d} value={d}>{d === NO_LIMIT ? 'Until you turn it off' : d === 1 ? '1 day' : `${d} days`}</option>
+                ))}
+              </Select>
+            </label>
+            <label className="block text-sm text-zinc-700 dark:text-zinc-200">
+              <span className="block pb-1">Works for</span>
+              <Select value={String(uses)} onChange={(e) => setUses(Number(e.target.value))}>
+                {USE_CHOICES.filter((n) => n === NO_LIMIT || (n >= state.limits.minUses && n <= state.limits.maxUses)).map((n) => (
+                  <option key={n} value={n}>{n === NO_LIMIT ? 'Anyone with the link' : n === 1 ? '1 person' : `${n} people`}</option>
+                ))}
+              </Select>
+            </label>
+            <div className="flex items-stretch gap-2">
+              <button type="button" className={SECONDARY} onClick={() => setChanging(false)}>Cancel</button>
+              <button id="app-invite-make" type="button" className={PRIMARY} disabled={busy} onClick={make}>
+                Make new link
               </button>
             </div>
-          ))}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+        {state.links.length ? state.links.map((link) => (
+          <div key={link.id} className={ROW} data-invite-link={link.id}>
+            <span className="flex-1 min-w-0">
+              <span className="block truncate">{linkDetail(link)}</span>
+              {!link.mine && link.createdBy ? (
+                <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">{`by @${link.createdBy}`}</span>
+              ) : null}
+            </span>
+            <button
+              type="button"
+              className="shrink-0 text-sm font-medium text-red-600 dark:text-red-400 hover:underline disabled:opacity-50"
+              disabled={busy}
+              onClick={() => turnOff(link)}
+            >
+              Turn off
+            </button>
+          </div>
+        )) : (changing ? null : <p className={NOTE}>No live links.</p>)}
+      </div>
     </div>
   );
 }
