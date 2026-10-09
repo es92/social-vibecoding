@@ -3355,8 +3355,9 @@ function issueRoutes(config) {
         const pat = process.env.GITHUB_BOT_TOKEN;
         if (owner && repo && pat) {
           try {
-            const { Octokit } = await import('@octokit/rest');
-            const ok = new Octokit({ auth: pat });
+            // The bot token's client from services/github.js (recorded and
+            // counted against the hourly budget).
+            const ok = await github.getOctokit(owner);
             await ok.rest.issues.update({
               owner, repo, issue_number: issue.github_issue_number, state: 'closed',
             });
@@ -3483,8 +3484,9 @@ async function maybeApplyRenameProposal(pool, issue) {
 
       if (owner && repo && pat) {
         try {
-          const { Octokit } = await import('@octokit/rest');
-          const ok = new Octokit({ auth: pat });
+          // The bot token's client from services/github.js (recorded and
+          // counted against the hourly budget).
+          const ok = await github.getOctokit(owner);
 
           await ok.rest.issues.update({
             owner, repo, issue_number: locked.github_issue_number, state: 'closed',
@@ -3895,8 +3897,9 @@ async function maybeApplySecretChangeProposal(config, pool, issue, options = {})
       const pat = process.env.GITHUB_BOT_TOKEN;
       if (owner && repo && pat) {
         try {
-          const { Octokit } = await import('@octokit/rest');
-          const ok = new Octokit({ auth: pat });
+          // The bot token's client from services/github.js (recorded and
+          // counted against the hourly budget).
+          const ok = await github.getOctokit(owner);
           await ok.rest.issues.update({
             owner, repo, issue_number: locked.github_issue_number, state: 'closed',
           });

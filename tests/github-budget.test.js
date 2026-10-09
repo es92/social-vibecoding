@@ -363,6 +363,7 @@ test('the timer-driven GitHub callers ask before they spend', () => {
     'src/services/homeroom-bot.js',
     'src/services/workshop-themes.js',
     'src/services/app-heal.js',
+    'src/services/bench/lane.js',
   ]) {
     assert.match(read(rel), asks, `${rel} asks services/github-budget.js`);
   }
@@ -371,6 +372,9 @@ test('the timer-driven GitHub callers ask before they spend', () => {
   assert.match(audit.slice(0, audit.indexOf('\n}\n')), /githubBudget\.budgetAllows\('background'\)/, 'the boot privacy audit');
   const headSync = server.slice(server.indexOf('// Pass 6: imported-PR head sync'));
   assert.match(headSync.slice(0, 1800), /if \(!githubBudget\.budgetAllows\('background'\)\) break;/, 'the imported-PR head sync');
+  const recover = server.slice(server.indexOf('async function recoverStuckMerges'));
+  assert.match(recover.slice(0, recover.indexOf('\n}\n')), /if \(!githubBudget\.budgetAllows\('background'\)\) \{/,
+    'the merge recovery sweep (tests/recover-stuck-merges.test.js runs it)');
 });
 
 test('the Homeroom bot\'s pass waits for the reset, with the wait as its retry', async (t) => {

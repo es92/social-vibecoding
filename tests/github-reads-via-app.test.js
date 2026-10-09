@@ -159,6 +159,8 @@ test('an owner with no installation is read with the bot token', async (t) => {
   assert.equal(inst.calls.length, 0);
   assert.equal(pat.calls[0].auth, 'token bot-token');
   assert.deepEqual(budget.snapshot().reads.patReasons, { no_installation: 1 });
+  assert.deepEqual(budget.snapshot().reads.noInstallation, { 'someone-else': 1 },
+    'and names the owner the App would have to be installed on');
 });
 
 for (const [label, answer, reason] of [
@@ -282,7 +284,7 @@ test('switched off, the raw reads use the bot token exactly as before', async (t
   await github.fetchPublicIssue('usernode-bot', 'reads-b', 4);
   await github.fetchIssueComments('usernode-bot', 'reads-b', 4);
   assert.deepEqual(calls.map((c) => c.auth), ['Bearer bot-token', 'Bearer bot-token']);
-  assert.deepEqual(budget.snapshot().reads, { installation: 0, pat: 0, patReasons: {} }, 'nothing is routed');
+  assert.deepEqual(budget.snapshot().reads, { installation: 0, pat: 0, patReasons: {}, noInstallation: {} }, 'nothing is routed');
 });
 
 // ─── 4. No write path moved ─────────────────────────────────────────────
@@ -315,6 +317,7 @@ test('every write keeps the bot token; only standalone reads moved', () => {
     'getFileContent', 'compareCommitAncestry', 'getCommitParents', 'getCommitTree', 'getBranchSha',
     'getRepoHead', 'getCommitAt', 'findOpenPrByBranch', 'listOpenPulls', 'getPR', 'listChangedFiles',
     'compareRefs', 'getProposalDiff', 'compareFiles', 'getIssue', 'checkRepoPublic',
+    'compareCommitSubjects',
   ];
   for (const name of reads) {
     assert.match(body(name), /await getReadOctokit\(owner\)/, `${name} reads through getReadOctokit`);

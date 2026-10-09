@@ -536,7 +536,10 @@ async function refreshDriftState({ pool, session, pr, repo }) {
 
   let behindBy = null;
   try {
-    const octokit = await activeGithub().getOctokit(repo.owner);
+    // A read: through the App installation (services/github.js
+    // getReadOctokit), not the bot token's hourly budget. A stranded
+    // conflict re-derives here every few minutes.
+    const octokit = await activeGithub().getReadOctokit(repo.owner);
     const { data } = await octokit.rest.repos.compareCommits({
       owner: repo.owner, repo: repo.repo, base, head,
     });

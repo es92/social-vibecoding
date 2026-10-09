@@ -185,8 +185,10 @@ async function mergePR(owner, repo, prNumber, sha = null) {
 }
 
 // Minimal octokit shim so pr-import-sync.refreshDriftState (which calls
-// getOctokit(...).rest.repos.compareCommits) works in mock mode: report the
-// branch as up to date (behind_by 0), so drift refresh is a clean no-op.
+// getReadOctokit(...).rest.repos.compareCommits) works in mock mode: report
+// the branch as up to date (behind_by 0), so drift refresh is a clean no-op.
+// The mock has one client, so getReadOctokit is getOctokit, as it is in
+// services/github.js with reads through the App switched off.
 async function getOctokit(/* owner */) {
   return {
     rest: {
@@ -204,6 +206,7 @@ module.exports = {
   listChangedFiles,
   mergePR,
   getOctokit,
+  getReadOctokit: getOctokit,
   HeadMovedError,
   // mock-control + fixtures alignment
   bumpHead,

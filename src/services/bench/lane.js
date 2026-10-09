@@ -969,6 +969,10 @@ async function deleteBranch(pool, github, repoUrl, branch, trialId) {
  */
 async function sweepBranches(pool, deps = {}, now = Date.now()) {
   if (now - lastSweepAt < SWEEP_EVERY_MS && !deps.force) return 0;
+  // Each deletion spends the bot token's hourly budget, and nothing waits on
+  // it: under the reserve it waits for the reset, checked again each tick.
+  const githubBudget = require('../github-budget');
+  if (!githubBudget.budgetAllows('background')) return 0;
   lastSweepAt = now;
   const github = runner.guardedGithub(deps.github || require('../github'));
   const { rows } = await pool.query(
@@ -989,6 +993,7 @@ async function sweepBranches(pool, deps = {}, now = Date.now()) {
   );
   let n = 0;
   for (const r of rows) {
+    if (!githubBudget.budgetAllows('background')) return n;
     // eslint-disable-next-line no-await-in-loop
     if (await deleteBranch(pool, github, r.repo_url, r.build_branch, r.id)) n += 1;
   }
@@ -1009,6 +1014,7 @@ async function sweepBranches(pool, deps = {}, now = Date.now()) {
   );
   const bot = require('../homeroom-bot');
   for (const r of firsts) {
+    if (!githubBudget.budgetAllows('background')) return n;
     const repo = bot.parseRepo(r.repo_url);
     if (!repo) continue;
     try {

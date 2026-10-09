@@ -49,31 +49,48 @@ function publicFetchCredential() {
   return process.env.GITHUB_BOT_TOKEN ? 'pat' : 'anonymous';
 }
 
-// Record one response's rate-limit headers (services/github-budget.js).
-// Bookkeeping only: it never throws into the request it describes, and a
-// stub without headers records nothing.
-function recordHeaders(credential, headers) {
+// Record one response's rate-limit headers (services/github-budget.js), and
+// count the request against the caller that asked for it (`request`:
+// { method, url, caller, status }). Bookkeeping only: it never throws into
+// the request it describes, and a stub without headers records nothing.
+function recordHeaders(credential, headers, request = null) {
   try {
-    if (headers) budget.record(credential, headers);
+    if (!headers) return;
+    budget.record(credential, headers);
+    if (request) budget.noteRequest(credential, { ...request, headers });
   } catch (_) { /* bookkeeping only */ }
 }
 
-function recordFetchResponse(credential, resp) {
-  recordHeaders(credential, resp && resp.headers);
+// For the raw fetch paths. `method` and `url` are what was sent; the caller
+// is read off the stack here, which still holds the awaiting callers.
+function recordFetchResponse(credential, resp, { method = 'GET', url = null } = {}) {
+  let caller = 'unknown';
+  try { caller = budget.callerFromStack(); } catch (_) { /* bookkeeping only */ }
+  recordHeaders(credential, resp && resp.headers, {
+    method,
+    url: url || (resp && resp.url) || '',
+    caller,
+    status: resp && resp.status,
+  });
 }
 
 // Record every response an Octokit client gets, success or error, against
-// the credential it authenticates as. A client without Octokit's hook API (a
-// test double) is returned untouched.
+// the credential it authenticates as, and count it against the code that
+// asked (read off the stack before the request is sent, while the asking
+// frames are still on it). A client without Octokit's hook API (a test
+// double) is returned untouched.
 function instrument(octokit, credential) {
   if (!octokit || !octokit.hook || typeof octokit.hook.wrap !== 'function') return octokit;
   octokit.hook.wrap('request', async (request, options) => {
+    let caller = 'unknown';
+    try { caller = budget.callerFromStack(); } catch (_) { /* bookkeeping only */ }
+    const sent = { method: options && options.method, url: options && options.url, caller };
     try {
       const response = await request(options);
-      recordHeaders(credential, response && response.headers);
+      recordHeaders(credential, response && response.headers, { ...sent, status: response && response.status });
       return response;
     } catch (err) {
-      recordHeaders(credential, err && err.response && err.response.headers);
+      recordHeaders(credential, err && err.response && err.response.headers, { ...sent, status: err && err.status });
       throw err;
     }
   });
@@ -504,13 +521,17 @@ function isEnabled() {
   return !!app;
 }
 
+// GitHub logins are case-insensitive, and an owner parsed out of a stored
+// repo URL keeps whatever case the URL was written in, so the installation
+// is matched without regard to case.
 async function resolveInstallationId(owner) {
-  const cached = installationCache.get(owner);
+  const key = String(owner || '').toLowerCase();
+  const cached = installationCache.get(key);
   if (cached && cached.expiresAt > Date.now()) return cached.id;
 
   for await (const { installation } of app.eachInstallation.iterator()) {
-    if (installation.account?.login === owner) {
-      installationCache.set(owner, { id: installation.id, expiresAt: Date.now() + CACHE_TTL_MS });
+    if (String(installation.account?.login || '').toLowerCase() === key) {
+      installationCache.set(key, { id: installation.id, expiresAt: Date.now() + CACHE_TTL_MS });
       return installation.id;
     }
   }
@@ -779,7 +800,7 @@ async function getReadOctokit(owner) {
     : await patOctokit(pat);
   const installation = await installationReadOctokit(owner);
   if (!installation) {
-    budget.noteRead('pat', 'no_installation');
+    budget.noteRead('pat', 'no_installation', { owner });
     return botToken;
   }
   return withBotTokenFallback(installation, botToken, owner);
@@ -807,7 +828,7 @@ async function installationReadHeaders(owner) {
     });
   }
   if (!token) {
-    budget.noteRead('pat', 'no_installation');
+    budget.noteRead('pat', 'no_installation', { owner });
     return null;
   }
   return {
@@ -828,7 +849,7 @@ async function publicReadFetch(owner, url, { signal } = {}) {
   const viaApp = await installationReadHeaders(owner);
   if (viaApp) {
     const resp = await fetch(url, { headers: viaApp.headers, signal });
-    recordFetchResponse(viaApp.credential, resp);
+    recordFetchResponse(viaApp.credential, resp, { url });
     const refused = READ_FALLBACK_STATUSES.has(resp.status);
     if (!refused) {
       budget.noteRead('installation');
@@ -837,7 +858,7 @@ async function publicReadFetch(owner, url, { signal } = {}) {
     budget.noteRead('pat', `status_${resp.status}`);
   }
   const resp = await fetch(url, { headers: publicFetchHeaders(), signal });
-  recordFetchResponse(publicFetchCredential(), resp);
+  recordFetchResponse(publicFetchCredential(), resp, { url });
   return resp;
 }
 
@@ -1790,7 +1811,7 @@ async function compareRefs(owner, repo, basehead) {
 // is the figure to show and `files` may be short of a very large change.
 // Throws on transport errors, like compareRefs.
 async function compareCommitSubjects(owner, repo, base, head) {
-  const octokit = await getOctokit(owner);
+  const octokit = await getReadOctokit(owner);
   const { data } = await octokit.rest.repos.compareCommitsWithBasehead({
     owner, repo, basehead: `${base}...${head}`, per_page: 100,
   });
@@ -1944,7 +1965,7 @@ async function patchIssueTitle(owner, repo, issueNumber, title) {
       },
       body: JSON.stringify({ title: safeMention(title) }),
     });
-    recordFetchResponse('pat', res);
+    recordFetchResponse('pat', res, { method: 'PATCH', url: `/repos/${owner}/${repo}/issues/${issueNumber}` });
     if (res.ok) return;
     log.warn('github', 'PAT issue PATCH failed; trying installation token', {
       repo: `${owner}/${repo}`, issueNumber, status: res.status,
@@ -1969,7 +1990,7 @@ async function patchIssueBody(owner, repo, issueNumber, body) {
       },
       body: JSON.stringify({ body: safeBody }),
     });
-    recordFetchResponse('pat', res);
+    recordFetchResponse('pat', res, { method: 'PATCH', url: `/repos/${owner}/${repo}/issues/${issueNumber}` });
     if (res.ok) return;
     log.warn('github', 'PAT issue body PATCH failed; trying installation token', {
       repo: `${owner}/${repo}`, issueNumber, status: res.status,
@@ -2264,7 +2285,7 @@ async function fetchPublicRepoInfo(owner, repo) {
     const resp = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, {
       headers: { 'Accept': 'application/vnd.github+json' },
     });
-    recordFetchResponse('anonymous', resp);
+    recordFetchResponse('anonymous', resp, { url: `/repos/${owner}/${repo}` });
     if (!resp.ok) return null;
     const data = await resp.json();
     return { name: data.name || null, description: data.description || null };

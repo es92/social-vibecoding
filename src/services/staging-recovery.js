@@ -361,9 +361,6 @@ async function rebuildSessionStaging({ config, pool, session, reason }) {
     return 'skipped';
   }
 
-  const { Octokit } = await import('@octokit/rest');
-  const ok = new Octokit({ auth: pat });
-
   // #866: what identifies this session's code in the app's own repo.
   //
   // Native rows own their branch there, so `branch_name` compares and
@@ -389,6 +386,11 @@ async function rebuildSessionStaging({ config, pool, session, reason }) {
   // (or behind) main has nothing to preview.
   let compare;
   try {
+    // A read, so it goes through the App installation when the owner has
+    // one (services/github.js getReadOctokit), and is recorded and counted
+    // like every other GitHub request. It used to be a bot-token client of
+    // its own that the budget never saw.
+    const ok = await require('./github').getReadOctokit(owner);
     const { data } = await ok.rest.repos.compareCommits({
       owner, repo, base: 'main', head: compareHead,
     });

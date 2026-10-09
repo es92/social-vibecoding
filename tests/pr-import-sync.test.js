@@ -40,7 +40,7 @@ function fakeModule(relPath, exports) {
 const fakeGithub = fakeModule('../src/services/github', {
   isEnabled: () => true,
   getPR: async () => ({}),
-  getOctokit: async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 0 } }) } } }),
+  getReadOctokit: async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 0 } }) } } }),
 });
 const fakeWs = fakeModule('../src/services/ws', {
   sendSystemMessage: async () => {},
@@ -419,7 +419,7 @@ test('syncImportedProposal: an authored push resets the tally, posts re-review, 
 
   await withStubs([
     [fakeGithub, 'getPR', async () => ({ head: { sha: NEW, ref: 'feature/x' }, base: { ref: 'main' }, mergeable: true })],
-    [fakeGithub, 'getOctokit', async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 3 } }) } } })],
+    [fakeGithub, 'getReadOctokit', async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 3 } }) } } })],
     [fakeWs, 'sendSystemMessage', async (_pool, _appId, content, msgType, meta, thread) => {
       sysMessages.push({ content, msgType, meta, thread });
     }],
@@ -870,7 +870,7 @@ test('applyHeadChange: a late sweep keeps an author summary recorded for the hea
   let github = SESSION_HEAD;
   await withStubs([
     [fakeGithub, 'getPR', async () => ({ head: { sha: github, ref: 'feature/x' }, base: { ref: 'main' }, mergeable: true })],
-    [fakeGithub, 'getOctokit', async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 0 } }) } } })],
+    [fakeGithub, 'getReadOctokit', async () => ({ rest: { repos: { compareCommits: async () => ({ data: { behind_by: 0 } }) } } })],
     [fakeWs, 'sendSystemMessage', async () => {}],
     [fakeStaging, 'buildAndDeployStaging', async () => ({ containerId: 'cid', stagingUrl: 'https://s', hostname: 'h' })],
     [fakeVisuals, 'captureForSession', async () => {}],

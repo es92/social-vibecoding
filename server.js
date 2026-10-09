@@ -1901,9 +1901,29 @@ async function auditExistingRepoPrivacy(pool) {
 // We ask GitHub the truth rather than guessing. Bounded concurrency keeps
 // the boot scan cheap; genuinely-open PRs simply report merged=false and
 // are left untouched (only 'merging' rows are demoted to 'promoted').
-async function recoverStuckMerges(config, { attemptedOnly = false } = {}) {
+//
+// Every lookup spends GitHub's hourly budget, and on 9 Oct 2026 this sweep
+// was one of the callers refused when the bot token ran out (21 refusals in
+// a minute). So:
+//   - It is background work: it asks services/github-budget.js before each
+//     lookup and stops for the hour once the reserve is reached.
+//   - A refusal for the hourly limit ends the sweep: every remaining lookup
+//     would be refused too, and still counted.
+//   - The timer sweep (attemptedOnly) revisits a demoted attempt every time
+//     for its first hour, while GitHub may still report a merge the platform
+//     lost, and once an hour after that. A merge attempt is never cleared,
+//     so every open proposal that ever tried to merge used to cost one
+//     lookup per sweep, every four minutes, for as long as it stayed open.
+//     A row still 'merging' is looked up every time.
+const RECENT_MERGE_ATTEMPT_MS = 60 * 60 * 1000;
+const OLD_MERGE_ATTEMPT_RECHECK_MS = 60 * 60 * 1000;
+// sessionId -> when the timer sweep last looked up its old attempt.
+const oldMergeAttemptLookedUpAt = new Map();
+
+async function recoverStuckMerges(config, { attemptedOnly = false, now = Date.now } = {}) {
   const { getPool } = require('./src/db/pool');
   const github = require('./src/services/github');
+  const githubBudget = require('./src/services/github-budget');
   const mergeLock = require('./src/services/merge-finalization-lock');
   const pool = getPool(config);
 
@@ -1933,16 +1953,40 @@ async function recoverStuckMerges(config, { attemptedOnly = false } = {}) {
     return;
   }
 
-  log.info('server', 'Reconciling open PR sessions against GitHub', { count: rows.length });
+  // An old attempt the timer looked up within the hour waits its turn.
+  let deferred = 0;
+  if (attemptedOnly) {
+    const listed = new Set(rows.map((row) => row.id));
+    for (const id of oldMergeAttemptLookedUpAt.keys()) {
+      if (!listed.has(id)) oldMergeAttemptLookedUpAt.delete(id);
+    }
+    rows = rows.filter((row) => {
+      if (row.status === 'merging' || !row.merge_attempt_at) return true;
+      if (now() - new Date(row.merge_attempt_at).getTime() < RECENT_MERGE_ATTEMPT_MS) return true;
+      const last = oldMergeAttemptLookedUpAt.get(row.id);
+      if (last && now() - last < OLD_MERGE_ATTEMPT_RECHECK_MS) { deferred++; return false; }
+      return true;
+    });
+    if (!rows.length) return;
+  }
+
+  log.info('server', 'Reconciling open PR sessions against GitHub', { count: rows.length, deferred });
 
   const CONCURRENCY = 4;
   const queue = rows.slice();
   let healed = 0;
   let demoted = 0;
   let errors = 0;
+  let held = 0;
+  let stoppedForLimit = false;
 
   async function worker() {
     while (queue.length) {
+      if (!githubBudget.budgetAllows('background')) {
+        held += queue.length;
+        queue.length = 0;
+        break;
+      }
       const row = queue.shift();
       const release = await mergeLock.acquire(pool, row.id, { tryOnly: true });
       if (!release) continue; // A live process still owns this merge.
@@ -1958,6 +2002,7 @@ async function recoverStuckMerges(config, { attemptedOnly = false } = {}) {
         const [, owner, repo] = m;
         try {
           const pr = await github.getPR(owner, repo, row.pr_number);
+          if (attemptedOnly) oldMergeAttemptLookedUpAt.set(row.id, now());
           const workflow = require('./src/workflow/platform.ts');
           if (pr && pr.merged && workflow.mergeFollowupsEnabled()) {
             // The merge-followups machine records the merge and runs every
@@ -2001,10 +2046,24 @@ async function recoverStuckMerges(config, { attemptedOnly = false } = {}) {
           // Not merged + 'promoted' == genuinely open proposal: leave alone.
         } catch (err) {
           errors++;
-          log.warn('server', 'recoverStuckMerges: GitHub lookup failed', {
-            sessionId: row.id, prNumber: row.pr_number,
-            repo: `${owner}/${repo}`, err: err.message,
-          });
+          if (githubBudget.isRateLimitError(err)) {
+            // The hour is used up: the rest of the queue would be refused
+            // too. The next sweep after the reset picks them up.
+            if (!stoppedForLimit) {
+              stoppedForLimit = true;
+              log.warn('server', 'recoverStuckMerges: GitHub\'s hourly limit is used up; stopping until the next sweep', {
+                sessionId: row.id, prNumber: row.pr_number, repo: `${owner}/${repo}`,
+                left: queue.length,
+              });
+            }
+            held += queue.length;
+            queue.length = 0;
+          } else {
+            log.warn('server', 'recoverStuckMerges: GitHub lookup failed', {
+              sessionId: row.id, prNumber: row.pr_number,
+              repo: `${owner}/${repo}`, err: err.message,
+            });
+          }
           // A failed lookup is not proof the merge failed. The next timer
           // sweep retries without changing this session's status.
         }
@@ -2021,6 +2080,7 @@ async function recoverStuckMerges(config, { attemptedOnly = false } = {}) {
   }
   log.info('server', 'PR session reconciliation complete', {
     scanned: rows.length, healed, demoted, errors,
+    ...(held ? { heldForGithubBudget: held } : {}),
   });
 }
 

@@ -13143,8 +13143,9 @@ ${isCodexSession ? `${OPENROUTER_PROPOSAL_DESCRIPTION_GUIDANCE}\n` : ''}${guidan
           try {
             const pat = process.env.GITHUB_BOT_TOKEN;
             if (pat) {
-              const { Octokit } = await import('@octokit/rest');
-              const ok = new Octokit({ auth: pat });
+              // The bot token's client from services/github.js, so the
+              // request is recorded and counted against the hourly budget.
+              const ok = await github.getOctokit(repoOwner);
               // #127: append the "How to test" section so the guidance is
               // visible right where reviewers find the staging link.
               const testingComment = prMetadata.buildTestingBlock(session.testing_md, session.testing_path);

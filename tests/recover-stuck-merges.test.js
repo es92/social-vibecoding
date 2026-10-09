@@ -195,3 +195,105 @@ test('periodic reconciliation revisits a demoted attempt that GitHub completed l
   assert.equal(pool.updates.length, 1);
   assert.equal(pool.updates[0].id, attempted.id);
 });
+
+// ── GitHub's hourly budget (9 Oct 2026) ─────────────────────────────────────
+// The bot token ran out twice in one evening, and this sweep was among the
+// callers refused: 21 lookups in a minute against an empty budget, and every
+// open proposal that had ever attempted a merge looked up every four minutes.
+
+const budget = require('../src/services/github-budget');
+
+function withBotToken(t) {
+  const prior = process.env.GITHUB_BOT_TOKEN;
+  process.env.GITHUB_BOT_TOKEN = 'test-token';
+  budget._resetForTests();
+  t.after(() => {
+    if (prior === undefined) delete process.env.GITHUB_BOT_TOKEN;
+    else process.env.GITHUB_BOT_TOKEN = prior;
+    budget._resetForTests();
+  });
+}
+
+function rateHeaders(remaining) {
+  return {
+    'x-ratelimit-limit': '5000',
+    'x-ratelimit-remaining': String(remaining),
+    'x-ratelimit-reset': String(Math.floor(Date.now() / 1000) + 30 * 60),
+    'x-ratelimit-resource': 'core',
+  };
+}
+
+function openRows(count, firstId) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: firstId + i, status: 'promoted', pr_number: 1000 + i, merge_commit_sha: null,
+    repo_url: 'https://github.com/acme/widget',
+  }));
+}
+
+test('under the reserve it is background work like any other: nothing is looked up', async (t) => {
+  withBotToken(t);
+  budget.record('pat', rateHeaders(100));
+  const pool = makePool(openRows(6, 300));
+  const lookedUp = [];
+  await withStubs(pool, {
+    isEnabled: () => true,
+    getPR: async (_o, _r, n) => { lookedUp.push(n); return { merged: false }; },
+  }, () => recoverStuckMerges({}));
+  assert.deepEqual(lookedUp, []);
+  assert.deepEqual(pool.updates, []);
+});
+
+test('a refusal for the hourly limit ends the sweep instead of spending the rest of the queue', async (t) => {
+  withBotToken(t);
+  const rows = openRows(20, 400);
+  const pool = makePool(rows);
+  const lookedUp = [];
+  await withStubs(pool, {
+    isEnabled: () => true,
+    getPR: async (_o, _r, n) => {
+      lookedUp.push(n);
+      const err = new Error('API rate limit exceeded for user ID 276401300.');
+      err.status = 403;
+      err.response = { status: 403, headers: rateHeaders(0) };
+      throw err;
+    },
+  }, () => recoverStuckMerges({}));
+  assert.ok(lookedUp.length <= 4, `only the lookups already in flight went out (${lookedUp.length})`);
+  assert.deepEqual(pool.updates, [], 'a refusal is not proof of anything');
+});
+
+test('the timer revisits an old attempt once an hour, a recent one or a merging row every time', async (t) => {
+  withBotToken(t);
+  let clock = Date.parse('2026-10-09T20:00:00Z');
+  const now = () => clock;
+  const minutesAgo = (m) => new Date(clock - m * 60 * 1000).toISOString();
+  const rows = [
+    { id: 501, status: 'promoted', pr_number: 51, merge_commit_sha: null, merge_attempt_at: minutesAgo(3 * 24 * 60), repo_url: 'https://github.com/acme/widget' },
+    { id: 502, status: 'promoted', pr_number: 52, merge_commit_sha: null, merge_attempt_at: minutesAgo(10), repo_url: 'https://github.com/acme/widget' },
+    { id: 503, status: 'merging', pr_number: 53, merge_commit_sha: null, merge_attempt_at: minutesAgo(1), repo_url: 'https://github.com/acme/widget' },
+  ];
+  const pool = makePool(rows);
+  const lookedUp = [];
+  const github = {
+    isEnabled: () => true,
+    getPR: async (_o, _r, n) => { lookedUp.push(n); return { merged: false }; },
+  };
+  const sweep = () => withStubs(pool, github, () => recoverStuckMerges({}, { attemptedOnly: true, now }));
+
+  await sweep();
+  assert.deepEqual(lookedUp.sort(), [51, 52, 53], 'the first sweep looks every attempt up');
+
+  lookedUp.length = 0;
+  clock += 4 * 60 * 1000;
+  await sweep();
+  assert.deepEqual(lookedUp.sort(), [52, 53], 'four minutes later the three-day-old attempt waits');
+
+  lookedUp.length = 0;
+  clock += 57 * 60 * 1000;
+  await sweep();
+  assert.deepEqual(lookedUp.sort(), [51, 53], 'an hour on it is looked up again; the other attempt is now old too');
+
+  lookedUp.length = 0;
+  await withStubs(pool, github, () => recoverStuckMerges({}, { now }));
+  assert.deepEqual(lookedUp.sort(), [51, 52, 53], 'the boot scan looks every open row up');
+});

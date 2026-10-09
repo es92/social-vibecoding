@@ -43,7 +43,14 @@
 // services/platform-limit-alerts.js reads alertFigures() to tell the full
 // admins when a credential's core budget falls under a fifth and when it is
 // used up, and GET /api/admin/github-budget serves snapshot() to Admin, Limits.
+//
+// GitHub's figures say how much of an hour is used, not by what. On
+// 2026-10-09 the bot token ran out twice in an evening and nobody could say
+// which feature had spent it, so noteRequest() also counts every request
+// this process sends, per credential, by endpoint and by the code that asked
+// for it (see "Who spent it" below).
 
+const path = require('node:path');
 const log = require('./logger');
 
 // Background work waits once less than this share of the limit is left.
@@ -57,8 +64,15 @@ const SAME_WINDOW_MS = 60 * 1000;
 const state = new Map();
 // Which credential answered the reads routed by services/github.js
 // getReadOctokit (GITHUB_READS_VIA_APP), since this process started: the
-// App installation, or the bot token, and why the bot token.
-const reads = { installation: 0, pat: 0, patReasons: {} };
+// App installation, or the bot token, and why the bot token. `noInstallation`
+// names the owners whose reads went to the bot token because the App is not
+// installed on them: installing it there is the fix, and only an owner of
+// that account can do it.
+// (A null-prototype map: an owner is any GitHub login, "constructor" too.)
+const reads = { installation: 0, pat: 0, patReasons: {}, noInstallation: Object.create(null) };
+// Owners counted in reads.noInstallation, at most; the rest are counted
+// under '(others)'.
+const NO_INSTALLATION_OWNERS_MAX = 20;
 // "<credential>@<resetAt>" for the windows already logged as held.
 const heldLogged = new Set();
 
@@ -175,7 +189,7 @@ function isExhausted(credential, { now = Date.now() } = {}) {
  * Count one routed read: 'installation', or 'pat' with the reason the bot
  * token answered it (no_installation, budget_used_up, status_403, ...).
  */
-function noteRead(source, reason = null) {
+function noteRead(source, reason = null, { owner = null } = {}) {
   if (source === 'installation') {
     reads.installation += 1;
     return;
@@ -183,6 +197,218 @@ function noteRead(source, reason = null) {
   reads.pat += 1;
   const why = String(reason || 'unknown').slice(0, 32);
   reads.patReasons[why] = (reads.patReasons[why] || 0) + 1;
+  if (why === 'no_installation' && owner) {
+    let who = String(owner).slice(0, 100);
+    const known = Object.keys(reads.noInstallation);
+    // Logins are case-insensitive: one owner is one entry, as first seen.
+    const same = known.find((k) => k.toLowerCase() === who.toLowerCase());
+    if (same) who = same;
+    else if (known.length >= NO_INSTALLATION_OWNERS_MAX) who = '(others)';
+    reads.noInstallation[who] = (reads.noInstallation[who] || 0) + 1;
+  }
+}
+
+// ── Who spent it ──────────────────────────────────────────────────────
+//
+// Per credential and resource, the requests this process sent in GitHub's
+// current window (and the one before it), by endpoint and by caller.
+//
+// The caller is read off the request's async stack: the first two frames
+// outside services/github.js, this file and node_modules, as "function
+// (file)". No call site has to name itself, so a new caller is counted the
+// day it ships. The endpoint is the route template ("GET
+// /repos/{owner}/{repo}/pulls/{pull_number}"), so a thousand proposals are
+// one row, not a thousand.
+//
+// What the counts do NOT cover is reported too: GitHub's `used` for the
+// window, less what was already used when this process first saw it, less
+// what it counted, is what something else spent in the meantime: another
+// replica, a copy of the token handed to a container, or a request that
+// does not go through services/github.js.
+//
+// A 304 answer to a conditional request is free on GitHub's side, so it is
+// counted apart.
+
+// Rows (caller x endpoint) kept per window; anything past that is counted
+// in one '(other callers)' row, so a pathological caller cannot grow it.
+const SPEND_MAX_ROWS = 200;
+// Callers and endpoints per caller in snapshot().
+const SPEND_TOP_CALLERS = 12;
+const SPEND_TOP_ENDPOINTS = 4;
+const OTHER_CALLERS = '(other callers)';
+
+// "<credential>|<resource>" -> { current, previous }, each a window:
+// { resetAt, baseline, maxUsed, counted, free, rows: Map<key, row> }
+const spend = new Map();
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+// Frames that are the GitHub plumbing itself, not who asked.
+const PLUMBING = [
+  `${path.sep}src${path.sep}services${path.sep}github.js`,
+  `${path.sep}src${path.sep}services${path.sep}github-budget.js`,
+  `${path.sep}node_modules${path.sep}`,
+];
+
+function frameOf(line) {
+  // "at async fn (/abs/file.js:1:2)", "at fn (/abs/file.js:1:2)",
+  // "at /abs/file.js:1:2", "at async Promise.all (index 0)".
+  const m = /^\s*at (?:async )?(?:(.+?) \()?((?:file:\/\/)?\/[^():]+|[A-Za-z]:\\[^():]+):(\d+):\d+\)?$/.exec(line);
+  if (!m) return null;
+  const file = m[2].replace(/^file:\/\//, '');
+  if (PLUMBING.some((p) => file.includes(p))) return null;
+  if (!file.startsWith(REPO_ROOT)) return null;
+  const rel = path.relative(REPO_ROOT, file).split(path.sep).join('/').replace(/^src\//, '');
+  const fn = (m[1] || '').replace(/^Object\.|^Timeout\.|^Immediate\./, '').trim();
+  return fn && !/^<anonymous>$/.test(fn) ? `${fn} (${rel})` : `${rel}:${m[3]}`;
+}
+
+/**
+ * Who is asking, from the current (async) stack: "fn (file)", or
+ * "fn (file) ← fn (file)" with the frame that called it. Call it before the
+ * request's first await so the asking frames are still on the stack.
+ */
+function callerFromStack() {
+  const limit = Error.stackTraceLimit;
+  let stack = '';
+  try {
+    Error.stackTraceLimit = 40;
+    stack = String(new Error().stack || '');
+  } catch (_) {
+    return 'unknown';
+  } finally {
+    Error.stackTraceLimit = limit;
+  }
+  const frames = [];
+  for (const line of stack.split('\n').slice(1)) {
+    const f = frameOf(line);
+    if (f && f !== frames[frames.length - 1]) frames.push(f);
+    if (frames.length === 2) break;
+  }
+  return frames.length ? frames.join(' ← ') : 'unknown';
+}
+
+// "GET /repos/{owner}/{repo}/pulls/{pull_number}" from an Octokit route
+// template, or from a literal URL ("https://api.github.com/repos/o/r/
+// issues/7?per_page=100" -> "GET /repos/{owner}/{repo}/issues/{n}").
+function endpointOf(method, url) {
+  const verb = String(method || 'GET').toUpperCase();
+  let p = String(url || '');
+  try {
+    if (/^https?:\/\//i.test(p)) p = new URL(p).pathname;
+  } catch (_) { /* keep it as given */ }
+  p = p.split('?')[0];
+  const parts = p.split('/');
+  const out = [];
+  for (let i = 0; i < parts.length; i += 1) {
+    const seg = parts[i];
+    const prev = parts[i - 1];
+    if (prev === 'repos' && i === 2 && !seg.startsWith('{')) { out.push('{owner}', '{repo}'); i += 1; continue; }
+    if (['contents', 'ref', 'refs', 'matching-refs', 'compare'].includes(prev) && !seg.startsWith('{')) {
+      out.push(prev === 'contents' ? '{path}' : (prev === 'compare' ? '{basehead}' : '{ref}'));
+      break;
+    }
+    if (/^\d+$/.test(seg)) out.push('{n}');
+    else if (/^[0-9a-f]{40}$/i.test(seg)) out.push('{sha}');
+    else if (prev === 'branches' && seg && !seg.startsWith('{')) out.push('{branch}');
+    else out.push(seg);
+  }
+  return `${verb} ${out.join('/').slice(0, 160)}`;
+}
+
+function newWindow(figures, free) {
+  return {
+    resetAt: figures.resetAt,
+    // What was already used when this process first saw the window.
+    baseline: Math.max(0, figures.used - (free ? 0 : 1)),
+    maxUsed: figures.used,
+    counted: 0,
+    free: 0,
+    rows: new Map(),
+  };
+}
+
+/**
+ * Count one request that GitHub answered, against the window its own
+ * headers name. `caller` comes from callerFromStack(), taken before the
+ * request was sent; `status` is the answer's. A response without figures (a
+ * network error, a stub) reached nothing that counts, so it is not counted.
+ */
+function noteRequest(credential, { method = 'GET', url = '', caller = 'unknown', status = 0, headers = null } = {}) {
+  const cred = normalizeCredential(credential);
+  if (!cred) return;
+  const figures = parse(headers);
+  if (!figures) return;
+  const key = `${cred}|${figures.resource}`;
+  let slot = spend.get(key);
+  const free = Number(status) === 304;
+  if (!slot) {
+    slot = { current: newWindow(figures, free), previous: null };
+    spend.set(key, slot);
+  } else if (figures.resetAt >= slot.current.resetAt + SAME_WINDOW_MS) {
+    slot.previous = slot.current;
+    slot.current = newWindow(figures, free);
+  } else if (figures.resetAt <= slot.current.resetAt - SAME_WINDOW_MS) {
+    // A late answer from the window before: it belongs there, if anywhere.
+    if (!slot.previous || Math.abs(figures.resetAt - slot.previous.resetAt) >= SAME_WINDOW_MS) return;
+  }
+  const w = Math.abs(figures.resetAt - slot.current.resetAt) < SAME_WINDOW_MS ? slot.current : slot.previous;
+  const endpoint = endpointOf(method, url);
+  let rowKey = `${caller}\u0000${endpoint}`;
+  if (!w.rows.has(rowKey) && w.rows.size >= SPEND_MAX_ROWS) rowKey = `${OTHER_CALLERS}\u0000*`;
+  let row = w.rows.get(rowKey);
+  if (!row) {
+    row = rowKey.startsWith(`${OTHER_CALLERS}\u0000`)
+      ? { caller: OTHER_CALLERS, endpoint: '*', count: 0, free: 0 }
+      : { caller, endpoint, count: 0, free: 0 };
+    w.rows.set(rowKey, row);
+  }
+  if (free) {
+    row.free += 1;
+    w.free += 1;
+  } else {
+    row.count += 1;
+    w.counted += 1;
+  }
+  w.maxUsed = Math.max(w.maxUsed, figures.used);
+  // Answers land out of order. The lowest `used` any of them carries is the
+  // first of this process's requests GitHub counted, so one less than it is
+  // what was spent before this process joined the window.
+  w.baseline = Math.max(0, Math.min(w.baseline, figures.used - (free ? 0 : 1)));
+}
+
+// One window, for snapshot(): the top callers with their top endpoints.
+function spendSummary(w, { now = Date.now() } = {}) {
+  if (!w) return null;
+  const byCaller = new Map();
+  for (const row of w.rows.values()) {
+    let c = byCaller.get(row.caller);
+    if (!c) {
+      c = { caller: row.caller, count: 0, free: 0, endpoints: [] };
+      byCaller.set(row.caller, c);
+    }
+    c.count += row.count;
+    c.free += row.free;
+    c.endpoints.push({ endpoint: row.endpoint, count: row.count, free: row.free });
+  }
+  const callers = [...byCaller.values()]
+    .sort((a, b) => (b.count - a.count) || (b.free - a.free) || a.caller.localeCompare(b.caller));
+  const top = callers.slice(0, SPEND_TOP_CALLERS).map((c) => ({
+    ...c,
+    endpoints: c.endpoints
+      .sort((a, b) => (b.count - a.count) || (b.free - a.free) || a.endpoint.localeCompare(b.endpoint))
+      .slice(0, SPEND_TOP_ENDPOINTS),
+  }));
+  const rest = callers.slice(SPEND_TOP_CALLERS);
+  return {
+    resetAt: new Date(w.resetAt).toISOString(),
+    expired: w.resetAt <= now,
+    counted: w.counted,
+    free: w.free,
+    usedBeforeCounting: w.baseline,
+    notCounted: Math.max(0, w.maxUsed - w.baseline - w.counted),
+    callers: top,
+    otherCallers: rest.length ? { callers: rest.length, count: rest.reduce((n, c) => n + c.count, 0) } : null,
+  };
 }
 
 function installationCredentials() {
@@ -279,6 +505,7 @@ function snapshot({ now = Date.now() } = {}) {
   for (const [credential, byResource] of state) {
     for (const [resource, e] of byResource) {
       const expired = e.resetAt <= now;
+      const slot = spend.get(`${credential}|${resource}`);
       rows.push({
         credential,
         kind: credential === 'pat' ? 'pat' : (credential === 'anonymous' ? 'anonymous' : 'installation'),
@@ -292,6 +519,8 @@ function snapshot({ now = Date.now() } = {}) {
         observedAt: new Date(e.observedAt).toISOString(),
         expired,
         held: resource === 'core' && !expired && e.remaining < reserveFor(e.limit),
+        spend: spendSummary(slot && slot.current, { now }),
+        previousSpend: spendSummary(slot && slot.previous, { now }),
       });
     }
   }
@@ -303,7 +532,12 @@ function snapshot({ now = Date.now() } = {}) {
   return {
     reservePercent: Math.round(RESERVE_RATIO * 100),
     credentials: rows,
-    reads: { installation: reads.installation, pat: reads.pat, patReasons: { ...reads.patReasons } },
+    reads: {
+      installation: reads.installation,
+      pat: reads.pat,
+      patReasons: { ...reads.patReasons },
+      noInstallation: { ...reads.noInstallation },
+    },
   };
 }
 
@@ -328,14 +562,47 @@ function demoSnapshot({ now = Date.now() } = {}) {
       observedAt: new Date(now - 20 * 1000).toISOString(),
       expired: false,
       held: remaining < reserveFor(limit),
+      spend: null,
+      previousSpend: null,
     };
+  };
+  const caller = (name, count, endpoints) => ({
+    caller: name,
+    count,
+    free: 0,
+    endpoints: endpoints.map(([endpoint, n]) => ({ endpoint, count: n, free: 0 })),
+  });
+  const pat = row('pat', 5000, 612, 23);
+  pat.spend = {
+    resetAt: pat.resetAt,
+    expired: false,
+    counted: 3605,
+    free: 140,
+    usedBeforeCounting: 0,
+    notCounted: 783,
+    callers: [
+      caller('recoverStuckMerges (server.js)', 1490, [['GET /repos/{owner}/{repo}/pulls/{pull_number}', 1490]]),
+      caller('syncImportedProposal (services/pr-import-sync.js)', 1122, [
+        ['GET /repos/{owner}/{repo}/pulls/{pull_number}', 801],
+        ['GET /repos/{owner}/{repo}/compare/{basehead}', 321],
+      ]),
+      caller('sweepBranches (services/bench/lane.js)', 640, [['DELETE /repos/{owner}/{repo}/git/refs/{ref}', 640]]),
+      caller('checkAndMerge (routes/votes.js)', 353, [['PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge', 353]]),
+    ],
+    otherCallers: null,
   };
   return {
     reservePercent: Math.round(RESERVE_RATIO * 100),
     credentials: [
-      row('pat', 5000, 612, 23),
+      pat,
       row('installation:usernode-labs', 12500, 11870, 41),
     ],
+    reads: {
+      installation: 6630,
+      pat: 1490,
+      patReasons: { no_installation: 1490 },
+      noInstallation: { 'Sample-Org': 1490 },
+    },
   };
 }
 
@@ -408,9 +675,11 @@ function githubUnavailableBody(err, { now = Date.now() } = {}) {
 function _resetForTests() {
   state.clear();
   heldLogged.clear();
+  spend.clear();
   reads.installation = 0;
   reads.pat = 0;
   reads.patReasons = {};
+  reads.noInstallation = Object.create(null);
 }
 
 module.exports = {
@@ -419,6 +688,9 @@ module.exports = {
   core,
   isExhausted,
   noteRead,
+  noteRequest,
+  callerFromStack,
+  endpointOf,
   snapshot,
   demoSnapshot,
   alertFigures,
