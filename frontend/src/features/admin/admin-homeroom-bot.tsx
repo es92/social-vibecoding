@@ -60,10 +60,11 @@ interface Settings {
   pausedApps: string[];
   turnSeconds: number;
   turnInputTokens: number;
-  // How many live builds the benchmark's trials and a later change's side
-  // builds wait behind (isLiveLaneSaturated), and whether side builds are
-  // made on the platform's own repository (laterSideSkipReason). Both are
-  // named for the shadow builds they also governed.
+  // How many shadow builds run at once (the build lane), and whether side
+  // builds are made on the platform's own repository (laterSideSkipReason).
+  // Both are named for the shadow builds. The benchmark's trials and side
+  // builds wait for `liveAtOnce` instead (isLiveLaneSaturated): this one
+  // held them back until 9 Oct 2026, behind any two live builds.
   buildConcurrency: number;
   shadowBuildPlatform: boolean;
   // #3624: what each person's requests may cost the platform in a week
@@ -281,7 +282,12 @@ interface Payload {
   dmChat?: DmChat;
   health?: RolloutHealthData;
   incidents?: Incidents | null;
+  // The configurations' pairs waiting for a pick, per scope (bot-configs.js
+  // pairsWaitingByScope); null when they could not be counted.
+  pairsWaiting?: PairsWaiting | null;
 }
+
+interface PairsWaiting { first_version?: number; later?: number }
 
 // Somebody who asked the bot to stop tagging them on one issue.
 interface MentionOptOut {
@@ -748,6 +754,21 @@ export function waitingFor(depth: number, buildsWaiting: number): string {
   return countsLine([[depth, 'to read'], [buildsWaiting, 'to build']]);
 }
 
+/**
+ * Under the totals: the configurations' pairs waiting for a pick, per scope,
+ * and where they are picked, since nothing else says they wait. Empty when
+ * none does. Pure.
+ */
+export function pairsWaitingLine(waiting: PairsWaiting | null | undefined): string {
+  const n = (v: unknown) => (Number.isInteger(v) && (v as number) > 0 ? (v as number) : 0);
+  const parts: [number, string][] = [[n(waiting?.first_version), 'first-version'], [n(waiting?.later), 'later-change']];
+  const shown = parts.filter(([k]) => k > 0);
+  if (!shown.length) return '';
+  const total = shown.reduce((sum, [k]) => sum + k, 0);
+  const list = shown.map(([k, what]) => `${k} ${what} pair${k === 1 ? '' : 's'}`).join(' and ');
+  return `Bot configurations: ${list} ${total === 1 ? 'waits' : 'wait'} for a pick. Pairs are picked through the Homeroom connector: list_bot_configs, then get_bot_config_pair.`;
+}
+
 /** "2 reading, 3 building", leaving a zero out; empty when all are. Pure. */
 function countsLine(parts: [number, string][]): string {
   return parts.filter(([n]) => n > 0).map(([n, words]) => `${n} ${words}`).join(', ');
@@ -987,7 +1008,7 @@ const FIELD_LABEL: Record<FormKey, string> = {
   continueReads: 'continuing its last read',
   liveBuildStream: 'Live while a first version builds',
   shadowBuildPlatform: 'side builds of Homeroom',
-  buildConcurrency: 'live builds before side builds wait',
+  buildConcurrency: 'shadow builds at once',
   liveAtOnce: 'live requests at once',
   perPerson: 'per person at once',
   proposalCeiling: 'proposals at once',
@@ -1069,7 +1090,7 @@ export function buildPatch(form: Form, saved: Form, dirty: FormKey[]): { patch: 
       if (Object.keys(changed).length) patch.models = changed;
     } else if (key === 'botCap') patch.weeklyLimitCents = dollars('botCap', "The bot's weekly budget", '');
     else if (key === 'userCap') patch.userWeeklyCents = dollars('userCap', 'The budget per person', ' (0 for no limit)');
-    else if (key === 'buildConcurrency') patch.buildConcurrency = whole(key, 1, 4, 'Live builds before side builds wait');
+    else if (key === 'buildConcurrency') patch.buildConcurrency = whole(key, 1, 4, 'Shadow builds at once');
     else if (key === 'liveAtOnce') patch.liveAtOnce = whole(key, 1, 24, 'Live requests at once');
     else if (key === 'perPerson') patch.perPerson = whole(key, 1, 6, 'Per person at once');
     else if (key === 'proposalCeiling') patch.proposalCeiling = whole(key, 0, 1000, 'Proposals up for a vote at once');
@@ -1319,6 +1340,7 @@ function HomeroomBotSection() {
 
   const chip = health(settings, payload?.loop);
   const working = payload?.workingNow || [];
+  const pairsLine = pairsWaitingLine(payload?.pairsWaiting);
 
   const tile = (label: string, value: string, id: string, sub?: string) => (
     <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 p-3" id={id}>
@@ -1390,6 +1412,7 @@ function HomeroomBotSection() {
               </>
               : ''}
           </p>
+          <p className={pairsLine ? `${AdminUI.muted} mt-1` : 'hidden'} id="admin-homeroom-bot-pairs-waiting">{pairsLine}</p>
 
           <details className="mt-3" id="admin-homeroom-bot-health-details">
             <summary className={`${AdminUI.muted} cursor-pointer`}>How the loop is doing</summary>
@@ -1816,7 +1839,7 @@ function HomeroomBotSection() {
                 <h3 className={AdminUI.cardTitle}>Side builds and the benchmark</h3>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <NumberField id="admin-homeroom-bot-build-concurrency" label="Live builds before side builds wait"
+                <NumberField id="admin-homeroom-bot-build-concurrency" label="Shadow builds at once"
                   value={form.buildConcurrency} min={1} max={4} canWrite={canWrite}
                   onChange={(v) => setField('buildConcurrency', v)} />
                 <label className="flex items-center gap-2 text-sm md:mt-6" htmlFor="admin-homeroom-bot-shadow-build-platform">
@@ -1833,8 +1856,10 @@ function HomeroomBotSection() {
               <p className={`${AdminUI.muted} mt-3`} id="admin-homeroom-bot-side-builds-note">
                 A side build is another configuration of the bot building the same change quietly, beside the one that
                 builds it for real, so the two can be compared (Benchmark). Side builds and the benchmark&apos;s own trials
-                start only while fewer live builds than this are running, so they never take a worker somebody is waiting
-                on. Each comes out of the bot&apos;s weekly budget.
+                start only while the bot&apos;s live requests leave a slot free (Live requests at once, under Advanced), so
+                they never take a worker somebody is waiting on, and a later change&apos;s side builds take one of those
+                slots themselves. Shadow builds at once is for the bot&apos;s shadow builds alone. Each comes out of the
+                bot&apos;s weekly budget.
               </p>
             </div>
 

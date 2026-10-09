@@ -4381,7 +4381,32 @@ async function finishRecoveredTurn({
  */
 async function finishConfiguredShadow(pool, runId, built) {
   const version = await runConfigVersion(pool, runId).catch(() => null);
-  if (version) await botConfigs().finishLive(pool, { botRunId: runId, version, built });
+  if (version) await botConfigs().finishLive(pool, { botRunId: runId, version, built, activeMs: await recoveredBuildMs(pool, built?.sessionId) });
+}
+
+/**
+ * How long a build a restart finished was under way: from its session's
+ * start, which live.buildAndPropose opens as its spec turn begins (where the
+ * live path's own buildMs starts too), to now, the restart included, since
+ * its worker went on building through it; or to `until` (a review a restart
+ * stopped with nothing running: its last step), when that is earlier. A side
+ * build's time is counted the same way (bench/lane.js releaseTrial adds each
+ * claim's to prior_ms). Without it, a configuration's result for a build
+ * finished after a restart held its triage's time alone (95 s beside a side
+ * build's 940 s). Null when the session is gone. Never throws.
+ */
+async function recoveredBuildMs(pool, sessionId, { until = null } = {}) {
+  if (!sessionId) return null;
+  try {
+    const { rows: [s] } = await pool.query(
+      `SELECT (EXTRACT(EPOCH FROM LEAST(NOW(), COALESCE($2::timestamptz, NOW())) - created_at) * 1000)::float8 AS ms
+         FROM chat_sessions WHERE id = $1`,
+      [Number(sessionId), until && Number.isFinite(Date.parse(until)) ? new Date(until).toISOString() : null],
+    );
+    return s && Number.isFinite(Number(s.ms)) ? Math.max(Math.round(Number(s.ms)), 0) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -5042,6 +5067,9 @@ async function completeRecoveredLive({ pool, config = {}, sessionId, deps = {} }
     if (version && !restartedOut) {
       await botConfigs().finishLive(pool, {
         botRunId: plan.runId, version,
+        // Its real time, as a side build's is counted; to the review's last
+        // step when the restart left the review with nothing running.
+        activeMs: await recoveredBuildMs(pool, sessionId, { until: plan.lost ? reviewing?.updatedAt : null }),
         built: reviewing ? { ...built, review: { ...reviewing, finalCapture: null } }
           : reviewedNow ? { ...built, review: reviewedNow } : built,
       });
@@ -5264,20 +5292,29 @@ async function sayBuildLost(pool, settings, run, deps = {}) {
  * outcome is recorded in the same columns (#3509), never is.
  */
 /**
- * #3654: whether the bot's live builds (ready verdicts on an app it is live
- * on, which a person is waiting for) fill every build slot it has right now,
- * in this process. The benchmark's lane (services/bench/lane.js) starts
- * nothing while they do, so a benchmark never takes a worker a person is
- * waiting on. Shadow builds in the lane do not count: like a benchmark trial
- * they are an experiment nobody waits for, and counting them let a busy
- * shadow lane hold the benchmark back indefinitely. `counts.besides` adds
- * builds that share the live builds' slots: a later change's side builds
- * use only the slots live builds leave free (lane.js). `counts.live` is for
- * tests.
+ * #3654: whether the bot's live work (the requests on apps it is live on,
+ * which a person is waiting for: reads and builds) fills every live slot it
+ * has right now, in this process: `liveAtOnce`, which dispatch fills, each
+ * slot a worker from the pool people's own sessions use. The benchmark's
+ * lane (services/bench/lane.js) starts nothing while it does, so a benchmark
+ * never takes a worker a person is waiting on. Shadow builds in the lane do
+ * not count: like a benchmark trial they are an experiment nobody waits for,
+ * and counting them let a busy shadow lane hold the benchmark back
+ * indefinitely. `counts.besides` adds work that shares the live slots: a
+ * later change's side builds use only the slots live work leaves free
+ * (lane.js), so live work and side builds together stay inside
+ * `liveAtOnce`; live work never waits for them, since dispatch does not
+ * count them. `counts.live` is for tests.
+ *
+ * The limit was `buildConcurrency` (2), from when live builds had that many
+ * slots. They have had `liveAtOnce` (12) since, and any two of them held
+ * every side build and benchmark trial back: on 9 Oct 2026 none started for
+ * hours with twenty queued.
  */
 function isLiveLaneSaturated(settings = null, counts = null) {
-  const limit = clampInt(settings?.buildConcurrency, DEFAULTS.buildConcurrency, 1, MAX_BUILD_CONCURRENCY);
-  const live = counts && Number.isFinite(counts.live) ? counts.live : liveBuildsInFlight.size;
+  const limit = clampInt(settings?.liveAtOnce, DEFAULTS.liveAtOnce, 1, MAX_LIVE_AT_ONCE);
+  const live = counts && Number.isFinite(counts.live) ? counts.live
+    : Math.max([...inFlight.values()].filter((e) => e.lane === 'live').length, liveBuildsInFlight.size);
   return live + (Number(counts?.besides) || 0) >= limit;
 }
 
@@ -8707,6 +8744,9 @@ async function adminPayload(pool, config, {
     // #4210: errors that should not happen (a build a restart cut short),
     // the last week's, newest first (platform-incidents.js).
     incidents: await incidents().recent(pool),
+    // The configurations' pairs waiting for a pick, per scope: picked only
+    // through the connector, so the Overview says they wait.
+    pairsWaiting: await botConfigs().pairsWaitingByScope(pool),
   };
 }
 

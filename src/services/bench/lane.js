@@ -15,18 +15,26 @@
 //     next light one (triage, DM, follow-up) instead of holding the run.
 //     And at most eight trials in flight across every run, counting the ones
 //     restart recovery is finishing.
-//   * Never while the live bot's live builds (ones a person is waiting for)
-//     use every build slot it has (homeroom-bot isLiveLaneSaturated): the
-//     benchmark waits for them, not the other way round. Shadow builds do
-//     not hold it back; they are experiments too. A later change's side
-//     builds (services/bot-configs.js, kind `bot_config_later`) take only
-//     the build slots live builds leave free: those in flight count beside
-//     the live builds against the bot's build concurrency.
+//   * Never while the live bot's live work (the requests a person is waiting
+//     for, read or built) fills every live slot it has, `liveAtOnce`
+//     (homeroom-bot isLiveLaneSaturated): the benchmark waits for it, not
+//     the other way round. Shadow builds do not hold it back; they are
+//     experiments too. A later change's side builds (services/bot-configs.js,
+//     kind `bot_config_later`) take only the live slots live work leaves
+//     free: those in flight count beside the live work against `liveAtOnce`.
+//     It was the bot's build concurrency (2) until 9 Oct 2026, from when live
+//     builds had only that many slots; once they had `liveAtOnce` (12), any
+//     two live builds held every side build back, and none started for hours
+//     with twenty queued.
 //   * The cap. Before a trial is claimed, what the run has spent, plus the
 //     estimate of every trial still under way, plus this trial's estimate
 //     (catalog.estimateTrialCost, deliberately pessimistic), must stay inside
 //     the run's cap; the first trial that would cross it ends the run's
-//     scheduling, and every trial not yet run is marked `skipped_cap`. The
+//     scheduling, and every trial not yet run is marked `skipped_cap` (a
+//     side build's result with it, skipped: capRun). A trial that goes on
+//     from what it kept after a restart is counted at what is still to come
+//     of its estimate, less what its kept work cost (keptSpend), which its
+//     run was charged already. The
 //     bench user's own weekly allowance is checked too, as a backstop. What
 //     a trial already under way spends cannot be stopped mid-turn (usage is
 //     only known when the turn ends), so the cap can be overrun by at most
@@ -59,7 +67,9 @@
 //
 // Branches: a trial's `bench/` branch is deleted when it ends unless it
 // holds commits (a build, a revision), which are kept BRANCH_KEEP_DAYS for
-// a person to look at; the diff the judge reads is stored on the trial.
+// a person to look at; the diff the judge reads is stored on the trial. A
+// later change's side build's is kept while its pair waits for a pick, up
+// to BRANCH_KEEP_WAITING_DAYS.
 
 const crypto = require('crypto');
 const log = require('../logger');
@@ -92,6 +102,11 @@ const DEFAULT_REPEATS = 3;
 const SINGLE_ATTEMPT_STAGES = Object.freeze(['build', 'spec', 'capture']);
 const MAX_CLAIMS = 2;
 const BRANCH_KEEP_DAYS = 7;
+// A side build's branch whose pair still waits for a pick is kept past
+// BRANCH_KEEP_DAYS, so the pair's compare link opens, but not for good: it
+// sits on the live project's own repository. After this, the pair shows the
+// diff stored on its trial (bot-configs.js diffSummary).
+const BRANCH_KEEP_WAITING_DAYS = 30;
 const IDLE_MS = 60 * 1000;
 const SWEEP_EVERY_MS = 10 * 60 * 1000;
 // How long a claimed trial may go without this process holding it before
@@ -670,6 +685,27 @@ function stepsKept(checkpoint) {
   return ['triage', 'spec', 'build', 'review'].filter((k) => cp[k]).length;
 }
 
+/** The sessions whose work a trial's checkpoint keeps: its triage, spec, build and review. Pure. */
+function keptSessions(checkpoint) {
+  const cp = checkpoint || {};
+  return new Set([cp.triage?.session_id, cp.spec?.sessionId, cp.build?.sessionId, cp.reviewSessionId].filter(Boolean).map(Number));
+}
+
+/**
+ * What a trial that goes on from its checkpoint has already spent on the
+ * work it keeps (keptSessions), as its run was charged for it (`charged`,
+ * releaseTrial): the part of its estimate it will not spend again. What an
+ * interrupted attempt threw away is not in it; that work is still to come.
+ * Zero for a trial with no checkpoint. Pure.
+ */
+function keptSpend(checkpoint) {
+  const cp = checkpoint || {};
+  const charged = cp.charged && typeof cp.charged === 'object' ? cp.charged : {};
+  let sum = 0;
+  for (const id of keptSessions(cp)) sum += Math.max(Number(charged[String(id)]) || 0, 0);
+  return sum;
+}
+
 /**
  * What a trial's sessions spent that no release has charged to its run yet:
  * those in `sessionIds` and, for a trial with a checkpoint, every session it
@@ -681,7 +717,7 @@ function stepsKept(checkpoint) {
 async function unchargedSpend(pool, checkpoint, { sessionIds = [], skip = [] } = {}) {
   const cp = checkpoint || {};
   const already = cp.charged && typeof cp.charged === 'object' ? cp.charged : {};
-  const kept = new Set([cp.triage?.session_id, cp.spec?.sessionId, cp.build?.sessionId, cp.reviewSessionId].filter(Boolean).map(Number));
+  const kept = keptSessions(cp);
   const skipped = new Set(skip.map(Number));
   const ids = [...new Set([...(Array.isArray(cp.sessions) ? cp.sessions : []), ...sessionIds]
     .filter((x) => x != null).map(Number))].filter((id) => !skipped.has(id));
@@ -924,7 +960,13 @@ async function deleteBranch(pool, github, repoUrl, branch, trialId) {
   }
 }
 
-/** Kept branches past their time, deleted. Throttled; never throws. */
+/**
+ * Kept branches past their time, deleted. A side build's whose pair still
+ * waits for a pick is kept on, as recordTrial says it is, until the pair is
+ * picked (or left out) or BRANCH_KEEP_WAITING_DAYS pass: before, the sweep
+ * took it at seven days like any other, and the pair's compare link stopped
+ * opening while the pair still waited. Throttled; never throws.
+ */
 async function sweepBranches(pool, deps = {}, now = Date.now()) {
   if (now - lastSweepAt < SWEEP_EVERY_MS && !deps.force) return 0;
   lastSweepAt = now;
@@ -937,8 +979,13 @@ async function sweepBranches(pool, deps = {}, now = Date.now()) {
       WHERE tr.build_branch IS NOT NULL AND tr.branch_deleted_at IS NULL
         AND tr.kept_at IS NULL
         AND tr.finished_at < NOW() - make_interval(days => $1)
+        AND (tr.finished_at < NOW() - make_interval(days => $2)
+             OR NOT EXISTS (
+               SELECT 1 FROM bot_config_results cr
+                 JOIN bot_config_pairs p ON p.side_result_id = cr.id
+                WHERE cr.trial_id = tr.id AND p.status = 'waiting'))
       ORDER BY tr.id LIMIT 50`,
-    [BRANCH_KEEP_DAYS],
+    [BRANCH_KEEP_DAYS, BRANCH_KEEP_WAITING_DAYS],
   );
   let n = 0;
   for (const r of rows) {
@@ -1365,10 +1412,17 @@ async function handBackTrial({ pool, row, session, activeTurn, result, timedOut,
   return status ? 'handed_back' : 'gone';
 }
 
-/** End a run's scheduling at its cap: what is left is skipped. */
+/**
+ * End a run's scheduling at its cap: what is left is skipped. A
+ * configuration's side build skipped here is finished as one the lane
+ * recorded (bot-configs.js finishSideTrial): its result skipped, with why.
+ * Left pending, it was never paired nor counted, and nothing came back to
+ * it (9 of 50 side builds, 9 Oct 2026).
+ */
 async function capRun(pool, runId) {
-  await pool.query(
-    "UPDATE bench_trials SET status = 'skipped_cap', finished_at = NOW() WHERE run_id = $1 AND status = 'pending'",
+  const { rows: skipped } = await pool.query(
+    `UPDATE bench_trials SET status = 'skipped_cap', finished_at = NOW() WHERE run_id = $1 AND status = 'pending'
+     RETURNING id, bot_config_version_id`,
     [runId],
   );
   await pool.query(
@@ -1376,6 +1430,41 @@ async function capRun(pool, runId) {
     [runId],
   );
   log.info('bench', 'Run reached its cap', { runId });
+  for (const t of skipped) {
+    // eslint-disable-next-line no-await-in-loop
+    if (t.bot_config_version_id) await require('../bot-configs').finishSideTrial(pool, t.id);
+  }
+}
+
+/**
+ * Side builds' results still pending whose trial has ended: capped before
+ * capRun finished them, released into a run capped meanwhile (releaseTrial),
+ * or cancelled by an admin. Each is finished as capRun finishes one, so none
+ * waits for good. A trial this process still holds is left to its own
+ * finisher. Resolves how many it settled; never throws.
+ */
+async function settleSideResults(pool) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT tr.id FROM bot_config_results cr
+         JOIN bench_trials tr ON tr.id = cr.trial_id
+        WHERE cr.status = 'pending' AND cr.source = 'trial'
+          AND tr.status NOT IN ('pending', 'running', 'awaiting')
+          AND NOT (tr.id = ANY($1::int[]))
+        ORDER BY tr.id LIMIT 50`,
+      [[...inFlight.keys()]],
+    );
+    let n = 0;
+    for (const r of rows) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await require('../bot-configs').finishSideTrial(pool, r.id)) n += 1;
+    }
+    if (n) log.info('bench', 'Settled side builds whose trial ended without a result', { results: n });
+    return n;
+  } catch (err) {
+    log.warn('bench', 'Could not settle side builds\' results', { err: err.message });
+    return 0;
+  }
 }
 
 /**
@@ -1400,6 +1489,7 @@ async function tick(pool, config, deps = {}) {
     await releaseStale(pool, settings);
     await releaseOrphaned(pool, deps).catch((err) => log.warn('bench', 'Orphaned-trial sweep failed', { err: err.message }));
     await sweepBranches(pool, deps).catch(() => {});
+    await settleSideResults(pool);
     // The studio's previews: kept up for their day, then taken down.
     await require('./studio').sweepPreviews(pool, deps).catch(() => {});
     const { rows: runs } = await pool.query(
@@ -1443,7 +1533,7 @@ async function tick(pool, config, deps = {}) {
         // three heavy trials at a time.
         const heavyCap = run.kind === 'studio' ? Math.min(Number(run.concurrency) || 1, MAX_IN_FLIGHT) : MAX_HEAVY_PER_RUN;
         const { rows: [next] } = await pool.query(
-          `SELECT tr.id, tr.est_cost_usd::float8 AS est, t.stage
+          `SELECT tr.id, tr.est_cost_usd::float8 AS est, t.stage, tr.checkpoint
              FROM bench_trials tr JOIN bench_tasks t ON t.id = tr.task_id
             WHERE tr.run_id = $1 AND tr.status = 'pending'
               AND ($2::boolean OR NOT (t.stage = ANY($3::text[])))
@@ -1456,9 +1546,16 @@ async function tick(pool, config, deps = {}) {
         );
         const running = [...inFlight.values()].filter((f) => f.runId === run.id);
         const inFlightEst = running.reduce((sum, f) => sum + (f.est || 0), 0);
+        // What is still to come of its estimate. A trial going on from what
+        // it kept after a restart (a side build, a first version) already
+        // spent part of it, and its run was charged for that when it was
+        // handed back: counted again at its whole estimate, a side build
+        // that had used most of its run's cap (three times its estimate) was
+        // capped for spend it already had, its work thrown away.
+        const toCome = Math.max((Number(next.est) || 0) - keptSpend(next.checkpoint), 0);
         // A trial that spends nothing on a model (a capture, a reference
         // build's screenshots) cannot take the run past its cap.
-        if (Number(next.est) > 0 && !fitsCap({ spentUsd: money.spent, capUsd: money.cap, inFlightEst, nextEst: next.est || 0 })) {
+        if (Number(next.est) > 0 && !fitsCap({ spentUsd: money.spent, capUsd: money.cap, inFlightEst, nextEst: toCome })) {
           // Wait for what is under way, then stop the run there.
           if (!running.length) await capRun(pool, run.id);
           out.paused = out.paused || 'cap';
@@ -1478,7 +1575,7 @@ async function tick(pool, config, deps = {}) {
           [run.id],
         );
         const entry = {
-          runId: run.id, est: claim.est || 0, sessionId: null, promise: null, heavy: HEAVY_STAGES.includes(next.stage),
+          runId: run.id, est: toCome, sessionId: null, promise: null, heavy: HEAVY_STAGES.includes(next.stage),
           laterSide: run.kind === LATER_SIDE_RUN_KIND,
         };
         inFlight.set(claim.id, entry);
@@ -1583,6 +1680,7 @@ module.exports = {
   SINGLE_ATTEMPT_STAGES,
   MAX_CLAIMS,
   BRANCH_KEEP_DAYS,
+  BRANCH_KEEP_WAITING_DAYS,
   validateLaunch,
   attemptsFor,
   launcherDefaults,
@@ -1607,6 +1705,7 @@ module.exports = {
   goesOnAfterRestart,
   saveCheckpoint,
   stepsKept,
+  keptSpend,
   recoveredLooks,
   sweepBranches,
   releaseStale,
@@ -1618,6 +1717,7 @@ module.exports = {
   recoveryDeadline,
   finishRecoveredTrial,
   capRun,
+  settleSideResults,
   fitsCap,
   tick,
   start,

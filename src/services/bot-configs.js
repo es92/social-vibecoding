@@ -888,8 +888,9 @@ async function finishSideTrial(pool, trialId) {
   try {
     const { rows: [t] } = await pool.query(
       `SELECT tr.id, tr.bot_run_id, tr.bot_config_version_id, tr.status, tr.parsed, tr.capture, tr.cost_usd::float8 AS cost,
-              tr.interrupted_cost_usd::float8 AS interrupted, tr.duration_ms, tr.build_sha, tr.build_commits, tr.error
-         FROM bench_trials tr WHERE tr.id = $1`,
+              tr.interrupted_cost_usd::float8 AS interrupted, tr.duration_ms, tr.build_sha, tr.build_commits, tr.error,
+              r.spent_usd::float8 AS run_spent, r.cap_usd::float8 AS run_cap
+         FROM bench_trials tr LEFT JOIN bench_runs r ON r.id = tr.run_id WHERE tr.id = $1`,
       [Number(trialId)],
     );
     if (!t || !t.bot_run_id || !t.bot_config_version_id) return null;
@@ -899,7 +900,12 @@ async function finishSideTrial(pool, trialId) {
     // that did not run) says nothing about its configuration: skipped with
     // why, like one never run, never counted as "didn't build".
     const ranAtAll = !['cancelled', 'skipped_cap', 'not_applicable', 'infra_fail'].includes(t.status);
-    const why = t.error || (t.parsed?.blocked ? `blocked: ${t.parsed.blocked}` : null);
+    // One its run's cap stopped (bench/lane.js capRun) says so, and how far
+    // the run had got: a capped trial has no error of its own.
+    const capped = t.status === 'skipped_cap'
+      ? `capped: its run had spent $${(num(t.run_spent) || 0).toFixed(2)} of its $${(num(t.run_cap) || 0).toFixed(2)} cap`
+      : null;
+    const why = t.error || capped || (t.parsed?.blocked ? `blocked: ${t.parsed.blocked}` : null);
     await recordResult(pool, {
       botRunId: t.bot_run_id, configVersionId: t.bot_config_version_id, source: 'trial', trialId: t.id,
       // Its own stages (bench/runner.js buildStage), and the live run's triage.
@@ -1443,6 +1449,32 @@ async function listWithStats(pool, { scope: rawScope = null } = {}) {
   };
 }
 
+/**
+ * How many pairs wait for a pick in each scope, { first_version, later }:
+ * the Homeroom bot console's Overview shows them (homeroom-bot.js
+ * adminPayload). A pair is picked only through the connector
+ * (list_bot_configs, get_bot_config_pair), so nothing else told an admin one
+ * was waiting. Null when it cannot be read. Never throws.
+ */
+async function pairsWaitingByScope(pool) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT v.scope, COUNT(*)::int AS n
+         FROM bot_config_pairs p
+         JOIN bot_config_results cr ON cr.id = p.current_result_id
+         JOIN bot_config_versions v ON v.id = cr.config_version_id
+        WHERE p.status = 'waiting'
+        GROUP BY v.scope`,
+    );
+    const out = Object.fromEntries(SCOPES.map((scope) => [scope, 0]));
+    for (const r of rows) if (SCOPES.includes(r.scope)) out[r.scope] = Number(r.n) || 0;
+    return out;
+  } catch (err) {
+    log.warn('bot-configs', 'Could not count the pairs waiting for a pick', { err: err.message });
+    return null;
+  }
+}
+
 /** Both scopes' numbers, labelled, first versions first (the connector's list). */
 async function listAllScopes(pool) {
   const scopes = [];
@@ -1926,6 +1958,7 @@ module.exports = {
   outcomesOf,
   listWithStats,
   listAllScopes,
+  pairsWaitingByScope,
   sideWeeklyCents,
   setSideWeeklyBudget,
   sideBudget,

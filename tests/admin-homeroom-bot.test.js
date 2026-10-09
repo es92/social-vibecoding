@@ -144,6 +144,7 @@ test('GET /api/admin/homeroom-bot: a view-only admin reads the whole dashboard; 
   assert.equal(data.runs.length, 1);
   assert.equal(data.runs[0].issueUrl, 'https://github.com/usernode-bot/todo/issues/12');
   assert.deepEqual(data.caps, { proposalsPerApp: 5, proposalsTotal: 100, questionsPerAppPerDay: 10 });
+  assert.deepEqual(data.pairsWaiting, { first_version: 0, later: 0 }, 'the configurations\' pairs waiting, per scope');
 
   // adminMiddleware sends a non-admin back to the shell (a redirect, since
   // the mounted router sees a path without the /api prefix).
@@ -692,6 +693,28 @@ test('a model picked in the Benchmark fills the form in and waits for Save', () 
   assert.match(fn, /setModel\(stage, id\);/);
   assert.match(fn, /showTab\('settings'\);/);
   assert.doesNotMatch(fn, /write\(|fetch\(/, 'nothing is saved until a person presses Save changes');
+});
+
+// The configurations' blind pairs are picked only through the connector,
+// and nothing told an admin one was waiting: the Overview says so, per
+// scope, beside the spend and the verdicts, and a zero says nothing.
+test('the Overview says how many configuration pairs wait for a pick, and where they are picked', () => {
+  const tsx = read('frontend/src/features/admin/admin-homeroom-bot.tsx');
+  const { pairsWaitingLine } = loadBotSection();
+  assert.equal(pairsWaitingLine(null), '');
+  assert.equal(pairsWaitingLine(undefined), '');
+  assert.equal(pairsWaitingLine({ first_version: 0, later: 0 }), '', 'zero says nothing');
+  const how = 'Pairs are picked through the Homeroom connector: list_bot_configs, then get_bot_config_pair.';
+  assert.equal(pairsWaitingLine({ first_version: 0, later: 1 }), `Bot configurations: 1 later-change pair waits for a pick. ${how}`);
+  assert.equal(pairsWaitingLine({ first_version: 2, later: 0 }), `Bot configurations: 2 first-version pairs wait for a pick. ${how}`);
+  assert.equal(pairsWaitingLine({ first_version: 1, later: 5 }),
+    `Bot configurations: 1 first-version pair and 5 later-change pairs wait for a pick. ${how}`);
+  // Under the totals line, on the Overview, hidden when there is nothing to say.
+  const overview = tsx.slice(tsx.indexOf('id="admin-homeroom-bot-panel-overview"'), tsx.indexOf('id="admin-homeroom-bot-panel-settings"'));
+  assert.match(overview, /id="admin-homeroom-bot-totals"[\s\S]*<p className=\{pairsLine \? `\$\{AdminUI\.muted\} mt-1` : 'hidden'\} id="admin-homeroom-bot-pairs-waiting">\{pairsLine\}<\/p>/);
+  assert.match(tsx, /const pairsLine = pairsWaitingLine\(payload\?\.pairsWaiting\);/);
+  const botSrc = read('src/services/homeroom-bot.js');
+  assert.match(botSrc, /pairsWaiting: await botConfigs\(\)\.pairsWaitingByScope\(pool\),/, 'from the payload the Overview already loads');
 });
 
 test('the tabs have addresses of their own, and Settings and the Overview stay rendered', () => {

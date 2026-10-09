@@ -465,12 +465,13 @@ test('a later side build goes on after a restart from what its last claim kept: 
   assert.deepEqual(fromBuild.parsed.side, { botRunId: 901 });
 });
 
-test('a later change\'s side builds take only the build slots live builds leave free', () => {
-  const settings = { buildConcurrency: 2 };
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 1 }), false);
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 1, besides: 1 }), true, 'one live build and one side build fill two slots');
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 0, besides: 1 }), false);
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 2 }), true, 'live builds never wait for side builds: they are not counted against');
+test('a later change\'s side builds take only the live slots live work leaves free', () => {
+  const settings = { buildConcurrency: 2, liveAtOnce: 12 };
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 2, besides: 1 }), false, 'two live builds no longer hold side builds back');
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 9, besides: 2 }), false);
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 9, besides: 3 }), true, 'live work and side builds fill the twelve slots');
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 0, besides: 11 }), false);
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 12 }), true, 'live work never waits for side builds: they are not counted against it');
   const src = require('node:fs').readFileSync(require.resolve('../src/services/bench/lane'), 'utf8');
   assert.match(src, /if \(run\.kind === LATER_SIDE_RUN_KIND\) \{\n\s+const besides = \[\.\.\.inFlight\.values\(\)\]\.filter\(\(f\) => f\.laterSide\)\.length;/);
   assert.match(src, /laterSide: run\.kind === LATER_SIDE_RUN_KIND,/);

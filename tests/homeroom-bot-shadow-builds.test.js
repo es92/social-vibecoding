@@ -567,11 +567,15 @@ test('the dashboard keeps the two settings that still do something, and the runs
   // No shadow apps, so no switch, no backfill and no lane line for them.
   assert.doesNotMatch(tsx, /id="admin-homeroom-bot-shadow-builds"|admin-homeroom-bot-shadow-backfill|admin-homeroom-bot-build-lane|shadow-builds\/backfill/);
   assert.doesNotMatch(tsx, /setField\('shadowBuilds'/);
-  // What the benchmark and a later change's side builds wait behind
-  // (isLiveLaneSaturated), and whether side builds include the platform's
-  // own repository (laterSideSkipReason), say so.
+  // How many shadow builds run at once, and whether side builds include the
+  // platform's own repository (laterSideSkipReason), say so; and the note
+  // says the benchmark and side builds wait for the live requests at once
+  // (isLiveLaneSaturated), not for this number, which held them back behind
+  // any two live builds until 9 Oct 2026.
   assert.match(tsx, /id="admin-homeroom-bot-side-builds"/);
-  assert.match(tsx, /<NumberField id="admin-homeroom-bot-build-concurrency" label="Live builds before side builds wait"/);
+  assert.match(tsx, /<NumberField id="admin-homeroom-bot-build-concurrency" label="Shadow builds at once"/);
+  assert.doesNotMatch(tsx, /Live builds before side builds wait|fewer live builds than this/);
+  assert.match(tsx, /start only while the bot&apos;s live requests leave a slot free \(Live requests at once, under Advanced\)/);
   assert.match(tsx, /onChange=\{\(v\) => setField\('buildConcurrency', v\)\}/);
   assert.match(tsx, /id="admin-homeroom-bot-shadow-build-platform"[\s\S]{0,400}<span>Make side builds on Homeroom&apos;s own repository too<\/span>/);
   assert.match(tsx, /id="admin-homeroom-bot-side-builds-note"/);
@@ -585,18 +589,26 @@ test('the dashboard keeps the two settings that still do something, and the runs
   assert.match(tsx, /<ShadowBuild run=\{run\} \/>/);
 });
 
-// #3654: the benchmark yields only to live builds, the ones a person is
+// #3654: the benchmark yields only to live work, the requests a person is
 // waiting for. A full shadow lane must not hold it back: both are
 // experiments, and counting shadow builds starved the benchmark whenever
-// the shadow bot was busy.
-test('the benchmark waits for live builds only, never for shadow builds', () => {
-  const settings = { buildConcurrency: 2 };
+// the shadow bot was busy. Live work has `liveAtOnce` slots; the benchmark
+// waited behind the shadow lane's `buildConcurrency` (2) until 9 Oct 2026,
+// so any two live builds held every trial and side build back.
+test('the benchmark waits for live work to fill its live slots only, never for shadow builds', () => {
+  const settings = { buildConcurrency: 2, liveAtOnce: 12 };
   assert.equal(bot.isLiveLaneSaturated(settings, { live: 0 }), false, 'nothing live: the bench may run');
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 1 }), false);
-  assert.equal(bot.isLiveLaneSaturated(settings, { live: 2 }), true, 'every slot taken by live builds');
-  assert.equal(bot.isLiveLaneSaturated({ buildConcurrency: 4 }, { live: 3 }), false);
-  // With no live builds under way in this process, a busy shadow lane
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 2 }), false, 'two live builds leave ten live slots free');
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 11 }), false);
+  assert.equal(bot.isLiveLaneSaturated(settings, { live: 12 }), true, 'every live slot taken');
+  assert.equal(bot.isLiveLaneSaturated({ liveAtOnce: 4, buildConcurrency: 4 }, { live: 3 }), false);
+  assert.equal(bot.isLiveLaneSaturated({ liveAtOnce: 4 }, { live: 4 }), true);
+  assert.equal(bot.isLiveLaneSaturated({}, { live: 11 }), false, 'the default liveAtOnce (12) when unset');
+  assert.equal(bot.isLiveLaneSaturated({}, { live: 12 }), true);
+  // With no live work under way in this process, a busy shadow lane
   // does not saturate it.
   assert.equal(bot.isLiveLaneSaturated(settings), false);
   assert.doesNotMatch(String(bot.isLiveLaneSaturated), /buildsInFlight\.size \+/, 'shadow builds are not counted');
+  assert.doesNotMatch(String(bot.isLiveLaneSaturated), /buildConcurrency/, 'the shadow lane\'s number is not the live lane\'s');
+  assert.match(String(bot.isLiveLaneSaturated), /e\.lane === 'live'/, 'reads and builds alike: the live slots dispatch fills');
 });

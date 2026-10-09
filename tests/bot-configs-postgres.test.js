@@ -619,6 +619,8 @@ test('bot configurations against the full PostgreSQL schema', { timeout: 180000 
       finalSha: 'r1sha', finalCommits: 2, lastBooted: { sha: 'r0sha', commits: 1 }, buildText: 'Built.',
       updatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     });
+    // Its build began two hours ago; its review last moved an hour ago.
+    await pool.query("UPDATE chat_sessions SET created_at = NOW() - INTERVAL '2 hours' WHERE id = $1", [s.id]);
     assert.equal(await bot.finishInterruptedReviews(pool, {}, deps), 1, 'found despite the turn on its session');
     assert.deepEqual(moved, [['usernode-bot', 'plant-log', 'dev/homeroom_bot-y', 'r0sha']], 'its own branch, back to the build that booted');
     assert.deepEqual(promoted, [s.id]);
@@ -628,9 +630,14 @@ test('bot configurations against the full PostgreSQL schema', { timeout: 180000 
     assert.deepEqual([after.build_sha, after.review_stop, after.fin], ['r0sha', 'interrupted', 'r0sha']);
     assert.deepEqual(after.rb, { from: 'r1sha', to: 'r0sha', why: 'not seen to boot before the restart' });
     assert.deepEqual(spends, [20], 'the reviewer call, which no turn ledger holds, is debited');
-    const { rows: [res] } = await pool.query("SELECT sha, cost_usd::float8 AS cost FROM bot_config_results WHERE bot_run_id = $1 AND source = 'live'", [id]);
+    const { rows: [res] } = await pool.query(
+      "SELECT sha, cost_usd::float8 AS cost, active_ms::float8 AS ms FROM bot_config_results WHERE bot_run_id = $1 AND source = 'live'", [id],
+    );
     assert.equal(res.sha, 'r0sha');
     assert.ok(Math.abs(res.cost - (0.2 + 0.04)) < 1e-9);
+    // Its time ends where the review stopped, not at the sweep that found it
+    // an hour later: an hour, and the triage's 90 s.
+    assert.ok(Math.abs(res.ms - (60 * 60_000 + 90_000)) < 60_000, `${res.ms} ms`);
     assert.equal(await bot.finishInterruptedReviews(pool, {}, deps), 0, 'once');
   });
 
@@ -758,15 +765,25 @@ test('bot configurations against the full PostgreSQL schema', { timeout: 180000 
     // The build turn ran on through the restart and pushed: proposed, and
     // its round-0 result recorded rather than left pending.
     const a = await configured(41);
+    // Its session opened as its spec turn began, 20 minutes ago.
+    await pool.query("UPDATE chat_sessions SET created_at = NOW() - INTERVAL '20 minutes' WHERE id = $1", [a.sessionId]);
     assert.equal(await bot.finishRecoveredTurn({
       pool, session: { id: a.sessionId }, activeTurn: { mode: 'build' },
       result: { pushOk: true, ahead: 2, sha: 'b1sha', lastResultText: 'Built.' },
     }), 'live_pending');
     await bot.completeRecoveredLive({ pool, config: {}, sessionId: a.sessionId, deps });
     assert.deepEqual(promoted, [a.sessionId]);
-    const { rows: ra } = await pool.query('SELECT source, status, sha FROM bot_config_results WHERE bot_run_id = $1 ORDER BY source', [a.id]);
+    const { rows: ra } = await pool.query(
+      'SELECT source, status, sha, active_ms::float8 AS ms FROM bot_config_results WHERE bot_run_id = $1 ORDER BY source', [a.id],
+    );
     assert.deepEqual(ra.map((r) => [r.source, r.status, r.sha]), [['live', 'done', 'b1sha'], ['round0', 'done', 'b1sha'], ['trial', 'pending', null]],
       'its own result and its round-0 one: no review ran, so they are the same build');
+    // Its time is the build's own, spec to now, the restart included, beside
+    // the shared triage's (90 s): a side build's is counted the same way.
+    // It used to be the triage's alone.
+    for (const r of ra.filter((x) => x.source !== 'trial')) {
+      assert.ok(r.ms >= 20 * 60_000 + 90_000 && r.ms < 22 * 60_000 + 90_000, `${r.source}: ${r.ms} ms is the build's time and the triage's`);
+    }
     // The turn was lost: the request goes round again as a new run, which
     // makes side builds of its own, so this run's stop.
     const b = await configured(42);
