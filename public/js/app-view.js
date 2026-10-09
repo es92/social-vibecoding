@@ -6060,10 +6060,14 @@ const AppView = {
     // #4479: the plan it was built from, as the card a request's page hangs
     // under the request (request-head.tsx SpecCard), with the same Read.
     body.plan = AppView._changePlanCard(item, mine && underway);
+    // With no summary and no plan, the description itself is folded under
+    // the line on the page (change-head.tsx, "Description"): the page draws
+    // no Details section for "under Details" to point at.
+    body.descriptionFold = !body.summaryHtml && !body.plan && !!body.proposalBody;
     body.summaryHtml ||= body.plan
       ? '<p>No short summary has been added yet. The plan this change is built from is below.</p>'
       : body.proposalBody
-        ? '<p>No short summary has been added yet. The current description is under Details.</p>'
+        ? '<p>No short summary has been added yet. The current description is below.</p>'
         : '<p>No change summary has been added yet.</p>';
     const md = item.testing_md || '';
     body.testing = { html: md ? AppView._proposalBodyView({ pr_body: md })?.html : null, path: item.testing_path || null };
@@ -9689,7 +9693,10 @@ const AppView = {
     // say less there: the full sentence stays the chip's tooltip and its
     // screen-reader words, and the change's page says it in full.
     const ROW_SHORT = { 'Taking before & after shots': 'Taking shots', 'Preview ready': 'Preview' };
-    const shortly = (tag) => (ROW_SHORT[tag.label] ? { ...tag, short: ROW_SHORT[tag.label] } : tag);
+    // "Checks running… 459" (a run that does not know its total yet) carries
+    // a count, so it is matched on its words' start rather than by name.
+    const shortOf = (label) => ROW_SHORT[label] || (/^Checks running…/.test(label) ? 'Checks…' : '');
+    const shortly = (tag) => (shortOf(tag.label) ? { ...tag, short: shortOf(tag.label) } : tag);
     const checkTags = (p) => {
       for (const s of AppView.statusTagSpecs(p)) {
         // #4486: "Behind main" does not stop a change landing, so it stays

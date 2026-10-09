@@ -39,7 +39,7 @@ import type { ActionSpec, DevCardModel } from '../card/model';
 import type { ChangeGateView, ChangeThreadView, TopicBody } from './model';
 import { RequestWords, SpecCard } from './request-head';
 import { TopicBack } from './topic-back';
-import { IncludedIn, IssueAssociations, SummaryMore } from './topic-head';
+import { IncludedIn, IssueAssociations, ProposalBody, SummaryMore } from './topic-head';
 
 function host(id: string): Element | null {
   return typeof document === 'undefined' ? null : document.getElementById(id);
@@ -186,6 +186,9 @@ export function ChangeThreadHead({ id, card, body, v, linkedIssues, onIssuesSave
           <ChangeDiagram value={body.diagram} />
           <RequestWords html={body.summaryHtml || ''} />
           {body.summaryMore ? <SummaryMore m={body.summaryMore} /> : null}
+          {body.descriptionFold && body.proposalBody
+            ? <ProposalBody b={body.proposalBody} label="Description" part="description" />
+            : null}
           {body.summaryStale && body.summaryHtml
             ? <p className="dev-change-stale" role="note">Written for an earlier version of this change.</p>
             : null}

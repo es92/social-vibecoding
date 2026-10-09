@@ -537,17 +537,24 @@ function LedgerRowBody({ r, help }: { r: LedgerRow; help: boolean }): ReactNode 
   );
 }
 
-export function ProposalBody({ b }: { b: NonNullable<TopicBody['proposalBody']> }): ReactNode {
+export function ProposalBody({ b, label = 'Technical details', part }: {
+  b: NonNullable<TopicBody['proposalBody']>;
+  /** The disclosure's name: a change page with no summary calls it "Description". */
+  label?: string;
+  /** `data-topic-part`, when the disclosure stands in for a part of the page. */
+  part?: string;
+}): ReactNode {
   return (
     <details
-      className="dev-topic-details"
+      className={part ? 'dev-topic-details dev-topic-hero-more' : 'dev-topic-details'}
+      data-topic-part={part}
       open={b.open}
       onToggle={(e) => {
         if (b.id != null) call('_setProposalBodyOpen', b.id, e.currentTarget.open);
       }}
     >
       <summary className="dev-topic-details-summary">
-        Technical details
+        {label}
       </summary>
       {/* DevChat.renderMarkdown's output — sanitised where it is built, and
           the same pipeline the issue body above uses. */}

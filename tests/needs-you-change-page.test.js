@@ -304,8 +304,17 @@ test('a stale summary stays, with the quiet line under it that says it was writt
 test('a stale flag without any saved summary points to the current description', () => {
   const av = context();
   const { page } = render(av, { ...PR, pr_summary_md: null, pr_summary_stale: true });
-  assert.match(page, /The current description is under Details\./);
+  assert.match(page, /The current description is below\./);
   assert.doesNotMatch(page, /Written for an earlier version/);
+  // "Below" is on the page: the description, folded under the line, in the
+  // same markdown view the Details sheet reads.
+  const fold = page.slice(page.indexOf('data-topic-part="description"'));
+  assert.ok(page.includes('data-topic-part="description"'), 'the description is folded on the page');
+  assert.ok(page.indexOf('The current description is below') < page.indexOf('data-topic-part="description"'), 'under the line that points at it');
+  assert.match(fold, /<summary class="dev-topic-details-summary">Description<\/summary>/);
+  assert.match(fold, /technical prose/);
+  // A summary, or a plan, is read instead: no fold.
+  assert.doesNotMatch(render(av, PR).page, /data-topic-part="description"/);
 });
 
 test('Vote is the Votes card’s button and Preview the Testing card’s; everything else is the sheet’s ⋯ (#4455)', () => {

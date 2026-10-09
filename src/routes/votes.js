@@ -301,6 +301,16 @@ function stagingMockProposals(viewer) {
         4, 1, 0, 0, { required: 2, windowEndsAt: hoursAhead(60) }),
       pr_title_fallback: true,
     },
+    // A change with a description and no short summary, and no plan: its
+    // page folds the description under the line that says so ("The
+    // current description is below.") rather than pointing at a Details
+    // section the page does not draw.
+    {
+      ...mk(9000096, 900196,
+        '[Mock] No-summary test: a description but no short summary yet',
+        3, 1, 0, 0, { required: 2, windowEndsAt: hoursAhead(62) }),
+      pr_summary_md: null,
+    },
     // #1688: the viewer said yes to an EARLIER version of this one, and the
     // author has since pushed a new one. Their vote is on the row but no
     // longer counted, so the card's button asks "Still yes?" instead of

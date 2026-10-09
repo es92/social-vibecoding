@@ -698,6 +698,11 @@ export interface TopicBody {
    * follow keeps the disclosure from collapsing under the reader.
    */
   proposalBody?: { id: number | null; open: boolean; html: string } | null;
+  /**
+   * A change page with no summary and no plan folds `proposalBody` under
+   * the summary line as "Description", where the line says it is.
+   */
+  descriptionFold?: boolean;
   details?: ProposalDetails | null;
   /** A change page's hero, and its steps (drawn in Details, B10b). Set with `changeId`. */
   hero?: HeroView | null;
