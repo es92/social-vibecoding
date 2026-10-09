@@ -834,7 +834,8 @@ test('an empty reply moments after a stop on the same session is the stop, not t
     bot: BOT, app: APP, item: ITEM, mode: 'shadow',
     settings: { turnSeconds: 3600, turnInputTokens: 10_000_000 }, deps,
   });
-  assert.deepEqual({ ran: out.ran, reason: out.reason }, { ran: false, reason: 'infra' });
+  assert.deepEqual({ ran: out.ran, reason: out.reason }, { ran: false, reason: 'collateral' },
+    'not \'infra\': one session\'s fallout is no platform fault (see the runOnce test below)');
   const insert = calls.queries.find((q) => /INSERT INTO homeroom_bot_runs/.test(q.s));
   assert.match(insert.params[18], /collateral: the session was stopped mid-dispatch/,
     'the row says what happened rather than blaming the issue');
@@ -1060,6 +1061,53 @@ test('runOnce: inside a fault backoff it refreshes but dispatches nothing, and s
   assert.equal(out.paused, 'infra');
   assert.equal(out.detail, 'the worker storage quota is full');
   assert.ok(out.retryInMs > 0 && out.retryInMs <= 2 * 60 * 1000);
+  bot._resetForTests();
+});
+
+test('runOnce: a turn lost to a stop on its session goes back on the queue without pausing every project', async () => {
+  // One pass of the background lane over one request, its turn as `h` runs it.
+  const pass = async (h) => {
+    bot._resetForTests();
+    const { pool } = mockPool({ settings: [{ key: bot.KEY_MODE, value: 'shadow' }] });
+    let heads = 0;
+    let items = 0;
+    const realQuery = pool.query.bind(pool);
+    pool.query = async (sql, params) => {
+      const s = String(sql);
+      if (/FROM homeroom_bot_queue q JOIN apps/.test(s)) return { rows: heads++ === 0 ? [{ app_id: 9 }] : [] };
+      if (/SELECT id, slug, name, repo_url, self_hosted FROM apps WHERE id = \$1/.test(s)) return { rows: [APP] };
+      if (/FROM homeroom_bot_queue\s+WHERE app_id = \$1 AND started_at IS NULL/.test(s)) return { rows: items++ === 0 ? [ITEM] : [] };
+      if (/SELECT \* FROM chat_sessions|INSERT INTO homeroom_bot_runs|UPDATE homeroom_bot_queue SET started_at = NULL WHERE id/.test(s)) {
+        return h.pool.query(sql, params);
+      }
+      return realQuery(sql, params);
+    };
+    return bot.runOnce(pool, {}, {
+      ...h.deps,
+      github: { ...h.deps.github, async fetchPublicIssues() { return { issues: [] }; } },
+      worker: { ...h.deps.worker, async listWorkerVolumes() { return []; } },
+      forceRefresh: true,
+    });
+  };
+
+  // A read started over mid-thread (homeroom-maps #30, run 1250) paused the
+  // bot on every project for two minutes, doubling while it recurred.
+  const lost = triageHarness({ verdictText: '', sessionId: 735 });
+  bot.noteStopped(735);
+  const out = await pass(lost);
+  const row = lost.calls.queries.find((q) => /INSERT INTO homeroom_bot_runs/.test(q.s));
+  assert.match(row.params[18], /^collateral: /);
+  assert.ok(lost.calls.queries.some((q) => /SET started_at = NULL WHERE id = \$1/.test(q.s) && q.params[0] === ITEM.id),
+    'the request goes back on the queue');
+  assert.equal(bot.faultBackoff(), null, 'and the bot does not back off');
+  assert.ok(out.paused == null, 'nor does the pass pause');
+
+  // A real platform fault still backs off the whole bot, as before.
+  const fault = triageHarness({ verdictText: 'x', sessionId: 736 });
+  fault.deps.worker.ensureWorker = async () => { throw new Error('image pull failed'); };
+  const faulted = await pass(fault);
+  assert.equal(faulted.paused, 'infra');
+  assert.equal(bot.faultBackoff()?.error, 'worker: image pull failed');
   bot._resetForTests();
 });
 
@@ -1893,24 +1941,47 @@ test('runTriage: a thread the runtime will not resume is never asked on a fresh 
 
 const PERSON_REPLY = '```json\n{"verdict":"person","determined":true,"reason":"Changes the login flow."}\n```';
 
+// The worker's stop as it really behaves (#937), the way
+// homeroom-bot-spec.test.js models it: a stop stays pending on the session
+// after its turn ends, and every dispatch is skipped (exit 143, no reply)
+// until a new turn clears it. A message in the request's discussion lands
+// while each turn runs. Returns the sessions whose dispatch was skipped.
+function interruptEachTurn(h, stopped) {
+  let pendingStop = null;
+  const skipped = [];
+  h.deps.worker.stopTurn = async (id) => { stopped.push(id); pendingStop = Date.now(); };
+  h.deps.worker.getPendingStop = () => pendingStop;
+  h.deps.worker.clearPendingStop = () => { pendingStop = null; };
+  const exec = h.deps.worker.execInWorker;
+  h.deps.worker.execInWorker = async (id, opts) => {
+    if (pendingStop) { skipped.push(id); return { exitCode: 143 }; }
+    return exec(id, opts);
+  };
+  const loop = h.deps.sessions.runCodexAttemptLoop;
+  h.deps.sessions.runCodexAttemptLoop = async (args) => {
+    const routed = await loop(args);
+    assert.equal(bot.interruptRead({ appId: APP.id, issueNumber: ITEM.issue_number, reason: 'thread' }), h.loops.length === 1,
+      'the first read is stopped; the read started over is left to finish');
+    return routed;
+  };
+  return skipped;
+}
+
 test('runTriage: a person writing mid-read stops the turn and reads again once, as one row', async () => {
   const h = repairHarness(971, [
     { lastResultText: '', inputTokens: 4000, outputTokens: 0 },
     { lastResultText: PERSON_REPLY, agentThreadId: 'thr-2', inputTokens: 1000, outputTokens: 40 },
   ], [0.03, 0.01]);
   const stopped = [];
-  h.deps.worker.stopTurn = async (id) => { stopped.push(id); };
-  const loop = h.deps.sessions.runCodexAttemptLoop;
-  h.deps.sessions.runCodexAttemptLoop = async (args) => {
-    // A message in the request's discussion lands while each turn runs.
-    assert.equal(bot.interruptRead({ appId: APP.id, issueNumber: ITEM.issue_number, reason: 'thread' }), h.loops.length === 0,
-      'the first read is stopped; the read started over is left to finish');
-    return loop(args);
-  };
+  const skipped = interruptEachTurn(h, stopped);
   const out = await bot.runTriage(h.pool, {}, { bot: BOT, app: APP, item: ITEM, mode: 'shadow', deps: h.deps });
   assert.deepEqual({ ran: out.ran, verdict: out.verdict }, { ran: true, verdict: 'person' });
   assert.deepEqual(stopped, [971], 'the out-of-date turn is stopped, once');
   assert.equal(h.loops.length, 2);
+  // homeroom-maps #30 (run 1250): the stop stayed pending, the read started
+  // over was skipped at once, and its empty reply was recorded as collateral.
+  assert.deepEqual(skipped, [], 'the read started over is dispatched, not skipped on the stop the first one left');
+  assert.equal(h.deps.worker.getPendingStop(971), null, 'that stop was cleared once its turn was over');
   const inserts = h.calls.queries.filter((q) => /INSERT INTO homeroom_bot_runs/.test(q.s));
   assert.equal(inserts.length, 1, 'no row for the turn that was stopped');
   assert.ok(Math.abs(inserts[0].params[14] - 0.04) < 1e-9, 'the one row carries what the stopped turn spent');
@@ -1922,6 +1993,22 @@ test('runTriage: a person writing mid-read stops the turn and reads again once, 
   assert.deepEqual(claims, [[ITEM.id, false], [ITEM.id, true]], 'the read started over keeps the row it already holds');
   assert.equal(bot.interruptRead({ appId: APP.id, issueNumber: ITEM.issue_number, reason: 'thread' }), false, 'nothing is left in flight');
   assert.equal(h.deps.activeWorkers.size, 0);
+});
+
+test('runTriage: a read started over that comes back empty is recorded as empty, not as collateral', async () => {
+  const h = repairHarness(976, [
+    { lastResultText: '', inputTokens: 4000, outputTokens: 0 },
+    { lastResultText: '', resultSubtype: 'error_during_execution', agentError: 'provider hung up', inputTokens: 900, outputTokens: 0 },
+  ], [0.03, 0.01]);
+  const stopped = [];
+  const skipped = interruptEachTurn(h, stopped);
+  const out = await bot.runTriage(h.pool, {}, { bot: BOT, app: APP, item: ITEM, mode: 'shadow', deps: h.deps });
+  assert.deepEqual(skipped, []);
+  assert.equal(out.verdict, 'failed');
+  const insert = h.calls.queries.find((q) => /INSERT INTO homeroom_bot_runs/.test(q.s));
+  assert.match(insert.params[18], /^unparseable: \(empty reply\) .*provider hung up/,
+    'the stop was the first read\'s own, so it does not explain this reply');
+  assert.ok(h.calls.queries.some((q) => /DELETE FROM homeroom_bot_queue WHERE id = \$1/.test(q.s)), 'a model failure consumes the row');
 });
 
 test('runTriage: a request changed before its turn starts is read again without a turn', async () => {
