@@ -441,11 +441,12 @@ function authRoutes(config) {
       // and `next` are unchanged. Nothing here leaks to somebody who does
       // not hold the mailbox: the code was just proved.
       //
-      // #3575: there is no `suggestedUsername` any more. It was a handle
-      // derived from the address that the field arrived holding, and one
-      // press accepted it; the person now types their own into an empty
-      // field, and set-password refuses to finish without it. A shell cached
-      // from before reads the missing field as null — an empty field.
+      // #4596: `suggestedUsername` is the handle the field arrives holding,
+      // made from the address (usernames.suggestUsernameForEmail) and free
+      // when it was read, or null for an empty field; absent for an account
+      // that already has its handle. It overturns #3575 for
+      // this step on purpose; the person can change it, and set-password
+      // still refuses to finish without a handle in the field.
       //
       // A link that just let them in (as a private member, or on its maker's
       // skip) answers `waitlisted`: there is no queue in front of them now.
@@ -458,6 +459,7 @@ function authRoutes(config) {
         next: 'set-password',
         created: !!verified.created,
         needsUsername: !!verified.needsUsernameChoice,
+        ...(verified.needsUsernameChoice ? { suggestedUsername: verified.suggestedUsername || null } : {}),
         waitlisted: waitlistedNow,
         ...(invite ? { invite } : {}),
       });

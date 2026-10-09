@@ -5,12 +5,13 @@
 // its profile address and the leaderboard. The contracts guarded here are
 // the five that replace it:
 //
-//   1. The address is NEVER the handle, and since #3575 nothing derived
-//      from it is either. email-signup.js writes an opaque placeholder; the
-//      #2563 suggestion (the local part, prefilled wherever the person was
-//      asked) is gone, because a prefill one press accepts is a username
-//      generated from the email — what #3575 asked us not to do. Every
-//      field that asks for the handle starts empty and says, beside it,
+//   1. The address is NEVER the handle. email-signup.js writes an opaque
+//      placeholder. #3575 removed the #2563 suggestion (the local part,
+//      prefilled wherever the person was asked); #4596 brought one back for
+//      the email sign-up's set-password step only, on purpose: the field
+//      arrives holding the letters and digits before the @ (a number added
+//      when taken) and the person can change it. The first-run gate still
+//      starts empty. Every field that asks for the handle says, beside it,
 //      that the name will be public.
 //   2. The gate is SERVER state. `users.needs_username_choice` is written
 //      where the account is created and read by /api/auth/me as a new
@@ -62,7 +63,7 @@ test('the placeholder is opaque, valid, and not an address', () => {
   assert.notEqual(placeholder, usernames.placeholderUsername());
 });
 
-test('nothing derives a handle from an email address any more (#3575)', () => {
+test('the #3575 helpers stay retired; only the email sign-up step suggests from the address (#4596)', () => {
   for (const gone of ['suggestUsernameFromEmail', 'suggestAvailableUsernameFromEmail',
     'isPlaceholderUsername']) {
     assert.equal(gone in usernames, false, `${gone} is retired`);
@@ -70,8 +71,56 @@ test('nothing derives a handle from an email address any more (#3575)', () => {
   for (const rel of ['src/services/usernames.js', 'src/services/email-signup.js',
     'src/routes/profile.js', 'src/routes/auth.js']) {
     assert.doesNotMatch(read(rel), /suggest(?:Available)?UsernameFromEmail\(|firstRunSuggestion\(/,
-      `${rel} still calls an email-derived suggestion`);
+      `${rel} still calls a retired email-derived suggestion`);
   }
+  // #4596 deliberately brings a suggestion back for ONE place: the email
+  // sign-up's set-password step (the verify answer). The first-run gate and
+  // the profile routes still ask with an empty field.
+  for (const rel of ['src/routes/profile.js', 'frontend/src/features/auth/username-first-run.js']) {
+    assert.doesNotMatch(read(rel), /suggestUsernameForEmail|usernameFromEmail|suggestedUsername/, rel);
+  }
+  assert.match(read('src/services/email-signup.js'), /usernames\.suggestUsernameForEmail\(pool, email, userId\)/);
+});
+
+test('the suggestion is the letters and digits before the @, lowercased, cut to 32 (#4596)', () => {
+  const { usernameFromEmail } = usernames;
+  assert.equal(usernameFromEmail('Ada.Lovelace@example.com'), 'adalovelace');
+  assert.equal(usernameFromEmail('alex+homeroom@example.com'), 'alexhomeroom');
+  assert.equal(usernameFromEmail('j_o-e.99@example.com'), 'joe99', 'underscores and hyphens go too');
+  assert.equal(usernameFromEmail('Zoë@example.com'), 'zoe', 'accents fold to their letter');
+  assert.equal(usernameFromEmail(`${'a'.repeat(40)}@example.com`), 'a'.repeat(32));
+  // Too short, or reserved: no suggestion, and the field starts empty.
+  assert.equal(usernameFromEmail('al@example.com'), null);
+  assert.equal(usernameFromEmail('a.b@example.com'), null);
+  assert.equal(usernameFromEmail('...@example.com'), null);
+  assert.equal(usernameFromEmail('homeroom.team@example.com'), null);
+  assert.equal(usernameFromEmail('Usernode@example.com'), null);
+  assert.equal(usernameFromEmail('staging1@example.com'), null);
+  assert.equal(usernameFromEmail(''), null);
+  assert.equal(usernameFromEmail(null), null);
+});
+
+test('a taken suggestion takes the smallest free number, over live and retired names (#4596)', async () => {
+  const at = (live, retired = []) => ({
+    query: async (sql, [candidates, userId]) => {
+      assert.match(collapse(sql), /FROM users WHERE LOWER\(username\) = ANY\(\$1::text\[\]\) AND id IS DISTINCT FROM \$2 UNION SELECT LOWER\(username\) AS name FROM username_history WHERE LOWER\(username\) = ANY\(\$1::text\[\]\) AND user_id IS DISTINCT FROM \$2/);
+      const rows = [];
+      for (const u of live) if (u.id !== userId && candidates.includes(u.username.toLowerCase())) rows.push({ name: u.username.toLowerCase() });
+      for (const h of retired) if (h.user_id !== userId && candidates.includes(h.username.toLowerCase())) rows.push({ name: h.username.toLowerCase() });
+      return { rows };
+    },
+  });
+  const suggest = usernames.suggestUsernameForEmail;
+  assert.equal(await suggest(at([]), 'alex@example.com', 7), 'alex');
+  assert.equal(await suggest(at([{ id: 8, username: 'Alex' }]), 'alex@example.com', 7), 'alex2', 'case-insensitive');
+  assert.equal(await suggest(at([{ id: 8, username: 'alex' }, { id: 9, username: 'alex2' }], [{ user_id: 10, username: 'ALEX3' }]),
+    'alex@example.com', 7), 'alex4', 'a retired name is taken too');
+  assert.equal(await suggest(at([{ id: 7, username: 'alex' }]), 'alex@example.com', 7), 'alex', 'a name this account holds is its own');
+  // The number still fits in 32.
+  const long = 'b'.repeat(32);
+  assert.equal(await suggest(at([{ id: 8, username: long }]), `${long}@example.com`, 7), `${'b'.repeat(31)}2`);
+  // Nothing to suggest asks nothing of the database.
+  assert.equal(await suggest({ query: async () => { throw new Error('no query'); } }, 'al@example.com', 7), null);
 });
 
 // ═══════════════════════════════════════════════════════════════════════

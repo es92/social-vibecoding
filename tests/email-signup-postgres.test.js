@@ -212,13 +212,15 @@ test('real PostgreSQL web signup keeps authority in HttpOnly cookies', async (t)
       // QA 2026-09-24 Q12: additive fields so the set-password step can say
       // that the code just created the account, ask for the handle, and say
       // before the waiting room that it queues. `ok` and `next` are what
-      // they always were. #3575: no `suggestedUsername` — the field the
-      // person types into starts empty.
+      // they always were. #4596: `suggestedUsername` is what the field
+      // arrives holding, the letters and digits before the @ (`New.User`
+      // becomes `newuser`); the person can change it.
       assert.deepEqual(await verify.json(), {
         ok: true,
         next: 'set-password',
         created: true,
         needsUsername: true,
+        suggestedUsername: 'newuser',
         waitlisted: true,
       });
       const signupCookie = cookieValue(verify.headers, 'usernode_signup');
@@ -226,10 +228,10 @@ test('real PostgreSQL web signup keeps authority in HttpOnly cookies', async (t)
       assert.match(verify.headers.get('set-cookie'), /HttpOnly/i);
       assert.match(verify.headers.get('set-cookie'), /Path=\/api\/auth\/otp/i);
 
-      // #2563 + #3575: the address is NEVER the handle, and neither is
-      // anything derived from it. Until the person chooses, the row holds an
-      // opaque placeholder — not `newuser`, which is what the local part
-      // `New.User` used to become — and is marked as still owing a choice.
+      // #2563 + #3575: the address is NEVER the handle, and the suggestion
+      // is only offered, never stored. Until the person chooses, the row
+      // holds an opaque placeholder — not `newuser` — and is marked as still
+      // owing a choice.
       const pendingRow = (await pool.query(
         'SELECT username, needs_username_choice, needs_communities_choice, getting_started_gate FROM users WHERE email = $1',
         ['new.user@example.com'],
@@ -772,7 +774,7 @@ test('a repeat code request inside the min gap reuses the outstanding code', asy
 
 // QA 2026-09-24 Q12: the set-password step asks a new account for its handle
 // instead of the waiting room introducing one the person never chose. Since
-// #3575 the field starts empty and is required for an account that has never
+// #3575 the field is required (since #4596 it arrives holding a suggestion) for an account that has never
 // chosen; a refused or missing name leaves the signup session unspent so the
 // corrected submit works.
 test('set-password takes the first handle, and a refused one keeps the session', async (t) => {
@@ -813,7 +815,7 @@ test('set-password takes the first handle, and a refused one keeps the session',
 
     try {
       await pool.query(
-        `INSERT INTO users (username, password) VALUES ('taken_name', 'unused')`,
+        `INSERT INTO users (username, password) VALUES ('taken_name', 'unused'), ('PickMe', 'unused')`,
       );
       assert.equal((await post('/api/auth/otp/request', { email: 'pick.me@example.com' })).status, 200);
       const verified = await post('/api/auth/otp/verify', { email: 'pick.me@example.com', code });
@@ -821,11 +823,12 @@ test('set-password takes the first handle, and a refused one keeps the session',
       const vBody = await verified.json();
       assert.equal(vBody.created, true);
       assert.equal(vBody.needsUsername, true);
-      // #3575: nothing derived from `pick.me@` is offered, or stored.
-      assert.equal('suggestedUsername' in vBody, false);
+      // #4596: `pick.me@` suggests `pickme`, which `PickMe` holds (case
+      // does not matter), so the smallest free number; offered, not stored.
+      assert.equal(vBody.suggestedUsername, 'pickme2');
       assert.equal((await pool.query(
         "SELECT COUNT(*)::int AS n FROM users WHERE username ILIKE '%pick%'",
-      )).rows[0].n, 0);
+      )).rows[0].n, 1);
       const cookie = `usernode_signup=${cookieValue(verified.headers, 'usernode_signup')}`;
       const pw = { password: 'correct horse battery staple', passwordConfirmation: 'correct horse battery staple' };
 

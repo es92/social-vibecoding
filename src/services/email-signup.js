@@ -316,8 +316,10 @@ async function verifyCode(pool, rawEmail, rawCode, { createSession } = {}) {
       created,
       // QA 2026-09-24 Q12: the account still owes a choice of handle, so the
       // password step asks for it rather than the person meeting a name
-      // they never chose in the waiting room. #3575: asked with an EMPTY
-      // field — there is no suggestion any more (see usernames.js).
+      // they never chose in the waiting room. #4596: the field arrives
+      // holding a suggestion from the address (`suggestedUsername`, below),
+      // which the person can change; set-password still takes only what
+      // the field sends.
       needsUsernameChoice: user.needs_username_choice === true,
     };
   });
@@ -348,7 +350,24 @@ async function verifyCode(pool, rawEmail, rawCode, { createSession } = {}) {
   if (result.next === 'set-password') {
     result.waitlisted = await isWaitlisted(pool, result.userId);
   }
+  if (result.next === 'set-password' && result.needsUsernameChoice) {
+    result.suggestedUsername = await suggestedUsername(pool, email, result.userId);
+  }
   return result;
+}
+
+/**
+ * The handle the set-password step's username field arrives holding
+ * (#4596, usernames.suggestUsernameForEmail). Best effort: a failed read
+ * answers null, an empty field, rather than failing the code that worked.
+ */
+async function suggestedUsername(pool, email, userId) {
+  try {
+    return await usernames.suggestUsernameForEmail(pool, email, userId);
+  } catch (error) {
+    log.warn('email-signup', 'Username suggestion failed', { message: error.message });
+    return null;
+  }
 }
 
 /**

@@ -19,6 +19,9 @@
 // press of "Create account" signed up under a username generated from the
 // email. Now it starts EMPTY, says beside it "Your username will be public to
 // other users on Homeroom.", and the server refuses to finish without it.
+// #4596 brought the prefill back for this step, on purpose: the field arrives
+// holding the letters and digits before the @ (made free by a number when
+// taken), the person can change it, and it is still required.
 //
 // Run with: node --test tests/otp-signup-onboarding.test.js
 
@@ -32,13 +35,16 @@ const LOGIN = read('frontend/src/features/auth/login.tsx');
 const AUTH = read('src/routes/auth.js');
 const SIGNUP = read('src/services/email-signup.js');
 
-test('the verify answer says what happened, additively, and suggests no name', () => {
+test('the verify answer says what happened, additively, and suggests a name from the address', () => {
   const route = AUTH.slice(AUTH.indexOf("router.post('/api/auth/otp/verify'"));
-  assert.match(route, /next: 'set-password',\s+created: !!verified\.created,\s+needsUsername: !!verified\.needsUsernameChoice,\s+waitlisted:/);
-  // #3575: the email-derived suggestion is gone from the answer and the service.
-  assert.doesNotMatch(route.slice(0, route.indexOf("router.post('/api/auth/otp/set-password'")),
-    /suggestedUsername: verified/);
-  assert.doesNotMatch(SIGNUP, /suggestedUsername/);
+  // #4596 (overturning #3575 for this step): a suggestion made from the
+  // address, only for an account that still owes its handle (null when
+  // none fits), and absent otherwise.
+  assert.match(route, /next: 'set-password',\s+created: !!verified\.created,\s+needsUsername: !!verified\.needsUsernameChoice,\s+\.\.\.\(verified\.needsUsernameChoice \? \{ suggestedUsername: verified\.suggestedUsername \|\| null \} : \{\}\),\s+waitlisted:/);
+  assert.match(SIGNUP, /if \(result\.next === 'set-password' && result\.needsUsernameChoice\) \{\s*result\.suggestedUsername = await suggestedUsername\(pool, email, result\.userId\);/);
+  // Best effort: a failed read is an empty field, never a failed code.
+  const helper = SIGNUP.slice(SIGNUP.indexOf('async function suggestedUsername'));
+  assert.match(helper, /try \{\s*return await usernames\.suggestUsernameForEmail\(pool, email, userId\);\s*\} catch \(error\) \{[\s\S]*?return null;/);
   // Read after linkUserByEmail, which releases an address the waitlist already let in.
   assert.ok(SIGNUP.indexOf('result.waitlisted = await isWaitlisted') > SIGNUP.indexOf('await waitlist.linkUserByEmail'));
   // #4083: a waiting account gets its own spot, after the link (which lets a
@@ -48,14 +54,16 @@ test('the verify answer says what happened, additively, and suggests no name', (
   assert.ok(spot < SIGNUP.indexOf('result.waitlisted = await isWaitlisted'));
 });
 
-test('the password step says the account is new, and asks for its handle with an empty field', () => {
+test('the password step says the account is new, and asks for its handle with the suggestion in the field', () => {
   assert.match(LOGIN, /"Code verified\. No account uses this email yet, so we'll create one\. Choose a username and a password\."/);
   assert.match(LOGIN, /otpSignup\?\.created\s+\? OTP_PASSWORD_INTRO_NEW/);
   const field = LOGIN.slice(LOGIN.indexOf('id="otp-username"'), LOGIN.indexOf('id="otp-username-hint"'));
   assert.match(field, /\{\.\.\.HANDLE_FIELD\}/, 'no auto-capitalising a handle');
-  // #3575: nothing is put in the field for the person to accept.
-  assert.doesNotMatch(field, /defaultValue=|data-username-suggested/, 'the field starts empty');
-  assert.doesNotMatch(LOGIN, /suggestedUsername/);
+  // #4596: the field arrives holding the server's suggestion ('' for none),
+  // and stays the person's to change.
+  assert.match(field, /defaultValue=\{otpSignup\.suggestedUsername\}/);
+  assert.match(LOGIN, /suggestedUsername: typeof data\.suggestedUsername === 'string' \? data\.suggestedUsername : '',/);
+  assert.doesNotMatch(field, /data-username-suggested|readOnly/);
   // Beside it, who will see it; then the rule, or the server's refusal.
   assert.match(field, /aria-describedby="otp-username-public otp-username-hint"/);
   assert.match(field, /<p id="otp-username-public" className=\{FIELD_HINT\}>\s*\{USERNAME_PUBLIC_NOTE\}\s*<\/p>/);

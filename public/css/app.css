@@ -3714,6 +3714,13 @@ html[data-browser-scroller^="auth-"] body :is(
 html.un-ios[data-browser-scroller="auth-landing-scroll"] [data-landing-story] {
   padding-bottom: max(0px, calc(100lvh - 100svh));
 }
+/* The same toolbar under the sign-in screen's foot (#4593): with the story
+   switched off, the release mail's "Create my account" lands on #signup,
+   and its steps (the account step's button, the line pinned at the foot)
+   ran on under Safari's toolbar the way the story's foot did. */
+html.un-ios[data-browser-scroller="auth-login-screen"] #auth-login-screen > .min-h-full {
+  padding-bottom: max(0px, calc(100lvh - 100svh));
+}
 /* THE INVITE PAGE'S LAST LINE IS AT THE FOOT OF ITS SCROLLER (#4049). Paged
    by the document in a phone browser, the landing's scroller is
    content-height (`flex: none` above), so the column's `min-h-full` had
@@ -20407,6 +20414,31 @@ html.un-kb #platform-tabs {
     max-height: calc(100% - var(--platform-vv-top, 0px) - var(--platform-kb-cover, 0px) - 12px);
     /* The home indicator is behind the keys. */
     padding-bottom: 1.25rem;
+  }
+}
+
+/* THE SHEET'S BUTTON CLEARS SAFARI'S TOOLBAR WITH THE KEYS DOWN (#4593).
+   Mobile Safari, the release mail's "Create my account": the sign-in sheet
+   opened over the story with its Continue below the fold. The sheet's root
+   is `fixed inset-0`, and Safari 26 runs that box on under its floating
+   toolbar whenever the toolbar is tucked away or drawn over the page, so the
+   panel's foot (`bottom-0`), where the step's button is, sat behind it. The
+   story reserves the same toolbar under its own foot (`100lvh - 100svh`,
+   above). Here the panel stands on the small viewport's foot instead: its
+   `bottom` is however far the root runs past `100svh` (the root's height
+   less the viewport with every toolbar showing, 0 when the root already
+   ends above the toolbar), and its height is capped to 92% of that same
+   small viewport. Where no toolbar comes and goes (the Homeroom app, an
+   installed app, Android with its bar at the top) `100svh` is the root's
+   height and nothing moves. With the keys up, the rule above (more
+   specific) still puts the foot on the keys. Phone only: the desktop card
+   is centred. */
+@media (max-width: 767px) {
+  @supports (height: 100svh) {
+    html .platform-kb-sheet {
+      bottom: max(0px, calc(100% - 100svh));
+      max-height: 92svh;
+    }
   }
 }
 

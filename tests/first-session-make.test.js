@@ -392,7 +392,11 @@ test('with the keyboard up nothing scrolls under the status bar: the bar stays, 
   assert.match(src, /import \{ useKeyboardSurface \} from '\.\.\/\.\.\/lib\/keyboard-surface';/);
   assert.match(src, /useKeyboardSurface\(scrollerRef\);/);
   assert.doesNotMatch(src, /useComposerKeyboard/, 'one owner of the fields\' taps: the surface, not the kit\'s chat avoidance too');
-  assert.match(src, /useEffect\(\(\) => \{ briefRef\.current\?\.focus\(\{ preventScroll: true \}\); \}, \[\]\);/);
+  // #4597: the caret goes in from code only where the sign-in sheet would
+  // put one (a desktop, or keys already up), so on a phone the screen opens
+  // whole after the account step instead of under the keyboard.
+  assert.match(src, /import \{ mayFocusByCodeNow \} from '\.\.\/auth\/sign-in-sheet';/);
+  assert.match(src, /useEffect\(\(\) => \{ if \(mayFocusByCodeNow\(\)\) briefRef\.current\?\.focus\(\{ preventScroll: true \}\); \}, \[\]\);/);
   // The bar holds the whole mark under the status bar's inset (on a notched
   // phone the mark used to hang 12px out of a 52px box), so what scrolls
   // stops below it.

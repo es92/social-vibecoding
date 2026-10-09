@@ -106,6 +106,7 @@ import { PencilSquareIcon, XIcon } from '@/components/ui/icons';
 import { Wordmark } from '@/components/ui/wordmark';
 
 import { useKeyboardSurface } from '../../lib/keyboard-surface';
+import { mayFocusByCodeNow } from '../auth/sign-in-sheet';
 import { AppAllowance, useAppAllowance } from '../dialogs/app-allowance';
 import { deviceTimeZone, postCreateApp } from '../dialogs/post-create-app';
 import { descriptionOf, firstChoice, OWN, readyMadeOf, sentence, starterOf, suggestedName, TEMPLATES, type Template } from './examples';
@@ -284,8 +285,11 @@ export function MakeScreen({
   const wordsBoxRef = useRef<HTMLTextAreaElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   // The caret for a hardware keyboard; on a phone the first tap raises the
-  // keys (without iOS's pan: lib/keyboard-surface.ts takes that tap).
-  useEffect(() => { briefRef.current?.focus({ preventScroll: true }); }, []);
+  // keys (without iOS's pan: lib/keyboard-surface.ts takes that tap). A
+  // touch screen gets no caret from code (#4597, the sign-in sheet's own
+  // `mayFocusByCode`): in the Homeroom app's web view a field focused from
+  // code raises the keyboard, and this screen opens whole, under no keys.
+  useEffect(() => { if (mayFocusByCodeNow()) briefRef.current?.focus({ preventScroll: true }); }, []);
   // Taps on the fields without the pan, and the focused field (with Make it
   // when they fit) revealed inside the scroller once the keys are up.
   useKeyboardSurface(scrollerRef);

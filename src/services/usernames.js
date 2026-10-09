@@ -194,6 +194,56 @@ function handlesFromName(rawName, tries = 6) {
 }
 
 /**
+ * The handle an email sign-up's username field arrives holding (#4596):
+ * the letters and digits before the @, lowercased, with dots and every
+ * other character dropped, cut to the 32 a handle may hold. `Ada.Lovelace+hr@`
+ * is `adalovelace`. Null when what is left is too short or reserved, and
+ * the field then starts empty. #4596 deliberately overturns #3575 for this
+ * flow: the field is prefilled, the person can change it, and set-password
+ * still takes only what the field sends.
+ */
+function usernameFromEmail(rawEmail) {
+  const local = String(rawEmail || '').split('@')[0] || '';
+  const base = local
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toLowerCase()
+    .slice(0, MAX_USERNAME_LEN);
+  return validateUsername(base).ok ? base : null;
+}
+
+/**
+ * `usernameFromEmail`, made free for `userId`: the name itself when nobody
+ * holds it, else the name with the smallest number that is (`alex2`,
+ * `alex3`, …), cut so the number still fits. Free means what
+ * checkAvailability means: case-insensitive, over the live table and the
+ * retired ledger, and a name this account holds or retired is its own. One
+ * query for the first 100 candidates; null when none of them is free, and
+ * the field then starts empty.
+ */
+async function suggestUsernameForEmail(pool, rawEmail, userId, tries = 100) {
+  const base = usernameFromEmail(rawEmail);
+  if (!base) return null;
+  const candidates = [base];
+  for (let n = 2; candidates.length < tries; n += 1) {
+    const suffix = String(n);
+    const name = `${base.slice(0, MAX_USERNAME_LEN - suffix.length)}${suffix}`;
+    if (validateUsername(name).ok) candidates.push(name);
+  }
+  const { rows } = await pool.query(
+    `SELECT LOWER(username) AS name FROM users
+      WHERE LOWER(username) = ANY($1::text[]) AND id IS DISTINCT FROM $2
+     UNION
+     SELECT LOWER(username) AS name FROM username_history
+      WHERE LOWER(username) = ANY($1::text[]) AND user_id IS DISTINCT FROM $2`,
+    [candidates, userId == null ? null : userId]
+  );
+  const taken = new Set(rows.map((r) => r.name));
+  return candidates.find((name) => !taken.has(name)) || null;
+}
+
+/**
  * Replace a PROVISIONAL handle (users.username_provisional_since: made from
  * an invite phone sign-up's name, seen only in private groups) with the one
  * the person picks before going anywhere public. Like chooseFirstUsername,
@@ -479,6 +529,8 @@ module.exports = {
   isServiceIdentity,
   placeholderUsername,
   handlesFromName,
+  usernameFromEmail,
+  suggestUsernameForEmail,
   replaceProvisionalUsername,
   isProvisional,
   USERNAME_REQUIRED,

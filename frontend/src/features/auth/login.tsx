@@ -114,11 +114,16 @@ interface OtpSignup {
   /** The code just CREATED the account: no account used this address. */
   created: boolean;
   /**
-   * The account has never chosen its handle, so this step asks for it, with
-   * an empty field (#3575: the server no longer suggests one, and will not
-   * finish the step without it).
+   * The account has never chosen its handle, so this step asks for it. The
+   * server will not finish the step without one.
    */
   needsUsername: boolean;
+  /**
+   * #4596: the handle the field arrives holding, made from the address by
+   * the server and free when it was read; '' for an empty field. The person
+   * can change it.
+   */
+  suggestedUsername: string;
   /** It will land in the waiting room; null when the server could not tell. */
   waitlisted: boolean | null;
 }
@@ -930,6 +935,7 @@ export function LoginScreen() {
       setOtpSignup({
         created: data.created === true,
         needsUsername: data.needsUsername === true,
+        suggestedUsername: typeof data.suggestedUsername === 'string' ? data.suggestedUsername : '',
         waitlisted: typeof data.waitlisted === 'boolean' ? data.waitlisted : null,
       });
       // Past the code: nothing left to resend, and setOtpStatus(null) above
@@ -1768,13 +1774,12 @@ export function LoginScreen() {
                   have platform access yet"); the first-run gate that asks for
                   it only runs at release.
 
-                  #3575: the field starts EMPTY. It used to arrive holding a
-                  name derived from the address, which "Create account"
-                  accepted with one press — a username generated from the
-                  email, the thing the request asked us not to do. The person
-                  types their own, the server refuses to finish without one
-                  (`username_required`), and the line under the field says
-                  who will see it. That line is its own <p>, ahead of the
+                  #4596 (overturning #3575 for this step): the field arrives
+                  holding a suggestion the server made from the address, the
+                  letters and digits before the @, free when it was read, or
+                  empty when none fits. The person can change it, the server
+                  refuses to finish without one (`username_required`), and
+                  the line under the field says who will see it. That line is its own <p>, ahead of the
                   rule: the rule's line is swapped whole for the server's
                   refusal, and the public note has to stay put meanwhile.
               */}
@@ -1787,6 +1792,7 @@ export function LoginScreen() {
                     ref={otpUsername}
                     id="otp-username"
                     type="text"
+                    defaultValue={otpSignup.suggestedUsername}
                     autoComplete="username"
                     maxLength={32}
                     enterKeyHint="next"
