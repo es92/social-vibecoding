@@ -317,7 +317,7 @@ test('server.js re-arms the clock for a marked follow-up and records it after th
 
 // ── 2. A recovered follow-up's outcome reaches the ledger ───────────────
 
-function recoveryPool({ effectState = null, reviewedHead = NEW_HEAD } = {}) {
+function recoveryPool({ effectState = null, reviewedHead = NEW_HEAD, retried = false } = {}) {
   const calls = { queries: [], inserted: [], effects: [] };
   const pool = {
     async query(sql, params) {
@@ -328,6 +328,7 @@ function recoveryPool({ effectState = null, reviewedHead = NEW_HEAD } = {}) {
         return effectState ? { rows: [], rowCount: 0 } : { rows: [{ state: 'pending' }], rowCount: 1 };
       }
       if (/SELECT state, result FROM turn_effects/.test(s)) return { rows: [{ state: effectState, result: null }] };
+      if (/SELECT 1 FROM homeroom_bot_runs WHERE proposal_session_id = \$1 AND error = \$2/.test(s)) return { rows: retried ? [{}] : [] };
       if (/UPDATE turn_effects/.test(s)) return { rows: [{ result: params[2] }], rowCount: 1 };
       if (/FROM apps WHERE id = \$1/.test(s)) return { rows: [APP] };
       if (/FROM agent_turns WHERE logical_turn_id = \$1::uuid/.test(s)) return { rows: [{ cost: 0.31, input_tokens: 41000, output_tokens: 2100 }] };
@@ -423,8 +424,27 @@ test('a recovered fix that pushed is a revise run on the head it looked at, with
   assert.ok(calls.queries.some((q) => /UPDATE turn_effects/.test(q.s)), 'and settled');
 });
 
-test('a recovered fix its clock stopped is handed to a person as having run out of time, on the head it looked at', async (t) => {
+test('#4572: a recovered fix its clock stopped is tried once more, and the head is not marked looked at', async (t) => {
   const { pool, calls } = recoveryPool({ reviewedHead: HEAD });
+  const deps = recoveryDeps(calls);
+  const out = await withPosts(t, calls, () => bot.finishRecoveredFollowUp({
+    pool, session: SESSION, activeTurn: recoveredTurn(), timedOut: true, deps,
+    result: { exitCode: 143, pushOk: false, ahead: 0 },
+  }));
+  assert.equal(out, 'checks_retry');
+  const run = calls.inserted[0];
+  assert.equal(run[4], 'failed', 'never a revision, so never one of MAX_REVISIONS');
+  assert.equal(run[18], `checks: ran out of time on ${HEAD}, trying once more`);
+  assert.equal(run[19], 'wall clock');
+  assert.equal(run[21], null, 'the head is still due');
+  assert.equal(calls.posts.length, 0, 'nobody is asked to take it over yet');
+  assert.equal(calls.onProposal.length, 1);
+  assert.equal(calls.onProposal[0].kind, 'checks_retry');
+  assert.match(calls.onProposal[0].text, /ran out of time fixing the failing checks on this change\. It is trying once more\./);
+});
+
+test('a recovered fix its clock stopped a second time is handed to a person as having run out of time, on the head it looked at', async (t) => {
+  const { pool, calls } = recoveryPool({ reviewedHead: HEAD, retried: true });
   const deps = recoveryDeps(calls);
   const out = await withPosts(t, calls, () => bot.finishRecoveredFollowUp({
     pool, session: SESSION, activeTurn: recoveredTurn(), timedOut: true, deps,

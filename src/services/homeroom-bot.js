@@ -2774,6 +2774,8 @@ async function runTriage(pool, config, {
   const budget = await limits.checkBudget(pool, bot.id);
   if (budget.error) {
     log.info('homeroom-bot', 'Pass paused on budget', { reason: budget.reason || null });
+    // #4610: a person waiting on an answer on the bot's change hears why.
+    if (liveMode) await noteFollowUpWait(pool, { app, issueNumber, bot, why: 'budget', ws: liveD.ws });
     return { ran: false, reason: 'budget', detail: budget.reason || null };
   }
 
@@ -2837,6 +2839,9 @@ async function runTriage(pool, config, {
       log.info('homeroom-bot', 'Request held until the week resets: its payer\'s building time is used up', {
         app: app.slug, issueNumber, userId: payerId,
       });
+      // #4610: and a person who wrote on the bot's change for it hears it
+      // there, where they wrote, not only in the requester's DM.
+      await noteFollowUpWait(pool, { app, issueNumber, bot, why: 'allowance', ws: liveD.ws });
       return { ran: false, reason: 'user_allowance' };
     }
   }
@@ -2852,7 +2857,8 @@ async function runTriage(pool, config, {
         followUpTurn = true;
         return runFollowUp(pool, config, {
           bot, app, repo, item, issue, proposal: open, runMode,
-          model: stageModel(settings, config, 'followup'), turnBudgetMs, startedMs,
+          model: stageModel(settings, config, 'followup'),
+          turnBudgetMs: followUpBudgetMs(app, config, turnBudgetMs), startedMs,
           recordFailure,
           deps: {
             github, worker, agentTurn, limits, threadContext, managedOpenRouter, sessions,
@@ -3644,6 +3650,19 @@ function buildBudgets(app, config, turnBudgetMs, { firstVersion = false } = {}) 
   const factor = isPlatformRepo(app, config) ? PLATFORM_BUILD_TIME_FACTOR
     : firstVersion ? FIRST_VERSION_BUILD_TIME_FACTOR : 1;
   return { turnBudgetMs: turnBudgetMs * factor, specBudgetMs: live.SPEC_TURN_MAX_MS * factor };
+}
+
+/**
+ * #4610: the clock for a follow-up on `app` (a fix of its red checks, or an
+ * answer to a person). It used to be the plain turn budget everywhere, so on
+ * the platform's own repository, where a build gets
+ * PLATFORM_BUILD_TIME_FACTOR times it for reading a large codebase and
+ * running its slower suites, the fix of that same build ran out of time
+ * (PR #4582, change 7490). It gets what the build got; a first version's
+ * longer clock is for its size, which a follow-up does not have.
+ */
+function followUpBudgetMs(app, config, turnBudgetMs) {
+  return isPlatformRepo(app, config) ? turnBudgetMs * PLATFORM_BUILD_TIME_FACTOR : turnBudgetMs;
 }
 
 /**
@@ -5422,6 +5441,82 @@ async function proposalSpec(pool, sessionId) {
   }
 }
 
+// #4610: how recent a person's message must be for a wait to be said
+// under it: a wait is news about a message somebody is waiting on now.
+const WAIT_NOTE_WINDOW_HOURS = 6;
+
+/**
+ * #4610: say in the change's thread why the bot's answer waits, instead of
+ * waiting silently. Only on the bot's own change while it is up for a vote,
+ * and only while a person's message is the newest word in its thread, so it
+ * is said once per message waited on: the note itself is the bot's word, and
+ * the next pass that waits finds it there. `why` is a key of
+ * followup.WAIT_WORDS. Never throws; resolves whether it said it.
+ */
+async function noteFollowUpWait(pool, { app, issueNumber, bot, why, sessionId = null, ws = null }) {
+  const text = followup.waitText(why);
+  if (!text || !app || !bot?.id) return false;
+  try {
+    const open = sessionId ? { id: sessionId, status: 'promoted' }
+      : await live.openBotProposal(pool, bot.id, app.id, issueNumber);
+    if (!open || open.status !== 'promoted') return false;
+    const { rows } = await pool.query(
+      `SELECT (u.is_synthetic IS TRUE) AS by_bot,
+              (m.created_at > NOW() - make_interval(hours => $3)) AS recent
+         FROM chat_messages m
+         LEFT JOIN users u ON u.id = m.user_id
+        WHERE m.app_id = $1 AND m.thread_type = 'session' AND m.thread_ref = $2
+          AND m.msg_type = 'message' AND m.deleted_at IS NULL
+        ORDER BY m.created_at DESC, m.id DESC
+        LIMIT 1`,
+      [app.id, Number(open.id), WAIT_NOTE_WINDOW_HOURS],
+    );
+    const last = rows[0];
+    if (!last || last.by_bot || !last.recent) return false;
+    await live.postOnProposal({
+      pool, ws: ws || liveDeps().ws, app, issueNumber, kind: 'followup_wait', text, bot, sessionId: Number(open.id),
+    });
+    log.info('homeroom-bot', 'Said why its answer on its change waits', { app: app.slug, issueNumber, sessionId: open.id, why });
+    return true;
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not say why a follow-up waits', { app: app?.slug, issueNumber, why, err: err.message });
+    return false;
+  }
+}
+
+/**
+ * #4610: a short line from the bot in the thread a person wrote in: the
+ * change's own (`sessionId`), else the request's. Homeroom only, never a
+ * GitHub comment: a comment moves the issue's updated_at, which reads as new
+ * activity and would start another look. Never throws.
+ */
+async function postThreadNote({ pool, ws, app, issueNumber, runId = null, kind, text, bot, sessionId = null }) {
+  try {
+    if (sessionId) {
+      await live.postOnProposal({ pool, ws, app, issueNumber, runId, kind, text, bot, sessionId: Number(sessionId) });
+      return true;
+    }
+    await pool.query(
+      'INSERT INTO homeroom_bot_posts (app_id, issue_number, run_id, kind) VALUES ($1, $2, $3, $4)',
+      [app.id, issueNumber, runId, kind],
+    );
+    await ws.sendBotMessage(pool, app.id, { user: bot, content: text, thread: { type: 'issue', ref: Number(issueNumber) } });
+    return true;
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not post a note in the thread', { app: app?.slug, issueNumber, kind, err: err.message });
+    return false;
+  }
+}
+
+// #4610: the plain cause of a reply turn that failed, for the note it posts
+// (followup.replyFailedText). The record stays on the run.
+function replyFailedWhy(error) {
+  const e = String(error || '');
+  if (/^budget: wall clock/.test(e)) return 'it ran out of time';
+  if (/^unparseable:/.test(e)) return 'its answer came back unreadable';
+  return 'something went wrong while it worked on it';
+}
+
 /**
  * #3264: a follow-up on the bot's own open proposal for this issue. Runs
  * where runTriage would otherwise have stopped at "already has a bot
@@ -5449,9 +5544,25 @@ async function runFollowUp(pool, config, {
   const recordSnapshot = (runId) => (snapshot && runId
     ? snapshots.recordSnapshot(pool, { runId, ...snapshot })
     : Promise.resolve(null));
+  // #4610: where the person wrote, once the replies are read, and how many
+  // turns already failed to answer them (followup.repliesSince).
+  let noteSessionId = null;
+  let priorFailures = 0;
   const fail = async (error, extra = {}, opts = {}) => {
     const out = await recordFailure(error, { proposalSessionId: proposal.id, ...extra }, opts);
     if (!opts.infra && out?.runId) await recordSnapshot(out.runId);
+    // #4610: a reply turn that failed used to post nothing, so the person
+    // who wrote heard nothing at all. A wait (a refusal) is said where it
+    // happens, and a platform fault is retried on its own row: neither is
+    // this. One plain line, and whether it tries again on its own.
+    if (!opts.infra && !REFUSAL_ERRORS.has(error) && out?.ran && deps.ws) {
+      await postThreadNote({
+        pool, ws: deps.ws, app, issueNumber, runId: out.runId || null, kind: 'followup_failed', bot, sessionId: noteSessionId,
+        text: followup.replyFailedText({
+          why: replyFailedWhy(error), retrying: priorFailures + 1 < followup.MAX_REPLY_TRIES,
+        }),
+      });
+    }
     return out;
   };
 
@@ -5464,6 +5575,22 @@ async function runFollowUp(pool, config, {
     [app.id, issueNumber],
   );
   const lastRun = lastRows[0] || null;
+  // #4610: the runs since the last one that answered, so a reply turn that
+  // failed does not count the message it failed on as answered
+  // (followup.repliesSince). Without any, the last run's mark stands.
+  const { rows: recentRuns } = recovered ? { rows: [] } : await pool.query(
+    `SELECT verdict, error, thread_seen_at, proposal_session_id, checks_head_sha
+       FROM homeroom_bot_runs
+      WHERE app_id = $1 AND issue_number = $2
+        AND budget_stop IS DISTINCT FROM 'input tokens'
+        AND (error IS NULL OR error NOT LIKE 'collateral:%')
+      ORDER BY created_at DESC LIMIT 8`,
+    [app.id, issueNumber],
+  ).catch(() => ({ rows: [] }));
+  const since = recentRuns?.length
+    ? followup.repliesSince(recentRuns, proposal.id)
+    : { sinceAt: lastRun?.thread_seen_at || null, failures: 0, gaveUp: false };
+  priorFailures = since.gaveUp ? 0 : since.failures;
 
   const seedReadAt = recovered?.mark.seedReadAt || new Date().toISOString();
   const [{ comments = [] } = {}, issueThread, proposalThread, botLogin] = await Promise.all([
@@ -5480,8 +5607,9 @@ async function runFollowUp(pool, config, {
     proposalThread: proposalThread?.messages || [],
     botLogin,
     botUsername: BOT_USERNAME,
-    sinceMs: toMs(lastRun?.thread_seen_at),
+    sinceMs: toMs(since.sinceAt),
   });
+  noteSessionId = replies.some((r) => r.where === 'proposal') ? proposal.id : null;
   // Its own red checks: a failing verdict on the proposal's current head
   // that no follow-up has looked at yet is a reason to look again even when
   // nobody said anything. A person's reply comes first; a fix still due
@@ -5558,8 +5686,12 @@ async function runFollowUp(pool, config, {
     const design = canRevise
       ? live.revisionDesignText({ readsImages: await live.buildSeesImages({ pool, config, userId: bot.id, model }) })
       : '';
+    // #4572: a person writing on a change whose checks fail is shown them
+    // too, so the reply can fix them (followup.failingNowLines). Whether or
+    // not a fix turn already looked at this head.
+    const failingNow = await failingChecksNow(pool, session.id);
     const prompt = followup.followUpPrompt({
-      seed, proposalBlock, spec, prNumber: session.pr_number, replies, canRevise, design,
+      seed, proposalBlock, spec, prNumber: session.pr_number, replies, canRevise, design, checks: failingNow,
     });
     snapshot = {
       stage: 'followup', appId: app.id, issueNumber,
@@ -5582,7 +5714,16 @@ async function runFollowUp(pool, config, {
         threadSeenAt: item.thread_seen_at || null,
         extra: { onProposal: replies.some((r) => r.where === 'proposal') },
       }),
+      // #4610: once the turn is really going ahead, the person hears so.
+      onStart: deps.ws ? () => postThreadNote({
+        pool, ws: deps.ws, app, issueNumber, kind: 'followup_working', text: followup.workingText(), bot,
+        sessionId: noteSessionId,
+      }) : null,
     });
+    // #4610: and when it has to wait for another turn on the change, why.
+    if (turn.routed?.error === 'session_busy' && deps.ws) {
+      await noteFollowUpWait(pool, { app, issueNumber, bot, why: 'session_busy', sessionId: session.id, ws: deps.ws });
+    }
   }
   const result = turn.result || {};
   const relay = relaySpend(result.relayUsage, turn.pricing, agentTurn);
@@ -5814,6 +5955,21 @@ const CHECKS_ROW_SQL = `SELECT cs.id, cs.app_id, cs.linked_issues, cs.check_stat
        JOIN apps a ON a.id = cs.app_id
        JOIN users u ON u.id = cs.user_id
       WHERE cs.id = $1 AND cs.status = 'promoted' AND u.username = $2 AND u.is_synthetic = TRUE`;
+
+/**
+ * #4572: the checks failing on the bot's proposal `sessionId` now, and what
+ * its shots show failing, whether or not a fix turn looked at this head
+ * already: what a reply turn is shown (followup.failingNowLines). Null when
+ * nothing fails or the read fails.
+ */
+async function failingChecksNow(pool, sessionId) {
+  try {
+    const { rows } = await pool.query(CHECKS_ROW_SQL, [Number(sessionId), BOT_USERNAME]);
+    return rows[0] ? followup.checksDue({ ...rows[0], looked: false }) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** The fix the bot's proposal `sessionId` is due, or null (followup.checksDue). */
 async function checksToFix(pool, sessionId) {
@@ -6069,6 +6225,34 @@ async function runChecksFix(pool, config, {
     return { ran: true, verdict: 'revise', runId, acted: 'checks_revise' };
   }
 
+  // #4572: a fix that ran out of time is tried once more before anybody is
+  // asked: it used to mark the head looked at and hand over at once, though
+  // nothing about the change said a person was needed (PR #4582, change
+  // 7490). Its own one retry per head (checksRetryError): the run keeps no
+  // `checks_head_sha`, so the head is still due, and a failed run never
+  // counts toward MAX_REVISIONS. The second time out hands over as before.
+  if (turn.stopped && !await checksRetried(pool, session.id, head)) {
+    runId = await insertRun(pool, {
+      ...billingOf(item, runMode),
+      readReason: readReasonOf(item),
+      appId: app.id, issueNumber, mode: runMode, verdict: 'failed',
+      reason: 'its attempt to fix them ran out of time', error: checksRetryError(head),
+      threadSeenAt, model, durationMs: Date.now() - startedMs,
+      proposalSessionId: session.id, ...spent, budgetStop: 'wall clock',
+    });
+    await recordSnapshot(runId);
+    await dropRow();
+    await live.postOnProposal({
+      pool, ws: deps.ws, app, issueNumber, runId, kind: 'checks_retry', bot, sessionId: session.id,
+      text: followup.checksRetryText({ broken: broken.length > 0, failing: failing.length > 0 }),
+    }).catch((err) => log.warn('homeroom-bot', 'Checks retry post failed', { app: app.slug, issueNumber, err: err.message }));
+    log.warn('homeroom-bot', 'Fix of its proposal\'s checks ran out of time; trying once more', {
+      app: app.slug, issueNumber, sessionId: session.id, head, runId,
+    });
+    await noteProposalChecks(pool, { sessionId: session.id });
+    return { ran: true, verdict: 'failed', runId, acted: 'checks_retry' };
+  }
+
   // The turn could not fix them: one note, and a person takes it from here.
   const turnFailed = !turn.stopped && !code ? live.failedClaudeTurn(result) : null;
   const why = turn.stopped ? 'its attempt to fix them ran out of time'
@@ -6082,6 +6266,26 @@ async function runChecksFix(pool, config, {
     verdict: parsed?.action === 'person' ? 'person' : 'failed',
     extra: { ...spent, ...(turn.stopped ? { budgetStop: 'wall clock' } : {}) },
   });
+}
+
+// #4572: the error a timed-out fix records when it is tried once more, one
+// per head, so the retry is counted by the head it was for.
+function checksRetryError(head) {
+  return `checks: ran out of time on ${String(head || '').toLowerCase()}, trying once more`;
+}
+
+/** Whether a fix of `head` on proposal `sessionId` already ran out of time once (checksRetryError). */
+async function checksRetried(pool, sessionId, head) {
+  try {
+    const { rows } = await pool.query(
+      'SELECT 1 FROM homeroom_bot_runs WHERE proposal_session_id = $1 AND error = $2 LIMIT 1',
+      [Number(sessionId), checksRetryError(head)],
+    );
+    return rows.length > 0;
+  } catch {
+    // A read that fails hands over, as before: never a loop of retries.
+    return true;
+  }
 }
 
 // ── A follow-up after a restart (#4533) ──────────────────────────────────
@@ -8816,15 +9020,26 @@ function noteIssueActivity({ appId, issueNumber, reason = 'activity' } = {}) {
  * answers; any other proposal's thread is none of the bot's business and
  * costs one indexed lookup. Never throws.
  */
-async function noteProposalActivity(pool, { appId, sessionId } = {}) {
+async function noteProposalActivity(pool, { appId, sessionId, deps = {} } = {}) {
   try {
     const { rows } = await pool.query(
-      `SELECT cs.linked_issues FROM chat_sessions cs JOIN users u ON u.id = cs.user_id
+      `SELECT cs.linked_issues, u.id AS bot_id, u.username AS bot_username, a.slug
+         FROM chat_sessions cs JOIN users u ON u.id = cs.user_id JOIN apps a ON a.id = cs.app_id
         WHERE cs.id = $1 AND cs.app_id = $2 AND cs.status = 'promoted' AND u.username = $3`,
       [Number(sessionId), Number(appId), BOT_USERNAME],
     );
     const issueNumber = Array.isArray(rows[0]?.linked_issues) ? rows[0].linked_issues[0] : null;
     if (!issueNumber) return false;
+    // #4610: on a project the bot is paused on, nothing will read this
+    // message (refreshQueue skips the app): the person hears why, once.
+    const settings = await readSettings(pool).catch(() => null);
+    if (settings && settings.mode !== 'off' && (settings.pausedApps || []).includes(rows[0].slug)) {
+      await noteFollowUpWait(pool, {
+        app: { id: Number(appId), slug: rows[0].slug }, issueNumber: Number(issueNumber),
+        bot: { id: rows[0].bot_id, username: rows[0].bot_username }, why: 'paused', sessionId: Number(sessionId),
+        ws: deps.ws || null,
+      });
+    }
     return noteIssueActivity({ appId, issueNumber, reason: 'proposal_thread' });
   } catch (err) {
     log.warn('homeroom-bot', 'Proposal activity check failed', { err: err.message });
@@ -9548,6 +9763,9 @@ module.exports = {
   laterSideSkipReason,
   isPlatformRepo,
   buildBudgets,
+  followUpBudgetMs,
+  noteFollowUpWait,
+  replyFailedWhy,
   PLATFORM_BUILD_TIME_FACTOR,
   isRecoveredBotSession,
   settleReapedTurn,

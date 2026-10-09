@@ -112,7 +112,7 @@ function fakePool({ mentions = [], notes = [], optouts = [] }) {
     async query(sql, params) {
       const s = String(sql);
       if (/FROM chat_messages m/.test(s)) {
-        assert.match(params[2], /@homeroom_bot/);
+        assert.match(params[2], /@\(homeroom_bot\|/);
         return { rows: mentions };
       }
       if (/SELECT issue_number, kind, created_at FROM homeroom_bot_posts/.test(s)) return { rows: notes };

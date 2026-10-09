@@ -230,14 +230,16 @@ test('a checks fix a restart caught keeps its deadline, and its outcome reaches 
     assert.ok(stopTimes[0] - followedAt >= 2000, `followed until its deadline, not stopped at once (${stopTimes[0] - followedAt} ms)`);
     assert.ok(Date.now() - t0 < 60_000, 'at its own deadline: no fresh budget');
 
+    // #4572: the first time out on a head is tried once more: no head
+    // marked, nobody asked to take it over yet.
     assert.deepEqual(await runsOf(sessionId), [{
-      verdict: 'failed', error: 'checks: its attempt to fix them ran out of time', budget_stop: 'wall clock',
-      checks_head_sha: HEAD, cost_usd: 0.31, input_tokens: '41000', session_id: sessionId, proposal_session_id: sessionId,
-    }], 'one run, on the head it looked at, with what it cost');
-    assert.equal(await bot.checksToFix(pool, sessionId), null, 'and that head counts as looked at');
-    assert.equal(posts.length, 1);
-    assert.equal(posts[0].kind, 'followup_person');
-    assert.equal(posts[0].proposalSessionId, sessionId);
+      verdict: 'failed', error: `checks: ran out of time on ${HEAD}, trying once more`, budget_stop: 'wall clock',
+      checks_head_sha: null, cost_usd: 0.31, input_tokens: '41000', session_id: sessionId, proposal_session_id: sessionId,
+    }], 'one run, with what it cost, that leaves the head due');
+    assert.ok(await bot.checksToFix(pool, sessionId), 'so that head is still due');
+    assert.equal(posts.length, 0);
+    assert.deepEqual(onProposal.map((p) => p.kind), ['checks_retry']);
+    assert.equal(onProposal[0].sessionId, sessionId);
     assert.equal((await pool.query('SELECT 1 FROM homeroom_bot_queue WHERE id = $1', [queueId])).rows.length, 0, 'its queue row is spent');
     assert.equal((await effectOf(turnId))?.state, 'completed');
     assert.deepEqual(wrapUps, [sessionId], 'the person\'s tail still ran, as before');
