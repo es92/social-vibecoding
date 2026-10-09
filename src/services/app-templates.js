@@ -89,14 +89,16 @@ function tierList(id, { plural, one, example, title }) {
     tables: '`tier_items` and `tier_votes`',
     tests: Object.freeze([
       {
+        // It opens on your own board, so a newcomer's items wait in the
+        // tray below the tiers as chips to drag.
         id: 'tiers.board',
-        name: 'The group\'s tier list shows items in their tiers',
+        name: 'Your tier list opens with items ready to drag into tiers',
         path: '/',
-        expectSelector: '#board[data-view="group"] [data-tier="S"] [data-item]',
+        expectSelector: '#board[data-view="yours"] ~ #tray button[data-item]',
         visual: true,
         impact: IMPACT,
       },
-      { name: 'The board switches to your own ranking', path: '/', expectSelector: '#view-toggle button[data-view="yours"]' },
+      { name: 'The board switches to the group\'s ranking', path: '/', expectSelector: '#view-toggle button[data-view="group"]' },
       { name: 'A new item can be added', path: '/', expectSelector: '#add-form input[name="name"]' },
     ]),
   });

@@ -39,9 +39,10 @@
   var CHIP_PICKED = 'inline-flex min-h-9 max-w-full cursor-grab touch-manipulation select-none items-center rounded-lg border border-accent bg-surface px-2.5 py-1.5 text-small font-medium ring-2 ring-accent';
 
   var data = null;
-  // Which ranking is on the board; remembered on this device.
-  var view = 'group';
-  try { if (localStorage.getItem('tier-list:view') === 'yours') view = 'yours'; } catch (e) { /* the group's */ }
+  // Which ranking is on the board; remembered on this device. Yours first,
+  // so somebody new can drag straight away; once they switch, that sticks.
+  var view = 'yours';
+  try { if (localStorage.getItem('tier-list:view') === 'group') view = 'group'; } catch (e) { /* yours */ }
   // The item tapped and waiting for a tier, if any.
   var picked = null;
   // A drag under way: { id, chip, ghost, x, y, pointerId, touch, active, timer }.
@@ -347,14 +348,19 @@
     el.loading.hidden = state !== 'loading';
     el.error.hidden = state !== 'error';
     el.empty.hidden = state !== 'empty';
-    el.ranking.hidden = state !== 'ready';
+    // With nothing added yet the empty tiers still show under the empty
+    // state, so it is clear what the list will be.
+    el.ranking.hidden = state !== 'ready' && state !== 'empty';
   }
 
   function render() {
-    if (!data.items.length) return show('empty');
     if (picked && !itemById(picked)) picked = null;
     renderBoard();
-    show('ready');
+    var none = !data.items.length;
+    // Nothing to switch between, drag or tray yet: just the tiers.
+    el.toggle.parentNode.hidden = none;
+    if (none) { el.hint.hidden = true; el.tray.hidden = true; }
+    show(none ? 'empty' : 'ready');
   }
 
   var loaded = false;

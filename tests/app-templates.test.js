@@ -179,6 +179,17 @@ test('a tier list ranks what its entry says, escaped where it lands, and its scr
   }
   const script = fs.readFileSync(path.join(appTemplates.STARTERS_DIR, 'tier-list/public/app.js'), 'utf8');
   assert.doesNotMatch(script, /\{\{/, 'the script is the same for every tier list');
+  // It opens on Yours, so a newcomer can drag straight away; a saved choice
+  // of the group's still wins.
+  assert.match(html, /<div id="board" class="list" data-view="yours">/);
+  assert.match(html, /data-view="yours" aria-checked="true"/);
+  assert.match(html, /data-view="group" aria-checked="false"/);
+  assert.match(script, /var view = 'yours';\n\s*try \{ if \(localStorage\.getItem\('tier-list:view'\) === 'group'\) view = 'group'; \}/);
+  // With nothing added yet, the empty tiers still show under "No hikes yet".
+  assert.match(script, /el\.ranking\.hidden = state !== 'ready' && state !== 'empty';/);
+  assert.doesNotMatch(script, /if \(!data\.items\.length\) return show\('empty'\)/);
+  const board = appTemplates.get('tier-list-hikes').tests.find((c) => c.id === 'tiers.board');
+  assert.match(board.expectSelector, /#board\[data-view="yours"\]/, 'the visual check reads the board it opens on');
 });
 
 for (const id of READY) {

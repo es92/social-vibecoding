@@ -92,25 +92,26 @@
       <button id="retry" type="button" class="btn-secondary">Retry</button>
     </div>
 
-    <!-- Empty: only when the load worked and there is nothing yet. -->
+    <!-- Empty: only when the load worked and there is nothing yet. The empty
+         tiers still show below it. -->
     <div id="empty" class="state-empty card" hidden>
       <p class="text-heading">No {{ITEM_PLURAL}} yet</p>
       <p class="text-body text-muted">Add the first one above. Everyone here can add more and rank them.</p>
     </div>
 
-    <!-- One board, two rankings: the group's (every item in the tier its
-         average lands in) and yours (drag each into a tier, or tap it and
-         then tap a tier). -->
+    <!-- One board, two rankings: yours, first (drag each into a tier, or tap
+         it and then tap a tier) and the group's (every item in the tier its
+         average lands in). -->
     <section id="ranking" class="flex flex-col gap-3" hidden>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div id="view-toggle" role="radiogroup" aria-label="Whose ranking" class="inline-flex rounded-xl border border-line bg-surface p-1">
-          <button type="button" role="radio" data-view="group" aria-checked="true" class="min-h-11 rounded-lg px-4 text-body font-medium">The group's</button>
-          <button type="button" role="radio" data-view="yours" aria-checked="false" class="min-h-11 rounded-lg px-4 text-body font-medium">Yours</button>
+          <button type="button" role="radio" data-view="group" aria-checked="false" class="min-h-11 rounded-lg px-4 text-body font-medium">The group's</button>
+          <button type="button" role="radio" data-view="yours" aria-checked="true" class="min-h-11 rounded-lg px-4 text-body font-medium">Yours</button>
         </div>
         <p id="board-note" class="px-1 text-small text-muted"></p>
       </div>
       <p id="hint" class="px-1 text-small text-muted" aria-live="polite"></p>
-      <div id="board" class="list" data-view="group"></div>
+      <div id="board" class="list" data-view="yours"></div>
       <div id="tray" class="flex flex-col gap-2 rounded-xl border border-dashed border-line px-3 py-3" data-drop="">
         <p id="tray-label" class="text-small text-muted"></p>
         <div id="tray-items" class="flex min-h-11 flex-wrap items-center gap-1.5"></div>

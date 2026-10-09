@@ -260,8 +260,11 @@ test('every ready-made app runs: seeds in staging only, serves its screen, refus
   await t.test('a tier list: anyone adds, each ranks, the group\'s tier is where the average lands', async () => {
     await run('tier-list-restaurants', '/api/items', (d) => demo(d.items), async (app) => {
       const seeded = (await app.call('GET', '/api/items', { as: ada })).data;
-      assert.deepEqual(seeded.items.find((i) => i.id === 900001).tier, 'S', 'the check\'s S row has an item');
+      assert.deepEqual(seeded.items.find((i) => i.id === 900001).tier, 'S', 'the group\'s S row has an item');
       assert.equal(seeded.items.find((i) => i.id === 900005).tier, null, 'one nobody has ranked yet');
+      // The board opens on Yours: whoever the check signs in as has ranked
+      // nothing, so every item waits in the tray as a chip to drag.
+      assert.ok(seeded.items.length > 0 && seeded.items.every((i) => i.yours === null), 'the check\'s tray has items');
 
       assert.equal((await app.call('POST', '/api/items', { as: ada, body: { name: '   ' } })).status, 400);
       const added = await app.call('POST', '/api/items', { as: ada, body: { name: '  Noodle   Bar ' } });
