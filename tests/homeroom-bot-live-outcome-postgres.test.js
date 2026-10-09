@@ -671,4 +671,135 @@ test('a live build always records its outcome, against the full PostgreSQL schem
     await pool.query('DELETE FROM homeroom_bot_runs');
     await pool.query('DELETE FROM homeroom_bot_queue');
   });
+
+  // One ready run is built once. Since #4544 two or three builds started
+  // from one run (homestead #31 and #32, ~300 ms apart; kasirku #7), and the
+  // loser paid for a plan and a build before it stopped. Linking a build's
+  // session to its run is its claim on the run: the first build to link has
+  // it, and any other stops before its plan, with nothing recorded.
+  await t.test('one ready run, two builds at once: the first to link its session builds it, the other stops before its plan', async () => {
+    bot._resetForTests();
+    await pool.query('DELETE FROM homeroom_bot_runs');
+    const runId = (await pool.query(
+      `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict, build_note, thread_seen_at, live_build_waiting_at)
+       VALUES ($1, 31, 'live', 'ready', 'build it', $2, NOW()) RETURNING id`, [recipebot.id, SEEN],
+    )).rows[0].id;
+    const [pick] = await bot.liveBuildCandidates(pool, { liveSlugs: ['recipebot'] });
+    assert.equal(Number(pick.id), runId);
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    const planned = [];
+    const refused = [];
+    live.botUsernameOf = async () => 'usernode-bot';
+    live.advanceSeen = async () => {};
+    // As buildAndPropose does: open a session, link it (the claim), and on
+    // a refusal stop there (homeroom-bot-live.test.js pins that half).
+    live.buildAndPropose = async (args) => {
+      const sessionId = await session(recipebot);
+      const why = await args.onSession({ id: sessionId });
+      if (why) {
+        refused.push(why);
+        return { ok: false, sessionId, branchName: null, error: why, skipped: why, lostClaim: true, costUsd: null };
+      }
+      planned.push(sessionId);
+      await gate;
+      const stopped = 'skipped: stopped by the test';
+      return { ok: false, skipped: stopped, error: stopped, sessionId, branchName: 'dev/homeroom_bot-first', costUsd: 0.3 };
+    };
+    const github = {
+      isEnabled: () => true,
+      async fetchPublicIssue() { return { issue: { number: 31, title: 'Chores', state: 'open' } }; },
+      async fetchIssueComments() { return { comments: [] }; },
+    };
+    const deps = {
+      github, dm: { async requesterOf() { return null; } }, ...noSpend, sessions: { buildHeadlessSeed: () => 'seed' },
+      threadContext: { async loadIssueThread() { return { messages: [] }; } },
+      worker: {}, agentTurn: {}, activeWorkers: new Set(), sessionLifecycle: {}, ws: {}, domain: 'app.test',
+    };
+    // Two passes took the same run.
+    const builds = [0, 1].map(() => bot.buildOne(pool, {}, { bot: botUser, app: recipebot, run: pick, settings: {}, deps }));
+    for (let i = 0; i < 200 && planned.length + refused.length < 2; i += 1) await new Promise((r) => setTimeout(r, 10));
+    assert.equal(planned.length, 1, 'one plan and one build');
+    assert.deepEqual(refused, [bot.LOST_CLAIM], 'the other build stopped at its link');
+    release();
+    const outs = await Promise.all(builds);
+    assert.deepEqual(outs.map((o) => o.acted).sort(), ['lost_claim', 'skipped']);
+    const { rows: [run] } = await pool.query(
+      `SELECT build_session_id, build_ok, build_error, build_branch, build_cost_usd::float8 AS cost
+         FROM homeroom_bot_runs WHERE id = $1`, [runId],
+    );
+    assert.equal(Number(run.build_session_id), planned[0], 'the run is the first build\'s');
+    assert.deepEqual([run.build_ok, run.build_error, run.build_branch, run.cost],
+      [false, 'skipped: stopped by the test', 'dev/homeroom_bot-first', 0.3], 'with its record, and nothing of the other\'s');
+    assert.deepEqual(await bot.liveBuildCandidates(pool, { liveSlugs: ['recipebot'] }), [], 'and it waits for no other');
+    Object.assign(live, real);
+    await pool.query('DELETE FROM homeroom_bot_runs');
+  });
+
+  // Run 1267: a second build of a run, which stopped once the first's
+  // proposal was up for a vote, wrote "failed" and its own branch over it.
+  await t.test('a build that ends after its run has another build\'s proposal leaves the run\'s record alone', async () => {
+    await pool.query('DELETE FROM homeroom_bot_runs');
+    const first = await proposalOn(67, 'promoted');
+    const runId = (await pool.query(
+      `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict, build_ok, build_branch, build_session_id, proposal_session_id)
+       VALUES ($1, 67, 'live', 'ready', TRUE, 'dev/first', $2, $2) RETURNING id`, [recipebot.id, first],
+    )).rows[0].id;
+    const record = async () => (await pool.query(
+      `SELECT build_ok, build_error, build_branch, build_session_id, proposal_session_id, build_sha
+         FROM homeroom_bot_runs WHERE id = $1`, [runId],
+    )).rows[0];
+    const before = await record();
+    const second = await session(recipebot);
+    await bot.recordLiveBuild(pool, runId, {
+      ok: false, sessionId: second, branchName: 'dev/second', error: bot.hasProposalSkip(first), costUsd: 0.9,
+    });
+    assert.deepEqual(await record(), before, 'not "failed", not its branch');
+    // Nor does a second proposal take the run's place.
+    await bot.announceBuilt({
+      pool, ws: {}, app: recipebot, bot: botUser, issueNumber: 67, runId, domain: 'app.test', say: async () => ({}),
+      built: { ok: true, sessionId: second, prNumber: 9, branchName: 'dev/second' },
+    });
+    assert.deepEqual(await record(), before, 'its proposal is still the first');
+    // The build the proposal is still records on it (restart recovery does).
+    await bot.recordLiveBuild(pool, runId, { ok: true, sessionId: first, sha: 'b'.repeat(40) });
+    assert.equal((await record()).build_sha, 'b'.repeat(40));
+    await pool.query('DELETE FROM homeroom_bot_runs');
+  });
+
+  // A build under way is no proposal, but two of them are two proposals of
+  // one request: of two builds of one request (two runs of it), the first
+  // goes on and the second stops; never both.
+  await t.test('of two builds of one request under way, the first goes on and the second stops', async () => {
+    await pool.query('DELETE FROM homeroom_bot_runs');
+    const first = await session(recipebot);
+    const runA = await liveRun(recipebot, 32, first, { ago: 120 });
+    const second = await session(recipebot, { status: 'paused' });
+    const runB = await liveRun(recipebot, 32, second, { ago: 60 });
+    const why = (runId) => bot.whyNotBuild(pool, { runId, botId: botUser.id, appId: recipebot.id, issueNumber: 32 });
+    assert.equal(await why(runA), null, 'the first goes on');
+    assert.equal(await why(runB), `skipped: the request is already being built (${first})`, 'the second stops');
+    // A plan links no session of its own: it gives way to a build under way.
+    const plan = (await pool.query(
+      `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict, live_build_waiting_at)
+       VALUES ($1, 32, 'live', 'ready', NOW()) RETURNING id`, [recipebot.id],
+    )).rows[0].id;
+    assert.equal(await why(plan), bot.beingBuiltSkip(first));
+    // Paused between its turns, it is still under way.
+    await pool.query(`UPDATE chat_sessions SET status = 'paused' WHERE id = $1`, [first]);
+    assert.equal(await why(runB), bot.beingBuiltSkip(first));
+    // Not once it ended: put away, its outcome recorded, or older than any
+    // build (the abandoned-build sweep's, not a build under way).
+    await pool.query(`UPDATE chat_sessions SET status = 'archived' WHERE id = $1`, [first]);
+    assert.equal(await why(runB), null);
+    await pool.query(`UPDATE chat_sessions SET status = 'active' WHERE id = $1`, [first]);
+    await pool.query(`UPDATE homeroom_bot_runs SET build_ok = FALSE, build_error = 'x' WHERE id = $1`, [runA]);
+    assert.equal(await why(runB), null);
+    await pool.query('UPDATE homeroom_bot_runs SET build_ok = NULL, build_error = NULL WHERE id = $1', [runA]);
+    await pool.query(`UPDATE chat_sessions SET created_at = NOW() - INTERVAL '5 hours' WHERE id = $1`, [first]);
+    assert.equal(await why(runB), null);
+    // Another request's build is no business of this one's.
+    assert.equal(await bot.requestBuilding(pool, { appId: recipebot.id, issueNumber: 33, runId: runB }), null);
+    await pool.query('DELETE FROM homeroom_bot_runs');
+  });
 });

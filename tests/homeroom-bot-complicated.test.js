@@ -287,6 +287,25 @@ test('a plan that could not be written is said on the request, and nothing waits
   assert.ok(!pool.queries.some(([sql]) => /awaiting_go_at = NOW\(\)/.test(sql)));
 });
 
+test('a run already waiting for Build it under one plan is never asked about a second (turnly #6)', async (t) => {
+  const seen = stubLive(t);
+  stubConfigs(t);
+  live.buildAndPropose = async (a) => {
+    seen.built.push(a);
+    return { ok: false, planned: true, sessionId: 56, specMd: '# Another leaderboard', specVersion: 1, costUsd: 0.4 };
+  };
+  // Another drafting of the same run put its plan to the requester first.
+  const pool = fakePool((sql) => (/SET live_build_waiting_at = NULL, awaiting_go_at = NOW\(\)/.test(sql) ? { rows: [], rowCount: 0 } : null));
+  const args = verdictArgs({ pool, complicated: true, plan: PLAN, parsed: { verdict: 'ready', buildNote: 'Add a leaderboard tab.' } });
+  const cards = [];
+  args.deps.dm = { async sendPlanCard(_pool, a) { cards.push(a); return { messageId: 32 }; }, async requesterOf() { return null; } };
+  assert.equal(await bot.buildLive(args), 'already_built');
+  const waited = pool.queries.find(([sql]) => /SET live_build_waiting_at = NULL, awaiting_go_at = NOW\(\)/.test(sql));
+  assert.match(waited[0], /AND awaiting_go_at IS NULL/, 'only a run no plan waits on yet');
+  assert.deepEqual(cards, [], 'no second DM card');
+  assert.ok(!seen.posts.some((p) => p.kind === 'plan'), 'and no second plan on the request');
+});
+
 test('Build it builds exactly the approved spec, with its screens, reviewed as a first version is, and says it was checked', async (t) => {
   const seen = stubLive(t);
   stubConfigs(t);

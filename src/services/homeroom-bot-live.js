@@ -2570,10 +2570,17 @@ async function buildAndPropose({
   }
   // The caller's durable link to this session, written before any turn runs:
   // a restart mid-turn leaves the worker running, and restart recovery finds
-  // the run it belongs to through this (#3401).
+  // the run it belongs to through this (#3401). It is the build's claim on
+  // its run too: a reason it resolves (a string) is the run refusing the
+  // link, because another build of it linked its session first
+  // (homeroom-bot.js buildLive). That build is the run's; this one ends below,
+  // before its branch, its worker and its plan, with `lostClaim` on the
+  // result. A link that could not be written is logged and the build goes on.
+  let claimRefused = null;
   if (onSession) {
     try {
-      await onSession(session);
+      const refused = await onSession(session);
+      if (typeof refused === 'string' && refused) claimRefused = refused;
     } catch (err) {
       log.warn('homeroom-bot', 'Could not link the build session to its run', { sessionId: session.id, err: err.message });
     }
@@ -2633,6 +2640,11 @@ async function buildAndPropose({
       return null;
     }
   };
+  // Its run is another build's (onSession, above): nothing more is spent on
+  // this one, and its session is put away as a skip's is.
+  if (claimRefused) {
+    return { ...(await fail(claimRefused)), skipped: claimRefused, lostClaim: true, costUsd: null };
+  }
 
   let branchName;
   try {

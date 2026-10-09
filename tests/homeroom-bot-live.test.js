@@ -693,6 +693,43 @@ test('WP1: a build whose request was answered or closed while it ran is not prop
   assert.ok(check < fn.indexOf('await prepareProposal({') && check < fn.indexOf('const promoted = await promoteAsBot({'), 'before it is proposed');
 });
 
+// One run, one build. Linking a build's session to its run is its claim on
+// the run (homeroom-bot.js buildLive's onSession): a run another build linked
+// first refuses it, and this one stops there. A second build of homestead
+// #31 paid for a plan and a build before it stopped on the first's proposal.
+test('a build whose run refuses its session stops before its branch, its worker and its plan', async () => {
+  const h = buildHarness({ spec: SPEC });
+  const specs = [];
+  const branches = [];
+  const ensureSessionBranch = h.deps.sessionLifecycle.ensureSessionBranch;
+  h.deps.sessionLifecycle.ensureSessionBranch = async (a) => { branches.push(a.sessionId); return ensureSessionBranch(a); };
+  const out = await live.buildAndPropose({
+    pool: h.pool, deps: h.deps, ...BUILD_ARGS,
+    onSpec: async (s) => { specs.push(s); },
+    onSession: async () => bot.LOST_CLAIM,
+    skipCheck: async () => { throw new Error('never asked'); },
+  });
+  assert.equal(out.lostClaim, true);
+  assert.equal(out.ok, false);
+  assert.equal(out.skipped, bot.LOST_CLAIM);
+  assert.equal(out.sessionId, 5001);
+  assert.equal(out.costUsd, null, 'nothing spent');
+  assert.deepEqual(branches, [], 'no branch');
+  assert.deepEqual(h.calls.ensured, [], 'no worker');
+  assert.deepEqual(h.calls.modes, [], 'no plan turn and no build turn');
+  assert.deepEqual(specs, [], 'no plan posted');
+  assert.deepEqual(h.calls.promoted, []);
+  assert.ok(h.calls.queries.some((q) => /SET status = 'archived'/.test(q.sql) && q.params[0] === 5001), 'its session is put away');
+  // Only a reason is a refusal: a link that resolves nothing (the bench's)
+  // or the query's result builds as before.
+  for (const resolved of [undefined, null, { rows: [{ id: 900 }] }]) {
+    const go = buildHarness();
+    const built = await live.buildAndPropose({ pool: go.pool, deps: go.deps, ...BUILD_ARGS, onSession: async () => resolved });
+    assert.equal(built.ok, true);
+    assert.equal(built.lostClaim, undefined);
+  }
+});
+
 test('WP1: a check that cannot answer never stops a build, and a build with no check is built as before', async () => {
   const h = buildHarness();
   const out = await live.buildAndPropose({
@@ -808,6 +845,45 @@ test('WP1: a build that was not needed is recorded as a skip, and nothing is sai
   assert.deepEqual(recorded.slice(0, 3), [900, false, 'skipped: the request already has a proposal (6190)'],
     'which every reader shows as stopped');
   assert.ok(!h.queries.some((q) => /SET proposal_session_id = \$2/.test(q.sql)));
+});
+
+test('a second build of one run stops at its link and leaves the run to the first: nothing recorded, said or spent', async (t) => {
+  const h = actHarness();
+  const realPost = live.post;
+  const realBuild = live.buildAndPropose;
+  const realSeen = live.advanceSeen;
+  t.after(() => { live.post = realPost; live.buildAndPropose = realBuild; live.advanceSeen = realSeen; });
+  const seen = [];
+  live.post = async (args) => { h.posts.push({ kind: args.kind }); return {}; };
+  live.advanceSeen = async () => { seen.push('seen'); return { advanced: true }; };
+  let refused;
+  live.buildAndPropose = async (args) => {
+    refused = await args.onSession({ id: 5009 });
+    // What buildAndPropose resolves once its link is refused (above).
+    if (refused) return { ok: false, sessionId: 5009, branchName: null, error: refused, skipped: refused, lostClaim: true, costUsd: null };
+    return { ok: true, sessionId: 5009, prNumber: 43, costUsd: 0.25 };
+  };
+  // The run answers no row: another build linked its session first.
+  assert.equal(await build(h, { verdict: 'ready', buildNote: 'x' }), 'lost_claim');
+  assert.equal(refused, bot.LOST_CLAIM);
+  const claim = h.queries.find((q) => /SET build_session_id = \$2, live_build_waiting_at = NULL WHERE id = \$1/.test(q.sql));
+  assert.match(claim.sql, /WHERE id = \$1\s+AND build_session_id IS NULL AND build_ok IS NULL AND proposal_session_id IS NULL\s+RETURNING id/,
+    'once: only a run no build has linked, still waiting for its outcome');
+  assert.deepEqual(claim.params, [900, 5009]);
+  assert.ok(!h.queries.some((q) => /SET build_ok = \$2, build_error = \$3/.test(q.sql)), 'the run keeps the first build\'s record');
+  assert.ok(!h.queries.some((q) => /^UPDATE homeroom_bot_runs SET (live_build_waiting_at|build_spec_md|proposal_session_id) = /.test(q.sql)));
+  assert.deepEqual(h.posts, [], 'nothing said');
+  assert.deepEqual(seen, [], 'what the run has seen is the first build\'s to move');
+  assert.deepEqual(h.deps.limits.spend, [], 'nothing spent');
+
+  // The run's own build: its link is taken, and it builds as ever.
+  const query = h.pool.query;
+  h.pool.query = async (sql, params) => {
+    if (/SET build_session_id = \$2/.test(String(sql))) return { rows: [{ id: 900 }] };
+    return query(sql, params);
+  };
+  assert.equal(await build(h, { verdict: 'ready', buildNote: 'x' }), 'proposed');
+  assert.equal(refused, null);
 });
 
 test('WP1: what the run has seen moves past its own plan comment as soon as it is posted', async (t) => {

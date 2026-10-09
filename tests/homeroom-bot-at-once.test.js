@@ -493,6 +493,60 @@ test('a project\'s next request is read while its builds run, three of them at o
   bot._resetForTests();
 });
 
+// One ready run, one build. A run reads as waiting until its build links its
+// session (buildLive's onSession), several awaits after the build took its
+// slot, and each pass's `seen` is its own: since #4544 let a project build
+// three at once, the pass the next wake started took the same run again
+// (homestead #31 and #32, two builds ~300 ms apart; kasirku #7, three).
+test('two passes racing on one ready run start one build: its slot is taken until that build ends', async () => {
+  bot._resetForTests();
+  const settings = [
+    { key: bot.KEY_MODE, value: 'shadow' },
+    { key: bot.KEY_PER_PERSON, value: '3' },
+    { key: bot.KEY_LIVE_AT_ONCE, value: '8' },
+  ];
+  // Every pass reads run 900 as waiting: its build has not linked a session.
+  const pool = loopPool({ settings, apps: APPS, waiting: [waitingBuild(900, 101, 31, 7)] });
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const builds = [];
+  const deps = {
+    drain: false,
+    github: {
+      isEnabled: () => true,
+      async fetchPublicIssues() { return { issues: [] }; },
+      // Where a build is when the next pass starts: reading its request,
+      // which it then finds closed.
+      async fetchPublicIssue(_o, _r, n) { builds.push(n); await gate; return { issue: { state: 'closed' } }; },
+    },
+    limits: { async checkBudget() { return { ok: true }; } },
+    worker: { async listWorkerVolumes() { return []; } },
+    dm: { async overWeeklyAllowance() { return false; }, async requesterOf() { return null; } },
+  };
+  const first = await bot.runOnce(pool, {}, deps);
+  assert.equal(first.dispatched, 1);
+  // The wake its verdict sent and the read slot that ended: passes back to
+  // back, each with a `seen` of its own.
+  const second = await bot.runOnce(pool, {}, deps);
+  const third = await bot.runOnce(pool, {}, deps);
+  assert.deepEqual([second.dispatched, third.dispatched], [0, 0], 'the run\'s build already has its slot');
+  await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(builds, [31], 'one build of the run, not two or three');
+  assert.deepEqual(bot._inFlightForTests().map((e) => [e.runId, e.build]), [[900, true]]);
+
+  release();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(bot._inFlightForTests().length, 0, 'the slot frees when the build ends, whatever it came to');
+  const skipped = pool.log.filter((l) => /SET live_build_waiting_at = NULL, build_ok = FALSE, build_error = \$2/.test(l.s));
+  assert.deepEqual(skipped.map((l) => l.params[0]), [900], 'its outcome recorded once');
+  // Never held for good: a run that still waits once its slot is free is
+  // picked again.
+  const after = await bot.runOnce(pool, {}, deps);
+  assert.equal(after.dispatched, 1);
+  await new Promise((r) => setTimeout(r, 20));
+  bot._resetForTests();
+});
+
 test('a waiting build whose request the bot already proposed is not built (Plant Pal #1, #3)', async () => {
   const log = [];
   const pool = {
@@ -530,6 +584,32 @@ test('a waiting build whose request the bot already proposed is not built (Plant
   assert.deepEqual(await bot.buildOne(failing, {}, { bot: { id: 330 }, app, run, settings: {}, deps: { github } }),
     { ran: false, reason: 'infra', detail: 'proposal_unreadable' });
   assert.ok(!log.some((l) => /live_build_waiting_at = NULL/.test(l.s)), 'still waiting');
+});
+
+test('a waiting build is not built while another build of its request is under way', async () => {
+  const log = [];
+  const pool = {
+    async query(sql, params) {
+      const s = String(sql);
+      log.push({ s, params });
+      // Another run's build of the request, its session open (requestBuilding).
+      if (/JOIN chat_sessions bs ON bs\.id = b\.build_session_id/.test(s)) return { rows: [{ id: 7450 }] };
+      return { rows: [] };
+    },
+  };
+  const github = { isEnabled: () => true, async fetchPublicIssue() { return { issue: { number: 31, state: 'open' } }; } };
+  const run = { id: 1268, issue_number: 31, build_note: 'build it', created_at: '2026-10-09T17:20:00Z' };
+  const app = { id: 3120, slug: 'homestead', repo_url: 'https://github.com/usernode-bot/homestead' };
+  const out = await bot.buildOne(pool, {}, { bot: { id: 330 }, app, run, settings: {}, deps: { github } });
+  assert.deepEqual(out, { ran: false, reason: 'being_built' });
+  const looked = log.find((l) => /JOIN chat_sessions bs ON bs\.id = b\.build_session_id/.test(l.s));
+  assert.deepEqual(looked.params.slice(0, 3), [3120, 31, 1268], 'another run of this request, not this one');
+  assert.equal(looked.params[4], null, 'one under way at all: this one has not started');
+  assert.match(looked.s, /bs\.status IN \('active', 'paused'\)/, 'open: active in a turn, paused between them');
+  assert.match(looked.s, /b\.build_ok IS NULL AND b\.proposal_session_id IS NULL/, 'its outcome not in yet');
+  const skipped = log.find((l) => /SET live_build_waiting_at = NULL, build_ok = FALSE, build_error = \$2/.test(l.s));
+  assert.deepEqual(skipped.params, [1268, 'skipped: the request is already being built (7450)'], 'a skip, read as stopped');
+  assert.ok(!log.some((l) => /build_session_id = \$2/.test(l.s)), 'and nothing was built');
 });
 
 test('a ready verdict waits on its run, and only for a build of the same project', () => {

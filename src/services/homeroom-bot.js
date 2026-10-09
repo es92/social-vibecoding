@@ -6041,7 +6041,9 @@ async function keepNoChange(pool, runId, noChange) {
  * say why a proposal had no spec. build_at and build_queued_at stay NULL:
  * those are the lane's, and a live build never went through it. A spec
  * that failed is noted beside a build that went ahead, as a shadow
- * build's is (#3396). Never throws.
+ * build's is (#3396). A run whose proposal is another build's keeps that
+ * build's record: a second build of run 1267 that stopped after the first
+ * was up for a vote wrote "failed" and its own branch over it. Never throws.
  */
 async function recordLiveBuild(pool, runId, built, model = null) {
   if (!runId || !built) return;
@@ -6058,7 +6060,7 @@ async function recordLiveBuild(pool, runId, built, model = null) {
             build_commits = COALESCE($6, build_commits), build_cost_usd = COALESCE($7, build_cost_usd),
             build_session_id = COALESCE(build_session_id, $8), build_spec_md = COALESCE($9, build_spec_md),
             build_model = COALESCE($10, build_model), build_no_change = COALESCE($11::jsonb, build_no_change)
-      WHERE id = $1`,
+      WHERE id = $1 AND (proposal_session_id IS NULL OR proposal_session_id = $8)`,
     [runId, !!built.ok, error, built.branchName || null, built.sha || null,
       Number.isFinite(built.commits) ? built.commits : null,
       Number.isFinite(built.costUsd) ? built.costUsd : null,
@@ -6078,8 +6080,9 @@ async function recordLiveBuild(pool, runId, built, model = null) {
 async function announceBuilt({ pool, ws, app, bot, issueNumber, runId, built, say, domain }) {
   await recordLiveBuild(pool, runId, built, built.model || null);
   if (built.ok) {
+    // The run's first proposal stays its proposal (recordLiveBuild).
     await pool.query(
-      'UPDATE homeroom_bot_runs SET proposal_session_id = $2 WHERE id = $1',
+      'UPDATE homeroom_bot_runs SET proposal_session_id = $2 WHERE id = $1 AND proposal_session_id IS NULL',
       [runId, built.sessionId],
     ).catch(() => {});
     // The vote-card metadata the promote route's own activity rows carry,
@@ -6616,11 +6619,14 @@ async function planBeforeBuilding({
     bullets: complicatedPlanBullets(plan), questions, complicated: true,
     ...(drafted.specVersion ? { spec: { sessionId: Number(drafted.sessionId), version: Number(drafted.specVersion) } } : {}),
   };
+  // Once: a plan another drafting of this run already put to its requester
+  // stays the one they are asked about (turnly #6 was asked about two).
   const { rowCount } = await pool.query(
     `UPDATE homeroom_bot_runs
         SET live_build_waiting_at = NULL, awaiting_go_at = NOW(), plan = $2::jsonb, plan_send_attempts = 0, plan_unsent_at = NULL,
             build_spec_md = $3, build_cost_usd = $4, build_model = COALESCE($5, build_model)
-      WHERE id = $1 AND build_ok IS NULL AND build_session_id IS NULL AND proposal_session_id IS NULL`,
+      WHERE id = $1 AND build_ok IS NULL AND build_session_id IS NULL AND proposal_session_id IS NULL
+        AND awaiting_go_at IS NULL`,
     [runId, JSON.stringify(shown), drafted.specMd, Number.isFinite(drafted.costUsd) ? drafted.costUsd : null, specModel || model || null],
   ).catch((err) => {
     log.warn('homeroom-bot', 'Could not record a complicated change\'s plan', { app: app.slug, issueNumber, runId, err: err.message });
@@ -6969,9 +6975,18 @@ async function buildLive({
       // Linked before any turn runs, so a restart mid-build can find the run
       // (#3471): the build's worker outlives the restart; this process does
       // not. From here restart recovery owns it, so it is no longer waiting.
-      onSession: (session) => pool.query(
-        'UPDATE homeroom_bot_runs SET build_session_id = $2, live_build_waiting_at = NULL WHERE id = $1', [runId, session.id],
-      ),
+      // And only once: the link is the build's claim on its run, and a run
+      // another build already linked (or whose outcome is in) refuses it, so
+      // a second build of one run stops before its plan (LOST_CLAIM).
+      onSession: async (session) => {
+        const { rows } = await pool.query(
+          `UPDATE homeroom_bot_runs SET build_session_id = $2, live_build_waiting_at = NULL WHERE id = $1
+              AND build_session_id IS NULL AND build_ok IS NULL AND proposal_session_id IS NULL
+            RETURNING id`,
+          [runId, session.id],
+        );
+        return rows.length ? null : LOST_CLAIM;
+      },
       origin: { lane: 'live', runId },
       onNoChange: (noChange) => keepNoChange(pool, runId, noChange),
       // #4387: what the people waiting on a first version watch on its App
@@ -7006,6 +7021,16 @@ async function buildLive({
     buildMs = Date.now() - buildStartedMs;
   } finally {
     liveBuildsInFlight.delete(runId);
+  }
+  // Its run refused the link (onSession): another build of it has it, and
+  // records the run, settles its side builds and says what came of it, or
+  // its outcome came in meanwhile (noteRequestMerged). This one stopped
+  // before its plan with nothing spent, and touches none of it.
+  if (built?.lostClaim) {
+    log.warn('homeroom-bot', 'Live build stopped before its plan: its run is another build\'s, or already settled', {
+      app: app.slug, issueNumber, runId, sessionId: built.sessionId || null,
+    });
+    return 'lost_claim';
   }
   if (built) built.model = model;
   // #4387: and, once it is reviewed, up to three of its real screens, from
@@ -7454,6 +7479,41 @@ function hasProposalSkip(sessionId) {
   return `skipped: the request already has a proposal (${Number(sessionId)})`;
 }
 
+/**
+ * Another live build of the same request under way: the build session of
+ * another of its runs, still open (`active` while a turn runs, `paused`
+ * between its turns), started within BUILD_UNDER_WAY_HOURS, and its run's
+ * outcome not in. Given `before` (the asking build's own session), only one
+ * that started before it, so of two builds of one request the first goes on
+ * and the second stops, never both. `{ id }` (that session), or null. Throws
+ * when it cannot be read. Asked beside requestProposal (buildOne,
+ * whyNotBuild): a build still under way is no proposal, and two of them
+ * were two proposals of one request. A run's own second build is stopped
+ * earlier, by its claim (buildLive's onSession).
+ */
+async function requestBuilding(pool, { appId, issueNumber, runId, before = null }) {
+  const { rows } = await pool.query(
+    `SELECT bs.id FROM homeroom_bot_runs b
+       JOIN chat_sessions bs ON bs.id = b.build_session_id
+      WHERE b.app_id = $1 AND b.issue_number = $2 AND b.id <> $3 AND b.mode = 'live'
+        AND b.build_ok IS NULL AND b.proposal_session_id IS NULL
+        AND bs.status IN ('active', 'paused') AND bs.created_at > NOW() - make_interval(hours => $4)
+        AND ($5::int IS NULL OR bs.id < $5::int)
+      ORDER BY bs.id LIMIT 1`,
+    [appId, issueNumber, runId, BUILD_UNDER_WAY_HOURS, Number(before) || null],
+  );
+  return rows[0] || null;
+}
+
+/** What a build another build of its request made unneeded records: a skip, read as stopped. */
+function beingBuiltSkip(sessionId) {
+  return `skipped: the request is already being built (${Number(sessionId)})`;
+}
+
+// What a build whose run another build claimed first resolves (buildLive's
+// onSession). Never recorded: the run is that other build's.
+const LOST_CLAIM = 'skipped: another build of its run started first';
+
 // What a build whose request was closed while it was built records.
 const CLOSED_WHILE_BUILDING = 'skipped: the request was closed before it was proposed';
 
@@ -7464,18 +7524,23 @@ const CLOSED_WHILE_BUILDING = 'skipped: the request was closed before it was pro
  * `skipCheck`), and before restart recovery proposes one. A reason is a
  * skip: the run already stopped (noteRequestMerged), a proposal of the
  * bot's for the request (up for a vote, merging, or merged since this
- * verdict), or the request's issue closed. Both of Plant Pal's duplicate
- * proposals went up after their issue had closed. What cannot be read never
- * stops a build: this is the backstop, not the guard.
+ * verdict), another build of the request that started before this one
+ * (requestBuilding), or the request's issue closed. Both of Plant Pal's
+ * duplicate proposals went up after their issue had closed. What cannot be
+ * read never stops a build: this is the backstop, not the guard.
  */
 async function whyNotBuild(pool, { runId, botId, appId, issueNumber, github = null, repo = null }) {
   try {
     const { rows: [run] = [] } = await pool.query(
-      'SELECT created_at, build_ok, build_error FROM homeroom_bot_runs WHERE id = $1', [runId],
+      'SELECT created_at, build_ok, build_error, build_session_id FROM homeroom_bot_runs WHERE id = $1', [runId],
     );
     if (run?.build_ok === false && /^skipped:/.test(String(run.build_error || ''))) return String(run.build_error);
     const proposed = await requestProposal(pool, { appId, botId, issueNumber, since: run?.created_at || null });
     if (proposed) return hasProposalSkip(proposed.id);
+    // Its own session is the run's (its claim); a plan, which links none,
+    // gives way to any build of the request under way.
+    const building = await requestBuilding(pool, { appId, issueNumber, runId, before: run?.build_session_id || null });
+    if (building) return beingBuiltSkip(building.id);
   } catch (err) {
     log.warn('homeroom-bot', 'Could not look for the request\'s proposal during its build', { runId, issueNumber, err: err.message });
   }
@@ -7530,24 +7595,29 @@ async function buildOne(pool, config, { bot, app, run, settings, deps = {} }) {
   // one request each waited for a build and both were built (Plant Pal #1
   // and #3, 2026-10-03); the second started seconds after the first was put
   // up for a vote. When this cannot be read, it is not built either: it
-  // keeps waiting, and the next pass looks again.
+  // keeps waiting, and the next pass looks again. Nor is one built while
+  // another build of the request is under way (requestBuilding).
   let proposed;
+  let building = null;
   try {
     proposed = await requestProposal(pool, { appId: app.id, botId: bot.id, issueNumber, since: run.created_at || null });
+    if (!proposed) building = await requestBuilding(pool, { appId: app.id, issueNumber, runId: run.id });
   } catch (err) {
     log.warn('homeroom-bot', 'Could not look for the request\'s proposal before its build', { app: app.slug, issueNumber, err: err.message });
     return { ran: false, reason: 'infra', detail: 'proposal_unreadable' };
   }
-  if (proposed) {
+  if (proposed || building) {
     await pool.query(
       `UPDATE homeroom_bot_runs SET live_build_waiting_at = NULL, build_ok = FALSE, build_error = $2
         WHERE id = $1 AND build_ok IS NULL`,
-      [run.id, hasProposalSkip(proposed.id)],
+      [run.id, proposed ? hasProposalSkip(proposed.id) : beingBuiltSkip(building.id)],
     ).catch(() => {});
-    log.info('homeroom-bot', 'Live build skipped: its request already has a proposal', {
-      app: app.slug, issueNumber, runId: run.id, sessionId: Number(proposed.id),
+    log.info('homeroom-bot', proposed
+      ? 'Live build skipped: its request already has a proposal'
+      : 'Live build skipped: its request is already being built', {
+      app: app.slug, issueNumber, runId: run.id, sessionId: Number((proposed || building).id),
     });
-    return { ran: false, reason: 'has_proposal' };
+    return { ran: false, reason: proposed ? 'has_proposal' : 'being_built' };
   }
   const dm = deps.dm || require('./homeroom-bot-dm');
   const requester = await dm.requesterOf(pool, app.id, issueNumber).catch(() => null);
@@ -7859,8 +7929,16 @@ async function dispatch(pool, config, { settings, bot, backedOff = [], deps = {}
   const buildSlots = Math.max(0, liveAtOnce - [...inFlight.values()].filter((e) => e.lane === 'live').length);
   if (buildSlots && !live.scopeIsEmpty(scope)) {
     const running = [...inFlight.values()];
+    // Never a run whose build already has its slot (track sets it before
+    // any await). Its run reads as waiting until buildLive links its
+    // session, several awaits later, and `seen` lasts one pass, so the pass
+    // the next wake started picked it again once #4544 let a project build
+    // three at once: homestead #31 and #32 and kasirku #7 were each built two
+    // or three times from one run, and turnly #6's requester was asked about
+    // two plans. A slot frees when its work ends, whatever it came to.
     const waiting = (await liveBuildCandidates(pool, { scope, pausedApps: settings.pausedApps || [] }))
-      .filter((row) => !seen.has(`build:${Number(row.id)}`) && !liveBuildsInFlight.has(Number(row.id)));
+      .filter((row) => !seen.has(`build:${Number(row.id)}`) && !inFlight.has(buildSlot(row.id))
+        && !liveBuildsInFlight.has(Number(row.id)));
     const picks = pickLiveBuilds(waiting, {
       buildingAppIds: running.filter((e) => e.build).map((e) => Number(e.appId)),
       active: running.filter((e) => e.lane === 'live'), slots: buildSlots, perPerson,
@@ -9080,8 +9158,11 @@ module.exports = {
   buildOne,
   // WP1 (#2): a build re-checked before it is proposed, and a merge's net.
   requestProposal,
+  requestBuilding,
   whyNotBuild,
   hasProposalSkip,
+  beingBuiltSkip,
+  LOST_CLAIM,
   CLOSED_WHILE_BUILDING,
   noteRequestMerged,
   queueLiveBuild,
