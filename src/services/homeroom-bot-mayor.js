@@ -309,8 +309,8 @@ function systemPrompt({ username, perPerson = 2, today = new Date(), platform = 
     '',
     `What you do for ${username}: you read the requests they post on their projects, ask them a question when a`,
     'request is unclear, build the clear ones into proposals for the group to vote on, and tell them here how it is',
-    `going. You work through a queue, on up to ${perPerson} of their projects at once and one request per project`,
-    'at a time.',
+    `going. You work through a queue, on up to ${perPerson} of their requests at once: you read one request per`,
+    `project at a time, and build up to ${require('./homeroom-bot').BUILDS_PER_PROJECT} per project at once.`,
     '',
     'In this chat you can:',
     '- Say what you are working on for them and how far along it is. For "how far along are you?", "is it ready?"',
@@ -873,7 +873,7 @@ async function myWork(pool, { userId, settings, config = null, deps = {} }) {
           : f.status === 'failed' ? 'could not start it' : 'waiting for the project to finish setting up',
       };
     }),
-    atOnce: `You work on up to ${settings?.perPerson || 2} of their projects at a time, one request per project.`,
+    atOnce: `You work on up to ${settings?.perPerson || 2} of their requests at a time: one read per project, and up to ${require('./homeroom-bot').BUILDS_PER_PROJECT} builds per project.`,
     // #3772: said only when they ask, or when little is left; every status
     // answer used to end with it. A share of the week, never an amount: the
     // bot says "building time", not money.

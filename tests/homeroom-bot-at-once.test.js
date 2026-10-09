@@ -412,35 +412,52 @@ test('a row started as a follow-up whose proposal has gone is handed back untouc
 // the project's one slot was held for the whole build (up to 50 minutes,
 // 110 on the platform's repository) and every other request on it waited
 // unread. Now the build waits on its run and gets a slot of its own,
-// `build:<appId>`: one build per project at a time, reading beside it.
+// `build:<runId>`: up to BUILDS_PER_PROJECT builds per project at a time,
+// each on a session and branch of its own, reading beside them.
 
 const waitingBuild = (id, appId, issueNumber, personId) => ({
   id, app_id: appId, issue_number: issueNumber, build_note: 'build it', person_id: personId,
 });
 
-test('pickLiveBuilds: one build per project, none beside a running one, perPerson and slots counted', () => {
-  const rows = [waitingBuild(900, 10, 1, 7), waitingBuild(901, 10, 2, 7), waitingBuild(902, 11, 3, 8), waitingBuild(903, 12, 4, 7)];
-  assert.deepEqual(bot.pickLiveBuilds(rows, { slots: 6, perPerson: 2 }).map((p) => p.id), [900, 902, 903],
-    'the second build on project 10 waits for the first');
-  assert.deepEqual(bot.pickLiveBuilds(rows, { buildingAppIds: [10], slots: 6, perPerson: 2 }).map((p) => p.id), [902, 903],
-    'a project already building starts no second build');
-  assert.deepEqual(bot.pickLiveBuilds(rows, { active: [{ person: 'u7' }, { person: 'u7' }], slots: 6, perPerson: 2 }).map((p) => p.id), [902],
-    'what runs for a person counts, reading or building');
+test('three builds per project at once: Homeroom\'s own requests stopped waiting in a line', () => {
+  assert.equal(bot.BUILDS_PER_PROJECT, 3);
+});
+
+test('pickLiveBuilds: up to perProject builds per project, counting those running, perPerson and slots counted', () => {
+  const rows = [
+    waitingBuild(900, 10, 1, 7), waitingBuild(901, 10, 2, 8), waitingBuild(902, 10, 5, 9), waitingBuild(903, 10, 6, 9),
+    waitingBuild(904, 11, 3, 8), waitingBuild(905, 12, 4, 7),
+  ];
+  assert.deepEqual(bot.pickLiveBuilds(rows, { slots: 9, perPerson: 2 }).map((p) => p.id), [900, 901, 902, 904, 905],
+    'three on project 10 at once; its fourth waits');
+  assert.deepEqual(bot.pickLiveBuilds(rows, { buildingAppIds: [10, 10], slots: 9, perPerson: 2 }).map((p) => p.id), [900, 904, 905],
+    'each build already under way counts against its project');
+  assert.deepEqual(bot.pickLiveBuilds(rows, { buildingAppIds: [10, 10, 10], slots: 9, perPerson: 2 }).map((p) => p.id), [904, 905],
+    'a project with three under way starts no fourth');
+  assert.deepEqual(bot.pickLiveBuilds(rows, { slots: 9, perPerson: 2, perProject: 1 }).map((p) => p.id), [900, 904, 905],
+    'perProject is the limit it reads');
+  assert.deepEqual(bot.pickLiveBuilds(rows, { active: [{ person: 'u7' }, { person: 'u7' }], slots: 9, perPerson: 2 }).map((p) => p.id),
+    [901, 902, 903, 904], 'what runs for a person counts, reading or building: #1 waits, so #6 is project 10\'s third');
+  assert.deepEqual(bot.pickLiveBuilds(rows, { slots: 9, perPerson: 1 }).map((p) => p.id), [900, 901, 902],
+    'and perPerson still holds across projects');
   assert.deepEqual(bot.pickLiveBuilds(rows, { slots: 1, perPerson: 2 }).map((p) => p.id), [900]);
 });
 
-test('a project\'s next request is read while its build runs, and its builds go one at a time', async () => {
+test('a project\'s next request is read while its builds run, three of them at once', async () => {
   bot._resetForTests();
   const settings = [
     { key: bot.KEY_MODE, value: 'shadow' },
     { key: bot.KEY_PER_PERSON, value: '3' },
-    { key: bot.KEY_LIVE_AT_ONCE, value: '6' },
+    { key: bot.KEY_LIVE_AT_ONCE, value: '8' },
   ];
   const pool = loopPool({
     settings,
     candidates: [row(2, 101, 7)],
     apps: APPS,
-    waiting: [waitingBuild(900, 101, 1, 7), waitingBuild(901, 101, 3, 8), waitingBuild(902, 102, 4, 8)],
+    waiting: [
+      waitingBuild(900, 101, 1, 7), waitingBuild(901, 101, 3, 8), waitingBuild(903, 101, 5, 9),
+      waitingBuild(904, 101, 6, 9), waitingBuild(902, 102, 4, 8),
+    ],
   });
   let release;
   const gate = new Promise((r) => { release = r; });
@@ -460,20 +477,19 @@ test('a project\'s next request is read while its build runs, and its builds go 
   const out = await bot.runOnce(pool, {}, deps);
   const running = bot._inFlightForTests();
   const builds = running.filter((e) => e.build);
-  assert.deepEqual(builds.map((e) => [e.appId, e.runId]).sort(), [[101, 900], [102, 902]],
-    'one build per project: #3 on a1 waits for #1');
+  assert.deepEqual(builds.map((e) => [e.appId, e.runId]).sort((a, b) => a[1] - b[1]), [[101, 900], [101, 901], [102, 902], [101, 903]],
+    'three builds on a1 at once, each in a slot of its own: #6 waits for one of them');
   assert.ok(builds.every((e) => e.lane === 'live'));
   const reads = running.filter((e) => !e.build);
-  assert.deepEqual(reads.map((e) => [e.appId, e.issueNumber]), [[101, 2]], 'a1\'s next request is read beside its build');
-  assert.equal(out.dispatched, 3);
+  assert.deepEqual(reads.map((e) => [e.appId, e.issueNumber]), [[101, 2]], 'a1\'s next request is read beside its builds');
+  assert.equal(out.dispatched, 5);
 
   release();
   await new Promise((r) => setTimeout(r, 20));
   const skipped = pool.log.filter((l) => /SET live_build_waiting_at = NULL, build_ok = FALSE, build_error = \$2/.test(l.s));
-  assert.deepEqual(skipped.map((l) => l.params).sort((a, b) => a[0] - b[0]), [
-    [900, 'skipped: the request was closed before its build started'],
-    [902, 'skipped: the request was closed before its build started'],
-  ], 'a request closed while its build waited is not built');
+  assert.deepEqual(skipped.map((l) => l.params[0]).sort((a, b) => a - b), [900, 901, 902, 903],
+    'a request closed while its build waited is not built');
+  assert.ok(skipped.every((l) => l.params[1] === 'skipped: the request was closed before its build started'));
   bot._resetForTests();
 });
 

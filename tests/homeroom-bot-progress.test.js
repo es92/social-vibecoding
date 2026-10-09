@@ -201,11 +201,14 @@ test('the records, said in plain words when the model could not answer', () => {
 test('#3771: a request in the queue says what it waits for', () => {
   const row = { app_id: 7, issue_number: 14, name: 'Ear Trainer', slug: 'ear-trainer' };
   const now = new Date('2026-10-03T12:40:00Z');
-  const busy = new Map([[7, [{ issueNumber: 12, since: '2026-10-03T12:26:00Z', what: 'building' }]]]);
+  const busy = new Map([[7, [{ issueNumber: 12, since: '2026-10-03T12:26:00Z', what: 'reading' }]]]);
   assert.deepEqual(progress.queuedWait(row, { busy, now }), {
-    doing: 'waiting its turn: Ear Trainer is building request #12 first (one request per project at a time)',
-    waitingFor: { reason: 'project_busy', number: 12, doing: 'building', minutesSoFar: 14 },
+    doing: 'waiting its turn: Ear Trainer is reading request #12 first (one read per project at a time)',
+    waitingFor: { reason: 'project_busy', number: 12, doing: 'reading', minutesSoFar: 14 },
   });
+  // A build runs on a session of its own: it holds no read up.
+  const building = new Map([[7, [{ issueNumber: 12, since: '2026-10-03T12:26:00Z', what: 'building' }]]]);
+  assert.equal(progress.queuedWait(row, { busy: building, queuePosition: 1 }).doing, 'next in line for a free builder');
   // Its own row being read is not something it waits for.
   const self = new Map([[7, [{ issueNumber: 14, since: '2026-10-03T12:39:00Z', what: 'reading' }]]]);
   assert.equal(progress.queuedWait(row, { busy: self, queuePosition: 1 }).doing, 'next in line for a free builder');
@@ -231,11 +234,22 @@ test('a ready request waiting for its build slot says so, and what it waits for'
   // Its session exists: it is under way, not waiting.
   assert.notEqual(progress.stageOf({ ...row, build_session_id: 5001, build_status: 'active' }, { now }).stage, 'build_queued');
 
-  const busy = new Map([[7, [{ issueNumber: 12, since: '2026-10-03T12:26:00Z', what: 'building' }, { issueNumber: 15, since: '2026-10-03T12:39:00Z', what: 'reading' }]]]);
+  // Newest first, as projectsBusy lists them.
+  const three = [
+    { issueNumber: 13, since: '2026-10-03T12:35:00Z', what: 'building' },
+    { issueNumber: 11, since: '2026-10-03T12:30:00Z', what: 'building' },
+    { issueNumber: 12, since: '2026-10-03T12:26:00Z', what: 'building' },
+  ];
+  const busy = new Map([[7, [...three, { issueNumber: 15, since: '2026-10-03T12:39:00Z', what: 'reading' }]]]);
   assert.deepEqual(progress.buildWait(row, { busy, now }), {
-    doing: 'ready to build; Ear Trainer is building request #12 first (one build per project at a time)',
-    waitingFor: { reason: 'project_building', number: 12, minutesSoFar: 14 },
-  });
+    doing: 'ready to build; Ear Trainer is building requests #12, #11, #13 first (up to 3 builds per project at a time)',
+    waitingFor: { reason: 'project_building', number: 12, building: 3, most: 3, minutesSoFar: 14 },
+  }, 'three under way hold the next; the one started first is the one it waits on');
+  const two = new Map([[7, three.slice(0, 2)]]);
+  assert.equal(progress.buildWait(row, { busy: two, now }).doing, 'ready to build; its build starts next',
+    'two under way leave room for a third');
+  assert.equal(progress.buildWait(row, { busy: new Map([[7, three.slice(2)]]), now, perProject: 1 }).doing,
+    'ready to build; Ear Trainer is building request #12 first (up to 1 build per project at a time)');
   const reading = new Map([[7, [{ issueNumber: 15, since: '2026-10-03T12:39:00Z', what: 'reading' }]]]);
   assert.equal(progress.buildWait(row, { busy: reading, now }).doing, 'ready to build; its build starts next',
     'a request being read on the project does not hold a build');

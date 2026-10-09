@@ -206,6 +206,13 @@ const MAX_BUILD_CONCURRENCY = 4;
 // use (the worker namespace's quota), so the ceiling stays well under it.
 const MAX_LIVE_AT_ONCE = 24;
 const MAX_PER_PERSON = 6;
+// How many live builds one project may have under way at once. Each build
+// is a session and a branch of its own (live.buildAndPropose), so they do
+// not share a worker; one at a time made a busy project's ready requests
+// (Homeroom's own above all, where a build can take almost two hours) wait
+// in a line behind each other. Reads stay one per project: they share the
+// project's one session.
+const BUILDS_PER_PROJECT = 3;
 const MAX_PROPOSAL_CEILING = 1000;
 // The automatic ceiling: what twenty live apps
 // had under "5 per live app", and well past what 16 builds at once can fill
@@ -5039,9 +5046,10 @@ async function holdSlotDuringRecovery(pool, sessionId, recovery) {
 }
 
 /**
- * A live build restart recovery is finishing holds its project's build slot
- * (`build:<appId>`, see dispatch), so the lane does not start the project's
- * next waiting build beside it. Resolves with the recovery's own outcome.
+ * A live build restart recovery is finishing holds a build slot of its own
+ * (`build:<runId>`, see dispatch), so it counts against its project's
+ * BUILDS_PER_PROJECT like any build under way. Resolves with the recovery's
+ * own outcome.
  */
 async function holdLiveBuildDuringRecovery(pool, sessionId, recovery) {
   let run = null;
@@ -5056,7 +5064,7 @@ async function holdLiveBuildDuringRecovery(pool, sessionId, recovery) {
     );
     run = rows[0] || null;
   } catch (_) { run = null; }
-  const slot = run ? `build:${Number(run.app_id)}` : null;
+  const slot = run ? buildSlot(run.id) : null;
   if (!run || inFlight.has(slot)) return recovery;
   inFlight.set(slot, {
     lane: 'live', build: true, recovered: true, appId: Number(run.app_id),
@@ -6115,8 +6123,8 @@ async function actOnVerdict({
 }
 
 /**
- * A live 'ready' verdict's build, waiting its turn: one build per project at
- * a time, started by the lane (dispatch) as soon as its project has none
+ * A live 'ready' verdict's build, waiting its turn: started by the lane
+ * (dispatch) as soon as its project has fewer than BUILDS_PER_PROJECT
  * running. Never throws.
  */
 // Once: a run already waiting keeps its place, and one already building or
@@ -7253,15 +7261,21 @@ async function liveCandidates(pool, {
   return rows;
 }
 
-// ── Live builds, one per project (buildLive) ────────────────────────────
+// ── Live builds, up to BUILDS_PER_PROJECT per project (buildLive) ───────
 //
 // A live 'ready' verdict is built after the turn that read it, in a slot of
-// its own: `build:<appId>`. The project's read slot is free again the moment
+// its own: `build:<runId>`. The project's read slot is free again the moment
 // the verdict is recorded, so its next request is read (and asked about, or
-// left for a person, or queued to build) while the build runs. Builds on one
-// project still run one after another: two at once would race on the same
-// files, and a request often builds on the one before it. Each waits on its
-// run (live_build_waiting_at), so a restart loses none of them.
+// left for a person, or queued to build) while the build runs. Each build is
+// a session and a branch of its own, so up to BUILDS_PER_PROJECT of one
+// project's run side by side; two that touch the same files meet as any two
+// proposals do, at merge. Each waits on its run (live_build_waiting_at), so a
+// restart loses none of them.
+
+/** The inFlight slot of one live build, keyed by its run. */
+function buildSlot(runId) {
+  return `build:${Number(runId)}`;
+}
 
 /**
  * The live builds waiting their turn, oldest first, with who each is for,
@@ -7306,23 +7320,26 @@ async function liveBuildCandidates(pool, { scope: given = null, liveSlugs = [], 
 }
 
 /**
- * Pure: which waiting builds to start now. One per project, none on a
- * project already building (`buildingAppIds`), at most `perPerson` live
- * pieces of work for any one person counting what runs (`active`), and at
- * most `slots` in all.
+ * Pure: which waiting builds to start now. At most `perProject` under way on
+ * one project, counting those already building (`buildingAppIds`, one entry
+ * per build), at most `perPerson` live pieces of work for any one person
+ * counting what runs (`active`), and at most `slots` in all.
  */
-function pickLiveBuilds(candidates, { buildingAppIds = [], active = [], slots = 0, perPerson = 1 } = {}) {
-  const building = new Set(buildingAppIds.map(Number));
+function pickLiveBuilds(candidates, {
+  buildingAppIds = [], active = [], slots = 0, perPerson = 1, perProject = BUILDS_PER_PROJECT,
+} = {}) {
+  const building = new Map();
+  for (const id of buildingAppIds) building.set(Number(id), (building.get(Number(id)) || 0) + 1);
   const count = new Map();
   for (const a of active) count.set(a.person, (count.get(a.person) || 0) + 1);
   const picks = [];
   for (const row of candidates || []) {
     if (picks.length >= slots) break;
     const appId = Number(row.app_id);
-    if (building.has(appId)) continue;
+    if ((building.get(appId) || 0) >= perProject) continue;
     const person = personKeyOf(row);
     if ((count.get(person) || 0) >= perPerson) continue;
-    building.add(appId);
+    building.set(appId, (building.get(appId) || 0) + 1);
     count.set(person, (count.get(person) || 0) + 1);
     picks.push({ ...row, person });
   }
@@ -7750,8 +7767,8 @@ async function dispatch(pool, config, { settings, bot, backedOff = [], deps = {}
   const perPerson = settings.perPerson || DEFAULTS.perPerson;
 
   // Live builds waiting their turn first: they are further along than
-  // anything still to be read. One per project, in a slot of its own, so
-  // the project's read slot stays free (buildLive).
+  // anything still to be read. Up to BUILDS_PER_PROJECT per project, each in
+  // a slot of its own, so the project's read slot stays free (buildLive).
   const buildSlots = Math.max(0, liveAtOnce - [...inFlight.values()].filter((e) => e.lane === 'live').length);
   if (buildSlots && !live.scopeIsEmpty(scope)) {
     const running = [...inFlight.values()];
@@ -7802,7 +7819,7 @@ async function dispatch(pool, config, { settings, bot, backedOff = [], deps = {}
         }
         tray().noteWorkChanged(pick.person_id, deps);
         const item = { issue_number: pick.issue_number };
-        started.push(track(pool, `build:${Number(app.id)}`, {
+        started.push(track(pool, buildSlot(pick.id), {
           lane: 'live', build: true, appId: Number(app.id), person: pick.person, issueNumber: Number(pick.issue_number),
           runId: Number(pick.id), itemId: null, startedAt: new Date().toISOString(),
         }, async () => {
@@ -7927,9 +7944,10 @@ function isStagingLoop() {
 }
 
 /**
- * What the bot is working on now, for the dashboard and for a person asking
- * in a DM: every claimed queue row, with its app and who it is for. Read
- * from the database, so any Pod can answer, not only the one running it.
+ * What the bot is reading now, for the dashboard and for a person asking in
+ * a DM: every claimed queue row, with its app and who it is for. Read from
+ * the database, so any Pod can answer, not only the one running it. Its
+ * builds are buildsNow's: they run from their runs, not from the queue.
  */
 async function workingNow(pool, settings, { userId = null } = {}) {
   const scope = live.liveScope(settings);
@@ -7957,8 +7975,71 @@ async function workingNow(pool, settings, { userId = null } = {}) {
     issueNumber: Number(row.issue_number),
     since: row.started_at,
     lane: live.inScope(scope, row.slug) ? 'live' : 'background',
+    kind: 'read',
     person: row.person || null,
   }));
+}
+
+// A live build is under way from the moment its session is linked (onSession)
+// until its outcome is recorded; one older than this is the abandoned-build
+// sweep's, not work under way (a platform build's plan and build turn, the
+// longest, take under two hours).
+const BUILD_UNDER_WAY_HOURS = 4;
+
+// The live builds under way (a session linked, no outcome yet, the session
+// still open) and how many wait their turn (the newest verdict on their
+// issue, no session yet), for the dashboard. A plan waiting for its Build it
+// is neither.
+const BUILDS_UNDER_WAY_SQL = `
+  SELECT r.app_id, r.issue_number, bs.created_at AS since, a.slug, a.name, u.username AS person
+    FROM homeroom_bot_runs r
+    JOIN chat_sessions bs ON bs.id = r.build_session_id
+    JOIN apps a ON a.id = r.app_id
+    LEFT JOIN homeroom_bot_requesters q ON q.app_id = r.app_id AND q.issue_number = r.issue_number
+    LEFT JOIN users u ON u.id = q.user_id
+   WHERE r.mode = 'live' AND r.verdict = 'ready' AND r.build_ok IS NULL AND r.proposal_session_id IS NULL
+     AND r.awaiting_go_at IS NULL AND bs.status = 'active'
+     AND bs.created_at > NOW() - make_interval(hours => $1)
+   ORDER BY bs.created_at
+   LIMIT 50`;
+const BUILDS_WAITING_SQL = `
+  SELECT COUNT(*)::int AS waiting
+    FROM homeroom_bot_runs r
+   WHERE r.mode = 'live' AND r.verdict = 'ready' AND r.live_build_waiting_at IS NOT NULL
+     AND r.build_ok IS NULL AND r.build_session_id IS NULL AND r.proposal_session_id IS NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM homeroom_bot_runs n
+        WHERE n.app_id = r.app_id AND n.issue_number = r.issue_number AND n.id > r.id
+     )`;
+
+/**
+ * The bot's live builds for the dashboard: `building`, the ones under way,
+ * in workingNow's shape with `kind: 'build'`, and `waiting`, how many wait
+ * their turn. Read from the database, so any Pod can answer. Never throws:
+ * nothing to show is empty.
+ */
+async function buildsNow(pool) {
+  try {
+    const [{ rows: building }, { rows: [waiting] }] = await Promise.all([
+      pool.query(BUILDS_UNDER_WAY_SQL, [BUILD_UNDER_WAY_HOURS]),
+      pool.query(BUILDS_WAITING_SQL),
+    ]);
+    return {
+      building: building.map((row) => ({
+        appSlug: row.slug,
+        appName: row.name,
+        issueNumber: Number(row.issue_number),
+        since: row.since,
+        lane: 'live',
+        kind: 'build',
+        person: row.person || null,
+      })),
+      waiting: Number(waiting?.waiting) || 0,
+    };
+  } catch (err) {
+    log.warn('homeroom-bot', 'Builds under way read failed', { err: err.message });
+    return { building: [], waiting: 0 };
+  }
 }
 
 // ── The work loop ───────────────────────────────────────────────────────
@@ -8520,6 +8601,9 @@ async function adminPayload(pool, config, {
   const { rows: depthRows } = await pool.query(
     'SELECT COUNT(*)::int AS depth FROM homeroom_bot_queue WHERE started_at IS NULL',
   );
+  // Running now and Waiting count builds too: they run from their runs, not
+  // from the queue, and were left out of both while the bot was busy.
+  const builds = await buildsNow(pool);
 
   const pageSize = Math.min(Math.max(Number(limit) || RUNS_PAGE, 1), 200);
   const { rows: runRows } = await pool.query(
@@ -8553,7 +8637,7 @@ async function adminPayload(pool, config, {
         .map((r) => (r.appId && backoffFor(r.appId) ? { ...r, retryInMs: Math.max(0, appBackoff.get(r.appId).until - Date.now()) } : r)),
     } : lastPass,
     totals,
-    queue: { depth: depthRows[0]?.depth || 0, items: queueRows },
+    queue: { depth: depthRows[0]?.depth || 0, items: queueRows, buildsWaiting: builds.waiting },
     runs: runRows.map((r) => ({
       ...r, issueUrl: issueUrlFor(r), buildUrl: buildUrlFor(r), replayStages: replayable[r.id] || [],
     })),
@@ -8566,7 +8650,7 @@ async function adminPayload(pool, config, {
     builds: await buildLaneSummary(pool),
     mentionOptOuts: await mentionOptOutList(pool),
     // #3624 stage 2: what runs now, and what the DM's answers cost.
-    workingNow: await workingNow(pool, settings),
+    workingNow: [...await workingNow(pool, settings), ...builds.building],
     dmChat: await dmChatSummary(pool),
     // Whether it is working, over the last week (homeroom-bot-health.js).
     health: await require('./homeroom-bot-health').rolloutHealth(pool, { botUsername: BOT_USERNAME }),
@@ -9050,6 +9134,8 @@ module.exports = {
   readReasonOf,
   skippedAtTriage,
   liveCandidates,
+  buildsNow,
+  BUILDS_PER_PROJECT,
   // A project's first version goes first.
   FIRST_VERSION_PENDING_SQL,
   FIRST_VERSION_HOLD,

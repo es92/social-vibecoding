@@ -10258,8 +10258,9 @@ ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS build_no_change JSONB;
 COMMENT ON COLUMN homeroom_bot_runs.build_no_change IS 'staging:private';
 
 -- A live build waiting its turn: a live 'ready' verdict is built after the
--- turn that read it ends, one build per project at a time, so reading the
--- project's next request never waits for a build. Set when the verdict is
+-- turn that read it ends, up to three builds per project at a time
+-- (homeroom-bot.js BUILDS_PER_PROJECT), so reading the project's next
+-- request never waits for a build. Set when the verdict is
 -- recorded, cleared once the build's session exists (homeroom-bot.js
 -- buildLive). The shadow lane's build_queued_at/build_at stay its own.
 ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS live_build_waiting_at TIMESTAMPTZ;

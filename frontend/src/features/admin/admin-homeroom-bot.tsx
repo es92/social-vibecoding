@@ -95,6 +95,9 @@ interface Working {
   issueNumber: number;
   since: string;
   lane: 'live' | 'background';
+  // A request being read (a claimed queue row) or a change being built
+  // (a live run with its build session; homeroom-bot.js buildsNow).
+  kind?: 'read' | 'build';
   person: string | null;
 }
 
@@ -267,7 +270,9 @@ interface Payload {
   bot: Bot | null;
   loop: LastPass | null;
   totals: Totals;
-  queue: { depth: number; items: QueueItem[] };
+  // `buildsWaiting`: live builds waiting their turn, which wait on their
+  // runs rather than in the queue.
+  queue: { depth: number; items: QueueItem[]; buildsWaiting?: number };
   runs: Run[];
   apps: { slug: string; name: string }[];
   caps: { proposalsPerApp: number; proposalsTotal: number; questionsPerAppPerDay: number };
@@ -734,8 +739,18 @@ function AddToSuite({ run, busy }: { run: Run; busy: boolean }) {
 
 /** Under Running now: who the work is for, or just that it is live. Pure. */
 export function workingFor(items: Working[]): string {
-  const people = new Set(items.map((w) => w.person).filter(Boolean)).size;
-  return people ? `for ${people} ${people === 1 ? 'person' : 'people'}` : 'live';
+  const builds = items.filter((w) => w.kind === 'build').length;
+  return countsLine([[items.length - builds, 'reading'], [builds, 'building']]);
+}
+
+/** Under Waiting in the queue: requests to read and builds to start. Pure. */
+export function waitingFor(depth: number, buildsWaiting: number): string {
+  return countsLine([[depth, 'to read'], [buildsWaiting, 'to build']]);
+}
+
+/** "2 reading, 3 building", leaving a zero out; empty when all are. Pure. */
+function countsLine(parts: [number, string][]): string {
+  return parts.filter(([n]) => n > 0).map(([n, words]) => `${n} ${words}`).join(', ');
 }
 
 /** One whole-number field of the Settings form. */
@@ -767,8 +782,10 @@ function WorkingNow({ items }: { items: Working[] }) {
   return (
     <ul className="text-sm space-y-1" id="admin-homeroom-bot-working">
       {items.map((w) => (
-        <li key={`${w.appSlug}#${w.issueNumber}`} className="flex flex-wrap items-center gap-2" data-working={`${w.appSlug}#${w.issueNumber}`}>
-          <span className={w.lane === 'live' ? AdminUI.badge.success : AdminUI.badge.default}>{w.lane === 'live' ? 'live' : 'background'}</span>
+        <li key={`${w.kind || 'read'}:${w.appSlug}#${w.issueNumber}`} className="flex flex-wrap items-center gap-2" data-working={`${w.appSlug}#${w.issueNumber}`}>
+          <span className={w.lane === 'live' ? AdminUI.badge.success : AdminUI.badge.default}>
+            {w.lane !== 'live' ? 'background' : w.kind === 'build' ? 'building' : 'reading'}
+          </span>
           <span>{`${w.appName} #${w.issueNumber}`}</span>
           {w.person ? <span className={AdminUI.muted}>{`for @${w.person}`}</span> : null}
           <span className={AdminUI.muted}>{`since ${when(w.since)}`}</span>
@@ -1355,7 +1372,9 @@ function HomeroomBotSection() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {tile('Running now', String(working.length), 'admin-homeroom-bot-tile-working',
               working.length ? workingFor(working) : 'nothing')}
-            {tile('Waiting in the queue', payload ? String(payload.queue.depth) : '–', 'admin-homeroom-bot-tile-queue')}
+            {tile('Waiting in the queue',
+              payload ? String(payload.queue.depth + (payload.queue.buildsWaiting || 0)) : '–', 'admin-homeroom-bot-tile-queue',
+              payload ? waitingFor(payload.queue.depth, payload.queue.buildsWaiting || 0) || undefined : undefined)}
             {tile('Spent this week', bot ? dollarsFromCents(bot.weeklySpentCents) : '–', 'admin-homeroom-bot-tile-spend',
               bot ? `of ${dollarsFromCents(bot.weeklyLimitCents)}` : undefined)}
             {tile('You agree with it', agreement == null ? '–' : `${agreement}%`, 'admin-homeroom-bot-tile-agreement',

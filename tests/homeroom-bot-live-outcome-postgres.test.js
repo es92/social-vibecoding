@@ -239,7 +239,7 @@ test('a live build always records its outcome, against the full PostgreSQL schem
     assert.ok(seconds < 3 * 3600, 'the fixtures above are past it');
   });
 
-  await t.test('a ready verdict waits on its run for its project\'s build slot, and a newer verdict replaces it', async () => {
+  await t.test('a ready verdict waits on its run for a build slot on its project, and a newer verdict replaces it', async () => {
     const waiting = async (issue) => (await pool.query(
       `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict, build_note, thread_seen_at)
        VALUES ($1, $2, 'live', 'ready', 'build it', $3) RETURNING id`,
@@ -256,8 +256,10 @@ test('a live build always records its outcome, against the full PostgreSQL schem
     const candidates = await bot.liveBuildCandidates(pool, { liveSlugs: ['recipebot'] });
     assert.deepEqual(candidates.map((c) => Number(c.id)), [first, second], 'oldest first, only where the bot acts');
     assert.ok(!candidates.some((c) => Number(c.id) === quietRun));
-    assert.deepEqual(bot.pickLiveBuilds(candidates, { slots: 6, perPerson: 2 }).map((p) => Number(p.id)), [first],
-      'one build per project at a time');
+    assert.deepEqual(bot.pickLiveBuilds(candidates, { slots: 6, perPerson: 2 }).map((p) => Number(p.id)), [first, second],
+      'two builds on one project at once, under its BUILDS_PER_PROJECT');
+    assert.deepEqual(bot.pickLiveBuilds(candidates, { slots: 6, perPerson: 2, buildingAppIds: [recipebot.id, recipebot.id] })
+      .map((p) => Number(p.id)), [first], 'and only up to it, counting the builds already under way');
     assert.deepEqual(await bot.liveBuildCandidates(pool, { liveSlugs: ['recipebot'], pausedApps: ['recipebot'] }), []);
 
     // A newer verdict on #81 (someone replied while it waited): the old wait is not built.
@@ -474,7 +476,7 @@ test('a live build always records its outcome, against the full PostgreSQL schem
     assert.equal(waitRow.live_build_waiting_at, null);
     const r = await runRow(running);
     assert.deepEqual([r.build_ok, r.build_error], [false, skip], 'the build under way is recorded stopped first ...');
-    assert.deepEqual(stopped, [runningSession], '... then its turn is ended, which frees its project\'s build slot');
+    assert.deepEqual(stopped, [runningSession], '... then its turn is ended, which frees its build slot');
     assert.equal(await bot.whyNotBuild(pool, { runId: running, botId: botUser.id, appId: recipebot.id, issueNumber: 96 }), skip,
       'and whatever that turn comes to reads as the skip, never a failure');
     assert.deepEqual(archived, [{ pool, sessionId: duplicate, reason: 'superseded' }],

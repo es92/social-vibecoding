@@ -30,7 +30,8 @@ test('the prompt keeps the model to the tools, plain words and Homeroom\'s conte
   assert.match(prompt, /Nothing is filed until they tap File it/);
   assert.match(prompt, /Finish every turn by calling reply exactly once/);
   assert.match(prompt, /Decline, in one friendly sentence, anything sexual, violent, about gambling/);
-  assert.match(prompt, /on up to 2 of their projects at once/);
+  // Reads go one per project; builds up to BUILDS_PER_PROJECT per project.
+  assert.match(prompt, /on up to 2 of their requests at once: you read one request per\nproject at a time, and build up to 3 per project at once\./);
   assert.match(prompt, /Today is 2026-10-02\./);
   const own = prompt.slice(0, prompt.indexOf('PLATFORM RULES'));
   assert.doesNotMatch(own, /—/, 'no em dash in what this module writes');

@@ -767,12 +767,10 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     });
     // Her answer to its question (passed on above) put it first in the queue.
     assert.equal(by.get('seed-swap#4').stage, 'queued');
-    // #3771: what it waits for, in words: Seed swap builds #3 first.
-    assert.equal(by.get('seed-swap#4').doing, 'waiting its turn: Seed swap is building request #3 first (one request per project at a time)');
-    assert.deepEqual(
-      { reason: by.get('seed-swap#4').waitingFor.reason, number: by.get('seed-swap#4').waitingFor.number },
-      { reason: 'project_busy', number: 3 },
-    );
+    // #3771: what it waits for, in words. Seed swap is building #3, but a
+    // build runs on a session of its own and holds no read up: #4 is next.
+    assert.equal(by.get('seed-swap#4').doing, 'next in line for a free builder');
+    assert.deepEqual(by.get('seed-swap#4').waitingFor, { reason: 'queue', ahead: 0 });
     assert.equal(by.get('seed-swap#4').busyNow, false);
     assert.equal(by.get('note-board#5').waitingOn, 'the group');
     assert.equal(by.get('note-board#5').proposal.votesNeeded > 0, true, 'and how many votes it needs');
