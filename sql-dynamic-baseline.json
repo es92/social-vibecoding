@@ -775,13 +775,6 @@
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "053d2f7fe78f6efe410b",
-      "count": 1,
-      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs."
-    },
-    {
-      "source": "src/routes/votes.js",
-      "kind": "structural-template",
       "fingerprint": "157017d7b5984923ede2",
       "count": 1,
       "preview": "`${mergedRowSelect()} WHERE cs.app_id = $1 AND cs.status = 'merged' ${prCursorSql} ORDER BY COALESCE(cs.merged_at, cs.created_at) DESC, cs.id DESC LIMIT $${prPa"
@@ -792,13 +785,6 @@
       "fingerprint": "3474bc02c4800e84c12b",
       "count": 1,
       "preview": "`SELECT pv.vote, pv.reason, u.username, pv.user_id, ${currentVotePredicateSql('pv', 'cs')} AS current FROM pr_votes pv JOIN users u ON pv.user_id = u.id JOIN ch"
-    },
-    {
-      "source": "src/routes/votes.js",
-      "kind": "structural-template",
-      "fingerprint": "3578607b976851ef6d01",
-      "count": 1,
-      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs."
     },
     {
       "source": "src/routes/votes.js",
@@ -827,6 +813,13 @@
       "fingerprint": "61a5b0d7edd56fa67c61",
       "count": 1,
       "preview": "`${mergedRowSelect()} WHERE cs.app_id = $1 AND cs.id = $3 AND (cs.status IN ('promoted', 'merging', 'merged') OR (cs.status IN ('active', 'paused') AND (cs.user"
+    },
+    {
+      "source": "src/routes/votes.js",
+      "kind": "structural-template",
+      "fingerprint": "aaa0033cbfbd7442abc1",
+      "count": 1,
+      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs."
     },
     {
       "source": "src/routes/votes.js",
