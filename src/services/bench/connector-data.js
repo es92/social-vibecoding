@@ -115,6 +115,10 @@ async function botOverview(pool, config, query = {}, deps = {}) {
       items: (p.queue?.items || []).map((q) => ({
         app: q.app_slug || null, issueNumber: num(q.issue_number), reason: q.reason ? clipText(q.reason, 120) : null,
         enqueuedAt: iso(q.enqueued_at), startedAt: iso(q.started_at),
+        // #4533: why it waits and until when (homeroom-bot.js queueWait): a
+        // turn running on its session, its payer's week, a platform fault.
+        waiting: q.waiting && CODE_RE.test(String(q.waiting.reason || ''))
+          ? { reason: q.waiting.reason, until: iso(q.waiting.until) } : null,
       })),
     },
     dmChat: p.dmChat ? {

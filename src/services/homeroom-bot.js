@@ -2713,7 +2713,7 @@ async function runTriage(pool, config, {
   // Whether this turn is a follow-up on the bot's own proposal (set again
   // below once its open proposal is found), for what a refusal backs off.
   let followUpTurn = !!item.followUp;
-  const recordRefusal = (error) => {
+  const recordRefusal = async (error) => {
     // A follow-up's session is its proposal's: only that follow-up waits.
     const { attempts, delayMs } = followUpTurn
       ? noteFollowUpRefusal(app.id, issueNumber, error)
@@ -2721,6 +2721,12 @@ async function runTriage(pool, config, {
     log.info('homeroom-bot', followUpTurn ? 'A follow-up was refused a turn; backing it off' : 'App refused a turn; backing off', {
       app: app.slug, issueNumber, error, attempts, delayMs,
     });
+    // #4533: and the row says so (queueWait). A refusal leaves it where it
+    // was, enqueued_at and all, so nothing showed it was waiting, or why.
+    await pool.query(
+      'UPDATE homeroom_bot_queue SET wait_reason = $2, wait_until = $3 WHERE id = $1',
+      [item.id, error, new Date(Date.now() + delayMs).toISOString()],
+    ).catch((err) => log.warn('homeroom-bot', 'Could not note why a queue row waits', { app: app.slug, issueNumber, err: err.message }));
     return { ran: false, reason: 'refused', detail: error, app: app.slug, retryInMs: delayMs, followUp: followUpTurn };
   };
 
@@ -3025,6 +3031,9 @@ async function runTriage(pool, config, {
       onProgress: () => {},
     });
   } catch (err) {
+    // #4533: a worker that cannot change its storage under a running turn
+    // is a busy session, never a platform fault that pauses the whole bot.
+    if (err?.code === 'session_busy') return recordFailure('session_busy', { sessionId: session.id });
     return recordFailure(`worker: ${err.message}`, { sessionId: session.id }, { infra: true });
   }
 
@@ -4088,6 +4097,13 @@ function wakeBuilds() {
 // a follow-up on a proposal the group is voting on. That session is
 // `promoted`, and a person's recovery (the PR and staging updated) is the
 // right end for it.
+//
+// #4533: but a follow-up is still the bot's turn, with the bot's clock and
+// the bot's ledger. Its record carries the bot's mark (homeroom-bot-followup
+// TURN_MARK), which isRecoveredBotFollowUp reads: recovery re-arms its clock
+// from the deadline on the mark (recoveryDeadline), and once the person's
+// tail has moved the proposal on, records what the turn did as the follow-up
+// itself would have (finishRecoveredFollowUp).
 
 /**
  * True when restart recovery should hand this session to the bot.
@@ -4104,6 +4120,20 @@ function isRecoveredBotSession(session) {
     && session.username === live.BOT_USERNAME
     && session.user_is_synthetic === true
     && (session.status === 'active' || (session.status === 'paused' && !!session.active_turn));
+}
+
+/**
+ * #4533: true when the turn restart recovery found is a follow-up of the
+ * bot's on its own proposal: the session is the bot's, and the turn's record
+ * carries the mark its follow-up left (homeroom-bot-followup turnMarkOf). A
+ * person's turn on the same session carries none, so it is never stopped on
+ * the bot's clock. Pure.
+ */
+function isRecoveredBotFollowUp(session, activeTurn = session?.active_turn) {
+  return !!session
+    && session.username === live.BOT_USERNAME
+    && session.user_is_synthetic === true
+    && !!followup.turnMarkOf(activeTurn);
 }
 
 /** The build run a session is the build of, while it is still under way. */
@@ -4158,6 +4188,9 @@ function restartAllowanceMs(activeTurn) {
  * third, and gave a spec turn twice its 10 minutes.
  */
 async function recoveryDeadline(pool, config, session, activeTurn) {
+  // #4533: a follow-up's own deadline, as its live clock had it.
+  const mark = followup.turnMarkOf(activeTurn);
+  if (mark) return toMs(mark.deadlineAt) + restartAllowanceMs(activeTurn);
   const startedAt = toMs(activeTurn?.startedAt);
   if (!startedAt) return null;
   const allowance = restartAllowanceMs(activeTurn);
@@ -5399,10 +5432,15 @@ async function proposalSpec(pool, sessionId) {
  * writes to the proposal thread. So the turn runs only when a PERSON said
  * something since the bot last looked; otherwise that activity is recorded
  * as seen and nothing is posted or spent.
+ *
+ * #4533: `recovered` is a turn restart recovery followed to its end
+ * ({ turn, mark, mode }, finishRecoveredFollowUp): no turn is run, and what
+ * follows the turn runs as it does for a live one, from what its mark kept
+ * of where it began.
  */
 async function runFollowUp(pool, config, {
   bot, app, repo, item, issue, proposal, runMode, model, turnBudgetMs, startedMs,
-  recordFailure, deps,
+  recordFailure, deps, recovered = null,
 }) {
   const { github, threadContext, sessions, limits, managedOpenRouter, agentTurn } = deps;
   const issueNumber = Number(item.issue_number);
@@ -5427,14 +5465,16 @@ async function runFollowUp(pool, config, {
   );
   const lastRun = lastRows[0] || null;
 
-  const seedReadAt = new Date().toISOString();
+  const seedReadAt = recovered?.mark.seedReadAt || new Date().toISOString();
   const [{ comments = [] } = {}, issueThread, proposalThread, botLogin] = await Promise.all([
     github.fetchIssueComments(repo.owner, repo.repo, issueNumber).catch(() => ({ comments: [] })),
     threadContext.loadIssueThread(pool, app.id, issueNumber),
     threadContext.loadProposalThread(pool, app.id, proposal.id),
     live.botUsernameOf(github),
   ]);
-  const replies = followup.newReplies({
+  // #4533: a recovered turn answered what it read before the restart; its
+  // mark says where that was, which is where the answer goes.
+  const replies = recovered ? [{ where: recovered.mark.onProposal ? 'proposal' : 'issue' }] : followup.newReplies({
     comments,
     issueThread: issueThread?.messages || [],
     proposalThread: proposalThread?.messages || [],
@@ -5476,13 +5516,18 @@ async function runFollowUp(pool, config, {
     await pool.query('DELETE FROM homeroom_bot_queue WHERE id = $1', [item.id]);
     return { ran: false, reason: 'has_proposal' };
   }
+  // #4533: whether a recovered turn moved the head is read against the head
+  // it started from: the person's recovery tail has made its push the
+  // reviewed head since.
+  if (recovered) session.reviewed_head_sha = recovered.mark.reviewedHeadSha || null;
 
   const { rows: revisionRows } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM homeroom_bot_runs
       WHERE proposal_session_id = $1 AND verdict = 'revise'`,
     [session.id],
   );
-  const canRevise = (revisionRows[0]?.n || 0) < followup.MAX_REVISIONS;
+  // #4533: a recovered turn ran in the mode it was given then.
+  const canRevise = recovered ? recovered.mode === 'build' : (revisionRows[0]?.n || 0) < followup.MAX_REVISIONS;
   const mode = canRevise ? 'build' : 'scout';
 
   if (checks) {
@@ -5495,41 +5540,50 @@ async function runFollowUp(pool, config, {
   // land) is looked at on the next pass: this run consumes the queue row.
   const requeueChecks = () => noteProposalChecks(pool, { sessionId: session.id });
 
-  const seed = sessions.buildHeadlessSeed(
-    issueNumber, issue, comments, botLogin, issueThread?.messages || [],
-  );
-  const proposalBlock = require('./thread-context').buildProposalDiscussionBlock({
-    sessionId: session.id, prNumber: session.pr_number,
-    threadMessages: proposalThread?.messages || [], truncated: !!proposalThread?.truncated,
-  });
-  // #3703: the spec whose card leads the proposal's discussion, which is
-  // what a reply there is usually about.
-  const spec = await proposalSpec(pool, session.id);
-  // #3767: a revision gets the design guidance and the browser check its
-  // build had (#3748), read for what the turn's model can see.
-  const design = canRevise
-    ? live.revisionDesignText({ readsImages: await live.buildSeesImages({ pool, config, userId: bot.id, model }) })
-    : '';
-  const prompt = followup.followUpPrompt({
-    seed, proposalBlock, spec, prNumber: session.pr_number, replies, canRevise, design,
-  });
-  snapshot = {
-    stage: 'followup', appId: app.id, issueNumber,
-    // The follow-up works on the proposal's branch, at its reviewed head.
-    baseSha: session.reviewed_head_sha || null,
-    texts: {
-      seed, prompt, proposal_block: proposalBlock, spec,
-      replies: JSON.stringify(replies),
-      thread: snapshots.frozenThread({
-        issueNumber, issue, comments, threadMessages: issueThread?.messages || [], botLogin,
-      }),
-    },
-    extra: { model, canRevise, prNumber: session.pr_number || null, mode },
-  };
+  // #4533: a recovered turn has run already; nothing is read for a prompt.
+  let turn = recovered ? recovered.turn : null;
+  if (!turn) {
+    const seed = sessions.buildHeadlessSeed(
+      issueNumber, issue, comments, botLogin, issueThread?.messages || [],
+    );
+    const proposalBlock = require('./thread-context').buildProposalDiscussionBlock({
+      sessionId: session.id, prNumber: session.pr_number,
+      threadMessages: proposalThread?.messages || [], truncated: !!proposalThread?.truncated,
+    });
+    // #3703: the spec whose card leads the proposal's discussion, which is
+    // what a reply there is usually about.
+    const spec = await proposalSpec(pool, session.id);
+    // #3767: a revision gets the design guidance and the browser check its
+    // build had (#3748), read for what the turn's model can see.
+    const design = canRevise
+      ? live.revisionDesignText({ readsImages: await live.buildSeesImages({ pool, config, userId: bot.id, model }) })
+      : '';
+    const prompt = followup.followUpPrompt({
+      seed, proposalBlock, spec, prNumber: session.pr_number, replies, canRevise, design,
+    });
+    snapshot = {
+      stage: 'followup', appId: app.id, issueNumber,
+      // The follow-up works on the proposal's branch, at its reviewed head.
+      baseSha: session.reviewed_head_sha || null,
+      texts: {
+        seed, prompt, proposal_block: proposalBlock, spec,
+        replies: JSON.stringify(replies),
+        thread: snapshots.frozenThread({
+          issueNumber, issue, comments, threadMessages: issueThread?.messages || [], botLogin,
+        }),
+      },
+      extra: { model, canRevise, prNumber: session.pr_number || null, mode },
+    };
 
-  const turn = await followup.runFollowUpTurn({
-    pool, config, bot, repo, session, prompt, mode, issueNumber, turnBudgetMs, model, deps,
-  });
+    turn = await followup.runFollowUpTurn({
+      pool, config, bot, repo, session, prompt, mode, issueNumber, turnBudgetMs, model, deps,
+      turnMark: followUpMark({
+        kind: 'reply', app, item, runMode, model, startedMs, seedReadAt, session,
+        threadSeenAt: item.thread_seen_at || null,
+        extra: { onProposal: replies.some((r) => r.where === 'proposal') },
+      }),
+    });
+  }
   const result = turn.result || {};
   const relay = relaySpend(result.relayUsage, turn.pricing, agentTurn);
   const costUsd = turn.costUsd ?? relay?.costUsd ?? null;
@@ -5631,7 +5685,9 @@ async function runFollowUp(pool, config, {
 
   const action = moved ? 'revise' : parsed.action;
   const reply = parsed?.reply || 'It updated the change to follow the latest replies.';
-  if (moved) await reconcileRevision({ config, pool, session, app, issueNumber, deps });
+  // #4533: after a restart, the person's recovery tail has already done
+  // this for the new head (server.js finalizeRecoveredTurn).
+  if (moved && !recovered) await reconcileRevision({ config, pool, session, app, issueNumber, deps });
   // #3767: and its name, when the revision changed what it does. Ear Trainer's
   // size options were taken out and its proposal was still called "Lead size
   // options with the number of sounds" when it merged.
@@ -5825,10 +5881,15 @@ async function noteProposalChecks(pool, { sessionId } = {}) {
  * a turn, and every hand-off, records the head it looked at, so the same
  * failing head is never looked at twice; a platform fault records nothing
  * of the kind and keeps the queue row, as a triage's does.
+ *
+ * #4533: `recovered` is a fix turn restart recovery followed to its end
+ * ({ turn, mark, mode }, finishRecoveredFollowUp): no turn is run, and
+ * everything after it is what a live fix does, but the reconcile, which the
+ * person's recovery tail has done.
  */
 async function runChecksFix(pool, config, {
   bot, app, repo, item, issue, session, checks, canRevise, mode, runMode, model, turnBudgetMs, startedMs,
-  recordFailure, lastRun, seedReadAt, comments, issueThread, proposalThread, botLogin, deps,
+  recordFailure, lastRun, seedReadAt, comments, issueThread, proposalThread, botLogin, deps, recovered = null,
 }) {
   const { github, threadContext, sessions, limits, managedOpenRouter, agentTurn } = deps;
   const issueNumber = Number(item.issue_number);
@@ -5847,7 +5908,7 @@ async function runChecksFix(pool, config, {
     ? snapshots.recordSnapshot(pool, { runId: id, ...snapshot })
     : Promise.resolve(null));
 
-  if (followup.checksLookLikeInfra(checks)) {
+  if (!recovered && followup.checksLookLikeInfra(checks)) {
     await dropRow();
     log.info('homeroom-bot', 'Failing checks look like the platform\'s fault; not revising', {
       app: app.slug, issueNumber, sessionId: session.id, failing: failing.length, total,
@@ -5907,32 +5968,45 @@ async function runChecksFix(pool, config, {
     });
   }
 
-  const seed = sessions.buildHeadlessSeed(issueNumber, issue, comments, botLogin, issueThread?.messages || []);
-  const proposalBlock = require('./thread-context').buildProposalDiscussionBlock({
-    sessionId: session.id, prNumber,
-    threadMessages: proposalThread?.messages || [], truncated: !!proposalThread?.truncated,
-  });
-  const prompt = followup.checksFixPrompt({ seed, proposalBlock, prNumber, failing, total, broken });
-  snapshot = {
-    stage: 'checks_fix', appId: app.id, issueNumber,
-    baseSha: head,
-    texts: {
-      seed, prompt, proposal_block: proposalBlock,
-      failing: JSON.stringify(failing),
-      ...(broken.length ? { broken: JSON.stringify(broken) } : {}),
-      thread: snapshots.frozenThread({
-        issueNumber, issue, comments, threadMessages: issueThread?.messages || [], botLogin,
+  // #4533: a recovered turn has run already; nothing is read for a prompt.
+  let turn = recovered ? recovered.turn : null;
+  if (!turn) {
+    const seed = sessions.buildHeadlessSeed(issueNumber, issue, comments, botLogin, issueThread?.messages || []);
+    const proposalBlock = require('./thread-context').buildProposalDiscussionBlock({
+      sessionId: session.id, prNumber,
+      threadMessages: proposalThread?.messages || [], truncated: !!proposalThread?.truncated,
+    });
+    const prompt = followup.checksFixPrompt({ seed, proposalBlock, prNumber, failing, total, broken });
+    snapshot = {
+      stage: 'checks_fix', appId: app.id, issueNumber,
+      baseSha: head,
+      texts: {
+        seed, prompt, proposal_block: proposalBlock,
+        failing: JSON.stringify(failing),
+        ...(broken.length ? { broken: JSON.stringify(broken) } : {}),
+        thread: snapshots.frozenThread({
+          issueNumber, issue, comments, threadMessages: issueThread?.messages || [], botLogin,
+        }),
+      },
+      extra: { model, prNumber: prNumber || null, total, mode },
+    };
+    turn = await followup.runFollowUpTurn({
+      // `mode` is runFollowUp's: a build turn, since revisions remain.
+      pool, config, bot, repo, session, prompt, mode, issueNumber, turnBudgetMs, model, deps,
+      commitMsg: failing.length
+        ? `Homeroom bot: fix the failing checks on #${issueNumber}`
+        : `Homeroom bot: fix what did not work on #${issueNumber}`,
+      turnMark: followUpMark({
+        kind: 'checks_fix', app, item, runMode, model, startedMs, seedReadAt, session, threadSeenAt,
+        extra: {
+          checks: {
+            head, total, failing: failing.length,
+            broken: broken.slice(0, 5).map((b) => ({ claim: clip(String(b?.claim || ''), 300) })),
+          },
+        },
       }),
-    },
-    extra: { model, prNumber: prNumber || null, total, mode },
-  };
-  const turn = await followup.runFollowUpTurn({
-    // `mode` is runFollowUp's: a build turn, since revisions remain.
-    pool, config, bot, repo, session, prompt, mode, issueNumber, turnBudgetMs, model, deps,
-    commitMsg: failing.length
-      ? `Homeroom bot: fix the failing checks on #${issueNumber}`
-      : `Homeroom bot: fix what did not work on #${issueNumber}`,
-  });
+    });
+  }
   const result = turn.result || {};
   const relay = relaySpend(result.relayUsage, turn.pricing, agentTurn);
   const costUsd = turn.costUsd ?? relay?.costUsd ?? null;
@@ -5963,7 +6037,9 @@ async function runChecksFix(pool, config, {
     mode, result, reviewedHeadSha: session.reviewed_head_sha, action: parsed?.action,
   });
   if (moved) {
-    await reconcileRevision({ config, pool, session, app, issueNumber, deps });
+    // #4533: after a restart, the person's recovery tail has already done
+    // this for the new head (server.js finalizeRecoveredTurn).
+    if (!recovered) await reconcileRevision({ config, pool, session, app, issueNumber, deps });
     const summary = parsed?.summary || parsed?.reply || 'It updated the change so its checks pass.';
     runId = await insertRun(pool, {
       ...billingOf(item, runMode),
@@ -6006,6 +6082,192 @@ async function runChecksFix(pool, config, {
     verdict: parsed?.action === 'person' ? 'person' : 'failed',
     extra: { ...spent, ...(turn.stopped ? { budgetStop: 'wall clock' } : {}) },
   });
+}
+
+// ── A follow-up after a restart (#4533) ──────────────────────────────────
+//
+// A follow-up runs on its PROMOTED proposal's session, so restart recovery
+// follows its turn through the person's tail (see "After a restart"), which
+// moves the proposal on: the push, the votes cleared, staging and checks on
+// the new head. What it never did was the bot's part. On PR #4533 (change
+// 7428) a checks fix a deploy caught pushed its fix, and the ledger had no
+// run for it, no `checks_revise` post and no cost, so MAX_REVISIONS and
+// "already looked at this head" (checksDue's `looked`) could not see it.
+// Its record now carries the bot's mark (followUpMark, kept by
+// runFollowUpTurn with the deadline), and recovery hands the turn's result
+// back to the same runChecksFix / runFollowUp that run after a live turn.
+
+// The turn_effects key that keeps recording one recovered follow-up to at
+// most once, whatever replays the recovery tail.
+const RECOVERED_FOLLOWUP_EFFECT = 'homeroom_bot_followup_outcome';
+
+/**
+ * #4533: what a follow-up's turn record keeps for restart recovery
+ * (homeroom-bot-followup TURN_MARK; runFollowUpTurn adds the deadline):
+ * where it was (app, issue, queue row), what its run is billed and recorded
+ * as, and the head it started from. Nothing anybody wrote. Pure.
+ */
+function followUpMark({
+  kind, app, item, runMode, model, startedMs, seedReadAt, session, threadSeenAt = null, extra = {},
+}) {
+  return {
+    followUp: kind,
+    appId: Number(app.id), issueNumber: Number(item.issue_number),
+    queueId: Number(item.id) || null, reason: item.reason || null,
+    payerUserId: Number(item.payer_user_id) || null, changedBy: item.changed_by || null,
+    runMode, model: model || null,
+    startedAt: new Date(startedMs || Date.now()).toISOString(),
+    seedReadAt: seedReadAt || null, threadSeenAt: threadSeenAt || null,
+    reviewedHeadSha: session?.reviewed_head_sha || null,
+    ...extra,
+  };
+}
+
+/** What one logical turn cost, from its attempts' own ledger rows (agent_turns). Never throws. */
+async function ledgerSpendOfTurn(pool, activeTurn) {
+  const none = { costUsd: null, inputTokens: null, outputTokens: null };
+  const id = activeTurn?.logicalTurnId || activeTurn?.turnId || null;
+  if (!id) return none;
+  try {
+    const { rows: [row] = [] } = await pool.query(
+      `SELECT SUM(estimated_cost_usd)::float8 AS cost, SUM(input_tokens)::float8 AS input_tokens,
+              SUM(output_tokens)::float8 AS output_tokens
+         FROM agent_turns WHERE logical_turn_id = $1::uuid`,
+      [String(id)],
+    );
+    const num = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+    return { costUsd: num(row?.cost), inputTokens: num(row?.input_tokens), outputTokens: num(row?.output_tokens) };
+  } catch {
+    return none;
+  }
+}
+
+/**
+ * #4533: a follow-up of the bot's (a checks fix, or its answer to replies)
+ * that restart recovery followed to its end, recorded as the follow-up
+ * records one: `result` is what the journal replay returned, `timedOut`
+ * that the bot's clock, re-armed from the deadline on its mark, ended it.
+ * The run goes in the ledger with its verdict, the failing head it looked
+ * at and what it cost; the bot says what it did where it would have; the
+ * follow-up's wait is cleared. Called by server.js once the person's tail
+ * has moved the proposal on, which therefore is not done again. At most
+ * once per turn (turn_effects). Resolves what it did; never throws.
+ */
+async function finishRecoveredFollowUp({
+  pool, config = {}, session, activeTurn, result = {}, timedOut = false, deps = {},
+}) {
+  const mark = followup.turnMarkOf(activeTurn);
+  const turnId = require('./turn-lifecycle').turnIdentity(activeTurn);
+  if (!mark || !session || !turnId) return null;
+  const turnEffects = deps.turnEffects || require('./turn-effects');
+  try {
+    const claim = await turnEffects.claimExternalEffect({
+      pool, turnId, effectKey: RECOVERED_FOLLOWUP_EFFECT, sessionId: session.id,
+    });
+    if (!claim.claimed) return 'already_recorded';
+    const { rows: [app] = [] } = await pool.query(
+      'SELECT id, slug, name, repo_url, self_hosted FROM apps WHERE id = $1', [Number(mark.appId)],
+    );
+    const repo = app ? parseRepo(app.repo_url) : null;
+    let out = null;
+    if (repo) {
+      const issueNumber = Number(mark.issueNumber);
+      const github = deps.github || require('./github');
+      const fetched = await github.fetchPublicIssue(repo.owner, repo.repo, issueNumber).catch(() => null);
+      // What the turn cost is its own attempts' (the journal replay settled
+      // them before this runs), debited by the run as a live turn's is.
+      const spend = await ledgerSpendOfTurn(pool, activeTurn);
+      const turnResult = {
+        ...(result || {}),
+        inputTokens: Number.isFinite(result?.inputTokens) ? result.inputTokens : spend.inputTokens,
+        outputTokens: Number.isFinite(result?.outputTokens) ? result.outputTokens : spend.outputTokens,
+      };
+      // The clock re-armed past a deadline fires at once, even for a turn
+      // that had finished before the restart: one whose journal ended on its
+      // own exit 0, before the stop's 143, did its work in time.
+      const stopped = !!timedOut && Number(result?.exitCode) !== 0;
+      const recovered = {
+        mark, mode: activeTurn.mode === 'scout' ? 'scout' : 'build',
+        turn: { routed: { result: turnResult }, result: turnResult, stopped, costUsd: spend.costUsd, pricing: null },
+      };
+      const item = {
+        id: mark.queueId, app_id: app.id, issue_number: issueNumber, reason: mark.reason,
+        thread_seen_at: mark.threadSeenAt, payer_user_id: mark.payerUserId, changed_by: mark.changedBy,
+      };
+      const startedMs = toMs(mark.startedAt) || toMs(activeTurn.startedAt) || Date.now();
+      // A turn that failed is a failed run, and its queue row is spent, as
+      // runTriage's recordFailure records a model failure.
+      const recordFailure = async (error, extra = {}) => {
+        const runId = await insertRun(pool, {
+          ...billingOf(item, mark.runMode), readReason: readReasonOf(item),
+          appId: app.id, issueNumber, mode: mark.runMode, verdict: 'failed', error,
+          threadSeenAt: mark.threadSeenAt || null, model: mark.model, durationMs: Date.now() - startedMs, ...extra,
+        });
+        await pool.query('DELETE FROM homeroom_bot_queue WHERE id = $1', [item.id]);
+        return { ran: true, verdict: 'failed', runId };
+      };
+      const runDeps = {
+        github,
+        threadContext: deps.threadContext || require('./thread-context'),
+        sessions: deps.sessions || null,
+        limits: deps.limits || require('./limits'),
+        managedOpenRouter: deps.managedOpenRouter || require('./openrouter-managed-keys'),
+        agentTurn: deps.agentTurn || require('./agent-turn'),
+        votes: deps.votes || null, dm: deps.dm || null, notifications: deps.notifications || null,
+        ...liveDeps(deps),
+      };
+      const common = {
+        bot: { id: session.user_id, username: BOT_USERNAME }, app, repo, item, issue: fetched?.issue || null,
+        runMode: mark.runMode, model: mark.model, turnBudgetMs: 0, startedMs, recordFailure, deps: runDeps, recovered,
+      };
+      if (mark.followUp === 'checks_fix') {
+        const { rows: [row] = [] } = await pool.query(
+          `SELECT cs.*, a.slug AS app_slug, a.name AS app_name, a.repo_url, a.self_hosted AS app_self_hosted
+             FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id WHERE cs.id = $1`,
+          [session.id],
+        );
+        const c = mark.checks || {};
+        out = row ? await runChecksFix(pool, config, {
+          ...common,
+          // Whether it moved the head is read against the head it started
+          // from: the person's recovery tail has made its push the reviewed
+          // head since.
+          session: { ...row, reviewed_head_sha: mark.reviewedHeadSha || null },
+          checks: {
+            head: c.head || null, total: Number(c.total) || 0,
+            // How many failed is all that is said again; the turn read why.
+            failing: Array.from({ length: Math.max(0, Number(c.failing) || 0) }, () => ({})),
+            broken: Array.isArray(c.broken) ? c.broken : [],
+          },
+          canRevise: true, mode: recovered.mode, lastRun: null, seedReadAt: mark.seedReadAt || null,
+          comments: [], issueThread: null, proposalThread: null, botLogin: await live.botUsernameOf(github),
+        }) : { ran: false, reason: 'gone' };
+      } else {
+        out = await runFollowUp(pool, config, { ...common, proposal: { id: session.id } });
+      }
+    }
+    // What it waited on is over: a row still queued for it is read on the
+    // next pass, not after the rest of a backoff.
+    clearFollowUpRefusals(mark.appId, mark.issueNumber);
+    await pool.query(
+      'UPDATE homeroom_bot_queue SET wait_reason = NULL, wait_until = NULL WHERE app_id = $1 AND issue_number = $2',
+      [Number(mark.appId), Number(mark.issueNumber)],
+    ).catch(() => {});
+    const outcome = out?.acted || out?.verdict || out?.reason || 'gone';
+    await turnEffects.completeExternalEffect({
+      pool, turnId, effectKey: RECOVERED_FOLLOWUP_EFFECT, result: { outcome, runId: out?.runId || null },
+    }).catch(() => {});
+    log.info('homeroom-bot', 'Recorded a follow-up a restart interrupted', {
+      sessionId: session.id, appId: mark.appId, issueNumber: mark.issueNumber, kind: mark.followUp,
+      outcome, runId: out?.runId || null, timedOut: !!timedOut, exitCode: result?.exitCode ?? null,
+    });
+    return outcome;
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not record a follow-up a restart interrupted', {
+      sessionId: session.id, kind: mark.followUp, err: err.message,
+    });
+    return 'error';
+  }
 }
 
 /**
@@ -8717,6 +8979,26 @@ async function* iterateRunsForExport(pool, {
   }
 }
 
+/**
+ * #4533: why a queue row that is not running waits, and until when, or null
+ * when it is simply next in line: { reason, until }. Its own refusal first
+ * (`session_busy`: a turn is running on its session, recorded by runTriage's
+ * recordRefusal with its backoff), then its payer's week (`allowance`,
+ * held_until), then the whole bot's pause on a platform fault
+ * (`platform_fault`, faultBackoff, known on the Pod running the loop). A
+ * wait whose time has passed is no wait. Pure.
+ */
+function queueWait(row, { fault = null, now = Date.now() } = {}) {
+  if (!row || row.started_at) return null;
+  const at = (ms) => new Date(ms).toISOString();
+  const own = toMs(row.wait_until);
+  if (row.wait_reason && own > now) return { reason: String(row.wait_reason), until: at(own) };
+  const held = toMs(row.held_until);
+  if (held > now) return { reason: 'allowance', until: at(held) };
+  if (fault && Number(fault.until) > now) return { reason: 'platform_fault', until: at(Number(fault.until)) };
+  return null;
+}
+
 async function adminPayload(pool, config, {
   app = null, verdict = null, before = null, limit = RUNS_PAGE, budgetOnly = false,
 } = {}) {
@@ -8792,13 +9074,17 @@ async function adminPayload(pool, config, {
     costUsd: Number(t.cost_usd) || 0,
   };
 
-  const { rows: queueRows } = await pool.query(
+  const { rows: queued } = await pool.query(
     `SELECT q.id, q.issue_number, q.priority, q.reason, q.enqueued_at, q.started_at,
+            q.held_until, q.wait_reason, q.wait_until,
             a.slug AS app_slug, a.name AS app_name
        FROM homeroom_bot_queue q JOIN apps a ON a.id = q.app_id
       ORDER BY q.started_at DESC NULLS LAST, q.priority, q.enqueued_at
       LIMIT 12`,
   );
+  // #4533: and why each one that is not running waits, and until when.
+  const fault = faultBackoff();
+  const queueRows = queued.map((q) => ({ ...q, waiting: queueWait(q, { fault }) }));
   const { rows: depthRows } = await pool.query(
     'SELECT COUNT(*)::int AS depth FROM homeroom_bot_queue WHERE started_at IS NULL',
   );
@@ -9284,6 +9570,12 @@ module.exports = {
   noteProposalChecks,
   checksToFix,
   runChecksFix,
+  // #4533: a follow-up a restart caught.
+  isRecoveredBotFollowUp,
+  followUpMark,
+  finishRecoveredFollowUp,
+  RECOVERED_FOLLOWUP_EFFECT,
+  queueWait,
   settleAbandonedLiveBuilds,
   finishInterruptedReviews,
   recordReviewState,

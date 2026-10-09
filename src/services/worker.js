@@ -3038,7 +3038,9 @@ async function ensureWorker(sessionId, {
       // rollout from ever becoming a reason to interrupt paid work.
       if (existing?.inFlight) {
         if (staleReason === 'storage-mode') {
-          throw new Error('Cannot change worker storage while a turn is running');
+          // #4533: the session is busy, not the platform broken: the code
+          // lets a caller wait for the turn rather than report a fault.
+          throw Object.assign(new Error('Cannot change worker storage while a turn is running'), { code: 'session_busy' });
         }
         log.info('worker', 'Deferring stale warm worker replacement until turn completion', {
           containerName, staleReason,

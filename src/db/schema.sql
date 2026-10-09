@@ -12797,6 +12797,14 @@ ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS build_caption_at TIMESTAM
 -- from before, or one no queue row started.
 ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS read_reason TEXT;
 ALTER TABLE homeroom_bot_queue ADD COLUMN IF NOT EXISTS changed_by TEXT;
+-- #4533: why a queued row is waiting, and until when, as the refusal that
+-- left it there said (homeroom-bot.js recordRefusal; 'session_busy' when a
+-- turn was running on its session). A refusal keeps the row and its place,
+-- so without these a follow-up backing off for an hour looked like one next
+-- in line. Read by the console's queue and get_homeroom_bot (queueWait),
+-- and only while wait_until is still ahead.
+ALTER TABLE homeroom_bot_queue ADD COLUMN IF NOT EXISTS wait_reason TEXT;
+ALTER TABLE homeroom_bot_queue ADD COLUMN IF NOT EXISTS wait_until TIMESTAMPTZ;
 
 -- #4449: LIVE, the new app itself taking shape while a first version is
 -- built (services/first-version-live.js). A watcher in the build's worker

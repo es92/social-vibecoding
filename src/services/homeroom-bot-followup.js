@@ -477,17 +477,71 @@ function checksPersonText({ why, failingCount = 0, broken = [] }) {
 
 // ── The turn ─────────────────────────────────────────────────────────────
 
+// #4533 (change 7428, request #4524): a follow-up's turn record says it is the
+// bot's, what it was doing, and when its time is up. Its clock was only a
+// timer in the process that started it, so a deploy restart dropped it:
+// restart recovery followed the checks fix on through the person's
+// recovery tail (it is on a PROMOTED proposal, which isRecoveredBotSession
+// leaves to that tail on purpose) for 38 minutes against its 20, and what
+// it did never reached the bot's ledger. With this on the record
+// (turn-lifecycle stampTurn), recovery stops it at the same deadline
+// (homeroom-bot.js recoveryDeadline, given back what each restart cost it)
+// and records its outcome as the bot would have (finishRecoveredFollowUp).
+// A person's turn on the same session has no such mark, so it is never
+// bounded by the bot's clock.
+const TURN_MARK = 'homeroomBotFollowUp';
+const MARK_KINDS = Object.freeze(['checks_fix', 'reply']);
+
+/** The bot's mark on a turn record (TURN_MARK), or null when it is not a follow-up of the bot's. Pure. */
+function turnMarkOf(activeTurn) {
+  const mark = activeTurn && typeof activeTurn === 'object' ? activeTurn[TURN_MARK] : null;
+  if (!mark || typeof mark !== 'object' || !MARK_KINDS.includes(mark.followUp)) return null;
+  if (!toMs(mark.deadlineAt) || !Number.isInteger(Number(mark.appId)) || !Number.isInteger(Number(mark.issueNumber))) return null;
+  return mark;
+}
+
+/**
+ * #4533: is a turn running on the proposal's session now? Something in this
+ * process holds it (a sync with main, a recovery following a turn, a
+ * dispatch), its worker is executing, or its row carries a turn record,
+ * which is what any other process's turn leaves (and what
+ * startCodexAttempt refuses a new turn on anyway). A read that fails says
+ * no: the turn's own start refuses a busy session as before.
+ */
+async function turnRunningOn({ pool, session, worker, activeWorkers }) {
+  const id = Number(session.id);
+  if (activeWorkers.has(session.id) || activeWorkers.has(id)) return true;
+  if (require('./active-workers').hasSessionOperation(id)) return true;
+  if (typeof worker.isInFlight === 'function' && (worker.isInFlight(session.id) || worker.isInFlight(id))) return true;
+  try {
+    const { rows } = await pool.query('SELECT active_turn FROM chat_sessions WHERE id = $1', [id]);
+    return !!rows[0]?.active_turn;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * One follow-up turn on the proposal's own session. `mode` is 'build' while
  * the bot may still revise, 'scout' (no commit, no push) once it may not.
  * The session keeps its status: it is the group's open proposal. Resolves
  * { routed, result, stopped, costUsd, pricing }; never throws.
+ *
+ * #4533: `turnMark` is what the turn's record keeps for restart recovery
+ * (TURN_MARK), its deadline added here. A session that is running another
+ * turn is answered `session_busy` before any worker is asked for, which the
+ * bot reads as a wait for this follow-up alone, never as a platform fault.
  */
 async function runFollowUpTurn({
   pool, config, bot, repo, session, prompt, mode, issueNumber, turnBudgetMs, model, deps,
-  commitMsg = null,
+  commitMsg = null, turnMark = null,
 }) {
   const { worker, sessions, agentTurn, activeWorkers } = deps;
+  const busy = { routed: { error: 'session_busy' }, result: {}, stopped: false, costUsd: null, pricing: null };
+  if (await turnRunningOn({ pool, session, worker, activeWorkers })) {
+    log.info('homeroom-bot', 'Follow-up waits: a turn is running on its proposal', { sessionId: session.id, issueNumber });
+    return busy;
+  }
   let containerName;
   try {
     await worker.ensureWorkerImage();
@@ -496,6 +550,15 @@ async function runFollowUpTurn({
       temporary: true, onProgress: () => {},
     });
   } catch (err) {
+    // #4533: a turn that started between the look above and here. The
+    // worker cannot change its storage under it (a sync with main and the
+    // before & after shots run on the proposal's persistent volume; this
+    // asks for temporary storage), and says so with `session_busy`: still
+    // a wait.
+    if (err?.code === 'session_busy') {
+      log.info('homeroom-bot', 'Follow-up waits: its worker is running a turn on other storage', { sessionId: session.id, issueNumber });
+      return busy;
+    }
     return { routed: { error: `worker: ${err.message}` }, result: {}, stopped: false, costUsd: null, infra: true };
   }
   // A fresh model conversation (#3035's reason): the saved thread is the
@@ -513,6 +576,8 @@ async function runFollowUpTurn({
     stopping = Promise.resolve(worker.stopTurn(session.id)).catch(() => {});
   }, turnBudgetMs);
   if (typeof timer.unref === 'function') timer.unref();
+  // #4533: when this timer ends the turn, kept on the turn's record.
+  const deadlineAt = new Date(Date.now() + turnBudgetMs).toISOString();
   activeWorkers.add(session.id);
   let pricing = null;
   let routed;
@@ -528,7 +593,18 @@ async function runFollowUpTurn({
         // in the other CLI is never resumed across the switch.
         harness: 'auto',
       }),
-      dispatchOnce: (ctx) => { pricing = ctx?.pricingSnapshot || pricing; return worker.execInWorker(session.id, {
+      dispatchOnce: async (ctx) => {
+        pricing = ctx?.pricingSnapshot || pricing;
+        // #4533: the attempt's record exists now (startCodexAttempt wrote
+        // it), and the agent starts below: the mark goes on it first.
+        if (turnMark && ctx?.logicalTurnId) {
+          await require('./turn-lifecycle').stampTurn(pool, {
+            sessionId: session.id, turnId: ctx.logicalTurnId, key: TURN_MARK, value: { ...turnMark, deadlineAt },
+          }).catch((err) => log.warn('homeroom-bot', 'Could not mark a follow-up turn as the bot\'s', {
+            sessionId: session.id, issueNumber, err: err.message,
+          }));
+        }
+        return worker.execInWorker(session.id, {
         mode,
         prompt,
         model,
@@ -591,6 +667,9 @@ module.exports = {
   revisedText,
   revisionFailedText,
   runFollowUpTurn,
+  TURN_MARK,
+  turnMarkOf,
+  turnRunningOn,
   headMoved,
   failingChecks,
   brokenClaims,

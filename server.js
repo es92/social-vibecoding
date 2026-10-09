@@ -4439,11 +4439,18 @@ async function resumeDetachedTurnInner({
   // build whose clock still runs out ran too long on its own (7 Oct 2026:
   // two builds that ran on through every restart were each sent round again
   // from the start, twice).
+  //
+  // #4533: and a follow-up of the bot's on its own PROMOTED proposal, which
+  // goes on through the person's tail below (isRecoveredBotSession leaves it
+  // there on purpose) but keeps the bot's clock, from the deadline its turn
+  // record carries. Only a turn with the bot's mark: a person's turn on the
+  // same session is never stopped on it.
   const benchTurn = require('./src/services/bench/runner').isBenchSession(session);
   const botTurn = !benchTurn && homeroomBotRecovery().isRecoveredBotSession(session);
+  const botFollowUp = !benchTurn && !botTurn && homeroomBotRecovery().isRecoveredBotFollowUp(session, activeTurn);
   let botTimedOut = false;
   let botClock = null;
-  if (botTurn || benchTurn) {
+  if (botTurn || benchTurn || botFollowUp) {
     const restarts = await turnLifecycle.noteRestart(pool, { sessionId, turnId: activeTurn.turnId }).catch(() => null);
     const clockTurn = Number.isInteger(restarts) ? { ...activeTurn, restarts } : activeTurn;
     const deadline = await (benchTurn
@@ -4767,7 +4774,12 @@ async function resumeDetachedTurnInner({
   let recoveredStalled = false;
   let durableTailComplete = false;
   try {
-    if (recoveryActiveTurn.mode === 'scout') {
+    if (botFollowUp && recoveryActiveTurn.mode === 'scout') {
+      // #4533: a follow-up the bot may no longer revise with runs read-only
+      // (scout). Its answer is the bot's to post (below), never a spec: the
+      // branch after this one would have made it the proposal's.
+      terminalLine = '[done]';
+    } else if (recoveryActiveTurn.mode === 'scout') {
       // Scout turns push nothing — their product is the spec text.
       // Persist it the same way runScoutTool does (spec_md + frozen
       // version) so the draft isn't lost with the dead SSE.
@@ -4891,6 +4903,17 @@ async function resumeDetachedTurnInner({
         : (recoveredNoChanges ? 'no_changes' : 'code');
       wrapUpSummary = summary;
       recoveredStalled = finalizeOutcome === 'push_failed';
+    }
+
+    // #4533: what a follow-up of the bot's did goes in the bot's ledger and
+    // is said where the bot says it, as after a live turn, once the tail
+    // above has moved the proposal on (homeroom-bot.js
+    // finishRecoveredFollowUp: at most once, whatever replays this). Read
+    // off the record recovery began with, which carries the bot's mark.
+    if (botFollowUp) {
+      await homeroomBotRecovery().finishRecoveredFollowUp({
+        pool, config, session, activeTurn, result, timedOut: botTimedOut,
+      });
     }
 
     // #896: re-issue the Mayor's phase-2 wrap-up. It used to be skipped

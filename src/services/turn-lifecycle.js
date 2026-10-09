@@ -399,6 +399,36 @@ async function noteRestart(db, { sessionId, turnId }) {
   return rows.length ? Number(rows[0].restarts) : null;
 }
 
+// The lifecycle's own fields, which only the helpers above write.
+const RESERVED_TURN_KEYS = new Set([
+  'turnId', 'phase', 'journal', 'turnUuid', 'logicalTurnId', 'attemptNumber', 'backend', 'harness',
+  'mode', 'model', 'startedAt', 'tail', 'restarts', 'byok', 'byokCents', 'stopRequestedAt',
+  'stopRequestedBy', 'lifecycleUpdatedAt', 'executionStartedAt', 'cleanupPendingAt', 'quarantineCode',
+]);
+
+// #4533: the turn's owner keeps a note of its own on the record, under one
+// key of its own (the Homeroom bot's follow-up keeps its deadline and what
+// it was doing there, homeroom-bot-followup.js TURN_MARK, so restart
+// recovery stops it on time and records it as the bot would). Compare-and-
+// set on the exact turn, like every write here, and never the phase or any
+// field the lifecycle owns. Resolves whether the turn still held the session.
+async function stampTurn(db, { sessionId, turnId, key, value }) {
+  if (!turnId) throw new Error('turn-lifecycle: turnId required to stamp a turn');
+  if (!/^[a-z][A-Za-z0-9]{2,63}$/.test(String(key || '')) || RESERVED_TURN_KEYS.has(key)) {
+    throw new Error(`turn-lifecycle: ${key} is not a key a turn's owner may stamp`);
+  }
+  const { rows, rowCount } = await db.query(
+    `UPDATE chat_sessions
+        SET active_turn = jsonb_set(active_turn, ARRAY[$3::text], $4::jsonb, true)
+      WHERE id = $1
+        AND active_turn IS NOT NULL
+        AND active_turn->>'turnId' = $2
+      RETURNING id`,
+    [sessionId, String(turnId), key, JSON.stringify(value ?? null)],
+  );
+  return (rowCount ?? rows?.length ?? 0) === 1;
+}
+
 async function clearCleanupPending(db, {
   sessionId,
   turnId = null,
@@ -586,6 +616,7 @@ module.exports = {
   mergeTailMilestones,
   incrementByokCents,
   noteRestart,
+  stampTurn,
   clearCleanupPending,
   markHeadlessTerminal,
   markStopRequested,

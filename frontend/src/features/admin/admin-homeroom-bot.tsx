@@ -157,6 +157,13 @@ interface QueueItem {
   started_at: string | null;
   app_slug: string;
   app_name: string;
+  // #4533: why it waits and until when (homeroom-bot.js queueWait).
+  waiting?: QueueWait | null;
+}
+
+interface QueueWait {
+  reason: string;
+  until: string;
 }
 
 interface Run {
@@ -769,6 +776,22 @@ export function pairsWaitingLine(waiting: PairsWaiting | null | undefined): stri
   return `Bot configurations: ${list} ${total === 1 ? 'waits' : 'wait'} for a pick. Pairs are picked through the Homeroom connector: list_bot_configs, then get_bot_config_pair.`;
 }
 
+// #4533: a queued row a refusal left where it was looked like one next in
+// line; a checks fix backing off for up to an hour behind a busy proposal
+// said nothing at all.
+const WAIT_WORDS: Record<string, string> = {
+  session_busy: 'a turn is running on its session',
+  allowance: 'its payer\'s week is used up',
+  platform_fault: 'the bot is backing off a platform fault',
+};
+
+/** Why a queued row waits, and until when, in words; empty when it does not. Pure. */
+export function waitLine(waiting: QueueWait | null | undefined): string {
+  if (!waiting || !waiting.reason) return '';
+  const until = when(waiting.until);
+  return `waiting: ${WAIT_WORDS[waiting.reason] || waiting.reason.replace(/_/g, ' ')}${until ? `, until ${until}` : ''}`;
+}
+
 /** "2 reading, 3 building", leaving a zero out; empty when all are. Pure. */
 function countsLine(parts: [number, string][]): string {
   return parts.filter(([n]) => n > 0).map(([n, words]) => `${n} ${words}`).join(', ');
@@ -810,6 +833,29 @@ function WorkingNow({ items }: { items: Working[] }) {
           <span>{`${w.appName} #${w.issueNumber}`}</span>
           {w.person ? <span className={AdminUI.muted}>{`for @${w.person}`}</span> : null}
           <span className={AdminUI.muted}>{`since ${when(w.since)}`}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** The queue, one line each: what put it there, the app and request, and why it waits, when it does. */
+function QueueItems({ items }: { items: QueueItem[] }) {
+  if (!items.length) {
+    return <p className={AdminUI.muted}>Nothing queued. The queue refreshes from open requests every five minutes while the bot is on.</p>;
+  }
+  return (
+    <ul className="text-sm space-y-1" id="admin-homeroom-bot-queue">
+      {items.map((q) => (
+        <li key={q.id} className="flex flex-wrap items-center gap-2">
+          <span className={q.started_at ? AdminUI.badge.secondary : AdminUI.badge.default}>
+            {q.started_at ? 'running' : q.priority === 0 ? 'run now' : q.reason}
+          </span>
+          <span>{q.app_name}</span>
+          <span className={AdminUI.muted}>#{q.issue_number}</span>
+          {waitLine(q.waiting) ? (
+            <span className={AdminUI.muted} data-queue-waiting={q.waiting?.reason}>{waitLine(q.waiting)}</span>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -1464,21 +1510,7 @@ function HomeroomBotSection() {
                   {payload ? `${payload.queue.depth} waiting` : ''}
                 </span>
               </div>
-              {payload && payload.queue.items.length ? (
-                <ul className="text-sm space-y-1" id="admin-homeroom-bot-queue">
-                  {payload.queue.items.map((q) => (
-                    <li key={q.id} className="flex flex-wrap items-center gap-2">
-                      <span className={q.started_at ? AdminUI.badge.secondary : AdminUI.badge.default}>
-                        {q.started_at ? 'running' : q.priority === 0 ? 'run now' : q.reason}
-                      </span>
-                      <span>{q.app_name}</span>
-                      <span className={AdminUI.muted}>#{q.issue_number}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={AdminUI.muted}>Nothing queued. The queue refreshes from open requests every five minutes while the bot is on.</p>
-              )}
+              <QueueItems items={payload?.queue.items || []} />
             </div>
           </div>
           {canWrite ? (
@@ -1967,4 +1999,4 @@ const AdminHomeroomBot = {
 if (typeof window !== 'undefined') (window as any).AdminHomeroomBot = AdminHomeroomBot;
 
 // Exported for tests/admin-homeroom-bot.test.js, which renders them.
-export { AdminHomeroomBot, WorkingNow, HomeroomBotSection };
+export { AdminHomeroomBot, WorkingNow, QueueItems, HomeroomBotSection };
