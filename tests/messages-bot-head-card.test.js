@@ -108,6 +108,11 @@ test('a first version’s line is its project, and the maker’s hello stays bef
   assert.equal(botHead('**Todo List**\n\nx', { ...started, appName: 'Herbs' }), null, 'only the project its metadata names');
 });
 
+test('#4604: the hello after the tour names no project, so it draws no card', () => {
+  const meta = { kind: 'hello_tour', hello: dm.TOUR_HELLO, actions: dm.promptActions(dm.TOUR_PROMPTS), status: 'open' };
+  assert.equal(botHead(dm.TOUR_HELLO, meta), null, 'plain words, no head line');
+});
+
 test('a first version that went live with its Open button keeps the button and drops the line', () => {
   const live = { ...FIRST, kind: 'merged', actions: [{ id: 'open_app', label: 'Open Todo List', style: 'primary', type: 'open', target: '#app/todo-list-b91765/app' }] };
   const head = botHead('**Todo List**, its first version\n\nIt\'s live now. Open Todo List below to try it.', live);

@@ -104,7 +104,13 @@ test('B5: the hellos say what the bot does, in plain words', () => {
     ['ask-1', 'prompt', 'How long will this take?'], ['ask-2', 'prompt', 'What can I ask for?'], ['ask-3', 'prompt', 'How do I invite friends?'],
   ]);
   assert.deepEqual(dm.MEMBER_PROMPTS, ['What else can I ask for?', 'How long will this take?']);
-  for (const text of [dm.MAKER_HELLO, dm.memberHello('X'), ...dm.MAKER_PROMPTS, ...dm.MEMBER_PROMPTS]) assert.doesNotMatch(text, /—|homeroom_bot/);
+  for (const text of [dm.MAKER_HELLO, dm.memberHello('X'), ...dm.MAKER_PROMPTS, ...dm.MEMBER_PROMPTS, dm.TOUR_HELLO, ...dm.TOUR_PROMPTS]) {
+    assert.doesNotMatch(text, /—|homeroom_bot/);
+  }
+  // #4604: the hello after the tour: who it is, and what to ask it, short.
+  assert.equal(dm.TOUR_HELLO, 'Hi, I\'m Homeroom bot, the AI that builds things on Homeroom. Ask me here to build a change, '
+    + 'file an idea or fix a bug in any project you\'re in, and I\'ll tell you how it goes.');
+  assert.deepEqual(dm.TOUR_PROMPTS, ['What can I ask for?', 'How does the group decide?', 'How do I start a project?']);
 });
 
 test('B5: its name and its one hello, against the full PostgreSQL schema', { timeout: 180000 }, async (t) => {
@@ -273,6 +279,42 @@ test('B5: its name and its one hello, against the full PostgreSQL schema', { tim
     // Redeeming a link is what greets them.
     assert.match(read('src/services/community-invites.js'),
       /if \(status === 'joined'\) \{\n {6}appAccess\.invalidateVisibility\(invite\.app_id, invite\.slug\);\n[^\n]*\n {6}void require\('\.\/homeroom-bot-dm'\)\.greetJoiner\(pool, \{/);
+  });
+
+  await t.test('#4604: ending the tour greets once, only somebody the bot has not met, never a quiet test account', async () => {
+    const onboarding = require('../src/services/onboarding');
+    const mode = (value) => pool.query(
+      `INSERT INTO platform_settings (key, value) VALUES ('homeroom_bot_mode', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [value]);
+    const nina = await user('nina');
+    const tester = await user('tester_tour');
+    await pool.query('UPDATE users SET test_account_created_at = NOW() WHERE id = $1', [tester.id]);
+    await mode('off');
+    assert.equal(await dm.greetTourFinisher(pool, { userId: nina.id }), null, 'switched off: no hello it cannot keep');
+    await mode('live');
+    assert.equal(await dm.greetTourFinisher(pool, { userId: tester.id }), null, 'a test account hears nothing');
+    const sent = await dm.greetTourFinisher(pool, { userId: nina.id });
+    assert.ok(sent?.messageId);
+    const { rows: [msg] } = await pool.query('SELECT content, metadata FROM conversation_messages WHERE id = $1', [sent.messageId]);
+    assert.equal(msg.content, dm.TOUR_HELLO);
+    assert.equal(msg.metadata.homeroomBot.kind, 'hello_tour');
+    assert.equal(msg.metadata.homeroomBot.status, 'open', 'a hello they can reply to');
+    assert.equal(dm.momentOf(msg.metadata.homeroomBot), null, 'a hello rings nothing');
+    assert.deepEqual(msg.metadata.homeroomBot.actions.map((a) => a.label), dm.TOUR_PROMPTS);
+    const { rows: [hello] } = await pool.query('SELECT kind, message_id FROM homeroom_bot_hellos WHERE user_id = $1', [nina.id]);
+    assert.deepEqual(hello, { kind: 'tour', message_id: sent.messageId });
+    assert.equal(await dm.greetTourFinisher(pool, { userId: nina.id }), null, 'once, ever');
+    // Somebody greeted another way (the joiner above) is not greeted again.
+    const { rows: [tess] } = await pool.query("SELECT id FROM users WHERE username = 'tess'");
+    assert.equal(await dm.greetTourFinisher(pool, { userId: tess.id }), null, 'one hello per person, whichever it was');
+    // A test account made to receive the welcome DM is greeted like anyone.
+    await pool.query('UPDATE users SET test_account_welcome_dm = TRUE WHERE id = $1', [tester.id]);
+    assert.ok((await dm.greetTourFinisher(pool, { userId: tester.id }))?.messageId);
+    await mode('off');
+    // The first end of the tour is what greets, never a backfill.
+    const source = read('src/services/onboarding.js');
+    assert.match(source, /if \(marked && marked\.rowCount > 0 && ended !== 'backfill'\) \{\n {4}void require\('\.\/homeroom-bot-dm'\)\.greetTourFinisher\(pool, \{ userId \}\);/);
+    assert.equal(typeof onboarding.markTourDone, 'function');
   });
 
   await t.test('two claims at once greet once', async () => {

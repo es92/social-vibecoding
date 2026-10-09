@@ -31,9 +31,10 @@
  *     around it does, because each of them leaves the tour (a dialog, a new
  *     session) and a spotlight is not an instruction to press.
  *     ./tour-steps.ts carries the whole argument;
- *   * step 5 shuts the menu through `Improve.close()`, the controller's own
- *     close path and never a write into its DOM, then points at the Me tab,
- *     whose screen holds Settings, where the tour can be replayed.
+ *   * the steps after it shut the menu through `Improve.close()`, the
+ *     controller's own close path and never a write into its DOM, then point
+ *     at the Messages tab, where Homeroom bot is, and the Me tab, whose
+ *     screen holds Settings, where the tour can be replayed.
  *
  * ── The island rules, and how each is kept ────────────────────────────
  *
@@ -732,9 +733,9 @@ export function OnboardingTour() {
     if (panelOpenNow()) void Improve.close();
   }, [live, index]);
 
-  // Step 5 ends the arc by shutting the panel itself — and the app's menu with
-  // it, because the step that carries `closesPanel` spotlights a tab, and on a
-  // phone the menu's sheet is drawn over the tab bar, hiding the thing the
+  // The steps after the menu's end the arc by shutting the panel itself — and
+  // the app's menu with it, because a step that carries `closesPanel`
+  // spotlights a tab, and on a phone the menu's sheet is drawn over the tab bar, hiding the thing the
   // cut-out is drawn around.
   useEffect(() => {
     if (!live) return;

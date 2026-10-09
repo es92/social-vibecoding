@@ -1,5 +1,5 @@
 /**
- * The five steps of the welcome tour, as data.
+ * The six steps of the welcome tour, as data.
  *
  * Kept as a plain table with no React in it so the order, the wording, the
  * anchoring and the interaction rules can be asserted without rendering
@@ -185,8 +185,24 @@ export const TOUR_STEPS: readonly TourStep[] = [
     needsPanel: true,
   },
   {
+    // #4604: new people finished the tour without meeting Homeroom bot, the
+    // thing that builds what they ask for. This stop points at the Messages
+    // tab (the bottom bar on a phone, the rail from 768px up), where the
+    // bot's DM is the first row, and ending the tour is what has the bot
+    // say hello there (homeroom-bot-dm.js greetTourFinisher).
+    //
     // THE STEP THAT LEAVES THE MENU: the step before it points inside the
-    // menu, and the tab this one points at is behind it on a phone.
+    // menu, and the tab this one points at is behind it on a phone. Like
+    // every tab step it describes its target rather than asking for a press.
+    id: 'meet-bot',
+    title: 'Meet Homeroom bot',
+    body: 'Ask it to build a change, file an idea or fix a bug for you. Find it in Messages.',
+    targets: ['#platform-tab-messages'],
+    closesPanel: true,
+  },
+  {
+    // The menu is shut by the step before this one; the flag stays so Back
+    // and a resume never land here with the sheet over the tab bar.
     //
     // `#app-switcher-btn` until #2718, which retired the chip. Settings is a
     // row of the Profile screen the Me tab lands on, so the tab is where this
@@ -260,7 +276,7 @@ export function nextOpensMenu(index: number): boolean {
   return stepAt(index).advanceOn === 'menu-open';
 }
 
-/** The counter the card prints, e.g. "3 of 5". */
+/** The counter the card prints, e.g. "3 of 6". */
 export function stepCounter(index: number): string {
   return `${clampIndex(index) + 1} of ${TOUR_LENGTH}`;
 }

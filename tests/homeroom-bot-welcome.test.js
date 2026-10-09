@@ -40,7 +40,7 @@ test('the leader starts it beside the other welcome, and stops it on the way dow
   const server = read('server.js');
   assert.match(server, /require\('\.\/src\/services\/welcome-dm'\)\.start\(config\);[\s\S]{0,400}require\('\.\/src\/services\/homeroom-bot-welcome'\)\.start\(config\);/);
   assert.match(server, /require\('\.\/src\/services\/homeroom-bot-welcome'\)\.stop\(\)/);
-  assert.match(read('src/db/schema.sql'), /CHECK \(kind IN \('maker', 'member', 'joiner', 'welcome', 'known'\)\)/);
+  assert.match(read('src/db/schema.sql'), /CHECK \(kind IN \('maker', 'member', 'joiner', 'welcome', 'tour', 'known'\)\)/);
 });
 
 test('the welcome, against the full PostgreSQL schema', { timeout: 180000 }, async (t) => {

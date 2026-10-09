@@ -3353,6 +3353,66 @@ async function greetJoiner(pool, { user, app }) {
   }
 }
 
+// #4604: somebody who finishes the welcome tour (or skips it) meets the bot
+// in Messages, once, if it builds for them and it has not met them yet: the
+// tour's "Meet Homeroom bot" stop points at Messages, and this is what they
+// find there. Kept short: who it is, and what to ask it.
+const TOUR_HELLO = 'Hi, I\'m Homeroom bot, the AI that builds things on Homeroom. Ask me here to build a change, '
+  + 'file an idea or fix a bug in any project you\'re in, and I\'ll tell you how it goes.';
+const TOUR_PROMPTS = Object.freeze(['What can I ask for?', 'How does the group decide?', 'How do I start a project?']);
+
+/**
+ * #4604: greet somebody who has just ended the welcome tour
+ * (onboarding.js markTourDone), once ever: their one hello (claimHello, as a
+ * 'tour'), so somebody already greeted as a maker, member, joiner or in the
+ * welcome sweep, or written to before hellos existed, hears nothing. Only
+ * when the bot is on and builds for them, as greetJoiner, and never a test
+ * account unless it was made to receive the welcome DM
+ * (test_account_welcome_dm), as the welcome sweep and the welcome DM skip
+ * them. Quiet: it rings nothing. Never throws.
+ */
+async function greetTourFinisher(pool, { userId }) {
+  try {
+    if (!userId) return null;
+    const settings = await settingsModule().readSettings(pool);
+    if (settings.mode === 'off') return null;
+    const { rows } = await pool.query(
+      `SELECT id, username, is_synthetic, (has_platform_access OR private_member_since IS NOT NULL) AS has_platform_access,
+              is_admin, (test_account_created_at IS NOT NULL AND NOT test_account_welcome_dm) AS quiet_test
+         FROM users WHERE id = $1 AND anonymised_at IS NULL`, [userId],
+    );
+    const person = rows[0];
+    if (!person || person.quiet_test || !hasBot(settings, {
+      username: person.username, isSynthetic: !!person.is_synthetic,
+      hasPlatformAccess: !!person.has_platform_access, isAdmin: !!person.is_admin,
+    })) return null;
+    const bot = await botAccount(pool);
+    if (!bot) return null;
+    if (!await claimHello(pool, { userId, botId: bot.id, kind: 'tour' })) return null;
+    let sent;
+    try {
+      sent = await sendDm(pool, {
+        bot,
+        userId,
+        idempotencyKey: `hrbot-tour-${userId}`,
+        content: TOUR_HELLO,
+        metadata: { kind: 'hello_tour', hello: TOUR_HELLO, actions: promptActions(TOUR_PROMPTS), status: 'open' },
+      });
+    } catch (err) {
+      // Give the claim back, so a later tour end can try again.
+      await pool.query(
+        "DELETE FROM homeroom_bot_hellos WHERE user_id = $1 AND kind = 'tour' AND message_id IS NULL", [userId],
+      ).catch(() => {});
+      throw err;
+    }
+    if (sent) await noteHelloSent(pool, userId, sent.messageId);
+    return sent;
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not greet a tour finisher', { userId, err: err.message });
+    return null;
+  }
+}
+
 /** Pure: `labels` as prompt buttons (types.ts HomeroomBotAction), at most three. */
 function promptActions(labels) {
   return labels.slice(0, 3).map((label, i) => ({ id: `ask-${i + 1}`, label, style: 'secondary', type: 'prompt' }));
@@ -3942,6 +4002,9 @@ module.exports = {
   askersOf,
   MAKER_HELLO,
   joinerHello,
+  TOUR_HELLO,
+  TOUR_PROMPTS,
+  greetTourFinisher,
   greetJoiner,
   MAKER_PROMPTS,
   MEMBER_PROMPTS,

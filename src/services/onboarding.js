@@ -712,7 +712,7 @@ function parseTourEnd(body) {
 
 async function markTourDone(pool, userId, body) {
   const { ended, step } = parseTourEnd(body);
-  await pool.query(
+  const marked = await pool.query(
     `UPDATE users
         SET tour_done_at = NOW(),
             getting_started_seen = CASE WHEN $2::text IS NULL THEN getting_started_seen
@@ -721,6 +721,13 @@ async function markTourDone(pool, userId, body) {
       WHERE id = $1 AND tour_done_at IS NULL`,
     [userId, ended, step]
   );
+  // #4604: the tour's last stop but one points at Messages, where Homeroom
+  // bot says hello, once. Only on the first end (a replay greets nobody),
+  // and not on a backfill, which is a browser reporting a tour ended long
+  // ago. greetTourFinisher keeps the once-ever rule and never throws.
+  if (marked && marked.rowCount > 0 && ended !== 'backfill') {
+    void require('./homeroom-bot-dm').greetTourFinisher(pool, { userId });
+  }
   return { ok: true };
 }
 
