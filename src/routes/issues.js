@@ -1236,7 +1236,9 @@ function issueRoutes(config) {
   // B8: "Ask Homeroom bot to build this" on a request's page. It goes first
   // in the bot's queue, paid from the asker's building time; the request
   // stays whoever's it is (services/homeroom-bot-dm.js askBotToBuild). A
-  // member's own tap only: same-origin, and on no connector's list.
+  // member's own tap only: same-origin, and on no connector's list. #4530:
+  // 409 `awaiting_reply` while the bot is waiting on an answer there (the
+  // repository, to read the issue's comments for one).
   //
   //   POST /api/apps/:slug/issues/:number/homeroom-bot → { ok, typicalMinutes, mine }
   router.post('/api/apps/:slug/issues/:number/homeroom-bot', issueKindLimiter, sameOriginBrowserOnly,
@@ -1246,7 +1248,9 @@ function issueRoutes(config) {
         if (!Number.isInteger(n) || n <= 0) return res.status(400).json({ error: 'Invalid request number' });
         // The demo's door decides nothing.
         if (IS_STAGING && req.query.demo === '1') return res.json({ ok: true, demo: true, typicalMinutes: 8, mine: true });
-        const app = await appAccess.getAppForUser(pool, req.params.slug, req.user, 'view', appAccess.ACCESS_COLUMNS);
+        const app = await appAccess.getAppForUser(
+          pool, req.params.slug, req.user, 'view', `${appAccess.ACCESS_COLUMNS}, repo_url`,
+        );
         if (!app) return res.status(404).json({ error: 'App not found' });
         const out = await require('../services/homeroom-bot-dm').askBotToBuild(pool, { app, user: req.user, issueNumber: n });
         if (!out.ok) return res.status(out.status || 400).json({ error: out.error, ...(out.code ? { code: out.code } : {}) });
@@ -2185,6 +2189,11 @@ function issueRoutes(config) {
       if (!botDoor && IS_STAGING && req.query.demo === '1' && req.query.bot === '1') {
         botDoor = { typicalMinutes: botDm.TYPICAL_BUILD_MINUTES, demo: true };
       }
+      // #4530: the requests the bot is waiting on people about, for a viewer
+      // it builds for: their card answers the bot instead of asking it again.
+      const botWaiting = botDoor && !botDoor.demo
+        ? await botDm.botWaitingByIssue(pool, app.id, (result.issues || []).filter((i) => !botByNumber.has(i.number)))
+        : new Map();
 
       const issues = (result.issues || []).map((issue) => {
         const b = byNumber.get(issue.number);
@@ -2211,6 +2220,9 @@ function issueRoutes(config) {
           // ({ what, since }), or null. Its own field, like `headless`: the
           // bot is never `in_progress`.
           bot: botAsked(issue.number),
+          // #4530: the bot's note there that nobody has answered yet
+          // ({ kind: 'question' | 'person' | 'empty', messageId }), or null.
+          botAwaits: botWaiting.get(issue.number) || null,
           // #287: per-viewer proposal session id, or null. Drives the
           // "Create proposal" → "Create new proposal" swap on the issue row.
           myPrSessionId: myPrSessionByNumber.get(issue.number) || null,
@@ -2393,6 +2405,16 @@ function issueRoutes(config) {
         // marks, and only where no real bot work claimed the number.
         for (const issue of issues) {
           if (issue.number === 900018 && !issue.bot) issue.bot = stagingMockBotWork();
+        }
+        // #4530: and one it asked a question on that nobody has answered:
+        // 900001, where its door is drawn (?demo=1&bot=1). Its card offers
+        // to answer the bot instead of asking it again.
+        if (botDoor && botDoor.demo) {
+          for (const issue of issues) {
+            if (issue.number === 900001 && !issue.bot && !issue.botAwaits) {
+              issue.botAwaits = { kind: 'question', messageId: null };
+            }
+          }
         }
       }
 
@@ -2598,6 +2620,10 @@ function issueRoutes(config) {
         }
         if (!bot && mock && number === 900018) bot = stagingMockBotWork();
       }
+      // #4530: and its unanswered note there, as the list says it.
+      const botAwaits = issue.state !== 'closed' && !bot && issue !== mock
+        ? (await require('../services/homeroom-bot-dm').botWaitingByIssue(pool, app.id, [issue])).get(number) || null
+        : null;
       // #4244: a closed issue no merged change closed was closed by a
       // close_issue vote, or an admin forcing one through. The applied row's
       // audit payload says which, so the page's status band can too.
@@ -2636,6 +2662,7 @@ function issueRoutes(config) {
           headless: null,
           in_progress: null,
           bot,
+          botAwaits,
           myPrSessionId: null,
           addressed_by: addressed,
           closed_via: closedVia,

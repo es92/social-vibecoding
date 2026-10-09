@@ -111,6 +111,54 @@ test('its own comment is its own even when the login lookup fails (#3509)', asyn
   assert.deepEqual(out, { advanced: false, reason: 'someone_replied' });
 });
 
+test('#4530: the stamp its own comment puts on the issue is seen too, read fresh before the comments', async () => {
+  // homestead #35: the bot commented at 17:00:05, GitHub stamped the issue's
+  // updated_at 17:00:06, and the run recorded 17:00:05. Every refresh then
+  // read its own note as a change ('changed:github') and said it again.
+  const since = '2026-09-25T17:00:00Z';
+  const own = { author: 'usernode-bot', createdAt: '2026-09-25T17:00:05Z' };
+  const order = [];
+  const updates = [];
+  const pool = { async query(sql, params) { updates.push({ sql: String(sql), params }); return { rows: [] }; } };
+  const github = (updatedAt, read = { comments: [own] }) => ({
+    getBotUsername: async () => 'usernode-bot',
+    async fetchPublicIssue(owner, repo, n, opts) { order.push(['issue', n, opts]); return { issue: { number: n, updatedAt } }; },
+    async fetchIssueComments() { order.push(['comments']); return read; },
+  });
+  const threadContext = { async loadIssueThread() { return { messages: [] }; } };
+  const advance = (gh) => live.advanceSeen({
+    pool, github: gh, threadContext, app: APP, repo: REPO, issueNumber: 35, runId: 901, since, postedAt: [own.createdAt],
+  });
+  const out = await advance(github('2026-09-25T17:00:06Z'));
+  assert.deepEqual(out, { advanced: true, seen: '2026-09-25T17:00:06.000Z' });
+  assert.deepEqual(order, [['issue', 35, { fresh: true }], ['comments']],
+    'the issue first, uncached: a person whose comment moved it is in the list read after it');
+  assert.equal(bot.classifyIssue({
+    issue: { number: 35, state: 'open', createdAt: '2026-09-20T00:00:00Z', updatedAt: '2026-09-25T17:00:06Z' },
+    lastRun: { thread_seen_at: out.seen },
+  }).reason, 'unchanged', 'so the next refresh finds nothing new');
+
+  // A stamp well after its comment is somebody else's doing (an edit, a
+  // label), and is left to be read.
+  const edited = await advance(github('2026-09-25T17:09:00Z'));
+  assert.deepEqual(edited, { advanced: true, seen: '2026-09-25T17:00:05.000Z' });
+  assert.equal(bot.classifyIssue({
+    issue: { number: 35, state: 'open', createdAt: '2026-09-20T00:00:00Z', updatedAt: '2026-09-25T17:09:00Z' },
+    lastRun: { thread_seen_at: edited.seen },
+  }).reason, 'changed');
+  // So is one when the comments could not all be read: the person whose
+  // comment moved it may be the one missing.
+  for (const read of [{ comments: [own], truncated: true }, { comments: [], note: 'rate limited' }]) {
+    assert.deepEqual(await advance(github('2026-09-25T17:00:06Z', read)), { advanced: true, seen: '2026-09-25T17:00:05.000Z' });
+  }
+  // And a person's comment still leaves the issue to be read again.
+  const replied = await advance(github('2026-09-25T17:00:07Z', {
+    comments: [own, { author: 'alice', createdAt: '2026-09-25T17:00:07Z' }],
+  }));
+  assert.deepEqual(replied, { advanced: false, reason: 'someone_replied' });
+  assert.equal(live.OWN_STAMP_SLACK_MS, 60 * 1000);
+});
+
 test('its Homeroom posts are system messages, which the queue never counts as activity', () => {
   assert.match(LIVE_SRC, /msgType = 'system'/, 'posts default to system messages');
   const activity = BOT_SRC.slice(BOT_SRC.indexOf('async function threadActivityByIssue'));

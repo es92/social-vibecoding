@@ -478,6 +478,33 @@ test('a live build that pushed nothing says so on the issue, instead of going si
   assert.ok(sessionUpdates(pool).some((c) => /'archived'/.test(c.sql)));
 });
 
+test('#4553: what a build finished after a restart says is recorded as seen, so it is not built again for it', async (t) => {
+  // Run 1278's build "couldn't finish (finished after a restart)"; nothing
+  // recorded that note as seen, so the next refresh read it as a change and
+  // run 1291 built the request again from scratch, with nobody writing.
+  stubLive();
+  const realAdvance = live.advanceSeen;
+  const seen = [];
+  live.advanceSeen = async (args) => { seen.push(args); return { advanced: true }; };
+  t.after(() => { live.advanceSeen = realAdvance; });
+  live.post = async ({ kind, text }) => { liveCalls.push(['post', kind, text, null]); return { githubCreatedAt: '2026-10-09T12:00:05Z' }; };
+  journalTail = async () => ({ pushOk: false, ahead: 0, exitCode: 0 });
+  const session = botSession();
+  const pool = makePool({ session, run: null, liveRun: LIVE_RUN });
+  const query = pool.query.bind(pool);
+  // What the run had seen when the restart caught its build.
+  pool.query = async (sql, params) => (/SELECT COALESCE\(thread_seen_at, created_at\) AS since FROM homeroom_bot_runs WHERE id = \$1/.test(String(sql))
+    ? { rows: [{ since: new Date('2026-10-09T11:40:00Z') }] } : query(sql, params));
+  await adopt(pool, session);
+  assert.ok(liveCalls.some((c) => c[0] === 'post' && c[1] === 'build_failed'), 'the note is posted');
+  assert.equal(seen.length, 1, 'and recorded as seen, as the live path records it');
+  assert.deepEqual(
+    { runId: seen[0].runId, issueNumber: seen[0].issueNumber, since: seen[0].since, postedAt: seen[0].postedAt, repo: seen[0].repo },
+    { runId: 950, issueNumber: 12, since: '2026-10-09T11:40:00.000Z', postedAt: ['2026-10-09T12:00:05Z'], repo: { owner: 'usernode-bot', repo: 'todo' } },
+    'from what the run had seen, so a person who wrote while it built is still read',
+  );
+});
+
 const SPEC_TEXT = '# Spec\n\n## User-facing changes\n\nx\n\n## Technical implementation\n\ny';
 const resumes = (pool) => pool.calls.filter((c) => /SET build_spec_md = \$2, build_cost_usd = \$3, build_session_id = NULL/.test(c.sql));
 

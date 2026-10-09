@@ -326,6 +326,10 @@ const CHECKS_REASON = 'checks_failing';
 // request while it ran (interruptRead). It was already told the bot is
 // looking, and it is never started over a second time.
 const READ_AGAIN_REASON = 'read_again';
+// The queue reason of a request somebody asked the bot to build from its
+// page, or just filed on a project it builds on (homeroom-bot-dm.js
+// askBotToBuild, noteRequestFiled).
+const ASKED_REASON = 'asked';
 // Rows the bot queued for itself rather than for anything on the issue: a
 // restart's (#3471), a failing check's, and a read started over. The issue
 // has not changed since the bot last looked, which is exactly what a
@@ -3472,6 +3476,12 @@ async function runTriage(pool, config, {
         // only for the bot; everything else speaks as it did. The comments
         // the read fetched, so a mention on the GitHub issue counts too.
         relook: item.reason === 'changed' || item.reason === READ_AGAIN_REASON,
+        // And a look somebody asked for (Ask Homeroom bot to build this, or
+        // a request just filed) does not say again the note the bot is still
+        // waiting on: the button is refused then (homeroom-bot-dm.js
+        // askBotToBuild), and this holds the repeat if it got through. A
+        // request's first look has no note before it, and speaks.
+        askedLook: item.reason === ASKED_REASON,
         comments,
         model: stageModel(settings, config, 'build'), specModel: stageModel(settings, config, 'spec'),
         quietHold: item.reason === APP_AGAIN_REASON,
@@ -4930,9 +4940,15 @@ async function completeRecoveredLive({ pool, config = {}, sessionId, deps = {} }
     // (isRecoveredBotSession checks the name and the synthetic flag).
     const bot = { id: session.user_id, username: live.BOT_USERNAME };
     const liveD = liveDeps(deps);
+    // #4553: what it posts, so its own note is not read back as a change
+    // (advanceSeen below, as the live path does). Without it, a build that
+    // "couldn't finish (finished after a restart)" left that note newer than
+    // anything the run had seen, and the next refresh built the request
+    // again from scratch ('changed:github', run 1278 then 1291).
+    const postedAt = [];
     const say = liveSayer({
       pool, github, ws: liveD.ws, app, repo, issueNumber: plan.issueNumber, issue, runId: plan.runId, bot,
-      botLogin: await live.botUsernameOf(github), notifications: deps.notifications || null,
+      botLogin: await live.botUsernameOf(github), notifications: deps.notifications || null, postedAt,
     });
     const note = ' (finished after a restart)';
     // A failed turn is a failed build here as on the live path.
@@ -5077,6 +5093,19 @@ async function completeRecoveredLive({ pool, config = {}, sessionId, deps = {} }
     const acted = await announceBuilt({
       pool, ws: liveD.ws, app, bot, issueNumber: plan.issueNumber, runId: plan.runId, built, say, domain: liveD.domain,
     });
+    // #4553: the read that started this build is gone with the restart, so
+    // what the run last recorded as seen stands for it: a person who wrote
+    // after that still has the request read again.
+    const { rows: [seenRow] = [] } = await pool.query(
+      'SELECT COALESCE(thread_seen_at, created_at) AS since FROM homeroom_bot_runs WHERE id = $1', [plan.runId],
+    ).catch(() => ({ rows: [] }));
+    const since = seenRow?.since ? new Date(seenRow.since).toISOString() : null;
+    if (since) {
+      await live.advanceSeen({
+        pool, github, threadContext: deps.threadContext || require('./thread-context'), app, repo,
+        issueNumber: plan.issueNumber, runId: plan.runId, since, postedAt,
+      }).catch((err) => log.warn('homeroom-bot', 'Could not record what the bot has seen', { err: err.message }));
+    }
     log.info('homeroom-bot', 'Finished a live build a restart interrupted', {
       app: app.slug, issueNumber: plan.issueNumber, sessionId, acted,
     });
@@ -6118,7 +6147,7 @@ async function announceBuilt({ pool, ws, app, bot, issueNumber, runId, built, sa
 async function actOnVerdict({
   pool, config, bot, app, repo, issueNumber, issue, parsed, capSuppressed, runId,
   seed, seedReadAt, postedAt, turnBudgetMs, model, specModel = null, botLogin = null, quietHold = false,
-  proposalCeiling = PROPOSALS_PER_APP_CAP, firstVersion = false, relook = false, comments = [], deps,
+  proposalCeiling = PROPOSALS_PER_APP_CAP, firstVersion = false, relook = false, askedLook = false, comments = [], deps,
 }) {
   const { github, ws } = deps;
   const say = liveSayer({
@@ -6131,9 +6160,16 @@ async function actOnVerdict({
   // has addressed the bot since its last note: mentioned it, replied to one
   // of its messages, or answered a question it asked. People working
   // something out among themselves are not for it. Fails open, and never
-  // holds a ready verdict or a note a cap is already quiet about.
-  const gate = relook && !capSuppressed && addressedMod().NOTE_KINDS.includes(parsed.verdict)
-    ? await addressedMod().shouldSpeak(pool, { appId: app.id, issueNumber, botId: bot.id, comments, botLogin })
+  // holds a ready verdict or a note a cap is already quiet about. A look
+  // somebody asked for (`askedLook`) is held exactly when the button that
+  // asks is refused (waitingOnly, homeroom-bot-addressed.js waitingOn): only
+  // while the bot's last word there is itself one of those notes (after a
+  // failed build or a held verdict, asking is what brings it back), and an
+  // edit of the request since counts as news.
+  const gate = (relook || askedLook) && !capSuppressed && addressedMod().NOTE_KINDS.includes(parsed.verdict)
+    ? await addressedMod().shouldSpeak(pool, {
+      appId: app.id, issueNumber, botId: bot.id, comments, botLogin, waitingOnly: !relook, updatedAt: issue?.updatedAt || null,
+    })
     : { speak: true };
   if (!gate.speak) {
     log.info('homeroom-bot', 'Live note not repeated: nobody addressed the bot', {

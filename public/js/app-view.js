@@ -19152,8 +19152,13 @@ const AppView = {
       extra.push({ t: 'note', key: 'work', text: workState.note, workState: workState.key });
     }
     // B8: under the bot's button on the request's page, how long it takes.
+    // #4530: or, while the bot is waiting on an answer there, what for.
     if (noNav && !closed && !issue.bot && AppView._botDoor() && !AppView.readOnly) {
-      extra.push({ t: 'note', key: 'bot-door', text: AppView._botDoorHint(AppView._botDoor()) });
+      const waiting = AppView._botWaiting(issue);
+      extra.push({
+        t: 'note', key: 'bot-door',
+        text: waiting ? AppView._botWaitingHint(waiting) : AppView._botDoorHint(AppView._botDoor()),
+      });
     }
     // Topic-view-only admin escape hatch: the live claimer list with a
     // per-claim clear control, so a stuck claim can be removed without SQL.
@@ -19344,6 +19349,18 @@ const AppView = {
     // building it yourself is the first row of its ≡ (_issueMenuItems).
     const door = AppView._botDoor();
     if (door) {
+      // #4530: not while it is waiting on an answer here. Asking read the
+      // request again and posted the same question again (the server now
+      // refuses it, 409 awaiting_reply); answering is what moves it on.
+      const waiting = AppView._botWaiting(issue);
+      if (waiting) {
+        return {
+          key: 'primary', cls: 'gc-vote-btn',
+          label: waiting.kind === 'question' ? 'Answer Homeroom bot\'s question' : 'Reply to Homeroom bot',
+          title: AppView._botWaitingHint(waiting),
+          act: { fn: 'answerBotOnRequest', args: [n, Number(waiting.messageId) || 0, noNav ? 1 : 0] },
+        };
+      }
       return {
         key: 'primary', cls: 'gc-vote-btn', label: 'Ask Homeroom bot to build this',
         title: AppView._botDoorHint(door),
@@ -19431,6 +19448,52 @@ const AppView = {
   },
 
   /**
+   * #4530: the bot's note on this request that nobody has answered yet
+   * (`issue.botAwaits`, routes/issues.js: { kind, messageId }), or null.
+   */
+  _botWaiting(issue) {
+    const w = issue && issue.botAwaits;
+    return w && typeof w === 'object' && ['question', 'person', 'empty'].includes(w.kind) ? w : null;
+  },
+
+  /** #4530: the line under "Answer Homeroom bot's question": what it waits for. */
+  _botWaitingHint(waiting) {
+    if (waiting.kind === 'question') return 'Homeroom bot asked a question here. Answer it, and it reads the request again.';
+    if (waiting.kind === 'person') return 'Homeroom bot said a person needs to decide this one. Reply to it once that is settled, and it reads the request again.';
+    return 'Homeroom bot found nothing to build here yet. Reply to it with more to go on, and it reads the request again.';
+  },
+
+  /**
+   * #4530: "Answer Homeroom bot's question" (or "Reply to Homeroom bot"):
+   * the request's discussion, with a Reply to the bot's note staged in its
+   * composer, so what the person writes is for the bot (homeroom-bot-
+   * addressed.js counts a Reply to its message). From the board it opens
+   * the request first. The note arrives with the discussion's first page,
+   * a moment after the page paints; when it does not (or none is
+   * recorded), the box starts with @homeroom_bot, which counts the same.
+   */
+  async answerBotOnRequest(issueNumber, messageId, onPage) {
+    const n = Number(issueNumber);
+    if (!Number.isInteger(n) || n <= 0) return;
+    if (!onPage) await AppView.openTopic('issue', n);
+    const id = Number(messageId) || 0;
+    const chat = typeof GroupChat !== 'undefined' ? GroupChat : null;
+    const staged = () => !!(chat && chat.replyDraft && Number(chat.replyDraft.refMsgId) === id);
+    for (let i = 0; id > 0 && chat && typeof chat.replyToMessage === 'function' && i < 8; i += 1) {
+      chat.replyToMessage(id, 'thread');
+      if (staged()) return;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    const input = document.getElementById('gc-thread-input');
+    if (!input) return;
+    if (!String(input.value || '').trim()) {
+      input.value = '@homeroom_bot ';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    input.focus();
+  },
+
+  /**
    * B8: "Ask Homeroom bot to build this". It goes first in the bot's queue,
    * paid from the viewer's building time, and its card arrives in the chat
    * of whoever it is for; the page shows the bot on it at the next read.
@@ -19448,6 +19511,9 @@ const AppView = {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         PlatformUI.toast(data.error || `Couldn't ask Homeroom bot just now (HTTP ${resp.status}).`);
+        // #4530: it is waiting on an answer this page did not know about:
+        // read again, so the card offers to answer it instead.
+        if (data.code === 'awaiting_reply') AppView.refreshDevData('issue');
         return;
       }
       PlatformUI.toast(data.mine

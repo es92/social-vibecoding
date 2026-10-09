@@ -301,6 +301,40 @@ test('fetchPublicIssue serves a cached open issue without a network call, full b
   }
 });
 
+test('fetchPublicIssue { fresh: true } asks GitHub even with the issue cached (#4530)', async () => {
+  // The Homeroom bot reads the issue's updated_at right after commenting on
+  // it (homeroom-bot-live.js advanceSeen); the cached list still has the
+  // time from before its comment.
+  const origFetch = global.fetch;
+  try {
+    const calls = stubFetch([fakeIssue(31, 'cached', '2026-06-09T00:00:00Z')]);
+    await github.fetchPublicIssues('StampOwner', 'stamp-repo'); // warm the cache
+    global.fetch = async (url) => {
+      calls.push(String(url));
+      return {
+        ok: true, status: 200, headers: { get: () => null },
+        json: async () => fakeIssue(31, 'cached', '2026-06-09T00:00:07Z'),
+      };
+    };
+    assert.strictEqual((await github.fetchPublicIssue('StampOwner', 'stamp-repo', 31)).issue.updatedAt,
+      '2026-06-09T00:00:00Z', 'the cache answers an ordinary read');
+    assert.strictEqual(calls.length, 1);
+    const res = await github.fetchPublicIssue('StampOwner', 'stamp-repo', 31, { fresh: true });
+    assert.strictEqual(calls.length, 2);
+    assert.ok(calls[1].endsWith('/repos/StampOwner/stamp-repo/issues/31'));
+    assert.strictEqual(res.issue.updatedAt, '2026-06-09T00:00:07Z');
+
+    // Rate limited, a fresh read answers nothing rather than the cached copy.
+    global.fetch = async () => ({
+      ok: false, status: 429, headers: { get: () => null }, json: async () => ({}),
+    });
+    assert.deepStrictEqual(await github.fetchPublicIssue('StampOwner', 'stamp-repo', 31, { fresh: true }),
+      { issue: null, note: 'rate limited' });
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+
 test('fetchPublicIssue falls through to the single-issue endpoint on a cache miss', async () => {
   const origFetch = global.fetch;
   try {

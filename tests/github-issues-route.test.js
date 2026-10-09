@@ -360,6 +360,31 @@ test('#17: staging gives mock 900018, and only it, a synthetic bot build; produc
   }
 });
 
+test('#4530: the bot\'s demo door draws one request it waits on an answer for; nothing else, and never in production', async () => {
+  const staging = await startStagingServer();
+  try {
+    const port = staging.address().port;
+    const list = async (qs) => new Map((await (await realFetch(`http://127.0.0.1:${port}/api/apps/demo/github-issues${qs}`)).json())
+      .issues.map((i) => [i.number, i]));
+    const drawn = await list('?demo=1&bot=1');
+    assert.deepEqual(drawn.get(900001).botAwaits, { kind: 'question', messageId: null });
+    for (const [n, issue] of drawn) {
+      if (n !== 900001) assert.strictEqual(issue.botAwaits, null, `#${n} is not waited on`);
+    }
+    assert.ok([...(await list('?demo=1')).values()].every((i) => i.botAwaits === null), 'not without the door');
+  } finally {
+    staging.close();
+  }
+  const prod = await startServer();
+  try {
+    const port = prod.address().port;
+    const res = await realFetch(`http://127.0.0.1:${port}/api/apps/demo/github-issues?demo=1&bot=1`);
+    assert.ok((await res.json()).issues.every((i) => i.botAwaits === null), 'production synthesizes nothing');
+  } finally {
+    prod.close();
+  }
+});
+
 test('staging does not clobber a real headless row on a mock number', async () => {
   poolQueryHandler = async (sql) => {
     const s = String(sql);

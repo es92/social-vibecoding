@@ -165,6 +165,68 @@ test('B8: filing, against the full PostgreSQL schema', { timeout: 180000 }, asyn
     assert.equal((await dm.askBotToBuild(pool, { app: live, user: sam, issueNumber: 21 })).status, 403);
   });
 
+  await t.test('#4530: not while the bot waits on an answer there; once somebody answers, or edits the request, it goes', async () => {
+    const live = { id: plantPal.id, slug: plantPal.slug, name: plantPal.name, repo_url: 'https://github.com/usernode-bot/plant-pal' };
+    const { rows: [homeroomBot] } = await pool.query("SELECT id FROM users WHERE username = 'homeroom_bot'");
+    // The bot asked on the request at 9:02, as live.post leaves it: its row,
+    // its GitHub comment's id and its line in the discussion.
+    const askedOn = async (n) => {
+      const { rows: [line] } = await pool.query(
+        `INSERT INTO chat_messages (app_id, user_id, content, msg_type, thread_type, thread_ref, created_at)
+         VALUES ($1, $2, 'Which days should it remind you on?', 'message', 'issue', $3, '2026-10-09T09:02:00Z') RETURNING id`,
+        [plantPal.id, homeroomBot.id, n],
+      );
+      await pool.query(
+        `INSERT INTO homeroom_bot_posts (app_id, issue_number, kind, created_at, github_comment_id, thread_message_id)
+         VALUES ($1, $2, 'question', '2026-10-09T09:02:00Z', $3, $4)`,
+        [plantPal.id, n, 9000 + n, line.id],
+      );
+      return line.id;
+    };
+    const own = (n) => ({ id: 9000 + n, author: 'usernode-bot[bot]', body: 'Which days?', createdAt: '2026-10-09T09:02:01Z' });
+    const github = (comments, updatedAt = '2026-10-09T09:02:02Z') => ({
+      isEnabled: () => true,
+      parseGithubUrl: require('../src/services/github').parseGithubUrl,
+      async fetchPublicIssue(_o, _r, n) { return { issue: { number: n, state: 'open', updatedAt } }; },
+      async fetchIssueComments() { return { comments, truncated: false }; },
+      async getBotUsername() { return 'usernode-bot'; },
+    });
+    const ask = (n, gh) => dm.askBotToBuild(pool, { app: live, user: maya, issueNumber: n, deps: { github: gh } });
+    const queued = async (n) => (await pool.query(
+      'SELECT reason FROM homeroom_bot_queue WHERE app_id = $1 AND issue_number = $2', [plantPal.id, n],
+    )).rows.map((r) => r.reason);
+
+    const line = await askedOn(30);
+    const refused = await ask(30, github([own(30)]));
+    assert.deepEqual([refused.ok, refused.status, refused.code], [false, 409, 'awaiting_reply']);
+    assert.equal(refused.error, dm.WAITING_TEXT.question);
+    assert.match(refused.error, /waiting for an answer/);
+    assert.deepEqual(await queued(30), [], 'nothing is queued, so the question is not asked again');
+    // The request list knows it too, for the card.
+    const waits = await dm.botWaitingByIssue(pool, plantPal.id, [{ number: 30, updatedAt: '2026-10-09T09:02:02Z' }, { number: 20 }]);
+    assert.deepEqual([...waits], [[30, { kind: 'question', messageId: line }]]);
+
+    // Answered on the GitHub issue only.
+    const there = await ask(30, github([own(30), { id: 9100, author: 'maya-gh', body: 'Sundays', createdAt: '2026-10-09T09:10:00Z' }]));
+    assert.equal(there.ok, true);
+    assert.deepEqual(await queued(30), ['asked']);
+
+    // Answered in the discussion: GitHub is not even read.
+    await askedOn(31);
+    await pool.query(
+      `INSERT INTO chat_messages (app_id, user_id, content, msg_type, thread_type, thread_ref, created_at)
+       VALUES ($1, $2, 'Sundays', 'message', 'issue', 31, '2026-10-09T09:10:00Z')`,
+      [plantPal.id, maya.id],
+    );
+    const unread = { isEnabled: () => true, parseGithubUrl: require('../src/services/github').parseGithubUrl,
+      async fetchPublicIssue() { throw new Error('not read'); }, async fetchIssueComments() { throw new Error('not read'); } };
+    assert.equal((await ask(31, unread)).ok, true);
+
+    // The request edited since the question (its updated_at, past every comment).
+    await askedOn(32);
+    assert.equal((await ask(32, github([own(32)], '2026-10-09T09:40:00Z'))).ok, true);
+  });
+
   await t.test('how long it usually takes is the median of its own record, once there is enough of it', async () => {
     assert.equal(await dm.typicalMinutes(pool), dm.TYPICAL_BUILD_MINUTES, 'too little record');
     for (const minutes of [4, 5, 6, 12, 30]) {

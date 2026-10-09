@@ -2546,7 +2546,12 @@ async function refreshPublicIssues(owner, repo) {
 // shape or null, with `note` naming why ('bad issue number',
 // 'not found', 'not an issue (pull request)', 'rate limited',
 // 'fetch failed').
-async function fetchPublicIssue(owner, repo, number) {
+//
+// `fresh` skips the cache, the overlay and the stale fallback: the issue as
+// GitHub has it now, or none. The Homeroom bot reads its updated_at right
+// after commenting (homeroom-bot-live.js advanceSeen), and a cached copy
+// up to five minutes old would answer with the time before its comment.
+async function fetchPublicIssue(owner, repo, number, { fresh = false } = {}) {
   const n = Number(number);
   if (!owner || !repo || !Number.isInteger(n) || n <= 0) {
     return { issue: null, note: 'bad issue number' };
@@ -2561,7 +2566,7 @@ async function fetchPublicIssue(owner, repo, number) {
   const suppressed = liveSuppressions(owner, repo);
   const knownClosed = !!(suppressed && suppressed.has(n));
   const cached = issuesCache.get(cacheKey);
-  if (!knownClosed && cached && cached.expiresAt > Date.now()) {
+  if (!fresh && !knownClosed && cached && cached.expiresAt > Date.now()) {
     const hit = cached.result.issues.find((i) => i.number === n);
     if (hit) return { issue: hit };
   }
@@ -2569,7 +2574,7 @@ async function fetchPublicIssue(owner, repo, number) {
   // #192: a just-created issue may predate both the cache and GitHub's
   // lagging anonymous endpoints — the overlay carries its full body, so
   // serving from it costs no network call (and no rate-limit budget).
-  const overlay = knownClosed ? null : liveCreatedOverlay(owner, repo);
+  const overlay = knownClosed || fresh ? null : liveCreatedOverlay(owner, repo);
   const overlayHit = overlay && overlay.get(n);
   if (overlayHit) return { issue: overlayHit.issue };
 
@@ -2591,7 +2596,7 @@ async function fetchPublicIssue(owner, repo, number) {
       // Same stale-cache fallback fetchPublicIssues uses: an expired list
       // entry still beats returning nothing.
       log.warn('github', 'Single-issue fetch rate-limited', { repo: cacheKey, issue: n });
-      const stale = issuesCache.get(cacheKey);
+      const stale = fresh ? null : issuesCache.get(cacheKey);
       const hit = stale && stale.result.issues.find((i) => i.number === n);
       if (hit) return { issue: hit, note: 'rate limited' };
       return { issue: null, note: 'rate limited' };
