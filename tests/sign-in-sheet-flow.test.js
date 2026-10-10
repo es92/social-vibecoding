@@ -213,7 +213,7 @@ test('the account step\'s password is optional (#4595)', () => {
   // Asked once (Evan, 10 Oct 2026): no "Password again", and so no
   // confirmation sent; a mistyped one is reset by email. The field shows
   // what was typed on request instead (the shared PasswordInput's toggle).
-  assert.doesNotMatch(src, /Password again|passwordConfirmation|confirmField/);
+  assert.doesNotMatch(src, /Password again|passwordConfirmation|confirmField|signInSheet\.account\.confirmLabel/);
   assert.match(src, /<PasswordInput ref=\{passwordField\} id="sign-in-sheet-password" autoComplete="new-password"/);
 });
 

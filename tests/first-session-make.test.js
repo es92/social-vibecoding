@@ -286,7 +286,7 @@ test('a choice that needs no typing makes a ready-made app, with nothing for Hom
   // fine print on a screen that is about the idea.
   const make = loadTsx(`${DIR}/make.tsx`);
   assert.equal(make.READY_LINE, undefined);
-  assert.doesNotMatch(src, /data-make-ready|Ready-made:/);
+  assert.doesNotMatch(src, /data-make-ready|Ready-made:|firstSession\.make\.readyMade/);
 });
 
 // Evan, 8 Oct 2026: each game preset starts its project from a game
@@ -315,7 +315,7 @@ test('a game preset starts from a working game starter, and its brief is still b
   assert.match(src, /const starter = templated && example \? starterOf\(example, choice\) : null;/);
   // And, like it, nothing under the choices says so (Evan, 10 Oct 2026).
   assert.equal(make.starterLine, undefined);
-  assert.doesNotMatch(src, /data-make-starter|Starts from a game/);
+  assert.doesNotMatch(src, /data-make-starter|Starts from a game|starterLine/);
 });
 
 // #4384: the make screen no longer says, under Make it, that what you write

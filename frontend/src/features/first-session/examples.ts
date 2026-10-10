@@ -242,7 +242,6 @@ export function readyMadeOf(t: Template, key: string): { template: string; emoji
 }
 
 /**
-/**
  * The game starter a choice makes its project from, or null: for Your own
  * words, or a choice with none. Unlike a ready-made app, Homeroom bot still
  * builds the first version, on it.

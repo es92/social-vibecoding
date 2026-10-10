@@ -523,10 +523,6 @@
     "text": "Your own…",
     "description": "Chip beside the ready options under an idea's sentence on the \"What do you want to make?\" screen, where a member describes a new project: lets the member type their own words into the sentence's blank instead of picking an option. Keep the ellipsis."
   },
-  "firstSession.make.readyMade": {
-    "text": "Ready-made: nothing to build, so it is ready as soon as it is set up.",
-    "description": "Hint under a ready idea's sentence when the picked option is an app Homeroom already has: the project will not need to be built first. \"it\" is the new app."
-  },
   "firstSession.make.briefPlaceholder": {
     "text": "A map of our favorite swimming spots…",
     "description": "Placeholder in the empty \"What should it do?\" box: an example of a description a member might write for a new app. Keep the ellipsis."
@@ -542,10 +538,6 @@
   "firstSession.make.namePlaceholder": {
     "text": "For example, Hiking Tier List",
     "description": "Placeholder in the empty name field on the \"What do you want to make?\" screen, where a member describes a new project: an example of a project name."
-  },
-  "firstSession.make.nameHint": {
-    "text": "It's your group's name too. You can change it later.",
-    "description": "Hint under the name field on the \"What do you want to make?\" screen, where a member describes a new project: the project's name is also the name of the community created with it."
   },
   "firstSession.make.needed.blank": {
     "text": "Fill in the blank first.",
@@ -634,10 +626,6 @@
   "firstSession.import.namePlaceholder": {
     "text": "For example, Sunday Run Club",
     "description": "Placeholder in the empty name field on the form that imports an existing app from a GitHub repository as a new project: an example of a project name."
-  },
-  "firstSession.import.nameHint": {
-    "text": "It's your group's name too. You can change it later.",
-    "description": "Hint under the name field on the form that imports an existing app from a GitHub repository as a new project: the project's name is also the name of the community created with it."
   },
   "firstSession.import.needed.name": {
     "text": "Give it a name to import it. You can change it later.",
@@ -1214,26 +1202,6 @@
   "tour.step.settings.body": {
     "text": "You can replay this tour any time from Settings, on your profile.",
     "description": "Text of the last card of the welcome tour on the Home screen, started from the Getting started card or from Settings. Settings is the name of a screen reached from the person's profile."
-  },
-  "firstSession.template.game.board.starterLine": {
-    "text": "Starts from a game that already works, a dice race, and Homeroom bot builds your idea on it.",
-    "description": "Line under the chips on the screen that asks a member \"What do you want to make?\" when the \"Board game\" chip of the game idea is picked: the project starts as a working multiplayer game (a dice race), and Homeroom bot, the assistant, then builds the maker's own idea on top of it."
-  },
-  "firstSession.template.game.shooter.starterLine": {
-    "text": "Starts from a game that already works, a scrolling run dodging storms of sparks, and Homeroom bot builds your idea on it.",
-    "description": "Line under the chips on the screen that asks a member \"What do you want to make?\" when the \"Space shooter\" chip of the game idea is picked: the project starts as a working multiplayer game (a scrolling arcade run dodging storms of sparks), and Homeroom bot, the assistant, then builds the maker's own idea on top of it."
-  },
-  "firstSession.template.game.blocks.starterLine": {
-    "text": "Starts from a game that already works, a shared 3D block world, and Homeroom bot builds your idea on it.",
-    "description": "Line under the chips on the screen that asks a member \"What do you want to make?\" when the \"3D blocks\" chip of the game idea is picked: the project starts as a working multiplayer game (a shared 3D block world), and Homeroom bot, the assistant, then builds the maker's own idea on top of it."
-  },
-  "firstSession.template.game.trivia.starterLine": {
-    "text": "Starts from a game that already works, trivia about each other, and Homeroom bot builds your idea on it.",
-    "description": "Line under the chips on the screen that asks a member \"What do you want to make?\" when the \"Trivia\" chip of the game idea is picked: the project starts as a working multiplayer game (a trivia game about the group's own members), and Homeroom bot, the assistant, then builds the maker's own idea on top of it."
-  },
-  "firstSession.make.starterLine.fallback": {
-    "text": "Starts from a game that already works, a working game, and Homeroom bot builds your idea on it.",
-    "description": "Line under the chips on the screen that asks a member \"What do you want to make?\" when a game chip with a starter is picked and nothing more is known about the starter: the project starts as a working game, and Homeroom bot, the assistant, then builds the maker's own idea on top of it."
   },
   "firstSession.tour.general.title": {
     "text": "Talk in #general",
