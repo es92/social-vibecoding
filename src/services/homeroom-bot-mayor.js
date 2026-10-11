@@ -2469,7 +2469,6 @@ async function answer(pool, config, { bot, user, settings, conversationId, messa
 
 // ── An offer, and the tap that decides it ─────────────────────────────────
 
-// An offer's metadata: its question and its buttons (offerActions).
 /**
  * #4501: the name somebody wrote for a project, when it is not exactly the
  * project the model picked ("Gym Trackr" for Gym Tracker), or null. Case,
@@ -2504,6 +2503,7 @@ function guessMeta({ app, name, actionId }) {
   };
 }
 
+// An offer's metadata: its question and its buttons (offerActions).
 function confirmMeta(kind, { app, name, actionId, question }) {
   return {
     kind: 'confirm', appSlug: app.slug, appName: name, actionId, question,
