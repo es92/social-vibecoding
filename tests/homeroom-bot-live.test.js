@@ -413,6 +413,10 @@ test('what it says: the question, notes that never close, a linked proposal', ()
   assert.match(two, /^Homeroom bot has two questions before it can build this:\n\n1\. What time\?\n2\. How\?\n\n/);
   assert.match(q, /Reply here \(or on the GitHub issue\) and it will look again\./);
   assert.match(live.personText({ reason: 'It changes who can see feeds.' }), /a person needs to decide this one: It changes who can see feeds\./);
+  // #4239: about Homeroom itself, the note says so, and who can move it.
+  const platform = live.personText({ reason: 'The header is drawn by Homeroom.', platform: true });
+  assert.match(platform, /^Homeroom bot thinks this is about Homeroom itself, not this project: The header is drawn by Homeroom\.\n\nWhoever asked for it, or this project's creator or admins, can move it to Homeroom's own board by asking Homeroom bot in a chat\.$/);
+  assert.doesNotMatch(platform, /\u2014/);
   const empty = live.emptyText({ reason: 'The body is a placeholder.' });
   assert.match(empty, /couldn't find anything to build/);
   assert.ok(!/close/i.test(empty), 'it never closes, or offers to close, an issue');

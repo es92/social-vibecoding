@@ -1201,6 +1201,11 @@ function readVerdict(text) {
       // #4239: a request the bot leaves because it is about Homeroom itself,
       // not the app it was filed on. Only a person verdict carries it.
       platform: verdict === 'person' && obj.platform === true,
+      // A request whose ask is already there (in the app, or done by a merged
+      // change): its requester is offered a vote on closing it, not left at a
+      // "person decides" with nothing to decide. A person or empty verdict
+      // carries it; one about Homeroom itself is offered the move instead.
+      done: (verdict === 'person' || verdict === 'empty') && obj.done === true && obj.platform !== true,
       stopMentioning: live.parseStopMentioning(obj.stop_mentioning),
       resumeMentioning: live.parseStopMentioning(obj.resume_mentioning),
     };
@@ -1806,9 +1811,16 @@ ${designGuidance}
 // The last thing the model reads says what it is doing and restates the one
 // format parseVerdict accepts, so the verdict does not depend on it
 // remembering instructions from earlier in the turn.
+// The one shape parseVerdict reads, as the end of every triage prompt says
+// it. A re-read and the repair ask restate it too (VERDICT_KEYS_LINE):
+// without it, a re-read answered in keys of its own (`next_step`,
+// `ask_reporter`) that nothing reads, and so did the ask to repair it.
+const VERDICT_FORMAT = '{"verdict": "question" | "empty" | "ready" | "person", "determined": true | false, "missing_fact": "...", "question": "...", "default": "...", "build_note": "...", "reason": "..."}';
+const VERDICT_KEYS_LINE = 'Use these keys and the others your instructions name (such as `answers`, `blocker`, `assumptions`, `platform`): a block with keys of its own, or no `verdict`, cannot be read.';
+
 function triageClosing(issueNumber) {
   return `That is the end of the reference. Now answer the triage request above, for issue #${issueNumber}: decide which verdict is true, and END YOUR REPLY WITH EXACTLY ONE fenced JSON block in this format, and nothing after it:
-{"verdict": "question" | "empty" | "ready" | "person", "determined": true | false, "missing_fact": "...", "question": "...", "default": "...", "build_note": "...", "reason": "..."}`;
+${VERDICT_FORMAT}`;
 }
 
 /**
@@ -2573,7 +2585,7 @@ function continuedTriagePrompt({ seed, issueNumber }) {
     live.screenshotNote(seed).join('\n').trim() || null,
     '==== DECIDE IT AGAIN ====',
     'Decide it again, by the same instructions as before, taking in what is new. You have already read the code it touches: read only what the change needs, and do not repeat reads you made before. The app\'s code may have changed since then, so check any file your verdict depends on rather than relying on memory.',
-    `END YOUR REPLY WITH EXACTLY ONE fenced JSON block in the same format as before, for issue #${issueNumber}, and nothing after it.`,
+    `END YOUR REPLY WITH EXACTLY ONE fenced JSON block in the same format as before, for issue #${issueNumber}, and nothing after it:\n${VERDICT_FORMAT}\n${VERDICT_KEYS_LINE}`,
   ].filter(Boolean).join('\n\n');
 }
 
@@ -2629,7 +2641,9 @@ const VERDICT_REPAIR_MS = 3 * 60 * 1000;
 const VERDICT_REPAIR_PROMPT = [
   'Your reply ended without the fenced JSON block your instructions asked for, so it could not be read.',
   'Do not read any more files and do not use any tool.',
-  'Reply now with ONLY that one fenced ```json block, for the verdict you reached, in exactly the format your instructions gave, with nothing before or after it.',
+  'Reply now with ONLY that one fenced ```json block, for the verdict you reached, in exactly the format your instructions gave, with nothing before or after it:',
+  VERDICT_FORMAT,
+  VERDICT_KEYS_LINE,
 ].join('\n');
 
 /**
@@ -7018,10 +7032,13 @@ async function actOnVerdict({
       ? decider.deciders.map((d) => d?.username).filter(Boolean)
       : [];
     await say('person', live.personText(parsed), {
-      dm: { reason: parsed.reason, ...(parsed.platform ? { platform: true } : {}), ...(deciders.length ? { deciders } : {}) },
+      dm: {
+        reason: parsed.reason, ...(parsed.platform ? { platform: true } : {}), ...(deciders.length ? { deciders } : {}),
+        ...(parsed.done ? { done: true } : {}),
+      },
     });
   } else if (parsed.verdict === 'empty') {
-    await say('empty', live.emptyText(parsed), { dm: { reason: parsed.reason } });
+    await say('empty', live.emptyText(parsed), { dm: { reason: parsed.reason, ...(parsed.done ? { done: true } : {}) } });
   } else if (parsed.verdict === 'ready') {
     // B6: a first version waits for its creator's Build it, under the plan
     // they are sent first. #4175: it is never built without it. A plan that
@@ -10088,6 +10105,9 @@ module.exports = {
   previousRead,
   rememberRead,
   continuedTriagePrompt,
+  VERDICT_FORMAT,
+  VERDICT_REPAIR_PROMPT,
+  triageClosing,
   MAX_CONTINUED_READS,
   CONTINUE_READ_MAX_AGE_MS,
   wasStoppedRecently,

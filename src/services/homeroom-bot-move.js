@@ -83,7 +83,8 @@ function movedFooter({ app, issueNumber, link, author }) {
 /**
  * The request a move is about, read fresh: an open issue (not a pull
  * request) on a project that is not Homeroom's own, which this person asked
- * for (homeroom_bot_requesters) or filed. Resolves { ok: true, app, repo,
+ * for (homeroom_bot_requesters) or filed, or whose project they run (its
+ * creator or an admin: app-admins.js canManageApp). Resolves { ok: true, app, repo,
  * issue: { title, body, login }, author: { userId, username } | null } or
  * { ok: false, code, error }.
  */
@@ -117,8 +118,10 @@ async function moveGate(pool, { app, issueNumber, user, deps = {} }) {
     'SELECT 1 FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = $2 AND user_id = $3',
     [app.id, n, user.id],
   );
-  if (!asked.length && author?.userId !== Number(user.id)) {
-    return { ok: false, code: 'not_theirs', error: 'Only the person who filed it, or asked for it, can move it.' };
+  // The project's creator and admins may move it too: HOMESTEAD #33 and #35
+  // stayed on its board because only their requester could, and never did.
+  if (!asked.length && author?.userId !== Number(user.id) && !(await require('./app-admins').canManageApp(pool, app, user))) {
+    return { ok: false, code: 'not_theirs', error: 'Only the person who filed it or asked for it, or the project\'s creator or admins, can move it.' };
   }
   return { ok: true, app, repo, issueNumber: n, issue, author };
 }
@@ -410,6 +413,57 @@ async function offerMove(pool, { bot, userId, app, issueNumber, title, reason = 
   }
 }
 
+/**
+ * After the bot told a requester that what they asked for is already there
+ * (a triage `done` verdict, homeroom-bot-dm.js relayIssuePost), the offer to
+ * open a vote on closing it: the same Propose to close / Keep it open offer
+ * the DM chat makes (homeroom-bot-mayor.js offerCloseRequest), so a tap opens
+ * the request's own close vote with them as its proposer. Offered once per
+ * request and person, and not while a close vote is already open. Never
+ * throws; resolves what was sent, or null.
+ */
+async function offerClose(pool, { bot, userId, app, issueNumber, title, reason = null, key = null, deps = {} }) {
+  try {
+    const n = Number(issueNumber);
+    if (!bot?.id || !userId || !app?.id || !Number.isInteger(n)) return null;
+    const { rows: before } = await pool.query(
+      `SELECT 1 FROM homeroom_bot_dm_actions
+        WHERE user_id = $1 AND app_id = $2 AND kind = 'close_request' AND source_issue_number = $3
+          AND status IN ('open', 'done')
+       UNION ALL
+       SELECT 1 FROM issues
+        WHERE app_id = $2 AND kind = 'close_issue' AND status = 'open' AND (payload->>'issueNumber')::int = $3`,
+      [userId, app.id, n],
+    );
+    if (before.length) return null;
+    const name = app.name || app.slug;
+    const { rows: [action] } = await pool.query(
+      `INSERT INTO homeroom_bot_dm_actions (user_id, app_id, kind, title, details, source_issue_number)
+       VALUES ($1, $2, 'close_request', $3, $4, $5) RETURNING id`,
+      [userId, app.id, clip(title || `Request #${n}`, MAX_TITLE_CHARS), reason ? clip(reason, 600) : null, n],
+    );
+    const mayor = mayorModule();
+    const sent = await dmModule(deps).sendDm(pool, {
+      bot, userId,
+      content: mayor.closeOfferText({ name, issueNumber: n, title: title || `Request #${n}` }),
+      idempotencyKey: key ? `hrbot-close-${key}` : `hrbot-close-${action.id}`,
+      metadata: mayor.closeOfferMeta({ app, name, actionId: action.id, issueNumber: n }),
+    });
+    if (!sent?.messageId || sent.duplicate) {
+      await pool.query('DELETE FROM homeroom_bot_dm_actions WHERE id = $1', [action.id]);
+      return sent || null;
+    }
+    await pool.query(
+      'UPDATE homeroom_bot_dm_actions SET message_id = $2, conversation_id = $3 WHERE id = $1',
+      [action.id, sent.messageId, sent.conversationId],
+    );
+    return sent;
+  } catch (err) {
+    log.warn('homeroom-bot-move', 'Could not offer to close a request', { app: app?.slug, issueNumber, err: err.message });
+    return null;
+  }
+}
+
 /** Pure: the words of a move offer. */
 function moveOfferText({ name, issueNumber, text = null, title = null, why = null }) {
   return [
@@ -435,6 +489,7 @@ function moveOfferMeta({ app, actionId }) {
 }
 
 module.exports = {
+  offerClose,
   requestLink,
   movedFooter,
   moveGate,

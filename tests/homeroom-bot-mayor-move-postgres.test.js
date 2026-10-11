@@ -8,6 +8,9 @@
 // the request filed on Homeroom's board with its original words and a
 // footer, a link left on the original, and the original closed at once only
 // when its author tapped and nobody else took part, else put to a vote.
+// Beside it, the bot's other offers about where a request belongs: a vote on
+// closing one a triage found already done, and "Did you mean ...?" before a
+// request is filed on a project named inexactly (#4501).
 //
 // Run with: node --test tests/homeroom-bot-mayor-move-postgres.test.js
 
@@ -329,13 +332,20 @@ test('#4239: moving a request about Homeroom itself to Homeroom\'s own board', {
     // Somebody else's request, one on Homeroom's own board, and a closed one.
     await request(11, { by: sam });
     await pool.query('DELETE FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = 11', [ears.id]);
-    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: ada })).code, 'not_theirs');
+    const stranger = await user('cy');
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: stranger })).code, 'not_theirs');
+    // The project's creator may move it (HOMESTEAD #33 and #35 waited on a
+    // requester who never tapped), and so may one of its admins.
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: ada })).ok, true, 'its creator');
+    await pool.query('INSERT INTO app_admins (app_id, user_id) VALUES ($1, $2)', [ears.id, stranger.id]);
+    require('../src/services/app-admins').invalidateAppAdmins(ears.id);
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: stranger })).ok, true, 'an admin');
     assert.equal((await move.moveGate(pool, { app: homeroom, issueNumber: 1, user: ada })).code, 'already_there');
     await request(12);
     gh.issues.get('ear-trainer#12').state = 'closed';
     assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 12, user: ada })).code, 'closed');
-    const refused = await turn('move #11', [
-      [['offer_move_request', { project: 'ear-trainer', number: 11, reason: 'x' }]],
+    const refused = await turn('move #12', [
+      [['offer_move_request', { project: 'ear-trainer', number: 12, reason: 'x' }]],
       [['reply', { text: 'I can\'t move that one.' }]],
     ]);
     assert.equal((await read(refused)).metadata.homeroomBot.kind, 'chat', 'no offer under it');
@@ -373,5 +383,76 @@ test('#4239: moving a request about Homeroom itself to Homeroom\'s own board', {
     // The chat model sees why it was left.
     const detail = await mayor.requestDetail(pool, { user: ada, project: 'ear-trainer', number: 13, settings });
     assert.equal(detail.recentLooks[0].aboutHomeroom, true);
+  });
+
+  await t.test('#4501: a project named inexactly is asked about on the card; its exact name files as before', async () => {
+    const guessed = await read(await turn('file this on ear trainr: show interval names', [
+      [['offer_request', { project: 'ear-trainer', named: 'Ear Trainr', title: 'Show interval names', details: 'Name each interval.' }]],
+      [['reply', { text: 'Here is what I would file.' }]],
+    ]));
+    const meta = guessed.metadata.homeroomBot;
+    assert.equal(meta.question, 'Did you mean Ear trainer?');
+    assert.deepEqual(meta.actions.map((a) => [a.id, a.label, a.type]), [
+      ['yes', 'Yes, file it', 'server'], ['other', 'No, another app', 'prompt'], ['open_app', 'Open Ear trainer', 'open'],
+    ]);
+    assert.equal(meta.actions[2].target, '#app/ear-trainer/app');
+    assert.match(guessed.content, /\*\*Ear trainer\*\* · new request: Show interval names/, 'the card still names the request');
+
+    const exact = await read(await turn('file this on ear trainer: show chord names', [
+      [['offer_request', { project: 'ear-trainer', named: 'ear-trainer', title: 'Show chord names', details: 'Name each chord.' }]],
+      [['reply', { text: 'Here is what I would file.' }]],
+    ]));
+    assert.equal(exact.metadata.homeroomBot.question, 'File this as a request on Ear trainer?');
+    assert.deepEqual(exact.metadata.homeroomBot.actions.map((a) => a.label), ['File it', 'Not now']);
+
+    // Yes files it, as File it does.
+    const action = await actionOf(guessed.id);
+    const went = await tap(action, 'yes');
+    assert.equal(went.ok, true);
+    assert.ok(gh.created.some((c) => c.repo === 'ear-trainer' && c.title === 'Show interval names'));
+  });
+
+  await t.test('a triage that finds a request already done tells the requester, offers a vote on closing it once, and a tap opens it', async () => {
+    await request(14, { title: 'Show my votes' });
+    const post = (postId, kind = 'person') => dm.relayIssuePost({
+      pool, app: ears, issueNumber: 14, kind, postId, bot,
+      dm: { reason: 'It is there already: open Profile, then Your votes.', done: true },
+    });
+    const told = await read(await post(601));
+    assert.match(told.content, /This looks done already, so I haven't built anything: It is there already: open Profile, then Your votes\./);
+    assert.match(told.content, /you can open a vote on closing it below/);
+    assert.equal(told.metadata.homeroomBot.actions, undefined, 'no Go ahead: there is nothing to decide');
+    const offers = async () => (await pool.query(
+      `SELECT * FROM homeroom_bot_dm_actions WHERE kind = 'close_request' AND source_issue_number = 14`,
+    )).rows;
+    const [offer] = await offers();
+    assert.equal(offer.conversation_id, opened.conversationId);
+    assert.equal(offer.details, 'It is there already: open Profile, then Your votes.', 'the vote\'s reason');
+    const card = await conversations.getMessage(pool, ada, opened.conversationId, offer.message_id);
+    assert.match(card.content, /^Want me to open a vote on closing request #14\? It closes only if its group votes for it\./);
+    assert.deepEqual(card.metadata.homeroomBot.actions.map((a) => a.label), ['Propose to close', 'Keep it open']);
+    await post(602, 'empty');
+    assert.equal((await offers()).length, 1, 'offered once');
+
+    const went = await tap(offer, 'yes');
+    assert.equal(went.ok, true);
+    const { rows: votes } = await pool.query(
+      `SELECT created_by, payload FROM issues WHERE app_id = $1 AND kind = 'close_issue' AND (payload->>'issueNumber')::int = 14`,
+      [ears.id],
+    );
+    assert.equal(votes.length, 1, 'the request\'s own close vote');
+    assert.equal(Number(votes[0].created_by), Number(ada.id), 'proposed by them');
+
+    // Not offered again while that vote is open, to anybody.
+    await request(15, { title: 'Show my votes again' });
+    await pool.query(
+      `INSERT INTO issues (app_id, title, description, kind, payload, created_by, status)
+       VALUES ($1, 'Close #15', 'x', 'close_issue', '{"issueNumber":15}', $2, 'open')`,
+      [ears.id, sam.id],
+    );
+    await dm.relayIssuePost({ pool, app: ears, issueNumber: 15, kind: 'person', postId: 603, bot, dm: { reason: 'Done.', done: true } });
+    assert.equal((await pool.query(
+      `SELECT 1 FROM homeroom_bot_dm_actions WHERE kind = 'close_request' AND source_issue_number = 15`,
+    )).rows.length, 0);
   });
 });

@@ -939,6 +939,18 @@ function updateFailedWords(reason, it = 'this change', voice = 'me') {
 }
 
 /**
+ * A request the triage found already done (`done`: it exists in the app, or
+ * a merged change did it). It was a dead end: "a person needs to decide",
+ * with nothing to decide. The offer to vote on closing it follows
+ * (relayIssuePost); a reply here still asks the bot to look again.
+ */
+function doneText(line, dm) {
+  return `${line}\n\nThis looks done already, so I haven't built anything: ${clip(dm.reason, 600)}\n\n`
+    + 'If that covers what you asked for, you can open a vote on closing it below. If something is still missing, '
+    + 'reply to this message and say what, and I\'ll look at it again.';
+}
+
+/**
  * Who a person hand-off waits on, when it is not the requester: the
  * project's creator and admins (homeroom-bot.js whoDecides), at most four,
  * as usernames.
@@ -1050,6 +1062,7 @@ function dmText(kind, dm, context) {
           + `can do it, and I haven't built anything: ${clip(dm.reason, 600)}\n\n`
           + 'I can move it to Homeroom\'s own board, where the people who work on Homeroom look. Tap below to choose.';
       }
+      if (dm.done) return doneText(line, dm);
       // #3772: and what to do about it. "Left for the group" was a dead end
       // for somebody who was the group: a reply here is posted on the
       // request, and the bot looks at it again with it.
@@ -1067,6 +1080,7 @@ function dmText(kind, dm, context) {
     case 'followup_person':
       return `${line}\n\nThis needs a person to decide, so I've left it for the group: ${clip(dm.reason, 600)}`;
     case 'empty':
+      if (dm.done) return doneText(line, dm);
       return `${line}\n\nI couldn't find anything to build in this yet. Reply to this message with what you'd like `
         + 'changed and I\'ll look again.';
     // A cap on how many changes the bot keeps waiting for approval held a
@@ -1333,7 +1347,8 @@ async function relayIssuePost({
     // #4239: not Go ahead on a request about Homeroom itself; its own
     // message offers the move instead. Nor to a requester who does not
     // decide on the project: theirs would be read to the same answer.
-    ...(STUCK_ACTIONS[kind] && !(kind === 'person' && (dm.platform || personDeciders(dm).length))
+    // Nor under a request that is done already: the close offer follows.
+    ...(STUCK_ACTIONS[kind] && !(kind === 'person' && (dm.platform || personDeciders(dm).length)) && !dm.done
       ? { actions: STUCK_ACTIONS[kind], status: 'open' } : {}),
     // B7: a change ready to try, as a card with its buttons: whether it is
     // one person's project (the title), who else it waits on and how many of
@@ -1407,6 +1422,12 @@ async function relayIssuePost({
   // Homeroom's own board, under its own buttons. Never throws.
   if (kind === 'person' && dm.platform) {
     await require('./homeroom-bot-move').offerMove(pool, {
+      bot, userId: requester.userId, app, issueNumber, title: requester.issueTitle, reason: dm.reason,
+      key: `${app.id}-${issueNumber}-${runId || postId || sent.messageId}`,
+    });
+  } else if ((kind === 'person' || kind === 'empty') && dm.done) {
+    // And for one that is done already, the offer to vote on closing it.
+    await require('./homeroom-bot-move').offerClose(pool, {
       bot, userId: requester.userId, app, issueNumber, title: requester.issueTitle, reason: dm.reason,
       key: `${app.id}-${issueNumber}-${runId || postId || sent.messageId}`,
     });

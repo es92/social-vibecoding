@@ -874,6 +874,18 @@ test('a requester who does not decide on the project is told who does, and offer
   assert.doesNotMatch(text, /\u2014/);
 });
 
+test('a request found already done says so, where it is, and that a vote on closing it follows', () => {
+  const ctx = { appName: 'Ear Trainer', issueNumber: 14, issueTitle: 'Show my votes' };
+  for (const kind of ['person', 'empty']) {
+    const text = dm.dmText(kind, { reason: 'Open Profile, then Your votes.', done: true }, ctx);
+    assert.match(text, /This looks done already, so I haven't built anything: Open Profile, then Your votes\.\n\nIf that covers what you asked for, you can open a vote on closing it below\. If something is still missing, reply to this message and say what, and I'll look at it again\.$/, kind);
+    assert.doesNotMatch(text, /—/);
+  }
+  assert.match(dm.dmText('person', { reason: 'x', done: true, deciders: ['ann'] }, ctx), /looks done already/, 'done comes before who decides');
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
+  assert.match(src, /\} else if \(\(kind === 'person' \|\| kind === 'empty'\) && dm\.done\) \{\n[^\n]*\n\s+await require\('\.\/homeroom-bot-move'\)\.offerClose\(pool, \{/);
+});
+
 test('#4239: a request about Homeroom itself says so, and offers the move instead of Go ahead', () => {
   const ctx = { appName: 'Ear Trainer', issueNumber: 13, issueTitle: 'Header colour' };
   const text = dm.dmText('person', { reason: 'The header is drawn by Homeroom.', platform: true }, ctx);
@@ -881,7 +893,7 @@ test('#4239: a request about Homeroom itself says so, and offers the move instea
   assert.match(text, /I can move it to Homeroom's own board, where the people who work on Homeroom look\. Tap below to choose\.$/);
   assert.doesNotMatch(text, /\u2014/);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
-  assert.match(src, /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\)\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/);
+  assert.match(src, /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\) && !dm\.done\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/);
   assert.match(src, /if \(kind === 'person' && dm\.platform\) \{\n    await require\('\.\/homeroom-bot-move'\)\.offerMove\(/);
 });
 
