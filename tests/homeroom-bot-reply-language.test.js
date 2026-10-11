@@ -109,3 +109,12 @@ test('the design-review prompts word the rule', () => {
 test('the rule line itself has no em dash, whatever the locale', () => {
   for (const locale of [null, 'pt-BR', 'id']) assert.doesNotMatch(live.localeRule(locale), /—/);
 });
+
+test('the DM chat and the thread replies answer in the language people write in', () => {
+  const mayor = require('../src/services/homeroom-bot-mayor');
+  const voice = require('../src/services/homeroom-bot-voice');
+  const dmChat = mayor.systemPrompt({ username: 'ann' });
+  assert.match(dmChat, /Answer in the language of their latest message, and in the language they wrote in before when it is too short\n {2}to tell\. English only when you cannot tell\./);
+  const thread = voice.systemPrompt({ app: { name: 'Maps' }, place: { type: 'issue' }, tools: [] });
+  assert.match(thread, /- Reply in the language of the newest message you answer\. English only when you cannot tell\./);
+});
