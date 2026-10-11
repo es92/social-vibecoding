@@ -1178,7 +1178,17 @@ async function runTool(pool, ctx, name, args, { platform = null } = {}) {
           kind: 'file_request', forUserId: user.id,
           args: { title, details: clip(withoutEmDashes(args.details), 3000), messageId: Number(ctx.triggerMessage.id) },
         };
-        return { ok: true, offered: 'File it and Not now are under your reply, for them to tap. Nothing is filed until they do.' };
+        // An open request that looks like this one is said, so their words
+        // can go on it instead of a second copy (request-similarity.js).
+        const similar = await require('./request-similarity').openSimilar(app, title, { github: ctx.deps?.github });
+        return {
+          ok: true,
+          offered: 'File it and Not now are under your reply, for them to tap. Nothing is filed until they do.',
+          ...(similar.length ? {
+            similarOpen: similar,
+            similarNote: 'These open requests on this project look like the same thing: say so, by number, so they can add to one instead of filing a second.',
+          } : {}),
+        };
       }
       default:
         return { error: `There is no ${name} here.` };

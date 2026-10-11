@@ -67,7 +67,7 @@ test('a stuck build, one it cannot build, one with nothing in it and one a perso
   assert.match(dm.dmText('blocked', { reason: 'x' }, context), /Reply to this message with more detail/);
   assert.match(dm.dmText('empty', {}, context), /Reply to this message with what you'd like/);
   assert.match(dm.dmText('person', { reason: 'x' }, context), /reply to this message and say so/);
-  assert.match(read('src/services/homeroom-bot-dm.js'), /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\)\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/,
+  assert.match(read('src/services/homeroom-bot-dm.js'), /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\) && !dm\.done\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/,
     '#4239: every stuck kind but a request about Homeroom itself, whose move offer follows, and one somebody else decides');
   assert.equal(dm.suggestsOnly({ actions: dm.STUCK_ACTIONS.build_failed }), true);
   assert.equal(dm.suggestsOnly({ actions: dm.promptActions(['a', 'b']) }), true);

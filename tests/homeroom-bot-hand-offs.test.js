@@ -41,9 +41,31 @@ test('the DM chat and the thread replies say where those are set, and that it is
 
 test('"it already exists" says where to find it, in the words on screen', () => {
   const triage = read('src/prompts/homeroom-bot-triage.md');
-  assert.match(triage, /Say which criterion fails, in one sentence\. If it already exists, `reason` says where on screen\.\n/);
+  assert.match(triage, /- `done`: true only with `person` or `empty`, when all it asks for already exists or is done; `reason` says where on screen, and its requester is offered a vote to close it\./);
   const mayor = require('../src/services/homeroom-bot-mayor').systemPrompt({ username: 'ann' });
   assert.match(mayor, /When something they ask for already exists, say where they find it, in the words they see on screen: the\n {2}screen or tab and the button to tap\./);
   const voice = require('../src/services/homeroom-bot-voice').systemPrompt({ app: { name: 'Maps' }, place: { type: 'issue' }, tools: [] });
   assert.match(voice, /When something asked for already exists,\n {2}say where people find it, in the words they see on screen/);
+});
+
+test('#4501: a name that is not exactly the project\'s is a guess; case, spaces, punctuation and a slug\'s suffix are not', () => {
+  const { guessedProject } = require('../src/services/homeroom-bot-mayor');
+  const app = { name: 'Gym Tracker', slug: 'gym-tracker-9de81f' };
+  assert.equal(guessedProject('Gym Trackr', app), 'Gym Trackr');
+  assert.equal(guessedProject('the gym app', app), 'the gym app');
+  for (const exact of ['Gym Tracker', 'gym tracker', 'GYM-TRACKER', 'gym-tracker-9de81f', 'gym-tracker', ' Gym  Tracker ']) {
+    assert.equal(guessedProject(exact, app), null, exact);
+  }
+  assert.equal(guessedProject(undefined, app), null, 'nothing named, nothing to confirm');
+  assert.equal(guessedProject('', app), null);
+});
+
+test('the DM chat passes the name as written and offers similar open requests; a thread names them too', () => {
+  const mayor = require('../src/services/homeroom-bot-mayor').systemPrompt({ username: 'ann' });
+  assert.match(mayor, /Pass the project's name as they wrote it \(named\): when it is not\n {2}exactly one of theirs, the card asks "Did you mean \.\.\.\?", so never say it is the closest match and carry on\./);
+  assert.match(mayor, /When they answer No, another app, list the few of their projects \(my_projects\) whose names are closest and\n {2}ask which\./);
+  assert.match(mayor, /When offer_request names similar open requests, say so and offer to add their words to one of\n {2}them \(comment_on_request\) instead\./);
+  const src = read('src/services/homeroom-bot-mayor.js');
+  assert.match(src, /const similar = await require\('\.\/request-similarity'\)\.openSimilar\(app, title, \{ github: ctx\.deps\?\.github \}\);/);
+  assert.match(read('src/services/homeroom-bot-voice.js'), /const similar = await require\('\.\/request-similarity'\)\.openSimilar\(app, title, \{ github: ctx\.deps\?\.github \}\);/);
 });
