@@ -159,7 +159,6 @@ test('Q19: each small control named by the audit wears a hit-slop', () => {
   has(ws, new RegExp(`className="dev-ws-ov-chip ${KIT}"`), 'a chip of where the open work is');
   has('frontend/src/features/dev-board/workshop/community-card.tsx', new RegExp(`className="dev-ws-hub-open dev-ws-ov-rule-edit ${KIT}"`), 'Rules');
   has('frontend/src/features/dev-board/workshop/work-row.tsx', new RegExp(`className="${KIT}"\\s+data-act=\\{a\\.act\\?\\.fn\\}`), 'a row\'s act');
-  has(ws, new RegExp(`className="${KIT}"\\s+data-ws-fresh-vote=""`), 'New for you\'s Vote');
   // "N more of yours" is gone: the Workshop tab shows your own work in full.
   has(ws, new RegExp(`className="dev-ws-hub-open dev-ws-head-end ${KIT}"`), 'All items\' See all');
   has('frontend/src/features/dev-board/workshop/page-back.tsx', new RegExp(`className="dev-ws-page-back ${KIT}"`), 'the way back from a page to the hub');

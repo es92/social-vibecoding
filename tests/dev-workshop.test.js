@@ -1254,7 +1254,7 @@ test('#4505: catch-up retains your recently merged contributions, not your ongoi
   assert.match(after, />My recent live contribution<\/a>/, 'what was new is this week\'s like the rest');
 });
 
-test('New for you: of what moved since your last visit, the votes waiting on you and the requests filed since', () => {
+test('New for you: of what moved since your last visit, the requests filed since; a vote waiting on you is Needs you\'s (#4716)', () => {
   const store = { 'workshopSeen:demo-app': String(Date.now() - 3.5 * 86400000) };
   const AppView = makeAppView({ localStorage: store });
   seed(AppView);
@@ -1264,24 +1264,17 @@ test('New for you: of what moved since your last visit, the votes waiting on you
   AppView._ghIssues.push({ number: 14, title: 'Old but busy', createdAt: at(10), updatedAt: at(1), lastMessageAt: at(1), user: 'dana', htmlUrl: 'https://github.com/x/y/issues/14' });
   const html = workshopHtml(AppView, 'workshop');
   const fresh = html.slice(html.indexOf('data-ws-fresh=""'), html.indexOf('data-ws-happened-head'));
-  assert.match(fresh, /^data-ws-fresh=""><div class="dev-ws-head"><span class="dev-ws-head-title">New for you<\/span><span class="dev-ws-head-sub">2 since your last visit<\/span><\/div>/);
+  assert.match(fresh, /^data-ws-fresh=""><div class="dev-ws-head"><span class="dev-ws-head-title">New for you<\/span><span class="dev-ws-head-sub">1 since your last visit<\/span><\/div>/);
   const rows = [...fresh.matchAll(/data-ws-row="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(rows, ['since:issue:12', 'since:proposal:34'], 'newest first; a request filed before the visit is not new for you');
+  assert.deepEqual(rows, ['since:issue:12'], 'a request filed before the visit is not new for you, and the vote is Needs you\'s');
   // The request: what it is, who filed it, and Build it — the request
   // card's own act, worded short, its own words the tooltip.
   assert.match(fresh, /<span class="dev-ws-wrow-sub">New request · #12 · alice · 2d ago<\/span><\/span><span class="dev-ws-arow-act"><button type="button" data-act="chooseIssueWork" title="Start an agent session on this request" class="[^"]*\brounded-full\b[^"]*">Build it<\/button><\/span>/);
-  // The vote: the tile in the attention tint, and Vote, into Needs you.
-  assert.match(fresh, /<span class="dev-ws-wrow-tile" data-kind="change" data-tone="ask" aria-hidden="true">/);
-  assert.match(fresh, /<span class="dev-ws-wrow-sub">Waiting on your vote · PR #41 · carol · 3d ago<\/span><\/span><span class="dev-ws-arow-act"><button type="button" data-ws-fresh-vote="" class="[^"]*\bbg-violet-600\b[^"]*">Vote<\/button><\/span>/);
-  assert.match(WORKSHOP, /const voteInNeeds = \(row: WorkCardRow\) => \{\s*setNeedsLanding\(`vote:\$\{row\.card\.key\}`\);\s*openTab\('needs'\);\s*\};/);
-  assert.match(WORKSHOP, /openOn=\{needsLanding\}/, 'Needs you lands on it');
-  // The feed reads it once, at mount, and lands on the row by its key the
-  // first time the row is there and the scroller has a height; any other
-  // way into Needs you opens where it opens.
-  assert.match(WORKSHOP, /const landRef = useRef<string \| null>\(endOnOpen \? null : openOn\);/);
-  assert.match(WORKSHOP, /const key = landRef\.current;\s*if \(!key \|\| !el \|\| !el\.clientHeight\) return;\s*const idx = items\.findIndex\(\(r\) => r\.key === key\);\s*if \(idx < 0\) return;\s*landRef\.current = null;\s*curKeyRef\.current = key;\s*setAt\(idx\);/);
-  assert.match(WORKSHOP, /useEffect\(\(\) => \{\s*if \(tab !== 'needs'\) setNeedsLanding\(null\);\s*\}, \[tab\]\);/);
-  assert.ok(plain(AppView._workshopView().queue).some((r) => r.key === 'vote:proposal:34'), 'by the key the queue gives it');
+  // #4716: the vote waiting on you is not here a second time. It is in
+  // Needs you, where it is voted on.
+  assert.ok(!fresh.includes('since:proposal:34') && !fresh.includes('data-ws-fresh-vote') && !fresh.includes('Waiting on your vote'));
+  assert.ok(plain(AppView._workshopView().queue).some((r) => r.key === 'vote:proposal:34'), 'it is in Needs you\'s queue');
+  assert.doesNotMatch(WORKSHOP, /voteInNeeds|needsLanding|data-ws-fresh-vote/);
   // A Build it is offered only when the act builds: asking Homeroom bot, or
   // building it yourself.
   assert.match(WORKSHOP, /if \(a && a\.act && \(a\.act\.fn === 'askBotToBuild' \|\| a\.act\.fn === 'chooseIssueWork'\)\) \{\s*return <ActButton a=\{a\} label=\{t\('project:workshop\.fresh\.buildIt'\)\} \/>;/);
@@ -1298,8 +1291,8 @@ test('New for you: of what moved since your last visit, the votes waiting on you
   mine._proposals[0].username = 'me';
   mine._proposals[0].user_id = 1;
   assert.ok(!workshopHtml(mine, 'workshop').slice(0, workshopHtml(mine, 'workshop').indexOf('data-ws-happened-head')).includes('since:proposal:34'));
-  assert.deepEqual(['workshop.fresh.title', 'workshop.fresh.vote', 'workshop.fresh.buildIt'].map((k) => message(`project:${k}`)),
-    ['New for you', 'Vote', 'Build it']);
+  assert.deepEqual(['workshop.fresh.title', 'workshop.fresh.buildIt'].map((k) => message(`project:${k}`)),
+    ['New for you', 'Build it']);
 });
 
 test('the vote deck is its own tab; the unclaimed suggestion stays with the status', () => {
@@ -5098,7 +5091,7 @@ test('This week shows its new rows, then a few seen ones, then All of this week,
   assert.match(quiet, /data-ws-since-clear="" disabled="">Mark all seen</);
 });
 
-test('#4457: a governance vote waiting on you is new for you, with its Vote', () => {
+test('#4457, #4716: a governance vote waiting on you is Needs you\'s, not New for you\'s, and new in This week', () => {
   const AppView = makeAppView({ localStorage: { 'workshopSeen:demo-app': String(Date.now() - 12 * 3600000) } });
   seed(AppView);
   AppView._govProposals = [
@@ -5109,11 +5102,8 @@ test('#4457: a governance vote waiting on you is new for you, with its Vote', ()
   const v = AppView._workshopView();
   assert.equal(v.since.total, 1, 'only the governance proposal moved');
   const html = workshopHtml(AppView, 'workshop');
-  const fresh = html.slice(html.indexOf('data-ws-fresh=""'), html.indexOf('data-ws-happened-head'));
-  assert.match(fresh, /<span class="dev-ws-head-sub">1 since your last visit<\/span>/);
-  assert.match(fresh, /<span class="dev-ws-wrow-tile" data-kind="vote" data-tone="ask" aria-hidden="true">/);
-  assert.match(fresh, /<span class="dev-ws-wrow-sub">Waiting on your vote · Vote #72 · /);
-  assert.match(fresh, /data-ws-fresh-vote="" class="[^"]*">Vote<\/button>/);
+  assert.ok(!html.includes('data-ws-fresh=""'), 'nothing else moved, so no New for you card');
+  assert.ok(plain(v.queue).some((r) => /^vote:/.test(r.key) && r.key.includes('72')), 'the vote is in Needs you');
   assert.match(html.slice(html.indexOf('data-ws-happened=""')), /<span class="dev-ws-week-fresh">1 new<\/span>/);
 });
 

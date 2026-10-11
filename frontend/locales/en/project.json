@@ -473,7 +473,7 @@
   },
   "workshop.fresh.title": {
     "text": "New for you",
-    "description": "Heading of a card on the Workshop tab of a project's page: votes waiting on the viewer and requests filed since their last visit."
+    "description": "Heading of a card on the Workshop tab of a project's page: requests filed since the viewer's last visit."
   },
   "workshop.fresh.count_one": {
     "text": "{{count}} since your last visit",
@@ -482,10 +482,6 @@
   "workshop.fresh.count_other": {
     "text": "{{count}} since your last visit",
     "description": "Beside the \"New for you\" heading on the Workshop tab of a project's page: how many rows the card holds. {{count}} is that number."
-  },
-  "workshop.fresh.vote": {
-    "text": "Vote",
-    "description": "Button on a row of the \"New for you\" card on the Workshop tab of a project's page: opens that proposal in Needs you, where the viewer votes on it."
   },
   "workshop.fresh.buildIt": {
     "text": "Build it",
@@ -706,10 +702,6 @@
   "workRow.replies_other": {
     "text": "{{count}} comments",
     "description": "One fact on a Workshop row's line, after who made it: how many comments the item has. {{count}} is that number."
-  },
-  "workRow.state.yourVote": {
-    "text": "Waiting on your vote",
-    "description": "First fact on a row of the \"New for you\" card on a project's Workshop tab: the proposal waits on the viewer's vote."
   },
   "workRow.state.newRequest": {
     "text": "New request",

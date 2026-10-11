@@ -3851,9 +3851,6 @@ export function DevWorkshop(): ReactNode {
   const [openWeek, setOpenWeek] = useState<string | null>(null);
   // New for you's rows past its first WORKSHOP_WORK_FIRST, put out in place.
   const [freshAll, setFreshAll] = useState(false);
-  // The vote New for you's Vote opened Needs you on, by its queue key, until
-  // the page leaves Needs you (NeedsFeed `openOn`).
-  const [needsLanding, setNeedsLanding] = useState<string | null>(null);
   // The category an Overview chip opened on All items, unfolded and brought
   // into view once the page is up.
   const [focusTheme, setFocusTheme] = useState<string | null>(null);
@@ -4105,11 +4102,6 @@ export function DevWorkshop(): ReactNode {
   useEffect(() => {
     setSideItem(null);
     if (tab !== 'workshop') setOpenWeek(null);
-  }, [tab]);
-  // New for you's Vote lands on its row once; any other way into Needs you
-  // opens it where it opens.
-  useEffect(() => {
-    if (tab !== 'needs') setNeedsLanding(null);
   }, [tab]);
   useEffect(() => {
     if (!sideWide) setSideItem(null);
@@ -4374,11 +4366,12 @@ export function DevWorkshop(): ReactNode {
   // (week-pages.tsx `catchUp`, which files the dots and "N new" the same way.)
   const sinceRows = (v.since ? v.since.rows : [])
     .filter((r): r is WorkCardRow => r.t === 'card' && !!r.brief && catchUp(r.brief));
-  // NEW FOR YOU: of what moved since your last visit, what asks something of
-  // you — a vote that waits on yours, and a request filed since — newest
-  // first. Your own are Your work's.
+  // NEW FOR YOU: of what moved since your last visit, the requests filed
+  // since, newest first. Your own are Your work's. A vote waiting on yours is
+  // Needs you's (#4716): it was here too, a second Vote for the same vote,
+  // whose press only opened Needs you on it.
   const freshRows = sinceRows.filter((r) => !!r.brief && !r.brief.mine && !r.brief.requested
-    && ((!!r.brief.vote && r.brief.vote.ask) || (r.brief.kind === 'request' && !!r.fresh)));
+    && r.brief.kind === 'request' && !!r.fresh);
   const openWeekPage = (key: string) => {
     setOpenWeek(key);
     // A week further back than the since-list's capped rows draws nothing on
@@ -4394,36 +4387,15 @@ export function DevWorkshop(): ReactNode {
     callAppView('closeWorkshopWeek');
     scrollToHead(hostRef.current);
   };
-  // New for you's Vote: the item in Needs you, landed on (NeedsFeed
-  // `openOn`), by the key the queue gives a vote (AppView._workshopView).
-  const voteInNeeds = (row: WorkCardRow) => {
-    setNeedsLanding(`vote:${row.card.key}`);
-    openTab('needs');
-  };
   // New for you's rows: lit while their page is open beside the list, as
   // WorkList lights its own.
   const rowOn = (r: WorkCardRow): boolean => {
     const ref = topicRef(r.card);
     return !!sideKey && !!ref && sideKey === `${ref.kind}:${ref.id}`;
   };
-  // New for you's: Vote, into Needs you; or Build it, the request card's own
-  // act when that act is building it (asking Homeroom bot, or yourself).
+  // New for you's: Build it, the request card's own act when that act is
+  // building it (asking Homeroom bot, or yourself).
   const freshAct = (r: WorkCardRow): ReactNode => {
-    const b = r.brief!;
-    if (b.vote && b.vote.ask) {
-      return (
-        <Button
-          type="button"
-          variant="pillAccent"
-          size="sm"
-          className="un-touch-target"
-          data-ws-fresh-vote=""
-          onClick={() => voteInNeeds(r)}
-        >
-          {t('project:workshop.fresh.vote')}
-        </Button>
-      );
-    }
     const a = primaryAct(r.card);
     if (a && a.act && (a.act.fn === 'askBotToBuild' || a.act.fn === 'chooseIssueWork')) {
       return <ActButton a={a} label={t('project:workshop.fresh.buildIt')} />;
@@ -4733,11 +4705,11 @@ export function DevWorkshop(): ReactNode {
         </section>
       ) : null}
       {/* ── New for you ──
-          Since your last visit, what asks something of you: a vote waiting
-          on yours, whose Vote opens it in Needs you, landed on; and a
-          request filed since, whose Build it is the request card's own
-          next step (ask Homeroom bot, or build it yourself). Not on a first
-          visit, which has no last visit, and not when there is none. */}
+          Since your last visit, the requests filed since, whose Build it is
+          the request card's own next step (ask Homeroom bot, or build it
+          yourself). The votes waiting on yours are Needs you's (#4716). Not
+          on a first visit, which has no last visit, and not when there is
+          none. */}
       {freshRows.length ? (
         <section className="dev-ws-strip" data-ws-fresh="">
           <div className="dev-ws-head">
@@ -4750,11 +4722,7 @@ export function DevWorkshop(): ReactNode {
                 key={r.key}
                 row={r}
                 slug={slug}
-                tone={r.brief!.vote && r.brief!.vote.ask ? 'ask' : undefined}
-                sub={rowWords(r.brief!, {
-                  lead: r.brief!.vote && r.brief!.vote.ask ? t('project:workRow.state.yourVote') : t('project:workRow.state.newRequest'),
-                  replies: true,
-                })}
+                sub={rowWords(r.brief!, { lead: t('project:workRow.state.newRequest'), replies: true })}
                 act={freshAct(r)}
                 on={rowOn(r)}
                 onOpen={openItem}
@@ -4851,7 +4819,6 @@ export function DevWorkshop(): ReactNode {
           canPost={canPost}
           onDone={() => openTab('workshop')}
           onHub={() => openTab('status')}
-          openOn={needsLanding}
           // #4680: the end card's quiet way into the Suggest an improvement
           // form, the same open the hub's ⋯ row makes. No `intent: 'issue'`,
           // so the heading reads "Suggest an improvement".
