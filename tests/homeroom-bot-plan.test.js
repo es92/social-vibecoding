@@ -190,7 +190,7 @@ test('the look reads a live first version\'s people into its prompt and its snap
   const src = read('src/services/homeroom-bot.js');
   assert.match(src, /const members = liveMode && requester\?\.firstVersion\s+\? await projectMembers\(pool, app\)\.catch\(/);
   assert.match(src, /seed, issueNumber, firstVersion: !!requester\?\.firstVersion, decider,\s+\.\.\.\(members \? \{ members \} : \{\}\),/);
-  assert.match(src, /\.\.\.\(decider\?\.requesterDecides \? \{ decider \} : \{\}\),[\s\S]{0,120}\.\.\.\(members \? \{ members \} : \{\}\),\s+(?:\.\.\.\(starter \? \{ starter \} : \{\}\),\s+)?\},/,
+  assert.match(src, /\.\.\.\(deciderNote\(decider\) \? \{ decider \} : \{\}\),[\s\S]{0,120}\.\.\.\(members \? \{ members \} : \{\}\),\s+(?:\.\.\.\(starter \? \{ starter \} : \{\}\),\s+)?\},/,
     'kept in the snapshot');
   assert.match(read('src/services/bench/runner.js'), /members: snapshot\.extra\?\.members \|\| null,/);
 });
@@ -566,6 +566,21 @@ test('B6: a first version\'s plan, end to end, against the full PostgreSQL schem
     assert.deepEqual([run.awaiting_go_at, run.build_ok, run.build_error], [null, false, 'skipped: nobody tapped Build it within a week']);
     const card = await planMessage(stale);
     assert.deepEqual([card.meta.status, card.meta.stopped], ['closed', true]);
+    // Said once, under the card, without ringing: the card changing a week
+    // up the conversation was the only sign it had gone quiet.
+    const stoppedNotes = async () => (await pool.query(
+      `SELECT m.id, m.content, m.metadata->'homeroomBot' AS meta
+         FROM conversation_messages m
+        WHERE m.conversation_id = $1 AND m.metadata->'homeroomBot'->>'kind' = 'plan_stopped'`,
+      [card.conversation_id],
+    )).rows;
+    const [note] = await stoppedNotes();
+    assert.equal(note.content, dm.planStoppedText(app.name));
+    assert.match(note.content, /^Nobody tapped Build it on the plan for .+ for a week, so I put it away and built nothing\. Reply to the plan above to pick it up again\.$/);
+    assert.ok(Number(note.id) > Number(card.id), 'after the plan it is about');
+    assert.equal(note.meta.issueNumber, 1);
+    await dm.closePlanCards(pool, [stale], { stopped: true });
+    assert.equal((await stoppedNotes()).length, 1, 'once');
 
     const go = await readyRun();
     await bot.awaitGo(pool, { runId: go, app, issueNumber: 1, parsed: { plan: PLAN }, bot: homeroomBot });

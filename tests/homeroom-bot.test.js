@@ -2259,10 +2259,56 @@ test('#3772: on a project of one, the person who asked decides what the group wo
   const evan = { userId: 1, username: 'evan' };
   assert.deepEqual(await bot.whoDecides(pool({ created_by: 1, members: 1, member: true }), { id: 5 }, evan),
     { requester: 'evan', members: 1, requesterDecides: true });
-  assert.equal((await bot.whoDecides(pool({ created_by: 1, members: 2, member: true }), { id: 5 }, evan)).requesterDecides, false);
   assert.equal((await bot.whoDecides(pool({ created_by: 9, members: 1, member: false }), { id: 5 }, evan)).requesterDecides, false,
     'somebody else\'s project of one');
   assert.equal((await bot.whoDecides(pool({ created_by: 1, members: 0, member: false }), { id: 5 }, evan)).requesterDecides, true,
     'a project in no community: its creator');
   assert.equal(await bot.whoDecides(pool(null), { id: 5 }, evan), null);
+});
+
+test('on a project with more people, its creator and admins decide what gets built, and a request names them', async () => {
+  const pool = (row) => ({ query: async () => ({ rows: row ? [row] : [] }) });
+  const evan = { userId: 1, username: 'evan' };
+  const app = { id: 5, slug: 'geneva-hikes' };
+  assert.deepEqual(await bot.whoDecides(pool({ created_by: 1, creator: 'evan', members: 19, member: true, admin: false, admins: [] }), app, evan),
+    { requester: 'evan', members: 19, requesterDecides: true, role: 'creator' }, 'its creator');
+  assert.deepEqual(await bot.whoDecides(pool({ created_by: 9, creator: 'ann', members: 19, member: true, admin: true, admins: ['evan'] }), app, evan),
+    { requester: 'evan', members: 19, requesterDecides: true, role: 'admin' }, 'one of its admins');
+  assert.deepEqual(await bot.whoDecides(pool({ created_by: 9, creator: 'ann', members: 3, member: true, admin: false, admins: ['bo', 'cy', 'di', 'ed'] }), app, evan),
+    {
+      requester: 'evan', members: 3, requesterDecides: false,
+      deciders: [{ username: 'ann', role: 'creator' }, { username: 'bo', role: 'admin' }, { username: 'cy', role: 'admin' }, { username: 'di', role: 'admin' }],
+    }, 'anyone else: the creator first, four at most');
+  assert.deepEqual(await bot.whoDecides(pool({ created_by: 1, creator: 'evan', members: 40, member: true, self_hosted: true, admin: true, admins: [] }), app, evan),
+    { requester: 'evan', members: 40, requesterDecides: false }, 'Homeroom\'s own project keeps the rule');
+  const homeroom = await bot.whoDecides(pool({ created_by: 1, creator: 'evan', members: 40, member: true, admin: true, admins: [] }), { id: 5, slug: 'usernode-2d5619' }, evan);
+  assert.equal(homeroom.requesterDecides, false, 'by its slug too');
+  assert.equal(homeroom.deciders, undefined);
+
+  const creatorNote = bot.deciderNote({ requester: 'evan', members: 19, requesterDecides: true, role: 'creator' });
+  assert.match(creatorNote, /@evan asked for this, and made this project: the decisions its group would make before building are theirs\. The group still votes on the change it becomes\./);
+  assert.match(creatorNote, /is a `question` to them, not `person`/);
+  assert.match(bot.deciderNote({ requester: 'evan', members: 19, requesterDecides: true, role: 'admin' }), /@evan asked for this, and is an admin of this project:/);
+  assert.equal(bot.deciderNote({ requester: 'evan', members: 3, requesterDecides: false }), null, 'nobody to name says nothing');
+
+  const named = bot.deciderNote({
+    requester: 'evan', members: 3, requesterDecides: false,
+    deciders: [{ username: 'ann', role: 'creator' }, { username: 'bo', role: 'admin' }],
+  });
+  assert.match(named, /^==== WHO DECIDES ON THIS PROJECT ====/);
+  assert.match(named, /@evan asked for this\. On this project @ann \(who made it\) and @bo \(an admin\) decide what gets built; the group still votes on every change\./);
+  assert.match(named, /is `person`, and its `reason` says it waits for @ann or @bo to say go ahead in this request's discussion\./);
+  assert.match(named, /When the request's discussion shows @ann or @bo choosing .* that criterion is decided: judge the rest as usual\. A go-ahead from anyone else, @evan included, does not decide it\./);
+  assert.match(named, /auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`/);
+  assert.match(bot.deciderNote({ requester: 'evan', members: 2, requesterDecides: false, deciders: [{ username: 'ann', role: 'creator' }] }),
+    /On this project @ann \(who made it\) decides what gets built;/);
+  assert.doesNotMatch(named, /\u2014/);
+});
+
+test('a person hand-off tells the requester\'s DM who it waits on', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot.js'), 'utf8');
+  const act = src.slice(src.indexOf('async function actOnVerdict('), src.indexOf("} else if (parsed.verdict === 'empty') {", src.indexOf('async function actOnVerdict(')));
+  assert.match(act, /const deciders = decider && !decider\.requesterDecides && Array\.isArray\(decider\.deciders\)/);
+  assert.match(act, /\.\.\.\(deciders\.length \? \{ deciders \} : \{\}\)/);
+  assert.match(src, /firstVersion: !!requester\?\.firstVersion,\n\s+\/\/ Who a person hand-off waits on, for the requester's DM\.\n\s+decider,\n/);
 });

@@ -862,6 +862,18 @@ test('#3772: "needs a person" says what to do about it, and a card already showi
   assert.match(src, /objects: dm\.card \? \[\] : cardsFor\(kind, dm, app, issueNumber\)\.filter\(\(c\) => !\(shown && c\.type === 'issue'\)\),/);
 });
 
+test('a requester who does not decide on the project is told who does, and offered no Go ahead that would loop', () => {
+  const ctx = { appName: 'Geneva Hikes', issueNumber: 2, issueTitle: 'A real map' };
+  const text = dm.dmText('person', { reason: 'A map needs a tile provider.', deciders: ['ann', 'bo'] }, ctx);
+  assert.match(text, /This needs a person to decide, so I haven't built it: A map needs a tile provider\./);
+  assert.match(text, /On Geneva Hikes, @ann or @bo decide things like this\. Once one of them says to go ahead on the request, I'll look at it again\.$/);
+  assert.doesNotMatch(text, /If you decide to go ahead/);
+  assert.match(dm.dmText('person', { reason: 'x', deciders: ['ann'] }, ctx), /On Geneva Hikes, @ann decides things like this\. Once they say to go ahead on the request, I'll look at it again\.$/);
+  assert.match(dm.dmText('person', { reason: 'x', deciders: ['ann', 'bo', 'cy'] }, ctx), /@ann, @bo or @cy decide/);
+  assert.match(dm.dmText('person', { reason: 'x', deciders: ['<b>', 7] }, ctx), /If you decide to go ahead/, 'nothing usable: as before');
+  assert.doesNotMatch(text, /\u2014/);
+});
+
 test('#4239: a request about Homeroom itself says so, and offers the move instead of Go ahead', () => {
   const ctx = { appName: 'Ear Trainer', issueNumber: 13, issueTitle: 'Header colour' };
   const text = dm.dmText('person', { reason: 'The header is drawn by Homeroom.', platform: true }, ctx);
@@ -869,7 +881,7 @@ test('#4239: a request about Homeroom itself says so, and offers the move instea
   assert.match(text, /I can move it to Homeroom's own board, where the people who work on Homeroom look\. Tap below to choose\.$/);
   assert.doesNotMatch(text, /\u2014/);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
-  assert.match(src, /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && dm\.platform\) \?/);
+  assert.match(src, /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\)\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/);
   assert.match(src, /if \(kind === 'person' && dm\.platform\) \{\n    await require\('\.\/homeroom-bot-move'\)\.offerMove\(/);
 });
 

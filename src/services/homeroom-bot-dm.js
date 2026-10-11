@@ -939,6 +939,23 @@ function updateFailedWords(reason, it = 'this change', voice = 'me') {
 }
 
 /**
+ * Who a person hand-off waits on, when it is not the requester: the
+ * project's creator and admins (homeroom-bot.js whoDecides), at most four,
+ * as usernames.
+ */
+function personDeciders(dm) {
+  return (Array.isArray(dm?.deciders) ? dm.deciders : [])
+    .filter((name) => typeof name === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(name))
+    .slice(0, 4);
+}
+
+/** "@a", "@a or @b", "@a, @b or @c". */
+function deciderNames(dm) {
+  const names = personDeciders(dm).map((name) => `@${name}`);
+  return names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
+}
+
+/**
  * The DM text for one of the bot's posts on a request, from the structured
  * `dm` its caller passed (homeroom-bot.js): plain words, no code. Returns
  * null for a kind the DM does not carry.
@@ -1036,6 +1053,15 @@ function dmText(kind, dm, context) {
       // #3772: and what to do about it. "Left for the group" was a dead end
       // for somebody who was the group: a reply here is posted on the
       // request, and the bot looks at it again with it.
+      // On a project where somebody else decides (its creator or admins,
+      // homeroom-bot.js whoDecides), a go-ahead from the requester would
+      // only be read to the same answer: they are told who it waits on.
+      if (personDeciders(dm).length) {
+        const several = personDeciders(dm).length > 1;
+        return `${line}\n\nThis needs a person to decide, so I haven't built it: ${clip(dm.reason, 600)}\n\n`
+          + `On ${context.appName}, ${deciderNames(dm)} ${several ? 'decide' : 'decides'} things like this. `
+          + `Once ${several ? 'one of them says' : 'they say'} to go ahead on the request, I'll look at it again.`;
+      }
       return `${line}\n\nThis needs a person to decide, so I haven't built it: ${clip(dm.reason, 600)}\n\n`
         + 'If you decide to go ahead (or the group does), reply to this message and say so, and I\'ll look at it again.';
     case 'followup_person':
@@ -1305,8 +1331,10 @@ async function relayIssuePost({
     ...(dm.link ? { link: dm.link } : {}),
     // Where it is stuck, what to tap (STUCK_ACTIONS).
     // #4239: not Go ahead on a request about Homeroom itself; its own
-    // message offers the move instead.
-    ...(STUCK_ACTIONS[kind] && !(kind === 'person' && dm.platform) ? { actions: STUCK_ACTIONS[kind], status: 'open' } : {}),
+    // message offers the move instead. Nor to a requester who does not
+    // decide on the project: theirs would be read to the same answer.
+    ...(STUCK_ACTIONS[kind] && !(kind === 'person' && (dm.platform || personDeciders(dm).length))
+      ? { actions: STUCK_ACTIONS[kind], status: 'open' } : {}),
     // B7: a change ready to try, as a card with its buttons: whether it is
     // one person's project (the title), who else it waits on and how many of
     // them it needs, their words.
@@ -1399,6 +1427,16 @@ async function relayIssuePost({
 // the card (closePlanCards); its bullets stay.
 
 const PLAN_KIND = 'plan';
+
+// B6: the message under a plan that stopped waiting (closePlanCards). It
+// rings nothing: it is news, not a decision, and the card above it is what
+// a reply picks up again.
+const PLAN_STOPPED_KIND = 'plan_stopped';
+
+function planStoppedText(appName) {
+  return `Nobody tapped Build it on the plan${appName ? ` for ${appName}` : ''} for a week, so I put it away and built nothing. `
+    + 'Reply to the plan above to pick it up again.';
+}
 const BUILD_IT = 'Build it';
 // A reply to a plan that says to go ahead, rather than what to change.
 const PLAN_GO_WORDS = new Set([
@@ -1520,17 +1558,23 @@ async function sendPlanCard(pool, { app, issueNumber, runId, plan, bot, ws = nul
  * B6: the cards of plans that stopped waiting (`runIds`): their buttons go on
  * every device. `stopped` (a week with no tap) says so and asks for a reply;
  * otherwise the card reads "No longer needed", until a newer plan replaces
- * it. Never throws.
+ * it. A stopped plan is also said once, in a message of its own with its
+ * request's card (planStoppedText): a card that changes a week up the
+ * conversation is one nobody sees, and the plan just went quiet. Never
+ * throws.
  */
-async function closePlanCards(pool, runIds, { stopped = false, ws = null } = {}) {
+async function closePlanCards(pool, runIds, { stopped = false, ws = null, bot = null } = {}) {
   const ids = (runIds || []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
   if (!ids.length) return 0;
   try {
     const { rows } = await pool.query(
-      `SELECT message_id, conversation_id, user_id FROM homeroom_bot_dm_messages
-        WHERE kind = $2 AND run_id = ANY($1::int[])`,
+      `SELECT d.message_id, d.conversation_id, d.user_id, d.run_id, d.app_id, d.issue_number,
+              COALESCE(NULLIF(a.name, ''), a.slug) AS app_name, a.slug AS app_slug
+         FROM homeroom_bot_dm_messages d LEFT JOIN apps a ON a.id = d.app_id
+        WHERE d.kind = $2 AND d.run_id = ANY($1::int[])`,
       [ids, PLAN_KIND],
     );
+    let sender = bot;
     for (const row of rows) {
       await pool.query(
         'UPDATE homeroom_bot_dm_actions SET status = \'declined\', decided_at = NOW(), error = $2 WHERE message_id = $1 AND status = \'open\'',
@@ -1539,6 +1583,24 @@ async function closePlanCards(pool, runIds, { stopped = false, ws = null } = {})
       await setQuestionState(pool, Number(row.message_id), stopped ? { status: 'closed', stopped: true } : { status: 'closed' }, {
         ws, conversationId: row.conversation_id, userId: row.user_id,
       });
+      if (!stopped) continue;
+      try {
+        sender = sender || await botAccount(pool);
+        await sendDm(pool, {
+          bot: sender,
+          userId: row.user_id,
+          content: planStoppedText(row.app_name),
+          // The request it is about, as a card: a bot message quotes only
+          // the person's own (quotable).
+          objects: cardsFor(PLAN_STOPPED_KIND, {}, { id: row.app_id }, row.issue_number),
+          idempotencyKey: `hrbot-plan-stopped-${row.run_id}`,
+          metadata: {
+            kind: PLAN_STOPPED_KIND, appSlug: row.app_slug, appName: row.app_name, issueNumber: Number(row.issue_number),
+          },
+        });
+      } catch (err) {
+        log.warn('homeroom-bot-dm', 'Closed a stopped plan, but could not say so', { runId: row.run_id, err: err.message });
+      }
     }
     return rows.length;
   } catch (err) {
@@ -4041,6 +4103,8 @@ function firstSentence(text, max = 90) {
 }
 
 module.exports = {
+  PLAN_STOPPED_KIND,
+  planStoppedText,
   BOT_USERNAME,
   QUESTION_KINDS,
   MIRRORED_KINDS,
