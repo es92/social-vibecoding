@@ -70,7 +70,7 @@ test('#4239: parseVerdict reads `platform` on a person verdict only', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot.js'), 'utf8');
   assert.match(src, /plan: parsed\.plan, aboutPlatform: !!parsed\.platform,/);
   assert.match(src, /if \(parsed\.platform && \(await platformAppSlugs\(pool\)\)\.includes\(app\.slug\)\) parsed = \{ \.\.\.parsed, platform: false \};/);
-  assert.match(src, /\{ dm: \{ reason: parsed\.reason, \.\.\.\(parsed\.platform \? \{ platform: true \} : \{\}\) \} \}/);
+  assert.match(src, /dm: \{ reason: parsed\.reason, \.\.\.\(parsed\.platform \? \{ platform: true \} : \{\}\), \.\.\.\(deciders\.length \? \{ deciders \} : \{\}\) \},/);
 });
 
 test('parseVerdict finds the last verdict object whatever surrounds it', () => {
