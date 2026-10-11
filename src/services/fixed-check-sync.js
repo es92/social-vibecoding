@@ -35,12 +35,16 @@
 //     until #4648; two approved Homeroom bot proposals cut before it stayed
 //     red on them, with nobody able to sync them), or has passed on main's
 //     tip as it stands, which the proposal is behind (mainGreenAtTip). Once
-//     per proposal, as for any check: if the suite still fails on a head
-//     containing main, the failure is the proposal's own;
+//     per main tip, and at most MAX_UNIT_SYNCS times: a suite that still
+//     fails on a head containing main fails on the proposal's own code AS
+//     OF THAT MAIN, and a later main may fix the very test (11 Oct 2026: the
+//     translation proposal #4764 was synced onto a main without #4767, the
+//     fix of the one test it failed, and stayed red with two yes votes after
+//     #4767 merged, its one sync spent and nobody able to press Sync);
 //   - it is behind main and merges with it cleanly (services/integration.js);
-//   - at most once per head, and at most once per check: a check it was
-//     synced for that still fails once it contains main is its own failure
-//     (fixed_check_sync_keys), and waits for a person.
+//   - at most once per head, and at most once per named check: a check it
+//     was synced for that still fails once it contains main is its own
+//     failure (fixed_check_sync_keys), and waits for a person.
 //
 // A clean sync is a mechanical merge, so the approval epoch does not move
 // and the votes the proposal has keep counting (services/pr-vote-revision.js).
@@ -66,6 +70,10 @@ const MIN_FAILING = 2;
 // A sync dispatches a worker and its new head takes a checks slot, so one
 // pass starts no more than the checks queue runs at once.
 const MAX_SYNCS_PER_PASS = 4;
+// A proposal failing only the unit suite is synced at most this many times
+// in all, each with a main that moved on and is green: one whose own change
+// breaks a test costs at most two runs more than it did when it was once.
+const MAX_UNIT_SYNCS = 3;
 
 function isEnabled() {
   const v = String(process.env.FIXED_CHECK_SYNC_ENABLED ?? '1').trim().toLowerCase();
@@ -160,6 +168,20 @@ async function mainWatchVerdict(pool, appId) {
 // The unit suite's own key, as fixed_check_sync_keys records it.
 const UNIT_KEY = appManifest.checkKey(UNIT_CHECK_NAME, UNIT_CHECK_PATH);
 
+// A sync for the unit suite is recorded with main's tip as main watch knew it
+// when the sync was chosen, `<UNIT_KEY>@<tip>`, so one main is never a reason
+// twice and the syncs can be counted. A bare UNIT_KEY was recorded before
+// this (or with no tip known): it counts, and names no main.
+function unitSyncKey(tip) {
+  return tip ? `${UNIT_KEY}@${String(tip).toLowerCase()}` : UNIT_KEY;
+}
+
+function unitSyncCount(tried) {
+  let n = 0;
+  for (const k of tried) if (k === UNIT_KEY || String(k).startsWith(`${UNIT_KEY}@`)) n += 1;
+  return n;
+}
+
 // Main watch passed after this proposal's checks ran: main has moved on since
 // the run and is green.
 function mainGreenSince(row, mainWatch) {
@@ -217,9 +239,16 @@ function select(rows, passes, mainWatch = null) {
     if (!blocking.length) {
       const unitBlocks = (row.failing || []).some((f) => !f.advisory && isUnitSuiteRow(f));
       if (!unitBlocks) { skipped[id] = 'nothing_fixed'; continue; }
-      if (tried.has(UNIT_KEY)) { skipped[id] = 'already_tried'; continue; }
+      // Synced as often as it gets, with this main already, or before with a
+      // main nobody can tell this one from: it waits for main to move on.
+      const synced = unitSyncCount(tried);
+      const tip = mainWatch && mainWatch.tip ? String(mainWatch.tip).toLowerCase() : null;
+      if (synced >= MAX_UNIT_SYNCS || tried.has(unitSyncKey(tip)) || (synced && !tip)) {
+        skipped[id] = 'already_tried';
+        continue;
+      }
       if (!mainGreenSince(row, mainWatch) && !mainGreenAtTip(mainWatch)) { skipped[id] = 'unit_suite_only'; continue; }
-      candidates.push({ id, head, keys: [UNIT_KEY] });
+      candidates.push({ id, head, keys: [unitSyncKey(tip)] });
       continue;
     }
     const keys = [];
@@ -406,6 +435,7 @@ module.exports = {
   openVerdicts,
   mainWatchVerdict,
   UNIT_KEY,
+  unitSyncKey,
   start,
   stop,
   isEnabled,
@@ -413,4 +443,5 @@ module.exports = {
   RECENT_MERGES,
   MIN_FAILING,
   MAX_SYNCS_PER_PASS,
+  MAX_UNIT_SYNCS,
 };
