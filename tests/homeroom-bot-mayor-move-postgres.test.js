@@ -332,13 +332,20 @@ test('#4239: moving a request about Homeroom itself to Homeroom\'s own board', {
     // Somebody else's request, one on Homeroom's own board, and a closed one.
     await request(11, { by: sam });
     await pool.query('DELETE FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = 11', [ears.id]);
-    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: ada })).code, 'not_theirs');
+    const stranger = await user('cy');
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: stranger })).code, 'not_theirs');
+    // The project's creator may move it (HOMESTEAD #33 and #35 waited on a
+    // requester who never tapped), and so may one of its admins.
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: ada })).ok, true, 'its creator');
+    await pool.query('INSERT INTO app_admins (app_id, user_id) VALUES ($1, $2)', [ears.id, stranger.id]);
+    require('../src/services/app-admins').invalidateAppAdmins(ears.id);
+    assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 11, user: stranger })).ok, true, 'an admin');
     assert.equal((await move.moveGate(pool, { app: homeroom, issueNumber: 1, user: ada })).code, 'already_there');
     await request(12);
     gh.issues.get('ear-trainer#12').state = 'closed';
     assert.equal((await move.moveGate(pool, { app: ears, issueNumber: 12, user: ada })).code, 'closed');
-    const refused = await turn('move #11', [
-      [['offer_move_request', { project: 'ear-trainer', number: 11, reason: 'x' }]],
+    const refused = await turn('move #12', [
+      [['offer_move_request', { project: 'ear-trainer', number: 12, reason: 'x' }]],
       [['reply', { text: 'I can\'t move that one.' }]],
     ]);
     assert.equal((await read(refused)).metadata.homeroomBot.kind, 'chat', 'no offer under it');

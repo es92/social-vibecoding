@@ -185,7 +185,14 @@ function questionText({ question, plan = null }) {
   return lines.join('\n');
 }
 
-function personText({ reason }) {
+function personText({ reason, platform = false }) {
+  // #4239: about Homeroom itself. The requester is offered the move in their
+  // DM; the project's creator and admins, who see only this note, are told
+  // they can move it too (homeroom-bot-move.js moveGate).
+  if (platform) {
+    return `Homeroom bot thinks this is about Homeroom itself, not this project: ${clipText(reason) || 'no reason given.'}\n\n`
+      + 'Whoever asked for it, or this project\'s creator or admins, can move it to Homeroom\'s own board by asking Homeroom bot in a chat.';
+  }
   return `Homeroom bot thinks a person needs to decide this one: ${clipText(reason) || 'no reason given.'}`;
 }
 

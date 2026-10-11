@@ -287,7 +287,7 @@ function failingNowLines(checks, canRevise = true) {
       '',
     ] : []),
     canRevise
-      ? 'If the replies ask about this, or ask you to fix it, and the cause is in your change, choose "revise" and fix it with whatever else they asked for. Never loosen, skip or delete a check that was there before your proposal.'
+      ? 'If the replies ask about this, or ask you to fix it, and the cause is in your change, choose "revise" and fix it with whatever else they asked for. Never loosen, skip or delete a check that was there before your proposal; one that pins the very wording or behaviour the request asked to change is updated to what it asked for, and your summary names it.'
       : 'If the replies ask about this, say what fails and why in your answer.',
     '',
   ];
@@ -665,8 +665,8 @@ function checksFixPrompt({ seed, proposalBlock = '', prNumber = null, failing = 
       '',
     ] : []),
     'Find out why each one fails, then do exactly one thing:',
-    '- "revise": the failures come from your change. Either the code does not do what the check expects, or a check your proposal added expects something the code does not do (text, a label, a selector that differs from what you built). Fix whichever one is wrong, and nothing else. Never loosen, skip or delete a check that was there before your proposal, and never change one the group wrote to match your code. Follow the repository\'s own agent instructions, and run the checks or tests that cover the fix. Do not commit or push yourself: your working tree is committed and pushed to the proposal for you, which clears its votes so the group looks again.',
-    '- "person": the failures are not caused by your change (they fail without it too), a check the group wrote expects behaviour the request asked you to change, or you cannot fix them safely. Say which, and why, in plain words. Change no files.',
+    '- "revise": the failures come from your change. Either the code does not do what the check expects, or a check your proposal added expects something the code does not do (text, a label, a selector that differs from what you built). Fix whichever one is wrong, and nothing else. Never loosen, skip or delete a check that was there before your proposal, and never change one the group wrote to match your code, with one exception: a check that pins the very wording or behaviour the request above asked to change (it expects the old words the request asked to reword) is updated to what the request asked for, and `summary` names that check, so the group sees it. Follow the repository\'s own agent instructions, and run the checks or tests that cover the fix. Do not commit or push yourself: your working tree is committed and pushed to the proposal for you, which clears its votes so the group looks again.',
+    '- "person": the failures are not caused by your change (they fail without it too), or you cannot fix them safely. Say which, and why, in plain words. Change no files.',
     '',
     `Write \`reply\` and \`summary\` in plain words, without em dashes: use a comma, a colon or a full stop. ${localeRule(locale)}`,
     'END YOUR REPLY WITH EXACTLY ONE fenced JSON block, and nothing after it:',

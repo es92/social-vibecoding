@@ -83,7 +83,8 @@ function movedFooter({ app, issueNumber, link, author }) {
 /**
  * The request a move is about, read fresh: an open issue (not a pull
  * request) on a project that is not Homeroom's own, which this person asked
- * for (homeroom_bot_requesters) or filed. Resolves { ok: true, app, repo,
+ * for (homeroom_bot_requesters) or filed, or whose project they run (its
+ * creator or an admin: app-admins.js canManageApp). Resolves { ok: true, app, repo,
  * issue: { title, body, login }, author: { userId, username } | null } or
  * { ok: false, code, error }.
  */
@@ -117,8 +118,10 @@ async function moveGate(pool, { app, issueNumber, user, deps = {} }) {
     'SELECT 1 FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = $2 AND user_id = $3',
     [app.id, n, user.id],
   );
-  if (!asked.length && author?.userId !== Number(user.id)) {
-    return { ok: false, code: 'not_theirs', error: 'Only the person who filed it, or asked for it, can move it.' };
+  // The project's creator and admins may move it too: HOMESTEAD #33 and #35
+  // stayed on its board because only their requester could, and never did.
+  if (!asked.length && author?.userId !== Number(user.id) && !(await require('./app-admins').canManageApp(pool, app, user))) {
+    return { ok: false, code: 'not_theirs', error: 'Only the person who filed it or asked for it, or the project\'s creator or admins, can move it.' };
   }
   return { ok: true, app, repo, issueNumber: n, issue, author };
 }
