@@ -1,0 +1,1406 @@
+{
+  "merge.measured.justNow": {
+    "text": "mesuré à l'instant",
+    "source": "b5e96dd76d16fd2b658ecaf50c00c1e30a3486d3c91407756656fcc02fd77a9b"
+  },
+  "merge.measured.minuteAgo": {
+    "text": "mesuré il y a une minute",
+    "source": "7548c7651c80f849f98f8b9bd44cf67d73cad5b8dd4fd0f5d793c06705d7ae48"
+  },
+  "merge.measured.hourAgo": {
+    "text": "mesuré il y a une heure",
+    "source": "210fb6a16631ef12988ee45289a98884a2783a4dcd6bad67c7885f5c6587b430"
+  },
+  "merge.measured.joined": {
+    "text": "{{statement}} · {{measured}}",
+    "source": "1cc73d69b4234862a1e837ce12d7a2564c34c13ff514bef0b0614c5ac25df163"
+  },
+  "explicitApproval.sentence.admins": {
+    "text": "Toute modification de la liste des administrateurs de cette appli requiert un Oui d'un autre membre.",
+    "source": "5689c24c05049e0baccd97355859e013be2b42366531d36491968f397876ba24"
+  },
+  "explicitApproval.sentence.governance": {
+    "text": "Toute modification de la règle d'approbation requiert un Oui d'un autre membre.",
+    "source": "1252695b74d93753c46e9b0ad7948b0c4ec226ce22c552272f8606cf556b045f"
+  },
+  "explicitApproval.sentence.visibility": {
+    "text": "Les modifications de la visibilité de cette appli nécessitent un Oui d’un autre membre.",
+    "source": "261e7ec0d3a4cd257600e5af1cc8dff3ef12d451e2853e870b98d3f0df038e89"
+  },
+  "explicitApproval.sentence.platformEnv": {
+    "text": "Les modifications des paramètres de plateforme de cette appli nécessitent un Oui d’un autre membre.",
+    "source": "2dffe151a29dd2a200d0305fa40509cff4f2245cef9209fc8497cf5796a0d48a"
+  },
+  "explicitApproval.sentence.secrets": {
+    "text": "Les modifications des clés de cette appli nécessitent un Oui d’un autre membre.",
+    "source": "f2dd6b8edc56dc36a6c90ee4bab91ee23d6f42abb338fbfe07f9c6b24482e4ff"
+  },
+  "explicitApproval.sentence.other": {
+    "text": "Cette modification nécessite un Oui d’un autre membre.",
+    "source": "456bf8bcf41fd0982aae90f6a1258397c854893bc21cc943683df58440972d82"
+  },
+  "explicitApproval.line.admins": {
+    "text": "Elle modifie qui gère cette appli",
+    "source": "6c5fcabc1a229368f133682c5b2614b02f26cc4a2d7e3a4414296ce784ceed7f"
+  },
+  "explicitApproval.line.governance": {
+    "text": "Elle modifie la façon dont les modifications sont approuvées",
+    "source": "628f7fbe2b3d1f9957d189a32d149cb741267f7c4623d6bd3ce940acd3143831"
+  },
+  "explicitApproval.line.visibility": {
+    "text": "Elle modifie qui peut voir cette appli",
+    "source": "15a3cfa6f972653ad28a7ee31e4d10682e08768bfeb8f3f59f44bbd41a39896d"
+  },
+  "explicitApproval.line.platformEnv": {
+    "text": "Elle modifie les paramètres de plateforme de cette appli",
+    "source": "af423c4dd178c4076daba27b5fd4553f2add7a08a6b1d2f1e226b1dc57973b67"
+  },
+  "explicitApproval.line.secrets": {
+    "text": "Elle modifie les clés de cette appli",
+    "source": "53aee3163a56d8953ba32f525b1973a96ce8578f87f6f72aeb1a0115b7b11279"
+  },
+  "explicitApproval.line.other": {
+    "text": "Elle modifie un paramètre protégé",
+    "source": "ae42b60102862b6dd9db8a721232637793b781d0402d332604f92aa007343f4a"
+  },
+  "merge.status.integrating": {
+    "text": "Mise à jour…",
+    "source": "4d201b4648301bde0a10951a7d14f05e7ae99e507f037b5ae3d3d947df6161cf"
+  },
+  "merge.title.integrating": {
+    "text": "La plateforme fusionne main dans cette proposition pour résoudre un conflit. Le résultat est prévisualisé et vérifié, puis fusionné automatiquement une fois le vote adopté.",
+    "source": "a2957cfe18b5f5e73a7f09ed4a5e96cbfdd42611c8fd01fd369fc661ea538607"
+  },
+  "merge.status.waitingOnBudget": {
+    "text": "En attente du budget partagé",
+    "source": "32e9da4bf98debbbd26472ac17cc1573645c81074479c199fb301871ebd59e7b"
+  },
+  "merge.title.waitingOnBudget": {
+    "text": "Cette proposition doit être fusionnée avec main, mais le budget de jetons partagé de la plateforme est épuisé pour aujourd’hui. Elle reprendra après la réinitialisation à minuit UTC.",
+    "source": "195813c86211bbc83bbd1e9ab2abda2f5b0cda0d7395aecd0970374dde3b2392"
+  },
+  "merge.status.goingLive": {
+    "text": "Mise en ligne…",
+    "source": "bf4f4709eac06b0d460f2a9142f3eb782a292ccb93f50c3001cf1bb90bd18184"
+  },
+  "merge.title.goingLive": {
+    "text": "Cette modification est fusionnée. La production est en cours de mise à jour pour l’exécuter.",
+    "source": "41bf71cb9d8179f9cb4d7ccadbf3a588fc89abd4354c186d645f3dcdcc5c9c88"
+  },
+  "merge.status.merged": {
+    "text": "Fusionnée",
+    "source": "bd0a06202c440a9ee86f50165aa66886259d89c3d219e2ef47a759cde6a38c00"
+  },
+  "merge.status.merging": {
+    "text": "Fusion…",
+    "source": "42212e3026cbbecd93c4c82071c214db33c1dce70f2aa591e89296b651fa7252"
+  },
+  "merge.title.merging": {
+    "text": "Cette modification est en cours de fusion dans l’appli et la production se reconstruit.",
+    "source": "8fd7219f4d312b348f5f3ad962ab81e9446b3a53d585b3f80a01de8b5abbc9af"
+  },
+  "merge.status.resolving": {
+    "text": "Résolution automatique des conflits…",
+    "source": "6191b885ab49307ba4b34877a9bc8eb24840320928190084dd60f1f566695d88"
+  },
+  "merge.title.resolving": {
+    "text": "Résolution automatique des conflits avec main, puis nouvelle tentative de fusion.",
+    "source": "0deeee4f436f76754524d5174e763150d005e51798d5e7ee32324f4051392987"
+  },
+  "merge.status.conflictFailed": {
+    "text": "Échec de la résolution du conflit",
+    "source": "95fc7813ee4c3bbc5043e87b7da098d4925531924e493c71595eddece3422ca9"
+  },
+  "merge.title.conflictFailed": {
+    "text": "La dernière résolution automatique du conflit a échoué. Le propriétaire doit la résoudre manuellement.",
+    "source": "d4359cb033ead0ae855b96f1c660d69ef3b7c5caa47dbe7ce397fe11b5f62081"
+  },
+  "merge.status.mergeConflict": {
+    "text": "Échec de la fusion : conflit",
+    "source": "cdc73e8888f7e09352757659a1c72cc95d84c614d5755c444bb14025de5d280c"
+  },
+  "merge.title.mergeConflict": {
+    "text": "La mise en ligne a été tentée, mais cette modification est en conflit avec main. Son auteur doit la mettre à jour depuis sa session d’agent (« Sync with main »).",
+    "source": "9005e4849b13d58b65d9e36aa5f2b1cf197c56b5b469ba63d3dbd9289729e2e8"
+  },
+  "merge.status.conflictsWithMain": {
+    "text": "En conflit avec main",
+    "source": "160f1693ddd5e2ae6d6e32c71ed4701eedf6542339ca1aaa2103e3e54f589379"
+  },
+  "merge.title.conflictUnresolvable": {
+    "text": "Main a évolué et cette proposition ne peut plus être fusionnée seule. La plateforme a tenté de la résoudre sans y parvenir. L’auteur de la modification doit la mettre à jour depuis sa session d’agent (« Sync with main »).",
+    "source": "f5555478777f97f18e14d14b20b9b5aa436b8435efc426c9c17c23ab795d7558"
+  },
+  "merge.title.conflictForkHead": {
+    "text": "Main a évolué et cette proposition ne peut plus être fusionnée seule. Sa branche se trouve sur le fork de son auteur, où la plateforme ne peut pas écrire : seul l’auteur peut la mettre à jour.",
+    "source": "842ee766d8c12cc0003a11e3a50573539e97d4b143b3d37505d19dc6bd1d300d"
+  },
+  "merge.title.conflictAwaitingApproval": {
+    "text": "Main a évolué et cette proposition ne peut plus être fusionnée seule. La plateforme la résoudra une fois le vote adopté. L’auteur peut la mettre à jour plus tôt depuis sa session d’agent (« Sync with main »).",
+    "source": "f8b0468cf5209e87edc21b3a76d602f5c0d609652ee9ccb4305fb85539e90871"
+  },
+  "merge.title.conflictAutomatic": {
+    "text": "Main a évolué et cette proposition ne peut plus être fusionnée seule. La plateforme la résout automatiquement. L’auteur peut aussi la mettre à jour depuis sa session d’agent (« Sync with main »).",
+    "source": "667485c8df25575314d8e53a5bdf844eafb254651ec535041f2185d2053d573e"
+  },
+  "merge.status.previewFailed": {
+    "text": "L’aperçu ne démarre pas",
+    "source": "cf4e0364a3d146c035586055db659f0cbf19a99fbad95c7b0b182f3b7d5eb64f"
+  },
+  "merge.title.previewFailedReason": {
+    "text": "L’aperçu n’a pas pu démarrer, il ne peut donc pas être testé. Il ne peut pas être mis en ligne tant qu’il ne démarre pas. Raison : {{reason}}",
+    "source": "55ee1937d6cae382a358bda8ae9fa210d46f927b2013df094691cbb31523e2da"
+  },
+  "merge.title.previewFailed": {
+    "text": "L’aperçu n’a pas pu démarrer, il n’a donc pas pu être testé. Il ne peut pas être mis en ligne tant qu’il ne démarre pas.",
+    "source": "4bc53266714f4e17d00e20c3a079e1bcecc15677ef9d16c4bdb80e5144b3f4e2"
+  },
+  "merge.status.checksWillRetry": {
+    "text": "Les vérifications vont se relancer",
+    "source": "01842acf617d4663d643763b238ff6f7218d5596904fb3d661baa6940fb22543"
+  },
+  "merge.title.checksWillRetryDetail": {
+    "text": "{{detail}} La fusion est bloquée tant qu’elles ne sont pas réussies.",
+    "source": "91d1e8cb3fde8f28577c95ef6185a1b6b2cbf4634d1d5e933dc71f7368baa3d2"
+  },
+  "merge.title.checksWillRetry": {
+    "text": "La fusion est bloquée tant que les vérifications ne sont pas réussies.",
+    "source": "00f3dc84cfecb10e640deb582f8155d6e6922880a0b9ed49e5abe261feddc521"
+  },
+  "merge.status.checksError": {
+    "text": "Vérifications impossibles",
+    "source": "ae981c13805c7759a9fa3e0d22d451618e6e6653a33fd087612b3de0fc097126"
+  },
+  "merge.title.checksErrorReason": {
+    "text": "L’exécution des vérifications automatiques s’est arrêtée sans produire de verdict. La fusion est bloquée. Raison : {{reason}}",
+    "source": "0fb6e67fae741dd08bdbbf5476ae97492dbecd4cfea527d695ea9ed7999c717a"
+  },
+  "merge.title.checksError": {
+    "text": "L’exécution des vérifications automatiques s’est arrêtée sans produire de verdict. L’aperçu est peut-être encore disponible ; la fusion est bloquée jusqu’à la fin des vérifications.",
+    "source": "deef3cc87e8bcb37611cf842df4d223648adbdaba604038792dd4d50887e6ba1"
+  },
+  "merge.status.checksFailing": {
+    "text": "Vérifications en échec",
+    "source": "cc33bd61400c285b951824dc8308be3f3b2407607b5f51fc0f793edd3a695bbd"
+  },
+  "merge.title.checksFailing": {
+    "text": "Les vérifications ne réussissent pas sur l’aperçu. La proposition ne peut pas être mise en ligne tant qu’elles échouent.",
+    "source": "855a4c53be02a92dc1a8151fcbebf2bd0e1e649588fc235734b75e0ca76fcc1a"
+  },
+  "merge.status.checksDeferred": {
+    "text": "Vérifications différées",
+    "source": "a2cd58c8ffaf69067cab48549be794997ec4c077dcd9544579e3a8fbde48ee5f"
+  },
+  "merge.title.checksDeferred": {
+    "text": "Cette proposition est en conflit avec main : son aperçu a été construit, mais ses tests n’ont pas été exécutés, car ils jugeraient une arborescence impossible à fusionner. Ils s’exécuteront automatiquement dès qu’elle pourra être fusionnée sans conflit.",
+    "source": "40dcbb19340024ca17eaa23c1b5fa17b8cce23c3339f7573fd8ef82c5cd49d01"
+  },
+  "merge.status.checksQueued": {
+    "text": "Vérifications en attente",
+    "source": "d2c27402aa25e99e605da4dd2ea26db3d6bd52e748059e9b7ec31d2a7082781d"
+  },
+  "merge.status.checksQueuedNext": {
+    "text": "Vérifications en attente · suivante",
+    "source": "b073745331534f2a5a7f562e4bdef215c4dfed480d1dcaf06591244574f90656"
+  },
+  "merge.title.checksQueued": {
+    "text": "L’aperçu est prêt et ses vérifications attendent une place : Homeroom n’exécute que quelques vérifications de propositions à la fois. Elles démarreront d’elles-mêmes. La proposition ne peut pas être mise en ligne tant qu’elles ne réussissent pas.",
+    "source": "9b0477f08c23093d03677f1aa110c3aeec2416134d33afb589c39a88d3aaf8ff"
+  },
+  "merge.status.checksRunning": {
+    "text": "Vérifications en cours…",
+    "source": "378935598963b3ad5d4f680777c1761fa1528028db99668354dddbb0489193c3"
+  },
+  "merge.title.checksRunning": {
+    "text": "Test de l’aperçu en cours. La proposition ne peut pas être mise en ligne tant que les vérifications ne réussissent pas.",
+    "source": "ea9ad72b5006f7c2785ca7d4ad243b67ead65f2ea54803350ccc92209bdfffb1"
+  },
+  "merge.status.checksStarting": {
+    "text": "Démarrage des vérifications…",
+    "source": "0ddf2772e7d8e0ef7416eb2d5d5a84e1686daa5d83c2515a4e3a485b564603cd"
+  },
+  "merge.title.checksStarting": {
+    "text": "L’aperçu est en préparation et les tests vont démarrer. La proposition ne peut pas être mise en ligne tant que les vérifications ne réussissent pas.",
+    "source": "9cf084130fbf00761efbc36913cd9fc86af6c74a02aea3145d6249e504cf051c"
+  },
+  "merge.status.checksSkipped": {
+    "text": "Vérifications ignorées",
+    "source": "765099c781325d6e0c330eacc1fd1df1b87b859cc6c8785d754bbb6f2bbd376d"
+  },
+  "merge.title.checksSkippedReason": {
+    "text": "Les vérifications ont été ignorées : {{reason}}. La proposition peut quand même être mise en ligne.",
+    "source": "2d86b176ac89321fa7deab549a577922f31339428b64015b36d1786b5b843ab1"
+  },
+  "merge.title.checksSkipped": {
+    "text": "Les vérifications ont été ignorées : il n’y avait rien à tester. La proposition peut quand même être mise en ligne.",
+    "source": "1c84321ca2afb7184e930f35d46eaa31743e5e2d1851ab4298fc00a8d5bd925e"
+  },
+  "merge.status.behind": {
+    "text": "En retard sur main",
+    "source": "fff255040f092e24a8caa2343e8350b462089e110b218fc99dc85e3171443228"
+  },
+  "merge.title.behind": {
+    "text": "Main a évolué depuis cette proposition, mais elle peut toujours être fusionnée sans conflit. Aucune synchronisation n’est nécessaire : elle sera fusionnée telle quelle une fois le vote adopté.",
+    "source": "c6fdfaafbcbcd5f300c375fb419009b7d452720b1594f57dd7ecc60675f685b8"
+  },
+  "merge.status.awaitingAdmin": {
+    "text": "Approbation d’un admin en attente",
+    "source": "c16937fcc7cf20607952961014acb83ef11f5fe225542e7d8d765b722c9fd7ad"
+  },
+  "merge.title.awaitingAdmin": {
+    "text": "L’appli est verrouillée : il faut aussi au moins un Oui d’un admin avant la fusion.",
+    "source": "fcb4069f6c7352690e9e81e98496966cfca2a08426fc1b90f0d7a9e7d236cbb2"
+  },
+  "merge.status.awaitingMember": {
+    "text": "Il faut le Oui d’un autre membre",
+    "source": "43bb7625b2f4a4ed59c521d087bca988290d1bbe68af5413633c1e85c56cdb19"
+  },
+  "merge.status.mainPaused": {
+    "text": "Approuvée, mise en ligne en pause",
+    "source": "56cd528d4da3181cbd6894f7829b830927a9638f5f900b52d48c42fbfa6eea7a"
+  },
+  "merge.title.mainPausedNote": {
+    "text": "Approuvée et vérifications réussies, mais {{reason}}. Rien ne cloche dans cette modification ; elle sera mise en ligne dès que l’appli sera de nouveau en bonne santé ou qu’un admin reprendra.",
+    "source": "4f32ad6daa3f3859b5de94573eff9fee18e09304fe09763bb8f466b1a67884ea"
+  },
+  "merge.title.mainPaused": {
+    "text": "Approuvée et vérifications réussies, mais la suite de tests unitaires de main échoue et la mise en ligne est suspendue pour cette app. Rien n’est à reprocher à cette modification : elle sera mise en ligne dès que l’app sera de nouveau saine ou qu’un admin reprendra.",
+    "source": "941eae703fca35d78409955a24af28ac1b1818a1590142116c722c03e8ef91cd"
+  },
+  "merge.status.ready": {
+    "text": "Approuvée, mise en ligne imminente",
+    "source": "15a8bd338076db51cc8029b3388a37bba285dddeff0e724b8a61b972427ab5ab"
+  },
+  "merge.title.ready": {
+    "text": "Approuvée et vérifications réussies. Elle sera bientôt mise en ligne.",
+    "source": "d602759c24efcec4bedc5e22465c72b3cb02cb71619a5c507932edf30de0b58b"
+  },
+  "merge.status.waitingForYourApproval": {
+    "text": "En attente de votre approbation",
+    "source": "af7a94b91a7493faa5d5226a2ddbb38b57df3d30f426deb82d9cd9c64547d122"
+  },
+  "merge.status.waitingForApproval": {
+    "text": "En attente d’approbation",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "merge.title.explicitApprovalNoTimer": {
+    "text": "{{requirement}} Elle ne sera pas fusionnée au bout d’un délai : il faut de vrais votes Oui pour atteindre le seuil normal de l’app.",
+    "source": "516d1c8948b0dec070145ccc2332bcbd004059aa7ddd58495177ce96129169cf"
+  },
+  "merge.status.checksPassed": {
+    "text": "Vérifications réussies",
+    "source": "b63c39d9e1d20d42983dd86d40ba09c414bc96224c387d973f6fd41983d5e8ab"
+  },
+  "merge.title.checksPassed": {
+    "text": "Vérifications réussies sur l’aperçu. Elle est prête à être envoyée pour approbation.",
+    "source": "32255c42565c039b853720d4ab1513eff0853cd11299fc2da9ff7e562e50b81e"
+  },
+  "merge.status.draft": {
+    "text": "Brouillon",
+    "source": "ebf12ef47cf575b3ba9a3cc019c5310146fdac88f6d1be6618d6e91158c2f174"
+  },
+  "merge.pill.statusWithTally": {
+    "text": "{{status}} · {{yes}}/{{required}}",
+    "source": "3468790cb306b653edfa549a30117969f06bf9c4e5e43f5ef65527255e3b5c5f"
+  },
+  "venue.group.inChat": {
+    "text": "Dans ce chat",
+    "source": "9f8ea144c95ea84124f70b63ef16e5c18c837aeb3a0f9dc4d9a2450a2c768595"
+  },
+  "venue.group.elsewhere": {
+    "text": "Ailleurs",
+    "source": "6fc42e1efc9f1ba8e35e7a3364bf7bee2581abc2633434bc1e4683e26efb494f"
+  },
+  "venue.usernodeOpenrouter.label": {
+    "text": "Homeroom · OpenRouter",
+    "source": "8e3c38ff33e0229816787b6380bef1bc9e0bef3ccc77c4b6545415514cbf209b"
+  },
+  "venue.usernodeOpenrouter.blurb": {
+    "text": "L’option à privilégier dans le chat : utilisez les crédits inclus ou votre propre clé OpenRouter, et choisissez n’importe quel modèle disponible.",
+    "source": "73fce269a7b578e3c1a0929ba4ffc65955f61550734931501610814cc533172e"
+  },
+  "venue.usernodeOpenrouter.cta": {
+    "text": "Utiliser OpenRouter",
+    "source": "60ee6ab8eefc5c9bde13cee5b5c912aad2e724d213db36652609ab0e8f76c63a"
+  },
+  "venue.usernodeClaude.label": {
+    "text": "Homeroom · Claude",
+    "source": "512e3c8d3c7dc34cf3689a75c389c2b232b79c0c9a6f7021672b8972fbc92c0e"
+  },
+  "venue.usernodeClaude.blurb": {
+    "text": "Homeroom exécute les échanges ici même, avec vos crédits Claude quotidiens, ou votre propre clé Anthropic une fois épuisés.",
+    "source": "e96532779ae6dd569ff9b4e927979dffa2f95aeee78035466d3c54399e3ffd6f"
+  },
+  "venue.usernodeClaude.cta": {
+    "text": "Utiliser Claude",
+    "source": "02df37789b8c426fc70d0b85b55c2f12cfed27c5e20ecd68a13dd3856eee81a4"
+  },
+  "venue.local.label": {
+    "text": "Votre ordinateur · session Homeroom",
+    "source": "20ccf0bddf3d1e8dd74d654f75b6280cd1765137e477c33df95f0c02179a2fca"
+  },
+  "venue.local.blurb": {
+    "text": "Le CLI Homeroom exécute les échanges de cette session sur votre machine, avec votre propre forfait Claude. Même chat, même branche, même proposition. Le travail s’exécute simplement en local.",
+    "source": "2d7f4080ad8ef54c4ba291b169f67321611ec859d2bb4cbb64f80e1f80b59b5d"
+  },
+  "venue.local.cta": {
+    "text": "Installer le CLI Homeroom",
+    "source": "c372ae4802acfb8c46b85acb394abd014be0e145e4c3d19125eee67175d6b32b"
+  },
+  "venue.webClaudeCode.label": {
+    "text": "Claude Code sur le web",
+    "source": "d6d694206e1d2de6701e369f45c5730fe9bce14aad89b77b94694e6e467d2d7f"
+  },
+  "venue.webClaudeCode.blurb": {
+    "text": "Homeroom rédige l’ordre de travail ; Claude Code sur le web le réalise avec votre propre forfait Claude et pousse vers votre fork. Homeroom ouvre la pull request et l’importe comme proposition. Sans crédits, sans clé d’API.",
+    "source": "bcfafe7c2a9304988c9c7f79f39fcda90a4e5bc369d120e9da91e5648ad7060b"
+  },
+  "venue.webClaudeCode.cta": {
+    "text": "Utiliser Claude Code",
+    "source": "a718dfe39b02132435af3a4cff38ad2deee47deae20a631fa77eef52455e6124"
+  },
+  "venue.webCodex.label": {
+    "text": "Codex sur le web",
+    "source": "114daa2da970b700481ddee89dcea387585f958af9633399dd7dd85996f31ceb"
+  },
+  "venue.webCodex.blurb": {
+    "text": "Le même transfert pour Codex sur le web et le forfait ChatGPT que vous payez déjà. Homeroom vous guide pour lier GitHub, créer le fork et soumettre.",
+    "source": "ac2a8c97dcd941bfbb2bc11cd2db029c0f86ec08b5cc8e1be524476202e47ac6"
+  },
+  "venue.webCodex.cta": {
+    "text": "Utiliser Codex",
+    "source": "0574bcfa07f9fb0f8575748b3857e9a067432ce321471c14e0d3cdf566196ddb"
+  },
+  "venue.ownToolsPr.label": {
+    "text": "Votre ordinateur · vos propres outils",
+    "source": "2e3454ab2eae5906b39cb9f68dd688707ac4b60ee48315843fd449a563b47a26"
+  },
+  "venue.ownToolsPr.blurb": {
+    "text": "Construisez-la comme vous voulez (Cursor, Zed, vim, n’importe quel agent), poussez une branche, puis importez la pull request avec « Import Feature from a PR ».",
+    "source": "c784606e72748c1010ff55e71022737afb28a682a019c0b49d8802fae8c7702b"
+  },
+  "venue.ownToolsPr.cta": {
+    "text": "Comment fonctionne l’import d’une PR",
+    "source": "570aa7959e9a7df2c7fa397c1130c9bf805eb40713d9e621b2d79d4a4a466015"
+  },
+  "venue.handoff.externalAgent": {
+    "text": "Agent externe",
+    "source": "41883df464c66e5e95add18647366698bed6e295e41a216365dbe413a0a4a6d2"
+  },
+  "venue.handoff.authoredWithCodex": {
+    "text": "Rédigée avec Codex sur votre ordinateur.",
+    "source": "8c5ae83ffe5be1c188623d5cee5747311153ad28a26a934f9b1eca3ba0d1a2b3"
+  },
+  "venue.handoff.authoredWithClaudeCode": {
+    "text": "Rédigée avec Claude Code sur votre ordinateur.",
+    "source": "c235dc65818294e42313c6be91bb3e22b517695c7791177b28c1ff824d2f186f"
+  },
+  "venue.handoff.authoredWithExternalAgent": {
+    "text": "Rédigée avec un agent externe sur votre ordinateur.",
+    "source": "a9280dcdb1a9032e3e4bd4f7820344947928006a90800f19d54cc427bdb21149"
+  },
+  "venue.rowLabel.continueSession": {
+    "text": "Poursuivre cette session avec {{venue}}",
+    "source": "be7269fff51755af773a59fff93dd47a276ace03aeb92d8bbd010170fc6d3423"
+  },
+  "venue.rowLabel.continueProposal": {
+    "text": "Poursuivre cette proposition avec {{venue}}",
+    "source": "27b031e5c1608fbdeee9b91f9e519c4d90e853aa0e5849c2da845bd1cf17701a"
+  },
+  "venue.rowLabel.startNew": {
+    "text": "Démarrer un nouveau travail avec {{venue}}",
+    "source": "b5d5e0752f2a6fe7b9e3857574de058931b9cbde5fe6dd21cbd6fa0221e95759"
+  },
+  "venue.rowLabel.moveTo": {
+    "text": "Passer à {{venue}}",
+    "source": "32eee21005d5501ffa48dd3532bb4b1718cfc3c207fe2f49353c5d736fad5865"
+  },
+  "venue.webNote.sessionPaused": {
+    "text": "Il part du dernier commit de cette session et repousse son travail sur la branche propre de cette session ; le code arrive sur cette branche, et son aperçu et ses vérifications se mettent à jour quand vous rouvrez la session. La conversation de l’agent a lieu là-bas, pas dans cette transcription.",
+    "source": "945420cde8c2b7edea9df276f49c575289239e497bbdd7a2ef70e2e103acc580"
+  },
+  "venue.webNote.session": {
+    "text": "Il part du dernier commit de cette session et repousse son travail sur la branche propre de cette session ; le code arrive ici, et son aperçu et ses vérifications sont reconstruits. La conversation de l’agent a lieu là-bas, pas dans cette transcription.",
+    "source": "047f744663f3b7b029aa3abc79bdd6f90633838a4ea53bb827da4f9b699b010e"
+  },
+  "venue.webNote.proposal": {
+    "text": "Il part du dernier commit de cette proposition et repousse sur la même proposition ; soumettre efface les votes déjà recueillis et relance ses vérifications. La conversation de l’agent a lieu là-bas, pas dans cette transcription.",
+    "source": "737002fd56127b2f518ff4e3c94ab29a492a81bfd71fb2f05bb07e843d39897c"
+  },
+  "venue.webNote.newWork": {
+    "text": "Homeroom prépare une tâche pour l’agent web ; ce qu’il construit revient sous forme de proposition distincte, pas comme des échanges supplémentaires dans cette session.",
+    "source": "a790046ee008fff631b24b6ac3bfc29a15762c91cede377739086015da5c55e6"
+  },
+  "venue.consequence.ownToolsSwitch": {
+    "text": "Démarre un travail distinct. Ce chat reste tel quel, et ce que vous importez revient sous forme de proposition distincte. Ne peut pas être votre choix par défaut.",
+    "source": "2bf4cfa3aa362cda626acdf97b265d8552eb362c2e4eb01467cb0655cc66bff2"
+  },
+  "venue.consequence.ownToolsBlocked": {
+    "text": "Ne coûte aucun crédit : vous la construisez vous-même et importez la pull request. Pas de chat Homeroom pour celle-ci, et elle ne peut pas être votre choix par défaut.",
+    "source": "99da23ad19a8be80b4bc53d08183b44e3fb8f41b460910f9c63068e153c865ba"
+  },
+  "venue.consequence.ownToolsStart": {
+    "text": "Pas de chat Homeroom pour celle-ci. Vous la construisez, puis importez la pull request. Ne peut pas être votre choix par défaut.",
+    "source": "ae68e1c0fee2e2363a8f1a4666d9a536d18b991e6f3e6cce4f7bbd024d517171"
+  },
+  "venue.consequence.inChatSwitch": {
+    "text": "Conserve ce chat, cette branche et cette proposition. Seul l’endroit où s’exécutent les échanges change.",
+    "source": "274731bf6d0eb7751892fb4ccc749b9ad16daef8afc8b1796c9a2f2f016fdbad"
+  },
+  "venue.consequence.inChatStart": {
+    "text": "Le travail se fait dans ce chat.",
+    "source": "5719699d53adbb9dbaef5daac4f0907e9a0e74e30e8fdc7132f55ade51de250d"
+  },
+  "venue.rowTitle.joined": {
+    "text": "{{blurb}} {{consequence}}",
+    "source": "d3909a2dedf44462f8cfe013c05491a8fa75e263f115ac1f6d9e7a175426e0cf"
+  },
+  "venue.blocked.creditsSpent": {
+    "text": "Les crédits IA du jour sont épuisés. Ils sont réinitialisés à {{time}}.",
+    "source": "a2e747c4129dd88bbb362a69be19de767a11558b2151145f32132886cdb354f1"
+  },
+  "venue.blocked.creditsSpentUtc": {
+    "text": "Les crédits IA du jour sont épuisés. Ils sont réinitialisés à minuit UTC.",
+    "source": "f7edfc46654aba6f8241971ee7f2c886cd69cc58e2638394a866a901bdbc19de"
+  },
+  "venue.chip.title": {
+    "text": "{{venue}} : {{blurb}}",
+    "source": "3080058e6e25af56faae3aab9c775389cdae9935f707e37d4bc70e3aea8e2f1c"
+  },
+  "venue.fallback.flagOff": {
+    "text": "Votre choix par défaut est Homeroom · OpenRouter, mais cette instance l’a désactivé ; cette session se construit donc dans Homeroom · Claude.",
+    "source": "da88610c046f6c8e5c196dbec2f87f9dee41d758377044b36e526a7b8175dd3e"
+  },
+  "venue.fallback.modelUnavailable": {
+    "text": "Votre choix par défaut est Homeroom · OpenRouter, mais aucun modèle n’y est défini ; cette session se construit donc dans Homeroom · Claude. Choisissez un modèle dans les Réglages et la suivante l’utilisera.",
+    "source": "e8a137c80776255b7f18d3c741a5c6c2adb052a97c5f6967936913a63803a946"
+  },
+  "venue.fallback.noCredential": {
+    "text": "Votre choix par défaut est Homeroom · OpenRouter, mais votre clé OpenRouter est absente ou n’est plus valide ; cette session se construit donc dans Homeroom · Claude. Enregistrez à nouveau la clé dans les Réglages.",
+    "source": "8f709c28a56bad336809117f4ac49a3ad37a9d1a996baa35d9fda246324fc456"
+  },
+  "venue.choice.onPlatform.label": {
+    "text": "Sur la plateforme",
+    "source": "604d2fcb7ccb8c49e29590f0dbea141209cb9408bbf34670a3a504384c5fe2a8"
+  },
+  "venue.choice.onPlatform.blurb": {
+    "text": "Homeroom exécute les échanges ici même, dans ce chat, avec vos crédits IA quotidiens ou votre propre clé une fois épuisés.",
+    "source": "03c19bf6b8c16811a577c34075e9ea443c14527098b85a441c62fe8beb206a24"
+  },
+  "venue.choice.webAgent.label": {
+    "text": "Interface web Claude ou Codex",
+    "source": "17f1bb5ba9a69e5791f984458c37b34ae95e2543e8198e200b4ad4aced51b829"
+  },
+  "venue.choice.webAgent.blurb": {
+    "text": "Homeroom rédige l’ordre de travail et Claude Code ou Codex le réalise avec le forfait que vous payez déjà, puis repousse ici. Vous choisirez lequel des deux sur l’écran suivant.",
+    "source": "64cda33274381f1b9e289e961cdf449bdf71d69cb85c2580ec0b42cc8ead51a3"
+  },
+  "venue.choice.ownTools.label": {
+    "text": "Vos propres outils de développement",
+    "source": "9d3d0d0daf58eb3c0ad2d3fca2541cbaaa259385254d49ff1609f16e4f914f51"
+  },
+  "venue.choice.ownTools.blurb": {
+    "text": "Construisez-la comme vous voulez (Cursor, Zed, vim, n’importe quel agent), poussez une branche, puis importez la pull request.",
+    "source": "8c216d920b8902fef42dfbecae691752d2dbc03bfc694e313c2c578a09e53b2a"
+  },
+  "venue.choice.cliBridge.label": {
+    "text": "Pont CLI local",
+    "source": "3657732f84d12e6fa2bf928d2ef906d23f26adb9ae49f053583599702247d2b7"
+  },
+  "venue.choice.cliBridge.blurb": {
+    "text": "La CLI Homeroom exécute les échanges de cette session sur votre machine, avec votre propre abonnement Claude. Même discussion, même branche, même proposition. Seule l’exécution se fait en local.",
+    "source": "2d7f4080ad8ef54c4ba291b169f67321611ec859d2bb4cbb64f80e1f80b59b5d"
+  },
+  "venue.sheet.rowUnavailable": {
+    "text": "{{choice}} (indisponible)",
+    "source": "d46dcc5701ce24837a407bbb2a2d59dea1391c47f5acf8839c1ad633c1ee010c"
+  },
+  "venue.sheet.rowCurrent": {
+    "text": "{{choice}} ✓",
+    "source": "47aa0502dc46b683da21b2f106087063456a3d199b1cc45cecfdd71cf59d3c20"
+  },
+  "venue.sheet.title": {
+    "text": "Où voulez-vous travailler dessus ?",
+    "source": "d3cb6ca67bf4e74b04d854018b0d2ad0819608318332550e3787d4a39163421d"
+  },
+  "flow.agent.generic": {
+    "text": "votre agent de code",
+    "source": "9f9a3cb0e1298e87b66b743578880d3dafd08da2c00e90f540d7069a18529dfc"
+  },
+  "flow.unavailable.noRepository": {
+    "text": "Cette appli n’a pas encore de dépôt GitHub : elle ne peut être créée qu’ici, sur Homeroom.",
+    "source": "7d49dfd05f6b28ee484bc78436c538fab5e1ef4dae0212d4ca3dd502650a13e0"
+  },
+  "flow.unavailable.platform": {
+    "text": "Confier le travail à Claude Code ou Codex n’est pas disponible pour le moment sur ce déploiement.",
+    "source": "074a5e2144e23343388da903f488f3b83269c1db9cff791dfb53ab9ee24dae77"
+  },
+  "flow.unavailable.generic": {
+    "text": "Ce parcours n’est pas disponible pour le moment.",
+    "source": "1a99ed3b65148da09431931eb37e943d488899b6eac157de3768f91de736a55d"
+  },
+  "flow.github.title": {
+    "text": "Liez votre compte GitHub",
+    "source": "864ea5521bf4228bafc2d61a58214007788fbfbb694206973372deb5ed5fbe4f"
+  },
+  "flow.github.linkedAs": {
+    "text": "Lié en tant que {{login}}.",
+    "source": "901de38f70facfdb9a5851e56f9aeca7b4d357d0b7b32edec13d9e78b4e7e7a8"
+  },
+  "flow.github.linked": {
+    "text": "Lié à votre compte GitHub.",
+    "source": "26c7b63f26ee939904c01c8deb0b3b0bcfe9e2750e43e83a4de6afe932c2c570"
+  },
+  "flow.github.detail": {
+    "text": "Identité uniquement. Homeroom ne demande aucun accès à vos dépôts et ne stocke aucun jeton. Il doit simplement savoir quel compte GitHub est le vôtre, pour que le travail revienne sous votre nom.",
+    "source": "21e79c2fdf935843300bf3c1f05af11b91a8a735ef695bcd4ed97d64a38b364d"
+  },
+  "flow.github.link": {
+    "text": "Lier GitHub",
+    "source": "3b7f3198864d65ae8e6d21a8bbe22fbe380c1f602eec9775306b9543b363e201"
+  },
+  "flow.fork.title": {
+    "text": "Forkez le dépôt de l’appli",
+    "source": "26ac891c48f93449c78ad65483a8f0026c0b565fde50e335aa1cb7ddc37256ab"
+  },
+  "flow.fork.checking": {
+    "text": "Votre agent a besoin d’un endroit où pousser son travail. Homeroom cherche sur GitHub votre fork de cette appli.",
+    "source": "72ecc50ea150dfbac5804218a48267eb7e2d95d1ac3082f0468506e4df9b9751"
+  },
+  "flow.fork.found": {
+    "text": "{{repository}} trouvé.",
+    "source": "f626c1badbb0d2f193e904f407ba8fcb83166594d84ce5f53ddc2def6924a537"
+  },
+  "flow.fork.nameConflict": {
+    "text": "Vous possédez déjà un dépôt nommé {{existing}} qui n’est pas un fork de cette appli. Forkez-la plutôt sous le nom {{forkName}}.",
+    "source": "e42fdc8629547344f88f7ecbc2aeb8ee926f135b1787dfbde02e10eacaec327c"
+  },
+  "flow.fork.unknown": {
+    "text": "Homeroom n’a pas pu lire GitHub à l’instant et ne peut pas savoir si vous avez un fork. Continuez et revérifiez dans un instant.",
+    "source": "3544f40e75bc3e41ca26eabacc9fef6c10427b5e68148b7fb0daa22ded6eb4c7"
+  },
+  "flow.fork.none": {
+    "text": "Pas encore de fork. Forkez l’appli sur GitHub, puis revenez vérifier.",
+    "source": "9dca1c27a60ad21eb4b7b863d4d88e40d30693863559ce3f9f16496c1b711d55"
+  },
+  "flow.fork.open": {
+    "text": "Forker sur GitHub",
+    "source": "0022deee724805ea2cc4153a45c4dca41d9135c41f3ab9393ce04e6f6a0a9b5b"
+  },
+  "flow.fork.checkAgain": {
+    "text": "Revérifier",
+    "source": "fb7099ad8e818d42eceefe0d97c824fd54ddb0eeef54c263ec72c77d39198ac9"
+  },
+  "flow.handoff.title": {
+    "text": "Confiez-le à {{agent}}",
+    "source": "1b55b2144725153b3d28e6f1905ceed537a02e62cda2b4305bc765ca44eb59eb"
+  },
+  "flow.handoff.titleGeneric": {
+    "text": "Confiez-le à votre agent de code",
+    "source": "1f3ffd621c5ce2e02a354994bc1ca2b4a356af3a3906fccd755bb9bf683ce155"
+  },
+  "flow.connect.title": {
+    "text": "Connecter Homeroom",
+    "source": "9181230682e5046431cc247763223f31691be779f6f4dd595848d872a1f63521"
+  },
+  "flow.connect.detail": {
+    "text": "Homeroom donne à {{agent}} un court jeu d’instructions ; {{agent}} vous demande ce que vous voulez créer et prend le relais : rédaction de l’ordre de travail, lecture des règles de cette appli, envoi de la branche et ouverture de la proposition. Pour cela, il lui faut le connecteur dans le compte {{product}} qu’il utilise.",
+    "source": "50cec59c79975a38919d078f97bb59d63fdc957da1e0e831c8203436f3f051c7"
+  },
+  "flow.connect.detailGeneric": {
+    "text": "Homeroom donne à votre agent de code un court jeu d’instructions ; il vous demande ce que vous voulez créer et prend le relais : rédaction de l’ordre de travail, lecture des règles de cette appli, envoi de la branche et ouverture de la proposition. Pour cela, il lui faut le connecteur dans le compte {{product}} qu’il utilise.",
+    "source": "22a0d432ef87fb931baaa442f5343d3568170713a343dfc1907c720da635c9c8"
+  },
+  "flow.connect.action": {
+    "text": "Connecter Homeroom",
+    "source": "9181230682e5046431cc247763223f31691be779f6f4dd595848d872a1f63521"
+  },
+  "flow.connect.checkAgain": {
+    "text": "Revérifier",
+    "source": "fb7099ad8e818d42eceefe0d97c824fd54ddb0eeef54c263ec72c77d39198ac9"
+  },
+  "flow.handoff.detail": {
+    "text": "Copiez les instructions et collez-les dans {{agent}}. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer.",
+    "source": "2067ca78d30207891db14e65355386e9e6859880f09108a0c2b5a91d273c1203"
+  },
+  "flow.handoff.detailGeneric": {
+    "text": "Copiez les instructions et collez-les dans votre agent de code. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer.",
+    "source": "b9e5e828773b24f121ae93aa9de94a745e86617e96a1f0852917fb9f67895256"
+  },
+  "flow.handoff.detailSession": {
+    "text": "Copiez les instructions et collez-les dans {{agent}}. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer. Les instructions nomment la session que cela prolonge : le travail arrive donc comme une mise à jour de celle-ci, et non comme une seconde copie.",
+    "source": "ae6a0323e28aee17cf869c556f8738970305d83676419a3072cf66759013409b"
+  },
+  "flow.handoff.detailSessionGeneric": {
+    "text": "Copiez les instructions et collez-les dans votre agent de code. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer. Les instructions nomment la session que cela prolonge : le travail arrive donc comme une mise à jour de celle-ci, et non comme une seconde copie.",
+    "source": "35e3a675f14c162a5f6f6e58a585bcf45aafe020c5c80b754843bcc519420b73"
+  },
+  "flow.handoff.detailProposal": {
+    "text": "Copiez les instructions et collez-les dans {{agent}}. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer. Les instructions nomment la proposition que cela prolonge : le travail arrive donc comme une mise à jour de celle-ci, et non comme une seconde copie.",
+    "source": "4fa053d83154e69e488eadefb1078807b146bcb32945a93f5387c395820985d1"
+  },
+  "flow.handoff.detailProposalGeneric": {
+    "text": "Copiez les instructions et collez-les dans votre agent de code. Il vous demandera ce que vous voulez créer, puis rédigera l’ordre de travail, enverra la branche et ouvrira lui-même la proposition. Inutile de revenir ici pour terminer. Les instructions nomment la proposition que cela prolonge : le travail arrive donc comme une mise à jour de celle-ci, et non comme une seconde copie.",
+    "source": "bc9172624e409d27513922d1114343fece1b9e4f2abc6cf86196e82ba7f127c4"
+  },
+  "flow.handoff.copy": {
+    "text": "Copier les instructions",
+    "source": "37b2f33727bdf7215ed2273217f9eba4a5b10f2597a54c51ab1454dda8683d7b"
+  },
+  "flow.handoff.open": {
+    "text": "Ouvrir {{agent}}",
+    "source": "c3ef85408c55573cd9e5219893453238ad18364873fbd49e45bca6a87bf90dd5"
+  },
+  "flow.handoff.openGeneric": {
+    "text": "Ouvrir votre agent de code",
+    "source": "6afff075e4acb22371cb18687daa55a93ab73c310c5541c41c2b60d9b2df3caf"
+  },
+  "flow.vendor.groupLabel": {
+    "text": "Quel agent le crée",
+    "source": "23177f0590bb87173d83027d8c4d836951da8d90a7430fd522847086d83ae55c"
+  },
+  "flow.lead.buildingWith": {
+    "text": "Création avec {{agent}}",
+    "source": "ffea832fa19d1b4b908558d6551ae15571a45af27539483783f99be6f0f7ab07"
+  },
+  "flow.lead.buildingWithGeneric": {
+    "text": "Création avec votre agent de code",
+    "source": "bcf55798bab8a0c83385d0c5360e9c576c6b14db0362036782eb4f8d46767e5c"
+  },
+  "flow.status.checking": {
+    "text": "Vérification de votre avancement…",
+    "source": "7c1f44928fcf47ce6a0ef4a26a3835d25b341d96e682f16929d8e9cd006ab4bc"
+  },
+  "flow.cancel.buildHere": {
+    "text": "Créer ici plutôt",
+    "source": "93fef20357ca3220ac595d8e0c8c384ba84c94cafdc40f20b992ea33d6b031c1"
+  },
+  "flow.brief.placeholder": {
+    "text": "Que doit-il créer ?",
+    "source": "772ec16e0966cff2f58ea5870aa2115982b4c486b6fa9059435cfb5bd9988324"
+  },
+  "flow.instructions.summary": {
+    "text": "Instructions",
+    "source": "934652dce41d62d3c9ff34b2c5e44e3addaedc67d6137328a9fe75a63c51dbac"
+  },
+  "flow.cancel.buildOnPlatform": {
+    "text": "Créer plutôt sur la plateforme Homeroom",
+    "source": "2a33d325acc1f057fc4abb0973ce5600c14c0584434c9c74a5db1736db0f7d02"
+  },
+  "credits.resetIn.underMinute": {
+    "text": "moins d’une minute",
+    "source": "30d5117d18c11eda636513dba31a134203abd9b013da8662ec96a619147c2020"
+  },
+  "credits.resetIn.hoursMinutes": {
+    "text": "{{hours}} h {{minutes}} min",
+    "source": "f35242f6ebba66f2865026f3e8a8115aaa8d569767aa7d06a277403ab92d8720"
+  },
+  "credits.reset.locked": {
+    "text": "Connectez GitHub ou X pour débloquer 10,00 $/jour de crédits Homeroom.",
+    "source": "4d0eb1973fe7bf4982e455ca47ed10527fbdaccf69fc98f62e0060efe1841da7"
+  },
+  "credits.reset.unavailable": {
+    "text": "L’éligibilité aux crédits est temporairement indisponible.",
+    "source": "9cc7d52341617ccc92bad57b7e408e8f2b52c1a53e4effb722fba00bba23f84a"
+  },
+  "credits.reset.when": {
+    "text": "Les crédits gratuits se renouvellent {{when}}.",
+    "source": "abc4aa0ee3108b7a7f2db2037a7405e1f2a000dc7f588811f0139c0f503f345a"
+  },
+  "credits.reset.whenWithTimeLeft": {
+    "text": "Les crédits gratuits se renouvellent {{when}}, dans environ {{timeLeft}}.",
+    "source": "876741510d68a0a52f0d369a6c10533ea5f8018c949bf2b1a0a635d37276184f"
+  },
+  "credits.reset.daily": {
+    "text": "Les crédits gratuits se renouvellent à {{time}}.",
+    "source": "b83c6587b03580e1dd96084258cd3077978e9926f429cb06f60bda9d2d6a8afc"
+  },
+  "credits.reset.dailyWithTimeLeft": {
+    "text": "Les crédits gratuits se renouvellent à {{time}}, dans environ {{timeLeft}}.",
+    "source": "3dcb4f732a57edebd19f5b3c13ffdc1599597da5ddd66987ff35152861b669d2"
+  },
+  "credits.reset.dailyUtc": {
+    "text": "Les crédits gratuits se renouvellent à {{time}} ({{utc}}).",
+    "source": "48440f1479ad23af0ad9a923271e698a003ad7f6cf9ba9237c9e3114e9d8cebf"
+  },
+  "credits.reset.dailyWithTimeLeftUtc": {
+    "text": "Les crédits gratuits se renouvellent à {{time}}, dans environ {{timeLeft}} ({{utc}}).",
+    "source": "3db1f7e40c0d9421e093cc478af9d13c25ca150760a4b3ea1fc8c8565972cf87"
+  },
+  "credits.reset.weekly": {
+    "text": "Les crédits gratuits se renouvellent le {{day}} à {{time}}.",
+    "source": "8d26f1432d85df7b71151b916d57b692b71fd685b279d243749bb8bcbc641fdc"
+  },
+  "credits.reset.weeklyWithTimeLeft": {
+    "text": "Les crédits gratuits se renouvellent le {{day}} à {{time}}, dans environ {{timeLeft}}.",
+    "source": "b14e8fa09595b9f633c5d75197a6257bd8b53b34d6a44e6023c7e7bec399dc1e"
+  },
+  "credits.reset.weeklyUtc": {
+    "text": "Les crédits gratuits se renouvellent le {{day}} à {{time}} ({{utc}}).",
+    "source": "dd8dd08ddd2f424c73e3d71fe5f5dbf75be842de2da264036e799e7cee958c1f"
+  },
+  "credits.reset.weeklyWithTimeLeftUtc": {
+    "text": "Les crédits gratuits se renouvellent le {{day}} à {{time}}, dans environ {{timeLeft}} ({{utc}}).",
+    "source": "a76e1019b3f1f8115e4f04e21a5a61a7568655bd01d09e0be21d693623d518da"
+  },
+  "credits.reset.atBoundary": {
+    "text": "Les crédits gratuits sont réinitialisés à {{boundary}}.",
+    "source": "1b1fe241df86b7416a9eb4c6ee6310175a554dfe8ed33c2ffaeddb21a8827627"
+  },
+  "credits.reset.atBoundaryWithTimeLeft": {
+    "text": "Les crédits gratuits sont réinitialisés à {{boundary}}, dans environ {{timeLeft}}.",
+    "source": "3705706a48d7848a6497c29aeb945eefca7f198ebae76e711b09485bf274f6b8"
+  },
+  "credits.meter.locked": {
+    "text": "vérifiez le compte · débloquez 10 $/jour",
+    "source": "a683560b105736011e2ca80f55b26c7586d9c0d2f1eae5708f29060f47aba45b"
+  },
+  "credits.meter.unavailable": {
+    "text": "crédits momentanément indisponibles",
+    "source": "b028cfa7020d0eeee89a5b0f9fc1a670f51e9e66d0ddcce26489bf6d9b40b1f1"
+  },
+  "credits.meter.sharedBudgetSpent": {
+    "text": "budget commun épuisé",
+    "source": "ba1908c9faf6f3de51cdb5ce9c5a2cb3202af36b4f8e45f698e68fb9a2554647"
+  },
+  "credits.meter.noneLeft": {
+    "text": "plus aucun",
+    "source": "b684b47581201f4f66c479a635f88436d22b994787071290595ca9486dcd8ac0"
+  },
+  "credits.meter.amountLeft": {
+    "text": "{{amount}} restants",
+    "source": "0a7083bacb6b5ceb11bb338d2e4ef3a82dd0551c148bbdfffd504baf0d14ab20"
+  },
+  "credits.meter.ownKeySpend": {
+    "text": "votre clé {{amount}}",
+    "source": "3dde006908cefcc52dbbea742cd29786410350496371bd6aa01ecbb6d13e1572"
+  },
+  "credits.low.thisWeek": {
+    "text": "Crédits IA gratuits bientôt épuisés : il reste {{remaining}} sur {{limit}} cette semaine.",
+    "source": "12c45d717b8755e9ad218eb054f95553f49d665a42c15c9f81bc604c59297916"
+  },
+  "credits.low.today": {
+    "text": "Crédits IA gratuits bientôt épuisés : il reste {{remaining}} sur {{limit}} aujourd'hui.",
+    "source": "0685245b0522ebd2072e4e684e943dcfd1d5a978e9d8f3119e29c317f44a859c"
+  },
+  "credits.apiKey.savedKeyFailed.title": {
+    "text": "Votre clé enregistrée n'a pas pu être utilisée",
+    "source": "5bd1e9b3be697ec3de1559528d4e714907c14dc084dd35996e2ebd9f30186b5e"
+  },
+  "credits.apiKey.savedKeyFailed.blurb": {
+    "text": "Homeroom a une clé enregistrée, mais n'a pas pu l'utiliser pour cet échange. Ouvrez Paramètres → Clé API, vérifiez-la et enregistrez-la à nouveau. Votre quota hebdomadaire est entièrement ignoré tant qu'une clé valide est enregistrée.",
+    "source": "c2f5e245c96c829f15035a7420121e439ade1497b0e5760f33b2bbe33e63695d"
+  },
+  "credits.apiKey.savedKeyFailed.cta": {
+    "text": "Vérifier la clé API",
+    "source": "ef993ae6ab8b02224fb0757ab3c9c190fc4def601cd45afc963bb7d9ca8ef95d"
+  },
+  "credits.apiKey.useOwn.title": {
+    "text": "Utilisez votre propre clé API Anthropic",
+    "source": "ab8e55a6c17a01e9b95b622a1d8afc96ef56c15dd9a9841431a1ebe6f4f3cec7"
+  },
+  "credits.apiKey.useOwn.blurb": {
+    "text": "Collez une clé dans Paramètres → Clé API et Homeroom fonctionne exactement comme maintenant, facturé à votre compte Anthropic plutôt que sur votre quota hebdomadaire.",
+    "source": "ec20782542f60c703aad357c42756b9de6001c0bb748818462efb3d94ba3383d"
+  },
+  "credits.apiKey.useOwn.cta": {
+    "text": "Ajouter une clé API",
+    "source": "6f2d3db3648e0b3ea15c536674d2a498056388d793273c0a492d05a43b346bb2"
+  },
+  "credits.verify.line": {
+    "text": "Vérifiez votre compte pour en obtenir plus : ajoutez votre numéro de téléphone ou liez GitHub et X.",
+    "source": "7ad6c223cd82e77326dad9cfc172bfc391c8358cb3e7df61e3f50e8e0af9ebf0"
+  },
+  "credits.verify.title": {
+    "text": "Vérifiez votre compte",
+    "source": "5f06da5b4cff279cbc0835fafd004bb7cddbcf08c89cd7c870e38d42c24a2605"
+  },
+  "credits.verify.cta": {
+    "text": "Vérifier mon compte",
+    "source": "8540f4dee7355c147ef0c46f62d4c39f87118fdb755af7705f9dfa5471c46051"
+  },
+  "credits.connector.title": {
+    "text": "Utilisez votre abonnement Claude.ai ou ChatGPT",
+    "source": "03801b3956a63be78ef3a4f699e52ce6492a2b6a0cb8583f37fa5179fba0bdd2"
+  },
+  "credits.connector.blurb": {
+    "text": "Connectez Homeroom à Claude ou ChatGPT et laissez Claude Code sur le web ou Codex travailler avec l'abonnement que vous payez déjà.",
+    "source": "55ad4bd25885db9f9999483c98b40c437dd05c550ceae1e8ba5db676b5a3d697"
+  },
+  "credits.connector.cta": {
+    "text": "Connecter Claude ou ChatGPT",
+    "source": "749513a59e658bf06a2b376b0dc33019f48ad994f549d70554ea3ecdbd1eabf4"
+  },
+  "credits.intro.none": {
+    "text": "Aucun moyen de continuer à construire pour l'instant :",
+    "source": "34d1d0670d48f3bd19bba20871b74a9a5882286ff6778d73943ff9661f620810"
+  },
+  "credits.intro.one": {
+    "text": "Un moyen de continuer à construire pour l'instant :",
+    "source": "00ffeb84438b3bfcffb8407a0e7fbaac7df13ef8ddbdd24930aaa90cc72b98c5"
+  },
+  "credits.intro.two": {
+    "text": "Deux moyens de continuer à construire pour l'instant :",
+    "source": "41d58f21c61757cd05bb6353b51f4f9f6db92218e1287780e96dabc3ec95bcdf"
+  },
+  "credits.intro.three": {
+    "text": "Trois moyens de continuer à construire pour l'instant :",
+    "source": "0e2e088500a1d7b7082a75305878b299f594719b2a788ead4fb9d1b7882cdf6c"
+  },
+  "credits.intro.four": {
+    "text": "Quatre moyens de continuer à construire pour l'instant :",
+    "source": "fd011973809aa01fc00268fc5ff21c24d3038db5e993a8f43f13adb0780061d6"
+  },
+  "credits.intro.five": {
+    "text": "Cinq moyens de continuer à construire pour l'instant :",
+    "source": "b49c900b402d61c0c4caf52d16fd150423ca25782c6e7787093dce99bce0c9a3"
+  },
+  "credits.intro.six": {
+    "text": "Six moyens de continuer à construire pour l'instant :",
+    "source": "bdb3abb2b5b74efb70f87bc5a38070d2cb1207aac0bb9236528c9b50299fca20"
+  },
+  "credits.intro.seven": {
+    "text": "Sept moyens de continuer à construire pour l'instant :",
+    "source": "c49759d78259105bb383e3f9133abf2e950e3a937ff34cd05e2625dfa837f3e8"
+  },
+  "credits.intro.eight": {
+    "text": "Huit moyens de continuer à construire pour l'instant :",
+    "source": "8d8b6fa64c05ef12e39773ee76135d31158f70b6c1161c7495d15a2e967d2c21"
+  },
+  "credits.intro.nine": {
+    "text": "Neuf moyens de continuer à construire pour l'instant :",
+    "source": "18b7271cab2ba4254fb721ea1c6675b578edae35a45ce66a88c4be2f27a02e32"
+  },
+  "credits.lead.outToday": {
+    "text": "Vous avez épuisé les crédits IA gratuits du jour.",
+    "source": "b0fcca188defd08b5fd7aa0343a0aacee62fe3d6a63dbeb4bd2dd9da867a3fb9"
+  },
+  "credits.lead.outThisWeek": {
+    "text": "Vous avez épuisé les crédits IA gratuits de la semaine.",
+    "source": "dc484e948b54a3598a4562d03f577a30e0ee8981b905585b8c3d30e5f75411d0"
+  },
+  "credits.lead.sharedBudgetOut": {
+    "text": "Le budget IA quotidien commun de la plateforme est épuisé.",
+    "source": "2ca88a7e854bb0aef84a386f2e488689adefab0df33b5a6f6c866faa0d16e7c2"
+  },
+  "credits.developer.summary": {
+    "text": "Vous êtes développeur ?",
+    "source": "80ca32a99a39c0e48d790654385b5f0e71b8d73724e5bbbc1c584ca255a96329"
+  },
+  "credits.developer.hint": {
+    "text": "Construisez-la plutôt avec les outils de votre propre ordinateur.",
+    "source": "309d94dcfd82c15eef15451bce7fb5b4e46c419e7d1466bb4779f7d4fc2acf8d"
+  },
+  "credits.banner.changeSessionType": {
+    "text": "Changer le type de session",
+    "source": "67e5288d7dd63116d077dfb14eec99b7e25ee5d985e70858acbfdec55a736cf3"
+  },
+  "buildLog.stage.clone": {
+    "text": "Clonage du dépôt",
+    "source": "10658ff88f1c66703078b73853281e7d606882f0c29dc71e6ca522d762465b09"
+  },
+  "buildLog.stage.build": {
+    "text": "Construction de l'image Docker",
+    "source": "560eebbfe86a6378c40246e846309d90dc0a642dc53889046c6f4b3da1c48e02"
+  },
+  "buildLog.stage.start": {
+    "text": "Démarrage du conteneur",
+    "source": "620c3de1c3f009bc0eee1d9e2a013ae34a0496b63c684c9699d24591b55c3e0c"
+  },
+  "buildLog.stage.healthcheck": {
+    "text": "Attente du contrôle de santé",
+    "source": "3cb362ec985557d715c3a94c97ea4b9e76b81c1522d939a12e2312a9ec070fcb"
+  },
+  "buildLog.stage.timeout": {
+    "text": "Délai dépassé",
+    "source": "9718cc761cfd5810041ef007ae258fa1308b8487d0f30c5f36a442f8fe5f76c5"
+  },
+  "buildLog.stage.other": {
+    "text": "Déploiement",
+    "source": "4338bdb0808bff1b27e25686556fe98b645c49386392ac76a0859c73ffa5c008"
+  },
+  "buildLog.empty": {
+    "text": "Aucun détail d'échec de build n'est enregistré pour cette appli. Les échecs antérieurs à cette fonctionnalité n'ont pas été conservés. Relancez le déploiement pour enregistrer un nouveau journal.",
+    "source": "d3afd8981ecb342757fd1f515150c11ecb7da0e990049b256852bfaa0e59b09f"
+  },
+  "buildLog.meta.failedStep": {
+    "text": "<0>Étape en échec :</0> {{step}}",
+    "source": "c23da6de748cd42758342dc143ce17dd88203cab3476d36f810fc5bb01c1af39"
+  },
+  "buildLog.meta.whenRelative": {
+    "text": "<0>Quand :</0> {{relative}} ({{date}})",
+    "source": "9c3c2a30193112e42f5396e791836690f8b78d7fac14202b5c14424cb0804058"
+  },
+  "buildLog.meta.when": {
+    "text": "<0>Quand :</0> {{date}}",
+    "source": "bc5e1fe06cc94ee9fec6838feb762d58ff21730d8d0a6cb9ad61175bab04e0b2"
+  },
+  "buildLog.meta.commit": {
+    "text": "<0>Commit :</0> <1>{{sha}}</1>",
+    "source": "b791209e4c093c3b045ae5af2436c4168cfc095fac13d9795cca77ed13e1b055"
+  },
+  "buildLog.noLog": {
+    "text": "Aucune sortie de journal n'a été capturée pour cet échec.",
+    "source": "f3d70ce902c1c29f2ee68ba270216fda1567782bc29320e89699f20db6cd5568"
+  },
+  "buildLog.title": {
+    "text": "Journal de build",
+    "source": "91d9414aee8abafdd9bbbe5459a0163f25d9b592edc2c93ec5d19dfbc1e6accf"
+  },
+  "buildLog.copy": {
+    "text": "Copier le journal",
+    "source": "99d7297aa0b8796647815bd3444840615cc7ee4f801255232b198ccaa49334de"
+  },
+  "buildLog.copied": {
+    "text": "Copié !",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "buildLog.copyFailed": {
+    "text": "Échec de la copie",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "buildLog.retry": {
+    "text": "Relancer le déploiement",
+    "source": "19f848b7b46b38c6a1a73d3883019f51905b378e6196d8e224202ee66d1b4485"
+  },
+  "buildLog.retrying": {
+    "text": "Nouvelle tentative…",
+    "source": "a16c8b1c95956fbabce3ed5506c7e1b4a2d10c86f7adfc7ae084f2d3df9f5174"
+  },
+  "buildLog.retryFailed": {
+    "text": "Échec de la nouvelle tentative (HTTP {{status}})",
+    "source": "e5374c011d332e00326135456390246768c1a5c45dc135ac0cc24ba1e2c926d8"
+  },
+  "buildLog.ago.justNow": {
+    "text": "à l'instant",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "transcript.attachment.unnamed": {
+    "text": "fichier",
+    "source": "3b9c358f36f0a31b6ad3e14f309c7cf198ac9246e8316f9ce543d5b19ac02b80"
+  },
+  "transcript.attachment.title": {
+    "text": "{{filename}} (les pièces jointes ne sont pas partagées, seulement leurs noms)",
+    "source": "845584f76d391bc7ec041acfd986cd4b9302314e7db183c73319a171bb9f63b7"
+  },
+  "transcript.attachment.titleUnnamed": {
+    "text": "fichier (les pièces jointes ne sont pas partagées, seulement leurs noms)",
+    "source": "e5a402cd572c0ce47e4fbcd0077b6247b6a33b40a680fdf4a5c79661c5eeebac"
+  },
+  "transcript.activity.summary": {
+    "text": "Résumé de l’agent",
+    "source": "8351fe3f09fd8a306b0b84eeb8feb009bbc72469ced45e785ec1bb4966dc699a"
+  },
+  "transcript.spec.version": {
+    "text": "Plan v{{version}}",
+    "source": "d94788c6107a5463536113c0b0f92239f373b87b5fd6aee73d7852cf12d51471"
+  },
+  "transcript.spec.drafted": {
+    "text": "Plan rédigé",
+    "source": "aedf0a600f7dadc9aaef695b680d1bfa2e499f3e97c031ba4ed664e9bcefe625"
+  },
+  "transcript.agentRunning": {
+    "text": "L’agent de code est en cours d’exécution{{tail}}",
+    "source": "af8d049a0439a500bf50e3905f08f23f138059b70edfdadb516e5d23a6e11dfb"
+  },
+  "transcript.author.unknown": {
+    "text": "cette personne",
+    "source": "c9a8dc336964db7fd6c764f1ff23925d6f281ece50472c0c7699b8eb0f8ac227"
+  },
+  "transcript.author.ai": {
+    "text": "IA",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "transcript.empty": {
+    "text": "Ce chat ne contient encore aucun message.",
+    "source": "791fdc1abb205c98d63d00c317b97f9434c273e780634086968df87fa52a5ee3"
+  },
+  "transcript.truncated": {
+    "text": "Affichage de la partie la plus récente d’un long chat. Les messages précédents ne sont pas inclus.",
+    "source": "bb99006cd22de4f6f4b766dbf6ba38e1dd58ecd35f3d65ba3cc42bf56e9e8138"
+  },
+  "transcript.header.byAuthor": {
+    "text": "Session d’agent de {{author}}",
+    "source": "3dc3eefac38c2e4baa20de3f3f7b1121fce1ba5e0f82cefdf7c90db3a060ac55"
+  },
+  "transcript.header.byUnknown": {
+    "text": "Session d’agent de cette personne",
+    "source": "c28cb080386aa9e75610fed8dc3527f4d3d06a12093c6d711eaa20d542a74670"
+  },
+  "transcript.header.read": {
+    "text": "Lire la session d’agent",
+    "source": "2e294c8a72bd644bfdba5c795ec6cdc4617ed6bd1f7bb10fa317cf00313f61dc"
+  },
+  "localRun.cloneComment": {
+    "text": "# clonez le dépôt de cette app, puis faites cd dedans",
+    "source": "62952884afa665908e9445ad1be88871979c7dca986f985de1a3226b017493d4"
+  },
+  "localRun.leadNoBranch": {
+    "text": "Cette session reste ici : même transcription, même proposition. Rien n’y a encore été exécuté, donc elle n’a pas de branche sur GitHub. Homeroom en crée une dès que le premier tour est poussé. Les tours s’exécutent via Claude Code sur votre machine, avec votre propre formule Claude, et chacun demande confirmation dans votre terminal avant de démarrer.",
+    "source": "8c01330b7d5eb71a1d97e066f89981acf2e3c02f0a5167ed6825d662b5b83e98"
+  },
+  "localRun.lead": {
+    "text": "Cette session reste ici : même transcription, même branche, même proposition. Ses tours s’exécutent simplement via Claude Code sur votre machine, avec votre propre formule Claude, et chacun demande confirmation dans votre terminal avant de démarrer.",
+    "source": "596bbdf2f5304e142cbec1d28b46c9a69bb101e868357f3e14b2bb5f52f71e3a"
+  },
+  "localRun.title": {
+    "text": "Exécuter cette session sur votre ordinateur",
+    "source": "03976e190ecaa88a04d10a871626301a2b90cf8a9b517bdb770b5413f3cf7c94"
+  },
+  "localRun.footnote": {
+    "text": "Homeroom ouvre toujours la pull request, génère l’aperçu et lance les vérifications. Rendez les tours à Homeroom à tout moment depuis le sélecteur « Run on » du champ de message.",
+    "source": "df7d503f4c74f67355f39bb0bebe87b5ce69aebde4a71c61fccfaab74727dd73"
+  },
+  "localRun.copy": {
+    "text": "Copier les commandes",
+    "source": "e614ef1572da969a6e39c5bcbeb7f86d0f6a5e4bf86ece82aa444d89ad549357"
+  },
+  "localRun.copied": {
+    "text": "Copié !",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "localRun.copyFailed": {
+    "text": "Échec de la copie",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "progress.elapsed.seconds": {
+    "text": "{{seconds}} s",
+    "source": "c98e00945ab1f6c3908f62d4a198875f8eea59b34ed9dd5d67e2d78bfa8cc53b"
+  },
+  "progress.elapsed.minutesSeconds": {
+    "text": "{{minutes}} min {{seconds}} s",
+    "source": "1f8e5ba1f8fc71ddcabe9230a2fe3419a5c4b63e338032758fc6c107e6f88d51"
+  },
+  "progress.elapsed.hoursMinutes": {
+    "text": "{{hours}} h {{minutes}} min",
+    "source": "f35242f6ebba66f2865026f3e8a8115aaa8d569767aa7d06a277403ab92d8720"
+  },
+  "progress.countdown.underMinute": {
+    "text": "· moins d’une minute restante",
+    "source": "f58290b2f68cb5e2ee2f18b0a255b0767b357a19093244b05a07082d4b1a6381"
+  },
+  "progress.countdown.about": {
+    "text": "· ~{{time}} restantes",
+    "source": "87468507a69a9c7fc3b760fb72680ea7f058bca4c7e1d1298044f9df5a3629c0"
+  },
+  "progress.cohort.longerThanMost": {
+    "text": "plus long que la plupart, environ 1 exécution sur 5",
+    "source": "baedec831b11c8dfb10cf820e31b3e5f3effee4d804ddd674770f15d77680166"
+  },
+  "progress.cohort.longOne": {
+    "text": "c’est une longue, certaines exécutions durent plus de 30 min",
+    "source": "c77fdeba148ea056d2eb6e170d818932ebaf35b85d8046c2ade1f1523526111a"
+  },
+  "progress.phase.claudeWorking": {
+    "text": "Claude travaille",
+    "source": "74909c18d5f3303c1933ffb703d4a9e27e1b1b70259b8434d0162d9788dbeff9"
+  },
+  "progress.phase.agentWorking": {
+    "text": "L’agent de code travaille",
+    "source": "bdba63ba1f904530e86640bbcbfd51c2ef3d07bc3a8d726af3e5208d9930b18c"
+  },
+  "progress.phase.syncingWithMain": {
+    "text": "Synchronisation avec main",
+    "source": "a88d4c3828d8e77131456e48c652936ec717f6d06aeaf7f88b1c93d8d28317e8"
+  },
+  "progress.phase.syncingBranch": {
+    "text": "Synchronisation de la branche",
+    "source": "1c0cc2f2c1013ccbe177dc4f020a5be03729b1fa631dc371d1519429aa4466d6"
+  },
+  "progress.phase.committing": {
+    "text": "Commit en cours",
+    "source": "f9764fc0bbaca6b836272ceb3c6218f988f7d7334bf516a627c94b45dbb72696"
+  },
+  "progress.phase.pushing": {
+    "text": "Envoi en cours",
+    "source": "a602ed6c3207a22be33312b3aa96aa457aaec5851fe742a5c15978c4ab2d04f0"
+  },
+  "progress.phase.finished": {
+    "text": "Terminé",
+    "source": "7804f7a79a9eee323b6e89d3f8287c7d36076f4d76291646295f435b0dec736e"
+  },
+  "progress.phase.pushFailed": {
+    "text": "Échec de l’envoi",
+    "source": "91809be5c9ab027d2fc3262e96eb1d2d5d2e6946dfcfb7b38e73f7f54e5835e8"
+  },
+  "progress.phase.interrupted": {
+    "text": "Interrompu",
+    "source": "132d124d6bb3d811116f98aa03bc474f5783517d4c82635c031745912e62e1c8"
+  },
+  "merge.measured.minutesAgo_many": {
+    "text": "mesuré il y a {{count}} minutes",
+    "source": "fab5cb02f9f34f5b9c23d65b9af60f9d0b34389a2217c3c4b7adf7eec94f721f"
+  },
+  "merge.measured.minutesAgo_one": {
+    "text": "mesuré il y a {{count}} minute",
+    "source": "122359816fa092208411ca9f2a262884dc5985b32e29609cff117b44d04832df"
+  },
+  "merge.measured.minutesAgo_other": {
+    "text": "mesuré il y a {{count}} minutes",
+    "source": "fab5cb02f9f34f5b9c23d65b9af60f9d0b34389a2217c3c4b7adf7eec94f721f"
+  },
+  "merge.measured.hoursAgo_many": {
+    "text": "mesuré il y a {{count}} heures",
+    "source": "a0684d5220fdaec34613e90ce9d8316ee372fd8b61233d8bb06c8abb867fc529"
+  },
+  "merge.measured.hoursAgo_one": {
+    "text": "mesuré il y a {{count}} heure",
+    "source": "a40bd7557e4ea758a3545791ea8f66e22bc4bc20dced7d5127e805cf079386ea"
+  },
+  "merge.measured.hoursAgo_other": {
+    "text": "mesuré il y a {{count}} heures",
+    "source": "a0684d5220fdaec34613e90ce9d8316ee372fd8b61233d8bb06c8abb867fc529"
+  },
+  "merge.status.conflictsWithMainFiles_many": {
+    "text": "Conflits avec main · {{count}}",
+    "source": "ccebb79ef5de4540602c37e5bdb14e0f255732108ce8ae79a4505de771f58adf"
+  },
+  "merge.status.conflictsWithMainFiles_one": {
+    "text": "Conflits avec main · {{count}}",
+    "source": "ccebb79ef5de4540602c37e5bdb14e0f255732108ce8ae79a4505de771f58adf"
+  },
+  "merge.status.conflictsWithMainFiles_other": {
+    "text": "Conflits avec main · {{count}}",
+    "source": "ccebb79ef5de4540602c37e5bdb14e0f255732108ce8ae79a4505de771f58adf"
+  },
+  "merge.status.checksFailingCount_many": {
+    "text": "Vérifications en échec · {{count}}",
+    "source": "d312d35e2e88c0c08a527abfe98c11ca8e8500a1f0e3ff02f0249cef4b1d3b46"
+  },
+  "merge.status.checksFailingCount_one": {
+    "text": "Vérifications en échec · {{count}}",
+    "source": "d312d35e2e88c0c08a527abfe98c11ca8e8500a1f0e3ff02f0249cef4b1d3b46"
+  },
+  "merge.status.checksFailingCount_other": {
+    "text": "Vérifications en échec · {{count}}",
+    "source": "d312d35e2e88c0c08a527abfe98c11ca8e8500a1f0e3ff02f0249cef4b1d3b46"
+  },
+  "merge.status.checksQueuedAhead_many": {
+    "text": "Vérifications en attente · {{count}} devant",
+    "source": "eab8f11d97739087afa414c6f2ae44813a21d124275342fe4e194bbb0b1ac4dc"
+  },
+  "merge.status.checksQueuedAhead_one": {
+    "text": "Vérifications en attente · {{count}} devant",
+    "source": "eab8f11d97739087afa414c6f2ae44813a21d124275342fe4e194bbb0b1ac4dc"
+  },
+  "merge.status.checksQueuedAhead_other": {
+    "text": "Vérifications en attente · {{count}} devant",
+    "source": "eab8f11d97739087afa414c6f2ae44813a21d124275342fe4e194bbb0b1ac4dc"
+  },
+  "merge.status.checksRunningFor_many": {
+    "text": "Vérifications en cours · {{count}} min",
+    "source": "077aa9ff5525c54b79caf86f6a5694a944c51aa5e1f8b4640c9445f5b3c86c83"
+  },
+  "merge.status.checksRunningFor_one": {
+    "text": "Vérifications en cours · {{count}} min",
+    "source": "077aa9ff5525c54b79caf86f6a5694a944c51aa5e1f8b4640c9445f5b3c86c83"
+  },
+  "merge.status.checksRunningFor_other": {
+    "text": "Vérifications en cours · {{count}} min",
+    "source": "077aa9ff5525c54b79caf86f6a5694a944c51aa5e1f8b4640c9445f5b3c86c83"
+  },
+  "merge.status.behindCount_many": {
+    "text": "En retard sur main · {{count}}",
+    "source": "9e71cc86c4d5ce22b7efbb1d646ccbd33a9dc9094c3039aa0edea984d3862135"
+  },
+  "merge.status.behindCount_one": {
+    "text": "En retard sur main · {{count}}",
+    "source": "9e71cc86c4d5ce22b7efbb1d646ccbd33a9dc9094c3039aa0edea984d3862135"
+  },
+  "merge.status.behindCount_other": {
+    "text": "En retard sur main · {{count}}",
+    "source": "9e71cc86c4d5ce22b7efbb1d646ccbd33a9dc9094c3039aa0edea984d3862135"
+  },
+  "merge.pill.advisoryVotes_many": {
+    "text": "{{count}} votes consultatifs de non-approbateurs. Ils ne comptent pas pour la fusion",
+    "source": "bee2ff0211395b1b2cc8fa92b4d84af7c6818670f81bc548be6fad2fd283ab51"
+  },
+  "merge.pill.advisoryVotes_one": {
+    "text": "{{count}} vote consultatif de non-approbateurs. Il ne compte pas pour la fusion",
+    "source": "7799c1131ee1fe16f9a0c3051f8ea81466afdfe4071aae4bd7da950e5940ab8a"
+  },
+  "merge.pill.advisoryVotes_other": {
+    "text": "{{count}} votes consultatifs de non-approbateurs. Ils ne comptent pas pour la fusion",
+    "source": "bee2ff0211395b1b2cc8fa92b4d84af7c6818670f81bc548be6fad2fd283ab51"
+  },
+  "flow.connectors.hint_many": {
+    "text": "Vous avez déjà {{count}} connecteurs Claude / ChatGPT connectés. Vous pouvez aussi simplement lui demander de prendre cette tâche en charge. Un connecteur appartient au compte {{product}} où il a été ajouté ; coller dans un autre compte demande donc le sien : <0>afficher les étapes</0>.",
+    "source": "7c0724bf00ab965f5bb40fcacd406cd32de88f8ac6a1ed7a9c8e5364b7ec8367"
+  },
+  "flow.connectors.hint_one": {
+    "text": "Vous avez déjà {{count}} connecteur Claude / ChatGPT connecté. Vous pouvez aussi simplement lui demander de prendre cette tâche en charge. Un connecteur appartient au compte {{product}} où il a été ajouté ; coller dans un autre compte demande donc le sien : <0>afficher les étapes</0>.",
+    "source": "7b3c024b87e597ea1ea4109b51e648688986c4ed09cde7d56d4be1cc4e47a309"
+  },
+  "flow.connectors.hint_other": {
+    "text": "Vous avez déjà {{count}} connecteurs Claude / ChatGPT connectés. Vous pouvez aussi simplement lui demander de prendre cette tâche en charge. Un connecteur appartient au compte {{product}} où il a été ajouté ; coller dans un autre compte demande donc le sien : <0>afficher les étapes</0>.",
+    "source": "7c0724bf00ab965f5bb40fcacd406cd32de88f8ac6a1ed7a9c8e5364b7ec8367"
+  },
+  "credits.resetIn.minutes_many": {
+    "text": "{{count}} min",
+    "source": "dfa02f1827e7eeb4de0376512e651595dda607acbfe39dc892e9d397805bb604"
+  },
+  "credits.resetIn.minutes_one": {
+    "text": "{{count}} min",
+    "source": "dfa02f1827e7eeb4de0376512e651595dda607acbfe39dc892e9d397805bb604"
+  },
+  "credits.resetIn.minutes_other": {
+    "text": "{{count}} min",
+    "source": "dfa02f1827e7eeb4de0376512e651595dda607acbfe39dc892e9d397805bb604"
+  },
+  "credits.resetIn.hours_many": {
+    "text": "{{count}} h",
+    "source": "0419aebec122e5210870a0d354e3ea9b5510821dfe20094e3d7802e99a6ca0d3"
+  },
+  "credits.resetIn.hours_one": {
+    "text": "{{count}} h",
+    "source": "0419aebec122e5210870a0d354e3ea9b5510821dfe20094e3d7802e99a6ca0d3"
+  },
+  "credits.resetIn.hours_other": {
+    "text": "{{count}} h",
+    "source": "0419aebec122e5210870a0d354e3ea9b5510821dfe20094e3d7802e99a6ca0d3"
+  },
+  "credits.intro.counted_many": {
+    "text": "{{count}} façons de continuer à construire dès maintenant :",
+    "source": "7fa8dbdc6ee7af752dd900627b2c10d40b262d3653e9f2b3dd6cb9cb805f4bb1"
+  },
+  "credits.intro.counted_one": {
+    "text": "{{count}} façon de continuer à construire dès maintenant :",
+    "source": "a5c8b5ff36a941a6d817e7e87c69719f922cbd685dff4ae73f2a5e6615cbf381"
+  },
+  "credits.intro.counted_other": {
+    "text": "{{count}} façons de continuer à construire dès maintenant :",
+    "source": "7fa8dbdc6ee7af752dd900627b2c10d40b262d3653e9f2b3dd6cb9cb805f4bb1"
+  },
+  "buildLog.ago.minutes_many": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "buildLog.ago.minutes_one": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "buildLog.ago.minutes_other": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "buildLog.ago.hours_many": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "buildLog.ago.hours_one": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "buildLog.ago.hours_other": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "buildLog.ago.days_many": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "buildLog.ago.days_one": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "buildLog.ago.days_other": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "buildLog.ago.months_many": {
+    "text": "il y a {{count}} mois",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "buildLog.ago.months_one": {
+    "text": "il y a {{count}} mois",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "buildLog.ago.months_other": {
+    "text": "il y a {{count}} mois",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "transcript.activity.stepsAndSummary_many": {
+    "text": "Activité de l’agent ({{count}} étapes) et résumé",
+    "source": "0a916b4372b1fe76f38908634f5184945b833873754176a8c2ef45852b20477b"
+  },
+  "transcript.activity.stepsAndSummary_one": {
+    "text": "Activité de l’agent ({{count}} étape) et résumé",
+    "source": "0a916b4372b1fe76f38908634f5184945b833873754176a8c2ef45852b20477b"
+  },
+  "transcript.activity.stepsAndSummary_other": {
+    "text": "Activité de l’agent ({{count}} étapes) et résumé",
+    "source": "0a916b4372b1fe76f38908634f5184945b833873754176a8c2ef45852b20477b"
+  },
+  "transcript.activity.steps_many": {
+    "text": "Activité de l’agent ({{count}} étapes)",
+    "source": "637b437bf7a1665507a1c00f1c535f9fd19df4a3d9337aa6cd1e77502c1bf87d"
+  },
+  "transcript.activity.steps_one": {
+    "text": "Activité de l’agent ({{count}} étape)",
+    "source": "637b437bf7a1665507a1c00f1c535f9fd19df4a3d9337aa6cd1e77502c1bf87d"
+  },
+  "transcript.activity.steps_other": {
+    "text": "Activité de l’agent ({{count}} étapes)",
+    "source": "637b437bf7a1665507a1c00f1c535f9fd19df4a3d9337aa6cd1e77502c1bf87d"
+  },
+  "transcript.spec.versionLines_many": {
+    "text": "Plan v{{version}} · {{lines}} lignes",
+    "source": "ca7078019c498416bb28c889f5a63c9533be59a64aec694348bab64acdd81a99"
+  },
+  "transcript.spec.versionLines_one": {
+    "text": "Plan v{{version}} · {{lines}} ligne",
+    "source": "ca7078019c498416bb28c889f5a63c9533be59a64aec694348bab64acdd81a99"
+  },
+  "transcript.spec.versionLines_other": {
+    "text": "Plan v{{version}} · {{lines}} lignes",
+    "source": "ca7078019c498416bb28c889f5a63c9533be59a64aec694348bab64acdd81a99"
+  },
+  "transcript.spec.draftedLines_many": {
+    "text": "Plan rédigé · {{lines}} lignes",
+    "source": "2df444dfaefad09c226187644eeeb505bb4af7dbfac2bdf75ed2512dd009532a"
+  },
+  "transcript.spec.draftedLines_one": {
+    "text": "Plan rédigé · {{lines}} ligne",
+    "source": "2df444dfaefad09c226187644eeeb505bb4af7dbfac2bdf75ed2512dd009532a"
+  },
+  "transcript.spec.draftedLines_other": {
+    "text": "Plan rédigé · {{lines}} lignes",
+    "source": "2df444dfaefad09c226187644eeeb505bb4af7dbfac2bdf75ed2512dd009532a"
+  },
+  "transcript.header.byAuthorMessages_many": {
+    "text": "Session d’agent de {{author}} · {{count}} messages",
+    "source": "c144794ae25d47cdc65adb9242317b18c542bb8dbfc86781a3164adaa0587b92"
+  },
+  "transcript.header.byAuthorMessages_one": {
+    "text": "Session d’agent de {{author}} · {{count}} message",
+    "source": "0e2d4748a6dd2e8fd02aa086fbdd8347af5c1ee28cc19379a19971dd281231e3"
+  },
+  "transcript.header.byAuthorMessages_other": {
+    "text": "Session d’agent de {{author}} · {{count}} messages",
+    "source": "c144794ae25d47cdc65adb9242317b18c542bb8dbfc86781a3164adaa0587b92"
+  },
+  "transcript.header.byUnknownMessages_many": {
+    "text": "Session d’agent de cette personne · {{count}} messages",
+    "source": "85bf6b7e7b6d9e1cc8c9596834567ebe77cb72fd0908e88b82069411de4bc0a0"
+  },
+  "transcript.header.byUnknownMessages_one": {
+    "text": "Session d’agent de cette personne · {{count}} message",
+    "source": "20a31320dc78c6b095ca64f45ef66b87b1d744d83c12e0fb1c56a02173d60f3f"
+  },
+  "transcript.header.byUnknownMessages_other": {
+    "text": "Session d’agent de cette personne · {{count}} messages",
+    "source": "85bf6b7e7b6d9e1cc8c9596834567ebe77cb72fd0908e88b82069411de4bc0a0"
+  },
+  "transcript.header.readMessages_many": {
+    "text": "Lire la session d’agent ({{count}} messages)",
+    "source": "2cd885fb43046a463abcf0a87c59296bf743654a172ac3522d12f1bb398198b8"
+  },
+  "transcript.header.readMessages_one": {
+    "text": "Lire la session d’agent ({{count}} message)",
+    "source": "2cd885fb43046a463abcf0a87c59296bf743654a172ac3522d12f1bb398198b8"
+  },
+  "transcript.header.readMessages_other": {
+    "text": "Lire la session d’agent ({{count}} messages)",
+    "source": "2cd885fb43046a463abcf0a87c59296bf743654a172ac3522d12f1bb398198b8"
+  }
+}

@@ -1,0 +1,1174 @@
+{
+  "sheet.title": {
+    "text": "Notifikasi",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "sheet.markAllRead": {
+    "text": "Tandai semua dibaca",
+    "source": "3bc62a9e6a39484a62a5d651ad0f3908f172f4bbcfea8f21f8876a644e3c2153"
+  },
+  "sheet.filters": {
+    "text": "Filter notifikasi",
+    "source": "2c59fc9a00262864868402ad2890c2260f705a5d4de1bc898bfeb2e8cb54b988"
+  },
+  "sheet.tab.unread": {
+    "text": "Belum dibaca",
+    "source": "1b9f384c1436f607447ff66db22dcfe569141506b7499589a9b4857580075b26"
+  },
+  "sheet.tab.messages": {
+    "text": "Pesan",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "sheet.tab.all": {
+    "text": "Semua",
+    "source": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2"
+  },
+  "sheet.allMessages": {
+    "text": "Semua pesan",
+    "source": "5eb8f655776b20593ab370a85d51182afe7bb0617ce16ae2856d7e03720b4572"
+  },
+  "sheet.today": {
+    "text": "Hari ini",
+    "source": "2b065c7c9ce466e5ebcad757987d5d660ee4c9ea708bc62c43444b53334738ba"
+  },
+  "sheet.earlier": {
+    "text": "Sebelumnya",
+    "source": "e10ae990740118886b011c218c7d0777c5c203954e0038747965ddbe5aea1744"
+  },
+  "sheet.empty.unread": {
+    "text": "Kamu sudah membaca semuanya.",
+    "source": "47aa1e80a7c7d61445cd42555b7cf425e8dfebd8ce611dfa7faa8a20ee3c8562"
+  },
+  "sheet.empty.other": {
+    "text": "Belum ada apa-apa. Notifikasimu akan muncul di sini.",
+    "source": "d49bf8672f9ed5775512122c16d34be620b66e9ce5cad28ddba0dbcd852c1455"
+  },
+  "sheet.older.loading": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "sheet.older.messages": {
+    "text": "Lihat notifikasi pesan yang lebih lama",
+    "source": "9e9efd37b9ab7db4709f254e059d7a4fd7186ed50f56bf365b121026c5d7d346"
+  },
+  "sheet.older.reveal": {
+    "text": "Lihat notifikasi yang lebih lama",
+    "source": "e6e2b91ee8d1f8e8b27adebc8b2a18ea8a7b7c471f90a1085b87044cf53e4df7"
+  },
+  "sheet.older.hide": {
+    "text": "Sembunyikan notifikasi yang lebih lama",
+    "source": "e054b8e214e5a9b257ec7982eb036c92566c7efa62c27cb32b65335a327a92da"
+  },
+  "sheet.older.showAll": {
+    "text": "Lihat notifikasi yang lebih lama",
+    "source": "e6e2b91ee8d1f8e8b27adebc8b2a18ea8a7b7c471f90a1085b87044cf53e4df7"
+  },
+  "sheet.older.load": {
+    "text": "Lihat notifikasi yang lebih lama",
+    "source": "e6e2b91ee8d1f8e8b27adebc8b2a18ea8a7b7c471f90a1085b87044cf53e4df7"
+  },
+  "row.clear": {
+    "text": "Hapus",
+    "source": "83b12c2216efb4fdc924e1deb5182e905e4926ed0c1c324d467107f46d5a26a9"
+  },
+  "row.clearLabel": {
+    "text": "Hapus notifikasi",
+    "source": "f3936d8750c0ab35ce0798f693969512b148e27c299540394150aaae2ae3fc13"
+  },
+  "row.unreadDot": {
+    "text": "Belum dibaca",
+    "source": "1b9f384c1436f607447ff66db22dcfe569141506b7499589a9b4857580075b26"
+  },
+  "row.sending": {
+    "text": "Mengirim…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "row.meta.sourceByWhen": {
+    "text": "{{source}} · oleh @{{username}}<0> · {{when}}</0>",
+    "source": "e843b11170ebe6ec92f4aaaab534d24f754d13e2c37bf2bb1b62de67568eac16"
+  },
+  "row.meta.sourceWhen": {
+    "text": "{{source}}<0> · {{when}}</0>",
+    "source": "4ac5ba3c300450ab916738d6ee7f4e3678f330fb99692c44719cfeab02e6b104"
+  },
+  "row.meta.byWhen": {
+    "text": "oleh @{{username}}<0> · {{when}}</0>",
+    "source": "a2ff149ba8d65e60d0a4fe50f9d65ddd9cb4b457f74585ac54ea0a407c66b3c6"
+  },
+  "row.meta.sourceBy": {
+    "text": "{{source}} · oleh @{{username}}",
+    "source": "757288f5687a711aaafcb75ea24263240434d8b482864b10da0ed25fe57b44e9"
+  },
+  "row.meta.by": {
+    "text": "oleh @{{username}}",
+    "source": "2e4e07ca4209136e8bf1089ae407ed5bf1d49f7eb24cbd726154b52802e65614"
+  },
+  "row.factPair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "row.unknownPerson": {
+    "text": "seseorang",
+    "source": "2a59d59e3809f827ce709d3815e3950eef4a6a93af5557a93a7fdfba71460843"
+  },
+  "row.source.messages": {
+    "text": "Pesan",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "row.source.friends": {
+    "text": "Teman",
+    "source": "bd104d1b98d032274986497eeb7997c44a1d674b29140e43cd525d33468ecb6e"
+  },
+  "row.source.account": {
+    "text": "Akun",
+    "source": "7e1b0d5641f2640ce9a953ec231eea2c27a2a7633f7d3c273e5735e2b30c10b7"
+  },
+  "row.source.admin": {
+    "text": "Admin",
+    "source": "c1c224b03cd9bc7b6a86d77f5dace40191766c485cd55dc48caf9ac873335d6f"
+  },
+  "row.source.discussion": {
+    "text": "Diskusi",
+    "source": "5eb6cf647d2c5d14a044e2d103dcef4cf0cdc872434c374debc1043092bc4746"
+  },
+  "row.testAlert.label": {
+    "text": "Notifikasi uji Homeroom",
+    "source": "6358ce2ccf3650710d9b0172a3f016b5a40dbdcb91c30555e5d0784806bae3e4"
+  },
+  "row.testAlert.body": {
+    "text": "Kamu meminta uji notifikasi push. Buka pengaturan Peringatan untuk mencoba lagi.",
+    "source": "522c61298b92a0f02bd9fb40e052b2155db62af49b21873ae33df03e24b4e909"
+  },
+  "row.conversation.untitled": {
+    "text": "Pesan",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "row.conversation.invite": {
+    "text": "Undangan",
+    "source": "1fd9ae1607aa3d804ef494984ed57aa79b6d3553962c76f6c8f5fa0a4dde04b7"
+  },
+  "row.conversation.mention": {
+    "text": "Menyebutmu",
+    "source": "44c08b55164b0e8045379b23a3784356f3ce0109dda9141ee89e830c8a1c1cb3"
+  },
+  "row.conversation.reply": {
+    "text": "Membalas",
+    "source": "1cd7fa936258e09c42cb5ae2e6aff298ae3e75ea55fbbcb7960f21a998877e4e"
+  },
+  "row.conversation.threadReply": {
+    "text": "Membalas di utas",
+    "source": "f1f2b38daa292aa57889c6b5a6b965376fe444f0fe3cbc91d56d35bac69c9203"
+  },
+  "row.conversation.reaction": {
+    "text": "Memberi reaksi",
+    "source": "964ec337d1f2ab5dd086268f886f93797631dac767482a3de5fafaa0494d7473"
+  },
+  "row.bot.name": {
+    "text": "Bot Homeroom",
+    "source": "dbcdaf6793937cb49c108a0928a95702345de32d1e04db8037f1bb66945bcde9"
+  },
+  "row.bot.build.ready": {
+    "text": "Perubahanmu siap dicoba",
+    "source": "ee2fdd6b20c5ae55ce452bb45a507dfc080d2bda453b5c4903df18078adccc2d"
+  },
+  "row.bot.build.needsYou": {
+    "text": "Aku punya pertanyaan",
+    "source": "2cfcf9ff2690c3b6e91d44d16605503d31b54ca397b5134abdaa4a5110b35d58"
+  },
+  "row.bot.build.stopped": {
+    "text": "Perubahanmu berhenti. Alasannya sudah kujelaskan di chat kita",
+    "source": "936317fb71101a19d822cdce74c0ffb0c1601b7eb213fb3026ebf7676c735740"
+  },
+  "row.bot.build.live": {
+    "text": "Perubahanmu sudah tayang",
+    "source": "53d55fa29612548f8f5fba0f7e1c12f598d57da0c7af1753cb9508329fdf94d6"
+  },
+  "row.bot.moment.question.named": {
+    "text": "{{project}}: Aku punya pertanyaan",
+    "source": "4b966abdcc26ee310b2abb230239b27cec890a10601d65205ba4c851eb6608b0"
+  },
+  "row.bot.moment.question.unnamed": {
+    "text": "Aku punya pertanyaan",
+    "source": "2cfcf9ff2690c3b6e91d44d16605503d31b54ca397b5134abdaa4a5110b35d58"
+  },
+  "row.bot.moment.ready.named": {
+    "text": "{{project}} siap dicoba",
+    "source": "2ec80934957efe6c944453ebc6bee0cb3e19a65dd3dc5b5dd5bd21f1b1fdafb5"
+  },
+  "row.bot.moment.ready.unnamed": {
+    "text": "Perubahanmu siap dicoba",
+    "source": "ee2fdd6b20c5ae55ce452bb45a507dfc080d2bda453b5c4903df18078adccc2d"
+  },
+  "row.bot.moment.readyGroup.named": {
+    "text": "Perubahanmu pada {{project}} siap dicoba",
+    "source": "05f66f8a2ce3510a0a09f8c7b30b5b3f6c3452c029f83b106623f2d3b83a6154"
+  },
+  "row.bot.moment.readyGroup.unnamed": {
+    "text": "Perubahanmu siap dicoba",
+    "source": "ee2fdd6b20c5ae55ce452bb45a507dfc080d2bda453b5c4903df18078adccc2d"
+  },
+  "row.bot.moment.readyBroken.named": {
+    "text": "{{project}} sudah dibuat, tapi belum semuanya berfungsi",
+    "source": "33d43b120e84c66f3f9a3bc7c895c828ea13c4e42b737078856dc51f005a160f"
+  },
+  "row.bot.moment.readyBroken.unnamed": {
+    "text": "Perubahanmu sudah dibuat, tapi belum semuanya berfungsi",
+    "source": "b48ae2813a369b64068fc6e1c95fc6d663c83aa24cdc56698ef0a465067b5219"
+  },
+  "row.bot.moment.stopped.named": {
+    "text": "{{project}}: perubahanmu berhenti. Alasannya sudah kujelaskan di chat kita",
+    "source": "eada16c3dd86b852f910bb21d024d285fc9d9bf5466d107969635e2977a94e09"
+  },
+  "row.bot.moment.stopped.unnamed": {
+    "text": "Perubahanmu berhenti. Alasannya sudah kujelaskan di chat kita",
+    "source": "936317fb71101a19d822cdce74c0ffb0c1601b7eb213fb3026ebf7676c735740"
+  },
+  "row.bot.moment.stoppedBuild.named": {
+    "text": "{{project}}: Aku tidak bisa menyelesaikan pembuatannya. Balas saja, nanti kucoba lagi",
+    "source": "a5a714e654be7aacc1eb8db8a4c05ccf5c9faf65cfc6e631bdf7334a06ccd206"
+  },
+  "row.bot.moment.stoppedBuild.unnamed": {
+    "text": "Aku tidak bisa menyelesaikan pembuatannya. Balas saja, nanti kucoba lagi",
+    "source": "c2cb309cf07231aa1eee69064d3c283b6d2529738b4977662a5bf73b38d7e7f2"
+  },
+  "row.bot.moment.stoppedBlocked.named": {
+    "text": "{{project}}: Aku tidak bisa membuatnya seperti yang tertulis. Ceritakan lebih lanjut",
+    "source": "7b4ea55b0e4ba612fe9f3c64672837d1d005c21a72c075f4113095bdf2f1df81"
+  },
+  "row.bot.moment.stoppedBlocked.unnamed": {
+    "text": "Aku tidak bisa membuatnya seperti yang ditulis. Ceritakan lebih banyak ya",
+    "source": "28fa7d6814ffff9c03c761c4473d86d32be5c303fc1a724dd7ed76c5b17b5b6a"
+  },
+  "row.bot.moment.stoppedPerson.named": {
+    "text": "{{project}}: ini perlu diputuskan oleh seseorang",
+    "source": "5b22094fb24f50440dacbb736c1b12b4d92a836e955982fdbd648eaa50ddb599"
+  },
+  "row.bot.moment.stoppedPerson.unnamed": {
+    "text": "Ini perlu diputuskan oleh seseorang",
+    "source": "4e5121a6fe69d5a98f5bc6209e66de61a6923e834d6b250d1af4bf088c76a2ca"
+  },
+  "row.bot.moment.stoppedEmpty.named": {
+    "text": "{{project}}: aku tidak menemukan apa pun untuk dibuat. Ceritakan lebih banyak ya",
+    "source": "f4d9f07fecbc3a892dba7a31fbb6d0f5a0d56b97930cd3762591eb9d65de7a21"
+  },
+  "row.bot.moment.stoppedEmpty.unnamed": {
+    "text": "Aku tidak menemukan apa pun untuk dibuat. Ceritakan lebih banyak ya",
+    "source": "11bf0b599b7469f28354d4f1afa2768c39fb9bc28024f5724df165682dec352c"
+  },
+  "row.bot.moment.stoppedFirst.named": {
+    "text": "{{project}}: aku tidak bisa mulai membuatnya. Kamu tetap bisa mengirim permintaan",
+    "source": "ef798f86001e61d80c28395d59ba134df7440b7dfed4502a6bb0d81716c1e4df"
+  },
+  "row.bot.moment.stoppedFirst.unnamed": {
+    "text": "Aku tidak bisa mulai membuatnya",
+    "source": "fb2999ea853f8331b1a4ee1ea61df14bd8450fb1247539818a7854f8f38eb1db"
+  },
+  "row.bot.moment.stoppedPreview.named": {
+    "text": "{{project}}: pratinjau gagal dimulai. Aku coba lagi",
+    "source": "6169039378cb05917439585bd33e8840eae3437fa4c52457fe73fd740cef3c2c"
+  },
+  "row.bot.moment.stoppedPreview.unnamed": {
+    "text": "Pratinjau gagal dimulai. Aku coba lagi",
+    "source": "71bba4ed0c8a1d4efb877755333df42dad3da330b22e61f35ad475a75a01ab6c"
+  },
+  "row.bot.moment.stoppedLook.named": {
+    "text": "{{project}}: sudah dibuat, tapi perlu diperiksa dulu sebelum kamu bisa mencobanya",
+    "source": "a4b3ab93699e8a63b8f34d4a6b38f4acc0a10a1f6db75a18a4ec81052b049da6"
+  },
+  "row.bot.moment.stoppedLook.unnamed": {
+    "text": "Sudah dibuat, tapi perlu diperiksa dulu sebelum kamu bisa mencobanya",
+    "source": "e8b7a3cd914e635521acdb6b59fec033269a066ecb73e3ac5486acae1b3d324e"
+  },
+  "row.bot.moment.held.named": {
+    "text": "{{project}}: aku mulai hari Senin",
+    "source": "fe01ce512e844ca6acd145cf23d23fe0c47002fb3035e7ccd023539e0411a6b3"
+  },
+  "row.bot.moment.held.unnamed": {
+    "text": "Aku berhenti sejenak sampai hari Senin",
+    "source": "7f2b450ab449e687ad03c915216800487cf8d554d74f25f1ecb59eb1d56cffa3"
+  },
+  "row.bot.moment.live.named": {
+    "text": "Perubahanmu pada {{project}} sudah tayang",
+    "source": "75617f55edb6259b926fa074ddfe5716e3e1a51b8c0ab908c7c46a8dc6b6a196"
+  },
+  "row.bot.moment.live.unnamed": {
+    "text": "Perubahanmu sudah tayang",
+    "source": "53d55fa29612548f8f5fba0f7e1c12f598d57da0c7af1753cb9508329fdf94d6"
+  },
+  "row.bot.moment.liveFirst.named": {
+    "text": "{{project}} sudah tayang",
+    "source": "967919a6413f7d734a43c8f23be01f397a00255e721b1c8d8df0576d979049e4"
+  },
+  "row.bot.moment.liveFirst.unnamed": {
+    "text": "Proyekmu sudah tayang",
+    "source": "e14f05abc4706e72de9b8fd51c19f4f9e58684c322f587299c842c7fc25b2e41"
+  },
+  "row.bot.moment.liveSoon.named": {
+    "text": "Perubahanmu pada {{project}} segera tayang",
+    "source": "cd4ca91db40b473e0cdbc80a6e2eca9b7544103b2ea98a1e3379e5d30935f5cb"
+  },
+  "row.bot.moment.liveSoon.unnamed": {
+    "text": "Perubahanmu segera tayang",
+    "source": "484a98e17ed17c0f35d1f65ea263da3fc76a5aa11a3fc2e9b8837e8edc1bf328"
+  },
+  "row.bot.moment.liveFirstSoon.named": {
+    "text": "{{project}} segera tayang",
+    "source": "9b00a38e5fbff2a28d667d1b172083324eb624f6a3228cd07ba5414ccfa27975"
+  },
+  "row.bot.moment.liveFirstSoon.unnamed": {
+    "text": "Proyekmu segera tayang",
+    "source": "5c1cb0c8fa05d335a8ea651b3da469133f69695a26e93503983770c76427fc2f"
+  },
+  "row.friend.request": {
+    "text": "Permintaan pertemanan",
+    "source": "d67dac8830c6ae27b1b94b0c16d1ab66829b180d81d2d15da553d3462f045be5"
+  },
+  "row.friend.accepted": {
+    "text": "Menerima permintaan pertemananmu",
+    "source": "81e161e70a796148969562dabbf68795f2b2bbae334ec4a160f734be60dbc891"
+  },
+  "row.friend.accept": {
+    "text": "Terima",
+    "source": "89713b9c9c1b8f659c9f49db25e4a47886dd673fee248c3f650391f09a759cef"
+  },
+  "row.friend.decline": {
+    "text": "Tolak",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "row.appDeleteAttempted": {
+    "text": "Mencoba menghapus aplikasi bersama ini",
+    "source": "2ced5ce63c3e5ec3467f37869a5808e15b9549118585f9cb7d8d825167bd67a6"
+  },
+  "row.appDeleted.label": {
+    "text": "Menghapus aplikasi bersama yang kamu ikut kerjakan",
+    "source": "1bce0ac46fac5ea42b61ec5aa5519485baba0a610d9c678234b4e3e20c14bf77"
+  },
+  "row.appDeleted.unnamed": {
+    "text": "sebuah aplikasi",
+    "source": "66e93a7c5a2576c34833f10761ca00fadbd40b36eff79f1e0969652f607b0b43"
+  },
+  "row.moderation.report": {
+    "text": "Kabar laporan",
+    "source": "1cb4c806f847eef1580ad33ce5625d149fdaba3bafaaad5f36f887605423a1a1"
+  },
+  "row.moderation.action": {
+    "text": "Tindakan moderasi",
+    "source": "f9bb667d7c64e594340c28cffd9b8cc9d0ccc2d32d463c2f9aaab24d4942d095"
+  },
+  "row.quota.changed.label": {
+    "text": "Jatah aplikasi berubah",
+    "source": "073325ba4b129d12488f893258935903fa0e829346ad079eb6aa865b56cff94c"
+  },
+  "row.quota.changed.unknown": {
+    "text": "Jatah aplikasimu berubah.",
+    "source": "a81daec7ffe98d40fb261b829f3e7a250531437618986d7293c0ca9b7952a679"
+  },
+  "row.quota.requested": {
+    "text": "Meminta tambahan slot aplikasi",
+    "source": "95ca8bbb7b83829f9a6c7063f4ed1201a913a65f49fc649c114c16ba3ff6261f"
+  },
+  "row.quota.declined.label": {
+    "text": "Permintaan jatah aplikasi ditolak",
+    "source": "07bd8f2a05c7457f88b94033ede50364b3ed26c38231f1d1fd8d69aa4a22e432"
+  },
+  "row.quota.declined.body": {
+    "text": "Jatah aplikasimu tidak berubah.",
+    "source": "67a1341357aae98e66a217101b16a1c3a3b99fd3fd292969049ac7543f0aaaf1"
+  },
+  "row.openrouter.review": {
+    "text": "Kunci OpenRouter perlu ditinjau admin",
+    "source": "f5fd39213c2dba93689a02e0e5192aebaca33cdff5eeda038c04cdddbec4362b"
+  },
+  "row.openrouter.enabled": {
+    "text": "Akses OpenRouter diaktifkan",
+    "source": "36cb5f410fe5924635ae39ac4a65725ae1573c333f9d4c3bb5f2c4520ad2d8a0"
+  },
+  "row.limit.unknown.label": {
+    "text": "Batas platform",
+    "source": "9118ac91e69745494ada4130a83b1216725e8f69333eb3e9d40670b9797594b4"
+  },
+  "row.limit.unknown.body": {
+    "text": "server hampir mencapai salah satu batasnya",
+    "source": "5ff890cc04c73a0a88c42f6b45246ef00bec66bf3db6493bd9b0bdcaceb1f69f"
+  },
+  "row.limit.githubApp.full.label": {
+    "text": "Permintaan GitHub App habis",
+    "source": "1d55c30538c00534c5f15942774d3390dc4ae38e6e99ae58cc93d7dd010a771d"
+  },
+  "row.limit.githubApp.warn.label": {
+    "text": "Permintaan GitHub App hampir habis",
+    "source": "484c5a9c0e19e85aa2643c9e0aba29b75e16936438ad9b68da7565ca7f7cf5ce"
+  },
+  "row.limit.github.full.label": {
+    "text": "Permintaan GitHub habis",
+    "source": "4a7e7092122f1cccf6a897924a1532e9845a7a01ddaa4692aa69e3895d0aa2d2"
+  },
+  "row.limit.github.warn.label": {
+    "text": "Permintaan GitHub hampir habis",
+    "source": "b8950ea751db3159e3fd71d0a95b233b8dce77541ebd6aa40342f354afc02bd4"
+  },
+  "row.limit.apps.full.label": {
+    "text": "Batas aplikasi tercapai",
+    "source": "f7e1c68974a2452a04140ef81b832c12b49375dc18b4a5460149108587ee9dfa"
+  },
+  "row.limit.apps.warn.label": {
+    "text": "Hampir mencapai batas aplikasi",
+    "source": "bf64e475877bcdc139500c1083034ec23e53b60ac47658abdcae2cbc094d8a60"
+  },
+  "row.limit.sessions.full.label": {
+    "text": "Batas sesi tercapai",
+    "source": "13439b0858a247658b94bc3d87021946376ef13b9488221e967324e15368ca88"
+  },
+  "row.limit.sessions.warn.label": {
+    "text": "Hampir mencapai batas sesi",
+    "source": "f3042c0f19409505448949f68b67c0cfd600db0c3d49176760f4c43ab184a622"
+  },
+  "row.incident.hour.label": {
+    "text": "Kejadian tak terduga menumpuk",
+    "source": "86af77460b8e549e4385fb9023d26d4c35696c1693fa7451555a47173b05dbee"
+  },
+  "row.incident.digest.kindCount": {
+    "text": "{{kind}} {{count}}",
+    "source": "2719a3e72e4d7a54fd7ec784bb99dbc1464d2a5af6294423e8ae5a39bbef80a3"
+  },
+  "row.incident.digest.otherCount": {
+    "text": "lainnya {{count}}",
+    "source": "d85e5eee019812befdc3da75eecf707b95f731a8997cef5b2c6d2d82c60a4528"
+  },
+  "row.incident.digest.list": {
+    "text": "{{kinds}}.",
+    "source": "baed46584fffbc87423e551cb8d301667adcd681dea82237b419cd6f40e70988"
+  },
+  "row.incident.digest.empty": {
+    "text": "Lihat Admin → Kejadian tak terduga.",
+    "source": "0d69c0b4095e188a0f6a161ff16da6eb1c1a986f5d176399dc2be54dfd318ba9"
+  },
+  "row.incident.unknown.label": {
+    "text": "Kejadian tak terduga",
+    "source": "aefb57c10cb7cd816e3ee1733d03160f7593ec650711de222bbe70a66a759c0c"
+  },
+  "row.incident.unknown.body": {
+    "text": "terjadi sesuatu yang seharusnya tidak terjadi",
+    "source": "0907cf77615da45de49033adb0aa77db614eea49c19a93f1edad4a920c46fc4a"
+  },
+  "row.kudos.label": {
+    "text": "Kudos",
+    "source": "51483eb0b6d593009a02ce75240e6d94327c29cd0934297fce4025e12128ced0"
+  },
+  "row.kudos.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.kudos.note": {
+    "text": "Ucapan terima kasih dari anggota lain. Kudos yang kamu terima tidak kedaluwarsa dan dihitung di papan peringkat Kudos. Setiap orang punya {{limit}} per minggu untuk diberikan.",
+    "source": "ebf26c928107638a0151712113fb9748fb426e3b454b4f79367c3bdee7e9245a"
+  },
+  "row.kudos.board": {
+    "text": "Papan peringkat",
+    "source": "31b471215872634299bc844f90c0493a24f6db1f00dca395175da335c4c0ca1d"
+  },
+  "row.reaction.label": {
+    "text": "Memberi reaksi",
+    "source": "964ec337d1f2ab5dd086268f886f93797631dac767482a3de5fafaa0494d7473"
+  },
+  "row.stale.label": {
+    "text": "Butuh suara",
+    "source": "05cc11b0c4ba587c00fdd4095e910a95d7f5350c84d05cae0d83706cebb0853c"
+  },
+  "row.stale.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.checkFailed.label": {
+    "text": "Pengujian tidak bisa berjalan",
+    "source": "814b8ad75528046d253ec0b608fa38b33b588ce089f943879d5cb95b8058d9e3"
+  },
+  "row.checkFailed.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.proposed.label": {
+    "text": "Perubahan baru",
+    "source": "1e98669442c0d77703980b7abddf20da86081ca6d9e780026afcc2d3fc301f09"
+  },
+  "row.proposed.aChange": {
+    "text": "sebuah perubahan",
+    "source": "aeb303f24373a3b607cad1c529094e197b76e8cf9e2668e7611e86233c3c0b09"
+  },
+  "row.changeReady.live": {
+    "text": "Sudah tayang",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "row.changeReady.goingLive": {
+    "text": "Segera tayang",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "row.changeReady.closed": {
+    "text": "Ditutup",
+    "source": "c21ead0614e7e1b70edb3759e1d19ca1e12e6036980d10bfb73052fb1a018efa"
+  },
+  "row.changeReady.ready": {
+    "text": "Siap dicoba",
+    "source": "5eff2e7bbcbb296bb48877eccbd3d3337bf19b015abcc0e943c06851b05a1d9a"
+  },
+  "row.changeReady.aChange": {
+    "text": "sebuah perubahan",
+    "source": "aeb303f24373a3b607cad1c529094e197b76e8cf9e2668e7611e86233c3c0b09"
+  },
+  "row.merged.forced": {
+    "text": "Ditayangkan oleh admin",
+    "source": "840ae13d3d42c5ab0860f342c3448f70c3d84b5be6f8c1486c79aaed165a8a51"
+  },
+  "row.merged.live": {
+    "text": "Sudah tayang",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "row.merged.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.vote.no": {
+    "text": "Memilih tidak",
+    "source": "9dfd1ccc16ec2c9488835e19348f4615a5d5de271ed96480e86c760be8420071"
+  },
+  "row.vote.yes": {
+    "text": "Memilih ya",
+    "source": "3393ce52f5d0ada30ea98a7102a4b6721aefb9c6fca6de7e3de373b6b48b6393"
+  },
+  "row.vote.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.vote.reason": {
+    "text": "“{{reason}}”",
+    "source": "504c682c5e4439d0e87aadc61e6afeca420b7551759840673ee4a82307bb2d7c"
+  },
+  "row.recheck.label": {
+    "text": "Masih setuju?",
+    "source": "4d975c768ba3d18d3caad0e167e9dd375b056d84b802abe9c18fbd8d1ec67e1e"
+  },
+  "row.recheck.aChange": {
+    "text": "perubahan yang kamu dukung",
+    "source": "5b160ef22d38576c0750456932ed3ca904ebb73583a5347ace2f35c1f85ae6a5"
+  },
+  "row.recheck.stillYes": {
+    "text": "Tetap ya",
+    "source": "1ab9570b63e1803af6c36c97ecfc868be70cc4cd8153ae7ee3145cc6fa18ba78"
+  },
+  "row.weekly.label": {
+    "text": "Minggu ini di {{project}}",
+    "source": "f8ba481a0ed2501afa4f0bf0245e1a6058725ec8122880d391cf9f9a200bddcf"
+  },
+  "row.weekly.labelUnnamed": {
+    "text": "Minggu ini di aplikasi",
+    "source": "e7dc129a8e47b2a143bacf507403ef2bcea264a95c7d7a159f57bdacea427c24"
+  },
+  "row.weekly.nothing": {
+    "text": "Tidak ada yang tayang minggu ini",
+    "source": "871c4020302976610855e33e6907cd690167726691b60d969b67ceb7dbd8519c"
+  },
+  "row.issueOpened.label": {
+    "text": "Permintaan baru",
+    "source": "5977ded363b218084c538878f7d774389364b7178275cb951a193733df870a19"
+  },
+  "row.issueOpened.filed": {
+    "text": "diajukan",
+    "source": "d0481a767ebfdcc5e273659794e78feaa2c9b0282e1a11aa46bc466d3c4d0b09"
+  },
+  "row.issueOpened.number": {
+    "text": "#{{number}}",
+    "source": "2036653b22ffb6d1d247cfa38c77e81296406ada36ed4d75fb220212a59bef30"
+  },
+  "row.issueMention.label": {
+    "text": "Menyebutmu",
+    "source": "44c08b55164b0e8045379b23a3784356f3ce0109dda9141ee89e830c8a1c1cb3"
+  },
+  "row.issueMention.request": {
+    "text": "permintaan #{{number}}",
+    "source": "38230b76111e8c9d45f08d6893bc1b2c31f60cad3818cf048f13906107215192"
+  },
+  "row.issueMention.aRequest": {
+    "text": "sebuah permintaan",
+    "source": "af0bf2a562dabe2a81e0b0b47a33a515b5e8495c72fff218af4c15f3f066fa44"
+  },
+  "row.health.storage.label": {
+    "text": "Penyimpanan aplikasi",
+    "source": "27e2347ea0c67c52dc6af7ec2486f54c7c5cc47a666852e047c79c319ee0c29f"
+  },
+  "row.health.storage.warn": {
+    "text": "{{app}} sudah memakai sebagian besar penyimpanannya",
+    "source": "efcfc30e4c6bd21ce80292911fc2e656f3f0648ec2192e07b48e8c450c253d04"
+  },
+  "row.health.storage.warnUnnamed": {
+    "text": "Aplikasimu sudah memakai sebagian besar penyimpanannya",
+    "source": "181c5c0a94b9bd98c386db19cbf1f703863930ab141544495bf560ff415ef55d"
+  },
+  "row.health.storage.full": {
+    "text": "<0>Penyimpanan {{app}} penuh.</0> Data baru tidak bisa disimpan sampai admin menaikkan batasnya atau memberi waktu untuk membersihkan",
+    "source": "ef7226627c1b00383b944ea228e6d80557685099435de8a6aa0965c66d97a51f"
+  },
+  "row.health.storage.fullUnnamed": {
+    "text": "<0>Penyimpanan aplikasimu penuh.</0> Data baru tidak bisa disimpan sampai admin menaikkan batasnya atau memberi waktu untuk membersihkan",
+    "source": "f5bce5fa750e1ea640729897c05085d903287f66be963c1cfa00271d95c5f73f"
+  },
+  "row.health.problem.label": {
+    "text": "Masalah aplikasi",
+    "source": "4614a47fc4cc068822b24570248d4039f20bbdeaa8924858ab1c7883cce382d7"
+  },
+  "row.health.problem.deployFailed": {
+    "text": "sebuah pembaruan gagal tayang",
+    "source": "ffae361e82113d1f29e64a24fc777dc03a4638b6164bdd7f5f2b699b2c4a7191"
+  },
+  "row.health.problem.releaseStalled": {
+    "text": "perubahan yang disetujui belum tayang",
+    "source": "4034302bb9563f62fb26522dbe532cc57f33e5252ccff6ebdd202f0887d938b4"
+  },
+  "row.health.problem.other": {
+    "text": "ada yang perlu diperiksa",
+    "source": "b7adea7561314228eaeb80cef843cafa2618b5b17f24b3658710e9060110e9c6"
+  },
+  "row.voteDigest.none": {
+    "text": "Tidak ada lagi yang menunggu persetujuanmu",
+    "source": "4fbbfb9334dbd674ac8c7e6f96343fbc53275aa85e25e21aca291db917609ab6"
+  },
+  "row.voteDigest.label": {
+    "text": "Menunggu persetujuanmu",
+    "source": "af7a94b91a7493faa5d5226a2ddbb38b57df3d30f426deb82d9cd9c64547d122"
+  },
+  "row.connector.shared": {
+    "text": "Dibagikan oleh agenmu",
+    "source": "0fcd7a76f4e82e8febdb24db95743a7d5c4c3d96dead350eb1c79f3fd6d1585c"
+  },
+  "row.connector.submitted": {
+    "text": "Diajukan oleh agenmu",
+    "source": "83c2df6650e71ae86f2ad77cef9186b4eed0e67849419bc80a79ba784f8d3d76"
+  },
+  "row.connector.yourChange": {
+    "text": "perubahanmu",
+    "source": "af7f8c29352df69119b6ad928163437a96e0e657489d9a2a1bb52b4321d9d725"
+  },
+  "row.agentAsked": {
+    "text": "Claude bertanya kepadamu",
+    "source": "e893e9f6b727d639ab57a021b8742f33fab958cd61caa4ea63e39a9fd43fdf77"
+  },
+  "row.session.agentFinished": {
+    "text": "Agen pengodean selesai",
+    "source": "9f88c5ae1ce087c3a204d2dfba330bdb4a46303a850b402f6e0b62f030e095c1"
+  },
+  "row.session.finished": {
+    "text": "Sesi selesai",
+    "source": "ad28fe4ccd5dfdccdb62420d828a39601bb2671aba7522331e08774fb401d6eb"
+  },
+  "row.session.agentStopped": {
+    "text": "Agen pengodean berhenti sebelum selesai",
+    "source": "1d6ebdd43b141704b98dbd2fd2a61d6bad326378d47dffb9b7ee183d17af5335"
+  },
+  "row.session.stopped": {
+    "text": "Sesi berhenti sebelum selesai",
+    "source": "5ba6f649b0725df18ccd138bb3aab827ac86a085256486dc274be20c69910848"
+  },
+  "row.session.yourSession": {
+    "text": "sesimu",
+    "source": "41aa2577deb77c3b6f29c6084872b40e769db97191a204e5b1b9b19da1598814"
+  },
+  "row.autoSolve.failed": {
+    "text": "Perubahan gagal",
+    "source": "3c3e8bc53be43064c7c9424638c7bf520cec9ce667e3b5e3bfced9005df30425"
+  },
+  "row.autoSolve.question": {
+    "text": "Perubahan punya pertanyaan",
+    "source": "5e64654edae93f6a5a8dd3d5c133c7ff29f5d7f31f997bc33502dbab7b02336b"
+  },
+  "row.autoSolve.ready": {
+    "text": "Perubahan siap dicoba",
+    "source": "542c811b86312327f6eb2deab974db49fb691c7d382a8132a306abcb556d15f0"
+  },
+  "row.autoSolve.request": {
+    "text": "permintaan #{{number}}",
+    "source": "38230b76111e8c9d45f08d6893bc1b2c31f60cad3818cf048f13906107215192"
+  },
+  "row.autoSolve.aRequest": {
+    "text": "sebuah permintaan",
+    "source": "af0bf2a562dabe2a81e0b0b47a33a515b5e8495c72fff218af4c15f3f066fa44"
+  },
+  "row.spec.label": {
+    "text": "Rencana dibagikan",
+    "source": "20d55698f4100d66651784b1f47ecc28d431b643b1003d3ee6d5a81d6e897c87"
+  },
+  "row.spec.version": {
+    "text": "v{{version}}",
+    "source": "3ab5cefec1b666633fb137eff196b62b5c3f8e83eebd1bea4b4259e8cc719ee4"
+  },
+  "spec.panelTitle": {
+    "text": "Rencana v{{version}}",
+    "source": "d94788c6107a5463536113c0b0f92239f373b87b5fd6aee73d7852cf12d51471"
+  },
+  "row.channel.snippet": {
+    "text": "@{{username}}: {{message}}",
+    "source": "760146d15fb4e6165927ddb63160f6058c544c720ab506d0e0ed158562b14400"
+  },
+  "row.channel.snippetSomeone": {
+    "text": "Seseorang: {{message}}",
+    "source": "9696391eb3af76b0b7b75d2417848eee595e97774ea89d8d9dabc3e48d800a98"
+  },
+  "row.channel.someone": {
+    "text": "Seseorang",
+    "source": "864c855e3d64399dc06fa30ebb75526c2c2e73db7216b16a3d4cf03e8a52ec3b"
+  },
+  "row.channel.askedIn": {
+    "text": "@{{username}} meminta perubahan di {{project}}",
+    "source": "7825002ef7222e6642d6f823735245506d9e57cccd5a1c705b3a2fbbae811416"
+  },
+  "row.channel.askedInUnnamed": {
+    "text": "@{{username}} meminta perubahan di diskusi",
+    "source": "786c12d3827460cd6f4fad35965de51bf45cdae59441490afe0fddc047e42ce4"
+  },
+  "row.channel.someoneAskedIn": {
+    "text": "Seseorang meminta perubahan di {{project}}",
+    "source": "d1afef9c9366427d27d333e4d2d22dedf44565ee8b17f0ae4c5571ee576f573d"
+  },
+  "row.channel.someoneAskedInUnnamed": {
+    "text": "Seseorang meminta perubahan di diskusi",
+    "source": "d77a95bb8f44f2fdc339a12bae0aabd5678949b8ef715d8f9a60b3133889aa29"
+  },
+  "row.channel.saidIn": {
+    "text": "@{{username}} di {{project}}",
+    "source": "adf3a7b9d52af4367608f6b3f6818b52a6c23825e73de90abf352ba55881cd0b"
+  },
+  "row.channel.saidInUnnamed": {
+    "text": "@{{username}} di diskusi",
+    "source": "0ef7547080e5d12b9f59e90c765157efe444377475f8524011b05033e59e73e5"
+  },
+  "row.channel.someoneIn": {
+    "text": "Seseorang di {{project}}",
+    "source": "e0df2953d6d7f25485abcfee40f688994a0e01b67bb3e7f90aaae71dbb8ee5d9"
+  },
+  "row.channel.someoneInUnnamed": {
+    "text": "Seseorang di diskusi",
+    "source": "224ce2cae5fc4e75f5df0cb4d252daccc758dbdcc8afd4dae3df7980f492a6a2"
+  },
+  "row.inviteLink.openedOne": {
+    "text": "Seseorang membuka undanganmu",
+    "source": "05c4550fa7198da15648ca9259fc9cf5c102efa7f740f1411e34faa71d5f3a3b"
+  },
+  "row.inviteLink.joined": {
+    "text": "Bergabung lewat undanganmu",
+    "source": "47d8af8ba0a904a8c01aadb645d0a095d44b72b5201f5e9403c119aa57d9a971"
+  },
+  "row.inviteLink.asked": {
+    "text": "Meminta perubahan",
+    "source": "c8781da4144505cb190418fed3fc84818b9d3c916627aad649d215c15936c8ff"
+  },
+  "row.inviteLink.saidHi": {
+    "text": "Menyapa",
+    "source": "351e2d82d6d9b47713903e276282082a0cfd2f11bf72da63d7c9d4bd25db030f"
+  },
+  "row.collab.invitedJoin": {
+    "text": "Mengundangmu bergabung",
+    "source": "3bf5410dbe516202f4f9f72b63ae64fad18950ce4305b8c10832b9c16c606efc"
+  },
+  "row.collab.invitedBuild": {
+    "text": "Mengundangmu membangun bersama",
+    "source": "aade4739d58e756bbdb985ad8de99ac77fb126c58ad47314a26a26eca19e95d7"
+  },
+  "row.collab.accepted": {
+    "text": "Bergabung lewat undanganmu",
+    "source": "47d8af8ba0a904a8c01aadb645d0a095d44b72b5201f5e9403c119aa57d9a971"
+  },
+  "row.collab.approverInvite": {
+    "text": "Memintamu membantu menyetujui perubahan",
+    "source": "e6164b0a6419080401f96838bbce66750bb3d46f98df003fa6ad337a95a714e1"
+  },
+  "row.collab.approverAccepted": {
+    "text": "Sekarang bisa menyetujui perubahan",
+    "source": "c60f3ce200966403f95faa96de9af46a85011faa086f90da593240ebfccfef60"
+  },
+  "row.chat.mention": {
+    "text": "Menyebutmu",
+    "source": "44c08b55164b0e8045379b23a3784356f3ce0109dda9141ee89e830c8a1c1cb3"
+  },
+  "row.chat.reply": {
+    "text": "Membalasmu",
+    "source": "8f4e90a9456df3d33d4d3314dab9a1945f6fc845c5b698c020204d105bc9cf84"
+  },
+  "row.chat.threadReply": {
+    "text": "Membalas di utas",
+    "source": "f1f2b38daa292aa57889c6b5a6b965376fe444f0fe3cbc91d56d35bac69c9203"
+  },
+  "row.chat.posted": {
+    "text": "Memposting",
+    "source": "afd80c5a1b84c378544290379f7195d17d994e3a6e30675372c6dc58446e0614"
+  },
+  "saved.heading": {
+    "text": "Tersimpan",
+    "source": "b5c120b316c237a0deab3140267aebedba61947d3ae268d708a53d5be119e9fb"
+  },
+  "saved.unsave": {
+    "text": "Batal simpan",
+    "source": "51883bd8df178d966865a2a1c5b5b72f7d5929eed44246315be2ae2d08a067aa"
+  },
+  "saved.system": {
+    "text": "Sistem",
+    "source": "6725e7bbcd28f3a8a586fa34bf191fd72dde8b61756932cd3237c17a6f196f1a"
+  },
+  "saved.line.author": {
+    "text": "<0>@{{username}}</0> di <1>{{place}}</1> · <2>{{when}}</2>",
+    "source": "9e5510e32079dff50bf205aaaebb92a310bb1e6e9a02622535bd03cdb46ed15d"
+  },
+  "saved.line.authorConversation": {
+    "text": "<0>@{{username}}</0> di <1>sebuah percakapan</1> · <2>{{when}}</2>",
+    "source": "9f0d92365101b1a5498cb1b1987b2960c5fff835a338ddb1bf05f2be008035ac"
+  },
+  "saved.line.authorApp": {
+    "text": "<0>@{{username}}</0> di <1>sebuah aplikasi</1> · <2>{{when}}</2>",
+    "source": "b9320a1fc3df2ad793eb33dfeea9c8ca827ca777be43855ee6479dbbab42fdc1"
+  },
+  "saved.line.system": {
+    "text": "<0>Sistem</0> di <1>{{place}}</1> · <2>{{when}}</2>",
+    "source": "99a6b1f5f124305b01349610b0f67392d19b8112e14c4419cb3b48678ed0255b"
+  },
+  "saved.line.systemConversation": {
+    "text": "<0>Sistem</0> di <1>sebuah percakapan</1> · <2>{{when}}</2>",
+    "source": "e5cbb04f5215e3961d80cc533324bb2f29d869b0a5aa46bbffbaccd9aaa00792"
+  },
+  "saved.line.systemApp": {
+    "text": "<0>Sistem</0> di <1>sebuah aplikasi</1> · <2>{{when}}</2>",
+    "source": "97e5665425022ac91d5e312e69219b20e7a014da352701eebec7e6f050ea86db"
+  },
+  "invite.heading": {
+    "text": "Undangan",
+    "source": "f212a985ab1612db36f99f8ce3d228fb1a0332c07daf544534846bf2cdf8c6fb"
+  },
+  "invite.accept": {
+    "text": "Terima",
+    "source": "89713b9c9c1b8f659c9f49db25e4a47886dd673fee248c3f650391f09a759cef"
+  },
+  "invite.decline": {
+    "text": "Tolak",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "invite.note": {
+    "text": "“{{note}}”",
+    "source": "2a021146774ace843ff6132136c74fc5e2b372bd09d2c2ec95d87939575fd161"
+  },
+  "invite.someone": {
+    "text": "Seseorang",
+    "source": "864c855e3d64399dc06fa30ebb75526c2c2e73db7216b16a3d4cf03e8a52ec3b"
+  },
+  "invite.alreadyIn": {
+    "text": "Kamu sudah ada di dalamnya",
+    "source": "9cc7a07a25c8831b803e68d0d5763e67da65bfdebbe79de7de343e1c486c8918"
+  },
+  "invite.meta.membersWhen": {
+    "text": "<0>{{members}} · </0><1>{{when}}</1>",
+    "source": "659d5b3ab835d4b9f4bcded2cdb4629472d8a6bbf00a48f9005d8ecf353ddc7e"
+  },
+  "invite.line.approve": {
+    "text": "<0>@{{username}}</0> memintamu membantu menyetujui perubahan di <1>{{project}}</1>",
+    "source": "692d242cb39472ebfba46dcc6d2d5fccffbcc643ea5b055bd0ccd1621a3801bf"
+  },
+  "invite.line.approveUnnamed": {
+    "text": "<0>@{{username}}</0> memintamu membantu menyetujui perubahan di <1>sebuah aplikasi</1>",
+    "source": "0040c185044a32729825e8d0040b6c2c5c60667b3e53837831dcf5454d75c84a"
+  },
+  "invite.line.someoneApprove": {
+    "text": "<0>Seseorang</0> memintamu membantu menyetujui perubahan di <1>{{project}}</1>",
+    "source": "b80a06c5c7cbf7f730978e77e4ecd2c839afe0954fe7424ab9f925231a392b47"
+  },
+  "invite.line.someoneApproveUnnamed": {
+    "text": "<0>Seseorang</0> memintamu membantu menyetujui perubahan di <1>sebuah aplikasi</1>",
+    "source": "e30b89770f946791d3390db10ba8f504ec141be084cc5b608bb8d9ad1bc776f1"
+  },
+  "invite.line.join": {
+    "text": "<0>@{{username}}</0> mengundangmu bergabung di <1>{{project}}</1>",
+    "source": "0768530224de7d6619133dab14f766d026d73dbc0cfdd391e772f9f3107c5e43"
+  },
+  "invite.line.joinUnnamed": {
+    "text": "<0>@{{username}}</0> mengundangmu bergabung di <1>sebuah aplikasi</1>",
+    "source": "50b990a10cb287d4d1e7829cbaa4d8550d614751a4c0e19adaf4138b7d5c002d"
+  },
+  "invite.line.someoneJoin": {
+    "text": "<0>Seseorang</0> mengundangmu bergabung di <1>{{project}}</1>",
+    "source": "790819d180c91cf967de8938164222f4ff7a2e5222baf5bcdc84f9615ce81f7b"
+  },
+  "invite.line.someoneJoinUnnamed": {
+    "text": "<0>Seseorang</0> mengundangmu bergabung di <1>sebuah aplikasi</1>",
+    "source": "98ae24dea76e1a32b1c5c99b6883e0b7eb90198811c678b32be7c3fba5250bfe"
+  },
+  "invite.line.build": {
+    "text": "<0>@{{username}}</0> mengundangmu membangun <1>{{project}}</1>",
+    "source": "ae92b47ef0b67894be67ce36476cce70f49418097471f3841223784bdadcd12f"
+  },
+  "invite.line.buildUnnamed": {
+    "text": "<0>@{{username}}</0> mengundangmu membangun <1>sebuah aplikasi</1>",
+    "source": "112c36df75b5240f40c5d83e9e4b51c8a3fc3a65b15584e0e6c768ff9bd8bcaa"
+  },
+  "invite.line.someoneBuild": {
+    "text": "<0>Seseorang</0> mengundangmu membangun <1>{{project}}</1>",
+    "source": "424ec53bb3ea702b313c08510934d65529090fe7fcab8bc13b5d57c9898af693"
+  },
+  "invite.line.someoneBuildUnnamed": {
+    "text": "<0>Seseorang</0> mengundangmu membangun <1>sebuah aplikasi</1>",
+    "source": "f9cbbb59e0de8dcccdf8f480b64865a27a07d07178121dd4e0b84b4a98ca05a3"
+  },
+  "invite.acceptFailed": {
+    "text": "Gagal menerima (HTTP {{status}})",
+    "source": "542a020ccff4d4519f97abddcee0e7b36d5d8cddcc03b4ed75b631e1ce970c5e"
+  },
+  "invite.acceptedBuild": {
+    "text": "Sekarang kamu bisa membangun {{project}}",
+    "source": "d840a5600fe7301394f9b43e32ae7c162d95ddf707e507514acdbc5e87d98ceb"
+  },
+  "invite.acceptedBuildUnnamed": {
+    "text": "Sekarang kamu bisa membangun proyek ini",
+    "source": "cc3f116e3a942e7b0dd490abef564778600ee23816551082e277bdda9a2690cc"
+  },
+  "invite.declined": {
+    "text": "Undangan ditolak",
+    "source": "9af9c90973121fadba64e56510786753a3875d0bc6c7b239b752f5ea868e2235"
+  },
+  "toast.markAllFailed": {
+    "text": "Tidak bisa menandai notifikasi sebagai dibaca. Coba lagi.",
+    "source": "4684b79db7b82375a807642e8d7a9ee046a30ad8ad92160040d9ef96640d025e"
+  },
+  "toast.clearFailed": {
+    "text": "Tidak bisa menghapus notifikasi ini. Coba lagi.",
+    "source": "fb3e0e07077d5fe8662522936bb73d33f8276c1ac2ca925696a40bea663adcbf"
+  },
+  "friend.answerFailed": {
+    "text": "Tidak bisa menjawab permintaan pertemanan ini. Coba lagi.",
+    "source": "c64b0dae9829e91b7154385085d87ecac42b9b41c4fe1a89b5c2ffe2184d4ae9"
+  },
+  "friend.nowFriends": {
+    "text": "Kamu dan @{{username}} sekarang berteman",
+    "source": "9a5f77fbb1cbf89fb2f2024d0452ccf8cf5d4d8caaa558e2b588ad03bc0bfc1f"
+  },
+  "friend.nowFriendsUnnamed": {
+    "text": "Kamu dan dia sekarang berteman",
+    "source": "1cddfb33114d9bd5713ba5dfcc11fbce0f2213d9da01c15f0c8f96bd1400d4e0"
+  },
+  "friend.withdrawn": {
+    "text": "Permintaan ini sudah ditarik",
+    "source": "47feb58065eb6a62cacf12c54bf6ae9bf65020896e98cc94bb58b68dee5839fd"
+  },
+  "friend.declined": {
+    "text": "Permintaan ditolak",
+    "source": "1df48b2da038a8590b47b3202e6bbad0a620607550d8af9630ce801097e527b4"
+  },
+  "alert.change.failed.title": {
+    "text": "Perubahan gagal",
+    "source": "3c3e8bc53be43064c7c9424638c7bf520cec9ce667e3b5e3bfced9005df30425"
+  },
+  "alert.change.question.title": {
+    "text": "Perubahan punya pertanyaan",
+    "source": "5e64654edae93f6a5a8dd3d5c133c7ff29f5d7f31f997bc33502dbab7b02336b"
+  },
+  "alert.change.ready.title": {
+    "text": "Perubahan siap dicoba",
+    "source": "542c811b86312327f6eb2deab974db49fb691c7d382a8132a306abcb556d15f0"
+  },
+  "alert.change.failed.body": {
+    "text": "Perubahan untuk permintaan #{{number}} di {{app}} gagal. Kamu bisa mencoba lagi",
+    "source": "a017cac28d6ad55c326e1262865068113d8ac982fccb280effbb66c2963424b2"
+  },
+  "alert.change.failed.bodyYourApp": {
+    "text": "Perubahan untuk permintaan #{{number}} di aplikasimu gagal. Kamu bisa mencoba lagi",
+    "source": "d518368c160f790694919bb5b25a175246c032ad17429f25962a68e426cb2cf3"
+  },
+  "alert.change.failed.bodyARequest": {
+    "text": "Perubahan untuk sebuah permintaan di {{app}} gagal. Kamu bisa mencoba lagi",
+    "source": "97a289f8e3658cdb4024f736c07d48faaa7ea4a5b9bc2f051de392acae5b4340"
+  },
+  "alert.change.failed.bodyARequestYourApp": {
+    "text": "Perubahan untuk sebuah permintaan di aplikasimu gagal. Kamu bisa mencoba lagi",
+    "source": "9e7c45bbd4ec5c0f7292756e52a72201d44737e35ae872b81e23148e06f5c851"
+  },
+  "alert.change.question.body": {
+    "text": "Perubahan untuk permintaan #{{number}} di {{app}} menunggu jawabanmu",
+    "source": "816335e1a806d9cf7f401ccdbdcc3ac66aa9cadb05ee57b6cc21e8ef1b01a68c"
+  },
+  "alert.change.question.bodyYourApp": {
+    "text": "Perubahan untuk permintaan #{{number}} di aplikasimu menunggu jawabanmu",
+    "source": "ccff2d4b3ff17f6948ac3129ac95144a5ce92c98ce0ad4e310b5e842c5b490fa"
+  },
+  "alert.change.question.bodyARequest": {
+    "text": "Perubahan untuk sebuah permintaan di {{app}} menunggu jawabanmu",
+    "source": "5fc374a178ebccdb13564f2ac842fd9b5599d4513afd1c9ffcaef4c2b9e9fe5c"
+  },
+  "alert.change.question.bodyARequestYourApp": {
+    "text": "Perubahan untuk sebuah permintaan di aplikasimu menunggu jawabanmu",
+    "source": "c2d7c74d109ab8425748c0dfd9053459f3e211ae1148f1011889a793a4fe4b32"
+  },
+  "alert.change.ready.body": {
+    "text": "Perubahan untuk permintaan #{{number}} di {{app}} sudah siap",
+    "source": "1bf352058e116ee7dd900280dfa3cb78b8c480818bd7cea1b63e326ebda3e05d"
+  },
+  "alert.change.ready.bodyYourApp": {
+    "text": "Perubahan untuk permintaan #{{number}} di aplikasimu sudah siap",
+    "source": "f1e1010dffc7214dc091ebb41789b65e9bbecea82df9cc4ba40cc244aafd3d27"
+  },
+  "alert.change.ready.bodyARequest": {
+    "text": "Perubahan untuk sebuah permintaan di {{app}} sudah siap",
+    "source": "402f7de03b3d776fc9b29b9e5d66506420098ba17a06e99a7307f312fd1e56f4"
+  },
+  "alert.change.ready.bodyARequestYourApp": {
+    "text": "Perubahan untuk sebuah permintaan di aplikasimu sudah siap",
+    "source": "3a4ed0466f2c989f6882c63aa89ad83fea6f243f5208c228f5fa532bcc126aa1"
+  },
+  "alert.stalled.title": {
+    "text": "Sesi berhenti sebelum selesai",
+    "source": "5ba6f649b0725df18ccd138bb3aab827ac86a085256486dc274be20c69910848"
+  },
+  "alert.stalled.body": {
+    "text": "Sesimu di {{app}} berhenti sebelum selesai. Buka untuk melanjutkan",
+    "source": "a132482aab95a662edf167020eb4dd2babf84f61e95d3eb18420df1dce8b940d"
+  },
+  "alert.stalled.bodyYourApp": {
+    "text": "Sesimu di aplikasimu berhenti sebelum selesai. Buka untuk melanjutkan",
+    "source": "c79d74389b270b24a73310a0e724e2694691320b457cd51ef40ed034cbd7f734"
+  },
+  "alert.agentDone.title": {
+    "text": "Agen pengodean selesai",
+    "source": "9f88c5ae1ce087c3a204d2dfba330bdb4a46303a850b402f6e0b62f030e095c1"
+  },
+  "alert.agentDone.body": {
+    "text": "Agen pengodean selesai di {{app}}: {{title}}",
+    "source": "22da2e448c81c7d7504d9d5a881ee862d98adac5803e95f16948105f9bb11983"
+  },
+  "alert.agentDone.bodyYourApp": {
+    "text": "Agen pengodean selesai di aplikasimu: {{title}}",
+    "source": "dd3fc8141780b06ed22eb1c23c863328bbac64aab45a4cf8d8ddba01eb815b9a"
+  },
+  "alert.agentDone.bodyYourSession": {
+    "text": "Agen pengodean selesai di {{app}}: sesimu",
+    "source": "67866fccf7e474facc3be3f962793df8f39bbdcc815191b5e04e212cddffd9b8"
+  },
+  "alert.agentDone.bodyYourAppYourSession": {
+    "text": "Agen pengodean selesai di aplikasimu: sesimu",
+    "source": "2a46325601c6269624d204b27ef348124fdac534791658502295599e91e2944f"
+  },
+  "alert.sessionDone.title": {
+    "text": "Sesi agen selesai",
+    "source": "2286d25285c5ccaed77a70d14cfe59b05faf98e3c0401938ab76a09314f8a113"
+  },
+  "alert.sessionDone.body": {
+    "text": "Sesi agenmu di {{app}} selesai: {{title}}",
+    "source": "4037a82ebbd93145035b4fb233607686b14046f710bd7363854a9e67b96eeeba"
+  },
+  "alert.sessionDone.bodyYourApp": {
+    "text": "Sesi agenmu di aplikasimu selesai: {{title}}",
+    "source": "cbc46d45b9f7179c7004c05fd17e69246b1a7fa831746caeb169120790826a53"
+  },
+  "alert.sessionDone.bodyYourSession": {
+    "text": "Sesi agenmu di {{app}} selesai: sesimu",
+    "source": "854dfac9c84c6b7aa21fedc8ec83a4c8645f1d0f65a4cb82314ca939a9d9646e"
+  },
+  "alert.sessionDone.bodyYourAppYourSession": {
+    "text": "Sesi agenmu di aplikasimu selesai: sesimu",
+    "source": "5f0eeae2be7bca1accba6997399844848c14945a1badcd942e0f31d4c79d020c"
+  },
+  "row.chat.requestReply": {
+    "text": "Membalas permintaan #{{number}}",
+    "source": "f86bac79db95cfbce5ac3554f8c85333e41601ecade365df51a444e4d5ead038"
+  },
+  "row.chat.requestReplyUnnumbered": {
+    "text": "Membalas sebuah permintaan",
+    "source": "ebec941df52308992648f6fc3e7f5e561374c14ac629b231e21fbd282a0c1ffc"
+  },
+  "sheet.tab.unreadCount_other": {
+    "text": "Belum dibaca ({{count}})",
+    "source": "42a50898b7280f9c18fe5cd132caa1b5afe37e21f5718058195f648a44e3ecbf"
+  },
+  "row.runCount_other": {
+    "text": "{{count}} notifikasi",
+    "source": "5c4f2732b21e9ae64b0f2133da00032bd8bad9e99794d6d3626bf16b2a630b46"
+  },
+  "row.quota.changed.up_other": {
+    "text": "Jatah aplikasimu naik dari {{before}} menjadi {{count}} slot aplikasi.",
+    "source": "ca67d526190e63fd87521b8eafd50a96402a683fdf89c16b3169223de67a8174"
+  },
+  "row.quota.changed.down_other": {
+    "text": "Jatah aplikasimu turun dari {{before}} menjadi {{count}} slot aplikasi.",
+    "source": "01d5aab22fe43bc81af328495c341048b48c69a2cba34f3c125c865d569ef12d"
+  },
+  "row.quota.changed.same_other": {
+    "text": "Jatah aplikasimu {{count}} slot aplikasi.",
+    "source": "689a6a4d2d7b6946a3d5af8ccd2fa1557be9f4fd6a76d23a1e91eb0f7894d887"
+  },
+  "row.limit.githubApp.body_other": {
+    "text": "<0>{{used}} dari {{count}} permintaan GitHub App terpakai jam ini.</0> Akan direset dalam jam ini.",
+    "source": "7aa9adf171ddaa25482b10b875d9fa26928872b3ae1e97470de07c0a7c60af33"
+  },
+  "row.limit.github.full.body_other": {
+    "text": "<0>{{used}} dari {{count}} permintaan GitHub terpakai jam ini.</0> Pekerjaan yang butuh GitHub akan gagal sampai jam berganti.",
+    "source": "9820eac978328e684e87df2a1e4d81f2ba90a48d70296263bfd0023b626b498b"
+  },
+  "row.limit.github.warn.body_other": {
+    "text": "<0>{{used}} dari {{count}} permintaan GitHub terpakai jam ini.</0> Pekerjaan latar belakang menunggu agar sisanya tetap untuk pekerjaan orang.",
+    "source": "14d5de050a36558308173e4c999bb3b47f6ddde01ff9b64d664518998e0c8da1"
+  },
+  "row.limit.apps.full.body_other": {
+    "text": "<0>{{used}} dari {{count}} aplikasi terpakai.</0> Aplikasi baru ditolak sampai batas aplikasi dinaikkan di Admin → Limits atau satu aplikasi dihapus.",
+    "source": "d7228958ec8f71482009edfb45b8e2151d8b9f515bd0087c7225bd4b342cbdaa"
+  },
+  "row.limit.apps.warn.body_other": {
+    "text": "<0>{{used}} dari {{count}} aplikasi terpakai.</0> Naikkan batas aplikasi di Admin → Limits sebelum aplikasi baru ditolak.",
+    "source": "5532e8d844ac26f362d0c7b16da3a70a93d590a4b5f80c65d4dbe2f0548e3501"
+  },
+  "row.limit.sessions.full.body_other": {
+    "text": "<0>{{used}} dari {{count}} sesi pengodean terpakai.</0> Sesi baru menjeda sesi yang menganggur, atau menunggu, sampai MAX_GLOBAL_SESSIONS dinaikkan.",
+    "source": "31723a496101fad75f54258e6b1ed03c4d09b33084315de21b214ddeb814bf5a"
+  },
+  "row.limit.sessions.warn.body_other": {
+    "text": "<0>{{used}} dari {{count}} sesi pengodean terpakai.</0> Saat mencapai batas, sesi yang menganggur dijeda untuk memberi ruang.",
+    "source": "b1e3013563a994bb09a072806c68bafaef2d0d445ec515adb3619f87d89592da"
+  },
+  "row.incident.hour.body_other": {
+    "text": "<0>{{count}} {{kind}} dalam satu jam terakhir.</0> Admin → Unexpected events memuat semuanya.",
+    "source": "aca0abadfa0e080844186a8c57be19f42d15fecaa9494eb29b7f0dff87409edf"
+  },
+  "row.incident.digest.label_other": {
+    "text": "{{count}} kejadian tak terduga kemarin",
+    "source": "b2cb978f8d20bc203bb9f578e7bdc9460d4fed6ef1ab102b46201612a1d3eab5"
+  },
+  "row.weekly.wentLive_other": {
+    "text": "{{count}} perubahan sudah tayang",
+    "source": "a73051dc7ee77282dc6ccc3cb05b26ed779fbdc66972c091973e1f4799635fa6"
+  },
+  "row.weekly.waiting_other": {
+    "text": "{{count}} perubahan menunggu persetujuan",
+    "source": "57d69c5aa05e5a2c907a4c03f4730c4d78a84274e74ac25519cdf9a87bf32c87"
+  },
+  "row.voteDigest.count_other": {
+    "text": "{{count}} perubahan",
+    "source": "440660f8047c1dda4fc4c487c327d4f3ad7bd066e6924008873a7e8d9d55dcd9"
+  },
+  "row.channel.many_other": {
+    "text": "{{count}} pesan baru di {{project}}",
+    "source": "16ef16fa5f0b5eb58defd629976f820fdd67fa9c4c9d6a095cc5edeb6d99a06b"
+  },
+  "row.channel.manyUnnamed_other": {
+    "text": "{{count}} pesan baru di diskusi",
+    "source": "4b3dccf2a693b75efe941e80b2b500f7937cd04cd6749fcd41f753145bcab966"
+  },
+  "row.inviteLink.openedMany_other": {
+    "text": "{{count}} orang membuka undanganmu",
+    "source": "f80d71996095277ef8efd0d93f56ffc527ad89605f50e6954df360fc21ee75c0"
+  },
+  "row.inviteLink.joinedWithOthers_other": {
+    "text": "Bergabung lewat undanganmu, bersama {{count}} orang lain",
+    "source": "5872b2d83d9c9d0b5bfbf75db7f2eb2c278df2b9e8f3645c7d9293501a26232b"
+  },
+  "row.inviteLink.saidHiWithOthers_other": {
+    "text": "Menyapa, bersama {{count}} orang lain",
+    "source": "afe6c81d4781223b0692276bd74cb92087535dfee1c2e14e49be4515015117e3"
+  },
+  "invite.showMore_other": {
+    "text": "Tampilkan {{count}} undangan lagi",
+    "source": "fb4d615edd4ad54e799c32897eb7e2fcbcf97910784349e82c93776edc4265c3"
+  },
+  "invite.members_other": {
+    "text": "{{count}} orang di dalamnya",
+    "source": "7d90418462658249223b9287f5cebc294137178df9c61fae382947f7f8617bd8"
+  }
+}

@@ -1,0 +1,382 @@
+{
+  "row.label": {
+    "text": "Dompet",
+    "source": "d1c9a01d57e900867b70369511eea3c3cc47536e8953bc4818d5f465252dd6be"
+  },
+  "sheet.title": {
+    "text": "Dompet",
+    "source": "d1c9a01d57e900867b70369511eea3c3cc47536e8953bc4818d5f465252dd6be"
+  },
+  "sheet.send": {
+    "text": "Kirim",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "sheet.receive": {
+    "text": "Terima",
+    "source": "bac9d15ad9f1ca0c964e670b53bc837493e92addaface934a63b00e54bba0bde"
+  },
+  "sheet.walletUnavailable": {
+    "text": "Status dompet tidak tersedia di versi aplikasi ini.",
+    "source": "33942b8be7a7fffcb6ffcfe3f3e93ae18bd147b277e937ae88cd40ee8681d154"
+  },
+  "sheet.submissionUnavailable": {
+    "text": "Pengiriman transaksi tidak tersedia di versi aplikasi ini.",
+    "source": "912ac960b0a0cfc117df3859f832cc06d1c525521eb129abb7dee5112ab56f57"
+  },
+  "sheet.recent": {
+    "text": "Terbaru",
+    "source": "690dbe9dc0993c4256683738fc3fd541cfa96f60d299be33343615dd58179d93"
+  },
+  "sheet.noTransactions": {
+    "text": "Belum ada transaksi terbaru.",
+    "source": "33e015b23a25bba189e34a233ce9e2ff05d58ae1576174265541fbba7e1c020a"
+  },
+  "toast.addressCopied": {
+    "text": "Alamat disalin",
+    "source": "a2617581771209f92a472ac498e5c6f30b3175467f878a4359fc387feafcf92e"
+  },
+  "toast.addressCopyFailed": {
+    "text": "Tidak dapat menyalin alamat",
+    "source": "90d6f4c823a9c11763195ad6c02725de7635eaf34854f4ea70d806c425319019"
+  },
+  "toast.sendUnavailable": {
+    "text": "Pengiriman tidak tersedia di versi aplikasi ini",
+    "source": "6d9555c9e9155ffae8eb19713c2d21ad6b35842e44ce1fcfa820347319439a4c"
+  },
+  "toast.submitted": {
+    "text": "Transaksi terkirim",
+    "source": "5d0594152cc057fd5870b158b4bb7916acb1edeae3008a5e502f3d858af45158"
+  },
+  "toast.sendFailed": {
+    "text": "Gagal mengirim: {{reason}}",
+    "source": "ff4b67d565be721ec30456f7264b4fa642fe085b45a5160900806f587430c984"
+  },
+  "toast.sendFailedUnknown": {
+    "text": "Gagal mengirim: kesalahan tidak diketahui",
+    "source": "dc837552a66cfd93495099a8b29169f80c8b72864490b8cf0fee35a40d9cb3ce"
+  },
+  "toast.previewOnly": {
+    "text": "Hanya pratinjau. Tidak ada yang diubah.",
+    "source": "97d01bf7e27487220011ea977ed4d78526f15d61a3df3f32d0af38abf1053750"
+  },
+  "error.refreshState": {
+    "text": "Tidak dapat memperbarui status dompet.",
+    "source": "2a24d03d09768f45f09d5d0be82d65c443fe3ed72355fd9a49c4945d566c7d36"
+  },
+  "error.openDelegation": {
+    "text": "Tidak dapat membuka pengelolaan delegasi.",
+    "source": "3e60c940f011007f38d1593d19dc02442a79cc12a4f08ff3feacf2c1fe833ede"
+  },
+  "send.confirmTitle": {
+    "text": "Kirim dari dompet",
+    "source": "44635765271437e07457238b1cb2a569698e3c395d62a9ea876c36fe697ad606"
+  },
+  "send.confirmSubtitle": {
+    "text": "Mengirim {{amount}} {{symbol}} ke {{address}}",
+    "source": "d6ad73e3f76b750fe07aa2ac1dfed4aad78f1f3a963c480b13383fe27c49acd1"
+  },
+  "send.invalidAddress": {
+    "text": "Masukkan alamat ut1… yang valid",
+    "source": "5f32c4a4e25e0f44b0c02fdc321dea372f49310b0dbe76067072f124a5ae3bb0"
+  },
+  "send.invalidAmount": {
+    "text": "Masukkan jumlah yang lebih dari nol",
+    "source": "b3284370556b8469d6dd143f94ab175b46d13e81b6ad803f52b02eb101b32180"
+  },
+  "send.recipientPlaceholder": {
+    "text": "Alamat penerima (ut1…)",
+    "source": "109cc6d5913ce78566bff25dcb4740b9963586e9858183ffd52a8c472c0c0e04"
+  },
+  "send.recipientLabel": {
+    "text": "Alamat penerima",
+    "source": "454d039112717bcd39c9fa8a7a605beb9436063a8653d6225f04a39d0390ba92"
+  },
+  "send.amountPlaceholder": {
+    "text": "Jumlah",
+    "source": "49e96d7cdf58069cc793555324e2226642f2f7f8bfff4cebe0c11a61eecef60a"
+  },
+  "send.amountLabel": {
+    "text": "Jumlah",
+    "source": "49e96d7cdf58069cc793555324e2226642f2f7f8bfff4cebe0c11a61eecef60a"
+  },
+  "send.submit": {
+    "text": "Kirim",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "send.confirmNote": {
+    "text": "Kamu akan mengonfirmasi transaksi ini di layar berikutnya.",
+    "source": "f4cff83e82b87d54b64b3baa6caa5a9038bdaa2de2c7f24357b1aa336b50b117"
+  },
+  "receipt.sent": {
+    "text": "Mengirim {{amount}} {{symbol}} ke {{address}}",
+    "source": "7d7edbbb79ee49747d7be20f0cf58cb09775984d930e640ee541996f7319f7ff"
+  },
+  "receipt.confirmedInBlock": {
+    "text": "{{when}} · terkonfirmasi · blok {{block}}",
+    "source": "abaf589c8399fe604ad85b9374e9719862228cdbee0e73a376fb5936204f70f4"
+  },
+  "receipt.confirmed": {
+    "text": "{{when}} · terkonfirmasi",
+    "source": "9c597b43cceda7eb05a99594b45ff9c63b4d7c3ae98cfe24566c48bb0b135feb"
+  },
+  "receipt.pending": {
+    "text": "{{when}} · tertunda",
+    "source": "6771d490cdce22c26e3fddc81bbe17a7cf3a7235b24aaa9ca912554f9c4a0a5d"
+  },
+  "receipt.unknown": {
+    "text": "{{when}} · tidak diketahui",
+    "source": "80f25a745b7ad4e65f22fd95935a18f9b68ad646c12f6aacc0c0e554d5901ec3"
+  },
+  "receipt.otherStatus": {
+    "text": "{{when}} · {{status}}",
+    "source": "f0df07a7fa5b9feb11fd76c5ce4a1fe8345ec395d5fb38820942a9e302ab81ec"
+  },
+  "staking.heading": {
+    "text": "Produksi blok",
+    "source": "240dbb9193bdb2943d12a87eb685682c68fcd6eea1aac17b798dbc6c632c3c3d"
+  },
+  "staking.setupPending": {
+    "text": "Penyiapan dompet masih berlangsung",
+    "source": "2005085e16acc6e72c5b77b06003dc1f4b48944f263974a1e10f4b4eba412bbc"
+  },
+  "staking.delegated": {
+    "text": "Didelegasikan",
+    "source": "dd341e5d100e662afaece640599296ad65ca98617a03774b4546857ddb52c268"
+  },
+  "staking.local": {
+    "text": "Memproduksi blok di ponsel ini",
+    "source": "6d7375a7c1c2233a69cac32ab338bd02112d3366b3ddcd37d4e9c3b4799da870"
+  },
+  "staking.delegatedNote": {
+    "text": "Produksi blok di ponsel ini dinonaktifkan.",
+    "source": "d42a865a0c9d771830c6a2d5d9141045c6a54f1a5f9254cbe2abb7c3341f3134"
+  },
+  "staking.localNote": {
+    "text": "Memproduksi blok langsung di ponsel ini memberi poin penuh.",
+    "source": "2cc45c90348b034d8a5983a8f37aaddd58df6535d154932f5db02a141cf95946"
+  },
+  "staking.delegatedSince": {
+    "text": "Didelegasikan sejak {{when}}",
+    "source": "e7a29c88df7b23d9f4505380204ac005888f803f5fb3d9651bc840aa3b93ee43"
+  },
+  "staking.disclosure": {
+    "text": "Saat didelegasikan, kamu mendapat setengah dari poin yang akan kamu peroleh jika memproduksi blok langsung dari ponselmu.",
+    "source": "ddcada4ea85aedf56fd93d88425aa87c2859e9e7683cbf3642db228a5b6d921b"
+  },
+  "staking.selfHosted": {
+    "text": "Ingin menjalankan node di laptop atau server sendiri dan memantaunya dari ponsel? Mulai node di sana dengan akun yang sama seperti di ponsel ini.",
+    "source": "eac7809b6d9a952324962fa656454615f28a759be8c37f686bfc13d7e56bcecf"
+  },
+  "staking.backgroundActive": {
+    "text": "Layanan latar belakang tetap berjalan agar ponsel ini bisa terus memproduksi blok dan tetap sinkron dengan jaringan saat kamu tidak memakai aplikasi. Notifikasi tetap terlihat selama layanan aktif.",
+    "source": "ed5d648ff6792370874140f4f3a6e973180a116c9690674b4b32d9a39780ac0a"
+  },
+  "staking.backgroundInactive": {
+    "text": "Layanan latar belakang tidak aktif. Ponsel ini tidak memproduksi blok, jadi tidak ada yang berjalan saat kamu tidak memakai aplikasi.",
+    "source": "e48315dbe4c58dd1d25a556f88c6bf5d1df4f5036dc2da5bc5bbbafe86bff7be"
+  },
+  "staking.retry": {
+    "text": "Coba lagi",
+    "source": "942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852"
+  },
+  "staking.retrying": {
+    "text": "Mencoba lagi…",
+    "source": "a16c8b1c95956fbabce3ed5506c7e1b4a2d10c86f7adfc7ae084f2d3df9f5174"
+  },
+  "staking.opening": {
+    "text": "Membuka…",
+    "source": "c926c2c50e65d5a5799f548604472ee8554b53c376e45be580b3a06a484d8fc0"
+  },
+  "staking.manage": {
+    "text": "Kelola delegasi",
+    "source": "0f6f168b12bf55aceaebef005b0b40a2039be55f48a8813a6b2f48800d4217d8"
+  },
+  "node.row.label": {
+    "text": "Node",
+    "source": "e93372533f323b2f12783aa3a586135cf421486439c2cdcde47411b78f9839ec"
+  },
+  "node.sheet.title": {
+    "text": "Node",
+    "source": "e93372533f323b2f12783aa3a586135cf421486439c2cdcde47411b78f9839ec"
+  },
+  "node.status.synced": {
+    "text": "Sinkron",
+    "source": "5da22fe4f7ac1d40a15e2d1c3770f98e5344a0d3118d34feb7466e265224d048"
+  },
+  "node.status.syncing": {
+    "text": "Menyinkronkan",
+    "source": "5c8b9e1ce0a2bc3181602873e9c5ec0208909539a46c5f1947427657b01a6713"
+  },
+  "node.status.connecting": {
+    "text": "Menghubungkan",
+    "source": "d403c686f6a1048014bdd230f59963271b0123ea48245754fc9f264b962a2182"
+  },
+  "node.status.offline": {
+    "text": "Luring",
+    "source": "a1794783aab72d205dc532b1170d1be63ebdce8816b57c21acb451c15dab969a"
+  },
+  "node.status.unavailable": {
+    "text": "Tidak tersedia",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "node.sheet.chain": {
+    "text": "Rantai",
+    "source": "dae0896cbc2c67bfbf74f011e826f2fb06aac119ed2938ec2c2f049774a7b89c"
+  },
+  "node.sheet.yourHeight": {
+    "text": "Tinggi blokmu",
+    "source": "54786a548836e93c1b2c2e5f0460a9b87d981026a0227e795d98fe56493538a6"
+  },
+  "node.sheet.networkHeight": {
+    "text": "Tinggi blok jaringan",
+    "source": "fb398f37cee88e5e98dbb1370c62608b25e27a8ea277e1fca6e7b83ff08908ac"
+  },
+  "node.sheet.peers": {
+    "text": "Peer",
+    "source": "64b769bcaf8f557421eeedb7b3a73191630675263062ee34567e3cac475d3c1b"
+  },
+  "node.sheet.heightWithAge": {
+    "text": "{{height}} · {{age}}",
+    "source": "6d5261f43912c4e1ab17d8966afa08c1d764f694de0900b6795675444f5c6f9d"
+  },
+  "node.tipAge.justNow": {
+    "text": "baru saja",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "node.warning.noPeers": {
+    "text": "Tidak ada peer yang terhubung.",
+    "source": "1ede3d09b73f23955e95308dee0c9193fe2b654f9acfb75818fe429ff74c2744"
+  },
+  "node.warning.syncStalled": {
+    "text": "Sinkronisasi tampaknya macet.",
+    "source": "77634c73ee38cc58c2c56960c9a254a337b1a716eca9282fb3d7aa857a19bada"
+  },
+  "node.warning.clockDrift": {
+    "text": "Jam node tidak sinkron.",
+    "source": "29e9d949f7c47dc3be78c82117eb306be429f7c8eb9ac6428f8f073cad0a7652"
+  },
+  "node.warning.hydrating": {
+    "text": "Data dompet masih dimuat.",
+    "source": "5d247a771ba8b242a5b9d09069fb41672954c20cb7d4bd989536b15186f4c814"
+  },
+  "credit.row.label": {
+    "text": "Kredit AI",
+    "source": "d7efdf04fec282a71a6a78e0983a8faaeed4fabd7655bdb35e2fa5893761b796"
+  },
+  "credit.meter.spend": {
+    "text": "<0>batas </0><1>{{spent}}</1><0>/{{limit}}</0>",
+    "source": "6ec7053cdb52f05aa0fdfff92d8ea38785cd14b32d5a9041f00eb170ad7f0115"
+  },
+  "credit.meter.left": {
+    "text": "<0>· </0><1>sisa {{remaining}}</1>",
+    "source": "7809a8726f3fc417800fe753f96bb3de8026116aa7c3239856a84d12cfc93a2c"
+  },
+  "credit.meter.noneLeft": {
+    "text": "<0>· </0><1>sudah habis</1>",
+    "source": "8f93185529b55ca75dba8c79fc286d9f3d538f98c8a5f6ed277593edd50b0a58"
+  },
+  "credit.meter.ownKey": {
+    "text": "<0>· </0><1>kunci kamu {{amount}}</1>",
+    "source": "bb93b283752f51a60f05f3939fe2b2f610e7ed340f1831ca796557f5ad6baa0f"
+  },
+  "credit.meter.locked": {
+    "text": "verifikasi akun · buka $10/hari",
+    "source": "a683560b105736011e2ca80f55b26c7586d9c0d2f1eae5708f29060f47aba45b"
+  },
+  "credit.meter.lockedKeyAvailable": {
+    "text": "<0>· </0><1>kunci kamu tersedia</1>",
+    "source": "f8432b7108696dc9ca62b454eeba6021e55765680cb83674b18203472f9aebe2"
+  },
+  "credit.meter.unavailable": {
+    "text": "kredit sementara tidak tersedia",
+    "source": "b028cfa7020d0eeee89a5b0f9fc1a670f51e9e66d0ddcce26489bf6d9b40b1f1"
+  },
+  "credit.tip.locked": {
+    "text": "Hubungkan GitHub atau X di Pengaturan untuk membuka $10/hari.",
+    "source": "131c7dbab35b5c4af999008dfdca85d92d41390d9b89dc6b935833f36b60e3c2"
+  },
+  "credit.tip.lockedWithKey": {
+    "text": "Hubungkan GitHub atau X di Pengaturan untuk membuka $10/hari. Kunci Anthropic milikmu tetap bisa dipakai.",
+    "source": "58461487ee4bac10ab8f643e5eb79cae59ff52c3f976adc3e97a042a4086a9cc"
+  },
+  "credit.tip.unavailable": {
+    "text": "Kelayakan kredit tidak dapat diverifikasi. Coba lagi sebentar lagi.",
+    "source": "9fe063691a85c86978f341431d92edad49644a885aa29e6d3ef5d28b08ea13d7"
+  },
+  "credit.tip.keyBilledWeekly": {
+    "text": "Jatah mingguan {{limit}} milikmu sudah habis. Giliran AI sekarang ditagihkan ke kunci Anthropic yang kamu simpan di Pengaturan.",
+    "source": "eca49d1101b008498fe2075b693296eba452e8c118f8ae3c135ff6f2b58fa787"
+  },
+  "credit.tip.keyBilledDaily": {
+    "text": "Jatah harian {{limit}} milikmu sudah habis. Giliran AI sekarang ditagihkan ke kunci Anthropic yang kamu simpan di Pengaturan.",
+    "source": "8d15e6abc6989cf3b0e926435e912ff7b0fce3538217fa306acfce4c95532cf7"
+  },
+  "credit.tip.usedAllWeekly": {
+    "text": "Kamu sudah memakai seluruh {{limit}} jatah AI minggu ini.",
+    "source": "cdacfa7d613b607b5ec4d0d6757a5059b7c7d2d92946e00466dab20a1061afbf"
+  },
+  "credit.tip.usedAllDaily": {
+    "text": "Kamu sudah memakai seluruh {{limit}} jatah AI hari ini.",
+    "source": "2bf5650996416b6c8cc753446d278cdb307ac6ebd83bd34ff3f386f114679387"
+  },
+  "credit.tip.usedWeekly": {
+    "text": "{{spent}} dari jatah AI mingguan {{limit}} terpakai (sisa {{remaining}}).",
+    "source": "14b1bbc1b1bd503f111e5ea27869b1ce1966beb08917ce66f63a1a14403ca35a"
+  },
+  "credit.tip.usedDaily": {
+    "text": "{{spent}} dari jatah AI harian {{limit}} terpakai (sisa {{remaining}}).",
+    "source": "8ac78e01d66945a4febac9463922621abe1a8694557c7e1124cab71acd3ac3e7"
+  },
+  "credit.tip.ownKeyToday": {
+    "text": "Tambahan {{amount}} hari ini ditagihkan ke kunci Anthropic milikmu dan tidak mengurangi jatah.",
+    "source": "ffddb520fcba145cd7ee4cb34a043923e87985236945c0ff5fb7b637f98058ce"
+  },
+  "credit.tip.resetsDaily": {
+    "text": "Kredit gratis diatur ulang pukul {{time}}.",
+    "source": "b83c6587b03580e1dd96084258cd3077978e9926f429cb06f60bda9d2d6a8afc"
+  },
+  "credit.tip.resetsWeekly": {
+    "text": "Kredit gratis diatur ulang hari {{day}} pukul {{time}}.",
+    "source": "8d26f1432d85df7b71151b916d57b692b71fd685b279d243749bb8bcbc641fdc"
+  },
+  "credit.tip.resetsWeeklyUtc": {
+    "text": "Kredit gratis diatur ulang Senin 00:00 UTC.",
+    "source": "171a409f2fba297ec50c58b610fe6ec94fffa78d83e7f4abfd544992e5a53c8e"
+  },
+  "credit.tip.resetsDailyUtc": {
+    "text": "Kredit gratis diatur ulang tengah malam UTC.",
+    "source": "c6c0d2006e01fca5f03b413087742c3a6c5027a8ed5df7731e3f2f31b98d2f89"
+  },
+  "credit.tip.sentences": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "appVersion.label": {
+    "text": "Versi aplikasi seluler",
+    "source": "04c1664b979a0e3b98ea052cff7c108833f6c2a553a3dcc7d15c18a239764856"
+  },
+  "node.sheet.peersReady_other": {
+    "text": "{{ready}} siap",
+    "source": "7aca59dcb5b59a72a015d685d23965da22880ed0b1e14e3360f72c3c969a9f1e"
+  },
+  "node.sheet.peersReadyOfKnown_other": {
+    "text": "{{ready}} siap / {{known}} dikenal",
+    "source": "c2aaa7e0b6bfe630b6a93e84a945bb56a3bb7a299855ad1dad8df5a6e8a2ffaa"
+  },
+  "node.tipAge.seconds_other": {
+    "text": "{{count}} detik lalu",
+    "source": "4021d7563cab19632311dd9acaf77c33e2cb79fc394e58dbf25e650805a1cf5d"
+  },
+  "node.tipAge.minutes_other": {
+    "text": "{{count}} menit lalu",
+    "source": "3d92f208d6c90f9ca0cb024c04162df5ce4524bc1c0565b7b96f2920427cec70"
+  },
+  "node.tipAge.hours_other": {
+    "text": "{{count}} jam lalu",
+    "source": "0687828cfa4d8b52bb7174db34e6f4d5a8e61c31d15964e31733ea4a0a8db1cc"
+  },
+  "node.tipAge.days_other": {
+    "text": "{{count}} hari lalu",
+    "source": "0d0d0a848ddf761192c49ddfd37a427c4230e2354b957e6998256e9c6ed4389f"
+  }
+}

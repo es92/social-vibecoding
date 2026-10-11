@@ -1694,6 +1694,7 @@
       const select = document.getElementById('settings-locale');
       if (!select) return;
       const value = this.state.locale || '';
+      this._appendLiveLanguages(select);
       // A saved value outside the shipped list (chosen when the picker
       // listed more, or set via the API) still needs to render truthfully:
       // inject an option for it, under the language's own name, so the
@@ -1707,6 +1708,19 @@
       select.value = value;
       const status = document.getElementById('settings-locale-status');
       if (status) { status.classList.add('hidden'); status.textContent = ''; }
+    },
+
+    // A language the server's translation cache offers that this build's
+    // catalogs do not (lib/i18n/runtime.ts getLanguages), under its own name,
+    // after the ones the pane lists.
+    _appendLiveLanguages(select) {
+      for (const { tag, name } of window.PlatformI18n?.getLanguages?.() || []) {
+        if ([...select.options].some((o) => o.value === tag)) continue;
+        const opt = document.createElement('option');
+        opt.value = tag;
+        opt.textContent = name;
+        select.appendChild(opt);
+      }
     },
 
     // Does the CLI-credentials surface exist in this deployment?
@@ -6522,6 +6536,11 @@
       });
       repaint(() => { if (Settings._openRouterModels.length) Settings._renderOpenRouterModelOptions(); });
       repaint(() => Settings._publishUsernode());
+    });
+    // The languages the cache offers arrive after boot: the open pane lists them.
+    document.addEventListener('homeroom:languages-changed', () => {
+      if (!Settings._open) return;
+      try { Settings._renderLanguageSection(); } catch { /* a pane that is not mounted */ }
     });
   }
 

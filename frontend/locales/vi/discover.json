@@ -1,0 +1,506 @@
+{
+  "card.openApp": {
+    "text": "Mở {{app}}",
+    "source": "5feada99b7c2717d75c37e2beb67d1fe6d76ce690c325151508f842ada3386fd"
+  },
+  "pill.missingSecrets": {
+    "text": "Thiếu khóa bí mật",
+    "source": "07a10de69bbb151e4c76a546684f21da76f08d23bfd8235006715a92068b61d8"
+  },
+  "pill.private": {
+    "text": "Riêng tư",
+    "source": "c63eb6720c6e88493897548d3620d45e539d18574465f7b26fdddcbade044ee2"
+  },
+  "pill.privateTip": {
+    "text": "Chỉ thành viên mới có thể mở và dùng ứng dụng này",
+    "source": "463308f18d58080176cb875d6675a6a54f6fe9df6c15495510ed049ef766f201"
+  },
+  "pill.inviteOnly": {
+    "text": "Chỉ mời mới được xây dựng",
+    "source": "2f0dec6ffec8e42bfde3db65d6a1967be12f4baec0d0ce7cd970c254097adc27"
+  },
+  "pill.inviteOnlyTip": {
+    "text": "Ai cũng có thể dùng ứng dụng này; chỉ cộng tác viên được mời mới có thể xây dựng",
+    "source": "aff3f8694597e283210254357d728938fe05a793fa72c0e64310704a596b65d5"
+  },
+  "browse.headerTitle": {
+    "text": "Tất cả ứng dụng",
+    "source": "01bed311e7d0c963a5f8afe3dd3c99c8140d887d92c602b94b9309fa51b32723"
+  },
+  "search.placeholder": {
+    "text": "Tìm tất cả ứng dụng…",
+    "source": "7ab778cc2c78b81d1eef6abd8ca5e3fc7441c7571b141a18af323fa8f03323a5"
+  },
+  "search.label": {
+    "text": "Tìm tất cả ứng dụng",
+    "source": "273a9a8737870c81e5040fa282149528de30a345c4c7a4162cee90af147f84be"
+  },
+  "search.clear": {
+    "text": "Xóa tìm kiếm",
+    "source": "3b7ea51793e9d906afa06afb86252abb48e1125cc96a7f5efabcfd8597ea183a"
+  },
+  "filter.groupLabel": {
+    "text": "Lọc ứng dụng",
+    "source": "c8be01160de85357e8cfa6a5a314f0c4287fafe9f127733c72bb229abd1deb27"
+  },
+  "filter.all": {
+    "text": "Tất cả",
+    "source": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2"
+  },
+  "filter.featured": {
+    "text": "Nổi bật",
+    "source": "c533cafab69e4033784a7d3857a806e551a95fee2ce47207bdd9a5528a24fb25"
+  },
+  "filter.joined": {
+    "text": "Đã tham gia",
+    "source": "69318b0c6a928e7e61624740d7382f513070ab28aa832b1da1d5e16995ae6a8b"
+  },
+  "filter.new": {
+    "text": "Mới",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "sort.label": {
+    "text": "Sắp xếp",
+    "source": "bec69036aa27e7fab7d44cad3909477b76631c39ba46fd7841ea71aae7e5a735"
+  },
+  "sort.selectLabel": {
+    "text": "Sắp xếp ứng dụng",
+    "source": "6dfe7969708d8474c11d9ac058b04ffb3fb9a71a238e449b535ada830ac5c629"
+  },
+  "sort.recommended": {
+    "text": "Đề xuất",
+    "source": "d70604e8430461372849bbd123d85771e11423870a507e8fa4650a7e9a5a50ef"
+  },
+  "sort.users": {
+    "text": "Nhiều người dùng nhất",
+    "source": "125c07d3ad934401b55f04446238c542786dc1b605734f3d9331567e13ca7686"
+  },
+  "sort.active": {
+    "text": "Sôi động nhất",
+    "source": "202997c941cad8e4ddc8244c3878b3836796f7e46afbef76cc4e206a28985505"
+  },
+  "sort.merged": {
+    "text": "Nhiều thay đổi đã ra mắt nhất",
+    "source": "8c3705100bb46c4f83f51512be9757cbbd57117980b07fb59c5c8fe5aa97485e"
+  },
+  "sort.newest": {
+    "text": "Mới nhất",
+    "source": "d15efa178cf65ae16596a270671aa320bc9d2a5f18d78ecc5d479f73b3ffd51e"
+  },
+  "loadError.directoryTitle": {
+    "text": "Không thể tải danh mục ứng dụng",
+    "source": "7a3b13f4bd7cf95ed4ba3859803ed2191f9d3b5bfc1126e3762567cfad51d464"
+  },
+  "loadError.detail": {
+    "text": "Đã xảy ra lỗi khi kết nối danh mục ứng dụng. Hãy kiểm tra kết nối và thử lại.",
+    "source": "99f7f59c11c325f6e0aa9d4c87724eb22e292c4b8a052606a63246f81ce03866"
+  },
+  "empty.search.featured": {
+    "text": "Không có ứng dụng nổi bật nào khớp với “{{query}}”.",
+    "source": "b56c344ac88806d180ef00a603f490c11fbab629f7bbb3b77d304ff3f0a7eeee"
+  },
+  "empty.search.joined": {
+    "text": "Không có ứng dụng nào bạn đã tham gia khớp với “{{query}}”.",
+    "source": "b626c55823777954f391e72d4e18775efbd2fef53a9ffeb88e510381e87a06c2"
+  },
+  "empty.search.new": {
+    "text": "Không có ứng dụng mới nào khớp với “{{query}}”.",
+    "source": "f106fef7135c944ae5fcb8fdb637332a1071fb7592dad23e98288b84aa62fd6c"
+  },
+  "empty.search.all": {
+    "text": "Không có ứng dụng nào khớp với “{{query}}”.",
+    "source": "54d38caed55915dc125700cacc8a02b09313ce5bd6f308d8e1840cd938030b3a"
+  },
+  "empty.featured": {
+    "text": "Chưa có ứng dụng nổi bật.",
+    "source": "613b1f22722c66c5e0dd264592bee21ff4b5747698c181bdb10e8e77e001f3f1"
+  },
+  "empty.joined": {
+    "text": "Bạn chưa tham gia ứng dụng nào. Hãy tham gia từ mục Tất cả.",
+    "source": "5895dba0aa49e359611252facac8ea8700dc0fae8c7db4fb1cf9f818623e4ea3"
+  },
+  "empty.all": {
+    "text": "Chưa có ứng dụng nào để hiển thị.",
+    "source": "aa1dc7d4a04d3e466d4e28fbcea2e3fc191aa23ab9ea0be42847e9a672ca0d8f"
+  },
+  "list.heading.reviewedWorking": {
+    "text": "Ứng dụng đã được xem xét và hoạt động tốt",
+    "source": "362d52d19d368cb461d95e28130a2dd59bf939b20cfa3bfbe679eea33437c0f2"
+  },
+  "list.heading.notYetReviewed": {
+    "text": "Chưa được xem xét",
+    "source": "ba0dc1555f4de3f60a698381bf2b9db8639342a2aaccac8ace3b3f17e85b7ded"
+  },
+  "list.label.notYetReviewed": {
+    "text": "Chưa được xem xét",
+    "source": "ba0dc1555f4de3f60a698381bf2b9db8639342a2aaccac8ace3b3f17e85b7ded"
+  },
+  "list.more.note": {
+    "text": "Ứng dụng demo và ứng dụng cần sửa lỗi, thiết lập hoặc biểu tượng vẫn có ở bên dưới và trong tìm kiếm.",
+    "source": "311109259b13b49cf85372357b4dc5ca28ff641e2e17b4aa41fefc474297bb89"
+  },
+  "list.more.showLess": {
+    "text": "Thu gọn",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "list.join.action": {
+    "text": "Tham gia",
+    "source": "fd30fe681b4b2d9e55f851cb34641f907401aa43e9d80f5b1e14ce714ef00497"
+  },
+  "list.join.joined": {
+    "text": "Đã tham gia",
+    "source": "69318b0c6a928e7e61624740d7382f513070ab28aa832b1da1d5e16995ae6a8b"
+  },
+  "list.join.named": {
+    "text": "Tham gia {{app}}",
+    "source": "d4768ccc8dd8f48a82f87d00f42eb9e0f590c9e6274fffd09cd687a00cdb00ad"
+  },
+  "row.join.tip": {
+    "text": "Tham gia {{app}}",
+    "source": "d4768ccc8dd8f48a82f87d00f42eb9e0f590c9e6274fffd09cd687a00cdb00ad"
+  },
+  "row.join.joinedTip": {
+    "text": "Đã tham gia. Chạm để rời {{app}}",
+    "source": "00fce967049c33a34207b9ba06b63a3717248170c9a8ecbc96cc62739cba3790"
+  },
+  "row.meta.created": {
+    "text": "Tạo {{when}}",
+    "source": "4073b233b16c3a167ebffc73d5e328dca3265c6bfbeb5b157d8dc498a9daaee4"
+  },
+  "row.meta.updated": {
+    "text": "Cập nhật {{when}}",
+    "source": "3f334e45c4655270420948911ee13a2f59643035d44e7d1eb906e0780063d0f2"
+  },
+  "row.meta.pair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "row.status.creating": {
+    "text": "Đang khởi tạo…",
+    "source": "7a0d6a5c7579b584382b959a814bbd13de2c3d48e4938b20bcc5a07cb3b446c4"
+  },
+  "row.status.awaitingSecrets": {
+    "text": "Đang chờ khóa bí mật",
+    "source": "a7841a8b087f1ac4ab666c2eb1b8a196e7521b0dd640ad737aeaf21feefb395b"
+  },
+  "row.status.error": {
+    "text": "Lỗi",
+    "source": "54a0e8c17ebb21a11f8a25b8042786ef7efe52441e6cc87e92c67e0c4c0c6e78"
+  },
+  "time.justNow": {
+    "text": "vừa xong",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "detail.unavailable": {
+    "text": "Ứng dụng này không khả dụng.",
+    "source": "565f61ca273da3a6c3d0b13285b394cbdb077c2545b597678f67297fbd2f9df5"
+  },
+  "detail.backToAll": {
+    "text": "← Quay lại tất cả ứng dụng",
+    "source": "20b5eca321cdc0c0a724fed4063cb8f0acf1fc1d7b2c9182b4aafff9fdbe47f4"
+  },
+  "detail.blocked.note": {
+    "text": "Bạn đã chặn ứng dụng này. Hãy bỏ chặn để mở lại.",
+    "source": "33360de6152b77561768dd9a22793687e506cb8eea1b3df261fbb9a9b0b3713e"
+  },
+  "detail.blocked.settingsLink": {
+    "text": "Mở ứng dụng đã chặn trong Cài đặt",
+    "source": "ff2f11f2518647a3b6913b5c65e60bce0711cbaadc95214bc7f7ca9f57fbb6ea"
+  },
+  "detail.remixedFrom.line": {
+    "text": "⑂ Phối lại từ {{app}}",
+    "source": "46d824217747b60867611d3747c7a1a9aa948040e87630b1b3bbf7886dc58347"
+  },
+  "detail.remixedFrom.lineDeleted": {
+    "text": "⑂ Phối lại từ {{open}}đã xóa{{close}}",
+    "source": "27accbf25706f70ee176ddc04147e35fd2fa08c784e0ae9c250bbac87c206303"
+  },
+  "detail.remixedFrom.openOriginal": {
+    "text": "Phối lại từ {{app}}: mở bản gốc",
+    "source": "e245450e1bf8cf3a9afd3b248144ddf2e31cd4867f5c2f226068c4f728d73d20"
+  },
+  "detail.remixedFrom.openOriginalDeleted": {
+    "text": "Phối lại từ {{open}}đã xóa{{close}}: mở bản gốc",
+    "source": "c521a75c2ad61278abbff317b0fb57729f2f86bf7144ac49d3838733fc905e49"
+  },
+  "detail.remixedFrom.originalGone": {
+    "text": "Ứng dụng gốc không còn tồn tại",
+    "source": "23bafd55a1b3363f0742dc558b1b01624b186cf40306b7d49cee75aecf68c61e"
+  },
+  "detail.updated": {
+    "text": "Cập nhật {{when}}",
+    "source": "3f334e45c4655270420948911ee13a2f59643035d44e7d1eb906e0780063d0f2"
+  },
+  "detail.open.action": {
+    "text": "Mở",
+    "source": "ed077f3d8125d60dca1979c7133601bd187d47c73ed9975028f677e49e709942"
+  },
+  "detail.open.creating": {
+    "text": "Đang khởi tạo…",
+    "source": "7a0d6a5c7579b584382b959a814bbd13de2c3d48e4938b20bcc5a07cb3b446c4"
+  },
+  "detail.open.notRunning": {
+    "text": "Không chạy",
+    "source": "9e3856eef37c48e551fcb274637d0d3499eec816116e0a3aa509990a59a49040"
+  },
+  "detail.open.unavailable": {
+    "text": "Không khả dụng",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "detail.myApps.add": {
+    "text": "Thêm vào Ứng dụng của tôi",
+    "source": "b174f7f1fc7e93ca99d5a30715bc56dd8ba20ba42397ce9bf573271f9f0e6ece"
+  },
+  "detail.myApps.remove": {
+    "text": "Xóa khỏi Ứng dụng của tôi",
+    "source": "44d7bfb6f22f011da6788cfe8a7d5ced887142a597d689b75fa6d7c84365894e"
+  },
+  "detail.share.label": {
+    "text": "Chia sẻ",
+    "source": "29887a5ff9846ccc23327565a07e17fa6dcaea6211f1898ae825f84ae38f4223"
+  },
+  "detail.share.tip": {
+    "text": "Chia sẻ liên kết đến ứng dụng này",
+    "source": "f4151a2a495d9b427031b1e4a105383c86cf52137fae13082a3e2c7a5017011b"
+  },
+  "detail.share.copied": {
+    "text": "Đã sao chép liên kết",
+    "source": "d12860c21e78baa522ac743ecfbd77fb9cf4558e581e0e54afcace23b3ce1849"
+  },
+  "detail.share.copyFailed": {
+    "text": "Không thể sao chép liên kết",
+    "source": "da5f22732bfa6140e61d73402df22b6ce2d97cac4d8114ff0bbdf8e32320c944"
+  },
+  "detail.contributors.heading": {
+    "text": "Người đóng góp",
+    "source": "350ad433c42fe8cecdb38439f33947ea04c43fe819455772fd3c03b85c389f16"
+  },
+  "detail.contributors.tip": {
+    "text": "Người tạo ứng dụng, các thành viên và mọi người có thay đổi đã được đưa vào ứng dụng",
+    "source": "12ecfb762a0d770406a750613437b0ecc8a7ccf277d37588c7594945e8490339"
+  },
+  "detail.contributors.loading": {
+    "text": "Đang tải người đóng góp…",
+    "source": "bfaea4c0e7e6ca9aeb164dbdcd372417e856b076df290145972d8d1e6bb74d61"
+  },
+  "detail.contributors.loadFailed": {
+    "text": "Không thể tải người đóng góp.",
+    "source": "68653b35c7cb02a716a2b7bc1b3a293d10b051b52cf4f4601fe5a85402fb33e6"
+  },
+  "detail.contributors.none": {
+    "text": "Chưa có người đóng góp.",
+    "source": "39eb422faf09012f4bd1f9128c63b897ea56970acc145aa82dcd64c553b4e4d3"
+  },
+  "detail.contributors.showFewer": {
+    "text": "Thu gọn",
+    "source": "255beb6510e7827d37ec1cd22d080f910888ae00f29374dd9545c8b3d1fce43a"
+  },
+  "detail.contributor.viewChanges": {
+    "text": "Xem các thay đổi của @{{username}}",
+    "source": "8e2c10e7348a6c171170ba77b85b7adb2bc573af8babf1962f3293597b720857"
+  },
+  "detail.contributor.viewChangesUnnamed": {
+    "text": "Xem các thay đổi của @unknown",
+    "source": "2643aa834ad653da093a8ea7d563fb35bf5d09bae4797fba77e7e7fc3ebb879f"
+  },
+  "detail.contributor.unknownHandle": {
+    "text": "@unknown",
+    "source": "55747a1e54f6a91a0e8314b33bd82517cf33673198f6861d6dedbfe0900cb370"
+  },
+  "detail.contributor.creator": {
+    "text": "Người tạo",
+    "source": "88447b83090cded58b10214c752813d476fa21c8c1d8dcbccbd2e2676231aab9"
+  },
+  "detail.contributor.member": {
+    "text": "Thành viên",
+    "source": "7c968fb71f50e335442b35062a35620a508bbd0bd3ee7888deff2490636a5311"
+  },
+  "detail.contributor.liveTip": {
+    "text": "Các thay đổi của họ đã được đưa vào ứng dụng này",
+    "source": "7f55ad3f3440b8a14be8bd2cff1542b1923b5cd327d6509ce29b0ec95769b77c"
+  },
+  "illustration.title": {
+    "text": "Hình minh họa nổi bật",
+    "source": "2ad772c77441a4303726738c251a5a8cf19cb0a193c0008313570d75f3bbc45c"
+  },
+  "illustration.previewCaption": {
+    "text": "Bản xem trước trên Khám phá",
+    "source": "5d0fbea21a2fa89d8826c746b94ddb583478f1c063fe41110e47cd6010a5ec23"
+  },
+  "illustration.theme.group": {
+    "text": "Giao diện xem trước",
+    "source": "8bc94986dcd4e3ca05325a0a343344c61ff5ba558d36d1b548df7d69e5ce57b6"
+  },
+  "illustration.theme.light": {
+    "text": "Sáng",
+    "source": "dbcd5e7bb7a0f538810de44c3efbd813037ee3fa358747bb71fa58e157af45f7"
+  },
+  "illustration.theme.dark": {
+    "text": "Tối",
+    "source": "60acc53f13a5d1bf115878c4a785e9a43e8286c4139a8402a6ac7d23966f9153"
+  },
+  "illustration.framingLabel": {
+    "text": "Khung hình minh họa: kéo để di chuyển, cuộn hoặc chụm để thu phóng, dùng phím mũi tên để nhích",
+    "source": "c84117df25ab45ffc1edb4c64820d6302d1dc3f0f3be13e4df5aeeffeb42c610"
+  },
+  "illustration.framingHelp": {
+    "text": "Kéo thẻ để di chuyển ảnh. Cuộn hoặc chụm để thu phóng. Thu phóng <0>{{percent}}%</0>.",
+    "source": "725cd3f12a8165c98ac7ac7e321dbdc2fbdadcfe8b71cbfbfdc05dff9fc5a6d4"
+  },
+  "illustration.upload.fileLabel": {
+    "text": "Tải lên hình minh họa nổi bật",
+    "source": "f64bc5fff81f7bc30b9f85eb26c5f44fef60f155a09e629f4ab503f50f30d08f"
+  },
+  "illustration.upload.light": {
+    "text": "Tải ảnh sáng lên",
+    "source": "e98556da7093f15d6bb36a62a1613640ae6647db5d40c9282416d5ae076733d3"
+  },
+  "illustration.upload.replaceLight": {
+    "text": "Thay ảnh sáng",
+    "source": "949e4fd959141c86fe7be7d84f5ecb3c51391b456e4250abf52df25ca35f9f2a"
+  },
+  "illustration.upload.dark": {
+    "text": "Tải ảnh tối lên",
+    "source": "7ba6c14441c3a4cbee17367b8d5ed011d029071612b8e1fed396f8615ffead9e"
+  },
+  "illustration.upload.replaceDark": {
+    "text": "Thay ảnh tối",
+    "source": "14e9fa2acfe0817af53bd2c3f94e6be3150ad7d9083977a039ead9d638074e9b"
+  },
+  "illustration.upload.useLightInBoth": {
+    "text": "Dùng ảnh sáng cho cả hai giao diện",
+    "source": "4ae3065ee837e6f8929daa2bb87c0d696016efa9886dc5802cc485963657dc6e"
+  },
+  "illustration.upload.formats": {
+    "text": "PNG, JPEG hoặc WebP, tối đa 20 MB.",
+    "source": "88d30953b392cf3a7286b50c616ccc85917d08890da03bd5fbeb33e7ba48ef42"
+  },
+  "illustration.upload.sameDimensions": {
+    "text": "Dùng các ảnh có cùng kích thước. Khung và màu được dùng chung cho cả hai giao diện.",
+    "source": "167f0740471403a4357559b0f9e9708d1f1795637e3ef84896c2c1f7d0a207b0"
+  },
+  "illustration.cardColour": {
+    "text": "Màu thẻ",
+    "source": "32fcd1507a366673414fbb1296029eaea0d5c5fe2799a622325ffb1ff2f47f78"
+  },
+  "illustration.resetPosition": {
+    "text": "Đặt lại vị trí",
+    "source": "8cebff8711824e090200cc93eab22fdcde720e4b0d4c3098b1209621e85ebfc7"
+  },
+  "illustration.useAppIcon": {
+    "text": "Dùng biểu tượng ứng dụng",
+    "source": "694d7da26cc136151957ab3b0f70818879e67cbfccacd97b5039224b30632f78"
+  },
+  "illustration.loadingPreview": {
+    "text": "Đang tải bản xem trước…",
+    "source": "c4cf2b2ccb5d8dec9a0412c84a7c04c739ff0b298eb83d02bd8cabde8663dd7f"
+  },
+  "illustration.loadFailed": {
+    "text": "Không thể tải hình minh họa. Hãy mở lại trình chỉnh sửa để thử lại.",
+    "source": "9c5e15b1a8354ee5088dc70956c4404a3d5560cf40b4d019b9eae04454906d34"
+  },
+  "illustration.saveFailed": {
+    "text": "Không thể lưu. Hãy thử lại.",
+    "source": "fe32924b26f09c2f47c6ab6dada5f098265abfcd0d47addfa8425bb56eea374f"
+  },
+  "illustration.sent": {
+    "text": "Đã gửi cho nhóm để duyệt. Hình minh họa sẽ đổi khi phiếu bầu được thông qua. <0>Mở đề xuất</0>",
+    "source": "22046666d2d937a36aa9d478e18b1c8a299bc0d5bf112d6888c6c65bfeb471ea"
+  },
+  "illustration.pending": {
+    "text": "Một thay đổi cho hình minh họa này đang chờ nhóm bỏ phiếu. Bạn có thể đề xuất thay đổi khác sau khi có kết quả. <0>Mở đề xuất</0>",
+    "source": "08aea6e52077d96e377e0c075b609622e4a114c56e68c36c3eabbbe5266872bb"
+  },
+  "illustration.proposeNote": {
+    "text": "Việc đề xuất sẽ mở một thẻ quản trị trên bảng. Thay đổi được áp dụng khi nhóm bỏ phiếu thông qua.",
+    "source": "c32ac785d106693d8ed4aabfabef058c2e400e47aa449eef9ec23116f18902ba"
+  },
+  "illustration.propose": {
+    "text": "Đề xuất thay đổi",
+    "source": "0a12361265ae673161f24a9305fe9e828539750afdb585d35e6bfd6f37a2cb5c"
+  },
+  "illustration.pleaseWait": {
+    "text": "Vui lòng chờ…",
+    "source": "4660a983366f710126b2dbf35dd89c7ea89eb7efdbe55b68dede11aa6aef705b"
+  },
+  "pill.missingSecretsTip_other": {
+    "text": "{{count}} bí mật bắt buộc chưa được đặt. Đặt giá trị trong bảng Bí mật của ứng dụng",
+    "source": "e8cc74acb4c2cdd1ecba2cff47ef933980c2db70f8ddd040b3b57ab76321bfcf"
+  },
+  "pill.toVote_other": {
+    "text": "{{count}} cần bỏ phiếu",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "pill.toVoteTip_other": {
+    "text": "{{count}} thay đổi đang chờ cộng đồng bỏ phiếu",
+    "source": "01798a3019346af5c180b11fd63c03feae4c23d9748f82e21c46255d0c9205fd"
+  },
+  "pill.inDev_other": {
+    "text": "{{count}} đang phát triển",
+    "source": "acc4fcb117ae6d3403b94391b4d2c60091a962aeac54316702f311893acedb29"
+  },
+  "pill.inDevTip_other": {
+    "text": "{{count}} phiên xây dựng đang diễn ra",
+    "source": "87b1473f2d2b0433784a343d50bd6ed99aae31ff93496cdb6d12e08e628c6cb4"
+  },
+  "pill.issues_other": {
+    "text": "{{count}} vấn đề",
+    "source": "30293c03a543ce241c75e76098aaca08f32f48225ccea58ecb56969d87a0e648"
+  },
+  "pill.issuesTip_other": {
+    "text": "{{count}} vấn đề đang mở",
+    "source": "bdca8800194c9b6f0911cbff638a039984dbc0b9e1a7f5ed448d9ad300d5a1f0"
+  },
+  "list.more.showMore_other": {
+    "text": "Xem thêm ({{count}})",
+    "source": "1645fa086452d5e2a63c23f6ae112cc4be4a66d686e30bc5c2a425a93585d975"
+  },
+  "row.meta.users_other": {
+    "text": "{{count}} người dùng",
+    "source": "b89ce7bf0c2c3f72f0cc6bfca58261b1116612e837a1940097805dfbe18752e2"
+  },
+  "row.meta.liveRecently_other": {
+    "text": "{{count}} đã phát hành trong 30 ngày",
+    "source": "39e594f31ae096bcc2c62b5ab4fa5220581bb9e1c39a7e97bd06b438c699c3cd"
+  },
+  "row.meta.changesLive_other": {
+    "text": "{{count}} thay đổi đã phát hành",
+    "source": "c5341db9f4fff317c210e1c271ba5ea92dfe84f6e53591b6ade22c91b963a664"
+  },
+  "time.minutesAgo_other": {
+    "text": "{{count}} phút trước",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.hoursAgo_other": {
+    "text": "{{count}} giờ trước",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.daysAgo_other": {
+    "text": "{{count}} ngày trước",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.monthsAgo_other": {
+    "text": "{{count}} tháng trước",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "time.yearsAgo_other": {
+    "text": "{{count}} năm trước",
+    "source": "58e23858c9c6af474909dc4b8c178ed4e08af389d8ec70256186be6fc940e2cb"
+  },
+  "detail.contributors.headingCount_other": {
+    "text": "Người đóng góp<0> · {{count}}</0>",
+    "source": "708bb584d79b55cb8cf1fb427ea4472d765bef757c4736c668ee3907e277aaf8"
+  },
+  "detail.contributors.showAll_other": {
+    "text": "Xem cả {{count}} người đóng góp",
+    "source": "1f9f766a8c24fbcd83bcef79d4181f9c71c49091d026f8838335961e05054839"
+  },
+  "detail.contributor.votes_other": {
+    "text": "{{count}} phiếu bầu",
+    "source": "8ce57030b104a6f2f6837b98c2d90abecb4b1cc8abed2924537888d6f3663429"
+  },
+  "detail.contributor.live_other": {
+    "text": "{{count}} đã phát hành",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  }
+}

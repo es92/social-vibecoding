@@ -1,0 +1,3922 @@
+{
+  "language.title": {
+    "text": "Idioma",
+    "source": "a4fe65264ef7dbb38d104b1e81eb3350f3142f3d16f32bdec39b1d9b42c1b8d1"
+  },
+  "language.intro": {
+    "text": "Por ahora, las pantallas de Homeroom están en inglés. Las aplicaciones de Homeroom usan este idioma como predeterminado y pueden ofrecer su propia opción.",
+    "source": "58e2ea7398f33905022d67cb0088130e92aad87aa28a9ef7e60f841e7d3fbcf2"
+  },
+  "language.auto": {
+    "text": "Automático: usar el idioma del dispositivo",
+    "source": "69204d4929d65215798e7f69a38711b4c45eb3a7dd2df200d254936f8a15dec2"
+  },
+  "language.saved": {
+    "text": "✓ Guardado",
+    "source": "45edcc201b730f55b185fb07d06dd4aeadbacb41643537912152499d38a3e26f"
+  },
+  "language.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "language.loadFailed": {
+    "text": "No se pudo cargar ese idioma. Inténtalo de nuevo.",
+    "source": "7891bad2afcb4727a1886b8b3967f8ce606787531226b5d75e52896b23a1e22f"
+  },
+  "connectors.title": {
+    "text": "Conectores",
+    "source": "c3d2e79ebdd046c6b7363de7b69dc9fb5b38235f0d328fdff0b2f9ccf2854b07"
+  },
+  "connectors.intro": {
+    "text": "Trabaja en tus aplicaciones desde un chat de Claude o ChatGPT, sin gastar tus créditos diarios.",
+    "source": "33b9393e75ac99d19cf6f9dac33eb67f342e3ae26baeb7461788ea52fc2be330"
+  },
+  "connectors.url.label": {
+    "text": "URL del servidor MCP",
+    "source": "4f5aff033a99aafc3fd8ada21494659861d67bf9ae5f7a448c679fef2c222999"
+  },
+  "connectors.url.copyAria": {
+    "text": "Copiar la URL del servidor MCP",
+    "source": "c3c7a36ace51bdf0ab08277021eaee33fb88333ddc52b04c9d10ede516f138c1"
+  },
+  "connectors.howItWorks.summary": {
+    "text": "Cómo funciona",
+    "source": "9c870aa6e5e93270170d5a81277ad3e623afe8d4efd186d3e28f3d2b646d52e6"
+  },
+  "connectors.howItWorks.address": {
+    "text": "Esta es la dirección de Homeroom para aplicaciones de IA. MCP es el estándar que usan para conectarse.",
+    "source": "2abcc49cd6963dab0348b4f272560a4c579806cfdc3880c00c1cba7ecb88ed9a"
+  },
+  "connectors.howItWorks.paste": {
+    "text": "Pégala en Claude, ChatGPT u otra aplicación compatible con MCP. Esa aplicación podrá ver tus aplicaciones de Homeroom, enviar solicitudes y abrir propuestas por ti.",
+    "source": "22e7a490994d139844d2006703479dd4cca69e04d12b4efba5a12eb4b8cc9e01"
+  },
+  "connectors.howItWorks.approve": {
+    "text": "No necesitas contraseña ni clave. La aplicación abre una página de Homeroom y allí lo apruebas.",
+    "source": "cf820b9cdc4ce81a8055e8054902b0932d8835b89ce5e1d581963431ab29a75b"
+  },
+  "connectors.chooseApp": {
+    "text": "Elige tu aplicación",
+    "source": "fc4d005d0baf87f46de0dacca42c2d3799272151a680e5736d3058af9afb7c41"
+  },
+  "connectors.claude.hint": {
+    "text": "6 pasos · también configura Claude Code",
+    "source": "2079a9e9a836429fcc59ed34dc38bcbff36edc11c8bd17f441ab4c4fa18abce1"
+  },
+  "connectors.chatgpt.hint": {
+    "text": "4 pasos · en el directorio de plugins",
+    "source": "aa2703a844580c35764a5c859db6240c3b0426919e23a70e3be8c08593112407"
+  },
+  "connectors.codex.hint": {
+    "text": "3 pasos · en la terminal",
+    "source": "15e92e2c258f45351d21b03fb6b4a74aa92551edf9cdd1aa77196266c0f94a38"
+  },
+  "connectors.generic.title": {
+    "text": "Otro agente",
+    "source": "aa212b604098286f38ad759dded84b23eb9cfabf87a6f9dff3eb634e3dab18bf"
+  },
+  "connectors.generic.hint": {
+    "text": "4 pasos · cualquier cliente MCP",
+    "source": "76da31e5f3f22e1a0f537a9a3cd1a10fabca6a6aa5b071974a0af3f1c8291d2f"
+  },
+  "connectors.guided.ask": {
+    "text": "Pide a {{product}} que te guíe",
+    "source": "3e124da3e1f30889cd4bc6df78e15b7e9810b4b856377bb16b2a30f4ec631fa4"
+  },
+  "connectors.guided.opens": {
+    "text": "Abre un chat nuevo de {{product}} con los datos de tu conector ya rellenados.",
+    "source": "d895e87db25fe4b2809ca4cb55a4b4e8bce521d2ae4323c85fd6ea1913e8720a"
+  },
+  "connectors.guided.orSteps": {
+    "text": "O sigue los pasos",
+    "source": "8cef3762d8130be9c7eec5bcf57513ef1d051fa991b5a60a52dba108e43a9c4f"
+  },
+  "connectors.claudeCode.heading": {
+    "text": "Si usas Claude Code",
+    "source": "6c26af2f44a4c59b294f1f83ad1528561b1de9ab6a7328303055a0eb2df1a1ff"
+  },
+  "connectors.naming.title": {
+    "text": "Llámalo homeroom",
+    "source": "42ff8871aa8cf55c9f49d02ad2dba9b404a2df9b2fab945a96dbb651a57e9ac6"
+  },
+  "connectors.naming.hint": {
+    "text": "Para que coincidan las reglas incluidas",
+    "source": "d67f90ed36ef42f38d6021004e7d46ec91929b2865a33f0fd6eae54299a7803a"
+  },
+  "connectors.naming.body": {
+    "text": "Llámalo exactamente <0>homeroom</0>. Claude Code crea sus reglas de permisos a partir de ese nombre. Otra grafía también funciona, pero la lista de permitidos de solo lectura que Homeroom incluye en cada repositorio de aplicación no coincidirá, y seguirán pidiéndote aprobar cada llamada. La lista también cubre <1>Homeroom</1>, así que la forma con mayúscula es segura. Además cubre <2>usernode</2> y <3>Usernode</3>, los nombres que tuvo antes este conector, de modo que un conector que añadiste antes sigue funcionando y no tienes que rehacer nada. Cualquier otro nombre requiere reescribir las reglas, y el campo de “Detén las solicitudes de permiso” lo hace por ti.",
+    "source": "540d16ea777465e7d83a165bfdd7b4473728fbee032762d8d908e2281f1211e8"
+  },
+  "connectors.prompts.title": {
+    "text": "Detén las solicitudes de permiso",
+    "source": "199715186c61369d48cac7305f6b748cfe9cec9b4f4175e52015b117b91ffd13"
+  },
+  "connectors.prompts.hint": {
+    "text": "Si Claude Code pregunta antes de cada llamada",
+    "source": "8429c11d680131134a7711f45fbddce6c0109fabf8f9573d24f9900d722aa946"
+  },
+  "connectors.prompts.intro": {
+    "text": "Por defecto, Claude Code te pide aprobar <0>cada</0> llamada del conector, incluso las de solo lectura como <1>whoami</1> y <2>get_app</2>. La solución depende de dónde lo ejecutes.",
+    "source": "02805314028a52fc49b5ac80b6fdf4562069c434aed5be8a5fcbd08c6de731a9"
+  },
+  "connectors.prompts.ownership": {
+    "text": "Homeroom no puede activar esto por ti. Las reglas de permisos están en un archivo de tu equipo o en el repositorio de tu aplicación, y un conector no puede escribir en ninguno de los dos, que es también lo que impide que otro conector que añadas se otorgue permisos a sí mismo. Copiar uno de los bloques de abajo es toda la solución, y solo hay que hacerlo una vez.",
+    "source": "d1f0171e974d5a32f2f4f682dfa12febfa724c5ce6bf20d757bef8bb36e71dc4"
+  },
+  "connectors.prompts.local.title": {
+    "text": "Claude Code en tu propio equipo",
+    "source": "2a8f58a3109d7d46b8f183464f4675d95beba6e1486a8427383eb970e9b183f7"
+  },
+  "connectors.prompts.local.body": {
+    "text": "Añade esto a tu propio <0>~/.claude/settings.json</0>. Es el único de los tres que cubre <1>todos</1> los repositorios a la vez, incluidos los que Homeroom no creó.",
+    "source": "8a3981fd9e37588f67a4b88d942e71a6f3d09f04916f264d13da4218a96a49f8"
+  },
+  "connectors.prompts.local.copyAria": {
+    "text": "Copiar las reglas de permiso para tu archivo de ajustes personal",
+    "source": "fd51b3f90ec61a53c1af344d8b81656d361694cca0fab877689c96c93136daf0"
+  },
+  "connectors.prompts.web.title": {
+    "text": "Claude Code en la web",
+    "source": "d6d694206e1d2de6701e369f45c5730fe9bce14aad89b77b94694e6e467d2d7f"
+  },
+  "connectors.prompts.web.body": {
+    "text": "Una sesión web recibe un contenedor nuevo cada vez, así que un archivo de ajustes de tu equipo no está en él y las aprobaciones de la sesión anterior se pierden. Lo que el contenedor sí incluye es el repositorio que descarga, así que haz commit del mismo bloque como <0>.claude/settings.json</0> en el repositorio de la aplicación. Homeroom escribe ese archivo en cada repositorio de aplicación que crea, importa o bifurca; los repositorios que ya existían antes de que se lanzara no lo tienen, y añadirlo es un commit normal.",
+    "source": "f511571a3ca98fb57f49e8a6335262ebcc1c5aa2dbaa79b5fbc13251e2992eaf"
+  },
+  "connectors.prompts.web.copyAria": {
+    "text": "Copiar las reglas de permiso para hacer commit en el repositorio de tu aplicación",
+    "source": "afed5d7bd493f9e663c1b7103357b74b9b953d52818863f19264b4d03210946b"
+  },
+  "connectors.prompts.web.trust": {
+    "text": "Es posible que Claude Code aún te pida confiar en el espacio de trabajo una vez por contenedor antes de que un archivo del repositorio surta efecto. No está claro si ese diálogo aparece en todas las sesiones web. Si sigues viendo solicitudes tras hacer commit del archivo, esa es la razón, y el caso anterior es la solución que no depende de ello.",
+    "source": "8e702718fd0da571d00653ab1959f2d35a32ca89e454159d68271f5dcce9e159"
+  },
+  "connectors.prompts.chat.title": {
+    "text": "Chat de Claude.ai, ChatGPT y Codex",
+    "source": "ee49899676d0b615ffdaee64d8f5d1d467e00f2f90ec3943ee4bbce6ffbed661"
+  },
+  "connectors.prompts.chat.body": {
+    "text": "No hay nada que hacer. Apruebas el conector una vez al conectarlo y no vuelve a preguntar en cada llamada. Los dos bloques de arriba son el formato de archivo de Claude Code y no tienen efecto en esos productos.",
+    "source": "0224c49951c772ab1e5d6b82a73b1fd2cffc819c58662e31fd14f5a5c93615dd"
+  },
+  "connectors.prompts.readsOnly": {
+    "text": "Solo lectura. Todo lo que actúa en tu nombre (enviar una solicitud, abrir o hacer avanzar una propuesta) sigue preguntando siempre, a propósito.",
+    "source": "110d7bca0b82a658fe2427ee064480f830556082a31b10368c45ba2459a4db61"
+  },
+  "connectors.prompts.spelling.label": {
+    "text": "¿Tu conector está registrado con otro nombre?",
+    "source": "e9f4b7d320ee72426199e197c54d9fbe37fc593293972efc3ecdf54316575dcd"
+  },
+  "connectors.prompts.spelling.body": {
+    "text": "Comprueba cómo se llaman tus herramientas en tu sesión, la parte central de <0>mcp__homeroom__whoami</0>. Si no es <1>homeroom</1>, <2>Homeroom</2>, <3>usernode</3> ni <4>Usernode</4>, escríbelo aquí y los dos bloques de arriba se reescribirán con él.",
+    "source": "5b5bea1c35aff14900d650ce481370b30a7f0feb761ae2eeb6ec094b6466e434"
+  },
+  "connectors.codex.add.title": {
+    "text": "Añade el servidor.",
+    "source": "29c1bdc439c02d7c02337dc09a1f146cf31ea94c6724462bb65693e77b1a2b29"
+  },
+  "connectors.codex.add.body": {
+    "text": "Desde una terminal donde esté instalado Codex, ejecuta el comando de abajo, o añade a mano la entrada de configuración que aparece debajo a <0>~/.codex/config.toml</0>, que es todo lo que hace el comando. Conserva el nombre <1>homeroom</1>: Codex antepone el nombre del servidor a las herramientas, y es el nombre que el resto de esta página da por supuesto.",
+    "source": "3e5eb9bd3e1a9c4393d88033913278c86a0fc6b5a6cec0ec8f5243c74df3b7bf"
+  },
+  "connectors.codex.signIn.title": {
+    "text": "Inicia sesión.",
+    "source": "6c52846f7720c9b1b120dbd210c70e79c027815257610c4e32bdabb246d9c53d"
+  },
+  "connectors.codex.signIn.body": {
+    "text": "Ejecuta <0>codex mcp login homeroom</0>. Codex abre tu navegador en la página de consentimiento de Homeroom; apruébalo allí y Codex guarda el token por sí mismo. No hay ID de cliente ni secreto que introducir. Después, <1>codex mcp list</1> muestra el servidor y las herramientas estarán disponibles en tu próxima sesión de Codex.",
+    "source": "ab4ce414d14d9a28dd91a586ba1665fdc59ffb397e246ecb63e8ba892bd05a09"
+  },
+  "connectors.codex.limit.title": {
+    "text": "Conoce el límite actual.",
+    "source": "49a3a62ca7633dbc21ee124af4f158af5bd62ac738461a86fff02c15f93d83e9"
+  },
+  "connectors.codex.limit.body": {
+    "text": "Codex recibe esa aprobación en un callback de <0>127.0.0.1</0>, y el conector alojado de Homeroom solo acepta callbacks de inicio de sesión en los hosts propios de Claude y ChatGPT, por lo que en la plataforma alojada el inicio de sesión se rechaza con <1>invalid_redirect_uri</1>. Funciona con un Homeroom que ejecutes tú mismo en modo de desarrollo local. Una sesión de Codex sin el conector aún puede crear una orden de trabajo de Homeroom: sube la rama, y el chat de ChatGPT que tiene el conector la envía.",
+    "source": "15641bf6bc978d8a12bb2ba8ce6865b06a07b90fa799cfcd317df7a7dd45648d"
+  },
+  "connectors.codex.terminal": {
+    "text": "terminal",
+    "source": "4e686af7bdcc5ae005a247624fd8c7283257c2514f6b3ad2ff5d4cb6d95196e6"
+  },
+  "connectors.codex.copyCommandAria": {
+    "text": "Copiar el comando de Codex que añade el servidor de Homeroom",
+    "source": "601d0cd469170621dee88802686bf8b484b919e71321718c94ffc97f16942469"
+  },
+  "connectors.codex.copyConfigAria": {
+    "text": "Copiar la entrada de config.toml de Codex para el servidor de Homeroom",
+    "source": "69d9490c5efdc4c1d917571c118824d783b7131b1bee0a54f35208754fa442e3"
+  },
+  "connectors.generic.transport.title": {
+    "text": "Dale la URL del conector como servidor Streamable HTTP.",
+    "source": "e92952d7bc0145eb7dc2ceec9d5070c4e718de9a87cc76023794add0961dcc3a"
+  },
+  "connectors.generic.transport.body": {
+    "text": "Es la URL del campo de arriba: un endpoint HTTPS público que termina en <0>/mcp</0> y acepta JSON-RPC mediante POST. No hay variante SSE ni stdio, y no hay nada que ejecutar en tu propio equipo.",
+    "source": "43f50fcbfbbe46876857d7f25b76ee80ed2d5729be47493a434208aae75083ed"
+  },
+  "connectors.generic.oauth.title": {
+    "text": "Deja que descubra OAuth.",
+    "source": "5c8bd160ceeee36b1839e401ccdc07ba629ea30c4f4911887106fd3023086716"
+  },
+  "connectors.generic.oauth.body": {
+    "text": "La autenticación es OAuth 2.1 con PKCE y registro dinámico de clientes. Un cliente encuentra el servidor de autorización mediante <0>/.well-known/oauth-protected-resource/mcp</0> en el mismo origen, se registra como cliente público (sin ID de cliente ni secreto que introducir) y solicita los ámbitos <1>usernode:apps:read</1> y <2>usernode:proposals:write</2>. Los apruebas una vez en la página de consentimiento de Homeroom.",
+    "source": "f062342921b1a63b1b064c841f6e4d68f14520628693a9d70fa0460b6665f8d7"
+  },
+  "connectors.generic.callback.title": {
+    "text": "Comprueba adónde va su callback.",
+    "source": "f4cd31ec415089b79050a9c968880725c343c202411f123bdceccc326573e089"
+  },
+  "connectors.generic.callback.body": {
+    "text": "Homeroom registra un cliente solo si su callback de OAuth está en <0>claude.ai</0>, <1>claude.com</1>, <2>chatgpt.com</2> u <3>openai.com</3> (o en un host que el operador del despliegue haya añadido). Un callback en localhost, que usan los clientes de línea de comandos, solo lo acepta un Homeroom en modo de desarrollo local. Un registro rechazado responde <4>invalid_redirect_uri</4>, y es un límite de la plataforma, no algo que se deba corregir en el cliente.",
+    "source": "3b33148ac30bb838d39c00d6a92272e2cc2671bb8494ae0a4bedc8fd4979c14b"
+  },
+  "connectors.generic.naming.title": {
+    "text": "Llámalo homeroom y lee tu lista de herramientas.",
+    "source": "3508e77ee66cc2f167fc13160f578cbae415557a69a2c09703dde5b8ca35d98e"
+  },
+  "connectors.generic.naming.body": {
+    "text": "Las herramientas llegan como <0>mcp__homeroom__whoami</0> en la mayoría de los clientes, o como <1>mcp__claude_ai_homeroom__whoami</1> cuando el cliente usa espacios de nombres por producto. La parte entre el primer y el último <2>__</2> es el nombre del servidor para el que se escriben las reglas de permisos; si no es una de las grafías que cubren, escríbelo en el campo de Claude.ai → “Detén las solicitudes de permiso”. Haz que el agente llame primero a <3>get_connector_guidance</3>: devuelve la carta operativa completa del conector.",
+    "source": "bf497c6223c57a509cc6f1d66df1850d7adc42f6453ae4ccb1d62320371d3366"
+  },
+  "connectors.approveNote": {
+    "text": "Uses cual uses, aprueba la conexión en la página del navegador que se abre.",
+    "source": "c45d7d4411a17bb94b79b443e13f94ea1e2a9bcd2d4ff598929c6ac3efaba9d9"
+  },
+  "connectors.connected": {
+    "text": "Conectados",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "connectors.list.loading": {
+    "text": "Cargando conexiones…",
+    "source": "8aa3f4352701fb52dc7ea69beef11172aaedbab6f324b005014092d17590c40a"
+  },
+  "connectors.list.empty": {
+    "text": "Aún no hay productos de chat conectados.",
+    "source": "a0378105a1540502e03d62d2b01b7926721928278e2c5416d78395dd8135fe2a"
+  },
+  "connectors.list.disconnect": {
+    "text": "Desconectar",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "connectors.claudeSteps.open.title": {
+    "text": "Abre los ajustes de conectores.",
+    "source": "b334fccc29ef7eb9b7d0b1bfffb2923cd52942e5587c3cc3e61edf49c9f7a31e"
+  },
+  "connectors.claudeSteps.open.body": {
+    "text": "Ve a <0>Personalizar → Conectores</0> en Claude (<1>claude.ai/customize/connectors</1>). Aquí están tanto los conectores del directorio como los personalizados.",
+    "source": "6a8e4c5a256e0a7a9fa7d14914c6dcef015cffd09c412ec2d12152dcd8dbc999"
+  },
+  "connectors.claudeSteps.start.title": {
+    "text": "Inicia un conector personalizado.",
+    "source": "99c6955dc6a1ed28615d4ddca964ed5ba2edff3063b97225d411eb090162f308"
+  },
+  "connectors.claudeSteps.start.body": {
+    "text": "Haz clic en el botón <0>+</0> y elige “Añadir conector personalizado”. En el cuadro de diálogo, escribe <1>homeroom</1> en el campo Nombre, con esa ortografía exacta: Claude Code crea sus reglas de permisos a partir de lo que escribas aquí, y la lista de permitidos de solo lectura que Homeroom incluye en cada repositorio de apps solo reconoce los nombres que conoce. En los planes Team o Enterprise esta opción no está disponible para los miembros, así que primero un propietario debe añadirlo desde Ajustes de la organización → Conectores (Añadir → pasa el cursor por “Personalizado” → “Web”).",
+    "source": "28df3cb5aa8efa37ea6201ac55277ddcc8ff552c545f62e636bdce1884fe31b5"
+  },
+  "connectors.claudeSteps.paste.title": {
+    "text": "Pega la URL de tu servidor MCP.",
+    "source": "99cf1764133a7404de0d310a0f754f5a0e64ed6005374c8bd0ad098f24c60bc9"
+  },
+  "connectors.claudeSteps.paste.body": {
+    "text": "Para Homeroom es la URL del servidor MCP que aparece arriba, un endpoint HTTPS público que termina en <0>/mcp</0>. Un servidor personalizado debe ser accesible desde la nube de Anthropic, no solo desde tu equipo.",
+    "source": "4aad52e0ff7e79278ad5955391172fbe4923a4b4f6b0b58b4cb9e2a42f3ab1bb"
+  },
+  "connectors.claudeSteps.oauth.title": {
+    "text": "Añade credenciales OAuth si hace falta.",
+    "source": "a0e89f677852936414015ccdd8d511b7a51609bcee84e08c74ebdbb07f359706"
+  },
+  "connectors.claudeSteps.oauth.body": {
+    "text": "Si un servidor requiere OAuth, abre “Ajustes avanzados” e introduce tu OAuth Client ID y tu Client Secret. Omite esto para Homeroom: usa registro dinámico de clientes, así que no hay nada que introducir.",
+    "source": "6f6fdf738ed2312f6615dbc431cdbc6cbddf8ba002e71ea85d884a82c1a9987d"
+  },
+  "connectors.claudeSteps.save.title": {
+    "text": "Guarda y autentícate.",
+    "source": "25e1b1376c1aee1d5ea15a26c036293b65512dcb484dd5c0a66cbf5d705431d8"
+  },
+  "connectors.claudeSteps.save.body": {
+    "text": "Haz clic en “Añadir” para terminar la configuración y luego en “Conectar” junto al conector. Te redirigirán por el flujo de OAuth; revisa los permisos que solicita antes de aprobar.",
+    "source": "6b8cf6fa7d12352bc06e1de5b105644d60c2dca689eb28851bee9411231700b3"
+  },
+  "connectors.claudeSteps.enable.title": {
+    "text": "Actívalo en una conversación.",
+    "source": "2824bdbddab8945c23f6be3dc3e800b16788aad4f6b8a577456940606e38386b"
+  },
+  "connectors.claudeSteps.enable.body": {
+    "text": "En un chat, usa el botón <0>+</0> de la parte inferior izquierda, luego “Conectores”, y activa tu conector. Los interruptores son por conversación, así que tú controlas qué chats pueden acceder a él.",
+    "source": "87c5affc65103c02a8d8854021b01ecb17604950ae018fc3ecfa60e7876a7a17"
+  },
+  "connectors.chatgptSteps.directory.title": {
+    "text": "Abre el directorio de plugins.",
+    "source": "3b7b3c88a1ae120d7eb423e880636b4b01cdf2d7ab61bc797608aaa039d0ae80"
+  },
+  "connectors.chatgptSteps.directory.body": {
+    "text": "Ve a <0>chatgpt.com/plugins</0> en tu navegador. La configuración de plugins y MCP es, por ahora, una función web.",
+    "source": "b27f269cebbeb8ae958f33e391e36259f537ceab375c865abe97a15555067bc3"
+  },
+  "connectors.chatgptSteps.create.title": {
+    "text": "Crea un servidor MCP personalizado.",
+    "source": "38c709e5a10ce92fd80876ece03fe5cea5405f0c3b14c6f35b0b7a68db93047c"
+  },
+  "connectors.chatgptSteps.create.body": {
+    "text": "Haz clic en <0>“Add plugin”</0> y elige <1>“Create custom MCP server”</1>.",
+    "source": "6f47d46a6870b7d2c359fab1ab50670bbda12f80bba0a5bf9833a33d42b59de9"
+  },
+  "connectors.chatgptSteps.url.title": {
+    "text": "Introduce la URL del servidor MCP de Homeroom.",
+    "source": "d8c71f1054e5d1ab325e15b783f0d875555f37d7aaaa0111375603f8da6a12ed"
+  },
+  "connectors.chatgptSteps.use.title": {
+    "text": "Activa el servidor en un chat.",
+    "source": "959093cc98aaae2f0db4d6cee16195fe4ca99db43281d47f5f22205470cb704d"
+  },
+  "connectors.chatgptSteps.use.body": {
+    "text": "Abre el selector de <0>+</0> / conectores junto al cuadro de mensaje, selecciona el servidor que acabas de crear y márcalo como activo. Ahora pide a ChatGPT que haga algo que use una de las herramientas, por ejemplo: <1>“Usa mi servidor MCP para listar los tickets de soporte abiertos.”</1> Cuando corresponda, ChatGPT llamará a las herramientas que expone tu servidor MCP y usará sus resultados en la conversación.",
+    "source": "94a56655d503dacd67a5d1e11900b9f542db2fbbf15645a523cd198c31a84b42"
+  },
+  "connectors.chatgptSteps.inShort": {
+    "text": "<0>En resumen:</0> chatgpt.com/plugins → Add plugin → Create custom MCP server → introduce la URL del servidor MCP de Homeroom → selector de conectores → márcalo como activo.",
+    "source": "5a4921bf2917041076dd174f64f117fecded8ff4f9bd6f4cefb86d61ef01f7cb"
+  },
+  "linkedAccounts.title": {
+    "text": "Cuentas vinculadas",
+    "source": "feda46a46abb0f718aac6234e607aa0c188882669b38b5e3d3dffd981cde0bdb"
+  },
+  "linkedAccounts.intro": {
+    "text": "Pagamos estos créditos, así que una cuenta conectada nos ayuda a evitar que una sola persona cree muchas cuentas.",
+    "source": "7c75a0678c3bf55fb4d5e518c302802798df1d56673a28de595ac072f948f8d0"
+  },
+  "linkedAccounts.scope": {
+    "text": "Homeroom<0> no pide acceso a tus repositorios </0>y no guarda ningún token del proveedor. Conectar confirma que controlas la cuenta. No es una prueba de identidad humana única.",
+    "source": "6873935fe23db5f20e55345a112fa96673773dca9e19244e8e8c6dba32f384ac"
+  },
+  "linkedAccounts.dailyCredits": {
+    "text": "Créditos diarios",
+    "source": "a6f0c7d1399c884b02a42633eb60eba5d5fa07ab230e60eb1fa76f69480821c9"
+  },
+  "linkedAccounts.auditNote": {
+    "text": "Revisa o revoca esta autorización en <0>{{address}}</0>.",
+    "source": "67ce03751756c58a4c12cbe5097f8b781d52d948988ac43c1ad2ce37ed2564cc"
+  },
+  "linkedAccounts.showOnProfile": {
+    "text": "Mostrar en el perfil público",
+    "source": "b8e295255965ddd4f8c4782ad2de9fb859f8e33f53d9f43645b57bef08dabad0"
+  },
+  "linkedAccounts.disconnect": {
+    "text": "Desconectar",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "linkedAccounts.status.openingBrowser": {
+    "text": "Abriendo tu navegador…",
+    "source": "fe059f4026c37b38cbe3a8a93b6d9a42d0a3af563e5292c9cb70fa97e0ce8ad5"
+  },
+  "linkedAccounts.status.finishConnecting": {
+    "text": "Termina de conectar en tu navegador y vuelve a la app. Inicia sesión con la misma cuenta de Homeroom si te lo piden.",
+    "source": "117a72f6305e049ac751572142aece6881daece2767a0995a8f61f6a8d9b7561"
+  },
+  "linkedAccounts.status.finishVerification": {
+    "text": "Termina la verificación en tu navegador y vuelve a la app. Inicia sesión con la misma cuenta de Homeroom si te lo piden.",
+    "source": "b53d9b750b09385baeaaf2d80815d3f847c46bbf9d8d5996ea6334913d883b72"
+  },
+  "linkedAccounts.status.savingVisibility": {
+    "text": "Guardando la visibilidad del perfil…",
+    "source": "5ba20300118dac602de86821c0ac13ab4ad7bfc07d73e41e99754a30d8fc723f"
+  },
+  "linkedAccounts.status.visibilityFailed": {
+    "text": "No se pudo cambiar la visibilidad del perfil.",
+    "source": "077598185c41713e6d4bfb48762d67f2f9e0d1f4952c84e1f8cc230e0c5feb11"
+  },
+  "linkedAccounts.status.shownOnProfile": {
+    "text": "Se muestra en tu perfil público.",
+    "source": "f221e7cdd785b08e6bd8d7dc65e9823d73936a4318daa76374ac5677b573a128"
+  },
+  "linkedAccounts.status.hiddenFromProfile": {
+    "text": "Oculta en tu perfil público.",
+    "source": "f27c2de33407ca811176e3dc03d7c4833dd2861f1cd5ea81c202f7b3b220bb05"
+  },
+  "linkedAccounts.status.replacing": {
+    "text": "Reemplazando cuenta…",
+    "source": "2c0a642e063823b764012d1fcff6dff20ba1d471e0a3caee60594dd740163e90"
+  },
+  "linkedAccounts.status.replaceFailed": {
+    "text": "No se pudo reemplazar esta cuenta.",
+    "source": "bd9e7baf48ccfbd9952ea00a7d01fdb9bcb1be613f159f85ca19cd1729a26081"
+  },
+  "linkedAccounts.status.replaced": {
+    "text": "Cuenta de {{provider}} reemplazada.",
+    "source": "b3cdcb9f7dd13054166f6d78ebcb185cdf54bdeb8e773ee6b0f3c3f41a5ddde7"
+  },
+  "linkedAccounts.status.cancelFailed": {
+    "text": "No se pudo cancelar este reemplazo.",
+    "source": "1634fdcf34b199114fce4a9f63d537a67d82f05e9b9b3906ea257843429e9284"
+  },
+  "linkedAccounts.status.replacementCancelled": {
+    "text": "No se hicieron cambios. @{{handle}} sigue conectada.",
+    "source": "38bdecaee5a5b2985c5bad9e07e8babfe4257c06034c20aeb7675c8b9229697f"
+  },
+  "linkedAccounts.replacement.aria": {
+    "text": "Confirmar el reemplazo de la cuenta de {{provider}}",
+    "source": "5c9a3a9ac2db80fff097ba430cb304a79a932fa133d01bb3ac754182628bced0"
+  },
+  "linkedAccounts.replacement.title": {
+    "text": "¿Reemplazar la cuenta de {{provider}}?",
+    "source": "3c2ece104d4337a5f4dde615e1024c0623c327b69b854580a682691a8d1ee54f"
+  },
+  "linkedAccounts.replacement.intro": {
+    "text": "La nueva cuenta está verificada. No cambiará nada hasta que confirmes.",
+    "source": "e4912395ed9be00739318c84bbc30d4438049e55938e29c838cfd3be5ef8fcaf"
+  },
+  "linkedAccounts.replacement.current": {
+    "text": "Actual",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "linkedAccounts.replacement.verified": {
+    "text": "Reemplazo verificado",
+    "source": "10fc1a46fc4ee70bacd0d10c1278e4e5fa343ccf1d21390eac8281b55daa97d7"
+  },
+  "linkedAccounts.replacement.showOnProfile": {
+    "text": "Mostrar el reemplazo en mi perfil público",
+    "source": "ef2d740b269deedcb6c5f61166126a90053d966e11c53d3dfa94d911d9b6716d"
+  },
+  "linkedAccounts.replacement.cancelNote": {
+    "text": "Si cancelas, @{{handle}} sigue conectada con su visibilidad actual.",
+    "source": "468f61fc5ada0eb78ad7593c6662c0a29e2a703b6273790bbb1eee85955a61af"
+  },
+  "linkedAccounts.replacement.confirm": {
+    "text": "Reemplazar cuenta",
+    "source": "53ac9b29deaef3db23538b247a2040c2333929a1dbd9c365f4f3967bcada6034"
+  },
+  "linkedAccounts.replacement.replacing": {
+    "text": "Reemplazando…",
+    "source": "44207eb29645f6ab24953642c4b4155a4aa2497f181ff6141de0e5fe3643badb"
+  },
+  "linkedAccounts.diagnostics.summary": {
+    "text": "Configuración de {{provider}} · solo administradores",
+    "source": "4c42d892d719aff7f9caf8dad2639c6153979f43b180c6fdda027d2a4276f77f"
+  },
+  "linkedAccounts.diagnostics.callbackUri": {
+    "text": "URI de retorno:",
+    "source": "ae2d8e2d9a55402e9e24f6a852e5d25e4d6dced6736d552d7ea117efb34d4f89"
+  },
+  "linkedAccounts.diagnostics.run": {
+    "text": "Ejecutar comprobación de configuración",
+    "source": "13d45a0dd0e1db073f7a09ca27cc2d1cb9b1ecb29e57fa1dd93437070be4d315"
+  },
+  "linkedAccounts.diagnostics.checking": {
+    "text": "Comprobando…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "linkedAccounts.diagnostics.accepted": {
+    "text": "{{provider}} aceptó las credenciales de cliente de la plataforma. Si la conexión sigue fallando en la página de {{provider}}, la dirección de retorno de arriba no está registrada en la app de {{provider}}.",
+    "source": "94c9f47736114ccc95503f1294e40ab2d074e26764cb033b79c54f1f32fcf02f"
+  },
+  "linkedAccounts.diagnostics.rejected": {
+    "text": "{{provider}} rechazó el ID de cliente o el secreto de la plataforma. El par de credenciales configurado es incorrecto.",
+    "source": "5f8e25a242cbdaca55d3a1ad7f05e0895fb37b7df46a3f8633bd511d62992843"
+  },
+  "linkedAccounts.diagnostics.unreachable": {
+    "text": "No se pudo contactar con {{provider}} para verificar las credenciales. Inténtalo de nuevo en un momento.",
+    "source": "a3a995f269199333dd02ec15c2dc81188b0717104bb482ee0795f85b50a132d2"
+  },
+  "linkedAccounts.diagnostics.failed": {
+    "text": "No se pudo ejecutar la comprobación de configuración. Inténtalo de nuevo en un momento.",
+    "source": "b10496d32eafb5588a2aeac75638f2dafdbfd5f30b83e077b6182a86e8caf86f"
+  },
+  "linkedAccounts.native.accountUnknown": {
+    "text": "No se pudo identificar tu cuenta. Vuelve a abrir Ajustes e inténtalo de nuevo.",
+    "source": "e3cdf105be6e91b3f5a7790d93bd1e405941923ec6a91c04c6f34f326dbe397b"
+  },
+  "linkedAccounts.native.updateApp": {
+    "text": "Actualiza la app de Homeroom para abrir la conexión de cuentas en tu navegador.",
+    "source": "bd710b814b5f1e2cc967ad8dc4e27bb53943ff91dffc25695703e35a83089797"
+  },
+  "linkedAccounts.native.browserNotOpened": {
+    "text": "No se pudo abrir tu navegador. Toca Conectar para intentarlo de nuevo.",
+    "source": "e647128b6ba9b8540900e55726a09aa4c3f3d3b063f05f1ceb6babccbe74c726"
+  },
+  "cli.title": {
+    "text": "Acceso de CLI y agentes de programación",
+    "source": "f5b96ef5a6c0adacf4f8c79fe12f2b7efe9dee7c0d23ce7c7efa0a883cf336a3"
+  },
+  "cli.intro": {
+    "text": "Credenciales aprobadas para la CLI de Homeroom, Codex, Claude Code u OpenCode. Revocar una credencial activa surte efecto de inmediato.",
+    "source": "d72becb6da15ecf7c5cfaaada8e6926cb73c9720f0a0bdd14e840b7b48d9a3e2"
+  },
+  "cli.tokens.loading": {
+    "text": "Cargando credenciales…",
+    "source": "f95763a4d76c6868f642f508f06eb630dc38fc3293cc50bec91db44c6b33c4ba"
+  },
+  "cli.tokens.empty": {
+    "text": "No hay credenciales de CLI.",
+    "source": "2575a681ebf753e2ebaebbf491120b09b7e6580422f89d9529f0be248d512b1c"
+  },
+  "cli.tokens.revoke": {
+    "text": "Revocar",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "cli.tokens.loadMore": {
+    "text": "Cargar más",
+    "source": "ac8991ef01019cf55a2426194a05959e0cb886333f1a332ff4f442320d165400"
+  },
+  "cli.guide.title": {
+    "text": "Configura un agente de programación local",
+    "source": "524891f6bf3f55c9f07f8a67191e9cbb58dd031a4bec2efa2290a4f7acfd9bf7"
+  },
+  "cli.guide.intro": {
+    "text": "Inicia Codex o Claude Code desde una copia local del repositorio y pídele que cree una propuesta.",
+    "source": "6f0b72afac4711bc910a0fe45abe2519aa9626920a18f71d06b1c9742d816b41"
+  },
+  "cli.guide.clone.title": {
+    "text": "Clona el repositorio",
+    "source": "0fce6e04ffaeaa07ae7480fb155fb78e4de97fd3c301bb3d295b5bc7b4f09d55"
+  },
+  "cli.guide.clone.body": {
+    "text": "Clona Homeroom y entra en la copia local.",
+    "source": "830d38a33c85edff362c13f32eee253735a51ad6faf17215c5253bc19e3b84c6"
+  },
+  "cli.guide.clone.codeLabel": {
+    "text": "comandos de configuración del repositorio",
+    "source": "3f2f7e3c5d7fd79dcf453cbaa00977ac0306c4da1541633733857fd130edc4ce"
+  },
+  "cli.guide.clone.copyAria": {
+    "text": "Copiar comandos de configuración del repositorio",
+    "source": "1846bba2f8846b13177883f715ff192382743e25569cf4063c2473d6b7ae7162"
+  },
+  "cli.guide.start.title": {
+    "text": "Inicia tu agente de programación",
+    "source": "c21d5754cb1a2bc351af18e5936fc47f554c2c9e7427f92043eb85e688049366"
+  },
+  "cli.guide.start.body": {
+    "text": "Ejecuta Codex o Claude Code desde el directorio del repositorio.",
+    "source": "7310f4704876d0c6af094679e99b8509037500ea781e996f8dd758a7579f08dc"
+  },
+  "cli.guide.start.codexLabel": {
+    "text": "Comando de Codex",
+    "source": "1bab5da7ad7d820dbc64aee8290acf94e23d5cb5c636e724a04206b58710da08"
+  },
+  "cli.guide.start.codexCopyAria": {
+    "text": "Copiar comando de Codex",
+    "source": "73afd0050f1d6a9cc037988a2e4ed9405057820e4067f432c777c501e08bdc62"
+  },
+  "cli.guide.start.claudeLabel": {
+    "text": "Comando de Claude Code",
+    "source": "5af7af69f26f4a45c8240e99ef76449c4ee96c1e5db3d6d942824f5f7b42645c"
+  },
+  "cli.guide.start.claudeCopyAria": {
+    "text": "Copiar comando de Claude Code",
+    "source": "b56248027d0af0a283441a677edaf06a342cc085d11e7ab7490848879943dcdf"
+  },
+  "cli.guide.ask.title": {
+    "text": "Pídele que cree una propuesta",
+    "source": "1f6f6432529fd5f88e2ca0d03a0fe50cf25add8caa673cd67777431b2d72b9d1"
+  },
+  "cli.guide.ask.promptHelp": {
+    "text": "Sustituye los marcadores por la app y el cambio que tienes en mente, y envía el mensaje.",
+    "source": "2e751b16f7f53a5b6122f093dde581f487000ff7ae7ab25f82d60e49ff6c16cb"
+  },
+  "cli.guide.ask.examplePrompt": {
+    "text": "Crea una propuesta para <0>nombre de la app</0> que <1>describa el cambio que quieres</1>.",
+    "source": "0bc8c0161ddb6fb333831a62c71f6edfbc28e9807a8e0fd4d7bb3e033c8beb10"
+  },
+  "cli.guide.ask.promptLabel": {
+    "text": "mensaje de ejemplo de propuesta",
+    "source": "a09ecbf5d971953d11da684f7fb9c884f384ddcd77c6a86b222f2564f335975f"
+  },
+  "cli.guide.ask.promptCopyAria": {
+    "text": "Copiar mensaje de ejemplo de propuesta",
+    "source": "63b9ea9defd0da0b61f61181811d4414d7299f6d3f96cd680493ee53e4cc2049"
+  },
+  "cli.guide.ask.follow": {
+    "text": "Sigue las instrucciones del agente. Te pedirá autorizar el acceso en una página web de Homeroom; revisa y aprueba la solicitud allí y vuelve a tu terminal.",
+    "source": "f8013ce9d462e45307acf0c285dbdf6234adff0bdfe27db3d5c373aacc968157"
+  },
+  "cli.guide.copyFailed": {
+    "text": "Error al copiar",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "cli.guide.copyFailedToast": {
+    "text": "No se pudo copiar. Selecciona el texto y cópialo manualmente",
+    "source": "9181be576b49cb2ddc08670fe5e6858dd852534505be0751160f918b90f5abe8"
+  },
+  "localAgents.lastSeen": {
+    "text": "{{runtime}} · visto por última vez <0>{{when}}</0>",
+    "source": "1ce52bd8b15662569265979c838d55a1eb769bc849440b076854a2188912bcc0"
+  },
+  "localAgents.lastSeenUnknown": {
+    "text": "{{runtime}} · última vez visto: desconocido",
+    "source": "c5efe62fd47ddfdb558e9fc762d36e4963fbfc415f4b062ec817daa08a16d4fe"
+  },
+  "localAgents.detach": {
+    "text": "Desvincular",
+    "source": "74bc117435434cc1708fda8004336cf159021c5fa8f991b444c4fa4b1e7c0b6f"
+  },
+  "grants.title": {
+    "text": "Permisos de IA de las apps",
+    "source": "8be55dd90e374de98322dd13ce0a20b481c4996e85cdd0730f97d48a0be67360"
+  },
+  "grants.intro": {
+    "text": "Apps a las que has permitido usar IA en tu nombre. Su gasto cuenta contra tu presupuesto diario normal, además del límite por app que establezcas. Revocar surte efecto de inmediato, y una app revocada se puede volver a habilitar aquí con su límite anterior.",
+    "source": "f61e6dbad08e7083295d2e6b8a2141fece86a532ac2e5d6adbbd9d1994642746"
+  },
+  "grants.loadFailed": {
+    "text": "No se pudieron cargar los permisos de las apps.",
+    "source": "5eb6af55d4350f494a7b80397699b9ea1116f85e4deef1941ff75d450ff7a6d9"
+  },
+  "grants.empty": {
+    "text": "Ninguna app ha pedido usar IA todavía.",
+    "source": "b11b6069db8df47662ca9fd410474cb3c0ff620383b43e62621c63e06337dfa0"
+  },
+  "grants.revoked": {
+    "text": "Revocado",
+    "source": "f6f738d043929f59fe41b1a5b414b33ea28ca9a6ddc74e682bdb7167b5a6ac6e"
+  },
+  "grants.reenableNote": {
+    "text": "Al volver a habilitarla se restablece su límite diario de ${{cap}}.",
+    "source": "eaf4efb2006d8c77718e35affbe8e614ecc06d8eff336bb73d022bd3398cf411"
+  },
+  "grants.reenable": {
+    "text": "Volver a habilitar",
+    "source": "63de421725fe824d9997872b1130d48e684b08da4b2784054049002f95684303"
+  },
+  "grants.spentToday": {
+    "text": "${{spent}} / ${{cap}} hoy",
+    "source": "4d298cf26bbed54b11caf9105b8368f6c02a102e12e277e9e95d733fd3dfeadb"
+  },
+  "grants.capLabel": {
+    "text": "Límite $",
+    "source": "65f13504f1788453d383782f0c87ed3a2a9b8f725427a3312f09d2adeb7c3bae"
+  },
+  "grants.useOwnKey": {
+    "text": "Usar mi propia clave al agotar el presupuesto diario",
+    "source": "4e44fe70255b6486de20d7c39dbcc8f89d10052087a28df5aede1b5c73cc50b5"
+  },
+  "grants.revoke": {
+    "text": "Revocar",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "usage.title": {
+    "text": "Uso",
+    "source": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66"
+  },
+  "usage.intro": {
+    "text": "Cuánto te queda de tu asignación de IA y, cuando añadas tu propia clave, cuánto ha gastado esta semana.",
+    "source": "a9cad60aaaa6de667ee141cf2ddedf2df2831c7a5d2913b0e32253ad3f52648e"
+  },
+  "usage.buildingTime.title": {
+    "text": "Tiempo de construcción del bot de Homeroom",
+    "source": "2f97a56ab7dd4deac5bf6e5d49c85b7c7ba0529ba0e285a8ef7494f5ce8a5101"
+  },
+  "usage.buildingTime.used": {
+    "text": "{{percent}}% del tiempo de construcción de esta semana usado",
+    "source": "8031d6c56c57c28ab7406f3ff079a20d36dca99366c4b7999768a53d7e3c6c3b"
+  },
+  "usage.buildingTime.usedUp": {
+    "text": "Has usado el tiempo de construcción de esta semana",
+    "source": "23d521a02d6f6b5cd2b44ab9b6d0016c1048b8cd4ccfc4a03d8d067b45a22d83"
+  },
+  "usage.buildingTime.none": {
+    "text": "No has usado tiempo de construcción esta semana",
+    "source": "547da50d8345b5cd6ad510937874358d5ea94af5b5c9f9aea2b9081531d44971"
+  },
+  "usage.buildingTime.unlimited": {
+    "text": "Tu tiempo de construcción no tiene límite semanal",
+    "source": "37c9e5f0644cebd3a82eab30167a6e75704bf49e9741b5517537ac89c96b04e3"
+  },
+  "usage.buildingTime.resets": {
+    "text": "Se reinicia el {{day}} a las {{time}}.",
+    "source": "f56ad5c5cec2cd02084ba0b4eeaa621e6d01ace3d9d3b5366a6af57ad81b8603"
+  },
+  "usage.buildingTime.percent": {
+    "text": "{{percent}}%",
+    "source": "6eae0dff5b4b3c72aaa73b1a40acf7a63534303708c5923d056d1d1f7406880c"
+  },
+  "usage.buildingTime.underOne": {
+    "text": "Menos del 1%",
+    "source": "2d1353576242ed0eba40f82af10733e7d672c2e9392686f8098b3ff6f1cde22d"
+  },
+  "usage.buildingTime.untitled": {
+    "text": "Solicitud n.º {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "usage.buildingTime.askedFor": {
+    "text": "{{app}} · Lo pediste tú",
+    "source": "3009051eab0c985b0b0ce754726e2365cf1079d988a327610a619737ec1bbf89"
+  },
+  "usage.buildingTime.others": {
+    "text": "Otras solicitudes",
+    "source": "638e58c202ba623c1aa831c4a330f7032ea9b74a58183414a363715ff1dfb5c0"
+  },
+  "usage.buildingTime.explainLimited": {
+    "text": "La parte de tu semana que usa cada solicitud. Cuenta cuando el bot lee, planifica y construye tus solicitudes, y las que le pediste construir para otra persona.",
+    "source": "8ab64ec5628f5a819387dea4b32f67f6d17b2da3ddbf5eb9bd30c69aaea89ba2"
+  },
+  "usage.buildingTime.explainUnlimited": {
+    "text": "La parte de lo que usaste esta semana que corresponde a cada solicitud. Cuenta cuando el bot lee, planifica y construye tus solicitudes, y las que le pediste construir para otra persona.",
+    "source": "bec24faaf7a5308bc9328990f0bb68f62621bfea5d28c8943cc5b394ffc24d34"
+  },
+  "usage.buildingTime.demo": {
+    "text": "Cifras de demostración de pruebas, no reales.",
+    "source": "1d1fe182728f39676977f9993c2daa34e7546df65a9ff3ffdd6777c0095f51be"
+  },
+  "usage.spend.heading": {
+    "text": "Gasto de esta semana",
+    "source": "921b881fcea8e7eeb4830bf2d3fd2256178f9b2af17b22d3511bd106d686bcc0"
+  },
+  "usage.spend.platform": {
+    "text": "Límite semanal de la plataforma",
+    "source": "a83f14f098bfc1d72b6bbadcd7cdba7c74384ae8d55c946e6ecc937bb3c52c74"
+  },
+  "usage.spend.ownKey": {
+    "text": "Tu clave",
+    "source": "10d7b222c4b9c18867e21dca6feb15924c3d57b491eeff7efc274ae2d7fd118b"
+  },
+  "usage.spend.resetUtc": {
+    "text": "Se reinicia el lunes a las 00:00 UTC.",
+    "source": "8260c59430618de198b46e83610e7a2945840b03ccd8174e1d52020606f50498"
+  },
+  "apiKey.title": {
+    "text": "Clave de API de Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "apiKey.intro": {
+    "text": "Usa tu propia clave de API de Anthropic para seguir trabajando después del límite semanal. Primero se usa tu asignación semanal de la plataforma; cuando se agota, tu clave toma el relevo automáticamente, incluso en mitad de un turno en curso, y el uso se factura directamente a tu cuenta de Anthropic.",
+    "source": "5b0792bc208a2c15d311cd18b29c5aabb8d6bb4c085f13c01991ffe2eaad28ba"
+  },
+  "apiKey.savedKeyLabel": {
+    "text": "Clave",
+    "source": "99a52df3ff3d499488e2fa28150c4106a2cb5e928891a830a9aa3922b2d32160"
+  },
+  "apiKey.fieldLabel": {
+    "text": "Clave de API de Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "apiKey.remove": {
+    "text": "Quitar",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "apiKey.safety": {
+    "text": "Se cifra en reposo, se verifica con Anthropic antes de guardarla y nunca se muestra completa después. El servidor la descifra en memoria para llamar a Anthropic en tu nombre, así que no pegues claves en servicios en los que no confíes con ese nivel de acceso. <0>Define límites de gasto estrictos</0> en la propia clave como defensa adicional.",
+    "source": "964372764cebc98f971f0a8a93b91718b37a66b5e4dc6fe31778a665234ac478"
+  },
+  "openrouter.intro": {
+    "text": "Usa cualquier modelo compatible para todo el chat y la programación en una sesión de OpenRouter. Estas sesiones no usan tu asignación de Claude de la plataforma. Tu cuenta incluye una clave de OpenRouter, así que OpenRouter es la opción predeterminada y GLM 5.3 Flash se selecciona cuando está disponible, mientras que la lista completa de modelos visibles para la clave sigue disponible. Los modelos marcados como Claude Code en la lista se ejecutan en Claude Code. Las claves se cifran en reposo y solo se inyectan en cada turno.",
+    "source": "227eef10170b9b0dc7009a9f48d95a0859acd84a1c5e2755f9c5415cf73d6c01"
+  },
+  "openrouter.included.title": {
+    "text": "Clave de OpenRouter incluida",
+    "source": "f33fea5d48604219c052f6d69cf33d2515bb36b95244850cfda3a909bba33095"
+  },
+  "openrouter.personalKey.label": {
+    "text": "O usa tu clave de API personal de OpenRouter",
+    "source": "95b84abf0b457a3383153e5363e15781f84c9cb92b41b521d10d8ddf4e35d6fc"
+  },
+  "openrouter.personalKey.testAndSave": {
+    "text": "Probar y guardar",
+    "source": "634dbaabb7bfa2e961b2bff68e7e4fe6dcb6d40181773206fcbfd6957d18d35e"
+  },
+  "openrouter.personalKey.remove": {
+    "text": "Quitar",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "openrouter.model.label": {
+    "text": "Modelo de OpenRouter",
+    "source": "dd24ac61242a5891d7634c9f3d47a395aa8fa3c69f05146ade6dbd79f1e89918"
+  },
+  "openrouter.model.filterPlaceholder": {
+    "text": "Filtrar por modelo o proveedor…",
+    "source": "19c5643bbd1f98db6b8a44e44ea4e41206c8bef78a76be7f69725fbec2ddf643"
+  },
+  "openrouter.model.filterAria": {
+    "text": "Filtrar modelos de OpenRouter",
+    "source": "75d3b31cdd6e14244e88ca0e21fb9ba54c7d4e1654c15de08e936bd39fc14201"
+  },
+  "openrouter.model.favoritesOff": {
+    "text": "☆ Favoritos",
+    "source": "c2a2f40a25908cbf45d00937d3105b55913e6e0be8606c2f72629c170c6f268d"
+  },
+  "openrouter.model.refresh": {
+    "text": "Actualizar",
+    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
+  },
+  "openrouter.model.addFavorite": {
+    "text": "Añadir el modelo seleccionado a favoritos",
+    "source": "a079bd1c365635918e2f92e449c44166440dc6089751ae28a3ccb34328dd7902"
+  },
+  "openrouter.model.favoritesNote": {
+    "text": "Las recomendaciones de la plataforma empiezan marcadas con estrella. Tus cambios reemplazan esos valores predeterminados en todos tus dispositivos. OpenRouter filtra este catálogo según tu clave y las políticas de tu cuenta.",
+    "source": "b9be668d6b486880d00c6b2600cc9dad1d48157f99dc299f31c9024c83ecedc0"
+  },
+  "openrouter.reasoning.label": {
+    "text": "Nivel de razonamiento",
+    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
+  },
+  "openrouter.reasoning.default": {
+    "text": "Predeterminado",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "openrouter.reasoning.minimal": {
+    "text": "Mínimo",
+    "source": "057b5de48d7b90f123ec28d7e15f65d99b508d6b7cc2958c39472070f0f0f6bb"
+  },
+  "openrouter.reasoning.low": {
+    "text": "Bajo",
+    "source": "f793de205ead5ac302c4a1627829dea41f176b1068b993a32373fc869918374b"
+  },
+  "openrouter.reasoning.medium": {
+    "text": "Medio",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "openrouter.reasoning.high": {
+    "text": "Alto",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "openrouter.reasoning.xhigh": {
+    "text": "Muy alto",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "openrouter.saveDefault": {
+    "text": "Guardar como mi agente de programación predeterminado",
+    "source": "37aaed4932ec8f90f8f8f8bb091ca3548428ce7613ebb82a8d26fba353d170da"
+  },
+  "openrouter.useClaudeDefault": {
+    "text": "Usar Claude Code como predeterminado",
+    "source": "247385385ccd48b6d5a20573b9ed88f3cb93dc8d65053ac211f993f21ae0ad9c"
+  },
+  "screen.signOut": {
+    "text": "Cerrar sesión",
+    "source": "48f0d3d397d49f135f116d947a805b49f084f637154a8e9913e7233a11dc16a0"
+  },
+  "screen.loadFailed": {
+    "text": "No se pudieron cargar los ajustes. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "1977912215d331200b5e83537ff38c1de9a6267ab068e7359298f217d956d3db"
+  },
+  "nav.sectionsName": {
+    "text": "Secciones de ajustes",
+    "source": "e26d51d36781ba171c5eba3f73a03d53120e8479d5275f0768ec49a40b3b0386"
+  },
+  "nav.filter.field": {
+    "text": "Buscar un ajuste",
+    "source": "556e14934a4a4550aa43766e0f576030549cd26062f8817fd77da448fd5a7df9"
+  },
+  "nav.filter.noMatch": {
+    "text": "Ningún ajuste coincide con «{{query}}».",
+    "source": "a0e86b6149ce0c066deb8e64da06ab9b9ad03483a2ec1edac2693797b934f17d"
+  },
+  "nav.filter.signOut": {
+    "text": "Cerrar sesión",
+    "source": "48f0d3d397d49f135f116d947a805b49f084f637154a8e9913e7233a11dc16a0"
+  },
+  "accountRows.admin.heading": {
+    "text": "Admin",
+    "source": "c1c224b03cd9bc7b6a86d77f5dace40191766c485cd55dc48caf9ac873335d6f"
+  },
+  "accountRows.admin.console": {
+    "text": "Administración y moderación",
+    "source": "a89dfdf81e371949454a94701026bd3d66841a0017f1e2e2194b12956149cc56"
+  },
+  "accountRows.native.name": {
+    "text": "Billetera y nodo",
+    "source": "c64502e63a4b8edaa2f421cc2159e2ef9bca9a0aafa57105e57e890032cb2b2f"
+  },
+  "accountRows.native.heading": {
+    "text": "Billetera y nodo",
+    "source": "130fe869926efcc9ad04721a8722c64ee681d0c1cb7c322ce0249f6fce72a837"
+  },
+  "profile.title": {
+    "text": "Perfil",
+    "source": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c"
+  },
+  "profile.intro": {
+    "text": "Tu nombre, foto y biografía, y si tu página pública está activada.",
+    "source": "a271f0449c7181f39403a8b531eb364fc7ba5595d1a43c9ab6661d52241caf6c"
+  },
+  "profile.edit": {
+    "text": "Editar perfil",
+    "source": "15c4aa13037eaf52733882a470415c0f5a4afa8490b49dc1712b1f96fc3b1de0"
+  },
+  "username.title": {
+    "text": "Nombre de usuario",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "username.intro": {
+    "text": "Tu @usuario es con lo que inicias sesión y la dirección de tu página pública de creador.",
+    "source": "72596fbeacf2de766c4ee9457bc6eae79b8a75f4f98baa8f7955cdab57d5fadb"
+  },
+  "username.current": {
+    "text": "Actual",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "username.newPlaceholder": {
+    "text": "Nuevo nombre de usuario",
+    "source": "0e2b4ad75a90f6f58bdcab37b1297b99e76c4aca6896f6dae6a04b9a1e8549d7"
+  },
+  "username.passwordPlaceholder": {
+    "text": "Contraseña actual",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "username.submit": {
+    "text": "Cambiar nombre de usuario",
+    "source": "5912b5638f7783e34edb180ddfae070ca1899c7938462d16719a5123594ec178"
+  },
+  "username.rules": {
+    "text": "Letras, números y guiones bajos, de 3 a 32 caracteres, para que sigan pudiendo mencionarte con @. Tu usuario anterior queda reservado para ti en lugar de liberarse, así que los enlaces y menciones que lo usaban siguen apuntando a ti y nadie más puede tomarlo. Podrás volver a cambiar tu nombre de usuario después de 30 días.",
+    "source": "1534a76f937407e5d5bb505222328fbd4fc110a2b02030a1e3bb5519610eeb9d"
+  },
+  "email.title": {
+    "text": "Correo y recuperación",
+    "source": "4ee4c51181215dd5cfd768f9f9a7dfa2a899fa7c972aa850b9715c38d4ee8880"
+  },
+  "email.intro": {
+    "text": "Vincula un correo electrónico privado para ayudarte a recuperar el acceso a tu cuenta. No aparece en tu perfil público.",
+    "source": "cbd3f673d71b25ff4f1a035b22daa8b8b3136e586e94694ee8f49380d5a4d2d0"
+  },
+  "email.loading": {
+    "text": "Cargando correo de la cuenta…",
+    "source": "fe67ad09b5e18bc040b35c63470ad214f7af89bd58e0958b1c26a5033dd23691"
+  },
+  "email.requestFailed": {
+    "text": "No se pudo actualizar el correo de la cuenta.",
+    "source": "0b0c8b9e7b8bccdbcbbecdc9b4aa394e880470ddbc799726e65152263a88584d"
+  },
+  "email.none": {
+    "text": "Sin correo vinculado",
+    "source": "754cc606f2c59a67ea75ecf0a227309758bb10a7a996889b9fc067597cf70878"
+  },
+  "email.verified": {
+    "text": "Verificado",
+    "source": "4f7838402f37674e8ebedb6cf048c0aea66bacdb25607aa3eee4b53093d83f5c"
+  },
+  "email.notVerified": {
+    "text": "Sin verificar. Verifícalo abajo.",
+    "source": "ab2039f434ad3c2d3d66197c75610c93ca2327836957e779dc300243d6eb22e6"
+  },
+  "email.recoveryAllowed": {
+    "text": "Una vez verificado, usa este correo para iniciar sesión o elige «¿Olvidaste tu contraseña?» en la pantalla de inicio de sesión.",
+    "source": "6de309a2fd469ae6d33a9c17dce9fe5437e86e6f216e91e11011a726bfead5e1"
+  },
+  "email.recoveryNotAllowed": {
+    "text": "Las cuentas de administrador no pueden usar el inicio de sesión ni la recuperación de contraseña por correo. Guarda bien tu contraseña.",
+    "source": "dc4b9774291463d69098de7f09e19d2f15d8970dcd2f4b5029eaf1182a4c2dc6"
+  },
+  "email.verifyPrompt": {
+    "text": "Verifica {{email}}. Tu correo actual seguirá vinculado hasta que se complete.",
+    "source": "8521576f08be60fc025fb6b91b05ef606b010f59770c5aa4f4f713632542fab0"
+  },
+  "email.codeLabel": {
+    "text": "Código de verificación",
+    "source": "3ee75029c70e284c46b5af29eb87592f923e747f460353b02059a645f332b990"
+  },
+  "email.addressLabel": {
+    "text": "Dirección de correo electrónico",
+    "source": "f2488fd4ef4adbc6ac61300083f2c33980e48bb4bbf3c540ad760d61fc36f420"
+  },
+  "email.passwordLabel": {
+    "text": "Contraseña actual",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "email.submit.busy": {
+    "text": "Espera…",
+    "source": "4660a983366f710126b2dbf35dd89c7ea89eb7efdbe55b68dede11aa6aef705b"
+  },
+  "email.submit.verify": {
+    "text": "Verificar correo",
+    "source": "e89a77e7fe58a6d14ffde89db2a9d370d605da0cad4b8df1fa7eec63fb2fac2b"
+  },
+  "email.submit.sendCode": {
+    "text": "Enviar código de verificación",
+    "source": "19e86d2b7055340c491f0b37f762a8d1a86969ae1d67ce085f56045f48b55f53"
+  },
+  "email.startOver": {
+    "text": "Cambiar el correo o pedir otro código",
+    "source": "5dfc237e6224768b254d292369f8d9ecf556346eca76809178f69fa87f86f2f0"
+  },
+  "email.verifiedNotice": {
+    "text": "Correo verificado y vinculado a tu cuenta.",
+    "source": "e1921e832861abdbbf213bab3fafd0d08dfdbda411d516af3abbeaf9e740d86f"
+  },
+  "email.codeSentNotice": {
+    "text": "Revisa tu bandeja de entrada: te enviamos un código de seis dígitos. Caduca en 10 minutos.",
+    "source": "d6f40d8cf962539114c892bb23cb25c4d8887a0a9e060ce90e92ffd78b1721a5"
+  },
+  "password.title": {
+    "text": "Cambiar contraseña",
+    "source": "3f9c991f63a9a376bb02fee8db355879a987ce640654bc66d20b4c6ff2e999be"
+  },
+  "password.intro": {
+    "text": "Define una contraseña nueva para iniciar sesión en la web. Si un administrador te dio una contraseña temporal, introdúcela aquí como contraseña actual. ¿Aún no tienes contraseña? Elige una aquí; hasta entonces inicias sesión con un código enviado por correo.",
+    "source": "ff7e956c33371225bfd80e39c78f003a644e71fd66b6fcb2c74748d8ef77d5d7"
+  },
+  "password.currentPlaceholder": {
+    "text": "Contraseña actual",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "password.newPlaceholder": {
+    "text": "Contraseña nueva (mínimo 8 caracteres)",
+    "source": "b4ae3c2a46f9eae8a0b4145ffce243118b18171452f0e118ed6ec45d77a03243"
+  },
+  "password.confirmPlaceholder": {
+    "text": "Confirma la contraseña nueva",
+    "source": "bf000421aeb39493cf8044ec73846d7da8ca97b7166208c0d1172a17ba23a388"
+  },
+  "password.submit": {
+    "text": "Cambiar contraseña",
+    "source": "3f9c991f63a9a376bb02fee8db355879a987ce640654bc66d20b4c6ff2e999be"
+  },
+  "password.submitWithWallet": {
+    "text": "Firmar y cambiar contraseña",
+    "source": "a94ed0483afad231866585a85419b7d4a8a8dca1d4ee4b027063bdac107e5db4"
+  },
+  "password.useWallet": {
+    "text": "¿No tienes contraseña? Crea una",
+    "source": "d4a22819d483e94a8e2c69ee78753c6176f0d99dcf46e24fe283e37f9d675693"
+  },
+  "password.usePassword": {
+    "text": "Usar la contraseña actual",
+    "source": "c852abcbfd99601048c6235bb17da6ecf8f0dfdc1a183926696ba16cadffab7a"
+  },
+  "deleteAccount.title": {
+    "text": "Eliminar cuenta",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "deleteAccount.intro": {
+    "text": "Anonimiza tu cuenta y elimina tu acceso para iniciar sesión. Los mensajes y contribuciones compartidos permanecen bajo un nombre anónimo, «deleted-user».",
+    "source": "7f60f499b5a8771aa25fb40281ec28739e6a570e5dd2b6ba046ff2cd3b27d562"
+  },
+  "deleteAccount.open": {
+    "text": "Eliminar cuenta…",
+    "source": "619e3be216f367adf3a4514e7c14db9bad5f28e32e8cd85374e1f373b1d67bde"
+  },
+  "deleteAccount.formName": {
+    "text": "Eliminar cuenta",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "deleteAccount.question": {
+    "text": "¿Eliminar tu cuenta de forma permanente?",
+    "source": "79594f2e2cfbf70ffc8d4e8ad5136835e8d9a5dce35dcaf71ff8c8a73a552ec7"
+  },
+  "deleteAccount.deleted": {
+    "text": "Cuenta eliminada",
+    "source": "5d670c14e5b1964725e22f1130c5bf15611d41d5668e7da420e421837e4eafed"
+  },
+  "deleteAccount.whatIsRemoved": {
+    "text": "Tu cuenta se anonimiza, no se borra por completo: se eliminan tu nombre, correo, perfil, acceso para iniciar sesión y datos privados de la cuenta, y se cerrará tu sesión en todos los dispositivos. Esta acción no se puede deshacer.",
+    "source": "c42108fe17e344061e175eeecd97fb8718d86f0c7044704dd41488c9c445633c"
+  },
+  "deleteAccount.whatStays": {
+    "text": "Los mensajes, votos, archivos adjuntos compartidos y contribuciones públicas siguen disponibles para otros participantes bajo un nombre anónimo, «deleted-user». Se conserva su contenido, incluida cualquier información personal que hayas compartido en ellos.",
+    "source": "7be3ec0d913a541fcb842dc91fd7d0ac23b7102427c200b45b57720f80a1a95e"
+  },
+  "deleteAccount.retention": {
+    "text": "Los registros financieros y de moderación necesarios se conservan sin vínculo con tu cuenta. La limpieza externa puede tardar más. Las copias en respaldos, otras apps, GitHub o la blockchain siguen sus propias reglas de conservación.",
+    "source": "d903f070a54a80c6be055a5b8edd7df746981922ac160a243c7ae7ee99c51c56"
+  },
+  "deleteAccount.loading": {
+    "text": "Cargando los datos de la cuenta…",
+    "source": "135a022f2da6710c381dc1aa6855cb63093b2c3be6457d78a5f2a7b1fd5525f0"
+  },
+  "deleteAccount.loadFailed": {
+    "text": "No se pudieron cargar los datos de la cuenta.",
+    "source": "26b8969f6133869d5d7e3d48a8a3da8ff2c7b8897872c352e9761155a8022c35"
+  },
+  "deleteAccount.connectionError": {
+    "text": "Revisa tu conexión e inténtalo de nuevo.",
+    "source": "481859b689b0d0d9de1e27b3a0a25004f32d7624f412f8f80e0188cb3e3d54f2"
+  },
+  "deleteAccount.passwordLabel": {
+    "text": "Contraseña actual",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "deleteAccount.recentSignIn": {
+    "text": "Por seguridad, cierra sesión y vuelve a iniciarla si la iniciaste hace más de 10 minutos.",
+    "source": "210573d4869779bcfdcb0ddf1862649ca4bdee7a41939ba7b73281d4cd0cb7c8"
+  },
+  "deleteAccount.confirmLabel": {
+    "text": "Escribe {{word}} para confirmar",
+    "source": "d6bd17ddfcd028b5970c9cdaf8a5ebe214756ead0cb3fe3566896b6d1c055981"
+  },
+  "deleteAccount.submit": {
+    "text": "Eliminar mi cuenta definitivamente",
+    "source": "e65fb685d8ada175704517ed367c752c874543db77394a9be126a8676df02c45"
+  },
+  "deleteAccount.submitting": {
+    "text": "Eliminando…",
+    "source": "43b5894c3e4e2b24f13c935f4fae0a0a8fbe7d7792750a09b88c2097fd9a32b8"
+  },
+  "deleteAccount.failed": {
+    "text": "No se pudo eliminar la cuenta.",
+    "source": "4ab5c712b023d5ee4e370e5c460d003bf5aa2dc14252b2a41e5b2693f40d493e"
+  },
+  "deleteAccount.signOutFailed": {
+    "text": "Tu cuenta se eliminó. Vuelve a intentar cerrar sesión para limpiar este dispositivo.",
+    "source": "a68357ed68bcd3fb715fbf07ab4137358940e6c77c515d84b33b7ea2af4b7c57"
+  },
+  "deleteAccount.finishSignOut": {
+    "text": "Terminar de cerrar sesión",
+    "source": "dad9ac67f3f0869ac46751cc23cdf9854b631daff3619cc9292d496c7c42850c"
+  },
+  "wallet.title": {
+    "text": "Homeroom Wallet",
+    "source": "6e5f658a2e1a4ba0bc4706d148631db941b521a296aa2a4abcd51c5ded8432cc"
+  },
+  "wallet.intro": {
+    "text": "Vincula tu identidad on-chain. Escanea el código QR con la app móvil de Homeroom.",
+    "source": "3d798ec2fd20f8d9e6aa7734e9e12fc7cc707fedaa6d60a9d7c809bf12e7e59b"
+  },
+  "wallet.link": {
+    "text": "Vincular Homeroom Wallet",
+    "source": "ad511b146971eed8f742ca5b8da754dc00292f62c350af3b4ab67784bf99bc0b"
+  },
+  "agentFiles.title": {
+    "text": "Instrucciones y habilidades del agente",
+    "source": "7c5c797501a2f24ebef712d1c00661d32cc0cdfe593764d603e218cdf1af65c4"
+  },
+  "agentFiles.intro": {
+    "text": "Archivos personales que el agente de programación sigue en cada compilación o ejecución de plan que inicies, en cualquier app. Solo Markdown o texto sin formato, hasta 10 de cada tipo, 48 KB por archivo. Los cambios se aplican desde tu próxima ejecución.",
+    "source": "cf3350261b7051471ec22dcf9a2c28951b85cb8f261699d162c8a060f662911d"
+  },
+  "agentFiles.instructions.heading": {
+    "text": "Instrucciones",
+    "source": "934652dce41d62d3c9ff34b2c5e44e3addaedc67d6137328a9fe75a63c51dbac"
+  },
+  "agentFiles.instructions.upload": {
+    "text": "Subir",
+    "source": "865e89de78d94c747184d6a7e6f5244b453d8062343c07e014ae698cfb0260e8"
+  },
+  "agentFiles.instructions.empty": {
+    "text": "Aún no hay archivos de instrucciones. Sube un archivo Markdown para guiar al agente de programación en cada compilación que inicies.",
+    "source": "40f9b6a274d91869af593797da914d40317356e1abde830f2ad07dc92e9335a2"
+  },
+  "agentFiles.skills.heading": {
+    "text": "Habilidades",
+    "source": "66d0f523a379b2de6f8d5fba3a817ebc395f7bcaa54cc132ca9dfa665d1e9378"
+  },
+  "agentFiles.skills.upload": {
+    "text": "Subir",
+    "source": "865e89de78d94c747184d6a7e6f5244b453d8062343c07e014ae698cfb0260e8"
+  },
+  "agentFiles.skills.empty": {
+    "text": "Aún no hay habilidades. Sube un archivo de habilidad que el agente pueda usar mientras trabaja para ti.",
+    "source": "8f37bfc2c9fe689ccd3c0592c5a7e480c4be7ac3ec78ddde0a8528e68351f028"
+  },
+  "agentFiles.form.nameLabel": {
+    "text": "Nombre",
+    "source": "dcd1d5223f73b3a965c07e3ff5dbee3eedcfedb806686a05b9b3868a2c3d6d50"
+  },
+  "agentFiles.form.descriptionLabel": {
+    "text": "Descripción",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "agentFiles.form.descriptionPlaceholder": {
+    "text": "Una línea: qué hace esta habilidad",
+    "source": "5e8fbb47abada358ebd0be46439c084e375f8afefddd881bc7370ab828732c6b"
+  },
+  "agentFiles.list.loadFailed": {
+    "text": "No se pudieron cargar los archivos de tu agente.",
+    "source": "09624deb20f7162ad6673156d89662de26262804a6770b67b265528a068e2202"
+  },
+  "agentFiles.file.size": {
+    "text": "{{size}} KB",
+    "source": "1d772587be1b96d4cb1ab70f2302a660f5123daa79f22edebec15409c0f8dcb5"
+  },
+  "agentFiles.file.view": {
+    "text": "Ver",
+    "source": "dcc839a4015c4b7dd9db959a8f757833b8adb92462a751b973386e453c6d58a3"
+  },
+  "agentFiles.file.hide": {
+    "text": "Ocultar",
+    "source": "ac20a57bfde0bbc40bfe70895eb1cfacc944aaff06ca784053623c569b3e1b3d"
+  },
+  "agentFiles.file.viewName": {
+    "text": "Ver {{file}}",
+    "source": "fbd892c1fb170832d080fda1f43d3e75bd5e5dfd27b03244db778476400956d2"
+  },
+  "agentFiles.file.hideName": {
+    "text": "Ocultar {{file}}",
+    "source": "92ea53352a639ed81083f24671b09e1340dbb6b97727aea0143dd406b79d5b06"
+  },
+  "agentFiles.file.delete": {
+    "text": "Eliminar",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "agentFiles.file.deleteName": {
+    "text": "Eliminar {{file}}",
+    "source": "069ba581500b88b33c8a8594b91159f4a1aabe5e606ff7f980893b6a98045491"
+  },
+  "agentFiles.file.loading": {
+    "text": "Cargando…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "agentFiles.file.emptyContent": {
+    "text": "(vacío)",
+    "source": "d29a0939bcb51176dd565a5e2d33214ce5204806b384bd80a72cb40861cdc7b9"
+  },
+  "agentFiles.file.loadFailedReason": {
+    "text": "No se pudo cargar: {{reason}}",
+    "source": "79d037c97512a29e464da58369b57ee2589722f33f928c4ce1845ecef43d6f4c"
+  },
+  "agentFiles.file.loadFailed": {
+    "text": "No se pudo cargar: falló la descarga",
+    "source": "1d91b9911ffc7b9e35cd945e9beb61e3684eab4362a246f58846811d1e4db9d5"
+  },
+  "globalChat.title": {
+    "text": "Global Chat <0>(experimental)</0>",
+    "source": "abba10de894a6763d08875c127ca41afb5b9d5ffd9919566bcb0b29ddefa98b0"
+  },
+  "globalChat.intro": {
+    "text": "IA rápida y de bajo costo para navegar y usar Homeroom. El trabajo de desarrollo conserva su propio modelo y su propio ajuste de razonamiento.",
+    "source": "6284220efb06b83941dda036e13bb1b5fca8e9aecbe8381c449d155d4b77ee50"
+  },
+  "globalChat.loadFailed": {
+    "text": "No se pudieron cargar los ajustes de Global Chat.",
+    "source": "b1ed417acf0ea3aa2bbe4dc83754125bf7f59437edb256d84b809a1c33204789"
+  },
+  "globalChat.modelsLoadFailed": {
+    "text": "No se pudieron cargar los modelos compatibles.",
+    "source": "e7d3d9ee7b6c979b9ba9a14f55a9064cc15d59e6e172f0d9cf71ea8e965173d1"
+  },
+  "globalChat.chooseModelFirst": {
+    "text": "Elige primero un modelo compatible.",
+    "source": "83918e8cc6bf3d1c2685d1aeeadee3eca77c220f29feed3f910a13dc2562b2a8"
+  },
+  "globalChat.saving": {
+    "text": "Guardando…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "globalChat.saveBusy": {
+    "text": "Guardando…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "globalChat.saved": {
+    "text": "Ajustes de Global Chat guardados.",
+    "source": "3fb241407a472de6e974192e4e7b1a28ed2fb37d6683b8b5e2e3faf68bf80444"
+  },
+  "globalChat.saveFailed": {
+    "text": "No se pudieron guardar los ajustes de Global Chat.",
+    "source": "269bb313a4b7a441b91b2027787f3e551fb86558c296e3cdd54b9589235ae142"
+  },
+  "globalChat.enabledNotice": {
+    "text": "Global Chat experimental activado.",
+    "source": "48d8e666284ebb18e5fac86519617d0b90e2fcac282fecfdecc442b3406123de"
+  },
+  "globalChat.disabledNotice": {
+    "text": "Global Chat experimental desactivado.",
+    "source": "f7df9614276d9fc289dd6babf1f4e78b52338e3c9f1ffbb3d61d2607bad72c31"
+  },
+  "globalChat.toggleFailed": {
+    "text": "No se pudo actualizar Global Chat.",
+    "source": "b4b1a660bbbd82953b6b64f2e38bf4c1642fbe48e096fb49ae5d17587706ce91"
+  },
+  "globalChat.enable.label": {
+    "text": "Activar Global Chat experimental",
+    "source": "f6baece434d8d5a0eb441c4851ad7d25929b8aed1d45259bc89560558d610ac8"
+  },
+  "globalChat.enable.description": {
+    "text": "Muestra tus conversaciones de Global Chat en Mensajes. Clásico sigue siendo la experiencia predeterminada.",
+    "source": "147d8909e53ff1b2c061c2e83f04a358967822965bfe49e262ace271904fe417"
+  },
+  "globalChat.needsKey.text": {
+    "text": "Añade o reclama una clave de OpenRouter antes de elegir un modelo de Global Chat.",
+    "source": "f95349478723c1311ff3e9c230c01d6d36b656689066c8508df7ca607900e4a1"
+  },
+  "globalChat.needsKey.open": {
+    "text": "Abrir ajustes de OpenRouter",
+    "source": "43a49afc3547fbf162ce73fb5092dfe6d54491d6c3fd10e3996d6c988edfec13"
+  },
+  "globalChat.model.label": {
+    "text": "Modelo de Global Chat",
+    "source": "0f65a60c5747693afacf2aa069914f251b1a6ec18d132b72682ac909eb7b25bb"
+  },
+  "globalChat.model.optionPriced": {
+    "text": "{{model}} · {{price}}",
+    "source": "ec4e1cd6a09d6c1ecce75fa1221c23af6da061e3888bf424ef9215b04b764623"
+  },
+  "globalChat.model.optionRecommended": {
+    "text": "{{model}} · Recomendado",
+    "source": "420ba63cbefaf0627a7828685eed59334100ea636fa4cd760693232dfda57db5"
+  },
+  "globalChat.model.optionRecommendedPriced": {
+    "text": "{{model}} · Recomendado · {{price}}",
+    "source": "edf690bdb83c0703632329eb05ac497ccb853d8af39b609ab525852417ddcc25"
+  },
+  "globalChat.model.priceAverage": {
+    "text": "{{price}}/M prom.",
+    "source": "475fe5df1c38b899a0b4d1e9f6f60cb619c02c23912c23598358c42cac6dacb7"
+  },
+  "globalChat.model.priceInOut": {
+    "text": "{{input}} ent. · {{output}} sal. /M",
+    "source": "83532d0ba7a46aacf25f71a922ba3dfdd82ff7104de44aedf2397deae98fa61d"
+  },
+  "globalChat.model.selectedPriced": {
+    "text": "{{modelId}} · {{price}}",
+    "source": "a4f4d82a83173116f2906530bdebdb52fbe8ad3aa9ed39a9032fca7ed3fc5f9c"
+  },
+  "globalChat.model.refresh": {
+    "text": "Actualizar",
+    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
+  },
+  "globalChat.effort.label": {
+    "text": "Esfuerzo de razonamiento",
+    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
+  },
+  "globalChat.effort.low": {
+    "text": "Bajo · recomendado para GLM Flash",
+    "source": "0ff85ed61f6308f34d856b5ef768209133d52d33facac0d6c2fd35d02f2aa292"
+  },
+  "globalChat.effort.minimal": {
+    "text": "Mínimo · solo en modelos compatibles",
+    "source": "a81c4df1b139470d5e8fc57864ad75aa5a8b8ac9fb080a9e32f764700496731c"
+  },
+  "globalChat.effort.medium": {
+    "text": "Medio",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "globalChat.effort.high": {
+    "text": "Alto",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "globalChat.effort.xhigh": {
+    "text": "Muy alto",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "globalChat.cap.label": {
+    "text": "Límite mensual de Chat en USD · opcional",
+    "source": "9b91ea1979a91bfe1c45af0b20172a6184e9359f680962253f0105b90c3babd3"
+  },
+  "globalChat.cap.placeholder": {
+    "text": "Sin límite aparte",
+    "source": "7f5111c6b1afaf0db6e95d1acce55712f37531b3ab019a2bfb74eaf7f9692a0b"
+  },
+  "globalChat.usage.thisMonth": {
+    "text": "Global Chat este mes",
+    "source": "1fe5240043650878d5c82531f9ae0c57e439295bba69b99bed9b69197e7e321d"
+  },
+  "globalChat.usage.spentOfCap": {
+    "text": "{{spent}} / {{cap}}",
+    "source": "df46c8177fbe1a80de57eb4071eaec1566e27ca0cef7bc0d5dd9ea4bc520b5b3"
+  },
+  "globalChat.usage.overallRemaining": {
+    "text": "Total restante de OpenRouter",
+    "source": "11be62abd3d3d8866abde178e63eee0f741a1f1bca0dcdcb2259943b6f82cf27"
+  },
+  "globalChat.usage.unavailable": {
+    "text": "No disponible",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "globalChat.save": {
+    "text": "Guardar ajustes de Global Chat",
+    "source": "604bc43266773fe4868a0f04ac6102ff75b71fcece78c096b87bdd921f872725"
+  },
+  "globalChat.developmentSettings": {
+    "text": "Ajustes de IA para desarrollo",
+    "source": "f0ae8065330894efbf3c11325b335034a2fa92495dc4905e0c91e851c423cf7b"
+  },
+  "globalChat.footnote": {
+    "text": "Clásico es siempre el modo de inicio. Este perfil solo controla Global Chat; las sesiones de desarrollo conservan sus propios valores predeterminados.",
+    "source": "221f905cc84e5ade6ce877d72f56f6d51c7f04f1fc5910e2aacb317286146585"
+  },
+  "experimental.title": {
+    "text": "Experimental",
+    "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
+  },
+  "experimental.intro": {
+    "text": "Funciones tempranas que aún estamos probando. Pueden cambiar o desaparecer.",
+    "source": "18b10e0c90e42ba4507868d4659f759c77b4dcf216b2553847b762f5247d188a"
+  },
+  "experimental.progressEstimate.label": {
+    "text": "Estimación de avance con IA",
+    "source": "84af6dff632097de226153424720c09feb5cfa871f85400e8c08c7317eaf6a61"
+  },
+  "experimental.progressEstimate.description": {
+    "text": "Mientras el agente de programación trabaja, un modelo de IA pequeño revisa su registro de avance cada minuto aproximadamente y calcula cuánto lleva y cuánto tiempo queda. Está calibrado con lo que tardan las ejecuciones reales, pero sigue siendo una estimación y puede fallar. Añade un costo mínimo por ejecución (se factura a tu propia clave de API si guardaste una arriba).",
+    "source": "c1f62fff4a572c4018e74b5785f02dbe206eadd3c2bb5a781145e6514c605562"
+  },
+  "experimental.sessionBridge.label": {
+    "text": "Puente de sesión (ejecuta este chat en tu computadora)",
+    "source": "a7de0058b64e2182c8ef7fe6094e0fc78e932853d777942b58e8101f56bc3c4f"
+  },
+  "experimental.sessionBridge.description": {
+    "text": "Añade <0>Tu computadora · sesión de Homeroom</0> a la lista de lugares donde se puede construir una sesión. Mantienes el chat de la plataforma tal cual, con la misma transcripción, rama y propuesta, pero sus turnos se ejecutan mediante la CLI de Homeroom en tu propia máquina, con tu propio plan de Claude. Requiere tener la CLI instalada y conectada, así que permanece desactivado hasta que lo pidas.",
+    "source": "8e3af0c1eee69f920bc02d4624267865c7c46323eb3d86aa7809d596e9d405fc"
+  },
+  "experimental.suggestShortcut.label": {
+    "text": "Pulsa C para comentar la página",
+    "source": "d72166ab9f7c2c20f4a40ca0a5d5538c88aa10148c27037c4fc3c893c83a9808"
+  },
+  "experimental.suggestShortcut.description": {
+    "text": "Sugerir una mejora abre el modo de comentarios, y en una computadora también al pulsar C. Haz clic o toca cualquier elemento, di qué debería cambiar y publícalo: es una sugerencia con una captura de la página y tu marca. Añade más comentarios a la misma sugerencia, o publica cada uno por separado, y luego pulsa Listo. El formulario está a un interruptor de distancia. C no hace nada mientras escribes o tienes texto seleccionado, ni cuando la pantalla o app en la que estás usa C para algo propio. Se guarda solo en este dispositivo.",
+    "source": "a793f6d835dee650388699852153b4b3d9dc4aedc9adbc491311f8e121460340"
+  },
+  "experimental.localAgents.title": {
+    "text": "Agente de programación local",
+    "source": "c95fa2257a953a1b13dbb49d8a8019540a22d8eab3142ef4280192fc5e43d8e7"
+  },
+  "experimental.localAgents.intro": {
+    "text": "Máquinas que ejecutan <0>{{command}}</0>. Mientras una esté conectada, los turnos de plan y de programación de esa sesión se ejecutan allí con tu propia suscripción de Claude, en lugar de en Homeroom. Cada turno pregunta en tu terminal antes de empezar; los turnos de plan son de solo lectura, y tras un turno de programación Homeroom aún abre la solicitud de extracción, crea la vista previa y ejecuta las comprobaciones. Al desconectar, el siguiente turno vuelve a Homeroom.",
+    "source": "487761a456cc783c9e57dcfd66822c5a47fac9117f701eed415c484afeccb3ad"
+  },
+  "theme.title": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "theme.intro": {
+    "text": "Claro, oscuro o según tu dispositivo. Se aplica en todas partes de este navegador.",
+    "source": "8ded12ce9f66fde3990387653db857cbd2fe58ad24bc826a4b50f68af3093995"
+  },
+  "theme.controlName": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "theme.mode.light": {
+    "text": "Claro",
+    "source": "dbcd5e7bb7a0f538810de44c3efbd813037ee3fa358747bb71fa58e157af45f7"
+  },
+  "theme.mode.dark": {
+    "text": "Oscuro",
+    "source": "60acc53f13a5d1bf115878c4a785e9a43e8286c4139a8402a6ac7d23966f9153"
+  },
+  "theme.mode.system": {
+    "text": "Sistema",
+    "source": "6725e7bbcd28f3a8a586fa34bf191fd72dde8b61756932cd3237c17a6f196f1a"
+  },
+  "theme.railPinned.label": {
+    "text": "Mantener abierta la barra lateral en las apps",
+    "source": "2706db127a5a91fd0e60dfcd5021df0683f1573152a1492b301e75f38c7d4ccf"
+  },
+  "theme.railPinned.description": {
+    "text": "Desactivado, una aplicación que abres ocupa toda la ventana y la barra lateral reaparece cuando acercas el puntero al borde izquierdo. Activado, la barra lateral permanece a su lado.",
+    "source": "636cdcbec82ae421472e549c8e08def1df05b5acd90f38a68def75a73ebc3662"
+  },
+  "devConsole.title": {
+    "text": "Consola de desarrollador",
+    "source": "2ef15ac2866f955969bde655eb39df64da0e817fea9297c29e2022c9e32b6de0"
+  },
+  "devConsole.intro": {
+    "text": "El icono del insecto en el encabezado abre un registro deslizable con la salida de la consola y los errores de la aplicación en ejecución.",
+    "source": "3b19f54f543905990de396241b9cc74ac1c5e101e0a8cf80b65ba15ab1050351"
+  },
+  "devConsole.alwaysShow.label": {
+    "text": "Mostrar siempre el icono",
+    "source": "40f2992775263dd2c1bff5333be5c74d2bcd66ff8cd5e0e804458f387b4ab3fb"
+  },
+  "devConsole.alwaysShow.description": {
+    "text": "Si está desmarcado (valor predeterminado), el icono solo aparece cuando la aplicación actual ha registrado al menos un error.",
+    "source": "55e66c8b804429aa2fa7c042e8a9abe3bef6046826afb27d07263521cd67f8d6"
+  },
+  "adminPreview.title": {
+    "text": "Vista previa de administrador",
+    "source": "a702a4e31bd03d35c641ca5af59492fff364395d8d00694fff2458aa098171e9"
+  },
+  "adminPreview.intro": {
+    "text": "Oculta la interfaz exclusiva de administradores para ver la aplicación como la ve un usuario normal. Es útil para detectar problemas de experiencia que solo afectan a quienes no son administradores.",
+    "source": "446e57c8bf88c10a8addfcc2d2a56f99c7074470cd564289555f95ef9fb72ee6"
+  },
+  "adminPreview.toggle.label": {
+    "text": "Ver como no administrador",
+    "source": "970e2f82bb23512903deed9e908d51ab4a2c3686182a7f15d9eec44eecb57261"
+  },
+  "adminPreview.toggle.description": {
+    "text": "Es solo un ajuste de visualización en el cliente, así que tus privilegios de administrador en el servidor no cambian. La página se recargará para que el resto de la interfaz aplique el cambio.",
+    "source": "be71b26ead92aeafd7ab635568161e5ce741b940088f803e267c68eb6b2be00b"
+  },
+  "alerts.title": {
+    "text": "Sonido y alertas de sesiones del agente",
+    "source": "a3b208e8f3048cca2ccd81e9be817c062d0ea465af1431e0ae2f42064d5377c2"
+  },
+  "alerts.intro": {
+    "text": "Recibe un aviso cuando una sesión del agente termine y esté esperando tu respuesta.",
+    "source": "4bbe7c095151e5cdfe09c970a7ec24017d154f117ef8b8c484bc10a9044518b5"
+  },
+  "alerts.toggle.label": {
+    "text": "Reproducir un sonido y avisarme cuando la aplicación esté en segundo plano",
+    "source": "cdbb5cda3a58e96115e2ee2ba87e22b8a6b6817591522c940f68ee940af3d7ca"
+  },
+  "alerts.toggle.description": {
+    "text": "Cuando estás en la aplicación, suena un tono suave. Un navegador puede mostrar notificaciones mientras su pestaña siga abierta. Para recibir notificaciones push con la aplicación móvil en segundo plano o cerrada, activa Notificaciones de actividad en tu teléfono y Sesiones del agente más abajo. La prueba envía una notificación push al teléfono con 10 segundos de retraso para que puedas salir de la aplicación.",
+    "source": "c11cd6dff182bc73a64315604423fabd0fc364153216ca450190f5092e071761"
+  },
+  "alerts.test": {
+    "text": "Enviar una alerta de prueba",
+    "source": "38875c4ca7f00bd25da87570ba85bffa0699b975e6adf7901b4dff4f0c1de8b8"
+  },
+  "alerts.push.title": {
+    "text": "Categorías de notificaciones push móviles",
+    "source": "5299ed9533b4ef42d490d07f8a59d81274759fd0a8a483af80b0278e36b87039"
+  },
+  "alerts.push.intro": {
+    "text": "Elige qué actividad de Social puede enviar una notificación al teléfono. El interruptor Notificaciones de actividad de tu teléfono sigue siendo el control principal de ese dispositivo.",
+    "source": "a89f2a23181c4d73a657b576a64be0775f6a676e2e47c55f721a110a735443b8"
+  },
+  "alerts.push.loading": {
+    "text": "Cargando preferencias de notificaciones push móviles…",
+    "source": "21318fa1e6fb90a3d4b8d08d3e52f9bdc97a261b6386ec91964520a7805aa097"
+  },
+  "alerts.push.messages.label": {
+    "text": "Mensajes",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "alerts.push.messages.description": {
+    "text": "Invitaciones a conversaciones, mensajes, menciones, respuestas y reacciones.",
+    "source": "de866d23f9b2e802e80e963a65c9e7121ca5c7b18e7fbecb3766ba716177244a"
+  },
+  "alerts.push.builds.label": {
+    "text": "Tus compilaciones",
+    "source": "a12302d2ed554590a2325f03a6bdfd13083d38d8d177798fe9ff43226249e988"
+  },
+  "alerts.push.builds.description": {
+    "text": "Cuando algo que le pediste a Homeroom bot está listo para probar, necesita tu respuesta, se detiene o se publica.",
+    "source": "6447121649ea00349b8a6d96be25343221830127cb2f64986ac4b6c04e0f8978"
+  },
+  "alerts.push.inviteActivity.label": {
+    "text": "Tus invitaciones",
+    "source": "7006e7bfc8a75c13fbe64f104ff1a9c18045aa96198a2f52e0e805f95d9b1ba3"
+  },
+  "alerts.push.inviteActivity.description": {
+    "text": "Cuando alguien abre tu enlace de invitación, se une a través de él o saluda por primera vez.",
+    "source": "7696ba4dad2fc449d5c4abbf97ab645a286f0e180f8cb8564faf13b186e680ef"
+  },
+  "alerts.push.directInteractions.label": {
+    "text": "Interacciones directas",
+    "source": "b9c5c9e683a1863c89323f705e1ccdfc49050430c0b1632225921f947fed8ee7"
+  },
+  "alerts.push.directInteractions.description": {
+    "text": "Menciones y respuestas a tus mensajes.",
+    "source": "05c2c01d1b2800522f25f6a7365e92f0999d3ab969d0b76f94e21016d37ec2d2"
+  },
+  "alerts.push.invitations.label": {
+    "text": "Invitaciones",
+    "source": "14210e691c877f6338e6d6cb29e38ab22e9400ff20e8b4c0bd25d72efc9e0131"
+  },
+  "alerts.push.invitations.description": {
+    "text": "Invitaciones de colaboración y de aprobador, incluido cuando se aceptan las tuyas.",
+    "source": "c8b22a2b22f5769d40c93a56bbc361361abefaaace62be54268e4a50aef4bc1f"
+  },
+  "alerts.push.sharedWork.label": {
+    "text": "Trabajo compartido",
+    "source": "0189670d3c17510b8a7e2972e75a8295195ae05fab2b7e48b33a971e5a0f8c7e"
+  },
+  "alerts.push.sharedWork.description": {
+    "text": "Planes que alguien comparte contigo de forma privada.",
+    "source": "f51d744b1268288a94e08dce0e567acb903cbd752547b79cca685504d8bc4228"
+  },
+  "alerts.push.developerSessions.label": {
+    "text": "Sesiones del agente",
+    "source": "1cd9b23c49955617ab09ea8f61e699b709c699704366f6626685f776fcc5ede7"
+  },
+  "alerts.push.developerSessions.description": {
+    "text": "Sesiones del agente y ejecuciones desatendidas que terminan mientras estás ausente.",
+    "source": "5b108b9cdf45add912557e1c4b08bef56eca9f75fa0399ea15965ff9d2fdb96e"
+  },
+  "alerts.push.proposalAlerts.label": {
+    "text": "Alertas de cambios",
+    "source": "78f9e84a7bd8796015b5df94236f9351f00a22a890e5490008e15eae9367f2d1"
+  },
+  "alerts.push.proposalAlerts.description": {
+    "text": "Cambios que requieren atención, vistas previas fallidas, cambios nuevos pendientes de aprobación y votos sobre los tuyos o los tuyos al publicarse.",
+    "source": "a52ba2e03af5d45633a7c79f87aeef0e73dd61263d09860e6562811b62038246"
+  },
+  "alerts.push.appAlerts.label": {
+    "text": "Alertas de aplicaciones",
+    "source": "33afdfb05fd9889d774a1a3759eae5f766892cfcbb55e0c7a36015febd5b0e9d"
+  },
+  "alerts.push.appAlerts.description": {
+    "text": "Nuevas incidencias abiertas en tus aplicaciones y aplicaciones que dejan de funcionar.",
+    "source": "fafb4108312e74d3cc950d8e26be46ba11bd79fa3673c48681d98bb1b89b312e"
+  },
+  "alerts.push.lightweightActivity.label": {
+    "text": "Actividad ligera",
+    "source": "da19281248ad37bd389325fd09484939c0f7b6043098e9dc8db7be193f7f125c"
+  },
+  "alerts.push.lightweightActivity.description": {
+    "text": "Reacciones y felicitaciones por tu trabajo.",
+    "source": "60d186d5e09099c5ff3258bd2f9dbd61e82160baf89941b4ec2ce22f471db8fa"
+  },
+  "alerts.apps.title": {
+    "text": "Sobre qué te avisan las aplicaciones",
+    "source": "0cb37f87029183f6b206cd7d30523454378aa67c5224142d431000014b36983a"
+  },
+  "alerts.apps.intro": {
+    "text": "Tu configuración predeterminada para cada aplicación y las aplicaciones que configuraste de otra manera. Cada una abarca la campana de aquí y una notificación en tu teléfono, a la vez. Cambia una aplicación desde su entrada Notificaciones en el menú de la aplicación.",
+    "source": "6b763540dfc196f849bf6bc424e517d4c30d29085ac8f782f51167854324f8ce"
+  },
+  "alerts.apps.loadFailed": {
+    "text": "No se pudo cargar la configuración de notificaciones.",
+    "source": "9b7eaff0315856f59f255dbcb7c7cc8c67091b7a59800c6a719cb50636731fb5"
+  },
+  "alerts.apps.overridesHeading": {
+    "text": "Aplicaciones con configuración distinta",
+    "source": "f8de2a665ea92ffc41e8b3460f3eb2e5208777866f13863ae2546e95e82992c8"
+  },
+  "alerts.apps.useDefaults": {
+    "text": "Usar mis valores predeterminados",
+    "source": "1b232808fbf471c4c362636af95c949f530253ff04a27ef1a20b9ac7cf295d0d"
+  },
+  "alerts.apps.categoryOn": {
+    "text": "{{category}}: activado",
+    "source": "461e3dec6d3ecb1195383d80538b1dee9fa80b494db2f8bd02d5b5c26dde25c7"
+  },
+  "alerts.apps.categoryOff": {
+    "text": "{{category}}: desactivado",
+    "source": "cf9d99848cff27926bdae8cc9ce26872fab3879a4576158835a5abb92b2b7e4e"
+  },
+  "alerts.apps.noOverrides": {
+    "text": "Ninguna aplicación tiene una configuración distinta. Cambia una desde su entrada Notificaciones en el menú de la aplicación.",
+    "source": "0ae74d774fe6a591dda51c4a635802fa8cf57b6a516a308c5f55f7b69516030f"
+  },
+  "appPermissions.title": {
+    "text": "Permisos de dispositivo de las aplicaciones",
+    "source": "bad62fc7e4a90fc30d7fe53e407cd68e14bf9787b838314525a9530e033fd2d6"
+  },
+  "appPermissions.intro": {
+    "text": "Aplicaciones a las que has permitido usar tu ubicación, micrófono, cámara, pantalla o dispositivos conectados. Se pide permiso por separado para cada aplicación y solo la aplicación autorizada lo recibe. Al revocarlo, la aplicación se detiene la próxima vez que se abra, porque una aplicación en ejecución conserva lo concedido hasta entonces.",
+    "source": "eeb288bedcb4e59f3f68e8f6c56bca5703b90c6420937ace4141bebf921aa87e"
+  },
+  "appPermissions.loadFailed": {
+    "text": "No se pudieron cargar los permisos de las aplicaciones.",
+    "source": "65968b172dd7e70bdf1ceb70d8cdd1c67be40361d6805b21e87c02c82031aa45"
+  },
+  "appPermissions.empty": {
+    "text": "Ninguna aplicación ha solicitado aún tu cámara, micrófono, ubicación o dispositivos.",
+    "source": "b84a618b131011069e54805af73a350861895121c6ce1a5fb9858a012256eba8"
+  },
+  "appPermissions.reEnable": {
+    "text": "Reactivar",
+    "source": "63de421725fe824d9997872b1130d48e684b08da4b2784054049002f95684303"
+  },
+  "appPermissions.revoke": {
+    "text": "Revocar",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "blockedApps.title": {
+    "text": "Aplicaciones bloqueadas",
+    "source": "adfc2938bb4bd50b3e53274304411071a4b7e2134037fa833fbffec96289296b"
+  },
+  "blockedApps.intro": {
+    "text": "Las aplicaciones bloqueadas se ocultan de tus listas y del descubrimiento, no se pueden abrir en Homeroom y no te envían notificaciones. Sus creadores y colaboradores no se ven afectados.",
+    "source": "f9d2eb467e3345b202ddb0898707bd612b6a36c83ba920ad35e51249620a5169"
+  },
+  "blockedApps.loading": {
+    "text": "Cargando aplicaciones bloqueadas…",
+    "source": "2268173d3a0f47c36a72ce301b2577fab81befbcb53d40d93040d145372ec9d1"
+  },
+  "blockedApps.loadFailed": {
+    "text": "No se pudieron cargar las aplicaciones bloqueadas.",
+    "source": "53f0be5fd325d0ac94d455d2398457c0ce721ae1e152da47e1e5eb095d420a90"
+  },
+  "blockedApps.empty": {
+    "text": "No has bloqueado ninguna aplicación.",
+    "source": "6bf9fcd0f2f25859096515178829013d67216e8d74e8b251bc6c4e9142fa12d0"
+  },
+  "blockedApps.unblock": {
+    "text": "Desbloquear",
+    "source": "712da63171e0c9de0e1523438c5a0240ce765b722769f1df0df6975339263025"
+  },
+  "blockedApps.unblocking": {
+    "text": "Desbloqueando…",
+    "source": "b9c165b383c7488c6dc82603a16c506b976f56b49b3e8aa96095a0e435c46851"
+  },
+  "blockedApps.unblockFailed": {
+    "text": "No se pudo desbloquear esta aplicación.",
+    "source": "7ffb7448bc8f8601edef74dcf4da89beb5c5e6ab8c4829f1ddd8abdf8d72a87f"
+  },
+  "tour.title": {
+    "text": "Recorrido de bienvenida",
+    "source": "5155b98763c0fef9af78ae62741da215496c6dfeecb258e4c3c141b9a9ddd632"
+  },
+  "tour.intro": {
+    "text": "Un recorrido de un minuto por tus apps y el menú de Homeroom.",
+    "source": "d8be7f27758b86f26077b683d233751e01fc481ebc0221be9cc6a5f098dc6f42"
+  },
+  "tour.replay": {
+    "text": "Repetir el recorrido",
+    "source": "dc494df1b50a21c549d23f6381fd6f0535d873008c33b1980d581b8b4cbaa59d"
+  },
+  "tour.hint": {
+    "text": "Se inicia de nuevo en tu pantalla de inicio.",
+    "source": "1036e65e88675e84b6d56b75806f456a0e0ef9ba695ecc58f258b21bfe681541"
+  },
+  "about.title": {
+    "text": "Acerca de",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "about.intro": {
+    "text": "Qué compilación de cada parte de la plataforma estás usando.",
+    "source": "271079cc8691c46a080745057999ad36f3d47e7a55fb3f2c22a88b0b6e9aa9e8"
+  },
+  "about.appVersion.label": {
+    "text": "Versión de la app",
+    "source": "80a7db3b236f581269594eb3b04938db79c003f03104cd04fa57ee1f69d8b8e1"
+  },
+  "about.appVersion.deploying": {
+    "text": "desplegando…",
+    "source": "9664572e6e067431fe401363144ee80698d7c7224e270b9e61e0868ce4dec55a"
+  },
+  "about.appVersion.unknown": {
+    "text": "desconocida",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "about.platformVersion.label": {
+    "text": "Versión de la plataforma",
+    "source": "87a77f7b207934b3aaba52b6643b8e42372995c3653d44c1281cc33f593ca2ae"
+  },
+  "usernode.demoNote": {
+    "text": "Demo de pruebas: datos de ejemplo",
+    "source": "4d544e0addb08c3fde8ed7297e17a4451d5750d85a109eddf397e17e5cb36d56"
+  },
+  "usernode.actionFailed": {
+    "text": "La acción falló",
+    "source": "6e1704d8eca96bd7170a983e6370041cd4a75617570d9a83145517d7576b2a8d"
+  },
+  "usernode.settingSaveFailed": {
+    "text": "No se pudo guardar el ajuste",
+    "source": "de85eeb0faa433d0c6b1a612ef52fbc3fac32440f9613ecbc004e444705f0817"
+  },
+  "usernode.connection.title": {
+    "text": "App de Homeroom: conexión",
+    "source": "c357b0c786720cb31eedf06cd65771cff4d50e018ec0e203217af86e757daf8d"
+  },
+  "usernode.connection.intro": {
+    "text": "A qué puede acceder esta pantalla en la app y qué hacer cuando no puede.",
+    "source": "57ae84f75cc57d40e6c6ac7ddf81c55eb07822f4a1d364fa05e28d5a02461178"
+  },
+  "usernode.connection.walletRecovery": {
+    "text": "No hay una billetera móvil nueva disponible para esta cuenta, así que el inicio de sesión seguro en la app no se completó. Si antes te uniste con correo electrónico, puedes conectar la billetera de esa cuenta.",
+    "source": "ed9a4b53d2394688e14cd6afebe266f15614abcf257eab09e99b2ea1e8d34945"
+  },
+  "usernode.connection.copyDiagnostics": {
+    "text": "Copiar diagnóstico",
+    "source": "46fa69e51b74768a08cd5de30f84e6d540d54f7d03efe78a386cc81a3543370e"
+  },
+  "usernode.body.loading": {
+    "text": "Cargando ajustes de la app de Homeroom…",
+    "source": "ed4ab34f8fa5510ee29bd4bf3f10266def6c720765243d054da7f65dc0f028a8"
+  },
+  "usernode.body.loadFailed": {
+    "text": "No se pudieron cargar los ajustes de la app de Homeroom.",
+    "source": "6ee3adf9b9ae64cf273867d59dc1851baec25b992729e33a92a7a0ae91f4c858"
+  },
+  "usernode.body.openNotificationSettings": {
+    "text": "Abrir ajustes de notificaciones",
+    "source": "c6885c8ebcb22d112322a0c0f644efc40dc07a6207068b69ed25503ca45b092f"
+  },
+  "usernode.socialPush.title": {
+    "text": "App de Homeroom: notificaciones de actividad",
+    "source": "fba10fe5db9b110095d1ffd93d071b8a2a1f8b92540c5eb9081ed337996d6d65"
+  },
+  "usernode.socialPush.intro": {
+    "text": "Recibe una notificación en tu dispositivo cuando termine una sesión de agente o una ejecución desatendida. El contenido de la notificación se carga solo después de abrir Social.",
+    "source": "c0dbd22fe700304ec39a13b0b4b03f46fdb812b0fe4cb7e6b3ba8e90ec1729ce"
+  },
+  "usernode.socialPush.checking": {
+    "text": "Comprobando estado…",
+    "source": "c8e79f30e9296bbb1d443fff041bc342ca863726d47952bf530dbe5097a3d5fc"
+  },
+  "usernode.socialPush.toggle": {
+    "text": "Notificaciones de actividad",
+    "source": "5d01c890ff5988e9c82c7d1e87f3c4ec22e34d301dacea3c4d05ecd3a973de71"
+  },
+  "usernode.blockProduction.title": {
+    "text": "App de Homeroom: producción de bloques",
+    "source": "7ea23d77f6d357466484e738bee4162b446a95a67daeac9eb9530546b070b1a8"
+  },
+  "usernode.blockProduction.intro": {
+    "text": "Producir bloques genera puntos. El acceso se libera manualmente: solicítalo abajo y un administrador liberará tus claves por tandas.",
+    "source": "2ea7e4f9fd18d4501c88bf18948287fb71925156f1ffba6abefa0f8647fca7ce"
+  },
+  "usernode.blockProduction.checking": {
+    "text": "Comprobando estado…",
+    "source": "c8e79f30e9296bbb1d443fff041bc342ca863726d47952bf530dbe5097a3d5fc"
+  },
+  "usernode.blockProduction.ask": {
+    "text": "Solicitar producir bloques",
+    "source": "f152c1287f889b4cd557606160da22f166735a6fb2bca0c6bf049bdcfe7d46d8"
+  },
+  "usernode.widgetIcons.title": {
+    "text": "App de Homeroom: iconos del widget",
+    "source": "346d1bf0fb0dd9de26f27d4ab6e832ccc7aa64131619c9fc855efd5770e36c1b"
+  },
+  "usernode.widgetIcons.intro": {
+    "text": "Qué se le indicó mostrar al widget de la pantalla de inicio y qué informa él.",
+    "source": "9f7353883d6d7b4cae10e69ca1b7c8ae4368143588cf4f7ce45a1eb4c950df1f"
+  },
+  "usernode.widgetIcons.recheck": {
+    "text": "Volver a comprobar iconos",
+    "source": "3725c28ce1c23eb6ad301e273269b7aa46de97c785c6d2734612c48206139ed9"
+  },
+  "usernode.privacy.title": {
+    "text": "App de Homeroom: privacidad e identidad",
+    "source": "ca2e059674bb1fcaa6542abc2d45885d5d6be5b43b269834fbd904d4251b65e8"
+  },
+  "usernode.privacy.intro": {
+    "text": "Controles del flujo de identidad con pasaporte ZK.",
+    "source": "47ad3148919cb3eeae449665970c11c32372d226c7f3eaf6b9833b1ef2ba7349"
+  },
+  "usernode.diagnostics.title": {
+    "text": "App de Homeroom: diagnóstico",
+    "source": "842cdb6223af39a747d84217e8c2d21f27b65626ac44a66f1f73fc4bc27b93c9"
+  },
+  "usernode.diagnostics.intro": {
+    "text": "Herramientas de depuración para la app y su nodo integrado.",
+    "source": "946251c5181f44134f64e100c8ad2de70124c2709eeac90d0ff2eb10ed464678"
+  },
+  "usernode.about.title": {
+    "text": "App de Homeroom: información y aspectos legales",
+    "source": "2d6d2182dfd3f31f530d64a908da1aeeb1fe27a87b99da925d7b7a0a6fcfb04d"
+  },
+  "usernode.account.title": {
+    "text": "App de Homeroom: cuenta",
+    "source": "a397f7bef1eca17f92d3395d2e67f78f15a3846685c80f31ad68d607ee7fe4ed"
+  },
+  "usernode.account.autoSignIn": {
+    "text": "La app inicia sesión automáticamente con tu cuenta de la plataforma. Si este mensaje persiste, prueba a cerrar y volver a abrir la app.",
+    "source": "87ffde5dda139a52382bcc025580de329be8a8e16ad963c1f8cabce7914a97dc"
+  },
+  "usernode.faq.heading": {
+    "text": "Ayuda e información",
+    "source": "59a661da0dd379589acd876434e5c9c792284b118f6d0743f191f5f366bb4de5"
+  },
+  "usernode.faq.about.title": {
+    "text": "Acerca de",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "usernode.faq.about.network": {
+    "text": "Tu dispositivo forma parte de una red nueva. Verifica, ejecuta y aporta capacidad de cómputo directamente a la red, de forma pasiva en segundo plano, sin servidores centrales ni infraestructura oculta. Mientras los usuarios mantengan la app en ejecución, la red seguirá funcionando, de igual a igual, sin dependencias externas.",
+    "source": "b8d3b822a8c49915139dc8b87db6841b8c9dbe39ea0d59c051a16bb70aeca504"
+  },
+  "usernode.faq.about.why": {
+    "text": "Lo hacemos para permitir redes que sus propias comunidades puedan alojar de principio a fin, tanto por la descentralización como para crear un punto natural de coordinación en torno a la participación, donde quienes ayudan a operar y contribuir a los sistemas obtienen directamente sus beneficios.",
+    "source": "2b47c4a3d987acf42b3a913b79478665cbbdb9e97187a9242b9c8ea863359a15"
+  },
+  "usernode.faq.about.testnet": {
+    "text": "Por ahora estamos en testnet mientras validamos la capa central: producción de bloques, comportamiento del consenso y fiabilidad de la red. Cuando esto se estabilice, nos apoyaremos en las características únicas de la plataforma (su descentralización, las pruebas de conocimiento cero y la identidad resistente a ataques sybil) para introducir nuevas actividades, mecanismos de coordinación y herramientas para comunidades autoalojadas y resistentes a ataques sybil.",
+    "source": "2441305beefcfdf974b26a6360fb4b58d55b4fca0700e454719f85c1a1ff0f78"
+  },
+  "usernode.faq.about.thanks": {
+    "text": "Gracias por ayudar a probar en esta etapa temprana. La app es sencilla por ahora, pero a medida que demostremos la funcionalidad central, esperamos hacer posible un nuevo tipo de red propiedad de la comunidad, donde los usuarios puedan operar directamente las redes que usan y beneficiarse de ellas.",
+    "source": "619120254b5386f8ea700a65307c3f457de90624cac09c82ed4d04c84a548cae"
+  },
+  "usernode.faq.blockProduction.title": {
+    "text": "¿Qué es la producción de bloques?",
+    "source": "f3cd476ee9fa0c5c5ce885ea93805cae046fd6b56c480a50212f1f16649ff65d"
+  },
+  "usernode.faq.blockProduction.lead": {
+    "text": "Esta función activa automáticamente tu dispositivo para producir bloques de la cadena cuando tu nodo gana un slot. Así funciona:",
+    "source": "b037068372682933d085e768e1173024f375255493601c0d52bf8fd0ed4fb5df"
+  },
+  "usernode.faq.blockProduction.selection": {
+    "text": "1. Selección por VRF: en cada época, la red elige al azar qué validadores producirán bloques mediante una función aleatoria verificable (VRF).",
+    "source": "2fd9c56c64d8669dd0f1692e99d591c9dc9d0f42ee9aa19786e1a3d88f22dd12"
+  },
+  "usernode.faq.blockProduction.scheduling": {
+    "text": "2. Programación de slots: cuando ganas slots, la app programa alarmas para activar tu dispositivo ~1 minuto antes de cada slot.",
+    "source": "578d8de2dd260433dfb47964a0187831ec77722d34537ef35d51c0e52fd2104d"
+  },
+  "usernode.faq.blockProduction.production": {
+    "text": "3. Producción de bloques: en el momento del slot, la app supervisa tu nodo y se asegura de que se produzca el bloque.",
+    "source": "41d069d1c741f9fb42504b44535a1c974dab18365c940c8cb88986f80a9f15b5"
+  },
+  "usernode.faq.blockProduction.tracking": {
+    "text": "4. Seguimiento de éxito: los resultados se registran para medir tu fiabilidad a lo largo del tiempo.",
+    "source": "4eb22c2bcc1b3dd04cafcfbe0caab3e40acc346bedbc40e8e438aca4cbbcb934"
+  },
+  "usernode.faq.platform.title": {
+    "text": "Plataforma y fiabilidad",
+    "source": "01eb3d81d09cc879597b7e609f71c4c37f1ef8d0a7ab539f9420e7fd9877a4d6"
+  },
+  "usernode.faq.platform.androidHow": {
+    "text": "Usa el sistema de alarmas exactas de Android (AlarmManager) para activar tu dispositivo justo cuando se necesita para producir bloques.",
+    "source": "70d4ceadb4470ffa68443d4930792ebff6b18c95e1c743f7c4722aea7d0d1637"
+  },
+  "usernode.faq.platform.androidModes": {
+    "text": "Fiabilidad por modo: Predeterminado (basado en eventos) 90-95 %, eficiente con la batería, se activa solo durante las ventanas de slot. Modo Keep-Alive 100 %, servicio persistente, mayor consumo de batería (~5-10 %/h).",
+    "source": "7c1ebf82046a8e9c77f4b50193077331e6911888af56a93b300fe90d5392bfc4"
+  },
+  "usernode.faq.platform.iosHow": {
+    "text": "Combina tareas en segundo plano y el modo keep-alive para activar tu dispositivo y producir bloques.",
+    "source": "f14325b4839f5b2aff7b09b694ea68e051097690abdf15301877dcc04b46cd8f"
+  },
+  "usernode.faq.platform.iosModes": {
+    "text": "Fiabilidad por modo: Modo Keep-Alive 99 %, la app permanece activa en primer plano, requiere cargador. Solo segundo plano 40-60 %, iOS controla la ejecución, no está garantizado.",
+    "source": "bc702c39f20c815830fa05fd9ef9d5906a62c45a545799bd2891bf403eb32ed0"
+  },
+  "usernode.faq.platform.device": {
+    "text": "Dispositivo: {{manufacturer}}",
+    "source": "5b0c13447e701b7cf4a9e015f255227d28150393e70f790fc6c0f3e288c5969d"
+  },
+  "usernode.faq.vrf.title": {
+    "text": "Entender VRF y slots",
+    "source": "9336e3ea31d3574c0accf7fe297006fca75ca7036cff795456c72f2130726ed6"
+  },
+  "usernode.faq.vrf.what": {
+    "text": "VRF (función aleatoria verificable) es la forma en que la red elige de manera justa a los productores de bloques. Al comienzo de cada época, la red ejecuta cálculos VRF para determinar qué validadores producirán bloques en los próximos slots.",
+    "source": "bbd1f44f743ef7c6dfc33d97458a7309c3365a79aa0a1b5ad8b40e90ac501328"
+  },
+  "usernode.faq.vrf.statuses": {
+    "text": "Significado de los estados. Pendiente: esperando la transición de época para iniciar los cálculos. Calculando: evaluación VRF en curso (tarda unas horas). Completo: las asignaciones de slots están finalizadas y programadas.",
+    "source": "64334c4ad73b477bb3ad4a2260e4ed55068cf310dbd713c6269293401c8cca11"
+  },
+  "usernode.faq.vrf.winning": {
+    "text": "Cuando la VRF elige tu nodo para producir un bloque en un momento concreto, has \"ganado\" ese slot. Tu responsabilidad es tener el dispositivo activo y conectado para que se pueda producir el bloque.",
+    "source": "df71f91f1d6a601717d10b0acd105f564968676b7755546f5ffc13c0c2e405a3"
+  },
+  "usernode.faq.vrf.timing": {
+    "text": "Por qué importa el momento: cada slot tiene una ventana de ~5 segundos. Si tu dispositivo no se activa a tiempo o pierde la conexión de red, el slot se pierde y se cuenta como \"fallido\".",
+    "source": "9c4572e5502bb1cfef5ee8d0e30f4fefbb1e465e63c874f54c384c37cb4e476f"
+  },
+  "nav.part.profile": {
+    "text": "Perfil",
+    "source": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c"
+  },
+  "nav.part.username": {
+    "text": "Nombre de usuario",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "nav.part.email": {
+    "text": "Correo y recuperación",
+    "source": "4ee4c51181215dd5cfd768f9f9a7dfa2a899fa7c972aa850b9715c38d4ee8880"
+  },
+  "nav.part.password": {
+    "text": "Contraseña",
+    "source": "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a"
+  },
+  "nav.part.deleteAccount": {
+    "text": "Eliminar cuenta",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "nav.part.linkedAccounts": {
+    "text": "Cuentas vinculadas",
+    "source": "feda46a46abb0f718aac6234e607aa0c188882669b38b5e3d3dffd981cde0bdb"
+  },
+  "nav.part.wallet": {
+    "text": "Homeroom Wallet",
+    "source": "6e5f658a2e1a4ba0bc4706d148631db941b521a296aa2a4abcd51c5ded8432cc"
+  },
+  "nav.part.usage": {
+    "text": "Uso",
+    "source": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66"
+  },
+  "nav.part.openrouter": {
+    "text": "OpenRouter",
+    "source": "eb70c3bc14fa7ae14285b750955958e63b64b8f19546c30fc2223ad9057a959c"
+  },
+  "nav.part.apiKey": {
+    "text": "Clave de API de Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "nav.part.connectors": {
+    "text": "Conectores",
+    "source": "c3d2e79ebdd046c6b7363de7b69dc9fb5b38235f0d328fdff0b2f9ccf2854b07"
+  },
+  "nav.part.cli": {
+    "text": "Acceso por CLI y agentes de programación",
+    "source": "f5b96ef5a6c0adacf4f8c79fe12f2b7efe9dee7c0d23ce7c7efa0a883cf336a3"
+  },
+  "nav.part.agentFiles": {
+    "text": "Instrucciones y habilidades de agentes",
+    "source": "7c5c797501a2f24ebef712d1c00661d32cc0cdfe593764d603e218cdf1af65c4"
+  },
+  "nav.part.globalChat": {
+    "text": "Global Chat (experimental)",
+    "source": "1dfd6900d8677c63cece52755670a07abc961cce8b62592344646d7d29a8c31e"
+  },
+  "nav.part.experimental": {
+    "text": "Experimental",
+    "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
+  },
+  "nav.part.theme": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "nav.part.devConsole": {
+    "text": "Consola de desarrollo",
+    "source": "2ef15ac2866f955969bde655eb39df64da0e817fea9297c29e2022c9e32b6de0"
+  },
+  "nav.part.adminPreview": {
+    "text": "Vista previa de administrador",
+    "source": "a702a4e31bd03d35c641ca5af59492fff364395d8d00694fff2458aa098171e9"
+  },
+  "nav.part.language": {
+    "text": "Idioma",
+    "source": "a4fe65264ef7dbb38d104b1e81eb3350f3142f3d16f32bdec39b1d9b42c1b8d1"
+  },
+  "nav.part.alerts": {
+    "text": "Notificaciones",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "nav.part.appPermissions": {
+    "text": "Permisos de dispositivo de las apps",
+    "source": "bad62fc7e4a90fc30d7fe53e407cd68e14bf9787b838314525a9530e033fd2d6"
+  },
+  "nav.part.appAi": {
+    "text": "Permisos de IA de las apps",
+    "source": "8be55dd90e374de98322dd13ce0a20b481c4996e85cdd0730f97d48a0be67360"
+  },
+  "nav.part.blockedApps": {
+    "text": "Apps bloqueadas",
+    "source": "adfc2938bb4bd50b3e53274304411071a4b7e2134037fa833fbffec96289296b"
+  },
+  "nav.part.tour": {
+    "text": "Recorrido de bienvenida",
+    "source": "5155b98763c0fef9af78ae62741da215496c6dfeecb258e4c3c141b9a9ddd632"
+  },
+  "nav.part.usernode": {
+    "text": "App de Homeroom",
+    "source": "92077421b998d809e8172aa58ba95c88c04d89adb51f5e9d73bb1a7c3bd070a0"
+  },
+  "nav.part.about": {
+    "text": "Acerca de",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "nav.page.account": {
+    "text": "Cuenta",
+    "source": "7e1b0d5641f2640ce9a953ec231eea2c27a2a7633f7d3c273e5735e2b30c10b7"
+  },
+  "nav.page.ai": {
+    "text": "Uso de IA y modelos",
+    "source": "429f837fc94cd7842fed13ffd137bc9c214c884a4ef58c7a3f66795fe0849607"
+  },
+  "nav.page.connectors": {
+    "text": "Conectores y CLI",
+    "source": "20805e515532dbc7d0a4e27952355d32c0b170a1158b4f1150d41e4ebf2b5525"
+  },
+  "nav.page.theme": {
+    "text": "Apariencia",
+    "source": "3907fa7f80722a6fc58cd8c1bd30abf7638095d6774f183b6e831b7093957d1b"
+  },
+  "nav.page.appPermissions": {
+    "text": "Permisos de apps",
+    "source": "7e07c5e75c261908e4f0dc4714f665fb4559356ca804bd154c1dd363ed160645"
+  },
+  "nav.group.account": {
+    "text": "Cuenta",
+    "source": "7e1b0d5641f2640ce9a953ec231eea2c27a2a7633f7d3c273e5735e2b30c10b7"
+  },
+  "nav.group.aiBuilding": {
+    "text": "IA y creación",
+    "source": "bb6617ccb5c57cd9f6a427739beacf67bb04ded90774ce2330288e2dab44f7d9"
+  },
+  "nav.group.preferences": {
+    "text": "Preferencias",
+    "source": "66962f72a08883733c35df6f82a049b929f9579f19c4bc083ac99bead602eab3"
+  },
+  "nav.group.helpAbout": {
+    "text": "Ayuda e información",
+    "source": "8569e9fcca1b149341ae6021be2ca8485464df1ffe28c615d4db16a742036de5"
+  },
+  "nav.group.other": {
+    "text": "Otros",
+    "source": "f97e9da0e3b879f0a9df979ae260a5f7e1371edb127c1862d4f861981166cdc1"
+  },
+  "nav.keywords.profile": {
+    "text": "nombre visible foto avatar imagen biografía bio página pública",
+    "source": "d37883a05b1439cf49b5e11e8ae6ca73f5ba770905c23deafeebedb5c1919452"
+  },
+  "nav.keywords.username": {
+    "text": "alias usuario handle cambiar nombre arroba",
+    "source": "946d3398d0aa94b78018bf3e47f005e2b49e2a523cdd4137d682eed71c004620"
+  },
+  "nav.keywords.email": {
+    "text": "correo electrónico dirección verificar verificación recuperación",
+    "source": "a5502b4de746c974e69fe108252917e35bf140abec84616b2b6896098296ce3a"
+  },
+  "nav.keywords.password": {
+    "text": "clave iniciar sesión acceso seguridad",
+    "source": "40de7fa22e5ebaf4ca04420991ac06c2bc6a0accc82d219012e58f6316b98347"
+  },
+  "nav.keywords.deleteAccount": {
+    "text": "cerrar borrar quitar desactivar anonimizar",
+    "source": "cb07cd2ef68821fcc910ca4fbe76ce128f05e8fa09c16a95b6ec0a98e7e7aafc"
+  },
+  "nav.keywords.linkedAccounts": {
+    "text": "github x twitter social verificado diario créditos conectar",
+    "source": "258ff933efd6bb8d59109fda7baf305c81582e43fa540ba44a3adbaab7d12c54"
+  },
+  "nav.keywords.wallet": {
+    "text": "cripto monedero billetera vincular qr",
+    "source": "4c6924918e86dd666cc3632ef04b36469c54615d1bf8a56dde85052cbabb07db"
+  },
+  "nav.keywords.usage": {
+    "text": "asignación límite créditos presupuesto gasto restante semanal",
+    "source": "0adb04f257b23954eed88565204036d296f01d22c8f8910de60d1ec37715c568"
+  },
+  "nav.keywords.apiKey": {
+    "text": "claude byok clave sk-ant facturación",
+    "source": "c996fca19838c733331595e2a1ae5519bade7c758661edf20d108351488a7ef7"
+  },
+  "nav.keywords.openrouter": {
+    "text": "modelo glm deepseek razonamiento predeterminado agente de programación clave",
+    "source": "0f8e1093e081306ecbe4c1aa85821093a83e20c738e14f41b4052e48aea54223"
+  },
+  "nav.keywords.connectors": {
+    "text": "mcp claude chatgpt codex chat conector",
+    "source": "4c012f47062c8c754d509776b18396ac59347c9da3edbff707379b13bb364867"
+  },
+  "nav.keywords.cli": {
+    "text": "terminal token credenciales revocar agente local opencode claude code",
+    "source": "7f1db215dd0ee3fd1a7eb4b5bb09588d42b001093eb8693338e98199ea814ef6"
+  },
+  "nav.keywords.agentFiles": {
+    "text": "instrucciones habilidades agentes md claude md prompt archivos",
+    "source": "cef4a94c8d946971c4cc219eeec502ea65e59494c5b081c95b1d7f4be52f9353"
+  },
+  "nav.keywords.globalChat": {
+    "text": "modelo límite chat",
+    "source": "e2314f06cef7a37e56fa984edbe339d410e72f26c284b0c9d1064c1258bb1a51"
+  },
+  "nav.keywords.experimental": {
+    "text": "beta laboratorio progreso estimación sesión puente agente local atajo de teclado sugerir mejora",
+    "source": "648500521795b79c827f6c93d106528dfea7748cabe517888613546394b82b80"
+  },
+  "nav.keywords.theme": {
+    "text": "oscuro claro modo apariencia barra lateral",
+    "source": "f7de49fc80faa8d41240bd0113ec02db496e6a98aae4858e7a349c5b7da08c51"
+  },
+  "nav.keywords.devConsole": {
+    "text": "icono bicho registros errores depurar desarrollador",
+    "source": "ba4aca35c00709621e28c8cb97c45ab32535f5d7f61ab73c1eacde3dc8eb6c95"
+  },
+  "nav.keywords.language": {
+    "text": "idioma configuración regional traducir",
+    "source": "fc923f36585493fa841241ecb94c8864fefb9ea7a3426f6709ef0dddb59abe67"
+  },
+  "nav.keywords.alerts": {
+    "text": "notificaciones sonido push teléfono silenciar campana aviso",
+    "source": "0df389bdd546be4b8b9df4aa19f4970238e87e57433e04ebb7588ff0f9ceba1f"
+  },
+  "nav.keywords.appPermissions": {
+    "text": "cámara micrófono ubicación pantalla dispositivo",
+    "source": "3b79e8e85463d60cd334cba5f94907fc8b021ef51f26233ddad125d4d09337ab"
+  },
+  "nav.keywords.appAi": {
+    "text": "ia gasto límite permisos presupuesto",
+    "source": "857b95067a896e75da85df7313f16b7fc0188256dfe35017803d0d6f9d11ed34"
+  },
+  "nav.keywords.blockedApps": {
+    "text": "bloquear ocultar desbloquear",
+    "source": "4ee951634d0670ecb791ac26827bc9e0b92d2c42a9b17bad9a0562173ce7e94e"
+  },
+  "nav.keywords.tour": {
+    "text": "guía ayuda introducción bienvenida",
+    "source": "0a330344657a70155796010ecb4fd7e8dd8446ab82239fa7342d6895d18039c3"
+  },
+  "nav.keywords.usernode": {
+    "text": "móvil teléfono nativa diagnóstico bloquear producción",
+    "source": "b303cf2b849ac90ab33314450c2e3ba1597cd42cf7467d01a9a47bbf6b77b464"
+  },
+  "nav.keywords.about": {
+    "text": "versión compilación build términos acerca",
+    "source": "d83db505157b5d33f6e10e9d4e7825ee193dd5c3b90be4649ea42d6923488dff"
+  },
+  "nav.keywords.adminPreview": {
+    "text": "vista no administrador como ver administrador",
+    "source": "8a1e1be7033f78b58d2a7f14636a002a46edbcaf50bf2cbc1998310cd8d9634c"
+  },
+  "signOut.nativeShutdownNotice": {
+    "text": "Sesión cerrada. Cierra y vuelve a abrir la app para terminar de cerrar Homeroom.",
+    "source": "31055a5a15c0888022ee7dcaaed962e4e97f0ea7d6b36470da22ecf44ce7b71f"
+  },
+  "signOut.signingOut": {
+    "text": "Cerrando sesión…",
+    "source": "08c6bd357b7d7b819903c4d32cf8875a2f8bb02dd2e85aa7602e3d82d4f69c45"
+  },
+  "connectors.copy.urlCopied": {
+    "text": "URL del servidor MCP copiada",
+    "source": "149289b1f365e95c3ad3bea6838f10edc69324fb82fc10a050ca70b14c38f7c2"
+  },
+  "connectors.copy.urlFailed": {
+    "text": "No se pudo copiar la URL del servidor MCP",
+    "source": "6d0a55e7df41f17bddc207ace21276f13e353e9fda76159cb0d87d606f686c44"
+  },
+  "connectors.copy.personalRulesCopied": {
+    "text": "Copiado. Pégalo en ~/.claude/settings.json",
+    "source": "a6298524518710f4069097e2090ac7267e30bfb7520c158c0bb3f925819e17c0"
+  },
+  "connectors.copy.personalRulesFailed": {
+    "text": "No se pudieron copiar las reglas de permiso",
+    "source": "51bb60c2f79f6a9a3bf635798ffe3be645ece38727553a3ba84407279427aeda"
+  },
+  "connectors.copy.repoRulesCopied": {
+    "text": "Copiado. Súbelo como .claude/settings.json en el repositorio de tu app",
+    "source": "c9eecf28a22dee3b95372144bd90ac9c4b5be4106f1cd306e69c3f0e22b88bd5"
+  },
+  "connectors.copy.repoRulesFailed": {
+    "text": "No se pudieron copiar las reglas de permiso",
+    "source": "51bb60c2f79f6a9a3bf635798ffe3be645ece38727553a3ba84407279427aeda"
+  },
+  "connectors.copy.codexCommandCopied": {
+    "text": "Copiado. Ejecútalo en una terminal donde esté instalado Codex",
+    "source": "7ed86b7cd01a389c71be611ee1f9a17b4e1349c2d0e118db1ed260a675801b37"
+  },
+  "connectors.copy.codexCommandFailed": {
+    "text": "No se pudo copiar el comando de Codex",
+    "source": "94710d65addd32db50837d3e2a1b7815832110b16dbda48b3159affc168cb674"
+  },
+  "connectors.copy.codexConfigCopied": {
+    "text": "Copiado. Pégalo en ~/.codex/config.toml",
+    "source": "dbe2bf3e30be7b669c4c457c31f467206a2534f0ab199334b42dc4c238a1a05b"
+  },
+  "connectors.copy.codexConfigFailed": {
+    "text": "No se pudo copiar la entrada de configuración de Codex",
+    "source": "3dd98444d61b85ca0953780a546c27b6be6206e6d8b80293271faf319c9a3fb7"
+  },
+  "copyControl.failed": {
+    "text": "Error al copiar",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "alerts.test.queueing": {
+    "text": "Poniendo en cola la alerta de prueba…",
+    "source": "682578bea33cf41e6a75b5e67a79a54eef889e4cced91d53b56ca2ebc68d31d3"
+  },
+  "alerts.test.after.queued": {
+    "text": "La notificación push de prueba está en cola. Revisa tu teléfono; la entrega puede tardar unos segundos más.",
+    "source": "ce2787f1bf439214a7daf33c8d9cf0bdd8b87d6428693a740eb1d79b96fdf054"
+  },
+  "alerts.test.after.preferenceDisabled": {
+    "text": "No se puso en cola la notificación push. Activa Sesiones de agente en Categorías de notificaciones push móviles e inténtalo de nuevo.",
+    "source": "a84eea9dfc1951afc6b30150ad00ea3b98d9d0bbd744ce025e18d759fcc59a97"
+  },
+  "alerts.test.after.unavailable": {
+    "text": "No se puso en cola la notificación push. Inicia sesión en tu teléfono y activa las notificaciones de actividad y el permiso de notificaciones. La entrega de notificaciones push también debe estar disponible en el servidor.",
+    "source": "08615bef8f43ad77b35cd10c3cd00129e2ca951a9bde93505fa8995d6383b2cf"
+  },
+  "alerts.test.failed": {
+    "text": "No se pudo poner en cola la notificación de prueba. Inténtalo de nuevo.",
+    "source": "237ab0ed948edc6de837474252d502289d6a908ba75bb51f4d26c12b1cb6b35a"
+  },
+  "screen.title": {
+    "text": "Ajustes",
+    "source": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "localAgents.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "localAgents.unknownApp": {
+    "text": "una app",
+    "source": "66e93a7c5a2576c34833f10761ca00fadbd40b36eff79f1e0969652f607b0b43"
+  },
+  "localAgents.unnamedMachine": {
+    "text": "Máquina sin nombre",
+    "source": "060810189c6f9f2f5a1f223cee2dc03e17530dd2914929fd128cd0df645af0f5"
+  },
+  "localAgents.appAndSession": {
+    "text": "{{app}} · {{session}}",
+    "source": "1dc2faf3add9a2fbf140ab486d0da63aa2363a418261989d337a9e3d3141627d"
+  },
+  "localAgents.detach.confirmNamed": {
+    "text": "¿Desvincular {{machine}}?\n\nLos turnos de programación de su sesión vuelven a ejecutarse en Homeroom. Lo que ya haya confirmado (commit) permanece en la rama.",
+    "source": "c1bcb77721a26c0037519423688b3109d0f356b622d3af1171ef05c395f89736"
+  },
+  "localAgents.detach.confirmUnnamed": {
+    "text": "¿Desvincular esta máquina?\n\nLos turnos de programación de su sesión vuelven a ejecutarse en Homeroom. Lo que ya haya confirmado (commit) permanece en la rama.",
+    "source": "e74e5247a1fbd4583d931fda6eba825183bc914e22850af726aea5d8b956196d"
+  },
+  "localAgents.detach.failed": {
+    "text": "No se pudo desvincular esa máquina.",
+    "source": "6034c97cbb4108eb225500cfe0ccd085ea6a524b3ed8611ea98195596fd02194"
+  },
+  "connectors.setupPrompt": {
+    "text": "Quiero añadir un conector MCP personalizado. La URL del servidor es {{url}} y usa registro dinámico de clientes, así que no hay ID de cliente ni secreto que introducir. Llámalo exactamente \"homeroom\". Guíame paso a paso y dime en qué debo hacer clic.",
+    "source": "921bd0f3c3b237fa0c5d7bcc73115a253bda40ed9d32772a03291671713e579c"
+  },
+  "connectors.load.failed": {
+    "text": "No se pudieron cargar tus conexiones.",
+    "source": "18fb599bae166a7e0bc6a61f240520827c0f702d889dc0f420ea6266cdceae29"
+  },
+  "connectors.load.invalid": {
+    "text": "La respuesta de las conexiones no es válida.",
+    "source": "972f96a227697619ad03c8459c6d4105ac57bb2f966016baa02980bfc19feff7"
+  },
+  "connectors.hint.notSentYet": {
+    "text": "Homeroom aún no te ha enviado este consejo en el chat. Se incluye en la primera lectura que responda en una conversación nueva.",
+    "source": "7d929cc0230345a4718625498bcb12f17cc2ac9e87a9a53070babba57be3b997"
+  },
+  "connectors.hint.limitReached": {
+    "text": "Ese es el límite de {{limit}} por conexión cada {{days}} días; volverá cuando termine el período.",
+    "source": "15602d775436d3e3935b5148602440c961c4c4133f90c1979d89f3d71a5cded3"
+  },
+  "connectors.hint.quietUntilToday": {
+    "text": "Se mantiene en silencio durante {{minutes}} minutos después de cada envío, así que una conversación abierta antes de hoy a las {{time}} no lo incluirá. Una abierta después sí.",
+    "source": "0cd9162cc54e0ff39a53b18c6d3507a39e70a22453f1a44b759089c093f2a685"
+  },
+  "connectors.hint.quietUntilDate": {
+    "text": "Se mantiene en silencio durante {{minutes}} minutos después de cada envío, así que una conversación abierta antes de {{when}} no lo incluirá. Una abierta después sí.",
+    "source": "d10613907a7828a4fe48a3607b3ffd392eacf12b2e21b90ebb06ed5671884200"
+  },
+  "connectors.hint.openNewConversation": {
+    "text": "Abre una conversación nueva para verlo de nuevo.",
+    "source": "2a2c7f846db21e5cb044b7dca1f7360353cb6a24ace7c69368598a914b37ee99"
+  },
+  "connectors.hint.summaryAndAdvice": {
+    "text": "{{summary}} {{advice}}",
+    "source": "30bb556fc8da4d390f20d3afac2b0451b97e16b0d8f064cf420fec6c94cdbff0"
+  },
+  "connectors.row.connectedUsed": {
+    "text": "conectado {{connected}} · último uso {{lastUsed}}",
+    "source": "b398ca278eaeabd56673b7669fbd7c6e90d158e09a566f9544f08217d6a08206"
+  },
+  "connectors.row.connectedNeverUsed": {
+    "text": "conectado {{connected}} · nunca usado",
+    "source": "d446651f702285a10eedaf17bd74b75f51c3d14efb561f52c68b23fad2aa9c35"
+  },
+  "connectors.row.unknownDateUsed": {
+    "text": "conectado en fecha desconocida · último uso {{lastUsed}}",
+    "source": "972f2c4171c46469afbb2924bd27b4ff2f99b5cff218aa232969d0c433ddc3cd"
+  },
+  "connectors.row.unknownDateNeverUsed": {
+    "text": "conectado en fecha desconocida · nunca usado",
+    "source": "2ec398917286f7b979bcfeff8161cc4aced1053bab10058e5ecd7daeb813d421"
+  },
+  "connectors.row.unnamedClient": {
+    "text": "Cliente conectado",
+    "source": "0dd5007103bd5fa53c4dd55fc4d2d3c8074fa6b692d399c32538f465b34b9bb4"
+  },
+  "connectors.disconnect.failedRetry": {
+    "text": "No se pudo desconectar. Inténtalo de nuevo.",
+    "source": "5662fa4bf54ecbb48e7a457e0b5de73a68eec20ee4b0ef65b2df93ab03586dfd"
+  },
+  "connectors.disconnect.done": {
+    "text": "Desconectado.",
+    "source": "7fcdbd4a0ca24d27e5a77bd0c4e6de424a4be6a97f3749e5dca265ddf0614298"
+  },
+  "connectors.disconnect.failed": {
+    "text": "No se pudo desconectar.",
+    "source": "975d7bac40e599ad332420d81e3ba2d70965a92ec2180f916795615e297fd51c"
+  },
+  "socialIdentity.load.failed": {
+    "text": "No se pudieron cargar las cuentas sociales. Inténtalo de nuevo en breve.",
+    "source": "8c11d8b683d66976a867c52183a482caa9894c4ca6791c5ad50089ae194199b0"
+  },
+  "socialIdentity.perDay": {
+    "text": "{{amount}} US$ / día",
+    "source": "87cb645516115a701a77e530f40bf94d83cdd1f32781a426abe95add881e55b3"
+  },
+  "socialIdentity.tier.unavailable.title": {
+    "text": "Créditos diarios no disponibles",
+    "source": "34d88d0bfb9d454aaca7fab09820eaf5c00c4f797b166b3837f609775e7e7a7e"
+  },
+  "socialIdentity.tier.unavailable.note": {
+    "text": "No pudimos comprobar tus créditos, así que las llamadas que pagamos nosotros están en pausa. Tu propia clave de API sigue funcionando.",
+    "source": "7d883cca8fb589f5b3468f9f6bede4ab2625ae8df1303cc4cc6d9700e05e182c"
+  },
+  "socialIdentity.tier.legacy.title": {
+    "text": "Tus créditos",
+    "source": "0422797bd9cae085d522cc35ee19c3de723c938d901cddf5146e41a43c34476f"
+  },
+  "socialIdentity.tier.legacy.note": {
+    "text": "Tus créditos aún no dependen de una cuenta conectada.",
+    "source": "5fffe4b641af2e795885b7570a6f148a06c0fb9fbe916b4fa370963670dbdf38"
+  },
+  "socialIdentity.tier.override.title": {
+    "text": "Tus créditos",
+    "source": "0422797bd9cae085d522cc35ee19c3de723c938d901cddf5146e41a43c34476f"
+  },
+  "socialIdentity.tier.override.note": {
+    "text": "Un administrador fijó esta cantidad. Una cuenta conectada no la cambia.",
+    "source": "ed2bf45d6403fda57a297a480281e2c0ddce2067c55670939bcd516493d53c35"
+  },
+  "socialIdentity.tier.signedIn.title": {
+    "text": "Sesión iniciada",
+    "source": "ca566c8968e7e881d55617e7caaf0c126924ab1cb64ca80edb2f37ef386492d8"
+  },
+  "socialIdentity.tier.signedIn.note": {
+    "text": "Basta con una de las dos. Conectar ambas no suma más.",
+    "source": "56c6a818647bf6b9a28200e3b3579f056175a1c98c06be9925b559da65cec19c"
+  },
+  "socialIdentity.row.reconnectRequired": {
+    "text": "Vinculada para atribuir en GitHub. Vuelve a conectarla una vez para que cuente en los créditos diarios.",
+    "source": "1be5335fcb9e11198e84c76ec9ce3b2d8403a4f1d2529b554d8635a5056a4abe"
+  },
+  "socialIdentity.row.noExtraCredits": {
+    "text": "Sin créditos adicionales",
+    "source": "51ae57ea66b3ab5903b1587d7fcf30fe0e983910c902319e523fb1ac2f32d11f"
+  },
+  "socialIdentity.row.notSetUp": {
+    "text": "No configurado en este servidor.",
+    "source": "c4806ac0c78434251b5878170e854797e82511e88fc67051f36b32e273e9f718"
+  },
+  "socialIdentity.row.notConnected": {
+    "text": "No conectada.",
+    "source": "3b3d2796168bf3881009c9b9084e9652f2becd5094d7cff30b1757957f5f8efb"
+  },
+  "socialIdentity.badge.reconnectNeeded": {
+    "text": "Requiere reconexión",
+    "source": "2b0211b3421a16ae6704fe8910762c6d3e6ad8c925f210ef544036866a888c00"
+  },
+  "socialIdentity.badge.connected": {
+    "text": "Conectada",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "socialIdentity.row.linkedAt": {
+    "text": "vinculada el {{when}}",
+    "source": "cc134d097967b678586e1bad51e8ee9006136282ad89e24987c8b48d38e883d7"
+  },
+  "socialIdentity.row.noTokenGithub": {
+    "text": "Homeroom no guarda ningún token de acceso de GitHub de tu cuenta.",
+    "source": "4aa9ad7dcaa6ef264c5cfdccc56e7a1d983030a2577855c2db9e947327da0427"
+  },
+  "socialIdentity.row.noTokenX": {
+    "text": "Homeroom no guarda ningún token de acceso de X de tu cuenta.",
+    "source": "36b721ef0f39d6359d27724a7e8779e424feb03918037493ec9667cd747abfdb"
+  },
+  "socialIdentity.action.reconnect": {
+    "text": "Reconectar",
+    "source": "bf8a9eab9e7e141bfb81f0ca9244a5f68f476ed0b57f03538410417298169d18"
+  },
+  "socialIdentity.action.connect": {
+    "text": "Conectar",
+    "source": "1a2303ede07493acc7caaa7c737f3c52bcc9cf04372be19ed1b0af6b9f2c791e"
+  },
+  "socialIdentity.action.refreshHandle": {
+    "text": "Actualizar nombre de usuario",
+    "source": "d0bc66fe8d640c47aa136f589206eba65be9c545f0e18a9f7ee51df009e1c734"
+  },
+  "socialIdentity.action.changeAccount": {
+    "text": "Cambiar de cuenta",
+    "source": "26639e78325224c94978566fed0864fe451d64b06f4af5d5f89325b47e8fbf7c"
+  },
+  "socialIdentity.row.strandedAttempt": {
+    "text": "Tu último intento de conexión con {{provider}} no se completó. Prueba a pulsar Conectar de nuevo. Puede ocurrir si el navegador no llegó a la página de inicio de sesión o si se canceló el proceso. Si {{provider}} indica un error en la dirección de callback o redirección, pide a un administrador que revise su configuración de OAuth.",
+    "source": "f7a55c89bd0657b324ae8be4e39b8fe8275653485b89fad7bc78f444863df130"
+  },
+  "socialIdentity.diagnostics.sourceWaitlist": {
+    "text": "Se reutilizan las credenciales de la app de {{provider}} de la lista de espera.",
+    "source": "9131f66197953a0c08c0ac510b7dcf28bc5f5c20ff766842f9c6ede72e0b1d93"
+  },
+  "socialIdentity.diagnostics.sourceDedicatedSameApp": {
+    "text": "Credenciales propias de {{provider}}, de la misma app que el par de la lista de espera.",
+    "source": "c9b2a5b4359bef5eeed28588b167eff35579e532af30f5a9d18872921bb6b694"
+  },
+  "socialIdentity.diagnostics.sourceDedicated": {
+    "text": "Credenciales de una app de {{provider}} dedicada.",
+    "source": "0323697b53733442b7f94062ad90ff173be63317db5ee12b9e554fccab947286"
+  },
+  "socialIdentity.diagnostics.sourceMissing": {
+    "text": "No hay configurado ningún par de credenciales completo de {{provider}}.",
+    "source": "2cf77a2780862e975b156e3c96da1e180b074a99d997ddd076f4604a0ed42bbd"
+  },
+  "socialIdentity.diagnostics.callbackWarning": {
+    "text": "Si esta dirección no está registrada como URI de callback en la app de desarrollador de {{provider}}, {{provider}} muestra \"Something went wrong\" antes de iniciar sesión y nunca redirige de vuelta aquí.",
+    "source": "ad2edb9863cebecb505ad1cc4acac8d8d3582638daa804676fd0f6dbffbb3c83"
+  },
+  "socialIdentity.callback.linked": {
+    "text": "{{provider}} conectado.",
+    "source": "cb9aafeed55b04371515006c354a74b205855f067a297539b6d61be74ad96405"
+  },
+  "socialIdentity.callback.refreshed": {
+    "text": "Nombre de usuario de {{provider}} actualizado.",
+    "source": "7ec18ad572a20f6a0273076bbd8b32b47d1229fcde7c7997a45b5acb3e8a14a7"
+  },
+  "socialIdentity.callback.confirm": {
+    "text": "Se verificó otra cuenta de {{provider}}. Revisa el reemplazo a continuación antes de que cambie nada.",
+    "source": "ec62d2c6071b8f497e09ebedf41e5f24926d47ee8fbb31219938fe79fd17a982"
+  },
+  "socialIdentity.callback.inUse": {
+    "text": "Esa cuenta de {{provider}} ya está vinculada a otra cuenta de Homeroom. Tu conexión actual no ha cambiado.",
+    "source": "963ae54c1d8a54a0623c1676b84c8922f634a3a934cd11cbd08748fddedd46db"
+  },
+  "socialIdentity.callback.differentAccount": {
+    "text": "Es una cuenta de {{provider}} diferente. Usa Cambiar de cuenta; tu conexión actual no ha cambiado.",
+    "source": "9ab7bff3cdfaf1e3e1437118f9077d6517ca4440490c7e017651131a4bd2b393"
+  },
+  "socialIdentity.callback.conflict": {
+    "text": "No se pudo usar esa cuenta de {{provider}}. Tu conexión actual no ha cambiado.",
+    "source": "3736969874027866cfcdc089aff4446468df88a5bb99a51aacc49a0d5bdf6872"
+  },
+  "socialIdentity.callback.denied": {
+    "text": "Se canceló la conexión con {{provider}}.",
+    "source": "7dc199457447655fe510e212eda54145acba2e897c9eb9b45f16ffec4405aad6"
+  },
+  "socialIdentity.callback.callbackMismatch": {
+    "text": "{{provider}} no aceptó la dirección de callback de Homeroom, así que no ha cambiado nada. Pide a un administrador que registre la URL de callback de este sitio ({{origin}}) en la app OAuth de {{provider}}.",
+    "source": "3fd884acd9149931923df4014293b2decd5dc6c7a94ad5eeecfc03bc09bf7a98"
+  },
+  "socialIdentity.callback.error": {
+    "text": "No se pudo conectar {{provider}}. Inténtalo de nuevo.",
+    "source": "475e030a52bcfefd28a91331012e12e1f0c8c8588a85747e3c85706756a51acc"
+  },
+  "socialIdentity.callback.accountMismatch": {
+    "text": "Este navegador tiene la sesión iniciada en una cuenta de Homeroom distinta a la de la app. Cierra sesión aquí, vuelve a tocar Conectar en la app e inicia sesión con la misma cuenta.",
+    "source": "0e49f5f56c15037c1849150d6e84dc68ce385d4286f35180b67a1c8309af4e44"
+  },
+  "socialIdentity.unlink.confirmTitle": {
+    "text": "¿Desconectar {{provider}}?",
+    "source": "90e39f1ecf91593ac9198f241ac1ab209540179e924b67e4b3f7911fae5fbaaf"
+  },
+  "socialIdentity.unlink.confirmMessage": {
+    "text": "Esto quita {{provider}} de tu perfil público y puede cambiar tu elegibilidad para el crédito diario.",
+    "source": "4133404f1fcd4c71505a21859be22a1ca19fe752e8f799a7b33f922799540ae1"
+  },
+  "socialIdentity.unlink.confirmButton": {
+    "text": "Desconectar",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "socialIdentity.unlink.failedProvider": {
+    "text": "No se pudo desconectar {{provider}}.",
+    "source": "d398739336204e5262814f8601366ed50b8074274729dfbf2f5adaaa905ab460"
+  },
+  "socialIdentity.unlink.failed": {
+    "text": "No se pudo desconectar esta cuenta.",
+    "source": "a968c528af580c58e4c1337bf30e3bec0141161674de14628e7b239febb78897"
+  },
+  "cliTokens.load.failed": {
+    "text": "No se pudieron cargar las credenciales de la CLI.",
+    "source": "b21cbedcd25c47cd1e82508c09fab9d221cc9590cbbeb5e3a9570078253942b8"
+  },
+  "cliTokens.load.invalid": {
+    "text": "La respuesta de la lista de credenciales no era válida.",
+    "source": "291ebc36b3d4eaeea2e8d7a458a47d6771f92b7008ad9f4ba4659a27af751299"
+  },
+  "cliTokens.row.statusUnknown": {
+    "text": "desconocido",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "cliTokens.row.createdUsed": {
+    "text": "{{status}} · creada {{created}} · último uso {{lastUsed}}",
+    "source": "b81c370008f536985d0eafd88d3057861dc70129e278fe9296698e539e3d3233"
+  },
+  "cliTokens.row.created": {
+    "text": "{{status}} · creada {{created}}",
+    "source": "6b3092bd16d9b9ba8789280fc989743ff9a62afb60e1629c3cab7b2ac0dcea12"
+  },
+  "cliTokens.row.unknownDateUsed": {
+    "text": "{{status}} · fecha de creación desconocida · último uso {{lastUsed}}",
+    "source": "d168b98249c4c613f319833c771043b635e80afd54c05cb5e5e7834376746e0c"
+  },
+  "cliTokens.row.unknownDate": {
+    "text": "{{status}} · fecha de creación desconocida",
+    "source": "4c9e8087c4b203c4ca90aa5c78a9b7776fb58703654b116d7d46195e45d40788"
+  },
+  "cliTokens.row.unnamed": {
+    "text": "Credencial de la CLI",
+    "source": "fed39a0da3cff8387398b00fc970b8c5f2073e68774074ef9b41576b8a45b086"
+  },
+  "cliTokens.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "cliTokens.revoke.failed": {
+    "text": "No se pudo revocar la credencial.",
+    "source": "6d3c955f6af5d8d8864fdfedaec159082d717a30a015e00f6a48ce0b268f4096"
+  },
+  "cliTokens.revoke.done": {
+    "text": "Credencial revocada.",
+    "source": "fa8d99359669223757844e387f2c18bbbfa429221dbe40099098b23d9e771f5a"
+  },
+  "experimental.progressEstimate.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "experimental.progressEstimate.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "experimental.sessionBridge.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "experimental.sessionBridge.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "mobilePush.invalidResponse": {
+    "text": "Respuesta de preferencias no válida.",
+    "source": "6de557513c34acab7af9ab153abb29e6f547b33834fba6a1a482288d2c17ea91"
+  },
+  "mobilePush.incompleteResponse": {
+    "text": "Respuesta de preferencias incompleta.",
+    "source": "0886bd4d184a7661e498979fc3054fca7d42443815ae2f8410ed6242e5cd260c"
+  },
+  "mobilePush.saved": {
+    "text": "Guardado en tu cuenta.",
+    "source": "de0e217a0b85d1b21bfbb4f8f51040eaa0a03d3262f6517a1365bd5f8731dbef"
+  },
+  "mobilePush.saving": {
+    "text": "Guardando…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "mobilePush.loadFailed": {
+    "text": "No se pudieron cargar las preferencias de notificaciones push móviles: {{reason}}",
+    "source": "7e3248194ae5ceba2f68d49e97d12e93c626555535399fc3c804d0cdffb8463e"
+  },
+  "mobilePush.saveFailed": {
+    "text": "No se pudo guardar: {{reason}}",
+    "source": "695da99d1b94472be52607bc11950a6f66c1bfa756f4cf327cfec5f2e83b7449"
+  },
+  "mobilePush.saveFailedToast": {
+    "text": "No se pudieron guardar las preferencias de notificaciones push móviles",
+    "source": "7c9cc454c737e22211eec5f1755a2a9f649e051365bf74886355d84ea0e96ff7"
+  },
+  "apiKey.field.replacePlaceholder": {
+    "text": "Pega una clave nueva para reemplazarla",
+    "source": "8a347fdf5687f98be7defa6bc00ee1346e79f50c7ecaa801b91a57f74907d1ca"
+  },
+  "apiKey.button.replace": {
+    "text": "Reemplazar",
+    "source": "95e154398a4bc0091aa4d6b607472ac5a89e41fbc84a3a49f823314d6de9eebc"
+  },
+  "apiKey.status.pasteFirst": {
+    "text": "Primero pega una clave de API.",
+    "source": "448710dc61de72d49cedf6c73808a66355e18e7fe52e4eb20f52886ec200bcf8"
+  },
+  "apiKey.status.verifying": {
+    "text": "Verificando con Anthropic…",
+    "source": "cabd4656e84b52428a35326940ab951d522f9ada12f2b0c94a1ffea7c24d6c31"
+  },
+  "apiKey.status.saveFailed": {
+    "text": "No se pudo guardar la clave.",
+    "source": "2ca6410dbed10cffc6c57ada961d1493471bb3565ec122ef9f331d08a1eac4ca"
+  },
+  "apiKey.status.saved": {
+    "text": "Guardada. Tus chats ahora se facturan a tu cuenta de Anthropic.",
+    "source": "94373a53a9d8cd2639fa1a6a89cd48aa9d9759d80621802dc1949f64570f0cac"
+  },
+  "apiKey.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "openrouter.cost.free": {
+    "text": "Gratis",
+    "source": "f411a1fb62758b4c54690d0a702b4955b54dd22115416fa7b1ce51b4a084818d"
+  },
+  "openrouter.cost.low": {
+    "text": "Bajo costo",
+    "source": "607264add7ce608189f0d38e2c1bb2a38e66eb6a636dea16f9570d496593556a"
+  },
+  "openrouter.cost.medium": {
+    "text": "Costo medio",
+    "source": "7c1964044ca88a216d84091d2c1c939625999e722668749fa1f88b4b75afb631"
+  },
+  "openrouter.cost.high": {
+    "text": "Costo alto",
+    "source": "d6d2e413efd65cf2942bbe6f5b2db477997b1a5b7cc0b1f3ded3ed8624933761"
+  },
+  "openrouter.cost.unknown": {
+    "text": "Precio no disponible",
+    "source": "6a9e657bba78dd439a0e1f0e291bb9d67eb56ebda13cc9b29a90c9d64d4fdb6d"
+  },
+  "openrouter.cost.inputPrice": {
+    "text": "{{price}} /M de entrada",
+    "source": "660e9fc60afff7e3c088f01a4ecebce30352ba4fb66075ef9db0cc922f1ef32c"
+  },
+  "openrouter.cost.outputPrice": {
+    "text": "{{price}} /M de salida",
+    "source": "4ec850eb02b3840330c23e449c6688589d89eab3515da875dbefd6a148328397"
+  },
+  "openrouter.model.badgeRecommended": {
+    "text": "Recomendado",
+    "source": "d70604e8430461372849bbd123d85771e11423870a507e8fa4650a7e9a5a50ef"
+  },
+  "openrouter.model.badgeNew": {
+    "text": "Nuevo",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "openrouter.model.compatVerified": {
+    "text": "verificado",
+    "source": "1c34f88707b55e6104c4eb20e71ffa3d33e414b71ef689a15fad0640d0ac58cb"
+  },
+  "openrouter.model.compatLimited": {
+    "text": "limitado",
+    "source": "7b508dace774f8adc1b121c1812b740904be6dfd37e3b5e3579bc81fbf6f5553"
+  },
+  "openrouter.model.compatUnverified": {
+    "text": "sin verificar",
+    "source": "97b7e2db799e2b79e65f418b42a7d3054c95b2d3ab1dba243039597e44a38084"
+  },
+  "openrouter.model.unknown": {
+    "text": "Modelo desconocido",
+    "source": "3895185372e6aa76e3ef386f0b061ebae58fd4fe51d7d741fa326169eeac7577"
+  },
+  "openrouter.model.optionLabel": {
+    "text": "{{model}}: {{details}}",
+    "source": "8fd5571093c7a359094d92aeae988b20e9dd3b1b0c2d8c625a0a71efcc8fc37a"
+  },
+  "openrouter.catalog.updatedJustNow": {
+    "text": "Actualizado hace un momento",
+    "source": "c5cb2e53029125397d2f1a208a7c477aeba686ca6b77cad41bed79d678327d20"
+  },
+  "openrouter.catalog.noMatch": {
+    "text": "Ningún modelo coincide. Borra la búsqueda o muestra todos los modelos",
+    "source": "bc72fa996c112a39b76587cb0c7f2c4cfd4204c28223c07cc8c553429934bc99"
+  },
+  "openrouter.effort.defaultMinimal": {
+    "text": "Predeterminado (Mínimo)",
+    "source": "a0e9619efbb407197ed098d28e337a09b45e8d55115becdfbd6201e22139adb2"
+  },
+  "openrouter.effort.defaultLow": {
+    "text": "Predeterminado (Bajo)",
+    "source": "307e9c47b4ce6f35c73241a43bb45d80174c7b0f335cf7d6fcb351593e72f067"
+  },
+  "openrouter.effort.defaultMedium": {
+    "text": "Predeterminado (Medio)",
+    "source": "14ef4b989459f4a68dcc5c4990ed7dd9f4232e66e3dc841a4ccc6d69619f0a7a"
+  },
+  "openrouter.effort.defaultHigh": {
+    "text": "Predeterminado (Alto)",
+    "source": "5faa89f6c43a0b6d70a0b961b36f8d9bfc3111ff17c510a02d2e1fe5f26dddde"
+  },
+  "openrouter.effort.defaultExtraHigh": {
+    "text": "Predeterminado (Muy alto)",
+    "source": "00c059451c6c4e3d02662072e8fef7fca4b9f6f2189d146f6aa6ca6589a9b0ea"
+  },
+  "openrouter.model.sortHint": {
+    "text": "Los modelos se ordenan por precio medio de entrada/salida. El gasto real depende del uso de tokens.",
+    "source": "8ea7846a5d50c231aff738f9e097a60f4a974005f09b8f4455cfe2d6eb5f7b6f"
+  },
+  "openrouter.model.removeFavorite": {
+    "text": "Quitar el modelo seleccionado de favoritos",
+    "source": "af86f2966d9ada3aedad426c2e5cd86d36f3e1be437c6f39006cf43f4dddeff4"
+  },
+  "openrouter.model.notYetVerified": {
+    "text": "Aún no verificado para programar en repositorios.",
+    "source": "58297943c669f5207c9fae72a8f19b97cb9253365805686ddbce202d1d05311f"
+  },
+  "openrouter.model.verified": {
+    "text": "Verificado para programar en repositorios.",
+    "source": "3e7a6d2ad80813a7dadb75729ba4b64df330174eeae9f64f2589ad92453138c3"
+  },
+  "openrouter.model.mayFail": {
+    "text": "Es posible que este modelo no tenga herramientas de repositorio o contexto suficiente, por lo que un turno de OpenRouter podría fallar.",
+    "source": "7726660c5c4006dfcd743c5e757d753500a0050dbf553804d82ab3fafd618811"
+  },
+  "openrouter.model.tooltip": {
+    "text": "{{cost}}. {{compatibility}} El gasto real depende del uso de tokens.",
+    "source": "e4abe5d7ab84a1df68939e617dd6525669861389944bdb1ba642dea8e6a29783"
+  },
+  "openrouter.effort.unsupported": {
+    "text": "Este modelo no ofrece controles de esfuerzo de razonamiento.",
+    "source": "ee224d3d38b4244d64843830346000931a0f402f5b7eff0a58e8e92e2c83921a"
+  },
+  "openrouter.effort.hint": {
+    "text": "Cuánto tiempo piensa este modelo antes de responder. Predeterminado es el nivel con el que funciona la plataforma; tu elección lo reemplaza.",
+    "source": "b8271769d47c5f2e7e395ff573565678edc9e315aab6fbd91f523bfb5feb2c0b"
+  },
+  "openrouter.included.activeWeekly": {
+    "text": "Activa. Incluye la asignación semanal de {{amount}} de la plataforma y puedes elegir cualquier modelo disponible.",
+    "source": "cf35e984bd7994940d3f277fd523924cc1ee0e27475619f6e20884373bd93e92"
+  },
+  "openrouter.included.activeWeeklyWithKey": {
+    "text": "Activa (sk-or-…{{last4}}). Incluye la asignación semanal de {{amount}} de la plataforma y puedes elegir cualquier modelo disponible.",
+    "source": "1034a8c72dcbdc61383791d1e0bf4c6d46a46d981d9a0343a02523c3aceeb3d1"
+  },
+  "openrouter.included.activeDaily": {
+    "text": "Activa. Tiene un límite diario de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "53c31f5fe75b9f3baa0e6eff0699ee67690831ea519e7ca2c21447ebd8f2bcda"
+  },
+  "openrouter.included.activeDailyWithKey": {
+    "text": "Activa (sk-or-…{{last4}}). Tiene un límite diario de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "c8826b16ca4969e6c1fc8c9b19342a4c30fc570d6a5df43446f8b302c3d818ad"
+  },
+  "openrouter.included.activeMonthly": {
+    "text": "Activa. Tiene un límite mensual de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "9477b439e370a3f067ac90f78ee7bf86bb287873e37d520398aba4c5a9a7a2be"
+  },
+  "openrouter.included.activeMonthlyWithKey": {
+    "text": "Activa (sk-or-…{{last4}}). Tiene un límite mensual de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "798448b11ed8baa8dfa997f89148d9c90805e10efb74e976b51eebfbcddc4e95"
+  },
+  "openrouter.included.activeLimit": {
+    "text": "Activa. Tiene un límite de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "6c2c4fa729b95b48c4bf83a5a1af022a835446f3bdf935049a192dbedd0e342c"
+  },
+  "openrouter.included.activeLimitWithKey": {
+    "text": "Activa (sk-or-…{{last4}}). Tiene un límite de {{amount}} hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "95df335cd578fd0eeda2b02b0122c3a9f0bd9a35a314c41296c175e721f97510"
+  },
+  "openrouter.included.activeOther": {
+    "text": "Activa. Tiene un límite de {{amount}} ({{cadence}}) hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "7a1438898955b0fa0af981e5cc8c4d9f1b6b6d2e5847e7c185706e662ef1004c"
+  },
+  "openrouter.included.activeOtherWithKey": {
+    "text": "Activa (sk-or-…{{last4}}). Tiene un límite de {{amount}} ({{cadence}}) hasta que pase a la asignación semanal de la plataforma, y puedes elegir cualquier modelo disponible.",
+    "source": "6c214f15b4b61d8a1d6f05d6289ce8dc964fe296fd059c71a0272ebf88f3d00d"
+  },
+  "openrouter.included.blocked": {
+    "text": "Un administrador bloqueó esta clave incluida. Contacta con los administradores de la plataforma si debe volver a habilitarse.",
+    "source": "45ec7fb306d753894e4b58a310fcd8f17b512ff1190533381b622666ebd65f76"
+  },
+  "openrouter.included.deleted": {
+    "text": "Un administrador eliminó tu clave incluida. Las claves incluidas se emiten una sola vez, pero puedes añadir una clave personal abajo.",
+    "source": "a443323b38437d5374b6c752d25d28de9333224d49cc726c04d9fadcd101ee4c"
+  },
+  "openrouter.included.needsReview": {
+    "text": "Esta clave necesita revisión de un administrador. Homeroom no reintentó la solicitud al proveedor, para evitar claves duplicadas por error.",
+    "source": "923657eccccecc1f8f125160c285e3191becb84ac6ff2a8fd26ab6aa4c92bc46"
+  },
+  "openrouter.included.notConfigured": {
+    "text": "El administrador de la plataforma aún no ha configurado las claves incluidas.",
+    "source": "932b735f7ec04945bcdee7643d28e51a2027e475a262a17587170be3cd54bf71"
+  },
+  "openrouter.included.noAllowance": {
+    "text": "Tu cuenta no tiene ahora una asignación semanal incluida, así que no hay clave incluida. Puedes añadir una clave personal de OpenRouter abajo.",
+    "source": "f5756fb17708cc577b16b796fbb63c1b2179917f8bbf27c86e36a30512e25ced"
+  },
+  "openrouter.included.personalKey": {
+    "text": "Estás usando tu propia clave de OpenRouter. Quítala para volver a la incluida.",
+    "source": "3a795bfdac4182e69eb631d5308379e415293fb93f7bfd1c2a860a463a77412d"
+  },
+  "openrouter.included.settingUpWeekly": {
+    "text": "Tu clave incluida se está configurando. Incluye la asignación semanal de {{amount}} de la plataforma; vuelve a abrir esta pantalla en un momento.",
+    "source": "dcc554d624f6aa4236ee1e786078ad9f50f9be3c298180323a7e991e795e6b36"
+  },
+  "openrouter.included.settingUpDaily": {
+    "text": "Tu clave incluida se está configurando. Incluye la asignación diaria de {{amount}} de la plataforma; vuelve a abrir esta pantalla en un momento.",
+    "source": "1377cbf22d0747b4cd3f951e3107563e463b44c711e931e72f16dff5802e1a1c"
+  },
+  "openrouter.included.settingUpMonthly": {
+    "text": "Tu clave incluida se está configurando. Incluye la asignación mensual de {{amount}} de la plataforma; vuelve a abrir esta pantalla en un momento.",
+    "source": "110211c4bb41cc9dca4ba26fdfad9f2c3196770957df78152b337dd4c1d97c89"
+  },
+  "openrouter.included.settingUpAllowance": {
+    "text": "Tu clave incluida se está configurando. Incluye la asignación de {{amount}} de la plataforma; vuelve a abrir esta pantalla en un momento.",
+    "source": "f6abcce4bed6047cfee8c5919aabe6026ea8658028bc01ccb2b9c09717831a9d"
+  },
+  "openrouter.included.settingUpOther": {
+    "text": "Tu clave incluida se está configurando. Incluye la asignación de {{amount}} ({{cadence}}) de la plataforma; vuelve a abrir esta pantalla en un momento.",
+    "source": "a4456c80472bae94eab0d5e847fd0244f829eb0aca8fc8bceb458c7055797f45"
+  },
+  "openrouter.key.replacePlaceholder": {
+    "text": "Pega una clave nueva para reemplazarla",
+    "source": "8a347fdf5687f98be7defa6bc00ee1346e79f50c7ecaa801b91a57f74907d1ca"
+  },
+  "openrouter.key.replace": {
+    "text": "Reemplazar",
+    "source": "95e154398a4bc0091aa4d6b607472ac5a89e41fbc84a3a49f823314d6de9eebc"
+  },
+  "openrouter.key.ownerManaged": {
+    "text": "Gestionada por Homeroom",
+    "source": "28b10a41f6e120c93b9201cb0dfa1f31d62403ebcb71c7ed862c91114651f3c1"
+  },
+  "openrouter.key.ownerPersonal": {
+    "text": "Clave personal",
+    "source": "e0ec7d23d8ae24dea98b603e7ca99814195156f7065cf8946058fd851091e076"
+  },
+  "openrouter.key.limitWeekly": {
+    "text": "Límite semanal: {{limit}}",
+    "source": "f86ce0940a2507e6d03cb6a8c53c185f888b9e975e9045d198675f022b14a6c3"
+  },
+  "openrouter.key.limitDaily": {
+    "text": "Límite diario: {{limit}}",
+    "source": "e85dbaa58c44139a7e00939b46067178943ee76aa854c3d5a2016b1c2683bc4d"
+  },
+  "openrouter.key.limitMonthly": {
+    "text": "Límite mensual: {{limit}}",
+    "source": "fb9dc097a2860d3832784246ce6d863a74fb3d9a89437f5a39252164b751e596"
+  },
+  "openrouter.key.limitPlain": {
+    "text": "Límite: {{limit}}",
+    "source": "23e4f9c2e892e75cd50df8001d73f4b84226a445e67746906758430bfeb95323"
+  },
+  "openrouter.key.limitOther": {
+    "text": "Límite ({{cadence}}): {{limit}}",
+    "source": "ef18781ee9cfc55cc4ece6b41d604aaeaeb13c42969750106bfec9f277c895c8"
+  },
+  "openrouter.key.remaining": {
+    "text": "Restante: {{remaining}}",
+    "source": "4e1646a1d94cb7df186d02c6c9ccfcf98e0aeeef9b72e485d31885128d91ced8"
+  },
+  "openrouter.model.favoritesOn": {
+    "text": "★ Favoritos",
+    "source": "68b313bd3a864047563e76252b892a4da35af65842a1f24602356ca6b4d3b752"
+  },
+  "usage.spend.platformOfLimit": {
+    "text": "{{spent}} de {{limit}}",
+    "source": "8fa0d656077a510a701f68b93ba62d618b88ec369ed220dc056a7e45239efe8d"
+  },
+  "usage.spend.resetsDaily": {
+    "text": "Se restablece a las {{time}}.",
+    "source": "657e2592a7b7f445d80031ee9a51a61538622653088d93fce400dea84fc688c0"
+  },
+  "usage.spend.resetsWeekly": {
+    "text": "Se restablece el {{day}} a las {{time}}.",
+    "source": "f56ad5c5cec2cd02084ba0b4eeaa621e6d01ace3d9d3b5366a6af57ad81b8603"
+  },
+  "openrouter.catalog.loadFailed": {
+    "text": "No se pudieron cargar los modelos de OpenRouter.",
+    "source": "50eb99bd96ae98c6da37b0ec63ccf9908621046a4fca138376eabb2f226b6905"
+  },
+  "openrouter.catalog.refreshing": {
+    "text": "Actualizando…",
+    "source": "1c0def7be0607b966b89e4974da38090472d8ada625f5b4c89f25b09d39683bd"
+  },
+  "openrouter.catalog.refreshingStatus": {
+    "text": "Actualizando desde OpenRouter el catálogo visible para la clave…",
+    "source": "8b22f6a1d2e095913cbb901027b580c2017614687337e48ce01e4d97e288c30d"
+  },
+  "openrouter.catalog.refreshFailed": {
+    "text": "No se pudieron actualizar los modelos de OpenRouter.",
+    "source": "ad5f3aeeeee6205787c2eec78441e1112ca01389997c37cbefb1eacb7a6360f1"
+  },
+  "openrouter.favorite.failed": {
+    "text": "No se pudo actualizar ese favorito.",
+    "source": "288b961bc1df1bb49781b6238be6b0422c0280335081dd3274ce5302ecfb61ff"
+  },
+  "openrouter.favorite.added": {
+    "text": "{{model}} se añadió a favoritos.",
+    "source": "7d2ff967b9641e86be16872d26868746fce2f4ff0cf4ff74e1c714baab319916"
+  },
+  "openrouter.favorite.removed": {
+    "text": "{{model}} se quitó de favoritos.",
+    "source": "8dd79e0b344c0619f8dacfa70e059ba813cb176ab441a38b3970c98eb8434db0"
+  },
+  "openrouter.key.pasteFirst": {
+    "text": "Primero pega una clave de API de OpenRouter.",
+    "source": "9ccff907e5553d78c957a5556f854b77c7bfd1a322d9c10ee36b3ce269ecdb8a"
+  },
+  "openrouter.key.verifying": {
+    "text": "Verificando con OpenRouter…",
+    "source": "df6febc87959e86d11824328e6a84fb69ae119a14f8861c2cc6e860d8a085d4e"
+  },
+  "openrouter.key.saveFailed": {
+    "text": "No se pudo guardar la clave.",
+    "source": "2ca6410dbed10cffc6c57ada961d1493471bb3565ec122ef9f331d08a1eac4ca"
+  },
+  "openrouter.key.saved": {
+    "text": "Guardada, cifrada y seleccionada como tu agente de programación predeterminado.",
+    "source": "9358f750d87bbf7821e18403bff211c8bf5967f5970dbd9c976cc7e09212fc8c"
+  },
+  "openrouter.key.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "openrouter.key.removeFailed": {
+    "text": "No se pudo eliminar la clave.",
+    "source": "4b33ea92e4c7da9f490f106fded6a4b5033ce752e74e3eb11c5e89b3eb6c87e7"
+  },
+  "openrouter.key.removed": {
+    "text": "Clave eliminada.",
+    "source": "e1d3cae0be73c7d2694cb62abc0796163dd6f055c5a7c67d40ed6a552a459ef5"
+  },
+  "openrouter.key.removedDefaultReset": {
+    "text": "Clave eliminada; tu agente predeterminado volvió a Claude Code.",
+    "source": "189536bbf67c3e89856eceea9fea2567bb663a7d80220b1afe7e2a47af5baad8"
+  },
+  "openrouter.default.chooseModelFirst": {
+    "text": "Primero elige un modelo de OpenRouter.",
+    "source": "eb5ba7eba33e7551c83e4a6135a3fabd48ab7fc13754e526bcfdeafe27ea7ef8"
+  },
+  "openrouter.default.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "openrouter.default.saved": {
+    "text": "OpenRouter guardado como tu IA predeterminada para sesiones.",
+    "source": "cfa500b1714a271a936fef3fbb7cc6a0ff8d9764a046f4d3ed662b2e8446f0ef"
+  },
+  "openrouter.default.networkError": {
+    "text": "Error de red.",
+    "source": "1bd8a2e6222008e610495d1d13117a41ac07fa3b96df609fc7d59a0fdfc94ae0"
+  },
+  "openrouter.claudeDefault.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "openrouter.claudeDefault.saved": {
+    "text": "Claude Code es ahora tu agente de programación predeterminado.",
+    "source": "9eab2f9230edeb34874c0d07adfb870817d92464e11fe29c6288ef213a49e9d7"
+  },
+  "openrouter.claudeDefault.networkError": {
+    "text": "Error de red.",
+    "source": "1bd8a2e6222008e610495d1d13117a41ac07fa3b96df609fc7d59a0fdfc94ae0"
+  },
+  "password.status.tooShort": {
+    "text": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "source": "46d36027482ba10c1ab461cbfbc8369e1c33d360fdd6f72b68e9873322f8b0ef"
+  },
+  "password.status.mismatch": {
+    "text": "Las nuevas contraseñas no coinciden.",
+    "source": "653fbc4155186e5a28a4c5a1765cad99313e1aa4a5f1640864c379603d158acc"
+  },
+  "password.status.walletNativeOnly": {
+    "text": "La firma con la billetera solo está disponible en la app de Homeroom.",
+    "source": "7a847aa1e4ea48428a280975680fbbe0f6f475e4be892671be17c7f4cf3f7058"
+  },
+  "password.status.verifyingIdentity": {
+    "text": "Verificando identidad…",
+    "source": "258749e2777d4dd71aea1a3dfe020a76679bc1b4a6e4e9bd1a62dfad3fef8c55"
+  },
+  "password.status.noWalletAddress": {
+    "text": "No se pudo leer la dirección de tu billetera.",
+    "source": "d3e2e848bf632bdbf5f35d09b00860d7548f7567a6de9faddec53281f13437ec"
+  },
+  "password.status.noChallenge": {
+    "text": "No se pudo obtener un desafío del servidor.",
+    "source": "5cff7bddf8c119b66f5bd67a5d6847e319335872ed294e2cdc1f3d4c8f651800"
+  },
+  "password.status.changeFailed": {
+    "text": "No se pudo cambiar la contraseña.",
+    "source": "bfaea7c85615a0bba21d299df41e55a37606429a80eb71ba96ef452ea06afa45"
+  },
+  "password.status.changed": {
+    "text": "Contraseña cambiada.",
+    "source": "a768c77be9ddf3bd735a9225995ae0cf9b31829159613083e2bc44164b2ba280"
+  },
+  "password.status.signatureDenied": {
+    "text": "Se rechazó la solicitud de firma.",
+    "source": "1431f4c6c22d308d5da9b09b0f8c0a6ac29a6348eae3b11ff87226d93c7b91d1"
+  },
+  "password.status.walletChangeFailed": {
+    "text": "Falló el cambio con la billetera: {{reason}}",
+    "source": "952ea9bc472bceef3172a2f3781ce0fb510d4c186e4600043be70070519ba09d"
+  },
+  "password.status.enterCurrent": {
+    "text": "Introduce tu contraseña actual.",
+    "source": "cf4d205e451da03cea764504155e4eba992477f6b70c012502d636c9a7898dac"
+  },
+  "password.status.saving": {
+    "text": "Guardando…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "password.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "username.status.enterNew": {
+    "text": "Introduce un nuevo nombre de usuario.",
+    "source": "355c82f89730dd5aa3d821f4ad27f25d44cb09184147a35188640d6024554b37"
+  },
+  "username.status.enterPassword": {
+    "text": "Introduce tu contraseña actual.",
+    "source": "cf4d205e451da03cea764504155e4eba992477f6b70c012502d636c9a7898dac"
+  },
+  "username.status.saving": {
+    "text": "Guardando…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "username.status.changeFailed": {
+    "text": "No se pudo cambiar el nombre de usuario.",
+    "source": "073750be527e5e7d82f1281e1ada66204d95a2edf1515e749ff0a5f154bd7b93"
+  },
+  "username.status.unchanged": {
+    "text": "Ese ya es tu nombre de usuario.",
+    "source": "b33a96a452ac57e14225a11ad048281be6bee3a0fea7d89864cdc314dedc190d"
+  },
+  "username.status.changed": {
+    "text": "Ahora eres @{{username}}.",
+    "source": "c3a6938942a3227128001ec2c55f6d3e826dff69f05ca17800959090c036cd82"
+  },
+  "username.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "signOut.failed": {
+    "text": "No se pudo cerrar sesión. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "0632a4853c68c1e1f46564d9df9aaabb335f62459c2b38543b87107e9fd0a158"
+  },
+  "apiKey.remove.confirmTitle": {
+    "text": "¿Eliminar tu clave de API?",
+    "source": "1ee469e473451824b7c32a8088b0d3f61de81c496df0a7d9b557b8a0ec15c301"
+  },
+  "apiKey.remove.confirmMessage": {
+    "text": "Los próximos chats usarán de nuevo el presupuesto diario compartido.",
+    "source": "cafee8d0d055378667b569721fd4f68f2a918d395544fe9006708cfab489b51e"
+  },
+  "apiKey.remove.confirmButton": {
+    "text": "Eliminar",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "apiKey.remove.failed": {
+    "text": "No se pudo eliminar la clave.",
+    "source": "4b33ea92e4c7da9f490f106fded6a4b5033ce752e74e3eb11c5e89b3eb6c87e7"
+  },
+  "apiKey.remove.done": {
+    "text": "Eliminada.",
+    "source": "b4df0c43b59cfbb146d94d5610850a72afbd6844486643b3e025e7eee9891af2"
+  },
+  "apiKey.remove.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "grants.status.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "grants.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "grants.status.invalidCap": {
+    "text": "Introduce un límite válido (mínimo $0.01).",
+    "source": "5eac2deb4ff1f25a1a0b9bdcf46451a7879503351bfd0fc3022a2c10191cd81d"
+  },
+  "grants.status.capFailed": {
+    "text": "No se pudo actualizar el límite.",
+    "source": "7839e655d9ea328de1d141f6d71a31a46d3292c94926a9e96d63e7b027a3e0c7"
+  },
+  "grants.status.capUpdated": {
+    "text": "Límite actualizado.",
+    "source": "43414f3c4b4263651d48572da4c3bfd41e6fc56e285fa4ff7fa447fe878a1876"
+  },
+  "grants.status.spilloverFailed": {
+    "text": "No se pudo actualizar.",
+    "source": "9eac1d3f9df1e7ef4f913262f9c0fb7fb06f73c46d72e9edb36d49bc1d22b021"
+  },
+  "grants.status.spilloverEnabled": {
+    "text": "Desbordamiento activado.",
+    "source": "88ee271921b5cf1b5abf63375d61cd99215d8957f9b913a4123d65a614eb859e"
+  },
+  "grants.status.spilloverDisabled": {
+    "text": "Desbordamiento desactivado.",
+    "source": "2195cfc46d63729730edaef62f4649570dcbd6f104ee69f1730c052c9427868b"
+  },
+  "grants.revoke.confirmTitle": {
+    "text": "¿Revocar el acceso a la IA de \"{{app}}\"?",
+    "source": "1fb7843756419e80896ee31f7488cac51439c60a0f69238236e1626dbfb60f83"
+  },
+  "grants.revoke.confirmMessage": {
+    "text": "Su próxima llamada a la IA fallará de inmediato. La app podrá volver a pedir acceso más adelante.",
+    "source": "920d81411145be5e1b592316bfbd7e4e51d52aea7d3e720dfe408d5810606532"
+  },
+  "grants.revoke.confirmButton": {
+    "text": "Revocar",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "grants.status.revokeFailed": {
+    "text": "No se pudo revocar.",
+    "source": "1f13652b3517320dbbc1855ee3cdbe92499bc436818d76a2797f13a1dd138f86"
+  },
+  "grants.status.revoked": {
+    "text": "Revocado.",
+    "source": "f11dcfc58f94154c44a10abbe4b6b6d459555c5b6d43e0c29d9484d98185e052"
+  },
+  "grants.status.reenableFailed": {
+    "text": "No se pudo volver a activar.",
+    "source": "abe57dbcf7742a96774c5b77805e2e8613fb557bb53ae23753d378d80601c00c"
+  },
+  "grants.status.reenabledAtDefault": {
+    "text": "Reactivado con el límite diario predeterminado de {{cap}}.",
+    "source": "539e4231ca0412b9c2c06852294833cf6ae3c017308fa87733bd6383eec55815"
+  },
+  "grants.status.reenabled": {
+    "text": "Reactivado.",
+    "source": "6335436c30e71e966ef7ff55f106395dd5965aadb1e5218f5502b94314b59301"
+  },
+  "notificationPrefs.status.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "notificationPrefs.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "notificationPrefs.status.saveFailed": {
+    "text": "No se pudo guardar.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "notificationPrefs.status.saved": {
+    "text": "Guardado.",
+    "source": "fca046ccd586c67f7fe0b3c12c29873a8abf9376f7cd514fc6272ec03b2de0b3"
+  },
+  "notificationPrefs.status.unknownApp": {
+    "text": "No se pudo identificar esta app.",
+    "source": "48efbb9706c3b8759c3969029c9b7cc3f9c7454016285e2bacf54aa369c03090"
+  },
+  "notificationPrefs.status.resetFailed": {
+    "text": "No se pudo restablecer.",
+    "source": "534cc8a201a2738c223c574e8463fc208a8ac87676c936cfd820464998fdba23"
+  },
+  "notificationPrefs.status.reset": {
+    "text": "Se vuelven a seguir tus valores predeterminados.",
+    "source": "79e4dcaac085bbe9b0bb5578f757ac3187e2a93240aaa03dc8eabf1d05d2b305"
+  },
+  "appPermissions.status.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "appPermissions.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "appPermissions.revoke.confirmTitle": {
+    "text": "¿Revocar este permiso?",
+    "source": "421e06bfbe3df9e1605fbae63d5db91147add6aa6408cae7961784e1c977ac14"
+  },
+  "appPermissions.revoke.confirmMessage": {
+    "text": "La app lo pierde la próxima vez que se abra. Puede volver a pedírtelo más adelante.",
+    "source": "7c569ed0914eea4e8b239e326273851b7f2bb23ab7467b1191763413853e26f1"
+  },
+  "appPermissions.revoke.confirmButton": {
+    "text": "Revocar",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "appPermissions.status.revokeFailed": {
+    "text": "No se pudo revocar.",
+    "source": "1f13652b3517320dbbc1855ee3cdbe92499bc436818d76a2797f13a1dd138f86"
+  },
+  "appPermissions.status.revoked": {
+    "text": "Revocado. Dejará de funcionar la próxima vez que se abra la app.",
+    "source": "6720ad68c0edcd29aa6fdd0d496e83d87475e6c71587445e2a02a0738442bae1"
+  },
+  "appPermissions.status.unknownApp": {
+    "text": "No se pudo identificar esta app.",
+    "source": "48efbb9706c3b8759c3969029c9b7cc3f9c7454016285e2bacf54aa369c03090"
+  },
+  "appPermissions.status.notDeclared": {
+    "text": "Esta app ya no solicita ese permiso.",
+    "source": "1670cd7604ad909f9224ef1b03f0c12c0c40a365bbc1a453b5a921e724408a5f"
+  },
+  "appPermissions.status.reenableFailed": {
+    "text": "No se pudo volver a activar.",
+    "source": "abe57dbcf7742a96774c5b77805e2e8613fb557bb53ae23753d378d80601c00c"
+  },
+  "appPermissions.status.reenabled": {
+    "text": "Reactivado. Se aplica la próxima vez que se abra la app.",
+    "source": "00f025347f2ba4cf23722e0301a2b31439b5368a20f69c2127887dd4cdaa136b"
+  },
+  "agentFiles.status.tooLarge": {
+    "text": "\"{{file}}\" es demasiado grande. El límite es de 48 KB por archivo.",
+    "source": "e5f58661d1021018f75a0341d0bd3b7f26c932a90feee37a309ec9c7262ac098"
+  },
+  "agentFiles.status.unreadable": {
+    "text": "No se pudo leer ese archivo.",
+    "source": "66cc390c1bcfec65a1117d89ff88065832e498d435df8667f72d469b5e4b33b8"
+  },
+  "agentFiles.form.titleSkill": {
+    "text": "Nueva habilidad desde \"{{file}}\"",
+    "source": "8fe49cf6356257ee02efa7ec4dae99df07ebab5bb65e6619027d75299e23f3cf"
+  },
+  "agentFiles.form.titleInstruction": {
+    "text": "Nuevo archivo de instrucciones desde \"{{file}}\"",
+    "source": "704e70620c42b0b958131fa29517fa94a1ef1b789aaed84dc599436bddee8719"
+  },
+  "agentFiles.status.demoData": {
+    "text": "Datos de demostración: los cambios no se guardan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "agentFiles.status.nameRequired": {
+    "text": "Ponle un nombre al archivo.",
+    "source": "3febfed6fc176af1a35c54e098cc734fbe1270a075fa6c7121ebbe255f254907"
+  },
+  "agentFiles.status.saveFailed": {
+    "text": "No se pudo guardar el archivo.",
+    "source": "65aa9a344eac37ab013bc180a2fd28d45b5c3b8601e9f2945abbe2ea0f2a6506"
+  },
+  "agentFiles.status.saved": {
+    "text": "Se guardó \"{{name}}\". Se aplica desde tu próxima ejecución.",
+    "source": "d3890a9a7b600fe78cd96fa09c8537d521d0788f0b0d108a2245bafa15b55bde"
+  },
+  "agentFiles.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "agentFiles.delete.confirmTitle": {
+    "text": "¿Eliminar \"{{name}}\"?",
+    "source": "e329db76e112d1841910992ce89edb91c3afa1ba8c510e7f3ec6e2b73389dd4e"
+  },
+  "agentFiles.delete.confirmMessage": {
+    "text": "El agente de programación dejará de usarlo desde tu próxima ejecución. Esta acción no se puede deshacer.",
+    "source": "7f67889a17d6d6a1b3d217ce49622a7b4a14df5f9b41277ab76bd6768243e012"
+  },
+  "agentFiles.delete.confirmButton": {
+    "text": "Eliminar",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "agentFiles.status.deleteFailed": {
+    "text": "No se pudo eliminar.",
+    "source": "7e2e87f15e1acfd77091272e596e93abdc2142f01a1688c6ea72c07d735d0ab1"
+  },
+  "agentFiles.status.deleted": {
+    "text": "Se eliminó \"{{name}}\".",
+    "source": "ce314eea16594e051bf7cc5226fd13dcd5dd91b371f77ebc2d2800e8c9a131e5"
+  },
+  "wallet.status.startFailed": {
+    "text": "No se pudo iniciar la vinculación.",
+    "source": "455b3330f8dae7f88ed13b969496d81d8a78ec102b98eed75e0e40ba933cce30"
+  },
+  "wallet.status.networkError": {
+    "text": "Error de red: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "wallet.status.linked": {
+    "text": "¡Billetera vinculada!",
+    "source": "d90e1dc460804a9cea89595a189dff63e4230f73042115a2827f4e2d5ee0fbfb"
+  },
+  "wallet.status.qrExpired": {
+    "text": "El código QR caducó. Inténtalo de nuevo.",
+    "source": "603d556dcefc649c423f9cf1c10214c0cac5f5432d9cc00b6a7722e067e409ba"
+  },
+  "wallet.link.expiresIn": {
+    "text": "Caduca en {{time}}",
+    "source": "d12833a5a9266f3e8b7f1fa789005bb9788eff61d9955c303f29b84dbfeaedd2"
+  },
+  "wallet.unlink.confirmTitle": {
+    "text": "¿Desvincular tu billetera de Homeroom?",
+    "source": "dc7c8139a8b6b44fdd425ac689bb22626d9c22e353d034379c7173c1762830e6"
+  },
+  "wallet.unlink.confirmButton": {
+    "text": "Desvincular",
+    "source": "b90108da0bd2b120cc5ed1ba1eb5859a0364c78e56819a427abd176aaff2af5b"
+  },
+  "wallet.status.unlinkFailed": {
+    "text": "No se pudo desvincular.",
+    "source": "df68c8229552bb550935e7b90f5b122112a39c1d70427c97b09a721b2f87b5eb"
+  },
+  "wallet.status.unlinked": {
+    "text": "Billetera desvinculada.",
+    "source": "9c955cd913a11c322c0cd96af385091fcf04e00ef07efe22f7d6597c702fca70"
+  },
+  "usernode.readError.timeout": {
+    "text": "La app de Homeroom no respondió a tiempo. Puede que aún se esté iniciando.",
+    "source": "831a2fb6617f9384cf58468c2e43feb57aecc87c897eebca521746e1b1bf5147"
+  },
+  "usernode.readError.rejected": {
+    "text": "La app de Homeroom informó de un error.",
+    "source": "1d0b7e7236e5e03141e34aa148f2c0b969ea1c40584c34a527eddf87211d1ac0"
+  },
+  "usernode.readError.probeInconclusive": {
+    "text": "La app de Homeroom no ha restablecido su conexión segura para los ajustes. Volver a abrir la app suele solucionarlo.",
+    "source": "cbad46244ec4e77f9938ff2df9f4e7e0e1c888005607e604e0576c3e92ec15a6"
+  },
+  "usernode.readError.noTransport": {
+    "text": "Esta pantalla no puede conectarse con la app de Homeroom desde aquí.",
+    "source": "6c093b9d67b4e59203cf081c500c16830b3473d1a9326ac113737a2ca020936a"
+  },
+  "usernode.readError.notNative": {
+    "text": "Esta pantalla no puede conectarse con la app de Homeroom desde aquí.",
+    "source": "6c093b9d67b4e59203cf081c500c16830b3473d1a9326ac113737a2ca020936a"
+  },
+  "usernode.readError.pageChanged": {
+    "text": "La solicitud se canceló porque esta página cambió.",
+    "source": "b80faf3fc3fcb499835b4b938e47079e7c1af0d4dd1aa1b17fbbdbc0e18c7cff"
+  },
+  "usernode.readError.privilegedUnavailable": {
+    "text": "La app de Homeroom rechazó la conexión segura de esta pantalla. Consulta “App de Homeroom: conexión” más abajo.",
+    "source": "25aa701e185ac90e212148f60f7a823e8a99b03b075df004a631ba9b6a409bfa"
+  },
+  "usernode.readError.fallback": {
+    "text": "La app de Homeroom no devolvió ningún ajuste.",
+    "source": "37784f6a730bd90a70119d154fb1aef06287ecfe91a420bb4f051c7b0051b174"
+  },
+  "usernode.connection.state.ready": {
+    "text": "Conectado",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "usernode.connection.state.blockedFrame": {
+    "text": "Rechazada",
+    "source": "66b873543aebf01b33f9a69013d6ba1291d31dafbdcd29051e9dd94fe90b7245"
+  },
+  "usernode.connection.state.unsupported": {
+    "text": "No está en esta versión de la app",
+    "source": "c05d68abe445c0962023df597ad7ff017fe2920b3810faf828b0e5b1f1a2fc53"
+  },
+  "usernode.connection.state.inconclusive": {
+    "text": "Sin confirmar",
+    "source": "3229d16ca643cb8615493e849ef042cc687c7a94ac44b9b9131668cab75422d5"
+  },
+  "usernode.connection.state.unattached": {
+    "text": "Sin respuesta",
+    "source": "7e49c68db30e39dc72d346ee51ddc7e9a283ce3ad6ece4fa786612919313d8ab"
+  },
+  "usernode.connection.state.unknown": {
+    "text": "Aún no es necesaria",
+    "source": "f3ad7cf45438cb3a4c87e86cb88e79fe609d5faaa5d9e01e73436a4f83b4758e"
+  },
+  "usernode.connection.reason.ready": {
+    "text": "Esta pantalla puede administrar los ajustes de la app.",
+    "source": "805d49b781ba37e2db3f2b889e47fe694aa6509c271362991821d932e0b80f09"
+  },
+  "usernode.connection.reason.blockedFrame": {
+    "text": "La app rechaza la conexión segura de esta pantalla, así que desde aquí no se pueden cambiar los ajustes ni cerrar la sesión de la app. Fuerza el cierre de la app y vuelve a abrirla; normalmente así se restablece. Si sigue ocurriendo, reinstalar la app elimina el estado bloqueado.",
+    "source": "9e92a4bf9976b3a473701ee8afad8eba4d02e455f8548bd09fbee134f9c0f001"
+  },
+  "usernode.connection.reason.unsupported": {
+    "text": "Esta versión de la app es anterior a la conexión segura que usa esta pantalla. Actualiza la app de Homeroom para administrar sus ajustes desde aquí.",
+    "source": "89697727ab94c0fb34a2cd9db9853307b4fc4f79515d9a95a10f530b66498091"
+  },
+  "usernode.connection.reason.inconclusive": {
+    "text": "La app aún no ha respondido, así que no sabemos si la conexión segura está activa. Puede que todavía se esté iniciando; inténtalo de nuevo en un momento.",
+    "source": "a66334fbae7e742083e5e76f604e0e1881514b0a8d3e74d51d464e75253602fd"
+  },
+  "usernode.connection.reason.unattached": {
+    "text": "La app nunca respondió a la solicitud de conexión segura de esta pantalla. Fuerza el cierre de la app y vuelve a abrirla; si no funciona, reinstalar la app elimina el estado bloqueado.",
+    "source": "df1e001385560fe5277d457204d79a990dda2d850e029a4578150bf403e9e816"
+  },
+  "usernode.connection.reason.unknown": {
+    "text": "Esta pantalla aún no ha necesitado la conexión segura de la app.",
+    "source": "612de212244474a9a0223370eb2206051eb821ce308fecce8cf78e30bee5fbed"
+  },
+  "usernode.action.notAccepting": {
+    "text": "La app de Homeroom no acepta cambios desde esta pantalla. Fuerza el cierre de la app, vuelve a abrirla e inténtalo de nuevo.",
+    "source": "2b7bf898284cae25a3226931e6fb4a72abaac29df8d881867bfc99ca8b0dc902"
+  },
+  "usernode.notif.openingPermissionPrompt": {
+    "text": "Abriendo la solicitud de permiso…",
+    "source": "64c1477f3509795da1f7de010cc0f862777eb178e6075e9c61de767ed12d1782"
+  },
+  "usernode.notif.openingNotificationPrompt": {
+    "text": "Abriendo la solicitud de notificaciones…",
+    "source": "729279cc5d9df6b09ac57e8176fe70dd83d5db2b277a2ecf3fb058a4b7b0ae2d"
+  },
+  "usernode.notif.preview": {
+    "text": "Esta es una vista previa de la fila de la app. El permiso de notificaciones en sí está en la app de Homeroom.",
+    "source": "1305496610d71fc65450a3631f807d2da90e3cc5a2c2289890a9c3d37545e583"
+  },
+  "usernode.notif.onlyInApp": {
+    "text": "El permiso de notificaciones solo está disponible dentro de la app de Homeroom.",
+    "source": "e7162b450d52843cc9597027a35516df288fb52d208e6e7b01c0c6a9af416e9d"
+  },
+  "usernode.notif.alreadyAllowed": {
+    "text": "Las notificaciones ya están permitidas para Homeroom.",
+    "source": "59a91e71b5f3321415296525e0966b831f9d0f0ac4a7801d6c790a880d6c315f"
+  },
+  "usernode.notif.noAnswer": {
+    "text": "La app de Homeroom no respondió a la solicitud de permiso. Fuerza el cierre de la app, vuelve a abrirla e inténtalo de nuevo.",
+    "source": "c14ed244df55d110245268697912f218f01d08cac51eeb316b0644ebda0e4bda"
+  },
+  "usernode.notif.requestFailed": {
+    "text": "No se pudo iniciar la solicitud de permiso.",
+    "source": "7251d65fc769f6f93ee82885745527b4ec89eec735f26f581fc983f9c1e9e5c9"
+  },
+  "usernode.notif.permissionGranted": {
+    "text": "Permiso concedido.",
+    "source": "63895f3e9bc16c0ae570abe6cf082208d2852cd8f01104482273583a40f60aff"
+  },
+  "usernode.notif.nowAllowed": {
+    "text": "Las notificaciones ahora están permitidas para Homeroom.",
+    "source": "29f715c70031e5bf97e618a5bf69f9542b914c2993893146993ad3ae2f73e9b9"
+  },
+  "usernode.notif.unsupported": {
+    "text": "Esta versión de la app de Homeroom no puede abrir la solicitud de notificaciones. Actualiza la app desde la App Store.",
+    "source": "d893917265e5302c8ec27c98faddb6da3b55c6cbf92e3a10c8ae3533590060a4"
+  },
+  "usernode.notif.deniedAndroid": {
+    "text": "Se denegó el permiso. Permite las notificaciones de Homeroom en los ajustes del sistema.",
+    "source": "6bececd1d2ca6beabbc4d12259f7e7d16ffc240856e929bf559c80807baec99d"
+  },
+  "usernode.notif.deniedIos": {
+    "text": "Las notificaciones están desactivadas para Homeroom. iOS solo muestra su solicitud una vez, así que debes cambiarlo en Ajustes › Notificaciones › Homeroom.",
+    "source": "561ae5ff3364ebc965724bab72dfab7426edf2110c9ba9abdafb87ee701b5785"
+  },
+  "usernode.notif.declined": {
+    "text": "No se concedió el permiso.",
+    "source": "ea5e378049b40e488372f8ac53d3122e47c10f2a50bf973a193b6b44670a7541"
+  },
+  "usernode.notif.silent": {
+    "text": "La app de Homeroom se cerró sin mostrar la solicitud de notificaciones. Vuelve a abrir la app e inténtalo de nuevo, o permite las notificaciones en Ajustes › Notificaciones › Homeroom.",
+    "source": "975826ec04e561e84e182cdbb0de90c12e7b6004288030902632b9e3ddf3cfe2"
+  },
+  "usernode.notif.couldNotOpen": {
+    "text": "No se pudo abrir la solicitud de notificaciones.",
+    "source": "36ea1087645820ec97ca85357f6a53fbaf10a17c55da684207dba6e317298cca"
+  },
+  "terms.noneToReview": {
+    "text": "No hay términos para revisar ahora",
+    "source": "836ccd73b0e6a48eaaa34f7662cbcbccdbf7962ea273620bdd85b64ceac42a89"
+  },
+  "terms.loadFailed": {
+    "text": "No se pudieron cargar los términos",
+    "source": "d7d4499d91346f6d3929f14870bed283268adcedd68dd363d1c6743ed6af7fd3"
+  },
+  "terms.fallbackTitle": {
+    "text": "Términos",
+    "source": "ede5489964834a514b61c7a4a8370be2452dd4a7d807180f14991ccc11ad2430"
+  },
+  "terms.firstRunIntro": {
+    "text": "Revisar los términos es parte de unirse a la plataforma. Lee los términos completos y luego elige si los aceptas.",
+    "source": "2fc352b8ed5f2c95610a9b7dd2fbb0e2ee70da90d549310023030acf235ee8d1"
+  },
+  "terms.version": {
+    "text": "Versión {{version}}",
+    "source": "c6b6b4b58937ac03375604bd0a9252f6c1926496d870272ba68f78fb3497891a"
+  },
+  "terms.published": {
+    "text": "publicada el {{date}}",
+    "source": "562a293e692aefc3c5e6651b677d6a134e41c9652b398112cd406895f871c702"
+  },
+  "terms.readFull": {
+    "text": "Leer los términos completos",
+    "source": "05e37a9b3499499944e130c81729efdf00ac5ccf78a9f0d20c11ebeae1b1b8e1"
+  },
+  "terms.acceptedOn": {
+    "text": "Aceptaste esta versión el {{date}}.",
+    "source": "52a89f484a8823a54c32ae001f1760d0769122d389ff063ad73975afabaf7046"
+  },
+  "terms.accepted": {
+    "text": "Aceptaste esta versión.",
+    "source": "b155e2010274956d7255b54087526586e6265601ced022d753199964c866d372"
+  },
+  "terms.notAccepted": {
+    "text": "Aún no has aceptado esta versión.",
+    "source": "737bfca88a5fc7dcfbc234298661501deaaaceae01812372ce555462f4745f16"
+  },
+  "terms.consentFailed": {
+    "text": "No se pudo registrar tu consentimiento",
+    "source": "dd2f35910e9f661defd4300951f07595fbc5c3207d879c5a53668f77181dfb3d"
+  },
+  "terms.accept": {
+    "text": "Aceptar los términos",
+    "source": "04ef526187fbb9b19f5faeca7e7565a5a0f63d0eb56856f733ec0980643aa55c"
+  },
+  "terms.acceptedToast": {
+    "text": "Términos aceptados",
+    "source": "af982c8cecc983342a025406a91461ae84036cb97b92de8c8c832e410d783879"
+  },
+  "terms.decline": {
+    "text": "Rechazar",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "terms.declinedToast": {
+    "text": "Puedes aceptar los términos más tarde desde tu perfil",
+    "source": "8757d0f985fc7e34d9bedd20ecc044472bc660cce0704f70ba39e1c4b7b32560"
+  },
+  "usernode.privacy.strictFacematch": {
+    "text": "Coincidencia facial estricta",
+    "source": "db9e96be50a5fa7969cb4efe17c583eb69f35d8091beb11edbbdca4798f1cf93"
+  },
+  "usernode.privacy.openZkIdentity": {
+    "text": "Abrir identidad ZK",
+    "source": "fb90222891cc1a7c5290b146886141f24eba8ee93b8af8db975191561345a675"
+  },
+  "usernode.privacy.restartZkChallenge": {
+    "text": "Reiniciar desafío ZK",
+    "source": "8444b0af8fa991877e37c5d1b0bed5e3b056a248bdc70c0c030c64855bce3e60"
+  },
+  "usernode.diagnostics.debugMode": {
+    "text": "Modo de depuración",
+    "source": "166f21953904ae988849ff2ddd3945eea2c931a050682aa3468c5d7884e4be9c"
+  },
+  "usernode.diagnostics.deviceBenchmark": {
+    "text": "Prueba de rendimiento del dispositivo",
+    "source": "706d270858be872719e3709555136b624a8569792481021e7e90dd4aa5ba855d"
+  },
+  "usernode.diagnostics.httpLogs": {
+    "text": "Registros de depuración HTTP",
+    "source": "2f45ced28b956e152d33c22a79e2bfc2caff0714b85e25838bc4437dedc6961f"
+  },
+  "usernode.about.reviewTerms": {
+    "text": "Revisar términos (sin aceptar)",
+    "source": "cb5d729382d69c60804bf5b03b8b70e5e8b4241336bd5dee1f5b5a670189dbc2"
+  },
+  "usernode.about.terms": {
+    "text": "Términos",
+    "source": "ede5489964834a514b61c7a4a8370be2452dd4a7d807180f14991ccc11ad2430"
+  },
+  "usernode.about.appVersionBuild": {
+    "text": "App {{version}} ({{build}})",
+    "source": "d36c2dea1a080518cbe762c6cf71fb57a0a5b4bb50537b6e5b24430572f07d5e"
+  },
+  "usernode.about.appVersion": {
+    "text": "App {{version}}",
+    "source": "348470f60fc7cde6af35d42c875a1539cf2345889b0189efb1d27227a845312a"
+  },
+  "usernode.about.nodeVersion": {
+    "text": "Nodo {{version}}",
+    "source": "c2400c559b2d139910e1898ba0928819e030d3bdccd47623a15977e2dc4d4a0e"
+  },
+  "usernode.connection.appVersionBuild": {
+    "text": "App {{version}} ({{build}})",
+    "source": "d36c2dea1a080518cbe762c6cf71fb57a0a5b4bb50537b6e5b24430572f07d5e"
+  },
+  "usernode.connection.appVersion": {
+    "text": "App {{version}}",
+    "source": "348470f60fc7cde6af35d42c875a1539cf2345889b0189efb1d27227a845312a"
+  },
+  "usernode.connection.bridgeVersion": {
+    "text": "Puente v{{version}}",
+    "source": "95d331660e4bf1dea5deef7da244a6dbe07e77fa4d6f55252cb80152945fb521"
+  },
+  "usernode.connection.rowLabel": {
+    "text": "Conexión segura con la app",
+    "source": "2feb90ba4887107dba6926355a6c6aa6e4e76e35c97febb5a2f1b873c0068c44"
+  },
+  "usernode.connection.state.unavailable": {
+    "text": "No disponible",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "usernode.connection.connectWallet": {
+    "text": "Conectar cartera existente",
+    "source": "0b6aca1e4afecbbecaf7a510f0b756d3710b872ea8a2d3da8397a8d094bdffe5"
+  },
+  "usernode.permissions.heading": {
+    "text": "App de Homeroom: permisos del dispositivo",
+    "source": "6812765047c424f1d2d03aff5b105cc2bbbcfd0d75b8fe7f69e9a4d56a453932"
+  },
+  "usernode.permissions.descriptionAndroid": {
+    "text": "La producción de bloques requiere que la app active tu dispositivo en los momentos exactos de cada turno.",
+    "source": "fae4d31501c74e7a5321f175fc8b4313cdd2c87748a81942e93b1916c2455a4d"
+  },
+  "usernode.permissions.descriptionIos": {
+    "text": "Las notificaciones permiten que Homeroom te avise de la actividad del nodo y de la cuenta.",
+    "source": "8e24f2dead070515d0059cf449502d4bdd2155664b12905b35352d54c61593e5"
+  },
+  "usernode.permissions.exactAlarms": {
+    "text": "Alarmas exactas",
+    "source": "b39f0e4186c82efbde64084d006a87e3aa040a4a3cd641d220dc203031eac9f4"
+  },
+  "usernode.permissions.notifications": {
+    "text": "Notificaciones",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "usernode.permissions.granted": {
+    "text": "Concedido",
+    "source": "62026a42b2390a87bf21a984cabce8067c2bddf5031a519a11397f38a0ee828c"
+  },
+  "usernode.permissions.notGranted": {
+    "text": "No concedido",
+    "source": "352a5b4c1246d1bf84a4bc5902b808a29e50b008bb7f2f26ba2881289deb9adb"
+  },
+  "usernode.permissions.exactAlarmsActionName": {
+    "text": "Alarmas exactas: solicitar permisos",
+    "source": "ad4015e2b4db9f16f19fad9b70c3de3d5bd7c1f127d04c863a03648d7951b521"
+  },
+  "usernode.permissions.notificationsActionName": {
+    "text": "Notificaciones: permitir notificaciones",
+    "source": "08f23317849552b9ca6898900a2ff5feede2f6a9111e574cd8f62ec51dbc6224"
+  },
+  "usernode.permissions.requestPermissions": {
+    "text": "Solicitar permisos",
+    "source": "db910d2c50636828c6629734bb9385fd85cc2d6f5e45c01d0b52e5b30671b939"
+  },
+  "usernode.permissions.allowNotifications": {
+    "text": "Permitir notificaciones",
+    "source": "001559c8913cdf3d6f835cbbe86da612c0affb5c7e8602221053fcd292db52d6"
+  },
+  "usernode.permissions.batteryOptimization": {
+    "text": "Optimización de batería",
+    "source": "e2c2b8efa9f25025dd12a329574dce5a0cc28cd886d841099d804b9d3c244c2b"
+  },
+  "usernode.permissions.batteryUnrestricted": {
+    "text": "Sin restricciones",
+    "source": "ea72a231d1b8a76fc80be167eb0c7c4702e27cee873551579096b2fcccb3aa60"
+  },
+  "usernode.permissions.batteryRestricted": {
+    "text": "Restringida",
+    "source": "a00571bcb257e86300664e627eb41fdab70d591ec10f43dba357b0bd4ce3a420"
+  },
+  "usernode.permissions.openBatterySettings": {
+    "text": "Abrir ajustes de batería",
+    "source": "3163b5ddd02cd4358f691773b33474693e871028dc8be96e522a47babe61bfca"
+  },
+  "usernode.permissions.device": {
+    "text": "Dispositivo: {{manufacturer}}",
+    "source": "5b0c13447e701b7cf4a9e015f255227d28150393e70f790fc6c0f3e288c5969d"
+  },
+  "usernode.socialPush.stuck": {
+    "text": "La app de Homeroom no acepta la conexión segura de esta pantalla, así que no se pueden configurar las notificaciones. Consulta «App de Homeroom: conexión» más arriba.",
+    "source": "9b74ef87bababfd1cd92e9bb8a27e2a42fb3fa067da7625918a824a270050d68"
+  },
+  "usernode.socialPush.finishingSignIn": {
+    "text": "Terminando el inicio de sesión seguro de la app antes de activar las notificaciones…",
+    "source": "1991ee7ebd7f3f1bcde13dbb7be76a6aea73485fd42d5bad30dde3167bac8474"
+  },
+  "usernode.socialPush.unavailable": {
+    "text": "Los ajustes de notificaciones no están disponibles temporalmente.",
+    "source": "92460ef6a02d3a8c39f790444bf75fd0d4734f12fdbf6e48882c3d1713bf2603"
+  },
+  "usernode.socialPush.statusOff": {
+    "text": "Desactivadas en este dispositivo.",
+    "source": "78e679b98577b9a5d2723cfeb5583a63c78fdaad4ca572c1a6be578a6550a3fe"
+  },
+  "usernode.socialPush.statusOn": {
+    "text": "Activadas. Este dispositivo está registrado para recibir notificaciones de actividad.",
+    "source": "4555ec032600e196d9ba1053e1d2a922f0c8d7e0a02ff42740fb4fa2f2dbfcf5"
+  },
+  "usernode.socialPush.statusDenied": {
+    "text": "El permiso de notificaciones está denegado en los ajustes del dispositivo.",
+    "source": "7c0a8c1e5f6d939f15c1a573de6893175008b2c2158e0819176ba9efc1edc288"
+  },
+  "usernode.socialPush.statusEnabling": {
+    "text": "Activando notificaciones…",
+    "source": "24721556b0e48c1e1583df58aed17b325f5da8ed5da5ee0a945b54c2288ea052"
+  },
+  "usernode.socialPush.statusNotActive": {
+    "text": "Activadas, pero la entrega aún no está activa.",
+    "source": "6ad332318486f0cefd695aaa56442f98503a24630675982b8e9889022813a202"
+  },
+  "usernode.blockProduction.checkFailed": {
+    "text": "No se pudo comprobar el estado de la producción de bloques ahora.",
+    "source": "e64e7832f8f68224912da88fc2f840d83efc714ebf5bb19741108dbade4f41b1"
+  },
+  "usernode.blockProduction.released": {
+    "text": "Liberadas. Tu nodo produce bloques cuando gana turnos.",
+    "source": "adf35d7ac68c5a49872711a9e7c24e1bb3edd5497853ade62c81d678e40dfa95"
+  },
+  "usernode.blockProduction.pending": {
+    "text": "Solicitud pendiente. Empezarás a producir automáticamente cuando un administrador libere tus claves.",
+    "source": "077e16d0082dc09aaf1d94d1e3d2aa09aa4e41e39d0a69332de1b97098cf2083"
+  },
+  "usernode.blockProduction.needsAccess": {
+    "text": "Disponible cuando tu cuenta tenga acceso a la plataforma.",
+    "source": "03256d37821babe5eb4a154cf97af09e0d17571526276068815074e5924eb09b"
+  },
+  "usernode.blockProduction.requestFailed": {
+    "text": "La solicitud falló",
+    "source": "cfce761befa84073c2ea0d29bc3f3d647c985faa02d80854eada5312a7cc24a1"
+  },
+  "usernode.blockProduction.requestSent": {
+    "text": "Solicitud enviada. Un administrador liberará tus claves",
+    "source": "ac5d16ce13d3a3387a70ef320f4ed1e04fd1427694f7f1418bb519e321db6bd8"
+  },
+  "usernode.widgetIcons.sending.label": {
+    "text": "Envío",
+    "source": "e595f17fac1d8384c7287aa20ab48ec05476a9a557a524091c03727732582e76"
+  },
+  "usernode.widgetIcons.sending.pair": {
+    "text": "Par claro + oscuro",
+    "source": "fc06e4cb4798feb3cc6886f5817ceb2a78fe325339bb0fc4b4a55d2f9761425e"
+  },
+  "usernode.widgetIcons.sending.undecided": {
+    "text": "Sin decidir, una sola versión por ahora",
+    "source": "2e8ab8eea0dde9b8862452f16d327ad4dff268999a6db00a962448d0b765283e"
+  },
+  "usernode.widgetIcons.sending.singleDark": {
+    "text": "Una sola versión (oscura)",
+    "source": "f15986d7b53c753897c34e95c5a833d2046a3a17f707d371669eb99da42338d4"
+  },
+  "usernode.widgetIcons.sending.singleLight": {
+    "text": "Una sola versión (clara)",
+    "source": "bb33cabe7f93d9ff616a7fc970f7135fa8448e27323435e21e93bb82e19a765b"
+  },
+  "usernode.widgetIcons.sending.singleOther": {
+    "text": "Una sola versión ({{scheme}})",
+    "source": "9ae4503f7bb788e20011d6cebd16c42f674bc071596d405ef4adc630aeb0a08e"
+  },
+  "usernode.widgetIcons.verdictBound": {
+    "text": "Veredicto vinculado a la versión de la app: {{version}} ({{build}})",
+    "source": "7ad9266455dde7e3e70542bd8541c3690fa7377aae6bec959c0116d7a5cca19b"
+  },
+  "usernode.widgetIcons.verdictUnbound": {
+    "text": "Veredicto vinculado a la versión de la app: desconocida, el veredicto se reconfirma cada vez",
+    "source": "ef9ee42c30704792283c50c6d085fee1af40a0b3881ac866a8b224457b6ca183"
+  },
+  "usernode.widgetIcons.readError": {
+    "text": "{{method}}: {{reason}}",
+    "source": "18e213dc21d4a48a80907fd9642b4362cef6ac309d5044afc30ff00b66abbc44"
+  },
+  "usernode.widgetIcons.mechanism.label": {
+    "text": "Accesos directos del widget",
+    "source": "5f28cf1abbf8bb2a488484779c6df903e78b472d6693f80b00ad275fb47551a3"
+  },
+  "usernode.widgetIcons.mechanism.available": {
+    "text": "Disponible",
+    "source": "e674447337e83c1346f6122ed69f35bf5526e2a11842b2f2b788f3fb67d714ca"
+  },
+  "usernode.widgetIcons.mechanism.otherDevice": {
+    "text": "Este dispositivo no ({{mechanism}})",
+    "source": "5ce4302a92454a59b0da9ead174b5aeda452d08480e9ef1bd6f207f87cd442b0"
+  },
+  "usernode.widgetIcons.mechanism.unavailable": {
+    "text": "No disponible",
+    "source": "67a926f7008e2b0e7f2b3f7a4b37597834830110be1d51138f425d6f3449bc09"
+  },
+  "usernode.widgetIcons.registry.label": {
+    "text": "Registro de fijados",
+    "source": "c9ea4eb50e17e193f34f2558e7a82f786f4a3a0e906c7a921bf350ccb60f0c77"
+  },
+  "usernode.widgetIcons.registry.unreadable": {
+    "text": "No se pudo leer",
+    "source": "51a02791dcb61eb8846a00d3f0263a9da516b30b6a92a3b08e34d65af4cef259"
+  },
+  "usernode.widgetIcons.capability.label": {
+    "text": "Compatibilidad con iconos oscuros",
+    "source": "a688ec86f82b3dd3763052074ea9281ea578f14e3f83f70bbae163393ad3764d"
+  },
+  "usernode.widgetIcons.capability.advertised": {
+    "text": "Anunciada por la app",
+    "source": "ea028841ba86ecedbc7863bd5d03c88fc17dd436d5df844e6f9951e7bb75af43"
+  },
+  "usernode.widgetIcons.capability.notAdvertised": {
+    "text": "No anunciada",
+    "source": "bbcd905d77f7611cc883e6b5380db154a04af70dd6f979cdadfa30a454a1f1dc"
+  },
+  "usernode.widgetIcons.capability.unknown": {
+    "text": "La app no pudo indicarlo",
+    "source": "2b23bea4da092445c29a3dd997f47ae831b269788d9567983f2dd904af52f97c"
+  },
+  "usernode.widgetIcons.verdict.label": {
+    "text": "Confirmado por el widget",
+    "source": "f36e9669d9f2c8f1cbcfebfab2e8460e2f48e55721a560851d8914d7e14aaa0b"
+  },
+  "usernode.widgetIcons.verdict.supported": {
+    "text": "Guarda ambas versiones",
+    "source": "ef5d1b3dcd3140b4eac01dabe7c83d1f5a6883cf8c3019bae4e032da757d4507"
+  },
+  "usernode.widgetIcons.verdict.unsupported": {
+    "text": "Solo una versión",
+    "source": "fe4f3ad53f7110872d3b2eee34c5e7f49aebecd7badc1c14245e93f72c99c0d7"
+  },
+  "usernode.widgetIcons.verdict.unconfirmed": {
+    "text": "Aún sin confirmar",
+    "source": "96584d78f43835f6b63ba47efbc40d533d016d3e057e09812da86a6150fe9bf1"
+  },
+  "usernode.widgetIcons.lastCheck.at": {
+    "text": "Última comprobación de iconos: {{when}}",
+    "source": "85e00f92b37a95f422ca6a73532f9977ef5c6c9d34b8f43c31806bf3ad50c232"
+  },
+  "usernode.widgetIcons.lastCheck.never": {
+    "text": "Última comprobación de iconos: nunca",
+    "source": "3d72e5e8fa72783d3e5c8bba9a1efd21b3cd5723d96f19e48d1baa224d14a216"
+  },
+  "usernode.widgetIcons.lastCheck.atSkippedMechanism": {
+    "text": "Última comprobación de iconos: {{when}}: omitida, no es el mecanismo del widget",
+    "source": "dd01545d747edad858e4d401d3a8083bc9fc9e2cdd163e5e95ba3341ec582cdb"
+  },
+  "usernode.widgetIcons.lastCheck.neverSkippedMechanism": {
+    "text": "Última comprobación de iconos: nunca: omitida, no es el mecanismo del widget",
+    "source": "8473c78f8336fce291fc3fd43695372f93e9f0152404e6d512bff70da6a6bbd2"
+  },
+  "usernode.widgetIcons.lastCheck.atSkippedBridge": {
+    "text": "Última comprobación de iconos: {{when}}: omitida, sin puente de accesos directos",
+    "source": "26d5438dfc2e2d63e86314da676dbd5db4a2791b9128bd414c332c5cbb0dd29b"
+  },
+  "usernode.widgetIcons.lastCheck.neverSkippedBridge": {
+    "text": "Última comprobación de iconos: nunca: omitida, sin puente de accesos directos",
+    "source": "1fa93aadc6eecf4cd939d9898221a000d14fcb6a4b3551512ccee1011368108d"
+  },
+  "usernode.widgetIcons.lastCheck.atNothing": {
+    "text": "Última comprobación de iconos: {{when}}: nada que enviar",
+    "source": "2f62327ce11ff804fe03f6a9318a7ea02318d3550402c46b6f861fad10d8ab8d"
+  },
+  "usernode.widgetIcons.lastCheck.neverNothing": {
+    "text": "Última comprobación de iconos: nunca: nada que enviar",
+    "source": "6655124fb03110aded7d47ecd619a89364fbf6dc56469a386cdea1f052be0106"
+  },
+  "usernode.widgetIcons.entry.none": {
+    "text": "No hay accesos directos fijados en el widget.",
+    "source": "30503d43e7c80f21a9d42843b9067d0818e83716afbbb793cdf9fdb88eb02bf9"
+  },
+  "usernode.widgetIcons.entry.foreign": {
+    "text": "fijado por otra app",
+    "source": "d419f6db33ee85677ef0eea1610a6c5cac5a7decc92f20f32ccff3428813a8c8"
+  },
+  "usernode.widgetIcons.entry.appNotLoaded": {
+    "text": "app no cargada",
+    "source": "304cae45faa3b4ea3bbd66d6ebbd334bece69278750fce5c82a1f23e53c0b786"
+  },
+  "usernode.widgetIcons.entry.iconYes": {
+    "text": "icono sí",
+    "source": "3f0ae64208d5a55679076f0e34422e9bbfe8e7437c5de8024a4e0a339d528ce7"
+  },
+  "usernode.widgetIcons.entry.iconNo": {
+    "text": "icono no",
+    "source": "e8985bae400378de3e776f388a753a943acdcdfbe782161a3b744b81b9126365"
+  },
+  "usernode.widgetIcons.entry.iconUnknown": {
+    "text": "icono —",
+    "source": "59bbbfdc8a83b4050628574d58ccbcedbdf2b01059bced7ce21dd1340c6557f8"
+  },
+  "usernode.widgetIcons.entry.darkYes": {
+    "text": "oscuro sí",
+    "source": "02907d37ad7022c7e1346fa07631fe8766fc7f6a27182d65070767593e84b7a0"
+  },
+  "usernode.widgetIcons.entry.darkNo": {
+    "text": "oscuro no",
+    "source": "3c8bad9b69a9179d64eb38a432ef7ec00d339a6ce31d9aa274174505f1e01712"
+  },
+  "usernode.widgetIcons.entry.darkUnknown": {
+    "text": "oscuro —",
+    "source": "72e1e79d6935d8a1a7d59c35a6775a098897286414d83b78cd5d0ef93f1404ab"
+  },
+  "usernode.widgetIcons.entry.sentCurrent": {
+    "text": "enviado actual",
+    "source": "0b6a485617561b7f9a6a3c11dabc3d4c386a916b6b474638ae6110cb04a256dd"
+  },
+  "usernode.widgetIcons.entry.sentStale": {
+    "text": "enviado desactualizado",
+    "source": "ef1a54916bd44d79e29e69d1d65a76ed2c046307cb0b27a7e18ce5b1803aca52"
+  },
+  "usernode.connection.diagnosticsCopied": {
+    "text": "Diagnóstico copiado",
+    "source": "2c8618c0ca2a8c80249586c6afc554f1a13ac6f51778f44a027463b82beead8a"
+  },
+  "usernode.connection.diagnosticsCopyFailed": {
+    "text": "No se pudo copiar",
+    "source": "d5cb934f8035e733ae4ce309fe314887ded6b2045c52b635248eb4d1c3a1bf6d"
+  },
+  "usernode.privacy.openZkIdentityFailed": {
+    "text": "No se pudo abrir la identidad ZK",
+    "source": "23e1f16af4566a591812755ea4bcd90ff05f3094515d224263101a6020a2dff8"
+  },
+  "usernode.diagnostics.openBenchmarkFailed": {
+    "text": "No se pudo abrir la prueba de rendimiento",
+    "source": "4c4308fa29cdb341618a9225ea56abe4d3ffc57d3a23f1f8c2e5e10372c301a8"
+  },
+  "usernode.diagnostics.openLogsFailed": {
+    "text": "No se pudieron abrir los registros",
+    "source": "e8ec5a4c82f3a84cf1a3e5e5a4edefad34312dcd2b3240816504f227b18bf955"
+  },
+  "usernode.privacy.restart.confirmTitle": {
+    "text": "¿Reiniciar el desafío ZK?",
+    "source": "0e089820cf39d7ba9b93555371d02f8372bdedfc371ec543e7b0448d86708af6"
+  },
+  "usernode.privacy.restart.confirmMessage": {
+    "text": "Se descartará el registro de identidad que tienes en curso.",
+    "source": "4da2517c273d1548caf223a1b212c822241d8de5a8a8a62d7acc6ace830cda82"
+  },
+  "usernode.privacy.restart.confirmButton": {
+    "text": "Reiniciar",
+    "source": "6b983a81e5e8099e4e23a368e72636e31f029f2e691e5be714106b8cf59d70a7"
+  },
+  "usernode.privacy.restart.done": {
+    "text": "Estado del desafío restablecido",
+    "source": "a73eb1a125dd611610cd4ea4763476f8749c0004f5c87c99877e020fc49dc702"
+  },
+  "list.dot": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "password.status.set": {
+    "text": "Contraseña establecida. Ya puedes iniciar sesión con ella.",
+    "source": "5ff4583ec20a0aaca130c16c90ea388eea12d0e504dafc6799b80bb856984733"
+  }
+}

@@ -1,0 +1,390 @@
+{
+  "confirm.title": {
+    "text": "Êtes-vous sûr ?",
+    "source": "f0762c4f3bfcd695e32e7fcd087dc2a60bc26cda108b4fc0a643445b397168c7"
+  },
+  "alerts.notification.fallbackTitle": {
+    "text": "Session d’agent",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "alerts.test.queueFailed": {
+    "text": "Impossible de programmer la notification push de test. Veuillez réessayer.",
+    "source": "237ab0ed948edc6de837474252d502289d6a908ba75bb51f4d26c12b1cb6b35a"
+  },
+  "alerts.test.title": {
+    "text": "Alerte de test Homeroom",
+    "source": "6358ce2ccf3650710d9b0172a3f016b5a40dbdcb91c30555e5d0784806bae3e4"
+  },
+  "alerts.test.body": {
+    "text": "Ceci est un test du son et des alertes de vos sessions d’agent.",
+    "source": "f885d5af9382efed4cee290f9e915f5aa9c1ce8dcbbd0fc55ebdbdace7d5cd09"
+  },
+  "feedbackQueue.error.screenshotUpload": {
+    "text": "échec de l’envoi de la capture d’écran",
+    "source": "f4dd20277ba825ec90d05b7e18396e1c2b72e779be4f19f7b54fc979ca5ed94d"
+  },
+  "feedbackQueue.error.network": {
+    "text": "erreur réseau",
+    "source": "b026fa61abcf11c4dc129fd3462457f58be83bbcf06c002e17a3def9e0955429"
+  },
+  "feedbackQueue.error.couldNotSend": {
+    "text": "Envoi impossible",
+    "source": "e42c42e0b72fb4f0cbac1955884dfbd2d29644a9a6669552343139e16de71c89"
+  },
+  "push.error.unsupported": {
+    "text": "Les notifications d’activité ne sont pas prises en charge par cette version de l’app",
+    "source": "5003a51d4080406ed2075c3a0a2af8739abe7a27ff1e8805b88b85a3c5e88be5"
+  },
+  "push.error.signInFinishing": {
+    "text": "La connexion sécurisée de l’app n’est pas encore terminée. Réessayez dans un instant",
+    "source": "63614c59868ca62958472699465db6f1425e2c3aaba17e3fa724f6ca8136bab8"
+  },
+  "push.error.sessionChanged": {
+    "text": "La session native a changé pendant la mise à jour des notifications",
+    "source": "d9aab0836bffbed52062f1e364300e79b8a4bb13fc3172874f8d62d56c99c7be"
+  },
+  "push.error.invalidState": {
+    "text": "L’app a renvoyé un état de notification non valide",
+    "source": "a2e3a628dd560feb804d489a15005b2ad3b6176210f8d1e10769b444769a5ba4"
+  },
+  "permissions.title": {
+    "text": "Configurez votre appareil",
+    "source": "be470ccb63986283003f3e02ad5fec4be77585fa2369b95677a8241098924b42"
+  },
+  "permissions.intro.androidProducer": {
+    "text": "Votre téléphone aide à faire fonctionner Homeroom : votre nœud peut produire des blocs lorsque l’app est en arrière-plan. Pour cela, Android doit pouvoir la réveiller à l’heure exacte des créneaux et la laisser hors de l’optimisation de la batterie. Ces réglages ne font que programmer des réveils. Ils ne donnent à Homeroom aucun accès à vos données.",
+    "source": "8954db94bb4bf9ce2ce1f373d9843fa198db0159c41ecc4798fa961371615722"
+  },
+  "permissions.intro.android": {
+    "text": "Autorisez les notifications pour que Homeroom vous informe de l’activité de vos apps et de votre nœud.",
+    "source": "35a0ec0c3fa557e59c51d9a121f7acd170ddc037ea7ef211bb3c4a8f7ecb0a37"
+  },
+  "permissions.intro.ios": {
+    "text": "Autorisez les notifications pour que Homeroom vous alerte de l’activité du nœud et du compte.",
+    "source": "9d98f246ebb1d36e085c387687bfb59f6157407fe4e64c912bd2fdb683e04a17"
+  },
+  "permissions.status.granted": {
+    "text": "Accordée",
+    "source": "62026a42b2390a87bf21a984cabce8067c2bddf5031a519a11397f38a0ee828c"
+  },
+  "permissions.status.notGranted": {
+    "text": "Non accordée",
+    "source": "352a5b4c1246d1bf84a4bc5902b808a29e50b008bb7f2f26ba2881289deb9adb"
+  },
+  "permissions.row.exactAlarms": {
+    "text": "Alarmes exactes",
+    "source": "b39f0e4186c82efbde64084d006a87e3aa040a4a3cd641d220dc203031eac9f4"
+  },
+  "permissions.row.notifications": {
+    "text": "Notifications",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "permissions.row.battery": {
+    "text": "Optimisation de la batterie",
+    "source": "e2c2b8efa9f25025dd12a329574dce5a0cc28cd886d841099d804b9d3c244c2b"
+  },
+  "permissions.action.grant": {
+    "text": "Accorder les autorisations",
+    "source": "6d6a893fff9f01cfccb2959bfdc363cfe60a75fae346d45f7e184e89a9969806"
+  },
+  "permissions.action.allowNotifications": {
+    "text": "Autoriser les notifications",
+    "source": "001559c8913cdf3d6f835cbbe86da612c0affb5c7e8602221053fcd292db52d6"
+  },
+  "permissions.action.openBatterySettings": {
+    "text": "Ouvrir les réglages de batterie",
+    "source": "3163b5ddd02cd4358f691773b33474693e871028dc8be96e522a47babe61bfca"
+  },
+  "permissions.action.skip": {
+    "text": "Plus tard",
+    "source": "b58eb52c8810b97857e264ea9de45f7bd7edb754bb0edad30ffab78ff027c45e"
+  },
+  "permissions.action.openNotificationSettings": {
+    "text": "Ouvrir les réglages de notification",
+    "source": "c6885c8ebcb22d112322a0c0f644efc40dc07a6207068b69ed25503ca45b092f"
+  },
+  "permissions.action.allowExactAlarms": {
+    "text": "Autoriser les alarmes exactes",
+    "source": "fe8bbe784d8d71d1ac2393892ec8e6000b96bb7297d06ba627a35f3619866894"
+  },
+  "permissions.action.allowBackground": {
+    "text": "Autoriser l’exécution en arrière-plan",
+    "source": "5bdfdc5597d906055f690b9d2e3b3e6e772ca895e51b048b74ec8b844310628c"
+  },
+  "permissions.action.delegate": {
+    "text": "Déléguer à la place",
+    "source": "355b92399c00c1b51e518e155d39169c2df535945e15ddab08d51e4ade206005"
+  },
+  "permissions.hint.notifications": {
+    "text": "Android vous demandera si Homeroom peut vous envoyer des notifications. Appuyez sur Autoriser. Vous pouvez les désactiver à tout moment dans les Réglages.",
+    "source": "b51da97e1833d669f383dd6177fb441cce201faa892d10d802937ac8749f32e6"
+  },
+  "permissions.hint.notificationsOff": {
+    "text": "Les notifications sont désactivées pour Homeroom. Activez-les dans les réglages d’Android, puis revenez ici.",
+    "source": "caf3b42db7215679e6d619ab30a64dded74790ca713392d8cf100d4a508bc5be"
+  },
+  "permissions.hint.exactAlarms": {
+    "text": "Android ouvre la page « Alarmes et rappels ». Activez Autoriser pour Homeroom, puis revenez ici. Votre nœud ne se réveille que quelques minutes avant chacun de ses créneaux.",
+    "source": "5ed1f948c6ecedcbb4795f9c1812d07d66eba3b553b4a5ab939c50e5275a4507"
+  },
+  "permissions.hint.background": {
+    "text": "Android vous demandera si Homeroom peut toujours s’exécuter en arrière-plan et vous avertira que cela peut consommer plus de batterie. Appuyez sur Autoriser. Votre nœud reste en veille entre les créneaux, l’impact réel est donc faible, et vous pouvez le modifier à tout moment dans les Réglages.",
+    "source": "421a0c28fe464e54d18fcbc35778edc3061967bc4bb700f64c65194dc813131e"
+  },
+  "permissions.hint.delegate": {
+    "text": "Vous préférez ne pas modifier ces réglages ? Déléguez plutôt votre mise au serveur. Vous gagnez toujours la moitié des points de production de blocs, et vous pouvez revenir en arrière à tout moment.",
+    "source": "e9d9991f4182fee315895aeee1c8034b8c752aa466fbe01646142829dc8e9acf"
+  },
+  "permissions.hint.productionDeferred": {
+    "text": "Les réglages de production de blocs (alarmes exactes et batterie) viendront plus tard, lorsque vous demanderez à produire des blocs dans Réglages, app Homeroom.",
+    "source": "ca0d2f91d03692f0c16828103eb1e352730aa03e9031a155162d523b65e2a05b"
+  },
+  "pingAsk.appBuilding.title": {
+    "text": "Être notifié quand votre app est prête ?",
+    "source": "0980bf4c4afdfc05a0f09cb4024050fcd10631d9ae8c750c711ad9dd48749dda"
+  },
+  "pingAsk.appBuilding.message": {
+    "text": "Le bot Homeroom vous écrira quand elle sera prête à être essayée.",
+    "source": "2c9059b93c7b86d4ee27efe1c0da185a34c029e70b78ab36a22ee454b4afcf85"
+  },
+  "pingAsk.confirm": {
+    "text": "Me notifier",
+    "source": "a5b3a74811e60623f753002629d9abfc8455155b316003299a39b9eb2871e8b8"
+  },
+  "pingAsk.notNow": {
+    "text": "Plus tard",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "version.tip.staging": {
+    "text": "Aperçu de préproduction de la plateforme, compilé sans SHA de commit, donc aucune révision à lier",
+    "source": "e12080dffa60922296dd275a8787c2470f0af3e6fe95a2d620bef17f1602e89f"
+  },
+  "version.tip.dev": {
+    "text": "Exécution hors déploiement (aucun GIT_SHA défini)",
+    "source": "1447ae37693507d42b5a1c35d8c8dabaafe80ab59318a4224ffa9c52b8281b92"
+  },
+  "version.tip.deploying": {
+    "text": "Déploiement de {{newSha}} · depuis {{oldSha}}",
+    "source": "ef66beee800be851864a4173b77719f0c01ab41ae2e3441e62861da168690b81"
+  },
+  "version.tip.deployingNewBuild": {
+    "text": "Déploiement d’une nouvelle version · depuis {{oldSha}}",
+    "source": "a273b38f1a6610950a19b578c114a2919f794a7f12c25626488d885d562f0c45"
+  },
+  "version.label.deploying": {
+    "text": "déploiement",
+    "source": "430895907c1c54070187fda0b4487636c73b5bfabaa562cc76ac93c58649686e"
+  },
+  "version.tip.downloading": {
+    "text": "Plateforme mise à jour de {{oldSha}} à {{newSha}}. Téléchargement en cours ; le rechargement apparaît dès qu’il y a quelque chose vers quoi basculer.",
+    "source": "a7b42f865d7bd0fac531c2c5c63b09363629e608370c8efa0da2d6ef9377a0cb"
+  },
+  "version.label.updating": {
+    "text": "{{sha}} · mise à jour…",
+    "source": "44a5127e755f4be2d5e08799e85d1dda3049dab167f3681669f02bb796b82b46"
+  },
+  "version.tip.reloadFailedPrefetch": {
+    "text": "Plateforme mise à jour de {{oldSha}} à {{newSha}}. Cliquez pour recharger (la mise à jour n’a pas pu être préchargée, il faudra peut-être deux essais).",
+    "source": "655de2c64cf82484c67875fef4dc104ea248b419c04ad859e96aa2ed2b9ab2cc"
+  },
+  "version.tip.reloadReady": {
+    "text": "Plateforme mise à jour de {{oldSha}} à {{newSha}}, et la nouvelle version est prête. Cliquez pour recharger.",
+    "source": "6b35a56c8f41b3ef4036e17dad393dbae98de690da1b0ddbcd9d5f4c2c715a1e"
+  },
+  "version.label.reload": {
+    "text": "{{sha}} · recharger",
+    "source": "c0922cc1773d26f63edf704b48e1bfe830192b7962153de43902cafd3500aaff"
+  },
+  "version.tip.commit": {
+    "text": "Commit de la plateforme {{sha}}",
+    "source": "38eb40d51a2012b786d27027329c95e59c7bcb2b41f4b23191fb97cd27dd2b93"
+  },
+  "invite.signedOut": {
+    "text": "Vous êtes déconnecté. Reconnectez-vous pour rejoindre.",
+    "source": "2ad08c2b461607a198cc05bf0b8e73e2022a844b74591a31102a67071729ffac"
+  },
+  "invite.dead.expired": {
+    "text": "Ce lien d’invitation a expiré.",
+    "source": "7aa263b33dcbbff9cadc7667e4d9c7079f92b139351fbf607da78f8ff78a0873"
+  },
+  "invite.dead.revoked": {
+    "text": "Ce lien d’invitation a été désactivé.",
+    "source": "e06ebc93751a841a4b1a9d257fb73bc5c0179c3dd0e40d24e5adc40ec977ec98"
+  },
+  "invite.dead.usedUp": {
+    "text": "Ce lien d’invitation a atteint son nombre maximal d’utilisations.",
+    "source": "470ba439321ab27f07f0e4c2173df61170c1a80c007eebc980d208f82562d07a"
+  },
+  "invite.dead.unknown": {
+    "text": "Ce lien d’invitation ne fonctionne pas.",
+    "source": "a0ffc5912ef1f3588980bab8ae1204ac9a01bc56a63f27afa1d8914d9c2285b8"
+  },
+  "invite.couldNotOpen": {
+    "text": "Impossible d’ouvrir ce lien d’invitation. Réessayez.",
+    "source": "ea0e29657a1775df08faf42d673c1d03a20973428d1588b3a377266c78bad4c1"
+  },
+  "invite.couldNotJoin": {
+    "text": "Impossible de rejoindre. Réessayez.",
+    "source": "d8162dad54a10098395d9e9322f73170fff9999c583d3857ba04b98b29c58b66"
+  },
+  "invite.from.isMaking": {
+    "text": "{{inviter}} le crée et vous a invité.",
+    "source": "47a113cb76b4a52f1c2400574f1948e1217c8ca14b2989fd139cb6604d01d835"
+  },
+  "invite.from.made": {
+    "text": "{{inviter}} l’a créé et vous a invité.",
+    "source": "ebf48c6df55f0ab7a2fcfe899eea581a066cfe7cb5e709827198c8106c91174c"
+  },
+  "invite.from.handle": {
+    "text": "@{{handle}} vous a invité.",
+    "source": "42e0af3155f8e2fdbb122b9b58a823b9ed67bbce49f770905f4854e8b173d687"
+  },
+  "invite.from.unknown": {
+    "text": "Vous avez été invité.",
+    "source": "6e957db787df2ae56c0578a2c58cc88ef31ad4317a19cc8d10e82ceb8a5ce6c1"
+  },
+  "invite.confirm.title": {
+    "text": "Rejoindre {{project}} ?",
+    "source": "5a47fa2915310fadcf2972ee57b7c583e5c9c1ff24206eaef5f22bacebbd9ba1"
+  },
+  "invite.confirm.titleUnnamed": {
+    "text": "Rejoindre ce projet ?",
+    "source": "0fc173a3729d512dbb4641b30a504c52b446f0712c4e9566c5182ec677a3dfd5"
+  },
+  "invite.confirm.note": {
+    "text": "« {{note}} »",
+    "source": "2a021146774ace843ff6132136c74fc5e2b372bd09d2c2ec95d87939575fd161"
+  },
+  "invite.confirm.twoSentences": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "invite.confirm.threeSentences": {
+    "text": "{{first}} {{second}} {{third}}",
+    "source": "474e1df2d7070ce42cd25255dc559330bb8e2ae4b9ee8f3dd626704123a1b7be"
+  },
+  "invite.confirm.join": {
+    "text": "Rejoindre",
+    "source": "fd30fe681b4b2d9e55f851cb34641f907401aa43e9d80f5b1e14ce714ef00497"
+  },
+  "invite.confirm.notNow": {
+    "text": "Plus tard",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "invitePreview.unnamed": {
+    "text": "cette communauté",
+    "source": "7a0984fae8008c868042a594765931af7a38dd2720c6184be19be455e4ec5d6e"
+  },
+  "invitePreview.privateCommunity": {
+    "text": "Communauté privée",
+    "source": "cbb6e03143153940d60b396a1930d790299d190338d5caee412a16d55e3ec2a2"
+  },
+  "invite.joined": {
+    "text": "Vous voilà dedans.",
+    "source": "fbf03a5ae58a1e80a178da3f44f3dfbdd19db140c197bc723819f9e5f81b776b"
+  },
+  "title.leaderboard.challenges": {
+    "text": "Défis",
+    "source": "40b9c8f444870eff94e260ea77c034c0078841842fedb9ba3cfe9e83b4ffb313"
+  },
+  "title.leaderboard.kudos": {
+    "text": "Kudos",
+    "source": "51483eb0b6d593009a02ce75240e6d94327c29cd0934297fce4025e12128ced0"
+  },
+  "title.leaderboard.standings": {
+    "text": "Classement",
+    "source": "c7342049e69be4aad2ccaf5eeb2e767dc3907bb2f83dcf1323c9ad378ec0b7ee"
+  },
+  "title.leaderboard.history": {
+    "text": "Historique",
+    "source": "0e769600933790607b2a13b33ddfade0fa17810eb62c3b28ee23e59516516491"
+  },
+  "title.profile": {
+    "text": "Profil",
+    "source": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c"
+  },
+  "title.yourChanges": {
+    "text": "Vos modifications",
+    "source": "96b37574b6640362a93b3ba556c91c6dbc8de4bfbd1111540cc084fe2e78f41e"
+  },
+  "title.yourRequests": {
+    "text": "Vos demandes",
+    "source": "4c64a2a1c58138fe301a92028cac974bd41fc9fbef099f668718817c6646c8af"
+  },
+  "title.yourVotes": {
+    "text": "Vos votes",
+    "source": "ca7f000856d9acd34f26649d87caa848a8406bbd225fdde843b97c96b4614612"
+  },
+  "title.allApps": {
+    "text": "Toutes les apps",
+    "source": "01bed311e7d0c963a5f8afe3dd3c99c8140d887d92c602b94b9309fa51b32723"
+  },
+  "title.communities": {
+    "text": "Communautés",
+    "source": "c864f329f5dde534613448895303d0a62f17af46b75ab16cb6c8170a120d1293"
+  },
+  "title.platformStatus": {
+    "text": "État de la plateforme",
+    "source": "c6df37e530f99dfea2d66e95dc35e0821706d401447e78fac66c26057263e1a8"
+  },
+  "title.admin": {
+    "text": "Admin et modération",
+    "source": "a89dfdf81e371949454a94701026bd3d66841a0017f1e2e2194b12956149cc56"
+  },
+  "title.settings": {
+    "text": "Réglages",
+    "source": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "title.messages": {
+    "text": "Messages",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "title.chat": {
+    "text": "Discussion",
+    "source": "460b3a7da007b7af9d35bca54181dc91382263b2bf133ca214871ca1fed1fc1c"
+  },
+  "title.agentSession": {
+    "text": "Session d’agent",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "title.appNotAvailable": {
+    "text": "Application indisponible",
+    "source": "f92ec0a50f2d881431b5833f689ba92be5ffb112c22dc3fc0331df833a215452"
+  },
+  "version.tip.deployingElapsed_many": {
+    "text": "Déploiement de {{newSha}} · depuis {{oldSha}} · {{count}} s écoulées",
+    "source": "6b8aca531e77c4245d4369361ab3009fc60b7c1664c278b19aef9f0d75206576"
+  },
+  "version.tip.deployingElapsed_one": {
+    "text": "Déploiement de {{newSha}} · depuis {{oldSha}} · {{count}} s écoulée",
+    "source": "6b8aca531e77c4245d4369361ab3009fc60b7c1664c278b19aef9f0d75206576"
+  },
+  "version.tip.deployingElapsed_other": {
+    "text": "Déploiement de {{newSha}} · depuis {{oldSha}} · {{count}} s écoulées",
+    "source": "6b8aca531e77c4245d4369361ab3009fc60b7c1664c278b19aef9f0d75206576"
+  },
+  "version.tip.deployingNewBuildElapsed_many": {
+    "text": "Déploiement d’une nouvelle version · depuis {{oldSha}} · {{count}} s écoulées",
+    "source": "803c164a0564e5aeb74e13d0b3ba280edb38e24c251f936371c66653ddaf9d2b"
+  },
+  "version.tip.deployingNewBuildElapsed_one": {
+    "text": "Déploiement d’une nouvelle version · depuis {{oldSha}} · {{count}} s écoulée",
+    "source": "803c164a0564e5aeb74e13d0b3ba280edb38e24c251f936371c66653ddaf9d2b"
+  },
+  "version.tip.deployingNewBuildElapsed_other": {
+    "text": "Déploiement d’une nouvelle version · depuis {{oldSha}} · {{count}} s écoulées",
+    "source": "803c164a0564e5aeb74e13d0b3ba280edb38e24c251f936371c66653ddaf9d2b"
+  },
+  "invite.confirm.members_many": {
+    "text": "{{count}} personnes en font partie.",
+    "source": "74e1542d343f210fd9925d75df70d3d67cc497898d288d3cd3becb40594b50a5"
+  },
+  "invite.confirm.members_one": {
+    "text": "{{count}} personne en fait partie.",
+    "source": "3634802ec0d260d1f1d0db2bdbaefeadf95b3eb3b964a2ee3a5e24089a709088"
+  },
+  "invite.confirm.members_other": {
+    "text": "{{count}} personnes en font partie.",
+    "source": "74e1542d343f210fd9925d75df70d3d67cc497898d288d3cd3becb40594b50a5"
+  }
+}

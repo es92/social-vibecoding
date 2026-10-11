@@ -1,0 +1,3242 @@
+{
+  "report.title.app": {
+    "text": "Báo cáo ứng dụng",
+    "source": "5cf59a220d296b6811fd8fc4af3d64841ec1f4fd59cac97d7f1172490fc84f3e"
+  },
+  "report.title.user": {
+    "text": "Báo cáo người dùng",
+    "source": "82016f1f318751d17cf2012c8eb1ca986c533fc6d9c95f84455309a91c8c2198"
+  },
+  "report.title.message": {
+    "text": "Báo cáo tin nhắn",
+    "source": "0a1e3c5275559c907933f2d7aed5ed272b16da899c93061a08b3f67c41f869d7"
+  },
+  "report.title.received": {
+    "text": "Đã nhận báo cáo",
+    "source": "6b10cb5b474f4e9b33d4f62ce19f3ddb95363782839581db352ce7a6fa8d1e79"
+  },
+  "report.received": {
+    "text": "Đã nhận báo cáo #{{number}}. Chúng tôi sẽ xem xét và thông báo cho bạn khi xong.",
+    "source": "86928f0e5f118c26b3e4787a476c73af28660410863d09ac38a3c55511daf5ef"
+  },
+  "report.blockAppNote": {
+    "text": "Chặn sẽ ẩn ứng dụng này và tắt thông báo của nó đối với bạn. Việc này không chặn những người đóng góp. Bạn có thể bỏ chặn trong Cài đặt → Ứng dụng đã chặn.",
+    "source": "db79ebe68fbc91802853dbb4bbda6efcedd5bef76ff6059290f3e59ef64799a4"
+  },
+  "report.block.app": {
+    "text": "Chặn ứng dụng",
+    "source": "c73e9312da75ed0da1c48c3b754acb176c171f61ccab25527ed27c1d82363a9f"
+  },
+  "report.block.appDone": {
+    "text": "Đã chặn ứng dụng",
+    "source": "0e3c7373b16ae67d555893cb7651673fe812fceecf0fcefe3c6e996702a4f06f"
+  },
+  "report.block.user": {
+    "text": "Chặn @{{username}}",
+    "source": "8036a7efb997149c404cff0015877d92e5d01fe0539f00688c9a389919708018"
+  },
+  "report.block.userDone": {
+    "text": "Đã chặn @{{username}}",
+    "source": "f9756c1de1a720b81ffcace2e97f4808ec10616dd4967891f512dd26b4786da1"
+  },
+  "report.privateMessageNote": {
+    "text": "Người kiểm duyệt sẽ nhận tin nhắn này và các tệp đính kèm. Các tin nhắn riêng khác của bạn không được gửi kèm.",
+    "source": "dd40aaeba3cbc19a28dda00ec63af62c080f4721e70c5b2cbcbe9c9ee6dfaa4a"
+  },
+  "report.reason.label": {
+    "text": "Lý do",
+    "source": "f81ab834de5f84918dc040b884267c2b61cb1a52d46442de10e97f35a94d0500"
+  },
+  "report.reason.choose": {
+    "text": "Chọn lý do",
+    "source": "f9479b869e1045ab3d23e24ebea1f649fe627001b8987c25ee2e530a037e9a18"
+  },
+  "report.reason.spam": {
+    "text": "Spam",
+    "source": "94a9eac404c8c6ff825a438e1f8f3ff1afa9340dd3d1a6412d2c511a800de478"
+  },
+  "report.reason.scam": {
+    "text": "Lừa đảo hoặc gian lận",
+    "source": "5f0f908b54ed9c8a88704111f472f1f125a435e2acedda669978c170df8e807f"
+  },
+  "report.reason.harassment": {
+    "text": "Quấy rối",
+    "source": "98a7655d026affd930464dec6d5568dded83b9b5369bfed836801935111b9400"
+  },
+  "report.reason.hate": {
+    "text": "Thù ghét",
+    "source": "e562e8ead932801f552bdd268d623fb0d2f8bed4ab1251e5f732b157ebad9227"
+  },
+  "report.reason.threats": {
+    "text": "Đe dọa",
+    "source": "0631f1283421bd4e08fb50195457bb1580c53d9fb9690fd175b89054e39827cd"
+  },
+  "report.reason.sexualContent": {
+    "text": "Nội dung tình dục hoặc không an toàn",
+    "source": "2bf99866fdaff11842183b0b4de02d93976a4840d0c3950fff5dc4e49a6035c2"
+  },
+  "report.reason.impersonation": {
+    "text": "Mạo danh",
+    "source": "05955157000128548b4e412003ed7358fb45e4c37855476b81261e7c1543ac88"
+  },
+  "report.reason.other": {
+    "text": "Khác",
+    "source": "f97e9da0e3b879f0a9df979ae260a5f7e1371edb127c1862d4f861981166cdc1"
+  },
+  "report.details.optional": {
+    "text": "Chi tiết (không bắt buộc)",
+    "source": "4239d7e46a45364776dab4c24d9f620646653aeaeda57442c01f3a5dfa5baf11"
+  },
+  "report.details.required": {
+    "text": "Chi tiết (bắt buộc)",
+    "source": "f58d5c0c7d3945190b1051cb26237da6b4aa6d9960cfad737b77482e132d09bd"
+  },
+  "report.identityNote": {
+    "text": "Danh tính của bạn hiển thị với người kiểm duyệt, không hiển thị với người bị báo cáo hoặc chủ sở hữu ứng dụng.",
+    "source": "1c738f8eab169de7ca0067513c0bee56d90a5562475f86f50320d7e701624606"
+  },
+  "report.submit": {
+    "text": "Gửi báo cáo",
+    "source": "b41fd589ad91ed789bc2098002cb0306fe7e400a4c775f81ee65e8e38473753f"
+  },
+  "report.sending": {
+    "text": "Đang gửi…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "report.error.send": {
+    "text": "Không thể gửi báo cáo của bạn. Hãy thử lại.",
+    "source": "97fca689b54f7f6c6bd5ebed5186785ed7c0aed9dcf93a42f4cbd74fa093a05d"
+  },
+  "report.error.block": {
+    "text": "Không thể chặn. Hãy thử lại.",
+    "source": "0c8e525b9e9d2ee6e4e1ad9d666d2aff4ab84fb3cf739654a8fffb0757af7cf9"
+  },
+  "share.title": {
+    "text": "Chia sẻ ứng dụng này",
+    "source": "27b2c8704f71909ab7fd2af663bb02f4981338f3c791eb2fb66e8db73890a51d"
+  },
+  "share.close": {
+    "text": "Đóng chia sẻ",
+    "source": "bfc83eecce596f7586c1fb5bbbf2daa1528d6554f273fed7a623f3a72bc9c127"
+  },
+  "share.audience.members": {
+    "text": "Chỉ thành viên mới mở được. Hãy mời mọi người để họ vào được.",
+    "source": "a75f15f8266c3dfd9b96b4a4855799cf36173268235a8f6a3bf41a44c5ad7676"
+  },
+  "share.audience.public": {
+    "text": "Bất kỳ ai có tài khoản Homeroom đều có thể mở.",
+    "source": "791fd9c309e1911bd1424fdaf28fea72ab86edf8c1cab10fcde7605d7bf47140"
+  },
+  "share.urlLabel": {
+    "text": "URL chia sẻ",
+    "source": "04db8a9c83a778453442e284a16e8db5e4a8fa975c1433c1dc1c204af3523a00"
+  },
+  "share.copied": {
+    "text": "Đã sao chép!",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "share.copyFailed": {
+    "text": "Sao chép thất bại",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "share.invite": {
+    "text": "Mời mọi người",
+    "source": "27bf0f2d3f3f549002f193566e19b010a40b80c1a5564cf65a80d83f2f2c0462"
+  },
+  "share.openInNewTab": {
+    "text": "Mở trong tab mới",
+    "source": "e0af5c0bc2457475ab3c6e78ea06374a904469684daf6bffa229ac990b21aca3"
+  },
+  "share.alsoAt": {
+    "text": "Cũng có tại {{address}}",
+    "source": "eafa50018282d2279c60d37431feb80a79f154b7eb4a287c37a7795c84dc2ffe"
+  },
+  "appDomain.title": {
+    "text": "Tên miền tùy chỉnh",
+    "source": "d7d4c1e416bc676929d69b864fa2217888960abc2bef557b8833a64297219545"
+  },
+  "appDomain.loading": {
+    "text": "Đang tải…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "appDomain.error.load": {
+    "text": "Không thể tải tên miền tùy chỉnh.",
+    "source": "5fa6ee1470693eaa4a7e4d0199532c3a0d0214df9b03fc0f7ad2e224b61b5e15"
+  },
+  "appDomain.error.generic": {
+    "text": "Đã xảy ra lỗi. Hãy thử lại.",
+    "source": "4def98c892406e31099ba18e5d6a60db12420dd723a27a5ab77235d20adb0beb"
+  },
+  "appDomain.error.empty": {
+    "text": "Nhập một địa chỉ web, ví dụ app.example.com.",
+    "source": "4e89bafc17d44e35a9b110cb312bf8421a5e60ef569e5a98948e877bf13b1542"
+  },
+  "appDomain.error.copy": {
+    "text": "Không thể sao chép. Hãy chọn giá trị và tự sao chép.",
+    "source": "063700919562325b605c4bb3854b97b2d5ef7fda4b98499e3cfd8df95c932696"
+  },
+  "appDomain.add.intro": {
+    "text": "Gán cho dự án này một địa chỉ web của riêng bạn, bên cạnh {{host}}.",
+    "source": "604ccb24bf96c06b0156731d5822ae00200748e0d760e6ba20a1b2f0cf449e88"
+  },
+  "appDomain.add.label": {
+    "text": "Địa chỉ web",
+    "source": "45099c558849715716ba6287e21487c52a736378498173470fd826c4b77059eb"
+  },
+  "appDomain.add.hint": {
+    "text": "Một tên miền phụ, ví dụ app.example.com hoặc www.example.com. Tên miền gốc như example.com chưa được hỗ trợ.",
+    "source": "a4b566688c389d3aa01960026c1714bf6f7ddf79d5bca474275aaf5f9573368b"
+  },
+  "appDomain.add.submit": {
+    "text": "Thêm tên miền",
+    "source": "d86476ae6cc9e4a57c1401337d4a3c5260248ac12c3c45628d72a1462fb1e334"
+  },
+  "appDomain.add.adding": {
+    "text": "Đang thêm…",
+    "source": "c6de6f45c827f464b161b668ae93192ce4e6585c4029d8dd71795cbd7f922719"
+  },
+  "appDomain.status.pending.plain": {
+    "text": "Đang chờ DNS. Thay đổi DNS có thể mất tới một giờ mới hiển thị.",
+    "source": "b11d292f2e87023f8486909d16793bff832090aa0aa841bd72630d9671a477ea"
+  },
+  "appDomain.status.pending.checkedJustNow": {
+    "text": "Đang chờ DNS. Vừa kiểm tra xong. Thay đổi DNS có thể mất tới một giờ mới hiển thị.",
+    "source": "7c9aa991d322efd7912154a0cd6ab834b9c772bdfa5bad050fa80e5335a06536"
+  },
+  "appDomain.status.pendingReason": {
+    "text": "Đang chờ DNS. {{reason}}",
+    "source": "3c9150fef1d9c50314d368d118416e93e20fcdd9e3495dfaea62c4034b4a0cba"
+  },
+  "appDomain.status.verified": {
+    "text": "Đang lấy chứng chỉ. Thường mất một hai phút.",
+    "source": "7d0bab3594c8a16996aca4a2ca9b9ae2c43deb914340a031cb00a64d1f69983a"
+  },
+  "appDomain.status.verifiedReason": {
+    "text": "Đang lấy chứng chỉ. {{reason}}",
+    "source": "b299f67fd96d03e294552bb43cb3a69b884071a51adc884dc4b1eb853efeddc9"
+  },
+  "appDomain.status.live": {
+    "text": "Đang hoạt động.",
+    "source": "ea72b3ddce8acddc5c8129c7534a8d1ae4ba1e4279d12b7180a326807e6fcfc4"
+  },
+  "appDomain.status.liveSince": {
+    "text": "Hoạt động từ {{date}}.",
+    "source": "352f3421faf8e6f36e831d807fe2c336221ef7de28b4b1cebc5704c1fbcf1553"
+  },
+  "appDomain.status.failed": {
+    "text": "Không hoạt động.",
+    "source": "a08870abb1ba4963ac5acac8346cd94506d760646c133954ee40de3f47d22872"
+  },
+  "appDomain.status.failedReason": {
+    "text": "Không hoạt động. {{reason}}",
+    "source": "49665ce1f12e218790411613bed00b0b85a3ae13eee5fdbfc4271fdf8e3c23c7"
+  },
+  "appDomain.status.disabled": {
+    "text": "Đã bị quản trị viên tắt.",
+    "source": "01fc8818942f79473f9b0416e3eea726d6509c535328c4e89a06e15f3a29e58a"
+  },
+  "appDomain.status.disabledReason": {
+    "text": "Đã bị quản trị viên tắt. {{reason}}",
+    "source": "73e1698068d1c1bb642a591626784532203a39dfdc3af5f66004a98297184650"
+  },
+  "appDomain.records.add": {
+    "text": "Hãy thêm hai bản ghi này vào nơi bạn quản lý DNS cho {{zone}}:",
+    "source": "2e8267e2d2776b1fe60a006953a4bc076648d9f80407dfe8de3264af7b79aa9e"
+  },
+  "appDomain.records.keep": {
+    "text": "Hãy giữ hai bản ghi này ở nơi bạn quản lý DNS cho {{zone}}:",
+    "source": "a762101d665c0621177a36241cf8f9d12bbb90e255c59e5cd20b8db68f635379"
+  },
+  "appDomain.records.type": {
+    "text": "Loại",
+    "source": "baaddf70fb5d432b8bd948ef91d6f910124a6d138edae4d5f000c4610ddc8eae"
+  },
+  "appDomain.records.name": {
+    "text": "Tên",
+    "source": "dcd1d5223f73b3a965c07e3ff5dbee3eedcfedb806686a05b9b3868a2c3d6d50"
+  },
+  "appDomain.records.value": {
+    "text": "Giá trị",
+    "source": "8e37953d23daca5ff01b8282c33f4e0a2152f1d1885f94c06418617e3ee1d24e"
+  },
+  "appDomain.records.copy": {
+    "text": "Sao chép",
+    "source": "e21f935f11d7e966dbbae78da9daa378fe8142a14e7c0cd7434183005faa6c5c"
+  },
+  "appDomain.records.copied": {
+    "text": "Đã sao chép",
+    "source": "8d525e5f158b9afe05f3122af363ac67763bdc4e1395b46597b320c289766ce3"
+  },
+  "appDomain.records.staysChecking": {
+    "text": "Homeroom kiểm tra mỗi phút. Dự án vẫn có tại {{host}}.",
+    "source": "1319861736debadf9bd9617a84031e5dbeaecff09f625e248a6e9791f14f72f7"
+  },
+  "appDomain.records.staysLive": {
+    "text": "Dự án vẫn có tại {{host}}.",
+    "source": "dddd55b0780f454f92e927c5b59032f42afb6f0ccd1dfb5c742690e91966bc8c"
+  },
+  "appDomain.check.submit": {
+    "text": "Kiểm tra ngay",
+    "source": "2937cffb37abce97fcdf262d7f3187fe2a83f67ea0f3c0c841195fa7d12b00ed"
+  },
+  "appDomain.check.checking": {
+    "text": "Đang kiểm tra…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "appDomain.open": {
+    "text": "Mở",
+    "source": "ed077f3d8125d60dca1979c7133601bd187d47c73ed9975028f677e49e709942"
+  },
+  "appDomain.remove": {
+    "text": "Xóa tên miền",
+    "source": "5ce435076ca12c5636089eb24b3be78952135c1fcda9b608709126d17ea414a8"
+  },
+  "rename.title": {
+    "text": "Đổi tên ứng dụng",
+    "source": "5689214eba318e26740e60422e2aeec47f9802c026bddf41606d3ed89ce9fddf"
+  },
+  "rename.current": {
+    "text": "Tên ứng dụng hiện tại: <0>{{name}}</0>",
+    "source": "2282971ebe6c3a0e2816de78024c65ab66a9ae0de02ec883e4f233604137ed73"
+  },
+  "rename.newName": {
+    "text": "Tên ứng dụng mới",
+    "source": "d32b33c7646c5d28e3071d74184ee2bdaab11da7d4e732f979da2723e5b3970b"
+  },
+  "rename.placeholder": {
+    "text": "một cái tên hay hơn",
+    "source": "7e82a74e5c452fc76c5c4ad89768138a93234bb414603ff8671d1674011dee44"
+  },
+  "rename.hint": {
+    "text": "3–64 ký tự. Đây là tên hiển thị của ứng dụng, URL sẽ không đổi. Mở một PR chỉnh sửa <0>dapp.json</0>; tên mới được áp dụng sau khi PR được bầu chọn và hợp nhất.",
+    "source": "c88edcf01c85babd926b986a1c74a497b206c6f1920e718f755f3c8f614189df"
+  },
+  "rename.submit": {
+    "text": "Mở PR",
+    "source": "04c24026b2f00d817b610318ab2e984393c65576e67b591fb8fb0467f5aef0cb"
+  },
+  "rename.submitting": {
+    "text": "Đang mở PR...",
+    "source": "ea9a01281bac6b84743af562b5d47e0d78f81283a8160d7ef7831be355a12563"
+  },
+  "rename.error.tooShort": {
+    "text": "Tên phải có ít nhất 3 ký tự",
+    "source": "b822b3ab4b1ac505a4d7cb241b94b0b4b85aac8c6293827d798469e17ab11ed2"
+  },
+  "rename.error.tooLong": {
+    "text": "Tên không được quá 64 ký tự",
+    "source": "0f226e6234891403349c570fba74e89d529241df77e87c90e3fd410fb7f17423"
+  },
+  "rename.error.same": {
+    "text": "Tên ứng dụng mới phải khác tên hiện tại",
+    "source": "74aac2a7746e23585981d58910979c482a377cd269dd4916dbceaab57ad04fa5"
+  },
+  "rename.error.failed": {
+    "text": "Không thể mở PR đổi tên",
+    "source": "7aaaadadf4c3f047822587b43af58315be76003f82d11531a98d2864eca5ae28"
+  },
+  "rename.error.network": {
+    "text": "Lỗi mạng khi mở PR đổi tên",
+    "source": "81bea4dd394257934504fafbc8f7c58fab6d1f385d7c529a2429c4c2d23678ed"
+  },
+  "closeIssue.title": {
+    "text": "Đề xuất đóng vấn đề <0>#{{number}}</0>?",
+    "source": "00fc03e0d2fa247f0c07c08cbc153eac1e830c2e16b846474fb761c622cd26a9"
+  },
+  "closeIssue.explanation": {
+    "text": "Thao tác này mở một cuộc bỏ phiếu nhóm. Nếu được thông qua, vấn đề sẽ được đóng tại đây và trên GitHub.",
+    "source": "4b009e373628d6d67ef1cb2fca11afb4ded0cdea91bf816f8c7a7c24be7cdefb"
+  },
+  "closeIssue.reason.label": {
+    "text": "Vì sao nên đóng vấn đề này? <0>(không bắt buộc)</0>",
+    "source": "7502139d873ce3195afff11b028e96ac75189d1796380c58bec39846ff1d913d"
+  },
+  "closeIssue.reason.placeholder": {
+    "text": "VD: lỗi thời, trùng lặp, đã được sửa…",
+    "source": "1895a8df6fe9299ee2f41ba634e7512adc55f8824b45e2d60dca48ac5c3e4b24"
+  },
+  "closeIssue.reason.hint": {
+    "text": "Sẽ được đăng công khai trên vấn đề GitHub khi cuộc bỏ phiếu được thông qua.",
+    "source": "3feed84a88c77dd9b350045a4dbbc3f0bd8a6a142afe2a89b854aecdec3accd5"
+  },
+  "closeIssue.submit": {
+    "text": "Đề xuất đóng",
+    "source": "929738432a23d33cb99b972d1d4644a988d561533c9cd1f1c84ead9ae8ccf571"
+  },
+  "closeIssue.error.http": {
+    "text": "Đề xuất không thành công (HTTP {{status}}).",
+    "source": "ec08e8ae913b3f46aa920d3c8d52f64a592068137b488997fd1d345d54179eb0"
+  },
+  "closeIssue.error.detail": {
+    "text": "Đề xuất không thành công: {{reason}}",
+    "source": "b54639a7063abe1097c2d968bec7a51861d71165478e14c0c3228e2abf9009b0"
+  },
+  "allowance.title": {
+    "text": "Hạn mức ứng dụng",
+    "source": "aa08e18823fcb6f5df9602aba0effd4a0403445b086528af21defd13273ec063"
+  },
+  "allowance.checking": {
+    "text": "Đang kiểm tra…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "allowance.serverFull": {
+    "text": "Máy chủ đã đầy",
+    "source": "5dcf7840505d18656a86b9aebce1e2df79c2e806b1bc362277e2a6e23b791bcc"
+  },
+  "allowance.headline.noLimit": {
+    "text": "Không giới hạn ứng dụng",
+    "source": "9fd7a6f535f201ca9d51b28e720059e1f0ea125e2f9ef382bb6cf8b135489208"
+  },
+  "allowance.detail.admin": {
+    "text": "Tài khoản quản trị có thể tạo ứng dụng không giới hạn số suất.",
+    "source": "508c8cdbdf639d50705566208c33f01eec268f1de017b02471c65189bdafb09e"
+  },
+  "allowance.detail.unavailable": {
+    "text": "Chưa có thông tin mức sử dụng hiện tại.",
+    "source": "78a480af31f6e194d9e8ccfc41dae06ee529e600b9e5ce50abdd071ed5645d7d"
+  },
+  "allowance.detail.unavailableSpent": {
+    "text": "Chưa có thông tin mức sử dụng hiện tại. Hãy yêu cầu thêm suất để tạo ứng dụng khác.",
+    "source": "64f260db66fc8ca4da0f9451e3c97adfd6f5d02d766fd901a913cf865ba60c7e"
+  },
+  "allowance.server.fullNoLimit": {
+    "text": "Máy chủ này đã đạt giới hạn ứng dụng ({{limit}}). Hãy nhờ quản trị viên xóa một ứng dụng hoặc nâng giới hạn. Hạn mức của bạn: không giới hạn.",
+    "source": "0be5840c23a823d13ac028d74e50d270ec0110c4bc6f89fbc5907b435316a355"
+  },
+  "allowance.request.more": {
+    "text": "Yêu cầu thêm",
+    "source": "339d84f0dcbf98c41241d55025b24ff7d46e69b12a4474ed8a33267483ba6486"
+  },
+  "allowance.request.sending": {
+    "text": "Đang gửi…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "allowance.request.pending": {
+    "text": "Yêu cầu đang chờ",
+    "source": "bc26ab4d4ba9f030b32611d37569fcfd1842a25e30ec71dd68f106cbb4ceefb7"
+  },
+  "allowance.request.note": {
+    "text": "Quản trị viên đã nhận yêu cầu của bạn. Bạn sẽ được thông báo khi yêu cầu được xem xét.",
+    "source": "68eae4f062e069688bd1c995689497d88e356f6d228c6b8ea0492f25801b796f"
+  },
+  "allowance.refresh": {
+    "text": "Làm mới hạn mức",
+    "source": "cf0b3e3d47ecd094933257f1e830f8c5651747a0bea529f55d3db6e0ce8ddf64"
+  },
+  "allowance.error.load": {
+    "text": "Không thể tải hạn mức ứng dụng của bạn.",
+    "source": "a67f1e63f7966c253a20d3395564c5ff079de995b515e68d08b6a4dfd64f2c66"
+  },
+  "allowance.error.request": {
+    "text": "Không thể gửi yêu cầu của bạn.",
+    "source": "698d87629a0d8cbfb66d9bccac3777c53fb28d5dc08533b7f8326f6f20d77bd9"
+  },
+  "appNotifications.title": {
+    "text": "Thông báo",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "appNotifications.intro.named": {
+    "text": "Những gì {{app}} có thể báo cho bạn. Mỗi mục áp dụng cho cả chuông thông báo tại đây và thông báo trên điện thoại.",
+    "source": "97e581e21c42e831d039cba71bc93636409a0f6cd1ece37ea49c7cc93fbf4a42"
+  },
+  "appNotifications.intro.unnamed": {
+    "text": "Những gì ứng dụng này có thể báo cho bạn.",
+    "source": "680a934473b91a12df7acfc7c53c714e36ea64a328d8a1f4a6c3db16a8eee0d9"
+  },
+  "appNotifications.followDefault": {
+    "text": "Theo mặc định của tôi",
+    "source": "989794b6b1136ac32e9026c968d96d35f0ecc7d4fef114e9894864f30d2f2d44"
+  },
+  "appNotifications.source.account": {
+    "text": "Mặc định của bạn cho mọi ứng dụng",
+    "source": "e8c9643feda1f3ba5a6e8500840dd0f93b2a625ae3637e5412dd59bd80c21eaa"
+  },
+  "appNotifications.source.default": {
+    "text": "Mặc định",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "appNotifications.note": {
+    "text": "Tắt một mục chỉ dừng thông báo, không xóa nội dung đó. Vấn đề và đề xuất mới vẫn hiển thị trên bảng của ứng dụng này.",
+    "source": "3ee92c3594ccc382c84d56d95514a9df282f35b2a8fce35f4aec371c8c440909"
+  },
+  "appNotifications.error.load": {
+    "text": "Không thể tải cài đặt thông báo.",
+    "source": "9b7eaff0315856f59f255dbcb7c7cc8c67091b7a59800c6a719cb50636731fb5"
+  },
+  "appNotifications.error.save": {
+    "text": "Không thể lưu thay đổi đó.",
+    "source": "593417b9ce4acb0cd5165e5627a2cf0bc7ff063efbb9f3a30555836676f47a22"
+  },
+  "appSettings.title": {
+    "text": "Cài đặt ứng dụng",
+    "source": "d43fb8a961ff2d1f037995587ed8883ac4b733ecaf1b0b74201123ada13df810"
+  },
+  "appSettings.loading": {
+    "text": "Đang tải cài đặt ứng dụng…",
+    "source": "09f65a5f9674b5373a1e05f3891796db3d3b629747a2fabfe9c05f82ed2bcabd"
+  },
+  "appSettings.error.load": {
+    "text": "Không thể tải cài đặt ứng dụng.",
+    "source": "a80c5033fa9c8f194ff60c1fe1f88d9ee429170cdf08233886ac488a64efce5e"
+  },
+  "appSettings.demo.notice": {
+    "text": "Ứng dụng này đang ở chế độ demo. Các đề xuất và phiếu bầu từ <0>@{{partner}}</0> là giả lập: người tạo ứng dụng đã tạo chúng để ghi lại cách một thay đổi được đề xuất, xem trước và hợp nhất.",
+    "source": "b4ed0c764789f8f548ae20b0644ac5594f67e536341e0ff7b02ee1c4792e1561"
+  },
+  "appSettings.demo.noticeUnnamed": {
+    "text": "Ứng dụng này đang ở chế độ demo. Các đề xuất và phiếu bầu từ <0>@đối tác demo</0> là giả lập: người tạo ứng dụng đã tạo chúng để ghi lại cách một thay đổi được đề xuất, xem trước và hợp nhất.",
+    "source": "58274686c0716bf241ce838dad4becf376533e49d933ddfcc07b80f143e3c404"
+  },
+  "appSettings.access.heading": {
+    "text": "Quyền truy cập",
+    "source": "ec5ba0abb717da87aab2655bd4b4a40f93f2a591a0ade63611c42925c49c17e9"
+  },
+  "appSettings.access.codePublic": {
+    "text": "Dù chọn cách nào, mã nguồn vẫn công khai trên GitHub.",
+    "source": "0a8f9781a6a7a4d99e2dd7edbd3f87c540df6631223488efeb43dbe8cbfc9461"
+  },
+  "appSettings.delete.blocked.core": {
+    "text": "Đây là ứng dụng cốt lõi của nền tảng. Không thể xóa từ giao diện.",
+    "source": "ddb27a0d23d40eb74b0e1dd4c7f8f469ed0697385dd437363e40138d5db21a35"
+  },
+  "appSettings.delete.blocked.notOwner": {
+    "text": "Bạn không có quyền xóa ứng dụng này.",
+    "source": "2963ba429f6d3fb1ec21abcbb2d04a1ae52e30ef4e9772d1d75a9130af0099f1"
+  },
+  "appSettings.danger.heading": {
+    "text": "Vùng nguy hiểm",
+    "source": "fd8b8dae44216610d490dc8bf3470a2576c62b7a2bbe1b9234508df4832159f8"
+  },
+  "appSettings.danger.explanation.named": {
+    "text": "Xóa {{app}} sẽ gỡ ứng dụng khỏi mọi người, kể cả dữ liệu ứng dụng. Không thể hoàn tác. Đây không chỉ là gỡ biểu tượng khỏi trang chủ của bạn.",
+    "source": "9835b72a1f16368e29a7c2500ee5d02cd426fa2d2f11e2ced55a7b8aaf57707d"
+  },
+  "appSettings.danger.explanation.unnamed": {
+    "text": "Xóa ứng dụng này sẽ gỡ nó khỏi mọi người, kể cả dữ liệu ứng dụng. Không thể hoàn tác. Đây không chỉ là gỡ biểu tượng khỏi trang chủ của bạn.",
+    "source": "cc1ace6ea1ed569589b07a00f77f58886ceafa6b39e6ed59d93497ba335520f6"
+  },
+  "appSettings.danger.confirmLabel": {
+    "text": "Nhập <0>{{app}}</0> để xác nhận xóa.",
+    "source": "3b510a43d70ab2db6e69814b3c02ddcac851f75ded520053091f008912e05c93"
+  },
+  "appSettings.danger.submit": {
+    "text": "Xóa ứng dụng cho mọi người",
+    "source": "69c1cc64e59bf13f0aa255f262690f6d71d7411e7821cb40f544161d04d95ef8"
+  },
+  "appSettings.danger.deleting": {
+    "text": "Đang xóa…",
+    "source": "43b5894c3e4e2b24f13c935f4fae0a0a8fbe7d7792750a09b88c2097fd9a32b8"
+  },
+  "appSettings.danger.error": {
+    "text": "Không thể xóa ứng dụng. Hãy thử lại.",
+    "source": "71ccefce36849320723f8d6aea94b4ef431f7d8c08ffb845d65b7c8d6a5e075b"
+  },
+  "appSettings.danger.deleted": {
+    "text": "Đã xóa ứng dụng cho mọi người.",
+    "source": "3253a6512a3fd5784aeb7c61469e22826f637103d87f3d556203383cbf345c61"
+  },
+  "boardFilters.title": {
+    "text": "Bộ lọc",
+    "source": "546ebb8eb993ea561029d9febd84c363bdb09010bb2cb915a8287762b76b9a64"
+  },
+  "boardFilters.subtitle": {
+    "text": "Tất cả điều kiện được áp dụng cùng lúc.",
+    "source": "f06b2cce1369551fcfe6a14e0ab1709b2e98ff0127206f68493027e82dd73dbb"
+  },
+  "boardFilters.priority.label": {
+    "text": "Mức ưu tiên",
+    "source": "d60dbba079223254d4c49c230a515bc107a997e69f811365da2387f8557b9cec"
+  },
+  "boardFilters.priority.any": {
+    "text": "Mọi mức ưu tiên",
+    "source": "b335572e92050baec85a4b932620b6eb7aefc815cd1ee9484798a2daf4ddf623"
+  },
+  "boardFilters.priority.high": {
+    "text": "Cao",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "boardFilters.priority.medium": {
+    "text": "Trung bình",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "boardFilters.priority.low": {
+    "text": "Thấp",
+    "source": "f793de205ead5ac302c4a1627829dea41f176b1068b993a32373fc869918374b"
+  },
+  "boardFilters.category.label": {
+    "text": "Danh mục",
+    "source": "292c06f0045a45d044be282b132b7055ae224e18e02b523a451d8ea96fadfd24"
+  },
+  "boardFilters.category.any": {
+    "text": "Mọi danh mục",
+    "source": "b64819fe6c16c5c8af77a783e8ab03200020558c20090c2fa2fad418d944a4d8"
+  },
+  "boardFilters.assignee.label": {
+    "text": "Người được giao",
+    "source": "5e20d20e3978dcf8550bd758d863b782ac0d139d51be8034836ed21e35104567"
+  },
+  "boardFilters.assignee.anyone": {
+    "text": "Bất kỳ ai",
+    "source": "8d486bb2d3f85d1bc3526ca2c0c5d7aa8f7a0e45806ed049ee4aed16539c73fa"
+  },
+  "boardFilters.assignee.nobody": {
+    "text": "Chưa có ai",
+    "source": "aca294641f54e13988d811c4e7c5a8e86113c74323721ca43988e69ceff5e247"
+  },
+  "boardFilters.waiting.title": {
+    "text": "Đang chờ bạn",
+    "source": "57dccc5db9b096172f80ed94d7ba1886dbd8ad7c582831c78f0a3e4ab095ceec"
+  },
+  "boardFilters.waiting.description": {
+    "text": "Chỉ các đề xuất bạn chưa bỏ phiếu",
+    "source": "27e188b3debaf053177dcce5111db2fcd8147a89c69af4d81b2e7479bf19d06f"
+  },
+  "boardFilters.assigned.title": {
+    "text": "Giao cho bạn",
+    "source": "dbf11bd849e218208ed24906c9db31d0685ab69db96babce6d1dfa50a670e473"
+  },
+  "boardFilters.assigned.description": {
+    "text": "Chỉ các mục nhóm đã bầu giao cho bạn",
+    "source": "1091863fec641add840ef845d1daef896bee9e45ead42a2c60e8e80f13509dd4"
+  },
+  "boardFilters.created.title": {
+    "text": "Do bạn tạo",
+    "source": "39467b6ea2126461e77e005fdfac136f1d8dcc6de0b417c14c9c833e7e90c4a3"
+  },
+  "boardFilters.created.description": {
+    "text": "Chỉ các mục chính bạn đã mở",
+    "source": "29fd15029e6c4d2dd7827c19f3e1656c3c9a1a0e881acbe338ec028b6b6c9671"
+  },
+  "createProgress.title.creating": {
+    "text": "Đang tạo {{app}}",
+    "source": "113e0c10f66fb86641faf3fa4168090bd15236fbe54f646d804515ab5c2aa0d5"
+  },
+  "createProgress.title.importing": {
+    "text": "Đang nhập {{app}}",
+    "source": "fc5ab648113ae267038ff93d0ea3105d71cd369e76f0bff767a2fe3bf121327e"
+  },
+  "createProgress.title.remixing": {
+    "text": "Đang remix {{app}}",
+    "source": "d2b425b1e02a0b2de1721f88b19149349ce7c61006b527b3541a84fc6be2a85f"
+  },
+  "createProgress.title.live": {
+    "text": "{{app}} đã hoạt động",
+    "source": "f33a50e3319172fef892c1c85ea2b50138a61e7a035751d5cb6799f3fdf69605"
+  },
+  "createProgress.title.almost": {
+    "text": "Sắp xong rồi",
+    "source": "750a358a4affcdd22d5a3a8fa8dae764132b73e8a95ff2be408fe71907aefb8b"
+  },
+  "createProgress.title.failed": {
+    "text": "Không thể hoàn tất {{app}}",
+    "source": "fcc69b5f6cf46b264851f5a8cbbf017eb45778de2dfaef4dcdcd334fc74524e3"
+  },
+  "createProgress.step.database": {
+    "text": "Đang thiết lập cơ sở dữ liệu của bạn",
+    "source": "89669dd27386247aac55353147f2824fbc765decf26a6cef00b5d58f4133105f"
+  },
+  "createProgress.step.repository": {
+    "text": "Đang chuẩn bị kho mã",
+    "source": "da510db3c8c7cd60213f5896e850206b7712135ec4156447ecdaa23a77237f75"
+  },
+  "createProgress.step.build": {
+    "text": "Đang xây dựng ứng dụng của bạn",
+    "source": "f0242cf87de22ce28e7b217c28c67c4ae99a225619f5996b00fa69d367bdcbe1"
+  },
+  "createProgress.step.deploy": {
+    "text": "Đang đưa vào hoạt động",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "createProgress.status.pending": {
+    "text": "Việc này thường mất chưa đến một phút. Bạn có thể đóng cửa sổ này và tiếp tục. Chúng tôi sẽ hoàn tất ở chế độ nền và ứng dụng sẽ xuất hiện trong danh sách ứng dụng của bạn.",
+    "source": "499623ab456f9eee7832c131c28a309a88dbf59bb6bf4a61f2e94c02d5f9d5df"
+  },
+  "createProgress.status.live": {
+    "text": "Ứng dụng của bạn đang chạy. Hãy mở để xem nội dung có sẵn.",
+    "source": "a589a244057dc4a3e524eb9ce4d3eef2448ef3ed22f5433d1b81105fb8656a0c"
+  },
+  "createProgress.status.liveBot": {
+    "text": "{{app}} đã được thiết lập. Homeroom bot đang xây dựng phiên bản đầu tiên từ mô tả của bạn và sẽ nhắn khi sẵn sàng để dùng thử.",
+    "source": "4a086d4403a01e34cf051533909ddf99755a24f3817f4eaffe57e363dc4e0b4d"
+  },
+  "createProgress.status.liveRequest": {
+    "text": "Dự án của bạn đã sẵn sàng. Yêu cầu đầu tiên đang chờ trên trang dự án.",
+    "source": "b405b8ae69c62b484eeb942e23186862e02cbc0a2823896e1d75aa8354199dc8"
+  },
+  "createProgress.status.needsNamedSecrets": {
+    "text": "Hãy đặt {{secrets}} và ứng dụng của bạn sẽ khởi động xong.",
+    "source": "9abd07d0c22357091b2d1d19c86c19aee3d7b95db187a814be07d66ee3165f67"
+  },
+  "createProgress.status.needsSecrets": {
+    "text": "Hãy đặt các khóa bí mật cần thiết và ứng dụng của bạn sẽ khởi động xong.",
+    "source": "c29ccd4e235f8425068ecfd19c7d0749c9912b60a8cfb9c55651cd7b173d1f83"
+  },
+  "createProgress.status.stopped": {
+    "text": "Quá trình thiết lập dừng trước khi ứng dụng chạy. Thử lại thường khắc phục được lỗi tạm thời.",
+    "source": "6595de14705802cbb11c30ebbaf0a18e22a0804fab691601daadae1c610b7e2f"
+  },
+  "createProgress.status.buildFailed": {
+    "text": "Bản dựng chưa hoàn tất. Hãy thử lại hoặc hỏi quản trị viên.",
+    "source": "e5a3039ac0e18b297c85e740ab7f49c58ea5e69d8c07cac91dced3b240239845"
+  },
+  "createProgress.status.setupFailed": {
+    "text": "Thiết lập chưa hoàn tất. Hãy thử lại hoặc hỏi quản trị viên.",
+    "source": "63666f421c8506986f014a515c8d52b1f211509c33c5ab35b40a1fc4a9e0ac58"
+  },
+  "createProgress.details": {
+    "text": "Chi tiết",
+    "source": "45989de49fb7f66dfe17a8fc26f3a02c7abcd74f7e8e6cf9f39fa0e3775780df"
+  },
+  "createProgress.next.heading": {
+    "text": "Điều gì xảy ra tiếp theo",
+    "source": "8f9b77e6e0b4eebac0a0786b761ecfaf5782fd7223b1fb34ae6c6bbe2fd63a9b"
+  },
+  "createProgress.next.open": {
+    "text": "Mở ứng dụng và dùng thử nội dung có sẵn.",
+    "source": "671fda3a79b0e5d836cdcd052201a1ff15b941fd267baa32e00c7031ac40c77f"
+  },
+  "createProgress.next.describe": {
+    "text": "Mô tả một thay đổi trong cuộc trò chuyện, và tác tử lập trình sẽ viết nó.",
+    "source": "86bbaf5448e3db0fe1167fe1fed77de7e6e25b12defd1ab626d294f3cb60e10e"
+  },
+  "createProgress.next.collaboratorsVote": {
+    "text": "Các cộng tác viên bỏ phiếu thông qua, và nó sẽ hoạt động.",
+    "source": "e7f385f9647c9bb882c676252a0413423de454f700e224cdf03c148b4a29535a"
+  },
+  "createProgress.next.membersVote": {
+    "text": "Các thành viên bỏ phiếu thông qua, và nó sẽ hoạt động.",
+    "source": "11f3e23a6ed00e4af5e9914c2d6bc515e3dc06aa6ad37e86b279c8ebf077eb4a"
+  },
+  "createProgress.next.soloApprove": {
+    "text": "Bạn phê duyệt, và nó sẽ hoạt động.",
+    "source": "175d9d0da5cbab4d81e499cafe6a054d8bc9d091a8fadbf6c0a2bbada107b2cd"
+  },
+  "createProgress.next.botBuilds": {
+    "text": "Homeroom bot xây dựng phiên bản đầu tiên từ mô tả của bạn.",
+    "source": "f7034c447cb215f87da71aba2899f0cd6d4b06fbde631233eeef8caaaea19ecd"
+  },
+  "createProgress.next.botMessages": {
+    "text": "Bot sẽ nhắn cho bạn trong cuộc trò chuyện khi xong, và hỏi ở đó nếu có điều chưa rõ.",
+    "source": "aed60f062ff6f87368d5be6cab478b7edcc8c9423f4f7b76c5f1475d616a199b"
+  },
+  "createProgress.next.firstRequest": {
+    "text": "Mô tả của bạn là yêu cầu đầu tiên của dự án.",
+    "source": "ab4fad37c8dc08495df39668076f79cf38cc8b1987cbba4acf4e3de19c3d2f09"
+  },
+  "createProgress.next.startChange": {
+    "text": "Bắt đầu một thay đổi từ đó, và tác tử lập trình sẽ viết nó.",
+    "source": "98291a2739bf2e80446ac28ea20d7660c2e1e6b929d058b207fcf5e96af852b6"
+  },
+  "createProgress.openApp": {
+    "text": "Mở ứng dụng",
+    "source": "e51c6b48fb9e73e340a2804fd209dd67b2fe22952170a846a939fe3ba18b1e5e"
+  },
+  "createProgress.viewApp": {
+    "text": "Mở ứng dụng",
+    "source": "e51c6b48fb9e73e340a2804fd209dd67b2fe22952170a846a939fe3ba18b1e5e"
+  },
+  "createProgress.setSecrets": {
+    "text": "Đặt khóa bí mật",
+    "source": "b123ebddacc7fbb406e1f5e94412da13e05fdf25ea308cc7e8e2c31b590fe342"
+  },
+  "createApp.error.network": {
+    "text": "Lỗi mạng. Hãy thử lại.",
+    "source": "052b478fa4eaeadd9aeb8beaf48eb0bf07faf80117a560b036a3c73360ba3000"
+  },
+  "createApp.error.status": {
+    "text": "Homeroom không thể tạo dự án ({{status}}). Hãy thử lại sau giây lát.",
+    "source": "6a572af96acf87b02a2302bfa951247ea4678c7fe503730e932206e58ffe4e3a"
+  },
+  "fork.title.named": {
+    "text": "Remix <0>{{app}}</0>",
+    "source": "a9b5d3b407a12c77c460356e02b53e820c76888f2d27825f6a4357566749bc31"
+  },
+  "fork.title.unnamed": {
+    "text": "Remix <0>ứng dụng này</0>",
+    "source": "a7d4b0a32bb44fcf0e731c3e8437f92c6b51a0dc0409c9f1f4ecd2755edeaeb5"
+  },
+  "fork.intro": {
+    "text": "Tạo bản sao của riêng bạn. Bạn có mã và giao diện, và nó bắt đầu ở chế độ Just you.",
+    "source": "4f82d061a6bba8354eb13708b154971bf351ea1f28d8dc26f2f4447385a75656"
+  },
+  "fork.nameLabel": {
+    "text": "Tên cho bản sao của bạn",
+    "source": "e68edc1a981345c6f967004c7d7dacbeaaaf9bd02c282cde5361d17a4e922b89"
+  },
+  "fork.namePlaceholder": {
+    "text": "Bản sao của tôi",
+    "source": "0a0cb172a85ed7a25aaf4abfc80dec7c5162b72a8393afa7037ea94b3271d1c2"
+  },
+  "fork.defaultName.named": {
+    "text": "{{app}} (remix)",
+    "source": "d17a6bb59ef652e76fe9441a705d399f84ffe2a8403dc1f3496d59ecd552cc30"
+  },
+  "fork.defaultName.unnamed": {
+    "text": "Ứng dụng (remix)",
+    "source": "5c514e1e8a0c242f9bc5940a4357c44ed0645dec3f601f989c6ca9bc78b0d0d6"
+  },
+  "fork.info.copied": {
+    "text": "<0>Được sao chép:</0> mã, giao diện và biểu tượng.",
+    "source": "ab3dd6a0a40b4a5640856a7f9221ad3ac24b014ab104b8219bea77dbdd2c6450"
+  },
+  "fork.info.fresh": {
+    "text": "<0>Bắt đầu mới:</0> ở chế độ Just you, với cơ sở dữ liệu trống. Bạn có thể mời mọi người hoặc mở rộng sau.",
+    "source": "62d11e5f443ce07ddf97e0fde4f5282f02105a7b651ebef7427dc01977f4194a"
+  },
+  "fork.info.notCopied": {
+    "text": "<0>Không được sao chép:</0> dữ liệu của bất kỳ ai, khóa, cuộc trò chuyện hay thành viên. Nếu ứng dụng cần khóa, bạn sẽ thêm khóa của riêng mình trước khi nó hoạt động.",
+    "source": "faeaf11769014772202db6f3cc9be28422532a152c5508222ca3479b26027d79"
+  },
+  "fork.info.public": {
+    "text": "Mã nguồn của bản sao được công khai trên GitHub.",
+    "source": "b4e29b5eb06efaab596dcad82635a561f694f846a33c0e57f50e00465e232e76"
+  },
+  "fork.submit": {
+    "text": "Remix",
+    "source": "f84ed4375595ff56536a50d853f9efa4897ac6e815aad3b94a8ac263e92736ef"
+  },
+  "fork.submitting": {
+    "text": "Đang remix…",
+    "source": "7fdd65e65c604b7309a4bb403357593d0e12c239b4a22b0b55081cadd9a92ed9"
+  },
+  "fork.error.nameShort": {
+    "text": "Tên phải có ít nhất 3 ký tự.",
+    "source": "7cd487b267ee8cae3a299ba412422e4ab0d5a082fa72a49c19d674d7f0efbe71"
+  },
+  "fork.error.failed": {
+    "text": "Không thể tạo bản sao của bạn.",
+    "source": "ba5bbed0859641d58ad57bcea13c92520dcba57c6b2e8b0839f985199e33255a"
+  },
+  "fork.error.network": {
+    "text": "Lỗi mạng. Vui lòng thử lại.",
+    "source": "9ff8cfaf7d9431535aa7aafec3ee94df85345211e66d892d50d4e49fd6cad1c1"
+  },
+  "fork.beingMade": {
+    "text": "Bản sao của bạn đang được tạo. Bản sao sẽ xuất hiện trong ứng dụng của bạn khi sẵn sàng.",
+    "source": "c06c296ee125980f6ed2e286ca0d51249bd838c09af572918585516c325ee28b"
+  },
+  "fork.retry.http": {
+    "text": "Thử lại không thành công (HTTP {{status}}).",
+    "source": "cbe1a309051ceb1c1ebe611ba3686ae1248ebb1ba856a865c7cdbf5de4d0e327"
+  },
+  "fork.retry.unreachable": {
+    "text": "Không thể kết nối máy chủ để thử lại. Hãy thử lại từ ô ứng dụng.",
+    "source": "2e49f76ef50765e23234ab989e9c86193b9af2122256273cf0709ec5dc2cb107"
+  },
+  "importPr.title": {
+    "text": "Nhập pull request",
+    "source": "eaf57bed5d45325fb0ce269c7b040fed79a053d82276080afec5ee724fb6551c"
+  },
+  "importPr.intro": {
+    "text": "Chọn một pull request đang mở để thêm vào Đang thực hiện. Pull request sẽ ở đó cho đến khi bạn yêu cầu phê duyệt.",
+    "source": "98b812e69f00b12b4969fd2e8acef5b442f397b423c04e70956ad26c53a69d75"
+  },
+  "importPr.previewNote": {
+    "text": "Bản xem trước thử nghiệm được dựng từ commit đầu của pull request, nên sẽ mất vài phút mới xuất hiện, và các kiểm tra tự động sẽ ở trạng thái chờ cho đến lúc đó. Các dòng được đánh dấu <0>từ một fork</0> là nhánh trong kho lưu trữ của người khác: hãy xem lại các thay đổi trên GitHub trước khi nhập.",
+    "source": "138f319d4224126e3cafc82e759de9ddabc3bb51f7083901ac951e12d2856397"
+  },
+  "importPr.list.loading": {
+    "text": "Đang tải các pull request đang mở…",
+    "source": "c93af41eb136972d50ea2940dbb4db62b5ed336f528ed8ee5d202e16959e9248"
+  },
+  "importPr.list.loadFailed": {
+    "text": "Không thể tải pull request. Vui lòng thử lại.",
+    "source": "35b7ffb54c4ab4c1359757e71366f0533c66ffb1be1f0d1f1d39e41c3a345e49"
+  },
+  "importPr.list.notConfigured": {
+    "text": "GitHub chưa được cấu hình cho ứng dụng này nên không có gì để nhập.",
+    "source": "f96b81f6b2669dd51750aa314661622e8c6ed0cddfab471bae9b73ffd0c7aa39"
+  },
+  "importPr.list.empty": {
+    "text": "Hiện không có pull request đang mở nào để nhập.",
+    "source": "21bf4beb2c89578336f547a2c7c18aa839bc043e4e3dc4649a04b116e4374b4a"
+  },
+  "importPr.row.unknownAuthor": {
+    "text": "không rõ",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "importPr.row.fromFork": {
+    "text": "từ một fork: <0>{{repository}}</0>",
+    "source": "e7b4dc623c2efcbb999c446684d66130633d6f3bf20c03c16b4897ed9a613f17"
+  },
+  "importPr.row.fromUnknownFork": {
+    "text": "từ một fork: <0>fork không rõ</0>",
+    "source": "4b80ee8d6603772c28bbfeab1ee6a5585387a5f5092e8bc5fbe1b118213352a6"
+  },
+  "importPr.row.forkTooltip": {
+    "text": "Nhánh này nằm trong một fork, không phải kho lưu trữ riêng của ứng dụng. Bản xem trước được dựng từ commit đầu của pull request. Hãy xem lại các thay đổi trên GitHub trước khi nhập.",
+    "source": "ae49ecc77530a1ae8b05422bcfaa090550fe1030348d5be133afece0c64193bf"
+  },
+  "importPr.row.viewOnGitHub": {
+    "text": "Xem trên GitHub ↗",
+    "source": "f5acbc5b6f91ee3516a2d1d78a32c2b8787908bb2e314775c8c992fd97e8b507"
+  },
+  "importPr.progress": {
+    "text": "Đang nhập PR #{{number}}: kiểm tra trên GitHub và thêm vào Đang thực hiện…",
+    "source": "63a5afce5dccb94b70018260b259ca8e079ac592cb244bc4022d50e153616bbc"
+  },
+  "importPr.slow": {
+    "text": "Vẫn đang xử lý. GitHub đang chậm, vì vậy đừng đóng cửa sổ này.",
+    "source": "f372ef030ed4ea4a8ca0b1e8cb6104e3e363e0022bc999e108f08312ca3207a6"
+  },
+  "importPr.submit": {
+    "text": "Nhập",
+    "source": "2cff9baabf56ca002610e113bc94deb6ededddfc3c130365b6e88ed5195bf774"
+  },
+  "importPr.submitting": {
+    "text": "Đang nhập…",
+    "source": "c01c4324f1fa14fc76957936626e11a5150c24e748dbd08cc46848dfcbe37d00"
+  },
+  "importPr.imported": {
+    "text": "Đã nhập PR #{{number}}. Bản xem trước đang được dựng. Bạn có thể tìm thấy nó trong Dev, mục Đang thực hiện.",
+    "source": "6394d73cacf0e152e6b21f7bc51847a05a1ce1d308aa69f586c01048ebd839c5"
+  },
+  "importPr.error.pick": {
+    "text": "Hãy chọn một pull request để nhập.",
+    "source": "79d2c8eaf11f4153e80dcd62d23f7d53a54164129289ed81e5e11d4feb423f16"
+  },
+  "importPr.error.network": {
+    "text": "Lỗi mạng. Vui lòng thử lại.",
+    "source": "9ff8cfaf7d9431535aa7aafec3ee94df85345211e66d892d50d4e49fd6cad1c1"
+  },
+  "importPr.error.notFound": {
+    "text": "Không tìm thấy PR #{{number}} trên GitHub. Có thể nó đã bị xóa.",
+    "source": "070481433fe006757300135164aea1a1c441df4f4652aef28f80cd44adcaab8c"
+  },
+  "importPr.error.conflict": {
+    "text": "Hiện không thể nhập PR #{{number}}.",
+    "source": "7690b1db826556ce4f72c74c72917db34523330a6d012147192bce817e4d8245"
+  },
+  "importPr.error.restarting": {
+    "text": "Nền tảng đang khởi động lại. Hãy thử nhập lại sau vài giây.",
+    "source": "1e1a857336c22e90d8ca3471eb622ae962677b16eb5aee35c2640bc760939bd5"
+  },
+  "importPr.error.generic": {
+    "text": "Đã xảy ra lỗi khi nhập PR này. Vui lòng thử lại.",
+    "source": "f38d20b99291534288df80ae30a7bba9033b7bd2c8799ef4fb010704134a3bd9"
+  },
+  "walletRecovery.title": {
+    "text": "Kết nối ví hiện có của bạn",
+    "source": "28e3996e599e5cc8f44250cd0877a85d0a5e66e355efc7190874262d7e587c3b"
+  },
+  "walletRecovery.intro": {
+    "text": "Hiện không có ví di động mới. Nếu trước đây bạn đã tham gia bằng email, hãy xác minh địa chỉ đó để kết nối ví của mùa hiện tại.",
+    "source": "666f7692f140a6ee58e1e6f8a4d893a85b921d98540680fc41eb511abe3e3b88"
+  },
+  "walletRecovery.emailLabel": {
+    "text": "Email tài khoản trước đây",
+    "source": "b23674c74d9ffecd372768c6d82c034e13eb3a94bede957ba58ea39f9d2a0ff7"
+  },
+  "walletRecovery.emailPlaceholder": {
+    "text": "you@example.com",
+    "source": "53e6cdc30765aade0129f85e5aeb50124b1d3f5bb9a70373be31e4eb328371e0"
+  },
+  "walletRecovery.sendCode": {
+    "text": "Gửi mã",
+    "source": "66a5b4090d14cb4117ddd4fbfd989aef36df60112701665b06c65629e6606cfa"
+  },
+  "walletRecovery.sending": {
+    "text": "Đang gửi…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "walletRecovery.codeLabel": {
+    "text": "Mã trong email",
+    "source": "0adcdb5d55ecf545d3fc5645a2ea9efc9f808d883a271cfedc1c3770af981bf5"
+  },
+  "walletRecovery.connect": {
+    "text": "Kết nối ví",
+    "source": "7b1f118169bc487db0ac6a028a460bdb0a3a0d145d34326349896006c9981d6b"
+  },
+  "walletRecovery.connecting": {
+    "text": "Đang kết nối…",
+    "source": "72021eb70e91b4d58254586a8519393a281eb830c165bf1ec42a5057d425bcaf"
+  },
+  "walletRecovery.retrySignIn": {
+    "text": "Thử lại",
+    "source": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  },
+  "walletRecovery.status.checkEmail": {
+    "text": "Hãy kiểm tra email đó để lấy mã gồm sáu chữ số.",
+    "source": "7b4fb67e488ebd2b6461468d679260860f4c47debdf1a7030e2391e9861a03e2"
+  },
+  "walletRecovery.status.connected": {
+    "text": "Đã kết nối ví. Đang hoàn tất đăng nhập ứng dụng…",
+    "source": "90abc2924c09c7d87fe3beee555df923421d6d471f539db2fe9ea5b562d7eb12"
+  },
+  "walletRecovery.error.email": {
+    "text": "Nhập địa chỉ email mà tài khoản trước đây của bạn đã dùng.",
+    "source": "ff785d899fef6749645ee71f689673dfe798bcdca7696735638b926e88314f0a"
+  },
+  "walletRecovery.error.code": {
+    "text": "Nhập mã gồm sáu chữ số trong email.",
+    "source": "7863806d72428f2d49504179665e1b79d84ee33cb31daabab4c0f463262e50b7"
+  },
+  "walletRecovery.error.send": {
+    "text": "Không thể gửi mã. Vui lòng thử lại.",
+    "source": "f98e4216ea4e51405715684df467e6a79c87cd9777851f73ab1cc8436d465031"
+  },
+  "walletRecovery.error.rotation": {
+    "text": "Ví đó đã được cài đặt ở nơi khác. Để chuyển ví an toàn cần xoay vòng khóa, tính năng này hiện chưa có.",
+    "source": "ffd5a35185767216e22fb0051bfb731f03bebde52e1e8d7f1b3eb03e9405da2b"
+  },
+  "walletRecovery.error.claim": {
+    "text": "Không thể kết nối ví đó. Hãy kiểm tra email và mã rồi thử lại.",
+    "source": "67ae3fc9b0bb4a72956cac4ea6a52ff40582b550fc3b5199bcdee17f10ce10a2"
+  },
+  "walletRecovery.error.connect": {
+    "text": "Không thể kết nối ví đó. Vui lòng thử lại.",
+    "source": "1a49deb299bd9b52b8d9c8fbf6978e07a7b2c8dc6af99bb9526937f4eba984fd"
+  },
+  "walletRecovery.error.update": {
+    "text": "Hãy cập nhật ứng dụng Homeroom để hoàn tất kết nối ví này.",
+    "source": "c8602377bef5705eb4d271edcdbda688ee970ac0b4064f1bc8192d87a8381eed"
+  },
+  "walletRecovery.error.signIn": {
+    "text": "Ví đã được kết nối nhưng chưa đăng nhập xong vào ứng dụng. Hãy thử lại.",
+    "source": "15f8e3c644026a371be277a99eec1313bc5205439fb8a2829f97aef5020043ff"
+  },
+  "feedback.heading": {
+    "text": "Đề xuất cải tiến",
+    "source": "cfbf47a0b6534ad1577177e339c73219b433f6e196a8ead8aeb2270f1b17714a"
+  },
+  "feedback.intro": {
+    "text": "Các thành viên có thể xem, bỏ phiếu và nhận thực hiện.",
+    "source": "4592a6eda977389b1b1eb4bcef3c5f1ee438a4a905fb8c8a35bf9334bc44552f"
+  },
+  "feedback.form.mine": {
+    "text": "Xem yêu cầu của bạn",
+    "source": "893fe5b454c9792759f99e7b92563d71d6ccbd82208bcf5a0c75fd19a1f42545"
+  },
+  "feedback.dropLabel": {
+    "text": "Thả ảnh hoặc video clip để đính kèm",
+    "source": "66bd1d7213665bc55d9090685f82b0be56a2fcdebdb03c26ea36e14cb68c51f0"
+  },
+  "feedback.target.label": {
+    "text": "Gửi đến đâu?",
+    "source": "172707afa35a64c5733db93801a0ae881061efa83982680f27616079ae817476"
+  },
+  "feedback.target.thisApp": {
+    "text": "Ứng dụng này",
+    "source": "0982cb1775e60cc8424ea970cb48323b85bd55a1a9c92136f0b7e0e0c19e77ea"
+  },
+  "feedback.target.noApp": {
+    "text": "Chưa mở ứng dụng nào",
+    "source": "39a25d79cf395dde2f82b5973ec9f5abc25b115e0e6a6c9958c566b30ae86824"
+  },
+  "feedback.target.appSub": {
+    "text": "Ứng dụng này",
+    "source": "0982cb1775e60cc8424ea970cb48323b85bd55a1a9c92136f0b7e0e0c19e77ea"
+  },
+  "feedback.target.platformSub": {
+    "text": "Chính nền tảng",
+    "source": "11dbdeb485abcd27d63f9497d9d945cd1d539d9615c3d59ecb2a8c52b995afb5"
+  },
+  "feedback.target.choose": {
+    "text": "Hãy chọn nơi gửi.",
+    "source": "cbbf68389d185d63e0f16d3c6ce7a6e91dcea7b421a2a14f719458742dc07ff5"
+  },
+  "feedback.title.label": {
+    "text": "Tiêu đề<0> không bắt buộc</0>",
+    "source": "26f6ea772843c075e8cdd7a0353d187faccba31ae5699a1d63007c57eb5183c5"
+  },
+  "feedback.title.placeholder": {
+    "text": "Gợi ý khi bạn nhập",
+    "source": "d3c5cf47fe40529f2b3de6f8e8c4a0af8c04a06380cf376d9750a55855583eae"
+  },
+  "feedback.title.generating": {
+    "text": "Đang tạo tiêu đề…",
+    "source": "bb1bc2e010803aebb61c89bd28f2385fb229053758f1432da09c153da31d320e"
+  },
+  "feedback.description.label": {
+    "text": "Cần thay đổi điều gì?",
+    "source": "e6cbf7faa1b80e25c56bdb31be1b9fcfce26b6aecd14bc6342bb4eb075e3a829"
+  },
+  "feedback.description.placeholder": {
+    "text": "Mô tả thay đổi hoặc vấn đề bạn gặp",
+    "source": "1a8ea3fb8174ed7e9955d40d078f3d9f2acb3a297922668b951a9b9b6906b2da"
+  },
+  "feedback.description.required": {
+    "text": "Vui lòng cho biết cần thay đổi điều gì.",
+    "source": "facd976838d9cbd27092b49408221ceea06136cb66581396f3ae37946d0c9cd3"
+  },
+  "feedback.screenshot.attach": {
+    "text": "Đính kèm ảnh chụp màn hình",
+    "source": "97ea8f3fc76d9a9712640b72f90fae650309c8ea061cbdc91f167a1d5975d052"
+  },
+  "feedback.screenshot.attachAnother": {
+    "text": "Đính kèm thêm",
+    "source": "3201bd49c27049cc885181df50252dd2c1a7bb54991512c6618d44fe027b53da"
+  },
+  "feedback.screenshot.take": {
+    "text": "Chụp màn hình",
+    "source": "9c118198e69329a890c142e15880402911922e7ff62a2de69df3efcaf04c2ee6"
+  },
+  "feedback.screenshot.takeAnother": {
+    "text": "Chụp thêm",
+    "source": "c722b6264d41673bce25572f2d6668b736d44caac688c0957bb19028da623377"
+  },
+  "feedback.screenshot.previewAlt": {
+    "text": "Bản xem trước ảnh {{number}}",
+    "source": "577dde21405accb8543825f48b9fff092914205c8b30c85a34f7315657c68635"
+  },
+  "feedback.screenshot.remove": {
+    "text": "Xóa ảnh {{number}}",
+    "source": "fa84f5b7f645fd1f2ff9b5589b2a8c22f20d3d35ae9926ab80d8807fb08778ed"
+  },
+  "feedback.screenshot.uploading": {
+    "text": "Đang tải lên…",
+    "source": "5ce44dd77dae789f322b4bc032812a77a989e90c31928743f4fbdb26321011c2"
+  },
+  "feedback.screenshot.savedOffline": {
+    "text": "Đã lưu cùng phản hồi của bạn. Ảnh sẽ được tải lên khi bạn có mạng lại",
+    "source": "686bf3cf2c8f4421edbe4c4bc69ef5e28fb6454900bbc4c388403bcbaebd0986"
+  },
+  "feedback.screenshot.uploadFailed": {
+    "text": "Tải ảnh chụp màn hình lên thất bại",
+    "source": "37d67677a9da4a11587621d5a7a60f541a4a6210c0fd5cc72cf8b2d8f0f43dca"
+  },
+  "feedback.screenshot.uploadLater": {
+    "text": "Chưa thể tải ảnh chụp màn hình lên. Ảnh sẽ được gửi cùng phản hồi của bạn.",
+    "source": "18fbec0ee600e12b680acdc45ae5bd4bf14ceb8b661b320bfd737ddd236e8111"
+  },
+  "feedback.screenshot.stillUploading": {
+    "text": "Ảnh chụp màn hình vẫn đang tải lên, vui lòng chờ một chút…",
+    "source": "7c68e98fde498dcd1401342b0b37118239e5e94abfcb6e0e57b5e4f771af0373"
+  },
+  "feedback.screenshot.lost": {
+    "text": "Ảnh chụp màn hình không được lưu, nhưng phản hồi của bạn vẫn an toàn. Nó đây.",
+    "source": "210b57bc9983e7167e61452da8d3323d746f4f0e72db255219a924f617aac2d6"
+  },
+  "feedback.capture.waiting": {
+    "text": "Vẫn đang chờ trình duyệt chia sẻ màn hình. Nếu bạn đã chọn nội dung chia sẻ mà không có gì xảy ra, hãy khởi động lại trình duyệt hoặc chọn một ảnh. Phản hồi của bạn vẫn an toàn.",
+    "source": "f3425099d1652813b3d9b1a55315db1e28a069723c010cc11b32b6013c1fde77"
+  },
+  "feedback.capture.declined": {
+    "text": "Bạn đã từ chối chụp màn hình. Chưa có gì được đính kèm và phản hồi của bạn vẫn an toàn.",
+    "source": "711a8f213a582827873e0f11bf893322a2d35b85e603ace04aa763d32af19cd5"
+  },
+  "feedback.capture.blank": {
+    "text": "Cửa sổ được chia sẻ bị trống. Trên Mac, hãy cho phép trình duyệt của bạn tại Cài đặt hệ thống, Quyền riêng tư & Bảo mật, Ghi màn hình & âm thanh hệ thống, rồi thử lại. Phản hồi của bạn vẫn an toàn.",
+    "source": "31e33cf021815f124f5a1f3ff083b9ce14e081b6a9e37d4f7b549755f4388b76"
+  },
+  "feedback.capture.smallWindow": {
+    "text": "Đó là một cửa sổ nhỏ, không phải trang này. Hãy thử lại và chia sẻ cửa sổ đang hiển thị trang này hoặc toàn bộ màn hình. Phản hồi của bạn vẫn an toàn.",
+    "source": "44657c6296ab36106e5623775ced676721a482d7664952bb8966a87e8ab165dd"
+  },
+  "feedback.capture.notFound": {
+    "text": "Không tìm thấy trang này trong cửa sổ được chia sẻ. Hãy để trang hiển thị đầy đủ rồi thử lại. Phản hồi của bạn vẫn an toàn.",
+    "source": "0777091886ff92bce1b61ce0cdf5487b671bed7ff240df54f8515eeed4331db3"
+  },
+  "feedback.capture.tooLarge": {
+    "text": "Ảnh chụp màn hình đó lớn hơn 4 MB. Phản hồi của bạn vẫn an toàn, hãy đính kèm ảnh nhỏ hơn.",
+    "source": "8415ed4ef5962d161a91ef26ac552940851b110732a3f578011a52de132b44f2"
+  },
+  "feedback.capture.failedPickPhoto": {
+    "text": "Không thể chụp màn hình, nhưng phản hồi của bạn vẫn an toàn. Hãy chọn một ảnh từ Ảnh, hoặc cứ gửi như hiện tại.",
+    "source": "202f096db87045b6c200c0f911cb7dc82396bbcc684eef15462bdada8d6899ac"
+  },
+  "feedback.capture.failed": {
+    "text": "Chụp màn hình thất bại, nhưng phản hồi của bạn vẫn an toàn. Hãy thử lại hoặc gửi mà không kèm ảnh.",
+    "source": "cbb879d811032103e322a0735f973d87831d3ebdeb2c2ddd407c0d593434666e"
+  },
+  "feedback.image.wrongType": {
+    "text": "Hãy chọn ảnh PNG hoặc JPEG.",
+    "source": "e861136c8242df2d1eeb6d9cee1979aa8d27a3a9d7125a2da3c919dfafa968c7"
+  },
+  "feedback.image.tooLarge": {
+    "text": "Ảnh đó lớn hơn 4 MB.",
+    "source": "ad3b1f5a83392c196ada31d488b2d210e47c21e126b21b82998f67033c7624b7"
+  },
+  "feedback.image.failed": {
+    "text": "Không thể đính kèm ảnh đó. Vui lòng thử ảnh khác.",
+    "source": "d3a2ec915e49a9c05c744ea4564ffcff88094ecc01fcd0c1393837c6708a4f4f"
+  },
+  "feedback.drop.wrongType": {
+    "text": "Hãy thả một ảnh hoặc một đoạn video.",
+    "source": "39d9da8305ca178d45d3b2ec49d51a8e1e3277951590ef6d765e566e93f7e088"
+  },
+  "feedback.attach.button": {
+    "text": "Đính kèm ảnh hoặc video",
+    "source": "83071ea0db10d6a852fadbf259c79911ab3cb7bbd9328633f743a32326251673"
+  },
+  "feedback.attach.menu": {
+    "text": "Đính kèm",
+    "source": "d406ade2958cb5b6777af977e28cac8995cd430c03fd3eb36fef2f5f8971daeb"
+  },
+  "feedback.attach.photo": {
+    "text": "Ảnh",
+    "source": "d84eebada93efee12b029e5b61e4df3270f0356886ceaa44a78eb52166a8f312"
+  },
+  "feedback.video.add": {
+    "text": "Video",
+    "source": "d534be829e32196b4d1e53b67103cf1e376b1d60071857572598c196abfefbc6"
+  },
+  "feedback.video.replace": {
+    "text": "Thay video",
+    "source": "e9594fc595b1d345a658dd701f00edc18a392317f72926f50095c3ddc58ae174"
+  },
+  "feedback.video.remove": {
+    "text": "Xóa video",
+    "source": "3a17beb58c843a240a088651c6827fbc818d4333cf93fac7b28e21f4d22f901e"
+  },
+  "feedback.video.checking": {
+    "text": "Đang kiểm tra…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "feedback.video.uploading": {
+    "text": "Đang tải lên…",
+    "source": "5ce44dd77dae789f322b4bc032812a77a989e90c31928743f4fbdb26321011c2"
+  },
+  "feedback.video.savedOffline": {
+    "text": "Đã lưu cùng phản hồi của bạn. Video sẽ được tải lên khi bạn có mạng lại",
+    "source": "686bf3cf2c8f4421edbe4c4bc69ef5e28fb6454900bbc4c388403bcbaebd0986"
+  },
+  "feedback.video.tooLarge": {
+    "text": "Đoạn video tối đa 50 MB.",
+    "source": "8aa5109b9fe2414ed9783baff6e004d3ac57f087b035c82ee25661c0fa28338d"
+  },
+  "feedback.video.unreadable": {
+    "text": "Không đọc được đoạn video đó. Hãy thử bản ghi MP4, WebM hoặc MOV.",
+    "source": "b2464bc98b6a67bab4ac418af0f1a25a10342cd55b714081fc7b773d9a540dea"
+  },
+  "feedback.video.tooLong": {
+    "text": "Đoạn video dài tối đa 60 giây. Hãy cắt ngắn rồi thử lại.",
+    "source": "fcba2c5a0e92738ed595623daa5439879123b314d501ef4642da02c9d9d54f01"
+  },
+  "feedback.video.uploadFailed": {
+    "text": "Tải video lên thất bại",
+    "source": "5afe923fc21376c1689069f95128eff7bdaf2ab81ecab63dee2287cfaa6f8c36"
+  },
+  "feedback.video.uploadLater": {
+    "text": "Chưa thể tải video lên. Video sẽ được gửi cùng phản hồi của bạn.",
+    "source": "71a29b5d3989af55352cb9d66ad8cd94c0d1ca3d0feffdbe3668ca9ca6f15e41"
+  },
+  "feedback.video.failed": {
+    "text": "Không thể đính kèm đoạn video đó. Vui lòng thử đoạn khác.",
+    "source": "84b8c5565ea68678bbdc8c945a99a876cb87310697c57c242f3426849c438f72"
+  },
+  "feedback.video.stillUploading": {
+    "text": "Video vẫn đang tải lên, vui lòng chờ một chút…",
+    "source": "89a99ceae5460a955a61a997e3a53787a30c675fbafc86cf194a8ac91ca652a2"
+  },
+  "feedback.state.label": {
+    "text": "<0>Kèm trạng thái ứng dụng:</0> ứng dụng này có thể đính kèm ảnh chụp trạng thái hiện tại để hỗ trợ gỡ lỗi",
+    "source": "6954da0dc50d0e0129241e4928506f252d77c61efa4768c98269aeeff1438db4"
+  },
+  "feedback.state.filingWithout": {
+    "text": "Không thể thu thập trạng thái ứng dụng, đang gửi mà không có nó…",
+    "source": "32b68e94afd16a408c30405205d024079902ea77e97d07d2dab1fe5175505afd"
+  },
+  "feedback.state.filedWithout": {
+    "text": "Không thể thu thập trạng thái ứng dụng nên yêu cầu đã được gửi mà không có nó.",
+    "source": "846f01f8c36bfc829ad36a5825eac728f19f09c8b4d4c056b3271d6900af0cd9"
+  },
+  "feedback.bounty.label": {
+    "text": "<0>Tặng một kudos cho yêu cầu này</0> để cảm ơn người giải quyết nó",
+    "source": "7a9b0d979f714e770ca5d2a3b4acc3bab08e27bb6b0180ba7e1ebce05181e14f"
+  },
+  "feedback.bounty.cost": {
+    "text": "Tốn 1 kudos",
+    "source": "e5b1af656cdc87a116a0fc8bb2b5b9d55556f873f151202e0247404ed0b4aa56"
+  },
+  "feedback.bounty.failedReason": {
+    "text": "Không thể thêm tiền thưởng: {{reason}}.",
+    "source": "fa70697932ec937cf4fdb30905fa78625a089076d530f7a6797cd220e1336b92"
+  },
+  "feedback.bounty.failed": {
+    "text": "Không thể thêm tiền thưởng: không thể đặt tiền thưởng.",
+    "source": "f565a7d27dc7d1c01bc2b84fec63f6e6b5d026676377f8afc82bf7495148b147"
+  },
+  "feedback.queue.retry": {
+    "text": "Thử lại",
+    "source": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  },
+  "feedback.queue.retrying": {
+    "text": "Đang gửi…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "feedback.queue.offline": {
+    "text": "Bạn đang ngoại tuyến. Tin nhắn của bạn sẽ được lưu trên thiết bị này và tự động gửi khi bạn có mạng lại.",
+    "source": "e0e024f30020387e0525897f04511e6ae4b7be04b71cb41b0df083dc46a825be"
+  },
+  "feedback.queue.saved": {
+    "text": "Đã lưu trên thiết bị này. Chúng tôi sẽ gửi ngay khi bạn có mạng lại.",
+    "source": "8cb916b259623953e672e7379ebf10851995b8c968a2f4eb2b89ec276620bd6f"
+  },
+  "feedback.queue.savedWithoutVideo": {
+    "text": "Đã lưu trên thiết bị này nhưng không kèm video vì video cần có mạng để tải lên. Chúng tôi sẽ gửi phần còn lại ngay khi bạn có mạng lại.",
+    "source": "52b45945bb8dac41028d2fcb5cc18f14ec0414e62bb1978401f0d17002c0f5e8"
+  },
+  "feedback.queue.refused.duplicate": {
+    "text": "Bạn đã lưu tin nhắn này rồi. Tin nhắn sẽ được gửi khi bạn có mạng trở lại.",
+    "source": "7b4e3d99633fb4d75a6938e8a4a66a993807562214a164fa31ba9654ac49b91b"
+  },
+  "feedback.queue.refused.tooLarge": {
+    "text": "Không đủ chỗ để giữ thêm ảnh chụp màn hình khi ngoại tuyến. Hãy xóa ảnh và lưu phần văn bản.",
+    "source": "ea9c5ee388afd19f02e116b2a7e4946a732abbe2b9943a8dde7fc92362369388"
+  },
+  "feedback.queue.refused.failed": {
+    "text": "Không thể lưu tin nhắn này trên thiết bị.",
+    "source": "6d029fa374384fcc95118dd9c8e813a67b4e87052e146bdd107841ce1a77fc80"
+  },
+  "feedback.queue.rejectedReason": {
+    "text": "Không thể gửi tin nhắn này: {{reason}}. Nội dung của bạn đã được khôi phục, hãy chỉnh sửa và thử lại.",
+    "source": "7576fe3efa08ab978325f12e3357dbe30089ddf3bdde9a84371e28066d6a0e4b"
+  },
+  "feedback.queue.rejected": {
+    "text": "Không thể gửi tin nhắn này: máy chủ đã từ chối. Nội dung của bạn đã được khôi phục, hãy chỉnh sửa và thử lại.",
+    "source": "5ffad1668be29db5e2f238ef43f72f0f055278208a5ac35f495fb58ba77ecd99"
+  },
+  "feedback.draftSaved": {
+    "text": "Đã lưu bản nháp yêu cầu của bạn. Hãy mở lại Đề xuất cải tiến để hoàn tất.",
+    "source": "02f08a6b626876d6d4ceefd64440f1ca711c14ed6a78543189aa84260a46812d"
+  },
+  "feedback.submit.post": {
+    "text": "Đăng yêu cầu",
+    "source": "f070a1ea8873b2ab93b92a6404f8b8fabb566b362b8d463854cae95844dd001a"
+  },
+  "feedback.submit.saveForLater": {
+    "text": "Lưu để gửi sau",
+    "source": "ce3cf1fbf050b5240306bcc74904e92eb091813e86b8db80a01bed1d996083b0"
+  },
+  "feedback.submit.posting": {
+    "text": "Đang đăng…",
+    "source": "648a2ef491ba918c6439d1f697e9cb42c646aab5db9cf27a94cc14105d5fddec"
+  },
+  "feedback.submit.saved": {
+    "text": "Đã lưu",
+    "source": "b5c120b316c237a0deab3140267aebedba61947d3ae268d708a53d5be119e9fb"
+  },
+  "feedback.submit.posted": {
+    "text": "Đã đăng",
+    "source": "afd80c5a1b84c378544290379f7195d17d994e3a6e30675372c6dc58446e0614"
+  },
+  "feedback.error.file": {
+    "text": "Hiện chưa thể gửi yêu cầu này. Vui lòng thử lại sau.",
+    "source": "8a663c502fecce0860c5092b8d444cd6394e997a1c2412aff13879440e57865d"
+  },
+  "feedback.error.network": {
+    "text": "Lỗi mạng",
+    "source": "2a33d984de88157305b38d8c13bc9d85880a40f84eec3683507785fdc2bfd48d"
+  },
+  "feedback.fix.failedRequest": {
+    "text": "Hiện chưa thể mở bản sửa. Bạn có thể thử lại từ yêu cầu trên bảng.",
+    "source": "8d6e40523bdfe3eaa53fbdcf512cd63673762d377da8fe1efabcefbb373747c8"
+  },
+  "feedback.fix.failedIssue": {
+    "text": "Hiện chưa thể mở bản sửa. Bạn có thể thử lại từ vấn đề trên bảng.",
+    "source": "d1455e92d6fdb9ba05ce63ac4f636e68103cfe01640576eaf14931867bf1fd9b"
+  },
+  "feedback.notice.pair": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "feedback.posted.app": {
+    "text": "Đã đăng lên {{app}}.",
+    "source": "2f39ec951aeeca8bbb1739e353a31fd3e1d70bc880f42fb3fe4c5e474fb33945"
+  },
+  "feedback.posted.thisApp": {
+    "text": "Đã đăng lên ứng dụng này.",
+    "source": "558fe578b9d7062206dd8109c144c79d5f2cf425670cc3ba652568da5cca16fd"
+  },
+  "feedback.posted.platform": {
+    "text": "Đã đăng lên Homeroom.",
+    "source": "c785968a74d6a0bbd5dca1d2fefab721b2a5edf481abf7e02008e60bab693df6"
+  },
+  "feedback.first.title": {
+    "text": "Chúc mừng yêu cầu đầu tiên của bạn!",
+    "source": "1b7c19bd4005e25f4018e0b0fc3fba116d93b57c1da6bd47ac962a47156f5985"
+  },
+  "feedback.first.intro": {
+    "text": "Bạn đã góp phần làm ứng dụng này tốt hơn. Muốn làm tiếp bước kế tiếp không?",
+    "source": "6b08ca94f4bff60178c241caff869220b1ac31b8acd999a8c5781dc820cedbcf"
+  },
+  "feedback.first.posted": {
+    "text": "Yêu cầu của bạn đã được đăng.",
+    "source": "57474c90f4e3ace3500aa6ad5428f1189f0209e4c4fd55973b974a628a9f89ca"
+  },
+  "feedback.first.savedPosted": {
+    "text": "Yêu cầu đã lưu của bạn đã được đăng.",
+    "source": "7483d94a615ba84ff62fdb1d43c0366594ffb27b8eee310805b66be4182ea4ed"
+  },
+  "feedback.first.savedSent": {
+    "text": "Phản hồi đã lưu của bạn đã được gửi.",
+    "source": "1dc75d986bc65dfa745367f4ba3e9378dea0bf04597108ca15c720a6f598fc72"
+  },
+  "feedback.first.fix": {
+    "text": "Tự thử sửa",
+    "source": "8f4261e4f64cffb2ee2f68fce2fe071176141c82e11134d696f5bc0708e75a6f"
+  },
+  "feedback.first.fixNote.default": {
+    "text": "Bắt đầu với bản nháp mà bạn có thể chỉnh sửa trước khi gửi cho trợ lý lập trình.",
+    "source": "c0b2869cedf42485c5fff09c297fb17f1ec78e08ef9a83139a0b7cc113fa0260"
+  },
+  "feedback.first.fixNote.needAccess": {
+    "text": "Bạn cần quyền cộng tác viên để thử sửa. Bạn vẫn có thể xem bảng.",
+    "source": "8b80678b3ca544fa366543d0c348812162e5e1c0832d5dcfa69f1234c301e3a0"
+  },
+  "feedback.first.fixNote.noBoard": {
+    "text": "Kho mã này không có bảng ứng dụng nào mà bạn truy cập được ở đây.",
+    "source": "2453377d0707dbb3c6d2d1eed65d5172cf98cd2adb8a5c382781481f7b018f62"
+  },
+  "feedback.first.board": {
+    "text": "Xem bảng của ứng dụng",
+    "source": "22885aca7b8526135e14b1d79db9067cb7a7223e6211c05b41fd6f605274f7e9"
+  },
+  "feedback.first.mine": {
+    "text": "Xem yêu cầu của bạn",
+    "source": "893fe5b454c9792759f99e7b92563d71d6ccbd82208bcf5a0c75fd19a1f42545"
+  },
+  "feedback.sent.title": {
+    "text": "Đã đăng yêu cầu",
+    "source": "fa85958e0495dedf26f6bfb04f61d4b7da1fa316246eede5e641abb23d49e2e7"
+  },
+  "feedback.sent.postedApp": {
+    "text": "Đã đăng lên {{app}}",
+    "source": "9b044a625f0f8b140b36bc7233710352b9ae943d3a4b0ccdbc266f1666c20879"
+  },
+  "feedback.sent.postedThisApp": {
+    "text": "Đã đăng lên ứng dụng này",
+    "source": "376dbea79ba34c10e55d35a6a84995cdcadef63ffb70f50904429051fb8a0df2"
+  },
+  "feedback.sent.postedPlatform": {
+    "text": "Đã đăng lên Homeroom",
+    "source": "9a66e0368e970ca695f07c55d8493cbb8aacdcb98d2c3f1777d7072209116c6a"
+  },
+  "feedback.sent.thanksApp": {
+    "text": "Cảm ơn bạn! Đã đăng lên {{app}}",
+    "source": "dea7529511b85f723ad1b394395efc9b6f32f03d611d65b4ea04b06e477f3ad5"
+  },
+  "feedback.sent.thanksThisApp": {
+    "text": "Cảm ơn bạn! Đã đăng lên ứng dụng này",
+    "source": "362a2637d37768420fd73f1704e069b17d8f4e6ffc554190e3ed4f7dd75a4563"
+  },
+  "feedback.sent.thanksPlatform": {
+    "text": "Cảm ơn bạn! Đã đăng lên Homeroom",
+    "source": "ff1b28602a36584fd78e44d27fba404a52c9048a0ef55d4ee1f17e2cbc8fdaba"
+  },
+  "feedback.sent.thanksGroup": {
+    "text": "Cảm ơn bạn! Đã gửi đến nhóm của {{app}}",
+    "source": "9307424889295e814b0f632ff3baaad447e23c05b8bcfbdca605952ef6797590"
+  },
+  "feedback.sent.thanksThisGroup": {
+    "text": "Cảm ơn bạn! Đã gửi đến nhóm của ứng dụng này",
+    "source": "cc6faadeef65903d6d4a2c98a4dd23bf1e50e5c1eedae8cf57038b90b143cf3e"
+  },
+  "feedback.sent.botTitle": {
+    "text": "Ý tưởng của bạn đang được thực hiện!",
+    "source": "23d154a3dffed24266d6a039440a012b100e63ff9ab84acfa09eee540e846dee"
+  },
+  "feedback.sent.line": {
+    "text": "Ý tưởng của bạn đã lên bảng. Bạn có thể xem trong hồ sơ, mục Yêu cầu của bạn.",
+    "source": "d5a8401dc7f045697fb8e67b7bc7b47e36aa55d25bcfc511e86ea69d4e25f276"
+  },
+  "feedback.sent.firstTitle": {
+    "text": "Yêu cầu đầu tiên của bạn!",
+    "source": "22a148f6be20b3b1f82f9ac2f7ac66b5611db9cd1644f5c392b5c761abdc19ed"
+  },
+  "feedback.sent.firstLine.named": {
+    "text": "Bạn vừa góp phần định hình {{app}}.",
+    "source": "2b519ca89c56c77387c71536e97feb66d2c6161955e1d6602d39d53e701096b9"
+  },
+  "feedback.sent.firstLine.unnamed": {
+    "text": "Bạn vừa góp phần định hình ứng dụng này.",
+    "source": "7406480d8b410efcd28b2bcd58738169a337fbe135fd9ead8cf1ed4bf57ac399"
+  },
+  "feedback.sent.chat": {
+    "text": "Mở trò chuyện",
+    "source": "0600175af8429c3cd44ab859dcdd3cfa5c763d9b352c7b03520196d4ceb59a88"
+  },
+  "feedback.sent.mine": {
+    "text": "Xem yêu cầu của bạn",
+    "source": "893fe5b454c9792759f99e7b92563d71d6ccbd82208bcf5a0c75fd19a1f42545"
+  },
+  "feedback.sent.fix": {
+    "text": "Xây dựng ngay với trợ lý lập trình",
+    "source": "7d7a511f00eb088bb07b49ee8c4fd250a9948b1ad1bebe91ae94a619f0b3d049"
+  },
+  "members.title.full": {
+    "text": "Thành viên & phê duyệt",
+    "source": "7988f96b4d6722fcca848a24ff004cae96f417eba275b4984909c92bf1cd7923"
+  },
+  "members.title.approvals": {
+    "text": "Phê duyệt đề xuất",
+    "source": "47c0597586e0c0cf75c401f30566ef4761972ea2ab3ca8ada3d31df8af5ff7a1"
+  },
+  "members.error.appLoading": {
+    "text": "Ứng dụng vẫn đang tải. Hãy mở lại Thành viên & phê duyệt sau giây lát.",
+    "source": "825ae7f6de390cc91b9c2ec4ec7664b87eaf904a9a58ae0625e01133f52b9bf7"
+  },
+  "members.invite.label": {
+    "text": "Mời người dùng",
+    "source": "320de51a0fead222e3437e6f385ebdaac0187d5bc5772b2b04313b19131ca67f"
+  },
+  "members.invite.placeholder": {
+    "text": "tên người dùng",
+    "source": "16f78a7d6317f102bbd95fc9a4f3ff2e3249287690b8bdad6b7810f82b34ace3"
+  },
+  "members.invite.sending": {
+    "text": "Đang mời…",
+    "source": "a4c2059a1177eccc64fd6b9d49e44e07786f820ad65fbd939db54afda0110d23"
+  },
+  "members.invite.sent": {
+    "text": "✓ Đã mời @{{username}}",
+    "source": "b855dea8cea0f89ceba4f190a952f72c5b38d4a2c6d9f4f155c835a2c1cbdbe1"
+  },
+  "members.collaborators.heading": {
+    "text": "Cộng tác viên",
+    "source": "439c0bddcded12eb3e032981d56416fced96dea5b4a08247e7099f44ebd112f6"
+  },
+  "members.collaborators.empty": {
+    "text": "Chưa có cộng tác viên.",
+    "source": "609c3f96a3b6ef242edcb5f7ebd4b45c3128e6ba3b575ebf86b1b6728eada598"
+  },
+  "members.collaborators.loadFailed": {
+    "text": "Không tải được thành viên: {{reason}}",
+    "source": "aac6089cac36d13c5c53b646ac47d2e87b2c044c45a232ea041a715b60e0fa3e"
+  },
+  "members.collaborators.tag.creator": {
+    "text": "người tạo",
+    "source": "bc6bfd848ebd7819c9a82bf124d65e7f739d08e002601e23bb906aacd40a3d81"
+  },
+  "members.collaborators.tag.invited": {
+    "text": "đã mời",
+    "source": "307128ff4d35a7e2b87909cebfd2c3fdf24b412fcc1a978d286ffa46b7c32546"
+  },
+  "members.collaborators.revoke": {
+    "text": "Thu hồi",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "members.collaborators.revokeTitle": {
+    "text": "Thu hồi lời mời",
+    "source": "3e19d958e48381e7a91705121e6f1ddc13c667bf57e8c0fe22499b80b1faf6fb"
+  },
+  "members.collaborators.leave": {
+    "text": "Rời đi",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "members.collaborators.leaveTitle": {
+    "text": "Rời khỏi ứng dụng",
+    "source": "7d814576503a092b3914b685c0f1d79e2dd7a04a41f10ff2dcdacc4a29d341be"
+  },
+  "members.collaborators.remove": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.collaborators.removeTitle": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.collaborators.removeFailed": {
+    "text": "Không xóa được: {{reason}}",
+    "source": "24bdc3d12585bc830b9b4f9964e3da640484038ec060f98ce26f940f736d3859"
+  },
+  "members.governance.heading": {
+    "text": "Phê duyệt đề xuất",
+    "source": "47c0597586e0c0cf75c401f30566ef4761972ea2ab3ca8ada3d31df8af5ff7a1"
+  },
+  "members.governance.who": {
+    "text": "Ai có thể phê duyệt đề xuất",
+    "source": "f8b49580def79c051550e94688e2df276b73b628264b8de8bf5e54db9694ab49"
+  },
+  "members.governance.policy.everyone": {
+    "text": "Mọi người",
+    "source": "da2e5dc515b188dcac1afa88c93f859834ad57dfd921581172c9a74ab190e9f1"
+  },
+  "members.governance.policy.invited": {
+    "text": "Người phê duyệt được mời",
+    "source": "3b27d31f06a49cc8ccc73615590378c74ba57a73a98e75ca87b6a4fa0f3da1ac"
+  },
+  "members.governance.howMany": {
+    "text": "Cần bao nhiêu lượt phê duyệt",
+    "source": "6df6c7603ba5b0f77e8ddac215f44015e6296be7381b395ba7cc5cdacb1b6c9f"
+  },
+  "members.governance.mode.default": {
+    "text": "Thời gian & đa số",
+    "source": "cef18a8b3420f51fa6fd7a2d36efffbe5f94863569deae9f1890965563b1f367"
+  },
+  "members.governance.mode.atLeast": {
+    "text": "Ít nhất",
+    "source": "3251982cbfa9f225a048fdae6ef28b0afbfad89cc26b6fa97b951c6c51d6ec07"
+  },
+  "members.governance.propose": {
+    "text": "Đề xuất",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "members.governance.note": {
+    "text": "Mọi thay đổi sẽ mở một đề xuất được bỏ phiếu theo quy tắc hiện tại.",
+    "source": "2a75856dd9cd065ddf5b69d81182f5b37464fe2bf600a75c97267beacc2b04c6"
+  },
+  "members.governance.noRepository": {
+    "text": "Thay đổi cài đặt phê duyệt được đề xuất qua pull request dapp.json, mà ứng dụng này không có kho GitHub nên không thể thực hiện.",
+    "source": "5ba7bc9f759c79f165bbec89f30aa0f80f15e26cf6be9ded33d02374e8eb7341"
+  },
+  "members.governance.setNumber": {
+    "text": "Đặt số lượt phê duyệt, rồi nhấn Đề xuất.",
+    "source": "1d9d847b68fc9e57f24e7c16e8cdbd4662e80d3563e3d318bffcaa76bfb5dcff"
+  },
+  "members.governance.review": {
+    "text": "Xem lại những người phê duyệt ban đầu, rồi nhấn Đề xuất.",
+    "source": "659c89a3d35f09b7b46028f8b40ae29446024dd6980a604769882e34b2ee4356"
+  },
+  "members.governance.confirm.title": {
+    "text": "Mở đề xuất cài đặt phê duyệt?",
+    "source": "800fa5b14bab3155dd91919544868271354757698daa28b8aa3cbaf16fcdc4c2"
+  },
+  "members.governance.confirm.message": {
+    "text": "Thay đổi cài đặt phê duyệt sẽ mở một đề xuất được bỏ phiếu theo quy tắc hiện tại. Thay đổi có hiệu lực sau khi phiếu bầu được thông qua và ứng dụng triển khai lại.",
+    "source": "a19db787cfdeb5d3f4d37e24b1d3add5f1cb593c29072edf01619c2fe80c1af1"
+  },
+  "members.governance.confirm.open": {
+    "text": "Mở đề xuất",
+    "source": "61cbb6454002eb98cdac099db81611de59b430bba0c9333a703cd55d8d88404d"
+  },
+  "members.governance.alreadyWaiting": {
+    "text": "Một thay đổi về người điều hành ứng dụng này đang chờ phê duyệt. Xem trong Xưởng.",
+    "source": "9c1013d8a91289f33147e26bab5df49e63d612868d08c15765a7a85e2d3be136"
+  },
+  "members.governance.opened": {
+    "text": "Đã mở đề xuất (PR #{{number}}). Cần phiếu bầu của nhóm trong bảng bỏ phiếu ở tab Dev trước khi cài đặt mới có hiệu lực.",
+    "source": "3fe00bdf7a3f60dc876e685df98f4d6925f09de13a8e90f79d7d9d8bbecd7a7c"
+  },
+  "members.governance.openedWithWarnings": {
+    "text": "Đã mở đề xuất (PR #{{number}}). Cần phiếu bầu của nhóm trong bảng bỏ phiếu ở tab Dev trước khi cài đặt mới có hiệu lực. Không gửi được một số lời mời phê duyệt: {{warnings}}.",
+    "source": "22edb89a09f6111f7ffed40139b61f7c1473fc763f68f64d948e764d50e7c7fe"
+  },
+  "members.governance.failed": {
+    "text": "Không thể mở đề xuất quản trị: {{reason}}",
+    "source": "37bc9e7a49c8bf0f992b803ac53c0b5750728e73f036c900dad693dc8ef1d895"
+  },
+  "members.initialApprovers.heading": {
+    "text": "Người phê duyệt ban đầu",
+    "source": "cd980f85fb9048a0f0602f61ff5ba2c298ed56c844151d8e01da7c4423def339"
+  },
+  "members.initialApprovers.placeholder": {
+    "text": "thêm người phê duyệt để mời (không bắt buộc)",
+    "source": "6ffc85f8c5373b7b620a4d6755b7dc30033b72811e22b8aa34aef3958b468848"
+  },
+  "members.initialApprovers.propose": {
+    "text": "Đề xuất",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "members.initialApprovers.willBeInvited": {
+    "text": "sẽ được mời",
+    "source": "81a5e16044f086b7f85e5966a274c25b7584b32e37736bd49a6aee33e9254110"
+  },
+  "members.initialApprovers.remove": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.initialApprovers.status.current": {
+    "text": "Những người phê duyệt hiện tại vẫn giữ nguyên: {{approvers}}. Thêm người khác để mời bên dưới (không bắt buộc).",
+    "source": "ec5f4239101adff507fefe6d26bd8510e0d31105062b9a55b83653b2905edc93"
+  },
+  "members.initialApprovers.status.platformAdmins": {
+    "text": "Quản trị viên nền tảng có thể phê duyệt đề xuất cho đến khi có người phê duyệt được mời. Hãy chọn một vài người bên dưới.",
+    "source": "fb01420f3d13058c6420c130328611ae619519709edd145e350e41fe05bd3f1c"
+  },
+  "members.initialApprovers.status.creatorFirst": {
+    "text": "Người tạo ứng dụng sẽ tự động là người phê duyệt đầu tiên. Thêm người khác để mời bên dưới (không bắt buộc).",
+    "source": "74ee88db008f91de1d60ce5639a85d78f005a317f6e9dbb959621bbcb06578f3"
+  },
+  "members.initialApprovers.status.youFirst": {
+    "text": "Bạn sẽ tự động là người phê duyệt đầu tiên của ứng dụng này. Thêm người khác để mời bên dưới (không bắt buộc).",
+    "source": "1179708e6c4a6a5e648dff3650ac556bcb5130d6cf083fa4475f5f2794718bd0"
+  },
+  "members.approvers.heading": {
+    "text": "Người phê duyệt",
+    "source": "97ecaec16a965f318327711ac796a28bd3e52a0fc9af5bed95d21ce7453d3d20"
+  },
+  "members.approvers.dormantNote": {
+    "text": "Người phê duyệt chỉ có tác dụng khi “Ai có thể phê duyệt đề xuất” được đặt là Người phê duyệt được mời.",
+    "source": "9727939765ca589ae4e2eb9a1b41486be05e1a320fea9fcf7e299f1af045a9b1"
+  },
+  "members.approvers.invitePlaceholder": {
+    "text": "mời người phê duyệt theo tên người dùng",
+    "source": "a9754aab10eff072000473529762d8fe2f7e3c00bf85f1b1c896f8e5cb27fc60"
+  },
+  "members.approvers.empty": {
+    "text": "Chưa có người phê duyệt. Quản trị viên nền tảng có thể phê duyệt đề xuất cho đến khi thêm người phê duyệt.",
+    "source": "be084f5e1cef1a649aef6f2a40a9ed03a961b822a35099629d0fcba4517cd8da"
+  },
+  "members.approvers.loadFailed": {
+    "text": "Không tải được người phê duyệt: {{reason}}",
+    "source": "92568094c23455ea45634809107ee2020791343dd10df75183e7cdc5974b6a45"
+  },
+  "members.approvers.tag.invited": {
+    "text": "đã mời",
+    "source": "307128ff4d35a7e2b87909cebfd2c3fdf24b412fcc1a978d286ffa46b7c32546"
+  },
+  "members.approvers.tag.approver": {
+    "text": "người phê duyệt",
+    "source": "7a023df6bf29324d9c2dd30086dc8aca140029e59a353152e05480d132d6ed85"
+  },
+  "members.approvers.revoke": {
+    "text": "Thu hồi",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "members.approvers.revokeTitle": {
+    "text": "Thu hồi lời mời",
+    "source": "3e19d958e48381e7a91705121e6f1ddc13c667bf57e8c0fe22499b80b1faf6fb"
+  },
+  "members.approvers.leave": {
+    "text": "Rời đi",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "members.approvers.leaveTitle": {
+    "text": "Thôi làm người phê duyệt",
+    "source": "f7e82d28c1ca87847ab9a4314a409d2d987e3625b4d4a93b2dc46bb7e4294501"
+  },
+  "members.approvers.remove": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.approvers.removeTitle": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.approvers.removeFailed": {
+    "text": "Không xóa được: {{reason}}",
+    "source": "24bdc3d12585bc830b9b4f9964e3da640484038ec060f98ce26f940f736d3859"
+  },
+  "members.approvers.inviting": {
+    "text": "Đang mời…",
+    "source": "a4c2059a1177eccc64fd6b9d49e44e07786f820ad65fbd939db54afda0110d23"
+  },
+  "members.approvers.invited": {
+    "text": "✓ Đã mời @{{username}} làm người phê duyệt",
+    "source": "fc7a8848bc5327c98d3694293d520c3293fc4ee365180e028dd6e1889031ced0"
+  },
+  "members.appAdmins.heading": {
+    "text": "Quản trị viên ứng dụng",
+    "source": "8cb33dc2de192698f4b8df83547b008befb439fc8fe6162060e25aa08ec07d5f"
+  },
+  "members.appAdmins.placeholder": {
+    "text": "thêm quản trị viên theo tên người dùng",
+    "source": "b06974ed0342f591a29a576c7948e6fdb7d83e1fe6230f54b7b7f5ffc3c091ef"
+  },
+  "members.appAdmins.propose": {
+    "text": "Đề xuất",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "members.appAdmins.empty": {
+    "text": "Chưa có quản trị viên ứng dụng. Quản trị viên ứng dụng có thể quản lý cài đặt của ứng dụng này và hợp nhất cưỡng chế các đề xuất.",
+    "source": "f1f06da268efb111718dec6c5fa7c66321e3e1dd168ffe2b8b818e377fbea19a"
+  },
+  "members.appAdmins.loadFailed": {
+    "text": "Không tải được quản trị viên ứng dụng: {{reason}}",
+    "source": "8c3f7df90defe6efa6d857ca16c47dba6a9f0f41c1605bab025d22584e26b70e"
+  },
+  "members.appAdmins.remove": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.appAdmins.undo": {
+    "text": "Hoàn tác",
+    "source": "a8283ade31856f71220db0e6f60a257c6889dc4dad0f275f66ad44b9ed9bf8d5"
+  },
+  "members.appAdmins.tag.admin": {
+    "text": "Quản trị viên",
+    "source": "c1c224b03cd9bc7b6a86d77f5dace40191766c485cd55dc48caf9ac873335d6f"
+  },
+  "members.appAdmins.tag.unregistered": {
+    "text": "chưa đăng ký",
+    "source": "e965527f55cbc5b50d4d2ab81dfa78513f20118aab880aa47a7c07b7727da3a5"
+  },
+  "members.appAdmins.tag.unregisteredTitle": {
+    "text": "Đã khai báo trong dapp.json nhưng chưa có tài khoản nào với tên người dùng này",
+    "source": "5389eb2bfbe4f41834b34ebca6fe434fde5d927d2e9a70e7e7583ff79afa27ee"
+  },
+  "members.appAdmins.tag.willBeRemoved": {
+    "text": "sẽ bị gỡ",
+    "source": "0ea5069c46ff7c7f23d3e3db029bb5361baf009d9082d89a8b39020d4e0815a4"
+  },
+  "members.appAdmins.tag.willBeAdded": {
+    "text": "sẽ được thêm",
+    "source": "d203828dcc5cad39130e0791d900accb7d676fc8303f562a7a8cac516790a79d"
+  },
+  "members.appAdmins.tag.noAccount": {
+    "text": "chưa có tài khoản",
+    "source": "80e133919ec81c9ba389eadbc04d4746ec7dee457ded99f919f2ec87c30b87bf"
+  },
+  "members.appAdmins.tag.noAccountTitle": {
+    "text": "Chưa có tài khoản nào với tên người dùng này. Họ sẽ trở thành quản trị viên sau khi đăng ký và ứng dụng triển khai lần tiếp theo",
+    "source": "da811219b155cdb33135d54355dcc02510b67a9256275084ec9b65aaec90f53b"
+  },
+  "members.appAdmins.note.editable": {
+    "text": "Các thay đổi được đề xuất dưới dạng pull request chỉnh sửa danh sách <1>admins</1> trong <0>dapp.json</0>. Cần phiếu bầu Đồng ý thực sự và sẽ không tự hợp nhất theo thời gian.",
+    "source": "9570fec778dfd9920e513f1886c0c5a83ee99b8be12bf871e0356c1f8a4ece9e"
+  },
+  "members.appAdmins.note.readOnly": {
+    "text": "Được đặt trong <0>dapp.json</0>. Để thay đổi, hãy mở một pull request chỉnh sửa danh sách <1>admins</1>. Đề xuất đó cần phiếu bầu Đồng ý thực sự và sẽ không tự hợp nhất theo thời gian.",
+    "source": "4dd67230afa3d7fec4512ac17ab3a8c22158a28edd44571676237313ae27aaa0"
+  },
+  "members.appAdmins.alreadyWaiting": {
+    "text": "Một thay đổi về quản trị viên của ứng dụng đang chờ phê duyệt. Xem trong Xưởng.",
+    "source": "4b63e2f2a1dece899e0b2f2ec46599819990d30aca4db01b582489602c4a2651"
+  },
+  "members.appAdmins.noRepository": {
+    "text": "Thay đổi quản trị viên được đề xuất qua pull request dapp.json, mà ứng dụng này không có kho GitHub nên không thể thực hiện.",
+    "source": "82b47d0c7609702fcd67317599dad8bf82cdcba8344f6826c9e9aa98c458a920"
+  },
+  "members.appAdmins.tooMany": {
+    "text": "Một ứng dụng chỉ có thể khai báo tối đa 20 quản trị viên.",
+    "source": "c5d265f9c572b8b37cace7fda0ace64d9f5d7d45246f292be4868362a8aeb628"
+  },
+  "members.appAdmins.confirm.title": {
+    "text": "Mở đề xuất quản trị viên ứng dụng?",
+    "source": "f30d53534bb32b9c6b8e1fc30041ec761599672cceeaa1744a29bc2b5f7bf35f"
+  },
+  "members.appAdmins.confirm.message": {
+    "text": "Thay đổi người quản trị ứng dụng này sẽ mở một đề xuất. Vì cấp quyền ở cấp ứng dụng nên đề xuất sẽ không tự hợp nhất theo thời gian: cần phiếu bầu Đồng ý thực sự để đạt ngưỡng thông thường của ứng dụng, và chỉ quản trị viên nền tảng mới có thể buộc hợp nhất.",
+    "source": "ad532749964ae5fa723e44edf3640c09a828a6087483842693f965b508818ddd"
+  },
+  "members.appAdmins.confirm.messageEmptying": {
+    "text": "Thao tác này gỡ mọi quản trị viên ứng dụng. Chỉ người tạo và quản trị viên nền tảng mới quản lý được ứng dụng. Thay đổi sẽ mở một đề xuất cần phiếu bầu Đồng ý thực sự và không tự hợp nhất theo thời gian.",
+    "source": "619798ccfd1027b91c871c8b6b30d0006a526928a6746e9e5809aeb5f2313c42"
+  },
+  "members.appAdmins.confirm.open": {
+    "text": "Mở đề xuất",
+    "source": "61cbb6454002eb98cdac099db81611de59b430bba0c9333a703cd55d8d88404d"
+  },
+  "members.appAdmins.opened": {
+    "text": "Đã mở đề xuất (PR #{{number}}). Cần phiếu bầu của nhóm trong tab Dev trước khi quản trị viên mới có hiệu lực.",
+    "source": "8e7cce421e5e44f9a92696b9cee6d2976fa7f88ba7b705d86bb27d8c3453df22"
+  },
+  "members.appAdmins.failed": {
+    "text": "Không thể mở đề xuất quản trị viên: {{reason}}",
+    "source": "618cad723133f71f2019f3b81bbb8a8e87e787388ce4e300d122842c694e1d53"
+  },
+  "secrets.title.app": {
+    "text": "Bí mật của ứng dụng",
+    "source": "fbd64919bcf492441161bc5b58e8fe080e17e4a459d56f011b4cc9e0343592cf"
+  },
+  "secrets.title.platform": {
+    "text": "Biến nền tảng",
+    "source": "d570a27ee8978c24c5c2221018a57ceb661a0e0b44b7077c9deabfc543978605"
+  },
+  "secrets.subtitle.initial": {
+    "text": "Các biến môi trường ứng dụng này khai báo trong <0>dapp.json</0>.",
+    "source": "91d65cb0e52860526442658cf74ab21f5fd1933fd01bc9f4d0aac9cd2af28e64"
+  },
+  "secrets.subtitle.app": {
+    "text": "Các biến môi trường ứng dụng này khai báo trong <0>dapp.json</0>.",
+    "source": "e42fafb08e91fdf1639d7310aedfae4d6016f797fb9ee93856f781b2343c493c"
+  },
+  "secrets.subtitle.platform": {
+    "text": "Các biến môi trường của chính nền tảng, khai báo trong <0>dapp.json</0>. <1>Thay đổi ở đây không có hiệu lực ngay: sẽ được áp dụng ở lần triển khai tiếp theo của nền tảng.</1>",
+    "source": "39205e0a02cec85f7bd43bfaf5e77265961ccc48c0dcf4111242dbee3eda422c"
+  },
+  "secrets.footer": {
+    "text": "Thay đổi áp dụng ở lần triển khai tiếp theo. Quản trị viên có thể <0>triển khai lại ngay</0>.",
+    "source": "06e2d2f04066ddea57427f870e977d6cf4c083410b4097825748b43d8ee67547"
+  },
+  "secrets.redeploy.triggering": {
+    "text": "Đang kích hoạt triển khai lại…",
+    "source": "92e38e4a747547b94c1b7b6ffc1743e1b7f2e2ac3973eece5961597006d77cc6"
+  },
+  "secrets.redeploy.started": {
+    "text": "Đã bắt đầu triển khai lại. Hãy theo dõi nhãn phiên bản.",
+    "source": "c62e73bb6f2da8074fd616352b15c20e452f65262d5f66055ffde9cc64154307"
+  },
+  "secrets.redeploy.failed": {
+    "text": "Triển khai lại thất bại: {{reason}}",
+    "source": "fd8e127ec01ec43c99037eee2effa446b81ab0b1b2e617cc297c3f19adece00e"
+  },
+  "secrets.loadFailed": {
+    "text": "Không tải được: {{reason}}",
+    "source": "79d037c97512a29e464da58369b57ee2589722f33f928c4ce1845ecef43d6f4c"
+  },
+  "secrets.noManifest": {
+    "text": "Chưa có bản chụp manifest. Khi lần triển khai đầu tiên của ứng dụng hoàn tất, các bí mật đã khai báo sẽ hiện ở đây.",
+    "source": "b2bdf58e0a80957ae7864adbfe100273c47b601e19303a7d0e06019ee7ff912d"
+  },
+  "secrets.empty.platform": {
+    "text": "Chưa có biến nền tảng nào được khai báo. Dùng “Biến mới” bên dưới để khai báo biến đầu tiên.",
+    "source": "8f9e6c78be0974416bf296fc6e817be70822c16cb5a23fffb409a7024cb86bf4"
+  },
+  "secrets.empty.app": {
+    "text": "<0>dapp.json</0> của ứng dụng này chưa khai báo bí mật nào. Dùng “Bí mật mới” bên dưới để khai báo bí mật đầu tiên.",
+    "source": "179824339f3a00fc07df6e87b8ea86e137024c201042d19a97e21336c638f654"
+  },
+  "secrets.state.set": {
+    "text": "Đã đặt",
+    "source": "b6f6f3ad07b3c05fa0bbbbf2e3d257ff1e3e31a83efbe2c9369cd008594f94e0"
+  },
+  "secrets.state.unset": {
+    "text": "Chưa đặt",
+    "source": "4895f73177ab5d67c30c183a49d2477e014a2ef69b65150762d17e877f4f5b95"
+  },
+  "secrets.state.managed": {
+    "text": "Do triển khai quản lý",
+    "source": "fe835fe013a21b59506cc8c71c0f3621a1abc9963d42e848dc66a7ba1e437033"
+  },
+  "secrets.state.orphan": {
+    "text": "Không còn được khai báo",
+    "source": "d9865b559ef9160533571c5079dc501242e53c65863bee3e8787cdfee296608e"
+  },
+  "secrets.state.proposed": {
+    "text": "Chờ phê duyệt",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "secrets.badge.required": {
+    "text": "bắt buộc",
+    "source": "d0a3630555bbec7fc05a98d311c23b00fd1ab4d8296ac4a4125976d80b6a6959"
+  },
+  "secrets.badge.sensitive": {
+    "text": "nhạy cảm",
+    "source": "2d5e8600a4fba66e5c6a513a6e77421f4079cdb8728ed12b810196584b0bbde2"
+  },
+  "secrets.badge.sensitiveTitle": {
+    "text": "giá trị không bao giờ hiển thị sau khi lưu",
+    "source": "d7ce664997d17660a2ade69b31656566daa57f7ad49e346cdb44ef46a6b11407"
+  },
+  "secrets.badge.orphan": {
+    "text": "mồ côi",
+    "source": "88f6811ab5d8fc6d3177f9b7609ae0fcebfda187e5046b62d38bb539e88b74d7"
+  },
+  "secrets.github.note": {
+    "text": "Chỉ đọc. Thay đổi trong <0>Settings → Secrets and variables → Actions</0> của kho trên GitHub. GitHub không bao giờ trả về giá trị của bí mật cho bất kỳ ai, nên ở đây chỉ hiển thị được tên và lần thay đổi gần nhất.",
+    "source": "6c05b2a5cf223ce040e32721e525d260f6f0ff4a11e38adffa8bd8cb942f1bc8"
+  },
+  "secrets.github.noteStaged": {
+    "text": "Chỉ đọc. Thay đổi trong <0>Settings → Secrets and variables → Actions</0> của kho trên GitHub. GitHub không bao giờ trả về giá trị của bí mật cho bất kỳ ai, nên ở đây chỉ hiển thị được tên và lần thay đổi gần nhất. <1>(Bản xem trước staging: danh sách này là dữ liệu mẫu.)</1>",
+    "source": "327caac2b52c4229a7f5862164c5a0cf0f1bb94f63216c381a87b98d66a08245"
+  },
+  "secrets.github.noteNone": {
+    "text": "Kho này không có bí mật Actions nào. Chỉ đọc. Thay đổi trong <0>Settings → Secrets and variables → Actions</0> của kho trên GitHub. GitHub không bao giờ trả về giá trị của bí mật cho bất kỳ ai, nên ở đây chỉ hiển thị được tên và lần thay đổi gần nhất.",
+    "source": "5a101ccbf02e8125bda280711c35cce77a102112440c617f9c6fe2166647ee7d"
+  },
+  "secrets.github.unavailable": {
+    "text": "Không đọc được bí mật Actions của kho nền tảng.",
+    "source": "d28e4bf81ad64fb139687b486e93292b7dfb81a11b6b3fbb2b58f0e8644a5f81"
+  },
+  "secrets.value.github": {
+    "text": "Đã đặt trên GitHub",
+    "source": "2d9e318edd1bb28eba33edd79c182d8da9900eeca67746bdd7236cb07fc53c88"
+  },
+  "secrets.value.githubUpdated": {
+    "text": "Đã đặt trên GitHub · cập nhật {{date}}",
+    "source": "df883c2b741cc4d48a05c3a2b543cb2e5f3079d701c6a1f493fa0972e2c97273"
+  },
+  "secrets.value.proposed": {
+    "text": "có kèm giá trị, áp dụng khi đề xuất được hợp nhất",
+    "source": "fe400adf271415d05cc3c33c1cb1f186c4adb117df873cd9128f0bae32465586"
+  },
+  "secrets.value.proposedEnding": {
+    "text": "có kèm giá trị (…{{ending}}), áp dụng khi đề xuất được hợp nhất",
+    "source": "0ba7a29cb1dea1b6588c1f500554bdd30ccd0c1af9c93a1ba63710ef89f88aa3"
+  },
+  "secrets.value.declarationOnly": {
+    "text": "chỉ khai báo, không đề xuất giá trị",
+    "source": "8c4c8583a2bca88d7af92a7b24d663badd4d2d57c4744721406f631ffc2bc2c4"
+  },
+  "secrets.value.private": {
+    "text": "•••••••• (riêng tư, không bao giờ hiển thị)",
+    "source": "95098d11c9832667ee6f4b1c5c127613b991b73c5808dc2fa82e59263a450d19"
+  },
+  "secrets.value.unreadable": {
+    "text": "đã đặt, nhưng không đọc được giá trị đã lưu",
+    "source": "d84f20100936817210b251d81f28e99c1dcf298ddb9a238af8402ba621a9da57"
+  },
+  "secrets.value.setEnding": {
+    "text": "đã đặt …{{ending}}",
+    "source": "c2cd4cc7147d2956caef1e29feaf2c87cea9647610a6298cc665ad82ce626619"
+  },
+  "secrets.value.setHidden": {
+    "text": "đã đặt ••••••••",
+    "source": "15167a151c7edd97b2dcc5ce76fb1962082e34158c8be46caf15c11cbffcc1ee"
+  },
+  "secrets.value.missing": {
+    "text": "thiếu, việc triển khai bị chặn",
+    "source": "ee1b26d935ef976587de64c349ff05a01bd36345420b7f71be765fa71ad9bbef"
+  },
+  "secrets.value.default": {
+    "text": "mặc định: {{fallback}}",
+    "source": "03fd359874366b4312ca62161f4b38e43cb7bab8d2e92ae843e2404731b65b3a"
+  },
+  "secrets.value.notSet": {
+    "text": "chưa đặt",
+    "source": "1aef939917215ce780284dd9047f170482753bbe40a0998b3decb2f02c2606ac"
+  },
+  "secrets.action.set": {
+    "text": "đặt",
+    "source": "6ee0eb490ff832101cf82a3d387c35f29e4230be786978f7acf9e811febf6723"
+  },
+  "secrets.action.replace": {
+    "text": "thay thế",
+    "source": "7ab3778776cde4fa728a162a53ad3abcc967d1bd7361039e0942888240c4ce86"
+  },
+  "secrets.action.clear": {
+    "text": "xóa",
+    "source": "913a4cb91be20332f3559f8070255d7ac3e6228bb423f4441551d3f783e7d4f4"
+  },
+  "secrets.action.proposeSet": {
+    "text": "đề xuất đặt",
+    "source": "ddde44ccc3b9de0ee93569f5ad5df448f852638fcc59cec8e61c04a2d091a88a"
+  },
+  "secrets.action.proposeReplace": {
+    "text": "đề xuất thay thế",
+    "source": "272e3cf5b4a6b06b9c9bac4d700b0d713ab2095a2d273db6842bc9eaa4064282"
+  },
+  "secrets.action.proposeClear": {
+    "text": "đề xuất xóa",
+    "source": "0fb1baa24e2a9f0f6cbda06c6c8b91a05b3291cb2b5036a55476914968b58071"
+  },
+  "secrets.action.viewProposal": {
+    "text": "Xem đề xuất",
+    "source": "fb66e1c96ee133bd1dfc601fab375bc077b56b18922daf9999de420ab0ae0519"
+  },
+  "secrets.action.viewProposalNumbered": {
+    "text": "Xem đề xuất #{{number}}",
+    "source": "4546b8c285462a29fa8d1c3d363863e1edd69e3588814b7bc9c4253d3d5dbb75"
+  },
+  "secrets.row.githubStored": {
+    "text": "Được lưu dưới dạng secret của Actions trên repo nền tảng. Không thể hiển thị giá trị vì API của GitHub không bao giờ trả về giá trị đó. Hãy thay đổi trong Settings → Secrets and variables → Actions của repo.",
+    "source": "6e9da594235238a528a4cf57c3b9ef7360ea1c7579204982c528ee98c0a84bd7"
+  },
+  "secrets.row.deployManaged": {
+    "text": "Được quá trình triển khai đặt từ một secret của GitHub. Không thể chỉnh sửa tại đây.",
+    "source": "a1daa1aa87ad60fc50dc8799a7f90169df872a1d4daa219f3e7ff31e2ff43728"
+  },
+  "secrets.row.alsoGithub": {
+    "text": "Cũng là một secret của GitHub Actions trên repo nền tảng.",
+    "source": "6af6dcc757155c9bc978fc2204cb1c9523723748558bdfa03f43dc37b1f11a5d"
+  },
+  "secrets.row.alsoGithubUpdated": {
+    "text": "Cũng là một secret của GitHub Actions trên repo nền tảng · cập nhật {{date}}.",
+    "source": "1e1ea18577f3ea6041e79ca5b3b141b320cb6e4b02b53cc39ae9e60bf52ba315"
+  },
+  "secrets.row.proposed": {
+    "text": "Chưa được khai báo. Một thay đổi thêm nó vào <0>dapp.json</0> đang chờ phê duyệt.",
+    "source": "6a21b519df2c8da0f4d522188cdcb57c39b68b77bc8af2fd6f792e8899059ff2"
+  },
+  "secrets.row.proposedBy": {
+    "text": "Chưa được khai báo. Một thay đổi thêm nó vào <0>dapp.json</0> đang chờ phê duyệt (do {{person}} mở).",
+    "source": "dcab3ecf6f008b772c0b300e5cf57739fae0aa87bd63571a289cd86500fd9540"
+  },
+  "secrets.row.pendingDeclaration": {
+    "text": "Đã đặt giá trị · phần khai báo đang chờ phê duyệt.",
+    "source": "ffa1035b4ff0a2f8d6e8a57b62d629b4787dc32db06194340b2c2ba502c3f2e9"
+  },
+  "secrets.row.pendingDeclarationNumbered": {
+    "text": "Đã đặt giá trị · phần khai báo đang chờ phê duyệt (PR #{{number}}).",
+    "source": "2ceb0cf7129a44aa9d7080188333273ed705d147c039af7e055b61c639b87e88"
+  },
+  "secrets.row.orphan": {
+    "text": "Không còn được khai báo trong <0>dapp.json</0>. Giá trị vẫn được giữ để khôi phục phiên bản cũ vẫn hoạt động, nên hãy xóa khi bạn chắc chắn.",
+    "source": "06f3095acbf7a65e63c4ea300a4e515db73fabea36dfb3650c993d0b7f6b1c60"
+  },
+  "secrets.declare.open.variable": {
+    "text": "+ Biến mới",
+    "source": "3797a7963e8bb8a32b7b7c22ca8ef29030a504b993d8c17690c2392598bf67b1"
+  },
+  "secrets.declare.open.secret": {
+    "text": "+ Secret mới",
+    "source": "47e82bc6923e1fdd1308f971d4b5b8dc00c35126ab032a51dff64e4799a34a91"
+  },
+  "secrets.declare.unavailable": {
+    "text": "Hiện không khả dụng.",
+    "source": "2cb2c12604182ab6702efb6a563c706f3a13581a75025657d66720bba759e392"
+  },
+  "secrets.declare.hint.direct": {
+    "text": "Khai báo trong dapp.json (một đề xuất) và lưu giá trị của bạn ngay.",
+    "source": "ecc7530770821a44e23c42ab8a95632c08b4dcd71c005c000cb544c5e3e03fc7"
+  },
+  "secrets.declare.hint.proposal": {
+    "text": "Phần khai báo và giá trị cùng chờ phê duyệt.",
+    "source": "6c8b2282b9befcf984f68e6ffd30edc171fb2cbbc5a1962d4e3111cd3544cf31"
+  },
+  "secrets.declare.heading.platform": {
+    "text": "Biến nền tảng mới",
+    "source": "f1c4d3caca4671c1bfc0a8581919ba5f8b4e7234e5b9c5684ad7ee38108b6598"
+  },
+  "secrets.declare.heading.app": {
+    "text": "Secret ứng dụng mới",
+    "source": "658082860194e274523deb71512e3bd4a7dd89e4daa372c86dd4680cee93534f"
+  },
+  "secrets.declare.blocked": {
+    "text": "Hiện không thể khai báo biến mới.",
+    "source": "cf07d984826bb0c1360be03275dcf8f3a0c0755134d8a5c477fcaa8f852bcdb3"
+  },
+  "secrets.declare.blockedStatus": {
+    "text": "Hiện không thể khai báo biến mới.",
+    "source": "cf07d984826bb0c1360be03275dcf8f3a0c0755134d8a5c477fcaa8f852bcdb3"
+  },
+  "secrets.declare.key.label": {
+    "text": "Khóa",
+    "source": "99a52df3ff3d499488e2fa28150c4106a2cb5e928891a830a9aa3922b2d32160"
+  },
+  "secrets.declare.key.help": {
+    "text": "UPPER_SNAKE_CASE: tên mà mã của bạn đọc từ môi trường.",
+    "source": "6a69b60292202de8a2d1380611213e261ef81a2bb343e91cc01a438a6f6e82a2"
+  },
+  "secrets.declare.description.label": {
+    "text": "Mô tả",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "secrets.declare.description.placeholder": {
+    "text": "Giá trị này là gì và lấy ở đâu",
+    "source": "cb663adf46bea56a8e683b870773b77da2707d4ef3031a6d11729b205432758a"
+  },
+  "secrets.declare.value.label": {
+    "text": "Giá trị",
+    "source": "8e37953d23daca5ff01b8282c33f4e0a2152f1d1885f94c06418617e3ee1d24e"
+  },
+  "secrets.declare.value.placeholder": {
+    "text": "để trống nếu chỉ khai báo",
+    "source": "453d7d7497c55799e32d6a971cc6d734acd59b2397f737f33c62025a64eb4064"
+  },
+  "secrets.declare.value.helpDirect": {
+    "text": "Được lưu ngay khi bạn gửi. Không bắt buộc nếu bạn nhập giá trị mặc định bên dưới.",
+    "source": "f30fc98e5a75454de9b91e2cd4b1793eebc4d07b4106df841adda48feed4f6aa"
+  },
+  "secrets.declare.value.helpProposal": {
+    "text": "Được giữ ở dạng mã hóa và lưu khi đề xuất được hợp nhất. Không bắt buộc nếu bạn nhập giá trị mặc định bên dưới.",
+    "source": "17a9bed58d731e11a6561c42bbd2aa80cf1c69f5823f36371bf77b1be6961e0d"
+  },
+  "secrets.declare.required": {
+    "text": "Bắt buộc",
+    "source": "4850b174b713d88cfc63de107830d5388929020e78abc91fc19bba7a6821625f"
+  },
+  "secrets.declare.private": {
+    "text": "Riêng tư",
+    "source": "c63eb6720c6e88493897548d3620d45e539d18574465f7b26fdddcbade044ee2"
+  },
+  "secrets.declare.flagsHelp.platform": {
+    "text": "Bắt buộc sẽ chặn triển khai cho đến khi có giá trị. Riêng tư nghĩa là được mã hóa khi lưu trữ và không bao giờ hiển thị lại.",
+    "source": "bd94d7286b6602dd4760bee60dddcd34d04eed60b05a78ffaddc343e7f6904b5"
+  },
+  "secrets.declare.flagsHelp.app": {
+    "text": "Bắt buộc sẽ chặn triển khai cho đến khi có giá trị. Riêng tư nghĩa là được mã hóa khi lưu trữ, không bao giờ hiển thị lại và không bao giờ được sao chép vào bản xem trước PR.",
+    "source": "f76f7d81b1babd24d33249731585834473c662b905b6119ec2fcd534640bd0fe"
+  },
+  "secrets.declare.default.label": {
+    "text": "Mặc định",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "secrets.declare.default.placeholder": {
+    "text": "không bắt buộc",
+    "source": "ec91fdd9256cb75ae611249b50cb7eb16533f0fa91b86239ec1d439a1ea033b8"
+  },
+  "secrets.declare.default.helpPlatform": {
+    "text": "Ghi lại giá trị dự phòng mà mã của bạn đã dùng. Quá trình triển khai của nền tảng không áp dụng nó, nên hãy đặt giá trị ở trên nếu biến thực sự cần.",
+    "source": "3e65014c0aad5cb2f56e6863db89ea0ad4b2d888aceded01554bd1e291d2f366"
+  },
+  "secrets.declare.default.helpApp": {
+    "text": "Được dùng khi triển khai nếu chưa lưu giá trị nào.",
+    "source": "c534d9cbbed8bf4d3cf13c438f42e1eabcae49132a99801db094964a043809bd"
+  },
+  "secrets.declare.group.label": {
+    "text": "Nhóm",
+    "source": "34ca0e76608842ff3e7d924a455a396a82f471052c15e3f2ed7f090ac702e5c1"
+  },
+  "secrets.declare.group.help": {
+    "text": "Tiêu đề mà dòng này được xếp vào trong bảng này.",
+    "source": "29efebbbdcb423789a37b0dd9b36def128e96129ebb7493a6c0669dc1daca133"
+  },
+  "secrets.declare.stagingDefault.label": {
+    "text": "Mặc định cho staging",
+    "source": "504b5f39d2799595d2efed7fb09d0007810da9ced642be3b717d7e1e50a88651"
+  },
+  "secrets.declare.stagingDefault.placeholder": {
+    "text": "không bắt buộc",
+    "source": "ec91fdd9256cb75ae611249b50cb7eb16533f0fa91b86239ec1d439a1ea033b8"
+  },
+  "secrets.declare.stagingDefault.help": {
+    "text": "Giá trị mà bản xem trước PR dùng. Secret vừa bắt buộc vừa riêng tư cần có một giá trị (hoặc giá trị mặc định), nếu không bản xem trước của ứng dụng này sẽ không khởi động được.",
+    "source": "bc24fbb732ec23ea84b95f783751fff63951b73fbdac21222aa33aaf598b7c32"
+  },
+  "secrets.declare.submit.direct": {
+    "text": "Thêm và đặt giá trị",
+    "source": "1a4a7e76758dc4e96b6e35145d2a6c1b6fefb6f1e4af0798173becf97414d18b"
+  },
+  "secrets.declare.submit.variable": {
+    "text": "Đề xuất biến mới",
+    "source": "17e5b581017647079718d88e8a7b9f9eebad27eed78887cf4fe69d89915aef71"
+  },
+  "secrets.declare.submit.secret": {
+    "text": "Đề xuất secret mới",
+    "source": "337196ed803593fb37a70015847a7798216dfe15b4025d4483ceef765e22ea0b"
+  },
+  "secrets.declare.error.key": {
+    "text": "Khóa phải ở dạng UPPER_SNAKE_CASE (chữ cái, chữ số và dấu gạch dưới).",
+    "source": "7b8ea689e9b6f993dc4b2328ee80e0651543c992e9c7f8539d0832d179df817a"
+  },
+  "secrets.declare.error.requiredValue": {
+    "text": "Biến bắt buộc cần có giá trị hoặc giá trị mặc định.",
+    "source": "c06e02a6f0a5ba17a74637f72506c5ae0fc6c67d31fa363095489e7f06ac2cf9"
+  },
+  "secrets.declare.error.stagingDefault": {
+    "text": "Bản xem trước PR của ứng dụng này sẽ không khởi động được nếu secret bắt buộc và riêng tư không có giá trị mặc định cho staging.",
+    "source": "86401def2ecef2b50c081bb551d74f78e27fa2bc76d1981c22f918e80fac5d85"
+  },
+  "secrets.declare.error.quote": {
+    "text": "Giá trị không được chứa dấu nháy đơn hoặc ký tự xuống dòng (carriage return). Chúng sẽ không giữ nguyên khi ghi vào tệp .env của nền tảng.",
+    "source": "732695af7bb906d6b9abcdc112da3471a94f158670be3d83b7f5b6a901357c05"
+  },
+  "secrets.declare.opening": {
+    "text": "Đang mở đề xuất cho {{key}}…",
+    "source": "1d244043421d4954d551bbe040ae442876d70a9683671ea46f1575d58527f029"
+  },
+  "secrets.declare.opened.stored": {
+    "text": "Đã mở đề xuất cho {{key}}. Giá trị của bạn đã được lưu; phần khai báo vẫn cần phiếu bầu hợp nhất.",
+    "source": "ea199ac147d615b03265abd23520968c86588fced907bc15c66a85133bad96cf"
+  },
+  "secrets.declare.opened.storedNumbered": {
+    "text": "Đã mở đề xuất cho {{key}} (PR #{{number}}). Giá trị của bạn đã được lưu; phần khai báo vẫn cần phiếu bầu hợp nhất.",
+    "source": "786f0f8c88a96892e4bbc8b8f9e4e218d53bc37191a3cf0837563b236a9b30f4"
+  },
+  "secrets.declare.opened.pending": {
+    "text": "Đã mở đề xuất cho {{key}}. Hãy bỏ phiếu trong bảng trò chuyện nhóm. Giá trị sẽ được áp dụng khi hợp nhất.",
+    "source": "ca829f3dd8289b4628952e7566e45b39424745cfa19816b19c09b5ece171583e"
+  },
+  "secrets.declare.opened.pendingNumbered": {
+    "text": "Đã mở đề xuất cho {{key}} (PR #{{number}}). Hãy bỏ phiếu trong bảng trò chuyện nhóm. Giá trị sẽ được áp dụng khi hợp nhất.",
+    "source": "13a30e83d62c2510e65bfa4f28952c7283b151c6b67fc54c0fbc4d5357ae2cf1"
+  },
+  "secrets.declare.failed": {
+    "text": "Không thành công: {{reason}}",
+    "source": "c1dda30c11604fee80e2f6fc50baa30470da65c9c92214cf902d2b2d0367f6b4"
+  },
+  "secrets.set.title": {
+    "text": "Đặt {{key}}",
+    "source": "77c25825b2dba3adff40ef0c891b6a125f51c37f2280d254ddf17b902dc2eba2"
+  },
+  "secrets.set.sensitive": {
+    "text": "Giá trị này nhạy cảm: được mã hóa khi lưu trữ và không bao giờ hiển thị lại.",
+    "source": "2103461fb4ae732ce858cf4a82f60c61706ef9178eda96ba2f79ca434730b602"
+  },
+  "secrets.set.placeholder": {
+    "text": "giá trị",
+    "source": "cd42404d52ad55ccfa9aca4adc828aa5800ad9d385a0671fbcbf724118320619"
+  },
+  "secrets.set.setting": {
+    "text": "Đang đặt {{key}}…",
+    "source": "765936da4a226e6413fc74653546d3ee1c4f364a75b8229c0108b804094bd8ac"
+  },
+  "secrets.set.saved": {
+    "text": "Đã lưu {{key}}.",
+    "source": "d1a8bb0b384c18728622c371ff613f6ed985deeedfe25b5b2919a62c907e0590"
+  },
+  "secrets.set.failed": {
+    "text": "Không đặt được {{key}}: {{reason}}",
+    "source": "f1b879ee2deacd8d7a9f108c7aacde54298a2de6e7e4127f911e4dbae3a6b52d"
+  },
+  "secrets.clear.title": {
+    "text": "Xóa {{key}}?",
+    "source": "33a0b22bd54dde76a7d36a3d6435a484c30b54ed92f09cd81b29ebc4f710ef93"
+  },
+  "secrets.clear.confirm": {
+    "text": "Xóa",
+    "source": "83b12c2216efb4fdc924e1deb5182e905e4926ed0c1c324d467107f46d5a26a9"
+  },
+  "secrets.clear.clearing": {
+    "text": "Đang xóa {{key}}…",
+    "source": "086e362e9f064f11460e4ef1edb5ee2c1dc5ce49ce7b53391e7022059cd889bd"
+  },
+  "secrets.clear.cleared": {
+    "text": "Đã xóa {{key}}.",
+    "source": "42443a6474f813f69fa8c19212958a48da748ec4ad20d5b86ae6e4f1099e31ca"
+  },
+  "secrets.clear.failed": {
+    "text": "Không xóa được {{key}}: {{reason}}",
+    "source": "fefa0b6d49e1f9fd85ef5b85b6cd2ab6729b028eba44309d49cc3d91751060b0"
+  },
+  "secrets.proposeSet.title": {
+    "text": "Đề xuất đặt {{key}}",
+    "source": "0f244d3637ac483a3f007d2471837a30f5c9c87b78c32322d6d03621da011242"
+  },
+  "secrets.proposeSet.message": {
+    "text": "Cần đa số người dùng đang hoạt động bỏ phiếu thuận trước khi áp dụng.",
+    "source": "44ca47fc442235a2f289fbd9399223ce97708bcb9ffebea048fc0bebd3d22d21"
+  },
+  "secrets.proposeSet.messageSensitive": {
+    "text": "Giá trị này nhạy cảm. Cần đa số người dùng đang hoạt động bỏ phiếu thuận trước khi áp dụng.",
+    "source": "163e3198516f8fe40761035f1b2d1321e4b7a4032aa48f7e763eacf83acbc6fe"
+  },
+  "secrets.proposeSet.placeholder": {
+    "text": "giá trị",
+    "source": "cd42404d52ad55ccfa9aca4adc828aa5800ad9d385a0671fbcbf724118320619"
+  },
+  "secrets.proposeSet.confirm": {
+    "text": "Đề xuất",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "secrets.proposeSet.opening": {
+    "text": "Đang mở đề xuất cho {{key}}…",
+    "source": "132507250198d04b301bff787df7ad2281bee45b2fd5223e483b364f834d948a"
+  },
+  "secrets.proposeSet.opened": {
+    "text": "Đã mở đề xuất. Hãy bỏ phiếu trong tab trò chuyện nhóm.",
+    "source": "20b2e5104c4aea67d33c1b0df7b456bfb35cfdf3d5e07640bedd108ae26be454"
+  },
+  "secrets.proposeSet.failed": {
+    "text": "Không thành công: {{reason}}",
+    "source": "c1dda30c11604fee80e2f6fc50baa30470da65c9c92214cf902d2b2d0367f6b4"
+  },
+  "secrets.proposeClear.title": {
+    "text": "Đề xuất xóa {{key}}?",
+    "source": "b610af3c2dfce148fd69bb4d97f88be58fe826135b5f880965a666d49b9f6eb8"
+  },
+  "secrets.proposeClear.confirm": {
+    "text": "Đề xuất",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "secrets.proposeClear.opening": {
+    "text": "Đang mở đề xuất cho {{key}}…",
+    "source": "132507250198d04b301bff787df7ad2281bee45b2fd5223e483b364f834d948a"
+  },
+  "secrets.proposeClear.opened": {
+    "text": "Đã mở đề xuất. Hãy bỏ phiếu trong tab trò chuyện nhóm.",
+    "source": "20b2e5104c4aea67d33c1b0df7b456bfb35cfdf3d5e07640bedd108ae26be454"
+  },
+  "secrets.proposeClear.failed": {
+    "text": "Không thành công: {{reason}}",
+    "source": "c1dda30c11604fee80e2f6fc50baa30470da65c9c92214cf902d2b2d0367f6b4"
+  },
+  "screenshot.hint": {
+    "text": "Kéo để chọn vùng cần chụp. Nhấn Esc để hủy",
+    "source": "3384d3a31a296e4c43e0d63daec05d5b28b12deab7fb6f630e0e7c4d3f47ab49"
+  },
+  "screenshot.attach": {
+    "text": "Đính kèm vùng đã chọn",
+    "source": "63959bdc2d13d928585129ce364d337195c6ca234871bd8cd0131e45a3237039"
+  },
+  "screenshot.cancel": {
+    "text": "Hủy chụp màn hình",
+    "source": "4dc9b335976d6ed959c266b31b7be87822ec318459c4658b9dca59b729c00ca6"
+  },
+  "feedback.mode.label": {
+    "text": "Cách gửi góp ý",
+    "source": "fc97827a56fcb2a5835b4eb801843d7d3ed967a59a5490cb7b919409fdb08a44"
+  },
+  "feedback.mode.formTitle": {
+    "text": "Gửi góp ý bằng biểu mẫu này",
+    "source": "35c6a536fb005507dcf9e0322bf40c3e777f3bffa1a541f7c742389599ff5869"
+  },
+  "feedback.mode.form": {
+    "text": "Biểu mẫu",
+    "source": "2e0e960ab3204127b1dce399c9984c81f52a79f4d85cb0c3afddcfcfe8a2b48c"
+  },
+  "feedback.mode.commentTitle": {
+    "text": "Bình luận trên trang",
+    "source": "4d066be158823df96ac4933891423fdc5e89de2293b5825457492a5545cd9dbb"
+  },
+  "feedback.mode.comment": {
+    "text": "Bình luận",
+    "source": "44f5e3fbec57be75ebfb2e42caf7f5ee1542f84748a0380b6f20238c4a257e1b"
+  },
+  "feedback.mode.hint": {
+    "text": "Nhấp vào trang để bình luận",
+    "source": "26aeebdb1d00ce2661a1f69fac389b077abcf5a32ace023669eee33371dd4bbb"
+  },
+  "topics.title": {
+    "text": "Chủ đề",
+    "source": "e22820fcf5cd90e3fdd99a7569e0ee2f30eb7ebadfb2fe4d159b30c166ff81b7"
+  },
+  "topics.intro": {
+    "text": "Mỗi thay đổi là một đề xuất để nhóm bỏ phiếu. Thay đổi được áp dụng khi được thông qua.",
+    "source": "58d2b54d3b68b95337141850fd4ab7717dc43b852b2e74236f481c0e18bd69ff"
+  },
+  "topics.row.mergedInto": {
+    "text": "#{{handle}} · đã hợp nhất vào #{{into}}",
+    "source": "f35ed0deb9912568a32c0d057d57999873e9ddaeadcba47a0ecb75cdb2e25afc"
+  },
+  "topics.row.mergedIntoAnother": {
+    "text": "#{{handle}} · đã hợp nhất vào chủ đề khác",
+    "source": "e82268a7ff56680ab9e34b656a1769d5954b19ac16ddc2797479dc9e84b0dbf4"
+  },
+  "topics.row.archived": {
+    "text": "#{{handle}} · đã lưu trữ",
+    "source": "b3d1fce8032ad7b07a75b862fb0741044b557939aa98d7a5bf91b1e3cf28cdf3"
+  },
+  "topics.row.more": {
+    "text": "Thay đổi {{topic}}",
+    "source": "ef3de1bab70af70c1220bb53f7d2d6d399a5ee88bd4e09cb159d0bd96907124a"
+  },
+  "topics.row.actions": {
+    "text": "Thay đổi {{topic}}",
+    "source": "ef3de1bab70af70c1220bb53f7d2d6d399a5ee88bd4e09cb159d0bd96907124a"
+  },
+  "topics.action.rename": {
+    "text": "Đổi tên",
+    "source": "3064d79a295cefe4b384b8fe5cb29fd6b06d7eb1ad94b8895f4148039d06b330"
+  },
+  "topics.action.merge": {
+    "text": "Hợp nhất vào…",
+    "source": "2eb1fd03bbe336faa22866bc42606cc26624bd002a04109ba201081c1e95a7c2"
+  },
+  "topics.action.archive": {
+    "text": "Lưu trữ",
+    "source": "66f4804ee23ddc092d1bae43cb88186aa541187fff7c1cc8a4aa17e59a9f4123"
+  },
+  "topics.empty": {
+    "text": "Chưa có chủ đề nào. Hãy đề xuất chủ đề đầu tiên bên dưới.",
+    "source": "3008d91d80b760261f85b9757891fbdb7b670645bd69a446e7402cb0e9475b24"
+  },
+  "topics.form.rename": {
+    "text": "Đổi tên #{{handle}}",
+    "source": "c904108630ed768bf18b45fcb2d47220b5bc0fc9e6bf3ea10fd2ad184fd0373d"
+  },
+  "topics.form.merge": {
+    "text": "Hợp nhất #{{handle}} vào…",
+    "source": "a2be261d64c2cdea38b7f316c2c57facb08d5a04e58f892d99210eaf12990b2e"
+  },
+  "topics.form.archive": {
+    "text": "Lưu trữ #{{handle}}",
+    "source": "60a58cd9115aa9527114903fb0b74568acb7ceb2bd5aa8e4abf3b5c8d1aefa5d"
+  },
+  "topics.field.nameNew": {
+    "text": "Chủ đề mới",
+    "source": "ed7c2b116cadd98ad5c992e49af50554d6dffc11925222bf376c9e0e551d54c4"
+  },
+  "topics.field.name": {
+    "text": "Tên",
+    "source": "dcd1d5223f73b3a965c07e3ff5dbee3eedcfedb806686a05b9b3868a2c3d6d50"
+  },
+  "topics.field.namePlaceholder": {
+    "text": "Nói về điều gì, trong vài từ",
+    "source": "2d2dd5f1dece259f39c0488df2796bbea23aa18528384b9f1e67d79fb9e4fbb8"
+  },
+  "topics.field.channel": {
+    "text": "Kênh",
+    "source": "ce4683e7013a18cdf3d224bfcb4e9594ea8f559e946a837c633defe7d3c32172"
+  },
+  "topics.field.channelPlaceholder": {
+    "text": "Tạo từ tên",
+    "source": "ff8739a4ed647546717867d22b89c403a152e8c6d1be63f1427fb7750b588aed"
+  },
+  "topics.field.channelRenameHint": {
+    "text": "Các liên kết đến tên cũ vẫn hoạt động.",
+    "source": "66f36e77949369ab94a0572683486bc02b052dc9fdc2a5d76859cc1e79337636"
+  },
+  "topics.field.about": {
+    "text": "Dùng để làm gì",
+    "source": "1ad944c4c5dd7731e2ad4bdbbfc3b0ddd2c83265365dfb48de8e6ea1ca45c3d2"
+  },
+  "topics.field.aboutPlaceholder": {
+    "text": "Một dòng mọi người thấy ở đầu kênh",
+    "source": "52f527f055767ad3cb70a7a1f7c67e6b16e5d252cf64ed0d6bb7755346bc9a07"
+  },
+  "topics.field.into": {
+    "text": "Hợp nhất vào",
+    "source": "6e699598661a89323384019fc3aad56eed3ec86302481086670aaa897373f743"
+  },
+  "topics.field.intoPlaceholder": {
+    "text": "Chọn một chủ đề",
+    "source": "a11d13ad72faf509ab84dc5c0a43a710b48cd9330780f9fb729dc2ca5fadbc58"
+  },
+  "topics.merge.hint": {
+    "text": "Các yêu cầu và phiếu bầu của chủ đề này chuyển sang chủ đề bạn chọn. Kênh của nó vẫn còn, chỉ đọc, kèm lịch sử.",
+    "source": "c19bc1bdfe4f07dcd46e693bf999b717c2d55467e504ca0888cbcea6a2999949"
+  },
+  "topics.archive.hint": {
+    "text": "Kênh của nó vẫn còn, chỉ đọc, kèm lịch sử. Các yêu cầu của nó được phân loại lại vào các chủ đề khác.",
+    "source": "d14833f3c858ad8276fd8c45ca38a69cd4afef78f8536dca99291a1250562bf5"
+  },
+  "topics.submit.idle": {
+    "text": "Mở PR",
+    "source": "04c24026b2f00d817b610318ab2e984393c65576e67b591fb8fb0467f5aef0cb"
+  },
+  "topics.submit.busy": {
+    "text": "Đang mở PR…",
+    "source": "8146d2588e5b2fbdb9098d44b26300678a8812ff1ea9d6aea08a2d96559321aa"
+  },
+  "topics.status.opened": {
+    "text": "\"{{title}}\" đang chờ bỏ phiếu. Thay đổi được áp dụng khi được thông qua.",
+    "source": "05bcfbabe195fbce428cc69f6ad283296ade3ceef668963a6845930f84bbf82f"
+  },
+  "topics.status.openedUntitled": {
+    "text": "\"Thay đổi chủ đề\" đang chờ bỏ phiếu. Thay đổi được áp dụng khi được thông qua.",
+    "source": "40e292c3f5991dc8f652d88ed39c6701987fe0e329e6e17faffddebaa3973ad5"
+  },
+  "topics.proposals.heading": {
+    "text": "Đang chờ bỏ phiếu",
+    "source": "1ea7e00a62d846ea8849a472534c10dc52d768182746bc3b046c801fc5fb5275"
+  },
+  "topics.proposals.untitled": {
+    "text": "Thay đổi chủ đề",
+    "source": "b59b9feee9273bfe634b9651f10a0eae7405cca2862bf7dde690250a61f6c2b7"
+  },
+  "topics.proposals.number": {
+    "text": "Thay đổi #{{number}}",
+    "source": "e3bb28fcbf0b47a8e7370a494ef5c4de4875825b0190218433e25bd6e6d85e8c"
+  },
+  "topics.archived.heading": {
+    "text": "Đã lưu trữ",
+    "source": "bdb86505f8062d15f152cef71dd4ca89609d5bf8e98771dcd2c9f70d247403da"
+  },
+  "topics.error.nameShort": {
+    "text": "Tên chủ đề cần ít nhất 3 ký tự.",
+    "source": "08382c6fb298ecc919ba03fbe8a234ca6195b6146df20f6d17c8aabd96ec903c"
+  },
+  "topics.error.nameLong": {
+    "text": "Tên chủ đề tối đa 48 ký tự.",
+    "source": "3c539b55010249c06e6f04f51f32f1709dbb4f9cf942ae3e348cac5b70002345"
+  },
+  "topics.error.aboutLong": {
+    "text": "Mục \"Dùng để làm gì\" chỉ gồm một dòng, tối đa 140 ký tự.",
+    "source": "65dac95bfea385cbb1c77a3b00512c7732e38c8c2d3f3b1863c08a2abbfdb5ef"
+  },
+  "topics.error.notLive": {
+    "text": "Chủ đề này không còn hoạt động.",
+    "source": "2407e41d599cec046677a9338243c0ede82fc121d0ab8b5a8f32c639ab41a3be"
+  },
+  "topics.error.unchanged": {
+    "text": "Hãy đổi tên, kênh hoặc mục đích sử dụng trước.",
+    "source": "3baec396dde8068bbdb768e3bcf18f512e89088657d9a0a8f1759374e90f26fd"
+  },
+  "topics.error.chooseInto": {
+    "text": "Chọn chủ đề để hợp nhất vào.",
+    "source": "7c29517b413b18ab911e2062055cabfc449e790599d87e45cca5bde3108e5502"
+  },
+  "topics.error.open": {
+    "text": "Không thể mở đề xuất. Hãy thử lại.",
+    "source": "28cb1c8495d94129282485765603d728e5489da07c0d3d68a6e2775e59d58f38"
+  },
+  "topics.error.network": {
+    "text": "Lỗi mạng khi mở đề xuất.",
+    "source": "4bf9d99ae2d4031be4d5c005ab89fcbfcb6058a2369063ff33e4460d6dc9cefa"
+  },
+  "whoDecides.title": {
+    "text": "Ai có thể xem và thay đổi",
+    "source": "c9bd22ce67ecde912f31f5e9f47e293a554bd7dbd60c031f38754e4635ccaadd"
+  },
+  "whoDecides.sub": {
+    "text": "{{name}} · {{audience}}",
+    "source": "39ebb437c498e067447fda1ee1d0a87a9bb30b8bfca866c53d0d25640b7b6930"
+  },
+  "whoDecides.back": {
+    "text": "Quay lại",
+    "source": "76900f1bfd16c8d4dd3d25e6f46638d7165aee23883ccea6bfe071c514421769"
+  },
+  "whoDecides.close": {
+    "text": "Đóng",
+    "source": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed"
+  },
+  "whoDecides.picked": {
+    "text": "Đã chọn",
+    "source": "310028fb075055aa9b5933a58195d026eb318d193b1dc248d031faa4542b8bb4"
+  },
+  "whoDecides.now": {
+    "text": "Hiện tại",
+    "source": "fe18013d93d22f4f2a70344d30c00fe62d2ef29189ae5d25ccbda81fbd9c92b0"
+  },
+  "whoDecides.someone": {
+    "text": "Người khác",
+    "source": "3233cb049ab7f4ed5c6eccc11a4c9b6e02d0ed8e74e159d5e6baddd525b9febb"
+  },
+  "whoDecides.waiting": {
+    "text": "Một thay đổi về người được xem và thay đổi đang chờ bỏ phiếu.",
+    "source": "4c4834765cb86e9ca344ead52f0130fea60c3969c630901455ea6817aa2d382e"
+  },
+  "whoDecides.open": {
+    "text": "Mở",
+    "source": "acfe1b40614125018b5e49c902dc5f336e4eca9b9ff07c4704ea6321721f4e45"
+  },
+  "whoDecides.see.title": {
+    "text": "Ai có thể xem",
+    "source": "5d34a0f349f84ee84fdaf47a25f8cd547bcdb80c2bc5edd817cc6f3119f19d47"
+  },
+  "whoDecides.see.private": {
+    "text": "Cộng đồng riêng tư",
+    "source": "cbb6e03143153940d60b396a1930d790299d190338d5caee412a16d55e3ec2a2"
+  },
+  "whoDecides.see.privateSub": {
+    "text": "Chỉ thành viên mới mở được.",
+    "source": "07d5fdc8b42d6d75ba22eee4222f5f1c63293697c3c42c5eb0b1457e469d5415"
+  },
+  "whoDecides.see.public": {
+    "text": "Cộng đồng công khai",
+    "source": "1cf36210afedc3d6bc9c1848e5351ab16410dc8c7ec865b1ab3a57d6c69f3c3a"
+  },
+  "whoDecides.see.publicSub": {
+    "text": "Ai cũng có thể mở và tham gia.",
+    "source": "513e547f81a69f16f08bebe45224fc36ea64c76db003e491aa258c7bd293cee8"
+  },
+  "whoDecides.see.note": {
+    "text": "Ai xem được cũng có thể đề xuất thay đổi. Quy tắc bên dưới quyết định thay đổi nào được áp dụng.",
+    "source": "b05e7754395785ed3348856725d81202850d75622886347836a3f087dead8fce"
+  },
+  "whoDecides.see.limitedName": {
+    "text": "Công khai, chỉ mời mới được xây dựng",
+    "source": "44efa1221af3b4449b84ffe6916ea5f3969ac2123bcb310ad6a588b6cbfd4732"
+  },
+  "whoDecides.see.limitedNote": {
+    "text": "Hiện tại ai cũng xem được, nhưng chỉ cộng tác viên mới được xây dựng. Chọn Cộng đồng công khai để mọi người tham gia đều có thể đề xuất thay đổi.",
+    "source": "a2dff4aca3a219760018be6944586d35f9faf0c213bcb96af2c8ce3ce2455a5e"
+  },
+  "whoDecides.rule.title": {
+    "text": "Cách duyệt thay đổi",
+    "source": "7a13b0794ab46b214d6d5815a86c47d8a6df483189e7b6661f005c0d374fa909"
+  },
+  "whoDecides.publicWarning": {
+    "text": "Ai cũng có thể tham gia cộng đồng công khai, nên theo quy tắc này, ai tham gia cũng có thể duyệt thay đổi.",
+    "source": "5636cad980884195343837de2809794673e559956359042ebb1b979d1e303ff3"
+  },
+  "whoDecides.legacyName": {
+    "text": "Quy tắc hiện tại",
+    "source": "6cd2b2d90a3ae1903140aa5f9fdc2a017b63228094272a790a885b08702fe105"
+  },
+  "whoDecides.legacyNote": {
+    "text": "Dự án này dùng thiết lập duyệt cũ. Chọn một mục bên dưới để thay đổi.",
+    "source": "0fe23025eda61ea3977731b5bd6ea24c00d840c27341aaabb828eef0ed2ea731"
+  },
+  "whoDecides.preset.you_or_the_group.name": {
+    "text": "Bạn hoặc nhóm",
+    "source": "0645255b93f43442be1f27b9c4f2ddb5824fee39bef472f716a6d2875ac8dd1c"
+  },
+  "whoDecides.preset.you_or_the_group.nameOther": {
+    "text": "{{creator}} hoặc nhóm",
+    "source": "3f77ca90234fa4628b1f58f3791a692a8ac369d37223d7d072f637669437bdd4"
+  },
+  "whoDecides.preset.you_or_the_group.line": {
+    "text": "Bạn tự phát hành được. Người khác cần bạn hoặc đa số trong nhóm.",
+    "source": "5fedced53c026574d9efba2ea94020cae80149ef0020842867b77f07ec025219"
+  },
+  "whoDecides.preset.you_or_the_group.lineOther": {
+    "text": "{{creator}} tự phát hành được. Người khác cần {{creator}} hoặc đa số trong nhóm.",
+    "source": "c6945b583acd91deb3217b09c2e96658fde741fbef18cc6ea6ed1a7290fb6ac7"
+  },
+  "whoDecides.preset.two_yeses.name": {
+    "text": "Hai phiếu đồng ý",
+    "source": "49bcd03335e57f18e908bafadfed08b61361beec487285c45b8a6b2f0fd93f7a"
+  },
+  "whoDecides.preset.two_yeses.line": {
+    "text": "Người tạo thay đổi cộng thêm một người nữa. Khi chỉ có một mình bạn, phiếu của bạn là đủ.",
+    "source": "9425496dd0566f1661a4f8e59e3b1b3f34df1eba56a53d192e75b50ad388add5"
+  },
+  "whoDecides.preset.open_floor.name": {
+    "text": "Tự do",
+    "source": "2fbceedb5a223648e1465a03fff128882bdaf768ec20a8db20264bfe2dd384ff"
+  },
+  "whoDecides.preset.open_floor.line": {
+    "text": "Một phiếu đồng ý của bất kỳ thành viên nào cũng phát hành được thay đổi, kể cả của chính họ.",
+    "source": "92ad2f5067d9af430fa2d4a59e0578ccfe1d1fad2769cd1e1dff8fe64affcb9d"
+  },
+  "whoDecides.preset.group_vote.name": {
+    "text": "Nhóm bỏ phiếu",
+    "source": "98a21f57a2f704e30809daed2ae1a7ccfbbc460108225c5f997bdebcaf2c425e"
+  },
+  "whoDecides.preset.group_vote.line": {
+    "text": "Đa số thành viên tích cực đồng ý, hoặc thay đổi được áp dụng sau một thời gian chờ nếu không ai phản đối.",
+    "source": "e7ddef72d218a4a3b488ed6bb9159af781934c10e4e0650513ac09831d7b1feb"
+  },
+  "whoDecides.plays.title": {
+    "text": "Cách vận hành",
+    "source": "e7272904b7ec300a334ae3b3dd1f02c42ecb818ce694cefeb5572f3be5cfa1ba"
+  },
+  "whoDecides.plays.youTitle": {
+    "text": "Bạn tạo thay đổi",
+    "source": "00218591dbd1172642a578cd5743f50d23d2ccd187e49ad8e25fc1cde0fa515b"
+  },
+  "whoDecides.plays.otherTitle": {
+    "text": "{{name}} tạo thay đổi",
+    "source": "400ec276dfeba8879df4c47af21326923904331becffe76b13a780be47b2b133"
+  },
+  "whoDecides.plays.you_or_the_group.you": {
+    "text": "Phiếu của bạn là đủ. Áp dụng khi kiểm tra đạt.",
+    "source": "8fb49b53e2579a0483a298e8839f5296333427a54954a9ba3118fb71352e690f"
+  },
+  "whoDecides.plays.you_or_the_group.other": {
+    "text": "Áp dụng khi bạn đồng ý, hoặc khi đa số trong nhóm đồng ý.",
+    "source": "40fbbd824d0fb1bbfa9c7a52f1a5c85825928e01fc79cd1784354d746385ee49"
+  },
+  "whoDecides.plays.you_or_the_group.youOther": {
+    "text": "Áp dụng khi {{creator}} đồng ý, hoặc khi đa số trong nhóm đồng ý.",
+    "source": "810bcb5b5cb759d86130b7b5da7546e9d91eb329dc121a3a72364bcf75e0f3a0"
+  },
+  "whoDecides.plays.you_or_the_group.otherOther": {
+    "text": "Áp dụng khi {{creator}} đồng ý, hoặc khi đa số trong nhóm đồng ý.",
+    "source": "810bcb5b5cb759d86130b7b5da7546e9d91eb329dc121a3a72364bcf75e0f3a0"
+  },
+  "whoDecides.plays.two_yeses.you": {
+    "text": "Áp dụng khi có thêm một người khác đồng ý.",
+    "source": "b118b9239994d2ce40c7a31d0ead5a84402e81d7869a573e82736a4022bd0fac"
+  },
+  "whoDecides.plays.two_yeses.other": {
+    "text": "Áp dụng khi có một người không phải {{name}} đồng ý. Người đó có thể là bạn.",
+    "source": "d37efd672b44cc1ebaed6f3247175f7e9c996516207809708283ab1a71199140"
+  },
+  "whoDecides.plays.open_floor.you": {
+    "text": "Phiếu của bạn là đủ. Áp dụng khi kiểm tra đạt.",
+    "source": "8fb49b53e2579a0483a298e8839f5296333427a54954a9ba3118fb71352e690f"
+  },
+  "whoDecides.plays.open_floor.other": {
+    "text": "Phiếu của chính {{name}} là đủ, giống như của bạn.",
+    "source": "a7eddda60b025956b854f21ff5766961757285b119c1225786e8b9d4397b760c"
+  },
+  "whoDecides.plays.group_vote.you": {
+    "text": "Áp dụng khi đa số thành viên tích cực đồng ý, hoặc sau một thời gian chờ nếu không ai phản đối.",
+    "source": "84552030002a626892aa4a065336592cef402eff5bbbf23163481c0149b27ec3"
+  },
+  "whoDecides.plays.group_vote.other": {
+    "text": "Giống của bạn: nhóm quyết định.",
+    "source": "153474838e2dc820d7508e2be0796f52c17148633c084aa13e59d0322b39c17d"
+  },
+  "whoDecides.plays.own.you": {
+    "text": "Áp dụng khi một trong các quy tắc của dự án được đáp ứng.",
+    "source": "179448e18423a3a98d3214362cfcc514d235fb0f9c421c629cfd106595bd6798"
+  },
+  "whoDecides.plays.own.other": {
+    "text": "Giống của bạn: chỉ cần đáp ứng một quy tắc là đủ.",
+    "source": "b060c898408d98345581ca69354a6104324c470acfc7c241512908c0900d7c3b"
+  },
+  "whoDecides.alwaysYou": {
+    "text": "Thay đổi người được xem, quản trị viên hoặc quy tắc này luôn hoạt động như Bạn hoặc nhóm: phiếu của bạn là đủ, hoặc các phiếu đồng ý thật sự của nhóm.",
+    "source": "182389e164bd8ff002bcc5b0e7737efea38121e1367780de84306dcd5d1b038a"
+  },
+  "whoDecides.alwaysCreator": {
+    "text": "Thay đổi người được xem, quản trị viên hoặc quy tắc này luôn hoạt động như Bạn hoặc nhóm: phiếu của {{creator}} là đủ, hoặc các phiếu đồng ý thật sự của nhóm.",
+    "source": "178c5add03f86afd4f489e70f23c8819e44c47aeac6c1d166c90dddc27ef5523"
+  },
+  "whoDecides.own.name": {
+    "text": "Tự tạo quy tắc",
+    "source": "347930c81c5f3e950ed7203bb13c6c08e8b5efb715f86dba80de74f759edce8e"
+  },
+  "whoDecides.own.sub": {
+    "text": "Nhóm và quy tắc, bắt đầu từ mục đã chọn ở trên.",
+    "source": "f9a2e2a86657897f36830101ec2ec2d92d506ee40750a9ff568ed10752bd3daa"
+  },
+  "whoDecides.own.startedFrom": {
+    "text": "{{name}} · bắt đầu từ {{preset}}",
+    "source": "6e3306bb40dbd83e2cd23d95bcc8d1e9a7f13dd788d2f72edd4a42d6d4409228"
+  },
+  "whoDecides.own.same": {
+    "text": "Giống {{preset}}",
+    "source": "1f004f514e7d79c63254dd2509ddb944bf7aca0e0e68b5ce9b928367dbcf30c9"
+  },
+  "whoDecides.own.rules": {
+    "text": "Quy tắc · chỉ cần một quy tắc đạt là đủ",
+    "source": "4f2612fada80765e83ab4ee348993a611b68f447ece0126b3a0b465d3af9d572"
+  },
+  "whoDecides.own.or": {
+    "text": "hoặc",
+    "source": "7175517a370b5cd2e664e3fd29c4ea9db5ce17058eb9772fe090a5485e49dad6"
+  },
+  "whoDecides.own.addRule": {
+    "text": "Thêm quy tắc",
+    "source": "bed79361ea53f5914e8f5b5aae68078eba52fd906ee1863b3cac4722f649decc"
+  },
+  "whoDecides.own.groups": {
+    "text": "Nhóm",
+    "source": "39bbb719fa2b9d2251039cbf2cd072e1120a414278263e2f11d99af0236c4262"
+  },
+  "whoDecides.own.addGroup": {
+    "text": "Thêm nhóm",
+    "source": "2466db329c6826a9ccf5beb7c99c32435361f873cd23d257c7623b36384d7e1f"
+  },
+  "whoDecides.own.alwaysOn": {
+    "text": "Luôn áp dụng",
+    "source": "044ba8a9ae43b296f0908d5f94c2ec616c7703ef71e1e3218393fad6c91a83b2"
+  },
+  "whoDecides.own.alwaysTitle": {
+    "text": "Thay đổi về người quyết định",
+    "source": "d273e998c4939758ba50e58aa293fe7ec94e404b14620082cf9eee78de9734bd"
+  },
+  "whoDecides.own.alwaysSub": {
+    "text": "Ai có thể xem, quản trị viên, các nhóm và những quy tắc này: {{creator}} đồng ý, hoặc nhóm đồng ý bằng các phiếu bầu đồng ý thực sự.",
+    "source": "b773d8d44e131d57c16f550f9073cbcbdf5dfe54c659a24506a06d5bc62b31a7"
+  },
+  "whoDecides.own.alwaysSubNobody": {
+    "text": "Ai có thể xem, quản trị viên, các nhóm và những quy tắc này: nhóm đồng ý bằng các phiếu bầu đồng ý thực sự.",
+    "source": "ffded86fbbe6e23c1936a91164d7c11baacb632b27575f59d62f4e2ae125b481"
+  },
+  "whoDecides.own.use": {
+    "text": "Dùng các quy tắc này",
+    "source": "da5bfedf7a50996b7aedd63983a67018be010d507e8ebc2872608f973ecc278b"
+  },
+  "whoDecides.own.useNote": {
+    "text": "Sẽ không có gì thay đổi cho đến khi bạn đề xuất. Việc này theo quy tắc Luôn áp dụng.",
+    "source": "c90af61f5979efa2d83edc37061503a974adbb640535227bf930492366b23829"
+  },
+  "whoDecides.own.problem.noRules": {
+    "text": "Hãy thêm ít nhất một quy tắc.",
+    "source": "847f7819c53a1939096d03f0e9601470c64c29bcd52d23bc8bdeaf63baa5cead"
+  },
+  "whoDecides.own.problem.tooManyRules": {
+    "text": "Một dự án có tối đa {{max}} quy tắc.",
+    "source": "68d6a39f09a99b3d56fefec355ffea210d3085691b9ddd1509a345f9d4986503"
+  },
+  "whoDecides.own.problem.tooManyGroups": {
+    "text": "Một dự án có tối đa {{max}} nhóm riêng.",
+    "source": "a37b665df8469e1dfc0e8a3b7c58a9a1ba586b585fe28ad28a375d4d5b6b2c10"
+  },
+  "whoDecides.own.problem.missingGroup": {
+    "text": "Một quy tắc nêu tên nhóm không còn tồn tại. Hãy sửa hoặc xóa quy tắc đó.",
+    "source": "a0f62875aaceb124e10b41d59904ce7284d0ba29ac28dea070bf56d61e73db5d"
+  },
+  "whoDecides.own.problem.duplicate": {
+    "text": "Quy tắc này đã có trong danh sách.",
+    "source": "3751314d583ec2723d7af89cddfb77d154ecfbd9de71cec44ee98a7f072f3df6"
+  },
+  "whoDecides.group.creator": {
+    "text": "Người tạo",
+    "source": "88447b83090cded58b10214c752813d476fa21c8c1d8dcbccbd2e2676231aab9"
+  },
+  "whoDecides.group.creatorNobody": {
+    "text": "Không có ai: dự án này không có người tạo",
+    "source": "886d0ebfaf197e62babd5a01e494ce2d9ccdf578b13d9fcc9bfd26ab71c29fc0"
+  },
+  "whoDecides.group.members": {
+    "text": "Tất cả thành viên",
+    "source": "3d6fe3e703f62a7aea645a5a8eac5d5e7f2691c2ccdce6600489aeaa801bf076"
+  },
+  "whoDecides.group.admins": {
+    "text": "Quản trị viên ứng dụng",
+    "source": "8cb33dc2de192698f4b8df83547b008befb439fc8fe6162060e25aa08ec07d5f"
+  },
+  "whoDecides.group.builtIn": {
+    "text": "Có sẵn",
+    "source": "78a6a8fe9be5ec07665beecc3284374e1629c53a0df9f93ce41f9db742a6c576"
+  },
+  "whoDecides.group.nobody": {
+    "text": "Chưa có ai",
+    "source": "aca294641f54e13988d811c4e7c5a8e86113c74323721ca43988e69ceff5e247"
+  },
+  "whoDecides.group.title": {
+    "text": "Nhóm",
+    "source": "34ca0e76608842ff3e7d924a455a396a82f471052c15e3f2ed7f090ac702e5c1"
+  },
+  "whoDecides.group.newTitle": {
+    "text": "Nhóm mới",
+    "source": "df796c655f6f5ed4163956ff97b16e19dd36480ecaaf52acc0d007c0575671d7"
+  },
+  "whoDecides.group.sub": {
+    "text": "{{name}} · Tự tạo",
+    "source": "48b54bb5b75725dc6c788bd954f2c1d5a8d147688a5a3f34b0e33da817d5de8f"
+  },
+  "whoDecides.group.name": {
+    "text": "Tên",
+    "source": "dcd1d5223f73b3a965c07e3ff5dbee3eedcfedb806686a05b9b3868a2c3d6d50"
+  },
+  "whoDecides.group.removePerson": {
+    "text": "Xóa {{name}}",
+    "source": "43e1269ac88aba53770f74a888e94434ed456cafba03b1bd4bd40350f31befb0"
+  },
+  "whoDecides.group.add": {
+    "text": "Thêm thành viên",
+    "source": "64a1a6bd5b9b91f4eca91c6fc4e5323e6a28a7cd772e69a0e550cc2216ecfac3"
+  },
+  "whoDecides.group.note": {
+    "text": "Chỉ thành viên của {{name}} mới có thể vào nhóm.",
+    "source": "9f6f58b057b1beb23d140c5a29b5176f1f2a178f860512b1b7b7cf861a29fb59"
+  },
+  "whoDecides.group.whoDecides": {
+    "text": "Thay đổi thành viên trong nhóm là thay đổi người quyết định, nên khi bạn đề xuất, việc này theo quy tắc Luôn áp dụng.",
+    "source": "2c943df68734860bef132821318bc537825db79a1f700c1c2b09dac619af8ef6"
+  },
+  "whoDecides.group.save": {
+    "text": "Lưu nhóm",
+    "source": "dc7fd704c4db8f9a06ad6712ba5417cb5751a395308103fed1b1989e273e4d32"
+  },
+  "whoDecides.group.delete": {
+    "text": "Xóa nhóm",
+    "source": "3f7374ac08ea87dc3387b0fa58953163a6319e39015e6a5983bec7785648fed8"
+  },
+  "whoDecides.group.cannotDelete": {
+    "text": "Có quy tắc đang dùng nhóm này. Hãy xóa quy tắc trước để xóa nhóm.",
+    "source": "faddd329ad3b8a2d7bcfd035ec199ec3b3387af4b9e8364d53e82e571d4fec18"
+  },
+  "whoDecides.group.problem.blank": {
+    "text": "Hãy đặt tên cho nhóm.",
+    "source": "88d48c021d1ccb3aa49a7bb1e821c53ca4e696f7543eba1cd7c66787f50bbaa4"
+  },
+  "whoDecides.group.problem.long": {
+    "text": "Tên nhóm tối đa {{max}} ký tự.",
+    "source": "0433a3170d8d17762382c1cdecddcf12b71354d6d113f26ffea29edf02bae5bd"
+  },
+  "whoDecides.group.problem.builtIn": {
+    "text": "{{name}} là nhóm có sẵn. Hãy đặt tên khác cho nhóm của bạn.",
+    "source": "8102a9c5e70635721c719be211baf87752fb23d3308e63479e04ad43b860afcc"
+  },
+  "whoDecides.group.problem.taken": {
+    "text": "Đã có nhóm khác dùng tên này.",
+    "source": "262bab34e603ed41b69e9e85bcd165f1fa87ac3ccb1f005bb2f450e86c1b12cc"
+  },
+  "whoDecides.rule.newTitle": {
+    "text": "Quy tắc mới",
+    "source": "99cd24efe9831454061e38f29bb3786c8f58e03a9b4d31b9995ecc0117fd4260"
+  },
+  "whoDecides.rule.editTitle": {
+    "text": "Quy tắc",
+    "source": "62845f31a2fe00be3ebaaeb93f5b27af82ab81dfcbaa1871c76f596cd98cf3c9"
+  },
+  "whoDecides.rule.sentence": {
+    "text": "Một thay đổi được áp dụng khi: {{rule}}.",
+    "source": "969df4f82954b2606a5aae03f275942965a5de2351a9a3bddf90a86350fc9dd5"
+  },
+  "whoDecides.rule.whose": {
+    "text": "Phiếu đồng ý của ai",
+    "source": "8640607a26286f1a7edf5054ad82896a1dcd573bc6418c0d40b97416019e6b8a"
+  },
+  "whoDecides.rule.howMany": {
+    "text": "Bao nhiêu",
+    "source": "e2a6ff2c78fdb163d02c7b5c66431cab9b1b418470219eb4e342b0324dfab14f"
+  },
+  "whoDecides.rule.kind.atLeast": {
+    "text": "Một số người",
+    "source": "68d4b047a89477f3d7f8d345af46cbd5117f12ad27a884cbd3ec76a3970b8ad6"
+  },
+  "whoDecides.rule.kind.atLeastSub": {
+    "text": "Không bao giờ vượt quá số người trong nhóm, nên vẫn hoạt động khi có người rời đi.",
+    "source": "148a9e0470874bd78c597430ce86aeb0288a706aba74272f84fd54461b5dff01"
+  },
+  "whoDecides.rule.kind.percentOfActive": {
+    "text": "% số người hoạt động",
+    "source": "5c28625c5babdf11d108d59b46f924ff268e53d03ce3a6352df2dc240634626c"
+  },
+  "whoDecides.rule.kind.percentOfActiveSub": {
+    "text": "Chỉ tính những người hoạt động gần đây, giống như Bỏ phiếu nhóm.",
+    "source": "cf4fc83a48ccce3a0382a905ee78fa33c5a352ca1ad7c69846e2ea5f74b0c6b8"
+  },
+  "whoDecides.rule.kind.percentOfEveryone": {
+    "text": "% mọi người trong nhóm",
+    "source": "90d5baa20f50a0646739ee6dba9dfe8b28844fdebee48928b6a8e6efa71ca5ff"
+  },
+  "whoDecides.rule.kind.percentOfEveryoneSub": {
+    "text": "Dù có hoạt động hay không.",
+    "source": "cb3770afd6a444b27b3cfe08a185f74e59223e19fd8152e9ec119c457432c4f7"
+  },
+  "whoDecides.rule.kind.majority": {
+    "text": "Đa số theo thời gian",
+    "source": "9ef547fc10032a387f821a765898095a538ab590680d4d226407dce251c3165d"
+  },
+  "whoDecides.rule.kind.majoritySub": {
+    "text": "Cách tính của Bỏ phiếu nhóm: ngưỡng giảm dần khi có thêm người hoạt động, và một phiếu đồng ý không bị phản đối sẽ được áp dụng sau một thời gian chờ.",
+    "source": "16014653b75b795ca79689a696b5ce26827c824ba5e62586cf888b7c7248c533"
+  },
+  "whoDecides.rule.people": {
+    "text": "Số người",
+    "source": "7db20897053bb2780b9b706e5505227b005de80c236e4a4836aab37a3a7bb298"
+  },
+  "whoDecides.rule.percent": {
+    "text": "Phần trăm",
+    "source": "716d633b125adb76832f17bee5bce63be33094820cd46ef1222cec4a7ae8eb58"
+  },
+  "whoDecides.rule.percentValue": {
+    "text": "{{percent}}%",
+    "source": "6eae0dff5b4b3c72aaa73b1a40acf7a63534303708c5923d056d1d1f7406880c"
+  },
+  "whoDecides.rule.fewer": {
+    "text": "Giảm",
+    "source": "2a246cca8735d1b769fa808e3c71edae13d8a0078c39a0dd5c55044cbd3674fc"
+  },
+  "whoDecides.rule.more": {
+    "text": "Tăng",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "whoDecides.rule.today.title": {
+    "text": "Hôm nay",
+    "source": "2b065c7c9ce466e5ebcad757987d5d660ee4c9ea708bc62c43444b53334738ba"
+  },
+  "whoDecides.rule.yesesOnly": {
+    "text": "Chỉ phiếu đồng ý được tính cho quy tắc. Phiếu không đồng ý không chặn được, nhưng nếu đủ nhiều vẫn có thể đóng một thay đổi không ai muốn.",
+    "source": "007f193bdc4b18ad387b69294525485e8e94d10de1daf5251ef60c75c91a28d2"
+  },
+  "whoDecides.rule.save": {
+    "text": "Lưu quy tắc",
+    "source": "4e62c225adb2e2aa4188ac5eefd952073a4bff60333db4ffb6eb282c531da091"
+  },
+  "whoDecides.rule.remove": {
+    "text": "Xóa quy tắc",
+    "source": "3fab7379af907d888479ee329e0b7ba80b879977208b72be281f38d7cfaca735"
+  },
+  "whoDecides.rule.phrase.creator": {
+    "text": "{{creator}} (người tạo) đồng ý",
+    "source": "398bc4851bcd0613159b45332966397ce08138180b763232a6b17cb6be1399b9"
+  },
+  "whoDecides.rule.phrase.creatorNobody": {
+    "text": "Người tạo đồng ý",
+    "source": "60141c5c765114b63d3f522da330503dda03cc7cd6c0fe097298b9c74644ed21"
+  },
+  "whoDecides.rule.phrase.percentOfActive": {
+    "text": "{{percent}}% người đang hoạt động trong {{group}} đồng ý",
+    "source": "6cf8345ac94341b7242b0431a3960bde47700e9173ecd095b28ac9fc5fdae24b"
+  },
+  "whoDecides.rule.phrase.percentOfEveryone": {
+    "text": "{{percent}}% tất cả mọi người trong {{group}} đồng ý",
+    "source": "83bdd07a5d2599a077d6fa904890435374784a81a04f3b58cd983108f98a03fd"
+  },
+  "whoDecides.rule.phrase.majority": {
+    "text": "Đa số người đang hoạt động trong {{group}} đồng ý, theo thời gian",
+    "source": "6bad549f909b41dfe0014b4873caa6d447455b1eb534b1bf586dd5b1ca624b15"
+  },
+  "whoDecides.rule.today.empty": {
+    "text": "Không thể được thông qua cho đến khi {{group}} có người.",
+    "source": "a2c993554fe832bb552c90097513976fe25890f4ac4a4150408bf2edcfe12c19"
+  },
+  "whoDecides.rule.today.creator": {
+    "text": "Chỉ cần {{creator}} đồng ý là đủ.",
+    "source": "a3776ad99f3350515a00a4093b24056622747a94ac4d9a77ace61f0dee88ef88"
+  },
+  "whoDecides.rule.today.percentOfEveryone": {
+    "text": "Hôm nay cần {{need}}/{{total}} người, dù có hoạt động hay không.",
+    "source": "b0f98194213105b04408a3abb60323de6550243f3ff917f8f576f3ad02145308"
+  },
+  "whoDecides.rule.today.percentOfActive": {
+    "text": "Chỉ tính những người hoạt động gần đây.",
+    "source": "ce0684e388da0337c70fbb646286ff5565515a03b1a36399dbfecd4837282adb"
+  },
+  "whoDecides.rule.today.majority": {
+    "text": "Tính theo phiếu bầu của nhóm, hoặc lặng lẽ chờ nếu không ai phản đối.",
+    "source": "0328543b1d107c5cb56171555c8cc4b3daeab41a08cd33ff255e074d128bb6fe"
+  },
+  "whoDecides.rule.today.unknown": {
+    "text": "Tùy thuộc vào số người trong nhóm.",
+    "source": "94481b092a3fd00d5fd1c91218889ffe7dddff5cfa9859b2217cd191dd2d94b4"
+  },
+  "whoDecides.people.title": {
+    "text": "Mọi người",
+    "source": "7db20897053bb2780b9b706e5505227b005de80c236e4a4836aab37a3a7bb298"
+  },
+  "whoDecides.people.members": {
+    "text": "Thành viên",
+    "source": "1044a4c056d0d685bf4f09174d2bc136137765d62916779fadcacf006a99ffac"
+  },
+  "whoDecides.people.admins": {
+    "text": "Quản trị viên ứng dụng",
+    "source": "8cb33dc2de192698f4b8df83547b008befb439fc8fe6162060e25aa08ec07d5f"
+  },
+  "whoDecides.people.adminsNone": {
+    "text": "Chưa có. Họ quản lý cài đặt và có thể hợp nhất cưỡng bức.",
+    "source": "1c7114be7f89a3ea5a7150d09e1e9df4007c98fd1d55c98d105d38d1be832728"
+  },
+  "whoDecides.change.see": {
+    "text": "Ai có thể xem",
+    "source": "5d34a0f349f84ee84fdaf47a25f8cd547bcdb80c2bc5edd817cc6f3119f19d47"
+  },
+  "whoDecides.change.rule": {
+    "text": "Cách phê duyệt thay đổi",
+    "source": "7a13b0794ab46b214d6d5815a86c47d8a6df483189e7b6661f005c0d374fa909"
+  },
+  "whoDecides.changeLine": {
+    "text": "{{what}}: {{from}} → {{to}}",
+    "source": "326b26798a9a4a73df0ae531ae594843d136d8806ac6ef9e9285b1d6cb16e0b9"
+  },
+  "whoDecides.proposing": {
+    "text": "Đang đề xuất…",
+    "source": "adf1e9863b117de1b301cff1c6d1187163f52116a0c0a51856368d8257eb314c"
+  },
+  "whoDecides.proposeNoteYou": {
+    "text": "Chỉ cần bạn đồng ý là đủ để thông qua, hoặc các phiếu đồng ý thực sự của nhóm. Thay đổi về người quyết định không bao giờ có hiệu lực qua việc lặng lẽ chờ.",
+    "source": "676022d1686fc80a4bdf0a5004ea93c410cb5c09e802f22c2f401976e5655004"
+  },
+  "whoDecides.proposeNoteCreator": {
+    "text": "Chỉ cần {{creator}} đồng ý là đủ để thông qua, hoặc các phiếu đồng ý thực sự của nhóm. Thay đổi về người quyết định không bao giờ có hiệu lực qua việc lặng lẽ chờ.",
+    "source": "da9802ba14b3daabb518b28a859a4c2b9790f0a3d59d6fd0e27014b915e8e280"
+  },
+  "whoDecides.nothing": {
+    "text": "Chưa có thay đổi nào",
+    "source": "0b348466332c5126cc4e81d44840e4c04c5f079fe2398761fb03fe5f189bcae6"
+  },
+  "whoDecides.nothingSub": {
+    "text": "Chọn một lựa chọn khác ở trên, và nó sẽ thành một đề xuất cho nhóm.",
+    "source": "a29075589c6cf513a4f26e7ffb63e2233d7f6e1787a5167253f3d7aec8f62e95"
+  },
+  "whoDecides.opened": {
+    "text": "Đã đề xuất",
+    "source": "9b0c660bb1152a72cb104c404f0f790e50b80fb3156ebdc8bd4999d2c250aa44"
+  },
+  "whoDecides.openedSub": {
+    "text": "Đề xuất đang được bỏ phiếu và sẽ có hiệu lực khi được thông qua.",
+    "source": "c0891389734e29f71ca4ee97d8dbc31d2c116e575ab41e15e02d3356b3e373d4"
+  },
+  "whoDecides.alreadyWaiting": {
+    "text": "Một thay đổi về người được xem và thay đổi đang chờ bỏ phiếu. Hãy mở nó từ ghi chú ở trên cùng.",
+    "source": "5dfd0a0356d0b66bccc39ffe0898efb3575a94675a4c7d2536aa77258c7d86b5"
+  },
+  "whoDecides.notVerified": {
+    "text": "Không có gì thay đổi. Để công khai, trước tiên bạn cần xác minh số điện thoại.",
+    "source": "23575e9b3233dd3dbb2b8578d0a3a4c659c86f9dd67f0033e8e05d569785d0e7"
+  },
+  "whoDecides.error": {
+    "text": "Không thể đề xuất thay đổi. Hãy thử lại.",
+    "source": "6b6ba95d59e774ae79b7678164b9c9ae94bde14a9c6b4267523a8938d1e1c13c"
+  },
+  "members.whoDecides.title": {
+    "text": "Ai có thể xem & thay đổi",
+    "source": "c9bd22ce67ecde912f31f5e9f47e293a554bd7dbd60c031f38754e4635ccaadd"
+  },
+  "members.whoDecides.sub": {
+    "text": "Riêng tư hay công khai, và cách phê duyệt thay đổi",
+    "source": "da1a2b235b73efec36469bd6bd9328c58af5975c14e99b859ce314eac6b4c4eb"
+  },
+  "appSettings.access.now": {
+    "text": "Hiện tại: {{access}}. Người được xem và cách phê duyệt thay đổi được đặt cùng nhau trong một đề xuất.",
+    "source": "b10d48a9f19bbdfbba073a2e308bd1635d01136c5b30fbd3f6a9b3300078a7da"
+  },
+  "appSettings.access.open": {
+    "text": "Ai có thể xem & thay đổi",
+    "source": "c9bd22ce67ecde912f31f5e9f47e293a554bd7dbd60c031f38754e4635ccaadd"
+  },
+  "appDomain.status.pending.checkedMinutes_other": {
+    "text": "Đang chờ DNS. Đã kiểm tra {{count}} phút trước. Thay đổi DNS có thể mất đến một giờ mới hiển thị.",
+    "source": "6b6e6f643102526fd080081b03954f0115e72cdada285182daba629794a5373a"
+  },
+  "appDomain.status.pending.checkedHours_other": {
+    "text": "Đang chờ DNS. Đã kiểm tra {{count}} giờ trước. Thay đổi DNS có thể mất đến một giờ mới hiển thị.",
+    "source": "3917e67813b96186864ef518af0d53e4bdccf7b30041e91f4d710116695648dc"
+  },
+  "appDomain.status.pending.checkedDays_other": {
+    "text": "Đang chờ DNS. Đã kiểm tra {{count}} ngày trước. Thay đổi DNS có thể mất đến một giờ mới hiển thị.",
+    "source": "bdaf427988cc1df82cc29d4e8d2494b5517a141eb139215f6b2f8f93bf991da0"
+  },
+  "allowance.headline.usedNoLimit_other": {
+    "text": "{{count}} ứng dụng · không giới hạn",
+    "source": "35ac02eaa72f99edca03e591f34f667e71f13bd150d58301462fc09e2dd7f652"
+  },
+  "allowance.headline.slots_other": {
+    "text": "{{count}} suất ứng dụng",
+    "source": "b7d271fed799e3a56b3cfbdaaebd54a490c14dabb5dcc96765233c9ac5f4883b"
+  },
+  "allowance.headline.used_other": {
+    "text": "Đã dùng {{used}}/{{count}} suất ứng dụng",
+    "source": "11d2a4dfd26ec6355a2cbf3b6e74aa76195487d49af53ac73d236d49d63b7085"
+  },
+  "allowance.headline.slotsRequested_other": {
+    "text": "{{count}} suất ứng dụng · đã yêu cầu thêm",
+    "source": "7d13dd833fef745e6741770cebb46ce1048ae607161430a4a9eeafef0b2c0b51"
+  },
+  "allowance.headline.usedRequested_other": {
+    "text": "Đã dùng {{used}}/{{count}} suất ứng dụng · đã yêu cầu thêm",
+    "source": "8d1f1e45480f206629e3f413f09d5075cd134bf832fba211302a5ccdcd068160"
+  },
+  "allowance.detail.available_other": {
+    "text": "Còn {{count}} suất. Tạo, nhập và remix dùng chung hạn mức này.",
+    "source": "66d078f1f555db858065313c5cb84562a0db4914032d3d5b020c4598dd805915"
+  },
+  "allowance.detail.availableSpent_other": {
+    "text": "Còn {{count}} suất. Tạo, nhập và remix dùng chung hạn mức này. Hãy yêu cầu thêm suất để tạo ứng dụng khác.",
+    "source": "c570ded6c264f2d5f4d2af6002001d8c2326047c6cf3ae810c4c56f139380ac5"
+  },
+  "allowance.server.fullSlotsFree_other": {
+    "text": "Máy chủ này đã đạt giới hạn ứng dụng ({{limit}}). Hãy nhờ quản trị viên xóa một ứng dụng hoặc nâng giới hạn. Hạn mức của bạn: còn {{count}} suất.",
+    "source": "640483f4a12878bfb50e30fb33aed5d9cc1811f254c1573c29be464ab6682b01"
+  },
+  "allowance.server.room_other": {
+    "text": "Máy chủ này còn chỗ cho {{count}} ứng dụng nữa (giới hạn {{limit}}).",
+    "source": "c8c389cfc80f6705dff024e1d3406ca0082ddf3706e5993be7a64093e292fbf9"
+  },
+  "appSettings.demo.noticeApprovals_other": {
+    "text": "Ứng dụng này đang ở chế độ demo. Các đề xuất và phiếu bầu từ <0>@{{partner}}</0> là giả lập: người tạo ứng dụng đã tạo chúng để ghi lại cách một thay đổi được đề xuất, xem trước và hợp nhất. Khi chế độ demo bật, một đề xuất ở đây được hợp nhất khi có {{count}} lượt phê duyệt thay vì theo quy tắc thời gian thông thường của ứng dụng; tắt chế độ demo sẽ khôi phục lại quy tắc đó.",
+    "source": "71f8fe3466852a76938cd80fde1ca65daec6bcb7e051d7982d68688681b75847"
+  },
+  "appSettings.demo.noticeUnnamedApprovals_other": {
+    "text": "Ứng dụng này đang ở chế độ demo. Các đề xuất và phiếu bầu từ <0>@đối tác demo</0> là giả lập: người tạo ứng dụng đã tạo chúng để ghi lại cách một thay đổi được đề xuất, xem trước và hợp nhất. Khi chế độ demo bật, một đề xuất ở đây được hợp nhất khi có {{count}} lượt phê duyệt thay vì theo quy tắc thời gian thông thường của ứng dụng; tắt chế độ demo sẽ khôi phục lại quy tắc đó.",
+    "source": "ccb886bf0a8df665b51a2e7a6ee0e32df7ab3c09e7b936b63072553cc7d2577c"
+  },
+  "appSettings.delete.blocked.shared_other": {
+    "text": "Ứng dụng này có {{count}} người đóng góp khác, nên không ai có thể tự xóa nó. Xóa ứng dụng chung cần sự đồng ý của nhóm.",
+    "source": "100f279bdaebb28a07c26ff017efa0d4f10790d495f9b235a16c402082a1c541"
+  },
+  "appSettings.danger.sharedAck_other": {
+    "text": "Ứng dụng này có {{count}} người đóng góp khác chưa đồng ý việc này. Vẫn xóa với tư cách quản trị viên nền tảng. Họ sẽ được thông báo.",
+    "source": "6bf4d18a857798f3351df1a66e9889d0156a1ab5b3e534068d3543ba34404eb8"
+  },
+  "feedback.screenshot.limit_other": {
+    "text": "Bạn có thể đính kèm tối đa {{count}} ảnh.",
+    "source": "e7abb7359ca3b664282af3c6b6f88176214a65e6e8a50c37fe2fd62377f28c31"
+  },
+  "feedback.screenshot.attached_other": {
+    "text": "Đã đính kèm {{attached}}/{{count}} ảnh.",
+    "source": "964ef39c8a4abf860b79630d783cefdabaca8ec17d397aa42c096283508846af"
+  },
+  "feedback.screenshot.attachedFull_other": {
+    "text": "Đã đính kèm {{attached}}/{{count}} ảnh. Hãy xóa một ảnh để thêm ảnh khác.",
+    "source": "5308f9c2b574e09435911091345d858fba649d9c615e40b57f0274f1180a1b12"
+  },
+  "feedback.image.onlyFirst_other": {
+    "text": "Bạn có thể đính kèm tối đa {{max}} ảnh, nên chỉ {{count}} ảnh đầu tiên được thêm.",
+    "source": "89ab2eb74973e28f1f4a1c5089dc0e5e49e131600ef1c48d99f8a4a6cbf5e197"
+  },
+  "feedback.image.dropLimit_other": {
+    "text": "Bạn có thể đính kèm tối đa {{count}} ảnh.",
+    "source": "e7abb7359ca3b664282af3c6b6f88176214a65e6e8a50c37fe2fd62377f28c31"
+  },
+  "feedback.bounty.costRemaining_other": {
+    "text": "Tốn 1 kudos. Còn {{count}}/{{limit}} trong tuần này",
+    "source": "5edfc5d7a2d21a8a10f9e3b103dfafccd0f53e20041ba186955b910a56d7b368"
+  },
+  "feedback.bounty.usedAll_other": {
+    "text": "Bạn đã dùng hết {{count}} kudos tuần này. Làm mới vào {{day}} lúc {{time}}.",
+    "source": "31ac46d54e66d21e02d4f3c113a6efe16dbefc1b473bd81a513591c63f13fb7e"
+  },
+  "feedback.bounty.usedAllUtc_other": {
+    "text": "Bạn đã dùng hết {{count}} kudos tuần này. Làm mới vào thứ Hai 00:00 UTC.",
+    "source": "9c89a343b8948841875ffc71525a4309162b5cff878c836627160dcf53becd17"
+  },
+  "feedback.bounty.pledged_other": {
+    "text": "Đã cam kết 1 kudos làm tiền thưởng. Còn {{count}} trong tuần này.",
+    "source": "e2dc0c2426b55cbd50e1f119c8cc13443e6e81029525aaf841618b734e9d9f79"
+  },
+  "feedback.queue.offlineWaiting_other": {
+    "text": "Bạn đang ngoại tuyến. {{count}} tin nhắn đã lưu trên thiết bị này đang chờ gửi. Tin này cũng sẽ được lưu.",
+    "source": "6061e7ab073a1bc0c78b40e0e90e184218466be88f5eb04b0377807a14de7be9"
+  },
+  "feedback.queue.waiting_other": {
+    "text": "{{count}} tin nhắn đã lưu trên thiết bị này chưa được gửi.",
+    "source": "0930dc49624739ee7405f346dd258ba6a5bd27bf2bf3981aceb9086ee208f655"
+  },
+  "feedback.queue.refused.full_other": {
+    "text": "Chỉ có thể chờ {{count}} tin nhắn ngoại tuyến cùng lúc. Các tin cũ hơn sẽ được gửi trước.",
+    "source": "4b25d4dae002cff58b5383a4f0efb6551d1809de65324928e684b61cd27d51b9"
+  },
+  "feedback.queue.stillWaiting_other": {
+    "text": "Vẫn chưa gửi được. Cả {{count}} tin được giữ trên thiết bị này và sẽ tự thử lại.",
+    "source": "c3e35a2d25a89ce0e8ad3e7bea422afb34ac47b3a32b8ea8753a4596702c713e"
+  },
+  "feedback.queue.flushed_other": {
+    "text": "Đã gửi {{count}} phản hồi đã lưu của bạn.",
+    "source": "8a7309dc37b27f33af9de8de240f8c6d50defab7453fe50b5c1bf0f214ce805a"
+  },
+  "feedback.sent.botLine_other": {
+    "text": "Homeroom bot đang xây dựng ngay bây giờ, thường mất khoảng {{count}} phút. Bạn sẽ nhận được tin nhắn khi có thể dùng thử.",
+    "source": "1b0a15c856385f60b14101501ef581341842c85bc8e2b8602c61d3ed42ea58b8"
+  },
+  "topics.row.requests_other": {
+    "text": "#{{handle}} · {{count}} yêu cầu",
+    "source": "97039354e61202864f25098f81a3aaf09a30adae8195a85be69243f6be6bac7a"
+  },
+  "whoDecides.own.picked_other": {
+    "text": "{{count}} quy tắc riêng của bạn. Chạm để thay đổi.",
+    "source": "56c8714871a0eff02a35e1025be453bd9f468e933d1f31467c9fd9351c0a09e6"
+  },
+  "whoDecides.own.ruleCount_other": {
+    "text": "{{count}}/{{max}} quy tắc",
+    "source": "b4555885630d71b3a030b611e259560f6ed9dda532f7b63d0a80766dc4f0c750"
+  },
+  "whoDecides.group.membersSub_other": {
+    "text": "{{count}} người, tự cập nhật khi có người tham gia hoặc rời đi",
+    "source": "71da89e061761d4e17e0003f8f308957c590d5087c2004842b0bb0087fe65b8f"
+  },
+  "whoDecides.group.people_other": {
+    "text": "Người trong nhóm này · {{count}}",
+    "source": "096f08e1658220446c7e1def876958c5b9e03d2a4ffe461335cff83b4360289c"
+  },
+  "whoDecides.group.usedBy_other": {
+    "text": "Được {{count}} quy tắc sử dụng",
+    "source": "1e8010db11d8b1480052524c0c7ff2e126abde6c2a3455c40c02cd91b883a596"
+  },
+  "whoDecides.rule.phrase.atLeast_other": {
+    "text": "Ít nhất {{count}} người trong {{group}} đồng ý",
+    "source": "44f1b2e5dcac048424fc15e38c2afdc6cd0f74614dd5573d94d980a9c75816a8"
+  },
+  "whoDecides.rule.today.atLeast_other": {
+    "text": "Hôm nay cần {{count}} phiếu đồng ý. Không bao giờ vượt quá số người trong nhóm.",
+    "source": "5dc3bb532c457d2b005f4c39186cc2a3c6eac6d7af50f09325d4868258e17d4f"
+  },
+  "whoDecides.people.membersSub_other": {
+    "text": "{{count}} người trong đó. Mời và quản lý mọi người.",
+    "source": "6a6a7b232d70d46090e1ff84a0cf706087c4893602a634362acc7ba3764fea2a"
+  },
+  "whoDecides.count_other": {
+    "text": "{{count}} thay đổi, đề xuất cùng nhau",
+    "source": "e4038b46a902cf8e41a02e17c7c4071fea9ac52e24a83c74ee688b6284e3dfde"
+  },
+  "whoDecides.propose_other": {
+    "text": "Đề xuất {{count}} thay đổi",
+    "source": "e3a97ac1982ed8f7cbf49d48e1aa693fba3e8cfb8b06201f0d898cc0ec80e2c8"
+  }
+}

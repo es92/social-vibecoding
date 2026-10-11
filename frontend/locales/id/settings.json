@@ -1,0 +1,3978 @@
+{
+  "language.title": {
+    "text": "Bahasa",
+    "source": "a4fe65264ef7dbb38d104b1e81eb3350f3142f3d16f32bdec39b1d9b42c1b8d1"
+  },
+  "language.intro": {
+    "text": "Tampilan Homeroom sendiri masih berbahasa Inggris untuk saat ini. Aplikasi di Homeroom memakainya sebagai bahasa bawaan, dan bisa menyediakan pilihan bahasanya sendiri.",
+    "source": "58e2ea7398f33905022d67cb0088130e92aad87aa28a9ef7e60f841e7d3fbcf2"
+  },
+  "language.auto": {
+    "text": "Otomatis: ikuti bahasa perangkat",
+    "source": "69204d4929d65215798e7f69a38711b4c45eb3a7dd2df200d254936f8a15dec2"
+  },
+  "language.saved": {
+    "text": "✓ Tersimpan",
+    "source": "45edcc201b730f55b185fb07d06dd4aeadbacb41643537912152499d38a3e26f"
+  },
+  "language.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "language.loadFailed": {
+    "text": "Bahasa itu tidak bisa dimuat. Coba lagi.",
+    "source": "7891bad2afcb4727a1886b8b3967f8ce606787531226b5d75e52896b23a1e22f"
+  },
+  "connectors.title": {
+    "text": "Konektor",
+    "source": "c3d2e79ebdd046c6b7363de7b69dc9fb5b38235f0d328fdff0b2f9ccf2854b07"
+  },
+  "connectors.intro": {
+    "text": "Kerjakan aplikasimu dari obrolan Claude atau ChatGPT, tanpa memakai kredit harianmu.",
+    "source": "33b9393e75ac99d19cf6f9dac33eb67f342e3ae26baeb7461788ea52fc2be330"
+  },
+  "connectors.url.label": {
+    "text": "URL server MCP",
+    "source": "4f5aff033a99aafc3fd8ada21494659861d67bf9ae5f7a448c679fef2c222999"
+  },
+  "connectors.url.copyAria": {
+    "text": "Salin URL server MCP",
+    "source": "c3c7a36ace51bdf0ab08277021eaee33fb88333ddc52b04c9d10ede516f138c1"
+  },
+  "connectors.howItWorks.summary": {
+    "text": "Cara kerjanya",
+    "source": "9c870aa6e5e93270170d5a81277ad3e623afe8d4efd186d3e28f3d2b646d52e6"
+  },
+  "connectors.howItWorks.address": {
+    "text": "Ini adalah alamat Homeroom untuk aplikasi AI. MCP adalah standar yang mereka pakai untuk terhubung.",
+    "source": "2abcc49cd6963dab0348b4f272560a4c579806cfdc3880c00c1cba7ecb88ed9a"
+  },
+  "connectors.howItWorks.paste": {
+    "text": "Tempel ke Claude, ChatGPT, atau aplikasi lain yang mendukung MCP. Aplikasi itu lalu bisa melihat aplikasi Homeroom-mu, mengajukan permintaan, dan membuka usulan untukmu.",
+    "source": "22e7a490994d139844d2006703479dd4cca69e04d12b4efba5a12eb4b8cc9e01"
+  },
+  "connectors.howItWorks.approve": {
+    "text": "Kamu tidak perlu kata sandi atau kunci. Aplikasi membuka halaman Homeroom, dan kamu menyetujuinya di sana.",
+    "source": "cf820b9cdc4ce81a8055e8054902b0932d8835b89ce5e1d581963431ab29a75b"
+  },
+  "connectors.chooseApp": {
+    "text": "Pilih aplikasimu",
+    "source": "fc4d005d0baf87f46de0dacca42c2d3799272151a680e5736d3058af9afb7c41"
+  },
+  "connectors.claude.hint": {
+    "text": "6 langkah · sekaligus menyiapkan Claude Code",
+    "source": "2079a9e9a836429fcc59ed34dc38bcbff36edc11c8bd17f441ab4c4fa18abce1"
+  },
+  "connectors.chatgpt.hint": {
+    "text": "4 langkah · di direktori plugin",
+    "source": "aa2703a844580c35764a5c859db6240c3b0426919e23a70e3be8c08593112407"
+  },
+  "connectors.codex.hint": {
+    "text": "3 langkah · di terminal",
+    "source": "15e92e2c258f45351d21b03fb6b4a74aa92551edf9cdd1aa77196266c0f94a38"
+  },
+  "connectors.generic.title": {
+    "text": "Agen lain",
+    "source": "aa212b604098286f38ad759dded84b23eb9cfabf87a6f9dff3eb634e3dab18bf"
+  },
+  "connectors.generic.hint": {
+    "text": "4 langkah · klien MCP apa pun",
+    "source": "76da31e5f3f22e1a0f537a9a3cd1a10fabca6a6aa5b071974a0af3f1c8291d2f"
+  },
+  "connectors.guided.ask": {
+    "text": "Minta {{product}} memandumu",
+    "source": "3e124da3e1f30889cd4bc6df78e15b7e9810b4b856377bb16b2a30f4ec631fa4"
+  },
+  "connectors.guided.opens": {
+    "text": "Membuka obrolan {{product}} baru dengan detail konektormu yang sudah terisi.",
+    "source": "d895e87db25fe4b2809ca4cb55a4b4e8bce521d2ae4323c85fd6ea1913e8720a"
+  },
+  "connectors.guided.orSteps": {
+    "text": "Atau ikuti langkah-langkahnya",
+    "source": "8cef3762d8130be9c7eec5bcf57513ef1d051fa991b5a60a52dba108e43a9c4f"
+  },
+  "connectors.claudeCode.heading": {
+    "text": "Jika kamu memakai Claude Code",
+    "source": "6c26af2f44a4c59b294f1f83ad1528561b1de9ab6a7328303055a0eb2df1a1ff"
+  },
+  "connectors.naming.title": {
+    "text": "Beri nama homeroom",
+    "source": "42ff8871aa8cf55c9f49d02ad2dba9b404a2df9b2fab945a96dbb651a57e9ac6"
+  },
+  "connectors.naming.hint": {
+    "text": "Agar aturan siap pakai cocok",
+    "source": "d67f90ed36ef42f38d6021004e7d46ec91929b2865a33f0fd6eae54299a7803a"
+  },
+  "connectors.naming.body": {
+    "text": "Beri nama persis <0>homeroom</0>. Claude Code menyusun aturan izinnya dari nama itu. Ejaan lain tetap berfungsi, tetapi daftar izin baca-saja yang disertakan Homeroom di setiap repo aplikasi tidak akan cocok, dan kamu akan terus diminta menyetujui setiap panggilan. Daftar izin itu juga mencakup <1>Homeroom</1>, jadi huruf kapital aman. Daftar itu juga masih mencakup <2>usernode</2> dan <3>Usernode</3>, nama lama konektor ini, sehingga konektor yang kamu tambahkan sebelumnya tetap berfungsi dan tidak ada yang perlu diulang. Nama lain perlu aturan yang ditulis ulang, dan kolom di bawah “Hentikan pertanyaan izin” akan melakukannya untukmu.",
+    "source": "540d16ea777465e7d83a165bfdd7b4473728fbee032762d8d908e2281f1211e8"
+  },
+  "connectors.prompts.title": {
+    "text": "Hentikan pertanyaan izin",
+    "source": "199715186c61369d48cac7305f6b748cfe9cec9b4f4175e52015b117b91ffd13"
+  },
+  "connectors.prompts.hint": {
+    "text": "Jika Claude Code bertanya sebelum setiap panggilan",
+    "source": "8429c11d680131134a7711f45fbddce6c0109fabf8f9573d24f9900d722aa946"
+  },
+  "connectors.prompts.intro": {
+    "text": "Secara bawaan, Claude Code meminta kamu menyetujui <0>setiap</0> panggilan konektor, termasuk yang hanya membaca seperti <1>whoami</1> dan <2>get_app</2>. Solusinya tergantung di mana kamu menjalankannya.",
+    "source": "02805314028a52fc49b5ac80b6fdf4562069c434aed5be8a5fcbd08c6de731a9"
+  },
+  "connectors.prompts.ownership": {
+    "text": "Homeroom tidak bisa mengaktifkan ini untukmu. Aturan izin disimpan di file di komputermu atau di repo aplikasimu, dan konektor tidak bisa menulis ke keduanya. Itu juga yang mencegah konektor lain yang kamu tambahkan memberi izin pada dirinya sendiri. Cukup salin salah satu blok di bawah, dan itu hanya perlu dilakukan sekali.",
+    "source": "d1f0171e974d5a32f2f4f682dfa12febfa724c5ce6bf20d757bef8bb36e71dc4"
+  },
+  "connectors.prompts.local.title": {
+    "text": "Claude Code di komputermu sendiri",
+    "source": "2a8f58a3109d7d46b8f183464f4675d95beba6e1486a8427383eb970e9b183f7"
+  },
+  "connectors.prompts.local.body": {
+    "text": "Tambahkan ini ke <0>~/.claude/settings.json</0> milikmu. Hanya yang ini dari ketiganya yang mencakup <1>semua</1> repo sekaligus, termasuk repo yang tidak dibuat oleh Homeroom.",
+    "source": "8a3981fd9e37588f67a4b88d942e71a6f3d09f04916f264d13da4218a96a49f8"
+  },
+  "connectors.prompts.local.copyAria": {
+    "text": "Salin aturan izin untuk file pengaturan pribadimu",
+    "source": "fd51b3f90ec61a53c1af344d8b81656d361694cca0fab877689c96c93136daf0"
+  },
+  "connectors.prompts.web.title": {
+    "text": "Claude Code di web",
+    "source": "d6d694206e1d2de6701e369f45c5730fe9bce14aad89b77b94694e6e467d2d7f"
+  },
+  "connectors.prompts.web.body": {
+    "text": "Sesi web mendapat kontainer baru setiap kali, jadi file pengaturan di komputermu tidak ada di dalamnya dan persetujuan sesi sebelumnya hilang. Yang dibawa kontainer adalah repo yang diambilnya, jadi commit blok yang sama sebagai <0>.claude/settings.json</0> di repo aplikasi. Homeroom menulis file itu ke setiap repo aplikasi yang dibuat, diimpor, atau di-fork; repo yang sudah ada sebelum fitur ini rilis tidak memilikinya, dan menambahkannya cukup dengan commit biasa.",
+    "source": "f511571a3ca98fb57f49e8a6335262ebcc1c5aa2dbaa79b5fbc13251e2992eaf"
+  },
+  "connectors.prompts.web.copyAria": {
+    "text": "Salin aturan izin untuk di-commit di repo aplikasimu",
+    "source": "afed5d7bd493f9e663c1b7103357b74b9b953d52818863f19264b4d03210946b"
+  },
+  "connectors.prompts.web.trust": {
+    "text": "Claude Code mungkin masih meminta kamu memercayai ruang kerja sekali per kontainer sebelum file tingkat repo berlaku. Belum dipastikan apakah dialog itu muncul di setiap sesi web. Jika kamu masih ditanya setelah meng-commit file itu, itulah penyebabnya, dan kasus di atas adalah solusi yang tidak bergantung padanya.",
+    "source": "8e702718fd0da571d00653ab1959f2d35a32ca89e454159d68271f5dcce9e159"
+  },
+  "connectors.prompts.chat.title": {
+    "text": "Obrolan Claude.ai, ChatGPT, dan Codex",
+    "source": "ee49899676d0b615ffdaee64d8f5d1d467e00f2f90ec3943ee4bbce6ffbed661"
+  },
+  "connectors.prompts.chat.body": {
+    "text": "Tidak perlu melakukan apa pun. Kamu menyetujui konektor sekali saat menghubungkannya dan tidak akan ditanya lagi per panggilan. Kedua blok di atas adalah format file Claude Code dan tidak berpengaruh di produk-produk itu.",
+    "source": "0224c49951c772ab1e5d6b82a73b1fd2cffc819c58662e31fd14f5a5c93615dd"
+  },
+  "connectors.prompts.readsOnly": {
+    "text": "Hanya untuk membaca. Apa pun yang bertindak atas namamu (mengajukan permintaan, membuka atau melanjutkan usulan) tetap meminta persetujuan setiap kali, dengan sengaja.",
+    "source": "110d7bca0b82a658fe2427ee064480f830556082a31b10368c45ba2459a4db61"
+  },
+  "connectors.prompts.spelling.label": {
+    "text": "Konektor terdaftar dengan nama lain?",
+    "source": "e9f4b7d320ee72426199e197c54d9fbe37fc593293972efc3ecdf54316575dcd"
+  },
+  "connectors.prompts.spelling.body": {
+    "text": "Lihat nama alatmu di sesimu, yaitu bagian tengah dari <0>mcp__homeroom__whoami</0>. Jika bukan <1>homeroom</1>, <2>Homeroom</2>, <3>usernode</3>, atau <4>Usernode</4>, ketik di sini dan kedua blok di atas akan ditulis ulang untuknya.",
+    "source": "5b5bea1c35aff14900d650ce481370b30a7f0feb761ae2eeb6ec094b6466e434"
+  },
+  "connectors.codex.add.title": {
+    "text": "Tambahkan server.",
+    "source": "29c1bdc439c02d7c02337dc09a1f146cf31ea94c6724462bb65693e77b1a2b29"
+  },
+  "connectors.codex.add.body": {
+    "text": "Dari terminal tempat Codex terpasang, jalankan perintah di bawah, atau tambahkan entri konfigurasi di bawahnya ke <0>~/.codex/config.toml</0> secara manual, yang memang hanya itu yang dilakukan perintahnya. Pertahankan nama <1>homeroom</1>: Codex memberi awalan nama server pada alat-alatnya, dan nama itulah yang dipakai di seluruh halaman ini.",
+    "source": "3e5eb9bd3e1a9c4393d88033913278c86a0fc6b5a6cec0ec8f5243c74df3b7bf"
+  },
+  "connectors.codex.signIn.title": {
+    "text": "Masuk.",
+    "source": "6c52846f7720c9b1b120dbd210c70e79c027815257610c4e32bdabb246d9c53d"
+  },
+  "connectors.codex.signIn.body": {
+    "text": "Jalankan <0>codex mcp login homeroom</0>. Codex membuka browsermu ke halaman persetujuan Homeroom; setujui di sana dan Codex menyimpan tokennya sendiri. Tidak ada ID klien atau rahasia yang perlu diisi. <1>codex mcp list</1> lalu menampilkan servernya, dan alat-alatnya tersedia di sesi Codex berikutnya.",
+    "source": "ab4ce414d14d9a28dd91a586ba1665fdc59ffb397e246ecb63e8ba892bd05a09"
+  },
+  "connectors.codex.limit.title": {
+    "text": "Ketahui batasannya saat ini.",
+    "source": "49a3a62ca7633dbc21ee124af4f158af5bd62ac738461a86fff02c15f93d83e9"
+  },
+  "connectors.codex.limit.body": {
+    "text": "Codex menerima persetujuan itu lewat callback <0>127.0.0.1</0>, dan konektor Homeroom yang di-host hanya menerima callback masuk di host milik Claude dan ChatGPT, jadi di platform yang di-host proses masuk ditolak dengan <1>invalid_redirect_uri</1>. Ini berfungsi pada Homeroom yang kamu jalankan sendiri dalam mode pengembangan lokal. Sesi Codex tanpa konektor tetap bisa membuat perintah kerja Homeroom: ia mendorong branch, dan obrolan ChatGPT yang memegang konektor mengirimkannya.",
+    "source": "15641bf6bc978d8a12bb2ba8ce6865b06a07b90fa799cfcd317df7a7dd45648d"
+  },
+  "connectors.codex.terminal": {
+    "text": "terminal",
+    "source": "4e686af7bdcc5ae005a247624fd8c7283257c2514f6b3ad2ff5d4cb6d95196e6"
+  },
+  "connectors.codex.copyCommandAria": {
+    "text": "Salin perintah Codex untuk menambahkan server Homeroom",
+    "source": "601d0cd469170621dee88802686bf8b484b919e71321718c94ffc97f16942469"
+  },
+  "connectors.codex.copyConfigAria": {
+    "text": "Salin entri config.toml Codex untuk server Homeroom",
+    "source": "69d9490c5efdc4c1d917571c118824d783b7131b1bee0a54f35208754fa442e3"
+  },
+  "connectors.generic.transport.title": {
+    "text": "Berikan URL konektor sebagai server Streamable HTTP.",
+    "source": "e92952d7bc0145eb7dc2ceec9d5070c4e718de9a87cc76023794add0961dcc3a"
+  },
+  "connectors.generic.transport.body": {
+    "text": "Itu adalah URL di kolom di atas: endpoint HTTPS publik berakhiran <0>/mcp</0> yang menerima JSON-RPC lewat POST. Tidak ada varian SSE atau stdio, dan tidak ada yang perlu dijalankan di komputermu.",
+    "source": "43f50fcbfbbe46876857d7f25b76ee80ed2d5729be47493a434208aae75083ed"
+  },
+  "connectors.generic.oauth.title": {
+    "text": "Biarkan ia menemukan OAuth.",
+    "source": "5c8bd160ceeee36b1839e401ccdc07ba629ea30c4f4911887106fd3023086716"
+  },
+  "connectors.generic.oauth.body": {
+    "text": "Autentikasinya adalah OAuth 2.1 dengan PKCE dan pendaftaran klien dinamis. Klien menemukan server otorisasi lewat <0>/.well-known/oauth-protected-resource/mcp</0> pada origin yang sama, mendaftarkan dirinya sebagai klien publik (tanpa ID klien atau rahasia), dan meminta scope <1>usernode:apps:read</1> dan <2>usernode:proposals:write</2>. Kamu menyetujuinya sekali di halaman persetujuan Homeroom.",
+    "source": "f062342921b1a63b1b064c841f6e4d68f14520628693a9d70fa0460b6665f8d7"
+  },
+  "connectors.generic.callback.title": {
+    "text": "Periksa ke mana callback-nya mengarah.",
+    "source": "f4cd31ec415089b79050a9c968880725c343c202411f123bdceccc326573e089"
+  },
+  "connectors.generic.callback.body": {
+    "text": "Homeroom hanya mendaftarkan klien jika callback OAuth-nya ada di <0>claude.ai</0>, <1>claude.com</1>, <2>chatgpt.com</2>, atau <3>openai.com</3> (atau host yang ditambahkan operator deployment). Callback di localhost, yang dipakai klien baris perintah, hanya diterima oleh Homeroom dalam mode pengembangan lokal. Pendaftaran yang ditolak dijawab dengan <4>invalid_redirect_uri</4>, dan itu adalah batasan di sisi platform, bukan sesuatu yang perlu diperbaiki di klien.",
+    "source": "3b33148ac30bb838d39c00d6a92272e2cc2671bb8494ae0a4bedc8fd4979c14b"
+  },
+  "connectors.generic.naming.title": {
+    "text": "Beri nama homeroom dan baca daftar alatmu.",
+    "source": "3508e77ee66cc2f167fc13160f578cbae415557a69a2c09703dde5b8ca35d98e"
+  },
+  "connectors.generic.naming.body": {
+    "text": "Alat muncul sebagai <0>mcp__homeroom__whoami</0> di sebagian besar klien, atau sebagai <1>mcp__claude_ai_homeroom__whoami</1> jika klien memakai namespace per produk. Bagian di antara <2>__</2> pertama dan terakhir adalah nama server yang menjadi acuan aturan izin; jika bukan salah satu ejaan yang dicakup, ketik di kolom di bawah Claude.ai → “Hentikan pertanyaan izin”. Minta agen memanggil <3>get_connector_guidance</3> terlebih dahulu: ia mengembalikan piagam operasi lengkap konektor.",
+    "source": "bf497c6223c57a509cc6f1d66df1850d7adc42f6453ae4ccb1d62320371d3366"
+  },
+  "connectors.approveNote": {
+    "text": "Apa pun yang kamu pakai, setujui sambungannya di halaman browser yang terbuka.",
+    "source": "c45d7d4411a17bb94b79b443e13f94ea1e2a9bcd2d4ff598929c6ac3efaba9d9"
+  },
+  "connectors.connected": {
+    "text": "Terhubung",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "connectors.list.loading": {
+    "text": "Memuat koneksi…",
+    "source": "8aa3f4352701fb52dc7ea69beef11172aaedbab6f324b005014092d17590c40a"
+  },
+  "connectors.list.empty": {
+    "text": "Belum ada produk obrolan yang terhubung.",
+    "source": "a0378105a1540502e03d62d2b01b7926721928278e2c5416d78395dd8135fe2a"
+  },
+  "connectors.list.disconnect": {
+    "text": "Putuskan",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "connectors.claudeSteps.open.title": {
+    "text": "Buka pengaturan konektor.",
+    "source": "b334fccc29ef7eb9b7d0b1bfffb2923cd52942e5587c3cc3e61edf49c9f7a31e"
+  },
+  "connectors.claudeSteps.open.body": {
+    "text": "Buka <0>Customize → Connectors</0> di Claude (<1>claude.ai/customize/connectors</1>). Di sinilah konektor direktori maupun konektor kustom milikmu berada.",
+    "source": "6a8e4c5a256e0a7a9fa7d14914c6dcef015cffd09c412ec2d12152dcd8dbc999"
+  },
+  "connectors.claudeSteps.start.title": {
+    "text": "Mulai konektor kustom.",
+    "source": "99c6955dc6a1ed28615d4ddca964ed5ba2edff3063b97225d411eb090162f308"
+  },
+  "connectors.claudeSteps.start.body": {
+    "text": "Klik tombol <0>+</0>, lalu pilih “Add custom connector”. Di dialog, isi kolom Name dengan <1>homeroom</1>, persis seperti itu ejaannya: Claude Code menyusun aturan izinnya dari yang kamu ketik di sini, dan daftar izin hanya-baca yang disertakan Homeroom di setiap repositori aplikasi hanya cocok dengan nama yang dikenalnya. Di paket Team atau Enterprise, opsi ini tidak tersedia untuk anggota, jadi Owner perlu menambahkannya lebih dulu lewat Organization settings → Connectors (Add → arahkan ke “Custom” → “Web”).",
+    "source": "28df3cb5aa8efa37ea6201ac55277ddcc8ff552c545f62e636bdce1884fe31b5"
+  },
+  "connectors.claudeSteps.paste.title": {
+    "text": "Tempel URL server MCP-mu.",
+    "source": "99cf1764133a7404de0d310a0f754f5a0e64ed6005374c8bd0ad098f24c60bc9"
+  },
+  "connectors.claudeSteps.paste.body": {
+    "text": "Untuk Homeroom, itu adalah URL server MCP di atas, yaitu endpoint HTTPS publik yang berakhir dengan <0>/mcp</0>. Server kustom harus bisa dijangkau dari cloud Anthropic, bukan hanya dari perangkatmu.",
+    "source": "4aad52e0ff7e79278ad5955391172fbe4923a4b4f6b0b58b4cb9e2a42f3ab1bb"
+  },
+  "connectors.claudeSteps.oauth.title": {
+    "text": "Tambahkan kredensial OAuth jika perlu.",
+    "source": "a0e89f677852936414015ccdd8d511b7a51609bcee84e08c74ebdbb07f359706"
+  },
+  "connectors.claudeSteps.oauth.body": {
+    "text": "Jika server memerlukan OAuth, buka “Advanced settings” lalu masukkan OAuth Client ID dan Client Secret milikmu. Lewati langkah ini untuk Homeroom: Homeroom memakai pendaftaran klien dinamis, jadi tidak ada yang perlu diisi.",
+    "source": "6f6fdf738ed2312f6615dbc431cdbc6cbddf8ba002e71ea85d884a82c1a9987d"
+  },
+  "connectors.claudeSteps.save.title": {
+    "text": "Simpan dan autentikasi.",
+    "source": "25e1b1376c1aee1d5ea15a26c036293b65512dcb484dd5c0a66cbf5d705431d8"
+  },
+  "connectors.claudeSteps.save.body": {
+    "text": "Klik “Add” untuk menyelesaikan pengaturan, lalu klik “Connect” di samping konektor. Kamu akan dialihkan melalui alur OAuth; periksa cakupan izin yang diminta sebelum menyetujui.",
+    "source": "6b8cf6fa7d12352bc06e1de5b105644d60c2dca689eb28851bee9411231700b3"
+  },
+  "connectors.claudeSteps.enable.title": {
+    "text": "Aktifkan di sebuah percakapan.",
+    "source": "2824bdbddab8945c23f6be3dc3e800b16788aad4f6b8a577456940606e38386b"
+  },
+  "connectors.claudeSteps.enable.body": {
+    "text": "Di sebuah obrolan, pakai tombol <0>+</0> di kiri bawah, lalu pilih “Connectors”, dan aktifkan konektormu. Pengaktifan berlaku per percakapan, jadi kamu yang menentukan obrolan mana yang bisa menjangkaunya.",
+    "source": "87c5affc65103c02a8d8854021b01ecb17604950ae018fc3ecfa60e7876a7a17"
+  },
+  "connectors.chatgptSteps.directory.title": {
+    "text": "Buka direktori plugin.",
+    "source": "3b7b3c88a1ae120d7eb423e880636b4b01cdf2d7ab61bc797608aaa039d0ae80"
+  },
+  "connectors.chatgptSteps.directory.body": {
+    "text": "Buka <0>chatgpt.com/plugins</0> di browsermu. Pengaturan plugin dan MCP saat ini hanya tersedia di web.",
+    "source": "b27f269cebbeb8ae958f33e391e36259f537ceab375c865abe97a15555067bc3"
+  },
+  "connectors.chatgptSteps.create.title": {
+    "text": "Buat server MCP kustom.",
+    "source": "38c709e5a10ce92fd80876ece03fe5cea5405f0c3b14c6f35b0b7a68db93047c"
+  },
+  "connectors.chatgptSteps.create.body": {
+    "text": "Klik <0>“Add plugin”</0>, lalu pilih <1>“Create custom MCP server”</1>.",
+    "source": "6f47d46a6870b7d2c359fab1ab50670bbda12f80bba0a5bf9833a33d42b59de9"
+  },
+  "connectors.chatgptSteps.url.title": {
+    "text": "Masukkan URL server MCP Homeroom.",
+    "source": "d8c71f1054e5d1ab325e15b783f0d875555f37d7aaaa0111375603f8da6a12ed"
+  },
+  "connectors.chatgptSteps.use.title": {
+    "text": "Aktifkan server di sebuah obrolan.",
+    "source": "959093cc98aaae2f0db4d6cee16195fe4ca99db43281d47f5f22205470cb704d"
+  },
+  "connectors.chatgptSteps.use.body": {
+    "text": "Buka pemilih <0>+</0> / konektor di samping kotak pesan, pilih server yang baru kamu buat, dan jadikan aktif. Sekarang minta ChatGPT melakukan sesuatu yang memakai salah satu alat, misalnya: <1>“Gunakan server MCP-ku untuk menampilkan daftar tiket dukungan yang masih terbuka.”</1> Bila sesuai, ChatGPT akan memanggil alat yang disediakan server MCP-mu dan memakai hasilnya dalam percakapan.",
+    "source": "94a56655d503dacd67a5d1e11900b9f542db2fbbf15645a523cd198c31a84b42"
+  },
+  "connectors.chatgptSteps.inShort": {
+    "text": "<0>Singkatnya:</0> chatgpt.com/plugins → Add plugin → Create custom MCP server → masukkan URL server MCP Homeroom → pemilih konektor → jadikan aktif.",
+    "source": "5a4921bf2917041076dd174f64f117fecded8ff4f9bd6f4cefb86d61ef01f7cb"
+  },
+  "linkedAccounts.title": {
+    "text": "Akun tertaut",
+    "source": "feda46a46abb0f718aac6234e607aa0c188882669b38b5e3d3dffd981cde0bdb"
+  },
+  "linkedAccounts.intro": {
+    "text": "Kredit ini kami yang membayar, jadi akun yang terhubung membantu kami mencegah satu orang membuat banyak akun.",
+    "source": "7c75a0678c3bf55fb4d5e518c302802798df1d56673a28de595ac072f948f8d0"
+  },
+  "linkedAccounts.scope": {
+    "text": "Homeroom<0> tidak meminta akses ke repositori kamu </0>dan tidak menyimpan token penyedia. Menghubungkan hanya memastikan kamu mengendalikan akun tersebut. Ini bukan bukti bahwa kamu orang yang unik.",
+    "source": "6873935fe23db5f20e55345a112fa96673773dca9e19244e8e8c6dba32f384ac"
+  },
+  "linkedAccounts.dailyCredits": {
+    "text": "Kredit harian",
+    "source": "a6f0c7d1399c884b02a42633eb60eba5d5fa07ab230e60eb1fa76f69480821c9"
+  },
+  "linkedAccounts.auditNote": {
+    "text": "Tinjau atau cabut otorisasi ini di <0>{{address}}</0>.",
+    "source": "67ce03751756c58a4c12cbe5097f8b781d52d948988ac43c1ad2ce37ed2564cc"
+  },
+  "linkedAccounts.showOnProfile": {
+    "text": "Tampilkan di profil publik",
+    "source": "b8e295255965ddd4f8c4782ad2de9fb859f8e33f53d9f43645b57bef08dabad0"
+  },
+  "linkedAccounts.disconnect": {
+    "text": "Putuskan",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "linkedAccounts.status.openingBrowser": {
+    "text": "Membuka browsermu…",
+    "source": "fe059f4026c37b38cbe3a8a93b6d9a42d0a3af563e5292c9cb70fa97e0ce8ad5"
+  },
+  "linkedAccounts.status.finishConnecting": {
+    "text": "Selesaikan penautan di browsermu, lalu kembali ke aplikasi. Masuk dengan akun Homeroom yang sama jika diminta.",
+    "source": "117a72f6305e049ac751572142aece6881daece2767a0995a8f61f6a8d9b7561"
+  },
+  "linkedAccounts.status.finishVerification": {
+    "text": "Selesaikan verifikasi di browsermu, lalu kembali ke aplikasi. Masuk dengan akun Homeroom yang sama jika diminta.",
+    "source": "b53d9b750b09385baeaaf2d80815d3f847c46bbf9d8d5996ea6334913d883b72"
+  },
+  "linkedAccounts.status.savingVisibility": {
+    "text": "Menyimpan visibilitas profil…",
+    "source": "5ba20300118dac602de86821c0ac13ab4ad7bfc07d73e41e99754a30d8fc723f"
+  },
+  "linkedAccounts.status.visibilityFailed": {
+    "text": "Tidak dapat mengubah visibilitas profil.",
+    "source": "077598185c41713e6d4bfb48762d67f2f9e0d1f4952c84e1f8cc230e0c5feb11"
+  },
+  "linkedAccounts.status.shownOnProfile": {
+    "text": "Ditampilkan di profil publikmu.",
+    "source": "f221e7cdd785b08e6bd8d7dc65e9823d73936a4318daa76374ac5677b573a128"
+  },
+  "linkedAccounts.status.hiddenFromProfile": {
+    "text": "Disembunyikan dari profil publikmu.",
+    "source": "f27c2de33407ca811176e3dc03d7c4833dd2861f1cd5ea81c202f7b3b220bb05"
+  },
+  "linkedAccounts.status.replacing": {
+    "text": "Mengganti akun…",
+    "source": "2c0a642e063823b764012d1fcff6dff20ba1d471e0a3caee60594dd740163e90"
+  },
+  "linkedAccounts.status.replaceFailed": {
+    "text": "Tidak dapat mengganti akun ini.",
+    "source": "bd9e7baf48ccfbd9952ea00a7d01fdb9bcb1be613f159f85ca19cd1729a26081"
+  },
+  "linkedAccounts.status.replaced": {
+    "text": "Akun {{provider}} sudah diganti.",
+    "source": "b3cdcb9f7dd13054166f6d78ebcb185cdf54bdeb8e773ee6b0f3c3f41a5ddde7"
+  },
+  "linkedAccounts.status.cancelFailed": {
+    "text": "Tidak dapat membatalkan penggantian ini.",
+    "source": "1634fdcf34b199114fce4a9f63d537a67d82f05e9b9b3906ea257843429e9284"
+  },
+  "linkedAccounts.status.replacementCancelled": {
+    "text": "Tidak ada perubahan. @{{handle}} masih terhubung.",
+    "source": "38bdecaee5a5b2985c5bad9e07e8babfe4257c06034c20aeb7675c8b9229697f"
+  },
+  "linkedAccounts.replacement.aria": {
+    "text": "Konfirmasi penggantian akun {{provider}}",
+    "source": "5c9a3a9ac2db80fff097ba430cb304a79a932fa133d01bb3ac754182628bced0"
+  },
+  "linkedAccounts.replacement.title": {
+    "text": "Ganti akun {{provider}}?",
+    "source": "3c2ece104d4337a5f4dde615e1024c0623c327b69b854580a682691a8d1ee54f"
+  },
+  "linkedAccounts.replacement.intro": {
+    "text": "Akun baru sudah terverifikasi. Tidak ada yang berubah sampai kamu konfirmasi.",
+    "source": "e4912395ed9be00739318c84bbc30d4438049e55938e29c838cfd3be5ef8fcaf"
+  },
+  "linkedAccounts.replacement.current": {
+    "text": "Saat ini",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "linkedAccounts.replacement.verified": {
+    "text": "Pengganti terverifikasi",
+    "source": "10fc1a46fc4ee70bacd0d10c1278e4e5fa343ccf1d21390eac8281b55daa97d7"
+  },
+  "linkedAccounts.replacement.showOnProfile": {
+    "text": "Tampilkan akun pengganti di profil publikku",
+    "source": "ef2d740b269deedcb6c5f61166126a90053d966e11c53d3dfa94d911d9b6716d"
+  },
+  "linkedAccounts.replacement.cancelNote": {
+    "text": "Jika dibatalkan, @{{handle}} tetap terhubung dengan visibilitasnya saat ini.",
+    "source": "468f61fc5ada0eb78ad7593c6662c0a29e2a703b6273790bbb1eee85955a61af"
+  },
+  "linkedAccounts.replacement.confirm": {
+    "text": "Ganti akun",
+    "source": "53ac9b29deaef3db23538b247a2040c2333929a1dbd9c365f4f3967bcada6034"
+  },
+  "linkedAccounts.replacement.replacing": {
+    "text": "Mengganti…",
+    "source": "44207eb29645f6ab24953642c4b4155a4aa2497f181ff6141de0e5fe3643badb"
+  },
+  "linkedAccounts.diagnostics.summary": {
+    "text": "Penyiapan {{provider}} · khusus admin",
+    "source": "4c42d892d719aff7f9caf8dad2639c6153979f43b180c6fdda027d2a4276f77f"
+  },
+  "linkedAccounts.diagnostics.callbackUri": {
+    "text": "Callback URI:",
+    "source": "ae2d8e2d9a55402e9e24f6a852e5d25e4d6dced6736d552d7ea117efb34d4f89"
+  },
+  "linkedAccounts.diagnostics.run": {
+    "text": "Jalankan pemeriksaan konfigurasi",
+    "source": "13d45a0dd0e1db073f7a09ca27cc2d1cb9b1ecb29e57fa1dd93437070be4d315"
+  },
+  "linkedAccounts.diagnostics.checking": {
+    "text": "Memeriksa…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "linkedAccounts.diagnostics.accepted": {
+    "text": "{{provider}} menerima kredensial klien platform. Jika penyambungan tetap gagal di halaman {{provider}} sendiri, berarti alamat callback di atas belum didaftarkan di aplikasi {{provider}}.",
+    "source": "94c9f47736114ccc95503f1294e40ab2d074e26764cb033b79c54f1f32fcf02f"
+  },
+  "linkedAccounts.diagnostics.rejected": {
+    "text": "{{provider}} menolak client ID atau secret platform. Pasangan kredensial yang dikonfigurasi salah.",
+    "source": "5f8e25a242cbdaca55d3a1ad7f05e0895fb37b7df46a3f8633bd511d62992843"
+  },
+  "linkedAccounts.diagnostics.unreachable": {
+    "text": "Tidak dapat menjangkau {{provider}} untuk memverifikasi kredensial. Coba lagi sebentar lagi.",
+    "source": "a3a995f269199333dd02ec15c2dc81188b0717104bb482ee0795f85b50a132d2"
+  },
+  "linkedAccounts.diagnostics.failed": {
+    "text": "Pemeriksaan konfigurasi gagal dijalankan. Coba lagi sebentar lagi.",
+    "source": "b10496d32eafb5588a2aeac75638f2dafdbfd5f30b83e077b6182a86e8caf86f"
+  },
+  "linkedAccounts.native.accountUnknown": {
+    "text": "Akunmu tidak dapat dikenali. Buka Pengaturan lagi dan coba lagi.",
+    "source": "e3cdf105be6e91b3f5a7790d93bd1e405941923ec6a91c04c6f34f326dbe397b"
+  },
+  "linkedAccounts.native.updateApp": {
+    "text": "Perbarui aplikasi Homeroom untuk membuka sambungan akun di browsermu.",
+    "source": "bd710b814b5f1e2cc967ad8dc4e27bb53943ff91dffc25695703e35a83089797"
+  },
+  "linkedAccounts.native.browserNotOpened": {
+    "text": "Browsermu tidak bisa dibuka. Ketuk Hubungkan untuk mencoba lagi.",
+    "source": "e647128b6ba9b8540900e55726a09aa4c3f3d3b063f05f1ceb6babccbe74c726"
+  },
+  "cli.title": {
+    "text": "Akses CLI & agen pemrograman",
+    "source": "f5b96ef5a6c0adacf4f8c79fe12f2b7efe9dee7c0d23ce7c7efa0a883cf336a3"
+  },
+  "cli.intro": {
+    "text": "Kredensial yang disetujui untuk Homeroom CLI, Codex, Claude Code, atau OpenCode. Mencabut kredensial yang aktif langsung berlaku.",
+    "source": "d72becb6da15ecf7c5cfaaada8e6926cb73c9720f0a0bdd14e840b7b48d9a3e2"
+  },
+  "cli.tokens.loading": {
+    "text": "Memuat kredensial…",
+    "source": "f95763a4d76c6868f642f508f06eb630dc38fc3293cc50bec91db44c6b33c4ba"
+  },
+  "cli.tokens.empty": {
+    "text": "Belum ada kredensial CLI.",
+    "source": "2575a681ebf753e2ebaebbf491120b09b7e6580422f89d9529f0be248d512b1c"
+  },
+  "cli.tokens.revoke": {
+    "text": "Cabut",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "cli.tokens.loadMore": {
+    "text": "Muat lagi",
+    "source": "ac8991ef01019cf55a2426194a05959e0cb886333f1a332ff4f442320d165400"
+  },
+  "cli.guide.title": {
+    "text": "Siapkan agen pemrograman lokal",
+    "source": "524891f6bf3f55c9f07f8a67191e9cbb58dd031a4bec2efa2290a4f7acfd9bf7"
+  },
+  "cli.guide.intro": {
+    "text": "Jalankan Codex atau Claude Code dari salinan kode lokal, lalu minta agen membuat usulan.",
+    "source": "6f0b72afac4711bc910a0fe45abe2519aa9626920a18f71d06b1c9742d816b41"
+  },
+  "cli.guide.clone.title": {
+    "text": "Kloning repositori",
+    "source": "0fce6e04ffaeaa07ae7480fb155fb78e4de97fd3c301bb3d295b5bc7b4f09d55"
+  },
+  "cli.guide.clone.body": {
+    "text": "Kloning Homeroom lalu masuk ke folder salinannya.",
+    "source": "830d38a33c85edff362c13f32eee253735a51ad6faf17215c5253bc19e3b84c6"
+  },
+  "cli.guide.clone.codeLabel": {
+    "text": "perintah penyiapan repositori",
+    "source": "3f2f7e3c5d7fd79dcf453cbaa00977ac0306c4da1541633733857fd130edc4ce"
+  },
+  "cli.guide.clone.copyAria": {
+    "text": "Salin perintah penyiapan repositori",
+    "source": "1846bba2f8846b13177883f715ff192382743e25569cf4063c2473d6b7ae7162"
+  },
+  "cli.guide.start.title": {
+    "text": "Jalankan agen pemrogramanmu",
+    "source": "c21d5754cb1a2bc351af18e5936fc47f554c2c9e7427f92043eb85e688049366"
+  },
+  "cli.guide.start.body": {
+    "text": "Jalankan Codex atau Claude Code dari direktori repositori.",
+    "source": "7310f4704876d0c6af094679e99b8509037500ea781e996f8dd758a7579f08dc"
+  },
+  "cli.guide.start.codexLabel": {
+    "text": "Perintah Codex",
+    "source": "1bab5da7ad7d820dbc64aee8290acf94e23d5cb5c636e724a04206b58710da08"
+  },
+  "cli.guide.start.codexCopyAria": {
+    "text": "Salin perintah Codex",
+    "source": "73afd0050f1d6a9cc037988a2e4ed9405057820e4067f432c777c501e08bdc62"
+  },
+  "cli.guide.start.claudeLabel": {
+    "text": "Perintah Claude Code",
+    "source": "5af7af69f26f4a45c8240e99ef76449c4ee96c1e5db3d6d942824f5f7b42645c"
+  },
+  "cli.guide.start.claudeCopyAria": {
+    "text": "Salin perintah Claude Code",
+    "source": "b56248027d0af0a283441a677edaf06a342cc085d11e7ab7490848879943dcdf"
+  },
+  "cli.guide.ask.title": {
+    "text": "Minta agen membuat usulan",
+    "source": "1f6f6432529fd5f88e2ca0d03a0fe50cf25add8caa673cd67777431b2d72b9d1"
+  },
+  "cli.guide.ask.promptHelp": {
+    "text": "Ganti bagian placeholder dengan aplikasi dan perubahan yang kamu inginkan, lalu kirim prompt-nya.",
+    "source": "2e751b16f7f53a5b6122f093dde581f487000ff7ae7ab25f82d60e49ff6c16cb"
+  },
+  "cli.guide.ask.examplePrompt": {
+    "text": "Buat usulan untuk <0>nama aplikasi</0> yang <1>jelaskan perubahan yang kamu inginkan</1>.",
+    "source": "0bc8c0161ddb6fb333831a62c71f6edfbc28e9807a8e0fd4d7bb3e033c8beb10"
+  },
+  "cli.guide.ask.promptLabel": {
+    "text": "contoh prompt usulan",
+    "source": "a09ecbf5d971953d11da684f7fb9c884f384ddcd77c6a86b222f2564f335975f"
+  },
+  "cli.guide.ask.promptCopyAria": {
+    "text": "Salin contoh prompt usulan",
+    "source": "63b9ea9defd0da0b61f61181811d4414d7299f6d3f96cd680493ee53e4cc2049"
+  },
+  "cli.guide.ask.follow": {
+    "text": "Ikuti petunjuk dari agen. Kamu akan diminta memberi izin akses di halaman web Homeroom; periksa dan setujui permintaannya di sana, lalu kembali ke terminalmu.",
+    "source": "f8013ce9d462e45307acf0c285dbdf6234adff0bdfe27db3d5c373aacc968157"
+  },
+  "cli.guide.copyFailed": {
+    "text": "Gagal menyalin",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "cli.guide.copyFailedToast": {
+    "text": "Tidak bisa menyalin. Pilih teksnya lalu salin secara manual",
+    "source": "9181be576b49cb2ddc08670fe5e6858dd852534505be0751160f918b90f5abe8"
+  },
+  "localAgents.lastSeen": {
+    "text": "{{runtime}} · terakhir terlihat <0>{{when}}</0>",
+    "source": "1ce52bd8b15662569265979c838d55a1eb769bc849440b076854a2188912bcc0"
+  },
+  "localAgents.lastSeenUnknown": {
+    "text": "{{runtime}} · terakhir terlihat tidak diketahui",
+    "source": "c5efe62fd47ddfdb558e9fc762d36e4963fbfc415f4b062ec817daa08a16d4fe"
+  },
+  "localAgents.detach": {
+    "text": "Lepas",
+    "source": "74bc117435434cc1708fda8004336cf159021c5fa8f991b444c4fa4b1e7c0b6f"
+  },
+  "grants.title": {
+    "text": "Izin AI aplikasi",
+    "source": "8be55dd90e374de98322dd13ce0a20b481c4996e85cdd0730f97d48a0be67360"
+  },
+  "grants.intro": {
+    "text": "Aplikasi yang kamu izinkan memakai AI atas namamu. Pengeluarannya dihitung dari anggaran hariankmu yang biasa, ditambah batas per aplikasi yang kamu atur. Pencabutan langsung berlaku, dan aplikasi yang dicabut bisa diaktifkan lagi di sini dengan batas sebelumnya.",
+    "source": "f61e6dbad08e7083295d2e6b8a2141fece86a532ac2e5d6adbbd9d1994642746"
+  },
+  "grants.loadFailed": {
+    "text": "Gagal memuat izin aplikasi.",
+    "source": "5eb6af55d4350f494a7b80397699b9ea1116f85e4deef1941ff75d450ff7a6d9"
+  },
+  "grants.empty": {
+    "text": "Belum ada aplikasi yang meminta izin memakai AI.",
+    "source": "b11b6069db8df47662ca9fd410474cb3c0ff620383b43e62621c63e06337dfa0"
+  },
+  "grants.revoked": {
+    "text": "Dicabut",
+    "source": "f6f738d043929f59fe41b1a5b414b33ea28ca9a6ddc74e682bdb7167b5a6ac6e"
+  },
+  "grants.reenableNote": {
+    "text": "Mengaktifkan lagi akan memulihkan batas harian ${{cap}}.",
+    "source": "eaf4efb2006d8c77718e35affbe8e614ecc06d8eff336bb73d022bd3398cf411"
+  },
+  "grants.reenable": {
+    "text": "Aktifkan lagi",
+    "source": "63de421725fe824d9997872b1130d48e684b08da4b2784054049002f95684303"
+  },
+  "grants.spentToday": {
+    "text": "${{spent}} / ${{cap}} hari ini",
+    "source": "4d298cf26bbed54b11caf9105b8368f6c02a102e12e277e9e95d733fd3dfeadb"
+  },
+  "grants.capLabel": {
+    "text": "Batas $",
+    "source": "65f13504f1788453d383782f0c87ed3a2a9b8f725427a3312f09d2adeb7c3bae"
+  },
+  "grants.useOwnKey": {
+    "text": "Pakai kunciku sendiri setelah anggaran harian habis",
+    "source": "4e44fe70255b6486de20d7c39dbcc8f89d10052087a28df5aede1b5c73cc50b5"
+  },
+  "grants.revoke": {
+    "text": "Cabut",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "usage.title": {
+    "text": "Penggunaan",
+    "source": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66"
+  },
+  "usage.intro": {
+    "text": "Sisa jatah AI-mu dan, setelah kamu menambahkan kunci sendiri, pengeluarannya minggu ini.",
+    "source": "a9cad60aaaa6de667ee141cf2ddedf2df2831c7a5d2913b0e32253ad3f52648e"
+  },
+  "usage.buildingTime.title": {
+    "text": "Waktu membangun Homeroom bot",
+    "source": "2f97a56ab7dd4deac5bf6e5d49c85b7c7ba0529ba0e285a8ef7494f5ce8a5101"
+  },
+  "usage.buildingTime.used": {
+    "text": "{{percent}}% waktu membangun minggu ini terpakai",
+    "source": "8031d6c56c57c28ab7406f3ff079a20d36dca99366c4b7999768a53d7e3c6c3b"
+  },
+  "usage.buildingTime.usedUp": {
+    "text": "Waktu membangunmu minggu ini sudah habis",
+    "source": "23d521a02d6f6b5cd2b44ab9b6d0016c1048b8cd4ccfc4a03d8d067b45a22d83"
+  },
+  "usage.buildingTime.none": {
+    "text": "Kamu belum memakai waktu membangun minggu ini",
+    "source": "547da50d8345b5cd6ad510937874358d5ea94af5b5c9f9aea2b9081531d44971"
+  },
+  "usage.buildingTime.unlimited": {
+    "text": "Waktu membangunmu tidak dibatasi per minggu",
+    "source": "37c9e5f0644cebd3a82eab30167a6e75704bf49e9741b5517537ac89c96b04e3"
+  },
+  "usage.buildingTime.resets": {
+    "text": "Diatur ulang {{day}} pukul {{time}}.",
+    "source": "f56ad5c5cec2cd02084ba0b4eeaa621e6d01ace3d9d3b5366a6af57ad81b8603"
+  },
+  "usage.buildingTime.percent": {
+    "text": "{{percent}}%",
+    "source": "6eae0dff5b4b3c72aaa73b1a40acf7a63534303708c5923d056d1d1f7406880c"
+  },
+  "usage.buildingTime.underOne": {
+    "text": "Di bawah 1%",
+    "source": "2d1353576242ed0eba40f82af10733e7d672c2e9392686f8098b3ff6f1cde22d"
+  },
+  "usage.buildingTime.untitled": {
+    "text": "Permintaan #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "usage.buildingTime.askedFor": {
+    "text": "{{app}} · Kamu yang memintanya",
+    "source": "3009051eab0c985b0b0ce754726e2365cf1079d988a327610a619737ec1bbf89"
+  },
+  "usage.buildingTime.others": {
+    "text": "Permintaan lainnya",
+    "source": "638e58c202ba623c1aa831c4a330f7032ea9b74a58183414a363715ff1dfb5c0"
+  },
+  "usage.buildingTime.explainLimited": {
+    "text": "Porsi tiap permintaan dari minggumu. Ini mencakup waktu bot membaca, merencanakan, dan membangun permintaanmu, serta permintaan yang kamu minta dibangun untuk orang lain.",
+    "source": "8ab64ec5628f5a819387dea4b32f67f6d17b2da3ddbf5eb9bd30c69aaea89ba2"
+  },
+  "usage.buildingTime.explainUnlimited": {
+    "text": "Porsi tiap permintaan dari yang kamu pakai minggu ini. Ini mencakup waktu bot membaca, merencanakan, dan membangun permintaanmu, serta permintaan yang kamu minta dibangun untuk orang lain.",
+    "source": "bec24faaf7a5308bc9328990f0bb68f62621bfea5d28c8943cc5b394ffc24d34"
+  },
+  "usage.buildingTime.demo": {
+    "text": "Angka demo staging, bukan angka sebenarnya.",
+    "source": "1d1fe182728f39676977f9993c2daa34e7546df65a9ff3ffdd6777c0095f51be"
+  },
+  "usage.spend.heading": {
+    "text": "Pengeluaran minggu ini",
+    "source": "921b881fcea8e7eeb4830bf2d3fd2256178f9b2af17b22d3511bd106d686bcc0"
+  },
+  "usage.spend.platform": {
+    "text": "Batas mingguan platform",
+    "source": "a83f14f098bfc1d72b6bbadcd7cdba7c74384ae8d55c946e6ecc937bb3c52c74"
+  },
+  "usage.spend.ownKey": {
+    "text": "Kunci kamu",
+    "source": "10d7b222c4b9c18867e21dca6feb15924c3d57b491eeff7efc274ae2d7fd118b"
+  },
+  "usage.spend.resetUtc": {
+    "text": "Direset Senin pukul 00.00 UTC.",
+    "source": "8260c59430618de198b46e83610e7a2945840b03ccd8174e1d52020606f50498"
+  },
+  "apiKey.title": {
+    "text": "Kunci API Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "apiKey.intro": {
+    "text": "Gunakan kunci API Anthropic milikmu sendiri agar tetap bisa bekerja setelah batas mingguan habis. Jatah mingguan platform dipakai lebih dulu; setelah habis, kuncimu akan mengambil alih secara otomatis, bahkan di tengah giliran yang sedang berjalan, dan biayanya langsung ditagihkan ke akun Anthropic-mu.",
+    "source": "5b0792bc208a2c15d311cd18b29c5aabb8d6bb4c085f13c01991ffe2eaad28ba"
+  },
+  "apiKey.savedKeyLabel": {
+    "text": "Kunci",
+    "source": "99a52df3ff3d499488e2fa28150c4106a2cb5e928891a830a9aa3922b2d32160"
+  },
+  "apiKey.fieldLabel": {
+    "text": "Kunci API Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "apiKey.remove": {
+    "text": "Hapus",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "apiKey.safety": {
+    "text": "Dienkripsi saat disimpan, diverifikasi ke Anthropic sebelum disimpan, dan tidak pernah ditampilkan utuh setelah disimpan. Server mendekripsinya di memori untuk memanggil Anthropic atas namamu, jadi jangan tempel kunci ke layanan yang tidak kamu percayai dengan tingkat akses sebesar itu. <0>Atur batas pengeluaran yang ketat</0> pada kunci itu sendiri untuk perlindungan berlapis.",
+    "source": "964372764cebc98f971f0a8a93b91718b37a66b5e4dc6fe31778a665234ac478"
+  },
+  "openrouter.intro": {
+    "text": "Gunakan model apa pun yang kompatibel untuk semua obrolan dan pengodean dalam sesi OpenRouter. Sesi ini tidak memakai jatah Claude dari platform. Akunmu sudah dilengkapi kunci OpenRouter, jadi OpenRouter menjadi pilihan bawaan dan GLM 5.3 Flash dipilih jika tersedia, sementara daftar lengkap model yang terlihat oleh kunci tetap tersedia. Model bertanda Claude Code di daftar model berjalan di Claude Code. Kunci dienkripsi saat disimpan dan hanya disisipkan untuk setiap giliran.",
+    "source": "227eef10170b9b0dc7009a9f48d95a0859acd84a1c5e2755f9c5415cf73d6c01"
+  },
+  "openrouter.included.title": {
+    "text": "Kunci OpenRouter bawaan",
+    "source": "f33fea5d48604219c052f6d69cf33d2515bb36b95244850cfda3a909bba33095"
+  },
+  "openrouter.personalKey.label": {
+    "text": "Atau pakai kunci API OpenRouter pribadimu",
+    "source": "95b84abf0b457a3383153e5363e15781f84c9cb92b41b521d10d8ddf4e35d6fc"
+  },
+  "openrouter.personalKey.testAndSave": {
+    "text": "Uji & simpan",
+    "source": "634dbaabb7bfa2e961b2bff68e7e4fe6dcb6d40181773206fcbfd6957d18d35e"
+  },
+  "openrouter.personalKey.remove": {
+    "text": "Hapus",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "openrouter.model.label": {
+    "text": "Model OpenRouter",
+    "source": "dd24ac61242a5891d7634c9f3d47a395aa8fa3c69f05146ade6dbd79f1e89918"
+  },
+  "openrouter.model.filterPlaceholder": {
+    "text": "Saring menurut model atau penyedia…",
+    "source": "19c5643bbd1f98db6b8a44e44ea4e41206c8bef78a76be7f69725fbec2ddf643"
+  },
+  "openrouter.model.filterAria": {
+    "text": "Saring model OpenRouter",
+    "source": "75d3b31cdd6e14244e88ca0e21fb9ba54c7d4e1654c15de08e936bd39fc14201"
+  },
+  "openrouter.model.favoritesOff": {
+    "text": "☆ Favorit",
+    "source": "c2a2f40a25908cbf45d00937d3105b55913e6e0be8606c2f72629c170c6f268d"
+  },
+  "openrouter.model.refresh": {
+    "text": "Muat ulang",
+    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
+  },
+  "openrouter.model.addFavorite": {
+    "text": "Tambahkan model terpilih ke favorit",
+    "source": "a079bd1c365635918e2f92e449c44166440dc6089751ae28a3ccb34328dd7902"
+  },
+  "openrouter.model.favoritesNote": {
+    "text": "Rekomendasi platform awalnya diberi bintang. Perubahanmu menggantikan pengaturan bawaan itu di semua perangkat. OpenRouter menyaring katalog ini sesuai kunci dan kebijakan akunmu.",
+    "source": "b9be668d6b486880d00c6b2600cc9dad1d48157f99dc299f31c9024c83ecedc0"
+  },
+  "openrouter.reasoning.label": {
+    "text": "Tingkat penalaran",
+    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
+  },
+  "openrouter.reasoning.default": {
+    "text": "Bawaan",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "openrouter.reasoning.minimal": {
+    "text": "Minimal",
+    "source": "057b5de48d7b90f123ec28d7e15f65d99b508d6b7cc2958c39472070f0f0f6bb"
+  },
+  "openrouter.reasoning.low": {
+    "text": "Rendah",
+    "source": "f793de205ead5ac302c4a1627829dea41f176b1068b993a32373fc869918374b"
+  },
+  "openrouter.reasoning.medium": {
+    "text": "Sedang",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "openrouter.reasoning.high": {
+    "text": "Tinggi",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "openrouter.reasoning.xhigh": {
+    "text": "Sangat tinggi",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "openrouter.saveDefault": {
+    "text": "Simpan sebagai agen pengodean bawaanku",
+    "source": "37aaed4932ec8f90f8f8f8bb091ca3548428ce7613ebb82a8d26fba353d170da"
+  },
+  "openrouter.useClaudeDefault": {
+    "text": "Pakai Claude Code sebagai bawaanku",
+    "source": "247385385ccd48b6d5a20573b9ed88f3cb93dc8d65053ac211f993f21ae0ad9c"
+  },
+  "screen.signOut": {
+    "text": "Keluar",
+    "source": "48f0d3d397d49f135f116d947a805b49f084f637154a8e9913e7233a11dc16a0"
+  },
+  "screen.loadFailed": {
+    "text": "Pengaturan tidak dapat dimuat. Periksa koneksimu dan coba lagi.",
+    "source": "1977912215d331200b5e83537ff38c1de9a6267ab068e7359298f217d956d3db"
+  },
+  "nav.sectionsName": {
+    "text": "Bagian pengaturan",
+    "source": "e26d51d36781ba171c5eba3f73a03d53120e8479d5275f0768ec49a40b3b0386"
+  },
+  "nav.filter.field": {
+    "text": "Cari pengaturan",
+    "source": "556e14934a4a4550aa43766e0f576030549cd26062f8817fd77da448fd5a7df9"
+  },
+  "nav.filter.noMatch": {
+    "text": "Tidak ada pengaturan yang cocok dengan “{{query}}”.",
+    "source": "a0e86b6149ce0c066deb8e64da06ab9b9ad03483a2ec1edac2693797b934f17d"
+  },
+  "nav.filter.signOut": {
+    "text": "Keluar",
+    "source": "48f0d3d397d49f135f116d947a805b49f084f637154a8e9913e7233a11dc16a0"
+  },
+  "accountRows.admin.heading": {
+    "text": "Admin",
+    "source": "c1c224b03cd9bc7b6a86d77f5dace40191766c485cd55dc48caf9ac873335d6f"
+  },
+  "accountRows.admin.console": {
+    "text": "Admin & moderasi",
+    "source": "a89dfdf81e371949454a94701026bd3d66841a0017f1e2e2194b12956149cc56"
+  },
+  "accountRows.native.name": {
+    "text": "Dompet dan node",
+    "source": "c64502e63a4b8edaa2f421cc2159e2ef9bca9a0aafa57105e57e890032cb2b2f"
+  },
+  "accountRows.native.heading": {
+    "text": "Dompet & node",
+    "source": "130fe869926efcc9ad04721a8722c64ee681d0c1cb7c322ce0249f6fce72a837"
+  },
+  "profile.title": {
+    "text": "Profil",
+    "source": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c"
+  },
+  "profile.intro": {
+    "text": "Nama, foto, dan bio kamu, serta apakah halaman publikmu aktif.",
+    "source": "a271f0449c7181f39403a8b531eb364fc7ba5595d1a43c9ab6661d52241caf6c"
+  },
+  "profile.edit": {
+    "text": "Ubah profil",
+    "source": "15c4aa13037eaf52733882a470415c0f5a4afa8490b49dc1712b1f96fc3b1de0"
+  },
+  "username.title": {
+    "text": "Nama pengguna",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "username.intro": {
+    "text": "@handle kamu dipakai untuk masuk dan menjadi alamat halaman pembangun publikmu.",
+    "source": "72596fbeacf2de766c4ee9457bc6eae79b8a75f4f98baa8f7955cdab57d5fadb"
+  },
+  "username.current": {
+    "text": "Saat ini",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "username.newPlaceholder": {
+    "text": "Nama pengguna baru",
+    "source": "0e2b4ad75a90f6f58bdcab37b1297b99e76c4aca6896f6dae6a04b9a1e8549d7"
+  },
+  "username.passwordPlaceholder": {
+    "text": "Kata sandi saat ini",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "username.submit": {
+    "text": "Ubah nama pengguna",
+    "source": "5912b5638f7783e34edb180ddfae070ca1899c7938462d16719a5123594ec178"
+  },
+  "username.rules": {
+    "text": "Huruf, angka, dan garis bawah, 3–32 karakter, agar orang tetap bisa @mention kamu. Handle lamamu tetap dicadangkan untukmu dan tidak dilepas, sehingga tautan dan mention yang memakainya tetap mengarah kepadamu dan tak ada orang lain yang bisa mengambilnya. Kamu bisa mengubah nama penggunamu lagi setelah 30 hari.",
+    "source": "1534a76f937407e5d5bb505222328fbd4fc110a2b02030a1e3bb5519610eeb9d"
+  },
+  "email.title": {
+    "text": "Email & pemulihan",
+    "source": "4ee4c51181215dd5cfd768f9f9a7dfa2a899fa7c972aa850b9715c38d4ee8880"
+  },
+  "email.intro": {
+    "text": "Tautkan alamat email pribadi untuk membantumu masuk kembali ke akunmu. Email ini tidak muncul di profil publikmu.",
+    "source": "cbd3f673d71b25ff4f1a035b22daa8b8b3136e586e94694ee8f49380d5a4d2d0"
+  },
+  "email.loading": {
+    "text": "Memuat email akun…",
+    "source": "fe67ad09b5e18bc040b35c63470ad214f7af89bd58e0958b1c26a5033dd23691"
+  },
+  "email.requestFailed": {
+    "text": "Tidak dapat memperbarui email akun.",
+    "source": "0b0c8b9e7b8bccdbcbbecdc9b4aa394e880470ddbc799726e65152263a88584d"
+  },
+  "email.none": {
+    "text": "Belum ada email yang ditautkan",
+    "source": "754cc606f2c59a67ea75ecf0a227309758bb10a7a996889b9fc067597cf70878"
+  },
+  "email.verified": {
+    "text": "Terverifikasi",
+    "source": "4f7838402f37674e8ebedb6cf048c0aea66bacdb25607aa3eee4b53093d83f5c"
+  },
+  "email.notVerified": {
+    "text": "Belum diverifikasi. Verifikasi di bawah.",
+    "source": "ab2039f434ad3c2d3d66197c75610c93ca2327836957e779dc300243d6eb22e6"
+  },
+  "email.recoveryAllowed": {
+    "text": "Setelah diverifikasi, pakai email ini untuk masuk atau pilih “Lupa kata sandi?” di layar masuk.",
+    "source": "6de309a2fd469ae6d33a9c17dce9fe5437e86e6f216e91e11011a726bfead5e1"
+  },
+  "email.recoveryNotAllowed": {
+    "text": "Akun admin tidak bisa memakai masuk lewat email atau pemulihan kata sandi lewat email. Jaga kata sandimu baik-baik.",
+    "source": "dc4b9774291463d69098de7f09e19d2f15d8970dcd2f4b5029eaf1182a4c2dc6"
+  },
+  "email.verifyPrompt": {
+    "text": "Verifikasi {{email}}. Email kamu saat ini tetap tertaut sampai proses ini berhasil.",
+    "source": "8521576f08be60fc025fb6b91b05ef606b010f59770c5aa4f4f713632542fab0"
+  },
+  "email.codeLabel": {
+    "text": "Kode verifikasi",
+    "source": "3ee75029c70e284c46b5af29eb87592f923e747f460353b02059a645f332b990"
+  },
+  "email.addressLabel": {
+    "text": "Alamat email",
+    "source": "f2488fd4ef4adbc6ac61300083f2c33980e48bb4bbf3c540ad760d61fc36f420"
+  },
+  "email.passwordLabel": {
+    "text": "Kata sandi saat ini",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "email.submit.busy": {
+    "text": "Mohon tunggu…",
+    "source": "4660a983366f710126b2dbf35dd89c7ea89eb7efdbe55b68dede11aa6aef705b"
+  },
+  "email.submit.verify": {
+    "text": "Verifikasi email",
+    "source": "e89a77e7fe58a6d14ffde89db2a9d370d605da0cad4b8df1fa7eec63fb2fac2b"
+  },
+  "email.submit.sendCode": {
+    "text": "Kirim kode verifikasi",
+    "source": "19e86d2b7055340c491f0b37f762a8d1a86969ae1d67ce085f56045f48b55f53"
+  },
+  "email.startOver": {
+    "text": "Ubah email atau minta kode lain",
+    "source": "5dfc237e6224768b254d292369f8d9ecf556346eca76809178f69fa87f86f2f0"
+  },
+  "email.verifiedNotice": {
+    "text": "Email terverifikasi dan terhubung ke akunmu.",
+    "source": "e1921e832861abdbbf213bab3fafd0d08dfdbda411d516af3abbeaf9e740d86f"
+  },
+  "email.codeSentNotice": {
+    "text": "Cek kotak masukmu untuk kode enam digit. Kode kedaluwarsa dalam 10 menit.",
+    "source": "d6f40d8cf962539114c892bb23cb25c4d8887a0a9e060ce90e92ffd78b1721a5"
+  },
+  "password.title": {
+    "text": "Ubah kata sandi",
+    "source": "3f9c991f63a9a376bb02fee8db355879a987ce640654bc66d20b4c6ff2e999be"
+  },
+  "password.intro": {
+    "text": "Atur kata sandi baru untuk login web. Jika admin memberimu kata sandi sementara, masukkan di sini sebagai kata sandi saat ini. Belum punya kata sandi? Buat di sini; sampai saat itu kamu masuk dengan kode yang dikirim lewat email.",
+    "source": "ff7e956c33371225bfd80e39c78f003a644e71fd66b6fcb2c74748d8ef77d5d7"
+  },
+  "password.currentPlaceholder": {
+    "text": "Kata sandi saat ini",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "password.newPlaceholder": {
+    "text": "Kata sandi baru (minimal 8 karakter)",
+    "source": "b4ae3c2a46f9eae8a0b4145ffce243118b18171452f0e118ed6ec45d77a03243"
+  },
+  "password.confirmPlaceholder": {
+    "text": "Konfirmasi kata sandi baru",
+    "source": "bf000421aeb39493cf8044ec73846d7da8ca97b7166208c0d1172a17ba23a388"
+  },
+  "password.submit": {
+    "text": "Ubah kata sandi",
+    "source": "3f9c991f63a9a376bb02fee8db355879a987ce640654bc66d20b4c6ff2e999be"
+  },
+  "password.submitWithWallet": {
+    "text": "Tandatangani & ubah kata sandi",
+    "source": "a94ed0483afad231866585a85419b7d4a8a8dca1d4ee4b027063bdac107e5db4"
+  },
+  "password.useWallet": {
+    "text": "Belum punya kata sandi? Buat sekarang",
+    "source": "d4a22819d483e94a8e2c69ee78753c6176f0d99dcf46e24fe283e37f9d675693"
+  },
+  "password.usePassword": {
+    "text": "Pakai kata sandi saat ini",
+    "source": "c852abcbfd99601048c6235bb17da6ecf8f0dfdc1a183926696ba16cadffab7a"
+  },
+  "deleteAccount.title": {
+    "text": "Hapus akun",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "deleteAccount.intro": {
+    "text": "Anonimkan akunmu dan hapus akses masukmu. Pesan dan kontribusi bersama tetap ada dengan nama anonim “deleted-user”.",
+    "source": "7f60f499b5a8771aa25fb40281ec28739e6a570e5dd2b6ba046ff2cd3b27d562"
+  },
+  "deleteAccount.open": {
+    "text": "Hapus akun…",
+    "source": "619e3be216f367adf3a4514e7c14db9bad5f28e32e8cd85374e1f373b1d67bde"
+  },
+  "deleteAccount.formName": {
+    "text": "Hapus akun",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "deleteAccount.question": {
+    "text": "Hapus akunmu secara permanen?",
+    "source": "79594f2e2cfbf70ffc8d4e8ad5136835e8d9a5dce35dcaf71ff8c8a73a552ec7"
+  },
+  "deleteAccount.deleted": {
+    "text": "Akun dihapus",
+    "source": "5d670c14e5b1964725e22f1130c5bf15611d41d5668e7da420e421837e4eafed"
+  },
+  "deleteAccount.whatIsRemoved": {
+    "text": "Akunmu dianonimkan, bukan dihapus total: nama, email, profil, akses masuk, dan data akun pribadimu dihapus, dan kamu akan keluar dari semua perangkat. Tindakan ini tidak dapat dibatalkan.",
+    "source": "c42108fe17e344061e175eeecd97fb8718d86f0c7044704dd41488c9c445633c"
+  },
+  "deleteAccount.whatStays": {
+    "text": "Pesan, suara, lampiran bersama, dan kontribusi publik tetap tersedia bagi peserta lain dengan nama anonim “deleted-user”. Isinya tetap disimpan, termasuk informasi pribadi yang kamu bagikan di dalamnya.",
+    "source": "7be3ec0d913a541fcb842dc91fd7d0ac23b7102427c200b45b57720f80a1a95e"
+  },
+  "deleteAccount.retention": {
+    "text": "Catatan keuangan dan moderasi yang diperlukan tetap disimpan tanpa tautan ke akunmu. Pembersihan eksternal mungkin butuh waktu lebih lama. Salinan di cadangan, aplikasi lain, GitHub, atau blockchain mengikuti aturan penyimpanannya sendiri.",
+    "source": "d903f070a54a80c6be055a5b8edd7df746981922ac160a243c7ae7ee99c51c56"
+  },
+  "deleteAccount.loading": {
+    "text": "Memuat detail akun…",
+    "source": "135a022f2da6710c381dc1aa6855cb63093b2c3be6457d78a5f2a7b1fd5525f0"
+  },
+  "deleteAccount.loadFailed": {
+    "text": "Tidak dapat memuat detail akun.",
+    "source": "26b8969f6133869d5d7e3d48a8a3da8ff2c7b8897872c352e9761155a8022c35"
+  },
+  "deleteAccount.connectionError": {
+    "text": "Periksa koneksimu dan coba lagi.",
+    "source": "481859b689b0d0d9de1e27b3a0a25004f32d7624f412f8f80e0188cb3e3d54f2"
+  },
+  "deleteAccount.passwordLabel": {
+    "text": "Kata sandi saat ini",
+    "source": "72ed2bd767cef62711f4293e17fef76dfe2858fe169db0a6b5c757193d45aa0c"
+  },
+  "deleteAccount.recentSignIn": {
+    "text": "Demi keamanan, keluar lalu masuk lagi jika kamu masuk lebih dari 10 menit lalu.",
+    "source": "210573d4869779bcfdcb0ddf1862649ca4bdee7a41939ba7b73281d4cd0cb7c8"
+  },
+  "deleteAccount.confirmLabel": {
+    "text": "Ketik {{word}} untuk mengonfirmasi",
+    "source": "d6bd17ddfcd028b5970c9cdaf8a5ebe214756ead0cb3fe3566896b6d1c055981"
+  },
+  "deleteAccount.submit": {
+    "text": "Hapus akunku secara permanen",
+    "source": "e65fb685d8ada175704517ed367c752c874543db77394a9be126a8676df02c45"
+  },
+  "deleteAccount.submitting": {
+    "text": "Menghapus…",
+    "source": "43b5894c3e4e2b24f13c935f4fae0a0a8fbe7d7792750a09b88c2097fd9a32b8"
+  },
+  "deleteAccount.failed": {
+    "text": "Gagal menghapus akun.",
+    "source": "4ab5c712b023d5ee4e370e5c460d003bf5aa2dc14252b2a41e5b2693f40d493e"
+  },
+  "deleteAccount.signOutFailed": {
+    "text": "Akunmu sudah dihapus. Coba keluar lagi untuk membersihkan perangkat ini.",
+    "source": "a68357ed68bcd3fb715fbf07ab4137358940e6c77c515d84b33b7ea2af4b7c57"
+  },
+  "deleteAccount.finishSignOut": {
+    "text": "Selesaikan keluar",
+    "source": "dad9ac67f3f0869ac46751cc23cdf9854b631daff3619cc9292d496c7c42850c"
+  },
+  "wallet.title": {
+    "text": "Homeroom Wallet",
+    "source": "6e5f658a2e1a4ba0bc4706d148631db941b521a296aa2a4abcd51c5ded8432cc"
+  },
+  "wallet.intro": {
+    "text": "Hubungkan identitas on-chain-mu. Pindai kode QR dengan aplikasi seluler Homeroom.",
+    "source": "3d798ec2fd20f8d9e6aa7734e9e12fc7cc707fedaa6d60a9d7c809bf12e7e59b"
+  },
+  "wallet.link": {
+    "text": "Hubungkan Homeroom Wallet",
+    "source": "ad511b146971eed8f742ca5b8da754dc00292f62c350af3b4ab67784bf99bc0b"
+  },
+  "agentFiles.title": {
+    "text": "Instruksi & skill agen",
+    "source": "7c5c797501a2f24ebef712d1c00661d32cc0cdfe593764d603e218cdf1af65c4"
+  },
+  "agentFiles.intro": {
+    "text": "File pribadi yang diikuti agen pemrograman setiap kali kamu memulai proses build atau penyusunan rencana, di aplikasi mana pun. Hanya markdown atau teks biasa, maksimal 10 per jenis, 48 KB per file. Perubahan berlaku mulai proses berikutnya.",
+    "source": "cf3350261b7051471ec22dcf9a2c28951b85cb8f261699d162c8a060f662911d"
+  },
+  "agentFiles.instructions.heading": {
+    "text": "Instruksi",
+    "source": "934652dce41d62d3c9ff34b2c5e44e3addaedc67d6137328a9fe75a63c51dbac"
+  },
+  "agentFiles.instructions.upload": {
+    "text": "Unggah",
+    "source": "865e89de78d94c747184d6a7e6f5244b453d8062343c07e014ae698cfb0260e8"
+  },
+  "agentFiles.instructions.empty": {
+    "text": "Belum ada file instruksi. Unggah file markdown untuk memandu agen pemrograman di setiap build yang kamu mulai.",
+    "source": "40f9b6a274d91869af593797da914d40317356e1abde830f2ad07dc92e9335a2"
+  },
+  "agentFiles.skills.heading": {
+    "text": "Skill",
+    "source": "66d0f523a379b2de6f8d5fba3a817ebc395f7bcaa54cc132ca9dfa665d1e9378"
+  },
+  "agentFiles.skills.upload": {
+    "text": "Unggah",
+    "source": "865e89de78d94c747184d6a7e6f5244b453d8062343c07e014ae698cfb0260e8"
+  },
+  "agentFiles.skills.empty": {
+    "text": "Belum ada skill. Unggah file skill yang bisa dipakai agen saat membangun untukmu.",
+    "source": "8f37bfc2c9fe689ccd3c0592c5a7e480c4be7ac3ec78ddde0a8528e68351f028"
+  },
+  "agentFiles.form.nameLabel": {
+    "text": "Nama",
+    "source": "dcd1d5223f73b3a965c07e3ff5dbee3eedcfedb806686a05b9b3868a2c3d6d50"
+  },
+  "agentFiles.form.descriptionLabel": {
+    "text": "Deskripsi",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "agentFiles.form.descriptionPlaceholder": {
+    "text": "Satu baris: fungsi skill ini",
+    "source": "5e8fbb47abada358ebd0be46439c084e375f8afefddd881bc7370ab828732c6b"
+  },
+  "agentFiles.list.loadFailed": {
+    "text": "Gagal memuat file agenmu.",
+    "source": "09624deb20f7162ad6673156d89662de26262804a6770b67b265528a068e2202"
+  },
+  "agentFiles.file.size": {
+    "text": "{{size}} KB",
+    "source": "1d772587be1b96d4cb1ab70f2302a660f5123daa79f22edebec15409c0f8dcb5"
+  },
+  "agentFiles.file.view": {
+    "text": "Lihat",
+    "source": "dcc839a4015c4b7dd9db959a8f757833b8adb92462a751b973386e453c6d58a3"
+  },
+  "agentFiles.file.hide": {
+    "text": "Sembunyikan",
+    "source": "ac20a57bfde0bbc40bfe70895eb1cfacc944aaff06ca784053623c569b3e1b3d"
+  },
+  "agentFiles.file.viewName": {
+    "text": "Lihat {{file}}",
+    "source": "fbd892c1fb170832d080fda1f43d3e75bd5e5dfd27b03244db778476400956d2"
+  },
+  "agentFiles.file.hideName": {
+    "text": "Sembunyikan {{file}}",
+    "source": "92ea53352a639ed81083f24671b09e1340dbb6b97727aea0143dd406b79d5b06"
+  },
+  "agentFiles.file.delete": {
+    "text": "Hapus",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "agentFiles.file.deleteName": {
+    "text": "Hapus {{file}}",
+    "source": "069ba581500b88b33c8a8594b91159f4a1aabe5e606ff7f980893b6a98045491"
+  },
+  "agentFiles.file.loading": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "agentFiles.file.emptyContent": {
+    "text": "(kosong)",
+    "source": "d29a0939bcb51176dd565a5e2d33214ce5204806b384bd80a72cb40861cdc7b9"
+  },
+  "agentFiles.file.loadFailedReason": {
+    "text": "Gagal memuat: {{reason}}",
+    "source": "79d037c97512a29e464da58369b57ee2589722f33f928c4ce1845ecef43d6f4c"
+  },
+  "agentFiles.file.loadFailed": {
+    "text": "Gagal memuat: pengambilan gagal",
+    "source": "1d91b9911ffc7b9e35cd945e9beb61e3684eab4362a246f58846811d1e4db9d5"
+  },
+  "globalChat.title": {
+    "text": "Global Chat <0>(eksperimental)</0>",
+    "source": "abba10de894a6763d08875c127ca41afb5b9d5ffd9919566bcb0b29ddefa98b0"
+  },
+  "globalChat.intro": {
+    "text": "AI cepat dan hemat biaya untuk menjelajah dan memakai Homeroom. Pekerjaan pengembangan punya pengaturan model dan penalaran sendiri.",
+    "source": "6284220efb06b83941dda036e13bb1b5fca8e9aecbe8381c449d155d4b77ee50"
+  },
+  "globalChat.loadFailed": {
+    "text": "Pengaturan Global Chat tidak dapat dimuat.",
+    "source": "b1ed417acf0ea3aa2bbe4dc83754125bf7f59437edb256d84b809a1c33204789"
+  },
+  "globalChat.modelsLoadFailed": {
+    "text": "Model yang kompatibel tidak dapat dimuat.",
+    "source": "e7d3d9ee7b6c979b9ba9a14f55a9064cc15d59e6e172f0d9cf71ea8e965173d1"
+  },
+  "globalChat.chooseModelFirst": {
+    "text": "Pilih model yang kompatibel dulu.",
+    "source": "83918e8cc6bf3d1c2685d1aeeadee3eca77c220f29feed3f910a13dc2562b2a8"
+  },
+  "globalChat.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "globalChat.saveBusy": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "globalChat.saved": {
+    "text": "Pengaturan Global Chat tersimpan.",
+    "source": "3fb241407a472de6e974192e4e7b1a28ed2fb37d6683b8b5e2e3faf68bf80444"
+  },
+  "globalChat.saveFailed": {
+    "text": "Pengaturan Global Chat tidak dapat disimpan.",
+    "source": "269bb313a4b7a441b91b2027787f3e551fb86558c296e3cdd54b9589235ae142"
+  },
+  "globalChat.enabledNotice": {
+    "text": "Global Chat eksperimental diaktifkan.",
+    "source": "48d8e666284ebb18e5fac86519617d0b90e2fcac282fecfdecc442b3406123de"
+  },
+  "globalChat.disabledNotice": {
+    "text": "Global Chat eksperimental dinonaktifkan.",
+    "source": "f7df9614276d9fc289dd6babf1f4e78b52338e3c9f1ffbb3d61d2607bad72c31"
+  },
+  "globalChat.toggleFailed": {
+    "text": "Global Chat tidak dapat diperbarui.",
+    "source": "b4b1a660bbbd82953b6b64f2e38bf4c1642fbe48e096fb49ae5d17587706ce91"
+  },
+  "globalChat.enable.label": {
+    "text": "Aktifkan Global Chat eksperimental",
+    "source": "f6baece434d8d5a0eb441c4851ad7d25929b8aed1d45259bc89560558d610ac8"
+  },
+  "globalChat.enable.description": {
+    "text": "Tampilkan percakapan Global Chat kamu di Pesan. Klasik tetap menjadi tampilan bawaan.",
+    "source": "147d8909e53ff1b2c061c2e83f04a358967822965bfe49e262ace271904fe417"
+  },
+  "globalChat.needsKey.text": {
+    "text": "Tambahkan atau klaim kunci OpenRouter sebelum memilih model Global Chat.",
+    "source": "f95349478723c1311ff3e9c230c01d6d36b656689066c8508df7ca607900e4a1"
+  },
+  "globalChat.needsKey.open": {
+    "text": "Buka pengaturan OpenRouter",
+    "source": "43a49afc3547fbf162ce73fb5092dfe6d54491d6c3fd10e3996d6c988edfec13"
+  },
+  "globalChat.model.label": {
+    "text": "Model Global Chat",
+    "source": "0f65a60c5747693afacf2aa069914f251b1a6ec18d132b72682ac909eb7b25bb"
+  },
+  "globalChat.model.optionPriced": {
+    "text": "{{model}} · {{price}}",
+    "source": "ec4e1cd6a09d6c1ecce75fa1221c23af6da061e3888bf424ef9215b04b764623"
+  },
+  "globalChat.model.optionRecommended": {
+    "text": "{{model}} · Disarankan",
+    "source": "420ba63cbefaf0627a7828685eed59334100ea636fa4cd760693232dfda57db5"
+  },
+  "globalChat.model.optionRecommendedPriced": {
+    "text": "{{model}} · Disarankan · {{price}}",
+    "source": "edf690bdb83c0703632329eb05ac497ccb853d8af39b609ab525852417ddcc25"
+  },
+  "globalChat.model.priceAverage": {
+    "text": "{{price}}/M rata-rata",
+    "source": "475fe5df1c38b899a0b4d1e9f6f60cb619c02c23912c23598358c42cac6dacb7"
+  },
+  "globalChat.model.priceInOut": {
+    "text": "{{input}} masuk · {{output}} keluar /M",
+    "source": "83532d0ba7a46aacf25f71a922ba3dfdd82ff7104de44aedf2397deae98fa61d"
+  },
+  "globalChat.model.selectedPriced": {
+    "text": "{{modelId}} · {{price}}",
+    "source": "a4f4d82a83173116f2906530bdebdb52fbe8ad3aa9ed39a9032fca7ed3fc5f9c"
+  },
+  "globalChat.model.refresh": {
+    "text": "Segarkan",
+    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
+  },
+  "globalChat.effort.label": {
+    "text": "Tingkat penalaran",
+    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
+  },
+  "globalChat.effort.low": {
+    "text": "Rendah · disarankan untuk GLM Flash",
+    "source": "0ff85ed61f6308f34d856b5ef768209133d52d33facac0d6c2fd35d02f2aa292"
+  },
+  "globalChat.effort.minimal": {
+    "text": "Minimal · hanya untuk model yang mendukung",
+    "source": "a81c4df1b139470d5e8fc57864ad75aa5a8b8ac9fb080a9e32f764700496731c"
+  },
+  "globalChat.effort.medium": {
+    "text": "Sedang",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "globalChat.effort.high": {
+    "text": "Tinggi",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "globalChat.effort.xhigh": {
+    "text": "Sangat tinggi",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "globalChat.cap.label": {
+    "text": "Batas Chat bulanan dalam USD · opsional",
+    "source": "9b91ea1979a91bfe1c45af0b20172a6184e9359f680962253f0105b90c3babd3"
+  },
+  "globalChat.cap.placeholder": {
+    "text": "Tanpa batas terpisah",
+    "source": "7f5111c6b1afaf0db6e95d1acce55712f37531b3ab019a2bfb74eaf7f9692a0b"
+  },
+  "globalChat.usage.thisMonth": {
+    "text": "Global Chat bulan ini",
+    "source": "1fe5240043650878d5c82531f9ae0c57e439295bba69b99bed9b69197e7e321d"
+  },
+  "globalChat.usage.spentOfCap": {
+    "text": "{{spent}} / {{cap}}",
+    "source": "df46c8177fbe1a80de57eb4071eaec1566e27ca0cef7bc0d5dd9ea4bc520b5b3"
+  },
+  "globalChat.usage.overallRemaining": {
+    "text": "Sisa OpenRouter keseluruhan",
+    "source": "11be62abd3d3d8866abde178e63eee0f741a1f1bca0dcdcb2259943b6f82cf27"
+  },
+  "globalChat.usage.unavailable": {
+    "text": "Tidak tersedia",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "globalChat.save": {
+    "text": "Simpan pengaturan Global Chat",
+    "source": "604bc43266773fe4868a0f04ac6102ff75b71fcece78c096b87bdd921f872725"
+  },
+  "globalChat.developmentSettings": {
+    "text": "Pengaturan AI pengembangan",
+    "source": "f0ae8065330894efbf3c11325b335034a2fa92495dc4905e0c91e851c423cf7b"
+  },
+  "globalChat.footnote": {
+    "text": "Klasik selalu menjadi mode awal. Profil ini hanya mengatur Global Chat; sesi pengembangan punya pengaturan bawaan sendiri.",
+    "source": "221f905cc84e5ade6ce877d72f56f6d51c7f04f1fc5910e2aacb317286146585"
+  },
+  "experimental.title": {
+    "text": "Eksperimental",
+    "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
+  },
+  "experimental.intro": {
+    "text": "Fitur awal yang masih kami uji. Fitur ini bisa berubah atau hilang.",
+    "source": "18b10e0c90e42ba4507868d4659f759c77b4dcf216b2553847b762f5247d188a"
+  },
+  "experimental.progressEstimate.label": {
+    "text": "Perkiraan progres AI",
+    "source": "84af6dff632097de226153424720c09feb5cfa871f85400e8c08c7317eaf6a61"
+  },
+  "experimental.progressEstimate.description": {
+    "text": "Saat agen pemrograman bekerja, model AI kecil membaca sekilas log progresnya sekitar semenit sekali, lalu menebak sudah sejauh mana dan kira-kira berapa lama lagi. Perkiraan ini dikalibrasi dari lamanya proses nyata, tapi tetap tebakan dan bisa meleset. Ada biaya kecil per proses (ditagihkan ke kunci API milikmu jika sudah kamu simpan di atas).",
+    "source": "c1f62fff4a572c4018e74b5785f02dbe206eadd3c2bb5a781145e6514c605562"
+  },
+  "experimental.sessionBridge.label": {
+    "text": "Jembatan sesi (jalankan obrolan ini di komputermu)",
+    "source": "a7de0058b64e2182c8ef7fe6094e0fc78e932853d777942b58e8101f56bc3c4f"
+  },
+  "experimental.sessionBridge.description": {
+    "text": "Menambahkan <0>Komputermu · Sesi Homeroom</0> ke daftar tempat sesi bisa dibangun. Obrolan platform tetap sama persis, dengan transkrip, cabang, dan usulan yang sama, tetapi giliran-giliran kerjanya berjalan lewat CLI Homeroom di mesinmu sendiri, memakai paket Claude milikmu. CLI harus sudah terpasang dan terhubung, jadi ini tetap mati sampai kamu menyalakannya.",
+    "source": "8e3af0c1eee69f920bc02d4624267865c7c46323eb3d86aa7809d596e9d405fc"
+  },
+  "experimental.suggestShortcut.label": {
+    "text": "Tekan C untuk berkomentar di halaman",
+    "source": "d72166ab9f7c2c20f4a40ca0a5d5538c88aa10148c27037c4fc3c893c83a9808"
+  },
+  "experimental.suggestShortcut.description": {
+    "text": "Saran perbaikan membuka mode komentar, dan di komputer menekan C juga bisa. Klik atau ketuk apa saja, tulis apa yang perlu diubah, lalu kirim: itu menjadi saran dengan tangkapan layar halaman dan pinmu di atasnya. Tambahkan komentar lain ke saran yang sama, atau kirim satu per satu, lalu tekan Selesai. Formulirnya tinggal satu pengaturan lagi. C tidak berfungsi saat kamu mengetik atau memilih teks, atau saat layar atau aplikasi yang kamu pakai menggunakan C untuk hal lain. Hanya disimpan di perangkat ini.",
+    "source": "a793f6d835dee650388699852153b4b3d9dc4aedc9adbc491311f8e121460340"
+  },
+  "experimental.localAgents.title": {
+    "text": "Agen pemrograman lokal",
+    "source": "c95fa2257a953a1b13dbb49d8a8019540a22d8eab3142ef4280192fc5e43d8e7"
+  },
+  "experimental.localAgents.intro": {
+    "text": "Mesin yang menjalankan <0>{{command}}</0>. Selama terhubung, giliran rencana dan pemrograman sesi itu berjalan di sana dengan langganan Claude milikmu, bukan di Homeroom. Setiap giliran meminta persetujuan di terminalmu sebelum mulai; giliran rencana hanya-baca, dan setelah giliran pemrograman Homeroom tetap membuka pull request, membangun pratinjau, dan menjalankan pemeriksaan. Jika diputus, giliran berikutnya kembali ke Homeroom.",
+    "source": "487761a456cc783c9e57dcfd66822c5a47fac9117f701eed415c484afeccb3ad"
+  },
+  "theme.title": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "theme.intro": {
+    "text": "Terang, gelap, atau ikuti perangkatmu. Berlaku di semua tempat di browser ini.",
+    "source": "8ded12ce9f66fde3990387653db857cbd2fe58ad24bc826a4b50f68af3093995"
+  },
+  "theme.controlName": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "theme.mode.light": {
+    "text": "Terang",
+    "source": "dbcd5e7bb7a0f538810de44c3efbd813037ee3fa358747bb71fa58e157af45f7"
+  },
+  "theme.mode.dark": {
+    "text": "Gelap",
+    "source": "60acc53f13a5d1bf115878c4a785e9a43e8286c4139a8402a6ac7d23966f9153"
+  },
+  "theme.mode.system": {
+    "text": "Sistem",
+    "source": "6725e7bbcd28f3a8a586fa34bf191fd72dde8b61756932cd3237c17a6f196f1a"
+  },
+  "theme.railPinned.label": {
+    "text": "Biarkan bilah samping terbuka di aplikasi",
+    "source": "2706db127a5a91fd0e60dfcd5021df0683f1573152a1492b301e75f38c7d4ccf"
+  },
+  "theme.railPinned.description": {
+    "text": "Saat mati, aplikasi yang kamu buka memenuhi seluruh jendela dan bilah sisi muncul lagi saat kamu mengarahkan kursor ke tepi kiri. Saat nyala, bilah sisi tetap ada di sampingnya.",
+    "source": "636cdcbec82ae421472e549c8e08def1df05b5acd90f38a68def75a73ebc3662"
+  },
+  "devConsole.title": {
+    "text": "Konsol pengembang",
+    "source": "2ef15ac2866f955969bde655eb39df64da0e817fea9297c29e2022c9e32b6de0"
+  },
+  "devConsole.intro": {
+    "text": "Ikon serangga di header membuka log geser ke atas berisi keluaran konsol dan error dari aplikasi yang sedang berjalan.",
+    "source": "3b19f54f543905990de396241b9cc74ac1c5e101e0a8cf80b65ba15ab1050351"
+  },
+  "devConsole.alwaysShow.label": {
+    "text": "Selalu tampilkan ikon",
+    "source": "40f2992775263dd2c1bff5333be5c74d2bcd66ff8cd5e0e804458f387b4ab3fb"
+  },
+  "devConsole.alwaysShow.description": {
+    "text": "Jika tidak dicentang (bawaan), ikon baru muncul setelah aplikasi saat ini mencatat setidaknya satu error.",
+    "source": "55e66c8b804429aa2fa7c042e8a9abe3bef6046826afb27d07263521cd67f8d6"
+  },
+  "adminPreview.title": {
+    "text": "Pratinjau admin",
+    "source": "a702a4e31bd03d35c641ca5af59492fff364395d8d00694fff2458aa098171e9"
+  },
+  "adminPreview.intro": {
+    "text": "Sembunyikan tampilan khusus admin agar aplikasi terlihat seperti yang dilihat pengguna biasa. Berguna untuk menemukan masalah UX yang hanya dialami non-admin.",
+    "source": "446e57c8bf88c10a8addfcc2d2a56f99c7074470cd564289555f95ef9fb72ee6"
+  },
+  "adminPreview.toggle.label": {
+    "text": "Lihat sebagai non-admin",
+    "source": "970e2f82bb23512903deed9e908d51ab4a2c3686182a7f15d9eec44eecb57261"
+  },
+  "adminPreview.toggle.description": {
+    "text": "Ini hanya pengaturan tampilan di sisi klien, jadi hak admin kamu di server tidak berubah. Halaman akan dimuat ulang agar seluruh tampilan ikut berubah.",
+    "source": "be71b26ead92aeafd7ab635568161e5ce741b940088f803e267c68eb6b2be00b"
+  },
+  "alerts.title": {
+    "text": "Suara & peringatan sesi agen",
+    "source": "a3b208e8f3048cca2ccd81e9be817c062d0ea465af1431e0ae2f42064d5377c2"
+  },
+  "alerts.intro": {
+    "text": "Dapatkan pemberitahuan saat sesi agen selesai dan menunggu balasanmu.",
+    "source": "4bbe7c095151e5cdfe09c970a7ec24017d154f117ef8b8c484bc10a9044518b5"
+  },
+  "alerts.toggle.label": {
+    "text": "Putar suara, dan beri tahu aku saat aplikasi di latar belakang",
+    "source": "cdbb5cda3a58e96115e2ee2ba87e22b8a6b6817591522c940f68ee940af3d7ca"
+  },
+  "alerts.toggle.description": {
+    "text": "Saat kamu berada di aplikasi, bunyi lonceng lembut diputar. Browser bisa menampilkan notifikasi selama tabnya tetap terbuka. Untuk menerima notifikasi push saat aplikasi seluler di latar belakang atau ditutup, aktifkan Notifikasi aktivitas di ponselmu dan Sesi agen di bawah. Pengujian ini mengantrekan push ke ponsel dengan jeda 10 detik agar kamu sempat berpindah.",
+    "source": "c11cd6dff182bc73a64315604423fabd0fc364153216ca450190f5092e071761"
+  },
+  "alerts.test": {
+    "text": "Kirim peringatan uji coba",
+    "source": "38875c4ca7f00bd25da87570ba85bffa0699b975e6adf7901b4dff4f0c1de8b8"
+  },
+  "alerts.push.title": {
+    "text": "Kategori push seluler",
+    "source": "5299ed9533b4ef42d490d07f8a59d81274759fd0a8a483af80b0278e36b87039"
+  },
+  "alerts.push.intro": {
+    "text": "Pilih aktivitas Sosial mana yang boleh mengirim notifikasi ke ponsel. Sakelar Notifikasi aktivitas di ponselmu tetap menjadi kontrol utama untuk perangkat itu.",
+    "source": "a89f2a23181c4d73a657b576a64be0775f6a676e2e47c55f721a110a735443b8"
+  },
+  "alerts.push.loading": {
+    "text": "Memuat preferensi push seluler…",
+    "source": "21318fa1e6fb90a3d4b8d08d3e52f9bdc97a261b6386ec91964520a7805aa097"
+  },
+  "alerts.push.messages.label": {
+    "text": "Pesan",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "alerts.push.messages.description": {
+    "text": "Undangan percakapan, pesan, sebutan, balasan, dan reaksi.",
+    "source": "de866d23f9b2e802e80e963a65c9e7121ca5c7b18e7fbecb3766ba716177244a"
+  },
+  "alerts.push.builds.label": {
+    "text": "Buildmu",
+    "source": "a12302d2ed554590a2325f03a6bdfd13083d38d8d177798fe9ff43226249e988"
+  },
+  "alerts.push.builds.description": {
+    "text": "Saat sesuatu yang kamu minta dari Homeroom bot siap dicoba, butuh jawabanmu, berhenti, atau tayang.",
+    "source": "6447121649ea00349b8a6d96be25343221830127cb2f64986ac4b6c04e0f8978"
+  },
+  "alerts.push.inviteActivity.label": {
+    "text": "Undanganmu",
+    "source": "7006e7bfc8a75c13fbe64f104ff1a9c18045aa96198a2f52e0e805f95d9b1ba3"
+  },
+  "alerts.push.inviteActivity.description": {
+    "text": "Saat seseorang membuka tautan undanganmu, bergabung lewat tautan itu, atau menyapa untuk pertama kali.",
+    "source": "7696ba4dad2fc449d5c4abbf97ab645a286f0e180f8cb8564faf13b186e680ef"
+  },
+  "alerts.push.directInteractions.label": {
+    "text": "Interaksi langsung",
+    "source": "b9c5c9e683a1863c89323f705e1ccdfc49050430c0b1632225921f947fed8ee7"
+  },
+  "alerts.push.directInteractions.description": {
+    "text": "Sebutan dan balasan untuk pesanmu.",
+    "source": "05c2c01d1b2800522f25f6a7365e92f0999d3ab969d0b76f94e21016d37ec2d2"
+  },
+  "alerts.push.invitations.label": {
+    "text": "Undangan",
+    "source": "14210e691c877f6338e6d6cb29e38ab22e9400ff20e8b4c0bd25d72efc9e0131"
+  },
+  "alerts.push.invitations.description": {
+    "text": "Undangan kolaborasi dan penyetuju, termasuk saat undanganmu diterima.",
+    "source": "c8b22a2b22f5769d40c93a56bbc361361abefaaace62be54268e4a50aef4bc1f"
+  },
+  "alerts.push.sharedWork.label": {
+    "text": "Karya bersama",
+    "source": "0189670d3c17510b8a7e2972e75a8295195ae05fab2b7e48b33a971e5a0f8c7e"
+  },
+  "alerts.push.sharedWork.description": {
+    "text": "Rencana yang dibagikan seseorang secara pribadi kepadamu.",
+    "source": "f51d744b1268288a94e08dce0e567acb903cbd752547b79cca685504d8bc4228"
+  },
+  "alerts.push.developerSessions.label": {
+    "text": "Sesi agen",
+    "source": "1cd9b23c49955617ab09ea8f61e699b709c699704366f6626685f776fcc5ede7"
+  },
+  "alerts.push.developerSessions.description": {
+    "text": "Sesi agen dan proses tanpa pengawasan yang selesai saat kamu sedang tidak ada.",
+    "source": "5b108b9cdf45add912557e1c4b08bef56eca9f75fa0399ea15965ff9d2fdb96e"
+  },
+  "alerts.push.proposalAlerts.label": {
+    "text": "Peringatan perubahan",
+    "source": "78f9e84a7bd8796015b5df94236f9351f00a22a890e5490008e15eae9367f2d1"
+  },
+  "alerts.push.proposalAlerts.description": {
+    "text": "Perubahan yang perlu perhatian, pratinjau yang gagal, perubahan baru yang menunggu persetujuan, serta suara untuk perubahanmu atau perubahanmu yang tayang.",
+    "source": "a52ba2e03af5d45633a7c79f87aeef0e73dd61263d09860e6562811b62038246"
+  },
+  "alerts.push.appAlerts.label": {
+    "text": "Peringatan aplikasi",
+    "source": "33afdfb05fd9889d774a1a3759eae5f766892cfcbb55e0c7a36015febd5b0e9d"
+  },
+  "alerts.push.appAlerts.description": {
+    "text": "Isu baru pada aplikasimu, dan aplikasi yang berhenti berfungsi.",
+    "source": "fafb4108312e74d3cc950d8e26be46ba11bd79fa3673c48681d98bb1b89b312e"
+  },
+  "alerts.push.lightweightActivity.label": {
+    "text": "Aktivitas ringan",
+    "source": "da19281248ad37bd389325fd09484939c0f7b6043098e9dc8db7be193f7f125c"
+  },
+  "alerts.push.lightweightActivity.description": {
+    "text": "Reaksi dan apresiasi untuk karyamu.",
+    "source": "60d186d5e09099c5ff3258bd2f9dbd61e82160baf89941b4ec2ce22f471db8fa"
+  },
+  "alerts.apps.title": {
+    "text": "Hal yang diberitahukan aplikasi",
+    "source": "0cb37f87029183f6b206cd7d30523454378aa67c5224142d431000014b36983a"
+  },
+  "alerts.apps.intro": {
+    "text": "Pengaturan bawaanmu untuk semua aplikasi, dan aplikasi yang kamu atur berbeda. Tiap pengaturan ini mencakup lonceng di sini dan notifikasi di ponselmu sekaligus. Ubah satu aplikasi lewat menu Notifikasi di menu aplikasi.",
+    "source": "6b763540dfc196f849bf6bc424e517d4c30d29085ac8f782f51167854324f8ce"
+  },
+  "alerts.apps.loadFailed": {
+    "text": "Tidak dapat memuat pengaturan notifikasi.",
+    "source": "9b7eaff0315856f59f255dbcb7c7cc8c67091b7a59800c6a719cb50636731fb5"
+  },
+  "alerts.apps.overridesHeading": {
+    "text": "Aplikasi dengan pengaturan berbeda",
+    "source": "f8de2a665ea92ffc41e8b3460f3eb2e5208777866f13863ae2546e95e82992c8"
+  },
+  "alerts.apps.useDefaults": {
+    "text": "Pakai pengaturan bawaanku",
+    "source": "1b232808fbf471c4c362636af95c949f530253ff04a27ef1a20b9ac7cf295d0d"
+  },
+  "alerts.apps.categoryOn": {
+    "text": "{{category}}: nyala",
+    "source": "461e3dec6d3ecb1195383d80538b1dee9fa80b494db2f8bd02d5b5c26dde25c7"
+  },
+  "alerts.apps.categoryOff": {
+    "text": "{{category}}: mati",
+    "source": "cf9d99848cff27926bdae8cc9ce26872fab3879a4576158835a5abb92b2b7e4e"
+  },
+  "alerts.apps.noOverrides": {
+    "text": "Tidak ada aplikasi dengan pengaturan berbeda. Ubah lewat menu Notifikasi di menu aplikasi.",
+    "source": "0ae74d774fe6a591dda51c4a635802fa8cf57b6a516a308c5f55f7b69516030f"
+  },
+  "appPermissions.title": {
+    "text": "Izin perangkat aplikasi",
+    "source": "bad62fc7e4a90fc30d7fe53e407cd68e14bf9787b838314525a9530e033fd2d6"
+  },
+  "appPermissions.intro": {
+    "text": "Aplikasi yang kamu izinkan memakai lokasi, mikrofon, kamera, layar, atau perangkat yang terhubung. Izin diminta terpisah untuk tiap aplikasi, dan hanya aplikasi yang kamu beri izin yang mendapatkannya. Pencabutan berlaku saat aplikasi dibuka lagi, karena aplikasi yang sedang berjalan tetap memegang izinnya sampai saat itu.",
+    "source": "eeb288bedcb4e59f3f68e8f6c56bca5703b90c6420937ace4141bebf921aa87e"
+  },
+  "appPermissions.loadFailed": {
+    "text": "Tidak dapat memuat izin aplikasi.",
+    "source": "65968b172dd7e70bdf1ceb70d8cdd1c67be40361d6805b21e87c02c82031aa45"
+  },
+  "appPermissions.empty": {
+    "text": "Belum ada aplikasi yang meminta kamera, mikrofon, lokasi, atau perangkatmu.",
+    "source": "b84a618b131011069e54805af73a350861895121c6ce1a5fb9858a012256eba8"
+  },
+  "appPermissions.reEnable": {
+    "text": "Aktifkan lagi",
+    "source": "63de421725fe824d9997872b1130d48e684b08da4b2784054049002f95684303"
+  },
+  "appPermissions.revoke": {
+    "text": "Cabut",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "blockedApps.title": {
+    "text": "Aplikasi diblokir",
+    "source": "adfc2938bb4bd50b3e53274304411071a4b7e2134037fa833fbffec96289296b"
+  },
+  "blockedApps.intro": {
+    "text": "Aplikasi yang diblokir disembunyikan dari daftar aplikasi dan penemuanmu, tidak bisa dibuka di Homeroom, dan tidak mengirimimu notifikasi. Pembuat dan kontributornya tidak terpengaruh.",
+    "source": "f9d2eb467e3345b202ddb0898707bd612b6a36c83ba920ad35e51249620a5169"
+  },
+  "blockedApps.loading": {
+    "text": "Memuat aplikasi yang diblokir…",
+    "source": "2268173d3a0f47c36a72ce301b2577fab81befbcb53d40d93040d145372ec9d1"
+  },
+  "blockedApps.loadFailed": {
+    "text": "Tidak dapat memuat aplikasi yang diblokir.",
+    "source": "53f0be5fd325d0ac94d455d2398457c0ce721ae1e152da47e1e5eb095d420a90"
+  },
+  "blockedApps.empty": {
+    "text": "Kamu belum memblokir aplikasi apa pun.",
+    "source": "6bf9fcd0f2f25859096515178829013d67216e8d74e8b251bc6c4e9142fa12d0"
+  },
+  "blockedApps.unblock": {
+    "text": "Buka blokir",
+    "source": "712da63171e0c9de0e1523438c5a0240ce765b722769f1df0df6975339263025"
+  },
+  "blockedApps.unblocking": {
+    "text": "Membuka blokir…",
+    "source": "b9c165b383c7488c6dc82603a16c506b976f56b49b3e8aa96095a0e435c46851"
+  },
+  "blockedApps.unblockFailed": {
+    "text": "Tidak dapat membuka blokir aplikasi ini.",
+    "source": "7ffb7448bc8f8601edef74dcf4da89beb5c5e6ab8c4829f1ddd8abdf8d72a87f"
+  },
+  "tour.title": {
+    "text": "Tur selamat datang",
+    "source": "5155b98763c0fef9af78ae62741da215496c6dfeecb258e4c3c141b9a9ddd632"
+  },
+  "tour.intro": {
+    "text": "Tur singkat satu menit melihat aplikasimu dan menu Homeroom.",
+    "source": "d8be7f27758b86f26077b683d233751e01fc481ebc0221be9cc6a5f098dc6f42"
+  },
+  "tour.replay": {
+    "text": "Putar ulang tur",
+    "source": "dc494df1b50a21c549d23f6381fd6f0535d873008c33b1980d581b8b4cbaa59d"
+  },
+  "tour.hint": {
+    "text": "Tur dimulai lagi di layar utamamu.",
+    "source": "1036e65e88675e84b6d56b75806f456a0e0ef9ba695ecc58f258b21bfe681541"
+  },
+  "about.title": {
+    "text": "Tentang",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "about.intro": {
+    "text": "Build mana dari tiap bagian platform yang sedang kamu jalankan.",
+    "source": "271079cc8691c46a080745057999ad36f3d47e7a55fb3f2c22a88b0b6e9aa9e8"
+  },
+  "about.appVersion.label": {
+    "text": "Versi aplikasi",
+    "source": "80a7db3b236f581269594eb3b04938db79c003f03104cd04fa57ee1f69d8b8e1"
+  },
+  "about.appVersion.deploying": {
+    "text": "sedang dirilis…",
+    "source": "9664572e6e067431fe401363144ee80698d7c7224e270b9e61e0868ce4dec55a"
+  },
+  "about.appVersion.unknown": {
+    "text": "tidak diketahui",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "about.platformVersion.label": {
+    "text": "Versi platform",
+    "source": "87a77f7b207934b3aaba52b6643b8e42372995c3653d44c1281cc33f593ca2ae"
+  },
+  "usernode.demoNote": {
+    "text": "Demo staging: data contoh",
+    "source": "4d544e0addb08c3fde8ed7297e17a4451d5750d85a109eddf397e17e5cb36d56"
+  },
+  "usernode.actionFailed": {
+    "text": "Tindakan gagal",
+    "source": "6e1704d8eca96bd7170a983e6370041cd4a75617570d9a83145517d7576b2a8d"
+  },
+  "usernode.settingSaveFailed": {
+    "text": "Tidak bisa menyimpan pengaturan",
+    "source": "de85eeb0faa433d0c6b1a612ef52fbc3fac32440f9613ecbc004e444705f0817"
+  },
+  "usernode.connection.title": {
+    "text": "Aplikasi Homeroom: koneksi",
+    "source": "c357b0c786720cb31eedf06cd65771cff4d50e018ec0e203217af86e757daf8d"
+  },
+  "usernode.connection.intro": {
+    "text": "Apa saja yang bisa dijangkau layar ini di aplikasi, dan apa yang harus dilakukan jika tidak bisa.",
+    "source": "57ae84f75cc57d40e6c6ac7ddf81c55eb07822f4a1d364fa05e28d5a02461178"
+  },
+  "usernode.connection.walletRecovery": {
+    "text": "Tidak ada dompet seluler baru untuk akun ini, jadi proses masuk aplikasi yang aman belum selesai. Jika sebelumnya kamu bergabung lewat email, kamu bisa menyambungkan dompet akun tersebut.",
+    "source": "ed9a4b53d2394688e14cd6afebe266f15614abcf257eab09e99b2ea1e8d34945"
+  },
+  "usernode.connection.copyDiagnostics": {
+    "text": "Salin diagnostik",
+    "source": "46fa69e51b74768a08cd5de30f84e6d540d54f7d03efe78a386cc81a3543370e"
+  },
+  "usernode.body.loading": {
+    "text": "Memuat pengaturan aplikasi Homeroom…",
+    "source": "ed4ab34f8fa5510ee29bd4bf3f10266def6c720765243d054da7f65dc0f028a8"
+  },
+  "usernode.body.loadFailed": {
+    "text": "Tidak bisa memuat pengaturan aplikasi Homeroom.",
+    "source": "6ee3adf9b9ae64cf273867d59dc1851baec25b992729e33a92a7a0ae91f4c858"
+  },
+  "usernode.body.openNotificationSettings": {
+    "text": "Buka pengaturan notifikasi",
+    "source": "c6885c8ebcb22d112322a0c0f644efc40dc07a6207068b69ed25503ca45b092f"
+  },
+  "usernode.socialPush.title": {
+    "text": "Aplikasi Homeroom: notifikasi aktivitas",
+    "source": "fba10fe5db9b110095d1ffd93d071b8a2a1f8b92540c5eb9081ed337996d6d65"
+  },
+  "usernode.socialPush.intro": {
+    "text": "Dapatkan notifikasi di perangkat saat sesi agen atau proses tanpa pengawasan selesai. Isi notifikasi baru dimuat setelah kamu membuka Social.",
+    "source": "c0dbd22fe700304ec39a13b0b4b03f46fdb812b0fe4cb7e6b3ba8e90ec1729ce"
+  },
+  "usernode.socialPush.checking": {
+    "text": "Memeriksa status…",
+    "source": "c8e79f30e9296bbb1d443fff041bc342ca863726d47952bf530dbe5097a3d5fc"
+  },
+  "usernode.socialPush.toggle": {
+    "text": "Notifikasi aktivitas",
+    "source": "5d01c890ff5988e9c82c7d1e87f3c4ec22e34d301dacea3c4d05ecd3a973de71"
+  },
+  "usernode.blockProduction.title": {
+    "text": "Aplikasi Homeroom: produksi blok",
+    "source": "7ea23d77f6d357466484e738bee4162b446a95a67daeac9eb9530546b070b1a8"
+  },
+  "usernode.blockProduction.intro": {
+    "text": "Memproduksi blok menghasilkan poin. Akses dibuka secara manual, jadi ajukan di bawah dan admin akan membuka kuncimu secara bertahap.",
+    "source": "2ea7e4f9fd18d4501c88bf18948287fb71925156f1ffba6abefa0f8647fca7ce"
+  },
+  "usernode.blockProduction.checking": {
+    "text": "Memeriksa status…",
+    "source": "c8e79f30e9296bbb1d443fff041bc342ca863726d47952bf530dbe5097a3d5fc"
+  },
+  "usernode.blockProduction.ask": {
+    "text": "Ajukan produksi blok",
+    "source": "f152c1287f889b4cd557606160da22f166735a6fb2bca0c6bf049bdcfe7d46d8"
+  },
+  "usernode.widgetIcons.title": {
+    "text": "Aplikasi Homeroom: ikon widget",
+    "source": "346d1bf0fb0dd9de26f27d4ab6e832ccc7aa64131619c9fc855efd5770e36c1b"
+  },
+  "usernode.widgetIcons.intro": {
+    "text": "Apa yang diminta untuk ditampilkan widget layar utama, dan apa yang dilaporkannya kembali.",
+    "source": "9f7353883d6d7b4cae10e69ca1b7c8ae4368143588cf4f7ce45a1eb4c950df1f"
+  },
+  "usernode.widgetIcons.recheck": {
+    "text": "Periksa ulang ikon",
+    "source": "3725c28ce1c23eb6ad301e273269b7aa46de97c785c6d2734612c48206139ed9"
+  },
+  "usernode.privacy.title": {
+    "text": "Aplikasi Homeroom: privasi & identitas",
+    "source": "ca2e059674bb1fcaa6542abc2d45885d5d6be5b43b269834fbd904d4251b65e8"
+  },
+  "usernode.privacy.intro": {
+    "text": "Kontrol untuk alur identitas paspor ZK.",
+    "source": "47ad3148919cb3eeae449665970c11c32372d226c7f3eaf6b9833b1ef2ba7349"
+  },
+  "usernode.diagnostics.title": {
+    "text": "Aplikasi Homeroom: diagnostik",
+    "source": "842cdb6223af39a747d84217e8c2d21f27b65626ac44a66f1f73fc4bc27b93c9"
+  },
+  "usernode.diagnostics.intro": {
+    "text": "Alat debugging untuk aplikasi dan node bawaannya.",
+    "source": "946251c5181f44134f64e100c8ad2de70124c2709eeac90d0ff2eb10ed464678"
+  },
+  "usernode.about.title": {
+    "text": "Aplikasi Homeroom: tentang & legal",
+    "source": "2d6d2182dfd3f31f530d64a908da1aeeb1fe27a87b99da925d7b7a0a6fcfb04d"
+  },
+  "usernode.account.title": {
+    "text": "Aplikasi Homeroom: akun",
+    "source": "a397f7bef1eca17f92d3395d2e67f78f15a3846685c80f31ad68d607ee7fe4ed"
+  },
+  "usernode.account.autoSignIn": {
+    "text": "Aplikasi masuk otomatis dengan akun platformmu. Jika pesan ini terus muncul, coba tutup lalu buka lagi aplikasinya.",
+    "source": "87ffde5dda139a52382bcc025580de329be8a8e16ad963c1f8cabce7914a97dc"
+  },
+  "usernode.faq.heading": {
+    "text": "Bantuan & Info",
+    "source": "59a661da0dd379589acd876434e5c9c792284b118f6d0743f191f5f366bb4de5"
+  },
+  "usernode.faq.about.title": {
+    "text": "Tentang",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "usernode.faq.about.network": {
+    "text": "Perangkatmu adalah bagian dari jaringan baru. Perangkat ini memverifikasi, menjalankan, dan menyumbangkan daya komputasi langsung ke jaringan, secara pasif di latar belakang, tanpa server pusat dan tanpa infrastruktur tersembunyi. Selama pengguna menjaga aplikasi tetap berjalan, jaringan akan terus beroperasi secara peer to peer, tanpa ketergantungan eksternal.",
+    "source": "b8d3b822a8c49915139dc8b87db6841b8c9dbe39ea0d59c051a16bb70aeca504"
+  },
+  "usernode.faq.about.why": {
+    "text": "Kami melakukan ini agar jaringan bisa dihosting sepenuhnya oleh komunitasnya sendiri, demi desentralisasi dan untuk menciptakan titik koordinasi alami seputar partisipasi, di mana pengguna yang ikut menjalankan dan berkontribusi pada sistem langsung merasakan manfaatnya.",
+    "source": "2b47c4a3d987acf42b3a913b79478665cbbdb9e97187a9242b9c8ea863359a15"
+  },
+  "usernode.faq.about.testnet": {
+    "text": "Saat ini kami masih di testnet sambil memvalidasi lapisan inti: produksi blok, perilaku konsensus, dan keandalan jaringan. Setelah semua itu stabil, kami akan membangun di atas keunikan platform ini, yaitu desentralisasi, bukti zero knowledge, dan identitas tahan sybil, untuk menghadirkan aktivitas, mekanisme koordinasi, dan alat baru bagi komunitas yang dihosting sendiri dan tahan sybil.",
+    "source": "2441305beefcfdf974b26a6360fb4b58d55b4fca0700e454719f85c1a1ff0f78"
+  },
+  "usernode.faq.about.thanks": {
+    "text": "Terima kasih sudah membantu menguji di tahap awal ini. Aplikasinya saat ini masih sederhana, tetapi seiring kami membuktikan fungsi intinya, kami berharap bisa mewujudkan jenis jaringan baru milik komunitas, di mana pengguna bisa langsung menjalankan dan menikmati manfaat dari jaringan yang mereka pakai.",
+    "source": "619120254b5386f8ea700a65307c3f457de90624cac09c82ed4d04c84a548cae"
+  },
+  "usernode.faq.blockProduction.title": {
+    "text": "Apa itu Produksi Blok?",
+    "source": "f3cd476ee9fa0c5c5ce885ea93805cae046fd6b56c480a50212f1f16649ff65d"
+  },
+  "usernode.faq.blockProduction.lead": {
+    "text": "Fitur ini otomatis membangunkan perangkatmu untuk memproduksi blok blockchain saat nodemu memenangi sebuah slot. Begini cara kerjanya:",
+    "source": "b037068372682933d085e768e1173024f375255493601c0d52bf8fd0ed4fb5df"
+  },
+  "usernode.faq.blockProduction.selection": {
+    "text": "1. Pemilihan VRF: di setiap epoch, jaringan memilih secara acak validator mana yang akan memproduksi blok menggunakan Verifiable Random Function (VRF).",
+    "source": "2fd9c56c64d8669dd0f1692e99d591c9dc9d0f42ee9aa19786e1a3d88f22dd12"
+  },
+  "usernode.faq.blockProduction.scheduling": {
+    "text": "2. Penjadwalan Slot: saat kamu memenangi slot, aplikasi menjadwalkan alarm untuk membangunkan perangkatmu ~1 menit sebelum tiap slot.",
+    "source": "578d8de2dd260433dfb47964a0187831ec77722d34537ef35d51c0e52fd2104d"
+  },
+  "usernode.faq.blockProduction.production": {
+    "text": "3. Produksi Blok: saat waktu slot tiba, aplikasi memantau nodemu dan memastikan blok diproduksi.",
+    "source": "41d069d1c741f9fb42504b44535a1c974dab18365c940c8cb88986f80a9f15b5"
+  },
+  "usernode.faq.blockProduction.tracking": {
+    "text": "4. Pelacakan Keberhasilan: hasilnya dicatat untuk melacak keandalanmu dari waktu ke waktu.",
+    "source": "4eb22c2bcc1b3dd04cafcfbe0caab3e40acc346bedbc40e8e438aca4cbbcb934"
+  },
+  "usernode.faq.platform.title": {
+    "text": "Platform & Keandalan",
+    "source": "01eb3d81d09cc879597b7e609f71c4c37f1ef8d0a7ab539f9420e7fd9877a4d6"
+  },
+  "usernode.faq.platform.androidHow": {
+    "text": "Memakai sistem alarm tepat waktu milik Android (AlarmManager) untuk membangunkan perangkatmu tepat saat dibutuhkan untuk produksi blok.",
+    "source": "70d4ceadb4470ffa68443d4930792ebff6b18c95e1c743f7c4722aea7d0d1637"
+  },
+  "usernode.faq.platform.androidModes": {
+    "text": "Keandalan menurut mode: Default (Event-Driven) 90-95%, hemat baterai, hanya bangun pada jendela slot. Keep-Alive Mode 100%, layanan persisten, baterai lebih boros (~5-10%/jam).",
+    "source": "7c1ebf82046a8e9c77f4b50193077331e6911888af56a93b300fe90d5392bfc4"
+  },
+  "usernode.faq.platform.iosHow": {
+    "text": "Memakai gabungan tugas latar belakang dan mode keep-alive untuk membangunkan perangkatmu demi produksi blok.",
+    "source": "f14325b4839f5b2aff7b09b694ea68e051097690abdf15301877dcc04b46cd8f"
+  },
+  "usernode.faq.platform.iosModes": {
+    "text": "Keandalan menurut mode: Keep-Alive Mode 99%, aplikasi tetap aktif di latar depan, perlu pengisi daya. Background Only 40-60%, eksekusi dikendalikan iOS, tidak dijamin.",
+    "source": "bc702c39f20c815830fa05fd9ef9d5906a62c45a545799bd2891bf403eb32ed0"
+  },
+  "usernode.faq.platform.device": {
+    "text": "Perangkat: {{manufacturer}}",
+    "source": "5b0c13447e701b7cf4a9e015f255227d28150393e70f790fc6c0f3e288c5969d"
+  },
+  "usernode.faq.vrf.title": {
+    "text": "Memahami VRF & Slot",
+    "source": "9336e3ea31d3574c0accf7fe297006fca75ca7036cff795456c72f2130726ed6"
+  },
+  "usernode.faq.vrf.what": {
+    "text": "VRF (Verifiable Random Function) adalah cara jaringan memilih produsen blok secara adil. Di awal tiap epoch, jaringan menjalankan perhitungan VRF untuk menentukan validator mana yang akan memproduksi blok pada slot-slot berikutnya.",
+    "source": "bbd1f44f743ef7c6dfc33d97458a7309c3365a79aa0a1b5ad8b40e90ac501328"
+  },
+  "usernode.faq.vrf.statuses": {
+    "text": "Arti status. Pending: menunggu pergantian epoch untuk memulai perhitungan. Calculating: evaluasi VRF sedang berjalan (butuh beberapa jam). Complete: penetapan slot sudah final dan terjadwal.",
+    "source": "64334c4ad73b477bb3ad4a2260e4ed55068cf310dbd713c6269293401c8cca11"
+  },
+  "usernode.faq.vrf.winning": {
+    "text": "Saat VRF memilih nodemu untuk memproduksi blok pada waktu tertentu, kamu \"memenangi\" slot itu. Tugasmu adalah memastikan perangkatmu aktif dan terhubung agar blok bisa diproduksi.",
+    "source": "df71f91f1d6a601717d10b0acd105f564968676b7755546f5ffc13c0c2e405a3"
+  },
+  "usernode.faq.vrf.timing": {
+    "text": "Mengapa waktu penting: setiap slot punya jendela ~5 detik. Jika perangkatmu tidak bangun tepat waktu atau kehilangan koneksi jaringan, slot terlewat dan dihitung \"gagal\".",
+    "source": "9c4572e5502bb1cfef5ee8d0e30f4fefbb1e465e63c874f54c384c37cb4e476f"
+  },
+  "nav.part.profile": {
+    "text": "Profil",
+    "source": "d696a35bdd1883da07a8d6c41bb7a3153381b23aa197629ee273479a6eaa5a9c"
+  },
+  "nav.part.username": {
+    "text": "Nama pengguna",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "nav.part.email": {
+    "text": "Email & pemulihan",
+    "source": "4ee4c51181215dd5cfd768f9f9a7dfa2a899fa7c972aa850b9715c38d4ee8880"
+  },
+  "nav.part.password": {
+    "text": "Kata sandi",
+    "source": "e7cf3ef4f17c3999a94f2c6f612e8a888e5b1026878e4e19398b23bd38ec221a"
+  },
+  "nav.part.deleteAccount": {
+    "text": "Hapus akun",
+    "source": "a2e20a33570001ae083b4667b54c433a7246897eba226b258a680cf46089c0b0"
+  },
+  "nav.part.linkedAccounts": {
+    "text": "Akun tertaut",
+    "source": "feda46a46abb0f718aac6234e607aa0c188882669b38b5e3d3dffd981cde0bdb"
+  },
+  "nav.part.wallet": {
+    "text": "Homeroom Wallet",
+    "source": "6e5f658a2e1a4ba0bc4706d148631db941b521a296aa2a4abcd51c5ded8432cc"
+  },
+  "nav.part.usage": {
+    "text": "Penggunaan",
+    "source": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66"
+  },
+  "nav.part.openrouter": {
+    "text": "OpenRouter",
+    "source": "eb70c3bc14fa7ae14285b750955958e63b64b8f19546c30fc2223ad9057a959c"
+  },
+  "nav.part.apiKey": {
+    "text": "Kunci API Anthropic",
+    "source": "97d1086e162903067214792b5d6feab03a0b40ab4b337133b2344a28705f16c5"
+  },
+  "nav.part.connectors": {
+    "text": "Konektor",
+    "source": "c3d2e79ebdd046c6b7363de7b69dc9fb5b38235f0d328fdff0b2f9ccf2854b07"
+  },
+  "nav.part.cli": {
+    "text": "Akses CLI & agen pengodean",
+    "source": "f5b96ef5a6c0adacf4f8c79fe12f2b7efe9dee7c0d23ce7c7efa0a883cf336a3"
+  },
+  "nav.part.agentFiles": {
+    "text": "Instruksi & keahlian agen",
+    "source": "7c5c797501a2f24ebef712d1c00661d32cc0cdfe593764d603e218cdf1af65c4"
+  },
+  "nav.part.globalChat": {
+    "text": "Global Chat (eksperimental)",
+    "source": "1dfd6900d8677c63cece52755670a07abc961cce8b62592344646d7d29a8c31e"
+  },
+  "nav.part.experimental": {
+    "text": "Eksperimental",
+    "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
+  },
+  "nav.part.theme": {
+    "text": "Tema",
+    "source": "efb52e7172b77731d996ff4f51cd7b3dcfd55fc6f07392994619418d58d170dd"
+  },
+  "nav.part.devConsole": {
+    "text": "Konsol pengembang",
+    "source": "2ef15ac2866f955969bde655eb39df64da0e817fea9297c29e2022c9e32b6de0"
+  },
+  "nav.part.adminPreview": {
+    "text": "Pratinjau admin",
+    "source": "a702a4e31bd03d35c641ca5af59492fff364395d8d00694fff2458aa098171e9"
+  },
+  "nav.part.language": {
+    "text": "Bahasa",
+    "source": "a4fe65264ef7dbb38d104b1e81eb3350f3142f3d16f32bdec39b1d9b42c1b8d1"
+  },
+  "nav.part.alerts": {
+    "text": "Notifikasi",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "nav.part.appPermissions": {
+    "text": "Izin perangkat aplikasi",
+    "source": "bad62fc7e4a90fc30d7fe53e407cd68e14bf9787b838314525a9530e033fd2d6"
+  },
+  "nav.part.appAi": {
+    "text": "Izin AI aplikasi",
+    "source": "8be55dd90e374de98322dd13ce0a20b481c4996e85cdd0730f97d48a0be67360"
+  },
+  "nav.part.blockedApps": {
+    "text": "Aplikasi yang diblokir",
+    "source": "adfc2938bb4bd50b3e53274304411071a4b7e2134037fa833fbffec96289296b"
+  },
+  "nav.part.tour": {
+    "text": "Tur selamat datang",
+    "source": "5155b98763c0fef9af78ae62741da215496c6dfeecb258e4c3c141b9a9ddd632"
+  },
+  "nav.part.usernode": {
+    "text": "Aplikasi Homeroom",
+    "source": "92077421b998d809e8172aa58ba95c88c04d89adb51f5e9d73bb1a7c3bd070a0"
+  },
+  "nav.part.about": {
+    "text": "Tentang",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "nav.page.account": {
+    "text": "Akun",
+    "source": "7e1b0d5641f2640ce9a953ec231eea2c27a2a7633f7d3c273e5735e2b30c10b7"
+  },
+  "nav.page.ai": {
+    "text": "Penggunaan AI & model",
+    "source": "429f837fc94cd7842fed13ffd137bc9c214c884a4ef58c7a3f66795fe0849607"
+  },
+  "nav.page.connectors": {
+    "text": "Konektor & CLI",
+    "source": "20805e515532dbc7d0a4e27952355d32c0b170a1158b4f1150d41e4ebf2b5525"
+  },
+  "nav.page.theme": {
+    "text": "Tampilan",
+    "source": "3907fa7f80722a6fc58cd8c1bd30abf7638095d6774f183b6e831b7093957d1b"
+  },
+  "nav.page.appPermissions": {
+    "text": "Izin aplikasi",
+    "source": "7e07c5e75c261908e4f0dc4714f665fb4559356ca804bd154c1dd363ed160645"
+  },
+  "nav.group.account": {
+    "text": "Akun",
+    "source": "7e1b0d5641f2640ce9a953ec231eea2c27a2a7633f7d3c273e5735e2b30c10b7"
+  },
+  "nav.group.aiBuilding": {
+    "text": "AI & pembuatan",
+    "source": "bb6617ccb5c57cd9f6a427739beacf67bb04ded90774ce2330288e2dab44f7d9"
+  },
+  "nav.group.preferences": {
+    "text": "Preferensi",
+    "source": "66962f72a08883733c35df6f82a049b929f9579f19c4bc083ac99bead602eab3"
+  },
+  "nav.group.helpAbout": {
+    "text": "Bantuan & tentang",
+    "source": "8569e9fcca1b149341ae6021be2ca8485464df1ffe28c615d4db16a742036de5"
+  },
+  "nav.group.other": {
+    "text": "Lainnya",
+    "source": "f97e9da0e3b879f0a9df979ae260a5f7e1371edb127c1862d4f861981166cdc1"
+  },
+  "nav.keywords.profile": {
+    "text": "nama tampilan foto avatar gambar bio halaman publik",
+    "source": "d37883a05b1439cf49b5e11e8ae6ca73f5ba770905c23deafeebedb5c1919452"
+  },
+  "nav.keywords.username": {
+    "text": "handle ganti nama at",
+    "source": "946d3398d0aa94b78018bf3e47f005e2b49e2a523cdd4137d682eed71c004620"
+  },
+  "nav.keywords.email": {
+    "text": "alamat verifikasi pemulihan surel",
+    "source": "a5502b4de746c974e69fe108252917e35bf140abec84616b2b6896098296ce3a"
+  },
+  "nav.keywords.password": {
+    "text": "sandi masuk login keamanan",
+    "source": "40de7fa22e5ebaf4ca04420991ac06c2bc6a0accc82d219012e58f6316b98347"
+  },
+  "nav.keywords.deleteAccount": {
+    "text": "tutup hapus nonaktifkan anonimkan",
+    "source": "cb07cd2ef68821fcc910ca4fbe76ce128f05e8fa09c16a95b6ec0a98e7e7aafc"
+  },
+  "nav.keywords.linkedAccounts": {
+    "text": "github x twitter sosial terverifikasi harian kredit hubungkan",
+    "source": "258ff933efd6bb8d59109fda7baf305c81582e43fa540ba44a3adbaab7d12c54"
+  },
+  "nav.keywords.wallet": {
+    "text": "kripto tautkan qr dompet",
+    "source": "4c6924918e86dd666cc3632ef04b36469c54615d1bf8a56dde85052cbabb07db"
+  },
+  "nav.keywords.usage": {
+    "text": "jatah batas kredit anggaran pakai sisa mingguan",
+    "source": "0adb04f257b23954eed88565204036d296f01d22c8f8910de60d1ec37715c568"
+  },
+  "nav.keywords.apiKey": {
+    "text": "claude byok kunci sk-ant tagihan",
+    "source": "c996fca19838c733331595e2a1ae5519bade7c758661edf20d108351488a7ef7"
+  },
+  "nav.keywords.openrouter": {
+    "text": "model glm deepseek penalaran bawaan agen pengodean kunci",
+    "source": "0f8e1093e081306ecbe4c1aa85821093a83e20c738e14f41b4052e48aea54223"
+  },
+  "nav.keywords.connectors": {
+    "text": "mcp claude chatgpt codex obrolan konektor",
+    "source": "4c012f47062c8c754d509776b18396ac59347c9da3edbff707379b13bb364867"
+  },
+  "nav.keywords.cli": {
+    "text": "terminal token kredensial cabut lokal agen opencode claude code",
+    "source": "7f1db215dd0ee3fd1a7eb4b5bb09588d42b001093eb8693338e98199ea814ef6"
+  },
+  "nav.keywords.agentFiles": {
+    "text": "instruksi keahlian agen md claude md prompt berkas",
+    "source": "cef4a94c8d946971c4cc219eeec502ea65e59494c5b081c95b1d7f4be52f9353"
+  },
+  "nav.keywords.globalChat": {
+    "text": "model batas obrolan chat",
+    "source": "e2314f06cef7a37e56fa984edbe339d410e72f26c284b0c9d1064c1258bb1a51"
+  },
+  "nav.keywords.experimental": {
+    "text": "beta lab kemajuan perkiraan sesi jembatan agen lokal pintasan keyboard saran perbaikan",
+    "source": "648500521795b79c827f6c93d106528dfea7748cabe517888613546394b82b80"
+  },
+  "nav.keywords.theme": {
+    "text": "gelap terang mode tampilan bilah samping",
+    "source": "f7de49fc80faa8d41240bd0113ec02db496e6a98aae4858e7a349c5b7da08c51"
+  },
+  "nav.keywords.devConsole": {
+    "text": "ikon bug log galat debug pengembang",
+    "source": "ba4aca35c00709621e28c8cb97c45ab32535f5d7f61ab73c1eacde3dc8eb6c95"
+  },
+  "nav.keywords.language": {
+    "text": "bahasa lokal terjemahan",
+    "source": "fc923f36585493fa841241ecb94c8864fefb9ea7a3426f6709ef0dddb59abe67"
+  },
+  "nav.keywords.alerts": {
+    "text": "notifikasi suara push ponsel bisukan lonceng nada",
+    "source": "0df389bdd546be4b8b9df4aa19f4970238e87e57433e04ebb7588ff0f9ceba1f"
+  },
+  "nav.keywords.appPermissions": {
+    "text": "kamera mikrofon lokasi layar perangkat",
+    "source": "3b79e8e85463d60cd334cba5f94907fc8b021ef51f26233ddad125d4d09337ab"
+  },
+  "nav.keywords.appAi": {
+    "text": "ai pengeluaran batas izin anggaran",
+    "source": "857b95067a896e75da85df7313f16b7fc0188256dfe35017803d0d6f9d11ed34"
+  },
+  "nav.keywords.blockedApps": {
+    "text": "blokir sembunyikan buka blokir",
+    "source": "4ee951634d0670ecb791ac26827bc9e0b92d2c42a9b17bad9a0562173ce7e94e"
+  },
+  "nav.keywords.tour": {
+    "text": "panduan bantuan orientasi",
+    "source": "0a330344657a70155796010ecb4fd7e8dd8446ab82239fa7342d6895d18039c3"
+  },
+  "nav.keywords.usernode": {
+    "text": "seluler ponsel asli diagnostik blokir produksi",
+    "source": "b303cf2b849ac90ab33314450c2e3ba1597cd42cf7467d01a9a47bbf6b77b464"
+  },
+  "nav.keywords.about": {
+    "text": "versi build ketentuan syarat tentang",
+    "source": "d83db505157b5d33f6e10e9d4e7825ee193dd5c3b90be4649ea42d6923488dff"
+  },
+  "nav.keywords.adminPreview": {
+    "text": "bukan admin tampilan sebagai pratinjau",
+    "source": "8a1e1be7033f78b58d2a7f14636a002a46edbcaf50bf2cbc1998310cd8d9634c"
+  },
+  "signOut.nativeShutdownNotice": {
+    "text": "Kamu sudah keluar. Tutup lalu buka lagi aplikasinya untuk menyelesaikan penutupan Homeroom.",
+    "source": "31055a5a15c0888022ee7dcaaed962e4e97f0ea7d6b36470da22ecf44ce7b71f"
+  },
+  "signOut.signingOut": {
+    "text": "Sedang keluar…",
+    "source": "08c6bd357b7d7b819903c4d32cf8875a2f8bb02dd2e85aa7602e3d82d4f69c45"
+  },
+  "connectors.copy.urlCopied": {
+    "text": "URL server MCP disalin",
+    "source": "149289b1f365e95c3ad3bea6838f10edc69324fb82fc10a050ca70b14c38f7c2"
+  },
+  "connectors.copy.urlFailed": {
+    "text": "Tidak dapat menyalin URL server MCP",
+    "source": "6d0a55e7df41f17bddc207ace21276f13e353e9fda76159cb0d87d606f686c44"
+  },
+  "connectors.copy.personalRulesCopied": {
+    "text": "Tersalin. Tempel ke ~/.claude/settings.json",
+    "source": "a6298524518710f4069097e2090ac7267e30bfb7520c158c0bb3f925819e17c0"
+  },
+  "connectors.copy.personalRulesFailed": {
+    "text": "Tidak dapat menyalin aturan izin",
+    "source": "51bb60c2f79f6a9a3bf635798ffe3be645ece38727553a3ba84407279427aeda"
+  },
+  "connectors.copy.repoRulesCopied": {
+    "text": "Tersalin. Commit sebagai .claude/settings.json di repo aplikasimu",
+    "source": "c9eecf28a22dee3b95372144bd90ac9c4b5be4106f1cd306e69c3f0e22b88bd5"
+  },
+  "connectors.copy.repoRulesFailed": {
+    "text": "Tidak dapat menyalin aturan izin",
+    "source": "51bb60c2f79f6a9a3bf635798ffe3be645ece38727553a3ba84407279427aeda"
+  },
+  "connectors.copy.codexCommandCopied": {
+    "text": "Tersalin. Jalankan di terminal yang sudah terpasang Codex",
+    "source": "7ed86b7cd01a389c71be611ee1f9a17b4e1349c2d0e118db1ed260a675801b37"
+  },
+  "connectors.copy.codexCommandFailed": {
+    "text": "Tidak dapat menyalin perintah Codex",
+    "source": "94710d65addd32db50837d3e2a1b7815832110b16dbda48b3159affc168cb674"
+  },
+  "connectors.copy.codexConfigCopied": {
+    "text": "Tersalin. Tempel ke ~/.codex/config.toml",
+    "source": "dbe2bf3e30be7b669c4c457c31f467206a2534f0ab199334b42dc4c238a1a05b"
+  },
+  "connectors.copy.codexConfigFailed": {
+    "text": "Tidak dapat menyalin entri konfigurasi Codex",
+    "source": "3dd98444d61b85ca0953780a546c27b6be6206e6d8b80293271faf319c9a3fb7"
+  },
+  "copyControl.failed": {
+    "text": "Gagal menyalin",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "alerts.test.queueing": {
+    "text": "Mengantrekan pemberitahuan uji…",
+    "source": "682578bea33cf41e6a75b5e67a79a54eef889e4cced91d53b56ca2ebc68d31d3"
+  },
+  "alerts.test.after.queued": {
+    "text": "Push uji sudah diantrekan untuk dikirim. Cek ponselmu; pengirimannya mungkin butuh beberapa detik lagi.",
+    "source": "ce2787f1bf439214a7daf33c8d9cf0bdd8b87d6428693a740eb1d79b96fdf054"
+  },
+  "alerts.test.after.preferenceDisabled": {
+    "text": "Push ke ponsel tidak diantrekan. Aktifkan Sesi agen di Kategori push seluler, lalu coba lagi.",
+    "source": "a84eea9dfc1951afc6b30150ad00ea3b98d9d0bbd744ce025e18d759fcc59a97"
+  },
+  "alerts.test.after.unavailable": {
+    "text": "Push ke ponsel tidak diantrekan. Masuk di ponselmu, lalu aktifkan Notifikasi aktivitas dan izin notifikasi. Pengiriman push juga harus tersedia di server.",
+    "source": "08615bef8f43ad77b35cd10c3cd00129e2ca951a9bde93505fa8995d6383b2cf"
+  },
+  "alerts.test.failed": {
+    "text": "Tidak dapat mengantrekan push uji. Coba lagi.",
+    "source": "237ab0ed948edc6de837474252d502289d6a908ba75bb51f4d26c12b1cb6b35a"
+  },
+  "screen.title": {
+    "text": "Pengaturan",
+    "source": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "localAgents.demoData": {
+    "text": "Data demo: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "localAgents.unknownApp": {
+    "text": "sebuah aplikasi",
+    "source": "66e93a7c5a2576c34833f10761ca00fadbd40b36eff79f1e0969652f607b0b43"
+  },
+  "localAgents.unnamedMachine": {
+    "text": "Mesin tanpa nama",
+    "source": "060810189c6f9f2f5a1f223cee2dc03e17530dd2914929fd128cd0df645af0f5"
+  },
+  "localAgents.appAndSession": {
+    "text": "{{app}} · {{session}}",
+    "source": "1dc2faf3add9a2fbf140ab486d0da63aa2363a418261989d337a9e3d3141627d"
+  },
+  "localAgents.detach.confirmNamed": {
+    "text": "Lepaskan {{machine}}?\n\nGiliran pengodean sesinya akan kembali berjalan di Homeroom. Apa pun yang sudah di-commit tetap ada di branch.",
+    "source": "c1bcb77721a26c0037519423688b3109d0f356b622d3af1171ef05c395f89736"
+  },
+  "localAgents.detach.confirmUnnamed": {
+    "text": "Lepaskan mesin ini?\n\nGiliran pengodean sesinya akan kembali berjalan di Homeroom. Apa pun yang sudah di-commit tetap ada di branch.",
+    "source": "e74e5247a1fbd4583d931fda6eba825183bc914e22850af726aea5d8b956196d"
+  },
+  "localAgents.detach.failed": {
+    "text": "Tidak dapat melepaskan mesin itu.",
+    "source": "6034c97cbb4108eb225500cfe0ccd085ea6a524b3ed8611ea98195596fd02194"
+  },
+  "connectors.setupPrompt": {
+    "text": "Aku ingin menambahkan konektor MCP kustom. URL servernya {{url}} dan memakai pendaftaran klien dinamis, jadi tidak ada ID atau rahasia klien yang perlu diisi. Beri nama persis \"homeroom\". Pandu aku selangkah demi selangkah dan beri tahu apa yang harus diklik.",
+    "source": "921bd0f3c3b237fa0c5d7bcc73115a253bda40ed9d32772a03291671713e579c"
+  },
+  "connectors.load.failed": {
+    "text": "Tidak dapat memuat koneksimu.",
+    "source": "18fb599bae166a7e0bc6a61f240520827c0f702d889dc0f420ea6266cdceae29"
+  },
+  "connectors.load.invalid": {
+    "text": "Respons koneksi tidak valid.",
+    "source": "972f96a227697619ad03c8459c6d4105ac57bb2f966016baa02980bfc19feff7"
+  },
+  "connectors.hint.notSentYet": {
+    "text": "Homeroom belum mengirim tips ini ke chat-mu. Tips ini menyertai pembacaan pertama yang dijawabnya dalam percakapan baru.",
+    "source": "7d929cc0230345a4718625498bcb12f17cc2ac9e87a9a53070babba57be3b997"
+  },
+  "connectors.hint.limitReached": {
+    "text": "Itu batasnya, {{limit}} per koneksi setiap {{days}} hari; tips akan muncul lagi setelah periodenya berganti.",
+    "source": "15602d775436d3e3935b5148602440c961c4c4133f90c1979d89f3d71a5cded3"
+  },
+  "connectors.hint.quietUntilToday": {
+    "text": "Tips ini diam selama {{minutes}} menit setelah tiap pengiriman, jadi percakapan yang dibuka sebelum pukul {{time}} hari ini tidak akan memuatnya. Percakapan yang dibuka setelahnya akan memuatnya.",
+    "source": "0cd9162cc54e0ff39a53b18c6d3507a39e70a22453f1a44b759089c093f2a685"
+  },
+  "connectors.hint.quietUntilDate": {
+    "text": "Tips ini diam selama {{minutes}} menit setelah tiap pengiriman, jadi percakapan yang dibuka sebelum {{when}} tidak akan memuatnya. Percakapan yang dibuka setelahnya akan memuatnya.",
+    "source": "d10613907a7828a4fe48a3607b3ffd392eacf12b2e21b90ebb06ed5671884200"
+  },
+  "connectors.hint.openNewConversation": {
+    "text": "Buka percakapan baru untuk melihatnya lagi.",
+    "source": "2a2c7f846db21e5cb044b7dca1f7360353cb6a24ace7c69368598a914b37ee99"
+  },
+  "connectors.hint.summaryAndAdvice": {
+    "text": "{{summary}} {{advice}}",
+    "source": "30bb556fc8da4d390f20d3afac2b0451b97e16b0d8f064cf420fec6c94cdbff0"
+  },
+  "connectors.row.connectedUsed": {
+    "text": "terhubung {{connected}} · terakhir dipakai {{lastUsed}}",
+    "source": "b398ca278eaeabd56673b7669fbd7c6e90d158e09a566f9544f08217d6a08206"
+  },
+  "connectors.row.connectedNeverUsed": {
+    "text": "terhubung {{connected}} · belum pernah dipakai",
+    "source": "d446651f702285a10eedaf17bd74b75f51c3d14efb561f52c68b23fad2aa9c35"
+  },
+  "connectors.row.unknownDateUsed": {
+    "text": "terhubung pada tanggal tak diketahui · terakhir dipakai {{lastUsed}}",
+    "source": "972f2c4171c46469afbb2924bd27b4ff2f99b5cff218aa232969d0c433ddc3cd"
+  },
+  "connectors.row.unknownDateNeverUsed": {
+    "text": "terhubung pada tanggal tak diketahui · belum pernah dipakai",
+    "source": "2ec398917286f7b979bcfeff8161cc4aced1053bab10058e5ecd7daeb813d421"
+  },
+  "connectors.row.unnamedClient": {
+    "text": "Klien terhubung",
+    "source": "0dd5007103bd5fa53c4dd55fc4d2d3c8074fa6b692d399c32538f465b34b9bb4"
+  },
+  "connectors.disconnect.failedRetry": {
+    "text": "Tidak dapat memutus koneksi. Coba lagi.",
+    "source": "5662fa4bf54ecbb48e7a457e0b5de73a68eec20ee4b0ef65b2df93ab03586dfd"
+  },
+  "connectors.disconnect.done": {
+    "text": "Koneksi diputus.",
+    "source": "7fcdbd4a0ca24d27e5a77bd0c4e6de424a4be6a97f3749e5dca265ddf0614298"
+  },
+  "connectors.disconnect.failed": {
+    "text": "Tidak dapat memutus koneksi.",
+    "source": "975d7bac40e599ad332420d81e3ba2d70965a92ec2180f916795615e297fd51c"
+  },
+  "socialIdentity.load.failed": {
+    "text": "Tidak dapat memuat akun sosial. Coba lagi sebentar lagi.",
+    "source": "8c11d8b683d66976a867c52183a482caa9894c4ca6791c5ad50089ae194199b0"
+  },
+  "socialIdentity.perDay": {
+    "text": "${{amount}} / hari",
+    "source": "87cb645516115a701a77e530f40bf94d83cdd1f32781a426abe95add881e55b3"
+  },
+  "socialIdentity.tier.unavailable.title": {
+    "text": "Kredit harian tidak tersedia",
+    "source": "34d88d0bfb9d454aaca7fab09820eaf5c00c4f797b166b3837f609775e7e7a7e"
+  },
+  "socialIdentity.tier.unavailable.note": {
+    "text": "Kami tidak dapat memeriksa kreditmu, jadi panggilan yang kami biayai dijeda. Kunci API milikmu sendiri tetap berfungsi.",
+    "source": "7d883cca8fb589f5b3468f9f6bede4ab2625ae8df1303cc4cc6d9700e05e182c"
+  },
+  "socialIdentity.tier.legacy.title": {
+    "text": "Kreditmu",
+    "source": "0422797bd9cae085d522cc35ee19c3de723c938d901cddf5146e41a43c34476f"
+  },
+  "socialIdentity.tier.legacy.note": {
+    "text": "Kreditmu belum bergantung pada akun yang terhubung.",
+    "source": "5fffe4b641af2e795885b7570a6f148a06c0fb9fbe916b4fa370963670dbdf38"
+  },
+  "socialIdentity.tier.override.title": {
+    "text": "Kreditmu",
+    "source": "0422797bd9cae085d522cc35ee19c3de723c938d901cddf5146e41a43c34476f"
+  },
+  "socialIdentity.tier.override.note": {
+    "text": "Jumlah ini ditetapkan oleh administrator. Akun yang terhubung tidak mengubahnya.",
+    "source": "ed2bf45d6403fda57a297a480281e2c0ddce2067c55670939bcd516493d53c35"
+  },
+  "socialIdentity.tier.signedIn.title": {
+    "text": "Sudah masuk",
+    "source": "ca566c8968e7e881d55617e7caaf0c126924ab1cb64ca80edb2f37ef386492d8"
+  },
+  "socialIdentity.tier.signedIn.note": {
+    "text": "Salah satunya sudah cukup. Menghubungkan keduanya tidak menambah kredit.",
+    "source": "56c6a818647bf6b9a28200e3b3579f056175a1c98c06be9925b559da65cec19c"
+  },
+  "socialIdentity.row.reconnectRequired": {
+    "text": "Terhubung untuk atribusi GitHub. Hubungkan ulang sekali agar dihitung sebagai kredit harian.",
+    "source": "1be5335fcb9e11198e84c76ec9ce3b2d8403a4f1d2529b554d8635a5056a4abe"
+  },
+  "socialIdentity.row.noExtraCredits": {
+    "text": "Tanpa kredit tambahan",
+    "source": "51ae57ea66b3ab5903b1587d7fcf30fe0e983910c902319e523fb1ac2f32d11f"
+  },
+  "socialIdentity.row.notSetUp": {
+    "text": "Belum disiapkan di server ini.",
+    "source": "c4806ac0c78434251b5878170e854797e82511e88fc67051f36b32e273e9f718"
+  },
+  "socialIdentity.row.notConnected": {
+    "text": "Belum terhubung.",
+    "source": "3b3d2796168bf3881009c9b9084e9652f2becd5094d7cff30b1757957f5f8efb"
+  },
+  "socialIdentity.badge.reconnectNeeded": {
+    "text": "Perlu hubungkan ulang",
+    "source": "2b0211b3421a16ae6704fe8910762c6d3e6ad8c925f210ef544036866a888c00"
+  },
+  "socialIdentity.badge.connected": {
+    "text": "Terhubung",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "socialIdentity.row.linkedAt": {
+    "text": "dihubungkan {{when}}",
+    "source": "cc134d097967b678586e1bad51e8ee9006136282ad89e24987c8b48d38e883d7"
+  },
+  "socialIdentity.row.noTokenGithub": {
+    "text": "Homeroom tidak menyimpan token akses GitHub untuk akunmu.",
+    "source": "4aa9ad7dcaa6ef264c5cfdccc56e7a1d983030a2577855c2db9e947327da0427"
+  },
+  "socialIdentity.row.noTokenX": {
+    "text": "Homeroom tidak menyimpan token akses X untuk akunmu.",
+    "source": "36b721ef0f39d6359d27724a7e8779e424feb03918037493ec9667cd747abfdb"
+  },
+  "socialIdentity.action.reconnect": {
+    "text": "Hubungkan ulang",
+    "source": "bf8a9eab9e7e141bfb81f0ca9244a5f68f476ed0b57f03538410417298169d18"
+  },
+  "socialIdentity.action.connect": {
+    "text": "Hubungkan",
+    "source": "1a2303ede07493acc7caaa7c737f3c52bcc9cf04372be19ed1b0af6b9f2c791e"
+  },
+  "socialIdentity.action.refreshHandle": {
+    "text": "Segarkan nama pengguna",
+    "source": "d0bc66fe8d640c47aa136f589206eba65be9c545f0e18a9f7ee51df009e1c734"
+  },
+  "socialIdentity.action.changeAccount": {
+    "text": "Ganti akun",
+    "source": "26639e78325224c94978566fed0864fe451d64b06f4af5d5f89325b47e8fbf7c"
+  },
+  "socialIdentity.row.strandedAttempt": {
+    "text": "Percobaan terakhirmu menghubungkan {{provider}} tidak selesai. Coba Hubungkan lagi. Ini bisa terjadi jika browser tidak sampai ke halaman masuk atau prosesnya dibatalkan. Jika {{provider}} melaporkan kesalahan alamat callback atau pengalihan, minta administrator memeriksa pengaturan OAuth-nya.",
+    "source": "f7a55c89bd0657b324ae8be4e39b8fe8275653485b89fad7bc78f444863df130"
+  },
+  "socialIdentity.diagnostics.sourceWaitlist": {
+    "text": "Memakai kredensial aplikasi {{provider}} untuk daftar tunggu.",
+    "source": "9131f66197953a0c08c0ac510b7dcf28bc5f5c20ff766842f9c6ede72e0b1d93"
+  },
+  "socialIdentity.diagnostics.sourceDedicatedSameApp": {
+    "text": "Kredensial {{provider}} khusus, aplikasi yang sama dengan pasangan daftar tunggu.",
+    "source": "c9b2a5b4359bef5eeed28588b167eff35579e532af30f5a9d18872921bb6b694"
+  },
+  "socialIdentity.diagnostics.sourceDedicated": {
+    "text": "Kredensial aplikasi {{provider}} khusus.",
+    "source": "0323697b53733442b7f94062ad90ff173be63317db5ee12b9e554fccab947286"
+  },
+  "socialIdentity.diagnostics.sourceMissing": {
+    "text": "Pasangan kredensial {{provider}} yang lengkap belum diatur.",
+    "source": "2cf77a2780862e975b156e3c96da1e180b074a99d997ddd076f4604a0ed42bbd"
+  },
+  "socialIdentity.diagnostics.callbackWarning": {
+    "text": "Jika alamat ini tidak didaftarkan sebagai callback URI di aplikasi developer {{provider}}, {{provider}} akan menampilkan \"Something went wrong\" sebelum masuk dan tidak mengarahkan kembali ke sini.",
+    "source": "ad2edb9863cebecb505ad1cc4acac8d8d3582638daa804676fd0f6dbffbb3c83"
+  },
+  "socialIdentity.callback.linked": {
+    "text": "{{provider}} terhubung.",
+    "source": "cb9aafeed55b04371515006c354a74b205855f067a297539b6d61be74ad96405"
+  },
+  "socialIdentity.callback.refreshed": {
+    "text": "Nama pengguna {{provider}} disegarkan.",
+    "source": "7ec18ad572a20f6a0273076bbd8b32b47d1229fcde7c7997a45b5acb3e8a14a7"
+  },
+  "socialIdentity.callback.confirm": {
+    "text": "Akun {{provider}} lain telah diverifikasi. Periksa penggantinya di bawah sebelum ada yang berubah.",
+    "source": "ec62d2c6071b8f497e09ebedf41e5f24926d47ee8fbb31219938fe79fd17a982"
+  },
+  "socialIdentity.callback.inUse": {
+    "text": "Akun {{provider}} itu sudah terhubung ke akun Homeroom lain. Koneksimu saat ini tidak berubah.",
+    "source": "963ae54c1d8a54a0623c1676b84c8922f634a3a934cd11cbd08748fddedd46db"
+  },
+  "socialIdentity.callback.differentAccount": {
+    "text": "Itu akun {{provider}} yang berbeda. Gunakan Ganti akun; koneksimu saat ini tidak berubah.",
+    "source": "9ab7bff3cdfaf1e3e1437118f9077d6517ca4440490c7e017651131a4bd2b393"
+  },
+  "socialIdentity.callback.conflict": {
+    "text": "Akun {{provider}} itu tidak bisa dipakai. Koneksimu saat ini tidak berubah.",
+    "source": "3736969874027866cfcdc089aff4446468df88a5bb99a51aacc49a0d5bdf6872"
+  },
+  "socialIdentity.callback.denied": {
+    "text": "Koneksi {{provider}} dibatalkan.",
+    "source": "7dc199457447655fe510e212eda54145acba2e897c9eb9b45f16ffec4405aad6"
+  },
+  "socialIdentity.callback.callbackMismatch": {
+    "text": "{{provider}} tidak menerima alamat callback Homeroom, jadi tidak ada yang berubah. Minta administrator mendaftarkan URL callback situs ini ({{origin}}) di aplikasi OAuth {{provider}}.",
+    "source": "3fd884acd9149931923df4014293b2decd5dc6c7a94ad5eeecfc03bc09bf7a98"
+  },
+  "socialIdentity.callback.error": {
+    "text": "{{provider}} tidak bisa dihubungkan. Coba lagi.",
+    "source": "475e030a52bcfefd28a91331012e12e1f0c8c8588a85747e3c85706756a51acc"
+  },
+  "socialIdentity.callback.accountMismatch": {
+    "text": "Browser ini masuk ke akun Homeroom yang berbeda dari di aplikasi. Keluar di sini, lalu ketuk Hubungkan lagi di aplikasi dan masuk dengan akun yang sama.",
+    "source": "0e49f5f56c15037c1849150d6e84dc68ce385d4286f35180b67a1c8309af4e44"
+  },
+  "socialIdentity.unlink.confirmTitle": {
+    "text": "Putuskan {{provider}}?",
+    "source": "90e39f1ecf91593ac9198f241ac1ab209540179e924b67e4b3f7911fae5fbaaf"
+  },
+  "socialIdentity.unlink.confirmMessage": {
+    "text": "Ini akan menghapus {{provider}} dari profil publikmu dan bisa memengaruhi kelayakan kredit hariannya.",
+    "source": "4133404f1fcd4c71505a21859be22a1ca19fe752e8f799a7b33f922799540ae1"
+  },
+  "socialIdentity.unlink.confirmButton": {
+    "text": "Putuskan",
+    "source": "acfc5be785a9bb3da11c9f05adb69bd5633096f09002aa44813a1b3207e912ad"
+  },
+  "socialIdentity.unlink.failedProvider": {
+    "text": "Tidak bisa memutuskan {{provider}}.",
+    "source": "d398739336204e5262814f8601366ed50b8074274729dfbf2f5adaaa905ab460"
+  },
+  "socialIdentity.unlink.failed": {
+    "text": "Tidak bisa memutuskan akun ini.",
+    "source": "a968c528af580c58e4c1337bf30e3bec0141161674de14628e7b239febb78897"
+  },
+  "cliTokens.load.failed": {
+    "text": "Tidak bisa memuat kredensial CLI.",
+    "source": "b21cbedcd25c47cd1e82508c09fab9d221cc9590cbbeb5e3a9570078253942b8"
+  },
+  "cliTokens.load.invalid": {
+    "text": "Respons daftar kredensial tidak valid.",
+    "source": "291ebc36b3d4eaeea2e8d7a458a47d6771f92b7008ad9f4ba4659a27af751299"
+  },
+  "cliTokens.row.statusUnknown": {
+    "text": "tidak diketahui",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "cliTokens.row.createdUsed": {
+    "text": "{{status}} · dibuat {{created}} · terakhir dipakai {{lastUsed}}",
+    "source": "b81c370008f536985d0eafd88d3057861dc70129e278fe9296698e539e3d3233"
+  },
+  "cliTokens.row.created": {
+    "text": "{{status}} · dibuat {{created}}",
+    "source": "6b3092bd16d9b9ba8789280fc989743ff9a62afb60e1629c3cab7b2ac0dcea12"
+  },
+  "cliTokens.row.unknownDateUsed": {
+    "text": "{{status}} · tanggal dibuat tidak diketahui · terakhir dipakai {{lastUsed}}",
+    "source": "d168b98249c4c613f319833c771043b635e80afd54c05cb5e5e7834376746e0c"
+  },
+  "cliTokens.row.unknownDate": {
+    "text": "{{status}} · tanggal dibuat tidak diketahui",
+    "source": "4c9e8087c4b203c4ca90aa5c78a9b7776fb58703654b116d7d46195e45d40788"
+  },
+  "cliTokens.row.unnamed": {
+    "text": "Kredensial CLI",
+    "source": "fed39a0da3cff8387398b00fc970b8c5f2073e68774074ef9b41576b8a45b086"
+  },
+  "cliTokens.demoData": {
+    "text": "Data demo: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "cliTokens.revoke.failed": {
+    "text": "Tidak bisa mencabut kredensial.",
+    "source": "6d3c955f6af5d8d8864fdfedaec159082d717a30a015e00f6a48ce0b268f4096"
+  },
+  "cliTokens.revoke.done": {
+    "text": "Kredensial dicabut.",
+    "source": "fa8d99359669223757844e387f2c18bbbfa429221dbe40099098b23d9e771f5a"
+  },
+  "experimental.progressEstimate.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "experimental.progressEstimate.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "experimental.sessionBridge.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "experimental.sessionBridge.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "mobilePush.invalidResponse": {
+    "text": "Respons preferensi tidak valid.",
+    "source": "6de557513c34acab7af9ab153abb29e6f547b33834fba6a1a482288d2c17ea91"
+  },
+  "mobilePush.incompleteResponse": {
+    "text": "Respons preferensi tidak lengkap.",
+    "source": "0886bd4d184a7661e498979fc3054fca7d42443815ae2f8410ed6242e5cd260c"
+  },
+  "mobilePush.saved": {
+    "text": "Tersimpan ke akunmu.",
+    "source": "de0e217a0b85d1b21bfbb4f8f51040eaa0a03d3262f6517a1365bd5f8731dbef"
+  },
+  "mobilePush.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "mobilePush.loadFailed": {
+    "text": "Tidak bisa memuat preferensi notifikasi push seluler: {{reason}}",
+    "source": "7e3248194ae5ceba2f68d49e97d12e93c626555535399fc3c804d0cdffb8463e"
+  },
+  "mobilePush.saveFailed": {
+    "text": "Tidak bisa menyimpan: {{reason}}",
+    "source": "695da99d1b94472be52607bc11950a6f66c1bfa756f4cf327cfec5f2e83b7449"
+  },
+  "mobilePush.saveFailedToast": {
+    "text": "Tidak bisa menyimpan preferensi notifikasi push seluler",
+    "source": "7c9cc454c737e22211eec5f1755a2a9f649e051365bf74886355d84ea0e96ff7"
+  },
+  "apiKey.field.replacePlaceholder": {
+    "text": "Tempel kunci baru untuk mengganti",
+    "source": "8a347fdf5687f98be7defa6bc00ee1346e79f50c7ecaa801b91a57f74907d1ca"
+  },
+  "apiKey.button.replace": {
+    "text": "Ganti",
+    "source": "95e154398a4bc0091aa4d6b607472ac5a89e41fbc84a3a49f823314d6de9eebc"
+  },
+  "apiKey.status.pasteFirst": {
+    "text": "Tempel kunci API dulu.",
+    "source": "448710dc61de72d49cedf6c73808a66355e18e7fe52e4eb20f52886ec200bcf8"
+  },
+  "apiKey.status.verifying": {
+    "text": "Memverifikasi dengan Anthropic…",
+    "source": "cabd4656e84b52428a35326940ab951d522f9ada12f2b0c94a1ffea7c24d6c31"
+  },
+  "apiKey.status.saveFailed": {
+    "text": "Gagal menyimpan kunci.",
+    "source": "2ca6410dbed10cffc6c57ada961d1493471bb3565ec122ef9f331d08a1eac4ca"
+  },
+  "apiKey.status.saved": {
+    "text": "Tersimpan. Obrolanmu sekarang ditagihkan ke akun Anthropic-mu.",
+    "source": "94373a53a9d8cd2639fa1a6a89cd48aa9d9759d80621802dc1949f64570f0cac"
+  },
+  "apiKey.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "openrouter.cost.free": {
+    "text": "Gratis",
+    "source": "f411a1fb62758b4c54690d0a702b4955b54dd22115416fa7b1ce51b4a084818d"
+  },
+  "openrouter.cost.low": {
+    "text": "Murah",
+    "source": "607264add7ce608189f0d38e2c1bb2a38e66eb6a636dea16f9570d496593556a"
+  },
+  "openrouter.cost.medium": {
+    "text": "Biaya sedang",
+    "source": "7c1964044ca88a216d84091d2c1c939625999e722668749fa1f88b4b75afb631"
+  },
+  "openrouter.cost.high": {
+    "text": "Biaya tinggi",
+    "source": "d6d2e413efd65cf2942bbe6f5b2db477997b1a5b7cc0b1f3ded3ed8624933761"
+  },
+  "openrouter.cost.unknown": {
+    "text": "Harga tidak tersedia",
+    "source": "6a9e657bba78dd439a0e1f0e291bb9d67eb56ebda13cc9b29a90c9d64d4fdb6d"
+  },
+  "openrouter.cost.inputPrice": {
+    "text": "{{price}} /jt input",
+    "source": "660e9fc60afff7e3c088f01a4ecebce30352ba4fb66075ef9db0cc922f1ef32c"
+  },
+  "openrouter.cost.outputPrice": {
+    "text": "{{price}} /jt output",
+    "source": "4ec850eb02b3840330c23e449c6688589d89eab3515da875dbefd6a148328397"
+  },
+  "openrouter.model.badgeRecommended": {
+    "text": "Disarankan",
+    "source": "d70604e8430461372849bbd123d85771e11423870a507e8fa4650a7e9a5a50ef"
+  },
+  "openrouter.model.badgeNew": {
+    "text": "Baru",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "openrouter.model.compatVerified": {
+    "text": "terverifikasi",
+    "source": "1c34f88707b55e6104c4eb20e71ffa3d33e414b71ef689a15fad0640d0ac58cb"
+  },
+  "openrouter.model.compatLimited": {
+    "text": "terbatas",
+    "source": "7b508dace774f8adc1b121c1812b740904be6dfd37e3b5e3579bc81fbf6f5553"
+  },
+  "openrouter.model.compatUnverified": {
+    "text": "belum diverifikasi",
+    "source": "97b7e2db799e2b79e65f418b42a7d3054c95b2d3ab1dba243039597e44a38084"
+  },
+  "openrouter.model.unknown": {
+    "text": "Model tidak dikenal",
+    "source": "3895185372e6aa76e3ef386f0b061ebae58fd4fe51d7d741fa326169eeac7577"
+  },
+  "openrouter.model.optionLabel": {
+    "text": "{{model}}: {{details}}",
+    "source": "8fd5571093c7a359094d92aeae988b20e9dd3b1b0c2d8c625a0a71efcc8fc37a"
+  },
+  "openrouter.catalog.updatedJustNow": {
+    "text": "Baru saja diperbarui",
+    "source": "c5cb2e53029125397d2f1a208a7c477aeba686ca6b77cad41bed79d678327d20"
+  },
+  "openrouter.catalog.noMatch": {
+    "text": "Tidak ada model yang cocok. Hapus pencarian atau tampilkan semua model",
+    "source": "bc72fa996c112a39b76587cb0c7f2c4cfd4204c28223c07cc8c553429934bc99"
+  },
+  "openrouter.effort.defaultMinimal": {
+    "text": "Bawaan (Minimal)",
+    "source": "a0e9619efbb407197ed098d28e337a09b45e8d55115becdfbd6201e22139adb2"
+  },
+  "openrouter.effort.defaultLow": {
+    "text": "Bawaan (Rendah)",
+    "source": "307e9c47b4ce6f35c73241a43bb45d80174c7b0f335cf7d6fcb351593e72f067"
+  },
+  "openrouter.effort.defaultMedium": {
+    "text": "Bawaan (Sedang)",
+    "source": "14ef4b989459f4a68dcc5c4990ed7dd9f4232e66e3dc841a4ccc6d69619f0a7a"
+  },
+  "openrouter.effort.defaultHigh": {
+    "text": "Bawaan (Tinggi)",
+    "source": "5faa89f6c43a0b6d70a0b961b36f8d9bfc3111ff17c510a02d2e1fe5f26dddde"
+  },
+  "openrouter.effort.defaultExtraHigh": {
+    "text": "Bawaan (Sangat tinggi)",
+    "source": "00c059451c6c4e3d02662072e8fef7fca4b9f6f2189d146f6aa6ca6589a9b0ea"
+  },
+  "openrouter.model.sortHint": {
+    "text": "Model diurutkan berdasarkan rata-rata harga input/output. Pengeluaran sebenarnya bergantung pada penggunaan token.",
+    "source": "8ea7846a5d50c231aff738f9e097a60f4a974005f09b8f4455cfe2d6eb5f7b6f"
+  },
+  "openrouter.model.removeFavorite": {
+    "text": "Hapus model terpilih dari favorit",
+    "source": "af86f2966d9ada3aedad426c2e5cd86d36f3e1be437c6f39006cf43f4dddeff4"
+  },
+  "openrouter.model.notYetVerified": {
+    "text": "Belum diverifikasi untuk pengodean repositori.",
+    "source": "58297943c669f5207c9fae72a8f19b97cb9253365805686ddbce202d1d05311f"
+  },
+  "openrouter.model.verified": {
+    "text": "Terverifikasi untuk pengodean repositori.",
+    "source": "3e7a6d2ad80813a7dadb75729ba4b64df330174eeae9f64f2589ad92453138c3"
+  },
+  "openrouter.model.mayFail": {
+    "text": "Model ini mungkin tidak punya alat repositori atau konteks yang cukup, sehingga satu giliran OpenRouter bisa gagal.",
+    "source": "7726660c5c4006dfcd743c5e757d753500a0050dbf553804d82ab3fafd618811"
+  },
+  "openrouter.model.tooltip": {
+    "text": "{{cost}}. {{compatibility}} Pengeluaran sebenarnya bergantung pada penggunaan token.",
+    "source": "e4abe5d7ab84a1df68939e617dd6525669861389944bdb1ba642dea8e6a29783"
+  },
+  "openrouter.effort.unsupported": {
+    "text": "Model ini tidak menyediakan pengaturan tingkat penalaran.",
+    "source": "ee224d3d38b4244d64843830346000931a0f402f5b7eff0a58e8e92e2c83921a"
+  },
+  "openrouter.effort.hint": {
+    "text": "Berapa lama model ini berpikir sebelum menjawab. Bawaan adalah tingkat yang dipakai platform; pilihanmu akan menggantikannya.",
+    "source": "b8271769d47c5f2e7e395ff573565678edc9e315aab6fbd91f523bfb5feb2c0b"
+  },
+  "openrouter.included.activeWeekly": {
+    "text": "Aktif. Kunci ini membawa jatah mingguan platform sebesar {{amount}}, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "cf35e984bd7994940d3f277fd523924cc1ee0e27475619f6e20884373bd93e92"
+  },
+  "openrouter.included.activeWeeklyWithKey": {
+    "text": "Aktif (sk-or-…{{last4}}). Kunci ini membawa jatah mingguan platform sebesar {{amount}}, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "1034a8c72dcbdc61383791d1e0bf4c6d46a46d981d9a0343a02523c3aceeb3d1"
+  },
+  "openrouter.included.activeDaily": {
+    "text": "Aktif. Kunci ini memiliki batas harian {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "53c31f5fe75b9f3baa0e6eff0699ee67690831ea519e7ca2c21447ebd8f2bcda"
+  },
+  "openrouter.included.activeDailyWithKey": {
+    "text": "Aktif (sk-or-…{{last4}}). Kunci ini memiliki batas harian {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "c8826b16ca4969e6c1fc8c9b19342a4c30fc570d6a5df43446f8b302c3d818ad"
+  },
+  "openrouter.included.activeMonthly": {
+    "text": "Aktif. Kunci ini memiliki batas bulanan {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "9477b439e370a3f067ac90f78ee7bf86bb287873e37d520398aba4c5a9a7a2be"
+  },
+  "openrouter.included.activeMonthlyWithKey": {
+    "text": "Aktif (sk-or-…{{last4}}). Kunci ini memiliki batas bulanan {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "798448b11ed8baa8dfa997f89148d9c90805e10efb74e976b51eebfbcddc4e95"
+  },
+  "openrouter.included.activeLimit": {
+    "text": "Aktif. Kunci ini memiliki batas {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "6c2c4fa729b95b48c4bf83a5a1af022a835446f3bdf935049a192dbedd0e342c"
+  },
+  "openrouter.included.activeLimitWithKey": {
+    "text": "Aktif (sk-or-…{{last4}}). Kunci ini memiliki batas {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "95df335cd578fd0eeda2b02b0122c3a9f0bd9a35a314c41296c175e721f97510"
+  },
+  "openrouter.included.activeOther": {
+    "text": "Aktif. Kunci ini memiliki batas {{cadence}} {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "7a1438898955b0fa0af981e5cc8c4d9f1b6b6d2e5847e7c185706e662ef1004c"
+  },
+  "openrouter.included.activeOtherWithKey": {
+    "text": "Aktif (sk-or-…{{last4}}). Kunci ini memiliki batas {{cadence}} {{amount}} sampai dipindahkan ke jatah mingguan platform, dan kamu boleh memilih model apa pun yang tersedia.",
+    "source": "6c214f15b4b61d8a1d6f05d6289ce8dc964fe296fd059c71a0272ebf88f3d00d"
+  },
+  "openrouter.included.blocked": {
+    "text": "Admin telah memblokir kunci bawaan ini. Hubungi admin platform jika kunci ini perlu diaktifkan lagi.",
+    "source": "45ec7fb306d753894e4b58a310fcd8f17b512ff1190533381b622666ebd65f76"
+  },
+  "openrouter.included.deleted": {
+    "text": "Kunci bawaanmu dihapus oleh admin. Kunci bawaan hanya diberikan sekali, tetapi kamu bisa menambahkan kunci pribadi di bawah.",
+    "source": "a443323b38437d5374b6c752d25d28de9333224d49cc726c04d9fadcd101ee4c"
+  },
+  "openrouter.included.needsReview": {
+    "text": "Kunci ini perlu ditinjau admin. Homeroom tidak mengulang permintaan ke penyedia, untuk mencegah kunci ganda yang tidak disengaja.",
+    "source": "923657eccccecc1f8f125160c285e3191becb84ac6ff2a8fd26ab6aa4c92bc46"
+  },
+  "openrouter.included.notConfigured": {
+    "text": "Kunci bawaan belum disiapkan oleh administrator platform.",
+    "source": "932b735f7ec04945bcdee7643d28e51a2027e475a262a17587170be3cd54bf71"
+  },
+  "openrouter.included.noAllowance": {
+    "text": "Akunmu saat ini tidak punya jatah mingguan bawaan, jadi tidak ada kunci bawaan. Kamu bisa menambahkan kunci OpenRouter pribadi di bawah.",
+    "source": "f5756fb17708cc577b16b796fbb63c1b2179917f8bbf27c86e36a30512e25ced"
+  },
+  "openrouter.included.personalKey": {
+    "text": "Kamu memakai kunci OpenRouter milikmu sendiri. Hapus kunci itu untuk kembali memakai kunci bawaan.",
+    "source": "3a795bfdac4182e69eb631d5308379e415293fb93f7bfd1c2a860a463a77412d"
+  },
+  "openrouter.included.settingUpWeekly": {
+    "text": "Kunci bawaanmu sedang disiapkan. Kunci ini membawa jatah mingguan platform sebesar {{amount}}; buka layar ini lagi sebentar lagi.",
+    "source": "dcc554d624f6aa4236ee1e786078ad9f50f9be3c298180323a7e991e795e6b36"
+  },
+  "openrouter.included.settingUpDaily": {
+    "text": "Kunci bawaanmu sedang disiapkan. Kunci ini membawa jatah harian platform sebesar {{amount}}; buka layar ini lagi sebentar lagi.",
+    "source": "1377cbf22d0747b4cd3f951e3107563e463b44c711e931e72f16dff5802e1a1c"
+  },
+  "openrouter.included.settingUpMonthly": {
+    "text": "Kunci bawaanmu sedang disiapkan. Kunci ini membawa jatah bulanan platform sebesar {{amount}}; buka layar ini lagi sebentar lagi.",
+    "source": "110211c4bb41cc9dca4ba26fdfad9f2c3196770957df78152b337dd4c1d97c89"
+  },
+  "openrouter.included.settingUpAllowance": {
+    "text": "Kunci bawaanmu sedang disiapkan. Kunci ini membawa jatah platform sebesar {{amount}}; buka layar ini lagi sebentar lagi.",
+    "source": "f6abcce4bed6047cfee8c5919aabe6026ea8658028bc01ccb2b9c09717831a9d"
+  },
+  "openrouter.included.settingUpOther": {
+    "text": "Kunci bawaanmu sedang disiapkan. Kunci ini membawa jatah {{cadence}} platform sebesar {{amount}}; buka layar ini lagi sebentar lagi.",
+    "source": "a4456c80472bae94eab0d5e847fd0244f829eb0aca8fc8bceb458c7055797f45"
+  },
+  "openrouter.key.replacePlaceholder": {
+    "text": "Tempel kunci baru untuk mengganti",
+    "source": "8a347fdf5687f98be7defa6bc00ee1346e79f50c7ecaa801b91a57f74907d1ca"
+  },
+  "openrouter.key.replace": {
+    "text": "Ganti",
+    "source": "95e154398a4bc0091aa4d6b607472ac5a89e41fbc84a3a49f823314d6de9eebc"
+  },
+  "openrouter.key.ownerManaged": {
+    "text": "Dikelola Homeroom",
+    "source": "28b10a41f6e120c93b9201cb0dfa1f31d62403ebcb71c7ed862c91114651f3c1"
+  },
+  "openrouter.key.ownerPersonal": {
+    "text": "Kunci pribadi",
+    "source": "e0ec7d23d8ae24dea98b603e7ca99814195156f7065cf8946058fd851091e076"
+  },
+  "openrouter.key.limitWeekly": {
+    "text": "Batas mingguan: {{limit}}",
+    "source": "f86ce0940a2507e6d03cb6a8c53c185f888b9e975e9045d198675f022b14a6c3"
+  },
+  "openrouter.key.limitDaily": {
+    "text": "Batas harian: {{limit}}",
+    "source": "e85dbaa58c44139a7e00939b46067178943ee76aa854c3d5a2016b1c2683bc4d"
+  },
+  "openrouter.key.limitMonthly": {
+    "text": "Batas bulanan: {{limit}}",
+    "source": "fb9dc097a2860d3832784246ce6d863a74fb3d9a89437f5a39252164b751e596"
+  },
+  "openrouter.key.limitPlain": {
+    "text": "Batas: {{limit}}",
+    "source": "23e4f9c2e892e75cd50df8001d73f4b84226a445e67746906758430bfeb95323"
+  },
+  "openrouter.key.limitOther": {
+    "text": "Batas {{cadence}}: {{limit}}",
+    "source": "ef18781ee9cfc55cc4ece6b41d604aaeaeb13c42969750106bfec9f277c895c8"
+  },
+  "openrouter.key.remaining": {
+    "text": "Sisa: {{remaining}}",
+    "source": "4e1646a1d94cb7df186d02c6c9ccfcf98e0aeeef9b72e485d31885128d91ced8"
+  },
+  "openrouter.model.favoritesOn": {
+    "text": "★ Favorit",
+    "source": "68b313bd3a864047563e76252b892a4da35af65842a1f24602356ca6b4d3b752"
+  },
+  "usage.spend.platformOfLimit": {
+    "text": "{{spent}} dari {{limit}}",
+    "source": "8fa0d656077a510a701f68b93ba62d618b88ec369ed220dc056a7e45239efe8d"
+  },
+  "usage.spend.resetsDaily": {
+    "text": "Diatur ulang pukul {{time}}.",
+    "source": "657e2592a7b7f445d80031ee9a51a61538622653088d93fce400dea84fc688c0"
+  },
+  "usage.spend.resetsWeekly": {
+    "text": "Diatur ulang {{day}} pukul {{time}}.",
+    "source": "f56ad5c5cec2cd02084ba0b4eeaa621e6d01ace3d9d3b5366a6af57ad81b8603"
+  },
+  "openrouter.catalog.loadFailed": {
+    "text": "Tidak dapat memuat model OpenRouter.",
+    "source": "50eb99bd96ae98c6da37b0ec63ccf9908621046a4fca138376eabb2f226b6905"
+  },
+  "openrouter.catalog.refreshing": {
+    "text": "Menyegarkan…",
+    "source": "1c0def7be0607b966b89e4974da38090472d8ada625f5b4c89f25b09d39683bd"
+  },
+  "openrouter.catalog.refreshingStatus": {
+    "text": "Menyegarkan katalog model yang bisa diakses kunci ini dari OpenRouter…",
+    "source": "8b22f6a1d2e095913cbb901027b580c2017614687337e48ce01e4d97e288c30d"
+  },
+  "openrouter.catalog.refreshFailed": {
+    "text": "Tidak dapat menyegarkan model OpenRouter.",
+    "source": "ad5f3aeeeee6205787c2eec78441e1112ca01389997c37cbefb1eacb7a6360f1"
+  },
+  "openrouter.favorite.failed": {
+    "text": "Tidak dapat memperbarui favorit itu.",
+    "source": "288b961bc1df1bb49781b6238be6b0422c0280335081dd3274ce5302ecfb61ff"
+  },
+  "openrouter.favorite.added": {
+    "text": "{{model}} ditambahkan ke favorit.",
+    "source": "7d2ff967b9641e86be16872d26868746fce2f4ff0cf4ff74e1c714baab319916"
+  },
+  "openrouter.favorite.removed": {
+    "text": "{{model}} dihapus dari favorit.",
+    "source": "8dd79e0b344c0619f8dacfa70e059ba813cb176ab441a38b3970c98eb8434db0"
+  },
+  "openrouter.key.pasteFirst": {
+    "text": "Tempel kunci API OpenRouter dulu.",
+    "source": "9ccff907e5553d78c957a5556f854b77c7bfd1a322d9c10ee36b3ce269ecdb8a"
+  },
+  "openrouter.key.verifying": {
+    "text": "Memverifikasi dengan OpenRouter…",
+    "source": "df6febc87959e86d11824328e6a84fb69ae119a14f8861c2cc6e860d8a085d4e"
+  },
+  "openrouter.key.saveFailed": {
+    "text": "Gagal menyimpan kunci.",
+    "source": "2ca6410dbed10cffc6c57ada961d1493471bb3565ec122ef9f331d08a1eac4ca"
+  },
+  "openrouter.key.saved": {
+    "text": "Tersimpan, terenkripsi, dan dipilih sebagai agen pengodean bawaanmu.",
+    "source": "9358f750d87bbf7821e18403bff211c8bf5967f5970dbd9c976cc7e09212fc8c"
+  },
+  "openrouter.key.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "openrouter.key.removeFailed": {
+    "text": "Gagal menghapus kunci.",
+    "source": "4b33ea92e4c7da9f490f106fded6a4b5033ce752e74e3eb11c5e89b3eb6c87e7"
+  },
+  "openrouter.key.removed": {
+    "text": "Kunci dihapus.",
+    "source": "e1d3cae0be73c7d2694cb62abc0796163dd6f055c5a7c67d40ed6a552a459ef5"
+  },
+  "openrouter.key.removedDefaultReset": {
+    "text": "Kunci dihapus; agen bawaanmu dikembalikan ke Claude Code.",
+    "source": "189536bbf67c3e89856eceea9fea2567bb663a7d80220b1afe7e2a47af5baad8"
+  },
+  "openrouter.default.chooseModelFirst": {
+    "text": "Pilih model OpenRouter dulu.",
+    "source": "eb5ba7eba33e7551c83e4a6135a3fabd48ab7fc13754e526bcfdeafe27ea7ef8"
+  },
+  "openrouter.default.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "openrouter.default.saved": {
+    "text": "OpenRouter disimpan sebagai AI sesi bawaanmu.",
+    "source": "cfa500b1714a271a936fef3fbb7cc6a0ff8d9764a046f4d3ed662b2e8446f0ef"
+  },
+  "openrouter.default.networkError": {
+    "text": "Kesalahan jaringan.",
+    "source": "1bd8a2e6222008e610495d1d13117a41ac07fa3b96df609fc7d59a0fdfc94ae0"
+  },
+  "openrouter.claudeDefault.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "openrouter.claudeDefault.saved": {
+    "text": "Claude Code sekarang jadi agen pengodean bawaanmu.",
+    "source": "9eab2f9230edeb34874c0d07adfb870817d92464e11fe29c6288ef213a49e9d7"
+  },
+  "openrouter.claudeDefault.networkError": {
+    "text": "Kesalahan jaringan.",
+    "source": "1bd8a2e6222008e610495d1d13117a41ac07fa3b96df609fc7d59a0fdfc94ae0"
+  },
+  "password.status.tooShort": {
+    "text": "Kata sandi baru minimal 8 karakter.",
+    "source": "46d36027482ba10c1ab461cbfbc8369e1c33d360fdd6f72b68e9873322f8b0ef"
+  },
+  "password.status.mismatch": {
+    "text": "Kata sandi baru tidak cocok.",
+    "source": "653fbc4155186e5a28a4c5a1765cad99313e1aa4a5f1640864c379603d158acc"
+  },
+  "password.status.walletNativeOnly": {
+    "text": "Penandatanganan dompet hanya tersedia di aplikasi Homeroom.",
+    "source": "7a847aa1e4ea48428a280975680fbbe0f6f475e4be892671be17c7f4cf3f7058"
+  },
+  "password.status.verifyingIdentity": {
+    "text": "Memverifikasi identitas…",
+    "source": "258749e2777d4dd71aea1a3dfe020a76679bc1b4a6e4e9bd1a62dfad3fef8c55"
+  },
+  "password.status.noWalletAddress": {
+    "text": "Tidak dapat membaca alamat dompetmu.",
+    "source": "d3e2e848bf632bdbf5f35d09b00860d7548f7567a6de9faddec53281f13437ec"
+  },
+  "password.status.noChallenge": {
+    "text": "Tidak dapat mengambil tantangan dari server.",
+    "source": "5cff7bddf8c119b66f5bd67a5d6847e319335872ed294e2cdc1f3d4c8f651800"
+  },
+  "password.status.changeFailed": {
+    "text": "Gagal mengubah kata sandi.",
+    "source": "bfaea7c85615a0bba21d299df41e55a37606429a80eb71ba96ef452ea06afa45"
+  },
+  "password.status.changed": {
+    "text": "Kata sandi diubah.",
+    "source": "a768c77be9ddf3bd735a9225995ae0cf9b31829159613083e2bc44164b2ba280"
+  },
+  "password.status.signatureDenied": {
+    "text": "Permintaan tanda tangan ditolak.",
+    "source": "1431f4c6c22d308d5da9b09b0f8c0a6ac29a6348eae3b11ff87226d93c7b91d1"
+  },
+  "password.status.walletChangeFailed": {
+    "text": "Perubahan lewat dompet gagal: {{reason}}",
+    "source": "952ea9bc472bceef3172a2f3781ce0fb510d4c186e4600043be70070519ba09d"
+  },
+  "password.status.enterCurrent": {
+    "text": "Masukkan kata sandimu saat ini.",
+    "source": "cf4d205e451da03cea764504155e4eba992477f6b70c012502d636c9a7898dac"
+  },
+  "password.status.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "password.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "username.status.enterNew": {
+    "text": "Masukkan nama pengguna baru.",
+    "source": "355c82f89730dd5aa3d821f4ad27f25d44cb09184147a35188640d6024554b37"
+  },
+  "username.status.enterPassword": {
+    "text": "Masukkan kata sandimu saat ini.",
+    "source": "cf4d205e451da03cea764504155e4eba992477f6b70c012502d636c9a7898dac"
+  },
+  "username.status.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "username.status.changeFailed": {
+    "text": "Gagal mengubah nama pengguna.",
+    "source": "073750be527e5e7d82f1281e1ada66204d95a2edf1515e749ff0a5f154bd7b93"
+  },
+  "username.status.unchanged": {
+    "text": "Itu sudah jadi nama penggunamu.",
+    "source": "b33a96a452ac57e14225a11ad048281be6bee3a0fea7d89864cdc314dedc190d"
+  },
+  "username.status.changed": {
+    "text": "Sekarang kamu @{{username}}.",
+    "source": "c3a6938942a3227128001ec2c55f6d3e826dff69f05ca17800959090c036cd82"
+  },
+  "username.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "signOut.failed": {
+    "text": "Tidak bisa keluar. Periksa koneksimu lalu coba lagi.",
+    "source": "0632a4853c68c1e1f46564d9df9aaabb335f62459c2b38543b87107e9fd0a158"
+  },
+  "apiKey.remove.confirmTitle": {
+    "text": "Hapus kunci API-mu?",
+    "source": "1ee469e473451824b7c32a8088b0d3f61de81c496df0a7d9b557b8a0ec15c301"
+  },
+  "apiKey.remove.confirmMessage": {
+    "text": "Obrolan berikutnya akan memakai anggaran harian bersama.",
+    "source": "cafee8d0d055378667b569721fd4f68f2a918d395544fe9006708cfab489b51e"
+  },
+  "apiKey.remove.confirmButton": {
+    "text": "Hapus",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "apiKey.remove.failed": {
+    "text": "Gagal menghapus kunci.",
+    "source": "4b33ea92e4c7da9f490f106fded6a4b5033ce752e74e3eb11c5e89b3eb6c87e7"
+  },
+  "apiKey.remove.done": {
+    "text": "Dihapus.",
+    "source": "b4df0c43b59cfbb146d94d5610850a72afbd6844486643b3e025e7eee9891af2"
+  },
+  "apiKey.remove.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "grants.status.demoData": {
+    "text": "Data demo: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "grants.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "grants.status.invalidCap": {
+    "text": "Masukkan batas yang valid (minimal $0,01).",
+    "source": "5eac2deb4ff1f25a1a0b9bdcf46451a7879503351bfd0fc3022a2c10191cd81d"
+  },
+  "grants.status.capFailed": {
+    "text": "Gagal memperbarui batas.",
+    "source": "7839e655d9ea328de1d141f6d71a31a46d3292c94926a9e96d63e7b027a3e0c7"
+  },
+  "grants.status.capUpdated": {
+    "text": "Batas diperbarui.",
+    "source": "43414f3c4b4263651d48572da4c3bfd41e6fc56e285fa4ff7fa447fe878a1876"
+  },
+  "grants.status.spilloverFailed": {
+    "text": "Gagal memperbarui.",
+    "source": "9eac1d3f9df1e7ef4f913262f9c0fb7fb06f73c46d72e9edb36d49bc1d22b021"
+  },
+  "grants.status.spilloverEnabled": {
+    "text": "Limpahan diaktifkan.",
+    "source": "88ee271921b5cf1b5abf63375d61cd99215d8957f9b913a4123d65a614eb859e"
+  },
+  "grants.status.spilloverDisabled": {
+    "text": "Limpahan dinonaktifkan.",
+    "source": "2195cfc46d63729730edaef62f4649570dcbd6f104ee69f1730c052c9427868b"
+  },
+  "grants.revoke.confirmTitle": {
+    "text": "Cabut akses AI untuk \"{{app}}\"?",
+    "source": "1fb7843756419e80896ee31f7488cac51439c60a0f69238236e1626dbfb60f83"
+  },
+  "grants.revoke.confirmMessage": {
+    "text": "Panggilan AI berikutnya dari aplikasi ini akan langsung gagal. Aplikasi bisa meminta akses lagi nanti.",
+    "source": "920d81411145be5e1b592316bfbd7e4e51d52aea7d3e720dfe408d5810606532"
+  },
+  "grants.revoke.confirmButton": {
+    "text": "Cabut",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "grants.status.revokeFailed": {
+    "text": "Gagal mencabut.",
+    "source": "1f13652b3517320dbbc1855ee3cdbe92499bc436818d76a2797f13a1dd138f86"
+  },
+  "grants.status.revoked": {
+    "text": "Dicabut.",
+    "source": "f11dcfc58f94154c44a10abbe4b6b6d459555c5b6d43e0c29d9484d98185e052"
+  },
+  "grants.status.reenableFailed": {
+    "text": "Gagal mengaktifkan kembali.",
+    "source": "abe57dbcf7742a96774c5b77805e2e8613fb557bb53ae23753d378d80601c00c"
+  },
+  "grants.status.reenabledAtDefault": {
+    "text": "Diaktifkan kembali dengan batas harian standar {{cap}}.",
+    "source": "539e4231ca0412b9c2c06852294833cf6ae3c017308fa87733bd6383eec55815"
+  },
+  "grants.status.reenabled": {
+    "text": "Diaktifkan kembali.",
+    "source": "6335436c30e71e966ef7ff55f106395dd5965aadb1e5218f5502b94314b59301"
+  },
+  "notificationPrefs.status.demoData": {
+    "text": "Data contoh: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "notificationPrefs.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "notificationPrefs.status.saveFailed": {
+    "text": "Gagal menyimpan.",
+    "source": "55ac3cfb190ed5e43ea0ad4bcc3812318c3f671ef9ae9ca64b256e74eb01c679"
+  },
+  "notificationPrefs.status.saved": {
+    "text": "Tersimpan.",
+    "source": "fca046ccd586c67f7fe0b3c12c29873a8abf9376f7cd514fc6272ec03b2de0b3"
+  },
+  "notificationPrefs.status.unknownApp": {
+    "text": "Aplikasi ini tidak dapat dikenali.",
+    "source": "48efbb9706c3b8759c3969029c9b7cc3f9c7454016285e2bacf54aa369c03090"
+  },
+  "notificationPrefs.status.resetFailed": {
+    "text": "Gagal mengatur ulang.",
+    "source": "534cc8a201a2738c223c574e8463fc208a8ac87676c936cfd820464998fdba23"
+  },
+  "notificationPrefs.status.reset": {
+    "text": "Kembali mengikuti pengaturan bawaanmu.",
+    "source": "79e4dcaac085bbe9b0bb5578f757ac3187e2a93240aaa03dc8eabf1d05d2b305"
+  },
+  "appPermissions.status.demoData": {
+    "text": "Data contoh: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "appPermissions.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "appPermissions.revoke.confirmTitle": {
+    "text": "Cabut izin ini?",
+    "source": "421e06bfbe3df9e1605fbae63d5db91147add6aa6408cae7961784e1c977ac14"
+  },
+  "appPermissions.revoke.confirmMessage": {
+    "text": "Aplikasi kehilangan izin ini saat dibuka berikutnya. Aplikasi bisa meminta lagi nanti.",
+    "source": "7c569ed0914eea4e8b239e326273851b7f2bb23ab7467b1191763413853e26f1"
+  },
+  "appPermissions.revoke.confirmButton": {
+    "text": "Cabut",
+    "source": "87e6d00bbf53ec5ae251de23ace84d5cf01c69deae04cfff08a5fe353a9853bb"
+  },
+  "appPermissions.status.revokeFailed": {
+    "text": "Gagal mencabut.",
+    "source": "1f13652b3517320dbbc1855ee3cdbe92499bc436818d76a2797f13a1dd138f86"
+  },
+  "appPermissions.status.revoked": {
+    "text": "Dicabut. Berlaku saat aplikasi dibuka berikutnya.",
+    "source": "6720ad68c0edcd29aa6fdd0d496e83d87475e6c71587445e2a02a0738442bae1"
+  },
+  "appPermissions.status.unknownApp": {
+    "text": "Aplikasi ini tidak dapat dikenali.",
+    "source": "48efbb9706c3b8759c3969029c9b7cc3f9c7454016285e2bacf54aa369c03090"
+  },
+  "appPermissions.status.notDeclared": {
+    "text": "Aplikasi ini tidak lagi meminta izin tersebut.",
+    "source": "1670cd7604ad909f9224ef1b03f0c12c0c40a365bbc1a453b5a921e724408a5f"
+  },
+  "appPermissions.status.reenableFailed": {
+    "text": "Gagal mengaktifkan kembali.",
+    "source": "abe57dbcf7742a96774c5b77805e2e8613fb557bb53ae23753d378d80601c00c"
+  },
+  "appPermissions.status.reenabled": {
+    "text": "Diaktifkan kembali. Berlaku saat aplikasi dibuka berikutnya.",
+    "source": "00f025347f2ba4cf23722e0301a2b31439b5368a20f69c2127887dd4cdaa136b"
+  },
+  "agentFiles.status.tooLarge": {
+    "text": "\"{{file}}\" terlalu besar. Batasnya 48 KB per file.",
+    "source": "e5f58661d1021018f75a0341d0bd3b7f26c932a90feee37a309ec9c7262ac098"
+  },
+  "agentFiles.status.unreadable": {
+    "text": "File itu tidak bisa dibaca.",
+    "source": "66cc390c1bcfec65a1117d89ff88065832e498d435df8667f72d469b5e4b33b8"
+  },
+  "agentFiles.form.titleSkill": {
+    "text": "Skill baru dari \"{{file}}\"",
+    "source": "8fe49cf6356257ee02efa7ec4dae99df07ebab5bb65e6619027d75299e23f3cf"
+  },
+  "agentFiles.form.titleInstruction": {
+    "text": "File instruksi baru dari \"{{file}}\"",
+    "source": "704e70620c42b0b958131fa29517fa94a1ef1b789aaed84dc599436bddee8719"
+  },
+  "agentFiles.status.demoData": {
+    "text": "Data contoh: perubahan tidak disimpan.",
+    "source": "364f1930bad3ae0563a1bcc398a4829fcda32b7271761f1bff5e08a09c1c8597"
+  },
+  "agentFiles.status.nameRequired": {
+    "text": "Beri nama pada file.",
+    "source": "3febfed6fc176af1a35c54e098cc734fbe1270a075fa6c7121ebbe255f254907"
+  },
+  "agentFiles.status.saveFailed": {
+    "text": "Gagal menyimpan file.",
+    "source": "65aa9a344eac37ab013bc180a2fd28d45b5c3b8601e9f2945abbe2ea0f2a6506"
+  },
+  "agentFiles.status.saved": {
+    "text": "\"{{name}}\" tersimpan. Berlaku mulai proses berikutnya.",
+    "source": "d3890a9a7b600fe78cd96fa09c8537d521d0788f0b0d108a2245bafa15b55bde"
+  },
+  "agentFiles.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "agentFiles.delete.confirmTitle": {
+    "text": "Hapus \"{{name}}\"?",
+    "source": "e329db76e112d1841910992ce89edb91c3afa1ba8c510e7f3ec6e2b73389dd4e"
+  },
+  "agentFiles.delete.confirmMessage": {
+    "text": "Agen pemrograman berhenti memakainya mulai proses berikutnya. Tindakan ini tidak bisa dibatalkan.",
+    "source": "7f67889a17d6d6a1b3d217ce49622a7b4a14df5f9b41277ab76bd6768243e012"
+  },
+  "agentFiles.delete.confirmButton": {
+    "text": "Hapus",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "agentFiles.status.deleteFailed": {
+    "text": "Gagal menghapus.",
+    "source": "7e2e87f15e1acfd77091272e596e93abdc2142f01a1688c6ea72c07d735d0ab1"
+  },
+  "agentFiles.status.deleted": {
+    "text": "\"{{name}}\" dihapus.",
+    "source": "ce314eea16594e051bf7cc5226fd13dcd5dd91b371f77ebc2d2800e8c9a131e5"
+  },
+  "wallet.status.startFailed": {
+    "text": "Gagal memulai penautan.",
+    "source": "455b3330f8dae7f88ed13b969496d81d8a78ec102b98eed75e0e40ba933cce30"
+  },
+  "wallet.status.networkError": {
+    "text": "Kesalahan jaringan: {{reason}}",
+    "source": "ca4fdb02d0e67180f5b50de8afe3334e899ed0c7a850add5ad46449cf63374b0"
+  },
+  "wallet.status.linked": {
+    "text": "Dompet tertaut!",
+    "source": "d90e1dc460804a9cea89595a189dff63e4230f73042115a2827f4e2d5ee0fbfb"
+  },
+  "wallet.status.qrExpired": {
+    "text": "Kode QR kedaluwarsa. Coba lagi.",
+    "source": "603d556dcefc649c423f9cf1c10214c0cac5f5432d9cc00b6a7722e067e409ba"
+  },
+  "wallet.link.expiresIn": {
+    "text": "Kedaluwarsa dalam {{time}}",
+    "source": "d12833a5a9266f3e8b7f1fa789005bb9788eff61d9955c303f29b84dbfeaedd2"
+  },
+  "wallet.unlink.confirmTitle": {
+    "text": "Putuskan tautan dompet Homeroom-mu?",
+    "source": "dc7c8139a8b6b44fdd425ac689bb22626d9c22e353d034379c7173c1762830e6"
+  },
+  "wallet.unlink.confirmButton": {
+    "text": "Putuskan",
+    "source": "b90108da0bd2b120cc5ed1ba1eb5859a0364c78e56819a427abd176aaff2af5b"
+  },
+  "wallet.status.unlinkFailed": {
+    "text": "Gagal memutuskan tautan.",
+    "source": "df68c8229552bb550935e7b90f5b122112a39c1d70427c97b09a721b2f87b5eb"
+  },
+  "wallet.status.unlinked": {
+    "text": "Tautan dompet diputuskan.",
+    "source": "9c955cd913a11c322c0cd96af385091fcf04e00ef07efe22f7d6597c702fca70"
+  },
+  "usernode.readError.timeout": {
+    "text": "Aplikasi Homeroom tidak merespons tepat waktu. Mungkin masih dimulai.",
+    "source": "831a2fb6617f9384cf58468c2e43feb57aecc87c897eebca521746e1b1bf5147"
+  },
+  "usernode.readError.rejected": {
+    "text": "Aplikasi Homeroom melaporkan kesalahan.",
+    "source": "1d0b7e7236e5e03141e34aa148f2c0b969ea1c40584c34a527eddf87211d1ac0"
+  },
+  "usernode.readError.probeInconclusive": {
+    "text": "Aplikasi Homeroom belum membuat ulang koneksi aman untuk pengaturan. Membuka ulang aplikasi biasanya memperbaikinya.",
+    "source": "cbad46244ec4e77f9938ff2df9f4e7e0e1c888005607e604e0576c3e92ec15a6"
+  },
+  "usernode.readError.noTransport": {
+    "text": "Layar ini tidak bisa terhubung ke aplikasi Homeroom dari sini.",
+    "source": "6c093b9d67b4e59203cf081c500c16830b3473d1a9326ac113737a2ca020936a"
+  },
+  "usernode.readError.notNative": {
+    "text": "Layar ini tidak bisa terhubung ke aplikasi Homeroom dari sini.",
+    "source": "6c093b9d67b4e59203cf081c500c16830b3473d1a9326ac113737a2ca020936a"
+  },
+  "usernode.readError.pageChanged": {
+    "text": "Permintaan dibatalkan karena halaman ini berubah.",
+    "source": "b80faf3fc3fcb499835b4b938e47079e7c1af0d4dd1aa1b17fbbdbc0e18c7cff"
+  },
+  "usernode.readError.privilegedUnavailable": {
+    "text": "Aplikasi Homeroom menolak koneksi aman layar ini. Lihat “Aplikasi Homeroom: koneksi” di bawah.",
+    "source": "25aa701e185ac90e212148f60f7a823e8a99b03b075df004a631ba9b6a409bfa"
+  },
+  "usernode.readError.fallback": {
+    "text": "Aplikasi Homeroom tidak mengirim pengaturan.",
+    "source": "37784f6a730bd90a70119d154fb1aef06287ecfe91a420bb4f051c7b0051b174"
+  },
+  "usernode.connection.state.ready": {
+    "text": "Terhubung",
+    "source": "22965568d22a14ee17af055d2870b50afcfe9fd94a83eec3196e266932297bb2"
+  },
+  "usernode.connection.state.blockedFrame": {
+    "text": "Ditolak",
+    "source": "66b873543aebf01b33f9a69013d6ba1291d31dafbdcd29051e9dd94fe90b7245"
+  },
+  "usernode.connection.state.unsupported": {
+    "text": "Tidak ada di versi aplikasi ini",
+    "source": "c05d68abe445c0962023df597ad7ff017fe2920b3810faf828b0e5b1f1a2fc53"
+  },
+  "usernode.connection.state.inconclusive": {
+    "text": "Belum dikonfirmasi",
+    "source": "3229d16ca643cb8615493e849ef042cc687c7a94ac44b9b9131668cab75422d5"
+  },
+  "usernode.connection.state.unattached": {
+    "text": "Tidak ada jawaban",
+    "source": "7e49c68db30e39dc72d346ee51ddc7e9a283ce3ad6ece4fa786612919313d8ab"
+  },
+  "usernode.connection.state.unknown": {
+    "text": "Belum diperlukan",
+    "source": "f3ad7cf45438cb3a4c87e86cb88e79fe609d5faaa5d9e01e73436a4f83b4758e"
+  },
+  "usernode.connection.reason.ready": {
+    "text": "Layar ini bisa mengelola pengaturan aplikasi.",
+    "source": "805d49b781ba37e2db3f2b889e47fe694aa6509c271362991821d932e0b80f09"
+  },
+  "usernode.connection.reason.blockedFrame": {
+    "text": "Aplikasi menolak koneksi aman dari layar ini, jadi pengaturan aplikasi dan keluar dari aplikasi tidak bisa diubah dari sini. Tutup paksa aplikasi lalu buka lagi, biasanya ini memulihkan koneksi. Kalau masih terjadi, instal ulang aplikasi untuk menghapus kondisi macet tersebut.",
+    "source": "9e92a4bf9976b3a473701ee8afad8eba4d02e455f8548bd09fbee134f9c0f001"
+  },
+  "usernode.connection.reason.unsupported": {
+    "text": "Versi aplikasi ini lebih lama daripada koneksi aman yang dipakai layar ini. Perbarui aplikasi Homeroom untuk mengelola pengaturannya di sini.",
+    "source": "89697727ab94c0fb34a2cd9db9853307b4fc4f79515d9a95a10f530b66498091"
+  },
+  "usernode.connection.reason.inconclusive": {
+    "text": "Aplikasi belum menjawab, jadi kami belum tahu apakah koneksi aman sudah aktif. Mungkin aplikasi masih dimulai, coba lagi sebentar lagi.",
+    "source": "a66334fbae7e742083e5e76f604e0e1881514b0a8d3e74d51d464e75253602fd"
+  },
+  "usernode.connection.reason.unattached": {
+    "text": "Aplikasi tidak pernah menjawab permintaan koneksi aman dari layar ini. Tutup paksa aplikasi lalu buka lagi. Kalau tidak berhasil, instal ulang aplikasi untuk menghapus kondisi macet tersebut.",
+    "source": "df1e001385560fe5277d457204d79a990dda2d850e029a4578150bf403e9e816"
+  },
+  "usernode.connection.reason.unknown": {
+    "text": "Layar ini belum memerlukan koneksi aman aplikasi.",
+    "source": "612de212244474a9a0223370eb2206051eb821ce308fecce8cf78e30bee5fbed"
+  },
+  "usernode.action.notAccepting": {
+    "text": "Aplikasi Homeroom tidak menerima perubahan dari layar ini. Tutup paksa dan buka lagi aplikasinya, lalu coba lagi.",
+    "source": "2b7bf898284cae25a3226931e6fb4a72abaac29df8d881867bfc99ca8b0dc902"
+  },
+  "usernode.notif.openingPermissionPrompt": {
+    "text": "Membuka permintaan izin…",
+    "source": "64c1477f3509795da1f7de010cc0f862777eb178e6075e9c61de767ed12d1782"
+  },
+  "usernode.notif.openingNotificationPrompt": {
+    "text": "Membuka permintaan notifikasi…",
+    "source": "729279cc5d9df6b09ac57e8176fe70dd83d5db2b277a2ecf3fb058a4b7b0ae2d"
+  },
+  "usernode.notif.preview": {
+    "text": "Ini hanya pratinjau baris di dalam aplikasi. Izin notifikasi sendiri ada di aplikasi Homeroom.",
+    "source": "1305496610d71fc65450a3631f807d2da90e3cc5a2c2289890a9c3d37545e583"
+  },
+  "usernode.notif.onlyInApp": {
+    "text": "Izin notifikasi hanya tersedia di dalam aplikasi Homeroom.",
+    "source": "e7162b450d52843cc9597027a35516df288fb52d208e6e7b01c0c6a9af416e9d"
+  },
+  "usernode.notif.alreadyAllowed": {
+    "text": "Notifikasi untuk Homeroom sudah diizinkan.",
+    "source": "59a91e71b5f3321415296525e0966b831f9d0f0ac4a7801d6c790a880d6c315f"
+  },
+  "usernode.notif.noAnswer": {
+    "text": "Aplikasi Homeroom tidak merespons permintaan izin. Tutup paksa dan buka lagi aplikasinya, lalu coba lagi.",
+    "source": "c14ed244df55d110245268697912f218f01d08cac51eeb316b0644ebda0e4bda"
+  },
+  "usernode.notif.requestFailed": {
+    "text": "Permintaan izin tidak bisa dimulai.",
+    "source": "7251d65fc769f6f93ee82885745527b4ec89eec735f26f581fc983f9c1e9e5c9"
+  },
+  "usernode.notif.permissionGranted": {
+    "text": "Izin diberikan.",
+    "source": "63895f3e9bc16c0ae570abe6cf082208d2852cd8f01104482273583a40f60aff"
+  },
+  "usernode.notif.nowAllowed": {
+    "text": "Notifikasi untuk Homeroom sekarang diizinkan.",
+    "source": "29f715c70031e5bf97e618a5bf69f9542b914c2993893146993ad3ae2f73e9b9"
+  },
+  "usernode.notif.unsupported": {
+    "text": "Versi aplikasi Homeroom ini tidak bisa membuka permintaan notifikasi. Perbarui aplikasi dari App Store.",
+    "source": "d893917265e5302c8ec27c98faddb6da3b55c6cbf92e3a10c8ae3533590060a4"
+  },
+  "usernode.notif.deniedAndroid": {
+    "text": "Izin ditolak. Izinkan notifikasi untuk Homeroom di pengaturan sistem.",
+    "source": "6bececd1d2ca6beabbc4d12259f7e7d16ffc240856e929bf559c80807baec99d"
+  },
+  "usernode.notif.deniedIos": {
+    "text": "Notifikasi untuk Homeroom dimatikan. iOS hanya menampilkan permintaannya sekali, jadi ini harus diubah di Pengaturan › Notifikasi › Homeroom.",
+    "source": "561ae5ff3364ebc965724bab72dfab7426edf2110c9ba9abdafb87ee701b5785"
+  },
+  "usernode.notif.declined": {
+    "text": "Izin tidak diberikan.",
+    "source": "ea5e378049b40e488372f8ac53d3122e47c10f2a50bf973a193b6b44670a7541"
+  },
+  "usernode.notif.silent": {
+    "text": "Aplikasi Homeroom tertutup tanpa menampilkan permintaan notifikasi. Buka lagi aplikasinya dan coba lagi, atau izinkan notifikasi di Pengaturan › Notifikasi › Homeroom.",
+    "source": "975826ec04e561e84e182cdbb0de90c12e7b6004288030902632b9e3ddf3cfe2"
+  },
+  "usernode.notif.couldNotOpen": {
+    "text": "Permintaan notifikasi tidak bisa dibuka.",
+    "source": "36ea1087645820ec97ca85357f6a53fbaf10a17c55da684207dba6e317298cca"
+  },
+  "terms.noneToReview": {
+    "text": "Belum ada ketentuan untuk ditinjau",
+    "source": "836ccd73b0e6a48eaaa34f7662cbcbccdbf7962ea273620bdd85b64ceac42a89"
+  },
+  "terms.loadFailed": {
+    "text": "Ketentuan tidak bisa dimuat",
+    "source": "d7d4499d91346f6d3929f14870bed283268adcedd68dd363d1c6743ed6af7fd3"
+  },
+  "terms.fallbackTitle": {
+    "text": "Ketentuan",
+    "source": "ede5489964834a514b61c7a4a8370be2452dd4a7d807180f14991ccc11ad2430"
+  },
+  "terms.firstRunIntro": {
+    "text": "Meninjau ketentuan adalah bagian dari bergabung di platform ini. Baca ketentuan selengkapnya, lalu pilih apakah kamu menerimanya.",
+    "source": "2fc352b8ed5f2c95610a9b7dd2fbb0e2ee70da90d549310023030acf235ee8d1"
+  },
+  "terms.version": {
+    "text": "Versi {{version}}",
+    "source": "c6b6b4b58937ac03375604bd0a9252f6c1926496d870272ba68f78fb3497891a"
+  },
+  "terms.published": {
+    "text": "dipublikasikan {{date}}",
+    "source": "562a293e692aefc3c5e6651b677d6a134e41c9652b398112cd406895f871c702"
+  },
+  "terms.readFull": {
+    "text": "Baca ketentuan lengkap",
+    "source": "05e37a9b3499499944e130c81729efdf00ac5ccf78a9f0d20c11ebeae1b1b8e1"
+  },
+  "terms.acceptedOn": {
+    "text": "Kamu menerima versi ini pada {{date}}.",
+    "source": "52a89f484a8823a54c32ae001f1760d0769122d389ff063ad73975afabaf7046"
+  },
+  "terms.accepted": {
+    "text": "Kamu sudah menerima versi ini.",
+    "source": "b155e2010274956d7255b54087526586e6265601ced022d753199964c866d372"
+  },
+  "terms.notAccepted": {
+    "text": "Kamu belum menerima versi ini.",
+    "source": "737bfca88a5fc7dcfbc234298661501deaaaceae01812372ce555462f4745f16"
+  },
+  "terms.consentFailed": {
+    "text": "Persetujuanmu tidak bisa dicatat",
+    "source": "dd2f35910e9f661defd4300951f07595fbc5c3207d879c5a53668f77181dfb3d"
+  },
+  "terms.accept": {
+    "text": "Terima ketentuan",
+    "source": "04ef526187fbb9b19f5faeca7e7565a5a0f63d0eb56856f733ec0980643aa55c"
+  },
+  "terms.acceptedToast": {
+    "text": "Ketentuan diterima",
+    "source": "af982c8cecc983342a025406a91461ae84036cb97b92de8c8c832e410d783879"
+  },
+  "terms.decline": {
+    "text": "Tolak",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "terms.declinedToast": {
+    "text": "Kamu bisa menerima ketentuan nanti dari profilmu",
+    "source": "8757d0f985fc7e34d9bedd20ecc044472bc660cce0704f70ba39e1c4b7b32560"
+  },
+  "usernode.privacy.strictFacematch": {
+    "text": "Pencocokan wajah ketat",
+    "source": "db9e96be50a5fa7969cb4efe17c583eb69f35d8091beb11edbbdca4798f1cf93"
+  },
+  "usernode.privacy.openZkIdentity": {
+    "text": "Buka identitas ZK",
+    "source": "fb90222891cc1a7c5290b146886141f24eba8ee93b8af8db975191561345a675"
+  },
+  "usernode.privacy.restartZkChallenge": {
+    "text": "Mulai ulang tantangan ZK",
+    "source": "8444b0af8fa991877e37c5d1b0bed5e3b056a248bdc70c0c030c64855bce3e60"
+  },
+  "usernode.diagnostics.debugMode": {
+    "text": "Mode debug",
+    "source": "166f21953904ae988849ff2ddd3945eea2c931a050682aa3468c5d7884e4be9c"
+  },
+  "usernode.diagnostics.deviceBenchmark": {
+    "text": "Benchmark perangkat",
+    "source": "706d270858be872719e3709555136b624a8569792481021e7e90dd4aa5ba855d"
+  },
+  "usernode.diagnostics.httpLogs": {
+    "text": "Log debug HTTP",
+    "source": "2f45ced28b956e152d33c22a79e2bfc2caff0714b85e25838bc4437dedc6961f"
+  },
+  "usernode.about.reviewTerms": {
+    "text": "Tinjau ketentuan (belum diterima)",
+    "source": "cb5d729382d69c60804bf5b03b8b70e5e8b4241336bd5dee1f5b5a670189dbc2"
+  },
+  "usernode.about.terms": {
+    "text": "Ketentuan",
+    "source": "ede5489964834a514b61c7a4a8370be2452dd4a7d807180f14991ccc11ad2430"
+  },
+  "usernode.about.appVersionBuild": {
+    "text": "Aplikasi {{version}} ({{build}})",
+    "source": "d36c2dea1a080518cbe762c6cf71fb57a0a5b4bb50537b6e5b24430572f07d5e"
+  },
+  "usernode.about.appVersion": {
+    "text": "Aplikasi {{version}}",
+    "source": "348470f60fc7cde6af35d42c875a1539cf2345889b0189efb1d27227a845312a"
+  },
+  "usernode.about.nodeVersion": {
+    "text": "Node {{version}}",
+    "source": "c2400c559b2d139910e1898ba0928819e030d3bdccd47623a15977e2dc4d4a0e"
+  },
+  "usernode.connection.appVersionBuild": {
+    "text": "Aplikasi {{version}} ({{build}})",
+    "source": "d36c2dea1a080518cbe762c6cf71fb57a0a5b4bb50537b6e5b24430572f07d5e"
+  },
+  "usernode.connection.appVersion": {
+    "text": "Aplikasi {{version}}",
+    "source": "348470f60fc7cde6af35d42c875a1539cf2345889b0189efb1d27227a845312a"
+  },
+  "usernode.connection.bridgeVersion": {
+    "text": "Bridge v{{version}}",
+    "source": "95d331660e4bf1dea5deef7da244a6dbe07e77fa4d6f55252cb80152945fb521"
+  },
+  "usernode.connection.rowLabel": {
+    "text": "Koneksi aplikasi aman",
+    "source": "2feb90ba4887107dba6926355a6c6aa6e4e76e35c97febb5a2f1b873c0068c44"
+  },
+  "usernode.connection.state.unavailable": {
+    "text": "Tidak tersedia",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "usernode.connection.connectWallet": {
+    "text": "Hubungkan dompet yang sudah ada",
+    "source": "0b6aca1e4afecbbecaf7a510f0b756d3710b872ea8a2d3da8397a8d094bdffe5"
+  },
+  "usernode.permissions.heading": {
+    "text": "Aplikasi Homeroom: izin perangkat",
+    "source": "6812765047c424f1d2d03aff5b105cc2bbbcfd0d75b8fe7f69e9a4d56a453932"
+  },
+  "usernode.permissions.descriptionAndroid": {
+    "text": "Produksi blok membutuhkan aplikasi untuk membangunkan perangkatmu tepat pada waktu slot.",
+    "source": "fae4d31501c74e7a5321f175fc8b4313cdd2c87748a81942e93b1916c2455a4d"
+  },
+  "usernode.permissions.descriptionIos": {
+    "text": "Notifikasi memungkinkan Homeroom memberi tahumu tentang aktivitas node dan akun.",
+    "source": "8e24f2dead070515d0059cf449502d4bdd2155664b12905b35352d54c61593e5"
+  },
+  "usernode.permissions.exactAlarms": {
+    "text": "Alarm tepat waktu",
+    "source": "b39f0e4186c82efbde64084d006a87e3aa040a4a3cd641d220dc203031eac9f4"
+  },
+  "usernode.permissions.notifications": {
+    "text": "Notifikasi",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "usernode.permissions.granted": {
+    "text": "Diizinkan",
+    "source": "62026a42b2390a87bf21a984cabce8067c2bddf5031a519a11397f38a0ee828c"
+  },
+  "usernode.permissions.notGranted": {
+    "text": "Belum diizinkan",
+    "source": "352a5b4c1246d1bf84a4bc5902b808a29e50b008bb7f2f26ba2881289deb9adb"
+  },
+  "usernode.permissions.exactAlarmsActionName": {
+    "text": "Alarm tepat waktu: minta izin",
+    "source": "ad4015e2b4db9f16f19fad9b70c3de3d5bd7c1f127d04c863a03648d7951b521"
+  },
+  "usernode.permissions.notificationsActionName": {
+    "text": "Notifikasi: izinkan notifikasi",
+    "source": "08f23317849552b9ca6898900a2ff5feede2f6a9111e574cd8f62ec51dbc6224"
+  },
+  "usernode.permissions.requestPermissions": {
+    "text": "Minta izin",
+    "source": "db910d2c50636828c6629734bb9385fd85cc2d6f5e45c01d0b52e5b30671b939"
+  },
+  "usernode.permissions.allowNotifications": {
+    "text": "Izinkan notifikasi",
+    "source": "001559c8913cdf3d6f835cbbe86da612c0affb5c7e8602221053fcd292db52d6"
+  },
+  "usernode.permissions.batteryOptimization": {
+    "text": "Pengoptimalan baterai",
+    "source": "e2c2b8efa9f25025dd12a329574dce5a0cc28cd886d841099d804b9d3c244c2b"
+  },
+  "usernode.permissions.batteryUnrestricted": {
+    "text": "Tanpa batasan",
+    "source": "ea72a231d1b8a76fc80be167eb0c7c4702e27cee873551579096b2fcccb3aa60"
+  },
+  "usernode.permissions.batteryRestricted": {
+    "text": "Dibatasi",
+    "source": "a00571bcb257e86300664e627eb41fdab70d591ec10f43dba357b0bd4ce3a420"
+  },
+  "usernode.permissions.openBatterySettings": {
+    "text": "Buka pengaturan baterai",
+    "source": "3163b5ddd02cd4358f691773b33474693e871028dc8be96e522a47babe61bfca"
+  },
+  "usernode.permissions.device": {
+    "text": "Perangkat: {{manufacturer}}",
+    "source": "5b0c13447e701b7cf4a9e015f255227d28150393e70f790fc6c0f3e288c5969d"
+  },
+  "usernode.socialPush.stuck": {
+    "text": "Aplikasi Homeroom tidak menerima koneksi aman layar ini, jadi notifikasi belum bisa diatur. Lihat “Aplikasi Homeroom: koneksi” di atas.",
+    "source": "9b74ef87bababfd1cd92e9bb8a27e2a42fb3fa067da7625918a824a270050d68"
+  },
+  "usernode.socialPush.finishingSignIn": {
+    "text": "Menyelesaikan proses masuk aplikasi yang aman sebelum mengaktifkan notifikasi…",
+    "source": "1991ee7ebd7f3f1bcde13dbb7be76a6aea73485fd42d5bad30dde3167bac8474"
+  },
+  "usernode.socialPush.unavailable": {
+    "text": "Pengaturan notifikasi sedang tidak tersedia.",
+    "source": "92460ef6a02d3a8c39f790444bf75fd0d4734f12fdbf6e48882c3d1713bf2603"
+  },
+  "usernode.socialPush.statusOff": {
+    "text": "Nonaktif di perangkat ini.",
+    "source": "78e679b98577b9a5d2723cfeb5583a63c78fdaad4ca572c1a6be578a6550a3fe"
+  },
+  "usernode.socialPush.statusOn": {
+    "text": "Aktif. Perangkat ini sudah terdaftar untuk notifikasi aktivitas.",
+    "source": "4555ec032600e196d9ba1053e1d2a922f0c8d7e0a02ff42740fb4fa2f2dbfcf5"
+  },
+  "usernode.socialPush.statusDenied": {
+    "text": "Izin notifikasi ditolak di pengaturan perangkat.",
+    "source": "7c0a8c1e5f6d939f15c1a573de6893175008b2c2158e0819176ba9efc1edc288"
+  },
+  "usernode.socialPush.statusEnabling": {
+    "text": "Mengaktifkan notifikasi…",
+    "source": "24721556b0e48c1e1583df58aed17b325f5da8ed5da5ee0a945b54c2288ea052"
+  },
+  "usernode.socialPush.statusNotActive": {
+    "text": "Sudah diaktifkan, tetapi pengiriman belum berjalan.",
+    "source": "6ad332318486f0cefd695aaa56442f98503a24630675982b8e9889022813a202"
+  },
+  "usernode.blockProduction.checkFailed": {
+    "text": "Status produksi blok belum bisa diperiksa saat ini.",
+    "source": "e64e7832f8f68224912da88fc2f840d83efc714ebf5bb19741108dbade4f41b1"
+  },
+  "usernode.blockProduction.released": {
+    "text": "Sudah dilepas. Node kamu memproduksi blok saat mendapat slot.",
+    "source": "adf35d7ac68c5a49872711a9e7c24e1bb3edd5497853ade62c81d678e40dfa95"
+  },
+  "usernode.blockProduction.pending": {
+    "text": "Permintaan tertunda. Kamu akan mulai memproduksi otomatis setelah admin melepas kunci kamu.",
+    "source": "077e16d0082dc09aaf1d94d1e3d2aa09aa4e41e39d0a69332de1b97098cf2083"
+  },
+  "usernode.blockProduction.needsAccess": {
+    "text": "Tersedia setelah akunmu punya akses platform.",
+    "source": "03256d37821babe5eb4a154cf97af09e0d17571526276068815074e5924eb09b"
+  },
+  "usernode.blockProduction.requestFailed": {
+    "text": "Permintaan gagal",
+    "source": "cfce761befa84073c2ea0d29bc3f3d647c985faa02d80854eada5312a7cc24a1"
+  },
+  "usernode.blockProduction.requestSent": {
+    "text": "Permintaan terkirim. Admin akan melepas kunci kamu",
+    "source": "ac5d16ce13d3a3387a70ef320f4ed1e04fd1427694f7f1418bb519e321db6bd8"
+  },
+  "usernode.widgetIcons.sending.label": {
+    "text": "Dikirim",
+    "source": "e595f17fac1d8384c7287aa20ab48ec05476a9a557a524091c03727732582e76"
+  },
+  "usernode.widgetIcons.sending.pair": {
+    "text": "Pasangan terang + gelap",
+    "source": "fc06e4cb4798feb3cc6886f5817ceb2a78fe325339bb0fc4b4a55d2f9761425e"
+  },
+  "usernode.widgetIcons.sending.undecided": {
+    "text": "Belum ditentukan, sementara satu tampilan",
+    "source": "2e8ab8eea0dde9b8862452f16d327ad4dff268999a6db00a962448d0b765283e"
+  },
+  "usernode.widgetIcons.sending.singleDark": {
+    "text": "Satu tampilan (gelap)",
+    "source": "f15986d7b53c753897c34e95c5a833d2046a3a17f707d371669eb99da42338d4"
+  },
+  "usernode.widgetIcons.sending.singleLight": {
+    "text": "Satu tampilan (terang)",
+    "source": "bb33cabe7f93d9ff616a7fc970f7135fa8448e27323435e21e93bb82e19a765b"
+  },
+  "usernode.widgetIcons.sending.singleOther": {
+    "text": "Satu tampilan ({{scheme}})",
+    "source": "9ae4503f7bb788e20011d6cebd16c42f674bc071596d405ef4adc630aeb0a08e"
+  },
+  "usernode.widgetIcons.verdictBound": {
+    "text": "Kesimpulan terikat ke versi aplikasi: {{version}} ({{build}})",
+    "source": "7ad9266455dde7e3e70542bd8541c3690fa7377aae6bec959c0116d7a5cca19b"
+  },
+  "usernode.widgetIcons.verdictUnbound": {
+    "text": "Kesimpulan terikat ke versi aplikasi: tidak diketahui, kesimpulan dikonfirmasi ulang setiap kali",
+    "source": "ef9ee42c30704792283c50c6d085fee1af40a0b3881ac866a8b224457b6ca183"
+  },
+  "usernode.widgetIcons.readError": {
+    "text": "{{method}}: {{reason}}",
+    "source": "18e213dc21d4a48a80907fd9642b4362cef6ac309d5044afc30ff00b66abbc44"
+  },
+  "usernode.widgetIcons.mechanism.label": {
+    "text": "Pintasan widget",
+    "source": "5f28cf1abbf8bb2a488484779c6df903e78b472d6693f80b00ad275fb47551a3"
+  },
+  "usernode.widgetIcons.mechanism.available": {
+    "text": "Tersedia",
+    "source": "e674447337e83c1346f6122ed69f35bf5526e2a11842b2f2b788f3fb67d714ca"
+  },
+  "usernode.widgetIcons.mechanism.otherDevice": {
+    "text": "Bukan perangkat ini ({{mechanism}})",
+    "source": "5ce4302a92454a59b0da9ead174b5aeda452d08480e9ef1bd6f207f87cd442b0"
+  },
+  "usernode.widgetIcons.mechanism.unavailable": {
+    "text": "Tidak tersedia",
+    "source": "67a926f7008e2b0e7f2b3f7a4b37597834830110be1d51138f425d6f3449bc09"
+  },
+  "usernode.widgetIcons.registry.label": {
+    "text": "Daftar yang disematkan",
+    "source": "c9ea4eb50e17e193f34f2558e7a82f786f4a3a0e906c7a921bf350ccb60f0c77"
+  },
+  "usernode.widgetIcons.registry.unreadable": {
+    "text": "Tidak bisa dibaca",
+    "source": "51a02791dcb61eb8846a00d3f0263a9da516b30b6a92a3b08e34d65af4cef259"
+  },
+  "usernode.widgetIcons.capability.label": {
+    "text": "Dukungan ikon gelap",
+    "source": "a688ec86f82b3dd3763052074ea9281ea578f14e3f83f70bbae163393ad3764d"
+  },
+  "usernode.widgetIcons.capability.advertised": {
+    "text": "Dinyatakan oleh aplikasi",
+    "source": "ea028841ba86ecedbc7863bd5d03c88fc17dd436d5df844e6f9951e7bb75af43"
+  },
+  "usernode.widgetIcons.capability.notAdvertised": {
+    "text": "Tidak dinyatakan",
+    "source": "bbcd905d77f7611cc883e6b5380db154a04af70dd6f979cdadfa30a454a1f1dc"
+  },
+  "usernode.widgetIcons.capability.unknown": {
+    "text": "Aplikasi tidak bisa memastikan",
+    "source": "2b23bea4da092445c29a3dd997f47ae831b269788d9567983f2dd904af52f97c"
+  },
+  "usernode.widgetIcons.verdict.label": {
+    "text": "Dikonfirmasi oleh widget",
+    "source": "f36e9669d9f2c8f1cbcfebfab2e8460e2f48e55721a560851d8914d7e14aaa0b"
+  },
+  "usernode.widgetIcons.verdict.supported": {
+    "text": "Menyimpan kedua tampilan",
+    "source": "ef5d1b3dcd3140b4eac01dabe7c83d1f5a6883cf8c3019bae4e032da757d4507"
+  },
+  "usernode.widgetIcons.verdict.unsupported": {
+    "text": "Hanya satu tampilan",
+    "source": "fe4f3ad53f7110872d3b2eee34c5e7f49aebecd7badc1c14245e93f72c99c0d7"
+  },
+  "usernode.widgetIcons.verdict.unconfirmed": {
+    "text": "Belum dikonfirmasi",
+    "source": "96584d78f43835f6b63ba47efbc40d533d016d3e057e09812da86a6150fe9bf1"
+  },
+  "usernode.widgetIcons.lastCheck.at": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}",
+    "source": "85e00f92b37a95f422ca6a73532f9977ef5c6c9d34b8f43c31806bf3ad50c232"
+  },
+  "usernode.widgetIcons.lastCheck.never": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah",
+    "source": "3d72e5e8fa72783d3e5c8bba9a1efd21b3cd5723d96f19e48d1baa224d14a216"
+  },
+  "usernode.widgetIcons.lastCheck.atSkippedMechanism": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}: dilewati, bukan mekanisme widget",
+    "source": "dd01545d747edad858e4d401d3a8083bc9fc9e2cdd163e5e95ba3341ec582cdb"
+  },
+  "usernode.widgetIcons.lastCheck.neverSkippedMechanism": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah: dilewati, bukan mekanisme widget",
+    "source": "8473c78f8336fce291fc3fd43695372f93e9f0152404e6d512bff70da6a6bbd2"
+  },
+  "usernode.widgetIcons.lastCheck.atSkippedBridge": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}: dilewati, tanpa jembatan pintasan",
+    "source": "26d5438dfc2e2d63e86314da676dbd5db4a2791b9128bd414c332c5cbb0dd29b"
+  },
+  "usernode.widgetIcons.lastCheck.neverSkippedBridge": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah: dilewati, tanpa jembatan pintasan",
+    "source": "1fa93aadc6eecf4cd939d9898221a000d14fcb6a4b3551512ccee1011368108d"
+  },
+  "usernode.widgetIcons.lastCheck.atNothing": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}: tidak ada yang dikirim",
+    "source": "2f62327ce11ff804fe03f6a9318a7ea02318d3550402c46b6f861fad10d8ab8d"
+  },
+  "usernode.widgetIcons.lastCheck.neverNothing": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah: tidak ada yang dikirim",
+    "source": "6655124fb03110aded7d47ecd619a89364fbf6dc56469a386cdea1f052be0106"
+  },
+  "usernode.widgetIcons.entry.none": {
+    "text": "Tidak ada pintasan yang disematkan ke widget.",
+    "source": "30503d43e7c80f21a9d42843b9067d0818e83716afbbb793cdf9fdb88eb02bf9"
+  },
+  "usernode.widgetIcons.entry.foreign": {
+    "text": "disematkan oleh aplikasi lain",
+    "source": "d419f6db33ee85677ef0eea1610a6c5cac5a7decc92f20f32ccff3428813a8c8"
+  },
+  "usernode.widgetIcons.entry.appNotLoaded": {
+    "text": "aplikasi belum dimuat",
+    "source": "304cae45faa3b4ea3bbd66d6ebbd334bece69278750fce5c82a1f23e53c0b786"
+  },
+  "usernode.widgetIcons.entry.iconYes": {
+    "text": "ikon ada",
+    "source": "3f0ae64208d5a55679076f0e34422e9bbfe8e7437c5de8024a4e0a339d528ce7"
+  },
+  "usernode.widgetIcons.entry.iconNo": {
+    "text": "ikon tidak ada",
+    "source": "e8985bae400378de3e776f388a753a943acdcdfbe782161a3b744b81b9126365"
+  },
+  "usernode.widgetIcons.entry.iconUnknown": {
+    "text": "ikon —",
+    "source": "59bbbfdc8a83b4050628574d58ccbcedbdf2b01059bced7ce21dd1340c6557f8"
+  },
+  "usernode.widgetIcons.entry.darkYes": {
+    "text": "gelap ada",
+    "source": "02907d37ad7022c7e1346fa07631fe8766fc7f6a27182d65070767593e84b7a0"
+  },
+  "usernode.widgetIcons.entry.darkNo": {
+    "text": "gelap tidak ada",
+    "source": "3c8bad9b69a9179d64eb38a432ef7ec00d339a6ce31d9aa274174505f1e01712"
+  },
+  "usernode.widgetIcons.entry.darkUnknown": {
+    "text": "gelap —",
+    "source": "72e1e79d6935d8a1a7d59c35a6775a098897286414d83b78cd5d0ef93f1404ab"
+  },
+  "usernode.widgetIcons.entry.sentCurrent": {
+    "text": "terkirim terbaru",
+    "source": "0b6a485617561b7f9a6a3c11dabc3d4c386a916b6b474638ae6110cb04a256dd"
+  },
+  "usernode.widgetIcons.entry.sentStale": {
+    "text": "terkirim usang",
+    "source": "ef1a54916bd44d79e29e69d1d65a76ed2c046307cb0b27a7e18ce5b1803aca52"
+  },
+  "usernode.connection.diagnosticsCopied": {
+    "text": "Diagnostik disalin",
+    "source": "2c8618c0ca2a8c80249586c6afc554f1a13ac6f51778f44a027463b82beead8a"
+  },
+  "usernode.connection.diagnosticsCopyFailed": {
+    "text": "Gagal menyalin",
+    "source": "d5cb934f8035e733ae4ce309fe314887ded6b2045c52b635248eb4d1c3a1bf6d"
+  },
+  "usernode.privacy.openZkIdentityFailed": {
+    "text": "Gagal membuka identitas ZK",
+    "source": "23e1f16af4566a591812755ea4bcd90ff05f3094515d224263101a6020a2dff8"
+  },
+  "usernode.diagnostics.openBenchmarkFailed": {
+    "text": "Gagal membuka benchmark",
+    "source": "4c4308fa29cdb341618a9225ea56abe4d3ffc57d3a23f1f8c2e5e10372c301a8"
+  },
+  "usernode.diagnostics.openLogsFailed": {
+    "text": "Gagal membuka log",
+    "source": "e8ec5a4c82f3a84cf1a3e5e5a4edefad34312dcd2b3240816504f227b18bf955"
+  },
+  "usernode.privacy.restart.confirmTitle": {
+    "text": "Mulai ulang tantangan ZK?",
+    "source": "0e089820cf39d7ba9b93555371d02f8372bdedfc371ec543e7b0448d86708af6"
+  },
+  "usernode.privacy.restart.confirmMessage": {
+    "text": "Pendaftaran identitasmu yang sedang berjalan akan dibuang.",
+    "source": "4da2517c273d1548caf223a1b212c822241d8de5a8a8a62d7acc6ace830cda82"
+  },
+  "usernode.privacy.restart.confirmButton": {
+    "text": "Mulai ulang",
+    "source": "6b983a81e5e8099e4e23a368e72636e31f029f2e691e5be714106b8cf59d70a7"
+  },
+  "usernode.privacy.restart.done": {
+    "text": "Status tantangan direset",
+    "source": "a73eb1a125dd611610cd4ea4763476f8749c0004f5c87c99877e020fc49dc702"
+  },
+  "list.dot": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "password.status.set": {
+    "text": "Kata sandi sudah diatur. Sekarang kamu bisa masuk dengannya.",
+    "source": "5ff4583ec20a0aaca130c16c90ea388eea12d0e504dafc6799b80bb856984733"
+  },
+  "alerts.test.countdown.queued_other": {
+    "text": "Pemberitahuan dalam {{count}} dtk. Notifikasi push ke ponsel sudah diantrekan. Jalankan aplikasi seluler di latar belakang atau tutup untuk memeriksa notifikasi. Tetap di sini untuk mendengar bunyi lonceng jika suara aktif.",
+    "source": "44d3b7820e60ebcea0b7fcbd9b765a674f71648b37449f59dda9196a8a8ecccd"
+  },
+  "alerts.test.countdown.preferenceDisabled_other": {
+    "text": "Pemberitahuan dalam {{count}} dtk. Notifikasi push ke ponsel tidak diantrekan. Aktifkan Sesi agen di Kategori push seluler lalu coba lagi. Tetap di sini untuk mendengar bunyi lonceng jika suara aktif.",
+    "source": "0981ea37a5400452d0212ef337c7fa4b0c61c63784bf2f4f75a2182b3ffca299"
+  },
+  "alerts.test.countdown.unavailable_other": {
+    "text": "Pemberitahuan dalam {{count}} dtk. Notifikasi push ke ponsel tidak diantrekan. Masuk di ponselmu, lalu aktifkan Notifikasi aktivitas dan izin notifikasi. Pengiriman push juga harus tersedia di server. Tetap di sini untuk mendengar bunyi lonceng jika suara aktif.",
+    "source": "801ee6e101f0262c0e8764dff66e1afa3b3ff8732a9718abc8c7fdba1dbd2658"
+  },
+  "connectors.hint.sent_other": {
+    "text": "Homeroom mengirim tips ini ke chat-mu {{count}} kali dalam {{days}} hari terakhir, terakhir pada {{when}}.",
+    "source": "8f01b4e580aa3607aaa8fbe3f594c418f545d4ca07d30ab0f41b67941cd9c8cf"
+  },
+  "connectors.hint.sentWhenUnknown_other": {
+    "text": "Homeroom mengirim tips ini ke chat-mu {{count}} kali dalam {{days}} hari terakhir, belum lama ini.",
+    "source": "3091bfb5a601a4fccd6bc38e7669684bea633bb718f220fd79849d099d02383a"
+  },
+  "openrouter.catalog.updatedMinutesAgo_other": {
+    "text": "Diperbarui {{count}} mnt lalu",
+    "source": "a9be2bbcb1e48bf59df89e4dbcacf201de49a43fb5387ff31f6ae2a6a36665f2"
+  },
+  "openrouter.catalog.updatedHoursAgo_other": {
+    "text": "Diperbarui {{count}} jam lalu",
+    "source": "5901a1ad82c92f198071df469d7d5cf04aa31a24149b194d03e1cd00a119dae9"
+  },
+  "openrouter.catalog.shownOfTotal_other": {
+    "text": "{{shown}} dari {{count}} model",
+    "source": "3d9dc57b3a54d2f39c5932965c79a70156417a6eb4af397dd34151d52dcf544f"
+  },
+  "openrouter.catalog.refreshed_other": {
+    "text": "{{count}} model OpenRouter terbaru dimuat.",
+    "source": "3b052c314495da8dcd229695a2e5198b64a49d0098f95b540774826ab9db2df1"
+  },
+  "usernode.widgetIcons.registry.loaded_other": {
+    "text": "Dimuat: {{count}} disematkan",
+    "source": "5b6ba223ee96014b3cdb77353ed53890aa98311fad1ba9e06eff3bcd456bb412"
+  },
+  "usernode.widgetIcons.lastCheck.atSent_other": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}: {{count}} terkirim",
+    "source": "5bbf66900c03de58042d868cc07a9c7866891beab8c68dbe842e0c8ba542b4f4"
+  },
+  "usernode.widgetIcons.lastCheck.neverSent_other": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah: {{count}} terkirim",
+    "source": "1bcc91ea1f0696b2e234544863fcdc774a01556c34b86d7963b26de26f4fbcb8"
+  },
+  "usernode.widgetIcons.lastCheck.atSentRefused_other": {
+    "text": "Pemeriksaan ikon terakhir: {{when}}: {{count}} terkirim, {{refused}} ditolak",
+    "source": "34de95aafa5af1823a1c8b1fc52abde752894c6b6f7a53edf4e5d4ecced91973"
+  },
+  "usernode.widgetIcons.lastCheck.neverSentRefused_other": {
+    "text": "Pemeriksaan ikon terakhir: belum pernah: {{count}} terkirim, {{refused}} ditolak",
+    "source": "71bb178f901ce6b6ccd31ad18fee7974ee1d49587799b784af70187f2f514470"
+  }
+}

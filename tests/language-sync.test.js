@@ -1,8 +1,9 @@
 'use strict';
 
 // The translation step (services/language-sync.js) and Homeroom's sweep that
-// runs it (services/language-sync-runner.js), against a fake model and a fake
-// GitHub. frontend/locales/README.md, "Translations", is the contract.
+// runs it (services/language-sync-runner.js) into the translation cache
+// (services/language-cache.js), against a fake model and a fake pool.
+// frontend/locales/README.md, "Translations", is the contract.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -12,7 +13,8 @@ const path = require('node:path');
 
 const sync = require('../src/services/language-sync');
 const runner = require('../src/services/language-sync-runner');
-const { buildLanguagePacks, hash } = require('../scripts/language-packs');
+const { buildLanguagePacks, hash, writeSource } = require('../scripts/language-packs');
+const languageCache = require('../src/services/language-cache');
 
 const ROOT = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -231,49 +233,43 @@ test('no build calls a model: the builder and the shell build never load the tra
 
 // ── The sweep ──────────────────────────────────────────────────────────
 
-function platform(t, { translations = {}, english = ENGLISH, state = null, sessions = {} } = {}) {
+/**
+ * Homeroom's sweep over a running build: its catalogs as the build wrote them
+ * (scripts/language-packs.js writeSource), the translation cache in a fake
+ * pool, and a fake model. `deploy(english)` is a new build with new English.
+ */
+function platform(t, { translations = {}, english = ENGLISH, state = null } = {}) {
   const repo = checkout(t, { translations, english });
-  const db = { state, sessions: { ...sessions }, inserted: [], spend: 0 };
+  const db = { state, cache: [], spend: 0 };
   const pool = {
     async query(sql, params = []) {
       const text = String(sql);
-      if (/FROM apps WHERE self_hosted/.test(text)) {
-        return { rows: [{ id: 7, slug: 'usernode-2d5619', name: 'Homeroom', repo_url: 'https://github.com/Usernode-Labs/social-vibecoding' }] };
-      }
       if (/SELECT value FROM platform_settings WHERE key = \$1/.test(text) && params[0] === runner.STATE_KEY) {
         return { rows: db.state ? [{ value: JSON.stringify(db.state) }] : [] };
       }
       if (/INSERT INTO platform_settings/.test(text)) { db.state = JSON.parse(params[1]); return { rows: [] }; }
-      if (/SELECT status FROM chat_sessions WHERE id = \$1/.test(text)) {
-        return { rows: db.sessions[params[0]] ? [{ status: db.sessions[params[0]] }] : [] };
+      if (/SELECT COUNT\(\*\)::int AS n, MAX\(created_at\) AS at FROM language_translations/.test(text)) {
+        return { rows: [{ n: db.cache.length, at: db.cache.length ? new Date(1700000000000 + db.cache.length) : null }] };
       }
-      if (/INSERT INTO chat_sessions/.test(text)) { db.inserted.push(params); return { rows: [{ id: 900 + db.inserted.length }] }; }
+      if (/SELECT language, namespace, key, source, text FROM language_translations/.test(text)) return { rows: [...db.cache] };
+      if (/INSERT INTO language_translations/.test(text)) {
+        let added = 0;
+        params[0].forEach((language, i) => {
+          const row = { language, namespace: params[1][i], key: params[2][i], source: params[3][i], text: params[4][i] };
+          if (db.cache.some((r) => r.language === row.language && r.namespace === row.namespace && r.key === row.key && r.source === row.source)) return;
+          db.cache.push(row);
+          added += 1;
+        });
+        return { rows: [], rowCount: added };
+      }
       if (/INSERT INTO system_token_usage/.test(text)) { db.spend += Number(params[0]); return { rows: [] }; }
       return { rows: [] };
     },
   };
-  const files = () => {
-    const out = [];
-    const walk = (dir) => {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) walk(full);
-        else out.push({ path: path.relative(repo.root, full).split(path.sep).join('/'), size: 1, sha: full });
-      }
-    };
-    walk(path.join(repo.root, 'frontend'));
-    return out;
-  };
-  const pushed = [];
-  const reads = [];
-  let main = 'a'.repeat(40);
-  const github = {
-    async getBranchSha() { return main; },
-    async listRepoFiles(owner, name, ref) { reads.push(ref); return { files: [...files(), { path: 'README.md', size: 1, sha: 'x' }], truncated: false }; },
-    async getBlobContent(owner, name, sha) { return fs.readFileSync(sha, 'utf8'); },
-    async ensureBranchAtSha(owner, name, branch, sha) { pushed.push({ branch, at: sha }); },
-    async pushFiles(owner, name, list, { branch }) { pushed.push({ branch, files: list }); },
-    async createPR(owner, name, { title }) { return { number: 5000 + pushed.length, html_url: 'https://github.com/x/y/pull/1', title }; },
+  const sourceOf = () => {
+    const out = fs.mkdtempSync(path.join(os.tmpdir(), 'language-source-'));
+    t.after(() => fs.rmSync(out, { recursive: true, force: true }));
+    return JSON.parse(fs.readFileSync(writeSource(repo.root, out), 'utf8'));
   };
   const model = fakeModel((item) => SPANISH[item.id]);
   const batches = [];
@@ -284,64 +280,64 @@ function platform(t, { translations = {}, english = ENGLISH, state = null, sessi
     async catalogBatchStatus(id) { return { status: batches[Number(id.split('_')[1]) - 1].status }; },
     async catalogBatchAnswers(id) { return model.translate(batches[Number(id.split('_')[1]) - 1].requests); },
   };
-  const kicked = [];
-  const deps = {
-    github,
-    llm,
-    maintenance: {
-      PLATFORM_USERNAME: 'usernode-platform',
-      ensurePlatformUser: async () => 1,
-      kickChecks: (config, p, session) => kicked.push(session),
-    },
-    ws: { pushVoteUpdate() {}, pushNotificationToUser() {} },
-    notifications: { createPrProposedNotifications: async () => [], serialize: (row) => row },
-  };
+  const deps = { llm, source: sourceOf() };
+  languageCache.reset();
   return {
-    repo, db, pool, deps, pushed, kicked, batches, model, reads,
-    moveMain: (sha) => { main = sha; },
+    repo, db, pool, deps, batches, model,
+    deploy: (next) => { repo.put('en/core.json', next); deps.source = sourceOf(); languageCache.reset(); },
+    cached: (key) => db.cache.filter((row) => row.key === key),
     run: () => runner.runOnce({ config: {}, pool, deps }),
   };
 }
 
-test('the sweep translates what main is missing and puts it to the community as one proposal', async (t) => {
+test('the sweep translates what the running build is missing into the cache, and proposes nothing', async (t) => {
   const p = platform(t);
   const result = await p.run();
-  assert.equal(result.opened, 5002);
-  assert.deepEqual(p.pushed[0], { branch: p.pushed[0].branch, at: 'a'.repeat(40) }, 'branched at the commit the English was read from');
-  assert.match(p.pushed[0].branch, /^i18n\/translations-\d+$/);
-  assert.deepEqual(p.pushed[1].files.map((file) => file.path), ['frontend/locales/es/core.json'], 'only the translation files');
-  assert.equal(JSON.parse(p.pushed[1].files[0].content)['button.leave'].text, 'Salir');
-  const [session] = p.db.inserted;
-  assert.equal(session[6], 'translation', 'a translation proposal, by source');
-  assert.match(session[5], /^Translations: 4 interface messages in Español$/);
-  assert.match(session[7], /in Español/);
-  assert.equal(p.kicked.length, 1, 'its preview and checks start like any platform-opened proposal');
+  // Three messages and Spanish's three forms of the count.
+  assert.equal(result.cached, 6);
+  assert.deepEqual(p.cached('button.leave').map((row) => [row.language, row.text, row.source]), [['es', 'Salir', hash('Leave')]]);
+  assert.deepEqual(p.cached('items_many').map((row) => row.text), ['{{count}} de elementos']);
   assert.ok(p.db.spend > 0, 'the spend counts against the system budget');
-  assert.equal(p.db.state.proposal.sessionId, 901);
-
-  // While it is open, nothing else is opened.
-  p.db.sessions[901] = 'promoted';
-  p.moveMain('b'.repeat(40));
-  assert.deepEqual(await p.run(), { skipped: 'proposal_open' });
+  assert.equal(p.db.state.proposal, undefined, 'no proposal');
+  assert.doesNotMatch(read('src/services/language-sync-runner.js'), /createPR|pushFiles|INSERT INTO chat_sessions/, 'nothing that opens one');
+  // And the shell is offered Spanish from the cache at once.
+  const live = await languageCache.live(p.pool, { source: p.deps.source });
+  assert.deepEqual(live.languages, { en: 'English', es: 'Español' });
+  assert.equal(JSON.parse(live.files.get(live.manifest.es.core.url.split('/').pop()))['button.leave'], 'Salir');
 });
 
-test('a closed translation proposal is not offered again until the English changes', async (t) => {
+test('a deploy that does not change the English translates nothing again; new English is translated alone', async (t) => {
   const p = platform(t);
   await p.run();
-  p.db.sessions[901] = 'closed';
-  p.moveMain('b'.repeat(40));
-  assert.deepEqual(await p.run(), { skipped: 'declined' });
-  p.moveMain('c'.repeat(40));
-  assert.deepEqual(await p.run(), { skipped: 'declined' }, 'main moved, but the English is the same');
-  p.repo.put('en/core.json', { ...ENGLISH, 'button.join': says('Join', 'Button: become a member.') });
-  p.moveMain('d'.repeat(40));
+  assert.deepEqual(await p.run(), { skipped: 'unchanged' });
+  // Another instance, or the state lost: the cache already has it all.
+  p.db.state = null;
+  assert.deepEqual(await p.run(), { skipped: 'nothing_missing' });
   SPANISH['core:button.join'] = { text: 'Unirse' };
   t.after(() => { delete SPANISH['core:button.join']; });
+  p.deploy({ ...ENGLISH, 'button.join': says('Join', 'Button: become a member.') });
+  const calls = p.model.calls.length;
   const again = await p.run();
-  assert.equal(again.opened > 0, true, 'new English, a new proposal');
+  assert.equal(again.cached, 1);
+  assert.deepEqual(p.model.calls.slice(calls).flat().flatMap((request) => request.items.map((item) => item.id)), ['core:button.join'],
+    'only the new message is asked for');
+  // A reworded message is translated again, under its new English.
+  SPANISH['core:button.leave'] = { text: 'Abandonar' };
+  t.after(() => { SPANISH['core:button.leave'] = { text: 'Salir' }; });
+  p.deploy({ ...ENGLISH, 'button.join': says('Join', 'Button: become a member.'), 'button.leave': says('Leave the community', 'Button on a community\'s menu.') });
+  await p.run();
+  assert.deepEqual(p.cached('button.leave').map((row) => [row.text, row.source]), [['Salir', hash('Leave')], ['Abandonar', hash('Leave the community')]]);
 });
 
-test('a whole language goes as a Message Batch, and its proposal opens on the pass after it ends', async (t) => {
+test('a committed translation wins over the cache, and the step does not translate it again', async (t) => {
+  const p = platform(t, { translations: { es: { 'button.leave': from('Leave', 'Abandonar', { locked: true }) } } });
+  await p.run();
+  assert.deepEqual(p.cached('button.leave'), [], 'already committed');
+  const live = await languageCache.live(p.pool, { source: p.deps.source });
+  assert.equal(JSON.parse(live.files.get(live.manifest.es.core.url.split('/').pop()))['button.leave'], 'Abandonar');
+});
+
+test('a whole language goes as a Message Batch; its answers are kept once it ends, and only for English it was asked about', async (t) => {
   const english = { ...ENGLISH };
   for (let i = 0; i <= runner.DIRECT_LIMIT; i += 1) english[`bulk.m${i}`] = says(`Message ${i}`, 'Bulk fixture message.');
   const p = platform(t, { english });
@@ -349,32 +345,43 @@ test('a whole language goes as a Message Batch, and its proposal opens on the pa
   t.after(() => { for (let i = 0; i <= runner.DIRECT_LIMIT; i += 1) delete SPANISH[`core:bulk.m${i}`]; });
   const submitted = await p.run();
   assert.equal(submitted.submitted, 'batch_1');
-  assert.equal(p.db.state.batch.baseSha, 'a'.repeat(40));
+  assert.equal(p.db.state.batch.english['core:bulk.m3'], runner.englishOf({ english: 'Message 3' }));
   assert.deepEqual(await p.run(), { waiting: 'batch_1' });
   p.batches[0].status = 'ended';
-  p.moveMain('b'.repeat(40));
-  const opened = await p.run();
-  assert.ok(opened.opened, 'opened from the batch');
-  assert.equal(p.reads.at(-1), 'a'.repeat(40), 'the answers are matched against the catalogs the batch was built from');
-  assert.equal(p.pushed[0].at, 'a'.repeat(40), 'at the commit the batch translated, not today\'s main');
+  // A deploy while it ran: one message reworded, one added before the rest,
+  // so every request after it carries other messages than it did.
+  p.deploy({ 'a.first': says('First', 'Added at the top.'), ...english, 'bulk.m3': says('Message three', 'Bulk fixture message.') });
+  SPANISH['core:a.first'] = { text: 'Primero' };
+  t.after(() => { delete SPANISH['core:a.first']; });
+  const calls = p.model.calls.length;
+  const kept = await p.run();
+  assert.ok(kept.cached > runner.DIRECT_LIMIT, 'the batch\'s answers are kept, matched by message');
   assert.equal(p.db.state.batch, undefined);
+  const askedAgain = p.model.calls.slice(calls + 1).flat().flatMap((request) => request.items.map((item) => item.id)).sort();
+  assert.deepEqual(askedAgain, ['core:a.first', 'core:bulk.m3'], 'what the batch was not asked about is asked on its own');
+  assert.deepEqual(p.cached('bulk.m3').map((row) => row.source), [hash('Message three')], 'never under English it was not asked about');
+  // The batch was asked from the English before the deploy, so the next pass
+  // reads the new English again rather than calling it unchanged; the cache
+  // already has all of it.
+  assert.notEqual(p.db.state.checkedDigest, runner.sourceDigest(p.deps.source));
+  assert.deepEqual(await p.run(), { skipped: 'nothing_missing' });
 });
 
-test('a pass that could use nothing says why, in the state an admin reads, and opens nothing (#4641)', async (t) => {
+test('a pass that could use nothing says why, in the state an admin reads, and caches nothing (#4641)', async (t) => {
   const p = platform(t);
   const refused = '400 output_config.format.schema: additionalProperties must be false';
   p.deps.llm.translateCatalogDirect = async (requests) => new Map(requests.map((request) => [request.customId, { error: refused }]));
   const result = await p.run();
   assert.equal(result.nothingUsable, true);
-  assert.equal(p.db.inserted.length, 0, 'no proposal');
-  assert.equal(p.db.state.checkedSha, 'a'.repeat(40));
+  assert.equal(p.db.cache.length, 0);
+  assert.equal(p.db.state.checkedDigest, runner.sourceDigest(p.deps.source));
   const { lastPass } = p.db.state;
   assert.equal(lastPass.requested, 4);
   assert.equal(lastPass.written, 0);
   assert.equal(lastPass.failed, 4);
   assert.equal(lastPass.problems[0].count, 4);
   assert.match(lastPass.problems[0].problem, /additionalProperties must be false/, 'the API\'s own words, not "no answer"');
-  const status = await runner.status(p.pool);
+  const status = await runner.status(p.pool, { deps: { cache: { live: async () => null } } });
   assert.deepEqual(status.lastPass, lastPass);
 });
 
@@ -386,6 +393,13 @@ test('a pass that wrote translations records what it used too', async (t) => {
     { requested: 4, written: 4, failed: 0 },
   );
   assert.deepEqual(p.db.state.lastPass.problems, []);
+});
+
+test('a build without its catalogs\' source translates nothing', async () => {
+  const result = await runner.runOnce({
+    config: {}, pool: { query: async () => ({ rows: [] }) }, deps: { llm: { isEnabled: () => true }, source: null },
+  });
+  assert.deepEqual(result, { skipped: 'no_source' });
 });
 
 test('the sweep is idle without a key, off with LANGUAGE_SYNC_ENABLED=false, and runs only on the leader', () => {

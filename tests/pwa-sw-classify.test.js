@@ -294,6 +294,11 @@ test('shell assets classify as shell', () => {
 
 test('content-addressed images are cache-first', () => {
   assert.equal(classify('GET', `/app-icons/${'a'.repeat(32)}`), 'immutable');
+  // A pack the translation cache serves is named by its content hash too,
+  // and no release lists it: cache-first. The list that names it is an API read.
+  assert.equal(classify('GET', `/locales/live/id.core.${'c'.repeat(64)}.json`), 'immutable');
+  assert.equal(classify('GET', `/locales/id.core.${'c'.repeat(64)}.json`), 'shell', 'a build\'s pack stays the release\'s');
+  assert.equal(classify('GET', '/api/languages'), 'api');
   assert.equal(classify('GET', `/visuals/${'b'.repeat(32)}`), 'immutable');
 });
 

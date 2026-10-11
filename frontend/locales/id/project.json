@@ -1,0 +1,4054 @@
+{
+  "facts.pair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "sentences.pair": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "page.title.needsYou": {
+    "text": "Menunggumu",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "page.title.allItems": {
+    "text": "Semua item",
+    "source": "51107686754a31d258064ff193f18ac2125040a21fa6ce49c748f702f7680cc3"
+  },
+  "page.title.plan": {
+    "text": "Rencana",
+    "source": "d6a5fe7a20d1c0a353ac767b0cb54be15a3345cc31679252c4956c56ae2a0d34"
+  },
+  "page.title.workshop": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "page.loading": {
+    "text": "Memuat bengkel",
+    "source": "ab0d3e1438d620b2ccb034b91496407b7de6af8ea49880e32385abb0a4ef1363"
+  },
+  "page.backToWorkshop": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "allItems.theme.whoInvolved": {
+    "text": "Yang terlibat: {{people}}",
+    "source": "7c3a2008c68bf391e54654ce3c20ae6e800c53e45618c8f6a1d3a4f54f7db87e"
+  },
+  "allItems.theme.foot.idle": {
+    "text": "belum ada yang dikerjakan saat ini",
+    "source": "9dced2db1008fd512dc71fedaf9869439736d0d1df0e9f76ac10c59b73334a52"
+  },
+  "allItems.theme.openOnBoard": {
+    "text": "Buka di Papan ›",
+    "source": "04823bc0ab4cb1073ebe34317b8873180e979b241bd2f820fe14d8951454773b"
+  },
+  "allItems.categories.draftedAt": {
+    "text": "Kategori disusun {{when}} dan disusun ulang setiap hari, atau lebih cepat saat sepersepuluh papan berubah.",
+    "source": "b331904c9c1e80cbab8aa7dbcf8db6944697ba8c46b7c7eba541680d71eff68a"
+  },
+  "allItems.categories.drafted": {
+    "text": "Kategori disusun dari papan dan disusun ulang setiap hari, atau lebih cepat saat sepersepuluh papan berubah.",
+    "source": "9d3a7a13ea64a52948d9c58db957691c6ba30c451d75159b71b9c859dcc4f9aa"
+  },
+  "allItems.categories.lastError": {
+    "text": "Percobaan terakhir gagal ({{error}}); akan dicoba lagi sebentar lagi.",
+    "source": "39b84b06d7447eb9d6c014aa6437f479c66ad2d413215007ee565ed0ad4f217c"
+  },
+  "allItems.categories.demo": {
+    "text": "Pengelompokan demo staging: di produksi, kategori disusun oleh model dari papan.",
+    "source": "f6a6e3fcd34836cb65c456b0c4c72b86ede43166ed2ccafb251e8d0401f38465"
+  },
+  "allItems.categories.beingDrafted": {
+    "text": "Kategori sedang disusun dari papan. Kategori ini akan menggantikan pengelompokan ini saat sudah siap.",
+    "source": "ba34ad80637ea6aff05dc36dc74d3534b1f6858e31209943c2d6243bc73bd2ae"
+  },
+  "allItems.categories.draftFailed": {
+    "text": "Percobaan terakhir menyusun kategori gagal ({{error}}). Item tetap dikelompokkan menurut kategori yang dipilih kelompok sampai percobaan berikutnya.",
+    "source": "713e42870dc9af278d7170d977126104409c563faca92c1e1b1b4c1d8945d1a3"
+  },
+  "allItems.categories.noModel": {
+    "text": "Belum ada model AI yang diatur, jadi item dikelompokkan menurut kategori yang dipilih kelompok.",
+    "source": "cd14b69725c91318a0b4fd85fde22fbcb59ba086a9e4e09664f7926b6918f606"
+  },
+  "allItems.grouping.byCategoryForNow": {
+    "text": "dikelompokkan menurut kategori untuk sementara",
+    "source": "a424bb0e17d9d31c8d1ba792a878ed4bf03bb110fba9176c26111b3d971a5287"
+  },
+  "allItems.grouping.demo": {
+    "text": "pengelompokan demo staging",
+    "source": "1747d748070fb0552466769aa5f329d8de543b7cb0b7d01ec401a781244cecf4"
+  },
+  "allItems.grouping.placing": {
+    "text": "menempatkan kartu baru…",
+    "source": "9c8cf9bc135711f5391f50ccb7f4ac30ad177ea6ec19e8d3d670de802f9fbb51"
+  },
+  "allItems.grouping.redrafting": {
+    "text": "menyusun ulang kategori…",
+    "source": "1862a15030cf0a712fbb7d0722b6818aab56ca6a78a6a6160de89f1bbd6a1669"
+  },
+  "allItems.grouping.drafting": {
+    "text": "menyusun kategori…",
+    "source": "7b16700ad856f1f906a5cc465522645c9f1608986f492017b12aebbb833296f9"
+  },
+  "allItems.sort.label": {
+    "text": "Urutkan kategori",
+    "source": "8984e5645c3cb781cbf79bf1f553f557fd4c23bf6979e4e99e13ed67dd4e3a40"
+  },
+  "allItems.sort.people": {
+    "text": "Menurut orang",
+    "source": "d82937b9f920b01620c6dfcab8548d693b71942273cd9c83d480d22db311e84b"
+  },
+  "allItems.sort.activity": {
+    "text": "Menurut aktivitas",
+    "source": "f5a0ab8bb37df5263c483d0ece3b32592a3568fab2560c5bc002c3bb912381d5"
+  },
+  "allItems.sort.open": {
+    "text": "Menurut item terbuka",
+    "source": "e8db0fdc432fca755f806511f2a0ec4aca41903b5c58d733dd3e8b7e4a89ee43"
+  },
+  "allItems.group.label": {
+    "text": "Kelompokkan papan menurut",
+    "source": "b41d005786aa315face3947560dca05c85053c9723988ad05f5c66fdd0e543b2"
+  },
+  "allItems.group.category": {
+    "text": "Menurut kategori",
+    "source": "39a8581a5c48fcc3098b25dfa6cfbeda2ed06c95e0bd872b5a92e8972f7fae7a"
+  },
+  "allItems.group.stage": {
+    "text": "Menurut tahap",
+    "source": "cc7122d8757068d572c78b5f7b0e6f89629d3da7840c2f8ae422efec7a843b0b"
+  },
+  "boardEmpty.filtered": {
+    "text": "Tidak ada yang cocok dengan pencarian dan filter saat ini.",
+    "source": "75c13af849bf9a6164da4bc1d3dd391d344bc5249547c09511d9f1b66213c095"
+  },
+  "boardEmpty.loadFailed": {
+    "text": "Permintaan terbuka tidak bisa dimuat sekarang. <0></0>",
+    "source": "bc61555b45c1f01c7c16814d97a409dc6a224b10f9cbcc7e0dbe03a205702a74"
+  },
+  "boardEmpty.readOnly": {
+    "text": "Belum ada apa pun di papan.",
+    "source": "5e81d2627e69c42c2c1765f4b01e4538284f6ae4fc7ad3c3b9b06dc781710110"
+  },
+  "boardEmpty.press.hub.collab.full": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> untuk mengusulkan perbaikan atau mengimpor PR; untuk membuatnya sendiri, pakai Bangun sekarang di sana.",
+    "source": "f3051005af5b5a939a532952a3f9b1903f5d9aa410799d8a9ceb013fb4abefa0"
+  },
+  "boardEmpty.press.hub.collab.short": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> untuk mengusulkan perbaikan atau mengimpor PR.",
+    "source": "8118cf7ecfe38e379e37a9f797eb5e29b5865a1ebcf8b8d03bf6fd5d233d968e"
+  },
+  "boardEmpty.press.hub.plain.full": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> untuk mengusulkan perbaikan; untuk membuatnya sendiri, pakai Bangun sekarang di sana.",
+    "source": "bbb42abf2e78c476e327a5b6dcfecfeb8414caae00ed16d5679875bce63aae84"
+  },
+  "boardEmpty.press.hub.plain.short": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> untuk mengusulkan perbaikan.",
+    "source": "57194745ba2ee4949e9dca3dd8c88f6510be401cc9fa3211692a411fc666e5cf"
+  },
+  "boardEmpty.press.away.collab.full": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> di hub untuk mengusulkan perbaikan atau mengimpor PR; untuk membuatnya sendiri, pakai Bangun sekarang di sana.",
+    "source": "12670e770cff11f6a904e99c3d6ec99550c8468f97c091451723f78904706729"
+  },
+  "boardEmpty.press.away.collab.short": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> di hub untuk mengusulkan perbaikan atau mengimpor PR.",
+    "source": "a76efcce49877435b9842c4a8afb1307cdef3ea9305b5280614985c9788b3ca1"
+  },
+  "boardEmpty.press.away.plain.full": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> di hub untuk mengusulkan perbaikan; untuk membuatnya sendiri, pakai Bangun sekarang di sana.",
+    "source": "3764a9a371e8ecdef8d376e436e2715c6a5216bc955b4b697780c0af25be4e6c"
+  },
+  "boardEmpty.press.away.plain.short": {
+    "text": "Belum ada apa pun di papan. Tekan <0>⋯</0> di hub untuk mengusulkan perbaikan.",
+    "source": "e5c763a9522202f426eb74444eb7d4dbfb93b040a72d097abbdf0082a402a972"
+  },
+  "hub.startHere.title": {
+    "text": "Mulai kerjakan aplikasi ini",
+    "source": "90d9b66be661ef7cb56f6fd7a1450d82480549af6963bc334de2371213782b29"
+  },
+  "hub.startHere.text": {
+    "text": "Belum ada yang terbuka dan belum ada yang rilis. Perubahan pertama kamu yang mulai.",
+    "source": "987f1ed7a41d1ba675f64ffccf02a483d5d929ee64fe6ff9028af44419585e82"
+  },
+  "hub.startHere.start": {
+    "text": "Mulai perubahan baru",
+    "source": "9d63289a806fb075b5741dd0c20e1fae6b6568128feb4a7c09fdaf9a82446e4c"
+  },
+  "workshop.allItems.title": {
+    "text": "Semua item",
+    "source": "51107686754a31d258064ff193f18ac2125040a21fa6ce49c748f702f7680cc3"
+  },
+  "workshop.part.overview": {
+    "text": "Ringkasan",
+    "source": "d4b1ea5708dd532930a85188b45aff6f0a3ed458500c7577e0127a538eb0d100"
+  },
+  "workshop.part.happening": {
+    "text": "Yang sedang terjadi",
+    "source": "336d92e93ed356146603137804fa01018bb9c1415b310ffd939a8a5e49119696"
+  },
+  "workshop.part.happened": {
+    "text": "Yang sudah terjadi",
+    "source": "483bd49023ae2bfb08da43eea2757a0e5490f7b0fe2964f49273cc25215d61f4"
+  },
+  "workshop.allItems.seeAll": {
+    "text": "Lihat semua",
+    "source": "d7a8c446069a058592e224c0ef5fe3d33e5c46e3395160baa24580a7de4965c2"
+  },
+  "workshop.allItems.seeAllFiltered": {
+    "text": "Lihat semua<0></0><1> (difilter)</1>",
+    "source": "0986025df420d3c20c10a6259f55c277b633d6bbf14a13f565416023a4b3ca5c"
+  },
+  "workshop.dash.unclaimed": {
+    "text": "belum ada yang menangani",
+    "source": "136f8f9e98e83f802d928194834ad32964cbb15272055aef4e5abb8f882548e4"
+  },
+  "workshop.dash.shipped": {
+    "text": "rilis minggu ini",
+    "source": "9ff808d44c53259ba904183a5bfe3621d393dc13e0c476c22396ecb43b678a35"
+  },
+  "workshop.dash.shippedPartial": {
+    "text": "Paling sedikit sebanyak ini: riwayatnya lebih banyak daripada yang dimuat halaman.",
+    "source": "a0079257e48ab63e3b0611029b3ea21eaabee44bdad4faadc7f75efcd912cab3"
+  },
+  "workshop.dash.shippedWeek": {
+    "text": "Minggu kalender ini, dihitung dari Senin 00.00 UTC.",
+    "source": "f2689b424cd869519cc673768b3be7d355c3b5fb97c8cfa46d599153d5e716b7"
+  },
+  "workshop.overview.mostOpenIn": {
+    "text": "<0>Pekerjaan terbuka terbanyak ada di</0><1></1>",
+    "source": "d9412eadbb64c6154b9513df5ef82939f42f2720964f287f48ba7b862f56f67b"
+  },
+  "workshop.pace.nonePartial": {
+    "text": "Belum ada yang masuk minggu ini.",
+    "source": "50aa5e3e6b8a294713d36acb356b57f093b302de357993cfa74d009845869cfd"
+  },
+  "workshop.pace.noneFortnight": {
+    "text": "Tidak ada yang masuk dalam dua minggu terakhir.",
+    "source": "d6fdd7478e939ffde0aa09bdff45b75b6da22c1743444c8f8e8c7a455b6b1d2c"
+  },
+  "workshop.mine.title": {
+    "text": "Pekerjaanmu",
+    "source": "ef14cf0d34ed4bd62ddb201026b13ba7da82fe295b127d50fc65c7afb4c6b46b"
+  },
+  "workshop.mine.empty": {
+    "text": "Kamu tidak punya pekerjaan yang sedang berjalan.",
+    "source": "23e6b6ea376d71c4395766c0a0aaa905fa7601db15c02492b9b562007017e48f"
+  },
+  "workshop.mine.emptyBot": {
+    "text": "Kamu belum punya pekerjaan yang sedang berjalan. Untuk mengubah sesuatu, beri tahu Homeroom bot, atau pakai Usulkan perbaikan di menu Homeroom.",
+    "source": "300e0ccab28195b9febe729ceed5213be96441ff32893700a44ebf1cf7856a42"
+  },
+  "workshop.mine.emptyBuild": {
+    "text": "Kamu belum punya pekerjaan yang sedang berjalan. Ambil salah satu item terbuka di Semua item, atau tekan ⋯ di hub lalu pilih Bangun sekarang.",
+    "source": "f6427c1bcb2d9457f18d6c52e91661f5dde7c557fcc9cd228666b2dec86e68b4"
+  },
+  "workshop.mine.showLess": {
+    "text": "Tampilkan lebih sedikit",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "workshop.fresh.title": {
+    "text": "Baru untukmu",
+    "source": "f52e454e29ecca26f59eb7c472aa78e996c0d29e4843e55622aff22adca54b86"
+  },
+  "workshop.fresh.buildIt": {
+    "text": "Bangun",
+    "source": "5e383207c65159ba379ca0ca2a83d23f2d145626b4d9527af53b1a5441151549"
+  },
+  "since.none": {
+    "text": "Belum ada yang baru sejak kunjungan terakhirmu.",
+    "source": "fca6da995e82f65a698b5304e0d35e8421420826c7355ee432bd5d1dd342a091"
+  },
+  "since.markAllSeen": {
+    "text": "Tandai semua dilihat",
+    "source": "f9e85a4d914ffeccf530405be016c2d70707b2250267ac74a575152717fbcf49"
+  },
+  "happened.allOfWeek": {
+    "text": "Semua minggu ini",
+    "source": "69f72aa524f41cd2270b4de4191e12ee14f44b39603bf07b006551b3af6b4bbb"
+  },
+  "happened.earlierWeeks": {
+    "text": "Minggu-minggu sebelumnya",
+    "source": "aa4e216f9c6fc92a6e2fa13bb4733879c5b2365fb2a4eff221e29687d894f3ad"
+  },
+  "happened.row.new": {
+    "text": "Baru",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "happened.row.you": {
+    "text": "Kamu",
+    "source": "08b041935798fbf6fd6ff51099ffedb140a475889986d14f5559ff8e7fc571dd"
+  },
+  "happened.row.goingLive": {
+    "text": "Segera tayang",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "since.week.thisWeek": {
+    "text": "Minggu ini",
+    "source": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634"
+  },
+  "since.week.rangeLive": {
+    "text": "{{start}} → sekarang",
+    "source": "c671067c435848f8afee1364a242c8cc165a00149fa4b319112c773e60948a11"
+  },
+  "since.week.range": {
+    "text": "{{start}} – {{end}}",
+    "source": "e3997f8da6a037f271d4ec59be5cbe809cd4d60330c15f8ed124b3b9d0699677"
+  },
+  "since.projectStarted": {
+    "text": "Proyek ini dimulai pada minggu {{date}}.",
+    "source": "a4bc00a5a6d55a151fb1a608e0537c2b803b41929b158c177b8610ac4289c758"
+  },
+  "weeks.lastWeek": {
+    "text": "Minggu lalu",
+    "source": "84c2e09d3390dc3ffe9241b0212a2e02dd1a5d038235e2b242bee5e60226d279"
+  },
+  "weekPage.back": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "weekPage.none": {
+    "text": "Tidak ada yang terjadi di minggu ini.",
+    "source": "7616aa10eeb0ce2dad63c3bedd3546a7a1c9223aa93d5a2cb70380a682b1abee"
+  },
+  "weekPage.loading": {
+    "text": "Memuat minggu ini…",
+    "source": "5c4af7b01f5579962617f397fcce36554c293716385fd9523a84c4df4bcf6647"
+  },
+  "weekPage.failed": {
+    "text": "Sebagian dari minggu ini tidak dapat dimuat. Buka lagi untuk mencoba kembali.",
+    "source": "c2e31eebf4d6163adbd909af41d565d5ea7b34d7194aa7f4f0ec9f12a65a21bb"
+  },
+  "weekPage.group.new": {
+    "text": "Baru sejak kunjungan terakhirmu",
+    "source": "3b5aa3e622443f755449c4bd674375935d6ad7328c14076721210d3e9d9c4577"
+  },
+  "weekPage.group.votes": {
+    "text": "Menunggu suara",
+    "source": "bbb50edc12d1ce791069a8e84ca6e73a255b796306d32cdc1414987b986e172f"
+  },
+  "weekPage.group.live": {
+    "text": "Sudah tayang",
+    "source": "6f260a8baf30ce8ed857697e63b46d668fc736523efc7afe9353c00e49dbaf9a"
+  },
+  "weekPage.group.requests": {
+    "text": "Permintaan baru",
+    "source": "3b7c001f1686e641491a79e88f6ebc3688c39348c11786b62cd0d408825a3f4a"
+  },
+  "weekPage.group.worked": {
+    "text": "Sedang dikerjakan",
+    "source": "e73c8a10fe9b5c4c6523d33618f793bcd9807e85c57258d64fe0cf9fb6d8d6b6"
+  },
+  "sidePanel.label": {
+    "text": "Halaman item",
+    "source": "b9dc9b454100f3cc4b496068de0d7f2cd2cf5979b0a68924a8d4b50088454493"
+  },
+  "sidePanel.openAsPage": {
+    "text": "Buka sebagai halaman",
+    "source": "06caee5d0c83ae9413d623e03925309759d3915157954a9b7bed4da4f68049fc"
+  },
+  "workRow.name.change": {
+    "text": "Perubahan",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "workRow.name.changeNumbered": {
+    "text": "PR #{{number}}",
+    "source": "3e1a154cfb911f9333d7e99d818b2a74d9b2cc6d4660e6b3ef14316c4f014f24"
+  },
+  "workRow.name.request": {
+    "text": "Permintaan",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "workRow.name.requestNumbered": {
+    "text": "#{{number}}",
+    "source": "2036653b22ffb6d1d247cfa38c77e81296406ada36ed4d75fb220212a59bef30"
+  },
+  "workRow.name.vote": {
+    "text": "Pemungutan suara",
+    "source": "cd5588db6fc6fb44dd76b006202f9efa2ba5d715272a1ae06fb3c805e6a25289"
+  },
+  "workRow.name.voteNumbered": {
+    "text": "Pemungutan suara #{{number}}",
+    "source": "56679631e6c3a720f79f5b9748991916f048585307271888dfb2eb79e17ea5bf"
+  },
+  "workRow.numbers.pair": {
+    "text": "{{first}}, {{second}}",
+    "source": "4ad330968ee3e4b0b4549f3d0f1fdac6bf1abf85e5d2caa989da59f2fc1aa5f4"
+  },
+  "workRow.numbers.last": {
+    "text": "{{first}} dan {{last}}",
+    "source": "35feea28ee4ad5c1bd142d8274cc289bdf353283ded02cb210ea0271ce0dbec2"
+  },
+  "workRow.facts.pair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "workRow.state.newRequest": {
+    "text": "Permintaan baru",
+    "source": "5977ded363b218084c538878f7d774389364b7178275cb951a193733df870a19"
+  },
+  "needsYou.fact.yourYesPutsItLive": {
+    "text": "suara ya darimu akan menayangkannya",
+    "source": "cbbf644eb1391dadb07ce630e385fd06a7df83ea9483b64e325e604d479b9d9c"
+  },
+  "needsYou.answered.votedYes": {
+    "text": "Memilih ya",
+    "source": "3393ce52f5d0ada30ea98a7102a4b6721aefb9c6fca6de7e3de373b6b48b6393"
+  },
+  "needsYou.answered.votedNo": {
+    "text": "Memilih tidak",
+    "source": "9dfd1ccc16ec2c9488835e19348f4615a5d5de271ed96480e86c760be8420071"
+  },
+  "needsYou.answered.approved": {
+    "text": "Disetujui",
+    "source": "87b42e40c2a290e01d87b721bf381c3c5e259d1eb0a4660e41fdbf8bc73f7ddd"
+  },
+  "needsYou.answered.notApproved": {
+    "text": "Tidak disetujui",
+    "source": "ad2815011b0661cb9809bdefc4aec51f21a192984c0e14884ec107e96de7b819"
+  },
+  "needsYou.fact.youVotedYes": {
+    "text": "Kamu memilih ya",
+    "source": "7db76b4833727d665f362546c624fd3e2130e1c37fcc698b2440ac0e84a400a4"
+  },
+  "needsYou.fact.youVotedNo": {
+    "text": "Kamu memilih tidak",
+    "source": "14399d8a5cc4b0cc56c18fd4e994059cc9b2b7eb17fff263f93cd77f5c9160ce"
+  },
+  "needsYou.fact.youApproved": {
+    "text": "Kamu menyetujuinya",
+    "source": "035052df8a1f9dd1371b849c3880ceb59fc303dff03c753ac4ba2f7ed8c1a387"
+  },
+  "needsYou.fact.youDidNotApprove": {
+    "text": "Kamu tidak menyetujuinya",
+    "source": "c20134ce756458b62ecc9a6ebcba568992cd90d3b9280121ae1d27b58c910df3"
+  },
+  "needsYou.vote.yes": {
+    "text": "Ya",
+    "source": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
+  },
+  "needsYou.vote.no": {
+    "text": "Tidak",
+    "source": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d"
+  },
+  "needsYou.voteSub.approved": {
+    "text": "Disetujui.",
+    "source": "7e0019a3769b3e37d8a83d04a70720b100041b63e8000b03eafc85071a7a67bf"
+  },
+  "needsYou.voteSub.approvedState": {
+    "text": "Disetujui. {{state}}.",
+    "source": "e46c4eebd4a64412b4344bc79ecdd6e8d1392ab8334c9689fec24142f7f34f86"
+  },
+  "needsYou.voteSub.notApproved": {
+    "text": "Tidak disetujui.",
+    "source": "08101108f59edc1eb441260133fc3786c5fdfb6c16efd028179b9f8f36f12500"
+  },
+  "needsYou.voteSub.notApprovedState": {
+    "text": "Tidak disetujui. {{state}}.",
+    "source": "204ac80f17b1125d51832fc64348ea1c95ff9023a09e1f16d5f3aa68165680db"
+  },
+  "needsYou.voteSub.waiting": {
+    "text": "Menunggu persetujuanmu.",
+    "source": "a019ae6f9c22dfb71880dea14806271cf46f9ad6df20780792cd87c1858ed735"
+  },
+  "needsYou.voteSub.waitingState": {
+    "text": "Menunggu persetujuanmu. {{state}}.",
+    "source": "3de2981a15ae5c8adc27dcf5cf91e032005f767427111f0ac9204bbb8e84c17f"
+  },
+  "needsYou.voteSub.nobody": {
+    "text": "Belum ada yang memberi suara.",
+    "source": "ebcab4eaf0e4c79beca44edd7fba1c9579ae777c84cbd0deaca5ef744e509d4c"
+  },
+  "needsYou.voteSub.counts": {
+    "text": "Sejauh ini {{yes}} ya dan {{no}} tidak.",
+    "source": "4e8cac3fc7d1b79bc5ee8ac4f42d83c696f70dc272a7d151e82034ec658ecaf3"
+  },
+  "shots.switch.label": {
+    "text": "Sebelum atau sesudah",
+    "source": "c7cea157309c9cc3d2003b497135b75a19a145d64f1c390415e4614a8170cc86"
+  },
+  "shots.switch.before": {
+    "text": "Sebelum",
+    "source": "9bb725005055412c75a8e8d1fb5a0780595174ac8bbe5a24f768647bd4e4debe"
+  },
+  "shots.switch.after": {
+    "text": "Sesudah",
+    "source": "7b68fe5510851da3d89100c569d3265e044d8656d95750c376b7a0972dea7330"
+  },
+  "shots.only.before": {
+    "text": "Sebelum",
+    "source": "9bb725005055412c75a8e8d1fb5a0780595174ac8bbe5a24f768647bd4e4debe"
+  },
+  "shots.only.after": {
+    "text": "Sesudah",
+    "source": "7b68fe5510851da3d89100c569d3265e044d8656d95750c376b7a0972dea7330"
+  },
+  "shots.fullPage": {
+    "text": "Halaman penuh ↗",
+    "source": "b77b35fa245ec26c19bba464b78dfcefb85c59e305d0f161a25721b29fe5b933"
+  },
+  "shots.fullPageCropped": {
+    "text": "Dipotong · Halaman penuh ↗",
+    "source": "0eedb345e90e8c4d41eed5a5cb2690c802c7595dd379bc024065726460424d5d"
+  },
+  "shots.alt.before": {
+    "text": "Sebelum perubahan",
+    "source": "90f17c4e6af39e3409a8bbb1a95f4a5fd50a5edb73cb0577ed60e2e5a7686b59"
+  },
+  "shots.alt.after": {
+    "text": "Sesudah perubahan",
+    "source": "d385b9e55f831aa4b43ee248466bda45ba93d0c026858727aa6c360c4525ae31"
+  },
+  "shots.size.phone": {
+    "text": "Ponsel",
+    "source": "63dceb8800b2dd4af9567a1f54f03b7c3dbdc27fac4799091ebfcc4928899ee5"
+  },
+  "shots.flip.toBefore": {
+    "text": "Tampilkan sebelum perubahan",
+    "source": "18fee1079471dd7e2bb8bc66acc3a4c94e4fdc92b33429f9b929bdc94203534a"
+  },
+  "shots.flip.toAfter": {
+    "text": "Tampilkan sesudah perubahan",
+    "source": "1cd46ba7b18fe0a52e8f5138ce5248b5ed22941cd14116d4f1e6d991d0d1f814"
+  },
+  "needsYou.by.botName": {
+    "text": "Bot Homeroom",
+    "source": "dbcdaf6793937cb49c108a0928a95702345de32d1e04db8037f1bb66945bcde9"
+  },
+  "needsYou.by.at": {
+    "text": "<0>{{name}}</0> · {{when}}",
+    "source": "9abc63fdc91e4ff6e299b9ba6c8ad281ffc420935fcf56f81d06b01b5331bfa0"
+  },
+  "needsYou.by.anonymous": {
+    "text": "Diusulkan",
+    "source": "9b0c660bb1152a72cb104c404f0f790e50b80fb3156ebdc8bd4999d2c250aa44"
+  },
+  "needsYou.by.anonymousAgo": {
+    "text": "Diusulkan · {{when}}",
+    "source": "8ea8bfe46b1094bfbf822d23c5c0fbbf10b31f0a87b408829e5e902738fbd578"
+  },
+  "needsYou.next.wide": {
+    "text": "tekan ↓ atau gulir untuk berikutnya",
+    "source": "02b566907f8a643f8b94af7441353a2a821900a288696a6de88b7b3dbee6590d"
+  },
+  "needsYou.next.phone": {
+    "text": "geser ke atas untuk berikutnya",
+    "source": "b90a19cc87c92a89cf36b61399ebf3f4635ed20d110d6fe495c245b2d3ed5357"
+  },
+  "needsYou.eyebrow.groupDecision": {
+    "text": "Keputusan bersama · Menunggu persetujuanmu",
+    "source": "4ace6776a6de5a971c778a833380d48fb056fdbc1da85a1908e9ac5307f3b00e"
+  },
+  "needsYou.eyebrow.change": {
+    "text": "Perubahan · Menunggu persetujuanmu",
+    "source": "6c58d291bb237ee484d94e0e148f0110e51bc93325db3570fb4db3ee168b6861"
+  },
+  "needsYou.previousItem": {
+    "text": "Item sebelumnya",
+    "source": "81b35f1b4332ab68875bfb115e0a57f8f6023dfd4ed0b5b31149460b1d122839"
+  },
+  "needsYou.noSummary.change": {
+    "text": "Belum ada ringkasan dalam bahasa sederhana untuk perubahan ini.",
+    "source": "a30cc7d2204e634a45b699a1e85b9c7263f9241644650461ae0877ed0c57692a"
+  },
+  "needsYou.caption.more": {
+    "text": "selengkapnya",
+    "source": "187897ce0afcf20b50ba2b37dca84a951b7046f29ed5ab94f010619f69d6e189"
+  },
+  "needsYou.caption.less": {
+    "text": "ringkas",
+    "source": "4fdd3b6201a22c7814d6e67dbb7a17790224ea0fd32ef0a0ccb0a5485eae4c9d"
+  },
+  "needsYou.caption.whatChanges": {
+    "text": "Apa yang berubah",
+    "source": "9f036d41436122c9e47f0322de8575995e9fba536947f51a0afb2490ea5cb1b5"
+  },
+  "needsYou.swipe.yes": {
+    "text": "Ya",
+    "source": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
+  },
+  "needsYou.swipe.no": {
+    "text": "Tidak",
+    "source": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d"
+  },
+  "needsYou.swipe.approve": {
+    "text": "Setujui",
+    "source": "6007acbe30b2cd98703e83350ea665c06009fcd51f26dd73b309294235f45f21"
+  },
+  "needsYou.swipe.dontApprove": {
+    "text": "Jangan setujui",
+    "source": "815f6d870f524e4958c98de8810e738f346f35f774c5dc3d47bb0da3e46b9674"
+  },
+  "needsYou.end.forNow": {
+    "text": "Itu saja untuk saat ini",
+    "source": "9f3c879aa641a2299ef3b7dcc7bb30009337d2f40476dd5182cc3fca792b68bf"
+  },
+  "needsYou.end.caughtUp": {
+    "text": "Semua sudah beres",
+    "source": "7773db01aeed20f585a9827e85b20bad75e4435fccd92eb8cce28de861f1f8b0"
+  },
+  "needsYou.end.allAnswered": {
+    "text": "Semua perubahan yang bisa kamu beri suara sudah kamu jawab.",
+    "source": "ca2a6f4abd805142a0efec9e0cff458f0eab0aaad80beb736a7fd9e9db7d37a4"
+  },
+  "needsYou.end.didHeading": {
+    "text": "Dampak suaramu",
+    "source": "096376854660cce22a03350f02562c8d263a3c227a56e6a05463c9f475110419"
+  },
+  "needsYou.end.status.live": {
+    "text": "Sudah tayang",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "needsYou.end.status.goingLive": {
+    "text": "Segera tayang",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "needsYou.end.status.backToAuthor": {
+    "text": "Kembali ke pembuat",
+    "source": "cb231527466a39c05944c44bb70daa246d0b9d05d418bfbf4a4f45617719d3d7"
+  },
+  "needsYou.end.overTheLine": {
+    "text": "Suara ya darimu yang menentukan",
+    "source": "2d5726258a7b23bf29e58139fac371d36b2e78cc9ed50ec4cdfd4ed7dd94eed5"
+  },
+  "needsYou.end.overGoingLive": {
+    "text": "{{title}} segera tayang.",
+    "source": "a2542622855fedff81215391f04ca483ac32be180ab86c208259ff6166d18a44"
+  },
+  "needsYou.end.overLive": {
+    "text": "{{title}} sudah tayang.",
+    "source": "a763e507cf4ff65e9a4fa24e1a6c70dae70ea1dae56fb196c66a59c21d3613d5"
+  },
+  "needsYou.end.seeLive": {
+    "text": "Lihat yang sudah tayang",
+    "source": "799e9935fddcc981d011e6c3b0c0500143df1c5196c2bafd17882b45a74e814d"
+  },
+  "needsYou.end.backToHub": {
+    "text": "Kembali ke Hub",
+    "source": "b724d4d2c2327a93e21f11ad12c3ee6570b3c7d68b41a4b1a3edd412b07d1d47"
+  },
+  "needsYou.end.backToSkipped": {
+    "text": "Kembali ke yang pertama kamu lewati",
+    "source": "563b1e67358b0a35695fbf762bac016e92ab95f50515e487639b6d620adf11e3"
+  },
+  "needsYou.end.suggest": {
+    "text": "Usulkan perbaikan",
+    "source": "cfbf47a0b6534ad1577177e339c73219b433f6e196a8ead8aeb2270f1b17714a"
+  },
+  "needsYou.ask.reading": {
+    "text": "Membaca perubahan…",
+    "source": "41b7b3231d1e0e9fead2d202c85e81fb1672b22b2f8b70f0be065096990038d9"
+  },
+  "needsYou.ask.failed": {
+    "text": "Gagal terkirim. Coba tanya lagi.",
+    "source": "8c2cf1c7fdfbfdccf6757f1734c5eae29c102333eaaa60016b4f517fbfb9fcb4"
+  },
+  "needsYou.ask.failedOffline": {
+    "text": "Gagal terkirim. Periksa koneksimu lalu coba lagi.",
+    "source": "79ee91f3c9b0826ae44129c60ee3b0effe48923d94c2e0ef182767ec6d978429"
+  },
+  "needsYou.ask.send": {
+    "text": "Tanya",
+    "source": "b8c209cdead61a095ec097b7a13c4fc9264c04b3e3bd0fca42ec8dbaeebeeafe"
+  },
+  "needsYou.ask.private": {
+    "text": "Hanya kamu yang bisa melihat pertanyaanmu di sini.",
+    "source": "3032a6a0351261bec582fc1c7b55863d93ac2453f52835a9de3f256c7fbe9024"
+  },
+  "needsYou.ask.hint": {
+    "text": "Tanyakan apa yang berubah, siapa yang terdampak, atau apa yang terjadi jika perubahan ini disetujui. Dijawab berdasarkan yang diketahui platform tentangnya.",
+    "source": "f97a4db5e2d9872bc56c89d554c4ee25f9cb95551ef1d9a893b6219355e32a34"
+  },
+  "needsYou.ask.noDetails": {
+    "text": "Tidak ada detail yang bisa ditanyakan untuk yang satu ini.",
+    "source": "ffe203b6c7136890089d689b15ba8698be7a8cd92e1a4b57e690c42f6a83222e"
+  },
+  "needsYou.ask.fieldLabel": {
+    "text": "Tanya tentang perubahan ini",
+    "source": "090fcdb1d955d4dad3b40dddd82e21b6cf0e40a90941a8196ad3b69581b8fe55"
+  },
+  "needsYou.ask.placeholderNone": {
+    "text": "Tidak ada detail untuk ditanyakan",
+    "source": "323173d3e83bc5e12da6106b8ae8fbe9c9be765176b255afc25f34f7d913b890"
+  },
+  "needsYou.ask.placeholder": {
+    "text": "Ajukan pertanyaan…",
+    "source": "d6a2035c730086cfff0c89f1c06ec283fdba94f193818853f350c017ff68b735"
+  },
+  "needsYou.ask.model": {
+    "text": "Model",
+    "source": "5e2c614c23f02239bc03c6c04fcb681950f9e72bf8fdff6be79c79841cbb10c0"
+  },
+  "needsYou.move.previous": {
+    "text": "Sebelumnya",
+    "source": "a57b08a480b822a0a572b993391c292ede593bf8000b406675b180bbb16260fa"
+  },
+  "needsYou.move.next": {
+    "text": "Berikutnya",
+    "source": "1ff57a29d7c9d11bdf61c1b80f2b289b44c1ea844824d4b94a0d52b6ba5fc858"
+  },
+  "needsYou.rail.label": {
+    "text": "Item ini",
+    "source": "10ceeb1a4b3b75b84868cf2c0ea228ae9290590004b300f12f640c0bcf66bfdf"
+  },
+  "needsYou.rail.endLabel": {
+    "text": "Akhir daftar",
+    "source": "69a2b58f070d7629c47597a0df71517aab880f7ca2eb1f5be918fedd9082fdb7"
+  },
+  "needsYou.rail.sending": {
+    "text": "Mengirim…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "needsYou.rail.approve": {
+    "text": "Setujui",
+    "source": "6007acbe30b2cd98703e83350ea665c06009fcd51f26dd73b309294235f45f21"
+  },
+  "needsYou.rail.vote": {
+    "text": "Beri suara",
+    "source": "cd5588db6fc6fb44dd76b006202f9efa2ba5d715272a1ae06fb3c805e6a25289"
+  },
+  "needsYou.rail.comments": {
+    "text": "Komentar",
+    "source": "355f79f29d7d3c2df917ad07f7441e3ce4b0ac48892b778076dbdca401851712"
+  },
+  "needsYou.rail.ask": {
+    "text": "Tanya",
+    "source": "b8c209cdead61a095ec097b7a13c4fc9264c04b3e3bd0fca42ec8dbaeebeeafe"
+  },
+  "needsYou.rail.tryIt": {
+    "text": "Coba",
+    "source": "fe69511137842f6fddcfcc1e96e39bf6920b5ed00251ec6549d79463928b2e0c"
+  },
+  "needsYou.rail.moreActions": {
+    "text": "Tindakan lainnya",
+    "source": "f8d46c2570e70736d62beb6e2e8df321d7cb4842a2b894f2025c47b31871d9f1"
+  },
+  "needsYou.rail.more": {
+    "text": "Lainnya",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "needsYou.voteSheet.openToDecide": {
+    "text": "Buka untuk memutuskan",
+    "source": "650b703c555fa5e524d9c61342f332ca3c332b84e05d31b02fe4050159cd2a1a"
+  },
+  "needsYou.voteSheet.later": {
+    "text": "Putuskan nanti",
+    "source": "892c45a22edb0db9ba0cd725f06f38d7860c7867e1615ec6826f1f5bcbf057c8"
+  },
+  "needsYou.voteSheet.keysApprove": {
+    "text": "Y setujui · N tidak setuju · Enter kirim · Esc tutup",
+    "source": "1eadaa9d33c042d7c5e55feb8431dbf9c81e961e0b7e51a6860548d9d962df71"
+  },
+  "needsYou.voteSheet.keysVote": {
+    "text": "Y ya · N tidak · Enter beri suara · Esc tutup",
+    "source": "9cc9d9408db614acffaf2a7c7859418c8739628bb5da612330e4d0e31630127b"
+  },
+  "needsYou.keys.move": {
+    "text": "<0>↑</0><1>↓</1> pindah",
+    "source": "123e1edb48e38e70eaf05334138d12cad5f64ee1a431ad1956cb4620f471f824"
+  },
+  "needsYou.keys.vote": {
+    "text": "<0>V</0> beri suara",
+    "source": "3204557d8b86026599849f6e8c4f86fe68153d3c8b7cd356cf9a8ad46cae1378"
+  },
+  "needsYou.keys.ask": {
+    "text": "<0>A</0> tanya",
+    "source": "465bc0c347237f68494b07ba01059b65484ca239446d8f7e462c982639fdaf30"
+  },
+  "needsYou.keys.comments": {
+    "text": "<0>C</0> komentar",
+    "source": "23723a2a45ca9d1cc55f57c3c2808ae1a8623bd262982b45af52cdf64f28ee9f"
+  },
+  "needsYou.keys.tryIt": {
+    "text": "<0>T</0> coba",
+    "source": "f1c73acd85db6f8cf607cd0f9aad71fe55bddbc03fe254c8e94937ba28b6e9b6"
+  },
+  "needsYou.keys.more": {
+    "text": "<0>M</0> lainnya",
+    "source": "509f1aaf49b1ae29a83ce6d2f4fbde64e7cf2d16b9cbe2c68c9043adf89550f2"
+  },
+  "needsYou.comments.none": {
+    "text": "Belum ada komentar.",
+    "source": "b7cba9576dc55226bf684b3e92c19114b1432e7d0731d58de212c23ece10ab11"
+  },
+  "needsYou.talk.dialog": {
+    "text": "Komentar dan pertanyaan",
+    "source": "88d011bed3e30fe83935ae41da27cae9f7adae224de6b2592697165d979569e2"
+  },
+  "needsYou.talk.tabs": {
+    "text": "Komentar atau tanya",
+    "source": "aced62daccca74c5766306fd2c1be0aac6390040ee451b417a9c66a98f763c7d"
+  },
+  "needsYou.talk.comments": {
+    "text": "Komentar",
+    "source": "355f79f29d7d3c2df917ad07f7441e3ce4b0ac48892b778076dbdca401851712"
+  },
+  "needsYou.talk.ask": {
+    "text": "Tanya",
+    "source": "b8c209cdead61a095ec097b7a13c4fc9264c04b3e3bd0fca42ec8dbaeebeeafe"
+  },
+  "needsYou.rail.votedYes": {
+    "text": "Suara ya",
+    "source": "3393ce52f5d0ada30ea98a7102a4b6721aefb9c6fca6de7e3de373b6b48b6393"
+  },
+  "needsYou.rail.votedNo": {
+    "text": "Suara tidak",
+    "source": "9dfd1ccc16ec2c9488835e19348f4615a5d5de271ed96480e86c760be8420071"
+  },
+  "needsYou.rail.approved": {
+    "text": "Disetujui",
+    "source": "87b42e40c2a290e01d87b721bf381c3c5e259d1eb0a4660e41fdbf8bc73f7ddd"
+  },
+  "needsYou.rail.notApproved": {
+    "text": "Tidak disetujui",
+    "source": "ad2815011b0661cb9809bdefc4aec51f21a192984c0e14884ec107e96de7b819"
+  },
+  "needsYou.ask.placeholderReading": {
+    "text": "Membaca perubahan…",
+    "source": "41b7b3231d1e0e9fead2d202c85e81fb1672b22b2f8b70f0be065096990038d9"
+  },
+  "pageBack.backTo": {
+    "text": "Kembali ke {{place}}",
+    "source": "1ae7c6ca2c51680521d5399ced02a46e5f8a327edfea1178b19f5cb077f97f87"
+  },
+  "ask.failed": {
+    "text": "Gagal terkirim. Coba tanya lagi.",
+    "source": "8c2cf1c7fdfbfdccf6757f1734c5eae29c102333eaaa60016b4f517fbfb9fcb4"
+  },
+  "plan.step": {
+    "text": "Langkah {{step}} dari {{total}}",
+    "source": "598062492cad82125bbc9d2c69feb90a0473dcb3d28efc47585281dee22a2dbf"
+  },
+  "plan.decides.named": {
+    "text": "{{username}} yang memutuskan rencana ini.",
+    "source": "de2b4156ff83d735d8cfefdc48d7256f4207585ee4444cb754f2ea16b4d01e16"
+  },
+  "plan.decides.starter": {
+    "text": "Pembuat proyek yang memutuskan rencana ini.",
+    "source": "e99900739cfe03759e7d2971655cf1aa68d0da2403e4be4a6979aa62fb2cc6a2"
+  },
+  "plan.chosen.named": {
+    "text": "{{username}} memilih rencana ini. Setelah aktif, siapa pun di sini bisa mengusulkan perubahan.",
+    "source": "5d18de373eaf5027cdf17d153c83c45c487bd5274d1d2445175fb996f8939148"
+  },
+  "plan.chosen.starter": {
+    "text": "Pembuat proyek memilih rencana ini. Setelah aktif, siapa pun di sini bisa mengusulkan perubahan.",
+    "source": "de86f2661ebbeff10b53b62d9f1112e8015172b2e3d3dac9f05e5aa80fab3ec2"
+  },
+  "plan.backHub": {
+    "text": "Hub",
+    "source": "d87c9ca31f373cc5ce5d1d8efc602ef809fefbb9cafd79961260d31ccfd49363"
+  },
+  "plan.botNameBadge": {
+    "text": "Homeroom bot <0>AI</0>",
+    "source": "f100cd5b4b11461c34d712f6d2b31af134d47d21c9e3f9fe57bc5ba489fe010c"
+  },
+  "plan.title": {
+    "text": "Rencanaku untuk {{project}}",
+    "source": "c6c52cb2fd53f2c25be13de625e35509d960d84b3cfba01608bb6b546943f79d"
+  },
+  "plan.linesLabel": {
+    "text": "Rencana untuk {{project}}",
+    "source": "7de39e85a182fa0f54970244e2060949662b4e0b0d2e71d0be5987d6e5317bea"
+  },
+  "plan.talk": {
+    "text": "Bahas di #general",
+    "source": "a1a6b94290102099f7262f6803c79ed6719cb93f3d0f22b3786ed40a7ced9602"
+  },
+  "discussion.label": {
+    "text": "Diskusi {{project}}",
+    "source": "8caf7b6d18dfcafbc239a8c5208a970f653221051d605850498407172636306e"
+  },
+  "discussion.none": {
+    "text": "Proyek ini tidak punya diskusi yang bisa kamu baca.",
+    "source": "4bad8fd0a2d5a67d6eefb592d03f87999f28de614fbab5936252bade9003fc8d"
+  },
+  "discussion.closeThread": {
+    "text": "Tutup utas",
+    "source": "5110caa6ca6c3ef28948a5962f370a17ad382c417453b260f2e2a080016eb7ac"
+  },
+  "invite.from.isMaking": {
+    "text": "{{name}} sedang membuatnya dan mengundangmu",
+    "source": "92e63abe7f32df5e1350e9d134ba80597a6f1615e0cf2ec068d748aca05626d0"
+  },
+  "invite.from.made": {
+    "text": "{{name}} membuatnya dan mengundangmu",
+    "source": "996b9592396b0d54559461edad4b201caab61d37c46c0c44ebb64f1390bec5bb"
+  },
+  "invite.from.invited": {
+    "text": "@{{username}} mengundangmu",
+    "source": "40fd0b1a50944e4295ea983a2b525e62993a36e2789757163669a394575f394a"
+  },
+  "invite.from.unnamed": {
+    "text": "Kamu diundang",
+    "source": "c4941a0e344f74bd11ae2c078eeea59ea409e3de31d1107eb25cd1017441e75a"
+  },
+  "invite.dead.expired": {
+    "text": "Tautan undangan itu sudah kedaluwarsa.",
+    "source": "7aa263b33dcbbff9cadc7667e4d9c7079f92b139351fbf607da78f8ff78a0873"
+  },
+  "invite.dead.revoked": {
+    "text": "Tautan undangan itu sudah dinonaktifkan.",
+    "source": "e06ebc93751a841a4b1a9d257fb73bc5c0179c3dd0e40d24e5adc40ec977ec98"
+  },
+  "invite.dead.usedUp": {
+    "text": "Tautan undangan itu sudah mencapai batas penggunaan.",
+    "source": "470ba439321ab27f07f0e4c2173df61170c1a80c007eebc980d208f82562d07a"
+  },
+  "invite.dead.unknown": {
+    "text": "Tautan undangan itu tidak berfungsi.",
+    "source": "a0ffc5912ef1f3588980bab8ae1204ac9a01bc56a63f27afa1d8914d9c2285b8"
+  },
+  "invite.previewOnly": {
+    "text": "Ini hanya pratinjau undangan, jadi tidak ada yang bergabung.",
+    "source": "cc969dceac9e5e8162a15a818b33891dfa941555975b5d8b029678ade4575f3d"
+  },
+  "invite.joinFailed": {
+    "text": "Gagal bergabung. Coba lagi.",
+    "source": "d8162dad54a10098395d9e9322f73170fff9999c583d3857ba04b98b29c58b66"
+  },
+  "invite.usernameFirst": {
+    "text": "Pilih nama pengguna dulu.",
+    "source": "2e3f3572e1e8ce11bf8ea259f3edd0f25df97e159707eb1524b5a4ac32e037a5"
+  },
+  "invite.joined": {
+    "text": "Kamu sudah bergabung.",
+    "source": "fbf03a5ae58a1e80a178da3f44f3dfbdd19db140c197bc723819f9e5f81b776b"
+  },
+  "hub.channel.sayHi": {
+    "text": "Sapa {{project}}",
+    "source": "8f64de95a97efb2069a1ffaa9269a195806d0ab455d1e821e7b1c7ecd7ef9109"
+  },
+  "hub.firstVersion.review": {
+    "text": "Tinjau rencana",
+    "source": "e794a93299662a1d031967e2e73ed6774355a2c2ed0f9eac759be0410a27d256"
+  },
+  "hub.firstVersion.answer": {
+    "text": "Jawab pertanyaan",
+    "source": "1fc108420acc2ba2f80db6daa0639b36e01c9a3b3eb074d2ac4e31255cdaee46"
+  },
+  "hub.firstVersion.tryIt": {
+    "text": "Coba",
+    "source": "fe69511137842f6fddcfcc1e96e39bf6920b5ed00251ec6549d79463928b2e0c"
+  },
+  "hub.firstVersion.openApp": {
+    "text": "Buka aplikasi",
+    "source": "e51c6b48fb9e73e340a2804fd209dd67b2fe22952170a846a939fe3ba18b1e5e"
+  },
+  "hub.firstVersion.seePlan": {
+    "text": "Lihat rencana",
+    "source": "4f83cff0b88783d33ec3122f5cfba6a6f637357b0755cfcb4d8cccd2023f1f9e"
+  },
+  "hub.needs.title": {
+    "text": "Menunggumu",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "hub.needs.joinToVote": {
+    "text": "Gabung untuk memberi suara.",
+    "source": "da1f25f8defe96d6266411e8d9c4c9c2d8ee846e4f2cec0eb504f19015d5bca7"
+  },
+  "hub.needs.none": {
+    "text": "Tidak ada lagi yang perlu diberi suara.",
+    "source": "65789eca70171bb06c7c3643c27369fcbb2231b06d3fdea288611cd6f81f085a"
+  },
+  "hub.work.title": {
+    "text": "Pekerjaanmu",
+    "source": "ef14cf0d34ed4bd62ddb201026b13ba7da82fe295b127d50fc65c7afb4c6b46b"
+  },
+  "hub.work.empty": {
+    "text": "Belum ada pekerjaan yang berjalan.",
+    "source": "ed3f87728c3d4a8e76c93df2593b8f02926f42f6c88c8366ff59c54f83550ef0"
+  },
+  "hub.work.emptyBot": {
+    "text": "Belum ada yang berjalan. Untuk mengubah sesuatu, bilang saja ke Homeroom bot.",
+    "source": "6bd2b50567314596a18a4e70aa62d0255aa10869dccb5da8d32915d1f3ac23b7"
+  },
+  "hub.work.emptyMenu": {
+    "text": "Belum ada yang berjalan. Tekan <0>⋯</0> untuk mengusulkan perbaikan.",
+    "source": "562881d2bff52630865d9cf08318d58e4b7bccfa426f19af61f558b7ac77cb75"
+  },
+  "hub.forYou.title": {
+    "text": "Untukmu",
+    "source": "143134f9392545a25774f24d42306752bcbbb7ea18ee8cffd69fb5b7388eec06"
+  },
+  "hub.forYou.discussion.title": {
+    "text": "Diskusi <0>#{{handle}}</0>",
+    "source": "6a39622c5604f8b6c1ccf495d5b7c7e3a9c0484ff3f9df7970f98bb05f7ce002"
+  },
+  "hub.forYou.discussion.lastBy": {
+    "text": "@{{username}}: {{message}} · {{ago}}",
+    "source": "9e16747f097e1446b2908dddc58687c286c5f67fb59fcb21058383ffae4f7140"
+  },
+  "hub.forYou.discussion.last": {
+    "text": "{{message}} · {{ago}}",
+    "source": "0b6ee4a7fe610053c45e2fb44706047f67543c87f7dce36b9d29b85c6402ea51"
+  },
+  "hub.forYou.discussion.postedBy": {
+    "text": "@{{username}} mengirim pesan · {{ago}}",
+    "source": "0b697caa59758babe47566fc865c24ff1d42fd54cf7e9e3d1d965678323990ba"
+  },
+  "hub.forYou.discussion.posted": {
+    "text": "Pesan baru · {{ago}}",
+    "source": "c7b5c66747e8af8aaf68fe71389496f6b0c0f37a2cd91410d700f57f1dd24c84"
+  },
+  "hub.recent.title": {
+    "text": "Baru tayang",
+    "source": "c3a606b3cf5b7276b50f1724bcfa3a4b72f8febd4bac50c93d92607f7301ad0c"
+  },
+  "hub.recent.all": {
+    "text": "Semua di Bengkel",
+    "source": "17f7a210aef27baeb35e73a42703ef9e2bdbdaba31eac7fcc45405c93c1bd932"
+  },
+  "hub.recent.byAgo": {
+    "text": "{{who}} · {{ago}}",
+    "source": "e9bc123d10c5eeee38434ef0c8969485f5228033302836b03b10fc203cff0be4"
+  },
+  "hub.recent.byGoing": {
+    "text": "{{who}} · sedang tayang",
+    "source": "895e3e37d5925bdbf270eae33f0e612f0c353dd37146d615b47128b20f38a3b4"
+  },
+  "hub.recent.going": {
+    "text": "Sedang tayang",
+    "source": "7a528bab4bc654c810cf5be4bad6d6a35145b7e2521a88dc013de150a95f5fc7"
+  },
+  "communityCard.rule.you": {
+    "text": "Perubahan tayang setelah kamu menyetujuinya.",
+    "source": "3aa7e57926faa777394adeca76943d948785aee912db21b75178c46409c157ce"
+  },
+  "communityCard.rule.approvers.only": {
+    "text": "Perubahan tayang setelah satu-satunya penyetuju berkata ya.",
+    "source": "0d2b1b664da738d2cfea44eb2463023725aebf3fba006035b65767293f4688de"
+  },
+  "communityCard.rule.approvers.both": {
+    "text": "Perubahan tayang setelah kedua penyetuju berkata ya.",
+    "source": "790a1ed8264ca39e0f4cd9b6bbdf4b136ca478a535b1d1dc0c65b86695d1616e"
+  },
+  "communityCard.rule.approvers.bothQuiet": {
+    "text": "Perubahan tayang setelah kedua penyetuju berkata ya, atau setelah jeda jika satu berkata ya dan tidak ada yang berkata tidak.",
+    "source": "cf5aa452fcb50281c1548843becb6c436b4f46d673d618d59aa27fec865c9c6e"
+  },
+  "communityCard.rule.members.only": {
+    "text": "Perubahan tayang setelah satu-satunya anggota aktif menyetujuinya.",
+    "source": "99790a3752a2b012b98f77755cacb345ae93f8d5150e886353acd760fba81bea"
+  },
+  "communityCard.rule.members.both": {
+    "text": "Perubahan tayang setelah kedua anggota aktif menyetujuinya.",
+    "source": "89c58093bc1a4afb8514e3e4c7fffc3c333845e08cdec98ad2a7a5b76902263c"
+  },
+  "communityCard.rule.members.bothQuiet": {
+    "text": "Perubahan tayang setelah kedua anggota aktif menyetujuinya, atau setelah jeda jika satu menyetujui dan tidak ada yang keberatan.",
+    "source": "7b17023e038caf531af86df6309ec719c9048e98ef7cd5c637e4b41f32abdcd6"
+  },
+  "communityCard.step.you": {
+    "text": "Kamu menyetujuinya",
+    "source": "10d9cd688efce7161b34fc02fbf93004d822fdd8c3d9ece3d4d275cd32e92439"
+  },
+  "communityCard.step.justYou": {
+    "text": "Hanya kamu",
+    "source": "fb55a89a1737cae174473e3294601fa7ed83054cb1c5d5750668731e720b42b9"
+  },
+  "communityCard.step.approvers.only": {
+    "text": "Penyetuju berkata ya",
+    "source": "88aa5112e5a2c0f441d1bf0fbd07af7de1b578b4ec683a671f5e57e781ce12d9"
+  },
+  "communityCard.step.approvers.both": {
+    "text": "Kedua penyetuju berkata ya",
+    "source": "2a37067c72e6d9c493cb38a43184e37e001b48e4ee92be513074df2382d0961f"
+  },
+  "communityCard.step.approvers.wait": {
+    "text": "Atau setelah jeda, jika satu berkata ya dan tidak ada yang berkata tidak",
+    "source": "95f3fc2282946ab0aa8f5c9b60a9a016da5c6a6071bf685a104fa60d67188d55"
+  },
+  "communityCard.step.members.only": {
+    "text": "Satu-satunya anggota aktif berkata ya",
+    "source": "e237b59af0f1d8a2ebe65ae0e188d15dd38ec72a3691581ffa26a635c47369e7"
+  },
+  "communityCard.step.members.both": {
+    "text": "Kedua anggota aktif berkata ya",
+    "source": "a86dd41b3af84337b97d5aad219a4371c79ff66c5c87e53687bd6a56b340d9c2"
+  },
+  "communityCard.step.members.wait": {
+    "text": "Atau setelah jeda, jika satu menyetujui dan tidak ada yang keberatan",
+    "source": "0e57e534ad1aad26a1edf98fe5aeb45730c1be011582bfe871bd6b033c0f05ab"
+  },
+  "communityCard.step.names.eitherOfTwo": {
+    "text": "{{first}} atau {{second}}",
+    "source": "fb9fea47e0ab513776b8b01579bb822c922bcd4552aeab3d7abd71b43f5016cd"
+  },
+  "communityCard.step.names.bothOfTwo": {
+    "text": "{{first}} dan {{second}}",
+    "source": "9484f622cc39610d78236ef25122e9eae0f9854051a7b649c91822f3d98fd029"
+  },
+  "communityCard.step.names.anyOfThree": {
+    "text": "{{first}}, {{second}}, atau {{third}}",
+    "source": "89b10d568a760bf9d0ec09ee1b787fd4be6449220af5c7aa79e69e7706caf0a0"
+  },
+  "communityCard.step.names.allOfThree": {
+    "text": "{{first}}, {{second}}, dan {{third}}",
+    "source": "1a597300916a73e980197860bb284a5fa3f224be3bb2036a6adeb2a42886dbc6"
+  },
+  "communityCard.audience.justYou": {
+    "text": "Hanya kamu",
+    "source": "aeed20a96ee36e83c67fdca5fdee4bb5522ec06cec7c86b5d2984860ec560942"
+  },
+  "communityCard.audienceChange.toPublic": {
+    "text": "Menjadikannya komunitas publik menunggu persetujuan",
+    "source": "7bdc84396ac7a1ed8c032ad24d8af39e320c2e392410fc904da82dddee27c9d7"
+  },
+  "communityCard.audienceChange.toPrivate": {
+    "text": "Menjadikannya komunitas privat menunggu persetujuan",
+    "source": "8103d7b06e80d2160f9c1cb5c4e6011404c0b570df9ec7f2285255c061d6475b"
+  },
+  "communityCard.audienceChange.other": {
+    "text": "Perubahan untuk siapa proyek ini menunggu persetujuan",
+    "source": "86264355aeade4fe7e12f16d32a252c0f3e646f81b5c4af59de2049b5aa85fbf"
+  },
+  "communityCard.audienceChange.failed": {
+    "text": "Belum berhasil. Coba lagi.",
+    "source": "057c05e0305ab2cfcb3a8275431f6fbd1fb530807eae559fdc4bcb74dc393cce"
+  },
+  "communityCard.week.privateCommunity": {
+    "text": "Komunitas privat",
+    "source": "cbb6e03143153940d60b396a1930d790299d190338d5caee412a16d55e3ec2a2"
+  },
+  "communityCard.makePublic.question": {
+    "text": "Jadikan {{project}} komunitas publik?",
+    "source": "86affa1ce106ff9d2ba5fec7afc25d65f6fb928a21d56147ca07c3d7d0564b22"
+  },
+  "communityCard.makePublic.explain": {
+    "text": "Siapa saja bisa menemukannya di Discover, bergabung, dan mengusulkan perubahan. Anggota memberi suara dulu, dan berlaku setelah digabungkan.",
+    "source": "1ed5c42473a16a8697eff28c06cf7f13b2d045aa157ee790d5cdf6601d574d1d"
+  },
+  "communityCard.makePublic.propose": {
+    "text": "Usulkan jadi publik",
+    "source": "ba844977ce930e0671644a8fb1dca8aa0439918e84ad59348bd0fc2fd1e7579d"
+  },
+  "communityCard.makePublic.notNow": {
+    "text": "Nanti saja",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "communityCard.share.title": {
+    "text": "Bagikan",
+    "source": "692991f8b622c07929dab639f3bfe705e15c81ee015a97bbd8becc9955e5d76d"
+  },
+  "communityCard.share.line": {
+    "text": "Undang orang agar jadi komunitas privat, atau jadikan publik agar siapa saja bisa bergabung.",
+    "source": "5a5fd3b51abe8b6ee9b9b3cd4a33be930e2ff0a57b1ecbfebc1e26ded63ed4c2"
+  },
+  "communityCard.share.lineBuilding": {
+    "text": "Undang orang untuk mengikuti prosesnya selagi dibuat, atau jadikan publik agar siapa saja bisa bergabung.",
+    "source": "db250e1b722349c050cdad8a7e8217ef3925ab3e2449d2f3495656a90a6e32a6"
+  },
+  "communityCard.share.invite": {
+    "text": "Undang orang",
+    "source": "27bf0f2d3f3f549002f193566e19b010a40b80c1a5564cf65a80d83f2f2c0462"
+  },
+  "communityCard.share.makePublic": {
+    "text": "Jadikan publik",
+    "source": "20c4d94c39a0b76190d158e10bfb3b6ee60208dadcbd6f68afe003de68f0b5d2"
+  },
+  "communityCard.inviteCard.note": {
+    "text": "“{{note}}”",
+    "source": "2a021146774ace843ff6132136c74fc5e2b372bd09d2c2ec95d87939575fd161"
+  },
+  "communityCard.inviteCard.join": {
+    "text": "Gabung ke {{project}}",
+    "source": "210b7b479f4c2ca28469c3cc8a95693e4a5b87cda216a78e9fc8b87d792a5cf6"
+  },
+  "communityCard.inviteCard.joinUnnamed": {
+    "text": "Gabung ke komunitas ini",
+    "source": "e287e1a83c680f34cd334a055297bf5e9b8e11f25aca134022082016f81a4542"
+  },
+  "communityCard.join.button": {
+    "text": "Gabung",
+    "source": "fd30fe681b4b2d9e55f851cb34641f907401aa43e9d80f5b1e14ce714ef00497"
+  },
+  "communityCard.join.question": {
+    "text": "Gabung ke {{project}}?",
+    "source": "5a47fa2915310fadcf2972ee57b7c583e5c9c1ff24206eaef5f22bacebbd9ba1"
+  },
+  "communityCard.join.explain": {
+    "text": "Anggota bisa memulai perubahan, mengajukan permintaan, memberi suara, dan mengobrol di sini.",
+    "source": "c37decc64067446de0d5782a1c49bc9d23b8681041453c470cc4f212832f62e0"
+  },
+  "communityCard.join.answer": {
+    "text": "Gabung",
+    "source": "fd30fe681b4b2d9e55f851cb34641f907401aa43e9d80f5b1e14ce714ef00497"
+  },
+  "communityCard.join.notNow": {
+    "text": "Nanti saja",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "communityCard.openApp": {
+    "text": "Buka aplikasi",
+    "source": "e51c6b48fb9e73e340a2804fd209dd67b2fe22952170a846a939fe3ba18b1e5e"
+  },
+  "communityCard.invite.button": {
+    "text": "Undang",
+    "source": "1fd9ae1607aa3d804ef494984ed57aa79b6d3553962c76f6c8f5fa0a4dde04b7"
+  },
+  "communityCard.invite.title": {
+    "text": "Undang orang lewat tautan",
+    "source": "214c7ce698d5ef8a21243831c7a2327469ab3524b30edae6a0c4f2c1c98d31b3"
+  },
+  "topic.frame.resizeSpecPanel": {
+    "text": "Ubah ukuran panel rencana",
+    "source": "8a79f16d019efc23084fd84b49c9fa6834be3eb2e6903f8a762e094732c5fed2"
+  },
+  "topic.back.messages": {
+    "text": "Pesan",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "topic.back.workshop": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "topic.back.toMessages": {
+    "text": "Kembali ke Pesan",
+    "source": "b37d78799ae1facfbf1be2b82438df0def1168fe0a6e732b0bacc96a4f1a3038"
+  },
+  "topic.back.toWorkshop": {
+    "text": "Kembali ke Bengkel",
+    "source": "154af54298f49f55de7911d6867db48c5e35a2558d5ce2e751697bf872d72636"
+  },
+  "topic.editor.title": {
+    "text": "Edit deskripsi",
+    "source": "3495f1b0ea9d5ce1779a31c776c465d3b1dfb84cb6694649da71df479a20c9c6"
+  },
+  "topic.editor.closeLabel": {
+    "text": "Tutup editor deskripsi",
+    "source": "80830b73269301f55f3653a963a1b56f71893a9129b43a5754580a08ca06b31f"
+  },
+  "topic.editor.help": {
+    "text": "Jelaskan masalahnya dan apa yang dilakukan perubahan ini. Markdown didukung.",
+    "source": "060f080a0131e45d88e646ca1af18f75fc664055394101178820f54d6b2e8245"
+  },
+  "topic.editor.loading": {
+    "text": "Memuat deskripsi…",
+    "source": "f118976614485a9d1518275db274d3846d18da253104f127bec0c79ce1c438fb"
+  },
+  "topic.editor.fieldLabel": {
+    "text": "Deskripsi",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "topic.editor.previewRegion": {
+    "text": "Pratinjau deskripsi",
+    "source": "bff36549f585fb7d394213fc7dd0dda8f85a34d137e736f2ec29b76e779a6454"
+  },
+  "topic.editor.preview": {
+    "text": "Pratinjau",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "topic.editor.editText": {
+    "text": "Edit teks",
+    "source": "7967d944899516194673bf8f5391776cc10cf1d70e840d8a76cead74815bd488"
+  },
+  "topic.editor.tooLong": {
+    "text": "Persingkat deskripsinya sebelum menyimpan; tidak ada teksmu yang dihapus.",
+    "source": "d4c9ed4ff24c3369fcadfa588db5c04438ff6a1c40a80923bb28b5f7b2a8c11a"
+  },
+  "topic.editor.loadFailed": {
+    "text": "Tidak dapat memuat deskripsi.",
+    "source": "6a6dd1d7478256bba049dfa9a38d6e78a439856fd3144082a3ab648529dede64"
+  },
+  "topic.editor.saveFailed": {
+    "text": "Tidak dapat menyimpan deskripsi.",
+    "source": "596671687f8c7d2f75e1285267c39ee1c553cbf9643950ffdf5d9b89e6485e1f"
+  },
+  "topic.editor.connectFailed": {
+    "text": "Tidak dapat terhubung. Drafmu tetap tersimpan; coba simpan lagi.",
+    "source": "703d75dc15aacef79bbaf27a07be7712c95b371f6fceab61a85e5be0df3e5aa7"
+  },
+  "topic.editor.savedSyncIncomplete": {
+    "text": "Tersimpan di Homeroom. Sinkronisasi pull request belum selesai. Simpan lagi untuk mencoba ulang.",
+    "source": "c45f5398998f6bad42fe90ac53bdd76041d64af1dc9648af95b21778ba718476"
+  },
+  "topic.editor.savedToast": {
+    "text": "Deskripsi tersimpan.",
+    "source": "e2e50cfec31ae7ca719bedaf69d90e58f20d9509a9d30b0df47335c104e6d754"
+  },
+  "topic.editor.reviewLatest": {
+    "text": "Lihat deskripsi terbaru",
+    "source": "b42916f83cf8b4d089efeb30e0f873c61b2d145f5de0d69dc46200c2351260ec"
+  },
+  "topic.editor.latestTitle": {
+    "text": "Deskripsi tersimpan terbaru",
+    "source": "2e7f7f1601bcdbb47dc8466a5806b0578b029ceae6db8421324c0bc27cb45072"
+  },
+  "topic.editor.useLatest": {
+    "text": "Pakai teks terbaru",
+    "source": "9a0f05500f99ea9c52db363c5c6deae0ea428d1f2c1b91c13a56e821c8d3691a"
+  },
+  "topic.editor.keepDraft": {
+    "text": "Pertahankan drafku",
+    "source": "cdb80bb94da38a42f06987347870066abf11197c7194267c4ad4cce953ab32df"
+  },
+  "topic.editor.save": {
+    "text": "Simpan deskripsi",
+    "source": "0a42115cdc151c8fffd62d7c60f7136592a47eb5a1e40711947bcd398c240ad3"
+  },
+  "topic.editor.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "topic.editor.retrySync": {
+    "text": "Coba lagi sinkronisasi GitHub",
+    "source": "80bee5b7fe7ab16b5d9d8fcf6fdc6c0b10636aab2b4011d3e171d2ab84ecedf5"
+  },
+  "topic.check.advisory": {
+    "text": "saran",
+    "source": "644c4a77ffa6df24068f109ef2582ea1a76cc24b42eef9ed6b9efef0af0db69d"
+  },
+  "topic.check.flaky": {
+    "text": "tidak stabil · {{percent}}%",
+    "source": "f110b41a1ad36e49c2a44995b2adf8e504af525f936909e193317b70673f7677"
+  },
+  "topic.check.flakyTitle": {
+    "text": "Gagal sekitar {{percent}}% dari proses yang tercatat",
+    "source": "c391ca09a6a74764479870c06fc6bf192cd7308b5f021e449ea15c6b21462f53"
+  },
+  "topic.check.whyItFailed": {
+    "text": "Mengapa gagal",
+    "source": "5cba76ed9408cad1679e5fd6cd247ca6e30692956c406508fb0e84dea213e04d"
+  },
+  "topic.check.passedOnRetry": {
+    "text": "Lolos saat diulang",
+    "source": "467d8dd8bea1b2af1e5e219a0c91a524a0fb787526db517155b8d65702693552"
+  },
+  "topic.check.failed": {
+    "text": "gagal",
+    "source": "5d28a90f4498a81461efbaf6f628a19d9778390bb5c81a393dd936181cc3d826"
+  },
+  "topic.check.reasonOnPath": {
+    "text": "{{reason}}<0> · di {{path}}</0>",
+    "source": "13f52b70b90ddcf9d4f973dc32753c9a7b932fa1b8feb5ea160eebf97776a875"
+  },
+  "topic.check.testInFile": {
+    "text": "<0>{{test}}</0><1> · di {{file}}</1>",
+    "source": "a0f645b7d0b8155ea30a281f634e4f44bcb3eb62450386690fdf484835ce93cd"
+  },
+  "topic.checks.passNamesLoading": {
+    "text": "Memuat pemeriksaan yang lolos…",
+    "source": "39128b259c710a0fc2021d2e210460f164cec23f2bd6bc3ee11ee52b86456bc4"
+  },
+  "topic.checks.passNamesFailed": {
+    "text": "Tidak dapat memuat pemeriksaan yang lolos. Tutup lalu buka lagi untuk mencoba ulang.",
+    "source": "204c563a83ea49b2aeeb2c953c837b5d69eb7bb548f7d6aa0c5e681340f8b701"
+  },
+  "topic.build.seconds": {
+    "text": "{{seconds}} dtk",
+    "source": "c98e00945ab1f6c3908f62d4a198875f8eea59b34ed9dd5d67e2d78bfa8cc53b"
+  },
+  "topic.build.minutesSeconds": {
+    "text": "{{minutes}} mnt {{seconds}} dtk",
+    "source": "1f8e5ba1f8fc71ddcabe9230a2fe3419a5c4b63e338032758fc6c107e6f88d51"
+  },
+  "topic.roster.loading": {
+    "text": "Memuat suara…",
+    "source": "6bc097409bbffe0d74917446b8536472b123f778039a68d2e8e8198567dcf2e4"
+  },
+  "topic.roster.approved": {
+    "text": "Disetujui",
+    "source": "87b42e40c2a290e01d87b721bf381c3c5e259d1eb0a4660e41fdbf8bc73f7ddd"
+  },
+  "topic.roster.approvedBy": {
+    "text": "<0>Disetujui</0> oleh {{approvers}}",
+    "source": "443ed8dab43f154076bf2d385146a395df59c41c1099a3ae8ef55079bbec1996"
+  },
+  "topic.roster.approvedByWithNo": {
+    "text": "<0>Disetujui</0> oleh {{approvers}}<1> · Tidak: {{against}}</1>",
+    "source": "dae52a764a1b484901e07c9c18c99ba9f1750e4fbc8da7df3a89eca4aaf5bbc2"
+  },
+  "topic.roster.approvedWithNo": {
+    "text": "<0>Disetujui</0><1> · Tidak: {{against}}</1>",
+    "source": "656daa3a7d0c621fda419470c139b856573a6969c36dfa232a27d955f45f63f7"
+  },
+  "topic.roster.waiting": {
+    "text": "Menunggu suara.",
+    "source": "24953fcd78a2a3fde1c5849060fbd0e5a9efde342bc6f296831d84461cf66189"
+  },
+  "topic.roster.waitingYes": {
+    "text": "<0>Menunggu suara. </0><1>{{yesLabel}}:</1> {{yesNames}}",
+    "source": "eafda617846862b97c65cc15ba8bdd7868819ab76579e3c7ad28a6828800be2e"
+  },
+  "topic.roster.waitingYesNo": {
+    "text": "<0>Menunggu suara. </0><1>{{yesLabel}}:</1> {{yesNames}} · <2>{{noLabel}}:</2> {{noNames}}",
+    "source": "31c14aa857ba5afe9d8d2352004da8abad6bd02847707947050ee53b25789cb6"
+  },
+  "topic.roster.waitingNo": {
+    "text": "<0>Menunggu suara. </0><2>{{noLabel}}:</2> {{noNames}}",
+    "source": "7547b22c911455a833b85f3cac7ab738db8d8e4b11903fcf9c5fe913233b42dd"
+  },
+  "topic.roster.reason": {
+    "text": "{{voter}}: “{{reason}}”",
+    "source": "9cb19d4c9d179aa0c23d76de05b09e03b8c13a468bb515b25f8c61800bf428d3"
+  },
+  "topic.help.howVotingWorks": {
+    "text": "Cara kerja pemungutan suara",
+    "source": "efec217807fd8a143371b79ab2b99b434ad4330d5968e485a3e6cff1e94985f7"
+  },
+  "topic.help.votingAndMerges": {
+    "text": "Cara kerja pemungutan suara dan penggabungan",
+    "source": "09191d72e03de6ee312fa764f88241bd041353b1ad62558458d7345444d8a2d9"
+  },
+  "topic.steps.votingHelp": {
+    "text": "Cara kerja pemungutan suara dan penggabungan",
+    "source": "09191d72e03de6ee312fa764f88241bd041353b1ad62558458d7345444d8a2d9"
+  },
+  "topic.steps.voteTally": {
+    "text": "Ya {{yes}} · Tidak {{no}}",
+    "source": "6ace8bc7f3ff96c5df4da4c47a3427fbb7a9254f2c5041663928b308a8c51168"
+  },
+  "topic.about.title": {
+    "text": "Tentang",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "topic.about.whatChanges": {
+    "text": "Apa yang berubah untukmu",
+    "source": "9a039b110193415f66a805f454929378049e5fdc0eb1dcdbe7cbdd97ae37d82a"
+  },
+  "topic.about.technicalDetails": {
+    "text": "Detail teknis",
+    "source": "890ab358a55d7fcefe7527f675efb96865cf84d1d54e8d52d9692e3b599031e3"
+  },
+  "topic.about.testing.title": {
+    "text": "Petunjuk pengujian",
+    "source": "352eb533a0af46d58ce7a90a3ffba47a2da847213fa52e21b67d2c47df6c3619"
+  },
+  "topic.about.testing.recordedIn": {
+    "text": "Petunjuk pengujian dicatat di {{path}}.",
+    "source": "aa939923413a94428072eb301e7015f2770dbf1ada795647d5e1bf35d5187a40"
+  },
+  "topic.about.testing.none": {
+    "text": "Belum ada petunjuk pengujian.",
+    "source": "ec26d3497539285303a6626025218ee5cfc2eb48a717d5129b9c8714886938f7"
+  },
+  "topic.hero.howItsBuilt": {
+    "text": "Cara pembuatannya",
+    "source": "42ee1d1bf264f73d3e3f8eb3e0b517e35e9a87eab351a8b61e15b9d25799314e"
+  },
+  "topic.transcript.readOnly": {
+    "text": "hanya baca",
+    "source": "4fed3970dcc0d31dccddbf69ef55b00f32d2ca787f1757894914bc0365ea7aa5"
+  },
+  "topic.change.refreshFailed": {
+    "text": "Tidak dapat memuat ulang perubahan ini.",
+    "source": "45fd8966a299d8fffd25c00612c5fe3f636677fcd6d303709e43ab23421f8934"
+  },
+  "topic.change.includedInRegion": {
+    "text": "Perubahan tempat perubahan ini dirilis",
+    "source": "d9fa293ef6e39dc18d0e1e62b4ab6ba3c483c399bc0ab01473ae0b632f78dbf5"
+  },
+  "topic.change.sheetLabel": {
+    "text": "Perubahan",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "topic.change.bar.titleNumbered": {
+    "text": "Perubahan #{{number}}",
+    "source": "e3bb28fcbf0b47a8e7370a494ef5c4de4875825b0190218433e25bd6e6d85e8c"
+  },
+  "topic.change.bar.title": {
+    "text": "Perubahan",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "topic.change.bar.more": {
+    "text": "Tindakan lainnya",
+    "source": "f8d46c2570e70736d62beb6e2e8df321d7cb4842a2b894f2025c47b31871d9f1"
+  },
+  "topic.change.summaryStale": {
+    "text": "Ditulis untuk versi perubahan ini yang sebelumnya.",
+    "source": "32eec9b61c345f35a60add770162e200fa60334ae30a5c3f5477837adaf662f9"
+  },
+  "topic.change.gate.noteSeeFailed": {
+    "text": "{{note}} <0>Lihat yang gagal</0>",
+    "source": "4f5211e69ea12a0388d38373ca04d85990f51fce8b2f94b002a13bb9046820c8"
+  },
+  "topic.change.gate.seeFailed": {
+    "text": "Lihat yang gagal",
+    "source": "9687d8a9de56b93f4bba6f8bd0f400824c74979f0c141c6bab765466487854ac"
+  },
+  "topic.change.shots.title": {
+    "text": "Sebelum dan sesudah",
+    "source": "d542f9918e393a845271ea02171062100160ddb7459673684355e836a37d9aa6"
+  },
+  "topic.change.stream.noReplies": {
+    "text": "Belum ada balasan",
+    "source": "c106d94d2cb199ddc6fd8e5adf09f27b5d37f7b8e485d85002955c08ee4ded34"
+  },
+  "topic.change.stream.loading": {
+    "text": "Memuat balasan…",
+    "source": "90fa2cf31d174dcd56b93ebdd783624f65142a1408418384fab9ad5c1ba09c47"
+  },
+  "topic.change.stream.loadEarlier": {
+    "text": "Muat balasan sebelumnya",
+    "source": "ce2528d49381fed5bbf7d4b40d0b6ffdcbadfe92bae2b77bf0151e3643d71211"
+  },
+  "topic.change.stream.tryIt": {
+    "text": "Coba",
+    "source": "fe69511137842f6fddcfcc1e96e39bf6920b5ed00251ec6549d79463928b2e0c"
+  },
+  "topic.change.line.postedSpec": {
+    "text": "<0>{{author}}</0> memposting rencana v{{version}}",
+    "source": "50a3f8693bb82d2a2f06118e88ac0f8f9cea524eeb1761cfe9912d986605bdb8"
+  },
+  "topic.change.line.postedSpecUnnamed": {
+    "text": "<0>Seseorang</0> memposting rencana v{{version}}",
+    "source": "37c81cc9565c6fb086be05752a51cb5cf31862f1920dab32a6629b27f9d1ceb0"
+  },
+  "topic.change.line.previewReady": {
+    "text": "Pratinjau sudah siap",
+    "source": "a0741c0a1e6bfdccd4ce6eae733fa38c75256414428005bba7845ccb940cf390"
+  },
+  "topic.change.line.askedForApproval": {
+    "text": "<0>{{author}}</0> meminta persetujuan",
+    "source": "d813361e264ec16c1a10f241adaebcf13546b9993ba942c2535b50810301ccc3"
+  },
+  "topic.change.line.unnamedAskedForApproval": {
+    "text": "Meminta persetujuan",
+    "source": "e577d10f7f2ebfbde2fd0a019d3672993d22f652aeeac17c7e48767f22683ffb"
+  },
+  "topic.change.line.votedYes": {
+    "text": "<0>{{voter}}</0> memberi suara setuju",
+    "source": "520f2e54d823d7483e999c87a08dbd5616f5b8be73871d5f75df56174240a9f4"
+  },
+  "topic.change.line.votedYesReason": {
+    "text": "<0>{{voter}}</0> memberi suara setuju<1>: “{{reason}}”</1>",
+    "source": "72c0e5aed3ab07049680f8834a902c4fce8b848270758bcbd992c4019738ffef"
+  },
+  "topic.change.line.votedYesEarlier": {
+    "text": "<0>{{voter}}</0> memberi suara setuju pada versi sebelumnya",
+    "source": "796d258e787ffb796bec6602b8e0b9a6c52fab340df16915a1c742c32276ba17"
+  },
+  "topic.change.line.votedYesEarlierReason": {
+    "text": "<0>{{voter}}</0> memberi suara setuju pada versi sebelumnya<1>: “{{reason}}”</1>",
+    "source": "3f15dc76c25392bb493881a3308b5d1f6e9eed73982e766b94fce33f02ceeb43"
+  },
+  "topic.change.line.votedNo": {
+    "text": "<0>{{voter}}</0> memberi suara tidak setuju",
+    "source": "2d5cb03b3d86fb3b727c3f4ebace841fb6096aa69ae5844675c812a353c4cffe"
+  },
+  "topic.change.line.votedNoReason": {
+    "text": "<0>{{voter}}</0> memberi suara tidak setuju<1>: “{{reason}}”</1>",
+    "source": "335a91e01f887d22af0cf1d1415cfac79b11a5ffd2fb39ca7edc2419ab02c33d"
+  },
+  "topic.change.line.votedNoEarlier": {
+    "text": "<0>{{voter}}</0> memberi suara tidak setuju pada versi sebelumnya",
+    "source": "51ba87063fbed7421f2cca20619b3e20903d23ad7db74c0e1107238020cdb77a"
+  },
+  "topic.change.line.votedNoEarlierReason": {
+    "text": "<0>{{voter}}</0> memberi suara tidak setuju pada versi sebelumnya<1>: “{{reason}}”</1>",
+    "source": "87a253042b9ad0bf05e89be4aa9460f441f6b9c71736d7c1658e2421f83bb809"
+  },
+  "topic.change.line.unnamedVotedYes": {
+    "text": "Memberi suara setuju",
+    "source": "3393ce52f5d0ada30ea98a7102a4b6721aefb9c6fca6de7e3de373b6b48b6393"
+  },
+  "topic.change.line.unnamedVotedYesReason": {
+    "text": "Memberi suara setuju<1>: “{{reason}}”</1>",
+    "source": "9ff2e95d478ddb8f85a26c58fe89889c0ade154ed88efcb2dcedcc5c28d4c2c8"
+  },
+  "topic.change.line.unnamedVotedYesEarlier": {
+    "text": "Memberi suara setuju pada versi sebelumnya",
+    "source": "5563511f81e5e5ffd7d4123f92cc8adbe2b2a634b0a0f0db8964c3e024cd1997"
+  },
+  "topic.change.line.unnamedVotedYesEarlierReason": {
+    "text": "Memberi suara setuju pada versi sebelumnya<1>: “{{reason}}”</1>",
+    "source": "8990873755ee64d0671c9d15aa9331419ff61e1ca8dc477a1c0e8a118f3f419d"
+  },
+  "topic.change.line.unnamedVotedNo": {
+    "text": "Memberi suara tidak setuju",
+    "source": "9dfd1ccc16ec2c9488835e19348f4615a5d5de271ed96480e86c760be8420071"
+  },
+  "topic.change.line.unnamedVotedNoReason": {
+    "text": "Memberi suara tidak setuju<1>: “{{reason}}”</1>",
+    "source": "8b4b9bac11eb723ba6cdae3b6d9efebb1bb96331ed0d7b6a9a1ae56e611b5968"
+  },
+  "topic.change.line.unnamedVotedNoEarlier": {
+    "text": "Memberi suara tidak setuju pada versi sebelumnya",
+    "source": "804ba61ad4c73b85bca6689b525c5c9575c9a4c59f470c9d5ff2600036e129f6"
+  },
+  "topic.change.line.unnamedVotedNoEarlierReason": {
+    "text": "Memberi suara tidak setuju pada versi sebelumnya<1>: “{{reason}}”</1>",
+    "source": "9ec2946861b24b11fbe866a960029806c8c5dcd71bcd5dd939b960f0220893f7"
+  },
+  "topic.requests.region": {
+    "text": "Permintaan yang ditangani perubahan ini",
+    "source": "8aeab0d8be0fcc09ea204aabcc5ba17581de9698cec4c0c327949b5312327dcc"
+  },
+  "topic.requests.addresses": {
+    "text": "Menangani",
+    "source": "76179aafc43c51f3f583ed6da770553419ce4129499c2466ebace48d841d0f28"
+  },
+  "topic.requests.showLess": {
+    "text": "Tampilkan lebih sedikit",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "topic.requests.remove": {
+    "text": "Hapus #{{number}}: {{title}}",
+    "source": "e56edb7f9dbb4f4997351c13b272b58c2d9f6c53d3446ffc7c1445c1ab8ce4cf"
+  },
+  "topic.requests.noneSelected": {
+    "text": "Belum ada permintaan yang dipilih.",
+    "source": "bb7c4b095f60977e3d963b4819e8adf36a96e8ff205914fab11c03ea9ba062b5"
+  },
+  "topic.requests.addAnother": {
+    "text": "Tambah permintaan lain",
+    "source": "471dfa40a33479e162269fc01257f4a9aaf401cc169ed5a252d1257be8102fa6"
+  },
+  "topic.requests.searchPlaceholder": {
+    "text": "Cari berdasarkan nomor atau judul",
+    "source": "e3dabcce763fb15d7a5aa020a8c78ad087b33eb5d1e379699bdaa86a8a01e4b4"
+  },
+  "topic.requests.matches": {
+    "text": "Permintaan yang cocok",
+    "source": "f03bdc5a42c50a88e5f3560f5612c36dc5405e7c8a63837a34932b133383e962"
+  },
+  "topic.requests.addNamed": {
+    "text": "Tambah #{{number}}: {{title}}",
+    "source": "6499d4aba577049e6f34f5290966847a2c19e550aa057bdd1b6177a17918ab28"
+  },
+  "topic.requests.addNumbered": {
+    "text": "Tambah permintaan #{{number}}",
+    "source": "6bcec41aada00eb9d7d1c0a129f4d5a8b09663926a29a589609bad735f273017"
+  },
+  "topic.requests.addByNumber": {
+    "text": "Tambah berdasarkan nomor isu",
+    "source": "2b443a48b386860dde26d351433d8d4f40d7f8d334549db26270962d77069d5c"
+  },
+  "topic.requests.untitled": {
+    "text": "Permintaan #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "topic.requests.noMatches": {
+    "text": "Tidak ada permintaan terbuka yang cocok. Masukkan nomor permintaan untuk menambahkannya.",
+    "source": "696292c8b39de615f9eecac2e0503d55c80dccdc4c6e0f4146bacb181d406c94"
+  },
+  "topic.requests.searchHelp": {
+    "text": "Mencari permintaan terbuka di proyek ini. Kamu selalu bisa menambahkannya lewat nomornya.",
+    "source": "00192aafb71cb764dfcd9a4477f1ed4158c8ca0bcff06c9392ae8899151b3eb9"
+  },
+  "topic.requests.numberTooLarge": {
+    "text": "“{{input}}” terlalu besar untuk jadi nomor isu.",
+    "source": "bb002dde78d4b02c80e27efbc73b7960c38a202c86c1e3c8aeddfa2846548ce8"
+  },
+  "topic.requests.chooseOrEnter": {
+    "text": "Pilih isu yang cocok atau masukkan nomor isunya.",
+    "source": "b44fff6ad8a463129e6f154d7287104922e0462cb107a4811298ff419eaa8c38"
+  },
+  "topic.requests.updateFailed": {
+    "text": "Tidak bisa memperbarui permintaan.",
+    "source": "e27c36a51d9a2720f14ad75be41280e3f1bd598915f2df80b515a67c1cbba0d1"
+  },
+  "topic.requests.networkError": {
+    "text": "Kesalahan jaringan. Coba lagi.",
+    "source": "052b478fa4eaeadd9aeb8beaf48eb0bf07faf80117a560b036a3c73360ba3000"
+  },
+  "topic.requests.saved": {
+    "text": "Isu disimpan.",
+    "source": "e4df7c31b15577ddd8875501931f8c2eca39e9e3909c89eb5bd1a6d141974333"
+  },
+  "topic.requests.savedSyncPending": {
+    "text": "Isu disimpan. Pull request belum bisa diperbarui; menyimpan lagi akan mencobanya ulang.",
+    "source": "9d6625743bb840a31041d0a873cfc73023bf34323ee0c009a620024860f8f8af"
+  },
+  "topic.requests.save": {
+    "text": "Simpan permintaan",
+    "source": "e6bcae30621b98db90948f506be756d7e7409c3a6cdc718c5e5b9d28646245b9"
+  },
+  "topic.requests.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "topic.request.addressedByRegion": {
+    "text": "Perubahan yang menangani isu ini",
+    "source": "25446d59d97a0c90dc8b938867fd1fbb23524a25c841e5d10b723b3cfb1605bd"
+  },
+  "topic.request.closedBand.closed": {
+    "text": "<0>Ditutup</0>",
+    "source": "2aca1b6a33c0d4f1e932994ba6a480cd85ce7eb3b1a6bfa9f4be456640991e04"
+  },
+  "topic.request.closedBand.when": {
+    "text": "<0>Ditutup</0><1>·</1><2>{{date}}</2>",
+    "source": "241638845cc3d2fad3283d91132bab7f3a5d15ef5e2440cdb0eea78cb94a701f"
+  },
+  "topic.request.closedBand.whenByChange": {
+    "text": "<0>Ditutup</0><1>·</1><2>{{date}}</2><3>·</3><4>oleh</4><5></5>",
+    "source": "2351cb27d134e44a385c571f6f35120321b0498593b554c0837cff492ae7f3eb"
+  },
+  "topic.request.closedBand.byChange": {
+    "text": "<0>Ditutup</0><1>·</1><2>oleh</2><3></3>",
+    "source": "43131cd4a5ca155e4a020d728e29dfa1d89f5f0cbdd8ebbd72bd451c617d6e6b"
+  },
+  "topic.request.closedBand.byChangeLabel": {
+    "text": "Ditutup oleh {{change}}: {{title}}",
+    "source": "c266556a69d8819c7ed7a90f913ce920e391835e0ab5eb98e1463ea56c06bce4"
+  },
+  "topic.request.body.title": {
+    "text": "Tentang permintaan ini",
+    "source": "ce90fcea524de1cfdd7f70df476f80981bb59ff6908e7a28ba9f08eae3d18ec9"
+  },
+  "topic.request.body.editTitle": {
+    "text": "Edit permintaan ini (kamu yang mengajukannya)",
+    "source": "81f01fe7bc69078e86922ce1a96c61d2f4cc37922124e6203b726ccd0da3f30b"
+  },
+  "topic.request.body.editLabel": {
+    "text": "Edit permintaan",
+    "source": "c5a6b24b7a2846bb7343a1fc16d2ffb2c24932730105e476baa63e8d12f3a9ff"
+  },
+  "topic.request.body.empty": {
+    "text": "Belum ada deskripsi.",
+    "source": "6d962a3d4e519cf72bfcadd4d89652ce0754e802d90d578044749e3e511be6b7"
+  },
+  "topic.request.body.unavailable": {
+    "text": "Permintaan ini sedang tidak tersedia.",
+    "source": "7640a1e23e4691ccd577c248fa91195bc3ee7ff4f1ce376e9b35e437e12d7100"
+  },
+  "topic.request.body.saveFailed": {
+    "text": "Permintaan tidak bisa disimpan.",
+    "source": "6fc7c64bf6d963f602d65f7fa2703f0127a121a6302a3cd2a855a56db9ba7b25"
+  },
+  "topic.request.body.save": {
+    "text": "Simpan isi",
+    "source": "a6a533af9a282500a81dbc81d87e0285d85f2936ec7013596249d3ff154f0aca"
+  },
+  "topic.request.body.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "topic.request.sheetLabel": {
+    "text": "Permintaan",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "topic.request.bar.title": {
+    "text": "Permintaan #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "topic.request.bar.more": {
+    "text": "Aksi lainnya",
+    "source": "f8d46c2570e70736d62beb6e2e8df321d7cb4842a2b894f2025c47b31871d9f1"
+  },
+  "topic.request.words.showMore": {
+    "text": "Tampilkan lebih banyak",
+    "source": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6"
+  },
+  "topic.request.words.showLess": {
+    "text": "Tampilkan lebih sedikit",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "topic.request.editor.label": {
+    "text": "Permintaan",
+    "source": "9c6da702b67ed15fde854b2308f4682ba3ac24bdb10eb747056bd58cc1bbeecb"
+  },
+  "topic.request.editor.saving": {
+    "text": "Menyimpan…",
+    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
+  },
+  "topic.request.status.label": {
+    "text": "Posisi permintaan ini",
+    "source": "966068f1033ef307b3ccdab9ac74c68d4439d0371806963034fda9c2ed7bfed7"
+  },
+  "topic.request.status.specVersionReady": {
+    "text": "Rencana v{{version}} siap untuk dikomentari.",
+    "source": "532e570266edc213674b4fd8c71095768967effccad409e0553183a63cb10d31"
+  },
+  "topic.request.status.specReady": {
+    "text": "Sebuah rencana siap untuk dikomentari.",
+    "source": "9a2c7b8b411d75a1b6321c8567a690cb4fb1a1ac5b5a4eda92d33a30d27020b0"
+  },
+  "topic.request.stage.asked": {
+    "text": "Diajukan",
+    "source": "821c038b7a771ead0558b3113faeef905440e63c94858860a5032c4f96f9e119"
+  },
+  "topic.request.stage.spec": {
+    "text": "Rencana",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "topic.request.stage.built": {
+    "text": "Dibuat",
+    "source": "cfe0e6cbcf5cdd1aab44a39ab4d39713561bafab51fa7ff4654c980d5578ee5f"
+  },
+  "topic.request.stage.voted": {
+    "text": "Disetujui",
+    "source": "e8475313fa51eb8a87cdd5a17265d8ee7133ad05560571baba5297f9771d4b9f"
+  },
+  "topic.request.spec.kicker": {
+    "text": "Rencana",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "topic.request.spec.kickerVersion": {
+    "text": "Rencana · v{{version}}",
+    "source": "2325c0d52fed322d5ee5bf727989fffc077cfc29255efa08c4166afe58f2d5bb"
+  },
+  "topic.request.spec.by": {
+    "text": "oleh {{author}}",
+    "source": "7e7e6154634509758452586d5abf888d98d70cf020a1c0f3c9c742384b00ee2f"
+  },
+  "topic.request.spec.bySystem": {
+    "text": "oleh Sistem",
+    "source": "acfd8f8831e8ac2f81534b32f813b3bbef9de119f26ef4b3c0a6324ad4540df1"
+  },
+  "topic.request.spec.bySomeone": {
+    "text": "oleh Seseorang",
+    "source": "4029a52a279d5be11998e3508693311edfb9e66ad398e4391e666a8bb1ecee23"
+  },
+  "topic.request.spec.byAt": {
+    "text": "oleh {{author}} · <0>{{time}}</0>",
+    "source": "2717fb840bd70b574254f3b45198cdebaafa73891e86d535f22b5ef05afa8c1f"
+  },
+  "topic.request.spec.bySystemAt": {
+    "text": "oleh Sistem · <0>{{time}}</0>",
+    "source": "bf5e0c9249d10649e55a8bdf3eca3359bcdb8fb6ce125f70798b27a6c6829d19"
+  },
+  "topic.request.spec.bySomeoneAt": {
+    "text": "oleh Seseorang · <0>{{time}}</0>",
+    "source": "ff76822ce14d0b8afe1cb5f71017869d89b3a9186ac37335ae956e147883b0b3"
+  },
+  "topic.request.spec.read": {
+    "text": "Baca",
+    "source": "9b9a8d05a7ec353bda84f9c1bb3178c299de3001b5e970508ddc889c487f92ca"
+  },
+  "topic.request.spec.readNamed": {
+    "text": "Baca {{title}}",
+    "source": "0450469abaf897ae72731547f32c81f0234e7f6169cf0f54c952b2325c19ed89"
+  },
+  "topic.request.spec.opening": {
+    "text": "Membuka…",
+    "source": "c926c2c50e65d5a5799f548604472ee8554b53c376e45be580b3a06a484d8fc0"
+  },
+  "topic.request.spec.untitled": {
+    "text": "Rencananya",
+    "source": "d6a5fe7a20d1c0a353ac767b0cb54be15a3345cc31679252c4956c56ae2a0d34"
+  },
+  "topic.request.stream.noReplies": {
+    "text": "Belum ada balasan",
+    "source": "c106d94d2cb199ddc6fd8e5adf09f27b5d37f7b8e485d85002955c08ee4ded34"
+  },
+  "topic.request.stream.loading": {
+    "text": "Memuat balasan…",
+    "source": "90fa2cf31d174dcd56b93ebdd783624f65142a1408418384fab9ad5c1ba09c47"
+  },
+  "topic.request.stream.loadEarlier": {
+    "text": "Muat balasan sebelumnya",
+    "source": "ce2528d49381fed5bbf7d4b40d0b6ffdcbadfe92bae2b77bf0151e3643d71211"
+  },
+  "topic.request.stream.earlierOnGitHub": {
+    "text": "Komentar GitHub sebelumnya tidak ditampilkan di sini. <0>Baca di GitHub</0>",
+    "source": "bd4d1251fb43de0e55690815e4061d8b3c2e04206761b485060491e5f8f76c85"
+  },
+  "topic.request.stream.earlierNotShown": {
+    "text": "Komentar GitHub sebelumnya tidak ditampilkan di sini.",
+    "source": "629622bf479d9a5589d9daf26b419180c9fd0ea9622b5746457764692862c24e"
+  },
+  "topic.request.stream.timeOnGitHub": {
+    "text": "<0>{{time}}</0><1> · di GitHub</1>",
+    "source": "23aa343b5f3759db107d61525fb8fd3524d6b297cfd9c74e9052a06429d3d62a"
+  },
+  "topic.request.stream.onGitHub": {
+    "text": "di GitHub",
+    "source": "b7f78ab602e842908c79332284d6f3773bf902ec7847708c8eb3d04920a80220"
+  },
+  "topic.request.stream.postedSpecVersion": {
+    "text": "<0>{{author}}</0> memposting rencana v{{version}}",
+    "source": "50a3f8693bb82d2a2f06118e88ac0f8f9cea524eeb1761cfe9912d986605bdb8"
+  },
+  "topic.request.stream.postedSpecVersionUnnamed": {
+    "text": "<0>Seseorang</0> memposting rencana v{{version}}",
+    "source": "37c81cc9565c6fb086be05752a51cb5cf31862f1920dab32a6629b27f9d1ceb0"
+  },
+  "topic.request.stream.postedSpec": {
+    "text": "<0>{{author}}</0> memposting rencana",
+    "source": "d6cf9bcb1f16a5be294420bd0eaeb0ea0f283ff5edf5e03e7f75656bbf403af7"
+  },
+  "topic.request.stream.postedSpecSystem": {
+    "text": "<0>Sistem</0> memposting rencana",
+    "source": "61d8e28cd6aa96acb517d620fcd74f4d6d6445d85767fc60e1452245678cf24f"
+  },
+  "topic.request.stream.claimed": {
+    "text": "<0>{{member}}</0> mulai mengerjakan ini",
+    "source": "e1c257ca33101c863798609b045db698df91fe14bfe52dabc7baa92a91b7c926"
+  },
+  "topic.request.stream.claimedPlain": {
+    "text": "{{member}} mulai mengerjakan ini",
+    "source": "82404b76761f9d5552cbf94981531c8c1c194147e1b996ad250fd5404ad95b63"
+  },
+  "topic.request.stream.read": {
+    "text": "Baca",
+    "source": "9b9a8d05a7ec353bda84f9c1bb3178c299de3001b5e970508ddc889c487f92ca"
+  },
+  "topic.run.build": {
+    "text": "Build",
+    "source": "bdd254b65baac169f6ac50e8175ce6d930c1fcb086dec59808d3e0170ae2291d"
+  },
+  "topic.run.checks.label": {
+    "text": "Pemeriksaan aplikasi",
+    "source": "e38b0661d4674d9551a606b6db0c84959568aeff7764c50150c8bd626383241c"
+  },
+  "topic.run.checks.progress": {
+    "text": "{{ran}} / {{expected}}",
+    "source": "96f8ae98cbf4b6cb795a66debd9f1bb6de520553d9c4538b9499095a90d19973"
+  },
+  "topic.run.checks.starting": {
+    "text": "Memulai",
+    "source": "aeed4d26bb5f0c312bc8a9ee9ce362899252110089263414690ae7b5d6625427"
+  },
+  "topic.run.checks.waitingForSlot": {
+    "text": "Menunggu giliran",
+    "source": "c7802386f1ddb3e0b317e5ffc7a2861d7fd55cbe0cbefa25e4b090a0f29d3df2"
+  },
+  "topic.run.checks.afterBuild": {
+    "text": "Setelah build",
+    "source": "49bab695202473d0d68be1042799be8726455138f9111e49e616050097eb6f0c"
+  },
+  "topic.run.checks.didNotRun": {
+    "text": "Tidak berjalan",
+    "source": "89e6207d31c3ff471fa4344b377d002a52142c561f3e86223bf8b65155bb91bd"
+  },
+  "topic.run.unit.label": {
+    "text": "Uji unit",
+    "source": "e6ebeaeb81e463d0dd7da9e8efc10811491edf6feb7134cd68ddbec8d11778a8"
+  },
+  "topic.run.unit.cloning": {
+    "text": "Menyalin",
+    "source": "5c1db3027475f95d492a7cd568a1eb2191128ef605bc334c074223fe5926c60e"
+  },
+  "topic.run.unit.installing": {
+    "text": "Memasang",
+    "source": "8749b1693f74941144464b73f49e322066f437079a400d0b11abffc6dffae2cc"
+  },
+  "topic.run.unit.progress": {
+    "text": "{{ran}} / {{expected}}",
+    "source": "96f8ae98cbf4b6cb795a66debd9f1bb6de520553d9c4538b9499095a90d19973"
+  },
+  "topic.details.title": {
+    "text": "Detail",
+    "source": "45989de49fb7f66dfe17a8fc26f3a02c7abcd74f7e8e6cf9f39fa0e3775780df"
+  },
+  "topic.details.openOnGitHub": {
+    "text": "Buka di GitHub",
+    "source": "03f69885814b5b7aa5e4758e46733da443a237e2ec63488bddd230f501ff166a"
+  },
+  "topic.details.description": {
+    "text": "Deskripsi",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "topic.details.shots": {
+    "text": "Detail tangkapan layar",
+    "source": "f54c06bf07c121bf7378ee63ef312aed460bc303f90186d1ce8ad442ea65dd95"
+  },
+  "card.pill.goesLiveIn": {
+    "text": "Tayang dalam {{time}}",
+    "source": "41bf4f1857db68810c3ddd0caeec4575f6bbfc74c59015f8f5afc73f6b75eaf6"
+  },
+  "card.pill.setAsideIn": {
+    "text": "Ditutup dalam {{time}}",
+    "source": "3d182c21696d8ccc8e9b5ca4ce04c5d06a8f95939bd2bdf863571d8a3f69d01c"
+  },
+  "card.countdown.daysHours": {
+    "text": "~{{days}}h {{hours}}j",
+    "source": "aed7111d26e5617eea0ae48667b8623856aec579e8ff473270821e0da9766e39"
+  },
+  "card.countdown.days": {
+    "text": "~{{days}}h",
+    "source": "75168db1f7a57eec3c82d4b925bdd6350dbc09ed2fb43ac4e83eff1aea4b33f2"
+  },
+  "card.countdown.hoursMinutes": {
+    "text": "~{{hours}}j {{minutes}}m",
+    "source": "82f20e7cb025140ba623a28356a4033b443737bffd1d390850c1d4036e98182f"
+  },
+  "card.countdown.hours": {
+    "text": "~{{hours}}j",
+    "source": "20a976f136ee39613dbd881e3b37f3b6593f04e00d0cd3857e2d6699396b12a2"
+  },
+  "card.countdown.minutes": {
+    "text": "~{{minutes}}m",
+    "source": "5dd00a5151757c6bdea7e0759d5eeb4c0a5d11e8a43be0c7ff6f629a994069e8"
+  },
+  "card.pill.lockFallback": {
+    "text": "Perubahan ini butuh suara Ya dari anggota lain. Perubahan tidak akan digabungkan otomatis oleh timer: harus ada suara Ya yang cukup untuk mencapai ambang normal aplikasi.",
+    "source": "f63caea351a087ee0f68b4530b3b8e5d992a62107dd0051de4ab54e27fcb14e4"
+  },
+  "card.preview.open": {
+    "text": "Buka pratinjau",
+    "source": "f7afe3dde18c1446eb3218cfaedae0aaf6ca9f39f5ceae076701036cd8950d00"
+  },
+  "card.preview.label": {
+    "text": "Pratinjau",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "card.preview.building": {
+    "text": "Pratinjau disiapkan…",
+    "source": "adafcfa18528db1b5ecd0b35fd5c5c09c7376e9f51330f8999199c6074153e28"
+  },
+  "card.preview.buildingName": {
+    "text": "Pratinjau sedang disiapkan",
+    "source": "8dd53c94fa7388e0ea2fb6330ae74f875d624a700c172d61dfafb4d329c8066d"
+  },
+  "card.preview.unavailable": {
+    "text": "Pratinjau tidak tersedia",
+    "source": "b99fa6c061504f0011fb2d5af1fb600b28ed177f02cf94286d5b542f2333d803"
+  },
+  "card.preview.unavailableName": {
+    "text": "Pratinjau tidak tersedia",
+    "source": "b99fa6c061504f0011fb2d5af1fb600b28ed177f02cf94286d5b542f2333d803"
+  },
+  "card.badge.threadMessages": {
+    "text": "Pesan di utas ini",
+    "source": "26b93e8e67a67bf61716f8705dc49b1f34142d2c5126a047cad60acc5974a1ab"
+  },
+  "card.vote.sheet.approve": {
+    "text": "✓  Setujui",
+    "source": "f8e46fbdeff23da7c88e245cf8f800133ba0006a827ac57a75931adab5a34602"
+  },
+  "card.vote.sheet.dontApprove": {
+    "text": "✕  Jangan setujui",
+    "source": "f21e89d5d9accc41548215e0a2c04f8d3e329165176881970a992d9c949a9b65"
+  },
+  "card.vote.sheet.yes": {
+    "text": "✓  Ya",
+    "source": "53cb5d1c50eaa1eec5a337b4f3f4aca71b78171a0271feb7c9757aa34c8a1ef0"
+  },
+  "card.vote.sheet.yesTally": {
+    "text": "✓  Ya ({{tally}})",
+    "source": "a54801e77604b128b14e368394bfb3aebdaa831a6354bdc12905e834b654b12d"
+  },
+  "card.vote.sheet.stillYes": {
+    "text": "✓  Tetap ya",
+    "source": "9a5d31e81b462ba9f2813fb51296caf9e3feb5d39bfceb4e51da2b4d31aae4e6"
+  },
+  "card.vote.sheet.stillYesTally": {
+    "text": "✓  Tetap ya ({{tally}})",
+    "source": "c2db662fccc1034cfdd4de9ebf3a1e39b789dae37d7b075b5105d6e3bfb4a2fd"
+  },
+  "card.vote.sheet.no": {
+    "text": "✕  Tidak",
+    "source": "087db59761ba96b58383fd2641a65d658299ac5b0ae712e1ddc1c7bd2f04de5b"
+  },
+  "card.vote.sheet.noTally": {
+    "text": "✕  Tidak ({{tally}})",
+    "source": "0fcb01896cf9935e36f05d0a6c92460ca96db0866b4e95211bddfc33558175e4"
+  },
+  "card.vote.sheet.notThisTime": {
+    "text": "✕  Kali ini tidak",
+    "source": "89e23d8921c9e9924330855da297fbbce3829d2f7846332de816a47f0e03fadd"
+  },
+  "card.vote.sheet.notThisTimeTally": {
+    "text": "✕  Kali ini tidak ({{tally}})",
+    "source": "a6acd4b1cfad51f29eff18ecfb4090795e92fdf3b433f974e651267ded199268"
+  },
+  "card.vote.face.approved": {
+    "text": "Disetujui",
+    "source": "87b42e40c2a290e01d87b721bf381c3c5e259d1eb0a4660e41fdbf8bc73f7ddd"
+  },
+  "card.vote.face.notApproved": {
+    "text": "Tidak disetujui",
+    "source": "ad2815011b0661cb9809bdefc4aec51f21a192984c0e14884ec107e96de7b819"
+  },
+  "card.vote.face.approve": {
+    "text": "Setujui",
+    "source": "6007acbe30b2cd98703e83350ea665c06009fcd51f26dd73b309294235f45f21"
+  },
+  "card.vote.face.yes": {
+    "text": "Ya",
+    "source": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
+  },
+  "card.vote.face.no": {
+    "text": "Tidak",
+    "source": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d"
+  },
+  "card.vote.face.stillYes": {
+    "text": "Tetap ya?",
+    "source": "afebce067ae43803ee9a9b58683e6aad72b8f88497c51ec3a0e43f910054301c"
+  },
+  "card.vote.face.vote": {
+    "text": "Beri suara",
+    "source": "cd5588db6fc6fb44dd76b006202f9efa2ba5d715272a1ae06fb3c805e6a25289"
+  },
+  "card.vote.title.sending": {
+    "text": "Suaramu sedang dikirim.",
+    "source": "9d6a6ecea282f3aff4bb7b89858c803b876aa6ed831c9debab1d85fca7e3d8e6"
+  },
+  "card.vote.title.approved": {
+    "text": "Kamu sudah menyetujuinya.",
+    "source": "62187898d91000a1d73d2642e421d6668ec6d76ff9a2693f6442d2c55d10145d"
+  },
+  "card.vote.title.notApproved": {
+    "text": "Kamu tidak menyetujuinya. Tekan untuk mengubah.",
+    "source": "926d5d8080182d691a3f169bd2855d2e2dfb9aaf241b1bd6bfcaf202c420251d"
+  },
+  "card.vote.title.approve": {
+    "text": "Setujui, dan perubahan langsung tayang.",
+    "source": "c7e1a60db2e2216e6b4dd3e26bdb3e1d2922370ffdfd03432a3f5dd8b78ee5dc"
+  },
+  "card.vote.title.votedYes": {
+    "text": "Kamu memilih Ya. Tekan untuk mengubah suaramu.",
+    "source": "9e21d81267b3ad87623605dd55293777803e1f5f7c9d71714100ae4695a8241e"
+  },
+  "card.vote.title.votedNo": {
+    "text": "Kamu memilih Tidak. Tekan untuk mengubah suaramu.",
+    "source": "76a7ba3f542fbac4b84aefba5d22c8bd18c8210a029b9a3fa9fa4317ed8452a7"
+  },
+  "card.vote.title.priorYes": {
+    "text": "Kamu sudah bilang ya untuk versi sebelumnya. Sekali ketuk untuk meneruskannya ke versi ini.",
+    "source": "6f7b1c56425396425b8972274ae990f00e21227cdbbe5edc5df4952cd8b74e48"
+  },
+  "card.vote.title.cast": {
+    "text": "Berikan suaramu · Ya {{yesTally}} · Tidak {{noTally}}",
+    "source": "c079aac79ed9bedc20dff409555313680a241d7c58c4b00f3028e279a918ad07"
+  },
+  "card.vote.sending": {
+    "text": "Mengirim…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "card.vote.dialog.approval": {
+    "text": "Persetujuanmu",
+    "source": "7a3b8fe167adeee3da4c5c3e78427ea3281ac812d2858230d539e824e6af1ec2"
+  },
+  "card.vote.dialog.vote": {
+    "text": "Suaramu",
+    "source": "24638ec512d47e6b94f3101f26fa3848fea2b5cab907ef1c18d5f770cac4fe03"
+  },
+  "card.vote.picker.headApproval": {
+    "text": "Persetujuanmu",
+    "source": "7a3b8fe167adeee3da4c5c3e78427ea3281ac812d2858230d539e824e6af1ec2"
+  },
+  "card.vote.picker.headVote": {
+    "text": "Suaramu",
+    "source": "24638ec512d47e6b94f3101f26fa3848fea2b5cab907ef1c18d5f770cac4fe03"
+  },
+  "card.vote.picker.uncounted": {
+    "text": "Akun uji coba: suara ini tidak dihitung.",
+    "source": "1684af4e4e73e53faf735477e3ad6f77fa1903411c63c1071f11bf63390c7517"
+  },
+  "card.vote.picker.approve": {
+    "text": "Setujui",
+    "source": "6007acbe30b2cd98703e83350ea665c06009fcd51f26dd73b309294235f45f21"
+  },
+  "card.vote.picker.dontApprove": {
+    "text": "Jangan setujui",
+    "source": "815f6d870f524e4958c98de8810e738f346f35f774c5dc3d47bb0da3e46b9674"
+  },
+  "card.vote.picker.yes": {
+    "text": "Ya",
+    "source": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
+  },
+  "card.vote.picker.no": {
+    "text": "Tidak",
+    "source": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d"
+  },
+  "card.vote.picker.stillYes": {
+    "text": "Tetap ya",
+    "source": "1ab9570b63e1803af6c36c97ecfc868be70cc4cd8153ae7ee3145cc6fa18ba78"
+  },
+  "card.vote.picker.notThisTime": {
+    "text": "Kali ini tidak",
+    "source": "6f3efa36d8ec387159dca1ab7fc92806f9d40eb26f1828aef0ddb73856d53c25"
+  },
+  "card.vote.picker.noteLabel": {
+    "text": "Tambahkan catatan, kalau mau.",
+    "source": "26ddba34fb8f82285ac83b55ff1dc542387843b1806859d609a19a6757d091ac"
+  },
+  "card.vote.picker.lineLabel": {
+    "text": "Tulis satu kalimat untuk grup, kalau mau.",
+    "source": "59929382110838c35c8d2257ecdbc4160a2afd8815067451e48c9082498d53f0"
+  },
+  "card.vote.picker.noLabel": {
+    "text": "Apa yang kurang cocok buatmu? Satu kalimat sudah cukup.",
+    "source": "11f2da005c32aa19206bbcbd21ea04c21d61b4dfe39177dacc46444d91f04aab"
+  },
+  "card.vote.picker.yesPlaceholder": {
+    "text": "Apa yang kamu suka dari usulan ini?",
+    "source": "141b9255076032b709e91fcb7d211d0cccd4ce7d9b74ecc6c41f52d2b04ab6f4"
+  },
+  "card.vote.picker.noPlaceholder": {
+    "text": "Apa yang ingin kamu ubah?",
+    "source": "fd3394132dad0bb1c84a87d28fe02d9279e71105384484bc43068eb99fd93326"
+  },
+  "card.vote.picker.sendYes": {
+    "text": "Beri suara setuju",
+    "source": "d0f291d1c676e5ca4ae6a77091359b54eb083a51675e2484b52f170bdf738104"
+  },
+  "card.vote.picker.sendNo": {
+    "text": "Beri suara tidak setuju",
+    "source": "f89fa765cad40101fb5ff7bed7bdf7e4c80190715313598ca950ebab7114557c"
+  },
+  "card.vote.picker.sendApprove": {
+    "text": "Setujui",
+    "source": "6007acbe30b2cd98703e83350ea665c06009fcd51f26dd73b309294235f45f21"
+  },
+  "card.vote.picker.sendDontApprove": {
+    "text": "Jangan setujui",
+    "source": "815f6d870f524e4958c98de8810e738f346f35f774c5dc3d47bb0da3e46b9674"
+  },
+  "card.explore.unavailable": {
+    "text": "Obrolan AI belum diatur di instalasi ini.",
+    "source": "c0c4d18c84abc3e5b53b0edfac9762d34a0023002968b8128aa59735aeeef54e"
+  },
+  "card.explore.label": {
+    "text": "Jelajahi dengan agen pemrograman",
+    "source": "824d92c5ad803603b48ba2b46bae7433e911866ce68308d3fe8731fda8ae2da8"
+  },
+  "card.menu.more": {
+    "text": "Tindakan lainnya",
+    "source": "f8d46c2570e70736d62beb6e2e8df321d7cb4842a2b894f2025c47b31871d9f1"
+  },
+  "card.title.proposalInput": {
+    "text": "Judul usulan",
+    "source": "f85d9e1aabac00a881bf1055779313f93ba925f1621165acc1ac7ed637e84436"
+  },
+  "card.title.requestInput": {
+    "text": "Judul permintaan",
+    "source": "6db74c94320284982251be85a36e7e3f34836c89635efac62b089918234461ff"
+  },
+  "card.title.editProposal": {
+    "text": "Ubah judul usulan ini",
+    "source": "b93cd2dc194cab1417ae2bd0af599e4d6aae6443d85cd89e199312796a14056a"
+  },
+  "card.title.editRequest": {
+    "text": "Ubah judul permintaan ini (kamu yang memintanya)",
+    "source": "cd8e1cf3f147824c74e0a9cb385457c354022decdfb18464414f479a33095ba1"
+  },
+  "card.title.edit": {
+    "text": "Ubah judul",
+    "source": "176a44212e881bb28e0c800dca40f3920e975565a683e1fc8711340f6ac2a472"
+  },
+  "card.illustration.altProposed": {
+    "text": "Ilustrasi unggulan yang diusulkan",
+    "source": "14044ad3136fada8edb2180ffc84f6a7ef40443fe17e38ad85f015d2227b81f6"
+  },
+  "card.illustration.altCurrent": {
+    "text": "Ilustrasi unggulan saat ini",
+    "source": "a027acb8bb71f20562f893947df32043c98c7fc344f97145a15ea31d86d89836"
+  },
+  "card.illustration.removed": {
+    "text": "Dihapus, ikon aplikasi ditampilkan sebagai gantinya",
+    "source": "b656eb3b4d1a5c9054eb883de5bd627ec3a466aec084d8c38e7c0c4a9d502db0"
+  },
+  "card.illustration.none": {
+    "text": "Tanpa ilustrasi, ikon aplikasi ditampilkan",
+    "source": "1a203c8e7c941683a068b45685cec8f3ce7b8f670fe3075cc35eea5c731a440d"
+  },
+  "card.illustration.current": {
+    "text": "Saat ini",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "card.illustration.proposed": {
+    "text": "Diusulkan",
+    "source": "9b0c660bb1152a72cb104c404f0f790e50b80fb3156ebdc8bd4999d2c250aa44"
+  },
+  "card.claims.label": {
+    "text": "Klaim:",
+    "source": "8b3788ec2dca8c00e1a26d01491c8aaac798279bf7e8dadda4f5f69bd13828e0"
+  },
+  "card.claims.release": {
+    "text": "Lepaskan klaim {{username}} (admin)",
+    "source": "95eafe9abda26124a57553fc10bb37a13d0f6d6bd4a894c23fa007656d625afa"
+  },
+  "kanban.sort.priority": {
+    "text": "Prioritas suara",
+    "source": "332e1a2507ac3c199d58ee62dc6dceee4997ea9a9e510521ba9eb74d470925a1"
+  },
+  "kanban.sort.newest": {
+    "text": "Terbaru",
+    "source": "d15efa178cf65ae16596a270671aa320bc9d2a5f18d78ecc5d479f73b3ffd51e"
+  },
+  "kanban.sort.namePriority": {
+    "text": "Urutkan Menunggu persetujuan: Prioritas suara. Ganti ke Terbaru.",
+    "source": "32eb01b34a85ba36760b53b0bb349f49607f3291c12ba37f40c9660e54932155"
+  },
+  "kanban.sort.nameNewest": {
+    "text": "Urutkan Menunggu persetujuan: Terbaru. Ganti ke Prioritas suara.",
+    "source": "3ce5d43e16ddaadc79f1ddb0185362eedc86bc4f50d16217fa35ec7dd5f91ca7"
+  },
+  "kanban.sort.titlePriority": {
+    "text": "Yang belum diberi suara dulu, lalu yang paling sedikit kekurangan suara sahnya. Dalam tiap kelompok suara, usulan yang sudah memenuhi syarat berada setelah yang masih kurang. Yang terbaru menentukan urutan jika sama. Klik untuk ganti ke Terbaru.",
+    "source": "344c774ec0b73a3698acd65ce744e514d1fe4396d72c7d018c1fd764dd734de1"
+  },
+  "kanban.sort.titleNewest": {
+    "text": "Yang paling baru diajukan untuk ditinjau lebih dulu. Klik untuk ganti ke Prioritas suara.",
+    "source": "b23d4124cfcac02468a6bd474b16406fba9543c1f45d79030a5d947c455ecbc6"
+  },
+  "kanban.column.loading": {
+    "text": "Memuat {{column}}",
+    "source": "5fbdda4a3d1f8c13b30500719d16b445bc7aa058ed505e54dad16c91ab8567b3"
+  },
+  "kanban.tabs.name": {
+    "text": "Kolom papan",
+    "source": "b0a43b06a72c9f8827e08d92accd45abf587dfae22066dd55872e10f75b801c8"
+  },
+  "kanban.skeleton.requests": {
+    "text": "Permintaan",
+    "source": "ada27592c9578e9072b465934a474d7e2c7a3d057db04101550a3cd4ac93fb0d"
+  },
+  "kanban.skeleton.underway": {
+    "text": "Sedang dikerjakan",
+    "source": "1ecd2476edfd341d5ede971cc850360502e009572b0477c2b1408f2a541d4549"
+  },
+  "kanban.skeleton.waiting": {
+    "text": "Menunggu persetujuan",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "kanban.skeleton.done": {
+    "text": "Selesai",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "kanban.skeleton.loadingBoard": {
+    "text": "Memuat papan",
+    "source": "2b71b8f9098740c883fa297cf8d5419402e192cdd6443fe648d6e7bc61bffb0a"
+  },
+  "kanban.skeleton.loading": {
+    "text": "Memuat",
+    "source": "dc380888c4e2c7762212480ff86eb39150ec70b45009c33bc6adcbd0041384b1"
+  },
+  "kanban.footer.loading": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "kanban.footer.loadMore": {
+    "text": "Tampilkan lebih banyak",
+    "source": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6"
+  },
+  "kanban.footer.moreRequests": {
+    "text": "Permintaan terbuka lainnya →",
+    "source": "dfe5f14e314d9072073e2eede468a5660f00ab993aaa1ed0579606eea4ce6aed"
+  },
+  "kanban.archived.state": {
+    "text": "Diarsipkan",
+    "source": "bdb86505f8062d15f152cef71dd4ca89609d5bf8e98771dcd2c9f70d247403da"
+  },
+  "kanban.archived.restoreTitle": {
+    "text": "Pulihkan sesi ini (membuka kembali PR-nya)",
+    "source": "837045bf51113451e67368370cc04ae546f0a06134df739c7d2c0e8d49307fad"
+  },
+  "kanban.archived.unarchive": {
+    "text": "Batal arsip",
+    "source": "f565318d124534cfe0a7630d518f548cd339e464f48d50eda453abd3728ac2a7"
+  },
+  "card.fold.fold": {
+    "text": "Ciutkan kartu",
+    "source": "c7c5ea935f218e86ba090a9eec2c4727ef6fcdb8bce9160b0d3673cae55a95c4"
+  },
+  "card.fold.new": {
+    "text": "baru",
+    "source": "11507a0e2f5e69d5dfa40a62a1bd7b6ee57e6bcd85c67c9b8431b36fff21c437"
+  },
+  "card.fold.placing": {
+    "text": "menempatkan…",
+    "source": "bc4d96fabae8e9b3a09888acbf709baa55b1115271c8794b8c18ee7163d4595c"
+  },
+  "card.fold.placingTitle": {
+    "text": "Sedang ditempatkan ke kategori",
+    "source": "ed9b0600a60fe699bd79a4fe9ee5ee99d53c7be929bd8048870ed39ae1ef7357"
+  },
+  "card.fold.openCard": {
+    "text": "Buka kartu",
+    "source": "4fc58b0e071ec005a870eec869c418214ae02b92a174462e887e9c2e91847092"
+  },
+  "card.fold.openSession": {
+    "text": "Buka sesi ›",
+    "source": "052a6db6b35b61b32623d8ee81662d9d5b594ac862163477113a42b9c93e9101"
+  },
+  "feedThread.reply.placeholder": {
+    "text": "Balas…",
+    "source": "1d627af010c02edc925b7b1728137ad404934d128245ae3fd188ffe8f42b7a16"
+  },
+  "feedThread.reply.name": {
+    "text": "Balas item ini",
+    "source": "b87827301d3290601323dbdd12788bf106d00f321f1f2e1542810ca5076449f3"
+  },
+  "feedThread.reply.send": {
+    "text": "Kirim balasan",
+    "source": "625aafc3a9bd3c323c7f1b2efb36dcfb15bf62afd31f5ff69d6eb1202a7f056c"
+  },
+  "feedThread.postFailed": {
+    "text": "Gagal terkirim. Coba lagi, atau buka item untuk membalas di sana.",
+    "source": "d9f86b497febfeeb93d73e6d165f7859d745e05790d250e083ae0cc71ba27a84"
+  },
+  "feedThread.unknownAuthor": {
+    "text": "seseorang",
+    "source": "2a59d59e3809f827ce709d3815e3950eef4a6a93af5557a93a7fdfba71460843"
+  },
+  "typeahead.mention.name": {
+    "text": "Sebut seseorang",
+    "source": "e5efb963f068b49696e98219345f72b32fdba6a8d910084e9a4b20d7044ddb33"
+  },
+  "typeahead.ref.name": {
+    "text": "Sisipkan rujukan pull request atau isu",
+    "source": "9c2a084f696a8f2c36624e3c84e03e206b6d4209019f268cf8c115c1c2dbcbcd"
+  },
+  "menu.button.remix": {
+    "text": "Remix: buat salinanmu sendiri",
+    "source": "4824fcaa986daa9ed0f106709101e91611a6b116a0a27be04bc27d107dcc4842"
+  },
+  "menu.button.manage": {
+    "text": "Sarankan perbaikan, impor PR, atau kelola aplikasi ini",
+    "source": "988dd0e3c3af9c2b0693c97d6efd46628378673fd8176ff2b80577d99d3d7558"
+  },
+  "menu.suggest.title": {
+    "text": "Sarankan perbaikan",
+    "source": "cfbf47a0b6534ad1577177e339c73219b433f6e196a8ead8aeb2270f1b17714a"
+  },
+  "menu.suggest.sub": {
+    "text": "Laporkan masalah atau ide tanpa membuatnya sendiri",
+    "source": "4d912ca586fa4324eed964a8dda7ec311a6323f7617cdf6efe9f451ff705104e"
+  },
+  "menu.build.title": {
+    "text": "Buat sekarang",
+    "source": "e692729553d78058e361e606ff2d6845767dd75008169bdfc6cd3c28b540f429"
+  },
+  "menu.build.sub": {
+    "text": "Pakai agen coding, lalu minta persetujuan",
+    "source": "3025de259d799f73b1fea3029041e58fdd67a4a2dcaf52d390ad58aeb6de7808"
+  },
+  "menu.importPr.title": {
+    "text": "Impor Fitur dari PR",
+    "source": "06dad1f0942431630de4725026bdc2a3a7f1bd9cd7e239fac6b19e9ab3bb3682"
+  },
+  "menu.importPr.sub": {
+    "text": "Komputermu · alat milikmu sendiri. Kamu sudah membuatnya, jadi tidak ada obrolan untuk yang ini",
+    "source": "c719bea705cb89a5f41eb725a64508b0fe3a607252c3f70a5b671899ffcaec61"
+  },
+  "menu.settings.title": {
+    "text": "Pengaturan & aturan",
+    "source": "e129531f76a079c0a936f3fb133f1927456ccf6056fe84de04a2e0e324d78638"
+  },
+  "menu.settings.heading": {
+    "text": "Pengaturan & aturan",
+    "source": "e129531f76a079c0a936f3fb133f1927456ccf6056fe84de04a2e0e324d78638"
+  },
+  "menu.settings.back": {
+    "text": "Kembali ke menu",
+    "source": "218936a29803fefd8d05adba76946d60c9d7d057076e29eee183aab5db75a46f"
+  },
+  "menu.leave.named": {
+    "text": "Keluar dari {{project}}",
+    "source": "b96d4f994ed3050c8c55d87c0dc350f01ce7b29f989c820654e5ade67ee26052"
+  },
+  "menu.leave.plain": {
+    "text": "Keluar",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "menu.appSettings.title": {
+    "text": "Pengaturan aplikasi",
+    "source": "d43fb8a961ff2d1f037995587ed8883ac4b733ecaf1b0b74201123ada13df810"
+  },
+  "menu.appSettings.sub": {
+    "text": "Atur siapa yang bisa memakai dan membangun aplikasi ini",
+    "source": "a22c66e20ee28225feac089cdca6cb0b0a9fa6feb64847ecbad06914d6c4df7d"
+  },
+  "menu.domain.title": {
+    "text": "Domain khusus",
+    "source": "d7d4c1e416bc676929d69b864fa2217888960abc2bef557b8833a64297219545"
+  },
+  "menu.domain.sub": {
+    "text": "Pakai alamat web milikmu sendiri untuk proyek ini",
+    "source": "e8f82bb0007616c3519d2105bd33bb89279bce698677783227ad63afdf3edb8c"
+  },
+  "menu.illustration.title": {
+    "text": "Ilustrasi unggulan",
+    "source": "2ad772c77441a4303726738c251a5a8cf19cb0a193c0008313570d75f3bbc45c"
+  },
+  "menu.illustration.sub": {
+    "text": "Lihat pratinjau dan atur gambar kartu Discover",
+    "source": "0fd42059833d72770e5fa7597cea27b23bc0033d925a1f0935d0f60d4b97ed6e"
+  },
+  "menu.approvals.title": {
+    "text": "Persetujuan usulan",
+    "source": "47c0597586e0c0cf75c401f30566ef4761972ea2ab3ca8ada3d31df8af5ff7a1"
+  },
+  "menu.approvals.sub": {
+    "text": "Siapa yang menyetujui usulan dan berapa persetujuan yang dibutuhkan",
+    "source": "d3052fff5a0f510a6a7579b509a9092b59be412f11b23b1243d677fbd4341fb4"
+  },
+  "menu.members.title": {
+    "text": "Anggota & persetujuan",
+    "source": "7988f96b4d6722fcca848a24ff004cae96f417eba275b4984909c92bf1cd7923"
+  },
+  "menu.members.sub": {
+    "text": "Atur kolaborator, admin aplikasi, dan persetujuan usulan",
+    "source": "64035d331986dcc16091e82d15f075650eab56ba8c3d4d56c118facc40136842"
+  },
+  "menu.rename.title": {
+    "text": "Nama tampilan aplikasi",
+    "source": "4258ff178cb95df7cef15a6dfea06040e168252d3c574956d7003f0bf418cb20"
+  },
+  "menu.rename.sub": {
+    "text": "Penggantian nama berupa usulan, berlaku setelah disetujui lewat suara",
+    "source": "59a22acd2e287558b4713d405f07964bddd54b5e158f5710fee92f5857eb0fc5"
+  },
+  "menu.secrets.appTitle": {
+    "text": "Rahasia aplikasi",
+    "source": "fbd64919bcf492441161bc5b58e8fe080e17e4a459d56f011b4cc9e0343592cf"
+  },
+  "menu.secrets.appSub": {
+    "text": "Atur atau perbarui nilai rahasia",
+    "source": "8cfef26aa6c16a593f9b2153d7b7123c0aa29e0113e0345ba557998231f9ac84"
+  },
+  "menu.secrets.platformTitle": {
+    "text": "Variabel platform",
+    "source": "d570a27ee8978c24c5c2221018a57ceb661a0e0b44b7077c9deabfc543978605"
+  },
+  "menu.secrets.platformSub": {
+    "text": "Env milik platform, berlaku pada deploy berikutnya",
+    "source": "9c29cd691ed7d0bdefb1f7f6ffd929acc0b78367990cae32ecb3c7e3429deca8"
+  },
+  "menu.suggestBack.title": {
+    "text": "Usulkan kembali",
+    "source": "02ddfeec1dd07b0f59abfac7e5c01e9183c07c36ebad3c7bb52d09392af70189"
+  },
+  "menu.suggestBack.sub": {
+    "text": "Kirim perubahanmu ke {{project}} sebagai usulan",
+    "source": "28fe1da4d867be67221a62b9d7a34b232c121b75d9f95a8352e9881ae3b519eb"
+  },
+  "menu.remix.title": {
+    "text": "Remix",
+    "source": "f84ed4375595ff56536a50d853f9efa4897ac6e815aad3b94a8ac263e92736ef"
+  },
+  "menu.remix.sub": {
+    "text": "Buat salinanmu sendiri",
+    "source": "82bb5bb897a289f90180a30a283b884a02a67c5488371286ddab47ce658642dd"
+  },
+  "attr.assignee.removeHint": {
+    "text": "Klik lagi untuk menghapus pilihanmu",
+    "source": "a59a5e40253cd2d655697e445429bd1dfcef626d3e8f4fd6e35ff9d97cca2bb4"
+  },
+  "attr.add": {
+    "text": "Tambah",
+    "source": "9fd728c66c9a256b121472dabf32a34317aed01d8427d70ec830289cf23a7cc8"
+  },
+  "attr.loadFailed": {
+    "text": "Opsi gagal dimuat.",
+    "source": "6f3b25bbbefef2c685d8ba07f25f5211041533c2f324b485f8204398ffcebb3f"
+  },
+  "board.discussion.open": {
+    "text": "Buka obrolan umum aplikasi",
+    "source": "13b530c21136ba56553a919d3453fbd5c00d07551e5709976c633f0b7ea4bb14"
+  },
+  "board.discussion.title": {
+    "text": "Diskusi umum",
+    "source": "ed371a6ad1cb071b5745a1ebc0ee54164db0ca04d231447cf7934102c41d7867"
+  },
+  "pause.resume": {
+    "text": "Lanjutkan penggabungan",
+    "source": "f5abf8e02d22e5e63fd5106a416841fcbc65c51ba8cc003604e654002f88dc73"
+  },
+  "pause.resumeHint": {
+    "text": "Lanjutkan penggabungan di aplikasi ini selagi unit suite main gagal. Penghentian akan kembali jika penggabungan berikutnya membuat suite gagal lagi.",
+    "source": "d13bc9741f29716ff933ae6c9b33cd2724aa8564d6b146ee2dc34461b658d0af"
+  },
+  "pause.confirming.plain": {
+    "text": "Unit suite main gagal satu kali. Sedang dijalankan ulang untuk memastikan. Sementara itu penggabungan dihentikan, kecuali untuk usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri.",
+    "source": "dbc5fb6b901e4f524848d444d102d0b0ab96d0372427153dec6d60622e996179"
+  },
+  "pause.confirming.since": {
+    "text": "Unit suite main gagal satu kali sejak {{commit}}. Sedang dijalankan ulang untuk memastikan. Sementara itu penggabungan dihentikan, kecuali untuk usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri.",
+    "source": "b125bf54b73e5934230c90e76225b391d21330d8fb14bad363a80443a4a9f4f6"
+  },
+  "pause.confirming.test": {
+    "text": "Unit suite main gagal satu kali: {{test}}. Sedang dijalankan ulang untuk memastikan. Sementara itu penggabungan dihentikan, kecuali untuk usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri.",
+    "source": "59e3eb086527de1840cc094375e065b607844dae868d275edd858577b8e6bec6"
+  },
+  "pause.confirming.sinceTest": {
+    "text": "Unit suite main gagal satu kali sejak {{commit}}: {{test}}. Sedang dijalankan ulang untuk memastikan. Sementara itu penggabungan dihentikan, kecuali untuk usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri.",
+    "source": "7a923d71434c337d0ba865b679ae524c1205a2b209bbf02dd6eb4c1f2b14c73b"
+  },
+  "pause.paused.plain": {
+    "text": "Penggabungan dihentikan: unit suite main gagal. Penggabungan lanjut setelah perbaikan masuk atau admin melanjutkannya; usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri tetap bisa digabungkan.",
+    "source": "580ad73c1781b8d4a524b5534a38e21f3cf0b3bad6fb70226382ef833bc60605"
+  },
+  "pause.paused.since": {
+    "text": "Penggabungan dihentikan: unit suite main gagal sejak {{commit}}. Penggabungan lanjut setelah perbaikan masuk atau admin melanjutkannya; usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri tetap bisa digabungkan.",
+    "source": "1c5c4b895cd93d9342a3907bc52841fe3fcb1add7a1225c06978f009647b5b32"
+  },
+  "pause.paused.test": {
+    "text": "Penggabungan dihentikan: unit suite main gagal: {{test}}. Penggabungan lanjut setelah perbaikan masuk atau admin melanjutkannya; usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri tetap bisa digabungkan.",
+    "source": "c92393aaef4937e5c5a29826970edac101d8c8329489c8a45055ecc53c21fa43"
+  },
+  "pause.paused.sinceTest": {
+    "text": "Penggabungan dihentikan: unit suite main gagal sejak {{commit}}: {{test}}. Penggabungan lanjut setelah perbaikan masuk atau admin melanjutkannya; usulan yang sudah sejajar dengan main dan lolos pemeriksaannya sendiri tetap bisa digabungkan.",
+    "source": "ae43c3c1d35990727dab372943c162cf4bc86c8610b1d27fc661c6467795148d"
+  },
+  "releaseStall.openRun": {
+    "text": "Buka workflow run",
+    "source": "74455b921268f95be176b8408fa6444b54c1ef95ab837f9a562fce74100bbe17"
+  },
+  "releaseStall.failed.prCommit": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan tetapi belum dirilis: workflow rilisnya tidak selesai. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "c1bf936a0b8328c929851b28ec486102032909702863960ffdb750fe1d94e375"
+  },
+  "releaseStall.failed.prCommitRunning": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan tetapi belum dirilis: workflow rilisnya tidak selesai. Platform masih menjalankan {{running}}. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "bc6222a6eee863c3303989a3647b7929d9e824d62763d5ec37d6f1dae2582dd0"
+  },
+  "releaseStall.failed.pr": {
+    "text": "PR #{{pr}} sudah digabungkan tetapi belum dirilis: workflow rilisnya tidak selesai. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "5ccf35928dfb39b3c74c63dad750b735b9fd5c54e72f7744331575a594712de6"
+  },
+  "releaseStall.failed.prRunning": {
+    "text": "PR #{{pr}} sudah digabungkan tetapi belum dirilis: workflow rilisnya tidak selesai. Platform masih menjalankan {{running}}. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "4bcc2a697597efe081eea4319ca75ad5aa044592c6b5d401a96a9c17f72d8c46"
+  },
+  "releaseStall.failed.commit": {
+    "text": "Commit {{commit}} masuk ke main tetapi belum dirilis: workflow rilisnya tidak selesai. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "b66166ac9aaef9175546d330910f6d0c89ee6d708edac3b1ff6f3e322421d30b"
+  },
+  "releaseStall.failed.commitUnknown": {
+    "text": "Commit (unknown) masuk ke main tetapi belum dirilis: workflow rilisnya tidak selesai. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "11f742be8f420717165c081438a0e3369db729f7d842892f08ca704fcedfac04"
+  },
+  "releaseStall.failed.commitRunning": {
+    "text": "Commit {{commit}} masuk ke main tetapi belum dirilis: workflow rilisnya tidak selesai. Platform masih menjalankan {{running}}. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "d54dee2b85a35261380bfc5e3e415dfa8079a96076ee9966c3d4abcb76219e12"
+  },
+  "releaseStall.failed.commitUnknownRunning": {
+    "text": "Commit (unknown) masuk ke main tetapi belum dirilis: workflow rilisnya tidak selesai. Platform masih menjalankan {{running}}. Jalankan di main untuk merilis commit terbaru; penggabungan berikutnya juga akan membawa perubahan ini.",
+    "source": "53ed5b72e3048113f45cd4b82e191fb0d9772d20964d020eb671a06e34119c79"
+  },
+  "releaseStall.slow.prCommit": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit.",
+    "source": "8d32eae23d39b1145baf320a51f839d246fd5c54c570b3b742a45a6ff156a78f"
+  },
+  "releaseStall.slow.prCommitRunning": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit. Platform masih menjalankan {{running}}.",
+    "source": "2b2adc95fdd8e8b4de6ed60d531f2ed40dc7b241589fd3e3126fca9ab13a4124"
+  },
+  "releaseStall.slow.pr": {
+    "text": "PR #{{pr}} sudah digabungkan dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit.",
+    "source": "612691e53278bc581a58f0d501acaf2b04b8d77f3de1ea037fae2411817e7fb0"
+  },
+  "releaseStall.slow.prRunning": {
+    "text": "PR #{{pr}} sudah digabungkan dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit. Platform masih menjalankan {{running}}.",
+    "source": "549c41086501f9a86919847d91c16a698ef3161b98c86023669b95c2d8b4dbb3"
+  },
+  "releaseStall.slow.commit": {
+    "text": "Commit {{commit}} masuk ke main dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit.",
+    "source": "d6d6e424a39d259769fe1061f1627598db35c0420b233bc7b0cc67d2d3530fe9"
+  },
+  "releaseStall.slow.commitUnknown": {
+    "text": "Commit (unknown) masuk ke main dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit.",
+    "source": "355f39455cd26715246fad61d0369df4b34b010bdde2267c64f78889d7f916f7"
+  },
+  "releaseStall.slow.commitRunning": {
+    "text": "Commit {{commit}} masuk ke main dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit. Platform masih menjalankan {{running}}.",
+    "source": "2cd3503a01ab48583fec7bf56778bc9f2426da6d9a06bec374f27e7480b1f45c"
+  },
+  "releaseStall.slow.commitUnknownRunning": {
+    "text": "Commit (unknown) masuk ke main dan workflow rilisnya masih berjalan, jauh melewati waktu biasanya yang hanya beberapa menit. Platform masih menjalankan {{running}}.",
+    "source": "4cf75dfe82530ff7ad587a36ddf88cf82f57ea4e5821c249ee1e387ffdecad08"
+  },
+  "releaseStall.notRolled.prCommit": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu.",
+    "source": "c3e83b4796b8d307c9ba62219b55346d258e0eda9ad8445e20155f3790cc902f"
+  },
+  "releaseStall.notRolled.prCommitRunning": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu. Platform masih menjalankan {{running}}.",
+    "source": "6e41a775e24b310a1dae9536e5933a53565a588c5f99bd04b535d63010e1ce7e"
+  },
+  "releaseStall.notRolled.pr": {
+    "text": "PR #{{pr}} sudah digabungkan dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu.",
+    "source": "10a302b556518218cde6e8feb629e27d22bd689fe50427ff7feee41197316578"
+  },
+  "releaseStall.notRolled.prRunning": {
+    "text": "PR #{{pr}} sudah digabungkan dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu. Platform masih menjalankan {{running}}.",
+    "source": "16885711a8a25067995e2f1f4c31474c4a90c89c40adcb9c9c11ed1730efcd86"
+  },
+  "releaseStall.notRolled.commit": {
+    "text": "Commit {{commit}} masuk ke main dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu.",
+    "source": "88a9da72c870f50080ef49bc7b9be99decd771c80fd1be39705dc714e6b7fe8c"
+  },
+  "releaseStall.notRolled.commitUnknown": {
+    "text": "Commit (tidak diketahui) masuk ke main dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu.",
+    "source": "4fbe636c55a19f7cdeb02c188d4050d56b049c2cd9844d98351fab1de2f69f20"
+  },
+  "releaseStall.notRolled.commitRunning": {
+    "text": "Commit {{commit}} masuk ke main dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu. Platform masih menjalankan {{running}}.",
+    "source": "15dcca8334016a0c2522274675b900860d73c8b618da2ef9ffc0010daa0aa4a5"
+  },
+  "releaseStall.notRolled.commitUnknownRunning": {
+    "text": "Commit (tidak diketahui) masuk ke main dan alur kerja rilisnya berhasil, tetapi platform belum beralih ke versi itu. Platform masih menjalankan {{running}}.",
+    "source": "9c4eaa7d3811947fdaa3464bdc05c6f359a3838da7f42e0f0e8d619d39a7158a"
+  },
+  "releaseStall.noRun.prCommit": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya.",
+    "source": "742b082dd364f2190d03a56e60a8cb7668c74063c04d71be68b80006db582378"
+  },
+  "releaseStall.noRun.prCommitRunning": {
+    "text": "PR #{{pr}} ({{commit}}) sudah digabungkan tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya. Platform masih menjalankan {{running}}.",
+    "source": "5fefe72422f7d3be5a5004ec1cf0d77b637d9810812da8abbd80e8f5f1951a67"
+  },
+  "releaseStall.noRun.pr": {
+    "text": "PR #{{pr}} sudah digabungkan tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya.",
+    "source": "78a1076ed41a4e5f256622f47283904146e66cec3fd758d8ebf94b3af511f0ce"
+  },
+  "releaseStall.noRun.prRunning": {
+    "text": "PR #{{pr}} sudah digabungkan tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya. Platform masih menjalankan {{running}}.",
+    "source": "14d57adb1b5a50f23f865f39840560baec2a4f7e45a20198e1ba1879219c58d0"
+  },
+  "releaseStall.noRun.commit": {
+    "text": "Commit {{commit}} masuk ke main tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya.",
+    "source": "98d142558db110b94a4d9c6b66163d207b60ca1260fb5c3e919672fda5b3f846"
+  },
+  "releaseStall.noRun.commitUnknown": {
+    "text": "Commit (tidak diketahui) masuk ke main tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya.",
+    "source": "f2cb4d3f8bd27e94a7bcab9d5a29d3db3e0c1c62caa63334797285ad1e14ea89"
+  },
+  "releaseStall.noRun.commitRunning": {
+    "text": "Commit {{commit}} masuk ke main tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya. Platform masih menjalankan {{running}}.",
+    "source": "5dfe60c999aa70f3dc91c37978de98b629e919e0f82dd28e2e8fdb2b5574cd10"
+  },
+  "releaseStall.noRun.commitUnknownRunning": {
+    "text": "Commit (tidak diketahui) masuk ke main tetapi belum berjalan, dan tidak ada eksekusi alur kerja rilis yang ditemukan untuknya. Platform masih menjalankan {{running}}.",
+    "source": "fc0331ded2bb560caf3d93d969ae2236827f4093dba38dbfec1de7857055e4eb"
+  },
+  "clamp.showMore": {
+    "text": "Lihat selengkapnya",
+    "source": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6"
+  },
+  "clamp.showLess": {
+    "text": "Ringkas",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "filters.quick.assignedToYou": {
+    "text": "Ditugaskan ke kamu",
+    "source": "dbf11bd849e218208ed24906c9db31d0685ab69db96babce6d1dfa50a670e473"
+  },
+  "filters.quick.createdByYou": {
+    "text": "Dibuat olehmu",
+    "source": "39467b6ea2126461e77e005fdfac136f1d8dcc6de0b417c14c9c833e7e90c4a3"
+  },
+  "filters.search.placeholder": {
+    "text": "Cari permintaan, perubahan, komentar, atau #",
+    "source": "d7095d781e0b0ff52b85c286c6a5733722f89e980ffa884650d22a744815112c"
+  },
+  "filters.search.label": {
+    "text": "Saring kartu",
+    "source": "7ac548abeb5f0a2b51366d342f4e228dc32e5eca66632be1ccfe298e09e5ae6d"
+  },
+  "filters.button.hint": {
+    "text": "Saring papan",
+    "source": "4bdcb5bd85958678641f421222c2e9d084e20a3c81263905648d365ca6bf0d92"
+  },
+  "filters.button.none": {
+    "text": "Filter",
+    "source": "546ebb8eb993ea561029d9febd84c363bdb09010bb2cb915a8287762b76b9a64"
+  },
+  "filters.chip.remove": {
+    "text": "Hapus filter: {{filter}}",
+    "source": "cffe3476018c1cb29aba482e84f61d417d783798d83f2e492b6620f3c6ff72cd"
+  },
+  "suggestBack.title": {
+    "text": "Usulkan ini kembali ke {{project}}",
+    "source": "87a439c2e3054e4d57cba8c79200972137a5ca584b8e3876e8e196afe6330fcd"
+  },
+  "suggestBack.intro": {
+    "text": "Perubahanmu sejak me-remix dikirim ke {{project}} sebagai usulan. Anggotanya akan mencoba dan memberi suara, seperti perubahan lainnya.",
+    "source": "a8e2ac28cc055539d015e70e8bb6fbcac06e72ce3c22acd46119c281940e9c7c"
+  },
+  "suggestBack.loading": {
+    "text": "Memuat perubahanmu…",
+    "source": "6775b5b057d9355630bd5c6c5ff079404550dfb756afc02383acbe2ccebe699b"
+  },
+  "suggestBack.changes.none": {
+    "text": "Belum ada perubahan yang terdaftar.",
+    "source": "f53696e19c378b3d3463471fed1e8f4401dc052d8ddd8c7e81d18f7a27f94467"
+  },
+  "suggestBack.notSent": {
+    "text": "Tidak dikirim: nama {{copy}}, siapa yang bisa melihatnya, adminnya, atau datanya.",
+    "source": "62ad72625770127582daa50ad8b8dff84920de8b3bb58d9eef9439fab81abda9"
+  },
+  "suggestBack.openOriginal": {
+    "text": "Buka {{project}}",
+    "source": "2d2da98eb6d06a1ccbc25df5fe50d4c88fbea568429aaa8ec6c7f384739a9234"
+  },
+  "suggestBack.openProposal": {
+    "text": "Buka usulan",
+    "source": "7376180daa2e7627041fa4e685a86f936bd9bdb5821f91ce3f46b12c0cc01beb"
+  },
+  "suggestBack.sent": {
+    "text": "Terkirim. Perubahanmu sekarang menjadi usulan di {{project}}. <0>Buka usulan</0>",
+    "source": "5e0529940e0ba29aaa6571a65e78da86e99d4ddb9b2f18fb73fe822ef3ddbc25"
+  },
+  "suggestBack.send": {
+    "text": "Kirim ke {{project}}",
+    "source": "50fe8880f21d913fcdbdcf3231e014730bac8140c171a8159944be3ffd65a60a"
+  },
+  "suggestBack.sending": {
+    "text": "Mengirim…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "suggestBack.error.loadRetry": {
+    "text": "Tidak dapat memuat perubahanmu. Tutup ini lalu coba lagi.",
+    "source": "8e801c2690bdf2df9f44dc2e507033989f2874964657f2786fe1d5ef1cb754e9"
+  },
+  "suggestBack.error.load": {
+    "text": "Tidak dapat memuat perubahanmu.",
+    "source": "c4f4961d2e24df9d3b186ff885f02892b72805f143bb58209b9d8457415f90d1"
+  },
+  "suggestBack.error.notSent": {
+    "text": "Perubahanmu tidak terkirim. Coba lagi.",
+    "source": "78138f23d9a6bb2ab980c0c46e5361f30f1e8d06cf0f9b288a099a5f5fa5d1fd"
+  },
+  "suggestBack.error.network": {
+    "text": "Kesalahan jaringan. Coba lagi.",
+    "source": "9ff8cfaf7d9431535aa7aafec3ee94df85345211e66d892d50d4e49fd6cad1c1"
+  },
+  "votingHelp.title": {
+    "text": "Cara kerja pemungutan suara & penggabungan",
+    "source": "d4cc816d92c53e84e41b128dbde178a2a352257bab0f9c1f424cbd271bf6a90f"
+  },
+  "votingHelp.liveTitle": {
+    "text": "Usulan ini, saat ini",
+    "source": "0de6c6f8f40b962990a7bac4247be1d55078ab1082b9394f0fb6dbf779fe21e7"
+  },
+  "votingHelp.rule.voters": {
+    "text": "Hanya orang yang benar-benar memakai aplikasi belakangan ini yang dihitung sebagai pemilih. Jumlah suara Ya yang dibutuhkan menyesuaikan dengan banyaknya penguji aktif.",
+    "source": "a7e043a1143753c426b23205a8a3c9475d32da12c6b299ae7980ba56fd757ee4"
+  },
+  "votingHelp.rule.quiet": {
+    "text": "Usulan dengan dukungan jelas dan tanpa keberatan akan tayang sendiri setelah jeda waktu singkat (beberapa hari), supaya semua orang sempat melihatnya. <0>Diam dianggap setuju</0>, jadi bersuaralah jika ada yang mengganjal.",
+    "source": "72fc44a7d2b2f93b7d94214ef1fa3745fd31ef00101e9cf33fb9f805bc5ed69e"
+  },
+  "votingHelp.rule.support": {
+    "text": "Makin banyak dukungan untuk usulan, makin singkat waktu tunggunya. Mayoritas yang jelas digabungkan hampir seketika; dukungan tipis tanpa penentang menunggu lebih lama.",
+    "source": "34578a689fdba794b936fb963b47953b45d5a4463f54349026a185bb631ae8a1"
+  },
+  "votingHelp.rule.no": {
+    "text": "Suara <0>Tidak</0> membuat usulan lebih sulit lolos: jumlah suara Ya yang dibutuhkan naik dan waktu tunggu jadi lebih lama.",
+    "source": "0c564e078ae930338ec40411c05f6776456f531d92d8fd76c05dfb888c511b13"
+  },
+  "votingHelp.rule.conversation": {
+    "text": "Jika cukup banyak orang memilih Tidak, usulan <0>perlu dibicarakan</0>. Penghitung waktu mati dan usulan butuh mayoritas suara Ya yang jelas agar tayang, jadi bicarakan bersama.",
+    "source": "acde565afd876bc80f77709e788cb18e85ebe2378386cb26f6abdd5056687ae6"
+  },
+  "votingHelp.rule.setAside": {
+    "text": "Usulan dengan suara Tidak lebih banyak daripada Ya dan dukungan sedikit akan dikesampingkan setelah hitung mundur (“Dikesampingkan dalam …”). Tidak ada yang hilang: usulan bisa muncul lagi sebagai usulan baru.",
+    "source": "3650e889d9c82bb7ff164633d4549baf70467690768b774c57bedf87b5f61f47"
+  },
+  "votingHelp.rule.checks": {
+    "text": "Meski menang suara, usulan baru digabungkan setelah <0>pemeriksaan otomatisnya lolos</0> dan <1>sudah mutakhir dengan aplikasi utama</1>. Aplikasi yang dikunci juga butuh suara Ya dari admin.",
+    "source": "31913ee94403bca4c2b014348911dbb82b7e33c9418d7321d75a3897d9a84c18"
+  },
+  "votingHelp.rule.custom": {
+    "text": "Aplikasi dapat menyesuaikan aturan ini: membatasi persetujuan hanya untuk <0>penyetuju yang diundang</0> (suara orang lain tetap terlihat tetapi bersifat saran) dan/atau mewajibkan <1>“minimal N persetujuan”</1> sebagai ganti sistem mayoritas berbatas waktu.",
+    "source": "ef713f9004171630ed2783c0701f834788a766221780011f4791e7c63b2992e9"
+  },
+  "modals.generate.title": {
+    "text": "Buat usulan untuk isu #{{number}}?",
+    "source": "0465f7e9446f5cacd3f698e7ee4820b68a7846302863efe95b58b93542e08f14"
+  },
+  "modals.generate.modelLabel": {
+    "text": "Model",
+    "source": "5e2c614c23f02239bc03c6c04fcb681950f9e72bf8fdff6be79c79841cbb10c0"
+  },
+  "modals.generate.changeModel": {
+    "text": "Ganti model",
+    "source": "d9a95536e77587336f923348adb5e8cc82f0950a8b4532a861d44fddb0b01e27"
+  },
+  "modals.generate.confirm": {
+    "text": "Buat usulan",
+    "source": "41613e50530716a27a3b8a48a67afcccc6770dfcf257bc3f9084dbcf4784fc06"
+  },
+  "modals.generate.picker.back": {
+    "text": "Kembali ke ringkasan usulan",
+    "source": "6dc7edf5df592346568e1ab53ae65a7aa7e0b38e2023b6f0b77036f1fbce3060"
+  },
+  "modals.generate.picker.title": {
+    "text": "Pilih model",
+    "source": "78a7ab5e314ab1a5af28cc60698d364e076c6642a881df6b8ae74f7738491bc6"
+  },
+  "modals.generate.picker.intro": {
+    "text": "Model yang direkomendasikan ditampilkan lebih dulu. Cari hanya jika kamu butuh model lain.",
+    "source": "5629f6778da1f89293c3fbdff38c6851425b64dcab5302823ac1930af44cf931"
+  },
+  "modals.generate.picker.ownKey.title": {
+    "text": "Memakai kunci OpenRouter milikmu",
+    "source": "63b91e917ed6bbfc1ff4ba8235428cf67ab1c65488f166cdcb6e7ce4f9d26106"
+  },
+  "modals.generate.picker.ownKey.body": {
+    "text": "Ketersediaan model mengikuti pengaturan privasi OpenRouter-mu. Untuk mengecualikan penyedia yang mungkin melatih model dengan datamu, tinjau pengaturan tersebut.",
+    "source": "e52a73438a83c8dafc9497302756a63b27e80ab849d63cbd180e479f811bc88d"
+  },
+  "modals.generate.picker.ownKey.link": {
+    "text": "Tinjau pengaturan privasi",
+    "source": "8e90656f37ae85123cd878d4c4e7484425da196819fc4349e32bdf400de18230"
+  },
+  "modals.generate.picker.searchLabel": {
+    "text": "Cari model",
+    "source": "10421935232f54e0b25f9d839f362a1ea5a401e73c7cb0671b32283dd6e3d37a"
+  },
+  "modals.generate.picker.searchPlaceholder": {
+    "text": "Cari semua model yang tersedia…",
+    "source": "0d33b95c7ec93ff357b391f39cb4ec38306f9134fc463cafa5ed0de87c1bcac7"
+  },
+  "modals.generate.picker.listLabel": {
+    "text": "Model yang tersedia",
+    "source": "9dbfd0478bd51235f9f74cd045d70c58f012ab7e0c68caab83f817deae91e90d"
+  },
+  "modals.generate.picker.noMatches": {
+    "text": "Tidak ada model yang cocok dengan pencarian itu.",
+    "source": "36deb3d0aa756cc82790d36af26003ad47413eb518158af7ad74332bfba5d6ad"
+  },
+  "modals.generate.picker.noRecommended": {
+    "text": "Belum ada model yang direkomendasikan.",
+    "source": "7c1a2d84f186e7a80e5af433e668488796f2b442b1e6bf645c1946ccd7b4de84"
+  },
+  "modals.generate.picker.useNamed": {
+    "text": "Pakai {{model}}",
+    "source": "1f099da26c4288a4ab15a4e24023b9b25829acaa5e9a9ae4b571db79dda0e848"
+  },
+  "modals.generate.picker.use": {
+    "text": "Pakai model ini",
+    "source": "1f2ba25aaafeea2041ee1a110ac518faed0e31356861a56ab9b3b0a5e5dc4be1"
+  },
+  "modals.aiConsent.title": {
+    "text": "Izinkan {{app}} memakai AI?",
+    "source": "ac6b0921b6e99d939cf9d5b95d2fbf72ec7691b4b2df9a5feaac1d325a6ba311"
+  },
+  "modals.aiConsent.titleUnnamed": {
+    "text": "Izinkan aplikasi ini memakai AI?",
+    "source": "06270313ea6371eda54b73273f887a3cdb6fe5969dcdb2d61b87db209512d4fa"
+  },
+  "modals.aiConsent.purposeQuote": {
+    "text": "“{{purpose}}”",
+    "source": "fb3b117b9d31830f84e6b2d4be64cbe916f4e204f5a4b74cc32e9c39bdc3e768"
+  },
+  "modals.aiConsent.eligibilityUnavailable": {
+    "text": "Kelayakan kredit tidak dapat diperiksa. Tutup dialog ini dan coba lagi sebentar lagi.",
+    "source": "aafb44f0921d6e9d0c5fb4c7725abc22960db118b7260dec5e61478a255ee182"
+  },
+  "modals.aiConsent.noPayer": {
+    "text": "Belum ada pembayar AI. <0>Hubungkan GitHub atau X</0> untuk membuka $10/hari, atau <1>tambahkan kunci API Anthropic milikmu sendiri</1>.",
+    "source": "f6dfed19c5f771dc43051145bbe7f9b64b435200a4fd38f6f872acedd1ae5c2d"
+  },
+  "modals.aiConsent.capLabel": {
+    "text": "Batas harian untuk aplikasi ini ($ per hari)",
+    "source": "f19ab801c54bdf337068fa237fde22979eb6b1dfd4d261228b72094a5783d689"
+  },
+  "modals.aiConsent.notNow": {
+    "text": "Nanti saja",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "modals.aiConsent.allow": {
+    "text": "Izinkan",
+    "source": "e213c161d5cefa520c8dd4155c9569076d9a40406111465136a6f1b207045761"
+  },
+  "modals.aiConsent.unavailable": {
+    "text": "Tidak tersedia",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "modals.permission.reasonQuote": {
+    "text": "“{{reason}}”",
+    "source": "504c682c5e4439d0e87aadc61e6afeca420b7551759840673ee4a82307bb2d7c"
+  },
+  "modals.permission.notNow": {
+    "text": "Nanti saja",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "modals.credits.notNow": {
+    "text": "Nanti saja",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "modals.checks.title": {
+    "text": "Pemeriksaan usulan",
+    "source": "9c021e9624373cff809342e8a9ccbac13c2775f693f829aa21d9269e0052a037"
+  },
+  "modals.checks.none": {
+    "text": "Belum ada hasil pemeriksaan yang tercatat.",
+    "source": "f7afe28f0ec68d53da51cdf4bf78afe8f44b7bd8b2c8ad71fac594d50fd4ea99"
+  },
+  "modals.checks.loading": {
+    "text": "Memuat pemeriksaan…",
+    "source": "634e0304fd02ca7c9a7ecdb3ee59ad01d3c8671f8dad2a1863d4a5761b5bcc57"
+  },
+  "modals.checks.loadFailed": {
+    "text": "Tidak dapat memuat hasil pemeriksaan",
+    "source": "20c2947ad694a4b61a40953246a1d30b25985195583ec40a5b69412ecb0b0ccb"
+  },
+  "modals.checks.refresh": {
+    "text": "Segarkan hasil",
+    "source": "04cc9c1a86c034a7f77ca955f898ca8cc6b320270827f0986ea9cc9661790375"
+  },
+  "modals.checks.rerunning": {
+    "text": "Menjalankan ulang…",
+    "source": "6049843fdf4fcb00a2af9565135414357cd378968dd9a8a1463f30926da516fa"
+  },
+  "topic.back.allItems": {
+    "text": "Semua item",
+    "source": "51107686754a31d258064ff193f18ac2125040a21fa6ce49c748f702f7680cc3"
+  },
+  "topic.back.toAllItems": {
+    "text": "Kembali ke Semua item",
+    "source": "ffa157bb54a070f54ad4e68bad8b3933f5a62481b06a72d721a30defab8e48cd"
+  },
+  "topic.change.descriptionFold": {
+    "text": "Deskripsi",
+    "source": "526e0087cc3f254d9f86f6c7d8e23d954c4dfda2b312efc29194ae8a860106ba"
+  },
+  "topic.change.diagram.failed": {
+    "text": "Diagram dari pembuatnya tidak dapat digambar.",
+    "source": "8c88171ed9d8bfc2791d87c0d8961630bee9b61e91d0c390bace8ae3ac071ad9"
+  },
+  "topic.change.diagram.showSource": {
+    "text": "Tampilkan teksnya",
+    "source": "505f2fce405e72812b5d2a5c6da50e5048635da5b3fe0d4ebc0cd03e905edf31"
+  },
+  "communityCard.rule.editName": {
+    "text": "Ubah aturan persetujuan",
+    "source": "2cbdc3c4819f6522e60d5cdfc78c5478e2af850b482ebeedf092869f9d01d485"
+  },
+  "communityCard.line.you": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kamu menyetujuinya.",
+    "source": "5f7a7a5ccd1dee83004080ee3d39b22b1181881fbb1317291e814502b17fd68b"
+  },
+  "communityCard.line.anyOf": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan <0></0><1>{{names}}</1> menyetujuinya.",
+    "source": "2c3f70514811b7f2deb5e83bc5030f8f4f79210765f5a32ee7a87bf24c4633ba"
+  },
+  "communityCard.line.allOf": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan <0></0><1>{{names}}</1> menyetujuinya.",
+    "source": "8814534e7f70bcc92a50e3e4c3a5d576a27e8b1e8e103c89f4c12ad525228d36"
+  },
+  "communityCard.line.approvers.only": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan penyetuju menyetujuinya.",
+    "source": "fa95e5454cf1cee25968cfeb878c3d37230b40320fa6a461b104d2c19cabd6f9"
+  },
+  "communityCard.line.approvers.both": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kedua penyetuju menyetujuinya.",
+    "source": "6148f13d016548afdea4eea9c55686e2a3f975133e4e4eeb4b60f5196b3617f3"
+  },
+  "communityCard.line.members.only": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan satu-satunya anggota aktif menyetujuinya.",
+    "source": "4eda8c4c12f6eae5c173e61f6acfe1cd3c57dec0f9c9ae02bba35d3ab5a519e1"
+  },
+  "communityCard.line.members.both": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kedua anggota aktif menyetujuinya.",
+    "source": "eba8d598cbce2b3075513fde7f89c16bcdb8105017e9caf15e5f3798db8003eb"
+  },
+  "communityCard.lineShort.you": {
+    "text": "Tayang saat pemeriksaannya lolos dan kamu menyetujuinya.",
+    "source": "a87ff6a5038110484f2fd430fb57c8de7588bedf01e908d9ab91a7881cea507d"
+  },
+  "communityCard.lineShort.anyOf": {
+    "text": "Tayang saat pemeriksaannya lolos dan <0></0><1>{{names}}</1> menyetujuinya.",
+    "source": "6969866c9e46fe7413d9591c7d4f2d7a7cd2df5cefe9574d3838d6272f33fb82"
+  },
+  "communityCard.lineShort.allOf": {
+    "text": "Tayang saat pemeriksaannya lolos dan <0></0><1>{{names}}</1> menyetujuinya.",
+    "source": "51f4181251224c76101cd70154a231a2ac3d9be79d3cbc1283a6eaa0f8b35bea"
+  },
+  "communityCard.lineShort.approvers.only": {
+    "text": "Tayang saat pemeriksaannya lolos dan penyetuju menyetujuinya.",
+    "source": "e848a743a7df2cb20be15b1761e4b55df5b922c7b081d37bf1d65cb4cb4494d2"
+  },
+  "communityCard.lineShort.approvers.both": {
+    "text": "Tayang saat pemeriksaannya lolos dan kedua penyetuju menyetujuinya.",
+    "source": "7b0c3b49b067b1cb62d2f7261b05a8aff737b3d9d5d7097071d549e5c7c558a0"
+  },
+  "communityCard.lineShort.members.only": {
+    "text": "Tayang saat pemeriksaannya lolos dan satu-satunya anggota aktif menyetujuinya.",
+    "source": "7c01ae9a8ddaf6b3f9668961bf7bcb16003ce177b904c2b532d4860a1a012f6c"
+  },
+  "communityCard.lineShort.members.both": {
+    "text": "Tayang saat pemeriksaannya lolos dan kedua anggota aktif menyetujuinya.",
+    "source": "eb643bae7d1b9c30de37dc929c8a8300ba473c92afe3e5f1c0df489899fb9850"
+  },
+  "communityCard.rule.rules": {
+    "text": "Aturan",
+    "source": "4228aeb07c410ffc9d15b458bf7c2bf8d9dfa7af632f2c339e69f8cb54654da3"
+  },
+  "page.title.hub": {
+    "text": "Hub",
+    "source": "d87c9ca31f373cc5ce5d1d8efc602ef809fefbb9cafd79961260d31ccfd49363"
+  },
+  "places.tray.name": {
+    "text": "Tempat di {{project}}",
+    "source": "1b8af652664f3d227d465e87c35d49ff01933ef443f8e2d52707311691d6a168"
+  },
+  "allItems.themes.topics": {
+    "text": "Topik",
+    "source": "e22820fcf5cd90e3fdd99a7569e0ee2f30eb7ebadfb2fe4d159b30c166ff81b7"
+  },
+  "allItems.themes.other": {
+    "text": "Kategori lain",
+    "source": "c48f331386342fa12852004c294194ed10456dfe1a4ef6d4643847b4dacb0d2c"
+  },
+  "allItems.theme.discuss": {
+    "text": "Diskusikan di #{{channel}} ›",
+    "source": "f7061bd7fba798e04cbc951a4d6dcd19295672511162baeb411c8a7437352a76"
+  },
+  "topic.change.gate.release": {
+    "text": "{{release}}.",
+    "source": "9f8e3da4697beb42277c50aeaaf7a94245facaa86d455509d0e1d1aa8199baac"
+  },
+  "diagram.kind.rename": {
+    "text": "Ganti nama",
+    "source": "3064d79a295cefe4b384b8fe5cb29fd6b06d7eb1ad94b8895f4148039d06b330"
+  },
+  "diagram.kind.flow": {
+    "text": "Sebelum → sesudah",
+    "source": "71e282c2cbf749df7dfbbe2c9b05e06fab10e3bc2b58e2b63ab9129ef37807a2"
+  },
+  "diagram.kind.changes": {
+    "text": "Yang berubah",
+    "source": "9f036d41436122c9e47f0322de8575995e9fba536947f51a0afb2490ea5cb1b5"
+  },
+  "diagram.kind.numbers": {
+    "text": "Angka",
+    "source": "b0640f0fc46040e7139bbbc43e0a75dc914c6cab74f344cee2c597f1d6b476df"
+  },
+  "diagram.kind.mermaid": {
+    "text": "Diagram",
+    "source": "913c5e96ccce08c180f5ba8c522dc44bb3e4d8a33b269c048a3365ea4131cf6b"
+  },
+  "diagram.label": {
+    "text": "{{kind}}. {{text}}",
+    "source": "4f17025ba42c87858b5b4fdddcc0e078909f31d28cad9a9ed414710d5aa80527"
+  },
+  "diagram.source.decision": {
+    "text": "Dari keputusan bersama",
+    "source": "b8b83ed5856b17619a6e222c689c221068e1d2149ccc0420a882cfba4bdb9e7b"
+  },
+  "diagram.source.files": {
+    "text": "Digambar dari berkas perubahan",
+    "source": "b9aeb90c3320fae7d59803ecb4976a47a982943d76d7bbc1b1cbad40f6de23b7"
+  },
+  "diagram.source.author": {
+    "text": "Diagram oleh pembuat perubahan",
+    "source": "07ad1a856c46a24621cc16c7825e1247407e09a434a81fd4f981cd824a418c44"
+  },
+  "diagram.source.authorMermaid": {
+    "text": "Diagram dari pembuat perubahan · Mermaid",
+    "source": "4772b0a21f378db87784fe70577690bb2729d955c187c9301b6a2abade6831a5"
+  },
+  "diagram.flow.before": {
+    "text": "Sebelum",
+    "source": "9bb725005055412c75a8e8d1fb5a0780595174ac8bbe5a24f768647bd4e4debe"
+  },
+  "diagram.flow.after": {
+    "text": "Sesudah",
+    "source": "7b68fe5510851da3d89100c569d3265e044d8656d95750c376b7a0972dea7330"
+  },
+  "diagram.changes.added": {
+    "text": "Ditambahkan",
+    "source": "6b02e0d363a4af1c95eef50364bb0202c8b250aa05a48a69e68fd7787b4b0632"
+  },
+  "diagram.changes.changed": {
+    "text": "Diubah",
+    "source": "2a6141e43be0c2125e3b5d9f74b4ff1261a0b320ff927c83d4d9b1b65585bad7"
+  },
+  "diagram.changes.removed": {
+    "text": "Dihapus",
+    "source": "4118fb4fed0ecec996876cae9dc97177e50fb5f8702ddd8a26eff63813cfd6aa"
+  },
+  "diagram.text.rename": {
+    "text": "Ganti nama: {{from}} menjadi {{to}}.",
+    "source": "4258510210718596f22b7c5931c9b8ce25ac2939690728c8b29318eb49956de7"
+  },
+  "diagram.text.renameIn": {
+    "text": "Ganti nama: {{from}} menjadi {{to}}, di {{places}}.",
+    "source": "3cbb6b75469a276fb992f6ee297a9d71ffc3cb7722ec88712e73933c7b4e32ea"
+  },
+  "diagram.text.flow": {
+    "text": "Sebelum: {{before}}. Sesudah: {{after}}.",
+    "source": "444b9511266d7312518be4bcf56d71688d1456ed79a3e48adb68bb8c80e095e1"
+  },
+  "diagram.text.then": {
+    "text": "{{first}}, lalu {{second}}",
+    "source": "0a3496a79f7930a2bd554fe214bb0e911e1f0e06e2114a6c88fe03097e0f130b"
+  },
+  "diagram.text.added": {
+    "text": "Ditambahkan: {{what}}.",
+    "source": "fd562df4618d4e982c8bd4ea21a9e2b925cebb669f77dd47720a9d2e40a07abd"
+  },
+  "diagram.text.addedDetail": {
+    "text": "Ditambahkan: {{what}} ({{detail}}).",
+    "source": "ff0371c7f50b00cefe734e3352c771cdb8756c5c69c55a98203ab2e8457b6d31"
+  },
+  "diagram.text.changed": {
+    "text": "Diubah: {{what}}.",
+    "source": "b2e25b6f6e55e3e5e484049cc9825db1c7b2b81a39bce4f4aaeb9db3ac4a724c"
+  },
+  "diagram.text.changedDetail": {
+    "text": "Diubah: {{what}} ({{detail}}).",
+    "source": "578b21f92404f2444beb06a081f38ac5c9a7ad9a5af7de79ef64da5717edf394"
+  },
+  "diagram.text.removed": {
+    "text": "Dihapus: {{what}}.",
+    "source": "534419997ec9e13954960632a5bd227486b792d1ab897d034a2410b88fc57271"
+  },
+  "diagram.text.removedDetail": {
+    "text": "Dihapus: {{what}} ({{detail}}).",
+    "source": "d3c0113b4190e1948ce2084f5d40dadf4255e58c9334edb8b4e55972bb2296e4"
+  },
+  "diagram.text.numbers": {
+    "text": "{{label}}: {{before}} sebelumnya, {{after}} sesudahnya.",
+    "source": "8ad1eed959763bf78309eab10e74831af16384ee9a55fbccf6b675a5a910bc0e"
+  },
+  "diagram.text.sentences": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "diagram.text.mermaid": {
+    "text": "Diagram yang dibuat dari teks penulisnya.",
+    "source": "36bebfc4ab0058808e99dc097642a0bd1cd264a04758f683aa4a912abca5e0dd"
+  },
+  "diagram.decision.projectName": {
+    "text": "Nama proyek",
+    "source": "25498193b898195dca035317a941c506276da563d690c4cccf94af50643dbb44"
+  },
+  "diagram.decision.secretRemoved": {
+    "text": "Pengaturan rahasia",
+    "source": "f315eda7e329bf1a3910958ada5eae71c7f46a2db0e89fea8fca048e71f30745"
+  },
+  "diagram.decision.secretChanged": {
+    "text": "Pengaturan rahasia, nilai tidak ditampilkan",
+    "source": "5404ad4940040f881963f8b9e2924488547bb3500e0343959bd50cda94673fdd"
+  },
+  "places.list.hub": {
+    "text": "Beranda",
+    "source": "d87c9ca31f373cc5ce5d1d8efc602ef809fefbb9cafd79961260d31ccfd49363"
+  },
+  "places.list.needsYou": {
+    "text": "Menunggumu",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "places.list.workshop": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "places.list.channels": {
+    "text": "Kanal",
+    "source": "4c8906cf76f5740ab8792aef9f0033fe21a92045e90b357816064e9f6860a03e"
+  },
+  "places.list.topics": {
+    "text": "Topik",
+    "source": "e22820fcf5cd90e3fdd99a7569e0ee2f30eb7ebadfb2fe4d159b30c166ff81b7"
+  },
+  "places.list.switchCommunity": {
+    "text": "Ganti komunitas",
+    "source": "15a6f073f8d46647db1e4d8bb8e5bd0b95c934d9654d69db87eb87971e8d32c7"
+  },
+  "places.list.name": {
+    "text": "Tempat di {{project}}",
+    "source": "1b8af652664f3d227d465e87c35d49ff01933ef443f8e2d52707311691d6a168"
+  },
+  "places.list.nameUnnamed": {
+    "text": "Tempat",
+    "source": "eb5cfb73677d98eb9b976131e0aa92d19838605ea67cc9e6a44c90d0aeefe594"
+  },
+  "places.list.filtered": {
+    "text": "(difilter)",
+    "source": "ff5bcbf42db8f900aa7678f0c3859d3f48f33f9279f6582e19952c885cea371b"
+  },
+  "places.list.countAloud": {
+    "text": "({{phrase}})",
+    "source": "11ab77a11f8ebabb39110b9b30cab59068c7e6f8a1ffac517cd2420897aa1d02"
+  },
+  "places.bar.hub": {
+    "text": "Beranda",
+    "source": "d87c9ca31f373cc5ce5d1d8efc602ef809fefbb9cafd79961260d31ccfd49363"
+  },
+  "places.bar.needsYou": {
+    "text": "Menunggumu",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "places.bar.workshop": {
+    "text": "Bengkel",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "places.bar.button": {
+    "text": "Tempat di {{project}}",
+    "source": "1b8af652664f3d227d465e87c35d49ff01933ef443f8e2d52707311691d6a168"
+  },
+  "places.bar.buttonUnnamed": {
+    "text": "Tempat",
+    "source": "eb5cfb73677d98eb9b976131e0aa92d19838605ea67cc9e6a44c90d0aeefe594"
+  },
+  "places.bar.waitingAloud": {
+    "text": "({{waiting}})",
+    "source": "64839ff555d3d3bc08f776c3911af96c1340349fc4ebbbb916bb84e718e37ee3"
+  },
+  "places.mergedCard.text": {
+    "text": "#{{channel}} digabungkan ke topik ini",
+    "source": "58dcaca3ae19035205ffbd184be9e5b00273390ce5333eb4c3001ae13f1e9689"
+  },
+  "places.mergedCard.read": {
+    "text": "Baca #{{channel}} ›",
+    "source": "20dff0835a9b29f82ef02421b80aebad1895741e73683f2460f15a98a9dbb3d8"
+  },
+  "places.topicHead.mergedInto": {
+    "text": "Digabungkan ke #{{channel}}. Hanya bisa dibaca.",
+    "source": "3f8c9666b889280e9caa5d3d69688f1ac7fd6a6dbf27bf8df0132042357df6f1"
+  },
+  "places.topicHead.mergedIntoLink": {
+    "text": "Digabungkan ke <0>#{{channel}}</0>. Hanya bisa dibaca.",
+    "source": "1defbd7d188b0d25a7d10a726cdae28d87e8c58ad275dd42444fc6aaed67410f"
+  },
+  "places.topicHead.mergedUnnamed": {
+    "text": "Digabungkan ke topik lain. Hanya bisa dibaca.",
+    "source": "c41412c3034e3fce2b01eb169ed3b615bb2f4674017cfe888c6976b73762ba48"
+  },
+  "places.topicHead.archived": {
+    "text": "Diarsipkan. Hanya bisa dibaca.",
+    "source": "9b4d62d9d7ad0fc5137bf97994bd70367bcd75e060e1a75cad73c420f5527dd2"
+  },
+  "places.topicHead.aboutThenRequests": {
+    "text": "{{about}} · <0>{{requests}}</0>",
+    "source": "cc34b733820c79c05b309749c7162ad40e839c0eb4229e2f1b94c1537881f45a"
+  },
+  "places.topicFigures.label": {
+    "text": "Angka topik ini",
+    "source": "1134f81d4472903fd773946264d42d629d6ec5a67630b43c3957b0de055805eb"
+  },
+  "places.topicFigures.whatItMeans": {
+    "text": "Arti {{label}}",
+    "source": "6120d1e246e4d58645f2df04ad709c60443c06b0ce488ec0fcceaa33c8d78fde"
+  },
+  "places.topicFigures.demo": {
+    "text": "Angka demo staging, bukan angka asli.",
+    "source": "1d1fe182728f39676977f9993c2daa34e7546df65a9ff3ffdd6777c0095f51be"
+  },
+  "topic.request.shots.hideComment": {
+    "text": "Sembunyikan komentar",
+    "source": "cf17a6f7f76f038087b215725839a34c23918822de930ac8bf389f298830df94"
+  },
+  "topic.request.shots.hideComments": {
+    "text": "Sembunyikan komentar",
+    "source": "7ff1ff02ca92af3940ae750ebbc29fb882388f104e04685d346587a477334580"
+  },
+  "topic.request.shots.showComment": {
+    "text": "Tampilkan komentar",
+    "source": "a27a70d3d933a9fbc747889779fc0c4a7ed74ca49d6afbae1aec19859d0c4b97"
+  },
+  "topic.request.shots.showComments": {
+    "text": "Tampilkan komentar",
+    "source": "c8488f35c0e194d6749b175f775fde3480c46a39f270bd7e91a79f9d5308485e"
+  },
+  "touches.kicker": {
+    "text": "Yang disentuh",
+    "source": "b2026e9525d4ce995874b61183136ec4522e6d5308d0e959709fef390bc88c4b"
+  },
+  "touches.files.none": {
+    "text": "tidak ada",
+    "source": "140bedbf9c3f6d56a9846d2ba7088798683f4da0c248231336e6a05679e4fdfe"
+  },
+  "touches.area.screens": {
+    "text": "Layar",
+    "source": "4727a1a2b79c0c214a2c2050e86b796f8728699c567519ae8015df1d48269c03"
+  },
+  "touches.area.server": {
+    "text": "Server",
+    "source": "aef7de28d52977f1b5cd0fecfdc151717610adf41e0aa33b4d9f7522a43337ef"
+  },
+  "touches.area.database": {
+    "text": "Basis data",
+    "source": "fa7fe67124e94375d97e50896e0c32f44b03bb7ed5e9fb026341b55da724126b"
+  },
+  "touches.area.tests": {
+    "text": "Pengujian",
+    "source": "e5c9d7030bada2fe792ad7e4a26ca44379a73f3fe16805ac1359e46759a1571a"
+  },
+  "touches.area.docs": {
+    "text": "Dokumen",
+    "source": "7af023c43013b9a53fbff7dd4b5821588bba3319308878229740489152c43f6d"
+  },
+  "touches.area.other": {
+    "text": "Lainnya",
+    "source": "f97e9da0e3b879f0a9df979ae260a5f7e1371edb127c1862d4f861981166cdc1"
+  },
+  "touches.area.withFiles": {
+    "text": "{{area}}, {{files}}",
+    "source": "2b48839c50fb667916c839fe03b5fad08e5671855fbb1b00c9b2942f97b6e1e3"
+  },
+  "touches.areas.pair": {
+    "text": "{{first}}; {{second}}",
+    "source": "8e8b6650169aa65bf72d54e2e04ba6a45f3d798c5b8e6219777badd30a834db0"
+  },
+  "touches.label": {
+    "text": "Yang disentuh. {{areas}}.",
+    "source": "97a29898bc727a6cfccc66db285caf3ef48901ec35080f2ab39cdfb2e73521fb"
+  },
+  "touches.labelNothingVisible": {
+    "text": "{{said}} Tidak ada yang berubah di layar.",
+    "source": "3eaedfa9fc113f05cf03ba4baab240921cfae040abbf8a288eb56ee771df5af4"
+  },
+  "touches.footNothingVisible": {
+    "text": "Tidak ada yang berubah di layar · digambar dari berkas perubahan",
+    "source": "3b95053012b1a6ffad1560ccc80ccd8db26108a400606f947a162fcb441df1f5"
+  },
+  "menu.topics.title": {
+    "text": "Topik",
+    "source": "e22820fcf5cd90e3fdd99a7569e0ee2f30eb7ebadfb2fe4d159b30c166ff81b7"
+  },
+  "menu.topics.sub": {
+    "text": "Saluran proyek, dan kategori tempat permintaan diajukan",
+    "source": "0a4e2d3f764ecfd6287916892fdccba065af98b80317f8cfb77d90f4b8ccde9d"
+  },
+  "discussion.topic.none": {
+    "text": "Proyek ini tidak punya saluran #{{handle}}.",
+    "source": "65870b99695aa96c87e213d97bb6e454c97a43926467bc5229f8ef80d3ce1cd8"
+  },
+  "discussion.topic.mergedInto": {
+    "text": "#{{handle}} sudah digabungkan ke #{{into}}. Riwayatnya tetap bisa dibaca di sini.",
+    "source": "6789661eec1421bb8a204f06aaaf7727a59b38e5495a7cad6b2d54da198caf92"
+  },
+  "discussion.topic.mergedIntoAnother": {
+    "text": "#{{handle}} sudah digabungkan ke topik lain. Riwayatnya tetap bisa dibaca di sini.",
+    "source": "4774a1788e523973b55ef73eaa1665aa94ba97d7ba104d7b1fc201e6a978d01c"
+  },
+  "discussion.topic.archived": {
+    "text": "#{{handle}} diarsipkan. Riwayatnya tetap bisa dibaca di sini.",
+    "source": "cc56cf14e9c9db296fdf3b10283ce759257c0f07260669817cb9a7810b7ad699"
+  },
+  "discussion.topic.joinToPost": {
+    "text": "Gabung ke komunitas ini untuk menulis di sini.",
+    "source": "792858fbd50610065f19f960f61c83a16b24987f6d2c3fd525ea387545856972"
+  },
+  "discussion.topic.placeholder": {
+    "text": "Kirim pesan ke #{{handle}}",
+    "source": "250cc12c1685c3b45b4ce6f14c3958b6bae68485d5c2893042ad7afb74f4d8aa"
+  },
+  "communityCard.line.youOrGroup.you.only": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan kamu setuju, atau satu-satunya anggota aktif setuju.",
+    "source": "4a8f30406fbb71653e679177e7f81cff95050f5d2202b078b8b732727f40ddd9"
+  },
+  "communityCard.lineShort.youOrGroup.you.only": {
+    "text": "Tayang jika pemeriksaan lolos dan kamu setuju, atau satu-satunya anggota aktif setuju.",
+    "source": "2a3104987bd95ffab6fae7d4c11ff1035f13a177c10e1a086fb351dce98b5e43"
+  },
+  "communityCard.line.youOrGroup.creator.only": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan <0></0><1>{{creator}}</1> setuju, atau satu-satunya anggota aktif setuju.",
+    "source": "d77ac1f8e58bd0e86ba5b66cbbb81ecfc5e1c718c6f6cecfd2b892c670a699c2"
+  },
+  "communityCard.lineShort.youOrGroup.creator.only": {
+    "text": "Tayang jika pemeriksaan lolos dan <0></0><1>{{creator}}</1> setuju, atau satu-satunya anggota aktif setuju.",
+    "source": "789bbbed5e0aed560ac8758f567e18629eb42c0d6754c66f6e1df982585001d0"
+  },
+  "communityCard.line.youOrGroup.you.both": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan kamu setuju, atau kedua anggota aktif setuju.",
+    "source": "5fb8cc380f381f7c3cf5bbb0712604fcdbd3cea6bd4c5a98c87f0d4da007cee0"
+  },
+  "communityCard.lineShort.youOrGroup.you.both": {
+    "text": "Tayang jika pemeriksaan lolos dan kamu setuju, atau kedua anggota aktif setuju.",
+    "source": "d80a02f1ca55e9f3307d9074a2f85d50f934ef192fff9e46ddc932dd7689aaa8"
+  },
+  "communityCard.line.youOrGroup.creator.both": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan <0></0><1>{{creator}}</1> setuju, atau kedua anggota aktif setuju.",
+    "source": "ba4d435f479910391aaa00ffffb9154a2b28450f0d2600ed2367f095dd8799b4"
+  },
+  "communityCard.lineShort.youOrGroup.creator.both": {
+    "text": "Tayang jika pemeriksaan lolos dan <0></0><1>{{creator}}</1> setuju, atau kedua anggota aktif setuju.",
+    "source": "7c872f4919ebf5b91c7422efbb0991dd94a47118af79fb8f2c2c0002d37e68a3"
+  },
+  "communityCard.line.twoYeses": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan dua orang setuju: pembuatnya, dan satu orang lagi.",
+    "source": "ca5e388ce016284abb199f31a20f7f18067e51641071e12be312a7989e17bc68"
+  },
+  "communityCard.lineShort.twoYeses": {
+    "text": "Tayang jika pemeriksaan lolos dan dua orang setuju.",
+    "source": "dd1fa337e3dce31fc82eccf9a8b10920c594a616d24cadfcaacc2df67e359f57"
+  },
+  "communityCard.line.openFloor": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan anggota mana pun setuju, bahkan untuk perubahannya sendiri.",
+    "source": "844d32715147a3a1aa60560e3d3fa676b0daaa89e291b1afe1cd6d45504c3798"
+  },
+  "communityCard.lineShort.openFloor": {
+    "text": "Tayang jika pemeriksaan lolos dan anggota mana pun setuju.",
+    "source": "cd012f31affca3c90a941dd06af578952b111a9bfdf297bd46d75bc70712f44a"
+  },
+  "communityCard.line.own": {
+    "text": "Perubahan tayang jika pemeriksaannya lolos dan salah satu aturannya terpenuhi.",
+    "source": "f3fded2d327cff9185d303319c801bbfef56cbe3f611923ee11bc89d76b6c232"
+  },
+  "communityCard.lineShort.own": {
+    "text": "Tayang jika pemeriksaan lolos dan salah satu aturannya terpenuhi.",
+    "source": "85ed9a8e53fe999586b97554ce1fd0adc489d4af537a7a5acbb864d31d0367af"
+  },
+  "menu.whoDecides.title": {
+    "text": "Siapa yang bisa melihat & mengubah",
+    "source": "c9bd22ce67ecde912f31f5e9f47e293a554bd7dbd60c031f38754e4635ccaadd"
+  },
+  "menu.whoDecides.sub": {
+    "text": "Privat atau publik, dan cara perubahan disetujui",
+    "source": "da1a2b235b73efec36469bd6bd9328c58af5975c14e99b859ce314eac6b4c4eb"
+  },
+  "allItems.lane.more_other": {
+    "text": "+{{count}} lagi di jalur ini",
+    "source": "999421c6c1798166a53e5f4f3ca9ad99df3c34cf94c0f188a943cb8acb398599"
+  },
+  "allItems.theme.chip.fresh_other": {
+    "text": "<0>+{{count}}</0> baru",
+    "source": "8d71f0714ef93831151fe0a5ace67f81cf0fd5dd9214ff75c648b6276519b28f"
+  },
+  "allItems.theme.chip.review_other": {
+    "text": "<0>{{count}}</0> ditinjau",
+    "source": "a7a1b7393a118768d7270435273a4f06a68f361efd0686a024576df977945d8c"
+  },
+  "allItems.theme.chip.underway_other": {
+    "text": "<0>{{count}}</0> dikerjakan",
+    "source": "4d8e85353c74c70d5a9b0beddda61191c4c5f8ba9717e640a6048b131a8cbba1"
+  },
+  "allItems.theme.chip.open_other": {
+    "text": "<0>{{count}}</0> terbuka",
+    "source": "a2f0953f75a3d1e87c503b2cb3d1a4edbca4b10b87de6edd22507f5a2854e428"
+  },
+  "allItems.theme.chip.shipped_other": {
+    "text": "<0>{{count}}</0> tayang minggu ini",
+    "source": "e98f6fdd8367bdfced1f9eb87697cfc94ab0e6845482c725538c87208643b70d"
+  },
+  "allItems.theme.stat.people_other": {
+    "text": "<0>{{count}}</0>orang",
+    "source": "9f0b7fe55a5baf9c0b206f444255c8804baf45c80b11bc978072609ac9594ba9"
+  },
+  "allItems.theme.stat.items_other": {
+    "text": "<0>{{count}}</0>item",
+    "source": "ecb70d9b67f38a0d51f55953bfb67af331922b2d09a7b90969e047aad6bf9690"
+  },
+  "allItems.theme.foot.involved_other": {
+    "text": "{{count}} terlibat",
+    "source": "48bb8c17b0735bd41dd2a8e93436e3eeb422e25aa0970ed4517a8552ac7f7d67"
+  },
+  "allItems.theme.foot.underway_other": {
+    "text": "{{count}} dikerjakan",
+    "source": "afd7e6007a515c59a81e1fe6686c8ca03920a7dd7ca8b227a9b23a9e29180910"
+  },
+  "allItems.theme.foot.review_other": {
+    "text": "{{count}} ditinjau",
+    "source": "4ce5173297cf4a34791bca8c60143503b7212f0841ffc392d1380b8a45610ce8"
+  },
+  "allItems.theme.foot.shippedIdle_other": {
+    "text": "{{count}} tayang minggu ini, tidak ada yang dikerjakan sekarang",
+    "source": "ff8f8c9a289e896d8d06462f4647070bfe06fcb059d558f27e42bceb58b80d4a"
+  },
+  "allItems.theme.foot.quiet_other": {
+    "text": "sepi selama {{count}} hari",
+    "source": "379b17e5b5d91e351dce190c8c557b7a1bdb6f6088c2a4c783342793feba3ba7"
+  },
+  "allItems.theme.hiddenThenOpen_other": {
+    "text": "<0>+{{count}} tidak ditampilkan · </0><1>Buka di Papan ›</1>",
+    "source": "05d813044a533328ea2f06637c0a672b2da16e798a2365f1c64db20520293640"
+  },
+  "allItems.categories.pending_other": {
+    "text": "{{count}} kartu baru sedang ditempatkan.",
+    "source": "4222cc1724d5381ca788c4668d2e49d42edfc5103e9d3e34d7d405ecb5a92d09"
+  },
+  "allItems.categories.unplaced_other": {
+    "text": "{{count}} kartu tidak cocok dengan kategori mana pun dan menunggu draf berikutnya.",
+    "source": "4c659c798c1d3c945c84a65b1bd5a518de2f0ad3f00b005b5890ed19d12db34c"
+  },
+  "allItems.grouping.categories_other": {
+    "text": "{{count}} kategori",
+    "source": "22da031398ad70a76d843d476d4fe05af46d9874d7cb1edf7384ddf0daeaf711"
+  },
+  "workshop.dash.open_other": {
+    "text": "item terbuka",
+    "source": "fa4e6c390ac92d477531ab921b089d22a60537791badb38b5cf84b529143e344"
+  },
+  "workshop.dash.votes_other": {
+    "text": "menunggu suara",
+    "source": "a694af96b5d1b1076ba57d033e61f77ed23bd74f91cebb42ec049aaac3bd9adf"
+  },
+  "workshop.dash.onYou_other": {
+    "text": "{{count}} menunggumu",
+    "source": "7ea3d44063c9bc803d723fff968ef3295ee4089b1a30c7a25e93a11d2a37f785"
+  },
+  "workshop.dash.fromLastWeek_other": {
+    "text": "dari {{count}}",
+    "source": "60fb24962d2f2995ed545ed957daec44ea78a3bf3fcba840586c72c4f09b93f9"
+  },
+  "workshop.pace.atLeast_other": {
+    "text": "Setidaknya {{count}} perubahan masuk minggu ini.",
+    "source": "915dfccdc6a3261163816225509d91673dde71f10cdcfec5efcaf8e8308d29ad"
+  },
+  "workshop.pace.firstInFortnight_other": {
+    "text": "{{count}} perubahan masuk minggu ini, yang pertama dalam dua minggu.",
+    "source": "f97928cb13cce649397b90ed6307c431677c666ae693781ca46144f43665b682"
+  },
+  "workshop.pace.up_other": {
+    "text": "{{count}} masuk minggu ini, naik dari {{previous}} minggu sebelumnya.",
+    "source": "9093bf1ce6b33abaf625b2cee10a30a64487b7aafa935bfb7c5334b87d0a1b72"
+  },
+  "workshop.pace.down_other": {
+    "text": "{{count}} masuk minggu ini, turun dari {{previous}} minggu sebelumnya.",
+    "source": "c90895e38b483a665a4c5e5ad25a0bd3feaba4a9163269820ac354bbf67ba3fb"
+  },
+  "workshop.pace.same_other": {
+    "text": "{{count}} masuk minggu ini, sama seperti minggu sebelumnya.",
+    "source": "f412765e35cf8375ae3357e5766b8edcd7d8eae85db56fa8c22ba7887633243c"
+  },
+  "workshop.mine.open_other": {
+    "text": "{{count}} terbuka",
+    "source": "a69dade13b868a0a8ef1e722291294ac7ba2a4ff9007f7af1b653027c562b170"
+  },
+  "workshop.mine.showMore_other": {
+    "text": "Tampilkan {{count}} lagi",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "workshop.fresh.count_other": {
+    "text": "{{count}} sejak kunjungan terakhirmu",
+    "source": "cad790403f19f3184b1c96475297ed9be6457f68c9c52c77d284a11ce37c07d8"
+  },
+  "weeks.row.fresh_other": {
+    "text": "{{count}} baru",
+    "source": "7e563ede9d0428724e9b5aa5f9c182d7f16a7a59d869c01d06244be2027fa166"
+  },
+  "weeks.row.live_other": {
+    "text": "<0>{{count}}</0> tayang",
+    "source": "c53cc96d738905aa7acd2b917ca79ee540a9d5187345f0d4624f746bb8a1775e"
+  },
+  "weeks.row.liveAtLeast_other": {
+    "text": "<0>{{count}}+</0> tayang",
+    "source": "9f7784e796593274d206c7875001683bddad3442461fb053a35b0461262bb513"
+  },
+  "weekPage.meta.nowLive_other": {
+    "text": "{{start}} → sekarang · <0>{{count}}</0> tayang",
+    "source": "8ab777cbb4bad718d3ad3ea60f8e2183011c18891327e17236abce79eefc678a"
+  },
+  "weekPage.meta.nowLiveAtLeast_other": {
+    "text": "{{start}} → sekarang · <0>{{count}}+</0> tayang",
+    "source": "c8e3b274172a4bdf2ca9b8c2578278e7e46640e649ad9eeb3db546c17b7b1875"
+  },
+  "weekPage.meta.rangeLive_other": {
+    "text": "{{start}} – {{end}} · <0>{{count}}</0> tayang",
+    "source": "e98b4d1fd13c06659b549aaaf175ca8358a862be58406b8178fe699875412c9b"
+  },
+  "weekPage.meta.rangeLiveAtLeast_other": {
+    "text": "{{start}} – {{end}} · <0>{{count}}+</0> tayang",
+    "source": "208b51363aa1388580d1deaf4d2027a27e423fe9030b1a36a397c3930ca8ab33"
+  },
+  "weekPage.group.showAll_other": {
+    "text": "Tampilkan semua {{count}}",
+    "source": "4d9b71269748d690965d9f80af4168c540965ede4f6f6226e2ae8408f551edb9"
+  },
+  "workRow.for_other": {
+    "text": "untuk {{requests}}",
+    "source": "c75fa21c260425b4e5a83870fd053a02e88510ddd5638c2b726485f59dab258c"
+  },
+  "workRow.closed_other": {
+    "text": "menutup {{requests}}",
+    "source": "2f489f37cdf38738aa222003ce70a9a70cfdd9533470c408372ca1320f948bf4"
+  },
+  "workRow.replies_other": {
+    "text": "{{count}} komentar",
+    "source": "3313c3ed57add98d84a952640940903b6720d20da0cb0c134cf697c1eba32bf7"
+  },
+  "needsYou.fact.approvals_other": {
+    "text": "{{yes}} dari {{count}} persetujuan",
+    "source": "92c6d9cd8a5b818e8161934e37d557430039e909266ccc49fef93c64a4ef522b"
+  },
+  "needsYou.fact.yes_other": {
+    "text": "{{count}} setuju",
+    "source": "007d6ed7346df239517087df6082699bf7117941f982a94cc9d548b143855926"
+  },
+  "needsYou.fact.no_other": {
+    "text": "{{count}} tidak",
+    "source": "37072901ced8ddd98335f60e27b81ae83a72d84fdd7600b3b67677e226481c02"
+  },
+  "needsYou.voteSub.ofNeeded_other": {
+    "text": "Sejauh ini {{count}} dari {{needed}} sudah setuju.",
+    "source": "64e736f70ae3bf8b3ad4bee625c0a0f96dde5a627c78337935ee553b6f1496b6"
+  },
+  "needsYou.voteSub.ofNeededState_other": {
+    "text": "Sejauh ini {{count}} dari {{needed}} sudah setuju. {{state}}.",
+    "source": "a3e2adfb9d089b3f85eaafafd8ceded2674dc9392ed4146f270b53f08ad31ee1"
+  },
+  "needsYou.end.reviewedAll_other": {
+    "text": "Kamu sudah meninjau semua {{count}} perubahan yang menunggumu.",
+    "source": "7cc7965e9be9c6b50c73592f3e705571f8b5fa70171e0fb18f21f82a4e1324d6"
+  },
+  "needsYou.end.reviewedSome_other": {
+    "text": "Kamu sudah meninjau {{done}} dari {{count}} perubahan yang menunggumu.",
+    "source": "9b75b1fffae07a364f4b14de7d272971b76101bbe8ea15d980d7404b9c59544e"
+  },
+  "needsYou.end.skipped_other": {
+    "text": "Kamu melewati {{count}}. Tetap ada di atas kalau kamu berubah pikiran.",
+    "source": "9f73c5f1d7745a2b834b5e2a493b15943f3a29fa79a70ea4b1e981962e81be9d"
+  },
+  "needsYou.end.status.waiting_other": {
+    "text": "Menunggu {{count}} lagi",
+    "source": "2d1a345d037f21d851a0d870dbd6f94747462c403f3ce5b6835ced013a3d9253"
+  },
+  "needsYou.rail.commentsCount_other": {
+    "text": "{{count}} komentar",
+    "source": "3313c3ed57add98d84a952640940903b6720d20da0cb0c134cf697c1eba32bf7"
+  },
+  "needsYou.talk.commentsCount_other": {
+    "text": "Komentar <0>{{count}}</0>",
+    "source": "8d30f2670e0956a2dab560442fc14a48e191c020fb31b3460a8d8702abe879c5"
+  },
+  "hub.channel.unread_other": {
+    "text": "{{shown}} baru",
+    "source": "3ef1cb80f2d3b411e51333ccd55f63f38996d37d67cd894ea1974c39925c3bdb"
+  },
+  "hub.needs.toVote_other": {
+    "text": "{{count}} untuk dipilih",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "hub.needs.skipped_other": {
+    "text": "{{count}} suara yang kamu lewati masih terbuka",
+    "source": "6b90914c51fad7caabf6e5f53410fee1b939c70a983c3a0af53aec61143e504c"
+  },
+  "hub.needs.noneButRequests_other": {
+    "text": "Tidak ada lagi yang perlu diberi suara · <0>{{count}} permintaan belum ada yang mengerjakan</0>",
+    "source": "df6f979ca3cc2c4cdc877199ca1649143512e07a1abf0bf1ec5ce332a4f3bdf2"
+  },
+  "hub.needs.requestsAlone_other": {
+    "text": "<0>{{count}} permintaan belum ada yang mengerjakan</0>",
+    "source": "6d08c257a9173dd491d6c9076ebcc9228e239c34c652da3a7823652c5eb3aef5"
+  },
+  "hub.people.active_other": {
+    "text": "{{count}} aktif minggu ini",
+    "source": "8c14f09c2453bc9678d9834c7f9df953dff57047ecb2f0743a72464126b0becf"
+  },
+  "hub.people.namesAndMore_other": {
+    "text": "{{names}} dan {{count}} lainnya",
+    "source": "62c152bb12b517f5da08c0a0106f5c6a348fd6c4a47481fde8fed3188c443086"
+  },
+  "hub.people.moreFaces_other": {
+    "text": "+{{count}}",
+    "source": "dcccc8a38439354a5444ec414d6a796680d5b97cce0ef1abf9a642cc1ecdfa59"
+  },
+  "hub.forYou.needs.firstAndMore_other": {
+    "text": "{{title}}, dan {{count}} lainnya",
+    "source": "26e7a637ed98107dd924c35247c596d67bab87591928d38931867d7fe0265dae"
+  },
+  "hub.forYou.work.inProgress_other": {
+    "text": "{{count}} sedang berjalan",
+    "source": "e927bf4644731c56fb38c510a706ae357184d964f0d23d12f98f85c5f0554643"
+  },
+  "communityCard.rule.fixed_other": {
+    "text": "Perubahan tayang setelah disetujui {{count}} anggota.",
+    "source": "30df4712aaff8c1b45e6ef9eca4a6affab1d0bc25dc661a5dbd02d1b32a55e00"
+  },
+  "communityCard.rule.approvers.some_other": {
+    "text": "Perubahan tayang saat {{count}} dari {{total}} penyetuju berkata setuju.",
+    "source": "208e521c25806af85aceccf65785874f42a3bd4b9eb469e6a0735a6c26250341"
+  },
+  "communityCard.rule.approvers.someQuiet_other": {
+    "text": "Perubahan tayang saat {{count}} dari {{total}} penyetuju berkata setuju, atau setelah menunggu jika satu berkata setuju dan tidak ada yang menolak.",
+    "source": "97a26dd896525164eb338fb3698184e446d5ebc813e392a0a961f31e4d4b3023"
+  },
+  "communityCard.rule.approvers.short_other": {
+    "text": "Perubahan tayang saat {{required}} penyetuju (jumlahnya {{count}}) berkata setuju.",
+    "source": "06d9c6edd3b91f0f0caf7c090eb56e3edddd6f9b5ed891319c6be2c098178e4a"
+  },
+  "communityCard.rule.approvers.shortQuiet_other": {
+    "text": "Perubahan tayang saat {{required}} penyetuju (jumlahnya {{count}}) berkata setuju, atau setelah menunggu jika satu berkata setuju dan tidak ada yang menolak.",
+    "source": "c9c591320b6d41b71f2d077db8c40969ee4b098a5c403afed0da8e750dbd3e80"
+  },
+  "communityCard.rule.approvers.all_other": {
+    "text": "Perubahan tayang saat semua {{count}} penyetuju berkata setuju.",
+    "source": "6fba4442b9450bbad7533b7fba2754af08752bea6dd5a50506daf41eff41e38d"
+  },
+  "communityCard.rule.approvers.allQuiet_other": {
+    "text": "Perubahan tayang saat semua {{count}} penyetuju berkata setuju, atau setelah menunggu jika satu berkata setuju dan tidak ada yang menolak.",
+    "source": "6002acf10e8d08bc56c9993582d7a6eb8b6decc30b581c7653240333e4238267"
+  },
+  "communityCard.rule.members.some_other": {
+    "text": "Perubahan tayang saat {{count}} dari {{total}} anggota aktif menyetujuinya.",
+    "source": "ba30783b103d4d3d6fb4445c03489b4b07b0f9cca8402366d3f85ce9673e8e33"
+  },
+  "communityCard.rule.members.someQuiet_other": {
+    "text": "Perubahan tayang saat {{count}} dari {{total}} anggota aktif menyetujuinya, atau setelah menunggu jika satu menyetujui dan tidak ada yang keberatan.",
+    "source": "c6fd93faac277712a2a3235182d9b5815ebdfa7772b094ad6576f4e34f4c8a12"
+  },
+  "communityCard.rule.members.short_other": {
+    "text": "Perubahan tayang saat {{required}} anggota aktif (jumlahnya {{count}}) menyetujuinya.",
+    "source": "dca81e0381acb0cb5ae3eff335fdec989fceba3f6327f95640b3a3cd8a8e5a1d"
+  },
+  "communityCard.rule.members.shortQuiet_other": {
+    "text": "Perubahan tayang saat {{required}} anggota aktif (jumlahnya {{count}}) menyetujuinya, atau setelah menunggu jika satu menyetujui dan tidak ada yang keberatan.",
+    "source": "3a30daf1e53394db976bf1ef5ceb05649200f632af6237a28c855e386d53417d"
+  },
+  "communityCard.rule.members.all_other": {
+    "text": "Perubahan tayang saat semua {{count}} anggota aktif menyetujuinya.",
+    "source": "247da650c4e0db7b815733936f239a40d97baec84d1bad60857abe9175cbaf84"
+  },
+  "communityCard.rule.members.allQuiet_other": {
+    "text": "Perubahan tayang saat semua {{count}} anggota aktif menyetujuinya, atau setelah menunggu jika satu menyetujui dan tidak ada yang keberatan.",
+    "source": "d44ab4a7e605a65a18eb6580816c2d8fe115e1c5f9cd15617e1dd9aaabb0a0e6"
+  },
+  "communityCard.step.fixed_other": {
+    "text": "{{count}} anggota menyetujui",
+    "source": "fae140edc3c33f961f8ff97798112044e02a8e062ff0e13a53e71b14d84e4d3c"
+  },
+  "communityCard.step.approvers.some_other": {
+    "text": "{{count}} dari {{total}} penyetuju berkata setuju",
+    "source": "11dcaeab7f94033c619fad0018d1d6884f5cfcde25e6fcf67bb6409e0fb80db8"
+  },
+  "communityCard.step.approvers.all_other": {
+    "text": "Semua {{count}} penyetuju berkata setuju",
+    "source": "a6550eac5a2b9d7bc3afd2e6cbcc37b6ece84547286be27347d2cbdb914e7f41"
+  },
+  "communityCard.step.approvers.short_other": {
+    "text": "{{required}} penyetuju berkata setuju (jumlahnya {{count}})",
+    "source": "44222eaf4bc1c5038d2a4b4040a235660562af11fa3022923e59ba228990cf3a"
+  },
+  "communityCard.step.members.some_other": {
+    "text": "{{count}} dari {{total}} anggota aktif berkata setuju",
+    "source": "c102d8075ee7fcbbfa8822e6d1efa55b014b1de4257042621b14aa5726637360"
+  },
+  "communityCard.step.members.short_other": {
+    "text": "{{required}} anggota aktif (jumlahnya {{count}}) berkata setuju",
+    "source": "f1c660bac93c856f6e2ec92ca47f6abe357ea1e8089a036bc9fdd00ebd8f3d4d"
+  },
+  "communityCard.step.members.all_other": {
+    "text": "Semua {{count}} anggota aktif berkata setuju",
+    "source": "3fb6cd416b40baf5a1a4ff952f11d7df75e85ad20bedc0489b5b17dc58088096"
+  },
+  "communityCard.step.names.more_other": {
+    "text": "{{first}}, {{second}}, {{third}} +{{count}}",
+    "source": "7e7158431bb6fdf248a41a6b23ab48a39f86e132400010d4dd14a78b75b161ad"
+  },
+  "communityCard.audience.withMembers_other": {
+    "text": "{{audience}} · {{count}} anggota",
+    "source": "ab96727ee5ef2a4ecccc6d5c548ae1a7d1cb3e8ca15d8130df0df464c51a82ff"
+  },
+  "communityCard.week.people_other": {
+    "text": "{{count}} orang",
+    "source": "387110bc3f09d337d5e7ecd1895885a978bcca90980fb55463e3950eb4e1affd"
+  },
+  "communityCard.people.members_other": {
+    "text": "{{count}} anggota",
+    "source": "9f5aa2fb70d1df7c6149ca2f482cafa0d8b944d6c3367a3e1c7bbef6a9d544af"
+  },
+  "communityCard.people.audienceMembers_other": {
+    "text": "<0>{{audience}}</0> · {{count}} anggota",
+    "source": "b602089121976183bfa4d1e48f59f0886df599db05f63160e67214fe9f38b6fa"
+  },
+  "topic.checks.showPassing_other": {
+    "text": "Tampilkan {{count}} pemeriksaan yang lolos",
+    "source": "fcab68d18e73ba79ebd3ed101e36e7c28f6ff2d23d591decda73cb7228507125"
+  },
+  "topic.ledger.passing_other": {
+    "text": "{{count}} lolos",
+    "source": "cac73682a5f05e07d5fe34fa599a4e2a20df3b2a76e9ab14442ec76d16503d01"
+  },
+  "topic.change.stream.replies_other": {
+    "text": "{{count}} balasan",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "topic.requests.more_other": {
+    "text": "+{{count}} lagi",
+    "source": "48380badf7a45c74d3fac6b89d19d777585cb9052d135d1ec482b932bc99e98a"
+  },
+  "topic.requests.selectedCount_other": {
+    "text": "Dipilih ({{count}})",
+    "source": "e0416959b1bdd65227f8316665642534d788bc7ddd43950287ce9bf2cab8dcf0"
+  },
+  "topic.requests.remaining_other": {
+    "text": "{{count}} tersisa",
+    "source": "5ca269e1d54664842d0f6d68d73d51d3ab0add37a26defc997ef056a7910f395"
+  },
+  "topic.requests.tooMany_other": {
+    "text": "Satu perubahan bisa ditautkan ke maksimal {{count}} permintaan.",
+    "source": "d621fdde0bcc23118e85566d6fc6eb750dcb8d8854328aba3ea43273f2404a56"
+  },
+  "topic.request.stream.replies_other": {
+    "text": "{{count}} balasan",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "topic.run.checks.passed_other": {
+    "text": "{{passed}} lolos",
+    "source": "fd337846d94efd7a9780245a0db071be678e2b0db41a6908828e417534cada4c"
+  },
+  "topic.run.checks.passedFailed_other": {
+    "text": "{{passed}} lolos · {{failed}} gagal",
+    "source": "c4ab1f12c9ccf0ec7856769c1b34a30126e485989aa163acc6355b16a8be0588"
+  },
+  "topic.run.checks.progressFailed_other": {
+    "text": "{{ran}} / {{expected}} · {{failed}} gagal",
+    "source": "ee16bc491ac440539154ca65a83cc4cb51e0fad1d58e092717ccc77acc76fd34"
+  },
+  "topic.run.unit.passed_other": {
+    "text": "{{passed}} lolos",
+    "source": "fd337846d94efd7a9780245a0db071be678e2b0db41a6908828e417534cada4c"
+  },
+  "topic.run.unit.passedFailed_other": {
+    "text": "{{passed}} lolos · {{failed}} gagal",
+    "source": "c4ab1f12c9ccf0ec7856769c1b34a30126e485989aa163acc6355b16a8be0588"
+  },
+  "topic.run.unit.progressFailed_other": {
+    "text": "{{ran}} / {{expected}} · {{failed}} gagal",
+    "source": "ee16bc491ac440539154ca65a83cc4cb51e0fad1d58e092717ccc77acc76fd34"
+  },
+  "card.pill.moreReasons_other": {
+    "text": "dan {{count}} alasan lagi, buka untuk detail",
+    "source": "1f988c5961ec4daa908f5f7c422a6578069614c6d6ac0bc81f9ef948a11ce4d5"
+  },
+  "card.pill.reasonAndMore_other": {
+    "text": "{{reason}} · dan {{count}} alasan lagi, buka untuk detail",
+    "source": "f499b8008102faa04f19795bee7521d9d1d2d951d446bd4bf2f36faaa42a756b"
+  },
+  "card.pill.advisoryVotes_other": {
+    "text": "{{count}} suara penasihat dari non-penyetuju, jadi tidak dihitung untuk menggabungkan perubahan",
+    "source": "1fb03c8c625a8fefcc63c49145a69182afff4769bcecd430b27e67b81e819c18"
+  },
+  "kanban.footer.showAll_other": {
+    "text": "Tampilkan semua {{number}}",
+    "source": "ed16f316c364be1b1fb99d5948cfcf0dad1af44aa9f8949fe55a11c95b90ac7e"
+  },
+  "kanban.footer.loadMoreCount_other": {
+    "text": "Tampilkan {{number}} lagi",
+    "source": "492e7d93913bf41bca55069ac47067920b92e7b94b2025a78e8ecfa8f5800fc2"
+  },
+  "kanban.footer.moreCompleted_other": {
+    "text": "+{{count}} selesai lagi",
+    "source": "7cb013936d68426d37d3b7b10f8b56a88b52aeb8948a3aba6a810034764b8e76"
+  },
+  "kanban.archived.show_other": {
+    "text": "Tampilkan yang diarsipkan ({{count}})",
+    "source": "883eafed4c316c732e84c64183bb0df37df04bc0cf3678c6c1ee0c9f2a3b9f5d"
+  },
+  "feedThread.earlier_other": {
+    "text": "{{count}} balasan sebelumnya",
+    "source": "7009c749253d5171f05f063e0d0ea220e5fd8fc1131a353cd0da719f27eda86d"
+  },
+  "filters.button.active_other": {
+    "text": "Filter ({{count}})",
+    "source": "78f210bb359032d9b61b3eb01c7f8e21758906fa38c81249f80296ce95cce474"
+  },
+  "suggestBack.changes.more_other": {
+    "text": "dan {{count}} lagi",
+    "source": "25a067fd69ff7625b9eccc01a36d750435cc76099ee291969ae0f01c569b0ab3"
+  },
+  "suggestBack.changes.files_other": {
+    "text": "{{count}} berkas berubah",
+    "source": "cf3e57f6b9ce865d1aa26052eb0e5549c15b48ceaf2d304dc1c4c1f796b4b5ad"
+  },
+  "modals.generate.picker.truncated_other": {
+    "text": "Menampilkan {{shown}} pertama dari {{count}} hasil. Terus ketik untuk mempersempit daftar.",
+    "source": "b7166eb2fec1929d112d3d796999864af570d48a14a8b9c65467b34660e86878"
+  },
+  "communityCard.line.approvers.some_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan {{count}} dari {{total}} penyetuju bilang Ya.",
+    "source": "e3958d2c696ba847d747b24c53ac5c8d0104d8ad10504b5b205fb765db09fa9f"
+  },
+  "communityCard.line.approvers.all_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan semua {{count}} penyetuju bilang Ya.",
+    "source": "da6550d45e13a21dd8aca86b62172a92d74bc0781c8e2af7809aacdbac5f32a6"
+  },
+  "communityCard.line.approvers.short_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan {{required}} penyetuju (hanya ada {{count}}) bilang Ya.",
+    "source": "099d7d217a2c1a7e0b5f0a966cf5f8713538cebec3a8b7c097f791a5646236ff"
+  },
+  "communityCard.line.fixed_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan disetujui {{count}} anggota.",
+    "source": "ad0696270d050febfc536dfdd4bcae9d17a106e74e7f109f44768bd665f0bbf0"
+  },
+  "communityCard.line.members.some_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan disetujui {{count}} dari {{total}} anggota aktif.",
+    "source": "c7a12f0ee434ab802a7e1146a1432c7029e8808e32b61f6d9b6eebcd6f455941"
+  },
+  "communityCard.line.members.short_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan disetujui {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "3069f39593f0fd924de92bb325ea50c2d3d9305ee696e8972a9ef2c86b1c11d0"
+  },
+  "communityCard.line.members.all_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan disetujui semua {{count}} anggota aktif.",
+    "source": "30be90006fac8d73d7a4c42971a5e2bcebbb8f542ac36c6f40b8ee32a0c9b6a6"
+  },
+  "communityCard.lineShort.approvers.some_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan {{count}} dari {{total}} penyetuju bilang Ya.",
+    "source": "fb99f5f6e07185700f28b52f89207fd2b65684b88754da61c737e703131704be"
+  },
+  "communityCard.lineShort.approvers.all_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan semua {{count}} penyetuju bilang Ya.",
+    "source": "8a0d7b3af2947eeb27a2369c00a675eed0b4b0c54b8af386ea5da45be3478ecd"
+  },
+  "communityCard.lineShort.approvers.short_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan {{required}} penyetuju (hanya ada {{count}}) bilang Ya.",
+    "source": "d8ed0d50fdad8e6e2e83f369247630adfede0d01319242f9793a93e813db12fb"
+  },
+  "communityCard.lineShort.fixed_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan disetujui {{count}} anggota.",
+    "source": "90a5fb9fb80839001d41adcde2e95be15a88580de7cefeeb5996aec236953c87"
+  },
+  "communityCard.lineShort.members.some_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan disetujui {{count}} dari {{total}} anggota aktif.",
+    "source": "77499ea0579deed65938a781a53dbcde249c2cefa13d8986babdf19ea3c7daad"
+  },
+  "communityCard.lineShort.members.short_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan disetujui {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "9f4fe55e9f44d139d99f688cd1614c299039e4f8d9e493d636bb8e3a1aa73300"
+  },
+  "communityCard.lineShort.members.all_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan disetujui semua {{count}} anggota aktif.",
+    "source": "ae1546e0c5d14a01af6ee1eb5753ffd2e515fa729b8856315b67c2587b8e12ea"
+  },
+  "places.count.toVote_other": {
+    "text": "{{count}} menunggu suara",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "places.count.unread_other": {
+    "text": "{{count}} belum dibaca",
+    "source": "7cf5ab0de921e729efc5c0fdc762ee1339022e1923163a6e3c6966e7fec7e72c"
+  },
+  "places.bar.toVote_other": {
+    "text": "{{count}} menunggu suara",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "places.bar.unread_other": {
+    "text": "{{count}} belum dibaca",
+    "source": "7cf5ab0de921e729efc5c0fdc762ee1339022e1923163a6e3c6966e7fec7e72c"
+  },
+  "places.topicHead.requests_other": {
+    "text": "{{count}} permintaan ›",
+    "source": "e27ec903d1687d878de3636303043964c95a9680261025919384d84dd031340f"
+  },
+  "places.topicFigures.window_other": {
+    "text": "{{count}} hari terakhir",
+    "source": "11f9c0140054341bf0daaf3eedd70a66ae3a597a09077b38054877a48ed4d4c2"
+  },
+  "touches.files.count_other": {
+    "text": "{{count}} berkas",
+    "source": "95964e2dcccd3ddd080eed1bb4b23699fef06269ff8ef777264692d5fbe78c80"
+  },
+  "communityCard.line.youOrGroup.you.some_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau {{count}} dari {{total}} anggota aktif.",
+    "source": "e1f7101d7717ecccd42e1ccc702da9de0e0f39b2712b8e809249a29e96d0b501"
+  },
+  "communityCard.lineShort.youOrGroup.you.some_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau {{count}} dari {{total}} anggota aktif.",
+    "source": "9e6d69bee9d19b5c9076f25a0e061ff4d8fe8966ef41d505438ea17cbf8288ec"
+  },
+  "communityCard.line.youOrGroup.creator.some_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau {{count}} dari {{total}} anggota aktif.",
+    "source": "09a4842ae06e4745b54885556df7dc7f9f071b15aab3008bccb66507f6bb16bc"
+  },
+  "communityCard.lineShort.youOrGroup.creator.some_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau {{count}} dari {{total}} anggota aktif.",
+    "source": "854d0a756ea4f6336d4d29ca3ff2dab7c4c4719d1771c60b7a9ee031ed717403"
+  },
+  "communityCard.line.youOrGroup.you.short_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "0189637166c0e107e8cae5ea4ff61513d95f8337d76019c00da56e0fdc49c1c2"
+  },
+  "communityCard.lineShort.youOrGroup.you.short_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "4b9cdbfd3a471fe3e7fb6cfb886031a66cb6589866f714c0c6d482ff32363c36"
+  },
+  "communityCard.line.youOrGroup.creator.short_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "00f35579d4dd5a32350c2af2a57b8e80be151916734e032d05fc87da318095be"
+  },
+  "communityCard.lineShort.youOrGroup.creator.short_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau {{required}} anggota aktif (hanya ada {{count}}).",
+    "source": "3b24e38998b86f12a077c74e3c2016fb64b02c9073234e40256fe956b232cde0"
+  },
+  "communityCard.line.youOrGroup.you.all_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau semua {{count}} anggota aktif.",
+    "source": "543b72fc21720b43c95d4ec4e537c7a608ea3dd4ef0800c9f26acf8dceb4d7c9"
+  },
+  "communityCard.lineShort.youOrGroup.you.all_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan kamu bilang Ya, atau semua {{count}} anggota aktif.",
+    "source": "83a80a8f5d32ead5c1c9a86b9afee4bff9b7b800d489fe58df66c7ab064a3cbf"
+  },
+  "communityCard.line.youOrGroup.creator.all_other": {
+    "text": "Perubahan tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau semua {{count}} anggota aktif.",
+    "source": "911e099cd44452250284752c96bb8eeaedc0a1b394b7d3167ba872e441ec2252"
+  },
+  "communityCard.lineShort.youOrGroup.creator.all_other": {
+    "text": "Tayang saat pemeriksaannya lolos dan <0></0><1>{{creator}}</1> bilang Ya, atau semua {{count}} anggota aktif.",
+    "source": "dc6df7758ce71824c0f04f8c4726e01fab021bd25bad378155b36e8b36144195"
+  }
+}

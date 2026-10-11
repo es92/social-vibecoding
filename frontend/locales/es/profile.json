@@ -1,0 +1,1010 @@
+{
+  "identity.fallbackName": {
+    "text": "Tu perfil",
+    "source": "528d89ad72cba22e2d9d116befd3bb96a519f06b5f1147a2348d29fa6d1a2cbd"
+  },
+  "identity.edit": {
+    "text": "Editar perfil",
+    "source": "15c4aa13037eaf52733882a470415c0f5a4afa8490b49dc1712b1f96fc3b1de0"
+  },
+  "identity.buildingSince": {
+    "text": "Creando desde {{date}}",
+    "source": "e74dedf4b1ceaaceda32bb7cb9f7c0d8a2fbca7f32a89e0524f37edb1bac5c20"
+  },
+  "line.factPair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "stats.live": {
+    "text": "activos",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "stats.kudos": {
+    "text": "kudos",
+    "source": "95f3e4b198639d6e2795ae53f424ce8a37f7eac7593dc96d9a2ce0c3ec88e7e4"
+  },
+  "stats.challenges": {
+    "text": "desafíos",
+    "source": "6a5800844860611cb761c82c8110afbbcfce5757526755b244c087e2dd40c15f"
+  },
+  "screen.loading": {
+    "text": "Cargando tu perfil",
+    "source": "2b68cefc9cb855e0cfe28f810c635887ae547be840a284c7c761b49a2b914811"
+  },
+  "signedOut.text": {
+    "text": "Inicia sesión para ver tu perfil.",
+    "source": "1fbea3243dfaa79914f12993db6c4cf761cbc0636f3c4ef24fac04969a1e196d"
+  },
+  "signedOut.signIn": {
+    "text": "Iniciar sesión",
+    "source": "bfd402b2f6f3812529b55596136d3a11c51616317e3b1cd999928e2d4eae7d3f"
+  },
+  "screen.loadFailed": {
+    "text": "No se pudo cargar tu perfil. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "7390eadeea27006057b1929a5d8e87d66292407292227315b7ea028452cb944a"
+  },
+  "public.unavailable": {
+    "text": "Este perfil no está disponible.",
+    "source": "57fec0f928a7881b13fcefa619958a901b03c4a62ee342a4f88939a1d1ffad8e"
+  },
+  "public.report": {
+    "text": "Denunciar usuario",
+    "source": "82016f1f318751d17cf2012c8eb1ca986c533fc6d9c95f84455309a91c8c2198"
+  },
+  "work.heading": {
+    "text": "Tu trabajo",
+    "source": "ef14cf0d34ed4bd62ddb201026b13ba7da82fe295b127d50fc65c7afb4c6b46b"
+  },
+  "work.changes.title": {
+    "text": "Tus cambios",
+    "source": "96b37574b6640362a93b3ba556c91c6dbc8de4bfbd1111540cc084fe2e78f41e"
+  },
+  "work.changes.hint": {
+    "text": "Todo lo que has iniciado",
+    "source": "c238d9c326522bf1702cece930612673b2f3d3e7993ed9b3b82af3933af4189e"
+  },
+  "work.changes.loadFailed": {
+    "text": "No se pudieron cargar tus cambios.",
+    "source": "949702835fe1bd4466e5ee5b83c19a324f61cbc3c2dddd31ead8a4127c5ef84a"
+  },
+  "work.changes.empty": {
+    "text": "Aún no has iniciado ningún cambio.",
+    "source": "ed4f426e5f3a8082b725c3f42fc399f7e31d8f2e23b85b2c38ad2f598c989f67"
+  },
+  "work.requests.title": {
+    "text": "Tus solicitudes",
+    "source": "4c64a2a1c58138fe301a92028cac974bd41fc9fbef099f668718817c6646c8af"
+  },
+  "work.requests.hint": {
+    "text": "Lo que pediste y en qué estado está",
+    "source": "55cc23946dfbf2cbd7ceb5af7b2ae9028cef339bad92c27d2e3b637fd5d6c003"
+  },
+  "work.requests.loadFailed": {
+    "text": "No se pudieron cargar tus solicitudes.",
+    "source": "5ad1171bbaaabfbfb2291bd3ef89ff4cc8f9ac010522dffdaf37326b84962fd3"
+  },
+  "work.requests.empty": {
+    "text": "Aún no has sugerido ninguna mejora.",
+    "source": "5e9431860b65a3591ea7dcd871f7d4dd07b866835c116586396af144ed0e9ee3"
+  },
+  "work.requests.suggest": {
+    "text": "Sugerir una mejora",
+    "source": "cfbf47a0b6534ad1577177e339c73219b433f6e196a8ead8aeb2270f1b17714a"
+  },
+  "work.votes.title": {
+    "text": "Tus votos",
+    "source": "ca7f000856d9acd34f26649d87caa848a8406bbd225fdde843b97c96b4614612"
+  },
+  "work.votes.hint": {
+    "text": "Los cambios y decisiones en que votaste",
+    "source": "47fe9205e35ab0da04e555d4b346819e80495e8c71eabe083d36d6e8d3c2958c"
+  },
+  "work.votes.loadFailed": {
+    "text": "No se pudieron cargar tus votos.",
+    "source": "8baaf81a1cdd2a38d4f33f3cd6421402789724c5a39adc4c410d77070221ebe2"
+  },
+  "work.votes.empty": {
+    "text": "Aún no has votado en nada.",
+    "source": "e7bcf734da767ce309373aa89f9b0832f348bca026c695ab7031eed87d548cb9"
+  },
+  "work.votes.note": {
+    "text": "Puedes cambiar un voto mientras la votación siga abierta, así que cada fila muestra tu voto actual.",
+    "source": "2f10066a62f1e8e96c151207fc26cd3f808f6bf518e6e7fc47f84457adf78cf1"
+  },
+  "work.votes.latest": {
+    "text": "Último: {{title}}",
+    "source": "72f4772758d420b483369402a44b9b24ff68e75bbcea4d368f0a35de1f6f440b"
+  },
+  "work.fold.allLive": {
+    "text": "Mostrar todos los activos",
+    "source": "0c123d0035fd302ae4f9af6545fa71e15202c0ee49fd8c2b568a667ccebdb201"
+  },
+  "work.fold.allDecided": {
+    "text": "Mostrar todos",
+    "source": "2150d8df37e489573fb8f0f19ef89d2eda2ba4b49b3beb36333e5096a99a6dc0"
+  },
+  "more.heading": {
+    "text": "Más",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "more.appSlots.title": {
+    "text": "Espacios de apps",
+    "source": "1be05f8f6d8c7460800b2f6803a97d85f7ba9d70189cf4f6f078cc496b9ab22d"
+  },
+  "more.appSlots.hint": {
+    "text": "Cuántas apps puedes crear",
+    "source": "cc6f6baf61f91a84456c39e5f8fa274a442fc73ef7df18dbf7a0431fdaa21c64"
+  },
+  "more.challenges.title": {
+    "text": "Desafíos y clasificación",
+    "source": "13cb5a8837bf28c7edbdb2f02ddd45a51d18dafce238d4086a1444ca54c2a571"
+  },
+  "more.challenges.hint": {
+    "text": "Los desafíos y la clasificación de esta temporada",
+    "source": "b42ac32a81cce21ac461a9fe6f45b6ed2a96ac5ce0e0dd45b9dc873dae94ab38"
+  },
+  "more.challenges.rank": {
+    "text": "puesto n.º {{rank}}",
+    "source": "60405c6caa6267ac22474a82345513c973139ed82ae345ac48d0796673f88389"
+  },
+  "more.kudos.title": {
+    "text": "Kudos",
+    "source": "51483eb0b6d593009a02ce75240e6d94327c29cd0934297fce4025e12128ced0"
+  },
+  "more.kudos.hint": {
+    "text": "Kudos por tus cambios",
+    "source": "6ab9a51425d39cba1f799afa87518c443709f835836bc6b526bcbd36fa94c5d4"
+  },
+  "more.friends.title": {
+    "text": "Amigos",
+    "source": "bd104d1b98d032274986497eeb7997c44a1d674b29140e43cd525d33468ecb6e"
+  },
+  "more.friends.hint": {
+    "text": "Solo tú puedes ver a tus amigos",
+    "source": "37b5f2bdd3dd3a9e5077aacc7a576c09b8cfbb5bf82889612e17c50a8c51370d"
+  },
+  "more.settings.title": {
+    "text": "Ajustes",
+    "source": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "more.settings.hint": {
+    "text": "Cuenta, alertas, claves",
+    "source": "1569ebe48ff3138e1eafbaaf4d44d7615e3da5d4cbbd377ceb510e17e7d78dd9"
+  },
+  "more.settings.hintWallet": {
+    "text": "Cuenta, alertas, claves, billetera",
+    "source": "a7ea68364410f430ea37e508f60ac37e9ed5050b6725ef6bdf273ad14b73e015"
+  },
+  "more.settings.hintAdmin": {
+    "text": "Cuenta, alertas, claves, administración",
+    "source": "2b08a18d879b4c4c53bcad16dbc2af8046ec987f34467209f4c2fde52f8b9e9f"
+  },
+  "more.settings.hintWalletAdmin": {
+    "text": "Cuenta, alertas, claves, billetera, administración",
+    "source": "05ccca09da4534bb23f2dbdf742e03c79bda76d4f10277296c58b4d16f934877"
+  },
+  "date.today": {
+    "text": "hoy",
+    "source": "e0f4f767ac88a9303e7317843ac20be980665a36f52397e5b26d4cc2bf54011d"
+  },
+  "date.yesterday": {
+    "text": "ayer",
+    "source": "9523d9fbe79bcf3ee5f9f664a8041fa3cdba4b6b8bb902cb5ec335a5bf1ca769"
+  },
+  "changes.group.inProgress": {
+    "text": "En curso",
+    "source": "c1f88e9d6c4145cf0530ae020155384d5688d70ed82a07a35d783bbc4b32238c"
+  },
+  "changes.group.live": {
+    "text": "En vivo",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "changes.group.closed": {
+    "text": "Cerrados",
+    "source": "c21ead0614e7e1b70edb3759e1d19ca1e12e6036980d10bfb73052fb1a018efa"
+  },
+  "changes.fallbackTitle": {
+    "text": "Cambio",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "changes.state.waiting": {
+    "text": "esperando aprobación",
+    "source": "fbb059ed89ce5aa2010f7023e24831dd14ab0c768e7b8c67c808c160c36cee15"
+  },
+  "changes.state.inProgress": {
+    "text": "en curso",
+    "source": "2b6b853c9e59dbf44fdd9dd5919557d3ca4bf448807949acaea7697e6cd1d92d"
+  },
+  "changes.state.closed": {
+    "text": "cerrado sin publicarse",
+    "source": "c9bb00e698673b59afd323a7adb790bda3d3a57608650bcd12994b1cfd854076"
+  },
+  "requests.group.open": {
+    "text": "Abiertas",
+    "source": "ed077f3d8125d60dca1979c7133601bd187d47c73ed9975028f677e49e709942"
+  },
+  "requests.group.done": {
+    "text": "Terminadas",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "requests.fallbackTitle": {
+    "text": "Solicitud n.º {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "requests.anApp": {
+    "text": "Una app",
+    "source": "094f9581aca0eda599e0fbda74f715d6b052ce4e5b14cf268d155ece65b1557e"
+  },
+  "requests.state.waiting": {
+    "text": "nadie trabaja en ella aún",
+    "source": "c8f5b98f196fb76fb17a998fe08e5118d1b77a658caf7855b7913caf0dd032c2"
+  },
+  "requests.state.underway": {
+    "text": "alguien trabaja en ella",
+    "source": "8d4f89adedf8624b8ae460528440665a382be1c4a39672e56453c676531e3707"
+  },
+  "requests.state.shipped": {
+    "text": "en vivo",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "requests.state.closed": {
+    "text": "cerrada",
+    "source": "c3eefb58d7c42440a9d4abec51d629544d635a6d936ff3c4d3fca96d611b3cf3"
+  },
+  "votes.group.open": {
+    "text": "Aún abiertas",
+    "source": "ccde2b49c25621d58791d470bf6c0042e42f1bb4da161f1ece89801af32707d9"
+  },
+  "votes.group.decided": {
+    "text": "Decididas",
+    "source": "30ba702eee51c2a58e8237ce27c7d2caa308ce1341c50226149c40b1ea79d5df"
+  },
+  "votes.title.change": {
+    "text": "Cambio n.º {{number}}",
+    "source": "e3bb28fcbf0b47a8e7370a494ef5c4de4875825b0190218433e25bd6e6d85e8c"
+  },
+  "votes.title.aChange": {
+    "text": "Un cambio",
+    "source": "207f6b5c5456017a549e3c792b615d6d48552dd0984a8986e8c7de58affb6a94"
+  },
+  "votes.title.decision": {
+    "text": "Una decisión del grupo",
+    "source": "727c136f700509a6380101885ef2cd6ce31e165ffb55eb6b55502ec5eaa37cda"
+  },
+  "votes.anApp": {
+    "text": "Una app",
+    "source": "094f9581aca0eda599e0fbda74f715d6b052ce4e5b14cf268d155ece65b1557e"
+  },
+  "votes.votedYes": {
+    "text": "votaste sí",
+    "source": "72b32f98138d0e1cf1734e973b4edbf9c9c5f126404ed7c4d21e8995dbffb63f"
+  },
+  "votes.votedNo": {
+    "text": "votaste no",
+    "source": "8124ea89fabd758c54a167b9a001edbd9b722fb54dedc2485c23fcef423192eb"
+  },
+  "votes.outcome.live": {
+    "text": "en vivo",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "votes.outcome.goingLive": {
+    "text": "publicándose",
+    "source": "9a87940f878e828d7f5ee599fa59151493d3f724366028628b48fb3439c472a8"
+  },
+  "votes.outcome.closed": {
+    "text": "cerrado",
+    "source": "c3eefb58d7c42440a9d4abec51d629544d635a6d936ff3c4d3fca96d611b3cf3"
+  },
+  "votes.outcome.decided": {
+    "text": "decidido",
+    "source": "8d3c6686ec306db55ac57683ca4c4b96b3650d8d63e95599f9d5d1a8d3f31956"
+  },
+  "feedback.title": {
+    "text": "Tus comentarios",
+    "source": "cdb1c0a5f34f5f4f8a932d633d1ad05cd19bd613df88d8fde14f752300cb37be"
+  },
+  "feedback.close": {
+    "text": "Cerrar tus comentarios",
+    "source": "6a10f9177d051472f00aa7d3f4b54a6119c4a6e4ec4f97df7bef0cd124251847"
+  },
+  "feedback.legend": {
+    "text": "Recibido: se registró como solicitud. Contado: sumó puntos en el desafío de comentarios.",
+    "source": "00bcf6abab47831d30ea283289bcca0bbecfc5958d40f8448709b42d4e052bb8"
+  },
+  "feedback.loadFailed": {
+    "text": "No se pudieron cargar tus comentarios. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "28a173d0d3dfbed40f9fb1d19d4a95b440d191d8cc042957e2e0a9c8d87d41c1"
+  },
+  "feedback.empty": {
+    "text": "Aún no has enviado nada. Los comentarios que envíes aparecerán aquí, con su estado.",
+    "source": "453e4a21b427aedba719ac8b9fe002fccd1eb1bc74f96c3eb6152964fca376f9"
+  },
+  "feedback.truncated": {
+    "text": "Se muestran los 50 más recientes que enviaste.",
+    "source": "603fbebcca68786bb51360ba1e0f5963bd6b414d507b525bc566db75c9fd1287"
+  },
+  "feedback.status.received": {
+    "text": "Recibido",
+    "source": "49f19beeecf442ef476211c290c76edaf260b56f7dea5589963947207202c238"
+  },
+  "feedback.status.counted": {
+    "text": "Contado",
+    "source": "c037c15990c592791fc90ae5a033c6706538119572665ffa9c9987d2eab26f91"
+  },
+  "feedback.fallbackTitle": {
+    "text": "Comentario",
+    "source": "aac77df347205252b074d45aff7891debdba0ff1466cc0c351416d1662bb71ab"
+  },
+  "feedback.anApp": {
+    "text": "Una app",
+    "source": "094f9581aca0eda599e0fbda74f715d6b052ce4e5b14cf268d155ece65b1557e"
+  },
+  "feedback.request": {
+    "text": "solicitud n.º {{number}}",
+    "source": "38230b76111e8c9d45f08d6893bc1b2c31f60cad3818cf048f13906107215192"
+  },
+  "feedback.sent": {
+    "text": "enviado {{when}}",
+    "source": "006c5699984b1c47b4cc224b9e62969cfd0689039da0923e07f2bee6717315c1"
+  },
+  "feedback.summary.none": {
+    "text": "Aún no has enviado nada",
+    "source": "be2706000569954f81152dbe028b1dbc64614474c2d22cf76069d69d81c9e07c"
+  },
+  "friends.title": {
+    "text": "Amigos",
+    "source": "bd104d1b98d032274986497eeb7997c44a1d674b29140e43cd525d33468ecb6e"
+  },
+  "friends.close": {
+    "text": "Cerrar amigos",
+    "source": "64e9cddb8e46f5ba06005f18aa3b2b334e0c8c2cb8e4c62ecf78fbd2b0cfe038"
+  },
+  "friends.label": {
+    "text": "Amigos, visibles solo para ti",
+    "source": "ea2294a38d0b73d8d2e08925b49d81b3c144eee119f558f77f3e4f04b1c6b770"
+  },
+  "friends.accept": {
+    "text": "Aceptar",
+    "source": "89713b9c9c1b8f659c9f49db25e4a47886dd673fee248c3f650391f09a759cef"
+  },
+  "friends.decline": {
+    "text": "Rechazar",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "friends.cancelRequest": {
+    "text": "Cancelar",
+    "source": "19766ed6ccb2f4a32778eed80d1928d2c87a18d7c275ccb163ec6709d3eb2e27"
+  },
+  "friends.sentHeading": {
+    "text": "Solicitudes enviadas",
+    "source": "874d69d66eb2e62f52874701e639c9f09f5add6bb11a6df46499e0f62d2a809a"
+  },
+  "friends.empty": {
+    "text": "Aún no tienes amigos. Busca a alguien por nombre de usuario arriba.",
+    "source": "e40cba4099b6f32e7ecdc40e5a6cde04c10be74a573193c57bc5897043042e2a"
+  },
+  "friends.loadFailed": {
+    "text": "No se pudieron cargar tus amigos. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "c75a6a1a8f6b427a4b8048ead45761e6e63b8c4648e0d99c32a14105e59f65e8"
+  },
+  "friends.privacy": {
+    "text": "Solo tú puedes ver tus amigos. Nadie más ve esta lista ni cuántos son.",
+    "source": "2c18fb7b7ba6e34f5ecde9060a450f1160c6a37eee65320a21db4c12d8cc1018"
+  },
+  "friends.asked": {
+    "text": "Solicitud {{when}}",
+    "source": "11b77b0ff796137089a6cbf4b935df76412c4e3888475a9dd366bb77c27fd8c6"
+  },
+  "friends.askedUndated": {
+    "text": "Quiere ser tu amigo",
+    "source": "6593d38d02125875ed9747e951d8b0fde228090053efbf96fe595a5cd04242b9"
+  },
+  "friends.since": {
+    "text": "Amigos desde {{date}}",
+    "source": "baee93e59faf55cb9abf11eaa12676e3d2821ff778c6a1de9ad9aec0a45fb511"
+  },
+  "friends.sinceUndated": {
+    "text": "Amigos",
+    "source": "bd104d1b98d032274986497eeb7997c44a1d674b29140e43cd525d33468ecb6e"
+  },
+  "friends.requested": {
+    "text": "Solicitada {{when}}",
+    "source": "38664a6a98a4c3b0da54edc119e047cc3ef52f43d4a7498aa748a5f690cf8353"
+  },
+  "friends.requestedUndated": {
+    "text": "Solicitada",
+    "source": "2d9e28289facab94b41f9592b7f55bc4fc10fed54e789669468e8da31c9a5caf"
+  },
+  "message.button": {
+    "text": "Enviar mensaje",
+    "source": "2f77668a9dfbf8d5848b9eeb4a7145ca94c6ed9236e4a773f6dcafa5132b2f91"
+  },
+  "message.buttonLabel": {
+    "text": "Enviar mensaje a @{{username}}",
+    "source": "bb2f7e712cbd0e26b42370d5d836945d7f23adc2ac86e53df65ca427f4f43840"
+  },
+  "message.nobody": {
+    "text": "No hay nadie aquí a quien escribir.",
+    "source": "6b33f4e3df49d838f040685b3397249866e05cdb9fa2c79fd8ddc38d64b10676"
+  },
+  "message.unreachable": {
+    "text": "No se pudo acceder a Mensajes. Revisa tu conexión e inténtalo de nuevo.",
+    "source": "8e0f2e7ff4df1365ed157a5849523ce2c9c7f4a6ef1ecfe1236933783222352a"
+  },
+  "message.cannot": {
+    "text": "No puedes enviar mensajes a @{{username}}.",
+    "source": "a0fa5606a1f3cd6bcbf0a6501ff2691eec5e780f7a38cc4f7aac1e38a9080f83"
+  },
+  "message.cannotNow": {
+    "text": "No puedes enviar mensajes a @{{username}} en este momento.",
+    "source": "c03ca52cc81a4d7b361abcf45838bb16eb15d8f548c2cb0aa9a107772664e3ff"
+  },
+  "message.startFailed": {
+    "text": "No se pudo iniciar esta conversación. Inténtalo de nuevo.",
+    "source": "bcea807cb2e8c53866908443ff3f050401f49fd933a544e1e14cdbf4952e1dcb"
+  },
+  "edit.title": {
+    "text": "Editar perfil",
+    "source": "15c4aa13037eaf52733882a470415c0f5a4afa8490b49dc1712b1f96fc3b1de0"
+  },
+  "edit.saveFailed": {
+    "text": "No se pudo guardar tu perfil.",
+    "source": "2453823b95fc653de0fb8ece4008615407247ba27cf00af6b94dadaaa7346701"
+  },
+  "edit.saved": {
+    "text": "Perfil guardado",
+    "source": "ea278dbc0644d8bd0422b0f55d890f5ab48f716ca07ed7b19971662a845ae090"
+  },
+  "edit.photo.group": {
+    "text": "Foto",
+    "source": "d84eebada93efee12b029e5b61e4df3270f0356886ceaa44a78eb52166a8f312"
+  },
+  "edit.photo.label": {
+    "text": "Foto de perfil",
+    "source": "ac8a73189fe33c72a29d8d3a526e120a05155750291da8f3dc1990028d69eba8"
+  },
+  "edit.photo.note": {
+    "text": "PNG, JPEG o WebP. Tú eliges la parte que se muestra antes de usarla.",
+    "source": "77d5a1265070070a692f014f00af68e492037d7c38d09c295747cd639f53e10e"
+  },
+  "edit.photo.noteNew": {
+    "text": "Foto nueva, aún sin guardar. Pulsa Guardar para usarla.",
+    "source": "b461791754c4f1deade02096bbf053159dd9387fe3fcd5ce0a41f3741123e945"
+  },
+  "edit.photo.noteRemoved": {
+    "text": "Tu foto se eliminará cuando pulses Guardar.",
+    "source": "62f36c7f7c57f00f9c5987134ef09fcfbd3d2736da79639d2cc9c77b00ac727a"
+  },
+  "edit.photo.change": {
+    "text": "Cambiar foto",
+    "source": "c5fbcb8b00ea0d6e1e5bac2c065bb877192271ee9f39e9818dfe43b73d5aec16"
+  },
+  "edit.photo.remove": {
+    "text": "Quitar foto",
+    "source": "f46512ab2099fb0c1fecaaa5b24c230b0019c6974f266ad72d2d10c0c091c95e"
+  },
+  "edit.photo.unusable": {
+    "text": "No se pudo usar esa imagen. Prueba con un PNG, JPEG o WebP.",
+    "source": "37d52c137366208d0d9aff452b6b062fb9db7364256e68daad7fafd73ad680bb"
+  },
+  "edit.photo.wrongType": {
+    "text": "Elige una imagen PNG, JPEG o WebP.",
+    "source": "4a867943e388262fdcb56d58c6a1bff8cb6d1229ffa979ed3b570666d539bb99"
+  },
+  "edit.photo.unreadable": {
+    "text": "No se pudo leer esa imagen.",
+    "source": "473b21eba44f2168b8dbe139e80390a822ae455c98194cac2e9768b6fa83d3cf"
+  },
+  "edit.photo.unprocessable": {
+    "text": "No se pudo procesar esa imagen aquí.",
+    "source": "8831689f8f17a6bf047b8c87ada305c1d2546b4521a3cae25b916df028a7fae9"
+  },
+  "edit.photo.removeFailed": {
+    "text": "No se pudo quitar la foto.",
+    "source": "60fb665f8109d2237fb2a52b70abe27467781c9c7b0f639031ae77fe024b8bd7"
+  },
+  "edit.photo.uploadFailed": {
+    "text": "No se pudo subir la foto.",
+    "source": "33a052b33c3db26abfd035b9b981ee4ac3a1dae38988bba176466895a9f5ffd0"
+  },
+  "edit.name.group": {
+    "text": "Tu nombre",
+    "source": "2c6b2e253c01fb2ed7209c15766745ccee92a35ac8209f544789bdf9500e0944"
+  },
+  "edit.name.label": {
+    "text": "Nombre visible",
+    "source": "2b7f6a84de917e387539dbe441ca22056e793d738e6c50db30c3f569e4448df3"
+  },
+  "edit.name.note": {
+    "text": "El nombre que ven los demás. Déjalo vacío para mostrar tu @handle.",
+    "source": "657568dc1fdbd2372036ea38d7b534a5fa45ad12c5e72476e2b8ded878675577"
+  },
+  "edit.about.group": {
+    "text": "Acerca de ti",
+    "source": "4efca0d10c5feb8e9b35eb1d994f2905bb71714e6a271f511d713b539ea5faa1"
+  },
+  "edit.about.bio": {
+    "text": "Biografía",
+    "source": "3933b1802161254f41c59f2909f61ac994c086e1cde03848c4c310f45b5b4999"
+  },
+  "edit.public.group": {
+    "text": "Página pública",
+    "source": "b191fca34a80824e924fc574ede92265a78b17ba7dc07954347d8a618ce45cf2"
+  },
+  "edit.public.label": {
+    "text": "Perfil público",
+    "source": "eaad68e1f8c0827935454cf293896ea596823bee175acc67c2529b06c450f5b4"
+  },
+  "edit.public.hidden": {
+    "text": "Oculto por moderación",
+    "source": "492abfb080aeeb3ba7337c14f49e4bd4cbff2c05721df09e41270e6689153685"
+  },
+  "edit.public.on": {
+    "text": "Activado: cualquiera con el enlace puede verlo, sin cuenta",
+    "source": "b8074167537b2e8489f4b57f141e4b7ca59cf14cec39e9a3cfb21db064d9dc57"
+  },
+  "edit.public.off": {
+    "text": "Desactivado: tu perfil no tiene enlace público",
+    "source": "eb0e1cf96cd77dc2019c6fbcd70752ee598982680cd7dffc0cf90e715007be48"
+  },
+  "edit.public.open": {
+    "text": "Abrir página pública",
+    "source": "193b919d4957430feb795bd69f342c7960c75482408af745b2f40c3e0700b966"
+  },
+  "edit.public.copy": {
+    "text": "Copiar enlace público",
+    "source": "8a29ed34cf477f663d77fe11d5b247c8fd5150308c65b5af2ed0f7b0f3012486"
+  },
+  "edit.public.whatsOnIt": {
+    "text": "Qué contiene",
+    "source": "1e40e68d40ea2b47c5b1d572141401a5072b97e03adb6bc7b5c9c56146d9a859"
+  },
+  "edit.public.moderationNote": {
+    "text": "Puedes seguir editándolo o desactivarlo, pero la página pública seguirá sin estar disponible.",
+    "source": "8358b8fa2efa9b7ed2e389245b081b830c98cb6462291fa012f24327aeab0246"
+  },
+  "edit.public.previewNote": {
+    "text": "Solo tu nombre de usuario, nombre visible, biografía, foto alojada en Homeroom y cuentas sociales verificadas. Nunca tu correo, billetera, roles, membresías, cuentas sin verificar ni actividad privada. Los cambios se aplican al instante y nadie puede buscar la página.",
+    "source": "485767c0a0a5010a698656e2b6ed2ab0ad16149368f570094f40f16fa561366b"
+  },
+  "edit.public.copied": {
+    "text": "Enlace público copiado.",
+    "source": "4c1aed1ad22554331989ed21f58cba632ed0b5b13bcf168465fcfb67cf3204db"
+  },
+  "edit.public.copyManually": {
+    "text": "Copia este enlace: {{url}}",
+    "source": "45c0b0bf9bcb25636ab9a11962564af4d998837404101ef79af5d2b057ad5dec"
+  },
+  "edit.public.publishing": {
+    "text": "Publicando…",
+    "source": "582e0f1abad43e9e307858b4315949e6e4ae402b224c1b0ce9bd7406d79ddc2c"
+  },
+  "edit.public.unpublishing": {
+    "text": "Dejando de publicar…",
+    "source": "749c70135d30bebd2ba50a560e9a37077793fdaacb25725835b02c65a1a23fa5"
+  },
+  "edit.public.updateFailed": {
+    "text": "No se pudo actualizar la publicación.",
+    "source": "c03ccf56d1fc524faa9dd12449722a312798bde7cc4a20cc564a344f30c35c81"
+  },
+  "edit.public.published": {
+    "text": "Perfil público publicado",
+    "source": "ea99488cb212e06962643966cf40e3c0efaca47e08eb9fce64a7d6f298bbdaf9"
+  },
+  "edit.public.unpublished": {
+    "text": "Perfil público despublicado",
+    "source": "7f6610d3ea5a87d8c801fb50cbea3115fd6bdfc0fdb59adeffeb2007b788c24e"
+  },
+  "edit.social.group": {
+    "text": "Cuentas sociales verificadas",
+    "source": "0afe08e17096603fabd13b8678f2edd103c878300c472967c7eab153abd83d09"
+  },
+  "edit.social.verified": {
+    "text": "Verificada",
+    "source": "4f7838402f37674e8ebedb6cf048c0aea66bacdb25607aa3eee4b53093d83f5c"
+  },
+  "edit.social.notShown": {
+    "text": "No se muestra",
+    "source": "a08f0f94673a990239b7f73c42df9360e4734a3baf1729471ad48bb51556e143"
+  },
+  "edit.social.manage": {
+    "text": "Conectar o cambiar cuentas sociales",
+    "source": "60d4c4c23bc07e308f7d930af03f03c02a38098595bb38da6fd0b1d046b0d77a"
+  },
+  "edit.social.note": {
+    "text": "La verificación del proveedor y la visibilidad pública se gestionan por separado en Ajustes.",
+    "source": "04555f6c30c1d8e2e24a02d09380969ff6bb7d54b7a4bb73bf2ec9c64957aace"
+  },
+  "edit.username.group": {
+    "text": "Nombre de usuario",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "edit.username.label": {
+    "text": "Nombre de usuario",
+    "source": "e3b89e9d33f88e523083d8b4436adcc3726c89e97fd3179a2e102d765d1b16ed"
+  },
+  "edit.username.note": {
+    "text": "Tu @handle es tu nombre de inicio de sesión y la dirección de tu página pública. Para cambiarlo, ve a <0>Ajustes → Nombre de usuario</0>. Para cambiar solo cómo aparece tu nombre, define un nombre visible arriba.",
+    "source": "184b595b3dc74c08494f86e927008ed1307581cd2c897c9d126c9a97d6faf121"
+  },
+  "edit.email.group": {
+    "text": "Correo de la cuenta",
+    "source": "316ef5f98986d29baa5e6b4c5df40bb5c0fb17a3a2f9247665c9ae520536a4e3"
+  },
+  "edit.email.link": {
+    "text": "Correo y recuperación",
+    "source": "4ee4c51181215dd5cfd768f9f9a7dfa2a899fa7c972aa850b9715c38d4ee8880"
+  },
+  "edit.email.note": {
+    "text": "Añade o verifica un correo privado en Ajustes.",
+    "source": "46e5960b8b51099968f8319fb1f65c349f93567df79318060903d388ebf3757d"
+  },
+  "social.github": {
+    "text": "GitHub verificado · {{handle}}",
+    "source": "c08f8035ef73b5fd3fee9d22e3bfc2d2c52f7e3f5a8b873b685c5f43b7d2cc58"
+  },
+  "social.x": {
+    "text": "X verificado · @{{handle}}",
+    "source": "9634fa163b3a96063ab9f07170367ee0b9b223a04754f67559def1db45f809cb"
+  },
+  "report.received": {
+    "text": "Denuncia recibida.",
+    "source": "abb3a4ca91904fd127a70bcd7c4e5d1b1c59a0c32f4df7a0527468ce49e65e20"
+  },
+  "report.failed": {
+    "text": "No se pudo enviar la denuncia. Inténtalo de nuevo.",
+    "source": "a954f943e1391c917afb5c79e171c12d95ae98a66099913d15273f0592749a73"
+  },
+  "crop.title": {
+    "text": "Coloca tu foto",
+    "source": "34aa480b640bad6f2db7e124358125e69685108870776ea934740a73dbac7c6d"
+  },
+  "crop.help": {
+    "text": "Arrastra para elegir la parte de tu foto que se muestra en el círculo. No se guarda nada hasta que pulses Guardar.",
+    "source": "7f6716a1391093f637138b3d084b71faa597eefb003a64ac79b2becfefea5494"
+  },
+  "crop.role": {
+    "text": "posición de la foto",
+    "source": "16b1b97e49d716f72616ea25d9cfb14b18600b1502245f39390d01f2b4603bd7"
+  },
+  "crop.stageLabel": {
+    "text": "Posición de la foto. Arrastra para mover la foto o usa las teclas de flecha. Más y menos para ampliar o reducir.",
+    "source": "8ad65b578047ddc6895be4ca04c37f638c6ab6ca9c2d7efcfa378f7e4f111087"
+  },
+  "crop.zoom": {
+    "text": "Zoom",
+    "source": "509c517ede79fef060a5f3a109fd1f45951eef2c7970b25c20992011e36a4070"
+  },
+  "crop.zoomValue": {
+    "text": "{{percent}} %",
+    "source": "6eae0dff5b4b3c72aaa73b1a40acf7a63534303708c5923d056d1d1f7406880c"
+  },
+  "crop.preparing": {
+    "text": "Preparando…",
+    "source": "5d1fa38bcf0d88ca03d187718fd6cf8ad128f288f66d402d331476a85774d08d"
+  },
+  "crop.use": {
+    "text": "Usar foto",
+    "source": "66a0773a4c0b23e2d4683b1bfe9dc396728f8d62bc8ef6818d22799ab5ba10a7"
+  },
+  "staking.title": {
+    "text": "Staking",
+    "source": "5190ff487713fdbbb8d5e6241ee505a1272af85fd5e8b640aa6ff32911133035"
+  },
+  "staking.close": {
+    "text": "Cerrar staking",
+    "source": "79ed453189822f8aa2c7a87fc05f3fb7e3ca56588daf107c00a63cbb9c878b26"
+  },
+  "staking.status.delegated": {
+    "text": "Delegado",
+    "source": "dd341e5d100e662afaece640599296ad65ca98617a03774b4546857ddb52c268"
+  },
+  "staking.status.active": {
+    "text": "Activo",
+    "source": "92340695899bd2d86223e4a007620e0d6502fc0e08809773634c7e0743764a9c"
+  },
+  "staking.status.checking": {
+    "text": "Comprobando…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "staking.activeDot": {
+    "text": "● Activo",
+    "source": "597137f2c0f6f28e5acb012df6ddc84585609fd626b84f79568b92790efba33b"
+  },
+  "staking.manageInApp": {
+    "text": "Abre la app de Homeroom para gestionar la delegación.",
+    "source": "7eab752b827827e2ef211eba418c825869953313eebbd5c202a01937f9664565"
+  },
+  "staking.opening": {
+    "text": "Abriendo…",
+    "source": "c926c2c50e65d5a5799f548604472ee8554b53c376e45be580b3a06a484d8fc0"
+  },
+  "staking.undelegate": {
+    "text": "Anular delegación",
+    "source": "d151bd27bf09a27bff28750bb4cf22cdcf6534a08b616e7e33028e8930670566"
+  },
+  "staking.delegate": {
+    "text": "Delegar",
+    "source": "760ed96061ace03e6cce20c86b70dea6808080f721cb92cd593eb884fff61d8e"
+  },
+  "staking.unavailable": {
+    "text": "El estado del staking aún no está disponible.",
+    "source": "14c3ec265161f143b114c4fc3a51e89a94dd40f67258579eff94020482c53f69"
+  },
+  "staking.rechecking": {
+    "text": "Comprobando…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "staking.epoch.loading": {
+    "text": "Cargando datos de la época…",
+    "source": "b4d227867fd0c5e24458a49bc7601249952d0464fd2d139db88a7a9ee42f17a9"
+  },
+  "staking.epoch.title": {
+    "text": "Época {{epoch}}",
+    "source": "96f05cf9006943f3eec5e0a28a5984359d94a8a81f4ba0a17acc74d3c03e4cbb"
+  },
+  "staking.epoch.current": {
+    "text": "Actual",
+    "source": "e0d1b68224bf0b31ef16b206c65b5f8f6b89d18161f4a7cdcb8d0ac8d952549a"
+  },
+  "staking.epoch.completed": {
+    "text": "Completada",
+    "source": "22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1"
+  },
+  "staking.epoch.wonSlots": {
+    "text": "Ranuras ganadas",
+    "source": "32dbf5c2c0ed80c1e91eb7f642277e72eca14ddb7efd83f1b70d35c2a3895bb1"
+  },
+  "staking.epoch.upcoming": {
+    "text": "Próximas",
+    "source": "5f1a2542e4e4ca5ed784e15fb756dbfc32f4b68ae08bc1d44f957761566c8c41"
+  },
+  "staking.epoch.produced": {
+    "text": "Producidos",
+    "source": "3b22f22b5d1cb8d73f82b11c09941da70102d340e468646bf9842a356a19fcb9"
+  },
+  "staking.epoch.missed": {
+    "text": "Perdidos",
+    "source": "3d86eb082e3605a86d207bf5a080fadfa335c5c569dcd8b1bef8dc7b1a204a08"
+  },
+  "staking.epoch.unobserved": {
+    "text": "Algunas ranuras no tienen observación confirmada.",
+    "source": "f8aef0bcf10680e5d0e4160fe0c9c51b5ec619d2d2aa0495aea70e37f90dd55f"
+  },
+  "staking.epoch.collecting": {
+    "text": "Aún se están recopilando los datos de la época.",
+    "source": "2db0cb850222eaf384ff0731d6507a3eb34e5577cc2c2d93180b6dcba87c2564"
+  },
+  "staking.epoch.history": {
+    "text": "Historial de épocas",
+    "source": "8ee90f9449cfb88caeaae4c14846f44d408d8b8d03373da6dfe4f8628724bd96"
+  },
+  "staking.epoch.previous": {
+    "text": "Época anterior",
+    "source": "c7451870dff77be0d1434f0c8b4232bbf14fe8ddb775e907d1c836a6703be47e"
+  },
+  "staking.epoch.next": {
+    "text": "Época siguiente",
+    "source": "49deb5cc6c9793aacb0f36dd3d7b55bfd9737f8e681b1b225e515d9e3116cc27"
+  },
+  "staking.epoch.swipe": {
+    "text": "Desliza para ver épocas",
+    "source": "f2b51e336af87944704912dce16beb7872d527ae4c9d8216ef73d03a22f669a4"
+  },
+  "staking.error.preview": {
+    "text": "No se pudo cargar la vista previa.",
+    "source": "8dadb1e0f3fb23553d56a9efba7ad11717e23017f497b9fe7ad70dab0eab2b01"
+  },
+  "staking.error.epochData": {
+    "text": "No se pudieron cargar los datos de la época.",
+    "source": "fdb6a6ed20827c3d3b273177273f86e900a9d9550d5cefbec0c7fa69dfea4c5f"
+  },
+  "staking.error.changed": {
+    "text": "La cartera o la red cambió. Reintenta para actualizar los datos de la época.",
+    "source": "4c532a5e5a75713897d329a842a393073e38985faa9ff705a96ccaf4c5e4df08"
+  },
+  "staking.error.network": {
+    "text": "La red no está disponible.",
+    "source": "61a194beba36c9f4e4bdd556f7d32b0a40015c847d91587116cf0a9b4b4565af"
+  },
+  "staking.error.currentEpoch": {
+    "text": "No se pudo cargar la época actual.",
+    "source": "e6ae77688a38a89d246d6dc97de5a8f9ca9670fab9ddfb31dd13586f15d36078"
+  },
+  "staking.error.misconfigured": {
+    "text": "El servicio de datos de épocas no está bien configurado.",
+    "source": "1c838cece78d496131a60f41257347188155d064d52f30c3a7976521398d8d59"
+  },
+  "staking.error.http": {
+    "text": "El servicio de datos de épocas devolvió HTTP {{status}}. Reintenta.",
+    "source": "98234a3bd0cf4aeeb9aef3ad9bf1015aaff72b7d99383150a22dc62c131c1c9f"
+  },
+  "staking.error.emptyResponse": {
+    "text": "El servicio de datos de épocas devolvió una respuesta vacía.",
+    "source": "e767a8f2e89beb2b6dcc41ebf5ef12b0493cc70f84b5088b4b095dc70f887cbb"
+  },
+  "staking.error.tooLarge": {
+    "text": "La respuesta de datos de la época es demasiado grande.",
+    "source": "b0b2170693db56293d36c62f6432b3be3eaf2214ea4e090d30ab268dbd894cbf"
+  },
+  "staking.error.invalidResponse": {
+    "text": "El servicio de datos de épocas devolvió una respuesta no válida.",
+    "source": "02ad24dee994e1b112df6ee1837ef73b32c440cbb02cebc0c742c91999b21280"
+  },
+  "staking.error.timeout": {
+    "text": "La solicitud de datos de la época agotó el tiempo. Reintenta.",
+    "source": "d9356dd4f6434224039c29f075eaafb73b307990faa0b63ef210dcb8de83db34"
+  },
+  "staking.error.unreachable": {
+    "text": "No se pudo contactar con el servicio de datos de épocas. Reintenta.",
+    "source": "ca5394bdfd342b1d5a417f7f753206a42043533d27f50e2bbe021f8ed063b398"
+  },
+  "staking.error.wallet": {
+    "text": "Se requiere una dirección de cartera válida.",
+    "source": "67f77790934632a8057b8e3db6fc7e5da568bf9f1439086c438515634a1c16d7"
+  },
+  "staking.error.epoch": {
+    "text": "Se requiere una época válida.",
+    "source": "94a41b874c41a88b3630ddab120cd51ad9be636c1be27521ee085b09f8d6e31f"
+  },
+  "staking.error.notYet": {
+    "text": "Los datos de la época aún no están disponibles.",
+    "source": "e014cffc8559ebc32f6d46623d24557811dccdeba7caa4f436fcd4dcd2d46d8d"
+  },
+  "staking.error.notStarted": {
+    "text": "Esa época aún no ha comenzado.",
+    "source": "1a944cc178bf86dfa04da8f57de411e9c8f69b6621725cc140a98742f2847379"
+  },
+  "breakdown.event": {
+    "text": "Evento",
+    "source": "4e1f49a9c8ae8a158434e647c0c410352d718984a4fcd144d26cca3c394caa02"
+  },
+  "breakdown.bonus": {
+    "text": "Puntos extra",
+    "source": "244d63c27eedf108b00283604bd978b4af951c62d6b7b734ba31bbd50c2a21a4"
+  },
+  "identity.apps_many": {
+    "text": "{{count}} de apps",
+    "source": "81d6b019f34b611544798444c6fd7306452cd1180bc797cb86d0b1bdb2b7932a"
+  },
+  "identity.apps_one": {
+    "text": "{{count}} app",
+    "source": "98f8909e187559c63ece87803176f341d483c23f14f5f1b861d76c52f0c4e79d"
+  },
+  "identity.apps_other": {
+    "text": "{{count}} apps",
+    "source": "81d6b019f34b611544798444c6fd7306452cd1180bc797cb86d0b1bdb2b7932a"
+  },
+  "work.changes.live_many": {
+    "text": "{{number}} activos",
+    "source": "0874bfc49e962bf332794ae0e9609ebe5614661102b1b422579074678deed05c"
+  },
+  "work.changes.live_one": {
+    "text": "{{number}} activo",
+    "source": "0874bfc49e962bf332794ae0e9609ebe5614661102b1b422579074678deed05c"
+  },
+  "work.changes.live_other": {
+    "text": "{{number}} activos",
+    "source": "0874bfc49e962bf332794ae0e9609ebe5614661102b1b422579074678deed05c"
+  },
+  "work.changes.inProgress_many": {
+    "text": "{{number}} en curso",
+    "source": "e07e9c76e52c285a16e9d967c0a64d5b319cba9652d45f2209424fb59d6dbde6"
+  },
+  "work.changes.inProgress_one": {
+    "text": "{{number}} en curso",
+    "source": "e07e9c76e52c285a16e9d967c0a64d5b319cba9652d45f2209424fb59d6dbde6"
+  },
+  "work.changes.inProgress_other": {
+    "text": "{{number}} en curso",
+    "source": "e07e9c76e52c285a16e9d967c0a64d5b319cba9652d45f2209424fb59d6dbde6"
+  },
+  "work.requests.open_many": {
+    "text": "{{number}} abiertas",
+    "source": "4a5b46ca8aabea6957e584572e3da185c2351f56d21249894107fa0ed1913172"
+  },
+  "work.requests.open_one": {
+    "text": "{{number}} abierta",
+    "source": "4a5b46ca8aabea6957e584572e3da185c2351f56d21249894107fa0ed1913172"
+  },
+  "work.requests.open_other": {
+    "text": "{{number}} abiertas",
+    "source": "4a5b46ca8aabea6957e584572e3da185c2351f56d21249894107fa0ed1913172"
+  },
+  "work.requests.done_many": {
+    "text": "{{number}} terminadas",
+    "source": "540dc8006ff304805cddad5b8dcbf53c9ff605858d36a768df0640d64a6623f8"
+  },
+  "work.requests.done_one": {
+    "text": "{{number}} terminada",
+    "source": "540dc8006ff304805cddad5b8dcbf53c9ff605858d36a768df0640d64a6623f8"
+  },
+  "work.requests.done_other": {
+    "text": "{{number}} terminadas",
+    "source": "540dc8006ff304805cddad5b8dcbf53c9ff605858d36a768df0640d64a6623f8"
+  },
+  "more.challenges.done_many": {
+    "text": "{{done}} de {{count}} completados",
+    "source": "bfb4eaaef4aa4292a41903e2f0960fca96e2a109228c758694c737574f9a65bb"
+  },
+  "more.challenges.done_one": {
+    "text": "{{done}} de {{count}} completado",
+    "source": "bfb4eaaef4aa4292a41903e2f0960fca96e2a109228c758694c737574f9a65bb"
+  },
+  "more.challenges.done_other": {
+    "text": "{{done}} de {{count}} completados",
+    "source": "bfb4eaaef4aa4292a41903e2f0960fca96e2a109228c758694c737574f9a65bb"
+  },
+  "more.kudos.received_many": {
+    "text": "{{number}} recibidos",
+    "source": "79ea04b05361dbaaf6114eff1339fbaa6193a4f107a5fde1bc255e4030a4e424"
+  },
+  "more.kudos.received_one": {
+    "text": "{{number}} recibido",
+    "source": "79ea04b05361dbaaf6114eff1339fbaa6193a4f107a5fde1bc255e4030a4e424"
+  },
+  "more.kudos.received_other": {
+    "text": "{{number}} recibidos",
+    "source": "79ea04b05361dbaaf6114eff1339fbaa6193a4f107a5fde1bc255e4030a4e424"
+  },
+  "more.friends.waiting_many": {
+    "text": "{{number}} solicitudes en espera",
+    "source": "bc0a742524dd4c45956a3812a7b3412911b9be1c7967514b3786d1efb30c2e3b"
+  },
+  "more.friends.waiting_one": {
+    "text": "{{number}} solicitud en espera",
+    "source": "dfbbfa3fa82900043384c492dcb9fc253ff8a9ef77102d5b66011c3aa3e19dc5"
+  },
+  "more.friends.waiting_other": {
+    "text": "{{number}} solicitudes en espera",
+    "source": "bc0a742524dd4c45956a3812a7b3412911b9be1c7967514b3786d1efb30c2e3b"
+  },
+  "date.daysAgo_many": {
+    "text": "hace {{count}} días",
+    "source": "0d0d0a848ddf761192c49ddfd37a427c4230e2354b957e6998256e9c6ed4389f"
+  },
+  "date.daysAgo_one": {
+    "text": "hace {{count}} día",
+    "source": "47c2a06f6d2f744ecd7a30b31cac04657899918d4395d3d7ba6c06cc6bf7dc94"
+  },
+  "date.daysAgo_other": {
+    "text": "hace {{count}} días",
+    "source": "0d0d0a848ddf761192c49ddfd37a427c4230e2354b957e6998256e9c6ed4389f"
+  },
+  "feedback.status.countedPoints_many": {
+    "text": "Contado · {{points}} pts",
+    "source": "637c3cab148197658d32d569ad743980c3255808c3cd3455599032ea2e6ed1b8"
+  },
+  "feedback.status.countedPoints_one": {
+    "text": "Contado · {{points}} pts",
+    "source": "637c3cab148197658d32d569ad743980c3255808c3cd3455599032ea2e6ed1b8"
+  },
+  "feedback.status.countedPoints_other": {
+    "text": "Contado · {{points}} pts",
+    "source": "637c3cab148197658d32d569ad743980c3255808c3cd3455599032ea2e6ed1b8"
+  },
+  "feedback.summary.sent_many": {
+    "text": "{{number}} enviados",
+    "source": "8b0ef3abd0cce52a9c65d303eb37fa35a5264c04ef2b57fad8f0d0f353b28064"
+  },
+  "feedback.summary.sent_one": {
+    "text": "{{number}} enviado",
+    "source": "8b0ef3abd0cce52a9c65d303eb37fa35a5264c04ef2b57fad8f0d0f353b28064"
+  },
+  "feedback.summary.sent_other": {
+    "text": "{{number}} enviados",
+    "source": "8b0ef3abd0cce52a9c65d303eb37fa35a5264c04ef2b57fad8f0d0f353b28064"
+  },
+  "feedback.summary.sentCounted_many": {
+    "text": "{{number}} enviados · {{counted}} contados",
+    "source": "95385c444c4bf4b902d8d230e426e6790f9a83e52224a58112f297209ff8de81"
+  },
+  "feedback.summary.sentCounted_one": {
+    "text": "{{number}} enviado · {{counted}} contado",
+    "source": "95385c444c4bf4b902d8d230e426e6790f9a83e52224a58112f297209ff8de81"
+  },
+  "feedback.summary.sentCounted_other": {
+    "text": "{{number}} enviados · {{counted}} contados",
+    "source": "95385c444c4bf4b902d8d230e426e6790f9a83e52224a58112f297209ff8de81"
+  }
+}

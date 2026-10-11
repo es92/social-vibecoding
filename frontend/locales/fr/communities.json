@@ -1,0 +1,382 @@
+{
+  "sections.open.label": {
+    "text": "Communautés publiques",
+    "source": "2c25b65f5297ccc32fcc14d5eb76bc0dfd80391a555b17eb0a7d84ba5bc19f52"
+  },
+  "sections.invited.label": {
+    "text": "Communautés privées",
+    "source": "fd72430143d6f852a1180b7bb1d60c910027cd05474118e920a9bbb12238265f"
+  },
+  "sections.solo.label": {
+    "text": "Vous seul",
+    "source": "aeed20a96ee36e83c67fdca5fdee4bb5522ec06cec7c86b5d2984860ec560942"
+  },
+  "sections.open.noun": {
+    "text": "Communauté publique",
+    "source": "1cf36210afedc3d6bc9c1848e5351ab16410dc8c7ec865b1ab3a57d6c69f3c3a"
+  },
+  "sections.invited.noun": {
+    "text": "Communauté privée",
+    "source": "cbb6e03143153940d60b396a1930d790299d190338d5caee412a16d55e3ec2a2"
+  },
+  "sections.solo.noun": {
+    "text": "Vous seul",
+    "source": "aeed20a96ee36e83c67fdca5fdee4bb5522ec06cec7c86b5d2984860ec560942"
+  },
+  "sections.showFewer": {
+    "text": "Afficher moins",
+    "source": "255beb6510e7827d37ec1cd22d080f910888ae00f29374dd9545c8b3d1fce43a"
+  },
+  "list.loading": {
+    "text": "Chargement de vos applications",
+    "source": "402e40849fc5815ae5e8eb7463f6d63c86985b410a4b849f01f3e578d0926170"
+  },
+  "list.loadError": {
+    "text": "Impossible de charger vos communautés",
+    "source": "bd4a17e21668e4f5037efd15c2ff0cfc02b816dc9f5ab3968bdcd40cf1e2770a"
+  },
+  "list.empty.title": {
+    "text": "Vous n’avez encore rejoint aucune communauté",
+    "source": "00055bf1d3ccaef3bb0fbb5a3ba9fc7129de24c0c7d6ccd25251a276d0c4f575"
+  },
+  "list.empty.subtitle": {
+    "text": "Parcourez l’annuaire pour trouver un projet à rejoindre.",
+    "source": "dddb1b36c3f99983843336aeb81d714f40a2de2047b0da7f546c7e711387fb35"
+  },
+  "list.join.title": {
+    "text": "Rejoindre une communauté",
+    "source": "540dc95d726e83c30fe4ecbad31369f5fe45ac9ed73b8380b46fec17d5361251"
+  },
+  "list.join.subtitle": {
+    "text": "Trouvez-en une dans Découvrir.",
+    "source": "688dc17a8ea6bde810f48494be9af86de49bba5256432b40289d424dcdd52e29"
+  },
+  "list.start.title": {
+    "text": "Créer une communauté",
+    "source": "2d211bb9165ad21ab62be0eda7e71e2b050cde804c411cd13760c6202b208880"
+  },
+  "list.start.subtitle": {
+    "text": "Créez un projet pour vous, un groupe ou tout le monde.",
+    "source": "d7f4be32467576ab1c3bccb7a71417675a4ecb82c900ec8d7050032110b29479"
+  },
+  "row.active.justNow": {
+    "text": "à l’instant",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "needsYou.heading": {
+    "text": "Vous attend",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "needsYou.review": {
+    "text": "Examiner",
+    "source": "aff0766a5290e117b8433c351bae7b7b23bed682b2369bd822d88a647cc58512"
+  },
+  "needsYou.back": {
+    "text": "Retour aux communautés",
+    "source": "6bedf90f4ac4253c71c2bf44dd29294a5c281c5200d58b229927cdd99357f1c3"
+  },
+  "needsYou.over": {
+    "text": "Communautés",
+    "source": "c864f329f5dde534613448895303d0a62f17af46b75ab16cb6c8170a120d1293"
+  },
+  "needsYou.title": {
+    "text": "Vous attend",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "reel.fallbackTitle.change": {
+    "text": "Une modification",
+    "source": "207f6b5c5456017a549e3c792b615d6d48552dd0984a8986e8c7de58affb6a94"
+  },
+  "reel.fallbackTitle.decision": {
+    "text": "Une décision du groupe",
+    "source": "727c136f700509a6380101885ef2cd6ce31e165ffb55eb6b55502ec5eaa37cda"
+  },
+  "reel.ask.change": {
+    "text": "Cette modification doit-elle être intégrée ?",
+    "source": "45d77d7a970b362f26b98e8f4bc03d5b36e7a82e966b0ae1876d87a77ee2eb89"
+  },
+  "reel.ask.decision": {
+    "text": "Faut-il donner suite ?",
+    "source": "3023393fcaa9038f9aa944f7f3d20710de1d7be7775963e6cfa83a29c603393c"
+  },
+  "reel.yes": {
+    "text": "Oui",
+    "source": "85a39ab345d672ff8ca9b9c6876f3adcacf45ee7c1e2dbd2408fd338bd55e07e"
+  },
+  "reel.no": {
+    "text": "Non",
+    "source": "1ea442a134b2a184bd5d40104401f2a37fbc09ccf3f4bc9da161c6099be3691d"
+  },
+  "reel.error": {
+    "text": "Impossible de charger ce qui vous attend. La page Vous attend de chaque projet l’affiche toujours.",
+    "source": "ad8dd075a4b56d0faa39ac4c21d9f082c3456aa36f3c139f3363a9f52d75249e"
+  },
+  "reel.loading": {
+    "text": "Chargement de ce qui vous attend",
+    "source": "c5470c5712fbbaccf8c38257d928c824fbdefa9e8658b60540ba680df5cf4ad9"
+  },
+  "reel.empty": {
+    "text": "Aucun vote ne vous attend dans vos projets.",
+    "source": "5c4f586e3fb54c5a5e12dfce3c129b92a98a66a3ef8fbaddc0570493a742a37e"
+  },
+  "reel.done": {
+    "text": "Retour à vos communautés",
+    "source": "b5358765cc2f762f40b0a126ef1faf5aacdbd72cf4eddb03d1edfedf41a46ff1"
+  },
+  "switcher.title": {
+    "text": "Vos communautés",
+    "source": "605352da4726caa1f716ee5a948ae6c722483b8302c3f3fd3d79f0480b373d94"
+  },
+  "switcher.all.name": {
+    "text": "Toutes les communautés",
+    "source": "4b597732669442cfdae6344f46dabf623a6e6b0fdbf40c8aa3c5bd1976f3bdee"
+  },
+  "switcher.all.every": {
+    "text": "Toutes vos communautés",
+    "source": "1556344e3bf909f7f7a71acc182e4a5c217bd2393a040cec5705b3ba0dfde925"
+  },
+  "switcher.loading": {
+    "text": "Chargement de vos communautés…",
+    "source": "0c069ebf52f9b8b421c650f66e588362cd5d85801f2a66c0bea34de6a57cdbac"
+  },
+  "switcher.row.solo": {
+    "text": "Vous seul",
+    "source": "aeed20a96ee36e83c67fdca5fdee4bb5522ec06cec7c86b5d2984860ec560942"
+  },
+  "switcher.join": {
+    "text": "Rejoindre une communauté",
+    "source": "540dc95d726e83c30fe4ecbad31369f5fe45ac9ed73b8380b46fec17d5361251"
+  },
+  "switcher.start": {
+    "text": "Créer une communauté",
+    "source": "2d211bb9165ad21ab62be0eda7e71e2b050cde804c411cd13760c6202b208880"
+  },
+  "sections.open.count_many": {
+    "text": "{{count}} dans Communautés publiques",
+    "source": "9fef8f39c6b79c48f38b836ca24d724ceca93f40912e25656933bb58b2189960"
+  },
+  "sections.open.count_one": {
+    "text": "{{count}} dans Communautés publiques",
+    "source": "9fef8f39c6b79c48f38b836ca24d724ceca93f40912e25656933bb58b2189960"
+  },
+  "sections.open.count_other": {
+    "text": "{{count}} dans Communautés publiques",
+    "source": "9fef8f39c6b79c48f38b836ca24d724ceca93f40912e25656933bb58b2189960"
+  },
+  "sections.invited.count_many": {
+    "text": "{{count}} dans Communautés privées",
+    "source": "9d547eb4b5da5fa607b92cfc8ef05b969d65b9b72374b5599ed6a9df21a6a518"
+  },
+  "sections.invited.count_one": {
+    "text": "{{count}} dans Communautés privées",
+    "source": "9d547eb4b5da5fa607b92cfc8ef05b969d65b9b72374b5599ed6a9df21a6a518"
+  },
+  "sections.invited.count_other": {
+    "text": "{{count}} dans Communautés privées",
+    "source": "9d547eb4b5da5fa607b92cfc8ef05b969d65b9b72374b5599ed6a9df21a6a518"
+  },
+  "sections.solo.count_many": {
+    "text": "{{count}} dans Vous seul",
+    "source": "7f069b1a5b27ceca5448fe355f1d882a99bbfc534dc5cc460cbbfb57cc61e922"
+  },
+  "sections.solo.count_one": {
+    "text": "{{count}} dans Vous seul",
+    "source": "7f069b1a5b27ceca5448fe355f1d882a99bbfc534dc5cc460cbbfb57cc61e922"
+  },
+  "sections.solo.count_other": {
+    "text": "{{count}} dans Vous seul",
+    "source": "7f069b1a5b27ceca5448fe355f1d882a99bbfc534dc5cc460cbbfb57cc61e922"
+  },
+  "sections.showMore_many": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "sections.showMore_one": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "sections.showMore_other": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "row.members_many": {
+    "text": "{{count}} de membres",
+    "source": "9f5aa2fb70d1df7c6149ca2f482cafa0d8b944d6c3367a3e1c7bbef6a9d544af"
+  },
+  "row.members_one": {
+    "text": "{{count}} membre",
+    "source": "e1c605d723ad78f3648dd5f23927345e3e65afbe0ab5e0500a42bb9a4af0acb3"
+  },
+  "row.members_other": {
+    "text": "{{count}} membres",
+    "source": "9f5aa2fb70d1df7c6149ca2f482cafa0d8b944d6c3367a3e1c7bbef6a9d544af"
+  },
+  "row.active.minutes_many": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "row.active.minutes_one": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "row.active.minutes_other": {
+    "text": "il y a {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "row.active.hours_many": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "row.active.hours_one": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "row.active.hours_other": {
+    "text": "il y a {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "row.active.days_many": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "row.active.days_one": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "row.active.days_other": {
+    "text": "il y a {{count}} j",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "row.inProgress_many": {
+    "text": "{{count}} en cours",
+    "source": "e927bf4644731c56fb38c510a706ae357184d964f0d23d12f98f85c5f0554643"
+  },
+  "row.inProgress_one": {
+    "text": "{{count}} en cours",
+    "source": "e927bf4644731c56fb38c510a706ae357184d964f0d23d12f98f85c5f0554643"
+  },
+  "row.inProgress_other": {
+    "text": "{{count}} en cours",
+    "source": "e927bf4644731c56fb38c510a706ae357184d964f0d23d12f98f85c5f0554643"
+  },
+  "row.toVote_many": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "row.toVote_one": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "row.toVote_other": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "row.unread_many": {
+    "text": "{{count}} non lus dans le canal",
+    "source": "32701bd31529c2a448702c15390af215cde97f9a9bafe2589e914d8b1b438f3e"
+  },
+  "row.unread_one": {
+    "text": "{{count}} non lu dans le canal",
+    "source": "32701bd31529c2a448702c15390af215cde97f9a9bafe2589e914d8b1b438f3e"
+  },
+  "row.unread_other": {
+    "text": "{{count}} non lus dans le canal",
+    "source": "32701bd31529c2a448702c15390af215cde97f9a9bafe2589e914d8b1b438f3e"
+  },
+  "needsYou.waiting_many": {
+    "text": "{{count}} votes vous attendent",
+    "source": "97eae8058bc74ad7a9cccdea340b233ed37e1b3b29befe92a8e0382687314d79"
+  },
+  "needsYou.waiting_one": {
+    "text": "{{count}} vote vous attend",
+    "source": "ff3b3a8d943428b6681d07709ea1fa96705f8cfe4a779218e33e05df12cd883a"
+  },
+  "needsYou.waiting_other": {
+    "text": "{{count}} votes vous attendent",
+    "source": "97eae8058bc74ad7a9cccdea340b233ed37e1b3b29befe92a8e0382687314d79"
+  },
+  "needsYou.skipped_many": {
+    "text": "{{count}} votes ignorés",
+    "source": "990d004e214a69252d6ac4d1386dd33a32ab339b4214ce1b322fb463fc55541b"
+  },
+  "needsYou.skipped_one": {
+    "text": "{{count}} vote ignoré",
+    "source": "14d5bf837cb4940657c58ba3ca28b7aca45527480bfc97223c102431e7c9a371"
+  },
+  "needsYou.skipped_other": {
+    "text": "{{count}} votes ignorés",
+    "source": "990d004e214a69252d6ac4d1386dd33a32ab339b4214ce1b322fb463fc55541b"
+  },
+  "needsYou.projectsMore_many": {
+    "text": "{{projects}} et {{count}} autres",
+    "source": "5f323b0df55552d7a4625d73d9743400f3cec19c8a5ade9616f7dcf8502330b9"
+  },
+  "needsYou.projectsMore_one": {
+    "text": "{{projects}} et {{count}} autre",
+    "source": "5f323b0df55552d7a4625d73d9743400f3cec19c8a5ade9616f7dcf8502330b9"
+  },
+  "needsYou.projectsMore_other": {
+    "text": "{{projects}} et {{count}} autres",
+    "source": "5f323b0df55552d7a4625d73d9743400f3cec19c8a5ade9616f7dcf8502330b9"
+  },
+  "reel.capped_many": {
+    "text": "Affichage des {{count}} plus récents. La page Vous attend de chaque projet contient le reste.",
+    "source": "e5cf3a0529762c062fadcb82407e5051eb7e4df8bb9abf019113436dc587e6e6"
+  },
+  "reel.capped_one": {
+    "text": "Affichage des {{count}} plus récents. La page Vous attend de chaque projet contient le reste.",
+    "source": "e5cf3a0529762c062fadcb82407e5051eb7e4df8bb9abf019113436dc587e6e6"
+  },
+  "reel.capped_other": {
+    "text": "Affichage des {{count}} plus récents. La page Vous attend de chaque projet contient le reste.",
+    "source": "e5cf3a0529762c062fadcb82407e5051eb7e4df8bb9abf019113436dc587e6e6"
+  },
+  "switcher.all.count_many": {
+    "text": "{{count}} de communautés",
+    "source": "48330895c4a24f69712ae10a53db8a296b72bba81c3cac57721720ae001ea050"
+  },
+  "switcher.all.count_one": {
+    "text": "{{count}} communauté",
+    "source": "2939018cb0e97d600a8ebe2772fc11895650323e2c4e2b389bc533f483ddc761"
+  },
+  "switcher.all.count_other": {
+    "text": "{{count}} communautés",
+    "source": "48330895c4a24f69712ae10a53db8a296b72bba81c3cac57721720ae001ea050"
+  },
+  "switcher.row.invited_many": {
+    "text": "Privée · {{count}} de membres",
+    "source": "dac312ae18809d548bf884233f5cc3d0e9a928960dbdf942b80c889c61e57ce6"
+  },
+  "switcher.row.invited_one": {
+    "text": "Privée · {{count}} membre",
+    "source": "9eecd02732fdc4342e0a2c28fd6ff1795cb0c79666d3ff2239b050a8076de84e"
+  },
+  "switcher.row.invited_other": {
+    "text": "Privée · {{count}} membres",
+    "source": "dac312ae18809d548bf884233f5cc3d0e9a928960dbdf942b80c889c61e57ce6"
+  },
+  "switcher.row.open_many": {
+    "text": "Publique · {{count}} de membres",
+    "source": "7b692265bdd91789ca234e011df57556312dd2ed75ce9b614a260a0a97e039d2"
+  },
+  "switcher.row.open_one": {
+    "text": "Publique · {{count}} membre",
+    "source": "32bf79e7a3ec81f159f724f3df9c03b6a4066e5a371b8edba5a8ec84d1af19bc"
+  },
+  "switcher.row.open_other": {
+    "text": "Publique · {{count}} membres",
+    "source": "7b692265bdd91789ca234e011df57556312dd2ed75ce9b614a260a0a97e039d2"
+  },
+  "switcher.toVote_many": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "switcher.toVote_one": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "switcher.toVote_other": {
+    "text": "{{count}} à voter",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  }
+}

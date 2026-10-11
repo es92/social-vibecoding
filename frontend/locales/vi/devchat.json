@@ -1,0 +1,2366 @@
+{
+  "commentPin.toast.postedBuilding": {
+    "text": "Đã đăng lên {{place}}. Homeroom bot đang xây dựng.",
+    "source": "089e9a3e8ddca4580673229543593b2772a627c3a29ae2a2cc69c46bf3ddf849"
+  },
+  "commentPin.toast.posted": {
+    "text": "Đã đăng lên {{place}}. Cảm ơn bạn!",
+    "source": "538483c195ae71ea05a57439b08a617f3fe4b1fdd371805d0f1196de71a412ae"
+  },
+  "commentPin.shot.none": {
+    "text": "Không có ảnh chụp màn hình.",
+    "source": "dc6a29878f9832572a91e69beaca7ac2c5c2796a51ad41c673b8738b6e3c53b8"
+  },
+  "commentPin.shot.taking": {
+    "text": "Đang chụp màn hình…",
+    "source": "e5fa18094c76d3aaecc7ad0be51acf7cabb3afb3c899853a129802804800b6ec"
+  },
+  "commentPin.shot.attached": {
+    "text": "Ảnh chụp trang này, kèm ghim của bạn",
+    "source": "9cc3f85b726bddd3349a8377f4011e3d393baab3d22fe23ef2ecd8f70effa754"
+  },
+  "commentPin.shot.failed": {
+    "text": "Không có ảnh chụp. Nội dung của bạn vẫn được gửi.",
+    "source": "5aead193d7b05c41402480dda098cdcce4f249759713c05849c7dc9a3a55a936"
+  },
+  "commentPin.shot.remove": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "commentPin.shot.addBack": {
+    "text": "Thêm lại",
+    "source": "23907c482ac0ba2e71815254ffdd567bc582b764698db18400ee7f575e35fc61"
+  },
+  "commentPin.textLabel": {
+    "text": "Bình luận của bạn",
+    "source": "9fc732f8f02d5e31fe5fe134fe0035f7970930f8d5ee9ff01d7a1bea09c8ea58"
+  },
+  "commentPin.placeholder": {
+    "text": "Cần thay đổi gì ở đây?",
+    "source": "ebb84cb25b9bae8a853076400c3087fe5a2f3ad496474f0d00e3194716b32df3"
+  },
+  "commentPin.target.groupLabel": {
+    "text": "Nơi gửi đến",
+    "source": "4d1ca74fb716ec7b7633928acdb645700837a63cfb5b00422bd36b691edece7e"
+  },
+  "commentPin.target.to": {
+    "text": "Gửi đến",
+    "source": "f4b06ef6d3c81436f60a318c81c42f8f7e2d774d45a22f3b9b5f3b6980d28146"
+  },
+  "commentPin.target.toHomeroom": {
+    "text": "Gửi đến Homeroom",
+    "source": "7123c7cd4cc33451377bd10e758ecf510139605c909ce8db122ddc3f9d51d64d"
+  },
+  "commentPin.posting": {
+    "text": "Đang đăng…",
+    "source": "648a2ef491ba918c6439d1f697e9cb42c646aab5db9cf27a94cc14105d5fddec"
+  },
+  "commentPin.post": {
+    "text": "Đăng",
+    "source": "a5554622c655c7a7e470c115f374d92595fa3b1f431dc6ee3d1edfbc103846ed"
+  },
+  "commentPin.postFailed": {
+    "text": "Không thể đăng bình luận này.",
+    "source": "b6b0db2f4e000ebb399d0f89b4833af0b8d06b3fb17bd5a38eee41f7d06b39f2"
+  },
+  "staging.banner.solo": {
+    "text": "Bản xem trước thay đổi của bạn. Thay đổi sẽ được áp dụng khi bạn bỏ phiếu thông qua. Mọi thứ bạn thêm ở đây chỉ nằm trong bản xem trước và sẽ không được chuyển sang.",
+    "source": "6c8954c4976e7951b8ee0d37797056c7614651eb16a076e35dceda13795ba39a"
+  },
+  "staging.banner.group": {
+    "text": "Bản xem trước thay đổi này. Thành viên có thể dùng thử trước khi bỏ phiếu. Mọi thứ bạn thêm ở đây chỉ nằm trong bản xem trước và sẽ không được chuyển sang.",
+    "source": "5fab03e384c8d95b8ac59538119419c63d128c5fb9f30d4bfc9fef55b8698662"
+  },
+  "staging.clock.showingNow": {
+    "text": "Đang hiển thị như hiện tại.",
+    "source": "a1e9436923e2ba8d5c2abe8bb573cf6629f74b4fe46fa275a994fb5764106962"
+  },
+  "staging.clock.showingAt": {
+    "text": "Đang hiển thị như vào {{moment}}.",
+    "source": "822c00c7ad9ca4ae71d41803b51e2cf10c77e4a626ea49ef95f3835235444c83"
+  },
+  "staging.clock.seeAt": {
+    "text": "Xem như vào {{moment}}",
+    "source": "d7bb8d187f2e3f854a117461c7143ca3f540065ec1469274b808df5b45d668fc"
+  },
+  "staging.clock.seeNow": {
+    "text": "Xem như hiện tại",
+    "source": "93b78fe25db8b1555e2195a9057c06013be3c29b15b999aecd1a57b0db9b96cd"
+  },
+  "staging.testThisChange": {
+    "text": "Thử thay đổi này",
+    "source": "cf4a1f03148c34ed07160a46ada383971f300ba9bdc9d616a2ad67753ce70169"
+  },
+  "staging.fullScreen": {
+    "text": "Toàn màn hình",
+    "source": "674fe2acd0d5f47b46180dd66e26e349cd9c9db215046f5e86ea2f5728d18117"
+  },
+  "staging.openConsole": {
+    "text": "Mở bảng điều khiển nhà phát triển",
+    "source": "dd573bcc0699ab87c3065cdf9bfd1630d5c1d30296816d9008d29e3ccc4f1afb"
+  },
+  "staging.closePreview": {
+    "text": "Đóng bản xem trước",
+    "source": "7d8ab368210c5ae8d2cec7bb577afe1e7cf9489c88f031e0f9de7555c9f20b66"
+  },
+  "staging.howToTest": {
+    "text": "Cách thử",
+    "source": "925cc7380c789e512561279162f57f52644731f9bd33cce3516ac8c6d8ee797d"
+  },
+  "staging.dismissTesting": {
+    "text": "Ẩn hướng dẫn thử",
+    "source": "11291def6d67deac7474a984af749d70c0bc3232231b7be952652c9a46b075fb"
+  },
+  "staging.loader.opening": {
+    "text": "Đang mở bản xem trước…",
+    "source": "57aa96ab8f93aea9c1433f222fbfdfc006b982115832fd67eec4178211cd68c8"
+  },
+  "staging.loader.retrySignIn": {
+    "text": "Thử đăng nhập lại",
+    "source": "0338e01471b811839ef94a905b7867985fdb52293676988ae284d9b834ba56d0"
+  },
+  "staging.compare.dialogLabel": {
+    "text": "So sánh trước / sau",
+    "source": "5a34812b6691352fe30d9786899a8dc33448af74e9132b19dcfea83cd92fb964"
+  },
+  "console.title": {
+    "text": "Bảng điều khiển nhà phát triển",
+    "source": "2ef15ac2866f955969bde655eb39df64da0e817fea9297c29e2022c9e32b6de0"
+  },
+  "console.filter.all": {
+    "text": "Tất cả",
+    "source": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2"
+  },
+  "console.filter.errors": {
+    "text": "Lỗi",
+    "source": "cb702378f31507efa79a2a2c6046050bc9f578f149c88e3c0a3d9532ab4b5300"
+  },
+  "console.filter.warnings": {
+    "text": "Cảnh báo",
+    "source": "0e04cd10f9afd7e546e176b34b56a243d8c741198aa0bfee27d7661a370dc043"
+  },
+  "console.filter.info": {
+    "text": "Thông tin",
+    "source": "170322a32f3c35b2c61576a5553d352d7b3c8ae7086dab78f15fc891a28c067c"
+  },
+  "console.filter.log": {
+    "text": "Nhật ký",
+    "source": "21e49eb2b299c9f7503a1236ecc80e1c51dd9e07989a3c12283df174067cc1aa"
+  },
+  "console.filter.debug": {
+    "text": "Gỡ lỗi",
+    "source": "1a03bd2fd107c453f3183e30b9716f82200671e8270fbbefbe602f5a48705527"
+  },
+  "console.clear": {
+    "text": "Xóa",
+    "source": "83b12c2216efb4fdc924e1deb5182e905e4926ed0c1c324d467107f46d5a26a9"
+  },
+  "console.empty": {
+    "text": "Chưa có tin nhắn. Nếu ứng dụng này được tạo trước khi có hỗ trợ bảng điều khiển nhà phát triển, hãy nhờ trợ lý lập trình trong Dev Chat \"thêm chuyển tiếp dev-console vào public/index.html\".",
+    "source": "465316ccc3b95423f0571184a49cdeb249c3206453886c50b5ac242d77388ff5"
+  },
+  "console.counts": {
+    "text": "{{total}} tổng · {{errors}} lỗi · {{warnings}} cảnh báo",
+    "source": "8aa14e7807a571fb7a37a9886aac2c9a308e84a1ead6ce4be3b7761241261244"
+  },
+  "banner.sync.busyTitle": {
+    "text": "Claude đang xử lý một lượt. Có thể đồng bộ khi Claude xong",
+    "source": "f491b432de9e1a8d8575ac3e5a38d8baaf807e35e31fe9ac6d864565b47c1f70"
+  },
+  "banner.sync.syncing": {
+    "text": "Đang đồng bộ…",
+    "source": "8a046cc90ab0a981f95cbf2c9c609309e0cfda272d8c01fdffecdb8286877e91"
+  },
+  "banner.sync.tryAgain": {
+    "text": "Thử lại",
+    "source": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  },
+  "banner.sync.syncWithMain": {
+    "text": "Đồng bộ với main",
+    "source": "b055d2cfb37f64269af8347faf6c8f949912cd002375ed293e1e36100bfeaa47"
+  },
+  "banner.newChange.proposed": {
+    "text": "Thay đổi này đã được đề xuất cho nhóm (PR #{{number}}). Công việc mới trong cuộc trò chuyện này sẽ được thêm vào cùng PR, vì vậy hãy bắt đầu thay đổi mới để PR tập trung.",
+    "source": "6c8882fb9d14e9dd024556dd79c7b90a7de186600ea509c4e5ea46ddaa98754e"
+  },
+  "banner.newChange.merged": {
+    "text": "Thay đổi này đã được hợp nhất (PR #{{number}}). Công việc mới trong cuộc trò chuyện này sẽ được thêm vào cùng PR, vì vậy hãy bắt đầu thay đổi mới để PR tập trung.",
+    "source": "c1fdc398625c2b2e7acbd063a9e427cb6d83bf5f4db8aeaa2a2e0ee352c49403"
+  },
+  "banner.newChange.openCard": {
+    "text": "Mở thẻ đề xuất",
+    "source": "a1b1a77e0842876603bfd032e4253efdb29e8563e51f4eca22f03a048973ee7c"
+  },
+  "banner.newChange.start": {
+    "text": "Bắt đầu thay đổi mới",
+    "source": "9d63289a806fb075b5741dd0c20e1fae6b6568128feb4a7c09fdaf9a82446e4c"
+  },
+  "banner.credits.hide": {
+    "text": "Ẩn",
+    "source": "ac20a57bfde0bbc40bfe70895eb1cfacc944aaff06ca784053623c569b3e1b3d"
+  },
+  "banner.credits.details": {
+    "text": "Chi tiết",
+    "source": "45989de49fb7f66dfe17a8fc26f3a02c7abcd74f7e8e6cf9f39fa0e3775780df"
+  },
+  "banner.agentSession.text": {
+    "text": "Thay đổi này thuộc một phiên trợ lý của bạn. Hãy tiếp tục ở đó để chỉnh sửa.",
+    "source": "6a58a7f7029a29b11cc3fba698b42d7b9de780ce5ca83ca963c8cdc70fa66fc8"
+  },
+  "banner.agentSession.continue": {
+    "text": "Tiếp tục",
+    "source": "31fbef162594de01bab0cd525c51f74de7bcb15063029fa1a54b2cf5944c80d8"
+  },
+  "banner.classic.text": {
+    "text": "Đây là phiên cũ. Bạn có thể đọc nhưng không thể tiếp tục. Công việc mới được thực hiện trong các phiên trợ lý.",
+    "source": "61aca4523985428190073fc9e014adad77dc84c960e2ac0e2bcef347a4ede777"
+  },
+  "banner.classic.start": {
+    "text": "Bắt đầu phiên trợ lý",
+    "source": "63e1d617ebbef0e706f9118ad1c7054f006c1d07b1db015149c883ad42e24fc7"
+  },
+  "runner.pastTitle": {
+    "text": "Lượt trước chạy trên {{machine}}. Máy đó đã ngắt kết nối, nên lượt tiếp theo sẽ chạy trên Homeroom.",
+    "source": "3e016524af129de910972b7a7826fd3e42b2ee26e367d4bd1fbd53eddaf129e3"
+  },
+  "runner.pastTitleUnnamed": {
+    "text": "Lượt trước chạy trên máy của bạn. Máy đó đã ngắt kết nối, nên lượt tiếp theo sẽ chạy trên Homeroom.",
+    "source": "ee81a642578607953de980f66e38ff06840c807ad22c4758186214767036c00b"
+  },
+  "runner.lastTurn": {
+    "text": "Lượt trước: {{machine}}",
+    "source": "513a265888dec9006be7d73e3a804d5163ee404f45f3c4e591a76a5b26298ab8"
+  },
+  "runner.runOn": {
+    "text": "Chạy trên:",
+    "source": "f92a747f97d9f5551581a25088b3df54c61590708b11a3a5cdd6c6da53d7bd20"
+  },
+  "runner.liveTitle": {
+    "text": "Các lượt lập kế hoạch và lập trình trong phiên này chạy trên {{machine}}, dùng gói đăng ký Claude riêng của máy. Lượt kế hoạch chỉ đọc; sau lượt lập trình, Homeroom vẫn mở PR, dựng bản xem trước và chạy kiểm tra.",
+    "source": "ffb897ddc3c4c944bc73883490ae4797e709ae1f3311c8086f3d3dd6b0cc99ad"
+  },
+  "runner.liveTitleUnnamed": {
+    "text": "Các lượt lập kế hoạch và lập trình trong phiên này chạy trên máy của bạn, dùng gói đăng ký Claude riêng của máy. Lượt kế hoạch chỉ đọc; sau lượt lập trình, Homeroom vẫn mở PR, dựng bản xem trước và chạy kiểm tra.",
+    "source": "3496f71394de416d1421fe64f8e9686fbed4b84ef2292a6f2dcdb6cb96c06012"
+  },
+  "runner.onYourMachine": {
+    "text": "Đang chạy trên máy của bạn",
+    "source": "4f6942aac7dbe3d302335917c2d3826adeec5f2621594396ac96b612e436bbb2"
+  },
+  "composer.attachTitle": {
+    "text": "Đính kèm tệp: ảnh (≤4 MB), tệp văn bản/mã (≤200 KB), tệp zip (≤20 MB) hoặc tệp khác (≤10 MB); tối đa 4 tệp mỗi tin nhắn",
+    "source": "7fbbb56d2d9903e02ab3f3fef1e90e16c680b82f7e3b742ab6b1a08aaa371f24"
+  },
+  "composer.attach": {
+    "text": "Đính kèm tệp",
+    "source": "e697cc1e45afa5418934fb94f7d9c1bf8e45628cade57a6d31871f5961978d77"
+  },
+  "composer.sendTitle": {
+    "text": "Gửi (Ctrl+Enter)",
+    "source": "6336fe7d7f8d8b1dd9d987c993a4e67df4684f72493f10c3a58997944d32a759"
+  },
+  "composer.send": {
+    "text": "Gửi",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "composer.saveDraftTitle": {
+    "text": "Lưu nội dung này làm bản nháp (Ctrl+Enter). Nội dung được giữ ở đây cho đến khi bạn gửi",
+    "source": "631b8c69186043b932f52d65cb2ae4c687e7476db760f5c3926595d6259e4ac7"
+  },
+  "composer.saveDraft": {
+    "text": "Lưu bản nháp",
+    "source": "93ca415947e2a665b69237c81233ed37f8a00c3cd3fcb1399ea255ef0ac16194"
+  },
+  "composer.stop": {
+    "text": "Dừng",
+    "source": "cae7d57bc067a514b8e34c9589631a95c7dc051638ddd2a190773269279a99df"
+  },
+  "composer.stoppingLabel": {
+    "text": "Đang dừng",
+    "source": "a71ee1d4ac5c2b7a820bdc4c3ac45e38885f52b41b4bfd3f5cd1328ce600f940"
+  },
+  "composer.stopping": {
+    "text": "Đang dừng…",
+    "source": "bbe8574175aba84f29afa398a91f00ad7598ff0b98e3ae1ddc5473d1b8c0b0ee"
+  },
+  "composer.modelLabel": {
+    "text": "Mô hình trò chuyện và khóa API",
+    "source": "de8b21d3bdf013ef606332507ee619cf51baf927cf89ea9550a1b6767f902d29"
+  },
+  "composer.appliesNextTurn": {
+    "text": "áp dụng từ lượt sau",
+    "source": "dcff2caca9f23c2480e43b2065885a0b79cfb499ba99387c8e42cf42cbbd9d63"
+  },
+  "drafts.sendTitleBusy": {
+    "text": "Claude vẫn đang làm việc. Bạn có thể gửi bản nháp này khi lượt hiện tại kết thúc",
+    "source": "0c707771571456028ffac468f090985932945024d041764f0afb7f9a01a59cc3"
+  },
+  "drafts.sendTitle": {
+    "text": "Gửi bản nháp này ngay",
+    "source": "bc032321242b78732df36eb23bec8325a4fce217ae22c01377b16b52fd8c59d6"
+  },
+  "drafts.sendingLocked": {
+    "text": "mở khóa gửi khi Claude xong",
+    "source": "88f02e45a7524c1d6ad4fa6747b08497c70a4ffb6301c681ee950c4652acb8f6"
+  },
+  "drafts.send": {
+    "text": "Gửi bản nháp này",
+    "source": "5cda6b94e9abae67232c4f6c7728a0d772e7e8235ec4779b2b7995819a2c3971"
+  },
+  "drafts.edit": {
+    "text": "Sửa bản nháp này",
+    "source": "ee815b8cf70a8207e1fc1b4b7f31bc41f6b47a3fad202244bc98d2dd91ee9e9f"
+  },
+  "drafts.editTitle": {
+    "text": "Đưa bản nháp này về khung nhập để sửa",
+    "source": "73452e7e27e2c1008dc0d35a1d8984e119e229462e342b9362fcf6932be8820c"
+  },
+  "drafts.delete": {
+    "text": "Xóa bản nháp này",
+    "source": "61e54a00ef2cfb36177d0329dbae992e0243910ea53b272b95de6b17992c32b5"
+  },
+  "connector.urlLabel": {
+    "text": "URL máy chủ MCP của bạn",
+    "source": "dedcabba3aca9cf9b3b58ed58cc472e58cc5774a6fc0ebb4fb8b38e464ef37a7"
+  },
+  "connector.copyUrl": {
+    "text": "Sao chép URL máy chủ MCP của bạn",
+    "source": "1a6ac1ae93db2c2a15c1f11a074148774abcc7d6f2684d002e2a1ec67517e10b"
+  },
+  "connector.copyFailed": {
+    "text": "Sao chép thất bại",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "connector.copyFailedToast": {
+    "text": "Không thể sao chép. Hãy chọn văn bản và sao chép thủ công",
+    "source": "9181be576b49cb2ddc08670fe5e6858dd852534505be0751160f918b90f5abe8"
+  },
+  "connector.lead": {
+    "text": "Thêm trình kết nối Homeroom trong {{product}}",
+    "source": "33b93d3404c46c8affc113fe904e0cb52ad7c3fcd95614e379ced09f208733b5"
+  },
+  "connector.otherAccount": {
+    "text": "Bạn có một trình kết nối trên tài khoản khác. Trình kết nối thuộc về tài khoản {{product}} đã thêm nó, nên tài khoản bạn giao việc này cần có trình kết nối riêng.",
+    "source": "b7b820d8cfe3bf6b6dbcd3d7c3d9d20456b6c8afdc32b9fa76abf9733ab48a41"
+  },
+  "connector.intro": {
+    "text": "{{product}} đọc các ứng dụng của bạn, tạo lệnh công việc và mở đề xuất qua trình kết nối này. Chỉ mất vài phút, mỗi tài khoản một lần.",
+    "source": "f468d5786760fd4582cce5c824b74c1acf42949f40f9ba8993549ed0b426ec96"
+  },
+  "connector.startNewChatgpt": {
+    "text": "Sau đó hãy bắt đầu một cuộc trò chuyện ChatGPT MỚI. Trình kết nối vừa thêm chỉ được nhận diện trong cuộc trò chuyện mới, nên cuộc trò chuyện hiện tại sẽ không thấy nó.",
+    "source": "c78b783268a7aea44cad6a6454c5a2d466f7d1332aa6f01438cefa1953dc6674"
+  },
+  "connector.startNewClaude": {
+    "text": "Sau đó hãy bắt đầu một cuộc trò chuyện Claude MỚI. Trình kết nối vừa thêm chỉ được nhận diện trong cuộc trò chuyện mới, nên cuộc trò chuyện hiện tại sẽ không thấy nó.",
+    "source": "d55865cd155448ee94217140a34bf6173afa91b311a952ebc55aca1050b3acfb"
+  },
+  "connector.done": {
+    "text": "Tôi đã thêm. Kiểm tra lại",
+    "source": "008563007ae7344b567710de724ad6dcc8ca0930c0e38d0507dfb5d031377a63"
+  },
+  "connector.moreSettings": {
+    "text": "Thêm cài đặt trình kết nối",
+    "source": "3948c404ad71b948dd2dbe60c8c37e6f1ec73175a5ed98f230fce8a53bc68414"
+  },
+  "ownTools.promptHelp": {
+    "text": "Sao chép lời nhắc này vào tác nhân của bạn. Nó gồm ứng dụng này và công việc đã bắt đầu; hãy điền các chỗ trống còn lại.",
+    "source": "23e1d33bb72cd92fa9f7d70980934a1f71af72c58c98e247abea27840845615c"
+  },
+  "ownTools.alreadyBuilt": {
+    "text": "Bạn đã tự tạo pull request rồi?",
+    "source": "db643c623e463bf52b067ac3b79e2ee01ca2270ef9a84f1e0734e1ec502f9911"
+  },
+  "ownTools.import": {
+    "text": "Nhập tính năng từ PR",
+    "source": "06dad1f0942431630de4725026bdc2a3a7f1bd9cd7e239fac6b19e9ab3bb3682"
+  },
+  "header.venue.busyTitle": {
+    "text": "Hãy đợi phản hồi hiện tại hoàn tất trước khi đổi nơi xây dựng phiên này.",
+    "source": "a9a24e48d90a827822f8ca19c1f7d0a584c619bc8b6d52e5d63e91a9f52257bd"
+  },
+  "header.venue.busyLabel": {
+    "text": "{{venue}}. Không khả dụng khi tác nhân đang suy nghĩ.",
+    "source": "bb374920485b8d5f29eeed70631e25dea05f25ce56db5bc71b4bf4ccf5d73d09"
+  },
+  "header.venue.thinking": {
+    "text": "Đang suy nghĩ…",
+    "source": "a02f1cea3c1d6c6edc0bdf52b8807f09eb5b33ca35a5e938e49d9ff646f80969"
+  },
+  "header.mode.building": {
+    "text": "Đang xây dựng",
+    "source": "87c5912f2cefdf9d7d1913611187fa8ab653a89a8d4b65f574812f899834e8b1"
+  },
+  "header.mode.groupLabel": {
+    "text": "Xem trước hoặc xây dựng thay đổi này",
+    "source": "0753805ef797f9b0ace01ff8da1ef4c062549477f041d18431ff02662948ac74"
+  },
+  "header.mode.previewLabel": {
+    "text": "Xem trước thay đổi này",
+    "source": "3e335718bbc627dd4f379f0cd0853e5161ca14079f44b1e7fa4f2a1f583f6f29"
+  },
+  "header.mode.buildPreviewLabel": {
+    "text": "Tạo bản xem trước cho thay đổi này",
+    "source": "54d4709b59fbe51eb0c29e9040935d915acfcda514b49e89b72cc867573317c7"
+  },
+  "header.mode.previewTitle": {
+    "text": "Xem trước thay đổi này trên staging",
+    "source": "42900bff42fd74e7904b8b28bf7f50399ee8d686c1f5602a7fbeb39dcf969620"
+  },
+  "header.mode.buildPreviewTitle": {
+    "text": "Tạo bản xem trước staging cho thay đổi này (đã ngủ đông hoặc chưa từng được tạo)",
+    "source": "badb64108416ec66635f39e9f1f50b6fa72918d366a4ac094e5e4473cd87f01e"
+  },
+  "header.mode.preview": {
+    "text": "Xem trước",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "header.mode.backToBuilding": {
+    "text": "Quay lại xây dựng",
+    "source": "790980b31ec58295ec272c7e5c510600a841e06670bc2361a7c04bf66dc154c4"
+  },
+  "header.mode.backToChat": {
+    "text": "Quay lại cuộc trò chuyện của phiên",
+    "source": "6437863a4b5ab9514db9d6ecfe64e07d9fe8d3113717901abef10b50034347be"
+  },
+  "header.actions": {
+    "text": "Tác vụ của phiên",
+    "source": "742ab447c91df15254d4aa77afdba62a1c9e1e55d2048b7a53e6cc33c0cee820"
+  },
+  "header.openCard": {
+    "text": "Mở thẻ đề xuất",
+    "source": "a1b1a77e0842876603bfd032e4253efdb29e8563e51f4eca22f03a048973ee7c"
+  },
+  "header.newChange": {
+    "text": "Thay đổi mới",
+    "source": "1e98669442c0d77703980b7abddf20da86081ca6d9e780026afcc2d3fc301f09"
+  },
+  "sessions.row.open": {
+    "text": "Mở phiên: {{title}} ({{status}})",
+    "source": "a350abb511c5dc6f99cd7fd177cf3597b3acc36d143daaed0dd34eb047fb349f"
+  },
+  "sessions.row.working": {
+    "text": "đang làm…",
+    "source": "5aaf3b7013982ff6a5987acd001103dcaf12fa85287792ab74364dc0b54ea4b0"
+  },
+  "sessions.row.pr": {
+    "text": "PR#{{number}}",
+    "source": "a9170bb1013b686a24f58c497e1d854a91d50c271cb2de46712e71f92c04d616"
+  },
+  "sessions.empty.title": {
+    "text": "Muốn thay đổi ứng dụng này? Cứ nhờ.",
+    "source": "5bd5f0cd5e93b9cfa482f15b32a27ab005021398b50df4ee9596b1bf404813ed"
+  },
+  "sessions.empty.body": {
+    "text": "Hãy mô tả điều bạn muốn khác đi bằng lời thường ngày. AI sẽ viết mã và mở một pull request thật. Không cần biết lập trình. Sau đó người dùng ứng dụng sẽ bỏ phiếu thông qua.",
+    "source": "5a074ef4135c8013b11a56ba564f3db2cf21a5587379311e72013726a8d69e2d"
+  },
+  "sessions.empty.howTo": {
+    "text": "Nhấn <0>+ Phiên mới</0> ở trên để bắt đầu, ví dụ <1>\"đổi tiêu đề sang màu xanh đậm\"</1>.",
+    "source": "777cf83ea78af89b9afb7e7f92b772e30e88db3a37eaa6696708cfd2da4a8dfd"
+  },
+  "sessions.older.loading": {
+    "text": "Đang tải…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "spec.loading": {
+    "text": "Đang tải kế hoạch…",
+    "source": "c9773eb9591526b00c9ac01efb9a673d098f34da7fff58c2a4f17a6b699c2223"
+  },
+  "spec.tabs.label": {
+    "text": "Các phần của kế hoạch",
+    "source": "9fe5c1f9d09d02fec3872bb83dde8a7d19d749ec99e6b6d1f9013f296499fda1"
+  },
+  "spec.tabs.user": {
+    "text": "Người dùng",
+    "source": "9f6f005ff1080e4f314aee190825a3ed9da50f6a438c512e8e3f7890af338f74"
+  },
+  "spec.tabs.technical": {
+    "text": "Kỹ thuật",
+    "source": "e851504f43bf3c8211004193e5de258134159ac0c863cd002e58828725a8d112"
+  },
+  "spec.tabs.empty": {
+    "text": "Phần này chưa có nội dung.",
+    "source": "04506069b266b70095aa3b7150d1e13bba8c7c683e2531c8719fec7b1cfbc023"
+  },
+  "spec.copy.label": {
+    "text": "Sao chép markdown",
+    "source": "7a99a7125c7cceb87ece64a39f982478bc655ab211dc4c0b8ee939bd40a5f2b2"
+  },
+  "spec.copy.noneTitle": {
+    "text": "Chưa có kế hoạch để sao chép",
+    "source": "98958373ab8c1b8702185601cd9c969a9f71739dd35a67db14eb177888fabfe1"
+  },
+  "spec.copy.title": {
+    "text": "Sao chép toàn bộ kế hoạch (cả hai phần) dưới dạng markdown",
+    "source": "70241b6123fa0042af52feaad44084e33a26dc0bfbe51d98d0afff7debfd529d"
+  },
+  "spec.copy.copied": {
+    "text": "Đã sao chép!",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "spec.copy.failed": {
+    "text": "Sao chép thất bại",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "spec.copy.failedToast": {
+    "text": "Không thể sao chép. Hãy chọn văn bản và sao chép thủ công",
+    "source": "9181be576b49cb2ddc08670fe5e6858dd852534505be0751160f918b90f5abe8"
+  },
+  "spec.share.noneTitle": {
+    "text": "Chưa có phiên bản kế hoạch để chia sẻ",
+    "source": "ca3ef47f3e524adc1bf0bf72cf715ca4790ff0e7ac5348c693f581a7124886bf"
+  },
+  "spec.share.toGroup": {
+    "text": "Chia sẻ với nhóm",
+    "source": "57f22054cd9fd597c86cfb703f1d3c74bdc9d104ebaf1b521c25a0fe1dd3eabd"
+  },
+  "spec.share.groupSharedTitle": {
+    "text": "Đã chia sẻ vào cuộc trò chuyện nhóm",
+    "source": "33449e1f58fd92e7cba98608174d5c7b6690cc645cf13ec64905b2561d3ec370"
+  },
+  "spec.share.groupTitle": {
+    "text": "Đăng thẻ liên kết đến kế hoạch này trong cuộc trò chuyện nhóm",
+    "source": "28b7e3e20b6d247cc72b0d34bd63737a8a3a56f39cc65676c51dfed153463268"
+  },
+  "spec.share.shared": {
+    "text": "Đã chia sẻ",
+    "source": "e3c4b39d6d5013477c98cd58236fed455f37aa7017b7168ce1980a449aaf438a"
+  },
+  "spec.share.toUser": {
+    "text": "Chia sẻ với người dùng",
+    "source": "2957a7aa238fc6894cc4a4bff2238f396309a3988645954c01e4131f00631816"
+  },
+  "spec.share.userTitle": {
+    "text": "Chia sẻ riêng phiên bản kế hoạch này với một người",
+    "source": "fa5f2ce7ed2db84c015d4a9dba025612d70654635886558d667e72d63350d980"
+  },
+  "spec.share.sentTo": {
+    "text": "Đã gửi cho @{{username}}",
+    "source": "281ad1c50d5fd786c4f73e8f5b2749a7523451beb8d069d4a665589934a52428"
+  },
+  "spec.share.enterUsername": {
+    "text": "Nhập tên người dùng",
+    "source": "35b68c138007e28bd93ca5f8065ec1be06fcb822b65061f45471d728321f9024"
+  },
+  "spec.share.failed": {
+    "text": "Chia sẻ không thành công",
+    "source": "cc17165622016c42044c6bb3de8bad2a4c297deef670b3c1b192ba4566a4928a"
+  },
+  "spec.share.dialogLabel": {
+    "text": "Chia sẻ kế hoạch này với một người",
+    "source": "556c0306a8f7bdf81b18e8b3a863dad5b924220ee077cce5db12069157754fa0"
+  },
+  "spec.share.usernamePlaceholder": {
+    "text": "Tên người dùng…",
+    "source": "806a95283be851098238afe362b41ed5347e9822eef5b253e0ce7741b89932f0"
+  },
+  "spec.share.usernameLabel": {
+    "text": "Tên người dùng để chia sẻ",
+    "source": "ce819d481fd7eed11f6a53a8272c6873b03eb4df51848dd822184565095487f9"
+  },
+  "spec.share.sending": {
+    "text": "Đang gửi…",
+    "source": "b8ed5279e897be5def6b902caa5121b3c1ee6957209f715187878a93ae0ca8be"
+  },
+  "spec.share.send": {
+    "text": "Gửi",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "spec.noVersions": {
+    "text": "Chưa có phiên bản",
+    "source": "ff76e0371906ef371413f5357729db2cbe9c1a9f8e72b8300f7934126c83cb2e"
+  },
+  "spec.close": {
+    "text": "Đóng trình xem kế hoạch",
+    "source": "29506ff463cf2370109e5d15f83f71ad8a6c0312ba0815cc693a7ded0f066b39"
+  },
+  "spec.buildHint": {
+    "text": "Đây là kế hoạch, chưa phải thay đổi đã được xây dựng. Sẵn sàng chưa? Hãy nhờ AI trong cuộc trò chuyện xây dựng nó.",
+    "source": "55521b3b4f7c814d70ce25e58a27be3929a8c474fcc45933432df14009919ee2"
+  },
+  "view.checks": {
+    "text": "Kiểm tra đề xuất",
+    "source": "9c021e9624373cff809342e8a9ccbac13c2775f693f829aa21d9269e0052a037"
+  },
+  "view.proposalHint": {
+    "text": "Hãy mô tả thay đổi bạn muốn. Khi đã sẵn sàng, việc đẩy PR của phiên này lên sẽ tạo ra đề xuất để mọi người bỏ phiếu.",
+    "source": "ac17ac1316e3d92e1c79a77ec0bf3d91c7b6699a415022c17093fe3a10cf187b"
+  },
+  "view.returnHint.label": {
+    "text": "Quay lại trò chuyện phát triển",
+    "source": "ce1865dd2fe8c38e5fbfa56b5ffb313fa6b7f081f25e51980e3fbe9a801e1e5b"
+  },
+  "view.returnHint.title": {
+    "text": "Bạn có thể quay lại sau",
+    "source": "d41ee92f1a7e6fbba366a87da68ff522995909144904568fd7098fbdcc1c2714"
+  },
+  "view.returnHint.body": {
+    "text": "Bạn có thể rời trang này và quay lại bất cứ lúc nào. Mở <0>Tin nhắn</0> để xem trạng thái thay đổi của bạn hoặc tìm lại cuộc trò chuyện này.",
+    "source": "0d017fa2a86d0c2f7b579e32f73342a972f84980cd0aeafcb9762ef2769606db"
+  },
+  "view.returnHint.dismiss": {
+    "text": "Đã hiểu",
+    "source": "5ad3dbd1242a4cea217e8b68a9fd2c8187f2c337258279193f6d9a31a9f1a69c"
+  },
+  "view.resizeSpec": {
+    "text": "Đổi kích thước trình xem kế hoạch",
+    "source": "7cde71b87c68956e0f347ab38efd781914a4e848c1d773dbbf1c6ea62f363cd3"
+  },
+  "view.resizeStaging": {
+    "text": "Đổi kích thước bản xem trước staging",
+    "source": "b672a029b79cd28ccd90c606fc3d95f59c3c844063587fe78f3dfa541863c2fa"
+  },
+  "transcript.forceStop": {
+    "text": "Buộc dừng",
+    "source": "3112cbbba91b55739a28618ebd89a40c9b556c87f56f6832d1778124b0ddd9a7"
+  },
+  "transcript.progress.guessTitle": {
+    "text": "Thử nghiệm: ước đoán sơ bộ của một mô hình AI nhỏ dựa trên nhật ký tiến độ. Có thể sai.",
+    "source": "104bce52671b1207bcfc07931c8e8b8765076873cebfa0d3e9eba2c4d33f2c77"
+  },
+  "transcript.progress.guess": {
+    "text": "✦ AI đoán: {{estimate}}",
+    "source": "d53e37c46eb6386bdc3ef17f84b4819b719896889154574c6ddabeb8ec3a1ff3"
+  },
+  "transcript.spec.open": {
+    "text": "Mở trình xem kế hoạch",
+    "source": "7e5a256f10dbcfb3dda81090ef0a264171df2b22ee27438f78362a49775ecc20"
+  },
+  "transcript.spec.viewFull": {
+    "text": "Xem toàn bộ kế hoạch →",
+    "source": "cea0efae3a9b01e203c9bbe4f83412c101619d679dac8e12626735f2150ebe3d"
+  },
+  "transcript.issueDraft.showFull": {
+    "text": "… Hiện toàn bộ báo cáo",
+    "source": "7dfa3dab33719f0503d81a2dbb1e9a5f8bbd386ad5af333d8f4a02971048cbe9"
+  },
+  "transcript.issueDraft.dismiss": {
+    "text": "Bỏ qua",
+    "source": "48845bff334a50a59aaecf499f28a7a24c3b4b891b8b18a9f1169ad8e8a6b261"
+  },
+  "card.changes.openVote": {
+    "text": "Mở trang bỏ phiếu của đề xuất này",
+    "source": "ad08fc940ea3f21c11460edcf9bbecc8836a1bd8d05de5045b7944d58fa9b097"
+  },
+  "card.changes.previewGone": {
+    "text": "Bản xem trước đã bị xóa sau khi hợp nhất. Thay đổi này hiện đã hoạt động trong ứng dụng",
+    "source": "d4c7d55ec65396dd2d25e6ac52e43eb3faf2f58c9d199c8a29766513ad834b67"
+  },
+  "card.changes.prLink": {
+    "text": "PR #{{number}}",
+    "source": "3e1a154cfb911f9333d7e99d818b2a74d9b2cc6d4660e6b3ef14316c4f014f24"
+  },
+  "card.changes.ready": {
+    "text": "Thay đổi đã sẵn sàng",
+    "source": "67d1207f22a3d288842145ea031ffb01de096e781c2746288c7cafe1079180f9"
+  },
+  "card.changes.openRequest": {
+    "text": "Mở yêu cầu #{{number}}",
+    "source": "92da8a7a8f70b01fd4bcd5cc0db2a272f35046b1a6a1f2562746e808aee99a8a"
+  },
+  "card.changes.closes": {
+    "text": "Đóng #{{number}}",
+    "source": "3b5e7b297afa70eaf8ba6a678823c0c64a448413b6a12afbf263225fa9f9b01a"
+  },
+  "card.changes.closed": {
+    "text": "Đã đóng #{{number}}",
+    "source": "747d00b07d10ad20dd5b4dcd16dcd785eccbcf75f993626f3b7fb630c25a75b8"
+  },
+  "card.changes.previewStaging": {
+    "text": "Xem trước staging",
+    "source": "a5dced81cb8fe2561514415a884fc2df8613664b9be6818f4c0430be09be6fb8"
+  },
+  "card.changes.test": {
+    "text": "Thử thay đổi này",
+    "source": "cf4a1f03148c34ed07160a46ada383971f300ba9bdc9d616a2ad67753ce70169"
+  },
+  "card.changes.viewOnGithub": {
+    "text": "Xem trên GitHub",
+    "source": "20672423d71690888afb7caa922ea2a23592d49346341b1eee292de65189a296"
+  },
+  "card.changes.proposing": {
+    "text": "Đang đề xuất…",
+    "source": "adf1e9863b117de1b301cff1c6d1187163f52116a0c0a51856368d8257eb314c"
+  },
+  "card.changes.alreadyProposed": {
+    "text": "Đã đề xuất",
+    "source": "d2dfe48d0bb1626ef13e81b6b1aefe4366f3f2b6e1017f0a0176f2f98c5f5a6f"
+  },
+  "card.changes.submit": {
+    "text": "Gửi để xem xét",
+    "source": "40447e4493fb383254128a32634f1a5f2aa90abe6d73ca3d46d5cef524ad9cd7"
+  },
+  "card.changes.mergedTitle": {
+    "text": "Thay đổi này đã được hợp nhất và hiện đã hoạt động trong ứng dụng.",
+    "source": "641fe6a4b671c581674a6affd447697479148f61ff0bad5c3202ca60f4748255"
+  },
+  "card.changes.mergedBadge": {
+    "text": "✓ Đã hợp nhất, đã hoạt động trong ứng dụng",
+    "source": "4ff4a42bbc7dea68fb4c14bf55cf6ff8561422f10086e88ea7f38bf4d7644596"
+  },
+  "card.changes.mergedNote": {
+    "text": "Đã hợp nhất, đã hoạt động trong ứng dụng",
+    "source": "f1f2ec9741cc01d6b3c6148bbcc4a38fde9568bc121bc823cc67cc69b41ed43b"
+  },
+  "card.changes.earlierResult": {
+    "text": "Kết quả bản dựng trước",
+    "source": "1e9a6b8c665834b8c85c3324349eafadc8416a217690bb379cc66e0412df9d7e"
+  },
+  "card.changes.resultNote": {
+    "text": "Kết quả bản dựng. Các thao tác hiện tại ở phía trên.",
+    "source": "f90fac18ea62a6708035dc1908167034ae9505c1e8c9e776dbe1a65fdd05f7a8"
+  },
+  "transcript.who.you": {
+    "text": "Bạn",
+    "source": "08b041935798fbf6fd6ff51099ffedb140a475889986d14f5559ff8e7fc571dd"
+  },
+  "transcript.who.claudeCode": {
+    "text": "Claude Code",
+    "source": "246ef8c1130d56f5d9df740a4b26c033a8b9c064daba9bb0a052d18993e87373"
+  },
+  "transcript.who.ai": {
+    "text": "AI",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "transcript.fullOutput": {
+    "text": "Toàn bộ kết quả",
+    "source": "db094b2a5f4ad20f351ef29ded4652f3da17452d1a8008eb7c45af4ec4ff0a45"
+  },
+  "transcript.attachment.openFullSize": {
+    "text": "{{name}}: mở kích thước đầy đủ",
+    "source": "c3d00e159289ab6284efa4580dbc93e75b243d48d30e126f9821d44a17615369"
+  },
+  "transcript.attachment.openFullSizeUnnamed": {
+    "text": "tệp: mở kích thước đầy đủ",
+    "source": "60c234f2bde039aff206e70a16a772a2b2f1feaaae3ef4280d48673206cb8b73"
+  },
+  "transcript.attachment.download": {
+    "text": "Tải xuống {{name}}",
+    "source": "043437f9a8abba216a5da59078ca43482396f0619c94bfdffdd6b5c62b9a31eb"
+  },
+  "transcript.attachment.downloadUnnamed": {
+    "text": "Tải xuống tệp",
+    "source": "9de4149fb9716cfc2d9f757708f261e93698c5bef33d41a0c5b927decc88e169"
+  },
+  "transcript.reasoning": {
+    "text": "Suy luận của tác tử (thô)",
+    "source": "d67b53e24edbe7491449492af01ae5c0ba4043bce50b176091bd56f36d6a0ab0"
+  },
+  "transcript.qa.less": {
+    "text": "Giảm",
+    "source": "ae5239ec63f28cd401ccd63e9f56e4ede8254a738a135ebcd33e844c18dd247f"
+  },
+  "transcript.qa.more": {
+    "text": "Tăng",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "transcript.qa.value": {
+    "text": "Giá trị",
+    "source": "8e37953d23daca5ff01b8282c33f4e0a2152f1d1885f94c06418617e3ee1d24e"
+  },
+  "transcript.qa.suggested": {
+    "text": "đề xuất",
+    "source": "8ad7037556d079419d067ab67761390f62a7db8ed3f4696554b320f13b18da97"
+  },
+  "transcript.qa.send": {
+    "text": "Gửi câu trả lời",
+    "source": "8a78567662bfc85339b737b569bf0ff603cf261c2e2a146b436e5c4b7a8f2d3e"
+  },
+  "transcript.qa.useDefaults": {
+    "text": "Dùng mặc định được đề xuất",
+    "source": "7a599865e832b4686ff832e95e80b3c1218b6834c329b54493a96318e4d0aee5"
+  },
+  "transcript.emptyTitle": {
+    "text": "Phiên này nên thay đổi điều gì?",
+    "source": "9a4a6fae89c66a68ce12c65b24e87c7b6c9c395b49d7a8706c3c9db71e85ae0c"
+  },
+  "transcript.qa.suggestedNumber": {
+    "text": "đề xuất {{number}}",
+    "source": "2720502f25437827f7f91d4f3dd6a1962e3847da67119ac225be339ef24e8801"
+  },
+  "list.dot": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "composer.placeholder": {
+    "text": "Mô tả thay đổi bằng lời thường, ví dụ: \"thêm nút bật chế độ tối\". Không cần biết lập trình.",
+    "source": "4084f4c1943579180868b0b116fa303a3d31388a4f4bb6fa267d03e2cdac5170"
+  },
+  "composer.placeholderBusy": {
+    "text": "{{agent}} đang làm việc. Hãy nhập ghi chú tiếp theo và nhấn 💾 để lưu lại dùng sau.",
+    "source": "4922638c955a47db1926540a149eeefc84e24e9491e8517622b67cbe763c2d33"
+  },
+  "model.cost.perChange": {
+    "text": "khoảng {{amount}} cho một thay đổi thông thường",
+    "source": "e3e4af0db69b6da2232d8679cf1e7d8fd304191fb3eae7e40c7b1b4ecc2b6e24"
+  },
+  "model.cost.perChangeEstimate": {
+    "text": "khoảng {{amount}} cho một thay đổi thông thường (ước tính)",
+    "source": "f5cb51d84a113282acfd695c58636b1a8365f664059af7bccdf99ca7da9c43de"
+  },
+  "model.option.openRouterKeyTitle": {
+    "text": "Chạy bằng khóa OpenRouter của bạn",
+    "source": "4d10fe0951fc9e86d5d43a0da459c8c9437e97e2511fb3f2fad6ef5f88d6b836"
+  },
+  "model.option.claudeKeyTitle": {
+    "text": "Chạy bằng hạn mức Claude của nền tảng hoặc khóa Anthropic của bạn",
+    "source": "09d5f4d7622f4d932503b1b879375940e19749c873c737a06c4e873edd20a704"
+  },
+  "model.option.addMore": {
+    "text": "Thêm mô hình OpenRouter…",
+    "source": "c46a3c8317481d3a60ccd3e6f86b52e4fb4f962db997e2eb01923ac64695e570"
+  },
+  "model.option.addMoreTitle": {
+    "text": "Xem mọi mô hình mà khóa OpenRouter của bạn truy cập được",
+    "source": "6f4eb153711b494b14bea3d652c5ae18c0d373cacfed13e3dd45f46cbee4b196"
+  },
+  "model.option.loading": {
+    "text": "Đang tải mô hình",
+    "source": "64590e4b6bc5fe73918f576b2845e3cdb15c420a5b92d024ece4408c2513f060"
+  },
+  "model.option.label": {
+    "text": "{{model}}: {{facts}}",
+    "source": "f94676fa2801340810977694d4a4cbc67c199d0e7bbed97a3c6b399043a20b8e"
+  },
+  "model.unknown": {
+    "text": "Mô hình không rõ",
+    "source": "3895185372e6aa76e3ef386f0b061ebae58fd4fe51d7d741fa326169eeac7577"
+  },
+  "model.badge.recommended": {
+    "text": "Khuyên dùng",
+    "source": "d70604e8430461372849bbd123d85771e11423870a507e8fa4650a7e9a5a50ef"
+  },
+  "model.badge.new": {
+    "text": "Mới",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "model.compatibility.verified": {
+    "text": "đã xác minh",
+    "source": "1c34f88707b55e6104c4eb20e71ffa3d33e414b71ef689a15fad0640d0ac58cb"
+  },
+  "model.compatibility.limited": {
+    "text": "hạn chế",
+    "source": "7b508dace774f8adc1b121c1812b740904be6dfd37e3b5e3579bc81fbf6f5553"
+  },
+  "model.compatibility.unverified": {
+    "text": "chưa xác minh",
+    "source": "97b7e2db799e2b79e65f418b42a7d3054c95b2d3ab1dba243039597e44a38084"
+  },
+  "model.compatibility.verifiedNote": {
+    "text": "Đã xác minh hoạt động với lập trình trên kho mã.",
+    "source": "3e7a6d2ad80813a7dadb75729ba4b64df330174eeae9f64f2589ad92453138c3"
+  },
+  "model.compatibility.unverifiedNote": {
+    "text": "OpenRouter cho biết mô hình hỗ trợ công cụ lập trình và đủ ngữ cảnh, nhưng mô hình này chưa được xác minh cho lập trình trên kho mã.",
+    "source": "fa531d08e35094c4819450a25a6e45b64ba36d08bfe692d39e3b156235dbc76d"
+  },
+  "model.compatibility.limitedNote": {
+    "text": "OpenRouter cung cấp mô hình này, nhưng có thể thiếu công cụ kho mã hoặc đủ ngữ cảnh; lượt này có thể thất bại.",
+    "source": "c43b50b66a695e1c192ddc7b847f64ad088764473be96e7e8ddefb4c1284aeeb"
+  },
+  "model.tier.free": {
+    "text": "Miễn phí",
+    "source": "f411a1fb62758b4c54690d0a702b4955b54dd22115416fa7b1ce51b4a084818d"
+  },
+  "model.tier.low": {
+    "text": "Chi phí thấp",
+    "source": "607264add7ce608189f0d38e2c1bb2a38e66eb6a636dea16f9570d496593556a"
+  },
+  "model.tier.medium": {
+    "text": "Chi phí trung bình",
+    "source": "7c1964044ca88a216d84091d2c1c939625999e722668749fa1f88b4b75afb631"
+  },
+  "model.tier.high": {
+    "text": "Chi phí cao",
+    "source": "d6d2e413efd65cf2942bbe6f5b2db477997b1a5b7cc0b1f3ded3ed8624933761"
+  },
+  "model.tier.unknown": {
+    "text": "Chưa có giá",
+    "source": "6a9e657bba78dd439a0e1f0e291bb9d67eb56ebda13cc9b29a90c9d64d4fdb6d"
+  },
+  "model.cost.summary": {
+    "text": "{{tier}} · {{inputPrice}} /M đầu vào · {{outputPrice}} /M đầu ra",
+    "source": "7dfd6a15e1dcc8b02fac4ad7c9671305eebd04c65032591da804ed0bb56029f0"
+  },
+  "model.catalog.updatedNow": {
+    "text": "Vừa cập nhật",
+    "source": "c5cb2e53029125397d2f1a208a7c477aeba686ca6b77cad41bed79d678327d20"
+  },
+  "transcript.agentRunning": {
+    "text": "Tác tử lập trình đang chạy{{tail}}",
+    "source": "af8d049a0439a500bf50e3905f08f23f138059b70edfdadb516e5d23a6e11dfb"
+  },
+  "agentChoice.error.favorite": {
+    "text": "Không thể cập nhật mục yêu thích đó.",
+    "source": "288b961bc1df1bb49781b6238be6b0422c0280335081dd3274ce5302ecfb61ff"
+  },
+  "agentChoice.error.loadSettings": {
+    "text": "Không thể tải cài đặt tác tử lập trình của bạn.",
+    "source": "156629b61c276f5419e9ac192837c7942bbe94ab12d0012876c6ac3590667d76"
+  },
+  "agentChoice.error.loadSettingsShort": {
+    "text": "Không thể tải cài đặt tác tử lập trình.",
+    "source": "61e999c33ff9c9227735e8ef0d00765f51bf910e313cf8adb9534a97b0fa7dc8"
+  },
+  "agentChoice.error.checkCredential": {
+    "text": "Không thể kiểm tra thông tin xác thực OpenRouter của bạn.",
+    "source": "6627703edc0a4b0e81d9569ac3133d60eaddc5e7fb7d686dddde190ca5308991"
+  },
+  "agentChoice.error.provision": {
+    "text": "Không thể tự động thiết lập OpenRouter (HTTP {{status}}).",
+    "source": "8ce620c71a8426997d837058a923ea4ae13b68f0e821e7def0a04b416882587b"
+  },
+  "agentChoice.error.notDefault": {
+    "text": "OpenRouter đã được tạo nhưng chưa được lưu làm mặc định của bạn. Hãy liên hệ quản trị viên.",
+    "source": "2a7ec75fe5490ce8b407773e6e278d4e5fc2cfa6a72592028f7212c35d005ab3"
+  },
+  "agentChoice.error.checkKey": {
+    "text": "Không thể kiểm tra khóa OpenRouter của bạn.",
+    "source": "a665eacd3f6ceb3bbe55ff55ae37f01373a39d050984bc3e2c01cc804542d98c"
+  },
+  "agentChoice.error.loadModels": {
+    "text": "Không thể tải các mô hình OpenRouter.",
+    "source": "50eb99bd96ae98c6da37b0ec63ccf9908621046a4fca138376eabb2f226b6905"
+  },
+  "agentChoice.error.noModels": {
+    "text": "Hiện không có mô hình OpenRouter nào. Hãy thử Làm mới.",
+    "source": "5b544eccd6379ffc2fae03e444d92935da1377b852da7c0b2a934e80627fc5ad"
+  },
+  "agentChoice.title.model": {
+    "text": "Chọn mô hình OpenRouter",
+    "source": "8cf84a2f608dcda3972b482726740d51ac42ffab2ff24436d058229a7765ce88"
+  },
+  "agentChoice.title.switch": {
+    "text": "Phiên này nên xây dựng ở đâu?",
+    "source": "a1f22996797565bc193e8ed00d8cfef1cf277c126b1b87eb66d38b2893da3a28"
+  },
+  "agentChoice.title.create": {
+    "text": "Bản dựng này nên chạy ở đâu?",
+    "source": "964e32bfcd55fc7f884e402d47672fdc2e30b8c48b6cd0d9d8a698e46ff7278f"
+  },
+  "agentChoice.intro.model": {
+    "text": "Đổi mô hình vẫn giữ nhánh và cuộc trò chuyện này, nhưng sẽ bắt đầu ngữ cảnh OpenRouter mới ở lượt tiếp theo.",
+    "source": "e545d0b842d7446ae0b038b0a34578397f62e7d50c08a6c0f0a84cfe7508dd4e"
+  },
+  "agentChoice.intro.switch": {
+    "text": "Chuyển đổi vẫn giữ nhánh và cuộc trò chuyện này, nhưng sẽ bắt đầu ngữ cảnh tác tử lập trình mới ở lượt tiếp theo.",
+    "source": "46a134a35bfebb5da9eaa31436c4903c1c051967177b81b0ff6b160a96ebac9b"
+  },
+  "agentChoice.intro.create": {
+    "text": "Cả hai tác tử đều khả dụng. Mặc định đã lưu của bạn được chọn sẵn; lựa chọn này được gắn với phiên mới.",
+    "source": "2e494c56d09f28496e5bf75f1dea71847bb798f231633c3e2549eec18e645d5d"
+  },
+  "agentChoice.groupLabel": {
+    "text": "AI của phiên",
+    "source": "1eedac3f41758cf199f2972392a2f60e10b773b8139a35624448a347efc3fc52"
+  },
+  "agentChoice.openRouterBlurb": {
+    "text": "Ưu tiên. Dùng tín dụng đi kèm hoặc khóa cá nhân của bạn, với bất kỳ mô hình nào có sẵn.",
+    "source": "8d576d69b3d8158176a6c24216a06b263f482656c5577b257b8a8414b8b3b635"
+  },
+  "agentChoice.claudeBlurb": {
+    "text": "Dùng hạn mức Claude của nền tảng.",
+    "source": "33140cf88aeb85e5a2d9fcd618c6edeedf3af5b1e6da7c13462d0d4e14a4a012"
+  },
+  "agentChoice.savedDefault": {
+    "text": "Mặc định đã lưu",
+    "source": "069cb9408c44c90c46c053af0427e89b9cb9c286db55090806a075c54f1f1a1f"
+  },
+  "agentChoice.modelLabel": {
+    "text": "Mô hình OpenRouter",
+    "source": "dd24ac61242a5891d7634c9f3d47a395aa8fa3c69f05146ade6dbd79f1e89918"
+  },
+  "agentChoice.filterPlaceholder": {
+    "text": "Lọc theo mô hình hoặc nhà cung cấp…",
+    "source": "19c5643bbd1f98db6b8a44e44ea4e41206c8bef78a76be7f69725fbec2ddf643"
+  },
+  "agentChoice.favoritesOff": {
+    "text": "☆ Yêu thích",
+    "source": "c2a2f40a25908cbf45d00937d3105b55913e6e0be8606c2f72629c170c6f268d"
+  },
+  "agentChoice.favoritesOn": {
+    "text": "★ Yêu thích",
+    "source": "68b313bd3a864047563e76252b892a4da35af65842a1f24602356ca6b4d3b752"
+  },
+  "agentChoice.refresh": {
+    "text": "Làm mới",
+    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
+  },
+  "agentChoice.refreshing": {
+    "text": "Đang làm mới…",
+    "source": "1c0def7be0607b966b89e4974da38090472d8ada625f5b4c89f25b09d39683bd"
+  },
+  "agentChoice.star.add": {
+    "text": "Thêm mô hình đã chọn vào mục yêu thích",
+    "source": "a079bd1c365635918e2f92e449c44166440dc6089751ae28a3ccb34328dd7902"
+  },
+  "agentChoice.star.remove": {
+    "text": "Xóa mô hình đã chọn khỏi mục yêu thích",
+    "source": "af86f2966d9ada3aedad426c2e5cd86d36f3e1be437c6f39006cf43f4dddeff4"
+  },
+  "agentChoice.catalogNote": {
+    "text": "Các đề xuất của nền tảng nằm trong Yêu thích. Bỏ bộ lọc Yêu thích để xem toàn bộ danh mục mà khóa của bạn truy cập được. Giá tính trên mỗi 1M token; chi phí thực tế tùy theo mức sử dụng.",
+    "source": "c27478fa0481fc5d670f9f36e7138963170ae5d046d4535d82a97f3538fde4d2"
+  },
+  "agentChoice.effort.label": {
+    "text": "Mức suy luận",
+    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
+  },
+  "agentChoice.effort.default": {
+    "text": "Mặc định",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "agentChoice.effort.minimal": {
+    "text": "Tối thiểu",
+    "source": "057b5de48d7b90f123ec28d7e15f65d99b508d6b7cc2958c39472070f0f0f6bb"
+  },
+  "agentChoice.effort.low": {
+    "text": "Thấp",
+    "source": "f793de205ead5ac302c4a1627829dea41f176b1068b993a32373fc869918374b"
+  },
+  "agentChoice.effort.medium": {
+    "text": "Trung bình",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "agentChoice.effort.high": {
+    "text": "Cao",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "agentChoice.effort.xhigh": {
+    "text": "Rất cao",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "agentChoice.openSettings": {
+    "text": "Mở cài đặt OpenRouter",
+    "source": "43a49afc3547fbf162ce73fb5092dfe6d54491d6c3fd10e3996d6c988edfec13"
+  },
+  "agentChoice.catalog.noMatch": {
+    "text": "Không có mô hình phù hợp. Xóa tìm kiếm hoặc hiện tất cả mô hình",
+    "source": "bc72fa996c112a39b76587cb0c7f2c4cfd4204c28223c07cc8c553429934bc99"
+  },
+  "agentChoice.apply.model": {
+    "text": "Dùng mô hình OpenRouter này",
+    "source": "e6f6fcab72d1875cce0a89ba72f137692a12375f278f88c5cc09816be31843f5"
+  },
+  "agentChoice.apply.switch": {
+    "text": "Chuyển sang {{venue}}",
+    "source": "f57bfb2a65c95b60dae30b36cae38685e1452e616c5d7f5c2f58a8bfa21a5fa7"
+  },
+  "agentChoice.apply.build": {
+    "text": "Xây dựng trên {{venue}}",
+    "source": "cc0352223a042c7ab4ea5570a2c8a2ed1cee9d6f523b9d4f17de6e577aae107c"
+  },
+  "agentChoice.apply.setUp": {
+    "text": "Thiết lập OpenRouter",
+    "source": "b9f8c5d059872aa06f7bbd07236fde7ab50b39fb21433f1ad8543fd08a562ce3"
+  },
+  "agentChoice.status.claudeAfterError": {
+    "text": "{{error}} Homeroom · Claude vẫn khả dụng.",
+    "source": "6d6c7f327eae39d2d6fd1cebf10a907ae9fbfe0e7a48927e69590858b101ec44"
+  },
+  "agentChoice.status.claude": {
+    "text": "Homeroom · Claude xây dựng trong cuộc trò chuyện này bằng tín dụng Homeroom hằng ngày của bạn.",
+    "source": "93876eb20c2636abfbb06c8ac20e0a4787fb284b1da28b6378b7f3727d592773"
+  },
+  "agentChoice.status.openRouterDisabled": {
+    "text": "Homeroom · OpenRouter chưa được bật cho tài khoản hoặc bản triển khai này.",
+    "source": "c6e07131a075ebb36853c5999b88f80913a89f5c2735ac1c28408a2e4fbdfe72"
+  },
+  "agentChoice.status.addKey": {
+    "text": "Hãy thêm khóa API OpenRouter của bạn trước khi chọn OpenRouter.",
+    "source": "a04975ea2c24bd620b5ee1dea85bbd19a26b59594b38c4bef07296fc0ed81e4b"
+  },
+  "agentChoice.status.noMatch": {
+    "text": "Không có mô hình phù hợp. Xóa tìm kiếm hoặc hiện tất cả mô hình.",
+    "source": "e585a81e704bc2a38900fb24a90353b36410bc0d13ebd65664ef18f05075c3e4"
+  },
+  "agentChoice.status.model": {
+    "text": "{{cost}}. {{compatibility}} Phiên này được tính phí trực tiếp vào khóa OpenRouter của bạn.",
+    "source": "028876f8cb89c702314e5996951fda697d5cbac39adf992fbdae1a7c5db6f5ae"
+  },
+  "agentChoice.status.modelNoEffort": {
+    "text": "{{cost}}. {{compatibility}} Mô hình này không có tùy chọn mức suy luận. Phiên này được tính phí trực tiếp vào khóa OpenRouter của bạn.",
+    "source": "57160ef17bce5b8da353daebc891b84f76b35b53dede64a4840682ddcb30d3f7"
+  },
+  "agentChoice.error.refresh": {
+    "text": "Không thể làm mới các mô hình OpenRouter.",
+    "source": "ad5f3aeeeee6205787c2eec78441e1112ca01389997c37cbefb1eacb7a6360f1"
+  },
+  "agentSwitch.alreadySelected": {
+    "text": "Phiên này đã dùng {{venue}}.",
+    "source": "d79d0df05cd6a383b2603a85d0a95b025efa446604b9ecf787688804df5d590b"
+  },
+  "agentSwitch.failed": {
+    "text": "Không thể chuyển tác nhân lập trình.",
+    "source": "3fe8417483ccba9b959efc48ce6a0f0f85b77ae771d1365de18e86b2024d0623"
+  },
+  "agentSwitch.nowUses": {
+    "text": "Phiên này hiện dùng {{venue}}.",
+    "source": "c68bcbf3f0e65e497879d9a44b3d2809cb86bf9e25001a4c7984e6721ffb3a8e"
+  },
+  "agentSwitch.networkError": {
+    "text": "Lỗi mạng khi chuyển tác nhân lập trình.",
+    "source": "4205cd6311e33d32f1694aa9684b2862c6dee457547ae10a665be056b94403ff"
+  },
+  "agentSwitch.platformFailed": {
+    "text": "Không thể chuyển sang tác nhân của nền tảng.",
+    "source": "253a092475e5b1b3aac48ce4f92896be1771ace9f920588dcac6199169dae6dc"
+  },
+  "runner.yourMachine": {
+    "text": "máy của bạn",
+    "source": "44c1d773754daf43c548fd4240077ed5e235397bdae8ff29b3406785521abefb"
+  },
+  "runner.handBack.confirm": {
+    "text": "Trả các lượt lập trình về cho Homeroom?\n\n{{machine}} sẽ không nhận lượt nào nữa cho phiên này. Những gì đã commit vẫn nằm trên nhánh.",
+    "source": "4312a504ca486f38371941cc7f4b90fd2191c124ea32d7462580146ee37e244b"
+  },
+  "runner.handBack.confirmUnnamed": {
+    "text": "Trả các lượt lập trình về cho Homeroom?\n\nMáy của bạn sẽ không nhận lượt nào nữa cho phiên này. Những gì đã commit vẫn nằm trên nhánh.",
+    "source": "8f0e6d18bf263c6b68086e7af29f680276f80360c6efe659cd69116ede3de571"
+  },
+  "runner.handBack.failed": {
+    "text": "Không thể trả phiên lại. Hãy thử lại sau giây lát.",
+    "source": "768a2b9ccb4d0b49d8aece7222c1bfd7e398823b2ed0375e51f3f6e1cb5ccd39"
+  },
+  "model.guidanceTooltip": {
+    "text": "Chỉ là gợi ý, không phải quy tắc. Mô hình nào cũng có thể thử mọi thay đổi. Opus là lựa chọn lập trình chung; hãy chọn Fable khi cần óc thiết kế hoặc việc lập trình thực sự khó. Cả hai đều tốn hơn Sonnet cho mỗi thay đổi.",
+    "source": "9c1c6d1ce946c6f2a3d3d8b73412f397fc6cbd26fdca886fda4afd06fa64e293"
+  },
+  "model.option.withHint": {
+    "text": "{{model}}: {{hint}}",
+    "source": "642c21a981aa9658c9b4dcf9048fd2304be580f6e8ecca4c40b975e8940883e9"
+  },
+  "model.option.bestFor": {
+    "text": "{{model}}: phù hợp nhất cho {{guidance}}",
+    "source": "22d6312a5eb279ff31a7372145b312af47ee673f89197550f4fe15764e81967e"
+  },
+  "budget.reset.daily": {
+    "text": "Đặt lại lúc {{time}}.",
+    "source": "657e2592a7b7f445d80031ee9a51a61538622653088d93fce400dea84fc688c0"
+  },
+  "budget.reset.weekly": {
+    "text": "Đặt lại vào {{day}} lúc {{time}}.",
+    "source": "f56ad5c5cec2cd02084ba0b4eeaa621e6d01ace3d9d3b5366a6af57ad81b8603"
+  },
+  "budget.reset.weeklyUtc": {
+    "text": "Đặt lại lúc 00:00 UTC thứ Hai.",
+    "source": "8260c59430618de198b46e83610e7a2945840b03ccd8174e1d52020606f50498"
+  },
+  "budget.reset.dailyUtc": {
+    "text": "Đặt lại vào nửa đêm UTC.",
+    "source": "2c9022fbc8e8f9a22c5ec6595dede32d9fd51d2abedb3eed2785dfe2a1190bda"
+  },
+  "budget.window.thisWeek": {
+    "text": "Tuần này",
+    "source": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634"
+  },
+  "budget.window.today": {
+    "text": "Hôm nay",
+    "source": "2b065c7c9ce466e5ebcad757987d5d660ee4c9ea708bc62c43444b53334738ba"
+  },
+  "budget.pill.thisTurn": {
+    "text": "lượt này ${{amount}}",
+    "source": "328bae77db5a55c3935268b952b2419d22ee78b940b1d8747a9a60005ffaa13c"
+  },
+  "budget.pill.thisTurnEstimated": {
+    "text": "lượt này ~${{amount}}",
+    "source": "72ea7abcb7e9e931cee62703130b377f65595ee744180bee5d6279a4bef01dce"
+  },
+  "budget.pill.thisTurnTitle.openRouter": {
+    "text": "Ước tính từ giá niêm yết OpenRouter của mô hình và số token lượt này đã dùng. Việc tính phí dựa trên bản ghi sử dụng của chính OpenRouter.",
+    "source": "dd6ea06c43ce66c3cd388c34ba91a92e54ca7afd76100d0fc7a776029428cec2"
+  },
+  "budget.pill.thisTurnTitle.estimated": {
+    "text": "Chi phí token ước tính đến nay. Cập nhật khi Claude Code làm việc; mức sử dụng cuối cùng quyết định việc tính phí.",
+    "source": "9222b827da91fd820c80f10eef3f02f33b226e836f8c1f813267b9424e344500"
+  },
+  "budget.pill.thisTurnTitle.reported": {
+    "text": "Chi phí token do Claude Code báo cáo cho lượt này.",
+    "source": "e6ecb196105aa6f0419e0e165c92699ad795f00c13b966eb2ac2835fd61af72b"
+  },
+  "budget.pill.lockedWithKeyTitle": {
+    "text": "Tín dụng nền tảng bị khóa cho đến khi bạn kết nối GitHub hoặc X. Khóa Anthropic của riêng bạn vẫn dùng được.",
+    "source": "48069758292791d23e6a0380d443141de1645f521f262efbde9903ebc85e6400"
+  },
+  "budget.pill.lockedWithKey": {
+    "text": "<0>tín dụng nền tảng bị khóa</0><1> · </1><2>khóa của bạn · {{last4}}</2>",
+    "source": "8cda3e6849e627c7e7e702d566fd05e8db9de6fea03ea50c8adfd6cdb42f2ec1"
+  },
+  "budget.pill.verify": {
+    "text": "xác minh tài khoản · mở khóa $10/ngày",
+    "source": "a683560b105736011e2ca80f55b26c7586d9c0d2f1eae5708f29060f47aba45b"
+  },
+  "budget.pill.verifyTitle": {
+    "text": "Kết nối GitHub hoặc X để mở khóa $10/ngày",
+    "source": "572ba5fea6f639b1901a8537f79d0a9cd84a078a12fadb480ecf54f2635d2223"
+  },
+  "budget.pill.keyAvailable": {
+    "text": "khóa của bạn khả dụng",
+    "source": "5e90064e548ec4ef6658ffcdaf605bb26bb07d7180f24c76bef0e49dd3e22ce4"
+  },
+  "budget.pill.keyAvailableTitle": {
+    "text": "Tạm thời không thể kiểm tra quyền dùng tín dụng nền tảng; khóa của riêng bạn vẫn dùng được.",
+    "source": "ffb8a07a4c56607f91a67d50c1ad8d3ccd33a5506617d9bb07b08ec2b32b8a80"
+  },
+  "budget.pill.unavailable": {
+    "text": "tín dụng tạm thời không khả dụng",
+    "source": "b028cfa7020d0eeee89a5b0f9fc1a670f51e9e66d0ddcce26489bf6d9b40b1f1"
+  },
+  "budget.pill.unavailableTitle": {
+    "text": "Không thể xác minh quyền dùng tín dụng nền tảng. Hãy thử lại sau ít phút.",
+    "source": "286f1ddc12f17ee9cd830fc2f325bbe85e7801765c1b732123bb5e7e6a3271d3"
+  },
+  "budget.pill.key": {
+    "text": "khóa của bạn · {{last4}}",
+    "source": "b2645e75e382581b6424859a7f2a43e7f6bdf4a96410d954648f0f12c49a3bc4"
+  },
+  "budget.pill.keyTitle": {
+    "text": "Đang dùng khóa API Anthropic của bạn",
+    "source": "5861b6d7f2cae17193a5fc5275cb0999cb3db830c4e52281a0e750c77aef757e"
+  },
+  "budget.pill.limit": {
+    "text": "giới hạn <0>${{spent}}</0><1>/${{limit}}</1>",
+    "source": "5fe7fcf6d2ba1f3fd669f3ee71e1824c0f0dfc4fe4317c23914901252a639f1b"
+  },
+  "budget.pill.limitWithKey": {
+    "text": "giới hạn <0>${{spent}}</0><1>/${{limit}}</1><2> · </2><3>khóa của bạn ${{keySpend}}</3>",
+    "source": "bd1b360bab527775444504f4c35d8e54b5ab8fdde0a36088c54ddf032c32e131"
+  },
+  "budget.title.key.weekly": {
+    "text": "{{window}}: ${{spent}} trong giới hạn hằng tuần ${{limit}} của nền tảng. Giới hạn hằng tuần được dùng trước; khóa của bạn (…{{last4}}) sẽ tiếp quản khi hết. {{reset}}",
+    "source": "41affe3a2059363fcde77a073d2f368ef8baeb655e717890706c52beabd50191"
+  },
+  "budget.title.key.weeklyWithKeySpend": {
+    "text": "{{window}}: ${{spent}} trong hạn mức hằng tuần ${{limit}} của nền tảng + ${{keySpend}} tính vào khóa Anthropic của bạn (…{{last4}}). Hạn mức hằng tuần được dùng trước; khi hết, khóa của bạn (…{{last4}}) sẽ được dùng tiếp. {{reset}}",
+    "source": "6c885dcfd956daf94646e1764dc542b9cf830bce5b39270946d8a1387c9dc559"
+  },
+  "budget.title.key.daily": {
+    "text": "{{window}}: ${{spent}} trong hạn mức hằng ngày ${{limit}} của nền tảng. Hạn mức hằng ngày được dùng trước; khi hết, khóa của bạn (…{{last4}}) sẽ được dùng tiếp. {{reset}}",
+    "source": "b7ce50fa97ea6692f6aaed2ab12a7d453c9e87dc5b8b80196d502c76001e4716"
+  },
+  "budget.title.key.dailyWithKeySpend": {
+    "text": "{{window}}: ${{spent}} trong hạn mức hằng ngày ${{limit}} của nền tảng + ${{keySpend}} tính vào khóa Anthropic của bạn (…{{last4}}). Hạn mức hằng ngày được dùng trước; khi hết, khóa của bạn (…{{last4}}) sẽ được dùng tiếp. {{reset}}",
+    "source": "6e6c318f83fb2d1c4cc74ea00006a1c56458a61fff407dd620e8e2387799b31a"
+  },
+  "budget.title.usedUp.weekly": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí hằng tuần. {{reset}} Hoặc thêm khóa API Anthropic của riêng bạn trong Cài đặt để tiếp tục làm việc ngay.",
+    "source": "c50a753cb6306949ff6b22a8e0b12e2dfa1a919aed00247c13ed93ebc9998250"
+  },
+  "budget.title.usedUp.daily": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí hằng ngày. {{reset}} Hoặc thêm khóa API Anthropic của riêng bạn trong Cài đặt để tiếp tục làm việc ngay.",
+    "source": "4a8a7ad75c4a34d249fb6e692e7311fdb50cbed765c1fd3454eef6bc0aadb8e5"
+  },
+  "budget.title.credits.weekly": {
+    "text": "{{window}}: ${{spent}} trong ${{limit}} tín dụng AI miễn phí hằng tuần của bạn. {{reset}}",
+    "source": "0008101d062417e935a02f4e06c14b41903e419eb2897f1ca8f940cc752d61a2"
+  },
+  "budget.title.credits.daily": {
+    "text": "{{window}}: ${{spent}} trong ${{limit}} tín dụng AI miễn phí hằng ngày của bạn. {{reset}}",
+    "source": "0d4e12c5c43190f1b369acab3a69ffe5eb2baac95d7d0e217d32966bd8a7d5a8"
+  },
+  "budget.pill.openRouter.left": {
+    "text": "OpenRouter <0>còn ${{remaining}}</0>",
+    "source": "e1ebedc89578e095c816a38a1dab717b1a75275e4bf1a1729918c62a0ba6f9e4"
+  },
+  "budget.pill.openRouter.leftToday": {
+    "text": "OpenRouter <0>còn ${{remaining}} hôm nay</0>",
+    "source": "cca2ed31cfc231e4b33752359217d514c42e0d35bbb06618c071e1f8042f2999"
+  },
+  "budget.pill.openRouter.leftThisWeek": {
+    "text": "OpenRouter <0>còn ${{remaining}} tuần này</0>",
+    "source": "c66b0d3e0de3ee42993504f8b24235f1e622cd39cecb5ee0608efa7f3bbefbbd"
+  },
+  "budget.pill.openRouter.leftThisMonth": {
+    "text": "OpenRouter <0>còn ${{remaining}} tháng này</0>",
+    "source": "e997c3a905974cc640b3ff2943db7749e02e3188346eb90c7ee3058fdcde59a2"
+  },
+  "budget.openRouter.title.included.left": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}}.",
+    "source": "b515ff5fdbb169a97da15d5ac315074d031cbf286f00038017cce7856e41ffe9"
+  },
+  "budget.openRouter.title.included.leftDaily": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}}. OpenRouter đặt lại hằng ngày.",
+    "source": "34982515c21458c5c4ac34fe84b69cafa1f9e3f563931d576aa2569afc637295"
+  },
+  "budget.openRouter.title.included.leftWeekly": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}}. OpenRouter đặt lại hằng tuần.",
+    "source": "db9cea5141f870ddf565958462bbcf42ee87401b197a1d58394fa36f27d7d1d6"
+  },
+  "budget.openRouter.title.included.leftMonthly": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}}. OpenRouter đặt lại hằng tháng.",
+    "source": "387d836d642893e6d8711ea96c11ed353febedd868f15abbbdbc6bd1aa962e78"
+  },
+  "budget.openRouter.title.included.allowance": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}} trong hạn mức ${{limit}}.",
+    "source": "5f401c5235cf504fa274b1fdad34a05108909fe704e9c9b43135dda236d7b822"
+  },
+  "budget.openRouter.title.included.allowanceDaily": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}} trong hạn mức hằng ngày ${{limit}}. OpenRouter đặt lại hằng ngày.",
+    "source": "5e6240a7aff671323f7ed8bc2ce7ee2a5c75b0441a09dc8489154fbeddc4abec"
+  },
+  "budget.openRouter.title.included.allowanceWeekly": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}} trong hạn mức hằng tuần ${{limit}}. OpenRouter đặt lại hằng tuần.",
+    "source": "6b1525771340eb6799bd6045cc00087cfddec101b3e77bfce99821cfee11ef01"
+  },
+  "budget.openRouter.title.included.allowanceMonthly": {
+    "text": "Khóa OpenRouter đi kèm của bạn còn ${{remaining}} trong hạn mức hằng tháng ${{limit}}. OpenRouter đặt lại hằng tháng.",
+    "source": "779788542e4c97d9489c4576ea2dc963925617c09d6515bfa28fba156c8f8017"
+  },
+  "budget.openRouter.title.own.left": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}}.",
+    "source": "7e057a81349b1eb7a6f59bd0e586669e5533a8da2682717dc524079fb96e6c04"
+  },
+  "budget.openRouter.title.own.leftDaily": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}}. OpenRouter đặt lại hằng ngày.",
+    "source": "2285195b067989ad4d268c6719dd94f2cb4ce0cad7db063f4e32a29e2427aa3d"
+  },
+  "budget.openRouter.title.own.leftWeekly": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}}. OpenRouter đặt lại hằng tuần.",
+    "source": "302e4ca7adca8cabe125e5ccdef03b61a2dbc43828b070e306ff77b5b06a2fbb"
+  },
+  "budget.openRouter.title.own.leftMonthly": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}}. OpenRouter đặt lại hằng tháng.",
+    "source": "be33c7f3482cc4e50c32f57bdc47156f9457aff185561e819f3e3bd97e262b88"
+  },
+  "budget.openRouter.title.own.allowance": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}} trong hạn mức ${{limit}}.",
+    "source": "615aa2dd3fb016b1c52d5697df4fed7b8acaf8f6f1a4baa9b700d8ca4b9778cd"
+  },
+  "budget.openRouter.title.own.allowanceDaily": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}} trong hạn mức hằng ngày ${{limit}}. OpenRouter đặt lại hằng ngày.",
+    "source": "ca46d293fc5cdfc6c71052c43b28e5330c84fdcec9a5fa2a4ae7ebc75b02df69"
+  },
+  "budget.openRouter.title.own.allowanceWeekly": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}} trong hạn mức hằng tuần ${{limit}}. OpenRouter đặt lại hằng tuần.",
+    "source": "98d37fc5d2a4bb35d62c2e80766c492518ac75525ff552419f36d5ca60a1f8be"
+  },
+  "budget.openRouter.title.own.allowanceMonthly": {
+    "text": "Khóa OpenRouter của bạn còn ${{remaining}} trong hạn mức hằng tháng ${{limit}}. OpenRouter đặt lại hằng tháng.",
+    "source": "26f3414caaa764850333974f499815681e2d7707627adbeafa8d8047c26d7c11"
+  },
+  "budget.openRouter.title.ownLast4.left": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}}.",
+    "source": "b323144ab6cd0b87ce4a7952b2df3fe571d0d1d4d035cd6c6f4fcdc0ee62d5df"
+  },
+  "budget.openRouter.title.ownLast4.leftDaily": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}}. OpenRouter đặt lại hằng ngày.",
+    "source": "2b889f1bd400f42db1389babb66e61b136a8615aa7b7c6aa67d6893978a0432b"
+  },
+  "budget.openRouter.title.ownLast4.leftWeekly": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}}. OpenRouter đặt lại hằng tuần.",
+    "source": "31fccbd9ca47cb0870298be3f45774515f0d8274f3351fd6b9dfd0bdbe060807"
+  },
+  "budget.openRouter.title.ownLast4.leftMonthly": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}}. OpenRouter đặt lại hằng tháng.",
+    "source": "f4c893a4739077e0b9a7b2ba2fcb0bbbeedab6ebdec3af544efcae8eb9c25ce9"
+  },
+  "budget.openRouter.title.ownLast4.allowance": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}} trong hạn mức ${{limit}}.",
+    "source": "0f6e35149992987d171c555325fcca99abaa13b5ecf56c40201fb092a2d22cac"
+  },
+  "budget.openRouter.title.ownLast4.allowanceDaily": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}} trong hạn mức hằng ngày ${{limit}}. OpenRouter đặt lại hằng ngày.",
+    "source": "cd4e1fd4ad4ecb70d6032104a391f35c3190fbb416627c0270ad17751d8bb4f8"
+  },
+  "budget.openRouter.title.ownLast4.allowanceWeekly": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}} trong hạn mức hằng tuần ${{limit}}. OpenRouter đặt lại hằng tuần.",
+    "source": "7389ead54b2f8f3873897597ad93b6dc6494697008f89ff03dbfbc7ac0ce2826"
+  },
+  "budget.openRouter.title.ownLast4.allowanceMonthly": {
+    "text": "Khóa OpenRouter của bạn (…{{last4}}) còn ${{remaining}} trong hạn mức hằng tháng ${{limit}}. OpenRouter đặt lại hằng tháng.",
+    "source": "e417e5c7208f691cae495240c8bf46a87343b97290a3366a576ace42f2c542e4"
+  },
+  "banner.credits.locked.lead": {
+    "text": "Bạn đã hết tín dụng AI miễn phí của tuần này.",
+    "source": "0750f1e3c6376f8cdc5866cc8d3d931835086ca7a2f6c08c4b395f278a37d06d"
+  },
+  "banner.credits.locked.tail": {
+    "text": "Hãy xác minh tài khoản để nhận thêm: thêm số điện thoại hoặc liên kết GitHub và X.",
+    "source": "7ad6c223cd82e77326dad9cfc172bfc391c8358cb3e7df61e3f50e8e0af9ebf0"
+  },
+  "banner.credits.unavailable.lead": {
+    "text": "Không thể xác minh điều kiện nhận tín dụng.",
+    "source": "2c76435956e488e8f1f34c17d6eb62bf4d9e6b7257fe63b2d7833bda9215c05e"
+  },
+  "banner.credits.unavailable.tail": {
+    "text": "Hãy thử lại sau ít phút, hoặc dùng khóa API của riêng bạn hoặc nơi xây dựng khác.",
+    "source": "4cc2cf0c1b59e37d7a500119948bd9f4e8a1f81a7b0cc341983468515a27a6d3"
+  },
+  "banner.credits.out.leadWeekly": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí của tuần này.",
+    "source": "37415e501c0f8a2404b0955caca28f14d88a69077e946604ad5dfff4fdf66691"
+  },
+  "banner.credits.out.leadDaily": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí của hôm nay.",
+    "source": "3d5dbe684b4c5a07c1ae39d8cd4917d096ff78138108ca93d31d285b33eaa490"
+  },
+  "banner.credits.out.leadPlatform": {
+    "text": "Ngân sách AI dùng chung hằng ngày của nền tảng đã hết.",
+    "source": "6128ed784306caffeb17542867c3019d3963778033f2c88ca1e3812b083b0d92"
+  },
+  "banner.credits.out.resetDaily": {
+    "text": "Tín dụng miễn phí được đặt lại lúc {{time}}.",
+    "source": "b83c6587b03580e1dd96084258cd3077978e9926f429cb06f60bda9d2d6a8afc"
+  },
+  "banner.credits.out.resetWeekly": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{day}} lúc {{time}}.",
+    "source": "8d26f1432d85df7b71151b916d57b692b71fd685b279d243749bb8bcbc641fdc"
+  },
+  "banner.credits.out.resetWeeklyUtc": {
+    "text": "Tín dụng miễn phí được đặt lại vào Thứ Hai lúc 00:00 UTC.",
+    "source": "171a409f2fba297ec50c58b610fe6ec94fffa78d83e7f4abfd544992e5a53c8e"
+  },
+  "banner.credits.out.resetDailyUtc": {
+    "text": "Tín dụng miễn phí được đặt lại vào nửa đêm UTC.",
+    "source": "c6c0d2006e01fca5f03b413087742c3a6c5027a8ed5df7731e3f2f31b98d2f89"
+  },
+  "banner.credits.out.tailPlans": {
+    "text": "Hoặc tiếp tục làm việc ngay với gói Claude hoặc ChatGPT của bạn, khóa API của riêng bạn, hoặc công cụ lập trình trên máy tính.",
+    "source": "e0a3088cea04ee109b0fe7806525a3bad263c0066324634f52cce0d3b2155308"
+  },
+  "banner.credits.out.tailKey": {
+    "text": "Hoặc tiếp tục làm việc ngay với khóa API của riêng bạn, công cụ lập trình trên máy tính, hoặc gói đăng ký Claude.ai / ChatGPT của bạn.",
+    "source": "25917c8efb0fbc06f8553910a7b9999f1aae67731f26c2166a63a6d60285ae25"
+  },
+  "banner.credits.low.tail": {
+    "text": "Hãy thiết lập cách khác để tiếp tục xây dựng trước khi tín dụng hết giữa chừng.",
+    "source": "0bbfd6d1da59e543585e472bba2740a4007dfe0d0aa6b79fdc2513bbdd85574a"
+  },
+  "venue.refusal.verify": {
+    "text": "Hãy xác minh tài khoản để nhận thêm: thêm số điện thoại hoặc liên kết GitHub và X.",
+    "source": "7ad6c223cd82e77326dad9cfc172bfc391c8358cb3e7df61e3f50e8e0af9ebf0"
+  },
+  "venue.refusal.platformOut": {
+    "text": "Ngân sách AI dùng chung hằng ngày của nền tảng đã hết.",
+    "source": "6128ed784306caffeb17542867c3019d3963778033f2c88ca1e3812b083b0d92"
+  },
+  "venue.refusal.outWeekly": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí của tuần này.",
+    "source": "37415e501c0f8a2404b0955caca28f14d88a69077e946604ad5dfff4fdf66691"
+  },
+  "venue.refusal.outDaily": {
+    "text": "Bạn đã dùng hết tín dụng AI miễn phí của hôm nay.",
+    "source": "3d5dbe684b4c5a07c1ae39d8cd4917d096ff78138108ca93d31d285b33eaa490"
+  },
+  "flow.linkGithub.tab": {
+    "text": "Hãy hoàn tất liên kết GitHub trong tab vừa mở, rồi quay lại đây.",
+    "source": "d025c445e3f60225c80e58ccc124e44e7426b219b01d82c656faae73fd4dc36b"
+  },
+  "flow.linkGithub.browser": {
+    "text": "Hãy hoàn tất liên kết GitHub trong trình duyệt, rồi quay lại ứng dụng. Nếu được hỏi, hãy đăng nhập bằng cùng tài khoản Homeroom.",
+    "source": "25a2c29e3f8c05415a1af95a9cb46c8f117ab3a4009fe75046eec125b460d2c4"
+  },
+  "flow.instructions.none": {
+    "text": "Chưa có hướng dẫn nào để sao chép.",
+    "source": "bb2553e32c622a1eb325f3da151a5bc206ec3be9fb16a412ce8c10338b893bce"
+  },
+  "flow.instructions.copied": {
+    "text": "Đã sao chép hướng dẫn. Hãy dán vào tác nhân của bạn, nó sẽ hỏi bạn muốn xây dựng gì.",
+    "source": "ba10b7814eca17392fd3f582efdeff5868416bfe3d82cb40fb42a13eccf8b9b7"
+  },
+  "flow.instructions.copyFailed": {
+    "text": "Không truy cập được bộ nhớ tạm. Hãy mở hướng dẫn bên dưới và sao chép thủ công.",
+    "source": "d629cf856cb8f9e9dd9273beb906df2f4976005484dbd4dbd0dae54c7aec33d1"
+  },
+  "flow.prepare.needBrief": {
+    "text": "Hãy cho biết cần xây dựng gì trước. Phiếu công việc cần có nội dung để giao cho tác nhân của bạn.",
+    "source": "00197121fcaf16496a01e1fd0a0b3088f0f497b9fff283d81c0d147809002397"
+  },
+  "flow.prepare.needBriefBelow": {
+    "text": "Hãy mô tả thay đổi trong ô tin nhắn bên dưới trước. Phiếu công việc cần có nội dung để giao cho tác nhân của bạn.",
+    "source": "1df23a250fc8e1b154ef15e3d87a68b9382c674080342160696087f2ff1163de"
+  },
+  "flow.prepare.failed": {
+    "text": "Không thể chuẩn bị phiếu công việc.",
+    "source": "c365c8c5075366600ef2cfa6eaeebf7c663e35ab012138bb60e6394d1456866f"
+  },
+  "flow.prepare.reused": {
+    "text": "Bạn đã có phiếu công việc cho ứng dụng này nên sẽ dùng lại phiếu đó.",
+    "source": "e7508b0e05b57ab665a29d77080c2df1be9ac3c50172c6e4e0642ba2ce6caafb"
+  },
+  "flow.prepare.ready": {
+    "text": "Phiếu công việc đã sẵn sàng.",
+    "source": "e8a8806fcb0b6e868da82ba88a9d438360da2f48a0f3abb4f9e3df46bbd5a2fe"
+  },
+  "flow.networkError": {
+    "text": "Lỗi mạng: {{detail}}",
+    "source": "697c34f512c2882d1093e64e6c04dbe73c0e6b843adf5b938211899a7ab938ef"
+  },
+  "flow.discard.none": {
+    "text": "Không có phiếu công việc để cất đi.",
+    "source": "02ff208bd762f1fa5deb8ba85f1c68208581d85e5760d4894dcec7484797aae0"
+  },
+  "flow.discard.done": {
+    "text": "Đã cất phiếu công việc. Hãy cho biết bạn muốn xây dựng gì thay thế.",
+    "source": "ebc28691b3787aa69a9b171c6eefc6973984c6c7742e67ec059b76169fd65568"
+  },
+  "flow.discard.failed": {
+    "text": "Không thể cất phiếu công việc này.",
+    "source": "358254d4d5d947a1432dc2c4e591ad8c6defd19acc81e776f1d7bd7c67180b74"
+  },
+  "flow.submit.none": {
+    "text": "Chưa có phiếu công việc để gửi.",
+    "source": "9e01d2ad28073d94a179c3def32682200192250fe2d4053ea051814080f4c999"
+  },
+  "flow.submit.failed": {
+    "text": "Không thể gửi nhánh.",
+    "source": "18f6dcb156beae2bf854d81d86d0de7c5f97b92cfa43462bc556fa2e0abefba8"
+  },
+  "flow.submit.opened": {
+    "text": "Đã mở đề xuất từ PR #{{number}}",
+    "source": "95918a131f3d9a5ee4d19db2875f4a0ba1bca84d19a2d0044ada07f91fe1dc38"
+  },
+  "flow.submit.openedUnnumbered": {
+    "text": "Đã mở đề xuất từ PR #",
+    "source": "9a6fad0790cf8784ef10cf20516d616b3aa2f7e4f998c64773271e76556a2a16"
+  },
+  "flow.update.none": {
+    "text": "Chưa có đề xuất để cập nhật.",
+    "source": "32153fbdec3fe909d3bee8d24b822a3348c74857cfa56010bbb5429b7958ec7c"
+  },
+  "flow.update.failed": {
+    "text": "Không thể gửi bản cập nhật.",
+    "source": "242af2991727180e491aa8682edd3709464d025fb5ff0301dacdb1b91639a209"
+  },
+  "flow.update.nothingNew": {
+    "text": "Không có gì mới để gửi. Phiên này đã ở commit đó.",
+    "source": "1850b211846c9fadc091734185643136496818324d7cc1b484e91ac2e7a37dd9"
+  },
+  "flow.update.landed": {
+    "text": "Đã cập nhật. Hãy mở lại phiên này để dựng lại bản xem trước và chạy lại kiểm tra.",
+    "source": "69a50c25bf37e2b670c74836024c2bcbbf3a505efedec954e3788fdc0e7e0fa8"
+  },
+  "flow.update.submitted": {
+    "text": "Đã gửi bản cập nhật",
+    "source": "13b878f0a513b9eb6ed137de263beea8818769ed1e8a3272c4ad865d793e3276"
+  },
+  "session.resumeFailed": {
+    "text": "Hiện không thể tiếp tục phiên này. Hãy thử lại sau giây lát.",
+    "source": "407fc8c6079db709f2884147c099c94de4b1f42e6103e373770c86e5f4942034"
+  },
+  "send.openRouterFailed": {
+    "text": "**Không thể bắt đầu lượt OpenRouter.** {{detail}}",
+    "source": "c88f49dd4282b8607f20333d0f5869f616844f4811f471d0257388b18f592a22"
+  },
+  "send.pleaseTryAgain": {
+    "text": "Vui lòng thử lại.",
+    "source": "eea4fb33efd382834952e3e7ab52f8dc41ccc2c3f5c3f246f0505235e0e962aa"
+  },
+  "send.creditsResetFallback": {
+    "text": "Chúng được đặt lại vào 00:00 UTC thứ Hai.",
+    "source": "854c7cdaa4529fc945ce23e4af9066537a47135072880219a142fe9fe108666c"
+  },
+  "send.rateLimited": {
+    "text": "**Đã đạt giới hạn yêu cầu.** {{detail}}",
+    "source": "72cad251689e964a3f63e6c5d649100e6c815973a55a9dfc331f1f4cca9f3786"
+  },
+  "send.tryAgainLater": {
+    "text": "Hãy thử lại sau.",
+    "source": "ef7fbdb092422e65591d9c4e0526c73e9a80f7e11d069b56bf8cad65793158f1"
+  },
+  "send.failed": {
+    "text": "**Không thể gửi tin nhắn:** {{detail}}",
+    "source": "98ed067f2929337afb5ece759e78e201724ecc3f69b05850a10fd0e8254d17d3"
+  },
+  "send.streamError": {
+    "text": "> **Lỗi:** {{error}}",
+    "source": "c3ea7044c022108d9fbac2dad5acde0f289c3b1086fcdf25e4c653f7188fb602"
+  },
+  "title.thinking": {
+    "text": "⏳ Đang suy nghĩ… · {{title}}",
+    "source": "0a84cb8f58d9b322a19720fca9f888a3b32d84d7d8804b72b38c10e12d55a526"
+  },
+  "title.sessionDone": {
+    "text": "✅ Phiên đã xong · {{title}}",
+    "source": "b2116b3399540a749a7648e00031f36f7ca7fb54428836b6c56c868beb693ef3"
+  },
+  "title.sessionStopped": {
+    "text": "⏸️ Phiên đã dừng · {{title}}",
+    "source": "d84e722c70279ba6509c0c7f76ef470398dc707c8052cb8a2becc15ccde99b7b"
+  },
+  "title.proposalReady": {
+    "text": "🤖 Đề xuất đã sẵn sàng · {{title}}",
+    "source": "0e2853b145ca675522856a001aee78ce9726f165aded87cd7691da09a255946b"
+  },
+  "title.proposalFailed": {
+    "text": "⚠️ Đề xuất thất bại · {{title}}",
+    "source": "c0c42987ff6f7785cd1d94260db67d1e602fd594091d211185ddeeecb243065f"
+  },
+  "stop.stopping": {
+    "text": "Đang dừng tác nhân…",
+    "source": "18c3ea72b50846325786cdae4b835a5bf13078281df661e9c2b001039d5fc9e9"
+  },
+  "stop.stoppingSlow": {
+    "text": "Đang dừng tác nhân… (lâu hơn bình thường)",
+    "source": "d455ccae337c4abd301727618cd1e15c2ddc25f9950230540625e161b7532a42"
+  },
+  "stop.otherStopping": {
+    "text": "@{{username}} đang dừng tác nhân…",
+    "source": "6120dec01fd1864df8dc1404ba203bae63c38e474d9fda592fe9b6ee4606d6d9"
+  },
+  "stop.otherStoppingSlow": {
+    "text": "@{{username}} đang dừng tác nhân… (lâu hơn bình thường)",
+    "source": "0713bb55cb2044ce5f64a41181111148b1c531b12369ece8b869991357238725"
+  },
+  "stop.stuck": {
+    "text": "Vẫn đang dừng. Tác nhân không phản hồi.",
+    "source": "589b7839daded675874595d95709d5016ed6f2ddea798baa75ddcb6cf297765f"
+  },
+  "stop.forcing": {
+    "text": "Đang buộc dừng…",
+    "source": "661331d96be7890a8b9e0d8fb10b42890b647211865499292372e0e968cfacd5"
+  },
+  "stop.wrapUp": {
+    "text": "Sắp xong. Bước hoàn tất không thể bị ngắt.",
+    "source": "8a0bb4143978104db88cc44c5e7d4a14b9694bffd185e573fdf148bef65cf49d"
+  },
+  "stop.failed": {
+    "text": "Không thể dừng tác nhân. Vui lòng thử lại.",
+    "source": "2128f49120aa4d5b8ea16b21d1a6b27add6e1c214310601024a1b72aeaa5142f"
+  },
+  "transcript.agentLog": {
+    "text": "Nhật ký {{agent}}",
+    "source": "4b12d3ce1b120fab1470c25b4a92995c91ce467bd9ec93d6106684ab41692478"
+  },
+  "transcript.agentOutput": {
+    "text": "Kết quả của {{agent}}",
+    "source": "d67f5ba58ebd8d618445622b62c546b4ed2a65d90d731f816bcf10162d3b4d33"
+  },
+  "transcript.changesReady": {
+    "text": "Thay đổi đã sẵn sàng.",
+    "source": "bb8f533ef24e93f527fbf558c1e4b37e2a20c002a38cf9f0143250a03052ef0d"
+  },
+  "transcript.changesReadyChecks": {
+    "text": "Thay đổi đã sẵn sàng. Kiểm tra cần được xem lại.",
+    "source": "fdd7c148d3174bbd666915218cb0583096708798ccceac3b11ac7e3c89f2ae5a"
+  },
+  "transcript.replyCost": {
+    "text": "phản hồi ${{amount}}",
+    "source": "1486099cdb476a4b898b850784c83dc83c4746ae69595d93d994389fbf0ce1a8"
+  },
+  "transcript.replyCostEstimated": {
+    "text": "phản hồi ~${{amount}}",
+    "source": "79e0d11dd64d7297dc206268d8e72113051e4a7d434abded399f05436ed34c4c"
+  },
+  "transcript.took": {
+    "text": "(mất {{duration}})",
+    "source": "6264fc1a87dd118d8b04b5387b466f72e158f5a7365855f0c4bebc10d39c88fd"
+  },
+  "transcript.qa.typeNumber": {
+    "text": "Để tôi nhập số",
+    "source": "243395f596f7d5f152265510b401f0b75f2aa59c4a02ed23cf4a083b77dac1be"
+  },
+  "transcript.qa.somethingElse": {
+    "text": "Khác",
+    "source": "cc72843144841a6f8110b7ebe7a1768101e03c4c8c152865cb7207e8e4bf8745"
+  },
+  "transcript.noVisibleReply": {
+    "text": "(không có phản hồi hiển thị, xem phần suy luận bên dưới)",
+    "source": "ba36faf2ee41b1ad0df0ab6b562be2818cb65e1160d01808c3f75c8665eba5de"
+  },
+  "transcript.stopLanding.nothingCommitted": {
+    "text": "chưa commit gì",
+    "source": "e1f0c68d329325458ba33d9cf02bf90f3a52dd1c0db7319aa7ef5ebd812c0dbe"
+  },
+  "transcript.stopLanding.changesCommitted": {
+    "text": "đã commit thay đổi",
+    "source": "4af149976579ef13b4d3017c77c1b9b84128a4ec5216ed5c0450f165e21e41ee"
+  },
+  "transcript.stopLanding.pushed": {
+    "text": "đã đẩy lên",
+    "source": "b77f399d988cdaefde8935e45fe96dc70fdd914b6b18d13bb87a84030b46fa5a"
+  },
+  "transcript.stopLanding.notPushed": {
+    "text": "chưa đẩy lên",
+    "source": "9acfe9c98a6a38573cdc205ea313f9e1387754014e8ee90d1218b6e870c03792"
+  },
+  "issueDraft.suggestion": {
+    "text": "AI đề nghị báo cáo việc này cho nền tảng",
+    "source": "ce2c5643c3ae22815dcc14c2071dcee99fc962bda7124837e4061201aa4f71e7"
+  },
+  "issueDraft.failed": {
+    "text": "Thất bại. Hãy thử lại",
+    "source": "d2fcf4638e856b107698f07c130ede7e2a7f579a6d3e28353c2408e0241bfcb0"
+  },
+  "issueDraft.networkError": {
+    "text": "Lỗi mạng",
+    "source": "2a33d984de88157305b38d8c13bc9d85880a40f84eec3683507785fdc2bfd48d"
+  },
+  "issueDraft.reportedLink": {
+    "text": "Đã báo cáo: issue #{{number}}",
+    "source": "3cfe9028a38172263516cd8a895a599b454117c156d41366d1a47d9a3ac8b29d"
+  },
+  "issueDraft.filedOnApp": {
+    "text": "Đã tạo trên repo của ứng dụng này",
+    "source": "1ed976728547730c8e83ab1d20123b7f2f78f2e5e1ad06739f9b49a82d8794e9"
+  },
+  "issueDraft.reportedToPlatform": {
+    "text": "Đã báo cáo cho nền tảng",
+    "source": "78211a0b53ce01a48e0855173a56caa44691eede0f87e83ba487af9b31cf96b6"
+  },
+  "issueDraft.dismissed": {
+    "text": "Đã bỏ qua",
+    "source": "9d74727714dba768278ea3e26ae526fedfa685d772a0d6669e506f44c1d676d4"
+  },
+  "issueDraft.fileIssue": {
+    "text": "Tạo issue",
+    "source": "3d9d772892071c0c6243c6ab432cd89136da5913632b515f0452ed5602f41944"
+  },
+  "issueDraft.reportToPlatform": {
+    "text": "Báo cáo cho nền tảng",
+    "source": "94c6e210e8cae0d3f2113a63442ff7ed6d0169b55c1e7994a130c2d8725e3cdf"
+  },
+  "issueDraft.destApp": {
+    "text": "Bản nháp vấn đề: {{app}}",
+    "source": "903ae098fefec55993d40815e3bfafc7195df2ad5cee1ecb6ad3247deb01d44b"
+  },
+  "issueDraft.destThisApp": {
+    "text": "Bản nháp vấn đề: ứng dụng này",
+    "source": "67b9429e7087a24324a8826d58317dccd576846c8f7d403f528c41dc0599d417"
+  },
+  "issueDraft.destPlatform": {
+    "text": "Báo cáo nền tảng được gợi ý",
+    "source": "6a7fe4b9e89e5653dd730e6e0c9b04457f03e33c4fbfed0861ad0e83d9186541"
+  },
+  "markdown.fallbackNotice": {
+    "text": "Hiện chưa thể định dạng văn bản, nên đây là markdown thô.",
+    "source": "3c2ca649d4b25f85d62826090eeda3406012391cd698a1ca6eec6d2d33f6b9c5"
+  },
+  "markdown.viewImage": {
+    "text": "Xem ảnh cỡ đầy đủ",
+    "source": "31ee4b81a166d17ea140ad5aa14e5615983a9fd9dcc44888f2de389aee82babb"
+  },
+  "sessions.row.untitled": {
+    "text": "Phiên",
+    "source": "6959b4159575d8dd76d9f3bbe2c6437904f861e7860c35abd18deffb1c3425a0"
+  },
+  "header.untitled": {
+    "text": "Phiên",
+    "source": "6959b4159575d8dd76d9f3bbe2c6437904f861e7860c35abd18deffb1c3425a0"
+  },
+  "sessions.action.free": {
+    "text": "Giải phóng worker",
+    "source": "4c863e1f645605fb754ecd0ff5fc33781e214b73e1cc39245da8fdcc844a6603"
+  },
+  "sessions.action.freeing": {
+    "text": "Đang giải phóng…",
+    "source": "efc9c10c3b66f364965eacbcf1f0a106ddc482e275034fba026bacf09cd1f837"
+  },
+  "sessions.action.freeTitle": {
+    "text": "Giải phóng worker AI. PR vẫn mở để bỏ phiếu.",
+    "source": "66908832413a28e142412dcfda198ccf81e6add97b29c85b19ce28a55c39a794"
+  },
+  "sessions.action.unarchive": {
+    "text": "Bỏ lưu trữ",
+    "source": "f565318d124534cfe0a7630d518f548cd339e464f48d50eda453abd3728ac2a7"
+  },
+  "sessions.action.unarchiveTitle": {
+    "text": "Khôi phục phiên này (mở lại PR)",
+    "source": "25aff15ed17f286ddff5ee03d8795ad00f55ea8137a018cc670b3de7c5bf8d4b"
+  },
+  "sessions.action.archive": {
+    "text": "Lưu trữ",
+    "source": "66f4804ee23ddc092d1bae43cb88186aa541187fff7c1cc8a4aa17e59a9f4123"
+  },
+  "sessions.action.archiveTitle": {
+    "text": "Lưu trữ (giải phóng chỗ; có thể khôi phục trong một thời gian)",
+    "source": "d85937c6a384621b8b4c905a9f5563a24acec4402da539ccc812019ffb3c1f0f"
+  },
+  "sessions.toast.pauseFailed": {
+    "text": "Không thể tạm dừng phiên",
+    "source": "7f472c252935a1d2e5e3f80f813974d7fe4f0e9f5a6691d1c7e97a6ea133c071"
+  },
+  "sessions.toast.resumeFailed": {
+    "text": "Không thể tiếp tục phiên",
+    "source": "c7dac1d9ddd7162f14aa9ebf323bf6fc302c6010383d587203215bd004f12c1c"
+  },
+  "sessions.toast.workerFreed": {
+    "text": "Đã giải phóng worker",
+    "source": "3c041c86feed0db17325680bee61dac19f86cce0a3e09393cce75b07c26fbf3d"
+  },
+  "sessions.archive.confirmTitle": {
+    "text": "Lưu trữ \"{{title}}\"?",
+    "source": "f1071c9294f9ee2b62e36ef86aa99e0394b7d49e6b2c0933a613c5781e7963a2"
+  },
+  "sessions.archive.confirmTitleUnnamed": {
+    "text": "Lưu trữ \"phiên này\"?",
+    "source": "d742e4e5afc18b43ce282eceeadc6dee7ee88ff17de5c41d7dde5b625476c1f7"
+  },
+  "sessions.archive.confirmBody": {
+    "text": "Thao tác này sẽ đóng PR và giải phóng chỗ. Bạn có thể Bỏ lưu trữ sau để khôi phục (bộ nhớ trò chuyện được giữ 30 ngày).",
+    "source": "65aa731d2d829a9861bcda2a6de3686ffedfd0b24effc7bbffd23e12e77be2a6"
+  },
+  "sessions.archive.confirm": {
+    "text": "Lưu trữ",
+    "source": "66f4804ee23ddc092d1bae43cb88186aa541187fff7c1cc8a4aa17e59a9f4123"
+  },
+  "sessions.toast.archiveFailed": {
+    "text": "Không thể lưu trữ phiên",
+    "source": "baa3938e00028c3be76f28d10a024d0d78969b357f8223d1dd4bdccee01e5834"
+  },
+  "sessions.toast.unarchiveFailed": {
+    "text": "Không thể bỏ lưu trữ phiên",
+    "source": "7843c6d4fcbdd90a63f513ee2e5957e661cde03dbd71afe0cfa7986d0ab81803"
+  },
+  "sessions.restored.title": {
+    "text": "Đã khôi phục phiên",
+    "source": "e8d1488b13c88d137d0f939baf2b69e833c70f93143404c4925319095ff7e916"
+  },
+  "sessions.restored.body": {
+    "text": "Bộ nhớ của Claude đã bị xóa, nên đây sẽ là cuộc trò chuyện mới trên cùng nhánh.",
+    "source": "dac885bdc484b92f4c45c2ff934b1158f71ace5d18b565aea996ae99683b2dea"
+  },
+  "banner.sync.phase.resolving": {
+    "text": "Đang giải quyết xung đột hợp nhất với Claude…",
+    "source": "f28fb66208f2bd17f9212cbb0a51f9ec532138fb65f80f00788b60bbbf38ca6a"
+  },
+  "banner.sync.phase.pushing": {
+    "text": "Đang đẩy nhánh đã hợp nhất…",
+    "source": "c33127962e39407fe4c748952f1e8841043d88c85b586d8c38bb99f685ac1500"
+  },
+  "banner.sync.phase.syncing": {
+    "text": "Đang đồng bộ với main…",
+    "source": "07afc841afd985a8cdb70eca34b625caea39acbcd6ecbc5603b1f79c37df856f"
+  },
+  "banner.sync.done": {
+    "text": "Đã đồng bộ với main.",
+    "source": "b0c2e4ebe18850869d9a6cfa2ec6864635590d7f70f2d3756d6b34d4c8d290e7"
+  },
+  "banner.sync.failed": {
+    "text": "Đồng bộ với main thất bại.",
+    "source": "a8e2903fb4b4dcbfda1b7ea064fb1f19317b48c5bf1cf20b884388568c359f6a"
+  },
+  "banner.sync.failedHttp": {
+    "text": "Đồng bộ thất bại (HTTP {{status}}).",
+    "source": "ded1a1af54f5582719576d8a5cda3262d42369ec892e77c8ed93f7165880323d"
+  },
+  "banner.sync.failedDetail": {
+    "text": "Đồng bộ thất bại: {{detail}}",
+    "source": "419a8b60cc9a71ee5614195fd99cbd91c6b9ae018b56f5a96ff36f70d48fe027"
+  },
+  "header.venue.title": {
+    "text": "Đang xây dựng trong {{venue}}. {{blurb}} Chọn nơi khác: trên Homeroom, trên máy tính của bạn, hoặc giao cho Claude Code hoặc Codex trên web.",
+    "source": "3e63ad5dbfef7cb551876ab712df4412cb6aa4fee64e4cb7fda2b323c28e5c21"
+  },
+  "header.openCardTitle": {
+    "text": "Mở thẻ đề xuất của thay đổi này (PR #{{number}}). Mọi thay đổi trong cuộc trò chuyện này đều vào PR #{{number}}. Dùng “Bắt đầu thay đổi mới” cho công việc riêng.",
+    "source": "b8da7e7dfcdd1fbbb4621982bc93c9120e216b2ab1058ca189b8cc0172df74cb"
+  },
+  "header.newChangeTitle": {
+    "text": "Cuộc trò chuyện này là một thay đổi → một pull request. PR sẽ được mở sau lần xây dựng đầu tiên.",
+    "source": "8baf2c476b5f8db24d4c87f18e1392c51cb8253099363d9f8556debcd8cabbf3"
+  },
+  "composer.busy.working": {
+    "text": "Đang xử lý",
+    "source": "a92f0449a9f7235bf69dc2e8ff7070bfae3f00ec8f8f26e5457a9beac53466ac"
+  },
+  "composer.busy.finishing": {
+    "text": "Đang hoàn tất",
+    "source": "13f4f85aea89604ed53ff86dfdc38942bf4eeb0888637f5fbedff03776db412d"
+  },
+  "composer.busy.workingTitle": {
+    "text": "Lượt này vẫn đang chạy nhưng không thể dừng từ đây",
+    "source": "05cd146845aff0faed67311929ac1c61b84cb37873349a8a6201eb7c82e58627"
+  },
+  "composer.busy.finishingTitle": {
+    "text": "Đang hoàn tất…",
+    "source": "4bc99680df209ffb2f72e9291899e165218c0aa6be51f5ff5225c8b5d3595bcc"
+  },
+  "attach.stillUploading": {
+    "text": "Vẫn đang tải lên, vui lòng chờ…",
+    "source": "9862aef1a7f15da925aa344584d5e7081d3e6f9fd2b0d3dbf5e9ee68fc387b10"
+  },
+  "attach.tooBig.image": {
+    "text": "\"{{name}}\" quá lớn. Ảnh tối đa {{megabytes}} MB.",
+    "source": "1c962843d8d7e9d2e35fdbcee49eb32e7f5ba1700bd8e7954a8bd02b7d543cac"
+  },
+  "attach.tooBig.zip": {
+    "text": "\"{{name}}\" quá lớn. Tệp zip tối đa {{megabytes}} MB.",
+    "source": "9cc7f84c42c67fa02b804ea16688d388f72f55c8951cb39969753606a3d046a2"
+  },
+  "attach.tooBig.file": {
+    "text": "\"{{name}}\" quá lớn. Tệp tối đa {{megabytes}} MB.",
+    "source": "8c6f1bf70f47ef2d5587ff6c018c43851be9b81cf9f7466a4d6c08c4f4d7bb45"
+  },
+  "attach.uploadFailedHttp": {
+    "text": "Tải lên thất bại (HTTP {{status}})",
+    "source": "e795dd1768e55625102d06851b86efed2e1984dc4ce6832f5bb37ebbaf104464"
+  },
+  "attach.uploadFailed": {
+    "text": "Tải lên thất bại",
+    "source": "6efc5d27f30b20c103ca1a855bfc65cdbdf9de98c3f8ac93a3df3f319c3388bd"
+  },
+  "attach.unnamedFile": {
+    "text": "tệp",
+    "source": "3b9c358f36f0a31b6ad3e14f309c7cf198ac9246e8316f9ce543d5b19ac02b80"
+  },
+  "drafts.toast.full": {
+    "text": "Bạn đã có {{limit}} bản nháp. Hãy gửi hoặc xóa một bản trước",
+    "source": "588952a4a2bbd6ca56e5a00e13be2cfb43e72110703da65488f5a9acbaa98566"
+  },
+  "drafts.toast.saved": {
+    "text": "Đã lưu bản nháp. Gửi bất cứ khi nào bạn sẵn sàng",
+    "source": "ee16fdc4355bcc180a9bbe2798c673bbf6ff4c09b1e22b95bad0fb386a2fb313"
+  },
+  "drafts.toast.busy": {
+    "text": "Claude vẫn đang xử lý. Tin sẽ được gửi khi lượt này kết thúc",
+    "source": "1b838019e8c4911620973cbab7bbf0cd962a20dddf64fd91a069de3d3d140298"
+  },
+  "drafts.toast.uploading": {
+    "text": "Vẫn đang tải tệp lên, vui lòng chờ…",
+    "source": "84c970ba676f42c757c4b71dc767634f13545f22c5e65e69835cc6dea342160e"
+  },
+  "drafts.toast.keptTyped": {
+    "text": "Đã giữ nội dung bạn vừa nhập thành một bản nháp khác",
+    "source": "e2f1f1f3049282290c417a78c80bddba4588f05a272b6d5a72956f0596af7091"
+  },
+  "drafts.toast.deleted": {
+    "text": "Đã xóa bản nháp",
+    "source": "9e979a08793bd7d6ad440296bb8e62416641d326034d9415e2e67b1ee683c6df"
+  },
+  "spec.version.label": {
+    "text": "v{{version}}",
+    "source": "3ab5cefec1b666633fb137eff196b62b5c3f8e83eebd1bea4b4259e8cc719ee4"
+  },
+  "spec.version.latest": {
+    "text": "v{{version}} (mới nhất)",
+    "source": "4f1b819fc6c230495971cd34ac2d8e6f6f2a90dbedaba12aae3cab970f7769d8"
+  },
+  "spec.version.pr": {
+    "text": "PR #{{number}}",
+    "source": "3e1a154cfb911f9333d7e99d818b2a74d9b2cc6d4660e6b3ef14316c4f014f24"
+  },
+  "spec.empty.owner": {
+    "text": "Chưa có kế hoạch. Hãy nhờ AI soạn một bản.",
+    "source": "2001010fa0d74da3c117cfea96a382a528396fac849a7b9ec6bc801e5c76cad1"
+  },
+  "spec.empty.viewer": {
+    "text": "Phiên này chưa chia sẻ kế hoạch nào.",
+    "source": "993617d8b70c30b1a510cc9a3fdb88e5b932b49e06acb7cde77c012e6318b329"
+  },
+  "spec.share.noSession": {
+    "text": "Không có phiên",
+    "source": "64f06c9698cd0e17a303ad674d436c04ca60f5d0b358989e7369bb7ce5556b88"
+  },
+  "spec.share.networkError": {
+    "text": "Lỗi mạng",
+    "source": "2a33d984de88157305b38d8c13bc9d85880a40f84eec3683507785fdc2bfd48d"
+  },
+  "launchpad.resume.continueTitle": {
+    "text": "Tiếp tục nhánh của phiên này",
+    "source": "40705c123125483c43b1b0bca7bbb5661db1bfdec2ab3543aa5cc2bb727d682a"
+  },
+  "launchpad.resume.continueDetail": {
+    "text": "Đã có công việc trên <0>{{branch}}</0>. Hướng dẫn bên dưới yêu cầu tác tử của bạn bắt đầu từ commit hiện tại, nên không mất gì đã làm ở đây. Hãy sao chép nguyên văn: nếu tác tử bắt đầu từ nhánh mặc định của ứng dụng, nó sẽ làm lại từ đầu.",
+    "source": "fde28e423470147349a2b5718d780c099804be11ca673a1e10ac0f66d19d533f"
+  },
+  "launchpad.resume.newTitle": {
+    "text": "Bắt đầu công việc mới",
+    "source": "adcb830bf1f95d468bb166af4346f43543cf89d6ebf221587ddfb8219608340c"
+  },
+  "launchpad.resume.newDetail": {
+    "text": "Phiên này chưa xây dựng gì nên không có gì để tiếp tục. Tác tử của bạn bắt đầu từ mã hiện tại của ứng dụng, triển khai và kiểm thử thay đổi trên máy, rồi gửi kết quả lên Homeroom.",
+    "source": "a76d28934f19dc6e8f5f4c94f7aebb871c699ae8060bff1f80d3672d94cfa314"
+  },
+  "commentPin.error.imageType": {
+    "text": "Chỉ có thể đính kèm ảnh PNG và JPEG.",
+    "source": "fc8496a4fbd30c5e3e2af04461ed900009d17cf2e9d7eb75a54e850e1ec22262"
+  },
+  "commentPin.toast.kudosPlaced": {
+    "text": "Kudos của bạn sẽ thuộc về người giải quyết yêu cầu.",
+    "source": "1b3060c4aa44470f1f2ad1e8dc79161e0acbbad09d6961d12e31e1fe31f89225"
+  },
+  "commentPin.toast.kudosFailed": {
+    "text": "Chưa thêm được kudos: {{reason}}.",
+    "source": "7698d3cefd3da5d90860810b91a1dc5e1ec26d5074c293802529bda339f26db3"
+  },
+  "commentPin.toast.kudosFailedNoReason": {
+    "text": "Chưa thêm được kudos: không thể đặt kudos.",
+    "source": "02160220985f4e06b1314cb72d7ff8dd7a3697703b8307714b33c26a0661325e"
+  },
+  "commentPin.toast.sentences": {
+    "text": "{{first}} {{second}}",
+    "source": "f9253221a8337648fea7c7a0024ad06b59fda1f8cdea455c7fc1a8e7c2df14db"
+  },
+  "commentPin.posted.place": {
+    "text": "Đã đăng lên {{place}}",
+    "source": "0551d788a34ef4ff53a567b5d42c2fca0d0bd92d9407d68fe4d11cd26928ed9f"
+  },
+  "commentPin.posted.placeNumbered": {
+    "text": "#{{number}} · Đã đăng lên {{place}}",
+    "source": "7b8fdb768695515c4dfd9c03ccf564a475de58fe246aae4a36d76dc82015d87d"
+  },
+  "commentPin.hint.taking": {
+    "text": "Đang chụp ảnh màn hình…",
+    "source": "e5fa18094c76d3aaecc7ad0be51acf7cabb3afb3c899853a129802804800b6ec"
+  },
+  "commentPin.hint.next": {
+    "text": "Nhấp vào nơi đặt bình luận tiếp theo",
+    "source": "4835c825436f00f720ad30efcb9c6abfa161f6713e9dc32a71708f795d96a850"
+  },
+  "commentPin.hint.writing": {
+    "text": "Nhấn Enter để đăng. Nhấn Esc để hủy.",
+    "source": "b7a20f9abe63b3a0d9a5135397736f761bc35dd435764c184ac02d99b2187a9b"
+  },
+  "commentPin.hint.carry": {
+    "text": "Nhấp vào nơi nội dung của bạn thuộc về",
+    "source": "4e31b9560dfdd4a3e28e31d63ace3be3f47d25b2880b2dd6d0a9a18132b007c8"
+  },
+  "commentPin.hint.another": {
+    "text": "Nhấp để để lại bình luận khác",
+    "source": "039b3f3a6ff7cc0777dd46f397b4e9161ce7ee841ef1b81461ddebd6219291d2"
+  },
+  "commentPin.hint.start": {
+    "text": "Chạm vào bất kỳ đâu để đề xuất cải tiến",
+    "source": "8877e6e3746e65298e33ad6d3fca053b1b886c20eb7de6f948ef4c1a967a999d"
+  },
+  "commentPin.kudos.cost": {
+    "text": "Tốn 1 kudos.",
+    "source": "c4300df653d14aa69cdc41c80fba2506c2e5d931e9ca7f9df724b212f0ae8276"
+  },
+  "commentPin.kudos.label": {
+    "text": "Kudos cho người giải quyết",
+    "source": "8a8f2069c6d0ccf03ea123241a6cc7ee0e988654688eccd144eceba07718d628"
+  },
+  "commentPin.kudos.noneLeft": {
+    "text": "Tuần này đã hết",
+    "source": "cbf052f4d5de2088264c5d287bff39f497150fea7c2caf36a3bb49806507781d"
+  },
+  "commentPin.kudos.costAfterCount": {
+    "text": ". {{cost}}",
+    "source": "e78dbdefdda136ee246dfa12b36ff64b839433f77a2de7aab9a208b5049f66be"
+  },
+  "commentPin.shot.attachedMany": {
+    "text": "Ảnh chụp trang này, kèm các ghim của bạn",
+    "source": "166d93e039daee8e155b88f991dfb941758233ddfe51ad9d76e0e7d0d44147c3"
+  },
+  "commentPin.shot.removeLabel": {
+    "text": "Xóa các ảnh chụp màn hình",
+    "source": "c43dc88653877dd4422b69fac27f8240a09692adce2c22f5dfa4af2f1c1988bb"
+  },
+  "commentPin.image.numbered": {
+    "text": "Ảnh {{number}}",
+    "source": "1856b59fbc8aff9519bee53ad94431d3a522fb691e80ece8315a0cbd89e8165e"
+  },
+  "commentPin.image.pasted": {
+    "text": "Ảnh đã dán",
+    "source": "bce5b478a5fae8c8f8344afc0a849aee46fa438569dda5639db4582eef6960cb"
+  },
+  "commentPin.image.remove": {
+    "text": "Xóa {{name}}",
+    "source": "43e1269ac88aba53770f74a888e94434ed456cafba03b1bd4bd40350f31befb0"
+  },
+  "commentPin.image.removeNumbered": {
+    "text": "Xóa Ảnh {{number}}",
+    "source": "6cf3106d3396527f427065dd5ae64a752259f08a82b11503487ef1a71b577bf7"
+  },
+  "commentPin.image.removePasted": {
+    "text": "Xóa ảnh đã dán",
+    "source": "c6c156988447e9ddfca582776151e448457418e6f953b45db856ae0697477b27"
+  },
+  "commentPin.image.removeTitle": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "commentPin.next.where": {
+    "text": "Nhấp vào vị trí trên trang",
+    "source": "b12b695a276c39d3b2060bc3462afd06d7a1be3b055448bd5e5de8ce6da4fe2a"
+  },
+  "commentPin.view.chip": {
+    "text": "Ảnh chụp",
+    "source": "029320ad166c1807cd70230b908d6552a5f4bc8054449a58856a31a2c765c5c4"
+  },
+  "commentPin.marker.numbered": {
+    "text": "Bình luận {{number}}",
+    "source": "9af8a0c0c9cc8a8926a59872cbf115ec73a1a1ec8c6af9b7a960dbe20435d485"
+  },
+  "commentPin.marker.single": {
+    "text": "Bình luận",
+    "source": "44f5e3fbec57be75ebfb2e42caf7f5ee1542f84748a0380b6f20238c4a257e1b"
+  },
+  "commentPin.draftPin.number": {
+    "text": "Bình luận {{number}}",
+    "source": "9af8a0c0c9cc8a8926a59872cbf115ec73a1a1ec8c6af9b7a960dbe20435d485"
+  },
+  "commentPin.draftPin.unposted": {
+    "text": "chưa đăng",
+    "source": "d81384ac2f564f61608e7b2a1cc3d2877f00a13f692d66d74c360c1b56a46e4b"
+  },
+  "commentPin.box.label": {
+    "text": "Yêu cầu của bạn",
+    "source": "73023a399137c4e9a61ed2ae44f1fd5919e8599642a5a56f63783070f91dbb61"
+  },
+  "commentPin.box.toForm": {
+    "text": "Mở trong biểu mẫu",
+    "source": "a301c0081e58b22cc76de63fce3d3ad63ee2b267c7a91883d3b60e8a61da45b2"
+  },
+  "commentPin.box.discardTitle": {
+    "text": "Hủy bỏ (Esc)",
+    "source": "91b64886ffc2b25c4c6a9fe6d34a8e1652a0eac779ca39319f76f4e3e4931a0a"
+  },
+  "commentPin.box.discardLabel": {
+    "text": "Hủy yêu cầu này",
+    "source": "2b2bff134731e0a45019804c913f8da42f9665ec95c38bf16d793390f06180ba"
+  },
+  "commentPin.textLabelNumbered": {
+    "text": "Bình luận {{number}}",
+    "source": "9af8a0c0c9cc8a8926a59872cbf115ec73a1a1ec8c6af9b7a960dbe20435d485"
+  },
+  "commentPin.placeholderMore": {
+    "text": "Và ở đây cần thay đổi gì nữa?",
+    "source": "8c32b1e8bc8584ad8f89258cdd9484f6322c3115197674acde7ccbef9c9368d7"
+  },
+  "commentPin.comment.change": {
+    "text": "Sửa bình luận này",
+    "source": "12071b15ee513e357226dc1b528928f26a1072866e1773962e53b14702dfdb63"
+  },
+  "commentPin.comment.empty": {
+    "text": "Chưa viết gì",
+    "source": "771ba18d2daa6fe949e83859b07025a5b3d7b4fd756bc433f9443d9728960802"
+  },
+  "commentPin.comment.removeLabel": {
+    "text": "Xóa bình luận {{number}}",
+    "source": "760cb1987e61507c2c704bf029d0811b2833304ecf389605abf6734881b8955e"
+  },
+  "commentPin.comment.removeTitle": {
+    "text": "Xóa",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "commentPin.title.label": {
+    "text": "Tiêu đề",
+    "source": "7e8cd2056da73a7fefb6cd91f4e5d199d08d9058c517b9a2476b1b520324d674"
+  },
+  "commentPin.title.placeholder": {
+    "text": "Đặt tên cho yêu cầu này",
+    "source": "59088d63e9d78ff7f5635c89e5a6aae5184a3e33456a1830a192bebf897c3ac7"
+  },
+  "commentPin.title.writing": {
+    "text": "Đang viết tiêu đề…",
+    "source": "1a6f511b41c2797d0a6498d3f793311f1b4e6eb9d0de2464fba7bb1e067a5868"
+  },
+  "commentPin.title.change": {
+    "text": "Sửa tiêu đề",
+    "source": "5b7850e1444c8ed21617a37a6b8bb35ef94539de5735f86ed8e7299bce9eb68b"
+  },
+  "commentPin.title.updating": {
+    "text": "Đang cập nhật…",
+    "source": "dfe40efe921fe88e332575a3516f4e8cd6bbb71437cf260b2bb9b947c65d1484"
+  },
+  "commentPin.title.suggested": {
+    "text": "Gợi ý",
+    "source": "93b63bab4c3a28d73a8bb83bcdfdcc5f6ddecfc8fc702296ca159d94c5dc6e53"
+  },
+  "commentPin.title.namedOnPost": {
+    "text": "Đặt tên từ nội dung của bạn khi đăng",
+    "source": "ae298a1122c48f5fab5098b9aa285759b9d7122123dc4acd05d264d6030c55a0"
+  },
+  "commentPin.title.asYouType": {
+    "text": "Gợi ý khi bạn nhập",
+    "source": "d3c5cf47fe40529f2b3de6f8e8c4a0af8c04a06380cf376d9750a55855583eae"
+  },
+  "commentPin.box.attachTitle": {
+    "text": "Đính kèm ảnh hoặc dán ảnh",
+    "source": "65615c6718b1134dc41cd39aa0aec7c396cd28cd9a96a65cc8d9aeaa2bf6662e"
+  },
+  "commentPin.box.attachLabel": {
+    "text": "Đính kèm ảnh",
+    "source": "b3288c672197bd6cff3106730fb208b1218625435b6b5a06e4cac049124095b0"
+  },
+  "commentPin.box.addCommentTitle": {
+    "text": "Thêm bình luận khác vào cùng yêu cầu này: nhấp vào vị trí tiếp theo",
+    "source": "1698938b892c296fc7975de9fcd0beb8d171d82421cad2681f78b706db0faef7"
+  },
+  "commentPin.box.addComment": {
+    "text": "Thêm bình luận",
+    "source": "66aaf2571db80347756ef08d718128baf62e10da434d38595a2d5aeddfe46c92"
+  },
+  "commentPin.card.kudos": {
+    "text": "kudos cho người giải quyết",
+    "source": "80c66ed823ddd0a5e14e2c6fce7343027fc2806a6d176b59975e82fe238a5c6d"
+  },
+  "commentPin.card.facts": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "commentPin.card.open": {
+    "text": "Mở yêu cầu",
+    "source": "3cfb5504e6a1736d0e6b0e5b7e7a50582d4115f3286e7cdf7f81e47d819fd57e"
+  },
+  "commentPin.intro.title": {
+    "text": "Chế độ bình luận hoạt động thế nào",
+    "source": "4f5c516f028733478c93e0d9f86753dfa64c26d080f24b332e5bf3b8f3b97803"
+  },
+  "commentPin.intro.tap": {
+    "text": "Chạm vào bất kỳ đâu trên trang để bình luận ngay tại đó, rồi nhấn Đăng.",
+    "source": "00304f14893596199772098c20f270197b7c68a51bbe52cd436e7dc2cd33083b"
+  },
+  "commentPin.intro.drag": {
+    "text": "Kéo tay nắm bên trái để di chuyển thanh.",
+    "source": "86e13646fd0ae77e736a20a2eb917da8616bf64466e8ecc4d2b39fa3cfd1851a"
+  },
+  "commentPin.intro.form": {
+    "text": "Thích dùng biểu mẫu hơn? Chạm Biểu mẫu để chuyển lại bất cứ lúc nào.",
+    "source": "a5264ec242345db849db1da5bc12819f8ee26b23a691608cd194a2cdc764f3e6"
+  },
+  "commentPin.intro.gotIt": {
+    "text": "Đã hiểu",
+    "source": "5ad3dbd1242a4cea217e8b68a9fd2c8187f2c337258279193f6d9a31a9f1a69c"
+  },
+  "commentPin.bar.label": {
+    "text": "Chế độ bình luận",
+    "source": "82d7a69825dbf68f2490b2a82ec6211e7f42f4085e99ea8827f5c2f6c97cbca6"
+  },
+  "commentPin.bar.move": {
+    "text": "Di chuyển thanh: kéo đến bất kỳ đâu, nhấp đúp để đặt lại",
+    "source": "9fda6109593ee6679277a2dfc7db583a209042ce1f7cc16cbd4f5147ac4c00c6"
+  },
+  "commentPin.bar.moveTitle": {
+    "text": "Kéo để di chuyển thanh đến bất kỳ đâu. Nhấp đúp để đặt lại xuống dưới cùng.",
+    "source": "718cddf9d3ccbfe7d56206e5aad4e23bb585dc67a6dd0832f1b10674924dc380"
+  },
+  "commentPin.bar.confirmDiscard": {
+    "text": "Bỏ yêu cầu này? Chưa có gì trong đó được đăng.",
+    "source": "8adbb1ab9815abbd433a52f45d8b04412a7ac9ecc979286d024e73fa8c4b195f"
+  },
+  "commentPin.bar.confirmExit": {
+    "text": "Bỏ các bình luận bạn chưa đăng?",
+    "source": "2c96f81f872bd543a6fddbe7a00e11fd742a4a00d0e6b5dd8055d2c189a6ab7f"
+  },
+  "commentPin.bar.keepWriting": {
+    "text": "Tiếp tục viết",
+    "source": "8fb50c872f60e8f0e7a741f02797111126ab765bdbf2d3d52938e4f6e2cff845"
+  },
+  "commentPin.bar.discard": {
+    "text": "Bỏ",
+    "source": "eb1a70e39274bb762b5d7c1adb5debeea2b05e12af28207f21a375b596853273"
+  },
+  "commentPin.bar.switchLabel": {
+    "text": "Cách đề xuất",
+    "source": "fc97827a56fcb2a5835b4eb801843d7d3ed967a59a5490cb7b919409fdb08a44"
+  },
+  "commentPin.bar.formTitle": {
+    "text": "Đề xuất bằng biểu mẫu",
+    "source": "2177cdd0fcd7df7bf4cba7af96f4b0c3f92e32fec00d347f6bda7169d53c48a6"
+  },
+  "commentPin.bar.form": {
+    "text": "Biểu mẫu",
+    "source": "2e0e960ab3204127b1dce399c9984c81f52a79f4d85cb0c3afddcfcfe8a2b48c"
+  },
+  "commentPin.bar.commentTitle": {
+    "text": "Bình luận trên trang",
+    "source": "4d066be158823df96ac4933891423fdc5e89de2293b5825457492a5545cd9dbb"
+  },
+  "commentPin.bar.comment": {
+    "text": "Bình luận",
+    "source": "44f5e3fbec57be75ebfb2e42caf7f5ee1542f84748a0380b6f20238c4a257e1b"
+  },
+  "commentPin.bar.done": {
+    "text": "Xong",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "commentPin.bar.doneKey": {
+    "text": "Esc",
+    "source": "52f878edb34fa14fa5597bf7dc55b084cd69c03df673f913988a79b1600148d3"
+  },
+  "commentPin.closeUp.pinchHint": {
+    "text": "Chụm để phóng to",
+    "source": "423044040c1049a6eb794769ac4f77e0e6e978b5d6424ac458446336b59243b9"
+  },
+  "banner.sync.behind_other": {
+    "text": "main đã đi trước nhánh này <0>{{count}}</0> commit.",
+    "source": "fd68fab5a6612bc83dc03291fe2b645e4e283f488c9b8e6d906cc9f35f247d82"
+  },
+  "drafts.heading_other": {
+    "text": "Bản nháp đã lưu ({{count}}) <0>· trên mọi thiết bị của bạn</0>",
+    "source": "6e58ac3a5e6d0ebe23f41ad9c78fd695d1d8f2e3201c965fc601cb9a240e9cd2"
+  },
+  "sessions.older.show_other": {
+    "text": "Hiện {{number}} phiên cũ hơn",
+    "source": "a9d7873d773501dad1ecde1a6f8397d28c1e7f65ebd53c0274a05d4e13f14e9a"
+  },
+  "transcript.progress.steps_other": {
+    "text": "{{count}} bước",
+    "source": "bfc14f85bd75246714b473a8c30848b967826c1f32c028740a0044f4413e5d75"
+  },
+  "model.catalog.updatedMinutes_other": {
+    "text": "Cập nhật {{count}} phút trước",
+    "source": "a9be2bbcb1e48bf59df89e4dbcacf201de49a43fb5387ff31f6ae2a6a36665f2"
+  },
+  "model.catalog.updatedHours_other": {
+    "text": "Cập nhật {{count}} giờ trước",
+    "source": "5901a1ad82c92f198071df469d7d5cf04aa31a24149b194d03e1cd00a119dae9"
+  },
+  "agentChoice.catalog.count_other": {
+    "text": "{{shown}}/{{count}} mô hình",
+    "source": "3d9dc57b3a54d2f39c5932965c79a70156417a6eb4af397dd34151d52dcf544f"
+  },
+  "flow.update.submittedVotesCleared_other": {
+    "text": "Đã gửi bản cập nhật: đã xóa {{count}} phiếu bầu",
+    "source": "582d4e1db20a68300ebab9032655454e19135f913cf447c383b9a5b6fbad7be0"
+  },
+  "transcript.spec.versionHeader_other": {
+    "text": "Kế hoạch v{{version}} · {{count}} dòng",
+    "source": "ed6256a6a7e5b5a7d6f6f0ed07b11eada18c52b6220f6c879e047b9e364ac6e0"
+  },
+  "transcript.spec.draftedHeader_other": {
+    "text": "Đã soạn kế hoạch · {{count}} dòng",
+    "source": "4b9e33b1a0b5c6b484a46ef78898423a19d5086323f4ef88460e8ff879ade3c9"
+  },
+  "transcript.stopLanding.countCommitted_other": {
+    "text": "đã commit {{count}} thay đổi",
+    "source": "56c0baf19422e7e3f08035e7b1bfd4dbb4b6e308882162ec6b602b346b7f0653"
+  },
+  "attach.tooMany_other": {
+    "text": "Tối đa {{count}} tệp mỗi tin nhắn.",
+    "source": "94798e449d4369cc757a6bfeee38428c7f9c3fb8b484cc0a9c6c4e108cac7170"
+  },
+  "attach.zipBadge_other": {
+    "text": "ZIP · {{files}} tệp",
+    "source": "62ec7870e19b83776894d16e06b69c986f94d0bc7268e583d94aec5140f27246"
+  },
+  "drafts.toast.dropped_other": {
+    "text": "Đã đạt {{limit}} bản nháp đã lưu. {{count}} bản nháp mới hơn đã bị bỏ. Hãy gửi hoặc xóa một bản trước.",
+    "source": "189f6698b98c47ab30fcd0f8dd20a0bb911a32b1c80f8b1bc773cabd9e3b7268"
+  },
+  "commentPin.error.imageLimit_other": {
+    "text": "Một yêu cầu chỉ có thể kèm {{count}} ảnh.",
+    "source": "f0ba74f17e49dfae4092294e7bec7b70af2cd791aded66e122c512ed22a45653"
+  },
+  "commentPin.toast.postedMany_other": {
+    "text": "Đã đăng {{count}} bình luận lên {{place}}. Cảm ơn bạn!",
+    "source": "e5a73c95780b6ccc132067b556dd705c594ea29aa8c31b0bbb957a69d4e3dff3"
+  },
+  "commentPin.toast.postedManyBuilding_other": {
+    "text": "Đã đăng {{count}} bình luận lên {{place}}. Homeroom bot đang xây dựng.",
+    "source": "162142c104942f511ff83214d8a4c6dda49ffb430144ac6058b2e4698cbe912d"
+  },
+  "commentPin.kudos.costRemaining_other": {
+    "text": "Tốn 1 kudos. Còn {{count}}/{{limit}} trong tuần này.",
+    "source": "aa1619b1e1c037d784e9ce5ad2b2d9cf965366b725cdc15d83573c11379967a1"
+  },
+  "commentPin.kudos.left_other": {
+    "text": "còn {{count}}",
+    "source": "656addbee3bde15ef6755ac398f9304a69f3d258b11c7e730966c2f44fb5738f"
+  },
+  "commentPin.shot.full_other": {
+    "text": "{{used}}/{{count}} ảnh",
+    "source": "f0776a83b3628b14362aa4d9abe6c8719e7886dce1f5c7431ffc1c113b542721"
+  },
+  "commentPin.postMany_other": {
+    "text": "Đăng {{count}} bình luận",
+    "source": "71618b9f3188bbc46565f8049881c589aae6a0c410ab9b68076f66ece844e6b1"
+  },
+  "commentPin.card.comments_other": {
+    "text": "{{count}} bình luận",
+    "source": "3313c3ed57add98d84a952640940903b6720d20da0cb0c134cf697c1eba32bf7"
+  },
+  "commentPin.card.images_other": {
+    "text": "{{count}} ảnh",
+    "source": "7520b3b85e97ce4da2910bf752bb13b4773e1ddf89db05e8de1e49a70266235f"
+  },
+  "commentPin.bar.posted_other": {
+    "text": "đã đăng {{count}}",
+    "source": "7e6b9fd07b1132f7464accfc5cdac41f380be3b829ebc43b17aa203bdde3bccd"
+  }
+}

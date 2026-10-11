@@ -1,0 +1,878 @@
+{
+  "search.placeholder": {
+    "text": "Buscar tus apps…",
+    "source": "0a886cb38c01c6570c63aeec062951201aeb2114c07ec3a0bb451d5e1c7a4450"
+  },
+  "search.label": {
+    "text": "Buscar tus apps",
+    "source": "bb8dcb0741ebf599fcf18b7467fd5c385ceea79b6b4c226516c9a0778e7246a6"
+  },
+  "search.clear": {
+    "text": "Borrar búsqueda",
+    "source": "3b7ea51793e9d906afa06afb86252abb48e1125cc96a7f5efabcfd8597ea183a"
+  },
+  "grid.heading": {
+    "text": "Mis apps",
+    "source": "c53203425f3466460f8bca237e0e6a107b90a06b62fe8aa47203e2146a0d58e5"
+  },
+  "grid.loading": {
+    "text": "Cargando tus apps",
+    "source": "402e40849fc5815ae5e8eb7463f6d63c86985b410a4b849f01f3e578d0926170"
+  },
+  "grid.noMatches": {
+    "text": "Ninguna app coincide con “{{query}}”. Borra la búsqueda y prueba <0>Descubrir comunidades</0> más abajo.",
+    "source": "3d394fa64e945990943c903fbb67e49fbd4a6eb2f2e6116b2f9396d63c840534"
+  },
+  "grid.notice.offline": {
+    "text": "Sin conexión. Las apps que has abierto antes aparecerán aquí cuando este dispositivo las haya cargado.",
+    "source": "8e9794bfbad1feab6e86e84384d9d0ca04b626c1e3cf5dd5ba7d65b69ef04d9e"
+  },
+  "grid.notice.loadFailed": {
+    "text": "No se pudieron cargar tus apps",
+    "source": "7760f9584546ff2c7ef9344a3caeffe49e4bdd14102abaf866faa57fed5c4f8c"
+  },
+  "grid.tile.tip": {
+    "text": "{{app}}. Mantén pulsado o haz clic derecho para ver las acciones de la app",
+    "source": "da4031e1da7a596d3ff013ce34a5c366d41e48a2e4cecb20c5c6ad91b393c8dc"
+  },
+  "grid.tile.actions": {
+    "text": "Acciones de la app",
+    "source": "2c496ac4ee78b6a6a7cfc15d6b2832194a765198ba216e7dcd31661e5e6c7682"
+  },
+  "grid.tile.remixedFrom": {
+    "text": "Remix de {{app}}",
+    "source": "cbdf637f1acf2b447f00d0ff4ac0a01c87a5d1efe4ce0ff4f455e0b65dd41d9a"
+  },
+  "grid.tile.remixedFromDeleted": {
+    "text": "Remix de {{open}}eliminada{{close}}",
+    "source": "8a0f1f5c77cfd7e79456e558789e6768268f62aa8de3016a8b89a55707305e46"
+  },
+  "grid.tile.audience.invited": {
+    "text": "Comunidad privada",
+    "source": "cbb6e03143153940d60b396a1930d790299d190338d5caee412a16d55e3ec2a2"
+  },
+  "grid.tile.audience.solo": {
+    "text": "Solo tú",
+    "source": "aeed20a96ee36e83c67fdca5fdee4bb5522ec06cec7c86b5d2984860ec560942"
+  },
+  "grid.tile.retryNamed": {
+    "text": "Reintentar {{app}}",
+    "source": "cb69001b75c50a26de98b4fe85c7c633a586143b9d7515a993da08f38da3d325"
+  },
+  "grid.tile.status.creating": {
+    "text": "Preparando...",
+    "source": "995aa30f212ab9e95c1056fd28ee755bcd9ee704164306cc57fa296fbced3454"
+  },
+  "grid.tile.status.awaitingSecrets": {
+    "text": "Esperando secretos",
+    "source": "a7841a8b087f1ac4ab666c2eb1b8a196e7521b0dd640ad737aeaf21feefb395b"
+  },
+  "grid.tile.status.error": {
+    "text": "Error",
+    "source": "54a0e8c17ebb21a11f8a25b8042786ef7efe52441e6cc87e92c67e0c4c0c6e78"
+  },
+  "layout.saveFailed": {
+    "text": "No se pudo guardar la disposición de tu pantalla de inicio.",
+    "source": "6803063f2577d47d1931e284ddbc346d5c49a7307ff92502b1f02851e7fbe9f3"
+  },
+  "create.label": {
+    "text": "Nuevo proyecto",
+    "source": "a41eb2bf7245d3bcca0c66f7b9a2c8b30a6cf975fc4bed8297811b2777956280"
+  },
+  "create.tip": {
+    "text": "Crear un nuevo proyecto",
+    "source": "a72ef4274a75450d2f66fb9e1f495d9dd8a8629700def37a90c6fb2367ab0bb1"
+  },
+  "create.disabledHint": {
+    "text": "Consulta tu límite de apps o solicita más espacios.",
+    "source": "87d3fd448f8212c59bf00ebee662164332946bc5e2ad98bb72d60f519ec92c8c"
+  },
+  "create.lockedTip": {
+    "text": "Nuevo proyecto. Ver cuota de apps. {{hint}}",
+    "source": "bb585f106007b5f725b47a7225bf282323da423479a31d9743252880a2c3e9a0"
+  },
+  "myApps.added": {
+    "text": "Añadida a Mis apps",
+    "source": "df6600e23943d2d0e8cd167c30d17b07ef0ed31ef26c8e405c191a8d5dd570d7"
+  },
+  "myApps.removed": {
+    "text": "Quitada de Mis apps",
+    "source": "d8e9f77a972e084aaf9bd4466c9f2bbf092812c6b3b4b6c742189283fc7f40c0"
+  },
+  "myApps.updateFailed": {
+    "text": "Error al actualizar: {{reason}}",
+    "source": "8c4f9909e3fb5f45947f9891cab03d9b52048356c0e1f8053127a81737137460"
+  },
+  "leave.afterUnpin.title": {
+    "text": "¿Salir también de {{community}}?",
+    "source": "478b55790693cc694defbebe7a44220c5316994474a3463207044dfe574c5d4e"
+  },
+  "leave.afterUnpin.private": {
+    "text": "Ya no está en tu pantalla de inicio. Si sales, también pierdes el acceso hasta que alguien te vuelva a invitar.",
+    "source": "82eb7adc0b002be35b47abec41d2268cffd6f47d027dc47d690c43aa7b09cc50"
+  },
+  "leave.afterUnpin.public": {
+    "text": "Ya no está en tu pantalla de inicio. Puedes seguir como miembro, o salir y dejar de proponer y votar sus cambios.",
+    "source": "445d2b7bf0d874a9f1ead41690bf4c941a28791aafb73f537241ad4c40d05972"
+  },
+  "leave.afterUnpin.confirm": {
+    "text": "Salir",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "leave.afterUnpin.stay": {
+    "text": "Seguir como miembro",
+    "source": "adf7ddb026b6d246a7940eaeabf68718ed148f6c85fe8093ca2ecc138bb8567f"
+  },
+  "leave.confirm.title": {
+    "text": "¿Salir de {{community}}?",
+    "source": "b4c4ae95f6741303ebbbe262081bab6f3d1e965215bacabe58e8c00706567785"
+  },
+  "leave.confirm.private": {
+    "text": "Perderás el acceso hasta que alguien te vuelva a invitar.",
+    "source": "f46577073a987427cb2b8ef3632fab6e9218c682d9008ea488548611c24e2ca2"
+  },
+  "leave.confirm.public": {
+    "text": "No podrás proponer ni votar sus cambios hasta que te unas de nuevo.",
+    "source": "76f4c9611ea3e3795cc8bd8cc1d6d6edb9abde4726453e27b6410d0acd4c29fb"
+  },
+  "leave.confirm.button": {
+    "text": "Salir",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "membership.joined": {
+    "text": "Te uniste a {{community}}",
+    "source": "ec48f3281baf256fe0304e4425dedbf12ea5d0cc7c201fdbfe547516f91ca737"
+  },
+  "membership.left": {
+    "text": "Saliste de {{community}}",
+    "source": "06e77bf56426d3bdbb8e49f0ce1626a06d642b84cd9df6066c0616106532e59e"
+  },
+  "membership.joinFailed": {
+    "text": "No se pudo unir: {{reason}}",
+    "source": "cfda1d5e35095a9891e65fe07d52ca2efff4872a5cf801b0c44a803f377cff03"
+  },
+  "membership.leaveFailed": {
+    "text": "No se pudo salir: {{reason}}",
+    "source": "4ffd3ec0965fc80536db524c3f1c716cb7444c31b28a5ccb4769a2ab4b19a7bb"
+  },
+  "menu.updated": {
+    "text": "Actualizada {{when}}",
+    "source": "3f334e45c4655270420948911ee13a2f59643035d44e7d1eb906e0780063d0f2"
+  },
+  "menu.details.label": {
+    "text": "Detalles de la app",
+    "source": "2945df36c2f9ae72c9b3544c186eabfdf6fc8d11cf29fd73d9951cf8b09439fa"
+  },
+  "menu.details.tip": {
+    "text": "Versión, estado y todo lo que puedes hacer con esta app",
+    "source": "168fca22a24b5b822b419c94f645659252c9f820a7fc510dbf5f4b1acb80b2d5"
+  },
+  "menu.github.label": {
+    "text": "Ver en GitHub",
+    "source": "20672423d71690888afb7caa922ea2a23592d49346341b1eee292de65189a296"
+  },
+  "menu.github.tip": {
+    "text": "Abrir el repositorio de esta app",
+    "source": "47420127ad801bd03a109db471edee3c5670cdc5c51c7dd73045367a59414314"
+  },
+  "menu.myApps.add": {
+    "text": "Añadir a Mis apps",
+    "source": "b174f7f1fc7e93ca99d5a30715bc56dd8ba20ba42397ce9bf573271f9f0e6ece"
+  },
+  "menu.myApps.remove": {
+    "text": "Quitar de Mis apps",
+    "source": "44d7bfb6f22f011da6788cfe8a7d5ced887142a597d689b75fa6d7c84365894e"
+  },
+  "menu.myApps.showAgainTip": {
+    "text": "Volver a mostrar esta app en Mis apps. Conservas tu acceso de creador en ambos casos.",
+    "source": "274d7e4e0c689a47381f01e333ffbb856a6afcce97e05108862a9c394d5cc1e5"
+  },
+  "menu.myApps.hideTip": {
+    "text": "Ocultar esta app de Mis apps. Sigue activa y conservas tu acceso de creador.",
+    "source": "64d6938eed729e1876112f92c425fa4edc207674e7bcd55f4f4c04dd20bdc512"
+  },
+  "menu.notifications.label": {
+    "text": "Notificaciones",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "menu.notifications.tip": {
+    "text": "Elige sobre qué puede notificarte esta app, aquí y en tu teléfono.",
+    "source": "db3662941126db5dc2f78b59a7bfdcb77803b11d10ddbdb96ae46bc6a51b38af"
+  },
+  "menu.widget.edit": {
+    "text": "Editar en el widget de Homeroom",
+    "source": "f2cea8eab2c7cb6d01a76bcdc57e7115b5732dc4fa128ab149ab24abd0e4346a"
+  },
+  "menu.widget.add": {
+    "text": "Añadir al widget de Homeroom",
+    "source": "840e433d107b60a2187460081c1cd37e685a33fdff646200fe688a796a16148f"
+  },
+  "menu.phoneHome.add": {
+    "text": "Añadir a la pantalla de inicio del teléfono",
+    "source": "7f2215b752c1f495422ad281e862f81d92cc883f63267ee09eb99a00ecd103cb"
+  },
+  "menu.phoneHome.addFailed": {
+    "text": "No se pudo añadir a la pantalla de inicio: {{reason}}",
+    "source": "582e2f56e1ce0799a966d885e0f819687418e517aaff52cf858ec992b38e3c19"
+  },
+  "menu.install.label": {
+    "text": "Añadir a la pantalla de inicio",
+    "source": "e1090dd0b82630c892138365dec0cff9d071c4f56fdace83e680c5ab8f53dec9"
+  },
+  "menu.install.tip": {
+    "text": "Pon esta app en la pantalla de inicio de tu teléfono con su propio icono",
+    "source": "aa056c2d2dfff5e5fd3a70b0201e802fdb616ed6fded832158f47de473d073df"
+  },
+  "menu.retry": {
+    "text": "Reintentar",
+    "source": "942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852"
+  },
+  "menu.buildLog.label": {
+    "text": "Ver registro de compilación",
+    "source": "796ae067cc65247b1ca3579f831a87d4a49e57835636af71fb6a4106240bb732"
+  },
+  "menu.buildLog.tip": {
+    "text": "Consulta por qué falló la última compilación o despliegue",
+    "source": "3d582f8c55ba89d811130165765f5e4074454d19aceed3df44774fecea221544"
+  },
+  "menu.checkUpdates.label": {
+    "text": "Buscar actualizaciones",
+    "source": "f26f3275e735bdf6268532ca7cbea3887c9adad21d8df74e84b2bc7791475c0d"
+  },
+  "menu.checkUpdates.checking": {
+    "text": "Comprobando…",
+    "source": "ec963ffc911b840134fc738b41a8bb0493489c402a4a761efd36c16dea7d984b"
+  },
+  "menu.checkUpdates.failedHttp": {
+    "text": "Falló la comprobación (HTTP {{status}})",
+    "source": "f9703ba9b13009e6519c40c1febc9c9064e778ab7a3fd412835b1886108a9bc0"
+  },
+  "menu.checkUpdates.failed": {
+    "text": "Falló la comprobación: {{reason}}",
+    "source": "e043ca26a2a1c40b28a7bd47658050417cc0173e4d9c53cfb4adbe6e4bee6ba0"
+  },
+  "menu.remix.label": {
+    "text": "Remezclar",
+    "source": "f84ed4375595ff56536a50d853f9efa4897ac6e815aad3b94a8ac263e92736ef"
+  },
+  "menu.remix.sub": {
+    "text": "Crea tu propia copia",
+    "source": "82bb5bb897a289f90180a30a283b884a02a67c5488371286ddab47ce658642dd"
+  },
+  "menu.lock.lock": {
+    "text": "Bloquear app",
+    "source": "a4bab675c89865df941f6fd84fc84145f2fe9b543f6ca66c0631af57519d31ac"
+  },
+  "menu.lock.unlock": {
+    "text": "Desbloquear app",
+    "source": "4a0650c5df18adf8a8409fab010d66e71dc43d7a5794ecd4555af7a8a8b70770"
+  },
+  "menu.lock.lockTip": {
+    "text": "Bloquea esta app. Para fusionar cambios también se requerirá un voto a favor de un administrador.",
+    "source": "d271ebb794e3c431982fab8911c4b0d4576c90537d7d851eb8d80b9813035eb7"
+  },
+  "menu.lock.unlockTip": {
+    "text": "App bloqueada: las fusiones también requieren un voto a favor de un administrador. Haz clic para desbloquear.",
+    "source": "63c8cfb28df36e957a50aad078eec837edfabfa4ca0a52cea4c13587c9d9e850"
+  },
+  "menu.lock.failedHttp": {
+    "text": "No se pudo cambiar el bloqueo (HTTP {{status}})",
+    "source": "c0dc714d13433228ae8025da7a589706f533a80e6a5d574642f563823258e52f"
+  },
+  "menu.lock.failed": {
+    "text": "No se pudo cambiar el bloqueo: {{reason}}",
+    "source": "23fad7bb6cdf73b479a204382d709b129adada97940dd995d49d1008bbc37cb5"
+  },
+  "menu.settings": {
+    "text": "Ajustes de la app",
+    "source": "d43fb8a961ff2d1f037995587ed8883ac4b733ecaf1b0b74201123ada13df810"
+  },
+  "menu.report": {
+    "text": "Denunciar app",
+    "source": "5cf59a220d296b6811fd8fc4af3d64841ec1f4fd59cac97d7f1172490fc84f3e"
+  },
+  "check.noDetails": {
+    "text": "Comprobación terminada (sin detalles).",
+    "source": "f8f389c8082896a6cd990a4c940e38c6654d01b24fbefe833d6a37644bbbc740"
+  },
+  "check.noDrift.title": {
+    "text": "Ya se ejecuta el último commit",
+    "source": "31dd024434e8f047992525e511f47fb502cdef03f51063c3b763af2aab59ad95"
+  },
+  "check.noDrift.message": {
+    "text": "¿Forzar una recompilación de todos modos? (Útil si cambiaron las variables de entorno o el código de la plataforma.)",
+    "source": "bd6cee9410002cf881060d983f3e8e50909fe82febdf38d804e0ae4fdf5349da"
+  },
+  "check.noDrift.confirm": {
+    "text": "Recompilar",
+    "source": "95aefb081ecee7a82b75cfcc7f48457aec0e456134a6bb5d349fbbda293fcaca"
+  },
+  "check.rebuild.started": {
+    "text": "Recompilación iniciada. Observa la etiqueta de versión.",
+    "source": "ec6bfafe168f9cc5d229d3546e63e28da8ab49dcfa18192465c8f5a61922be18"
+  },
+  "check.rebuild.failed": {
+    "text": "No se pudo iniciar la recompilación: {{reason}}",
+    "source": "942cc7db9fe32eab1bfa9b08dd0716d8040bccd572357139a928160de0b77ba7"
+  },
+  "check.redeployed": {
+    "text": "Redesplegado en {{sha}}.",
+    "source": "5426685f1b081fef4805cd68865234ac196c3eb7a303bfd6c79a6b13432c54bc"
+  },
+  "check.inFlight": {
+    "text": "Ya hay un redespliegue en curso para esta app.",
+    "source": "dd1c3827354aa90f4e3727db8dbb71dfce5fe85bdd24a2a6276f9305ecd2119a"
+  },
+  "check.firstSeen": {
+    "text": "SHA actual registrado ({{sha}}). Si el repositorio avanza, se activará un redespliegue.",
+    "source": "603fe1e2b97aa7c617c2e7a6a891312d0d7a270b81bb5237c98bb4faaf6d291f"
+  },
+  "check.fetchFailed": {
+    "text": "No se pudo conectar con GitHub: {{reason}}",
+    "source": "c7cb9d2da09e2e37a5c6547e16585a2c4c39aa9ff2b9dac2c6be168a7a9ffb91"
+  },
+  "check.fetchFailedUnknown": {
+    "text": "No se pudo conectar con GitHub: error desconocido",
+    "source": "1c21dec31c5bd6250f6c262b2fef43dbaa3cba12ee1fcc515413ef920d95ae69"
+  },
+  "check.invalidRepo": {
+    "text": "Esta app tiene una URL de repositorio no válida.",
+    "source": "59d1835019d0ff4675228539bc917ace2f77748354f68de1ab30651cf618b94a"
+  },
+  "check.rebuildFailed": {
+    "text": "Se detectó una versión nueva ({{from}} → {{to}}), pero falló el redespliegue: {{reason}}",
+    "source": "48f689ac1344939b7c75116d8267827da2ac26238686a4f69d31eea5975b4629"
+  },
+  "check.rebuildFailedUnknown": {
+    "text": "Se detectó una versión nueva ({{from}} → {{to}}), pero falló el redespliegue: error desconocido",
+    "source": "b00970058744f74d22c2d0a90cd194b46e2637d7eecdc8119c51ad1d21818bbb"
+  },
+  "check.finished": {
+    "text": "Comprobación terminada: {{status}}",
+    "source": "29d67d61046c4ba875f1282272827b18cfcd2e14a1919783fc0a9c5c7683a113"
+  },
+  "time.justNow": {
+    "text": "justo ahora",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "widget.heading": {
+    "text": "Widget de Homeroom",
+    "source": "dc7a18349b9dc67edd86fffbc1ca0f87e76afc29450409ec6103fdb273c77f94"
+  },
+  "widget.help.toggle": {
+    "text": "Cómo añadir el widget a tu pantalla de inicio",
+    "source": "a620bda2cb56a53085b9b1c9ee569930b0128734a989b81954bad505b74a4b12"
+  },
+  "widget.help.steps": {
+    "text": "<0>Añade el widget a tu pantalla de inicio:</0> mantén pulsada una zona vacía de la pantalla de inicio del iPhone, toca <1>Editar</1> → <2>Añadir widget</2> (o el <3>+</3>), busca <4>Homeroom</4>, elige un tamaño y toca <5>Añadir widget</5>. Las apps de abajo aparecerán en él automáticamente.",
+    "source": "5239e5eaab929d3e8391bb7d2e7ac647c5877d66758e268f7b1edf942de33f6c"
+  },
+  "widget.close": {
+    "text": "Cerrar la sección del widget",
+    "source": "5adf01ecc7ed335a7850d9aa43525eb3c2fe545e759026fe31e9dc8cdc841eb6"
+  },
+  "widget.hint.withTiles": {
+    "text": "Arrastra los mosaicos para reordenarlos. Arrastra tarjetas de Mis apps aquí para añadirlas.",
+    "source": "88f1bf33bcb887c543aa58005fcc3006ffa504fb448550c2c08af05030d6f922"
+  },
+  "widget.hint.empty": {
+    "text": "Arrastra una tarjeta de Mis apps aquí (o usa su menú) para añadirla al widget de Homeroom en tu pantalla de inicio.",
+    "source": "0b300ec7398862d46e0a917b01f09b3353c0cba01abc97c9372f3372e3f10528"
+  },
+  "widget.tile.remove": {
+    "text": "Quitar del widget",
+    "source": "92ca70414886ddc6d4fe37199e6b034c116054c290635e2d91c3daae142bbd87"
+  },
+  "widget.tile.removeNamed": {
+    "text": "Quitar {{app}} del widget",
+    "source": "898ba770220a4456fb28c85271970ce7b55fdd6266f3b6c71bdf01e0c3015460"
+  },
+  "widget.removeFailed": {
+    "text": "No se pudo quitar del widget: {{reason}}",
+    "source": "836a21a993c7f80a6d61e576d1500ffbae7c37557cbc7c080e248c9a9703c9a0"
+  },
+  "widget.reorderFailed": {
+    "text": "No se pudo reordenar el widget: {{reason}}",
+    "source": "6947000d7062318c219513f7f657255b5bd8aa3925608ceea3da8918a51a3b14"
+  },
+  "waitlist.regionLabel": {
+    "text": "Lista de espera",
+    "source": "ec08d977c68ea61d5be093d88615ebb79cd1401d8b8fc570ff24438f72f3ff62"
+  },
+  "waitlist.title": {
+    "text": "Crea tus propias apps",
+    "source": "bd753202046f819fb12e7030430784d013020c7e00d3fc184c0e9d9bad8db31d"
+  },
+  "waitlist.join.button": {
+    "text": "Unirme a la lista de espera",
+    "source": "6a16124b654c7660f3a37d8b422d70d23b94b6c771d8773d7ea1cf6c3a4dc391"
+  },
+  "waitlist.join.note": {
+    "text": "Estamos dejando entrar a unas pocas personas a la vez.",
+    "source": "4305ea7f4af9926ffc157702c6c0799583c4bb98782cafa73c19d059ff18ae94"
+  },
+  "waitlist.listed.byText": {
+    "text": "Te enviaremos un mensaje de texto cuando tu lugar esté listo.",
+    "source": "ecce4f41b544e20a9068396c11cabdd32b1f87615637cbc8e35184165ab291ee"
+  },
+  "waitlist.listed.byEmail": {
+    "text": "Te enviaremos un correo cuando tu lugar esté listo.",
+    "source": "338b2ca9f38adad37ff8b31cb1053d517b385d0cc94539996f6c79d0669ce8ee"
+  },
+  "waitlist.addEmail.link": {
+    "text": "Añade también un correo",
+    "source": "79f10eb0e44a4b17508793ba729fa1e7c03fcccfd9a52bd9d66c3ace1391eb76"
+  },
+  "waitlist.sooner.title": {
+    "text": "¿Quieres entrar antes?",
+    "source": "ed295e201da0a3c0182d43939e5e0e3c12296edeceb379fc6a611547dd0bdd61"
+  },
+  "waitlist.sooner.answer": {
+    "text": "Responde 4 preguntas",
+    "source": "3e576da528da6c1d8607ff39e5823863ef5034ff95de6dc0c75509ceb26a1f54"
+  },
+  "waitlist.sooner.edit": {
+    "text": "Editar mis respuestas",
+    "source": "bf4399b6f8946bc41bb8896974e2ccd2273d9a2bb7d6656e1ea228735c6f9606"
+  },
+  "waitlist.email.titleJoin": {
+    "text": "Unirme a la lista de espera",
+    "source": "6a16124b654c7660f3a37d8b422d70d23b94b6c771d8773d7ea1cf6c3a4dc391"
+  },
+  "waitlist.email.titleAdd": {
+    "text": "Añade también un correo",
+    "source": "79f10eb0e44a4b17508793ba729fa1e7c03fcccfd9a52bd9d66c3ace1391eb76"
+  },
+  "waitlist.email.leadOwn": {
+    "text": "Con tu correo o con otro.",
+    "source": "574cd6963bd4314773be275eac495463bd6bdadeb84d7a771f61ff63010353bd"
+  },
+  "waitlist.email.leadAdd": {
+    "text": "Añade tu correo. Te enviaremos un código de 6 dígitos.",
+    "source": "c9bdf9e610f915d56f733a8e5d991e11f8094936073da409e552619634cc8eaa"
+  },
+  "waitlist.email.label": {
+    "text": "Correo electrónico",
+    "source": "969ccbd3cf6300ecd5c880459d81ae9027df7517563184a1b8b15282db230621"
+  },
+  "waitlist.email.placeholder": {
+    "text": "tu@ejemplo.com",
+    "source": "53e6cdc30765aade0129f85e5aeb50124b1d3f5bb9a70373be31e4eb328371e0"
+  },
+  "waitlist.email.submitJoin": {
+    "text": "Unirme a la lista de espera",
+    "source": "6a16124b654c7660f3a37d8b422d70d23b94b6c771d8773d7ea1cf6c3a4dc391"
+  },
+  "waitlist.email.submitCode": {
+    "text": "Enviarme un código",
+    "source": "88d420398edd3a0618d02c3aba16d7b5dcad189194bab9bcaac51e38736bf233"
+  },
+  "waitlist.email.privacy": {
+    "text": "Lo usamos para avisarte cuando tu lugar esté listo, y puedes iniciar sesión con él. Nadie más lo ve.",
+    "source": "fa557b2ed89d32f40b7e41e04558fc705c0833ef53a21b7258bb752d566ce63e"
+  },
+  "waitlist.email.notNow": {
+    "text": "Ahora no",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "waitlist.code.title": {
+    "text": "Revisa tu correo",
+    "source": "7732287944e204a9b51ad6c271126f3e0140974f66936e21caed22f0d9c792fd"
+  },
+  "waitlist.code.sent": {
+    "text": "Enviamos un código de 6 dígitos a {{email}}. Caduca en 15 minutos.",
+    "source": "d60bd4657ed82c75377695881801f969b514b96129c948982b3f4e7f5ce9c85f"
+  },
+  "waitlist.code.label": {
+    "text": "Código",
+    "source": "340f463033e0fd5ddeabb922df4d4f1b5747494d0f5ed9894f13b6e13ca831f5"
+  },
+  "waitlist.code.submit": {
+    "text": "Unirme a la lista de espera",
+    "source": "6a16124b654c7660f3a37d8b422d70d23b94b6c771d8773d7ea1cf6c3a4dc391"
+  },
+  "waitlist.code.otherEmail": {
+    "text": "Usar otro correo",
+    "source": "687da8b89baf2c1070d79846e7d20b17c01fd7a19a60292ed4e96a5aafe2576f"
+  },
+  "waitlist.code.resend": {
+    "text": "Enviar un código nuevo",
+    "source": "9200fc2f31ae11ab98f09d3516e3ea5ee24b875580d5f34f89990828c72272cd"
+  },
+  "waitlist.error.join": {
+    "text": "No se pudo unir a la lista de espera. Inténtalo de nuevo.",
+    "source": "2255c6930b263287414b27c3c3ea41390cc58f3840ff346892e112b79bbb91ad"
+  },
+  "waitlist.error.code": {
+    "text": "No se pudo comprobar el código. Inténtalo de nuevo.",
+    "source": "e13733e344e1f826dcb66c9e31bc20ecdb4151d0b39b780857467b1b71c878f5"
+  },
+  "verify.regionLabel": {
+    "text": "Verifica tu cuenta",
+    "source": "5f06da5b4cff279cbc0835fafd004bb7cddbcf08c89cd7c870e38d42c24a2605"
+  },
+  "verify.title": {
+    "text": "Verifica tu cuenta",
+    "source": "5f06da5b4cff279cbc0835fafd004bb7cddbcf08c89cd7c870e38d42c24a2605"
+  },
+  "verify.lead": {
+    "text": "Añade tu número de teléfono para votar en apps públicas y obtener el presupuesto completo de IA. Nadie ve tu número.",
+    "source": "b9fa05185e8cc5d961e9ced6e72f373db1b8d1e3a6c555cdf474dc67053de4ef"
+  },
+  "verify.reason": {
+    "text": "Las cuentas verificadas votan en apps públicas y obtienen el presupuesto completo de IA.",
+    "source": "58ea121a3dab71b25c35cd7cc4c2fa145d22987f3a8b3f83bc0e12b4cee6760b"
+  },
+  "discover.heading": {
+    "text": "Descubre comunidades",
+    "source": "75ebcea28c5064a8ef2f09b8126023be1fc273f7c91568e865a2ade0f8cdaf9b"
+  },
+  "discover.fallbackTitle": {
+    "text": "Descubrir",
+    "source": "d4a33d5b78bccebe3f16843dc30e6c0f73b4eb6efb4e7114ddfebde7fa2c9954"
+  },
+  "discover.browseAll.label": {
+    "text": "Ver todas las apps",
+    "source": "7e578aad2a39f0e87c2aacccdaade1b32963b82631e6928ac40cfe02f5393276"
+  },
+  "discover.browseAll.tip": {
+    "text": "Explora todas las apps del directorio",
+    "source": "4a51ed1a4fded188d6fa6096c9ef0514c4fcd8fdc0909ad3a8b0b67778571cdb"
+  },
+  "discover.empty.title": {
+    "text": "Nada que descubrir por ahora",
+    "source": "153bb5c601bb11d0d5329eb545d2919858e29470bb0b990ce725005aaeae6d35"
+  },
+  "discover.empty.detail": {
+    "text": "Explora el directorio para encontrar una app que probar.",
+    "source": "1ec42f1af522f686a9f371f25fa48e8b427ad3c68e74939194a6d4b5704624de"
+  },
+  "discover.card.addTip": {
+    "text": "Añadir a Mis apps",
+    "source": "b174f7f1fc7e93ca99d5a30715bc56dd8ba20ba42397ce9bf573271f9f0e6ece"
+  },
+  "discover.card.addedTip": {
+    "text": "Añadida. Toca para quitarla de Mis apps",
+    "source": "4b911a4920d9ce0295e29317ed980c12de159a52b5615a2e964bf0008f3bf678"
+  },
+  "discover.card.addNamed": {
+    "text": "Añadir {{app}} a Mis apps",
+    "source": "f9d5ed8d1e69a0c0c6c4cd87cf7a4c907fa4ff18e0e4ccd703d1f37c2e2eee5e"
+  },
+  "discover.card.removeNamed": {
+    "text": "Quitar {{app}} de Mis apps",
+    "source": "4ff02b90d4016e85d57d3ac1e3225bf3d0d47cb90049fea44d19dda9b69bf2a3"
+  },
+  "challenges.heading": {
+    "text": "Desafíos",
+    "source": "40b9c8f444870eff94e260ea77c034c0078841842fedb9ba3cfe9e83b4ffb313"
+  },
+  "challenges.fallbackTitle": {
+    "text": "Desafíos",
+    "source": "40b9c8f444870eff94e260ea77c034c0078841842fedb9ba3cfe9e83b4ffb313"
+  },
+  "panels.fallbackTitle": {
+    "text": "Panel",
+    "source": "7dd7a28c2ff9e308abc831e0a6dce95d11600be10982a969048948a21a40879b"
+  },
+  "challenges.open.label": {
+    "text": "Abrir desafíos",
+    "source": "ed0a60f493af254539ece9181abd7e0b4b785551d3755f73bf7cd6371b21a336"
+  },
+  "challenges.open.tip": {
+    "text": "Ir a la pestaña Desafíos de la pantalla Clasificación",
+    "source": "5a7c1c89f718d40d9148dfedf6686c15e8aab6f7c1f5883b4127db8076b19ee3"
+  },
+  "challenges.empty.text": {
+    "text": "No hay desafíos en curso ahora mismo",
+    "source": "85bac9dab6d139b4f1fa5c49f8f135fd8ae5674862d3bab11fb679923fcf202b"
+  },
+  "challenges.empty.tip": {
+    "text": "Ir a la pestaña Desafíos de la pantalla Clasificación",
+    "source": "5a7c1c89f718d40d9148dfedf6686c15e8aab6f7c1f5883b4127db8076b19ee3"
+  },
+  "challenges.empty.label": {
+    "text": "No hay desafíos en curso ahora mismo. Ir a la pestaña Desafíos de la pantalla Clasificación",
+    "source": "56376c8a71ffea8c3750875c33bf31e27bb463903f69b9a250cb55fb9adaaed5"
+  },
+  "challenges.fold.showLess": {
+    "text": "Mostrar menos",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "challenges.fold.seeAll": {
+    "text": "Ver todos los desafíos",
+    "source": "15472cc62be4b5955c5ba7692719ba487ea5bee487cfd30da5c6bcf7c0c8f71f"
+  },
+  "challenges.fold.collapseTip": {
+    "text": "Contraer este panel",
+    "source": "0e60b3763fd34f07c81f4306119cd362559e00cc32e510ec86dfe48055da4eaa"
+  },
+  "challenges.fold.expandTip": {
+    "text": "Mostrar todos los desafíos de este panel",
+    "source": "5d4e4925f0de5c65828ff70691476175805dcab1d0923840277bc21c4ad066b9"
+  },
+  "challenges.group.setup": {
+    "text": "Primeros desafíos",
+    "source": "79462a6dcc46819ddab47253c01f5abbfc2cd69578d2b1d4c0c2e59310e0b63b"
+  },
+  "challenges.group.week": {
+    "text": "Esta semana",
+    "source": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634"
+  },
+  "challenges.group.always": {
+    "text": "Siempre abiertos",
+    "source": "67b6ffc1ed06f760507f823966d16dbf760e1fc2196937d6732606e40159142e"
+  },
+  "challenges.group.other": {
+    "text": "Desafíos de la temporada",
+    "source": "ba3646b8091fae789c40f8ba8581315af64217e6e0e95eb411f2c2ada62ae972"
+  },
+  "challenges.group.done": {
+    "text": "Completados",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "challenges.group.noDeadline": {
+    "text": "sin fecha límite",
+    "source": "4cee02390191d1f084e38b7d4dc1b930de8553265f4ab8f0d171c30e492ee71e"
+  },
+  "challenges.row.done": {
+    "text": "Completado",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "challenges.row.started": {
+    "text": "Iniciado",
+    "source": "ecbc89cd37a037342e740f9e0e0633a70180a2279b0157c9a823fce729f4bd77"
+  },
+  "challenges.row.notStarted": {
+    "text": "Sin empezar",
+    "source": "ba35f0c47d862763dafa955d6716942f79b8bfe1d01d5968520db6f9ba665f6f"
+  },
+  "challenges.row.countOf": {
+    "text": "{{current}}/{{target}}",
+    "source": "ebadb7e032f79de68eee302f5d22970ac9c1ac0570b346952d60133e1eadeeed"
+  },
+  "challenges.row.countOfUnit": {
+    "text": "{{current}}/{{target}} {{unit}}",
+    "source": "06252ad4788609eacebee2de35d2dced393e3121006170296a00c4b87ee0dd9f"
+  },
+  "challenges.summary.progress": {
+    "text": "{{done}} de {{total}}",
+    "source": "b89f649902c02750ac40ed2db7e94661fab745bb073f936671bd82404c5a564e"
+  },
+  "tone.cream": {
+    "text": "Crema",
+    "source": "d5398ba40fe2684dc15933d4afe4f8d90bdaae006eabe6b8b272dbdf57de2996"
+  },
+  "tone.yellow": {
+    "text": "Amarillo",
+    "source": "19dd83f117525b931fccdafe808aaa6939af792ee549f359eff13fac0d622f5d"
+  },
+  "tone.orange": {
+    "text": "Naranja",
+    "source": "78e7771b8b46e11ddb34ba48887e1330525215f96d94778980d1186e6f09f6b4"
+  },
+  "tone.coral": {
+    "text": "Coral",
+    "source": "56ac628a2f10b3b0ac611cc5adc8d9b497c78d6f771a343d1d6d5407bb1e92dd"
+  },
+  "tone.pink": {
+    "text": "Rosa",
+    "source": "bd38ed7732402b1a93261916c5906016cdccd1a9600b3864208246f6a3299bd0"
+  },
+  "tone.purple": {
+    "text": "Morado",
+    "source": "7d465fb9b9314846b72698017691e756af05e0a548e347a3b7c54ca5b85270de"
+  },
+  "tone.indigo": {
+    "text": "Índigo",
+    "source": "d81ab149e9771d94b85622a55cab77b4d9521e0579ad9abb46a4669d04c731c4"
+  },
+  "tone.blue": {
+    "text": "Azul",
+    "source": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7"
+  },
+  "tone.teal": {
+    "text": "Verdeazulado",
+    "source": "fa15a5c1d61010553974997a19c7baef52cedd7f7ba0042d9cdf03aec5105c3d"
+  },
+  "tone.mint": {
+    "text": "Menta",
+    "source": "ced97cc4a377b5b4386d9c67bc4f4e14febb561903a27409ce7a2886368b75bb"
+  },
+  "tone.sage": {
+    "text": "Salvia",
+    "source": "5faa713a75d776078b5ee2fdad65e4c974f818b90fa46eff7692c285c9713517"
+  },
+  "tone.gray": {
+    "text": "Gris",
+    "source": "0d5adda3cdccf937bd9c9e66c8000f98d9d0a91e7c3a166e2dfdc91386911cd2"
+  },
+  "search.results_many": {
+    "text": "{{count}} resultados",
+    "source": "b6c504e026b5ce26d311387d0885b0333745e48ae5a4dde038fac2dd23aaf218"
+  },
+  "search.results_one": {
+    "text": "{{count}} resultado",
+    "source": "be0c64afb19116c40e78ea593f4a731a3cba12361449dee031f96d5207e37507"
+  },
+  "search.results_other": {
+    "text": "{{count}} resultados",
+    "source": "b6c504e026b5ce26d311387d0885b0333745e48ae5a4dde038fac2dd23aaf218"
+  },
+  "grid.showAll_many": {
+    "text": "Mostrar las {{count}} apps",
+    "source": "8191cc6610fb3a5021cd63737645923343740784aa6e7f4a76d131de77fe032d"
+  },
+  "grid.showAll_one": {
+    "text": "Mostrar {{count}} app",
+    "source": "8dd603b850004aa1c7b31f875f556f7fb5d03c9cbfd9432ee61b88a29c465617"
+  },
+  "grid.showAll_other": {
+    "text": "Mostrar las {{count}} apps",
+    "source": "8191cc6610fb3a5021cd63737645923343740784aa6e7f4a76d131de77fe032d"
+  },
+  "time.minutesAgo_many": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.minutesAgo_one": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.minutesAgo_other": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.hoursAgo_many": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.hoursAgo_one": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.hoursAgo_other": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.daysAgo_many": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.daysAgo_one": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.daysAgo_other": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.monthsAgo_many": {
+    "text": "hace {{count}} m",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "time.monthsAgo_one": {
+    "text": "hace {{count}} m",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "time.monthsAgo_other": {
+    "text": "hace {{count}} m",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "time.yearsAgo_many": {
+    "text": "hace {{count}} a",
+    "source": "58e23858c9c6af474909dc4b8c178ed4e08af389d8ec70256186be6fc940e2cb"
+  },
+  "time.yearsAgo_one": {
+    "text": "hace {{count}} a",
+    "source": "58e23858c9c6af474909dc4b8c178ed4e08af389d8ec70256186be6fc940e2cb"
+  },
+  "time.yearsAgo_other": {
+    "text": "hace {{count}} a",
+    "source": "58e23858c9c6af474909dc4b8c178ed4e08af389d8ec70256186be6fc940e2cb"
+  },
+  "discover.card.contributors_many": {
+    "text": "{{count}} colaboradores",
+    "source": "4cc003fd18f21b6fac647fd72110ac89c4d539007ad4004692e6c22b4cb75cbf"
+  },
+  "discover.card.contributors_one": {
+    "text": "{{count}} colaborador",
+    "source": "daf50df57536fb4e846798ec55497875139026d00d8f7c1c35f0629a8e89cbcb"
+  },
+  "discover.card.contributors_other": {
+    "text": "{{count}} colaboradores",
+    "source": "4cc003fd18f21b6fac647fd72110ac89c4d539007ad4004692e6c22b4cb75cbf"
+  },
+  "challenges.fold.seeAllCount_many": {
+    "text": "Ver los {{count}} desafíos",
+    "source": "3140f14bd344d32e7b00eaf0a292892a2236c5cf93020d4413ce5a0dd4bdb284"
+  },
+  "challenges.fold.seeAllCount_one": {
+    "text": "Ver {{count}} desafío",
+    "source": "fa9295a39f8b06f1e2b7cefd675dec9cb3022f3a4e4db2b0d4bd36ee828046ec"
+  },
+  "challenges.fold.seeAllCount_other": {
+    "text": "Ver los {{count}} desafíos",
+    "source": "3140f14bd344d32e7b00eaf0a292892a2236c5cf93020d4413ce5a0dd4bdb284"
+  },
+  "challenges.timeLeft.hours_many": {
+    "text": "quedan {{count}} h",
+    "source": "baddc4d8eb0941b5ea118acc6a91b45386a423589bf9081163181e780e112165"
+  },
+  "challenges.timeLeft.hours_one": {
+    "text": "quedan {{count}} h",
+    "source": "baddc4d8eb0941b5ea118acc6a91b45386a423589bf9081163181e780e112165"
+  },
+  "challenges.timeLeft.hours_other": {
+    "text": "quedan {{count}} h",
+    "source": "baddc4d8eb0941b5ea118acc6a91b45386a423589bf9081163181e780e112165"
+  },
+  "challenges.timeLeft.days_many": {
+    "text": "quedan {{count}} d",
+    "source": "03844c3e95de2b1a76009f66b41ac5127053f28d121ec482397db36d755e17e5"
+  },
+  "challenges.timeLeft.days_one": {
+    "text": "quedan {{count}} d",
+    "source": "03844c3e95de2b1a76009f66b41ac5127053f28d121ec482397db36d755e17e5"
+  },
+  "challenges.timeLeft.days_other": {
+    "text": "quedan {{count}} d",
+    "source": "03844c3e95de2b1a76009f66b41ac5127053f28d121ec482397db36d755e17e5"
+  },
+  "challenges.row.earned_many": {
+    "text": "Ganaste {{points}} pts",
+    "source": "44dcb08a9fdabbc97ce942839a53bb589d6410996aa5f5741bc509b683bff8cb"
+  },
+  "challenges.row.earned_one": {
+    "text": "Ganaste {{points}} pts",
+    "source": "44dcb08a9fdabbc97ce942839a53bb589d6410996aa5f5741bc509b683bff8cb"
+  },
+  "challenges.row.earned_other": {
+    "text": "Ganaste {{points}} pts",
+    "source": "44dcb08a9fdabbc97ce942839a53bb589d6410996aa5f5741bc509b683bff8cb"
+  },
+  "challenges.reward.points_many": {
+    "text": "{{points}} pts",
+    "source": "229a5329505f8e1b9d4088656355ae666cb74f2139bba6a0fc9ebc126b5c4b38"
+  },
+  "challenges.reward.points_one": {
+    "text": "{{points}} pts",
+    "source": "229a5329505f8e1b9d4088656355ae666cb74f2139bba6a0fc9ebc126b5c4b38"
+  },
+  "challenges.reward.points_other": {
+    "text": "{{points}} pts",
+    "source": "229a5329505f8e1b9d4088656355ae666cb74f2139bba6a0fc9ebc126b5c4b38"
+  },
+  "challenges.summary.withPointsLeft_many": {
+    "text": "{{done}} de {{total}} · faltan {{points}} pts",
+    "source": "da6fe052f77774b0814f7abe801a91854cef8bd5a45c861886c3b8c2defd50cc"
+  },
+  "challenges.summary.withPointsLeft_one": {
+    "text": "{{done}} de {{total}} · faltan {{points}} pts",
+    "source": "da6fe052f77774b0814f7abe801a91854cef8bd5a45c861886c3b8c2defd50cc"
+  },
+  "challenges.summary.withPointsLeft_other": {
+    "text": "{{done}} de {{total}} · faltan {{points}} pts",
+    "source": "da6fe052f77774b0814f7abe801a91854cef8bd5a45c861886c3b8c2defd50cc"
+  }
+}

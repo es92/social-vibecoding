@@ -1,0 +1,2430 @@
+{
+  "activity.working": {
+    "text": "Trabalhando",
+    "source": "a92f0449a9f7235bf69dc2e8ff7070bfae3f00ec8f8f26e5457a9beac53466ac"
+  },
+  "activity.finished": {
+    "text": "Concluído",
+    "source": "7804f7a79a9eee323b6e89d3f8287c7d36076f4d76291646295f435b0dec736e"
+  },
+  "session.attach.imageTooBig": {
+    "text": "\"{{file}}\" é grande demais. O limite para imagens é {{megabytes}} MB.",
+    "source": "5195daffe69a5ef921d02fa497838434a3d76088664c37c995c993d4431c2f99"
+  },
+  "session.attach.zipTooBig": {
+    "text": "\"{{file}}\" é grande demais. O limite para arquivos zip é {{megabytes}} MB.",
+    "source": "823e41ee373aafbfbce268d5a7bc7e39b4be40e041c089deb3c182bc16f3d7f6"
+  },
+  "session.attach.fileTooBig": {
+    "text": "\"{{file}}\" é grande demais. O limite para arquivos é {{megabytes}} MB.",
+    "source": "38e447c0948ad2db25e374e22844530b8031b2d1bf2b7c06ac75e4e1e9c6229c"
+  },
+  "session.attach.empty": {
+    "text": "\"{{file}}\" está vazio.",
+    "source": "1f9498275f3412d85c4b9d9849315754890fe22dff705ec7fa19530084775025"
+  },
+  "session.fixChecks.askLine": {
+    "text": "- \"{{check}}\"",
+    "source": "e71de49dbe9c830fe8331feb02a7016b1fbfc9b5d80910beffc2fc83eb333287"
+  },
+  "session.fixChecks.askLineReason": {
+    "text": "- \"{{check}}\", que informou: {{reason}}",
+    "source": "9e0c886293467e439f3cb5fd811da21270555bf7883fdadaebeb1178ad32b2aa"
+  },
+  "session.requestSeed.titled": {
+    "text": "Trabalhe na solicitação #{{number}}: \"{{title}}\"",
+    "source": "95f5f20532012c35f945593950142676292cbc350ca44b9f23b3668e3e908f5c"
+  },
+  "session.requestSeed.untitled": {
+    "text": "Trabalhe na solicitação #{{number}}",
+    "source": "eda4afd3bef06fcd3a85a3df57c433b1cc3260579bb8aa1d2e6aba0a2c6e4eb6"
+  },
+  "session.userMessage.showLess": {
+    "text": "Mostrar menos",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "session.userMessage.showMore": {
+    "text": "Mostrar mais",
+    "source": "f5c9bd131486e793ee105bd81f001fc25cdc2dac9c1d9f636ac7d43a10efc7e6"
+  },
+  "session.effort.minimal": {
+    "text": "Mínimo",
+    "source": "057b5de48d7b90f123ec28d7e15f65d99b508d6b7cc2958c39472070f0f0f6bb"
+  },
+  "session.effort.low": {
+    "text": "Baixo",
+    "source": "f793de205ead5ac302c4a1627829dea41f176b1068b993a32373fc869918374b"
+  },
+  "session.effort.medium": {
+    "text": "Médio",
+    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
+  },
+  "session.effort.high": {
+    "text": "Alto",
+    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
+  },
+  "session.effort.xhigh": {
+    "text": "Muito alto",
+    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
+  },
+  "session.effort.default": {
+    "text": "Padrão",
+    "source": "21b111cbfe6e8fca2d181c43f53ad548b22e38aca955b9824706a504b0a07a2d"
+  },
+  "session.model.title.openRouter": {
+    "text": "Usa sua chave do OpenRouter",
+    "source": "4d10fe0951fc9e86d5d43a0da459c8c9437e97e2511fb3f2fad6ef5f88d6b836"
+  },
+  "session.model.title.openRouterClaudeCode": {
+    "text": "Usa sua chave do OpenRouter, no Claude Code",
+    "source": "d4f3d4bcba90b49a9968e05c978277147ba715d76a962d34194ee3c61a88961c"
+  },
+  "session.model.title.anthropic": {
+    "text": "Usa a franquia de Claude da plataforma ou sua própria chave da Anthropic",
+    "source": "09d5f4d7622f4d932503b1b879375940e19749c873c737a06c4e873edd20a704"
+  },
+  "session.model.cost": {
+    "text": "cerca de {{amount}} por alteração típica",
+    "source": "e3e4af0db69b6da2232d8679cf1e7d8fd304191fb3eae7e40c7b1b4ecc2b6e24"
+  },
+  "session.model.costWithNote": {
+    "text": "{{note}} · cerca de {{amount}} por alteração típica",
+    "source": "0c10737f670f7e4cabae0a4edd49dd5edfd4c86bc4cb0791ad0650c38971d3ac"
+  },
+  "session.credits.left": {
+    "text": "{{amount}} restantes",
+    "source": "0a7083bacb6b5ceb11bb338d2e4ef3a82dd0551c148bbdfffd504baf0d14ab20"
+  },
+  "session.credits.noneLeft": {
+    "text": "Esgotados",
+    "source": "7d0b2f2432901e583e9144cac663f44ebeeb319e6cf1a2b1845a883f337e82f1"
+  },
+  "session.credits.wideLeft": {
+    "text": "{{amount}} restantes / {{allowance}}",
+    "source": "a5895e6efca2a442ce74545ae06c4b7817278ad08d8229a92d2a8b2710dc11d4"
+  },
+  "session.credits.wideNoneLeft": {
+    "text": "Esgotados / {{allowance}}",
+    "source": "8e90dc7fd3e87f40e30cd0b7789449bbca547e7ba1c8b11c45c2756103ba0cd3"
+  },
+  "session.credits.pillWideLeft": {
+    "text": "{{amount}} restantes<0> / {{allowance}}</0>",
+    "source": "c2e03f7b662e744d3005653eec9b1d7332a57d870900cce685f766ff3959c4e7"
+  },
+  "session.credits.pillWideNoneLeft": {
+    "text": "Esgotados<0> / {{allowance}}</0>",
+    "source": "79f530b69cbdd1305048dff7aa87259c0ccb7b23d62975b2243c1be7479af195"
+  },
+  "session.credits.describeWeek": {
+    "text": "Restam {{remaining}} de {{allowance}} desta semana",
+    "source": "7737ce44513f6c63fd1dd5c27616b3afc79a9ec3416b76b68b784e6190eb6993"
+  },
+  "session.credits.describeDay": {
+    "text": "Restam {{remaining}} de {{allowance}} de hoje",
+    "source": "cb790fd66405f160b6c8894d44506cc4e27a3a242dcaf67de340e6573b4c7ce9"
+  },
+  "session.credits.pillLabelWeek": {
+    "text": "Créditos: restam {{remaining}} de {{allowance}} desta semana",
+    "source": "f39ceaed0be1c3f2f4fe476a325a46e47d3fdee53ed119825c771e39dfa6e8f1"
+  },
+  "session.credits.pillLabelDay": {
+    "text": "Créditos: restam {{remaining}} de {{allowance}} de hoje",
+    "source": "ef21492ee4c5627b32196d7922ccc234ee2b780ecb3f402145ad323882938094"
+  },
+  "session.credits.headingWeek": {
+    "text": "Créditos da semana",
+    "source": "04c86590bfe4d98dec21431e724f4666dfb8236ac08b62ed12202a5450a5ada6"
+  },
+  "session.credits.headingDay": {
+    "text": "Créditos de hoje",
+    "source": "ef99461fec5386743b18f08951b221e98744356a0b35fbfa69d735a5048093dc"
+  },
+  "session.credits.meterLabel": {
+    "text": "Créditos restantes",
+    "source": "18c041dd6d8ba11ba01363d9b4ce12f0e9616beb01b83abab4a06bbd8a9ff424"
+  },
+  "session.credits.ownKeyToday": {
+    "text": "Sua chave: {{amount}} hoje",
+    "source": "959c31267086601851792a65337de6e2838f9cd68d0f8ad260bfd8aed3574940"
+  },
+  "session.model.pillLabel": {
+    "text": "Modelo: {{model}}",
+    "source": "0960231fccde078947f73c4e4c686a958532fb1e0a1fa99849d615cbb7ca8de3"
+  },
+  "session.model.pillLabelThinking": {
+    "text": "Modelo: {{model}}, raciocínio {{level}}",
+    "source": "75d120eb6d2905263555450d7f6220df1fe98a6159be08d958d19cffc84ef5b5"
+  },
+  "session.buildWith.homeroomIntro": {
+    "text": "O agente cria aqui, com seus créditos do Homeroom.",
+    "source": "41898e8d19c304f815e6738705cd0f4f5191228edd025b9265ad51ae6e38cde0"
+  },
+  "session.model.listHeading": {
+    "text": "Modelo",
+    "source": "5e2c614c23f02239bc03c6c04fcb681950f9e72bf8fdff6be79c79841cbb10c0"
+  },
+  "session.model.defaultTag": {
+    "text": "padrão",
+    "source": "37a8eec1ce19687d132fe29051dca629d164e2c4958ba141d5f4133a33f0688f"
+  },
+  "session.effort.rowLabel": {
+    "text": "Nível de raciocínio",
+    "source": "96f115b94ed1c3ff1864b6f7e67fc111e3c05a16aa82bddd69d3b0285e3929aa"
+  },
+  "session.effort.defaultTag": {
+    "text": "padrão",
+    "source": "37a8eec1ce19687d132fe29051dca629d164e2c4958ba141d5f4133a33f0688f"
+  },
+  "session.buildWith.heading": {
+    "text": "Criar com",
+    "source": "46334791c5b5223c6010a9df4d6968de48d020c6b8d1106d43ad1ea2c9351b62"
+  },
+  "session.buildWith.tabsLabel": {
+    "text": "Criar com",
+    "source": "46334791c5b5223c6010a9df4d6968de48d020c6b8d1106d43ad1ea2c9351b62"
+  },
+  "session.buildWith.dialogLabel": {
+    "text": "Criar com",
+    "source": "46334791c5b5223c6010a9df4d6968de48d020c6b8d1106d43ad1ea2c9351b62"
+  },
+  "session.handoff.lead.update": {
+    "text": "O {{agent}} trabalha no seu próprio plano do {{product}} e envia para o seu fork do app; o trabalho volta como uma atualização desta alteração. Sem créditos do Homeroom.",
+    "source": "f88c6ea69595acf2e4794dee722f91f555c28759878c9c45eb5e3284637977d0"
+  },
+  "session.handoff.lead.newChange": {
+    "text": "O {{agent}} trabalha no seu próprio plano do {{product}} e envia para o seu fork do app; o trabalho volta como uma nova alteração. Sem créditos do Homeroom.",
+    "source": "dd51069a60a32b454173e82d67e9537a466166eae474cec90d0c379e8908efed"
+  },
+  "session.handoff.lead.newChangeOnApp": {
+    "text": "O {{agent}} trabalha no seu próprio plano do {{product}} e envia para o seu fork do app; o trabalho volta como uma nova alteração em {{app}}. Sem créditos do Homeroom.",
+    "source": "c4ea8f7ea110dce080848e9e80bcccb61e37df2257e180c0f9990789be8b02c6"
+  },
+  "session.handoff.check.github": {
+    "text": "GitHub vinculado",
+    "source": "d9230da624d794f062a6332b46993a503a1b22bcee77775159b55f41b9aa2a04"
+  },
+  "session.handoff.check.fork": {
+    "text": "Fork pronto",
+    "source": "b6e98a3d3598a0e9c851920e2c5763c09c720f3f2036c85363752f7afc643b86"
+  },
+  "session.handoff.check.connector": {
+    "text": "Homeroom conectado no {{product}}",
+    "source": "7c1e00930ed9b5cbdc95ebeade223e46abaec883b66f52665d4a90603935e196"
+  },
+  "session.handoff.check.done": {
+    "text": "Concluído",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "session.handoff.check.notDone": {
+    "text": "Ainda não concluído",
+    "source": "2cb1983a1ece0bc807647814ea66c22cde8e8826e6f86f0c175c3ae51c544c40"
+  },
+  "session.handoff.statusFailed": {
+    "text": "Não foi possível verificar em que pé está a transferência.",
+    "source": "a5cf8c9a670bf982579756b04794e27ec2475728acbe6cb2b7d18a07359b5d43"
+  },
+  "session.handoff.unavailable": {
+    "text": "A transferência para o Claude Code ou o Codex está indisponível no momento.",
+    "source": "7000e999d878874c492acf6786397b439f8fdd00085215579cc4c7aa01ed5c6b"
+  },
+  "session.handoff.copied": {
+    "text": "Copiado. Cole na nova sessão do {{agent}}.",
+    "source": "ab1e4d821816311ae10ddd58298f6a14259977123123f3d7ea997f5466d3581d"
+  },
+  "session.handoff.copyFailed": {
+    "text": "Não foi possível copiar. Copie as instruções abaixo manualmente e cole na nova sessão.",
+    "source": "0b27a677230d0cbfd00c5d14ca37f9ef8d646f22e1788e67071c212e57623eeb"
+  },
+  "session.handoff.nothingYet": {
+    "text": "Ainda não há nada para transferir. Diga ao agente qual app alterar e volte aqui.",
+    "source": "f28b1284b22c75f3d12545459a34822870e09be44d8028d1d4f3f4d37600607b"
+  },
+  "session.handoff.checking": {
+    "text": "Verificando em que etapa você está…",
+    "source": "7c1f44928fcf47ce6a0ef4a26a3835d25b341d96e682f16929d8e9cd006ab4bc"
+  },
+  "session.handoff.connector.heading": {
+    "text": "Adicione o conector do Homeroom no {{product}}",
+    "source": "33b93d3404c46c8affc113fe904e0cb52ad7c3fcd95614e379ced09f208733b5"
+  },
+  "session.handoff.connector.serverUrl": {
+    "text": "URL do seu servidor MCP: <0>{{url}}</0>",
+    "source": "31ee89352ae4f11cf23b3e735ee13fbd17476bed182ad9d40d6d98173042d610"
+  },
+  "session.handoff.connector.startNew": {
+    "text": "Depois, inicie uma nova conversa no {{product}}: uma conversa que já estava aberta não verá um conector adicionado depois que ela começou.",
+    "source": "26b809e79ced025c604f3fd236014477abd27dd9b654c5ad0d985022bcd03ea0"
+  },
+  "session.handoff.connector.checkAgain": {
+    "text": "Já adicionei. Verificar de novo",
+    "source": "008563007ae7344b567710de724ad6dcc8ca0930c0e38d0507dfb5d031377a63"
+  },
+  "session.handoff.connector.moreSettings": {
+    "text": "Mais configurações de conectores",
+    "source": "3948c404ad71b948dd2dbe60c8c37e6f1ec73175a5ed98f230fce8a53bc68414"
+  },
+  "session.handoff.carried.heading": {
+    "text": "Enviado junto com as instruções",
+    "source": "622beda4ebc98f535868b3d9ff28fa0b8fc4871a5f1e60a27c0383a2cc66ae52"
+  },
+  "session.handoff.carried.specTitled": {
+    "text": "Plano deste chat: \"{{title}}\"",
+    "source": "34cc9d668d2ed1947df5ac5d0369ad29bae57a02e9632f504a370dc516141dc5"
+  },
+  "session.handoff.carried.spec": {
+    "text": "Plano deste chat",
+    "source": "390efbe5e426e94814d47d45421c5ffa98c7bb4769f0fbc8ce7b672b71a1d496"
+  },
+  "session.handoff.carried.noSpec": {
+    "text": "Ainda não há plano, então o {{agent}} vai perguntar o que construir.",
+    "source": "9fd9fb3c9c1114813a7c8e883060a4d1c6d5bd9922e968b0269bae1fdd4d06cc"
+  },
+  "session.handoff.copyAndOpen": {
+    "text": "Copiar instruções e abrir o {{agent}}",
+    "source": "d15bf4af0d390924922fc708227284e705df804cdeeb980456a5ea81650f4c68"
+  },
+  "session.handoff.pasteHint": {
+    "text": "Cole na nova sessão. Ela começa a construir na hora.",
+    "source": "9464110b32c62e60e471a5942665303dd8b105aa56fc7ca14427b403e427c977"
+  },
+  "session.handoff.instructions": {
+    "text": "Instruções",
+    "source": "934652dce41d62d3c9ff34b2c5e44e3addaedc67d6137328a9fe75a63c51dbac"
+  },
+  "session.creditsCard.usedUp": {
+    "text": "Seus créditos do Homeroom acabaram.",
+    "source": "30b8db63751d3208c1c0eeb036656b59d9bb867a34d3db10bf8cc26cc7ecf8bf"
+  },
+  "session.propose.question": {
+    "text": "Colocar isto em votação para o grupo?",
+    "source": "d55f9306b0a65a78e710fc9255cf80dd8927fd74449d788a14a64c07216a3ccb"
+  },
+  "session.propose.line.titled": {
+    "text": "“{{title}}” vai para votação. A prévia e as verificações são executadas de novo no caminho.",
+    "source": "e74e317a99c46765090aeb8c0cb3807c7410b23c21900f30b50f8d4ad7bed08f"
+  },
+  "session.propose.line.titledPr": {
+    "text": "“{{title}}” (PR #{{number}}) vai para votação. A prévia e as verificações são executadas de novo no caminho.",
+    "source": "18f6a2fe2c0205ba7e5e1a9eeaecc7732ca97f812050fbabfd5c300544f15bc4"
+  },
+  "session.propose.line.untitled": {
+    "text": "“Esta alteração” vai para votação. A prévia e as verificações são executadas de novo no caminho.",
+    "source": "fdaed9be219bf9e25f1b8f2fe9ec660817a39b31e61bdbc7bdd70976ec4b3c2c"
+  },
+  "session.propose.line.untitledPr": {
+    "text": "“Esta alteração” (PR #{{number}}) vai para votação. A prévia e as verificações são executadas de novo no caminho.",
+    "source": "7cb927411a4ddf7b738355142db8a495ff9c3caaeeb6475ed4058d4ef0467437"
+  },
+  "session.propose.titleLabel": {
+    "text": "Título da proposta",
+    "source": "f85d9e1aabac00a881bf1055779313f93ba925f1621165acc1ac7ed637e84436"
+  },
+  "session.propose.titlePlaceholder": {
+    "text": "Esta alteração",
+    "source": "9ed68ba82f26d42a9be68462877d8cc686b0db993cf077c4e4f242769020a418"
+  },
+  "session.propose.confirm": {
+    "text": "Propor",
+    "source": "1cbd9e713d937baddd2cce6efa50f11875c188af81de970766cdf5b2ed73d4bb"
+  },
+  "session.propose.proposing": {
+    "text": "Propondo…",
+    "source": "adf1e9863b117de1b301cff1c6d1187163f52116a0c0a51856368d8257eb314c"
+  },
+  "session.propose.button": {
+    "text": "Propor ao grupo",
+    "source": "053e704889cb8eb6f11a2535222b1c58a2e04ca2ab491f6770a7fd1452f5bc96"
+  },
+  "session.card.field.app": {
+    "text": "App",
+    "source": "0d04bfeb7d64b71c74fc925cca93d683154e8cc7e6e5838faced498e34c9984d"
+  },
+  "session.card.field.changeTitle": {
+    "text": "Alteração",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "session.card.field.change": {
+    "text": "Alteração",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "session.card.field.proposal": {
+    "text": "Alteração",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "session.card.field.request": {
+    "text": "Solicitação",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "session.card.field.links": {
+    "text": "Vínculos",
+    "source": "9024c197d84940e47ff6aa631b7711c4cbff4e7fb2fe1a574a3592b662983a0d"
+  },
+  "session.card.field.details": {
+    "text": "Detalhes",
+    "source": "45989de49fb7f66dfe17a8fc26f3a02c7abcd74f7e8e6cf9f39fa0e3775780df"
+  },
+  "session.card.value.request": {
+    "text": "Solicitação #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "session.card.value.linkedRequest": {
+    "text": "Solicitação #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "session.run.agentOnYourMachine": {
+    "text": "{{agent}} · seu computador",
+    "source": "f8bb80d0f7c172650d61d0478ae92b8652227cc7a76eae6504ce250947e5f102"
+  },
+  "session.checks.skippedReason": {
+    "text": "As verificações foram ignoradas: {{reason}}. Ainda pode entrar no ar.",
+    "source": "2d86b176ac89321fa7deab549a577922f31339428b64015b36d1786b5b843ab1"
+  },
+  "session.checks.skippedNothingToTest": {
+    "text": "As verificações foram ignoradas: não havia nada para testar. Ainda pode entrar no ar.",
+    "source": "1c84321ca2afb7184e930f35d46eaa31743e5e2d1851ab4298fc00a8d5bd925e"
+  },
+  "session.checks.passing": {
+    "text": "Verificações aprovadas",
+    "source": "548591f8f2eb1dc65745cdd4a1e30b212af562719852b9591c55d9b050224360"
+  },
+  "session.checks.skipped": {
+    "text": "Verificações ignoradas",
+    "source": "765099c781325d6e0c330eacc1fd1df1b87b859cc6c8785d754bbb6f2bbd376d"
+  },
+  "session.checks.failing": {
+    "text": "Verificações com falha",
+    "source": "cc33bd61400c285b951824dc8308be3f3b2407607b5f51fc0f793edd3a695bbd"
+  },
+  "session.checks.running": {
+    "text": "Verificações em andamento",
+    "source": "1bac2cb3471f2a353ef65d29a38da2748a00aa5469f5b3209b74bbbd92a4311d"
+  },
+  "session.checks.couldNotRun": {
+    "text": "Não foi possível executar as verificações",
+    "source": "f223e7e68fc081e9b1c694e5bdf742ab3b99e00e0955020df517f506068d8026"
+  },
+  "session.run.spec.running": {
+    "text": "Escrevendo o plano…",
+    "source": "f93628f1ce385f263dc7fbd06195c346ac2057254b7210dc081601eb36796b49"
+  },
+  "session.run.sync.running": {
+    "text": "Sincronizando com a main…",
+    "source": "07afc841afd985a8cdb70eca34b625caea39acbcd6ecbc5603b1f79c37df856f"
+  },
+  "session.run.build.running": {
+    "text": "Construindo a alteração…",
+    "source": "7db6fbc2a431d5ab32ad5312479129d9467033ec7d7e9c3a09a39e285e19b92c"
+  },
+  "session.run.spec.done": {
+    "text": "Plano escrito",
+    "source": "97be070bf5858a86669943c3880a5b2341c70a563dc2aaf14db72ed9040e1027"
+  },
+  "session.run.sync.done": {
+    "text": "Sincronizado com a main",
+    "source": "3c3b07fe2768ec3823ab446a72e03ad530f2800e7494716d68ae4f329dc0af66"
+  },
+  "session.run.build.done": {
+    "text": "Alteração construída",
+    "source": "953991de28ca8e6d17994ff05df6d69d7158b0be0b0df1690a186d20c0c2b82a"
+  },
+  "session.run.noChanges": {
+    "text": "Nenhuma alteração feita",
+    "source": "8f4cc9245e555b844fff57fd92d679ca3cb92aa3a0a06fa4250a84e470cbd4b8"
+  },
+  "session.run.spec.failed": {
+    "text": "O plano não foi escrito",
+    "source": "ec504e2a3470764bd7708fcace346a90a132f0310b20f4316ec93773d44fd191"
+  },
+  "session.run.sync.failed": {
+    "text": "Não foi possível sincronizar com a main",
+    "source": "fdce861ef186c5e006816925cc06c9a09ae7ab7311b3ba320e8e3de2e156d199"
+  },
+  "session.run.build.failed": {
+    "text": "A construção não foi concluída",
+    "source": "e53047ef9d598882ed703b8ba8eee8774348c302f523a68ff1f97f3bdee808be"
+  },
+  "session.run.spec.stopped": {
+    "text": "Escrita do plano interrompida",
+    "source": "0339495b74231d0c631e406f6c7fec7a6f31aa9e4d39317733716d4103dfd8de"
+  },
+  "session.run.build.stopped": {
+    "text": "Construção interrompida",
+    "source": "5600623e6d504f476de0b5bf0e98b139cbe4cf862012a0659c4b01964545c680"
+  },
+  "session.run.spec.ended": {
+    "text": "Execução do plano encerrada",
+    "source": "e9433008f4d215902eb7f1db43a0626aa1abfaf7f486454b2d340dd8cf2682ce"
+  },
+  "session.run.sync.ended": {
+    "text": "Sincronização encerrada",
+    "source": "950bef310428a6bed10fee9163adfd278802bfacc20244c3f9ac18326e83841b"
+  },
+  "session.run.build.ended": {
+    "text": "Construção encerrada",
+    "source": "b5d11a0f7f3a1e8d0df0bb50553720dcef173af7a480750124e3720c49bb1a58"
+  },
+  "session.run.duration.seconds": {
+    "text": "{{seconds}}s",
+    "source": "c98e00945ab1f6c3908f62d4a198875f8eea59b34ed9dd5d67e2d78bfa8cc53b"
+  },
+  "session.run.duration.minutes": {
+    "text": "{{minutes}}min {{seconds}}s",
+    "source": "1f8e5ba1f8fc71ddcabe9230a2fe3419a5c4b63e338032758fc6c107e6f88d51"
+  },
+  "session.replies.tryAgain": {
+    "text": "Tente de novo",
+    "source": "d15466d48f8f0e4751106732ce2288083c8cedbbb530c840c83eff937d0358ba"
+  },
+  "session.replies.whatWentWrong": {
+    "text": "O que deu errado?",
+    "source": "3f5cd5dde41c30ac1965076f05f9d7c3bfd2ef2cbe26f57d5ff53baf53efd552"
+  },
+  "session.activity.listApps": {
+    "text": "Olhando os apps",
+    "source": "0c86289430291ff5136f7fa67bfc221ece3e101f6bc2345a048c91db23e8c16e"
+  },
+  "session.activity.getApp": {
+    "text": "Lendo o app",
+    "source": "a46d66fa38793d185552f93e20d11d8b217daf3ca075790709cb78bc1e84a12e"
+  },
+  "session.activity.listRequests": {
+    "text": "Lendo as solicitações",
+    "source": "e51c8e82f1867faad2b453d4e9805f90f7164843dbfea5802076606dbdcc2c01"
+  },
+  "session.activity.getRequest": {
+    "text": "Lendo uma solicitação",
+    "source": "85a5221a454e255303ab30848f58facb3c711524aa1b5c9e4ad2f175b0781fa7"
+  },
+  "session.activity.getDiscussion": {
+    "text": "Lendo uma discussão",
+    "source": "2a8277a317a76e3ae212d5da7db5f4d136f3fb111f39af26b9abb4e219faecd5"
+  },
+  "session.activity.getProposal": {
+    "text": "Lendo uma alteração",
+    "source": "f00ade143a31efe95a4c4638e275e9633bf49ce8f1a07f60bafafd6a03147953"
+  },
+  "session.activity.listMyProposals": {
+    "text": "Verificando suas propostas",
+    "source": "3838625faab3f155c785298654cbfcbdd302b571f5b19af7eae4e4b766cbc182"
+  },
+  "session.activity.getChange": {
+    "text": "Verificando a alteração",
+    "source": "b32a4bd4992a1eb7c944ad9e3b906d38a476d3938e75618dd9d4b4b66624af71"
+  },
+  "session.activity.getConventions": {
+    "text": "Lendo as regras da plataforma",
+    "source": "132bdf02c076f3da1645f261707e4a2d7532acf819041dc227236d44b3961d3e"
+  },
+  "session.activity.webFetch": {
+    "text": "Lendo uma página da web",
+    "source": "1e55bf5c5065a0102072986302ddc08742c45192508719d32a9c73f10bf8f7d6"
+  },
+  "session.activity.recheckChange": {
+    "text": "Executando as verificações de novo",
+    "source": "c0e5ac824cfb2fe72eb9818d3728413c7b47ae72fd08aeb6f223648d5e4c9a6d"
+  },
+  "session.activity.switchChange": {
+    "text": "Trocando de alteração",
+    "source": "bde551f77b9d983700e14d69100358cce23335efd50c2f3c49392f6180dfd7c3"
+  },
+  "session.activity.setFocusApp": {
+    "text": "Mudando o foco",
+    "source": "6079cda81dea98027dbd37f0ea2d17c79693507e163e53c0939c2027b4320c96"
+  },
+  "session.activity.getProdStatus": {
+    "text": "Lendo o status da produção",
+    "source": "669a8438591a4e4cfb56cc1a103f70659a2b58c92bac382160e450c0009409d2"
+  },
+  "session.activity.dispatchScout": {
+    "text": "O agente de código está escrevendo o plano",
+    "source": "6dc3ebe44269b0bfe4744877d9f999a4b4e1f1db0a2d425f39ff3432c2079dab"
+  },
+  "session.activity.dispatchCodingAgent": {
+    "text": "O agente de código está construindo",
+    "source": "57d6a1c294fe4c213e4b5477176f7e5ec0735ea83cb428970424fccb668de64f"
+  },
+  "session.activity.preparingConfirmation": {
+    "text": "Preparando uma confirmação",
+    "source": "8eb89d4f6d3fb454c01ba084e1e5d08434785e98800fc3fc705f56e8fae12031"
+  },
+  "session.changeStatus.building": {
+    "text": "Em construção",
+    "source": "87c5912f2cefdf9d7d1913611187fa8ab653a89a8d4b65f574812f899834e8b1"
+  },
+  "session.changeStatus.inProgress": {
+    "text": "Em andamento",
+    "source": "c1f88e9d6c4145cf0530ae020155384d5688d70ed82a07a35d783bbc4b32238c"
+  },
+  "session.changeStatus.waitingForApproval": {
+    "text": "Aguardando aprovação",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "session.changeStatus.goingLive": {
+    "text": "Indo ao ar",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "session.changeStatus.live": {
+    "text": "No ar",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "session.changeStatus.closed": {
+    "text": "Encerrada",
+    "source": "c21ead0614e7e1b70edb3759e1d19ca1e12e6036980d10bfb73052fb1a018efa"
+  },
+  "session.changeStatus.none": {
+    "text": "Nenhuma alteração ativa",
+    "source": "4a3942839082d51f659b2b83829fe2798259a46631b237e21c881acb1492f8c6"
+  },
+  "session.error.startFailed": {
+    "text": "Não foi possível iniciar uma sessão do agente.",
+    "source": "287ae1ced0d241859c1356737660f7e35c763eadca0999f5239e359695e01e9c"
+  },
+  "session.error.loadFailed": {
+    "text": "Não foi possível carregar esta sessão do agente.",
+    "source": "9612b2507cb790e91fb83b7a455c9cd96bd9be7a1a279d9c478f244bcc2eade9"
+  },
+  "session.error.modelFailed": {
+    "text": "Não foi possível trocar o modelo.",
+    "source": "4d39b6aa290e6cccfc44ff614665fb31482f2e8995dedc1c0b3cfce8e93a341e"
+  },
+  "session.error.draftsLoadFailed": {
+    "text": "Não foi possível carregar seus rascunhos salvos.",
+    "source": "5cd29b7283a9bc1caea6d89c14eb8188476458fa5208a27050f3aa66ff8e0fe3"
+  },
+  "session.error.draftSaveFailed": {
+    "text": "Não foi possível salvar esse rascunho.",
+    "source": "dc99ebfc3c79258b9e153e95a57f79366f2a750926b258e5c1177d76716dfb91"
+  },
+  "session.error.draftDeleteFailed": {
+    "text": "Não foi possível excluir esse rascunho.",
+    "source": "1d19e065c4d8879ca0947b2c63b98d111c65a3418d27c60b206f45c0f841f4e6"
+  },
+  "session.error.renameFailed": {
+    "text": "Não foi possível renomear esta sessão.",
+    "source": "eaf3f6a1ca15cfdf92b3bccf988e462e52474ace65bdb54c3159c49eae1b7873"
+  },
+  "session.error.archiveFailed": {
+    "text": "Não foi possível arquivar esta sessão.",
+    "source": "c35fd858da5538600883d12a293b624a4153014dc74e1ee6838fc5458006d3e1"
+  },
+  "session.error.unarchiveFailed": {
+    "text": "Não foi possível desarquivar esta sessão.",
+    "source": "858df4eb4a5ddfdc8566f9935a52ec194ec3d06c92056fbad6d67ea1325e4206"
+  },
+  "session.error.handoffStatusFailed": {
+    "text": "Não foi possível verificar o andamento da transferência.",
+    "source": "a5cf8c9a670bf982579756b04794e27ec2475728acbe6cb2b7d18a07359b5d43"
+  },
+  "session.error.listFailed": {
+    "text": "Não foi possível carregar as sessões do agente.",
+    "source": "5d63c3e2eb9c652927d81ff291efb56bfd259147230c4604777f29309a2aff38"
+  },
+  "session.error.messagesFailed": {
+    "text": "Não foi possível carregar a conversa.",
+    "source": "914cb051961240c7ae8aa9c434ee4b8b313f7d0ef2aca9097cd3394f871cce37"
+  },
+  "session.error.actionsFailed": {
+    "text": "Não foi possível carregar as confirmações.",
+    "source": "5186cf2f461f4386b6fa655ec0542e442ea0750614d08de6383618742d5855aa"
+  },
+  "session.error.confirmFailed": {
+    "text": "Essa confirmação não foi concluída.",
+    "source": "a6b37f32386699eec52686802552a73dc26226ddd819f1cc167aba59588925da"
+  },
+  "session.error.dismissFailed": {
+    "text": "Não foi possível dispensar essa confirmação.",
+    "source": "5724381a5c322ecb3ad092e7ff186bd0d2bef128fa24a446270f28934eb174a4"
+  },
+  "session.error.switchFailed": {
+    "text": "Não foi possível mudar para essa alteração.",
+    "source": "da01bf1f704ea7c923ec597d3e597ba57e786df0b6d01f9bd3032e10d5d66faa"
+  },
+  "session.error.stopFailed": {
+    "text": "Não foi possível parar o agente. Tente de novo.",
+    "source": "ffcebea095377bd54da3d4ebc6fc912713956c59e22a50fb42bc980072f77234"
+  },
+  "session.error.stopCaptureFailed": {
+    "text": "Não foi possível parar a captura das prévias.",
+    "source": "d893fa56dd3cacf47fe19e45627f901741e2d05a5c2c975578afbef2f9786237"
+  },
+  "session.error.specFailed": {
+    "text": "Não foi possível carregar o plano.",
+    "source": "ee73719159e8e62869df601997c7c6ec829a8298060ceed8a6b73f45027ac369"
+  },
+  "session.error.proposeFailed": {
+    "text": "Não foi possível colocar esta alteração em votação.",
+    "source": "bd4062c0d25a3b6bff03993225c0289ef1b074b5fffd6c245be3f5e0b8d49dde"
+  },
+  "session.error.titleFailed": {
+    "text": "Não foi possível alterar o título.",
+    "source": "38f5b99e0f646353a5f48845632c6a5459fde91348e867f16147fc66432a3e56"
+  },
+  "session.error.rebuildFailed": {
+    "text": "Não foi possível reconstruir a prévia.",
+    "source": "fe8ef72ca779279e5c3303d691b2aa117bb4158d3579a980a79c40283b0986ef"
+  },
+  "session.error.specVersionFailed": {
+    "text": "Não foi possível carregar essa versão do plano.",
+    "source": "7f9c084807511bc3fb26b423157be24b449ad417cf0a56604e796b519de0311a"
+  },
+  "session.error.turnRefused": {
+    "text": "O agente não pôde receber essa mensagem.",
+    "source": "5ff08b8e186ddf8abab55dc5fdc3eaaa365bc8d9b10e72adc3f21c23236cea8d"
+  },
+  "session.error.turnFailed": {
+    "text": "O agente não conseguiu concluir esta vez.",
+    "source": "244ad67facdabd58c66f87e41f320cef27162168d13bd38fc3b92bbba9f2dc05"
+  },
+  "session.error.retryFailed": {
+    "text": "Não foi possível tentar de novo.",
+    "source": "d32d15767a0d0eeeb06b1eaccd18fff222f975c825cc07f51d9814af4fa4724e"
+  },
+  "session.error.actionFailed": {
+    "text": "Isso não foi concluído.",
+    "source": "5a75a5c1781328a50fa6754640025f8b7cbf176efed76f4b40717ca20cb8b18e"
+  },
+  "session.error.turnRefusedNotSent": {
+    "text": "O agente não pôde receber isto, então não foi enviado.",
+    "source": "4095ee970fc3ed9fa3b4e94b2ccf9e5f262c5cb56b1058e4d9b0b4315f5bde64"
+  },
+  "session.error.attachFailed": {
+    "text": "Não foi possível anexar {{file}}.",
+    "source": "392c1cb7139d8f936ac9a33d646242ebd9761741d2ab73c412db640351df3621"
+  },
+  "session.newSessionTitle": {
+    "text": "Nova sessão",
+    "source": "cffdba22adf299e8fc6f937ef63ca4352ca9db3022d4634004c0a9bd10aa0dfe"
+  },
+  "session.outbox.notSentUnreachable": {
+    "text": "Não foi possível acessar o Homeroom, então não foi enviado.",
+    "source": "372067e729b3111d2acd5e5cd839e2518ca1c50dbf71da824450e7e04a758196"
+  },
+  "session.outbox.notSentBusy": {
+    "text": "O agente ainda estava respondendo, então não foi enviado.",
+    "source": "51eb487e4fa39b1b1614315a9a38cebd5f175b9004330313b96482bd6f0199ba"
+  },
+  "session.outbox.notSent": {
+    "text": "Não foi enviado.",
+    "source": "84a7caf6432908b2e724eaa74051f06bfa4cb3f509d89ea32dcc8bb6a6193cdf"
+  },
+  "session.outbox.attachFailedNotSent": {
+    "text": "Não foi possível anexar {{file}}, então não foi enviado.",
+    "source": "dd0cc499a40bda5f9c281da7dee5c0a2ffc3f85fc756f3aaf470c1c290ab9f5b"
+  },
+  "session.outbox.notSentNoCredits": {
+    "text": "Não enviado: você está sem créditos por enquanto.",
+    "source": "59568d1a379a83001bcfdd313163be8cc0f52a0ce7ecde661ca93166119259e5"
+  },
+  "session.outbox.attachedFile": {
+    "text": "Anexou {{file}}",
+    "source": "7ac99ed4c31e52a42bf41c088b427bd611792091a485062a297b7793089db449"
+  },
+  "session.activity.codingAgentWorking": {
+    "text": "O agente de código está trabalhando",
+    "source": "904061ed372844002111cca3355838ba3be1695b2956178aeac50f71603b94da"
+  },
+  "session.run.progress.working": {
+    "text": "O agente de código está trabalhando",
+    "source": "904061ed372844002111cca3355838ba3be1695b2956178aeac50f71603b94da"
+  },
+  "session.rename.title": {
+    "text": "Renomear esta sessão",
+    "source": "f3226919738c23ba3fd2a21086e73813264a013b06935f6d186f1512b6249434"
+  },
+  "session.rename.placeholder": {
+    "text": "Sobre o que é esta conversa",
+    "source": "952d0300055ed73909d3aac0f4196fd4d988f9174351a9e846f81597f7392418"
+  },
+  "session.rename.confirm": {
+    "text": "Renomear",
+    "source": "3064d79a295cefe4b384b8fe5cb29fd6b06d7eb1ad94b8895f4148039d06b330"
+  },
+  "session.archive.title": {
+    "text": "Arquivar esta sessão?",
+    "source": "64b2da2802ad98099b77dd53a67e7b082d86026a774b79f7d600e912f611dc86"
+  },
+  "session.archive.message": {
+    "text": "Ela sai das suas listas e a alteração dela é pausada. Uma alteração aguardando aprovação mantém as aprovações, e você pode desarquivar a sessão quando quiser.",
+    "source": "a68efab0f505b466159a186cac80ca72b0b88dd3bce6903d602ae42f8c70dee9"
+  },
+  "session.archive.confirm": {
+    "text": "Arquivar",
+    "source": "66f4804ee23ddc092d1bae43cb88186aa541187fff7c1cc8a4aa17e59a9f4123"
+  },
+  "session.drafts.saved": {
+    "text": "Rascunho salvo. Envie quando estiver pronto",
+    "source": "ee16fdc4355bcc180a9bbe2798c673bbf6ff4c09b1e22b95bad0fb386a2fb313"
+  },
+  "session.drafts.keptTyped": {
+    "text": "O que você digitou foi mantido como outro rascunho",
+    "source": "e2f1f1f3049282290c417a78c80bddba4588f05a272b6d5a72956f0596af7091"
+  },
+  "session.rebuild.stillRunning": {
+    "text": "A recompilação ainda está em andamento. O resultado aparecerá nesta conversa.",
+    "source": "4c3e06d3e4a80b4e7fea48cc0e3e92f9abb274f4d994a2ff4a8cf91e02a7bd2c"
+  },
+  "session.rebuild.unavailable": {
+    "text": "Não é possível recompilar esta prévia agora. Peça ao agente para verificar a compilação.",
+    "source": "d718d73014835bac5ca9145ea8a7901a4a50df40fefcfcd94444d24b33973091"
+  },
+  "session.bar.openApp": {
+    "text": "Abrir app",
+    "source": "e51c6b48fb9e73e340a2804fd209dd67b2fe22952170a846a939fe3ba18b1e5e"
+  },
+  "session.bar.openAppTitle": {
+    "text": "Abrir {{app}} com este chat ao lado",
+    "source": "f165b7ce4182841022187745431def3b4abcb5729ac4e9d27776dec9bcc7db21"
+  },
+  "session.changeRef.pr": {
+    "text": "PR #{{number}}",
+    "source": "3e1a154cfb911f9333d7e99d818b2a74d9b2cc6d4660e6b3ef14316c4f014f24"
+  },
+  "session.changeRef.change": {
+    "text": "Alteração {{number}}",
+    "source": "d46b1ecabae676c4aff7a863b572bf7e57dc2e64d4cedd1bcc3fdefe74a2885c"
+  },
+  "session.bar.focusTitle": {
+    "text": "O app sobre o qual é esta conversa quando uma solicitação não cita nenhum. O agente o troca quando você pede.",
+    "source": "4b65656e49a1c19ee60b5c4bce5d484e6a8fad3c0cafc78462fbb00ae7804b6d"
+  },
+  "session.bar.focusTitleNamed": {
+    "text": "{{app}}. O app sobre o qual é esta conversa quando uma solicitação não cita nenhum. O agente o troca quando você pede.",
+    "source": "79758205889d9a4077de3f3fef8de0d4e868f9186c77e9d4b71eca6160954f30"
+  },
+  "session.bar.noChangeYet": {
+    "text": "Nenhuma alteração ainda",
+    "source": "9b02a08660f234716c17feaa4227b2b03bd3ed78698f2a95794a8753f13af51b"
+  },
+  "session.bar.newSession": {
+    "text": "Nova sessão",
+    "source": "cffdba22adf299e8fc6f937ef63ca4352ca9db3022d4634004c0a9bd10aa0dfe"
+  },
+  "session.bar.kind": {
+    "text": "Sessão do agente",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "session.bar.kindStartedFrom": {
+    "text": "Sessão do agente · iniciada em {{app}}",
+    "source": "c831bdc51307a9bac990490afc719ae851e3d730d20878870b2c4cf4ecb538e5"
+  },
+  "session.bar.anyApp": {
+    "text": "Qualquer app",
+    "source": "3e99f65def3505b669a72754240470f16d8cce20ad0f5d9d29b08219ffc61d12"
+  },
+  "session.menu.label": {
+    "text": "Ações da sessão",
+    "source": "742ab447c91df15254d4aa77afdba62a1c9e1e55d2048b7a53e6cc33c0cee820"
+  },
+  "session.menu.rename": {
+    "text": "Renomear…",
+    "source": "6fa62b3dba2f02f2fe92df35669ff8ef242051be54b1d3aaadfd798e07abbce9"
+  },
+  "session.menu.unarchive": {
+    "text": "Desarquivar",
+    "source": "f565318d124534cfe0a7630d518f548cd339e464f48d50eda453abd3728ac2a7"
+  },
+  "session.menu.unarchiveTitle": {
+    "text": "Trazer esta sessão de volta às suas listas",
+    "source": "447bdb68b7538926917cd4f4d1d5fe2a0f4316c634d9ddd9c8d28f8625726136"
+  },
+  "session.menu.archive": {
+    "text": "Arquivar",
+    "source": "66f4804ee23ddc092d1bae43cb88186aa541187fff7c1cc8a4aa17e59a9f4123"
+  },
+  "session.menu.archiveTitle": {
+    "text": "Ocultar esta sessão das suas listas e pausar a alteração dela",
+    "source": "a04bfbf73b27f27ecb82b7fe6934f34487bb966c9d5a3d3150dd1858248d582c"
+  },
+  "session.join.joinedMessage": {
+    "text": "Entrei em {{community}}. Tente \"{{action}}\" de novo, por favor.",
+    "source": "30da69a218f8bab82c16933e6bac746cfe80b16c44833c699c42c8d8ae053e6c"
+  },
+  "session.join.membersOnly": {
+    "text": "Só membros de {{community}} podem fazer isso. Entre na comunidade e o agente tentará de novo.",
+    "source": "b1e88140c7a5c25c2a722b812dba992574b49f416c958d832f9dad65a0d9a73e"
+  },
+  "session.join.joined": {
+    "text": "Você entrou. O agente foi avisado para tentar de novo.",
+    "source": "4adb34dca6de44fc3654b5d386496f326b8caee11f4ea922ced18a631be1bd9c"
+  },
+  "session.join.button": {
+    "text": "Entrar em {{community}}",
+    "source": "33fd29ae59c8eaa7ca1a400cbd173772cacfc42db9f912ff294ff58af4034c78"
+  },
+  "session.join.failed": {
+    "text": "Não funcionou. Tente de novo.",
+    "source": "d38eba7d0144f41a9bc8b622ad8b95483c11e387e0c60d093cbb2cbb7934135d"
+  },
+  "session.card.label": {
+    "text": "Confirmar: {{action}}",
+    "source": "096eb4397542f9b3ff19b436c3f23c17a25dada8133b3c769e375279cfdcb3c0"
+  },
+  "session.card.needsOk": {
+    "text": "Precisa do seu OK",
+    "source": "4e9f2de31a0fba95db88c8c5a7f7aefe783d7682a5ddd08897efcebdccd0a4e6"
+  },
+  "session.card.confirm": {
+    "text": "Confirmar",
+    "source": "eebdd24a77d9ad32222660c07777163bf5f6732df2b172351f3f8d5783e4f529"
+  },
+  "session.card.notNow": {
+    "text": "Agora não",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "session.card.waiting": {
+    "text": "Aguardando o agente terminar…",
+    "source": "ac1be248a8b340901ff0b00a54d3ee07928459ce440f6e30439ade73782e897c"
+  },
+  "session.card.running": {
+    "text": "Executando…",
+    "source": "46c541363b0253b1b7d736ca2ff004b6c8eb816f253c16bf2f154472152fb66d"
+  },
+  "session.card.confirmed": {
+    "text": "Confirmado",
+    "source": "fe00b67b6dd1143f383553116b83dadce3502fb0282c3ec4ddaa99f756119626"
+  },
+  "session.card.confirmedOutcome": {
+    "text": "Confirmado · {{outcome}}",
+    "source": "0aec60a1df49fc85eba945b9181772bb4e6586b4601a665e5f04a5fb2510f061"
+  },
+  "session.card.failed": {
+    "text": "Não foi concluído.",
+    "source": "124c7bbe67fecad4eb5a6800045fe4d54ac3889d1b2cb9b06806806d21f2ce18"
+  },
+  "session.card.failedOutcome": {
+    "text": "Não foi concluído: {{outcome}}",
+    "source": "de0c50eb3a44e550943ed0445155eecf884dfbd980dfe29dcf1aac7f85641064"
+  },
+  "session.card.dismissed": {
+    "text": "Dispensado. Nada foi alterado.",
+    "source": "b419471cffa45777dbb520a6548b110fa98f0486ebe29acbe07234cf54e58e6d"
+  },
+  "session.card.expired": {
+    "text": "Esta confirmação expirou. Peça de novo para receber uma nova.",
+    "source": "6474e30d7a6af11fbd7944e54564d51fcc22a6e710437475e89d497ba511d3cd"
+  },
+  "session.reply.agent": {
+    "text": "Agente",
+    "source": "11b39c93777e8f1f3983bdba7c72b22fe68cfea20c677e9de53e17cb7dbfb19f"
+  },
+  "session.reply.agentWithCost": {
+    "text": "Agente<0> · resposta {{cost}}</0>",
+    "source": "1ef0c83652a20b4aca7020234328a6d366fdc586f333f63c1ca668d088daec8f"
+  },
+  "session.run.took": {
+    "text": "(levou {{duration}})",
+    "source": "6264fc1a87dd118d8b04b5387b466f72e158f5a7365855f0c4bebc10d39c88fd"
+  },
+  "session.run.starting": {
+    "text": "Iniciando…",
+    "source": "bbe5fc3b9ef39f994c259eaf233d625a500b5219784c82f73b50808d4f79d5dc"
+  },
+  "session.run.noOutput": {
+    "text": "Sem saída.",
+    "source": "dfdba897c3571034a3882d10250e4f18c7001d2e92c5bc9a4b19ab269f98837f"
+  },
+  "session.preview.failed": {
+    "text": "Falha ao compilar a prévia",
+    "source": "54cde3a6a5239fff2f553614f4e2d4f131416f7e4a75032d3c616b3960aaaa8d"
+  },
+  "session.preview.ready": {
+    "text": "Prévia pronta",
+    "source": "954fcf76ac50e19a0f9d16ca0e72ff2f7fef4ef9db5ceb7604d38f59a0b0e38f"
+  },
+  "session.preview.failedSuperseded": {
+    "text": "Falha ao compilar a prévia · Substituída por uma prévia mais recente",
+    "source": "6e09bb336d4bc8782a28c8baa1ef8a61750c40dd00eef502048f298f1fcb0428"
+  },
+  "session.preview.readySuperseded": {
+    "text": "Prévia pronta · Substituída por uma prévia mais recente",
+    "source": "63c613bddf4d0d7526419bf12046178d8bb06f9a8e3917d97889d2124fff5fd7"
+  },
+  "session.preview.status.live": {
+    "text": "No ar",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "session.preview.status.waiting": {
+    "text": "Aguardando aprovação",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "session.preview.checksTitle": {
+    "text": "Veja cada verificação e seu resultado",
+    "source": "bb977a75df504900f83ff46bb6aeabaa7d813509128c6d975f325134bcac189f"
+  },
+  "session.preview.retrying": {
+    "text": "Tentando de novo…",
+    "source": "a16c8b1c95956fbabce3ed5506c7e1b4a2d10c86f7adfc7ae084f2d3df9f5174"
+  },
+  "session.preview.retry": {
+    "text": "Tentar de novo",
+    "source": "942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852"
+  },
+  "session.preview.open": {
+    "text": "Abrir prévia",
+    "source": "f7afe3dde18c1446eb3218cfaedae0aaf6ca9f39f5ceae076701036cd8950d00"
+  },
+  "session.preview.viewChange": {
+    "text": "Ver alteração",
+    "source": "e21db8b81a4a3be2caff909c4b67724b388968a2e78193bd71b32d05a6b6385d"
+  },
+  "session.preview.openDraft": {
+    "text": "Abrir alteração em rascunho",
+    "source": "f07d6423ebbbbc59115a8d3dce0fd63058d0fce883f95ca74cdfa2cb4ba7ef0e"
+  },
+  "session.preview.recheckTitle": {
+    "text": "Recriar a prévia, se necessário, e executar as verificações automáticas novamente, no mesmo commit",
+    "source": "56acc3ca8593c286ccbc6c30322785ec43a8d1be8056105f5fd739ca646449d5"
+  },
+  "session.preview.rechecking": {
+    "text": "Executando de novo…",
+    "source": "6049843fdf4fcb00a2af9565135414357cd378968dd9a8a1463f30926da516fa"
+  },
+  "session.preview.recheck": {
+    "text": "Executar verificações de novo",
+    "source": "9df526d3b6303b71caf17858f6b235b262e9fe475e6de9dcbd3705dc866935f6"
+  },
+  "session.fixChecks.label": {
+    "text": "Verificações com falha",
+    "source": "1e97e84a7df8ce6e106be42418eda2e606a3fe4dea00164738fb8267b400d2ad"
+  },
+  "session.fixChecks.explain": {
+    "text": "As verificações precisam passar para a alteração poder ser mesclada. O agente pode ler o que falhou e corrigir.",
+    "source": "e8a6d4b64e6d38450e7aba85526758e0aff43dfa8113ef8fb80ce2febad83b3c"
+  },
+  "session.fixChecks.fix": {
+    "text": "Corrigir",
+    "source": "8c6c8d92dfc9629db098a304705ff137117450bb551fa3021149b83a0bf4e2fa"
+  },
+  "session.fixChecks.see": {
+    "text": "Ver verificações",
+    "source": "abff92564d44cca2085fd7ffe8b288b48eca3e568679a8143372fdc263cc9636"
+  },
+  "session.specCard.title": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.specCard.titleVersion": {
+    "text": "Plano v{{version}}",
+    "source": "d94788c6107a5463536113c0b0f92239f373b87b5fd6aee73d7852cf12d51471"
+  },
+  "session.specCard.open": {
+    "text": "Abrir plano",
+    "source": "eb6fc9da5268bc60bc45296d50f50bde0d3fa9c416af8ae66d3e773374332996"
+  },
+  "session.specCard.openVersion": {
+    "text": "Abrir plano v{{version}}",
+    "source": "39c056b72da36164b533c5c2c59958926404b8688f57cc99dd802b7bb41ff31f"
+  },
+  "session.specCard.viewFull": {
+    "text": "Ver plano completo →",
+    "source": "cea0efae3a9b01e203c9bbe4f83412c101619d679dac8e12626735f2150ebe3d"
+  },
+  "session.spec.sectionsLabel": {
+    "text": "Seções do plano",
+    "source": "9fe5c1f9d09d02fec3872bb83dde8a7d19d749ec99e6b6d1f9013f296499fda1"
+  },
+  "session.spec.tab.userFacing": {
+    "text": "Para o usuário",
+    "source": "9f6f005ff1080e4f314aee190825a3ed9da50f6a438c512e8e3f7890af338f74"
+  },
+  "session.spec.tab.technical": {
+    "text": "Técnico",
+    "source": "e851504f43bf3c8211004193e5de258134159ac0c863cd002e58828725a8d112"
+  },
+  "session.spec.emptySection": {
+    "text": "Nada nesta seção.",
+    "source": "04506069b266b70095aa3b7150d1e13bba8c7c683e2531c8719fec7b1cfbc023"
+  },
+  "session.spec.heading": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.spec.subtitleWithApp": {
+    "text": "{{change}} · {{app}}",
+    "source": "2bbdb38c588f1b90a35fc6f87300bad307c19f782714b346c983a5196b5b99b9"
+  },
+  "session.spec.versionLabel": {
+    "text": "Versão do plano",
+    "source": "b8371aaa54ebe46288903509992de19205ec1373152bd427a4c9d297beed64b6"
+  },
+  "session.spec.none": {
+    "text": "Esta alteração ainda não tem plano.",
+    "source": "8137f06fd3b57436712470cf2e063954a7d94fa5f7bb9e37e6f72c28b5bf7233"
+  },
+  "session.spec.dialogLabel": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.sidePane.tabsLabel": {
+    "text": "Painel lateral",
+    "source": "b03fed8ac79a6e3197d1cd16ec43de679c7852fc796bf44264a27c7f03df4222"
+  },
+  "session.sidePane.tab.spec": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.sidePane.tab.preview": {
+    "text": "Prévia",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "session.sidePane.resizePreview": {
+    "text": "Redimensionar a prévia",
+    "source": "a339b452dc877162014aca11395dff2dcaac37fd2fbbe6a9f284978315731dbe"
+  },
+  "session.sidePane.resizeSpec": {
+    "text": "Redimensionar o plano",
+    "source": "8da48bef628490d8da2e4c0270065fe225da54dc1acffe9bebd03233137f6c44"
+  },
+  "session.sidePane.previewLabel": {
+    "text": "Prévia",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "session.sidePane.specLabel": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.outbox.retryBusyTitle": {
+    "text": "O agente ainda está trabalhando. Você pode enviar quando ele terminar",
+    "source": "337213403e4643182e0b11a3450be0f3b185132602b002b5adfe96afc8551639"
+  },
+  "session.outbox.retryTitle": {
+    "text": "Enviar de novo",
+    "source": "b0148d2a9dca8d26fbfaf29c6790f85430ba2503172dd36da33d4e40ffc8748a"
+  },
+  "session.outbox.edit": {
+    "text": "Editar",
+    "source": "464c4ffd019e1e9691dcf0537c797353ef2b1c1d4833d3d463e5b74ae4547344"
+  },
+  "session.outbox.discard": {
+    "text": "Descartar",
+    "source": "eb1a70e39274bb762b5d7c1adb5debeea2b05e12af28207f21a375b596853273"
+  },
+  "session.live.stopping": {
+    "text": "Parando…",
+    "source": "bbe8574175aba84f29afa398a91f00ad7598ff0b98e3ae1ddc5473d1b8c0b0ee"
+  },
+  "session.live.wrappingUp": {
+    "text": "Finalizando",
+    "source": "bd1b2e048c00f1a52630907a225e8cfe20354bc8510fc066cf1aed443d0a00a5"
+  },
+  "session.live.thinking": {
+    "text": "O agente está pensando",
+    "source": "fd240a292ea5fea4e8bdf9ebb63b21ae85934116a8db329f81645bc14acb6fe2"
+  },
+  "session.elapsed": {
+    "text": "{{minutes}}min {{seconds}}s",
+    "source": "1f8e5ba1f8fc71ddcabe9230a2fe3419a5c4b63e338032758fc6c107e6f88d51"
+  },
+  "session.capture.heading": {
+    "text": "<0>Capturando prévias</0>",
+    "source": "7aff8a7746c7ea364abae60a1616331cfb60286a7f6c8d012370b29883cb9328"
+  },
+  "session.capture.provisioning": {
+    "text": "<0>Capturando prévias</0> · Preparando as versões antes e depois",
+    "source": "17516df56b6ade8c99021d9aad9b69af4119499809be8b481efb39862b7c05a9"
+  },
+  "session.capture.exploring": {
+    "text": "<0>Capturando prévias</0> · Encontrando as telas a capturar",
+    "source": "8080404c34c4610c70065cd5425d77a90c4bc324f9744b9656ba0aba5bdc7901"
+  },
+  "session.capture.replaying": {
+    "text": "<0>Capturando prévias</0> · Repetindo o fluxo nas duas versões",
+    "source": "02cef3ea7357bcc0786da579ea1bc9ff1cc29627b2dc60c5a32c8cc1b92d0d94"
+  },
+  "session.capture.reviewing": {
+    "text": "<0>Capturando prévias</0> · Salvando as capturas",
+    "source": "b7a03480a81deb3caf10c8bed2be86f09725e20322937fd60649db5734044451"
+  },
+  "session.capture.stopping": {
+    "text": "Parando…",
+    "source": "bbe8574175aba84f29afa398a91f00ad7598ff0b98e3ae1ddc5473d1b8c0b0ee"
+  },
+  "session.capture.stop": {
+    "text": "Parar",
+    "source": "cae7d57bc067a514b8e34c9589631a95c7dc051638ddd2a190773269279a99df"
+  },
+  "session.empty.requestHeading": {
+    "text": "Solicitação #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "session.empty.requestBody": {
+    "text": "Envie a mensagem abaixo para começar. O agente lê a solicitação, planeja a alteração com você e pede a aprovação do grupo quando você mandar.",
+    "source": "3f32278fc83cf1cddfdc2b26f5559b4189db8ffe4b263d1c312e021852af1d3a"
+  },
+  "session.empty.requestBodyOnApp": {
+    "text": "Em <0>{{app}}</0>. Envie a mensagem abaixo para começar. O agente lê a solicitação, planeja a alteração com você e pede a aprovação do grupo quando você mandar.",
+    "source": "0df8cec428aae45a7c5837acbeb9f9e9947f583996153b4ada11ade6461ced85"
+  },
+  "session.empty.heading": {
+    "text": "Nova sessão com o agente",
+    "source": "7c1058b0b75365ca279f5f3862d2777a11506b14de26e398455af16936f53be4"
+  },
+  "session.empty.body": {
+    "text": "Comece uma alteração em qualquer app. O agente planeja, cria e pede a aprovação do grupo quando você mandar.",
+    "source": "71f8aaa00619d697d8459cc3037c0c535304e9012467752559a9222fa5e9bdff"
+  },
+  "session.empty.bodyFromApp": {
+    "text": "Iniciada em <0>{{app}}</0>. Comece uma alteração em qualquer app. O agente planeja, cria e pede a aprovação do grupo quando você mandar.",
+    "source": "59d51b95d62aa523e1da5860b88de2a3ee1ef011bbeb6c83795e8c91ab57f920"
+  },
+  "session.starter.aboutChange": {
+    "text": "Fale sobre esta alteração",
+    "source": "e0cb01a157830c19f608388d025033823c4c711473a39fcf53e93295d265a7f0"
+  },
+  "session.starter.openOnApp": {
+    "text": "O que está em aberto em {{app}}?",
+    "source": "4ab034ba61cc9a1f1749ea68f74d61819acd816e649db69acb82b0d23238d993"
+  },
+  "session.starter.whatToWorkOn": {
+    "text": "No que eu poderia trabalhar?",
+    "source": "23fde4e6216fdb3a24dcd73f1354ca9609b98aa4d6ee532b1be6521456509960"
+  },
+  "session.starter.addFeature": {
+    "text": "Adicionar um recurso",
+    "source": "ad1a0237e3a04fa9cb0850107dfa9239e8bf4cb9776b251e0db5cca20c3a09cf"
+  },
+  "session.starter.fixBug": {
+    "text": "Corrigir um bug",
+    "source": "09a2cbd71b2f81b96c2e70be4e1bf2b6134c4c2f3fb9c5ec8e89e95e42ec537a"
+  },
+  "session.model.fallbackLabel": {
+    "text": "Modelo",
+    "source": "5e2c614c23f02239bc03c6c04fcb681950f9e72bf8fdff6be79c79841cbb10c0"
+  },
+  "session.composer.busyPlaceholder": {
+    "text": "O agente está trabalhando. Digite a próxima mensagem e salve para depois.",
+    "source": "694d8359cab79c5e09ee29d32532abff4ee5ba236d14dadc48d1fdfd3624a646"
+  },
+  "session.composer.saveTitle": {
+    "text": "Salvar como rascunho (Ctrl+Enter ou ⌘+Enter). Fica aqui até você enviar",
+    "source": "e3f3d9e5447b25e2ec7775b0528559dde0cfdd4040b29452b3a698651dae1343"
+  },
+  "session.composer.archivedPlaceholder": {
+    "text": "Esta sessão está arquivada.",
+    "source": "9b13cfc14743d59a1fb8d4126895293bbf686cd9844b91a901bad5207c805268"
+  },
+  "session.composer.placeholder": {
+    "text": "Descreva uma alteração em qualquer app em linguagem simples. Sem precisar programar.",
+    "source": "34b8c99869bf9b8022d4cec7a97536d69df05d50dce226070de5d3569b0bf941"
+  },
+  "session.composer.archivedNote": {
+    "text": "Esta sessão está arquivada. Desarquive para continuar.",
+    "source": "ee9b41f291de8f2093163b187d4f3e2c2e28d8c33767986968d1d96b482b42ae"
+  },
+  "session.composer.unarchive": {
+    "text": "Desarquivar",
+    "source": "f565318d124534cfe0a7630d518f548cd339e464f48d50eda453abd3728ac2a7"
+  },
+  "session.composer.saveNote": {
+    "text": "O agente ainda está trabalhando, então isto será <0>salvo como rascunho, não enviado</0>. Envie dos seus rascunhos quando ele terminar.",
+    "source": "120b979a6f6f97dd608657abe62a2b64e1de21bd46881e3831fab90db45d1304"
+  },
+  "session.composer.label": {
+    "text": "Enviar mensagem ao agente",
+    "source": "826dad8493e6e94d9a5dce0c1880ea755eec7648c2d94342322f0fee899e7409"
+  },
+  "session.composer.attach": {
+    "text": "Anexar fotos ou arquivos",
+    "source": "6ce50e27d5f7e98fa7f3ef846cff512de0f66ce480c6218c950b6fbf32eb7984"
+  },
+  "session.composer.stop": {
+    "text": "Parar",
+    "source": "cae7d57bc067a514b8e34c9589631a95c7dc051638ddd2a190773269279a99df"
+  },
+  "session.composer.saveAsDraft": {
+    "text": "Salvar como rascunho",
+    "source": "93ca415947e2a665b69237c81233ed37f8a00c3cd3fcb1399ea255ef0ac16194"
+  },
+  "session.composer.saveDraft": {
+    "text": "Salvar rascunho",
+    "source": "3de100106dd4e52eaa1f8a07bb71180adf2046a5ed79cbd6dcbb3a5d8505f01a"
+  },
+  "session.composer.sendWaitingLabel": {
+    "text": "Enviar (aguardando o upload dos arquivos)",
+    "source": "ca5414823239f014c1d8444de9f79bd577350f1a30ea4ca9ed90a5d10ca0cbfd"
+  },
+  "session.composer.send": {
+    "text": "Enviar",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "session.composer.stopUnavailableTitle": {
+    "text": "Não é possível interromper o resumo final",
+    "source": "b3f278e6bf29a7bccfd20e4ae2c8dd7c8f77395cf91c94bac725f3b66792081a"
+  },
+  "session.composer.sendWaitingTitle": {
+    "text": "Aguardando o upload dos seus arquivos",
+    "source": "33fa022e855ea86caac3834e0d53603c65cf308f8f4f2b4381985d4d03c3e72b"
+  },
+  "session.drafts.label": {
+    "text": "Rascunhos salvos",
+    "source": "ec135ea58fd5d2007f03c3ea611c381f72398382be41c80bce2bd8abb6f93e85"
+  },
+  "session.drafts.locked": {
+    "text": "o envio é liberado quando o agente terminar",
+    "source": "c38de88e1afec0ab24c36d45a4b2d28217715453d41af9cb55ee4ef2ecfc5136"
+  },
+  "session.drafts.ready": {
+    "text": "Pronto para enviar",
+    "source": "77311249a7d249bff40e990fb931ff82a33770ce9d1e1388c948f2b7c300750e"
+  },
+  "session.drafts.send": {
+    "text": "Enviar este rascunho",
+    "source": "5cda6b94e9abae67232c4f6c7728a0d772e7e8235ec4779b2b7995819a2c3971"
+  },
+  "session.drafts.sendBusyTitle": {
+    "text": "O agente ainda está trabalhando. Você poderá enviar quando ele terminar",
+    "source": "337213403e4643182e0b11a3450be0f3b185132602b002b5adfe96afc8551639"
+  },
+  "session.drafts.sendTitle": {
+    "text": "Enviar este rascunho agora",
+    "source": "bc032321242b78732df36eb23bec8325a4fce217ae22c01377b16b52fd8c59d6"
+  },
+  "session.drafts.edit": {
+    "text": "Editar este rascunho",
+    "source": "ee815b8cf70a8207e1fc1b4b7f31bc41f6b47a3fad202244bc98d2dd91ee9e9f"
+  },
+  "session.drafts.editTitle": {
+    "text": "Devolver este rascunho à caixa para editar",
+    "source": "73452e7e27e2c1008dc0d35a1d8984e119e229462e342b9362fcf6932be8820c"
+  },
+  "session.drafts.delete": {
+    "text": "Excluir este rascunho",
+    "source": "61e54a00ef2cfb36177d0329dbae992e0243910ea53b272b95de6b17992c32b5"
+  },
+  "session.stop.slow": {
+    "text": "Parar está demorando mais que o esperado.",
+    "source": "d767c8b1d2fb87b89eaa049ee38b8b268c89fe8bb02e92c3fdd4306f118c26cd"
+  },
+  "session.stop.stopping": {
+    "text": "Parando o agente…",
+    "source": "18c3ea72b50846325786cdae4b835a5bf13078281df661e9c2b001039d5fc9e9"
+  },
+  "session.stop.retry": {
+    "text": "Tentar parar de novo",
+    "source": "f992ca23640cfab6dc14f5b8fbe3aceaf833118afb6bdd395fd86f474ac555a4"
+  },
+  "session.drawer.heading": {
+    "text": "Alterações desta sessão",
+    "source": "214ae1be475174b8d185763ee4f35ec8e27e2d97178ebc671e6884d20b8850af"
+  },
+  "session.drawer.active": {
+    "text": "Ativa",
+    "source": "92340695899bd2d86223e4a007620e0d6502fc0e08809773634c7e0743764a9c"
+  },
+  "session.drawer.activeLinePr": {
+    "text": "{{app}} · PR #{{number}} (alteração {{change}})",
+    "source": "b5504b2c4e13036f7da43008f36dbd96ba456a60c581e281dd356e4eba49a653"
+  },
+  "session.drawer.linePr": {
+    "text": "{{app}} · PR #{{number}}",
+    "source": "a8e03359e4ff5572386f8008d1a4829f240eeaec3d36ffd2f74804e4838ee0a6"
+  },
+  "session.drawer.lineChange": {
+    "text": "{{app}} · Alteração {{number}}",
+    "source": "32a89a991989ae8e085c3a1fdd63fc28425b26652f7a67698af88779d3ab11ba"
+  },
+  "session.drawer.checks": {
+    "text": "Verificações: {{state}}",
+    "source": "fdad3573cfe76dc4f11bd2041431ee5513343ba1ea7240aca4507a11d43e54b7"
+  },
+  "session.drawer.openPreview": {
+    "text": "Abrir prévia",
+    "source": "f7afe3dde18c1446eb3218cfaedae0aaf6ca9f39f5ceae076701036cd8950d00"
+  },
+  "session.drawer.spec": {
+    "text": "Plano",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "session.drawer.proposalPage": {
+    "text": "Página da proposta",
+    "source": "4ada49ae5a59380eaa45f9d1288bb09ddc766e606fc6584126ba2e4a0d77a4a5"
+  },
+  "session.drawer.none": {
+    "text": "Nenhuma alteração ativa. Peça ao agente para iniciar uma.",
+    "source": "1c121f266d5936d1724bd582101539aef89e5deda809176e25f80282b6d8e8d1"
+  },
+  "session.drawer.earlier": {
+    "text": "Antes nesta sessão",
+    "source": "a7987b1374667c994616c12303fa1a8e7226202765623d9025980a4d5181ea5b"
+  },
+  "session.drawer.switchTo": {
+    "text": "Mudar para",
+    "source": "71b71bcf2818c86943fe49acb2040ca96edd7357b336c12a16cbdb8508558318"
+  },
+  "session.screenLabel": {
+    "text": "Sessão do agente",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "menu.suggestImprovement": {
+    "text": "Sugerir uma melhoria",
+    "source": "cfbf47a0b6534ad1577177e339c73219b433f6e196a8ead8aeb2270f1b17714a"
+  },
+  "menu.update.platformReady": {
+    "text": "Há uma nova versão disponível. Clique aqui para obtê-la.",
+    "source": "0b55f203cd658edf2252510f0ed0d3afe88adba5c53ae08f8accb404c27094fb"
+  },
+  "menu.update.appReady": {
+    "text": "Este app tem uma nova versão. Clique aqui para recarregá-lo.",
+    "source": "a839b5b67d23b3408b4d77c9b6b4e9a331dbecc032d12bc20421f8a498628fbc"
+  },
+  "menu.update.platformDownloading": {
+    "text": "Uma nova versão da plataforma está sendo baixada. A opção de recarregar aparece quando estiver pronta.",
+    "source": "2e8d453f929672ede340e390ed2a0e0b3c2c560a55de8e0436f5917e7c83f246"
+  },
+  "menu.update.platformBuilding": {
+    "text": "Uma nova versão da plataforma está sendo criada.",
+    "source": "128723ce6f353f82a4685f49aabfc183d38ad7e8920e57f01fd55ded096474f7"
+  },
+  "menu.update.appBuilding": {
+    "text": "Uma nova versão deste app está sendo criada.",
+    "source": "ac0584d35dcd47851ef8314c20028383581095def9ed76a7f15ec247e8e873e8"
+  },
+  "menu.row.state.working": {
+    "text": "Trabalhando",
+    "source": "a92f0449a9f7235bf69dc2e8ff7070bfae3f00ec8f8f26e5457a9beac53466ac"
+  },
+  "menu.row.state.handedOff": {
+    "text": "Repassado",
+    "source": "b60c5435c0503adb5bd57fb70668c183231a5f3bd9a06871a2a75fbfd4be0d33"
+  },
+  "menu.row.state.needsYou": {
+    "text": "Precisa de você",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "menu.row.state.ready": {
+    "text": "Pronto",
+    "source": "5fa7aac5375c5815787fba3f49559f9b45b14023147ce0652803387974144e5f"
+  },
+  "menu.row.unread": {
+    "text": "Atividade não lida",
+    "source": "d1b1f643e8e8fb56a4fdd49a7ca7a46a796f92f7677d1f23b5a63f0fda37992b"
+  },
+  "menu.row.status.working": {
+    "text": "Trabalhando…",
+    "source": "5474eef8d0f179c707cf418e2bbb468c77cc24edc5e9f5f4e137e85e06a8eea0"
+  },
+  "menu.row.status.needsYou": {
+    "text": "Precisa de você",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "menu.row.status.handedOff": {
+    "text": "Repassado",
+    "source": "b60c5435c0503adb5bd57fb70668c183231a5f3bd9a06871a2a75fbfd4be0d33"
+  },
+  "menu.row.caption": {
+    "text": "{{app}} · {{status}}",
+    "source": "2845a8cefb78cc19bb5174e71661dd859a08eac9535204b31211395d6d73ddfd"
+  },
+  "menu.row.sessionFallback": {
+    "text": "Sessão #{{number}}",
+    "source": "8b08403a5f3f1b2b84399f5bc2da0a127c317e327bd92d966378aec2e4ef1b96"
+  },
+  "menu.row.workOrderFallback": {
+    "text": "Ordem de trabalho #{{number}}",
+    "source": "32e327e451be430f89ef5eb34b686e4b547dc8f4fd5c6dc846b3c361c8105f1d"
+  },
+  "topicBack.messages": {
+    "text": "Mensagens",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "topicBack.workshop": {
+    "text": "Oficina",
+    "source": "c0086f23dcddcdda8b10b6601dcb1564c1aa5306a4bedb2dbb4b0ac41030ba59"
+  },
+  "appContext.about.note.thisApp": {
+    "text": "A comunidade deste app o constrói em conjunto.",
+    "source": "0f8d69457f3374ab22ab5596f56987da0f403cb23e0ced2a70743ce88b2fa8e6"
+  },
+  "appContext.about.note.app": {
+    "text": "A comunidade de {{app}} o constrói em conjunto.",
+    "source": "5e8ff69f36eed233e192cee92ae7268083cc7e594131504f1715e52359c60450"
+  },
+  "appContext.about.note.unnamedApp": {
+    "text": "a comunidade deste app o constrói em conjunto.",
+    "source": "98fb30b5711fa1830a8512f9511ea1607dd889eeaf9a2b3a34e703ec7ca3247e"
+  },
+  "appContext.about.note.platform": {
+    "text": "A comunidade do {{name}} o constrói em conjunto, do mesmo jeito que os apps nele.",
+    "source": "e7682cc48c7ff10333cd87044f88f22804ef70bec118438199354e41ed3a370b"
+  },
+  "appContext.about.note.platformRestricted": {
+    "text": "A comunidade do {{name}} o constrói em conjunto, do mesmo jeito que os apps nele. Neste servidor, a oficina dele é aberta somente a administradores.",
+    "source": "7a2af1f1ea86e926eefa197ed0652cc0e20d003f07805d960252eafd516a00df"
+  },
+  "appContext.about.version.app": {
+    "text": "Versão do app: {{version}}",
+    "source": "c1b7764f22dfda3a84996dfce57e554e6a2539106d685e0c8c21e2489a68e367"
+  },
+  "appContext.about.version.appDeploying": {
+    "text": "Versão do app: {{version}} (publicando…)",
+    "source": "bdfe6926d6e29032c9abe3863273b24f0530cd6e484e2d9cef129da3a95086d0"
+  },
+  "appContext.about.version.appDeployingOnly": {
+    "text": "Versão do app: publicando…",
+    "source": "a0ad120d54b56e4f80e8296d72372b63f388e8dcecf4e30b44bbf93341b93917"
+  },
+  "appContext.about.version.platform": {
+    "text": "Versão: {{version}}",
+    "source": "2e6261013ee28389951efb41ab18c98b3e054175c841759563e0549a73d3531a"
+  },
+  "appContext.about.version.platformDeploying": {
+    "text": "Versão: {{version}} (publicando…)",
+    "source": "003d6ecde69a3fcbac20f233a06aba87d9daa75bfcf451689368f28d708959f1"
+  },
+  "appContext.about.version.platformDeployingOnly": {
+    "text": "Versão: publicando…",
+    "source": "e7a8ef79c2c75520825097c46b8011ecf0503c7c1c8d2c7f39dd9872d1263c2c"
+  },
+  "appContext.about.contributor.unknown": {
+    "text": "desconhecido",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "appContext.about.open.resume": {
+    "text": "Retomar",
+    "source": "d640c7421da066618a39daf4266da5f61f66a9b1afcd626481b831a17064965d"
+  },
+  "appContext.about.open.open": {
+    "text": "Abrir",
+    "source": "ed077f3d8125d60dca1979c7133601bd187d47c73ed9975028f677e49e709942"
+  },
+  "appContext.about.open.spinningUp": {
+    "text": "Iniciando…",
+    "source": "7a0d6a5c7579b584382b959a814bbd13de2c3d48e4938b20bcc5a07cb3b446c4"
+  },
+  "appContext.about.open.notRunning": {
+    "text": "Não está em execução",
+    "source": "9e3856eef37c48e551fcb274637d0d3499eec816116e0a3aa509990a59a49040"
+  },
+  "appContext.about.open.unavailable": {
+    "text": "Indisponível",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "appContext.invite.error.generic": {
+    "text": "Algo deu errado. Tente novamente.",
+    "source": "4def98c892406e31099ba18e5d6a60db12420dd723a27a5ab77235d20adb0beb"
+  },
+  "appContext.invite.detail.used": {
+    "text": "{{used}} de {{max}} usados",
+    "source": "9aa990d56e5973d70b5fef449114d943b70836e82797d715aebc602bffd6a5fa"
+  },
+  "appContext.invite.detail.noEnd": {
+    "text": "sem data de término",
+    "source": "4cde242dbfc4b181e14ca55c50681b5e68456c2deada3fbf5a0c5938805800e1"
+  },
+  "appContext.invite.detail.underDay": {
+    "text": "menos de um dia restante",
+    "source": "add5bd905e1bb066c375ba2240658263ef766c013069c7def8049e6a1813377c"
+  },
+  "appContext.invite.detail.pair": {
+    "text": "{{uses}} · {{expiry}}",
+    "source": "4b31014143c310b1e1e7d6da09fdbca2380d46d0536190d838488736ebd8d0db"
+  },
+  "appContext.invite.title": {
+    "text": "Convidar pessoas para {{project}}",
+    "source": "65fd7dececc3de94dd5cac9e6296da1c1b1514ac1bcbacd5ff97cc52c6bc350e"
+  },
+  "appContext.invite.titleUnnamed": {
+    "text": "Convidar pessoas para este app",
+    "source": "b2d940729aeec4f45b8782b50c4e6ecdf0d51f678d1e6e3bacca51cd94aa27d3"
+  },
+  "appContext.invite.making": {
+    "text": "Criando seu link",
+    "source": "0a71b96416fc79398c7cd457d22e987ad45459a475ca6a8f77733efa0fea1b28"
+  },
+  "appContext.invite.copyFailed": {
+    "text": "Não foi possível copiar. Mantenha o link pressionado para copiá-lo.",
+    "source": "dac2f2810ad1415ef06f5fdddc2a63b2ca622a7ca6de308868b4541688c8cf45"
+  },
+  "appContext.invite.shareTitle": {
+    "text": "Participe de {{project}} no Homeroom",
+    "source": "babe12511b5dd134fdc82639caea7d6e221bac903d6be6bc548ae49ba2575ff3"
+  },
+  "appContext.invite.shareTitleUnnamed": {
+    "text": "Participe deste app no Homeroom",
+    "source": "66e820956f05b9715b08db99aaeb9a10c40b63a0a45b097498207aa41cc0fe77"
+  },
+  "appContext.invite.noProject": {
+    "text": "Abra um projeto para convidar pessoas.",
+    "source": "96c1e967884766fe60b3dea9f02356d0a02e9eb4ff1bd1ca8054db9f5cac994a"
+  },
+  "appContext.invite.buildersOnly": {
+    "text": "Somente quem constrói {{project}} pode convidar outras pessoas.",
+    "source": "12b0490389faf184d588748bac3f19ed16ea7608bd3134521a3fd2eb374d2980"
+  },
+  "appContext.invite.buildersOnlyUnnamed": {
+    "text": "Somente quem constrói este app pode convidar outras pessoas.",
+    "source": "cf6af58a44ef6a5c77f0bf3bfa8efb78c343f5ff5fec5a71074209e367fac591"
+  },
+  "appContext.invite.joinFirst": {
+    "text": "Participe de {{project}} para convidar pessoas.",
+    "source": "b6c12c3183561a755f53b8d8b74111ae7a5239e76952a07cafaad702ff217ed0"
+  },
+  "appContext.invite.joinFirstUnnamed": {
+    "text": "Participe deste app para convidar pessoas.",
+    "source": "e6e4973c14b311cfca45cf46c4f79b032fbf4a7c4a8c1521019bab59ca3c22c1"
+  },
+  "appContext.invite.linkLabel": {
+    "text": "Link de convite",
+    "source": "826c272260db2d1f1a6d33fb290c5ba7b709a18c39fefb05e3e874ec4d002718"
+  },
+  "appContext.invite.copied": {
+    "text": "Copiado",
+    "source": "8d525e5f158b9afe05f3122af363ac67763bdc4e1395b46597b320c289766ce3"
+  },
+  "appContext.invite.copyLink": {
+    "text": "Copiar link",
+    "source": "dbf362d4f210c780513a9258278d4d07abe8a224f84ba7ad775d819039342e77"
+  },
+  "appContext.invite.share": {
+    "text": "Compartilhar",
+    "source": "29887a5ff9846ccc23327565a07e17fa6dcaea6211f1898ae825f84ae38f4223"
+  },
+  "appContext.invite.expiresAfter": {
+    "text": "Expira após",
+    "source": "a5e4b9f547aa371fc3e620e21f4410d03efd49899576bcbc3cd325263279906a"
+  },
+  "appContext.invite.option.untilOff": {
+    "text": "Até você desativar",
+    "source": "e8a440c9d25398d2ef15132c077aa314b4a65308463d0a407fb1065481dc80a7"
+  },
+  "appContext.invite.worksFor": {
+    "text": "Vale para",
+    "source": "dd8110e9995750511aab7758a74b910efbe9c688750edc477cfd06e711bc3a07"
+  },
+  "appContext.invite.option.anyone": {
+    "text": "Qualquer pessoa com o link",
+    "source": "5b7f701785be58f468f02335ce1cf992f11bd06d5be6ca4d926375207e360c82"
+  },
+  "appContext.invite.makeNew": {
+    "text": "Criar novo link",
+    "source": "7630d846adbcfabe9185a349757b0891e0b6ee4a3d9e4522635cd08912cd40a4"
+  },
+  "appContext.invite.change": {
+    "text": "Alterar",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "appContext.invite.liveLinks": {
+    "text": "Links ativos",
+    "source": "3401ecef8e5ceb6a65851b119cb7ea3cc70389d99d87bd65e2dfb4c4c9aad91c"
+  },
+  "appContext.invite.yourLinks": {
+    "text": "Seus links",
+    "source": "219ee7d1ee3f648afd81a93448f82a714c3b615b34f8573d43bd164db2748e1f"
+  },
+  "appContext.invite.madeBy": {
+    "text": "por @{{username}}",
+    "source": "2e4e07ca4209136e8bf1089ae407ed5bf1d49f7eb24cbd726154b52802e65614"
+  },
+  "appContext.invite.turnOff": {
+    "text": "Desativar",
+    "source": "06f0e210b27d4d6215fba1ac31899dd4e95c6281888e2f107cfd19ed1dfda23f"
+  },
+  "appContext.about.contributors.showFewer": {
+    "text": "Mostrar menos",
+    "source": "255beb6510e7827d37ec1cd22d080f910888ae00f29374dd9545c8b3d1fce43a"
+  },
+  "appContext.about.lineage.linkTitle": {
+    "text": "Remixado de {{app}}: abrir o original",
+    "source": "e245450e1bf8cf3a9afd3b248144ddf2e31cd4867f5c2f226068c4f728d73d20"
+  },
+  "appContext.about.lineage.linkTitleDeleted": {
+    "text": "Remixado de {{open}}excluído{{close}}: abrir o original",
+    "source": "c521a75c2ad61278abbff317b0fb57729f2f86bf7144ac49d3838733fc905e49"
+  },
+  "appContext.about.lineage.remixedFrom": {
+    "text": "⑂ Remixado de {{app}}",
+    "source": "46d824217747b60867611d3747c7a1a9aa948040e87630b1b3bbf7886dc58347"
+  },
+  "appContext.about.lineage.remixedFromDeleted": {
+    "text": "⑂ Remixado de {{open}}excluído{{close}}",
+    "source": "27accbf25706f70ee176ddc04147e35fd2fa08c784e0ae9c250bbac87c206303"
+  },
+  "appContext.about.lineage.goneTitle": {
+    "text": "O app original não existe mais",
+    "source": "23bafd55a1b3363f0742dc558b1b01624b186cf40306b7d49cee75aecf68c61e"
+  },
+  "appContext.about.added": {
+    "text": "Adicionado",
+    "source": "6b02e0d363a4af1c95eef50364bb0202c8b250aa05a48a69e68fd7787b4b0632"
+  },
+  "appContext.about.addToMyApps": {
+    "text": "Adicionar a Meus apps",
+    "source": "b174f7f1fc7e93ca99d5a30715bc56dd8ba20ba42397ce9bf573271f9f0e6ece"
+  },
+  "appContext.about.noteHow.app": {
+    "text": "A comunidade de {{app}} o constrói em conjunto. <0>Como funcionam as alterações</0>",
+    "source": "67465521eecc426bee82b807853803cc6a258b0b49d20f4cd838f9aaaec59edd"
+  },
+  "appContext.about.noteHow.unnamedApp": {
+    "text": "a comunidade deste app o constrói em conjunto. <0>Como funcionam as alterações</0>",
+    "source": "634c8d877d5514f171a673a8c1d5f2fec3960ca6e9fa42179d91095d6e208523"
+  },
+  "appContext.about.noteHow.thisApp": {
+    "text": "A comunidade deste app o constrói em conjunto. <0>Como funcionam as alterações</0>",
+    "source": "11ad027065fc896f22126f34e228c3bab1d1dc665217abb70cf0457c33954b02"
+  },
+  "appContext.about.noteHow.platform": {
+    "text": "A comunidade do {{name}} o constrói em conjunto, do mesmo jeito que os apps nele. <0>Como funcionam as alterações</0>",
+    "source": "d2951106c49c474525a78503b08768147c14029c59edd6fccfa2ca3c4c0056c2"
+  },
+  "appContext.about.contributors.heading": {
+    "text": "Colaboradores",
+    "source": "350ad433c42fe8cecdb38439f33947ea04c43fe819455772fd3c03b85c389f16"
+  },
+  "appContext.about.contributors.loading": {
+    "text": "Carregando colaboradores…",
+    "source": "bfaea4c0e7e6ca9aeb164dbdcd372417e856b076df290145972d8d1e6bb74d61"
+  },
+  "appContext.about.contributors.failed": {
+    "text": "Não foi possível carregar os colaboradores.",
+    "source": "68653b35c7cb02a716a2b7bc1b3a293d10b051b52cf4f4601fe5a85402fb33e6"
+  },
+  "appContext.about.contributors.none": {
+    "text": "Ainda não há colaboradores.",
+    "source": "39eb422faf09012f4bd1f9128c63b897ea56970acc145aa82dcd64c553b4e4d3"
+  },
+  "appContext.about.more": {
+    "text": "Mais",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "appContext.row.share": {
+    "text": "Compartilhar",
+    "source": "29887a5ff9846ccc23327565a07e17fa6dcaea6211f1898ae825f84ae38f4223"
+  },
+  "appContext.about.share.copied": {
+    "text": "Link copiado",
+    "source": "d12860c21e78baa522ac743ecfbd77fb9cf4558e581e0e54afcace23b3ce1849"
+  },
+  "appContext.about.share.failed": {
+    "text": "Não foi possível copiar o link",
+    "source": "b156f6c7963c25eb4cf8606d4d28f13a323c3fddcdb5830c3c853d86f165a900"
+  },
+  "appContext.about.addToHomeScreen": {
+    "text": "Adicionar à tela inicial",
+    "source": "1d4b34eff080b359d6a1564945ffde72503f6764459c3e1a73c1ef7750b86718"
+  },
+  "appContext.about.code": {
+    "text": "Código",
+    "source": "340f463033e0fd5ddeabb922df4d4f1b5747494d0f5ed9894f13b6e13ca831f5"
+  },
+  "appContext.about.codePublic": {
+    "text": "Público no GitHub",
+    "source": "c7bb7b5eaadc4f833ab95c355dd504350c15d4146d0c51407d8a09d74d6d2200"
+  },
+  "appContext.about.remix": {
+    "text": "Remixar",
+    "source": "f84ed4375595ff56536a50d853f9efa4897ac6e815aad3b94a8ac263e92736ef"
+  },
+  "appContext.about.remixSub": {
+    "text": "Crie sua própria cópia",
+    "source": "82bb5bb897a289f90180a30a283b884a02a67c5488371286ddab47ce658642dd"
+  },
+  "appContext.about.liveSince": {
+    "text": "No ar desde {{when}}",
+    "source": "0ae75663b951f1da6b6628da5f3a253e0de78ab7926320658e33d984667b15ca"
+  },
+  "appContext.thisApp": {
+    "text": "este app",
+    "source": "d2c823cf6649d9cf0ade2e16cc34d1692c76641f03a5214ca084df612f84089e"
+  },
+  "appContext.sheetLabel": {
+    "text": "Menu",
+    "source": "99af6606ff9d6cd5154d4d4e9c21e325086d3e904677cdb41d363c8a3480f862"
+  },
+  "appContext.backToMenu": {
+    "text": "Voltar ao menu de {{app}}",
+    "source": "1f86efe545a8f78cbe0e701cbe16b1d52d2458abda463c356b17f93d4757e058"
+  },
+  "appContext.backToThisAppMenu": {
+    "text": "Voltar ao menu deste app",
+    "source": "fe69cbd87d6aa1420bfe00f2253b33239e214243837c6a20b1315085b289cbe1"
+  },
+  "appContext.goToHomeroom.title": {
+    "text": "Ir para o Homeroom",
+    "source": "5fd35ea799941cdf2985645548cadc6639f48076c65e49c84155cc8bc19cf190"
+  },
+  "appContext.goToHomeroom.sub": {
+    "text": "Seu Início, suas comunidades e o Homeroom bot",
+    "source": "45fc711da854d02885e5a98db669d7ec36a64d7a0e3e20d5ce36143777db680f"
+  },
+  "appContext.addHomeroomToHomeScreen": {
+    "text": "Adicione o Homeroom à tela inicial",
+    "source": "e9c1eee2840b5a32a0819398556b7a7f2ce6a20ee0ffc781dbb9e58a55c6e05b"
+  },
+  "appContext.row.community": {
+    "text": "Ir para a comunidade",
+    "source": "71141ab734364eef147c3166398fdf5e6bba90a257b66526c8441f6296f1b33e"
+  },
+  "appContext.row.terminal": {
+    "text": "Terminal de desenvolvedor",
+    "source": "6e8e7317a257dd20e993357ba0f12eeb73b295e98c6e3cc5ba0ef776e945a2b0"
+  },
+  "appContext.row.about": {
+    "text": "Sobre {{app}}",
+    "source": "8d856202fa3896a42fc051dd0d4dcb4fc46a9b3784ec28278cecbf5dbca596e2"
+  },
+  "appContext.row.aboutThisApp": {
+    "text": "Sobre este app",
+    "source": "147cb28304192ea07bb3760a9e9cb042b2b5eaa4a9fe6cb17cc6ad12a4be6233"
+  },
+  "appContext.reportApp": {
+    "text": "Denunciar app",
+    "source": "5cf59a220d296b6811fd8fc4af3d64841ec1f4fd59cac97d7f1172490fc84f3e"
+  },
+  "sidePanel.expandLabel": {
+    "text": "Abrir em tela cheia, saindo do app",
+    "source": "68a05b96a611b6baea1aeb70b315200655ad1daf3d457904547d347c0dcf978c"
+  },
+  "sidePanel.expand": {
+    "text": "Abrir em tela cheia",
+    "source": "7b6b61dc3624c5eee3ad79e19df756fed1dbd47f2cf283fe75cf9b15fb106934"
+  },
+  "sidePanel.close": {
+    "text": "Fechar painel",
+    "source": "a600b900f83db6cbe8f46f6f0181e8462308d98196a92991dfc741137759db72"
+  },
+  "sidePanel.frameTitle": {
+    "text": "Painel lateral",
+    "source": "c28cdd98645b370f1a327d22a201b3620530d6550c2b7dc94f5ca92307aa2b2f"
+  },
+  "sidePanel.resize": {
+    "text": "Redimensionar painel",
+    "source": "c9fe271c08aac0c350b899a3beadeff7bd91bb030732c8fede6bf4fe533834a9"
+  },
+  "sidePanel.resizeTitle": {
+    "text": "Arraste para redimensionar · clique duas vezes para redefinir",
+    "source": "dc94eb66542cb221db1c797dae8b09f57426fb7e3b77a47555f96165aadd8d43"
+  },
+  "sidePanel.title.workshop": {
+    "text": "Comunidade",
+    "source": "bb501d7877eb7ddbd40baf7990e8058212e8140a2e6ceaaf2d54a6412b770bfd"
+  },
+  "sidePanel.title.proposal": {
+    "text": "Proposta",
+    "source": "5d42766c7ecac46c344f7ed2f8940a0054b00641cb56876ceb30c9eab50159b0"
+  },
+  "sidePanel.title.request": {
+    "text": "Solicitação",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "sidePanel.title.change": {
+    "text": "Alteração",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "sidePanel.title.newChange": {
+    "text": "Nova alteração",
+    "source": "1e98669442c0d77703980b7abddf20da86081ca6d9e780026afcc2d3fc301f09"
+  },
+  "sidePanel.title.thread": {
+    "text": "Mensagens",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "sidePanel.title.chat": {
+    "text": "Chat",
+    "source": "460b3a7da007b7af9d35bca54181dc91382263b2bf133ca214871ca1fed1fc1c"
+  },
+  "sidePanel.title.agent": {
+    "text": "Sessão do agente",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "sidePanel.title.messages": {
+    "text": "Mensagens",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "appFrame.cover.opening": {
+    "text": "Abrindo…",
+    "source": "c926c2c50e65d5a5799f548604472ee8554b53c376e45be580b3a06a484d8fc0"
+  },
+  "appFrame.waiting.title": {
+    "text": "Enquanto você espera",
+    "source": "8fdd323aba92a15548dedee8cbb734132d46a7fba89adc024bae52acc4f60c0f"
+  },
+  "appFrame.waiting.sayHi.title": {
+    "text": "Diga oi para o grupo",
+    "source": "bc138af4ac7e2a8445ded3ec6cc2e970279e5a6471a11a48f88a295757543e85"
+  },
+  "appFrame.waiting.sayHi.makerNote": {
+    "text": "{{maker}}: “{{note}}”",
+    "source": "0a284311735db553cdaf2ab39495aaaac6ef9c4c6f066d12d88cac23898bc590"
+  },
+  "appFrame.waiting.sayHi.introduce": {
+    "text": "Apresente-se",
+    "source": "d0247b12d965ab4eccd45b15ca1625ed99756bfa842f3b95d03ef34eeb3539e0"
+  },
+  "appFrame.waiting.plan.title": {
+    "text": "Ver o plano",
+    "source": "4f83cff0b88783d33ec3122f5cfba6a6f637357b0755cfcb4d8cccd2023f1f9e"
+  },
+  "appFrame.waiting.plan.talk": {
+    "text": "Converse sobre isso na Discussão",
+    "source": "022ba47c17fc45aae3a6c6c54f6ce147e05bb6667896a50f06025f2c8d038c8b"
+  },
+  "appFrame.waiting.suggest.title": {
+    "text": "Sugira algo",
+    "source": "2c7f65d50ade3b2860e18b7d8905b9520014fd78203c3203ca0acadce65c17ac"
+  },
+  "appFrame.waiting.suggest.sub": {
+    "text": "O Homeroom bot começa assim que estiver no ar",
+    "source": "664ca6e90e4b839cf2e1346448c3ff6760f309ae55b02c4bd356f7b5a72798fc"
+  },
+  "appFrame.waiting.sheet.discussion": {
+    "text": "Discussão de {{project}}",
+    "source": "8caf7b6d18dfcafbc239a8c5208a970f653221051d605850498407172636306e"
+  },
+  "appFrame.waiting.sheet.plan": {
+    "text": "O plano de {{project}}",
+    "source": "c7deb7a9a59455a4cfbaa309bb429603eec026b2e11b103210f191be530dc203"
+  },
+  "appFrame.waiting.buildNote": {
+    "text": "geralmente de 10 a 25 min",
+    "source": "e035ac9cdce326b34dc7694393fea5ca6003f41c4664388ceb0f1c764655e118"
+  },
+  "appFrame.waiting.discussion.loading": {
+    "text": "Carregando…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "appFrame.waiting.discussion.failed": {
+    "text": "Não foi possível abrir a discussão. Tente novamente em instantes.",
+    "source": "6ef2cfa7068e1a862f000d282d843762cbe3a70218326babde3d39e43dee6448"
+  },
+  "appFrame.screens.pill.firstLook": {
+    "text": "Primeira olhada · feita a partir do plano",
+    "source": "9ba2a61e6b6e8568cd74fd7b3c40cb77edf62ecb0547f05ac9e313dfcc1f939f"
+  },
+  "appFrame.screens.pill.real": {
+    "text": "Tela real",
+    "source": "3df0297b6482c6432cc5f0cdc6145d80a6f6f1066d7903fbeb31fdf87bc0e9cc"
+  },
+  "appFrame.screens.alt.firstLook": {
+    "text": "Uma primeira olhada em {{project}}, feita a partir do plano",
+    "source": "95be28151ee56d60f669e68227376b8e8128c6b1b714f89f6508d8e80654029a"
+  },
+  "appFrame.screens.alt.real": {
+    "text": "{{project}}, tela real {{number}} de {{total}}",
+    "source": "af9a934d95bebd40b7f330758f1823e15a08907e117978d04fbf1ef966d82aaf"
+  },
+  "appFrame.screens.dot": {
+    "text": "Tela {{number}} de {{total}}",
+    "source": "4badb46e4a5afaabfea41767fb5512e28939aa2d0bb083b17bf1721bcfcdb3e7"
+  },
+  "appFrame.live.switch.label": {
+    "text": "O que a imagem mostra",
+    "source": "fcc817e4eeaa4ebe6ed632844bce4cf65b1299ff5518389ac6be92112c1fb2d5"
+  },
+  "appFrame.live.switch.preview": {
+    "text": "Prévia",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "appFrame.live.switch.live": {
+    "text": "Ao vivo",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "appFrame.live.pill.starting": {
+    "text": "Iniciando o app…",
+    "source": "be6d3d71da59046a70e24377f80f6d37b3ccd7212575c0617e9bf971ea358e95"
+  },
+  "appFrame.live.pill.failed": {
+    "text": "Falha ao reiniciar · mostrando a última tela boa",
+    "source": "703a697c19bb9d58cb4d8559b512a5f7d28f61818e5ca312f514a12c8c222083"
+  },
+  "appFrame.live.pill.justUpdated": {
+    "text": "Ao vivo · atualizado agora",
+    "source": "8466eb248a457eb496446abada8e2483df05da84bc401cb4cd50f7055192f0d1"
+  },
+  "appFrame.live.frame.starting": {
+    "text": "{{project}} está iniciando",
+    "source": "b4de9542350f5823fcafdae6e2e7ed1049a8ee4981b1a642516acab8f9e6cd83"
+  },
+  "appFrame.live.frame.live": {
+    "text": "{{project}}, ao vivo enquanto é criado",
+    "source": "67a26ce8c8a265cfe7cd202bdb512978d877773c855d27b12a37136373d64ca2"
+  },
+  "install.banner.getOnAppStore": {
+    "text": "Baixe o app na App Store",
+    "source": "7e8b9c6fa1d4ed9c4481cfc9b96cc6b2e1a4e77939a6cd44201245ff30114ecc"
+  },
+  "install.banner.getOnGooglePlay": {
+    "text": "Baixe o app no Google Play",
+    "source": "639bc51206685f275769b883e99587ce187303e996ef7d1e50e014eb9f2afffb"
+  },
+  "install.banner.getOnTestFlight": {
+    "text": "Baixe o app no TestFlight",
+    "source": "3f9718c00510a84afdfe21d593fd4c21ac57c1450e669af8bb645eb6ed73f5f4"
+  },
+  "install.sentence.ios": {
+    "text": "Toque em Compartilhar e depois em Adicionar à Tela de Início.",
+    "source": "1ba29065a33612e2b20d35dd43cda94d55b793dd444010173a3acf65ecc87a51"
+  },
+  "install.sentence.android": {
+    "text": "Abra o menu do navegador e toque em Adicionar à tela inicial.",
+    "source": "067947ccbb27b18cfce7a7473a9de3d4bd3a3e03009ae71b33a0132494f903c8"
+  },
+  "install.ios.step1": {
+    "text": "Toque em Compartilhar na barra do Safari",
+    "source": "77bfd938ad785a905cbddcd0ec97a16900a6c4f9955e32560c1442650ebb363b"
+  },
+  "install.ios.step2": {
+    "text": "Escolha Adicionar à Tela de Início",
+    "source": "4cbf7879b4ce1e13afd078bc63a389e941b26990602ef4b68cd4ec1151205c0d"
+  },
+  "install.ios.step3": {
+    "text": "Abra o Homeroom pelo ícone",
+    "source": "e036225756239af0615f1cfc9b4673c357329893ce722b5a5d273fe0129c33ed"
+  },
+  "install.android.step1": {
+    "text": "Toque no menu na barra do navegador",
+    "source": "6ebc4441a8fbbedf1ccc387dfca23e9d12c6dcfddc86f5c38868272e1ecdfffa"
+  },
+  "install.android.step2": {
+    "text": "Escolha Adicionar à tela inicial",
+    "source": "8c758da22c53dc22002e8b0fe11d53f551acca0ce247c4493da2984bb0115718"
+  },
+  "install.android.step3": {
+    "text": "Abra o Homeroom pelo ícone",
+    "source": "e036225756239af0615f1cfc9b4673c357329893ce722b5a5d273fe0129c33ed"
+  },
+  "install.banner.getApp": {
+    "text": "Baixe o app",
+    "source": "ec196e05b672d15967b4e8ced9c664783f5b80cc689bfc5229764feaebc53a3f"
+  },
+  "install.banner.addToHomeScreen": {
+    "text": "Adicione à tela inicial",
+    "source": "05ddfdd94d6f9f08e64da71e13d8987861c1d064676715d6e40e0d5451986593"
+  },
+  "install.banner.how": {
+    "text": "Como",
+    "source": "7470bd3bc2abfe497af32ee4ccf845cb2aba14878d55c970d38d99629ab5d6a3"
+  },
+  "install.banner.get": {
+    "text": "Baixar",
+    "source": "5fb9c3aba7ad5106939f35121cc8f086584593fbfb75b8f4015260655b7376f8"
+  },
+  "install.banner.dismiss": {
+    "text": "Dispensar banner de instalação",
+    "source": "0fb03ab95d257487643213dc7fcfe43979eaed48194c98fd22a673453d9b0694"
+  },
+  "install.steps.title": {
+    "text": "Adicione o Homeroom à tela inicial",
+    "source": "e9c1eee2840b5a32a0819398556b7a7f2ce6a20ee0ffc781dbb9e58a55c6e05b"
+  },
+  "install.steps.done": {
+    "text": "Entendi",
+    "source": "5ad3dbd1242a4cea217e8b68a9fd2c8187f2c337258279193f6d9a31a9f1a69c"
+  },
+  "session.attach.badgeFile": {
+    "text": "ARQUIVO",
+    "source": "9ef2faffd23e7fdda264eeeb3114357fcb304142506cbb023c2894ac10f71654"
+  },
+  "appContext.invite.noLinks": {
+    "text": "Nenhum link ativo.",
+    "source": "5fd71b88293c5b32f7b99b400f12a8aa4946a6a778e1c1a1a37a9ce0c744b977"
+  },
+  "session.changeRow.waitingForApproval": {
+    "text": "Aguardando aprovação",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "session.changeRow.goingLive": {
+    "text": "Entrando no ar",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "session.changeRow.live": {
+    "text": "No ar",
+    "source": "b64ac05f17e64d037db81a98f51e2688216e292ae9748f979f04dfbac49fd7fc"
+  },
+  "session.changeRow.inProgress": {
+    "text": "Em andamento",
+    "source": "c1f88e9d6c4145cf0530ae020155384d5688d70ed82a07a35d783bbc4b32238c"
+  },
+  "session.release.line": {
+    "text": "{{release}}.",
+    "source": "9f8e3da4697beb42277c50aeaaf7a94245facaa86d455509d0e1d1aa8199baac"
+  },
+  "topicBack.allItems": {
+    "text": "Todos os itens",
+    "source": "51107686754a31d258064ff193f18ac2125040a21fa6ce49c748f702f7680cc3"
+  },
+  "session.attach.tooMany_many": {
+    "text": "Você pode anexar até {{count}} de arquivos por mensagem.",
+    "source": "6f623f8711f7ff78456f902714d416932bee492dff5f36c6c337d3f81e982d32"
+  },
+  "session.attach.tooMany_one": {
+    "text": "Você pode anexar até {{count}} arquivo por mensagem.",
+    "source": "e5c5da4c7a8f1875dda9fab2791414421ae83c2dce7205489189f320d96ca274"
+  },
+  "session.attach.tooMany_other": {
+    "text": "Você pode anexar até {{count}} arquivos por mensagem.",
+    "source": "6f623f8711f7ff78456f902714d416932bee492dff5f36c6c337d3f81e982d32"
+  },
+  "session.fixChecks.headingPr_many": {
+    "text": "{{count}} de verificações falharam no PR #{{number}}",
+    "source": "a162c41c1190db6cc57f94738081ec7916f21abd7b314e6774c3719764006ed2"
+  },
+  "session.fixChecks.headingPr_one": {
+    "text": "{{count}} verificação falhou no PR #{{number}}",
+    "source": "053c52b779b6ee69d1e6f122f08769bec475b2632ee2711a0e547fd5bef7ef04"
+  },
+  "session.fixChecks.headingPr_other": {
+    "text": "{{count}} verificações falharam no PR #{{number}}",
+    "source": "a162c41c1190db6cc57f94738081ec7916f21abd7b314e6774c3719764006ed2"
+  },
+  "session.fixChecks.headingChange_many": {
+    "text": "{{count}} de verificações falharam nesta alteração",
+    "source": "f0de5c41ea2bd4f50985c31e0393f31535d0c6fa62c53b402c034ab8f8d01c01"
+  },
+  "session.fixChecks.headingChange_one": {
+    "text": "{{count}} verificação falhou nesta alteração",
+    "source": "22cc3d3cdcef8e21b3971b162c8ca0fd6444a15a07d08f10139f1f757b31383d"
+  },
+  "session.fixChecks.headingChange_other": {
+    "text": "{{count}} verificações falharam nesta alteração",
+    "source": "f0de5c41ea2bd4f50985c31e0393f31535d0c6fa62c53b402c034ab8f8d01c01"
+  },
+  "session.fixChecks.askPr_many": {
+    "text": "Corrija as {{count}} de verificações que falharam no PR #{{number}}, por favor.",
+    "source": "c2f32b36b3635db7fd4b8b69c2b10040f347fa628ecfde086c575cab3851274c"
+  },
+  "session.fixChecks.askPr_one": {
+    "text": "Corrija a verificação que falhou no PR #{{number}}, por favor.",
+    "source": "ed92be6ba0f79cdf5e5e05de8ae0b1a438cc8ea45d53e2be0e1edaf5dfa770ad"
+  },
+  "session.fixChecks.askPr_other": {
+    "text": "Corrija as {{count}} verificações que falharam no PR #{{number}}, por favor.",
+    "source": "c2f32b36b3635db7fd4b8b69c2b10040f347fa628ecfde086c575cab3851274c"
+  },
+  "session.fixChecks.askChange_many": {
+    "text": "Corrija as {{count}} de verificações que falharam nesta alteração, por favor.",
+    "source": "316f35996e268c5b1cc188f7d7be12e764fe22a5018dcf668f785f401f94b864"
+  },
+  "session.fixChecks.askChange_one": {
+    "text": "Corrija a verificação que falhou nesta alteração, por favor.",
+    "source": "6f4690022c3aefb4fe43020e54db3b4685926d98b10b5842c66cbb7f424362d0"
+  },
+  "session.fixChecks.askChange_other": {
+    "text": "Corrija as {{count}} verificações que falharam nesta alteração, por favor.",
+    "source": "316f35996e268c5b1cc188f7d7be12e764fe22a5018dcf668f785f401f94b864"
+  },
+  "session.fixChecks.askMore_many": {
+    "text": "- e mais {{count}}",
+    "source": "71cf407b27f9ef01988c59d64363bc7fd9a60e4b893d5c6a68d287680f906518"
+  },
+  "session.fixChecks.askMore_one": {
+    "text": "- e mais {{count}}",
+    "source": "71cf407b27f9ef01988c59d64363bc7fd9a60e4b893d5c6a68d287680f906518"
+  },
+  "session.fixChecks.askMore_other": {
+    "text": "- e mais {{count}}",
+    "source": "71cf407b27f9ef01988c59d64363bc7fd9a60e4b893d5c6a68d287680f906518"
+  },
+  "session.checks.countFailing_many": {
+    "text": "{{count}} de verificações falhando",
+    "source": "715178c003982c86dc94e98d7b6f3d4348ce393e0af2893bc8d9a0ccb5d2ac05"
+  },
+  "session.checks.countFailing_one": {
+    "text": "{{count}} verificação falhando",
+    "source": "b175ea490647d4000aa05c1122ae57a6d974067f2a18ebdb8bf30a704e617167"
+  },
+  "session.checks.countFailing_other": {
+    "text": "{{count}} verificações falhando",
+    "source": "715178c003982c86dc94e98d7b6f3d4348ce393e0af2893bc8d9a0ccb5d2ac05"
+  },
+  "session.outbox.attachedFiles_many": {
+    "text": "{{count}} de arquivos anexados",
+    "source": "04b4f269d3113e2e418720d29da4eefdbb3d8f9a4a50bc73540f2dd90580ffac"
+  },
+  "session.outbox.attachedFiles_one": {
+    "text": "{{count}} arquivo anexado",
+    "source": "3b10fc9631fd3448e024c06e81368eb888aa6af7b09ad960a5f106bbd96ea375"
+  },
+  "session.outbox.attachedFiles_other": {
+    "text": "{{count}} arquivos anexados",
+    "source": "04b4f269d3113e2e418720d29da4eefdbb3d8f9a4a50bc73540f2dd90580ffac"
+  },
+  "session.drafts.full_many": {
+    "text": "Já são {{count}} de rascunhos salvos. Envie ou exclua um antes",
+    "source": "8b700647bf35f7beace9f482ee1adfe424f6970d6d05d88f9bf38af90a1f5e77"
+  },
+  "session.drafts.full_one": {
+    "text": "Já são {{count}} rascunho salvo. Envie ou exclua um antes",
+    "source": "445c2496bc038304632d2d41234ca43be3367bdfc826c413ee17654714177471"
+  },
+  "session.drafts.full_other": {
+    "text": "Já são {{count}} rascunhos salvos. Envie ou exclua um antes",
+    "source": "8b700647bf35f7beace9f482ee1adfe424f6970d6d05d88f9bf38af90a1f5e77"
+  },
+  "session.bar.changes_many": {
+    "text": "Alterações · {{count}}",
+    "source": "9c7160797be4455ecba3c28505513e6e206e5242d0548f2911868dd28817bbdf"
+  },
+  "session.bar.changes_one": {
+    "text": "Alterações · {{count}}",
+    "source": "9c7160797be4455ecba3c28505513e6e206e5242d0548f2911868dd28817bbdf"
+  },
+  "session.bar.changes_other": {
+    "text": "Alterações · {{count}}",
+    "source": "9c7160797be4455ecba3c28505513e6e206e5242d0548f2911868dd28817bbdf"
+  },
+  "session.fixChecks.more_many": {
+    "text": "E mais {{count}}.",
+    "source": "7246f47846e57f319c3d2f030320f3d463c598f6fab50ee8e6788c3dd11b51a0"
+  },
+  "session.fixChecks.more_one": {
+    "text": "E mais {{count}}.",
+    "source": "7246f47846e57f319c3d2f030320f3d463c598f6fab50ee8e6788c3dd11b51a0"
+  },
+  "session.fixChecks.more_other": {
+    "text": "E mais {{count}}.",
+    "source": "7246f47846e57f319c3d2f030320f3d463c598f6fab50ee8e6788c3dd11b51a0"
+  },
+  "session.specCard.titleLines_many": {
+    "text": "Plano · {{count}} de linhas",
+    "source": "3b262042d44fa31c8bb1f1aeaccc977f218d9199a99c144ab257a78f7619a35a"
+  },
+  "session.specCard.titleLines_one": {
+    "text": "Plano · {{count}} linha",
+    "source": "e3f82795bf999213ff42a5340cb42de8bef949b59461533d81779fe1d3aec4bb"
+  },
+  "session.specCard.titleLines_other": {
+    "text": "Plano · {{count}} linhas",
+    "source": "3b262042d44fa31c8bb1f1aeaccc977f218d9199a99c144ab257a78f7619a35a"
+  },
+  "session.specCard.titleVersionLines_many": {
+    "text": "Plano v{{version}} · {{count}} de linhas",
+    "source": "ed6256a6a7e5b5a7d6f6f0ed07b11eada18c52b6220f6c879e047b9e364ac6e0"
+  },
+  "session.specCard.titleVersionLines_one": {
+    "text": "Plano v{{version}} · {{count}} linha",
+    "source": "cd5978658503ed9052d7b284a4be623921500f1b8d412c334ea0f2dd212f80cf"
+  },
+  "session.specCard.titleVersionLines_other": {
+    "text": "Plano v{{version}} · {{count}} linhas",
+    "source": "ed6256a6a7e5b5a7d6f6f0ed07b11eada18c52b6220f6c879e047b9e364ac6e0"
+  },
+  "session.specCard.openLines_many": {
+    "text": "Abrir plano · {{count}} de linhas",
+    "source": "0a02e38d41a05e9b8056b66a4179643a348f222b0066f0959250e99cdcfebebf"
+  },
+  "session.specCard.openLines_one": {
+    "text": "Abrir plano · {{count}} linha",
+    "source": "035b240052a0902c2c01a18780b7e06d57bc480abedfbdedda63e562fe99675a"
+  },
+  "session.specCard.openLines_other": {
+    "text": "Abrir plano · {{count}} linhas",
+    "source": "0a02e38d41a05e9b8056b66a4179643a348f222b0066f0959250e99cdcfebebf"
+  },
+  "session.specCard.openVersionLines_many": {
+    "text": "Abrir plano v{{version}} · {{count}} de linhas",
+    "source": "78a759affe3526b85919d5ef3be361fdd1085d9d78a9089df0c85aa9b09fa2e2"
+  },
+  "session.specCard.openVersionLines_one": {
+    "text": "Abrir plano v{{version}} · {{count}} linha",
+    "source": "9e56469dcf5f43f2b940679df2ab36ec4f2eed880131d57077e4d42d49acc339"
+  },
+  "session.specCard.openVersionLines_other": {
+    "text": "Abrir plano v{{version}} · {{count}} linhas",
+    "source": "78a759affe3526b85919d5ef3be361fdd1085d9d78a9089df0c85aa9b09fa2e2"
+  },
+  "session.drafts.heading_many": {
+    "text": "<0>Rascunhos salvos ({{count}})</0><1>· em todos os seus dispositivos</1>",
+    "source": "a914ae8804ac26459487106a53c5ee425f99659d716b49acc6dc87b70798734c"
+  },
+  "session.drafts.heading_one": {
+    "text": "<0>Rascunhos salvos ({{count}})</0><1>· em todos os seus dispositivos</1>",
+    "source": "a914ae8804ac26459487106a53c5ee425f99659d716b49acc6dc87b70798734c"
+  },
+  "session.drafts.heading_other": {
+    "text": "<0>Rascunhos salvos ({{count}})</0><1>· em todos os seus dispositivos</1>",
+    "source": "a914ae8804ac26459487106a53c5ee425f99659d716b49acc6dc87b70798734c"
+  },
+  "appContext.about.members_many": {
+    "text": "{{formatted}} de membros",
+    "source": "1393dfbcca99be19e733d4bb515766292e8976fca53623b3659ec944d650ec5d"
+  },
+  "appContext.about.members_one": {
+    "text": "{{formatted}} membro",
+    "source": "23b12f78fc6286039fed468335ec882fc9e86e8afa02c2f70a57e1810b9b909b"
+  },
+  "appContext.about.members_other": {
+    "text": "{{formatted}} membros",
+    "source": "1393dfbcca99be19e733d4bb515766292e8976fca53623b3659ec944d650ec5d"
+  },
+  "appContext.about.stat.apps_many": {
+    "text": "apps",
+    "source": "d56f6359d240f69e4164425b599d08869574fc013b9e5727951048914db12c5b"
+  },
+  "appContext.about.stat.apps_one": {
+    "text": "app",
+    "source": "a172cedcae47474b615c54d510a5d84a8dea3032e958587430b413538be3f333"
+  },
+  "appContext.about.stat.apps_other": {
+    "text": "apps",
+    "source": "d56f6359d240f69e4164425b599d08869574fc013b9e5727951048914db12c5b"
+  },
+  "appContext.about.stat.members_many": {
+    "text": "membros",
+    "source": "17373ca1c7634a4be4a13861a891abd975ec916caab8f3dcf5142fa4997d0b96"
+  },
+  "appContext.about.stat.members_one": {
+    "text": "membro",
+    "source": "e31ab643c44f7a0ec824b59d1194d60dac334200d845e61d2d289daa0f087ea4"
+  },
+  "appContext.about.stat.members_other": {
+    "text": "membros",
+    "source": "17373ca1c7634a4be4a13861a891abd975ec916caab8f3dcf5142fa4997d0b96"
+  },
+  "appContext.about.stat.live_many": {
+    "text": "no ar",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "appContext.about.stat.live_one": {
+    "text": "no ar",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "appContext.about.stat.live_other": {
+    "text": "no ar",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "appContext.invite.detail.joined_many": {
+    "text": "{{count}} de pessoas entraram",
+    "source": "c7ed9d2180da3d4b008b3079a7f1bf5e69dd63bd4cbb29d01480972eaa64104e"
+  },
+  "appContext.invite.detail.joined_one": {
+    "text": "{{count}} entrou",
+    "source": "c7ed9d2180da3d4b008b3079a7f1bf5e69dd63bd4cbb29d01480972eaa64104e"
+  },
+  "appContext.invite.detail.joined_other": {
+    "text": "{{count}} entraram",
+    "source": "c7ed9d2180da3d4b008b3079a7f1bf5e69dd63bd4cbb29d01480972eaa64104e"
+  },
+  "appContext.invite.detail.daysLeft_many": {
+    "text": "restam {{count}} de dias",
+    "source": "878bdbf15dccac2e74e867662a5e79e7e888cc87c403b34c513aee8005c1436c"
+  },
+  "appContext.invite.detail.daysLeft_one": {
+    "text": "resta {{count}} dia",
+    "source": "35e2d9bb75fa09108f33fc44ad2d99499df620f98a3c0aeb74a4b6e7edb1177d"
+  },
+  "appContext.invite.detail.daysLeft_other": {
+    "text": "restam {{count}} dias",
+    "source": "878bdbf15dccac2e74e867662a5e79e7e888cc87c403b34c513aee8005c1436c"
+  },
+  "appContext.invite.option.days_many": {
+    "text": "{{count}} de dias",
+    "source": "ca4c4a68ebc951cc38bffb8522bc8a7a57554127b153533cbf380fa0c524d220"
+  },
+  "appContext.invite.option.days_one": {
+    "text": "{{count}} dia",
+    "source": "02b4fc598525057abd522bb7fb34807d9b537508448292bb1112f7fe692ce64b"
+  },
+  "appContext.invite.option.days_other": {
+    "text": "{{count}} dias",
+    "source": "ca4c4a68ebc951cc38bffb8522bc8a7a57554127b153533cbf380fa0c524d220"
+  },
+  "appContext.invite.option.people_many": {
+    "text": "{{count}} de pessoas",
+    "source": "387110bc3f09d337d5e7ecd1895885a978bcca90980fb55463e3950eb4e1affd"
+  },
+  "appContext.invite.option.people_one": {
+    "text": "{{count}} pessoa",
+    "source": "112d58ddbf4028f131b53c460ea041138fb15be6a68dcd894065bdcfa85b82de"
+  },
+  "appContext.invite.option.people_other": {
+    "text": "{{count}} pessoas",
+    "source": "387110bc3f09d337d5e7ecd1895885a978bcca90980fb55463e3950eb4e1affd"
+  },
+  "appContext.about.contributor.live_many": {
+    "text": "{{count}} no ar",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  },
+  "appContext.about.contributor.live_one": {
+    "text": "{{count}} no ar",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  },
+  "appContext.about.contributor.live_other": {
+    "text": "{{count}} no ar",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  },
+  "appContext.about.contributors.showAll_many": {
+    "text": "Ver todos os {{count}} de colaboradores",
+    "source": "1f9f766a8c24fbcd83bcef79d4181f9c71c49091d026f8838335961e05054839"
+  },
+  "appContext.about.contributors.showAll_one": {
+    "text": "Ver {{count}} colaborador",
+    "source": "56682fe4fe7cc00eb0a5fcf6cec4b57f9dd80bbc5354814ed85c3d575850726a"
+  },
+  "appContext.about.contributors.showAll_other": {
+    "text": "Ver todos os {{count}} colaboradores",
+    "source": "1f9f766a8c24fbcd83bcef79d4181f9c71c49091d026f8838335961e05054839"
+  },
+  "appContext.row.toVote_many": {
+    "text": "{{count}} para votar",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "appContext.row.toVote_one": {
+    "text": "{{count}} para votar",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "appContext.row.toVote_other": {
+    "text": "{{count}} para votar",
+    "source": "0b933014269d26619a17763cea8bdecc4d6553b79199903184ed764c35f1a1eb"
+  },
+  "appFrame.waiting.plan.count_many": {
+    "text": "{{count}} de coisas que ele fará",
+    "source": "badfec31bfb9e08e76e151143b50235be4370b1b7d328c42946d386b87efbd95"
+  },
+  "appFrame.waiting.plan.count_one": {
+    "text": "{{count}} coisa que ele fará",
+    "source": "d88cf398cc7d0b91578695cf772685afa187e90c4c5c9642359c54bb7485fd34"
+  },
+  "appFrame.waiting.plan.count_other": {
+    "text": "{{count}} coisas que ele fará",
+    "source": "badfec31bfb9e08e76e151143b50235be4370b1b7d328c42946d386b87efbd95"
+  },
+  "appFrame.screens.pill.realMinutes_many": {
+    "text": "Tela real · há {{count}} min",
+    "source": "d6ad6281fa7f8f5fe5a546700c84c3e194aebe6cdef3dfc14f294eeaf57be3b9"
+  },
+  "appFrame.screens.pill.realMinutes_one": {
+    "text": "Tela real · há {{count}} min",
+    "source": "d6ad6281fa7f8f5fe5a546700c84c3e194aebe6cdef3dfc14f294eeaf57be3b9"
+  },
+  "appFrame.screens.pill.realMinutes_other": {
+    "text": "Tela real · há {{count}} min",
+    "source": "d6ad6281fa7f8f5fe5a546700c84c3e194aebe6cdef3dfc14f294eeaf57be3b9"
+  },
+  "appFrame.screens.pill.realHours_many": {
+    "text": "Tela real · há {{count}} h",
+    "source": "d901c5d2c0228904d88192aa6c0137af89f13403e92d44fccb5cfd1a7aae4181"
+  },
+  "appFrame.screens.pill.realHours_one": {
+    "text": "Tela real · há {{count}} h",
+    "source": "d901c5d2c0228904d88192aa6c0137af89f13403e92d44fccb5cfd1a7aae4181"
+  },
+  "appFrame.screens.pill.realHours_other": {
+    "text": "Tela real · há {{count}} h",
+    "source": "d901c5d2c0228904d88192aa6c0137af89f13403e92d44fccb5cfd1a7aae4181"
+  },
+  "appFrame.live.pill.updatedSeconds_many": {
+    "text": "Ao vivo · atualizado há {{count}} s",
+    "source": "bf2e9ebfaaacd9df69f7c0c0a787ed1fe1c80e6bff7d27f73ee4a8e1b09f9a3b"
+  },
+  "appFrame.live.pill.updatedSeconds_one": {
+    "text": "Ao vivo · atualizado há {{count}} s",
+    "source": "bf2e9ebfaaacd9df69f7c0c0a787ed1fe1c80e6bff7d27f73ee4a8e1b09f9a3b"
+  },
+  "appFrame.live.pill.updatedSeconds_other": {
+    "text": "Ao vivo · atualizado há {{count}} s",
+    "source": "bf2e9ebfaaacd9df69f7c0c0a787ed1fe1c80e6bff7d27f73ee4a8e1b09f9a3b"
+  },
+  "appFrame.live.pill.updatedMinutes_many": {
+    "text": "Ao vivo · atualizado há {{count}} min",
+    "source": "c6aba5c8d6924cc3bf37465ab715e9038d4dadd237ea93c42f8d091b6e6c7d19"
+  },
+  "appFrame.live.pill.updatedMinutes_one": {
+    "text": "Ao vivo · atualizado há {{count}} min",
+    "source": "c6aba5c8d6924cc3bf37465ab715e9038d4dadd237ea93c42f8d091b6e6c7d19"
+  },
+  "appFrame.live.pill.updatedMinutes_other": {
+    "text": "Ao vivo · atualizado há {{count}} min",
+    "source": "c6aba5c8d6924cc3bf37465ab715e9038d4dadd237ea93c42f8d091b6e6c7d19"
+  }
+}

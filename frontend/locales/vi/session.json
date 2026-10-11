@@ -1,0 +1,1222 @@
+{
+  "merge.measured.justNow": {
+    "text": "vừa đo xong",
+    "source": "b5e96dd76d16fd2b658ecaf50c00c1e30a3486d3c91407756656fcc02fd77a9b"
+  },
+  "merge.measured.minuteAgo": {
+    "text": "đo 1 phút trước",
+    "source": "7548c7651c80f849f98f8b9bd44cf67d73cad5b8dd4fd0f5d793c06705d7ae48"
+  },
+  "merge.measured.hourAgo": {
+    "text": "đo 1 giờ trước",
+    "source": "210fb6a16631ef12988ee45289a98884a2783a4dcd6bad67c7885f5c6587b430"
+  },
+  "merge.measured.joined": {
+    "text": "{{statement}} · {{measured}}",
+    "source": "1cc73d69b4234862a1e837ce12d7a2564c34c13ff514bef0b0614c5ac25df163"
+  },
+  "explicitApproval.sentence.admins": {
+    "text": "Thay đổi về người quản lý ứng dụng này cần một phiếu Đồng ý từ thành viên khác.",
+    "source": "5689c24c05049e0baccd97355859e013be2b42366531d36491968f397876ba24"
+  },
+  "explicitApproval.sentence.governance": {
+    "text": "Thay đổi về cách duyệt thay đổi cần một phiếu Đồng ý từ thành viên khác.",
+    "source": "1252695b74d93753c46e9b0ad7948b0c4ec226ce22c552272f8606cf556b045f"
+  },
+  "explicitApproval.sentence.visibility": {
+    "text": "Các thay đổi về người có thể xem ứng dụng này cần một phiếu Có từ thành viên khác.",
+    "source": "261e7ec0d3a4cd257600e5af1cc8dff3ef12d451e2853e870b98d3f0df038e89"
+  },
+  "explicitApproval.sentence.platformEnv": {
+    "text": "Các thay đổi về cài đặt nền tảng của ứng dụng này cần một phiếu Có từ thành viên khác.",
+    "source": "2dffe151a29dd2a200d0305fa40509cff4f2245cef9209fc8497cf5796a0d48a"
+  },
+  "explicitApproval.sentence.secrets": {
+    "text": "Các thay đổi về khóa của ứng dụng này cần một phiếu Có từ thành viên khác.",
+    "source": "f2dd6b8edc56dc36a6c90ee4bab91ee23d6f42abb338fbfe07f9c6b24482e4ff"
+  },
+  "explicitApproval.sentence.other": {
+    "text": "Thay đổi này cần một phiếu Có từ thành viên khác.",
+    "source": "456bf8bcf41fd0982aae90f6a1258397c854893bc21cc943683df58440972d82"
+  },
+  "explicitApproval.line.admins": {
+    "text": "Đề xuất này thay đổi người quản lý ứng dụng",
+    "source": "6c5fcabc1a229368f133682c5b2614b02f26cc4a2d7e3a4414296ce784ceed7f"
+  },
+  "explicitApproval.line.governance": {
+    "text": "Đề xuất này thay đổi cách phê duyệt các thay đổi",
+    "source": "628f7fbe2b3d1f9957d189a32d149cb741267f7c4623d6bd3ce940acd3143831"
+  },
+  "explicitApproval.line.visibility": {
+    "text": "Đề xuất này thay đổi người có thể xem ứng dụng",
+    "source": "15a3cfa6f972653ad28a7ee31e4d10682e08768bfeb8f3f59f44bbd41a39896d"
+  },
+  "explicitApproval.line.platformEnv": {
+    "text": "Đề xuất này thay đổi cài đặt nền tảng của ứng dụng",
+    "source": "af423c4dd178c4076daba27b5fd4553f2add7a08a6b1d2f1e226b1dc57973b67"
+  },
+  "explicitApproval.line.secrets": {
+    "text": "Đề xuất này thay đổi khóa của ứng dụng",
+    "source": "53aee3163a56d8953ba32f525b1973a96ce8578f87f6f72aeb1a0115b7b11279"
+  },
+  "explicitApproval.line.other": {
+    "text": "Đề xuất này thay đổi một cài đặt được bảo vệ",
+    "source": "ae42b60102862b6dd9db8a721232637793b781d0402d332604f92aa007343f4a"
+  },
+  "merge.status.integrating": {
+    "text": "Đang cập nhật…",
+    "source": "4d201b4648301bde0a10951a7d14f05e7ae99e507f037b5ae3d3d947df6161cf"
+  },
+  "merge.title.integrating": {
+    "text": "Nền tảng đang hợp nhất main vào đề xuất này để giải quyết xung đột. Kết quả được xem trước và kiểm tra, rồi tự hợp nhất khi phiếu bầu được thông qua.",
+    "source": "a2957cfe18b5f5e73a7f09ed4a5e96cbfdd42611c8fd01fd369fc661ea538607"
+  },
+  "merge.status.waitingOnBudget": {
+    "text": "Đang chờ ngân sách chung",
+    "source": "32e9da4bf98debbbd26472ac17cc1573645c81074479c199fb301871ebd59e7b"
+  },
+  "merge.title.waitingOnBudget": {
+    "text": "Đề xuất này cần được hợp nhất với main, nhưng ngân sách token chung của nền tảng đã hết cho hôm nay. Sẽ tiếp tục sau khi đặt lại lúc nửa đêm UTC.",
+    "source": "195813c86211bbc83bbd1e9ab2abda2f5b0cda0d7395aecd0970374dde3b2392"
+  },
+  "merge.status.goingLive": {
+    "text": "Đang phát hành…",
+    "source": "bf4f4709eac06b0d460f2a9142f3eb782a292ccb93f50c3001cf1bb90bd18184"
+  },
+  "merge.title.goingLive": {
+    "text": "Thay đổi này đã được hợp nhất. Môi trường production đang được cập nhật để chạy nó.",
+    "source": "41bf71cb9d8179f9cb4d7ccadbf3a588fc89abd4354c186d645f3dcdcc5c9c88"
+  },
+  "merge.status.merged": {
+    "text": "Đã hợp nhất",
+    "source": "bd0a06202c440a9ee86f50165aa66886259d89c3d219e2ef47a759cde6a38c00"
+  },
+  "merge.status.merging": {
+    "text": "Đang hợp nhất…",
+    "source": "42212e3026cbbecd93c4c82071c214db33c1dce70f2aa591e89296b651fa7252"
+  },
+  "merge.title.merging": {
+    "text": "Thay đổi này đang được hợp nhất vào ứng dụng và production đang được xây dựng lại.",
+    "source": "8fd7219f4d312b348f5f3ad962ab81e9446b3a53d585b3f80a01de8b5abbc9af"
+  },
+  "merge.status.resolving": {
+    "text": "Đang tự động giải quyết xung đột…",
+    "source": "6191b885ab49307ba4b34877a9bc8eb24840320928190084dd60f1f566695d88"
+  },
+  "merge.title.resolving": {
+    "text": "Đang tự động giải quyết xung đột với main, sau đó sẽ thử hợp nhất lại.",
+    "source": "0deeee4f436f76754524d5174e763150d005e51798d5e7ee32324f4051392987"
+  },
+  "merge.status.conflictFailed": {
+    "text": "Giải quyết xung đột thất bại",
+    "source": "95fc7813ee4c3bbc5043e87b7da098d4925531924e493c71595eddece3422ca9"
+  },
+  "merge.title.conflictFailed": {
+    "text": "Lần tự động giải quyết xung đột gần nhất đã thất bại. Chủ đề xuất cần giải quyết thủ công.",
+    "source": "d4359cb033ead0ae855b96f1c660d69ef3b7c5caa47dbe7ce397fe11b5f62081"
+  },
+  "merge.status.mergeConflict": {
+    "text": "Hợp nhất thất bại: xung đột",
+    "source": "cdc73e8888f7e09352757659a1c72cc95d84c614d5755c444bb14025de5d280c"
+  },
+  "merge.title.mergeConflict": {
+    "text": "Đã thử phát hành nhưng thay đổi này xung đột với main. Người tạo thay đổi cần cập nhật nó từ phiên tác tử của mình (\"Đồng bộ với main\").",
+    "source": "9005e4849b13d58b65d9e36aa5f2b1cf197c56b5b469ba63d3dbd9289729e2e8"
+  },
+  "merge.status.conflictsWithMain": {
+    "text": "Xung đột với main",
+    "source": "160f1693ddd5e2ae6d6e32c71ed4701eedf6542339ca1aaa2103e3e54f589379"
+  },
+  "merge.title.conflictUnresolvable": {
+    "text": "Main đã thay đổi và đề xuất này không thể tự hợp nhất nữa. Nền tảng đã thử giải quyết nhưng không được. Người tạo thay đổi cần cập nhật nó từ phiên tác tử của mình (\"Đồng bộ với main\").",
+    "source": "f5555478777f97f18e14d14b20b9b5aa436b8435efc426c9c17c23ab795d7558"
+  },
+  "merge.title.conflictForkHead": {
+    "text": "Main đã thay đổi và đề xuất này không thể tự hợp nhất nữa. Nhánh của nó nằm trên bản fork riêng của người tạo mà nền tảng không thể ghi vào, nên chỉ người tạo mới có thể cập nhật.",
+    "source": "842ee766d8c12cc0003a11e3a50573539e97d4b143b3d37505d19dc6bd1d300d"
+  },
+  "merge.title.conflictAwaitingApproval": {
+    "text": "Main đã thay đổi và đề xuất này không thể tự hợp nhất nữa. Nền tảng sẽ giải quyết sau khi phiếu bầu được thông qua. Người tạo có thể cập nhật sớm hơn từ phiên tác tử của mình (\"Đồng bộ với main\").",
+    "source": "f8b0468cf5209e87edc21b3a76d602f5c0d609652ee9ccb4305fb85539e90871"
+  },
+  "merge.title.conflictAutomatic": {
+    "text": "Main đã thay đổi và đề xuất này không thể tự hợp nhất nữa. Nền tảng sẽ tự động giải quyết. Người tạo cũng có thể cập nhật từ phiên tác tử của mình (\"Đồng bộ với main\").",
+    "source": "667485c8df25575314d8e53a5bdf844eafb254651ec535041f2185d2053d573e"
+  },
+  "merge.status.previewFailed": {
+    "text": "Bản xem trước không khởi động",
+    "source": "cf4e0364a3d146c035586055db659f0cbf19a99fbad95c7b0b182f3b7d5eb64f"
+  },
+  "merge.title.previewFailedReason": {
+    "text": "Bản xem trước không khởi động được nên không thể kiểm thử. Đề xuất không thể phát hành cho đến khi nó chạy được. Lý do: {{reason}}",
+    "source": "55ee1937d6cae382a358bda8ae9fa210d46f927b2013df094691cbb31523e2da"
+  },
+  "merge.title.previewFailed": {
+    "text": "Bản xem trước không khởi động được nên không thể kiểm thử. Đề xuất không thể phát hành cho đến khi nó chạy được.",
+    "source": "4bc53266714f4e17d00e20c3a079e1bcecc15677ef9d16c4bdb80e5144b3f4e2"
+  },
+  "merge.status.checksWillRetry": {
+    "text": "Sẽ kiểm tra lại",
+    "source": "01842acf617d4663d643763b238ff6f7218d5596904fb3d661baa6940fb22543"
+  },
+  "merge.title.checksWillRetryDetail": {
+    "text": "{{detail}} Không thể hợp nhất cho đến khi các kiểm tra đạt.",
+    "source": "91d1e8cb3fde8f28577c95ef6185a1b6b2cbf4634d1d5e933dc71f7368baa3d2"
+  },
+  "merge.title.checksWillRetry": {
+    "text": "Không thể hợp nhất cho đến khi các kiểm tra đạt.",
+    "source": "00f3dc84cfecb10e640deb582f8155d6e6922880a0b9ed49e5abe261feddc521"
+  },
+  "merge.status.checksError": {
+    "text": "Không chạy được kiểm tra",
+    "source": "ae981c13805c7759a9fa3e0d22d451618e6e6653a33fd087612b3de0fc097126"
+  },
+  "merge.title.checksErrorReason": {
+    "text": "Lượt kiểm tra tự động đã kết thúc mà không có kết quả. Không thể hợp nhất. Lý do: {{reason}}",
+    "source": "0fb6e67fae741dd08bdbbf5476ae97492dbecd4cfea527d695ea9ed7999c717a"
+  },
+  "merge.title.checksError": {
+    "text": "Lượt kiểm tra tự động đã kết thúc mà không có kết quả. Bản xem trước có thể vẫn dùng được; không thể hợp nhất cho đến khi kiểm tra hoàn tất.",
+    "source": "deef3cc87e8bcb37611cf842df4d223648adbdaba604038792dd4d50887e6ba1"
+  },
+  "merge.status.checksFailing": {
+    "text": "Kiểm tra không đạt",
+    "source": "cc33bd61400c285b951824dc8308be3f3b2407607b5f51fc0f793edd3a695bbd"
+  },
+  "merge.title.checksFailing": {
+    "text": "Các kiểm tra trên bản xem trước chưa đạt. Đề xuất không thể phát hành cho đến khi đạt.",
+    "source": "855a4c53be02a92dc1a8151fcbebf2bd0e1e649588fc235734b75e0ca76fcc1a"
+  },
+  "merge.status.checksDeferred": {
+    "text": "Kiểm tra bị hoãn",
+    "source": "a2cd58c8ffaf69067cab48549be794997ec4c077dcd9544579e3a8fbde48ee5f"
+  },
+  "merge.title.checksDeferred": {
+    "text": "Đề xuất này xung đột với main nên bản xem trước đã được xây dựng nhưng chưa chạy kiểm thử: chúng sẽ đánh giá một cây mã không thể hợp nhất. Chúng tự chạy khi đề xuất hợp nhất được suôn sẻ.",
+    "source": "40dcbb19340024ca17eaa23c1b5fa17b8cce23c3339f7573fd8ef82c5cd49d01"
+  },
+  "merge.status.checksQueued": {
+    "text": "Kiểm tra đang chờ",
+    "source": "d2c27402aa25e99e605da4dd2ea26db3d6bd52e748059e9b7ec31d2a7082781d"
+  },
+  "merge.status.checksQueuedNext": {
+    "text": "Kiểm tra đang chờ · kế tiếp",
+    "source": "b073745331534f2a5a7f562e4bdef215c4dfed480d1dcaf06591244574f90656"
+  },
+  "merge.title.checksQueued": {
+    "text": "Bản xem trước đã sẵn sàng và các kiểm tra đang chờ đến lượt: Homeroom chỉ chạy kiểm tra của một vài đề xuất cùng lúc. Chúng sẽ tự bắt đầu. Đề xuất không thể phát hành cho đến khi đạt.",
+    "source": "9b0477f08c23093d03677f1aa110c3aeec2416134d33afb589c39a88d3aaf8ff"
+  },
+  "merge.status.checksRunning": {
+    "text": "Đang kiểm tra…",
+    "source": "378935598963b3ad5d4f680777c1761fa1528028db99668354dddbb0489193c3"
+  },
+  "merge.title.checksRunning": {
+    "text": "Đang kiểm thử bản xem trước. Đề xuất không thể phát hành cho đến khi các kiểm tra đạt.",
+    "source": "ea9ad72b5006f7c2785ca7d4ad243b67ead65f2ea54803350ccc92209bdfffb1"
+  },
+  "merge.status.checksStarting": {
+    "text": "Đang bắt đầu kiểm tra…",
+    "source": "0ddf2772e7d8e0ef7416eb2d5d5a84e1686daa5d83c2515a4e3a485b564603cd"
+  },
+  "merge.title.checksStarting": {
+    "text": "Bản xem trước đang được chuẩn bị và việc kiểm thử sắp bắt đầu. Đề xuất không thể phát hành cho đến khi các kiểm tra đạt.",
+    "source": "9cf084130fbf00761efbc36913cd9fc86af6c74a02aea3145d6249e504cf051c"
+  },
+  "merge.status.checksSkipped": {
+    "text": "Đã bỏ qua kiểm tra",
+    "source": "765099c781325d6e0c330eacc1fd1df1b87b859cc6c8785d754bbb6f2bbd376d"
+  },
+  "merge.title.checksSkippedReason": {
+    "text": "Đã bỏ qua kiểm tra: {{reason}}. Đề xuất vẫn có thể phát hành.",
+    "source": "2d86b176ac89321fa7deab549a577922f31339428b64015b36d1786b5b843ab1"
+  },
+  "merge.title.checksSkipped": {
+    "text": "Đã bỏ qua kiểm tra: không có gì để kiểm thử. Đề xuất vẫn có thể phát hành.",
+    "source": "1c84321ca2afb7184e930f35d46eaa31743e5e2d1851ab4298fc00a8d5bd925e"
+  },
+  "merge.status.behind": {
+    "text": "Chậm hơn main",
+    "source": "fff255040f092e24a8caa2343e8350b462089e110b218fc99dc85e3171443228"
+  },
+  "merge.title.behind": {
+    "text": "Main đã thay đổi kể từ khi đề xuất này được tạo, nhưng nó vẫn hợp nhất suôn sẻ. Không cần đồng bộ: nó sẽ được hợp nhất nguyên trạng khi phiếu bầu được thông qua.",
+    "source": "c6fdfaafbcbcd5f300c375fb419009b7d452720b1594f57dd7ecc60675f685b8"
+  },
+  "merge.status.awaitingAdmin": {
+    "text": "Chờ quản trị viên duyệt",
+    "source": "c16937fcc7cf20607952961014acb83ef11f5fe225542e7d8d765b722c9fd7ad"
+  },
+  "merge.title.awaitingAdmin": {
+    "text": "Ứng dụng đang bị khóa nên cần thêm ít nhất một phiếu Có từ quản trị viên trước khi hợp nhất.",
+    "source": "fcb4069f6c7352690e9e81e98496966cfca2a08426fc1b90f0d7a9e7d236cbb2"
+  },
+  "merge.status.awaitingMember": {
+    "text": "Cần phiếu Có từ thành viên khác",
+    "source": "43bb7625b2f4a4ed59c521d087bca988290d1bbe68af5413633c1e85c56cdb19"
+  },
+  "merge.status.mainPaused": {
+    "text": "Đã duyệt, tạm dừng phát hành",
+    "source": "56cd528d4da3181cbd6894f7829b830927a9638f5f900b52d48c42fbfa6eea7a"
+  },
+  "merge.title.mainPausedNote": {
+    "text": "Đã duyệt và kiểm tra đạt, nhưng {{reason}}. Thay đổi này không có vấn đề gì; nó sẽ được phát hành khi ứng dụng ổn định trở lại hoặc quản trị viên tiếp tục.",
+    "source": "4f32ad6daa3f3859b5de94573eff9fee18e09304fe09763bb8f466b1a67884ea"
+  },
+  "merge.title.mainPaused": {
+    "text": "Đã được duyệt và kiểm tra đạt, nhưng bộ unit test của main đang lỗi nên việc đưa lên bản chính thức đang tạm dừng cho ứng dụng này. Thay đổi này không có vấn đề gì; nó sẽ được đưa lên khi ứng dụng hoạt động bình thường trở lại hoặc quản trị viên tiếp tục.",
+    "source": "941eae703fca35d78409955a24af28ac1b1818a1590142116c722c03e8ef91cd"
+  },
+  "merge.status.ready": {
+    "text": "Đã duyệt, sắp đưa lên bản chính thức",
+    "source": "15a8bd338076db51cc8029b3388a37bba285dddeff0e724b8a61b972427ab5ab"
+  },
+  "merge.title.ready": {
+    "text": "Đã duyệt và kiểm tra đạt. Sắp được đưa lên bản chính thức.",
+    "source": "d602759c24efcec4bedc5e22465c72b3cb02cb71619a5c507932edf30de0b58b"
+  },
+  "merge.status.waitingForYourApproval": {
+    "text": "Đang chờ bạn duyệt",
+    "source": "af7a94b91a7493faa5d5226a2ddbb38b57df3d30f426deb82d9cd9c64547d122"
+  },
+  "merge.status.waitingForApproval": {
+    "text": "Đang chờ duyệt",
+    "source": "10c5739b95bdf361bfc01dfe5c095102bef36b3e27002327192d0c6a368aeb22"
+  },
+  "merge.title.explicitApprovalNoTimer": {
+    "text": "{{requirement}} Đề xuất sẽ không tự hợp nhất theo thời gian: cần đủ phiếu Yes thật để đạt ngưỡng thông thường của ứng dụng.",
+    "source": "516d1c8948b0dec070145ccc2332bcbd004059aa7ddd58495177ce96129169cf"
+  },
+  "merge.status.checksPassed": {
+    "text": "Kiểm tra đạt",
+    "source": "b63c39d9e1d20d42983dd86d40ba09c414bc96224c387d973f6fd41983d5e8ab"
+  },
+  "merge.title.checksPassed": {
+    "text": "Kiểm tra đạt trên bản xem trước. Sẵn sàng gửi để duyệt.",
+    "source": "32255c42565c039b853720d4ab1513eff0853cd11299fc2da9ff7e562e50b81e"
+  },
+  "merge.status.draft": {
+    "text": "Bản nháp",
+    "source": "ebf12ef47cf575b3ba9a3cc019c5310146fdac88f6d1be6618d6e91158c2f174"
+  },
+  "merge.pill.statusWithTally": {
+    "text": "{{status}} · {{yes}}/{{required}}",
+    "source": "3468790cb306b653edfa549a30117969f06bf9c4e5e43f5ef65527255e3b5c5f"
+  },
+  "venue.group.inChat": {
+    "text": "Trong cuộc trò chuyện này",
+    "source": "9f8ea144c95ea84124f70b63ef16e5c18c837aeb3a0f9dc4d9a2450a2c768595"
+  },
+  "venue.group.elsewhere": {
+    "text": "Nơi khác",
+    "source": "6fc42e1efc9f1ba8e35e7a3364bf7bee2581abc2633434bc1e4683e26efb494f"
+  },
+  "venue.usernodeOpenrouter.label": {
+    "text": "Homeroom · OpenRouter",
+    "source": "8e3c38ff33e0229816787b6380bef1bc9e0bef3ccc77c4b6545415514cbf209b"
+  },
+  "venue.usernodeOpenrouter.blurb": {
+    "text": "Lựa chọn ưu tiên trong cuộc trò chuyện: dùng tín dụng đi kèm hoặc khóa OpenRouter của bạn, và chọn bất kỳ mô hình nào có sẵn.",
+    "source": "73fce269a7b578e3c1a0929ba4ffc65955f61550734931501610814cc533172e"
+  },
+  "venue.usernodeOpenrouter.cta": {
+    "text": "Dùng OpenRouter",
+    "source": "60ee6ab8eefc5c9bde13cee5b5c912aad2e724d213db36652609ab0e8f76c63a"
+  },
+  "venue.usernodeClaude.label": {
+    "text": "Homeroom · Claude",
+    "source": "512e3c8d3c7dc34cf3689a75c389c2b232b79c0c9a6f7021672b8972fbc92c0e"
+  },
+  "venue.usernodeClaude.blurb": {
+    "text": "Homeroom chạy các lượt ngay tại đây, bằng tín dụng Claude hằng ngày của bạn, hoặc khóa Anthropic của bạn khi hết tín dụng.",
+    "source": "e96532779ae6dd569ff9b4e927979dffa2f95aeee78035466d3c54399e3ffd6f"
+  },
+  "venue.usernodeClaude.cta": {
+    "text": "Dùng Claude",
+    "source": "02df37789b8c426fc70d0b85b55c2f12cfed27c5e20ecd68a13dd3856eee81a4"
+  },
+  "venue.local.label": {
+    "text": "Máy của bạn · phiên Homeroom",
+    "source": "20ccf0bddf3d1e8dd74d654f75b6280cd1765137e477c33df95f0c02179a2fca"
+  },
+  "venue.local.blurb": {
+    "text": "Homeroom CLI chạy các lượt của phiên này trên máy bạn bằng gói Claude của riêng bạn. Cùng cuộc trò chuyện, cùng nhánh, cùng đề xuất. Chỉ khác là công việc chạy cục bộ.",
+    "source": "2d7f4080ad8ef54c4ba291b169f67321611ec859d2bb4cbb64f80e1f80b59b5d"
+  },
+  "venue.local.cta": {
+    "text": "Thiết lập Homeroom CLI",
+    "source": "c372ae4802acfb8c46b85acb394abd014be0e145e4c3d19125eee67175d6b32b"
+  },
+  "venue.webClaudeCode.label": {
+    "text": "Claude Code trên web",
+    "source": "d6d694206e1d2de6701e369f45c5730fe9bce14aad89b77b94694e6e467d2d7f"
+  },
+  "venue.webClaudeCode.blurb": {
+    "text": "Homeroom soạn lệnh công việc; Claude Code trên web thực hiện bằng gói Claude của bạn và đẩy lên bản fork của bạn. Homeroom mở pull request và nhập vào thành một đề xuất. Không tốn tín dụng, không cần khóa API.",
+    "source": "bcfafe7c2a9304988c9c7f79f39fcda90a4e5bc369d120e9da91e5648ad7060b"
+  },
+  "venue.webClaudeCode.cta": {
+    "text": "Dùng Claude Code",
+    "source": "a718dfe39b02132435af3a4cff38ad2deee47deae20a631fa77eef52455e6124"
+  },
+  "venue.webCodex.label": {
+    "text": "Codex trên web",
+    "source": "114daa2da970b700481ddee89dcea387585f958af9633399dd7dd85996f31ceb"
+  },
+  "venue.webCodex.blurb": {
+    "text": "Cách chuyển giao tương tự cho Codex trên web và gói ChatGPT bạn đang trả phí. Homeroom hướng dẫn bạn liên kết GitHub, fork và gửi.",
+    "source": "ac2a8c97dcd941bfbb2bc11cd2db029c0f86ec08b5cc8e1be524476202e47ac6"
+  },
+  "venue.webCodex.cta": {
+    "text": "Dùng Codex",
+    "source": "0574bcfa07f9fb0f8575748b3857e9a067432ce321471c14e0d3cdf566196ddb"
+  },
+  "venue.ownToolsPr.label": {
+    "text": "Máy của bạn · công cụ của bạn",
+    "source": "2e3454ab2eae5906b39cb9f68dd688707ac4b60ee48315843fd449a563b47a26"
+  },
+  "venue.ownToolsPr.blurb": {
+    "text": "Tự làm theo cách bạn muốn (Cursor, Zed, vim, bất kỳ agent nào), đẩy một nhánh, rồi đưa pull request vào bằng “Import Feature from a PR”.",
+    "source": "c784606e72748c1010ff55e71022737afb28a682a019c0b49d8802fae8c7702b"
+  },
+  "venue.ownToolsPr.cta": {
+    "text": "Cách nhập một PR",
+    "source": "570aa7959e9a7df2c7fa397c1130c9bf805eb40713d9e621b2d79d4a4a466015"
+  },
+  "venue.handoff.externalAgent": {
+    "text": "Agent bên ngoài",
+    "source": "41883df464c66e5e95add18647366698bed6e295e41a216365dbe413a0a4a6d2"
+  },
+  "venue.handoff.authoredWithCodex": {
+    "text": "Được viết bằng Codex trên máy của bạn.",
+    "source": "8c5ae83ffe5be1c188623d5cee5747311153ad28a26a934f9b1eca3ba0d1a2b3"
+  },
+  "venue.handoff.authoredWithClaudeCode": {
+    "text": "Được viết bằng Claude Code trên máy của bạn.",
+    "source": "c235dc65818294e42313c6be91bb3e22b517695c7791177b28c1ff824d2f186f"
+  },
+  "venue.handoff.authoredWithExternalAgent": {
+    "text": "Được viết bằng agent bên ngoài trên máy của bạn.",
+    "source": "a9280dcdb1a9032e3e4bd4f7820344947928006a90800f19d54cc427bdb21149"
+  },
+  "venue.rowLabel.continueSession": {
+    "text": "Tiếp tục phiên này với {{venue}}",
+    "source": "be7269fff51755af773a59fff93dd47a276ace03aeb92d8bbd010170fc6d3423"
+  },
+  "venue.rowLabel.continueProposal": {
+    "text": "Tiếp tục đề xuất này với {{venue}}",
+    "source": "27b031e5c1608fbdeee9b91f9e519c4d90e853aa0e5849c2da845bd1cf17701a"
+  },
+  "venue.rowLabel.startNew": {
+    "text": "Bắt đầu công việc mới với {{venue}}",
+    "source": "b5d5e0752f2a6fe7b9e3857574de058931b9cbde5fe6dd21cbd6fa0221e95759"
+  },
+  "venue.rowLabel.moveTo": {
+    "text": "Chuyển sang {{venue}}",
+    "source": "32eee21005d5501ffa48dd3532bb4b1718cfc3c207fe2f49353c5d736fad5865"
+  },
+  "venue.webNote.sessionPaused": {
+    "text": "Nó bắt đầu từ commit mới nhất của phiên này và đẩy công việc về nhánh riêng của phiên, mã sẽ nằm trên nhánh của phiên này, còn bản xem trước và kiểm tra sẽ được cập nhật khi bạn mở lại phiên. Cuộc trò chuyện của agent diễn ra ở đó, không nằm trong bản ghi này.",
+    "source": "945420cde8c2b7edea9df276f49c575289239e497bbdd7a2ef70e2e103acc580"
+  },
+  "venue.webNote.session": {
+    "text": "Nó bắt đầu từ commit mới nhất của phiên này và đẩy công việc về nhánh riêng của phiên, mã sẽ về đây, còn bản xem trước và kiểm tra được dựng lại. Cuộc trò chuyện của agent diễn ra ở đó, không nằm trong bản ghi này.",
+    "source": "047f744663f3b7b029aa3abc79bdd6f90633838a4ea53bb827da4f9b699b010e"
+  },
+  "venue.webNote.proposal": {
+    "text": "Nó bắt đầu từ commit mới nhất của đề xuất này và đẩy lại vào chính đề xuất đó; khi gửi, các phiếu bầu đã có sẽ bị xóa và các kiểm tra được chạy lại. Cuộc trò chuyện của agent diễn ra ở đó, không nằm trong bản ghi này.",
+    "source": "737002fd56127b2f518ff4e3c94ab29a492a81bfd71fb2f05bb07e843d39897c"
+  },
+  "venue.webNote.newWork": {
+    "text": "Homeroom chuẩn bị một tác vụ cho agent web; kết quả được tạo ra sẽ quay lại thành một đề xuất riêng, không phải thêm lượt trong phiên này.",
+    "source": "a790046ee008fff631b24b6ac3bfc29a15762c91cede377739086015da5c55e6"
+  },
+  "venue.consequence.ownToolsSwitch": {
+    "text": "Bắt đầu công việc riêng. Cuộc trò chuyện này được giữ nguyên, và những gì bạn nhập vào sẽ quay lại thành một đề xuất riêng. Không thể đặt làm mặc định.",
+    "source": "2bf4cfa3aa362cda626acdf97b265d8552eb362c2e4eb01467cb0655cc66bff2"
+  },
+  "venue.consequence.ownToolsBlocked": {
+    "text": "Không tốn tín dụng: bạn tự làm rồi nhập pull request. Không có cuộc trò chuyện Homeroom cho việc này, và không thể đặt làm mặc định.",
+    "source": "99da23ad19a8be80b4bc53d08183b44e3fb8f41b460910f9c63068e153c865ba"
+  },
+  "venue.consequence.ownToolsStart": {
+    "text": "Không có cuộc trò chuyện Homeroom cho việc này. Bạn tự làm, rồi nhập pull request. Không thể đặt làm mặc định.",
+    "source": "ae68e1c0fee2e2363a8f1a4666d9a536d18b991e6f3e6cce4f7bbd024d517171"
+  },
+  "venue.consequence.inChatSwitch": {
+    "text": "Giữ nguyên cuộc trò chuyện, nhánh và đề xuất này. Chỉ nơi chạy các lượt thay đổi.",
+    "source": "274731bf6d0eb7751892fb4ccc749b9ad16daef8afc8b1796c9a2f2f016fdbad"
+  },
+  "venue.consequence.inChatStart": {
+    "text": "Công việc diễn ra ngay trong cuộc trò chuyện này.",
+    "source": "5719699d53adbb9dbaef5daac4f0907e9a0e74e30e8fdc7132f55ade51de250d"
+  },
+  "venue.rowTitle.joined": {
+    "text": "{{blurb}} {{consequence}}",
+    "source": "d3909a2dedf44462f8cfe013c05491a8fa75e263f115ac1f6d9e7a175426e0cf"
+  },
+  "venue.blocked.creditsSpent": {
+    "text": "Tín dụng AI hôm nay đã hết. Sẽ đặt lại lúc {{time}}.",
+    "source": "a2e747c4129dd88bbb362a69be19de767a11558b2151145f32132886cdb354f1"
+  },
+  "venue.blocked.creditsSpentUtc": {
+    "text": "Tín dụng AI hôm nay đã hết. Sẽ đặt lại vào nửa đêm UTC.",
+    "source": "f7edfc46654aba6f8241971ee7f2c886cd69cc58e2638394a866a901bdbc19de"
+  },
+  "venue.chip.title": {
+    "text": "{{venue}}: {{blurb}}",
+    "source": "3080058e6e25af56faae3aab9c775389cdae9935f707e37d4bc70e3aea8e2f1c"
+  },
+  "venue.fallback.flagOff": {
+    "text": "Mặc định của bạn là Homeroom · OpenRouter, nhưng bản triển khai này đã tắt nó, nên phiên này đang chạy trong Homeroom · Claude.",
+    "source": "da88610c046f6c8e5c196dbec2f87f9dee41d758377044b36e526a7b8175dd3e"
+  },
+  "venue.fallback.modelUnavailable": {
+    "text": "Mặc định của bạn là Homeroom · OpenRouter nhưng chưa đặt mô hình nào cho nó, nên phiên này đang chạy trong Homeroom · Claude. Hãy chọn một mô hình trong Cài đặt và phiên sau sẽ dùng mô hình đó.",
+    "source": "e8a137c80776255b7f18d3c741a5c6c2adb052a97c5f6967936913a63803a946"
+  },
+  "venue.fallback.noCredential": {
+    "text": "Mặc định của bạn là Homeroom · OpenRouter nhưng khóa OpenRouter của bạn bị thiếu hoặc không còn hợp lệ, nên phiên này đang chạy trong Homeroom · Claude. Hãy lưu lại khóa trong Cài đặt.",
+    "source": "8f709c28a56bad336809117f4ac49a3ad37a9d1a996baa35d9fda246324fc456"
+  },
+  "venue.choice.onPlatform.label": {
+    "text": "Trên nền tảng",
+    "source": "604d2fcb7ccb8c49e29590f0dbea141209cb9408bbf34670a3a504384c5fe2a8"
+  },
+  "venue.choice.onPlatform.blurb": {
+    "text": "Homeroom chạy các lượt ngay tại đây, trong cuộc trò chuyện này, bằng tín dụng AI hằng ngày của bạn hoặc khóa của bạn khi hết tín dụng.",
+    "source": "03c19bf6b8c16811a577c34075e9ea443c14527098b85a441c62fe8beb206a24"
+  },
+  "venue.choice.webAgent.label": {
+    "text": "Claude hoặc Codex WebUI",
+    "source": "17f1bb5ba9a69e5791f984458c37b34ae95e2543e8198e200b4ad4aced51b829"
+  },
+  "venue.choice.webAgent.blurb": {
+    "text": "Homeroom soạn lệnh công việc và Claude Code hoặc Codex thực hiện bằng gói bạn đang trả phí, rồi đẩy kết quả về đây. Bạn chọn một trong hai ở màn hình tiếp theo.",
+    "source": "64cda33274381f1b9e289e961cdf449bdf71d69cb85c2580ec0b42cc8ead51a3"
+  },
+  "venue.choice.ownTools.label": {
+    "text": "Công cụ lập trình của riêng bạn",
+    "source": "9d3d0d0daf58eb3c0ad2d3fca2541cbaaa259385254d49ff1609f16e4f914f51"
+  },
+  "venue.choice.ownTools.blurb": {
+    "text": "Tự làm theo cách bạn muốn (Cursor, Zed, vim, bất kỳ agent nào), đẩy một nhánh, rồi đưa pull request vào.",
+    "source": "8c216d920b8902fef42dfbecae691752d2dbc03bfc694e313c2c578a09e53b2a"
+  },
+  "venue.choice.cliBridge.label": {
+    "text": "Cầu nối CLI cục bộ",
+    "source": "3657732f84d12e6fa2bf928d2ef906d23f26adb9ae49f053583599702247d2b7"
+  },
+  "venue.choice.cliBridge.blurb": {
+    "text": "Homeroom CLI chạy các lượt của phiên này trên máy của bạn, dùng gói Claude của riêng bạn. Cùng cuộc trò chuyện, cùng nhánh, cùng đề xuất. Chỉ là công việc được thực thi cục bộ.",
+    "source": "2d7f4080ad8ef54c4ba291b169f67321611ec859d2bb4cbb64f80e1f80b59b5d"
+  },
+  "venue.sheet.rowUnavailable": {
+    "text": "{{choice}} (không khả dụng)",
+    "source": "d46dcc5701ce24837a407bbb2a2d59dea1391c47f5acf8839c1ad633c1ee010c"
+  },
+  "venue.sheet.rowCurrent": {
+    "text": "{{choice}} ✓",
+    "source": "47aa0502dc46b683da21b2f106087063456a3d199b1cc45cecfdd71cf59d3c20"
+  },
+  "venue.sheet.title": {
+    "text": "Bạn muốn thực hiện việc này ở đâu?",
+    "source": "d3cb6ca67bf4e74b04d854018b0d2ad0819608318332550e3787d4a39163421d"
+  },
+  "flow.agent.generic": {
+    "text": "tác nhân lập trình của bạn",
+    "source": "9f9a3cb0e1298e87b66b743578880d3dafd08da2c00e90f540d7069a18529dfc"
+  },
+  "flow.unavailable.noRepository": {
+    "text": "Ứng dụng này chưa có kho GitHub, nên chỉ có thể xây dựng tại đây trên Homeroom.",
+    "source": "7d49dfd05f6b28ee484bc78436c538fab5e1ef4dae0212d4ca3dd502650a13e0"
+  },
+  "flow.unavailable.platform": {
+    "text": "Hiện chưa thể giao việc cho Claude Code hoặc Codex trên hệ thống này.",
+    "source": "074a5e2144e23343388da903f488f3b83269c1db9cff791dfb53ab9ee24dae77"
+  },
+  "flow.unavailable.generic": {
+    "text": "Quy trình này hiện không khả dụng.",
+    "source": "1a99ed3b65148da09431931eb37e943d488899b6eac157de3768f91de736a55d"
+  },
+  "flow.github.title": {
+    "text": "Liên kết tài khoản GitHub của bạn",
+    "source": "864ea5521bf4228bafc2d61a58214007788fbfbb694206973372deb5ed5fbe4f"
+  },
+  "flow.github.linkedAs": {
+    "text": "Đã liên kết với {{login}}.",
+    "source": "901de38f70facfdb9a5851e56f9aeca7b4d357d0b7b32edec13d9e78b4e7e7a8"
+  },
+  "flow.github.linked": {
+    "text": "Đã liên kết với tài khoản GitHub của bạn.",
+    "source": "26c7b63f26ee939904c01c8deb0b3b0bcfe9e2750e43e83a4de6afe932c2c570"
+  },
+  "flow.github.detail": {
+    "text": "Chỉ để xác định danh tính. Homeroom không yêu cầu quyền truy cập vào kho của bạn và không lưu token. Homeroom chỉ cần biết tài khoản GitHub nào là của bạn, để công việc được ghi dưới tên bạn.",
+    "source": "21e79c2fdf935843300bf3c1f05af11b91a8a735ef695bcd4ed97d64a38b364d"
+  },
+  "flow.github.link": {
+    "text": "Liên kết GitHub",
+    "source": "3b7f3198864d65ae8e6d21a8bbe22fbe380c1f602eec9775306b9543b363e201"
+  },
+  "flow.fork.title": {
+    "text": "Fork kho của ứng dụng",
+    "source": "26ac891c48f93449c78ad65483a8f0026c0b565fde50e335aa1cb7ddc37256ab"
+  },
+  "flow.fork.checking": {
+    "text": "Tác nhân của bạn cần một nơi để đẩy mã lên. Homeroom đang kiểm tra GitHub xem bạn đã fork ứng dụng này chưa.",
+    "source": "72ecc50ea150dfbac5804218a48267eb7e2d95d1ac3082f0468506e4df9b9751"
+  },
+  "flow.fork.found": {
+    "text": "Đã tìm thấy {{repository}}.",
+    "source": "f626c1badbb0d2f193e904f407ba8fcb83166594d84ce5f53ddc2def6924a537"
+  },
+  "flow.fork.nameConflict": {
+    "text": "Bạn đã có một kho tên {{existing}} không phải là bản fork của ứng dụng này, nên hãy fork với tên {{forkName}}.",
+    "source": "e42fdc8629547344f88f7ecbc2aeb8ee926f135b1787dfbde02e10eacaec327c"
+  },
+  "flow.fork.unknown": {
+    "text": "Homeroom không thể đọc GitHub lúc này nên chưa biết bạn đã có bản fork hay chưa. Cứ tiếp tục và kiểm tra lại sau ít phút.",
+    "source": "3544f40e75bc3e41ca26eabacc9fef6c10427b5e68148b7fb0daa22ded6eb4c7"
+  },
+  "flow.fork.none": {
+    "text": "Chưa có bản fork. Hãy fork ứng dụng trên GitHub, rồi quay lại kiểm tra lại.",
+    "source": "9dca1c27a60ad21eb4b7b863d4d88e40d30693863559ce3f9f16496c1b711d55"
+  },
+  "flow.fork.open": {
+    "text": "Fork trên GitHub",
+    "source": "0022deee724805ea2cc4153a45c4dca41d9135c41f3ab9393ce04e6f6a0a9b5b"
+  },
+  "flow.fork.checkAgain": {
+    "text": "Kiểm tra lại",
+    "source": "fb7099ad8e818d42eceefe0d97c824fd54ddb0eeef54c263ec72c77d39198ac9"
+  },
+  "flow.handoff.title": {
+    "text": "Giao cho {{agent}}",
+    "source": "1b55b2144725153b3d28e6f1905ceed537a02e62cda2b4305bc765ca44eb59eb"
+  },
+  "flow.handoff.titleGeneric": {
+    "text": "Giao cho tác nhân lập trình của bạn",
+    "source": "1f3ffd621c5ce2e02a354994bc1ca2b4a356af3a3906fccd755bb9bf683ce155"
+  },
+  "flow.connect.title": {
+    "text": "Kết nối Homeroom",
+    "source": "9181230682e5046431cc247763223f31691be779f6f4dd595848d872a1f63521"
+  },
+  "flow.connect.detail": {
+    "text": "Homeroom đưa cho {{agent}} một bộ hướng dẫn ngắn; {{agent}} sẽ hỏi bạn muốn xây dựng gì rồi lo phần còn lại: viết phiếu công việc, đọc quy tắc của ứng dụng này, đẩy nhánh và mở đề xuất. Để làm được tất cả, cần có trình kết nối trong tài khoản {{product}} mà nó đang chạy.",
+    "source": "50cec59c79975a38919d078f97bb59d63fdc957da1e0e831c8203436f3f051c7"
+  },
+  "flow.connect.detailGeneric": {
+    "text": "Homeroom đưa cho tác nhân lập trình của bạn một bộ hướng dẫn ngắn; tác nhân sẽ hỏi bạn muốn xây dựng gì rồi lo phần còn lại: viết phiếu công việc, đọc quy tắc của ứng dụng này, đẩy nhánh và mở đề xuất. Để làm được tất cả, cần có trình kết nối trong tài khoản {{product}} mà nó đang chạy.",
+    "source": "22a0d432ef87fb931baaa442f5343d3568170713a343dfc1907c720da635c9c8"
+  },
+  "flow.connect.action": {
+    "text": "Kết nối Homeroom",
+    "source": "9181230682e5046431cc247763223f31691be779f6f4dd595848d872a1f63521"
+  },
+  "flow.connect.checkAgain": {
+    "text": "Kiểm tra lại",
+    "source": "fb7099ad8e818d42eceefe0d97c824fd54ddb0eeef54c263ec72c77d39198ac9"
+  },
+  "flow.handoff.detail": {
+    "text": "Sao chép hướng dẫn và dán vào {{agent}}. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất.",
+    "source": "2067ca78d30207891db14e65355386e9e6859880f09108a0c2b5a91d273c1203"
+  },
+  "flow.handoff.detailGeneric": {
+    "text": "Sao chép hướng dẫn và dán vào tác nhân lập trình của bạn. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất.",
+    "source": "b9e5e828773b24f121ae93aa9de94a745e86617e96a1f0852917fb9f67895256"
+  },
+  "flow.handoff.detailSession": {
+    "text": "Sao chép hướng dẫn và dán vào {{agent}}. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất. Hướng dẫn nêu tên phiên mà công việc này tiếp nối, nên kết quả sẽ được cập nhật vào phiên đó thay vì tạo một bản sao thứ hai.",
+    "source": "ae6a0323e28aee17cf869c556f8738970305d83676419a3072cf66759013409b"
+  },
+  "flow.handoff.detailSessionGeneric": {
+    "text": "Sao chép hướng dẫn và dán vào tác nhân lập trình của bạn. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất. Hướng dẫn nêu tên phiên mà công việc này tiếp nối, nên kết quả sẽ được cập nhật vào phiên đó thay vì tạo một bản sao thứ hai.",
+    "source": "35e3a675f14c162a5f6f6e58a585bcf45aafe020c5c80b754843bcc519420b73"
+  },
+  "flow.handoff.detailProposal": {
+    "text": "Sao chép hướng dẫn và dán vào {{agent}}. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất. Hướng dẫn nêu tên đề xuất mà công việc này tiếp nối, nên kết quả sẽ được cập nhật vào đề xuất đó thay vì tạo một bản sao thứ hai.",
+    "source": "4fa053d83154e69e488eadefb1078807b146bcb32945a93f5387c395820985d1"
+  },
+  "flow.handoff.detailProposalGeneric": {
+    "text": "Sao chép hướng dẫn và dán vào tác nhân lập trình của bạn. Nó sẽ hỏi bạn muốn xây dựng gì, rồi tự viết phiếu công việc, đẩy nhánh và mở đề xuất. Bạn không cần quay lại đây để hoàn tất. Hướng dẫn nêu tên đề xuất mà công việc này tiếp nối, nên kết quả sẽ được cập nhật vào đề xuất đó thay vì tạo một bản sao thứ hai.",
+    "source": "bc9172624e409d27513922d1114343fece1b9e4f2abc6cf86196e82ba7f127c4"
+  },
+  "flow.handoff.copy": {
+    "text": "Sao chép hướng dẫn",
+    "source": "37b2f33727bdf7215ed2273217f9eba4a5b10f2597a54c51ab1454dda8683d7b"
+  },
+  "flow.handoff.open": {
+    "text": "Mở {{agent}}",
+    "source": "c3ef85408c55573cd9e5219893453238ad18364873fbd49e45bca6a87bf90dd5"
+  },
+  "flow.handoff.openGeneric": {
+    "text": "Mở tác nhân lập trình của bạn",
+    "source": "6afff075e4acb22371cb18687daa55a93ab73c310c5541c41c2b60d9b2df3caf"
+  },
+  "flow.vendor.groupLabel": {
+    "text": "Tác nhân nào xây dựng việc này",
+    "source": "23177f0590bb87173d83027d8c4d836951da8d90a7430fd522847086d83ae55c"
+  },
+  "flow.lead.buildingWith": {
+    "text": "Xây dựng với {{agent}}",
+    "source": "ffea832fa19d1b4b908558d6551ae15571a45af27539483783f99be6f0f7ab07"
+  },
+  "flow.lead.buildingWithGeneric": {
+    "text": "Xây dựng với tác nhân lập trình của bạn",
+    "source": "bcf55798bab8a0c83385d0c5360e9c576c6b14db0362036782eb4f8d46767e5c"
+  },
+  "flow.status.checking": {
+    "text": "Đang kiểm tra tiến độ của bạn…",
+    "source": "7c1f44928fcf47ce6a0ef4a26a3835d25b341d96e682f16929d8e9cd006ab4bc"
+  },
+  "flow.cancel.buildHere": {
+    "text": "Xây dựng tại đây",
+    "source": "93fef20357ca3220ac595d8e0c8c384ba84c94cafdc40f20b992ea33d6b031c1"
+  },
+  "flow.brief.placeholder": {
+    "text": "Bạn muốn nó xây dựng gì?",
+    "source": "772ec16e0966cff2f58ea5870aa2115982b4c486b6fa9059435cfb5bd9988324"
+  },
+  "flow.instructions.summary": {
+    "text": "Hướng dẫn",
+    "source": "934652dce41d62d3c9ff34b2c5e44e3addaedc67d6137328a9fe75a63c51dbac"
+  },
+  "flow.cancel.buildOnPlatform": {
+    "text": "Xây dựng trên nền tảng Homeroom",
+    "source": "2a33d325acc1f057fc4abb0973ce5600c14c0584434c9c74a5db1736db0f7d02"
+  },
+  "credits.resetIn.underMinute": {
+    "text": "chưa đến một phút",
+    "source": "30d5117d18c11eda636513dba31a134203abd9b013da8662ec96a619147c2020"
+  },
+  "credits.resetIn.hoursMinutes": {
+    "text": "{{hours}} giờ {{minutes}} phút",
+    "source": "f35242f6ebba66f2865026f3e8a8115aaa8d569767aa7d06a277403ab92d8720"
+  },
+  "credits.reset.locked": {
+    "text": "Kết nối GitHub hoặc X để mở khóa 10,00 USD/ngày tín dụng Homeroom.",
+    "source": "4d0eb1973fe7bf4982e455ca47ed10527fbdaccf69fc98f62e0060efe1841da7"
+  },
+  "credits.reset.unavailable": {
+    "text": "Tạm thời không thể kiểm tra điều kiện nhận tín dụng.",
+    "source": "9cc7d52341617ccc92bad57b7e408e8f2b52c1a53e4effb722fba00bba23f84a"
+  },
+  "credits.reset.when": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{when}}.",
+    "source": "abc4aa0ee3108b7a7f2db2037a7405e1f2a000dc7f588811f0139c0f503f345a"
+  },
+  "credits.reset.whenWithTimeLeft": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{when}}, còn khoảng {{timeLeft}}.",
+    "source": "876741510d68a0a52f0d369a6c10533ea5f8018c949bf2b1a0a635d37276184f"
+  },
+  "credits.reset.daily": {
+    "text": "Tín dụng miễn phí được đặt lại lúc {{time}}.",
+    "source": "b83c6587b03580e1dd96084258cd3077978e9926f429cb06f60bda9d2d6a8afc"
+  },
+  "credits.reset.dailyWithTimeLeft": {
+    "text": "Tín dụng miễn phí được đặt lại lúc {{time}}, còn khoảng {{timeLeft}}.",
+    "source": "3dcb4f732a57edebd19f5b3c13ffdc1599597da5ddd66987ff35152861b669d2"
+  },
+  "credits.reset.dailyUtc": {
+    "text": "Tín dụng miễn phí được đặt lại lúc {{time}} ({{utc}}).",
+    "source": "48440f1479ad23af0ad9a923271e698a003ad7f6cf9ba9237c9e3114e9d8cebf"
+  },
+  "credits.reset.dailyWithTimeLeftUtc": {
+    "text": "Tín dụng miễn phí được đặt lại lúc {{time}}, còn khoảng {{timeLeft}} ({{utc}}).",
+    "source": "3db1f7e40c0d9421e093cc478af9d13c25ca150760a4b3ea1fc8c8565972cf87"
+  },
+  "credits.reset.weekly": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{day}} lúc {{time}}.",
+    "source": "8d26f1432d85df7b71151b916d57b692b71fd685b279d243749bb8bcbc641fdc"
+  },
+  "credits.reset.weeklyWithTimeLeft": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{day}} lúc {{time}}, còn khoảng {{timeLeft}}.",
+    "source": "b14e8fa09595b9f633c5d75197a6257bd8b53b34d6a44e6023c7e7bec399dc1e"
+  },
+  "credits.reset.weeklyUtc": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{day}} lúc {{time}} ({{utc}}).",
+    "source": "dd8dd08ddd2f424c73e3d71fe5f5dbf75be842de2da264036e799e7cee958c1f"
+  },
+  "credits.reset.weeklyWithTimeLeftUtc": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{day}} lúc {{time}}, còn khoảng {{timeLeft}} ({{utc}}).",
+    "source": "a76e1019b3f1f8115e4f04e21a5a61a7568655bd01d09e0be21d693623d518da"
+  },
+  "credits.reset.atBoundary": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{boundary}}.",
+    "source": "1b1fe241df86b7416a9eb4c6ee6310175a554dfe8ed33c2ffaeddb21a8827627"
+  },
+  "credits.reset.atBoundaryWithTimeLeft": {
+    "text": "Tín dụng miễn phí được đặt lại vào {{boundary}}, khoảng {{timeLeft}} nữa.",
+    "source": "3705706a48d7848a6497c29aeb945eefca7f198ebae76e711b09485bf274f6b8"
+  },
+  "credits.meter.locked": {
+    "text": "xác minh tài khoản · mở khóa $10/ngày",
+    "source": "a683560b105736011e2ca80f55b26c7586d9c0d2f1eae5708f29060f47aba45b"
+  },
+  "credits.meter.unavailable": {
+    "text": "tạm thời không có thông tin tín dụng",
+    "source": "b028cfa7020d0eeee89a5b0f9fc1a670f51e9e66d0ddcce26489bf6d9b40b1f1"
+  },
+  "credits.meter.sharedBudgetSpent": {
+    "text": "ngân sách chung đã hết",
+    "source": "ba1908c9faf6f3de51cdb5ce9c5a2cb3202af36b4f8e45f698e68fb9a2554647"
+  },
+  "credits.meter.noneLeft": {
+    "text": "đã hết",
+    "source": "b684b47581201f4f66c479a635f88436d22b994787071290595ca9486dcd8ac0"
+  },
+  "credits.meter.amountLeft": {
+    "text": "còn {{amount}}",
+    "source": "0a7083bacb6b5ceb11bb338d2e4ef3a82dd0551c148bbdfffd504baf0d14ab20"
+  },
+  "credits.meter.ownKeySpend": {
+    "text": "khóa của bạn {{amount}}",
+    "source": "3dde006908cefcc52dbbea742cd29786410350496371bd6aa01ecbb6d13e1572"
+  },
+  "credits.low.thisWeek": {
+    "text": "Tín dụng AI miễn phí sắp hết: tuần này còn {{remaining}} trên {{limit}}.",
+    "source": "12c45d717b8755e9ad218eb054f95553f49d665a42c15c9f81bc604c59297916"
+  },
+  "credits.low.today": {
+    "text": "Tín dụng AI miễn phí sắp hết: hôm nay còn {{remaining}} trên {{limit}}.",
+    "source": "0685245b0522ebd2072e4e684e943dcfd1d5a978e9d8f3119e29c317f44a859c"
+  },
+  "credits.apiKey.savedKeyFailed.title": {
+    "text": "Không thể dùng khóa đã lưu của bạn",
+    "source": "5bd1e9b3be697ec3de1559528d4e714907c14dc084dd35996e2ebd9f30186b5e"
+  },
+  "credits.apiKey.savedKeyFailed.blurb": {
+    "text": "Homeroom có một khóa đã lưu nhưng không thể dùng cho lượt này. Hãy mở Cài đặt → Khóa API, kiểm tra và lưu lại khóa. Hạn mức hằng tuần của bạn sẽ hoàn toàn được bỏ qua khi có khóa hoạt động được lưu.",
+    "source": "c2f5e245c96c829f15035a7420121e439ade1497b0e5760f33b2bbe33e63695d"
+  },
+  "credits.apiKey.savedKeyFailed.cta": {
+    "text": "Kiểm tra khóa API",
+    "source": "ef993ae6ab8b02224fb0757ab3c9c190fc4def601cd45afc963bb7d9ca8ef95d"
+  },
+  "credits.apiKey.useOwn.title": {
+    "text": "Dùng khóa API Anthropic của riêng bạn",
+    "source": "ab8e55a6c17a01e9b95b622a1d8afc96ef56c15dd9a9841431a1ebe6f4f3cec7"
+  },
+  "credits.apiKey.useOwn.blurb": {
+    "text": "Dán khóa vào Cài đặt → Khóa API và Homeroom vẫn hoạt động y như hiện tại, nhưng được tính vào tài khoản Anthropic của bạn thay vì hạn mức hằng tuần.",
+    "source": "ec20782542f60c703aad357c42756b9de6001c0bb748818462efb3d94ba3383d"
+  },
+  "credits.apiKey.useOwn.cta": {
+    "text": "Thêm khóa API",
+    "source": "6f2d3db3648e0b3ea15c536674d2a498056388d793273c0a492d05a43b346bb2"
+  },
+  "credits.verify.line": {
+    "text": "Xác minh tài khoản để nhận thêm: thêm số điện thoại hoặc liên kết GitHub và X.",
+    "source": "7ad6c223cd82e77326dad9cfc172bfc391c8358cb3e7df61e3f50e8e0af9ebf0"
+  },
+  "credits.verify.title": {
+    "text": "Xác minh tài khoản của bạn",
+    "source": "5f06da5b4cff279cbc0835fafd004bb7cddbcf08c89cd7c870e38d42c24a2605"
+  },
+  "credits.verify.cta": {
+    "text": "Xác minh tài khoản",
+    "source": "8540f4dee7355c147ef0c46f62d4c39f87118fdb755af7705f9dfa5471c46051"
+  },
+  "credits.connector.title": {
+    "text": "Dùng gói đăng ký Claude.ai hoặc ChatGPT của bạn",
+    "source": "03801b3956a63be78ef3a4f699e52ce6492a2b6a0cb8583f37fa5179fba0bdd2"
+  },
+  "credits.connector.blurb": {
+    "text": "Kết nối Homeroom với Claude hoặc ChatGPT để Claude Code trên web hoặc Codex làm việc bằng gói bạn đang trả phí.",
+    "source": "55ad4bd25885db9f9999483c98b40c437dd05c550ceae1e8ba5db676b5a3d697"
+  },
+  "credits.connector.cta": {
+    "text": "Kết nối Claude hoặc ChatGPT",
+    "source": "749513a59e658bf06a2b376b0dc33019f48ad994f549d70554ea3ecdbd1eabf4"
+  },
+  "credits.intro.none": {
+    "text": "Hiện không có cách nào để tiếp tục xây dựng:",
+    "source": "34d1d0670d48f3bd19bba20871b74a9a5882286ff6778d73943ff9661f620810"
+  },
+  "credits.intro.one": {
+    "text": "Một cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "00ffeb84438b3bfcffb8407a0e7fbaac7df13ef8ddbdd24930aaa90cc72b98c5"
+  },
+  "credits.intro.two": {
+    "text": "Hai cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "41d58f21c61757cd05bb6353b51f4f9f6db92218e1287780e96dabc3ec95bcdf"
+  },
+  "credits.intro.three": {
+    "text": "Ba cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "0e2e088500a1d7b7082a75305878b299f594719b2a788ead4fb9d1b7882cdf6c"
+  },
+  "credits.intro.four": {
+    "text": "Bốn cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "fd011973809aa01fc00268fc5ff21c24d3038db5e993a8f43f13adb0780061d6"
+  },
+  "credits.intro.five": {
+    "text": "Năm cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "b49c900b402d61c0c4caf52d16fd150423ca25782c6e7787093dce99bce0c9a3"
+  },
+  "credits.intro.six": {
+    "text": "Sáu cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "bdb3abb2b5b74efb70f87bc5a38070d2cb1207aac0bb9236528c9b50299fca20"
+  },
+  "credits.intro.seven": {
+    "text": "Bảy cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "c49759d78259105bb383e3f9133abf2e950e3a937ff34cd05e2625dfa837f3e8"
+  },
+  "credits.intro.eight": {
+    "text": "Tám cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "8d8b6fa64c05ef12e39773ee76135d31158f70b6c1161c7495d15a2e967d2c21"
+  },
+  "credits.intro.nine": {
+    "text": "Chín cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "18b7271cab2ba4254fb721ea1c6675b578edae35a45ce66a88c4be2f27a02e32"
+  },
+  "credits.lead.outToday": {
+    "text": "Bạn đã hết tín dụng AI miễn phí của hôm nay.",
+    "source": "b0fcca188defd08b5fd7aa0343a0aacee62fe3d6a63dbeb4bd2dd9da867a3fb9"
+  },
+  "credits.lead.outThisWeek": {
+    "text": "Bạn đã hết tín dụng AI miễn phí của tuần này.",
+    "source": "dc484e948b54a3598a4562d03f577a30e0ee8981b905585b8c3d30e5f75411d0"
+  },
+  "credits.lead.sharedBudgetOut": {
+    "text": "Ngân sách AI chung hằng ngày của nền tảng đã hết.",
+    "source": "2ca88a7e854bb0aef84a386f2e488689adefab0df33b5a6f6c866faa0d16e7c2"
+  },
+  "credits.developer.summary": {
+    "text": "Bạn là nhà phát triển?",
+    "source": "80ca32a99a39c0e48d790654385b5f0e71b8d73724e5bbbc1c584ca255a96329"
+  },
+  "credits.developer.hint": {
+    "text": "Hãy xây dựng bằng công cụ trên máy tính của bạn.",
+    "source": "309d94dcfd82c15eef15451bce7fb5b4e46c419e7d1466bb4779f7d4fc2acf8d"
+  },
+  "credits.banner.changeSessionType": {
+    "text": "Đổi loại phiên",
+    "source": "67e5288d7dd63116d077dfb14eec99b7e25ee5d985e70858acbfdec55a736cf3"
+  },
+  "buildLog.stage.clone": {
+    "text": "Đang sao chép kho mã",
+    "source": "10658ff88f1c66703078b73853281e7d606882f0c29dc71e6ca522d762465b09"
+  },
+  "buildLog.stage.build": {
+    "text": "Đang dựng image Docker",
+    "source": "560eebbfe86a6378c40246e846309d90dc0a642dc53889046c6f4b3da1c48e02"
+  },
+  "buildLog.stage.start": {
+    "text": "Đang khởi động container",
+    "source": "620c3de1c3f009bc0eee1d9e2a013ae34a0496b63c684c9699d24591b55c3e0c"
+  },
+  "buildLog.stage.healthcheck": {
+    "text": "Đang chờ kiểm tra tình trạng",
+    "source": "3cb362ec985557d715c3a94c97ea4b9e76b81c1522d939a12e2312a9ec070fcb"
+  },
+  "buildLog.stage.timeout": {
+    "text": "Hết thời gian chờ",
+    "source": "9718cc761cfd5810041ef007ae258fa1308b8487d0f30c5f36a442f8fe5f76c5"
+  },
+  "buildLog.stage.other": {
+    "text": "Đang triển khai",
+    "source": "4338bdb0808bff1b27e25686556fe98b645c49386392ac76a0859c73ffa5c008"
+  },
+  "buildLog.empty": {
+    "text": "Không có chi tiết lỗi dựng nào được ghi lại cho ứng dụng này. Các lỗi xảy ra trước khi tính năng này ra mắt không được ghi nhận. Hãy thử triển khai lại để ghi nhật ký mới.",
+    "source": "d3afd8981ecb342757fd1f515150c11ecb7da0e990049b256852bfaa0e59b09f"
+  },
+  "buildLog.meta.failedStep": {
+    "text": "<0>Bước lỗi:</0> {{step}}",
+    "source": "c23da6de748cd42758342dc143ce17dd88203cab3476d36f810fc5bb01c1af39"
+  },
+  "buildLog.meta.whenRelative": {
+    "text": "<0>Thời điểm:</0> {{relative}} ({{date}})",
+    "source": "9c3c2a30193112e42f5396e791836690f8b78d7fac14202b5c14424cb0804058"
+  },
+  "buildLog.meta.when": {
+    "text": "<0>Thời điểm:</0> {{date}}",
+    "source": "bc5e1fe06cc94ee9fec6838feb762d58ff21730d8d0a6cb9ad61175bab04e0b2"
+  },
+  "buildLog.meta.commit": {
+    "text": "<0>Commit:</0> <1>{{sha}}</1>",
+    "source": "b791209e4c093c3b045ae5af2436c4168cfc095fac13d9795cca77ed13e1b055"
+  },
+  "buildLog.noLog": {
+    "text": "Không có nhật ký nào được ghi lại cho lỗi này.",
+    "source": "f3d70ce902c1c29f2ee68ba270216fda1567782bc29320e89699f20db6cd5568"
+  },
+  "buildLog.title": {
+    "text": "Nhật ký dựng",
+    "source": "91d9414aee8abafdd9bbbe5459a0163f25d9b592edc2c93ec5d19dfbc1e6accf"
+  },
+  "buildLog.copy": {
+    "text": "Sao chép nhật ký",
+    "source": "99d7297aa0b8796647815bd3444840615cc7ee4f801255232b198ccaa49334de"
+  },
+  "buildLog.copied": {
+    "text": "Đã sao chép!",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "buildLog.copyFailed": {
+    "text": "Sao chép thất bại",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "buildLog.retry": {
+    "text": "Triển khai lại",
+    "source": "19f848b7b46b38c6a1a73d3883019f51905b378e6196d8e224202ee66d1b4485"
+  },
+  "buildLog.retrying": {
+    "text": "Đang thử lại…",
+    "source": "a16c8b1c95956fbabce3ed5506c7e1b4a2d10c86f7adfc7ae084f2d3df9f5174"
+  },
+  "buildLog.retryFailed": {
+    "text": "Thử lại thất bại (HTTP {{status}})",
+    "source": "e5374c011d332e00326135456390246768c1a5c45dc135ac0cc24ba1e2c926d8"
+  },
+  "buildLog.ago.justNow": {
+    "text": "vừa xong",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "transcript.attachment.unnamed": {
+    "text": "tệp",
+    "source": "3b9c358f36f0a31b6ad3e14f309c7cf198ac9246e8316f9ce543d5b19ac02b80"
+  },
+  "transcript.attachment.title": {
+    "text": "{{filename}} (tệp đính kèm không được chia sẻ, chỉ có tên)",
+    "source": "845584f76d391bc7ec041acfd986cd4b9302314e7db183c73319a171bb9f63b7"
+  },
+  "transcript.attachment.titleUnnamed": {
+    "text": "tệp (tệp đính kèm không được chia sẻ, chỉ có tên)",
+    "source": "e5a402cd572c0ce47e4fbcd0077b6247b6a33b40a680fdf4a5c79661c5eeebac"
+  },
+  "transcript.activity.summary": {
+    "text": "Tóm tắt của tác nhân",
+    "source": "8351fe3f09fd8a306b0b84eeb8feb009bbc72469ced45e785ec1bb4966dc699a"
+  },
+  "transcript.spec.version": {
+    "text": "Kế hoạch v{{version}}",
+    "source": "d94788c6107a5463536113c0b0f92239f373b87b5fd6aee73d7852cf12d51471"
+  },
+  "transcript.spec.drafted": {
+    "text": "Đã soạn kế hoạch",
+    "source": "aedf0a600f7dadc9aaef695b680d1bfa2e499f3e97c031ba4ed664e9bcefe625"
+  },
+  "transcript.agentRunning": {
+    "text": "Tác nhân lập trình đang chạy{{tail}}",
+    "source": "af8d049a0439a500bf50e3905f08f23f138059b70edfdadb516e5d23a6e11dfb"
+  },
+  "transcript.author.unknown": {
+    "text": "họ",
+    "source": "c9a8dc336964db7fd6c764f1ff23925d6f281ece50472c0c7699b8eb0f8ac227"
+  },
+  "transcript.author.ai": {
+    "text": "AI",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "transcript.empty": {
+    "text": "Cuộc trò chuyện này chưa có tin nhắn nào.",
+    "source": "791fdc1abb205c98d63d00c317b97f9434c273e780634086968df87fa52a5ee3"
+  },
+  "transcript.truncated": {
+    "text": "Đang hiển thị phần gần nhất của một cuộc trò chuyện dài. các tin nhắn trước đó không được bao gồm.",
+    "source": "bb99006cd22de4f6f4b766dbf6ba38e1dd58ecd35f3d65ba3cc42bf56e9e8138"
+  },
+  "transcript.header.byAuthor": {
+    "text": "Phiên tác nhân của {{author}}",
+    "source": "3dc3eefac38c2e4baa20de3f3f7b1121fce1ba5e0f82cefdf7c90db3a060ac55"
+  },
+  "transcript.header.byUnknown": {
+    "text": "Phiên tác nhân của họ",
+    "source": "c28cb080386aa9e75610fed8dc3527f4d3d06a12093c6d711eaa20d542a74670"
+  },
+  "transcript.header.read": {
+    "text": "Đọc phiên tác nhân",
+    "source": "2e294c8a72bd644bfdba5c795ec6cdc4617ed6bd1f7bb10fa317cf00313f61dc"
+  },
+  "localRun.cloneComment": {
+    "text": "# sao chép kho mã của ứng dụng này, rồi cd vào đó",
+    "source": "62952884afa665908e9445ad1be88871979c7dca986f985de1a3226b017493d4"
+  },
+  "localRun.leadNoBranch": {
+    "text": "Phiên này vẫn ở ngay tại đây: cùng bản ghi, cùng đề xuất. Chưa có gì chạy trong phiên nên chưa có nhánh trên GitHub. Homeroom sẽ tạo nhánh khi lượt đầu tiên được đẩy lên. Các lượt chạy qua Claude Code trên máy của bạn, bằng gói Claude của bạn, và mỗi lượt sẽ hỏi trong terminal của bạn trước khi bắt đầu.",
+    "source": "8c01330b7d5eb71a1d97e066f89981acf2e3c02f0a5167ed6825d662b5b83e98"
+  },
+  "localRun.lead": {
+    "text": "Phiên này vẫn ở ngay tại đây: cùng bản ghi, cùng nhánh, cùng đề xuất. Chỉ là các lượt chạy qua Claude Code trên máy của bạn, bằng gói Claude của bạn, và mỗi lượt sẽ hỏi trong terminal của bạn trước khi bắt đầu.",
+    "source": "596bbdf2f5304e142cbec1d28b46c9a69bb101e868357f3e14b2bb5f52f71e3a"
+  },
+  "localRun.title": {
+    "text": "Chạy phiên này trên máy tính của bạn",
+    "source": "03976e190ecaa88a04d10a871626301a2b90cf8a9b517bdb770b5413f3cf7c94"
+  },
+  "localRun.footnote": {
+    "text": "Homeroom vẫn mở pull request, tạo bản xem trước và chạy kiểm tra. Bạn có thể trả các lượt về cho Homeroom bất cứ lúc nào từ bộ chọn “Chạy trên” của khung soạn tin.",
+    "source": "df7d503f4c74f67355f39bb0bebe87b5ce69aebde4a71c61fccfaab74727dd73"
+  },
+  "localRun.copy": {
+    "text": "Sao chép lệnh",
+    "source": "e614ef1572da969a6e39c5bcbeb7f86d0f6a5e4bf86ece82aa444d89ad549357"
+  },
+  "localRun.copied": {
+    "text": "Đã sao chép!",
+    "source": "ea61bc15688d1e482ae5335e8dc030d8300b1afc07ecc7c2e6af5c43728b1d25"
+  },
+  "localRun.copyFailed": {
+    "text": "Sao chép thất bại",
+    "source": "5b50e7a693fee952b9ed0e7c240bf4cba69b1dbf02af718145b297e4110591f3"
+  },
+  "progress.elapsed.seconds": {
+    "text": "{{seconds}} giây",
+    "source": "c98e00945ab1f6c3908f62d4a198875f8eea59b34ed9dd5d67e2d78bfa8cc53b"
+  },
+  "progress.elapsed.minutesSeconds": {
+    "text": "{{minutes}} phút {{seconds}} giây",
+    "source": "1f8e5ba1f8fc71ddcabe9230a2fe3419a5c4b63e338032758fc6c107e6f88d51"
+  },
+  "progress.elapsed.hoursMinutes": {
+    "text": "{{hours}} giờ {{minutes}} phút",
+    "source": "f35242f6ebba66f2865026f3e8a8115aaa8d569767aa7d06a277403ab92d8720"
+  },
+  "progress.countdown.underMinute": {
+    "text": "· còn dưới một phút",
+    "source": "f58290b2f68cb5e2ee2f18b0a255b0767b357a19093244b05a07082d4b1a6381"
+  },
+  "progress.countdown.about": {
+    "text": "· còn khoảng {{time}}",
+    "source": "87468507a69a9c7fc3b760fb72680ea7f058bca4c7e1d1298044f9df5a3629c0"
+  },
+  "progress.cohort.longerThanMost": {
+    "text": "đang chạy lâu hơn hầu hết, khoảng 1 trong 5 lượt như vậy",
+    "source": "baedec831b11c8dfb10cf820e31b3e5f3effee4d804ddd674770f15d77680166"
+  },
+  "progress.cohort.longOne": {
+    "text": "lượt này khá lâu, có lượt chạy 30 phút trở lên",
+    "source": "c77fdeba148ea056d2eb6e170d818932ebaf35b85d8046c2ade1f1523526111a"
+  },
+  "progress.phase.claudeWorking": {
+    "text": "Claude đang làm việc",
+    "source": "74909c18d5f3303c1933ffb703d4a9e27e1b1b70259b8434d0162d9788dbeff9"
+  },
+  "progress.phase.agentWorking": {
+    "text": "Tác nhân lập trình đang làm việc",
+    "source": "bdba63ba1f904530e86640bbcbfd51c2ef3d07bc3a8d726af3e5208d9930b18c"
+  },
+  "progress.phase.syncingWithMain": {
+    "text": "Đang đồng bộ với main",
+    "source": "a88d4c3828d8e77131456e48c652936ec717f6d06aeaf7f88b1c93d8d28317e8"
+  },
+  "progress.phase.syncingBranch": {
+    "text": "Đang đồng bộ nhánh",
+    "source": "1c0cc2f2c1013ccbe177dc4f020a5be03729b1fa631dc371d1519429aa4466d6"
+  },
+  "progress.phase.committing": {
+    "text": "Đang commit",
+    "source": "f9764fc0bbaca6b836272ceb3c6218f988f7d7334bf516a627c94b45dbb72696"
+  },
+  "progress.phase.pushing": {
+    "text": "Đang đẩy lên",
+    "source": "a602ed6c3207a22be33312b3aa96aa457aaec5851fe742a5c15978c4ab2d04f0"
+  },
+  "progress.phase.finished": {
+    "text": "Đã xong",
+    "source": "7804f7a79a9eee323b6e89d3f8287c7d36076f4d76291646295f435b0dec736e"
+  },
+  "progress.phase.pushFailed": {
+    "text": "Đẩy lên thất bại",
+    "source": "91809be5c9ab027d2fc3262e96eb1d2d5d2e6946dfcfb7b38e73f7f54e5835e8"
+  },
+  "progress.phase.interrupted": {
+    "text": "Đã bị gián đoạn",
+    "source": "132d124d6bb3d811116f98aa03bc474f5783517d4c82635c031745912e62e1c8"
+  },
+  "merge.measured.minutesAgo_other": {
+    "text": "đo cách đây {{count}} phút",
+    "source": "fab5cb02f9f34f5b9c23d65b9af60f9d0b34389a2217c3c4b7adf7eec94f721f"
+  },
+  "merge.measured.hoursAgo_other": {
+    "text": "đo cách đây {{count}} giờ",
+    "source": "a0684d5220fdaec34613e90ce9d8316ee372fd8b61233d8bb06c8abb867fc529"
+  },
+  "merge.status.conflictsWithMainFiles_other": {
+    "text": "Xung đột với main · {{count}}",
+    "source": "ccebb79ef5de4540602c37e5bdb14e0f255732108ce8ae79a4505de771f58adf"
+  },
+  "merge.status.checksFailingCount_other": {
+    "text": "Kiểm tra thất bại · {{count}}",
+    "source": "d312d35e2e88c0c08a527abfe98c11ca8e8500a1f0e3ff02f0249cef4b1d3b46"
+  },
+  "merge.status.checksQueuedAhead_other": {
+    "text": "Kiểm tra đang chờ · còn {{count}} trước",
+    "source": "eab8f11d97739087afa414c6f2ae44813a21d124275342fe4e194bbb0b1ac4dc"
+  },
+  "merge.status.checksRunningFor_other": {
+    "text": "Đang kiểm tra · {{count}} phút",
+    "source": "077aa9ff5525c54b79caf86f6a5694a944c51aa5e1f8b4640c9445f5b3c86c83"
+  },
+  "merge.status.behindCount_other": {
+    "text": "Chậm hơn main · {{count}}",
+    "source": "9e71cc86c4d5ce22b7efbb1d646ccbd33a9dc9094c3039aa0edea984d3862135"
+  },
+  "merge.pill.advisoryVotes_other": {
+    "text": "{{count}} phiếu bầu tham khảo từ người không phải người duyệt. Chúng không được tính để hợp nhất",
+    "source": "bee2ff0211395b1b2cc8fa92b4d84af7c6818670f81bc548be6fad2fd283ab51"
+  },
+  "flow.connectors.hint_other": {
+    "text": "Bạn đã kết nối {{count}} trình kết nối Claude / ChatGPT. Bạn cũng có thể chỉ cần nhờ nó nhận nhiệm vụ này. Trình kết nối thuộc về tài khoản {{product}} đã thêm nó, nên dán vào tài khoản khác cần một trình kết nối riêng: <0>xem các bước</0>.",
+    "source": "7c0724bf00ab965f5bb40fcacd406cd32de88f8ac6a1ed7a9c8e5364b7ec8367"
+  },
+  "credits.resetIn.minutes_other": {
+    "text": "{{count}} phút",
+    "source": "dfa02f1827e7eeb4de0376512e651595dda607acbfe39dc892e9d397805bb604"
+  },
+  "credits.resetIn.hours_other": {
+    "text": "{{count}} giờ",
+    "source": "0419aebec122e5210870a0d354e3ea9b5510821dfe20094e3d7802e99a6ca0d3"
+  },
+  "credits.intro.counted_other": {
+    "text": "{{count}} cách để tiếp tục xây dựng ngay bây giờ:",
+    "source": "7fa8dbdc6ee7af752dd900627b2c10d40b262d3653e9f2b3dd6cb9cb805f4bb1"
+  },
+  "buildLog.ago.minutes_other": {
+    "text": "{{count}} phút trước",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "buildLog.ago.hours_other": {
+    "text": "{{count}} giờ trước",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "buildLog.ago.days_other": {
+    "text": "{{count}} ngày trước",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "buildLog.ago.months_other": {
+    "text": "{{count}} tháng trước",
+    "source": "1ac849daabdf9524b6c67be6483ec48053d7a688924f23666a2b82903620a56f"
+  },
+  "transcript.activity.stepsAndSummary_other": {
+    "text": "Hoạt động của tác nhân ({{count}} bước) và tóm tắt",
+    "source": "0a916b4372b1fe76f38908634f5184945b833873754176a8c2ef45852b20477b"
+  },
+  "transcript.activity.steps_other": {
+    "text": "Hoạt động của tác nhân ({{count}} bước)",
+    "source": "637b437bf7a1665507a1c00f1c535f9fd19df4a3d9337aa6cd1e77502c1bf87d"
+  },
+  "transcript.spec.versionLines_other": {
+    "text": "Kế hoạch v{{version}} · {{lines}} dòng",
+    "source": "ca7078019c498416bb28c889f5a63c9533be59a64aec694348bab64acdd81a99"
+  },
+  "transcript.spec.draftedLines_other": {
+    "text": "Đã soạn kế hoạch · {{lines}} dòng",
+    "source": "2df444dfaefad09c226187644eeeb505bb4af7dbfac2bdf75ed2512dd009532a"
+  },
+  "transcript.header.byAuthorMessages_other": {
+    "text": "Phiên tác nhân của {{author}} · {{count}} tin nhắn",
+    "source": "c144794ae25d47cdc65adb9242317b18c542bb8dbfc86781a3164adaa0587b92"
+  },
+  "transcript.header.byUnknownMessages_other": {
+    "text": "Phiên tác nhân của họ · {{count}} tin nhắn",
+    "source": "85bf6b7e7b6d9e1cc8c9596834567ebe77cb72fd0908e88b82069411de4bc0a0"
+  },
+  "transcript.header.readMessages_other": {
+    "text": "Đọc phiên tác nhân ({{count}} tin nhắn)",
+    "source": "2cd885fb43046a463abcf0a87c59296bf743654a172ac3522d12f1bb398198b8"
+  }
+}

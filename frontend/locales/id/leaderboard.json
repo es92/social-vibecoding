@@ -1,0 +1,1210 @@
+{
+  "tabs.challenges": {
+    "text": "Tantangan",
+    "source": "40b9c8f444870eff94e260ea77c034c0078841842fedb9ba3cfe9e83b4ffb313"
+  },
+  "tabs.kudos": {
+    "text": "Kudos",
+    "source": "51483eb0b6d593009a02ce75240e6d94327c29cd0934297fce4025e12128ced0"
+  },
+  "tabs.standings": {
+    "text": "Klasemen",
+    "source": "c7342049e69be4aad2ccaf5eeb2e767dc3907bb2f83dcf1323c9ad378ec0b7ee"
+  },
+  "tabs.history": {
+    "text": "Riwayat",
+    "source": "0e769600933790607b2a13b33ddfade0fa17810eb62c3b28ee23e59516516491"
+  },
+  "eventBar.label": {
+    "text": "Acara",
+    "source": "4e1f49a9c8ae8a158434e647c0c410352d718984a4fcd144d26cca3c394caa02"
+  },
+  "eventBar.loading": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "eventBar.noEvents": {
+    "text": "Tidak ada acara",
+    "source": "2197f6207922f4c874531e989af842ab8ceeea3afb6873a3306ed26d22a9a049"
+  },
+  "eventBar.option.season": {
+    "text": "{{event}} (musim)",
+    "source": "b49a62ff1f10a7b39a57b8bdd669ef55c2b0bc52b4e8054018b9fa074fb93a9c"
+  },
+  "eventBar.option.current": {
+    "text": "{{event}} (saat ini)",
+    "source": "94b09410d0769775825f470da75c99f5e5ca6b09f211a81f04df34ec768b2d26"
+  },
+  "eventBar.option.past": {
+    "text": "{{event}} (lalu)",
+    "source": "378d0c5532fd80f26c8a161393ff15e28e06bb5e7d4e48388d93d00f4df525d2"
+  },
+  "eventBar.pastSeasons": {
+    "text": "Musim sebelumnya →",
+    "source": "e9c5ec65c67bf66600e96f795a2f4858fd30591926190a0c51d80cf1c6ae1c34"
+  },
+  "eventBar.noneSelected": {
+    "text": "Belum ada acara dipilih.",
+    "source": "7718c83da9b61f924a0c8e36eef06cdd18aaa3112d8b595bc385c3eddba45b35"
+  },
+  "eventBar.loadFailed": {
+    "text": "Gagal memuat acara ini.",
+    "source": "f0c7d1947f77eacf5431627ed3d722fe292e68ad8c5aa3f371cbe38a20bf8706"
+  },
+  "eventBar.status.season": {
+    "text": "musim",
+    "source": "8f8e24f65c57e9d506fe81adfca35ef329983d6e33af935dd388a03c579613de"
+  },
+  "eventBar.status.activeNow": {
+    "text": "sedang berlangsung",
+    "source": "0c32f71c4caed50d9b9a268d59bcad14f1ed3e4a971fb774f1f3ea4d45b2e6ec"
+  },
+  "eventBar.status.active": {
+    "text": "aktif",
+    "source": "96879611650f80a81392a52e0db9b0237669087c4518e1c130e541a505e0eeef"
+  },
+  "eventBar.status.past": {
+    "text": "berakhir",
+    "source": "84ccdf8a849ffbc98d3a8a4bfb0999eda9254015f75a1c6cc7f68338d61c00b0"
+  },
+  "eventBar.dates": {
+    "text": "{{start}} – {{end}}",
+    "source": "e3997f8da6a037f271d4ec59be5cbe809cd4d60330c15f8ed124b3b9d0699677"
+  },
+  "eventBar.seasonNote": {
+    "text": "Klasemen satu musim penuh: semua acara publik di musim ini digabung. Pilih satu acara di atas untuk melihat hasilnya saja.",
+    "source": "1eb3c0c9aaf7ea3f53cb3359507e071b71e9df2834ce52757addde1865749f1e"
+  },
+  "eventBar.fallbackNote": {
+    "text": "Saat ini tidak ada acara yang berlangsung, jadi yang ditampilkan adalah acara terbaru.",
+    "source": "86b8da11caa6c080ce127ee63361d3748d0905be8bea2cdfe34f1c0d6ec5cca6"
+  },
+  "challenges.loading": {
+    "text": "Memuat tantangan",
+    "source": "578893517d8f797acc6a6fb9ae8d1d8417bdc3df89136012a5f3aac39a450043"
+  },
+  "challenges.empty": {
+    "text": "Belum ada tantangan untuk acara ini.",
+    "source": "c41e3642020dac2a1cb97ca8795a984438808e56af5c4da50f5a34162a8fa23a"
+  },
+  "challenges.loadFailed": {
+    "text": "Gagal memuat tantangan.",
+    "source": "e3bed3a97bf3c8cd5c41e8edbf4324dec34e9d4ec5397166f8737b812cfb00c9"
+  },
+  "challenges.toFirst": {
+    "text": "Buka Tantangan pertama",
+    "source": "fca78871e16595b1897282d696e40846efb7ace32f194393acfec93e4025996a"
+  },
+  "challenges.locked.notice": {
+    "text": "Selesaikan Langkah awal untuk membuka sisa tantangan musim ini.",
+    "source": "2ab652a3132908407a13e83726170bb5be7de2c4be43aac36690a8a93ce32229"
+  },
+  "challenges.group.setup": {
+    "text": "Tantangan pertama",
+    "source": "79462a6dcc46819ddab47253c01f5abbfc2cd69578d2b1d4c0c2e59310e0b63b"
+  },
+  "challenges.group.week": {
+    "text": "Minggu ini",
+    "source": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634"
+  },
+  "challenges.group.always": {
+    "text": "Selalu terbuka",
+    "source": "67b6ffc1ed06f760507f823966d16dbf760e1fc2196937d6732606e40159142e"
+  },
+  "challenges.group.other": {
+    "text": "Tantangan musim ini",
+    "source": "ba3646b8091fae789c40f8ba8581315af64217e6e0e95eb411f2c2ada62ae972"
+  },
+  "challenges.group.completed": {
+    "text": "Selesai",
+    "source": "22a970d2e5b1cc233e462be7c7b64e135a275bb09d83d87683bf4236c43113a1"
+  },
+  "challenges.group.meta.timed": {
+    "text": "{{done}}/{{total}} · {{timeLeft}}",
+    "source": "b57d59ae303b3d24d1b3dd1dfa35b4bb098e47975b986136421922a08fdb3673"
+  },
+  "challenges.group.meta.noDeadline": {
+    "text": "{{done}}/{{total}} · tanpa batas waktu",
+    "source": "238a0ba22183617e91de75e15c8c7487fe9d94711bc4ed923594207ac831ee3a"
+  },
+  "challenges.group.timed": {
+    "text": "{{group}} · {{timeLeft}}",
+    "source": "8912c2eda62d8dc33708ccd39b783b2f8cfecb76c181b48c07871c04d948c179"
+  },
+  "challenges.ends": {
+    "text": "berakhir {{when}}",
+    "source": "a383586c441c35dbe4bdebbf2ce54aba76cfbe76a6a4f60b9f884141eb21394a"
+  },
+  "challenges.endsTitle": {
+    "text": "Berakhir {{when}}",
+    "source": "6ef9066e3a8f8630fdbe83321003ecb5f6f538ced609f6d6f0931ee6cdffb4e1"
+  },
+  "challenges.state.done": {
+    "text": "Selesai",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "challenges.state.started": {
+    "text": "Dimulai",
+    "source": "ecbc89cd37a037342e740f9e0e0633a70180a2279b0157c9a823fce729f4bd77"
+  },
+  "challenges.state.notStarted": {
+    "text": "Belum dimulai",
+    "source": "ba35f0c47d862763dafa955d6716942f79b8bfe1d01d5968520db6f9ba665f6f"
+  },
+  "challenges.state.named": {
+    "text": "{{challenge}}: {{state}}",
+    "source": "60b51b91277e395b52aea89f33bc54b4323570f6384f30e587c0366ab6ed2cb6"
+  },
+  "challenges.cadence.next": {
+    "text": "penghitungan berikutnya {{when}}",
+    "source": "0e58702ab8786aa8386b81daee2307612ba763a5219fa55a1ccd3d9c65cc2161"
+  },
+  "challenges.cadence.now": {
+    "text": "sedang menghitung",
+    "source": "5c6c0ea5f8f48b34e7ff31fd7f439a39b76744a84e5fb066005a51b81b4256d5"
+  },
+  "challenges.cadence.last": {
+    "text": "penghitungan terakhir {{when}}",
+    "source": "77ddb2fa211da35d46d06c489f190334c8c8be9de1284de44e52228038160e1f"
+  },
+  "challenges.locked.hint": {
+    "text": "Selesaikan Getting started di Beranda untuk melihatnya",
+    "source": "bddc84b27bdc64386db992559d18540b923ac0ac0dd17e8776821e213c8439e0"
+  },
+  "challenges.locked.namesAnd": {
+    "text": "{{names}} dan {{last}}",
+    "source": "465698554556dc029e8bb9ca32976d59fee1f9a32dc01425164c594a58781ce4"
+  },
+  "challenges.intro.title": {
+    "text": "Cara kerja tantangan",
+    "source": "3f30e05942f0df25fb46a9059f6a4cd08b76df4161c94824f3e3a99ac2939ed3"
+  },
+  "challenges.intro.close": {
+    "text": "Tutup Cara kerja tantangan",
+    "source": "0bde504a7f0a850dabd6d3214bee12616401448420f4c1c2722c8d5b5bfcff10"
+  },
+  "challenges.intro.counts.title": {
+    "text": "Lakukan, langsung dihitung",
+    "source": "8841bc82e63f9bdc8f9c8547644989f097459246988cfdc53ce63b6495b1ddff"
+  },
+  "challenges.intro.counts.text": {
+    "text": "Selesaikan tantangan.",
+    "source": "49d6eb8edfd0dce6ddbe2fa1f9fe9a4613b7d53e3192940e6086c9725063f240"
+  },
+  "challenges.intro.points.title": {
+    "text": "Kumpulkan poin",
+    "source": "c800e3465ccc723ebbb31fe768234a2f72f75757482499bf6bc00828c6c3962c"
+  },
+  "challenges.intro.points.text": {
+    "text": "Setiap kartu menunjukkan poin yang didapat. Poin terkumpul di klasemen.",
+    "source": "842cf57356992e319ceeedaf8ed8d2a6016db67220f0340c739767d3607ca707"
+  },
+  "challenges.intro.weekly.title": {
+    "text": "Yang baru tiap minggu",
+    "source": "bf41f5da91ca13644dd0caaf60f1238086bdafb9792ef947013352cbb91b65b4"
+  },
+  "challenges.intro.weekly.text": {
+    "text": "Minggu ini dimulai lagi hari Senin. Selalu Terbuka tidak punya batas waktu.",
+    "source": "f9e7147ce15de8cbf60a11f8029f19f7566876b13b1eaacef214d2367141ee95"
+  },
+  "challenges.detail.header": {
+    "text": "Tantangan",
+    "source": "27cf1792f7bb4da955117bb4a15cb33f4e4705984cacfac9055a2884b061e4e1"
+  },
+  "challenges.detail.headerFallback": {
+    "text": "Papan Peringkat",
+    "source": "31b471215872634299bc844f90c0493a24f6db1f00dca395175da335c4c0ca1d"
+  },
+  "challenges.detail.go": {
+    "text": "Buka",
+    "source": "6cc8519b91584e8bd435d63341e0838a99721948718b1c9c1e9c358c64ba992a"
+  },
+  "challenges.detail.linkUnavailable": {
+    "text": "{{label}} <0>(tautan tidak tersedia)</0>",
+    "source": "d53f7959353270500a46295ba899510a773c41cdfc3a32141eb8071dbd8c7d43"
+  },
+  "challenges.detail.seeFeedback": {
+    "text": "Lihat masukanmu",
+    "source": "b474570b8f9ec5ae22ecf27bce34f0038fcaf6933c43d70a870b27e0fcecf7d2"
+  },
+  "challenges.detail.requirements": {
+    "text": "Syarat",
+    "source": "e0cdd07f6a270b8269217510822daa4ace573309134278f75f5e16ed59a3583b"
+  },
+  "challenges.detail.scoring": {
+    "text": "Penilaian",
+    "source": "9ea9bd2122aab52abe105861f214b7a8ac29fddbcdacaffc9f105d0f0ed072ad"
+  },
+  "challenges.detail.participants": {
+    "text": "Peserta",
+    "source": "0e27279b3302db0448a2acf5d923ffb09b75270c2e957bfb93f54815d2146aa4"
+  },
+  "challenges.detail.showMore": {
+    "text": "Tampilkan lagi →",
+    "source": "71e579d3e2eef21f0f7cc82ae3880021fd3d9a4ab243cb4b848e44df2b0971a2"
+  },
+  "challenges.detail.loadingParticipants": {
+    "text": "Memuat peserta",
+    "source": "465f51143d939bd940d5152886b11553f06ed023a498d5fd25381ad32c743644"
+  },
+  "challenges.detail.noParticipants": {
+    "text": "Belum ada peserta.",
+    "source": "8987d03b2dae88c45689851be796060912d25dc45276f8e724f10206a596365c"
+  },
+  "challenges.detail.breakdownFailed": {
+    "text": "Gagal memuat rinciannya.",
+    "source": "54ab326cee25922083b58f6c16e0f5cf0be052ce223aff25a21e2af29b302305"
+  },
+  "challenges.detail.anonymous": {
+    "text": "Anonim",
+    "source": "e7a8aa2df7e5d0b233da615af4e7fef148bec39aef1709da0a80391ad0316563"
+  },
+  "challenges.detail.nonPodium": {
+    "text": "{{name}}<0> (non-podium)</0>",
+    "source": "c141dee1901d93a43bac8f301a36c15fec8436c3ca9913db3d511d550afe394f"
+  },
+  "challenges.detail.pointsRate": {
+    "text": "{{points}} · {{rate}}%",
+    "source": "e9bd3fe3d47b888cfb232b64ad35f66d8318f15c0b784c2041943d24fa4423f0"
+  },
+  "challenges.countNote.onPropose": {
+    "text": "Dihitung saat kamu menekan Propose to group, yang mengajukan perubahanmu untuk diberi suara.",
+    "source": "53b8134277bda44f621cca5de8b8c306794850df366c2e9ff306079dac9bc748"
+  },
+  "challenges.profile.loading": {
+    "text": "Memuat profil",
+    "source": "078e56406a85b06cadc0142df7873df12a0fac805bf14759d15fb85a1878fef0"
+  },
+  "challenges.profile.loadFailed": {
+    "text": "Gagal memuat profil ini.",
+    "source": "e363ddd72bc9759e14db075c7804cdcecfe68ec21a0ffd37fe182d12783ffd09"
+  },
+  "challenges.profile.rank": {
+    "text": "Peringkat",
+    "source": "a4130d7d2c3a137f362d28ba21eedd525b7e42e7551c3e62817b048c9a0bd425"
+  },
+  "challenges.profile.totalPoints": {
+    "text": "Total poin",
+    "source": "82d73caab4e292cab3858c17064605a169a2696f6f8c5d0d34120fe3a7adf314"
+  },
+  "challenges.profile.extraPoints": {
+    "text": "Poin tambahan",
+    "source": "c1419df1f12e6658807bb126cfc075b851f539d8ffb8b9e5cc369cb8a0d4461c"
+  },
+  "challenges.profile.producedBlocks": {
+    "text": "Blok dihasilkan",
+    "source": "4898d66e6095dbee24a531ae34b0707f1b2e2ba1e842869903d610d62ba53a61"
+  },
+  "challenges.profile.wonSlots": {
+    "text": "Slot VRF dimenangkan",
+    "source": "6ba86e99b0293a5793a9f150bb3a00d1d8485d0e0595c1961dae2b4196120140"
+  },
+  "challenges.profile.successRate": {
+    "text": "Tingkat keberhasilan",
+    "source": "49da60f8a292ccc447ce5fca1d3e5b7d0425b9add0540947aa60d125fe9b06a6"
+  },
+  "challenges.profile.activities": {
+    "text": "Aktivitas",
+    "source": "4d0076e6b4c71059f0403fbdebc3a4079e4eb2124cb19b3c6be54ff9c0a30d06"
+  },
+  "challenges.profile.noActivities": {
+    "text": "Belum ada aktivitas tercatat.",
+    "source": "0aab895730ecab10d7a919000b2e1fa7cf5edfda3df767a82998bce917583868"
+  },
+  "bp.checking": {
+    "text": "Memeriksa status produksi blokmu…",
+    "source": "74e131fcf793e9465b64c9bde1a331c6cab0d9c9a1e396ecde71653d815cd19f"
+  },
+  "bp.error.title": {
+    "text": "Tidak bisa memeriksa status produksi blokmu",
+    "source": "b619a319f21d9c3c6d79e7b07f18c540308fd00009b2936e0e6f76a8b521b0dc"
+  },
+  "bp.error.text": {
+    "text": "Periksa koneksimu lalu coba lagi.",
+    "source": "481859b689b0d0d9de1e27b3a0a25004f32d7624f412f8f80e0188cb3e3d54f2"
+  },
+  "bp.error.retry": {
+    "text": "Coba lagi",
+    "source": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  },
+  "bp.account.title": {
+    "text": "Pilih cara menghasilkan blok",
+    "source": "bbee698a7cc8fae487955dfd3aaf76f4ca004c274f5d92916aadced8cd332181"
+  },
+  "bp.account.delegate.title": {
+    "text": "Delegasikan (disarankan)",
+    "source": "4725f1a3fa8444b934fe7157e82b7d9ceda6f75592b1c75af54173e0251c71b4"
+  },
+  "bp.account.delegate.text": {
+    "text": "Stake-mu didelegasikan ke server produksi blok Homeroom, jadi tidak ada yang terus berjalan di ponselmu. Saat didelegasikan, kamu mendapat setengah poin dari yang kamu peroleh jika menghasilkan blok langsung dari ponsel.",
+    "source": "48e5428c6bf029d64745c5f2000e4d42d0f1a3ff5735ae6aeb13697072eee2dd"
+  },
+  "bp.account.onDevice.title": {
+    "text": "Atau hasilkan blok di ponsel ini",
+    "source": "49131518f56226b805c9cffa5974b5ff3dd35172275f0f9770ce3752ef760372"
+  },
+  "bp.account.onDevice.text": {
+    "text": "Menghasilkan blok langsung di ponsel ini memberi poin penuh.",
+    "source": "969e4ca22435b442287dedfa0a8b8561ad55962413fcf9053518e165adf59375"
+  },
+  "bp.account.onDevice.warning": {
+    "text": "Hanya untuk ponsel yang bisa terus menyala. Layanan latar belakang terus berjalan dengan notifikasi permanen, memakai lebih banyak baterai dan data, dan Android harus mengizinkan aplikasi berjalan tanpa batasan di latar belakang serta mengatur alarm tepat waktu. Jika ponsel menghentikan aplikasi, slot-nya terlewat.",
+    "source": "81f5c171b332580d754f8cc5aa60525987dd24a87870a812e7718a69432e0cbf"
+  },
+  "bp.account.onDeviceNote": {
+    "text": "Menghasilkan blok di ponsel hanya tersedia di aplikasi Android.",
+    "source": "970661733d9f2f39ecc47918cf33c3b2f4849fa8617b9c68c32e4cf20f0f247a"
+  },
+  "bp.account.manage": {
+    "text": "Kelola delegasi",
+    "source": "0f6f168b12bf55aceaebef005b0b40a2039be55f48a8813a6b2f48800d4217d8"
+  },
+  "bp.account.appNote": {
+    "text": "Delegasi dikelola dari dompet di aplikasi Homeroom. Kalau belum tersedia di sana, perbarui aplikasinya.",
+    "source": "58d3bd9f71f8737b4f08d9f5e261b5554e1156795093ae6b16f8457cdc4c84bf"
+  },
+  "bp.account.webNote": {
+    "text": "Delegasi dikelola dari dompetmu di aplikasi Homeroom. Buka tantangan ini di sana.",
+    "source": "24a679a6c38d85515f03530646cfe9cc2665bb7d1e7fbb2da1188e853249f71d"
+  },
+  "bp.pending.title": {
+    "text": "Dompet sudah diminta",
+    "source": "85761edd90790e60f049c6ebdaf5f119ef633e9f31b69b03c6dec8cfce5d8cdb"
+  },
+  "bp.pending.text": {
+    "text": "Admin merilis kunci dompet secara bertahap. Setelah kuncimu dirilis, kembali ke sini untuk memilih cara blokmu diproduksi.",
+    "source": "a28835121615ac0eb09e0159e6d85ed607039a0af6a7de1f2d81fd2321e009c5"
+  },
+  "bp.locked.title": {
+    "text": "Belum tersedia",
+    "source": "787406ddea2a10a482aadb0a7af672d2621eef25af4aba9af33d4ae4ed135509"
+  },
+  "bp.locked.text": {
+    "text": "Kamu bisa meminta dompet setelah akunmu mendapat akses platform.",
+    "source": "fe9d8e4cbb00015addd3b28a76646c325c6da278b53dd4f2eea58ace913b4e75"
+  },
+  "bp.request.title": {
+    "text": "Pertama, minta dompet",
+    "source": "db0883e64fbbcf90a70ca02ead0a46d5c3f4fedb9d83c46b7eb52f7d7446f13b"
+  },
+  "bp.request.text": {
+    "text": "Memproduksi blok membutuhkan dompet dengan kunci produsen. Ajukan permintaan dan admin akan merilis kunci secara bertahap.",
+    "source": "f56b6e59caff5670f2b9009225a957c1003e6832b969b5b536b0156509dbc6d7"
+  },
+  "bp.request.action": {
+    "text": "Minta dompet",
+    "source": "86002c337e70702ec94802e9ff28f93a154a93e8879fe91921b1b67def1a66d9"
+  },
+  "bp.request.pending": {
+    "text": "Meminta…",
+    "source": "1db9285ae3d0c338610fca0fee19b05d37c9cfd54b6cf4233aea03e92f7c7990"
+  },
+  "bp.request.sent": {
+    "text": "Permintaan terkirim. Admin akan merilis kuncimu",
+    "source": "ac5d16ce13d3a3387a70ef320f4ed1e04fd1427694f7f1418bb519e321db6bd8"
+  },
+  "bp.request.failed": {
+    "text": "Permintaan gagal",
+    "source": "cfce761befa84073c2ea0d29bc3f3d647c985faa02d80854eada5312a7cc24a1"
+  },
+  "standing.label": {
+    "text": "Peringkatmu",
+    "source": "12e847dadcc2ba95876e480ae7a9c93ccfb9296fb3a6218886cf407fe54751f8"
+  },
+  "standing.thisSeason": {
+    "text": "Musim ini",
+    "source": "2f34b35503ca51d1909d7823602ba5cd9b3362d9a5e1226eba2e2d2799a61637"
+  },
+  "standing.yourStanding": {
+    "text": "Peringkatmu",
+    "source": "12e847dadcc2ba95876e480ae7a9c93ccfb9296fb3a6218886cf407fe54751f8"
+  },
+  "standing.updateNote": {
+    "text": "Peringkat diperbarui setiap beberapa jam; poin dari tantangan yang baru kamu selesaikan muncul di pembaruan berikutnya.",
+    "source": "59f9b6c4514afd50fc56df57c94fd88cc35d4fed5e81457dfe6c61cae38f1f56"
+  },
+  "standing.byEvent": {
+    "text": "Poin per acara",
+    "source": "7e48df61a571857f7ed7ad957749ec7a894f84612077ec275dbaedf5990c7f27"
+  },
+  "standing.token.withheld": {
+    "text": "Alokasi token ditahan",
+    "source": "4c0588c235e82ee4dd15a4ae966adefcf6768548e0ef4ab7504e0d042ef4b945"
+  },
+  "standing.token.review": {
+    "text": "Tinjau dan setujui ketentuan untuk melihat alokasi tokenmu.",
+    "source": "bb500d85e5d8e9696c36bd2f68ce003f0d5a0f37524eea272f5f9a86a1ea8842"
+  },
+  "standing.token.reviewTerms": {
+    "text": "Tinjau ketentuan",
+    "source": "ed6792b6a98ed25eadc09a5715b691993dce4d6ec93c90c2aeeec8d8afb209f5"
+  },
+  "standing.token.label": {
+    "text": "Alokasi token",
+    "source": "8f3825e22e20de9b5281f09017fe3a9070c13a5d54d4ac7793a6579c2838a917"
+  },
+  "standing.token.note": {
+    "text": "Bagianmu dari kumpulan token musim ini. Alokasi bersifat sementara dan tunduk pada ketentuan program.",
+    "source": "b3b0dbd5865115f2f48aa5afaddd9bcf431903453bf4d00b254da4eb7fefc649"
+  },
+  "standing.token.reveal": {
+    "text": "Tampilkan",
+    "source": "36b830bdb447f8c758a9b58f190eed468c4bd53e9c7662ee19bca9c53d3a3e3d"
+  },
+  "standings.loading": {
+    "text": "Memuat klasemen",
+    "source": "4eda8afa5988735114b583df51c6dabdbab1b50d6bf179f1f8dc09dfdf3fc500"
+  },
+  "standings.loadFailed": {
+    "text": "Gagal memuat papan peringkat.",
+    "source": "db88a437deaff8dbcb5f71b45a13086e038d678dd9cd3d7fb6d200f033592dbc"
+  },
+  "standings.noEvents": {
+    "text": "Belum ada acara yang dipublikasikan.",
+    "source": "baed0bc4f2d734cbcecb8da3e9b046c1028b44d30a8a6ce7a3739fb7968949d7"
+  },
+  "standings.noData": {
+    "text": "Tidak ada data.",
+    "source": "5118ec56d3b0c4c6df6071f28023a35c9fb4c544d2c463bd02537aaeea3a706f"
+  },
+  "standings.private": {
+    "text": "Papan peringkat acara ini belum dibuka untuk umum.",
+    "source": "d3810d93ec2a82c59d3321f3d57e0efd5a240d0f605e6c8c211e17a365bbe123"
+  },
+  "standings.noEntries": {
+    "text": "Belum ada entri di papan peringkat. Peringkat diperbarui setiap beberapa jam; poin dari tantangan yang baru kamu selesaikan muncul di pembaruan berikutnya.",
+    "source": "7901dd86e668a291847a2695884842b7006f6bd37c5ba620865acde8034e5155"
+  },
+  "standings.allExcluded": {
+    "text": "Semua peserta yang punya skor di papan ini tidak dimasukkan dalam peringkat.",
+    "source": "61dd23c819d4a080313b9b0a675955605bf51092cedb6e1eb160406f6f461946"
+  },
+  "standings.viewChallenges": {
+    "text": "<0>· </0><1>Lihat tantangan →</1>",
+    "source": "c65283334640a154d06bdb47bba77a2caacc45fb976e1fc549d78b50b733915f"
+  },
+  "standings.showNonPodium": {
+    "text": "Tampilkan pengguna non-podium",
+    "source": "fb954981445c19714ea3a09472aec0f734b4dc360f7cfd885b5b369288fa6514"
+  },
+  "standings.column.rank": {
+    "text": "Peringkat",
+    "source": "a4130d7d2c3a137f362d28ba21eedd525b7e42e7551c3e62817b048c9a0bd425"
+  },
+  "standings.column.user": {
+    "text": "Pengguna",
+    "source": "b512d97e7cbf97c273e4db073bbb547aa65a84589227f8f3d9e4a72b9372a24d"
+  },
+  "standings.column.points": {
+    "text": "Poin",
+    "source": "77deabe238de2f6dddc88c17dbe14221918571838d8fc1228843f9387b0b69f7"
+  },
+  "standings.column.seasonPoints": {
+    "text": "Poin musim",
+    "source": "035c805770530e15e6d85e9766cdd0edc188545c05d5cae1f722e055816d9e17"
+  },
+  "standings.column.blocks": {
+    "text": "Blok diproduksi",
+    "source": "029e436b187eef38d6528b969e41e5d504fdd8fd655090df2fb06465b3d13f8a"
+  },
+  "standings.column.success": {
+    "text": "Tingkat keberhasilan",
+    "source": "49da60f8a292ccc447ce5fca1d3e5b7d0425b9add0540947aa60d125fe9b06a6"
+  },
+  "standings.anonymous": {
+    "text": "Anonim",
+    "source": "e7a8aa2df7e5d0b233da615af4e7fef148bec39aef1709da0a80391ad0316563"
+  },
+  "standings.nonPodium": {
+    "text": "<0>{{name}}</0><1> non-podium</1>",
+    "source": "aae2bd5f00cf7fa7c2e9cfd767bf4220eb09ca65a1f893f154bc02a49c14fe89"
+  },
+  "standings.nonPodiumTip": {
+    "text": "Tidak termasuk peringkat podium",
+    "source": "07f1600ce404bb1992442c06c823053282b3ee20c8e500e8afa72086c88b3d47"
+  },
+  "standings.openDetails": {
+    "text": "Buka detail {{name}}",
+    "source": "6c4c1e53f3a1470d41c906944e8b0d16d77d796ffde761efd373fa5b8ec6945d"
+  },
+  "standings.openDetailsAnonymous": {
+    "text": "Buka detail Anonim",
+    "source": "4fcb413f6ea20c3ea32213721b228c1c04581e7b5d86822a36395cd651881f7a"
+  },
+  "standings.prev": {
+    "text": "Sebelumnya",
+    "source": "73912999faf42cb37adc0db937015cfbb2554170d72329b88ad86bf62a75cd98"
+  },
+  "standings.next": {
+    "text": "Berikutnya",
+    "source": "1ff57a29d7c9d11bdf61c1b80f2b289b44c1ea844824d4b94a0d52b6ba5fc858"
+  },
+  "drill.activities": {
+    "text": "Aktivitas",
+    "source": "4d0076e6b4c71059f0403fbdebc3a4079e4eb2124cb19b3c6be54ff9c0a30d06"
+  },
+  "drill.activitiesLoading": {
+    "text": "Memuat aktivitas…",
+    "source": "8d272db6230ff7cc7c116dd87bd2ac1538d6b9302d2048ada356938730598ad8"
+  },
+  "drill.activitiesEmpty": {
+    "text": "Tidak ada aktivitas yang tercatat untuk acara ini.",
+    "source": "b7f206f1f4b6bb2f25dc04aff91266012a95a2c7700e9a5463bfbd06e3ca37d1"
+  },
+  "drill.activitiesFailed": {
+    "text": "Tidak dapat memuat aktivitas.",
+    "source": "b56e73484c630657208acefebc827e12a415779f0e0593a466c0e557eb9e31b5"
+  },
+  "drill.noIdentifier": {
+    "text": "Tidak ada pengenal untuk baris ini.",
+    "source": "54990277b0a0518d57187b3784b83ef4fd0f29536a5aea8af2797a1fa5f52993"
+  },
+  "drill.epoch.heading": {
+    "text": "Rincian epoch",
+    "source": "0cdc9208a4ada9215389119ab699f19bafe79640736902f64a728152a19752cb"
+  },
+  "drill.epoch.loading": {
+    "text": "Memuat rincian epoch…",
+    "source": "388668814e7d03539ac0b3aef51df095b68d42b56c1bf986caa9b8a1cd094129"
+  },
+  "drill.epoch.empty": {
+    "text": "Tidak ada data epoch untuk acara ini.",
+    "source": "dbf4c6ced94901ef3b66f7b82364a638e0b56d6a68413f797cacdb716e828010"
+  },
+  "drill.epoch.failed": {
+    "text": "Tidak dapat memuat rincian epoch.",
+    "source": "f5f3992296c9b5c07813ce9d8d5be12998000aed2560eb5ef6cadd0339855ff9"
+  },
+  "drill.epoch.perEvent": {
+    "text": "Rincian epoch berlaku per acara. Pilih satu acara di atas untuk melihatnya.",
+    "source": "8d47d61ca79ebcf90b56709517b1e0e7ee84753d79c4979fb031c759af4825b2"
+  },
+  "drill.epoch.noWallet": {
+    "text": "Tidak ada dompet yang terhubung untuk baris ini.",
+    "source": "5439198e671338441ea0072883f8d07366b15f3c7d142d0924358c6b2b31e0ce"
+  },
+  "drill.epoch.column.epoch": {
+    "text": "Epoch",
+    "source": "fff7a2d7d622340f33ac12b81e308320067f9989605317e63cdf3776d4a9a67e"
+  },
+  "drill.epoch.column.wonSlots": {
+    "text": "Slot dimenangkan",
+    "source": "32dbf5c2c0ed80c1e91eb7f642277e72eca14ddb7efd83f1b70d35c2a3895bb1"
+  },
+  "drill.epoch.column.produced": {
+    "text": "Diproduksi",
+    "source": "3b22f22b5d1cb8d73f82b11c09941da70102d340e468646bf9842a356a19fcb9"
+  },
+  "drill.epoch.column.successRate": {
+    "text": "Tingkat keberhasilan",
+    "source": "49da60f8a292ccc447ce5fca1d3e5b7d0425b9add0540947aa60d125fe9b06a6"
+  },
+  "drill.profile.heading": {
+    "text": "Profilmu",
+    "source": "528d89ad72cba22e2d9d116befd3bb96a519f06b5f1147a2348d29fa6d1a2cbd"
+  },
+  "drill.profile.loading": {
+    "text": "Memuat profilmu…",
+    "source": "dc371220304b2d263b6ab658fbf4cecc2be13342858fb1576cd8b98e572dd052"
+  },
+  "drill.profile.failed": {
+    "text": "Tidak dapat memuat profilmu.",
+    "source": "fd2a9a955861683974ac47fa81e9e8de672142368719dbe5c1ba98081ceb6cdd"
+  },
+  "drill.profile.rank": {
+    "text": "Peringkat",
+    "source": "a4130d7d2c3a137f362d28ba21eedd525b7e42e7551c3e62817b048c9a0bd425"
+  },
+  "drill.profile.totalPoints": {
+    "text": "Total poin",
+    "source": "82d73caab4e292cab3858c17064605a169a2696f6f8c5d0d34120fe3a7adf314"
+  },
+  "drill.profile.producedBlocks": {
+    "text": "Blok yang dihasilkan",
+    "source": "4898d66e6095dbee24a531ae34b0707f1b2e2ba1e842869903d610d62ba53a61"
+  },
+  "drill.profile.clientRate": {
+    "text": "Tingkat keberhasilan klien",
+    "source": "f58196ac5387b35e3b2f3e309cc8f5289ee696c2a7de76397c3d94c71a48db0f"
+  },
+  "drill.profile.canonicalRate": {
+    "text": "Tingkat keberhasilan kanonis",
+    "source": "56b13819e539698c5604de65eb7619e64cf7830d081a02b342d5d3d1ba00d882"
+  },
+  "activity.dayTime": {
+    "text": "{{day}} · {{time}}",
+    "source": "790970126fae88a75677f71ed1c047e7ff066f4902a5e627baa1e7ff204be5c8"
+  },
+  "activity.dayTimeFull": {
+    "text": "{{day}}, {{time}}",
+    "source": "af9afc288b39361ecfd513f66ffd0b2f36a27d2bf3f647ecd0f46039ff18cd7c"
+  },
+  "history.loading": {
+    "text": "Memuat musim sebelumnya",
+    "source": "f4963c98b0f1e517f8bd722195a4653db6b7cffcc9f3e0364ecab92227d9e40e"
+  },
+  "history.loadFailed": {
+    "text": "Tidak dapat memuat musim sebelumnya. Coba lagi nanti.",
+    "source": "e10d7f6ad6f4cb83697c53f8334f23f48b85e2b2334bbe147b64b6b48f0fdbfb"
+  },
+  "history.empty": {
+    "text": "Belum ada musim yang berakhir. Saat ada, para pemenangnya akan tercantum di sini.",
+    "source": "c3902236b02007dbc5471aa42cbdbd5a851d0368a99f0b8c9ec686953375963e"
+  },
+  "history.fallbackName": {
+    "text": "Musim",
+    "source": "bad2b893e5a466919e6513c50ff6623b1d3a115ee0d2db5f0baa650357dac2d7"
+  },
+  "history.ended": {
+    "text": "berakhir {{date}}",
+    "source": "83c87ff9784094f2d83e57c8cd16f170fabd4107f6703345b5e190cb2d44abbb"
+  },
+  "history.noWinner": {
+    "text": "Tidak ada pemenang yang tercatat",
+    "source": "5350b73b0939247c529e548ff167e51b5b9160709a5210c3f32bd703a0cc2f82"
+  },
+  "history.youFinished": {
+    "text": "kamu di peringkat #{{rank}}",
+    "source": "eb4e00f8f70d62b07520ea047270839b77bf0b637e743af3e9c35b8050603f18"
+  },
+  "history.youTookPart": {
+    "text": "kamu ikut serta",
+    "source": "72cf40d6bcc47370b36b6a2d10e9d235afa3f7367704ce75e82c485dc9b33616"
+  },
+  "history.factPair": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "history.eventWinners": {
+    "text": "Pemenang acara",
+    "source": "4643be1b5b94a0d9f2557a6e9bc3f5ab02d7e168cc1086af2c204a13d329f988"
+  },
+  "history.eventWinner": {
+    "text": "{{event}} · {{winner}}",
+    "source": "2f93304d6e526290ac8409c8ceeb9920d6f11a1d09afd3b5bd4e88558dd9bf03"
+  },
+  "history.eventNoWinner": {
+    "text": "{{event}} · tanpa pemenang",
+    "source": "6f6005055dba3b703d0a6b60c78471bdfc36df58b78ef6b2f286d2a9c1f76d19"
+  },
+  "kudos.loading": {
+    "text": "Memuat papan peringkat",
+    "source": "44f14e7f2fca70375d04c752436c50316c82496273293095dca58880f4043f72"
+  },
+  "kudos.tab.changes": {
+    "text": "Perubahan teratas",
+    "source": "0af147a38677ad4aa0c4e473d9369dba3ed5d630ab7b616dd4d750bf0b831563"
+  },
+  "kudos.tab.users": {
+    "text": "Pengguna teratas",
+    "source": "6054194689135af33a5f946aaf225eab32a4a8dc513229b6ee0449a5f2a3a4fa"
+  },
+  "kudos.tab.history": {
+    "text": "Riwayatku",
+    "source": "ca28b082f7dfd694a83b604c208bb3e9dc0a7eaed91ef5e6b82ea204a5bbbf90"
+  },
+  "kudos.window.all": {
+    "text": "Sepanjang waktu",
+    "source": "074daba2b30cffe720f2ba5a7682047ecdafda08ecb587ed927676d2f831390c"
+  },
+  "kudos.window.week": {
+    "text": "Minggu ini",
+    "source": "8c4eef5ab2532515ef24a662db70f6e5b8063c7f924342b2a463f763f1091634"
+  },
+  "kudos.historySubtitle": {
+    "text": "Semua yang sudah kamu berikan: kudos, janji hadiah, dan suara, dari yang terbaru. Hanya kamu yang bisa melihat ini.",
+    "source": "2cb5f0f93d3c5fe0f030068fc3a660cd874386c0526da79f8492d93b94fbb7c1"
+  },
+  "kudos.loadFailed": {
+    "text": "Tidak dapat memuat papan peringkat. Coba lagi nanti.",
+    "source": "7bc1236df73cd9698f0b5d6c1e89cb9ccafd439c1d5caa0a933cb2afd4165845"
+  },
+  "kudos.empty.changes": {
+    "text": "Belum ada kudos. Saat seseorang memberi kudos pada sebuah perubahan, perubahan itu muncul di sini.",
+    "source": "02cce4ab4f16559e8436984daf775b8f432589f3093a5cf930633b895e62601f"
+  },
+  "kudos.empty.changesWeek": {
+    "text": "Belum ada kudos minggu ini. Saat seseorang memberi kudos pada sebuah perubahan, perubahan itu muncul di sini.",
+    "source": "906bfe7dd46fd66970ef1bbdea4df4932cafe92cd49d13f14ad0a3b4915d3306"
+  },
+  "kudos.empty.users": {
+    "text": "Belum ada kudos. Saat seseorang mendapat kudos atas perubahan yang dibuatnya, orang itu muncul di sini.",
+    "source": "fb4b01b27dd2c6dfaf3466980d36ee0a497b75a84f1708724cd4c8186cf45ff8"
+  },
+  "kudos.empty.usersWeek": {
+    "text": "Belum ada kudos minggu ini. Saat seseorang mendapat kudos atas perubahan yang dibuatnya, orang itu muncul di sini.",
+    "source": "d1658dbc8d875578d7b91231aed1b03dac42959f706e62ec9083a10250ef4b93"
+  },
+  "kudos.loadMore": {
+    "text": "Muat lagi",
+    "source": "ac8991ef01019cf55a2426194a05959e0cb886333f1a332ff4f442320d165400"
+  },
+  "kudos.loadingMore": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "kudos.untitledChange": {
+    "text": "Perubahan tanpa judul",
+    "source": "63cb7c2ea609efb07ecc941b74706f69d81bbe8349cb98f2549a8d4a4eefde91"
+  },
+  "kudos.unnamedApp": {
+    "text": "aplikasi",
+    "source": "a172cedcae47474b615c54d510a5d84a8dea3032e958587430b413538be3f333"
+  },
+  "kudos.unknownUser": {
+    "text": "tidakdikenal",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "kudos.row.by": {
+    "text": "oleh @{{username}}",
+    "source": "2e4e07ca4209136e8bf1089ae407ed5bf1d49f7eb24cbd726154b52802e65614"
+  },
+  "kudos.row.byUnknown": {
+    "text": "oleh @tidakdikenal",
+    "source": "87d0b97dfe810f104866ff8164be27ca881e6f8350a522a7529293605b9f6cfb"
+  },
+  "kudos.row.byDeleted": {
+    "text": "oleh @pengguna terhapus",
+    "source": "e0ec72b09d2c3bffcb9b11e03c348beef7bf0a0bf5a8096cc3b129ff70f24b15"
+  },
+  "kudos.status.live": {
+    "text": "tayang",
+    "source": "247610f4dedd4ab7247d07dbda19c81ca9817f85820742cad49d407ffae9e4ed"
+  },
+  "kudos.status.goingLive": {
+    "text": "segera tayang",
+    "source": "9a87940f878e828d7f5ee599fa59151493d3f724366028628b48fb3439c472a8"
+  },
+  "kudos.status.closed": {
+    "text": "ditutup",
+    "source": "c3eefb58d7c42440a9d4abec51d629544d635a6d936ff3c4d3fca96d611b3cf3"
+  },
+  "kudos.status.open": {
+    "text": "terbuka",
+    "source": "2348f998744212575d85959674f9607ab26f67708a917157472832386337c904"
+  },
+  "kudos.user.activeOnTip": {
+    "text": "Aktif di: {{apps}}",
+    "source": "98d95699b25c62311d60e438a100ead00284cbd0e1a0c7f4cda4eef6cee0c6e0"
+  },
+  "kudos.user.notLiveTip": {
+    "text": "Kudos pada perubahan yang belum tayang, tidak dihitung dalam peringkat",
+    "source": "aa06f1c02e4c294169cef1dfeecf0dc0c33255610bdecc80b0baa7e2a0234741"
+  },
+  "kudos.user.earnedTip": {
+    "text": "Kudos yang didapat dari perubahan yang tayang",
+    "source": "8afe27808d741b0144073ab5a60b1400b6aad81cb55ef75a634ccf5bee89c98d"
+  },
+  "kudos.person.back": {
+    "text": "← Pengguna teratas",
+    "source": "431b557cc55b148f0decc213a7d0ef9d612c842456bd778ecedd6575c38a8c33"
+  },
+  "kudos.person.intro": {
+    "text": "Semua perubahan yang diusulkan pengguna ini, dari yang terbaru.",
+    "source": "9c6ebf6831e4787c0a2db835d2b62529d5fb3feb7d81c87cdc824f4cf6366c82"
+  },
+  "kudos.person.notFound": {
+    "text": "Pengguna tidak ditemukan.",
+    "source": "f412be43147ccd563e87e3f4053fa0377a3530f92a020085cea35b4cd04f0e93"
+  },
+  "kudos.person.loadFailed": {
+    "text": "Tidak dapat memuat profil ini. Coba lagi nanti.",
+    "source": "b7d988f80c80e5a0d12d02eda76d36849714d4d449a6e87834e895f8378099f9"
+  },
+  "kudos.person.onLiveTip": {
+    "text": "Kudos dari perubahan yang tayang: skor peringkat papan peringkat",
+    "source": "584f39b2a09800aa6e62272d21b4b6eb1917756458f6dd82d9307c080ecc9e2d"
+  },
+  "kudos.person.liveTip": {
+    "text": "Perubahannya yang sudah tayang",
+    "source": "bbfb1b32c087a1e4b237535ea40e8c261b36d94a94101c47c2f3fc2165e0cb5b"
+  },
+  "kudos.person.madeTip": {
+    "text": "Semua yang dia ajukan ke kelompok, termasuk perubahan yang terbuka dan ditutup",
+    "source": "4df8f313e9914c52de68e5f50cd95a0e457da2a25a22eff955e8abd0ad42c4b1"
+  },
+  "kudos.person.none": {
+    "text": "Belum ada perubahan yang diusulkan.",
+    "source": "e8eb63b556bd89f83b1db5f45c125b87f6a3e0418e652d9d207345dbcaf25d13"
+  },
+  "kudos.person.openOnGithub": {
+    "text": "Buka di GitHub",
+    "source": "03f69885814b5b7aa5e4758e46733da443a237e2ec63488bddd230f501ff166a"
+  },
+  "kudos.history.filterKudos": {
+    "text": "👏 Kudos",
+    "source": "b17818b9c5c2c1c518ac7a0dc5765cb6ba4d1166dd5412420d33eb06be98e19f"
+  },
+  "kudos.history.filterVotes": {
+    "text": "🗳️ Suara",
+    "source": "c77d8b2d14d318fb8fa91b64387b33312fca05f90028fdca2a22b4b4086008f0"
+  },
+  "kudos.history.loadFailed": {
+    "text": "Riwayatmu tidak bisa dimuat. Coba lagi nanti.",
+    "source": "fb29df29f91e2a333a99c6d3e425de7dc52c3e786a51356571335e4c6b0624fb"
+  },
+  "kudos.history.empty": {
+    "text": "Belum ada apa-apa di sini. Kudos, janji bounty, dan suara yang kamu berikan akan muncul di sini.",
+    "source": "86124e945718278c2e1e6ef64e567db39740a9060fbc5b0f9f4cf81a183c0666"
+  },
+  "kudos.history.bounty": {
+    "text": "bounty",
+    "source": "721152d9d7ea07f8d55b35ff2d6e7eb6b471d8ac2be01262bca7dceb13ec8a76"
+  },
+  "kudos.history.yes": {
+    "text": "ya",
+    "source": "8a798890fe93817163b10b5f7bd2ca4d25d84c52739a645a889c173eee7d9d3d"
+  },
+  "kudos.history.no": {
+    "text": "tidak",
+    "source": "9390298f3fb0c5b160498935d79cb139aef28e1c47358b4bbba61862b9c26e59"
+  },
+  "kudos.history.pledged": {
+    "text": "Menjanjikan kudos untuk isu #{{number}}",
+    "source": "3a0d7a05203fe6ba56be792f2536d4c670b2c43776d0d0c5cf11338bf2b558c8"
+  },
+  "kudos.history.awardedTo": {
+    "text": "diberikan kepada @{{username}} {{date}}",
+    "source": "f58a7209f735fb3cd7af71347a0e609c7e437d486931be0830caa1c92ecf7ef3"
+  },
+  "kudos.history.awardedToUndated": {
+    "text": "diberikan kepada @{{username}}",
+    "source": "50dc96e7078bcf1eca276961cffd4aef57dbb97f2e9c2984487fcab7b8980e3a"
+  },
+  "kudos.history.awardedToDeleted": {
+    "text": "diberikan kepada pengguna yang dihapus {{date}}",
+    "source": "5a9bdb3e5a268df6b8a80ad802f25dc8df11ff06bb017f0ff497fed388892f3c"
+  },
+  "kudos.history.awardedToDeletedUndated": {
+    "text": "diberikan kepada pengguna yang dihapus",
+    "source": "91a46b60f7c1a3f5b4b5cbf67f5f9899c843bc796637b98dd6f803a4e606e804"
+  },
+  "kudos.history.voided": {
+    "text": "dibatalkan",
+    "source": "df6a068ab74af34949387b4ebffe6bf4522fa77748496844f7a49d8dd03e9bbb"
+  },
+  "kudos.history.voidedTip": {
+    "text": "Perubahanmu sendiri menutup permintaan ini, jadi janji kudos dikembalikan ke jatah mingguanmu",
+    "source": "b15a274ed63acea199c30611971514cdb4d3ba458cd67f8bf2d18710cd438c61"
+  },
+  "kudos.history.open": {
+    "text": "terbuka",
+    "source": "2348f998744212575d85959674f9607ab26f67708a917157472832386337c904"
+  },
+  "kudos.history.currentVote": {
+    "text": "suara saat ini",
+    "source": "03c73be04aafae7aa2d081685d0b32a60551b11d5e671e294083a43edff020ea"
+  },
+  "kudos.history.request": {
+    "text": "Permintaan #{{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "kudos.history.kind.secretChange": {
+    "text": "Perubahan rahasia",
+    "source": "c4d94bb16850950b007270fa443cd2d572182c0d4531b41fa9f3e2fcbfba08f5"
+  },
+  "kudos.history.kind.rename": {
+    "text": "Ganti nama",
+    "source": "3064d79a295cefe4b384b8fe5cb29fd6b06d7eb1ad94b8895f4148039d06b330"
+  },
+  "kudos.history.kind.closeIssue": {
+    "text": "Tutup isu",
+    "source": "ae84bc5f1da7faa233470bc62d9bfce2919e4fb6b027ab9899b6ffa31f190b99"
+  },
+  "kudos.history.kind.maintenance": {
+    "text": "Kampanye pemeliharaan",
+    "source": "88540564338abd3d5e4ce0d260642215cc94a53a4d5d77dd9b43a87db7643e21"
+  },
+  "kudos.history.kind.featuredIllustration": {
+    "text": "Ilustrasi unggulan",
+    "source": "2ad772c77441a4303726738c251a5a8cf19cb0a193c0008313570d75f3bbc45c"
+  },
+  "kudos.button.collaboratorsOnly": {
+    "text": "Hanya kolaborator yang bisa memberi kudos",
+    "source": "d875ad37a1168cbefa29cfc71cc44b0e7c5274b773e8e11d9565049868e26b97"
+  },
+  "kudos.button.ownChange": {
+    "text": "Kamu tidak bisa memberi kudos untuk perubahanmu sendiri",
+    "source": "c147332b459a5768e4f6d559e4e5c1ea01234a6cd09a799986cf948268cf5e81"
+  },
+  "kudos.button.viaBounty": {
+    "text": "Dikreditkan lewat hadiah bounty, jadi tidak bisa ditarik kembali",
+    "source": "81b87a632f82eca0d7292544883302c7abc253abe6431f0c9c6263fb719c4675"
+  },
+  "kudos.button.retract": {
+    "text": "Kamu sudah memberi kudos untuk perubahan ini. Klik lagi untuk menarik",
+    "source": "cbf8396b6dc9a240f51a39f67901361931584df37fb44ff1fe6d585141a21717"
+  },
+  "kudos.button.thank": {
+    "text": "Terima kasih, {{username}}, sudah mengusulkan ini",
+    "source": "b57bee26235e66ba09d0aaf6b1a111fea2fe6b1a88714a9d536b4716fd5d6b80"
+  },
+  "kudos.button.thankFace": {
+    "text": "Terima kasih, {{username}}<0> sudah mengusulkan ini</0>",
+    "source": "aa7efeea108474a2b99bc5b314055eeb7e05db9a444c37133bb6df2a59433008"
+  },
+  "kudos.popover.none": {
+    "text": "Belum ada kudos. Jadilah yang pertama.",
+    "source": "0781f6f72dd55185cee8d158100538559d47e4bf315a11377ad98727be857331"
+  },
+  "kudos.popover.loading": {
+    "text": "Memuat…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "kudos.popover.failed": {
+    "text": "Tidak bisa memuat siapa yang memberi kudos.",
+    "source": "ef76b1b5d66e5d304e9f921c2331609dcc9c2a47a7cc16246e1a30cf79c5f287"
+  },
+  "kudos.popover.someone": {
+    "text": "seseorang",
+    "source": "2a59d59e3809f827ce709d3815e3950eef4a6a93af5557a93a7fdfba71460843"
+  },
+  "kudos.popover.you": {
+    "text": "kamu",
+    "source": "bb0347a468d97e98a9c00e37cebec1ab930f6f1221cae0f1fbb92b07e1900ba2"
+  },
+  "kudos.toast.quota": {
+    "text": "Kuota kudos mingguan habis.",
+    "source": "1a098775ff26fdfe4bc06cdd5eb8826c66f489846bbf21e3eb3a2ab943b20187"
+  },
+  "kudos.toast.ownChange": {
+    "text": "Kamu tidak bisa memberi kudos untuk perubahanmu sendiri.",
+    "source": "8ff163a3e1340116ad72db7e676f884fc4bec0627e5b2a04d40339d73ddef52d"
+  },
+  "kudos.toast.already": {
+    "text": "Kamu sudah memberi kudos untuk perubahan ini.",
+    "source": "03a23755b6a3aca4dd52154a0cd9cfb022faa48692e2cb033cf4f56cedf93a00"
+  },
+  "kudos.toast.notEligible": {
+    "text": "Perubahan ini tidak memenuhi syarat untuk menerima kudos.",
+    "source": "ba733a612671ce3e30f90a76bbbda51793a9bd97e83fb7c232af44641bb1025b"
+  },
+  "kudos.toast.giveFailed": {
+    "text": "Gagal memberi kudos. Coba lagi?",
+    "source": "e8adf142e0e974a5abd616d8f529003af04079aacc0b9a8c03f8bf553ff94c77"
+  },
+  "kudos.toast.giveNetwork": {
+    "text": "Kesalahan jaringan saat memberi kudos.",
+    "source": "bec56a1877e0b1e80af41a15fb74dfe7092ebee9d70a86e7a35d466143ba3a30"
+  },
+  "kudos.toast.nothingToRetract": {
+    "text": "Tidak ada kudos untuk ditarik.",
+    "source": "161752a2cc332af24671efae56676674a0c3718a5dc788c0a1b4ad0b978ccff3"
+  },
+  "kudos.toast.retractFailed": {
+    "text": "Gagal menarik kudos. Coba lagi?",
+    "source": "f79f5a87a4e30d7675a4f64c6178dd2d13e2cd25d54f3b2a7b83cd43ffcb8b49"
+  },
+  "kudos.toast.retractNetwork": {
+    "text": "Kesalahan jaringan saat menarik kudos.",
+    "source": "9cfb245068336b06e2b16c357bac98fd1e27b0ecd64f09a506e1b4ad0c32bce1"
+  },
+  "kudos.status.goingLiveTitle": {
+    "text": "{{release}}.",
+    "source": "9f8e3da4697beb42277c50aeaaf7a94245facaa86d455509d0e1d1aa8199baac"
+  },
+  "eventBar.datesTakingPart_other": {
+    "text": "{{start}} – {{end}} · {{count}} peserta",
+    "source": "0fa1bc52b91cf91aa82b7bf85c5fd81806e8e09b2288ac858d8fc920506fbcba"
+  },
+  "challenges.group.meta.allDone_other": {
+    "text": "{{done}}/{{count}} selesai",
+    "source": "3b31b7eb62ee55d8423abf6b46b6ae772eb24dcf308eef9f51e767777575c27c"
+  },
+  "challenges.timeLeft.hours_other": {
+    "text": "sisa {{count}} jam",
+    "source": "baddc4d8eb0941b5ea118acc6a91b45386a423589bf9081163181e780e112165"
+  },
+  "challenges.timeLeft.days_other": {
+    "text": "sisa {{count}} hari",
+    "source": "03844c3e95de2b1a76009f66b41ac5127053f28d121ec482397db36d755e17e5"
+  },
+  "challenges.points_other": {
+    "text": "{{points}} poin",
+    "source": "229a5329505f8e1b9d4088656355ae666cb74f2139bba6a0fc9ebc126b5c4b38"
+  },
+  "challenges.earned_other": {
+    "text": "Dapat {{points}} poin",
+    "source": "44dcb08a9fdabbc97ce942839a53bb589d6410996aa5f5741bc509b683bff8cb"
+  },
+  "challenges.soFar_other": {
+    "text": "{{points}} poin sejauh ini",
+    "source": "6cf89a95a95dc7b58563a46650a81fe1548ad591cdbcad580fdb36135627b352"
+  },
+  "challenges.locked.title_other": {
+    "text": "{{count}} tantangan terbuka setelah Memulai",
+    "source": "b1697d11e0539528a9f84c73201a04e9b1f56ff7f988c7f26805a73eef659f7e"
+  },
+  "challenges.locked.namesAndMore_other": {
+    "text": "{{names}} dan {{count}} lainnya",
+    "source": "62c152bb12b517f5da08c0a0106f5c6a348fd6c4a47481fde8fed3188c443086"
+  },
+  "progress.plain_other": {
+    "text": "<0>{{done}}/{{count}}</0><1>selesai</1>",
+    "source": "9ab7b605c87734836b3aa1855285798f3b994aa18de68f0c4170c43694de99b3"
+  },
+  "progress.plainLabel_other": {
+    "text": "{{done}} dari {{count}} selesai",
+    "source": "bfb4eaaef4aa4292a41903e2f0960fca96e2a109228c758694c737574f9a65bb"
+  },
+  "progress.first_other": {
+    "text": "<0>{{done}}/{{count}}</0><1>selesai di Tantangan pertama</1>",
+    "source": "a8a7b846a3657e7df9cbdafa5c38bbe41af870cb6e823285bb27846a0b94d6a9"
+  },
+  "progress.firstLabel_other": {
+    "text": "{{done}} dari {{count}} selesai di Tantangan pertama",
+    "source": "707b0470673a668b25e37b11671fcd70f6460b77bdfb06824160270b38ac9325"
+  },
+  "progress.season_other": {
+    "text": "<0>{{done}}/{{count}}</0><1>selesai di {{season}}</1>",
+    "source": "1e2625d163035d17f6a43663e6d09ad4582b8db35b8b410473913b37f3d8777f"
+  },
+  "progress.seasonLabel_other": {
+    "text": "{{done}} dari {{count}} selesai di {{season}}",
+    "source": "bc203496dee38ed5ce2df945f483c890374e229f6fce2b855459f32eccb3eb7c"
+  },
+  "progress.event_other": {
+    "text": "<0>{{done}}/{{count}}</0><1>selesai di acara ini</1>",
+    "source": "3f843ebefd8bd07f925a38c11fb29d62c47bd56875f83b44620548ec4ab53f2f"
+  },
+  "progress.eventLabel_other": {
+    "text": "{{done}} dari {{count}} selesai di acara ini",
+    "source": "4bc066db813172718ba9b4cde16e0adcaae29110fcba451fa616aba1b8257cc9"
+  },
+  "challenges.detail.participantsCount_other": {
+    "text": "Peserta · {{number}}",
+    "source": "fd07d0545702b3a4988fc53062a13f3fbba81d16d44476c04930f8968efa3e8a"
+  },
+  "challenges.detail.pointsBetween_other": {
+    "text": "total {{points}} poin",
+    "source": "0754f626b0087be5689f8aa967d294779383b345204f606f85a08c12db7d6aad"
+  },
+  "challenges.detail.showAll_other": {
+    "text": "Lihat semua {{number}} →",
+    "source": "d47ae2ef21cdcc9859ec2036f9168ba1724ef649f911188c2f6f91b2908a4213"
+  },
+  "challenges.countNote.weekAccepted_other": {
+    "text": "Tantangan ini menghitung hingga {{cap}} setiap minggu, dan kamu sudah mencapai {{cap}} minggu ini. Perubahan yang diterima lagi minggu ini tidak akan menambahnya. Dihitung ulang mulai Senin.",
+    "source": "39279e5063a6605e596ab3872fe5797fd69a3618836bd6af866156b336bd9ccf"
+  },
+  "challenges.countNote.week_other": {
+    "text": "Tantangan ini menghitung hingga {{cap}} setiap minggu, dan kamu sudah mencapai {{cap}} minggu ini. Tambahan minggu ini tidak akan menambahnya. Dihitung ulang mulai Senin.",
+    "source": "8b75a807fa5e8d46b5d8c0d6fd11253dd30f61535a053e5d5f4962dbdfd5e66a"
+  },
+  "challenges.countNote.accepted_other": {
+    "text": "Tantangan ini menghitung hingga {{cap}}, dan kamu sudah mencapai {{cap}}. Perubahan yang diterima lagi sebelum tantangan berakhir tidak akan menambahnya.",
+    "source": "b23a2bb0ce30766ade9c8515cdb5e4fc05712ee56978e2f14c696a784b23eece"
+  },
+  "challenges.countNote.other_other": {
+    "text": "Tantangan ini menghitung hingga {{cap}}, dan kamu sudah mencapai {{cap}}. Tambahan sebelum tantangan berakhir tidak akan menambahnya.",
+    "source": "6fe29ff46dad94bd227f72e6420d47eecc4d1e5d964b409afcfcb088c2f3f7ae"
+  },
+  "standing.takingPart_other": {
+    "text": "{{number}} peserta",
+    "source": "9e9535ec5f6365f8b9f3c451c5b67f9d0fbf5cd52fc99381d69184eaf01dd121"
+  },
+  "standing.pointsYou_other": {
+    "text": "{{points}} poin · kamu",
+    "source": "ae519286b3e95cf03c035de554efa38d593822779e9b285531c26cb28a6f8010"
+  },
+  "standing.pending_other": {
+    "text": "{{points}} poin didapat, belum masuk klasemen",
+    "source": "44378616ed5cee5f38101e38b694198657ffeba7000a1c312c4073f9e6fadd28"
+  },
+  "standing.eventPoints_other": {
+    "text": "{{points}} poin",
+    "source": "229a5329505f8e1b9d4088656355ae666cb74f2139bba6a0fc9ebc126b5c4b38"
+  },
+  "standings.challengesDone_other": {
+    "text": "{{done}} dari {{count}} tantangan selesai <0>· </0><1>Lihat tantangan →</1>",
+    "source": "d700438528ca1426ac197eb4a83fdf757a9783ee80de3974610906fff73b1c74"
+  },
+  "standings.showNonPodiumCount_other": {
+    "text": "Tampilkan pengguna non-podium ({{count}})",
+    "source": "fbae7a7dad5b77a2b9594fdd388527e7d92aaf5f29291bc9234c7b8737527b6f"
+  },
+  "standings.page_other": {
+    "text": "Halaman {{page}} dari {{pages}} · total {{count}}",
+    "source": "486019d6c7e1439c7448d55d6fb346efe2eb0b17d5d80fa11e95b141f068cda6"
+  },
+  "history.won_other": {
+    "text": "{{name}} menang dengan {{points}} poin",
+    "source": "a4b60e8f68786e3797e4a073ae302df137ae0dec65edbbfa4961043dbcc9047f"
+  },
+  "kudos.subtitle_other": {
+    "text": "{{count}} kudos per minggu, diatur ulang {{day}} pukul {{time}}. Berikan untuk perubahan yang kamu hargai.",
+    "source": "0681c0d91fd62e80df810135e2a9dbb6d8851d1f517fdeb0cfead5db1922647a"
+  },
+  "kudos.subtitleUtc_other": {
+    "text": "{{count}} kudos per minggu, diatur ulang Senin 00:00 UTC. Berikan untuk perubahan yang kamu hargai.",
+    "source": "1a3d654261673459dc3da2999d5a1fe047131d1c1d718f055110821ea1c29a5d"
+  },
+  "kudos.user.changesKudosed_other": {
+    "text": "{{count}} perubahan mendapat kudos",
+    "source": "3bbad066aa4cebb126c9eaca9d3520ecc0bdb21a42c89a15ad097d57ed3f37b2"
+  },
+  "kudos.user.live_other": {
+    "text": "{{count}} aktif",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  },
+  "kudos.user.issues_other": {
+    "text": "{{count}} permintaan",
+    "source": "30293c03a543ce241c75e76098aaca08f32f48225ccea58ecb56969d87a0e648"
+  },
+  "kudos.user.activeOn_other": {
+    "text": "aktif di {{count}} aplikasi",
+    "source": "9aa2bd981cde4feb271fbd23546045b1e1df8f4f6011032deac87272250c5936"
+  },
+  "kudos.user.notLiveYet_other": {
+    "text": "+{{count}} belum aktif",
+    "source": "2e38e43c3963f3fd33056704d55870edbcfb6a16d66b0a189dd68c08c815ff8d"
+  },
+  "kudos.person.onLive_other": {
+    "text": "{{count}} pada perubahan aktif",
+    "source": "5c8fdd2fdcdb70908536ffd8d1721e5b468cff2018f6054b019b7e4c1d9a0b82"
+  },
+  "kudos.person.live_other": {
+    "text": "{{count}} aktif",
+    "source": "90625b7547196b661bcf0f712ba724074a610fcff7c5025af576de15dd75fcec"
+  },
+  "kudos.person.made_other": {
+    "text": "{{count}} perubahan dibuat",
+    "source": "a15844318a6b67d286c60b47ec4f939f2abad1650d23905394112d52fc87c8fc"
+  },
+  "kudos.popover.givers_other": {
+    "text": "Pemberi kudos ({{count}})",
+    "source": "e43c87861cdc5b4a620c1c7403aa7df600603cbf6d08482cd1504083f55480d8"
+  },
+  "kudos.budget.left_other": {
+    "text": "<0><1>{{remaining}}</1><2> dari {{count}} tersisa</2></0>",
+    "source": "4d7e406cb0d69accd9701baf18335c07c663e053fc0c897500df637c5d47b771"
+  },
+  "kudos.budget.thanksBounties_other": {
+    "text": "<0><1>{{remaining}}</1><2> dari {{limit}} terima kasih</2></0><3> · </3><0><1>{{bountiesRemaining}}</1><2> dari {{count}} hadiah</2></0>",
+    "source": "3f08126f841b031cdb484be5c1d4b48f3c98410bf102a538222b766dac4a1422"
+  },
+  "kudos.budget.tip_other": {
+    "text": "Sisa {{remaining}} dari {{count}} kudos minggu ini. Diatur ulang {{day}} pukul {{time}} ({{utc}}).",
+    "source": "95f4d711a01c02956272cd799fc59bb77472ec8ef3b25cdfed8a0d2003b9ec90"
+  },
+  "kudos.budget.tipUtc_other": {
+    "text": "Sisa {{remaining}} dari {{count}} kudos minggu ini. Diatur ulang Senin 00:00 UTC.",
+    "source": "93f69e56356f505088185bd2ace4b0c69303e1dd97cf421c296ad8542a3f1e7f"
+  },
+  "kudos.budget.tipBounties_other": {
+    "text": "Sisa {{remaining}} dari {{limit}} terima kasih dan {{bountiesRemaining}} dari {{count}} hadiah minggu ini. Diatur ulang {{day}} pukul {{time}} ({{utc}}).",
+    "source": "960ffd5ef448d003e86ae85b263ab08025e89446b6cdec37a1546b728b816864"
+  },
+  "kudos.budget.tipBountiesUtc_other": {
+    "text": "Sisa {{remaining}} dari {{limit}} terima kasih dan {{bountiesRemaining}} dari {{count}} hadiah minggu ini. Diatur ulang Senin 00:00 UTC.",
+    "source": "73a3c4fc09dac3697cf36ebeec7fb53a81c58a8fce4c3602dc53b7905e96b5e6"
+  },
+  "progress.points_other": {
+    "text": "<0>{{earned}} dari {{total}} poin</0><1>didapat</1>",
+    "source": "cec5ec176fae8081b805795687e358197c43cb83a6912c3f963023388cb27ddc"
+  },
+  "progress.pointsLabel_other": {
+    "text": "{{earned}} dari {{total}} poin didapat",
+    "source": "ebe12a4fb24aead4702f32fb99950af445a8c0bdad165908b96fa4f18d474b4d"
+  }
+}

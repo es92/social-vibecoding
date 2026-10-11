@@ -1,0 +1,3534 @@
+{
+  "attachments.dropToAttach": {
+    "text": "Déposez les fichiers à joindre",
+    "source": "1ab1b095c1ed143e05cfebb9bd67a4594ced2ec7679efa2e48559f913e0d2f9d"
+  },
+  "attachments.remove": {
+    "text": "Retirer",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "attachments.removeNamed": {
+    "text": "Retirer {{file}}",
+    "source": "6ddbbe2e24ddd0d4cc163c86f4a40e1bd89916a2e242f41b6e21e254bc4d67b3"
+  },
+  "attachments.removeUnnamed": {
+    "text": "Retirer le fichier",
+    "source": "fffa2e32da712d499f75b15a2fae0e145c1f33dff29cac68e7e0a46f9bf9483a"
+  },
+  "friends.error.requestFailed": {
+    "text": "Échec de la requête ({{status}})",
+    "source": "2d17914c47b4706cff4ad20f981be0206e881c9d2bcc6f7167abc398d4045ae4"
+  },
+  "friends.error.cannotAdd": {
+    "text": "Vous ne pouvez pas ajouter @{{username}} comme ami pour le moment.",
+    "source": "bb3062dce54e25e73804e6605748b3050fae43e3ae08ab33faf877a0fd3858ee"
+  },
+  "friends.error.cannotAddUnnamed": {
+    "text": "Vous ne pouvez pas ajouter cette personne comme ami pour le moment.",
+    "source": "c98bc755753c02de5d10ec166fb4a3dbc2d9319deb1ac60e83a205cc3ade2786"
+  },
+  "friends.error.updateFailed": {
+    "text": "Impossible de mettre à jour cette amitié. Vérifiez votre connexion et réessayez.",
+    "source": "fd19809a266a0fe7cd0876dc76c9ea89b42e5c83301ff4ad1a58808e1d3ab94c"
+  },
+  "friends.button.requested": {
+    "text": "Demandé",
+    "source": "2d9e28289facab94b41f9592b7f55bc4fc10fed54e789669468e8da31c9a5caf"
+  },
+  "friends.button.requestedMenu": {
+    "text": "Demande envoyée à @{{username}}. Plus d’options",
+    "source": "843e3577de285299c5aa2f30370d4981d2bf85c8e067885e13dd300e48f7a6ac"
+  },
+  "friends.button.cancelRequest": {
+    "text": "Annuler la demande",
+    "source": "56196683592dab4dd8fee3b001f87e50ac53fba0a2c05a7a935ef1c92449d546"
+  },
+  "friends.button.cancelRequestConfirm": {
+    "text": "Annuler votre demande d’ami à @{{username}} ?",
+    "source": "e78adb52af7df29777c27280eba1e5c85dccdd91511583936e0ded6e6ade2673"
+  },
+  "friends.button.accept": {
+    "text": "Accepter",
+    "source": "89713b9c9c1b8f659c9f49db25e4a47886dd673fee248c3f650391f09a759cef"
+  },
+  "friends.button.decline": {
+    "text": "Refuser",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "friends.button.friends": {
+    "text": "Amis",
+    "source": "bd104d1b98d032274986497eeb7997c44a1d674b29140e43cd525d33468ecb6e"
+  },
+  "friends.button.friendsMenu": {
+    "text": "Ami avec @{{username}}. Plus d’options",
+    "source": "5ed275e94c6cbee9249fb99dafd6b5858a6aaa2159c33753bdbd467d7cfcbf52"
+  },
+  "friends.button.unfriend": {
+    "text": "Retirer des amis",
+    "source": "dd56a057ef33c7ab686843e595cd69731ea15b4b3ddb0e73a679ac03266adea9"
+  },
+  "friends.button.unfriendConfirm": {
+    "text": "Retirer @{{username}} de vos amis ? Cette personne ne sera pas prévenue.",
+    "source": "5f872ae8ab98c5a2fd88cb0a8c02a29ebd383e1b33c41af675361f19dbcb1ad0"
+  },
+  "friends.button.addFriend": {
+    "text": "Ajouter en ami",
+    "source": "c1f872819746c0934def8368e671c824dced32b9cbb53027f946ac8bf2f6245c"
+  },
+  "friends.search.failed": {
+    "text": "La recherche ne fonctionne pas pour le moment. Vérifiez votre connexion et réessayez.",
+    "source": "7892c378e34627eaaa8311f114dd1c742085698fd12404cf16d0f559bad9bc64"
+  },
+  "friends.search.searching": {
+    "text": "Recherche…",
+    "source": "c31723ab330289fe2cc4c7b69b7a862361da79a01f84893dc7b89a6de0ab4b42"
+  },
+  "friends.search.noMatch": {
+    "text": "Aucun résultat pour « {{query}} ».",
+    "source": "1c8d287219b9dbe94326ac0944b4d5119f77fba855ae49e3415f19ef4cd3395b"
+  },
+  "friends.search.label": {
+    "text": "Trouver des amis par nom d’utilisateur",
+    "source": "9cc90f02b8a175f93d7c1ff0102d43a04271890570553288e19301608c847d43"
+  },
+  "imageViewer.imageName": {
+    "text": "Image",
+    "source": "1aa4cb0bcca76e92e30677e809bb3d4b5c066715ef4d558184e319496bcc5125"
+  },
+  "imageViewer.openOriginal": {
+    "text": "Ouvrir l’original",
+    "source": "44a915faf3a909dc942739e32d327fe88bee550d1697741de10631f6fdabad5c"
+  },
+  "imageViewer.downloading": {
+    "text": "Téléchargement…",
+    "source": "a778d3492af219c3649f527b1219da0eedabb6b0f01190824331d293bd6dea24"
+  },
+  "imageViewer.tapToSave": {
+    "text": "Touchez pour enregistrer",
+    "source": "5b0b994caf6d4ab1ba8dab52828c545ff6a8a7c82aec617737755ef6a3acc250"
+  },
+  "imageViewer.download": {
+    "text": "Télécharger",
+    "source": "d6eafe82359100423c93c5ce53c352c1b51ca1e699215fcec3f5c5dd9bf12d24"
+  },
+  "imageSave.failed": {
+    "text": "Impossible de télécharger cette image.",
+    "source": "3ca72895925fcf235019ab1299566a0281c18f5bccb970ba87e2f556dc09c4a1"
+  },
+  "actions.toolbar": {
+    "text": "Actions du message",
+    "source": "f532ee1f7288365e1d032986764db0d9fa887b0239ab7dfa22bb36b4eb5cbe8c"
+  },
+  "actions.removeReaction": {
+    "text": "Retirer votre réaction {{emoji}}",
+    "source": "887977cb4ea5d3e8f22dec309130240760721cd8e1aff7ed218d226ff70a85c6"
+  },
+  "actions.reactWith": {
+    "text": "Réagir avec {{emoji}}",
+    "source": "17e9a7f7dab43170656c7c58a55ce134eb246f26079fc69e38e1c08f52aed1c2"
+  },
+  "actions.addReaction": {
+    "text": "Ajouter une réaction",
+    "source": "d97239a628a7c4715ef06c865556a7681e7e5dd96c418e4f8634360ca97722c8"
+  },
+  "actions.reply": {
+    "text": "Répondre",
+    "source": "c253f451bdd56431ff15f638498d0003c36aabd5b07e5d21aaa7f1391410747c"
+  },
+  "actions.unsaveMessage": {
+    "text": "Retirer des enregistrés",
+    "source": "a92fa23a300e5f99a462f28d90810fa3e8ff870944076bcfb241b0b74b508121"
+  },
+  "actions.saveMessage": {
+    "text": "Enregistrer le message",
+    "source": "46dc28c24b95f9e24d2bc6374267f38cf837a8c1f1b4d6b7c9f51f12c30f06bc"
+  },
+  "actions.savedTooltip": {
+    "text": "Enregistré. Cliquez pour retirer",
+    "source": "5c8c40fa7f20c01066c7a7ec89d748d21aee6e92f899e8b7018f2c9db75a6dfc"
+  },
+  "actions.saveTooltip": {
+    "text": "Enregistrer dans vos notifications",
+    "source": "ccd643dc82f28d61138e56157fd3da7075bb2c1838f506ec527f79a81195d4da"
+  },
+  "actions.moreActions": {
+    "text": "Plus d’actions",
+    "source": "f8d46c2570e70736d62beb6e2e8df321d7cb4842a2b894f2025c47b31871d9f1"
+  },
+  "actions.more": {
+    "text": "Plus",
+    "source": "d47d7cb0e4f8fd2be5ee07826694c18917d83ca77d0a01698582d05f432db996"
+  },
+  "actions.sheet.close": {
+    "text": "Fermer",
+    "source": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed"
+  },
+  "actions.sheet.previewAttachment": {
+    "text": "Pièce jointe",
+    "source": "040d2b3689dd1d4c9661e938f4633914f2c0aa0a1fbc3bc0047f554c0b16fd20"
+  },
+  "clipboard.copied": {
+    "text": "Copié",
+    "source": "8d525e5f158b9afe05f3122af363ac67763bdc4e1395b46597b320c289766ce3"
+  },
+  "clipboard.failed": {
+    "text": "Copie impossible. Votre navigateur a bloqué le presse-papiers.",
+    "source": "a0932a3d090a0675a61fcc20f042b3a6c38c12bb98be5535f8868bc5350ab56c"
+  },
+  "emoji.category.smileys": {
+    "text": "Smileys",
+    "source": "ba94d3d6c17f4a2774a3c70b1cf8152119b577a7cbe0463f6d061365ff504a7b"
+  },
+  "emoji.category.people": {
+    "text": "Personnes et mains",
+    "source": "f26f37066cc800efb27e8a67024e54ae16599ba10f82f9cd0e71199ffb423fa6"
+  },
+  "emoji.category.hearts": {
+    "text": "Cœurs",
+    "source": "a061d6997cde3cf8676d5eb64034563db5933c19a127184117db6d0b73b8058c"
+  },
+  "emoji.category.nature": {
+    "text": "Animaux et nature",
+    "source": "61106377a6b41da2ca1a709a0ac481f9648e1521fde4cf7103082064a16dcefc"
+  },
+  "emoji.category.food": {
+    "text": "Nourriture et boissons",
+    "source": "48f1e8beb4c38745be717c7faec055ebe776e728084c27ac46a72348795643b2"
+  },
+  "emoji.category.activities": {
+    "text": "Activités",
+    "source": "4d0076e6b4c71059f0403fbdebc3a4079e4eb2124cb19b3c6be54ff9c0a30d06"
+  },
+  "emoji.category.objects": {
+    "text": "Voyages et objets",
+    "source": "78e213fc96aa7563987a173630fbadde192b278c6d9a93f1570fc42f31701cca"
+  },
+  "emoji.category.symbols": {
+    "text": "Symboles",
+    "source": "9491fc41c39126862b949adbeffa73746599c495f2ea8d2132c6f61bcb433ace"
+  },
+  "emoji.category.recent": {
+    "text": "Récemment utilisés",
+    "source": "1e7cf8df9b6aa46c6aff58a6b6713c4205062e90a4d1d537a6d6185332a54f0e"
+  },
+  "emoji.picker.name": {
+    "text": "Ajouter une réaction",
+    "source": "4ae871ebc4c33d192318c216c18ec29d9c2e2ea016facc55dec568fdbd6feb06"
+  },
+  "emoji.picker.search": {
+    "text": "Rechercher un émoji",
+    "source": "87fafa7206f9f9e32ebbc41e4e3e31998657ce0af7858c4020d0daf02a183fbf"
+  },
+  "emoji.picker.categories": {
+    "text": "Catégories d’émojis",
+    "source": "fed48f971799221b359245aa6f8c2a0a648ce0b802f6a844095913df870a0325"
+  },
+  "emoji.picker.matching": {
+    "text": "Émojis correspondants",
+    "source": "2a7a222b016c1179e1895c81ac6e056341dd2c608561d138d98c9715950bd388"
+  },
+  "emoji.picker.noMatch": {
+    "text": "Aucun émoji ne correspond à « {{query}} ».",
+    "source": "647c84d390725601ae01dfda4b86e3c49d96f9fd436aa9801ba7911723ae59c6"
+  },
+  "emoji.picker.hint": {
+    "text": "Choisissez une réaction",
+    "source": "f32a1950ff2f85da86c38cd2d591d4df31d52ed6e0fc1b05527bac21b2520469"
+  },
+  "thread.activity.rootDeleted": {
+    "text": "Message supprimé",
+    "source": "7e94d4b9a46bed9bc030dfae9e10522d8089b42269c7a841a6682af3b4368afe"
+  },
+  "thread.activity.rootNoText": {
+    "text": "un message",
+    "source": "f53c09ca39717a45c62d9aca8f8113eddbfd5f81dcab0b33b1c1834075225e68"
+  },
+  "thread.activity.attachment": {
+    "text": "Pièce jointe",
+    "source": "040d2b3689dd1d4c9661e938f4633914f2c0aa0a1fbc3bc0047f554c0b16fd20"
+  },
+  "thread.summary.attachment": {
+    "text": "Pièce jointe",
+    "source": "040d2b3689dd1d4c9661e938f4633914f2c0aa0a1fbc3bc0047f554c0b16fd20"
+  },
+  "thread.summary.lastReply": {
+    "text": "Dernière réponse {{when}}",
+    "source": "095e0f0212cacacbb2b50af2b6153b151da5baba631a36532f4d36b65373a274"
+  },
+  "list.dot": {
+    "text": "{{first}} · {{second}}",
+    "source": "14a108d30e88688c55e4b23c0cca7409dc4e7c887c527ba0151b67abe0f30418"
+  },
+  "approval.list.comma": {
+    "text": "{{first}}, {{second}}",
+    "source": "4ad330968ee3e4b0b4549f3d0f1fdac6bf1abf85e5d2caa989da59f2fc1aa5f4"
+  },
+  "approval.list.and": {
+    "text": "{{first}} et {{last}}",
+    "source": "35feea28ee4ad5c1bd142d8274cc289bdf353283ded02cb210ea0271ce0dbec2"
+  },
+  "approval.list.or": {
+    "text": "{{first}} ou {{last}}",
+    "source": "7fce27630741e013d7ed96ca72150cd821b52babbd4574b7555b10a88bcfcf77"
+  },
+  "approval.list.from.you": {
+    "text": "vous",
+    "source": "bb0347a468d97e98a9c00e37cebec1ab930f6f1221cae0f1fbb92b07e1900ba2"
+  },
+  "approval.waiting": {
+    "text": "En attente de l’approbation de {{people}}",
+    "source": "be41e6b82e704e6623b31fde0743c00d6d8d5fc61a2394417e17628d6c376902"
+  },
+  "approval.waitingYou": {
+    "text": "En attente de votre approbation",
+    "source": "c0fdc3fd52052a1e5df51e969258bdb75d491f1e82f62db62702ce256bf53308"
+  },
+  "bot.job.firstVersion": {
+    "text": "Première version de {{project}}",
+    "source": "221c25508807a2a49074c81642c86f44c42093663c6b381cfa43f0e7bef0280e"
+  },
+  "bot.job.firstVersionUnnamed": {
+    "text": "Première version d’un projet",
+    "source": "12f32a35947b1b9bc515b5e1627fbd6b400b5d98e0308ffc89dfa88a2cd77260"
+  },
+  "bot.job.request": {
+    "text": "{{project}} n° {{number}}",
+    "source": "84343b71e8d3e476c05294dcfa0b6f26c019f3634faf8249cd1aebdb5d5dea0d"
+  },
+  "bot.job.requestUnnamed": {
+    "text": "Un projet n° {{number}}",
+    "source": "58e08f8ab7d7eafad7735732070cd8be3900950bddd1679ad6bd7b0670c83e70"
+  },
+  "bot.job.requestTitled": {
+    "text": "{{project}} n° {{number}} : {{title}}",
+    "source": "fcefdcb40f9866a4b95ac2f8a952760a94f533f2383b1c0f60dd2959e302404e"
+  },
+  "bot.job.requestTitledUnnamed": {
+    "text": "Un projet n° {{number}} : {{title}}",
+    "source": "8d9ca83e7b2fc8c5d1949020fddd66230915b82fe87cff22b1c981f9af8dbc64"
+  },
+  "bot.job.titled": {
+    "text": "{{project}} : {{title}}",
+    "source": "e0299f761f2defe4a4772b3227e0abbf2a8863025f24d75861ccecf342d4d0f6"
+  },
+  "bot.job.titledUnnamed": {
+    "text": "Un projet : {{title}}",
+    "source": "5a73a6209f324072fee86449a791365c0cec16b61d29e5a4a986ef9f7637a2e9"
+  },
+  "bot.job.unnamedProject": {
+    "text": "Un projet",
+    "source": "780ad41b1f8006cdea334dac0ad4367d7a0b9c41feb86770e064830c5666f4dd"
+  },
+  "bot.outcome.question": {
+    "text": "Vous a posé une question",
+    "source": "60079c1edd5c946a56c3d293fe334fc3f633d8e6aecea91499d29375fac8baef"
+  },
+  "bot.outcome.proposed": {
+    "text": "Construit. En attente d’approbation",
+    "source": "a7b4388340dfc017d6195100d12dcc8412d45243fb87f34eac31464feb78db09"
+  },
+  "bot.outcome.live": {
+    "text": "Construit. C’est en ligne",
+    "source": "8e851dc289b7313002d3d546c82a091190a240595d8f93cbd6288c8994e46eb4"
+  },
+  "bot.outcome.closed": {
+    "text": "Construit. La modification a été fermée",
+    "source": "d06992330b001ec7168e2a457f33e6c88d52e4fc80e1cb7d4241cea1bf5af3b0"
+  },
+  "bot.outcome.blocked": {
+    "text": "Impossible à construire tel quel",
+    "source": "04834d5b810dc0397bcce3120c43ce97baa9f82b28a7afbe9c9f60f6e35ee852"
+  },
+  "bot.outcome.buildFailed": {
+    "text": "Construction non terminée",
+    "source": "4f83179a2bc18fc37f9f34d4ecca3007246f14f89f812183055a5f4d5d022c8f"
+  },
+  "bot.outcome.person": {
+    "text": "Laissé à la décision du groupe",
+    "source": "aabb98abd6cb50e30c921be32f01ffb7a51ca0a953d14b93be37ef87f12243b0"
+  },
+  "bot.outcome.empty": {
+    "text": "Rien à construire pour l’instant",
+    "source": "d68f1c32c6645d7fed56d5b0954df12c2d29b5f9f215f771bd6d026ca427807d"
+  },
+  "bot.outcome.failed": {
+    "text": "Impossible de terminer l’examen",
+    "source": "41726b1098f1689f823c661999464279e223835dc2a347b66ed48bc153fe8ca7"
+  },
+  "bot.outcome.held": {
+    "text": "Prêt, mais retenu pour le moment",
+    "source": "1d771f71f8ab78a3f331b8876fc198f47810e7b8e729f20387f61bf2461ea0dc"
+  },
+  "bot.outcome.stopped": {
+    "text": "Arrêté avant la fin",
+    "source": "769f7d46f28a924d83c82cd7850392eb6effeab96882e1d4214c3b93b49d6317"
+  },
+  "bot.outcome.answer": {
+    "text": "Réponse donnée sur la modification",
+    "source": "dad674993e0f006c6bb6ad2bb1ec9d021eeb2ee81c1829e5ef35962fdbab1adb"
+  },
+  "bot.outcome.revise": {
+    "text": "Modification mise à jour",
+    "source": "44a13701373f45a4f094c6ec5c0d90df021050780b1d0f90f4cefa21fa4bad1c"
+  },
+  "bot.outcome.checking": {
+    "text": "Créé. Vérification avant que vous l’essayiez",
+    "source": "3e37c542f070bd160f07f624020530a3cc61ab5f59796728fd98df7c78a8cec4"
+  },
+  "bot.outcome.needsLook": {
+    "text": "Créé, mais à examiner",
+    "source": "5332a6d749e4fd848c86ae63b7b11932ef3a47a99a76476ac39bcd152d3e5d47"
+  },
+  "bot.outcome.goingLive": {
+    "text": "Créé. Mise en ligne en cours",
+    "source": "45451d02332cd82748ca4f4fa2bf071f377cae220cf3825fd2617f5fd4f38273"
+  },
+  "bot.tone.done": {
+    "text": "Terminé",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "bot.tone.built": {
+    "text": "Créé",
+    "source": "cfe0e6cbcf5cdd1aab44a39ab4d39713561bafab51fa7ff4654c980d5578ee5f"
+  },
+  "bot.tone.you": {
+    "text": "Vous attend",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "bot.tone.ended": {
+    "text": "Terminé sans suite",
+    "source": "7cdc804e6996997d599232fbf8ce066a4f6c0696e7b586fc7b3ee499f35d4559"
+  },
+  "bot.tone.trouble": {
+    "text": "Non terminé",
+    "source": "59ea57b56a6a1db522abd2a4726d88373324d674a421f7b7dc72eecfa6f7b372"
+  },
+  "bot.span.underMinute": {
+    "text": "moins d’une minute",
+    "source": "30d5117d18c11eda636513dba31a134203abd9b013da8662ec96a619147c2020"
+  },
+  "bot.span.minutes": {
+    "text": "{{minutes}} min",
+    "source": "e4f30a2d296f5cb7b6b274e9bdf2fd613fc8bfde59c1b799a08c66be237e3144"
+  },
+  "bot.span.hours": {
+    "text": "{{hours}} h",
+    "source": "31a27385799ac28e05a53612b1a35b70327165cedb98b93f893bda6972c992c2"
+  },
+  "bot.span.hoursMinutes": {
+    "text": "{{hours}} h {{minutes}} min",
+    "source": "f35242f6ebba66f2865026f3e8a8115aaa8d569767aa7d06a277403ab92d8720"
+  },
+  "bot.span.days": {
+    "text": "{{days}} j",
+    "source": "a27aa0363591527e42690794586930b1499c738ddf66817ac21c3c259f24598d"
+  },
+  "bot.span.daysHours": {
+    "text": "{{days}} j {{hours}} h",
+    "source": "426352b75aff12e03e11e9b4793a7ffdb42324bb2e6bc0ca6ef90580f98a5101"
+  },
+  "bot.activity.soFar": {
+    "text": "{{duration}} jusqu’ici",
+    "source": "671a388de363e90f5e200b3a272a85c0c04c5bb86cb35cc1d6f32a83a50765a7"
+  },
+  "bot.activity.soFarAfterFirstVersion": {
+    "text": "{{duration}} jusqu’ici, après {{waited}} d’attente de la première version",
+    "source": "38cf8b547b8a265610c5082a903e1e6eeac1f817dd054f0df1a84303b30e22fb"
+  },
+  "bot.activity.soFarAfterTurn": {
+    "text": "{{duration}} jusqu’ici, après {{waited}} d’attente de son tour",
+    "source": "4ba88fca7c78e0667070179f8b534c1c1e98be80eded312cd8eab9575d00cb3c"
+  },
+  "bot.activity.took": {
+    "text": "a pris {{duration}}",
+    "source": "f166d7a8d6319d92a4ae05f0226d6c07c42949de131057d833174829933897a9"
+  },
+  "bot.activity.tookAfterFirstVersion": {
+    "text": "a pris {{duration}}, après {{waited}} d’attente de la première version",
+    "source": "8dfad3f0c24763f7afdfba1f8c43bb2124590495a12dfdd31b384eae9c7b4d43"
+  },
+  "bot.activity.tookAfterTurn": {
+    "text": "a pris {{duration}}, après {{waited}} d’attente de son tour",
+    "source": "82a0c787fd00101ae3aee127c7f09905abf39bebb290e7d4e521294ea40439dc"
+  },
+  "bot.activity.ringStep": {
+    "text": "Étape {{step}} sur {{total}}",
+    "source": "598062492cad82125bbc9d2c69feb90a0473dcb3d28efc47585281dee22a2dbf"
+  },
+  "bot.activity.ringStepNamed": {
+    "text": "Étape {{step}} sur {{total}} : {{name}}",
+    "source": "51ada1ecb7c081da2c9ec7d0918396baccfd129c49f8b08c1b80434c293f80d6"
+  },
+  "bot.activity.ringWorking": {
+    "text": "En cours",
+    "source": "d55b6d1bbd56f5bfe03ec5ada5709ee9e06661755c40c233642416875be1b0e5"
+  },
+  "bot.activity.eyebrowStep": {
+    "text": "Étape {{step}} sur {{total}}",
+    "source": "598062492cad82125bbc9d2c69feb90a0473dcb3d28efc47585281dee22a2dbf"
+  },
+  "bot.activity.eyebrowStepNamed": {
+    "text": "Étape {{step}} sur {{total}} · {{name}}",
+    "source": "d5e1f3362df92421f971c0e28620fb57c40cb21bb880690206419eecdc5e2349"
+  },
+  "bot.activity.eyebrowWorking": {
+    "text": "En cours",
+    "source": "d55b6d1bbd56f5bfe03ec5ada5709ee9e06661755c40c233642416875be1b0e5"
+  },
+  "bot.activity.eyebrowUnknown": {
+    "text": "Activité",
+    "source": "38da1505ca8373288489495101b14f24ac95078f520ad64df18272aa6054f750"
+  },
+  "bot.activity.statusWorking": {
+    "text": "En cours",
+    "source": "d55b6d1bbd56f5bfe03ec5ada5709ee9e06661755c40c233642416875be1b0e5"
+  },
+  "bot.activity.youAsked": {
+    "text": "Votre demande : {{request}}",
+    "source": "336a1c001252b957e006700dc1bf42ed9fe29e8b80f559e62aa01c477da81d3a"
+  },
+  "bot.activity.loadFailed": {
+    "text": "Impossible de charger l’avancement.",
+    "source": "178402d87348a084bdc1626dfa634ea779f52d75e2ea5e294853930b0d4a5672"
+  },
+  "bot.activity.noProgress": {
+    "text": "Aucun avancement à afficher.",
+    "source": "2db8b14858a649e10e1473a42e6243937aa273228d7f56322f88de7ee15544e6"
+  },
+  "bot.activity.openChange": {
+    "text": "Ouvrir la modification",
+    "source": "6ab4b6b1c8a23c5d5c7b5342c4bb3534aa99fe4a3a8af176676280283b3da8df"
+  },
+  "bot.activity.openRequest": {
+    "text": "Ouvrir la demande",
+    "source": "3cfb5504e6a1736d0e6b0e5b7e7a50582d4115f3286e7cdf7f81e47d819fd57e"
+  },
+  "bot.activity.requestNumber": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "bot.activity.name": {
+    "text": "Activité de Homeroom bot : {{title}}",
+    "source": "307ebce88758f2087fbed26687382a5e5c0f76c4524fabcfd7a8a243311cf7c2"
+  },
+  "bot.phase.looking": {
+    "text": "Examen en cours",
+    "source": "48811824ed1219fd0a1858b814197bd450a05abbd93e879f58685ef3dbc8c35c"
+  },
+  "bot.phase.building": {
+    "text": "Création en cours",
+    "source": "87c5912f2cefdf9d7d1913611187fa8ab653a89a8d4b65f574812f899834e8b1"
+  },
+  "bot.phase.followingUp": {
+    "text": "Suivi de sa modification",
+    "source": "835a2b8ce1ee1d165942c9322eadb8603211158ad3b55b1a955bcd665b987e03"
+  },
+  "bot.phase.settingUp": {
+    "text": "Préparation du projet",
+    "source": "2fc725dfde4b25ee52851474e7880886c261c284f95782028529a7e701d2897f"
+  },
+  "bot.phase.queued": {
+    "text": "Attend son tour dans ma file",
+    "source": "0efac3c8aa2ae596d8fa22ae100c82b14aec529a457180ed0b9dead6828eb097"
+  },
+  "bot.phase.followUpQueued": {
+    "text": "Attend son tour pour suivre sa modification",
+    "source": "cbaaea043dd8c7a4df943bf2a0d59495e0200c1838fdd08e53694a07ca1b58bd"
+  },
+  "bot.phase.merging": {
+    "text": "Mise en ligne de la modification approuvée",
+    "source": "e1f4245c88d61e5504bc825a104aa4d7f12d75817fee9f2ebae96bf3c8f6d889"
+  },
+  "bot.last.question": {
+    "text": "Dernière action : question posée sur {{job}}",
+    "source": "d03070411db32b1f94cdb9d053138f6d18e53147efd2f3bad2bd4a7601bda8f6"
+  },
+  "bot.last.questionUnnamed": {
+    "text": "Dernière action : question posée sur Un projet",
+    "source": "97e5c536261f5d4c8a8ebaff9e2836bda820e494d18d6f5c401e8b394c90c8cc"
+  },
+  "bot.last.proposed": {
+    "text": "Dernière action : {{job}} en attente d’approbation",
+    "source": "21e4750006ab94775207bb37751886d3a9128822cd6322717ee67592d09dfdc0"
+  },
+  "bot.last.proposedUnnamed": {
+    "text": "Dernière action : Un projet en attente d’approbation",
+    "source": "faa0e22e42b3b76c221bc416ed1a7ce29b86bdebc106177403a685830e2a34d9"
+  },
+  "bot.last.live": {
+    "text": "Dernière action : {{job}} mis en ligne",
+    "source": "e2427635bc2e54a4fe082ae5593e5e4e08aa15cbbc1b12648723a2e293314de2"
+  },
+  "bot.last.liveUnnamed": {
+    "text": "Dernière action : Un projet mis en ligne",
+    "source": "13df69a68c4e144cb6e2bd91f7006cabe2998db4871ff8cb4d2f12a7532b7036"
+  },
+  "bot.last.closed": {
+    "text": "Dernière action : modification de {{job}} fermée",
+    "source": "995e4f894ed520c8c1aa7fedf3cec3e2b8cb8a9e328ef994576edf7086dfd6b2"
+  },
+  "bot.last.closedUnnamed": {
+    "text": "Dernière action : modification de Un projet fermée",
+    "source": "fde8169403a10c7195aec335b468d5f35074dff51d9e5a736b05d2da7c2cd218"
+  },
+  "bot.last.blocked": {
+    "text": "Dernière action : {{job}} impossible à créer tel quel",
+    "source": "509340113677bc0d63bbfc1e0917af4b83500ef866c8344bdc99cf18b47f280f"
+  },
+  "bot.last.blockedUnnamed": {
+    "text": "Dernière action : Un projet impossible à créer tel quel",
+    "source": "f696b6bb4215caaa862d4913f4c52c44eba88a6cde43ff6a2ad0aaad44bdeaaf"
+  },
+  "bot.last.buildFailed": {
+    "text": "Dernière action : création de {{job}} non terminée",
+    "source": "ca62c6dd26d93b07ea4299e7ea810c08582245c64f78756d863684b1ab53d6e6"
+  },
+  "bot.last.buildFailedUnnamed": {
+    "text": "Dernière action : création de Un projet non terminée",
+    "source": "0cdc71428269420abadea486d74806f4bbe93bd4017b6cb22d410926e6540a85"
+  },
+  "bot.last.person": {
+    "text": "Dernière action : {{job}} laissé à la communauté",
+    "source": "50fe8b1bda7312dc531c4ebdc4bccf316ee6bfd05c239b334b347627691febfb"
+  },
+  "bot.last.personUnnamed": {
+    "text": "Dernière action : Un projet laissé au groupe",
+    "source": "42be52fc5bdb81f2f1ae0ed14cc3bef934db7e6dc87baa2fe716f83f7eb48b56"
+  },
+  "bot.last.empty": {
+    "text": "Dernière action : rien à construire dans {{job}}",
+    "source": "ea315e089ef4ba916513983e58937a25e531d0ae25a94fa4696ece855c902492"
+  },
+  "bot.last.emptyUnnamed": {
+    "text": "Dernière action : rien à construire dans Un projet",
+    "source": "8481aee5d76ab3f5d03ff86ee0bde47408877e2b8d65752d582ce19ddbb1e3cc"
+  },
+  "bot.last.failed": {
+    "text": "Dernière action : impossible de terminer l’examen de {{job}}",
+    "source": "32a84f022aeaf7b9ed96e0a338d294ecff0d86b5f35d6471856095218a6a5a73"
+  },
+  "bot.last.failedUnnamed": {
+    "text": "Dernière action : impossible de terminer l’examen de Un projet",
+    "source": "2381d688c2466fd3d400ee1629fddf23098c463c7e2ad36e984f2ba2e3b17d47"
+  },
+  "bot.last.held": {
+    "text": "Dernière action : {{job}} mis en attente pour l’instant",
+    "source": "0f3fb89146f4086b5551e6cca5224817ce113260aa849ee0c4dbe29bac0a0219"
+  },
+  "bot.last.heldUnnamed": {
+    "text": "Dernière action : Un projet mis en attente pour l’instant",
+    "source": "a3f72266bf35b9657b719b1a9b60eb1f2f9237a54794242d2822cad5cb2afe8b"
+  },
+  "bot.last.stopped": {
+    "text": "Dernière action : arrêt sur {{job}}",
+    "source": "5cf2589e073c4c57d321a76157f943095b9e3df493bf28e7e389a06374d26279"
+  },
+  "bot.last.stoppedUnnamed": {
+    "text": "Dernière action : arrêt sur Un projet",
+    "source": "860f63093beb4bc36f08253bf8e85be2c8b0a395226fb553787548aa9c8e8963"
+  },
+  "bot.last.answer": {
+    "text": "Dernière action : réponse sur {{job}}",
+    "source": "7d3a2b88f8885128f9750902cc7f4e933e76d95bfa74d2672d02397f2c78253e"
+  },
+  "bot.last.answerUnnamed": {
+    "text": "Dernière action : réponse sur Un projet",
+    "source": "9f9dda2339c0d574663675ba403d75e874f68bbc6c25e051e08cf2c530b90983"
+  },
+  "bot.last.revise": {
+    "text": "Dernière action : modification mise à jour pour {{job}}",
+    "source": "c8b7e8c7d79bfa4d3acfcd3603d4d5b6d76e8f9881a5ca796993cbb3305a69d9"
+  },
+  "bot.last.reviseUnnamed": {
+    "text": "Dernière action : modification mise à jour pour Un projet",
+    "source": "f8826b8507b303b9e5a1a0f0c3fb2ed923f70bb746307109fe61e5ab27a5c490"
+  },
+  "bot.last.checking": {
+    "text": "Dernière action : vérification de {{job}} avant votre essai",
+    "source": "e8b441b613cfe94afe9602583be91ef05bbb355080452a993874f19e0cacbd2c"
+  },
+  "bot.last.checkingUnnamed": {
+    "text": "Dernière action : vérification de Un projet avant votre essai",
+    "source": "fae651f38f98beb8bce75b2950f3feebfa1a5c2f0856bcb10bf716e776d6b68a"
+  },
+  "bot.last.needsLook": {
+    "text": "Dernière action : {{job}} demande votre attention",
+    "source": "6c0ff57e9b62cea9f55a0e2d8e21dda56235830729959830a911bb37df641909"
+  },
+  "bot.last.needsLookUnnamed": {
+    "text": "Dernière action : Un projet demande votre attention",
+    "source": "07ff2be2d98c45e65537f7d2799126037973e3878b2a7018129ccbb75f8c7ebc"
+  },
+  "bot.last.goingLive": {
+    "text": "Dernière action : mise en ligne de {{job}}",
+    "source": "dbc0b64fee9f840018506501ceae32b9b0cd774d1ddf0fe74241e7d4c91016c1"
+  },
+  "bot.last.goingLiveUnnamed": {
+    "text": "Dernière action : mise en ligne de Un projet",
+    "source": "41586027850f1423d43059b1eec76e764938e686da8f67b2c94d1557f444c81d"
+  },
+  "bot.tray.activity": {
+    "text": "Activité",
+    "source": "38da1505ca8373288489495101b14f24ac95078f520ad64df18272aa6054f750"
+  },
+  "bot.tray.workingOn": {
+    "text": "Travaille sur {{job}}",
+    "source": "ab4c251fa4969276a22a07addca8f5fda9a33352bd55b4fcc7b51a258ea13bf9"
+  },
+  "bot.tray.workingOnUnnamed": {
+    "text": "Travaille sur Un projet",
+    "source": "71a4a048235a6d9914db9ca17f55282c74623ccef4ceece41416c31f58ae2ef9"
+  },
+  "bot.tray.workingOnPhase.looking": {
+    "text": "Travaille sur {{job}} · lecture en cours",
+    "source": "95a3667923e59f4b9d5fe3abc093ab3a77a6e6350b1b98a764eb5dac1fc02305"
+  },
+  "bot.tray.workingOnPhase.lookingUnnamed": {
+    "text": "Travaille sur Un projet · lecture en cours",
+    "source": "b76a1b1f5dfda55d26a61beb736d97d844a8e5d9927fbe9faa1f07008cee0d21"
+  },
+  "bot.tray.workingOnPhase.building": {
+    "text": "Travaille sur {{job}} · construction",
+    "source": "a1905481916322cb9ba59c524b0c9eeb5194208d25f2e1824b1732f240c04746"
+  },
+  "bot.tray.workingOnPhase.buildingUnnamed": {
+    "text": "Travaille sur Un projet · construction",
+    "source": "56bde460d89a1e49b5c3a5d97814616c46a41b1afc28ac5b1ec87b9104a3c8a6"
+  },
+  "bot.tray.workingOnPhase.followingUp": {
+    "text": "Travaille sur {{job}} · suivi",
+    "source": "3c8e2159563b768f1b3a3b7357afef531a376f1bde48de4c57e99601529dd147"
+  },
+  "bot.tray.workingOnPhase.followingUpUnnamed": {
+    "text": "Travaille sur Un projet · suivi",
+    "source": "32a7ab446a6afc3a5e83971a423428da90521749ba17c5b0f7fa5c78f5875ab3"
+  },
+  "bot.tray.workingOnPhase.settingUp": {
+    "text": "Travaille sur {{job}} · préparation",
+    "source": "55c71fa32bc28f9f207acceb67c98adca11d406183a6edb06990d6944b6d3af1"
+  },
+  "bot.tray.workingOnPhase.settingUpUnnamed": {
+    "text": "Travaille sur Un projet · préparation",
+    "source": "acbf2f8d97ed6cb4eafe074b2a397f306ac1db09286c992262efcc51e0308775"
+  },
+  "bot.tray.workingOnPhase.queued": {
+    "text": "Travaille sur {{job}} · dans ma file",
+    "source": "08403a52b1d92a03a805f3bbbd8885d845baba7a52a722bb5bdca6c94e7319c7"
+  },
+  "bot.tray.workingOnPhase.queuedUnnamed": {
+    "text": "Travaille sur Un projet · dans ma file",
+    "source": "6d94165c426e1bf35db9a88635661ddce59d1ceb77578867713cf1766388b9a7"
+  },
+  "bot.tray.workingOnPhase.followUpQueued": {
+    "text": "Travaille sur {{job}} · suivi en file d’attente",
+    "source": "e7738fdad3648bddbe25729a91ce9974076c3934aad93f8f1b3a2aaf3e964544"
+  },
+  "bot.tray.workingOnPhase.followUpQueuedUnnamed": {
+    "text": "Travaille sur Un projet · suivi en file d’attente",
+    "source": "a8d63ce8550c39796e4d914f7711adbcd6478c61f3544c61cb85476ac080eb18"
+  },
+  "bot.tray.workingOnPhase.merging": {
+    "text": "Travaille sur {{job}} · mise en ligne",
+    "source": "4148c28887f145df0496e5cf207f079672fe01da465792c8fd55470440de17e1"
+  },
+  "bot.tray.workingOnPhase.mergingUnnamed": {
+    "text": "Travaille sur Un projet · mise en ligne",
+    "source": "b515d4d80eea82dabcac1a97a47ee10bef6d2c72ae7c3b9044383d957a528d88"
+  },
+  "bot.tray.workingOnShort": {
+    "text": "Travaille sur {{job}}",
+    "source": "ab4c251fa4969276a22a07addca8f5fda9a33352bd55b4fcc7b51a258ea13bf9"
+  },
+  "bot.tray.workingOnShortUnnamed": {
+    "text": "Travaille sur Un projet",
+    "source": "71a4a048235a6d9914db9ca17f55282c74623ccef4ceece41416c31f58ae2ef9"
+  },
+  "bot.tray.jobQueued": {
+    "text": "{{job}} en file",
+    "source": "b1ae540df5b50bb36b3fde49f71f3ca35e860f2187c3780607de462431f2cbde"
+  },
+  "bot.tray.jobQueuedUnnamed": {
+    "text": "Un projet en file",
+    "source": "fd9c3f6f9970c8a1587048e1030e2f42ad04a36b260cd909c3c2631072a3a631"
+  },
+  "bot.tray.jobNeedsYou": {
+    "text": "{{job}} vous attend",
+    "source": "e53142ed47a955a51094f8d14e63ed13b36057d5d55b02700b58071a54080d98"
+  },
+  "bot.tray.jobNeedsYouUnnamed": {
+    "text": "Un projet vous attend",
+    "source": "77974ad6422f9df5811e47efb63688ffaaa425e14b49f6bc8b8e9e3deaeb38d1"
+  },
+  "bot.tray.jobNeedsYouShort": {
+    "text": "{{job}} vous attend",
+    "source": "e53142ed47a955a51094f8d14e63ed13b36057d5d55b02700b58071a54080d98"
+  },
+  "bot.tray.jobNeedsYouShortUnnamed": {
+    "text": "Un projet vous attend",
+    "source": "77974ad6422f9df5811e47efb63688ffaaa425e14b49f6bc8b8e9e3deaeb38d1"
+  },
+  "bot.tray.button": {
+    "text": "Activité",
+    "source": "38da1505ca8373288489495101b14f24ac95078f520ad64df18272aa6054f750"
+  },
+  "bot.tray.openChange": {
+    "text": "Ouvrir la modification",
+    "source": "6ab4b6b1c8a23c5d5c7b5342c4bb3534aa99fe4a3a8af176676280283b3da8df"
+  },
+  "bot.tray.openRequest": {
+    "text": "Ouvrir la demande",
+    "source": "3cfb5504e6a1736d0e6b0e5b7e7a50582d4115f3286e7cdf7f81e47d819fd57e"
+  },
+  "bot.tray.requestNumber": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "bot.tray.openProject": {
+    "text": "Ouvrir le projet",
+    "source": "5e5eba7f41abfe4ca8626fed02d332b15460bdec03f3313290986aa31a44ef05"
+  },
+  "bot.tray.eyebrowStep": {
+    "text": "Étape {{step}} sur {{total}}",
+    "source": "598062492cad82125bbc9d2c69feb90a0473dcb3d28efc47585281dee22a2dbf"
+  },
+  "bot.tray.eyebrowStepNamed": {
+    "text": "Étape {{step}} sur {{total}} · {{name}}",
+    "source": "d5e1f3362df92421f971c0e28620fb57c40cb21bb880690206419eecdc5e2349"
+  },
+  "bot.tray.eyebrowWorking": {
+    "text": "En cours",
+    "source": "d55b6d1bbd56f5bfe03ec5ada5709ee9e06661755c40c233642416875be1b0e5"
+  },
+  "bot.tray.soFar": {
+    "text": "{{duration}} jusqu’ici",
+    "source": "671a388de363e90f5e200b3a272a85c0c04c5bb86cb35cc1d6f32a83a50765a7"
+  },
+  "bot.tray.waitingOnYou": {
+    "text": "En attente de vous",
+    "source": "57dccc5db9b096172f80ed94d7ba1886dbd8ad7c582831c78f0a3e4ab095ceec"
+  },
+  "bot.tray.panelName": {
+    "text": "Activité de Homeroom bot",
+    "source": "5bfda20dbeafea54a03cd39ea0bf42441a15536575c07d2eb83d7a4ebc55f540"
+  },
+  "bot.tray.loadFailed": {
+    "text": "Impossible de charger mes tâches en cours.",
+    "source": "e8390dd55a8b4638709b03fc3abf1d5e606bb280f92288fc278923dd5aff8922"
+  },
+  "bot.tray.loading": {
+    "text": "Chargement de l’activité",
+    "source": "0acd8adfdd7a67964063ab821d5c0833781384d6f8169f717f372ac53055edd3"
+  },
+  "bot.tray.sectionNow": {
+    "text": "En ce moment",
+    "source": "fe18013d93d22f4f2a70344d30c00fe62d2ef29189ae5d25ccbda81fbd9c92b0"
+  },
+  "bot.tray.sectionNeedsYou": {
+    "text": "Vous attend",
+    "source": "74b6abdf59690fdffec2059089487cd63658249da5301cbf065e9977518fbd8f"
+  },
+  "bot.tray.idle": {
+    "text": "Je ne travaille sur rien pour vous en ce moment.",
+    "source": "9d3a3f8e6c7b4d857e56afe0c5c861509ef3cb9fca45b65ceb26debefbc348d6"
+  },
+  "bot.tray.hideHistory": {
+    "text": "Masquer l’historique",
+    "source": "db1ddf34fe743a1eaa8d68a74c2f12ac070c6247e313dc49f4624aa2b6a958df"
+  },
+  "bot.tray.empty": {
+    "text": "Rien pour l’instant. Quand je travaille sur une de vos demandes, elle apparaît ici.",
+    "source": "bf90bb46720364427451f52cd6a36c774ff2f26a06d3f38bd39718e23e668044"
+  },
+  "bot.tray.stale": {
+    "text": "Actualisation impossible pour le moment ; ces informations sont peut-être périmées.",
+    "source": "279155b53613ccaf793fed128e1865640abcfa014b840ece066d2749bb3fc5ad"
+  },
+  "bot.head.requestNumber": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "bot.head.firstVersion": {
+    "text": "Première version",
+    "source": "50ee9f04064fc0a781fcec6dc5f1d814600157429f6d4620134dda0fe5667bb5"
+  },
+  "bot.head.notFiled": {
+    "text": "{{project}} · pas encore déposée",
+    "source": "fae8bc5da0e389e4ffecdeac13869ae65d04d1a12f0bb2fa781574447a67c7c0"
+  },
+  "bot.ready.title.project": {
+    "text": "{{project}} est prêt à essayer",
+    "source": "2ec80934957efe6c944453ebc6bee0cb3e19a65dd3dc5b5dd5bd21f1b1fdafb5"
+  },
+  "bot.ready.title.projectBroken": {
+    "text": "{{project}} est créé, mais tout ne fonctionne pas encore",
+    "source": "33d43b120e84c66f3f9a3bc7c895c828ea13c4e42b737078856dc51f005a160f"
+  },
+  "bot.ready.title.unnamed": {
+    "text": "Votre projet est prêt à essayer",
+    "source": "bf1f819cd97cda89ee4376de3e2c925cee3bccad89e56326f7e9cea98fe888ef"
+  },
+  "bot.ready.title.unnamedBroken": {
+    "text": "Votre projet est créé, mais tout ne fonctionne pas encore",
+    "source": "0de04680f241d5930261a0604a1c284023b73c8ead599e3d90063b123e10dd75"
+  },
+  "bot.ready.title.change": {
+    "text": "Votre modification de {{project}} est prête à essayer",
+    "source": "05f66f8a2ce3510a0a09f8c7b30b5b3f6c3452c029f83b106623f2d3b83a6154"
+  },
+  "bot.ready.title.changeBroken": {
+    "text": "Votre modification de {{project}} est créée, mais tout ne fonctionne pas encore",
+    "source": "3e099efccb33c0a671cde98d92c1b98cf25a63f29735198400d6d29e3a053866"
+  },
+  "bot.ready.title.changeUnnamed": {
+    "text": "Votre modification de votre projet est prête à essayer",
+    "source": "428d2b1103c135955908364cf92724d4936489784b986ee959a58afdc57edb10"
+  },
+  "bot.ready.title.changeUnnamedBroken": {
+    "text": "Votre modification de votre projet est créée, mais tout ne fonctionne pas encore",
+    "source": "4f05db58730930267611ccdc529fecc9a1d780e6298c171949a21117c80a3105"
+  },
+  "bot.ready.brokenPair": {
+    "text": "{{first}} ; {{second}}",
+    "source": "8e8b6650169aa65bf72d54e2e04ba6a45f3d798c5b8e6219777badd30a834db0"
+  },
+  "bot.ready.goingLive": {
+    "text": "Mise en ligne",
+    "source": "408c1ebf920d66bc7b4ac60c3d9954a4e596c5e46bcf20954b469becd911edf6"
+  },
+  "bot.ready.youAsked": {
+    "text": "Votre demande : {{request}}",
+    "source": "336a1c001252b957e006700dc1bf42ed9fe29e8b80f559e62aa01c477da81d3a"
+  },
+  "bot.ready.choices": {
+    "text": "Choix",
+    "source": "2f75b64ac9163e816311e5c21589498f54c449f2da1d1436cb9ab2f10c160af5"
+  },
+  "bot.ready.line.live": {
+    "text": "C’est en ligne.",
+    "source": "60da6fe080769aeb4b646a8e9d1f362875e622c91a857f780f16d0ba213e6244"
+  },
+  "bot.ready.line.goingLive": {
+    "text": "C’est approuvé et en cours de mise en ligne.",
+    "source": "0d227d34966bf77b39b699a68fabde7b4f2887d85b81bded313e80f2d2e3be46"
+  },
+  "bot.ready.line.withdrawn": {
+    "text": "Cette modification a été fermée sans être mise en ligne.",
+    "source": "7eecf57f1d6de536d7afe699a609a5954a1d0446f50bbe23e3ea1eb8060996b7"
+  },
+  "bot.ready.line.approved": {
+    "text": "Vous l’avez approuvée.",
+    "source": "62187898d91000a1d73d2642e421d6668ec6d76ff9a2693f6442d2c55d10145d"
+  },
+  "bot.ready.line.stale": {
+    "text": "Cette modification a été mise à jour. Essayez d’abord la nouvelle version.",
+    "source": "fc0e1f5f670468962e709959fcba242848bf733ac0276c076a1c663bb66ea57b"
+  },
+  "bot.ready.line.updated": {
+    "text": "Cette modification a été mise à jour. La nouvelle version est plus bas.",
+    "source": "fbe52612072debac02d42adade0ff1f35006452d176b5a786dec903427c0652a"
+  },
+  "bot.ready.line.closed": {
+    "text": "Plus nécessaire.",
+    "source": "ace70031342ec31130d083d6d95b8200856c8169452d7e5427a80cd89ea3f3f3"
+  },
+  "bot.ready.approved.soon": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne dans une minute ou deux.",
+    "source": "031f9cc4611d29f566254b73524f7eb6d46f24e2d00a28b38bf90dd10162d463"
+  },
+  "bot.ready.approved.none.none": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne dès qu’elle aura les approbations nécessaires.",
+    "source": "d58855575f219ae40dd2ecce4e91da36d8047e128bd5ff6f36022599e59ca77b"
+  },
+  "bot.ready.approved.none.today": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "f0fea67abf2ab7e5c483343460f370b02b5fe89e1c32ee22f35ad012589e1b65"
+  },
+  "bot.ready.approved.none.tomorrow": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne demain si personne ne s’y oppose.",
+    "source": "9c2bb51196c27f7575c3e9650603f0c61b27ca782bbee938f6fd4e3bb3b01e1a"
+  },
+  "bot.ready.approved.none.weekday": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne {{weekday}} si personne ne s’y oppose.",
+    "source": "9bfa78927a3e65f2fa0b8b40d7eb085ec364e1376f6b05cd0736827f17340653"
+  },
+  "bot.ready.approved.none.date": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne le {{date}} si personne ne s’y oppose.",
+    "source": "039195cd9062d485c76f75ad0cb186ed62320e599ab0b1a68e21b84f17612dcc"
+  },
+  "bot.ready.approved.person.none": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand @{{username}} l’aura approuvée aussi.",
+    "source": "0cb22fb395ffce57fed7d10bfea1b42785cfb557c759186beaba3a6f0c97c44d"
+  },
+  "bot.ready.approved.person.today": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand @{{username}} l’aura approuvée aussi, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "030b7bcc7625a27fd256febd7f36d46af729aa4d53410aa66d5456eb8f2b22f3"
+  },
+  "bot.ready.approved.person.tomorrow": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand @{{username}} l’aura approuvée aussi, ou demain si personne ne s’y oppose.",
+    "source": "b8825e18e9767a144af76b7ef5ab8aa8d5b31ce8202a6a2a582232e4e5afbd78"
+  },
+  "bot.ready.approved.person.weekday": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand @{{username}} l’aura approuvée aussi, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "4e487fa252e44b9398fffa53660e9e79ec3a4e598121f7759c790c167546ced7"
+  },
+  "bot.ready.approved.person.date": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand @{{username}} l’aura approuvée aussi, ou le {{date}} si personne ne s’y oppose.",
+    "source": "e4b09880056437299260ceca63bd02c0ffa353c829186f7033dbf025ba671feb"
+  },
+  "bot.ready.approved.people.none": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand {{people}} l’auront approuvée aussi.",
+    "source": "635305c6942766fdad24da3bd4e66ddc67e719d9464e1028ca97c7f22e628731"
+  },
+  "bot.ready.approved.people.today": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand {{people}} l’auront approuvée aussi, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "7c8d8cdcd3cfd0d057327593053fea5e2fdb5dc46e1103d200655c8ad28e237b"
+  },
+  "bot.ready.approved.people.tomorrow": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand {{people}} l’auront approuvée aussi, ou demain si personne ne s’y oppose.",
+    "source": "4b0e99e4b527e7c23e09c2d2b1c9414e994ab96a98cdfd69cd2193ae0dc6cd98"
+  },
+  "bot.ready.approved.people.weekday": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand {{people}} l’auront approuvée aussi, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "59510a83f293da3e849192c83a8fc89e36fc255cabf8d3184fc5931bbf0a04a0"
+  },
+  "bot.ready.approved.people.date": {
+    "text": "Vous l’avez approuvée. Elle sera en ligne quand {{people}} l’auront approuvée aussi, ou le {{date}} si personne ne s’y oppose.",
+    "source": "2668fa138a4e7c0f590855dfbb97420d5c766cd38ba06e53f69cc8e84c2568f7"
+  },
+  "bot.plan.step": {
+    "text": "Étape {{step}} sur {{total}}",
+    "source": "598062492cad82125bbc9d2c69feb90a0473dcb3d28efc47585281dee22a2dbf"
+  },
+  "bot.plan.stepNamed": {
+    "text": "Étape {{step}} sur {{total}} · {{name}}",
+    "source": "d5e1f3362df92421f971c0e28620fb57c40cb21bb880690206419eecdc5e2349"
+  },
+  "bot.plan.working": {
+    "text": "En cours",
+    "source": "d55b6d1bbd56f5bfe03ec5ada5709ee9e06661755c40c233642416875be1b0e5"
+  },
+  "bot.plan.title": {
+    "text": "Mon plan pour {{project}}",
+    "source": "c6c52cb2fd53f2c25be13de625e35509d960d84b3cfba01608bb6b546943f79d"
+  },
+  "bot.plan.titleUnnamed": {
+    "text": "Mon plan pour votre projet",
+    "source": "c93bced33fc1d964e23b8467dafdd389fbb848e38456c823dca0eaa0cca4de37"
+  },
+  "bot.plan.titleInApp": {
+    "text": "Voici mon plan pour {{project}} :",
+    "source": "afb5dd84ea4404ad57d379d62971076c09b8fe78428cbdb35272c74c2839ec62"
+  },
+  "bot.plan.titleInAppUnnamed": {
+    "text": "Voici mon plan pour votre projet :",
+    "source": "a8672002d6e7cbccbde1c7590e3406754a4abdbb023ba05feb4f7ba1bae054b6"
+  },
+  "bot.plan.name": {
+    "text": "Plan pour {{project}}",
+    "source": "7de39e85a182fa0f54970244e2060949662b4e0b0d2e71d0be5987d6e5317bea"
+  },
+  "bot.plan.nameUnnamed": {
+    "text": "Plan pour votre projet",
+    "source": "a3b349bfcd7a848262faf7ec5324b3be622659242256368a212937b68c48ac23"
+  },
+  "bot.plan.replaced": {
+    "text": "Remplacé par un plan plus récent",
+    "source": "c5d17bccac39855e7c9bbaffd1e83764c8d1c8b65e85d8238c5e3016cb966bea"
+  },
+  "bot.plan.build": {
+    "text": "Lancer la création",
+    "source": "5e383207c65159ba379ca0ca2a83d23f2d145626b4d9527af53b1a5441151549"
+  },
+  "bot.plan.change": {
+    "text": "Modifier quelque chose",
+    "source": "870a8e1ae01badb9b70b6108bac3eeb768711b8ff3660ff69c7d42449d6ab3b5"
+  },
+  "bot.plan.building": {
+    "text": "Création en cours",
+    "source": "87c5912f2cefdf9d7d1913611187fa8ab653a89a8d4b65f574812f899834e8b1"
+  },
+  "bot.plan.state.built": {
+    "text": "Création en cours",
+    "source": "a2de03a2b5bdfcd8dcbf1ddbffc53cdd48097c7b16bab78435c521136fd6e04e"
+  },
+  "bot.plan.state.stopped": {
+    "text": "Je n’attends plus de réponse sur ce plan. Répondez pour le reprendre.",
+    "source": "91d435f9469dd92533b2e5360feb93e7f751a9de605a897944ae9b96dbe26e0a"
+  },
+  "bot.plan.state.changing": {
+    "text": "Vous avez demandé des modifications. Un nouveau plan arrive.",
+    "source": "9f866b568f00962af76f1717d30e4afba9ec7a28e556744fd8e5711f4fac1dc9"
+  },
+  "bot.plan.state.closed": {
+    "text": "Plus nécessaire.",
+    "source": "ace70031342ec31130d083d6d95b8200856c8169452d7e5427a80cd89ea3f3f3"
+  },
+  "bot.questions.suggested": {
+    "text": "suggéré",
+    "source": "8ad7037556d079419d067ab67761390f62a7db8ed3f4696554b320f13b18da97"
+  },
+  "bot.questions.actions": {
+    "text": "Actions",
+    "source": "ff8059dc6752afdd30d275932b1d5031a2ec854b387a8c57ecc6689915293a43"
+  },
+  "bot.questions.build": {
+    "text": "Lancer la création",
+    "source": "5e383207c65159ba379ca0ca2a83d23f2d145626b4d9527af53b1a5441151549"
+  },
+  "bot.questions.somethingElse": {
+    "text": "Autre chose",
+    "source": "cc72843144841a6f8110b7ebe7a1768101e03c4c8c152865cb7207e8e4bf8745"
+  },
+  "bot.questions.youAnswered": {
+    "text": "Vous avez répondu :\n{{answers}}",
+    "source": "d48b5abb7015be25b946a4b5c95629bae0f8521c276ec136438657ac793138c3"
+  },
+  "bot.questions.closed": {
+    "text": "Plus nécessaire.",
+    "source": "ace70031342ec31130d083d6d95b8200856c8169452d7e5427a80cd89ea3f3f3"
+  },
+  "bot.question.fileRequest": {
+    "text": "Déposer cette demande ?",
+    "source": "3157f534dc2a3a8515a159d708bb29fd1f1cac9abf98391865e8d2373f4b3f2e"
+  },
+  "bot.question.suggestedAnswers": {
+    "text": "Réponses suggérées",
+    "source": "c9be94c6babe47b45d22890325e3f7ebb20d4bba29155f456e68c9f28e6bc494"
+  },
+  "bot.question.suggested": {
+    "text": "suggérée",
+    "source": "8ad7037556d079419d067ab67761390f62a7db8ed3f4696554b320f13b18da97"
+  },
+  "bot.question.somethingElse": {
+    "text": "Autre chose",
+    "source": "cc72843144841a6f8110b7ebe7a1768101e03c4c8c152865cb7207e8e4bf8745"
+  },
+  "bot.question.youChose": {
+    "text": "Vous avez choisi : {{answer}}",
+    "source": "e0539cff186a03ee8450622962ae9e80530ea9036c1b7d16cc3f8c46dbcfee74"
+  },
+  "bot.question.youAnswered": {
+    "text": "Vous avez répondu",
+    "source": "5a1633c272ff621f5e4ecaa0f1e26589f540c4d78ddf13ecee61ecd4519b998d"
+  },
+  "bot.question.closed": {
+    "text": "Plus nécessaire.",
+    "source": "ace70031342ec31130d083d6d95b8200856c8169452d7e5427a80cd89ea3f3f3"
+  },
+  "bot.actions.questionsYouCanAsk": {
+    "text": "Questions que vous pouvez poser",
+    "source": "f9678b4366a60399d324eb813ed4310c53fd4518b021f2ba43d41f4f8908c2a9"
+  },
+  "bot.actions.whatNext": {
+    "text": "Que faire ensuite",
+    "source": "05c7efd0a4c9879c1ebf75377b4eea981db8708aa7158ddc13bfb2c0aa9b779b"
+  },
+  "bot.actions.choices": {
+    "text": "Choix",
+    "source": "2f75b64ac9163e816311e5c21589498f54c449f2da1d1436cb9ab2f10c160af5"
+  },
+  "bot.actions.youAsked": {
+    "text": "Vous avez demandé : {{question}}",
+    "source": "5039334e9c62c0155d9cebd4d9939a75369e81a7d7d1bd07ec990cd910778a11"
+  },
+  "bot.actions.youChose": {
+    "text": "Vous avez choisi {{choice}}",
+    "source": "876195d21f5f5c1691506aae65fc260918c8c3f518c9df9530cd9d088e183178"
+  },
+  "bot.actions.closed": {
+    "text": "Plus nécessaire.",
+    "source": "ace70031342ec31130d083d6d95b8200856c8169452d7e5427a80cd89ea3f3f3"
+  },
+  "bot.posted.answer.firstVersion": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande de première version de {{project}}, où le groupe peut la voir.",
+    "source": "b55d180e309e512ddd0d0c0cda3a25c78e2151b4501c85a545001a30d220ec2a"
+  },
+  "bot.posted.answer.firstVersionUnnamed": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande de première version du projet, où le groupe peut la voir.",
+    "source": "94990f7830e0156a1c42751568d43d521b04cb1058312ff22c4bca20d9a907a1"
+  },
+  "bot.posted.answer.request": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande n° {{number}} de {{project}}, où le groupe peut la voir.",
+    "source": "b028f62826d53f3b71c2be4b0727d4d7bc56313824a1de32e57241170d59485a"
+  },
+  "bot.posted.answer.requestUnnamed": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande n° {{number}} du projet, où le groupe peut la voir.",
+    "source": "78d79e573dc62f6321f0a81799e115f8edf308ed972c418dd43fd6ec6bd12efe"
+  },
+  "bot.posted.answers.firstVersion": {
+    "text": "Vos réponses sont publiées dans la discussion publique de la demande de première version de {{project}}, où le groupe peut les voir.",
+    "source": "c88e77608d291449259324ff68b6df0048c7b8e231e08bc24552e180fbbc4645"
+  },
+  "bot.posted.answers.firstVersionUnnamed": {
+    "text": "Vos réponses sont publiées dans la discussion publique de la demande de première version du projet, où le groupe peut les voir.",
+    "source": "2db098d82421601a3d209fb5b7f95bf6245d791ad346946b20367d9fb7229a8d"
+  },
+  "bot.posted.answers.request": {
+    "text": "Vos réponses sont publiées dans la discussion publique de la demande n° {{number}} de {{project}}, où le groupe peut les voir.",
+    "source": "e678bd00baf55ad8b0697b68445325e41eed72296dc0ea4c6c3c92cb399154e8"
+  },
+  "bot.posted.answers.requestUnnamed": {
+    "text": "Vos réponses sont publiées dans la discussion publique de la demande n° {{number}} du projet, où le groupe peut les voir.",
+    "source": "95f084a4dac686114f944aa56bf62881d0990a4a99068e19a5723c1c9df22a58"
+  },
+  "bot.posted.reply.firstVersion": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande de première version de {{project}}.",
+    "source": "6428f0e1006fbc2ff491708c605fedb4efb138594aebf90098bde6de537a9e0a"
+  },
+  "bot.posted.reply.firstVersionUnnamed": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande de première version du projet.",
+    "source": "86344a787dd296fc22394b4d54bda91afaaf807793623a5e4f75e3507e3a385e"
+  },
+  "bot.posted.reply.request": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande n° {{number}} de {{project}}.",
+    "source": "d960c65eaa5d8cbe9b7bedf216c5c44cd1e6a0d5663286e1dface33453390d13"
+  },
+  "bot.posted.reply.requestUnnamed": {
+    "text": "Votre réponse est publiée dans la discussion publique de la demande n° {{number}} du projet.",
+    "source": "30fb918cd110c1680177ca3e596822e33ed12f451428e695103a03d8ae435669"
+  },
+  "bot.thanks.usually": {
+    "text": "généralement {{from}} à {{to}} min",
+    "source": "b6dedda51d9c2073c061e4894774f027ef03a11af2a2096c531994522ab9df1a"
+  },
+  "bot.thanks.unnamedProject": {
+    "text": "votre projet",
+    "source": "16faeef4d0d5d49b4326399deceea618de38ab16f79342650a611479411c578a"
+  },
+  "bot.notify.offer": {
+    "text": "Me prévenir quand c’est prêt",
+    "source": "58224176ff92c9443e01c10a4f7b1f11be822527e32877e8cec96cae1a73bf0e"
+  },
+  "bot.notify.done": {
+    "text": "Je vous préviendrai",
+    "source": "7346a32a23741a2c9dcac77ce07d596fe424f5053a2e2b5bfde1163a5347b608"
+  },
+  "bot.notify.off": {
+    "text": "Notifications désactivées",
+    "source": "52b0dbbd7c9d670f29bd628f632ff819884b00d8a30295b809980e0cd71e4772"
+  },
+  "bot.notify.groupName": {
+    "text": "Notifications",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "bot.notify.turnOn": {
+    "text": "Activer les notifications",
+    "source": "92dfd3632baeb6d4f116758b2c1a354134a00006071df2866fda8eeb6fe3429c"
+  },
+  "composer.fileTooLarge": {
+    "text": "{{file}} est trop volumineux pour ce type de fichier.",
+    "source": "2f3baa775c005e3e84c7f7845933473716c208fdec8bf66023352c5210f82e26"
+  },
+  "composer.uploadFailed": {
+    "text": "Impossible d’envoyer {{file}}.",
+    "source": "da4287136a532cdb69633c43f6af498aad2a6b314441f7abd126f3d3b8517f6b"
+  },
+  "composer.sendFailed": {
+    "text": "Votre message n’a pas été envoyé.",
+    "source": "c8fd3251af3a79e4695d952e259007b10db034f57e9293a912078236efcd0c3d"
+  },
+  "composer.requestSent.title": {
+    "text": "Demande de message envoyée",
+    "source": "113edd9f1b230048de06e6c16c01ac92a0d44555b90e5c1d72919587b9f28fc8"
+  },
+  "composer.requestSent.waitingNamed": {
+    "text": "En attente que {{username}} accepte votre demande de message. Vous pourrez en envoyer d’autres dès qu’il ou elle l’aura fait.",
+    "source": "a199691aedad5da23e2018296a8dd76680ff521647ad1dee60093dfa2ce59a38"
+  },
+  "composer.requestSent.waitingUnknown": {
+    "text": "En attente que unknown accepte votre demande de message. Vous pourrez en envoyer d’autres dès qu’il ou elle l’aura fait.",
+    "source": "d320af89e183b64c93a4ba595b90946d856a0632c5ad6826d71055e49fb6569d"
+  },
+  "composer.requestSent.waitingUnnamed": {
+    "text": "En attente que cette personne accepte votre demande de message. Vous pourrez en envoyer d’autres dès qu’elle l’aura fait.",
+    "source": "16d2e700debb088bc3783dfe7be9b03ca1a8eb0e3c93f52c979cc0ce04c85241"
+  },
+  "composer.cannotSend": {
+    "text": "Vous ne pouvez pas envoyer de messages dans cette conversation.",
+    "source": "bcf6029ba834f866830edf7c6f1afebb9a05deb4dc26f0faa47eac2456ff0f70"
+  },
+  "composer.firstMessageHintNamed": {
+    "text": "{{username}} reçoit votre premier message comme demande de message. Vous pourrez en envoyer d’autres dès qu’il ou elle accepte.",
+    "source": "e31d80e5f45fed5a81506d441a10d0e453d0df9aabf3f4f80409efce3a348a1e"
+  },
+  "composer.firstMessageHintUnknown": {
+    "text": "unknown reçoit votre premier message comme demande de message. Vous pourrez en envoyer d’autres dès qu’il ou elle accepte.",
+    "source": "cc5e74e5043ca544d7b5679eaf9b1ac0d3debb2499d88d87834a3dfe504c9f8d"
+  },
+  "composer.firstMessageHintUnnamed": {
+    "text": "Cette personne reçoit votre premier message comme demande de message. Vous pourrez en envoyer d’autres dès qu’elle accepte.",
+    "source": "99bb5378638a17e09b198caf04a3d0d669eb0c84ac4eb2cf93f7cb9ffe70b237"
+  },
+  "composer.replyingTo": {
+    "text": "Réponse à {{name}}",
+    "source": "ebedbd824ffc3a47369d3e5975f86f68326de210118bd7a1ebdecf8105a6c012"
+  },
+  "composer.replyingToUnknownHandle": {
+    "text": "Réponse à @unknown",
+    "source": "af713f83b71613c10816950309df6171a422babe12264fc1819ba0bfd29cd2a0"
+  },
+  "composer.replyingToUnknown": {
+    "text": "Réponse à unknown",
+    "source": "807bf96defdee843052f44ec0c7e271d4cc5f27982de9c65b4eefc9ce972d4f6"
+  },
+  "composer.replyAttachment": {
+    "text": "Pièce jointe",
+    "source": "040d2b3689dd1d4c9661e938f4633914f2c0aa0a1fbc3bc0047f554c0b16fd20"
+  },
+  "composer.planReplyNote": {
+    "text": "Dites quoi modifier et Homeroom bot enverra un nouveau plan. Vous seul le voyez.",
+    "source": "30c08eb212f3e1fbef2ac9990f0e09cb31bfdb646c77584449e4e51c59a10ea0"
+  },
+  "composer.cancelReply": {
+    "text": "Annuler la réponse",
+    "source": "2355f73150190fc77c27f936d5b967569ac5d0bc9f5bf6f3cd8cb649d8f1a49d"
+  },
+  "composer.removeSharedItem": {
+    "text": "Retirer l’élément partagé",
+    "source": "2bbf13f5cf668c9d55182b0665d61a159a248800b04ed43bc0ea33c65a9006d4"
+  },
+  "composer.removeAttachment": {
+    "text": "Retirer {{file}}",
+    "source": "6ddbbe2e24ddd0d4cc163c86f4a40e1bd89916a2e242f41b6e21e254bc4d67b3"
+  },
+  "composer.channelsMenu": {
+    "text": "Canaux",
+    "source": "4c8906cf76f5740ab8792aef9f0033fe21a92045e90b357816064e9f6860a03e"
+  },
+  "composer.peopleMenu": {
+    "text": "Personnes",
+    "source": "7db20897053bb2780b9b706e5505227b005de80c236e4a4836aab37a3a7bb298"
+  },
+  "composer.emojiMatching": {
+    "text": "Emoji correspondant à <0>:{{query}}</0>",
+    "source": "e0b36925326383100e4c9c242fe207f923c0a8ae20f623ad1aeaaef1bc1f29b7"
+  },
+  "composer.emojiMenu": {
+    "text": "Emoji",
+    "source": "61ad8976e650e1532db7504bf379154f4f7c2ab43de00bfa06ed1e1895dec1df"
+  },
+  "composer.addToMessage": {
+    "text": "Ajouter au message",
+    "source": "a51ec5e25959ad81e2b3daf4c217b6edab08d084a0eccc0a6e2ed3f1d8103fab"
+  },
+  "composer.attachFiles": {
+    "text": "Joindre des fichiers",
+    "source": "e697cc1e45afa5418934fb94f7d9c1bf8e45628cade57a6d31871f5961978d77"
+  },
+  "composer.shareItem": {
+    "text": "Partager un élément",
+    "source": "dbce8c33386b640b926b1303ed94fb8d438884ecd01324b5a85b2971784aaf9e"
+  },
+  "composer.placeholderThread": {
+    "text": "Répondre dans le fil…",
+    "source": "5f4ecc1c9a12d4f4c3a5d54a6d3357bf01df3c140b6cc7547836752ffb76c1eb"
+  },
+  "composer.placeholder": {
+    "text": "Message…",
+    "source": "fc71507e47999a3341bcaa4b4161a10b3d227009fdf265bab344a4ea7b21231c"
+  },
+  "composer.labelThread": {
+    "text": "Répondre dans le fil",
+    "source": "a236732715648b31ac8834059279b44d4e676c02820de6e47e0d6f5d0e512760"
+  },
+  "composer.label": {
+    "text": "Message",
+    "source": "2f77668a9dfbf8d5848b9eeb4a7145ca94c6ed9236e4a773f6dcafa5132b2f91"
+  },
+  "composer.send": {
+    "text": "Envoyer le message",
+    "source": "93a26b1eaff99b3a84dd80366660991d15703a96514497afd997c12c43000ed7"
+  },
+  "object.kind.app": {
+    "text": "Appli",
+    "source": "0d04bfeb7d64b71c74fc925cca93d683154e8cc7e6e5838faced498e34c9984d"
+  },
+  "object.kind.issue": {
+    "text": "Demande",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "object.kind.proposal": {
+    "text": "Modification",
+    "source": "c0bf75bd78bf9572596720d596bd5a20a5b9145cde0fe50dec1e783cb184d69b"
+  },
+  "object.kind.governance": {
+    "text": "Proposition de gouvernance",
+    "source": "5f1d1a552aaa9a5799ea0117a34f5d087c1245f6bef91c99de2e460c1769ec23"
+  },
+  "object.kind.spec": {
+    "text": "Version du plan",
+    "source": "b8371aaa54ebe46288903509992de19205ec1373152bd427a4c9d297beed64b6"
+  },
+  "object.kind.hub": {
+    "text": "Hub de la communauté",
+    "source": "c2f9c96f91b710623562c88656c8d865cbdd357647cdf6267f36ea34c41ad5fb"
+  },
+  "object.kind.discussion": {
+    "text": "Discussion",
+    "source": "5eb6cf647d2c5d14a044e2d103dcef4cf0cdc872434c374debc1043092bc4746"
+  },
+  "object.kind.unknown": {
+    "text": "Élément",
+    "source": "652bcc3a478428893cc505ae19f847b49be52f861bedc64bb192ceed409fa733"
+  },
+  "object.requestNumber": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "object.unavailable.title": {
+    "text": "Indisponible",
+    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
+  },
+  "object.unavailable.detail": {
+    "text": "Vous n’avez pas accès à cet élément.",
+    "source": "2b313470acfd6925edaca613bb3901d6757ba04f1400d3ca59a1a7479a2accba"
+  },
+  "object.untitled": {
+    "text": "Sans titre",
+    "source": "f59ab8d1331b7b16952fbd388258f856b9e09ce2d7b904f500bdfe4905640774"
+  },
+  "object.byAuthor": {
+    "text": "par {{author}}",
+    "source": "7e7e6154634509758452586d5abf888d98d70cf020a1c0f3c9c742384b00ee2f"
+  },
+  "inbox.filter.all": {
+    "text": "Tous",
+    "source": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2"
+  },
+  "inbox.filter.people": {
+    "text": "Personnes",
+    "source": "7db20897053bb2780b9b706e5505227b005de80c236e4a4836aab37a3a7bb298"
+  },
+  "inbox.filter.agents": {
+    "text": "Agents",
+    "source": "279b44d2ab4b40c0fc132f8f3051293544cca91de9c8aa14f2cd29adb132b0ee"
+  },
+  "channel.backCommunities": {
+    "text": "Communautés",
+    "source": "c864f329f5dde534613448895303d0a62f17af46b75ab16cb6c8170a120d1293"
+  },
+  "thread.jumpToLatest": {
+    "text": "Aller au plus récent",
+    "source": "867524581f012f0ba381fd98a720aa569ffd1b70f320307943072a253a2a3b6a"
+  },
+  "refCard.open": {
+    "text": "Ouvrir cette demande",
+    "source": "6061e7f6ea838e778362ed3956a552f9a62d853c28b3b7d74ad4eaa46a5eda75"
+  },
+  "store.you": {
+    "text": "Vous",
+    "source": "08b041935798fbf6fd6ff51099ffedb140a475889986d14f5559ff8e7fc571dd"
+  },
+  "store.error.awaitingAcceptance": {
+    "text": "Cette personne doit accepter votre demande de message avant que vous puissiez en envoyer d’autres.",
+    "source": "b4e27f68b2baa9c13f9509945113d7b99d6d7b2344e55f679a4b8042f2497029"
+  },
+  "store.error.gone": {
+    "text": "Cette conversation n’est plus disponible.",
+    "source": "07f8c47b9be5545c63a0b80b176f6d1bd087334db208eedb7107a6108f3f9574"
+  },
+  "store.error.tooFast": {
+    "text": "Vous allez trop vite. Réessayez dans un instant.",
+    "source": "ce2ac38edce4fbc48b0f4739c4e5b3e6bc9b19ccd6ecd7cd2015e7d7edb81ccd"
+  },
+  "store.error.loadList": {
+    "text": "Impossible de charger vos conversations.",
+    "source": "d915a35be43ec637ec26dd40898f2d4b34c6725683ae4d4296a615a18c9fa811"
+  },
+  "store.error.loadThread": {
+    "text": "Impossible de charger cette conversation.",
+    "source": "407fa735faae01425f2572ccda60f668786a07053fbc95f269aa3f20f91f06a4"
+  },
+  "store.error.loadNewer": {
+    "text": "Impossible de charger les messages plus récents.",
+    "source": "e2d2f883ae5f77847849d6901841c7a0b59405eafe794e00a57af10df5f919c1"
+  },
+  "store.error.loadOlder": {
+    "text": "Impossible de charger les messages plus anciens.",
+    "source": "e5f71ac8cd95e29c515c58640e6da6194c270b1519342b68bef24381cb65bdf5"
+  },
+  "store.error.discussion": {
+    "text": "Impossible d’ouvrir cette discussion.",
+    "source": "0c1d4eb67c4e960eac80b6f16e5ae344a90207f65d3c8a7e105c82b5cc8e9c1a"
+  },
+  "store.error.queued": {
+    "text": "Message en attente. Il sera renvoyé à la reconnexion.",
+    "source": "662214e97d04fadcacbd296e655aa80728f4718cc7226960f2493413ca3e9d72"
+  },
+  "store.error.send": {
+    "text": "Votre message n’a pas été envoyé.",
+    "source": "c8fd3251af3a79e4695d952e259007b10db034f57e9293a912078236efcd0c3d"
+  },
+  "store.error.sendReply": {
+    "text": "Votre réponse n’a pas été envoyée.",
+    "source": "e8974b31e1ebc8589a50f21a5e0e7b48e6f155da29dce6c5caacfcc135477cc5"
+  },
+  "store.error.loadReplies": {
+    "text": "Impossible de charger ce fil.",
+    "source": "7931a0182b47faf3e7a5e2558e99909b9fccec2d1733260cd941190a15910549"
+  },
+  "store.error.loadEarlierReplies": {
+    "text": "Impossible de charger les réponses précédentes.",
+    "source": "611acb137945cb260ba6f517dc8bfd0d65cc38a3577c77585e9d4b9e46a2a566"
+  },
+  "store.header.channel": {
+    "text": "Canal",
+    "source": "ce4683e7013a18cdf3d224bfcb4e9594ea8f559e946a837c633defe7d3c32172"
+  },
+  "store.header.thread": {
+    "text": "Fil",
+    "source": "5373c7f8a5a69019e959540ef127be3302afdd5e2313244e6d08cbd5e975d06d"
+  },
+  "store.header.discussion": {
+    "text": "Discussion",
+    "source": "5eb6cf647d2c5d14a044e2d103dcef4cf0cdc872434c374debc1043092bc4746"
+  },
+  "store.header.messages": {
+    "text": "Messages",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "store.askForChangesPlaceholder": {
+    "text": "Que faut-il modifier ?",
+    "source": "e6cbf7faa1b80e25c56bdb31be1b9fcfce26b6aecd14bc6342bb4eb075e3a829"
+  },
+  "api.deletedUser": {
+    "text": "Utilisateur supprimé",
+    "source": "152bc3aa4e147002e50b05a522ce842f6ff87017fff045e2b27d5bc92936dea6"
+  },
+  "api.unknownUser": {
+    "text": "inconnu",
+    "source": "b23a6a8439c0dde5515893e7c90c1e3233b8616e634470f20dc4928bcf3609bc"
+  },
+  "store.error.groupNeedsName": {
+    "text": "Un groupe doit avoir un nom.",
+    "source": "b24f84c2fa692fb40e218feef36d693d3aa971cd8d5bda1425056c56cc96d09a"
+  },
+  "store.error.groupNameTooLong": {
+    "text": "Le nom d’un groupe peut comporter 80 caractères au maximum.",
+    "source": "f033d511abcd5f314012727d23e8059e7b6a8ab8ca8d4a5ca9eb9b8d58e5b360"
+  },
+  "store.error.chooseConversation": {
+    "text": "Choisissez une conversation.",
+    "source": "8dd9b10333c27299ae36469de6014232b0771ad1ca91401954f37bcf6c1e279b"
+  },
+  "api.conversationTitle": {
+    "text": "Conversation",
+    "source": "ccca1817575365871461752f3229dd59ede742ae69e350e20fd00a6ce3d149e3"
+  },
+  "api.requestFailed": {
+    "text": "Échec de la requête ({{status}})",
+    "source": "2d17914c47b4706cff4ad20f981be0206e881c9d2bcc6f7167abc398d4045ae4"
+  },
+  "api.uploadFailed": {
+    "text": "Échec du téléversement ({{status}})",
+    "source": "9fe96740781c4dab489cecaa34b384e17c81e5d6063ef25a391c42f85c389230"
+  },
+  "api.untitledItem": {
+    "text": "Sans titre",
+    "source": "f59ab8d1331b7b16952fbd388258f856b9e09ce2d7b904f500bdfe4905640774"
+  },
+  "api.approve.unreachable": {
+    "text": "Impossible de joindre Homeroom. Réessayez.",
+    "source": "0484b4ab53722a7d77dc5398d4bd9a406279189ffd5a171db102374f7de2f72e"
+  },
+  "api.approve.failed": {
+    "text": "Impossible de l’approuver pour le moment.",
+    "source": "28cbba4640cee64af1196bb457b766c620506b7ca5f54ad7832a4b128f6cc29b"
+  },
+  "create.error.direct": {
+    "text": "Impossible de démarrer cette conversation.",
+    "source": "12ddde6f010060b08af6dbc8272dfe549f8a59993b9a63b996f8793491f15d0e"
+  },
+  "create.error.group": {
+    "text": "Impossible de créer ce groupe.",
+    "source": "268177d83136617fe1d47135aefcab9e2e94f1221951c7327e1a34d041de811d"
+  },
+  "create.error.unblock": {
+    "text": "Impossible de débloquer cet utilisateur.",
+    "source": "0d5a53e3dca004c0774481f2f68c8a80c7453674effcf539e9e8d795870d0133"
+  },
+  "create.error.block": {
+    "text": "Impossible de bloquer cette personne.",
+    "source": "3b1a27970cbe26052c7581f712eaa2a2e812ca662f56d9827110e63095034910"
+  },
+  "create.block.title": {
+    "text": "Bloquer @{{username}} ?",
+    "source": "f506b124ef510d21c2b34b5d3a2c0f18aed43960ef19dca9c5b1b16481e2f80b"
+  },
+  "create.block.titleUnknown": {
+    "text": "Bloquer @unknown ?",
+    "source": "a5ef7702f3d58b0b9342dd6facc4f0fd96e85674f5ba615c6ce976f3f91db536"
+  },
+  "create.block.message": {
+    "text": "Ses messages dans les discussions partagées et les conversations d’application seront masqués, et il ou elle ne pourra plus vous écrire directement.",
+    "source": "2202f540b7de621528e4cbca8f9b208c8efe83dd196b88af2741e514fc06565b"
+  },
+  "create.block.confirm": {
+    "text": "Bloquer",
+    "source": "211d0bb8cf4f5b5202c2a9b7996e483898644aa24714b1e10edd80a54ba4b560"
+  },
+  "create.title": {
+    "text": "Nouveau message",
+    "source": "78f5975a5d705e9528dd0e8d41206534b7e8c269b139bb151d5c0ca0928247c3"
+  },
+  "create.typeTabs": {
+    "text": "Type de conversation",
+    "source": "9ca4980162f0fc49b5a79a9e220f648661553665b83532fc14d8acf514fc1004"
+  },
+  "create.tab.direct": {
+    "text": "Direct",
+    "source": "002c7c68468b4f550fbaa7fb8588155c58f8b5760fde69b3fe1773ae2a197ba2"
+  },
+  "create.tab.group": {
+    "text": "Groupe",
+    "source": "34ca0e76608842ff3e7d924a455a396a82f471052c15e3f2ed7f090ac702e5c1"
+  },
+  "create.groupName": {
+    "text": "Nom du groupe",
+    "source": "762ebb70ef0ea2e80a41035e91a5f95ec35b0b03d2f2acc5c5b4f4c09213c8c5"
+  },
+  "create.groupNamePlaceholder": {
+    "text": "Équipe design",
+    "source": "2eec8b54ad7388089d860ee52a728e4d151bdd8c29528f1fa9b4755b76a22566"
+  },
+  "create.selectedMembers": {
+    "text": "Membres sélectionnés",
+    "source": "78a2792cabfdb0602f776f43743691d1dade3476fd68275e72751f6e04e1cdfd"
+  },
+  "create.findPerson": {
+    "text": "Trouver une personne",
+    "source": "9af70da5251e6559788a11a4d57037431321c2b5816b5fb09967671c73445b02"
+  },
+  "create.invitePeople": {
+    "text": "Inviter des personnes",
+    "source": "27bf0f2d3f3f549002f193566e19b010a40b80c1a5564cf65a80d83f2f2c0462"
+  },
+  "create.searchPlaceholder": {
+    "text": "Rechercher par nom d’utilisateur",
+    "source": "b7a43e76ac251fcb28780d6214277dca3ffba2be79e370615bdead85dbb53179"
+  },
+  "create.result.add": {
+    "text": "Ajouter",
+    "source": "9fd728c66c9a256b121472dabf32a34317aed01d8427d70ec830289cf23a7cc8"
+  },
+  "create.result.message": {
+    "text": "Écrire",
+    "source": "2f77668a9dfbf8d5848b9eeb4a7145ca94c6ed9236e4a773f6dcafa5132b2f91"
+  },
+  "create.result.blockNamed": {
+    "text": "Bloquer @{{username}}",
+    "source": "8036a7efb997149c404cff0015877d92e5d01fe0539f00688c9a389919708018"
+  },
+  "create.result.blockUnknown": {
+    "text": "Bloquer @unknown",
+    "source": "53bf7129167a1c396be1ec1f4eada38d21e1fe6c4261f31af969ed52b6f30cc7"
+  },
+  "create.result.block": {
+    "text": "Bloquer",
+    "source": "211d0bb8cf4f5b5202c2a9b7996e483898644aa24714b1e10edd80a54ba4b560"
+  },
+  "create.blockedPeople": {
+    "text": "Personnes bloquées",
+    "source": "e11bdf7344a1d95eeeedd2f920ca4a3bb1608da56ccc43271464e8840f7527fc"
+  },
+  "create.creating": {
+    "text": "Création…",
+    "source": "c79ed9492e3c17199ab50694e07f5525cc6d598a02531528b0eb5ed933cd5466"
+  },
+  "create.createGroup": {
+    "text": "Créer le groupe",
+    "source": "35be9c541d68e6ea78dfce189aa504a97247ca6b1c59f125a75498b279796629"
+  },
+  "create.nobodyBlocked": {
+    "text": "Personne n’est bloqué.",
+    "source": "acecbd3f41406488c4210543c49b2611a5fdd013ec34533f598a8d813913c572"
+  },
+  "create.unblock": {
+    "text": "Débloquer",
+    "source": "712da63171e0c9de0e1523438c5a0240ce765b722769f1df0df6975339263025"
+  },
+  "create.searching": {
+    "text": "Recherche…",
+    "source": "c31723ab330289fe2cc4c7b69b7a862361da79a01f84893dc7b89a6de0ab4b42"
+  },
+  "create.noMatches": {
+    "text": "Aucun utilisateur correspondant.",
+    "source": "579f8c39232b314139f62bf385a3dd3e904e9e9bc4d277979aa4c6079224d0aa"
+  },
+  "members.error.invite": {
+    "text": "Impossible d’inviter ces personnes.",
+    "source": "a19842c3ccd07ae343f3b9d0b880476fee8b8015b45ace8f4a899f84942fc058"
+  },
+  "members.error.remove": {
+    "text": "Impossible de retirer ce membre.",
+    "source": "60b70d59512f150bd9ef23811cffd859892a094ec18660d21300a5bafd0415a9"
+  },
+  "members.error.leave": {
+    "text": "Impossible de quitter cette conversation.",
+    "source": "bbc9e4f7d91815afb12274ca4d3fffc522ca5b3a3d000f4ea847daf6af67d64f"
+  },
+  "members.remove.title": {
+    "text": "Retirer @{{username}} de ce groupe ?",
+    "source": "87abff4fe8daa6b7aaede72004563f10b9da1c48f43e05a83568fbd654299db4"
+  },
+  "members.remove.titleUnknown": {
+    "text": "Retirer @unknown de ce groupe ?",
+    "source": "bc68a824185afd27cb98f293b0bc05f257f2396e4f51e92aac4af231e92038e9"
+  },
+  "members.remove.confirm": {
+    "text": "Retirer",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.leave.transfer": {
+    "text": "La propriété sera transférée au plus ancien membre restant.",
+    "source": "edc80f07d446c1c3776fb84126e73eee4701d6ee35aaa7859f1b4d4bc534fe95"
+  },
+  "members.leave.title": {
+    "text": "Quitter {{group}} ?",
+    "source": "e87673da40fe2479d60549b73bbba48aae775ef4ed2795263a3d4f1d3c6fc5e3"
+  },
+  "members.leave.titleUntitled": {
+    "text": "Quitter Conversation ?",
+    "source": "bc718b9da4d8ae8ea5c488acc79e3054b7bd25c4410ef497fa7cbb280263a4c0"
+  },
+  "members.leave.titleUnnamed": {
+    "text": "Quitter cette conversation ?",
+    "source": "aab0f0a9ba1f9d5e62e3a652b3e1903444f1b8636cb1997521434068554e1268"
+  },
+  "members.leave.confirm": {
+    "text": "Quitter",
+    "source": "fc6e4a408d56be9670c14ee7be21e1a39c93c2df82f7c95975485e90ca6371c3"
+  },
+  "members.title": {
+    "text": "Membres du groupe",
+    "source": "dd0fd917e7772cf2ef97cc918a6e19174d74031a2a73486fe4ea32247d90ca06"
+  },
+  "members.subtitle": {
+    "text": "Les membres ayant accepté peuvent lire tout l’historique conservé.",
+    "source": "3a068bd240cd7b72e4c0ed91e1b1f8c7284db8eaf14be9d4b0a2a1d1c5cd1677"
+  },
+  "members.role.owner": {
+    "text": "propriétaire",
+    "source": "4c1029697ee358715d3a14a2add817c4b01651440de808371f78165ac90dc581"
+  },
+  "members.role.member": {
+    "text": "membre",
+    "source": "e31ab643c44f7a0ec824b59d1194d60dac334200d845e61d2d289daa0f087ea4"
+  },
+  "members.status.invited": {
+    "text": "invité",
+    "source": "307128ff4d35a7e2b87909cebfd2c3fdf24b412fcc1a978d286ffa46b7c32546"
+  },
+  "members.status.declined": {
+    "text": "refusé",
+    "source": "a8bfacf3bcd75164698d9d70aacd2ce5a5bb0993f5a9badf2e37b396fe5986d9"
+  },
+  "members.status.left": {
+    "text": "parti",
+    "source": "360f84035942243c6a36537ae2f8673485e6c04455a0a85a0db19690f2541480"
+  },
+  "members.status.removed": {
+    "text": "retiré",
+    "source": "e1f79758cc42e6fe6037941205d1fbc37f5780f13aa077d0ba8287fd93cecd52"
+  },
+  "members.removeButton": {
+    "text": "Retirer",
+    "source": "c3812fc4acb861d5182fc2b8155f327f736fbe5e5eb86a7bd7afcb6dc5497282"
+  },
+  "members.invitePeople": {
+    "text": "Inviter des personnes",
+    "source": "27bf0f2d3f3f549002f193566e19b010a40b80c1a5564cf65a80d83f2f2c0462"
+  },
+  "members.searchPlaceholder": {
+    "text": "Rechercher par nom d’utilisateur",
+    "source": "b7a43e76ac251fcb28780d6214277dca3ffba2be79e370615bdead85dbb53179"
+  },
+  "members.add": {
+    "text": "Ajouter",
+    "source": "9fd728c66c9a256b121472dabf32a34317aed01d8427d70ec830289cf23a7cc8"
+  },
+  "members.inviting": {
+    "text": "Invitation…",
+    "source": "a4c2059a1177eccc64fd6b9d49e44e07786f820ad65fbd939db54afda0110d23"
+  },
+  "members.inviteNone": {
+    "text": "Inviter",
+    "source": "1fd9ae1607aa3d804ef494984ed57aa79b6d3553962c76f6c8f5fa0a4dde04b7"
+  },
+  "members.leaveGroup": {
+    "text": "Quitter le groupe",
+    "source": "3475393dbebd81d948dd6eb98b14f27c3922183d3afdc30d6b45d1de562ff470"
+  },
+  "shareItem.type.app": {
+    "text": "Application",
+    "source": "0d04bfeb7d64b71c74fc925cca93d683154e8cc7e6e5838faced498e34c9984d"
+  },
+  "shareItem.type.issue": {
+    "text": "Ticket GitHub",
+    "source": "7d94e2e7acad3b70eb76f83fbf6ce2314194503e524d5bc054df0bad880cd0eb"
+  },
+  "shareItem.type.proposal": {
+    "text": "Proposition de code",
+    "source": "800e6d295b48fac7deafa608f37f5b4f7247750902ba3d93c789717304bb9b59"
+  },
+  "shareItem.type.governance": {
+    "text": "Proposition de gouvernance",
+    "source": "5f1d1a552aaa9a5799ea0117a34f5d087c1245f6bef91c99de2e460c1769ec23"
+  },
+  "shareItem.type.spec": {
+    "text": "Version du plan",
+    "source": "b8371aaa54ebe46288903509992de19205ec1373152bd427a4c9d297beed64b6"
+  },
+  "shareItem.group.all": {
+    "text": "Toutes",
+    "source": "a52ace420f2175d08b1577a1bea5445e36801229c074ef9ed6c55a73401fd9c2"
+  },
+  "shareItem.group.mine": {
+    "text": "Vos projets",
+    "source": "e82a6eb21afd56d66f69500536f26ceb1bd31571935358e19f8794b701061cb5"
+  },
+  "shareItem.group.others": {
+    "text": "Autres projets",
+    "source": "7b4418d894c3105ded6cd9fa3b7592905821d5ec2732dfa0b8bde492f00ffeb1"
+  },
+  "shareItem.loadingApps": {
+    "text": "Chargement des apps…",
+    "source": "f8bcca389b9584d397aeace82b5411cf8d309edb2ca80387f9dcaa256538eef3"
+  },
+  "shareItem.noSearchMatch": {
+    "text": "Aucune app ne correspond à votre recherche.",
+    "source": "780f43668735ba0c973bb0209b49ec710cfec8e13bc84c510b10c11e0109ffcf"
+  },
+  "shareItem.noApps": {
+    "text": "Aucune app à partager pour l’instant.",
+    "source": "6157792df589083b85d65a8c52b7d5fe61f5acdeffbe084a714b5e758f1b478d"
+  },
+  "shareItem.selected": {
+    "text": "Sélectionnée",
+    "source": "57fd7a0cf33f2666eede69e44f8857159653f2f28e4fd7482a5e16d4af628d2a"
+  },
+  "shareItem.loadFailed": {
+    "text": "Impossible de charger vos apps.",
+    "source": "cf911d9aa89bec56ed4efa1e87fa121fdeef98a0cda8834c7d06a4e267d6de84"
+  },
+  "shareItem.title": {
+    "text": "Partager un élément",
+    "source": "dbce8c33386b640b926b1303ed94fb8d438884ecd01324b5a85b2971784aaf9e"
+  },
+  "shareItem.subtitle": {
+    "text": "L’accès est vérifié séparément pour chaque destinataire.",
+    "source": "b2563a67a34089b57026c4d1ce7802a78fecffe6047a2f875fdf53ee2cefcf67"
+  },
+  "shareItem.searchApps": {
+    "text": "Rechercher des apps",
+    "source": "a10a36fa109818bee2cb638ae0fe9d5a39559fb6ed84053eaa999595ab9d7c75"
+  },
+  "shareItem.itemType": {
+    "text": "Type d’élément",
+    "source": "5b71c546c6b543ca748d1ec4f756fbfb412cfad738502a5619358eeab02bbfda"
+  },
+  "shareItem.appLegend": {
+    "text": "App",
+    "source": "0d04bfeb7d64b71c74fc925cca93d683154e8cc7e6e5838faced498e34c9984d"
+  },
+  "shareItem.filterApps": {
+    "text": "Filtrer les apps",
+    "source": "c8be01160de85357e8cfa6a5a314f0c4287fafe9f127733c72bb229abd1deb27"
+  },
+  "shareItem.appsList": {
+    "text": "Apps",
+    "source": "89dd748442c194857825848e1500abbbc5f52fb067ad27fb05dc9fb23eebba3b"
+  },
+  "shareItem.issueNumber": {
+    "text": "Numéro de la demande",
+    "source": "b90458b6339c0e14f5cea20207035c8a316ca33c0fda5d372ab8c4fc51fdb075"
+  },
+  "shareItem.governanceId": {
+    "text": "ID de la proposition de gouvernance",
+    "source": "7ba3cac655abae6c86b76606647c6778bf699578ced44b4765dc2f2e114a441b"
+  },
+  "shareItem.proposalId": {
+    "text": "ID de la proposition / session",
+    "source": "3726713b596c9fef4071a5e61c72a178fc2f10cb9dab3a109deaed43d1846089"
+  },
+  "shareItem.specVersion": {
+    "text": "Version du plan",
+    "source": "b8371aaa54ebe46288903509992de19205ec1373152bd427a4c9d297beed64b6"
+  },
+  "shareItem.note": {
+    "text": "Le serveur récupère le titre et l’état actuels. Si l’accès est retiré par la suite, la carte n’affiche plus aucune information et devient indisponible.",
+    "source": "cf33d33ac16d5d0ed8498d71f6ca5eaad0cfc80722cdc5561a88fd6fc6dae973"
+  },
+  "shareItem.attach": {
+    "text": "Joindre l’élément",
+    "source": "dcd3fcd1b6acdba61f24d8dd647bb3ed2173795d8839285cc0ba44a740b64810"
+  },
+  "shareTo.item.app": {
+    "text": "App",
+    "source": "0d04bfeb7d64b71c74fc925cca93d683154e8cc7e6e5838faced498e34c9984d"
+  },
+  "shareTo.item.issue": {
+    "text": "Demande",
+    "source": "59f03d642b41e22f4575061e817f9e87c3ced5a0e77d5c92364bd45b7f90d0c9"
+  },
+  "shareTo.item.issueNumbered": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "shareTo.item.proposal": {
+    "text": "Proposition",
+    "source": "5d42766c7ecac46c344f7ed2f8940a0054b00641cb56876ceb30c9eab50159b0"
+  },
+  "shareTo.item.proposalNumbered": {
+    "text": "Proposition n° {{number}}",
+    "source": "b74b0f5588c1bb46f27192f63e5e35bdeafa13b1d44b0419b53556d52ec0165e"
+  },
+  "shareTo.item.governance": {
+    "text": "Proposition de gouvernance",
+    "source": "5f1d1a552aaa9a5799ea0117a34f5d087c1245f6bef91c99de2e460c1769ec23"
+  },
+  "shareTo.item.governanceNumbered": {
+    "text": "Proposition de gouvernance n° {{number}}",
+    "source": "a02c246dc88f4584f51b132f3199dcdb68ae929cdc7bbd9d50bd61b6b5fd80a5"
+  },
+  "shareTo.item.spec": {
+    "text": "Plan",
+    "source": "fa8ed0bdabdd6bcb1c0746f1d3e15212f7f3439d74339fbaaf16c60c0a80fb8e"
+  },
+  "shareTo.item.specNumbered": {
+    "text": "Plan n° {{number}}",
+    "source": "ce5c65e13107d92569e2b26a574ebda37f2cd7d5ec4fd5e546c5bc9a3b7df9c0"
+  },
+  "shareTo.item.unknown": {
+    "text": "Élément",
+    "source": "652bcc3a478428893cc505ae19f847b49be52f861bedc64bb192ceed409fa733"
+  },
+  "shareTo.item.unknownNumbered": {
+    "text": "Élément n° {{number}}",
+    "source": "9a755bf95812c24e6faac7bfcaf802114446b89b8c1bf4bcddb583bfd5bf4f5c"
+  },
+  "shareTo.detail.direct": {
+    "text": "Message privé",
+    "source": "cd3e16057d094b97fa8efe29cec3b03e82ff48f4fc5712a2e5878732bd2a0ab6"
+  },
+  "shareTo.detail.everyone": {
+    "text": "Tout le monde sur Homeroom",
+    "source": "7af179f445089856e275472ab215530ebda3bc45cbca4d6519077deb05af30e6"
+  },
+  "shareTo.detail.discussion": {
+    "text": "#{{channel}} · Discussion",
+    "source": "36af745e8244fc0b189691ca9966c7f16bb44a469aa0552482d19a5cd4368dd5"
+  },
+  "shareTo.error.cannotPost": {
+    "text": "Vous ne pouvez pas publier dans la discussion {{discussion}}.",
+    "source": "6a02143d8fe36c59cc73ca4432d4618c15d8e0fc5ccee1ed394847719f0a5a42"
+  },
+  "shareTo.error.tooFast": {
+    "text": "Vous partagez trop vite. Patientez une minute et réessayez.",
+    "source": "4388cf865fd19dc8091ad5ecc4eb346e068337fcff696f6d6bd78299527742d0"
+  },
+  "shareTo.error.failed": {
+    "text": "Impossible de partager. Réessayez.",
+    "source": "4240568a6005ed575272889641a23c949f9ee87bfc5cc9057ddffb0b9985cf5b"
+  },
+  "shareTo.sharedTo": {
+    "text": "Partagé avec {{destination}}",
+    "source": "e0ae3e50e64b5b795cfb2366a1c48547ed09771750b8a5406f45c873f0a53a50"
+  },
+  "shareTo.sharedToUntitled": {
+    "text": "Partagé dans la conversation",
+    "source": "fa15ed1bd04e36cf329b8e2d1cf3a344ba078ef9f91e9b83975dba16ff7a8124"
+  },
+  "shareTo.sharedToUnknown": {
+    "text": "Partagé avec @unknown",
+    "source": "9ab3106784f5d0fe359367bedd8395e49580633663418dff74577395abbcfb12"
+  },
+  "shareTo.title": {
+    "text": "Partager avec…",
+    "source": "d6066d19866556f046337b21b43a9b447847575ee746f0789fb385c0960f7af5"
+  },
+  "shareTo.sendTo": {
+    "text": "Envoyer à",
+    "source": "9bcbb3bc11e28c336a117a7dc8f19cf10af18deff70cea40d3defac51602b490"
+  },
+  "shareTo.searchPlaceholder": {
+    "text": "Rechercher des personnes, groupes et discussions",
+    "source": "c1433ce0de96da47fb9c82b81bc97bf6fd69ebd9aa71c2a536be7cb73c890163"
+  },
+  "shareTo.listName": {
+    "text": "Où partager",
+    "source": "e29e21623958932c50c38d32e285f8678fbd481b7b2ac44e343d9ed21d7461be"
+  },
+  "shareTo.loading": {
+    "text": "Chargement de vos discussions…",
+    "source": "1b52c1b1da30f227ec7b1f33160b383aa8e80494122da102dd1f4c2924c3c6b3"
+  },
+  "shareTo.noMatch": {
+    "text": "Aucun résultat.",
+    "source": "32ab4da69c2b250a37c9b0791ba1457265caab3b493bf4a68e5b4f951e0aef34"
+  },
+  "shareTo.empty": {
+    "text": "Aucune conversation ni discussion où partager pour l’instant.",
+    "source": "a41db50d99a3b11dd8a771af350b58c022b03fd20e41eec7dfd17fe09846b3e6"
+  },
+  "shareTo.selected": {
+    "text": "Sélectionné",
+    "source": "57fd7a0cf33f2666eede69e44f8857159653f2f28e4fd7482a5e16d4af628d2a"
+  },
+  "shareTo.noteLabel": {
+    "text": "Ajouter un message (facultatif)",
+    "source": "0e4633fab693b7e616ac4d7b5c81cfffa15178a7742fa879f459fc6eb962dc2b"
+  },
+  "shareTo.notePlaceholder": {
+    "text": "Dites pourquoi vous le partagez",
+    "source": "df99cb0228afc76d6865917a1877fdd09cbc47c2916ca008a9046783b2310978"
+  },
+  "shareTo.discussionNote": {
+    "text": "Publie le lien dans la discussion {{discussion}}. Tous les participants voient la carte s’ils peuvent l’ouvrir.",
+    "source": "aeb16ce525c172e5f643d6b2be7d5c1fa7c5f2bec6c795592616f91e36ef00c1"
+  },
+  "shareTo.sharing": {
+    "text": "Partage…",
+    "source": "2e913af44d225a04f59256f792374fe8a7f0d08fe8cccefbac943a27e58fcc97"
+  },
+  "shareTo.send": {
+    "text": "Envoyer",
+    "source": "f6f4688ff23d50c67053963c251fa0ce64a925cf283537cf066b1f362cb9b778"
+  },
+  "row.attachmentPreview": {
+    "text": "Aperçu",
+    "source": "324b134f57c70c729ae3dc4d298bb451656717d70523e942c1ce667b8024ea07"
+  },
+  "row.error.edit": {
+    "text": "Votre modification n’a pas été enregistrée.",
+    "source": "5897b50ffa1a497c1c368240ee0c81a9ceb8c501c57c3d1bc589691e0e3e5afb"
+  },
+  "row.error.reaction": {
+    "text": "Impossible de mettre à jour la réaction.",
+    "source": "af4f9cd08d406af4e00d108c4a80d429b843f5298f12e683bda2c6ad534de107"
+  },
+  "row.error.saved": {
+    "text": "Impossible de mettre à jour vos messages enregistrés.",
+    "source": "5f3dc26f7806c8e876a3c91f28eefbe64193ee672b8ad0b2006eab45f28c850b"
+  },
+  "row.error.block": {
+    "text": "Impossible de bloquer cette personne.",
+    "source": "3b1a27970cbe26052c7581f712eaa2a2e812ca662f56d9827110e63095034910"
+  },
+  "row.error.delete": {
+    "text": "Impossible de supprimer ce message.",
+    "source": "ac2276304e3a3e64b063bb4191bb82c7b9a18282f1b936778229fd1789233c9f"
+  },
+  "row.error.unread": {
+    "text": "Impossible de marquer comme non lu.",
+    "source": "7dafe9557a1c9a855ebdb2cff962e6b767b9232f9288df794ada43c2f92e4875"
+  },
+  "row.block.title": {
+    "text": "Bloquer {{name}} ?",
+    "source": "7fb9b23e7d3b9ab77d50be1446c16c93d3d213a66c05e742bb0b68e76ce22205"
+  },
+  "row.block.titleUnknownHandle": {
+    "text": "Bloquer @unknown ?",
+    "source": "a5ef7702f3d58b0b9342dd6facc4f0fd96e85674f5ba615c6ce976f3f91db536"
+  },
+  "row.block.titleUnknown": {
+    "text": "Bloquer unknown ?",
+    "source": "7729ab35d896c3e29cf671dd133f99268660e8406bb16803f32e8a77519f4625"
+  },
+  "row.block.message": {
+    "text": "Ses messages dans les discussions partagées et les conversations d’applications seront masqués, et cette personne ne pourra plus vous écrire directement.",
+    "source": "2202f540b7de621528e4cbca8f9b208c8efe83dd196b88af2741e514fc06565b"
+  },
+  "row.block.confirm": {
+    "text": "Bloquer",
+    "source": "211d0bb8cf4f5b5202c2a9b7996e483898644aa24714b1e10edd80a54ba4b560"
+  },
+  "row.delete.title": {
+    "text": "Supprimer ce message ?",
+    "source": "8f6e2cda49ca7d233da70f3162dd7e33d66a6117d5d77832a185932264e4687d"
+  },
+  "row.delete.message": {
+    "text": "Tout le monde verra « Message supprimé » à sa place. Cette action est irréversible.",
+    "source": "03e4f87d60e8e2e174c50e08b3cb2b07b1337b6f0dc38181eae123849fbaf504"
+  },
+  "row.delete.confirm": {
+    "text": "Supprimer",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "row.markedUnread": {
+    "text": "Marqué comme non lu",
+    "source": "43523e7b79c573237ebe073ec36eb98e5bba555d931bf28627d6277acd87c892"
+  },
+  "row.menu.viewThread": {
+    "text": "Voir le fil",
+    "source": "9c32230599cc4fa40bce69ff46fb5b9234949ca4cebbe6739538047c90c44114"
+  },
+  "row.menu.replyInThread": {
+    "text": "Répondre dans le fil",
+    "source": "a236732715648b31ac8834059279b44d4e676c02820de6e47e0d6f5d0e512760"
+  },
+  "row.menu.edit": {
+    "text": "Modifier le message",
+    "source": "9757ccd5ef123556c20a8de269d851361cc98b38024d253fc70d81599c4915f3"
+  },
+  "row.menu.copyText": {
+    "text": "Copier le texte",
+    "source": "b0ac9cea86878b84b24131ccd5ed5979ed5c199e0a62f88fc1d1aed77723b53a"
+  },
+  "row.textCopied": {
+    "text": "Texte du message copié",
+    "source": "1ff13082060b3d91f8cb68c790727784cd0cabf521223039075028798beeffa8"
+  },
+  "row.menu.copyLink": {
+    "text": "Copier le lien du message",
+    "source": "fc0915221d9236577d2679c29436a5b22a5b0e3aacc6faf13bc8300d12287d89"
+  },
+  "row.linkCopied": {
+    "text": "Lien copié",
+    "source": "d12860c21e78baa522ac743ecfbd77fb9cf4558e581e0e54afcace23b3ce1849"
+  },
+  "row.menu.markUnread": {
+    "text": "Marquer comme non lu",
+    "source": "54b4e3f28dc5b7562bda4fc41662525042c2ba1e9b4301641d27c8f38f7f1e82"
+  },
+  "row.menu.delete": {
+    "text": "Supprimer le message",
+    "source": "87e7176a7ce700af0c4afe34a922d1401eec9611ffc5a99bdbf032e8654c2e9b"
+  },
+  "row.menu.report": {
+    "text": "Signaler le message",
+    "source": "0a1e3c5275559c907933f2d7aed5ed272b16da899c93061a08b3f67c41f869d7"
+  },
+  "row.reportLabel": {
+    "text": "Message de {{name}}",
+    "source": "75162f34cf7d5590ba2573da4c7d63713fcfe54180c46703ffff566b779bd64b"
+  },
+  "row.reportLabelUnknownHandle": {
+    "text": "Message de @unknown",
+    "source": "332c7cc9a7288b259ec474b65245f01b3afe89da0c70a98cab284e62103b9501"
+  },
+  "row.reportLabelUnknown": {
+    "text": "Message de unknown",
+    "source": "9b68a83f15eeaa6aacd0a1d1c645c2faf84a23cd8c69e6ae9e4029df64507a2c"
+  },
+  "row.menu.block": {
+    "text": "Bloquer {{name}}",
+    "source": "5de345087a87dc6e3074ee23ca65ddeac77fe11f1553b13403b1635cbeb2de2b"
+  },
+  "row.menu.blockUnknownHandle": {
+    "text": "Bloquer @unknown",
+    "source": "53bf7129167a1c396be1ec1f4eada38d21e1fe6c4261f31af969ed52b6f30cc7"
+  },
+  "row.menu.blockUnknown": {
+    "text": "Bloquer unknown",
+    "source": "08d433bb94a2ba0bf6cf90ce9c203df16ce95b7938e43be0e89d81dee06df696"
+  },
+  "row.sheet.reply": {
+    "text": "Répondre",
+    "source": "c253f451bdd56431ff15f638498d0003c36aabd5b07e5d21aaa7f1391410747c"
+  },
+  "row.sheet.unsave": {
+    "text": "Retirer",
+    "source": "51883bd8df178d966865a2a1c5b5b72f7d5929eed44246315be2ae2d08a067aa"
+  },
+  "row.sheet.save": {
+    "text": "Enregistrer",
+    "source": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d"
+  },
+  "row.deleted": {
+    "text": "Message supprimé",
+    "source": "7e94d4b9a46bed9bc030dfae9e10522d8089b42269c7a841a6682af3b4368afe"
+  },
+  "row.quote.deleted": {
+    "text": "Message supprimé",
+    "source": "7e94d4b9a46bed9bc030dfae9e10522d8089b42269c7a841a6682af3b4368afe"
+  },
+  "row.quote.attachment": {
+    "text": "Pièce jointe",
+    "source": "040d2b3689dd1d4c9661e938f4633914f2c0aa0a1fbc3bc0047f554c0b16fd20"
+  },
+  "row.editLabel": {
+    "text": "Modifier le message",
+    "source": "9757ccd5ef123556c20a8de269d851361cc98b38024d253fc70d81599c4915f3"
+  },
+  "row.aiBadge": {
+    "text": "IA",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "row.edited": {
+    "text": "modifié",
+    "source": "1fb9f4097256db2d7b1e13aff79cee44339891a31c556b9cf6093885773b3618"
+  },
+  "row.notSent": {
+    "text": "Non envoyé",
+    "source": "cd5f943d586317a053254e54e42d9979e79bec16124c3bde2e30c340aca5df87"
+  },
+  "row.discard": {
+    "text": "Abandonner",
+    "source": "eb1a70e39274bb762b5d7c1adb5debeea2b05e12af28207f21a375b596853273"
+  },
+  "inbox.aiBadge": {
+    "text": "IA",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "inbox.requestReview": {
+    "text": "Demande de message · Touchez pour examiner",
+    "source": "1e73e2a01c3a3733671f8be2c11f3d29c773da219ac946e1ef10c114f7d683fb"
+  },
+  "inbox.invitationReview": {
+    "text": "Invitation de groupe · Touchez pour examiner",
+    "source": "01d5556cc786d060aede3c4bbec814fc7c357a9c207de31f28ca907738bc9f8e"
+  },
+  "inbox.noMessages": {
+    "text": "Aucun message pour l’instant",
+    "source": "f42e0f66017d9937cc398684d9ba991ac7c0ec17f7cea27c68078e54176e277b"
+  },
+  "inbox.agentPill": {
+    "text": "Agent",
+    "source": "11b39c93777e8f1f3983bdba7c72b22fe68cfea20c677e9de53e17cb7dbfb19f"
+  },
+  "inbox.previewBy": {
+    "text": "@{{username}} : {{message}}",
+    "source": "760146d15fb4e6165927ddb63160f6058c544c720ab506d0e0ed158562b14400"
+  },
+  "inbox.everyone": {
+    "text": "Tout le monde sur Homeroom",
+    "source": "7af179f445089856e275472ab215530ebda3bc45cbca4d6519077deb05af30e6"
+  },
+  "inbox.agentChat.deleteFailed": {
+    "text": "Impossible de supprimer cette discussion.",
+    "source": "54945b07d93667cee23fd299fc9d9066d75bc26947262d160445f604cbe4d708"
+  },
+  "inbox.agentChat.deleteConfirm": {
+    "text": "Supprimer cette discussion ?",
+    "source": "848dad9ba0a4bacc6810e23088a156b011693714583edb406148ebe325ad5dec"
+  },
+  "inbox.agentChat.deleting": {
+    "text": "Suppression…",
+    "source": "43b5894c3e4e2b24f13c935f4fae0a0a8fbe7d7792750a09b88c2097fd9a32b8"
+  },
+  "inbox.agentChat.delete": {
+    "text": "Supprimer",
+    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
+  },
+  "inbox.agentChat.untitled": {
+    "text": "Discussion sans titre",
+    "source": "4d4e126c2185da5e86b7478f0f12fc30009339941ef0d8627959aeb4641b6f69"
+  },
+  "inbox.agentChat.working": {
+    "text": "En cours…",
+    "source": "5474eef8d0f179c707cf418e2bbb468c77cc24edc5e9f5f4e137e85e06a8eea0"
+  },
+  "inbox.agentChat.deleteNamed": {
+    "text": "Supprimer {{chat}}",
+    "source": "14f242ae252bd0c47545a7338cc502bd69b353dd98fcedfa110d9102d45cd647"
+  },
+  "inbox.agentChat.deleteUnnamed": {
+    "text": "Supprimer cette discussion",
+    "source": "45b0a773a0cda6621b59e4ee873f26b3d4d2ea5d0a84d0388c1349e2945f3c16"
+  },
+  "inbox.filterGroup": {
+    "text": "Afficher",
+    "source": "0df6f1cad36c49da768a6efdcc2c4be102f5729f7381cb53e4ff8061d17eaeb6"
+  },
+  "inbox.new.bot.label": {
+    "text": "Homeroom bot",
+    "source": "dbcdaf6793937cb49c108a0928a95702345de32d1e04db8037f1bb66945bcde9"
+  },
+  "inbox.new.bot.hint": {
+    "text": "Créez une application ou suggérez une amélioration",
+    "source": "2abfe5d51d6a6b02caff5cac161fef214edaf8ccd0a92042f22b937a08802844"
+  },
+  "inbox.new.agent.label": {
+    "text": "Construire maintenant",
+    "source": "e692729553d78058e361e606ff2d6845767dd75008169bdfc6cd3c28b540f429"
+  },
+  "inbox.new.agent.hint": {
+    "text": "Planifiez et créez une modification avec un agent de code",
+    "source": "25ff6d910b718424045573c7e4a20dd8248d74f5734778042f4eec63113d4499"
+  },
+  "inbox.new.direct.label": {
+    "text": "Message direct",
+    "source": "cd3e16057d094b97fa8efe29cec3b03e82ff48f4fc5712a2e5878732bd2a0ab6"
+  },
+  "inbox.new.direct.hint": {
+    "text": "Parler à une personne",
+    "source": "3e2fc6502a876510a479c723a2e0b928242debeb189433b4e4a96689ef3bc4e8"
+  },
+  "inbox.new.group.label": {
+    "text": "Discussion de groupe",
+    "source": "28c7d3f8b75de76f887dfddddf60086b646b2efdb00e4a1d559ccec95712a336"
+  },
+  "inbox.new.group.hint": {
+    "text": "Réunissez quelques personnes",
+    "source": "aef2cce10ace85195b480c459352da1e7f06e5dc7235ec2d8eb0f2627c33e877"
+  },
+  "inbox.new.button": {
+    "text": "Nouveau message",
+    "source": "78f5975a5d705e9528dd0e8d41206534b7e8c269b139bb151d5c0ca0928247c3"
+  },
+  "inbox.new.menuName": {
+    "text": "Démarrer une nouvelle conversation",
+    "source": "beae8c136bd3f9ebd8d20d895693794f5d27c02e7d10d75af247630140eff137"
+  },
+  "inbox.section.chats": {
+    "text": "Discussions",
+    "source": "ef5b4049bb367b05531fa2c2982dbc5b710c3dde724d9a2683747c1da9b61eac"
+  },
+  "inbox.section.channels": {
+    "text": "Canaux",
+    "source": "4c8906cf76f5740ab8792aef9f0033fe21a92045e90b357816064e9f6860a03e"
+  },
+  "inbox.loading": {
+    "text": "Chargement des conversations",
+    "source": "8d384c507b4792f9d01867fc8e2e085b9ff0022f0e46f70287fcb37f0b5710ce"
+  },
+  "inbox.showLess": {
+    "text": "Afficher moins",
+    "source": "94ea9b1d33a02975ea6b71d6cf87d461a48de07869c047b5daeb1654e9d539f8"
+  },
+  "inbox.archived.show": {
+    "text": "Afficher les archives",
+    "source": "e9de9f2f7a8547e2be68a608f71e3245cb176fcb03dfdff55060e0f25f387975"
+  },
+  "inbox.archived.hide": {
+    "text": "Masquer les archives",
+    "source": "dd1c79324e411c473dc6e8ad9506ce890e8acdfcc5d8bd17ff030d1c85d0d727"
+  },
+  "inbox.archived.heading": {
+    "text": "Archivées",
+    "source": "bdb86505f8062d15f152cef71dd4ca89609d5bf8e98771dcd2c9f70d247403da"
+  },
+  "inbox.archived.empty": {
+    "text": "Aucune discussion d’agent archivée.",
+    "source": "aeb37e7712587613c74dd61cf07d89a6924c2e21417f8a3b9767e4c4ec802df6"
+  },
+  "inbox.listName": {
+    "text": "Conversations",
+    "source": "1d432f58690c2b4a9737b0a97f04b70bb4f0d9950d5177619039afe139f3b31e"
+  },
+  "inbox.searchPlaceholder": {
+    "text": "Rechercher des messages…",
+    "source": "cd889ff473992e87ffc9b8ef01fb7391d51da132ec07b112f004780ee28f84c7"
+  },
+  "inbox.searchLabel": {
+    "text": "Rechercher des messages",
+    "source": "ddf0602b21a7f2a8a4653e2f70b43f776b578f167b414389fcd53f8c7f08d42c"
+  },
+  "inbox.offline": {
+    "text": "Hors ligne. Les messages en attente seront renvoyés à la reconnexion.",
+    "source": "48dfe96ce53da35d4be6490ebb6c8519709ba288f55f2ec7db208e562986ab7a"
+  },
+  "inbox.empty.title": {
+    "text": "Aucun message pour l’instant",
+    "source": "f42e0f66017d9937cc398684d9ba991ac7c0ec17f7cea27c68078e54176e277b"
+  },
+  "inbox.empty.body": {
+    "text": "Démarrez une conversation privée ou réunissez un groupe.",
+    "source": "209d9097f3924636dbd2199a26e042c2a0447b133a587495ddb363dc051e9018"
+  },
+  "inbox.empty.action": {
+    "text": "Nouvelle conversation",
+    "source": "396c946f0c795aa63e5ecd43128af985f9c2682892a01706500807111424c000"
+  },
+  "inbox.filterEmpty": {
+    "text": "Rien ici avec ce filtre.",
+    "source": "e73baf0adc384ee2be0504d7621db163426cfc920ed141674e7dd0abb659db97"
+  },
+  "inbox.searchEmpty": {
+    "text": "Aucun message ne correspond à « {{query}} ».",
+    "source": "e0a31a25c39990bf330eb83cc5cae3be7d39b8646b7c13fa3af97479f9a431f3"
+  },
+  "invitation.error.respond": {
+    "text": "Impossible de mettre à jour cette invitation.",
+    "source": "831e6ac8dbd95e339ba333fc02c2070e6baccb9f050f2cd30f247c3ea35357c2"
+  },
+  "invitation.error.declineBlock": {
+    "text": "Impossible de refuser et de bloquer cet expéditeur.",
+    "source": "8a88ced084d49d3e8c8f18df4fa5a7d71185d76b3c482e6ac6ba4a3cbae56439"
+  },
+  "invitation.messageRequest": {
+    "text": "Demande de message",
+    "source": "2de564f22a0b80dc904f53eaf258390eda50ae6027f5ec03224bbba762184a1a"
+  },
+  "invitation.groupInvitation": {
+    "text": "Invitation à un groupe",
+    "source": "3733873c8398374120518e9900cab8a1fc1ffe1ce2a72e3d2b4aa420f3033c9c"
+  },
+  "invitation.invitedBy": {
+    "text": "@{{username}} vous a invité. En acceptant, vous accédez à tout l’historique conservé de la conversation.",
+    "source": "061d5d71fdca4de72799a56b8178ead0cb3ccc945093821ee86cc894027b174e"
+  },
+  "invitation.invitedByUnknown": {
+    "text": "@unknown vous a invité. En acceptant, vous accédez à tout l’historique conservé de la conversation.",
+    "source": "ebbff0edf27f075238feb0b646d8f1d550ab2de5aa37bfcbf808e6573b1591e0"
+  },
+  "invitation.invitedBySomeone": {
+    "text": "Quelqu’un vous a invité. En acceptant, vous accédez à tout l’historique conservé de la conversation.",
+    "source": "f50ce89e2fb1e7bfc897b41a4a0421e987b23b5be455f6b8117c931a00a29a1e"
+  },
+  "invitation.decline": {
+    "text": "Refuser",
+    "source": "a2d285b352873457207a34a015267524bb4613c3e8c961c8998da4e08e0d5745"
+  },
+  "invitation.declineAndBlock": {
+    "text": "Refuser et bloquer @{{username}}",
+    "source": "d39afec02b6da01903559dd7a7fe179e24a3663dbd9f273309a6d3eaf31d21ea"
+  },
+  "invitation.declineAndBlockUnknown": {
+    "text": "Refuser et bloquer @unknown",
+    "source": "67fe43973102e1a2d171c4de7147ce21a935739cd3b5ea24da7cc9d93913a498"
+  },
+  "invitation.accept": {
+    "text": "Accepter",
+    "source": "89713b9c9c1b8f659c9f49db25e4a47886dd673fee248c3f650391f09a759cef"
+  },
+  "header.showList": {
+    "text": "Afficher la liste des conversations",
+    "source": "08d92ce7249c7d36f32bc82bb7c04844a4be0c248643c8c0255c04c03e14be0e"
+  },
+  "header.fullWidth": {
+    "text": "Pleine largeur",
+    "source": "d34008d28f89d292b674edcb48c1a532854feae544a194c58d5ef3f49ee199c8"
+  },
+  "header.block.title": {
+    "text": "Bloquer {{name}} ?",
+    "source": "7fb9b23e7d3b9ab77d50be1446c16c93d3d213a66c05e742bb0b68e76ce22205"
+  },
+  "header.block.titleUnknownHandle": {
+    "text": "Bloquer @unknown ?",
+    "source": "a5ef7702f3d58b0b9342dd6facc4f0fd96e85674f5ba615c6ce976f3f91db536"
+  },
+  "header.block.titleUnknown": {
+    "text": "Bloquer unknown ?",
+    "source": "7729ab35d896c3e29cf671dd133f99268660e8406bb16803f32e8a77519f4625"
+  },
+  "header.block.message": {
+    "text": "Ses messages dans les discussions partagées et les échanges d’applications seront masqués, et cette personne ne pourra plus vous écrire directement.",
+    "source": "2202f540b7de621528e4cbca8f9b208c8efe83dd196b88af2741e514fc06565b"
+  },
+  "header.block.confirm": {
+    "text": "Bloquer",
+    "source": "211d0bb8cf4f5b5202c2a9b7996e483898644aa24714b1e10edd80a54ba4b560"
+  },
+  "header.block.failed": {
+    "text": "Impossible de bloquer cet utilisateur.",
+    "source": "e400a5f2bb353c890c3d6a9c1e0f4f08ab7fce6171c37a126bc80565c6f5f2d9"
+  },
+  "header.rename.title": {
+    "text": "Renommer le groupe",
+    "source": "98d254a311d0e820bb8739eb28d4e1eb5fc1cfc34f755167759864cd15504b4c"
+  },
+  "header.rename.placeholder": {
+    "text": "Nom du groupe",
+    "source": "762ebb70ef0ea2e80a41035e91a5f95ec35b0b03d2f2acc5c5b4f4c09213c8c5"
+  },
+  "header.rename.failed": {
+    "text": "Impossible de renommer ce groupe.",
+    "source": "26ef08612d529eab4f6f49bb4d64c0ba461edca3074ff12a49656a31a656689d"
+  },
+  "header.subtitle.invited": {
+    "text": "Invitation en attente",
+    "source": "e49a73427b52b59805202ff29516e9b010651f898b2608b103b8e6c5210fb979"
+  },
+  "header.subtitle.requestPending": {
+    "text": "Demande en attente",
+    "source": "bc26ab4d4ba9f030b32611d37569fcfd1842a25e30ec71dd68f106cbb4ceefb7"
+  },
+  "header.subtitle.direct": {
+    "text": "Message privé",
+    "source": "cd3e16057d094b97fa8efe29cec3b03e82ff48f4fc5712a2e5878732bd2a0ab6"
+  },
+  "header.aiBadge": {
+    "text": "IA",
+    "source": "11fb682be0a0233d5fb899721ecfc1827d20f0d2ff2e093310efa61efca8af1c"
+  },
+  "header.groupMembers": {
+    "text": "Membres du groupe",
+    "source": "dd0fd917e7772cf2ef97cc918a6e19174d74031a2a73486fe4ea32247d90ca06"
+  },
+  "header.actions": {
+    "text": "Actions de la conversation",
+    "source": "ef3683c4bbe27eb54e4458789f35ba9fd517773f134e7d88c74a69cbb7811d64"
+  },
+  "header.menu.rename": {
+    "text": "Renommer le groupe",
+    "source": "98d254a311d0e820bb8739eb28d4e1eb5fc1cfc34f755167759864cd15504b4c"
+  },
+  "header.menu.members": {
+    "text": "Membres et invitations",
+    "source": "781b3b2185cab45591601365b3dff6ac110039b79743687eead591d2fe4d9c59"
+  },
+  "header.menu.block": {
+    "text": "Bloquer {{name}}",
+    "source": "5de345087a87dc6e3074ee23ca65ddeac77fe11f1553b13403b1635cbeb2de2b"
+  },
+  "header.menu.blockUnnamedHandle": {
+    "text": "Bloquer @unknown",
+    "source": "53bf7129167a1c396be1ec1f4eada38d21e1fe6c4261f31af969ed52b6f30cc7"
+  },
+  "header.menu.blockUnnamed": {
+    "text": "Bloquer unknown",
+    "source": "08d433bb94a2ba0bf6cf90ce9c203df16ce95b7938e43be0e89d81dee06df696"
+  },
+  "header.menu.blockUnknown": {
+    "text": "Bloquer",
+    "source": "211d0bb8cf4f5b5202c2a9b7996e483898644aa24714b1e10edd80a54ba4b560"
+  },
+  "header.menu.report": {
+    "text": "Signaler l’utilisateur",
+    "source": "82016f1f318751d17cf2012c8eb1ca986c533fc6d9c95f84455309a91c8c2198"
+  },
+  "header.menu.refresh": {
+    "text": "Actualiser la conversation",
+    "source": "889bdee49e27ea18328dfca520d92eb92fabff6ae0dae6aa7a29675751596f13"
+  },
+  "thread.day.today": {
+    "text": "Aujourd’hui",
+    "source": "2b065c7c9ce466e5ebcad757987d5d660ee4c9ea708bc62c43444b53334738ba"
+  },
+  "thread.day.yesterday": {
+    "text": "Hier",
+    "source": "566181254b293aa66653e43313be9e39c12d44f9ac4fcd3236ef1e9c50a2903f"
+  },
+  "discussion.error.title": {
+    "text": "Impossible d’ouvrir cette discussion.",
+    "source": "0c1d4eb67c4e960eac80b6f16e5ae344a90207f65d3c8a7e105c82b5cc8e9c1a"
+  },
+  "discussion.error.body": {
+    "text": "Elle a peut-être été supprimée, ou vous n’êtes peut-être pas membre de cette application.",
+    "source": "794d824a6a314325c499cea5b408fb61693ebc0bf3490e1d2bfd557033b45905"
+  },
+  "discussion.subtitle.archived": {
+    "text": "Ancienne discussion du projet · lecture seule",
+    "source": "ea2d0ed77a2a2f6927d1eca3ca4901a30c2fc527129b1a90584d1e3285de7bb2"
+  },
+  "discussion.subtitle.channel": {
+    "text": "#{{channel}} · Tous ceux qui construisent ce projet",
+    "source": "5d28df5a979173eb525980bc5902c8ebaa2cefaa61d5598c979ee758a1e71aa3"
+  },
+  "discussion.subtitle.everyone": {
+    "text": "Tous ceux qui construisent ce projet",
+    "source": "55b9c41a38c6d86e8193d66deb0fe63384997d4b3e398d4e54f69af259ea0842"
+  },
+  "agent.sessionName": {
+    "text": "Session d’agent",
+    "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
+  },
+  "agent.chatName": {
+    "text": "Discussion avec l’agent",
+    "source": "3b6628926bd28b0522ad00dba9f5c5afb8ff8effe57c1ab6bb3a6777232fb41b"
+  },
+  "agent.row.prNumber": {
+    "text": "PR n° {{number}}",
+    "source": "3e1a154cfb911f9333d7e99d818b2a74d9b2cc6d4660e6b3ef14316c4f014f24"
+  },
+  "agent.row.changeId": {
+    "text": "Modification {{id}}",
+    "source": "fdf00979c492648e3adf5b615925709ac73ddab509a730a8878803d0874c1013"
+  },
+  "agent.row.noChange": {
+    "text": "Aucune modification active",
+    "source": "4a3942839082d51f659b2b83829fe2798259a46631b237e21c881acb1492f8c6"
+  },
+  "agent.row.newSession": {
+    "text": "Nouvelle session",
+    "source": "cffdba22adf299e8fc6f937ef63ca4352ca9db3022d4634004c0a9bd10aa0dfe"
+  },
+  "agent.row.activity.working": {
+    "text": ", au travail",
+    "source": "c10cf4b7e937aa41e23deadc7548dfd0f92c17b938b67719a917869268a1811d"
+  },
+  "agent.row.activity.done": {
+    "text": ", terminé",
+    "source": "8eaaf59d9841b97059bf0143ceaaee2fbcba452d7a107fc4790d8fc212f55079"
+  },
+  "agent.row.working": {
+    "text": "Travail en cours…",
+    "source": "5474eef8d0f179c707cf418e2bbb468c77cc24edc5e9f5f4e137e85e06a8eea0"
+  },
+  "agent.session.openFull": {
+    "text": "Ouvrir en plein écran",
+    "source": "229fbeec6b2f9d821ce4812877621a2e60d56c1c9eeb42470bfe0ef6691130b2"
+  },
+  "agent.session.unavailable": {
+    "text": "Impossible d’ouvrir cette session ici.",
+    "source": "20246e7fff5e5fac0ee3bfaac16140341077a983839967033ab67ad6af7e0a97"
+  },
+  "agent.session.openInApp": {
+    "text": "Ouvrir dans l’app",
+    "source": "9c6e2aa69c7e4eff1fae4ece4092a21ddef762e50647e41c79bfb8eebbe476b2"
+  },
+  "agent.session.loading": {
+    "text": "Chargement de la session…",
+    "source": "3d3c04cbc07b2cc869cc8826900dba6c4a82d61a6a838692e8e83de96d34029c"
+  },
+  "thread.empty.title": {
+    "text": "Choisissez une conversation",
+    "source": "df2ea2bc7099883d7e222ac9e2644a7966b34d2509cd12d174e6b4ffde91c58b"
+  },
+  "thread.empty.body": {
+    "text": "Vos discussions s’ouvrent ici. Le canal d’une communauté se trouve sur sa page, dans Communautés.",
+    "source": "e76e96ddd0890e3b2c0825dbfb9c0063ff973e7ec35bec9d53bf444d5f95f0e8"
+  },
+  "thread.paneName": {
+    "text": "Conversation",
+    "source": "ccca1817575365871461752f3229dd59ede742ae69e350e20fd00a6ce3d149e3"
+  },
+  "thread.loading": {
+    "text": "Chargement des messages…",
+    "source": "3a496d425b0f4530284018d5ab74d70028841e58df623e72148795d8f7815e73"
+  },
+  "thread.left": {
+    "text": "Vous avez quitté ce groupe.",
+    "source": "b4d4239426c5cfb40bf9ccfd697782918ce5c3ccc681df1706e1ccc6be8a587f"
+  },
+  "thread.backToMessages": {
+    "text": "Retour aux messages",
+    "source": "b37d78799ae1facfbf1be2b82438df0def1168fe0a6e732b0bacc96a4f1a3038"
+  },
+  "thread.emptyConversation": {
+    "text": "Aucun message pour l’instant. Dites bonjour.",
+    "source": "55d6da428dc9f4af67c77cf3b21f8d27459b4b3ba677f86a636cb02ef809b391"
+  },
+  "thread.loadingOlder": {
+    "text": "Chargement…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "thread.loadEarlier": {
+    "text": "Charger les messages précédents",
+    "source": "33fd46b9e7798283b42a66fe595d088ea3afb0badac619e86951ffd740d0caca"
+  },
+  "thread.loadingNewer": {
+    "text": "Chargement…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "thread.loadNewer": {
+    "text": "Charger les messages suivants",
+    "source": "dc294d6b7860deb7ba26e88ab206bc7145de8f7c00bcdd2455f21b47543e4367"
+  },
+  "thread.jumpToPresent": {
+    "text": "Aller au plus récent",
+    "source": "91330b6f2507706af8a70c5ae4a49aae2668407a74ffea9f0a9525f8830f009f"
+  },
+  "thread.typingOne": {
+    "text": "{{name}} écrit…",
+    "source": "09139447ca239277c736a7b64a1fd57a7534ef479c3324c36eb6e9f4b0a0896f"
+  },
+  "thread.typingOneUnknown": {
+    "text": "unknown écrit…",
+    "source": "f49b639c8d457cd104e2ce20ecdaa519b93ada2e38fd10ad1c793dd9f98f5ffd"
+  },
+  "thread.typingTwo": {
+    "text": "{{first}}, {{second}} écrivent…",
+    "source": "519d12d0df5bbacc76c7c3a7b7819744e321173043f303cd1d148f5171d4ca86"
+  },
+  "thread.typingTwoUnknown": {
+    "text": "unknown, unknown écrivent…",
+    "source": "e410c07c4fd57a5eb45a57e1636d709bd59082d7cc6f1aeb51b5c5424afecc57"
+  },
+  "thread.typingTwoFirstUnknown": {
+    "text": "unknown, {{second}} écrivent…",
+    "source": "3ae6031e7e5b7793ef84af219fd84a2418badc4b7acaccb9e503cd079794e85a"
+  },
+  "thread.typingTwoSecondUnknown": {
+    "text": "{{first}}, unknown écrivent…",
+    "source": "55b3f3680c9821980b34e0c5bc5871fd164311b56d45c42419fb4ca46ede2207"
+  },
+  "thread.activityTimeRange": {
+    "text": "{{start}} – {{end}}",
+    "source": "e3997f8da6a037f271d4ec59be5cbe809cd4d60330c15f8ed124b3b9d0699677"
+  },
+  "replies.paneName": {
+    "text": "Fil",
+    "source": "5373c7f8a5a69019e959540ef127be3302afdd5e2313244e6d08cbd5e975d06d"
+  },
+  "replies.title": {
+    "text": "Fil",
+    "source": "5373c7f8a5a69019e959540ef127be3302afdd5e2313244e6d08cbd5e975d06d"
+  },
+  "replies.close": {
+    "text": "Fermer le fil",
+    "source": "5110caa6ca6c3ef28948a5962f370a17ad382c417453b260f2e2a080016eb7ac"
+  },
+  "replies.loading": {
+    "text": "Chargement des réponses…",
+    "source": "90fa2cf31d174dcd56b93ebdd783624f65142a1408418384fab9ad5c1ba09c47"
+  },
+  "replies.none": {
+    "text": "Aucune réponse",
+    "source": "c106d94d2cb199ddc6fd8e5adf09f27b5d37f7b8e485d85002955c08ee4ded34"
+  },
+  "replies.loadingEarlier": {
+    "text": "Chargement…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "replies.loadEarlier": {
+    "text": "Charger les réponses précédentes",
+    "source": "ce2528d49381fed5bbf7d4b40d0b6ffdcbadfe92bae2b77bf0151e3643d71211"
+  },
+  "replies.app.placeholder": {
+    "text": "Répondre dans le fil…",
+    "source": "5f4ecc1c9a12d4f4c3a5d54a6d3357bf01df3c140b6cc7547836752ffb76c1eb"
+  },
+  "replies.app.membersOnly": {
+    "text": "Seuls les membres de cette app peuvent répondre ici.",
+    "source": "3f1490d83c746e3db8d5cdb482bd6cbdb9510df8129b0bd9a6fe2ede8659e68e"
+  },
+  "row.botBlock.requestLabel": {
+    "text": "Demande n° {{number}} : {{title}}",
+    "source": "548c0153bf54c08309b6fd75f765efacd31a62b23dc3bb02f06b7f13265ea514"
+  },
+  "row.botBlock.requestLabelUntitled": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "bot.ready.line.release": {
+    "text": "{{release}}.",
+    "source": "9f8e3da4697beb42277c50aeaaf7a94245facaa86d455509d0e1d1aa8199baac"
+  },
+  "bot.ready.change.request": {
+    "text": "Demande n° {{number}} : {{title}}",
+    "source": "548c0153bf54c08309b6fd75f765efacd31a62b23dc3bb02f06b7f13265ea514"
+  },
+  "bot.ready.change.requestUntitled": {
+    "text": "Demande n° {{number}}",
+    "source": "cf9bada4f896059a3e2ab83658035f738657d0c2c2d1dccc1eec77f29d868cdf"
+  },
+  "bot.outcome.goingLiveRelease": {
+    "text": "C’est fait. {{release}}",
+    "source": "5f77b1ca5bab45251df5c64553b203c84e9da219b43fc030e36fa8e3f7973fe0"
+  },
+  "bot.tray.workingOnRelease.waiting": {
+    "text": "Travaille sur {{job}} · en attente d’une version",
+    "source": "972a12be6bdd2ca6e8425ca7ed6cbdcab6eeaa8dfe72734754fc3b965d564125"
+  },
+  "bot.tray.workingOnRelease.now": {
+    "text": "Travaille sur {{job}} · mise en ligne en cours",
+    "source": "ba7e2fc230bee97f8cc120b547ce670c0e82ef3a33cc7bacf0a9b96a5a6625d4"
+  },
+  "bot.tray.workingOnRelease.next": {
+    "text": "Travaille sur {{job}} · en ligne à la prochaine version",
+    "source": "b0d12b213ea568e2fe3216402e079fc8e1ff8db94821e5beb9b3592fc15acbd3"
+  },
+  "bot.last.release.waiting": {
+    "text": "Dernier : {{job}} en attente d’une version",
+    "source": "ab5d929ce6da1de6b13a2849c2513e244621079270d3ea10b9d82431852c1870"
+  },
+  "bot.last.release.now": {
+    "text": "Dernier : {{job}} mise en ligne en cours",
+    "source": "cb66628460f91799dcf741570e7e6e69205457f1671eddbf03711e27d63f7048"
+  },
+  "bot.last.release.next": {
+    "text": "Dernier : {{job}} en ligne à la prochaine version",
+    "source": "5f6f1bd4506e84d57312eb4b01ae525219d7f6977f4c06fb09414613585c33fe"
+  },
+  "bot.plan.complicatedNote": {
+    "text": "Ses écrans avant et après sont sur la demande ci-dessous. Ce que vous demandez de changer y est publié, visible du groupe.",
+    "source": "145d1235866f8465ad33f3fe65e1cac9dcd2b35c2eb9c22e4558a7c60510b797"
+  },
+  "attachments.refusedMore_many": {
+    "text": "{{reason}} {{count}} autres fichiers n’ont pas été joints.",
+    "source": "ffb0f003d340c69407ec034c717765151e3c8809054fe32cf2af5eac2a39ed68"
+  },
+  "attachments.refusedMore_one": {
+    "text": "{{reason}} {{count}} autre fichier n’a pas été joint.",
+    "source": "0d4412c7ebe42cc36173b71877e2452e4a9fb28d48e8c3c3164fff7e8f87baff"
+  },
+  "attachments.refusedMore_other": {
+    "text": "{{reason}} {{count}} autres fichiers n’ont pas été joints.",
+    "source": "ffb0f003d340c69407ec034c717765151e3c8809054fe32cf2af5eac2a39ed68"
+  },
+  "imageSave.saved_many": {
+    "text": "{{count}} images téléchargées",
+    "source": "232540b18e09e6775d2b2fe71c5c10dcbb67d217e1c44de6c7186d5fd730a2b6"
+  },
+  "imageSave.saved_one": {
+    "text": "Image téléchargée",
+    "source": "c37f27200a864cdea587a18561a882794218d9814ecd5c91359830a17dff4622"
+  },
+  "imageSave.saved_other": {
+    "text": "{{count}} images téléchargées",
+    "source": "232540b18e09e6775d2b2fe71c5c10dcbb67d217e1c44de6c7186d5fd730a2b6"
+  },
+  "imageSave.menuDownload_many": {
+    "text": "Télécharger {{count}} images",
+    "source": "6e376dfe5eeb37d79da8e12e48d6bc033761f3cfd1a0e86d7b2d0b520fefd955"
+  },
+  "imageSave.menuDownload_one": {
+    "text": "Télécharger l’image",
+    "source": "3ac575dcce244f9344a3dc09055f7bff3d61ad47b1c97aeb7d40553906cb8f23"
+  },
+  "imageSave.menuDownload_other": {
+    "text": "Télécharger {{count}} images",
+    "source": "6e376dfe5eeb37d79da8e12e48d6bc033761f3cfd1a0e86d7b2d0b520fefd955"
+  },
+  "thread.activity.what_many": {
+    "text": "{{count}} réponses dans le fil",
+    "source": "32b4ecc10d0cd2e6de1588b2d016dece8bea508755fb6900f403e06b886744a3"
+  },
+  "thread.activity.what_one": {
+    "text": "Réponse dans le fil",
+    "source": "f1f2b38daa292aa57889c6b5a6b965376fe444f0fe3cbc91d56d35bac69c9203"
+  },
+  "thread.activity.what_other": {
+    "text": "{{count}} réponses dans le fil",
+    "source": "32b4ecc10d0cd2e6de1588b2d016dece8bea508755fb6900f403e06b886744a3"
+  },
+  "thread.activity.open_many": {
+    "text": "{{count}} réponses dans le fil : {{message}}, {{time}}. Ouvrir le fil",
+    "source": "aa00e769ac06fd63e1734eec755a1b730dac56b0c19422b5a446900b83acce47"
+  },
+  "thread.activity.open_one": {
+    "text": "Réponse dans le fil : {{message}}, {{time}}. Ouvrir le fil",
+    "source": "9ad6ee6ba9cd5bcad46e9a1530fefc5d38732adf7f2331804a65bc5f7372d247"
+  },
+  "thread.activity.open_other": {
+    "text": "{{count}} réponses dans le fil : {{message}}, {{time}}. Ouvrir le fil",
+    "source": "aa00e769ac06fd63e1734eec755a1b730dac56b0c19422b5a446900b83acce47"
+  },
+  "thread.activity.openDeleted_many": {
+    "text": "{{count}} réponses dans le fil : message supprimé, {{time}}. Ouvrir le fil",
+    "source": "31925cd19addf80b5fd6efbc7cececf105f8c56abaecf36ae19ce57614f53990"
+  },
+  "thread.activity.openDeleted_one": {
+    "text": "Réponse dans le fil : message supprimé, {{time}}. Ouvrir le fil",
+    "source": "225bf0b63053c6768bc3029af8aae2dbb19499451b71b23187d0f4ce6d38a050"
+  },
+  "thread.activity.openDeleted_other": {
+    "text": "{{count}} réponses dans le fil : message supprimé, {{time}}. Ouvrir le fil",
+    "source": "31925cd19addf80b5fd6efbc7cececf105f8c56abaecf36ae19ce57614f53990"
+  },
+  "thread.activity.openNoText_many": {
+    "text": "{{count}} réponses dans le fil : un message, {{time}}. Ouvrir le fil",
+    "source": "c1388fa0e9284adcbda1e47592433a87d9efceb24b9fcf42b93291006c62ddac"
+  },
+  "thread.activity.openNoText_one": {
+    "text": "Réponse dans le fil : un message, {{time}}. Ouvrir le fil",
+    "source": "c1af08020ca43bd8431be20c4a3819af2f3cd62d10847e087944c6c7b016625f"
+  },
+  "thread.activity.openNoText_other": {
+    "text": "{{count}} réponses dans le fil : un message, {{time}}. Ouvrir le fil",
+    "source": "c1388fa0e9284adcbda1e47592433a87d9efceb24b9fcf42b93291006c62ddac"
+  },
+  "thread.summary.count_many": {
+    "text": "{{count}} réponses",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "thread.summary.count_one": {
+    "text": "{{count}} réponse",
+    "source": "1c9e6fb4290c21bca50c72205018b2472e04921fe55e3cf8ab46ec9ebe35761e"
+  },
+  "thread.summary.count_other": {
+    "text": "{{count}} réponses",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "thread.summary.openLastFromAt_many": {
+    "text": "{{count}} réponses, dernière de @{{username}} {{when}}. Ouvrir le fil",
+    "source": "3c4f9156382136c3107a757703824f0228ca4d83bd43a15a2bed67a2b8640f28"
+  },
+  "thread.summary.openLastFromAt_one": {
+    "text": "{{count}} réponse, dernière de @{{username}} {{when}}. Ouvrir le fil",
+    "source": "3a2998f3e371d3f676f2f801ea9a52a724324e5e8bcc1506670f3ab48702e08b"
+  },
+  "thread.summary.openLastFromAt_other": {
+    "text": "{{count}} réponses, dernière de @{{username}} {{when}}. Ouvrir le fil",
+    "source": "3c4f9156382136c3107a757703824f0228ca4d83bd43a15a2bed67a2b8640f28"
+  },
+  "thread.summary.openLastFromUnknownAt_many": {
+    "text": "{{count}} réponses, dernière de @unknown {{when}}. Ouvrir le fil",
+    "source": "33cc388b039da22fab7d405abbe5c0a7239aa78fe3e227c34c023bf1d1f303d2"
+  },
+  "thread.summary.openLastFromUnknownAt_one": {
+    "text": "{{count}} réponse, dernière de @unknown {{when}}. Ouvrir le fil",
+    "source": "507533abfeb802a228116b9f69737494bb1549dddbc1ac51a75ca625313e9da3"
+  },
+  "thread.summary.openLastFromUnknownAt_other": {
+    "text": "{{count}} réponses, dernière de @unknown {{when}}. Ouvrir le fil",
+    "source": "33cc388b039da22fab7d405abbe5c0a7239aa78fe3e227c34c023bf1d1f303d2"
+  },
+  "thread.summary.openLastFromSomeoneAt_many": {
+    "text": "{{count}} réponses, dernière de @someone {{when}}. Ouvrir le fil",
+    "source": "11144b374218bfa0463101683bb1d9ae72b140a80243936d1c20cb919924f406"
+  },
+  "thread.summary.openLastFromSomeoneAt_one": {
+    "text": "{{count}} réponse, dernière de @someone {{when}}. Ouvrir le fil",
+    "source": "69e183c631d0882abba21f58d5913304c2b12e3c3025139d5001d44aedfc6efe"
+  },
+  "thread.summary.openLastFromSomeoneAt_other": {
+    "text": "{{count}} réponses, dernière de @someone {{when}}. Ouvrir le fil",
+    "source": "11144b374218bfa0463101683bb1d9ae72b140a80243936d1c20cb919924f406"
+  },
+  "thread.summary.openLastFrom_many": {
+    "text": "{{count}} réponses, dernière de @{{username}}. Ouvrir le fil",
+    "source": "8feccdf9713e60059e7d398444b602a9c701db6ee1af71c5d16826ce14694ccf"
+  },
+  "thread.summary.openLastFrom_one": {
+    "text": "{{count}} réponse, dernière de @{{username}}. Ouvrir le fil",
+    "source": "dc3d1bc0d8fcdb667c4651acef2acc61655ccb78f62bb6b9d5ce0d06660809d9"
+  },
+  "thread.summary.openLastFrom_other": {
+    "text": "{{count}} réponses, dernière de @{{username}}. Ouvrir le fil",
+    "source": "8feccdf9713e60059e7d398444b602a9c701db6ee1af71c5d16826ce14694ccf"
+  },
+  "thread.summary.openLastFromUnknown_many": {
+    "text": "{{count}} réponses, dernière de @unknown. Ouvrir le fil",
+    "source": "2ebdaee6f798529a6bc9f53ab4ec3042ff3ec05155b3c097beccc112088ffe35"
+  },
+  "thread.summary.openLastFromUnknown_one": {
+    "text": "{{count}} réponse, dernière de @unknown. Ouvrir le fil",
+    "source": "d7f47589777c64c05b6f14658c49f75404c6a4329ade95e5c9c197d33aaae945"
+  },
+  "thread.summary.openLastFromUnknown_other": {
+    "text": "{{count}} réponses, dernière de @unknown. Ouvrir le fil",
+    "source": "2ebdaee6f798529a6bc9f53ab4ec3042ff3ec05155b3c097beccc112088ffe35"
+  },
+  "thread.summary.openLastFromSomeone_many": {
+    "text": "{{count}} réponses, dernière de @someone. Ouvrir le fil",
+    "source": "ecc1f86bd0fd1c8cb914ec63c80b581e5facdb9c655691ffbfe0f0e2e82856e0"
+  },
+  "thread.summary.openLastFromSomeone_one": {
+    "text": "{{count}} réponse, dernière de @someone. Ouvrir le fil",
+    "source": "14012759d3f558cb9bc23db6b868bbaf19449bac98784c2bde816f7c700382d0"
+  },
+  "thread.summary.openLastFromSomeone_other": {
+    "text": "{{count}} réponses, dernière de @someone. Ouvrir le fil",
+    "source": "ecc1f86bd0fd1c8cb914ec63c80b581e5facdb9c655691ffbfe0f0e2e82856e0"
+  },
+  "thread.summary.openLastAt_many": {
+    "text": "{{count}} réponses, dernière {{when}}. Ouvrir le fil",
+    "source": "55323aba1e616ba821426300811d8c6df4559713c5132c2dbff88a59fc2f6eed"
+  },
+  "thread.summary.openLastAt_one": {
+    "text": "{{count}} réponse, dernière {{when}}. Ouvrir le fil",
+    "source": "984cddc88cc5dbab7bcd93d9353f9679b169f9b26ffb8567d2def1f9f9ad6d27"
+  },
+  "thread.summary.openLastAt_other": {
+    "text": "{{count}} réponses, dernière {{when}}. Ouvrir le fil",
+    "source": "55323aba1e616ba821426300811d8c6df4559713c5132c2dbff88a59fc2f6eed"
+  },
+  "thread.summary.open_many": {
+    "text": "{{count}} réponses. Ouvrir le fil",
+    "source": "514708f9e038b0d56247be257d6aa33e28913c1dc39f6e1f85bb8093846b0499"
+  },
+  "thread.summary.open_one": {
+    "text": "{{count}} réponse. Ouvrir le fil",
+    "source": "24c7c1cf595ab2497246f324df1d8e1af9a0448f9fb52c182187820c8643fdb8"
+  },
+  "thread.summary.open_other": {
+    "text": "{{count}} réponses. Ouvrir le fil",
+    "source": "514708f9e038b0d56247be257d6aa33e28913c1dc39f6e1f85bb8093846b0499"
+  },
+  "approval.list.from.more_many": {
+    "text": "{{count}} autres",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.list.from.more_one": {
+    "text": "{{count}} autre",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.list.from.more_other": {
+    "text": "{{count}} autres",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.list.from.others_many": {
+    "text": "{{count}} autres",
+    "source": "169de0f0ee875a1234b668c4344db82209654959a28804f506686decdbd7bc58"
+  },
+  "approval.list.from.others_one": {
+    "text": "{{count}} autre",
+    "source": "14f0bd63435bc6ffc86011a9c9cd78fe5c6ffdbf1de15e1a155952e037eb71ab"
+  },
+  "approval.list.from.others_other": {
+    "text": "{{count}} autres",
+    "source": "169de0f0ee875a1234b668c4344db82209654959a28804f506686decdbd7bc58"
+  },
+  "approval.list.subject.more_many": {
+    "text": "{{count}} autres",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.list.subject.more_one": {
+    "text": "{{count}} autre",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.list.subject.more_other": {
+    "text": "{{count}} autres",
+    "source": "e3d6d4345ad8bde8395491aa9d90d87477e5e590ccbc84aadc7663fb57f9ccdd"
+  },
+  "approval.needs_many": {
+    "text": "Nécessite {{count}} approbations de {{people}}",
+    "source": "99db6055c7acd177f209768ee835757f70da0908fb3e9dc677825cbcd2b58747"
+  },
+  "approval.needs_one": {
+    "text": "Nécessite une approbation de {{people}}",
+    "source": "c9840fc8e0569a7d31abfdd2f9acf17c2fa84a370fdd7fe56133c9918e5b601f"
+  },
+  "approval.needs_other": {
+    "text": "Nécessite {{count}} approbations de {{people}}",
+    "source": "99db6055c7acd177f209768ee835757f70da0908fb3e9dc677825cbcd2b58747"
+  },
+  "approval.needsMore_many": {
+    "text": "Nécessite {{count}} approbations de plus de {{people}}",
+    "source": "c60f0267ef08417a30484b4a61c265e1fe1a4dcced084b22b1dedd73d6bc722f"
+  },
+  "approval.needsMore_one": {
+    "text": "Nécessite une approbation de plus de {{people}}",
+    "source": "bd97a05dc7533c8a03d81a54ba4ad1fb6a5b5486356888048ebb397d1b675337"
+  },
+  "approval.needsMore_other": {
+    "text": "Nécessite {{count}} approbations de plus de {{people}}",
+    "source": "c60f0267ef08417a30484b4a61c265e1fe1a4dcced084b22b1dedd73d6bc722f"
+  },
+  "bot.activity.typicalAbout_many": {
+    "text": "généralement environ {{count}} minutes",
+    "source": "b3cdcae28f657cee32ddd5387bb56bc94a9a3693d293daa9bd176ccdd65f5967"
+  },
+  "bot.activity.typicalAbout_one": {
+    "text": "généralement environ {{count}} minute",
+    "source": "b3cdcae28f657cee32ddd5387bb56bc94a9a3693d293daa9bd176ccdd65f5967"
+  },
+  "bot.activity.typicalAbout_other": {
+    "text": "généralement environ {{count}} minutes",
+    "source": "b3cdcae28f657cee32ddd5387bb56bc94a9a3693d293daa9bd176ccdd65f5967"
+  },
+  "bot.activity.typicalRange_many": {
+    "text": "généralement de {{from}} à {{count}} minutes",
+    "source": "8c711f66321e3f2048a043ec2ede37142683ef79d0a7a5db2a58075a3db0c8ec"
+  },
+  "bot.activity.typicalRange_one": {
+    "text": "généralement de {{from}} à {{count}} minute",
+    "source": "8c711f66321e3f2048a043ec2ede37142683ef79d0a7a5db2a58075a3db0c8ec"
+  },
+  "bot.activity.typicalRange_other": {
+    "text": "généralement de {{from}} à {{count}} minutes",
+    "source": "8c711f66321e3f2048a043ec2ede37142683ef79d0a7a5db2a58075a3db0c8ec"
+  },
+  "bot.tray.needYou_many": {
+    "text": "{{count}} vous attendent",
+    "source": "05352065534652d26758f22c2a2f4410c64554a0e5fe82480805ef0dd9cc1ba3"
+  },
+  "bot.tray.needYou_one": {
+    "text": "{{count}} vous attend",
+    "source": "af9f85abfbad0754fff0c10663b8c015688cbd95da0ad5273f3e4c08841250b9"
+  },
+  "bot.tray.needYou_other": {
+    "text": "{{count}} vous attendent",
+    "source": "05352065534652d26758f22c2a2f4410c64554a0e5fe82480805ef0dd9cc1ba3"
+  },
+  "bot.tray.queuedNeedYou_many": {
+    "text": "En attente · {{count}} vous attendent",
+    "source": "385b560830e3f844943f70732a6c9f35ff80c23ed00b52b94a950f22e29f0da9"
+  },
+  "bot.tray.queuedNeedYou_one": {
+    "text": "En attente · {{count}} vous attend",
+    "source": "348b3463cd618e898f0a4825f22fcbda6d256f9e01251949dc552697df7222f3"
+  },
+  "bot.tray.queuedNeedYou_other": {
+    "text": "En attente · {{count}} vous attendent",
+    "source": "385b560830e3f844943f70732a6c9f35ff80c23ed00b52b94a950f22e29f0da9"
+  },
+  "bot.tray.workingNeedYou_many": {
+    "text": "En cours · {{count}} vous attendent",
+    "source": "5220a578ef091460c39626f1c41dc91c0fecf04fee9a8caeddf7958a7e5ec53e"
+  },
+  "bot.tray.workingNeedYou_one": {
+    "text": "En cours · {{count}} vous attend",
+    "source": "df49b348bdcbbbfe245d889a62c538617a8b973623b6219da5dcdb8e8b581347"
+  },
+  "bot.tray.workingNeedYou_other": {
+    "text": "En cours · {{count}} vous attendent",
+    "source": "5220a578ef091460c39626f1c41dc91c0fecf04fee9a8caeddf7958a7e5ec53e"
+  },
+  "bot.tray.workingOnCount_many": {
+    "text": "{{count}} en cours",
+    "source": "93ea1a3673c28e1635d32bc50926ab80924e51ef29d44de0b96d77840e34597c"
+  },
+  "bot.tray.workingOnCount_one": {
+    "text": "{{count}} en cours",
+    "source": "93ea1a3673c28e1635d32bc50926ab80924e51ef29d44de0b96d77840e34597c"
+  },
+  "bot.tray.workingOnCount_other": {
+    "text": "{{count}} en cours",
+    "source": "93ea1a3673c28e1635d32bc50926ab80924e51ef29d44de0b96d77840e34597c"
+  },
+  "bot.tray.countQueued_many": {
+    "text": "{{count}} en attente",
+    "source": "302e35e690e78dcdda1c73f4a7e6e912c573c148344a14df14606ef5f181569d"
+  },
+  "bot.tray.countQueued_one": {
+    "text": "{{count}} en attente",
+    "source": "302e35e690e78dcdda1c73f4a7e6e912c573c148344a14df14606ef5f181569d"
+  },
+  "bot.tray.countQueued_other": {
+    "text": "{{count}} en attente",
+    "source": "302e35e690e78dcdda1c73f4a7e6e912c573c148344a14df14606ef5f181569d"
+  },
+  "bot.tray.workingOnRequests_many": {
+    "text": "{{count}} demandes en cours",
+    "source": "852ad1c09505b3a2c3db5aced5af1ad1262c8aa8b70099d177adcd7414f9543b"
+  },
+  "bot.tray.workingOnRequests_one": {
+    "text": "{{count}} demande en cours",
+    "source": "c3b57c38fbaa2bfa036ca5455dc9cdb0952aefce60c45be9931dbb5d775f7ed5"
+  },
+  "bot.tray.workingOnRequests_other": {
+    "text": "{{count}} demandes en cours",
+    "source": "852ad1c09505b3a2c3db5aced5af1ad1262c8aa8b70099d177adcd7414f9543b"
+  },
+  "bot.tray.requestsNeedYou_many": {
+    "text": "{{count}} demandes vous attendent",
+    "source": "db0056622d99e9613d2056c93831068d8f15ff2dc94485e688f9fc3b8fce4905"
+  },
+  "bot.tray.requestsNeedYou_one": {
+    "text": "{{count}} demande vous attend",
+    "source": "625e7c4f62538c93495c9e184df2ab541544523b30c6e145e833a23ba48e3848"
+  },
+  "bot.tray.requestsNeedYou_other": {
+    "text": "{{count}} demandes vous attendent",
+    "source": "db0056622d99e9613d2056c93831068d8f15ff2dc94485e688f9fc3b8fce4905"
+  },
+  "bot.tray.needYouShort_many": {
+    "text": "{{count}} vous attendent",
+    "source": "05352065534652d26758f22c2a2f4410c64554a0e5fe82480805ef0dd9cc1ba3"
+  },
+  "bot.tray.needYouShort_one": {
+    "text": "{{count}} vous attend",
+    "source": "af9f85abfbad0754fff0c10663b8c015688cbd95da0ad5273f3e4c08841250b9"
+  },
+  "bot.tray.needYouShort_other": {
+    "text": "{{count}} vous attendent",
+    "source": "05352065534652d26758f22c2a2f4410c64554a0e5fe82480805ef0dd9cc1ba3"
+  },
+  "bot.tray.earlierRuns_many": {
+    "text": "{{count}} essais précédents",
+    "source": "586ceee78d4fac0390181230334d85190c4b594f4fe8b42760bcd3f2065d553c"
+  },
+  "bot.tray.earlierRuns_one": {
+    "text": "{{count}} essai précédent",
+    "source": "59739a13dd6345d31d1a773d9d7e29af3d952f0a6ce60f14071279e0d7abb8bd"
+  },
+  "bot.tray.earlierRuns_other": {
+    "text": "{{count}} essais précédents",
+    "source": "586ceee78d4fac0390181230334d85190c4b594f4fe8b42760bcd3f2065d553c"
+  },
+  "bot.tray.showHistory_many": {
+    "text": "Afficher l’historique ({{count}})",
+    "source": "9c7b63b80157bb02282aa97e833c5d82013ca9bee897f500f90d8160970fb605"
+  },
+  "bot.tray.showHistory_one": {
+    "text": "Afficher l’historique ({{count}})",
+    "source": "9c7b63b80157bb02282aa97e833c5d82013ca9bee897f500f90d8160970fb605"
+  },
+  "bot.tray.showHistory_other": {
+    "text": "Afficher l’historique ({{count}})",
+    "source": "9c7b63b80157bb02282aa97e833c5d82013ca9bee897f500f90d8160970fb605"
+  },
+  "bot.ready.broken_many": {
+    "text": "{{count}} éléments ne fonctionnent pas encore : {{problems}}",
+    "source": "efa5adb7a7e2d3e96ef5654439fedda25652031f1c3464bd469af4f36309aa2a"
+  },
+  "bot.ready.broken_one": {
+    "text": "Un élément ne fonctionne pas encore : {{problems}}",
+    "source": "882c05cc7eb4a9217c62a04254747904a66046d7ddaaf50d62ad00798a54ec35"
+  },
+  "bot.ready.broken_other": {
+    "text": "{{count}} éléments ne fonctionnent pas encore : {{problems}}",
+    "source": "efa5adb7a7e2d3e96ef5654439fedda25652031f1c3464bd469af4f36309aa2a"
+  },
+  "bot.ready.approved.approvals.none_many": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}.",
+    "source": "97e37a0203e52516bfd059466c2cd2eda397b4bd827d1a5e0f3d4595677b17d9"
+  },
+  "bot.ready.approved.approvals.none_one": {
+    "text": "Vous avez approuvé. Mise en ligne après une approbation de plus de {{people}}.",
+    "source": "85c29070940247dc3917c3de1a4ee636b6217eb1916680183d0cf9eef52c02df"
+  },
+  "bot.ready.approved.approvals.none_other": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}.",
+    "source": "97e37a0203e52516bfd059466c2cd2eda397b4bd827d1a5e0f3d4595677b17d9"
+  },
+  "bot.ready.approved.approvals.today_many": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "8d5633235b5099c1b590d523aaeb8fab229e94da37cc3594e2b2cfddd58c78ee"
+  },
+  "bot.ready.approved.approvals.today_one": {
+    "text": "Vous avez approuvé. Mise en ligne après une approbation de plus de {{people}}, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "2c21061a8a3058690887c1dd465fe5536d6fd478b1cd998326495073fe1cdce1"
+  },
+  "bot.ready.approved.approvals.today_other": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "8d5633235b5099c1b590d523aaeb8fab229e94da37cc3594e2b2cfddd58c78ee"
+  },
+  "bot.ready.approved.approvals.tomorrow_many": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou demain si personne ne s’y oppose.",
+    "source": "da170aa1ed557258c9fcf71c4cb9e7fdc70c34a1c176b9a93f86c83c4fa16698"
+  },
+  "bot.ready.approved.approvals.tomorrow_one": {
+    "text": "Vous avez approuvé. Mise en ligne après une approbation de plus de {{people}}, ou demain si personne ne s’y oppose.",
+    "source": "a34056f56c82d153380a5d51fa12efb924d68d67e013c5caabd35bf7d2a04b17"
+  },
+  "bot.ready.approved.approvals.tomorrow_other": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou demain si personne ne s’y oppose.",
+    "source": "da170aa1ed557258c9fcf71c4cb9e7fdc70c34a1c176b9a93f86c83c4fa16698"
+  },
+  "bot.ready.approved.approvals.weekday_many": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "1c8a13f590d640b0127ba009badc4bffed671650310b39722622e7d1631b588c"
+  },
+  "bot.ready.approved.approvals.weekday_one": {
+    "text": "Vous avez approuvé. Mise en ligne après une approbation de plus de {{people}}, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "ca601701b95f4f5d11e4dd2f8408704ca64ed22f5a43459d5672a19f9c646a46"
+  },
+  "bot.ready.approved.approvals.weekday_other": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "1c8a13f590d640b0127ba009badc4bffed671650310b39722622e7d1631b588c"
+  },
+  "bot.ready.approved.approvals.date_many": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou le {{date}} si personne ne s’y oppose.",
+    "source": "d243831557c7fb7eafc0c2607c4f69f2c329d99be7f52859d9f318d308729434"
+  },
+  "bot.ready.approved.approvals.date_one": {
+    "text": "Vous avez approuvé. Mise en ligne après une approbation de plus de {{people}}, ou le {{date}} si personne ne s’y oppose.",
+    "source": "4302ae802f0efa008d3c8670ffc5b3929b28ce1a6d05bfd8c1b3e5c33db905e6"
+  },
+  "bot.ready.approved.approvals.date_other": {
+    "text": "Vous avez approuvé. Mise en ligne après {{count}} approbations de plus de {{people}}, ou le {{date}} si personne ne s’y oppose.",
+    "source": "d243831557c7fb7eafc0c2607c4f69f2c329d99be7f52859d9f318d308729434"
+  },
+  "bot.ready.approved.anyone.none_many": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent.",
+    "source": "c0e9d9d8e2bd9cb462a582b6504e12e7f8b77f19336b694af21f1cb831aa4894"
+  },
+  "bot.ready.approved.anyone.none_one": {
+    "text": "Vous avez approuvé. Mise en ligne quand une personne de plus approuve.",
+    "source": "e7bd94eed03724a86cce6e750cfd4e790ecb48ada47b51552dfbc420321cd845"
+  },
+  "bot.ready.approved.anyone.none_other": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent.",
+    "source": "c0e9d9d8e2bd9cb462a582b6504e12e7f8b77f19336b694af21f1cb831aa4894"
+  },
+  "bot.ready.approved.anyone.today_many": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "fd25c3b9f092c15b5a38be17922f15cec6da805cb11855046613c310e3103bb8"
+  },
+  "bot.ready.approved.anyone.today_one": {
+    "text": "Vous avez approuvé. Mise en ligne quand une personne de plus approuve, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "c580d5fa2b31c99cee6b2a18c00d15a69ec48804d6c3b49acf0d51c37c138261"
+  },
+  "bot.ready.approved.anyone.today_other": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou plus tard aujourd’hui si personne ne s’y oppose.",
+    "source": "fd25c3b9f092c15b5a38be17922f15cec6da805cb11855046613c310e3103bb8"
+  },
+  "bot.ready.approved.anyone.tomorrow_many": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou demain si personne ne s’y oppose.",
+    "source": "347565d31c0ae7e8936003a7711b327141fd73cc741705b688ec63ae0718602a"
+  },
+  "bot.ready.approved.anyone.tomorrow_one": {
+    "text": "Vous avez approuvé. Mise en ligne quand une personne de plus approuve, ou demain si personne ne s’y oppose.",
+    "source": "a302e53f81d8fc41aac6f850c13d3b3543d2ffe42e5c72bccffc9f150c4eb011"
+  },
+  "bot.ready.approved.anyone.tomorrow_other": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou demain si personne ne s’y oppose.",
+    "source": "347565d31c0ae7e8936003a7711b327141fd73cc741705b688ec63ae0718602a"
+  },
+  "bot.ready.approved.anyone.weekday_many": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "125b9e8dedd3926a20438c8b7b06c692fcbfef27438af73708f43a826cc036aa"
+  },
+  "bot.ready.approved.anyone.weekday_one": {
+    "text": "Vous avez approuvé. Mise en ligne quand une personne de plus approuve, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "0d820dfede3d3c37e78993e0c24546b1c567a35dff3c95434799942f490e4208"
+  },
+  "bot.ready.approved.anyone.weekday_other": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou {{weekday}} si personne ne s’y oppose.",
+    "source": "125b9e8dedd3926a20438c8b7b06c692fcbfef27438af73708f43a826cc036aa"
+  },
+  "bot.ready.approved.anyone.date_many": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou le {{date}} si personne ne s’y oppose.",
+    "source": "692bddd83019ecd9e3a6e1dc6c4191a57dec2687ec0906ce73a96c4eb4d7107a"
+  },
+  "bot.ready.approved.anyone.date_one": {
+    "text": "Vous avez approuvé. Mise en ligne quand une personne de plus approuve, ou le {{date}} si personne ne s’y oppose.",
+    "source": "135486aa1620c1aaa0db9bc43a2037bcaf2c5eb950aff478c99d08760a37a0f4"
+  },
+  "bot.ready.approved.anyone.date_other": {
+    "text": "Vous avez approuvé. Mise en ligne quand {{count}} personnes de plus approuvent, ou le {{date}} si personne ne s’y oppose.",
+    "source": "692bddd83019ecd9e3a6e1dc6c4191a57dec2687ec0906ce73a96c4eb4d7107a"
+  },
+  "bot.plan.progress.stepNamedAbout_many": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · environ {{count}} min",
+    "source": "42407bdbd81419171cef5877dcae9c47abbabaa0b75a90b5b9064f5509a24802"
+  },
+  "bot.plan.progress.stepNamedAbout_one": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · environ {{count}} min",
+    "source": "42407bdbd81419171cef5877dcae9c47abbabaa0b75a90b5b9064f5509a24802"
+  },
+  "bot.plan.progress.stepNamedAbout_other": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · environ {{count}} min",
+    "source": "42407bdbd81419171cef5877dcae9c47abbabaa0b75a90b5b9064f5509a24802"
+  },
+  "bot.plan.progress.stepNamedRange_many": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · {{from}} à {{count}} min",
+    "source": "410223d7ea12f02e8ae1ce17838f5ede70fd27cdb0ecde00169ba4d5e62bd66b"
+  },
+  "bot.plan.progress.stepNamedRange_one": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · {{from}} à {{count}} min",
+    "source": "410223d7ea12f02e8ae1ce17838f5ede70fd27cdb0ecde00169ba4d5e62bd66b"
+  },
+  "bot.plan.progress.stepNamedRange_other": {
+    "text": "Étape {{step}} sur {{total}} · {{name}} · {{from}} à {{count}} min",
+    "source": "410223d7ea12f02e8ae1ce17838f5ede70fd27cdb0ecde00169ba4d5e62bd66b"
+  },
+  "bot.plan.progress.stepAbout_many": {
+    "text": "Étape {{step}} sur {{total}} · environ {{count}} min",
+    "source": "dd0c400a0b800a89c77de89fa71607d2ff86109fe05000c287260a97641daf32"
+  },
+  "bot.plan.progress.stepAbout_one": {
+    "text": "Étape {{step}} sur {{total}} · environ {{count}} min",
+    "source": "dd0c400a0b800a89c77de89fa71607d2ff86109fe05000c287260a97641daf32"
+  },
+  "bot.plan.progress.stepAbout_other": {
+    "text": "Étape {{step}} sur {{total}} · environ {{count}} min",
+    "source": "dd0c400a0b800a89c77de89fa71607d2ff86109fe05000c287260a97641daf32"
+  },
+  "bot.plan.progress.stepRange_many": {
+    "text": "Étape {{step}} sur {{total}} · {{from}} à {{count}} min",
+    "source": "0a7f605265f11482d65b83281cac99e36c89e7932de7867fba8107aa1d46a509"
+  },
+  "bot.plan.progress.stepRange_one": {
+    "text": "Étape {{step}} sur {{total}} · {{from}} à {{count}} min",
+    "source": "0a7f605265f11482d65b83281cac99e36c89e7932de7867fba8107aa1d46a509"
+  },
+  "bot.plan.progress.stepRange_other": {
+    "text": "Étape {{step}} sur {{total}} · {{from}} à {{count}} min",
+    "source": "0a7f605265f11482d65b83281cac99e36c89e7932de7867fba8107aa1d46a509"
+  },
+  "bot.plan.progress.workingAbout_many": {
+    "text": "En cours · environ {{count}} min",
+    "source": "3f5c343146933230aaea184aa8a38bd6165fe8b419ce98c5d5f61509b873900e"
+  },
+  "bot.plan.progress.workingAbout_one": {
+    "text": "En cours · environ {{count}} min",
+    "source": "3f5c343146933230aaea184aa8a38bd6165fe8b419ce98c5d5f61509b873900e"
+  },
+  "bot.plan.progress.workingAbout_other": {
+    "text": "En cours · environ {{count}} min",
+    "source": "3f5c343146933230aaea184aa8a38bd6165fe8b419ce98c5d5f61509b873900e"
+  },
+  "bot.plan.progress.workingRange_many": {
+    "text": "En cours · {{from}} à {{count}} min",
+    "source": "1c3d6862393f958df1ace9aa7d3103f37eebed58ddf80dd6abadb68a4de3c5cb"
+  },
+  "bot.plan.progress.workingRange_one": {
+    "text": "En cours · {{from}} à {{count}} min",
+    "source": "1c3d6862393f958df1ace9aa7d3103f37eebed58ddf80dd6abadb68a4de3c5cb"
+  },
+  "bot.plan.progress.workingRange_other": {
+    "text": "En cours · {{from}} à {{count}} min",
+    "source": "1c3d6862393f958df1ace9aa7d3103f37eebed58ddf80dd6abadb68a4de3c5cb"
+  },
+  "bot.plan.progress.doingAbout_many": {
+    "text": "{{doing}} · environ {{count}} min",
+    "source": "0cd63ccf9c36998ed7f279b9ca0046b434038dec5f40e7f4dbdfa41218cf05be"
+  },
+  "bot.plan.progress.doingAbout_one": {
+    "text": "{{doing}} · environ {{count}} min",
+    "source": "0cd63ccf9c36998ed7f279b9ca0046b434038dec5f40e7f4dbdfa41218cf05be"
+  },
+  "bot.plan.progress.doingAbout_other": {
+    "text": "{{doing}} · environ {{count}} min",
+    "source": "0cd63ccf9c36998ed7f279b9ca0046b434038dec5f40e7f4dbdfa41218cf05be"
+  },
+  "bot.plan.progress.doingRange_many": {
+    "text": "{{doing}} · {{from}} à {{count}} min",
+    "source": "0195eced52af94f4f96fe7180a1bacd9bd4de1b1a9fbe0232c1cedb2bab7fd81"
+  },
+  "bot.plan.progress.doingRange_one": {
+    "text": "{{doing}} · {{from}} à {{count}} min",
+    "source": "0195eced52af94f4f96fe7180a1bacd9bd4de1b1a9fbe0232c1cedb2bab7fd81"
+  },
+  "bot.plan.progress.doingRange_other": {
+    "text": "{{doing}} · {{from}} à {{count}} min",
+    "source": "0195eced52af94f4f96fe7180a1bacd9bd4de1b1a9fbe0232c1cedb2bab7fd81"
+  },
+  "composer.attachLimit_many": {
+    "text": "Vous pouvez joindre jusqu’à {{count}} fichiers.",
+    "source": "258af24f6f3a70e1aecb9451aca22ad016bb15fff224b64208148b1c6f3b6d62"
+  },
+  "composer.attachLimit_one": {
+    "text": "Vous pouvez joindre jusqu’à {{count}} fichier.",
+    "source": "cbd5d4d4c8ba0279417adcc50ca35ef0610712895b15b6123b811cced1ffb784"
+  },
+  "composer.attachLimit_other": {
+    "text": "Vous pouvez joindre jusqu’à {{count}} fichiers.",
+    "source": "258af24f6f3a70e1aecb9451aca22ad016bb15fff224b64208148b1c6f3b6d62"
+  },
+  "composer.uploading_many": {
+    "text": "Envoi de {{count}}…",
+    "source": "9edf84406b68900395143ea693c5c48d831c4646b8bbc6104053f4d2b5ac1a39"
+  },
+  "composer.uploading_one": {
+    "text": "Envoi de {{count}}…",
+    "source": "9edf84406b68900395143ea693c5c48d831c4646b8bbc6104053f4d2b5ac1a39"
+  },
+  "composer.uploading_other": {
+    "text": "Envoi de {{count}}…",
+    "source": "9edf84406b68900395143ea693c5c48d831c4646b8bbc6104053f4d2b5ac1a39"
+  },
+  "thread.jumpToLatestNew_many": {
+    "text": "Aller au dernier message, {{count}} nouveaux messages",
+    "source": "70f4baf9f22951679ac68590ae59b6887ac792e143cf9baea89d59f590e16e6e"
+  },
+  "thread.jumpToLatestNew_one": {
+    "text": "Aller au dernier message, {{count}} nouveau message",
+    "source": "78e6a4432acb3d411126a38758b4610e5d15cf2b580cfabce9e9d4fcaf9a513f"
+  },
+  "thread.jumpToLatestNew_other": {
+    "text": "Aller au dernier message, {{count}} nouveaux messages",
+    "source": "70f4baf9f22951679ac68590ae59b6887ac792e143cf9baea89d59f590e16e6e"
+  },
+  "thread.newMessages_many": {
+    "text": "{{count}} nouveaux messages",
+    "source": "e2f12cf495489da976abcf2feaadcf943ff8cec0e1c5fcbbf65e0465e75c0c9f"
+  },
+  "thread.newMessages_one": {
+    "text": "{{count}} nouveau message",
+    "source": "665a014e59aad7052780f7274f4311cdc9b8750fae3f1de9414d7b1139ea7235"
+  },
+  "thread.newMessages_other": {
+    "text": "{{count}} nouveaux messages",
+    "source": "e2f12cf495489da976abcf2feaadcf943ff8cec0e1c5fcbbf65e0465e75c0c9f"
+  },
+  "members.inviteCount_many": {
+    "text": "Inviter {{count}}",
+    "source": "61088bc786671c9148929ca4467e3222e7392dc6c615cab27a2c4ce181471aa9"
+  },
+  "members.inviteCount_one": {
+    "text": "Inviter {{count}}",
+    "source": "61088bc786671c9148929ca4467e3222e7392dc6c615cab27a2c4ce181471aa9"
+  },
+  "members.inviteCount_other": {
+    "text": "Inviter {{count}}",
+    "source": "61088bc786671c9148929ca4467e3222e7392dc6c615cab27a2c4ce181471aa9"
+  },
+  "shareTo.detail.group_many": {
+    "text": "Groupe · {{count}} membres",
+    "source": "856a71f47e1bbb80580146595612815e3f9a0b6d76d6d9f2037b8f303b0e6b0e"
+  },
+  "shareTo.detail.group_one": {
+    "text": "Groupe · {{count}} membre",
+    "source": "4d0f536f5bfbf96be7b016108e70547c8fb3e0ae2ecba9f6b2f8a2dfc0bdb4eb"
+  },
+  "shareTo.detail.group_other": {
+    "text": "Groupe · {{count}} membres",
+    "source": "856a71f47e1bbb80580146595612815e3f9a0b6d76d6d9f2037b8f303b0e6b0e"
+  },
+  "inbox.unread_many": {
+    "text": "{{count}} non lus",
+    "source": "7cf5ab0de921e729efc5c0fdc762ee1339022e1923163a6e3c6966e7fec7e72c"
+  },
+  "inbox.unread_one": {
+    "text": "{{count}} non lu",
+    "source": "7cf5ab0de921e729efc5c0fdc762ee1339022e1923163a6e3c6966e7fec7e72c"
+  },
+  "inbox.unread_other": {
+    "text": "{{count}} non lus",
+    "source": "7cf5ab0de921e729efc5c0fdc762ee1339022e1923163a6e3c6966e7fec7e72c"
+  },
+  "inbox.showMore_many": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "inbox.showMore_one": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "inbox.showMore_other": {
+    "text": "Afficher {{count}} de plus",
+    "source": "d94a0e3b18cc208ec8b9217a2ecc28facd39ab3f54aa3a9092b5418209124314"
+  },
+  "header.subtitle.channel_many": {
+    "text": "Le canal de la communauté Homeroom · {{count}} membres",
+    "source": "67067c31a123a8ea7838e62cd309b1b062e4dbb60a0bd0e79c15029d9d34c9f0"
+  },
+  "header.subtitle.channel_one": {
+    "text": "Le canal de la communauté Homeroom · {{count}} membre",
+    "source": "a67eb130ebf4117c2804c32b7ef9661b79eccbb4f8ecd833a16c9c09a14c73aa"
+  },
+  "header.subtitle.channel_other": {
+    "text": "Le canal de la communauté Homeroom · {{count}} membres",
+    "source": "67067c31a123a8ea7838e62cd309b1b062e4dbb60a0bd0e79c15029d9d34c9f0"
+  },
+  "header.subtitle.group_many": {
+    "text": "{{count}} membres",
+    "source": "9f5aa2fb70d1df7c6149ca2f482cafa0d8b944d6c3367a3e1c7bbef6a9d544af"
+  },
+  "header.subtitle.group_one": {
+    "text": "{{count}} membre",
+    "source": "e1c605d723ad78f3648dd5f23927345e3e65afbe0ab5e0500a42bb9a4af0acb3"
+  },
+  "header.subtitle.group_other": {
+    "text": "{{count}} membres",
+    "source": "9f5aa2fb70d1df7c6149ca2f482cafa0d8b944d6c3367a3e1c7bbef6a9d544af"
+  },
+  "header.subtitle.groupOwner_many": {
+    "text": "{{count}} membres · vous êtes le propriétaire du groupe",
+    "source": "7d787fdd0df622606f9ad19a2023be087d2c2e80cdc4e2c9702d6152df319a68"
+  },
+  "header.subtitle.groupOwner_one": {
+    "text": "{{count}} membre · vous êtes le propriétaire du groupe",
+    "source": "4b3dd24949d7f07448a20d815e14fae7ca8d59acba3a924ca49e8a8650f1f9be"
+  },
+  "header.subtitle.groupOwner_other": {
+    "text": "{{count}} membres · vous êtes le propriétaire du groupe",
+    "source": "7d787fdd0df622606f9ad19a2023be087d2c2e80cdc4e2c9702d6152df319a68"
+  },
+  "thread.showMoreCards_many": {
+    "text": "Afficher {{count}} cartes de plus",
+    "source": "80308e6f8eb984904caa30b7a97b9f667f1ebe3a1bebb3e3d9dc0a2c5cdad141"
+  },
+  "thread.showMoreCards_one": {
+    "text": "Afficher {{count}} carte de plus",
+    "source": "b5c85369a80b2d6582803da673e8c7d720246d4160a166d039e9c46cbc7e8509"
+  },
+  "thread.showMoreCards_other": {
+    "text": "Afficher {{count}} cartes de plus",
+    "source": "80308e6f8eb984904caa30b7a97b9f667f1ebe3a1bebb3e3d9dc0a2c5cdad141"
+  },
+  "replies.count_many": {
+    "text": "{{count}} réponses",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "replies.count_one": {
+    "text": "{{count}} réponse",
+    "source": "1c9e6fb4290c21bca50c72205018b2472e04921fe55e3cf8ab46ec9ebe35761e"
+  },
+  "replies.count_other": {
+    "text": "{{count}} réponses",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "bot.tray.workingOnRelease.minutes_many": {
+    "text": "Travail sur {{job}} · mise en ligne dans environ {{count}} minutes",
+    "source": "433bb5c2e2b5f9d2f5d8ef64522331b15b072153c8909e4b37b4d0539702233d"
+  },
+  "bot.tray.workingOnRelease.minutes_one": {
+    "text": "Travail sur {{job}} · mise en ligne dans environ une minute",
+    "source": "7c95f3960ea77bfb097e1a5c7352737f0467def2225a88f0ccf86e56f5862794"
+  },
+  "bot.tray.workingOnRelease.minutes_other": {
+    "text": "Travail sur {{job}} · mise en ligne dans environ {{count}} minutes",
+    "source": "433bb5c2e2b5f9d2f5d8ef64522331b15b072153c8909e4b37b4d0539702233d"
+  },
+  "bot.last.release.minutes_many": {
+    "text": "Dernier : {{job}} sera en ligne dans environ {{count}} minutes",
+    "source": "e2a9ff51908d8aebb08eefb4d06845fea8d7223a8671e98737792c1108a5b691"
+  },
+  "bot.last.release.minutes_one": {
+    "text": "Dernier : {{job}} sera en ligne dans environ une minute",
+    "source": "d0476c00ebac18aed2fcbf5f8831f7f7e6583cd3fb3673d65c6310cc0337c48c"
+  },
+  "bot.last.release.minutes_other": {
+    "text": "Dernier : {{job}} sera en ligne dans environ {{count}} minutes",
+    "source": "e2a9ff51908d8aebb08eefb4d06845fea8d7223a8671e98737792c1108a5b691"
+  }
+}

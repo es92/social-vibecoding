@@ -503,3 +503,88 @@ test('Switch to English saves to the account when signed in, and to the device w
   const runtime = read('frontend/src/lib/i18n/runtime.ts');
   assert.match(runtime, /changeLanguage\('en', runtime\.isSignedIn\(\)\s+\? async \(value\) => \{ await saveAccountLocale\(value\); \}\s+: undefined\)/);
 });
+
+// The server's translation cache (GET /api/languages, src/services/
+// language-cache.js) can offer a language this build's catalogs do not ship,
+// and newer packs for one they do. The runtime takes its list and checks
+// every pack it names against the hash the list gave, as it checks a build's.
+function liveSetup(t, options = {}) {
+  const fixture = catalogFixture(t);
+  const { catalogs } = fixture.build();
+  const page = browser(t, { root: fixture.root, ...options });
+  // This build ships English only; the cache has the Spanish, served under
+  // /locales/live/ like the server serves it.
+  const englishOnly = { ...catalogs, languages: { en: 'English' }, manifest: {} };
+  const live = { languages: catalogs.languages, manifest: {} };
+  for (const [language, packs] of Object.entries(catalogs.manifest)) {
+    live.manifest[language] = {};
+    for (const [namespace, entry] of Object.entries(packs)) {
+      const name = entry.url.split('/').pop();
+      fs.mkdirSync(path.join(fixture.root, 'public/locales/live'), { recursive: true });
+      fs.copyFileSync(path.join(fixture.root, 'public', entry.url), path.join(fixture.root, 'public/locales/live', name));
+      live.manifest[language][namespace] = { url: `/locales/live/${name}`, hash: entry.hash };
+    }
+  }
+  return { page, live, runtime: runtimeFor(englishOnly) };
+}
+
+test('a language only the server\'s cache has is offered once its list arrives, and a session that wants it shows it', async (t) => {
+  const { page, live, runtime } = liveSetup(t);
+  assert.deepEqual(runtime.getLanguages(), [{ tag: 'en', name: 'English' }]);
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  assert.equal(runtime.getLanguage(), 'en', 'nothing ships it yet');
+  let heard = 0;
+  runtime.subscribeLanguages(() => { heard += 1; });
+  assert.equal(runtime.setLiveCatalogs(live), true);
+  assert.equal(heard, 1);
+  assert.deepEqual(runtime.getLanguages(), [{ tag: 'en', name: 'English' }, { tag: 'es', name: 'Español' }]);
+  assert.ok(page.events.some((event) => event.type === 'homeroom:languages-changed'));
+  await until(() => runtime.getLanguage() === 'es', 'the session to show Spanish');
+  assert.equal(runtime.t('hello', { name: 'Ana' }), 'Hola Ana');
+  assert.match(page.requests[0], /^\/locales\/live\/es\.core\.[a-f0-9]{64}\.json$/);
+});
+
+test('a list the runtime cannot trust is refused, and the build\'s languages stand', (t) => {
+  const { live, runtime } = liveSetup(t);
+  const entry = live.manifest.es.core;
+  const broken = [
+    null,
+    { languages: live.languages },
+    { ...live, manifest: { es: { core: { ...entry, url: 'https://elsewhere.example/es.json' } } } },
+    { ...live, manifest: { es: { core: { ...entry, hash: 'nope' } } } },
+    { ...live, manifest: { es: {} } },
+  ];
+  for (const value of broken) assert.equal(runtime.setLiveCatalogs(value), false, JSON.stringify(value)?.slice(0, 80));
+  assert.deepEqual(runtime.getLanguages(), [{ tag: 'en', name: 'English' }]);
+});
+
+test('a session waits a moment for the list rather than show English and switch', async (t) => {
+  const { page, live, runtime } = liveSetup(t);
+  runtime.waitForLive(new Promise((resolve) => { setTimeout(() => { runtime.setLiveCatalogs(live); resolve(); }, 30); }));
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  assert.equal(runtime.getLanguage(), 'es');
+  const switches = page.events.filter((event) => event.type === 'homeroom:language-changed' && !event.detail.namespace);
+  assert.deepEqual(switches.map((event) => event.detail.language), ['es'], 'straight to Spanish, never English first');
+});
+
+test('somebody whose first language ships never waits for the list', async (t) => {
+  const { live, runtime } = liveSetup(t, { deviceLanguages: ['en-US', 'es'] });
+  runtime.waitForLive(new Promise(() => {}));
+  const started = Date.now();
+  await runtime.applySessionLanguage({ id: 1, locale: null });
+  assert.equal(runtime.getLanguage(), 'en');
+  assert.ok(Date.now() - started < 500, 'English shipped, so nothing waited on the list');
+  assert.equal(runtime.setLiveCatalogs(live), true);
+  assert.equal(runtime.getLanguage(), 'en', 'and the list arriving changes nothing for them');
+});
+
+test('the shell asks for the list once it boots, and Settings lists what it adds', () => {
+  const runtime = read('frontend/src/lib/i18n/runtime.ts');
+  assert.match(runtime, /fetch\('\/api\/languages', \{ credentials: 'same-origin', signal: controller\.signal, redirect: 'error' \}\)/);
+  assert.match(runtime, /runtime\.waitForLive\(loadLiveLanguages\(\)\);/);
+  assert.match(runtime, /applySessionLanguage, saveAccountLocale, getLanguages,\n\};/, 'legacy modules read the list too');
+  const settings = read('frontend/src/features/settings/settings.js');
+  assert.match(settings, /for \(const \{ tag, name \} of window\.PlatformI18n\?\.getLanguages\?\.\(\) \|\| \[\]\) \{/);
+  assert.match(settings, /document\.addEventListener\('homeroom:languages-changed', \(\) => \{\n\s+if \(!Settings\._open\) return;\n\s+try \{ Settings\._renderLanguageSection\(\); \}/,
+    'a list that arrives while Settings is open is listed there');
+});

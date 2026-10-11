@@ -7968,6 +7968,22 @@
       "classicPath": "#leaderboard/challenges"
     },
     {
+      "source": "src/routes/languages.js",
+      "method": "GET",
+      "path": "/api/languages",
+      "expression": null,
+      "status": "exempt",
+      "reason": "the shell's own language list and packs, read by its language runtime as it boots, never a model-visible control"
+    },
+    {
+      "source": "src/routes/languages.js",
+      "method": "GET",
+      "path": "/locales/live/:name",
+      "expression": null,
+      "status": "exempt",
+      "reason": "the shell's own language list and packs, read by its language runtime as it boots, never a model-visible control"
+    },
+    {
       "source": "src/routes/llm-grants.js",
       "method": "GET",
       "path": "/api/me/llm-grants",

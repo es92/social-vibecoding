@@ -1,0 +1,482 @@
+{
+  "language.notice.showing": {
+    "text": "Mostrando Homeroom en {{language}}",
+    "source": "7fb535c70bd22af1e1bf906ef316b1051b12f7e2d7cc0fcb18fe7c02fce5a841"
+  },
+  "language.notice.dismiss": {
+    "text": "Descartar",
+    "source": "48845bff334a50a59aaecf499f28a7a24c3b4b891b8b18a9f1169ad8e8a6b261"
+  },
+  "language.notice.switchToEnglish": {
+    "text": "Switch to English",
+    "source": "5f434646ab9efeafc4354df10131f0ef2a4a8db3d301aba52f177cea9d0b4a9e"
+  },
+  "tabs.sections": {
+    "text": "Secciones",
+    "source": "9bae918add9affa51189bde5fefc7390ee2866831e894bb5f72b472a79d4ade8"
+  },
+  "tabs.home": {
+    "text": "Inicio",
+    "source": "3a78695388b38b5cceefaf6796b0137877514593543b91af2752d5a17e3d736c"
+  },
+  "tabs.discover": {
+    "text": "Descubrir",
+    "source": "d4a33d5b78bccebe3f16843dc30e6c0f73b4eb6efb4e7114ddfebde7fa2c9954"
+  },
+  "tabs.messages": {
+    "text": "Mensajes",
+    "source": "04d7b48339271ea67d3c8493e07e90bc68dc565485eebe5e0b67c21c1586e3c0"
+  },
+  "tabs.communities": {
+    "text": "Comunidades",
+    "source": "c864f329f5dde534613448895303d0a62f17af46b75ab16cb6c8170a120d1293"
+  },
+  "tabs.me": {
+    "text": "Yo",
+    "source": "d30af076b0dc85cc5b0074b403f74770b73af84a70c2f77f7a3609d0db23112e"
+  },
+  "tabs.meNamed": {
+    "text": "{{username}}, tu perfil",
+    "source": "a79035a6a0fca4e6da7036a54052393dbdde54efe1744da1a2dcac6b10685cbd"
+  },
+  "tabs.communitiesOn": {
+    "text": "Comunidades, en {{community}}",
+    "source": "01e1de1db0b004185aedfc4030979f45f1d7048b3555e67e40794518e5595da6"
+  },
+  "tabs.unreadConversations": {
+    "text": "Conversaciones sin leer",
+    "source": "043836eb0666fa8a0c5f212a783c1be2aee8c8178099bd401e577bcd1125eced"
+  },
+  "tabs.unreadChannels": {
+    "text": "Canales con mensajes sin leer",
+    "source": "d78ea0a9f2842ddd219d3d779dc0b8ec7509c1d4caeb226451bcaa2a23d2e93c"
+  },
+  "tabs.settings": {
+    "text": "Ajustes",
+    "source": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "rail.hideSidebar": {
+    "text": "Ocultar barra lateral",
+    "source": "d1db29ebc76d9f61a28f3432121b308f1110ea5adf549be8c1e5285c4a29dc23"
+  },
+  "rail.showSidebar": {
+    "text": "Mostrar barra lateral",
+    "source": "9e8197ce9e5f9592caa99fbf2b178e642f383525a1580981b9d25ed62644b838"
+  },
+  "rail.skipToNavigation": {
+    "text": "Saltar a la navegación",
+    "source": "3c0ac196326cd1c38d586900609938194527dc537330ef0a28cb840752fc67e0"
+  },
+  "parked.resume": {
+    "text": "Reanudar",
+    "source": "d640c7421da066618a39daf4266da5f61f66a9b1afcd626481b831a17064965d"
+  },
+  "parked.forget": {
+    "text": "Olvidar {{app}}",
+    "source": "9d3128f1522543eae2c6dc30f973bfd09e2f8eb2a8e0ac96f554bc175e68d367"
+  },
+  "liveApp.stillOpen": {
+    "text": "sigue abierta",
+    "source": "b0daa8ccb4b38341dd3a6efabe1416749dee5037cf53239f18d1f2c2e1c0f5fd"
+  },
+  "liveApp.dotTitle": {
+    "text": "Sigue abierta",
+    "source": "ccde2b49c25621d58791d470bf6c0042e42f1bb4da161f1ece89801af32707d9"
+  },
+  "header.back": {
+    "text": "Atrás",
+    "source": "76900f1bfd16c8d4dd3d25e6f46638d7165aee23883ccea6bfe071c514421769"
+  },
+  "header.closeApp": {
+    "text": "Cerrar app",
+    "source": "2e99a1bc196544461c8d64531f847674f8b74ddd6fc36e65dac85751ac20d418"
+  },
+  "header.home": {
+    "text": "Inicio",
+    "source": "3a78695388b38b5cceefaf6796b0137877514593543b91af2752d5a17e3d736c"
+  },
+  "header.notifications": {
+    "text": "Notificaciones",
+    "source": "788011833a5a0f22db90c91e8eb7bd8e9f5cd423354ff5ef8c338e7895f44ba9"
+  },
+  "header.unreadNotifications": {
+    "text": "Notificaciones sin leer",
+    "source": "b1e97dfc5eb8de749b9859052902ae20063c195f4613cfec58cfe46f67a2432d"
+  },
+  "header.communitiesSwitch": {
+    "text": "Comunidades: todas las tuyas, o abre una",
+    "source": "a3cd19b1787d4c24e9132236aa3dbef1a6832175c14e4d6ee94df9479e9d472b"
+  },
+  "header.communities": {
+    "text": "Comunidades",
+    "source": "c864f329f5dde534613448895303d0a62f17af46b75ab16cb6c8170a120d1293"
+  },
+  "header.switchCommunity": {
+    "text": "{{community}}, cambiar de comunidad",
+    "source": "64c4f84d81ea8c9916f6fc77bcc0bac080b69257de4240f3138d7f885dbd75b9"
+  },
+  "header.homeroomMenu": {
+    "text": "Menú de Homeroom",
+    "source": "4123e2c1b38f016516db3b17708f4b4ea8ebef9a064851a19089b28869b4ad96"
+  },
+  "header.changeBuilding": {
+    "text": "Uno de tus cambios se está construyendo",
+    "source": "f08263fb33f498eda38a04d8e280e098159a5c5abad090be96e09841a28ee0b1"
+  },
+  "chromeless.openAppLabel": {
+    "text": "Abrir esta app en Homeroom",
+    "source": "85068025eacc5a78c9514be69d815d2ae22ece32945b989422ccb06aa8d9aeec"
+  },
+  "chromeless.open": {
+    "text": "Abrir en Homeroom",
+    "source": "28e9e287d04aa71c263a7551d2c0793f743d92d628805652ae3af2bb0737c18a"
+  },
+  "banner.viewAsNonAdmin.text": {
+    "text": "Viendo como no administrador (interfaz de admin oculta).",
+    "source": "f67268c8328ea6ca8ce946ad269fdd124312cc77bc38ba438bf015ed20a374e3"
+  },
+  "banner.viewAsNonAdmin.switchBack": {
+    "text": "Volver",
+    "source": "fe080e0fb7e6fea9caa89c15ec3a1a340345b4762df6147c18ec86783905db3b"
+  },
+  "banner.offline.text": {
+    "text": "Reconectando con Homeroom. Mostrando contenido guardado",
+    "source": "eb9080d92a2ddd26f340cf504fbe9a8c0effdf008dee56ad3bce80a720c7fe3f"
+  },
+  "list.pair": {
+    "text": "{{first}}, {{second}}",
+    "source": "4ad330968ee3e4b0b4549f3d0f1fdac6bf1abf85e5d2caa989da59f2fc1aa5f4"
+  },
+  "common.cancel": {
+    "text": "Cancelar",
+    "source": "19766ed6ccb2f4a32778eed80d1928d2c87a18d7c275ccb163ec6709d3eb2e27"
+  },
+  "common.close": {
+    "text": "Cerrar",
+    "source": "7d9eb7acb13e24625c404401d8e88b2350e32162455885f18276cf802f7701ed"
+  },
+  "common.back": {
+    "text": "Atrás",
+    "source": "76900f1bfd16c8d4dd3d25e6f46638d7165aee23883ccea6bfe071c514421769"
+  },
+  "common.retry": {
+    "text": "Reintentar",
+    "source": "942087cc2d41e01304b7195558d093d10c72af8e838c7556d6a02d471ee71852"
+  },
+  "common.tryAgain": {
+    "text": "Intentar de nuevo",
+    "source": "d8b8392e2c542950ca64867168e4ef87d4ad606882d5898f826b51c6d553988f"
+  },
+  "common.save": {
+    "text": "Guardar",
+    "source": "1509f561f2416598629b886ad7d3c05a7e221e4e0675c84bbff4ee6d9e03913d"
+  },
+  "common.done": {
+    "text": "Listo",
+    "source": "11a6767d5674c7e45f7e00dc525762275b3a48491ad6045427d2609cc496c516"
+  },
+  "common.ok": {
+    "text": "Aceptar",
+    "source": "565339bc4d33d72817b583024112eb7f5cdf3e5eef0252d6ec1b9c9a94e12bb3"
+  },
+  "common.copy": {
+    "text": "Copiar",
+    "source": "e21f935f11d7e966dbbae78da9daa378fe8142a14e7c0cd7434183005faa6c5c"
+  },
+  "common.dismiss": {
+    "text": "Descartar",
+    "source": "48845bff334a50a59aaecf499f28a7a24c3b4b891b8b18a9f1169ad8e8a6b261"
+  },
+  "common.copied": {
+    "text": "Copiado",
+    "source": "8d525e5f158b9afe05f3122af363ac67763bdc4e1395b46597b320c289766ce3"
+  },
+  "common.loading": {
+    "text": "Cargando…",
+    "source": "ba3bbbe10d8bef66441c88536ce7b8e724e2829b59a3da658654f4961cd61ae5"
+  },
+  "ui.passwordInput.show": {
+    "text": "Mostrar contraseña",
+    "source": "6aeaa6a53d09dcad071fdda6280b1e7c42aa164cd0514304ff162e7da440ffaa"
+  },
+  "ui.passwordInput.hide": {
+    "text": "Ocultar contraseña",
+    "source": "a60a56c584b3b05b1a95076a36edbab7131a447910cf21124efcb35f769502df"
+  },
+  "ui.chat.newMessages": {
+    "text": "Mensajes nuevos",
+    "source": "ef5df7e6051540cadc2942c9c85501a74772f87f4d30d28913478a84331b8062"
+  },
+  "ui.chat.newLine": {
+    "text": "Nuevos",
+    "source": "18fdd549b2ed367ac0c74cbec1214644728515b30edbcb78e7d322757a7c8359"
+  },
+  "join.prompt.title": {
+    "text": "¿Unirte a {{community}}?",
+    "source": "8cb88b1764f9a974c127ff81b76c2cf9ee43c040fb5cf3a3debf2412a0cb6261"
+  },
+  "join.prompt.message": {
+    "text": "Los miembros inician cambios, crean solicitudes, votan y chatean aquí. Únete para participar.",
+    "source": "9550d1e0d46da98ff7252ef56b0620fd6843560f224a47b492ffe15214d68a7f"
+  },
+  "join.prompt.join": {
+    "text": "Unirme",
+    "source": "fd30fe681b4b2d9e55f851cb34641f907401aa43e9d80f5b1e14ce714ef00497"
+  },
+  "join.prompt.notNow": {
+    "text": "Ahora no",
+    "source": "a0e63d7c7125d29af84d6919af5550529be77c327324940c98c4b2cb13a99c8c"
+  },
+  "time.ago.justNow": {
+    "text": "justo ahora",
+    "source": "7ddb44d8a533a7535d85cedddf35d7f3414632ad4e10a0d7ca697723e1d97993"
+  },
+  "time.reset.weekly": {
+    "text": "el {{day}} a las {{time}}",
+    "source": "c04cb6147427e45e5293413f3a9308e0e8d986b248f05a292573c0ea723ca13f"
+  },
+  "time.reset.daily": {
+    "text": "a las {{time}}",
+    "source": "df8eeaa237400bfd3d65b0062a8acbc2cacf656800bf70e02fb13237643b3820"
+  },
+  "spec.screens.afterLabel": {
+    "text": "Después (planeado): {{changes}}",
+    "source": "e65344a785f389ddcf00cd90de841055015175446ca4b6285dab72b2bd49197a"
+  },
+  "spec.screens.beforeLabel": {
+    "text": "Antes: {{changes}}",
+    "source": "30816066d8e31b7d95c3e0cd99de1b466ee200eca063cf992f6f3149a73e4bd9"
+  },
+  "spec.screens.afterChip": {
+    "text": "Después · planeado",
+    "source": "c2b21fadc03700c8b2a9f4d3410214de3cb90622a20fe6c5ecee7220c6e3c14d"
+  },
+  "spec.screens.beforeChip": {
+    "text": "Antes · hoy",
+    "source": "08f06eaf8f975c3a51a0966b28d6b9563edea4a9a17cd5c3a410c44551f9bdb8"
+  },
+  "spec.screens.metaPhone": {
+    "text": "Teléfono, {{width}} × {{height}} · visto como {{persona}}",
+    "source": "1807dd48c8d31eac798193d20f7d60eb4785617b0a2fc0d4fbee2faec8663275"
+  },
+  "spec.screens.metaDesktop": {
+    "text": "Escritorio, {{width}} × {{height}} · visto como {{persona}}",
+    "source": "8cec8df9d05de50da047ada8204e03ab93104845593fa34b2b8cbac38c8565bf"
+  },
+  "spec.screens.metaPhoneZoom": {
+    "text": "Teléfono, {{width}} × {{height}}<0> · detalle</0><1> · pantalla completa</1> · visto como {{persona}}",
+    "source": "91de51555290b8eba2ebeb4f55e9799258ab81057d0fd53ec12b864822794729"
+  },
+  "spec.screens.metaDesktopZoom": {
+    "text": "Escritorio, {{width}} × {{height}}<0> · detalle</0><1> · pantalla completa</1> · visto como {{persona}}",
+    "source": "5be21a5171c8602a81e83de97bbc29a5ad707fe89294afba924c791e36c1e2f6"
+  },
+  "illustration.error.type": {
+    "text": "Elige un PNG, JPEG o WebP de menos de 20 MB.",
+    "source": "009d2cabd257b25e3480cb3efded4ea2f253b81cdf3695fd09c04958e46d9bae"
+  },
+  "illustration.error.unreadable": {
+    "text": "No se pudo leer esa imagen. Elige otra.",
+    "source": "3f284f4ae119899de345fc27b93a60ce5b0eb5984cbd171cd13e0a5b72bf508d"
+  },
+  "illustration.error.noSize": {
+    "text": "Elige una imagen con un tamaño válido.",
+    "source": "c24343e7a22294ca63d5cdb81ae18258837041507df7f7f736239cfa87d409cc"
+  },
+  "illustration.error.noCanvas": {
+    "text": "La edición de imágenes no está disponible en este navegador.",
+    "source": "55a4a314a0455980f9f5b8f908231f77291050764d82b0bcc92aa3e1960c9e87"
+  },
+  "illustration.error.tooLarge": {
+    "text": "Elige una imagen más pequeña.",
+    "source": "2a1bb7a8bf5b0840ddc15cbcc7a921cbcba7d2639828d92e296d9dd26f6cd498"
+  },
+  "stripApps.label": {
+    "text": "Apps recientes",
+    "source": "608be3dbd4ecde8b836decfee75bb7557fe8a3053be409ea825106a3dce48716"
+  },
+  "release.sentence.waiting": {
+    "text": "Fusionado; esperando una versión",
+    "source": "64f825cf467e82870d38e2831225af19191d1993c4e81f2d0372372c79fec808"
+  },
+  "release.sentence.now": {
+    "text": "Fusionado; publicándose ahora",
+    "source": "587dbc56c725cec5fc1701bc9a8f96f1b324cb0e8dee06583b58db375d20dc08"
+  },
+  "release.sentence.next": {
+    "text": "Fusionado; se publicará en la próxima versión",
+    "source": "e3df359f7b41a8e1a6b777e116559569f8d3478d39cf5fb80c35aed322dbc796"
+  },
+  "release.short.waiting": {
+    "text": "Esperando una versión",
+    "source": "b8a049f5671deacce9d41960085a3f53e9ee1b1203887d4403814cf5b67f5971"
+  },
+  "release.short.now": {
+    "text": "Publicándose ahora",
+    "source": "7a528bab4bc654c810cf5be4bad6d6a35145b7e2521a88dc013de150a95f5fc7"
+  },
+  "release.short.next": {
+    "text": "Se publicará en la próxima versión",
+    "source": "a0bdb42b8fb3fd4c23ef2ab6c2b6cfa1eceed63016693325042a5be05bf071da"
+  },
+  "sectionColumn.label": {
+    "text": "Lugares",
+    "source": "eb5cfb73677d98eb9b976131e0aa92d19838605ea67cc9e6a44c90d0aeefe594"
+  },
+  "tabs.votesWaiting_many": {
+    "text": "{{count}} votos te esperan",
+    "source": "97eae8058bc74ad7a9cccdea340b233ed37e1b3b29befe92a8e0382687314d79"
+  },
+  "tabs.votesWaiting_one": {
+    "text": "{{count}} voto te espera",
+    "source": "ff3b3a8d943428b6681d07709ea1fa96705f8cfe4a779218e33e05df12cd883a"
+  },
+  "tabs.votesWaiting_other": {
+    "text": "{{count}} votos te esperan",
+    "source": "97eae8058bc74ad7a9cccdea340b233ed37e1b3b29befe92a8e0382687314d79"
+  },
+  "time.ago.minutes_many": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.ago.minutes_one": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.ago.minutes_other": {
+    "text": "hace {{count}} min",
+    "source": "96da0d6c543c29bdad16bee63e9c9d4bd4516ac1c9d0296e73b2f24bc8ed74d6"
+  },
+  "time.ago.hours_many": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.ago.hours_one": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.ago.hours_other": {
+    "text": "hace {{count}} h",
+    "source": "f9fd95fe176ea25b5a5a8741cdd8564ef60faa4da09674c70ba0e82b3f58bb13"
+  },
+  "time.ago.days_many": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.ago.days_one": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "time.ago.days_other": {
+    "text": "hace {{count}} d",
+    "source": "477879d991b4f84f84011ea85e3e3f55bd1e0f64148a26a0cdb4d59a478d1cde"
+  },
+  "ui.chat.replies_many": {
+    "text": "{{count}} respuestas",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "ui.chat.replies_one": {
+    "text": "{{count}} respuesta",
+    "source": "1c9e6fb4290c21bca50c72205018b2472e04921fe55e3cf8ab46ec9ebe35761e"
+  },
+  "ui.chat.replies_other": {
+    "text": "{{count}} respuestas",
+    "source": "058b2c42c294f95ec02d03d78564dccc682d1cf4b7da8e85a15d409a4eb20502"
+  },
+  "ui.cardRun.more_many": {
+    "text": "… {{count}} más",
+    "source": "47335b28af9172b3a0a8e5b2261c97395f058249094e1b4b046569e3bda89bb7"
+  },
+  "ui.cardRun.more_one": {
+    "text": "… {{count}} más",
+    "source": "47335b28af9172b3a0a8e5b2261c97395f058249094e1b4b046569e3bda89bb7"
+  },
+  "ui.cardRun.more_other": {
+    "text": "… {{count}} más",
+    "source": "47335b28af9172b3a0a8e5b2261c97395f058249094e1b4b046569e3bda89bb7"
+  },
+  "release.sentence.minutes_many": {
+    "text": "Fusionado; se publicará en la próxima versión (en unos {{count}} minutos)",
+    "source": "5df28e81d289eeced9d8031d4c38f904fabc1088818029d0aa28c7a1af31e63b"
+  },
+  "release.sentence.minutes_one": {
+    "text": "Fusionado; se publicará en la próxima versión (en aproximadamente un minuto)",
+    "source": "f88ccfbb6b44103786a34db1e68b8f86da32c93d67b6742a8a4275b0607f6756"
+  },
+  "release.sentence.minutes_other": {
+    "text": "Fusionado; se publicará en la próxima versión (en unos {{count}} minutos)",
+    "source": "5df28e81d289eeced9d8031d4c38f904fabc1088818029d0aa28c7a1af31e63b"
+  },
+  "release.short.minutes_many": {
+    "text": "Se publicará en unos {{count}} minutos",
+    "source": "8492239da0b9b50c1635e8897ed70ab6f1ad9b0ca6405f502c4e81b6f4e1eba5"
+  },
+  "release.short.minutes_one": {
+    "text": "Se publicará en aproximadamente un minuto",
+    "source": "fe7ce89959a4b6f5f970d5483e310934e295256967c4e6830dbb42d132cec36c"
+  },
+  "release.short.minutes_other": {
+    "text": "Se publicará en unos {{count}} minutos",
+    "source": "8492239da0b9b50c1635e8897ed70ab6f1ad9b0ca6405f502c4e81b6f4e1eba5"
+  },
+  "release.countLine.waiting_many": {
+    "text": "{{count}} cambios fusionados esperando una versión",
+    "source": "b253d5bfe33da076de597b8412ed0c31b4e11d2fdadfd33240baedbaa61d7677"
+  },
+  "release.countLine.waiting_one": {
+    "text": "{{count}} cambio fusionado esperando una versión",
+    "source": "8f2d40008cc3d63972322ce7df9a733e7088de6e0f88781daf79854e48c07e80"
+  },
+  "release.countLine.waiting_other": {
+    "text": "{{count}} cambios fusionados esperando una versión",
+    "source": "b253d5bfe33da076de597b8412ed0c31b4e11d2fdadfd33240baedbaa61d7677"
+  },
+  "release.countLine.now_many": {
+    "text": "{{count}} cambios fusionados publicándose ahora",
+    "source": "8d40060e7403f452f3742490dbd2f1185bef60c458ccc7769c94046afa1cd39e"
+  },
+  "release.countLine.now_one": {
+    "text": "{{count}} cambio fusionado publicándose ahora",
+    "source": "54a5889af3ff480945c2c0d8af834d26c7c80239b2dfa5adc5ff24b526f3d895"
+  },
+  "release.countLine.now_other": {
+    "text": "{{count}} cambios fusionados publicándose ahora",
+    "source": "8d40060e7403f452f3742490dbd2f1185bef60c458ccc7769c94046afa1cd39e"
+  },
+  "release.countLine.next_many": {
+    "text": "{{count}} cambios fusionados se publicarán en la próxima versión",
+    "source": "dd3b205c695e718fa17a786ae27eae74475eb62890c397fd9419f0608b063d1e"
+  },
+  "release.countLine.next_one": {
+    "text": "{{count}} cambio fusionado se publicará en la próxima versión",
+    "source": "87a2ea3127d348fb0364956b01272b9474b27141cc759c283cb79c3840d093ff"
+  },
+  "release.countLine.next_other": {
+    "text": "{{count}} cambios fusionados se publicarán en la próxima versión",
+    "source": "dd3b205c695e718fa17a786ae27eae74475eb62890c397fd9419f0608b063d1e"
+  },
+  "release.countLine.estimate_many": {
+    "text": "{{count}} cambios fusionados se publicarán en la próxima versión ({{eta}})",
+    "source": "668eae67d36f3e2252810ba822cd3360395578e7ec01d746eb7ddafc70b1d782"
+  },
+  "release.countLine.estimate_one": {
+    "text": "{{count}} cambio fusionado se publicará en la próxima versión ({{eta}})",
+    "source": "30dfc6b5fab55cbb053a7b63c1682bd304b191d06a81a874e2b685114d1695d5"
+  },
+  "release.countLine.estimate_other": {
+    "text": "{{count}} cambios fusionados se publicarán en la próxima versión ({{eta}})",
+    "source": "668eae67d36f3e2252810ba822cd3360395578e7ec01d746eb7ddafc70b1d782"
+  },
+  "release.countLine.eta_many": {
+    "text": "en unos {{count}} minutos",
+    "source": "d795de09b742111c17f45089b0d26511a629a54f239560ee9ec9be08c18debb0"
+  },
+  "release.countLine.eta_one": {
+    "text": "en aproximadamente un minuto",
+    "source": "f0e9296b65fb3df006c9147e26b1bb9de5a2482799eafce58057e1f7d07ef354"
+  },
+  "release.countLine.eta_other": {
+    "text": "en unos {{count}} minutos",
+    "source": "d795de09b742111c17f45089b0d26511a629a54f239560ee9ec9be08c18debb0"
+  }
+}
