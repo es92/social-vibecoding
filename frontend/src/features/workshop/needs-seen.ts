@@ -42,6 +42,15 @@
  * never pruned against a count: an entry nothing owes any more matches
  * nothing, so it cannot take anything off. Following you to another device
  * would need a table of its own; that is a later step.
+ *
+ * ── Where the feed opens (#4753) ───────────────────────────────────────
+ *
+ * The same record also says where Needs you OPENS when you come back to it:
+ * `firstUnseenIndex` finds the first row of the feed you have not already
+ * passed over or answered, and the feed lands there instead of on the first
+ * one. Rows before it are seen rows, still in place and still votable by
+ * swiping back; rows that are not votes are never recorded, so they always
+ * count as not seen and the feed can stop at one.
  */
 
 import { useEffect } from 'react';
@@ -155,6 +164,27 @@ function seenEntry(slug: string, key: string): boolean {
 /** Whether this vote, as it stands now, was passed over here. */
 export function isNeedsSeen(slug: string | null | undefined, key: string | null | undefined): boolean {
   return !!slug && !!key && seenEntry(slug, key);
+}
+
+/**
+ * The row of `rows` the feed opens on (#4753): the FIRST one you have not
+ * already passed over or answered here, this account on this device. A row
+ * that is not a vote has a null key, which is never recorded as seen, so the
+ * scan always stops at one of those. Every row seen — or the list empty — is
+ * index 0: the feed opens on the first item, as it does with nothing seen.
+ * `slugOf` names each row's project, which is the row's own on the
+ * Communities reel and the page's inside a project. Reads the record after
+ * the first paint: call it from an effect, never during render.
+ */
+export function firstUnseenIndex<Row extends RowLike>(
+  rows: readonly Row[],
+  slugOf: (row: Row) => string | null | undefined,
+): number {
+  hydrateNeedsSeen();
+  for (let idx = 0; idx < rows.length; idx++) {
+    if (!isNeedsSeen(slugOf(rows[idx]), needsRowKey(rows[idx]))) return idx;
+  }
+  return 0;
 }
 
 /** Remember a vote passed over. A no-op for one already remembered as it is. */

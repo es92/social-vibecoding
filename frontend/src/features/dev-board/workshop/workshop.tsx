@@ -83,7 +83,7 @@ import { VotePicker } from '../card/dev-card';
 import { useWorkshopGroup } from './group-mode-store';
 import { describe as describeCommunity, openSwitcher } from '../../workshop/community-scope';
 import { registerLevel } from '../../workshop/tab-ladder';
-import { markNeedsSeen, needsRowKey, unseenNeeds, useNeedsSeen } from '../../workshop/needs-seen';
+import { firstUnseenIndex, markNeedsSeen, needsRowKey, unseenNeeds, useNeedsSeen } from '../../workshop/needs-seen';
 import {
   ApprovalLine, CommunityCard, ShareItCard, canLeave,
   leaveCommunity, useCommunity,
@@ -2479,6 +2479,10 @@ export function NeedsFeed({ rows, models, slug, canPost, onDone, onHub, onSugges
   const approveOpenRef = useRef<'approve' | 'diagram' | 'touches' | null>(endOnOpen ? null : shotTarget());
   // Still owed the open on `openOn`'s row (the effect below).
   const landRef = useRef<string | null>(endOnOpen ? null : openOn);
+  // Still owed the resume open (#4753, the effect below): true only when no
+  // other open is owed — the route asked for neither the end card
+  // (`endOnOpen`), a shot target nor a New for you row (`openOn`).
+  const resumeRef = useRef<boolean>(!endOnOpen && !approveOpenRef.current && !openOn);
   const moreRef = useRef<HTMLButtonElement>(null);
   const voteRef = useRef<HTMLButtonElement>(null);
   const commentsRef = useRef<HTMLDivElement>(null);
@@ -2641,6 +2645,31 @@ export function NeedsFeed({ rows, models, slug, canPost, onDone, onHub, onSugges
     if (idx < 0) return;
     landRef.current = null;
     curKeyRef.current = key;
+    setAt(idx);
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = idx * el.clientHeight;
+    el.style.scrollBehavior = '';
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * #4753: come back to a feed you have already been part way through, and it
+   * opens on the first item you have not already passed over or answered —
+   * `firstUnseenIndex`, read off the record needs-seen.ts keeps — rather than
+   * on the first one. The rows it jumps past are the seen ones, still in
+   * place and reachable by swiping back up. Once, on the first publish that
+   * has rows and a laid-out scroller, as the opens above land; after that the
+   * re-sync follows the row by key. Off when another open is owed: the end
+   * card, a shot target and `openOn` land where they ask. The jump does not
+   * go through `landOn`, so the rows it passes are not marked seen HERE —
+   * they were already seen, which is how the index was found.
+   */
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!resumeRef.current || !el || !el.clientHeight || !items.length) return;
+    resumeRef.current = false;
+    const idx = firstUnseenIndex(items, (r) => rowSlug(r, slug));
+    if (idx <= 0) return;
+    curKeyRef.current = items[idx].key;
     setAt(idx);
     el.style.scrollBehavior = 'auto';
     el.scrollTop = idx * el.clientHeight;
