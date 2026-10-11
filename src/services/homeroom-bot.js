@@ -1984,6 +1984,7 @@ function deciderNote(decider) {
       '- A request that fails a `ready` criterion only because it needs a decision they can make (a new dependency or external service that needs no credentials, a design or product choice) is a `question` to them, not `person`. Ask it plainly, say what it would add, and give `answers` they can tap: the choice that needs no approval (for example the browser\'s built-in way) first when there is one, then the one that needs it (for example "Add the library"), then "Leave it".',
       '- When the request or its discussion already shows them choosing (they answered your question, or said to go ahead), that criterion is decided: judge the rest as usual.',
       '- Changes to auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`.',
+      rulesLine(decider.role ? `@${decider.requester} can` : 'its creator or admins can'),
     ].join('\n');
   }
   const deciders = (Array.isArray(decider?.deciders) ? decider.deciders : []).filter((d) => d?.username);
@@ -1997,7 +1998,18 @@ function deciderNote(decider) {
     `- A request that fails a \`ready\` criterion only because it needs a decision they can make (a new dependency or external service that needs no credentials, a design or product choice) is \`person\`, and its \`reason\` says it waits for ${either} to say go ahead in this request's discussion.`,
     `- When the request's discussion shows ${either} choosing (answering your question, or saying to go ahead), that criterion is decided: judge the rest as usual. A go-ahead from anyone else, @${decider.requester} included, does not decide it.`,
     '- Changes to auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`.',
+    rulesLine(`${either} can`),
   ].join('\n');
+}
+
+/**
+ * #4666: how a project's changes are approved, and who can see it, are set
+ * in its Who can see & change it sheet by whoever may manage it, as one
+ * proposal; a request to change them is never built (Homeroom Maps #30 was
+ * read five times to "the group decides"). `who` says who can, by name.
+ */
+function rulesLine(who) {
+  return `- A request to change how this project's changes are approved (who says yes, how many yeses) or who can see it is not code: ${who} change it on the project's page, under ⋯, Settings & rules, Who can see & change it, as one proposal for the group. It is \`person\`, and \`reason\` says where and who.`;
 }
 
 /** "a", "a and b", "a, b and c". */
