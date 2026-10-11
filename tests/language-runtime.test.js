@@ -447,12 +447,19 @@ test('RichMessage keeps a whole sentence together and renders a parameter as tex
   assert.equal(renderToHtml(createElement(Message, { id: 'onlyEnglish' })), 'Not translated yet');
 });
 
-test("the shell's own runtime: English only, so no pack is requested and no notice appears", async (t) => {
-  const page = browser(t, { root: ROOT, deviceLanguages: ['es-MX', 'ja'] });
+// The shell's real catalogs, not a fixture: what it offers is what the
+// translation step's proposals have merged, so this holds whether a language
+// has passed the coverage bar yet or not (it pinned "English only" until the
+// first translations did, PR #4764).
+test("the shell's own runtime offers what its packs ship, English first; a language none ships stays English, with no pack and no notice", async (t) => {
+  const page = browser(t, { root: ROOT, deviceLanguages: ['ja'] });
   const shell = loadTsx('frontend/src/lib/i18n/runtime.ts');
-  assert.deepEqual(shell.shippedLanguages, [{ tag: 'en', name: 'English' }]);
+  const generated = JSON.parse(read('frontend/src/lib/i18n/catalogs.generated.json'));
+  assert.deepEqual(shell.shippedLanguages, Object.entries(generated.languages).map(([tag, name]) => ({ tag, name })));
+  assert.deepEqual(shell.shippedLanguages[0], { tag: 'en', name: 'English' });
+  assert.ok(!shell.shippedLanguages.some((l) => l.tag === 'ja'), 'Japanese is not a configured language');
   await shell.applySessionLanguage(null);
-  await shell.applySessionLanguage({ locale: 'es' });
+  await shell.applySessionLanguage({ locale: 'ja' });
   assert.equal(shell.getLanguage(), 'en');
   assert.equal(shell.getNotice(), null);
   assert.equal(page.requests.length, 0);

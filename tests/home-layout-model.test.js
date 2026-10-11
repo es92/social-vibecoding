@@ -33,7 +33,8 @@
 //      than refusing.
 //   6. The Create tile is DERIVED, never placed: trailingCell puts it straight
 //      after the last tile on screen, and createTileCollapsed holds it behind
-//      "Show all" when it would add a row to a collapsed grid (#3047).
+//      "Show all" when it would add a row to a collapsed grid (#3047) — where
+//      a compact New project entry on that line stands in for it (#4757).
 //
 // Run with: node --test tests/home-layout-model.test.js
 
@@ -142,7 +143,8 @@ test('the two-row default counts rows that HOLD apps, not row indices (#1367)', 
   // The renderer bounds INCLUSIVELY on this value, and re-places nothing —
   // widening the window must never move a tile off the cell its owner chose.
   // The Create tile never narrows or widens this window (#3047): it is held
-  // behind "Show all" instead — see createTileCollapsed below.
+  // behind "Show all" instead — where a compact New project entry stands in
+  // for it (#4757) — see createTileCollapsed below.
   const HOME = read('frontend/src/features/home/home.js');
   assert.match(HOME, /const rowBound = HomeLayout\.defaultRowBound\(layout, cols, rowBudget\);/);
   assert.doesNotMatch(HOME, /collapsedRowBound/);
@@ -290,7 +292,8 @@ test('createTileCollapsed: the tile goes behind "Show all" rather than start a r
   const shownOf = (layout, bound) => layout.filter((it) => it.row <= bound);
 
   // Eight apps on the two-row floor: rows 0-1 are full, so the tile would
-  // start a third row. It is held back — the issue's exact case.
+  // start a third row. It is held back — the issue's exact case, and the
+  // state the Show-all line's compact entry answers (#4757).
   const eight = packed(8);
   const b8 = HomeLayout.defaultRowBound(eight, 4, 2);
   assert.equal(b8, 1);

@@ -1,7 +1,8 @@
 /**
  * #4666: propose who can see a project and how its changes are approved, as
  * one change (POST /api/apps/:slug/who-decides-pr, src/services/who-decides-pr.js).
- * Shared by the Who can see & change it sheet and the invite sheet's presets.
+ * The Who can see & change it sheet's; the Make it step's presets propose
+ * nothing (the project does not exist yet).
  */
 
 import { t as translate } from '../../lib/i18n/runtime';

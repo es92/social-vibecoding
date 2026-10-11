@@ -587,6 +587,38 @@
     "text": "Import from a GitHub repo",
     "description": "Link under the Make it button, when the screen was opened from the Create button: switches to a form that brings in an existing app from a GitHub repository instead of describing a new one. GitHub is a name."
   },
+  "firstSession.make.rule.line": {
+    "text": "Who can change it: <0>{{preset}}</0>",
+    "description": "One line under the description and name fields on the \"What do you want to make?\" screen, before the project exists: the approval rule it will be made with. <0>…</0> is bold. {{preset}} is the rule's name, such as \"You or the group\" or \"Two yeses\"."
+  },
+  "firstSession.make.rule.intro": {
+    "text": "Pick how changes go live. You can change this later on the project’s page.",
+    "description": "Line under the title of the four approval presets sheet, opened from Change on the \"What do you want to make?\" screen, before the project is made."
+  },
+  "firstSession.make.rule.change": {
+    "text": "Change",
+    "description": "Link at the end of the Make it step's \"Who can change it\" line: opens the four approval presets."
+  },
+  "firstSession.make.rule.title": {
+    "text": "Who says yes?",
+    "description": "Title of the sheet with the four approval presets, opened from Change on the \"What do you want to make?\" screen."
+  },
+  "firstSession.make.rule.plays": {
+    "text": "How it plays out",
+    "description": "Section label over two rows showing what the picked preset means."
+  },
+  "firstSession.make.rule.close": {
+    "text": "Close",
+    "description": "Accessible name of the presets sheet's close button."
+  },
+  "firstSession.make.rule.done": {
+    "text": "Done",
+    "description": "Button: close the presets sheet without changing anything."
+  },
+  "firstSession.make.rule.use": {
+    "text": "Use {{preset}}",
+    "description": "Button: make the new project with the picked preset instead. {{preset}} is its name. Nothing is proposed: the project does not exist yet."
+  },
   "firstSession.make.lookAround": {
     "text": "Not sure yet? <0>Look around first</0>",
     "description": "Line under the Make it button on a new member's first screen. <0>…</0> is a link that skips making a project and shows a short tour of Home instead."
@@ -1226,73 +1258,5 @@
   "tour.step.meetBot.body": {
     "text": "Ask it to build a change, file an idea or fix a bug for you. Find it in Messages.",
     "description": "Body of the Home tour's stop pointing at the Messages tab: what Homeroom bot does for the reader and where to find it. \"Messages\" is the tab's name."
-  },
-  "firstSession.invite.rule.you_or_the_group": {
-    "text": "People you invite can suggest changes to {{name}}. A change goes live when you say yes, or when most of the group does.",
-    "description": "Line in the invite sheet above its share buttons, under the You or the group rule a new project starts on. {{name}} is the project."
-  },
-  "firstSession.invite.rule.two_yeses": {
-    "text": "People you invite can suggest changes to {{name}}. A change goes live once two people say yes.",
-    "description": "The same line under the Two yeses rule. {{name}} is the project."
-  },
-  "firstSession.invite.rule.open_floor": {
-    "text": "People you invite can suggest changes to {{name}}. Any member’s yes puts a change live.",
-    "description": "The same line under the Open floor rule. {{name}} is the project."
-  },
-  "firstSession.invite.rule.group_vote": {
-    "text": "People you invite can suggest changes to {{name}}. A change goes live when most of the group says yes.",
-    "description": "The same line under the Group vote rule. {{name}} is the project."
-  },
-  "firstSession.invite.rule.own": {
-    "text": "People you invite can suggest changes to {{name}}. A change goes live when one of its rules passes.",
-    "description": "The same line for a project with rules of its own. {{name}} is the project."
-  },
-  "firstSession.invite.rule.change": {
-    "text": "Change",
-    "description": "Link at the end of the invite sheet's rule line: opens the four approval presets."
-  },
-  "firstSession.invite.rule.proposed": {
-    "text": "Your change to {{preset}} is up for a vote. It goes live once its checks pass.",
-    "description": "Under the rule line once another preset was picked. {{preset}} is the preset's name."
-  },
-  "firstSession.invite.rule.title": {
-    "text": "Who says yes?",
-    "description": "Title of the sheet with the four approval presets, opened from the invite sheet."
-  },
-  "firstSession.invite.rule.intro": {
-    "text": "Pick how changes to {{name}} go live. You can change this later on the project’s page.",
-    "description": "Line under the presets sheet's title. {{name}} is the project."
-  },
-  "firstSession.invite.rule.plays": {
-    "text": "How it plays out",
-    "description": "Section label over two rows showing what the picked preset means."
-  },
-  "firstSession.invite.rule.close": {
-    "text": "Close",
-    "description": "Accessible name of the presets sheet's close button."
-  },
-  "firstSession.invite.rule.done": {
-    "text": "Done",
-    "description": "Button: close the presets sheet without changing anything."
-  },
-  "firstSession.invite.rule.use": {
-    "text": "Use {{preset}}",
-    "description": "Button: propose the picked preset. {{preset}} is its name."
-  },
-  "firstSession.invite.rule.useNote": {
-    "text": "It goes live on your yes once its checks pass.",
-    "description": "Note under Use, about the proposal it opens."
-  },
-  "firstSession.invite.rule.busy": {
-    "text": "Proposing…",
-    "description": "The button while the change is being proposed."
-  },
-  "firstSession.invite.rule.waiting": {
-    "text": "A change to this is already up for a vote.",
-    "description": "Error when such a proposal is already waiting."
-  },
-  "firstSession.invite.rule.error": {
-    "text": "Could not propose the change. Try again.",
-    "description": "Error when the proposal could not be opened."
   }
 }

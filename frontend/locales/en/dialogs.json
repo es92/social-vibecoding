@@ -2912,8 +2912,8 @@
     "description": "Two yeses, for a change the reader makes."
   },
   "whoDecides.plays.two_yeses.other": {
-    "text": "Live once anyone besides {{name}} says yes. That can be you.",
-    "description": "Two yeses, for a change someone else makes. {{name}} is that person's username."
+    "text": "Live once one more person says yes. That can be you.",
+    "description": "Two yeses, for a change someone else makes, under a row titled with that person's name: one yes besides theirs puts it live, and the reader's counts."
   },
   "whoDecides.plays.open_floor.you": {
     "text": "Your yes is enough. Live once its checks pass.",

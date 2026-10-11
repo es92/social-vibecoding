@@ -879,17 +879,25 @@ const Home = {
       // empty launcher, where it is all the grid shows, and
       // overflow tiles, which have no cell of their own either.
       //
+      // A collapsed grid the tile would add a row to (createHidden above)
+      // holds it back with the hidden rows — but it is not DROPPED there
+      // (#4757): heldBack marks it, and "Show all N apps" draws a compact
+      // New project entry on its own line (apps-more.tsx), so creating stays
+      // one tap away without expanding and without a new tile row. Exactly
+      // one of tile and compact entry is on screen: the grid draws its tile
+      // only when not held back (app-grid.tsx).
+      //
       // Present for EVERY account: `canCreate` decides its treatment, never
       // its presence — the locked tile opens the dialog that prints the quota.
-      // The one place it is not drawn is a collapsed grid it would add a row
-      // to (createHidden above): there it is behind "Show all N apps", one
-      // tap away, like the apps past the fold.
       const placed = items.filter((it) => it.placement).map((it) => it.placement);
       const flows = !placed.length || items.some((it) => !it.placement);
-      create = createHidden ? null : {
+      create = {
         enabled: canCreate,
         hint: message(Home.CREATE_DISABLED_HINT),
-        placement: flows ? null : { ...HomeLayout.trailingCell(placed, cols), w: 1, h: 1 },
+        heldBack: createHidden,
+        placement: createHidden || flows
+          ? null
+          : { ...HomeLayout.trailingCell(placed, cols), w: 1, h: 1 },
       };
       // A private member makes no apps until they are let in off the
       // waitlist (their Home's waitlist card says so), so no tile at all.

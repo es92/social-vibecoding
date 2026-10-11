@@ -93,11 +93,11 @@
   },
   "create.label": {
     "text": "New project",
-    "description": "Label under the dashed + tile at the end of Home's grid: starts a new project (an app and the community that builds it)."
+    "description": "Label under the dashed + tile at the end of Home's grid, and on the small dashed-plus button beside \"Show all N apps\" when the grid is folded and has no room for the tile: starts a new project (an app and the community that builds it)."
   },
   "create.tip": {
     "text": "Start a new project",
-    "description": "Tooltip of the + tile at the end of Home's grid."
+    "description": "Tooltip of the + tile at the end of Home's grid, and of the small New project button beside \"Show all N apps\" that stands in for it there."
   },
   "create.disabledHint": {
     "text": "View your app allowance or request more slots.",
@@ -105,7 +105,7 @@
   },
   "create.lockedTip": {
     "text": "New project. View app quota. {{hint}}",
-    "description": "Tooltip and accessible name of the + tile at the end of Home's grid when the viewer cannot create another app right now. {{hint}} is one whole sentence saying what pressing the tile does (\"View your app allowance or request more slots.\")."
+    "description": "Tooltip and accessible name of the + tile at the end of Home's grid when the viewer cannot create another app right now — and of the small New project button beside \"Show all N apps\" that stands in for it there, in the same state. {{hint}} is one whole sentence saying what pressing it does (\"View your app allowance or request more slots.\")."
   },
   "myApps.added": {
     "text": "Added to My apps",

@@ -1075,10 +1075,12 @@ test('each tour has a screenshot state, opened at any card, over a real project,
 });
 
 // The owner, 6 October 2026: each step scrolls its target into view before
-// ringing it. On a Home whose collapsed grid is full, the New project tile is
-// held back behind "Show all N apps" (home.js createHidden): the step presses
-// that first, as a finger would.
-test('each step brings its target into view before ringing it, drawing a held-back tile first', () => {
+// ringing it. On a Home whose collapsed grid is full, the New project tile
+// used to be held back behind "Show all N apps" (home.js createHidden) and
+// the step pressed the expander first, as a finger would; since #4757 the
+// Show-all line carries a compact New project entry, so the step finds its
+// target directly. revealWith stays for a target the screen truly lacks.
+test('each step brings its target into view before ringing it, finding a held-back tile on the Show-all line', () => {
   const { outOfBand, bringIntoView } = loadTsx(`${DIR}/index.tsx`);
   const { lookAroundSteps } = loadTsx(`${DIR}/tour-steps.ts`);
   const band = { top: 99, bottom: 754 };
@@ -1088,9 +1090,13 @@ test('each step brings its target into view before ringing it, drawing a held-ba
   assert.equal(outOfBand({ left: 0, top: 0, width: 390, height: 800 }, band), false, 'a whole screen is not scrolled to');
 
   const first = lookAroundSteps()[0];
+  // Kept as the fallback for a target the screen truly lacks; with the
+  // compact entry (#4757) a held-back tile is found directly, pressing
+  // nothing, so a folded grid no longer has to be unfolded first.
   assert.equal(first.revealWith, '#home-apps-more-btn');
   assert.match(read('frontend/src/features/home/apps-more.tsx'), /id="home-apps-more-btn"[\s\S]*home\._appsExpanded = true;\s+home\.render\(\);/);
-  assert.match(read('frontend/src/features/home/home.js'), /create = createHidden \? null : \{/);
+  assert.match(read('frontend/src/features/home/home.js'), /heldBack: createHidden,/);
+  assert.match(read('frontend/src/features/home/create-tile.tsx'), /id="home-create-tile"/);
 
   const withDoc = (doc, fn) => {
     const had = Object.hasOwn(globalThis, 'document');
@@ -1099,9 +1105,22 @@ test('each step brings its target into view before ringing it, drawing a held-ba
     try { return fn(); } finally { if (had) globalThis.document = before; else delete globalThis.document; }
   };
   const phone = { width: 390, height: 844 };
-  // Held back: the expander is pressed, and nothing is done yet.
+  // Held back (#4757): the compact New project entry sits on the Show-all
+  // line, so the step finds its target directly and presses nothing.
   let pressed = 0;
   const expander = { getBoundingClientRect: () => ({ width: 300, height: 30 }), click() { pressed += 1; } };
+  const compact = {
+    getBoundingClientRect: () => ({ left: 16, top: 700, width: 120, height: 30 }),
+    closest: () => null,
+  };
+  const found = withDoc({
+    querySelectorAll: (sel) => (sel === '#home-create-tile' ? [compact]
+      : sel === '#home-apps-more-btn' ? [expander] : []),
+    getElementById: () => ({ getBoundingClientRect: () => ({ height: 99, bottom: 99 }) }),
+  }, () => bringIntoView(first, phone));
+  assert.deepEqual([found, pressed], [true, 0], 'on the Show-all line already: no unfolding');
+  // A target the screen truly lacks: the expander is pressed, and nothing is
+  // done yet.
   const held = withDoc({
     querySelectorAll: (sel) => (sel === '#home-apps-more-btn' ? [expander] : []),
     getElementById: () => null,

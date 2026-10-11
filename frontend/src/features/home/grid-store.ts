@@ -118,6 +118,13 @@ export interface CreateTileView {
   enabled: boolean;
   /** The ask-an-admin sentence the locked tile announces. */
   hint: string;
+  /**
+   * #4757: a collapsed grid whose last shown row is full holds the tile back
+   * (#3047) — heldBack marks that state, and apps-more.tsx answers it with a
+   * compact New project entry beside "Show all N apps". False whenever the
+   * tile IS the grid's trailing cell, expanded or not.
+   */
+  heldBack: boolean;
   placement: GridPlacement | null;
 }
 
@@ -143,8 +150,10 @@ export interface HomeGridState {
   /**
    * The trailing Create tile, or null: before the first paint (so the
    * prerender and the first client render agree — the tile is data-placed),
-   * in the search view, with a load notice on screen, and in a collapsed grid
-   * it would add a row to (#3047) — there it is behind "Show all N apps".
+   * in the search view, and with a load notice on screen. A collapsed grid
+   * whose last shown row is full keeps the view with `heldBack: true` (#4757):
+   * app-grid.tsx then draws no tile, and the compact New project entry beside
+   * "Show all N apps" stands in for it.
    */
   create: CreateTileView | null;
 }

@@ -9323,7 +9323,11 @@ CREATE INDEX IF NOT EXISTS chat_sessions_checks_earned_unsettled_idx
 --   fixed_check_sync_keys  every check it was synced for. A check that
 --                          still fails once the proposal contains a main
 --                          that passes it is the proposal's own, and is
---                          never a reason to sync it again.
+--                          never a reason to sync it again. The unit suite,
+--                          one row for every test, is the exception: each
+--                          sync for it is recorded as <key>@<main's tip>,
+--                          and a main that moved on and is green may sync
+--                          it again, up to three times in all.
 ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS fixed_check_sync_head TEXT;
 ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS fixed_check_sync_keys TEXT[];
 

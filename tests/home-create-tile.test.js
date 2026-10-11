@@ -11,7 +11,9 @@
 //
 //   1. It is the grid's LAST child and sits in the cell straight after the
 //      last tile — collapsed, and after "Show all N apps". A collapsed grid it
-//      would add a row to holds it behind "Show all N apps" instead (#3047).
+//      would add a row to holds it behind "Show all N apps" instead (#3047),
+//      where a compact New project entry on that line stands in for it
+//      (#4757): same label, same tooltip, same dialog, never two at once.
 //   2. It is not a layout item: nothing stores, drags or displaces it.
 //   3. Hydration: it is absent from the initial store state and so from the
 //      prerender, exactly like every other data-placed child of #app-list.
@@ -251,7 +253,8 @@ test('#3047: the tile goes behind "Show all" when it would add a row past 2 rows
   Home.render();
   state = model();
   assert.equal(state.items.length, 8, 'every app still shown');
-  assert.equal(state.create, null, 'the tile is behind "Show all"');
+  assert.equal(state.create.heldBack, true, 'the tile is behind "Show all"');
+  assert.equal(state.create.placement, null, 'a held-back tile holds no cell');
   assert.ok(state.items.every((it) => it.placement.row <= 1), 'two rows, nothing more');
   assert.equal(moreCount(), 8, 'the expander appears for the tile alone, naming every app');
 
@@ -260,7 +263,7 @@ test('#3047: the tile goes behind "Show all" when it would add a row past 2 rows
   Home.render();
   state = model();
   assert.equal(state.items.length, 8);
-  assert.equal(state.create, null);
+  assert.equal(state.create.heldBack, true);
 
   // A taller budget holds it back the same way, trading no apps for it.
   Home._apps = mine(16);
@@ -268,7 +271,7 @@ test('#3047: the tile goes behind "Show all" when it would add a row past 2 rows
   Home.render();
   state = model();
   assert.equal(state.items.length, 16, 'four full rows of apps, not three');
-  assert.equal(state.create, null);
+  assert.equal(state.create.heldBack, true);
 
   // "Show all" brings it back, ending the expanded grid.
   Home._appsExpanded = true;
@@ -283,10 +286,116 @@ test('#3047: the expander appears for the tile alone, naming every app', () => {
   assert.match(HOME, /const createHidden = !Home\._appsExpanded\s*&& HomeLayout\.createTileCollapsed\(shown, cols, rowBound\);/);
   assert.match(HOME, /const collapsed = hiddenRows \|\| createHidden;/);
   assert.match(HOME, /moreCount = collapsed \? \(canvas\.length \+ HomeLayout\.overflowItems\(layout\)\.length\) : 0;/);
-  assert.match(HOME, /create = createHidden \? null : \{/);
+  // #4757: a held-back tile is no longer dropped — the view is pushed with
+  // heldBack and no placement, and apps-more.tsx draws the compact entry.
+  assert.match(HOME, /create = \{/);
+  assert.match(HOME, /heldBack: createHidden,/);
+  assert.match(HOME, /placement: createHidden \|\| flows/);
   // The shot links that pin the tile's treatments open the grid, so the tile
   // they exist to show is on screen whatever the viewport's budget.
   assert.match(HOME, /shot === 'home-apps' \|\| shot === 'create-enabled' \|\| shot === 'create-disabled'/);
+});
+
+// ── #4757: the compact entry on the "Show all N apps" line ────────────
+
+const MORE = 'frontend/src/features/home/apps-more.tsx';
+
+test('a held-back view draws no tile in the grid', () => {
+  const items = ['a', 'b', 'c', 'd'].map((slug, col) => ({
+    kind: 'card', placement: { col, row: 0, w: 1, h: 1 }, app: { ...CARD, slug, name: slug },
+  }));
+  const held = renderGrid({
+    ready: true, items, create: { ...CREATE, heldBack: true },
+  });
+  assert.doesNotMatch(held, /home-create-tile/,
+    'the compact entry on the Show-all line is the only New project control');
+  const shown = renderGrid({
+    ready: true, items,
+    create: { ...CREATE, heldBack: false, placement: { col: 0, row: 1, w: 1, h: 1 } },
+  });
+  assert.match(shown, /id="home-create-tile"/, 'the tile still ends the grid when it fits');
+});
+
+// AppsMoreBody is a function component with hooks, so calling it for its tree
+// needs a render — the same probe home-chrome-hosts.test.js uses. The walk
+// descends THROUGH function components by calling them, and must run inside
+// that render because CreateCompact reads the i18n context.
+function compactButton(AppsMoreBody, moreCount, create) {
+  let hit = null;
+  const walk = (node) => {
+    if (hit || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (node.props && node.props.id === 'home-create-tile') { hit = node; return; }
+    walk(node.props && node.props.children);
+    if (!hit && typeof node.type === 'function') walk(node.type(node.props));
+  };
+  const Probe = () => { walk(AppsMoreBody({ moreCount, create })); return null; };
+  renderToHtml(createElement(Probe));
+  return hit;
+}
+
+test('the Show-all line carries the compact entry exactly when the tile is held back', () => {
+  const { AppsMoreBody } = loadTsx(MORE);
+  const html = renderToHtml(createElement(AppsMoreBody, {
+    moreCount: 93, create: { ...CREATE, heldBack: true },
+  }));
+  assert.match(html, /Show all 93 apps/, 'the expander keeps its place on the line');
+  assert.match(html, /class="flex items-center gap-2"/, 'both controls share one line');
+  // Tile first? No: Show all, then the entry, the order the spec drew.
+  assert.ok(html.indexOf('home-apps-more-btn') < html.indexOf('home-create-tile'),
+    'the entry comes after the Show all button');
+  const entry = html.match(/<button type="button" id="home-create-tile" class="([^"]*)"/);
+  assert.ok(entry, 'the compact entry is a button carrying the Create id');
+  assert.match(entry[1], /\bhome-create-btn\b/, 'the focus-ring hook app.css keys');
+  assert.doesNotMatch(entry[1], /\bhome-create-tile\b/,
+    'not a tile of the grid canvas: the drag-time #app-list rules do not apply');
+  assert.match(html, /data-panel-slot="create"/);
+  assert.match(html, /data-create-enabled="true"/);
+  assert.match(html, /title="Start a new project"/);
+  assert.match(html, />New project</, 'the tile\'s own label');
+  assert.doesNotMatch(html, /<button[^>]*\sdisabled/, 'never the disabled attribute');
+});
+
+test('the compact entry draws the locked treatment, and opens the same dialog', () => {
+  const { AppsMoreBody } = loadTsx(MORE);
+  const off = renderToHtml(createElement(AppsMoreBody, {
+    moreCount: 8, create: { ...CREATE, enabled: false, heldBack: true },
+  }));
+  const entry = off.match(/<button type="button" id="home-create-tile" class="([^"]*)"/);
+  assert.ok(entry, 'the locked entry is still there');
+  assert.doesNotMatch(entry[1], /violet/, 'locked ink, no accent — as the locked tile');
+  assert.match(off, /data-create-enabled="false"/);
+  assert.match(off, /aria-label="New project\. View app quota\. View your app allowance or request more slots\."/,
+    'the locked name starts with the visible label, then says what a tap does');
+  assert.doesNotMatch(off, /<button[^>]*\sdisabled/);
+
+  // Executed coverage, the half a source grep cannot give: the tap opens the
+  // dialog the tile opens, in both states.
+  const calls = [];
+  const prev = global.window;
+  global.window = { App: { showCreateModal: () => { calls.push(1); } } };
+  try {
+    const btn = compactButton(AppsMoreBody, 8, { ...CREATE, heldBack: true });
+    btn.props.onClick();
+    assert.equal(calls.length, 1, 'the compact entry opens the same create dialog');
+  } finally {
+    if (prev === undefined) delete global.window; else global.window = prev;
+  }
+});
+
+test('without a held-back tile the Show-all line is what it always was', () => {
+  const { AppsMoreBody } = loadTsx(MORE);
+  const html = renderToHtml(createElement(AppsMoreBody, {
+    moreCount: 9, create: { ...CREATE, heldBack: false },
+  }));
+  assert.match(html, /id="home-apps-more-btn"[^>]*class="w-full /, 'the button keeps its full width');
+  assert.doesNotMatch(html, /home-create-tile/, 'and no compact entry beside it');
+  assert.doesNotMatch(html, /flex-1/);
+  // The zero count is still the hidden, empty host.
+  assert.equal(
+    renderToHtml(createElement(AppsMoreBody, { moreCount: 0 })),
+    '<div id="home-apps-more" class="hidden px-2 pb-1 sm:px-3"></div>',
+  );
 });
 
 test('no apps, or tiles in the overflow, and the tile flows after them', () => {

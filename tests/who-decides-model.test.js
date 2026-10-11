@@ -1,8 +1,8 @@
 'use strict';
 
 // #4666, WHO SAYS YES, on screen: the presets and rules as the sheet, the
-// invite sheet and the Workshop's rule line say them
-// (frontend/src/features/who-decides/model.ts, invite-rule.tsx,
+// Make it step and the Workshop's rule line say them
+// (frontend/src/features/who-decides/model.ts, make-rule.tsx,
 // dev-board/workshop/community-card.tsx presetSentence), held to the server's
 // own table (src/services/governance-rules.js).
 //
@@ -81,7 +81,7 @@ test('a preset is said from the reader’s side', () => {
   assert.equal(model.playsOut('you_or_the_group', creator).you, 'Your yes is enough. Live once its checks pass.');
   assert.equal(model.playsOut('you_or_the_group', creator).other, 'Live when you say yes, or when most of the group does.');
   assert.equal(model.playsOut('you_or_the_group', member).other, 'Live when evan says yes, or when most of the group does.');
-  assert.equal(model.playsOut('two_yeses', creator).other, 'Live once anyone besides maya says yes. That can be you.');
+  assert.equal(model.playsOut('two_yeses', creator).other, 'Live once one more person says yes. That can be you.');
   assert.equal(model.playsOut(null, creator).you, 'Live when any one of its rules passes.');
 });
 
@@ -148,19 +148,27 @@ test('the Workshop’s rule line says You or the group from the reader’s side'
   assert.equal(presetSentence({ policy: 'anyone', approvals_required: null, electorate: 3, required: 2 }, group), null);
 });
 
-test('the invite sheet’s line says the rule a new project starts on', () => {
-  const { inviteRuleLine } = loadTsx('frontend/src/features/who-decides/invite-rule.tsx');
-  assert.equal(inviteRuleLine('you_or_the_group', 'Swim Spots'),
-    'People you invite can suggest changes to Swim Spots. A change goes live when you say yes, or when most of the group does.');
-  assert.equal(inviteRuleLine('two_yeses', 'Swim Spots'),
-    'People you invite can suggest changes to Swim Spots. A change goes live once two people say yes.');
-  assert.equal(inviteRuleLine(null, 'Swim Spots'),
-    'People you invite can suggest changes to Swim Spots. A change goes live when one of its rules passes.');
+test('Make it says who can change the project, once, under the two answers', () => {
+  const { MakeRuleLine } = loadTsx('frontend/src/features/who-decides/make-rule.tsx');
+  const draw = (preset) => renderToHtml(createElement(MakeRuleLine, { preset, onPick() {}, who: 'evan' }));
+  const html = draw('you_or_the_group');
+  assert.match(html, /data-make-rule="you_or_the_group"/);
+  assert.match(html, /Who can change it: <b[^>]*>You or the group<\/b>/);
+  assert.match(html, /data-make-rule-change=""[^>]*>Change<\/button>/);
+  assert.match(draw('two_yeses'), /Who can change it: <b[^>]*>Two yeses<\/b>/);
+
+  const make = read('frontend/src/features/first-session/make.tsx');
+  const name = make.indexOf("{missing === 'name' ? <p id=\"first-session-name-hint\"");
+  const line = make.indexOf('<MakeRuleLine preset={rule} onPick={setRule} who={who} />');
+  const submit = make.indexOf('type="submit"');
+  assert.ok(name > 0 && name < line && line < submit, 'under the name, above Make it');
+  // The default goes unsaid (the server's own default); another pick is the
+  // new project's governance block, with nothing proposed.
+  assert.match(make, /\.\.\.\(rule !== DEFAULT_PRESET \? \{ governance: \{ preset: rule \} \} : \{\}\)/);
+
+  // Said once: the invite sheet after it says nothing about the rule.
   const made = read('frontend/src/features/first-session/made.tsx');
-  const hint = made.indexOf("{t('onboarding:firstSession.invite.noteHint')}");
-  const line = made.indexOf('<InviteRuleLine slug={made.slug} name={made.name} me={me} />');
-  const actions = made.indexOf('{actions.map((action, i) => {');
-  assert.ok(hint > 0 && hint < line && line < actions, 'under the note, above the share buttons');
+  assert.doesNotMatch(made, /who-decides|RuleLine/);
 });
 
 test('the sheet prerenders as an empty, hidden root', () => {

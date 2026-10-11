@@ -293,7 +293,11 @@ is no replay plan to write and nothing to verify locally.
   with nobody invited yet; inviting comes next, on its made screen. The
   create dialog that asked who it is for and who approves is retired: those
   are the project's own levers afterwards (Invite, and "Who can see & change
-  it", whose invite-sheet line names the rule and offers the presets). `POST /api/apps` still takes `audience`, a private
+  it"). The approval rule is the one thing Make it says before it makes:
+  one line under the two answers, "Who can change it: You or the group",
+  whose Change offers the four presets (`who-decides/make-rule.tsx`); a
+  pick goes out as the new project's `governance` block, and the invite
+  sheet after it says nothing about the rule. `POST /api/apps` still takes `audience`, a private
   community's `invitees` and the approval rule as dapp.json's own
   `governance` block (`src/services/create-options.js`) for any other
   caller; the rule is written into the new repository's dapp.json by the

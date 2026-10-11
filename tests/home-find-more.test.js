@@ -721,9 +721,10 @@ test('Create an app is the launcher grid\'s trailing tile, for every account', (
   // there.
   assert.doesNotMatch(PANELS_SRC, /createView\(panel\) \{/, 'the panels no longer build it');
   assert.doesNotMatch(PANELS_SRC, /create: 'home-create-section'/, 'and it has no section host');
-  // The only thing that withholds it is a collapsed grid it would add a row
-  // to (#3047) — and there it is behind "Show all N apps", not gone.
-  assert.match(HOME_SRC, /create = createHidden \? null : \{\n\s+enabled: canCreate,/,
+  // The only thing that withholds the tile is a collapsed grid it would add
+  // a row to (#3047) — and there it is not gone: the view is still built, and
+  // the Show-all line draws the compact New project entry for it (#4757).
+  assert.match(HOME_SRC, /create = \{\n\s+enabled: canCreate,\n\s+hint: message\(Home\.CREATE_DISABLED_HINT\),\n\s+heldBack: createHidden,/,
     'Home.render() builds it on the grid paint, from the same canCreate');
   assert.doesNotMatch(HOME_SRC, /data-panel-slot="/,
     'and the grid still plants no widget slots: the tile is a component, not a slot');

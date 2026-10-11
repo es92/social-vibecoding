@@ -1,6 +1,6 @@
 /**
- * #4666: the pieces the Who can see & change it sheet and the invite sheet's
- * presets share: the four preset tiles, how a preset plays out, and a face.
+ * #4666: the pieces the Who can see & change it sheet and the Make it step's
+ * presets (./make-rule.tsx) share: the four preset tiles, how a preset plays out, and a face.
  * Drawn from the shell's primitives in its one accent (AGENTS.md, "Type and
  * colour"): the picked tile wears the accent ring; the one in force today
  * says "Now" and gets no fill.

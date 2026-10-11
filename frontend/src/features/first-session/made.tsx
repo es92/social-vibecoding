@@ -100,7 +100,6 @@ import { Wordmark } from '@/components/ui/wordmark';
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
 import { askForPingWhileBotBuilds } from '../dialogs/ping-ask';
-import { InviteRuleLine } from '../who-decides/invite-rule';
 import type { HomeroomBotPlanQuestion } from '../messages/types';
 
 import { BUILD_LINE_WORDS, type BuildLineState, buildLineOf } from './build-line';
@@ -588,9 +587,6 @@ export function InviteSheet({ made, me, onClose, onSent }: {
           </div>
         </div>
         <p className="mt-2 text-[13px] text-zinc-500 dark:text-zinc-400">{t('onboarding:firstSession.invite.noteHint')}</p>
-        {/* #4666: who says yes, said where it starts to matter, with Change
-            (features/who-decides/invite-rule.tsx). */}
-        <InviteRuleLine slug={made.slug} name={made.name} me={me} />
         {/* The main button, then the other way beside it (inviteActions), a
             white pill on the sheet's grey (pillRaised). Not dimmed while
             "✓ Copied" shows: busy then only holds off a second press. */}

@@ -20,9 +20,11 @@
  * server sketches the idea for both, and only the first answers the join
  * screen and counts in the admin Journey (routes/apps.js). It is the only
  * door: the New project dialog it once had behind "More options" is gone,
- * and with it choosing Just me, a public community or who approves at
- * creation. Those are a project's own levers afterwards (Invite, "Make it
- * public", Members & approvals).
+ * and with it choosing Just me or a public community at creation. Those are
+ * a project's own levers afterwards (Invite, "Make it public"). Who can change
+ * it is one line under the two answers (#4666, ../who-decides/make-rule.tsx
+ * `MakeRuleLine`): You or the group unless its Change picks another preset,
+ * sent as the project's own governance block.
  *
  * From Create, a small "Import from a GitHub repo" under Make it swaps the
  * two questions for ./import-repo.tsx's (`mode` 'import'; #create/import
@@ -109,6 +111,8 @@ import { RichMessage, useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
 import { useKeyboardSurface } from '../../lib/keyboard-surface';
 import { mayFocusByCodeNow } from '../auth/sign-in-sheet';
+import { MakeRuleLine } from '../who-decides/make-rule';
+import { DEFAULT_PRESET, type PresetKey } from '../who-decides/model';
 import { AppAllowance, useAppAllowance } from '../dialogs/app-allowance';
 import { deviceTimeZone, postCreateApp } from '../dialogs/post-create-app';
 import { descriptionOf, firstChoice, OWN, readyMadeOf, sentence, starterOf, suggestedName, TEMPLATES, type Template } from './examples';
@@ -256,6 +260,9 @@ export function MakeScreen({
   const [written, setWritten] = useState<string | null>(null);
   // A name they typed: from then on a choice no longer suggests one.
   const [nameTyped, setNameTyped] = useState(false);
+  // Who can change it (#4666): You or the group, unless Change picked another.
+  // Sent only when it is another, as the project's own governance block.
+  const [rule, setRule] = useState<PresetKey>(DEFAULT_PRESET);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The answer a press of "Make it" found missing, said under its field
@@ -391,6 +398,7 @@ export function MakeScreen({
         audience: 'invited',
         ...(ready ? { template: ready.template } : { brief: text.trim(), ...(starter ? { template: starter.template } : {}) }),
         ...(example ? { description: descriptionOf(example, choice) } : {}),
+        ...(rule !== DEFAULT_PRESET ? { governance: { preset: rule } } : {}),
         from: entry,
         // So the sketch's "today" is the maker's (services/app-sketch.js).
         ...(timeZone ? { timeZone } : {}),
@@ -415,7 +423,7 @@ export function MakeScreen({
       makingRef.current = false;
       setBusy(false);
     }
-  }, [busy, templated, said, text, name, template, choice, entry, onMade]);
+  }, [busy, templated, said, text, name, template, choice, rule, entry, onMade]);
   const needed = neededLine(missing, text, !!template?.finish);
   // The chips under the sentence: Your own… last, or first for the game.
   const ownChip = { key: OWN, label: 'onboarding:firstSession.make.ownChip' };
@@ -667,6 +675,7 @@ export function MakeScreen({
               {missing === 'name' ? <p id="first-session-name-hint" role="alert" className={NEEDED}>{needed}</p> : null}
             </div>
           </div>
+          <MakeRuleLine preset={rule} onPick={setRule} who={who} />
           {allowance}
           {error ? <p role="alert" className="mt-3 text-[14px] text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="grow" />
