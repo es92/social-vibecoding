@@ -307,7 +307,7 @@ function acceptItem(item, answer, glossary) {
  * order. Entries no longer in English are dropped; a locked entry that is
  * still current is kept as it is.
  */
-function writeLanguage(root, language, accepted, english = readEnglishEntries(root)) {
+function writeLanguage(root, language, accepted, english = readEnglishEntries(root), collected = null) {
   const written = [];
   for (const [namespace, entries] of Object.entries(english)) {
     const updates = accepted[namespace] || {};
@@ -318,8 +318,11 @@ function writeLanguage(root, language, accepted, english = readEnglishEntries(ro
     const { required } = packs.requiredMessages(texts, language);
     const next = {};
     for (const key of Object.keys(required)) {
-      if (key in updates) next[key] = { text: updates[key], source: packs.hash(required[key]) };
-      else if (key in existing) next[key] = existing[key];
+      if (key in updates) {
+        next[key] = { text: updates[key], source: packs.hash(required[key]) };
+        // What was accepted, as the translation cache keeps it.
+        if (collected) (collected[namespace] ||= {})[key] = next[key];
+      } else if (key in existing) next[key] = existing[key];
     }
     if (!Object.keys(updates).length && JSON.stringify(next) === JSON.stringify(existing)) continue;
     if (!Object.keys(next).length && !fs.existsSync(file)) continue;
@@ -359,14 +362,16 @@ function prepareSync(root, { languages = null, onlyIds = null, chunkSize = CHUNK
  * answer fails a check are asked again once, on their own; what fails twice
  * stays English and is reported.
  *
- * Returns { files, languages: { tag: { requested, written, failed: [{ id, problem }] } } }.
+ * Returns { files, entries, languages: { tag: { requested, written, failed: [{ id, problem }] } } },
+ * where `entries` is what was accepted, language -> namespace -> key ->
+ * { text, source } (the translation cache keeps exactly that).
  */
 async function syncTranslations({
   root, translate, languages = null, onlyIds = null, chunkSize = CHUNK_SIZE, log = () => {},
   maxRetries = Infinity,
 }) {
   const { config, glossary, english, targets, plans, requests } = prepareSync(root, { languages, onlyIds, chunkSize });
-  const summary = { files: [], languages: {} };
+  const summary = { files: [], entries: {}, languages: {} };
   for (const [language, items] of plans) summary.languages[language] = { requested: items.length, written: 0, failed: [] };
   if (!requests.length) return summary;
   const total = [...plans.values()].reduce((sum, items) => sum + items.length, 0);
@@ -428,7 +433,8 @@ async function syncTranslations({
   }
 
   for (const language of targets) {
-    summary.files.push(...writeLanguage(root, language, accepted.get(language), english));
+    summary.entries[language] = {};
+    summary.files.push(...writeLanguage(root, language, accepted.get(language), english, summary.entries[language]));
   }
   return summary;
 }

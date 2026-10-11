@@ -44,7 +44,7 @@ test('a full admin reads the browser languages and the translation step through 
         days: 30,
         people: 120,
         languages: [{ language: 'id-ID', people: 70 }, { language: 'en-US', people: 40 }, { language: 'es', people: 10 }],
-        translation: { enabled: true, checkedSha: 'a'.repeat(40), batch: null, proposal: { prNumber: 4700, status: 'promoted' } },
+        translation: { enabled: true, batch: null, lastPass: null, coverage: { id: { translated: 9700, total: 9759, ships: true } } },
       }),
     };
   };
@@ -56,7 +56,7 @@ test('a full admin reads the browser languages and the translation step through 
   assert.equal(calls[0], 'http://platform.internal/api/browser-languages?days=30&includeAdmins=true');
   assert.deepEqual(out.structuredContent.languages[0], { language: 'id-ID', people: 70 });
   assert.equal(out.structuredContent.people, 120);
-  assert.equal(out.structuredContent.translation.proposal.prNumber, 4700);
+  assert.deepEqual(out.structuredContent.translation.coverage.id, { translated: 9700, total: 9759, ships: true });
 });
 
 test('nobody else is offered it, and the route is a full admin\'s read outside /api/admin', () => {
@@ -69,24 +69,21 @@ test('nobody else is offered it, and the route is a full admin\'s read outside /
   assert.ok(policy.CONNECTOR_ALLOWED_ROUTES.some((r) => r.method === 'GET' && r.pattern === '/api/browser-languages'));
 });
 
-test('the translation step\'s status names its batch and its last proposal', async () => {
+test('the translation step\'s status names its batch, its last pass and each language\'s coverage', async () => {
   const pool = {
-    async query(sql, params) {
+    async query(sql) {
       if (/platform_settings/.test(sql)) {
-        return { rows: [{ value: JSON.stringify({ checkedSha: 'b'.repeat(40), batch: { id: 'msgbatch_1', baseSha: 'b'.repeat(40), submittedAt: '2026-10-10T00:00:00Z', messages: 9000 }, proposal: { sessionId: 12, englishDigest: 'x' } }) }] };
-      }
-      if (/FROM chat_sessions WHERE id = \$1/.test(sql)) {
-        assert.deepEqual(params, [12]);
-        return { rows: [{ pr_number: 4700, status: 'merged' }] };
+        return { rows: [{ value: JSON.stringify({ checkedDigest: 'b'.repeat(64), batch: { id: 'msgbatch_1', sourceDigest: 'b'.repeat(64), english: {}, submittedAt: '2026-10-10T00:00:00Z', messages: 9000 } }) }] };
       }
       return { rows: [] };
     },
   };
-  assert.deepEqual(await runner.status(pool), {
+  const coverage = { id: { translated: 9700, total: 9759, ships: true } };
+  assert.deepEqual(await runner.status(pool, { deps: { cache: { live: async () => ({ coverage }) } } }), {
     enabled: true,
-    checkedSha: 'b'.repeat(40),
     batch: { submittedAt: '2026-10-10T00:00:00Z', messages: 9000 },
-    proposal: { prNumber: 4700, status: 'merged' },
     lastPass: null,
+    coverage,
   });
+  assert.match(tools.TOOL_DESCRIPTIONS?.get_browser_languages || read('src/services/mcp-tools.js'), /Translations are kept in that cache and served at once; none is put to a vote\./);
 });

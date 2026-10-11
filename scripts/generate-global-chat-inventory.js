@@ -66,6 +66,7 @@ const FILE_EXEMPTIONS = new Map([
   ['src/routes/cli-agent.js', 'local coding-agent protocol, represented by CLI Settings and development capabilities'],
   ['src/routes/external-agent-patch-upload.js', 'coding-agent patch upload authenticated by a one-time work-order token (#4264), never a signed-in Classic control'],
   ['src/routes/internal.js', 'platform-to-worker/internal service protocol'],
+  ['src/routes/languages.js', 'the shell\'s own language list and packs, read by its language runtime as it boots, never a model-visible control'],
   ['src/routes/public-api.js', 'anonymous public integration and waitlist surface'],
   ['src/routes/topochain/ingest.js', 'authenticated partner ingestion protocol'],
   ['src/routes/topochain/partner.js', 'partner service protocol'],

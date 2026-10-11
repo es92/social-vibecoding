@@ -13659,3 +13659,22 @@ CREATE TABLE IF NOT EXISTS homeroom_bot_voice_offers (
 CREATE INDEX IF NOT EXISTS idx_homeroom_bot_voice_offers_app
   ON homeroom_bot_voice_offers(app_id, status, id);
 COMMENT ON TABLE homeroom_bot_voice_offers IS 'staging:private';
+
+-- The translation cache (src/services/language-cache.js): every translation
+-- the translation step accepted, kept by the English it was translated from.
+-- `source` is the sha256 of that English message, as a committed catalog
+-- entry's `source` is, so a message is translated once per wording: a deploy
+-- reads what is here, and only a message whose English is new or changed is
+-- translated again. Committed catalog entries (frontend/locales) still win:
+-- a person correcting a translation commits it with "locked": true. Public:
+-- it is the shell's own text, the same in every environment.
+CREATE TABLE IF NOT EXISTS language_translations (
+  language    VARCHAR(35) NOT NULL,
+  namespace   TEXT NOT NULL,
+  key         TEXT NOT NULL,
+  source      CHAR(64) NOT NULL,
+  text        TEXT NOT NULL,
+  model       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (language, namespace, key, source)
+);

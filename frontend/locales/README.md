@@ -59,10 +59,12 @@ a mistake in your change, so it fails.
 }
 ```
 
-**Contributors do not write these, edit them or compute a hash.** They come
-from the translation step, not from the person changing the UI. `"locked":
-true` marks an entry a person corrected, which that step leaves alone until
-the English it corrects changes.
+**Contributors do not write these, edit them or compute a hash.** What is
+committed here came from earlier translation proposals, or from a person
+correcting one: `"locked": true` marks an entry a person corrected, which the
+translation step leaves alone until the English it corrects changes. New
+translations are not committed at all: they live in the translation cache
+(below), and a committed entry that is still usable always wins over it.
 
 A translation never fails a build. An entry that is missing, whose `source`
 no longer matches the English text, or whose parameters, tags or plural forms
@@ -70,16 +72,36 @@ do not match is left out of that language's pack, and the runtime shows
 English for that one message. `node scripts/language-packs.js --report` lists
 what each language is missing and why (`--all` for every key).
 
-### The translation step
+### The translation step and its cache
 
 Homeroom runs it on its own catalogs (`src/services/language-sync-runner.js`),
-and no build ever calls a model. Every three hours the leader reads
-`frontend/locales` on main. When English has messages a configured language
-lacks, because new text merged or a language was just added to `config.json`,
-it translates them (`src/services/language-sync.js`) and opens **one proposal**
-carrying only the translation files, which the community votes on like any
-other change.
+and no build ever calls a model. Every three hours, and ten minutes after a
+leader starts, it reads what the RUNNING build says: its English and its
+committed translations, which the shell build writes to
+`public/locales/.source.json` because the runtime image has no `frontend/`.
+It lays the translation cache over them (`src/services/language-cache.js`,
+table `language_translations`), and when a configured language still lacks
+messages (new or reworded English, or a language just added to
+`config.json`) it translates them (`src/services/language-sync.js`) and keeps
+what passes in the cache. No proposal is opened and nothing is committed.
 
+- **Served at once.** `GET /api/languages` names the languages offered now and
+  their packs; `/locales/live/<language>.<namespace>.<sha256>.json` serves each
+  pack, named by its content, so a browser keeps it until it changes. The shell
+  asks for the list as it boots (`lib/i18n/runtime.ts`), checks every pack
+  against the hash the list gave, and keeps the build's own catalogs when the
+  list cannot be had. Somebody whose first language the build does not ship
+  waits for the list a moment (at most 1.5 seconds) rather than see another
+  language and then switch; nobody else waits. A translation is ready within
+  a pass, with no deploy.
+- **Translated once per wording.** A cached translation is kept by the SHA-256
+  of the English it was translated from. A deploy that leaves a message's
+  English as it was translates nothing; one that rewords it translates that
+  message again, under its new English.
+- **What wins.** A committed entry still usable for the current English, then
+  the cache, then English, message by message. A language is offered once the
+  two together cover `minimumCoverage`, and a counted message only with every
+  form its language uses.
 - **What a model is given.** Each message with its description, the language's
   style note, Homeroom's own terms in that language and the names never to
   translate, all from `glossary.json`. Change the glossary to change how a word
@@ -88,21 +110,17 @@ other change.
   every plural form the language uses), and stricter ones: no space at an
   edge, the same line breaks, no em dash or markup the English lacks, names
   written as they are. A failed answer is asked again once, alone; a message
-  that fails twice stays English and is listed in the proposal.
+  that fails twice stays English until the English changes again.
 - **How much at once.** A few hundred messages, the usual merge's worth, go one
-  request at a time and are up for a vote the same pass. More, a whole new
-  language, go as one Message Batch at half the price; a later pass opens the
-  proposal once the batch has ended.
-- **One at a time.** While a translation proposal is open no other is opened.
-  One the community closes is not offered again until the English changes.
-- **Why not on each proposal's own branch.** A commit the platform adds to a
-  proposal under review clears its votes and restarts its checks, and races
-  the author's agent pushing to the same branch. A translation proposal lags
-  the English by one vote instead; until it merges, new messages show in
-  English, one at a time.
+  request at a time, the same pass. More, a whole new language, go as one
+  Message Batch at half the price, kept once it has ended; its answers are
+  matched by message and used only for English it was asked about.
+- **Correcting one.** Commit the corrected entry with `"locked": true`: a
+  committed entry wins over the cache.
 - `LANGUAGE_SYNC_ENABLED=false` turns it off. Its spend counts against the
   platform's daily system budget. A full admin's connector reads where it
-  stands with `get_browser_languages`.
+  stands with `get_browser_languages`: a batch in flight, what the last pass
+  could use, and each language's coverage.
 
 `node scripts/language-sync.js --plan` shows what each language needs on a
 checkout, and the same script translates by hand with an `ANTHROPIC_API_KEY`
@@ -244,9 +262,9 @@ second language.
 
 ## Adding a language
 
-Add it to `config.json` with its own name; that is the whole change. The
-translation step fills it in a proposal of its own, and the build offers it
-(in Settings and to devices that ask for it) once its translations cover
+Add it to `config.json` with its own name; that is the whole change. Once it
+is deployed, the translation step fills the cache for it, and the shell offers
+it (in Settings and to devices that ask for it) once its translations cover
 `minimumCoverage` of the English, 95% today. Until then a configured language
 gets no pack and nobody sees it. Give the glossary its terms and a style note
 in the same change. Right-to-left layout is not built yet and belongs with the

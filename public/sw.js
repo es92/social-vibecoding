@@ -555,6 +555,11 @@ function classifyRequest(method, url, acceptHeader, mode, selfOrigin) {
 
   // The shell's own static assets (incl. /usernode-bridge/v1/... versions).
   if (/\.(?:html|js|css|webmanifest)$/i.test(p)) return 'shell';
+  // A pack the server's translation cache serves (src/routes/languages.js):
+  // its URL is its content hash, so it never changes, and the runtime checks
+  // its bytes against the hash GET /api/languages gave. It is no build's, so
+  // no release lists it: kept cache-first, like the other hashed assets.
+  if (/^\/locales\/live\/[a-zA-Z-]+\.[a-z-]+\.[a-f0-9]{64}\.json$/.test(p)) return 'immutable';
   // A language pack (scripts/language-packs.js): content-hashed, fetched only
   // when a person's language asks for it, verified against the release and
   // kept for offline use from then on. Never in SHELL_ASSETS, so installing

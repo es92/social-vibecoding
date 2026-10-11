@@ -22,10 +22,15 @@
 // in English for its readers; afterwards a message the step has not reached
 // yet still falls back to English on its own.
 //
-// Output (both ignored by git and Docker, rebuilt by every shell build):
+// Output (all ignored by git and Docker, rebuilt by every shell build):
 //
 //   frontend/src/lib/i18n/catalogs.generated.json   bundled English + manifest
 //   public/locales/<language>.<namespace>.<sha256>.json   one pack per pair
+//   public/locales/.source.json   every catalog file as built, for the server:
+//                    the translation cache (src/services/language-cache.js)
+//                    reads the running build's English and committed
+//                    translations from it, since the runtime image carries
+//                    no frontend/. A dotfile, so it is never served.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -33,6 +38,10 @@ const crypto = require('node:crypto');
 
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const PACK_NAME = /^[a-zA-Z-]+\.[a-z-]+\.[a-f0-9]{64}\.json$/;
+const SOURCE_FILE = '.source.json';
+// The catalog files the source carries: config, glossary, and every
+// language's namespaces (English included).
+const SOURCE_PATH = /^(?:config\.json|glossary\.json|[a-zA-Z-]+\/[a-z][a-z-]*\.json)$/;
 const NAMESPACE = /^[a-z][a-z-]*$/;
 const KEY = /^[A-Za-z][A-Za-z0-9_.-]*$/;
 const PARAMETER = /^[a-z][A-Za-z0-9]*$/;
@@ -284,7 +293,44 @@ function buildLanguagePacks(root) {
   const generated = path.join(root, 'frontend/src/lib/i18n/catalogs.generated.json');
   fs.mkdirSync(path.dirname(generated), { recursive: true });
   fs.writeFileSync(generated, JSON.stringify({ languages, namespaces, english, manifest }));
+  writeSource(root, output);
   return { manifest, report, languages };
+}
+
+/**
+ * Every catalog file as built, in one JSON document ({ files: { path: json } },
+ * paths relative to frontend/locales), for a server whose image has no
+ * frontend/ (public/locales/.source.json). Returns its path.
+ */
+function writeSource(root, output = path.join(root, 'public/locales')) {
+  const directory = path.join(root, 'frontend/locales');
+  const files = {};
+  const walk = (relative) => {
+    for (const entry of fs.readdirSync(path.join(directory, relative), { withFileTypes: true })) {
+      const name = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(name);
+      else if (SOURCE_PATH.test(name)) {
+        try { files[name] = JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8')); } catch { /* a malformed translation is left out, as a build leaves it out */ }
+      }
+    }
+  };
+  walk('');
+  fs.mkdirSync(output, { recursive: true });
+  const target = path.join(output, SOURCE_FILE);
+  fs.writeFileSync(target, JSON.stringify({ files }));
+  return target;
+}
+
+/** Writes a source document's files back out as root/frontend/locales, for collectCatalogs and the translation step. */
+function materializeSource(source, root) {
+  const directory = path.join(root, 'frontend/locales');
+  for (const [name, content] of Object.entries(source?.files || {})) {
+    if (!SOURCE_PATH.test(name)) continue;
+    const target = path.join(directory, ...name.split('/'));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${JSON.stringify(content, null, 2)}\n`);
+  }
+  return root;
 }
 
 /**
@@ -332,6 +378,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  PACK_NAME, buildLanguagePacks, collectCatalogs, componentTags, formatReport, hash, minimumCoverage, parameters,
-  readConfig, requiredMessages, shippedLanguages, translationProblem,
+  PACK_NAME, SOURCE_FILE, buildLanguagePacks, collectCatalogs, componentTags, formatReport, hash, materializeSource,
+  minimumCoverage, parameters, readConfig, requiredMessages, shippedLanguages, translationProblem, writeSource,
 };

@@ -386,6 +386,11 @@ app.get('/api/version', async (_req, res) => {
   });
 });
 
+// The languages the shell is offered in, and their packs, from the
+// translation cache (src/routes/languages.js). Before authMiddleware: the
+// sign-in screens are translated too.
+app.use(require('./src/routes/languages').languageRoutes(config));
+
 // Public conventions endpoint. Apps' own CLAUDE.md files point here so
 // a developer (or Claude Code) running locally against a repo can
 // fetch the current platform rules without cloning the harness.
