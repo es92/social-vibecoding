@@ -645,7 +645,7 @@ test('#4239: moving a request about Homeroom itself, as the model and the person
   const move = require('../src/services/homeroom-bot-move');
   const tool = mayor.TOOLS.find((t) => t.function.name === 'offer_move_request').function;
   assert.deepEqual(tool.parameters.required, ['project', 'number', 'reason']);
-  assert.match(tool.description, /Only a request they filed or asked for\./);
+  assert.match(tool.description, /Only a request they filed or asked for, or one on a project they made or are an admin of\./);
   assert.match(tool.description, /nothing moves unless they tap Move it to Homeroom/);
   assert.match(tool.description, /the original is closed, or put to its group's vote when anybody else took part in it/);
   const prompt = mayor.systemPrompt({ username: 'ada' });
