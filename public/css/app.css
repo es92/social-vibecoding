@@ -23055,6 +23055,13 @@ html.in-side-panel body {
 }
 .dev-ws-hrow-tag[data-tone="run"] { color: var(--lit-ink); }
 .dev-ws-hrow-tag[data-tone="bad"] { color: var(--state-blocked); }
+/* What's happening's own-work rows end with where the work stands
+   (week-pages.tsx MetaTag): the tag's words in its tone, no pill, with its
+   glyph ("Only you", Homeroom bot) where it has one. */
+.dev-ws-hrow-tag[data-tone="warn"] { color: var(--state-attention); }
+.dev-ws-hrow-tag[data-tone="ok"] { color: var(--state-ok); }
+.dev-ws-hrow-tag:has(> svg) { display: inline-flex; align-items: center; gap: 4px; }
+.dev-ws-hrow-tag > svg { flex: none; width: 12px; height: 12px; }
 .dev-ws-hrow-ago { font-variant-numeric: tabular-nums; }
 .dev-ws-hweek > .dev-ws-reveal { margin-top: 2px; }
 .dev-ws-hweek + .dev-ws-wlist { margin-top: 4px; border-top: 1px solid var(--app-sheet-line); }
@@ -23081,25 +23088,25 @@ html.in-side-panel body {
    far end, as they do on a phone today (#4718): the first line lets go of
    its box (`display: contents`) so the title and the pair are the column's
    own items, and the pair is ordered after the tags. */
-/* Your work echoes What happened's This week card (#4716): This week's
-   heading (15px at 650, its count muted beside it on the baseline, 4px
-   above and 8px below), a hairline over the first row as over every row
-   there, and rows that start where This week's do, after the 7px dot and
-   10px gap This week keeps for what is new (so its titles line up with
-   This week's and New for you's). A row lights in place on hover, as This
-   week's does, rather than bleeding past the card's edge. */
-.dev-ws-strip[data-ws-mine] { container-type: inline-size; gap: 0; }
-.dev-ws-strip[data-ws-mine] > .dev-ws-head { align-items: baseline; padding: 4px 2px 8px; }
-.dev-ws-strip[data-ws-mine] > .dev-ws-head > .dev-ws-head-title { font-size: 15px; font-weight: 650; }
-.dev-ws-strip[data-ws-mine] .dev-ws-wlist { margin-top: 0; }
-.dev-ws-strip[data-ws-mine] .dev-ws-wlist + .dev-ws-reveal { margin-top: 2px; }
-/* #4772: Waiting on you, Yours, up for a vote and Going live are Your
-   work's sections, cards drawn exactly as it is. */
-.dev-ws-strip[data-ws-mine-section] { container-type: inline-size; gap: 0; }
-.dev-ws-strip[data-ws-mine-section] > .dev-ws-head { align-items: baseline; padding: 4px 2px 8px; }
-.dev-ws-strip[data-ws-mine-section] > .dev-ws-head > .dev-ws-head-title { font-size: 15px; font-weight: 650; }
-.dev-ws-strip[data-ws-mine-section] .dev-ws-wlist { margin-top: 0; }
-.dev-ws-strip[data-ws-mine-section] .dev-ws-wlist + .dev-ws-reveal { margin-top: 2px; }
+/* WHAT'S HAPPENING IS ONE CARD (After-Workshop-C, Oct 2026), drawn as What
+   happened's is: its own container (so a narrow card wraps its rows, not
+   only a narrow window), each part headed with This week's head
+   (`.dev-ws-hweek-head`: the name at 15px/650, its count beside it, 4px
+   above and 8px below), a hairline over every row, and a hairline between
+   parts, as between This week and the weeks under it. Waiting on you, Your
+   work and Going live are This week's one-line row (`.dev-ws-hrow`, the
+   `standing` HappenedRow); Yours, up for a vote keeps the two-line row
+   below (`.dev-ws-lrow`), whose glyph starts where the one-line rows'
+   does, after their 7px dot and 10px gap. A row lights in place on hover,
+   as This week's does, rather than bleeding past the card's edge. */
+.dev-ws-strip[data-ws-happening] { container-type: inline-size; gap: 4px; }
+.dev-ws-hpart { display: flex; flex-direction: column; min-width: 0; }
+.dev-ws-hpart + .dev-ws-hpart { margin-top: 4px; border-top: 1px solid var(--app-sheet-line); }
+.dev-ws-hpart + .dev-ws-hpart > .dev-ws-hweek-head { padding-top: 14px; }
+.dev-ws-hpart .dev-ws-wlist { margin-top: 0; }
+.dev-ws-hpart > .dev-ws-wlist > .dev-ws-wrow:first-child { border-top: 1px solid var(--app-sheet-line); }
+.dev-ws-hpart .dev-ws-reveal { margin-top: 2px; }
+.dev-ws-hpart [data-ws-mine-empty] { margin: 0; padding: 8px 2px; border-top: 1px solid var(--app-sheet-line); }
 .dev-ws-lrow { gap: 10px; padding: 8px 2px 8px 19px; border-top: 1px solid var(--app-sheet-line); border-radius: 10px; }
 .dev-ws-lrow:hover, .dev-ws-lrow[data-on] { margin: 0; padding-left: 19px; padding-right: 2px; }
 .dev-ws-lrow:hover + .dev-ws-lrow, .dev-ws-lrow[data-on] + .dev-ws-lrow { border-top-color: var(--app-sheet-line); }

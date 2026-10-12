@@ -26,15 +26,15 @@
 
 import { useState, type MouseEvent, type ReactNode } from 'react';
 
-import { ChevronDownIcon, ChevronRightIcon, PencilSquareIcon } from '@/components/ui/icons';
+import { ChevronDownIcon, ChevronRightIcon, LockIcon, PencilSquareIcon, SparklesIcon } from '@/components/ui/icons';
 
 import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { getLanguage, t as translate } from '../../../lib/i18n/runtime';
 import { agoStamp } from '../../../lib/timestamp';
 import { openHref } from '../card/fold';
-import type { RowBrief } from '../card/model';
+import type { RowBrief, RowTag } from '../card/model';
 import { PageBack } from './page-back';
-import { TILE, WorkList, topicRef, type CardRow, type TopicRef } from './work-row';
+import { TILE, WorkList, lineTags, topicRef, type CardRow, type TopicRef } from './work-row';
 import type { SinceWeek } from './workshop';
 
 /**
@@ -266,13 +266,22 @@ const GOING_LIVE = new Set(['deploying', 'delivery_pending', 'merging']);
  * wide window), "You" on your own, "Going live" on a merge still rolling
  * out (or the pill's own words when it is stuck), and when it moved. On a
  * phone the title wraps and the rest goes under it (app.css).
+ *
+ * `standing`: What's happening's own-work rows (Waiting on you, Your work,
+ * Going live) draw this same row, ending it with where the work stands
+ * instead: its most important tag in its tone ("Checks failing", "With
+ * Homeroom bot · it replied 42m ago", "Started"), then who made it when
+ * that is not simply you ("Only you", Homeroom bot), as Your work's two
+ * lines picked them (work-row.tsx lineTags). Everything here is yours, so
+ * no row says You, and the tag already says when where it matters.
  */
-export function HappenedRow({ row, fresh, slug, on = false, onOpen }: {
+export function HappenedRow({ row, fresh, slug, on = false, onOpen, standing = false }: {
   row: CardRow;
   fresh: boolean;
   slug: string;
   on?: boolean;
   onOpen?: (event: MouseEvent<HTMLAnchorElement>, ref: TopicRef) => void;
+  standing?: boolean;
 }): ReactNode {
   const t = useMessages('project');
   const b = row.brief;
@@ -285,7 +294,12 @@ export function HappenedRow({ row, fresh, slug, on = false, onOpen }: {
   const stuck = b.kind === 'live' && !!s && !going && s.tone === 'blocked';
   const Glyph = TILE[b.kind] || PencilSquareIcon;
   const at = Number(row.at) || 0;
-  const when = at > 0 ? agoStamp(at) : null;
+  const when = at > 0 && !standing ? agoStamp(at) : null;
+  // A merge going live (or stuck) already says where it stands; who made it
+  // still follows (#4728: Homeroom bot's change from your request).
+  const stand = standing ? lineTags(b, card) : null;
+  const first = stand && !going && !stuck && stand.ranked.length ? stand.ranked[0] : null;
+  const maker = stand ? stand.maker : null;
   return (
     <li
       className="dev-ws-hrow"
@@ -313,15 +327,33 @@ export function HappenedRow({ row, fresh, slug, on = false, onOpen }: {
           </a>
         ) : <span className="dev-ws-hrow-link">{card.title.text}</span>}
         <span className="dev-ws-hrow-meta">
-          {b.mine ? <span className="dev-ws-hrow-you">{t('project:happened.row.you')}</span> : null}
+          {b.mine && !standing ? <span className="dev-ws-hrow-you">{t('project:happened.row.you')}</span> : null}
           {going ? <span className="dev-ws-hrow-tag" data-tone="run">{t('project:happened.row.goingLive')}</span> : null}
           {stuck && s ? <span className="dev-ws-hrow-tag" data-tone="bad">{s.label}</span> : null}
+          {first ? <MetaTag tag={first} /> : null}
+          {maker ? <MetaTag tag={maker} /> : null}
           {when && when.text ? (
             <time className="dev-ws-hrow-ago" dateTime={new Date(at).toISOString()} title={when.title}>{when.text}</time>
           ) : null}
         </span>
       </span>
     </li>
+  );
+}
+
+/**
+ * A tag at the end of a one-line row: its words in its tone, no pill (the
+ * row is one line of type), with the lock or Homeroom bot's glyph where the
+ * tag has one, and its fewer words where it has them, saying the rest to a
+ * screen reader as the tags line does (work-row.tsx Tag).
+ */
+function MetaTag({ tag }: { tag: RowTag }): ReactNode {
+  return (
+    <span className="dev-ws-hrow-tag" data-tone={tag.tone} title={tag.title || (tag.short ? tag.label : undefined)}>
+      {tag.glyph === 'lock' ? <LockIcon aria-hidden="true" /> : null}
+      {tag.glyph === 'bot' ? <SparklesIcon aria-hidden="true" /> : null}
+      {tag.short ? <><span aria-hidden="true">{tag.short}</span><span className="sr-only">{tag.label}</span></> : tag.label}
+    </span>
   );
 }
 

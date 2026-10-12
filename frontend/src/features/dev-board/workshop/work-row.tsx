@@ -190,6 +190,31 @@ function Tag({ t }: { t: RowTag }): ReactNode {
 const TAG_RANK: Record<RowTag['tone'], number> = { bad: 0, warn: 1, run: 2, ok: 3, plain: 4 };
 
 /**
+ * A row's tags as the Workshop's own-work rows read them: what the work
+ * needs, most important first (TAG_RANK), and apart from them who made it
+ * when that is not simply you. Live work drops the tag its pill already
+ * says (AppView._workshopBrief `settled`, "Going live…" on a release still
+ * under way), and the preview tag stays on the item's page: these rows are
+ * what the work needs, and a preview is there to open, not to act on.
+ *
+ * Who made it is said at most once, never as a name in the words. What you
+ * made says nothing: everything here is yours unless it says otherwise.
+ * Homeroom bot's change from your request says so with its tag (#4728),
+ * and a private session of yours keeps its "Only you". A request you are
+ * working on names nobody here: it is often somebody else's, its words say
+ * who asked, and its "Picked up · you" already says you are on it.
+ */
+export function lineTags(b: RowBrief, card: DevCardModel): { ranked: RowTag[]; maker: RowTag | null } {
+  const pill = card.pill?.state || null;
+  const said = b.kind === 'live' && pill ? pill.label : null;
+  const tags = (said !== null ? b.tags.filter((t) => t.tone !== 'ok' && t.label !== said) : b.tags)
+    .filter((t) => t.glyph !== 'eye');
+  const maker = b.kind === 'request' ? null
+    : tags.find((t) => t.glyph === 'bot') || (b.mine ? tags.find((t) => t.glyph === 'lock') : undefined) || null;
+  return { ranked: tags.filter((t) => t !== maker).sort((x, y) => TAG_RANK[x.tone] - TAG_RANK[y.tone]), maker };
+}
+
+/**
  * A change's vote on the Workshop tab (#4486): the card's own status pill,
  * with its own words ("0 of 1 approval"), at its words' width plus the 56px
  * the thin bar it replaces took (app.css `.dev-ws-wvote-state`), and the
@@ -263,23 +288,9 @@ export function WorkRow({
     // `.dev-ws-lrow`).
     const end = votes || (live && pill ? <StatePill s={pill} className="dev-ws-wrow-live" /> : null);
     // Live work's bar is on the first line, so its tags drop the one that
-    // restates it: a merged item's settled tag is that pill's own label
-    // (AppView._workshopBrief `settled`), "Going live…" on a release still
-    // under way. The preview tag stays on the item's page: Your work is
-    // what the work needs, and a preview is there to open, not to act on.
-    const lineTags = (live && pill ? tags.filter((t) => t.label !== pill.label) : tags)
-      .filter((t) => t.glyph !== 'eye');
-    // Who made it is said at most once, never as a name in the words. What
-    // you made says nothing: everything in Your work is yours unless it
-    // says otherwise. Homeroom bot's change from your request says so with
-    // its tag (#4728), and a private session of yours keeps its "Only you";
-    // either goes after the status tags. A request you are working on keeps
-    // whoever asked for it in its words: it is often somebody else's, and
-    // its "Picked up · you" already says you are on it.
+    // restates it; who made it goes after the status tags (lineTags).
     const request = b.kind === 'request';
-    const maker = request ? null
-      : lineTags.find((t) => t.glyph === 'bot') || (b.mine ? lineTags.find((t) => t.glyph === 'lock') : undefined) || null;
-    const ranked = lineTags.filter((t) => t !== maker).sort((x, y) => TAG_RANK[x.tone] - TAG_RANK[y.tone]);
+    const { ranked, maker } = lineTags(b, card);
     return (
       <div
         className="dev-ws-wrow dev-ws-lrow"

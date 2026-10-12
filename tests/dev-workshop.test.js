@@ -1296,7 +1296,7 @@ test('#4505: catch-up retains your recently merged contributions, not your ongoi
   assert.match(row('My recent live contribution'), /data-new=""[\s\S]*<span class="dev-ws-hrow-you">You<\/span><time/);
   assert.equal(row('My merge going live'), '', 'still going live, it is not in What happened');
   const goingLive = html.slice(html.indexOf('data-ws-mine-section="live"'), html.indexOf('data-ws-happened-head'));
-  assert.match(goingLive, /<span class="dev-ws-head-title">Going live<\/span>[\s\S]*>My merge going live<\/a>/);
+  assert.match(goingLive, /<div class="dev-ws-hweek-head"><span class="dev-ws-week-head"><b>Going live<\/b><span>1 merged<\/span><\/span><\/div>[\s\S]*>My merge going live<\/a>/);
   assert.ok(!row('My recent live contribution').includes('Going live'), 'a live one says nothing of the sort');
   assert.equal(row('My older contribution'), '', 'old merges stay in their week, a row of its own');
   assert.ok(!happened.includes('My ongoing contribution'), 'ongoing work stays in Your work');
@@ -1321,7 +1321,8 @@ test('New for you: of what moved since your last visit, the requests filed since
   AppView._ghIssues.push({ number: 14, title: 'Old but busy', createdAt: at(10), updatedAt: at(1), lastMessageAt: at(1), user: 'dana', htmlUrl: 'https://github.com/x/y/issues/14' });
   const html = workshopHtml(AppView, 'workshop');
   const fresh = html.slice(html.indexOf('data-ws-fresh=""'), html.indexOf('data-ws-happened-head'));
-  assert.match(fresh, /^data-ws-fresh=""><div class="dev-ws-head"><span class="dev-ws-head-title">New for you<\/span><span class="dev-ws-head-sub">1 since your last visit<\/span><\/div>/);
+  // A part of What's happening's one card, headed as What happened's weeks are.
+  assert.match(fresh, /^data-ws-fresh=""><div class="dev-ws-hweek-head"><span class="dev-ws-week-head"><b>New for you<\/b><span>1 since your last visit<\/span><\/span><\/div>/);
   const rows = [...fresh.matchAll(/data-ws-row="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(rows, ['since:issue:12'], 'a request filed before the visit is not new for you, and the vote is Needs you\'s');
   // The request: what it is, who filed it, and Build it — the request
@@ -2301,7 +2302,7 @@ test('the viewer\u2019s own work in flight leads the lander', () => {
   assert.ok(html.indexOf('data-ws-dashboard') >= 0 && html.indexOf('data-ws-dashboard') < html.indexOf('data-ws-mine=""'));
   assert.ok(!html.includes('data-ws-mine-more'), 'nothing of it waits behind a reveal');
   assert.match(html, /data-ws-lane="mine"/);
-  assert.match(html, /<span class="dev-ws-head-title">Your work<\/span>/);
+  assert.match(html, /<div class="dev-ws-hweek-head"><span class="dev-ws-week-head"><b>Your work<\/b>/);
 
   // ON THE HUB, one row of For you: the first of it and how many, a door to
   // the Workshop page above. No rows of its own to unfold.
@@ -2440,17 +2441,18 @@ test('#4715: a merged change of yours that is still going live stays in Your wor
   assert.deepEqual(html.match(/data-ws-row="mine:[^"]*"/g) || [],
     ['data-ws-row="mine:merged:81"', 'data-ws-row="mine:merged:84"']);
 
-  // #4716: Your work's one-line row ends its first line with the card's own
-  // "Going live…" bar, and its tags line does not say it a second time; the
-  // bot change keeps its bot tag there.
-  const going = message('changes:badge.pill.goingLive');
+  // Going live is What happened's one-line row (After-Workshop-C): the
+  // spinner where the glyph is, the title, and "Going live" at the line's
+  // end, as This week says it of a merge still rolling out, once; the bot
+  // change keeps its bot tag after it.
+  const going = message('project:happened.row.goingLive');
   const esc = (x) => x.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
   const row81 = html.slice(html.indexOf('data-ws-row="mine:merged:81"'), html.indexOf('data-ws-row="mine:merged:84"'));
-  const row84 = html.slice(html.indexOf('data-ws-row="mine:merged:84"'), html.indexOf('</section>', html.indexOf('data-ws-row="mine:merged:84"')));
-  assert.match(row81, new RegExp(`<span class="dev-ws-lrow-line"><a class="dev-ws-wrow-link"[^>]*>Mine, going live</a><span class="dev-ws-row-state [^"]*dev-ws-wrow-live"[^>]*>${esc(going)}</span></span>`));
-  assert.equal(row81.split(going).length - 1, 1, 'said once, on the first line');
-  assert.equal(row84.split(going).length - 1, 1);
-  assert.match(row84.slice(row84.indexOf('dev-ws-wrow-status')), new RegExp(esc(message('changes:workshop.row.tag.homeroomBot'))));
+  const row84 = html.slice(html.indexOf('data-ws-row="mine:merged:84"'), html.indexOf('</li>', html.indexOf('data-ws-row="mine:merged:84"')));
+  assert.match(row81, new RegExp(`<span class="dev-ws-hrow-glyph" data-kind="live" aria-hidden="true"><span class="dc-status-spinner-arc"></span></span><span class="dev-ws-hrow-main"><a class="dev-ws-hrow-link"[^>]*>Mine, going live</a><span class="dev-ws-hrow-meta"><span class="dev-ws-hrow-tag" data-tone="run">${esc(going)}</span></span>`));
+  assert.ok(!row81.includes(message('changes:badge.pill.goingLive')), 'the pill\'s words are not said a second time');
+  assert.equal(row84.split(`>${going}<`).length - 1, 1);
+  assert.match(row84.slice(row84.indexOf('dev-ws-hrow-meta')), new RegExp(`data-tone="plain"><svg[^]*?</svg>${esc(message('changes:workshop.row.tag.homeroomBot'))}</span>`));
 });
 
 test('#4772: What\'s happening files your work as Waiting on you, Your work, Yours up for a vote and Going live, each once', () => {
@@ -2496,28 +2498,48 @@ test('#4772: What\'s happening files your work as Waiting on you, Your work, You
   assert.equal(message('changes:workshop.row.tag.botReplied', { ago: '1h ago' }), 'With Homeroom bot · it replied 1h ago');
 
   const html = workshopHtml(AppView, 'workshop');
-  // The sections in order, under What's happening, each a card with its
-  // sentence-case title; then New for you's and What happened.
+  // The sections in order, under What's happening, each a part of ONE card
+  // headed as What happened's weeks are (After-Workshop-C); then New for
+  // you's and What happened.
   const order = ['data-ws-part="happening"', 'data-ws-mine-section="waiting"', 'data-ws-mine=""',
     'data-ws-mine-section="vote"', 'data-ws-mine-section="live"', 'data-ws-happened-head'];
   const idx = order.map((x) => html.indexOf(x));
   assert.ok(idx.every((i) => i >= 0), `every section is drawn: ${idx}`);
   assert.deepEqual([...idx].sort((a, b) => a - b), idx, 'in that order');
-  const section = (key) => html.slice(html.indexOf(`data-ws-mine-section="${key}"`), html.indexOf('</section>', html.indexOf(`data-ws-mine-section="${key}"`)));
-  assert.match(section('waiting'), /<span class="dev-ws-head-title">Waiting on you<\/span>/);
-  assert.match(section('vote'), /<span class="dev-ws-head-title">Yours, up for a vote<\/span>/);
-  assert.match(section('live'), /<span class="dev-ws-head-title">Going live<\/span>/);
+  assert.equal((html.match(/data-ws-happening=""/g) || []).length, 1, 'one card');
+  const part = (attr) => {
+    const from = html.indexOf(attr);
+    const next = html.indexOf('<div class="dev-ws-hpart"', from);
+    const end = html.indexOf('</section>', from);
+    return html.slice(from, next > 0 && next < end ? next : end);
+  };
+  const section = (key) => part(`data-ws-mine-section="${key}"`);
+  const head = (title, count, cls) => new RegExp(`^data-ws-[a-z-]+="[a-z]*"><div class="dev-ws-hweek-head"><span class="dev-ws-week-head"><b>${title}</b><span${cls ? ` class="${cls}"` : ''}>${count}</span></span></div>`);
+  // Waiting on you's count asks for the viewer, so it is in the accent, as
+  // This week's "N new" is; the others are muted.
+  assert.match(section('waiting'), head('Waiting on you', '4 to answer', 'dev-ws-week-fresh'));
+  assert.match(section('vote'), head('Yours, up for a vote', '1 open'));
+  assert.match(section('live'), head('Going live', '1 merged'));
   const rowsOf = (chunk) => [...chunk.matchAll(/data-ws-row="([^"]+)"/g)].map((m) => m[1]);
   // The first three of Waiting on you, the rest behind Show 1 more.
   assert.deepEqual(rowsOf(section('waiting')), ['mine:proposal:62', 'mine:issue:13', 'mine:issue:12']);
   assert.match(section('waiting'), /data-ws-mine-section-more="waiting" aria-expanded="false">[\s\S]*?Show 1 more/);
   assert.deepEqual(rowsOf(section('vote')), ['mine:proposal:61']);
   assert.deepEqual(rowsOf(section('live')), ['mine:merged:79']);
-  const work = html.slice(html.indexOf('data-ws-mine=""'), html.indexOf('</section>', html.indexOf('data-ws-mine=""')));
+  const work = part('data-ws-mine=""');
   assert.deepEqual(rowsOf(work), ['mine:my-session:51']);
-  assert.match(work, /<span class="dev-ws-head-sub">1 open<\/span>/, 'Your work counts its own rows');
-  // The one-line rows of Your work, with the reason first among the tags.
-  assert.match(section('waiting'), /<span class="dev-ws-tag" data-tone="warn">Plan ready: tap Build it<\/span>/);
+  assert.match(work, head('Your work', '1 open'), 'Your work counts its own rows');
+  // Waiting on you, Your work and Going live are What happened's one-line
+  // rows, ending with where each stands: its most important tag, in its
+  // tone. Yours, up for a vote keeps its two lines.
+  for (const chunk of [section('waiting'), work, section('live')]) {
+    assert.ok(chunk.includes('<li class="dev-ws-hrow"') && !chunk.includes('dev-ws-lrow'));
+  }
+  assert.ok(section('vote').includes('<div class="dev-ws-wrow dev-ws-lrow"') && !section('vote').includes('dev-ws-hrow"'));
+  assert.match(section('waiting'), /<span class="dev-ws-hrow-tag" data-tone="bad">Checks failing · 1<\/span>/);
+  assert.match(section('waiting'), /<span class="dev-ws-hrow-tag" data-tone="warn">Plan ready: tap Build it<\/span>/);
+  assert.ok(!html.slice(html.indexOf('data-ws-happening=""'), html.indexOf('data-ws-happened-head')).includes('dev-ws-hrow-you'),
+    'everything here is yours, so no row says You');
   // Going live is listed once: not in What happened while it is going live.
   const happened = html.slice(html.indexOf('data-ws-happened=""'));
   assert.ok(!happened.includes('Mine, going live'), 'not in What happened as well');
@@ -2541,7 +2563,7 @@ test('#4772: What\'s happening files your work as Waiting on you, Your work, You
   AppView._ghIssuesMeta = { waitingOnYou: { plans: [{ number: 13, at: at(0.1) }], questions: [], talks: [] } };
   AppView._workshopShot = 'mine-empty';
   const shot = workshopHtml(AppView, 'workshop');
-  assert.match(shot, /data-ws-part="happening">[^<]*<\/h2><section class="dev-ws-strip" data-ws-mine="">/);
+  assert.match(shot, /data-ws-part="happening">[^<]*<\/h2><section class="dev-ws-strip" data-ws-happening=""><div class="dev-ws-hpart" data-ws-mine="">/);
 });
 
 test('#4772: a change of yours needs your fix only when it is yours to fix', () => {
@@ -2633,27 +2655,25 @@ test('#4457: Your work is rows in words, and a request your change addresses is 
   assert.doesNotMatch(rowWords(b), /yours/);
   assert.doesNotMatch(rowWords({ ...plain(claimed.brief), mine: true, by: 'evan' }), /yours/);
 
-  // Drawn: the shared work rows (./work-row.tsx WorkRow), as before
-  // After-Workshop-B and again since its follow-up: the row a link to the
-  // item's page, the board's words, its tags line and its ☰, and none of
-  // the card's chrome: no edge, no coloured glyph, no @ chip, no fold.
-  // #4716: in This week's one-line shape, the title alone on its first line
-  // (a change with no vote yet has no pill there), then the board's words
-  // leading its tags line.
+  // Drawn: What happened's one-line row (./week-pages.tsx HappenedRow,
+  // `standing`, After-Workshop-C): the small glyph, the title as a link to
+  // the item's page, and at the line's end where it stands, its tags most
+  // important first, and none of the card's chrome: no edge, no coloured
+  // glyph, no @ chip, no fold, and no ☰ (This week's rows have none).
   const html = workshopHtml(AppView, 'workshop');
   const from = html.indexOf('data-ws-lane="mine"');
-  const lane = html.slice(from, html.indexOf('</section>', from));
-  assert.match(lane, /<div class="dev-ws-wlist"><div class="dev-ws-wrow dev-ws-lrow" data-ws-row="mine:/);
-  assert.match(lane, /<span class="dev-ws-lrow-line"><a class="dev-ws-wrow-link" href="#app\/demo-app\/dev\/proposals\/51">Bottom tabs<\/a><\/span><span class="dev-ws-wrow-status"><span class="dev-ws-wrow-sub">Change · for #12<\/span><span class="dev-ws-tag" data-tone=/,
-    'the title on its line, then what it is and what it is for leading its tags line, with no maker and no age (#4716)');
+  const lane = html.slice(from, html.indexOf('</ul>', from));
+  assert.match(lane, /<ul class="dev-ws-hlist"><li class="dev-ws-hrow" data-ws-row="mine:/);
+  assert.match(lane, /<a class="dev-ws-hrow-link" href="#app\/demo-app\/dev\/proposals\/51">Bottom tabs<\/a><span class="dev-ws-hrow-meta"><span class="dev-ws-hrow-tag" data-tone="plain">Started<\/span>/,
+    'the title, then where it stands at the line\'s end, with no maker and no age (#4716)');
   // #4716: a private session of yours is yours by its "Only you" tag, last
   // on the line, rather than a You tag beside it.
-  assert.match(lane, /Started<\/span><span class="dev-ws-tag" data-tone="plain" title="[^"]*"><svg[^>]*>[\s\S]*?<\/svg>Only you<\/span><\/span>/);
-  assert.ok(!/<\/svg>You<\/span>/.test(lane), 'and no You tag beside it');
+  assert.match(lane, /Started<\/span><span class="dev-ws-hrow-tag" data-tone="plain" title="[^"]*"><svg[^>]*>[\s\S]*?<\/svg>Only you<\/span><\/span>/);
+  assert.ok(!lane.includes('dev-ws-hrow-you'), 'and no You beside it');
   assert.ok(lane.includes('<span class="dev-ws-hrow-glyph" data-kind="change" aria-hidden="true">'), 'This week\'s small glyph');
   assert.ok(!lane.includes('dev-ws-wrow-tile'), 'not the tile');
-  assert.ok(lane.includes('dev-ws-wrow-menu'), 'and its ☰');
-  assert.ok(!lane.includes('dev-ws-arow'), 'not the one-line row with a single act');
+  assert.ok(!lane.includes('dev-ws-wrow-menu') && !lane.includes('dev-ws-lrow'), 'one line, as This week\'s rows are');
+  assert.ok(!lane.includes('dev-ws-arow'), 'not the row with a single act');
   assert.ok(!lane.includes('data-ws-row="mine:issue:12"'), 'the request is drawn as the change, not beside it');
   // A request you picked up is a row of its own, its tag saying who is on it.
   const Picked = makeAppView();
@@ -2661,8 +2681,8 @@ test('#4457: Your work is rows in words, and a request your change addresses is 
   Picked._ghIssues[0].in_progress = AppView._ghIssues[0].in_progress;
   const picked = workshopHtml(Picked, 'workshop');
   const pickedRow = picked.slice(picked.indexOf('data-ws-row="mine:issue:12"'));
-  assert.match(pickedRow, /^data-ws-row="mine:issue:12"[^>]*>[\s\S]*?<span class="dev-ws-lrow-line"><a class="dev-ws-wrow-link"[^>]*>Dark mode resets<\/a><\/span><span class="dev-ws-wrow-status"><span class="dev-ws-wrow-sub">#12 · [^<]+<\/span>[\s\S]*?Picked up · you/);
-  assert.ok(!/<span class="dev-ws-wrow-sub">[^<]*yours/.test(lane), 'no "yours" on Your work (#4485)');
+  assert.match(pickedRow, /^data-ws-row="mine:issue:12"[^>]*>[\s\S]*?<a class="dev-ws-hrow-link"[^>]*>Dark mode resets<\/a><span class="dev-ws-hrow-meta"><span class="dev-ws-hrow-tag" data-tone="plain">Picked up · you<\/span><\/span>/);
+  assert.ok(!/yours/.test(lane), 'no "yours" on Your work (#4485)');
   assert.ok(!/data-edge=|dev-card-icon|dev-fold-mark|aria-expanded|data-issue-row|data-session-chip/.test(lane),
     'none of the card\'s chrome, and none of the hooks the Board\'s handler opens a card on');
 });
@@ -2739,13 +2759,15 @@ test('#4716: Your work is This week\'s one-line row: the title, its pill and Vot
   const list = renderToHtml(createElement(WorkRow, { row: { ...row, brief }, slug: 'demo-app' }));
   assert.match(list, /^<div class="dev-ws-wrow" /);
   assert.ok(list.includes('dev-ws-wrow-tile') && list.includes('<span class="dev-ws-wrow-votes">') && !list.includes('dev-ws-lrow'));
-  // Only Your work and its sections (#4772, MineSection) pass it.
-  assert.match(WORKSHOP, /onOpen=\{openItem\}\s*variant="line"\s*\/>/);
-  assert.equal((WORKSHOP.match(/variant="line"/g) || []).length, 2, 'Your work and its sections alone');
+  // Only Yours, up for a vote passes it (After-Workshop-C): What's
+  // happening's other parts are This week's one-line row (MineLines).
+  assert.match(WORKSHOP, /section === 'vote' \? \(\s*<WorkList rows=\{shown\} slug=\{slug\} openKey=\{openKey\} onOpen=\{onOpen\} variant="line" \/>/);
+  assert.equal((WORKSHOP.match(/variant="line"/g) || []).length, 1, 'Yours, up for a vote alone');
+  assert.match(WORKSHOP, /<HappenedRow\s+key=\{r\.key\}\s+row=\{r\}\s+fresh=\{!!r\.fresh\}[^>]*\s+standing\s*\/>/);
   // The first line keeps to one line on a wide card, in This week's weight;
   // a narrow one wraps the title and ends the row with the pill and Vote.
   assert.match(CSS, /\.dev-ws-lrow \.dev-ws-wrow-link \{\s*flex: 1 1 auto; min-width: 0; display: block; font-weight: 400; line-height: 1\.35;\s*white-space: nowrap; overflow: hidden; text-overflow: ellipsis;\s*\}/);
-  assert.match(CSS, /\.dev-ws-strip\[data-ws-mine\] \{ container-type: inline-size; gap: 0; \}/);
+  assert.match(CSS, /\.dev-ws-strip\[data-ws-happening\] \{ container-type: inline-size; gap: 4px; \}/);
   assert.match(CSS, /@container \(max-width: 520px\) \{\s*\.dev-ws-lrow > \.dev-ws-hrow-glyph \{ height: 20px; \}\s*\.dev-ws-lrow-line \{ display: contents; \}/);
   assert.match(CSS, /\.dev-ws-lrow-line > :not\(\.dev-ws-wrow-link\) \{ order: 1; align-self: flex-end; margin-top: 4px; \}/);
   // The nested link still rings the row when it has focus.
@@ -2810,20 +2832,28 @@ test('#4716: Your work\'s tags line names the bot once and you never, drops the 
     /if \(\(e\.target as Element\)\.closest\('a, button'\)\) return;\s*linkRef\.current\?\.click\(\);/);
 });
 
-test('#4716: Your work echoes This week: its heading, a hairline over its first row, rows that start where This week\'s do', () => {
+test('#4716: What\'s happening echoes What happened: one card, This week\'s heads, a hairline over every row and between parts, rows that start where This week\'s do', () => {
   const stripped = CSS.replace(/\/\*[\s\S]*?\*\//g, ' ');
   const rule = (sel) => {
     const at = stripped.indexOf(`${sel} {`);
     assert.ok(at >= 0, `${sel} has a rule`);
     return stripped.slice(at, stripped.indexOf('}', at));
   };
-  // The heading: This week's size and weight (`.dev-ws-week-head b`), its
-  // count beside it on the baseline, and This week's head padding.
+  // The heading of each part IS This week's (After-Workshop-C): its size
+  // and weight (`.dev-ws-week-head b`), its count beside it on the
+  // baseline, and its padding, and a part after the first is divided from
+  // the one above as the weeks under This week are, with room under the line.
   assert.match(rule('.dev-ws-week-head b'), /font-size: 15px; font-weight: 650;/);
-  assert.match(rule('.dev-ws-strip[data-ws-mine] > .dev-ws-head > .dev-ws-head-title'), /font-size: 15px; font-weight: 650;/);
   assert.match(rule('.dev-ws-hweek-head'), /padding: 4px 2px 8px;/);
-  assert.match(rule('.dev-ws-strip[data-ws-mine] > .dev-ws-head'), /align-items: baseline; padding: 4px 2px 8px;/);
-  assert.match(rule('.dev-ws-strip[data-ws-mine] .dev-ws-wlist'), /margin-top: 0;/);
+  assert.match(WORKSHOP, /<div className="dev-ws-hweek-head">\s*<span className="dev-ws-week-head">\s*<b>\{title\}<\/b>/);
+  assert.match(rule('.dev-ws-hpart + .dev-ws-hpart'), /margin-top: 4px; border-top: 1px solid var\(--app-sheet-line\);/);
+  assert.match(rule('.dev-ws-hweek + .dev-ws-wlist'), /margin-top: 4px; border-top: 1px solid var\(--app-sheet-line\);/, 'as What happened divides its weeks');
+  assert.match(rule('.dev-ws-hpart + .dev-ws-hpart > .dev-ws-hweek-head'), /padding-top: 14px;/);
+  assert.match(rule('.dev-ws-hpart .dev-ws-wlist'), /margin-top: 0;/);
+  // Yours, up for a vote's and New for you's rows wear a hairline over the
+  // first as well, as every one-line row does.
+  assert.match(rule('.dev-ws-hpart > .dev-ws-wlist > .dev-ws-wrow:first-child'), /border-top: 1px solid var\(--app-sheet-line\);/);
+  assert.ok(!/\.dev-ws-strip\[data-ws-mine(-section)?\]/.test(stripped), 'the per-card rules went with the cards');
   // The rows: a hairline over each, the first one included, as This week's
   // rows have, the same height and corners, and the title starting after
   // This week's 7px dot and 10px gap.
@@ -2835,7 +2865,7 @@ test('#4716: Your work echoes This week: its heading, a hairline over its first 
   // and the hairline under it stays.
   assert.match(stripped, /\.dev-ws-lrow:hover, \.dev-ws-lrow\[data-on\] \{ margin: 0; padding-left: 19px; padding-right: 2px; \}/);
   assert.match(stripped, /\.dev-ws-lrow:hover \+ \.dev-ws-lrow, \.dev-ws-lrow\[data-on\] \+ \.dev-ws-lrow \{ border-top-color: var\(--app-sheet-line\); \}/);
-  // Scoped to Your work: New for you and the other cards keep their heads.
+  // The Overview's All items keeps its own head.
   assert.match(rule('.dev-ws-head-title'), /font-size: 14px; font-weight: 600;/);
 });
 
@@ -2974,7 +3004,7 @@ test('#1887: a card about your own session opens the CARD, with the session a li
   // #4457: on the Workshop tab your work is a list of rows that open the
   // item's page, the change's for a session of yours, never the session.
   const tabRow = workshopHtml(AppView, 'workshop');
-  assert.match(tabRow, /<div class="dev-ws-wrow dev-ws-lrow" data-ws-row="mine:my-session:51" data-ws-kind="change" data-ws-open="proposal:51">[\s\S]*?<a class="dev-ws-wrow-link" href="#app\/demo-app\/dev\/proposals\/51">Bottom tabs<\/a>/);
+  assert.match(tabRow, /<li class="dev-ws-hrow" data-ws-row="mine:my-session:51" data-ws-kind="change" data-ws-open="proposal:51">[\s\S]*?<a class="dev-ws-hrow-link" href="#app\/demo-app\/dev\/proposals\/51">Bottom tabs<\/a>/);
   assert.ok(!tabRow.includes('/dev/sessions/51'), 'the session is linked from nowhere on the tab');
 
   // On the hub, For you's Your work row names it and opens the Workshop
@@ -3682,9 +3712,12 @@ test('the declared checks cover the lander, its strips and an unfolded row', () 
     /\[data-ws-dash-cell="open"\] \+ \[data-ws-dash-cell="unclaimed"\] \+ \[data-ws-dash-cell="votes"\] \+ \[data-ws-dash-cell="shipped"\] > b$/);
   // #4772: What's happening's sections of your work have their own check:
   // the ?demo=1 mocks give the viewer a row in each, in order.
-  const sections = byName(/What's happening files your work in sections/);
+  const sections = byName(/What's happening files your work in sections of one card/);
   assert.ok(sections && sections.path === '/?demo=1&ws=workshop#app/usernode-2d5619/dev');
   assert.match(sections.expectSelector, /\[data-ws-mine-section="waiting"\][^]*\[data-ws-mine-section="vote"\][^]*\[data-ws-mine-section="live"\]/);
+  // After-Workshop-C: the parts of ONE card, the waiting and live ones in
+  // This week's one-line row, the vote in the two-line one.
+  assert.match(sections.expectSelector, /\[data-ws-part="happening"\] \+ \[data-ws-happening\] > \[data-ws-mine-section="waiting"\]:has\(\.dev-ws-hrow\) ~ \[data-ws-mine-section="vote"\]:has\(\.dev-ws-lrow\) ~ \[data-ws-mine-section="live"\] \.dev-ws-hrow\[data-ws-row\]$/);
   assert.ok(sections.expectSelector.length <= 256);
   // The summary cards ride the ROUTE check rather than a slot of their own:
   // the manifest keeps 20 of its 580 clear and was already at that working
@@ -3728,7 +3761,7 @@ test('the declared checks cover the lander, its strips and an unfolded row', () 
     && message('project:communityCard.lineShort.anyOf').toLowerCase().includes(rules.expectText));
   const work = byName(/Your work stays on screen when it is empty/);
   assert.match(work.expectSelector,
-    /\.dev-ws-tabbody > \[data-ws-part="happening"\] \+ \[data-ws-mine\] \[data-ws-lane="mine"\] > \[data-ws-mine-empty\]$/,
+    /\.dev-ws-tabbody > \[data-ws-part="happening"\] \+ \[data-ws-happening\] > \[data-ws-mine\]:first-child \[data-ws-lane="mine"\] > \[data-ws-mine-empty\]$/,
     'your work comes first under What\'s happening');
   assert.ok(!work.expectSelector.includes(':has('), 'a plain chain');
 
