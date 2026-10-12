@@ -47,6 +47,7 @@
 
 const log = require('./logger');
 const conversations = require('./conversations');
+const notifyCopy = require('./homeroom-bot-notify-copy');
 
 const BOT_USERNAME = 'homeroom_bot';
 const META = conversations.BOT_METADATA_KEY;
@@ -326,27 +327,15 @@ const MOMENTS = Object.freeze({
   chat: 'reply', confirm: 'reply',
 });
 
-// WP-F: which stop a 'stopped' moment was (mobile-push-policy.js
-// botMomentCopy and the bell's botMomentLine word each one).
-const STOPPED_DETAIL = Object.freeze({
-  build_failed: 'stopped_build',
-  blocked: 'stopped_blocked',
-  person: 'stopped_person',
-  empty: 'stopped_empty',
-  first_version_failed: 'stopped_first',
-  preview_failed: 'stopped_preview',
-  needs_look: 'stopped_look',
-});
-
 // WP-E: the notification kind each moment rings as, in the "Your builds" push
 // category (mobile-push-preferences.js), so turning Messages off does not
 // silence them. An answer to what somebody wrote ('reply') is a message.
+// "One story": the moments by their names (homeroom-bot-notify-copy.js), and
+// the older names a sender may still use.
 const BUILD_KINDS = Object.freeze({
+  ...notifyCopy.MOMENT_KINDS,
   question: 'build_needs_you',
-  ready: 'build_ready',
-  stopped: 'build_stopped',
   held: 'build_stopped',
-  live: 'build_live',
 });
 
 /** Pure: the moment a message of the bot's rings at, by its kind, or null. */
@@ -356,30 +345,19 @@ function momentOf(metadata) {
 
 /**
  * B4: what a ringing message's notification carries (notifications.detail),
- * for the push and the bell to word it by (mobile-push-policy.js
- * botMomentCopy): "hrbot:<moment>:<app name>". A first version that is live
- * is the project being live; a change to a project with others in it is
- * "your change to" it. Never throws.
+ * for the push, the bell and the email to word it by
+ * (homeroom-bot-notify-copy.js botNotificationDetail, from the message's
+ * metadata). `moment` is what it rings at. A "ready to try" whose sender did
+ * not say which one is "ready_group" on a project with others in it. Never
+ * throws.
  */
 async function notificationDetail(pool, moment, metadata) {
   if (!moment) return null;
-  const appName = clip(String(metadata?.appName || '').replace(/\s+/g, ' '), 80);
-  let said = moment;
-  // WP-F: "live" only once the app answers on it (mergedText says the same);
-  // until then it is going live.
-  if (moment === 'live') {
-    const soon = metadata?.live === false;
-    if (metadata?.firstVersion) said = soon ? 'live_first_soon' : 'live_first';
-    else if (soon) said = 'live_soon';
+  const meta = { ...(metadata || {}), moment };
+  if (!meta.said && notifyCopy.normalizeMoment(moment) === 'ready' && !meta.firstVersion && meta.appSlug) {
+    if (await hasOthers(pool, null, meta.appSlug)) meta.group = true;
   }
-  // WP-F: a stop says which one, so it can say what happened and what is next.
-  if (moment === 'stopped' && STOPPED_DETAIL[metadata?.kind]) said = STOPPED_DETAIL[metadata.kind];
-  if (moment === 'ready' && !metadata?.firstVersion && metadata?.appSlug) {
-    if (await hasOthers(pool, null, metadata.appSlug)) said = 'ready_group';
-  }
-  // Built, but its shots show part of it failing: not "ready to try".
-  if (moment === 'ready' && Array.isArray(metadata?.ready?.broken) && metadata.ready.broken.length) said = 'ready_broken';
-  return `hrbot:${said}:${appName}`;
+  return notifyCopy.botNotificationDetail(meta);
 }
 
 /**

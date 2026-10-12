@@ -71,21 +71,47 @@ async function canPush(pool, userId) {
   return rows.length > 0;
 }
 
-/** Where the mail's button goes: the bot's chat for a build, else the project. */
-function openUrl({ appSlug, conversationId = null }) {
-  if (Number.isInteger(Number(conversationId)) && Number(conversationId) > 0) {
+/**
+ * Where the mail's button goes: for a build, the request's thread in the
+ * bot's chat (its root), or the message it rang for, or the chat; else the
+ * project.
+ */
+function openUrl({ appSlug, conversationId = null, threadRootId = null, messageId = null }) {
+  const valid = (v) => Number.isSafeInteger(Number(v)) && Number(v) > 0;
+  if (valid(conversationId)) {
+    if (valid(threadRootId)) return `${origin()}/#messages/${Number(conversationId)}/thread/${Number(threadRootId)}`;
+    if (valid(messageId)) return `${origin()}/#messages/${Number(conversationId)}/m/${Number(messageId)}`;
     return `${origin()}/#messages/${Number(conversationId)}`;
   }
   return appSlug ? `${origin()}/app/${encodeURIComponent(appSlug)}` : origin();
 }
 
+// "One story": the notification a "ready to try" rang as, for the words and
+// the thread: the newest build_ready row of theirs in the bot's chat (the
+// message that rang was sent a moment ago). Null when there is none.
+async function readyRow(pool, { userId, conversationId }) {
+  if (!Number.isSafeInteger(Number(conversationId)) || Number(conversationId) <= 0) return null;
+  const { rows } = await pool.query(
+    `SELECT n.detail, n.conversation_message_id, m.thread_root_id
+       FROM notifications n
+       LEFT JOIN conversation_messages m ON m.id = n.conversation_message_id
+      WHERE n.user_id = $1 AND n.conversation_id = $2 AND n.kind = 'build_ready'
+      ORDER BY n.id DESC LIMIT 1`,
+    [userId, Number(conversationId)],
+  );
+  return rows[0] || null;
+}
+
 /**
  * Send `kind` to `userId` when a push cannot reach them (see the top of this
  * file). Resolves 'sent' (handed to the mailer, which keeps its own record),
- * or why not. Never throws.
+ * or why not. Never throws. A `build_ready` is worded as its push is
+ * (homeroom-bot-notify-copy.js botEmailCopy), from `detail` when given, else
+ * from the notification it rang as.
  */
 async function emailIfNoPush(pool, {
   userId, kind, appName = null, appSlug = null, line = null, conversationId = null, notWorking = false,
+  detail = null, threadRootId = null,
 }) {
   try {
     if (!config || !KINDS.includes(kind) || !userId) return 'off';
@@ -99,6 +125,17 @@ async function emailIfNoPush(pool, {
     if (!user || user.is_synthetic || !user.email || !user.email_confirmed) return 'no_email';
     if (user.activity_email === false) return 'turned_off';
     if (await canPush(pool, userId)) return 'push';
+    let words = null;
+    let root = threadRootId;
+    let messageId = null;
+    if (kind === 'build_ready') {
+      const row = await readyRow(pool, { userId, conversationId }).catch(() => null);
+      const copy = require('./homeroom-bot-notify-copy');
+      const said = detail || row?.detail || null;
+      words = said ? copy.botEmailCopy(said) : null;
+      root = root || copy.parseBotDetail(said)?.threadRootId || row?.thread_root_id || null;
+      messageId = row?.conversation_message_id || null;
+    }
     const mail = require('./mail');
     void mail.send(config, {
       kind,
@@ -106,7 +143,8 @@ async function emailIfNoPush(pool, {
       appName: appName || 'Your project',
       line,
       ...(notWorking ? { notWorking: true } : {}),
-      url: openUrl({ appSlug, conversationId }),
+      ...(words ? { subject: words.subject, lead: words.lead } : {}),
+      url: openUrl({ appSlug, conversationId, threadRootId: root, messageId }),
       unsubscribeUrl: unsubscribe,
     });
     return 'sent';

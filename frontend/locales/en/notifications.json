@@ -183,157 +183,45 @@
     "text": "Homeroom bot",
     "description": "First line of a notification from Homeroom bot, the built-in assistant that builds changes: its name. Homeroom is the product's name."
   },
-  "row.bot.build.ready": {
-    "text": "Your change is ready to try",
-    "description": "Second line of a notification from Homeroom bot: the change the viewer asked for is built and can be tried."
+  "row.bot.label.needsYou": {
+    "text": "Needs you",
+    "description": "First line of a notification from Homeroom bot, the built-in assistant that builds what people ask for: one of the viewer's requests needs their answer or decision before the bot goes on. The request's title is on the line below."
   },
-  "row.bot.build.needsYou": {
-    "text": "I have a question",
-    "description": "Second line of a notification from Homeroom bot, speaking as itself: it needs an answer from the viewer before it can go on."
+  "row.bot.label.ready": {
+    "text": "Ready to try",
+    "description": "First line of a notification from Homeroom bot: what the viewer asked for is built and can be tried. The request's title is on the line below."
   },
-  "row.bot.build.stopped": {
-    "text": "Your change stopped. I said why in our chat",
-    "description": "Second line of a notification from Homeroom bot, speaking as itself: work on the viewer's change stopped, and the reason is in their conversation with the bot."
+  "row.bot.label.stopped": {
+    "text": "Stopped",
+    "description": "First line of a notification from Homeroom bot: work on one of the viewer's requests stopped. The request's title is on the line below; the reason is in their chat with the bot."
   },
-  "row.bot.build.live": {
-    "text": "Your change is live",
-    "description": "Second line of a notification from Homeroom bot: the viewer's change is now part of the running project."
+  "row.bot.label.onHold": {
+    "text": "On hold",
+    "description": "First line of a notification from Homeroom bot: work on the viewer's requests waits until Monday, because this week's building time is used up. The request's title (or how many requests) is on the line below."
   },
-  "row.bot.moment.question.named": {
-    "text": "{{project}}: I have a question",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". It needs an answer from the viewer before it can go on. {{project}} is the project's name and leads the line."
+  "row.bot.label.live": {
+    "text": "Live",
+    "description": "First line of a notification from Homeroom bot: what the viewer asked for is now part of the running project. The request's title is on the line below."
   },
-  "row.bot.moment.question.unnamed": {
-    "text": "I have a question",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". It needs an answer from the viewer before it can go on."
+  "row.bot.subject.firstVersion": {
+    "text": "{{project}} first version",
+    "description": "Second line of a notification from Homeroom bot, in bold: the first version of a new project the bot builds for the viewer. {{project}} is the project's name."
   },
-  "row.bot.moment.ready.named": {
-    "text": "{{project}} is ready to try",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's first version of {{project}} (the project's name) is built and can be tried."
+  "row.bot.subject.firstVersionUnnamed": {
+    "text": "Your first version",
+    "description": "Second line of a notification from Homeroom bot, in bold: the first version of a new project the bot builds for the viewer, when the project's name is not known."
   },
-  "row.bot.moment.ready.unnamed": {
-    "text": "Your change is ready to try",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". What the viewer asked for is built and can be tried; the project's name is not known."
+  "row.bot.subject.onHold_one": {
+    "text": "{{count}} request on hold",
+    "description": "Second line of a notification from Homeroom bot, in bold: how many of the viewer's requests wait until Monday. {{count}} is that number."
   },
-  "row.bot.moment.readyGroup.named": {
-    "text": "Your change to {{project}} is ready to try",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change to a project other people share is built and can be tried. {{project}} is the project's name."
+  "row.bot.subject.onHold_other": {
+    "text": "{{count}} requests on hold",
+    "description": "Second line of a notification from Homeroom bot, in bold: how many of the viewer's requests wait until Monday. {{count}} is that number."
   },
-  "row.bot.moment.readyGroup.unnamed": {
-    "text": "Your change is ready to try",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change to a shared project is built and can be tried; the project's name is not known."
-  },
-  "row.bot.moment.readyBroken.named": {
-    "text": "{{project}} is built, but not everything works yet",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build finished with known faults. {{project}} is the project's name."
-  },
-  "row.bot.moment.readyBroken.unnamed": {
-    "text": "Your change is built, but not everything works yet",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build finished with known faults; the project's name is not known."
-  },
-  "row.bot.moment.stopped.named": {
-    "text": "{{project}}: your change stopped. I said why in our chat",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". Work on the viewer's change stopped and the reason is in their conversation with the bot. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stopped.unnamed": {
-    "text": "Your change stopped. I said why in our chat",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". Work on the viewer's change stopped and the reason is in their conversation with the bot."
-  },
-  "row.bot.moment.stoppedBuild.named": {
-    "text": "{{project}}: I couldn't finish building it. Reply and I'll try again",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build failed; replying to the bot starts it again. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedBuild.unnamed": {
-    "text": "I couldn't finish building it. Reply and I'll try again",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build failed; replying to the bot starts it again."
-  },
-  "row.bot.moment.stoppedBlocked.named": {
-    "text": "{{project}}: I can't build it as written. Tell me more",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The request cannot be built as it was described, and the bot asks for more detail. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedBlocked.unnamed": {
-    "text": "I can't build it as written. Tell me more",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The request cannot be built as it was described, and the bot asks for more detail."
-  },
-  "row.bot.moment.stoppedPerson.named": {
-    "text": "{{project}}: this needs a person to decide",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The bot will not go on by itself: a human has to make the decision. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedPerson.unnamed": {
-    "text": "This needs a person to decide",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The bot will not go on by itself: a human has to make the decision."
-  },
-  "row.bot.moment.stoppedEmpty.named": {
-    "text": "{{project}}: I couldn't find anything to build. Tell me more",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The request held nothing it could turn into a change, and the bot asks for more detail. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedEmpty.unnamed": {
-    "text": "I couldn't find anything to build. Tell me more",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The request held nothing it could turn into a change, and the bot asks for more detail."
-  },
-  "row.bot.moment.stoppedFirst.named": {
-    "text": "{{project}}: I couldn't start building it. You can still post a request",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build never started. \"Post a request\" means file a request for a change on the project (post is a verb). {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedFirst.unnamed": {
-    "text": "I couldn't start building it",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build never started."
-  },
-  "row.bot.moment.stoppedPreview.named": {
-    "text": "{{project}}: the preview didn't start. I'm trying again",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The trial copy of the project failed to start and the bot is retrying. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedPreview.unnamed": {
-    "text": "The preview didn't start. I'm trying again",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The trial copy of the project failed to start and the bot is retrying."
-  },
-  "row.bot.moment.stoppedLook.named": {
-    "text": "{{project}}: it's built, but it needs a look before you can try it",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build finished but somebody has to check it before it can be tried. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.stoppedLook.unnamed": {
-    "text": "It's built, but it needs a look before you can try it",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The build finished but somebody has to check it before it can be tried."
-  },
-  "row.bot.moment.held.named": {
-    "text": "{{project}}: I'll start it on Monday",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The work is put off until Monday. {{project}} is the project's name and leads the line."
-  },
-  "row.bot.moment.held.unnamed": {
-    "text": "I've paused until Monday",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The bot has put its work off until Monday."
-  },
-  "row.bot.moment.live.named": {
-    "text": "Your change to {{project}} is live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change is now part of the running project. {{project}} is the project's name."
-  },
-  "row.bot.moment.live.unnamed": {
-    "text": "Your change is live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change is now part of the running project; the project's name is not known."
-  },
-  "row.bot.moment.liveFirst.named": {
-    "text": "{{project}} is live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's new project is now running for the first time. {{project}} is the project's name."
-  },
-  "row.bot.moment.liveFirst.unnamed": {
-    "text": "Your project is live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's new project is now running for the first time; its name is not known."
-  },
-  "row.bot.moment.liveSoon.named": {
-    "text": "Your change to {{project}} is going live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change was approved and is being put into the running project. {{project}} is the project's name."
-  },
-  "row.bot.moment.liveSoon.unnamed": {
-    "text": "Your change is going live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's change was approved and is being put into the running project; the project's name is not known."
-  },
-  "row.bot.moment.liveFirstSoon.named": {
-    "text": "{{project}} is going live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's new project is being started for the first time. {{project}} is the project's name."
-  },
-  "row.bot.moment.liveFirstSoon.unnamed": {
-    "text": "Your project is going live",
-    "description": "Second line of a notification from Homeroom bot, which speaks as \"I\". The viewer's new project is being started for the first time; its name is not known."
+  "row.bot.meta": {
+    "text": "{{project}} · Homeroom bot",
+    "description": "Small grey line under a notification from Homeroom bot, before the time: the project it is about, then who it is from. {{project}} is the project's name; Homeroom bot is the assistant's name."
   },
   "row.friend.request": {
     "text": "Friend request",

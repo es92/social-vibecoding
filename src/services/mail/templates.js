@@ -569,22 +569,24 @@ function activityFrame({ subject, lead, url, label, unsubscribeUrl }) {
   };
 }
 
-// Something somebody asked Homeroom bot for is ready to try.
+// Something somebody asked Homeroom bot for is ready to try. "One story":
+// worded as its push is (homeroom-bot-notify-copy.js botEmailCopy): the
+// request and its project with the body's first sentence ("Dark mode · Plant
+// Pal: Ready to try"), over the push's body. A sender that did not hand the
+// words over gets the same shape from the project's name.
 function buildReady(payload) {
   const app = String(payload.appName || 'Your project').slice(0, 80);
-  // Built, but its before & after shots showed part of it failing.
-  if (payload.notWorking) {
-    return activityFrame({
-      subject: `${app} is built, but not everything works yet`,
-      lead: `Homeroom bot built what you asked for in ${app}, but not everything works yet. Open it to see what.`,
-      url: payload.url || PRODUCTION_ORIGIN,
-      label: 'Open it',
-      unsubscribeUrl: payload.unsubscribeUrl || null,
-    });
-  }
+  const lead = typeof payload.lead === 'string' && payload.lead.trim()
+    ? payload.lead.trim().slice(0, 300)
+    : (payload.notWorking
+      ? 'Built, but something isn\'t working yet. Try it to see.'
+      : 'Ready to try. Try it, and approve it if you\'re happy.');
+  const subject = typeof payload.subject === 'string' && payload.subject.trim()
+    ? payload.subject.trim().slice(0, 200)
+    : `${app}: ${payload.notWorking ? 'Built, but something isn\'t working yet' : 'Ready to try'}`;
   return activityFrame({
-    subject: `${app} is ready to try`,
-    lead: `Homeroom bot built what you asked for in ${app}, and it's ready to try.`,
+    subject,
+    lead,
     url: payload.url || PRODUCTION_ORIGIN,
     label: 'Open it',
     unsubscribeUrl: payload.unsubscribeUrl || null,

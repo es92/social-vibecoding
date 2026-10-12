@@ -1767,6 +1767,16 @@ function conversationNotificationHref(n) {
   if (n.kind === 'conversation_thread_reply' && valid(rootId)) {
     return `#messages/${conversationId}/thread/${rootId}`;
   }
+  // "One story": one of Homeroom bot's moments opens its request's thread in
+  // the chat with the bot: the thread its message is in, or the card the
+  // detail names (services/homeroom-bot-notify-copy.js); else the message
+  // itself, whose permalink lands inside its thread.
+  if (BUILD_KIND_MOMENTS[n.kind] || isBotMomentDetail(n.detail)) {
+    const root = valid(rootId) ? rootId : (parseBotDetail(n.detail) || {}).threadRootId;
+    if (valid(root)) return `#messages/${conversationId}/thread/${root}`;
+    if (valid(messageId)) return `#messages/${conversationId}/m/${messageId}`;
+    return `#messages/${conversationId}`;
+  }
   if (['conversation_mention', 'conversation_reply', 'conversation_reaction'].includes(n.kind)
       && valid(messageId)) {
     return `#messages/${conversationId}/m/${messageId}`;
@@ -2057,7 +2067,7 @@ function collapseConversationRuns(items) {
     const id = n && n.conversationId != null ? Number(n.conversationId) : null;
     // B4: the bot's moments are each their own news ("I have a question",
     // then "is live"), so none of them folds into a run or takes one in.
-    const moment = !!(n && /^hrbot:[a-z_]{1,20}:/.test(String(n.detail || '')));
+    const moment = !!(n && parseBotDetail(n.detail));
     if (prev && id !== null && prev.conversationId === id
         && prev.read === !!n.readAt && !moment && !prev.moment) {
       prev.count += 1;
@@ -2154,12 +2164,82 @@ const AGENT_NOTIF_KINDS = new Set([
 // session — has no actor and no `by` either.
 // The two lines of a row's own copy. Spread into the view — `...headline(…)`
 // — rather than assigned to one field, because it fills two.
-// B4: the Homeroom bot's four moments, and its answer to what somebody just
-// wrote to it, as notifications.detail carries them ("hrbot:<moment>:<app>").
-// The same words as the push (services/mobile-push-policy.js botMomentCopy;
-// tests/homeroom-bot-notify.test.js holds the two together), under the bot's
-// name instead of "Replied" over "@homeroom_bot".
-const BOT_DETAIL_RE = /^hrbot:([a-z_]{1,20}):(.*)$/;
+// B4 / "one story": the Homeroom bot's moments, and its answer to what
+// somebody just wrote to it, as notifications.detail carries them:
+// `hrbot2:{…}` (services/homeroom-bot-notify-copy.js botNotificationDetail),
+// or `hrbot:<said>:<app>` on a row from before. The bell heads the row with
+// the moment ("Needs you", "Ready to try", "Stopped", "On hold", "Live")
+// over the request's title, with the project and "Homeroom bot" under it;
+// the push says the same request and project (botMomentCopy there;
+// tests/homeroom-bot-notify.test.js holds the two together).
+const BOT_DETAIL_PREFIX = 'hrbot2:';
+const BOT_LEGACY_RE = /^hrbot:([a-z_]{1,20}):(.*)$/;
+const BOT_MOMENT_ALIASES = { question: 'needs_you', held: 'on_hold' };
+const BOT_LABEL_IDS = {
+  needs_you: 'notifications:row.bot.label.needsYou',
+  ready: 'notifications:row.bot.label.ready',
+  stopped: 'notifications:row.bot.label.stopped',
+  on_hold: 'notifications:row.bot.label.onHold',
+  live: 'notifications:row.bot.label.live',
+};
+// A row from before "one story": the moment each old token is.
+const BOT_LEGACY_MOMENTS = {
+  question: 'needs_you',
+  ready: 'ready', ready_group: 'ready', ready_broken: 'ready',
+  stopped: 'stopped', stopped_build: 'stopped', stopped_first: 'stopped', stopped_preview: 'stopped', stopped_look: 'stopped',
+  stopped_blocked: 'needs_you', stopped_person: 'needs_you', stopped_empty: 'needs_you',
+  held: 'on_hold',
+  live: 'live', live_soon: 'live', live_first: 'live', live_first_soon: 'live',
+  reply: 'reply',
+};
+// The build kinds' moments, for a row that carries no detail.
+const BUILD_KIND_MOMENTS = {
+  build_ready: 'ready', build_needs_you: 'needs_you', build_stopped: 'stopped', build_live: 'live',
+};
+function oneLine(value, max) {
+  const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+}
+function positiveId(value) {
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n > 0 && n <= 2147483647 ? n : null;
+}
+// A detail read back, or null when it is not the bot's.
+function parseBotDetail(detail) {
+  const s = typeof detail === 'string' ? detail : '';
+  if (s.startsWith(BOT_DETAIL_PREFIX)) {
+    let raw = null;
+    try { raw = JSON.parse(s.slice(BOT_DETAIL_PREFIX.length)); } catch { return null; }
+    if (!raw || typeof raw !== 'object') return null;
+    const moment = BOT_MOMENT_ALIASES[raw.m] || raw.m;
+    if (moment === 'reply') return { moment };
+    if (!Object.prototype.hasOwnProperty.call(BOT_LABEL_IDS, moment)) return null;
+    return {
+      moment,
+      appName: oneLine(raw.a, 80),
+      requestTitle: oneLine(raw.t, 120),
+      firstVersion: raw.f === 1 || raw.f === true,
+      count: positiveId(raw.c),
+      threadRootId: positiveId(raw.r),
+    };
+  }
+  const m = BOT_LEGACY_RE.exec(s);
+  if (!m || !BOT_LEGACY_MOMENTS[m[1]]) return null;
+  const moment = BOT_LEGACY_MOMENTS[m[1]];
+  if (moment === 'reply') return { moment };
+  return {
+    moment,
+    appName: oneLine(m[2], 80),
+    requestTitle: '',
+    firstVersion: /^live_first/.test(m[1]) || m[1] === 'stopped_first',
+    count: null,
+    threadRootId: null,
+  };
+}
+function isBotMomentDetail(detail) {
+  const d = parseBotDetail(detail);
+  return !!d && d.moment !== 'reply';
+}
 function plainMarkdown(value) {
   return String(value || '')
     .replace(/!?\[([^\]\n]*)\]\([^)\s]*\)/g, '$1')
@@ -2169,38 +2249,28 @@ function plainMarkdown(value) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-// Each moment's line is a whole message: with the project's name, then without.
-const BOT_MOMENT_IDS = {
-  question: ['notifications:row.bot.moment.question.named', 'notifications:row.bot.moment.question.unnamed'],
-  ready: ['notifications:row.bot.moment.ready.named', 'notifications:row.bot.moment.ready.unnamed'],
-  ready_group: ['notifications:row.bot.moment.readyGroup.named', 'notifications:row.bot.moment.readyGroup.unnamed'],
-  ready_broken: ['notifications:row.bot.moment.readyBroken.named', 'notifications:row.bot.moment.readyBroken.unnamed'],
-  stopped: ['notifications:row.bot.moment.stopped.named', 'notifications:row.bot.moment.stopped.unnamed'],
-  // 5 Oct 2026: what the DM it opens ends with (homeroom-bot-dm.js dmText
-  // 'build_failed'), whose why is there. A reply starts it again; "A person
-  // can pick it up" was a dead end for the person it was for.
-  stopped_build: ['notifications:row.bot.moment.stoppedBuild.named', 'notifications:row.bot.moment.stoppedBuild.unnamed'],
-  stopped_blocked: ['notifications:row.bot.moment.stoppedBlocked.named', 'notifications:row.bot.moment.stoppedBlocked.unnamed'],
-  stopped_person: ['notifications:row.bot.moment.stoppedPerson.named', 'notifications:row.bot.moment.stoppedPerson.unnamed'],
-  stopped_empty: ['notifications:row.bot.moment.stoppedEmpty.named', 'notifications:row.bot.moment.stoppedEmpty.unnamed'],
-  stopped_first: ['notifications:row.bot.moment.stoppedFirst.named', 'notifications:row.bot.moment.stoppedFirst.unnamed'],
-  stopped_preview: ['notifications:row.bot.moment.stoppedPreview.named', 'notifications:row.bot.moment.stoppedPreview.unnamed'],
-  stopped_look: ['notifications:row.bot.moment.stoppedLook.named', 'notifications:row.bot.moment.stoppedLook.unnamed'],
-  held: ['notifications:row.bot.moment.held.named', 'notifications:row.bot.moment.held.unnamed'],
-  live: ['notifications:row.bot.moment.live.named', 'notifications:row.bot.moment.live.unnamed'],
-  live_first: ['notifications:row.bot.moment.liveFirst.named', 'notifications:row.bot.moment.liveFirst.unnamed'],
-  live_soon: ['notifications:row.bot.moment.liveSoon.named', 'notifications:row.bot.moment.liveSoon.unnamed'],
-  live_first_soon: ['notifications:row.bot.moment.liveFirstSoon.named', 'notifications:row.bot.moment.liveFirstSoon.unnamed'],
-};
+// The row's words for one of the bot's notifications: { label, subject, meta },
+// or null when the detail is not the bot's. Its answer is what it wrote,
+// under its name.
 function botMomentLine(detail, message) {
-  const m = BOT_DETAIL_RE.exec(typeof detail === 'string' ? detail : '');
-  if (!m) return null;
-  const app = m[2].replace(/\s+/g, ' ').trim();
-  // The bot's answer is what it wrote, not a message of the shell's.
-  if (m[1] === 'reply') return plainMarkdown(message).slice(0, 140) || null;
-  if (!Object.prototype.hasOwnProperty.call(BOT_MOMENT_IDS, m[1])) return null;
-  const [named, unnamed] = BOT_MOMENT_IDS[m[1]];
-  return app ? t(named, { project: app }) : t(unnamed);
+  const d = parseBotDetail(detail);
+  if (!d) return null;
+  if (d.moment === 'reply') {
+    const words = plainMarkdown(message).slice(0, 140);
+    return words ? { label: t('notifications:row.bot.name'), subject: words, meta: null } : null;
+  }
+  let subject;
+  if (d.moment === 'on_hold' && d.count > 1) subject = t('notifications:row.bot.subject.onHold', { count: d.count });
+  else if (d.firstVersion) {
+    subject = d.appName
+      ? t('notifications:row.bot.subject.firstVersion', { project: d.appName })
+      : t('notifications:row.bot.subject.firstVersionUnnamed');
+  } else subject = d.requestTitle || d.appName || t('notifications:row.bot.name');
+  return {
+    label: t(BOT_LABEL_IDS[d.moment]),
+    subject,
+    meta: d.appName ? t('notifications:row.bot.meta', { project: d.appName }) : t('notifications:row.bot.name'),
+  };
 }
 
 // A whole message with one emphasised part, as a row's segments: the catalog
@@ -2321,11 +2391,12 @@ function rowView(n) {
       conversation_reply: headline(t('notifications:row.conversation.reply'), conversation),
       conversation_thread_reply: headline(t('notifications:row.conversation.threadReply'), conversation),
       conversation_reaction: headline(t('notifications:row.conversation.reaction'), conversation),
-      // WP-E: a build moment without its detail (botMomentLine words the rest).
-      build_ready: headline(t('notifications:row.bot.name'), t('notifications:row.bot.build.ready')),
-      build_needs_you: headline(t('notifications:row.bot.name'), t('notifications:row.bot.build.needsYou')),
-      build_stopped: headline(t('notifications:row.bot.name'), t('notifications:row.bot.build.stopped')),
-      build_live: headline(t('notifications:row.bot.name'), t('notifications:row.bot.build.live')),
+      // WP-E: a build moment without its detail (botMomentLine words the
+      // rest): its moment, from Homeroom bot.
+      build_ready: headline(t(BOT_LABEL_IDS[BUILD_KIND_MOMENTS.build_ready]), t('notifications:row.bot.name')),
+      build_needs_you: headline(t(BOT_LABEL_IDS[BUILD_KIND_MOMENTS.build_needs_you]), t('notifications:row.bot.name')),
+      build_stopped: headline(t(BOT_LABEL_IDS[BUILD_KIND_MOMENTS.build_stopped]), t('notifications:row.bot.name')),
+      build_live: headline(t(BOT_LABEL_IDS[BUILD_KIND_MOMENTS.build_live]), t('notifications:row.bot.name')),
     }[n.kind];
     const icons = {
       conversation_invite: '✉️',
@@ -2339,9 +2410,11 @@ function rowView(n) {
       build_stopped: '💬',
       build_live: '💬',
     };
-    // B4: one of the bot's moments says what happened, in its own words,
-    // from "Homeroom bot". The name leads, so the meta line drops the
-    // "by @homeroom_bot" that would say it twice.
+    // B4 / "one story": one of the bot's moments is headed by the moment
+    // over the request it is about, with its project and "Homeroom bot"
+    // under it; its answer to what somebody wrote is its words, under its
+    // name. Either way the meta line drops the "by @homeroom_bot" that
+    // would say it twice.
     const bot = n.kind === 'conversation_reaction' ? null : botMomentLine(n.detail, n.messageContent);
     if (bot) {
       return {
@@ -2351,9 +2424,9 @@ function rowView(n) {
         by: null,
         conversation: true,
         conversationId: n.conversationId != null ? Number(n.conversationId) : null,
-        appLine: t('notifications:row.source.messages'),
+        appLine: bot.meta || t('notifications:row.source.messages'),
         botMoment: true,
-        ...headline(t('notifications:row.bot.name'), bot),
+        ...headline(bot.label, bot.subject),
       };
     }
     return {
@@ -2615,7 +2688,7 @@ function rowView(n) {
   // 5 October (Page Turners): once it is decided the row stops asking. It
   // says what became of it, read live off the change (`sessionStatus`,
   // services/notifications.js): Live (a tap opens the app), Going live, or
-  // Closed. A live one was put back unread for whoever had not said yes.
+  // Closed.
   if (n.kind === 'change_ready') {
     const subject = prLabel || n.sessionTitle || t('notifications:row.changeReady.aChange');
     if (n.sessionStatus === 'merged') {
@@ -3093,6 +3166,8 @@ function stampFields(ts) {
 Notifications._rowView = rowView;
 // B4: the sheet's rows, folded, for tests (a bot moment never folds).
 Notifications._screenViews = screenViews;
+// "One story": where a conversation row (and its push) opens, for tests.
+Notifications._conversationHref = conversationNotificationHref;
 
 // Published exactly where the classic <script> published it: at module
 // evaluation, which for the React entry is still before DOMContentLoaded. The
