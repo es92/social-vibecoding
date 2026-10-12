@@ -3928,7 +3928,8 @@ function voteRoutes(config) {
       // 5 Oct: whoever asked Homeroom bot for this change reads their ready
       // card again, so it says who it still waits on now. One indexed read
       // when it is not the bot's. Never throws.
-      void require('../services/homeroom-bot-dm').noteVoted(pool, session.id);
+      // One story: a yes is said in the request's thread too (noteVoted).
+      void require('../services/homeroom-bot-dm').noteVoted(pool, session.id, { voter: req.user, vote });
 
       const voteLabel = session.pr_title
         ? `PR #${session.pr_number || session.id}: ${session.pr_title}`

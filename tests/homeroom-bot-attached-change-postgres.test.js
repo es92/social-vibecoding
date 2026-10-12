@@ -117,8 +117,9 @@ test('D: the prompt rules em dashes out, and one in a reply becomes what fits th
 
 test('B: the prompt and revise_proposal say an attached change is the one to fix', () => {
   const prompt = mayor.systemPrompt({ username: 'sam' });
-  assert.match(prompt, /A proposal of yours they attached to their message \(the conversation says so, with its proposal id\) is the one\n  they are writing about\./);
-  assert.match(prompt, /Never offer a new\n  request for something that proposal should fix: it is not live yet\./);
+  // One story: the prompt says "change", never "proposal" (its tools keep their names).
+  assert.match(prompt, /A change of yours they attached to their message \(the conversation says so, with its proposal id\) is the one\n  they are writing about\./);
+  assert.match(prompt, /Never offer a new\n  request for something that change should fix: it is not live yet\./);
   const revise = mayor.TOOLS.find((tool) => tool.function.name === 'revise_proposal');
   assert.match(revise.function.description, /or reported a problem with one they attached to their message\./);
 });

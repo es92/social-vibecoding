@@ -228,7 +228,7 @@ test('the Homeroom bot DM gives work already under way its activity card: once, 
     assert.deepEqual(recorded, [{ kind: 'activity', app_id: seeds.id, issue_number: 3 }], 'recorded as the bot\'s news about the request');
 
     const card = await cardOf(asAda, message.id);
-    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'reading', 1, 'Read the request']);
+    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'reading', 1, 'Reading']);
     assert.equal(card.startedAt, reading.started_at.toISOString(), 'from when the look began, before the card');
 
     assert.deepEqual(await catchUp(asAda), { added: 0 }, 'a second opening adds none');
@@ -254,7 +254,7 @@ test('the Homeroom bot DM gives work already under way its activity card: once, 
     assert.equal(message.metadata.homeroomBot.startedAt, began, 'when its look began');
 
     let card = await cardOf(asAda, message.id);
-    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'planning', 2, 'Write a plan']);
+    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'planning', 2, 'Planning']);
     assert.equal(card.startedAt, began);
     await pool.query(`INSERT INTO homeroom_bot_posts (app_id, issue_number, run_id, kind) VALUES ($1, 4, $2, 'spec')`, [seeds.id, ready.id]);
     card = await cardOf(asAda, message.id);
@@ -485,7 +485,7 @@ test('the Homeroom bot DM gives work already under way its activity card: once, 
       assert.match(joined.content, /^\*\*Staging demo app\*\* · request #15: Staging demo, add a search box\n\nI started on this earlier/);
       const demo = await activity.demoCards(pool, viewer);
       const state = demo.cards.find((c) => c.messageId === joined.id);
-      assert.deepEqual([state.state, state.step, state.of, state.stepName], ['working', 2, 6, 'Write a plan']);
+      assert.deepEqual([state.state, state.step, state.of, state.stepName], ['working', 2, 6, 'Planning']);
       assert.ok(Date.parse(state.startedAt) < Date.parse(joined.createdAt || joined.created_at), 'it began before its card');
       const { rows } = await pool.query('SELECT 1 FROM homeroom_bot_dm_messages WHERE user_id = $1', [viewer.id]);
       assert.equal(rows.length, 0, 'a demo card stands for no request: nothing is recorded or posted');

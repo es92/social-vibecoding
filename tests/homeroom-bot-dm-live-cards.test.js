@@ -134,7 +134,8 @@ test('the card says the work\'s time, and the wait apart, in words', () => {
   const draw = (card, now = new Date(at('12:12'))) => renderToHtml(createElement(BotActivityCardView, { meta, card, loaded: true, now }));
   assert.match(draw(building), /<span> · 16m so far, after waiting 46m for the first version<\/span>/, 'not "1h so far"');
   const built = { ...building, state: 'done', outcome: 'proposed', endedAt: at('12:20'), step: null, of: null, doing: null };
-  assert.match(draw(built), /Built it\. Waiting for approval<\/span><span> · took 24m, after waiting 46m for the first version<\/span>/,
+  // One request, one story: "Ready to try · waiting for approval".
+  assert.match(draw(built), />Waiting for approval<\/span><span> · took 24m, after waiting 46m for the first version<\/span>/,
     'not "took 1h 9m"');
   assert.match(draw({ ...built, waitedFor: 'turn' }), /took 24m, after waiting 46m for its turn</);
   assert.match(draw({ ...built, waitedFor: undefined }), /<span> · took 24m<\/span>/);
@@ -144,9 +145,11 @@ test('the card says the work\'s time, and the wait apart, in words', () => {
   assert.match(draw(checking), /data-progress-ring-spinning=""/);
   assert.doesNotMatch(draw(checking), /Waiting for approval/);
   // #4227: going live spins too; waiting for approval and a person's look do not.
-  assert.match(draw({ ...built, outcome: 'going_live' }), /data-progress-ring-spinning=""[\s\S]*Built it\. Going live now</);
+  // One request, one story: "Approved · going live"; a change a person must
+  // look at first stopped ("Stopped: it's built, but a person needs to look").
+  assert.match(draw({ ...built, outcome: 'going_live' }), /data-progress-ring-spinning=""[\s\S]*>Approved<[\s\S]*>Going live</);
   assert.doesNotMatch(draw(built), /data-progress-ring-spinning/);
-  assert.match(draw({ ...built, outcome: 'needs_look' }), /Needs you[\s\S]*Built it, but it needs a look</);
+  assert.match(draw({ ...built, outcome: 'needs_look' }), />Stopped<[\s\S]*It’s built, but a person needs to look at it</);
   // Nothing begun yet: its time is the wait, under words that say it waits.
   const queued = { ...building, workedFrom: null, waitedFor: undefined, step: 2, doing: 'waiting for the first version to go live' };
   assert.match(draw(queued, new Date(at('11:40'))), /<span> · 30m so far<\/span>/);
@@ -176,7 +179,8 @@ test('the live news carries its own button to open the app, as the shell opens o
   assert.equal(dm.openAppAction({ slug: 'x', appName: 'y'.repeat(80) }).label.length <= 46, true, 'a long name is cut');
   // Its words point at the button, card or no card.
   const line = '**Page Turners**, its first version';
-  assert.equal(dm.mergedText({ line, appName: 'Page Turners', live: true }), `${line}\n\nIt's live now. Open Page Turners below to try it.`);
+  // One story (contract 2.2): "Your first version is live."
+  assert.equal(dm.mergedText({ line, appName: 'Page Turners', live: true }), `${line}\n\nYour first version is live. Open Page Turners to try it.`);
   const merged = read('src/services/homeroom-bot-dm.js');
   const fn = merged.slice(merged.indexOf('async function noteProposalMerged('), merged.indexOf('// ── A person writing to the bot'));
   assert.match(fn, /const open = platform \? null : openAppAction\(\{ slug: run\.slug, appName: context\.appName \}\);/);
@@ -317,8 +321,9 @@ test('the client keeps a ready card\'s state only as one it knows, and only the 
 test('a vote on one of the bot\'s changes reads its requester\'s DM again', () => {
   const votes = read('src/routes/votes.js');
   const route = votes.slice(votes.indexOf('const goesLive = vote === \'yes\''), votes.indexOf('const voteLabel = session.pr_title'));
-  assert.ok(route.indexOf('if (reasonOnly) {') < route.indexOf('noteVoted(pool, session.id)'), 'after a real change of vote only');
-  assert.match(route, /void require\('\.\.\/services\/homeroom-bot-dm'\)\.noteVoted\(pool, session\.id\);/);
+  assert.ok(route.indexOf('if (reasonOnly) {') < route.indexOf('noteVoted(pool, session.id'), 'after a real change of vote only');
+  // One story: with who voted and how, so a yes is a quiet line in the request's thread.
+  assert.match(route, /void require\('\.\.\/services\/homeroom-bot-dm'\)\.noteVoted\(pool, session\.id, \{ voter: req\.user, vote \}\);/);
   const store = read('frontend/src/features/messages/bot-activity-store.ts');
   assert.match(store, /ready: new Map\(ready\.map\(\(entry\) => \[entry\.messageId, entry\]\)\),/);
 });

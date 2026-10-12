@@ -18,11 +18,12 @@ const stage = (row) => progress.stageOf(row, { now: NOW });
 
 test('the steps a request and a first version go through, and which step each stage is', () => {
   // #4053: a first version's steps say what is happening, never what to do
-  // ("Build it" read as an instruction). A request's steps keep their names.
+  // ("Build it" read as an instruction). One story: a request's steps are
+  // named the same way (contract 2.3).
   assert.deepEqual(progress.FIRST_VERSION_STEPS, [
-    'Setting up the project', 'Reading the description', 'Planning it', 'Building it', 'Testing it', 'Ready to try', 'Live',
+    'Setting up', 'Reading', 'Planning', 'Building', 'Testing', 'Ready to try', 'Live',
   ]);
-  assert.deepEqual(progress.REQUEST_STEPS, ['Read the request', 'Write a plan', 'Build it', 'Test it', 'Approval', 'Live']);
+  assert.deepEqual(progress.REQUEST_STEPS, ['Reading', 'Planning', 'Building', 'Testing', 'Ready to try', 'Live']);
   assert.equal(progress.stepNumber('setting_up', true), 1);
   assert.equal(progress.stepNumber('reading', true), 2);
   assert.equal(progress.stepNumber('reading', false), 1);
@@ -54,14 +55,16 @@ test('#4053: the build line a first version\'s thumbnail shows, for its creator 
   for (const s of ['vote', 'merging', 'followup_queued', 'revising']) assert.equal(line(s), 'ready', s);
   assert.equal(line('nonsense'), null);
   assert.deepEqual(progress.BUILD_LINE_STATES, ['planning', 'plan', 'plan-member', 'question', 'building', 'testing', 'ready', 'live']);
-  // The chat's step names for steps 4 to 7 are the line's own words
-  // (frontend/src/features/first-session/build-line-words.js).
+  // The chat's step names for steps 4 to 7 lead the line's own words
+  // (frontend/src/features/first-session/build-line-words.js): one story
+  // names a step in a word ("Building"), the thumbnail's line in a phrase
+  // ("Building it").
   const words = require('node:fs').readFileSync(require('node:path').join(__dirname, '../frontend/src/features/first-session/build-line-words.js'), 'utf8');
   for (const [state, step] of [['building', 4], ['testing', 5], ['ready', 6], ['live', 7]]) {
     // The table holds each line's message id; its English is the step's name.
     const id = new RegExp(`\\b${state}: '(onboarding:buildLine\\.[A-Za-z]+)',`).exec(words);
     assert.ok(id, state);
-    assert.equal(require('./lib/platform-i18n').message(id[1]), progress.FIRST_VERSION_STEPS[step - 1], state);
+    assert.ok(require('./lib/platform-i18n').message(id[1]).startsWith(progress.FIRST_VERSION_STEPS[step - 1]), state);
   }
 });
 

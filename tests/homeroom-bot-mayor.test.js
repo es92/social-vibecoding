@@ -216,7 +216,9 @@ test('#3707: everything the DM model sends answers one of her messages, and quot
   assert.equal(sends.length, 3, 'a turn\'s answer, its offer and the answer to a tap');
   // B3: the answer to a tap (settleOffer) quotes what was typed or quoted
   // when there was one; a button's tap has no message of hers to quote.
-  for (const send of sends) assert.match(send, /replyToId: message\.id|replyToId, \.\.\.extra/);
+  // One story: a tap with nothing typed is answered where its offer is (the
+  // offer's own message, never quoted, names its thread).
+  for (const send of sends) assert.match(send, /replyToId: message\.id|replyToId, \.\.\.extra|replyToId: replyToId \|\| action\.message_id \|\| null, \.\.\.extra/);
   assert.match(src, /settleOffer\(pool, config, \{\s*bot, user, settings, action, yes, deps, replyToId: message\.id,/);
 });
 
@@ -233,17 +235,18 @@ test('#3740: a change to one of its own proposals is a tool, used only on a clea
 
 test('#3734, #3740: the prompt never lets the bot promise what no tool started, and has it offer when unsure', () => {
   const prompt = mayor.systemPrompt({ username: 'ada', perPerson: 2 });
-  assert.match(prompt, /- Change one of your own proposals that is up for a vote when they clearly ask you to \(revise_proposal\)/);
-  assert.match(prompt, /When it is not clear what they want changed, or which proposal, ask them, or\n  offer it \("Want me to change the proposal to \.\.\.\?"\), and call revise_proposal once they say yes\./);
+  // One story: the prompt says "change", never "proposal" (its tools keep their names).
+  assert.match(prompt, /- Change one of your own changes that is up for a vote when they clearly ask you to \(revise_proposal\)/);
+  assert.match(prompt, /When it is not clear what they want changed, or which change, ask them, or\n  offer it \("Want me to update the change to \.\.\.\?"\), and call revise_proposal once they say yes\./);
   // #11 (WP3): and never a promise to come back to it later, nor "the team
   // has been told" or "it was withdrawn" with nothing behind it.
   assert.match(prompt, /- Never say you will do something \(revise, change, build, post, file, withdraw, report, look at it again\)\n  unless a tool you called in this turn started it and its result says so, or progress or my_work shows it\n  under way\./);
   assert.match(prompt, /Never promise to follow up, look into, sort out, investigate or get back to them later: nothing\n  brings you back to it\./);
-  assert.match(prompt, /Never say the team has been told, or that a proposal was withdrawn or closed, unless\n  report_problem or withdraw_proposal did it in this turn\./);
-  assert.match(prompt, /When you cannot do something, say so plainly, and what they can do instead: leave it, vote\n  No on the proposal, comment on the request, or use Send feedback\./);
+  assert.match(prompt, /Never say the team has been told, or that a change was withdrawn or closed, unless\n  report_problem or withdraw_proposal did it in this turn\./);
+  assert.match(prompt, /When you cannot do something, say so plainly, and what they can do instead: leave it, vote\n  No on the change, comment on the request, or use Send feedback\./);
   assert.match(prompt, /If a tool refused, say plainly why, and that\n  nothing was done\./);
   assert.match(prompt, /When you have not started something you\n  can do, offer to do it instead of promising it\./);
-  assert.match(prompt, /or change anybody else's\n  proposal\. Changes happen through requests and their proposals, and to your own proposals through\n  revise_proposal\./);
+  assert.match(prompt, /or change anybody else's\n  change\. Changes come from requests, and your own changes are updated through\n  revise_proposal\./);
   assert.doesNotMatch(prompt, /From this chat you cannot build, merge, vote, close requests or change settings\. Changes happen/,
     'the old rule, which told it it could not change its own proposals either, is gone');
   assert.doesNotMatch(prompt.slice(0, prompt.indexOf('PLATFORM RULES')), /—/);
@@ -442,8 +445,8 @@ test('#11 (WP3): a promise to come back later, "the team was told" and "I withdr
 
 test('#11 (WP3): withdrawing a proposal and telling the team are tools, described precisely', () => {
   const prompt = mayor.systemPrompt({ username: 'ada' });
-  assert.match(prompt, /- Withdraw one of your own proposals that is still open when the person who asked for its request, or the\n  project's owner, asks you to \(withdraw_proposal\)\. It is withdrawn only once they tap Withdraw it under your\n  message, so ask them to\./);
-  assert.match(prompt, /The one exception: a second proposal for a request that already has one approved\n  or up for a vote is withdrawn straight away, and you say so\./);
+  assert.match(prompt, /- Withdraw one of your own changes that is still open when the person who asked for its request, or the\n  project's owner, asks you to \(withdraw_proposal\)\. It is withdrawn only once they tap Withdraw it under your\n  message, so ask them to\./);
+  assert.match(prompt, /The one exception: a second change for a request that already has one approved\n  or up for a vote is withdrawn straight away, and you say so\./);
   assert.match(prompt, /\(report_problem\)\. It is filed as a report from them where the team tracks problems, which\n  anyone can read; the last few messages of this chat go only to the team, privately\. Say so\./);
   assert.doesNotMatch(prompt.slice(0, prompt.indexOf('PLATFORM RULES')), /—/);
 

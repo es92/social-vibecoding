@@ -251,7 +251,7 @@ function firstLiveActions({ slug }) {
 
 // What routes/conversations.js does after a send, done here because the
 // service pushes nothing (the welcome DM does the same).
-async function pushLive(pool, result, conversationId, { opened = false } = {}) {
+async function pushLive(pool, result, conversationId, { opened = false, threadRootId = null } = {}) {
   const ws = require('./ws');
   const notificationSvc = require('./notifications');
   for (const row of result.notifications || []) await notificationSvc.hydrateAndPush(pool, row);
@@ -260,7 +260,7 @@ async function pushLive(pool, result, conversationId, { opened = false } = {}) {
     type: 'conversation_message_created',
     conversationId,
     messageId: result.message?.id ?? result.messageId,
-    threadRootId: null,
+    threadRootId: threadRootId || null,
   });
 }
 
@@ -280,6 +280,44 @@ async function quotable(pool, conversationId, userId, messageId) {
     [id, conversationId, userId],
   );
   return rows.length ? id : null;
+}
+
+/**
+ * One story per request: the thread a bot message about a request goes in,
+ * in the person's chat with the bot, or null for the main chat. The thread
+ * is the request's card (homeroom-bot-activity.js, kind 'activity'), which
+ * is its first message: everything about the request is said under it. An
+ * answer to something the person wrote in a thread goes in that thread.
+ * A request with no card in this chat (news about work that started before
+ * cards were sent for every request) is said in the main chat, as before.
+ * The card itself is never in a thread. Never throws.
+ */
+async function threadRootFor(pool, { conversationId, userId, metadata = null, replyToId = null }) {
+  try {
+    const replyId = conversations.strictId(replyToId);
+    if (replyId) {
+      const { rows: [quoted] = [] } = await pool.query(
+        'SELECT thread_root_id FROM conversation_messages WHERE id = $1 AND conversation_id = $2',
+        [replyId, conversationId],
+      );
+      if (quoted?.thread_root_id) return Number(quoted.thread_root_id);
+    }
+    const n = Number(metadata?.issueNumber);
+    if (!metadata || metadata.kind === 'activity' || !metadata.appSlug || !Number.isInteger(n) || n <= 0) return null;
+    const { rows: [card] = [] } = await pool.query(
+      `SELECT d.message_id
+         FROM homeroom_bot_dm_messages d
+         JOIN apps a ON a.id = d.app_id
+         JOIN conversation_messages m ON m.id = d.message_id AND m.deleted_at IS NULL AND m.thread_root_id IS NULL
+        WHERE d.user_id = $1 AND d.conversation_id = $2 AND a.slug = $3 AND d.issue_number = $4 AND d.kind = 'activity'
+        ORDER BY d.message_id DESC LIMIT 1`,
+      [userId, conversationId, metadata.appSlug, n],
+    );
+    return card ? Number(card.message_id) : null;
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not find a request\'s thread (saying it in the main chat)', { userId, err: err.message });
+    return null;
+  }
 }
 
 /**
@@ -317,6 +355,8 @@ const MOMENTS = Object.freeze({
   first_version_failed: 'stopped', preview_failed: 'stopped', allowance: 'held', paused: 'held',
   // #4242: built, but nothing will offer it to try without a person.
   needs_look: 'stopped',
+  // Its checks still fail and a person needs to look at them.
+  checks: 'stopped',
   // An update they asked for that did not happen ("your change stopped. I
   // said why in our chat", the stop's own words).
   followup_failed: 'stopped',
@@ -343,15 +383,109 @@ const STOPPED_DETAIL = Object.freeze({
 // silence them. An answer to what somebody wrote ('reply') is a message.
 const BUILD_KINDS = Object.freeze({
   question: 'build_needs_you',
+  needs_you: 'build_needs_you',
   ready: 'build_ready',
   stopped: 'build_stopped',
   held: 'build_stopped',
+  on_hold: 'build_stopped',
   live: 'build_live',
 });
 
-/** Pure: the moment a message of the bot's rings at, by its kind, or null. */
+/** Pure: the moment a message of the bot's rings at, by its kind, or null (the names MOMENTS gives). */
 function momentOf(metadata) {
   return MOMENTS[metadata?.kind] || null;
+}
+
+// ── One request, one story: the moment and what was said (contract 2.1) ──
+//
+// Every message the bot sends about a request says, in its metadata, which
+// of the four moments that ring it is (`moment`: needs_you, ready, stopped,
+// on_hold, live; none for a quiet line), and which of each moment's words
+// (`said`), with the request and project it is about. The push, the bell and
+// the email word themselves from these (homeroom-bot-notify-copy.js). MOMENTS
+// above keeps the names older rows were written with, for their details.
+const STORY_MOMENTS = Object.freeze({
+  question: 'needs_you', followup_ask: 'needs_you', plan: 'needs_you',
+  blocked: 'needs_you', person: 'needs_you', empty: 'needs_you',
+  proposal: 'ready', ready: 'ready',
+  build_failed: 'stopped', first_version_failed: 'stopped', preview_failed: 'stopped', needs_look: 'stopped',
+  followup_failed: 'stopped', checks: 'stopped',
+  allowance: 'on_hold', paused: 'on_hold',
+  merged: 'live',
+  chat: 'reply', confirm: 'reply',
+});
+// The four moments that ring, shown in the main chat as well as the request's thread.
+const RINGING_MOMENTS = new Set(['needs_you', 'ready', 'stopped', 'on_hold', 'live']);
+// A build that did not finish, by its cause (buildFailedCause).
+const BUILD_SAID = Object.freeze({
+  time: 'build_time', restart: 'build_restart', restarts: 'build_restart', no_change: 'build_no_change',
+  unproposed: 'build_not_proposed', no_start: 'build_no_start', other: 'build_other',
+});
+
+/** Pure: the contract's moment for a message of the bot's, by its kind, or null. */
+function storyMomentOf(metadata) {
+  return STORY_MOMENTS[metadata?.kind] || null;
+}
+
+/**
+ * Pure: which words a moment says (`said`, contract 2.1), from the message's
+ * kind and what it carries. `info` adds what the message does not carry
+ * itself (a verdict's `platform`, `done`, `deciders`; a build's `cause`;
+ * whether others approve). Null for a kind with no moment.
+ */
+function saidOf(kind, info = {}) {
+  const first = !!info.firstVersion;
+  switch (kind) {
+    case 'question': return Array.isArray(info.questions) && info.questions.length > 1 ? 'questions' : 'question';
+    case 'followup_ask': return 'followup_ask';
+    case 'plan': return first ? 'plan_first' : 'plan';
+    case 'person':
+      if (info.platform) return 'platform';
+      if (info.done) return 'done';
+      return Array.isArray(info.deciders) && info.deciders.length ? 'decide_others' : 'decide';
+    case 'blocked': return 'blocked';
+    case 'empty': return info.done ? 'done' : 'empty';
+    case 'proposal': case 'ready':
+      if (Array.isArray(info.ready?.broken) && info.ready.broken.length) return 'ready_broken';
+      if (first) return 'ready_first';
+      return info.group || info.ready?.group ? 'ready_group' : 'ready';
+    case 'build_failed': return BUILD_SAID[info.cause] || 'build_other';
+    case 'first_version_failed': return 'first_failed';
+    case 'preview_failed': case 'needs_look': return 'needs_look';
+    case 'checks': return 'checks';
+    case 'followup_failed': return 'update_failed';
+    case 'allowance': return 'allowance';
+    case 'paused': return 'paused';
+    case 'merged': {
+      const soon = info.live === false;
+      if (first) return soon ? 'live_first_soon' : 'live_first';
+      return soon ? 'live_soon' : 'live';
+    }
+    default: return null;
+  }
+}
+
+/**
+ * Pure: a message's metadata with the story's fields (contract 2.1) filled
+ * in: `moment` (a ringing one only), `said`, the request's title (null for a
+ * first version, which says `firstVersion`), and, in a request's thread,
+ * `threadRootId` and `alsoInChat` for a moment that rings. What the caller
+ * set itself wins.
+ */
+function storyMetadata(metadata, { moment = null, threadRootId = null } = {}) {
+  if (!metadata) return metadata;
+  const said = metadata.said || saidOf(metadata.kind, metadata);
+  const ringing = RINGING_MOMENTS.has(moment);
+  const about = Number.isInteger(Number(metadata.issueNumber)) && Number(metadata.issueNumber) > 0 && metadata.appSlug;
+  return {
+    ...metadata,
+    ...(ringing ? { moment } : {}),
+    ...(said && moment ? { said } : {}),
+    ...(about && !('requestTitle' in metadata)
+      ? { requestTitle: metadata.firstVersion ? null : (metadata.issueTitle || null) } : {}),
+    ...(threadRootId ? { threadRootId } : {}),
+    ...(threadRootId && ringing ? { alsoInChat: true } : {}),
+  };
 }
 
 /**
@@ -399,12 +533,17 @@ async function hasOthers(pool, appId, appSlug = null) {
 /**
  * Send one message from the bot to `userId`, in their DM with it. `moment`
  * (B4): whether it rings, and as what ('reply' for an answer to what they
- * just wrote); left out, its kind decides (MOMENTS), and anything else is
- * silent.
+ * just wrote); left out, its kind decides (STORY_MOMENTS), and anything
+ * else is silent.
+ *
+ * One story per request: a message about a request goes in that request's
+ * thread, under its card (threadRootFor), and one of the four moments that
+ * ring is shown in the main chat too (`alsoInChat`). `threadRootId` names
+ * the thread outright; false keeps the message in the main chat.
  */
 async function sendDm(pool, {
   bot, userId, content, metadata = null, idempotencyKey = null, objects = null, replyToId = null, withoutCards = null,
-  moment = undefined,
+  moment = undefined, threadRootId = undefined,
 }) {
   if (!bot?.id || !userId) return null;
   const opened = await conversations.ensureAdmittedDirect(pool, bot.id, userId);
@@ -412,18 +551,35 @@ async function sendDm(pool, {
   const input = { content: clip(content, conversations.MAX_MESSAGE_LENGTH || 8000) };
   const key = conversations.normalizeIdempotencyKey(idempotencyKey);
   if (key) input.idempotency_key = key;
-  const quote = await quotable(pool, opened.conversationId, userId, replyToId);
-  if (quote) input.reply_to_id = quote;
+  const root = threadRootId === false ? null
+    : (conversations.strictId(threadRootId)
+      || await threadRootFor(pool, { conversationId: opened.conversationId, userId, metadata, replyToId }));
+  if (root) {
+    // In a thread, what it answers is the line above it: no quote.
+    input.thread_root_id = root;
+  } else {
+    const quote = await quotable(pool, opened.conversationId, userId, replyToId);
+    if (quote) input.reply_to_id = quote;
+  }
   const cards = Array.isArray(objects) ? objects.filter(Boolean).slice(0, MAX_CARDS) : [];
-  const rings = moment === undefined ? momentOf(metadata) : (moment || null);
-  const detail = rings ? await notificationDetail(pool, rings, metadata) : null;
+  const story = moment === undefined ? storyMomentOf(metadata) : (moment || null);
+  // A "ready to try" says whether others approve it (contract 2.2's ready_group).
+  const group = story === 'ready' && metadata && !metadata.said && !metadata.firstVersion && metadata.appSlug
+    && !metadata.ready ? await hasOthers(pool, null, metadata.appSlug) : false;
+  const stored = metadata
+    ? storyMetadata(group ? { ...metadata, group: true } : metadata, { moment: story, threadRootId: root })
+    : null;
+  // The notification's detail (Stream 2's homeroom-bot-notify-copy.js words
+  // it from the story's fields; until then, today's "hrbot:<said>:<app>").
+  const legacy = moment === undefined ? momentOf(metadata) : (moment || null);
+  const detail = story ? await botDetail(pool, legacy, stored) : null;
   const send = (withCards) => conversations.sendMessage(pool, { id: bot.id }, opened.conversationId,
     withCards.length
       ? { ...input, objects: withCards }
       : { ...input, ...(cards.length && withoutCards ? { content: clip(withoutCards, conversations.MAX_MESSAGE_LENGTH || 8000) } : {}) },
     {
-      metadata: metadata ? { [META]: metadata } : null, notify: !!rings, notificationDetail: detail,
-      notificationKind: (rings && BUILD_KINDS[rings]) || null,
+      metadata: stored ? { [META]: stored } : null, notify: !!story, notificationDetail: detail,
+      notificationKind: (story && BUILD_KINDS[story]) || null,
     });
   let result = await send(cards);
   if (!result && cards.length) {
@@ -434,21 +590,26 @@ async function sendDm(pool, {
     log.warn('homeroom-bot-dm', 'DM refused', { userId, error: result?.error || 'refused' });
     return null;
   }
-  if (!result.duplicate && rings === 'ready') {
+  const messageId = result.messageId ?? result.message?.id ?? null;
+  if (!result.duplicate && story === 'ready') {
     // WP-E: "ready to try" by email when no phone can take the push.
     void require('./activity-mail').emailIfNoPush(pool, {
       userId, kind: 'build_ready', appName: metadata?.appName || null, appSlug: metadata?.appSlug || null,
       conversationId: opened.conversationId,
+      // Its button opens the request's thread (contract 2.2).
+      messageId, threadRootId: root,
+      ...(stored?.requestTitle ? { requestTitle: stored.requestTitle } : {}),
       // Built, but part of it failed when Homeroom tried it: not "ready to try".
       ...(Array.isArray(metadata?.ready?.broken) && metadata.ready.broken.length ? { notWorking: true } : {}),
     });
   }
   if (!result.duplicate) {
     await retireSuggestions(pool, {
-      botId: bot.id, conversationId: opened.conversationId, keepMessageId: result.messageId ?? result.message?.id, userId,
+      botId: bot.id, conversationId: opened.conversationId, keepMessageId: messageId, userId,
+      about: stored, kind: metadata?.kind || null,
     });
     try {
-      await pushLive(pool, result, opened.conversationId, { opened: opened.created });
+      await pushLive(pool, result, opened.conversationId, { opened: opened.created, threadRootId: root });
     } catch (err) {
       // The message and its bell row are in; a missed live refresh catches
       // up on the next load.
@@ -457,9 +618,29 @@ async function sendDm(pool, {
   }
   return {
     conversationId: opened.conversationId,
-    messageId: result.messageId ?? result.message?.id ?? null,
+    messageId,
     duplicate: !!result.duplicate,
+    threadRootId: root || null,
   };
+}
+
+// Stream 2's words for a moment's push and bell (contract 2.2), once that
+// module is there; until then the detail is today's token.
+function notifyCopyModule() {
+  try {
+    return require('./homeroom-bot-notify-copy');
+  } catch {
+    return null;
+  }
+}
+
+/** The detail a ringing message's notification carries. Never throws. */
+async function botDetail(pool, legacy, metadata) {
+  const copy = notifyCopyModule();
+  if (copy && typeof copy.botNotificationDetail === 'function') {
+    try { return copy.botNotificationDetail(metadata); } catch { /* today's token below */ }
+  }
+  return legacy ? notificationDetail(pool, legacy, metadata) : null;
 }
 
 // ── Typing, while the bot answers ────────────────────────────────────────
@@ -728,24 +909,25 @@ function weekKey(now = new Date()) {
 }
 
 /**
- * Pure: what the person whose building time is used up hears about the
- * request it holds. No amount: the limit is building time, not money, and
+ * Pure: what the person whose building time is used up hears (contract
+ * 2.2, `allowance`). No amount: the limit is building time, not money, and
  * on a project with others in it, somebody else can ask for it on theirs
- * (homeroom-bot-mayor.js start_request). #4097: led by the request's line
- * (requestLine), which Messages draws as its card, as the rest of its news
- * is; the words then say "it".
+ * (homeroom-bot-mayor.js start_request). `line` (#4097), the request's line,
+ * leads it when it is said outside the request's thread.
  */
 function overAllowanceText({ line = null, appName, group = false }) {
   const said = group
-    ? `You've used this week's building time. I'll start it on Monday, or someone else in ${appName} can ask me for it.`
-    : 'You\'ve used this week\'s building time. I\'ll start it on Monday.';
+    ? `On hold until Monday: your building time for this week is used up. Someone else in ${appName} can ask me for it sooner.`
+    : 'On hold until Monday: your building time for this week is used up.';
   return line ? `${line}\n\n${said}` : said;
 }
 
 /**
  * Said once a week, to the person whose building time holds a request back
  * (its payer; the requester unless somebody else asked for it), when the bot
- * talks to them.
+ * talks to them. One story: ONE message a week that rings (on_hold, with
+ * `count`, how many of their requests are held), and each held request's
+ * thread says it quietly; its card says On hold until Monday.
  */
 async function noteOverAllowance(pool, { settings, requester, payer = null, app, issueNumber, bot }) {
   const who = payer || requester;
@@ -755,20 +937,34 @@ async function noteOverAllowance(pool, { settings, requester, payer = null, app,
        FROM apps a WHERE a.id = $1`,
     [app.id],
   ).catch(() => ({ rows: [] }));
+  const { rows: [held] = [] } = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM homeroom_bot_queue q
+       JOIN homeroom_bot_requesters r ON r.app_id = q.app_id AND r.issue_number = q.issue_number
+      WHERE r.user_id = $1 AND q.held_until > NOW()`,
+    [who.userId],
+  ).catch(() => ({ rows: [] }));
   const appName = app.name || app.slug;
+  const group = (Number(rows[0]?.members) || 0) > 1;
+  const count = Math.max(Number(held?.n) || 0, 1);
   const context = { appName, issueNumber, issueTitle: requester?.issueTitle || null, firstVersion: !!requester?.firstVersion };
+  const mine = !payer || Number(payer.userId) === Number(requester?.userId);
+  // The held request's own thread says it, quietly, whichever week it is.
+  if (mine) {
+    await noteStep(pool, {
+      bot, userId: who.userId, app, issueNumber, step: 'on_hold', key: `hrbot-step-held-${app.id}-${issueNumber}-${weekKey()}`,
+      content: overAllowanceText({ appName, group }),
+    });
+  }
   return sendDm(pool, {
     bot,
     userId: who.userId,
-    replyToId: await requestStart(pool, { userId: who.userId, appId: app.id, issueNumber }),
     idempotencyKey: `hrbot-allowance-${who.userId}-${weekKey()}`,
-    content: overAllowanceText({
-      line: requestLine(context),
-      appName,
-      group: (Number(rows[0]?.members) || 0) > 1,
-    }),
+    // One message for every held request: the main chat, not a thread.
+    threadRootId: false,
+    replyToId: count > 1 ? null : await requestStart(pool, { userId: who.userId, appId: app.id, issueNumber }),
+    content: overAllowanceText({ line: count > 1 ? null : requestLine(context), appName, group }),
     metadata: {
-      kind: 'allowance', appSlug: app.slug, appName, issueNumber,
+      kind: 'allowance', appSlug: app.slug, appName, issueNumber, count,
       ...(context.issueTitle ? { issueTitle: context.issueTitle } : {}),
       ...(context.firstVersion ? { firstVersion: true } : {}),
     },
@@ -776,48 +972,46 @@ async function noteOverAllowance(pool, { settings, requester, payer = null, app,
 }
 
 // What the person hears when the bot's own weekly budget (its users row,
-// limits.checkBudget) stops work of theirs that was about to start.
-const PAUSED_FOR_WEEK_TEXT = 'I\'ve paused for the rest of the week. Your request is saved and I\'ll pick it up on Monday.';
+// limits.checkBudget) stops work of theirs that was about to start
+// (contract 2.2, `paused`).
+const PAUSED_FOR_WEEK_TEXT = 'On hold until Monday: I\'ve used my budget for this week. Your requests are saved and I\'ll pick them up on Monday.';
 
 /**
  * The bot's own weekly budget is spent (homeroom-bot.js pauseOnBudget), and
  * work of this person's was next: they hear it once a week, whichever
- * request it was, rather than finding the bot quiet. Resolves what sendDm
- * did, or null for somebody the bot does not talk to.
+ * request it was, rather than finding the bot quiet. `apps` names the
+ * projects held, when the caller knows them. Resolves what sendDm did, or
+ * null for somebody the bot does not talk to.
  */
-async function notePausedForWeek(pool, { settings, bot, userId }) {
+async function notePausedForWeek(pool, { settings, bot, userId, apps = [] }) {
   if (!bot?.id || !userId) return null;
   const { rows } = await pool.query(
     'SELECT u.id AS user_id, u.username, u.is_synthetic, (u.has_platform_access OR u.private_member_since IS NOT NULL) AS has_platform_access, u.is_admin FROM users u WHERE u.id = $1',
     [userId],
   );
   if (!rows[0] || !hasBot(settings, requesterFrom(rows[0]))) return null;
+  const names = (Array.isArray(apps) ? apps : []).map((a) => a?.name || a?.slug).filter(Boolean).slice(0, 3);
   return sendDm(pool, {
     bot,
     userId,
     idempotencyKey: `hrbot-paused-${userId}-${weekKey()}`,
     content: PAUSED_FOR_WEEK_TEXT,
-    metadata: { kind: 'paused' },
+    threadRootId: false,
+    metadata: { kind: 'paused', ...(names.length ? { appName: names.join(', ') } : {}) },
   });
 }
-
-// WP1 (#9): what the person hears when a build the platform restarted under
-// is started again (homeroom-bot.js completeRecoveredLive).
-const RESTARTED_TEXT = 'My build was interrupted, so I\'ve started it again. Nothing you need to do.';
 
 /**
  * WP1 (#9): a build of one of their requests was interrupted (a restart
  * took its worker, or cut its plan short) and the request was sent back to
- * be built again. Says nothing now; resolves null.
+ * be built again. Says nothing: the request's card and the tray say it is
+ * building, as they did before. The caller stays, so a restart that does
+ * need the person can be said here again. Resolves null.
  */
 async function noteBuildRestarted() {
-  // A build that carries on after a restart needs nothing from anybody: the
-  // request's card and the tray say it is building, as they did before. It
-  // used to be a message of its own (RESTARTED_TEXT, "Nothing you need to
-  // do."), which is the case for saying nothing. The caller stays, so a
-  // restart that does need the person can be said here again.
   return null;
 }
+
 
 // ── The request's news, in the DM ────────────────────────────────────────
 
@@ -945,13 +1139,12 @@ function updateFailedWords(reason, it = 'this change', voice = 'me') {
 /**
  * A request the triage found already done (`done`: it exists in the app, or
  * a merged change did it). It was a dead end: "a person needs to decide",
- * with nothing to decide. The offer to vote on closing it follows
- * (relayIssuePost); a reply here still asks the bot to look again.
+ * with nothing to decide. One story: the offer is folded into this message,
+ * Propose to close and Tell me what's missing (homeroom-bot-move.js
+ * foldOffer); a reply still asks the bot to look again.
  */
 function doneText(line, dm) {
-  return `${line}\n\nThis looks done already, so I haven't built anything: ${clip(dm.reason, 600)}\n\n`
-    + 'If that covers what you asked for, you can open a vote on closing it below. If something is still missing, '
-    + 'reply to this message and say what, and I\'ll look at it again.';
+  return `${line}\n\nThis looks done already: ${clip(dm.reason, 600)}`;
 }
 
 /**
@@ -974,10 +1167,17 @@ function deciderNames(dm) {
 /**
  * The DM text for one of the bot's posts on a request, from the structured
  * `dm` its caller passed (homeroom-bot.js): plain words, no code. Returns
- * null for a kind the DM does not carry.
+ * null for a kind the DM does not carry. In the request's thread
+ * (`context.threaded`) it is said under the request's card, so it does not
+ * name the request again.
  */
 function dmText(kind, dm, context) {
-  const line = requestLine(context);
+  const text = requestNews(kind, dm, context);
+  return typeof text === 'string' ? text.replace(/^\s+/, '') : text;
+}
+
+function requestNews(kind, dm, context) {
+  const line = context.threaded ? '' : requestLine(context);
   const it = context.firstVersion ? 'the first version' : 'this';
   switch (kind) {
     case 'question':
@@ -987,10 +1187,11 @@ function dmText(kind, dm, context) {
     case 'followup_ask':
       return `${line}\n\nI have a question before I update your change:\n\n${clip(dm.question, 2000)}`;
     case 'spec':
-      // A first version tried once more on its own (homeroom-bot.js
-      // buildLive): the one start of a build that is a message of its own.
-      if (dm.retry) return `${line}\n\nMy first try at building ${it} didn't finish, so I'm trying once more from the same plan. I'll message you here when it's ready to try.`;
-      return `${line}\n\nI'm building ${it} now. I'll message you here when it's ready to try.`;
+      // One story: a quiet line in the request's thread. A first version
+      // tried once more on its own (homeroom-bot.js buildLive) says so.
+      if (dm.retry) return `${line}\n\nMy first try didn't finish, so I'm trying once more from the same plan.`;
+      if (dm.plan) return `${line}\n\nPlan: ${clip(String(dm.plan).replace(/[.\s]+$/, ''), 200)}. I'm building it now.`;
+      return `${line}\n\nI'm building ${it} now.`;
     // #20 (WP3): the change's card under the message is its link (cardsFor
     // attaches it whenever the news names its session), so the text points
     // at the card. The address is written out only when there is no card:
@@ -1044,7 +1245,7 @@ function dmText(kind, dm, context) {
     case 'followup_failed': {
       // 5 Oct 2026: an update to their change that did not happen, in plain
       // words (updateFailedWords), never the run's own record, and how to
-      // try again that is sure to reach the bot: Ask for changes on the
+      // try again that is sure to reach the bot: Change something on the
       // change, which posts what they write in its discussion and puts its
       // follow-up first in the queue (homeroom-bot-mayor.js reviseAttached).
       // A reply here goes to the bot's chat model, which can send it on the
@@ -1056,18 +1257,27 @@ function dmText(kind, dm, context) {
           + 'so a person needs to make this one. It\'s as it was.';
       }
       const words = updateFailedWords(dm.reason, change, 'me');
-      let next = `To try again, open it on ${context.appName} and tap Ask for changes.`;
-      if (hasProposalCard(dm)) next = 'To try again, open it below and tap Ask for changes.';
-      else if (dm.link) next = `To try again, open it and tap Ask for changes: ${dm.link}`;
+      let next = `To try again, open it on ${context.appName} and tap Change something.`;
+      if (hasProposalCard(dm)) next = 'To try again, tap Change something on it below.';
+      else if (dm.link) next = `To try again, open it and tap Change something: ${dm.link}`;
       return `${line}\n\n${words} It's as it was. ${next}`;
     }
+    case 'checks': {
+      // One story: red checks the bot could not fix reach the requester as
+      // a stop, with the change to open (Open the change).
+      const n = Number(dm.failing) || 0;
+      const k = Number(dm.tries) || 0;
+      const fail = n === 1 ? '1 check still fails' : `${n || 'Some'} checks still fail`;
+      const after = k ? ` after ${k} ${k === 1 ? 'try' : 'tries'}` : '';
+      return `${line}\n\nI can't get its checks to pass on my own: ${fail}${after}. A person needs to look at them.`;
+    }
     case 'person':
-      // #4239: about Homeroom itself, so nothing on this project can do it:
-      // the offer to move it to Homeroom's own board follows (relayIssuePost).
+      // #4239: about Homeroom itself, so nothing on this project can do it.
+      // One story: the offer to move it to Homeroom's own board is this
+      // message's own buttons (homeroom-bot-move.js foldOffer).
       if (dm.platform) {
         return `${line}\n\nThis is about Homeroom itself rather than ${context.appName}, so no change to ${context.appName} `
-          + `can do it, and I haven't built anything: ${clip(dm.reason, 600)}\n\n`
-          + 'I can move it to Homeroom\'s own board, where the people who work on Homeroom look. Tap below to choose.';
+          + `can do it: ${clip(dm.reason, 600)}`;
       }
       if (dm.done) return doneText(line, dm);
       // #3772: and what to do about it. "Left for the group" was a dead end
@@ -1092,13 +1302,14 @@ function dmText(kind, dm, context) {
         + 'changed and I\'ll look again.';
     // A cap on how many changes the bot keeps waiting for approval held a
     // request it would build (homeroom-bot.js actOnVerdict). The cap's own
-    // refresh brings it back when there is room, so nothing is asked of them.
+    // refresh brings it back when there is room, so nothing is asked of them:
+    // a quiet line in the request's thread, and its card says Waiting.
     case 'held_proposals_per_app':
-      return `${line}\n\nI can't start ${it} yet because ${context.appName} already has ${Number(dm.limit) || 'several'} `
-        + 'changes waiting. I\'ll start when one is done.';
+      return `${line}\n\nI'll start when one of my ${Number(dm.limit) || ''} changes on ${context.appName} is voted in or closed.`
+        .replace('my  changes', 'my changes');
     case 'held_proposals_total':
-      return `${line}\n\nI can't start ${it} yet because I already have ${Number(dm.limit) || 'many'} changes waiting `
-        + 'across Homeroom. I\'ll start when one is done.';
+      return `${line}\n\nI'll start when one of my ${Number(dm.limit) || ''} changes across Homeroom is voted in or closed.`
+        .replace('my  changes', 'my changes');
     default:
       return null;
   }
@@ -1157,7 +1368,7 @@ async function untaggedRequester(pool, { appId, issueNumber, bot, told = null })
 /** Update a DM question's state in the message itself, so the reader's chips follow. */
 async function setQuestionState(pool, messageId, patch, { ws = null, conversationId = null, userId = null } = {}) {
   const { rows } = await pool.query(
-    'SELECT metadata, conversation_id, sender_id FROM conversation_messages WHERE id = $1',
+    'SELECT metadata, conversation_id, sender_id, thread_root_id FROM conversation_messages WHERE id = $1',
     [messageId],
   );
   if (!rows.length) return;
@@ -1167,33 +1378,34 @@ async function setQuestionState(pool, messageId, patch, { ws = null, conversatio
   const io = ws || require('./ws');
   const members = [rows[0].sender_id, userId].filter(Boolean);
   io.pushConversationEvent(members, {
-    type: 'conversation_message_updated', conversationId: conversationId || rows[0].conversation_id, messageId, threadRootId: null,
+    type: 'conversation_message_updated', conversationId: conversationId || rows[0].conversation_id, messageId,
+    // In a request's thread, the open thread reads it again too.
+    threadRootId: rows[0].thread_root_id ? Number(rows[0].thread_root_id) : null,
   });
 }
 
-// #3767: the news an activity card that is still the newest message about
-// its request already says, so it is not sent again.
-const CARD_SAYS = new Set(['spec']);
-
 // News the request's card and the tray above the DM show, and that the
-// person can do nothing about, is never a message of its own: "I'm building
+// person can do nothing about, is never a message that rings: "I'm building
 // it now", a build held because the project already has changes waiting, an
-// update made where they asked for it (said there), a change's checks that
-// need a person. The DM says something when it answers them or needs them:
-// a question, a plan, a change to approve, a stop they can unstick. On 9
-// October 2026 one person's DM got 123 messages in an afternoon, 53 of which
-// rang; by these rules it would have been 23, every one of them for them.
+// update made where they asked for it (said there). One story per request:
+// in the request's thread it is a quiet line (no bell, no push, no unread in
+// the main chat); a request with no thread (no card) keeps it on the card
+// and the tray alone. The DM rings when it needs them or has news they act
+// on: a question, a plan, a change to try, a stop, live. On 9 October 2026
+// one person's DM got 123 messages in an afternoon, 53 of which rang.
 const CARD_ONLY = new Set(['spec', 'held_proposals_per_app', 'held_proposals_total', 'followup_revise']);
 
-/** Pure: whether a post's news stays on the card rather than being a DM message (CARD_ONLY). */
+/** Pure: whether a post's news is quiet: a line in its thread, or nothing without one (CARD_ONLY). */
 function cardOnly(kind, dm = null) {
   // Trying once more is news the card alone would not say: it reads
   // "building" either way.
-  if (kind === 'spec' && dm?.retry) return false;
-  if (CARD_ONLY.has(kind)) return true;
-  // A change's red checks handed to a person: the change's own discussion
-  // says so, where the group votes on it (homeroom-bot.js runChecksFix).
-  return kind === 'followup_person' && !!dm?.checks;
+  if (kind === 'spec' && dm?.retry) return true;
+  return CARD_ONLY.has(kind);
+}
+
+/** Pure: the kind a post's news is told as: red checks handed to a person are a stop of their own. */
+function newsKind(kind, dm = null) {
+  return kind === 'followup_person' && dm?.checks ? 'checks' : kind;
 }
 
 // WP1 (#6): the news of one build, which can be overtaken before it is told.
@@ -1278,6 +1490,18 @@ async function relayIssuePost({
     await noteMove(requester ? 'no_bot' : 'no_requester');
     return null;
   }
+  // One story: red checks handed to a person reach them as a stop of its own.
+  kind = newsKind(kind, dm);
+  if (kind === 'checks' && hasProposalCard(dm)) {
+    const { rows: [tries] = [] } = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM homeroom_bot_runs WHERE proposal_session_id = $1 AND verdict = 'revise'`,
+      [Number(dm.sessionId)],
+    ).catch(() => ({ rows: [] }));
+    dm = { ...dm, tries: tries?.n || 0 };
+  }
+  // #3767 / one story: the request's card in their chat with the bot, whose
+  // thread everything about the request is said in.
+  const shown = await cardShown(pool, requester.userId, app.id, issueNumber);
   const context = {
     appName: app.name || app.slug,
     appSlug: app.slug,
@@ -1286,6 +1510,7 @@ async function relayIssuePost({
     firstVersion: requester.firstVersion,
     // B4: whether others are in the project, for who approves it.
     group: kind === 'proposal' ? await hasOthers(pool, app.id) : false,
+    threaded: !!shown,
   };
   const content = dmText(kind, dm, context);
   if (!content) return null;
@@ -1307,13 +1532,23 @@ async function relayIssuePost({
     await closeOpenQuestions(pool, { userId: requester.userId, appId: app.id, issueNumber, ws })
       .catch((err) => log.warn('homeroom-bot-dm', 'Could not close an older question', { app: app.slug, issueNumber, err: err.message }));
     require('./homeroom-bot-tray').noteWorkChanged(requester.userId);
-    log.info('homeroom-bot-dm', 'On the card, not a message', { app: app.slug, issueNumber, kind });
-    return { conversationId: null, messageId: null, quiet: true, userId: requester.userId, username: requester.username };
+    // One story: in the request's thread, a quiet line.
+    const line = shown ? await stepLine(pool, {
+      bot, userId: requester.userId, app, issueNumber, context, content, card: shown, step: kind,
+      key: postId ? `hrbot-post-${postId}` : key,
+      actions: kind === 'spec' && !dm.retry ? [readPlanAction(app.slug, issueNumber)] : null,
+    }) : null;
+    log.info('homeroom-bot-dm', line ? 'A quiet line in the request\'s thread' : 'On the card, not a message', { app: app.slug, issueNumber, kind });
+    return {
+      conversationId: line?.conversationId || null, messageId: line?.messageId || null, quiet: true,
+      userId: requester.userId, username: requester.username,
+    };
   }
   // B4: "it's built" waits until it is ready to try: its preview is up and
   // its checks passed or were skipped (noteChangeReady, from every place a
   // check verdict lands). Said to the post as told, so the post does not tag
-  // them either: they hear it once, when they can try it.
+  // them either: they hear it once, when they can try it. One story: its
+  // thread says, quietly, that it is built and being tested.
   let sendKey = key;
   if (kind === 'proposal' && !ready && hasProposalCard(dm)) {
     const state = await changeReadiness(pool, dm.sessionId);
@@ -1321,23 +1556,15 @@ async function relayIssuePost({
       log.info('homeroom-bot-dm', 'A change is up; its requester hears when it is ready to try', {
         app: app.slug, issueNumber, sessionId: Number(dm.sessionId) || null,
       });
+      if (shown) {
+        await stepLine(pool, {
+          bot, userId: requester.userId, app, issueNumber, context, card: shown, step: 'built',
+          content: BUILT_TESTING_TEXT, key: `hrbot-built-${Number(dm.sessionId)}`,
+        });
+      }
       return { conversationId: null, messageId: null, deferred: true, userId: requester.userId, username: requester.username };
     }
     if (state) sendKey = readyKey(dm.sessionId, state.epoch);
-  }
-  // #3767: the request's activity card already shows it. While the card is
-  // the newest thing in the DM about the request, "I'm building this now"
-  // repeats it word for word, so it is not sent; and no news about the
-  // request carries the request's card again under it. Said to the post as
-  // told (it is in front of them), so the post does not tag them instead.
-  const shown = await cardShown(pool, requester.userId, app.id, issueNumber);
-  // B4: one card follows a request through every look, so while it has one,
-  // that card says it, wherever it sits.
-  if (shown && CARD_SAYS.has(kind) && !dm.retry) {
-    return {
-      conversationId: shown.conversationId, messageId: shown.messageId, duplicate: true,
-      userId: requester.userId, username: requester.username, card: true,
-    };
   }
   const asks = QUESTION_KINDS.has(kind);
   const answers = asks ? (Array.isArray(dm.answers) ? dm.answers : []).filter((a) => typeof a === 'string' && a.trim()) : [];
@@ -1391,7 +1618,30 @@ async function relayIssuePost({
       ...(typeof dm.title === 'string' && dm.title.trim() ? { changeTitle: clip(dm.title.trim(), 200) } : {}),
       ...(requester.askedText ? { askedText: askedLine(requester.askedText) } : {}),
     } : {}),
+    // One story: red checks the bot could not fix, with the change to open.
+    ...(kind === 'checks' && hasProposalCard(dm) ? {
+      sessionId: Number(dm.sessionId),
+      actions: [{ id: 'open_change', label: 'Open the change', style: 'primary', type: 'open', target: changeHrefOf(app.slug, dm.sessionId) }],
+      status: 'open',
+    } : {}),
+    // Which words the moment says (contract 2.1), from what the verdict carried.
+    said: saidOf(kind, {
+      ...dm, firstVersion: context.firstVersion, group: context.group,
+      ...(kind === 'build_failed' ? { cause: buildFailedCause(dm.reason).cause } : {}),
+    }),
+    ...(kind === 'proposal' && dm.card ? { waiting: waitingPhrase(dm.card) } : {}),
   };
+  if (!metadata.said) delete metadata.said;
+  if (!metadata.waiting) delete metadata.waiting;
+  // One story: an offer is folded into the verdict that gives its reason,
+  // so one verdict is one message and rings once (homeroom-bot-move.js).
+  const move = require('./homeroom-bot-move');
+  const offerKind = kind === 'person' && dm.platform ? 'move_request'
+    : (kind === 'person' || kind === 'empty') && dm.done ? 'close_request' : null;
+  const offer = offerKind ? await move.foldOffer(pool, {
+    kind: offerKind, userId: requester.userId, app, issueNumber, title: requester.issueTitle, reason: dm.reason, runId,
+  }) : null;
+  if (offer) Object.assign(metadata, offer.metadata);
   const sent = await sendDm(pool, {
     bot,
     userId: requester.userId,
@@ -1402,10 +1652,12 @@ async function relayIssuePost({
     // B7: a ready card's Try it is its way to the change; it carries no card.
     objects: dm.card ? [] : cardsFor(kind, dm, app, issueNumber).filter((c) => !(shown && c.type === 'issue')),
     // #3707: news about a request they started here points back at it.
-    replyToId: await requestStart(pool, { userId: requester.userId, appId: app.id, issueNumber }),
+    replyToId: shown ? null : await requestStart(pool, { userId: requester.userId, appId: app.id, issueNumber }),
+    ...(shown ? { threadRootId: shown.messageId } : {}),
   });
+  await move.foldedOfferSent(pool, offer, sent);
   if (!sent?.messageId) {
-    await noteMove('not_sent');
+    if (!offer) await noteMove('not_sent');
     return null;
   }
   const told = { ...sent, userId: requester.userId, username: requester.username };
@@ -1438,21 +1690,93 @@ async function relayIssuePost({
   log.info('homeroom-bot-dm', 'Told the requester in their DM', {
     app: app.slug, issueNumber, kind, userId: requester.userId, question: asks,
   });
-  // #4239: and the offer to move a request about Homeroom itself to
-  // Homeroom's own board, under its own buttons. Never throws.
-  if (kind === 'person' && dm.platform) {
-    await require('./homeroom-bot-move').offerMove(pool, {
-      bot, userId: requester.userId, app, issueNumber, title: requester.issueTitle, reason: dm.reason, runId,
-      key: `${app.id}-${issueNumber}-${runId || postId || sent.messageId}`,
-    });
-  } else if ((kind === 'person' || kind === 'empty') && dm.done) {
-    // And for one that is done already, the offer to vote on closing it.
-    await require('./homeroom-bot-move').offerClose(pool, {
-      bot, userId: requester.userId, app, issueNumber, title: requester.issueTitle, reason: dm.reason,
-      key: `${app.id}-${issueNumber}-${runId || postId || sent.messageId}`,
-    });
-  }
   return told;
+}
+
+// One story: the quiet line that says a change is built and being tried.
+const BUILT_TESTING_TEXT = 'Built. Testing it: its checks, and its before and after screens.';
+
+/** Pure: a change's page (change-destination.js changeHref). */
+function changeHrefOf(slug, sessionId) {
+  return require('./change-destination').changeHref(slug, Number(sessionId));
+}
+
+/** Pure: the button under a plan's quiet line, to the request's page where the plan is. */
+function readPlanAction(slug, issueNumber) {
+  return {
+    id: 'read_plan', label: 'Read the plan', style: 'secondary', type: 'open',
+    target: `#app/${encodeURIComponent(slug)}/dev/issues/${Number(issueNumber)}`,
+  };
+}
+
+/**
+ * Pure: who a change ready to try waits on (contract 2.1 `waiting`), from
+ * its ready card: "you and @ada", "@ada", or null when it waits on nobody
+ * named.
+ */
+function waitingPhrase(card) {
+  const names = (Array.isArray(card?.waitingOn) ? card.waitingOn : [])
+    .map((w) => (typeof w === 'string' ? w : w?.username))
+    .filter((name) => typeof name === 'string' && name)
+    .slice(0, 3)
+    .map((name) => `@${name.replace(/^@/, '')}`);
+  const who = card?.approve ? ['you', ...names] : names;
+  if (!who.length) return null;
+  return who.length < 2 ? who[0] : `${who.slice(0, -1).join(', ')} and ${who[who.length - 1]}`;
+}
+
+/**
+ * One story: a quiet line in a request's thread (kind 'step'): what the
+ * bot is doing, said under the request's card. It rings nothing and counts
+ * as nothing unread in the main chat. `step` names which. Resolves what
+ * sendDm did, or null. Never throws.
+ */
+async function stepLine(pool, {
+  bot, userId, app, issueNumber, context = null, content, card, step, key = null, actions = null,
+}) {
+  try {
+    const n = Number(issueNumber);
+    return await sendDm(pool, {
+      bot, userId, content, threadRootId: card.messageId, idempotencyKey: key, moment: null,
+      metadata: {
+        kind: 'step', step,
+        appSlug: app.slug, appName: context?.appName || app.name || app.slug, issueNumber: n,
+        ...(context?.issueTitle ? { issueTitle: context.issueTitle } : {}),
+        ...(context?.firstVersion ? { firstVersion: true } : {}),
+        ...(actions?.length ? { actions, status: 'open' } : {}),
+      },
+    });
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not say a step in a request\'s thread', { app: app?.slug, issueNumber, step, err: err.message });
+    return null;
+  }
+}
+
+/**
+ * One story: a quiet line in the thread of `userId`'s request, when it has
+ * a card in their chat with the bot. For callers that do not hold the card
+ * (homeroom-bot-activity.js, noteApproved). Resolves what sendDm did, or
+ * null. Never throws.
+ */
+async function noteStep(pool, { bot = null, userId, app, issueNumber, content, step, key = null, actions = null }) {
+  try {
+    const sender = bot || await botAccount(pool);
+    if (!sender?.id || !userId || !app?.id) return null;
+    const card = await cardShown(pool, userId, app.id, issueNumber);
+    if (!card) return null;
+    const requester = await requesterOf(pool, app.id, issueNumber).catch(() => null);
+    return await stepLine(pool, {
+      bot: sender, userId, app, issueNumber, card, step, key, actions, content,
+      context: {
+        appName: app.name || app.slug,
+        issueTitle: requester?.userId === userId ? requester.issueTitle : null,
+        firstVersion: requester?.userId === userId && requester.firstVersion,
+      },
+    });
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not note a step', { app: app?.slug, issueNumber, step, err: err.message });
+    return null;
+  }
 }
 
 // ── B6: a first version's plan ───────────────────────────────────────────
@@ -1731,7 +2055,12 @@ async function changePlan(pool, { bot, user, target, message, deps = {} }) {
       if (went.ok) {
         const activity = require('./homeroom-bot-activity');
         const thanks = await activity.requestCard(pool, { userId: user.id, appId: app.id, issueNumber });
-        if (thanks && thanks.messageId > Number(target.message_id)) {
+        // One story: a plan in its request's thread was answered there
+        // already (the activity card's quiet line).
+        const { rows: [planRow] = [] } = await pool.query(
+          'SELECT thread_root_id FROM conversation_messages WHERE id = $1', [Number(target.message_id)],
+        );
+        if (thanks && (thanks.messageId > Number(target.message_id) || Number(planRow?.thread_root_id) === thanks.messageId)) {
           return { conversationId: thanks.conversationId, messageId: thanks.messageId, duplicate: true };
         }
         return reply(activity.thanksText(name));
@@ -2467,15 +2796,29 @@ async function noteVoted(pool, sessionId, deps = {}) {
   if (!Number.isInteger(id) || id <= 0) return null;
   try {
     const { rows } = await pool.query(
-      `SELECT q.user_id
+      `SELECT q.user_id, r.issue_number, a.id AS app_id, a.slug, a.name, cs.approval_epoch
          FROM homeroom_bot_runs r
          JOIN homeroom_bot_requesters q ON q.app_id = r.app_id AND q.issue_number = r.issue_number
+         JOIN apps a ON a.id = r.app_id
+         LEFT JOIN chat_sessions cs ON cs.id = r.proposal_session_id
         WHERE r.proposal_session_id = $1
         ORDER BY r.id DESC LIMIT 1`,
       [id],
     );
     if (!rows.length) return null;
     require('./homeroom-bot-tray').noteWorkChanged(rows[0].user_id, deps);
+    // One story: a yes is a quiet line in the request's thread ("ada
+    // approved it."), once per voter and version of the change.
+    const voter = deps.voter;
+    if (deps.vote === 'yes' && voter?.id) {
+      const row = rows[0];
+      const mine = Number(voter.id) === Number(row.user_id);
+      await noteStep(pool, {
+        userId: Number(row.user_id), app: { id: row.app_id, slug: row.slug, name: row.name }, issueNumber: Number(row.issue_number),
+        step: 'approved', content: mine ? 'You approved it.' : `@${voter.username} approved it.`,
+        key: `hrbot-step-approved-${id}-${Number(voter.id)}-${Number(row.approval_epoch) || 0}`,
+      });
+    }
     return Number(rows[0].user_id);
   } catch (err) {
     log.warn('homeroom-bot-dm', 'Could not announce a vote on the bot\'s change', { sessionId: id, err: err.message });
@@ -2489,6 +2832,9 @@ async function noteVoted(pool, sessionId, deps = {}) {
  * requester hears it once per approval epoch, as the "stopped" moment; the
  * retries go on, and "ready" follows if one of them works. Never throws.
  */
+// What a change whose preview did not start says while it is tried again.
+const PREVIEW_RETRY_TEXT = 'I built it, but its preview didn\'t start, so it isn\'t ready to try yet. I\'m trying again.';
+
 async function noteChangeStopped(pool, sessionId, { why = 'preview', deps = {} } = {}) {
   const id = Number(sessionId);
   if (!Number.isInteger(id) || id <= 0) return null;
@@ -2511,15 +2857,26 @@ async function noteChangeStopped(pool, sessionId, { why = 'preview', deps = {} }
       appName: run.name || run.slug, issueNumber: Number(run.issue_number),
       issueTitle: requester.issueTitle, firstVersion: requester.firstVersion,
     };
+    const key = `hrbot-stopped-${why}-${id}-${Number(run.approval_epoch) || 0}`;
+    // One story: while the platform is still trying its preview again, this
+    // is quiet: a line in the request's thread, no bell and no push.
+    const card = await cardShown(pool, requester.userId, run.id, context.issueNumber);
+    if (card) {
+      return await stepLine(pool, {
+        bot, userId: requester.userId, app: { id: run.id, slug: run.slug, name: run.name }, issueNumber: context.issueNumber,
+        context, card, step: 'preview_failed', key, content: PREVIEW_RETRY_TEXT,
+      });
+    }
     return await sendDm(pool, {
       bot,
       userId: requester.userId,
       replyToId: await requestStart(pool, { userId: requester.userId, appId: run.id, issueNumber: context.issueNumber }),
-      idempotencyKey: `hrbot-stopped-${why}-${id}-${Number(run.approval_epoch) || 0}`,
-      content: `${requestLine(context)}\n\nI built it, but its preview didn't start, so it isn't ready to try yet. `
-        + 'I\'m trying again, and I\'ll tell you here when it\'s ready.',
+      idempotencyKey: key,
+      content: `${requestLine(context)}\n\n${PREVIEW_RETRY_TEXT}`,
+      moment: null,
       metadata: {
         kind: 'preview_failed', appSlug: run.slug, appName: context.appName, issueNumber: context.issueNumber,
+        ...(context.issueTitle ? { issueTitle: context.issueTitle } : {}),
         ...(context.firstVersion ? { firstVersion: true } : {}),
       },
       objects: cardsFor('proposal', { sessionId: id }, { id: run.id }, context.issueNumber),
@@ -2584,16 +2941,20 @@ async function noteNeedsLook(pool, { sessionId = null, runId = null, why = 'chec
     const context = {
       appName: run.name || run.slug, issueNumber, issueTitle: requester.issueTitle, firstVersion: requester.firstVersion,
     };
+    // One story: said in the request's thread (and the main chat), when it has one.
+    const card = await cardShown(pool, requester.userId, run.id, issueNumber);
     const sent = await sendDm(pool, {
       bot,
       userId: requester.userId,
-      replyToId: await requestStart(pool, { userId: requester.userId, appId: run.id, issueNumber }),
+      replyToId: card ? null : await requestStart(pool, { userId: requester.userId, appId: run.id, issueNumber }),
+      ...(card ? { threadRootId: card.messageId } : {}),
       idempotencyKey: why === 'checks'
         ? `hrbot-needs-look-checks-${id}-${Number(run.approval_epoch) || 0}`
         : `hrbot-needs-look-built-${id}`,
-      content: needsLookText(requestLine(context), why),
+      content: needsLookText(card ? '' : requestLine(context), why).replace(/^\s+/, ''),
       metadata: {
         kind: 'needs_look', appSlug: run.slug, appName: context.appName, issueNumber,
+        ...(context.issueTitle && !context.firstVersion ? { issueTitle: context.issueTitle } : {}),
         ...(context.firstVersion ? { firstVersion: true } : {}),
       },
       objects: why === 'checks' ? cardsFor('proposal', { sessionId: id }, { id: run.id }, issueNumber) : [],
@@ -2698,11 +3059,19 @@ async function noteProposalChanged(pool, sessionId, deps = {}) {
  * under it (its Open button, openAppAction).
  */
 function mergedText({ line, appName, live, platform = false, card = true, change = false }) {
-  // B7: a change to a project is "your change"; a first version is the project.
-  const it = change ? 'Your change is' : 'It\'s';
-  const said = live ? `${it} live now.` : `${it} going live now and will be ready in a few minutes.`;
-  const open = card && !platform ? ` Open ${appName} below to try it${live ? '' : ' then'}.` : '';
-  return `${line}\n\n${said}${open}`;
+  // One story: a change is "it" (its thread is about it); a first version is
+  // the project's own. With nothing to open (the platform's own app), it
+  // says only when.
+  let said;
+  if (platform || !card) {
+    said = live ? 'It\'s live.' : 'It\'s going live now. It will be live in a few minutes.';
+  } else if (change) {
+    said = live ? `It's live. Open ${appName} to see it.` : `It's going live now. Open ${appName} in a few minutes to see it.`;
+  } else {
+    said = live ? `Your first version is live. Open ${appName} to try it.`
+      : `Your first version is going live now. Open ${appName} in a few minutes to try it.`;
+  }
+  return line ? `${line}\n\n${said}` : said;
 }
 
 /**
@@ -2833,18 +3202,14 @@ async function noteProposalMerged(pool, session, { config = null, sha = null, li
   const bot = await botAccount(pool);
   if (!bot) return null;
   await closeOpenQuestions(pool, { userId: requester.userId, appId: run.app_id, issueNumber: run.issue_number });
-  // A change going live is the request's card's and the ready card's to say
-  // ("Built it. It's live", homeroom-bot-activity.js; readyStates), which the
-  // tray's push above makes them read again. A first version is the one that
-  // is said as a message: it is a new project's moment, and it offers its
-  // community and inviting people to it.
-  if (!requester.firstVersion) {
-    log.info('homeroom-bot-dm', 'Live, on its cards', { app: run.slug, issueNumber: run.issue_number, sessionId: session.id });
-    return null;
-  }
+  // One story: every change's requester hears it is live, in the request's
+  // thread and the main chat (a moment that rings), with its Open button. A
+  // first version also offers its community and inviting people to it.
+  const card = await cardShown(pool, requester.userId, run.app_id, run.issue_number);
   const context = {
     appName: run.name || run.slug, issueNumber: run.issue_number,
     issueTitle: requester.issueTitle, firstVersion: requester.firstVersion,
+    threaded: !!card,
   };
   // The platform's own app has no app of its own to open: its proposal.
   const open = platform ? null : openAppAction({ slug: run.slug, appName: context.appName });
@@ -2854,14 +3219,16 @@ async function noteProposalMerged(pool, session, { config = null, sha = null, li
   return sendDm(pool, {
     bot,
     userId: requester.userId,
-    replyToId: await requestStart(pool, { userId: requester.userId, appId: run.app_id, issueNumber: run.issue_number }),
+    replyToId: card ? null : await requestStart(pool, { userId: requester.userId, appId: run.app_id, issueNumber: run.issue_number }),
+    ...(card ? { threadRootId: card.messageId } : {}),
     idempotencyKey: `hrbot-merged-${session.id}`,
     content: mergedText({
-      line: requestLine(context), appName: context.appName, live, platform, card: !!open, change: !context.firstVersion,
+      line: card ? null : requestLine(context), appName: context.appName, live, platform, card: !!open, change: !context.firstVersion,
     }),
     metadata: {
       kind: 'merged', appSlug: run.slug, appName: context.appName, issueNumber: run.issue_number,
       link: `#app/${encodeURIComponent(run.slug)}`, live,
+      ...(context.issueTitle && !context.firstVersion ? { issueTitle: context.issueTitle } : {}),
       ...(context.firstVersion ? { firstVersion: true } : {}),
       ...(actions.length ? { actions } : {}),
     },
@@ -2902,6 +3269,42 @@ async function quotedTarget(pool, userId, quotedId) {
     [quotedId, userId],
   );
   return rows[0] || null;
+}
+
+/**
+ * One story: the request whose thread a person's message was written in,
+ * from the thread's first message, the request's card: { rootId, appId,
+ * appSlug, appName, issueNumber, title, firstVersion }, or null for a
+ * message in the main chat (or in a thread that is no request's).
+ */
+async function threadRequest(pool, { userId, conversationId, message }) {
+  let rootId = Number(message?.threadRootId) || null;
+  if (!rootId && message?.id) {
+    const { rows: [row] = [] } = await pool.query(
+      'SELECT thread_root_id FROM conversation_messages WHERE id = $1 AND conversation_id = $2',
+      [Number(message.id), conversationId],
+    ).catch(() => ({ rows: [] }));
+    rootId = Number(row?.thread_root_id) || null;
+  }
+  if (!rootId) return null;
+  const { rows: [card] = [] } = await pool.query(
+    `SELECT d.app_id, d.issue_number, a.slug, a.name, q.issue_title, q.first_version
+       FROM homeroom_bot_dm_messages d
+       JOIN apps a ON a.id = d.app_id
+       LEFT JOIN homeroom_bot_requesters q ON q.app_id = d.app_id AND q.issue_number = d.issue_number
+      WHERE d.message_id = $1 AND d.user_id = $2 AND d.kind = 'activity'`,
+    [rootId, userId],
+  );
+  if (!card) return null;
+  return {
+    rootId,
+    appId: Number(card.app_id),
+    appSlug: card.slug,
+    appName: card.name || card.slug,
+    issueNumber: Number(card.issue_number),
+    title: card.issue_title || null,
+    firstVersion: !!card.first_version,
+  };
 }
 
 /** The newest question the bot asked this person that is still open. */
@@ -3192,6 +3595,22 @@ async function noteUserMessage(pool, config, { user, conversationId, message, de
 async function answerUserMessage(pool, config, { bot, user, settings, conversationId, message, deps }) {
   const mayor = deps.mayor || require('./homeroom-bot-mayor');
   const quoted = message?.reply?.id || null;
+  // One story per request: written in a request's thread, it is about that
+  // request. Not quoting anything, it answers the request's open question,
+  // or changes its waiting plan; anything else is the model's, told which
+  // request it is about. What the bot says back goes in the same thread
+  // (sendDm's threadRootFor, from the message it answers).
+  const thread = await threadRequest(pool, { userId: user.id, conversationId, message });
+  if (thread && !quoted) {
+    const open = await newestOpenQuestion(pool, user.id, { appId: thread.appId, issueNumber: thread.issueNumber });
+    if (open) return answerOnRequest(pool, { bot, user, target: open, message, deps });
+    const plan = await waitingPlan(pool, { userId: user.id, appId: thread.appId, issueNumber: thread.issueNumber });
+    if (plan) {
+      const target = await quotedTarget(pool, user.id, plan.messageId);
+      if (target) return changePlan(pool, { bot, user, target, message, deps });
+    }
+  }
+  if (thread) deps = { ...deps, threadRequest: thread };
   if (quoted) {
     const decided = await mayor.decideOffer(pool, config, { bot, user, settings, conversationId, message, deps });
     if (decided) return decided;
@@ -3611,6 +4030,12 @@ const STUCK_ACTIONS = Object.freeze({
 // (an offer's File it, a ready card's Approve, a plan's Build it).
 const SUGGESTION_TYPES = new Set(['prompt', 'reply']);
 
+/** Pure: which request a bot message is about ("slug#n"), or null. */
+function requestOf(meta) {
+  const n = Number(meta?.issueNumber);
+  return meta?.appSlug && Number.isInteger(n) && n > 0 ? `${meta.appSlug}#${n}` : null;
+}
+
 /** Pure: whether a bot message's buttons are all suggestions. */
 function suggestsOnly(meta) {
   const actions = Array.isArray(meta?.actions) ? meta.actions : [];
@@ -3624,8 +4049,17 @@ function suggestsOnly(meta) {
  * at all; they used to stay open until somebody typed one's exact words,
  * far up the chat. A question's answers, an offer, a plan or a ready card
  * keep their own lifecycle. Never throws.
+ *
+ * One story per request (contract 2.3): the buttons on a message about a
+ * request (Try again, Add detail, Go ahead) stay until they are used or
+ * newer news about the SAME request (`about`, the new message's metadata)
+ * replaces them, and then say why. News about another request, or the bot's
+ * answer to something said in the chat, leaves them be. Suggestions about
+ * no request (a hello's questions to ask) give way to anything newer.
  */
-async function retireSuggestions(pool, { botId, conversationId, keepMessageId, userId = null, ws = null }) {
+async function retireSuggestions(pool, {
+  botId, conversationId, keepMessageId, userId = null, ws = null, about = null, kind = null,
+}) {
   if (!botId || !conversationId || !keepMessageId) return;
   try {
     const { rows } = await pool.query(
@@ -3637,7 +4071,18 @@ async function retireSuggestions(pool, { botId, conversationId, keepMessageId, u
       [conversationId, botId, keepMessageId],
     );
     for (const row of rows) {
-      if (!suggestsOnly(row.metadata?.[META])) continue;
+      const meta = row.metadata?.[META];
+      if (!suggestsOnly(meta)) continue;
+      // A card's hello questions are about no request in particular.
+      const older = meta?.kind === 'activity' ? null : requestOf(meta);
+      if (older) {
+        const newer = requestOf(about);
+        if (!newer || newer !== older) continue;
+        await setQuestionState(pool, Number(row.id), {
+          status: 'closed', closedWhy: kind === PLAN_KIND ? 'A newer plan replaced this' : 'No longer needed',
+        }, { ws, conversationId, userId });
+        continue;
+      }
       await setQuestionState(pool, Number(row.id), { status: 'closed' }, { ws, conversationId, userId });
     }
   } catch (err) {
@@ -4162,6 +4607,17 @@ module.exports = {
   MOMENTS,
   BUILD_KINDS,
   momentOf,
+  STORY_MOMENTS,
+  RINGING_MOMENTS,
+  storyMomentOf,
+  saidOf,
+  storyMetadata,
+  threadRootFor,
+  threadRequest,
+  noteStep,
+  waitingPhrase,
+  BUILT_TESTING_TEXT,
+  PREVIEW_RETRY_TEXT,
   notificationDetail,
   askedLine,
   hasOthers,
@@ -4270,9 +4726,10 @@ module.exports = {
   relayIssuePost,
   staleBuildNews,
   noteBuildRestarted,
-  RESTARTED_TEXT,
   CARD_ONLY,
   cardOnly,
+  buildFailedCause,
+  newsKind,
   cardsFor,
   quotedTarget,
   quotable,

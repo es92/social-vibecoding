@@ -111,5 +111,6 @@ test('Ask for changes on a built change is a different action, and keeps its wor
   // #4455: a row of the change page's ⋯.
   assert.match(read('public/js/app-view.js'), /label: PlatformI18n\.t\('changes:page\.menu\.askForChanges'\), icon: 'generate',/);
   assert.equal(require('./lib/platform-i18n').message('changes:page.menu.askForChanges'), 'Ask for changes');
-  assert.match(read('src/services/homeroom-bot-dm.js'), /open it below and tap Ask for changes\./);
+  // One story: the chat's words say Change something (the ready card's button).
+  assert.match(read('src/services/homeroom-bot-dm.js'), /tap Change something on it below\./);
 });

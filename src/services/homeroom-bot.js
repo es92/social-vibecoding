@@ -301,9 +301,10 @@ const SETTLE_MS = 20 * 1000;
 // What wakes the loop for a person's words, and so waits to settle.
 const SETTLE_REASONS = new Set(['thread', 'proposal_thread']);
 // What a person asked for in their DM with the bot queues with one of these
-// (homeroom-bot-mayor.js, homeroom-bot-dm.js): that work gets a card in the
-// DM (homeroom-bot-activity.js startCard `inDm`); anything else is followed
-// in the tray until it needs them.
+// (homeroom-bot-mayor.js, homeroom-bot-dm.js). One story per request: every
+// request gets a card in its requester's chat with the bot, however it was
+// asked (homeroom-bot-activity.js startCard); `inDm` says only that its
+// thread starts "Filed from our chat."
 const DM_REASONS = new Set(['dm_request', 'dm_start', 'dm_answer', 'dm_comment', 'dm_revise', 'plan_change']);
 
 // Eligibility windows. A human claim counts while it is younger than the
@@ -3322,7 +3323,8 @@ async function runTriage(pool, config, {
     // pass. Never throws.
     if (item.reason !== RESTART_REASON && item.reason !== APP_AGAIN_REASON && item.reason !== READ_AGAIN_REASON) {
       await activity().startCard(pool, {
-        app, issueNumber, requester, bot, jobKey: item.id, settings, inDm: DM_REASONS.has(item.reason), deps: { dm: deps.dm },
+        app, issueNumber, requester, bot, jobKey: item.id, settings, inDm: DM_REASONS.has(item.reason), reason: item.reason,
+        deps: { dm: deps.dm },
       });
       // B9: the chat message it was asked in, if it was, says it is read.
       await require('./homeroom-bot-chat').noteRequestStatus(pool, { appId: app.id, issueNumber, status: 'reading' });
@@ -7197,10 +7199,10 @@ async function runChecksFix(pool, config, {
       sender: bot, senderId: bot.id, mentions: targets, notifications: deps.notifications || null,
       // Said where the group votes too: the checks are the proposal's.
       proposalSessionId: session.id,
-      // A change's checks are its discussion's news, not a DM message
-      // (homeroom-bot-dm.js cardOnly); what does not work yet is theirs.
+      // Red checks a person must look at reach the requester as a stop
+      // (homeroom-bot-dm.js, kind 'checks'); what does not work yet is theirs.
       dm: failing.length
-        ? { reason: `its checks are failing: ${why}`, checks: true }
+        ? { reason: `its checks are failing: ${why}`, checks: true, failing: failing.length, sessionId: session.id }
         : { reason: `part of it does not work yet: ${why}` },
     }).catch((err) => {
       log.warn('homeroom-bot', 'Checks hand-off post failed', { app: app.slug, issueNumber, err: err.message });
@@ -7842,8 +7844,8 @@ async function actOnVerdict({
     if (!already && !quietHold) {
       const limit = capSuppressed === 'proposals_per_app' ? PROPOSALS_PER_APP_CAP
         : capSuppressed === 'proposals_total' ? proposalCeiling : QUESTION_TRIPWIRE_PER_DAY;
-      // A build a proposal cap holds is said in the requester's DM too, so
-      // waiting is never a mystery (homeroom-bot-dm.js dmText). A question
+      // A build a proposal cap holds is a quiet line in the request's thread
+      // (homeroom-bot-dm.js dmText) and its card says Waiting. A question
       // the daily tripwire holds is not: there is nothing to tell them yet.
       const toDm = capSuppressed === 'proposals_per_app' || capSuppressed === 'proposals_total';
       await say(kind, live.heldText({
@@ -8631,7 +8633,8 @@ async function buildLive({
     } else {
       await say('spec', live.specCommentText(specMd, { approved: checkFirst }), {
         threadMessage: version ? live.specCard({ sessionId, version, spec: specMd, bot, approved: checkFirst }) : null,
-        dm: { building: true },
+        // The plan in a line, for the quiet line in the request's thread.
+        dm: { building: true, plan: live.specTitle(specMd) || null },
       });
     }
     // WP1 (#2): what the run has seen moves past its own plan comment now,

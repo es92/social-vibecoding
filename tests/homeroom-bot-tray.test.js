@@ -50,12 +50,12 @@ test('#3734: Now is the bot\'s own progress, its in-flight entries drawn as step
   assert.deepEqual(Object.keys(tray.PHASE_OF_STAGE).sort(), [...progress.IN_FLIGHT_STAGES].sort());
   const item = (extra) => ({
     project: 'ear trainer', projectName: 'Ear Trainer', number: 12, title: 'Sort by date', since: '2026-10-02T10:00:00.000Z',
-    step: 1, of: 6, stepName: 'Read the request', doing: 'reading the request to decide whether to ask a question or build it',
+    step: 1, of: 6, stepName: 'Reading', doing: 'reading the request to decide whether to ask a question or build it',
     ...extra,
   });
   assert.deepEqual(tray.jobOfProgress(item({ stage: 'reading' })), {
     key: 'ear trainer#12', appSlug: 'ear trainer', appName: 'Ear Trainer', issueNumber: 12, title: 'Sort by date', firstVersion: false,
-    phase: 'looking', stage: 'reading', step: 1, of: 6, stepName: 'Read the request',
+    phase: 'looking', stage: 'reading', step: 1, of: 6, stepName: 'Reading',
     doing: 'reading the request to decide whether to ask a question or build it',
     since: '2026-10-02T10:00:00.000Z', href: '#app/ear%20trainer/dev/issues/12',
     links: { request: '#app/ear%20trainer/dev/issues/12', proposal: null, project: null },
@@ -127,7 +127,7 @@ const run = (id, issue, hoursAgo, extra = {}) => ({
 });
 const entry = (number, stage, extra = {}) => ({
   project: 'ear-trainer', projectName: 'Ear Trainer', number, title: `Request ${number}`, stage, step: 5, of: 6,
-  stepName: 'Approval', doing: 'reading the newest replies on the change', busyNow: true, since: at(0.15).toISOString(), ...extra,
+  stepName: 'Ready to try', doing: 'reading the newest replies on the change', busyNow: true, since: at(0.15).toISOString(), ...extra,
 });
 
 test('each request appears once: in Now while the bot has it, else in Needs you while it waits on them, else in History', () => {
@@ -147,7 +147,7 @@ test('each request appears once: in Now while the bot has it, else in Needs you 
   assert.deepEqual(work.now.map((job) => job.key), ['ear-trainer#5']);
   const five = work.now[0];
   assert.equal(five.phase, 'following_up');
-  assert.deepEqual([five.step, five.of, five.stepName], [5, 6, 'Approval']);
+  assert.deepEqual([five.step, five.of, five.stepName], [5, 6, 'Ready to try']);
   assert.deepEqual(five.earlier, [{ id: 8, outcome: 'failed', at: at(16.2).toISOString() }], 'its run before, folded in');
 
   assert.deepEqual(work.needsYou.map((job) => [job.key, job.outcome]), [['ear-trainer#14', 'blocked']],
@@ -228,7 +228,7 @@ test('#4539: a request closed while it waited on its person reads stopped, in Hi
 
 test('a build the bot is still on is the work Now shows, not an earlier run; one nothing finished yet says so, never that it stopped', () => {
   const rows = [run(2, 7, 1, { verdict: 'ready' }), run(1, 7, 20, { verdict: 'question' })];
-  const building = tray.arrange([entry(7, 'building', { step: 3, stepName: 'Build it' })], rows);
+  const building = tray.arrange([entry(7, 'building', { step: 3, stepName: 'Building' })], rows);
   assert.deepEqual(building.now[0].earlier.map((r) => r.outcome), ['question']);
   // #8 (WP3): out of Now (the bot switched off, or the build gone quiet),
   // it is not "stopped", and the question it moved past is not its news.
@@ -253,9 +253,9 @@ test('B6: a first version\'s plan replaced before Build it is not one of its ear
     run(1, 1, 0.8, { ...fv, verdict: 'failed' }),
   ];
   const building = { project: 'flat-4b-chores', projectName: 'Flat 4B Chores', number: 1, firstVersion: true, stage: 'building',
-    step: 4, of: 7, stepName: 'Build it', doing: 'building it', busyNow: true, since: at(0.1).toISOString() };
+    step: 4, of: 7, stepName: 'Building', doing: 'building it', busyNow: true, since: at(0.1).toISOString() };
   const now = tray.arrange([building], rows).now[0];
-  assert.deepEqual([now.firstVersion, now.stepName, now.doing], [true, 'Build it', 'building it']);
+  assert.deepEqual([now.firstVersion, now.stepName, now.doing], [true, 'Building', 'building it']);
   assert.deepEqual(now.earlier.map((r) => [r.id, r.outcome]), [[1, 'failed']], 'its plans are not earlier runs; a look that failed still is');
   const built = [run(4, 1, 0.2, { ...fv, verdict: 'ready', proposal_session_id: 40, proposal_status: 'promoted', proposal_at: at(0.05) }), ...rows.slice(1)];
   const history = tray.arrange([], built).history[0];
@@ -602,7 +602,7 @@ test('the panel: Now with the step it is at, Needs you, and History folded away'
   const html = drawPanel({
     work: work({
       now: [working({
-        issueNumber: 12, title: 'Sort by date', phase: 'building', step: 3, of: 6, stepName: 'Build it', doing: 'building it',
+        issueNumber: 12, title: 'Sort by date', phase: 'building', step: 3, of: 6, stepName: 'Building', doing: 'building it',
         since: minutesAgo(4), href: '#app/ear-trainer/dev/issues/12',
         links: { request: '#app/ear-trainer/dev/issues/12', proposal: null, project: null },
         earlier: [{ id: 3, outcome: 'question', at: minutesAgo(60 * 20) }],
@@ -620,10 +620,11 @@ test('the panel: Now with the step it is at, Needs you, and History folded away'
   assert.match(html, /<section id="messages-bot-work-panel" class="absolute inset-x-3 [^"]*" aria-label="Homeroom bot activity" data-bot-work-panel="">/);
   assert.match(html, />Now</);
   assert.match(html, /data-bot-work-tile="now" data-bot-work-tone="working"/);
-  assert.match(html, /aria-label="Step 3 of 6: Build it"/, 'the ring the activity cards draw');
-  assert.match(html, /aria-label="Step 3 of 6: Build it" overflow="visible" data-progress-ring-spinning="">/, '#4199: with its arc circling it while it goes');
+  assert.match(html, /aria-label="Step 3 of 6: Building"/, 'the ring the activity cards draw');
+  assert.match(html, /aria-label="Step 3 of 6: Building" overflow="visible" data-progress-ring-spinning="">/, '#4199: with its arc circling it while it goes');
   assert.doesNotMatch(html, /animate-ping/, 'and no pulsing dot on the tile');
-  assert.match(html, /Step 3 of 6 · Build it/);
+  // One request, one story: the step leads by its name, as the card says it.
+  assert.match(html, /Building · step 3 of 6/);
   assert.match(html, /Ear Trainer #12: Sort by date/);
   assert.match(html, /Building it · 4m so far/);
   assert.match(html, /<a href="#app\/ear-trainer\/dev\/issues\/12" [^>]*data-bot-work-link="">Request #12<\/a>/);
@@ -694,7 +695,7 @@ test('#4201: History leads with the app\'s own icon and a badge of how it ended;
   const html = drawPanel({
     historyOpen: true,
     work: work({
-      now: [working({ issueNumber: 12, step: 3, of: 6, stepName: 'Build it', iconUrl: '/app-icons/ab12' })],
+      now: [working({ issueNumber: 12, step: 3, of: 6, stepName: 'Building', iconUrl: '/app-icons/ab12' })],
       needsYou: [past({ id: 4, issueNumber: 14, outcome: 'question', iconUrl: '/app-icons/ab12' })],
       history: [
         past({ id: 2, issueNumber: 9, outcome: 'live', iconUrl: '/app-icons/ab12', iconEmoji: '🎵' }),
@@ -705,7 +706,7 @@ test('#4201: History leads with the app\'s own icon and a badge of how it ended;
   });
   const tiles = html.split('data-bot-work-tile="').slice(1);
   const [now, you, ...history] = tiles;
-  assert.match(now, /aria-label="Step 3 of 6: Build it"/, 'Now keeps its ring');
+  assert.match(now, /aria-label="Step 3 of 6: Building"/, 'Now keeps its ring');
   assert.doesNotMatch(now, /data-bot-work-app-lead|app-icons/);
   assert.doesNotMatch(you, /data-bot-work-app-lead|app-icons/, 'Needs you keeps its tile');
   assert.equal(history.length, 3);
@@ -795,7 +796,7 @@ test('the client keeps only the platform\'s own addresses as links, and known wo
   const w = normalizeBotWork({
     now: [
       { appSlug: 'a', appName: 'A', issueNumber: 3, phase: 'building', since: 'x', href: 'javascript:alert(1)',
-        links: { request: 'https://example.test/x', proposal: '#app/a/dev/proposals/4' }, step: 3, of: 6, stepName: 'Build it' },
+        links: { request: 'https://example.test/x', proposal: '#app/a/dev/proposals/4' }, step: 3, of: 6, stepName: 'Building' },
       { appSlug: 'b', appName: 'B', phase: 'dancing', href: '#app/b/app', firstVersion: true, step: 7, of: 6 },
       ...tray.PHASES.map((phase) => ({ appSlug: 'c', appName: 'C', issueNumber: 1, phase })),
     ],
@@ -811,7 +812,7 @@ test('the client keeps only the platform\'s own addresses as links, and known wo
   });
   assert.equal(w.now[0].href, null);
   assert.deepEqual(w.now[0].links, { request: null, proposal: '#app/a/dev/proposals/4', project: null });
-  assert.deepEqual([w.now[0].step, w.now[0].of, w.now[0].stepName], [3, 6, 'Build it']);
+  assert.deepEqual([w.now[0].step, w.now[0].of, w.now[0].stepName], [3, 6, 'Building']);
   assert.equal(w.now[0].key, 'a#3');
   assert.equal(w.now[1].href, '#app/b/app');
   assert.equal(w.now[1].phase, 'looking');

@@ -603,17 +603,17 @@ function demoWork(now = Date.now()) {
   return {
     now: [{
       ...request(14, 'Staging demo, show a total under the list'),
-      phase: 'building', stage: 'building', step: 3, of: 6, stepName: 'Build it', doing: 'building it',
+      phase: 'building', stage: 'building', step: 3, of: 6, stepName: 'Building', doing: 'building it',
       since: ago(4), ...nowhere, earlier: [],
     }, {
       // Begun before it had a card in the DM: opening the demo DM gives it
       // one (staging-messages.js ensureDemoUnderWayCard).
       ...request(15, 'Staging demo, add a search box'),
-      phase: 'building', stage: 'planning', step: 2, of: 6, stepName: 'Write a plan', doing: 'writing the plan for the build',
+      phase: 'building', stage: 'planning', step: 2, of: 6, stepName: 'Planning', doing: 'writing the plan for the build',
       since: ago(7), ...nowhere, earlier: [],
     }, {
       ...request(9, 'Staging demo, show item counts'),
-      phase: 'follow_up_queued', stage: 'followup_queued', step: 5, of: 6, stepName: 'Approval',
+      phase: 'follow_up_queued', stage: 'followup_queued', step: 5, of: 6, stepName: 'Ready to try',
       doing: 'waiting in the queue (number 1) to follow up on the newest replies on the change',
       since: ago(1), ...nowhere, earlier: [{ id: 2, outcome: 'proposed', at: ago(60 * 26) }],
     }],

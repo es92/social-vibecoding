@@ -18,7 +18,8 @@ const { loadTsx, renderToHtml, createElement } = require('./lib/render-tsx');
 
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
-const THANKS = 'Thanks for answering about the plan. I\'ll let you know when Run Club is ready to try.';
+// One story: what is next, not a thanks (homeroom-bot-activity.js thanksText).
+const THANKS = 'Building it now. I\'ll tell you when it\'s ready to try.';
 const meta = { kind: 'activity', appSlug: 'run-club', appName: 'Run Club', issueNumber: 1, firstVersion: true, lookAt: 'x', thanks: true, appEmoji: '🏃' };
 const botMsg = (id, m, extra = {}) => ({
   id, conversationId: 3, content: THANKS, createdAt: '2026-10-08T10:00:00Z', reactions: [], attachments: [], objects: [],

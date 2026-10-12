@@ -271,7 +271,9 @@ test('a move offer records what became of it on the run, and the week counts the
   assert.match(dm, /reason: dm\.reason, runId,\n/);
   const src = read('src/services/homeroom-bot-move.js');
   assert.match(src, /await noteMoveOffer\(pool, runId, 'already_offered'\);/);
-  assert.match(src, /await noteMoveOffer\(pool, runId, 'sent'\);/);
+  // One story: the offer is folded into the verdict's message (foldOffer), and
+  // recorded as sent once that message is (foldedOfferSent).
+  assert.match(src, /if \(offer\.kind === 'move_request'\) await noteMoveOffer\(pool, offer\.runId, 'sent'\);/);
   assert.match(read('src/services/homeroom-bot.js'),
     /acted = 'unaddressed';\n\s+\/\/ [^\n]+\n\s+if \(parsed\.verdict === 'person' && parsed\.platform\) \{\n\s+await require\('\.\/homeroom-bot-move'\)\.noteMoveOffer\(pool, runId, 'repeat_held'\);/);
   assert.match(read('src/db/schema.sql'), /ALTER TABLE homeroom_bot_runs ADD COLUMN IF NOT EXISTS move_offer TEXT;/);

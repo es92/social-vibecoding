@@ -365,15 +365,15 @@ test('#4239: moving a request about Homeroom itself to Homeroom\'s own board', {
     const told = await post(501);
     const person = await read(told);
     assert.match(person.content, /This is about Homeroom itself rather than Ear trainer/);
-    assert.equal(person.metadata.homeroomBot.actions, undefined, 'no Go ahead');
+    // One story: the verdict and its offer are one message, with no Go ahead.
+    assert.deepEqual(person.metadata.homeroomBot.actions.map((a) => a.label), ['Move it to Homeroom', 'Keep it here'], 'no Go ahead');
     const { rows: offers } = await pool.query(
       `SELECT * FROM homeroom_bot_dm_actions WHERE kind = 'move_request' AND source_issue_number = 13`,
     );
     assert.equal(offers.length, 1);
     assert.equal(offers[0].conversation_id, opened.conversationId);
-    const offer = await conversations.getMessage(pool, ada, opened.conversationId, offers[0].message_id);
-    assert.match(offer.content, /^Want me to move request #13 to Homeroom's own board\?/);
-    assert.deepEqual(offer.metadata.homeroomBot.actions.map((a) => a.label), ['Move it to Homeroom', 'Keep it here']);
+    assert.equal(Number(offers[0].message_id), Number(person.id), 'the offer is the verdict\'s own message');
+    assert.equal(person.metadata.homeroomBot.actionId, Number(offers[0].id));
     await post(502);
     const { rows: again } = await pool.query(
       `SELECT 1 FROM homeroom_bot_dm_actions WHERE kind = 'move_request' AND source_issue_number = 13`,
@@ -419,18 +419,17 @@ test('#4239: moving a request about Homeroom itself to Homeroom\'s own board', {
       dm: { reason: 'It is there already: open Profile, then Your votes.', done: true },
     });
     const told = await read(await post(601));
-    assert.match(told.content, /This looks done already, so I haven't built anything: It is there already: open Profile, then Your votes\./);
-    assert.match(told.content, /you can open a vote on closing it below/);
-    assert.equal(told.metadata.homeroomBot.actions, undefined, 'no Go ahead: there is nothing to decide');
+    // One story: one message, the verdict with its offer's buttons.
+    assert.match(told.content, /This looks done already: It is there already: open Profile, then Your votes\.$/);
+    assert.deepEqual(told.metadata.homeroomBot.actions.map((a) => a.label), ['Propose to close', 'Tell me what\'s missing'],
+      'no Go ahead: there is nothing to decide');
     const offers = async () => (await pool.query(
       `SELECT * FROM homeroom_bot_dm_actions WHERE kind = 'close_request' AND source_issue_number = 14`,
     )).rows;
     const [offer] = await offers();
     assert.equal(offer.conversation_id, opened.conversationId);
     assert.equal(offer.details, 'It is there already: open Profile, then Your votes.', 'the vote\'s reason');
-    const card = await conversations.getMessage(pool, ada, opened.conversationId, offer.message_id);
-    assert.match(card.content, /^Want me to open a vote on closing request #14\? It closes only if its group votes for it\./);
-    assert.deepEqual(card.metadata.homeroomBot.actions.map((a) => a.label), ['Propose to close', 'Keep it open']);
+    assert.equal(Number(offer.message_id), Number(told.id), 'the offer is the verdict\'s own message');
     await post(602, 'empty');
     assert.equal((await offers()).length, 1, 'offered once');
 

@@ -138,10 +138,10 @@ test('B8: filing, against the full PostgreSQL schema', { timeout: 180000 }, asyn
         WHERE d.user_id = $1 AND d.app_id = $2 AND d.issue_number = 12 AND d.kind = 'activity'`,
       [maya.id, plantPal.id],
     );
-    // Filed through the form, not in her DM: no card there (9 Oct 2026: one
-    // person's DM got 45 of them in an afternoon). The tray above the DM
-    // follows it, and the DM speaks when it needs her.
-    assert.equal(cards.length, 0);
+    // One story: filed through the form, it still gets its card in her DM
+    // with the bot, whose thread holds its story (the main chat shows only
+    // the moments that need her).
+    assert.equal(cards.length, 1);
     const work = await require('../src/services/homeroom-bot-progress').botWorkByIssue(pool, plantPal.id);
     assert.equal(work.get(12).what, 'queued', 'the bot has it, waiting for a builder');
   });

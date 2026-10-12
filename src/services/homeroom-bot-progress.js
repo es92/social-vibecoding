@@ -73,21 +73,21 @@ function buildsPerProject() { return require('./homeroom-bot').BUILDS_PER_PROJEC
 
 // #4053: a first version's steps are named for what is happening, never as
 // an instruction: "Step 4 of 7: Build it" read to an invited member as if
-// they were asked to build it (onboarding test, 6 October 2026). Steps 4 to
-// 7 are the build line's own words (BUILD_LINE_STATES below), so Homeroom
-// bot's chat, the one place a step's number is said, names it the way every
-// thumbnail does. A request's steps keep their names for now.
+// they were asked to build it (onboarding test, 6 October 2026). One story
+// per request: a request's steps are named the same way, in the same words
+// everywhere they are said (the card, the tray, the bot's answers).
 const FIRST_VERSION_STEPS = Object.freeze([
-  'Setting up the project', 'Reading the description', 'Planning it', 'Building it', 'Testing it', 'Ready to try', 'Live',
+  'Setting up', 'Reading', 'Planning', 'Building', 'Testing', 'Ready to try', 'Live',
 ]);
 const REQUEST_STEPS = Object.freeze([
-  'Read the request', 'Write a plan', 'Build it', 'Test it', 'Approval', 'Live',
+  'Reading', 'Planning', 'Building', 'Testing', 'Ready to try', 'Live',
 ]);
 
 // Which step each stage is part of. A request's first step is "Read".
 const STEP_OF_STAGE = Object.freeze({
   setting_up: 'setup',
   queued: 'read',
+  on_hold: 'read',
   reading: 'read',
   question: 'read',
   // B6: a first version's plan, waiting for its creator's Build it.
@@ -369,6 +369,15 @@ function stageOf(input, { now = new Date() } = {}) {
     return { stage: 'planning', since: row.build_started_at || row.run_at, doing: 'writing the plan for the build', limit: 'plan' };
   }
   if (row.queue_id) {
+    // One story: held until the week resets, because its payer's building
+    // time is used up (homeroom-bot.js runTriage): On hold until Monday.
+    const held = row.held_until ? new Date(row.held_until) : null;
+    if (held && !Number.isNaN(held.getTime()) && held > now) {
+      return {
+        stage: 'on_hold', since: row.enqueued_at, waitingOn: 'time',
+        doing: 'on hold until Monday: this week\'s building time is used up',
+      };
+    }
     // Not its number in the queue: that counts every project's requests, and
     // the per-project and per-person limits decide more (queuedWait).
     return { stage: 'queued', since: row.enqueued_at, doing: 'waiting for a free builder' };
@@ -466,7 +475,7 @@ async function requestRows(pool, userId) {
                            WHERE r2.app_id = q.app_id AND r2.issue_number = q.issue_number)
      )
      SELECT m.app_id, a.slug, a.name, a.repo_url, m.issue_number, m.issue_title, m.first_version,
-            q.id AS queue_id, q.started_at, q.enqueued_at, q.reason AS queue_reason,
+            q.id AS queue_id, q.started_at, q.enqueued_at, q.reason AS queue_reason, q.held_until,
             run.id AS run_id, run.mode, run.verdict, run.created_at AS run_at, run.duration_ms AS run_duration_ms,
             run.cap_suppressed,
             run.build_ok, run.build_error, run.build_session_id, run.proposal_session_id AS run_proposal,

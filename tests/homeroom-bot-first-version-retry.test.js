@@ -328,10 +328,11 @@ test('a build from a preset plan runs no spec turn', async () => {
 
 test('the creator hears it is trying once more as a message of its own, not only on the card', () => {
   const context = { appName: 'Plant Log', appSlug: 'plant-log', issueNumber: 1, issueTitle: 'Plant Log', firstVersion: true };
+  // One story: a quiet line in its request's thread, as every step is.
   assert.match(dm.dmText('spec', { building: true, retry: true }, context),
-    /My first try at building the first version didn't finish, so I'm trying once more from the same plan\. I'll message you here when it's ready to try\.$/);
+    /My first try didn't finish, so I'm trying once more from the same plan\.$/);
   assert.match(dm.dmText('spec', { building: true }, context), /I'm building the first version now\./);
-  assert.equal(dm.cardOnly('spec', { retry: true }), false);
+  assert.equal(dm.cardOnly('spec', { retry: true }), true);
   assert.equal(dm.cardOnly('spec', {}), true);
   assert.match(live.retryCommentText(), /trying once more from the same plan/);
 });

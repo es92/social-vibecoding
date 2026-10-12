@@ -722,7 +722,7 @@ async function fileMessage(pool, config, { app, user, messageId, words, title, h
       const bot = await dmModule(deps).botAccount(pool);
       if (bot) {
         await require('./homeroom-bot-activity').startCard(pool, {
-          app, issueNumber: filed.issueNumber, bot, jobKey: filed.queueId, settings: here.settings, filed: true,
+          app, issueNumber: filed.issueNumber, bot, jobKey: filed.queueId, settings: here.settings, filed: true, origin: 'chat',
           requester: {
             userId: user.id, username: user.username, issueTitle: title, firstVersion: false, askedText: words,
             isSynthetic: !!user.isSynthetic, hasPlatformAccess: !!(user.hasPlatformAccess || user.privateMember), isAdmin: !!user.isAdmin,

@@ -667,13 +667,14 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const n = ack.metadata.homeroomBot.issueNumber;
     assert.ok(n > 0);
 
-    // Its news later on, from the bot's work on it, quotes where it started.
-    // #3767: while its card is the newest thing about it, "I'm building
-    // this now" is the card's to show, and is not sent again; the post is
-    // told it reached her, so it does not tag her instead.
+    // One story: "I'm building it now" is a quiet line in the request's
+    // thread, under its card; the post is told it reached her, so it does
+    // not tag her instead.
     const building = await dm.relayIssuePost({ pool, app: notes, issueNumber: n, kind: 'spec', postId: 37071, bot, dm: { building: true } });
-    assert.equal(building.quiet, true, 'the card says it, never a message');
-    assert.equal(building.messageId, null);
+    assert.equal(building.quiet, true, 'quiet: no bell, no push');
+    const line = await read(building);
+    assert.equal(line.threadRootId, ack.id, 'in the request\'s thread');
+    assert.equal(line.metadata.homeroomBot.kind, 'step');
     assert.equal(await dm.untaggedRequester(pool, { appId: notes.id, issueNumber: n, bot, told: building }), ada.username);
     const held = await dm.noteOverAllowance(pool, {
       settings: { ...settings, userWeeklyCents: 100 }, requester: { userId: ada.id, username: ada.username, hasPlatformAccess: true }, app: notes, issueNumber: n, bot,
@@ -700,11 +701,14 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
       },
       sleep: async () => {},
     };
-    // A change going live is said on its cards (the request's card reads
-    // "Built it. It's live"), never as a message of its own: the app is
-    // still asked whether it answers, for the chat's chip.
+    // One story: every change's requester hears it is live, in the request's
+    // thread and the main chat, with its Open button; the app is asked
+    // whether it answers first.
     const live = await dm.noteProposalMerged(pool, { id: built.id }, { config: {}, sha: 'a'.repeat(40), deps: healthy });
-    assert.equal(live, null);
+    const liveMsg = await read(live);
+    assert.equal(liveMsg.content, 'It\'s live. Open Note board to see it.');
+    assert.equal(liveMsg.threadRootId, ack.id);
+    assert.deepEqual([liveMsg.metadata.homeroomBot.moment, liveMsg.metadata.homeroomBot.said, liveMsg.metadata.homeroomBot.alsoInChat], ['live', 'live', true]);
     assert.deepEqual(probed, ['app-note-board']);
 
     // A request filed anywhere else started nowhere here; one whose start
@@ -746,7 +750,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const by = new Map(first.rightNow.map((e) => [`${e.project}#${e.number}`, e]));
     const building = by.get('seed-swap#3');
     assert.equal(building.stage, 'building');
-    assert.deepEqual([building.step, building.of, building.stepName], [3, 6, 'Build it']);
+    assert.deepEqual([building.step, building.of, building.stepName], [3, 6, 'Building']);
     assert.equal(building.stepTimeLimitMinutes, 20, 'a build is stopped at its clock: the most it can take');
     // #19 (WP3): and how long a build usually takes, never past that clock.
     assert.deepEqual(building.typicalMinutes, { from: 10, to: 20 });
@@ -820,7 +824,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
         const ear = lastToolResult(req, 'progress').rightNow.find((e) => e.project === 'ear-trainer');
         assert.deepEqual(
           { step: ear.step, of: ear.of, stepName: ear.stepName, doing: ear.doing, minutesSoFar: ear.minutesSoFar, busyNow: ear.busyNow },
-          { step: 1, of: 7, stepName: 'Setting up the project', doing: 'setting up the project: part 2 of 4, making its code repository', minutesSoFar: 2, busyNow: true },
+          { step: 1, of: 7, stepName: 'Setting up', doing: 'setting up the project: part 2 of 4, making its code repository', minutesSoFar: 2, busyNow: true },
         );
         assert.equal(ear.links.project, 'https://app.test/#app/ear-trainer');
         return [['reply', {

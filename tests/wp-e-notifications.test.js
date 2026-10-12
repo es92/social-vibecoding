@@ -27,10 +27,14 @@ const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 test('each ringing moment of the bot has its own kind; an answer stays a message', () => {
   assert.deepEqual({ ...dm.BUILD_KINDS }, {
     question: 'build_needs_you', ready: 'build_ready', stopped: 'build_stopped', held: 'build_stopped', live: 'build_live',
+    // One story (contract 2.1): the moments by their new names; the old ones
+    // above stay for rows already written.
+    needs_you: 'build_needs_you', on_hold: 'build_stopped',
   });
   assert.equal(dm.BUILD_KINDS.reply, undefined);
   const src = read('src/services/homeroom-bot-dm.js');
-  assert.match(src, /notificationKind: \(rings && BUILD_KINDS\[rings\]\) \|\| null,/);
+  // One story: the moment the message is (contract 2.1) names its kind.
+  assert.match(src, /notificationKind: \(story && BUILD_KINDS\[story\]\) \|\| null,/);
   // Only a direct conversation takes the kind; a group or channel keeps its own.
   assert.match(read('src/services/conversations.js'),
     /if \(membership\.kind === 'direct' && notificationKind\) kind = notificationKind;/);

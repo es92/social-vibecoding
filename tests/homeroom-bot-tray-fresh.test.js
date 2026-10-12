@@ -77,7 +77,7 @@ function createFakeReact() {
 const EMPTY = { now: [], needsYou: [], history: [] };
 const queuedJob = {
   key: 'ear-trainer#3', appSlug: 'ear-trainer', appName: 'Ear Trainer', issueNumber: 3, title: 'Sort', firstVersion: false,
-  phase: 'queued', step: 1, of: 6, stepName: 'Read the request', doing: 'next in line to be read', since: null,
+  phase: 'queued', step: 1, of: 6, stepName: 'Reading', doing: 'next in line to be read', since: null,
   href: null, links: { request: null, proposal: null, project: null }, earlier: [],
 };
 

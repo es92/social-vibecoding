@@ -132,7 +132,7 @@ test('the merge wakes the loop for what waited, and its pick-up moves the chat r
   assert.match(src, /noteIssueActivity\(\{ appId, issueNumber: Number\(firstVersion\[0\]\.issue_number\), reason: 'first_version_live' \}\);/);
   // processOne, picking the request up: its chat message reads Reading, and
   // noteRequestStatus pushes the requester's cards (followCards).
-  assert.match(src, /await activity\(\)\.startCard\(pool, \{\s*app, issueNumber, requester, bot, jobKey: item\.id, settings, inDm: DM_REASONS\.has\(item\.reason\), deps: \{ dm: deps\.dm \},\s*\}\);\s*\/\/ B9: [^\n]*\n\s*await require\('\.\/homeroom-bot-chat'\)\.noteRequestStatus\(pool, \{ appId: app\.id, issueNumber, status: 'reading' \}\);/);
+  assert.match(src, /await activity\(\)\.startCard\(pool, \{\s*app, issueNumber, requester, bot, jobKey: item\.id, settings, inDm: DM_REASONS\.has\(item\.reason\), reason: item\.reason,\s*deps: \{ dm: deps\.dm \},\s*\}\);\s*\/\/ B9: [^\n]*\n\s*await require\('\.\/homeroom-bot-chat'\)\.noteRequestStatus\(pool, \{ appId: app\.id, issueNumber, status: 'reading' \}\);/);
 });
 
 test('Page Turners, against the full PostgreSQL schema', { timeout: 180000 }, async (t) => {
@@ -267,9 +267,13 @@ test('Page Turners, against the full PostgreSQL schema', { timeout: 180000 }, as
     const { rows: dm } = await pool.query(
       `SELECT content FROM conversation_messages WHERE content LIKE '%request #2%' AND content LIKE '%Filed. Waiting for the first version to go live.%'`,
     );
-    // Asked in the chat, not in her DM: the chat's own card and the tray
-    // above the DM follow it, and the DM has no card of its own for it.
-    assert.equal(dm.length, 0, 'no DM card for a request asked in the chat');
+    // One story: asked in the chat, it still gets its card in her DM with
+    // the bot (every request has one), whose thread says where it came from.
+    assert.equal(dm.length, 1, 'its card in her DM, saying it waits');
+    const { rows: origin } = await pool.query(
+      `SELECT content FROM conversation_messages WHERE content LIKE 'You asked for this in %chat. It''s request #2.'`,
+    );
+    assert.equal(origin.length, 1, 'its thread starts with where it was asked');
     // After a reload (GET my-bot-requests): the same card, and the chip left as it is.
     frames.length = 0;
     const again = (await mine()).find((c) => c.messageId === booksId);

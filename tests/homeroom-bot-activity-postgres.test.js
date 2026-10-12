@@ -176,7 +176,14 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     assert.equal(message.sender.id, bot.id);
     assert.deepEqual(message.metadata.homeroomBot, {
       kind: 'activity', appSlug: 'seed-swap', appName: 'Seed swap', issueNumber: 3, issueTitle: 'Sort by date',
+      // One story (contract 2.1): every message about a request names it.
+      requestTitle: 'Sort by date',
     });
+    // Its thread starts with where it came from and that it is being read.
+    const { rows: lines } = await pool.query(
+      'SELECT content FROM conversation_messages WHERE thread_root_id = $1 ORDER BY id', [first.messageId],
+    );
+    assert.deepEqual(lines.map((l) => l.content), ['Filed from our chat.', 'Reading it.']);
     assert.match(message.content, /^\*\*Seed swap\*\* · request #3: Sort by date\n\nI'm working on this now\./);
     assert.equal(message.reply, null);
     assert.ok(events.slice(from).some((e) => e.payload.type === 'conversation_message_created'
@@ -194,7 +201,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
   await t.test('the card moves through the steps as the records do, and ends in the proposal', async () => {
     let card = await byId(asAda, first.messageId);
     assert.equal(card.state, 'working');
-    assert.deepEqual([card.stage, card.step, card.of, card.stepName], ['reading', 1, 6, 'Read the request']);
+    assert.deepEqual([card.stage, card.step, card.of, card.stepName], ['reading', 1, 6, 'Reading']);
     assert.match(card.doing, /^reading the request/);
     assert.equal(card.links.request, '#app/seed-swap/dev/issues/3');
     assert.ok(Date.parse(card.startedAt) <= Date.now());
@@ -208,7 +215,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     );
     const runId = await run(seeds, 3, { verdict: 'ready', buildSessionId: build.id });
     card = await byId(asAda, first.messageId);
-    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'planning', 2, 'Write a plan']);
+    assert.deepEqual([card.state, card.stage, card.step, card.stepName], ['working', 'planning', 2, 'Planning']);
 
     // Its plan posted: building.
     await pool.query(
@@ -216,7 +223,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
       [seeds.id, runId],
     );
     card = await byId(asAda, first.messageId);
-    assert.deepEqual([card.state, card.stage, card.step, card.stepName, card.doing], ['working', 'building', 3, 'Build it', 'building it']);
+    assert.deepEqual([card.state, card.stage, card.step, card.stepName, card.doing], ['working', 'building', 3, 'Building', 'building it']);
 
     // Built: its proposal is up for a vote. #4242: until its ready card has
     // gone out, it is being checked, not waiting for approval.
@@ -263,7 +270,15 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
     const { rows: [{ n: messagesAfter }] } = await pool.query(
       'SELECT COUNT(*)::int AS n FROM conversation_messages WHERE sender_id = $1', [bot.id],
     );
-    assert.equal(messagesAfter, messagesBefore, 'no second card');
+    // One story: no second card; its thread says, quietly, that it is read again.
+    assert.equal(messagesAfter, messagesBefore + 1, 'no second card, one quiet line');
+    const { rows: [line] } = await pool.query(
+      'SELECT content, thread_root_id, metadata FROM conversation_messages WHERE sender_id = $1 ORDER BY id DESC LIMIT 1', [bot.id],
+    );
+    assert.equal(line.thread_root_id, asking.messageId, 'in the request\'s thread');
+    assert.equal(line.content, 'Reading it again.');
+    assert.equal(line.metadata.homeroomBot.kind, 'step');
+    assert.equal(line.metadata.homeroomBot.moment, undefined, 'a quiet line rings nothing');
     const card = await byId(asAda, asking.messageId);
     assert.equal(card.state, 'working');
     assert.equal(card.stage, 'reading');
@@ -494,7 +509,7 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
       const going = demo.cards.find((c) => c.state === 'working');
       const ended = demo.cards.find((c) => c.state === 'done');
       assert.equal(going.messageId, cards[1].id);
-      assert.deepEqual([going.step, going.of, going.stepName], [3, 6, 'Build it']);
+      assert.deepEqual([going.step, going.of, going.stepName], [3, 6, 'Building']);
       assert.equal(ended.messageId, cards[0].id);
       assert.equal(ended.outcome, 'proposed');
       const byId = new Map(demo.cards.map((c) => [c.messageId, c]));

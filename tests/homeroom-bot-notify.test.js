@@ -279,14 +279,15 @@ test('B4: what one first version rings for its maker, against the full PostgreSQ
     const next = await dm.noteChangeReady(pool, change.id, { bot, domain: 'x' });
     assert.ok(next?.messageId && !next.duplicate && next.messageId !== ready.messageId);
 
-    // Its preview will not start: she hears that once, never "ready".
+    // Its preview will not start: while it is tried again that is quiet (one
+    // story: no bell, no push), and never "ready".
     await pool.query(`UPDATE chat_sessions SET check_state = 'error' WHERE id = $1`, [change.id]);
     assert.equal(await dm.noteChangeReady(pool, change.id, { bot, domain: 'x' }), null);
     const stuck = await dm.noteChangeStopped(pool, change.id, { deps: { bot } });
     const { rows: [stuckMsg] } = await pool.query('SELECT content FROM conversation_messages WHERE id = $1', [stuck.messageId]);
     assert.match(stuckMsg.content, /its preview didn't start, so it isn't ready to try yet/);
-    const { rows: [last] } = await pool.query('SELECT detail FROM notifications WHERE user_id = $1 ORDER BY id DESC LIMIT 1', [maya.id]);
-    assert.equal(last.detail, 'hrbot:stopped_preview:Plant Pal', 'WP-F: which stop it was, so it can say what is next');
+    const { rows: quiet } = await pool.query('SELECT 1 FROM notifications WHERE conversation_message_id = $1', [stuck.messageId]);
+    assert.equal(quiet.length, 0, 'a retry is quiet: only a give-up rings');
   });
 });
 

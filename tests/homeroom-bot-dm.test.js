@@ -263,18 +263,21 @@ test('#20 (WP3): a message whose card cannot go says what it says without it', a
 
 test('#7 (WP3): "live now" only once the app answered on the merge it deployed, and the platform\'s own app says a few minutes', async () => {
   const line = '**Plant Pal** · request #3: Watering reminders';
+  // One story (contract 2.2): a first version is "your first version"; a
+  // change is "it", in its request's thread, with Open {project} under it.
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true }),
-    `${line}\n\nIt's live now. Open Plant Pal below to try it.`);
+    `${line}\n\nYour first version is live. Open Plant Pal to try it.`);
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: false }),
-    `${line}\n\nIt's going live now and will be ready in a few minutes. Open Plant Pal below to try it then.`);
+    `${line}\n\nYour first version is going live now. Open Plant Pal in a few minutes to try it.`);
   assert.equal(dm.mergedText({ line, appName: 'Homeroom', live: false, platform: true }),
-    `${line}\n\nIt's going live now and will be ready in a few minutes.`);
-  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, card: false }), `${line}\n\nIt's live now.`);
-  // B7: a change to a project is "your change"; a first version is the project itself.
+    `${line}\n\nIt's going live now. It will be live in a few minutes.`);
+  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, card: false }), `${line}\n\nIt's live.`);
   assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: true, change: true }),
-    `${line}\n\nYour change is live now. Open Plant Pal below to try it.`);
-  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: false, change: true, card: false }),
-    `${line}\n\nYour change is going live now and will be ready in a few minutes.`);
+    `${line}\n\nIt's live. Open Plant Pal to see it.`);
+  assert.equal(dm.mergedText({ line, appName: 'Plant Pal', live: false, change: true }),
+    `${line}\n\nIt's going live now. Open Plant Pal in a few minutes to see it.`);
+  // In the request's thread, no line: the card above is the request.
+  assert.equal(dm.mergedText({ line: null, appName: 'Plant Pal', live: true, change: true }), 'It\'s live. Open Plant Pal to see it.');
   for (const live of [true, false]) assert.doesNotMatch(dm.mergedText({ line, appName: 'Plant Pal', live }), DASH);
   // 5 October: the app opens from the message's own button, which no card
   // the bot cannot attach takes with it; the proposal is its card.
@@ -479,12 +482,13 @@ test('the held message names no amount, and offers the group when there is one',
   const solo = dm.overAllowanceText({
     line: dm.requestLine({ appName: 'Plant Pal', issueNumber: 4, issueTitle: 'Sunday watering reminder' }), appName: 'Plant Pal',
   });
-  assert.equal(solo, '**Plant Pal** · request #4: Sunday watering reminder\n\nYou\'ve used this week\'s building time. I\'ll start it on Monday.');
+  // One story (contract 2.2's on_hold words).
+  assert.equal(solo, '**Plant Pal** · request #4: Sunday watering reminder\n\nOn hold until Monday: your building time for this week is used up.');
   const group = dm.overAllowanceText({
     line: dm.requestLine({ appName: 'Supper Club', issueNumber: 9, issueTitle: 'Sunday host reminder' }), appName: 'Supper Club', group: true,
   });
-  assert.equal(group, '**Supper Club** · request #9: Sunday host reminder\n\nYou\'ve used this week\'s building time. I\'ll start it on Monday, or someone else in Supper Club can ask me for it.');
-  assert.equal(dm.overAllowanceText({ appName: 'Plant Pal' }), 'You\'ve used this week\'s building time. I\'ll start it on Monday.', 'no line, the words alone');
+  assert.equal(group, '**Supper Club** · request #9: Sunday host reminder\n\nOn hold until Monday: your building time for this week is used up. Someone else in Supper Club can ask me for it sooner.');
+  assert.equal(dm.overAllowanceText({ appName: 'Plant Pal' }), 'On hold until Monday: your building time for this week is used up.', 'no line, the words alone');
   assert.doesNotMatch(solo + group, /\$/);
 });
 
@@ -559,12 +563,14 @@ test('a question in the DM draws its answers, the default marked, and says an an
   const html = renderToHtml(createElement(BotQuestion, { message, conversationId: 3 }));
   assert.match(html, /data-bot-answer="default"[^>]*><span>Newest first<\/span><span class="messages-bot-default">suggested<\/span>/);
   assert.match(html, /Oldest first/);
-  assert.match(html, /Something else/);
+  // One request, one story (spec 2.3): an answer of one's own is "Write my own".
+  assert.match(html, /Write my own/);
+  assert.doesNotMatch(html, /Something else/);
   assert.match(html, /posted on Seed swap request #7’s public discussion, where the group can see it/);
 
   const answered = { ...message, metadata: { homeroomBot: { ...message.metadata.homeroomBot, status: 'answered', answer: 'Oldest first' } } };
   const after = renderToHtml(createElement(BotQuestion, { message: answered, conversationId: 3 }));
-  assert.doesNotMatch(after, /Something else/, 'no buttons once answered');
+  assert.doesNotMatch(after, /Write my own/, 'no buttons once answered');
   assert.match(after, /<dt class="messages-bot-choice-label">You answered<\/dt><dd><span class="messages-bot-chosen">Oldest first<\/span><\/dd>/, '#4197: the answer as a chip, not a button');
 
   const person = { ...message, sender: { id: 4, username: 'ada' } };
@@ -572,7 +578,7 @@ test('a question in the DM draws its answers, the default marked, and says an an
 
   // #3624 stage 2: an offer to file a request takes the same buttons, but
   // nothing is posted until File it, so no public note, no "suggested", and
-  // no Something else (typing is read by the bot).
+  // no Write my own (typing is read by the bot).
   const offer = { ...message, metadata: { homeroomBot: {
     kind: 'confirm', appName: 'Seed swap', question: 'File this as a request on Seed swap?',
     answers: ['File it', 'Not now'], status: 'open',
@@ -583,7 +589,7 @@ test('a question in the DM draws its answers, the default marked, and says an an
   assert.match(offered, /aria-label="File this as a request on Seed swap\?"/);
   assert.match(offered, /<span>File it<\/span><\/button>/);
   assert.match(offered, /<span>Not now<\/span>/);
-  assert.doesNotMatch(offered, /suggested|Something else|public discussion/);
+  assert.doesNotMatch(offered, /suggested|Write my own|public discussion/);
   // #3770: File it is the act, filled in the accent, and Not now the neutral
   // fill beside it. Not `.messages-bot-other`, which the declared check
   // (homeroom-bot-dm-question) reads as a Something else.
@@ -858,8 +864,13 @@ test('#3772: "needs a person" says what to do about it, and a card already showi
   assert.match(text, /If you decide to go ahead \(or the group does\), reply to this message and say so, and I'll look at it again\.$/);
   assert.match(dm.dmText('followup_person', { reason: 'x' }, ctx), /so I've left it for the group: x$/);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
-  assert.match(src, /const CARD_SAYS = new Set\(\['spec'\]\);/);
+  // One story: "I'm building it now" is a quiet line in the request's
+  // thread (cardOnly, stepLine), never a second card, and no news carries
+  // the request's card again under it.
+  assert.equal(dm.cardOnly('spec', {}), true);
   assert.match(src, /objects: dm\.card \? \[\] : cardsFor\(kind, dm, app, issueNumber\)\.filter\(\(c\) => !\(shown && c\.type === 'issue'\)\),/);
+  // In the thread, the request is the card above: its line is not repeated.
+  assert.equal(dm.dmText('person', { reason: 'x' }, { ...ctx, threaded: true }).startsWith('This needs a person to decide'), true);
 });
 
 test('a requester who does not decide on the project is told who does, and offered no Go ahead that would loop', () => {
@@ -876,25 +887,29 @@ test('a requester who does not decide on the project is told who does, and offer
 
 test('a request found already done says so, where it is, and that a vote on closing it follows', () => {
   const ctx = { appName: 'Ear Trainer', issueNumber: 14, issueTitle: 'Show my votes' };
+  // One story: one message, the verdict and its offer (Propose to close,
+  // Tell me what's missing), folded in by homeroom-bot-move.js foldOffer.
   for (const kind of ['person', 'empty']) {
     const text = dm.dmText(kind, { reason: 'Open Profile, then Your votes.', done: true }, ctx);
-    assert.match(text, /This looks done already, so I haven't built anything: Open Profile, then Your votes\.\n\nIf that covers what you asked for, you can open a vote on closing it below\. If something is still missing, reply to this message and say what, and I'll look at it again\.$/, kind);
+    assert.match(text, /\n\nThis looks done already: Open Profile, then Your votes\.$/, kind);
     assert.doesNotMatch(text, /—/);
   }
   assert.match(dm.dmText('person', { reason: 'x', done: true, deciders: ['ann'] }, ctx), /looks done already/, 'done comes before who decides');
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
-  assert.match(src, /\} else if \(\(kind === 'person' \|\| kind === 'empty'\) && dm\.done\) \{\n[^\n]*\n\s+await require\('\.\/homeroom-bot-move'\)\.offerClose\(pool, \{/);
+  assert.match(src, /: \(kind === 'person' \|\| kind === 'empty'\) && dm\.done \? 'close_request' : null;/);
+  assert.match(src, /const offer = offerKind \? await move\.foldOffer\(pool, \{/);
+  assert.deepEqual(require('../src/services/homeroom-bot-move').DONE_ACTIONS.map((a) => a.label), ['Propose to close', 'Tell me what\'s missing']);
 });
 
 test('#4239: a request about Homeroom itself says so, and offers the move instead of Go ahead', () => {
   const ctx = { appName: 'Ear Trainer', issueNumber: 13, issueTitle: 'Header colour' };
   const text = dm.dmText('person', { reason: 'The header is drawn by Homeroom.', platform: true }, ctx);
-  assert.match(text, /This is about Homeroom itself rather than Ear Trainer, so no change to Ear Trainer can do it, and I haven't built anything: The header is drawn by Homeroom\./);
-  assert.match(text, /I can move it to Homeroom's own board, where the people who work on Homeroom look\. Tap below to choose\.$/);
+  // One story: one message, whose own buttons are the move.
+  assert.match(text, /This is about Homeroom itself rather than Ear Trainer, so no change to Ear Trainer can do it: The header is drawn by Homeroom\.$/);
   assert.doesNotMatch(text, /\u2014/);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/services/homeroom-bot-dm.js'), 'utf8');
   assert.match(src, /\.\.\.\(STUCK_ACTIONS\[kind\] && !\(kind === 'person' && \(dm\.platform \|\| personDeciders\(dm\)\.length\)\) && !dm\.done\n\s+\? \{ actions: STUCK_ACTIONS\[kind\], status: 'open' \} : \{\}\),/);
-  assert.match(src, /if \(kind === 'person' && dm\.platform\) \{\n    await require\('\.\/homeroom-bot-move'\)\.offerMove\(/);
+  assert.match(src, /const offerKind = kind === 'person' && dm\.platform \? 'move_request'/);
 });
 
 test('"typing" goes out before the answer starts, bounded', () => {
@@ -910,7 +925,11 @@ test('news the card and the tray show is never a DM message of its own; what nee
   for (const kind of ['spec', 'held_proposals_per_app', 'held_proposals_total', 'followup_revise']) {
     assert.equal(dm.cardOnly(kind, {}), true, kind);
   }
-  assert.equal(dm.cardOnly('followup_person', { reason: 'its checks are failing: x', checks: true }), true, 'a change\'s red checks');
+  // One story: a change's red checks a person must look at are a stop of
+  // their own ('checks'), which rings; an answer to what they asked too.
+  assert.equal(dm.newsKind('followup_person', { reason: 'its checks are failing: x', checks: true }), 'checks');
+  assert.equal(dm.cardOnly('checks', {}), false, 'a change\'s red checks');
+  assert.equal(dm.storyMomentOf({ kind: 'checks' }), 'stopped');
   assert.equal(dm.cardOnly('followup_person', { reason: 'a product call' }), false, 'an answer to what they asked');
   for (const kind of ['question', 'followup_ask', 'plan', 'proposal', 'person', 'empty', 'blocked', 'build_failed', 'followup_failed']) {
     assert.equal(dm.cardOnly(kind, {}), false, kind);

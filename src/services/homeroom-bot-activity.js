@@ -131,9 +131,9 @@ function proposalHref(slug, sessionId, prNumber = null) {
 // live says it waits for (cardText).
 const FIRST_VERSION_WAIT_WORDS = 'Waiting for the first version to go live. I\'ll start on this as soon as it does.';
 
-/** #4392: what the bot says once its creator has answered a first version's plan. */
-function thanksText(appName) {
-  return `Thanks for answering about the plan. I'll let you know when ${appName} is ready to try.`;
+/** #4392: what the bot says once its creator has answered a plan (one story: no thanks, what is next). */
+function thanksText() {
+  return 'Building it now. I\'ll tell you when it\'s ready to try.';
 }
 
 /**
@@ -301,7 +301,8 @@ async function continueCard(pool, card, { userId, lookAt = null, dm }) {
  * what sendDm did, or null.
  */
 async function startCard(pool, {
-  app, issueNumber, requester, bot, jobKey, settings = null, filed = false, queued = false, inDm = false, deps = {},
+  app, issueNumber, requester, bot, jobKey, settings = null, filed = false, queued = false, inDm = false, reason = null, origin = null,
+  deps = {},
 }) {
   try {
     const n = Number(issueNumber);
@@ -310,19 +311,17 @@ async function startCard(pool, {
     const s = settings || await settingsModule(deps).readSettings(pool);
     if (!dm.hasBot(s, requester)) return null;
     const existing = await requestCard(pool, { userId: requester.userId, appId: app.id, issueNumber: n });
-    // A DM card is for work they started there (`inDm`), or a project's
-    // first version. A request filed anywhere else (the Suggest form, the
-    // request's page, a project's chat, its board) is followed in the tray
-    // above the DM, and the DM says something only when it needs them: a
-    // question, a plan, a change to approve, a stop (relayIssuePost). On 9
-    // October 2026 one person's DM got 45 cards in an afternoon for requests
-    // they had filed through the Suggest form.
-    if (!existing && !inDm && !requester.firstVersion) {
-      log.info('homeroom-bot-activity', 'Followed in the tray, no DM card', {
-        app: app.slug, issueNumber: n, userId: requester.userId,
-      });
-      return null;
-    }
+    // One story per request: every request gets a card, however it was
+    // asked (the chat with the bot, Suggest an improvement, the request's
+    // page, the board, a project's chat). The card is the root of the
+    // request's thread, where everything about it is said; the main chat
+    // shows only the four moments that ring. (Until then a request filed
+    // anywhere but the chat was followed in the tray alone: on 9 October
+    // 2026 one person's DM got 45 cards in an afternoon, each saying
+    // everything in the main chat.)
+    // A look at the request starts now (not a card sent when it was filed
+    // or queued): its thread says so, quietly.
+    const reading = !filed && !queued;
     if (existing) {
       // WP1 (#9): a build still waiting its turn or running is what the card
       // follows until it ends, whatever look began after it.
@@ -330,6 +329,7 @@ async function startCard(pool, {
       if (row && !outcomeOf(row) && buildUnderWay(row)) {
         return { messageId: existing.messageId, conversationId: existing.conversationId, duplicate: true, continued: true };
       }
+      if (reading) await noteReading(pool, { app, issueNumber: n, requester, bot, jobKey, card: existing, reason, dm });
       return await continueCard(pool, existing, { userId: requester.userId, dm });
     }
     const lowAllowance = typeof dm.allowanceLow === 'function'
@@ -353,11 +353,66 @@ async function startCard(pool, {
     log.info('homeroom-bot-activity', 'Started an activity card', {
       app: app.slug, issueNumber: n, userId: requester.userId, filed, queued, ...(waits ? { waitsForFirstVersion: true } : {}),
     });
+    // One story: the thread's first lines say where the request came from,
+    // and that the bot is reading it when it is.
+    const card = { messageId: Number(sent.messageId), conversationId: Number(sent.conversationId) || null };
+    if (!requester.firstVersion && typeof dm.noteStep === 'function') {
+      await dm.noteStep(pool, {
+        bot, userId: requester.userId, app, issueNumber: n, step: 'origin', key: `hrbot-step-origin-${sent.messageId}`,
+        content: originText({ origin: origin || (inDm ? 'dm' : 'page'), appName: app.name || app.slug, issueNumber: n }),
+      });
+    }
+    if (reading) await noteReading(pool, { app, issueNumber: n, requester, bot, jobKey, card, reason, dm, first: true });
     return sent;
   } catch (err) {
     log.warn('homeroom-bot-activity', 'Could not start an activity card', {
       app: app?.slug, issueNumber, userId: requester?.userId, err: err.message,
     });
+    return null;
+  }
+}
+
+/**
+ * Pure (one story): the first line of a request's thread, where it came
+ * from: `origin` 'dm' (asked in this chat), 'chat' (a project's chat), or
+ * anything else (its page: Suggest an improvement, the board).
+ */
+function originText({ origin, appName, issueNumber }) {
+  if (origin === 'dm') return 'Filed from our chat.';
+  if (origin === 'chat') return `You asked for this in ${appName}'s chat. It's request #${Number(issueNumber)}.`;
+  return `You suggested this on ${appName}'s page. It's request #${Number(issueNumber)}.`;
+}
+
+// Why a look at a request began, when it began because the person answered.
+const ANSWER_REASONS = new Set(['dm_answer', 'thread', 'plan_change', 'dm_comment']);
+
+/**
+ * One story: a look at a request begins, said quietly in its thread:
+ * "Reading it." for the first, "Reading it again with your answer." after
+ * they answered, "Reading it again." otherwise. Once per queue row (its
+ * key). Never throws.
+ */
+async function noteReading(pool, { app, issueNumber, requester, bot, jobKey, card, reason = null, dm, first = false }) {
+  try {
+    if (typeof dm.noteStep !== 'function' || !card?.messageId) return null;
+    let again = !first;
+    if (again) {
+      // A card sent when the request was filed or queued has had no look yet.
+      const { rows: [looked] = [] } = await pool.query(
+        `SELECT EXISTS (SELECT 1 FROM homeroom_bot_runs r JOIN conversation_messages m ON m.id = $3
+                         WHERE r.app_id = $1 AND r.issue_number = $2 AND r.mode = 'live'
+                           AND r.created_at >= m.created_at) AS any`,
+        [app.id, issueNumber, card.messageId],
+      );
+      again = !!looked?.any;
+    }
+    const content = !again ? 'Reading it.'
+      : ANSWER_REASONS.has(reason) ? 'Reading it again with your answer.' : 'Reading it again.';
+    return await dm.noteStep(pool, {
+      bot, userId: requester.userId, app, issueNumber, step: 'reading', content, key: `hrbot-step-read-${jobKey}`,
+    });
+  } catch (err) {
+    log.warn('homeroom-bot-activity', 'Could not say a look began', { app: app?.slug, issueNumber, err: err.message });
     return null;
   }
 }
@@ -381,6 +436,22 @@ async function cardUnderPlan(pool, { app, issueNumber, runId, planMessageId, req
     const existing = await requestCard(pool, { userId: requester.userId, appId: app.id, issueNumber: n });
     if (existing && existing.messageId > Number(planMessageId)) {
       return { messageId: existing.messageId, conversationId: existing.conversationId, duplicate: true, continued: true };
+    }
+    // One story: a plan said in its request's thread is answered there. The
+    // card stays the thread's first message; the thread says what is next.
+    if (existing) {
+      const { rows: [plan] = [] } = await pool.query(
+        'SELECT thread_root_id FROM conversation_messages WHERE id = $1', [Number(planMessageId)],
+      );
+      if (plan && Number(plan.thread_root_id) === existing.messageId) {
+        if (typeof dm.noteStep === 'function') {
+          await dm.noteStep(pool, {
+            bot, userId: requester.userId, app, issueNumber: n, step: 'go', content: thanksText(),
+            key: `hrbot-step-go-${run}`,
+          });
+        }
+        return { messageId: existing.messageId, conversationId: existing.conversationId, duplicate: true, continued: true };
+      }
     }
     // Read from the look that wrote the plan: its run is the build's.
     const { rows: [planned] = [] } = await pool.query(
@@ -646,7 +717,16 @@ function cardOf(row, entry, { firstVersion = null } = {}) {
   // A newer card on the same request began without this one coming to
   // anything recorded, or nothing about it is in progress any more.
   if (!outcome && (row.next_at || !entry)) outcome = 'stopped';
-  if (outcome) return { ...base, state: 'done', outcome, endedAt: endedAt(row, outcome) };
+  if (outcome) {
+    return {
+      ...base, state: 'done', outcome, endedAt: endedAt(row, outcome),
+      // One story: the card's state line says why it stopped ("Stopped ·
+      // it took longer than I'm allowed"), and what holds it ("Waiting ·
+      // I'll start when one of my changes on {project} is voted in or closed").
+      ...(outcome === 'build_failed' ? { stopCause: require('./homeroom-bot-dm').buildFailedCause(row.build_error).cause } : {}),
+      ...(outcome === 'held' && row.cap_suppressed ? { heldBy: String(row.cap_suppressed) } : {}),
+    };
+  }
   return {
     ...base,
     state: 'working',
@@ -1110,14 +1190,14 @@ function demoState({ working = null, done = null, underWay = null, plan = null, 
   if (underWay) {
     cards.push({
       messageId: underWay, startedAt: ago(DEMO_UNDER_WAY.startedMinutesAgo), links, state: 'working', stage: 'planning',
-      step: 2, of: 6, stepName: 'Write a plan', doing: 'writing the plan for the build', stepSince: ago(7), stepLimitMinutes: 20,
+      step: 2, of: 6, stepName: 'Planning', doing: 'writing the plan for the build', stepSince: ago(7), stepLimitMinutes: 20,
       typicalMinutes: { from: 3, to: 8 },
     });
   }
   if (working) {
     cards.push({
       messageId: working, startedAt: ago(9), links, state: 'working', stage: 'building',
-      step: 3, of: 6, stepName: 'Build it', doing: 'building it', stepSince: ago(4), stepLimitMinutes: 30,
+      step: 3, of: 6, stepName: 'Building', doing: 'building it', stepSince: ago(4), stepLimitMinutes: 30,
       typicalMinutes: { from: 10, to: 25 },
     });
   }

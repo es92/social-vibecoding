@@ -4925,7 +4925,7 @@
     {
       "name": "The Homeroom bot's DM says under its name what the bot is working on for you, and its Activity button beside the conversation's actions opens its activity panel at any time (#3692, #3770); in the transcript, each piece of its work is one activity card where it started, with its step of the request's steps while it goes (#3736); and work it already had under way without a card gets one when the DM opens",
       "path": "/?demo=1#messages/910005",
-      "expectSelector": "#messages-screen:not(.hidden) .messages-thread-pane:has([aria-label=\"Step 3 of 6: Build it\"]):has([aria-label=\"Step 2 of 6: Write a plan\"]) > .messages-thread-header [data-bot-work-toggle][aria-expanded=false]:has([data-bot-work-status=working])",
+      "expectSelector": "#messages-screen:not(.hidden) .messages-thread-pane:has([aria-label=\"Step 3 of 6: Building\"]):has([aria-label=\"Step 2 of 6: Planning\"]) > .messages-thread-header [data-bot-work-toggle][aria-expanded=false]:has([data-bot-work-status=working])",
       "expectText": "Working on 3",
       "id": "homeroom-bot-dm-activity-tray",
       "visual": true,

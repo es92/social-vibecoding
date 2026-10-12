@@ -182,7 +182,7 @@ test('the Homeroom bot DM\'s activity tray reads one person\'s work, through the
     const by = new Map(work.now.map((job) => [key(job), job]));
     const sort = by.get('seed-swap#3');
     assert.equal(sort.phase, 'looking');
-    assert.deepEqual([sort.step, sort.of, sort.stepName], [1, 6, 'Read the request'], 'the step its activity card draws');
+    assert.deepEqual([sort.step, sort.of, sort.stepName], [1, 6, 'Reading'], 'the step its activity card draws');
     assert.equal(sort.title, 'Sort by date');
     assert.equal(sort.href, '#app/seed-swap/dev/issues/3');
     assert.ok(sort.since, 'and since when');

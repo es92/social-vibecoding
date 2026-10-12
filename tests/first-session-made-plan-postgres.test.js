@@ -209,7 +209,7 @@ test('the made screen reads the waiting plan off the real GET /api/apps/:slug, f
     const { rightNow } = await progress.progressFor(pool, { userId: alex.id, facts: false });
     const mine = rightNow.find((e) => e.firstVersion);
     assert.ok(mine, 'the first version is in progress');
-    assert.deepEqual([mine.step, mine.stepName], [4, 'Building it'], 'Step 4 of 7 · Building it, in the chat');
+    assert.deepEqual([mine.step, mine.stepName], [4, 'Building'], 'Step 4 of 7 · Building, in the chat (one story: the steps are named in a word)');
     assert.doesNotMatch(String(mine.doing), /plan/);
   });
 });
