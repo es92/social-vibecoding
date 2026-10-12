@@ -13,10 +13,10 @@
 //     (and its GitHub comment): "Homeroom bot tried to build this but
 //     couldn't finish: <the run's own record>. A person could pick it up from
 //     here." (homeroom-bot-live.js buildFailedText);
-//   - the push for that DM, and its bell row: "I couldn't finish building it.
-//     A person can pick it up" (mobile-push-policy.js botMomentCopy, the
-//     bell's botMomentLine; tests/homeroom-bot-notify.test.js holds the two
-//     together).
+//   - the push for that DM, and its bell row: "Stopped: something went wrong
+//     while I was building. Tap Try again." (homeroom-bot-notify-copy.js,
+//     which the push and the bell both read; tests/homeroom-bot-notify.test.js
+//     holds the two together).
 //
 // Pinned here: the post says each cause as the DM does, from the same reading
 // of the run's record, never the record itself; it says how anybody starts it
@@ -127,19 +127,29 @@ test('"Reply here (or on the GitHub issue)" is true: a person\'s word on the req
   assert.match(read('src/services/ws.js'), /if \(thread && thread\.type === 'issue'\) noteIssueActivityForBot\(client\.appId, thread\.ref, 'thread'\);/);
 });
 
-test('the push and the bell row for the DM end as the DM ends: a reply starts it again', async () => {
+test('the push and the bell row for the DM say it stopped and how to start it again', async () => {
   const pool = { async query() { return { rows: [] }; } };
-  const metadata = { kind: 'build_failed', appName: 'Page Turners' };
+  const notifyCopy = require('../src/services/homeroom-bot-notify-copy');
+  // "One story" (section 2.2): a stopped build's push names the request and
+  // its project, and ends with what starts it again (the DM's Try again).
+  const metadata = { kind: 'build_failed', appName: 'Page Turners', requestTitle: 'Display location and host information' };
   const detail = await dm.notificationDetail(pool, dm.momentOf(metadata), metadata);
-  assert.equal(detail, 'hrbot:stopped_build:Page Turners');
+  const parsed = notifyCopy.parseBotDetail(detail);
+  assert.deepEqual([parsed.moment, parsed.said], ['stopped', 'build_other']);
   const copy = policy.buildNotificationCopy('build_stopped', {
     sourceUsername: 'homeroom_bot', sourceIsSynthetic: true, detail, messageContent: 'x',
   });
-  assert.deepEqual(copy, { title: 'Homeroom bot', body: 'Page Turners: I couldn\'t finish building it. Reply and I\'ll try again' });
+  assert.deepEqual(copy, {
+    title: 'Display location and host information · Page Turners',
+    body: 'Stopped: something went wrong while I was building. Tap Try again.',
+  });
+  // A sender that says which stop it was is worded by it.
+  const timedOut = await dm.notificationDetail(pool, 'stopped', { ...metadata, said: 'build_time' });
+  assert.equal(notifyCopy.botMomentCopy(timedOut).body, 'Stopped: it took longer than I\'m allowed. Tap Try again.');
   const said = dm.dmText('build_failed', { reason: 'the build ran past its time limit (finished after a restart)' },
     { appName: 'Page Turners', issueNumber: 3, issueTitle: 'Display location and host information', firstVersion: false });
-  assert.match(said, /Reply here and I'll try again\.$/, 'the DM it opens');
-  assert.match(copy.body, /Reply and I'll try again$/);
+  assert.match(said, /try again/i, 'the DM it opens says how to start it again too');
+  assert.match(copy.body, /Try again\.$/);
 });
 
 test('no failure surface says "pick it up" any more', () => {

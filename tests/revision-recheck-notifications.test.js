@@ -48,12 +48,15 @@ function makePool() {
       const s = String(sql);
       queries.push({ sql: s, params });
       if (/INSERT INTO notifications/.test(s)) {
-        return {
-          rows: params.slice(4).map((userId, i) => ({
-            id: 500 + i, user_id: userId, app_id: params[0], session_id: params[1],
-            source_user_id: params[2], kind: 'revision_recheck', detail: params[3],
-          })),
-        };
+        // After the four shared parameters, each voter's id and detail.
+        const rows = [];
+        for (let i = 4; i < params.length; i += 2) {
+          rows.push({
+            id: 500 + rows.length, user_id: params[i], app_id: params[0], session_id: params[1],
+            source_user_id: params[2], kind: 'revision_recheck', detail: params[i + 1],
+          });
+        }
+        return { rows };
       }
       return { rows: [] };
     },
@@ -70,12 +73,14 @@ test('one ask per prior Yes voter per version; the author is never asked, a mute
   });
   assert.deepEqual(filtered, [{ userIds: [8, 10, 12], appId: 5, categoryKey: 'revision_recheck' }],
     'de-duplicated, the author dropped, then the category filter');
-  assert.equal(pool.queries.length, 1);
-  const [insert] = pool.queries;
-  assert.deepEqual(insert.params, [5, 41, 7, 'epoch:5', 8, 12], 'the epoch is the detail: a second push asks again');
-  assert.match(insert.sql, /\(\$5, \$1, \$2, \$3, 'revision_recheck', \$4\), \(\$6, \$1, \$2, \$3, 'revision_recheck', \$4\)/);
-  assert.match(insert.sql, /WHERE NOT EXISTS \([\s\S]*n\.kind = 'revision_recheck' AND n\.detail = v\.detail/,
-    'and a resumed tail does not ask twice for the same version');
+  // "One story": first who asked for the update (nobody, here), then the rows.
+  assert.equal(pool.queries.length, 2);
+  const [asker, insert] = pool.queries;
+  assert.match(asker.sql, /FROM homeroom_bot_change_asks/);
+  assert.deepEqual(insert.params, [5, 41, 7, 'epoch:5', 8, 'epoch:5', 12, 'epoch:5'], 'the epoch is the detail: a second push asks again');
+  assert.match(insert.sql, /\(\$5::int, \$1::int, \$2::int, \$3::int, 'revision_recheck'::text, \$6::text\), \(\$7::int, \$1::int, \$2::int, \$3::int, 'revision_recheck'::text, \$8::text\)/);
+  assert.match(insert.sql, /WHERE NOT EXISTS \([\s\S]*n\.kind = 'revision_recheck'\s+AND \(n\.detail = \$4::text OR n\.detail LIKE \$4::text \|\| ':%'\)/,
+    'and a resumed tail does not ask twice for the same version, whoever asked for it');
   assert.deepEqual(rows.map((r) => r.user_id), [8, 12]);
 });
 
@@ -219,13 +224,20 @@ test('the banners: still good, this week, the quoted line, the named merge', () 
   };
   const banner = (kind, context) => buildMessage({ ...INPUT, kind, context }).notification;
 
+  // "One story": the change and its project, and never "after your
+  // feedback" when it was not theirs (tests/one-story-pings-postgres.test.js
+  // pins whose ask it names).
   assert.deepEqual(banner('revision_recheck', CONTEXT), {
-    title: 'Still good? "Fix login redirect loop" was updated · MyPage',
-    body: '@alice pushed an update after your feedback. One tap keeps your yes',
+    title: 'Still good? Fix login redirect loop · MyPage',
+    body: '@alice updated it. One tap keeps your yes.',
   });
+  assert.deepEqual(banner('revision_recheck', { ...CONTEXT, detail: 'epoch:2:@ben' }).body,
+    '@alice updated it after @ben asked for a change. One tap keeps your yes.');
+  assert.deepEqual(banner('revision_recheck', { ...CONTEXT, sourceUsername: 'homeroom_bot', sourceIsSynthetic: true, detail: 'epoch:2:you' }).body,
+    '@homeroom_bot updated it after you asked for a change. One tap keeps your yes.');
   assert.deepEqual(banner('revision_recheck', {}), {
     title: 'Still good? A change you backed was updated',
-    body: 'A new version was pushed after your feedback. One tap keeps your yes',
+    body: 'Someone updated it. One tap keeps your yes.',
   });
   assert.deepEqual(banner('weekly_digest', { ...CONTEXT, detail: '3:1' }), {
     title: 'This week on MyPage',

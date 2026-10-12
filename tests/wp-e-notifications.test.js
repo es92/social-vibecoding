@@ -25,8 +25,10 @@ const dm = require('../src/services/homeroom-bot-dm');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 
 test('each ringing moment of the bot has its own kind; an answer stays a message', () => {
+  // "One story": the moments by their names, and the older names a sender may still use.
   assert.deepEqual({ ...dm.BUILD_KINDS }, {
-    question: 'build_needs_you', ready: 'build_ready', stopped: 'build_stopped', held: 'build_stopped', live: 'build_live',
+    needs_you: 'build_needs_you', ready: 'build_ready', stopped: 'build_stopped', on_hold: 'build_stopped', live: 'build_live',
+    question: 'build_needs_you', held: 'build_stopped',
   });
   assert.equal(dm.BUILD_KINDS.reply, undefined);
   const src = read('src/services/homeroom-bot-dm.js');
@@ -38,10 +40,11 @@ test('each ringing moment of the bot has its own kind; an answer stays a message
 
 test('a build moment\'s push is worded by its moment, with a fallback per kind', () => {
   const copy = (kind, detail) => policy.buildNotificationCopy(kind, { detail, sourceUsername: 'homeroom_bot' });
-  assert.deepEqual(copy('build_ready', 'hrbot:ready:Run Club'), { title: 'Homeroom bot', body: 'Run Club is ready to try' });
-  assert.deepEqual(copy('build_needs_you', 'hrbot:question:Run Club'), { title: 'Homeroom bot', body: 'Run Club: I have a question' });
-  assert.deepEqual(copy('build_live', 'hrbot:live_first:Run Club'), { title: 'Homeroom bot', body: 'Run Club is live' });
-  assert.deepEqual(copy('build_stopped', null), { title: 'Homeroom bot', body: 'Your change stopped. I said why in our chat' });
+  // "One story": rows written before it keep reading, as the moments they are.
+  assert.deepEqual(copy('build_ready', 'hrbot:ready:Run Club'), { title: 'Run Club', body: 'Ready to try. Try it, and approve it if you\'re happy.' });
+  assert.deepEqual(copy('build_needs_you', 'hrbot:question:Run Club'), { title: 'Run Club', body: 'I have a question before I build it.' });
+  assert.deepEqual(copy('build_live', 'hrbot:live_first:Run Club'), { title: 'Run Club', body: 'Your first version is live. Open Run Club to try it.' });
+  assert.deepEqual(copy('build_stopped', null), { title: 'Homeroom bot', body: 'Stopped. I said why in our chat.' });
 });
 
 test('invite news on a phone: an open is nobody, a join and a hello are the person', () => {
@@ -90,7 +93,8 @@ test('a build moment in the bell is the bot\'s, in its own words', () => {
     kind: 'build_ready', detail: 'hrbot:ready:Run Club', appName: null, appSlug: null,
     conversationId: 7, conversationKind: 'direct', sourceUsername: 'homeroom_bot',
   });
-  assert.deepEqual(row, { label: 'Homeroom bot', subject: 'Run Club is ready to try', by: null });
+  // "One story": the moment over the request (an old row has only its project).
+  assert.deepEqual(row, { label: 'Ready to try', subject: 'Run Club', by: null });
 });
 
 test('no invite surface says the maker sees a join; the made screen promises no time', () => {

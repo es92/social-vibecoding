@@ -136,11 +136,13 @@ test('the DM rings as a stop, in the stop\'s own words', async () => {
   const pool = { async query() { return { rows: [] }; } };
   const metadata = { kind: 'followup_failed', appName: 'Climbing Crew' };
   const detail = await dm.notificationDetail(pool, dm.momentOf(metadata), metadata);
-  assert.equal(detail, 'hrbot:stopped:Climbing Crew');
+  // "One story": an update that did not happen is its own stop.
+  const parsed = require('../src/services/homeroom-bot-notify-copy').parseBotDetail(detail);
+  assert.deepEqual([parsed.moment, parsed.said, parsed.appName], ['stopped', 'update_failed', 'Climbing Crew']);
   const copy = policy.buildNotificationCopy('build_stopped', {
     sourceUsername: 'homeroom_bot', sourceIsSynthetic: true, detail, messageContent: 'x',
   });
-  assert.deepEqual(copy, { title: 'Homeroom bot', body: 'Climbing Crew: your change stopped. I said why in our chat' });
+  assert.deepEqual(copy, { title: 'Climbing Crew', body: 'Stopped: I couldn\'t update it. It\'s as it was.' });
 });
 
 test('"Reply here (or on the GitHub issue)" is true: a reply there is read by the next follow-up', () => {

@@ -465,7 +465,9 @@ test('B6: a first version\'s plan, end to end, against the full PostgreSQL schem
     const { rows: [action] } = await pool.query('SELECT * FROM homeroom_bot_dm_actions WHERE id = $1', [card.meta.actionId]);
     assert.deepEqual([action.kind, action.status, Number(action.message_id)], ['build_plan', 'open', Number(card.id)]);
     const { rows: [rang] } = await pool.query('SELECT detail FROM notifications WHERE user_id = $1 ORDER BY id DESC LIMIT 1', [maya.id]);
-    assert.equal(rang.detail, 'hrbot:question:Plant Pal');
+    // "One story": a first version's plan rings as needs you, worded as its plan.
+    const rung = require('../src/services/homeroom-bot-notify-copy').parseBotDetail(rang.detail);
+    assert.deepEqual([rung.moment, rung.said, rung.appName], ['needs_you', 'plan_first', 'Plant Pal']);
   });
 
   await t.test('its progress waits on her, and the App tab carries the plan to build from', async () => {

@@ -2067,7 +2067,9 @@ function collapseConversationRuns(items) {
     const id = n && n.conversationId != null ? Number(n.conversationId) : null;
     // B4: the bot's moments are each their own news ("I have a question",
     // then "is live"), so none of them folds into a run or takes one in.
-    const moment = !!(n && parseBotDetail(n.detail));
+    // ("hrbot:<said>:<app>" on a row from before "one story", "hrbot2:{…}"
+    // now; kept to the shape here so the function stands on its own.)
+    const moment = !!(n && /^hrbot(?::[a-z_]{1,20}:|2:\{)/.test(String(n.detail || '')));
     if (prev && id !== null && prev.conversationId === id
         && prev.read === !!n.readAt && !moment && !prev.moment) {
       prev.count += 1;

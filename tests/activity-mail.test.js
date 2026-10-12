@@ -72,8 +72,10 @@ test('the button opens the bot\'s chat for a build, the project otherwise', () =
 test('both templates carry a one-click unsubscribe and say why they came', () => {
   const unsubscribeUrl = 'https://app.onhomeroom.com/mail/unsubscribe?u=7&t=abc';
   const ready = templates.buildMessage('build_ready', { appName: 'Run Club', url: 'https://x/#messages/12', unsubscribeUrl });
-  assert.equal(ready.subject, 'Run Club is ready to try');
-  assert.match(ready.text, /Homeroom bot built what you asked for in Run Club/);
+  // "One story": the push's words when the sender hands none over
+  // (tests/homeroom-bot-notify-copy.test.js pins the request-titled ones).
+  assert.equal(ready.subject, 'Run Club: Ready to try');
+  assert.match(ready.text, /^Ready to try\. Try it, and approve it if you're happy\./);
   assert.match(ready.text, /To stop these emails: https:\/\/app\.onhomeroom\.com\/mail\/unsubscribe/);
   assert.deepEqual(ready.headers, {
     'List-Unsubscribe': `<${unsubscribeUrl}>`,

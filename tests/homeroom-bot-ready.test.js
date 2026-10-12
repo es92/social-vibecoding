@@ -230,8 +230,9 @@ test('B7: "ready to try" in the bell and on the phone, on by default', async () 
   assert.ok(push.ALLOWED_KINDS.has('change_ready'));
   const { buildNotificationCopy } = require('../src/services/mobile-push-policy');
   const copy = buildNotificationCopy('change_ready', { sourceUsername: 'ben', appName: 'Supper Club', sessionTitle: 'Sunday host reminder' });
-  assert.equal(copy.title, "@ben's change to Supper Club is ready to try");
-  assert.equal(copy.body, 'Sunday host reminder');
+  // "One story": the change and its project, over who asked and what to do.
+  assert.equal(copy.title, 'Sunday host reminder · Supper Club');
+  assert.equal(copy.body, "@ben's change is ready to try. Try it and vote.");
   if (!globalThis.window) globalThis.window = globalThis;
   globalThis.PlatformI18n = englishPlatformI18n();
   loadTsx('frontend/src/features/notifications/notifications.js');
