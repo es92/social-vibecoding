@@ -41,7 +41,9 @@ function sendNotFound(res) {
 }
 
 // #2387's two refusals that are not "not found": a thread in a direct
-// conversation (400) and a change to a deleted message (409).
+// conversation other than the chat with the Homeroom bot (400,
+// services/conversations.js threadsAllowed) and a change to a deleted
+// message (409).
 const THREADS_NOT_SUPPORTED = Object.freeze({ error: 'threads_not_supported' });
 const MESSAGE_DELETED = Object.freeze({ error: 'message_deleted' });
 // QA 2026-09-24 Q2: a second message into a direct request the other person

@@ -147,6 +147,34 @@ async function canDirectInteract(db, membership, userId) {
   return !!otherId && !(await blockedEitherWay(db, userId, otherId));
 }
 
+// The Homeroom bot's account (homeroom-bot-dm.js BOT_USERNAME).
+const HOMEROOM_BOT_USERNAME = 'homeroom_bot';
+
+/**
+ * Whether a conversation is a person's direct chat with the Homeroom bot:
+ * the one direct conversation with reply threads, one per request (the
+ * request's card is the thread's first message). Other direct chats keep
+ * none. The client reads the same off a conversation's `homeroomBot` flag
+ * (frontend/src/features/messages threadsAllowed).
+ */
+async function isHomeroomBotDirect(db, conversationId) {
+  const { rows } = await db.query(
+    `SELECT 1 FROM conversation_direct_pairs p
+       JOIN users u ON u.id IN (p.user_low_id, p.user_high_id)
+      WHERE p.conversation_id = $1 AND u.is_synthetic IS TRUE AND u.username = $2
+      LIMIT 1`,
+    [conversationId, HOMEROOM_BOT_USERNAME]
+  );
+  return rows.length > 0;
+}
+
+/** Whether a membership's conversation has reply threads (#2387): every room, and the bot's chat. */
+async function threadsAllowed(db, membership) {
+  if (!membership) return false;
+  if (membership.kind !== 'direct') return true;
+  return isHomeroomBotDirect(db, membership.id);
+}
+
 // Deleted-peer archives are only marked for accepted, unblocked members
 // by account deletion. Writes keep canDirectInteract's live-peer gate.
 async function canReadConversation(db, membership, userId) {
@@ -508,11 +536,22 @@ function pageLimit(limit) {
 // direction is its own fully static statement rather than one with an
 // optional bound, so the SQL linter validates all three and each keeps its
 // index-ordered plan.
+//
+// One story per request: in the chat with the Homeroom bot (the one direct
+// conversation with threads, threadsAllowed) a request's thread holds its
+// whole story, and the main stream shows only the replies the bot marks
+// `alsoInChat` (the four moments that ring), drawn there whole, with their
+// buttons. A person's own replies and the bot's quiet lines stay in the
+// thread.
+const ALSO_IN_CHAT = `(m.metadata->'homeroomBot'->>'alsoInChat') = 'true'`;
 const MAIN_STREAM_ROW = `(m.thread_root_id IS NULL OR (
           m.deleted_at IS NULL
           AND NOT EXISTS (SELECT 1 FROM conversation_messages hidden_root
                             JOIN user_blocks hb ON hb.blocked_user_id = hidden_root.sender_id
-                           WHERE hidden_root.id = m.thread_root_id AND hb.blocker_id = $2)))`;
+                           WHERE hidden_root.id = m.thread_root_id AND hb.blocker_id = $2)
+          AND (${ALSO_IN_CHAT}
+               OR NOT EXISTS (SELECT 1 FROM conversations dc
+                               WHERE dc.id = m.conversation_id AND dc.kind = 'direct'))))`;
 async function mainStreamBefore(db, user, conversationId, before, count) {
   if (before) {
     return (await db.query(
@@ -620,11 +659,12 @@ async function listMessages(pool, user, conversationId, {
 
 // GET /api/conversations/:id/threads/:rootId (#2387). The root plus a page of
 // its replies, oldest first, paged backwards with `before` exactly like the
-// main stream. Direct conversations have no threads.
+// main stream. Direct conversations have no threads, apart from the chat
+// with the Homeroom bot (threadsAllowed).
 async function listThread(pool, user, conversationId, rootId, { before = null, limit = 50 } = {}) {
   const membership = await loadMembership(pool, conversationId, user.id, { allowDeletedPeer: true });
   if (!membership || !(await canReadConversation(pool, membership, user.id))) return null;
-  if (membership.kind === 'direct') return { error: 'threads_not_supported' };
+  if (!(await threadsAllowed(pool, membership))) return { error: 'threads_not_supported' };
   const root = await pool.query(
     `${MESSAGE_SELECT}
       WHERE m.id = $1 AND m.conversation_id = $2 AND m.thread_root_id IS NULL
@@ -782,10 +822,11 @@ async function conversationRow(db, user, conversationId) {
        LEFT JOIN user_avatars peer_avatar ON peer_avatar.user_id = peer.user_id
        LEFT JOIN LATERAL (
          -- #2387: the list's latest message is the main stream's latest
-         -- message anyone still has: thread replies and deletions skip.
+         -- message anyone still has: thread replies and deletions skip,
+         -- apart from a bot moment shown in the main chat too.
          SELECT id FROM conversation_messages m
           WHERE m.conversation_id = c.id
-            AND m.thread_root_id IS NULL AND m.deleted_at IS NULL
+            AND (m.thread_root_id IS NULL OR ${ALSO_IN_CHAT}) AND m.deleted_at IS NULL
             AND NOT EXISTS (SELECT 1 FROM user_blocks b
                              WHERE b.blocker_id = $2 AND b.blocked_user_id = m.sender_id)
           ORDER BY id DESC LIMIT 1
@@ -799,12 +840,14 @@ async function conversationRow(db, user, conversationId) {
 
 // The unread count behind a cursor (#2387): main stream only, other people's
 // messages only, and neither a deleted message nor one from someone the
-// viewer blocked counts. Shared by the list and by markUnread's answer.
+// viewer blocked counts. Shared by the list and by markUnread's answer. A bot
+// moment shown in the main chat as well as its thread (ALSO_IN_CHAT) counts
+// once, here; the bot's quiet lines in a thread do not.
 async function countUnread(db, conversationId, userId, cursor) {
   const result = await db.query(
     `SELECT COUNT(*)::int AS count FROM conversation_messages m
       WHERE m.conversation_id = $1 AND m.id > COALESCE($2, 0)
-        AND m.thread_root_id IS NULL AND m.deleted_at IS NULL
+        AND (m.thread_root_id IS NULL OR ${ALSO_IN_CHAT}) AND m.deleted_at IS NULL
         AND m.msg_type = 'message'
         AND m.sender_id IS DISTINCT FROM $3
         AND NOT EXISTS (SELECT 1 FROM user_blocks b
@@ -1511,14 +1554,15 @@ async function sendMessage(pool, user, conversationId, input, {
         return { messageId: existing.rows[0].id, memberIds: await activeMemberIds(db, conversationId), notifications: [], duplicate: true };
       }
     }
-    // #2387: threads live in groups and channels only, and one level deep —
+    // #2387: threads live in groups and channels (and the chat with the
+    // Homeroom bot, threadsAllowed) only, and one level deep —
     // the root is a main-stream message of this conversation that the sender
     // can see. FOR SHARE holds it against a concurrent delete, so a first
     // reply and the root's deletion serialize: a deleted message cannot start
     // a new thread, but a thread that already has replies stays open.
     let threadRoot = null;
     if (threadRootId) {
-      if (membership.kind === 'direct') return { error: 'threads_not_supported' };
+      if (!(await threadsAllowed(db, membership))) return { error: 'threads_not_supported' };
       const root = await db.query(
         `SELECT m.id, m.sender_id, m.deleted_at,
                 EXISTS (SELECT 1 FROM conversation_messages r
@@ -1670,7 +1714,10 @@ async function sendMessage(pool, user, conversationId, input, {
         kind = 'conversation_mention';
       } else if (member.user_id === replyAuthorId) kind = 'conversation_reply';
       else if (mentioned) kind = 'conversation_mention';
-      else if (threadRoot) {
+      else if (threadRoot && membership.kind !== 'direct') {
+        // In the chat with the Homeroom bot (the one direct chat with
+        // threads) a message that rings is for the one other person in it,
+        // in a thread or not: it rings as a message, as the main chat's do.
         // One row per person: a quote or an @mention above outranks this.
         if (!threadParticipants.has(member.user_id)) continue;
         kind = 'conversation_thread_reply';
@@ -1856,12 +1903,15 @@ async function markRead(pool, user, conversationId, messageId) {
     const membership = await lockInteractionMembership(db, conversationId, user.id);
     if (!membership) return null;
     const message = await db.query(
-      `SELECT id, thread_root_id FROM conversation_messages WHERE id = $1 AND conversation_id = $2`,
+      `SELECT m.id, m.thread_root_id, ${ALSO_IN_CHAT} AS also_in_chat
+         FROM conversation_messages m WHERE m.id = $1 AND m.conversation_id = $2`,
       [messageId, conversationId]
     );
     if (!message.rows.length) return null;
     const current = membership.last_read_message_id || 0;
-    const threadRootId = message.rows[0].thread_root_id;
+    // A bot moment shown in the main chat is read where it is shown: it is
+    // a main-stream position, as its unread count says (countUnread).
+    const threadRootId = message.rows[0].also_in_chat ? null : message.rows[0].thread_root_id;
     if (threadRootId) {
       // #2387: reading a THREAD up to a reply clears that thread's alerts up
       // to it. The main-stream cursor is not a thread position — ids of the
@@ -1896,7 +1946,8 @@ async function markRead(pool, user, conversationId, messageId) {
                OR (n.conversation_message_id <= $3
                    AND NOT EXISTS (SELECT 1 FROM conversation_messages m
                                     WHERE m.id = n.conversation_message_id
-                                      AND m.thread_root_id IS NOT NULL)))`,
+                                      AND m.thread_root_id IS NOT NULL
+                                      AND ${ALSO_IN_CHAT} IS NOT TRUE)))`,
       [user.id, conversationId, cursor]
     );
     return { messageId: cursor, threadRootId: null, memberIds: await activeMemberIds(db, conversationId) };
@@ -2195,6 +2246,9 @@ module.exports = {
   openAdmittedDirect,
   setMessageMetadata,
   publicMetadata,
+  isHomeroomBotDirect,
+  threadsAllowed,
+  ALSO_IN_CHAT,
   BOT_METADATA_KEY,
   updateTitle,
   respond,
