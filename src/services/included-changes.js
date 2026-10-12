@@ -142,6 +142,7 @@ function depsOf(deps = {}) {
     agentSessions: deps.agentSessions || require('./agent-sessions'),
     bot: deps.bot || require('./homeroom-bot'),
     dm: deps.dm || require('./homeroom-bot-dm'),
+    live: deps.live || require('./homeroom-bot-live'),
     journey: deps.journey || require('./journey-events'),
     watcher: deps.watcher || require('./issue-close-watcher'),
     isSessionBusy: deps.isSessionBusy || require('./active-workers').isSessionBusy,
@@ -281,6 +282,9 @@ async function settleIncluded({ config, pool, row, carrier, sha, deployed = true
   // Whoever asked for it hears it is live (for a first version, its
   // creator), and the journey records it going live, as on its own merge.
   await step('tell whoever asked for it', () => d.dm.noteProposalMerged(pool, row, { config, sha }));
+  // And the request the bot built it for says it is live, once (beside the
+  // DM above; the merge of the streams can fold the two into one hook).
+  await step('say on its request that it is live', () => d.live.announceLive(pool, { session: row, deps: { github: d.github, ws: d.ws } }));
   await step('record it going live', () => d.journey.recordChangeLive(pool, { config, session: row, sha }));
   return did;
 }

@@ -1827,7 +1827,7 @@ function normalizedSha(value) {
 // paths reconciling the same push cannot both post it.
 async function reconcileNativeReviewedHead({
   config, pool, session, fresh = false, notify = true, deferChecks = false,
-  offline = false, announceClearedVotes = true,
+  offline = false, announceClearedVotes = true, madeBy = null,
 }) {
   const integration = require('../services/integration');
   const mirror = require('../services/repo-mirror');
@@ -2099,7 +2099,12 @@ async function reconcileNativeReviewedHead({
         ? `${label} was brought up to date with main and ${move.conflictPaths?.length || 'its'} conflicting file${move.conflictPaths?.length === 1 ? '' : 's'} were resolved automatically. The votes still stand; its checks are re-running against the merged code and it will merge on its own once they pass.`
         : move.kind === 'unknown'
           ? `${label} moved to a commit the platform could not verify (${move.reason}). Earlier votes were cleared, so please re-review commit ${liveHead.slice(0, 8)}.`
-          : `${label} was updated on GitHub. Earlier votes were cleared, so please re-review commit ${liveHead.slice(0, 8)}.`;
+          // An update Homeroom made (the bot's, or one sent through Homeroom,
+          // `madeBy`) is said in the change's own discussion in one line, the
+          // only note about its votes: no "on GitHub", no pull request number.
+          : madeBy
+            ? 'Updated. Earlier votes were cleared, so take another look.'
+            : `${label} was updated on GitHub. Earlier votes were cleared, so please re-review commit ${liveHead.slice(0, 8)}.`;
     await sendSystemMessage(
       pool, session.app_id, message, 'system',
       { headChanged: true, votesKept: keepsApprovals, prNumber: session.pr_number, headSha: liveHead },
@@ -6131,6 +6136,16 @@ async function finalizeMerge({ config, pool, session, mergeCommitSha, required, 
         ?.catch?.((err) => log.warn('votes', 'Homeroom bot merged DM failed', { sessionId: session.id, err: err.message }));
     } catch (err) {
       log.warn('votes', 'Homeroom bot merged DM threw', { sessionId: session.id, err: err.message });
+    }
+    // One request, one story: the request the bot built it for says it is
+    // live, its closing line ("It's live. {title} is in {project} now."),
+    // once per change. Beside the DM above; the merge of the streams can
+    // fold the two into one hook. Never a reason the merge fails.
+    try {
+      require('../services/homeroom-bot-live').announceLive(pool, { session })
+        ?.catch?.((err) => log.warn('votes', 'Homeroom bot live note failed', { sessionId: session.id, err: err.message }));
+    } catch (err) {
+      log.warn('votes', 'Homeroom bot live note threw', { sessionId: session.id, err: err.message });
     }
 
     // The admin Journey's change_live record: who asked for this change,

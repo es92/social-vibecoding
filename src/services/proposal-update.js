@@ -520,6 +520,7 @@ async function reconcileManagedCommitUpload(deps, params) {
     fresh: true,
     notify: true,
     deferChecks: true,
+    madeBy: 'homeroom',
   });
   if (revision.blocked) {
     return fail(
@@ -1862,7 +1863,7 @@ async function advanceAppRepoBranch(ctx) {
   let reconciled = null;
   try {
     reconciled = await votes.reconcileNativeReviewedHead({
-      config, pool, session, fresh: true, notify: true,
+      config, pool, session, fresh: true, notify: true, madeBy: 'homeroom',
     });
   } catch (err) {
     // The push landed. A reconciliation that failed is caught up by the next

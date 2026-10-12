@@ -116,7 +116,7 @@ async function adoptActive({ config, pool, session, headSha, deps }) {
 async function adoptPromoted({ config, pool, session, headSha, deps }) {
   const votes = deps.votes || require('../routes/votes');
   const revision = await votes.reconcileNativeReviewedHead({
-    config, pool, session, fresh: true, notify: true, deferChecks: true,
+    config, pool, session, fresh: true, notify: true, deferChecks: true, madeBy: 'homeroom',
   });
   if (revision.blocked || !sameSha(revision.headSha, headSha)) {
     return {
