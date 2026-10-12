@@ -1175,6 +1175,9 @@ const DEMO_CARD_KEYS = Object.freeze({
   underWay: 'staging-hrbot-activity-under-way',
   plan: 'staging-hrbot-activity-plan',
   building: 'staging-hrbot-activity-building',
+  // One story: a request whose card is the root of its thread, waiting on
+  // the viewer's answer to a question in it (staging-messages.js).
+  thread: 'staging-hrbot-activity-thread',
 });
 // The demo's work already under way: the plan for request #15, begun before
 // its card was there (the tray's demo lists it too, homeroom-bot-tray.js).
@@ -1183,7 +1186,9 @@ const DEMO_UNDER_WAY = Object.freeze({
 });
 
 /** Pure: the demo cards' state, for the fixture's message ids. Times are relative to `now`. */
-function demoState({ working = null, done = null, underWay = null, plan = null, building = null }, now = Date.now()) {
+function demoState({
+  working = null, done = null, underWay = null, plan = null, building = null, thread = null,
+}, now = Date.now()) {
   const ago = (minutes) => new Date(now - minutes * 60 * 1000).toISOString();
   const links = { request: null, proposal: null };
   const cards = [];
@@ -1220,6 +1225,9 @@ function demoState({ working = null, done = null, underWay = null, plan = null, 
       typicalMinutes: { from: 10, to: 25 },
     });
   }
+  if (thread) {
+    cards.push({ messageId: thread, startedAt: ago(31), links, state: 'done', outcome: 'question', endedAt: ago(3) });
+  }
   return { cards };
 }
 
@@ -1236,7 +1244,7 @@ async function demoCards(pool, user, now = Date.now()) {
   const id = (key) => Number(rows.find((row) => row.idempotency_key === key)?.id) || null;
   return demoState({
     working: id(DEMO_CARD_KEYS.working), done: id(DEMO_CARD_KEYS.done), underWay: id(DEMO_CARD_KEYS.underWay),
-    plan: id(DEMO_CARD_KEYS.plan), building: id(DEMO_CARD_KEYS.building),
+    plan: id(DEMO_CARD_KEYS.plan), building: id(DEMO_CARD_KEYS.building), thread: id(DEMO_CARD_KEYS.thread),
   }, now);
 }
 

@@ -478,7 +478,9 @@ test('the Homeroom bot DM gives work already under way its activity card: once, 
       const page = await conversations.listMessages(pool, viewer, conversationId, {});
       const messages = [...(page.messages || page)].sort((a, b) => a.id - b.id);
       // #4046: the demo's first versions' cards (its plans carry them) are another project's.
-      const cards = messages.filter((m) => m.metadata?.homeroomBot?.kind === 'activity' && m.metadata.homeroomBot.appName === 'Staging demo app');
+      // One story: the demo request #18, whose card is its thread's root, is sent before this one.
+      const cards = messages.filter((m) => m.metadata?.homeroomBot?.kind === 'activity' && m.metadata.homeroomBot.appName === 'Staging demo app'
+        && m.metadata.homeroomBot.issueNumber !== 18);
       assert.deepEqual(cards.map((m) => m.metadata.homeroomBot.issueNumber), [9, 14, 15], 'the new card is the newest');
       const joined = cards[2];
       assert.equal(messages.at(-1).id, joined.id, 'at the end of the DM');

@@ -489,7 +489,8 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
       const conversationId = await staging.ensureBotDmFixture(pool, viewer);
       await staging.ensureBotDmFixture(pool, viewer);
       const page = await conversations.listMessages(pool, viewer, conversationId, {});
-      const all = (page.messages || page).filter((m) => m.metadata?.homeroomBot?.kind === 'activity')
+      // One story: the demo request #18's card (its thread's root) is told apart below.
+      const all = (page.messages || page).filter((m) => m.metadata?.homeroomBot?.kind === 'activity' && m.metadata.homeroomBot.issueNumber !== 18)
         .sort((a, b) => a.id - b.id);
       // #4046: and two first versions' cards, which their plans carry.
       assert.deepEqual(all.map((m) => m.metadata.homeroomBot.appName), [
@@ -507,7 +508,9 @@ test('the Homeroom bot DM\'s activity cards: one per piece of work, read from it
       assert.ok(readyCards[0].id < cards[0].id, 'older than the activity cards');
       const demo = await activity.demoCards(pool, viewer);
       const going = demo.cards.find((c) => c.state === 'working');
-      const ended = demo.cards.find((c) => c.state === 'done');
+      const ended = demo.cards.find((c) => c.state === 'done' && c.outcome !== 'question');
+      const story = (page.messages || page).find((m) => m.metadata?.homeroomBot?.issueNumber === 18 && m.metadata.homeroomBot.kind === 'activity');
+      assert.deepEqual([demo.cards.find((c) => c.messageId === story.id)?.outcome], ['question'], 'the story\'s card waits on its question');
       assert.equal(going.messageId, cards[1].id);
       assert.deepEqual([going.step, going.of, going.stepName], [3, 6, 'Building']);
       assert.equal(ended.messageId, cards[0].id);

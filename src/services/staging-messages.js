@@ -754,6 +754,7 @@ async function ensureBotDmFixture(pool, user) {
       },
     });
   }
+  await ensureBotDmStory(pool, { botId: bot.id, conversationId: opened.conversationId, cardKey: cardKeys.thread });
   await pool.query(
     `INSERT INTO staging_conversation_fixtures (user_id, legacy_id, conversation_id)
      VALUES ($1, $2, $3)
@@ -761,6 +762,77 @@ async function ensureBotDmFixture(pool, user) {
     [user.id, BOT_DM_LEGACY_ID, opened.conversationId]
   );
   return opened.conversationId;
+}
+
+// One request, one story: a demo request whose card is the root of its
+// thread, with the bot's quiet lines under it and one moment that rings (a
+// question with answers to tap), which the main chat shows too, under its
+// "↳ in …" label. Sent once, after what is already there, so the older
+// fixture's messages and the checks that read them stay as they were.
+// Obviously fake: no project or request stands behind it, nothing rings
+// (notify: false) and nothing is recorded as a question the bot waits on,
+// so an answer tapped here gets the bot's short help, as the fixture's other
+// question does. The card's state is demoCards' (DEMO_CARD_KEYS.thread).
+const BOT_DM_STORY = Object.freeze({
+  appName: 'Staging demo app', issueNumber: 18, issueTitle: 'Staging demo, a weekly dinner rota',
+});
+const BOT_DM_STORY_LINES = Object.freeze([
+  { key: 'staging-hrbot-story-origin', step: 'origin', content: 'You suggested this on Staging demo app\'s page. It\'s request #18.' },
+  { key: 'staging-hrbot-story-reading', step: 'reading', content: 'Reading it.' },
+  {
+    key: 'staging-hrbot-story-plan', step: 'spec',
+    content: 'Plan: a weekly rota on the first screen, with a reminder the day before. I\'m building it now.',
+  },
+  { key: 'staging-hrbot-story-built', step: 'built', content: 'Built. Testing it: its checks, and its before and after screens.' },
+]);
+const BOT_DM_STORY_QUESTION_KEY = 'staging-hrbot-story-question';
+
+async function ensureBotDmStory(pool, { botId, conversationId, cardKey }) {
+  const sent = await pool.query(
+    `SELECT 1 FROM conversation_messages WHERE conversation_id = $1 AND sender_id = $2 AND idempotency_key = $3`,
+    [conversationId, botId, cardKey]
+  );
+  if (sent.rows.length) return;
+  const story = BOT_DM_STORY;
+  const card = await conversations.sendMessage(pool, { id: botId }, conversationId, {
+    content: `**${story.appName}** · request #${story.issueNumber}: ${story.issueTitle}\n\n`
+      + 'I\'m working on this now. This card updates as I go.',
+    idempotency_key: cardKey,
+  }, {
+    notify: false,
+    metadata: {
+      homeroomBot: {
+        kind: 'activity', appName: story.appName, issueNumber: story.issueNumber,
+        issueTitle: story.issueTitle, requestTitle: story.issueTitle, mirrors: true,
+      },
+    },
+  });
+  const rootId = card?.messageId ?? card?.message?.id;
+  if (!rootId) return;
+  const about = {
+    appName: story.appName, issueNumber: story.issueNumber, issueTitle: story.issueTitle,
+    requestTitle: story.issueTitle, threadRootId: rootId,
+  };
+  for (const line of BOT_DM_STORY_LINES) {
+    await conversations.sendMessage(pool, { id: botId }, conversationId, {
+      content: line.content, idempotency_key: line.key, thread_root_id: rootId,
+    }, { notify: false, metadata: { homeroomBot: { kind: 'step', step: line.step, ...about } } });
+  }
+  const question = 'Which night should the rota start on?';
+  await conversations.sendMessage(pool, { id: botId }, conversationId, {
+    content: `One thing before it's ready to try:\n\n${question}`,
+    idempotency_key: BOT_DM_STORY_QUESTION_KEY,
+    thread_root_id: rootId,
+  }, {
+    notify: false,
+    metadata: {
+      homeroomBot: {
+        kind: 'question', ...about, mirrors: true, status: 'open',
+        question, answers: ['Sunday', 'Monday', 'Let me pick each week'],
+        moment: 'needs_you', said: 'question', alsoInChat: true,
+      },
+    },
+  });
 }
 
 // The demo of a card joining work already under way: what opening the bot's

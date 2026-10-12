@@ -610,8 +610,20 @@ test('the Homeroom bot DM against the full PostgreSQL schema', { timeout: 180000
       // then a new project's first version gone live, with Open, Open
       // community and Invite people.
       // #4488: and, after the two questions, a complicated change's plan.
-      assert.equal(messages.length, 14, 'one question, one ask, one offer, a built plan and its card, a plan and its card, two questions, a complicated change\'s plan, a stuck build, a first version live, a ready card and two cards, not one per visit');
-      const [question, ask, offer, built, building, planCard, plan, two, complicated, stuck, firstLive, ready, ...cards] = [...messages].sort((a, b) => a.id - b.id);
+      // One story: and, after them, a request whose card is its thread's
+      // root, with its question also shown in the main chat (its quiet
+      // lines stay in the thread).
+      assert.equal(messages.length, 16, 'one question, one ask, one offer, a built plan and its card, a plan and its card, two questions, a complicated change\'s plan, a stuck build, a first version live, a ready card and two cards, then a story\'s card and its question, not one per visit');
+      const sorted = [...messages].sort((a, b) => a.id - b.id);
+      const [storyCard, storyQuestion] = sorted.slice(-2);
+      assert.equal(storyCard.metadata.homeroomBot.kind, 'activity');
+      assert.equal(storyCard.thread.replyCount, 5, 'four quiet lines and the question');
+      assert.equal(storyQuestion.threadRootId, storyCard.id);
+      assert.deepEqual([storyQuestion.metadata.homeroomBot.moment, storyQuestion.metadata.homeroomBot.alsoInChat], ['needs_you', true]);
+      const storyThread = await conversations.listThread(pool, viewer, first, storyCard.id, {});
+      assert.deepEqual(storyThread.messages.slice(0, 2).map((m) => m.content),
+        ['You suggested this on Staging demo app\'s page. It\'s request #18.', 'Reading it.']);
+      const [question, ask, offer, built, building, planCard, plan, two, complicated, stuck, firstLive, ready, ...cards] = sorted.slice(0, -2);
       assert.deepEqual([complicated.metadata.homeroomBot.kind, complicated.metadata.homeroomBot.firstVersion, complicated.metadata.homeroomBot.plan.complicated],
         ['plan', false, true]);
       assert.match(complicated.content, /^Before I build \*\*Staging demo app\*\* request #17, here's my plan:/);
