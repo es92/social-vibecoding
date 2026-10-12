@@ -6142,7 +6142,7 @@ async function finalizeMerge({ config, pool, session, mergeCommitSha, required, 
     // once per change. Beside the DM above; the merge of the streams can
     // fold the two into one hook. Never a reason the merge fails.
     try {
-      require('../services/homeroom-bot-live').announceLive(pool, { session })
+      require('../services/homeroom-bot-live').announceLive(pool, { session, deps: { github } })
         ?.catch?.((err) => log.warn('votes', 'Homeroom bot live note failed', { sessionId: session.id, err: err.message }));
     } catch (err) {
       log.warn('votes', 'Homeroom bot live note threw', { sessionId: session.id, err: err.message });

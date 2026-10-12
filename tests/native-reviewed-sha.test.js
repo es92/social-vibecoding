@@ -433,6 +433,24 @@ test('a silent caller that retires votes still says so, in the proposal\'s own t
   } finally { restore(); r.cleanup(); }
 });
 
+// One request, one story: an update Homeroom made (the bot's, or one sent
+// through Homeroom) is one plain line in the change's thread, with no
+// "on GitHub" and no pull request number; the bot's own note does not
+// repeat it.
+test('an update Homeroom made says so in one line, without GitHub or a pull request number', async () => {
+  const r = repo().writeOnFeature('a.txt', 'PROPOSAL CHANGED\nl2\nl3\n');
+  const posted = [];
+  const { votes, restore } = load(r, posted);
+  try {
+    await votes.reconcileNativeReviewedHead({
+      config: {}, pool: makePool({ epoch: 3, voters: 1 }), session: session(r, { approval_epoch: 3 }), notify: true, madeBy: 'bot',
+    });
+    assert.equal(posted.length, 1);
+    assert.equal(posted[0].content, 'Updated. Earlier votes were cleared, so take another look.');
+    assert.deepEqual(posted[0].thread, { type: 'session', ref: 42 });
+  } finally { restore(); r.cleanup(); }
+});
+
 test('a silent caller posts nothing when the move cleared no votes, kept them, or its caller announces it', async () => {
   const pushed = repo().writeOnFeature('a.txt', 'PROPOSAL CHANGED\nl2\nl3\n');
   const posted = [];

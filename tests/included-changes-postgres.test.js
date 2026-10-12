@@ -117,7 +117,7 @@ test('a change built on another carries it live, against the full PostgreSQL sch
           noteIssuesClosed() {},
           unsuppressIssues() {},
         },
-        ws: { sendSystemMessage: rec('line'), pushVoteUpdate: (d) => { calls.push(['vote_update', d]); } },
+        ws: { sendSystemMessage: rec('line'), sendBotMessage: rec('bot'), pushVoteUpdate: (d) => { calls.push(['vote_update', d]); } },
         staging: { teardownStaging: rec('teardown') },
         worker: { retireWorker: rec('retire') },
         notifications: { createPrMergedNotification: async (_p, a) => { calls.push(['notify', a]); return []; }, hydrateAndPush: rec('push') },
@@ -206,7 +206,15 @@ test('a change built on another carries it live, against the full PostgreSQL sch
     const [did] = await out.done;
     assert.deepEqual(did, { id: pr3.id, prClosed: true, requestsClosed: [1] });
     const find = (name) => calls.filter((c) => c[0] === name);
-    assert.deepEqual(find('comment'), [['comment', 'usernode-bot', 'flat-4b-chores-e98ecd', 3, 'Included in #8, which went live.']]);
+    // And its request ends with the bot's line that it is live (live.announceLive).
+    assert.deepEqual(find('comment'), [
+      ['comment', 'usernode-bot', 'flat-4b-chores-e98ecd', 3, 'Included in #8, which went live.'],
+      ['comment', 'usernode-bot', 'flat-4b-chores-e98ecd', 1, 'Homeroom bot\'s change for this is live: First version of Flat 4B Chores.'],
+    ]);
+    const said = find('bot');
+    assert.equal(said.length, 1);
+    assert.match(said[0][2].content, /^It's live\. First version of Flat 4B Chores is in .+ now\.$/);
+    assert.deepEqual(said[0][2].thread, { type: 'issue', ref: 1 });
     assert.deepEqual(find('closePR'), [['closePR', 'usernode-bot', 'flat-4b-chores-e98ecd', 3]]);
     assert.deepEqual(find('closeIssue'), [['closeIssue', 'usernode-bot', 'flat-4b-chores-e98ecd', 1]], 'request #1, never #7');
     assert.match(find('line')[0][2], /^PR #3: First version of Flat 4B Chores went live as part of PR #8: /);

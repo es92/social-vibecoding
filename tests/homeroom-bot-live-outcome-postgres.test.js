@@ -224,7 +224,9 @@ test('a live build always records its outcome, against the full PostgreSQL schem
       assert.equal(p.text, 'Homeroom bot couldn\'t finish building this: Homeroom restarted in the middle of the build. '
         + 'Reply here (or on the GitHub issue) and it will try again.', 'what happened in plain words, and how to start it again');
       assert.deepEqual(p.dm, { reason: bot.ABANDONED_LIVE_REASON }, 'in the requester\'s DM too');
-      assert.deepEqual(p.mentions, ['cyrcle_0'], 'whoever filed it is told');
+      // One request, one story: a stopped build is progress, said untagged;
+      // whoever filed it is told in their DM (above).
+      assert.deepEqual(p.mentions, [], 'untagged');
     }
 
     // Once: a second sweep (another Pod, the next pass) records and says nothing.
