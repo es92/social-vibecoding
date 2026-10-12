@@ -14,7 +14,7 @@ import * as api from './api';
 import { afterYesWords, countOf, waitingWords, type AfterYes } from './approval-words';
 import { ensureBotActivity, useBotActivity } from './bot-activity-store';
 import { botMeta } from './bot-question';
-import { scopeKey, setReply } from './store';
+import { quoteInComposer } from './store';
 import type {
   ConversationMessage, HomeroomBotAction, HomeroomBotGoesLive, HomeroomBotMeta, HomeroomBotReady, HomeroomBotReadyNow,
 } from './types';
@@ -467,10 +467,9 @@ export function BotReadyCard({ message, conversationId }: { message: Conversatio
       return;
     }
     if (action.type === 'reply') {
-      setReply(scopeKey(conversationId, null), message);
-      window.requestAnimationFrame(() => {
-        document.querySelector<HTMLTextAreaElement>('.messages-composer-input')?.focus({ preventScroll: true });
-      });
+      // Change something: quoted in the composer, its request's thread's
+      // when the card is in one (store.quoteInComposer).
+      quoteInComposer(message, conversationId);
       return;
     }
     if (action.type === 'vote' && action.sessionId) {

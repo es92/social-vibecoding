@@ -94,6 +94,30 @@ export interface HomeroomBotMeta {
   appEmoji?: string;
   /** B7: once its person approved it, what happens next (services/homeroom-bot-dm.js goesLiveAfterYes). */
   goesLive?: HomeroomBotGoesLive;
+  /** Why its buttons were closed ("No longer needed", "A newer plan replaced this"), said in their place. */
+  closedWhy?: string;
+  /**
+   * One request, one story: the request's activity card (its thread's root)
+   * that this message was posted under. Set on every message in a request's
+   * thread, as the message's own `threadRootId` is.
+   */
+  threadRootId?: number;
+  /**
+   * Which of the four moments that ring this is (`needs_you`, `ready`,
+   * `stopped`, `on_hold`, `live`), `reply` for the bot's own replies, or
+   * absent for a quiet one; `said` is its variant (services/homeroom-bot-
+   * dm.js). The bell and the push word them; the chat draws the message.
+   */
+  moment?: string;
+  said?: string;
+  /** The request's title, as the request page has it; absent for a first version. */
+  requestTitle?: string;
+  /** Who a ready change waits on ("you and @ada"), as the push says it. */
+  waiting?: string;
+  /** An on-hold summary: how many of the person's requests are held. */
+  count?: number;
+  /** A moment in a request's thread the main chat also lists, under its "↳ in …" label. */
+  alsoInChat?: boolean;
 }
 
 export interface HomeroomBotReady {
@@ -292,6 +316,12 @@ export interface HomeroomBotActivity {
   endedAt: string | null;
   /** How long the step it is at usually takes, in minutes, when it takes a while. */
   typicalMinutes?: { from: number; to: number };
+  /** While it is working: who it waits on (`them`, the viewer; `the group`; `time`, on hold until Monday), when it waits (services/homeroom-bot-progress.js). */
+  waitingOn?: string;
+  /** A `build_failed` ending: why the build stopped. */
+  stopCause?: 'time' | 'restart' | 'restarts' | 'no_change' | 'unproposed' | 'no_start' | 'other';
+  /** A `held` ending: which of the bot's limits holds it back. */
+  heldBy?: 'proposals_per_app' | 'proposals_total' | 'questions_per_day';
   /**
    * `going_live`, on a merge of the platform's own app: when the platform's
    * next release carries it (services/release-watch.js), which the card

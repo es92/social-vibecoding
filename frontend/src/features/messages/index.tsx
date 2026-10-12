@@ -28,10 +28,12 @@ import { useVisibility, useVisibilityHiddenClass } from '../../lib/visibility-st
 import * as api from './api';
 import { BotActivitySync, isActivityMessage, isMovedActivity } from './bot-activity';
 import { botHead } from './bot-head-card';
-import { NO_PLAN_LAYOUT, planLayout } from './bot-plan';
+import { NO_PLAN_LAYOUT, isPlanMessage, planLayout } from './bot-plan';
 import { botMeta } from './bot-question';
 import { isReadyMessage } from './bot-ready';
-import { changeBlocks, dotText, type ChangeBlock } from './bot-shared';
+import {
+  alsoInChat, botRequestNames, botThreadTitle, changeBlocks, dotText, threadsAllowed, type ChangeBlock,
+} from './bot-shared';
 import { BotWorkButton, BotWorkPanel, BotWorkStatusLine, BotWorkSync, newestBotMessageId } from './bot-work';
 import { MessageComposer } from './composer';
 import { CreateConversationDialog } from './create-dialog';
@@ -1955,11 +1957,17 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
     // the run of replies to that thread with nothing else said between them
     // on the same day. A deleted reply is gone from the run; the next message
     // after the card carries its own name.
-    if (message.threadRootId) {
+    //
+    // One request, one story: in the chat with Homeroom bot the replies the
+    // main stream lists are the moments that ring (`alsoInChat`), each drawn
+    // whole, buttons and all, under its "↳ in …" label (./message-row.tsx),
+    // not as a line about the thread.
+    const moment = botDm && alsoInChat(message);
+    if (message.threadRootId && !moment) {
       const run = [message];
       while (index + 1 < snap.messages.length) {
         const next = snap.messages[index + 1];
-        if (next.threadRootId !== message.threadRootId || dayKey(next) !== day) break;
+        if (next.threadRootId !== message.threadRootId || dayKey(next) !== day || (botDm && alsoInChat(next))) break;
         run.push(next);
         index += 1;
       }
@@ -1973,7 +1981,8 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
     // A failed or unsent row is its own line: it carries a status of its own.
     // So is a platform line (a Homeroom line kept as the root of a thread),
     // which has no author to share a name with the row above.
-    const grouped = !!previous && !previous.failed && !message.failed
+    // A moment carries its own label and name: never a continuation line.
+    const grouped = !moment && !!previous && !previous.failed && !message.failed
       && !previous.system && !message.system
       && groupsWithPrevious(
         { author: previous.sender.id, at: previous.createdAt },
@@ -1992,8 +2001,9 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
       hidePrompts={plans.answersOpen && !!message.sender.bot}
       // #4564: this row's part of its change's block, in the bot's DM alone.
       block={blocks?.get(message.id) ?? null}
+      botChat={botDm}
     />);
-    previous = message;
+    previous = moment ? null : message;
     const length = runs.get(index);
     const runKey = String(message.clientKey || message.id);
     if (length && !expandedRuns.has(runKey)) {
@@ -2116,7 +2126,10 @@ function ThreadActivityRow({ replies }: { replies: ConversationMessage[] }) {
  * covers the conversation instead (app.css), and Back returns to it.
  *
  * DMs have no threads: a thread is how a room keeps a side conversation out
- * of everyone's way, and a DM has no one else in it (store: canThread).
+ * of everyone's way, and a DM has no one else in it. The chat with Homeroom
+ * bot is the one that does (./bot-shared.ts threadsAllowed): there each
+ * request's card is the root of its thread, which this pane names by the
+ * request ("Dark mode", "Plant Pal first version") over its project.
  */
 function ReplyThreadPanel() {
   const t = useMessages('messages');
@@ -2154,15 +2167,21 @@ function ReplyThreadPanel() {
   if (!conversationId || !rootId) return null;
   const active = snap.active;
   const kind = active?.kind || 'group';
-  const where = active ? (kind === 'channel' ? `#${active.channelKey || active.title}` : active.title) : '';
   const root = thread?.root || snap.messages.find((item) => item.id === rootId) || null;
+  // One request, one story: the bot's chat names the thread by its request.
+  const botChat = kind === 'direct' && threadsAllowed(active);
+  const rootMeta = botChat && root?.sender.bot ? root.metadata?.homeroomBot || null : null;
+  const request = rootMeta ? botRequestNames(rootMeta) : null;
+  const where = request ? request.project : active ? (kind === 'channel' ? `#${active.channelKey || active.title}` : active.title) : '';
   const replies = thread?.messages || [];
+  // A plan in a request's thread carries the step of the card it hangs off (./bot-plan.tsx).
+  const cardId = root && isActivityMessage(root) ? root.id : null;
   let previous: ConversationMessage | null = null;
   return (
     <aside className="messages-reply-pane platform-kb-column dc-lift dc-lift-session" aria-label={t('messages:replies.paneName')} data-reply-thread={rootId}>
       <header className="messages-thread-header">
         <div className="min-w-0 flex-1">
-          <div className="messages-thread-name">{t('messages:replies.title')}</div>
+          <div className="messages-thread-name">{request ? botThreadTitle(request) : t('messages:replies.title')}</div>
           {where ? <div className="messages-thread-sub">{where}</div> : null}
         </div>
         <button type="button" className="messages-thread-action" aria-label={t('messages:replies.close')} title={t('messages:replies.close')} onClick={() => closeThread()}>
@@ -2172,7 +2191,7 @@ function ReplyThreadPanel() {
       <div ref={scroller} className="messages-thread-scroll messages-reply-scroll platform-safe-scroll" aria-live="polite">
         {/* The root's Reply quotes it into THIS thread's composer (#2387): its
             own threadRootId is null, being the main stream's message. */}
-        {root ? <MessageRow message={{ ...root, thread: null, threadRootId: rootId }} conversationId={conversationId} channels={channels} kind={kind} inThread /> : null}
+        {root ? <MessageRow message={{ ...root, thread: null, threadRootId: rootId }} conversationId={conversationId} channels={channels} kind={kind} inThread botChat={botChat} /> : null}
         <div className="messages-reply-count" aria-hidden={!replies.length}>
           <span>{replies.length ? t('messages:replies.count', { count: replies.length }) : thread?.loading ? t('messages:replies.loading') : t('messages:replies.none')}</span>
         </div>
@@ -2185,7 +2204,7 @@ function ReplyThreadPanel() {
               { author: message.sender.id, at: message.createdAt, reply: !!message.reply },
             );
           previous = message;
-          return <MessageRow key={message.clientKey || message.id} message={{ ...message, threadRootId: message.threadRootId || rootId }} conversationId={conversationId} grouped={grouped} channels={channels} kind={kind} inThread />;
+          return <MessageRow key={message.clientKey || message.id} message={{ ...message, threadRootId: message.threadRootId || rootId }} conversationId={conversationId} grouped={grouped} channels={channels} kind={kind} inThread botChat={botChat} planCardId={cardId && isPlanMessage(message) ? cardId : null} />;
         })}
       </div>
       <JumpToLatest scroller={scroller} />

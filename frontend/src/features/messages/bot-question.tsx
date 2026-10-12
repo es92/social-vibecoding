@@ -7,14 +7,14 @@ import { t as translate } from '../../lib/i18n/runtime';
 import { InviteSheet } from '../first-session/made';
 import type { Made } from '../first-session/make';
 import { AnsweredChoices } from './bot-plan-view';
-import { answerBotQuestion, scopeKey, setReply, tapBotAction } from './store';
+import { answerBotQuestion, quoteInComposer, tapBotAction } from './store';
 import type { ConversationMessage, HomeroomBotAction, HomeroomBotMeta } from './types';
 
 /*
  * #3624: what hangs under a message from the Homeroom bot.
  *
  * A QUESTION carries its suggested answers as buttons, the bot's default
- * first and marked as such, and a "Something else" that quotes the question
+ * first and marked as such, and a "Write my own" that quotes the question
  * in the composer for an answer of one's own. Tapping an answer sends it at
  * once, quoting the question, which is how the server knows which request
  * it answers (services/homeroom-bot-dm.js). Once answered (or closed by
@@ -31,7 +31,7 @@ import type { ConversationMessage, HomeroomBotAction, HomeroomBotMeta } from './
  * #3624 stage 2: an OFFER (kind `confirm`) uses the same buttons: File it
  * and Not now under a request the bot offers to file. Nothing is posted
  * anywhere until File it, so it has no public note, no "suggested" and no
- * Something else (anything typed is read by the bot instead). #3770: File
+ * Write my own (anything typed is read by the bot instead). #3770: File
  * it is the act, filled in the accent; Not now is the neutral fill beside
  * it. A question's answers keep one look: none of them is the act.
  * #11 (WP3): an offer to withdraw one of the bot's proposals is the same
@@ -124,7 +124,7 @@ export function BotQuestion({ message, conversationId, hidePrompts = false }: {
     void answerBotQuestion(message, answer).catch(() => setChosen(null));
   }
 
-  function somethingElse() {
+  function writeOwn() {
     quoteInComposer(message, conversationId);
   }
 
@@ -144,7 +144,7 @@ export function BotQuestion({ message, conversationId, hidePrompts = false }: {
               {index === 0 && !offer ? <span className="messages-bot-default">{t('messages:bot.question.suggested')}</span> : null}
             </button>
           ))}
-          {offer ? null : <button type="button" className="messages-bot-other" onClick={somethingElse}>{t('messages:bot.question.somethingElse')}</button>}
+          {offer ? null : <button type="button" className="messages-bot-other" onClick={writeOwn}>{t('messages:bot.question.writeOwn')}</button>}
         </div>
       ) : null}
       {answered && offer ? <p className="messages-bot-answered">{t('messages:bot.question.youChose', { answer: answered })}</p> : null}
@@ -168,18 +168,12 @@ export function BotQuestion({ message, conversationId, hidePrompts = false }: {
  * keeps it that way. A refused press (decided already elsewhere) brings
  * nothing back: that device's choice arrives with the update.
  */
-/**
- * Quote `message` in the composer and put the caret there: a reply bar, for
- * them to write what the message asks for. The reply bar puts the caret in
- * the composer where there is a keyboard; a phone gets it too, since this is
- * a request to type.
+/*
+ * Quoting `message` in the composer (store.quoteInComposer) puts the caret
+ * there: a reply bar, for them to write what the message asks for, in the
+ * request's thread when the message is in one. A phone gets the caret too,
+ * since this is a request to type.
  */
-function quoteInComposer(message: ConversationMessage, conversationId: number) {
-  setReply(scopeKey(conversationId, null), message);
-  window.requestAnimationFrame(() => {
-    document.querySelector<HTMLTextAreaElement>('.messages-composer-input')?.focus({ preventScroll: true });
-  });
-}
 
 /** Whether a message's buttons are all suggestions of what to say next (homeroom-bot-dm.js suggestsOnly). */
 export function suggestsOnly(actions: readonly HomeroomBotAction[]): boolean {
@@ -209,7 +203,10 @@ function BotActions({ message, meta, conversationId, hidePrompts = false }: {
   // #4097 follow-up: suggestions the bot has moved on from (its newer
   // message closed them, homeroom-bot-dm.js retireSuggestions) go quietly;
   // "No longer needed." is for a decision that was overtaken.
-  if (meta.status === 'closed' && !chosen && suggestions) return null;
+  // A request's own step (Try again, Add detail, Go ahead) closed by newer
+  // news about the same request says why in its place (`closedWhy`).
+  const closedWhy = meta.status === 'closed' && !chosen ? meta.closedWhy || null : null;
+  if (meta.status === 'closed' && !chosen && suggestions && !closedWhy) return null;
   // #4046: one set of suggestions at a time: while a plan or a question
   // offers its own answers, what to say next waits (a button that quotes,
   // such as Try again, is not a suggestion). Asked already, it still says so.
@@ -266,7 +263,7 @@ function BotActions({ message, meta, conversationId, hidePrompts = false }: {
         </p>
       ) : null}
       {chosen ? <p className="messages-bot-answered">{chosenAction?.type === 'prompt' && !chosenAction.quote ? t('messages:bot.actions.youAsked', { question: chosen }) : t('messages:bot.actions.youChose', { choice: chosen })}</p> : null}
-      {meta.status === 'closed' && !chosen ? <p className="messages-bot-answered">{t('messages:bot.actions.closed')}</p> : null}
+      {meta.status === 'closed' && !chosen ? <p className="messages-bot-answered" data-bot-closed-why={closedWhy ? '' : undefined}>{closedWhy || t('messages:bot.actions.closed')}</p> : null}
       {inviting && invite ? (
         <InviteSheet made={invite} me={inviterName()} onClose={() => setInviting(false)} onSent={() => {}} />
       ) : null}

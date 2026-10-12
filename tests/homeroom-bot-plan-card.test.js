@@ -99,8 +99,10 @@ test('#4046: the plan is the one place its request\'s step shows: the cards abov
   const working = (extra) => ({ messageId: 20, state: 'working', startedAt: null, workedFrom: null, links: {}, step: null, of: null, stepName: null, doing: null, outcome: null, endedAt: null, ...extra });
   assert.deepEqual(planProgress(working({ step: 3, of: 7, stepName: 'Write a plan' }), 'open'), { line: 'Step 3 of 7', step: 3, of: 7 },
     'while it waits: the step, and nothing else');
-  assert.deepEqual(planProgress(working({ step: 4, of: 7, stepName: 'Build it', typicalMinutes: { from: 10, to: 25 } }), 'built'),
-    { line: 'Step 4 of 7 · Build it · 10 to 25 min', step: 4, of: 7 }, 'the step, its name, the time: short enough for one line');
+  // One request, one story: the step leads by its name, as the chat says
+  // it everywhere ("Building · step 4 of 7 · 10 to 25 min").
+  assert.deepEqual(planProgress(working({ step: 4, of: 7, stepName: 'Building', typicalMinutes: { from: 10, to: 25 } }), 'built'),
+    { line: 'Building · step 4 of 7 · 10 to 25 min', step: 4, of: 7 }, 'the step, its name, the time: short enough for one line');
   // The time is a kind and its numbers; the line that holds it is one whole message.
   assert.deepEqual(planTime({ from: 10, to: 25 }), { kind: 'range', from: 10, count: 25 });
   assert.deepEqual(planTime({ from: 3, to: 3 }), { kind: 'about', from: 3, count: 3 });

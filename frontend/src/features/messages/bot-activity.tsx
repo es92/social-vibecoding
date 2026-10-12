@@ -24,8 +24,10 @@ import type { ConversationMessage, HomeroomBotActivity, HomeroomBotActivityOutco
  * in the conversation, and the row draws that message as a card that
  * follows the work in place: the step it is at of the request's steps, what
  * it is doing, how long it has taken, and where to open it, until it ends
- * (a proposal up for a vote, a question asked, a build that did not
- * finish...). The viewer can go on writing below it. The activity tray
+ * (a change up for a vote, a question asked, a build that did not
+ * finish...). One request, one story: the card is also the root of the
+ * request's reply thread, where everything about the request is posted
+ * (./bot-shared.ts threadsAllowed); its "N updates in its thread" opens it. The viewer can go on writing below it. The activity tray
  * pinned above the transcript (./bot-work.tsx) stays what it is: everything
  * at once, and the history.
  *
@@ -106,6 +108,77 @@ export const ACTIVITY_OUTCOME_TONES: Record<HomeroomBotActivityOutcome, Tone> = 
   build_failed: 'trouble', failed: 'trouble', stopped: 'trouble',
   checking: 'built', going_live: 'built', needs_look: 'you',
 };
+
+/**
+ * One request, one story: the card's state line, in the words the chat uses
+ * for the request's moments ("Needs you · a question", "Ready to try ·
+ * waiting for approval", "Approved · going live", "Live", "Stopped · …").
+ * The small word over the title says where it stands; the line under it
+ * says what. An ending not named here keeps its tone's word and its label.
+ */
+export const CARD_STATE_WORDS: Partial<Record<HomeroomBotActivityOutcome, string>> = {
+  question: 'messages:bot.state.needsYou',
+  blocked: 'messages:bot.state.needsYou',
+  empty: 'messages:bot.state.needsYou',
+  proposed: 'messages:bot.state.ready',
+  checking: 'messages:bot.state.testing',
+  going_live: 'messages:bot.state.approved',
+  live: 'messages:bot.state.live',
+  stopped: 'messages:bot.state.stopped',
+  build_failed: 'messages:bot.state.stopped',
+  failed: 'messages:bot.state.stopped',
+  needs_look: 'messages:bot.state.stopped',
+  held: 'messages:bot.state.waiting',
+};
+
+/** The card's own line under its title where the chat's words differ from the ending's label. */
+export const CARD_STATE_LINES: Partial<Record<HomeroomBotActivityOutcome, string>> = {
+  question: 'messages:bot.state.line.question',
+  proposed: 'messages:bot.state.line.ready',
+  going_live: 'messages:bot.state.line.goingLive',
+  live: 'messages:bot.state.line.live',
+  needs_look: 'messages:bot.state.line.needsLook',
+};
+
+/** Pure: the card's small state word over its title, for an ending. */
+export function cardStateWord(outcome: HomeroomBotActivityOutcome): string {
+  const key = CARD_STATE_WORDS[outcome];
+  return translate(key || TONE_WORDS[ACTIVITY_OUTCOME_TONES[outcome]]);
+}
+
+/** Pure: the card's line under its title, for an ending: its own words, or the ending's label. */
+/** Why a build stopped (`stopCause`, services/homeroom-bot-activity.js cardOf), as the card says it. */
+export const STOP_CAUSE_LINES: Record<NonNullable<HomeroomBotActivity['stopCause']>, string> = {
+  time: 'messages:bot.state.line.stop.time',
+  restart: 'messages:bot.state.line.stop.restart',
+  restarts: 'messages:bot.state.line.stop.restart',
+  no_change: 'messages:bot.state.line.stop.noChange',
+  unproposed: 'messages:bot.state.line.stop.unproposed',
+  no_start: 'messages:bot.state.line.stop.noStart',
+  other: 'messages:bot.state.line.stop.other',
+};
+
+/**
+ * Pure: the card's line under its title, for an ending: its own words, or
+ * the ending's label. A build that stopped says why (`stopCause`); a request
+ * held back by one of the bot's limits says what it waits for (`heldBy`),
+ * naming `project`, and says nothing more when the limit is one it cannot
+ * name (an empty line: the heading "Waiting" says it).
+ */
+export function cardStateLine(
+  card: Pick<HomeroomBotActivity, 'outcome' | 'release' | 'stopCause' | 'heldBy'>, now: number = Date.now(), project = '',
+): string {
+  if (card.outcome === 'build_failed' && card.stopCause) return translate(STOP_CAUSE_LINES[card.stopCause]);
+  if (card.outcome === 'held') {
+    if (card.heldBy === 'proposals_per_app' && project) return translate('messages:bot.state.line.heldPerApp', { project });
+    if (card.heldBy === 'proposals_total') return translate('messages:bot.state.line.heldTotal');
+    if (card.heldBy) return '';
+  }
+  const key = card.outcome ? CARD_STATE_LINES[card.outcome] : undefined;
+  // A merge of Homeroom itself going live still says when its release comes.
+  if (key && !(card.outcome === 'going_live' && card.release)) return translate(key);
+  return outcomeLabel(card, now);
+}
 
 export const TONE_WORDS: Record<Tone, string> = {
   done: 'messages:bot.tone.done',
@@ -211,7 +284,9 @@ export function isActivityMessage(message: ConversationMessage): boolean {
  * the plan follows the request now, so the transcript leaves this one out.
  */
 export function isMovedActivity(message: ConversationMessage): boolean {
-  return isActivityMessage(message) && !!message.metadata?.homeroomBot?.movedTo;
+  // One request, one story: a card with a thread under it is the way into
+  // that thread, so it stays drawn wherever its work went.
+  return isActivityMessage(message) && !!message.metadata?.homeroomBot?.movedTo && !message.thread;
 }
 
 /**
@@ -350,14 +425,26 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
   let lead: ReactNode;
   let eyebrow: string;
   let status: ReactNode;
-  if (card && working) {
+  if (card && working && card.stage === 'on_hold') {
+    // Its building time for the week is used up: no step moving, no spinner.
+    lead = <ActivityLead />;
+    eyebrow = t('messages:bot.state.onHold');
+    status = (
+      <>
+        {project ? <span>{`${project} · `}</span> : null}
+        <span role="status">{card.doing ? capitalized(card.doing) : t('messages:bot.state.line.onHold')}</span>
+      </>
+    );
+  } else if (card && working) {
     const stepped = card.step && card.of;
     lead = <ActivityLead step={card.step} of={card.of} stepName={card.stepName} working />;
-    eyebrow = stepped
-      ? (card.stepName
-        ? t('messages:bot.activity.eyebrowStepNamed', { step: card.step as number, total: card.of as number, name: card.stepName })
-        : t('messages:bot.activity.eyebrowStep', { step: card.step as number, total: card.of as number }))
-      : t('messages:bot.activity.eyebrowWorking');
+    // Waiting on the viewer (a question, a plan for Build it): it needs them.
+    eyebrow = card.waitingOn === 'them' ? t('messages:bot.state.needsYou')
+      : stepped
+        ? (card.stepName
+          ? t('messages:bot.activity.eyebrowStepNamed', { step: card.step as number, total: card.of as number, name: card.stepName })
+          : t('messages:bot.activity.eyebrowStep', { step: card.step as number, total: card.of as number }))
+        : t('messages:bot.activity.eyebrowWorking');
     // The work's time, not the wait's (clockFrom), with the wait said apart.
     const elapsed = spanText(clockFrom(card), at);
     const usually = typicalText(card.typicalMinutes);
@@ -373,13 +460,14 @@ export function BotActivityCardView({ meta, card, loaded = false, failed = false
     // #4227: an ending that is still moving (checked before it is offered,
     // going live) spins, as working does.
     lead = SPINNING_OUTCOMES.has(card.outcome) ? <ActivityLead working /> : <ActivityLead tone={tone} />;
-    eyebrow = t(TONE_WORDS[tone]);
+    eyebrow = cardStateWord(card.outcome);
     const took = card.endedAt ? spanText(clockFrom(card), new Date(card.endedAt)) : null;
+    const line = cardStateLine(card, at.getTime(), meta.appName || meta.appSlug || '');
     status = (
       <>
-        {project ? <span>{`${project} · `}</span> : null}
-        <span role="status">{outcomeLabel(card, at.getTime())}</span>
-        {took ? <span>{` · ${tookText(card, took)}`}</span> : null}
+        {project ? <span>{line || took ? `${project} · ` : project}</span> : null}
+        {line ? <span role="status">{line}</span> : null}
+        {took ? <span>{line ? ` · ${tookText(card, took)}` : capitalized(tookText(card, took))}</span> : null}
       </>
     );
   } else {

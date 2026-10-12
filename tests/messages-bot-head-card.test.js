@@ -162,7 +162,8 @@ test('the server’s own lines parse, in the messages the bot sends', () => {
   assert.equal(botHead(dm.dmText('question', { question: 'Which colour?' }, { ...context, issueNumber: 1, firstVersion: true }), FIRST).kind, 'project');
   // The weekly limit, Filed and already filed lead with the same line (homeroom-bot-mayor.js).
   const held = dm.overAllowanceText({ line: dm.requestLine(context), appName: 'Todo List' });
-  assert.equal(botHead(held, { ...META, kind: 'allowance' }).rest, 'You\'ve used this week\'s building time. I\'ll start it on Monday.');
+  // One request, one story (spec 3, Stream 1 item 5): the on-hold words.
+  assert.equal(botHead(held, { ...META, kind: 'allowance' }).rest, 'On hold until Monday: your building time for this week is used up.');
   const mayor = read('src/services/homeroom-bot-mayor.js');
   assert.match(mayor, /`\$\{line\}\\n\\nFiled\. \$\{builds/);
   assert.match(mayor, /requestLine\(\{ appName: name, issueNumber: n, issueTitle: action\.title \}\)\}\\n\\nI already filed that\./);

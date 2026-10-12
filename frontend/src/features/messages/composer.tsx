@@ -6,6 +6,7 @@ import * as api from './api';
 import { waitingFor } from './waiting-for';
 import { channels, draftFor, notifyTyping, replyFor, scopeKey, send, setDraft, setReply, takePendingAttach, takePendingShare, useMessagesSnapshot } from './store';
 import { mirrorsReplies, postedNote } from './bot-question';
+import { botRequestNames, threadsAllowed } from './bot-shared';
 import type { ConversationUser, MessageAttachment, SharedObjectCard, SharedObjectReference, StagedObject } from './types';
 import { fileSize, pendingObjectLabel, senderName } from './format';
 import { plainText } from './plain-text';
@@ -488,6 +489,20 @@ export function MessageComposer({ threadRootId = null }: { threadRootId?: number
     );
   }
   if (!active.canSend) return <div className="messages-composer-disabled platform-safe-bar">{t('messages:composer.cannotSend')}</div>;
+  // One request, one story: inside a request's thread in the chat with
+  // Homeroom bot the box says which request a reply is about.
+  const botRoot = inThread && active.kind === 'direct' && threadsAllowed(active)
+    ? (snap.thread?.rootId === threadRootId ? snap.thread.root : null) || snap.messages.find((item) => item.id === threadRootId) || null
+    : null;
+  const botRequest = botRoot?.sender.bot && botRoot.metadata?.homeroomBot ? botRequestNames(botRoot.metadata.homeroomBot) : null;
+  const threadPlaceholder = !botRequest ? t('messages:composer.placeholderThread')
+    : botRequest.firstVersion ? t('messages:composer.placeholderBotThreadFirstVersion', { project: botRequest.project })
+      : botRequest.title ? t('messages:composer.placeholderBotThread', { request: botRequest.title })
+        : botRequest.number ? t('messages:composer.placeholderBotThreadNumbered', { number: String(botRequest.number) })
+          : t('messages:composer.placeholderThread');
+  // A plan's reply: a first version's is read by the bot alone (its next
+  // look), a request's plan's is posted on the request (#4488).
+  const planReply = reply?.sender.bot && reply.metadata?.homeroomBot?.kind === 'plan' ? reply.metadata.homeroomBot : null;
   // Where the count turns amber, and the only length a phone shows it at.
   const nearLimit = value.length > 7600;
 
@@ -501,7 +516,7 @@ export function MessageComposer({ threadRootId = null }: { threadRootId?: number
           inset (`platform-safe-bar`), so the card keeps its own padding on a
           notched phone instead of growing a tall blank foot. */}
       <div className="messages-composer-card">
-      {reply ? <div className="messages-reply-draft"><div className="min-w-0"><span className="font-semibold">{reply.sender.unnamed ? (reply.sender.id ? t('messages:composer.replyingToUnknownHandle') : t('messages:composer.replyingToUnknown')) : t('messages:composer.replyingTo', { name: senderName(reply.sender, { bare: active.kind === 'direct' }) })}</span><p className="truncate">{plainText(reply.content) || t('messages:composer.replyAttachment')}</p>{reply.sender.bot && mirrorsReplies(reply.metadata?.homeroomBot) ? <p className="messages-bot-note">{postedNote(reply.metadata.homeroomBot, 'reply')}</p> : null}{reply.sender.bot && reply.metadata?.homeroomBot?.kind === 'plan' ? <p className="messages-bot-note">{t('messages:composer.planReplyNote')}</p> : null}</div><button type="button" onClick={() => setReply(scope, null)} aria-label={t('messages:composer.cancelReply')}>×</button></div> : null}
+      {reply ? <div className="messages-reply-draft"><div className="min-w-0"><span className="font-semibold">{reply.sender.unnamed ? (reply.sender.id ? t('messages:composer.replyingToUnknownHandle') : t('messages:composer.replyingToUnknown')) : t('messages:composer.replyingTo', { name: senderName(reply.sender, { bare: active.kind === 'direct' }) })}</span><p className="truncate">{plainText(reply.content) || t('messages:composer.replyAttachment')}</p>{reply.sender.bot && mirrorsReplies(reply.metadata?.homeroomBot) ? <p className="messages-bot-note">{postedNote(reply.metadata.homeroomBot, 'reply')}</p> : null}{planReply ? <p className="messages-bot-note">{planReply.firstVersion ? t('messages:composer.planReplyNote') : t('messages:composer.planReplyNotePublic')}</p> : null}</div><button type="button" onClick={() => setReply(scope, null)} aria-label={t('messages:composer.cancelReply')}>×</button></div> : null}
       {object ? <div className="messages-pending-object"><span aria-hidden="true">◆</span><span className="truncate">{pendingObjectLabel(object, stagedCard)}</span><button type="button" onClick={() => { setObject(null); setPrompt(null); }} aria-label={t('messages:composer.removeSharedItem')}>×</button></div> : null}
       {attachments.length || uploading ? <div className="dc-attach-strip dc-attach-strip-active">{attachments.map((item) => <div key={item.id} className="dc-attach-item"><div className="min-w-0"><div className="dc-attach-name">{item.name}</div><div className="dc-attach-size">{fileSize(item.size)}</div></div><button type="button" className="dc-attach-remove" onClick={() => setAttachments((items) => items.filter((candidate) => candidate.id !== item.id))} aria-label={t('messages:composer.removeAttachment', { file: item.name })}>×</button></div>)}{uploading ? <span className="dc-attach-uploading">{t('messages:composer.uploading', { count: uploading })}</span> : null}</div> : null}
       {channelShown && channelMatches ? <div className="messages-mention-menu" id={listId} role="listbox" aria-label={t('messages:composer.channelsMenu')}>{channelMatches.map((item, index) => <button key={item.handle} id={optionId(index)} type="button" role="option" tabIndex={-1} aria-selected={index === activeOption} data-channel-option={item.handle} onMouseDown={(event) => event.preventDefault()} onMouseEnter={() => setHighlight(index)} onClick={() => insertChannel(item.handle)}>#{item.handle}{item.kind === 'app' && item.name.toLowerCase() !== item.handle ? <span className="messages-channel-option-name"> {item.name}</span> : null}</button>)}</div> : null}
@@ -541,7 +556,7 @@ export function MessageComposer({ threadRootId = null }: { threadRootId?: number
             </div>
           ) : null}
         </div>
-        <textarea ref={inputRef} value={value} onChange={onComposerChange} onPaste={(event) => { const files = [...event.clipboardData.files]; if (files.length) { event.preventDefault(); void addFiles(files); } }} onKeyDown={(event) => { if (onEmojiKeyDown(event)) return; if (suggestionKeys(event)) return; if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } else if (event.key === 'Escape' && reply) setReply(scope, null); }} onBlur={() => notifyTyping(false)} rows={1} maxLength={8000} placeholder={inThread ? t('messages:composer.placeholderThread') : (prompt || t('messages:composer.placeholder'))} aria-label={inThread ? t('messages:composer.labelThread') : t('messages:composer.label')} aria-autocomplete="list" aria-controls={suggestions.length ? listId : undefined} aria-activedescendant={activeOption >= 0 ? optionId(activeOption) : undefined} className="messages-composer-input" />
+        <textarea ref={inputRef} value={value} onChange={onComposerChange} onPaste={(event) => { const files = [...event.clipboardData.files]; if (files.length) { event.preventDefault(); void addFiles(files); } }} onKeyDown={(event) => { if (onEmojiKeyDown(event)) return; if (suggestionKeys(event)) return; if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } else if (event.key === 'Escape' && reply) setReply(scope, null); }} onBlur={() => notifyTyping(false)} rows={1} maxLength={8000} placeholder={inThread ? threadPlaceholder : (prompt || t('messages:composer.placeholder'))} aria-label={inThread ? t('messages:composer.labelThread') : t('messages:composer.label')} aria-autocomplete="list" aria-controls={suggestions.length ? listId : undefined} aria-activedescendant={activeOption >= 0 ? optionId(activeOption) : undefined} className="messages-composer-input" />
         <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={submit} disabled={!!uploading || (!value.trim() && !attachments.length && !object)} className="messages-send" aria-label={t('messages:composer.send')}><ArrowUpIcon aria-hidden="true" /></button>
       </div>
       {error ? <p role="alert" className="mt-1 text-xs text-red-700 dark:text-red-400">{error}</p> : null}

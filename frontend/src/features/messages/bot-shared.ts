@@ -1,5 +1,5 @@
 import { t } from '../../lib/i18n/runtime';
-import type { ConversationMessage, HomeroomBotActivityOutcome, HomeroomBotJob } from './types';
+import type { ConversationMessage, HomeroomBotActivityOutcome, HomeroomBotJob, HomeroomBotMeta } from './types';
 
 /*
  * What the Homeroom bot's activity tray (./bot-work.tsx), its activity cards
@@ -10,6 +10,80 @@ import type { ConversationMessage, HomeroomBotActivityOutcome, HomeroomBotJob } 
  * importing each other. It imports types and the message runtime only, and
  * reads a message's metadata inline — the other modules' own rule.
  */
+
+/*
+ * ── Threads in the chat with Homeroom bot ──────────────────────────────
+ * Every request the bot works on for someone has one story: an activity
+ * card in their chat with the bot, which is the root of that request's own
+ * reply thread (services/homeroom-bot-activity.js). Its quiet step lines,
+ * questions, plan, answers and ending are replies in that thread, and the
+ * four moments that ring (needs you, ready to try, stopped, live) are also
+ * listed in the main chat (`alsoInChat`), drawn there as the full message
+ * under a "↳ in {request} · {project}" label that opens the thread.
+ *
+ * A direct chat between people keeps no threads (#2387): a thread is how a
+ * room keeps a side conversation out of everyone's way, and a DM has no one
+ * else in it. The chat with the bot is the one exception, because there each
+ * request is its own conversation. `threadsAllowed` is the one place that
+ * says so on the client (the row's thread menu, the composer, the store).
+ */
+
+/** Whether a conversation can carry reply threads: a room, or the viewer's chat with Homeroom bot. */
+export function threadsAllowed(conversation: { kind?: string; homeroomBot?: boolean } | null | undefined): boolean {
+  if (!conversation) return false;
+  return conversation.kind !== 'direct' || conversation.homeroomBot === true;
+}
+
+/** A thread reply the bot also lists in the main chat: one of the four moments that ring. */
+export function alsoInChat(message: { threadRootId?: number | null; metadata?: { homeroomBot?: { alsoInChat?: boolean } | null } | null }): boolean {
+  return !!message.threadRootId && message.metadata?.homeroomBot?.alsoInChat === true;
+}
+
+/**
+ * Whether a message is a position in the main stream, as the server counts
+ * unread and moves the read cursor: a message of the conversation itself, or
+ * a thread reply it also lists there (`alsoInChat`).
+ */
+export function inMainStream(message: { threadRootId?: number | null; metadata?: { homeroomBot?: { alsoInChat?: boolean } | null } | null }): boolean {
+  return !message.threadRootId || alsoInChat(message);
+}
+
+/** What a request's thread is called, from any of its messages' metadata. */
+export interface BotRequestNames {
+  /** The project's name (or the stand-in for one nobody can name). */
+  project: string;
+  /** The request's own title, when it has one; null for a first version. */
+  title: string | null;
+  /** Its number on the project's board, when known. */
+  number: number | null;
+  firstVersion: boolean;
+}
+
+type RequestMeta = Pick<HomeroomBotMeta, 'appName' | 'appSlug' | 'issueNumber' | 'issueTitle' | 'firstVersion' | 'requestTitle'>;
+
+/** Pure: the names a request's thread goes by, from a bot message's metadata. */
+export function botRequestNames(meta: RequestMeta | null | undefined): BotRequestNames {
+  const project = meta?.appName || meta?.appSlug || t('messages:bot.job.unnamedProject');
+  const firstVersion = !!meta?.firstVersion;
+  const title = firstVersion ? null : (meta?.requestTitle || meta?.issueTitle || null);
+  const number = meta?.issueNumber && meta.issueNumber > 0 ? meta.issueNumber : null;
+  return { project, title, number, firstVersion };
+}
+
+/** "Dark mode", "Plant Pal first version", "Request #12": a request's thread by its own name. */
+export function botThreadTitle(names: BotRequestNames): string {
+  if (names.firstVersion) return t('messages:bot.job.firstVersion', { project: names.project });
+  if (names.title) return names.title;
+  return names.number ? t('messages:bot.activity.requestNumber', { number: String(names.number) }) : names.project;
+}
+
+/** "↳ in Dark mode · Plant Pal": the label over a moment the main chat also shows. */
+export function botThreadLabel(names: BotRequestNames): string {
+  if (names.firstVersion) return t('messages:row.botThread.inFirstVersion', { project: names.project });
+  if (names.title) return t('messages:row.botThread.in', { request: names.title, project: names.project });
+  if (names.number) return t('messages:row.botThread.inNumbered', { number: String(names.number), project: names.project });
+  return t('messages:row.botThread.inProject', { project: names.project });
+}
 
 /** public/js/app.js dispatches this on `homeroom_bot_work_changed` and on a socket reconnect. */
 export const WORK_CHANGED_EVENT = 'homeroom-bot-work-changed';
@@ -143,6 +217,15 @@ export function changeKey(message: ConversationMessage): string | null {
   return app ? `${app}#${n}` : null;
 }
 
+/**
+ * Whether a message belongs to a reply thread: a reply in one, or the root
+ * one hangs off. Its thread says which request it is about (#4564 retired
+ * for these, changeBlocks).
+ */
+export function threaded(message: ConversationMessage): boolean {
+  return !!message.threadRootId || !!message.thread;
+}
+
 /** How a row is drawn inside its change's block: alone, or where it sits in the run. */
 export type ChangeBlockPart = 'only' | 'first' | 'middle' | 'last';
 
@@ -184,15 +267,21 @@ export interface ChangeBlocksOptions {
  * by message id, for the rows it groups. Messages keep their order and are
  * grouped only where they are already adjacent: a run continues while each
  * next drawn message is the bot's message about the same request
- * (`changeKey`), is not a thread reply (`threadRootId`, drawn by its own
- * row) and `together` still holds; a day divider, the "New" line, a reply,
- * anything someone else says and a bot message about another change each
- * end it. A message with no key — those and a hidden one — is not in the map.
+ * (`changeKey`), is not threaded (`threaded`) and `together` still holds;
+ * a day divider, the "New" line, a reply, anything someone else says and a
+ * bot message about another change each end it. A message with no key —
+ * those and a hidden one — is not in the map.
  *
  * `repeat` is true on a row when an earlier row of its run `showsRequest`:
  * its request card would say for a second time what the top of the block
- * already shows. The keyless and the thread rows end a run; they never
+ * already shows. The keyless and the threaded rows end a run; they never
  * carry one.
+ *
+ * RETIRED FOR THREADS (one request, one story). A request's story is its
+ * thread now: its card is the thread's root, and what the bot says about it
+ * is in that thread, so a threaded row (a reply, or a root with replies)
+ * needs no outline to say which request it belongs to. Blocks still draw
+ * the chat's history from before threads, where nothing is threaded.
  */
 export function changeBlocks(
   messages: readonly ConversationMessage[],
@@ -219,9 +308,10 @@ export function changeBlocks(
     if (hidden(message)) continue;
     const key = changeKey(message);
     const previous = run[run.length - 1];
-    const joins = !!key && !!previous && changeKey(previous) === key && !message.threadRootId && together(previous, message);
+    const blocked = !!key && !threaded(message);
+    const joins = blocked && !!previous && changeKey(previous) === key && together(previous, message);
     if (!joins) close();
-    if (key && !message.threadRootId) run.push(message);
+    if (blocked) run.push(message);
   }
   close();
   return blocks;

@@ -127,7 +127,10 @@ test('a retired suggestion is drawn as nothing; a decision overtaken still says 
 
 test('Try again replies to its message; Add detail quotes it in the composer and stays', () => {
   const store = read('frontend/src/features/messages/store.ts');
-  assert.match(store, /if \(action\.quote\) setReply\(scope, message\);\s*else if \(staged\) setReply\(scope, null\);\s*const sending = send\(\{ content: action\.label \}\);\s*if \(action\.quote \|\| staged\) setReply\(scope, staged \|\| null\);/);
+  // One request, one story: in the chat with Homeroom bot a button on a
+  // message in a request's thread says its words in that thread (botThreadOf).
+  assert.match(store, /const rootId = botThreadOf\(message\);\s*const scope = scopeKey\(conversationId, rootId\);/);
+  assert.match(store, /if \(action\.quote\) setReply\(scope, message\);\s*else if \(staged\) setReply\(scope, null\);\s*const sending = send\(\{ content: action\.label, threadRootId: rootId, anyThread: true \}\);\s*if \(action\.quote \|\| staged\) setReply\(scope, staged \|\| null\);/);
   const question = read('frontend/src/features/messages/bot-question.tsx');
   assert.match(question, /if \(action\.type === 'reply'\) \{\s*quoteInComposer\(message, conversationId\);\s*return;\s*\}/);
   const api = loadTsx('frontend/src/features/messages/api.ts');

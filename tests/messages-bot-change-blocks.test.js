@@ -12,10 +12,13 @@
 //      same key, so its step card and a block cannot disagree.
 //   2. The blocks (`changeBlocks`): a run of adjacent bot messages about one
 //      request is first / middle / last; a person's message, another
-//      request, bot words about no request, a thread reply, a day divider
-//      and the unread line each end a block; a skipped row (a card moved
-//      under its plan) does not; and `repeat` is true only after a row that
-//      itself shows the request.
+//      request, bot words about no request, a threaded row (a thread reply,
+//      or the root a thread hangs off), a day divider and the unread line
+//      each end a block; a skipped row (a card moved under its plan) does
+//      not; and `repeat` is true only after a row that itself shows the
+//      request. One request, one story retired the blocks for threaded rows:
+//      a request's thread says which request its messages are about, so the
+//      outline is left to the chat's history from before threads.
 //   3. The drawing: a row drawn with its block wears the outline classes and
 //      data, a row whose block repeats the request drops its request card
 //      and speaks the card's label instead (its change's card stays), and a
@@ -121,6 +124,13 @@ test('a person’s message, another change, bot words about no request, a thread
   // A thread reply is drawn by its own row: not in a block, and it ends one.
   const withReply = [botMessage(1), botMessage(2, { threadRootId: 9 }), botMessage(3)];
   assert.deepEqual(parts(changeBlocks(withReply, opts)), [[1, 'only', false], [3, 'only', false]]);
+  // One request, one story: a request's card with its thread under it is
+  // that thread's root, which says which request it is; no block either.
+  const thread = { replyCount: 3, lastReplyAt: null, participants: [], lastReply: null };
+  const withRoot = [botMessage(1), botMessage(2, { thread }), botMessage(3), botMessage(4, { threadRootId: 2 })];
+  assert.deepEqual(parts(changeBlocks(withRoot, opts)), [[1, 'only', false], [3, 'only', false]]);
+  // A chat that is all threads draws no blocks at all.
+  assert.deepEqual(parts(changeBlocks([botMessage(1, { thread }), botMessage(2, { threadRootId: 1 }), botMessage(3, { threadRootId: 1 })], opts)), []);
   // A day divider, or the unread line, between two: the loop says so through `together`.
   const acrossDays = [botMessage(1), botMessage(2, { createdAt: new Date(Date.UTC(2026, 9, 10, 12, 1)).toISOString() })];
   const apart = { ...opts, together: (a, b) => new Date(a.createdAt).toDateString() === new Date(b.createdAt).toDateString() };

@@ -209,8 +209,10 @@ test('the activity card: "Built it." and then when', () => {
   };
   const html = renderToHtml(createElement(BotActivityCardView, { meta: META, loaded: true, now: NOW, card: { ...card, release: release8 } }));
   assert.match(html, new RegExp(`<span role="status">Built it\\. ${SENTENCE.replace(/[()]/g, '\\$&')}</span>`));
+  // One request, one story: a child app's merge reads "Approved · going
+  // live" on the card; a Homeroom merge still says when its release comes.
   const child = renderToHtml(createElement(BotActivityCardView, { meta: META, loaded: true, now: NOW, card }));
-  assert.match(child, /<span role="status">Built it\. Going live now<\/span>/);
+  assert.match(child, /data-bot-activity-eyebrow="">Approved<[\s\S]*<span role="status">Going live<\/span>/);
 });
 
 test('the tray: Now, History and the status line say when for a Homeroom merge', () => {

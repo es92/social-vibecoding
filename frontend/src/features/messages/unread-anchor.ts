@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { t } from '../../lib/i18n/runtime';
 import { useIsomorphicLayoutEffect } from '../../lib/legacy-dom';
 import { isNearBottom, STICK_SLACK_PX, type ScrollBox } from './stick-to-bottom';
+import { inMainStream } from './bot-shared';
 
 /*
  * A conversation with unread messages opens where they begin.
@@ -365,16 +366,21 @@ export function useUnreadAffordances(
  * A message as this module reads it. Countable the way the server's unread
  * count is (services/conversations.js countUnread): the main stream only,
  * not deleted, not a platform line, and stored (a row still sending, or one
- * that failed, has no place among what was read).
+ * that failed, has no place among what was read). One request, one story: a
+ * thread reply the chat with Homeroom bot also lists in its main stream
+ * (`alsoInChat`, ./bot-shared.ts inMainStream) is part of that stream.
  */
 export function messageRow(
-  message: { id: number; sender: { id: number }; threadRootId?: number | null; deleted?: boolean; system?: boolean; pending?: boolean; failed?: boolean },
+  message: {
+    id: number; sender: { id: number }; threadRootId?: number | null; deleted?: boolean; system?: boolean; pending?: boolean; failed?: boolean;
+    metadata?: { homeroomBot?: { alsoInChat?: boolean } | null } | null;
+  },
   viewerId: number,
 ): UnreadRow {
   return {
     id: message.id,
     mine: !!viewerId && message.sender.id === viewerId,
-    countable: message.id > 0 && !message.threadRootId && !message.deleted && !message.system && !message.pending && !message.failed,
+    countable: message.id > 0 && inMainStream(message) && !message.deleted && !message.system && !message.pending && !message.failed,
   };
 }
 

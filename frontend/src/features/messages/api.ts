@@ -260,6 +260,17 @@ export function normalizeBotMeta(input: unknown): { homeroomBot: HomeroomBotMeta
       // B6: a card Build it moved under its plan.
       ...(strictId(pick(bot, 'movedTo')) ? { movedTo: strictId(pick(bot, 'movedTo'))! } : {}),
       ...(goesLive ? { goesLive } : {}),
+      // Why its buttons were closed, said in their place.
+      ...(text(pick(bot, 'closedWhy')) ? { closedWhy: text(pick(bot, 'closedWhy')).slice(0, 120) } : {}),
+      // One request, one story: the thread it is in, the moment it rings
+      // as, and the names its label and its push use.
+      ...(strictId(pick(bot, 'threadRootId')) ? { threadRootId: strictId(pick(bot, 'threadRootId'))! } : {}),
+      moment: optional('moment'),
+      said: optional('said'),
+      requestTitle: optional('requestTitle'),
+      waiting: optional('waiting'),
+      ...(countOf(pick(bot, 'count')) !== null ? { count: countOf(pick(bot, 'count'))! } : {}),
+      ...(pick(bot, 'alsoInChat') === true ? { alsoInChat: true } : {}),
     },
   };
 }
@@ -965,6 +976,9 @@ export async function getHomeroomBotWork(options?: ReadOptions): Promise<Homeroo
  * "N of M"; an unknown state or outcome reads as a piece of work that
  * stopped, never as one still going.
  */
+const STOP_CAUSES = new Set(['time', 'restart', 'restarts', 'no_change', 'unproposed', 'no_start', 'other']);
+const HELD_BY = new Set(['proposals_per_app', 'proposals_total', 'questions_per_day']);
+
 export function normalizeBotActivity(input: unknown): HomeroomBotActivity[] {
   return array(pick(record(input), 'cards')).map((entry): HomeroomBotActivity | null => {
     const row = record(entry);
@@ -999,6 +1013,15 @@ export function normalizeBotActivity(input: unknown): HomeroomBotActivity[] {
       endedAt: working ? null : text(pick(row, 'endedAt')) || null,
       // Whole minutes, the shorter first, and under two hours.
       ...(working && from && to && from <= to && to <= 120 ? { typicalMinutes: { from, to } } : {}),
+      // Who the work waits on while it waits (`them`: the viewer), so the card can say it needs them.
+      ...(working && text(pick(row, 'waitingOn')) ? { waitingOn: text(pick(row, 'waitingOn')).slice(0, 40) } : {}),
+      // The stage it is at while it works (`on_hold`: until Monday), a short word.
+      ...(working && /^[a-z_]{1,40}$/.test(text(pick(row, 'stage'))) ? { stage: text(pick(row, 'stage')) } : {}),
+      // Why a build stopped, and which limit holds a request back: known words only.
+      ...(!working && outcome === 'build_failed' && STOP_CAUSES.has(text(pick(row, 'stopCause')))
+        ? { stopCause: text(pick(row, 'stopCause')) as HomeroomBotActivity['stopCause'] } : {}),
+      ...(!working && outcome === 'held' && HELD_BY.has(text(pick(row, 'heldBy')))
+        ? { heldBy: text(pick(row, 'heldBy')) as HomeroomBotActivity['heldBy'] } : {}),
       ...(release ? { release } : {}),
     };
   }).filter((card): card is HomeroomBotActivity => !!card);

@@ -19,7 +19,7 @@ import { BotQuestion, botMeta } from './bot-question';
 import { BotPlanCard, BotTwoQuestions, isPlanMessage, isTwoQuestions } from './bot-plan';
 import { BotThanksCard, isThanksMessage } from './bot-thanks-card';
 import { BotReadyCard, isReadyMessage } from './bot-ready';
-import type { ChangeBlock } from './bot-shared';
+import { alsoInChat, botRequestNames, botThreadLabel, threadsAllowed, type ChangeBlock } from './bot-shared';
 import { BotHeadWords, botHead, isHeadCard } from './bot-head-card';
 import { LinkEmbeds } from './link-cards';
 import { plainText } from './plain-text';
@@ -94,6 +94,7 @@ export const MessageRow = memo(function MessageRow({
   planCardId = null,
   hidePrompts = false,
   block = null,
+  botChat = false,
 }: {
   message: ConversationMessage;
   conversationId: number;
@@ -101,7 +102,7 @@ export const MessageRow = memo(function MessageRow({
   grouped?: boolean;
   /** The viewer's channel handles, so `#name` in the body links (#2783). */
   channels?: ReadonlySet<string>;
-  /** The conversation's kind: a DM has no threads (#2387). */
+  /** The conversation's kind: a DM has no threads (#2387), but for the chat with Homeroom bot (`botChat`). */
   kind?: ConversationKind;
   /** Drawn inside a reply thread — no thread of its own, no "mark unread". */
   inThread?: boolean;
@@ -119,6 +120,12 @@ export const MessageRow = memo(function MessageRow({
    * else, and for a bot message about no request: those draw as before.
    */
   block?: ChangeBlock | null;
+  /**
+   * One request, one story: the row is in the viewer's chat with Homeroom
+   * bot, the one direct chat with threads (./bot-shared.ts threadsAllowed):
+   * each request's card is the root of its thread.
+   */
+  botChat?: boolean;
 }) {
   const t = useMessages('messages');
   const mine = Number(typeof window !== 'undefined' ? window.App?.user?.id : 0) === message.sender.id;
@@ -143,7 +150,20 @@ export const MessageRow = memo(function MessageRow({
   useAutoGrow(editRef, editValue);
 
   const live = !message.deleted && !message.pending && !message.failed && message.id > 0;
-  const canThread = live && !inThread && kind !== 'direct';
+  // Threads where the chat keeps them (./bot-shared.ts threadsAllowed). In
+  // the chat with Homeroom bot a thread is a request's: it hangs off the
+  // request's card (or a message that already has one), and a moment the
+  // main chat also shows (`alsoInChat`) opens the thread it was posted in.
+  const threads = threadsAllowed({ kind, homeroomBot: botChat });
+  const threadRoot = !live || inThread || !threads ? null
+    : message.threadRootId ? message.threadRootId
+      : kind !== 'direct' || isActivityMessage(message) || message.thread ? message.id : null;
+  const canThread = threadRoot !== null;
+  // The label over such a moment: "↳ in Dark mode · Plant Pal".
+  const inChatLabel = !inThread && threads && alsoInChat(message) && message.sender.bot
+    ? botThreadLabel(botRequestNames(botMeta(message))) : null;
+  // A quiet step line in a request's thread ("Reading it.", "Built. Testing it…").
+  const step = !!message.sender.bot && message.metadata?.homeroomBot?.kind === 'step';
   const scope = scopeKey(conversationId, inThread ? message.threadRootId : null);
   useDismiss(!!(picker || menu), [bar], () => { setPicker(null); setMenu(null); });
   // #4055: the message's pictures. In the app, whether its build can save
@@ -223,8 +243,8 @@ export const MessageRow = memo(function MessageRow({
 
   // The ⋯ menu, by whose message it is and what kind of chat it sits in.
   const items: MenuItem[] = [];
-  if (canThread) {
-    items.push({ key: 'thread', label: message.thread ? t('messages:row.menu.viewThread') : t('messages:row.menu.replyInThread'), icon: ThreadIcon, onSelect: () => openThread(message.id) });
+  if (threadRoot !== null) {
+    items.push({ key: 'thread', label: message.thread || threadRoot !== message.id ? t('messages:row.menu.viewThread') : t('messages:row.menu.replyInThread'), icon: ThreadIcon, onSelect: () => openThread(threadRoot) });
   }
   if (mine && message.content && live) items.push({ key: 'edit', label: t('messages:row.menu.edit'), icon: PencilSquareIcon, onSelect: startEdit });
   if (message.content) {
@@ -325,6 +345,9 @@ export const MessageRow = memo(function MessageRow({
       ) : isReadyMessage(message) ? (
         // B7: a change ready to try, with Try it, Approve and Change something.
         <BotReadyCard message={message} conversationId={conversationId} />
+      ) : step && words ? (
+        // One request, one story: a step line in its thread reads quietly.
+        <div className="messages-bot-step text-[0.8125rem] leading-[1.125rem] text-zinc-500 dark:text-zinc-400" data-bot-step="">{words}</div>
       ) : words}
     </>
   );
@@ -342,7 +365,17 @@ export const MessageRow = memo(function MessageRow({
           card it names — for this reader, and never one already above. */}
       {message.content && !message.moderated ? <LinkEmbeds text={message.content} exclude={message.objects} /> : null}
       {message.reactions.length ? <div className="messages-reactions">{message.reactions.map((reaction) => <button type="button" key={reaction.emoji} aria-pressed={reaction.reacted} title={reaction.users ? listText(reaction.users) : undefined} onClick={() => void toggle(reaction.emoji)} className={reaction.reacted ? 'messages-reaction-mine' : ''}><span>{reaction.emoji}</span><span>{reaction.count}</span></button>)}</div> : null}
-      {message.thread && !inThread ? (
+      {message.thread && !inThread && kind === 'direct' && threads ? (
+        // One request, one story: in the chat with Homeroom bot the thread
+        // under a request's card is its updates, said in words.
+        <button
+          type="button"
+          className="mt-1.5 inline-flex items-center rounded-md text-[0.8125rem] font-semibold text-violet-700 hover:underline dark:text-violet-300"
+          aria-pressed={threadOpen}
+          data-bot-thread-link={message.id}
+          onClick={() => openThread(message.id)}
+        >{t('messages:row.botThread.updates', { count: message.thread.replyCount })}</button>
+      ) : message.thread && !inThread ? (
         <ThreadSummaryChip
           replyCount={message.thread.replyCount}
           lastReplyAt={message.thread.lastReplyAt}
@@ -427,6 +460,14 @@ export const MessageRow = memo(function MessageRow({
             hears which request these words are about, as the block's top
             shows. */}
         {dropHead ? <span className="sr-only">{spokenLabel}</span> : null}
+        {inChatLabel && message.threadRootId ? (
+          <button
+            type="button"
+            className="block max-w-full truncate text-left text-[0.8125rem] font-medium text-zinc-500 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
+            data-bot-thread-label={message.threadRootId}
+            onClick={() => openThread(message.threadRootId as number)}
+          >{inChatLabel}</button>
+        ) : null}
         {body}
         {extras}
         {grouped && message.editedAt && !message.deleted ? <div className="messages-message-meta">{status}</div> : null}

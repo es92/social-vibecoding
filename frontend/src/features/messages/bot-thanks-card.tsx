@@ -16,9 +16,8 @@ import type { ConversationMessage, HomeroomBotActivity, HomeroomBotMeta } from '
  * activity card under the plan (services/homeroom-bot-activity.js
  * cardUnderPlan). Until now that card was not drawn at all: its words
  * reached only the inbox's preview and the push, so the chat said nothing
- * after Build it. Now it is a message the maker sees: its words ("Thanks for
- * answering about the plan. I'll let you know when Run Club is ready to
- * try."), then a card for the app, the thumbnail row the hub draws
+ * after Build it. Now it is a message the maker sees: its words ("Building
+ * it now. I'll tell you when it's ready to try.", the server's), then a card for the app, the thumbnail row the hub draws
  * (../first-session/sketch-card.tsx ThumbRow: the icon tile in the
  * project's colour, and its name) with the build line under the name
  * (../first-session/build-line.tsx). The line follows the build from the

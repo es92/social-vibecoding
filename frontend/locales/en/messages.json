@@ -575,6 +575,94 @@
     "text": "Didn’t finish",
     "description": "Small heading on a Homeroom bot activity card: the work failed or was stopped before finishing."
   },
+  "bot.state.needsYou": {
+    "text": "Needs you",
+    "description": "Small heading on a Homeroom bot activity card: the request waits on the person reading it (a question, a plan to OK)."
+  },
+  "bot.state.ready": {
+    "text": "Ready to try",
+    "description": "Small heading on a Homeroom bot activity card: the change it built is ready to try and waits for approval."
+  },
+  "bot.state.testing": {
+    "text": "Testing",
+    "description": "Small heading on a Homeroom bot activity card: the change is built and being tested before anyone tries it."
+  },
+  "bot.state.approved": {
+    "text": "Approved",
+    "description": "Small heading on a Homeroom bot activity card: the change was approved and is going live."
+  },
+  "bot.state.live": {
+    "text": "Live",
+    "description": "Small heading on a Homeroom bot activity card: the change is live in the project."
+  },
+  "bot.state.stopped": {
+    "text": "Stopped",
+    "description": "Small heading on a Homeroom bot activity card: the work stopped before it finished."
+  },
+  "bot.state.waiting": {
+    "text": "Waiting",
+    "description": "Small heading on a Homeroom bot activity card: the bot is held back and will start later."
+  },
+  "bot.state.line.question": {
+    "text": "A question",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Needs you\": the bot asked the person a question about the request."
+  },
+  "bot.state.line.ready": {
+    "text": "Waiting for approval",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Ready to try\": the change waits for people to approve it."
+  },
+  "bot.state.line.goingLive": {
+    "text": "Going live",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Approved\": the change is on its way to being live."
+  },
+  "bot.state.line.live": {
+    "text": "It’s live",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Live\": the change is live in the project."
+  },
+  "bot.state.line.needsLook": {
+    "text": "It’s built, but a person needs to look at it",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the change was built but a person must look at it before anyone can try it."
+  },
+  "bot.state.onHold": {
+    "text": "On hold until Monday",
+    "description": "Small heading on a Homeroom bot activity card: the person's building time for this week is used up, so the work waits until Monday."
+  },
+  "bot.state.line.onHold": {
+    "text": "Your building time for this week is used up",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"On hold until Monday\": why the work waits."
+  },
+  "bot.state.line.stop.time": {
+    "text": "It took longer than I’m allowed",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the bot (speaking as I) ran out of the time it may spend building."
+  },
+  "bot.state.line.stop.restart": {
+    "text": "Homeroom restarted while I was building",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": Homeroom restarted during the build. The bot speaks as I."
+  },
+  "bot.state.line.stop.noChange": {
+    "text": "I ended up with no changes to show",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the build produced no changes. The bot speaks as I."
+  },
+  "bot.state.line.stop.unproposed": {
+    "text": "I couldn’t put it up for a vote",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the bot built the change but could not put it to the group's vote."
+  },
+  "bot.state.line.stop.noStart": {
+    "text": "I couldn’t get started",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the build never started. The bot speaks as I."
+  },
+  "bot.state.line.stop.other": {
+    "text": "Something went wrong while I was building",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Stopped\": the build failed for another reason. The bot speaks as I."
+  },
+  "bot.state.line.heldPerApp": {
+    "text": "I’ll start when one of my changes on {{project}} is voted in or closed",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Waiting\": the bot has as many changes up for a vote on this project as it may, and starts once one is decided. {{project}} is the project's name."
+  },
+  "bot.state.line.heldTotal": {
+    "text": "I’ll start when one of my changes across Homeroom is voted in or closed",
+    "description": "The line under a Homeroom bot activity card's title, under the heading \"Waiting\": the bot has as many changes up for a vote across all of Homeroom as it may, and starts once one is decided."
+  },
   "bot.span.underMinute": {
     "text": "under a minute",
     "description": "A duration of less than one minute, shown where a length of time is given on a Homeroom bot card, as in \"under a minute so far\" or \"took under a minute\"."
@@ -600,19 +688,19 @@
     "description": "A short duration in days and hours on a Homeroom bot card. {{days}} and {{hours}} are numbers; \"d\" and \"h\" abbreviate days and hours."
   },
   "bot.activity.typicalAbout_one": {
-    "text": "usually about {{count}} minutes",
+    "text": "usually about {{count}} min",
     "description": "One fact in the dot-separated status line of a working Homeroom bot activity card, complete on its own: how long this kind of work usually takes. {{count}} is a number of minutes."
   },
   "bot.activity.typicalAbout_other": {
-    "text": "usually about {{count}} minutes",
+    "text": "usually about {{count}} min",
     "description": "One fact in the dot-separated status line of a working Homeroom bot activity card, complete on its own: how long this kind of work usually takes. {{count}} is a number of minutes."
   },
   "bot.activity.typicalRange_one": {
-    "text": "usually {{from}} to {{count}} minutes",
+    "text": "usually {{from}} to {{count}} min",
     "description": "One fact in the dot-separated status line of a working Homeroom bot activity card, complete on its own: the usual range of time this kind of work takes. {{from}} is the shorter number of minutes and {{count}} the longer."
   },
   "bot.activity.typicalRange_other": {
-    "text": "usually {{from}} to {{count}} minutes",
+    "text": "usually {{from}} to {{count}} min",
     "description": "One fact in the dot-separated status line of a working Homeroom bot activity card, complete on its own: the usual range of time this kind of work takes. {{from}} is the shorter number of minutes and {{count}} the longer."
   },
   "bot.activity.soFar": {
@@ -656,8 +744,8 @@
     "description": "Small heading on a working Homeroom bot activity card. {{step}} is the current step number and {{total}} the number of steps."
   },
   "bot.activity.eyebrowStepNamed": {
-    "text": "Step {{step}} of {{total}} · {{name}}",
-    "description": "Small heading on a working Homeroom bot activity card. {{step}} is the current step number, {{total}} the number of steps and {{name}} what the step is called."
+    "text": "{{name}} · step {{step}} of {{total}}",
+    "description": "Small heading on a working Homeroom bot activity card: the step it is at, by name, then its number. {{name}} is what the step is called (for example Building), {{step}} the current step number and {{total}} the number of steps."
   },
   "bot.activity.eyebrowWorking": {
     "text": "Working on it",
@@ -1052,8 +1140,8 @@
     "description": "Small heading on a tile in Homeroom bot's Activity panel for work in progress. {{step}} is the current step number and {{total}} the number of steps."
   },
   "bot.tray.eyebrowStepNamed": {
-    "text": "Step {{step}} of {{total}} · {{name}}",
-    "description": "Small heading on a tile in Homeroom bot's Activity panel for work in progress. {{step}} is the current step number, {{total}} the number of steps and {{name}} what the step is called."
+    "text": "{{name}} · step {{step}} of {{total}}",
+    "description": "Small heading on a tile in Homeroom bot's Activity panel for work in progress: the step it is at, by name, then its number. {{name}} is what the step is called (for example Building), {{step}} the current step number and {{total}} the number of steps."
   },
   "bot.tray.eyebrowWorking": {
     "text": "Working on it",
@@ -1356,27 +1444,27 @@
     "description": "Progress line under the title of Homeroom bot's plan card. {{step}} is the current step number and {{total}} the number of steps."
   },
   "bot.plan.stepNamed": {
-    "text": "Step {{step}} of {{total}} · {{name}}",
-    "description": "Progress line under the title of Homeroom bot's plan card while it builds. {{step}} is the current step number, {{total}} the number of steps and {{name}} what the step is called."
+    "text": "{{name}} · step {{step}} of {{total}}",
+    "description": "Progress line under the title of Homeroom bot's plan card while it builds: the step it is at, by name, then its number. {{name}} is what the step is called (for example Building), {{step}} the current step number and {{total}} the number of steps."
   },
   "bot.plan.working": {
     "text": "Working on it",
     "description": "Progress line under the title of Homeroom bot's plan card while it builds, when the bot has not said what exactly it is doing. \"it\" is the plan."
   },
   "bot.plan.progress.stepNamedAbout_one": {
-    "text": "Step {{step}} of {{total}} · {{name}} · about {{count}} min",
+    "text": "{{name}} · step {{step}} of {{total}} · about {{count}} min",
     "description": "Progress line under the title of Homeroom bot's plan card while it builds, a single line of facts separated by middle dots: the step under way ({{step}} of {{total}}, called {{name}}), then how long building usually takes: {{count}} is a number of minutes. \"min\" abbreviates minutes."
   },
   "bot.plan.progress.stepNamedAbout_other": {
-    "text": "Step {{step}} of {{total}} · {{name}} · about {{count}} min",
+    "text": "{{name}} · step {{step}} of {{total}} · about {{count}} min",
     "description": "Progress line under the title of Homeroom bot's plan card while it builds, a single line of facts separated by middle dots: the step under way ({{step}} of {{total}}, called {{name}}), then how long building usually takes: {{count}} is a number of minutes. \"min\" abbreviates minutes."
   },
   "bot.plan.progress.stepNamedRange_one": {
-    "text": "Step {{step}} of {{total}} · {{name}} · {{from}} to {{count}} min",
+    "text": "{{name}} · step {{step}} of {{total}} · {{from}} to {{count}} min",
     "description": "Progress line under the title of Homeroom bot's plan card while it builds, a single line of facts separated by middle dots: the step under way ({{step}} of {{total}}, called {{name}}), then the usual range of time building takes: {{from}} is the shorter number of minutes and {{count}} the longer. \"min\" abbreviates minutes."
   },
   "bot.plan.progress.stepNamedRange_other": {
-    "text": "Step {{step}} of {{total}} · {{name}} · {{from}} to {{count}} min",
+    "text": "{{name}} · step {{step}} of {{total}} · {{from}} to {{count}} min",
     "description": "Progress line under the title of Homeroom bot's plan card while it builds, a single line of facts separated by middle dots: the step under way ({{step}} of {{total}}, called {{name}}), then the usual range of time building takes: {{from}} is the shorter number of minutes and {{count}} the longer. \"min\" abbreviates minutes."
   },
   "bot.plan.progress.stepAbout_one": {
@@ -1491,13 +1579,13 @@
     "text": "Actions",
     "description": "Accessible name of the pair of buttons under Homeroom bot's two questions (Build it, Something else). A noun."
   },
-  "bot.questions.build": {
-    "text": "Build it",
-    "description": "Button under Homeroom bot's questions about a request: sends the chosen answers and tells the bot to build. \"Build\" is a verb."
+  "bot.questions.send": {
+    "text": "Send answers",
+    "description": "Button under Homeroom bot's two questions about a request: sends the chosen answers to the bot. It does not start building; \"Send\" is a verb."
   },
-  "bot.questions.somethingElse": {
-    "text": "Something else",
-    "description": "Button under Homeroom bot's questions: lets the person type their own answer instead of choosing one."
+  "bot.questions.writeOwn": {
+    "text": "Write my own",
+    "description": "Button under Homeroom bot's questions: lets the person type their own answers instead of choosing them."
   },
   "bot.questions.youAnswered": {
     "text": "You answered:\n{{answers}}",
@@ -1519,8 +1607,8 @@
     "text": "suggested",
     "description": "Small tag beside the first answer button under a question from Homeroom bot: the answer the bot recommends. Lower case."
   },
-  "bot.question.somethingElse": {
-    "text": "Something else",
+  "bot.question.writeOwn": {
+    "text": "Write my own",
     "description": "Button under a question from Homeroom bot: lets the person type their own answer instead of choosing one."
   },
   "bot.question.youChose": {
@@ -1705,7 +1793,11 @@
   },
   "composer.planReplyNote": {
     "text": "Say what to change, and Homeroom bot sends a new plan. Only you see this.",
-    "description": "Note in the reply bar while replying to a plan from Homeroom bot. Homeroom bot is the assistant's name. \"Change\" is a verb."
+    "description": "Note in the reply bar while replying to the plan for a project's first version from Homeroom bot: the reply is read by the bot alone, which sends a new plan. Homeroom bot is the assistant's name. \"Change\" is a verb."
+  },
+  "composer.planReplyNotePublic": {
+    "text": "What you write is posted on the request, where the group can see it.",
+    "description": "Note in the reply bar while replying to Homeroom bot's plan for a request on an existing project: the reply is posted on the request's public discussion."
   },
   "composer.cancelReply": {
     "text": "Cancel reply",
@@ -1758,6 +1850,18 @@
   "composer.placeholderThread": {
     "text": "Reply in thread…",
     "description": "Placeholder in the message box of a thread."
+  },
+  "composer.placeholderBotThread": {
+    "text": "Reply about {{request}}…",
+    "description": "Placeholder in the message box of a request's thread in the chat with Homeroom bot. {{request}} is the request's title."
+  },
+  "composer.placeholderBotThreadFirstVersion": {
+    "text": "Reply about {{project}}’s first version…",
+    "description": "Placeholder in the message box of the thread about a project's first version in the chat with Homeroom bot. {{project}} is the project's name."
+  },
+  "composer.placeholderBotThreadNumbered": {
+    "text": "Reply about request #{{number}}…",
+    "description": "Placeholder in the message box of a request's thread in the chat with Homeroom bot, when the request has no title. {{number}} is its number on the project's board, keep the #."
   },
   "composer.placeholder": {
     "text": "Message…",
@@ -1941,7 +2045,7 @@
   },
   "store.askForChangesPlaceholder": {
     "text": "What should change?",
-    "description": "Placeholder in the message box of the chat with Homeroom bot after pressing \"Ask for changes\" on a change, or \"Tell Homeroom bot what to change\" on a project's Hub: the person types what they want changed. \"Change\" is a verb."
+    "description": "Placeholder in the message box of the chat with Homeroom bot after pressing \"Change something\" on a change, or \"Tell Homeroom bot what to change\" on a project's Hub: the person types what they want changed. \"Change\" is a verb."
   },
   "api.deletedUser": {
     "text": "Deleted user",
@@ -2530,6 +2634,30 @@
   "row.menu.viewThread": {
     "text": "View thread",
     "description": "Item in a message's actions menu when the message already has replies in a thread: opens the thread."
+  },
+  "row.botThread.updates_one": {
+    "text": "{{count}} update in its thread ›",
+    "description": "Button under a request's card in the chat with Homeroom bot: opens the request's thread, where the bot posts each step and its news. {{count}} is how many messages the thread holds; English spells the singular with the number."
+  },
+  "row.botThread.updates_other": {
+    "text": "{{count}} updates in its thread ›",
+    "description": "Button under a request's card in the chat with Homeroom bot: opens the request's thread, where the bot posts each step and its news. {{count}} is how many messages the thread holds."
+  },
+  "row.botThread.in": {
+    "text": "↳ in {{request}} · {{project}}",
+    "description": "Small label over a message from Homeroom bot shown in the main chat that was posted in a request's thread; tapping it opens that thread. {{request}} is the request's title and {{project}} the project's name."
+  },
+  "row.botThread.inFirstVersion": {
+    "text": "↳ in {{project}} first version · {{project}}",
+    "description": "Small label over a message from Homeroom bot shown in the main chat that was posted in the thread about a project's first version; tapping it opens that thread. {{project}} is the project's name, said twice: the thread's name, then the project."
+  },
+  "row.botThread.inNumbered": {
+    "text": "↳ in request #{{number}} · {{project}}",
+    "description": "Small label over a message from Homeroom bot shown in the main chat that was posted in a request's thread, when the request has no title; tapping it opens that thread. {{number}} is the request's number, keep the #; {{project}} is the project's name."
+  },
+  "row.botThread.inProject": {
+    "text": "↳ in its thread · {{project}}",
+    "description": "Small label over a message from Homeroom bot shown in the main chat that was posted in a request's thread, when the request has neither title nor number; tapping it opens that thread. {{project}} is the project's name."
   },
   "row.menu.replyInThread": {
     "text": "Reply in thread",

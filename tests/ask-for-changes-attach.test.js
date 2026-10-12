@@ -78,7 +78,11 @@ test('the composer takes the attached change: its chip, its prompt, the caret, a
   assert.match(composer, /setObject\(pending\.object\); setPrompt\(pending\.placeholder\); setFocusWanted\(true\);/);
   assert.equal(message('messages:composer.placeholderThread'), 'Reply in thread…');
   assert.equal(message('messages:composer.placeholder'), 'Message…');
-  assert.match(composer, /placeholder=\{inThread \? t\('messages:composer\.placeholderThread'\) : \(prompt \|\| t\('messages:composer\.placeholder'\)\)\}/);
+  // One request, one story: a thread's placeholder is chosen apart (a
+  // request's thread in the chat with Homeroom bot says which request);
+  // a room's thread keeps "Reply in thread…".
+  assert.match(composer, /placeholder=\{inThread \? threadPlaceholder : \(prompt \|\| t\('messages:composer\.placeholder'\)\)\}/);
+  assert.match(composer, /const threadPlaceholder = !botRequest \? t\('messages:composer\.placeholderThread'\)/);
   assert.match(composer, /\{pendingObjectLabel\(object, stagedCard\)\}/);
   assert.match(composer, /object: object \? referenceOf\(object\) : undefined/, 'the staged title is never sent');
   assert.match(composer, /api\.resolveLinkCards\(\[\{ type, appSlug, issueNumber, sessionId, proposalId \}\]\)/,
