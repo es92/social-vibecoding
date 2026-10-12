@@ -61,7 +61,7 @@ const CATEGORY_DEFINITIONS = Object.freeze([
   Object.freeze({
     key: 'proposal_alerts',
     label: 'Change alerts',
-    description: 'Changes needing attention, failed previews, new changes waiting for approval, and votes on yours, or changes going live.',
+    description: 'Changes that need your attention or your vote, votes on yours, and changes you made or voted on going live.',
     defaultEnabled: true,
     // #1374 adds three: a vote on your proposal, your proposal merging, and
     // the daily "what needs your vote" summary. All three are proposal
@@ -137,12 +137,14 @@ const CATEGORY_DEFINITIONS = Object.freeze([
   }),
   Object.freeze({
     // WP-E: what the Homeroom bot says about something you asked it for, at
-    // the four moments its messages ring (homeroom-bot-dm.js MOMENTS). They
-    // used to ride Messages, so turning Messages off silenced "it's ready to
-    // try" too. Its answers to what you wrote stay messages.
+    // the moments its messages ring (homeroom-bot-notify-copy.js MOMENT_KINDS:
+    // needs you, ready to try, stopped or on hold, live). They used to ride
+    // Messages, so turning Messages off silenced "it's ready to try" too. Its
+    // answers to what you wrote stay messages. The settings screen says the
+    // same words (frontend/locales/en/settings.json alerts.push.*).
     key: 'builds',
     label: 'Your builds',
-    description: 'When something you asked Homeroom bot for is ready to try, needs your answer, stops, or goes live.',
+    description: 'What Homeroom bot tells you about something you asked for: when it needs you, is ready to try, stops, or goes live.',
     defaultEnabled: true,
     kinds: Object.freeze(['build_ready', 'build_needs_you', 'build_stopped', 'build_live']),
   }),

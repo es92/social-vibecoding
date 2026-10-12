@@ -1532,7 +1532,7 @@
     "description": "Name of a phone notification category in Settings > Mobile push categories. \"Builds\" is a plural noun: things Homeroom bot is building for the person."
   },
   "alerts.push.builds.description": {
-    "text": "When something you asked Homeroom bot for is ready to try, needs your answer, stops, or goes live.",
+    "text": "What Homeroom bot tells you about something you asked for: when it needs you, is ready to try, stops, or goes live.",
     "description": "What the \"Your builds\" category covers, under its name in Settings > Mobile push categories. Homeroom bot is the name of Homeroom's building assistant."
   },
   "alerts.push.inviteActivity.label": {
@@ -1548,7 +1548,7 @@
     "description": "Name of a phone notification category in Settings > Mobile push categories: things other people do that are aimed at this person."
   },
   "alerts.push.directInteractions.description": {
-    "text": "Mentions and replies to your messages.",
+    "text": "Mentions, replies to your messages, and friend requests.",
     "description": "What the Direct interactions category covers, under its name in Settings > Mobile push categories."
   },
   "alerts.push.invitations.label": {
@@ -1580,7 +1580,7 @@
     "description": "Name of a phone notification category in Settings > Mobile push categories. \"Change\" is a noun: a proposed change to a project."
   },
   "alerts.push.proposalAlerts.description": {
-    "text": "Changes needing attention, failed previews, new changes waiting for approval, and votes on yours or yours going live.",
+    "text": "Changes that need your attention or your vote, votes on yours, and changes you made or voted on going live.",
     "description": "What the Change alerts category covers, under its name in Settings > Mobile push categories. \"Changes\" are proposed changes to a project; \"yours\" means the person's own proposed changes."
   },
   "alerts.push.appAlerts.label": {

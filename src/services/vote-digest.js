@@ -68,8 +68,9 @@ let timer = null;
  *   - `hidden` is not read, so a hidden opt-out row counts like a pin.
  *
  * Excluded: the proposal's own author, apps the person blocked, proposals
- * they already voted on, and anyone who had a digest in the last
- * MIN_GAP_HOURS.
+ * they already voted on, a change Homeroom bot built for a request they
+ * asked for, a change they were told is ready to try in the last 24 hours,
+ * and anyone who had a digest in the last MIN_GAP_HOURS.
  *
  * Deliberately ONE query rather than a loop: this runs over every user on
  * the platform, and per-user round trips would make an hourly sweep a
@@ -101,6 +102,22 @@ const PENDING_SQL = `
      AND NOT EXISTS (
        SELECT 1 FROM pr_votes v
         WHERE v.session_id = p.id AND v.user_id = s.user_id
+     )
+     -- "One story": not a change Homeroom bot built for a request this
+     -- person asked for. The bot is its author, so they would otherwise
+     -- "owe" a vote on their own change; the bot's own message asks them.
+     AND NOT EXISTS (
+       SELECT 1 FROM homeroom_bot_runs r
+         JOIN homeroom_bot_requesters q ON q.app_id = r.app_id AND q.issue_number = r.issue_number
+        WHERE r.proposal_session_id = p.id AND q.user_id = s.user_id
+     )
+     -- Nor one they were told is ready to try in the last day: that ping
+     -- already asked them.
+     AND NOT EXISTS (
+       SELECT 1 FROM notifications n
+        WHERE n.user_id = s.user_id AND n.session_id = p.id
+          AND n.kind IN ('change_ready', 'build_ready')
+          AND n.created_at > NOW() - INTERVAL '24 hours'
      )
      AND NOT EXISTS (
        SELECT 1 FROM notifications n

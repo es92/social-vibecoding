@@ -47,7 +47,7 @@ test('settings renders clear user-facing category labels and descriptions', () =
     assert.ok(row.slice(0, 600).includes(`>{t('${id}.description')}<`), `${key}: and its description`);
     assert.equal(message(`${id}.label`), label);
   }
-  assert.match(message('settings:alerts.push.directInteractions.description'), /Mentions and replies to your messages/);
+  assert.match(message('settings:alerts.push.directInteractions.description'), /Mentions, replies to your messages, and friend requests/);
   assert.match(message('settings:alerts.push.messages.description'), /Conversation invitations, messages, mentions, replies, and reactions/);
   assert.match(message('settings:alerts.push.lightweightActivity.description'), /Reactions and kudos on your work/);
   assert.doesNotMatch(block, />\s*(mention|reply|stale_pr|check_failed|pr_proposed|spec_shared)\s*</,
@@ -137,4 +137,15 @@ test('settings reflects saved state and persists a changed category', async () =
   assert.deepEqual(JSON.parse(patch.options.body), {
     preferences: { direct_interactions: true },
   });
+});
+
+test('one story: Settings describes every push category in the server\'s own words', () => {
+  const { CATEGORY_DEFINITIONS } = require('../src/services/mobile-push-preferences');
+  for (const category of CATEGORY_DEFINITIONS) {
+    const id = `settings:alerts.push.${category.key.replace(/_(\w)/g, (_, c) => c.toUpperCase())}`;
+    assert.equal(message(`${id}.description`), category.description, `${category.key}: one description, server and screen`);
+  }
+  const builds = CATEGORY_DEFINITIONS.find((c) => c.key === 'builds').description;
+  assert.match(builds, /needs you, is ready to try, stops, or goes live/);
+  assert.doesNotMatch(CATEGORY_DEFINITIONS.find((c) => c.key === 'proposal_alerts').description, /proposal/i);
 });
