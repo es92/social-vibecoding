@@ -71,6 +71,24 @@ test('things that happened are single lines, in the page’s own words', () => {
   assert.equal(changeLine(row({ kind: 'message' })), null);
 });
 
+// One request, one story: Homeroom bot's plan on its change reads as the
+// plan itself, "Plan v1: {title} · Read"; a person's share keeps its line.
+test('Homeroom bot\'s plan on a change is "Plan v{n}: {title}", with its Read', () => {
+  const { changeLine } = loadTsx(MODEL);
+  const share = (patch) => ({ title: 'Dark mode', previewTitle: 'Dark mode', sharedBy: 'homeroom_bot', version: 2,
+    built: null, prNumber: null, sessionId: 51, snippetHtml: null, snippetText: null, ...patch });
+  assert.deepEqual(JSON.parse(JSON.stringify(changeLine(row({ kind: 'spec_share', specShare: share() })))),
+    { kind: 'spec', glyph: '📋', actor: null, id: 'project:topic.change.line.botPlan', values: { version: 2, title: 'Dark mode' } });
+  assert.equal(message('project:topic.change.line.botPlan'), 'Plan v{{version}}: {{title}}');
+  assert.equal(changeLine(row({ kind: 'spec_share', specShare: share({ sharedBy: 'evan' }) })).id, 'project:topic.change.line.postedSpec');
+  const view = {
+    lead: { earlier: false, placeholder: null, language: 'change', change: { closed: false } },
+    messages: [row({ id: 9, kind: 'spec_share', specShare: share() })],
+  };
+  const html = renderComponent(TRANSCRIPT, 'ChangeRows', { view });
+  assert.match(html, /data-change-event="spec"[\s\S]*?Plan v2: Dark mode · <button[^>]*>Read</);
+});
+
 test('the stream keeps every person and every line it draws; "N replies" counts the people', () => {
   const { changeStream, changeReplyCount } = loadTsx(MODEL);
   const rows = [

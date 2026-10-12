@@ -460,6 +460,13 @@ export interface SpecShareView {
   built: string | null;
   prNumber: number | null;
   sessionId: number | null;
+  /**
+   * Homeroom bot's plan, in its sentence on a request's page: `building`
+   * ("I'm building it now.") or `waiting` (for `waitingFor` to say Build
+   * it). Absent on a person's share and on older rows.
+   */
+  botNote?: 'building' | 'waiting' | null;
+  waitingFor?: string | null;
   snippetHtml: string | null;
   snippetText: string | null;
 }

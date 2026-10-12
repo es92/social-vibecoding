@@ -4592,6 +4592,11 @@ const GroupChat = {
       built,
       prNumber: meta.prNumber || null,
       sessionId: meta.sessionId || null,
+      // Homeroom bot's plan says where it stands in one sentence on a
+      // request's page (homeroom-bot-live.js specCard): it is building it,
+      // or it waits for whoever asked for it to say Build it.
+      botNote: meta.botNote === 'building' || meta.botNote === 'waiting' ? meta.botNote : null,
+      waitingFor: meta.botNote === 'waiting' && typeof meta.waitingFor === 'string' && meta.waitingFor ? meta.waitingFor : null,
       // Markdown, so `dangerouslySetInnerHTML`; null when the share carried
       // no snippet, or when dev-chat.js is not loaded to render one.
       snippetHtml: meta.snippet && renderMd ? renderMd(meta.snippet) : null,

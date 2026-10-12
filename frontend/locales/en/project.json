@@ -2259,6 +2259,10 @@
     "text": "<0>Someone</0> posted plan v{{version}}",
     "description": "One line among the replies on a change's page, saying something that happened: a plan (the written description the change is built from) was posted. Used when nobody can be named; \"Someone\" is written as the line has always shown it. {{version}} is the plan's version number."
   },
+  "topic.change.line.botPlan": {
+    "text": "Plan v{{version}}: {{title}}",
+    "description": "One line among the replies on a change's page: Homeroom bot's plan (the written description the change is built from). {{version}} is the plan's version number; \"v\" abbreviates version. {{title}} is the plan's title. A \"Read\" link follows the line."
+  },
   "topic.change.line.previewReady": {
     "text": "The preview is ready",
     "description": "One line among the replies on a change's page, saying something that happened: the preview build of the change finished and can be opened. A \"Try it\" button follows it. No full stop."
@@ -2666,6 +2670,22 @@
   "topic.request.stream.postedSpecSystem": {
     "text": "<0>System</0> posted a plan",
     "description": "One line among the replies on a request's page, saying something that happened: a plan (the written description of the change) was posted on the request's GitHub issue. Used when the row came with no author and shows \"System\" in the author's place. Keep the <0> tag around the word."
+  },
+  "topic.request.stream.botPlanBuilding": {
+    "text": "Plan v{{version}}: {{title}}. I'm building it now.",
+    "description": "One line among the replies on a request's page: Homeroom bot (an assistant that builds requests, speaking in the first person) posted its plan (the written description of the change) and is building it. {{version}} is the plan's version number; \"v\" abbreviates version. {{title}} is the plan's title. A \"Read\" link follows the line."
+  },
+  "topic.request.stream.botPlanWaiting": {
+    "text": "Plan v{{version}}: {{title}}. Waiting for @{{requester}} to say Build it.",
+    "description": "One line among the replies on a request's page: Homeroom bot posted its plan (the written description of the change) and builds nothing until the person who asked for it approves it. {{version}} is the plan's version number; {{title}} is the plan's title; {{requester}} is that person's username, after an @. \"Build it\" is the name of the button they tap: keep it as the button reads in your language. A \"Read\" link follows the line."
+  },
+  "topic.request.stream.botPlanWaitingUnnamed": {
+    "text": "Plan v{{version}}: {{title}}. Waiting for the person who asked for it to say Build it.",
+    "description": "One line among the replies on a request's page: Homeroom bot posted its plan (the written description of the change) and builds nothing until the person who asked for the request approves it; used when that person cannot be named. {{version}} is the plan's version number; {{title}} is the plan's title. \"Build it\" is the name of the button they tap. A \"Read\" link follows the line."
+  },
+  "topic.request.stream.botPlan": {
+    "text": "Plan v{{version}}: {{title}}",
+    "description": "One line among the replies on a request's page: Homeroom bot posted its plan (the written description of the change). {{version}} is the plan's version number; \"v\" abbreviates version. {{title}} is the plan's title. A \"Read\" link follows the line."
   },
   "topic.request.stream.claimed": {
     "text": "<0>{{member}}</0> started working on this",

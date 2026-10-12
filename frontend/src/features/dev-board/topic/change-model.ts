@@ -79,6 +79,14 @@ const VOTE_LINE = {
 export function changeLine(msg: TranscriptMessage): ChangeLine | null {
   if (msg.kind === 'message' || msg.kind === 'github') return null;
   if (msg.kind === 'spec_share' && msg.specShare) {
+    // Homeroom bot's plan reads as the plan itself, "Plan v1: Dark mode",
+    // with its Read (homeroom-bot-live.js specCard).
+    if (msg.specShare.botNote || (!msg.specShare.sharedByUnknown && /^homeroom_bot$/i.test(msg.specShare.sharedBy))) {
+      return {
+        kind: 'spec', glyph: '📋', actor: null, id: 'project:topic.change.line.botPlan',
+        values: { version: msg.specShare.version, title: msg.specShare.title },
+      };
+    }
     return {
       kind: 'spec', glyph: '📋', actor: msg.specShare.sharedBy,
       // Nobody to name has a wording of its own.

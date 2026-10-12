@@ -1041,6 +1041,11 @@ const GitHubRow = memo(function GitHubRow({ msg }: { msg: TranscriptMessage }) {
   );
 });
 
+/** Whether a shared plan is Homeroom bot's, which a request's page words in its own sentence. */
+function isBotPlan(spec: { sharedBy: string; sharedByUnknown?: boolean; botNote?: string | null }): boolean {
+  return !!spec.botNote || (!spec.sharedByUnknown && /^homeroom_bot$/i.test(spec.sharedBy));
+}
+
 /**
  * #4453: something that happened on a request — a claim, a spec posted, a
  * notice — as one quiet line with a glyph, where the stream reached it.
@@ -1056,7 +1061,18 @@ const RequestEvent = memo(function RequestEvent({ msg, onRead }: { msg: Transcri
   let glyph = '•';
   let text: ReactNode = msg.systemText;
   // Each line is one whole message, with <0> around who did it.
-  if (spec) {
+  if (spec && isBotPlan(spec)) {
+    // Homeroom bot's plan says where it stands, in its own sentence:
+    // "Plan v1: Dark mode. I'm building it now." (homeroom-bot-live.js specCard).
+    glyph = '📋';
+    const values = { version: spec.version, title: spec.title };
+    text = spec.botNote === 'building' ? t('project:topic.request.stream.botPlanBuilding', values)
+      : spec.botNote === 'waiting'
+        ? (spec.waitingFor
+          ? t('project:topic.request.stream.botPlanWaiting', { ...values, requester: spec.waitingFor })
+          : t('project:topic.request.stream.botPlanWaitingUnnamed', values))
+        : t('project:topic.request.stream.botPlan', values);
+  } else if (spec) {
     glyph = '📋';
     text = spec.sharedByUnknown
       ? <RichMessage id="project:topic.request.stream.postedSpecVersionUnnamed" values={{ version: spec.version }} components={[<b />]} />
@@ -1198,6 +1214,10 @@ const ChangeEvent = memo(function ChangeEvent({ msg }: { msg: TranscriptMessage 
         ) : null}
         {line.tryIt && sessionId ? (
           <>{' · '}<button type="button" className="dev-request-event-link" onClick={() => (window as any).AppView?._tryChangePreview?.(sessionId)}>{t('project:topic.change.stream.tryIt')}</button></>
+        ) : null}
+        {/* A plan's line opens the version it posted, as the request page's does. */}
+        {line.kind === 'spec' && msg.specShare?.sessionId ? (
+          <>{' · '}<button type="button" className="dev-request-event-link" onClick={() => controller()?.openSharedSpec?.(msg.specShare?.sessionId, msg.specShare?.version, msg.specShare?.previewTitle)}>{t('project:topic.request.stream.read')}</button></>
         ) : null}
         {msg.time ? <span className="dev-request-event-time" title={msg.timeTitle}>{` · ${msg.time}`}</span> : null}
       </span>
