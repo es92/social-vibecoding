@@ -127,6 +127,20 @@ async function personWeek(pool, settings, username, deps = {}) {
   };
 }
 
+// The most of a kept reply passed on: what homeroom-bot.js keptReply keeps
+// (4 KB and 12 KB) and the line between them.
+const MAX_KEPT_REPLY_CHARS = 16 * 1024 + 200;
+
+/** A run's stored unreadable_reply, checked, or null. Pure. */
+function unreadableReplyOf(value) {
+  if (!value || typeof value !== 'object') return null;
+  const one = (part) => (part && typeof part.text === 'string' && part.text
+    ? { text: clipText(part.text, MAX_KEPT_REPLY_CHARS), chars: num(part.chars) }
+    : null);
+  const out = { reply: one(value.reply), repair: one(value.repair) };
+  return out.reply || out.repair ? out : null;
+}
+
 /** The run filters the console's verdict ledger takes, checked. Pure. */
 function botFilters(q = {}) {
   const app = typeof q.app === 'string' && SLUG_RE.test(q.app) ? q.app : null;
@@ -163,6 +177,10 @@ async function botOverview(pool, config, query = {}, deps = {}) {
     buildNote: r.build_note ? clipText(r.build_note, 600) : null,
     reason: r.reason ? clipText(r.reason, 300) : null,
     error: r.error ? clipText(r.error, 300) : null,
+    // A reply whose verdict could not be read, as the run kept it
+    // (homeroom-bot.js keptReply): the reply, and the reply to the turn that
+    // asked for its JSON block. The error above is one short line.
+    unreadableReply: unreadableReplyOf(r.unreadable_reply),
     budgetStop: r.budget_stop || null,
     // What started this read: the queue row's reason, and for a change what
     // moved (homeroom-bot.js readReasonOf).

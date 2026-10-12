@@ -538,7 +538,7 @@ test('nobody signed in and mid-use is ever moved by it', () => {
 });
 
 test('finishLogin asks alongside the session read and moves before enterAuthed', () => {
-  const finish = authScreensJs.slice(authScreensJs.indexOf('async finishLogin() {'));
+  const finish = authScreensJs.slice(authScreensJs.indexOf('async finishLogin(opts) {'));
   const ask = finish.indexOf('App._askLiveBuild()');
   const me = finish.indexOf("fetch('/api/auth/me'");
   const replace = finish.indexOf("history.replaceState(null, '', AuthScreens.deepLinkUrl(target));");

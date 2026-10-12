@@ -68,6 +68,15 @@ function sessionRow(overrides = {}) {
   };
 }
 
+// The active-sessions list is the chat_sessions query a request here makes.
+// session-state's row lookup (`WHERE cs.id = $1`) reads the same table and
+// runs on its own: a test that adds to activeWorkers schedules it 150 ms
+// later (session-state.touch). Under CI load it landed after the next test
+// had cleared capturedQueries, was found first, and failed that test's
+// column assertions (main, 12 Oct 2026). The shared-sessions test below
+// guards against the same thing.
+const isActiveSessionsQuery = (c) => /FROM chat_sessions cs/.test(c.sql) && !/WHERE cs\.id = \$1\b/.test(c.sql);
+
 async function fetchActiveSessions(server, { includeImported = false } = {}) {
   const port = server.address().port;
   const suffix = includeImported ? '?include_imported=1' : '';
@@ -84,7 +93,7 @@ test('query is owner-scoped and excludes archived/headless rows', async () => {
     assert.strictEqual(res.status, 200);
     assert.deepStrictEqual(body.sessions, []);
 
-    const q = capturedQueries.find((c) => /FROM chat_sessions cs/.test(c.sql));
+    const q = capturedQueries.find(isActiveSessionsQuery);
     assert.ok(q, 'active-sessions query was issued');
     // Owner scoping: the first filter param is the viewer's own id —
     // another user's rows can never satisfy the WHERE clause.
@@ -165,7 +174,7 @@ test('the Dev board can opt imported active rows into the owner list', async () 
     assert.strictEqual(imported.assignee.top, 'tester');
     assert.strictEqual(imported.assignee.myValue, 'tester');
     assert.strictEqual(imported.category.top, 'bug');
-    const q = capturedQueries.find((c) => /FROM chat_sessions cs/.test(c.sql));
+    const q = capturedQueries.find(isActiveSessionsQuery);
     assert.deepStrictEqual(q.params, [VIEWER.id, true]);
     assert.match(q.sql, /cs\.imported_pr_author/);
     assert.match(q.sql, /cs\.staging_url/);
@@ -300,7 +309,7 @@ test('awaiting_input: the query reads the last conversational row and the spec b
   const server = await startServer();
   try {
     await fetchActiveSessions(server);
-    const q = capturedQueries.find((c) => /FROM chat_sessions cs/.test(c.sql));
+    const q = capturedQueries.find(isActiveSessionsQuery);
     assert.match(q.sql, /cs\.spec_md/);
     assert.match(q.sql, /lt\.role AS last_turn_role, lt\.asks AS last_turn_asks/);
     // The newest user/assistant row: system rows (scout cards, status lines)

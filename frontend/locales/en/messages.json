@@ -1941,7 +1941,7 @@
   },
   "store.askForChangesPlaceholder": {
     "text": "What should change?",
-    "description": "Placeholder in the message box after pressing \"Ask for changes\" on a change: the person types what they want changed. \"Change\" is a verb."
+    "description": "Placeholder in the message box of the chat with Homeroom bot after pressing \"Ask for changes\" on a change, or \"Tell Homeroom bot what to change\" on a project's Hub: the person types what they want changed. \"Change\" is a verb."
   },
   "api.deletedUser": {
     "text": "Deleted user",

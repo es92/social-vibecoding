@@ -15,6 +15,7 @@ export interface PoolClient extends Queryable {
   release(destroy?: Error | boolean): void;
   on?(event: 'notification', listener: (msg: { channel: string; payload?: string }) => void): unknown;
   on?(event: 'error', listener: (err: Error) => void): unknown;
+  removeListener?(event: 'notification', listener: (msg: { channel: string; payload?: string }) => void): unknown;
   removeListener?(event: 'error', listener: (err: Error) => void): unknown;
 }
 export interface Pool extends Queryable { connect(): Promise<PoolClient> }

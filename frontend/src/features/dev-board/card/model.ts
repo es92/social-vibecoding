@@ -460,6 +460,12 @@ export type ListRow =
     /** What the Workshop tab's row says about it, in words (#4457, AppView._workshopBrief). */
     brief?: RowBrief;
     /**
+     * #4772: on the viewer's own work (`mine`), the What's happening section
+     * it is filed in: Waiting on you, Your work, Yours up for a vote, or
+     * Going live. Absent reads as Your work.
+     */
+    group?: 'waiting' | 'work' | 'vote' | 'live';
+    /**
      * Which item the Needs-you deck's ask box is asking about — an ADDRESS,
      * never content. The server resolves the kind/ref pair against this
      * app's own rows (services/workshop-ask.js), so nothing the client says
@@ -677,6 +683,12 @@ export interface DevWorkshopView {
     count: number;
     shown: number;
     rows: ListRow[];
+    /**
+     * #4772: what Homeroom bot waits on the viewer for on an item that is not
+     * otherwise theirs (a plan or a question on their request, a back and
+     * forth on a change), drawn under Waiting on you after `rows`' own.
+     */
+    extra?: ListRow[];
   };
   /**
    * What happened since the viewer last opened this app's Workshop, or null

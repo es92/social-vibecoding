@@ -1628,9 +1628,15 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // account's First challenges are ordinary Challenges cards now, which the
   // checks on Home's Challenges block already read. 732 leaves 148 slots.
   //
+  // 729 → 730: +1 (#4772): the Workshop tab's What's happening files the
+  // viewer's work in sections (Waiting on you, Yours, up for a vote, Going
+  // live), on the ?demo=1 mocks. Folding it into the Overview check on the
+  // same route took that selector past the runner's 256 characters. 730
+  // leaves 150 slots.
+  //
   // A mismatch says what the count is, what it is pinned at, and what to do
   // (tests/lib/check-cap.js) — it used to print only `812 !== 811`.
-  checkCap.assertPinned(DAPP.tests.length, 729);
+  checkCap.assertPinned(DAPP.tests.length, 730);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

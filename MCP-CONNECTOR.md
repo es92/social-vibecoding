@@ -266,7 +266,10 @@ than trusted not to use them:
   `counts_toward_outcome(voter, app)`, decides both.
 - **Rankings and Journey.** `exclude_podium`, and a `test` entry on the Journey
   page's left-out list.
-- **People.** No welcome DM unless `welcomeDm` is set. What it posts in a
+- **People.** No welcome DM unless `welcomeDm` is set: it puts staff into a
+  group with the account. Homeroom bot's hellos (after the tour, with a first
+  project, on joining, with a first request) are not fenced: they reach a test
+  account however it was made, as they reach any newcomer. What it posts in a
   shared space is still seen by everyone there.
 - **Wallets.** A native sign-in never assigns it a season wallet.
 - **Scale.** At most 25 live at once, unused phone sign-ins included (refused

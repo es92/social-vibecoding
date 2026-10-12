@@ -303,6 +303,87 @@ function imagesAfterToolResults(content, toolNames, counts) {
   return [...rewritten.slice(0, lastResult + 1), ...after, ...rewritten.slice(lastResult + 1)];
 }
 
+// Every tool result paired with its call by a non-empty id. OpenRouter turns
+// a non-Anthropic model's request into OpenAI's chat format, where each
+// tool_result becomes a `tool` message whose tool_call_id is the result's
+// tool_use_id, and a host refuses the whole request when one is empty: "400
+// messages[N]: tool messages must include a non-empty string tool_call_id"
+// (gas-lock-07613b 2026-10-04, familystories-84cefe 2026-10-09, GLM). The
+// empty id comes from the model itself: a tool call it streamed with no id
+// is kept by Claude Code as id "", and so is the result it sends back, so
+// every later request in the turn is refused.
+//
+// So a tool_use whose id is missing or blank gets one made from its place
+// in the conversation (message and block index), and a result with a
+// missing or blank id takes the next call of the assistant message just
+// before it that no result has answered yet, in order, which is how Claude
+// Code sends them. Such a result with no call left to take (an orphan,
+// which would be refused the same way) becomes a text block saying what it
+// was, so its words still reach the model. A result whose id is set is
+// never touched. Like the images above, this is a pure
+// function of the messages: an id made for an early call is the same on
+// every later request, and a conversation with nothing to repair is
+// returned as it came.
+const MADE_TOOL_ID_PREFIX = 'toolu_hr_';
+
+function hasToolId(value) {
+  return typeof value === 'string' && value.trim() !== '';
+}
+
+function toolResultText(block) {
+  const content = block.content;
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.map((part) => (part?.type === 'text' && typeof part.text === 'string' ? part.text : '[non-text content]'))
+    .join('\n');
+}
+
+function pairToolIds(messages) {
+  let changed = false;
+  // The calls of the latest assistant message no result has answered yet.
+  let open = [];
+  const out = messages.map((message, m) => {
+    if (!message || !Array.isArray(message.content)) {
+      open = [];
+      return message;
+    }
+    if (message.role === 'assistant') {
+      let rewritten = false;
+      const content = message.content.map((block, b) => {
+        if (block?.type !== 'tool_use' || hasToolId(block.id)) return block;
+        rewritten = true;
+        return { ...block, id: `${MADE_TOOL_ID_PREFIX}${m}_${b}` };
+      });
+      open = content.filter((block) => block?.type === 'tool_use').map((block) => block.id);
+      if (!rewritten) return message;
+      changed = true;
+      return { ...message, content };
+    }
+    if (message.role !== 'user') return message;
+    let rewritten = false;
+    const content = message.content.map((block) => {
+      if (block?.type !== 'tool_result') return block;
+      if (hasToolId(block.tool_use_id)) {
+        const at = open.indexOf(block.tool_use_id);
+        if (at !== -1) open.splice(at, 1);
+        return block;
+      }
+      rewritten = true;
+      if (!open.length) {
+        const said = toolResultText(block);
+        return { type: 'text', text: `[a tool result that answers no tool call${said ? `:\n${said}` : ''}]` };
+      }
+      return { ...block, tool_use_id: open.shift() };
+    });
+    // Results answer only the assistant message right before them.
+    open = [];
+    if (!rewritten) return message;
+    changed = true;
+    return { ...message, content };
+  });
+  return changed ? out : messages;
+}
+
 // The platform's effort scale (minimal … xhigh) plus Anthropic's `max`.
 // OpenRouter translates each onto the model's own reasoning levels.
 const REASONING_EFFORTS = new Set(['minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
@@ -350,8 +431,9 @@ const PROVIDER_PREFERENCES = Object.freeze({
   preferred_min_throughput: Object.freeze({ p50: 30 }),
 });
 
-// Pin the model, cap the reply, keep the input text, set the thinking level,
-// prefer hosts that answer promptly, and route web search to OpenRouter.
+// Pair every tool result with its call, pin the model, cap the reply, keep
+// the input text, set the thinking level, prefer hosts that answer
+// promptly, and route web search to OpenRouter.
 // Exported for tests: this is the policy. `imageCounts`, when given, is
 // filled with what the request did with its images.
 function applyTurnPolicy(body, {
@@ -359,6 +441,7 @@ function applyTurnPolicy(body, {
   imageCounts = null,
 }) {
   body.model = model;
+  if (Array.isArray(body.messages)) body.messages = pairToolIds(body.messages);
   if (Array.isArray(body.messages)) {
     const images = imageInput === true;
     const counts = imageCounts || { sent: 0, moved: 0, omitted: 0 };
@@ -739,6 +822,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  startMessagesAdapter, applyTurnPolicy, makeRedactor, claudeChildEnv, runClaude, replyFields, PROVIDER_PREFERENCES,
+  startMessagesAdapter, applyTurnPolicy, pairToolIds, makeRedactor, claudeChildEnv, runClaude, replyFields, PROVIDER_PREFERENCES,
   AUTO_COMPACT_TOKEN_LIMIT, NON_ANTHROPIC_AUTO_COMPACT_TOKEN_LIMIT, autoCompactLimit,
 };

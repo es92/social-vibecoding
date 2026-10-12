@@ -88,6 +88,23 @@ test('the audience line uses the words on screen, and "Just you" counts nobody',
   assert.equal(audienceLine({ audience: 'solo', audience_label: 'Just you', member_count: 1 }), 'Just you');
 });
 
+test('#4896: the hero says "Just you so far" to the one person in a project nobody else has joined', () => {
+  const { justYouSoFar, audienceLine } = loadTsx(CARD);
+  assert.equal(justYouSoFar({ audience: 'solo' }, true), 'Just you so far');
+  assert.equal(justYouSoFar({ audience: 'solo' }, false), null, 'not to somebody outside it, who is not "you"');
+  assert.equal(justYouSoFar({ audience: 'invited' }, true), null);
+  assert.equal(justYouSoFar({ audience: 'open' }, true), null);
+  // The audience keeps its name everywhere else it is said (the Who can see
+  // & change it sheet's line reads audienceLine).
+  assert.equal(audienceLine({ audience: 'solo', audience_label: 'Just you', member_count: 1 }), 'Just you');
+  assert.match(read('frontend/src/features/dialogs/who-decides.tsx'), /audience: audienceLine\(community\)/);
+  const src = read(CARD);
+  assert.match(src, /data-ws-community-audience="">\{justYouSoFar\(data, member\) \|\| audienceLine\(data\)\}<\/span>/,
+    'under the name, out of the first week');
+  assert.match(src, /audienceLabel=\{justYouSoFar\(data, member\) \|\| data\.audience_label\}/,
+    'and on the first week\'s people row');
+});
+
 test('before the read the hero draws only what needs none: Open app and the ⋯', () => {
   // No server render of it, so no hydration to mismatch. The tile and the
   // name come with the read (HeroIdentity), so before it the hero is the
@@ -143,8 +160,10 @@ test('the channel is a hub card at its old address; Join asks under its button a
   // `member` is is_member, except under `?shot=invite-join`, which draws the
   // hero as an invitee sees it (#3700).
   assert.match(src, /const member = data\.is_member && !offer\?\.preview;/);
-  assert.match(src, /\{member && !solo \? \(\s*<Button[\s\S]{0,160}data-ws-community-invite=""/,
-    'Invite is offered to members');
+  // #4896: on a project that is just yours too, beside "Just you so far":
+  // it was left to the Share it card, and a newcomer met "Just you" alone.
+  assert.match(src, /\{member \? \(\s*<Button[\s\S]{0,160}data-ws-community-invite=""/,
+    'Invite is offered to members, a project of one included');
   assert.doesNotMatch(src, /_plusMenuShowsMembers/, 'not by the members dialog\'s gate');
 });
 

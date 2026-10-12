@@ -31,6 +31,11 @@ export interface InstallEnv {
    * link's page before Join, the sign-in page and the waiting room.
    */
   member: boolean;
+  /**
+   * A first-session tour is on screen (../first-session/tour-running.ts):
+   * its cards and its spotlight are the screen while it runs (#4899).
+   */
+  touring: boolean;
   dismissed: boolean;
   /** `null` until the fetch resolves. */
   urls: StoreUrls | null;
@@ -143,6 +148,13 @@ export function installOffer(env: InstallEnv): InstallOffer | null {
   // were invited to, and sat above the one action that matters there: Join.
   // It is offered once they are signed in and let in, wherever they land.
   if (!env.member) return null;
+  // #4899: nor while the first-session tour is on screen. Right after a first
+  // app was made the strip came up on Home and stayed pinned at the top
+  // through the whole tour, on Home and inside the app: the strip, a tour
+  // card and the app, three layers at once. It is held rather than
+  // dismissed, so it comes up as the tour ends (its last card or Skip), and
+  // on the next visit when this one ends mid-tour.
+  if (env.touring) return null;
   if (env.dismissed) return null;
   if (!env.urls) return null;
 

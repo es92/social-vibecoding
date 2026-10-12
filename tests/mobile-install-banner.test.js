@@ -178,6 +178,7 @@ function env(over = {}) {
     native: false,
     standalone: false,
     member: true,
+    touring: false,
     dismissed: false,
     urls: URLS,
     ...over,
@@ -248,6 +249,71 @@ test('#4204: the island asks only once there is a platform viewer', () => {
   assert.ok(src.indexOf("fetch('/api/public/mobile-app')") > gate,
     'the store-listing fetch runs inside the viewer gate');
   assert.match(src, /member: member && hasPlatformViewer\(\)/);
+});
+
+// ── Not over the first-session tour (#4899) ─────────────────────────
+
+test('#4899: held while a first-session tour is on screen, offered again as it ends', () => {
+  // Onboarding run, 12 Oct 2026: right after a first app was made the strip
+  // came up on Home and stayed pinned through the whole tour, over its cards
+  // and the app. Held, not dismissed: the same visitor is offered it the
+  // moment the tour is over.
+  const { installOffer } = loadTsx('frontend/src/features/mobile-install/detect.ts');
+  assert.equal(installOffer(env({ touring: true })), null, 'a store listing is held');
+  assert.equal(installOffer(env({ touring: true, urls: { ios: null, android: null } })), null,
+    'so is the home-screen offer, the line the run saw');
+  assert.equal(installOffer(env({ touring: true, ua: ANDROID })), null);
+  assert.deepEqual(installOffer(env({ touring: false })), { kind: 'store', os: 'ios', url: IOS_URL });
+  assert.deepEqual(installOffer(env({ touring: false, urls: { ios: null, android: null } })),
+    { kind: 'a2hs', os: 'ios' });
+  // The other suppressions are untouched by it.
+  assert.equal(installOffer(env({ touring: false, member: false })), null, '#4204 still holds');
+  assert.equal(installOffer(env({ touring: false, dismissed: true })), null);
+});
+
+test('#4899: the island reads the tour\'s own flag, and asks again when it changes', () => {
+  const src = fs.readFileSync(
+    path.join(ROOT, 'frontend/src/features/mobile-install/install-banner.tsx'), 'utf8');
+  // The flag the first-session Tour sets while it is mounted
+  // (tests/first-session.test.js pins that side), read reactively, so the
+  // strip comes up as the tour ends without a reload.
+  assert.match(src, /import \{ useTourRunning \} from '\.\.\/first-session\/tour-running';/);
+  assert.match(src, /const touring = useTourRunning\(\);/);
+  const call = src.slice(src.indexOf('setOffer(installOffer({'));
+  assert.match(call.slice(0, call.indexOf('}));')), /\n\s+touring,\n/);
+  assert.match(src, /\}, \[urls, dismissed, member, privateMember, tab, touring\]\);/);
+  // That decision is an effect, a render behind the flag, so the strip and the
+  // body's room for it read the flag too: down in the frame the tour comes up.
+  assert.match(src, /const up = !!offer && !touring;\n\n  useHiddenClass\(ref, !up\);/);
+  assert.match(src, /body\.classList\.toggle\(BODY_CLASS, up\);\n[^\n]*\n  \}, \[up\]\);/);
+  // Nobody who never takes a tour is held: the flag is false until a Tour
+  // mounts, and the Tour puts it back as it unmounts.
+  const tour = loadTsx('frontend/src/features/first-session/tour-running.ts');
+  assert.equal(tour.tourRunning(), false);
+  // The mark menu's home-screen row is a menu somebody opened, not the strip.
+  const hook = fs.readFileSync(
+    path.join(ROOT, 'frontend/src/features/mobile-install/home-screen-offer.ts'), 'utf8');
+  assert.match(hook, /touring: false,/);
+});
+
+test('#4899: the first render is the same hidden strip whether or not a tour runs', () => {
+  // The flag only feeds effects (the offer, the hidden class, the body's
+  // class), so the markup the prerender shipped is what hydration draws in
+  // either case.
+  const tour = loadTsx('frontend/src/features/first-session/tour-running.ts');
+  const render = () => renderComponent(
+    'frontend/src/features/mobile-install/install-banner.tsx',
+    'MobileInstallBanner',
+  );
+  const idle = render();
+  tour.setTourRunning(true);
+  try {
+    const touring = render();
+    assert.equal(touring, idle);
+    assert.match(touring, /class="hidden /);
+  } finally {
+    tour.setTourRunning(false);
+  }
 });
 
 test('installOffer: suppressed once dismissed', () => {

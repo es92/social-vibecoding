@@ -196,6 +196,8 @@ async function migrate(config) {
   await require('../services/bench/demo').seedStagingStudio(pool);
   // The Homeroom bot's configurations table, with first versions to measure.
   await require('../services/bot-configs').seedStagingBotConfigs(pool);
+  // A failed bot run whose reply had no verdict block, kept on the run.
+  await require('../services/homeroom-bot').seedStagingUnreadableReply(pool);
   // After the proposal seeds above: the platform-env fixture stamps a
   // failing verdict onto an existing staging proposal.
   await seedStagingPlatformEnv(pool, config);

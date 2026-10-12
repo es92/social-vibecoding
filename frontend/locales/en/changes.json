@@ -1475,6 +1475,30 @@
     "text": "Homeroom bot",
     "description": "Small tag, beside a sparkle, on a row in a project's Your work when Homeroom bot built the change from a request the viewer made; \"Homeroom bot\" is the platform's builder bot, a name."
   },
+  "workshop.row.tag.planWaits": {
+    "text": "Plan ready: tap Build it",
+    "description": "Small status tag on a row under Waiting on you on a project's Workshop tab. On a request of the viewer's: Homeroom bot wrote a plan for it and waits for the viewer to tap the \"Build it\" button before it builds. \"Build it\" is that button's label; keep it the same as the button."
+  },
+  "workshop.row.tag.botAsked": {
+    "text": "Homeroom bot asked you",
+    "description": "Small status tag on a row under Waiting on you on a project's Workshop tab. On a request of the viewer's: Homeroom bot asked the viewer a question about it and waits for their answer. \"Homeroom bot\" is the platform's builder bot, a name."
+  },
+  "workshop.row.tag.botReplied": {
+    "text": "With Homeroom bot · it replied {{ago}}",
+    "description": "Small status tag on a row under Waiting on you on a project's Workshop tab, on a change or request where the viewer and Homeroom bot are talking in its discussion and Homeroom bot wrote last. {{ago}} is a time such as \"2h ago\". \"Homeroom bot\" is the platform's builder bot, a name."
+  },
+  "workshop.row.tag.botRepliedNow": {
+    "text": "With Homeroom bot · it replied",
+    "description": "The same tag as \"With Homeroom bot · it replied 2h ago\", when the time it replied is not known."
+  },
+  "workshop.row.tag.youReplied": {
+    "text": "With Homeroom bot · you replied {{ago}}",
+    "description": "Small status tag on a row under Waiting on you on a project's Workshop tab, on a change or request where the viewer and Homeroom bot are talking in its discussion and the viewer wrote last. {{ago}} is a time such as \"1d ago\". \"Homeroom bot\" is the platform's builder bot, a name."
+  },
+  "workshop.row.tag.youRepliedNow": {
+    "text": "With Homeroom bot · you replied",
+    "description": "The same tag as \"With Homeroom bot · you replied 1d ago\", when the time is not known."
+  },
   "countdown.daysHours": {
     "text": "~{{days}}d {{hours}}h",
     "description": "Short countdown on a proposal's card showing roughly how long until its voting window ends, for example \"~2d 5h\". {{days}} and {{hours}} are numbers; \"d\" and \"h\" abbreviate days and hours. Keep the leading \"~\" (about)."

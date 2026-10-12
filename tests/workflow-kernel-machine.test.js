@@ -130,3 +130,43 @@ test('a sleeper can take only the notifications it wants', async () => {
   await filtered;
   await signals.stop();
 });
+
+// The LISTEN connection goes back to the pool once. A listener of ours left
+// on it after stop() released it again when the idle connection errored (a
+// test database dropped under it), and pg-pool throws on that, from inside
+// the connection's error event.
+test('the signal connection is released once, after stop() and after a lost connection alike', async () => {
+  const { EventEmitter } = require('node:events');
+  const fakeClient = () => {
+    const client = new EventEmitter();
+    client.releases = 0;
+    client.query = async () => {};
+    client.release = () => {
+      client.releases += 1;
+      if (client.releases > 1) throw new Error('Release called on client which has already been released to the pool.');
+      // pg-pool watches an idle connection's errors itself.
+      client.on('error', () => {});
+    };
+    return client;
+  };
+  const log = { info() {}, warn() {}, error() {} };
+
+  const stopped = fakeClient();
+  const signals = new Signals({ connect: async () => stopped }, log);
+  await signals.start();
+  assert.equal(signals.listening, true);
+  await signals.stop();
+  stopped.emit('error', new Error('terminating connection due to administrator command'));
+  assert.equal(stopped.releases, 1, 'an error on the idle connection is the pool\'s');
+  assert.equal(stopped.listenerCount('notification'), 0);
+
+  const lost = fakeClient();
+  const again = new Signals({ connect: async () => lost }, log);
+  await again.start();
+  lost.emit('error', new Error('connection terminated'));
+  lost.emit('error', new Error('connection terminated, again'));
+  assert.equal(lost.releases, 1, 'a connection that reports two errors goes back once');
+  assert.equal(again.listening, false);
+  await again.stop();
+  assert.equal(lost.releases, 1);
+});

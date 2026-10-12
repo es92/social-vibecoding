@@ -565,21 +565,21 @@ test('cold checks separate document navigation from equivalent network-idle read
 
 test('a hash cohort owns its own console errors, and load errors are shared', async () => {
   const read = collect();
-  const timers = [];
+  // Each error is raised asynchronously, as a page's are, but in a microtask
+  // queued by the navigation itself, so it lands before the runner moves on
+  // whatever the clock does. Timers of 40 and 60 ms fired after a 100 ms
+  // settle window on a loaded checks pod (12 Oct 2026), and the cohort's
+  // error went unheard.
   const page = makeEventPage({
-    onGoto: (p) => timers.push(setTimeout(() => p.emitError('boot exploded'), 40)),
-    onHash: (p, h) => timers.push(setTimeout(() => p.emitError(`broken in ${h}`), 60)),
+    onGoto: (p) => queueMicrotask(() => p.emitError('boot exploded')),
+    onHash: (p, h) => queueMicrotask(() => p.emitError(`broken in ${h}`)),
   });
   const group = [
     { index: 0, name: 'a', path: '/dev', url: 'http://s/dev#/a' },
     { index: 1, name: 'b', path: '/dev', url: 'http://s/dev#/b' },
   ];
-  try {
-    await runTestGroup({ newPage: async () => page }, group,
-      { settleQuietMs: 100, settleMaxMs: 900 });
-  } finally {
-    for (const t of timers) clearTimeout(t);
-  }
+  await runTestGroup({ newPage: async () => page }, group,
+    { settleQuietMs: 100, settleMaxMs: 900 });
   const { frames } = read();
   assert.equal(page.gotos.length, 1, 'one cold load for the whole document');
   assert.deepEqual(page.hashes, ['#/b'], 'the second cohort is reached in-page');
@@ -693,10 +693,11 @@ test('an Error still resolving at a hash switch counts against the cohort it fir
 
 test('a cohort that breaks does not fail the cohorts it shares a document with', async () => {
   const read = collect();
-  const timers = [];
+  // In a microtask of the hash switch, not on a 40 ms timer that can fire
+  // after the 80 ms settle on a loaded pod (see the hash cohort test above).
   const page = makeEventPage({
     onHash: (p, h) => {
-      if (h === '#/b') timers.push(setTimeout(() => p.emitError('only b is broken'), 40));
+      if (h === '#/b') queueMicrotask(() => p.emitError('only b is broken'));
     },
   });
   const group = [
@@ -704,12 +705,8 @@ test('a cohort that breaks does not fail the cohorts it shares a document with',
     { index: 1, name: 'b', path: '/dev', url: 'http://s/dev#/b' },
     { index: 2, name: 'c', path: '/dev', url: 'http://s/dev#/c' },
   ];
-  try {
-    await runTestGroup({ newPage: async () => page }, group,
-      { settleQuietMs: 80, settleMaxMs: 600 });
-  } finally {
-    for (const t of timers) clearTimeout(t);
-  }
+  await runTestGroup({ newPage: async () => page }, group,
+    { settleQuietMs: 80, settleMaxMs: 600 });
   const { frames } = read();
   const byIndex = new Map(frames.map((f) => [f.index, f]));
   assert.equal(byIndex.get(0).status, 'pass');

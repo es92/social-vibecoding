@@ -61,6 +61,24 @@ test('the bot overview carries the console\'s fields it names, and nothing else'
   assert.equal(out.queue.items[0].app, 'bread');
 });
 
+test('botOverview: a run whose verdict could not be read carries its kept reply, and no other run does', async () => {
+  const bot = {
+    adminPayload: async () => ({
+      settings: {}, runs: [
+        { id: 2, verdict: 'failed', error: 'unparseable: Verdict below.', created_at: '2026-10-01T00:00:00Z',
+          unreadable_reply: { reply: { text: 'Reading. Verdict below.', chars: 23 }, repair: { text: 'x'.repeat(20_000), chars: 20_000 } } },
+        { id: 1, verdict: 'failed', error: 'budget: wall clock', created_at: '2026-10-01T00:00:00Z' },
+      ],
+    }),
+  };
+  const out = await data.botOverview(null, {}, {}, { bot });
+  assert.deepEqual(out.runs[0].unreadableReply.reply, { text: 'Reading. Verdict below.', chars: 23 });
+  assert.equal(out.runs[0].unreadableReply.repair.chars, 20_000);
+  assert.ok(out.runs[0].unreadableReply.repair.text.length <= 16 * 1024 + 200, 'bounded however it was stored');
+  assert.equal(out.runs[0].error, 'unparseable: Verdict below.');
+  assert.equal(out.runs[1].unreadableReply, null);
+});
+
 test('a ready verdict that was never built says where it got to and why; a run says what started its read', async () => {
   const run = (over) => ({ id: 9, app_slug: 'bread', issue_number: 3, verdict: 'ready', created_at: '2026-10-01T00:00:00Z', ...over });
   const bot = {

@@ -259,7 +259,7 @@ test('the hub puts the first version under the hero, and stands the start-here p
   const hubTab = LANDER.slice(LANDER.indexOf("{tab === 'status' ? ("), LANDER.indexOf("{tab === 'discussion' ? ("));
   const at = (x) => hubTab.indexOf(x);
   assert.ok(at('<CommunityCard') >= 0 && at('<CommunityCard') < at('<FirstVersionCard')
-    && at('<FirstVersionCard') < at('{startHere ? <StartHereBanner />') && at('<FirstVersionCard') < at('<ForYouCard'),
+    && at('<FirstVersionCard') < at('{startHere ? <StartHereBanner ') && at('<FirstVersionCard') < at('<ForYouCard'),
     'right under the hero, ahead of everything else on the hub');
   assert.match(hubTab, /\{slug \? \(\s*<FirstVersionCard slug=\{slug\} data=\{community\} emoji=\{app\.iconEmoji \|\| null\} onSeePlan=\{\(\) => openTab\('plan'\)\} \/>\s*\) : null\}/);
   // Before its description is filed the board is empty too, and "The first

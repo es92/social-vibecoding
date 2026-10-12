@@ -132,7 +132,7 @@ test('the shell lifts the hold at every way its boot ends', () => {
 });
 
 test('a sign-in that reloads onto the live build keeps the session it confirmed', () => {
-  const fn = AUTH_SCREENS.slice(AUTH_SCREENS.indexOf('    async finishLogin() {'));
+  const fn = AUTH_SCREENS.slice(AUTH_SCREENS.indexOf('    async finishLogin(opts) {'));
   const body = fn.slice(0, fn.indexOf('\n    },'));
   // Saved before the reload, so the new page boots from it.
   assert.match(body, /try \{ App\.saveSessionSnapshot\?\.\(user\); \} catch \(_\) \{\}\s+await App\._moveToLiveShell\('signed-in', liveShell\);/);

@@ -393,7 +393,16 @@
     // Confirm the session before navigating. Failure stays on the form and
     // returns a fixed diagnostic result to its React owner; retrying this
     // method never sends credentials or mints another session.
-    async finishLogin() {
+    //
+    // `opts.beforeShell` runs once the session is confirmed and this page is
+    // staying on its build, just before the signed-in shell starts: the
+    // sign-in sheet's hand-off to "What do you want to make?"
+    // (features/auth/sign-in-sheet.tsx). The sheet stays up, busy, through
+    // the session read and leaves only then, so the make screen, drawn in
+    // the tick the shell starts, follows it with no wait between (#4892:
+    // leaving first showed a blank page for as long as the read took).
+    async finishLogin(opts) {
+      const beforeShell = opts && typeof opts.beforeShell === 'function' ? opts.beforeShell : null;
       let returnTo = '';
       // The login-return targets accepted by the platform. Both are separate
       // documents by design — real navigation stays.
@@ -477,6 +486,11 @@
         if (typeof App !== 'undefined' && typeof App._moveToLiveShell === 'function') {
           try { App.saveSessionSnapshot?.(user); } catch (_) {}
           await App._moveToLiveShell('signed-in', liveShell);
+        }
+        // Staying: the sheet goes now (see above), and the shell starts once
+        // it has gone. A hand-off that fails must not keep anyone out.
+        if (beforeShell) {
+          try { await beforeShell(); } catch (_) { /* the shell starts all the same */ }
         }
         fx(() => {
           App.enterAuthed(user);

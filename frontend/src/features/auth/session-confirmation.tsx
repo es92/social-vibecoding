@@ -87,12 +87,14 @@ export function useSessionConfirmation() {
   const pending = useRef<Promise<boolean> | null>(null);
   // Resolves true once the session is open (or the page is on its way to
   // the page that asked for the sign-in), false when the notice is up.
-  const finishLogin = useCallback((): Promise<boolean> => {
+  // `beforeShell` is shared.ts's: the sign-in sheet's hand-off, run just
+  // before the signed-in shell starts.
+  const finishLogin = useCallback((beforeShell?: () => Promise<void>): Promise<boolean> => {
     if (pending.current) return pending.current;
     setChecking(true);
     const run = async () => {
       try {
-        const result = await confirmSession();
+        const result = await confirmSession(beforeShell);
         setFailure(result ? snapshot(result) : null);
         return !result;
       } catch {

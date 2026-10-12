@@ -23060,6 +23060,13 @@ html.in-side-panel body {
 .dev-ws-strip[data-ws-mine] > .dev-ws-head > .dev-ws-head-title { font-size: 15px; font-weight: 650; }
 .dev-ws-strip[data-ws-mine] .dev-ws-wlist { margin-top: 0; }
 .dev-ws-strip[data-ws-mine] .dev-ws-wlist + .dev-ws-reveal { margin-top: 2px; }
+/* #4772: Waiting on you, Yours, up for a vote and Going live are Your
+   work's sections, cards drawn exactly as it is. */
+.dev-ws-strip[data-ws-mine-section] { container-type: inline-size; gap: 0; }
+.dev-ws-strip[data-ws-mine-section] > .dev-ws-head { align-items: baseline; padding: 4px 2px 8px; }
+.dev-ws-strip[data-ws-mine-section] > .dev-ws-head > .dev-ws-head-title { font-size: 15px; font-weight: 650; }
+.dev-ws-strip[data-ws-mine-section] .dev-ws-wlist { margin-top: 0; }
+.dev-ws-strip[data-ws-mine-section] .dev-ws-wlist + .dev-ws-reveal { margin-top: 2px; }
 .dev-ws-lrow { gap: 10px; padding: 8px 2px 8px 19px; border-top: 1px solid var(--app-sheet-line); border-radius: 10px; }
 .dev-ws-lrow:hover, .dev-ws-lrow[data-on] { margin: 0; padding-left: 19px; padding-right: 2px; }
 .dev-ws-lrow:hover + .dev-ws-lrow, .dev-ws-lrow[data-on] + .dev-ws-lrow { border-top-color: var(--app-sheet-line); }

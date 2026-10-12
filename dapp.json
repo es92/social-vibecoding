@@ -4948,6 +4948,11 @@
       "name": "An agent session's own screen shows its app, its change and a Changes button, and the drawer links the active change to its proposal page (#2779) and says why its checks were skipped (#3180)",
       "path": "/#agent/990801/changes",
       "expectSelector": "#agent-session-screen:not(.hidden):has([data-agent-session-focus] ~ [data-agent-session-change-pill] ~ [data-agent-session-changes-button]) [data-agent-session-active-change]:has([data-agent-session-checks-reason]) a[href$=\"/dev/proposals/990802\"]"
+    },
+    {
+      "name": "Workshop: What's happening files your work in sections: Waiting on you, Yours, up for a vote, then Going live (#4772)",
+      "path": "/?demo=1&ws=workshop#app/usernode-2d5619/dev",
+      "expectSelector": "#dev-workshop .dev-ws-tabbody > [data-ws-part=\"happening\"] ~ [data-ws-mine-section=\"waiting\"]:has([data-ws-row]) ~ [data-ws-mine-section=\"vote\"]:has([data-ws-row]) ~ [data-ws-mine-section=\"live\"] [data-ws-row]"
     }
   ],
   "governance": {

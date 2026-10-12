@@ -86,6 +86,7 @@ export class Signals {
   #pool: Pool;
   #log: Logger;
   #client: PoolClient | null = null;
+  #giveBack: ((err?: Error) => void) | null = null;
   #sleepers = new Map<string, Set<(payload: string | null) => void>>();
   #kept = new Map<string, number>();
   #watches = new Set<{ seen: Set<string>; wake: (() => void) | null }>();
@@ -97,25 +98,42 @@ export class Signals {
 
   async start(): Promise<void> {
     if (this.#client || this.#stopped) return;
+    let giveBack: ((err?: Error) => void) | null = null;
     try {
       const client = await this.#pool.connect();
-      client.on?.('notification', (msg) => this.wake(msg.channel, msg.payload));
-      client.on?.('error', (err) => {
+      const onNotification = (msg: { channel: string; payload?: string }) => this.wake(msg.channel, msg.payload);
+      // The connection goes back to the pool once. Our listeners come off
+      // with it: the pool watches an idle connection itself, and one of ours
+      // left on it released it a second time when it errored later (a
+      // database dropped after stop()), which pg-pool throws on.
+      let released = false;
+      const onError = (err: Error) => {
         this.#log.warn('workflow', 'signal connection lost', { message: err.message });
-        this.#client = null;
-        client.release(err);
+        if (this.#client === client) this.#client = null;
+        giveBack!(err);
         // Sleepers waiting for notifications go back to polling until then.
         this.wakeAll();
         if (!this.#stopped) setTimeout(() => { this.start(); }, 1000).unref?.();
-      });
+      };
+      giveBack = (err?: Error) => {
+        if (released) return;
+        released = true;
+        client.removeListener?.('notification', onNotification);
+        client.removeListener?.('error', onError);
+        client.release(err);
+      };
+      client.on?.('notification', onNotification);
+      client.on?.('error', onError);
       await client.query('LISTEN wf_events');
       await client.query('LISTEN wf_outcome');
       await client.query('LISTEN wf_work');
       await client.query('LISTEN wf_timer');
       this.#client = client;
+      this.#giveBack = giveBack;
       // Whatever was announced while nobody listened: look once.
       this.wakeAll();
     } catch (err) {
+      giveBack?.(err as Error);
       this.#log.warn('workflow', 'signal connection unavailable; polling only', { message: (err as Error).message });
     }
   }
@@ -123,11 +141,13 @@ export class Signals {
   async stop(): Promise<void> {
     this.#stopped = true;
     const client = this.#client;
+    const giveBack = this.#giveBack;
     this.#client = null;
+    this.#giveBack = null;
     this.wakeAll();
     if (client) {
       await client.query('UNLISTEN *').catch(() => {});
-      client.release();
+      giveBack?.();
     }
   }
 

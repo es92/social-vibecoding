@@ -9448,6 +9448,9 @@ const AppView = {
           myRemaining: (ghData && typeof ghData.myRemaining === 'number') ? ghData.myRemaining : null,
           // B8: Homeroom bot builds requests here, for this viewer ({ typicalMinutes }).
           homeroomBot: (ghData && ghData.homeroomBot && typeof ghData.homeroomBot === 'object') ? ghData.homeroomBot : null,
+          // #4772: what Homeroom bot waits on this viewer for here
+          // (services/workshop-waiting.js), for the Workshop's Waiting on you.
+          waitingOnYou: (ghData && ghData.waitingOnYou && typeof ghData.waitingOnYou === 'object') ? ghData.waitingOnYou : null,
         };
       }
       // GitHub twins of open env-var proposals render as governance
@@ -10256,6 +10259,148 @@ const AppView = {
   _specDraftTag() {
     return { label: PlatformI18n.t('changes:workshop.row.tag.specDraft'), tone: 'plain', glyph: 'lock', title: AppView.PRIVATE_DIVIDER_TITLE };
   },
+  /**
+   * #4772: what Homeroom bot waits on the viewer for on this project, for
+   * the Workshop's Waiting on you: Map(item key, as _workshopItemKey makes
+   * it → { why: 'plan' | 'question' | 'talk', at, botLast }), one reason an
+   * item, the first that applies. From the request list's `waitingOnYou`
+   * (services/workshop-waiting.js: its plans waiting for their Build it, its
+   * open questions in their DM, the back and forths they are in with it)
+   * and, on a request of theirs, the bot's question on its discussion that
+   * nobody has answered (`botAwaits`, #4530).
+   */
+  _workshopWaitingOn() {
+    const out = new Map();
+    const w = (AppView._ghIssuesMeta && AppView._ghIssuesMeta.waitingOnYou) || null;
+    const list = (v) => (Array.isArray(v) ? v : []);
+    const put = (key, entry) => { if (!out.has(key)) out.set(key, entry); };
+    const n = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : 0);
+    if (w && typeof w === 'object') {
+      for (const p of list(w.plans)) if (n(p && p.number)) put(`issue:${n(p.number)}`, { why: 'plan', at: p.at || null });
+      for (const q of list(w.questions)) if (n(q && q.number)) put(`issue:${n(q.number)}`, { why: 'question', at: q.at || null });
+    }
+    const me = App.user && App.user.username;
+    if (me) {
+      for (const issue of AppView._visibleGhIssues()) {
+        const asked = AppView._botWaiting(issue);
+        if (asked && asked.kind === 'question' && issue.created_by_username === me) {
+          put(`issue:${issue.number}`, { why: 'question', at: null });
+        }
+      }
+    }
+    if (w && typeof w === 'object') {
+      for (const t of list(w.talks)) {
+        if (!t || !n(t.ref)) continue;
+        put(`${t.type === 'issue' ? 'issue' : 'session'}:${n(t.ref)}`, { why: 'talk', at: t.at || null, botLast: !!t.botLast });
+      }
+    }
+    return out;
+  },
+
+  /**
+   * #4772: the board's own item for a key of _workshopWaitingOn that is not
+   * already the viewer's work ({ kind, item }), or null when the board does
+   * not have it (a closed request, a change no longer open).
+   */
+  _workshopWaitingItem(key) {
+    const [type, raw] = String(key || '').split(':');
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id <= 0) return null;
+    if (type === 'issue') {
+      const issue = AppView._visibleGhIssues().find((i) => Number(i.number) === id);
+      return issue ? { kind: 'issue', item: issue } : null;
+    }
+    if (type !== 'session') return null;
+    const proposal = (AppView._proposals || []).find((p) => Number(p.id) === id);
+    if (proposal) return { kind: 'proposal', item: proposal };
+    const session = (AppView._mySessions || []).find((m) => Number(m.id) === id);
+    return session ? { kind: 'my-session', item: session } : null;
+  },
+
+  /**
+   * #4772: a change of the viewer's up for a vote that waits on THEM for a
+   * fix: its checks fail, its preview did not build, or it conflicts in a
+   * way somebody has to resolve (blockReasons, less the ones that resolve
+   * themselves). A change Homeroom bot built is the bot's to fix.
+   */
+  _workshopNeedsFix(p) {
+    if (!p || p.status !== 'promoted' || AppView._botBuilt(p)) return false;
+    const fix = new Set(['checks_failing', 'preview_failed', 'mergeability_conflict', 'conflict_failed', 'merge_conflict']);
+    return AppView.blockReasons(p).some((r) => fix.has(r.key) && !r.soft && !r.running);
+  },
+
+  /**
+   * #4772: one row of the viewer's work, filed in its What's happening
+   * section (`group`): Waiting on you when Homeroom bot waits on them for it
+   * (`waitingOn`, _workshopWaitingOn) or it is a change of theirs that needs
+   * their fix; Going live when it is merged or being merged; Yours, up for a
+   * vote for the rest of their changes and decisions up for a vote; else
+   * Your work. A row waiting on them for the bot leads its tags with why.
+   */
+  _workshopFiled(row, kind, item, waitingOn) {
+    if (!row) return null;
+    const key = AppView._workshopItemKey(kind, item);
+    const w = waitingOn && key ? waitingOn.get(key) : null;
+    let group = 'work';
+    if (w || (kind === 'proposal' && AppView._workshopNeedsFix(item))) group = 'waiting';
+    else if (kind === 'merged' || (kind === 'proposal' && item.status === 'merging')) group = 'live';
+    else if (kind === 'proposal' || kind === 'gov') group = 'vote';
+    const tag = w ? AppView._workshopWaitingTag(w) : null;
+    const brief = tag && row.brief ? { ...row.brief, tags: [tag, ...row.brief.tags] } : row.brief;
+    return { ...row, brief, group };
+  },
+
+  /** #4772: the tag that says why a row waits on the viewer (_workshopWaitingOn's entry). */
+  _workshopWaitingTag(w) {
+    if (w.why === 'plan') return { label: PlatformI18n.t('changes:workshop.row.tag.planWaits'), tone: 'warn' };
+    if (w.why === 'question') return { label: PlatformI18n.t('changes:workshop.row.tag.botAsked'), tone: 'warn' };
+    const ago = AppView._workshopAgo(w.at);
+    if (w.botLast) {
+      return { label: ago ? PlatformI18n.t('changes:workshop.row.tag.botReplied', { ago }) : PlatformI18n.t('changes:workshop.row.tag.botRepliedNow'), tone: 'warn' };
+    }
+    return { label: ago ? PlatformI18n.t('changes:workshop.row.tag.youReplied', { ago }) : PlatformI18n.t('changes:workshop.row.tag.youRepliedNow'), tone: 'plain' };
+  },
+
+  /**
+   * One row of the viewer's own work on the Workshop tab (_workshopView's
+   * `mine`), in the shared work rows, or null when its card cannot be built.
+   */
+  _workshopMineRow(kind, item) {
+    // #4715: a merged row draws the very card This week draws for it
+    // (`_mergedRowModel`, whose pill says "Going live" while the release
+    // is still rolling out), so there is no new markup to keep in step.
+    const card = kind === 'my-session'
+      ? AppView._mySessionCardModel(item)
+      : kind === 'gov'
+        ? AppView._govCardModel(item)
+        : kind === 'issue'
+          ? AppView._issueCardModel(item)
+          : kind === 'merged'
+            ? AppView._mergedRowModel(item)
+            : AppView._proposalCardModel(item);
+    if (!card) return null;
+    const brief = AppView._workshopBrief(kind, item, card);
+    // #4728: a change the bot built from the viewer's own request wears
+    // the bot tag in Your work, so the row says it was taken up at a
+    // glance and not only in its maker line. First among a proposal's
+    // tags; after a merged row's settled pill, so "Going live…" keeps
+    // the tags line's start. The brief is copied, not mutated: the
+    // board and the week pages build their own from the same models.
+    if ((kind === 'proposal' || kind === 'merged')
+      && item.requested_by_me === true && AppView._botBuilt(item)) {
+      const tag = AppView._botForYouTag();
+      const tags = brief.tags.slice();
+      if (kind === 'proposal') tags.unshift(tag);
+      else tags.splice(1, 0, tag);
+      return AppView._attachRowConversation(
+        { t: 'card', key: `mine:${card.key}`, card, brief: { ...brief, tags } }, kind, item,
+      );
+    }
+    return AppView._attachRowConversation(
+      { t: 'card', key: `mine:${card.key}`, card, brief }, kind, item,
+    );
+  },
+
   // #4728: the tag on a Your work row for a change Homeroom bot built from
   // a request the viewer made — the row is theirs through the bot, and the
   // tag says so at a glance, beside the sparkle Messages draws for an agent.
@@ -11697,6 +11842,21 @@ const AppView = {
       : AppView._workshopShot === 'mine-session'
         ? mineItems.filter((x) => x.kind === 'my-session').concat(mineItems.filter((x) => x.kind !== 'my-session'))
         : mineItems;
+    // #4772: What's happening files the viewer's work in sections: Waiting
+    // on you (what needs their answer before it can move), Your work (the
+    // rest in flight), Yours, up for a vote, and Going live. Each row of
+    // `mine.rows` carries its section (`group`); what Homeroom bot waits on
+    // them for on an item that is not otherwise theirs (a plan or question
+    // on their request, a back and forth on somebody's change) is `extra`.
+    // `mine.rows` itself is unchanged, so the hub's Your work counts as it did.
+    const waitingOn = AppView._workshopShot === 'mine-empty' ? new Map() : AppView._workshopWaitingOn();
+    const mineKeySet = new Set(mineList.map(({ kind, item }) => AppView._workshopItemKey(kind, item)));
+    const extraItems = [];
+    for (const key of waitingOn.keys()) {
+      if (mineKeySet.has(key)) continue;
+      const found = AppView._workshopWaitingItem(key);
+      if (found) extraItems.push(found);
+    }
     const mine = {
       viewer: meId != null,
       // Homeroom bot builds requests here for this viewer: the empty strip
@@ -11704,41 +11864,8 @@ const AppView = {
       bot: !!AppView._botDoor(),
       count: mineList.length,
       shown: AppView.WORKSHOP_MINE_MAX,
-      rows: mineList.map(({ kind, item }) => {
-        // #4715: a merged row draws the very card This week draws for it
-        // (`_mergedRowModel`, whose pill says "Going live" while the release
-        // is still rolling out), so there is no new markup to keep in step.
-        const card = kind === 'my-session'
-          ? AppView._mySessionCardModel(item)
-          : kind === 'gov'
-            ? AppView._govCardModel(item)
-            : kind === 'issue'
-              ? AppView._issueCardModel(item)
-              : kind === 'merged'
-                ? AppView._mergedRowModel(item)
-                : AppView._proposalCardModel(item);
-        if (!card) return null;
-        const brief = AppView._workshopBrief(kind, item, card);
-        // #4728: a change the bot built from the viewer's own request wears
-        // the bot tag in Your work, so the row says it was taken up at a
-        // glance and not only in its maker line. First among a proposal's
-        // tags; after a merged row's settled pill, so "Going live…" keeps
-        // the tags line's start. The brief is copied, not mutated: the
-        // board and the week pages build their own from the same models.
-        if ((kind === 'proposal' || kind === 'merged')
-          && item.requested_by_me === true && AppView._botBuilt(item)) {
-          const tag = AppView._botForYouTag();
-          const tags = brief.tags.slice();
-          if (kind === 'proposal') tags.unshift(tag);
-          else tags.splice(1, 0, tag);
-          return AppView._attachRowConversation(
-            { t: 'card', key: `mine:${card.key}`, card, brief: { ...brief, tags } }, kind, item,
-          );
-        }
-        return AppView._attachRowConversation(
-          { t: 'card', key: `mine:${card.key}`, card, brief }, kind, item,
-        );
-      }).filter(Boolean),
+      rows: mineList.map(({ kind, item }) => AppView._workshopFiled(AppView._workshopMineRow(kind, item), kind, item, waitingOn)).filter(Boolean),
+      extra: extraItems.map(({ kind, item }) => AppView._workshopFiled(AppView._workshopMineRow(kind, item), kind, item, waitingOn)).filter(Boolean),
     };
 
     // ── Needs your vote ──

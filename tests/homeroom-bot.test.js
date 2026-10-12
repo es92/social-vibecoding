@@ -1960,6 +1960,67 @@ test('runTriage: a reply still without its block after the one ask fails as it a
   assert.ok(h.calls.queries.some((q) => /DELETE FROM homeroom_bot_queue/.test(q.s)), 'a model failure consumes the row');
 });
 
+test('runTriage: an unreadable reply is kept on its run, with the reply to the ask, while its error stays one short line', async () => {
+  const long = `${'Reading the request. '.repeat(1500)}Verdict below.`;
+  const h = repairHarness(955, [{ ...WORDS_ONLY, lastResultText: long }, { lastResultText: 'It is fine to build.', agentThreadId: 'thr-1' }]);
+  const out = await bot.runTriage(h.pool, {}, { bot: BOT, app: APP, item: ITEM, mode: 'shadow', deps: h.deps });
+  assert.equal(out.verdict, 'failed');
+  const insert = h.calls.queries.find((q) => /INSERT INTO homeroom_bot_runs/.test(q.s));
+  assert.ok(insert.params[18].length <= 320, 'the error is one short line');
+  const kept = h.calls.queries.find((q) => /SET unreadable_reply = \$2/.test(q.s));
+  assert.ok(kept, 'the reply is stored beside the row');
+  assert.equal(kept.params[0], 900);
+  const stored = JSON.parse(kept.params[1]);
+  assert.equal(stored.reply.chars, long.length);
+  assert.ok(stored.reply.text.startsWith('Reading the request. '), 'its start');
+  assert.ok(stored.reply.text.endsWith('Verdict below.'), 'and its end');
+  assert.match(stored.reply.text, /\[… \d+ characters left out …\]/);
+  assert.deepEqual(stored.repair, { text: 'It is fine to build.', chars: 20 }, 'and what the ask got back');
+});
+
+test('keptReply keeps a short reply whole and a long one as its first 4 KB and last 12 KB', () => {
+  assert.equal(bot.keptReply(''), null);
+  assert.equal(bot.keptReply('  \n'), null);
+  assert.deepEqual(bot.keptReply('No block.'), { text: 'No block.', chars: 9 });
+  const text = `${'a'.repeat(4096)}${'m'.repeat(5000)}${'z'.repeat(12 * 1024)}`;
+  const kept = bot.keptReply(text);
+  assert.equal(kept.chars, text.length);
+  assert.equal(kept.text, `${'a'.repeat(4096)}\n\n[… 5000 characters left out …]\n\n${'z'.repeat(12 * 1024)}`);
+  assert.equal(bot.unreadableReplyOf('', null), null, 'nothing to keep, nothing stored');
+  assert.deepEqual(bot.unreadableReplyOf('x', null), { reply: { text: 'x', chars: 1 }, repair: null });
+});
+
+test('seedStagingUnreadableReply: staging only, once, a fake failed run with its kept reply', async () => {
+  const queries = [];
+  let have = false;
+  const pool = { query: async (sql, params) => {
+    queries.push({ sql, params });
+    if (/SELECT 1 FROM homeroom_bot_runs WHERE issue_number/.test(sql)) return { rows: have ? [{}] : [] };
+    if (/FROM apps WHERE status = 'running'/.test(sql)) return { rows: [{ id: 7 }] };
+    if (/INSERT INTO homeroom_bot_runs/.test(sql)) return { rows: [{ id: 41 }] };
+    return { rows: [] };
+  } };
+  const env = process.env.USERNODE_ENV;
+  try {
+    delete process.env.USERNODE_ENV;
+    assert.equal(await bot.seedStagingUnreadableReply(pool), false);
+    assert.equal(queries.length, 0, 'nothing outside staging');
+    process.env.USERNODE_ENV = 'staging';
+    assert.equal(await bot.seedStagingUnreadableReply(pool), true);
+    const insert = queries.find((q) => /INSERT INTO homeroom_bot_runs/.test(q.sql));
+    assert.match(insert.params[2], /^unparseable: /);
+    const kept = JSON.parse(queries.find((q) => /SET unreadable_reply/.test(q.sql)).params[1]);
+    assert.match(kept.reply.text, /^Staging demo:/);
+    assert.match(kept.repair.text, /^Staging demo:/);
+    have = true;
+    queries.length = 0;
+    assert.equal(await bot.seedStagingUnreadableReply(pool), false, 'seeded once');
+    assert.ok(!queries.some((q) => /INSERT/.test(q.sql)));
+  } finally {
+    if (env === undefined) delete process.env.USERNODE_ENV; else process.env.USERNODE_ENV = env;
+  }
+});
+
 test('runTriage: a thread the runtime will not resume is never asked on a fresh one', async () => {
   const h = repairHarness(954, [WORDS_ONLY, { lastResultText: '```json\n{"verdict":"ready","determined":true,"build_note":"Invented."}\n```' }]);
   h.deps.sessions.runCodexAttemptLoop = async ({ dispatchOnce, resumeThreadId }) => {

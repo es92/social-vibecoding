@@ -11,8 +11,9 @@
 //   * "Sign in with a password" is a step of the sheet, sending the sign-in
 //     screen's own exchange (passwordSignIn in features/auth/shared.ts).
 //   * A first sign-in through the sheet hands off to the make screen: the
-//     sheet leaves over the make screen's wallpaper, then the shell signs in
-//     and the make screen is drawn in that same tick, for a new account (its
+//     sheet stays up, busy, until the session is confirmed (#4892), then
+//     leaves over the make screen's wallpaper, then the shell signs in and
+//     the make screen is drawn in that same tick, for a new account (its
 //     flag) and for one that already existed (the join step, at once).
 //
 // Effects do not run here (tests/lib/render-tsx.js), so the parts that are
@@ -412,14 +413,21 @@ test('a new account from the sheet, the mail\'s included, gets the make screen a
   const { startedFromStory } = loadTsx(LANDING);
   const session = memoryStorage();
   const fetch = fakeFetch({ '/api/me/first-session/started': [200, { ok: true }] });
-  const order = [];
-  const handOff = async () => { order.push('hand-off'); };
+  let toMake;
   await withGlobals({ window: {}, sessionStorage: session, fetch }, async () => {
-    await startedFromStory('new', handOff);
+    toMake = await startedFromStory('new');
   });
   assert.equal(session.getItem('usernode:first-session:make'), '1', 'the island opens it as the shell signs in');
+  // Recorded before it answers, so before the shell starts and the join
+  // step's own record (`via: 'sign_in'`) can land first.
   assert.deepEqual(fetch.calls.map((c) => [c.url, c.init.method]), [['/api/me/first-session/started', 'POST']]);
-  assert.deepEqual(order, ['hand-off']);
+  assert.equal(toMake, true, 'the sheet hands off to the make screen');
+  // A record that fails still hands off: the make screen is the flag's.
+  const failed = fakeFetch(() => new Error('offline'));
+  await withGlobals({ window: {}, sessionStorage: memoryStorage(), fetch: failed }, async () => {
+    toMake = await startedFromStory('new');
+  });
+  assert.equal(toMake, true);
   // The mail's sheet is the story's own, with this as its beforeFinish.
   const src = read(LANDING);
   assert.match(src, /releaseToken=\{sheet === 'start' \? release\?\.token \?\? null : null\}\s+releaseSignIn=\{sheet === 'start' \? release\?\.signIn \?\? null : null\}\s+beforeFinish=\{startedFromStory\}/);
@@ -432,9 +440,9 @@ test('a first sign-in to an account that already existed, the password step\'s i
   for (const [user, handsOff] of [[{ id: 7 }, true], [{ id: 8 }, false]]) {
     const session = memoryStorage();
     const fetch = fakeFetch({ '/api/auth/me': [200, { user }] });
-    let handedOff = false;
+    let handedOff;
     await withGlobals({ window: { CommunitiesFirstRun: { firstSessionNow: due } }, sessionStorage: session, fetch }, async () => {
-      await startedFromStory('existing', async () => { handedOff = true; });
+      handedOff = await startedFromStory('existing');
     });
     assert.equal(handedOff, handsOff, `user ${user.id}`);
     // The session read, past the worker, and nothing recorded or flagged
@@ -445,9 +453,9 @@ test('a first sign-in to an account that already existed, the password step\'s i
   assert.deepEqual(asked.map((u) => u.id), [7, 8], 'the join step answers, not a copy of its rule');
   // A session read that fails is a sign-in like any other.
   const failed = fakeFetch({ '/api/auth/me': [500, {}] });
-  let handedOff = false;
+  let handedOff;
   await withGlobals({ window: { CommunitiesFirstRun: { firstSessionNow: () => true } }, sessionStorage: memoryStorage(), fetch: failed }, async () => {
-    await startedFromStory('existing', async () => { handedOff = true; });
+    handedOff = await startedFromStory('existing');
   });
   assert.equal(handedOff, false);
 });
@@ -534,8 +542,9 @@ test('the movement: the sheet leaves over the make screen\'s ground, then the ma
   assert.match(sheet, /data-sign-in-sheet-cover=""/);
   assert.match(sheet, /style=\{\{ background: 'var\(--home-wallpaper\)' \}\}/);
   assert.match(read('frontend/src/features/first-session/make.tsx'), /style=\{\{ background: 'var\(--home-wallpaper, #f4f2e4\)' \}\}/);
-  // The shell signs in only once the sheet has gone; a failure brings it back.
-  assert.match(sheet, /await beforeFinish\?\.\(kind, handOff\);\s+const opened = await confirmSession\(\);\s+if \(!opened\) setLeaving\(false\);/);
+  // The sheet goes only once the shell is ready to draw the make screen
+  // (#4892), and the shell signs in once it has gone; a failure keeps it up.
+  assert.match(sheet, /const toMake = \(await beforeFinish\?\.\(kind\)\) === true;\s+const opened = await confirmSession\(toMake \? handOff : undefined\);\s+if \(!opened\) setLeaving\(false\);/);
   assert.match(sheet, /const ms = prefersReducedMotion\(\) \? 0 : HAND_OFF_MS;/);
   const make = read('frontend/src/features/first-session/make.tsx');
   assert.match(make, /const ARRIVING = 'translate-y-6 opacity-0 transition-\[transform,opacity\] duration-300 ease-out motion-reduce:transition-none';/);
@@ -548,6 +557,112 @@ test('the movement: the sheet leaves over the make screen\'s ground, then the ma
   }
   assert.match(sheet, /transition-\[transform,opacity\] duration-200 ease-out motion-reduce:transition-none/);
   assert.equal((sheet.match(/motion-reduce:transition-none/g) || []).length >= 4, true);
+});
+
+// ─── held until the make screen is ready to draw (#4892) ───────────────
+//
+// Onboarding run, 12 Oct 2026 (iPhone 17 simulator, iOS 26.5 Safari): after
+// Continue on the "Welcome <address>" sheet a blank page showed before
+// "What do you want to make?". The sheet left before the session read, and
+// the bare wallpaper stood there for as long as the read took.
+
+/** AuthScreens.finishLogin in a sandbox, recording what it does in order. */
+function finishHarness({ user = { id: 7, hasPlatformAccess: true }, status = 200, move = false } = {}) {
+  const order = [];
+  const location = { search: '', hash: '#landing', pathname: '/', origin: 'https://homeroom.example', href: '/#landing' };
+  const element = { classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, style: {} };
+  const sandbox = {
+    URL, URLSearchParams, AbortController, console, location,
+    setTimeout() { return 1; }, clearTimeout() {},
+    history: { replaceState() {} },
+    document: {
+      addEventListener() {}, getElementById: () => element, querySelector: () => element,
+      querySelectorAll: () => [], body: element, documentElement: element,
+    },
+    addEventListener() {},
+    App: {
+      clearSessionSnapshot() {},
+      saveSessionSnapshot() {},
+      enterAuthed(u) { order.push(`shell:${u.id}`); },
+      _askLiveBuild() { return Promise.resolve(null); },
+      _moveToLiveShell() {
+        order.push('live-build');
+        return move === 'reload' ? new Promise(() => {}) : Promise.resolve(false);
+      },
+    },
+    fetch(url) {
+      order.push(`read:${url}`);
+      return Promise.resolve({ ok: status < 400, status, json: async () => ({ user }) });
+    },
+  };
+  sandbox.window = sandbox;
+  vm.runInNewContext(AUTH_SCREENS, sandbox);
+  return { auth: sandbox.AuthScreens, order, beforeShell: async () => { order.push('hand-off'); } };
+}
+
+test('bound for the make screen, the sheet stays up through the session read and hands off just before the shell starts (#4892)', async () => {
+  const h = finishHarness();
+  assert.equal(await h.auth.finishLogin({ beforeShell: h.beforeShell }), null);
+  assert.deepEqual(h.order, ['read:/api/auth/me', 'live-build', 'hand-off', 'shell:7'],
+    'the read and the build check first, then the sheet goes, then the shell draws the make screen');
+  // Every other sign-in starts the shell as it always has.
+  const plain = finishHarness();
+  assert.equal(await plain.auth.finishLogin(), null);
+  assert.deepEqual(plain.order, ['read:/api/auth/me', 'live-build', 'shell:7']);
+  // A hand-off that throws keeps nobody out.
+  const broken = finishHarness();
+  assert.equal(await broken.auth.finishLogin({ beforeShell: async () => { throw new Error('gone'); } }), null);
+  assert.deepEqual(broken.order, ['read:/api/auth/me', 'live-build', 'shell:7']);
+
+  // The sheet asks for it only when its screen said the make screen comes,
+  // and passes it through the confirmation to finishLogin.
+  const sheet = read(SHEET);
+  const finish = sheet.slice(sheet.indexOf('const finish = useCallback('), sheet.indexOf('finishRef.current = finish;'));
+  assert.doesNotMatch(finish, /await handOff\(\)|beforeFinish\?\.\(kind, handOff\)/, 'never before the session read');
+  assert.match(read('frontend/src/features/auth/session-confirmation.tsx'),
+    /const finishLogin = useCallback\(\(beforeShell\?: \(\) => Promise<void>\): Promise<boolean> => \{[\s\S]{0,200}const result = await confirmSession\(beforeShell\);/);
+  const shared = loadTsx(SHARED);
+  const seen = [];
+  const host = { finishLogin: async (opts) => { seen.push(opts); return null; } };
+  const beforeShell = async () => {};
+  await withGlobals({ window: { AuthScreens: host } }, async () => {
+    assert.equal(await shared.finishLogin(beforeShell), null);
+    assert.equal(await shared.finishLogin(), null);
+  });
+  assert.equal(seen[0].beforeShell, beforeShell);
+  assert.equal(seen[1], undefined, 'the other sign-ins call it as before');
+});
+
+test('the sheet does not hand off when the make screen is not coming next: a refused session, a reload, the waiting room', async () => {
+  // Refused: the sheet stays, with the notice, and nothing is drawn.
+  const refused = finishHarness({ status: 401 });
+  assert.equal((await refused.auth.finishLogin({ beforeShell: refused.beforeShell })).code, 'session-rejected');
+  assert.deepEqual(refused.order, ['read:/api/auth/me']);
+  // Behind the live build: the page reloads with the sheet still up and
+  // busy; the new page draws the make screen as it starts.
+  const reload = finishHarness({ move: 'reload' });
+  void reload.auth.finishLogin({ beforeShell: reload.beforeShell });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(reload.order, ['read:/api/auth/me', 'live-build']);
+  // Still waiting for access: the waiting room, not the make screen.
+  const waiting = finishHarness({ user: { id: 7, hasPlatformAccess: false } });
+  assert.equal(await waiting.auth.finishLogin({ beforeShell: waiting.beforeShell }), null);
+  assert.deepEqual(waiting.order, ['read:/api/auth/me', 'shell:7']);
+});
+
+test('Continue shows a spinner while it finishes, beside "Finishing…" (#4892)', () => {
+  const sheet = read(SHEET);
+  assert.match(sheet, /function FinishingSpinner\(\) \{\s+return <SpinnerArcIcon className="mr-2 h-\[18px\] w-\[18px\] shrink-0 animate-spin" aria-hidden="true" \/>;/);
+  // The Welcome step's Continue and a provider's username step's, the two
+  // that finish a new account and may hand off to the make screen.
+  for (const step of ['account', 'username']) {
+    assert.match(sheet, new RegExp(`\\{busy \\? <><FinishingSpinner />\\{t\\('auth:signInSheet\\.${step}\\.finishing'\\)\\}</> : t\\('auth:signInSheet\\.${step}\\.submit'\\)\\}</button>`), step);
+    assert.equal(message(`auth:signInSheet.${step}.submit`), 'Continue');
+    assert.equal(message(`auth:signInSheet.${step}.finishing`), 'Finishing…');
+  }
+  // Busy through the whole wait: the account is saved, then `finish` (the
+  // session read and the hand-off) is awaited before the button frees.
+  assert.match(sheet, /await finish\('new'\);\s+\} catch \(err\) \{\s+setError\(sessionMintFailureMessage\(err\)\);\s+\} finally \{\s+setBusy\(false\);/);
 });
 
 test('closed by its ✕, its dim or Escape, the sheet goes down the way it came up before it is dropped', () => {

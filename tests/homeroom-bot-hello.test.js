@@ -124,6 +124,20 @@ test('B5: the hellos say what the bot does, in plain words', () => {
   assert.deepEqual(dm.TOUR_PROMPTS, ['What can I ask for?', 'How does the group decide?', 'How do I start a project?']);
 });
 
+test('#4897: no hello is kept from a test account; the welcome DM keeps its own opt-in', () => {
+  // The tour's, a maker's and a joiner's hello (homeroom-bot-dm.js) and a
+  // member's (homeroom-bot-activity.js startCard) read nothing that marks a
+  // test account, so a tester meets the bot as a newcomer does, however the
+  // account was made.
+  for (const file of ['src/services/homeroom-bot-dm.js', 'src/services/homeroom-bot-activity.js']) {
+    assert.doesNotMatch(read(file), /test_account_created_at|quiet_test/, `${file} keeps no hello from a test account`);
+  }
+  // The welcome DM puts staff into a group with the account, so it still
+  // waits for the creator's welcomeDm (test_account_welcome_dm).
+  assert.match(read('src/db/schema.sql'),
+    /IF NEW\.test_account_created_at IS NOT NULL AND NOT NEW\.test_account_welcome_dm THEN\n {4}RETURN NULL;/);
+});
+
 test('B5: its name and its one hello, against the full PostgreSQL schema', { timeout: 180000 }, async (t) => {
   const admin = new Pool({ connectionString: DSN, connectionTimeoutMillis: 2000 });
   try { await admin.query('SELECT 1'); } catch (err) {
@@ -292,18 +306,15 @@ test('B5: its name and its one hello, against the full PostgreSQL schema', { tim
       /if \(status === 'joined'\) \{\n {6}appAccess\.invalidateVisibility\(invite\.app_id, invite\.slug\);\n[^\n]*\n {6}void require\('\.\/homeroom-bot-dm'\)\.greetJoiner\(pool, \{/);
   });
 
-  await t.test('#4604: ending the tour greets once, only somebody the bot has not met, never a quiet test account', async () => {
+  await t.test('#4604: ending the tour greets once, only somebody the bot has not met', async () => {
     const onboarding = require('../src/services/onboarding');
     const mode = (value) => pool.query(
       `INSERT INTO platform_settings (key, value) VALUES ('homeroom_bot_mode', $1)
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [value]);
     const nina = await user('nina');
-    const tester = await user('tester_tour');
-    await pool.query('UPDATE users SET test_account_created_at = NOW() WHERE id = $1', [tester.id]);
     await mode('off');
     assert.equal(await dm.greetTourFinisher(pool, { userId: nina.id }), null, 'switched off: no hello it cannot keep');
     await mode('live');
-    assert.equal(await dm.greetTourFinisher(pool, { userId: tester.id }), null, 'a test account hears nothing');
     const sent = await dm.greetTourFinisher(pool, { userId: nina.id });
     assert.ok(sent?.messageId);
     const { rows: [msg] } = await pool.query('SELECT content, metadata FROM conversation_messages WHERE id = $1', [sent.messageId]);
@@ -318,14 +329,60 @@ test('B5: its name and its one hello, against the full PostgreSQL schema', { tim
     // Somebody greeted another way (the joiner above) is not greeted again.
     const { rows: [tess] } = await pool.query("SELECT id FROM users WHERE username = 'tess'");
     assert.equal(await dm.greetTourFinisher(pool, { userId: tess.id }), null, 'one hello per person, whichever it was');
-    // A test account made to receive the welcome DM is greeted like anyone.
-    await pool.query('UPDATE users SET test_account_welcome_dm = TRUE WHERE id = $1', [tester.id]);
-    assert.ok((await dm.greetTourFinisher(pool, { userId: tester.id }))?.messageId);
     await mode('off');
     // The first end of the tour is what greets, never a backfill.
     const source = read('src/services/onboarding.js');
     assert.match(source, /if \(marked && marked\.rowCount > 0 && ended !== 'backfill'\) \{\n {4}void require\('\.\/homeroom-bot-dm'\)\.greetTourFinisher\(pool, \{ userId \}\);/);
     assert.equal(typeof onboarding.markTourDone, 'function');
+  });
+
+  await t.test('#4897: a test account hears every hello a newcomer hears, with the welcome DM still off', async () => {
+    const mode = (value) => pool.query(
+      `INSERT INTO platform_settings (key, value) VALUES ('homeroom_bot_mode', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, [value]);
+    // As create_test_account, create_test_phone_sign_in and
+    // send_test_release_email leave one when nobody asked for the welcome DM.
+    const tester = async (username) => {
+      const made = await user(username);
+      await pool.query('UPDATE users SET test_account_created_at = NOW(), exclude_podium = TRUE WHERE id = $1', [made.id]);
+      const { rows: [row] } = await pool.query('SELECT test_account_welcome_dm FROM users WHERE id = $1', [made.id]);
+      assert.equal(row.test_account_welcome_dm, false);
+      return made;
+    };
+    const helloOf = async (id) => (await pool.query('SELECT kind FROM homeroom_bot_hellos WHERE user_id = $1', [id])).rows[0]?.kind;
+    await mode('live');
+
+    const touring = await tester('tester_tour');
+    const toured = await dm.greetTourFinisher(pool, { userId: touring.id });
+    assert.ok(toured?.messageId, 'the tour\'s, which Messages is empty without');
+    const { rows: [msg] } = await pool.query('SELECT content FROM conversation_messages WHERE id = $1', [toured.messageId]);
+    assert.equal(msg.content, dm.TOUR_HELLO);
+    assert.equal(await helloOf(touring.id), 'tour');
+
+    const joining = await tester('tester_joiner');
+    assert.ok((await dm.greetJoiner(pool, { user: joining, app: supper }))?.messageId, 'a joiner\'s');
+    assert.equal(await helloOf(joining.id), 'joiner');
+
+    const making = await tester('tester_maker');
+    const readingLog = await project('reading-log', 'Reading Log', making);
+    const made = await dm.startFirstVersion(pool, {}, {
+      app: readingLog, user: { ...making, hasPlatformAccess: true }, brief: 'A reading log for our book club, with a page per book.',
+    });
+    assert.ok(made?.conversationId, 'a maker\'s');
+    assert.equal(await helloOf(making.id), 'maker');
+
+    const asking = await tester('tester_member');
+    await pool.query(
+      `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, asked_text)
+       VALUES ($1, 7, $2, 'Desserts', 'A dessert list')`, [supper.id, asking.id],
+    );
+    const card = await activity.startCard(pool, { inDm: true,
+      app: supper, issueNumber: 7, requester: await dm.requesterOf(pool, supper.id, 7), bot, jobKey: 'hello-4897', settings, queued: true,
+    });
+    const { rows: [carded] } = await pool.query('SELECT metadata FROM conversation_messages WHERE id = $1', [card.messageId]);
+    assert.equal(carded.metadata.homeroomBot.hello, dm.memberHello('Supper Club'), 'a member\'s');
+    assert.equal(await helloOf(asking.id), 'member');
+    await mode('off');
   });
 
   await t.test('two claims at once greet once', async () => {

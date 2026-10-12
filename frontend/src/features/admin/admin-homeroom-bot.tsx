@@ -196,6 +196,8 @@ interface Run {
   cost_usd: number | null;
   duration_ms: number | null;
   error: string | null;
+  // A reply whose verdict could not be read (homeroom-bot.js keptReply).
+  unreadable_reply?: UnreadableReply | null;
   created_at: string;
   // #3146: the proposal a live `ready` run opened.
   proposal_session_id: number | null;
@@ -221,6 +223,16 @@ interface Run {
   app_slug: string;
   app_name: string;
   issueUrl: string | null;
+}
+
+interface KeptReply {
+  text: string;
+  chars: number;
+}
+
+interface UnreadableReply {
+  reply?: KeptReply | null;
+  repair?: KeptReply | null;
 }
 
 /** One build turn of a build that changed nothing (homeroom-bot-live.js turnFacts), and what it said last. */
@@ -623,7 +635,29 @@ function VerdictBody({ run }: { run: Run }) {
       </div>
     );
   }
-  return <p className="text-sm text-red-400 break-words">{run.error || 'The run failed before it produced a verdict.'}</p>;
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-red-400 break-words">{run.error || 'The run failed before it produced a verdict.'}</p>
+      <UnreadableReplyText label="Its reply" kept={run.unreadable_reply?.reply} />
+      <UnreadableReplyText label="Its reply when asked for the JSON block" kept={run.unreadable_reply?.repair} />
+    </div>
+  );
+}
+
+/**
+ * A reply whose verdict could not be read, folded away: its first 4 KB and
+ * last 12 KB as the run kept them. Plain text, as the rest of this table is.
+ */
+function UnreadableReplyText({ label, kept }: { label: string; kept?: KeptReply | null }) {
+  if (!kept?.text) return null;
+  return (
+    <details className="text-sm" data-unreadable-reply>
+      <summary className={`${AdminUI.muted} cursor-pointer`}>
+        {`${label} (${Number(kept.chars || kept.text.length).toLocaleString()} characters)`}
+      </summary>
+      <p className="mt-1 max-h-96 overflow-y-auto whitespace-pre-wrap break-words">{kept.text}</p>
+    </details>
+  );
 }
 
 /** The build lane in one line: what is waiting, running, done, and why it idles. */

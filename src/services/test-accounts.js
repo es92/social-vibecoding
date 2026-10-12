@@ -18,8 +18,11 @@
 //     (counts_toward_outcome in schema.sql; D1).
 //   * Leaderboards (exclude_podium) and the Journey page (a 'test' left-out
 //     entry) do not see it.
-//   * No welcome DM unless the creator asked; never a season wallet on a
-//     native sign-in (native-session-protocol.js; D2).
+//   * No welcome DM unless the creator asked (test_account_welcome_dm: it
+//     puts staff into a group with the account); never a season wallet on a
+//     native sign-in (native-session-protocol.js; D2). Homeroom bot's hellos
+//     (the tour's, a maker's, a joiner's, a member's) are not fenced: they
+//     reach it as they reach a newcomer, however it was made (#4897).
 //   * At most MAX_LIVE at once, so app slots, the wallet pool and the bot's 50
 //     DM places cannot be drained by a loop.
 //

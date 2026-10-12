@@ -1246,6 +1246,26 @@ function stagingMockProposals(viewer) {
       },
       diagram_source: 'author',
     },
+    // #4772: two changes OWNED by the viewer (ownDemoProposals), for the
+    // Workshop's sections of their work: one up for a vote with its checks
+    // passing (Yours, up for a vote), and one whose checks fail, which waits
+    // on its author for a fix (Waiting on you). Without an owner they are
+    // ordinary mocks nobody owns.
+    mk(9000493, 900493,
+      '[Mock] Your change up for a vote: show the meeting date on each book',
+      0.5, 1, 0, 0, { required: 3, windowEndsAt: null }),
+    {
+      ...mk(9000494, 900494,
+        '[Mock] Your change needs a fix: its checks are failing',
+        0.6, 0, 0, 0, { required: 3, windowEndsAt: null }),
+      check_state: 'failing',
+      test_results: [
+        {
+          name: 'Home loads', path: '/', status: 'fail', consoleErrors: [],
+          failureReason: 'Expected element "[data-mock-fix]" was not found',
+        },
+      ],
+    },
   ];
   // Spread the community-voted priority/assignee across a few rows (the mk
   // factory otherwise stamps every proposal high / staging-tester) so the
@@ -1302,6 +1322,17 @@ function stagingMockProposals(viewer) {
     }
     return p;
   });
+}
+
+// #4772: the two ?demo=1 mocks the viewer owns (`user`, { id, username },
+// when known), so the Workshop's sections of their work are reviewable: one
+// up for a vote, one that needs their fix. Without a user they stay mocks
+// nobody owns.
+const OWN_DEMO_PROPOSALS = new Set([9000493, 9000494]);
+function ownDemoProposals(rows, user) {
+  if (!user || user.id == null || !user.username) return rows;
+  return rows.map((row) => (OWN_DEMO_PROPOSALS.has(row.id)
+    ? { ...row, user_id: user.id, username: user.username } : row));
 }
 
 // The ?demo=1 merged change that waits for the platform's next release.
@@ -4605,7 +4636,7 @@ function voteRoutes(config) {
       const demoMode = IS_STAGING && req.query.demo === '1';
       if (demoMode) {
         const have = new Set(rows.map((r) => r.id));
-        rows.push(...stagingMockProposals(req.user?.username).filter((m) => !have.has(m.id)));
+        rows.push(...ownDemoProposals(stagingMockProposals(req.user?.username), req.user).filter((m) => !have.has(m.id)));
       }
 
       const { active: activeUsers, majority } = await getActiveUserStats(pool, appRows[0].id);
@@ -5371,7 +5402,7 @@ function voteRoutes(config) {
       if (!proposal && IS_STAGING && req.query.demo === '1') {
         const sessionMocks = require('./sessions');
         proposal = stagingMockMerged(req.user).find((m) => m.id === id)
-          || stagingMockProposals().find((m) => m.id === id)
+          || ownDemoProposals(stagingMockProposals(), req.user).find((m) => m.id === id)
           || stagingDemoNeedsProposal(id, req.params.slug)
           || sessionMocks.stagingMockSharedSessions().find((m) => m.id === id)
           || sessionMocks.stagingMockOwnSessions(req.user?.id, config.selfAppSlug).find((m) => m.id === id)

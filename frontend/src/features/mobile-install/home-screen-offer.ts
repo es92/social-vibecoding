@@ -47,6 +47,9 @@ export function useHomeScreenOffer(enabled: boolean): MobileOs | null {
             native: isNativeApp(),
             standalone: isStandalone(),
             member: hasPlatformViewer(),
+            // Nor the strip's hold over a first-session tour (#4899): that
+            // keeps an unsolicited layer off the tour, and this is a row.
+            touring: false,
             dismissed: false,
             urls,
           });

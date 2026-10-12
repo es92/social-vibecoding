@@ -92,7 +92,9 @@ test('#3268: the hub\'s head is what it is and who is around this week', async (
     const slug = String(url).match(/\/api\/apps\/([^/]+)\/community/)[1];
     return { ok: true, json: async () => (slug === 'garden-solo'
       ? payload({ slug, audience: 'solo', audience_label: 'Just you', member_count: 1 })
-      : payload({ slug })) };
+      : slug === 'garden-solo-outside'
+        ? payload({ slug, audience: 'solo', audience_label: 'Just you', member_count: 1, is_member: false })
+        : payload({ slug })) };
   };
   try {
     await reloadCommunity('garden-head');
@@ -110,14 +112,24 @@ test('#3268: the hub\'s head is what it is and who is around this week', async (
       'Invite, then the ⋯, last');
     assert.doesNotMatch(hero, /data-ws-members-trend|shipped this month/, 'no chart and nothing about what shipped');
     // Just you: the label alone under the name, and nobody else to name.
+    // #4896: to its one member it is "Just you so far", and Invite is in
+    // the row of what they can do (it was the Share it card's alone).
     const solo = renderToHtml(createElement(CommunityCard, { slug: 'garden-solo', name: 'Garden', menu }));
-    assert.match(solo, /<h1 class="dev-ws-hero-name" data-ws-community-name="">Garden<\/h1><span class="dev-ws-hero-id-sub" data-ws-members-cell="members"><span class="dev-ws-hero-audience" data-ws-community-audience="">Just you<\/span><\/span>/);
-    assert.doesNotMatch(solo, /data-ws-active-people|data-ws-community-invite/, 'no faces and no Invite: Share it is how it grows');
+    assert.match(solo, /<h1 class="dev-ws-hero-name" data-ws-community-name="">Garden<\/h1><span class="dev-ws-hero-id-sub" data-ws-members-cell="members"><span class="dev-ws-hero-audience" data-ws-community-audience="">Just you so far<\/span><\/span>/);
+    assert.match(solo, /<div class="dev-ws-hero-actions"><button[^>]*data-ws-community-invite=""[^>]*>Invite<\/button><span class="dev-ws-plus"><button id="dev-plus-btn"><\/button><\/span><\/div>/,
+      'Invite, then the ⋯');
+    assert.doesNotMatch(solo, /data-ws-active-people/, 'no faces: nobody else to name');
+    // Somebody outside it (an admin's look) reads the audience's name, and
+    // is offered no Invite: making a link is a member's.
+    await reloadCommunity('garden-solo-outside');
+    const outside = renderToHtml(createElement(CommunityCard, { slug: 'garden-solo-outside', name: 'Garden', menu }));
+    assert.match(outside, /data-ws-community-audience="">Just you<\/span>/);
+    assert.doesNotMatch(outside, /Just you so far|data-ws-community-invite/);
   } finally {
     globalThis.fetch = realFetch;
   }
   const hero = CARD_SRC.slice(CARD_SRC.indexOf('export function CommunityCard('), CARD_SRC.indexOf('export function shareItLine('));
-  assert.match(hero, /\{week \? null : \(\s*<HeroIdentity slug=\{slug\} name=\{displayName\} iconUrl=\{iconUrl\} iconEmoji=\{iconEmoji\} data=\{data\} \/>\s*\)\}\s*\{data\.description && !week \? descLine : null\}/);
+  assert.match(hero, /\{week \? null : \(\s*<HeroIdentity slug=\{slug\} name=\{displayName\} iconUrl=\{iconUrl\} iconEmoji=\{iconEmoji\} data=\{data\} member=\{member\} \/>\s*\)\}\s*\{data\.description && !week \? descLine : null\}/);
   assert.match(hero, /\{week \|\| solo \? null : <HeroActive activity=\{data\.activity\} \/>\}/);
   assert.ok(hero.indexOf('<HeroActive') < hero.lastIndexOf('<div className="dev-ws-hero-row">'), 'then what you can do');
   assert.ok(hero.lastIndexOf('<div className="dev-ws-hero-row">') < hero.indexOf('{data.description && week ? descLine : null}'), 'in the first week the row comes first, then what it is');
@@ -191,6 +203,39 @@ test('#4045: the first week\'s people row is the lock over "N people", or your f
   // The seats are the link's: only a member of a Just you project with one out.
   assert.match(CARD_SRC, /const seats = member && solo && !!data\.invite_link;/);
   assert.match(CSS, /\.dev-ws-hero-row > \.dev-ws-hero-week-people \+ \.dev-ws-hero-actions \{ flex: none;/);
+});
+
+test('#4896: a new project of one says "Just you so far" with Invite beside it, in the first week\'s row', async () => {
+  // Onboarding run, 12 Oct 2026: right after the made screen said "Your new
+  // community", the project page said "Just you", with Open app and the ⋯
+  // beside it and the way to invite anyone at the foot of the hub.
+  const { CommunityCard, reloadCommunity } = loadTsx(CARD);
+  const record = (over = {}) => community({
+    slug: 'garden-week', first_week: true, audience: 'solo', audience_label: 'Just you', member_count: 1,
+    is_creator: true, members: [{ id: 1, username: 'ada' }], activity: null, ...over,
+  });
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const slug = String(url).match(/\/api\/apps\/([^/]+)\/community/)[1];
+    return { ok: true, json: async () => (slug === 'garden-week-link' ? record({ slug, invite_link: true }) : record({ slug })) };
+  };
+  try {
+    await reloadCommunity('garden-week');
+    await reloadCommunity('garden-week-link');
+    const menu = createElement('span', { className: 'dev-ws-plus' }, createElement('button', { id: 'dev-plus-btn' }));
+    const html = renderToHtml(createElement(CommunityCard, { slug: 'garden-week', name: 'Garden', menu, canOpenApp: true }));
+    assert.match(html, /<div class="dev-ws-hero-row"><div class="dev-ws-hero-week-people" data-ws-members=""><span class="dev-ws-hero-week-who" data-ws-members-cell="members"><span class="dev-ws-hero-audience" data-ws-community-audience=""><svg[^>]*>[\s\S]*?<\/svg><b>Just you so far<\/b><\/span><\/span><\/div><div class="dev-ws-hero-actions"><button[^>]*data-ws-community-open-app=""[\s\S]*?<\/button><button[^>]*data-ws-community-invite=""[^>]*>Invite<\/button><span class="dev-ws-plus">/,
+      '"Just you so far", then Open app, Invite and the ⋯, in one row');
+    assert.doesNotMatch(html, /<b>Just you<\/b>/);
+    // A link is out: the seats say what it is about to be, and Invite stays.
+    const link = renderToHtml(createElement(CommunityCard, { slug: 'garden-week-link', name: 'Garden', menu }));
+    assert.match(link, /data-ws-seats=""[\s\S]*<b>Private community<\/b>[\s\S]*data-ws-community-invite=""/);
+    assert.doesNotMatch(link, /Just you/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  // Invite is the same button and the same pane a community's hero opens.
+  assert.match(CARD_SRC, /data-ws-community-invite=""\s+title=\{t\('project:communityCard\.invite\.title'\)\}\s+onClick=\{openInviteLinks\}/);
 });
 
 test('#3276: the hero\'s rows wrap instead of running past a phone\'s edge', () => {

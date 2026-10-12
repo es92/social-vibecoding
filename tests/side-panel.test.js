@@ -742,7 +742,16 @@ function panelWindow({ href = 'https://homeroom.test/app/notes-ab12/workshop?pan
   const boot = () => (docListeners['sv:authed'] || []).forEach((fn) => fn());
   return { win, runtime, reports, routed, history, fire, boot, navigate, url: () => url.href };
 }
-const tick = () => new Promise((r) => setTimeout(r, 5));
+// The runtime reports from a 0 ms timer, and `go()` (or a refused hash push)
+// sets that timer from a microtask, after the page has routed. A 5 ms timer
+// started before the microtask ran could fire first when routing took more
+// than 4 ms on a loaded machine, and the report was not there yet. Waiting
+// for the next turn first lets the runtime's timer be set before this one,
+// and timers fire in the order they expire.
+const tick = async () => {
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setTimeout(r, 5));
+};
 
 test('the runtime installs only in the panel\'s document', () => {
   globalThis.document = { documentElement: { classList: { contains: () => false } } };

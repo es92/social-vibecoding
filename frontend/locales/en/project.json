@@ -301,15 +301,27 @@
   },
   "hub.startHere.title": {
     "text": "Start working on this app",
-    "description": "Heading of the prompt at the top of a project's Hub when nothing is open and nothing has ever been merged."
+    "description": "Heading of the prompt at the top of a project's Hub when nothing is open and nothing has ever been merged, for a person Homeroom bot does not build changes for on this project."
   },
   "hub.startHere.text": {
     "text": "Nothing is open and nothing has shipped yet. The first change is yours to start.",
-    "description": "Text of the prompt at the top of a project's Hub when the project has no open items and no merged change. Shipped means merged and live in the app."
+    "description": "Text of the prompt at the top of a project's Hub when the project has no open items and no merged change, for a person Homeroom bot does not build changes for on this project. Shipped means merged and live in the app."
   },
   "hub.startHere.start": {
     "text": "Start a new change",
     "description": "Button in the prompt at the top of an unstarted project's Hub: opens a new session with a coding agent to build a change to the app. Change is a noun."
+  },
+  "hub.startHere.bot.title": {
+    "text": "What do you want to change?",
+    "description": "Heading of the card at the top of a project's Hub when nothing is open and nothing has ever been merged, for a person Homeroom bot builds changes for there. \"Change\" is a verb; the project is what changes."
+  },
+  "hub.startHere.bot.text": {
+    "text": "Say it in your own words. Homeroom bot makes the change for you.",
+    "description": "Text of the card at the top of a project's Hub when nothing is open and nothing has ever been merged, under the heading \"What do you want to change?\". \"Homeroom bot\" is the name of Homeroom's assistant, which builds changes to the project; keep it as it is. \"Change\" is a noun here."
+  },
+  "hub.startHere.bot.button": {
+    "text": "Tell Homeroom bot what to change",
+    "description": "Button on the card at the top of a project's Hub when nothing is open and nothing has ever been merged: opens the person's chat with Homeroom bot (the assistant's name; keep it as it is) with this project attached, ready for them to type what they want changed. \"Change\" is a verb."
   },
   "workshop.allItems.title": {
     "text": "All items",
@@ -470,6 +482,18 @@
   "workshop.mine.showMore_other": {
     "text": "Show {{count}} more",
     "description": "Button under the Your work list on a project's Workshop tab: shows the rest of this person's items. {{count}} is how many are hidden."
+  },
+  "workshop.waiting.title": {
+    "text": "Waiting on you",
+    "description": "Title of a card in What's happening on a project's Workshop tab: the viewer's items that need their answer before they can move (a plan waiting for Build it, a question from Homeroom bot, a conversation with Homeroom bot, a change of theirs that needs a fix)."
+  },
+  "workshop.yourVotes.title": {
+    "text": "Yours, up for a vote",
+    "description": "Title of a card in What's happening on a project's Workshop tab: the viewer's own changes that are up for a vote now."
+  },
+  "workshop.goingLive.title": {
+    "text": "Going live",
+    "description": "Title of a card in What's happening on a project's Workshop tab: the viewer's changes that were approved and merged and are not live yet, waiting for the release that makes them live."
   },
   "workshop.fresh.title": {
     "text": "New for you",
@@ -1746,6 +1770,10 @@
   "communityCard.audience.justYou": {
     "text": "Just you",
     "description": "Name of the audience of a project only its maker is in, used as the project's audience line when the server sent no label. It is one of the three audience names, beside Private community and Public community."
+  },
+  "communityCard.audience.justYouSoFar": {
+    "text": "Just you so far",
+    "description": "Who a project is for, shown at the top of its Hub to the one person in it while nobody else has joined, with an Invite button beside it. \"Just you\" is the name of that audience (beside Private community and Public community); \"so far\" says it can grow."
   },
   "communityCard.audience.withMembers_one": {
     "text": "{{audience}} · {{count}} member",

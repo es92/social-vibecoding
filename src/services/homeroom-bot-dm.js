@@ -3527,10 +3527,11 @@ const TOUR_PROMPTS = Object.freeze(['What can I ask for?', 'How does the group d
  * (onboarding.js markTourDone), once ever: their one hello (claimHello, as a
  * 'tour'), so somebody already greeted as a maker, member, joiner or in the
  * welcome sweep, or written to before hellos existed, hears nothing. Only
- * when the bot is on and builds for them, as greetJoiner, and never a test
- * account unless it was made to receive the welcome DM
- * (test_account_welcome_dm), as the welcome sweep and the welcome DM skip
- * them. Quiet: it rings nothing. Never throws.
+ * when the bot is on and builds for them, as greetJoiner. #4897: a test
+ * account is greeted like anybody, as every other hello greets it, so a
+ * tester finds in Messages what the tour promised; only the welcome DM,
+ * which puts staff into a group with it, waits for test_account_welcome_dm.
+ * Quiet: it rings nothing. Never throws.
  */
 async function greetTourFinisher(pool, { userId }) {
   try {
@@ -3539,11 +3540,11 @@ async function greetTourFinisher(pool, { userId }) {
     if (settings.mode === 'off') return null;
     const { rows } = await pool.query(
       `SELECT id, username, is_synthetic, (has_platform_access OR private_member_since IS NOT NULL) AS has_platform_access,
-              is_admin, (test_account_created_at IS NOT NULL AND NOT test_account_welcome_dm) AS quiet_test
+              is_admin
          FROM users WHERE id = $1 AND anonymised_at IS NULL`, [userId],
     );
     const person = rows[0];
-    if (!person || person.quiet_test || !hasBot(settings, {
+    if (!person || !hasBot(settings, {
       username: person.username, isSynthetic: !!person.is_synthetic,
       hasPlatformAccess: !!person.has_platform_access, isAdmin: !!person.is_admin,
     })) return null;

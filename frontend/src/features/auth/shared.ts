@@ -525,11 +525,16 @@ export interface LoginCompletionFailure {
   code: 'session-rejected' | 'server-response' | 'network-error' | 'timeout' | 'invalid-response' | 'client-error';
 }
 
-export async function finishLogin(): Promise<LoginCompletionFailure | null> {
+/**
+ * `beforeShell` runs once the session is confirmed and the page stays on its
+ * build, just before the signed-in shell starts: the sign-in sheet's
+ * hand-off to the make screen (./sign-in-sheet.tsx), held until then.
+ */
+export async function finishLogin(beforeShell?: () => Promise<void>): Promise<LoginCompletionFailure | null> {
   const fn = legacy().AuthScreens?.finishLogin as undefined |
-    (() => Promise<LoginCompletionFailure | null>);
+    ((opts?: { beforeShell?: () => Promise<void> }) => Promise<LoginCompletionFailure | null>);
   if (!fn) return { stage: 'open-session', status: null, code: 'client-error' };
-  return fn();
+  return beforeShell ? fn({ beforeShell }) : fn();
 }
 
 /** What a password sign-in came to: in, or what to say and (in the app) the bridge's report. */
