@@ -733,18 +733,35 @@ async function botWorkByIssue(pool, appId) {
   // change) and it waits for a free builder: it is the bot's already, and
   // nobody starts it a second time.
   // B6: and a first version's plan, waiting for its creator's Build it.
+  // The request page's status card says which (`plan`: a plan waits for
+  // whoever asked for it to say Build it).
   const { rows: asked } = await pool.query(
-    `SELECT issue_number, enqueued_at FROM homeroom_bot_queue
+    `SELECT issue_number, enqueued_at, FALSE AS plan FROM homeroom_bot_queue
       WHERE app_id = $1 AND priority = 0 AND started_at IS NULL
         AND (held_until IS NULL OR held_until <= NOW())
      UNION ALL
-     SELECT issue_number, awaiting_go_at FROM homeroom_bot_runs
+     SELECT issue_number, awaiting_go_at, TRUE AS plan FROM homeroom_bot_runs
       WHERE app_id = $1 AND awaiting_go_at IS NOT NULL AND build_ok IS NULL`,
     [id],
   );
   for (const q of asked) {
     const n = Number(q.issue_number);
-    if (!out.has(n)) out.set(n, { what: 'queued', since: q.enqueued_at });
+    if (!out.has(n)) out.set(n, { what: 'queued', since: q.enqueued_at, ...(q.plan === true ? { plan: true } : {}) });
+  }
+  // And a request whose build its own limit holds: it starts when one of
+  // its changes on the project is voted in or closed (live.heldText).
+  const { rows: held } = await pool.query(
+    `SELECT DISTINCT ON (r.issue_number) r.issue_number, r.created_at, r.cap_suppressed
+       FROM homeroom_bot_runs r
+      WHERE r.app_id = $1 AND r.mode = 'live'
+        AND r.created_at > NOW() - make_interval(days => $2)
+      ORDER BY r.issue_number, r.id DESC`,
+    [id, ABANDONED_LIVE_WINDOW_DAYS],
+  ).catch(() => ({ rows: [] }));
+  for (const h of held) {
+    const n = Number(h.issue_number);
+    if (out.has(n) || !['proposals_per_app', 'proposals_total'].includes(h.cap_suppressed)) continue;
+    out.set(n, { what: 'queued', since: h.created_at, held: true });
   }
   return out;
 }

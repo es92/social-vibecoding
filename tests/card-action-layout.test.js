@@ -384,7 +384,8 @@ test('issue card: a generating run disables the primary and hides Generate', () 
     headless: { status: 'generating', sessionId: 93 },
   }));
   const html = cardHtml(model);
-  assert.match(html, /disabled[^>]*>Generating proposal/);
+  // Homeroom's words: a change, never a proposal.
+  assert.match(html, /disabled[^>]*>Drafting a change…/);
   assert.ok(!menuHas(AppView, html, /^Generate proposal$/), 'nothing to generate while one runs');
 });
 

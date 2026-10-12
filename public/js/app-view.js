@@ -5482,15 +5482,27 @@ const AppView = {
     // (AppView.REQUEST_WORKING_IDS).
     const whoKey = who === 'you' ? 'you' : (who ? 'named' : 'someone');
     const people = (ids) => PlatformI18n.t(ids[whoKey][others ? 'others' : 'alone'], { username: who, count: others });
+    // What is really happening, first what Homeroom bot is waiting on: an
+    // answer to its question, whoever asked for it to OK its plan, one of
+    // its changes here to be voted in or closed (it holds the build), or the
+    // vote on the change it built (which no person's session stands for).
+    const bot = issue.bot || null;
+    const waitingOnBot = AppView._botWaiting(issue);
+    const upForVote = !st && ref && ref.state === 'review';
     let lead;
-    if (merged) lead = PlatformI18n.t('changes:request.status.lead.votedIn');
+    if (merged) lead = PlatformI18n.t('changes:request.status.lead.live');
+    else if (waitingOnBot && waitingOnBot.kind === 'question') lead = PlatformI18n.t('changes:request.status.lead.botQuestion');
+    else if (upForVote) lead = AppView._requestUpForVoteLead(ref);
     else if (!st) lead = PlatformI18n.t('changes:request.status.lead.nobody');
     else if (st.key === 'in_review') {
       lead = who === 'you' ? PlatformI18n.t('changes:request.status.lead.reviewYours')
         : who ? PlatformI18n.t('changes:request.status.lead.reviewNamed', { username: who }) : PlatformI18n.t('changes:request.status.lead.review');
     } else if (st.key === 'bot') {
-      lead = issue.bot && issue.bot.what === 'queued' ? PlatformI18n.t('changes:request.status.lead.botQueued')
-        : AppView._botWorkReading(issue.bot) ? PlatformI18n.t('changes:request.status.lead.botReading') : PlatformI18n.t('changes:request.status.lead.botBuilding');
+      lead = bot && bot.held ? PlatformI18n.t('changes:request.status.lead.botHeld')
+        : bot && bot.plan
+          ? (bot.askedBy ? PlatformI18n.t('changes:request.status.lead.botPlanWaiting', { username: bot.askedBy }) : PlatformI18n.t('changes:request.status.lead.botPlanWaitingUnnamed'))
+          : bot && bot.what === 'queued' ? PlatformI18n.t('changes:request.status.lead.botQueued')
+            : AppView._botWorkReading(bot) ? PlatformI18n.t('changes:request.status.lead.botReading') : PlatformI18n.t('changes:request.status.lead.botBuilding');
     } else if (st.key === 'auto_solving') lead = PlatformI18n.t('changes:request.status.lead.autoSolving');
     else if (st.key === 'answer_needed') lead = PlatformI18n.t('changes:request.status.lead.answerNeeded');
     else if (st.key === 'draft_ready') lead = PlatformI18n.t('changes:request.status.lead.draftReady');
@@ -5500,12 +5512,13 @@ const AppView = {
 
     // The change that settled it, by its pull request number when it has one.
     const refNumber = ref ? (parseInt(issue.addressed_by.prNumber, 10) || 0) : 0;
+    // The sentence above already says it is live, or up for a vote.
     let note = null;
     if (merged) {
       note = closed
         ? (refNumber ? PlatformI18n.t('changes:request.status.note.closedByNumber', { number: refNumber }) : PlatformI18n.t('changes:request.status.note.closedByChange'))
-        : (refNumber ? PlatformI18n.t('changes:request.status.note.liveNumber', { number: refNumber }) : PlatformI18n.t('changes:request.status.note.liveChange'));
-    } else if (ref && ref.state === 'review' && !(st && st.key === 'in_review')) note = PlatformI18n.t('changes:request.status.note.review');
+        : null;
+    } else if (ref && ref.state === 'review' && !upForVote && !(st && st.key === 'in_review')) note = PlatformI18n.t('changes:request.status.note.review');
     else if (ref && ref.state === 'underway') note = PlatformI18n.t('changes:request.status.note.underway');
 
     // The claim's lapse, which the work-state sentence used to bury.
@@ -5548,7 +5561,27 @@ const AppView = {
       fine,
       action,
       closed: closed && !merged ? (when ? PlatformI18n.t(closedIds.when, { when }) : PlatformI18n.t(closedIds.alone)) : null,
+      // The sentence is Homeroom bot's state, plan included: no "Plan v1 is
+      // ready for comments." after it (request-head.tsx).
+      botSays: !merged && (!!(waitingOnBot && waitingOnBot.kind === 'question') || !!upForVote || !!(st && st.key === 'bot')),
     };
+  },
+
+  // The status card's sentence for a change up for a vote that no person's
+  // session stands for (Homeroom bot built it): how many more yes it needs,
+  // from the vote panel's own reading of it, or plainly that it is up when
+  // that is not known yet.
+  _requestUpForVoteLead(ref) {
+    const st = AppView.voteState || {};
+    const item = ref && st.bySession ? st.bySession[String(ref.sessionId)] : null;
+    if (item && typeof AppView.statusPillState === 'function') {
+      let pill = {};
+      try { pill = AppView.statusPillState(item, {}) || {}; } catch { pill = {}; }
+      const yes = Number(pill.yes) || 0;
+      const maj = Number(pill.majority) || 0;
+      if (maj > 0 && maj > yes) return PlatformI18n.t('changes:request.status.lead.upForVoteNeeds', { count: maj - yes });
+    }
+    return PlatformI18n.t('changes:request.status.lead.upForVote');
   },
 
   // The status card's sentence about who is on a request, by who leads it
@@ -20717,9 +20750,18 @@ const AppView = {
           act: { fn: 'openBotChatFromRequest', args: [] },
         };
       }
+      // What it is really doing: its plan waits for whoever asked for it,
+      // its own limit holds the build, it is asked and waits for a free
+      // builder (B8), or it is reading or building.
+      if (issue.bot.plan || issue.bot.held) {
+        return {
+          key: 'primary', cls: 'gc-vote-btn', disabled: true,
+          label: issue.bot.plan ? PlatformI18n.t('changes:issue.action.botPlanWaiting') : PlatformI18n.t('changes:issue.action.botHeld'),
+          title: issue.bot.plan ? PlatformI18n.t('changes:issue.action.botPlanWaitingTitle') : PlatformI18n.t('changes:issue.action.botHeldTitle'),
+        };
+      }
       return {
         key: 'primary', cls: 'gc-vote-btn', disabled: true,
-        // B8: asked, and waiting for a free builder.
         label: issue.bot.what === 'queued' ? PlatformI18n.t('changes:issue.action.botOnIt') : reading ? PlatformI18n.t('changes:issue.action.botReading') : PlatformI18n.t('changes:issue.action.botBuilding'),
         title: reading
           ? PlatformI18n.t('changes:issue.action.botReadingTitle')

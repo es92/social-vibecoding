@@ -4639,6 +4639,22 @@
     "text": "Homeroom bot is on it",
     "description": "Main button on a request's card (a request is a filed issue): disabled, shown to other people while the request waits in Homeroom bot's queue. \"Homeroom bot\" is the name of the platform's builder bot; \"is on it\" means it has taken the job."
   },
+  "issue.action.botPlanWaiting": {
+    "text": "Waiting for the plan's OK",
+    "description": "Main button on a request's card: disabled, shown to other people while Homeroom bot's plan for the request waits for the person who asked for it to approve it (say Build it). \"OK\" is a noun: approval."
+  },
+  "issue.action.botPlanWaitingTitle": {
+    "text": "Homeroom bot wrote a plan for this and builds it once the person who asked for it says Build it",
+    "description": "Tooltip of the disabled \"Waiting for the plan's OK\" button on a request's card. \"Build it\" is the name of the button that person taps: keep it as the button reads."
+  },
+  "issue.action.botHeld": {
+    "text": "Homeroom bot will build this",
+    "description": "Main button on a request's card: disabled, shown while Homeroom bot waits to build the request because it already has as many changes up for a vote on this project as it may."
+  },
+  "issue.action.botHeldTitle": {
+    "text": "Homeroom bot starts when one of its changes here is voted in or closed",
+    "description": "Tooltip of the disabled \"Homeroom bot will build this\" button on a request's card. \"Here\" is the project."
+  },
   "issue.action.botReading": {
     "text": "Homeroom bot is reading…",
     "description": "Main button on a request's card (a request is a filed issue): disabled, shown while Homeroom bot is reading the request before building. \"Homeroom bot\" is the name of the platform's builder bot. Keep the ellipsis."
@@ -4656,23 +4672,23 @@
     "description": "Tooltip of the disabled \"Homeroom bot is on it\" / \"Homeroom bot is building…\" button on a request's card."
   },
   "issue.action.generating": {
-    "text": "Generating proposal…",
-    "description": "Main button on a request's card (a request is a filed issue): disabled, shown while an automatic AI run drafts a proposal (a change to vote on) for the request. Keep the ellipsis."
+    "text": "Drafting a change…",
+    "description": "Main button on a request's card (a request is a filed issue): disabled, shown while an automatic AI run drafts a change (to vote on) for the request. Keep the ellipsis."
   },
   "issue.action.generatingTitle": {
-    "text": "A headless AI session is working on this issue",
-    "description": "Tooltip of the disabled \"Generating proposal…\" button on a request's card. \"headless\" means the AI session runs on its own with nobody chatting with it."
+    "text": "A headless AI session is working on this request",
+    "description": "Tooltip of the disabled \"Drafting a change…\" button on a request's card. \"headless\" means the AI session runs on its own with nobody chatting with it."
   },
   "issue.action.generatingTitleBy": {
-    "text": "A headless AI session is working on this issue (started by {{username}})",
-    "description": "Tooltip of the disabled \"Generating proposal…\" button on a request's card. \"headless\" means the AI session runs on its own. {{username}} is the person who started it."
+    "text": "A headless AI session is working on this request (started by {{username}})",
+    "description": "Tooltip of the disabled \"Drafting a change…\" button on a request's card. \"headless\" means the AI session runs on its own. {{username}} is the person who started it."
   },
   "issue.action.goToSession": {
     "text": "Go to session",
     "description": "Main button on a request's card (a request is a filed issue): opens the working session the viewer already started from this request's AI-drafted proposal."
   },
   "issue.action.goToSessionTitle": {
-    "text": "You already started a session from this proposal. Open it",
+    "text": "You already started a session from this request. Open it",
     "description": "Tooltip of the \"Go to session\" button on a request's card. \"Open it\" is an instruction."
   },
   "issue.action.answer": {
@@ -4684,7 +4700,7 @@
     "description": "Tooltip of the \"Answer & regenerate\" button on a request's card, for the person who started the run. An auto-solve run is an automatic AI attempt at the request. \"Open\" is a verb."
   },
   "issue.action.answerOthersTitle": {
-    "text": "This auto-solve run has a question. Answer it on this issue",
+    "text": "This auto-solve run has a question. Answer it on this request",
     "description": "Tooltip of the \"Answer & regenerate\" button on a request's card, for people who did not start the run. An auto-solve run is an automatic AI attempt at the request."
   },
   "issue.action.startWork": {
@@ -7895,13 +7911,41 @@
     "text": "someone",
     "description": "Stands in for the name of the person who filed a request, at the top of the request's page, when that person is not known. Lower case, as a username would sit there."
   },
-  "request.status.lead.votedIn": {
-    "text": "Voted in.",
-    "description": "The one sentence on the status card of a request's page that says where the request stands. The change that fulfils the request was approved by the group's vote."
+  "request.status.lead.live": {
+    "text": "Live.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. The change that fulfils the request was approved by the group's vote and is now part of the running app (\"live\")."
   },
   "request.status.lead.nobody": {
     "text": "Nobody is working on this yet.",
     "description": "The one sentence on the status card of a request's page that says where the request stands. \"This\" is the request."
+  },
+  "request.status.lead.botQuestion": {
+    "text": "Waiting for an answer to Homeroom bot's question.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. \"Homeroom bot\" is the name of the platform's assistant, which builds changes; it asked a question on the request and waits for someone to answer it."
+  },
+  "request.status.lead.botPlanWaiting": {
+    "text": "Waiting for @{{username}} to OK the plan.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. Homeroom bot (the platform's assistant) wrote a plan for the change and builds nothing until the person who asked for it approves the plan. {{username}} is that person's username, after an @. \"OK\" is a verb: approve."
+  },
+  "request.status.lead.botPlanWaitingUnnamed": {
+    "text": "Waiting for the person who asked for it to OK the plan.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. Homeroom bot (the platform's assistant) wrote a plan for the change and builds nothing until the person who asked for the request approves it; used when that person cannot be named. \"OK\" is a verb: approve."
+  },
+  "request.status.lead.botHeld": {
+    "text": "Homeroom bot will start when one of its changes here is voted in or closed.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. \"Homeroom bot\" is the name of the platform's assistant, which builds changes; it already has as many changes waiting for a vote on this project as it may, so it starts on this request when one of them is approved or closed. \"Here\" is the project."
+  },
+  "request.status.lead.upForVote": {
+    "text": "Up for a vote.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. The change that fulfils the request is built and waits for the group's vote; used when how many more yes votes it needs is not known."
+  },
+  "request.status.lead.upForVoteNeeds_one": {
+    "text": "Up for a vote: needs 1 more yes.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. The change that fulfils the request is built and waits for the group's vote; it needs one more yes vote. English spells the one out; a translation may use {{count}}."
+  },
+  "request.status.lead.upForVoteNeeds_other": {
+    "text": "Up for a vote: needs {{count}} more yes.",
+    "description": "The one sentence on the status card of a request's page that says where the request stands. The change that fulfils the request is built and waits for the group's vote; it needs {{count}} more yes votes. \"Yes\" is the vote, as a noun."
   },
   "request.status.lead.reviewYours": {
     "text": "Your change for this is waiting for approval.",
@@ -8018,14 +8062,6 @@
   "request.status.note.closedByChange": {
     "text": "Change closed it.",
     "description": "Second sentence on the status card of a request's page, after the one that says where the request stands. A change that has no pull request number went live and closed the request. \"Change\" is a noun standing where the change's number would."
-  },
-  "request.status.note.liveNumber": {
-    "text": "#{{number}} is live.",
-    "description": "Second sentence on the status card of a request's page, after the one that says where the request stands. The change with pull request number {{number}} that addresses the request is applied to the running app, and the request is still open. Keep the # before the number."
-  },
-  "request.status.note.liveChange": {
-    "text": "Change is live.",
-    "description": "Second sentence on the status card of a request's page, after the one that says where the request stands. A change that addresses the request and has no pull request number is applied to the running app. \"Change\" is a noun standing where the change's number would."
   },
   "request.status.note.review": {
     "text": "A change for it is waiting for approval.",

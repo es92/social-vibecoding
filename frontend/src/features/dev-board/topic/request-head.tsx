@@ -258,7 +258,8 @@ function RequestStatus({ s, specs }: { s: RequestStatusView; specs: RequestSpecC
   // Voted in is the end: every stop is done.
   const done = stage === 'voted';
   const version = newestSpecVersion(specs);
-  const specLine = stage === 'spec'
+  // Homeroom bot's plan says what it is waiting for in the sentence itself.
+  const specLine = stage === 'spec' && !s.botSays
     ? (version ? t('project:topic.request.status.specVersionReady', { version }) : t('project:topic.request.status.specReady'))
     : null;
   const say = sentences([s.lead, s.note || specLine]);
