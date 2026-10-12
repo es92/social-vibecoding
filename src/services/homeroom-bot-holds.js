@@ -106,7 +106,7 @@ function leavingText(holds, now = new Date()) {
 
 /** Pure: what the bot says when it goes ahead. */
 function goingText({ asker, holders = [] }) {
-  const tail = 'It will reply here with a question, a note or a proposal.';
+  const tail = 'It will reply here with a question, a note or a change to vote on.';
   if (!holders.length) return `Homeroom bot is taking this up now, as asked. ${tail}`;
   return `${asker || 'Somebody'} asked Homeroom bot to build this anyway, so it is taking it up now. ${tail}`;
 }

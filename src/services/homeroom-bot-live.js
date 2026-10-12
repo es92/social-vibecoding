@@ -162,7 +162,7 @@ const REPLY_HINT = 'Reply here (or on the GitHub issue) and it will look again.'
 
 function lookingText() {
   return 'Homeroom bot is looking at this request. It will reply here with a question if '
-    + 'something is unclear, a note if a person needs to decide, or a proposal if it can build it.';
+    + 'something is unclear, a note if a person needs to decide, or a change to vote on if it can build it.';
 }
 
 // B6 (E5): no line saying what it would go with when nobody answers:
@@ -185,15 +185,47 @@ function questionText({ question, plan = null }) {
   return lines.join('\n');
 }
 
-function personText({ reason, platform = false }) {
+// A reason the model wrote, as a whole sentence: it ends with a full stop.
+function reasonSentence(reason) {
+  const text = clipText(reason);
+  if (!text) return 'No reason given.';
+  return /[.!?…)"']$/.test(text) ? text : `${text}.`;
+}
+
+// Who can say Go ahead on a note for a person, by name: the requester, or
+// the people who decide on the project (homeroom-bot.js whoDecides). Pure.
+function decidersPhrase(names) {
+  const list = (Array.isArray(names) ? names : []).filter(Boolean).map((n) => `@${n}`);
+  if (!list.length) return 'The person who asked for it';
+  if (list.length === 1) return list[0];
+  return `${list.slice(0, -1).join(', ')} or ${list[list.length - 1]}`;
+}
+
+function personText({ reason, platform = false, project = null }) {
   // #4239: about Homeroom itself. The requester is offered the move in their
   // DM; the project's creator and admins, who see only this note, are told
   // they can move it too (homeroom-bot-move.js moveGate).
+  const name = project ? clipText(project, 80) : 'this project';
   if (platform) {
-    return `Homeroom bot thinks this is about Homeroom itself, not this project: ${clipText(reason) || 'no reason given.'}\n\n`
-      + 'Whoever asked for it, or this project\'s creator or admins, can move it to Homeroom\'s own board by asking Homeroom bot in a chat.';
+    return `Homeroom bot thinks this is about Homeroom itself, not ${name}: ${reasonSentence(reason)}\n\n`
+      + `Whoever asked for it, or ${project ? `${name}'s` : 'this project\'s'} creator or admins, can have Homeroom bot move it to Homeroom's own board.`;
   }
-  return `Homeroom bot thinks a person needs to decide this one: ${clipText(reason) || 'no reason given.'}`;
+  // GitHub never carries a platform username (#723): its copy names nobody.
+  // Homeroom's names who can say Go ahead (personHomeroomText).
+  return `Homeroom bot thinks a person needs to decide this one: ${reasonSentence(reason)} `
+    + 'Whoever decides here can say Go ahead in a chat with Homeroom bot, or reply here.';
+}
+
+/**
+ * The Homeroom copy of a note for a person: who can say Go ahead, by name.
+ * `deciders` are the people who decide on the project when the requester
+ * does not (homeroom-bot.js whoDecides); else the requester. Pure.
+ */
+function personHomeroomText({ reason, platform = false, project = null, requester = null, deciders = [] }) {
+  if (platform) return firstPerson(personText({ reason, platform, project }));
+  const named = (Array.isArray(deciders) && deciders.length ? deciders : [requester]).filter(Boolean);
+  const who = named.length ? decidersPhrase(named) : 'The person who asked for it';
+  return `I think a person needs to decide this one: ${reasonSentence(reason)} ${who} can say Go ahead in a chat with me, or reply here.`;
 }
 
 function emptyText({ reason }) {
@@ -204,9 +236,30 @@ function emptyText({ reason }) {
   ].join('\n');
 }
 
-function proposalText({ link, prNumber }) {
-  const pr = prNumber ? ` (PR #${prNumber})` : '';
-  return `Homeroom bot built this and opened a proposal for the group to vote on${pr}: ${link}`;
+// GitHub's copy links the change; Homeroom's names it by its title, and the
+// vote card under the message is the way to it (homeroom-bot.js
+// announceBuilt). No pull request number in either.
+function proposalText({ link }) {
+  return `Homeroom bot built this. It's up for a vote: ${link}`;
+}
+
+function proposalHomeroomText({ title }) {
+  const name = clipText(title, 200);
+  return name ? `I built this. It's up for a vote: ${name}` : 'I built this. It\'s up for a vote.';
+}
+
+// The request's ending (announceLive): its change is live.
+function liveText({ title }) {
+  const name = clipText(title, 200);
+  return name ? `Homeroom bot's change for this is live: ${name}.` : 'Homeroom bot\'s change for this is live.';
+}
+
+function liveHomeroomText({ title, project }) {
+  const name = clipText(title, 200);
+  const where = clipText(project, 80);
+  if (name && where) return `It's live. ${name} is in ${where} now.`;
+  if (where) return `It's live in ${where} now.`;
+  return 'It\'s live.';
 }
 
 // 5 Oct 2026, Page Turners #3: this said "Homeroom bot tried to build this
@@ -228,25 +281,23 @@ function buildFailedText(reason) {
 // from the plan its creator already said Build it to (homeroom-bot.js
 // buildLive): said on its request as the build's start is.
 function retryCommentText() {
-  return 'Homeroom bot\'s first try at building this didn\'t finish, so it is trying once more from the same plan. '
-    + 'The change will be linked here when it\'s ready to try.';
+  return 'Homeroom bot\'s first try at building this didn\'t finish, so it is trying once more from the same plan.';
 }
 
 // #3152: a verdict a live cap held. One line, so the person who filed the
 // issue is not left with silence, and a promise the refresh keeps: a held
 // issue is queued again as soon as the cap that held it has room.
-function heldText({ cap, verdict, limit }) {
+function heldText({ cap, verdict, limit, project = null }) {
+  const name = project ? clipText(project, 80) : 'this project';
   if (cap === 'proposals_per_app') {
-    return `Homeroom bot would build this, but it already has ${limit} proposals open on this app. `
-      + 'It will come back to this issue when one of them is merged or closed.';
+    return `Homeroom bot will build this when one of its ${limit} changes on ${name} is voted in or closed.`;
   }
   if (cap === 'proposals_total') {
-    return `Homeroom bot would build this, but it already has ${limit} proposals open across Homeroom. `
-      + 'It will come back to this issue when one of them is merged or closed.';
+    return `Homeroom bot will build this when one of its ${limit} changes across Homeroom is voted in or closed.`;
   }
   const what = verdict === 'question' ? 'a question about' : verdict === 'plan' ? 'a plan for' : 'a note on';
   return `Homeroom bot has ${what} this request, but it has already posted ${limit} questions and notes `
-    + 'on this app in the last day. It will come back to this issue once some of those are a day old.';
+    + `on ${name} today. It will come back to it once some of those are a day old.`;
 }
 
 function heldKind(cap) {
@@ -964,13 +1015,11 @@ function specCommentText(spec, { approved = false } = {}) {
   // #4488: a plan its requester already approved was posted when they were
   // asked: the build says it started, and does not post the plan again.
   if (approved) {
-    return 'Homeroom bot is building the plan above, as it was approved. The change will be linked here when it\'s '
-      + 'ready to try.';
+    return 'The person who asked for it said Build it, so Homeroom bot is building the plan above now.';
   }
   return [
-    // B6: no approval talk while it builds. The change is linked once it can be tried.
-    'Homeroom bot wrote a plan for this request and is building it now. The change will be linked here when it\'s '
-      + 'ready to try.',
+    // B6: no approval talk while it builds, and no promise of a link later.
+    'Homeroom bot wrote a plan for this request and is building it now.',
     '',
     '<details><summary>The plan</summary>',
     '',
@@ -978,6 +1027,15 @@ function specCommentText(spec, { approved = false } = {}) {
     '',
     '</details>',
   ].join('\n');
+}
+
+/**
+ * #4488: the Homeroom copy of a build its requester said Build it to: a
+ * short note, not a second card for the plan they were already shown.
+ * Named, never tagged (sendBotMessage writes no mention). Pure.
+ */
+function approvedBuildHomeroomText({ requester = null } = {}) {
+  return `${requester ? `@${requester}` : 'The person who asked for it'} said Build it. I'm building it now.`;
 }
 
 // #4488: how a complicated change's plan is answered where it is posted.
@@ -1013,16 +1071,24 @@ function planCommentText({ spec, questions = [] }) {
  * The spec as a thread message: the same spec card a person's "Share"
  * posts (metadata.specShare), opening the version the build worked from.
  */
-function specCard({ sessionId, version, spec, bot, proposed = false, revised = false, approved = false, asking = false }) {
+function specCard({
+  sessionId, version, spec, bot, proposed = false, revised = false, asking = false, requester = null,
+}) {
   const title = specTitle(spec);
+  // One sentence, as the request page draws the row (transcript.tsx
+  // RequestEvent): "Plan v1: {title}. I'm building it now." The page reads
+  // `botNote` (and `waitingFor`) off the metadata; the content is the same
+  // words for anything that draws the message itself.
+  const head = `📋 Plan v${Number(version)}${title ? `: ${title.replace(/[.!?]+$/, '')}` : ''}`;
+  const waitingFor = asking && requester ? String(requester) : null;
   const content = proposed
-    ? revised
-      ? `📋 The plan, updated for this change (version ${Number(version)})${title ? `: "${title}"` : ''}.`
-      : `📋 The plan this proposal was built from${title ? `: "${title}"` : ''}.`
-    : asking ? `📋 Homeroom bot's plan for this request${title ? `: "${title}"` : ''}, with its before and after screens. `
-      + `It builds nothing until the person who asked says so: ${PLAN_REPLY_HINT}`
-      : approved ? `📋 Homeroom bot is building the plan that was approved${title ? `: "${title}"` : ''}.`
-        : `📋 Homeroom bot's plan for this request${title ? `: "${title}"` : ''}. It is building it now.`;
+    ? `${head}${revised ? ', updated for this change' : ''}.`
+    : asking
+      ? `${head}. Waiting for ${waitingFor ? `@${waitingFor}` : 'the person who asked for it'} to say Build it.`
+      // #4488: a plan its requester approved was posted when they were
+      // asked; its build says so in a note, with no second card.
+      : `${head}. I'm building it now.`;
+  const botNote = proposed ? null : asking ? 'waiting' : 'building';
   return {
     content,
     msgType: 'spec_share',
@@ -1037,6 +1103,8 @@ function specCard({ sessionId, version, spec, bot, proposed = false, revised = f
         snippet: specSnippet(spec, title),
         totalChars: String(spec || '').length,
         sharedBy: { id: bot.id, username: bot.username },
+        ...(botNote ? { botNote } : {}),
+        ...(waitingFor ? { waitingFor } : {}),
       },
     },
   };
@@ -1137,14 +1205,14 @@ function followUpPlanFormat({ config, app, locale = null }) {
 // GitHub, the Homeroom account linked to its author's GitHub login.
 
 // The kinds of post that tag people: whoever filed the issue and whoever
-// took part in its discussion (see mentionTargets). Every answer, the spec
-// and the proposal, and every follow-up on the proposal. Not "looking" (a
-// notice, before anything is known) and not a held note (nothing for them
-// to do; the bot comes back on its own).
-const TAGGING_KINDS = new Set([
-  'question', 'plan', 'person', 'empty', 'proposal', 'build_failed', 'blocked', 'spec',
-  'followup_answer', 'followup_ask', 'followup_revise', 'followup_person', 'followup_failed',
-]);
+// took part in its discussion (see mentionTargets). Only the posts that ask
+// them something: a question, a decision for a person, a question about
+// its change. A tag means the bot is asking you something; progress (the
+// plan, the change, a build that stopped, an update) is said untagged, and
+// the requester hears it in their chat with the bot. The people holding a
+// request are tagged by their own posts (homeroom-bot-holds.js), as is the
+// asker of a going-ahead.
+const TAGGING_KINDS = new Set(['question', 'person', 'followup_ask']);
 
 function tagsPoster(kind) {
   return TAGGING_KINDS.has(kind);
@@ -1377,7 +1445,7 @@ async function post({
   pool, github, ws, app, repo, issueNumber, kind, runId = null, text,
   msgType = 'system', metadata = null, mention = null, mentions = null, senderId = null, notifications = null,
   proposalSessionId = null, sender = null, threadMessage = null, dm = null, untag = null, onlyProposal = false,
-  skipIssueThread = false, skipGithub = false,
+  skipIssueThread = false, skipGithub = false, homeroomText = null,
 }) {
   // Answered where it was asked: a reply to people who wrote only in the
   // change's own discussion is said there alone, with no GitHub comment and
@@ -1453,8 +1521,10 @@ async function post({
   // notify whoever owns that handle there), and GitHub already notifies the
   // author of an issue opened there about comments on it.
   // In Homeroom the note is the bot's own bubble, so it says it in the first
-  // person (homeroom-bot-words.js); GitHub keeps it as written.
-  const own = firstPerson(text);
+  // person (homeroom-bot-words.js); GitHub keeps it as written. A note whose
+  // Homeroom words differ from GitHub's by more than the voice (a change by
+  // its title, a person by their name) brings them as `homeroomText`.
+  const own = homeroomText || firstPerson(text);
   const threadText = handles ? `${handles} ${own}` : own;
   if (!noIssueThread) {
     try {
@@ -1542,6 +1612,67 @@ async function postOnProposal({ pool, ws, app, issueNumber, runId = null, kind, 
   }
   log.info('homeroom-bot', 'Posted on its proposal', { app: app.slug, issueNumber, kind, sessionId, thread: !!message });
   return { postId, thread: !!message };
+}
+
+/**
+ * The request's ending: a change the bot built for it is live, said on the
+ * request (a GitHub comment and the bot's bubble in its Homeroom thread):
+ * "It's live. {title} is in {project} now." Untagged: whoever asked for it
+ * hears it in their chat with the bot (homeroom-bot-dm.js
+ * noteProposalMerged), and its voters by their own ping. Called beside that
+ * DM wherever a merged change is told to whoever asked for it
+ * (routes/votes.js finalizeMerge, included-changes.js), and said once per
+ * change (its run's `live` post). Never throws; resolves what was posted,
+ * or null.
+ */
+async function announceLive(pool, { session, deps = {} } = {}) {
+  if (!session?.id) return null;
+  try {
+    const { rows } = await pool.query(
+      `SELECT r.id AS run_id, r.app_id, r.issue_number, a.slug, a.name, a.repo_url,
+              COALESCE(NULLIF(cs.pr_title, ''), NULLIF(cs.session_title, '')) AS title
+         FROM homeroom_bot_runs r
+         JOIN apps a ON a.id = r.app_id
+         LEFT JOIN chat_sessions cs ON cs.id = r.proposal_session_id
+        WHERE r.proposal_session_id = $1
+        ORDER BY r.id DESC LIMIT 1`,
+      [Number(session.id)],
+    );
+    const run = rows[0];
+    if (!run) return null;
+    const { rows: said } = await pool.query(
+      `SELECT 1 FROM homeroom_bot_posts
+        WHERE app_id = $1 AND issue_number = $2 AND run_id = $3 AND kind = 'live' LIMIT 1`,
+      [run.app_id, run.issue_number, run.run_id],
+    );
+    if (said.length) return null;
+    const { rows: bots } = await pool.query(
+      'SELECT id, username FROM users WHERE username = $1 AND is_synthetic = TRUE',
+      [BOT_USERNAME],
+    );
+    const bot = bots[0];
+    if (!bot) return null;
+    const title = run.title || session.pr_title || session.session_title || null;
+    const repo = require('./homeroom-bot').parseRepo(run.repo_url);
+    return await post({
+      pool,
+      github: deps.github || require('./github'),
+      ws: deps.ws || require('./ws'),
+      app: { id: run.app_id, slug: run.slug, name: run.name },
+      repo,
+      issueNumber: Number(run.issue_number),
+      kind: 'live',
+      runId: run.run_id,
+      text: liveText({ title }),
+      homeroomText: liveHomeroomText({ title, project: run.name || run.slug }),
+      sender: bot,
+      senderId: bot.id,
+      skipGithub: !repo,
+    });
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not say on its request that a change is live', { sessionId: session.id, err: err.message });
+    return null;
+  }
 }
 
 /**
@@ -3492,8 +3623,14 @@ module.exports = {
   lookingText,
   questionText,
   personText,
+  personHomeroomText,
   emptyText,
   proposalText,
+  proposalHomeroomText,
+  liveText,
+  liveHomeroomText,
+  announceLive,
+  approvedBuildHomeroomText,
   buildFailedText,
   retryCommentText,
   heldText,

@@ -49,7 +49,7 @@ test('a mention after that answer is the go-ahead, and it covers the holds that 
   assert.deepEqual(asked.others.map((h) => h.username), ['chinchan8']);
   assert.equal(holds.goingText({ asker: 'evan', holders: ['chinchan8'] }),
     'evan asked Homeroom bot to build this anyway, so it is taking it up now. '
-    + 'It will reply here with a question, a note or a proposal.');
+    + 'It will reply here with a question, a note or a change to vote on.');
 
   // From then on the request is the bot's to work on...
   const after = { notes: [note(holds.LEAVING_KIND, 6), note(holds.GOING_KIND, 1)] };
@@ -67,7 +67,7 @@ test('holding it yourself and mentioning the bot is asking it to go ahead', () =
   assert.equal(verdict.action, 'go');
   assert.deepEqual(verdict.others, []);
   assert.equal(holds.goingText({ asker: 'evan', holders: [] }),
-    'Homeroom bot is taking this up now, as asked. It will reply here with a question, a note or a proposal.');
+    'Homeroom bot is taking this up now, as asked. It will reply here with a question, a note or a change to vote on.');
 });
 
 test('a proposal up for a vote is left to the vote, however often the bot is asked', () => {

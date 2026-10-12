@@ -678,7 +678,7 @@ const WHERE = Object.freeze({
 function systemPrompt({ app, place, tools, today = new Date(), platformRules = null }) {
   const has = (name) => tools.some((t) => t.function.name === name);
   const can = [
-    has('update_change') ? '- Change one of your own changes that is up for a vote when somebody clearly asks for a change to it (update_change): describe the change in your own words, precisely enough for a coding agent. It is queued for the change\'s next update, behind any update running now, and the result says which. Say so, and that updating it resets its approvals; never say it is done, since it is not made yet. A question about it is not a change: answer it.' : null,
+    has('update_change') ? '- Change one of your own changes that is up for a vote when somebody clearly asks for a change to it (update_change): describe the change in your own words, precisely enough for a coding agent. It is queued for the change\'s next update, behind any update running now, and the result says which. Say so; never say it is done, since it is not made yet. A question about it is not a change: answer it.' : null,
     has('offer_withdraw') ? '- Offer to withdraw your change when the person who asked for its request, or the project\'s owner, wants it dropped (offer_withdraw). Nothing happens until they tap Withdraw it under your reply: say so.' : null,
     has('start_request') ? '- Start this request now, or read it again, when somebody asks you to build it (start_request). The result says what happens; say exactly that.' : null,
     has('offer_close_request') ? '- Offer a vote on closing this request when somebody says it is done, a duplicate or not wanted (offer_close_request). It opens only when they tap Propose to close, and closes only if the group votes for it.' : null,
@@ -1233,7 +1233,7 @@ async function updateChange(pool, ctx, args) {
     queued: asked.running
       ? 'An update to this change is running now. This one is queued right behind it: you make it as soon as that finishes.'
       : 'Queued: you start on it now.',
-    next: 'It is not made yet, so never say it is done. When it is made, you tell them here what changed. Updating it resets its approvals, so the group looks again.',
+    next: 'It is not made yet, so never say it is done. When it is made, you tell them here what changed.',
   };
 }
 
@@ -1501,13 +1501,29 @@ function notDoneYet(text) {
   return `Got it${/[.!]/.test(m[1]) ? '. ' : ', '}${rest}`;
 }
 
-/** Pure: what a follow-up's result must say, whoever words it. */
+/**
+ * Pure: what a follow-up's result must say, whoever words it. One note per
+ * update: that its earlier votes were cleared is the platform's line in the
+ * change's discussion (routes/votes.js reconcileNativeReviewedHead), so it
+ * is not a line the voice must add.
+ */
 function mustSay(outcome) {
   const lines = [];
-  if (outcome.action === 'revise' && outcome.moved) lines.push('Updating it reset its approvals, so the group needs to look again.');
   if (outcome.planVersion) lines.push(`Its plan was updated to match (version ${outcome.planVersion}).`);
   if (outcome.action === 'failed') lines.push('The change is as it was.');
   return lines;
+}
+
+/**
+ * Pure: why a follow-up failed, said by the bot itself. The causes come
+ * worded about it (homeroom-bot.js replyFailedWhy: "it ran out of time");
+ * in its own voice that is "I ran out of time".
+ */
+function ownWhy(why) {
+  return String(why || '').replace(/[.\s]+$/, '')
+    .replace(/^it ran out of time\b/, 'I ran out of time')
+    .replace(/^its answer\b/, 'my answer')
+    .replace(/\bwhile it worked on it\b/, 'while I worked on it');
 }
 
 /** Pure: what the voice says about a follow-up when its model does not answer. */
@@ -1526,7 +1542,7 @@ function plainReport(outcome) {
     case 'gone':
       return 'This change isn\'t up for a vote any more, so I didn\'t make that change. Ask on a request if it still needs doing.';
     default:
-      return [outcome.why ? `I couldn't make that change: ${outcome.why}.` : 'I couldn\'t make that change.', ...mustSay(outcome),
+      return [outcome.why ? `I couldn't make that change: ${ownWhy(outcome.why)}.` : 'I couldn\'t make that change.', ...mustSay(outcome),
         outcome.retrying ? 'I\'ll try once more on my own.' : 'Ask me again here to try again.'].join(' ');
   }
 }

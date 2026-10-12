@@ -105,7 +105,7 @@ test('a post tags everyone in the thread and notifies each of them; GitHub gets 
     pool, github, ws, app, repo: { owner: 'o', repo: 'r' }, issueNumber: 24, kind: 'spec',
     text: 'spec', mentions: ['evan'], mention: 'evan', sender: BOT, notifications, threadMessage: card,
   });
-  assert.match(sent[0].content, /^@evan 📋 My plan/, 'the spec card tags them too, once');
+  assert.match(sent[0].content, /^@evan 📋 Plan v1: T\. I'm building it now\./, 'a card with tags carries them once');
 });
 
 // ── Recorded before anything is posted ──────────────────────────────────

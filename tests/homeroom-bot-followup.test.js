@@ -147,10 +147,12 @@ test('#4612: planOutOf is the text before the action JSON block, and nothing whe
   assert.equal(followup.planOutOf(''), '');
 });
 
-test('#4612: revisedText names the new plan version before the approvals line', () => {
+// One note per update: the cleared votes are the platform's line in the
+// change's discussion (routes/votes.js), so the note ends with the plan line.
+test('#4612: revisedText names the new plan version, and leaves the cleared votes to the platform', () => {
   const withPlan = followup.revisedText({ summary: 's', reply: 'r', planVersion: 2 });
-  assert.match(withPlan, /Its plan is updated to match: version 2 is in the change's discussion\./);
-  assert.ok(withPlan.indexOf('version 2') < withPlan.indexOf('Earlier approvals were cleared'), 'before the approvals line');
+  assert.match(withPlan, /Its plan is updated to match: version 2 is in the change's discussion\.$/);
+  assert.doesNotMatch(withPlan, /approvals/);
   assert.doesNotMatch(followup.revisedText({ summary: 's', reply: 'r' }), /Its plan is updated/, 'no version, no line');
   const texts = [withPlan, followup.revisedText({ summary: 's', reply: 'r', planVersion: 12 })];
   for (const t of texts) assert.ok(!/—/.test(t) && !/PR #|proposal/.test(t), t);
@@ -167,7 +169,7 @@ test('what it says has no em dashes', () => {
   for (const t of texts) assert.ok(!/—/.test(t), t);
   // B4: plain words: the change, its approvals, never a proposal or its number.
   for (const t of texts) assert.ok(!/PR #|proposal/.test(t), t);
-  assert.match(texts[3], /Earlier approvals were cleared/);
+  assert.doesNotMatch(texts[3], /approvals/, 'the platform\'s line says the votes were cleared');
   assert.doesNotMatch(texts[3], /https:/, 'the change\'s card goes with it instead of its address');
 });
 
@@ -389,7 +391,7 @@ test('#4612: a revise that says the plan changed publishes the next spec version
   const share = h.calls.queries.find((q) => /UPDATE chat_session_specs SET shared_to_group_at/.test(q.s));
   assert.deepEqual(share.params, [5001, 2]);
   assert.equal(h.calls.cards.length, 1);
-  assert.equal(h.calls.cards[0].content, '📋 The plan, updated for this change (version 2): "Darker dark mode".');
+  assert.equal(h.calls.cards[0].content, '📋 Plan v2: Darker dark mode, updated for this change.');
   assert.equal(h.calls.cards[0].msgType, 'spec_share');
   assert.deepEqual(h.calls.cards[0].thread, { type: 'session', ref: 5001 });
   assert.equal(h.calls.cards[0].metadata.specShare.version, 2, 'the transcript shows it as v2, beside the v1 card');

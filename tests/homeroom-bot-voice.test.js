@@ -215,14 +215,15 @@ test('an offer is two buttons the person it is for taps; the reply quotes what i
 });
 
 test('what a change\'s update came to, in its own words when no model answers', () => {
+  // One note per update: that its votes were cleared is the platform's line
+  // in the change's discussion, not the voice's to repeat.
   assert.equal(voice.plainReport({ action: 'revise', moved: true, summary: 'The header is blue now.' }),
-    'Done: The header is blue now. Updating it reset its approvals, so the group needs to look again.');
+    'Done: The header is blue now.');
   assert.equal(voice.plainReport({ action: 'answer', reply: 'It already sorts by date.' }), 'It already sorts by date.');
   assert.match(voice.plainReport({ action: 'ask', reply: 'Which header?' }), /^I have a question before I update this change: Which header\?/);
-  assert.match(voice.plainReport({ action: 'failed', why: 'it ran out of time' }), /^I couldn't make that change: it ran out of time\. The change is as it was\./);
+  assert.match(voice.plainReport({ action: 'failed', why: 'it ran out of time' }), /^I couldn't make that change: I ran out of time\. The change is as it was\./);
   assert.match(voice.plainReport({ action: 'gone' }), /isn't up for a vote any more/);
   assert.deepEqual(voice.mustSay({ action: 'revise', moved: true, planVersion: 2 }), [
-    'Updating it reset its approvals, so the group needs to look again.',
     'Its plan was updated to match (version 2).',
   ]);
   for (const action of ['revise', 'answer', 'ask', 'person', 'failed', 'gone']) {
@@ -365,7 +366,7 @@ test('a report says nothing of the coding agent\'s workings: harness, commits, p
   // Its plain words, when no model answers, leave them out too.
   assert.equal(
     voice.plainReport({ action: 'revise', moved: true, summary: 'Names in DMs drop the @. The harness will commit and push.' }),
-    'Done: Names in DMs drop the @. Updating it reset its approvals, so the group needs to look again.',
+    'Done: Names in DMs drop the @.',
   );
   assert.equal(voice.plainReport({ action: 'answer', reply: 'I pushed it to the branch.' }), 'I looked, and there is nothing to change.');
 });
@@ -408,7 +409,7 @@ test('the report\'s model is never shown the agent\'s workings, is told not to n
   assert.match(req.messages[0].content, /Never mention the harness, commits, pushes,\s+branches, files, code, prompts/);
   const sent = seen.find((x) => x.sent).sent;
   assert.equal(sent.content,
-    'I updated it: DM replies now come in your language. Updating it reset its approvals, so the group needs to look again.');
+    'I updated it: DM replies now come in your language.');
 });
 
 test('a turn that only queued a change, or only offered something, never opens by saying it is done', () => {

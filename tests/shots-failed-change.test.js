@@ -372,7 +372,8 @@ test('what the bot says about it is plain, and never about checks that passed', 
   assert.equal(person, 'Homeroom bot can\'t get this change working on its own: "Tapping "mark as done" ticks a chore off and offers undo." didn\'t work when Homeroom tried it. The route needs a schema change I may not make. A person needs to look at it from here.');
   const revised = followup.checksRevisedText({ summary: 'Mark as done records the member, not the account.', broken: true, failing: false });
   assert.match(revised, /^Homeroom bot fixed what didn't work on this change: Mark as done records the member/);
-  assert.match(revised, /it is tried again on the new version/);
+  // One note per update: the cleared votes are the platform's line.
+  assert.match(revised, /\n\nHomeroom tries it again on the new version\.$/);
   assert.match(followup.checksPersonText({ why: '', failingCount: 2, broken: due.broken }),
     /2 checks are still failing, and one thing it says it does didn't work when Homeroom tried it\./);
   for (const t of [person, revised]) assert.ok(!/—|PR #|proposal/.test(t), t);

@@ -407,13 +407,14 @@ function personText({ reply }) {
 }
 
 // The change's card goes with it (homeroom-bot.js followUp), so no address.
-// #4612: when the turn also wrote a new version of the plan, the line
-// naming it comes before the approvals line.
+// #4612: when the turn also wrote a new version of the plan, a line names it.
+// One note per update: that earlier votes were cleared is the platform's
+// line in the change's discussion to say (routes/votes.js
+// reconcileNativeReviewedHead), not said again here.
 function revisedText({ summary, reply, planVersion = null }) {
   const lines = [`Homeroom bot updated this change: ${clipText(summary || reply, 600)}`];
   if (summary && reply && reply !== summary) lines.push('', clipText(reply, 2000));
   if (planVersion) lines.push('', `Its plan is updated to match: version ${planVersion} is in the change's discussion.`);
-  lines.push('', 'Earlier approvals were cleared, so it needs a fresh look.');
   return lines.join('\n');
 }
 
@@ -741,14 +742,15 @@ function checksFixPrompt({
 function checksRevisedText({ summary, reply, link, broken = false, failing = true, skipped = false }) {
   // Only shots that could not reach a change: the change worked all along.
   const onlyShots = skipped && !broken && !failing;
-  const what = onlyShots ? 'added what this change\'s before and after shots need'
+  const what = onlyShots ? 'added what this change\'s before and after screens need'
     : broken && !failing ? 'fixed what didn\'t work on this change' : 'fixed the failing checks on this change';
   const lines = [`Homeroom bot ${what}: ${clipText(summary || reply, 600)}`];
+  // That earlier votes were cleared is the platform's line to say.
   lines.push('', onlyShots
-    ? 'Earlier approvals were cleared, and the shots are taken again on the new version.'
+    ? 'Its before and after screens are taken again on the new version.'
     : broken && !failing
-      ? 'Earlier approvals were cleared, and it is tried again on the new version.'
-      : 'Earlier approvals were cleared, and the checks run again on the new version.');
+      ? 'Homeroom tries it again on the new version.'
+      : 'Its checks run again on the new version.');
   if (link) lines.push(link);
   return lines.join('\n');
 }
@@ -757,7 +759,7 @@ function checksRevisedText({ summary, reply, link, broken = false, failing = tru
 // asked (homeroom-bot.js runChecksFix), and it says so.
 function checksRetryText({ broken = false, failing = true, skipped = false } = {}) {
   if (skipped && !broken && !failing) {
-    return 'Homeroom bot ran out of time adding what this change\'s before and after shots need. It is trying once more.';
+    return 'Homeroom bot ran out of time adding what this change\'s before and after screens need. It is trying once more.';
   }
   const what = broken && !failing ? 'what didn\'t work on this change' : 'the failing checks on this change';
   return `Homeroom bot ran out of time fixing ${what}. It is trying once more.`;
@@ -773,24 +775,43 @@ function checksRetryText({ broken = false, failing = true, skipped = false } = {
  * #4524, #4569, #4570 and #4571).
  */
 function checksNotChangeText({ failingCount = 0 } = {}) {
-  const checks = failingCount === 1 ? 'The failing check on this change is' : 'The failing checks on this change are';
-  return `${checks} not caused by it: they fail without it too. I've flagged them to Homeroom's admins, who look after the checks.`;
+  const lead = failingCount === 1
+    ? 'The failing check on this change isn\'t caused by it: it fails without it too. I\'ve flagged it'
+    : 'The failing checks on this change aren\'t caused by it: they fail without it too. I\'ve flagged them';
+  return `${lead} to Homeroom's admins, who look after the checks.`;
+}
+
+/**
+ * Why a fix of its own checks stopped, as a whole sentence (homeroom-bot.js
+ * runChecksFix hands over a fragment: "its attempt to fix them ran out of
+ * time"). The fixed ones are said by Homeroom bot, which Homeroom's copy
+ * says in the first person (homeroom-bot-words.js); a reason the model
+ * wrote is its own words, capitalised and closed. Pure.
+ */
+function whySentence(why) {
+  const said = clipText(why, 600).trim().replace(/[.\s]+$/, '');
+  if (!said) return '';
+  const updated = /^it has already updated this change (\d+) times, as many as it may on its own$/i.exec(said);
+  if (updated) return `Homeroom bot has already updated it ${updated[1]} times, as many as it may on its own.`;
+  const attempt = /^its attempt to fix them (.+)$/i.exec(said);
+  if (attempt) return `Homeroom bot's attempt to fix them ${attempt[1]}.`;
+  return `${said.charAt(0).toUpperCase()}${said.slice(1)}.`;
 }
 
 function checksPersonText({ why, failingCount = 0, broken = [] }) {
-  const said = clipText(why, 600).replace(/[.\s]+$/, '');
+  const said = whySentence(why);
   const tried = Array.isArray(broken) ? broken : [];
   if (tried.length && !failingCount) {
     const what = tried.length === 1
       ? `"${clipText(tried[0].claim, 200)}" didn't work when Homeroom tried it`
       : `${tried.length} things it says it does didn't work when Homeroom tried them`;
     return `Homeroom bot can't get this change working on its own: ${what}. `
-      + `${said ? `${said}. ` : ''}A person needs to look at it from here.`;
+      + `${said ? `${said} ` : ''}A person needs to look at it from here.`;
   }
   const checks = failingCount === 1 ? '1 check is' : `${failingCount || 'Some'} checks are`;
   const also = tried.length ? `, and ${tried.length === 1 ? 'one thing it says it does' : `${tried.length} things it says it does`} didn't work when Homeroom tried it` : '';
   return `Homeroom bot can't get this change past its checks on its own: ${checks} still failing${also}. `
-    + `${said ? `${said}. ` : ''}A person needs to look at the failing checks from here.`;
+    + `${said ? `${said} ` : ''}A person needs to look at the failing checks from here.`;
 }
 
 // ── The turn ─────────────────────────────────────────────────────────────
@@ -1035,6 +1056,7 @@ module.exports = {
   checksFixPrompt,
   checksRevisedText,
   checksPersonText,
+  whySentence,
   checksNotChangeText,
   MAX_FAILING_SHOWN,
   INFRA_MIN_FAILING,

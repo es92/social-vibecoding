@@ -294,7 +294,9 @@ test('a failed build still says what it meant to build', async () => {
 test('the GitHub comment says what the spec is for and folds the document away', () => {
   const text = live.specCommentText(SPEC);
   // B6: no approval talk while it builds.
-  assert.match(text, /^Homeroom bot wrote a plan for this request and is building it now\. The change will be linked here when it's ready to try\.\n/);
+  // And no promise of a link later (nothing posts one there).
+  assert.match(text, /^Homeroom bot wrote a plan for this request and is building it now\.\n/);
+  assert.doesNotMatch(text, /linked here/);
   assert.ok(!/approve|proposal/i.test(text.split('<details>')[0]));
   assert.ok(text.includes(`<details><summary>The plan</summary>\n\n${SPEC}\n\n</details>`));
   const long = live.specCommentText('x'.repeat(70_000));
@@ -311,17 +313,19 @@ test('the thread card is the same spec card a person\'s Share posts', () => {
     snippet: SPEC.split('\n').slice(2).join('\n'),
     totalChars: SPEC.length,
     sharedBy: { id: 77, username: 'homeroom_bot' },
+    // One request, one story: the request page draws the bot's sentence.
+    botNote: 'building',
   });
-  assert.match(card.content, /Homeroom bot's plan for this request: "Hourly feed refresh"\. It is building it now\.$/);
-  assert.match(live.specCard({ sessionId: 5001, version: 3, spec: SPEC, bot: BOT, proposed: true }).content,
-    /The plan this proposal was built from: "Hourly feed refresh"/);
+  assert.equal(card.content, '📋 Plan v3: Hourly feed refresh. I\'m building it now.');
+  assert.equal(live.specCard({ sessionId: 5001, version: 3, spec: SPEC, bot: BOT, proposed: true }).content,
+    '📋 Plan v3: Hourly feed refresh.');
   assert.equal(live.specTitle('## Only a section\n# Real title'), 'Real title');
   assert.equal(live.specTitle('no title'), null);
 });
 
 test('#4612: an updated plan\'s card says so, and its metadata is the same card a Share posts', () => {
   const revised = live.specCard({ sessionId: 5001, version: 2, spec: SPEC, bot: BOT, proposed: true, revised: true });
-  assert.match(revised.content, /^📋 The plan, updated for this change \(version 2\): "Hourly feed refresh"\.$/);
+  assert.equal(revised.content, '📋 Plan v2: Hourly feed refresh, updated for this change.');
   const first = live.specCard({ sessionId: 5001, version: 2, spec: SPEC, bot: BOT, proposed: true });
   assert.deepEqual(revised.metadata.specShare, first.metadata.specShare, 'the transcript shows the same card, as v2');
   assert.doesNotMatch(first.content, /updated/, 'the first card says what it always said');
@@ -367,8 +371,9 @@ test('live.post puts the card in the thread and the full spec on GitHub', async 
     appId: 9, user: BOT, content: firstPerson(card.content), metadata: card.metadata,
     thread: { type: 'issue', ref: 12 }, msgType: 'spec_share',
   }]);
-  assert.match(sent[0].content, /^📋 My plan for this request: "Hourly feed refresh"\. I'm building it now\.$/);
-  assert.equal(live.tagsPoster('spec'), true, 'whoever filed it and took part are tagged on the spec');
+  assert.equal(sent[0].content, '📋 Plan v3: Hourly feed refresh. I\'m building it now.');
+  // Progress is said untagged; a tag means the bot is asking you something.
+  assert.equal(live.tagsPoster('spec'), false);
 });
 
 function actHarness() {

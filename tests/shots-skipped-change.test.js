@@ -177,10 +177,12 @@ test('the fix turn is told what was skipped, as data, and to seed it on the afte
 
 test('what the bot says about it is about the shots, not about checks or a broken change', () => {
   const revised = followup.checksRevisedText({ summary: 'A staging change now has an advisory vote.', failing: false, broken: false, skipped: true });
-  assert.equal(revised, 'Homeroom bot added what this change\'s before and after shots need: A staging change now has an advisory vote.\n\n'
-    + 'Earlier approvals were cleared, and the shots are taken again on the new version.');
+  // "Before and after screens", as the request page says it; the cleared
+  // votes are the platform's line to say (one note per update).
+  assert.equal(revised, 'Homeroom bot added what this change\'s before and after screens need: A staging change now has an advisory vote.\n\n'
+    + 'Its before and after screens are taken again on the new version.');
   assert.equal(followup.checksRetryText({ failing: false, broken: false, skipped: true }),
-    'Homeroom bot ran out of time adding what this change\'s before and after shots need. It is trying once more.');
+    'Homeroom bot ran out of time adding what this change\'s before and after screens need. It is trying once more.');
   // With a failing check as well, it is the checks' round, said as before.
   assert.match(followup.checksRevisedText({ summary: 'x', failing: true, skipped: true }), /fixed the failing checks on this change/);
   assert.match(followup.checksRetryText({ broken: true, failing: false, skipped: true }), /what didn't work on this change/);

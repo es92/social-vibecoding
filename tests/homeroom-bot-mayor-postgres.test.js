@@ -1687,7 +1687,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     assert.deepEqual(archives, [{ sessionId: duplicate, reason: 'superseded', userId: null }]);
     assert.equal(await statusOf(duplicate), 'archived');
     assert.deepEqual(systemMessages.map((m) => [m.appId, m.thread]), [[plant.id, { type: 'issue', ref: 1 }]]);
-    assert.match(systemMessages[0].content, /^Homeroom bot withdrew its proposal "Watering reminders again" \(PR #\d+\) for this request: it repeated PR #\d+, which was already approved\.$/);
+    assert.match(systemMessages[0].content, /^“Watering reminders again” was withdrawn: it repeated (?:“[^”]+”|another change for this request), which was already approved\.$/);
     // Its reply said it, and that was true: sent as written, with the request.
     const message = await read(sent);
     assert.equal(message.content, 'I withdrew the duplicate proposal; the approved one is the one that went live.');
@@ -1736,7 +1736,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     assert.equal(ack.metadata.homeroomBot.kind, 'withdrawn');
     assert.deepEqual(archives, [{ sessionId: photos, reason: 'withdrawn', userId: null }]);
     assert.equal(await statusOf(photos), 'archived');
-    assert.match(systemMessages.at(-1).content, /^Homeroom bot withdrew its proposal "Plant photos" \(PR #\d+\) for this request, at ada_\d+'s request\.$/);
+    assert.match(systemMessages.at(-1).content, /^“Plant photos” was withdrawn at ada_\d+'s request\.$/);
     assert.equal((await read(offered)).metadata.homeroomBot.answer, 'Withdraw it');
     const again = await say('Withdraw it', { reply_to_id: offered.messageId });
     assert.equal((await read(await mayor.decideOffer(pool, CONFIG, { bot, user: ada, settings, message: again, deps: { sessionLifecycle } }))).content,

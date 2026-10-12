@@ -92,8 +92,8 @@ test('a complicated plan counts against the daily questions and notes; a small c
   const src = read('src/services/homeroom-bot.js');
   assert.match(src, /const capSuppressed = await simulateCaps\(pool, bot, app\.id, parsed\.verdict, settings\)\n\s+\|\| \(parsed\.complicated \? await planTripwire\(pool, app\.id\) : null\);/,
     'only a complicated change: a small one is not asked about');
-  assert.match(live.heldText({ cap: 'question_tripwire', verdict: 'plan', limit: 10 }),
-    /^Homeroom bot has a plan for this request, but it has already posted 10 questions and notes on this app in the last day\./);
+  assert.match(live.heldText({ cap: 'question_tripwire', verdict: 'plan', limit: 10, project: 'Chores' }),
+    /^Homeroom bot has a plan for this request, but it has already posted 10 questions and notes on Chores today\./);
 });
 
 // ── What it says ──
@@ -107,12 +107,16 @@ test('the plan is posted on the request and GitHub to read and answer; the build
   const card = live.specCard({ sessionId: 5, version: 1, spec: '# Leaderboard\n\nx', bot: { id: 1, username: 'homeroom_bot' }, asking: true });
   assert.equal(card.msgType, 'spec_share');
   assert.equal(card.metadata.specShare.sessionId, 5, 'its card opens the spec, with its screens');
-  assert.match(card.content, /^📋 Homeroom bot's plan for this request: "Leaderboard", with its before and after screens\. It builds nothing until the person who asked says so: reply "build it" here/);
-  assert.match(live.specCard({ sessionId: 5, version: 1, spec: '# Leaderboard', bot: { id: 1 }, approved: true }).content,
-    /^📋 Homeroom bot is building the plan that was approved: "Leaderboard"\.$/);
+  // One request, one story: the plan in a line, saying who it waits for.
+  assert.equal(card.content, '📋 Plan v1: Leaderboard. Waiting for the person who asked for it to say Build it.');
+  assert.equal(card.metadata.specShare.botNote, 'waiting');
+  // A plan its requester said Build it to is not posted again: a note says so.
+  assert.equal(live.approvedBuildHomeroomText({ requester: 'sam' }), '@sam said Build it. I\'m building it now.');
   assert.doesNotMatch(live.specCommentText('# Leaderboard', { approved: true }), /<details>/, 'not the spec a second time');
   assert.match(live.specCommentText('# Leaderboard'), /<details><summary>The plan<\/summary>/, 'every other build as before');
-  assert.ok(live.tagsPoster('plan'), 'its requester is tagged on the request, unless their DM reached them');
+  // Progress is said untagged: its requester hears about the plan in their
+  // chat with the bot, and a tag means the bot is asking you something.
+  assert.equal(live.tagsPoster('plan'), false);
 });
 
 test('the DM card names the request, and its words say its screens are there', () => {

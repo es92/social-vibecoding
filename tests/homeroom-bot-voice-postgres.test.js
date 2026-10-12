@@ -312,7 +312,7 @@ test('the voice on the real schema', { timeout: 180000 }, async (t) => {
     });
     assert.equal(n, 1, 'both were asked in the change\'s discussion: one message there');
     assert.deepEqual(sent[0].thread, { type: 'session', ref: change.id });
-    assert.equal(sent[0].content, 'Done: The header is blue on every page, and the footer is smaller. Updating it reset its approvals, so the group needs to look again.');
+    assert.equal(sent[0].content, 'Done: The header is blue on every page, and the footer is smaller.');
     assert.equal(sent[0].metadata.quote.author, sam.username, 'quoting the newest ask');
     await voice.finishAsks(pool, { runTag, runId: null });
     const { rows } = await pool.query('SELECT status FROM homeroom_bot_change_asks WHERE session_id = $1 ORDER BY id', [change.id]);

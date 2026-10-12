@@ -6973,7 +6973,7 @@ async function reconcileRevision({ config, pool, session, app, issueNumber, deps
       [session.id],
     );
     await votes.reconcileNativeReviewedHead({
-      config, pool, session: fresh[0] || session, fresh: true, notify: true,
+      config, pool, session: fresh[0] || session, fresh: true, notify: true, madeBy: 'bot',
     });
   } catch (err) {
     log.error('homeroom-bot', 'Follow-up revision pushed, but reconciling the proposal failed', {
@@ -7764,7 +7764,14 @@ async function announceBuilt({ pool, ws, app, bot, issueNumber, runId, built, sa
       return 'proposed';
     }
     const link = live.proposalLink(domain, app.slug, built.sessionId, built.prNumber);
-    await say('proposal', live.proposalText({ link, prNumber: built.prNumber }), {
+    // Homeroom names the change by its title, over its vote card; GitHub links it.
+    const { rows: [named] = [] } = await pool.query(
+      `SELECT COALESCE(NULLIF(pr_title, ''), NULLIF(proposed_pr_title, ''), NULLIF(session_title, '')) AS title
+         FROM chat_sessions WHERE id = $1`,
+      [built.sessionId],
+    ).catch(() => ({ rows: [] }));
+    await say('proposal', live.proposalText({ link }), {
+      homeroomText: live.proposalHomeroomText({ title: named?.title || null }),
       msgType: 'vote', metadata: { vote: { sessionId: built.sessionId, prNumber: built.prNumber } },
       dm: { link, prNumber: built.prNumber, sessionId: built.sessionId },
     });
@@ -7848,6 +7855,7 @@ async function actOnVerdict({
       const toDm = capSuppressed === 'proposals_per_app' || capSuppressed === 'proposals_total';
       await say(kind, live.heldText({
         cap: capSuppressed, verdict: parsed.verdict === 'ready' && parsed.complicated ? 'plan' : parsed.verdict, limit,
+        project: app.name || app.slug,
       }), toDm ? { dm: { limit } } : undefined);
     }
   } else if (parsed.verdict === 'question') {
@@ -7868,7 +7876,13 @@ async function actOnVerdict({
     const deciders = decider && !decider.requesterDecides && Array.isArray(decider.deciders)
       ? decider.deciders.map((d) => d?.username).filter(Boolean)
       : [];
-    await say('person', live.personText(parsed), {
+    // Homeroom's copy names who can say Go ahead: the people who decide, or
+    // the person who asked for it.
+    const asker = deciders.length || parsed.platform ? null
+      : await require('./homeroom-bot-dm').requesterOf(pool, app.id, issueNumber).catch(() => null);
+    const project = app.name || app.slug;
+    await say('person', live.personText({ ...parsed, project }), {
+      homeroomText: live.personHomeroomText({ ...parsed, project, requester: asker?.username || null, deciders }),
       dm: {
         reason: parsed.reason, ...(parsed.platform ? { platform: true } : {}), ...(deciders.length ? { deciders } : {}),
         ...(parsed.done ? { done: true } : {}),
@@ -8356,10 +8370,14 @@ async function planBeforeBuilding({
     'UPDATE homeroom_bot_runs SET plan_send_attempts = 1, plan_unsent_at = $2 WHERE id = $1',
     [runId, sent?.messageId || sent?.stop ? null : new Date()],
   ).catch(() => {});
-  const told = sent?.messageId ? await dmSvc.requesterOf(pool, app.id, issueNumber).catch(() => null) : null;
+  const asker = await Promise.resolve().then(() => dmSvc.requesterOf(pool, app.id, issueNumber)).catch(() => null);
+  const told = sent?.messageId ? asker : null;
   await say('plan', live.planCommentText({ spec: drafted.specMd, questions }), {
     threadMessage: shown.spec
-      ? live.specCard({ sessionId: shown.spec.sessionId, version: shown.spec.version, spec: drafted.specMd, bot, asking: true })
+      ? live.specCard({
+        sessionId: shown.spec.sessionId, version: shown.spec.version, spec: drafted.specMd, bot, asking: true,
+        requester: asker?.username || null,
+      })
       : null,
     ...(told?.username ? { untag: told.username } : {}),
   });
@@ -8629,8 +8647,14 @@ async function buildLive({
     if (await checkpoint.runPosted(pool, runId, 'spec')) {
       log.info('homeroom-bot', 'The plan was said before a restart; not saying it again', { app: app.slug, issueNumber, runId, sessionId });
     } else {
+      // #4488: a plan its requester said Build it to is on the request
+      // already: a short note says so, and no second card.
+      const asker = checkFirst
+        ? await require('./homeroom-bot-dm').requesterOf(pool, app.id, issueNumber).catch(() => null)
+        : null;
       await say('spec', live.specCommentText(specMd, { approved: checkFirst }), {
-        threadMessage: version ? live.specCard({ sessionId, version, spec: specMd, bot, approved: checkFirst }) : null,
+        threadMessage: version && !checkFirst ? live.specCard({ sessionId, version, spec: specMd, bot }) : null,
+        ...(checkFirst ? { homeroomText: live.approvedBuildHomeroomText({ requester: asker?.username || null }) } : {}),
         dm: { building: true },
       });
     }

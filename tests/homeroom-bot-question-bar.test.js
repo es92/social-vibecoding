@@ -217,7 +217,7 @@ test('a BLOCKED spec builds nothing and says why; a spec that merely mentions it
   assert.deepEqual(ok.calls.modes, ['scout', 'build']);
 });
 
-test('live: a blocked build is said on the issue like a question, to whoever filed it', async (t) => {
+test('live: a blocked build is said on the issue like a question, untagged', async (t) => {
   const posts = [];
   const realPost = live.post;
   const realBuild = live.buildAndPropose;
@@ -238,7 +238,9 @@ test('live: a blocked build is said on the issue like a question, to whoever fil
   assert.equal(acted, 'blocked');
   assert.deepEqual(posts.map((p) => p.kind), ['blocked']);
   assert.match(posts[0].text, /^Homeroom bot started on this and found it cannot be built as asked:\n\nPulse has no leaderboard data to rank\.\n\nReply here/);
-  assert.equal(live.tagsPoster('blocked'), true, 'it asks something of whoever filed it');
+  // One request, one story: a build that stopped is progress, said untagged;
+  // whoever asked for it hears it in their chat with the bot.
+  assert.equal(live.tagsPoster('blocked'), false);
 });
 
 // ── Comparing old against new ────────────────────────────────────────────

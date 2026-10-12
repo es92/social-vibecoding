@@ -471,13 +471,15 @@ test('#11 (WP3): withdrawing a proposal and telling the team are tools, describe
 });
 
 test('#11 (WP3): what a withdrawal leaves on its request, and what a report carries', () => {
+  // One request, one story: a neutral line in Homeroom's words, the change
+  // by its title, never "Homeroom bot … its proposal (PR #12)".
   const session = { id: 6191, title: 'Watering reminders', pr_number: 12 };
-  assert.equal(mayor.withdrawNote({ session, duplicateOf: { id: 6190, status: 'merged', pr_number: 11 } }, { reason: 'superseded', username: 'ada' }),
-    'Homeroom bot withdrew its proposal "Watering reminders" (PR #12) for this request: it repeated PR #11, which was already approved.');
+  assert.equal(mayor.withdrawNote({ session, duplicateOf: { id: 6190, status: 'merged', pr_number: 11, title: 'Watering' } }, { reason: 'superseded', username: 'ada' }),
+    '“Watering reminders” was withdrawn: it repeated “Watering”, which was already approved.');
   assert.equal(mayor.withdrawNote({ session, duplicateOf: { id: 6190, status: 'promoted' } }, { reason: 'superseded', username: 'ada' }),
-    'Homeroom bot withdrew its proposal "Watering reminders" (PR #12) for this request: it repeated another of its proposals, which is already up for a vote.');
+    '“Watering reminders” was withdrawn: it repeated another change for this request, which is already up for a vote.');
   assert.equal(mayor.withdrawNote({ session: { id: 5 } }, { reason: 'withdrawn', username: 'ada' }),
-    'Homeroom bot withdrew its proposal for this request, at ada\'s request.');
+    'Homeroom bot\'s change for this request was withdrawn at ada\'s request.');
   // The PUBLIC issue: what happened, the request, the bot's records, and the
   // project only when it is public. Never the chat.
   const about = { app: { id: 2034, slug: 'plant-pal', name: 'Plant Pal', view_visibility: 'public' }, issueNumber: 3, runs: [779, 778], proposals: [6193, 6192] };

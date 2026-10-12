@@ -26,12 +26,16 @@ function notes() {
     live.questionText({ question: 'Which list?' }),
     live.questionText({ question: 'a', plan: { questions: [{ question: 'One?' }, { question: 'Two?' }] } }),
     live.personText({ reason: 'That changes sign-in.' }),
+    live.personText({ reason: 'Sign-in is a platform setting', platform: true, project: 'Plant Pal' }),
     live.emptyText({ reason: 'Nothing named.' }),
     live.proposalText({ link: 'https://x/1', prNumber: 12 }),
+    live.liveText({ title: 'Dark mode' }),
+    live.retryCommentText(),
     live.buildFailedText('budget: wall clock'),
     live.buildFailedText('the turn produced no change'),
     live.buildFailedText('restarted mid-build'),
     live.heldText({ cap: 'proposals_per_app', limit: 5 }),
+    live.heldText({ cap: 'proposals_per_app', limit: 5, project: 'Plant Pal' }),
     live.heldText({ cap: 'proposals_total', limit: 100 }),
     live.heldText({ cap: 'question_tripwire', verdict: 'question', limit: 10 }),
     live.heldText({ cap: 'question_tripwire', verdict: 'plan', limit: 10 }),
@@ -60,6 +64,12 @@ function notes() {
     followup.checksRetryText(),
     followup.checksPersonText({ why: 'That needs a decision', failingCount: 2 }),
     followup.checksPersonText({ why: 'x', broken: [{ claim: 'Save works' }] }),
+    followup.checksPersonText({ why: 'it has already updated this change 3 times, as many as it may on its own', failingCount: 1 }),
+    followup.checksPersonText({ why: 'its attempt to fix them ran out of time', failingCount: 2 }),
+    followup.checksRetryText({ skipped: true, failing: false }),
+    followup.checksRevisedText({ summary: 'Seeded it.', skipped: true, failing: false }),
+    followup.replyFailedText({ why: 'it ran out of time' }),
+    followup.replyFailedText({ why: 'something went wrong while it worked on it', retrying: true }),
     followup.checksNotChangeText({ failingCount: 1 }),
     holds.leavingText(held, now),
     holds.leavingText([{ kind: 'proposal', username: 'ada', since: '2026-10-08T12:00:00Z' }], now),
@@ -78,6 +88,17 @@ test('every fixed note reads in the bot\'s own voice in Homeroom', () => {
   }
 });
 
+// One request, one story: in Homeroom the bot speaks of itself in the first
+// person and in whole sentences, and in Homeroom's words: a request, a
+// change, never an issue or a proposal, and no pull request number.
+test('every fixed note uses Homeroom\'s words, and the bot never speaks of itself as "it"', () => {
+  for (const note of notes()) {
+    const own = firstPerson(note);
+    assert.doesNotMatch(own, /\bissue\b|\bproposal\b|PR #\d/i, `not Homeroom's words: ${own}`);
+    assert.doesNotMatch(own, /\bits attempt\b|\bit ran out of time\b|\bas many as it may\b|\bwhile it worked\b/, `still "it": ${own}`);
+  }
+});
+
 test('the words people and the model wrote pass through unchanged', () => {
   assert.equal(firstPerson('It changes sign-in, so a person decides.'), 'It changes sign-in, so a person decides.');
   assert.equal(firstPerson('The Homeroom bot docs say so.'), 'The Homeroom bot docs say so.');
@@ -85,7 +106,8 @@ test('the words people and the model wrote pass through unchanged', () => {
   assert.equal(firstPerson(null), null);
   assert.equal(
     firstPerson(live.questionText({ question: 'Which list should it use?' })),
-    'I have a question before I can build this:\n\nWhich list should it use?\n\nReply here (or on the GitHub issue) and I\'ll look again.',
+    // "Issue" is GitHub's word: in Homeroom the request is where you reply.
+    'I have a question before I can build this:\n\nWhich list should it use?\n\nReply here and I\'ll look again.',
   );
 });
 
@@ -93,6 +115,7 @@ test('a follow-up\'s answer loses its header: the bubble already says who is tal
   assert.equal(firstPerson(followup.answerText({ reply: 'It sorts by date now.' })), 'It sorts by date now.');
   assert.equal(
     firstPerson(followup.revisedText({ summary: 'Moved the bar into the header.' })),
-    'I updated this change: Moved the bar into the header.\n\nEarlier approvals were cleared, so it needs a fresh look.',
+    // One note per update: the cleared votes are the platform's line to say.
+    'I updated this change: Moved the bar into the header.',
   );
 });

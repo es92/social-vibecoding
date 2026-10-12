@@ -264,7 +264,7 @@ test('archiveSession: a rename/visibility PR row archives like any promoted sess
     const res = await subject.archiveSession({ pool, sessionId: 8, userId: 3, reason: 'manual' });
     assert.equal(res.archived, true);
     assert.deepEqual(spies.closePR, [{ owner: 'acme', repo: 'widget', pr: 21 }]);
-    assert.equal(spies.sendSystemMessage[0].content, 'evan withdrew PR #21: Rename to "Cooler App"');
+    assert.equal(spies.sendSystemMessage[0].content, 'evan withdrew “Rename to "Cooler App"”.');
   } finally {
     restore();
   }
@@ -272,7 +272,8 @@ test('archiveSession: a rename/visibility PR row archives like any promoted sess
 
 // ── PR-withdrawn group-chat announcement (#200) ─────────────────────────
 
-test('archiveSession: manual archive announces "<user> withdrew PR #N: Title"', async () => {
+// One request, one story: the change by its title, never "PR #N".
+test('archiveSession: manual archive announces "<user> withdrew “Title”."', async () => {
   const { subject, spies, restore } = loadWithStubs();
   try {
     const pool = makePool([
@@ -288,7 +289,7 @@ test('archiveSession: manual archive announces "<user> withdrew PR #N: Title"', 
     assert.equal(res.archived, true);
     assert.equal(spies.sendSystemMessage.length, 1);
     assert.equal(spies.sendSystemMessage[0].appId, 4);
-    assert.equal(spies.sendSystemMessage[0].content, 'evan withdrew PR #53: Add sticky notes');
+    assert.equal(spies.sendSystemMessage[0].content, 'evan withdrew “Add sticky notes”.');
     assert.equal(spies.sendSystemMessage[0].msgType, 'system');
   } finally {
     restore();
@@ -311,9 +312,9 @@ test('archiveSession: sweeper archive announces the actor-less form', async () =
     await subject.archiveSession({ pool, sessionId: 9, reason: 'stale-pr' });
 
     assert.equal(spies.sendSystemMessage.length, 1);
-    // pr_title null → label falls back to the bare PR number.
+    // pr_title null → "This change", never the bare PR number.
     assert.equal(spies.sendSystemMessage[0].content,
-      'PR #99 went quiet and was set aside. It can always come back as a new proposal');
+      'This change went quiet and was set aside. It can always come back as a new change.');
     assert.equal(spies.sendSystemMessage[0].msgType, 'system');
   } finally {
     restore();
@@ -322,8 +323,8 @@ test('archiveSession: sweeper archive announces the actor-less form', async () =
 
 test('#11 (WP3): the Homeroom bot withdrawing its own proposal says so, never that it went quiet', async () => {
   for (const [reason, said] of [
-    ['superseded', 'PR #99: Watering reminders was withdrawn: another proposal for the same request covers it'],
-    ['withdrawn', 'PR #99: Watering reminders was withdrawn'],
+    ['superseded', '“Watering reminders” was withdrawn: another change for the same request covers it.'],
+    ['withdrawn', '“Watering reminders” was withdrawn.'],
   ]) {
     const { subject, spies, restore } = loadWithStubs();
     try {

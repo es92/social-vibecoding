@@ -368,7 +368,10 @@ test('issuePoster: the platform\'s issue row, the feedback report, the Source li
   assert.equal((await poster({ body: 'plain', user: 'stranger' })).name, null, 'no linked account, nobody to notify here');
 });
 
-test('the answers tag whoever filed the issue and took part; the notice and a held note tag nobody', async (t) => {
+// One request, one story: a tag means the bot is asking you something. A
+// question and a decision for a person tag; progress (an empty request, the
+// plan, the change, a build that stopped) is said untagged.
+test('the answers that ask something tag whoever filed the issue and took part; progress, the notice and a held note tag nobody', async (t) => {
   // Who exactly, and who is left out, is tests/homeroom-bot-mentions.test.js.
   const h = actHarness();
   const realPost = live.post;
@@ -382,8 +385,8 @@ test('the answers tag whoever filed the issue and took part; the notice and a he
   await act(h, { verdict: 'person', reason: 'Taste.' });
   await act(h, { verdict: 'empty', reason: 'Nothing.' });
   assert.deepEqual(h.posts.map((p) => [p.kind, p.mentions, p.senderId]),
-    [['question', ['evan', 'maya'], 77], ['person', ['evan', 'maya'], 77], ['empty', ['evan', 'maya'], 77]]);
-  assert.equal(lookups.length, 3, 'one lookup per run, read fresh each time');
+    [['question', ['evan', 'maya'], 77], ['person', ['evan', 'maya'], 77], ['empty', [], 77]]);
+  assert.equal(lookups.length, 2, 'one lookup per run that tags, read fresh each time');
   assert.equal(lookups[0].issueNumber, 12);
   assert.equal(lookups[0].bot.id, 77, 'so the bot can leave itself out');
 
@@ -393,9 +396,11 @@ test('the answers tag whoever filed the issue and took part; the notice and a he
   assert.deepEqual(h.posts.map((p) => [p.kind, p.mentions]), [['held_question_tripwire', []]]);
   assert.equal(lookups.length, 0, 'a held note looks nobody up');
 
-  for (const kind of ['proposal', 'build_failed', 'spec', 'blocked', 'followup_answer', 'followup_revise']) {
-    assert.ok(live.tagsPoster(kind), `${kind} is theirs to know about too`);
+  for (const kind of ['proposal', 'build_failed', 'spec', 'plan', 'blocked', 'empty', 'followup_answer', 'followup_revise',
+    'followup_person', 'followup_failed']) {
+    assert.ok(!live.tagsPoster(kind), `${kind} is progress: said untagged`);
   }
+  for (const kind of ['question', 'person', 'followup_ask']) assert.ok(live.tagsPoster(kind), `${kind} asks them something`);
   assert.ok(!live.tagsPoster('looking'));
   assert.ok(!live.tagsPoster('held_proposals_per_app'));
 });
@@ -414,15 +419,15 @@ test('what it says: the question, notes that never close, a linked proposal', ()
   assert.match(q, /Reply here \(or on the GitHub issue\) and it will look again\./);
   assert.match(live.personText({ reason: 'It changes who can see feeds.' }), /a person needs to decide this one: It changes who can see feeds\./);
   // #4239: about Homeroom itself, the note says so, and who can move it.
-  const platform = live.personText({ reason: 'The header is drawn by Homeroom.', platform: true });
-  assert.match(platform, /^Homeroom bot thinks this is about Homeroom itself, not this project: The header is drawn by Homeroom\.\n\nWhoever asked for it, or this project's creator or admins, can move it to Homeroom's own board by asking Homeroom bot in a chat\.$/);
+  const platform = live.personText({ reason: 'The header is drawn by Homeroom.', platform: true, project: 'RSS Reader' });
+  assert.match(platform, /^Homeroom bot thinks this is about Homeroom itself, not RSS Reader: The header is drawn by Homeroom\.\n\nWhoever asked for it, or RSS Reader's creator or admins, can have Homeroom bot move it to Homeroom's own board\.$/);
   assert.doesNotMatch(platform, /\u2014/);
   const empty = live.emptyText({ reason: 'The body is a placeholder.' });
   assert.match(empty, /couldn't find anything to build/);
   assert.ok(!/close/i.test(empty), 'it never closes, or offers to close, an issue');
   const link = live.proposalLink('app.onhomeroom.com', APP.slug, 5001);
   assert.equal(link, 'https://app.onhomeroom.com/#app/rss-reader-4113da/dev/proposals/5001');
-  assert.match(live.proposalText({ link, prNumber: 42 }), /opened a proposal for the group to vote on \(PR #42\): https:\/\/app\.onhomeroom\.com/);
+  assert.equal(live.proposalText({ link, prNumber: 42 }), `Homeroom bot built this. It's up for a vote: ${link}`, 'no pull request number');
   assert.ok(live.questionText({ question: 'x'.repeat(5000) }).length < 2000, 'model text is clipped');
 });
 
@@ -845,8 +850,8 @@ test('each verdict says its own thing; a verdict held by a cap says only that it
   assert.deepEqual(h.posts.map((p) => p.kind), ['held_question_tripwire', 'held_proposals_per_app'],
     'the caps hold the question and the build, and say so in one line (#3152)');
   assert.ok(!/Which feed/.test(h.posts[0].text), 'the held question itself is not posted');
-  assert.match(h.posts[1].text, /would build this, but it already has 5 proposals open on this app/);
-  assert.match(h.posts[1].text, /come back to this issue when one of them is merged or closed/);
+  // One request, one story: in whole sentences, the project by its name.
+  assert.equal(h.posts[1].text, 'Homeroom bot will build this when one of its 5 changes on RSS reader is voted in or closed.');
 
   live.buildAndPropose = async (args) => {
     await args.onSession({ id: 5001 });
@@ -1112,7 +1117,7 @@ test('a ready verdict is held before it is built when the bot is at its ceiling 
   }), 'held');
   assert.deepEqual(built, []);
   assert.equal(h.posts[0].kind, 'held_proposals_total');
-  assert.match(h.posts[0].text, /already has 20 proposals open across Homeroom/);
+  assert.match(h.posts[0].text, /one of its 20 changes across Homeroom is voted in or closed/);
   // Not held, the build carries the ceiling to its promote.
   assert.equal(await bot.buildLive({
     pool: h.pool, config: {}, bot: BOT, app: APP, repo: REPO, issueNumber: 12, issue: { title: 'x' },
@@ -1128,9 +1133,9 @@ test('a ready verdict is held before it is built when the bot is at its ceiling 
 });
 
 test('the held lines name the limit and never promise more than the refresh does', () => {
-  assert.match(live.heldText({ cap: 'proposals_per_app', verdict: 'ready', limit: 2 }), /already has 2 proposals open on this app/);
+  assert.match(live.heldText({ cap: 'proposals_per_app', verdict: 'ready', limit: 2 }), /when one of its 2 changes on this project is voted in or closed/);
   const q = live.heldText({ cap: 'question_tripwire', verdict: 'question', limit: 10 });
-  assert.match(q, /has a question about this request, but it has already posted 10 questions and notes on this app in the last day/);
+  assert.match(q, /has a question about this request, but it has already posted 10 questions and notes on this project today/);
   assert.match(live.heldText({ cap: 'question_tripwire', verdict: 'empty', limit: 10 }), /has a note on this request/);
   for (const text of [q, live.heldText({ cap: 'proposals_per_app', limit: 2 })]) assert.ok(!/\u2014/.test(text));
 });

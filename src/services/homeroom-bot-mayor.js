@@ -3444,7 +3444,7 @@ async function withdrawGate(pool, { bot, user, sessionId, deps = {} }) {
   let duplicateOf = null;
   if (issueNumber) {
     const { rows: others } = await pool.query(
-      `SELECT id, status, pr_number FROM chat_sessions
+      `SELECT id, status, pr_number, COALESCE(NULLIF(pr_title, ''), NULLIF(session_title, '')) AS title FROM chat_sessions
         WHERE app_id = $1 AND user_id = $2 AND id <> $3 AND $4 = ANY(linked_issues) AND is_headless = FALSE
           AND (status IN ('merging', 'merged') OR (status = 'promoted' AND id < $3))
         ORDER BY (status IN ('merging', 'merged')) DESC, id
@@ -3458,14 +3458,15 @@ async function withdrawGate(pool, { bot, user, sessionId, deps = {} }) {
 
 /** Pure: the note a withdrawal leaves on its request's discussion. */
 function withdrawNote({ session, duplicateOf = null }, { reason, username }) {
-  const title = session.title ? ` "${clip(session.title, 120)}"` : '';
-  const pr = session.pr_number ? ` (PR #${session.pr_number})` : '';
+  // A neutral line on the request, in Homeroom's words: the change by its
+  // title, never "its proposal (PR #n)".
+  const title = session.title ? `“${clip(session.title, 120)}”` : 'Homeroom bot\'s change for this request';
   if (reason === 'superseded' && duplicateOf) {
-    const other = duplicateOf.pr_number ? `PR #${duplicateOf.pr_number}` : 'another of its proposals';
+    const other = duplicateOf.title ? `“${clip(duplicateOf.title, 120)}”` : 'another change for this request';
     const where = ['merging', 'merged'].includes(duplicateOf.status) ? 'was already approved' : 'is already up for a vote';
-    return `Homeroom bot withdrew its proposal${title}${pr} for this request: it repeated ${other}, which ${where}.`;
+    return `${title} was withdrawn: it repeated ${other}, which ${where}.`;
   }
-  return `Homeroom bot withdrew its proposal${title}${pr} for this request, at ${username}'s request.`;
+  return `${title} was withdrawn at ${username}'s request.`;
 }
 
 /**

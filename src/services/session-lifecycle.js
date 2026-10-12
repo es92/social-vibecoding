@@ -569,22 +569,21 @@ async function finalizeArchivedSession({
     // outcome: the close is best-effort and the PR leaves the vote
     // panel either way. Own catch so a chat failure never fails the
     // archive itself.
-    const label = session.pr_title
-      ? `PR #${session.pr_number}: ${session.pr_title}`
-      : `PR #${session.pr_number}`;
+    // Named by its title, in Homeroom's words: a change, never "PR #n".
+    const label = session.pr_title ? `“${session.pr_title}”` : 'This change';
     // Rejection (auto-takedown) gets its own line so the lifecycle feed reads
     // correctly: the group voted it down rather than it just going quiet.
     const content = reason === 'auto-rejected'
-      ? `${label} was set aside for now (more No than Yes, and not enough support to carry it)`
+      ? `${label} was set aside for now (more No than Yes, and not enough support to carry it).`
       : reason === 'proposal-replaced' && userId != null && session.owner_username
-        ? `${session.owner_username} replaced ${label} with a new proposal`
+        ? `${session.owner_username} replaced ${session.pr_title ? label : 'this change'} with a new one.`
       : reason === 'superseded'
-        ? `${label} was withdrawn: another proposal for the same request covers it`
+        ? `${label} was withdrawn: another change for the same request covers it.`
       : reason === 'withdrawn'
-        ? `${label} was withdrawn`
+        ? `${label} was withdrawn.`
       : userId != null && session.owner_username
-        ? `${session.owner_username} withdrew ${label}`
-        : `${label} went quiet and was set aside. It can always come back as a new proposal`;
+        ? `${session.owner_username} withdrew ${session.pr_title ? label : 'this change'}.`
+        : `${label} went quiet and was set aside. It can always come back as a new change.`;
     try {
       const { sendSystemMessage } = require('./ws');
       await sendSystemMessage(pool, session.app_id, content, 'system', null, { type: 'session', ref: session.id });

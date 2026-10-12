@@ -128,7 +128,9 @@ test('what it says has no em dashes, and the hand-off says a person takes it', (
   ];
   for (const t of texts) assert.ok(!/—/.test(t), t);
   assert.match(texts[0], /fixed the failing checks on this change: The button now reads "Text size"\./);
-  assert.match(texts[0], /Earlier approvals were cleared/);
+  // One note per update: the cleared votes are the platform's line to say.
+  assert.doesNotMatch(texts[0], /approvals/);
+  assert.match(texts[0], /Its checks run again on the new version\./);
   for (const t of texts) assert.ok(!/PR #|proposal/.test(t), t);
   assert.match(texts[1], /1 check is still failing\. The check expects a step the request removed\. A person needs to look/);
   assert.match(texts[2], /3 checks are still failing\. A person needs to look/);
@@ -253,7 +255,8 @@ test('out of revisions: no turn, and one note hands it to a person', async (t) =
   assert.equal(post.kind, 'followup_person');
   assert.equal(post.proposalSessionId, 5001, 'on the proposal too');
   assert.match(post.text, /can't get this change past its checks on its own: 1 check is still failing/);
-  assert.match(post.text, /already updated this change 3 times/);
+  // Why, as a whole sentence (followup.whySentence).
+  assert.match(post.text, /Homeroom bot has already updated it 3 times, as many as it may on its own\. A person/);
   assert.match(post.dm.reason, /its checks are failing/, 'the requester hears it in the DM');
   assert.equal(insertOf(h).params[21], HEAD, 'and it is not said again for the same head');
 });
@@ -281,7 +284,7 @@ test('red checks the change did not cause go to admins as an incident; the chang
   assert.equal(h.calls.onProposal.length, 1);
   assert.equal(h.calls.onProposal[0].kind, 'checks_not_change');
   assert.equal(h.calls.onProposal[0].text, followup.checksNotChangeText({ failingCount: 1 }));
-  assert.match(h.calls.onProposal[0].text, /not caused by it/);
+  assert.match(h.calls.onProposal[0].text, /^The failing check on this change isn't caused by it: it fails without it too\./);
   // An incident is an event admins read (platform-incidents.js record).
   const incident = h.calls.queries.find((q) => /INSERT INTO events/.test(q.s) && /checks_not_change/.test(JSON.stringify(q.params)));
   assert.ok(incident, 'recorded for admins');
@@ -540,8 +543,8 @@ test('a skip the change can seed: one build turn adds the data, said as what the
   assert.match(commitMsg, /seed what the before and after shots of #50 need/);
   assert.equal(h.calls.reconciled.length, 1, 'a revision like any other: votes cleared, checks and shots again on the new head');
   assert.equal(insertOf(h).params[21], HEAD, 'the head is looked at once');
-  assert.match(h.calls.onProposal[0].text, /^Homeroom bot added what this change's before and after shots need: The staging seed adds/);
-  assert.match(h.calls.onProposal[0].text, /the shots are taken again on the new version/);
+  assert.match(h.calls.onProposal[0].text, /^Homeroom bot added what this change's before and after screens need: The staging seed adds/);
+  assert.match(h.calls.onProposal[0].text, /Its before and after screens are taken again on the new version/);
   // Its new head's shots are taken again once; a skip there starts no second round.
   assert.match(read('src/services/homeroom-bot.js'),
     /WHERE r\.proposal_session_id = cs\.id\n\s+AND r\.verdict = 'revise' AND r\.checks_head_sha IS NOT NULL\n\s+\) AS fix_revised/);
