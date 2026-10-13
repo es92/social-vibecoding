@@ -1090,10 +1090,12 @@ async function transcriptOf(pool, trialId, { step = null, after = null, limit = 
   const n = Math.min(Math.max(Number(limit) || TRANSCRIPT_PAGE, 1), TRANSCRIPT_PAGE);
   const from = Number.isSafeInteger(Number(after)) && Number(after) > 0 ? Number(after) : 0;
   const stepName = typeof step === 'string' && /^[a-z_]{1,16}$/.test(step) ? step : null;
+  // Ordered by the column, a number: by the output's text `id` it put
+  // 1000 before 999, and a page's cursor skipped the lines between.
   const { rows } = await pool.query(
     `SELECT id::text AS id, at, step, kind, line, replayed FROM bench_trial_lines
       WHERE trial_id = $1 AND id > $2::bigint AND ($3::text IS NULL OR step = $3::text)
-      ORDER BY id LIMIT $4`,
+      ORDER BY bench_trial_lines.id LIMIT $4`,
     [Number(trialId), from, stepName, n + 1],
   );
   const { rows: [count] } = await pool.query('SELECT COUNT(*)::int AS n FROM bench_trial_lines WHERE trial_id = $1', [Number(trialId)]);

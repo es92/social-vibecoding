@@ -3654,10 +3654,14 @@ async function buildAndPropose({
   if (!presetSpec && specModel && specModel !== model) await stampSessionModel(pool, session, specModel);
   if (!presetSpec && onStage) { try { await onStage('spec'); } catch { /* a watcher never stops a build */ } }
   if (!presetSpec) await step('spec_turn');
+  // A kept spec's drawn screens, measured as a fresh spec's are (draftSpec),
+  // so a build that went on from a kept plan still says what they hold.
+  const presetScreens = presetSpec && presetSpecHtml ? specHtml.screenStats(String(presetSpecHtml)) : [];
   spec = presetSpec
     ? {
       ok: true, specMd: String(presetSpec), costUsd: null, preset: true,
       ...(presetSpecHtml ? { specHtml: String(presetSpecHtml) } : {}),
+      ...(presetScreens.length ? { screens: presetScreens } : {}),
       version: propose ? await publishSpec({
         pool, sessions, session, specMd: String(presetSpec), specHtml: presetSpecHtml ? String(presetSpecHtml) : null, model: specModel || model,
       }) : null,
@@ -3711,8 +3715,14 @@ async function buildAndPropose({
       // Posted, not waited on: the build starts whatever happens to the post.
       try {
         // Its ledger id too: a bench trial keeps it, so a restart's next claim
-        // can still name the spec turn's cost (bench/runner.js keptCosts).
-        await onSpec({ sessionId: session.id, version: spec.version, specMd: spec.specMd, ...(spec.turnId ? { turnId: spec.turnId } : {}) });
+        // can still name the spec turn's cost (bench/runner.js keptCosts);
+        // and its HTML, so a build that goes on from it still starts from
+        // the screens it drew (presetSpecHtml).
+        await onSpec({
+          sessionId: session.id, version: spec.version, specMd: spec.specMd,
+          ...(spec.turnId ? { turnId: spec.turnId } : {}),
+          ...(spec.specHtml ? { specHtml: spec.specHtml } : {}),
+        });
       } catch (err) {
         log.warn('homeroom-bot', 'Posting the spec failed (building anyway)', { sessionId: session.id, err: err.message });
       }

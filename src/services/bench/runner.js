@@ -613,10 +613,16 @@ async function buildStage(ctx) {
     // onSpec but the one that keeps the spec on its trial for a restart to go
     // on from (keepAsItLands: a first version's, a side build's, a build's).
     propose: false,
-    onSpec: ctx.onSpecWritten ? ({ sessionId: id, specMd, turnId }) => ctx.onSpecWritten({ sessionId: id, specMd, turnId }) : null,
+    onSpec: ctx.onSpecWritten
+      ? ({ sessionId: id, specMd, turnId, specHtml }) => ctx.onSpecWritten({ sessionId: id, specMd, turnId, specHtml })
+      : null,
     proposalCeiling: null,
-    // A spec a restart's recovery kept: built from as it is, not written again.
+    // A spec a restart's recovery kept: built from as it is, not written
+    // again, and with its HTML, so the build still starts from the screens
+    // it drew (spec-screens-start.js) and its screens are counted, as a live
+    // build a restart interrupted does (homeroom-bot.js build_spec_html).
     ...(ctx.presetSpec ? { presetSpec: ctx.presetSpec } : {}),
+    ...(ctx.presetSpec && ctx.presetSpecHtml ? { presetSpecHtml: ctx.presetSpecHtml } : {}),
     platformRepo: !!snapshot.extra?.platformRepo,
     firstVersion: !!snapshot.extra?.firstVersion,
     starter: snapshot.extra?.starter || null,
@@ -768,9 +774,11 @@ function keepAsItLands(ctx, kept, { onBuilt = null } = {}) {
       await kept.noteOpened(id);
       return ctx.onSession?.(id, info);
     },
-    onSpecWritten: ({ sessionId: id, specMd: written, turnId = null }) => {
+    onSpecWritten: ({ sessionId: id, specMd: written, turnId = null, specHtml = null }) => {
       specMd = written;
-      return kept.keep({ spec: { sessionId: Number(id), specMd: written, ...(turnId ? { turnId } : {}) } });
+      return kept.keep({
+        spec: { sessionId: Number(id), specMd: written, ...(turnId ? { turnId } : {}), ...(specHtml ? { specHtml } : {}) },
+      });
     },
     onSight: (seen) => {
       sight = seen;
@@ -827,6 +835,7 @@ async function buildSideNow(ctx, kept, { models, snapshot, budgets, reviewer = u
     budgets,
     ...(reviewer !== undefined ? { reviewer } : {}),
     presetSpec: kept.done.spec?.specMd || null,
+    presetSpecHtml: kept.done.spec?.specHtml || null,
     ...keepAsItLands(ctx, kept, { onBuilt }),
   });
 }
@@ -1177,7 +1186,9 @@ async function replayBuildStage(ctx) {
         return { status: 'infra_fail', error: `branch: ${err.message}` };
       }
     }
-    built = await buildStage({ ...ctx, presetSpec: done.spec?.specMd || null, ...keepAsItLands(ctx, kept) });
+    built = await buildStage({
+      ...ctx, presetSpec: done.spec?.specMd || null, presetSpecHtml: done.spec?.specHtml || null, ...keepAsItLands(ctx, kept),
+    });
   }
   built = await withKeptSpecCost(pool, built, done, models.spec);
   const ids = sideSessionIds(done, built.session_id);
@@ -1540,6 +1551,7 @@ async function firstVersionStage(ctx) {
       snapshot: buildSnapshot,
       budgets: clocks,
       presetSpec: done.spec?.specMd || null,
+      presetSpecHtml: done.spec?.specHtml || null,
       // Each part kept as it lands: the spec, the build the moment it
       // pushed (with its costs), and its review's state as it goes.
       ...keepAsItLands(ctx, kept),
@@ -1864,7 +1876,11 @@ function recoverFirstVersionTurn({ checkpoint, session, activeTurn, result = {},
     // With its turn's ledger id, so the trial can still name what it cost.
     const turnId = ledgerTurnIdOf(activeTurn);
     const named = turnId ? { turnId } : {};
-    if (read.ok) return { step, keep: { spec: { sessionId: Number(session.id), specMd: read.specMd, ...named } } };
+    // And its HTML: the build that goes on from it starts from the screens
+    // it drew (presetSpecHtml). Run 190: a restart during all six spec turns
+    // kept only the markdown, and no build started from its screens.
+    const html = read.specHtml ? { specHtml: read.specHtml } : {};
+    if (read.ok) return { step, keep: { spec: { sessionId: Number(session.id), specMd: read.specMd, ...named, ...html } } };
     if (read.blocked) return { step, keep: { spec: { sessionId: Number(session.id), blocked: read.blocked, error: read.error, ...named } } };
     return null;
   }

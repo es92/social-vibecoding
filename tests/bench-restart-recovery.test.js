@@ -613,6 +613,21 @@ test('restart recovery of benchmark trials, against the full PostgreSQL schema',
     assert.equal(rest.lines.length, 3);
     assert.equal(rest.next, null, 'the end');
     assert.equal((await studio.transcriptOf(pool, fvb.id, { step: 'triage' })).lines.length, 0, 'one step\'s lines only');
+    // Paged in id order as numbers: run 190's transcripts, ordered as text,
+    // put 1000 before 999 and a cursor skipped the lines between.
+    await pool.query(`INSERT INTO bench_trial_lines (id, trial_id, at, step, kind, line) VALUES
+      (9999, $1, NOW(), 'build', 'line', 'a'), (10000, $1, NOW(), 'build', 'line', 'b'), (100000, $1, NOW(), 'build', 'line', 'c')`, [fvb.id]);
+    const seen = [];
+    let after = null;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const p = await studio.transcriptOf(pool, fvb.id, { limit: 3, after });
+      seen.push(...p.lines.map((l) => l.id));
+      after = p.next;
+    } while (after);
+    assert.equal(seen.length, 10, 'every line, none skipped');
+    assert.deepEqual(seen, [...seen].sort((a, b) => a - b));
+    assert.deepEqual(seen.slice(-3), [9999, 10000, 100000]);
     assert.ok(row.recovered_at);
     assert.deepEqual(outward, []);
   });

@@ -783,6 +783,64 @@ test('a first version going on after a restart is never triaged again: the kept 
   assert.equal(h.calls.capture.length, 1);
 });
 
+// Run 190: a restart landed during all six spec turns, recovery kept each
+// spec's markdown only, and no build started from the screens it drew.
+const HTML_SPEC = '<article data-spec><h1>Ear Trainer</h1><section data-spec-tab="user"><h2>User-facing changes</h2>'
+  + '<figure data-screens><ol data-changes><li data-change="1">The lessons</li></ol>'
+  + '<template data-screen data-size="phone" data-height="900"><style>:root{--accent:37 99 235}</style>'
+  + '<div data-side="after" data-change="1"><h2>Lessons</h2><button class="btn-primary">Start</button></div></template></figure>'
+  + '<p>Lessons list.</p></section><section data-spec-tab="tech"><h2>Technical implementation</h2><p>public/app.js draws it.</p></section></article>';
+
+test('a spec turn a restart\'s recovery reads keeps its HTML, the screens it drew with it', () => {
+  const session = { id: 6, spec_md: '' };
+  const cp = { triageSessionId: 5, triage: { status: 'ok' } };
+  const read = runner.recoverFirstVersionTurn({ checkpoint: cp, session, activeTurn: { mode: 'scout' }, result: { lastResultText: HTML_SPEC } });
+  assert.equal(read.step, 'spec');
+  assert.match(read.keep.spec.specMd, /^# Ear Trainer/);
+  assert.match(read.keep.spec.specHtml, /<template data-screen data-size="phone"/);
+  const md = runner.recoverFirstVersionTurn({ checkpoint: cp, session, activeTurn: { mode: 'scout' }, result: { lastResultText: '# Ear Trainer\n\nPlain.' } });
+  assert.equal('specHtml' in md.keep.spec, false, 'a markdown spec keeps no HTML');
+});
+
+test('a kept spec\'s HTML goes to its build, which starts from its screens and counts them; a markdown one goes as before', async (t) => {
+  const { kept } = await keptRun(t);
+  const realBuild = live.buildAndPropose;
+  let args = null;
+  live.buildAndPropose = async (a) => { args = a; return realBuild(a); };
+  t.after(() => { live.buildAndPropose = realBuild; });
+  const spec = { sessionId: 6001, specMd: '# Ear Trainer\n\nThe kept spec.', specHtml: HTML_SPEC };
+  const out = await runner.runStage(ctx(harness(), 'first_version', FIRST, {
+    checkpoint: { ...keptTriageOf(kept), sessions: [KEPT_TRIAGE, 6001], spec },
+  }));
+  assert.equal(out.status, 'ok', out.error);
+  assert.equal(args.presetSpec, spec.specMd);
+  assert.equal(args.presetSpecHtml, HTML_SPEC, 'the screens it drew go with it (spec-screens-start.js)');
+  assert.equal(out.parsed.specScreens.length, 1, 'and they are counted, as a fresh spec\'s are');
+
+  const plain = await runner.runStage(ctx(harness(), 'first_version', FIRST, {
+    checkpoint: { ...keptTriageOf(kept), sessions: [KEPT_TRIAGE, 6001], spec: { sessionId: 6001, specMd: '# Ear Trainer\n\nThe kept spec.' } },
+  }));
+  assert.equal(plain.status, 'ok', plain.error);
+  assert.equal('presetSpecHtml' in args, false, 'no HTML kept, none passed');
+  assert.equal(plain.parsed.specScreens, undefined);
+});
+
+test('a spec written with screens is kept with its HTML as it lands, so a restart in the build still has them', async (t) => {
+  spySideEffects(t);
+  const h = harness();
+  const write = h.deps.worker.execInWorker;
+  h.deps.worker.execInWorker = async (id, opts) => {
+    const out = await write(id, opts);
+    return out.lastResultText === '# Ear Trainer\n\nThe first version.' ? { lastResultText: HTML_SPEC } : out;
+  };
+  const parts = [];
+  const out = await runner.runStage(ctx(h, 'first_version', FIRST, { onCheckpoint: async (p) => { parts.push(p); } }));
+  assert.equal(out.status, 'ok', out.error);
+  const spec = Object.assign({}, ...parts).spec;
+  assert.match(spec.specMd, /^# Ear Trainer/);
+  assert.equal(spec.specHtml, HTML_SPEC.replace(/—/g, ','), 'its HTML, as the spec turn read it');
+});
+
 test('a kept spec is built from as it is: one build turn, the spec\'s session counted', async (t) => {
   const { kept } = await keptRun(t);
   const realBuild = live.buildAndPropose;
