@@ -311,7 +311,7 @@ export const MessageRow = memo(function MessageRow({
     : null;
   const words = !message.content ? null : head
     ? <BotHeadWords head={head} objects={message.objects} channels={channels} />
-    : <MessageMarkdown content={message.content} channels={channels} appSlug={botMeta(message)?.appSlug} />;
+    : <MessageMarkdown content={message.content} channels={channels} appSlug={botMeta(message)?.appSlug} requestColors={!!botMeta(message)} />;
 
   // The quoted reply, the body and the inline editor: the part of the
   // message that stands as the row's text. A deleted message says so in its

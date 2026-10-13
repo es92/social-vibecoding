@@ -528,14 +528,15 @@ function drawStrip(props) {
 }
 
 test('a new project waiting for its secrets needs its person, and says so', () => {
-  const html = drawStrip({ work: { now: [], history: [], needsYou: [job({ id: 0, firstVersion: true, outcome: null, doing: 'waiting for its secrets', at: minutesAgo(10) })] } });
+  // The activity drawer, open (it starts closed: messages-bot-strip.test.js).
+  const html = drawStrip({ remembered: true, work: { now: [], history: [], needsYou: [job({ id: 0, firstVersion: true, outcome: null, doing: 'waiting for its secrets', at: minutesAgo(10) })] } });
   assert.match(html, /data-bot-strip-group="needs"/);
   assert.match(html, /Ear Trainer, first version/);
   assert.match(html, /Waiting for its secrets/);
 });
 
 test('the demo strip draws with nowhere to link: its rows open their threads, never a page', () => {
-  const html = drawStrip({ work: tray.demoWork(NOW.getTime()) });
+  const html = drawStrip({ remembered: true, work: tray.demoWork(NOW.getTime()) });
   assert.doesNotMatch(html, /<a /);
   assert.match(html, /Staging demo, a weekly dinner rota/);
   assert.match(html, /Which night should the rota start on\?/, 'the question itself');

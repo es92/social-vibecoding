@@ -2,16 +2,19 @@
 
 // One request, one story: the chat with Homeroom bot, redrawn.
 //
-//   1. "Your requests", the strip pinned under the chat's header
-//      (frontend/src/features/messages/bot-strip.tsx): its groups (Needs
-//      you, Ready to try, In progress, Done today, each request once), each
-//      row's state words and button, the limits and "+N more", the summary
-//      bar with Hide / Show (collapsed when nothing waits on the person, and
-//      remembered per device), and nothing at all with nothing to show.
+//   1. The activity drawer (frontend/src/features/messages/bot-strip.tsx):
+//      its groups (Needs you, Ready to try, In progress, Done today, each
+//      request once), each row's state words, number and button, the Activity
+//      bar that opens it (closed until opened, remembered per device), and
+//      nothing at all with nothing to show.
 //   2. The main chat's news (frontend/src/features/messages/bot-news-line.tsx):
-//      every message about a request is ONE short line, by its moment or its
-//      kind; a line opens the request's thread, and one from before threads
-//      opens in place; the bot's replies, offers and hellos stay messages.
+//      each request is ONE two-line row, its earlier news folded into its
+//      newest; the second line says where it stands now, in the need colour
+//      only while it waits on the person; a row opens the request's thread,
+//      one from before threads opens in place; the bot's replies, offers and
+//      hellos stay messages.
+//   3. A request's number in its own colour (bot-request.ts), the same in
+//      the drawer, the chat's rows, its thread's header and the bot's words.
 //
 // Run with: node --test tests/messages-bot-strip.test.js
 
@@ -118,6 +121,7 @@ test('each row says one short thing: no step numbers, no timings', () => {
 
 test('a Needs you row has ONE button; a Ready row Try it and, when their yes counts, Approve', () => {
   const html = draw({
+    remembered: true,
     work: work({
       needsYou: [past({ title: 'Dinner rota', outcome: 'question', cardId: 31, ask: { messageId: 40, kind: 'question', question: 'Which night?' } })],
       history: [
@@ -139,56 +143,60 @@ test('a Needs you row has ONE button; a Ready row Try it and, when their yes cou
   assert.match(source, /import \{ tryChange \} from '\.\/bot-ready';/);
   assert.match(source, /api\.approveChange\(sessionId, ready\?\.epoch \?\? null\)/);
   assert.match(source, /openThreadAt\(row\.rootId, row\.focusId\)/);
+  // Opening a request closes the drawer; Try it and Approve leave it open.
+  assert.match(source, /const onOpen = \(row: StripRow\) => \{ choose\(false\); openRow\(row\); \};/);
+  assert.match(source, /data-bot-strip-act="try" onClick=\{tryIt\}/);
 });
 
-test('at most three Needs you and two Ready rows, then "+N more"; In progress is one line; Done a count', () => {
+test('the drawer lists every request in its group, a row each with its number; In progress and Done today too', () => {
   const asks = Array.from({ length: 5 }, (_, i) => past({ title: `Ask ${i}`, outcome: 'question' }));
   const readies = Array.from({ length: 4 }, (_, i) => past({ title: `Ready ${i}`, outcome: 'proposed' }));
+  const total = working({ title: 'Show a total under the list', stage: 'building' });
   const html = draw({
+    remembered: true,
     work: work({
       needsYou: asks,
       history: [...readies, past({ title: 'Live one', outcome: 'live', at: ago(30) }), past({ title: 'Live two', outcome: 'going_live', at: ago(90) })],
-      now: [working({ title: 'Show a total under the list', stage: 'building' }), working({ title: 'Add a search box', stage: 'planning' }),
-        working({ title: 'C' }), working({ title: 'D' })],
+      now: [total, working({ title: 'Add a search box', stage: 'planning' }), working({ title: 'C' }), working({ title: 'D' })],
     }),
   });
-  assert.equal((html.match(/data-bot-strip-row="needs"/g) || []).length, 3);
-  assert.match(html, /data-bot-strip-more="needs">\+2 more need you ›<\/button>/);
-  assert.equal((html.match(/data-bot-strip-row="ready"/g) || []).length, 2);
-  assert.match(html, /data-bot-strip-more="ready">\+2 more ready to try ›<\/button>/);
-  assert.match(html, /data-bot-strip-group="progress">Show a total under the list \(building\), Add a search box \(planning\) \+2<\/p>/);
-  assert.match(html, /aria-expanded="false" data-bot-strip-more="done">2 done today ›<\/button>/);
-  assert.doesNotMatch(html, /data-bot-strip-row="done"/, 'Done opens into rows');
+  assert.equal((html.match(/data-bot-strip-row="needs"/g) || []).length, 5, 'no "+N more": the drawer scrolls');
+  assert.equal((html.match(/data-bot-strip-row="ready"/g) || []).length, 4);
+  assert.equal((html.match(/data-bot-strip-row="progress"/g) || []).length, 4, 'In progress is a row each');
+  assert.equal((html.match(/data-bot-strip-row="done"/g) || []).length, 2, 'Done today is listed');
+  assert.doesNotMatch(html, /data-bot-strip-more/);
+  assert.match(html, new RegExp(`data-request-tag="${total.issueNumber}">#${total.issueNumber}</span><span class="truncate[^"]*">Show a total under the list</span>`), 'its number, then its title');
+  assert.match(html, /first-letter:uppercase[^"]*" data-bot-strip-state="">building</, 'what it is doing, capitalised on screen');
+  assert.match(html, /class="[^"]*uppercase[^"]*">Done today</);
   assert.match(html, /5 need you<\/span>[\s\S]*4 ready to try[\s\S]*4 in progress[\s\S]*2 done today/);
 });
 
-test('the summary bar: zero parts left out, the need part in the need colour, and Hide', () => {
+test('the Activity bar: zero parts left out, the need part in the need colour with its numbers, and a chevron', () => {
   const { summaryParts, stripGroups } = strip();
   const one = stripGroups(work({ needsYou: [past({ outcome: 'question' })], history: [past({ outcome: 'proposed' })] }), NOW);
   assert.deepEqual(summaryParts(one).map((part) => part.text), ['1 needs you', '1 ready to try']);
-  const html = draw({ work: work({ needsYou: [past({ outcome: 'question' })], now: [working({})] }) });
-  assert.match(html, /<section class="max-h-\[45vh\] [^"]*overflow-y-auto[^"]*" aria-label="Your requests" data-bot-strip="open">/);
-  assert.match(html, /<span class="text-amber-700 dark:text-amber-400" data-bot-strip-count="needs">1 needs you<\/span><\/span><span><span aria-hidden="true"> · <\/span><span data-bot-strip-count="progress">1 in progress<\/span>/);
-  assert.match(html, /aria-expanded="true" data-bot-strip-toggle="">Hide<\/button>/);
-  assert.match(html, /NEEDS YOU|>Needs you</);
-  assert.match(html, /class="[^"]*uppercase[^"]*text-amber-700[^"]*">Needs you</, 'its eyebrow in the need colour');
+  const asked = past({ outcome: 'question', issueNumber: 18 });
+  const html = draw({ work: work({ needsYou: [asked], now: [working({})] }) });
+  assert.match(html, /^<section class="relative z-20 shrink-0" aria-label="Your requests" data-bot-strip="closed"><button type="button" class="[^"]*" aria-expanded="false" data-bot-strip-toggle=""><span class="[^"]*">Activity<\/span>/);
+  assert.match(html, /<span class="text-amber-700 dark:text-amber-400" data-bot-strip-count="needs">1 needs you<\/span><span class="ml-1 inline-flex gap-1 align-\[1px\]"><span class="[^"]*" style="--req-h:265" data-request-tag="18">#18<\/span><\/span><\/span><span><span aria-hidden="true"> · <\/span><span data-bot-strip-count="progress">1 in progress<\/span>/);
+  assert.match(html, /<svg [^>]*aria-hidden="true"[^>]*>/, 'the chevron, from the icon set');
+  assert.doesNotMatch(html, /data-bot-strip-drawer/, 'closed: the bar alone');
+  const open = draw({ work: work({ needsYou: [asked] }), remembered: true });
+  assert.match(open, /data-bot-strip="open"[\s\S]*aria-expanded="true"[\s\S]*data-bot-strip-scrim=""[\s\S]*data-bot-strip-drawer=""/, 'open: the dimmed chat and the drawer over it');
+  assert.match(open, /class="[^"]*uppercase[^"]*text-amber-700[^"]*">Needs you</, 'its eyebrow in the need colour');
+  assert.match(read(STRIP), /import \{ ChevronDownIcon \} from '@\/components\/ui\/icons';/);
 });
 
-test('with nothing waiting on them the strip is its summary line; Hide is remembered; with nothing, nothing', () => {
-  const quiet = draw({ work: work({ now: [working({})], history: [past({ outcome: 'live', at: ago(20) })] }) });
-  assert.match(quiet, /data-bot-strip="closed"/);
-  assert.match(quiet, /1 in progress[\s\S]*1 done today/);
-  assert.match(quiet, /aria-expanded="false" data-bot-strip-toggle="">Show<\/button><\/div><\/section>$/, 'the summary line alone');
+test('the drawer starts closed whatever waits; open is remembered on the device; with nothing, nothing', () => {
   const busy = work({ needsYou: [past({ outcome: 'question' })] });
-  assert.match(draw({ work: busy }), /data-bot-strip="open"/);
-  assert.match(draw({ work: busy, remembered: false }), /data-bot-strip="closed"/, 'Hide, remembered');
-  assert.match(draw({ work: work({ now: [working({})] }), remembered: true }), /data-bot-strip="open"/, 'Show, remembered');
+  assert.match(draw({ work: busy }), /data-bot-strip="closed"/, 'closed: the bar says what waits');
+  assert.match(draw({ work: busy, remembered: true }), /data-bot-strip="open"/, 'left open, remembered');
+  assert.match(draw({ work: busy, remembered: false }), /data-bot-strip="closed"/);
   assert.equal(draw({ work: work({}) }), '', 'nothing to show: nothing at all');
   assert.equal(draw({ work: null }), '', 'nothing until the first read');
-  const { stripOpen } = strip();
-  assert.equal(stripOpen({ needs: [], ready: [], progress: [1], done: [] }, null), false);
   // Remembered per device, in localStorage, never trusted to be there.
   const source = read(STRIP);
+  assert.match(source, /const HIDDEN_KEY = 'homeroom:botDrawer:open';/);
   assert.match(source, /try \{\s*const value = window\.localStorage\.getItem\(HIDDEN_KEY\);[\s\S]*?\} catch \{\s*return null;\s*\}/);
   assert.match(source, /try \{ window\.localStorage\.setItem\(HIDDEN_KEY, open \? '1' : '0'\); \} catch/);
 });
@@ -215,37 +223,87 @@ function line(message) {
   return renderToHtml(createElement(BotNewsLine, { message, full: () => createElement('p', null, 'FULL') }));
 }
 
-test('each kind of news says a few words after the request\'s title, in the need colour when it waits on them', () => {
+test('each row says where its request stands under its title, in the need colour while it waits on them', () => {
   const cases = [
-    [{ kind: 'question' }, 'needs your answer', true],
-    [{ kind: 'followup_ask' }, 'needs your answer', true],
-    [{ kind: 'plan' }, 'plan is ready', true],
-    [{ kind: 'person' }, 'needs your decision', true],
-    [{ kind: 'blocked' }, 'needs more detail', true],
-    [{ kind: 'empty' }, 'needs more detail', true],
-    [{ kind: 'proposal' }, 'is ready to try', false],
-    [{ kind: 'build_failed' }, 'stopped', true],
-    [{ kind: 'checks' }, 'stopped', true],
-    [{ kind: 'needs_look' }, 'stopped', true],
-    [{ kind: 'followup_failed' }, 'stopped', true],
-    [{ kind: 'first_version_failed' }, 'stopped', true],
-    [{ kind: 'allowance' }, 'is on hold until Monday', false],
-    [{ kind: 'paused' }, 'is on hold until Monday', false],
-    [{ kind: 'merged' }, 'is live', false],
+    [{ kind: 'question' }, 'Needs your answer', true],
+    [{ kind: 'followup_ask' }, 'Needs your answer', true],
+    [{ kind: 'plan' }, 'Plan is ready', true],
+    [{ kind: 'person' }, 'Needs your decision', true],
+    [{ kind: 'blocked' }, 'Needs more detail', true],
+    [{ kind: 'empty' }, 'Needs more detail', true],
+    [{ kind: 'proposal' }, 'Ready to try', false],
+    [{ kind: 'build_failed' }, 'Stopped', true],
+    [{ kind: 'checks' }, 'Stopped', true],
+    [{ kind: 'needs_look' }, 'Stopped', true],
+    [{ kind: 'followup_failed' }, 'Stopped', true],
+    [{ kind: 'first_version_failed' }, 'Stopped', true],
+    [{ kind: 'allowance' }, 'On hold until Monday', false],
+    [{ kind: 'paused' }, 'On hold until Monday', false],
+    [{ kind: 'merged' }, 'Live', false],
     [{ kind: 'activity' }, 'I’ve started on it', false],
     // The moment it rang as wins over its kind.
-    [{ kind: 'question', moment: 'needs_you', said: 'plan' }, 'plan is ready', true],
-    [{ kind: 'note', moment: 'stopped', said: 'build_time' }, 'stopped', true],
-    [{ kind: 'note', moment: 'live', said: 'live' }, 'is live', false],
-    [{ kind: 'note', moment: 'ready', said: 'ready_group' }, 'is ready to try', false],
-    [{ kind: 'note', moment: 'on_hold', said: 'allowance' }, 'is on hold until Monday', false],
+    [{ kind: 'question', moment: 'needs_you', said: 'plan' }, 'Plan is ready', true],
+    [{ kind: 'note', moment: 'stopped', said: 'build_time' }, 'Stopped', true],
+    [{ kind: 'note', moment: 'live', said: 'live' }, 'Live', false],
+    [{ kind: 'note', moment: 'ready', said: 'ready_group' }, 'Ready to try', false],
+    [{ kind: 'note', moment: 'on_hold', said: 'allowance' }, 'On hold until Monday', false],
   ];
+  // Before the tray's first read (as here), a row says what its message rang as.
   for (const [meta, words, need] of cases) {
     const html = line(botMessage(meta));
     const label = JSON.stringify(meta);
-    assert.match(html, /<strong class="[^"]*">Dark mode<\/strong>/, label);
-    assert.match(html, new RegExp(`<span class="${need ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-600 dark:text-zinc-300'}" data-bot-news-words=""> ${words}</span>`), label);
+    assert.match(html, /<span class="flex min-w-0 items-center gap-1\.5"><span class="[^"]*" style="--req-h:322" data-request-tag="4">#4<\/span><strong class="[^"]*">Dark mode<\/strong><\/span>/, label);
+    assert.match(html, new RegExp(`<span class="truncate text-\\[13px\\] leading-\\[18px\\] first-letter:uppercase ${need ? 'text-amber-700 dark:text-amber-400' : 'text-zinc-500 dark:text-zinc-400'}" data-bot-news-words="">${words}</span>`), label);
   }
+  // A first version has no number to wear.
+  assert.doesNotMatch(line(botMessage({ kind: 'merged', firstVersion: true })), /data-request-tag/);
+});
+
+test('with the tray read, a row says where its request stands NOW: amber only while it waits; an ask that moved on, in the past', () => {
+  const { newsStatus } = loadTsx(NEWS);
+  const { trayNow } = strip();
+  const meta = (extra) => ({ appName: 'Plant Pal', appSlug: 'plant-pal', issueNumber: 4, kind: 'question', ...extra });
+  const tray = trayNow(work({
+    needsYou: [past({ issueNumber: 4, outcome: 'question', ask: { messageId: 1, kind: 'question', question: 'Which night?' } })],
+    history: [past({ issueNumber: 6, outcome: 'proposed', ready: { approve: true } })],
+    now: [working({ issueNumber: 7, stage: 'building' })],
+  }));
+  assert.deepEqual(newsStatus(meta({}), tray), { text: 'Which night?', need: true }, 'still waiting: the drawer\'s words, amber');
+  assert.deepEqual(newsStatus(meta({ issueNumber: 6, kind: 'question' }), tray), { text: 'Ready for your yes', need: false }, 'moved on: where it is now');
+  assert.deepEqual(newsStatus(meta({ issueNumber: 7, kind: 'activity' }), tray), { text: 'building', need: false });
+  assert.deepEqual(newsStatus(meta({ issueNumber: 9, kind: 'question' }), tray), { text: 'Asked you a question', need: false }, 'gone from the tray: an ask, in the past');
+  assert.deepEqual(newsStatus(meta({ issueNumber: 9, kind: 'plan' }), tray), { text: 'Sent you a plan', need: false });
+  assert.deepEqual(newsStatus(meta({ issueNumber: 9, kind: 'build_failed' }), tray), { text: 'Stopped', need: false }, 'never amber once it no longer waits');
+  assert.deepEqual(newsStatus(meta({ issueNumber: 9, kind: 'question' }), null), { text: 'Needs your answer', need: true }, 'before the first read: as it rang');
+  assert.deepEqual(newsStatus(meta({ appName: 'Other', issueNumber: 4 }), tray), { text: 'Asked you a question', need: false }, 'a number is matched within its project');
+});
+
+test('one request, one row: a request\'s earlier news folds into its newest, which counts the updates', () => {
+  const { foldBotNews } = loadTsx(NEWS);
+  const a1 = botMessage({ kind: 'activity', issueNumber: 18 });
+  const other = botMessage({ kind: 'proposal', issueNumber: 11 });
+  const a2 = botMessage({ kind: 'question', issueNumber: 18 }, { threadRootId: a1.id });
+  const first = botMessage({ kind: 'plan', firstVersion: true, issueNumber: undefined, appName: 'Plants' });
+  const live = botMessage({ kind: 'merged', firstVersion: true, issueNumber: undefined, appName: 'plants' });
+  const chat = botMessage({ kind: 'chat', issueNumber: 18 });
+  const moved = botMessage({ kind: 'activity', issueNumber: 30 });
+  const after = botMessage({ kind: 'question', issueNumber: 30 });
+  const fold = foldBotNews([a1, other, a2, first, chat, live, moved, after], (message) => message === after);
+  assert.deepEqual([...fold.hidden].sort(), [a1.id, first.id].sort(), 'the earlier pieces; the newest is drawn');
+  assert.deepEqual(fold.earlier.get(a2.id).map((m) => m.id), [a1.id]);
+  assert.deepEqual(fold.earlier.get(live.id).map((m) => m.id), [first.id], 'a first version is one request, by the name the person sees');
+  assert.equal(fold.earlier.has(other.id), false, 'a request told once is left as it is');
+  assert.equal(fold.hidden.has(moved.id), false, 'a row the stream does not draw never takes another\'s place');
+  assert.equal(fold.hidden.has(chat.id), false, 'conversation is never folded');
+  // The row drawn carries the ids of what folded into it, so a link to one lands there.
+  const html = renderToHtml(createElement(loadTsx(NEWS).BotNewsLine, { message: a2, earlier: [a1], updates: 5, full: () => createElement('p', null, 'FULL') }));
+  assert.match(html, new RegExp(`<span id="messages-message-${a1.id}" aria-hidden="true"></span>`));
+  assert.match(html, /data-bot-thread-link="\d+"> · 5 updates ›<\/span>/);
+  const screen = read('frontend/src/features/messages/index.tsx');
+  assert.match(screen, /const newsFold = botDm \? foldBotNews\(snap\.messages, \(message\) => isMovedActivity\(message\) \|\| plans\.hidden\.has\(message\.id\)\) : null;/);
+  assert.match(screen, /const updates = root\?\.thread\?\.replyCount \|\| \(earlier\.length \? earlier\.length \+ 1 : 0\);/);
+  assert.match(screen, /focused=\{flashId === message\.id \|\| earlier\.some\(\(item\) => item\.id === flashId\)\}/);
+  assert.match(screen, /\{\[\.\.\.earlier, message\]\.map\(\(item\) => \(\s*<MessageRow/, 'opened in place, every card it holds');
 });
 
 test('a line keeps the message\'s id and opens its thread; one from before threads opens in place', () => {
@@ -259,7 +317,7 @@ test('a line keeps the message\'s id and opens its thread; one from before threa
   // A card with its thread opens that thread, and says how many updates it holds.
   const card = botMessage({ kind: 'activity' }, { thread: { replyCount: 5, lastReplyAt: null, participants: [], lastReply: null } });
   assert.equal(newsThread(card), card.id);
-  assert.match(line(card), /I’ve started on it<\/span><span class="text-violet-700 dark:text-violet-300" data-bot-thread-link="\d+"> · 5 updates ›<\/span>/);
+  assert.match(line(card), /I’ve started on it<span class="text-violet-700 dark:text-violet-300" data-bot-thread-link="\d+"> · 5 updates ›<\/span><\/span>/);
   // An old card, from before threads: no thread to open, so it opens in place.
   const old = botMessage({ kind: 'proposal' });
   assert.equal(newsThread(old), null);
@@ -302,7 +360,7 @@ test('the bot\'s replies, offers, hellos and words about no request stay message
   assert.equal(isBotNews(botMessage({ kind: 'question' }, { deleted: true })), false);
   // The transcript asks for the line in the bot's chat alone, before any other row.
   const screen = read('frontend/src/features/messages/index.tsx');
-  assert.match(screen, /if \(botDm && isBotNews\(message\)\) \{\s*rows\.push\(<BotNewsLine/);
+  assert.match(screen, /if \(botDm && isBotNews\(message\)\) \{[\s\S]{0,400}?rows\.push\(<BotNewsLine/);
 });
 
 test('the thread pane opens at the message a Needs you button names, and flashes it', () => {
@@ -314,4 +372,34 @@ test('the thread pane opens at the message a Needs you button names, and flashes
   assert.match(pane, /const wanted = snap\.threadFocusId \|\| snap\.route\.focusMessageId \|\| null;/);
   assert.match(pane, /el\.querySelector<HTMLElement>\(`\[id="messages-message-\$\{wanted\}"\]`\)/, 'its own row, not the line in the chat beside it');
   assert.match(pane, /focused=\{flashId === message\.id\}/);
+});
+
+// ── 3. A request's number, in its own colour ─────────────────────────────
+
+test('a request\'s number wears one of eight hues, neighbours apart, never the need amber or the action blue', () => {
+  const { requestHue, requestKey } = loadTsx('frontend/src/features/messages/bot-request.ts');
+  const hues = Array.from({ length: 8 }, (_, i) => requestHue(10 + i));
+  assert.equal(new Set(hues).size, 8, 'any eight in a row all differ');
+  assert.equal(requestHue(9), requestHue(17), 'eight apart share one');
+  for (const hue of hues) {
+    assert.ok(!(hue >= 25 && hue <= 60), `${hue} is not amber`);
+    assert.ok(!(hue >= 195 && hue <= 240), `${hue} is not the action blue`);
+  }
+  assert.equal(requestKey({ appName: 'Plant Pal', issueNumber: 4 }), 'plant pal|4');
+  assert.equal(requestKey({ appSlug: 'plant-pal', issueNumber: 4 }), 'plant-pal|4', 'the slug only when there is no name');
+  assert.equal(requestKey({ appName: 'Plant Pal', firstVersion: true, issueNumber: 1 }), 'plant pal|first');
+  assert.equal(requestKey({ appName: 'Plant Pal' }), null, 'no number: no request');
+  assert.equal(requestKey({ issueNumber: 4 }), null, 'no project: no request');
+});
+
+test('the thread\'s header and the bot\'s own words wear the number\'s colour too', () => {
+  const screen = read('frontend/src/features/messages/index.tsx');
+  assert.match(screen, /\{request && !request\.firstVersion \? <RequestTag number=\{request\.number\} size="head" \/> : null\}/);
+  const format = read('frontend/src/features/messages/format.tsx');
+  assert.match(format, /if \(requestColors\) \{\s*for \(const chip of root\.querySelectorAll<HTMLElement>\('\.gc-ref-issue\[data-ref-number\]'\)\) \{[\s\S]*?chip\.classList\.add\('gc-ref-request'\);\s*chip\.style\.setProperty\('--req-h', String\(requestHue\(n\)\)\);/);
+  const css = read('public/css/app.css');
+  assert.match(css, /html \.messages-markdown \.gc-ref-issue\.gc-ref-request \{ color: hsl\(var\(--req-h\) 70% 26%\); background: hsl\(var\(--req-h\) 80% 92%\);/);
+  assert.match(css, /html\.dark \.messages-markdown \.gc-ref-issue\.gc-ref-request \{ color: hsl\(var\(--req-h\) 80% 82%\); background: hsl\(var\(--req-h\) 35% 25%\); \}/);
+  // The tag's own ink is the same four values, so the two never drift apart.
+  assert.match(read(STRIP), /bg-\[hsl\(var\(--req-h\)_80%_92%\)\] text-\[hsl\(var\(--req-h\)_70%_26%\)\] dark:bg-\[hsl\(var\(--req-h\)_35%_25%\)\] dark:text-\[hsl\(var\(--req-h\)_80%_82%\)\]/);
 });

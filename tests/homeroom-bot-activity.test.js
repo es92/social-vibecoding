@@ -629,7 +629,7 @@ test('the row draws a bot\'s activity message as the card, in place of its words
   const row = read('frontend/src/features/messages/message-row.tsx');
   // #3770: handed the words a message is drawn with, for a card with nothing on record.
   // #4097: led by the card of what they are about when they open with its line.
-  assert.match(row, /const words = !message\.content \? null : head\s*\? <BotHeadWords head=\{head\} objects=\{message\.objects\} channels=\{channels\} \/>\s*: <MessageMarkdown content=\{message\.content\} channels=\{channels\} appSlug=\{botMeta\(message\)\?\.appSlug\} \/>;/);
+  assert.match(row, /const words = !message\.content \? null : head\s*\? <BotHeadWords head=\{head\} objects=\{message\.objects\} channels=\{channels\} \/>\s*: <MessageMarkdown content=\{message\.content\} channels=\{channels\} appSlug=\{botMeta\(message\)\?\.appSlug\} requestColors=\{!!botMeta\(message\)\} \/>;/);
   // B5: led by the bot's hello, on the first card it sends somebody.
   // B6: then a plan and two questions at once, which stand in place of their words too.
   assert.match(row, /\) : isActivityMessage\(message\) \? \([\s\S]{0,600}homeroomBot\?\.hello \? <p className="messages-bot-hello">[\s\S]{0,120}<BotActivityCard message=\{message\} words=\{words\} \/>\s*<\/>\s*\) : isPlanMessage\(message\) \? \(/);
@@ -703,18 +703,19 @@ test('only the bot\'s DM keeps the cards current, beside its tray', () => {
   assert.match(screen, /\{botDm \? <BotWorkSync [^\n]*\n[^\n]*\n\s*\{botDm \? <BotActivitySync conversationId=\{conversationId\} newsKey=\{newestBotMessageId\(snap\.messages\)\} \/> : null\}/);
 });
 
-test('the staging preview\'s declared check finds the strip under the demo DM\'s header, with its groups and their buttons', () => {
+test('the staging preview\'s declared check finds the Activity bar under the demo DM\'s header, with what waits', () => {
   const check = JSON.parse(read('dapp.json')).tests.find((t) => t.id === 'homeroom-bot-dm-activity-tray');
   assert.equal(check.path, '/?demo=1#messages/910005');
-  // One request, one story: the cards in the transcript are one-line news
-  // now and the Activity disc is gone, so the check reads the strip that
-  // replaced them ("Your requests", ./bot-strip.tsx): what needs you with its
-  // one button, Ready to try with Approve, and the In progress line.
-  assert.match(check.expectSelector, /\.messages-thread-header \+ \[data-bot-strip=open\]/);
-  assert.match(check.expectSelector, /\[data-bot-strip-group=needs\] \[data-bot-strip-act=open\]/);
-  assert.match(check.expectSelector, /\[data-bot-strip-group=ready\] \[data-bot-strip-act=approve\]/);
+  // One request, one story: the cards in the transcript are one row per
+  // request now, and the Activity disc and the pinned strip are gone. The
+  // check reads the Activity bar that opens the drawer (./bot-strip.tsx),
+  // closed as a page loads: what needs you with that request's number, what
+  // is ready to try and what is in progress.
+  assert.match(check.expectSelector, /\.messages-thread-header \+ \[data-bot-strip=closed\] \[data-bot-strip-toggle\]\[aria-expanded=false\]/);
+  assert.match(check.expectSelector, /:has\(\[data-bot-strip-count=needs\]\):has\(\[data-bot-strip-count=ready\]\):has\(\[data-bot-strip-count=progress\]\)/);
+  assert.match(check.expectSelector, /\[data-request-tag\]$/, 'the number of what needs you');
   assert.ok(check.expectSelector.length <= 256, 'within what the runner reads');
-  assert.equal(check.expectText, '1 needs you', 'the demo strip\'s summary');
+  assert.equal(check.expectText, '1 needs you', 'the demo bar\'s summary');
   for (const file of ['src/services/homeroom-bot-activity.js', 'src/services/staging-messages.js', 'src/routes/conversations.js']) {
     assert.ok(check.impact.includes(file), file);
   }
@@ -1121,8 +1122,8 @@ test('B6: the transcript leaves out a card Build it moved under its plan, and th
   assert.equal(normalizeBotMeta({ homeroomBot: { kind: 'activity', movedTo: 950 } }).homeroomBot.movedTo, 950);
   assert.equal('movedTo' in normalizeBotMeta({ homeroomBot: { kind: 'activity', movedTo: 'x' } }).homeroomBot, false);
   const screen = read('frontend/src/features/messages/index.tsx');
-  assert.match(screen, /const message = snap\.messages\[index\];\s*\/\/[^\n]*\n\s*if \(isMovedActivity\(message\)\) continue;\s*\/\/[^\n]*\n\s*if \(plans\.hidden\.has\(message\.id\)\) continue;\s*const day = dayKey\(message\);/,
-    'skipped before its day and its name are counted, so the row after it is drawn as it would be');
+  assert.match(screen, /const message = snap\.messages\[index\];\s*\/\/[^\n]*\n\s*if \(isMovedActivity\(message\)\) continue;\s*\/\/[^\n]*\n\s*if \(plans\.hidden\.has\(message\.id\)\) continue;\s*\/\/[^\n]*\n\s*if \(newsFold\?\.hidden\.has\(message\.id\)\) continue;\s*const day = dayKey\(message\);/,
+    'skipped before its day and its name are counted, so the row after it is drawn as it would be (and so is news folded into a newer row about its request)');
   // #4564 joined isActivityMessage to the import, for the change blocks' read of what a row shows.
   assert.match(screen, /import \{ BotActivitySync, isActivityMessage, isMovedActivity \} from '\.\/bot-activity';/);
 });

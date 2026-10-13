@@ -3,6 +3,7 @@ import { useMemo, useState, type MouseEvent } from 'react';
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
 import { messageStamp } from '../../lib/timestamp';
+import { requestHue } from './bot-request';
 import { dotText } from './bot-shared';
 import { decorateRefs } from './channels';
 import { findRequestCard, RefCards, revealCard } from './ref-cards';
@@ -47,7 +48,7 @@ function fallbackMarkdown(value: string): string {
  * requests, and record this conversation as where they were opened from, as
  * a shared card does (`recordObjectOrigin`).
  */
-export function MessageMarkdown({ content, channels, appSlug }: { content: string; channels?: ReadonlySet<string>; appSlug?: string | null }) {
+export function MessageMarkdown({ content, channels, appSlug, requestColors = false }: { content: string; channels?: ReadonlySet<string>; appSlug?: string | null; requestColors?: boolean }) {
   const html = useMemo(() => {
     const rendered = typeof window !== 'undefined' && window.DevChat?.renderMarkdown
       ? window.DevChat.renderMarkdown(content, { breaks: true })
@@ -57,8 +58,19 @@ export function MessageMarkdown({ content, channels, appSlug }: { content: strin
     root.innerHTML = rendered;
     const me = String(window.App?.user?.username || '').toLowerCase();
     decorateRefs(root, channels || NO_CHANNELS, me, appSlug);
+    // One request, one story: in the bot's words, a request's number wears the
+    // colour its tag does in the drawer, the chat and its thread's header
+    // (./bot-request.ts).
+    if (requestColors) {
+      for (const chip of root.querySelectorAll<HTMLElement>('.gc-ref-issue[data-ref-number]')) {
+        const n = Number(chip.getAttribute('data-ref-number'));
+        if (!Number.isInteger(n) || n <= 0) continue;
+        chip.classList.add('gc-ref-request');
+        chip.style.setProperty('--req-h', String(requestHue(n)));
+      }
+    }
     return root.innerHTML;
-  }, [content, channels, appSlug]);
+  }, [content, channels, appSlug, requestColors]);
   // The SAME object while the html is unchanged. React 19 compares this prop
   // by identity and reassigns innerHTML when it differs, so an inline
   // `{ __html }` tore down and rebuilt every message body on every render of

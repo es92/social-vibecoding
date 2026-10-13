@@ -35,8 +35,8 @@ import {
   alsoInChat, botRequestNames, botThreadTitle, changeBlocks, dotText, threadsAllowed, type ChangeBlock,
 } from './bot-shared';
 import { BotWorkSync, newestBotMessageId } from './bot-work';
-import { BotStrip } from './bot-strip';
-import { BotNewsLine, isBotNews } from './bot-news-line';
+import { BotStrip, RequestTag } from './bot-strip';
+import { BotNewsLine, foldBotNews, isBotNews } from './bot-news-line';
 import { MessageComposer } from './composer';
 import { CreateConversationDialog } from './create-dialog';
 import { ConversationMembersDialog } from './members-dialog';
@@ -1948,12 +1948,18 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
   // A day divider breaks a run, so folding never hides one.
   const runs = cardRunStarts(snap.messages, isCardMessage, (a, b) => dayKey(a) === dayKey(b));
   const { plans, blocks } = layout;
+  // One request, one row: the bot's news about a request is drawn once, at
+  // its newest piece; the earlier ones fold into that row (./bot-news-line.tsx).
+  const newsFold = botDm ? foldBotNews(snap.messages, (message) => isMovedActivity(message) || plans.hidden.has(message.id)) : null;
+  const byId = newsFold ? new Map(snap.messages.map((message) => [message.id, message])) : null;
   for (let index = 0; index < snap.messages.length; index += 1) {
     const message = snap.messages[index];
     // B6: a card Build it moved under its plan is drawn there, not here.
     if (isMovedActivity(message)) continue;
     // #4046: and a card whose step its plan carries is not drawn at all.
     if (plans.hidden.has(message.id)) continue;
+    // One request, one row: news drawn inside a newer row about its request.
+    if (newsFold?.hidden.has(message.id)) continue;
     const day = dayKey(message);
     if (day && day !== previousDay) {
       rows.push(<div key={`day-${day}`} className="messages-day" aria-hidden="true">{dayLabel(message)}</div>);
@@ -1965,21 +1971,32 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
     // the request's thread: its card, the moments the main stream also lists
     // and the big cards from before threads, which open in place, whole.
     if (botDm && isBotNews(message)) {
+      const earlier = newsFold?.earlier.get(message.id) || [];
+      // The story's size: its thread's replies, else the news folded in here.
+      const root = message.threadRootId ? byId?.get(message.threadRootId) : message;
+      const updates = root?.thread?.replyCount || (earlier.length ? earlier.length + 1 : 0);
       rows.push(<BotNewsLine
         key={message.clientKey || message.id}
         message={message}
-        focused={flashId === message.id}
+        earlier={earlier}
+        updates={updates}
+        focused={flashId === message.id || earlier.some((item) => item.id === flashId)}
         full={() => (
-          <MessageRow
-            message={message}
-            conversationId={conversationId}
-            channels={channels}
-            kind={kind}
-            focused={flashId === message.id}
-            planCardId={plans.cardOf.get(message.id) ?? null}
-            hidePrompts={plans.answersOpen}
-            botChat={botDm}
-          />
+          <>
+            {[...earlier, message].map((item) => (
+              <MessageRow
+                key={item.clientKey || item.id}
+                message={item}
+                conversationId={conversationId}
+                channels={channels}
+                kind={kind}
+                focused={flashId === item.id}
+                planCardId={plans.cardOf.get(item.id) ?? null}
+                hidePrompts={plans.answersOpen}
+                botChat={botDm}
+              />
+            ))}
+          </>
         )}
       />);
       previous = null;
@@ -2234,7 +2251,10 @@ function ReplyThreadPanel() {
     <aside className="messages-reply-pane platform-kb-column dc-lift dc-lift-session" aria-label={t('messages:replies.paneName')} data-reply-thread={rootId}>
       <header className="messages-thread-header">
         <div className="min-w-0 flex-1">
-          <div className="messages-thread-name">{request ? botThreadTitle(request) : t('messages:replies.title')}</div>
+          <div className="messages-thread-name flex min-w-0 items-center gap-2">
+            {request && !request.firstVersion ? <RequestTag number={request.number} size="head" /> : null}
+            <span className="min-w-0 truncate">{request ? botThreadTitle(request) : t('messages:replies.title')}</span>
+          </div>
           {where ? <div className="messages-thread-sub">{where}</div> : null}
         </div>
         <button type="button" className="messages-thread-action" aria-label={t('messages:replies.close')} title={t('messages:replies.close')} onClick={() => closeThread()}>

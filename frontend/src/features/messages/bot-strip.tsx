@@ -1,40 +1,43 @@
 import { useState, type ReactNode } from 'react';
 
+import { ChevronDownIcon } from '@/components/ui/icons';
+
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
 import { useResolvedCommunityColor } from '../../lib/community-color';
 import * as api from './api';
 import { tryChange } from './bot-ready';
+import { requestHue, requestKey } from './bot-request';
 import { loadBotWork, useBotWork } from './bot-work';
 import { openThreadAt } from './store';
 import type { HomeroomBotCurrentJob, HomeroomBotJob, HomeroomBotPastJob, HomeroomBotWork } from './types';
 
 /*
- * "Your requests": the strip pinned under the chat with Homeroom bot's
- * header (one request, one story).
+ * The activity drawer in the chat with Homeroom bot (one request, one story).
  *
- * The chat itself carries one short line per piece of news, and each
- * request's story is its thread. What is true NOW, across every request, is
- * here: what needs the person, what is ready to try, what is in progress,
+ * The chat itself draws each request as one row (./bot-news-line.tsx), and
+ * each request's story is its thread. What is true NOW, across every request,
+ * is here: what needs the person, what is ready to try, what is in progress,
  * and what went live today, read from the same endpoint and store the
  * activity tray used (./bot-work.tsx: GET /api/conversations/homeroom-bot/
  * work, read again on the bot's news and on `homeroom_bot_work_changed`). It
  * changes in place; nothing about it is posted to the chat.
  *
- *   - A SUMMARY BAR on top ("1 needs you · 2 ready to try · 2 in progress ·
- *     1 done today", zero parts left out) with Hide / Show. The choice is
- *     remembered on the device; with nothing waiting on the person the strip
- *     starts as that one line.
- *   - NEEDS YOU, at most three rows, each with ONE button that opens the
- *     request's thread at the message waiting on them (the entry's `ask`,
- *     flashed: store.openThreadAt).
- *   - READY TO TRY, at most two rows, with Try it and, when their yes would
- *     count, Approve: the ready card's own two acts (./bot-ready.tsx).
- *   - IN PROGRESS, one line naming what is being done.
- *   - DONE TODAY, a count that opens into rows.
+ *   - An ACTIVITY BAR under the header: "1 needs you #18 · 2 ready to try ·
+ *     2 in progress · 1 done today", zero parts left out, with the numbers of
+ *     what needs them in their own colours (./bot-request.ts). Pressing it
+ *     opens the drawer OVER the chat, which keeps its place underneath,
+ *     dimmed; the bar or the dimmed chat closes it. It starts closed; the
+ *     person's choice is remembered on the device.
+ *   - NEEDS YOU, a row each with ONE button that opens the request's thread
+ *     at the message waiting on them (the entry's `ask`, flashed:
+ *     store.openThreadAt). Opening a request closes the drawer.
+ *   - READY TO TRY, with Try it and, when their yes would count, Approve: the
+ *     ready card's own two acts (./bot-ready.tsx).
+ *   - IN PROGRESS and DONE TODAY, a row each, saying what it is doing.
  *
- * Each request appears once, in the first group that fits. No step numbers
- * and no timings: the thread and its card say those.
+ * Each request appears once, in the first group that fits, with its number
+ * in its own colour. No step numbers and no timings: the thread says those.
  *
  * OWNERSHIP. Every node here is React's, inside the thread pane React owns.
  * Nothing is drawn until the first read lands, so a first render matches.
@@ -66,13 +69,10 @@ export interface StripModel {
   done: StripRow[];
 }
 
-/** The most rows Needs you and Ready to try show before "+N more". */
+/** The most numbers of what needs them the bar names. */
 export const NEEDS_LIMIT = 3;
-export const READY_LIMIT = 2;
 /** Done is what went live in the last day. */
 const DONE_WINDOW_MS = 24 * 60 * 60 * 1000;
-/** How many of In progress its one line names before "+N". */
-const PROGRESS_NAMED = 2;
 
 /** The endings of History that wait on the person while a message of theirs still asks. */
 const NEEDS_OUTCOMES = new Set(['question', 'person', 'blocked', 'empty', 'build_failed', 'needs_look', 'failed', 'stopped']);
@@ -228,6 +228,26 @@ export function stripGroups(work: HomeroomBotWork | null, now: Date = new Date()
   return model;
 }
 
+/**
+ * Each request in the tray by its key (./bot-request.ts), with the group it
+ * is in and what its row says: where it stands NOW, for the chat's news rows.
+ * Read once per tray read.
+ */
+const NOW_CACHE = new WeakMap<HomeroomBotWork, Map<string, StripRow>>();
+export function trayNow(work: HomeroomBotWork | null): Map<string, StripRow> | null {
+  if (!work) return null;
+  const cached = NOW_CACHE.get(work);
+  if (cached) return cached;
+  const model = stripGroups(work);
+  const map = new Map<string, StripRow>();
+  for (const row of [...model.needs, ...model.ready, ...model.progress, ...model.done]) {
+    const key = requestKey(row.job);
+    if (key && !map.has(key)) map.set(key, row);
+  }
+  NOW_CACHE.set(work, map);
+  return map;
+}
+
 /** Pure: the summary bar's parts, zero ones left out ("1 needs you", "2 ready to try"…). */
 export function summaryParts(model: StripModel): Array<{ group: StripGroup; text: string }> {
   const parts: Array<{ group: StripGroup; text: string }> = [];
@@ -238,26 +258,9 @@ export function summaryParts(model: StripModel): Array<{ group: StripGroup; text
   return parts;
 }
 
-/** Pure: In progress as its one line ("Show a total (building), Add a search box (planning) +2"). */
-export function progressLine(rows: StripRow[]): string {
-  const named = rows.slice(0, PROGRESS_NAMED).map((row) => translate('messages:bot.strip.progressItem', { title: stripTitle(row.job), doing: row.state }));
-  const more = rows.length - named.length;
-  if (named.length === 1) return named[0];
-  if (!named.length) return '';
-  return more > 0
-    ? translate('messages:bot.strip.progressMore', { first: named[0], second: named[1], count: more })
-    : translate('messages:bot.strip.progressTwo', { first: named[0], second: named[1] });
-}
+// ── The drawer, open or closed, remembered per device ──
 
-/** Pure: whether the strip starts open, from the remembered choice and what it holds. */
-export function stripOpen(model: StripModel, remembered: boolean | null): boolean {
-  if (remembered !== null) return remembered;
-  return model.needs.length > 0 || model.ready.length > 0;
-}
-
-// ── The remembered Hide / Show, per device ──
-
-const HIDDEN_KEY = 'homeroom:botStrip:open';
+const HIDDEN_KEY = 'homeroom:botDrawer:open';
 
 export function rememberedOpen(): boolean | null {
   try {
@@ -301,11 +304,23 @@ export function ProjectTile({ name, slug = null, iconUrl = null, emoji = null, s
   );
 }
 
+const TAG = 'inline-flex shrink-0 items-center rounded-[6px] px-1.5 font-semibold tabular-nums bg-[hsl(var(--req-h)_80%_92%)] text-[hsl(var(--req-h)_70%_26%)] dark:bg-[hsl(var(--req-h)_35%_25%)] dark:text-[hsl(var(--req-h)_80%_82%)]';
+
+/** A request's number, "#18", in its own colour: the same in the drawer, the chat and its thread. */
+export function RequestTag({ number, size = 'row' }: { number: number | null | undefined; size?: 'row' | 'line' | 'head' }) {
+  if (!number || number <= 0) return null;
+  const text = size === 'head' ? 'text-[13px] leading-5' : 'text-[12px] leading-[18px]';
+  return (
+    <span className={`${TAG} ${text}`} style={{ ['--req-h' as string]: String(requestHue(number)) }} data-request-tag={number}>
+      {`#${number}`}
+    </span>
+  );
+}
+
 // Complete literals: Tailwind's extractor reads source text.
 const EYEBROW = 'px-4 pb-1 pt-2.5 text-[12px] font-bold uppercase tracking-[0.06em]';
 const PILL_PRIMARY = 'inline-flex shrink-0 items-center rounded-full bg-violet-600 px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-violet-700 disabled:opacity-60 dark:bg-violet-500 dark:hover:bg-violet-400';
 const PILL_SECONDARY = 'inline-flex shrink-0 items-center rounded-full bg-white px-3 py-1.5 text-[13px] font-semibold text-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700';
-const MORE = 'block w-full px-4 py-1.5 text-left text-[13px] font-semibold text-violet-700 hover:underline dark:text-violet-300';
 const NEED_INK = 'text-amber-700 dark:text-amber-400';
 
 /** Open a row's request: its thread at the message it names, else its own page. */
@@ -317,8 +332,11 @@ function openRow(row: StripRow): void {
 function RowText({ row }: { row: StripRow }) {
   return (
     <span className="flex min-w-0 flex-1 flex-col">
-      <span className="truncate text-[15px] font-[650] leading-5 text-zinc-900 dark:text-zinc-100">{stripTitle(row.job)}</span>
-      <span className={`truncate text-[13px] leading-[18px] ${row.group === 'needs' ? NEED_INK : 'text-zinc-500 dark:text-zinc-400'}`} data-bot-strip-state="">{row.state}</span>
+      <span className="flex min-w-0 items-center gap-1.5">
+        {row.job.firstVersion ? null : <RequestTag number={row.job.issueNumber} />}
+        <span className="truncate text-[15px] font-[650] leading-5 text-zinc-900 dark:text-zinc-100">{stripTitle(row.job)}</span>
+      </span>
+      <span className={`truncate text-[13px] leading-[18px] first-letter:uppercase ${row.group === 'needs' ? NEED_INK : 'text-zinc-500 dark:text-zinc-400'}`} data-bot-strip-state="">{row.state}</span>
     </span>
   );
 }
@@ -328,19 +346,19 @@ function Tile({ job }: { job: HomeroomBotJob }) {
 }
 
 /** A Needs you row: its words, and its one button, which opens the thread at what waits. */
-function NeedsRow({ row }: { row: StripRow }) {
+function NeedsRow({ row, onOpen }: { row: StripRow; onOpen: (row: StripRow) => void }) {
   const t = useMessages('messages');
   return (
     <li className="flex items-center gap-3 px-4 py-2" data-bot-strip-row="needs" data-bot-strip-key={row.key}>
       <Tile job={row.job} />
       <RowText row={row} />
-      <button type="button" className={PILL_PRIMARY} data-bot-strip-act="open" onClick={() => openRow(row)}>{t(row.action || 'messages:bot.strip.action.open')}</button>
+      <button type="button" className={PILL_PRIMARY} data-bot-strip-act="open" onClick={() => onOpen(row)}>{t(row.action || 'messages:bot.strip.action.open')}</button>
     </li>
   );
 }
 
 /** A Ready to try row: Try it, and Approve when their yes counts. */
-function ReadyRow({ row }: { row: StripRow }) {
+function ReadyRow({ row, onOpen }: { row: StripRow; onOpen: (row: StripRow) => void }) {
   const t = useMessages('messages');
   const ready = row.job.ready || null;
   const [busy, setBusy] = useState(false);
@@ -365,7 +383,7 @@ function ReadyRow({ row }: { row: StripRow }) {
   return (
     <li className="px-4 py-2" data-bot-strip-row="ready" data-bot-strip-key={row.key}>
       <div className="flex items-center gap-3">
-        <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => openRow(row)}>
+        <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => onOpen(row)}>
           <Tile job={row.job} />
           <RowText row={row} />
         </button>
@@ -378,10 +396,10 @@ function ReadyRow({ row }: { row: StripRow }) {
 }
 
 /** A row that is itself the button: Done's. */
-function PlainRow({ row }: { row: StripRow }) {
+function PlainRow({ row, onOpen }: { row: StripRow; onOpen: (row: StripRow) => void }) {
   return (
     <li data-bot-strip-row={row.group} data-bot-strip-key={row.key}>
-      <button type="button" className="flex w-full items-center gap-3 px-4 py-2 text-left" onClick={() => openRow(row)}>
+      <button type="button" className="flex w-full items-center gap-3 px-4 py-2 text-left" onClick={() => onOpen(row)}>
         <Tile job={row.job} />
         <RowText row={row} />
       </button>
@@ -402,70 +420,83 @@ export interface BotStripViewProps {
   now?: Date;
 }
 
-/** The strip, from one read: a pure render, so a test can draw every state. */
+/** The drawer's chevron: down while closed, turned up while open. */
+function Chevron({ open }: { open: boolean }) {
+  return <ChevronDownIcon aria-hidden="true" className={`h-[18px] w-[18px] shrink-0 text-zinc-500 transition-transform dark:text-zinc-400 ${open ? 'rotate-180' : ''}`} />;
+}
+
+/**
+ * The activity drawer, from one read: a pure render, so a test can draw every
+ * state. A bar under the chat's header says what is waiting ("1 needs you #18
+ * · 2 ready to try"); pressing it opens the drawer OVER the chat, which keeps
+ * its place underneath. Opening a request closes it. Closed until the person
+ * opens it; their choice is remembered on the device.
+ */
 export function BotStripView({ work, remembered = null, onRemember, now }: BotStripViewProps) {
   const t = useMessages('messages');
   const model = stripGroups(work, now || new Date());
-  const [chosen, setChosen] = useState<boolean | null>(remembered);
-  const [moreNeeds, setMoreNeeds] = useState(false);
-  const [moreReady, setMoreReady] = useState(false);
-  const [doneOpen, setDoneOpen] = useState(false);
+  const [open, setOpen] = useState<boolean>(remembered ?? false);
   const parts = summaryParts(model);
   if (!parts.length) return null;
-  const open = stripOpen(model, chosen);
-  const toggle = () => { setChosen(!open); onRemember?.(!open); };
-  const needs = moreNeeds ? model.needs : model.needs.slice(0, NEEDS_LIMIT);
-  const ready = moreReady ? model.ready : model.ready.slice(0, READY_LIMIT);
-  const needsLeft = model.needs.length - needs.length;
-  const readyLeft = model.ready.length - ready.length;
+  const choose = (next: boolean) => { setOpen(next); onRemember?.(next); };
+  const onOpen = (row: StripRow) => { choose(false); openRow(row); };
+  const needTags = model.needs.slice(0, NEEDS_LIMIT).map((row) => row.job.issueNumber).filter((n): n is number => !!n && n > 0);
   return (
-    <section
-      className="max-h-[45vh] shrink-0 overflow-y-auto overscroll-contain bg-[color:var(--dc-sheet-solid)] shadow-[inset_0_-1px_0_var(--app-sheet-line)]"
-      aria-label={t('messages:bot.strip.name')}
-      data-bot-strip={open ? 'open' : 'closed'}
-    >
-      <div className="flex items-center gap-2 px-4 py-2">
-        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-zinc-600 dark:text-zinc-300" data-bot-strip-summary="">
+    <section className="relative z-20 shrink-0" aria-label={t('messages:bot.strip.name')} data-bot-strip={open ? 'open' : 'closed'}>
+      <button
+        type="button"
+        className="flex w-full items-center gap-2.5 bg-[color:var(--dc-sheet-solid)] px-4 py-2.5 text-left shadow-[inset_0_-1px_0_var(--app-sheet-line)] hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
+        aria-expanded={open}
+        data-bot-strip-toggle=""
+        onClick={() => choose(!open)}
+      >
+        <span className="shrink-0 text-[14px] font-[650] text-zinc-900 dark:text-zinc-100">{t('messages:bot.strip.activity')}</span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-zinc-600 dark:text-zinc-300" data-bot-strip-summary="">
           {parts.map((part, index) => (
             <span key={part.group}>
               {index ? <span aria-hidden="true">{' · '}</span> : null}
               <span className={part.group === 'needs' ? NEED_INK : undefined} data-bot-strip-count={part.group}>{part.text}</span>
+              {part.group === 'needs' && needTags.length ? (
+                <span className="ml-1 inline-flex gap-1 align-[1px]">{needTags.map((n) => <RequestTag key={n} number={n} />)}</span>
+              ) : null}
             </span>
           ))}
-        </p>
-        <button type="button" className="shrink-0 rounded-full px-2 py-1 text-[13px] font-semibold text-violet-700 hover:underline dark:text-violet-300" aria-expanded={open} data-bot-strip-toggle="" onClick={toggle}>
-          {open ? t('messages:bot.strip.hide') : t('messages:bot.strip.show')}
-        </button>
-      </div>
+        </span>
+        <Chevron open={open} />
+      </button>
       {open ? (
-        <div className="pb-2">
-          {model.needs.length ? (
-            <>
-              <Eyebrow className={NEED_INK}>{t('messages:bot.strip.group.needs')}</Eyebrow>
-              <ul data-bot-strip-group="needs">{needs.map((row) => <NeedsRow key={row.key} row={row} />)}</ul>
-              {needsLeft > 0 ? <button type="button" className={MORE} data-bot-strip-more="needs" onClick={() => setMoreNeeds(true)}>{t('messages:bot.strip.moreNeeds', { count: needsLeft })}</button> : null}
-            </>
-          ) : null}
-          {model.ready.length ? (
-            <>
-              <Eyebrow className="text-violet-700 dark:text-violet-300">{t('messages:bot.strip.group.ready')}</Eyebrow>
-              <ul data-bot-strip-group="ready">{ready.map((row) => <ReadyRow key={row.key} row={row} />)}</ul>
-              {readyLeft > 0 ? <button type="button" className={MORE} data-bot-strip-more="ready" onClick={() => setMoreReady(true)}>{t('messages:bot.strip.moreReady', { count: readyLeft })}</button> : null}
-            </>
-          ) : null}
-          {model.progress.length ? (
-            <>
-              <Eyebrow className="text-zinc-500 dark:text-zinc-400">{t('messages:bot.strip.group.progress')}</Eyebrow>
-              <p className="truncate px-4 pb-1 text-[13px] leading-[18px] text-zinc-600 dark:text-zinc-300" data-bot-strip-group="progress">{progressLine(model.progress)}</p>
-            </>
-          ) : null}
-          {model.done.length ? (
-            <>
-              <button type="button" className={MORE} aria-expanded={doneOpen} data-bot-strip-more="done" onClick={() => setDoneOpen((shown) => !shown)}>{t('messages:bot.strip.doneToday', { count: model.done.length })}</button>
-              {doneOpen ? <ul data-bot-strip-group="done">{model.done.map((row) => <PlainRow key={row.key} row={row} />)}</ul> : null}
-            </>
-          ) : null}
-        </div>
+        <>
+          <div className="absolute inset-x-0 top-full h-[100vh] bg-zinc-900/10 dark:bg-black/40" aria-hidden="true" data-bot-strip-scrim="" onClick={() => choose(false)} />
+          <div
+            className="absolute inset-x-0 top-full max-h-[45vh] overflow-y-auto md:max-h-[min(70vh,560px)] overscroll-contain rounded-b-[20px] bg-[color:var(--dc-sheet-solid)] pb-2 shadow-[0_18px_36px_rgba(0,0,0,0.18)]"
+            data-bot-strip-drawer=""
+          >
+            {model.needs.length ? (
+              <>
+                <Eyebrow className={NEED_INK}>{t('messages:bot.strip.group.needs')}</Eyebrow>
+                <ul data-bot-strip-group="needs">{model.needs.map((row) => <NeedsRow key={row.key} row={row} onOpen={onOpen} />)}</ul>
+              </>
+            ) : null}
+            {model.ready.length ? (
+              <>
+                <Eyebrow className="text-violet-700 dark:text-violet-300">{t('messages:bot.strip.group.ready')}</Eyebrow>
+                <ul data-bot-strip-group="ready">{model.ready.map((row) => <ReadyRow key={row.key} row={row} onOpen={onOpen} />)}</ul>
+              </>
+            ) : null}
+            {model.progress.length ? (
+              <>
+                <Eyebrow className="text-zinc-500 dark:text-zinc-400">{t('messages:bot.strip.group.progress')}</Eyebrow>
+                <ul data-bot-strip-group="progress">{model.progress.map((row) => <PlainRow key={row.key} row={row} onOpen={onOpen} />)}</ul>
+              </>
+            ) : null}
+            {model.done.length ? (
+              <>
+                <Eyebrow className="text-zinc-500 dark:text-zinc-400">{t('messages:bot.strip.group.done')}</Eyebrow>
+                <ul data-bot-strip-group="done">{model.done.map((row) => <PlainRow key={row.key} row={row} onOpen={onOpen} />)}</ul>
+              </>
+            ) : null}
+          </div>
+        </>
       ) : null}
     </section>
   );

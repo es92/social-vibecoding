@@ -665,287 +665,263 @@
   },
   "bot.strip.name": {
     "text": "Your requests",
-    "description": "Accessible name of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the person's requests to the bot and where each stands."
+    "description": "Accessible name of the activity drawer of the chat with Homeroom bot: the person's requests to the bot and where each stands."
   },
-  "bot.strip.hide": {
-    "text": "Hide",
-    "description": "Button on the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: folds it down to its one summary line."
-  },
-  "bot.strip.show": {
-    "text": "Show",
-    "description": "Button on the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens it from its one summary line to its rows."
+  "bot.strip.activity": {
+    "text": "Activity",
+    "description": "Label of the bar under the header of the chat with Homeroom bot that opens the activity drawer: the person's requests to the bot and where each stands."
   },
   "bot.strip.summary.needs_one": {
     "text": "{{count}} needs you",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests wait on the person. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests wait on the person. {{count}} is that number."
   },
   "bot.strip.summary.needs_other": {
     "text": "{{count}} need you",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests wait on the person. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests wait on the person. {{count}} is that number."
   },
   "bot.strip.summary.ready_one": {
     "text": "{{count}} ready to try",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many changes the bot built are ready for the person to try. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many changes the bot built are ready for the person to try. {{count}} is that number."
   },
   "bot.strip.summary.ready_other": {
     "text": "{{count}} ready to try",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many changes the bot built are ready for the person to try. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many changes the bot built are ready for the person to try. {{count}} is that number."
   },
   "bot.strip.summary.progress_one": {
     "text": "{{count}} in progress",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests the bot is working on now. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests the bot is working on now. {{count}} is that number."
   },
   "bot.strip.summary.progress_other": {
     "text": "{{count}} in progress",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests the bot is working on now. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests the bot is working on now. {{count}} is that number."
   },
   "bot.strip.summary.done_one": {
     "text": "{{count}} done today",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests went live in the last day. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests went live in the last day. {{count}} is that number."
   },
   "bot.strip.summary.done_other": {
     "text": "{{count}} done today",
-    "description": "Part of the summary line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: how many requests went live in the last day. {{count}} is that number."
+    "description": "Part of the summary line of the activity drawer of the chat with Homeroom bot: how many requests went live in the last day. {{count}} is that number."
   },
   "bot.strip.group.needs": {
     "text": "Needs you",
-    "description": "Small heading over the rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot that wait on the person."
+    "description": "Small heading over the rows of the activity drawer of the chat with Homeroom bot that wait on the person."
   },
   "bot.strip.group.ready": {
     "text": "Ready to try",
-    "description": "Small heading over the rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot whose change is ready for the person to try."
+    "description": "Small heading over the rows of the activity drawer of the chat with Homeroom bot whose change is ready for the person to try."
   },
   "bot.strip.group.progress": {
     "text": "In progress",
-    "description": "Small heading over the line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot naming the requests the bot is working on now."
+    "description": "Small heading over the line of the activity drawer of the chat with Homeroom bot naming the requests the bot is working on now."
   },
-  "bot.strip.moreNeeds_one": {
-    "text": "+{{count}} more needs you ›",
-    "description": "Button under the Needs you rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the rest. {{count}} is how many more."
-  },
-  "bot.strip.moreNeeds_other": {
-    "text": "+{{count}} more need you ›",
-    "description": "Button under the Needs you rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the rest. {{count}} is how many more."
-  },
-  "bot.strip.moreReady_one": {
-    "text": "+{{count}} more ready to try ›",
-    "description": "Button under the Ready to try rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the rest. {{count}} is how many more."
-  },
-  "bot.strip.moreReady_other": {
-    "text": "+{{count}} more ready to try ›",
-    "description": "Button under the Ready to try rows of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the rest. {{count}} is how many more."
-  },
-  "bot.strip.doneToday_one": {
-    "text": "{{count}} done today ›",
-    "description": "Button at the foot of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the requests that went live in the last day. {{count}} is how many."
-  },
-  "bot.strip.doneToday_other": {
-    "text": "{{count}} done today ›",
-    "description": "Button at the foot of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: shows the requests that went live in the last day. {{count}} is how many."
+  "bot.strip.group.done": {
+    "text": "Done today",
+    "description": "Heading of the activity drawer's group of requests that went live (or were closed) in the last day, in the chat with Homeroom bot."
   },
   "bot.strip.firstVersion": {
     "text": "{{project}}, first version",
-    "description": "Name of a project's first version on a row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot and on a news line in the chat with Homeroom bot. {{project}} is the project's name."
+    "description": "Name of a project's first version on a row of the activity drawer of the chat with Homeroom bot and on a news line in the chat with Homeroom bot. {{project}} is the project's name."
   },
   "bot.strip.requestNumber": {
     "text": "Request #{{number}}",
-    "description": "Name of a request with no title on a row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot and on a news line in the chat with Homeroom bot. {{number}} is its number on the project's board, keep the #."
-  },
-  "bot.strip.progressItem": {
-    "text": "{{title}} ({{doing}})",
-    "description": "One request in the In progress line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot. {{title}} is the request's title and {{doing}} what the bot is doing on it, in a word or two (for example: building)."
-  },
-  "bot.strip.progressTwo": {
-    "text": "{{first}}, {{second}}",
-    "description": "The In progress line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot naming two requests. {{first}} and {{second}} are each a request with what is being done on it."
-  },
-  "bot.strip.progressMore_one": {
-    "text": "{{first}}, {{second}} +{{count}}",
-    "description": "The In progress line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot naming two requests and how many more there are. {{first}} and {{second}} are each a request with what is being done on it; {{count}} is how many more."
-  },
-  "bot.strip.progressMore_other": {
-    "text": "{{first}}, {{second}} +{{count}}",
-    "description": "The In progress line of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot naming two requests and how many more there are. {{first}} and {{second}} are each a request with what is being done on it; {{count}} is how many more."
+    "description": "Name of a request with no title on a row of the activity drawer of the chat with Homeroom bot and on a news line in the chat with Homeroom bot. {{number}} is its number on the project's board, keep the #."
   },
   "bot.strip.doing.reading": {
     "text": "reading",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: reading it. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: reading it. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.planning": {
     "text": "planning",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: writing its plan. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: writing its plan. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.building": {
     "text": "building",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: building it. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: building it. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.testing": {
     "text": "testing",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: testing what it built. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: testing what it built. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.queued": {
     "text": "in the queue",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: the request waits its turn. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: the request waits its turn. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.followingUp": {
     "text": "following up",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: updating its change after replies. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: updating its change after replies. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.goingLive": {
     "text": "going live",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: its change is going live. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: its change is going live. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.doing.settingUp": {
     "text": "setting up",
-    "description": "What Homeroom bot is doing on a request, in the In progress line of the \"Your requests\" strip: setting up a new project. Lower case, it follows the request's title in brackets."
+    "description": "What Homeroom bot is doing on a request, in the In progress line of the activity drawer: setting up a new project. Lower case, it follows the request's title in brackets."
   },
   "bot.strip.state.needsAnswer": {
     "text": "Needs your answer",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot asked a question."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot asked a question."
   },
   "bot.strip.state.planReady": {
     "text": "Your plan is ready",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot's plan waits for the person to say Build it."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot's plan waits for the person to say Build it."
   },
   "bot.strip.state.needsDecision": {
     "text": "Needs your decision",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: a person has to decide something before the bot builds it."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: a person has to decide something before the bot builds it."
   },
   "bot.strip.state.stopped": {
     "text": "Stopped",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot's work on it stopped before it finished."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot's work on it stopped before it finished."
   },
   "bot.strip.state.stoppedTime": {
     "text": "Stopped: took too long",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot's build stopped because it ran out of time."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot's build stopped because it ran out of time."
   },
   "bot.strip.state.blocked": {
     "text": "Can’t build it as written",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot needs more detail to build it."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot needs more detail to build it."
   },
   "bot.strip.state.empty": {
     "text": "Nothing to build yet",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the bot found nothing to build in it yet."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the bot found nothing to build in it yet."
   },
   "bot.strip.state.needsLook": {
     "text": "Needs a person to look",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: a person has to look at the change before it can go on."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: a person has to look at the change before it can go on."
   },
   "bot.strip.state.onHold": {
     "text": "On hold until Monday",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the person's building time for this week is used up."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: the person's building time for this week is used up."
   },
   "bot.strip.state.secrets": {
     "text": "Waiting for its secrets",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: a new project waits for the person to add its secrets (keys and passwords it needs)."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: a new project waits for the person to add its secrets (keys and passwords it needs)."
   },
   "bot.strip.state.needsYou": {
     "text": "Needs you",
-    "description": "Line under a request's title on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: when nothing more specific is known."
+    "description": "Line under a request's title on a Needs you row of the activity drawer of the chat with Homeroom bot: when nothing more specific is known."
   },
   "bot.strip.state.testing": {
     "text": "Being tested",
-    "description": "Line under a request's title on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the change is built and being tested before anyone tries it."
+    "description": "Line under a request's title on a Ready to try row of the activity drawer of the chat with Homeroom bot: the change is built and being tested before anyone tries it."
   },
   "bot.strip.state.readyForYes": {
     "text": "Ready for your yes",
-    "description": "Line under a request's title on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the person's approval would count."
+    "description": "Line under a request's title on a Ready to try row of the activity drawer of the chat with Homeroom bot: the person's approval would count."
   },
   "bot.strip.state.waitingFor": {
     "text": "Waiting for {{who}}",
-    "description": "Line under a request's title on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: who still has to approve the change. {{who}} is one or more @names."
+    "description": "Line under a request's title on a Ready to try row of the activity drawer of the chat with Homeroom bot: who still has to approve the change. {{who}} is one or more @names."
   },
   "bot.strip.state.waitingApproval": {
     "text": "Waiting for approval",
-    "description": "Line under a request's title on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the change waits for people to approve it."
+    "description": "Line under a request's title on a Ready to try row of the activity drawer of the chat with Homeroom bot: the change waits for people to approve it."
   },
   "bot.strip.state.live": {
     "text": "Live",
-    "description": "Line under a request's title on a Done row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: its change is live."
+    "description": "Line under a request's title on a Done row of the activity drawer of the chat with Homeroom bot: its change is live."
   },
   "bot.strip.state.closed": {
     "text": "Closed",
-    "description": "Line under a request's title on a Done row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: its change was closed without going live."
+    "description": "Line under a request's title on a Done row of the activity drawer of the chat with Homeroom bot: its change was closed without going live."
   },
   "bot.strip.action.answer": {
     "text": "Answer",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread at the bot's question."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread at the bot's question."
   },
   "bot.strip.action.buildIt": {
     "text": "Build it",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread at the bot's plan, where Build it starts the build. \"Build\" is a verb."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread at the bot's plan, where Build it starts the build. \"Build\" is a verb."
   },
   "bot.strip.action.decide": {
     "text": "Decide",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread at what needs deciding."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread at what needs deciding."
   },
   "bot.strip.action.tryAgain": {
     "text": "Try again",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread at the message that stopped, with its Try again."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread at the message that stopped, with its Try again."
   },
   "bot.strip.action.addDetail": {
     "text": "Add detail",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread to say more about what is wanted."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread to say more about what is wanted."
   },
   "bot.strip.action.open": {
     "text": "Open",
-    "description": "Button on a Needs you row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens the request's thread."
+    "description": "Button on a Needs you row of the activity drawer of the chat with Homeroom bot: opens the request's thread."
   },
   "bot.strip.action.tryIt": {
     "text": "Try it",
-    "description": "Button on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: opens a preview of the change."
+    "description": "Button on a Ready to try row of the activity drawer of the chat with Homeroom bot: opens a preview of the change."
   },
   "bot.strip.action.approve": {
     "text": "Approve",
-    "description": "Button on a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot: the person's yes vote on the change."
+    "description": "Button on a Ready to try row of the activity drawer of the chat with Homeroom bot: the person's yes vote on the change."
   },
   "bot.strip.approveStale": {
     "text": "It changed since you looked. Try it again first.",
-    "description": "Shown under a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot when Approve was refused because the change was updated."
+    "description": "Shown under a Ready to try row of the activity drawer of the chat with Homeroom bot when Approve was refused because the change was updated."
   },
   "bot.strip.approveFailed": {
     "text": "Couldn’t approve it. Try again.",
-    "description": "Shown under a Ready to try row of the \"Your requests\" strip pinned under the header of the chat with Homeroom bot when Approve failed."
+    "description": "Shown under a Ready to try row of the activity drawer of the chat with Homeroom bot when Approve failed."
   },
   "bot.news.started": {
     "text": "I’ve started on it",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the bot (speaking as I) started working on the request."
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the bot (speaking as I) started working on the request. Sentence case: it is a line of its own."
   },
   "bot.news.answer": {
-    "text": "needs your answer",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the bot asked the person a question about it. Lower case: it follows the title."
+    "text": "Needs your answer",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the bot asked the person a question about it. Sentence case: it is a line of its own."
   },
   "bot.news.plan": {
-    "text": "plan is ready",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the bot's plan for it is ready. Lower case: it follows the title."
+    "text": "Plan is ready",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the bot's plan for it is ready. Sentence case: it is a line of its own."
   },
   "bot.news.decision": {
-    "text": "needs your decision",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the person has to decide something. Lower case: it follows the title."
+    "text": "Needs your decision",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the person has to decide something. Sentence case: it is a line of its own."
   },
   "bot.news.detail": {
-    "text": "needs more detail",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the bot cannot build it as written. Lower case: it follows the title."
+    "text": "Needs more detail",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the bot cannot build it as written. Sentence case: it is a line of its own."
   },
   "bot.news.ready": {
-    "text": "is ready to try",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the change the bot built is ready to try. Lower case: it follows the title."
+    "text": "Ready to try",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the change the bot built is ready to try. Sentence case: it is a line of its own."
   },
   "bot.news.stopped": {
-    "text": "stopped",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: the bot's work on it stopped. Lower case: it follows the title."
+    "text": "Stopped",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: the bot's work on it stopped. Sentence case: it is a line of its own."
   },
   "bot.news.onHold": {
-    "text": "is on hold until Monday",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: building time for this week is used up. Lower case: it follows the title."
+    "text": "On hold until Monday",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: building time for this week is used up. Sentence case: it is a line of its own."
   },
   "bot.news.live": {
-    "text": "is live",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: its change is live. Lower case: it follows the title."
+    "text": "Live",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: its change is live. Sentence case: it is a line of its own."
   },
   "bot.news.update": {
-    "text": "has an update",
-    "description": "Words after a request's title on a short news line in the chat with Homeroom bot: other news about it. Lower case: it follows the title."
+    "text": "New update",
+    "description": "Where a request stands, on the line under its title in a news row in the chat with Homeroom bot: other news about it. Sentence case: it is a line of its own."
+  },
+  "bot.news.past.answer": {
+    "text": "Asked you a question",
+    "description": "Where a request stands, on the line under its title in a news row of the chat with Homeroom bot, when the question the bot asked no longer waits on the person (answered, or the request moved on). Past tense; sentence case."
+  },
+  "bot.news.past.plan": {
+    "text": "Sent you a plan",
+    "description": "The same line when the plan the bot sent no longer waits on the person. Past tense; sentence case."
+  },
+  "bot.news.past.decision": {
+    "text": "Asked you to decide",
+    "description": "The same line when the decision the bot asked for no longer waits on the person. Past tense; sentence case."
+  },
+  "bot.news.past.detail": {
+    "text": "Asked for more detail",
+    "description": "The same line when the bot's ask for more detail no longer waits on the person. Past tense; sentence case."
   },
   "bot.news.updates_one": {
     "text": "· {{count}} update ›",

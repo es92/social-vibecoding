@@ -296,17 +296,19 @@ test('the two-questions card leads with the request’s card too', () => {
   assert.match(plan, /\{head \? <BotHeadWords head=\{head\} objects=\{message\.objects\} \/>\s*: meta\.lead \? <MessageMarkdown content=\{meta\.lead\} appSlug=\{meta\.appSlug\} \/> : null\}/);
 });
 
-test('the staging preview’s declared check finds the demo DM’s news as one line each', () => {
+test('the staging preview’s declared check finds the demo DM’s news as one row per request', () => {
   // One request, one story: the request's card no longer leads a big card
-  // in the main chat; each piece of news is one line (./bot-news-line.tsx).
-  // The card still leads the message inside the request's thread, and an
-  // old message opened in place.
+  // in the main chat; each request is one row (./bot-news-line.tsx), its
+  // earlier news folded into its newest, which counts the updates. The card
+  // still leads the message inside the request's thread, and an old message
+  // opened in place.
   const check = JSON.parse(read('dapp.json')).tests.find((t) => /^#4097/.test(t.name));
   assert.ok(check, 'declared');
   assert.equal(check.path, '/?demo=1#messages/910005');
-  assert.match(check.expectSelector, /\[data-bot-news=proposal\] \[data-bot-news-open\]$/);
+  assert.match(check.expectSelector, /:has\(\[data-bot-news=merged\] \[data-bot-thread-link\]\)/, 'a first version told twice is one row that counts them');
+  assert.match(check.expectSelector, /\[data-bot-news=question\] \[data-bot-thread-link\]$/);
   assert.ok(check.expectSelector.length <= 256, 'within what the runner reads');
-  assert.equal(check.expectText, 'is ready to try');
+  assert.equal(check.expectText, 'Ready for your yes', 'the change ready to try, where it stands now');
   // The fixture it reads (services/staging-messages.js ensureBotDmFixture):
   // the change ready to try, a request of its own.
   const fixture = read('src/services/staging-messages.js');

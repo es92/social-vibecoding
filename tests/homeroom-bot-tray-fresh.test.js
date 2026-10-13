@@ -183,14 +183,15 @@ test('the worker\'s late correction (resync) reads the tray and the cards again,
 });
 
 test('#8 (D6): work that only waits its turn says so; anything under way says what is being done', () => {
-  // One request, one story: the header's status line is gone; the strip's
-  // In progress line names what each request is doing (bot-strip.tsx).
-  const { doingWord, progressLine, stripGroups } = loadTsx('frontend/src/features/messages/bot-strip.tsx');
+  // One request, one story: the header's status line is gone; each In
+  // progress row of the activity drawer says what its request is doing
+  // (bot-strip.tsx).
+  const { doingWord, stripGroups } = loadTsx('frontend/src/features/messages/bot-strip.tsx');
   const job = (issueNumber, phase, stage = null) => ({ ...queuedJob, key: `ear-trainer#${issueNumber}`, issueNumber, title: `Request ${issueNumber}`, phase, stage });
   assert.equal(doingWord(job(3, 'queued')), 'in the queue');
   assert.equal(doingWord(job(3, 'follow_up_queued')), 'following up', 'a follow-up waiting its turn');
   assert.equal(doingWord(job(3, 'building', 'build_queued')), 'in the queue', 'a build waiting its turn');
   assert.equal(doingWord(job(3, 'building')), 'building');
-  const line = progressLine(stripGroups({ now: [job(3, 'queued'), job(4, 'building'), job(5, 'follow_up_queued')], needsYou: [], history: [] }).progress);
-  assert.equal(line, 'Request 3 (in the queue), Request 4 (building) +1');
+  const rows = stripGroups({ now: [job(3, 'queued'), job(4, 'building'), job(5, 'follow_up_queued')], needsYou: [], history: [] }).progress;
+  assert.deepEqual(rows.map((row) => row.state), ['in the queue', 'building', 'following up']);
 });

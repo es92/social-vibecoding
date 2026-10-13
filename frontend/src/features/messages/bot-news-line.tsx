@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react';
 
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
-import { ProjectTile } from './bot-strip';
+import { requestKey } from './bot-request';
+import { ProjectTile, RequestTag, trayNow, type StripRow } from './bot-strip';
 import { useBotWork } from './bot-work';
 import { openThreadAt } from './store';
 import type { ConversationMessage, HomeroomBotMeta, HomeroomBotWork } from './types';
@@ -94,6 +95,66 @@ export function newsWords(meta: Pick<HomeroomBotMeta, 'kind' | 'moment' | 'said'
     || { key: 'messages:bot.news.update', need: false };
 }
 
+/**
+ * One request, one row: in the chat's main stream the newest news about each
+ * request is drawn, and the news before it folds into that row, so a request
+ * is one row however often the bot spoke about it. Its thread (or, for news
+ * from before threads, the row opened in place) still holds every piece.
+ * `skip` is what the stream draws nowhere (a moved card, a card its plan
+ * carries), so a folded row is never one that is not drawn.
+ */
+export interface NewsFold {
+  /** News drawn inside a newer row about the same request. */
+  hidden: Set<number>;
+  /** By the row drawn: the news folded into it, oldest first. */
+  earlier: Map<number, ConversationMessage[]>;
+}
+export function foldBotNews(messages: ConversationMessage[], skip: (message: ConversationMessage) => boolean = () => false): NewsFold {
+  const byRequest = new Map<string, ConversationMessage[]>();
+  for (const message of messages) {
+    if (skip(message) || !isBotNews(message)) continue;
+    const meta = metaOf(message);
+    const key = meta ? requestKey(meta) : null;
+    if (!key) continue;
+    const list = byRequest.get(key);
+    if (list) list.push(message);
+    else byRequest.set(key, [message]);
+  }
+  const fold: NewsFold = { hidden: new Set(), earlier: new Map() };
+  for (const list of byRequest.values()) {
+    if (list.length < 2) continue;
+    const newest = list[list.length - 1];
+    fold.earlier.set(newest.id, list.slice(0, -1));
+    for (const message of list.slice(0, -1)) fold.hidden.add(message.id);
+  }
+  return fold;
+}
+
+/**
+ * Pure: a row's second line, and whether it is in the need colour. A request
+ * the tray still holds says where it stands NOW, in the drawer's own words,
+ * in amber only while it waits on the person. One the tray no longer holds
+ * keeps its message's words, never in amber, and an ask among them is told
+ * in the past ("Asked you a question"): whatever it asked has moved on.
+ * Before the tray's first read, the message's words as they rang.
+ */
+export function newsStatus(meta: HomeroomBotMeta, now: Map<string, StripRow> | null): { text: string; need: boolean } {
+  const words = newsWords(meta);
+  if (!now) return { text: translate(words.key), need: words.need };
+  const key = requestKey(meta);
+  const row = key ? now.get(key) : undefined;
+  if (row) return { text: row.state, need: row.group === 'needs' };
+  return { text: translate(PAST_WORDS[words.key] || words.key), need: false };
+}
+
+/** What an ask says once it no longer waits on the person: what it was, in the past. */
+const PAST_WORDS: Record<string, string> = {
+  'messages:bot.news.answer': 'messages:bot.news.past.answer',
+  'messages:bot.news.plan': 'messages:bot.news.past.plan',
+  'messages:bot.news.decision': 'messages:bot.news.past.decision',
+  'messages:bot.news.detail': 'messages:bot.news.past.detail',
+};
+
 /** Pure: the request's name on a line: its title, "Plant Pal, first version", or "Request #12". */
 export function newsTitle(meta: HomeroomBotMeta): string {
   const project = meta.appName || meta.appSlug || translate('messages:bot.job.unnamedProject');
@@ -128,12 +189,16 @@ export function newsIcon(work: HomeroomBotWork | null, slug: string | null | und
 
 const NEED_INK = 'text-amber-700 dark:text-amber-400';
 
-export function BotNewsLine({ message, focused = false, full }: {
+export function BotNewsLine({ message, focused = false, full, earlier = [], updates: updatesIn = null }: {
   message: ConversationMessage;
   /** The message a link pointed at: flashed once. */
   focused?: boolean;
   /** The whole message, for one from before threads opened in place. */
   full: () => ReactNode;
+  /** The news about the same request folded into this row (foldBotNews). */
+  earlier?: ConversationMessage[];
+  /** How many updates the request's story holds, when the stream counted them. */
+  updates?: number | null;
 }) {
   const t = useMessages('messages');
   const [open, setOpen] = useState(false);
@@ -141,10 +206,10 @@ export function BotNewsLine({ message, focused = false, full }: {
   const meta = metaOf(message);
   if (!meta) return null;
   if (open) return <>{full()}</>;
-  const words = newsWords(meta);
+  const status = newsStatus(meta, trayNow(work));
   const rootId = newsThread(message);
   const icon = newsIcon(work, meta.appSlug, meta.appName);
-  const updates = meta.kind === 'activity' && message.thread ? message.thread.replyCount : 0;
+  const updates = updatesIn ?? (meta.kind === 'activity' && message.thread ? message.thread.replyCount : 0);
   function tap() {
     if (rootId) openThreadAt(rootId, message.threadRootId ? message.id : null);
     else setOpen(true);
@@ -156,20 +221,27 @@ export function BotNewsLine({ message, focused = false, full }: {
       className={`messages-bot-news px-4 py-1${focused ? ' messages-message-focus' : ''}`}
       data-bot-news={meta.kind}
     >
+      {/* Links to the news folded in here land on this row. */}
+      {earlier.map((item) => <span key={item.id} id={`messages-message-${item.id}`} aria-hidden="true" />)}
       {/* B5: the bot's hello still leads the first card it sends somebody. */}
       {meta.hello ? <p className="messages-bot-hello">{meta.hello}</p> : null}
       <button
         type="button"
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl py-1 text-left text-[15px] leading-5 hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
+        className="flex w-full min-w-0 items-center gap-3 rounded-xl py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800/60"
         aria-expanded={rootId ? undefined : false}
         data-bot-news-open={rootId ? 'thread' : 'inline'}
         onClick={tap}
       >
-        <ProjectTile name={meta.appName || meta.appSlug || ''} slug={meta.appSlug || null} iconUrl={icon.iconUrl} emoji={meta.appEmoji || icon.iconEmoji} size="line" />
-        <span className="min-w-0 flex-1 truncate">
-          <strong className="font-[650] text-zinc-900 dark:text-zinc-100">{newsTitle(meta)}</strong>
-          <span className={words.need ? NEED_INK : 'text-zinc-600 dark:text-zinc-300'} data-bot-news-words="">{` ${t(words.key)}`}</span>
-          {updates ? <span className="text-violet-700 dark:text-violet-300" data-bot-thread-link={message.id}>{` ${t('messages:bot.news.updates', { count: updates })}`}</span> : null}
+        <ProjectTile name={meta.appName || meta.appSlug || ''} slug={meta.appSlug || null} iconUrl={icon.iconUrl} emoji={meta.appEmoji || icon.iconEmoji} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex min-w-0 items-center gap-1.5">
+            {meta.firstVersion ? null : <RequestTag number={meta.issueNumber} size="line" />}
+            <strong className="truncate text-[15px] font-[650] leading-5 text-zinc-900 dark:text-zinc-100">{newsTitle(meta)}</strong>
+          </span>
+          <span className={`truncate text-[13px] leading-[18px] first-letter:uppercase ${status.need ? NEED_INK : 'text-zinc-500 dark:text-zinc-400'}`} data-bot-news-words="">
+            {status.text}
+            {updates ? <span className="text-violet-700 dark:text-violet-300" data-bot-thread-link={message.id}>{` ${t('messages:bot.news.updates', { count: updates })}`}</span> : null}
+          </span>
         </span>
       </button>
     </article>

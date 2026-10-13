@@ -126,7 +126,7 @@ test('#4046: the plan is the one place its request\'s step shows: the cards abov
   assert.doesNotMatch(row, /underPlan|BotPlanFollowUp/);
   assert.match(row, /<BotPlanCard message=\{message\} conversationId=\{conversationId\} cardId=\{planCardId\} \/>/);
   const screen = read('frontend/src/features/messages/index.tsx');
-  assert.match(screen, /if \(plans\.hidden\.has\(message\.id\)\) continue;\s*const day = dayKey\(message\);/,
+  assert.match(screen, /if \(plans\.hidden\.has\(message\.id\)\) continue;\s*\/\/[^\n]*\n\s*if \(newsFold\?\.hidden\.has\(message\.id\)\) continue;\s*const day = dayKey\(message\);/,
     'skipped before its day and its name are counted, as a moved card is');
   assert.match(screen, /planCardId=\{plans\.cardOf\.get\(message\.id\) \?\? null\}\s*hidePrompts=/);
   const host = read('frontend/src/features/messages/bot-plan.tsx');

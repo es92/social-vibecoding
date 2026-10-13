@@ -923,6 +923,12 @@ html.un-kb .platform-kb-column .un-kb-avoid {
    sheet, and on a lighter wash the green reads at 4.5:1. */
 .messages-markdown .gc-ref-issue { color: var(--state-ok); }
 html:not(.dark) .messages-markdown .gc-ref-issue { background: rgba(16, 185, 129, 0.05); }
+/* One request, one story: in the bot's own words a request's number wears its
+   tag's hue (frontend/src/features/messages/bot-request.ts), the same as in
+   the activity drawer, the chat's rows and its thread's header. The `html`
+   prefix outranks the light wash above. */
+html .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req-h) 70% 26%); background: hsl(var(--req-h) 80% 92%); font-weight: 600; }
+html.dark .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req-h) 80% 82%); background: hsl(var(--req-h) 35% 25%); }
 .messages-markdown a.gc-ref { text-decoration: none; }
 .messages-markdown span.gc-ref { cursor: auto; }
 @media (hover: hover) {
