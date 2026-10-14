@@ -106,6 +106,13 @@ const PLAN_SYSTEM = [
   '- plan: 3 to 5 short lines of a few words each, at most 40 characters, saying in the creator\'s own terms what the',
   '  first version will do: what they will see and can do. No file names, code, colours or jargon. Plan a first',
   '  version a person can try: the app the description asks for, kept to its core.',
+  // App bench run 196 (14 Oct 2026, Club Votes): "decide things together,
+  // like where to meet or what to do next" was planned as yes, no or
+  // abstain, the spec kept that scope, and 8 of 15 blind-graded builds
+  // failed for it: none could offer a place or a plan to choose between.
+  '- Kept to its core, never narrower than its words: it can do each example the description gives. Where people',
+  '  choose or decide something ("which day", "which film"), plan the options they pick between, written by whoever',
+  '  asks; plain yes or no only where the description asks for that.',
   '- choices: at most 2 decisions you would otherwise make yourself that change what they will see or do, each a',
   '  plain question with 2 to 4 short answers, the one you suggest first. They can pick another; one they leave goes',
   '  with yours. Only a choice they would care about, never the look or the theme. Often there are none: then give',

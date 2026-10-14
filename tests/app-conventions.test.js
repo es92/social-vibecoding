@@ -294,7 +294,9 @@ test('a first version\'s populated demo: the viewer\'s own data, a screen and a 
   const doc = getAppConventions();
   const mock = doc.slice(doc.indexOf('## Staging mock data'), doc.indexOf('### Seeded data must not fabricate a signal your logic reads'));
   // The general rule names the carve-out that wins over it, as "Small" does.
-  assert.match(mock, /- \*\*Obviously fake\.\*\* Give seeded rows a consistent "Staging demo …"\n  prefix so they can't be mistaken for real user content\. \(A first\n  version's `\?demo=1` demo is labelled once instead, on an element\n  marked `data-usernode-demo-note`: see "A first version's populated\n  demo" below\.\)/);
+  // Run 196's blind grades: a first version's boot-time rows were stamped
+  // "Staging demo" on each row too, so the carve-out names them.
+  assert.match(mock, /- \*\*Obviously fake\.\*\* Give seeded rows a consistent "Staging demo …"\n  prefix so they can't be mistaken for real user content\. \(A first\n  version's `\?demo=1` demo, and any rows it seeds on boot, are\n  labelled once instead, on an element marked\n  `data-usernode-demo-note`: see "A first version's populated demo"\n  below\.\)/);
   assert.match(mock, /- \*\*Small\.\*\* A handful of rows — just enough for the testing steps\.\n  \(A project's first version is the one exception: see "A first\n  version's populated demo" below\.\)/);
   const demo = mock.slice(mock.indexOf("### A first version's populated demo"));
   assert.ok(demo.length > 500, 'the carve-out is there, inside "Staging mock data"');
@@ -302,7 +304,7 @@ test('a first version\'s populated demo: the viewer\'s own data, a screen and a 
   assert.match(flat, /For that build only, and on `\?demo=1` only, four seed rules change\. Every later change keeps the rules above\./);
   assert.match(flat, /\*\*Enough to look lived in\.\*\* Varied, realistic rows filling about a screen and a half of the main screen at phone width \(390×844\), not a handful\. - \*\*Labelled once/);
   // Labelled once, at the top or in the list's name, not on every row; the rows stay made up.
-  assert.match(flat, /\*\*Labelled once, not on every row\.\*\* The screen says "Staging demo" once, plainly and visibly: a banner or a line at the top of the screen, or the name of the list or collection the rows belong to\. Each row needs no label of its own \(a "Staging demo" pill or prefix on every row only clutters the screen\), and this replaces the "Staging demo …" prefix above for these rows\. The rows themselves stay obviously made up: no real people and no real private data\./);
+  assert.match(flat, /\*\*Labelled once, not on every row\.\*\* The screen says "Staging demo" once, plainly and visibly: a banner or a line of its own at the top of the screen \(never the app's name, nor in place of its tagline\), or the name of the list or collection the rows belong to\. Each row needs no label of its own \(a "Staging demo" pill or prefix on every row only clutters the screen\), and this replaces the "Staging demo …" prefix above for these rows\. The rows themselves stay obviously made up: no real people and no real private data\./);
   // Newcomer run seven (14 Oct 2026): the label's element is marked, so
   // Homeroom can hide it where it shows the app under a label of its own.
   assert.match(flat, /no real private data\. The element that carries the label gets the attribute `data-usernode-demo-note`: the banner or the line itself, or, in a list's name, a `<span data-usernode-demo-note>` around the label's own words, so the name stays\. Homeroom hides that element where it shows the app with its sample data under a label of its own\./);

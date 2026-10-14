@@ -104,6 +104,10 @@ test('the prompt: the description, its creator, its real people, a game starter 
     /light and a dark look/, /Sample names, dates and numbers are placeholders/, /no em dashes/]) {
     assert.match(fvPlan.PLAN_SYSTEM, rule);
   }
+  // App bench run 196 (Club Votes): a plan narrower than the description's
+  // own examples, kept by the spec, failed 8 of 15 blind-graded builds.
+  const flatPlan = fvPlan.PLAN_SYSTEM.replace(/\s+/g, ' ');
+  assert.match(flatPlan, /Kept to its core, never narrower than its words: it can do each example the description gives\. Where people choose or decide something \("which day", "which film"\), plan the options they pick between, written by whoever asks; plain yes or no only where the description asks for that\./);
   assert.deepEqual(fvPlan.PLAN_SCHEMA.required, ['plan', 'choices', 'build_note', 'assumptions']);
 });
 

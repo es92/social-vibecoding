@@ -402,13 +402,16 @@ test('lean_plan: the spec plans the request done well, the platform\'s minimums,
   assert.match(prompt, /a person can remove what they added: that is part of adding it, not an extra\./);
   assert.ok(!/no undo/.test(prompt) && !/closing, archiving or deciding/.test(prompt));
   // And five of six drew two filled buttons on the empty screen.
-  assert.match(prompt, /one clear primary action on each screen, a filled button \(small on a screen for reading\)\. On an empty screen that action is the empty state's own button, and nothing else there is filled, the header's add button included\./);
+  assert.match(prompt, /one clear primary action on each screen, a filled button \(small on a screen for reading\)\. On an empty screen that action is the empty state's own button, and nothing else there is filled, the header's add button and a pinned or floating one included; on an error screen nothing but Retry is filled\./);
   assert.match(prompt, /about 15,000 characters in all, the drawn screens included/);
   assert.match(prompt, /no SQL, no catalogue of error messages, no unit-test suite/);
   assert.match(prompt, /At most five assumptions\./);
   assert.match(prompt, /keep it unless it has a defect you can name/);
+  // Run 196 (Club Votes): a plan that could not do the request's own
+  // examples was kept, and what they needed went under Not in this version.
+  assert.match(prompt, /A plan that cannot do one of the request's own examples has such a defect: widen it to fit\./);
   assert.match(prompt, /Tap targets at least 44px tall, and icons as inline SVG, never emoji, the favicon included/);
-  assert.match(prompt, /"Not in this version": each idea you left out, one line each\. The build does not implement them, and the user-facing half does not describe them\./);
+  assert.match(prompt, /"Not in this version": each idea you left out, one line each, and never what the request's own words or examples need\. The build does not implement them, and the user-facing half does not describe them\./);
   assert.ok(!/Nice-to-haves/.test(prompt) && /Nice-to-haves/.test(before), 'no nice-to-haves list');
   assert.ok(!/including the small touches that make it feel finished/.test(prompt) && /including the small touches/.test(before));
   // One drawn screen, shorter, a few rows; the Design subsection does not describe it again.

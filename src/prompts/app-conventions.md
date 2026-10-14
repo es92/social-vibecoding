@@ -552,9 +552,10 @@ Seed rules:
   `ON CONFLICT DO NOTHING`.
 - **Obviously fake.** Give seeded rows a consistent "Staging demo …"
   prefix so they can't be mistaken for real user content. (A first
-  version's `?demo=1` demo is labelled once instead, on an element
-  marked `data-usernode-demo-note`: see "A first version's populated
-  demo" below.)
+  version's `?demo=1` demo, and any rows it seeds on boot, are
+  labelled once instead, on an element marked
+  `data-usernode-demo-note`: see "A first version's populated demo"
+  below.)
 - **Small.** A handful of rows — just enough for the testing steps.
   (A project's first version is the one exception: see "A first
   version's populated demo" below.)
@@ -579,8 +580,9 @@ seed rules change. Every later change keeps the rules above.
   screen and a half of the main screen at phone width (390×844), not
   a handful.
 - **Labelled once, not on every row.** The screen says "Staging demo"
-  once, plainly and visibly: a banner or a line at the top of the
-  screen, or the name of the list or collection the rows belong to.
+  once, plainly and visibly: a banner or a line of its own at the top
+  of the screen (never the app's name, nor in place of its tagline),
+  or the name of the list or collection the rows belong to.
   Each row needs no label of its own (a "Staging demo" pill or prefix
   on every row only clutters the screen), and this replaces the
   "Staging demo …" prefix above for these rows. The rows themselves

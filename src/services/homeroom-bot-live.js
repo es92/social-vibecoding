@@ -673,8 +673,9 @@ const LEAN_PLAN_SCOPE_LINES = Object.freeze([
   '  polling or live refresh, no saved preferences or local storage, no discovery or import, no sharing or',
   '  notifications. Where one seems needed, leave it out and name it under "Not in this version".',
   '- Yours to design. The plan\'s look, layout and scope are the triage\'s first sketch: keep it unless it has a',
-  '  defect you can name, and say under Assumptions what you replaced and why. What binds you is the request',
-  '  itself and what its creator approved, above.',
+  '  defect you can name, and say under Assumptions what you replaced and why. A plan that cannot do one of the',
+  '  request\'s own examples has such a defect: widen it to fit. What binds you is the request itself and what its',
+  '  creator approved, above.',
   '- Short, so the build starts sooner and builds only this: about 15,000 characters in all, the drawn screens',
   '  included. The technical half is about 4,000 characters: the files, each table\'s columns, one line per route.',
   '  Leave the implementation to the build: no SQL, no catalogue of error messages, no unit-test suite (a first',
@@ -682,12 +683,13 @@ const LEAN_PLAN_SCOPE_LINES = Object.freeze([
   '  At most five assumptions.',
   '- Within the platform\'s checks: one clear primary action on each screen, a filled button (small on a screen for',
   '  reading). On an empty screen that action is the empty state\'s own button, and nothing else there is filled, the',
-  '  header\'s add button included. Tap targets at least 44px tall, and icons as inline SVG, never emoji, the favicon',
-  '  included.',
+  '  header\'s add button and a pinned or floating one included; on an error screen nothing but Retry is filled. Tap',
+  '  targets at least 44px tall, and icons as inline SVG, never emoji, the favicon included.',
   '- Ranked. End the technical half with a "Build order" subsection of two short lists. "Must-haves", in order: the',
   '  main action working end to end, the loading, empty and error states, the phone layout, the populated demo and',
-  '  the signature element. Then "Not in this version": each idea you left out, one line each. The build does not',
-  '  implement them, and the user-facing half does not describe them.',
+  '  the signature element. Then "Not in this version": each idea you left out, one line each, and never what the',
+  '  request\'s own words or examples need. The build does not implement them, and the user-facing half does not',
+  '  describe them.',
 ]);
 
 /** What the spec's scope is: a later change's, as small as the request; a first version's, complete (or, under `lean_plan`, focused), and its design the spec's own. Pure. */
@@ -2441,7 +2443,8 @@ const FIRST_VERSION_DESIGN_LINES = Object.freeze([
   'spec, the plan) sets it, and the starter\'s screen and default colours are placeholder, not a look to copy. Build',
   'it with the starter\'s design kit (`styles/tailwind-input.css`): set its colour tokens to this app\'s palette (its',
   'neutrals, its action colour and any set of colours its subject uses, adding a token for a colour the kit has no',
-  'name for), a light and a dark value each, unless the app keeps one fixed look; every text pair at 4.5:1 or more.',
+  'name for), a light and a dark value each, the dark one in the light one\'s hue, unless the app keeps one fixed',
+  'look; every text pair at 4.5:1 or more.',
   'Use only those tokens and the kit\'s components, its loading, empty and error states included: the design',
   'guidance\'s "no new colours" means none beyond them, and every token the spec defines is one of them. Then fill',
   'in the "## Design" section of the app\'s `CLAUDE.md` (add it if it is missing): the palette by name, the signature',
@@ -2471,13 +2474,20 @@ const FIRST_VERSION_DESIGN_LINES = Object.freeze([
   ...FIRST_VERSION_COLUMN_LINES,
   'A screen\'s loading state has the content\'s own shape: the same list and rows at their height, with the kit\'s',
   '`skeleton` bars where their text goes, so nothing moves when the data arrives.',
+  // Run 196's blind grades: two filled buttons on an empty or error screen
+  // (the empty state's own and a floating one) in builds of every arm.
+  'The empty and error screens fill one button at most, the empty state\'s own action or Retry: a pinned or floating',
+  'primary button is hidden on both.',
   // And the populated demo the spec describes, which is how a first version
   // is first seen (the staging preview with ?demo=1).
   'Build the populated demo the spec describes, the staging preview opened with `?demo=1`: the viewer\'s own data as',
   'well as other people\'s, varied realistic rows filling about a screen and a half at phone width, every control the',
-  'real screen has (never a view-only demo), labelled "Staging demo" once, plainly, as a banner or a line at the top of',
-  'the screen or in the name of its list, not on each row, with every row still obviously made up. On staging and with',
-  '`?demo=1` only, and idempotent, as the platform conventions\' "Staging mock data" says.',
+  'real screen has (never a view-only demo), and the app\'s main result already there (the scores added up, the',
+  'schedule filled in, the totals worked out), not only what goes into it. It is labelled "Staging demo" once, plainly,',
+  'as a banner or a line of its own at the top of the screen (never the app\'s name, nor in place of its tagline) or',
+  'in the name of its list, not on each row, and rows the app seeds on boot carry no label of their own either; every',
+  'row stays obviously made up. On staging and with `?demo=1` only, and idempotent, as the platform conventions\'',
+  '"Staging mock data" says.',
   // Newcomer run seven (14 Oct 2026): Homeroom shows a first version with
   // its sample data under a label of its own (the App tab's Live replay),
   // and hides the app's own by this attribute.
