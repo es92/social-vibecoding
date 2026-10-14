@@ -134,6 +134,11 @@ function _onBusMessage({ kind, routing, data, oversize, fromWorkflow }) {
     case 'shots_eval_wake':
       require('./shots-eval-runner').wakeHere();
       return;
+    // An app's merge queue pass, asked to run again by a process that found
+    // it running here (merge-queue.js kickElsewhere).
+    case 'merge_kick':
+      if (!oversize) require('./merge-queue').receiveKick(payload);
+      return;
     default:
       log.warn('ws', 'unknown bus kind', { kind });
   }

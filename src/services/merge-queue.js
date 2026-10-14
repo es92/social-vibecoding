@@ -79,17 +79,102 @@ const { firstVersionSql } = require('./first-version-rule');
 const { getPool } = require('../db/pool');
 const lifecycle = require('./lifecycle');
 const inflightWork = require('./inflight-work');
+const processes = require('./processes');
+const { MERGE_QUEUE_PASS_LOCK } = require('./advisory-locks');
 
 // App-level single-flight. Every trigger — a vote crossing threshold, a
 // post-merge cascade, the drift poller, the eligible-merge sweep — funnels
 // here, so concurrent triggers for one app coalesce into one sequential pass
 // instead of N parallel passes against the same main.
-const _running = new Map(); // appId -> Promise
+//
+// Across processes too (docs/plans/web-and-conductor.md): a vote lands on a
+// web process, and the sweep and the drift poller run on the conductor. A
+// pass holds MERGE_QUEUE_PASS_LOCK for its app (claimPass), and is held in
+// the process registry ('merge_pass') so every process can see it. A trigger
+// that finds the app's pass running in another process asks that process,
+// over the bus ('merge_kick'), to run again once it is done, exactly as a
+// trigger arriving mid-pass in the same process does.
+const _running = processes.heldMap('merge_pass'); // appId -> Promise
 const _rekick = new Set();  // appId -> a trigger arrived mid-pass
+// The config the last pass ran with, for a re-kick that arrives over the bus.
+let _config = null;
 
-/** True while this app's queue is running a pass. Read by the status routes. */
+/** True while this app's queue is running a pass, in any process. Read by the status routes. */
 function isIntegrating(appId) {
-  return _running.has(appId);
+  return _running.has(appId) || processes.heldElsewhere('merge_pass', appId);
+}
+
+// The app's pass lock, on a client of its own for as long as the pass runs.
+// Resolves { release } when this process may run the pass, or null when
+// another one holds it. A pool with no clients to give (a test's stub) or a
+// lock the database will not answer runs the pass anyway: two passes is
+// what happened before, and the merge claim stays the guard.
+async function claimPass(config, appId) {
+  const open = { release: async () => {} };
+  const pool = getPool(config);
+  if (!pool || typeof pool.connect !== 'function') return open;
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    log.warn('merge-queue', 'Could not take a client for the pass lock; running without it', { appId, err: err.message });
+    return open;
+  }
+  try {
+    const { rows } = await client.query('SELECT pg_try_advisory_lock($1, $2) AS ok', [MERGE_QUEUE_PASS_LOCK, Number(appId)]);
+    if (!rows[0] || !rows[0].ok) {
+      client.release();
+      return null;
+    }
+  } catch (err) {
+    client.release();
+    log.warn('merge-queue', 'Could not take the pass lock; running without it', { appId, err: err.message });
+    return open;
+  }
+  return {
+    async release() {
+      try {
+        await client.query('SELECT pg_advisory_unlock($1, $2)', [MERGE_QUEUE_PASS_LOCK, Number(appId)]);
+        client.release();
+      } catch (err) {
+        // The connection goes, and the lock with it.
+        client.release(err);
+      }
+    },
+  };
+}
+
+// Ask over the bus for one more pass of this app: `to` the processes named
+// (the holder, from the registry's copy, when the pass runs elsewhere), or
+// ['*'], anyone serving (a process shutting down hands on its re-kick).
+function kick(appId, to) {
+  try {
+    require('./ws-bus').publish('merge_kick', null, { appId: Number(appId), to });
+  } catch (err) {
+    log.warn('merge-queue', 'Could not ask another process for a pass', { appId, err: err.message });
+  }
+}
+
+function kickElsewhere(appId) {
+  kick(appId, processes.heldElsewhereBy('merge_pass', appId));
+}
+
+/**
+ * A pass another process asked for (kick), over the bus. A pass under way
+ * here runs again when it ends. One that is not running here runs now only
+ * where it was asked of this process by name (its pass ended between the
+ * two) or of anyone serving: never on a kick that names nobody, which every
+ * process unsure who holds the pass would otherwise answer by asking the
+ * others in turn. A pass lost that way is the eligible-merge sweep's.
+ */
+function receiveKick({ appId, to } = {}) {
+  const id = Number(appId);
+  if (!Number.isInteger(id) || id <= 0) return;
+  if (_running.has(id)) { _rekick.add(id); return; }
+  const list = Array.isArray(to) ? to : [];
+  if (!list.includes(processes.ID) && !list.includes('*')) return;
+  if (!_config || lifecycle.isShuttingDown()) return;
+  enqueue(_config, id).catch((err) => log.error('merge-queue', 'kicked pass failed', { appId: id, err: err.message }));
 }
 
 /**
@@ -100,24 +185,44 @@ function isIntegrating(appId) {
  * Each pass is held in services/inflight-work.js, so a shutdown's drain lets
  * a merge under way finish instead of exiting from under it, whichever
  * trigger started it (most answer their request first and never await it).
- * A re-kick is dropped once shutdown has begun: the next leader's boot
- * reconcile (reconcileEligibleMerges) drains every app with open proposals.
+ * A re-kick once shutdown has begun is handed to a process serving (kick,
+ * ['*']); if none takes it, the next leader's reconcile and the
+ * eligible-merge sweep drain every app with open proposals.
  */
 function enqueue(config, appId, options = {}) {
   if (appId == null) return Promise.resolve();
+  if (config) _config = config;
   if (_running.has(appId)) {
     _rekick.add(appId);
     return _running.get(appId);
   }
-  const run = runQueue(config, appId, options)
+  const run = (async () => {
+    const lock = await claimPass(config, appId);
+    if (!lock) {
+      // Another process runs this app's pass: it runs again for this
+      // trigger, and for any that came here while the lock was asked for.
+      _rekick.delete(appId);
+      kickElsewhere(appId);
+      return;
+    }
+    try {
+      await runQueue(config, appId, options);
+    } finally {
+      await lock.release();
+    }
+  })()
     .catch((err) => log.error('merge-queue', 'queue pass threw', { appId, err: err.message }))
     .finally(() => {
       _running.delete(appId);
-      if (_rekick.delete(appId) && !lifecycle.isShuttingDown()) {
-        enqueue(config, appId).catch((err) => log.error('merge-queue', 're-kick failed', {
-          appId, err: err.message,
-        }));
+      if (!_rekick.delete(appId)) return;
+      if (lifecycle.isShuttingDown()) {
+        // A release replaced this process: a process serving runs it.
+        kick(appId, ['*']);
+        return;
       }
+      enqueue(config, appId).catch((err) => log.error('merge-queue', 're-kick failed', {
+        appId, err: err.message,
+      }));
     });
   _running.set(appId, run);
   return inflightWork.track('merge-queue', run);
@@ -612,8 +717,9 @@ async function mergeDirect(config, pool, sessionId) {
 
 // Per-session coalescing: a vote and a sweep can name the same proposal at
 // once, and two concurrent syncs for one session hit the worker's
-// "a turn is already in flight" guard.
-const _inFlight = new Map();
+// "a turn is already in flight" guard. Held in the process registry, so a
+// sweep in another process (boot-failure-sync, fixed-check-sync) sees it.
+const _inFlight = processes.heldMap('merge_resolve');
 
 function resolveOne(config, pool, sessionId, admission) {
   const existing = _inFlight.get(sessionId);
@@ -624,9 +730,9 @@ function resolveOne(config, pool, sessionId, admission) {
   return p;
 }
 
-/** True while this proposal is being resolved. Read by the status routes. */
+/** True while this proposal is being resolved, in any process. Read by the status routes. */
 function isIntegratingSession(sessionId) {
-  return _inFlight.has(sessionId);
+  return _inFlight.has(sessionId) || processes.heldElsewhere('merge_resolve', sessionId);
 }
 
 async function resolveOneInner(config, pool, sessionId, admission = { reason: 'approved' }) {
@@ -858,6 +964,7 @@ async function postGroup(pool, session, content) {
 
 module.exports = {
   enqueue,
+  receiveKick,
   isIntegrating,
   isIntegratingSession,
   // The old name, so the dozen callers across server.js, visuals.js,

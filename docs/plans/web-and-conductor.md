@@ -71,6 +71,17 @@ is one for its whole life, so what a follower could not do had to move:
   no longer both start one (the copy they read is up to two seconds old, so
   two that start within that window still can; each heal's cooldown is its
   process's own).
+- **An app's merge queue pass is single-flight across processes**
+  (`services/merge-queue.js`): a vote lands on a web process, and the
+  eligible-merge sweep and the drift poller run on the conductor. A pass
+  holds the app's advisory lock (`MERGE_QUEUE_PASS_LOCK`) on a client of its
+  own and is held in the registry (`merge_pass`, and `merge_resolve` for a
+  proposal's conflict resolution in it), so status reads see it from any
+  process. A trigger that cannot take the lock asks the holder over the bus
+  (`merge_kick`) to run again once it is done; a process shutting down hands
+  its re-run to anyone serving. The merge claim (promoted to merging) was
+  always the guard against a second merge; this keeps two passes from syncing
+  the same branch.
 - **Sweeps that check a session is not mid-turn** before acting on it (the
   imported-PR head sync, the proposal measurement) check every process.
 - **A conductor does not say a release is live**: only a process that serves
