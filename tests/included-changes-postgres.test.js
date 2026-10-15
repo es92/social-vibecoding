@@ -126,6 +126,7 @@ test('a change built on another carries it live, against the full PostgreSQL sch
         watcher: {
           bustAndBroadcast: (a) => { calls.push(['bust', a.closed]); },
           resolveSupersededProposals: () => {},
+          withdrawBotProposals: () => {},
           closeTwinRows: watcher.closeTwinRows,
         },
         isSessionBusy: () => false,

@@ -27,7 +27,8 @@
 //
 // Every number it sees closed, or closes, also closes the platform's own
 // `general` twin row for that request (closeTwinRows below), which nothing
-// else did on a merge.
+// else did on a merge, and withdraws the Homeroom bot's proposals that were
+// built for it alone (withdrawBotProposals below).
 
 // Everything here is best-effort. watchIssuesClosedAfterMerge is
 // fired-and-forgotten from the merge path (routes/votes.js checkAndMerge)
@@ -213,6 +214,31 @@ function closeTwinRows({ pool, appId, prNumber, numbers, strict = false }) {
   }
 }
 
+// Withdraw the Homeroom bot's proposals up for a vote whose requests are now
+// all closed (homeroom-bot-closed-requests.js). A request a person's change
+// shipped otherwise kept the bot's proposal for it up, and holding one of the
+// bot's per-project proposal slots, for good. Lazy require, same reason as
+// resolveSupersededProposals. Same contract as closeTwinRows: a no-op without
+// a pool, never a reason the watch fails unless `strict`.
+function withdrawBotProposals({ pool, appId, prNumber, numbers, strict = false }) {
+  if (!pool || !appId || !Array.isArray(numbers) || !numbers.length) return Promise.resolve();
+  try {
+    const { noteRequestsClosed } = require('./homeroom-bot-closed-requests');
+    return noteRequestsClosed(pool, { appId, closed: numbers, strict }).then(() => {}, (err) => {
+      if (strict) throw err;
+      log.warn('issue-close-watcher', 'Withdrawing the bot\'s proposals for closed requests failed', {
+        pr: prNumber, issues: numbers, err: err.message,
+      });
+    });
+  } catch (err) {
+    if (strict) return Promise.reject(err);
+    log.warn('issue-close-watcher', 'Withdrawing the bot\'s proposals for closed requests failed', {
+      pr: prNumber, issues: numbers, err: err.message,
+    });
+    return Promise.resolve();
+  }
+}
+
 // Close, on GitHub, the linked issues GitHub left open after the grace polls.
 // Returns { closed, failed }.
 //
@@ -314,6 +340,7 @@ async function watchIssuesClosedAfterMerge({ owner, repo, prNumber, linkedIssues
       closed.push(...newlyClosed);
       bustAndBroadcast({ owner, repo, appSlug, appId, closed: newlyClosed });
       settle(closeTwinRows({ pool, appId, prNumber, numbers: newlyClosed, strict }));
+      settle(withdrawBotProposals({ pool, appId, prNumber, numbers: newlyClosed, strict }));
     }
     if (newlySkipped.length) skipped.push(...newlySkipped);
     // Retire close-issue proposals for closed AND skipped numbers: a
@@ -353,6 +380,7 @@ async function watchIssuesClosedAfterMerge({ owner, repo, prNumber, linkedIssues
       bustAndBroadcast({ owner, repo, appSlug, appId, closed: selfClosed });
       settle(resolveSupersededProposals({ pool, appId, appSlug, prNumber, numbers: selfClosed, strict }));
       settle(closeTwinRows({ pool, appId, prNumber, numbers: selfClosed, strict }));
+      settle(withdrawBotProposals({ pool, appId, prNumber, numbers: selfClosed, strict }));
       pending = pending.filter((n) => !selfClosed.includes(n));
     }
   }
@@ -382,5 +410,5 @@ module.exports = {
   // What an observed close does, for a close made elsewhere: a change that
   // went live inside another one closes its requests itself
   // (services/included-changes.js), and they then read closed the same way.
-  bustAndBroadcast, resolveSupersededProposals, closeTwinRows,
+  bustAndBroadcast, resolveSupersededProposals, closeTwinRows, withdrawBotProposals,
 };

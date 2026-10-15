@@ -324,6 +324,8 @@ test('archiveSession: sweeper archive announces the actor-less form', async () =
 test('#11 (WP3): the Homeroom bot withdrawing its own proposal says so, never that it went quiet', async () => {
   for (const [reason, said] of [
     ['superseded', '“Watering reminders” was withdrawn: another change for the same request covers it.'],
+    // Its requests closed another way: a person's change, a vote, GitHub.
+    ['request-closed', '“Watering reminders” was withdrawn: the request it was built for is closed.'],
     ['withdrawn', '“Watering reminders” was withdrawn.'],
   ]) {
     const { subject, spies, restore } = loadWithStubs();

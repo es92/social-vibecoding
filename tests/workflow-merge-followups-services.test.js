@@ -30,6 +30,7 @@ stub('../src/services/issue-close-watcher', {
   bustAndBroadcast() {},
   async closeTwinRows(args) { records.strict.push(args.strict); if (records.fail) throw new Error('db down'); },
   async resolveSupersededProposals(args) { records.strict.push(args.strict); },
+  async withdrawBotProposals(args) { records.strict.push(args.strict); },
 });
 stub('../src/routes/issues', { async resolveSupersededCloseProposals() { return { resolved: [] }; } });
 const realWs = require('../src/services/ws');

@@ -124,6 +124,9 @@ function addressedMod() { return require('./homeroom-bot-addressed'); }
 // The bot's voice outside its DM (homeroom-bot-voice.js): which places it
 // answers in, and the asks it queues on its changes.
 function voiceModule(deps) { return (deps && deps.voice) || require('./homeroom-bot-voice'); }
+// Its proposals for requests closed some other way (a person's change, a
+// close vote, GitHub): withdrawn, which frees their slots.
+function closedRequests() { return require('./homeroom-bot-closed-requests'); }
 
 // One name, in the live module, which compares thread authors against it.
 const { BOT_USERNAME } = live;
@@ -1635,6 +1638,18 @@ async function refreshApp(pool, app, {
   const fetched = await github.fetchPublicIssues(repo.owner, repo.repo);
   const issues = Array.isArray(fetched?.issues) ? fetched.issues : [];
   if (!issues.length && fetched?.note) { out.skipped = 'github_unavailable'; return out; }
+
+  // A proposal of the bot's for requests closed on GitHub, where Homeroom
+  // gets no signal (a person's change and a close vote withdraw theirs as
+  // they close: homeroom-bot-closed-requests.js), is withdrawn here, and the
+  // slot it held goes to a held request in this same refresh. Live apps
+  // only, and only from a whole, fresh list; GitHub then confirms each close.
+  if (capRoom && bot && !fetched?.note && !fetched?.truncatedList) {
+    const { withdrawn } = await closedRequests().sweepClosedRequests(pool, {
+      appId: app.id, openNumbers: issues.map((issue) => Number(issue.number)), deps: { github },
+    });
+    if (withdrawn.length) capRoom = await capRoomFor(pool, bot, app.id, settings);
+  }
 
   // #3264: on a live app (capRoom is set only there) a person's reply in the
   // discussion of the bot's own open proposal is activity on its issue, so

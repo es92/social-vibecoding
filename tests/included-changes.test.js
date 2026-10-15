@@ -91,6 +91,7 @@ function stubs({ commits = [H3, H8], listFails = false, busy = [] } = {}) {
       bustAndBroadcast: (args) => { calls.push(['bustAndBroadcast', args]); },
       closeTwinRows: (args) => { calls.push(['closeTwinRows', { appId: args.appId, numbers: args.numbers }]); },
       resolveSupersededProposals: (args) => { calls.push(['resolveSupersededProposals', { appId: args.appId, numbers: args.numbers }]); },
+      withdrawBotProposals: (args) => { calls.push(['withdrawBotProposals', { appId: args.appId, numbers: args.numbers }]); },
     },
     isSessionBusy: (id) => busy.includes(id),
     resolveIssueBounty: async (_pool, args) => { calls.push(['resolveIssueBounty', args]); return { awarded: [], voided: [] }; },
@@ -201,6 +202,7 @@ test('a change the merged one was built on is marked merged as included, and set
     'createIssueComment', 'closePR',
     'sendSystemMessage',
     'resolveIssueBounty', 'noteIssuesClosed', 'closeIssue', 'bustAndBroadcast', 'closeTwinRows', 'resolveSupersededProposals',
+    'withdrawBotProposals',
     'teardownStaging', 'retireWorker', 'noteChangeClosed',
     'pushVoteUpdate',
     'createPrMergedNotification',
@@ -219,6 +221,8 @@ test('a change the merged one was built on is marked merged as included, and set
   assert.deepEqual(line[5], { type: 'session', ref: 6269 }, 'in its own thread, never a channel');
   assert.deepEqual(call('resolveIssueBounty')[1], { appId: 41, sessionId: 6269, awardeeUserId: 9, issueNumber: 1 });
   assert.deepEqual(call('closeTwinRows')[1], { appId: 41, numbers: [1] });
+  assert.deepEqual(call('withdrawBotProposals')[1], { appId: 41, numbers: [1] },
+    'the bot\'s other proposals built for the closed request alone are withdrawn');
   assert.equal(call('noteChangeClosed')[1].outcome, 'merged');
   assert.deepEqual(call('createPrMergedNotification')[1],
     { userId: 9, appId: 41, sessionId: 6269, credits: 'Included in #8, which went live.' });

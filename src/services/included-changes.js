@@ -268,7 +268,8 @@ async function settleIncluded({ config, pool, row, carrier, sha, deployed = true
  * Close the requests it was linked to, as its own merge would have through
  * `Closes #N`: bounties on them resolve to its author, and each one closed is
  * then read as closed everywhere (the open-issues cache, its twin row, a
- * close-issue vote on it). Resolves the numbers closed on GitHub, or with
+ * close-issue vote on it, the Homeroom bot's proposals built for it alone).
+ * Resolves the numbers closed on GitHub, or with
  * `report`, { closed, failed: [{ number, status }] }, so a durable caller
  * (the merge-followups workflow machine) can retry the ones that failed;
  * with `strict`, a failure to record a close here (twin rows, superseded
@@ -308,6 +309,7 @@ async function closeRequests({ pool, row, carrier, github, repo, d, bounties = t
     await Promise.all([
       d.watcher.closeTwinRows({ pool, appId: row.app_id, prNumber, numbers: closed, strict }),
       d.watcher.resolveSupersededProposals({ pool, appId: row.app_id, appSlug: row.app_slug, prNumber, numbers: closed, strict }),
+      d.watcher.withdrawBotProposals({ pool, appId: row.app_id, prNumber, numbers: closed, strict }),
     ]);
   }
   return answer(closed, failed);

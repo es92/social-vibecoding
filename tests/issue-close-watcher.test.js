@@ -36,10 +36,11 @@ const assert = require('node:assert/strict');
 // Install module stubs before requiring the unit under test.
 // `gh` lets each test script the GitHub surface; `calls` records every
 // call for assertions; `ws` records broadcast pushes.
-function loadWithStubs({ gh = {}, calls, ws, issuesRoute = null }) {
+function loadWithStubs({ gh = {}, calls, ws, issuesRoute = null, closedRequests = null }) {
   const ghPath = require.resolve('../src/services/github');
   const wsPath = require.resolve('../src/services/ws');
   const issuesPath = require.resolve('../src/routes/issues');
+  const closedPath = require.resolve('../src/services/homeroom-bot-closed-requests');
   const subjectPath = require.resolve('../src/services/issue-close-watcher');
   const prMetaPath = require.resolve('../src/services/pr-metadata');
   const orig = {
@@ -48,6 +49,7 @@ function loadWithStubs({ gh = {}, calls, ws, issuesRoute = null }) {
     subject: require.cache[subjectPath],
     prMeta: require.cache[prMetaPath],
     issues: require.cache[issuesPath],
+    closed: require.cache[closedPath],
   };
 
   require.cache[ghPath] = {
@@ -99,6 +101,13 @@ function loadWithStubs({ gh = {}, calls, ws, issuesRoute = null }) {
       loaded: true, id: issuesPath, filename: issuesPath, paths: orig.issues ? orig.issues.paths : [],
     };
   }
+  // And the Homeroom bot's proposals for the closed requests.
+  if (closedRequests) {
+    require.cache[closedPath] = {
+      exports: closedRequests,
+      loaded: true, id: closedPath, filename: closedPath, paths: orig.closed ? orig.closed.paths : [],
+    };
+  }
   // pr-metadata requires ./llm and ./github at load time; with github
   // stubbed above a fresh load is safe and gives us the real
   // parseClosingKeywords/sanitizeIssueNumbers (which we want exercised).
@@ -111,6 +120,9 @@ function loadWithStubs({ gh = {}, calls, ws, issuesRoute = null }) {
     if (orig.ws) require.cache[wsPath] = orig.ws; else delete require.cache[wsPath];
     if (issuesRoute) {
       if (orig.issues) require.cache[issuesPath] = orig.issues; else delete require.cache[issuesPath];
+    }
+    if (closedRequests) {
+      if (orig.closed) require.cache[closedPath] = orig.closed; else delete require.cache[closedPath];
     }
     delete require.cache[prMetaPath];
     if (orig.prMeta) require.cache[prMetaPath] = orig.prMeta;
@@ -540,5 +552,87 @@ test('strict: a failing superseded-proposal resolve fails the watch, and is aske
     assert.deepEqual(asked, [true]);
     const res = await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, pool: recordingPool() });
     assert.deepEqual(res.closed, [3], 'without strict it is logged and the watch finishes, as before');
+  } finally { restore(); }
+});
+
+// ── The Homeroom bot's proposals for the closed requests ────────────────
+// A request a person's change shipped kept the bot's proposal for it up for
+// a vote, and one of the bot's five slots on the project with it, for good
+// (#4817, shipped by #4822 while the bot's #4819 stayed up). Every close the
+// watcher sees, or makes, now asks for them to be withdrawn.
+
+function recordingClosed({ fail = false } = {}) {
+  const asked = [];
+  return {
+    asked,
+    async noteRequestsClosed(pool, args) {
+      asked.push({ appId: args.appId, closed: args.closed, strict: args.strict });
+      if (fail && args.strict) throw new Error('db down');
+      return { withdrawn: [] };
+    },
+  };
+}
+
+test('an observed close asks for the bot\'s proposals on those requests to be withdrawn', async () => {
+  const calls = [], ws = [];
+  const closed = recordingClosed();
+  const { subject, restore } = loadWithStubs({
+    calls, ws, issuesRoute: ISSUES_ROUTE_STUB, closedRequests: closed,
+    gh: { getPR: async () => ({ body: 'Closes #3\nfixes #9' }) },
+  });
+  try {
+    const res = await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, pool: recordingPool() });
+    assert.deepEqual(res.closed, [3, 9]);
+    assert.deepEqual(closed.asked, [{ appId: 7, closed: [3, 9], strict: false }]);
+  } finally { restore(); }
+});
+
+test('a linked issue the watcher closes itself is asked about too; one still open is not', async () => {
+  const calls = [], ws = [];
+  const closed = recordingClosed();
+  const { subject, restore } = loadWithStubs({
+    calls, ws, issuesRoute: ISSUES_ROUTE_STUB, closedRequests: closed,
+    gh: {
+      getPR: async () => mergedPr('Closes #10\nfixes #20'),
+      getIssue: async (o, r, n) => ({ number: n, state: 'open' }),
+    },
+  });
+  try {
+    const res = await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, linkedIssues: [10], pool: recordingPool() });
+    assert.deepEqual(res.stillOpen, [20]);
+    assert.deepEqual(closed.asked, [{ appId: 7, closed: [10], strict: false }]);
+  } finally { restore(); }
+});
+
+test('nothing is withdrawn while every referenced issue is still open, or without a pool', async () => {
+  const calls = [], ws = [];
+  const closed = recordingClosed();
+  const { subject, restore } = loadWithStubs({
+    calls, ws, issuesRoute: ISSUES_ROUTE_STUB, closedRequests: closed,
+    gh: {
+      getPR: async () => ({ body: 'Closes #5' }),
+      getIssue: async (o, r, n) => ({ number: n, state: n === 5 ? 'open' : 'closed' }),
+    },
+  });
+  try {
+    await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, pool: recordingPool() });
+    assert.deepEqual(closed.asked, [], 'still open');
+    await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, linkedIssues: [6] });
+    assert.deepEqual(closed.asked, [], 'no pool, nothing to write with');
+  } finally { restore(); }
+});
+
+test('strict: a failing withdrawal fails the watch; without strict it is logged and the watch finishes', async () => {
+  const calls = [], ws = [];
+  const closed = recordingClosed({ fail: true });
+  const { subject, restore } = loadWithStubs({
+    calls, ws, issuesRoute: ISSUES_ROUTE_STUB, closedRequests: closed,
+    gh: { getPR: async () => ({ body: 'Closes #3' }) },
+  });
+  try {
+    await assert.rejects(subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, pool: recordingPool(), strict: true }), /db down/);
+    const res = await subject.watchIssuesClosedAfterMerge({ ...BASE_ARGS, pool: recordingPool() });
+    assert.deepEqual(res.closed, [3]);
+    assert.deepEqual(closed.asked.map((a) => a.strict), [true, false]);
   } finally { restore(); }
 });

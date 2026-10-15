@@ -472,8 +472,10 @@ async function teardownStagingForSession({ pool, sessionId, reason = 'idle' }) {
 //   pool, sessionId
 //   userId  - optional owner scope (HTTP authz). Omit for system actions.
 //   reason  - 'manual' | 'stale-pr' | ... The Homeroom bot's own proposals
-//             (#11, WP3) close with 'withdrawn' (asked for in its DM) or
-//             'superseded' (another proposal for the same request covers it).
+//             (#11, WP3) close with 'withdrawn' (asked for in its DM),
+//             'superseded' (another proposal for the same request covers it)
+//             or 'request-closed' (every request it was built for closed
+//             another way: homeroom-bot-closed-requests.js).
 //   purgeCc - destroy the CC volume immediately (skip retention). Default
 //             false. The activeWorkers in-flight set (routes/sessions.js)
 //             is cleared by the HTTP handler, not here.
@@ -594,6 +596,8 @@ async function finalizeArchivedSession({
         ? `${session.owner_username} replaced ${session.pr_title ? label : 'this change'} with a new one.`
       : reason === 'superseded'
         ? `${label} was withdrawn: another change for the same request covers it.`
+      : reason === 'request-closed'
+        ? `${label} was withdrawn: the request it was built for is closed.`
       : reason === 'withdrawn'
         ? `${label} was withdrawn.`
       : userId != null && session.owner_username

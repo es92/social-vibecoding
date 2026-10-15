@@ -52,12 +52,13 @@ function loadIssues(pool, { gh = {}, active = 2 } = {}) {
     appAccess: require.resolve('../src/services/app-access'),
     activeUsers: require.resolve('../src/services/active-users'),
     adminApproval: require.resolve('../src/services/admin-approval'),
+    closedRequests: require.resolve('../src/services/homeroom-bot-closed-requests'),
     subject: require.resolve('../src/routes/issues'),
   };
   const orig = {};
   for (const [k, id] of Object.entries(ids)) orig[k] = require.cache[id];
 
-  const spies = { systemMessages: [], issueUpdates: [], ghCalls: [] };
+  const spies = { systemMessages: [], issueUpdates: [], ghCalls: [], botWithdrawals: [] };
   const stub = (id, exports) => {
     require.cache[id] = { id, filename: id, loaded: true, exports, paths: [] };
   };
@@ -111,6 +112,14 @@ function loadIssues(pool, { gh = {}, active = 2 } = {}) {
     getActiveUserStats: async () => ({ active, majority: Math.floor(active / 2) + 1 }),
   });
   stub(ids.adminApproval, { isAppLocked: async () => false, hasAdminUpVote: async () => true });
+  // The Homeroom bot's proposals for the closed request; `lines` is how many
+  // thread lines were already written when it was asked.
+  stub(ids.closedRequests, {
+    noteRequestsClosed: async (_pool, args) => {
+      spies.botWithdrawals.push({ ...args, lines: spies.systemMessages.length });
+      return { withdrawn: [] };
+    },
+  });
 
   delete require.cache[ids.subject];
   const subject = require('../src/routes/issues');
@@ -492,6 +501,10 @@ test('apply: passing vote closes the proposal, GitHub close then comment with re
     assert.match(spies.systemMessages[0][2], /Issue #42 closed by group vote \(2\//);
     assert.deepEqual(spies.systemMessages[0][5], { type: 'governance', ref: 61 });
     assert.deepEqual(spies.systemMessages[1][5], { type: 'issue', ref: 42 });
+
+    // The Homeroom bot's proposals built for #42 alone come down with it,
+    // after the request's own "closed by group vote" line (#4968).
+    assert.deepEqual(spies.botWithdrawals, [{ appId: 9, closed: [42], lines: 2 }]);
   } finally { restore(); }
 });
 
@@ -509,6 +522,7 @@ test('apply: below the gate leaves the proposal open (no txn, no GitHub)', async
     assert.ok(!r.superseded);
     assert.ok(!pool.issued(/UPDATE issues SET status = 'closed'/), 'row untouched');
     assert.equal(spies.ghCalls.filter((c) => c.type === 'closeIssue').length, 0);
+    assert.equal(spies.botWithdrawals.length, 0, 'the bot\'s proposals stay up while the request is open');
   } finally { restore(); }
 });
 

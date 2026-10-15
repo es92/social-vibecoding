@@ -4226,6 +4226,16 @@ async function maybeApplyCloseIssueProposal(pool, issue, options = {}) {
   await sendSystemMessage(pool, issue.app_id, closedMsg, 'system',
     null, { type: 'issue', ref: issueNumber }).catch(() => {});
 
+  // The Homeroom bot's proposals built for this request alone come down with
+  // it: one left up for a vote holds a slot of the bot's per-project cap for
+  // good, and could still merge what the group just voted to drop (#4968).
+  // After the line above, so the request's thread reads in order. Not
+  // awaited: a withdrawal takes a preview down and closes a pull request,
+  // which the GitHub close below has no reason to wait on. Never throws.
+  require('../services/homeroom-bot-closed-requests')
+    .noteRequestsClosed(pool, { appId: issue.app_id, closed: [issueNumber] })
+    .catch(() => {});
+
   // GitHub: close FIRST, then comment (same ordering rationale as the
   // rename path — a stale "closed by vote" comment must not land on an
   // issue we failed to close). Both helpers route through getOctokit
