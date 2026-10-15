@@ -359,6 +359,67 @@ test('a sync that pushes nothing reports it and starts no run', async () => {
   assert.equal(calls.reconcile.length, 0);
 });
 
+// ── syncBeforeHandOff: the Homeroom bot's one sync before a person ───────
+// PR #4851 sat red from 12 Oct, 18 yes votes waiting, on a test #4843 had
+// fixed on main: the bot's fix turn found it was not the change's, handed it
+// to a person, and main watch never read green, so nothing synced it.
+
+// The pool syncOne reads, plus the keys a proposal's syncs left on it.
+function handOffPool({ keys = null, ...rest } = {}) {
+  const pool = makePool(rest);
+  const query = pool.query.bind(pool);
+  pool.query = async (sql, params) => {
+    if (/SELECT fixed_check_sync_keys FROM chat_sessions/.test(String(sql))) {
+      pool.queries.push({ sql: String(sql), params });
+      return { rows: rest.current === null ? [] : [{ fixed_check_sync_keys: keys }] };
+    }
+    return query(sql, params);
+  };
+  return pool;
+}
+
+test('before the bot hands red checks to a person, its proposal is synced with main once, through the same claim', async () => {
+  const pool = handOffPool({ keys: [key(DOMAIN)] });
+  const { deps, calls } = makeDeps();
+  const out = await subject.syncBeforeHandOff({ config: { c: 1 }, pool, sessionId: 7504, head: HEAD.toUpperCase() }, deps);
+  assert.deepEqual(out, { synced: true, why: null, sha: NEW_HEAD });
+  const claim = pool.queries.find((q) => /SET fixed_check_sync_head = \$2/.test(q.sql));
+  assert.deepEqual(claim.params, [7504, HEAD, [subject.BOT_HANDOFF_KEY]],
+    'claimed on the head the sweep claims, so the two never both sync it; a sweep\'s key is no reason not to');
+  assert.equal(calls.sync[0].opts.trigger, 'bot_handoff');
+  assert.equal(calls.reconcile.length, 1, 'its new head is run, keeping its votes');
+});
+
+test('once per proposal, never while off, and only what syncOne would sync', async () => {
+  const { deps, calls } = makeDeps();
+  const tried = handOffPool({ keys: [subject.BOT_HANDOFF_KEY] });
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: tried, sessionId: 7504, head: HEAD }, deps),
+    { synced: false, why: 'already_tried' }, 'a check still red on a head that contains main is handed over');
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: handOffPool({ current: null }), sessionId: 7504, head: HEAD }, deps),
+    { synced: false, why: 'gone' });
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: handOffPool(), sessionId: 7504, head: null }, deps),
+    { synced: false, why: 'no_verdict' });
+  const level = makeDeps({ measured: { headSha: HEAD, behindBy: 0, mergesClean: true } });
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: handOffPool(), sessionId: 7504, head: HEAD }, level.deps),
+    { synced: false, why: 'level' }, 'a change level with main has nothing to gain');
+  const conflict = makeDeps({ measured: { headSha: HEAD, behindBy: 182, mergesClean: false } });
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: handOffPool(), sessionId: 7504, head: HEAD }, conflict.deps),
+    { synced: false, why: 'conflict' }, 'a conflict is a person\'s to resolve');
+  const down = { async query() { throw new Error('db down'); } };
+  assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: down, sessionId: 7504, head: HEAD }, deps),
+    { synced: false, why: 'threw' }, 'never throws');
+  const before = process.env.FIXED_CHECK_SYNC_ENABLED;
+  try {
+    process.env.FIXED_CHECK_SYNC_ENABLED = '0';
+    assert.deepEqual(await subject.syncBeforeHandOff({ config: {}, pool: handOffPool(), sessionId: 7504, head: HEAD }, deps),
+      { synced: false, why: 'disabled' });
+  } finally {
+    if (before === undefined) delete process.env.FIXED_CHECK_SYNC_ENABLED;
+    else process.env.FIXED_CHECK_SYNC_ENABLED = before;
+  }
+  assert.equal(calls.sync.length, 0, 'none of those synced anything');
+});
+
 // ── sweep: every app, at most MAX_SYNCS_PER_PASS ─────────────────────────
 
 test('a sweep syncs at most MAX_SYNCS_PER_PASS and never throws', async () => {

@@ -3465,7 +3465,7 @@ async function runTriage(pool, config, {
           recordFailure,
           deps: {
             github, worker, agentTurn, limits, threadContext, managedOpenRouter, sessions,
-            activeWorkers, votes: deps.votes || null, dm: deps.dm || null, ...liveD,
+            activeWorkers, votes: deps.votes || null, dm: deps.dm || null, fixedCheckSync: deps.fixedCheckSync || null, ...liveD,
             ...(deps.voice ? { voice: deps.voice } : {}), ...(deps.voiceDeps ? { voiceDeps: deps.voiceDeps } : {}),
           },
         });
@@ -6023,7 +6023,9 @@ async function noteProposalChecks(pool, { sessionId } = {}) {
 
 /**
  * ONE turn on the bot's own proposal to fix its failing checks, or the
- * hand-off to a person when it may not or cannot. Every outcome that spent
+ * hand-off to a person when it may not or cannot; before the first hand-off
+ * of a red check, a change behind main is brought up to date with it once
+ * instead, and its checks run again (handOff). Every outcome that spent
  * a turn, and every hand-off, records the head it looked at, so the same
  * failing head is never looked at twice; a platform fault records nothing
  * of the kind and keeps the queue row, as a triage's does.
@@ -6066,7 +6068,7 @@ async function runChecksFix(pool, config, {
   }
 
   let runId = null;
-  const handOff = async ({ why, verdict, extra = {}, notChange = false }) => {
+  const handOff = async ({ why, verdict, extra = {}, notChange = false, cause = null }) => {
     runId = await insertRun(pool, {
       ...billingOf(item, runMode),
       readReason: readReasonOf(item),
@@ -6077,6 +6079,32 @@ async function runChecksFix(pool, config, {
     });
     await recordSnapshot(runId);
     await dropRow();
+    // Before anybody is asked, a change behind main is brought up to date
+    // with it once and its checks run again (fixed-check-sync.js
+    // syncBeforeHandOff): a red check its fix turn could not get past is
+    // often main's of the time, fixed since. PR #4851 sat red from 12 Oct,
+    // 18 yes votes waiting, on a test #4843 had fixed on main. Not when the
+    // turn said the failures are the change's own, nor for what its shots
+    // showed not working, which no sync changes. A check still failing on
+    // the synced head comes back through this round, and is handed over.
+    if (failing.length && !broken.length && cause !== 'change') {
+      const synced = await Promise.resolve()
+        .then(() => (deps.fixedCheckSync || require('./fixed-check-sync'))
+          .syncBeforeHandOff({ config, pool, sessionId: session.id, head }))
+        .catch(() => null);
+      if (synced?.synced) {
+        await pool.query('UPDATE homeroom_bot_runs SET build_note = $2 WHERE id = $1',
+          [runId, 'Brought up to date with main before handing it over; its checks run again.']).catch(() => {});
+        await live.postOnProposal({
+          pool, ws: deps.ws, app, issueNumber, runId, kind: 'checks_synced', bot, sessionId: session.id,
+          text: followup.checksSyncedText({ failingCount: failing.length }),
+        }).catch((err) => log.warn('homeroom-bot', 'Checks sync note failed', { app: app.slug, issueNumber, err: err.message }));
+        log.info('homeroom-bot', 'Synced its proposal with main before handing its failing checks to a person', {
+          app: app.slug, issueNumber, sessionId: session.id, head, sha: synced.sha || null, runId,
+        });
+        return { ran: true, verdict, runId, acted: 'checks_synced' };
+      }
+    }
     // Only shots that could not reach a change, and no data was added: the
     // change works, and its shots card already says why each was skipped, so
     // nobody is told anything more. The head is looked at, so this is not
@@ -6307,6 +6335,7 @@ async function runChecksFix(pool, config, {
     extra: { ...spent, ...(turn.stopped ? { budgetStop: 'wall clock' } : {}) },
     // The turn found the failures are not the change's (followup.CAUSES).
     notChange: parsed?.action === 'person' && parsed.cause === 'not_change' && failing.length > 0 && !broken.length,
+    cause: parsed?.action === 'person' ? parsed.cause : null,
   });
 }
 
@@ -6460,6 +6489,7 @@ async function finishRecoveredFollowUp({
         managedOpenRouter: deps.managedOpenRouter || require('./openrouter-managed-keys'),
         agentTurn: deps.agentTurn || require('./agent-turn'),
         votes: deps.votes || null, dm: deps.dm || null, notifications: deps.notifications || null,
+        fixedCheckSync: deps.fixedCheckSync || null,
         ...liveDeps(deps),
       };
       const common = {

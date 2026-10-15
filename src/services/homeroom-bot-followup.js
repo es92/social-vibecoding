@@ -833,6 +833,19 @@ function checksNotChangeText({ failingCount = 0 } = {}) {
 }
 
 /**
+ * A red check the fix turn would have handed to a person, on a change behind
+ * main: brought up to date with main once first (homeroom-bot.js
+ * runChecksFix, fixed-check-sync.js syncBeforeHandOff), since main may have
+ * fixed it since. Said in the change's own discussion, where the checks are;
+ * a clean merge keeps the votes it has. Nobody else is told: if it still
+ * fails, the hand-off says so as it always did.
+ */
+function checksSyncedText({ failingCount = 0 } = {}) {
+  const what = failingCount === 1 ? 'Its failing check may already be fixed there' : 'Its failing checks may already be fixed there';
+  return `I've brought this change up to date with main. ${what}, so its checks run again on the new version, and the votes it has keep counting.`;
+}
+
+/**
  * Why a fix of its own checks stopped, as a whole sentence (homeroom-bot.js
  * runChecksFix hands over a fragment: "its attempt to fix them ran out of
  * time"). The fixed ones are said by Homeroom bot, which Homeroom's copy
@@ -1109,6 +1122,7 @@ module.exports = {
   checksPersonText,
   whySentence,
   checksNotChangeText,
+  checksSyncedText,
   MAX_FAILING_SHOWN,
   INFRA_MIN_FAILING,
   INFRA_FAILING_SHARE,

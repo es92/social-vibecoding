@@ -52,6 +52,15 @@
 // It runs as a leader-only sweep every INTERVAL_MS, rather than from each
 // path a merge can take, so a proposal that was stuck before it existed is
 // found on its first pass.
+//
+// The Homeroom bot asks for one more, syncBeforeHandOff below: before it
+// hands a red check on one of its proposals to a person, the proposal is
+// brought up to date with main once, without waiting for main watch. Its fix
+// turn has read the failure and found it is not the change's own; what it
+// cannot tell is whether main has fixed it since. PR #4851 sat red from
+// 12 Oct on a test #4843 had fixed on main, 182 commits behind and merging
+// cleanly, its 18 yes votes waiting, because main watch never read green.
+// The same claim, so the sweep and the bot never both sync one head.
 
 const appManifest = require('./app-manifest');
 const { isUnitSuiteRow, UNIT_CHECK_NAME, UNIT_CHECK_PATH } = require('./unit-suite-row');
@@ -317,15 +326,18 @@ async function syncOne({ config, pool, candidate }, deps = defaultDeps()) {
     if (measured.mergesClean !== true) return { synced: false, why: 'conflict' };
     if (!(await claim(pool, id, candidate.head, candidate.keys))) return { synced: false, why: 'claimed' };
 
-    log.info('fixed-check-sync', 'A proposal fails only checks main now passes; syncing it', {
-      sessionId: id, headSha: candidate.head, behindBy, checks: candidate.keys.length,
+    const trigger = candidate.trigger || 'fixed_on_main';
+    log.info('fixed-check-sync', trigger === BOT_HANDOFF_TRIGGER
+      ? 'The Homeroom bot would hand a proposal\'s red checks to a person; syncing it with main first'
+      : 'A proposal fails only checks main now passes; syncing it', {
+      sessionId: id, headSha: candidate.head, behindBy, checks: candidate.keys.length, trigger,
     });
     const result = await deps.syncMain.runSyncMain(config, pool, id, {
       // As boot-failure-sync: behind_main is a turn's count, which a
       // proposal untouched since promotion may never have had, so the sync
       // is told the measured one and says what it is doing.
       sessionRow: { ...row, behind_main: behindBy },
-      trigger: 'fixed_on_main',
+      trigger,
     });
     const pushed = !!result && result.pushOk
       && (result.syncResult === 'clean' || result.syncResult === 'resolved');
@@ -356,6 +368,38 @@ async function syncOne({ config, pool, candidate }, deps = defaultDeps()) {
     log.warn('fixed-check-sync', 'Sync for a check main fixed failed', { sessionId: id, err: err.message });
     return { synced: false, why: 'threw' };
   }
+}
+
+// The Homeroom bot's own sync (homeroom-bot.js runChecksFix): recorded beside
+// the sweep's keys, so it is once per proposal, and claimed on the head the
+// same way.
+const BOT_HANDOFF_KEY = 'homeroom_bot:handoff';
+const BOT_HANDOFF_TRIGGER = 'bot_handoff';
+
+/**
+ * Before the Homeroom bot hands the red checks on its proposal `sessionId`
+ * to a person: bring the proposal up to date with main once, if it is behind
+ * main and merges with it cleanly, and start the run for its new head
+ * (syncOne). `head` is the failing head its fix turn looked at. Never twice
+ * for one proposal: a check that still fails once it contains main is handed
+ * over as before. Never throws; resolves { synced, why }.
+ */
+async function syncBeforeHandOff({ config, pool, sessionId, head }, deps = defaultDeps()) {
+  const id = Number(sessionId);
+  if (!isEnabled()) return { synced: false, why: 'disabled' };
+  if (!(id > 0) || !head) return { synced: false, why: 'no_verdict' };
+  try {
+    const { rows } = await pool.query('SELECT fixed_check_sync_keys FROM chat_sessions WHERE id = $1', [id]);
+    if (!rows[0]) return { synced: false, why: 'gone' };
+    if ((rows[0].fixed_check_sync_keys || []).includes(BOT_HANDOFF_KEY)) return { synced: false, why: 'already_tried' };
+  } catch (err) {
+    log.warn('fixed-check-sync', 'Could not read a proposal\'s syncs before a hand-off', { sessionId: id, err: err.message });
+    return { synced: false, why: 'threw' };
+  }
+  return syncOne({
+    config, pool,
+    candidate: { id, head: String(head).toLowerCase(), keys: [BOT_HANDOFF_KEY], trigger: BOT_HANDOFF_TRIGGER },
+  }, deps);
 }
 
 /**
@@ -431,6 +475,8 @@ module.exports = {
   select,
   sweep,
   syncOne,
+  syncBeforeHandOff,
+  BOT_HANDOFF_KEY,
   mainPasses,
   openVerdicts,
   mainWatchVerdict,

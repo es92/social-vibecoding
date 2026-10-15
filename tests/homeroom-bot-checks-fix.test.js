@@ -168,9 +168,9 @@ test('the fix round\'s note says what was fixed from what failed, with no code a
 function harness({
   row = checksRow(), revisions = 0, comments = [], proposalThread = [],
   result = { lastResultText: '```json\n{"action":"revise","reply":"Renamed the control.","summary":"The text-size button now says \\"Text size\\"."}\n```', pushOk: true, sha: NEW_HEAD },
-  routed = null,
+  routed = null, sync = { synced: false, why: 'level' },
 } = {}) {
-  const calls = { queries: [], exec: [], loop: null, posts: [], onProposal: [], reconciled: [], seen: [] };
+  const calls = { queries: [], exec: [], loop: null, posts: [], onProposal: [], reconciled: [], seen: [], sync: [] };
   const pool = {
     async query(sql, params) {
       const s = String(sql);
@@ -225,6 +225,15 @@ function harness({
     sessionLifecycle: {},
     domain: 'app.onhomeroom.com',
     votes: { async reconcileNativeReviewedHead(args) { calls.reconciled.push(args); return { enforced: true }; } },
+    // Before a hand-off (fixed-check-sync.js syncBeforeHandOff): level with
+    // main unless a test says otherwise, so nothing is synced.
+    fixedCheckSync: {
+      async syncBeforeHandOff(args) {
+        calls.sync.push({ sessionId: args.sessionId, head: args.head });
+        if (sync instanceof Error) throw sync;
+        return sync;
+      },
+    },
   };
   return { pool, deps, calls };
 }
@@ -319,6 +328,65 @@ test('red checks the change did not cause go to admins as an incident; the chang
   assert.ok(incident, 'recorded for admins');
   assert.equal(incident.params[2], 5001, 'on the change');
   assert.equal(insertOf(h).params[21], HEAD, 'and not looked at again for the same head');
+  assert.deepEqual(h.calls.sync, [{ sessionId: 5001, head: HEAD }], 'a sync was asked for first, and declined');
+});
+
+// PR #4851 (request #4813): red from 12 Oct with 18 yes votes, on a test
+// #4843 had fixed on main. The fix turn said it fails without the change too,
+// and the hand-off went to admins; the proposal was 182 commits behind main
+// and merged with it cleanly, and nothing ever brought it up to date.
+const NOT_CHANGE = { lastResultText: '```json\n{"action":"person","cause":"not_change","reply":"The Kudos test fails on main too."}\n```', pushOk: true, sha: HEAD };
+
+test('a red check the change did not cause, on a change behind main: synced with main once and run again, and nobody is asked yet', async (t) => {
+  const h = harness({ result: NOT_CHANGE, sync: { synced: true, why: null, sha: NEW_HEAD } });
+  const out = await run(t, h);
+  assert.equal(out.acted, 'checks_synced');
+  assert.equal(out.verdict, 'person', 'the run says what the turn found');
+  assert.deepEqual(h.calls.sync, [{ sessionId: 5001, head: HEAD }], 'the failing head it looked at');
+  assert.equal(h.calls.posts.length, 0, 'nothing on the request, on GitHub or in the DM');
+  assert.ok(!h.calls.queries.some((q) => /INSERT INTO events/.test(q.s)), 'no incident: main may have fixed it');
+  assert.deepEqual(h.calls.onProposal.map((p) => p.kind), ['checks_synced'], 'one line where the group votes');
+  assert.equal(h.calls.onProposal[0].text, followup.checksSyncedText({ failingCount: 1 }));
+  assert.equal(h.calls.onProposal[0].text,
+    'I\'ve brought this change up to date with main. Its failing check may already be fixed there, so its checks run again on the new version, and the votes it has keep counting.');
+  const insert = insertOf(h);
+  assert.equal(insert.params[4], 'person');
+  assert.equal(insert.params[21], HEAD, 'the old head is looked at; the synced one gets its own round');
+  const note = h.calls.queries.find((q) => /UPDATE homeroom_bot_runs SET build_note = \$2 WHERE id = \$1/.test(q.s));
+  assert.deepEqual(note.params, [901, 'Brought up to date with main before handing it over; its checks run again.'],
+    'the ledger says what happened instead of the hand-off');
+  assert.equal(h.calls.reconciled.length, 0, 'the sync starts the new head\'s run itself');
+});
+
+test('out of revisions: a change behind main is synced first, with no turn spent', async (t) => {
+  const h = harness({ revisions: followup.MAX_REVISIONS, sync: { synced: true, why: null, sha: NEW_HEAD } });
+  const out = await run(t, h);
+  assert.equal(out.acted, 'checks_synced');
+  assert.equal(h.calls.exec.length, 0, 'nothing spent');
+  assert.equal(h.calls.posts.length, 0);
+  assert.deepEqual(h.calls.onProposal.map((p) => p.kind), ['checks_synced']);
+});
+
+test('no sync for failures the turn calls the change\'s own, and a sync that fails hands over as before', async (t) => {
+  const own = harness({
+    result: { lastResultText: '```json\n{"action":"person","cause":"change","reply":"My change breaks the check and I cannot fix it safely."}\n```', pushOk: true, sha: HEAD },
+    sync: { synced: true, why: null, sha: NEW_HEAD },
+  });
+  assert.equal((await run(t, own)).acted, 'checks_person');
+  assert.deepEqual(own.calls.sync, [], 'main cannot fix what the change breaks');
+  assert.equal(own.calls.posts.length, 1);
+
+  const broke = harness({ result: NOT_CHANGE, sync: new Error('worker went away') });
+  assert.equal((await run(t, broke)).acted, 'checks_not_change', 'a sync that throws is a sync that did not happen');
+  assert.equal(broke.calls.sync.length, 1);
+});
+
+test('the bot asks fixed-check-sync for the sync, once per proposal, on the failing head', () => {
+  const src = read('src/services/homeroom-bot.js');
+  const hand = src.slice(src.indexOf('const handOff = async ('), src.indexOf('// Only shots that could not reach a change'));
+  assert.match(hand, /if \(failing\.length && !broken\.length && cause !== 'change'\) \{/);
+  assert.match(hand, /\.syncBeforeHandOff\(\{ config, pool, sessionId: session\.id, head \}\)/);
+  assert.match(src, /cause: parsed\?\.action === 'person' \? parsed\.cause : null,\n {2}\}\);\n\}/);
 });
 
 test('a person the change needs is still a person: only cause not_change goes to admins', () => {
