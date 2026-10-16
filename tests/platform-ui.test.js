@@ -380,6 +380,48 @@ test('kit present: zoom opts (el, fromEl, fallback, after, outEl) forward to unN
     'outEl (#764: destination measured with the outgoing screen hidden) forwards untouched');
 });
 
+// The kit pins a zooming screen as a fixed card at z-index 9960 over its whole
+// box. #app-view's box runs under the desktop rail, so an app opening beside
+// the rail covered it until the zoom ended. The zooming screen says so for
+// exactly as long as it is pinned, and app.css lifts the docked rail over it.
+test('a zooming screen carries data-zooming until its after runs, exactly once', () => {
+  const attrs = new Map();
+  const el = {
+    setAttribute: (k, v) => attrs.set(k, v),
+    removeAttribute: (k) => attrs.delete(k),
+  };
+  let held = null;
+  const { kit } = stubKit();
+  kit.transition = (fn, opts) => { fn(); held = opts; };
+  const { PlatformUI } = makeSandbox({ kit });
+  let afters = 0;
+  const seenDuring = [];
+  PlatformUI.transition(() => seenDuring.push(attrs.has('data-zooming')), {
+    type: 'zoom-in', el, after: () => { afters += 1; seenDuring.push(attrs.has('data-zooming')); },
+  });
+  assert.equal(attrs.has('data-zooming'), true, 'on while the card is pinned');
+  held.after();
+  assert.equal(attrs.has('data-zooming'), false, 'gone once the kit runs after');
+  assert.equal(afters, 1, "the caller's own after still runs, once");
+  assert.deepEqual(seenDuring, [true, false], 'set before fn, cleared before the caller\'s after');
+  // A push, or a zoom whose el is not an element, is untouched.
+  const plain = { type: 'push', after() {} };
+  PlatformUI.transition(() => {}, plain);
+  assert.equal(held, plain);
+});
+
+test('app.css lifts the docked rail over a zooming app, on the desktop only', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
+  const rule = 'body:has(#app-view[data-zooming]) :is(#platform-tabs, #platform-parked, #platform-section-column):not(.hidden) {';
+  const at = css.indexOf(rule);
+  assert.ok(at > 0, 'the rule is there');
+  assert.match(css.slice(at, css.indexOf('}', at)), /z-index: 9961;/,
+    'over the kit\'s pinned card (9960), under its sheets (9990 and up)');
+  const open = css.lastIndexOf('@media (min-width: 768px) {', at);
+  assert.ok(open > 0);
+  assert.doesNotMatch(css.slice(open, at), /\n\}/, 'inside the desktop breakpoint');
+});
+
 // ── 3. Include regressions ─────────────────────────────────────────────
 
 const INDEX = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');

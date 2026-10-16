@@ -298,6 +298,49 @@ test('app.css keys the wallpaper and the bar\'s tokens off the tone beside .dark
   }
 });
 
+test('the sidebar beside the app takes the tone too, with the theme\'s own values', () => {
+  // On a desktop the rail stays docked beside a running app, so it is part of
+  // the strip around it. With the shell's tokens it drew a pale column (a
+  // white half-fill over the toned, night wallpaper) beside a dark bar.
+  //
+  // A DARK APP under the light shell puts `.dark` on the rail and its parked
+  // foot, as on the sheets over a dark app (lib/surface-tone.ts, #2803), so
+  // the theme's own dark palette draws them and nothing is restated.
+  const surfaces = read('frontend/src/lib/surface-tone.ts');
+  assert.match(surfaces, /IN_TREE_SURFACES = \[[^\]]*'platform-tabs', 'platform-parked'\]/);
+  // A LIGHT APP under the dark shell carries `:root`'s values, as the bar does.
+  const css = read('public/css/app.css');
+  const value = (block, token) => new RegExp(`${token}: ([^;]+);`).exec(block)?.[1];
+  const rootBlock = css.slice(0, css.indexOf('\n.dark {'));
+  const sel = '.dark[data-app-tone="light"] #platform-tabs,\n.dark[data-app-tone="light"] #platform-parked {';
+  const at = css.indexOf(sel);
+  assert.ok(at > 0, 'app.css carries the light tone onto the rail');
+  const block = css.slice(at, css.indexOf('}', at));
+  assert.match(block, /\n  color: #1c1c1e;/, 'with the body\'s light ink');
+  for (const token of [
+    '--text-primary', '--text-secondary', '--text-muted', '--text-faint',
+    '--bg-primary', '--bg-secondary', '--border', '--border-light',
+    '--app-sheet-line', '--lit-ink', '--lit-tint', '--lit-line', '--accent', '--accent-ink',
+  ]) {
+    assert.equal(value(block, token), value(rootBlock, token), `${token} is :root's`);
+  }
+  // The plane fills are declared once per theme (no-glass-one-scheme), so the
+  // rail paints :root's two directly, on the desktop.
+  for (const [rule, token] of [
+    ['.dark[data-app-tone="light"] #platform-tabs {', '--dc-sheet-fill'],
+    ['.dark[data-app-tone="light"] #platform-tabs.platform-tabs-peek {', '--dc-sheet-solid'],
+  ]) {
+    const r = css.indexOf(rule);
+    assert.ok(r > 0, rule);
+    assert.equal(/background-color: ([^;]+);/.exec(css.slice(r, css.indexOf('}', r)))[1], value(rootBlock, token),
+      `${rule} paints :root's ${token}`);
+    assert.doesNotMatch(css.slice(css.lastIndexOf('@media (min-width: 768px) {', r), r), /\n\}/, 'on the desktop');
+  }
+  const tile = css.indexOf('.dark[data-app-tone="light"] :is(#platform-tabs, #platform-parked) .app-icon-tile {');
+  assert.ok(tile > 0, 'its tiles take the light face');
+  assert.match(css.slice(tile, css.indexOf('}', tile)), /background-color: var\(--bg-primary\);\s*border-color: var\(--border-light\);/);
+});
+
 test('the head pins the theme from ?theme= as well as ?shot=', () => {
   const head = read('frontend/src/head.html');
   assert.match(head, /themeParam = params\.get\('theme'\)/);

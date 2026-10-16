@@ -454,7 +454,30 @@
         if (opts && typeof opts.after === 'function') opts.after();
         return;
       }
-      un.transition(fn, PlatformUI.underTour(PlatformUI.phoneMotion(opts || { type: 'none' })));
+      un.transition(fn, PlatformUI.underTour(PlatformUI.phoneMotion(PlatformUI.markZoom(opts || { type: 'none' }))));
+    },
+
+    /** A SCREEN THAT IS ZOOMING SAYS SO: `data-zooming` on it, from the call
+        until `after`, which the kit runs exactly once on every path (the
+        settle, an instant finish, and the push/pop/none it falls back to).
+        The kit pins the zooming screen as a fixed card at z-index 9960 over
+        its whole box, and #app-view's box runs under the desktop rail (the
+        rail's room is padding inside it), so an app opening beside the rail
+        covered the rail for the length of the zoom and it snapped back at
+        the end. app.css lifts the docked rail over the card while this is
+        set ("THE RAIL STAYS OVER AN APP THAT IS ZOOMING"). */
+    markZoom(opts) {
+      const el = opts && (opts.type === 'zoom-in' || opts.type === 'zoom-out') ? opts.el : null;
+      if (!el || typeof el.setAttribute !== 'function') return opts;
+      el.setAttribute('data-zooming', '');
+      const after = opts.after;
+      return {
+        ...opts,
+        after: () => {
+          el.removeAttribute('data-zooming');
+          if (typeof after === 'function') after();
+        },
+      };
     },
 
     /** UNDER THE FIRST-SESSION TOUR A PAGE SWAPS IN PLACE (onboarding run

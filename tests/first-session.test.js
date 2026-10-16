@@ -1132,7 +1132,9 @@ test('onboarding run two: the tour dims as one rounded shape, waits for the hub 
 
 test('onboarding runs two and three: under the tour a page swaps in place, so nothing draws over its card', () => {
   const ui = read('public/js/platform-ui.js');
-  assert.match(ui, /un\.transition\(fn, PlatformUI\.underTour\(PlatformUI\.phoneMotion\(opts \|\| \{ type: 'none' \}\)\)\);/);
+  // The tour has the last word on the motion: underTour wraps everything
+  // else, markZoom (the zooming screen's flag) included.
+  assert.match(ui, /un\.transition\(fn, PlatformUI\.underTour\(PlatformUI\.phoneMotion\(PlatformUI\.markZoom\(opts \|\| \{ type: 'none' \}\)\)\)\);/);
   const body = ui.slice(ui.indexOf('    underTour(opts) {'));
   const underTour = new Function(`const globalThis = this; return function ${body.slice(4, body.indexOf('\n    },') + 6)}`);
   const run = (running, type) => underTour.call({ __usernodeFirstSessionTourRunning: running == null ? undefined : { running } })({ type });

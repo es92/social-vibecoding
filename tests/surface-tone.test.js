@@ -47,12 +47,16 @@ test('only a dark app under the LIGHT shell tones the surfaces', () => {
   assert.equal(tone.appToneDark(fakeDoc().documentElement), false);
 });
 
-test('every kit shell and the two in-tree sheets are tone surfaces; nothing else is', () => {
+test('every kit shell, the two in-tree sheets and the desktop rail are tone surfaces; nothing else is', () => {
   for (const c of ['un-modal', 'un-sheet', 'un-panel', 'un-action-sheet', 'un-popover', 'un-alert']) {
     assert.ok(tone.isToneSurface(el([c])), c);
   }
   assert.ok(tone.isToneSurface(el(['fixed'], 'apps-switcher-sheet')), 'the Homeroom menu');
   assert.ok(tone.isToneSurface(el(['fixed'], 'notifications-sheet')));
+  // The rail stays docked beside a running app on a desktop, so it is part of
+  // the strip around a dark app, and its parked foot with it.
+  assert.ok(tone.isToneSurface(el(['platform-tabs'], 'platform-tabs')), 'the rail');
+  assert.ok(tone.isToneSurface(el(['platform-parked'], 'platform-parked')), 'its parked foot');
   for (const c of ['un-backdrop', 'overlay-scrim', 'un-toast', 'app-shell']) {
     assert.equal(tone.isToneSurface(el([c])), false, c);
   }

@@ -4772,9 +4772,9 @@
       "expectSelector": "a#back-btn:not(.hidden)[aria-label=\"Back\"][href=\"#messages\"]"
     },
     {
-      "name": "On a desktop a running app keeps the sidebar beside it, and the header's corner is the sidebar toggle rather than a ✕; no left-edge hover strip over the app (#3138)",
+      "name": "On a desktop a running app keeps the sidebar beside it, its Communities tab names the app's community, and the header's corner is the sidebar toggle rather than a ✕; no left-edge hover strip over the app (#3138)",
       "path": "/#app/staging-demo-forkable",
-      "expectSelector": "body.rail-pinned:has(#app-view:not(.hidden)):has(#platform-tabs:not(.hidden)):not(:has(#platform-rail-peek)) #platform-header .platform-header-left:has(> a#back-btn.hidden) > #sidebar-toggle[aria-pressed=\"true\"]"
+      "expectSelector": "body.rail-pinned:has(#app-view:not(.hidden)):has(#platform-tab-workshop[aria-label$=\"forkable app\"]):not(:has(#platform-rail-peek)) #platform-header .platform-header-left:has(> a#back-btn.hidden) > #sidebar-toggle[aria-pressed=\"true\"]"
     },
     {
       "id": "agent-session.card",

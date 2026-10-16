@@ -5949,6 +5949,43 @@ const App = {
     try { window.UsernodeReact?.communityScope?.setScope(slug || null); } catch (_) { /* no bundle yet */ }
   },
 
+  // THE TAB FOLLOWS THE APP BESIDE IT. With the rail docked beside a running
+  // app (_railBesideApp), the Communities tab is on screen next to that app,
+  // and it read as the last project page left, often another app's: the
+  // whiteboard's tile beside the tier list. So opening an app makes the tab
+  // that app's community, and a press on it goes to that app's Workshop
+  // (resumeWorkshopView). A view already inside this app is kept, so the tab
+  // still returns to the card you were reading there. Its name and icon come
+  // from the record the app view opened with, filled in for a community the
+  // switcher's list does not hold (one you use but are not in).
+  _scopeToRunningApp() {
+    const slug = App.currentApp;
+    if (!slug || App.embeddedPanel) return;
+    let rec = null;
+    try {
+      rec = (typeof AppView !== 'undefined'
+        && ((AppView.appData?.slug === slug ? AppView.appData : null)
+          || AppView.launchRecordFor?.(slug))) || null;
+    } catch (_) { /* no record: the store keeps what it knows */ }
+    if (rec?.self_hosted) return;
+    if (App._readWorkshopView()?.slug !== slug) {
+      try {
+        localStorage.setItem(App._WORKSHOP_VIEW_KEY,
+          JSON.stringify({ slug, path: `/app/${encodeURIComponent(slug)}/workshop` }));
+      } catch (_) { /* the tab still shows it; the press keeps the old view */ }
+    }
+    if (rec?.name) {
+      try {
+        window.UsernodeReact?.communityScope?.describe?.(slug, {
+          name: rec.name,
+          iconUrl: rec.icon_url || undefined,
+          iconEmoji: rec.icon_emoji || undefined,
+        });
+      } catch (_) { /* no bundle yet */ }
+    }
+    App._publishCommunityScope(slug);
+  },
+
   _readWorkshopView() {
     try {
       const v = JSON.parse(localStorage.getItem(App._WORKSHOP_VIEW_KEY) || 'null');
@@ -6100,6 +6137,8 @@ const App = {
     // frame's own padding off (no gutter around somebody's program).
     const railPinned = inApp && App._railBesideApp();
     document.body?.classList?.toggle('rail-pinned', railPinned);
+    // …and its Communities tab names this app's community (_scopeToRunningApp).
+    if (railPinned && !App.chromeless) App._scopeToRunningApp();
     App._watchRailBreakpoint();
     App.Visibility.publish(
       'platform-tabs',

@@ -61,7 +61,7 @@ function fakeElement() {
 // public/js/app.js in a vm. History moves the address, so the router reads
 // back what it wrote; storage is a Map so persistence can be inspected.
 // PlatformUI.transition runs the reveal and `after` synchronously.
-function router({ catalog = [WHITEBOARD, NOTES], appsLoaded = true, storage = new Map() } = {}) {
+function router({ catalog = [WHITEBOARD, NOTES], appsLoaded = true, storage = new Map(), phone = false } = {}) {
   const errors = [];
   const noop = () => undefined;
   const elements = new Map();
@@ -81,6 +81,8 @@ function router({ catalog = [WHITEBOARD, NOTES], appsLoaded = true, storage = ne
       dispatchEvent() {},
     },
     addEventListener() {},
+    // A desktop unless `phone` (no matchMedia reads as the desktop).
+    ...(phone ? { matchMedia: () => ({ matches: false, addEventListener() {} }) } : {}),
     localStorage: {
       getItem: (k) => (storage.has(k) ? storage.get(k) : null),
       setItem: (k, v) => storage.set(k, String(v)),
@@ -174,7 +176,9 @@ test('on the selector the tab stays put', async () => {
 });
 
 test('the running app and a change are not Workshop views; the discussion is its project page', async () => {
-  const r = router();
+  // On a phone, where the running app covers the bar. (On a desktop the rail
+  // stays beside it and the tab follows it: the next test.)
+  const r = router({ phone: true });
   await r.App.navigateToApp(WHITEBOARD.slug, 'app');
   assert.equal(r.storage.has(KEY), false, 'the running app is the parked strip\'s');
   await r.App.switchTab('dev', 42, 'sessions');
@@ -184,6 +188,21 @@ test('the running app and a change are not Workshop views; the discussion is its
   await r.App.switchTab('dev', null, 'chat');
   assert.deepEqual(JSON.parse(r.storage.get(KEY)),
     { slug: WHITEBOARD.slug, path: '/app/whiteboard-ab12cd/workshop' });
+});
+
+test('on a desktop the tab follows the running app beside the rail, to its Workshop', async () => {
+  // The Communities tab is on screen next to the app there, so it names the
+  // app's community and a press goes to that app's Workshop.
+  const r = router();
+  await onCard(r);
+  await r.App.navigateToApp(NOTES.slug, 'app');
+  assert.deepEqual(JSON.parse(r.storage.get(KEY)),
+    { slug: NOTES.slug, path: `/app/${NOTES.slug}/workshop` });
+  // Back in an app whose card you were reading, that card is kept.
+  await onCard(r);
+  await r.App.navigateToApp(WHITEBOARD.slug, 'app');
+  assert.deepEqual(JSON.parse(r.storage.get(KEY)),
+    { slug: WHITEBOARD.slug, path: '/app/whiteboard-ab12cd/dev/proposals/7' });
 });
 
 test('the view is persisted, so it survives a reload', async () => {

@@ -4454,6 +4454,57 @@ html.un-ios.web-browser-chrome:not([data-community-tint]):not([data-browser-scro
 .dark[data-app-tone="light"] #platform-header #app-switcher-subtitle {
   color: #68686c; /* zinc-500 */
 }
+/* …AND THE SIDEBAR BESIDE THE APP. On a desktop the rail stays docked beside
+   a running app (App._railBesideApp), so it is part of the strip around the
+   app just as the bar is, and it takes the same tone: with the shell's own
+   values it drew a pale column (a white half-fill over the toned, night
+   wallpaper) beside a dark bar, or a night one beside a light bar.
+
+   A DARK APP UNDER THE LIGHT SHELL puts `.dark` on the rail and its parked
+   foot (lib/surface-tone.ts, the way the sheets over a dark app follow it,
+   #2803), so the theme's own dark palette draws them: fill, ink, lit row,
+   counts and tiles, with nothing restated here.
+
+   A LIGHT APP UNDER THE DARK SHELL cannot do that (`.dark` cannot be taken
+   away below a dark <html>), so the light values are carried here, the
+   theme's own from `:root`, as the bar's are above. The two plane fills are
+   set on the rail itself rather than as tokens: `--dc-sheet-fill` and
+   `--dc-sheet-solid` are declared once per theme and nowhere else
+   (tests/no-glass-one-scheme.test.js), so the rail paints `:root`'s values
+   directly, on the desktop, where it is a rail. */
+.dark[data-app-tone="light"] #platform-tabs,
+.dark[data-app-tone="light"] #platform-parked {
+  color: #1c1c1e; /* zinc-900, the body's light ink */
+  color-scheme: light;
+  --text-primary: #0a0a0a;
+  --text-secondary: #3a3a3c;
+  --text-muted: #68686c;
+  --text-faint: #8e8e93;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f7;
+  --border: #d1d1d6;
+  --border-light: #e3e3e6;
+  --app-sheet-line: rgba(0, 0, 0, 0.1);
+  --lit-ink: #0062cc;
+  --lit-tint: #eaf4ff;
+  --lit-line: rgba(10, 110, 224, 0.25);
+  --accent: #0a6ee0;
+  --accent-ink: #ffffff;
+}
+@media (min-width: 768px) {
+  .dark[data-app-tone="light"] #platform-tabs {
+    background-color: rgba(255, 255, 255, 0.50); /* :root's --dc-sheet-fill */
+  }
+  .dark[data-app-tone="light"] #platform-tabs.platform-tabs-peek {
+    background-color: #faf9f2; /* :root's --dc-sheet-solid */
+  }
+}
+/* Its app tiles take the light theme's face and ring, as the sheet's do
+   (see "THE ICON TILE IS THE ONE SURFACE" above). */
+.dark[data-app-tone="light"] :is(#platform-tabs, #platform-parked) .app-icon-tile {
+  background-color: var(--bg-primary);
+  border-color: var(--border-light);
+}
 /* AND WHAT OPENS OVER A DARK APP IS DARK TOO (#2803). This used to be the
    one thing the tone left alone: every sheet, dialog and menu kept the
    viewer's own mode, so Send feedback and the Homeroom menu opened as cream
@@ -22208,6 +22259,20 @@ html.un-kb #platform-parked {
   html:not(.un-kb) body.rail-pinned:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek):not(.platform-tabs-folded)) #app-view {
     padding-left: var(--platform-rail-w, 0px);
     padding-right: 0;
+  }
+
+  /* THE RAIL STAYS OVER AN APP THAT IS ZOOMING. Opening an app out of its
+     tile (and shrinking it back into one) pins #app-view as a fixed card at
+     z-index 9960 over its whole box, wallpaper and all, and that box runs
+     under the rail: the rail's room is the padding above. So with the rail
+     beside the app it vanished for the length of the zoom and snapped back
+     when the card was lifted. While the card is pinned (PlatformUI.markZoom
+     puts `data-zooming` on it for exactly that long) the docked rail, its
+     foot and the section column beside it sit over the card instead; the
+     part of the card under them is only the padding. Still under the kit's
+     sheets (9990 and up). A route whose rail is hidden is untouched. */
+  body:has(#app-view[data-zooming]) :is(#platform-tabs, #platform-parked, #platform-section-column):not(.hidden) {
+    z-index: 9961;
   }
 
   .platform-tabs {

@@ -27,10 +27,12 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const appSource = read('public/js/app.js');
 const css = read('public/css/app.css');
 
-function harness({ stored = null, phone = false, throws = false, user = null } = {}) {
+function harness({ stored = null, phone = false, throws = false, user = null, appView = null } = {}) {
   const store = new Map(stored == null ? [] : [['usernode:rail-pinned', stored]]);
   const classes = new Set();
   const slots = [];
+  const scopes = [];
+  const described = [];
   const localStorage = throws
     ? { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() {} }
     : {
@@ -67,12 +69,17 @@ function harness({ stored = null, phone = false, throws = false, user = null } =
   context.UsernodeReact = {
     nav: { setScreen() {} },
     backButton: { set: (mode) => slots.push(mode) },
+    communityScope: {
+      setScope: (slug) => scopes.push(slug),
+      describe: (slug, patch) => described.push([slug, patch]),
+    },
   };
+  if (appView) context.AppView = appView;
   App.currentTab = 'app';
   App.currentApp = 'garden-ab12';
   if (user) App.user = user;
   return {
-    App, store, classes,
+    App, store, classes, scopes, described,
     shown: () => App.Visibility.read('platform-tabs'),
     // The running app's corner, as both writers publish it.
     corner: () => App._backSlotFor('app-view')[0],
@@ -169,6 +176,52 @@ test('the running app\'s two corner writers agree (_backSlotFor and switchTab)',
   assert.doesNotMatch(appSource, /App\.setBackIcon\('close',/);
   assert.match(appSource, /if \(App\._railBesideApp\(\)\) return \['none'\];/);
   assert.match(appSource, /const railPinned = inApp && App\._railBesideApp\(\);/);
+});
+
+// The Communities tab is on screen beside the app now, so it names the app's
+// community rather than the last project page left, and a press on it goes to
+// this app's Workshop (App.resumeWorkshopView reads the same view).
+const VIEW_KEY = 'usernode_workshop_view_v1';
+const garden = { launchRecordFor: (slug) => (slug === 'garden-ab12'
+  ? { slug, name: 'Garden', icon_url: '/garden.png', icon_emoji: null } : null) };
+
+test('an app opened beside the rail puts the Communities tab on its community', () => {
+  const { App, store, scopes, described } = harness({ appView: garden });
+  store.set(VIEW_KEY, JSON.stringify({ slug: 'whiteboard-cd34', path: '/app/whiteboard-cd34/dev/issues/7' }));
+  App._syncPlatformTabs('app-view');
+  assert.equal(scopes.at(-1), 'garden-ab12', 'the tab is on the open app');
+  assert.deepEqual(JSON.parse(store.get(VIEW_KEY)),
+    { slug: 'garden-ab12', path: '/app/garden-ab12/workshop' }, 'and a press goes to its Workshop');
+  const [slug, patch] = described.at(-1);
+  assert.equal(slug, 'garden-ab12');
+  assert.equal(patch.name, 'Garden', 'its face is described from the record the app opened with');
+  assert.equal(patch.iconUrl, '/garden.png');
+  assert.equal(patch.iconEmoji, undefined, 'a field the record lacks is left to what the store knows');
+});
+
+test('a view already inside the open app is kept', () => {
+  const { App, store, scopes } = harness({ appView: garden });
+  const deeper = JSON.stringify({ slug: 'garden-ab12', path: '/app/garden-ab12/dev/issues/4' });
+  store.set(VIEW_KEY, deeper);
+  App._syncPlatformTabs('app-view');
+  assert.equal(scopes.at(-1), 'garden-ab12');
+  assert.equal(store.get(VIEW_KEY), deeper, 'the card you were reading there is still where the tab goes');
+});
+
+test('the tab is left alone where the rail is not beside the app', () => {
+  for (const opts of [{ phone: true }, { stored: '0' }]) {
+    const { App, store, scopes } = harness({ ...opts, appView: garden });
+    const other = JSON.stringify({ slug: 'whiteboard-cd34', path: '/app/whiteboard-cd34/workshop' });
+    store.set(VIEW_KEY, other);
+    App._syncPlatformTabs('app-view');
+    assert.deepEqual(scopes, [], JSON.stringify(opts));
+    assert.equal(store.get(VIEW_KEY), other, JSON.stringify(opts));
+  }
+  // Nor on the app's own Workshop: its view is noted by updateHash as before.
+  const { App, scopes } = harness({ appView: garden });
+  App.currentTab = 'dev';
+  App._syncPlatformTabs('app-view');
+  assert.deepEqual(scopes, []);
 });
 
 test('the pinned frame rule lives only inside the desktop breakpoint', () => {
