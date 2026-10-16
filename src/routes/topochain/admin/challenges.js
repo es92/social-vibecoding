@@ -19,6 +19,21 @@ const {
 
 const CTA_TYPE_VALUES = new Set(['url', 'app']);
 
+// The admin list's item: the public shape (challenge-view.js), plus the two
+// things only an admin sets that the public list leaves out: where the
+// challenge sits in its event's order, and whether it is featured. Without
+// the order, the console's edit form read every challenge's as 0 and a save
+// moved it to the top; the admin connector's tools read both here too
+// (routes/challenge-admin.js).
+function adminListItem(r) {
+  return {
+    ...buildChallengeListItem(r),
+    display_order: Number(r.display_order) || 0,
+    featured: r.featured === true,
+    featured_order: r.featured_order != null ? Number(r.featured_order) : null,
+  };
+}
+
 // One challenges<->challenge_templates JOIN, reused by every route below
 // that needs "the raw row with its activity_type" (create/update/toggle/
 // move/reorder — SPEC 2680/2690's fresh()-bug fix) or the public-shaped
@@ -209,7 +224,7 @@ function challengesAdminRoutes(config) {
         `${CHALLENGE_JOIN_SELECT} WHERE c.season_event_id = $1 ORDER BY c.display_order ASC, c.id ASC`,
         [seasonEventId]
       );
-      const data = rows.filter((r) => r.t_id != null).map(buildChallengeListItem);
+      const data = rows.filter((r) => r.t_id != null).map(adminListItem);
 
       return ok(res, { data });
     } catch (err) {
@@ -380,7 +395,7 @@ function challengesAdminRoutes(config) {
         `${CHALLENGE_JOIN_SELECT} WHERE c.season_event_id = $1 ORDER BY c.display_order ASC, c.id ASC`,
         [seasonEventId]
       );
-      const data = rows.filter((r) => r.t_id != null).map(buildChallengeListItem);
+      const data = rows.filter((r) => r.t_id != null).map(adminListItem);
 
       return ok(res, { data }, { message: 'Display orders updated successfully.' });
     } catch (err) {

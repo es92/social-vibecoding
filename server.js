@@ -711,6 +711,10 @@ app.use(require('./src/routes/shots-evals').shotsEvalRoutes(config));
 // Test accounts for first-run testing, minted by a full admin's connector
 // session (services/test-accounts.js).
 app.use(require('./src/routes/test-accounts').testAccountRoutes(config));
+// The programme's challenges (events, their challenges, templates and scoring
+// rules) through a full admin's connector session: each door hands on to the
+// console's own /api/v4/admin route (routes/challenge-admin.js).
+app.use(require('./src/routes/challenge-admin').challengeAdminRoutes(config));
 app.use(adminSupportRoutes(config));
 app.use(adminUserMergeRoutes(config));
 app.use(dashboardRoutes(config));

@@ -717,3 +717,92 @@ test('the six test-account routes are allowed, full-admin gated first, limited, 
   // Nothing else in the file registers a route.
   assert.equal((src.match(/router\.(get|post|put|patch|delete|use|all)\(/g) || []).length, 6);
 });
+
+// The programme's challenges (routes/challenge-admin.js). Twenty-two doors
+// outside /api/v4 (which a connector can never reach), allowed because every
+// one refuses anybody who is not a full platform admin before anything else
+// runs, reads included; every write is then limited per person and refused to
+// a browser on another origin. Each door hands the request to the console's
+// own route at the same path under /api/v4/admin, and only the doors listed:
+// deleting a whole event, the CSV export, users and the SQL console stay out.
+test('the challenge doors are allowed, full-admin gated first, and each opens onto the console route at the same path', () => {
+  const doors = [
+    ['GET', '/api/challenge-admin/season-events'],
+    ['POST', '/api/challenge-admin/season-events'],
+    ['GET', '/api/challenge-admin/season-events/7'],
+    ['PATCH', '/api/challenge-admin/season-events/7'],
+    ['GET', '/api/challenge-admin/season-events/7/challenges'],
+    ['POST', '/api/challenge-admin/season-events/7/challenges'],
+    ['GET', '/api/challenge-admin/season-events/7/challenges/available-activity-types'],
+    ['PATCH', '/api/challenge-admin/season-events/7/challenges/update-display-orders'],
+    ['PUT', '/api/challenge-admin/season-events/7/challenges/41'],
+    ['DELETE', '/api/challenge-admin/season-events/7/challenges/41'],
+    ['PATCH', '/api/challenge-admin/season-events/7/challenges/41/move'],
+    ['GET', '/api/challenge-admin/challenge-templates'],
+    ['POST', '/api/challenge-admin/challenge-templates'],
+    ['GET', '/api/challenge-admin/challenge-templates/categories'],
+    ['GET', '/api/challenge-admin/challenge-templates/12'],
+    ['PATCH', '/api/challenge-admin/challenge-templates/12'],
+    ['DELETE', '/api/challenge-admin/challenge-templates/12'],
+    ['GET', '/api/challenge-admin/challenge-scoring'],
+    ['POST', '/api/challenge-admin/challenge-scoring/rules'],
+    ['PUT', '/api/challenge-admin/challenge-scoring/rules/3'],
+    ['DELETE', '/api/challenge-admin/challenge-scoring/rules/3'],
+    ['POST', '/api/challenge-admin/challenge-scoring/run'],
+  ];
+  for (const [method, target] of doors) {
+    assert.equal(policy.isConnectorApiRequest(method, target), true, `${method} ${target}`);
+  }
+  for (const [method, target] of [
+    // A whole event, and everything in it, is deleted only in the console.
+    ['DELETE', '/api/challenge-admin/season-events/7'],
+    ['PUT', '/api/challenge-admin/season-events/7'],
+    ['PATCH', '/api/challenge-admin/season-events/7/challenges/41/toggle-enabled'],
+    ['PATCH', '/api/challenge-admin/season-events/7/challenges/41'],
+    ['GET', '/api/challenge-admin/season-events/7/challenges/41'],
+    ['PUT', '/api/challenge-admin/challenge-templates/12'],
+    ['GET', '/api/challenge-admin/challenge-scoring/anatomy'],
+    ['GET', '/api/challenge-admin/challenge-scoring/rules'],
+    ['GET', '/api/challenge-admin/programme/export.csv'],
+    ['GET', '/api/challenge-admin/users'],
+    ['POST', '/api/challenge-admin/sql-query/execute'],
+    ['POST', '/api/challenge-admin/challenge-illustrations'],
+    // The console's own routes stay out of reach.
+    ['GET', '/api/v4/admin/season-events'],
+    ['POST', '/api/v4/admin/challenge-templates'],
+  ]) {
+    assert.equal(policy.isConnectorApiRequest(method, target), false, `${method} ${target} is refused`);
+  }
+
+  const src = fs.readFileSync(path.join(__dirname, '../src/routes/challenge-admin.js'), 'utf8');
+  const routes = [...src.matchAll(/router\.(get|post|put|patch|delete)\('(\/api\/challenge-admin[^']*)', ([^)]*?)toConsole\)/g)];
+  assert.equal(routes.length, 22);
+  assert.equal((src.match(/router\.(get|post|put|patch|delete|use|all)\(/g) || []).length, 22, 'nothing else in the file is a route');
+  // The doors and the allowlist agree both ways: every door is allowed, and
+  // every allowed pattern is a door (GET .../categories rides on .../:id).
+  const shape = (p) => p.split('/').map((seg) => (seg.startsWith(':') ? ':x' : seg)).join('/');
+  const doorShapes = new Set(routes.map(([, m, route]) => `${m.toUpperCase()} ${shape(route)}`));
+  for (const [, m, route] of routes) {
+    assert.equal(policy.isConnectorApiRequest(m, route.replace(/:[a-zA-Z]+/g, '7')), true, `${m.toUpperCase()} ${route} is allowed`);
+  }
+  for (const r of policy.CONNECTOR_ALLOWED_ROUTES.filter((x) => x.pattern.startsWith('/api/challenge-admin/'))) {
+    assert.ok(doorShapes.has(`${r.method} ${shape(r.pattern)}`), `${r.method} ${r.pattern} is a door`);
+  }
+
+  const consoleSrc = ['season-events', 'challenge-templates', 'challenges', 'challenge-scoring']
+    .map((f) => fs.readFileSync(path.join(__dirname, `../src/routes/topochain/admin/${f}.js`), 'utf8')).join('\n');
+  const consoleRoutes = new Set([...consoleSrc.matchAll(/router\.(get|post|put|patch|delete)\('(\/api\/v4\/admin\/[^']+)'/g)]
+    .map(([, m, route]) => `${m.toUpperCase()} ${shape(route)}`));
+  for (const [, method, route, chain] of routes) {
+    const name = `${method.toUpperCase()} ${route}`;
+    const onto = `${method.toUpperCase()} ${shape(route.replace('/api/challenge-admin/', '/api/v4/admin/'))}`;
+    assert.ok(consoleRoutes.has(onto), `${name} opens onto the console's ${onto}`);
+    assert.doesNotMatch(route, /password|credentials|secrets/, `${route} carries no credential segment`);
+    if (method === 'get') {
+      assert.equal(chain, 'requireAdminWrite, ', `${name} is full-admin gated`);
+    } else {
+      assert.equal(chain, 'requireAdminWrite, challengeAdminLimiter, sameOriginBrowserOnly, ',
+        `${name} is full-admin gated, then limited, then guarded`);
+    }
+  }
+});

@@ -338,6 +338,40 @@ included, and every write then `benchStudioLimiter` (a launch
 `benchRunLimiter`) and `sameOriginBrowserOnly`. The writes are acting tools;
 everything else is a `get_`/`list_` read.
 
+### Admin only: the programme's challenges
+
+A full platform admin's connector also manages the challenge programme: the
+events, the challenges in each, the templates challenges are made from, and
+the rules that credit them automatically. These are the console's Season
+events, Challenge templates and Challenge scoring screens, a call at a time,
+so a week can be set up from a conversation instead of one form after
+another. The charter's `challenges` section is the procedure a session
+follows.
+
+| Tool | What it actually does |
+|---|---|
+| `list_challenge_events`, `get_challenge_event` | The events, newest first (`search`, `seasonId`, `page`); one event in full with its challenges in order, each with what its card shows, which fields it sets itself, its place and whether it is featured, and with `availableTemplates` the templates it has no challenge from yet. Read-only |
+| `save_challenge_event` | Makes an event (no `eventId`) or changes one. Deleting an event stays in the console |
+| `add_challenge`, `edit_challenge` | Adds a challenge to an event from a template, or changes one. A field set to `null` goes back to the template's |
+| `reorder_challenges`, `move_challenge` | Sets an event's order from a list of its challenge ids; moves a challenge, with the credits earned for it, to another event |
+| `remove_challenge` | With `confirm: "REMOVE"`: removes a challenge and every credit earned for it. `edit_challenge` with `enabled: false` hides one instead |
+| `list_challenge_templates`, `get_challenge_template` | The templates and their categories; one in full. Read-only |
+| `save_challenge_template`, `delete_challenge_template` | Makes or changes a template (which changes every challenge made from it, wherever the challenge does not set that field itself); deletes one no challenge uses |
+| `get_challenge_scoring` | The measures, the rules with each challenge they cover and why any is skipped, the last runs and the schedule. Read-only |
+| `save_challenge_scoring_rule`, `delete_challenge_scoring_rule` | Makes, changes or deletes a scoring rule. Credits a deleted rule wrote stay |
+| `run_challenge_scoring` | Runs the scorer now, or previews it with `dryRun: true`, which writes nothing and calls no grading model |
+
+Fields keep the console's own names (`goal`, `schedule_start`, `cta_link`)
+in both directions, so a refusal that names a field names the one sent. The
+routes sit at `/api/challenge-admin` (`routes/challenge-admin.js`), because a
+connector can never reach `/api/v4`. Each is gated `requireAdminWrite` first,
+reads included, and every write then `challengeAdminLimiter` and
+`sameOriginBrowserOnly`. Each one then hands the request to the console's own
+route at the same path under `/api/v4/admin`, so the console and a connector
+session validate and write alike. Only the listed doors open: deleting an
+event, the CSV export, users and the SQL console are not among them. The
+writes are acting tools; the reads are `get_`/`list_`.
+
 ---
 
 ## 3. The allowlist Homeroom ships

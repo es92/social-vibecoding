@@ -316,6 +316,36 @@ const CONNECTOR_ALLOWED_ROUTES = Object.freeze([
   // about its first version, or the copy retiring the account kept
   // (services/run-report.js). Metadata and short excerpts, never a secret.
   { method: 'GET', pattern: '/api/test-accounts/run-report' },
+  // The programme's challenges (routes/challenge-admin.js): the events, the
+  // challenges in each, the templates they are stamped from and the rules
+  // that score them, as the console's Season events, Challenge templates and
+  // Challenge scoring screens manage them. The same gate first on every
+  // handler (requireAdminWrite), reads included; every write then limited per
+  // person and refused to a browser on another origin. Each one hands on to
+  // the console's own /api/v4/admin route, which a connector can never reach
+  // directly, and only these: deleting a whole event stays in the console.
+  // They change the programme people see on Challenges, never an app.
+  { method: 'GET', pattern: '/api/challenge-admin/season-events' },
+  { method: 'POST', pattern: '/api/challenge-admin/season-events' },
+  { method: 'GET', pattern: '/api/challenge-admin/season-events/:id' },
+  { method: 'PATCH', pattern: '/api/challenge-admin/season-events/:id' },
+  { method: 'GET', pattern: '/api/challenge-admin/season-events/:id/challenges' },
+  { method: 'POST', pattern: '/api/challenge-admin/season-events/:id/challenges' },
+  { method: 'GET', pattern: '/api/challenge-admin/season-events/:id/challenges/available-activity-types' },
+  { method: 'PATCH', pattern: '/api/challenge-admin/season-events/:id/challenges/update-display-orders' },
+  { method: 'PUT', pattern: '/api/challenge-admin/season-events/:id/challenges/:challenge' },
+  { method: 'DELETE', pattern: '/api/challenge-admin/season-events/:id/challenges/:challenge' },
+  { method: 'PATCH', pattern: '/api/challenge-admin/season-events/:id/challenges/:challenge/move' },
+  { method: 'GET', pattern: '/api/challenge-admin/challenge-templates' },
+  { method: 'POST', pattern: '/api/challenge-admin/challenge-templates' },
+  { method: 'GET', pattern: '/api/challenge-admin/challenge-templates/:id' },
+  { method: 'PATCH', pattern: '/api/challenge-admin/challenge-templates/:id' },
+  { method: 'DELETE', pattern: '/api/challenge-admin/challenge-templates/:id' },
+  { method: 'GET', pattern: '/api/challenge-admin/challenge-scoring' },
+  { method: 'POST', pattern: '/api/challenge-admin/challenge-scoring/rules' },
+  { method: 'PUT', pattern: '/api/challenge-admin/challenge-scoring/rules/:id' },
+  { method: 'DELETE', pattern: '/api/challenge-admin/challenge-scoring/rules/:id' },
+  { method: 'POST', pattern: '/api/challenge-admin/challenge-scoring/run' },
   // The browser languages people use, and where the translation step stands
   // (routes/ui-telemetry.js): a read, behind the same full-admin gate.
   { method: 'GET', pattern: '/api/browser-languages' },

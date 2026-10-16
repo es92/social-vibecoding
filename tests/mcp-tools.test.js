@@ -2807,6 +2807,11 @@ test('the registered tool surface is exactly this, and nothing more', () => {
   const registered = [...SRC.matchAll(/server\.registerTool\('([a-z_]+)'/g)].map((m) => m[1]);
   assert.deepEqual(registered.sort(), [
     'add_bench_task',
+    // The programme's challenges (routes/challenge-admin.js, which hands each
+    // call to the console's own /api/v4/admin route): events, their
+    // challenges, templates and scoring rules. Registered only for a full
+    // platform admin, and every route behind them refuses anybody else.
+    'add_challenge',
     'answer_questions',
     // #3654. Cancelling a benchmark run: full platform admins only.
     'cancel_bench_run',
@@ -2829,10 +2834,11 @@ test('the registered tool surface is exactly this, and nothing more', () => {
     // registered only for a full platform admin, and every route behind them
     // refuses anybody else.
     'create_test_account', 'create_test_phone_sign_in',
+    'delete_challenge_scoring_rule', 'delete_challenge_template',
     // Demo mode: the four acting tools of a creator's synthetic partner, and
     // its read — see ACTING_TOOLS and routes/demo-mode.js.
     'demo_mode', 'demo_promote', 'demo_propose', 'demo_reset', 'demo_vote',
-    'deploy_bench_preview', 'edit_bench_task', 'get_app',
+    'deploy_bench_preview', 'edit_bench_task', 'edit_challenge', 'get_app',
     'get_bench_context_pack', 'get_bench_gallery',
     'get_bench_item', 'get_bench_reference_order',
     // #3654. One benchmark run's results, as aggregates only.
@@ -2846,6 +2852,7 @@ test('the registered tool surface is exactly this, and nothing more', () => {
     // #3659. Which languages people's browsers ask for, and where the
     // translation step stands. Full platform admins only.
     'get_browser_languages',
+    'get_challenge_event', 'get_challenge_scoring', 'get_challenge_template',
     // #2779. A native change, read the way the change page reads it.
     'get_change',
     // #1433. Read-only, and named `get_` so the shipped allow rules already
@@ -2878,10 +2885,12 @@ test('the registered tool surface is exactly this, and nothing more', () => {
     'launch_bench_run', 'launch_bench_studio', 'launch_shots_eval',
     'list_apps', 'list_bench_context_packs', 'list_bench_grading_queue', 'list_bench_runs',
     'list_bench_suites', 'list_bench_trials', 'list_bot_configs',
+    'list_challenge_events', 'list_challenge_templates',
     'list_my_proposals',
     // #4266. Exactly the work orders prepare_work's open-work-order cap counts.
     'list_my_work_orders',
     'list_recent_shots', 'list_requests', 'list_shots_configs', 'list_shots_evals', 'list_test_accounts',
+    'move_challenge',
     // #1405. They write a row, but only into the CALLER'S OWN notification
     // feed — see the allow-rule reasoning in services/mcp-connect-constants.js
     // for why that is a different category from the acting tools below.
@@ -2904,11 +2913,15 @@ test('the registered tool surface is exactly this, and nothing more', () => {
     'rate_homeroom_bot_run',
     'recheck_change',
     'release_request',
+    'remove_challenge', 'reorder_challenges',
     'rerun_bench_trial',
     'retire_test_account',
+    'run_challenge_scoring',
     // The configurations' writes: a version saved, a role set, a scope's
     // side-build budget set, a pick.
-    'save_bot_config', 'save_shots_config',
+    'save_bot_config',
+    'save_challenge_event', 'save_challenge_scoring_rule', 'save_challenge_template',
+    'save_shots_config',
     // The waitlist's "you're in" mail sent to a test address: full platform
     // admins only, like the other test-account tools.
     'send_test_release_email',
@@ -3121,19 +3134,22 @@ test('ACTING_TOOLS names every user-directed action, and every one is a write', 
   // mean a read is being withheld from both for no reason, and a write left
   // out of it would leak into the read-only globs.
   assert.deepEqual([...tools.ACTING_TOOLS].sort(), [
-    'add_bench_task',
+    'add_bench_task', 'add_challenge',
     'cancel_bench_run', 'cancel_bench_trial', 'cancel_shots_eval',
     'close_work_order',
     'create_bench_context_pack', 'create_request', 'create_test_account', 'create_test_phone_sign_in',
+    'delete_challenge_scoring_rule', 'delete_challenge_template',
     'demo_mode', 'demo_promote', 'demo_propose', 'demo_reset', 'demo_vote',
-    'deploy_bench_preview', 'edit_bench_task', 'keep_bench_trial',
+    'deploy_bench_preview', 'edit_bench_task', 'edit_challenge', 'keep_bench_trial',
     'label_bench_task', 'launch_bench_run', 'launch_bench_studio', 'launch_shots_eval',
+    'move_challenge',
     'post_message', 'post_spec', 'prepare_work', 'promote_change', 'propose_close_request',
-    'rate_homeroom_bot_run', 'recheck_change', 'rerun_bench_trial',
-    'retire_test_account',
+    'rate_homeroom_bot_run', 'recheck_change', 'remove_challenge', 'reorder_challenges', 'rerun_bench_trial',
+    'retire_test_account', 'run_challenge_scoring',
     // The Homeroom bot's configurations: full admins only.
     // Before & after shots evals: full admins only.
-    'save_bot_config', 'save_shots_config', 'send_test_release_email', 'set_bot_config_budget', 'set_bot_config_role', 'start_change',
+    // The programme's challenges: full admins only.
+    'save_bot_config', 'save_challenge_event', 'save_challenge_scoring_rule', 'save_challenge_template', 'save_shots_config', 'send_test_release_email', 'set_bot_config_budget', 'set_bot_config_role', 'start_change',
     'start_platform_build', 'submit_bench_grade', 'submit_bench_reference', 'submit_bot_config_pick',
     'submit_platform_build', 'submit_shots_eval_pick', 'submit_work', 'sync_change',
     'update_proposal_description', 'update_proposal_issues', 'withdraw_change',
