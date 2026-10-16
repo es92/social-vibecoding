@@ -133,7 +133,9 @@ test('a door to a project\'s hub opens the hub; a page opened again reads the ta
   assert.match(lander, /export function freshTab\(\): TabKey \| null \{\n\s*const tab = callAppView\('_workshopTab'\);/);
   // The doors: the logo menu row, Discover's rows, the Communities rows and a
   // Needs you card's project name. Back and Forward are not doors.
-  assert.match(read('frontend/src/features/app-context/app-context-sheet.tsx'), /onClick=\{\(e\) => \{\n\s*if \(slug\) \(window as any\)\.AppView\?\._landOnHub\?\.\(slug\);\n\s*followThenDismiss\(e,/);
+  // The menu row lands on the hub before either way it navigates: full width
+  // beside a running app on a desktop, its own link everywhere else.
+  assert.match(read('frontend/src/features/app-context/app-context-sheet.tsx'), /onClick=\{\(e\) => \{\n\s*if \(slug\) \(window as any\)\.AppView\?\._landOnHub\?\.\(slug\);\n\s*if \(slug && [^\n]*\n\s*&& \(window as any\)\.UsernodeReact\?\.sidePanel\?\.openFullWidth\?\.\([^\n]*\n[^}]*\}\n\s*followThenDismiss\(e,/);
   assert.match(read('frontend/src/features/apps/browse.js'), /if \(typeof AppView !== 'undefined' && AppView\._landOnHub\) AppView\._landOnHub\(view\.slug\);\n\s*location\.hash = href;/);
   assert.match(read('frontend/src/features/workshop/index.tsx'), /win\.AppView\?\._landOnHub\?\.\(row\.slug\);\n\s*win\.App\?\.navigateToApp\?\.\(row\.slug, 'dev'\);/);
   assert.match(read('frontend/src/features/workshop/needs-reel.tsx'), /onClick=\{\(\) => \{ \(window as any\)\.AppView\?\._landOnHub\?\.\(app\.slug\); \}\}/);

@@ -433,6 +433,22 @@ export function expand(): void {
   if (sidePanelStore.get().open || sidePanelStore.get().frameSrc) drop();
 }
 
+/**
+ * Open `route` full width, leaving the app, where following a link to it would
+ * have opened it in the panel. The app menu's "Go to community" goes here: on
+ * a desktop the hub is a page of its own, not a column beside the app. It is
+ * the same one real navigation Expand makes, so the app is parked and the
+ * router's leave drops a panel that was open. False when the panel would not
+ * have taken the route (a narrow window, no app on screen), where the
+ * caller's ordinary navigation is already full width.
+ */
+export function openFullWidth(route: string): boolean {
+  if (!isPanelRoute(route) || !canTake()) return false;
+  navigateTop(route);
+  if (sidePanelStore.get().open || sidePanelStore.get().frameSrc) drop();
+  return true;
+}
+
 interface CarriesPane {
   UsernodeReact?: { agentSession?: { paneToCarry?: () => unknown; adoptPane?: (pane: unknown) => void } };
 }
@@ -581,7 +597,9 @@ export function onClickCapture(e: MouseEvent): void {
   // for a modified click — a thread or a Workshop card as often as not, which
   // is a panel page. Taken here, closing the app would open that page BESIDE
   // it instead. The rail's tabs and the ✕ are the two ways out (#2854).
-  if (a.id === 'back-btn') return;
+  // The app menu's "Go to community" is a third: its own handler opens the
+  // hub full width (openFullWidth), so it is not caught for the panel here.
+  if (a.id === 'back-btn' || a.id === 'app-menu-row-workshop') return;
   if (a.target && a.target !== '_self') return;
   if (a.hasAttribute('download')) return;
   if (!isShellAddress(a.href, origin)) return;
@@ -640,6 +658,7 @@ export const SidePanel = {
   drop,
   back,
   expand,
+  openFullWidth,
   appPresence,
   isOpen,
   pend,

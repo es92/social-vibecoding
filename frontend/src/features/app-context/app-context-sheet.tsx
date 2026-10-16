@@ -772,9 +772,19 @@ export function AppsSwitcherSheet(): ReactNode {
               </span>
             ) : null}
             // It says community, so it opens the hub, not whichever tab
-            // the page was last left on (AppView._landOnHub).
+            // the page was last left on (AppView._landOnHub). Beside a
+            // running app on a desktop it opens the hub full width, leaving
+            // the app, rather than in the side panel (../side-panel/
+            // controller.ts openFullWidth); everywhere else that answers
+            // false and the link is followed as before.
             onClick={(e) => {
               if (slug) (window as any).AppView?._landOnHub?.(slug);
+              if (slug && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey
+                && (window as any).UsernodeReact?.sidePanel?.openFullWidth?.(`app/${encodeURIComponent(slug)}/workshop`)) {
+                e.preventDefault();
+                AppContext.dismissForNav();
+                return;
+              }
               followThenDismiss(e, slug ? `#app/${encodeURIComponent(slug)}/workshop` : '#');
             }}
           />

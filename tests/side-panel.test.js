@@ -491,6 +491,35 @@ test('Expand is ONE real navigation of the top window, with its own routing, the
   cleanup();
 });
 
+test('Go to community opens the hub full width, leaving the app, rather than in the panel', () => {
+  // The app menu's row, beside a running app on a desktop: the same one real
+  // navigation Expand makes, and a panel that was open goes with the app.
+  const { pushed, routed } = topWindow();
+  api.take('messages/4242');
+  fakeFrame();
+  assert.equal(api.openFullWidth('app/notes-ab12/workshop'), true);
+  assert.deepEqual(pushed, ['/?demo=1#app/notes-ab12/workshop'], 'pushed, as a history entry of its own');
+  assert.equal(routed.length, 1, 'and routed once, at once');
+  assert.equal(api.sidePanelStore.get().frameSrc, null, 'the panel is gone');
+  cleanup();
+
+  // Where the panel would not have taken it, the row's own link is followed.
+  for (const opts of [{ width: 800 }, { tab: 'dev' }, { app: null }]) {
+    const narrow = topWindow(opts);
+    assert.equal(api.openFullWidth('app/notes-ab12/workshop'), false);
+    assert.deepEqual(narrow.pushed, [], 'and nothing is navigated here');
+    cleanup();
+  }
+  topWindow();
+  assert.equal(api.openFullWidth('settings'), false, 'a page the panel never shows is not this function\'s');
+  cleanup();
+
+  const sheet = read('frontend/src/features/app-context/app-context-sheet.tsx');
+  assert.match(sheet, /id="app-menu-row-workshop"[\s\S]*?sidePanel\?\.openFullWidth\?\.\(`app\/\$\{encodeURIComponent\(slug\)\}\/workshop`\)/,
+    'the menu row asks for the hub full width before following its link');
+  assert.equal(api.SidePanel.openFullWidth, api.openFullWidth, 'on the bridge the row reads');
+});
+
 test('Expand from an agent session goes to Messages, the conversation beside the inbox (#2779)', () => {
   const { pushed, routed } = topWindow();
   assert.equal(api.take('messages/agent/7'), true, 'a conversation opened beside the running app');
@@ -629,6 +658,8 @@ test('the header\'s ✕ leaves the app, even when its href names a panel page', 
   };
   assert.equal(click('back-btn', '/#messages/4242'), false, 'the ✕ is left to its own handler');
   assert.equal(click('back-btn', '/app/notes-ab12/dev/proposals/12'), false);
+  assert.equal(click('app-menu-row-workshop', '/#app/notes-ab12/workshop'), false,
+    'so is the app menu\'s Go to community, which opens the hub full width');
   assert.equal(api.sidePanelStore.get().frameSrc, null, 'and no panel opened');
   assert.equal(click('some-row', '/#messages/4242'), true, 'while any other link to a thread is caught');
   cleanup();
