@@ -271,16 +271,19 @@ test('at a desk an unread row carries its ×, beside the row and never inside it
       view(20, { actions: [{ key: 'still_yes', label: 'Still yes', primary: true }] }),
     ],
   });
+  // #5580: on Unread a row is a card in its project's stack, and the slot
+  // is the card (its classes say so), so the slot is found by what opens it.
   const slot = (id) => {
-    const start = html.indexOf(`<div class="notifications-row-slot group/notif relative"><button data-notif-id="${id}"`);
-    return start < 0 ? null : html.slice(start, html.indexOf('</svg></button></div>', start));
+    const m = new RegExp(`<div class="notifications-row-slot group/notif relative[^"]*"[^>]*><button data-notif-id="${id}"`).exec(html);
+    return m ? html.slice(m.index, html.indexOf('</svg></button>', html.indexOf('data-notification-clear', m.index))) : null;
   };
   const plain = slot(10);
   assert.ok(plain, 'the plain row sits first in a slot of its own');
   // The row is a <button>, so a second button inside it would be invalid
-  // markup and would take the row's click. The × follows the row's close.
+  // markup and would take the row's click. The × follows the row's close,
+  // and on a card it sits on the card's corner.
   assert.match(plain,
-    /<\/button><button type="button" data-notification-clear="10" aria-label="Clear notification" class="absolute left-1\.5 top-2 /);
+    /<\/button><button type="button" data-notification-clear="10" aria-label="Clear notification" class="absolute -left-1\.5 -top-1\.5 z-\[2\] /);
   assert.equal((plain.match(/data-notification-clear/g) || []).length, 1);
   // Hidden and untouchable until the slot is hovered or holds keyboard focus.
   assert.match(plain, /pointer-events-none opacity-0 transition-opacity /);
@@ -289,18 +292,22 @@ test('at a desk an unread row carries its ×, beside the row and never inside it
 
   // The row with its own action ("Still yes") is a <div>; its × is the same.
   assert.match(html,
-    /<div class="notifications-row-slot group\/notif relative"><div data-notif-id="20"[\s\S]*?Still yes<\/button><\/div><button type="button" data-notification-clear="20"/);
+    /<div class="notifications-row-slot group\/notif relative[^"]*"[^>]*><div data-notif-id="20"[\s\S]*?Still yes<\/button>(?:<\/div>)+<button type="button" data-notification-clear="20"/);
 });
 
 test('on touch there is no × at all: the swipe is the way to clear', () => {
   const html = renderSheet({ touch: true, list: [view(10)] });
-  // #4769: on touch the row and its bookmark sit in a swipe host the kit
-  // holds, so a swipe translates row and bookmark together; the slot keeps
-  // that host as its only child. Desktop keeps the flat slot (pinned above),
-  // which is what dapp.json's selectors read.
-  assert.match(html, /<div class="notifications-row-slot group\/notif relative"><div data-notif-swipe="true" class="relative"><button data-notif-id="10"/);
-  assert.match(html, /<button data-notif-id="10"[\s\S]*?<\/button><button type="button" data-notification-save="10"/,
-    'the bookmark is inside the swipe host, so it slides with the row');
+  // #4769: on touch the row sits in a swipe host the kit holds, so a swipe
+  // translates everything on it together; the slot keeps that host as its
+  // only child. Desktop keeps the flat slot (pinned above), which is what
+  // dapp.json's selectors read. #5580: on Unread the host is the card's
+  // surface (it is what slides), and the slot only rounds the kit's wrap.
+  assert.match(html, /<div class="notifications-row-slot group\/notif relative notifications-card rounded-\[20px\]"><div data-notif-swipe="true" class="rounded-\[20px\] bg-white dark:bg-zinc-900 [^"]* relative grid grid-cols-1"><button data-notif-id="10"/);
+  // A card's save is the swipe's first button on a phone (no hover there to
+  // show it), so the card draws no bookmark of its own.
+  assert.doesNotMatch(html, /data-notification-save="10"/);
+  assert.match(SHEET_SRC, /const swipe = ui\.swipeActions\(el, \{ actions: cardSave \? \[save, clear\] : \[clear\] \}\);/);
+  assert.match(SHEET_SRC, /label: t\(view\.saved \? 'notifications:row\.swipeUnsave' : 'notifications:row\.swipeSave'\)/);
   assert.doesNotMatch(html, /data-notification-clear/,
     'no hover on a phone, and an invisible target on a tile corner would clear by accident');
 });
@@ -312,8 +319,8 @@ test('only an unread row offers a clear', () => {
 });
 
 test('the swipe is the kit\'s, neutral, and a full swipe only where the row leaves', () => {
-  const effect = SHEET_SRC.slice(SHEET_SRC.indexOf('const swipe = ui.swipeActions(el, {'),
-    SHEET_SRC.indexOf("}, [clearable, touch, removes, shape, view.id, groupIds?.join(','), t, onRelease]);"));
+  const effect = SHEET_SRC.slice(SHEET_SRC.indexOf('if (!clearable || !touch || !el || !ui?.swipeActions) return undefined;'),
+    SHEET_SRC.indexOf("}, [clearable, touch, removes, shape, view.id, groupIds?.join(','), t, onRelease, cardSave, view.saved]);"));
   assert.ok(effect.length > 0, 'the swipe effect found');
   assert.match(effect, /label: t\('notifications:row\.clear'\)/);
   assert.equal(message('notifications:row.clear'), 'Clear');
@@ -328,8 +335,8 @@ test('the swipe is the kit\'s, neutral, and a full swipe only where the row leav
   // still leaves Unread while the rows read elsewhere stay listed.
   // #5289: a folded row lets go of, and clears, every notification it is.
   assert.match(effect, /handler: \(\) => \{\s*onRelease\?\.\(groupIds \|\| \[view\.id\]\);\s*void controller\(\)\?\.clearNotification\(view\.id, groupIds \|\| undefined\);\s*\}/);
-  assert.match(SHEET_SRC, /return \(\) => swipe\.detach\(\);\n {2}\}, \[clearable, touch, removes, shape, view\.id, groupIds\?\.join\(','\), t, onRelease\]\);/,
-    'detached when the row stops being clearable, changes tab, shape or group');
+  assert.match(SHEET_SRC, /return \(\) => swipe\.detach\(\);\n {2}\}, \[clearable, touch, removes, shape, view\.id, groupIds\?\.join\(','\), t, onRelease, cardSave, view\.saved\]\);/,
+    'detached when the row stops being clearable, changes tab, shape or group, or its save changes');
 });
 
 test('the slot is what React places, and it is keyed on what the kit holds', () => {
@@ -338,8 +345,10 @@ test('the slot is what React places, and it is keyed on what the kit holds', () 
   // slot React places; a row whose read state or shape changes is a new slot,
   // dropped whole rather than having its row swapped out from under the kit.
   assert.match(SHEET_SRC,
-    /<div\s+key=\{`\$\{clearable \? 'unread' : 'read'\}:\$\{shape\}\$\{groupIds \? ':group' : ''\}`\}\s+className=\{held \? 'notifications-row-slot group\/notif relative opacity-60' : 'notifications-row-slot group\/notif relative'\}/,
-    'polish #7: a row read while the sheet is open stays on Unread, dim');
+    /<div\s+key=\{`\$\{clearable \? 'unread' : 'read'\}:\$\{shape\}\$\{groupIds \? ':group' : ''\}`\}\s+className=\{slotCls\}/);
+  // Polish #7: a row read while the sheet is open stays on Unread, dim.
+  // #5580: a card's slot is the card at a desk; on touch the swipe host is.
+  assert.match(SHEET_SRC, /const slotCls = 'notifications-row-slot group\/notif relative'\n\s+\+ \(card \? \(touch \? ' notifications-card rounded-\[20px\]' : ' notifications-card grid grid-cols-1 ' \+ CARD_SURFACE\) : ''\)\n\s+\+ \(held \? ' opacity-60' : ''\);/);
   // #4769: the kit must hold whichever node translates — the row itself on
   // desktop, the swipe host (row + bookmark) on touch — so the rows hand it
   // over only off touch, and the host hands itself over on touch.

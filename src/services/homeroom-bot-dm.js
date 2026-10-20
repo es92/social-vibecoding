@@ -548,6 +548,31 @@ const CLAIM_HELLO_SQL = `
   ON CONFLICT (user_id) DO NOTHING
   RETURNING kind`;
 
+// #5580: the project a ringing message is about, for its notification's
+// app_id: the app its metadata names, or, for a reply in a request's thread,
+// the app that request's card was sent about (homeroom_bot_dm_messages).
+// Null when it is about no project (a hello, a reply in the main chat).
+// Never throws: a message rings without a project rather than not at all.
+async function storyAppId(pool, metadata, root) {
+  try {
+    if (metadata?.appSlug) {
+      const { rows: [app] = [] } = await pool.query('SELECT id FROM apps WHERE slug = $1', [String(metadata.appSlug)]);
+      if (app) return Number(app.id);
+    }
+    const rootId = conversations.strictId(root);
+    if (rootId) {
+      const { rows: [card] = [] } = await pool.query(
+        'SELECT app_id FROM homeroom_bot_dm_messages WHERE message_id = $1',
+        [rootId],
+      );
+      if (card) return Number(card.app_id);
+    }
+  } catch (err) {
+    log.warn('homeroom-bot-dm', 'Could not tell which project a notification is about', { err: err.message });
+  }
+  return null;
+}
+
 async function sendDm(pool, {
   bot, userId, content, metadata = null, idempotencyKey = null, objects = null, replyToId = null, withoutCards = null,
   moment = undefined, threadRootId = undefined, hello = null,
@@ -589,6 +614,9 @@ async function sendDm(pool, {
   // The notification's detail: homeroom-bot-notify-copy.js words the push,
   // the bell and the email from the story's fields (contract 2.1).
   const detail = story ? await notificationDetail(pool, story, stored) : null;
+  // #5580: and the project it is about, so the bell files the bot's news
+  // under that project as it files everybody else's.
+  const notificationAppId = story ? await storyAppId(pool, metadata, root) : null;
   // Run six: a first version's ready and live, for a maker who turned
   // "We'll tell you when it's live" off, are said here and ring nothing.
   const firstNews = !!metadata?.firstVersion && (story === 'ready' || story === 'live');
@@ -623,7 +651,7 @@ async function sendDm(pool, {
       : { ...input, ...(cards.length && withoutCards ? { content: clip(withoutCards, conversations.MAX_MESSAGE_LENGTH || 8000) } : {}) },
     {
       metadata: stored ? { [META]: stored } : null, notify: !!story && !muted, notificationDetail: detail,
-      notificationKind: (story && BUILD_KINDS[story]) || null, ...helloHooks,
+      notificationKind: (story && BUILD_KINDS[story]) || null, notificationAppId, ...helloHooks,
     });
   let result = await send(cards);
   if (!result && cards.length) {

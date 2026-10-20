@@ -19,6 +19,166 @@
     "text": "Other",
     "description": "Heading on the Unread filter over the notifications that belong to no project (messages, friends, account)."
   },
+  "stack.more_one": {
+    "text": "{{count}} more notification",
+    "description": "Last line of the top card of a closed stack of notifications on the Unread filter, one stack per project: how many more notifications are under it. Tapping the card opens the stack. {{count}} is how many."
+  },
+  "stack.more_other": {
+    "text": "{{count}} more notifications",
+    "description": "Last line of the top card of a closed stack of notifications on the Unread filter, one stack per project: how many more notifications are under it. Tapping the card opens the stack. {{count}} is how many."
+  },
+  "stack.showLess": {
+    "text": "Show less",
+    "description": "Small button beside a project's name on the Unread filter while its stack of notifications is open: folds the stack back under its newest notification."
+  },
+  "stack.showLessLabel": {
+    "text": "Show less from {{app}}",
+    "description": "Accessible name of that button. {{app}} is the project's name."
+  },
+  "story.meta_one": {
+    "text": "#{{number}} · {{count}} notification",
+    "description": "Small last line of a card on the Unread filter that stands for several notifications about one request or proposal: which one, by its number, and how many notifications the card is. {{number}} is the request's or proposal's number, like 5580; {{count}} is how many notifications."
+  },
+  "story.meta_other": {
+    "text": "#{{number}} · {{count}} notifications",
+    "description": "Small last line of a card on the Unread filter that stands for several notifications about one request or proposal: which one, by its number, and how many notifications the card is. {{number}} is the request's or proposal's number, like 5580; {{count}} is how many notifications."
+  },
+  "story.metaUnnumbered_one": {
+    "text": "{{count}} notification",
+    "description": "Small last line of a card on the Unread filter that stands for several notifications about one request or proposal whose number is not known: how many notifications the card is. {{count}} is that number."
+  },
+  "story.metaUnnumbered_other": {
+    "text": "{{count}} notifications",
+    "description": "Small last line of a card on the Unread filter that stands for several notifications about one request or proposal whose number is not known: how many notifications the card is. {{count}} is that number."
+  },
+  "history.show": {
+    "text": "Show what happened",
+    "description": "Accessible name of the small arrow at the foot of a notification about a request or proposal: opens, inside the card, everything that happened on it (votes, comments, updates, going live)."
+  },
+  "history.hide": {
+    "text": "Hide what happened",
+    "description": "Accessible name of that arrow while the card's history is open: closes it."
+  },
+  "history.loading": {
+    "text": "Loading…",
+    "description": "Shown inside a notification card while what happened on its request or proposal is being fetched."
+  },
+  "history.failed": {
+    "text": "Couldn’t load what happened here.",
+    "description": "Shown inside a notification card when what happened on its request or proposal could not be fetched."
+  },
+  "history.empty": {
+    "text": "Nothing else has happened here yet.",
+    "description": "Shown inside a notification card when its request or proposal has no other activity to show."
+  },
+  "history.on": {
+    "text": "On #{{number}}",
+    "description": "First line of a notification card's history: the request or proposal the notification was posted on. {{number}} is its number, like 5588; its title is shown under it."
+  },
+  "history.step.live": {
+    "text": "Went live",
+    "description": "One line of a notification card's history: the change was merged and is live in the project."
+  },
+  "history.step.updated": {
+    "text": "Updated",
+    "description": "One line of a notification card's history: the proposal's change was updated with new work."
+  },
+  "history.step.closed": {
+    "text": "Closed by a group vote",
+    "description": "One line of a notification card's history: the request was closed because the group voted to close it."
+  },
+  "history.step.withdrawn": {
+    "text": "Withdrawn",
+    "description": "One line of a notification card's history: the proposal was withdrawn by the person who made it."
+  },
+  "history.step.voteYes": {
+    "text": "{{who}} voted yes",
+    "description": "One line of a notification card's history: someone voted for the proposal. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.voteYesYou": {
+    "text": "You voted yes",
+    "description": "One line of a notification card's history: the viewer voted for the proposal."
+  },
+  "history.step.voteNo": {
+    "text": "{{who}} voted no",
+    "description": "One line of a notification card's history: someone voted against the proposal. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.voteNoYou": {
+    "text": "You voted no",
+    "description": "One line of a notification card's history: the viewer voted against the proposal."
+  },
+  "history.step.votesYes_one": {
+    "text": "{{count}} yes vote",
+    "description": "One line of a notification card's history: several people voted for the proposal, one after another; their names are on the line under it. {{count}} is how many."
+  },
+  "history.step.votesYes_other": {
+    "text": "{{count}} yes votes",
+    "description": "One line of a notification card's history: several people voted for the proposal, one after another; their names are on the line under it. {{count}} is how many."
+  },
+  "history.step.votesNo_one": {
+    "text": "{{count}} no vote",
+    "description": "One line of a notification card's history: several people voted against the proposal, one after another; their names are on the line under it. {{count}} is how many."
+  },
+  "history.step.votesNo_other": {
+    "text": "{{count}} no votes",
+    "description": "One line of a notification card's history: several people voted against the proposal, one after another; their names are on the line under it. {{count}} is how many."
+  },
+  "history.step.voteTakenBack": {
+    "text": "{{who}} took back their vote",
+    "description": "One line of a notification card's history: someone withdrew the vote they had cast. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.voteTakenBackYou": {
+    "text": "You took back your vote",
+    "description": "One line of a notification card's history: the viewer withdrew the vote they had cast."
+  },
+  "history.step.voteTakenBackUnnamed": {
+    "text": "A vote was taken back",
+    "description": "One line of a notification card's history: someone withdrew the vote they had cast, and who is not known."
+  },
+  "history.step.proposed": {
+    "text": "{{who}} put it up for a vote",
+    "description": "One line of a notification card's history: someone proposed the change, so the group can vote on it. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.proposedYou": {
+    "text": "You put it up for a vote",
+    "description": "One line of a notification card's history: the viewer proposed the change, so the group can vote on it."
+  },
+  "history.step.plan": {
+    "text": "{{who}} shared a plan",
+    "description": "One line of a notification card's history: someone shared a written plan for the change; its title is on the line under it. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.planYou": {
+    "text": "You shared a plan",
+    "description": "One line of a notification card's history: the viewer shared a written plan for the change; its title is on the line under it."
+  },
+  "history.step.planUnnamed": {
+    "text": "A plan was shared",
+    "description": "One line of a notification card's history: a written plan for the change was shared; its title is on the line under it."
+  },
+  "history.step.asked": {
+    "text": "{{who}} asked for it",
+    "description": "One line of a notification card's history: someone filed the request. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.askedYou": {
+    "text": "You asked for it",
+    "description": "One line of a notification card's history: the viewer filed the request."
+  },
+  "history.step.closeProposed": {
+    "text": "{{who}} proposed closing it",
+    "description": "One line of a notification card's history: someone asked the group to vote on closing the request. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.closeProposedYou": {
+    "text": "You proposed closing it",
+    "description": "One line of a notification card's history: the viewer asked the group to vote on closing the request."
+  },
+  "history.step.comment": {
+    "text": "{{who}} commented",
+    "description": "One line of a notification card's history: someone wrote in the request's or proposal's discussion; their words are on the line under it. {{who}} is who did it: their @handle, like @ana, or Homeroom bot."
+  },
+  "history.step.commentYou": {
+    "text": "You commented",
+    "description": "One line of a notification card's history: the viewer wrote in the request's or proposal's discussion; their words are on the line under it."
+  },
   "sheet.filters": {
     "text": "Notification filters",
     "description": "Accessible name of the row of two filter buttons (Unread, All) at the top of the notifications sheet."
@@ -130,6 +290,14 @@
   "row.unsave": {
     "text": "Unsave notification",
     "description": "Accessible name of the bookmark button at the right end of a notification row the viewer has saved: removes it from the Saved section at the top. The button is the same one, pressed."
+  },
+  "row.swipeSave": {
+    "text": "Save",
+    "description": "Action revealed by swiping a notification on a phone: saves it for later, in the Saved section at the top of the sheet. A verb."
+  },
+  "row.swipeUnsave": {
+    "text": "Unsave",
+    "description": "Action revealed by swiping a saved notification on a phone: takes it out of the Saved section. A verb."
   },
   "row.unreadDot": {
     "text": "Unread",

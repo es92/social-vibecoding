@@ -52,6 +52,7 @@
 // change too (FILED_MESSAGE_JOIN_SQL).
 
 const log = require('./logger');
+const notifyCopy = require('./homeroom-bot-notify-copy');
 const usernames = require('./usernames');
 const { listActiveUserIds } = require('./active-users');
 const notificationPreferences = require('./notification-preferences');
@@ -75,6 +76,9 @@ const MENTION_RE = /(^|[^\w])@([A-Za-z0-9_]{1,32})/g;
 // Platform conversations deliberately use their own kinds rather than the
 // app-chat mention/reply/reaction kinds. That keeps routing, access checks,
 // grouping, and mobile-push preferences from inheriting app-centric state.
+// The Homeroom bot's account (conversations.js HOMEROOM_BOT_USERNAME).
+const HOMEROOM_BOT_USERNAME = 'homeroom_bot';
+
 const CONVERSATION_NOTIFICATION_KINDS = new Set([
   'conversation_invite',
   'conversation_message',
@@ -244,6 +248,37 @@ const THREAD_ROOT_COLUMNS_SQL = `(SELECT thread_root.thread_type FROM chat_messa
               WHERE cm.thread_type = 'message' AND thread_root.id = cm.thread_ref) AS root_thread_type,
             (SELECT thread_root.thread_ref FROM chat_messages thread_root
               WHERE cm.thread_type = 'message' AND thread_root.id = cm.thread_ref) AS root_thread_ref`;
+
+// #5580: what a notification is ABOUT, so the bell can fold one request's
+// news into one story. The proposal: the row's own session, or the one whose
+// discussion (or a reply thread under it) the message is in. The request: the
+// one whose discussion the message is in, else the proposal's (the issue it
+// was made from, or the first it links). Both NULL on rows about neither.
+const STORY_SESSION_SQL = `COALESCE(n.session_id,
+              CASE WHEN cm.thread_type = 'session' THEN cm.thread_ref END,
+              (SELECT story_root.thread_ref FROM chat_messages story_root
+                WHERE cm.thread_type = 'message' AND story_root.id = cm.thread_ref
+                  AND story_root.thread_type = 'session'))`;
+const STORY_COLUMNS_SQL = `${STORY_SESSION_SQL} AS story_session_id,
+            COALESCE(
+              CASE WHEN cm.thread_type = 'issue' THEN cm.thread_ref END,
+              (SELECT story_root.thread_ref FROM chat_messages story_root
+                WHERE cm.thread_type = 'message' AND story_root.id = cm.thread_ref
+                  AND story_root.thread_type = 'issue'),
+              (SELECT COALESCE(story_session.created_from_issue_number, story_session.linked_issues[1])
+                 FROM chat_sessions story_session WHERE story_session.id = ${STORY_SESSION_SQL})
+            ) AS story_issue_number,
+            (SELECT bot_card.issue_number FROM homeroom_bot_dm_messages bot_card
+              WHERE bot_card.message_id = conversation_message.thread_root_id) AS bot_thread_issue_number,
+            (SELECT story_session.pr_number FROM chat_sessions story_session
+              WHERE story_session.id = ${STORY_SESSION_SQL}) AS story_pr_number,
+            (SELECT COALESCE(story_session.pr_title, story_session.session_title) FROM chat_sessions story_session
+              WHERE story_session.id = ${STORY_SESSION_SQL}) AS story_title`;
+
+// #5580: a plain message the bell leaves to the Messages screen (#18). The
+// Homeroom bot's reply about a project is the exception: it carries that
+// project (homeroom-bot-dm.js storyAppId), files under it, and counts.
+const PLAIN_MESSAGE_SQL = `(n.kind = 'channel_message' OR (n.kind = 'conversation_message' AND n.app_id IS NULL))`;
 
 const FILED_MESSAGE_JOIN_SQL = `LEFT JOIN chat_bot_requests bot_request
        ON n.kind IN ('first_message', 'channel_message') AND bot_request.chat_message_id = n.chat_message_id
@@ -1214,6 +1249,7 @@ async function hydrateNotification(q, id) {
             cm.content AS message_content,
             cm.thread_type, cm.thread_ref,
             ${THREAD_ROOT_COLUMNS_SQL},
+            ${STORY_COLUMNS_SQL},
             n.session_id,
             cs.session_title, cs.pr_title, cs.pr_number, cs.headless_issue_number, cs.branch_name,
             cs.agent_session_id,
@@ -1577,7 +1613,7 @@ async function listForUser(pool, userId, { limit = 100, before = null, kinds = n
   let unreadClause = '';
   if (unreadOnly) {
     unreadClause = `AND n.read_at IS NULL AND NOT ${DECIDED_ASK_SETTLED_SQL}
-      AND n.kind NOT IN ('conversation_message', 'channel_message')`;
+      AND NOT ${PLAIN_MESSAGE_SQL}`;
   }
   // #4795: a merged change is decided, so the rows that asked you to vote on
   // it or try it leave the list instead of staying as read entries somebody
@@ -1621,6 +1657,7 @@ async function listForUser(pool, userId, { limit = 100, before = null, kinds = n
             cm.content AS message_content,
             cm.thread_type, cm.thread_ref,
             ${THREAD_ROOT_COLUMNS_SQL},
+            ${STORY_COLUMNS_SQL},
             n.session_id,
             cs.session_title, cs.pr_title, cs.pr_number, cs.headless_issue_number, cs.branch_name,
             cs.agent_session_id,
@@ -1681,6 +1718,7 @@ async function getForUser(pool, userId, id) {
             cm.content AS message_content,
             cm.thread_type, cm.thread_ref,
             ${THREAD_ROOT_COLUMNS_SQL},
+            ${STORY_COLUMNS_SQL},
             n.session_id,
             cs.session_title, cs.pr_title, cs.pr_number, cs.headless_issue_number, cs.branch_name,
             cs.agent_session_id,
@@ -1773,7 +1811,7 @@ const MESSAGE_KINDS = ['conversation_message', 'channel_message'];
 
 async function countUnreadSplit(pool, userId) {
   const { rows } = await pool.query(
-    `SELECT (COUNT(*) FILTER (WHERE n.kind = ANY($3::text[])))::int AS m,
+    `SELECT (COUNT(*) FILTER (WHERE ${PLAIN_MESSAGE_SQL}))::int AS m,
             COUNT(*)::int AS c FROM notifications AS n
       WHERE n.user_id = $1 AND n.read_at IS NULL
         AND NOT ${DECIDED_ASK_SETTLED_SQL}
@@ -1782,7 +1820,7 @@ async function countUnreadSplit(pool, userId) {
         AND NOT (n.kind = ANY($2::text[]) AND EXISTS (
               SELECT 1 FROM chat_sessions s
                WHERE s.id = n.session_id AND s.status = 'merged'))`,
-    [userId, MERGED_HIDDEN_KINDS, MESSAGE_KINDS]
+    [userId, MERGED_HIDDEN_KINDS]
   );
   return { unread: rows[0]?.c || 0, messageUnread: rows[0]?.m || 0 };
 }
@@ -2126,6 +2164,11 @@ function notificationHref(row) {
 // messageContent, mention rows ignore sessionId / prTitle.
 function serialize(row) {
   const isConversation = CONVERSATION_NOTIFICATION_KINDS.has(row.kind);
+  // #5580: the Homeroom bot's news about a project carries that project
+  // (conversations.sendMessage's notificationAppId), so the bell files it
+  // there. Only the project's name and id come through: it still routes,
+  // reads and pushes as the conversation row it is.
+  const botProject = isConversation && row.app_id != null && row.source_username === HOMEROOM_BOT_USERNAME;
   return {
     id: row.id,
     kind: row.kind,
@@ -2133,10 +2176,22 @@ function serialize(row) {
     createdAt: row.created_at,
     // Fail closed if a malformed conversation row also carries legacy app
     // references: private messaging must never route through or render as an
-    // app chat notification.
-    appId: isConversation ? null : row.app_id,
-    appSlug: isConversation ? null : row.app_slug,
-    appName: isConversation ? null : row.app_name,
+    // app chat notification. The bot's own rows are the one exception above.
+    appId: isConversation ? (botProject ? row.app_id : null) : row.app_id,
+    appSlug: isConversation ? (botProject ? row.app_slug : null) : row.app_slug,
+    appName: isConversation ? (botProject ? row.app_name : null) : row.app_name,
+    // #5580: the request and proposal this row is about (STORY_COLUMNS_SQL),
+    // which the sheet folds one story's news by. The bot's own rows name
+    // their request in `detail`, or, for a reply in a request's thread, by
+    // that thread's card; any other conversation row is about neither.
+    storyIssueNumber: botProject
+      ? (notifyCopy.parseBotDetail(row.detail)?.issueNumber || (row.bot_thread_issue_number != null ? Number(row.bot_thread_issue_number) : null))
+      : (!isConversation && row.story_issue_number != null ? Number(row.story_issue_number) : null),
+    storySessionId: !isConversation && row.story_session_id != null ? Number(row.story_session_id) : null,
+    // The proposal's number and name, so a message in its discussion can say
+    // what it is on ("on #5588").
+    storyPrNumber: !isConversation && row.story_pr_number != null ? Number(row.story_pr_number) : null,
+    storyTitle: !isConversation ? (row.story_title || null) : null,
     chatMessageId: isConversation ? null : row.chat_message_id,
     conversationId: isConversation ? row.conversation_id : null,
     conversationKind: isConversation ? (row.conversation_kind || null) : null,

@@ -10938,6 +10938,63 @@ html.un-kb #settings-content-col > .settings-sheet {
 }
 .dark .notifications-row-slot:not(:last-child) .notifications-row::after { background: rgba(255, 255, 255, 0.08); }
 
+/* #5580: the Unread tab's project stacks (features/notifications/
+   notification-stacks.tsx). A stack is its heading and its cards: the shell's
+   card (ScreenRow's card form), 12px in from the sheet's edges and 6px apart,
+   with no hairline between them, since each is its own surface.
+
+   CLOSED, the cards under the top one sit under it, each as tall as it (the
+   stack measures it into --stack-top and --stack-h) and a little narrower,
+   so only their edges show below it: the first two peek out and the rest
+   wait under the second. They are the real cards, in their edge colour and
+   emptied of their words, so opening the stack moves them out rather than
+   drawing new ones (ProjectStack's FLIP); the colour and the fade are
+   transitions on the same change. On a phone the swipe host is the card's
+   surface (it is what slides), so the edge colour is its own there. */
+.notifications-stack { position: relative; }
+.notifications-stack > .notifications-row-slot { margin: 0 12px; transition: background-color 0.4s ease; }
+.notifications-stack > .notifications-row-slot + .notifications-row-slot { margin-top: 6px; }
+.notifications-stack .notifications-row-slot .notifications-row::after { content: none; }
+.notifications-stack .notifications-card .un-swipe { border-radius: 20px; }
+.notifications-stack > .notifications-row-slot > *,
+.notifications-stack [data-notif-swipe],
+.notifications-stack [data-notif-swipe] > * { transition: opacity 0.3s ease, background-color 0.4s ease; }
+.notifications-stack[data-stack-closed][data-stack-depth="1"] { padding-bottom: 8px; }
+.notifications-stack[data-stack-closed][data-stack-depth="2"] { padding-bottom: 16px; }
+.notifications-stack[data-stack-closed] > [data-stack-top] { z-index: 3; }
+.notifications-stack[data-stack-closed] > [data-stack-behind] {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: calc(var(--stack-top, 0px) + 8px);
+  height: var(--stack-h, 0px);
+  margin: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: #efeee7;
+  box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 2px 4px rgba(0, 0, 0, 0.07);
+}
+.notifications-stack[data-stack-closed] > [data-stack-behind="2"],
+.notifications-stack[data-stack-closed] > [data-stack-behind="3"] {
+  left: 32px;
+  right: 32px;
+  top: calc(var(--stack-top, 0px) + 16px);
+  z-index: 1;
+}
+.notifications-stack[data-stack-closed] > [data-stack-behind="3"] { opacity: 0; }
+.notifications-stack[data-stack-closed] > [data-stack-behind] [data-notif-swipe] { background-color: #efeee7; }
+.dark .notifications-stack[data-stack-closed] > [data-stack-behind],
+.dark .notifications-stack[data-stack-closed] > [data-stack-behind] [data-notif-swipe] { background-color: #27282c; }
+.notifications-stack[data-stack-closed] > [data-stack-behind] > :not(.un-swipe):not([data-notif-swipe]),
+.notifications-stack[data-stack-closed] > [data-stack-behind] [data-notif-swipe] > * { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .notifications-stack > .notifications-row-slot,
+  .notifications-stack > .notifications-row-slot > *,
+  .notifications-stack [data-notif-swipe],
+  .notifications-stack [data-notif-swipe] > * { transition: none; }
+}
+
 /* ── The dev area on the ladder, and the shared composer card ───────────
    The board column is the STRIP and a topic or the Discussion is the SHEET
    (features/dev-board/board-frame.tsx, topic-frame.tsx, chat-frame.tsx,

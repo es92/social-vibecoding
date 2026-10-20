@@ -133,6 +133,9 @@ const DDL = `
   CREATE TABLE notifications (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- #5580: set on the Homeroom bot's news about a project (schema.sql's
+    -- column references apps, which this schema does not create).
+    app_id INTEGER,
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
     conversation_message_id INTEGER REFERENCES conversation_messages(id) ON DELETE CASCADE,
     chat_message_id INTEGER,

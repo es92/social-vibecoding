@@ -253,9 +253,12 @@ test('countUnreadSplit reads the total and the plain messages in one query', asy
   const pool = { async query(sql, params) { calls.push({ sql, params }); return { rows: [{ c: 7, m: 3 }] }; } };
   assert.deepEqual(await notifications.countUnreadSplit(pool, 5), { unread: 7, messageUnread: 3 });
   assert.equal(calls.length, 1);
-  assert.match(calls[0].sql, /COUNT\(\*\) FILTER \(WHERE n\.kind = ANY\(\$3::text\[\]\)\)/);
+  // #5580: a plain message is one of the two message kinds, except the
+  // Homeroom bot's news about a project, which carries that project and is
+  // the bell's like any project's notification.
+  assert.match(calls[0].sql, /COUNT\(\*\) FILTER \(WHERE \(n\.kind = 'channel_message' OR \(n\.kind = 'conversation_message' AND n\.app_id IS NULL\)\)\)/);
   assert.match(calls[0].sql, /COUNT\(\*\)::int AS c FROM notifications AS n/, 'the total keeps countUnread\'s shape');
-  assert.deepEqual(calls[0].params[2], ['conversation_message', 'channel_message']);
+  assert.equal(calls[0].params.length, 2, 'the message kinds are in the rule, not a parameter');
   // The same rows as countUnread, which the phone's icon keeps counting.
   const total = notifications.countUnread.toString();
   for (const piece of ['DECIDED_ASK_SETTLED_SQL', 'CONVERSATION_ACCESS_SQL', 'CHAT_SENDER_ACCESS_SQL', 'PARKED_KINDS_SQL']) {

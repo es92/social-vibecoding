@@ -9628,6 +9628,21 @@
     },
     {
       "source": "src/routes/notifications.js",
+      "method": "GET",
+      "path": "/api/notifications/:id/history",
+      "expression": null,
+      "status": "mapped",
+      "capabilityId": "notifications.get.notifications.item.history.11b9bda8",
+      "domain": "notifications",
+      "risk": "read",
+      "confirmation": "never",
+      "renderer": "notification",
+      "transport": "server_loopback",
+      "mobileSupported": true,
+      "classicPath": "#notifications"
+    },
+    {
+      "source": "src/routes/notifications.js",
       "method": "PUT",
       "path": "/api/notifications/:id/save",
       "expression": null,

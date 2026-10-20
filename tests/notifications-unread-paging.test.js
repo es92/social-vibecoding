@@ -417,7 +417,13 @@ test('the badge counts what the Unread tab pages: unread less plain messages, pl
   // against the same figure.
   assert.match(FE_SRC, /_badgeTotal\(\) \{\s*\n\s*return Math\.max\(0, Notifications\.unread - \(Notifications\.messageUnread \|\| 0\)\) \+ Notifications\.invites\.length;\s*\n\s*\},/);
   assert.match(FE_SRC, /return loaded < Notifications\.unread - \(Notifications\.messageUnread \|\| 0\);/);
-  assert.match(read('src/services/notifications.js'), /AND n\.kind NOT IN \('conversation_message', 'channel_message'\)`;/);
+  // #5580: the Homeroom bot's reply about a project is the exception: it
+  // carries that project, so it is not a plain message, and both the list
+  // and the count read it by the same one rule.
+  const svc = read('src/services/notifications.js');
+  assert.match(svc, /const PLAIN_MESSAGE_SQL = `\(n\.kind = 'channel_message' OR \(n\.kind = 'conversation_message' AND n\.app_id IS NULL\)\)`;/);
+  assert.match(svc, /AND NOT \$\{PLAIN_MESSAGE_SQL\}`;/);
+  assert.match(svc, /COUNT\(\*\) FILTER \(WHERE \$\{PLAIN_MESSAGE_SQL\}\)/);
 });
 
 // ── the sheet ───────────────────────────────────────────────────────────

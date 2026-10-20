@@ -201,7 +201,9 @@ test('people, rows with buttons and rows with no project never fold', () => {
 
 test('All stays the archive: nothing folds there', () => {
   assert.match(SHEET_SRC, /const groupedUnread = tab === 'unread' && !olderShown;/);
-  assert.match(SHEET_SRC, /if \(group\.appId != null\) group\.entries = foldRepeats\(group\.entries, t\);/);
+  // #5580: a project's stories fold first (one request's news is one card),
+  // then what is left folds by kind.
+  assert.match(SHEET_SRC, /if \(group\.appId != null\) group\.entries = foldRepeats\(foldStories\(group\.entries\), t\);/);
 });
 
 test('opening a folded row opens the newest and reads them all', async () => {

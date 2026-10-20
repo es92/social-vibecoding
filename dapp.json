@@ -4317,9 +4317,10 @@
       "expectSelector": "#dev-workshop:not(:has(#dev-plus-btn)) [data-ws-pane] #dev-actions > #dev-kanban-filterbar:not(:empty):last-child"
     },
     {
-      "name": "The Notifications sheet shows read rows on the All tab (Streamlined Concept)",
+      "name": "On Unread, a project's notifications stack under its newest card, and one request's news is one card (#5580)",
       "path": "/?shot=notifications&demo=1",
-      "expectSelector": "#notifications-sheet[data-open] [data-notif-id]"
+      "expectSelector": "#notifications-sheet[data-open] [data-notif-stack=\"a:0\"][data-stack-closed] > [data-stack-top] > [data-notif-id=\"990214\"][data-notif-group-size=\"2\"][aria-expanded=\"false\"]",
+      "expectText": "#990301 · 2 notifications"
     },
     {
       "name": "The Notifications sheet is a flat list of rows (#1385)",

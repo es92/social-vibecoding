@@ -1272,6 +1272,20 @@
     {
       "source": "src/services/notifications.js",
       "kind": "structural-template",
+      "fingerprint": "040dc8d2ccbfebb55031",
+      "count": 1,
+      "preview": "`SELECT n.id, n.kind, n.user_id, CASE WHEN n.read_at IS NULL AND ${DECIDED_ASK_SETTLED_SQL} THEN COALESCE(cs.merged_at, cs.archived_at, n.created_at) ELSE n.rea"
+    },
+    {
+      "source": "src/services/notifications.js",
+      "kind": "structural-template",
+      "fingerprint": "0aa31d0b7f4b61518c80",
+      "count": 1,
+      "preview": "`SELECT (COUNT(*) FILTER (WHERE ${PLAIN_MESSAGE_SQL}))::int AS m, COUNT(*)::int AS c FROM notifications AS n WHERE n.user_id = $1 AND n.read_at IS NULL AND NOT "
+    },
+    {
+      "source": "src/services/notifications.js",
+      "kind": "structural-template",
       "fingerprint": "2d0d87933561ba11fb65",
       "count": 1,
       "preview": "`SELECT COUNT(*)::int AS c FROM notifications AS n WHERE n.user_id = $1 AND n.read_at IS NULL AND NOT ${DECIDED_ASK_SETTLED_SQL} AND ${CONVERSATION_ACCESS_SQL} "
@@ -1279,9 +1293,9 @@
     {
       "source": "src/services/notifications.js",
       "kind": "structural-template",
-      "fingerprint": "85f7f82a1c2c7b3bf08d",
+      "fingerprint": "8748f0da3801293ac993",
       "count": 1,
-      "preview": "`SELECT n.id, n.kind, n.user_id, CASE WHEN n.read_at IS NULL AND ${DECIDED_ASK_SETTLED_SQL} THEN COALESCE(cs.merged_at, cs.archived_at, n.created_at) ELSE n.rea"
+      "preview": "`SELECT n.id, n.kind, CASE WHEN n.read_at IS NULL AND ${DECIDED_ASK_SETTLED_SQL} THEN COALESCE(cs.merged_at, cs.archived_at, n.created_at) ELSE n.read_at END AS"
     },
     {
       "source": "src/services/notifications.js",
@@ -1300,20 +1314,6 @@
     {
       "source": "src/services/notifications.js",
       "kind": "structural-template",
-      "fingerprint": "bbb2de2fcd61f3c35304",
-      "count": 1,
-      "preview": "`SELECT n.id, n.kind, CASE WHEN n.read_at IS NULL AND ${DECIDED_ASK_SETTLED_SQL} THEN COALESCE(cs.merged_at, cs.archived_at, n.created_at) ELSE n.read_at END AS"
-    },
-    {
-      "source": "src/services/notifications.js",
-      "kind": "structural-template",
-      "fingerprint": "c7f6a44be60767ec3f89",
-      "count": 1,
-      "preview": "`SELECT (COUNT(*) FILTER (WHERE n.kind = ANY($3::text[])))::int AS m, COUNT(*)::int AS c FROM notifications AS n WHERE n.user_id = $1 AND n.read_at IS NULL AND "
-    },
-    {
-      "source": "src/services/notifications.js",
-      "kind": "structural-template",
       "fingerprint": "cf837b937e37a4415dce",
       "count": 1,
       "preview": "`INSERT INTO notifications (user_id, app_id, chat_message_id, source_user_id, kind) SELECT v.user_id, v.app_id, v.chat_message_id, v.source_user_id, v.kind FROM"
@@ -1328,7 +1328,7 @@
     {
       "source": "src/services/notifications.js",
       "kind": "structural-template",
-      "fingerprint": "e90584a020926d5e4367",
+      "fingerprint": "d8dc2e39961da9c6101b",
       "count": 1,
       "preview": "`SELECT n.id, n.kind, CASE WHEN n.read_at IS NULL AND ${DECIDED_ASK_SETTLED_SQL} THEN COALESCE(cs.merged_at, cs.archived_at, n.created_at) ELSE n.read_at END AS"
     },
@@ -1443,6 +1443,13 @@
       "fingerprint": "e8bc7f464128ab6680c3",
       "count": 1,
       "preview": "`SELECT r.*, s.shots_run_id AS current_run_id, s.shots_state AS current_shots_state, s.shots_detail AS current_shots_detail FROM shot_runs r JOIN chat_sessions "
+    },
+    {
+      "source": "src/services/story-history.js",
+      "kind": "structural-template",
+      "fingerprint": "fe2c04bdaab2331e2636",
+      "count": 1,
+      "preview": "`SELECT m.id, m.user_id, u.username, m.content, m.msg_type, m.metadata, m.created_at FROM chat_messages m LEFT JOIN users u ON u.id = m.user_id WHERE m.app_id ="
     },
     {
       "source": "src/services/sync-main.js",

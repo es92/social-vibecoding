@@ -12,6 +12,7 @@ const groupChannelNotify = require('../services/group-channel-notify');
 const channelMutes = require('../services/channel-mutes');
 const log = require('../services/logger');
 const appAccess = require('../services/app-access');
+const storyHistory = require('../services/story-history');
 const { sameOriginBrowserOnly } = require('../middleware/same-site-browser');
 
 const IS_STAGING = process.env.USERNODE_ENV === 'staging';
@@ -122,6 +123,28 @@ function stagingMockNotifications() {
       sessionId: null, sessionTitle: null,
       prTitle: null, prNumber: null, headlessIssueNumber: null,
     },
+    // #5580: one request's story, from Homeroom bot: it says the change is
+    // live here, and (990215, further down) that it was ready to try before
+    // that. Both are about the same mock request (storyIssueNumber 990301),
+    // so the Unread tab folds them into one card at the top of the demo
+    // project's stack, and the card's history is stagingMockHistory's. The
+    // bot's news about a project carries that project now, so these keep
+    // `base`'s app fields, unlike the person's messages above.
+    {
+      ...base,
+      id: 990214, kind: 'build_live',
+      createdAt: new Date(now - 3.5 * 60 * 1000).toISOString(),
+      sourceUsername: 'homeroom_bot',
+      conversationId: 990402,
+      conversationKind: 'direct',
+      conversationTitle: 'Homeroom bot',
+      conversationMessageId: 990503,
+      messageContent: '[Mock] The pause button is live.',
+      detail: `hrbot2:${JSON.stringify({ m: 'live', a: 'Staging demo app', t: '[Mock] A pause button for the game', i: 990301 })}`,
+      storyIssueNumber: 990301,
+      sessionId: null, sessionTitle: null,
+      prTitle: null, prNumber: null, headlessIssueNumber: null,
+    },
     // #971: the issue's exact case — a session that finished BEFORE it was
     // promoted, so it has a session title but no PR title. The row must show
     // the title, never the `dev/…` branch name beside it.
@@ -169,6 +192,24 @@ function stagingMockNotifications() {
       sessionId: null, prTitle: null, prNumber: null,
       headlessIssueNumber: 900002,
     },
+    // #5580: the bot's earlier news on the same mock request as 990214.
+    {
+      ...base,
+      id: 990215, kind: 'build_ready',
+      createdAt: new Date(now - 25 * 60 * 1000).toISOString(),
+      sourceUsername: 'homeroom_bot',
+      conversationId: 990402,
+      conversationKind: 'direct',
+      conversationTitle: 'Homeroom bot',
+      conversationMessageId: 990504,
+      messageContent: '[Mock] The pause button is ready to try.',
+      detail: `hrbot2:${JSON.stringify({ m: 'ready', a: 'Staging demo app', t: '[Mock] A pause button for the game', i: 990301 })}`,
+      storyIssueNumber: 990301,
+      sessionId: null, sessionTitle: null,
+      prTitle: null, prNumber: null, headlessIssueNumber: null,
+    },
+    // #5580: a proposal of its own, with the story fields serialize gives a
+    // real row, so its card opens to a history (stagingMockHistory).
     {
       ...base,
       id: 990203, kind: 'stale_pr',
@@ -177,6 +218,7 @@ function stagingMockNotifications() {
       sessionTitle: '[Mock] Stale proposal going quiet',
       prTitle: '[Mock] Stale proposal going quiet',
       prNumber: 9901, headlessIssueNumber: null,
+      storySessionId: 990103, storyPrNumber: 9901, storyTitle: '[Mock] Stale proposal going quiet',
     },
     {
       ...base,
@@ -322,6 +364,41 @@ function stagingMockSavedMessages() {
 // exactly like a mark-read on a mock.
 function stagingMockSavedNotifications() {
   return stagingMockNotifications().filter((m) => m.saved);
+}
+
+// #5580: the history the staging demo's stories open to (?demo=1, staging
+// only, like the mock feed above): what happened on the mock request the
+// bot's two mock rows are about, and on the mock proposal going quiet.
+// Nothing here is a real row; the names are the demo's own.
+function stagingMockHistory(id) {
+  const now = Date.now();
+  const ago = (minutes) => new Date(now - minutes * 60 * 1000).toISOString();
+  if (id === 990214 || id === 990215) {
+    return {
+      issueNumber: 990301,
+      sessionIds: [990109],
+      steps: [
+        { at: ago(3), kind: 'live' },
+        { at: ago(20), kind: 'vote', actor: 'staging-demo-reviewer', vote: 'yes' },
+        { at: ago(26), kind: 'updated' },
+        { at: ago(48), kind: 'comment', actor: 'staging-demo-reviewer', words: '[Mock] Works on my phone. Could the button be a little bigger?' },
+        { at: ago(70), kind: 'proposed', actor: 'homeroom_bot' },
+        { at: ago(95), kind: 'plan', actor: 'homeroom_bot', words: '[Mock] A pause button in the corner, on phones only' },
+        { at: ago(120), kind: 'asked', actor: 'staging-demo-user' },
+      ],
+    };
+  }
+  if (id === 990203) {
+    return {
+      issueNumber: null,
+      sessionIds: [990103],
+      steps: [
+        { at: ago(180), kind: 'vote', actor: 'staging-demo-reviewer', vote: 'yes' },
+        { at: ago(300), kind: 'proposed', actor: 'staging-demo-user' },
+      ],
+    };
+  }
+  return null;
 }
 
 // Routes for the top-right notifications dropdown. All routes assume
@@ -819,6 +896,37 @@ function notificationsRoutes(config) {
     }
   });
 
+  // #5580: what happened on the request or proposal one of your notifications
+  // is about, for the history its card in the sheet opens to
+  // (services/story-history.js). The row must be the caller's, and its
+  // project one they can view, the gate the Discussion threads it reads
+  // from use (src/routes/chat.js). 404 for anything else, including a row
+  // about no request or proposal, so nothing is enumerable through it.
+  router.get('/api/notifications/:id/history', async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    res.set('Cache-Control', 'private, no-store');
+    const rawId = String(req.params.id || '');
+    if (!/^[1-9]\d{0,9}$/.test(rawId)) return res.status(404).json({ error: 'No history' });
+    const id = Number(rawId);
+    if (!Number.isSafeInteger(id) || id > 2147483647) return res.status(404).json({ error: 'No history' });
+    if (IS_STAGING && req.query.demo === '1' && stagingMockHistory(id)) {
+      return res.json(stagingMockHistory(id));
+    }
+    try {
+      const row = await notifications.getForUser(pool, req.user.id, id);
+      if (!row || row.app_id == null || !row.app_slug) return res.status(404).json({ error: 'No history' });
+      const app = await appAccess.getAppForUser(pool, row.app_slug, req.user, 'view', appAccess.ACCESS_COLUMNS);
+      if (!app || Number(app.id) !== Number(row.app_id)) return res.status(404).json({ error: 'No history' });
+      const story = await storyHistory.storyOf(pool, row);
+      const history = await storyHistory.historyFor(pool, { appId: Number(row.app_id), ...story });
+      if (!history) return res.status(404).json({ error: 'No history' });
+      return res.json(history);
+    } catch (err) {
+      log.error('notifications', 'history lookup failed', { id, message: err.message });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // #4769: save one notification to the drawer's pinned Saved section.
   // Same shape as the message bookmark toggles in src/routes/chat.js: an
   // idempotent save, the same id validation as the GET above, and the
@@ -1011,5 +1119,5 @@ function notificationsRoutes(config) {
 
 module.exports = {
   notificationsRoutes, stagingMockNotifications, stagingMockSavedMessages,
-  stagingMockSavedNotifications,
+  stagingMockSavedNotifications, stagingMockHistory,
 };

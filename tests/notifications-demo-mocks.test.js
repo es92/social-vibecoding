@@ -98,7 +98,7 @@ const SESSION_KINDS = ['session_done', 'auto_solve_done', 'stale_pr', 'check_fai
 // the mark-read scoping test below sends as a request body.
 const DEMO_KINDS = [...SESSION_KINDS, 'session_stalled'];
 
-test('staging + ?demo=1: twelve mock rows prepend, and only the unread ones bump unread', async () => {
+test('staging + ?demo=1: fourteen mock rows prepend, and only the unread ones bump unread', async () => {
   const pool = makeMockPool();
   const mod = loadRoutes('staging', pool);
   const { server, port } = await startServer(mod);
@@ -108,13 +108,23 @@ test('staging + ?demo=1: twelve mock rows prepend, and only the unread ones bump
     const body = await res.json();
 
     const mocks = body.notifications.filter((n) => n.id >= 990000);
-    assert.equal(mocks.length, 12, 'exactly twelve mock rows injected');
+    assert.equal(mocks.length, 14, 'exactly fourteen mock rows injected');
     assert.deepEqual(
       [...new Set(mocks.map((n) => n.kind))].sort(),
-      [...DEMO_KINDS, 'conversation_message', 'platform_limit', 'app_quota_changed'].sort(),
-      'every session-related kind is covered, plus the message row, a platform limit alert '
-      + 'and an app allowance change (#3233); no kudos row while kudos is parked (#5249)'
+      [...DEMO_KINDS, 'conversation_message', 'platform_limit', 'app_quota_changed', 'build_live', 'build_ready'].sort(),
+      'every session-related kind is covered, plus the message row, a platform limit alert, '
+      + 'an app allowance change (#3233) and the bot\'s story (#5580); no kudos row while kudos is parked (#5249)'
     );
+    // #5580: Homeroom bot's two rows are one request's story in the demo
+    // project, so the Unread tab folds them into one card.
+    const story = mocks.filter((n) => n.kind === 'build_live' || n.kind === 'build_ready');
+    assert.deepEqual(story.map((n) => n.id), [990214, 990215]);
+    for (const n of story) {
+      assert.equal(n.sourceUsername, 'homeroom_bot');
+      assert.equal(n.appId, 0, 'the bot\'s news about a project carries that project');
+      assert.equal(n.storyIssueNumber, 990301);
+      assert.match(n.detail, /^hrbot2:\{/);
+    }
     assert.equal(
       mocks.filter((n) => n.kind === 'session_done').length, 4,
       '#971: two session_done rows — one titled, one untitled — plus the read one below; '
@@ -151,8 +161,8 @@ test('staging + ?demo=1: twelve mock rows prepend, and only the unread ones bump
     // "See more notifications" button: without it the button does not
     // render at all and the caught-up state is unreachable, so the two things
     // a reviewer is asked to look at are both invisible.
-    assert.equal(mocks.filter((n) => !n.readAt).length, 11,
-      'eleven unread rows feed the badges');
+    assert.equal(mocks.filter((n) => !n.readAt).length, 13,
+      'thirteen unread rows feed the badges');
     const readMocks = mocks.filter((n) => n.readAt);
     assert.equal(readMocks.length, 1, 'exactly one already-read row');
     assert.match(readMocks[0].sessionTitle, /\[Mock\]/,
@@ -186,10 +196,10 @@ test('staging + ?demo=1: twelve mock rows prepend, and only the unread ones bump
     );
     // Real rows survive after the mocks; unread bumped by the UNREAD mock
     // count so the client's badge subtraction stays honest. Counting all
-    // twelve would claim the read row as unread — inflating the badge by one
+    // fourteen would claim the read row as unread — inflating the badge by one
     // and leaving "Mark all read" enabled with nothing left to mark.
     assert.ok(body.notifications.some((n) => n.id === 1), 'real rows still present');
-    assert.equal(body.unread, 2 + 11);
+    assert.equal(body.unread, 2 + 13);
     // #18: the unread mock messages are counted apart too, for the bell to
     // leave out (the real row is a mention, which the bell keeps).
     const mockMessages = body.notifications.filter((n) => n.id !== 1 && !n.readAt
@@ -239,7 +249,7 @@ test('stagingMockNotifications rows carry the fields the shared row renderers re
   const pool = makeMockPool();
   const mod = loadRoutes('staging', pool);
   const rows = mod.stagingMockNotifications();
-  assert.equal(rows.length, 12);
+  assert.equal(rows.length, 14);
   for (const r of rows) {
     assert.ok(r.id >= 990000 && r.id < 1000000, 'ids sit in the 99xxxx mock range');
     // `readAt` is null on every row EXCEPT the one that exists to be read —

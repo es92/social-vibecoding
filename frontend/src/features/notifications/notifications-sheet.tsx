@@ -100,13 +100,16 @@
  */
 
 import { OverlayScrim } from '../../lib/overlay-scrim-view';
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback, useEffect, useRef, useState,
+  type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode,
+} from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Chip, ChipRail } from '@/components/ui/chip';
 import { IconTile } from '@/components/ui/icon-tile';
 import {
-  BookmarkIcon, BookmarkSolidIcon, ChevronRightIcon, SearchIcon, XIcon,
+  BookmarkIcon, BookmarkSolidIcon, ChevronDownIcon, ChevronUpIcon, SearchIcon, XIcon,
 } from '@/components/ui/icons';
 
 import { UserAvatar, swatchFor } from '../messages/format';
@@ -122,6 +125,7 @@ import { notificationsSheetStore } from './notifications-sheet-store.js';
 import { NotificationsSheet } from './notifications-sheet-controller.js';
 import { NotificationsPinnedSections } from './notifications-list';
 import type { NotificationRowView } from './notifications-list';
+import { CardHistory, ProjectStack, foldStories, type CardPlace } from './notification-stacks';
 
 type ScreenRowView = NotificationRowView & {
   /** The unelided instant for the `<time>`'s title (#1808, stampFields). */
@@ -147,6 +151,8 @@ type ScreenRowView = NotificationRowView & {
   plainMessage?: boolean;
   /** Set on a row from the Homeroom bot: it wears the bot's own face. */
   bot?: boolean;
+  /** Set on one of the bot's moments (rowView): its meta line names its project and the bot. */
+  botMoment?: boolean;
   conversationId?: number | null;
   /** #5289: the notification's kind, what a project's repeats fold on. */
   kind?: string;
@@ -168,6 +174,14 @@ type ScreenRowView = NotificationRowView & {
    * collapseConversationRuns in ./notifications.js); absent means one.
    */
   count?: number;
+  /** #5580: the project's own name, for its stack's heading. */
+  appName?: string | null;
+  /** #5580: the request or proposal the row is about (rowView), what its project's stack folds a story on. */
+  storyKey?: string | null;
+  /** #5580: that request or proposal's number and title, when known. */
+  storyRef?: { number: number; title: string | null } | null;
+  /** #5580: set on a card standing for one story's notifications (foldStories), newest first. */
+  story?: { members: ScreenRowView[] } | null;
 };
 
 type Tab = 'all' | 'unread';
@@ -253,21 +267,48 @@ function SectionHead({ children }: { children: ReactNode }): ReactNode {
  * unread notification — including ones the sheet has not paged in — through
  * the controller's markAppRead. The "Other" group (notifications that belong
  * to no app) renders no button: nothing but Mark all read owns those.
+ *
+ * #5580: the heading of a project's stack. While the stack is open it also
+ * offers "Show less", which folds the stack back under its newest card.
  */
-function AppGroupHead({ groupKey, label, appId, onRead }: {
+function AppGroupHead({ groupKey, label, appId, onRead, onShowLess }: {
   groupKey: string;
   label: string;
   appId: number | null;
   /** Before the clear: let the group's rows go, so they leave Unread (useHeldUnread). */
   onRead?: () => void;
+  /** An open stack's way back to closed; absent while there is nothing to fold. */
+  onShowLess?: (() => void) | null;
 }): ReactNode {
   const t = useMessages('notifications');
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex items-center gap-2 px-4 pt-4 pb-1" data-notif-app-group={groupKey}>
+    <div className="flex items-center gap-2 px-4 pt-4 pb-1.5" data-notif-app-group={groupKey}>
       <span className="flex-1 min-w-0 truncate text-xs font-medium text-zinc-500 dark:text-zinc-500">
         {label}
       </span>
+      {onShowLess ? (
+        <button
+          type="button"
+          data-notif-stack-less={groupKey}
+          className={'inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-semibold '
+            + 'bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 '
+            + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 un-touch-target'}
+          aria-label={t('notifications:stack.showLessLabel', { app: label })}
+          onClick={(event) => {
+            event.stopPropagation();
+            onShowLess();
+            // From the keyboard, focus goes to the card the stack folds under.
+            if (event.detail === 0) {
+              const stack = event.currentTarget.closest('[data-notif-stack]');
+              requestAnimationFrame(() => (stack?.querySelector('[data-notif-id]') as HTMLElement | null)?.focus());
+            }
+          }}
+        >
+          <ChevronUpIcon aria-hidden="true" className="h-3.5 w-3.5" strokeWidth="2.5" />
+          {t('notifications:stack.showLess')}
+        </button>
+      ) : null}
       {appId != null ? (
         <button
           type="button"
@@ -311,8 +352,19 @@ type AppGroup = {
   appId: number | null;
   /** The first row's appLine, before the "Other" fallback the renderer applies. */
   appLine: string;
+  /** #5580: the project's own name, from the first row that carries it. */
+  appName?: string | null;
   entries: Entry[];
 };
+
+/**
+ * #5580: the heading's words: the project's name. A row's appLine is what
+ * its meta line says, and the Homeroom bot's says more than the name, so a
+ * group led by the bot still reads as its project.
+ */
+function groupName(group: AppGroup): string {
+  return group.appName || group.appLine;
+}
 
 function groupUnreadByApp(rows: ScreenRowView[], t: Translate): AppGroup[] {
   const groups: AppGroup[] = [];
@@ -325,10 +377,14 @@ function groupUnreadByApp(rows: ScreenRowView[], t: Translate): AppGroup[] {
       byKey.set(key, group);
       groups.push(group);
     }
+    if (!group.appName && view.appName) group.appName = view.appName;
     group.entries.push({ type: 'notif', key: `n:${view.id}`, at: view.createdAtMs || 0, view });
   }
+  // #5580: one story's notifications become one card first (foldStories in
+  // ./notification-stacks.tsx); the rows about nothing in particular still
+  // fold by kind.
   for (const group of groups) {
-    if (group.appId != null) group.entries = foldRepeats(group.entries, t);
+    if (group.appId != null) group.entries = foldRepeats(foldStories(group.entries), t);
   }
   return groups;
 }
@@ -364,7 +420,8 @@ export function foldRepeats(entries: Entry[], t: Translate): Entry[] {
   const firstAt = new Map<string, number>();
   for (const entry of entries) {
     const view = entry.view;
-    const foldable = !!view.kind && !view.conversation && !(view.actions && view.actions.length);
+    // #5580: a story card is already several notifications; it folds no further.
+    const foldable = !!view.kind && !view.conversation && !(view.actions && view.actions.length) && !view.story;
     const key = foldable ? `${view.kind}\n${view.label}` : null;
     const at = key != null ? firstAt.get(key) : undefined;
     if (at == null) {
@@ -377,7 +434,7 @@ export function foldRepeats(entries: Entry[], t: Translate): Entry[] {
   }
   return out.map((entry) => {
     const ids = entry.view.groupIds;
-    if (!ids || ids.length < 2) return entry;
+    if (!ids || ids.length < 2 || entry.view.story) return entry;
     const count = ids.length;
     const words = entry.view.kind ? GROUP_LABELS[entry.view.kind] : undefined;
     const labelled = !!words && t(words.one) === entry.view.label;
@@ -541,6 +598,8 @@ type ScreenRowProps = {
   held?: boolean;
   /** Let the row go before clearing it, so it leaves Unread (useHeldUnread). */
   onRelease?: (ids: Iterable<ScreenRowView['id']>) => void;
+  /** #5580: drawn as a card in its project's stack on Unread, in this place. */
+  card?: CardPlace | null;
 };
 
 /**
@@ -594,39 +653,83 @@ type ScreenRowProps = {
  * the kit may still be holding (a folded group, #5289, is a shape of its
  * own: it has no bookmark). The hairline between rows follows the
  * slot's place in the list rather than the row's (app.css).
+ *
+ * #5580: THE CARD. On Unread a row is a card in its project's stack
+ * (./notification-stacks.tsx): the shell's card (white, 20px, one hairline),
+ * the time at its top right where iOS keeps it, and no project name on its
+ * meta line, since the heading over the stack says it. Its × sits on the
+ * card's corner. Its bookmark takes the time's place while the pointer is
+ * over the card; on a phone, where nothing hovers, Save is the swipe's first
+ * button beside Clear. A card about a request or a proposal has a chevron at
+ * its foot (a 44px target) that opens its history under its words, and on a
+ * phone pressing and holding the card does the same, the way iOS opens a
+ * notification you hold; the press that opened it does not also open the
+ * notification. The top card of a closed stack opens the stack instead of
+ * the notification, and says how many more are under it; the cards under it
+ * are `inert` until it opens. The slot is the card on a desk; on a phone the
+ * swipe host is (it is what slides), and the slot only rounds the kit's wrap.
  */
-function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowProps): ReactNode {
+function ScreenRow({ view, touch, removes, held = false, onRelease, card = null }: ScreenRowProps): ReactNode {
   const t = useMessages('notifications');
   const clearable = view.unread;
   const shape = view.actions && view.actions.length ? 'actions' : 'plain';
   // #5289: a row standing for several notifications of one kind clears,
   // opens and reads as all of them (see foldRepeats).
   const groupIds = view.groupIds && view.groupIds.length > 1 ? view.groupIds : null;
+  // #5580: where the card sits in its stack, and whether it has a history to
+  // open: a card about a request or proposal, unless it is a fold by kind
+  // (several things, not one story) or tucked into a closed stack.
+  const top = card && card.top ? card.top : null;
+  const closedTop = top && top.closed ? top : null;
+  const behind = card && card.behind ? card.behind : 0;
+  const story = view.story && view.story.members.length > 1 ? view.story : null;
+  const hasHistory = !!card && !closedTop && !behind && !!view.storyKey && (!groupIds || !!story);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  useEffect(() => {
+    if (!hasHistory) setHistoryOpen(false);
+  }, [hasHistory]);
+  // A press and hold that opened the history: the lift that follows is not a tap.
+  const heldAt = useRef(0);
+  const press = useRef<{ x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const letGo = useCallback(() => {
+    if (press.current) clearTimeout(press.current.timer);
+    press.current = null;
+  }, []);
+  useEffect(() => letGo, [letGo]);
   const open = () => {
+    if (Date.now() - heldAt.current < 700) return;
+    if (closedTop) { closedTop.open(); return; }
     if (groupIds) controller()?.openGroupRow(view.id, groupIds);
     else controller()?._onItemClick(view.id);
   };
   const rowRef = useRef<HTMLElement | null>(null);
   const setRow = useCallback((el: HTMLElement | null) => { rowRef.current = el; }, []);
+  // #5580: a card's swipe saves as well as clears (a folded card has no save:
+  // a save is one notification's).
+  const cardSave = !!card && !groupIds;
   useEffect(() => {
     const el = rowRef.current;
     const ui = kit();
     if (!clearable || !touch || !el || !ui?.swipeActions) return undefined;
-    const swipe = ui.swipeActions(el, {
-      actions: [{
-        label: t('notifications:row.clear'),
-        // The kit's full swipe belongs to its destructive action, and it
-        // takes the row out of the document; only Unread wants that.
-        destructive: removes,
-        color: 'var(--un-action-neutral)',
-        handler: () => {
-          onRelease?.(groupIds || [view.id]);
-          void controller()?.clearNotification(view.id, groupIds || undefined);
-        },
-      }],
-    });
+    const clear = {
+      label: t('notifications:row.clear'),
+      // The kit's full swipe belongs to its destructive action, and it
+      // takes the row out of the document; only Unread wants that.
+      destructive: removes,
+      color: 'var(--un-action-neutral)',
+      handler: () => {
+        onRelease?.(groupIds || [view.id]);
+        void controller()?.clearNotification(view.id, groupIds || undefined);
+      },
+    };
+    const save = {
+      label: t(view.saved ? 'notifications:row.swipeUnsave' : 'notifications:row.swipeSave'),
+      color: 'var(--un-action-neutral)',
+      handler: () => { void controller()?.toggleSave(view.id); },
+    };
+    const swipe = ui.swipeActions(el, { actions: cardSave ? [save, clear] : [clear] });
     return () => swipe.detach();
-  }, [clearable, touch, removes, shape, view.id, groupIds?.join(','), t, onRelease]);
+  }, [clearable, touch, removes, shape, view.id, groupIds?.join(','), t, onRelease, cardSave, view.saved]);
 
   // The row's tile, its three lines and the count.
   //
@@ -635,7 +738,7 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
   // left the title about 30 characters. The chevron went (the whole row is
   // the tap, as a notification is on the lock screen), and the dot moved
   // into the row's left margin beside the tile, where Mail keeps it.
-  const body = (
+  const body = card ? null : (
     <>
       <span className="relative flex shrink-0">
         {view.unread ? (
@@ -727,28 +830,35 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
             : view.by ? t('notifications:row.meta.by', { username: view.by }) : view.appLine}
         </span>
       </span>
-      {/*
-          A collapsed conversation run says how many it stands for. Only ever
-          rendered above 1, so an ordinary row is unchanged — and it is a
-          COUNT, not an alerting badge: it sits in the row's own ink when the
-          run is read, violet only while it is still waiting on you. A folded
-          group whose label already says the number (#5289) does not say it
-          twice.
-      */}
-      {view.count && view.count > 1 && !view.groupLabelled ? (
-        <span
-          className={'shrink-0 min-w-[1.5rem] px-2 h-6 rounded-full text-[11px] font-semibold '
-            + 'flex items-center justify-center '
-            + (view.unread
-              ? 'bg-violet-600 text-white'
-              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400')}
-          aria-label={t('notifications:row.runCount', { count: view.count })}
-        >
-          {view.count > 99 ? '99+' : view.count}
-        </span>
-      ) : null}
+      <RunCount view={view} />
     </>
   );
+
+  // On a phone, pressing and holding a card with a history opens it; a drag
+  // (a scroll, the swipe) lets go first.
+  const hold = hasHistory && touch ? {
+    onPointerDown: (event: ReactPointerEvent) => {
+      if (event.pointerType !== 'touch') return;
+      letGo();
+      press.current = {
+        x: event.clientX,
+        y: event.clientY,
+        timer: setTimeout(() => {
+          press.current = null;
+          heldAt.current = Date.now();
+          setHistoryOpen((was) => !was);
+        }, 450),
+      };
+    },
+    onPointerMove: (event: ReactPointerEvent) => {
+      const at = press.current;
+      if (at && Math.abs(event.clientX - at.x) + Math.abs(event.clientY - at.y) > 10) letGo();
+    },
+    onPointerUp: letGo,
+    onPointerCancel: letGo,
+    onPointerLeave: letGo,
+    onContextMenu: (event: ReactMouseEvent) => event.preventDefault(),
+  } : {};
   // #1688: a row with an action of its own ("Still yes" on a re-confirm ask)
   // keeps the row as the tap that opens the thing, and puts the action
   // beside it as a real button — never a button inside a button.
@@ -762,34 +872,46 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
       // #4769: the row's right padding is pr-16, not the px-4 it was, so the
       // bookmark button (16px in from the slot's edge, N6) never sits over
       // the text.
-      className={actions.length > 1
-        ? 'notifications-row w-full pl-4 pr-16 py-3.5 flex flex-col gap-2'
-        : 'notifications-row w-full pl-4 pr-16 py-3.5 flex items-center gap-3'}
+      className={card
+        ? 'notifications-row col-start-1 row-start-1 w-full pl-5 pr-4 py-3 flex flex-col gap-2'
+        : actions.length > 1
+          ? 'notifications-row w-full pl-4 pr-16 py-3.5 flex flex-col gap-2'
+          : 'notifications-row w-full pl-4 pr-16 py-3.5 flex items-center gap-3'}
     >
       <button
-        className="min-w-0 flex-1 text-left flex items-center gap-4"
+        className={card ? 'min-w-0 flex-1 w-full text-left flex items-start gap-3' : 'min-w-0 flex-1 text-left flex items-center gap-4'}
+        aria-expanded={closedTop ? 'false' : undefined}
         onClick={(event) => {
           event.stopPropagation();
           open();
         }}
+        {...hold}
       >
-        {body}
+        {card ? <CardWords view={view} card={card} hasHistory={hasHistory} saveOnHover={cardSave && !touch} /> : body}
       </button>
-      <RowActions view={view} actions={actions} />
+      {/* #5580: on a card one action sits under the words too, as two do. */}
+      {card && actions.length === 1 ? (
+        <div className="flex items-center gap-2 pl-[3.75rem]"><RowActions view={view} actions={actions} /></div>
+      ) : <RowActions view={view} actions={actions} />}
     </div>
   ) : (
     <button
       ref={touch ? undefined : setRow}
       data-notif-id={view.id}
       data-notif-group-size={groupIds ? groupIds.length : undefined}
-      className={'notifications-row w-full text-left pl-4 pr-16 py-3.5 '
-        + 'hover:bg-black/[.03] dark:hover:bg-white/[.04] transition-colors flex items-center gap-4'}
+      className={card
+        ? 'notifications-row col-start-1 row-start-1 w-full text-left pl-5 pr-4 py-3 rounded-[20px] '
+          + 'hover:bg-black/[.02] dark:hover:bg-white/[.03] transition-colors flex items-start gap-3'
+        : 'notifications-row w-full text-left pl-4 pr-16 py-3.5 '
+          + 'hover:bg-black/[.03] dark:hover:bg-white/[.04] transition-colors flex items-center gap-4'}
+      aria-expanded={closedTop ? 'false' : undefined}
       onClick={(event) => {
         event.stopPropagation();
         open();
       }}
+      {...hold}
     >
-      {body}
+      {card ? <CardWords view={view} card={card} hasHistory={hasHistory} saveOnHover={cardSave && !touch} /> : body}
     </button>
   );
   // #4769: the row's own save. Outline until saved, filled violet (the
@@ -801,41 +923,86 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
   // that opens the row.
   // #5289: a folded group has no bookmark: a save is one notification's,
   // and the row stands for several. Each one is on All, with its own.
-  const bookmark = groupIds ? null : (
+  // #5580: on a card it takes the time's place while the pointer is over
+  // it, and on a phone the swipe's Save stands in for it.
+  const bookmark = groupIds || (card && touch) ? null : (
     <button
       type="button"
       data-notification-save={view.id}
       aria-pressed={view.saved ? 'true' : 'false'}
       aria-label={t(view.saved ? 'notifications:row.unsave' : 'notifications:row.save')}
-      className={'absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center '
-        + 'rounded-full transition-colors hover:bg-black/[.04] dark:hover:bg-white/[.06] '
-        + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500'}
+      className={card
+        ? 'absolute right-2 top-1.5 flex h-8 w-8 items-center justify-center rounded-full '
+          + 'transition-opacity hover:bg-black/[.04] dark:hover:bg-white/[.06] '
+          + 'pointer-events-none opacity-0 '
+          + 'group-hover/notif:pointer-events-auto group-hover/notif:opacity-100 '
+          + 'group-has-[:focus-visible]/notif:pointer-events-auto group-has-[:focus-visible]/notif:opacity-100 '
+          + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500'
+        : 'absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center '
+          + 'rounded-full transition-colors hover:bg-black/[.04] dark:hover:bg-white/[.06] '
+          + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500'}
       onClick={(event) => {
         event.stopPropagation();
         controller()?.toggleSave(view.id);
       }}
     >
       {view.saved
-        ? <BookmarkSolidIcon aria-hidden="true" className="h-5 w-5 text-violet-700 dark:text-violet-400" />
-        : <BookmarkIcon aria-hidden="true" className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />}
+        ? <BookmarkSolidIcon aria-hidden="true" className={card ? 'h-[18px] w-[18px] text-violet-700 dark:text-violet-400' : 'h-5 w-5 text-violet-700 dark:text-violet-400'} />
+        : <BookmarkIcon aria-hidden="true" className={card ? 'h-[18px] w-[18px] text-zinc-500 dark:text-zinc-400' : 'h-5 w-5 text-zinc-500 dark:text-zinc-400'} />}
     </button>
   );
+  // #5580: the history's chevron, at the foot of the card in the row's own
+  // grid cell (the slot, or the swipe host, is a one-column grid in card
+  // form), and the history itself under the words.
+  const history = hasHistory ? (
+    <>
+      <button
+        type="button"
+        data-notif-history={view.id}
+        aria-expanded={historyOpen ? 'true' : 'false'}
+        aria-label={t(historyOpen ? 'notifications:history.hide' : 'notifications:history.show')}
+        className={'relative z-[1] col-start-1 row-start-1 self-end justify-self-end mr-2.5 mb-2.5 '
+          + 'flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 dark:text-zinc-400 '
+          + 'hover:bg-black/[.04] hover:text-zinc-900 dark:hover:bg-white/[.06] dark:hover:text-zinc-100 '
+          + 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 un-touch-target'}
+        onClick={(event) => {
+          event.stopPropagation();
+          setHistoryOpen((was) => !was);
+        }}
+      >
+        <ChevronDownIcon
+          aria-hidden="true"
+          className={historyOpen ? 'h-4 w-4 rotate-180 transition-transform duration-300' : 'h-4 w-4 transition-transform duration-300'}
+          strokeWidth="2.5"
+        />
+      </button>
+      <CardHistory view={view} open={historyOpen} />
+    </>
+  ) : null;
   // On touch the bookmark is INSIDE the swipe host, so a swipe translates
   // row and bookmark together; on desktop the slot keeps its flat structure,
   // which is what dapp.json's selectors read. The row hands `setRow` to the
   // wrapper on touch and keeps it itself on desktop, because swipeActions
   // must hold whichever node translates.
   const swipeHost = touch ? (
-    <div ref={setRow} data-notif-swipe className="relative">
+    <div ref={setRow} data-notif-swipe className={card ? CARD_SURFACE + ' relative grid grid-cols-1' : 'relative'}>
       {row}
       {bookmark}
+      {history}
     </div>
   ) : row;
+  const slotCls = 'notifications-row-slot group/notif relative'
+    + (card ? (touch ? ' notifications-card rounded-[20px]' : ' notifications-card grid grid-cols-1 ' + CARD_SURFACE) : '')
+    + (held ? ' opacity-60' : '');
   return (
     <div
       key={`${clearable ? 'unread' : 'read'}:${shape}${groupIds ? ':group' : ''}`}
-      className={held ? 'notifications-row-slot group/notif relative opacity-60' : 'notifications-row-slot group/notif relative'}
+      className={slotCls}
       data-notif-held={held ? '' : undefined}
+      data-stack-top={top ? '' : undefined}
+      data-stack-behind={behind || undefined}
+      inert={behind ? true : undefined}
+      aria-hidden={behind ? 'true' : undefined}
     >
       {swipeHost}
       {clearable && !touch ? (
@@ -847,8 +1014,8 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
             : t('notifications:row.clearLabel')}
           // Hidden until the pointer is over the slot or something in it has
           // keyboard focus, and untouchable while hidden, so a click on the
-          // tile's corner opens the row as it always did.
-          className={'absolute left-1.5 top-2 flex h-5 w-5 items-center justify-center rounded-full '
+          // corner of the tile opens the row as it always did.
+          className={(card ? 'absolute -left-1.5 -top-1.5 z-[2] flex h-5 w-5 items-center justify-center rounded-full ' : 'absolute left-1.5 top-2 flex h-5 w-5 items-center justify-center rounded-full ')
             + 'bg-white text-zinc-900 shadow-sm ring-1 ring-black/10 hover:bg-zinc-50 '
             + 'dark:bg-zinc-900 dark:text-zinc-100 dark:ring-white/15 dark:hover:bg-zinc-800 '
             + 'pointer-events-none opacity-0 transition-opacity '
@@ -881,7 +1048,141 @@ function ScreenRow({ view, touch, removes, held = false, onRelease }: ScreenRowP
           bookmark joins at the end. Touch renders it inside the swipe host
           instead, so it is not here at all. */}
       {!touch ? bookmark : null}
+      {!touch ? history : null}
     </div>
+  );
+}
+
+/** #5580: the card's surface: the shell's card (GroupedList's), with a soft lift. */
+const CARD_SURFACE = 'rounded-[20px] bg-white dark:bg-zinc-900 '
+  + 'shadow-[inset_0_0_0_1px_var(--app-sheet-line),0_1px_2px_rgba(0,0,0,0.05)]';
+
+/**
+ * #5580: a card's words. The same three lines in the same order as a row's
+ * (what kind, which one, the meta line), so what reads a row reads a card;
+ * the time moves up beside the kind, at the card's top right, and the meta
+ * line names only what the heading over the stack does not: who did it, a
+ * source other than the project, or for the bot's news just the bot. A
+ * story card names its request or proposal and how many notifications it
+ * is. The top card of a stack says how many more are under it; the line
+ * stays while the stack is open, folded to nothing, so the card shrinks and
+ * grows with the stack instead of jumping.
+ */
+function CardWords({ view, card, hasHistory, saveOnHover }: {
+  view: ScreenRowView;
+  card: CardPlace;
+  hasHistory: boolean;
+  /** The bookmark takes the time's place while the pointer is over the card. */
+  saveOnHover: boolean;
+}): ReactNode {
+  const t = useMessages('notifications');
+  const story = view.story && view.story.members.length > 1 ? view.story : null;
+  const top = card.top || null;
+  const source = view.botMoment && view.appId != null ? t('notifications:row.bot.name')
+    : view.appLine && view.appLine !== card.groupName ? view.appLine : null;
+  const by = view.botMoment ? null : view.by;
+  const meta = story ? (view.storyRef
+    ? t('notifications:story.meta', { number: view.storyRef.number, count: story.members.length })
+    : t('notifications:story.metaUnnumbered', { count: story.members.length }))
+    : source && by ? t('notifications:row.meta.sourceBy', { source, username: by })
+      : by ? t('notifications:row.meta.by', { username: by }) : source;
+  return (
+    <>
+      <span className="relative flex shrink-0 self-start mt-0.5">
+        {view.unread ? (
+          <span
+            className="absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-zinc-900 dark:bg-zinc-100"
+            aria-label={t('notifications:row.unreadDot')}
+          >
+          </span>
+        ) : null}
+        <AvatarChip view={view} />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="flex items-baseline gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="flex-1 min-w-0 truncate">{view.segments.length ? view.label : null}</span>
+          {view.saved ? (
+            <BookmarkSolidIcon aria-hidden="true" className="h-3 w-3 shrink-0 self-center text-violet-700 dark:text-violet-400" />
+          ) : null}
+          {view.time ? (
+            <time
+              title={view.timeTitle}
+              className={saveOnHover
+                ? 'shrink-0 group-hover/notif:invisible group-has-[:focus-visible]/notif:invisible'
+                : 'shrink-0'}
+            >
+              {view.time}
+            </time>
+          ) : null}
+        </span>
+        <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100 line-clamp-2 break-words">
+          {story && view.storyRef && view.storyRef.title ? view.storyRef.title : subjectOf(view)}
+        </span>
+        {view.note ? (
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {view.note}
+          </span>
+        ) : null}
+        <span className={hasHistory ? 'block text-xs text-zinc-500 truncate pr-8' : 'block text-xs text-zinc-500 truncate'}>
+          {meta}
+        </span>
+        {top ? (
+          <span
+            className={'grid transition-[grid-template-rows,opacity] duration-300 '
+              + (top.closed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] opacity-0')}
+            aria-hidden={top.closed ? undefined : 'true'}
+          >
+            <span className="min-h-0 overflow-hidden">
+              <span className="block pt-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                {t('notifications:stack.more', { count: top.more })}
+              </span>
+            </span>
+          </span>
+        ) : null}
+      </span>
+      <RunCount view={view} />
+    </>
+  );
+}
+
+/** The subject line's words: the row's segments, else its label (a kind with no subject). */
+function subjectOf(view: ScreenRowView): ReactNode {
+  return view.segments.length ? view.segments.map((segment, index) => (
+    // eslint-disable-next-line react/no-array-index-key
+    <span
+      key={index}
+      className={segment.t === 'who'
+        ? 'font-bold'
+        : segment.t === 'strong'
+          ? 'font-semibold'
+          : 'font-normal text-zinc-700 dark:text-zinc-300'}
+    >
+      {(index > 0 ? ' ' : '') + (segment.t === 'who' ? `@${segment.v}` : segment.v)}
+    </span>
+  )) : view.label;
+}
+
+/*
+ * A collapsed conversation run says how many it stands for. Only ever
+ * rendered above 1, so an ordinary row is unchanged — and it is a COUNT, not
+ * an alerting badge: it sits in the row's own ink when the run is read,
+ * violet only while it is still waiting on you. A folded group whose label
+ * already says the number (#5289) does not say it twice.
+ */
+function RunCount({ view }: { view: ScreenRowView }): ReactNode {
+  const t = useMessages('notifications');
+  if (!view.count || view.count < 2 || view.groupLabelled) return null;
+  return (
+    <span
+      className={'shrink-0 min-w-[1.5rem] px-2 h-6 rounded-full text-[11px] font-semibold '
+        + 'flex items-center justify-center '
+        + (view.unread
+          ? 'bg-violet-600 text-white'
+          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400')}
+      aria-label={t('notifications:row.runCount', { count: view.count })}
+    >
+      {view.count > 99 ? '99+' : view.count}
+    </span>
   );
 }
 
@@ -1070,19 +1371,33 @@ export function NotificationsSheetView() {
   // groups newest-first too.
   const groupedUnread = tab === 'unread' && !olderShown;
   const appGroups = groupedUnread ? groupUnreadByApp(unread, t) : [];
-  const renderAppGroup = (group: AppGroup): ReactNode => (
-    <Fragment key={group.key}>
-      <AppGroupHead
+  // #5580: each project is a stack of cards (./notification-stacks.tsx),
+  // under the same heading and its Mark read.
+  const renderAppGroup = (group: AppGroup): ReactNode => {
+    const label = group.key === 'other' || !group.appLine ? t('notifications:sheet.group.other') : groupName(group);
+    return (
+      <ProjectStack
+        key={group.key}
         groupKey={group.key}
-        label={group.key === 'other' || !group.appLine ? t('notifications:sheet.group.other') : group.appLine}
-        // N6 (polish board): with one group on the tab its Mark read is Mark
-        // all read again, a pill's width apart, so the title row's is the one.
-        appId={appGroups.length > 1 ? group.appId : null}
-        onRead={() => held.release(group.entries.flatMap((entry) => (entry.type === 'notif' ? [entry.view.id] : [])))}
+        name={label}
+        entries={group.entries}
+        sheetOpen={open}
+        head={(showLess) => (
+          <AppGroupHead
+            groupKey={group.key}
+            label={label}
+            // N6 (polish board): with one group on the tab its Mark read is Mark
+            // all read again, a pill's width apart, so the title row's is the one.
+            appId={appGroups.length > 1 ? group.appId : null}
+            onRead={() => held.release(group.entries.flatMap((entry) => (entry.type === 'notif'
+              ? entry.view.groupIds || [entry.view.id] : [])))}
+            onShowLess={showLess}
+          />
+        )}
+        renderCard={renderCard}
       />
-      {group.entries.map(renderEntry)}
-    </Fragment>
-  );
+    );
+  };
   const renderEntry = (entry: Entry): ReactNode => (
     <ScreenRow
       key={entry.key}
@@ -1091,6 +1406,19 @@ export function NotificationsSheetView() {
       removes={tab === 'unread'}
       held={tab === 'unread' && !entry.view.unread && !olderShown}
       onRelease={held.release}
+    />
+  );
+  // #5580: a card in a project's stack, which only collapsed Unread draws:
+  // the same row, handed its place.
+  const renderCard = (entry: Entry, place: CardPlace): ReactNode => (
+    <ScreenRow
+      key={entry.key}
+      view={entry.view}
+      touch={!!snap.touch}
+      removes
+      held={!entry.view.unread}
+      onRelease={held.release}
+      card={place}
     />
   );
 

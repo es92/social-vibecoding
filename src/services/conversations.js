@@ -1172,16 +1172,19 @@ async function listConversations(pool, user) {
   return out;
 }
 
-async function insertNotification(db, { userId, conversationId, messageId = null, sourceUserId, kind, detail = null }) {
+// `appId` is set only on the Homeroom bot's news about a project (#5580,
+// sendMessage's `notificationAppId`): the bell files it under that project.
+// Every other conversation row leaves it NULL.
+async function insertNotification(db, { userId, conversationId, messageId = null, sourceUserId, kind, detail = null, appId = null }) {
   const { rows } = await db.query(
     `INSERT INTO notifications
-       (user_id, conversation_id, conversation_message_id, source_user_id, kind, detail)
-     SELECT $1, $2, $3, $4, $5, $6
+       (user_id, conversation_id, conversation_message_id, source_user_id, kind, detail, app_id)
+     SELECT $1, $2, $3, $4, $5, $6, $7
       WHERE NOT EXISTS (SELECT 1 FROM user_blocks b
                          WHERE b.blocker_id = $1 AND b.blocked_user_id = $4)
      RETURNING id, user_id, conversation_id, conversation_message_id,
-               source_user_id, kind, detail, created_at`,
-    [userId, conversationId, messageId, sourceUserId || null, kind, detail]
+               source_user_id, kind, detail, app_id, created_at`,
+    [userId, conversationId, messageId, sourceUserId || null, kind, detail, appId || null]
   );
   return rows[0] || null;
 }
@@ -1718,8 +1721,12 @@ function mentionsUsername(content, username) {
 // message makes, in place of the message kinds (the Homeroom bot's build
 // moments, homeroom-bot-dm.js BUILD_KINDS); it must be one of
 // notifications.CONVERSATION_NOTIFICATION_KINDS. A group or channel ignores it.
+// #5580: `notificationAppId` is the project a DIRECT message's notifications
+// are about (the Homeroom bot's news, homeroom-bot-dm.js sendDm), written on
+// each row so the bell files it under that project. A group or channel
+// ignores it too.
 async function sendMessage(pool, user, conversationId, input, {
-  metadata = null, notify = true, notificationDetail = null, notificationKind = null,
+  metadata = null, notify = true, notificationDetail = null, notificationKind = null, notificationAppId = null,
   // Inside the message's own transaction, for what must commit with it or
   // not at all (the Homeroom bot's hello, homeroom-bot-dm.js sendDm; a DM to
   // the bot heard by its workflow machine, routes/conversations.js):
@@ -1937,6 +1944,7 @@ async function sendMessage(pool, user, conversationId, input, {
       notifications.push(await insertNotification(db, {
         userId: member.user_id, conversationId, messageId,
         sourceUserId: user.id, kind, detail: notificationDetail,
+        appId: membership.kind === 'direct' ? notificationAppId : null,
       }));
     }
     return { messageId, memberIds: [user.id, ...members.rows.map((row) => row.user_id)], notifications, duplicate: false };

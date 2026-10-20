@@ -658,6 +658,27 @@ const Notifications = {
     }
   },
 
+  // #5580: what happened on the request or proposal notification `id` is
+  // about (GET /api/notifications/:id/history: { steps }, newest first), for
+  // the history a card in the sheet opens to. Null when there is none or the
+  // read failed; the card says which it was not able to tell apart.
+  async loadHistory(id) {
+    const demo = new URLSearchParams(location.search).get('demo') === '1' ? '?demo=1' : '';
+    try {
+      const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/history${demo}`, { credentials: 'same-origin' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data && Array.isArray(data.steps) ? data : null;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  // #5580: who is signed in, so a card's history says "You" for them.
+  viewerUsername() {
+    return (window.App && App.user && typeof App.user.username === 'string') ? App.user.username : null;
+  },
+
   // #5406: mark every unread notification from ONE app read — the per-app
   // "Mark read" button on the sheet's Unread tab. A busy app can be cleared
   // in one tap while every other app's unread rows stay where they are.
@@ -2672,6 +2693,33 @@ const CHANNEL_ASKED_IDS = ['notifications:row.channel.askedIn', 'notifications:r
 const CHANNEL_SAID_IDS = ['notifications:row.channel.saidIn', 'notifications:row.channel.saidInUnnamed',
   'notifications:row.channel.someoneIn', 'notifications:row.channel.someoneInUnnamed'];
 
+// #5580: the request (GitHub issue number) a row is about, when one is known:
+// the server's story columns, the bot's rows' own (serialize puts the number
+// in storyIssueNumber), or the request kinds' `detail`.
+const REQUEST_DETAIL_KINDS = new Set(['issue_opened', 'issue_mention', 'issue_thread_reply']);
+function storyIssueOf(n) {
+  const story = Number(n.storyIssueNumber);
+  if (Number.isSafeInteger(story) && story > 0) return story;
+  if (REQUEST_DETAIL_KINDS.has(n.kind) && /^\d+$/.test(String(n.detail || ''))) return Number(n.detail);
+  return null;
+}
+// One story per request in a project, else per proposal; null for a row
+// about neither (it stays a card of its own).
+function storyKeyOf(n) {
+  const app = n.appId != null ? n.appId : 'none';
+  const issue = storyIssueOf(n);
+  if (issue) return `r:${app}:${issue}`;
+  const session = Number(n.storySessionId);
+  if (Number.isSafeInteger(session) && session > 0) return `s:${app}:${session}`;
+  return null;
+}
+function storyRefOf(n) {
+  const bot = BUILD_KIND_MOMENTS[n.kind] || isBotUsername(n.sourceUsername) ? parseBotDetail(n.detail) : null;
+  const number = storyIssueOf(n) || (Number(n.storyPrNumber) > 0 ? Number(n.storyPrNumber) : null);
+  if (!number) return null;
+  return { number, title: n.storyTitle || (bot && bot.requestTitle) || null };
+}
+
 function rowView(n) {
   // #103: keep the violet left line on every row, read or unread, so a
   // notification never "loses its line" when read. Only the background
@@ -2695,7 +2743,9 @@ function rowView(n) {
     // #18 (19 Oct 2026 polish board): a plain message in a conversation or a
     // channel, which the bell leaves to the Messages tab: the sheet's Unread
     // tab neither lists nor counts it, so it says what the badge says.
-    plainMessage: n.kind === 'conversation_message' || n.kind === 'channel_message',
+    // #5580: the Homeroom bot's reply about a project is the exception: it
+    // carries that project, files under it on Unread, and the bell counts it.
+    plainMessage: (n.kind === 'conversation_message' && n.appId == null) || n.kind === 'channel_message',
     // #4769: whether the user has bookmarked this row — the feed row's
     // bookmark button and the pinned section both read it. A save is not a
     // read state; the two flags never derive from each other.
@@ -2708,9 +2758,19 @@ function rowView(n) {
     createdAtMs: Date.parse(n.createdAt) || 0,
     who,
     appLine,
-    // Which app the row came from, for the Unread tab's per-app groups
-    // (#5406). Conversation kinds carry no app, so they group under "Other".
+    // Which app the row came from, for the Unread tab's per-project stacks
+    // (#5406, #5580). Conversation kinds carry no app, except the Homeroom
+    // bot's news about a project, which carries that project.
     appId: n.appId ?? null,
+    // #5580: the project's own name, for the heading of the stack a row
+    // files under (`appLine` is what its meta line says, and a bot row's
+    // says more than the name).
+    appName: n.appName || null,
+    // #5580: the request or proposal this row is about. A project's stack
+    // folds one story's news into one card by `storyKey`; `storyRef` is what
+    // a card about it says it is on ("on #5588") and what its history is.
+    storyKey: storyKeyOf(n),
+    storyRef: storyRefOf(n),
     // Meta-line attribution. Null unless the source user actually DID this.
     by: null,
     // The kind line. Every branch below overwrites it; '' would render a
