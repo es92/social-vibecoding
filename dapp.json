@@ -5006,7 +5006,7 @@
       "expectText": "5 of 5 in use"
     },
     {
-      "name": "Inside the Homeroom app the landing is the whole story, with Look around first under Continue (first session)",
+      "name": "Inside the Homeroom app the landing is the whole story, with a Look around first link under it (first session)",
       "path": "/?shot=anon&un-native-webview=1#landing",
       "expectSelector": "#auth-landing-screen:not(.hidden):has([data-landing-story]:not([data-landing-story-compact]) [data-landing-story-start]):not(:has([data-guest-discover])) [data-landing-story] a[data-landing-story-look][href=\"#apps\"]",
       "expectText": "Look around first",

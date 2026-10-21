@@ -40,6 +40,9 @@ import { FRONT } from '../first-session/examples';
 import { useMessages } from '../../lib/i18n/react';
 import { TierChart } from '../first-session/tier-chart';
 
+// The foot's links: Sign in inside the email line, and Look around first.
+const STORY_LINK = 'font-semibold text-violet-700 dark:text-violet-400 hover:underline un-touch-target';
+
 // Also the dead invite link's welcome (./invite-card.tsx DeadInvite).
 export const SMALL_CAPS = 'text-[12px] leading-4 font-bold uppercase tracking-[0.06em] text-zinc-500 dark:text-zinc-400';
 
@@ -99,7 +102,7 @@ export function nextStep(fit: number, footBottom: number, screenBottom: number):
   return fit + 1;
 }
 
-export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false, lookAroundClass = null }: {
+export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false, lookAround = false }: {
   primaryClass: string;
   /** The address a "You're in" mail's link names, greeted under the welcome. */
   welcomeEmail?: string | null;
@@ -120,12 +123,13 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
   compact?: boolean;
   /**
    * Inside the Homeroom app the full story is still the front door
-   * (landing.tsx `storyFront`). Given, it adds "Look around first" under its
-   * foot, drawn with this class (the landing's white pill): Discover's public
-   * projects, at #apps, for somebody who wants to see what is here before
-   * making an account.
+   * (landing.tsx `storyFront`), and this adds "Look around first" under its
+   * foot: a link in the Sign in line's blue, on a line of its own, to
+   * Discover's public projects (#apps), for somebody who wants to see what
+   * is here before making an account. It is part of the foot, so the fit
+   * steps make room for it.
    */
-  lookAroundClass?: string | null;
+  lookAround?: boolean;
 }) {
   const t = useMessages('auth');
   const storyRef = useRef<HTMLDivElement>(null);
@@ -179,7 +183,19 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
       ? new ResizeObserver(() => { if (!fitting.current && story.offsetHeight) setMeasure((n) => n + 1); })
       : null;
     shown?.observe(story);
+    // The first fit can run before the typeface has loaded, while the
+    // fallback face sets the headline a line shorter: the fit settled a step
+    // early and the foot ended below the screen once the face arrived. So it
+    // fits again, from full size, when the fonts are in.
+    let live = true;
+    document.fonts?.ready.then(() => {
+      if (!live || !fitting.current?.settled) return;
+      fitting.current = null;
+      setFit(0);
+      setMeasure((n) => n + 1);
+    });
     return () => {
+      live = false;
       window.removeEventListener('resize', onResize);
       shown?.disconnect();
     };
@@ -199,16 +215,18 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
             <a
               href="#login"
               data-landing-story-signin=""
-              className="font-semibold text-violet-700 dark:text-violet-400 hover:underline un-touch-target"
+              className={STORY_LINK}
               onClick={(e) => { e.preventDefault(); (onSignIn || onStart)(); }}
             />,
           ]}
         />
       </p>
-      {lookAroundClass ? (
-        <a href="#apps" data-landing-story-look="" className={lookAroundClass}>
-          {t('auth:story.lookAround')}
-        </a>
+      {lookAround ? (
+        <p className="text-[15px] leading-5">
+          <a href="#apps" data-landing-story-look="" className={STORY_LINK}>
+            {t('auth:story.lookAround')}
+          </a>
+        </p>
       ) : null}
     </>
   );

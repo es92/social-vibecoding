@@ -263,19 +263,23 @@ test('inside the Homeroom app the full story stays the front door, with Look aro
   assert.match(src, /setInApp\(document\.documentElement\.classList\.contains\('in-native-webview'\)\);/);
   assert.match(src, /const storyFront = guestOn && inApp && !linkedSlug && !discoverLink && !gate;/);
   assert.match(src, /const guestPages = guestOn && !storyFront;/);
-  assert.match(src, /\{storyFront \? \(\s+<Story [^>]*onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} lookAroundClass=\{SECONDARY_PILL\} \/>/);
+  assert.match(src, /\{storyFront \? \(\s+<Story [^>]*onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} lookAround \/>/);
   // Discover opened from it has a back, and the back returns to the story.
   assert.match(src, /const appDiscover = guestOn && inApp && discoverLink;/);
   assert.match(src, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
   assert.match(src, /location\.hash = appDiscover && !guestProject \? '#landing' : '#apps';/);
   // The full story keeps Continue and its email line, then the way to look
   // around: a link to #apps.
-  const html = renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {}, lookAroundClass: 'white-pill' });
+  const html = renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {}, lookAround: true });
   assert.match(html, /data-landing-story-start/);
-  const look = html.match(/<a href="#apps" data-landing-story-look="" class="white-pill">([^<]+)<\/a>/);
+  // A link on its own line in the Sign in line's blue, not a second button.
+  const look = html.match(/<p class="text-\[15px\] leading-5"><a href="#apps" data-landing-story-look="" class="([^"]+)">([^<]+)<\/a><\/p>/);
   assert.ok(look, 'Look around first links to Discover');
-  assert.equal(look[1], message('auth:story.lookAround'));
-  assert.ok(html.indexOf('data-landing-story-start') < html.indexOf('data-landing-story-look'), 'under Continue');
+  assert.equal(look[2], message('auth:story.lookAround'));
+  const signIn = html.match(/data-landing-story-signin="" class="([^"]+)"/);
+  assert.ok(signIn);
+  assert.equal(look[1], signIn[1], 'the same look as Sign in');
+  assert.ok(html.indexOf('data-landing-story-how') < html.indexOf('data-landing-story-look'), 'under the Sign in line');
   // Without the prop (the browsers' short story, the first session) it is absent.
   assert.doesNotMatch(renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {} }), /data-landing-story-look/);
 });

@@ -1664,7 +1664,7 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // check reaches. 737 leaves 143 slots.
   //
   // 737 → 738: +1: inside the Homeroom app a signed-out visitor still opens
-  // on the whole story, with Look around first under Continue
+  // on the whole story, with a Look around first link under it
   // (?shot=anon&un-native-webview=1#landing), a route no other check
   // reaches; the browsers' Discover keeps the landing's own two checks.
   // 738 leaves 142 slots.
