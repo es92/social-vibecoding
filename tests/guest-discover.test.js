@@ -85,6 +85,26 @@ test('the kinds are the ones the directory has, in the manifest\'s order, and no
   assert.deepEqual([...CATEGORIES], [...APP_CATEGORIES]);
 });
 
+test('Try it where it can open here: the viewer anywhere, the app\'s own address only outside the Homeroom app', () => {
+  const { canTryHere } = loadTsx(DATA);
+  const noLogin = { requires_login: false, guest_ready: true };
+  const guestOnly = { requires_login: true, guest_ready: true };
+  const neither = { requires_login: true, guest_ready: false };
+  // In a browser: the viewer, or the app's own address (a back comes home).
+  assert.equal(canTryHere(noLogin, false), true);
+  assert.equal(canTryHere(guestOnly, false), true);
+  assert.equal(canTryHere(neither, false), false);
+  // Inside the app the web view has no back, so only the viewer.
+  assert.equal(canTryHere(noLogin, true), true);
+  assert.equal(canTryHere(guestOnly, true), false);
+  assert.equal(canTryHere(neither, true), false);
+  // Featured and the project page both ask it, with this page's answer.
+  assert.match(read(DISCOVER), /\{canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink/);
+  assert.match(read(PROJECT), /\{canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink/);
+  const { inHomeroomApp } = loadTsx(DATA);
+  assert.equal(inHomeroomApp(), false, 'a server render is never the app');
+});
+
 test('Featured is what an admin featured, in their order; a project page lives at its hub', () => {
   const { featuredApps, projectHash } = loadTsx(DATA);
   assert.deepEqual(featuredApps(APPS).map((a) => a.slug), ['todo-list', 'game-corner']);

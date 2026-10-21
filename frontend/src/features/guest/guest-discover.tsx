@@ -38,7 +38,9 @@ import {
   type GuestSort,
   SORTS,
   buildersOf,
+  canTryHere,
   featuredApps,
+  inHomeroomApp,
   filterApps,
   presentCategories,
   projectHash,
@@ -234,7 +236,7 @@ function Featured({ app, primaryClass, onOpenInside }: { app: GuestApp; primaryC
             <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
             <CardFacts app={app} sort="trending" />
           </a>
-          {app.guest_ready ? (
+          {canTryHere(app, inHomeroomApp()) ? (
             <TryLink
               app={app}
               onOpenInside={onOpenInside}

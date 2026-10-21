@@ -11,7 +11,7 @@
  * Discover does are unit-tested (tests/guest-discover.test.js).
  */
 
-import type { PublicApp } from '../auth/shared';
+import { isNative, type PublicApp } from '../auth/shared';
 
 /** A row of GET /api/public/apps, with the fields the guest pages read. */
 export interface GuestApp extends PublicApp {
@@ -120,6 +120,26 @@ export function featuredApps(apps: readonly GuestApp[]): GuestApp[] {
     .filter((a) => a.featured)
     .slice()
     .sort((a, b) => (a.featured_order ?? Number.MAX_SAFE_INTEGER) - (b.featured_order ?? Number.MAX_SAFE_INTEGER));
+}
+
+/**
+ * Whether "Try it" can open the app for this visitor, here. An app that needs
+ * no credential at all opens in the landing's own viewer, anywhere. One that
+ * shows a guest its view only at its own address (`guest_ready` without
+ * `requires_login === false`) opens there by leaving the page, which a phone
+ * or desktop browser can come back from; inside the Homeroom app it cannot:
+ * the web view has no back of its own, so leaving for the app's address
+ * strands the visitor there (landing.tsx's viewer says the same of
+ * target=_blank). In the app such a project says "Sign in to use it".
+ */
+export function canTryHere(app: GuestApp, inApp: boolean): boolean {
+  if (app.requires_login === false) return true;
+  return !!app.guest_ready && !inApp;
+}
+
+/** Inside the Homeroom app (its bridge is there); never during a server render. */
+export function inHomeroomApp(): boolean {
+  return typeof window !== 'undefined' && isNative();
 }
 
 /** Where a project's page is: its hub, the address a signed-in person lands on too. */
