@@ -1397,9 +1397,11 @@ async function seedCaptureUser(pool) {
 // A VIEW-ONLY admin (is_admin = TRUE, admin_readonly = TRUE): it can SEE
 // admin reads (adminMiddleware lets any admin through GETs) but is blocked
 // from every mutating route (requireAdminWrite → 403), so a leaked token
-// can never change platform state. Unlike usernode-capture this identity
-// signs NO public artifact — test frames are pass/fail + console errors,
-// never a published image — so granting it admin visibility leaks nothing.
+// can never change platform state. Its declared-check frames are pass/fail
+// and console errors. The before & after shots a change declares for this
+// persona are images, which is why they are shown only to signed-in people
+// who can see the project and never to anybody signed out: what a visitor
+// may see is the member account's stills alone (services/shots-public.js).
 // can_create_apps stays FALSE; the discarded-random-bytes bcrypt password
 // blocks interactive login (visuals.js mints a JWT directly). Idempotent:
 // keyed on the unique username, DO NOTHING on conflict. Runs unconditionally
