@@ -48,6 +48,20 @@ function descriptionOf(raw) {
   return text.length > DESCRIPTION_MAX ? `${text.slice(0, DESCRIPTION_MAX - 1).trimEnd()}…` : text;
 }
 
+// A change's title as a visitor with no account may read it: what its pull
+// request is called, unless that is the placeholder a change wears before
+// anyone names it, "<username>'s changes" (services/pr-metadata.js), which
+// would put a person's name on a page that shows none.
+const PLACEHOLDER_TITLE = /^.+'s changes$/;
+const CHANGE_TITLE_MAX = 120;
+
+function publicChangeTitle(raw) {
+  if (typeof raw !== 'string') return null;
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (!text || PLACEHOLDER_TITLE.test(text)) return null;
+  return text.length > CHANGE_TITLE_MAX ? `${text.slice(0, CHANGE_TITLE_MAX - 1).trimEnd()}…` : text;
+}
+
 function categoryOf(raw) {
   const key = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
   return APP_CATEGORIES.includes(key) ? key : null;
@@ -79,8 +93,9 @@ function shapeApp(app, contributorRows, includeWallets) {
     // project says it is, the kind of app it is, whether the platform
     // features it, its colour and the picture its group chose for its card,
     // how many people are in its community and how many of its changes are
-    // up for a vote. Everything here is what a signed-in non-member already
-    // reads on Discover.
+    // up for a vote, how many of its changes the group voted in and the
+    // last of them. Everything here is what a signed-in non-member already
+    // reads on Discover and the project's own pages.
     description: descriptionOf(app.description),
     category: categoryOf(app.category),
     featured: Boolean(app.featured),
@@ -91,7 +106,9 @@ function shapeApp(app, contributorRows, includeWallets) {
       ? `/app-illustrations/${app.illustration_dark_id}` : null,
     member_count: parseInt(app.member_count, 10) || 0,
     open_votes: parseInt(app.open_votes, 10) || 0,
+    merged_count: parseInt(app.merged_count, 10) || 0,
     last_merged_at: app.last_merged_at || null,
+    latest_change: publicChangeTitle(app.latest_change_title),
     // Whether "Try it" can open the app for somebody with no account
     // (guestReady). `requires_login` above keeps its own meaning: no
     // credential of any kind.
@@ -116,7 +133,8 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.dark_id END AS illustration_dark_id,
               COALESCE(cmc.cnt, 0) AS member_count,
               COALESCE(dev.open_votes, 0) AS open_votes,
-              dev.last_merged_at,
+              COALESCE(dev.merged_count, 0) AS merged_count,
+              dev.last_merged_at, lc.title AS latest_change_title,
               COALESCE(au.cnt, 0) AS active_users
          FROM apps a
          LEFT JOIN (
@@ -139,11 +157,19 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
          LEFT JOIN (
            SELECT app_id,
                   COUNT(*) FILTER (WHERE status IN ('promoted', 'merging')) AS open_votes,
+                  COUNT(*) FILTER (WHERE status = 'merged' AND live_at IS NOT NULL) AS merged_count,
                   MAX(COALESCE(merged_at, created_at)) FILTER (WHERE status = 'merged' AND live_at IS NOT NULL)
                     AS last_merged_at
              FROM chat_sessions
             GROUP BY app_id
          ) dev ON dev.app_id = a.id
+         LEFT JOIN LATERAL (
+           SELECT COALESCE(cs.pr_title, cs.session_title) AS title
+             FROM chat_sessions cs
+            WHERE cs.app_id = a.id AND cs.status = 'merged' AND cs.live_at IS NOT NULL
+            ORDER BY COALESCE(cs.merged_at, cs.created_at) DESC, cs.id DESC
+            LIMIT 1
+         ) lc ON TRUE
         WHERE NOT a.self_hosted
           AND a.moderation_suspended_at IS NULL
           AND a.view_visibility = 'public'
@@ -164,5 +190,6 @@ module.exports = {
   isPublicDirectoryApp,
   guestReady,
   descriptionOf,
+  publicChangeTitle,
   HIDDEN_APP_STATUSES,
 };

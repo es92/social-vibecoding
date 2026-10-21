@@ -195,11 +195,11 @@ test('the declared checks cover the states the panel can be in', () => {
   // And the landing way in is checked too, or it can vanish silently. The
   // landing's default is the first session's story now
   // (services/first-session.js), where somebody already on the list signs
-  // in from the story's sheet with their address (its one Continue, #5251);
+  // in from the story's sheet with their address (its sign-up buttons, #5251);
   // the "Check your status" line is the waitlist landing's, drawn only when
   // the story is switched off, and a declared check reads rendered text, so
   // it checks the story's.
-  assert.ok(DAPP.tests.some((t) => (t.expectSelector || '').includes('data-landing-story-start')),
+  assert.ok(DAPP.tests.some((t) => (t.expectSelector || '').includes('data-sign-up-method')),
     'the landing entry point is unchecked');
 
   // #2201's confirmed re-join came through the join form, retired by #5261;

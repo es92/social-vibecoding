@@ -176,7 +176,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from 'react';
 
 import { PLANE_FILL } from '@/components/ui/grouped-list';
-import { AppleIcon, ChevronLeftIcon, GoogleIcon, SpinnerArcIcon, XIcon } from '@/components/ui/icons';
+import { AppleIcon, ChevronLeftIcon, EnvelopeIcon, GoogleIcon, PhoneIcon, SpinnerArcIcon, XIcon } from '@/components/ui/icons';
 import { PasswordInput } from '@/components/ui/password-input';
 
 import { KB_OPEN_CLASS } from '../../lib/keyboard-open';
@@ -297,6 +297,74 @@ const PROVIDER_BUTTON: Record<SignInProvider, string> = {
   google: 'flex h-[50px] w-full items-center justify-center gap-2 rounded-full bg-white text-[17px] font-[650] text-zinc-900 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.15)] dark:bg-zinc-800 dark:text-zinc-100 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)] disabled:opacity-60',
 };
 const EMAIL_BUTTON = 'flex h-[50px] w-full items-center justify-center rounded-full bg-zinc-200 text-[17px] font-[650] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 disabled:opacity-60';
+
+/**
+ * The ways to make an account, in the order the sheet offers them: Apple and
+ * Google where an admin has set them up, a phone number where the server
+ * offers phone sign-in, and email always. The guest Discover's hero shows
+ * them as buttons (`SignUpButtons`, ./story.tsx), and each opens the sheet
+ * at its own way in (`start`).
+ */
+export type SignUpMethod = SignInProvider | 'phone' | 'email';
+
+export function signUpMethods(providers: readonly SignInProvider[], phone: boolean): SignUpMethod[] {
+  return [...providers, ...(phone ? ['phone' as const] : []), 'email'];
+}
+
+const SIGN_UP_BUTTON: Record<SignUpMethod, string> = {
+  apple: PROVIDER_BUTTON.apple,
+  google: PROVIDER_BUTTON.google,
+  phone: `${EMAIL_BUTTON} gap-2`,
+  email: `${EMAIL_BUTTON} gap-2`,
+};
+
+/**
+ * One button per way to make an account, as the sheet draws Apple's and
+ * Google's: stacked on a phone, two to a row from `sm`. Where email is the
+ * only way, its button is the page's primary one. Apple and Google make an
+ * account in one tap, so the terms sit under them, as on the sheet's first
+ * step (#5257).
+ */
+export function SignUpButtons({ methods, onPick, primaryClass, className = '' }: {
+  methods: readonly SignUpMethod[];
+  onPick: (method: SignUpMethod) => void;
+  primaryClass: string;
+  className?: string;
+}) {
+  const t = useMessages('auth');
+  const label = (method: SignUpMethod) => (method === 'phone'
+    ? t('auth:signUpButtons.phone')
+    : method === 'email'
+      ? t('auth:signUpButtons.email')
+      : t('auth:signUpButtons.continueWith', { provider: PROVIDER_LABEL[method] }));
+  const icon = (method: SignUpMethod) => (method === 'apple'
+    ? <AppleIcon className="h-[18px] w-[18px] -mt-0.5" aria-hidden="true" />
+    : method === 'google'
+      ? <GoogleIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+      : method === 'phone'
+        ? <PhoneIcon className="h-[18px] w-[18px]" aria-hidden="true" />
+        : <EnvelopeIcon className="h-[18px] w-[18px]" aria-hidden="true" />);
+  const oneTap = methods.some((m) => m === 'apple' || m === 'google');
+  return (
+    <div data-sign-up-methods="" className={`flex w-full flex-col gap-2.5 ${className}`}>
+      <div className="grid w-full gap-2.5 sm:grid-cols-2 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
+        {methods.map((method) => (
+          <button
+            key={method}
+            type="button"
+            data-sign-up-method={method}
+            className={methods.length === 1 ? primaryClass : SIGN_UP_BUTTON[method]}
+            onClick={() => onPick(method)}
+          >
+            {methods.length === 1 ? null : icon(method)}
+            {label(method)}
+          </button>
+        ))}
+      </div>
+      {oneTap ? <TermsNotice className="md:text-left" /> : null}
+    </div>
+  );
+}
 
 // The server holds a second code back for this long (routes/auth.js); the
 // resend counts it down rather than pretending to send.
@@ -690,6 +758,12 @@ export type SignInSheetProps = {
   /** An invite's Join: a phone number first, since a private member signs up with one. */
   phone?: boolean;
   /**
+   * Phone sign-in is offered, but not first: the first step's "New to
+   * Homeroom? Join with your phone" leads to the phone step, as it does
+   * under an invite's. The signed-out front page's sheets (./landing.tsx).
+   */
+  phoneLink?: boolean;
+  /**
    * The phone step asks "Your name" (a private group's invite: the name makes
    * a provisional handle only that group sees). A public community's invite
    * passes false: the server asks for a username after the code instead.
@@ -697,6 +771,12 @@ export type SignInSheetProps = {
   askName?: boolean;
   /** Which screen opened it, carried across a provider's trip. */
   from?: 'invite' | 'story' | 'signin';
+  /**
+   * The way in a button outside the sheet chose (`SignUpButtons`): the email
+   * step rather than the first step's choice, or Apple's or Google's sign-in
+   * at once. The phone step is `phone`'s.
+   */
+  start?: SignUpMethod | null;
   /** Where a provider's trip comes back to: Home, or the invite link. */
   returnTo?: string;
   /** Back from a provider: the username step, or what went wrong. */
@@ -761,13 +841,13 @@ function rememberInviteJoin() {
 }
 
 export function SignInSheet({
-  open, title, intro = '', followInvite = false, providers = [], native = false, phone = false, askName = true, from = 'signin',
-  returnTo = '/', resume = null, releaseToken = null, releaseSignIn = null, onSigningIn, held = false, linkUsed = false, onAccount,
+  open, title, intro = '', followInvite = false, providers = [], native = false, phone = false, phoneLink = false, askName = true, from = 'signin',
+  start = null, returnTo = '/', resume = null, releaseToken = null, releaseSignIn = null, onSigningIn, held = false, linkUsed = false, onAccount,
   beforeFinish, onClose, primaryClass,
 }: SignInSheetProps) {
   const t = useMessages('auth');
   const otherWays: Step = providers.length ? 'choose' : 'email';
-  const firstStep: Step = phone ? 'phone' : otherWays;
+  const firstStep: Step = phone ? 'phone' : start === 'email' ? 'email' : otherWays;
   const [step, setStep] = useState<Step>(firstStep);
   const [email, setEmail] = useState('');
   // The number a code went to, as sent (E.164), and the verify leg's handle.
@@ -1371,6 +1451,17 @@ export function SignInSheet({
     }
   }, [native, from, followInvite, returnTo, finish]);
 
+  // Opened by Apple's or Google's button outside the sheet (`start`): that
+  // sign-in at once, as the first step's own button would start it. Once per
+  // opening, and not when it opens again on the way back from the provider.
+  const startedWith = useRef(false);
+  useEffect(() => {
+    if (!open) { startedWith.current = false; return; }
+    if (startedWith.current || resume || (start !== 'apple' && start !== 'google')) return;
+    startedWith.current = true;
+    void continueWith(start);
+  }, [open, start, resume, continueWith]);
+
   const finishProviderAccount = useCallback(async () => {
     setError(null);
     const handle = (providerUsernameField.current?.value || '').trim();
@@ -1572,8 +1663,8 @@ export function SignInSheet({
                 {busy ? t('auth:signInSheet.email.sending') : t('auth:signInSheet.continueWithEmail')}
               </button>
             </form>
-            {phone ? (
-              <button type="button" data-sign-in-sheet-to-phone="" className={QUIET} onClick={() => { setError(null); setStep('phone'); }}>{t('auth:signInSheet.toPhone')}</button>
+            {phone || phoneLink ? (
+              <button type="button" data-sign-in-sheet-to-phone="" className={QUIET} onClick={() => { setError(null); setStep('phone'); }}>{phone ? t('auth:signInSheet.toPhone') : t('auth:signInSheet.toPhoneLink')}</button>
             ) : null}
             {passwordLink}
           </div>
@@ -1592,8 +1683,8 @@ export function SignInSheet({
             {providers.length ? (
               <button type="button" className={QUIET} onClick={() => { setError(null); setStep('choose'); }}>{t('auth:signInSheet.email.otherWays')}</button>
             ) : null}
-            {phone ? (
-              <button type="button" data-sign-in-sheet-to-phone="" className={QUIET} onClick={() => { setError(null); setStep('phone'); }}>{t('auth:signInSheet.toPhone')}</button>
+            {phone || phoneLink ? (
+              <button type="button" data-sign-in-sheet-to-phone="" className={QUIET} onClick={() => { setError(null); setStep('phone'); }}>{phone ? t('auth:signInSheet.toPhone') : t('auth:signInSheet.toPhoneLink')}</button>
             ) : null}
           </form>
         ) : null}

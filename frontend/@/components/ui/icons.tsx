@@ -944,6 +944,12 @@ export const PhonePlusIcon = stroked('PhonePlusIcon', [
   'M12 9v6M9 12h6',
 ]);
 
+/** Continue with phone: a phone, its speaker slot at the foot of its screen. */
+export const PhoneIcon = stroked('PhoneIcon', [
+  'M8 2.5h8a2 2 0 012 2v15a2 2 0 01-2 2H8a2 2 0 01-2-2v-15a2 2 0 012-2z',
+  'M11 18h2',
+]);
+
 /** Food & drink, a category of the emoji picker: a cup with steam. */
 export const CupIcon = stroked('CupIcon', [
   'M17 8h1a4 4 0 1 1 0 8h-1',

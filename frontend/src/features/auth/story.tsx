@@ -33,7 +33,7 @@
 // The three examples are the make screen's front three (Evan, 8 Oct 2026,
 // #4354; examples.ts FRONT since 15 Oct): the same three here and there, the
 // tier list drawn as one.
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { Message, RichMessage } from '../../lib/i18n/react';
 import { FRONT } from '../first-session/examples';
@@ -99,7 +99,7 @@ export function nextStep(fit: number, footBottom: number, screenBottom: number):
   return fit + 1;
 }
 
-export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false }: {
+export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false, actions = null }: {
   primaryClass: string;
   /** The address a "You're in" mail's link names, greeted under the welcome. */
   welcomeEmail?: string | null;
@@ -109,11 +109,18 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
   /**
    * THE SHORT STORY, over the guest Discover (features/guest/guest-discover.tsx):
    * the welcome, the headline and one line that says the apps below can be
-   * tried without an account, then the same Continue and the same line under
-   * it. No examples (the real apps follow it) and, on a phone, no picture, so
-   * the first apps are on the first screen; nothing to fit, so no steps.
+   * tried without an account, then the ways to make an account (`actions`).
+   * No examples (the real apps follow it) and, on a phone, no picture, so
+   * the first apps are near the first screen; nothing to fit, so no steps.
    */
   compact?: boolean;
+  /**
+   * What the short story offers in place of Continue and its Sign in line:
+   * the landing's sign-up buttons (sign-in-sheet.tsx SignUpButtons). The
+   * page's header has the one Sign in (Evan, 21 Oct 2026: two Sign ins on
+   * one screen read as a mistake).
+   */
+  actions?: ReactNode;
 }) {
   const t = useMessages('auth');
   const storyRef = useRef<HTMLDivElement>(null);
@@ -215,8 +222,8 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
             {t('auth:story.headline')}
           </h1>
           <p className="mt-2 text-base leading-[22px] text-zinc-500 dark:text-zinc-400 text-balance">{t('auth:guest.hero.line')}</p>
-          <div ref={footRef} className="mt-4 w-full max-w-sm flex flex-col gap-3">
-            {foot}
+          <div ref={footRef} className="mt-4 w-full max-w-sm sm:max-w-lg flex flex-col gap-3">
+            {actions}
           </div>
         </div>
       </div>

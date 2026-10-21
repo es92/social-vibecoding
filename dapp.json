@@ -1811,7 +1811,7 @@
     {
       "name": "Landing tells the story and asks people to get started (first session)",
       "path": "/?shot=anon#landing",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header [data-landing-sign-in]:not(.hidden)) [data-guest-discover] [data-landing-story] a[data-landing-story-start][href=\"#signup\"]",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header [data-landing-sign-in]:not(.hidden)) [data-guest-discover] [data-landing-story] [data-sign-up-methods] button[data-sign-up-method=\"email\"]",
       "expectText": "On Homeroom, communities make apps together.",
       "allowConsoleErrors": true
     },
@@ -1967,10 +1967,10 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Landing's one Continue button is for new and returning people, with the email line under it and nothing after (first session)",
+      "name": "Landing has one Sign in, in its bar, and the story under it offers the ways to make an account, email last (first session)",
       "path": "/?shot=anon#landing",
-      "expectSelector": "#auth-landing-screen:not(.hidden) [data-landing-story] a[data-landing-story-start][href=\"#signup\"] + p[data-landing-story-how]:last-child",
-      "expectText": "Sign in or join with your email.",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-landing-story] [data-sign-up-methods] button[data-sign-up-method=\"email\"]:last-child):not(:has([data-landing-story] [data-landing-story-signin])) #landing-header [data-landing-sign-in]:not(.hidden)",
+      "expectText": "Sign in",
       "allowConsoleErrors": true
     },
     {

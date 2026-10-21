@@ -73,6 +73,9 @@ import {
   SignInSheet,
   type SignInProvider,
   type SignInResume,
+  SignUpButtons,
+  type SignUpMethod,
+  signUpMethods,
   spendReleaseLink,
 } from './sign-in-sheet';
 import { Story } from './story';
@@ -742,6 +745,9 @@ export function LandingScreen() {
   // Which sign-in sheet is up (./sign-in-sheet.tsx): an invite's Join, or
   // the story's Make an account or Sign in.
   const [sheet, setSheet] = useState<null | 'join' | 'start' | 'signin'>(null);
+  // The way in the guest Discover's hero chose (SignUpButtons): the start
+  // sheet opens at it. Null for the sheet's own first step.
+  const [signUpWith, setSignUpWith] = useState<SignUpMethod | null>(null);
   // Back from Apple or Google: where the sheet picks up (./sign-in-sheet.tsx).
   const [resume, setResume] = useState<SignInResume | null>(null);
   // A waitlist "you're in" mail's link (AuthScreens.enter): this story with
@@ -750,7 +756,7 @@ export function LandingScreen() {
   // Closing the sheet keeps the link (Evan, 10 Oct 2026): Get started again
   // signs in from the email again, while the account it started is not set
   // up yet (src/services/release-links.js), rather than asking for a code.
-  const closeSheet = useCallback(() => { setSheet(null); setResume(null); }, []);
+  const closeSheet = useCallback(() => { setSheet(null); setResume(null); setSignUpWith(null); }, []);
   // A shared link opened while signed out (#5264, ./deep-link-sign-in.tsx):
   // the address it was for (remembered for after the sign-in by the router)
   // and the place it names. Set as the screen shows (landingOnShow), from
@@ -948,6 +954,9 @@ export function LandingScreen() {
   // (services/community-invites.js): the Join sheet starts there when the
   // server offers it.
   const phoneSignIn = waitlistPayload?.phone_sign_in === true;
+  // The hero's ways to make an account: Apple, Google, a phone, email.
+  const methods = useMemo(() => signUpMethods(providers, phoneSignIn), [providers, phoneSignIn]);
+  const signUp = useCallback((method: SignUpMethod) => { setSignUpWith(method); setSheet('start'); }, []);
   // Back from a provider without a session: reopen the sheet the trip left,
   // the invite's Join on its link, the story's otherwise.
   useEffect(() => {
@@ -2086,7 +2095,14 @@ export function LandingScreen() {
               onContinue={() => setSheet('start')}
               onOpenInside={(app) => { void live.current.openLandingApp(app); }}
               hero={(
-                <Story compact primaryClass={PRIMARY_PILL} welcomeEmail={releaseEmail} onStart={() => setSheet('start')} onSignIn={() => setSheet('signin')} />
+                <Story
+                  compact
+                  primaryClass={PRIMARY_PILL}
+                  welcomeEmail={releaseEmail}
+                  onStart={() => setSheet('start')}
+                  onSignIn={() => setSheet('signin')}
+                  actions={<SignUpButtons methods={methods} onPick={signUp} primaryClass={PRIMARY_PILL} />}
+                />
               )}
             />
           ) : null}
@@ -2137,6 +2153,8 @@ export function LandingScreen() {
           title={deepLinkTitle(gate.place, gateProject, (id, params) => t(id, params))}
           providers={providers}
           native={nativeSignIn}
+          phoneLink={phoneSignIn}
+          askName={false}
           from="signin"
           returnTo={deepLinkReturnTo(gate.target)}
           resume={resume}
@@ -2157,6 +2175,8 @@ export function LandingScreen() {
           title={intentTitle(intent, (id, params) => t(id, params))}
           providers={providers}
           native={nativeSignIn}
+          phoneLink={phoneSignIn}
+          askName={false}
           from="signin"
           returnTo={`/${projectHash(intent.app.slug)}`}
           resume={resume}
@@ -2170,6 +2190,10 @@ export function LandingScreen() {
           title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : t('auth:landing.sheet.continue')}
           providers={providers}
           native={nativeSignIn}
+          phone={phoneSignIn && sheet === 'start' && signUpWith === 'phone'}
+          phoneLink={phoneSignIn}
+          askName={false}
+          start={sheet === 'start' ? signUpWith : null}
           from={sheet === 'signin' ? 'signin' : 'story'}
           returnTo={guestProject ? `/${projectHash(guestProject.slug)}` : '/'}
           resume={resume}

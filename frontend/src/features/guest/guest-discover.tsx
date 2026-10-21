@@ -2,8 +2,11 @@
  * The guest Discover: what a visitor with no account sees first
  * (features/auth/landing.tsx draws it under the story's short hero).
  *
- * Every public project, as a card with its picture, icon, name, its own
- * one-line description and how many people use it. A card opens the
+ * Every public project, as a card with its picture, icon and name, what it
+ * is (its own description, else the last change its group voted in), how
+ * many members it has beside the figure the list is sorted by (people
+ * active, when it was made, how many build it), and what is up for a vote
+ * or when it last changed. A card opens the
  * project's read-only page (./guest-project.tsx) at the project's own
  * address, `#app/<slug>/workshop`, which is also where a person lands once
  * they sign in from there. Nothing on a card is locked: the page behind it
@@ -28,11 +31,13 @@ import { cn } from '@/lib/utils';
 
 import { useMessages } from '../../lib/i18n/react';
 import { useCommunityColor } from '../../lib/community-color';
+import { agoStamp } from '../../lib/timestamp';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import {
   type GuestApp,
   type GuestSort,
   SORTS,
+  buildersOf,
   featuredApps,
   filterApps,
   presentCategories,
@@ -55,9 +60,11 @@ function isNew(app: GuestApp, now = Date.now()): boolean {
 }
 
 /** The app's icon, in the tile Discover's rows draw (app-card-view.tsx). */
-export function GuestIcon({ app, size = 'md', eager = false }: { app: GuestApp; size?: 'sm' | 'md' | 'lg'; eager?: boolean }) {
-  const box = size === 'lg'
-    ? 'w-16 h-16 rounded-2xl text-2xl'
+export function GuestIcon({ app, size = 'md', eager = false }: { app: GuestApp; size?: 'sm' | 'md' | 'lg' | 'xl'; eager?: boolean }) {
+  const box = size === 'xl'
+    ? 'w-20 h-20 rounded-[22px] text-4xl shadow-[0_6px_20px_rgba(0,0,0,0.18)]'
+    : size === 'lg'
+    ? 'w-16 h-16 rounded-2xl text-2xl shadow-[0_4px_14px_rgba(0,0,0,0.16)]'
     : size === 'sm' ? 'w-8 h-8 rounded-lg text-sm' : 'w-11 h-11 rounded-xl text-lg';
   return (
     <span
@@ -75,7 +82,7 @@ export function GuestIcon({ app, size = 'md', eager = false }: { app: GuestApp; 
  * (`illustration_url`, its dark twin in the dark theme), else its icon large
  * on its own colour (lib/community-color.ts).
  */
-export function GuestCover({ app, className }: { app: GuestApp; className?: string }) {
+export function GuestCover({ app, className, iconSize = 'lg' }: { app: GuestApp; className?: string; iconSize?: 'lg' | 'xl' }) {
   const color = useCommunityColor({ color: app.icon_color, iconUrl: app.icon_url, iconEmoji: app.icon_emoji, key: app.slug });
   if (app.illustration_url) {
     return (
@@ -95,24 +102,63 @@ export function GuestCover({ app, className }: { app: GuestApp; className?: stri
   }
   return (
     <span className={cn('relative flex items-center justify-center overflow-hidden', className)} style={{ background: color }}>
-      <GuestIcon app={app} size="lg" />
+      <GuestIcon app={app} size={iconSize} />
     </span>
   );
 }
 
-/** One phrase under a card: how many people use it, else what is up for a vote. A zero says nothing. */
-function useCardLine() {
+/**
+ * What a card says under the project's name. `about`: what it is, in its own
+ * words, else the last change its group voted in. `fact`: how many members
+ * it has, beside the figure the list is sorted by, so the number a card was
+ * ranked by is the number it shows (as Discover's rows do,
+ * features/apps/browse.js metaLine). `votes`: what is up for a vote, in the
+ * accent, since a visitor can take part in it once they join; else
+ * `updated`, when the last change its group voted in went live. A zero
+ * says nothing.
+ */
+function useCardFacts(sort: GuestSort) {
   const t = useMessages('auth');
-  return (app: GuestApp): string => {
-    if ((app.active_users || 0) > 0) return t('auth:guest.card.active', { count: app.active_users });
-    if ((app.open_votes || 0) > 0) return t('auth:guest.card.votes', { count: app.open_votes });
-    return '';
+  return (app: GuestApp) => {
+    const about = app.description || (app.latest_change ? t('auth:guest.card.latest', { title: app.latest_change }) : '');
+    const builders = buildersOf(app);
+    const figure = sort === 'new'
+      ? (app.created_at ? t('auth:guest.card.made', { when: agoStamp(app.created_at).text }) : '')
+      : sort === 'built'
+        ? (builders > 0 ? t('auth:guest.card.builders', { count: builders }) : '')
+        : ((app.active_users || 0) > 0 ? t('auth:guest.card.active', { count: app.active_users }) : '');
+    const members = (app.member_count || 0) > 0 ? t('auth:guest.card.members', { count: app.member_count }) : '';
+    const fact = members && figure ? t('auth:guest.card.pair', { first: members, second: figure }) : members || figure;
+    const votes = (app.open_votes || 0) > 0 ? t('auth:guest.card.votes', { count: app.open_votes }) : '';
+    // A change the group voted in, not a redeploy: a project made an hour
+    // ago was not "updated" an hour ago.
+    const updated = !votes && app.last_merged_at ? t('auth:guest.card.updated', { when: agoStamp(app.last_merged_at).text }) : '';
+    return { about, fact, votes, updated };
   };
 }
 
-function Card({ app, eager }: { app: GuestApp; eager: boolean }) {
+/** The lines under a card's name (useCardFacts). */
+function CardFacts({ app, sort }: { app: GuestApp; sort: GuestSort }) {
+  const { about, fact, votes, updated } = useCardFacts(sort)(app);
+  return (
+    <>
+      {about ? (
+        <span data-guest-card-about="" className="line-clamp-2 block text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400">
+          {about}
+        </span>
+      ) : null}
+      {fact ? <span data-guest-card-fact="" className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">{fact}</span> : null}
+      {votes ? (
+        <span data-guest-card-votes="" className="mt-0.5 block text-xs font-semibold text-violet-700 dark:text-violet-400">{votes}</span>
+      ) : updated ? (
+        <span data-guest-card-updated="" className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{updated}</span>
+      ) : null}
+    </>
+  );
+}
+
+function Card({ app, eager, sort }: { app: GuestApp; eager: boolean; sort: GuestSort }) {
   const t = useMessages('auth');
-  const line = useCardLine()(app);
   return (
     <a
       href={projectHash(app.slug)}
@@ -128,14 +174,12 @@ function Card({ app, eager }: { app: GuestApp; eager: boolean }) {
         ) : null}
       </span>
       <span className="flex min-w-0 items-start gap-2.5">
-        {/* The icon is the picture already when the group chose none. */}
-        {app.illustration_url ? <GuestIcon app={app} size="sm" eager={eager} /> : null}
+        {/* The icon is the picture already when the group chose none. On a
+            phone's two narrow columns the words get the room instead. */}
+        {app.illustration_url ? <span className="hidden md:block"><GuestIcon app={app} size="sm" eager={eager} /></span> : null}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
-          {app.description ? (
-            <span className="line-clamp-2 block text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400">{app.description}</span>
-          ) : null}
-          {line ? <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{line}</span> : null}
+          <CardFacts app={app} sort={sort} />
         </span>
       </span>
     </a>
@@ -175,23 +219,20 @@ export function TryLink({ app, className, onOpenInside, children }: {
 
 function Featured({ app, primaryClass, onOpenInside }: { app: GuestApp; primaryClass: string; onOpenInside: (app: GuestApp) => void }) {
   const t = useMessages('auth');
-  const line = useCardLine()(app);
   return (
     <article
       data-guest-featured={app.slug}
       className="flex w-[296px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] bg-white shadow-[inset_0_0_0_1px_var(--app-sheet-line)] md:w-[360px] dark:bg-zinc-900"
     >
       <a href={projectHash(app.slug)} tabIndex={-1} aria-hidden="true" className="block">
-        <GuestCover app={app} className="aspect-[16/10] w-full" />
+        <GuestCover app={app} className="aspect-[16/10] w-full" iconSize="xl" />
       </a>
-      <div className="flex flex-col gap-2.5 p-3.5">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-1 flex-col gap-2.5 p-3.5">
+        <div className="flex items-start gap-3">
           {app.illustration_url ? <GuestIcon app={app} eager /> : null}
           <a href={projectHash(app.slug)} className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
-            {app.description ? (
-              <span className="block truncate text-[13px] text-zinc-500 dark:text-zinc-400">{app.description}</span>
-            ) : null}
+            <CardFacts app={app} sort="trending" />
           </a>
           {app.guest_ready ? (
             <TryLink
@@ -204,7 +245,6 @@ function Featured({ app, primaryClass, onOpenInside }: { app: GuestApp; primaryC
             </TryLink>
           ) : null}
         </div>
-        {line ? <div className="text-[13px] text-zinc-500 dark:text-zinc-400">{line}</div> : null}
       </div>
     </article>
   );
@@ -243,7 +283,7 @@ function JoinIn({ onContinue, onDismiss, primaryClass, waitlist }: {
       ) : null}
       <div className="flex items-center gap-2">
         <button type="button" data-guest-join-continue="" className={cn(primaryClass, 'h-11 w-auto px-5 text-[15px]')} onClick={onContinue}>
-          {t('auth:story.continue')}
+          {t('auth:guest.join.signUp')}
         </button>
         <button
           type="button"
@@ -287,11 +327,11 @@ function SortControl({ sort, onSort }: { sort: GuestSort; onSort: (s: GuestSort)
   );
 }
 
-function CardGrid({ apps, eagerFirst }: { apps: GuestApp[]; eagerFirst: boolean }) {
+function CardGrid({ apps, eagerFirst, sort }: { apps: GuestApp[]; eagerFirst: boolean; sort: GuestSort }) {
   if (!apps.length) return null;
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-x-3 gap-y-[18px] md:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
-      {apps.map((app, i) => <Card key={app.slug} app={app} eager={eagerFirst && i < 4} />)}
+      {apps.map((app, i) => <Card key={app.slug} app={app} sort={sort} eager={eagerFirst && i < 4} />)}
     </div>
   );
 }
@@ -377,7 +417,7 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
             </div>
           ) : null}
           {failed ? <p className="py-6 text-center text-[15px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.loadFailed')}</p> : null}
-          <CardGrid apps={first} eagerFirst />
+          <CardGrid apps={first} sort={sort} eagerFirst />
           {showJoin ? (
             <JoinIn
               primaryClass={primaryClass}
@@ -386,7 +426,7 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
               onDismiss={() => setJoinDismissed(true)}
             />
           ) : null}
-          <CardGrid apps={rest} eagerFirst={false} />
+          <CardGrid apps={rest} sort={sort} eagerFirst={false} />
           {apps && !list.length ? (
             <p className="py-6 text-center text-[15px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.empty')}</p>
           ) : null}

@@ -16,11 +16,13 @@
 //     issues, never a body or who filed it.
 //
 // No member names, no chat, no transcripts: those stay with members (the
-// project page says "The chat is for members").
+// project page says "The chat is for members"). A change still called by
+// its placeholder title, its author's handle and "'s changes", shows as
+// "A change" (publicChangeTitle).
 
 const github = require('./github');
 const log = require('./logger');
-const { listPublicApps } = require('./public-app-directory');
+const { listPublicApps, publicChangeTitle } = require('./public-app-directory');
 const { countedVotePredicateSql } = require('./pr-vote-revision');
 
 const VOTES_MAX = 10;
@@ -113,7 +115,7 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
     votes: votes.rows.map((r) => ({
       id: r.id,
       pr_number: r.pr_number,
-      title: r.title || null,
+      title: publicChangeTitle(r.title),
       summary: plainSummary(r.pr_summary_md),
       yes: parseInt(r.yes_count, 10) || 0,
       no: parseInt(r.no_count, 10) || 0,
@@ -122,7 +124,7 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
     merged: merged.rows.map((r) => ({
       id: r.id,
       pr_number: r.pr_number,
-      title: r.title || null,
+      title: publicChangeTitle(r.title),
       summary: plainSummary(r.pr_summary_md),
       merged_at: r.merged_at || null,
     })),

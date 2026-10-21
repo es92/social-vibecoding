@@ -27,6 +27,10 @@ export interface GuestApp extends PublicApp {
   active_users?: number;
   member_count?: number;
   open_votes?: number;
+  /** How many of its changes the group voted in and are live. */
+  merged_count?: number;
+  /** The title of the last of them, or null (none, or one still called by its placeholder). */
+  latest_change?: string | null;
   created_at?: string | null;
   last_deploy_at?: string | null;
   last_merged_at?: string | null;
