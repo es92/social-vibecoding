@@ -369,3 +369,40 @@ test('conventions doc says to seed a new state in the same proposal, within the 
     .replace(/\s+/g, ' ');
   assert.match(excerpt, /The shots' fixture accounts are not whoever opened the preview: a state new in a change is seeded in that change/);
 });
+
+// 21 Oct 2026: a minesweeper first version drew its board as a grid of
+// buttons, so a long press selected the numbers and every tap waited on the
+// browser's click. A game's play area is drawn on a canvas instead, and the
+// first version's spec and build point here by this heading.
+test('conventions doc says a game draws its play area on a canvas, with what that takes', () => {
+  const doc = getAppConventions();
+  const heading = '## Games: draw the play area on a canvas';
+  assert.match(doc, /^## Games: draw the play area on a canvas$/m);
+  const start = doc.indexOf(heading);
+  const section = doc.slice(start, doc.indexOf('\n## ', start + 1)).replace(/\s+/g, ' ');
+  assert.match(section, /is drawn on a `<canvas>` and played with pointer events on that canvas\. That holds for turn-based and grid games too: minesweeper, sudoku/);
+  assert.match(section, /\*\*Nothing to select or copy\.\*\*/);
+  assert.match(section, /\*\*No touch delay\.\*\*/);
+  // The rest of the screen stays HTML, from the kits.
+  assert.match(section, /What stays HTML is everything that is not the play/);
+  // The CSS that makes the difference on a phone, on the play area only.
+  for (const rule of ['touch-action: none;', 'user-select: none;', '-webkit-touch-callout: none;']) {
+    assert.ok(section.includes(rule), `the play area sets ${rule}`);
+  }
+  assert.match(section, /\*\*Input is pointer events, never `click`\.\*\*/);
+  assert.match(section, /`devicePixelRatio`/);
+  assert.match(section, /redraw on `usernode:theme-changed`/);
+  // Checks and the in-loop browser can still see and press it.
+  assert.match(section, /`data-\*` attributes/);
+  assert.match(section, /dispatch `pointerdown` and `pointerup` on the canvas with `browser_evaluate`/);
+  // Starters and existing apps keep what they have.
+  assert.match(section, /A project built on a game starter keeps the starter's own drawing/);
+  assert.match(section, /do not convert one as a drive-by/);
+  assert.doesNotMatch(section, /—/);
+
+  // The first version's spec and build name it by this heading.
+  const cite = '"Games: draw the play area on a canvas"';
+  assert.ok(require('../src/services/prompts.js').FIRST_VERSION_SPEC_DESIGN_BRIEF.includes(cite));
+  const lines = require('../src/services/homeroom-bot-live.js').FIRST_VERSION_DESIGN_LINES.join(' ').replace(/\s+/g, ' ');
+  assert.ok(lines.includes(cite), 'the build cites the section by its heading');
+});

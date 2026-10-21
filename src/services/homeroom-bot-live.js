@@ -2657,6 +2657,12 @@ const FIRST_VERSION_DESIGN_LINES = Object.freeze([
   'components rather than re-invented. In your look-and-fix rounds, compare your screenshots with the drawn screens and',
   'fix what differs. Where a drawing and the spec\'s words disagree, the words decide what the app does and the drawing',
   'decides how it looks.',
+  // 21 Oct 2026: a minesweeper first version reused its drawn board's markup
+  // as a grid of buttons, so a long press selected the numbers and every
+  // tap waited on the browser's click. A game's play is painted instead.
+  'A game\'s play area (its board, field, pieces or cards) is the one thing you never build from the drawing\'s markup:',
+  'paint what the drawing shows on a canvas, played with pointer events, as the platform conventions\' "Games: draw the',
+  'play area on a canvas" says, even for a grid game. A game starter\'s own drawing is kept.',
   // App bench run 193 (14 Oct 2026): the reviewer's two most common round-1
   // findings in every arm, desktop layouts stretched across the window (8 of
   // 15 reviewed builds) and loading states shaped unlike the rows (6).

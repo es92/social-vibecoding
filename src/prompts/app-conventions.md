@@ -3307,6 +3307,89 @@ apps.
    leave tabs/menus/panels instant.
 7. Optionally override `--un-*` variables to match the app's branding.
 
+## Games: draw the play area on a canvas
+
+A game's play area (the board, the field, the table, the pieces, the
+cards) is drawn on a `<canvas>` and played with pointer events on that
+canvas. That holds for turn-based and grid games too: minesweeper,
+sudoku, 2048, chess, match-three, solitaire, a word grid. A grid of
+`<button>`s or `<div>`s looks like the quicker way to build those, and it
+is the one that comes out less polished on a phone:
+
+- **Nothing to select or copy.** On HTML, a long press selects a number
+  or opens the copy callout, and a quick swipe highlights half the board.
+  A canvas has no text to select.
+- **No touch delay.** A canvas game acts on the pointer event itself, the
+  moment the finger lands or lifts, instead of waiting for a `click` the
+  browser sends only after ruling out a double tap or a scroll.
+- **One owner for every pixel.** Hit-testing is one function from a point
+  to a cell, a long press is one timer, and an animation (a tile
+  flipping, a cascade opening, a piece sliding) is a redraw, not CSS
+  transitions fighting the layout.
+
+What stays HTML is everything that is not the play: the title screen,
+menus and settings, the score, timer and turn line around the board, the
+buttons beside it, dialogs, results, the leaderboard and the history.
+Build those from the design kit and the native UI kit like any other
+screen.
+
+How to build it:
+
+- **Size it to its box, at the screen's density.** Lay the canvas out
+  with CSS (`width: 100%` and an `aspect-ratio`, or filling the window),
+  set `canvas.width` and `canvas.height` to that size times
+  `devicePixelRatio`, scale the context by the same factor, and redraw
+  from a `ResizeObserver`. A canvas left at its default size is blurry on
+  every phone ("Rendering invariants" has a self-check for this). Fit the
+  play area on the screen: a finger on it does not scroll the page.
+- **Turn the browser's own gestures off on the play area, and only
+  there.** The page around it still scrolls, and its text still selects:
+
+  ```css
+  .play {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ```
+
+  and call `preventDefault()` on the canvas's `contextmenu` event.
+- **Input is pointer events, never `click`.** Map the point from
+  `getBoundingClientRect()` to a cell and act on `pointerdown`, or on
+  `pointerup` when the same press can also be a long press or a drag. A
+  long press (a flag, a mark) is a timer started on `pointerdown` and
+  cancelled when the finger moves or lifts; a right-click does the same
+  on a desktop. Keep a visible way to do it without the long press too,
+  such as a mode switch, because few people discover a long press by
+  themselves.
+- **Colours from the app's tokens.** Read the design kit's colour tokens
+  (`"R G B"` values) with `getComputedStyle(document.documentElement)`,
+  draw with `rgb(...)`, and redraw on `usernode:theme-changed`, so the
+  board follows the light and dark look like the rest of the screen. A
+  game that keeps one fixed look says so in its `CLAUDE.md` ("New apps: a
+  light and a dark look, following the platform").
+- **Draw from state.** Keep the game in plain data, with one `draw()`
+  that paints all of it from that data, called after every move and on
+  resize. Run a `requestAnimationFrame` loop only while something moves.
+- **Leave a readable trace.** A canvas is opaque to a selector, an
+  accessibility snapshot and a screen reader. Put the game's phase and
+  its key numbers on the canvas's wrapper as `data-*` attributes (for
+  example `data-phase="won"`, `data-flags="3"`), give the canvas
+  `role="img"` and an `aria-label` that says the state in words, and
+  select on those in `dapp.json` checks.
+- **Trying a move in the in-loop browser.** `browser_click` on a canvas
+  presses its centre. To press a given cell, dispatch `pointerdown` and
+  `pointerup` on the canvas with `browser_evaluate`, with `clientX` and
+  `clientY` worked out from `getBoundingClientRect()` and the cell's
+  position.
+
+A three.js or WebGL game already draws on a canvas: the same rule. A
+project built on a game starter keeps the starter's own drawing and
+builds on it. An existing game drawn in HTML stays as it is until a
+request asks for it to be redrawn: do not convert one as a drive-by.
+
 ## Tailwind — precompiled per app, runtime centrally hosted
 
 Every app on this platform styles itself with Tailwind. There are two ways

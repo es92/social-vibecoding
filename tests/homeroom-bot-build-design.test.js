@@ -147,6 +147,9 @@ test('a first version\'s spec decides its colours, signature element, layout and
   assert.doesNotMatch(brief, /every demo row labelled/);
   assert.match(brief, /on staging and with \?demo=1 only, idempotent, either added to those responses or written once for the viewing account on its first \?demo=1 request \(the platform conventions' "Staging mock data"/);
   assert.match(brief, /records it in the app's CLAUDE\.md/);
+  // A game's play area is planned on a canvas, a grid game included.
+  assert.match(brief, /If the app is a game, its play area \(the board, the field, the pieces, the cards\) is drawn on a canvas and played with pointer events, never built from HTML elements, a grid game such as minesweeper, sudoku or chess included: say so here, and the technical half plans it that way \(the platform conventions' "Games: draw the play area on a canvas"\)/);
+  assert.match(brief, /A game starter's own drawing is kept\./);
   assert.doesNotMatch(brief, /which existing screen of this app it should look/);
   assert.doesNotMatch(brief, /—/);
   assert.doesNotMatch(brief, BENCH_SUBJECTS);
@@ -239,6 +242,7 @@ test('a first version\'s HTML spec draws its finished screens within a budget; a
   assert.match(flat, /An icon or illustration is an inline <svg> inside the screen, so the build can lift it: no emoji as icons, and no images/);
   // The fidelity budget.
   assert.match(flat, /Draw at the app's REAL fidelity: the HTML and CSS the build should write, not artwork/);
+  assert.match(flat, /A game's play area is the one exception: the build paints it on a canvas, so draw it as one inline <svg> picture of what the canvas shows/);
   assert.match(flat, /Icons are line icons: a 24 by 24 viewBox, one stroke width, at most about 8 shapes each, and no gradients, filters, masks, patterns or text turned into paths\. A consistent set of them is welcome: one for each kind of thing, the app's own mark, its actions\./);
   assert.match(flat, /A larger illustration is fine where it carries the subject, each kept to about 30 shapes\./);
   assert.match(flat, /Each screen, its <style> included, stays within about 20,000 characters: a screen that needs more is drawn in too much detail\. Draw repeated rows with identical structure\. Spend the effort where a careful designer would: hierarchy, density, spacing, type and the subject's own details; leave out decoration that carries no meaning\./);
@@ -267,6 +271,9 @@ test('a first version\'s build uses the starter\'s design kit and records its lo
   assert.match(flat, /Where the spec's design differs from the plan's, follow the spec: the plan's look was the triage's first sketch\./);
   assert.match(flat, /When the spec draws screens \(its "### Screen markup"\), they are your visual target: reproduce them, reusing their markup structure, inline SVG icons, proportions, spacing and type choices, translated onto the kit's tokens and components rather than re-invented\./);
   assert.match(flat, /In your look-and-fix rounds, compare your screenshots with the drawn screens and fix what differs\. Where a drawing and the spec's words disagree, the words decide what the app does and the drawing decides how it looks\./);
+  // Except a game's play area, which is painted on a canvas (a minesweeper
+  // first version reused its drawn board as a grid of buttons).
+  assert.match(flat, /A game's play area \(its board, field, pieces or cards\) is the one thing you never build from the drawing's markup: paint what the drawing shows on a canvas, played with pointer events, as the platform conventions' "Games: draw the play area on a canvas" says, even for a grid game\. A game starter's own drawing is kept\./);
   // The populated demo (b).
   assert.match(flat, /Build the populated demo the spec describes, the staging preview opened with `\?demo=1`: the viewer's own data as well as other people's, varied realistic rows filling about a screen and a half at phone width, every control the real screen has \(never a view-only demo\), and the app's main result already there \(the scores added up, the schedule filled in, the totals worked out\), not only what goes into it\. It is labelled "Staging demo" once, plainly, as a banner or a line of its own at the top of the screen \(never the app's name, nor in place of its tagline\) or in the name of its list, not on each row, and rows the app seeds on boot carry no label of their own either; every row stays obviously made up\. On staging and with `\?demo=1` only, and idempotent/);
   // Run 196's blind grades: an empty or error screen filled two buttons.
