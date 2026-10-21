@@ -78,7 +78,7 @@ import {
 import { Story } from './story';
 import { GuestDiscover } from '../guest/guest-discover';
 import { type GuestIntent, GuestProject } from '../guest/guest-project';
-import { type GuestApp, projectHash } from '../guest/guest-data';
+import { type GuestApp, linksToWorkshop, projectHash } from '../guest/guest-data';
 import { useWaitlistOptions, type WaitlistOptions, waitlistOptions } from './waitlist-shared';
 import { WelcomePage } from './welcome-page';
 
@@ -2127,6 +2127,7 @@ export function LandingScreen() {
           {guestPages && guestProject ? (
             <GuestProject
               app={guestProject}
+              startOnWorkshop={!!deepLink && linksToWorkshop(deepLink.target)}
               primaryClass={PRIMARY_PILL}
               onIntent={askFor}
               onOpenInside={(app) => { void live.current.openLandingApp(app); }}

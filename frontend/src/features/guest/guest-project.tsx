@@ -35,7 +35,7 @@ import { useMessages } from '../../lib/i18n/react';
 import { useCommunityColor } from '../../lib/community-color';
 import { agoStamp } from '../../lib/timestamp';
 import { GuestCover, GuestIcon, TryLink } from './guest-discover';
-import { type GuestApp, type GuestOverview, type GuestVote, buildersOf, canTryHere, fetchOverview, inHomeroomApp } from './guest-data';
+import { type GuestApp, type GuestOverview, type GuestVote, MIN_ACTIVE, MIN_BUILDERS, buildersOf, canTryHere, fetchOverview, inHomeroomApp } from './guest-data';
 
 /** What somebody tried to do: the sign-in sheet is titled for it. */
 export type GuestIntent =
@@ -137,9 +137,11 @@ function Row({ children, onClick, last }: { children: ReactNode; onClick?: () =>
   );
 }
 
-export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShare }: {
+export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShare, startOnWorkshop = false }: {
   /** The project's card from the public directory. */
   app: GuestApp;
+  /** The link asked for its changes up for a vote (a card's votes line): open on the Workshop. */
+  startOnWorkshop?: boolean;
   primaryClass: string;
   onIntent: (intent: GuestIntent) => void;
   onOpenInside: (app: GuestApp) => void;
@@ -147,7 +149,7 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
 }) {
   const t = useMessages('auth');
   const color = useCommunityColor({ color: app.icon_color, iconUrl: app.icon_url, iconEmoji: app.icon_emoji, key: app.slug });
-  const [tab, setTab] = useState<Tab>('hub');
+  const [tab, setTab] = useState<Tab>(startOnWorkshop ? 'workshop' : 'hub');
   const [overview, setOverview] = useState<GuestOverview | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -155,17 +157,22 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
     let live = true;
     setOverview(null);
     setLoaded(false);
-    setTab('hub');
+    setTab(startOnWorkshop ? 'workshop' : 'hub');
     void fetchOverview(app.slug).then((o) => {
       if (!live) return;
       setOverview(o);
       setLoaded(true);
     });
     return () => { live = false; };
-  }, [app.slug]);
+  }, [app.slug, startOnWorkshop]);
 
   const builders = overview?.app.builders ?? buildersOf(app);
-  const active = app.active_users || 0;
+  // Counts only from the cards' minimums (guest-data MIN_BUILDERS,
+  // MIN_ACTIVE): a small one reads as a project nobody uses. Under them the
+  // band says what changed this week, when anything did.
+  const active = (app.active_users || 0) >= MIN_ACTIVE ? app.active_users || 0 : 0;
+  const bandBuilders = builders >= MIN_BUILDERS ? builders : 0;
+  const week = app.merged_week || 0;
   const votes = overview?.votes || [];
   const voteCount = Math.max(overview?.app.open_votes ?? app.open_votes ?? 0, votes.length);
   const requests = overview?.requests || null;
@@ -201,12 +208,16 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
             </div>
           </div>
           {app.description ? <p className="text-base leading-[22px] text-white/90">{app.description}</p> : null}
-          <div className="flex items-center gap-1.5 text-[13px] text-white/80">
-            <UserGroupIcon className="h-4 w-4 shrink-0" />
-            <span>{t('auth:guest.project.builders', { count: builders })}</span>
-            {active > 0 ? <span aria-hidden="true">·</span> : null}
-            {active > 0 ? <span>{t('auth:guest.project.active', { count: active })}</span> : null}
-          </div>
+          {bandBuilders || active ? (
+            <div data-guest-project-facts="" className="flex items-center gap-1.5 text-[13px] text-white/80">
+              <UserGroupIcon className="h-4 w-4 shrink-0" />
+              {bandBuilders ? <span>{t('auth:guest.project.builders', { count: bandBuilders })}</span> : null}
+              {bandBuilders && active ? <span aria-hidden="true">·</span> : null}
+              {active ? <span>{t('auth:guest.project.active', { count: active })}</span> : null}
+            </div>
+          ) : week ? (
+            <div data-guest-project-facts="" className="text-[13px] text-white/80">{t('auth:guest.card.week', { count: week })}</div>
+          ) : null}
           <div className="mt-0.5 flex gap-2">
             {canTryHere(app, inHomeroomApp()) ? (
               <TryLink

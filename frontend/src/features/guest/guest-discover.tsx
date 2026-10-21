@@ -2,16 +2,23 @@
  * The guest Discover: what a visitor with no account sees first
  * (features/auth/landing.tsx draws it under the story's short hero).
  *
- * Every public project, as a card with its picture, icon and name, what it
- * is (its own description, else the last change its group voted in), how
- * many members it has beside the figure the list is sorted by (people
- * active, when it was made, how many build it), and what is up for a vote
- * or when it last changed. A card opens the
- * project's read-only page (./guest-project.tsx) at the project's own
- * address, `#app/<slug>/workshop`, which is also where a person lands once
- * they sign in from there. Nothing on a card is locked: the page behind it
- * is readable by anyone, and only that page's "Try it" says whether the app
- * itself needs an account yet (`guest_ready`, src/services/shell-probe.js).
+ * WHAT CAN BE PLAYED COMES FIRST (21 Oct 2026 review): a visitor came to
+ * try things, and one tap from the list to playing is what makes them stay.
+ * Featured holds only projects a visitor can try (guest-data featuredApps),
+ * every sort puts those first (sortApps' `tryable`), and each of their cards
+ * carries Try it. Only the first eight (four on a phone) are big cards;
+ * after them "More projects" is a list of rows, twelve at a time, so the top
+ * is curated rather than everything listed evenly. Search and the kinds
+ * still reach every project.
+ *
+ * A card says what the project is (its own description, else the last
+ * change its group voted in), its counts only when they are big enough to
+ * read as busy (guest-data MIN_MEMBERS, MIN_ACTIVE), else what changed
+ * lately, and what is up for a vote, which opens the project's page at
+ * its votes. A card opens the project's read-only page (./guest-project.tsx)
+ * at the project's own address, `#app/<slug>/workshop`, which is also where
+ * a person lands once they sign in from there. Nothing on a card is locked:
+ * the page behind it is readable by anyone.
  * The landing's old grid was taken away because 36 of its 41 tiles were
  * locked (docs/superpowers/specs/2026-09-18-logged-out-screens-design.md);
  * a page to read behind every card is what makes a grid worth having again.
@@ -23,10 +30,11 @@
  * Vote, Ask), never as a wall.
  */
 
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Chip, ChipRail } from '@/components/ui/chip';
-import { BallotIcon, LightBulbIcon, PlusIcon, SearchIcon } from '@/components/ui/icons';
+import { GroupedList } from '@/components/ui/grouped-list';
+import { BallotIcon, ChevronRightIcon, LightBulbIcon, PlusIcon, SearchIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils';
 
 import { useMessages } from '../../lib/i18n/react';
@@ -36,7 +44,11 @@ import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import {
   type GuestApp,
   type GuestSort,
+  MIN_ACTIVE,
+  MIN_BUILDERS,
+  MIN_MEMBERS,
   SORTS,
+  UPDATED_WITHIN_MS,
   buildersOf,
   canTryHere,
   featuredApps,
@@ -44,15 +56,18 @@ import {
   filterApps,
   presentCategories,
   projectHash,
+  projectVotesHash,
   sortApps,
 } from './guest-data';
 
-/** The cards above the "Want to join in?" card: two rows on a phone, two on a desktop. */
-const FIRST_CARDS = 6;
-const FIRST_CARDS_WIDE = 8;
+/** The big cards before the list: two rows on a phone, two on a wide screen. */
+const TOP_CARDS = 4;
+const TOP_CARDS_WIDE = 8;
+/** "More projects" shows this many rows at a time. */
+const ROWS_STEP = 12;
 
-/** A project made in the last two weeks wears "New". */
-const NEW_FOR_MS = 14 * 24 * 60 * 60 * 1000;
+/** A project made in the last 30 days wears "New". */
+const NEW_FOR_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const SMALL_CAPS_LABEL = 'text-xs font-bold uppercase tracking-[0.06em] text-zinc-500 dark:text-zinc-400';
 
@@ -112,36 +127,49 @@ export function GuestCover({ app, className, iconSize = 'lg' }: { app: GuestApp;
 /**
  * What a card says under the project's name. `about`: what it is, in its own
  * words, else the last change its group voted in. `fact`: how many members
- * it has, beside the figure the list is sorted by, so the number a card was
- * ranked by is the number it shows (as Discover's rows do,
- * features/apps/browse.js metaLine). `votes`: what is up for a vote, in the
- * accent, since a visitor can take part in it once they join; else
- * `updated`, when the last change its group voted in went live. A zero
- * says nothing.
+ * it has beside the figure the list is sorted by, each only from its
+ * minimum (guest-data MIN_MEMBERS, MIN_ACTIVE, MIN_BUILDERS): a public app's
+ * median is one person active, and "1 person active" reads as a project
+ * nobody uses. `activity`: what changed lately, how many changes went live
+ * this week, else when the last one did, up to 30 days back. It takes the
+ * fact's place when there is none. `votes`: what is up for a vote, in the
+ * accent, since a visitor can take part in it once they join. A zero says
+ * nothing.
  */
 function useCardFacts(sort: GuestSort) {
   const t = useMessages('auth');
   return (app: GuestApp) => {
     const about = app.description || (app.latest_change ? t('auth:guest.card.latest', { title: app.latest_change }) : '');
     const builders = buildersOf(app);
+    const active = app.active_users || 0;
     const figure = sort === 'new'
       ? (app.created_at ? t('auth:guest.card.made', { when: agoStamp(app.created_at).text }) : '')
       : sort === 'built'
-        ? (builders > 0 ? t('auth:guest.card.builders', { count: builders }) : '')
-        : ((app.active_users || 0) > 0 ? t('auth:guest.card.active', { count: app.active_users }) : '');
-    const members = (app.member_count || 0) > 0 ? t('auth:guest.card.members', { count: app.member_count }) : '';
+        ? (builders >= MIN_BUILDERS ? t('auth:guest.card.builders', { count: builders }) : '')
+        : (active >= MIN_ACTIVE ? t('auth:guest.card.active', { count: active }) : '');
+    const members = (app.member_count || 0) >= MIN_MEMBERS ? t('auth:guest.card.members', { count: app.member_count }) : '';
     const fact = members && figure ? t('auth:guest.card.pair', { first: members, second: figure }) : members || figure;
     const votes = (app.open_votes || 0) > 0 ? t('auth:guest.card.votes', { count: app.open_votes }) : '';
     // A change the group voted in, not a redeploy: a project made an hour
     // ago was not "updated" an hour ago.
-    const updated = !votes && app.last_merged_at ? t('auth:guest.card.updated', { when: agoStamp(app.last_merged_at).text }) : '';
-    return { about, fact, votes, updated };
+    const merged = app.last_merged_at ? Date.parse(app.last_merged_at) : NaN;
+    const activity = (app.merged_week || 0) > 0
+      ? t('auth:guest.card.week', { count: app.merged_week })
+      : Number.isFinite(merged) && Date.now() - merged < UPDATED_WITHIN_MS
+        ? t('auth:guest.card.updated', { when: agoStamp(app.last_merged_at as string).text })
+        : '';
+    return { about, fact, activity, votes };
   };
 }
 
+const FACT_LINE = 'block text-xs text-zinc-500 dark:text-zinc-400';
+
 /** The lines under a card's name (useCardFacts). */
 function CardFacts({ app, sort }: { app: GuestApp; sort: GuestSort }) {
-  const { about, fact, votes, updated } = useCardFacts(sort)(app);
+  const { about, fact, activity, votes } = useCardFacts(sort)(app);
+  // Two lines at most: the fact, else what changed lately; then what is up
+  // for a vote, else what changed lately when the fact took the first.
+  const second = votes ? null : fact ? activity : '';
   return (
     <>
       {about ? (
@@ -149,42 +177,114 @@ function CardFacts({ app, sort }: { app: GuestApp; sort: GuestSort }) {
           {about}
         </span>
       ) : null}
-      {fact ? <span data-guest-card-fact="" className="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">{fact}</span> : null}
+      {fact ? <span data-guest-card-fact="" className={cn('mt-1', FACT_LINE)}>{fact}</span> : null}
+      {!fact && activity ? <span data-guest-card-activity="" className={cn('mt-1', FACT_LINE)}>{activity}</span> : null}
       {votes ? (
-        <span data-guest-card-votes="" className="mt-0.5 block text-xs font-semibold text-violet-700 dark:text-violet-400">{votes}</span>
-      ) : updated ? (
-        <span data-guest-card-updated="" className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{updated}</span>
+        <a
+          href={projectVotesHash(app.slug)}
+          data-guest-card-votes=""
+          className="mt-0.5 block text-xs font-semibold text-violet-700 hover:underline dark:text-violet-400"
+        >
+          {votes}
+        </a>
+      ) : second ? (
+        <span data-guest-card-activity="" className={cn('mt-0.5', FACT_LINE)}>{second}</span>
       ) : null}
     </>
   );
 }
 
-function Card({ app, eager, sort }: { app: GuestApp; eager: boolean; sort: GuestSort }) {
+const TRY_SMALL = 'flex h-8 items-center justify-center rounded-full bg-black/5 px-3.5 text-sm font-semibold text-zinc-900 hover:bg-black/10 dark:bg-white/10 dark:text-zinc-100 dark:hover:bg-white/15';
+
+/**
+ * A big card. Its picture and its name open the project's page, its votes
+ * line opens the page at its votes, and Try it opens the app: three links
+ * side by side, never one inside another.
+ */
+function Card({ app, eager, sort, tryable, inside, onOpenInside }: {
+  app: GuestApp;
+  eager: boolean;
+  sort: GuestSort;
+  tryable: boolean;
+  inside: boolean;
+  onOpenInside: (app: GuestApp) => void;
+}) {
   const t = useMessages('auth');
   return (
-    <a
-      href={projectHash(app.slug)}
-      data-guest-card={app.slug}
-      className="group flex min-w-0 flex-col gap-2 rounded-[20px] outline-offset-4"
-    >
-      <span className="relative block">
+    <article data-guest-card={app.slug} className="flex min-w-0 flex-col gap-2">
+      <a href={projectHash(app.slug)} tabIndex={-1} aria-hidden="true" className="relative block rounded-2xl outline-offset-4">
         <GuestCover app={app} className="aspect-[16/10] w-full rounded-2xl shadow-[inset_0_0_0_1px_var(--app-sheet-line)]" />
         {isNew(app) ? (
           <span className="absolute left-2 top-2 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-zinc-950 dark:bg-zinc-900 dark:text-white">
             {t('auth:guest.card.new')}
           </span>
         ) : null}
-      </span>
+      </a>
       <span className="flex min-w-0 items-start gap-2.5">
         {/* The icon is the picture already when the group chose none. On a
             phone's two narrow columns the words get the room instead. */}
         {app.illustration_url ? <span className="hidden md:block"><GuestIcon app={app} size="sm" eager={eager} /></span> : null}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
+          <a href={projectHash(app.slug)} data-guest-card-link="" className="block truncate text-[15px] font-[650] text-zinc-900 outline-offset-4 dark:text-zinc-100">
+            {app.name}
+          </a>
           <CardFacts app={app} sort={sort} />
         </span>
       </span>
-    </a>
+      {tryable ? (
+        <TryLink app={app} inside={inside} onOpenInside={onOpenInside} className={cn(TRY_SMALL, 'self-start')}>
+          <span aria-hidden="true">{t('auth:guest.card.tryIt')}</span>
+          <span className="sr-only">{t('auth:guest.card.tryItLabel', { name: app.name })}</span>
+        </TryLink>
+      ) : null}
+    </article>
+  );
+}
+
+/**
+ * A row of "More projects": the icon, the name and one line (the fact, else
+ * what changed lately, else what is up for a vote, else what it is), then
+ * Try it where the visitor can, else a chevron to its page.
+ */
+function MoreRow({ app, sort, tryable, inside, onOpenInside, last }: {
+  app: GuestApp;
+  sort: GuestSort;
+  tryable: boolean;
+  inside: boolean;
+  onOpenInside: (app: GuestApp) => void;
+  last: boolean;
+}) {
+  const t = useMessages('auth');
+  const { about, fact, activity, votes } = useCardFacts(sort)(app);
+  const line = fact || activity || votes || about;
+  return (
+    <div
+      data-guest-row={app.slug}
+      className={cn('flex min-h-[64px] items-center gap-3 px-3.5 py-2.5', last ? '' : 'shadow-[inset_0_-1px_0_var(--app-sheet-line)]')}
+    >
+      <a href={projectHash(app.slug)} className="flex min-w-0 flex-1 items-center gap-3 outline-offset-4">
+        <GuestIcon app={app} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
+          {line ? (
+            <span className={cn('block truncate text-[13px]', line === votes && !fact && !activity
+              ? 'font-semibold text-violet-700 dark:text-violet-400'
+              : 'text-zinc-500 dark:text-zinc-400')}
+            >
+              {line}
+            </span>
+          ) : null}
+        </span>
+      </a>
+      {tryable ? (
+        <TryLink app={app} inside={inside} onOpenInside={onOpenInside} className={cn(TRY_SMALL, 'shrink-0')}>
+          <span aria-hidden="true">{t('auth:guest.card.tryIt')}</span>
+          <span className="sr-only">{t('auth:guest.card.tryItLabel', { name: app.name })}</span>
+        </TryLink>
+      ) : (
+        <ChevronRightIcon className="h-[18px] w-[18px] shrink-0 text-zinc-400 dark:text-zinc-500" aria-hidden="true" />
+      )}
+    </div>
   );
 }
 
@@ -196,10 +296,12 @@ function Card({ app, eager, sort }: { app: GuestApp; eager: boolean; sort: Guest
  * guest's view, the "You're looking around" strip and "Make an account to
  * continue" (src/services/edge-gate.js, public/usernode-bridge.js).
  */
-export function TryLink({ app, className, onOpenInside, children }: {
+export function TryLink({ app, className, onOpenInside, inside = false, children }: {
   app: GuestApp;
   className: string;
   onOpenInside: (app: GuestApp) => void;
+  /** Open it in the landing's viewer whatever it needs: the visitor is signed in (a waitlisted account). */
+  inside?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -208,7 +310,7 @@ export function TryLink({ app, className, onOpenInside, children }: {
       data-guest-try={app.slug}
       className={className}
       onClick={(e) => {
-        if (app.requires_login === false) {
+        if (inside || app.requires_login === false) {
           e.preventDefault();
           onOpenInside(app);
         }
@@ -219,7 +321,12 @@ export function TryLink({ app, className, onOpenInside, children }: {
   );
 }
 
-function Featured({ app, primaryClass, onOpenInside }: { app: GuestApp; primaryClass: string; onOpenInside: (app: GuestApp) => void }) {
+function Featured({ app, primaryClass, inside, onOpenInside }: {
+  app: GuestApp;
+  primaryClass: string;
+  inside: boolean;
+  onOpenInside: (app: GuestApp) => void;
+}) {
   const t = useMessages('auth');
   return (
     <article
@@ -232,20 +339,22 @@ function Featured({ app, primaryClass, onOpenInside }: { app: GuestApp; primaryC
       <div className="flex flex-1 flex-col gap-2.5 p-3.5">
         <div className="flex items-start gap-3">
           {app.illustration_url ? <GuestIcon app={app} eager /> : null}
-          <a href={projectHash(app.slug)} className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{app.name}</span>
+          <div className="min-w-0 flex-1">
+            <a href={projectHash(app.slug)} className="block truncate text-[15px] font-[650] text-zinc-900 outline-offset-4 dark:text-zinc-100">
+              {app.name}
+            </a>
             <CardFacts app={app} sort="trending" />
-          </a>
-          {canTryHere(app, inHomeroomApp()) ? (
-            <TryLink
-              app={app}
-              onOpenInside={onOpenInside}
-              className={cn(primaryClass, 'h-9 w-auto shrink-0 px-4 text-sm')}
-            >
-              <span aria-hidden="true">{t('auth:guest.card.tryIt')}</span>
-              <span className="sr-only">{t('auth:guest.card.tryItLabel', { name: app.name })}</span>
-            </TryLink>
-          ) : null}
+          </div>
+          {/* Featured holds only projects a visitor can try (featuredApps). */}
+          <TryLink
+            app={app}
+            inside={inside}
+            onOpenInside={onOpenInside}
+            className={cn(primaryClass, 'h-9 w-auto shrink-0 px-4 text-sm')}
+          >
+            <span aria-hidden="true">{t('auth:guest.card.tryIt')}</span>
+            <span className="sr-only">{t('auth:guest.card.tryItLabel', { name: app.name })}</span>
+          </TryLink>
         </div>
       </div>
     </article>
@@ -329,16 +438,24 @@ function SortControl({ sort, onSort }: { sort: GuestSort; onSort: (s: GuestSort)
   );
 }
 
-function CardGrid({ apps, eagerFirst, sort }: { apps: GuestApp[]; eagerFirst: boolean; sort: GuestSort }) {
+function CardGrid({ apps, sort, tryable, inside, onOpenInside }: {
+  apps: GuestApp[];
+  sort: GuestSort;
+  tryable: (app: GuestApp) => boolean;
+  inside: boolean;
+  onOpenInside: (app: GuestApp) => void;
+}) {
   if (!apps.length) return null;
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-x-3 gap-y-[18px] md:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
-      {apps.map((app, i) => <Card key={app.slug} app={app} sort={sort} eager={eagerFirst && i < 4} />)}
+      {apps.map((app, i) => (
+        <Card key={app.slug} app={app} sort={sort} eager={i < 4} tryable={tryable(app)} inside={inside} onOpenInside={onOpenInside} />
+      ))}
     </div>
   );
 }
 
-export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onContinue, onOpenInside }: {
+export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onContinue, onOpenInside, signedIn = false }: {
   /** The public directory, or null while it loads. */
   apps: GuestApp[] | null;
   /** The directory could not be read. */
@@ -350,8 +467,14 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
   waitlist: boolean;
   /** The sign-in sheet, as the story's Continue opens it. */
   onContinue: () => void;
-  /** Open an app that needs no account at all in the landing's own viewer. */
+  /** Open an app in the landing's own viewer. */
   onOpenInside: (app: GuestApp) => void;
+  /**
+   * A waitlisted account is looking (landing.tsx): it is signed in, so
+   * every public project opens for it in the landing's viewer, and nothing
+   * here asks it to sign up.
+   */
+  signedIn?: boolean;
 }) {
   const t = useMessages('auth');
   const [query, setQuery] = useState('');
@@ -359,15 +482,24 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
   const [sort, setSort] = useState<GuestSort>('trending');
   const [joinDismissed, setJoinDismissed] = useState(false);
 
+  const [rowsShown, setRowsShown] = useState(ROWS_STEP);
+
   const all = apps || [];
   const kinds = useMemo(() => presentCategories(all), [all]);
   const browsing = !query.trim() && !category;
-  const featured = useMemo(() => (browsing ? featuredApps(all) : []), [all, browsing]);
-  const list = useMemo(() => sortApps(filterApps(all, query, category), sort), [all, query, category, sort]);
-  const showJoin = browsing && !joinDismissed && !!apps && list.length > 0;
+  const inApp = inHomeroomApp();
+  const tryable = useCallback((app: GuestApp) => signedIn || canTryHere(app, inApp), [signedIn, inApp]);
+  const featured = useMemo(() => (browsing ? featuredApps(all, tryable) : []), [all, browsing, tryable]);
+  const list = useMemo(() => {
+    const above = new Set(featured.map((a) => a.slug));
+    return sortApps(filterApps(all, query, category), sort, tryable).filter((a) => !above.has(a.slug));
+  }, [all, query, category, sort, tryable, featured]);
+  useEffect(() => { setRowsShown(ROWS_STEP); }, [query, category, sort]);
+  const showJoin = browsing && !signedIn && !joinDismissed && !!apps && list.length > 0;
   const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width: 768px)').matches;
-  const first = showJoin ? list.slice(0, wide ? FIRST_CARDS_WIDE : FIRST_CARDS) : list;
-  const rest = showJoin ? list.slice(first.length) : [];
+  const top = list.slice(0, wide ? TOP_CARDS_WIDE : TOP_CARDS);
+  const more = list.slice(top.length);
+  const rows = more.slice(0, rowsShown);
 
   return (
     <div data-guest-discover="" className="flex flex-col gap-5">
@@ -403,7 +535,9 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
           <section className="flex flex-col gap-2.5">
             <h2 className={SMALL_CAPS_LABEL}>{t('auth:guest.featured')}</h2>
             <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {featured.map((app) => <Featured key={app.slug} app={app} primaryClass={primaryClass} onOpenInside={onOpenInside} />)}
+              {featured.map((app) => (
+                <Featured key={app.slug} app={app} primaryClass={primaryClass} inside={signedIn} onOpenInside={onOpenInside} />
+              ))}
             </div>
           </section>
         ) : null}
@@ -419,7 +553,7 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
             </div>
           ) : null}
           {failed ? <p className="py-6 text-center text-[15px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.loadFailed')}</p> : null}
-          <CardGrid apps={first} sort={sort} eagerFirst />
+          <CardGrid apps={top} sort={sort} tryable={tryable} inside={signedIn} onOpenInside={onOpenInside} />
           {showJoin ? (
             <JoinIn
               primaryClass={primaryClass}
@@ -428,7 +562,34 @@ export function GuestDiscover({ apps, failed, hero, primaryClass, waitlist, onCo
               onDismiss={() => setJoinDismissed(true)}
             />
           ) : null}
-          <CardGrid apps={rest} sort={sort} eagerFirst={false} />
+          {rows.length ? (
+            <div data-guest-more="" className="flex flex-col gap-2.5">
+              <h2 className={SMALL_CAPS_LABEL}>{t('auth:guest.more')}</h2>
+              <GroupedList className="mx-0">
+                {rows.map((app, i) => (
+                  <MoreRow
+                    key={app.slug}
+                    app={app}
+                    sort={sort}
+                    tryable={tryable(app)}
+                    inside={signedIn}
+                    onOpenInside={onOpenInside}
+                    last={i === rows.length - 1}
+                  />
+                ))}
+              </GroupedList>
+              {more.length > rows.length ? (
+                <button
+                  type="button"
+                  data-guest-show-more=""
+                  className="h-10 self-center rounded-full bg-white px-5 text-[15px] font-semibold text-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  onClick={() => setRowsShown((n) => n + ROWS_STEP)}
+                >
+                  {t('auth:guest.showMore')}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {apps && !list.length ? (
             <p className="py-6 text-center text-[15px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.empty')}</p>
           ) : null}

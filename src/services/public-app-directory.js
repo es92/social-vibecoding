@@ -107,6 +107,9 @@ function shapeApp(app, contributorRows, includeWallets) {
     member_count: parseInt(app.member_count, 10) || 0,
     open_votes: parseInt(app.open_votes, 10) || 0,
     merged_count: parseInt(app.merged_count, 10) || 0,
+    // How many of them went live in the last seven days: what a card says
+    // instead of a count too small to read as busy.
+    merged_week: parseInt(app.merged_week, 10) || 0,
     last_merged_at: app.last_merged_at || null,
     latest_change: publicChangeTitle(app.latest_change_title),
     // Whether "Try it" can open the app for somebody with no account
@@ -134,6 +137,7 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
               COALESCE(cmc.cnt, 0) AS member_count,
               COALESCE(dev.open_votes, 0) AS open_votes,
               COALESCE(dev.merged_count, 0) AS merged_count,
+              COALESCE(dev.merged_week, 0) AS merged_week,
               dev.last_merged_at, lc.title AS latest_change_title,
               COALESCE(au.cnt, 0) AS active_users
          FROM apps a
@@ -158,6 +162,8 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
            SELECT app_id,
                   COUNT(*) FILTER (WHERE status IN ('promoted', 'merging')) AS open_votes,
                   COUNT(*) FILTER (WHERE status = 'merged' AND live_at IS NOT NULL) AS merged_count,
+                  COUNT(*) FILTER (WHERE status = 'merged' AND live_at IS NOT NULL
+                                     AND COALESCE(merged_at, created_at) >= NOW() - INTERVAL '7 days') AS merged_week,
                   MAX(COALESCE(merged_at, created_at)) FILTER (WHERE status = 'merged' AND live_at IS NOT NULL)
                     AS last_merged_at
              FROM chat_sessions

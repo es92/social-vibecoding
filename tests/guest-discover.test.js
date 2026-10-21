@@ -64,6 +64,11 @@ test('the sorts: most active, newest, most built, ties in the directory\'s order
   assert.deepEqual(slugs('built'), ['fresh-one', 'game-corner', 'todo-list']);
   const tie = [{ slug: 'a', active_users: 1 }, { slug: 'b', active_users: 1 }];
   assert.deepEqual(sortApps(tie, 'trending').map((a) => a.slug), ['a', 'b']);
+  // What a visitor can try comes first under every sort, each group in the
+  // sort's own order.
+  const tryable = (a) => a.slug !== 'game-corner';
+  assert.deepEqual(sortApps(APPS, 'trending', tryable).map((a) => a.slug), ['todo-list', 'fresh-one', 'game-corner']);
+  assert.deepEqual(sortApps(APPS, 'new', tryable).map((a) => a.slug), ['fresh-one', 'todo-list', 'game-corner']);
 });
 
 test('search reads the name and the description; a kind narrows to its apps', () => {
@@ -98,17 +103,29 @@ test('Try it where it can open here: the viewer anywhere, the app\'s own address
   assert.equal(canTryHere(noLogin, true), true);
   assert.equal(canTryHere(guestOnly, true), false);
   assert.equal(canTryHere(neither, true), false);
-  // Featured and the project page both ask it, with this page's answer.
-  assert.match(read(DISCOVER), /\{canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink/);
+  // Discover asks it for every card, with this page's answer (a signed-in
+  // waitlisted account can open every project); the project page too.
+  assert.match(read(DISCOVER), /const tryable = useCallback\(\(app: GuestApp\) => signedIn \|\| canTryHere\(app, inApp\), \[signedIn, inApp\]\);/);
   assert.match(read(PROJECT), /\{canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink/);
   const { inHomeroomApp } = loadTsx(DATA);
   assert.equal(inHomeroomApp(), false, 'a server render is never the app');
 });
 
-test('Featured is what an admin featured, in their order; a project page lives at its hub', () => {
-  const { featuredApps, projectHash } = loadTsx(DATA);
-  assert.deepEqual(featuredApps(APPS).map((a) => a.slug), ['todo-list', 'game-corner']);
+test('Featured is what an admin featured that a visitor can try, filled to three; a project page lives at its hub', () => {
+  const { featuredApps, projectHash, projectVotesHash, linksToWorkshop, canTryHere, FEATURED_MIN } = loadTsx(DATA);
+  const here = (a) => canTryHere(a, false);
+  assert.equal(FEATURED_MIN, 3);
+  // Todo List is featured first, but a visitor cannot open it: left out,
+  // and the most active project they can try fills the row.
+  assert.deepEqual(featuredApps(APPS, here).map((a) => a.slug), ['game-corner', 'fresh-one']);
+  assert.deepEqual(featuredApps(APPS).map((a) => a.slug), ['todo-list', 'game-corner', 'fresh-one']);
+  assert.deepEqual(featuredApps(APPS, () => false), [], 'nothing to try, no Featured');
   assert.equal(projectHash('game-corner'), '#app/game-corner/workshop');
+  // A card's votes line opens the page at its Workshop, a signed-in
+  // person's own address for it too.
+  assert.equal(projectVotesHash('game-corner'), '#app/game-corner/workshop?ws=workshop');
+  assert.equal(linksToWorkshop('#app/game-corner/workshop?ws=workshop'), true);
+  assert.equal(linksToWorkshop('/app/game-corner/workshop'), false);
 });
 
 // ─── guest-discover.tsx ───────────────────────────────────────────
@@ -118,46 +135,100 @@ const discoverProps = (over = {}) => ({
   onContinue() {}, onOpenInside() {}, ...over,
 });
 
-test('every card opens its project\'s page, and no card is locked', () => {
+test('every card opens its project\'s page, no card is locked, and Featured is not repeated below it', () => {
   const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps());
-  const cards = [...html.matchAll(/<a href="([^"]+)" data-guest-card="([^"]+)"/g)].map((m) => [m[2], m[1]]);
-  assert.deepEqual(cards, [
-    ['game-corner', '#app/game-corner/workshop'],
-    ['todo-list', '#app/todo-list/workshop'],
-    ['fresh-one', '#app/fresh-one/workshop'],
-  ]);
+  assert.deepEqual([...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]), ['game-corner', 'fresh-one']);
+  assert.deepEqual([...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]), ['todo-list']);
+  // The picture and the name each open the page; nothing is nested in a link.
+  assert.match(html, /<article data-guest-card="todo-list"[^>]*><a href="#app\/todo-list\/workshop" tabindex="-1" aria-hidden="true"/);
+  assert.match(html, /<a href="#app\/todo-list\/workshop" data-guest-card-link=""/);
+  assert.doesNotMatch(html, /<a [^>]*>(?:(?!<\/a>).)*<a /, 'no link inside a link');
   assert.doesNotMatch(html, /Account required|grayscale|data-icon="lock"/);
-  // Under a card's name: what it is (its words, else its latest change), its
-  // members beside the figure the list is sorted by, then what is up for a
-  // vote or when it last changed. A zero says nothing; a project made lately
-  // wears New.
   const words = text(html);
-  const pair = (first, second) => message('auth:guest.card.pair', { first, second });
   assert.ok(words.includes('Classic games, fresh every day.'));
   assert.ok(words.includes(message('auth:guest.card.latest', { title: 'Add a dark theme' })));
-  assert.ok(words.includes(pair(message('auth:guest.card.members_other', { count: 87 }), message('auth:guest.card.active_other', { count: 43 }))));
-  assert.ok(words.includes(pair(message('auth:guest.card.members_one', { count: 1 }), message('auth:guest.card.active_other', { count: 12 }))));
-  assert.ok(words.includes(message('auth:guest.card.votes_other', { count: 7 })));
-  assert.ok(words.includes(message('auth:guest.card.votes_other', { count: 2 })));
-  assert.match(html, /data-guest-card-votes=""[^>]*text-violet-700/, 'what is up for a vote is in the accent');
-  assert.ok(words.some((w) => w.startsWith('Updated ')), 'no vote open: when it last changed');
   assert.ok(!words.some((w) => /^0 /.test(w)), 'no zero is printed');
-  assert.ok(words.includes(message('auth:guest.card.new')));
+});
+
+// What a card says, by its numbers (the 21 Oct 2026 review: the median
+// public app has one person active, and a small count reads as dead).
+const DAY = 24 * 60 * 60 * 1000;
+const ago = (days) => new Date(Date.now() - days * DAY).toISOString();
+const FACT_APPS = [
+  { slug: 'busy', name: 'Busy', member_count: 87, active_users: 43, open_votes: 3, last_merged_at: ago(1), merged_week: 6 },
+  { slug: 'week', name: 'Week', member_count: 11, active_users: 3, open_votes: 0, last_merged_at: ago(1), merged_week: 4 },
+  { slug: 'month', name: 'Month', member_count: 15, active_users: 8, open_votes: 0, last_merged_at: ago(8), merged_week: 0 },
+  { slug: 'quiet', name: 'Quiet', member_count: 3, active_users: 1, open_votes: 0, last_merged_at: ago(60), merged_week: 0 },
+].map((a) => ({ ...a, created_at: ago(200), requires_login: true, guest_ready: false, url: `https://${a.slug}.example`, contributors: [{}] }));
+
+function cardOf(html, slug) {
+  const at = html.indexOf(`<article data-guest-card="${slug}"`);
+  assert.ok(at >= 0, slug);
+  return html.slice(at, html.indexOf('</article>', at));
+}
+
+test('a count shows only from 25 members or 10 people active; under that, a card says what changed lately', () => {
+  const { MIN_MEMBERS, MIN_ACTIVE, MIN_BUILDERS } = loadTsx(DATA);
+  assert.deepEqual([MIN_MEMBERS, MIN_ACTIVE, MIN_BUILDERS], [25, 10, 5]);
+  const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps({ apps: FACT_APPS }));
+  const pair = (first, second) => message('auth:guest.card.pair', { first, second });
+  // Big enough: the counts, and what is up for a vote, which opens the page at its votes.
+  const busy = text(cardOf(html, 'busy'));
+  assert.ok(busy.includes(pair(message('auth:guest.card.members_other', { count: 87 }), message('auth:guest.card.active_other', { count: 43 }))));
+  assert.ok(busy.includes(message('auth:guest.card.votes_other', { count: 3 })));
+  assert.match(cardOf(html, 'busy'), /<a href="#app\/busy\/workshop\?ws=workshop" data-guest-card-votes=""[^>]*text-violet-700/);
+  // Too small: what changed this week, else when it last changed, else nothing.
+  // (Each card's text starts with its letter tile and its name.)
+  const week = text(cardOf(html, 'week'));
+  assert.deepEqual(week.slice(1), ['Week', message('auth:guest.card.week_other', { count: 4 })]);
+  const month = text(cardOf(html, 'month'));
+  assert.equal(month.length, 3);
+  assert.match(month[2], /^Updated /);
+  assert.deepEqual(text(cardOf(html, 'quiet')).slice(1), ['Quiet']);
+  for (const card of [week, month]) assert.ok(!card.some((w) => /member|people active/.test(w)), 'no small count');
+  assert.match(cardOf(html, 'week'), /data-guest-card-activity=""/);
 });
 
 test('a card shows the figure its list is sorted by', () => {
   const src = read(DISCOVER);
   assert.match(src, /sort === 'new'\s+\? \(app\.created_at \? t\('auth:guest\.card\.made'/);
-  assert.match(src, /sort === 'built'\s+\? \(builders > 0 \? t\('auth:guest\.card\.builders'/);
-  assert.match(src, /<CardGrid apps=\{first\} sort=\{sort\} eagerFirst \/>/);
+  assert.match(src, /sort === 'built'\s+\? \(builders >= MIN_BUILDERS \? t\('auth:guest\.card\.builders'/);
+  assert.match(src, /<CardGrid apps=\{top\} sort=\{sort\} tryable=\{tryable\} inside=\{signedIn\} onOpenInside=\{onOpenInside\} \/>/);
 });
 
-test('Featured leads with the admin\'s order, and offers Try it only where the app has a view for visitors', () => {
+test('Featured holds what a visitor can try, each with Try it, and so does every card that can', () => {
   const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps());
-  const featured = [...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(featured, ['todo-list', 'game-corner']);
   assert.match(html, /<a href="https:\/\/game-corner\.example" data-guest-try="game-corner"/);
-  assert.doesNotMatch(html, /data-guest-try="todo-list"/);
+  assert.match(html, /<a href="https:\/\/fresh-one\.example" data-guest-try="fresh-one"/);
+  assert.doesNotMatch(html, /data-guest-try="todo-list"/, 'nothing a visitor can open');
+  // A waitlisted account is signed in: every project opens for it, nothing asks it to sign up.
+  const signedIn = renderComponent(DISCOVER, 'GuestDiscover', discoverProps({ signedIn: true }));
+  assert.deepEqual([...signedIn.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]), ['todo-list', 'game-corner', 'fresh-one']);
+  assert.doesNotMatch(signedIn, /data-guest-join=/);
+});
+
+// Twenty projects, the even ones (a01, a03, …) open for a visitor.
+const MANY = Array.from({ length: 20 }, (_, i) => ({
+  slug: `a${String(i + 1).padStart(2, '0')}`, name: `App ${i + 1}`, active_users: 20 - i, member_count: 0,
+  created_at: ago(200), requires_login: i % 2 !== 0, guest_ready: false, url: `https://a${i + 1}.example`, contributors: [],
+}));
+
+test('the top is curated: four big cards on a phone, tryable first, then More projects twelve rows at a time', () => {
+  const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps({ apps: MANY }));
+  assert.deepEqual([...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]), ['a01', 'a03', 'a05']);
+  assert.deepEqual([...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]), ['a07', 'a09', 'a11', 'a13']);
+  const rows = [...html.matchAll(/data-guest-row="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(rows.length, 12);
+  assert.deepEqual(rows.slice(0, 4), ['a15', 'a17', 'a19', 'a02'], 'the rest that can be tried, then the others');
+  assert.match(html, /data-guest-show-more=""/);
+  assert.ok(text(html).includes(message('auth:guest.more')));
+  // A row Try it where the visitor can, else a way to its page.
+  const row = (slug) => html.slice(html.indexOf(`data-guest-row="${slug}"`), html.indexOf('data-guest-row=', html.indexOf(`data-guest-row="${slug}"`) + 5));
+  assert.match(row('a15'), /data-guest-try="a15"/);
+  assert.doesNotMatch(row('a02'), /data-guest-try=/);
+  const src = read(DISCOVER);
+  assert.match(src, /const TOP_CARDS = 4;\nconst TOP_CARDS_WIDE = 8;/);
+  assert.match(src, /const ROWS_STEP = 12;/);
 });
 
 test('the kinds, the sort, and one card that says what an account adds', () => {
@@ -209,6 +280,19 @@ test('a project page: its colour band, Try it where the app has a view for visit
   // The chat is for members: never a line of it here.
   assert.match(html, /data-guest-members-only=""/);
   assert.ok(words.includes(message('auth:guest.project.chatMembers')));
+});
+
+test('a project page\'s band shows counts from the cards\' minimums, and a votes link opens it on the Workshop', () => {
+  const small = FACT_APPS[1];
+  const html = renderComponent(PROJECT, 'GuestProject', projectProps(small));
+  const band = text(html.slice(html.indexOf('data-guest-project-band'), html.indexOf('role="tablist"')));
+  assert.ok(band.includes(message('auth:guest.card.week_other', { count: 4 })), 'what changed this week');
+  assert.ok(!band.includes(message('auth:guest.project.builders_one', { count: 1 })), 'not "Built by 1 person"');
+  assert.ok(!band.some((w) => /used it lately/.test(w)), 'not 3 people active');
+  // A card's votes line asks for the Workshop (?ws=workshop): the page opens there.
+  const workshop = renderComponent(PROJECT, 'GuestProject', { ...projectProps(APPS[0]), startOnWorkshop: true });
+  assert.match(workshop, /aria-selected="true" data-guest-tab="workshop"/);
+  assert.match(read(LANDING), /startOnWorkshop=\{!!deepLink && linksToWorkshop\(deepLink\.target\)\}/);
 });
 
 test('an app with no view for visitors yet: Sign in to use it, in Try it\'s place', () => {
