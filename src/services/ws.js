@@ -460,8 +460,9 @@ function attach(server, config) {
     log.info('ws', 'Client connected', { userId: user.id, appSlug });
 
     ws.on('message', async (raw) => {
+      let msg = null;
       try {
-        const msg = JSON.parse(raw);
+        msg = JSON.parse(raw);
         // The rate check comes first, so a frame over the budget costs no
         // query at all (see admitSocketFrame).
         if (!admitSocketFrame(client, msg)) return;
@@ -470,6 +471,9 @@ function attach(server, config) {
         await handleMessage(pool, client, msg);
       } catch (err) {
         log.warn('ws', 'Invalid message', { err: err.message });
+        // A chat message that failed before it was written was not posted
+        // either.
+        if (!storedChats.has(msg)) refuseChat(client, msg, 'send_failed');
       }
     });
 
@@ -1162,10 +1166,32 @@ async function validateThread(pool, appId, thread, viewerId = null) {
 // #621: mutating message types require collab access. Re-checked per
 // message (not cached at connect) so a membership revocation takes
 // effect immediately — chat rates are low and the lookup is a single
-// indexed query. Dropped silently server-side (same pattern as the
-// invalid-thread drop): read-only clients don't render these controls,
-// so anything arriving here is a stale or hostile client.
+// indexed query. Read-only clients don't render these controls, so an
+// edit, a reaction or a typing ping arriving here is dropped silently; a
+// chat message is answered (refuseChat below).
 const WRITE_MSG_TYPES = new Set(['chat', 'edit', 'react', 'typing']);
+
+// A chat message this server will not post. The composer that sent it
+// emptied as it left, so a refusal nobody answered was a message that
+// simply vanished (feedback, 21 Oct 2026: a reply on a change's page, sent
+// to another app's socket, refused as `invalid_thread`). Answered on the
+// sender's socket like `channel_moved`, and public/js/group-chat.js says it
+// was not sent. `message` only where the person can act on it; the client
+// words the rest. The REST write route has no socket and answers in HTTP.
+const NOT_COLLABORATOR_MESSAGE = 'Only collaborators can post here.';
+
+// The chat messages handleMessage has written, so a failure after the row
+// (its broadcast, say) is never answered as a message that was not sent.
+const storedChats = new WeakSet();
+
+function refuseChat(client, msg, code, message = null) {
+  if (!msg || msg.type !== 'chat') return;
+  try {
+    if (client.ws && client.ws.readyState === 1) {
+      client.ws.send(JSON.stringify({ type: 'error', code, ...(message ? { message } : {}) }));
+    }
+  } catch { /* a closed socket has nobody to tell */ }
+}
 
 async function canWriteChat(pool, client) {
   if (await require('./moderation').isRestricted(pool, client.user.id)) return false;
@@ -1186,17 +1212,20 @@ async function handleMessage(pool, client, msg) {
       log.warn('ws', 'write message dropped: access check failed', {
         appId: client.appId, userId: client.user.id, type: msg.type, err: err.message,
       });
+      refuseChat(client, msg, 'write_access_failed');
       return { ok: false, code: 'write_access_failed' };
     }
     if (!allowed) {
       log.warn('ws', 'write message dropped: not a collaborator', {
         appId: client.appId, userId: client.user.id, type: msg.type,
       });
+      refuseChat(client, msg, 'not_collaborator', NOT_COLLABORATOR_MESSAGE);
       return { ok: false, code: 'not_collaborator' };
     }
   }
   // Posting in an app's chat is for the members of its community
-  // (services/communities.js). Unlike the drops above, this one is ANSWERED:
+  // (services/communities.js). Like every refused chat message, this is
+  // ANSWERED, and with a question:
   // the sender is a legitimate client whose composer does not know they have
   // not joined, so the refusal goes back to that one socket as a
   // `join_required` frame carrying the message, and the composer
@@ -1210,6 +1239,7 @@ async function handleMessage(pool, client, msg) {
       log.warn('ws', 'chat message dropped: membership check failed', {
         appId: client.appId, userId: client.user.id, err: err.message,
       });
+      refuseChat(client, msg, 'write_access_failed');
       return { ok: false, code: 'write_access_failed' };
     }
     if (join) {
@@ -1264,6 +1294,7 @@ async function handleMessage(pool, client, msg) {
         log.warn('ws', 'chat message dropped: bad attachment ids', {
           appId: client.appId, userId: client.user.id,
         });
+        refuseChat(client, msg, 'invalid_attachment_ids');
         return { ok: false, code: 'invalid_attachment_ids' };
       }
       // An attachments-only send is allowed (#694): content stays ''
@@ -1273,8 +1304,8 @@ async function handleMessage(pool, client, msg) {
 
       // #194: optional thread scoping. An invalid/spoofed ref drops the
       // whole message (never silently re-route a thread post into the
-      // general stream — the sender's client is buggy or hostile either
-      // way, and general chat is the louder surface).
+      // general stream — general chat is the louder surface). The sender is
+      // told: a stale page sent one here (a thread of another app).
       let thread = null;
       if (msg.thread) {
         thread = await validateThread(pool, client.appId, msg.thread, client.user.id);
@@ -1282,6 +1313,7 @@ async function handleMessage(pool, client, msg) {
           log.warn('ws', 'chat message dropped: invalid thread ref', {
             appId: client.appId, userId: client.user.id,
           });
+          refuseChat(client, msg, 'invalid_thread');
           return { ok: false, code: 'invalid_thread' };
         }
         // #4417: a retired topic's channel is read-only. Answered, like the
@@ -1395,6 +1427,7 @@ async function handleMessage(pool, client, msg) {
             appId: client.appId, userId: client.user.id,
             requested: attIds.length, found: found.length,
           });
+          refuseChat(client, msg, 'attachment_not_owned');
           return { ok: false, code: 'attachment_not_owned' };
         }
         // Preserve the client's send order (the SELECT doesn't).
@@ -1466,6 +1499,7 @@ async function handleMessage(pool, client, msg) {
       } else {
         rows = await insert(pool);
       }
+      storedChats.add(msg);
 
       // #2387 follow-up: a reply in a reply thread is drawn in the general
       // stream as a line naming the message its thread hangs off.

@@ -266,8 +266,9 @@ const GroupChat = {
 
   /**
    * The app the CURRENT mount is about, when the caller named one — see
-   * mount(). Null means "ask AppView", which is what the app view's own
-   * mount wants and what every path did before this existed.
+   * mount(), and mountThread(), whose `app` replaces it. Null means "ask
+   * AppView", which is what the app view's own mount wants and what every
+   * path did before this existed.
    */
   _app: null,
 
@@ -1013,12 +1014,18 @@ const GroupChat = {
       : PlatformI18n.t('chat:group.send.rateLimitedMoment');
   },
 
-  // An `error` frame: show what the server said. Only `channel_moved` is
-  // sent today, and it answers a chat message, so it says that too.
+  // An `error` frame: show what the server said. Every code sent today
+  // answers a chat message the server would not post (services/ws.js
+  // refuseChat), so it says that too: the composer emptied as it left, and
+  // a refusal nobody told the sender about was a message that vanished.
+  // #4417: `topic_closed` is a retired topic's channel, read-only too.
+  NOT_SENT_CODES: new Set([
+    'channel_moved', 'topic_closed', 'not_collaborator', 'write_access_failed',
+    'invalid_thread', 'invalid_attachment_ids', 'attachment_not_owned', 'send_failed',
+  ]),
   _showSocketError(msg) {
     const said = (msg && (msg.message || msg.error)) || '';
-    // #4417: `topic_closed` is a retired topic's channel, read-only too.
-    const notSent = !!msg && (msg.code === 'channel_moved' || msg.code === 'topic_closed');
+    const notSent = !!msg && GroupChat.NOT_SENT_CODES.has(msg.code);
     // The server's own sentence when it sent one; the client's otherwise.
     window.PlatformUI?.toast?.(said
       ? (notSent ? PlatformI18n.t('chat:group.send.notSentReason', { reason: said }) : said)
@@ -1387,10 +1394,21 @@ const GroupChat = {
   // same renderMessageHtml pipeline and the one per-app WS connection —
   // which is opened on demand here, since the user can land on the
   // Issues/Proposals tabs without ever mounting the Chat sub-tab.
-  // opts: { type, ref, container, readOnly?, notice?, placeholder? }
+  // opts: { type, ref, container, app?, readOnly?, notice?, placeholder? }
+  //
+  // `app` ({ slug, name, readOnly }, as mount() takes it) names the app the
+  // thread is in, and it is the mount's app from here on. The app view
+  // passes its own for every topic page: `_app` otherwise still named the
+  // app the Messages screen or a project's Discussion tab last mounted, so a
+  // reply on a change's page went out on THAT app's socket, whose server
+  // refuses a thread it does not have, or was dropped before it left because
+  // that app's pane was read-only. Either way the box emptied and nothing
+  // was posted. A reply thread opened beside a channel passes none: it is in
+  // the channel's app, which `_app` already names.
   mountThread(opts) {
     const { type, ref, container } = opts || {};
     if (!type || !ref || !container) return;
+    if (opts.app && opts.app.slug) GroupChat._app = opts.app;
     const slug = GroupChat._appSlug()
       || GroupChat.appSlug;
     if (!slug) return;

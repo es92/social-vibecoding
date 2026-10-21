@@ -8496,6 +8496,14 @@ const AppView = {
     const slot = document.getElementById('dev-topic-thread');
     if (!t || !slot) return;
     if (typeof GroupChat === 'undefined' || !GroupChat.mountThread) return;
+    // The thread is in THIS app, whatever app the Messages screen or a
+    // project's Discussion tab mounted the group chat for last; without it a
+    // reply went to that app, or nowhere (GroupChat.mountThread). Shaped as
+    // renderGroupChatTab's own: the pane's `archived` is not the thread's,
+    // since a request's or a change's thread stays open on Homeroom.
+    const app = AppView.appData
+      ? { slug: AppView.appData.slug, name: AppView.appData.name, readOnly: !!AppView.readOnly }
+      : null;
     // #4455: a change's page is a Messages reply thread too, the change its
     // root post (features/dev-board/topic/change-head.tsx), every notice a
     // line in its stream. A change nobody else can see yet has no
@@ -8521,6 +8529,7 @@ const AppView = {
         language: 'change',
         placeholder: PlatformI18n.t('changes:page.thread.replyPlaceholder'),
         readOnly: AppView.readOnly || !!closed,
+        ...(app ? { app } : {}),
         ...(issue ? { issue } : {}),
         ...(closed ? {
           closed: issue
@@ -8559,6 +8568,7 @@ const AppView = {
       withHeader: true,
       // #621: non-collaborators read the thread but can't post to it.
       readOnly: AppView.readOnly,
+      ...(app ? { app } : {}),
       ...(AppView.readOnly
         ? { notice: PlatformI18n.t('changes:discussion.readOnlyNotice') }
         : {}),
