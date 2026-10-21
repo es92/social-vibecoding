@@ -284,7 +284,7 @@ test('the sheet spends the one-time sign-in with a POST, and anything but a spen
   // it started is not set up (tests/release-link-postgres.test.js).
   assert.match(src, /if \(!open\) \{ setShown\(false\); setLeaving\(false\); setClosing\(false\); releaseSeen\.current = null; return undefined; \}/);
   const landing = read('frontend/src/features/auth/landing.tsx');
-  assert.match(landing, /const closeSheet = useCallback\(\(\) => \{ setSheet\(null\); setResume\(null\); \}, \[\]\);/);
+  assert.match(landing, /const closeSheet = useCallback\(\(\) => \{ setSheet\(null\); setResume\(null\); setSignUpWith\(null\); \}, \[\]\);/);
   assert.doesNotMatch(landing, /setRelease\(null\); \}, \[\]\)/);
   // Refused, the code step says why a code came instead.
   // Otherwise "Sent to <address> · Change" says it (#5253).

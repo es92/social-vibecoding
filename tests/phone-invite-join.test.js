@@ -120,7 +120,7 @@ test('the invite\'s Join sheet starts with a phone number when the server offers
 
 test('the sheet\'s phone steps: the code, then the username on the phone\'s own route', () => {
   const src = read(SHEET);
-  assert.match(src, /const firstStep: Step = phone \? 'phone' : otherWays;/);
+  assert.match(src, /const firstStep: Step = phone \? 'phone' : start === 'email' \? 'email' : otherWays;/);
   assert.match(src, /data-sign-in-sheet-to-email=""\s+onClick=\{\(e\) => \{ e\.preventDefault\(\); setError\(null\); setDetails\(null\); setStep\('email'\); \}\}/,
     'the email way, which leads on to the password, whatever is set up');
   assert.match(src, /const recaptchaToken = await phoneRecaptchaToken\(\);\s+const res = await fetch\('\/api\/auth\/phone\/request'/);

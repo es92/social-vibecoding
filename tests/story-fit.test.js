@@ -126,5 +126,5 @@ test('a "You\'re in" link\'s address is greeted under the welcome', () => {
   assert.match(landing, /void Promise\.all\(\[releaseAccountFromToken\(token\), straightLink\(link\) \? waitlistOptions\(\) : null\]\)\.then\(async \(\[account, options\]\) => \{\s+if \(!live\) return;\s+setReleaseEmail\(account\?\.email \?\? null\);/);
   // The story heads the guest Discover in its short version, greeting the
   // address the same way (tests/guest-discover.test.js renders it).
-  assert.match(landing, /<Story compact primaryClass=\{PRIMARY_PILL\} welcomeEmail=\{releaseEmail\}/);
+  assert.match(landing, /<Story\s+compact\s+primaryClass=\{PRIMARY_PILL\}\s+welcomeEmail=\{releaseEmail\}/);
 });

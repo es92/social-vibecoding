@@ -147,7 +147,7 @@ test('the landing: the story in place of the pitch unless switched off, for nobo
   // Polish N10: the email line's "Sign in" opens the same sheet titled Sign in.
   // The story heads the guest Discover now, in its short version
   // (features/guest, tests/guest-discover.test.js), with the same two ways in.
-  assert.match(landing, /<Story compact primaryClass=\{PRIMARY_PILL\} welcomeEmail=\{releaseEmail\} onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} \/>/);
+  assert.match(landing, /<Story\s+compact\s+primaryClass=\{PRIMARY_PILL\}\s+welcomeEmail=\{releaseEmail\}\s+onStart=\{\(\) => setSheet\('start'\)\}\s+onSignIn=\{\(\) => setSheet\('signin'\)\}\s+actions=\{<SignUpButtons /);
   // A new account from its sheet is asked what to make, not which communities to join.
   assert.match(landing, /sessionStorage\.setItem\('usernode:first-session:make', '1'\)/);
   assert.match(landing, /fetch\('\/api\/me\/first-session\/started', \{ method: 'POST', credentials: 'same-origin' \}\)/);
