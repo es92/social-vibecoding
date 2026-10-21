@@ -1811,7 +1811,7 @@
     {
       "name": "Landing tells the story and asks people to get started (first session)",
       "path": "/?shot=anon#landing",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header [data-landing-sign-in]:not(.hidden)) [data-guest-discover] [data-landing-story] button[data-landing-story-sign-up]",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header [data-landing-sign-in]:not(.hidden)) [data-guest-discover] [data-landing-story] h1",
       "expectText": "On Homeroom, communities make apps together.",
       "allowConsoleErrors": true
     },
@@ -1967,9 +1967,9 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Landing has one Sign in, in its bar beside Sign up, and the story under it one Sign up of its own (first session)",
+      "name": "Landing has one Sign in and one Sign up, both in its bar, and nothing to press in the story under it (first session)",
       "path": "/?shot=anon#landing",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-landing-story] button[data-landing-story-sign-up]):has(#landing-header button[data-landing-sign-up]):not(:has([data-landing-story] [data-landing-story-signin])) #landing-header [data-landing-sign-in]:not(.hidden)",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header button[data-landing-sign-up]):not(:has([data-landing-story] button, [data-landing-story] a)) #landing-header [data-landing-sign-in]:not(.hidden)",
       "expectText": "Sign in",
       "allowConsoleErrors": true
     },

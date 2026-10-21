@@ -2124,18 +2124,6 @@ export function LandingScreen() {
                   welcomeEmail={releaseEmail}
                   onStart={() => setSheet('start')}
                   onSignIn={() => setSheet('signin')}
-                  actions={(
-                    <Button
-                      type="button"
-                      variant="pillAccent"
-                      size="pill"
-                      ink="solid"
-                      data-landing-story-sign-up=""
-                      onClick={() => setSheet('start')}
-                    >
-                      {t('auth:guest.hero.signUp')}
-                    </Button>
-                  )}
                 />
               )}
             />

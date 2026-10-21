@@ -207,7 +207,7 @@ test('the overview it reads carries no names, and the page draws none', () => {
 
 // ─── the story's short version ────────────────────────────────────
 
-test('the short story heads Discover: welcome, headline, one line, then one Sign up', () => {
+test('the short story heads Discover: welcome, headline and one line, with nothing to press', () => {
   const html = renderComponent(STORY, 'Story', { compact: true, primaryClass: 'pill', onStart() {}, onSignIn() {} });
   assert.deepEqual(text(html), [
     'Welcome to Homeroom',
@@ -223,8 +223,13 @@ test('the short story heads Discover: welcome, headline, one line, then one Sign
   assert.doesNotMatch(html, /rounded-\[20px\]|bg-white/);
   assert.match(html, /class="hidden md:block h-auto w-\[200px\] shrink-0"/);
   assert.ok(html.indexOf('<h1') < html.lastIndexOf('/brand/people.png'), 'the words first, the picture after');
-  // The landing hands it one Sign up, which opens the sheet with every way in.
-  assert.match(read(LANDING), /actions=\{\(\s+<Button\s+type="button"\s+variant="pillAccent"\s+size="pill"\s+ink="solid"\s+data-landing-story-sign-up=""\s+onClick=\{\(\) => setSheet\('start'\)\}\s+>\s+\{t\('auth:guest\.hero\.signUp'\)\}/);
+  // Nothing to press in it: the bar's Sign in and Sign up are the ways in,
+  // once each on the screen.
+  assert.doesNotMatch(html, /<button|<a\s/);
+  assert.doesNotMatch(read(LANDING), /data-landing-story-sign-up/);
+  // The line invites a look; it does not promise that nothing needs an
+  // account, since a lot of the apps do.
+  assert.equal(message('auth:guest.hero.line'), "Look around and try what we're making.");
   // No examples: the real apps follow it.
   assert.doesNotMatch(html, /For example/);
   // Nothing to fit, so no steps: the layout effect leaves it alone.
@@ -305,10 +310,10 @@ test('the landing\'s declared checks hold Discover and the bar\'s Sign in, folde
   assert.ok(story, 'the check keeps its name, so it keeps gating');
   assert.equal(story.path, '/?shot=anon#landing');
   assert.match(story.expectSelector, /#landing-header \[data-landing-sign-in\]:not\(\.hidden\)/);
-  assert.match(story.expectSelector, /\[data-guest-discover\] \[data-landing-story\] button\[data-landing-story-sign-up\]$/);
-  // And one Sign in, the bar's, beside its Sign up: the short story has no
-  // Sign in line of its own.
-  const one = manifest.tests.find((t) => /^Landing has one Sign in, in its bar/.test(t.name));
+  assert.match(story.expectSelector, /\[data-guest-discover\] \[data-landing-story\] h1$/);
+  // And one Sign in and one Sign up, both the bar's: nothing to press in the
+  // short story.
+  const one = manifest.tests.find((t) => /^Landing has one Sign in and one Sign up, both in its bar/.test(t.name));
   assert.ok(one);
-  assert.match(one.expectSelector, /:has\(#landing-header button\[data-landing-sign-up\]\):not\(:has\(\[data-landing-story\] \[data-landing-story-signin\]\)\) #landing-header \[data-landing-sign-in\]:not\(\.hidden\)$/);
+  assert.match(one.expectSelector, /:has\(#landing-header button\[data-landing-sign-up\]\):not\(:has\(\[data-landing-story\] button, \[data-landing-story\] a\)\) #landing-header \[data-landing-sign-in\]:not\(\.hidden\)$/);
 });

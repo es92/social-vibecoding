@@ -33,7 +33,7 @@
 // The three examples are the make screen's front three (Evan, 8 Oct 2026,
 // #4354; examples.ts FRONT since 15 Oct): the same three here and there, the
 // tier list drawn as one.
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { Message, RichMessage } from '../../lib/i18n/react';
 import { FRONT } from '../first-session/examples';
@@ -99,7 +99,7 @@ export function nextStep(fit: number, footBottom: number, screenBottom: number):
   return fit + 1;
 }
 
-export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false, actions = null }: {
+export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false }: {
   primaryClass: string;
   /** The address a "You're in" mail's link names, greeted under the welcome. */
   welcomeEmail?: string | null;
@@ -109,19 +109,15 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
   /**
    * THE SHORT STORY, over the guest Discover (features/guest/guest-discover.tsx):
    * the welcome, the headline and one line that says the apps below can be
-   * tried without an account, then the ways to make an account (`actions`).
-   * No examples (the real apps follow it) and, on a phone, no picture, so
-   * the first apps are near the first screen; nothing to fit, so no steps.
+   * looked around, and nothing to press: the page's bar carries the one
+   * Sign in and the one Sign up, whose sheet has every way in (Apple,
+   * Google, email, a phone). From the 21 Oct 2026 review: two Sign ins,
+   * then two Sign ups, on one screen read as a mistake, and four "Continue
+   * with" buttons made the top of the page tall. No examples (the real apps follow it)
+   * and, on a phone, no picture, so the first apps are near the first
+   * screen; nothing to fit, so no steps.
    */
   compact?: boolean;
-  /**
-   * What the short story offers in place of Continue and its Sign in line:
-   * the landing's one Sign up, which opens the sheet with every way in
-   * (Apple, Google, email, a phone). The page's bar has the one Sign in
-   * (Evan, 21 Oct 2026: two Sign ins on one screen read as a mistake, and
-   * four "Continue with" buttons made the top of the page tall).
-   */
-  actions?: ReactNode;
 }) {
   const t = useMessages('auth');
   const storyRef = useRef<HTMLDivElement>(null);
@@ -205,8 +201,8 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
   );
   if (compact) {
     // On the page itself, as the story always was, and short: the welcome,
-    // the headline, one line and one Sign up, with a small picture beside
-    // them from md. The ways in are the sheet's, so the apps start high.
+    // the headline and one line, with a small picture beside them from md.
+    // The ways in are the bar's, so the apps start high.
     return (
       <div ref={storyRef} data-landing-story="" data-landing-story-compact="" className="px-4 pt-5 md:pt-8 flex items-center gap-10">
         <div className="flex min-w-0 flex-1 flex-col items-start text-left">
@@ -218,9 +214,6 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
             {t('auth:story.headline')}
           </h1>
           <p className="mt-2 text-base leading-[22px] text-zinc-500 dark:text-zinc-400 text-balance">{t('auth:guest.hero.line')}</p>
-          <div ref={footRef} className="mt-4 flex">
-            {actions}
-          </div>
         </div>
         <img
           src="/brand/people.png"

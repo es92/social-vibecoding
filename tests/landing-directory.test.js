@@ -47,14 +47,17 @@ const WAITLIST_TSX = 'frontend/src/features/auth/waitlist.tsx';
 
 // ─── index.html: persistent header ────────────────────────────────
 
-test('the landing offers exactly two ways in, and neither is in the bar', () => {
+test('the landing\'s ways in: no anchor in the bar, and the guest bar\'s Sign in and Sign up are buttons', () => {
   const html = shellMarkup();
   const header = html.match(/<header id="landing-header"[\s\S]*?<\/header>/);
   assert.ok(header, 'landing-header exists');
-  // The bar used to hold them, at 28px, in the top-right corner — read at
-  // the moment a stranger knows least about the product. Both moved into the
-  // body, under the sentence that says what this place is.
-  assert.doesNotMatch(header[0], /<a[\s>]/, 'no CTA in the landing bar');
+  // The bar used to hold two anchors, at 28px, in the top-right corner, read
+  // at the moment a stranger knows least about the product, and the
+  // waitlist landing's moved into its body. The guest Discover's bar carries
+  // Sign in and Sign up again, as buttons at the row's height on the
+  // column's right edge (tests/header-height-parity.test.js), the one place
+  // each appears on the screen.
+  assert.doesNotMatch(header[0], /<a[\s>]/, 'no CTA anchor in the landing bar');
 
   const interior = interiorHtmlFor('auth-landing-screen');
   // The waitlist landing: one pill to the waitlist, one to sign-in, and
@@ -63,12 +66,12 @@ test('the landing offers exactly two ways in, and neither is in the bar', () => 
   assert.match(interior, /id="landing-waitlist-link"/);
   assert.match(interior, /<a href="#login"/);
   assert.doesNotMatch(interior, /Create account/);
-  // The story is the default, and its Sign up is the way to make an account
-  // from here: a button that opens the sheet with every way in (Apple,
-  // Google, email, a phone). The waitlist landing still defers it, and
-  // nothing links to #signup.
+  // The story is the default, and the bar's Sign up is the way to make an
+  // account from here: a button that opens the sheet with every way in
+  // (Apple, Google, email, a phone). The waitlist landing still defers it,
+  // and nothing links to #signup.
   assert.equal((interior.match(/href="#signup"/g) || []).length, 0);
-  assert.match(interior, /<button[^>]*data-landing-story-sign-up=""[^>]*>Sign up<\/button>/);
+  assert.match(header[0], /<button[^>]*data-landing-sign-up=""[^>]*>Sign up<\/button>/);
   // The in-app survey is not one of them any more. #landing-status-link is
   // the exception and keeps its own href — see the check-my-status test.
   const pills = interior.slice(interior.indexOf('id="landing-waitlist-link"'));
@@ -161,11 +164,11 @@ test('the check-my-status line sits under the pills, unchanged (#1538)', () => {
   // It is the waitlist landing's, which shows only when the first session's
   // story is switched off (services/first-session.js); the story is the
   // default, so the declared check that used to select on this link now
-  // selects on the story's Sign up, whose sheet signs an existing account
-  // in too (#5251), and the bar's one Sign in.
+  // selects on the bar's Sign up, whose sheet signs an existing account in
+  // too (#5251), and its one Sign in.
   const manifest = JSON.parse(read('dapp.json'));
   assert.ok(
-    manifest.tests.some((t) => /\[data-landing-story\] button\[data-landing-story-sign-up\]\):has\(#landing-header button\[data-landing-sign-up\]\)/.test(t.expectSelector || '')),
+    manifest.tests.some((t) => /:has\(#landing-header button\[data-landing-sign-up\]\)/.test(t.expectSelector || '')),
     'the declared check reads the story\'s one way in',
   );
 });
