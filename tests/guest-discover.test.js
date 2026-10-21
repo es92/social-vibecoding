@@ -256,6 +256,30 @@ test('the short story heads Discover: welcome, headline and one line, with nothi
   assert.match(read(STORY), /if \(!story \|\| !foot \|\| !story\.offsetHeight\) return;\s+if \(compact\) return;/);
 });
 
+test('inside the Homeroom app the full story stays the front door, with Look around first to Discover', () => {
+  const src = read(LANDING);
+  // Read after mount from the head's class, so the first render is the
+  // prerender's (browsers: Discover).
+  assert.match(src, /setInApp\(document\.documentElement\.classList\.contains\('in-native-webview'\)\);/);
+  assert.match(src, /const storyFront = guestOn && inApp && !linkedSlug && !discoverLink && !gate;/);
+  assert.match(src, /const guestPages = guestOn && !storyFront;/);
+  assert.match(src, /\{storyFront \? \(\s+<Story [^>]*onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} lookAroundClass=\{SECONDARY_PILL\} \/>/);
+  // Discover opened from it has a back, and the back returns to the story.
+  assert.match(src, /const appDiscover = guestOn && inApp && discoverLink;/);
+  assert.match(src, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
+  assert.match(src, /location\.hash = appDiscover && !guestProject \? '#landing' : '#apps';/);
+  // The full story keeps Continue and its email line, then the way to look
+  // around: a link to #apps.
+  const html = renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {}, lookAroundClass: 'white-pill' });
+  assert.match(html, /data-landing-story-start/);
+  const look = html.match(/<a href="#apps" data-landing-story-look="" class="white-pill">([^<]+)<\/a>/);
+  assert.ok(look, 'Look around first links to Discover');
+  assert.equal(look[1], message('auth:story.lookAround'));
+  assert.ok(html.indexOf('data-landing-story-start') < html.indexOf('data-landing-story-look'), 'under Continue');
+  // Without the prop (the browsers' short story, the first session) it is absent.
+  assert.doesNotMatch(renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {} }), /data-landing-story-look/);
+});
+
 const SHEET = 'frontend/src/features/auth/sign-in-sheet.tsx';
 
 test('the ways in are the sheet\'s: Apple, Google and email, and a phone number on the landing\'s sheets', () => {
@@ -285,7 +309,7 @@ test('the guest bar: the wordmark at the column\'s left, Sign in and Sign up at 
   const header = src.slice(src.indexOf('id="landing-header"'), src.indexOf('</header>'));
   // Discover's own bar (guestTop), and a project's page or an open app keep
   // the centred title with the back.
-  assert.match(src, /const guestTop = guestOn && !showBack && !gate;/);
+  assert.match(src, /const guestTop = guestPages && !showBack && !gate;/);
   assert.match(header, /data-guest-top=\{guestTop \? '' : undefined\}/);
   // Its edges are the column's (max-w-6xl, px-4 blocks), with a hairline under it.
   assert.match(src, /const GUEST_BAR = 'md:px-\[max\(1rem,calc\(\(100%_-_72rem\)\/2_\+_1rem\)\)\] shadow-\[inset_0_-1px_0_var\(--app-sheet-line\)\] \[&\[data-guest-top\]>div:first-child\]:\[display:none\]';/);
@@ -296,8 +320,8 @@ test('the guest bar: the wordmark at the column\'s left, Sign in and Sign up at 
   assert.match(header, /<div className="w-7 shrink-0 \[\[data-guest-top\]_&\]:hidden" aria-hidden="true" \/>/);
   // Sign in and Sign up, both at the row's 28px with no padding of their own.
   const actions = header.slice(header.indexOf('data-landing-actions'));
-  assert.match(actions.slice(0, 300), /hiddenLast\(session \|\| !guestOn, guestTop \? 'flex shrink-0 items-center gap-1\.5' : `absolute bottom-4 right-4 /);
-  assert.match(actions, /data-landing-sign-in=""\s+className=\{hiddenLast\(session \|\| !guestOn, 'h-7 rounded-full px-2 /);
+  assert.match(actions.slice(0, 300), /hiddenLast\(session \|\| !guestPages, guestTop \? 'flex shrink-0 items-center gap-1\.5' : `absolute bottom-4 right-4 /);
+  assert.match(actions, /data-landing-sign-in=""\s+className=\{hiddenLast\(session \|\| !guestPages, 'h-7 rounded-full px-2 /);
   assert.match(actions, /onClick=\{\(\) => setSheet\('signin'\)\}/);
   assert.match(actions, /<Button\s+type="button"\s+variant="pillAccent"\s+size="none"\s+ink="solid"\s+data-landing-sign-up=""/);
   assert.match(actions, /data-landing-sign-up=""\s+className=[^\n]+\s+onClick=\{\(\) => setSheet\('start'\)\}/);

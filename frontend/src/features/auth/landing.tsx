@@ -944,7 +944,26 @@ export function LandingScreen() {
   // so neither its page nor the sheet shows yet.
   const linkPending = guestOn && !!linkedSlug && apps === null && !appsFailed;
   const discoverLink = deepPlace?.kind === 'screen' && deepPlace.screen === 'discover';
+  // INSIDE THE HOMEROOM APP THE STORY STAYS THE FRONT DOOR, as it was
+  // before the guest Discover: somebody who installed the app most likely
+  // came to sign up or sign in, and the story was made to fit one phone
+  // screen for them. Its "Look around first" opens Discover (#apps), whose
+  // back returns to it; a link to a project still opens that project.
+  // Phone and desktop browsers, where people arrive from a shared link or a
+  // search, keep Discover first. Read after mount from the class the head
+  // sets before the first paint (`in-native-webview`: the app, or
+  // ?un-native-webview=1 for checks and shots), so the first render is the
+  // prerender's.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => {
+    setInApp(document.documentElement.classList.contains('in-native-webview'));
+  }, []);
   const gate = deepLink && !(guestOn && discoverLink) && !guestProject && !linkPending ? deepLink : null;
+  const storyFront = guestOn && inApp && !linkedSlug && !discoverLink && !gate;
+  // The guest pages (Discover, a project's page) and their bar.
+  const guestPages = guestOn && !storyFront;
+  // Discover inside the app, reached from the story: its bar has a back.
+  const appDiscover = guestOn && inApp && discoverLink;
   // The project's name, when the link is for a public one.
   const gateProject = linkedApp?.name ? String(linkedApp.name) : null;
   // As the page opens for a new account's link, or over Get started's
@@ -1512,15 +1531,16 @@ export function LandingScreen() {
   }, [shownSlug]);
   // The bar's back button: out of the open app, else from a project's page
   // to Discover.
-  const showBack = !!openApp || !!guestProject;
+  const showBack = !!openApp || !!guestProject || appDiscover;
   // The guest Discover's own bar: the wordmark at the left edge of the
   // column, Sign in and Sign up at its right, a hairline under it. A
   // project's page or an open app keeps the centred title and its back.
-  const guestTop = guestOn && !showBack && !gate;
+  const guestTop = guestPages && !showBack && !gate;
   const onBack = useCallback(() => {
     if (st.openSlug) { live.current.closeLandingApp(); return; }
-    location.hash = '#apps';
-  }, [st]);
+    // Discover in the app goes back to the story it was opened from.
+    location.hash = appDiscover && !guestProject ? '#landing' : '#apps';
+  }, [st, appDiscover, guestProject]);
   useEffect(() => {
     try {
       document.title = headerTitle;
@@ -1574,7 +1594,7 @@ export function LandingScreen() {
       <header
         id="landing-header"
         data-guest-top={guestTop ? '' : undefined}
-        className={`un-safe-top-extend relative flex items-center gap-3 px-4 pt-2 pb-4 shrink-0${guestOn ? ` ${GUEST_BAR}` : ''}`}
+        className={`un-safe-top-extend relative flex items-center gap-3 px-4 pt-2 pb-4 shrink-0${guestPages ? ` ${GUEST_BAR}` : ''}`}
       >
         <div className="w-7 h-7 shrink-0 flex items-center justify-center">
           <button
@@ -1637,12 +1657,12 @@ export function LandingScreen() {
         */}
         <div
           data-landing-actions=""
-          className={hiddenLast(session || !guestOn, guestTop ? 'flex shrink-0 items-center gap-1.5' : `absolute bottom-4 right-4 flex items-center gap-1.5 ${GUEST_BAR_RIGHT}`)}
+          className={hiddenLast(session || !guestPages, guestTop ? 'flex shrink-0 items-center gap-1.5' : `absolute bottom-4 right-4 flex items-center gap-1.5 ${GUEST_BAR_RIGHT}`)}
         >
           <button
             type="button"
             data-landing-sign-in=""
-            className={hiddenLast(session || !guestOn, 'h-7 rounded-full px-2 text-[15px] font-semibold text-zinc-950 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300')}
+            className={hiddenLast(session || !guestPages, 'h-7 rounded-full px-2 text-[15px] font-semibold text-zinc-950 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300')}
             onClick={() => setSheet('signin')}
           >
             {t('auth:guest.header.signIn')}
@@ -1730,7 +1750,7 @@ export function LandingScreen() {
             safe-area inset in the scroller's own padding — so the pin cannot
             introduce an overflow of its own.
         */}
-        <div className={`${guestOn ? 'max-w-6xl' : 'max-w-sm md:max-w-lg xl:max-w-2xl'} mx-auto flex min-h-full flex-col ${madeForYou ? 'pb-4' : 'pb-[34px]'}`}>
+        <div className={`${guestPages ? 'max-w-6xl' : 'max-w-sm md:max-w-lg xl:max-w-2xl'} mx-auto flex min-h-full flex-col ${madeForYou ? 'pb-4' : 'pb-[34px]'}`}>
           {/*
               Offline explanation (#1021). Both ways in from this screen —
               the marketing waitlist page and Sign in — need a connection, so
@@ -2100,7 +2120,11 @@ export function LandingScreen() {
               else the guest Discover under the story's short hero. While a
               project link waits on the directory, nothing yet.
           */}
-          {guestOn && guestProject ? (
+          {/* The story itself, inside the app (storyFront above). */}
+          {storyFront ? (
+            <Story primaryClass={PRIMARY_PILL} welcomeEmail={releaseEmail} onStart={() => setSheet('start')} onSignIn={() => setSheet('signin')} lookAroundClass={SECONDARY_PILL} />
+          ) : null}
+          {guestPages && guestProject ? (
             <GuestProject
               app={guestProject}
               primaryClass={PRIMARY_PILL}
@@ -2109,7 +2133,7 @@ export function LandingScreen() {
               onShare={shareProject}
             />
           ) : null}
-          {guestOn && !guestProject && !linkPending ? (
+          {guestPages && !guestProject && !linkPending ? (
             <GuestDiscover
               apps={apps}
               failed={appsFailed && !apps}

@@ -99,7 +99,7 @@ export function nextStep(fit: number, footBottom: number, screenBottom: number):
   return fit + 1;
 }
 
-export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false }: {
+export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, compact = false, lookAroundClass = null }: {
   primaryClass: string;
   /** The address a "You're in" mail's link names, greeted under the welcome. */
   welcomeEmail?: string | null;
@@ -118,6 +118,14 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
    * screen; nothing to fit, so no steps.
    */
   compact?: boolean;
+  /**
+   * Inside the Homeroom app the full story is still the front door
+   * (landing.tsx `storyFront`). Given, it adds "Look around first" under its
+   * foot, drawn with this class (the landing's white pill): Discover's public
+   * projects, at #apps, for somebody who wants to see what is here before
+   * making an account.
+   */
+  lookAroundClass?: string | null;
 }) {
   const t = useMessages('auth');
   const storyRef = useRef<HTMLDivElement>(null);
@@ -197,6 +205,11 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
           ]}
         />
       </p>
+      {lookAroundClass ? (
+        <a href="#apps" data-landing-story-look="" className={lookAroundClass}>
+          {t('auth:story.lookAround')}
+        </a>
+      ) : null}
     </>
   );
   if (compact) {

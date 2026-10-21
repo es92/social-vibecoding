@@ -109,7 +109,9 @@ test('the bar swaps the wordmark for the open app\'s name, or a project page\'s,
   const back = tsx.slice(tsx.indexOf('id="landing-back-btn"'));
   assert.match(back.slice(0, 400), /hiddenLast\(\s*\n?\s*!showBack/,
     'the back button is what an open app or a project page toggles');
-  assert.match(tsx, /const showBack = !!openApp \|\| !!guestProject;/);
+  // Discover opened from the story inside the Homeroom app takes a back too
+  // (to the story), and keeps the wordmark.
+  assert.match(tsx, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
   assert.match(tsx, /const headerTitle = openApp \? openApp\.name \|\| openApp\.slug : guestProject \? guestProject\.name : LANDING_TITLE;/);
   assert.match(tsx, /\{openApp \|\| guestProject \? headerTitle : <Wordmark/,
     'the mark gives way to the app name — it never draws over it');
@@ -510,8 +512,9 @@ test('the guest back arrow closes the viewer directly (#1028)', () => {
   const back = tsx.slice(tsx.indexOf('id="landing-back-btn"'));
   assert.match(back.slice(0, 500), /onClick=\{onBack\}/);
   // An open app first: Back closes it, the same call the button always made.
-  // Only with no app open does it go from a project's page to Discover.
-  assert.match(tsx, /const onBack = useCallback\(\(\) => \{\s*if \(st\.openSlug\) \{ live\.current\.closeLandingApp\(\); return; \}\s*location\.hash = '#apps';\s*\}, \[st\]\);/);
+  // Only with no app open does it go from a project's page to Discover, or,
+  // inside the Homeroom app, from Discover back to the story.
+  assert.match(tsx, /const onBack = useCallback\(\(\) => \{\s*if \(st\.openSlug\) \{ live\.current\.closeLandingApp\(\); return; \}\s*(?:\/\/[^\n]*\n\s*)*location\.hash = appDiscover && !guestProject \? '#landing' : '#apps';\s*\}, \[st, appDiscover, guestProject\]\);/);
   // The marker entry is unwound AFTER the close, behind a re-entrancy flag.
   assert.match(tsx, /unwindingViewerEntry/);
   // The popstate listener ignores a pop that lands ON the marker entry.

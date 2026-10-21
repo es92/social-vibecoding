@@ -5004,6 +5004,13 @@
       "path": "/?demo=1&ws=bot#app/usernode-2d5619/workshop",
       "expectSelector": "#dev-workshop [data-ws-bot-slots-page]:has([data-ws-bot-waiting] [data-ws-bot-slot-excerpt]):has([data-ws-bot-taken] [data-ws-open]):has([data-ws-bot-up-next] [data-ws-bot-older-badge]):has([data-ws-bot-left]) [data-ws-bot-slots-used=\"5/5\"]",
       "expectText": "5 of 5 in use"
+    },
+    {
+      "name": "Inside the Homeroom app the landing is the whole story, with Look around first under Continue (first session)",
+      "path": "/?shot=anon&un-native-webview=1#landing",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-landing-story]:not([data-landing-story-compact]) [data-landing-story-start]):not(:has([data-guest-discover])) [data-landing-story] a[data-landing-story-look][href=\"#apps\"]",
+      "expectText": "Look around first",
+      "allowConsoleErrors": true
     }
   ],
   "governance": {
