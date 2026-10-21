@@ -1557,6 +1557,20 @@
       "preview": "sql.replace(NOW_CALL, `$${values.length}::timestamptz`)"
     },
     {
+      "source": "src/services/shots-public.js",
+      "kind": "runtime-expression",
+      "fingerprint": "4e2eeb1379f378d39be7",
+      "count": 1,
+      "preview": "stillsSql(OPEN_SCOPE)"
+    },
+    {
+      "source": "src/services/shots-public.js",
+      "kind": "structural-template",
+      "fingerprint": "f7d003f2beea22780b01",
+      "count": 1,
+      "preview": "`SELECT pick.* FROM (${stillsSql('s.app_id = $1 AND s.merged_at IS NOT NULL')}) pick JOIN chat_sessions s ON s.id = pick.session_id ORDER BY s.merged_at DESC, p"
+    },
+    {
       "source": "src/services/shots-state.js",
       "kind": "structural-template",
       "fingerprint": "3bade3328c90c1bbde14",
