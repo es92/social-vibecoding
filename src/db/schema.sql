@@ -3371,6 +3371,13 @@ END $$;
 --     the scaffold's gated-by-default behavior.
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS anon_shell VARCHAR(10) NOT NULL DEFAULT 'unknown';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS anon_shell_checked_at TIMESTAMPTZ;
+--   guest_shell: the same two GETs made as a GUEST, with the guest token
+--     the app-host gate hands a visitor who has no account
+--     (services/edge-gate.js, "Guests (P15)"). Same three values, written
+--     by the same probe in the same pass, and only while that sign-in half
+--     is on. GET /api/public/apps reads it into `guest_ready`, which is
+--     what decides whether the guest Discover offers "Try it".
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS guest_shell VARCHAR(10) NOT NULL DEFAULT 'unknown';
 
 -- Per-app proposal-approval governance (issue #646).
 --   approver_policy:    who can approve proposals. 'anyone' = every

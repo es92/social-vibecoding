@@ -3847,6 +3847,12 @@ html[data-browser-scroller^="auth-"] body :is(
 html.un-ios[data-browser-scroller="auth-landing-scroll"] [data-landing-story] {
   padding-bottom: max(0px, calc(100lvh - 100svh));
 }
+/* The story's short version heads the guest Discover (features/guest), with
+   the apps under it: its foot is not the foot of the screen, so nothing is
+   tucked under the toolbar there. */
+html.un-ios[data-browser-scroller="auth-landing-scroll"] [data-landing-story-compact] {
+  padding-bottom: 0;
+}
 /* The same toolbar under the sign-in screen's foot (#4593): with the story
    switched off, the release mail's "Create my account" lands on #signup,
    and its steps (the account step's button, the line pinned at the foot)

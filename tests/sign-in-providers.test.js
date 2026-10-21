@@ -500,7 +500,11 @@ test('the landing offers what the options list, never inside the app, and reopen
   assert.match(landing, /document\.cookie = `\$\{PROVIDER_RESULT_COOKIE\}=; Max-Age=0; path=\/`;/);
   assert.match(landing, /setSheet\(inviteTokenFrom\(location\.pathname\) \? 'join' : 'start'\);/);
   assert.match(landing, /from="invite"\s+returnTo=\{location\.pathname\}/);
-  assert.match(landing, /from=\{sheet === 'signin' \? 'signin' : 'story'\}\s+returnTo="\/"/);
+  // Back to Home, or to the public project's page the sheet was opened over
+  // (features/guest), so a provider's trip lands where the visitor was.
+  assert.match(landing, /from=\{sheet === 'signin' \? 'signin' : 'story'\}\s+returnTo=\{guestProject \? `\/\$\{projectHash\(guestProject\.slug\)\}` : '\/'\}/);
+  assert.match(landing, /from="signin"\s+returnTo=\{`\/\$\{projectHash\(intent\.app\.slug\)\}`\}/,
+    'a project page\'s Join, Vote or Ask comes back to that page');
 });
 
 test('inside the app: the app\'s own sheet, offered where the server lists it and the build can show it', async () => {
@@ -513,7 +517,7 @@ test('inside the app: the app\'s own sheet, offered where the server lists it an
   assert.deepEqual(landing.nativeSignInProvidersFrom(null, ['signInWithApple']), []);
   const src = read('frontend/src/features/auth/landing.tsx');
   assert.match(src, /const providers = nativeSignIn \? nativeProviders : webProviders;/);
-  assert.equal((src.match(/native=\{nativeSignIn\}/g) || []).length, 3, 'all three sheets: the invite\'s, the story\'s and a shared link\'s (#5264)');
+  assert.equal((src.match(/native=\{nativeSignIn\}/g) || []).length, 4, 'all four sheets: the invite\'s, the story\'s, a shared link\'s (#5264) and a public project page\'s (features/guest)');
 
   // The sheet's native path: start, the app's sheet with the nonce, the token back.
   const sheet = loadTsx('frontend/src/features/auth/sign-in-sheet.tsx');

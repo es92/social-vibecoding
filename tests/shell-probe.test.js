@@ -16,6 +16,7 @@ const http = require('node:http');
 const {
   classifyResponse,
   probeUrl,
+  probeGuest,
   probeApp,
   selectDueApps,
   appShellUrl,
@@ -205,11 +206,65 @@ test('probeApp: writes the verdict + checked_at through the pool', async () => {
     // probeUrl-compatible plumbing: stub the app row and intercept via a
     // direct URL probe assertion above, then verify persistence here with
     // a slug whose container doesn't exist (verdict 'unknown').
-    const verdict = await probeApp(pool, { id: 42, slug: 'no-such-container', anon_shell: 'unknown' });
+    const verdict = await probeApp(pool, { id: 42, slug: 'no-such-container', anon_shell: 'unknown' }, undefined, { guestsOn: false });
     assert.equal(verdict, 'unknown');
     assert.equal(updates.length, 1);
-    assert.match(updates[0].sql, /UPDATE apps SET anon_shell = \$1, anon_shell_checked_at = NOW\(\)/);
-    assert.deepEqual(updates[0].params, ['unknown', 42]);
+    assert.match(updates[0].sql, /UPDATE apps SET anon_shell = \$1, anon_shell_checked_at = NOW\(\),\s+guest_shell = COALESCE\(\$3, guest_shell\)/);
+    // No guests to ask about (the sign-in half is off): the guest verdict
+    // is null, so the stored guest_shell is left as it was.
+    assert.deepEqual(updates[0].params, ['unknown', 42, null]);
+  } finally { await srv.close(); }
+});
+
+// ─── The guest pass ───────────────────────────────────────────────
+
+// Guest tokens are signed with a key derived from the edge secret
+// (platform-jwt guestKeyPair), as in production.
+function withEdgeSecret(fn) {
+  return async () => {
+    const before = process.env.EDGE_JWT_SECRET;
+    process.env.EDGE_JWT_SECRET = 'shell-probe-test-edge-secret-0123456789abcdef';
+    try { await fn(); } finally {
+      if (before === undefined) delete process.env.EDGE_JWT_SECRET;
+      else process.env.EDGE_JWT_SECRET = before;
+    }
+  };
+}
+
+// A scaffold app that knows about guests: no credential is "Open in
+// Homeroom", a guest's token reads.
+function guestAwareApp(req, res) {
+  if (req.headers['x-usernode-token']) { res.writeHead(req.url === '/api/' ? 404 : 200); res.end('ok'); return; }
+  res.writeHead(401); res.end('Open in Homeroom');
+}
+
+test('probeGuest: an app that lets guests read is public as a guest, gated without a token', withEdgeSecret(async () => {
+  const srv = await serve(guestAwareApp);
+  try {
+    const anon = await probeUrl(srv.url);
+    assert.equal(anon, 'gated');
+    assert.equal(await probeGuest(srv.url, { id: 7, slug: 'guests-ok' }, anon, { guestsOn: true }), 'public');
+  } finally { await srv.close(); }
+}));
+
+test('probeGuest: the token it sends is a guest token for that app, in x-usernode-token', withEdgeSecret(async () => {
+  const seen = [];
+  const srv = await serve((req, res) => { seen.push(req.headers['x-usernode-token'] || null); res.writeHead(401); res.end(); });
+  try {
+    assert.equal(await probeGuest(srv.url, { id: 7, slug: 'old-app' }, 'gated', { guestsOn: true }), 'gated');
+    const platformJwt = require('../src/services/platform-jwt');
+    assert.ok(seen[0], 'the guest pass carries a token');
+    assert.equal(platformJwt.verifyGuestToken(seen[0], { appId: 7 }).guest, true);
+  } finally { await srv.close(); }
+}));
+
+test('probeGuest: nothing is asked without guests, and an open app needs no second pass', async () => {
+  let hits = 0;
+  const srv = await serve((req, res) => { hits += 1; res.writeHead(200); res.end(); });
+  try {
+    assert.equal(await probeGuest(srv.url, { id: 7, slug: 'x' }, 'gated', { guestsOn: false }), null);
+    assert.equal(await probeGuest(srv.url, { id: 7, slug: 'x' }, 'public', { guestsOn: true }), 'public');
+    assert.equal(hits, 0);
   } finally { await srv.close(); }
 });
 
@@ -270,7 +325,7 @@ test('selectDueApps reads the runtime columns appShellUrl needs', () => {
   const source = require('node:fs').readFileSync(
     require('node:path').join(__dirname, '../src/services/shell-probe.js'), 'utf8'
   );
-  assert.match(source, /SELECT id, slug, anon_shell, runtime_kind, runtime_name FROM apps/);
+  assert.match(source, /SELECT id, slug, anon_shell, guest_shell, runtime_kind, runtime_name FROM apps/);
 });
 
 test('selectDueApps: boot refreshes prior public verdicts without disturbing staging fixtures', async () => {
@@ -280,7 +335,7 @@ test('selectDueApps: boot refreshes prior public verdicts without disturbing sta
   await selectDueApps(pool);
   assert.equal(calls[0].params[1], true);
   assert.equal(calls[1].params[1], false, 'ordinary ticks keep the hourly recheck cadence');
-  assert.match(calls[0].sql, /\$2::boolean AND anon_shell = 'public' AND anon_shell_checked_at <= NOW\(\)/);
+  assert.match(calls[0].sql, /\$2::boolean AND \(anon_shell = 'public' OR guest_shell = 'public'\) AND anon_shell_checked_at <= NOW\(\)/);
   assert.match(calls[0].sql, /self_hosted IS NOT TRUE/);
   assert.match(calls[0].sql, /view_visibility = 'public'/);
 });

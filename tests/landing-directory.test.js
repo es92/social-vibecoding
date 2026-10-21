@@ -94,16 +94,19 @@ test('the landing header is a persistent, non-scrolling sibling of the scroller'
   assert.doesNotMatch(html, /id="app-viewer-title"/);
 });
 
-test('the bar swaps the wordmark for the open app\'s name, and nothing else', () => {
+test('the bar swaps the wordmark for the open app\'s name, or a project page\'s, and nothing else', () => {
   const tsx = read(LANDING_TSX);
   // Back and the label are the only two things an open app touches. The
   // label is what makes #app-viewer need no bar of its own: the header stays
-  // put and owns Back + the app's name for as long as the viewer runs.
+  // put and owns Back + the app's name for as long as the viewer runs. A
+  // public project's guest page (features/guest) takes the same two: Back to
+  // Discover, and the project's name.
   const back = tsx.slice(tsx.indexOf('id="landing-back-btn"'));
-  assert.match(back.slice(0, 400), /hiddenLast\(\s*\n?\s*!openApp/,
-    'the back button is what the open app toggles');
-  assert.match(tsx, /const headerTitle = openApp \?/);
-  assert.match(tsx, /\{openApp \? headerTitle : <Wordmark/,
+  assert.match(back.slice(0, 400), /hiddenLast\(\s*\n?\s*!showBack/,
+    'the back button is what an open app or a project page toggles');
+  assert.match(tsx, /const showBack = !!openApp \|\| !!guestProject;/);
+  assert.match(tsx, /const headerTitle = openApp \? openApp\.name \|\| openApp\.slug : guestProject \? guestProject\.name : LANDING_TITLE;/);
+  assert.match(tsx, /\{openApp \|\| guestProject \? headerTitle : <Wordmark/,
     'the mark gives way to the app name — it never draws over it');
   // The element's class string does NOT move with that swap: it is the same
   // box either way, and a conditional className would rewrite the attribute
@@ -500,7 +503,10 @@ test('the guest back arrow closes the viewer directly (#1028)', () => {
   // The button performs the navigation; it never delegates to the browser
   // (the old `if (history.state...) history.back()` is what broke).
   const back = tsx.slice(tsx.indexOf('id="landing-back-btn"'));
-  assert.match(back.slice(0, 500), /onClick=\{\(\) => live\.current\.closeLandingApp\(\)\}/);
+  assert.match(back.slice(0, 500), /onClick=\{onBack\}/);
+  // An open app first: Back closes it, the same call the button always made.
+  // Only with no app open does it go from a project's page to Discover.
+  assert.match(tsx, /const onBack = useCallback\(\(\) => \{\s*if \(st\.openSlug\) \{ live\.current\.closeLandingApp\(\); return; \}\s*location\.hash = '#apps';\s*\}, \[st\]\);/);
   // The marker entry is unwound AFTER the close, behind a re-entrancy flag.
   assert.match(tsx, /unwindingViewerEntry/);
   // The popstate listener ignores a pop that lands ON the marker entry.
@@ -640,27 +646,32 @@ test('the landing overlay keeps its own scroll wrapper (pull-down backstop)', ()
 
 // ─── the directory is fetched, and renders nothing ────────────────
 
-test('the landing renders no app grid, but still loads the directory', () => {
+test('the landing\'s directory is the guest Discover, with no locked tiles', () => {
   const interior = interiorHtmlFor('auth-landing-screen');
-  // 41 tiles, 36 of them locked and captioned "Account required", three of
-  // the four screens a visitor scrolled through. A stranger's first screen
-  // is not a launcher for apps they cannot open.
+  // The old grid is still gone: 41 tiles, 36 of them locked and captioned
+  // "Account required", three of the four screens a visitor scrolled
+  // through. A stranger's first screen is not a launcher for apps they
+  // cannot open.
   assert.doesNotMatch(interior, /id="landing-apps"/);
   assert.doesNotMatch(interior, /class="app-card/);
   assert.doesNotMatch(interior, /Apps built here/);
 
-  // The FETCH stays, and these are the three things that depend on it — none
-  // of them a deep link. There is no path from a signed-out /app/<slug> to
-  // this viewer: app.js remembers the link and routes to #login instead.
+  // The FETCH is what the guest Discover draws now (features/guest), as well
+  // as the three things that always depended on it.
   const tsx = read(LANDING_TSX);
   assert.match(tsx, /'\/api\/public\/apps\?include_wallets=0'/);
   assert.match(tsx, /st\.appsList = list;/, 'the shot picks its target from the list');
   assert.match(tsx, /loadLandingApps\(\)\)/, 'pull-to-refresh re-runs it');
   assert.match(tsx, /_loadLandingApps: \(\) => live\.current\.loadLandingApps\(\)/,
     'and it is a published router seam');
-  // Nothing renders it, so nothing may hold render state for it either — a
-  // write-only useState is a tile grid waiting to grow back.
-  assert.doesNotMatch(tsx, /setApps\(/);
+  assert.match(tsx, /setApps\(list as GuestApp\[\]\);/);
+  assert.match(tsx, /<GuestDiscover\s+apps=\{apps\}/);
+  // WHAT MADE A GRID WORTH HAVING AGAIN: every card opens a page anybody can
+  // read, so no card is locked. Whether the app itself needs an account is
+  // the project page's "Try it" or "Sign in to use it", not a tile's.
+  const discover = read('frontend/src/features/guest/guest-discover.tsx');
+  assert.doesNotMatch(discover, /LockIcon|Account required|grayscale/);
+  assert.match(discover, /href=\{projectHash\(app\.slug\)\}/);
   assert.doesNotMatch(tsx, /TileSkeleton/);
 });
 

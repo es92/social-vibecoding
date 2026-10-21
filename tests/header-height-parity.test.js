@@ -208,7 +208,7 @@ test('CEILING: the Homeroom mark is exactly the 28px row', () => {
     'the mark ships with the shell');
 });
 
-test('CEILING: the landing bar is the wordmark at 28px, and carries no CTA', () => {
+test('CEILING: the landing bar is the wordmark at 28px, with no anchor and one quiet Sign in', () => {
   const bar = withoutComments(BARS.find((b) => b.id === 'landing-header').slice);
 
   // THE CTA ROW IS GONE, and with it the only thing that ever broke this
@@ -228,6 +228,18 @@ test('CEILING: the landing bar is the wordmark at 28px, and carries no CTA', () 
   // in this bar that carries its own padding.
   assert.deepEqual(bar.match(/<a[\s>]/g) || [], [],
     'the landing bar carries no anchor — both ways in are pills in the body');
+
+  // ONE QUIET SIGN IN CAME BACK (the guest Discover, 21 Oct 2026): a visitor
+  // who has an account looks around before signing in, and the bar is where
+  // they look for it. It is a BUTTON at the content row's own 28px with no
+  // padding of its own, so it cannot grow the bar the way the old chips did,
+  // and it sits over the trailing box rather than in the row, so the mark
+  // keeps the bar's true centre. Making an account is still the body's pill.
+  const signIn = bar.match(/<button[^>]*data-landing-sign-in=""[^>]*>/);
+  assert.ok(signIn, 'the bar carries the Sign in button');
+  assert.match(signIn[0], /\bh-7\b/, 'exactly the 28px content row');
+  assert.doesNotMatch(signIn[0], /\b(?:sm:)?py-\d/, 'no vertical padding of its own');
+  assert.match(signIn[0], /\babsolute\b/, 'out of the row, so the title stays centred');
 
   // What took over the row's other job, saying which product this is: the
   // logotype, drawn at the content row's own height. `h-7` is this bar's

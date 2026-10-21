@@ -76,6 +76,9 @@ import {
   spendReleaseLink,
 } from './sign-in-sheet';
 import { Story } from './story';
+import { GuestDiscover } from '../guest/guest-discover';
+import { type GuestIntent, GuestProject } from '../guest/guest-project';
+import { type GuestApp, projectHash } from '../guest/guest-data';
 import { useWaitlistOptions, type WaitlistOptions, waitlistOptions } from './waitlist-shared';
 import { WelcomePage } from './welcome-page';
 
@@ -697,6 +700,20 @@ export function SigningIn() {
   );
 }
 
+type Translate = (id: string, params?: Record<string, unknown>) => string;
+
+/** The sign-in sheet's title for what a visitor tried to do on a project's page. */
+export function intentTitle(intent: GuestIntent, t: Translate): string {
+  const project = intent.app.name;
+  switch (intent.kind) {
+    case 'join': return t('auth:guest.sheet.join', { project });
+    case 'vote': return t('auth:guest.sheet.vote');
+    case 'ask': return t('auth:guest.sheet.ask');
+    case 'chat': return t('auth:guest.sheet.chat', { project });
+    default: return t('auth:guest.sheet.use', { project });
+  }
+}
+
 export function LandingScreen() {
   const rootRef = useRef<HTMLElement>(null);
   useVisibilityHiddenClass(rootRef, AUTH_SCREEN_IDS.landing, false);
@@ -739,14 +756,19 @@ export function LandingScreen() {
   // and the place it names. Set as the screen shows (landingOnShow), from
   // AuthScreens.showSignInFor; the sheet titled for that place stands over a
   // blurred stand-in for the page, in place of the story.
-  const [gate, setGate] = useState<{ target: string; place: DeepLinkPlace } | null>(null);
-  // The project's name, when the link is for a public one: read from the
-  // public directory the screen loads anyway (loadLandingApps).
-  const [gateProject, setGateProject] = useState<string | null>(null);
+  //
+  // THE GUEST PAGES TAKE MOST OF THESE NOW (features/guest). A link to
+  // Discover (`#apps`) opens the guest Discover, and a link to a PUBLIC
+  // project opens its read-only page, with no sheet at all: the sheet is for
+  // the places a visitor with no account cannot read (Messages, a private
+  // project). `deepLink` is the link as it came; `gate` (below) is what is
+  // left of it for the sheet, once the public directory has said whether a
+  // project is public.
+  const [deepLink, setDeepLink] = useState<{ target: string; place: DeepLinkPlace } | null>(null);
   // Closed without signing in: the story, under an address that says so. The
   // link stays remembered, so a sign-in from the story still lands on it.
   const closeGate = useCallback(() => {
-    setGate(null);
+    setDeepLink(null);
     closeSheet();
     try {
       history.replaceState(history.state, '', legacy().App?._rootUrl?.('#landing') ?? '/#landing');
@@ -832,6 +854,14 @@ export function LandingScreen() {
   // show, i.e. after hydration.
   const [session, setSession] = useState(false);
   const [openApp, setOpenApp] = useState<{ slug: string; name: string } | null>(null);
+  // The public directory (loadLandingApps), for the guest Discover and the
+  // guest project pages: null until it has been read, and `appsFailed` when
+  // it could not be.
+  const [apps, setApps] = useState<GuestApp[] | null>(null);
+  const [appsFailed, setAppsFailed] = useState(false);
+  // What a visitor tried to do on a project's page (Join, Vote, Ask, the
+  // chat, an app that needs an account): the sign-in sheet titled for it.
+  const [intent, setIntent] = useState<GuestIntent | null>(null);
 
   // The memoised options fetch, read for its `waitlist_url`. Null until it
   // resolves — an EFFECT, never the initial render, which is what keeps the
@@ -890,6 +920,22 @@ export function LandingScreen() {
   }, []);
   const storyOn = waitlistPayload?.story_landing !== false && !onInvitePath && !session;
   const pitchHidden = madeForYou || deadInvite || storyOn || invitePending;
+  // THE GUEST PAGES (features/guest), wherever the story would be: the guest
+  // Discover under the story's short hero, or a public project's read-only
+  // page when the address names one. The same switch as the story, so with
+  // the story off the landing is the waitlist pitch it was.
+  const guestOn = storyOn;
+  const deepPlace = deepLink?.place ?? null;
+  const linkedSlug = deepPlace?.kind === 'project' ? deepPlace.slug : null;
+  const linkedApp = linkedSlug && apps ? apps.find((a) => a.slug === linkedSlug) ?? null : null;
+  const guestProject = guestOn ? linkedApp : null;
+  // Until the directory is read, a project link is neither public nor not,
+  // so neither its page nor the sheet shows yet.
+  const linkPending = guestOn && !!linkedSlug && apps === null && !appsFailed;
+  const discoverLink = deepPlace?.kind === 'screen' && deepPlace.screen === 'discover';
+  const gate = deepLink && !(guestOn && discoverLink) && !guestProject && !linkPending ? deepLink : null;
+  // The project's name, when the link is for a public one.
+  const gateProject = linkedApp?.name ? String(linkedApp.name) : null;
   // As the page opens for a new account's link, or over Get started's
   // sheet, the one that carries the link.
   const sheetSigningIn = signingIn && !signingInOverdue && storyOn && sheet === 'start';
@@ -1150,12 +1196,19 @@ export function LandingScreen() {
       //     (App._refreshOrReload);
       //   * `_loadLandingApps` is one of the nine names the legacy router
       //     patches over;
-      //   * a shared link to a public project, opened while signed out,
-      //     titles its sign-in sheet with the project's name, found here
-      //     (#5264, `gateProject`).
+      //   * a shared link to a project, opened while signed out, opens the
+      //     project's read-only page when it is public and titles its
+      //     sign-in sheet with the project's name otherwise (#5264);
+      //   * it IS the guest Discover (features/guest/guest-discover.tsx):
+      //     every card there is a row of it.
       st.appsList = list;
+      setApps(list as GuestApp[]);
+      setAppsFailed(false);
     } catch {
       st.appsList = [];
+      // A list read before stays on screen; only a first read that failed
+      // says so.
+      setAppsFailed(true);
     }
   }, [st]);
 
@@ -1318,8 +1371,8 @@ export function LandingScreen() {
     const target = typeof host?._deepLinkSignIn === 'string' ? host._deepLinkSignIn : '';
     if (host) host._deepLinkSignIn = '';
     flushSync(() => {
-      setGate(target ? { target, place: deepLinkPlace(target) } : null);
-      setGateProject(null);
+      setDeepLink(target ? { target, place: deepLinkPlace(target) } : null);
+      setIntent(null);
     });
     if (!st.appsLoaded) {
       st.appsLoaded = true;
@@ -1342,19 +1395,6 @@ export function LandingScreen() {
     }
   }, [loadLandingApps, refreshHeader, runAnonBackShot, st]);
 
-  // The project a shared link names, by its name when it is a public one.
-  // Not found (private, or unknown), the title says "this project".
-  const gateSlug = gate?.place.kind === 'project' ? gate.place.slug : null;
-  useEffect(() => {
-    if (!gateSlug) return undefined;
-    let live = true;
-    void Promise.resolve(st.appsReady).then(() => {
-      if (!live) return;
-      const app = st.appsList.find((a) => a.slug === gateSlug);
-      setGateProject(app?.name ? String(app.name) : null);
-    });
-    return () => { live = false; };
-  }, [gateSlug, st]);
 
   // ── The seam back into public/js/** ────────────────────────────────
   //
@@ -1426,7 +1466,46 @@ export function LandingScreen() {
 
   // Mirror the header title into the tab title so the Flutter WebView's AppBar
   // follows the screen, same as App.setHeaderTitle does authed.
-  const headerTitle = openApp ? openApp.name || openApp.slug : LANDING_TITLE;
+  const headerTitle = openApp ? openApp.name || openApp.slug : guestProject ? guestProject.name : LANDING_TITLE;
+  // A visitor tried to take part on a project's page: the sign-in sheet,
+  // titled for it, and signing in lands back on that page, the address the
+  // shell restores after a sign-in (AuthScreens.finishLogin).
+  const askFor = useCallback((i: GuestIntent) => {
+    (legacy().AuthScreens?.rememberDeepLink as undefined | ((h: string) => void))?.(projectHash(i.app.slug));
+    setResume(null);
+    setIntent(i);
+  }, []);
+  const closeIntent = useCallback(() => { setIntent(null); setResume(null); }, []);
+  // A project's page's Share: the system's share sheet where there is one,
+  // else the link copied. The clean `/app/<slug>` address, which opens this
+  // page for somebody signed out and the app for a member.
+  const shareProject = useCallback(async (app: GuestApp) => {
+    const url = `${location.origin}/app/${encodeURIComponent(app.slug)}`;
+    const nav = navigator as Navigator & { share?: (d: { title?: string; url?: string }) => Promise<void> };
+    if (typeof nav.share === 'function') {
+      try { await nav.share({ title: app.name, url }); } catch { /* dismissed */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      legacy().PlatformUI?.toast?.(translate('auth:guest.project.linkCopied'));
+    } catch {
+      legacy().PlatformUI?.toast?.(url);
+    }
+  }, []);
+  // A project's page, or Discover again, starts at its top.
+  const shownSlug = guestProject?.slug ?? null;
+  useEffect(() => {
+    byId('auth-landing-scroll')?.scrollTo?.(0, 0);
+    if (document.documentElement.dataset.browserScroller) window.scrollTo(0, 0);
+  }, [shownSlug]);
+  // The bar's back button: out of the open app, else from a project's page
+  // to Discover.
+  const showBack = !!openApp || !!guestProject;
+  const onBack = useCallback(() => {
+    if (st.openSlug) { live.current.closeLandingApp(); return; }
+    location.hash = '#apps';
+  }, [st]);
   useEffect(() => {
     try {
       document.title = headerTitle;
@@ -1485,9 +1564,9 @@ export function LandingScreen() {
           <button
             id="landing-back-btn"
             type="button"
-            className={hiddenLast(!openApp, LANDING_BACK_CLASS)}
+            className={hiddenLast(!showBack, LANDING_BACK_CLASS)}
             aria-label={t('auth:landing.backToApps')}
-            onClick={() => live.current.closeLandingApp()}
+            onClick={onBack}
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
@@ -1515,9 +1594,9 @@ export function LandingScreen() {
         */}
         <div
           id="landing-header-title"
-          className="flex-1 min-w-0 text-lg font-bold pointer-events-none truncate text-center"
+          className="flex-1 min-w-0 px-10 text-lg font-bold pointer-events-none truncate text-center"
         >
-          {openApp ? headerTitle : <Wordmark className="h-7 w-auto inline-block align-middle text-zinc-950 dark:text-white" title={LANDING_TITLE} />}
+          {openApp || guestProject ? headerTitle : <Wordmark className="h-7 w-auto inline-block align-middle text-zinc-950 dark:text-white" title={LANDING_TITLE} />}
         </div>
         {/*
             The trailing 28px, mirroring the lead box so the label sits on the
@@ -1528,6 +1607,26 @@ export function LandingScreen() {
             carrying h-7, and the lead group must stay that div.
         */}
         <div className="w-7 shrink-0" aria-hidden="true" />
+        {/*
+            THE ONE WAY IN THE BAR CARRIES (the guest Discover, 21 Oct 2026):
+            a quiet "Sign in", for somebody who has an account and is looking
+            around before they do. A button at the content row's own 28px
+            with no padding of its own, so the bar keeps its height
+            (tests/header-height-parity.test.js), and placed over the
+            trailing box rather than in the row, so the mark stays on the
+            bar's true centre; the title's `px-10` keeps a long project name
+            from running under it. Making an account is still the body's
+            Continue, under the sentence that says what this place is.
+            Not for a waiting-room session, which is signed in already.
+        */}
+        <button
+          type="button"
+          data-landing-sign-in=""
+          className={hiddenLast(session || !guestOn, 'absolute right-4 bottom-4 h-7 rounded-full px-1 text-[15px] font-semibold text-zinc-950 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300')}
+          onClick={() => setSheet('signin')}
+        >
+          {t('auth:guest.header.signIn')}
+        </button>
       </header>
       {/*
           Inner scroller: the kit pull-to-refresh rubber-band translates the
@@ -1599,7 +1698,7 @@ export function LandingScreen() {
             safe-area inset in the scroller's own padding — so the pin cannot
             introduce an overflow of its own.
         */}
-        <div className={`max-w-sm md:max-w-lg xl:max-w-2xl mx-auto flex min-h-full flex-col ${madeForYou ? 'pb-4' : 'pb-[34px]'}`}>
+        <div className={`${guestOn ? 'max-w-6xl' : 'max-w-sm md:max-w-lg xl:max-w-2xl'} mx-auto flex min-h-full flex-col ${madeForYou ? 'pb-4' : 'pb-[34px]'}`}>
           {/*
               Offline explanation (#1021). Both ways in from this screen —
               the marketing waitlist page and Sign in — need a connection, so
@@ -1963,8 +2062,33 @@ export function LandingScreen() {
               </a>
             </div>
           </div>
-          {storyOn ? (
-            <Story primaryClass={PRIMARY_PILL} welcomeEmail={releaseEmail} onStart={() => setSheet('start')} onSignIn={() => setSheet('signin')} />
+          {/*
+              THE GUEST PAGES (features/guest), in the story's place: a
+              public project's read-only page when the address names one,
+              else the guest Discover under the story's short hero. While a
+              project link waits on the directory, nothing yet.
+          */}
+          {guestOn && guestProject ? (
+            <GuestProject
+              app={guestProject}
+              primaryClass={PRIMARY_PILL}
+              onIntent={askFor}
+              onOpenInside={(app) => { void live.current.openLandingApp(app); }}
+              onShare={shareProject}
+            />
+          ) : null}
+          {guestOn && !guestProject && !linkPending ? (
+            <GuestDiscover
+              apps={apps}
+              failed={appsFailed && !apps}
+              primaryClass={PRIMARY_PILL}
+              waitlist
+              onContinue={() => setSheet('start')}
+              onOpenInside={(app) => { void live.current.openLandingApp(app); }}
+              hero={(
+                <Story compact primaryClass={PRIMARY_PILL} welcomeEmail={releaseEmail} onStart={() => setSheet('start')} onSignIn={() => setSheet('signin')} />
+              )}
+            />
           ) : null}
         </div>
       </div>
@@ -2020,14 +2144,34 @@ export function LandingScreen() {
           primaryClass={PRIMARY_PILL}
         />
       ) : null}
+      {/*
+          Taking part on a public project's page (./../guest/guest-project.tsx):
+          Join, Vote, Ask for something, the chat, or an app that has no view
+          for visitors yet. Titled for what they were doing, with no line
+          under the title (the landing's sheets have none); signing in lands
+          back on the project's page.
+      */}
+      {intent ? (
+        <SignInSheet
+          open
+          title={intentTitle(intent, (id, params) => t(id, params))}
+          providers={providers}
+          native={nativeSignIn}
+          from="signin"
+          returnTo={`/${projectHash(intent.app.slug)}`}
+          resume={resume}
+          onClose={closeIntent}
+          primaryClass={PRIMARY_PILL}
+        />
+      ) : null}
       {storyOn ? (
         <SignInSheet
-          open={!gate && (sheet === 'start' || sheet === 'signin')}
+          open={!gate && !intent && (sheet === 'start' || sheet === 'signin')}
           title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : t('auth:landing.sheet.continue')}
           providers={providers}
           native={nativeSignIn}
           from={sheet === 'signin' ? 'signin' : 'story'}
-          returnTo="/"
+          returnTo={guestProject ? `/${projectHash(guestProject.slug)}` : '/'}
           resume={resume}
           releaseToken={sheet === 'start' ? release?.token ?? null : null}
           releaseSignIn={sheet === 'start' && !releaseUsed ? release?.signIn ?? null : null}

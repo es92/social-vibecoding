@@ -95,8 +95,23 @@ test('the landing opens the sheet as it shows, titled for the link, and Close le
   assert.match(landing, /title=\{deepLinkTitle\(gate\.place, gateProject,/);
   assert.match(landing, /returnTo=\{deepLinkReturnTo\(gate\.target\)\}/);
   assert.match(landing, /onClose=\{closeGate\}/);
-  assert.match(landing, /open=\{!gate && \(sheet === 'start' \|\| sheet === 'signin'\)\}/,
-    'the story\'s own sheet stays down under it');
-  assert.match(landing, /st\.appsList\.find\(\(a\) => a\.slug === gateSlug\)/,
+  assert.match(landing, /open=\{!gate && !intent && \(sheet === 'start' \|\| sheet === 'signin'\)\}/,
+    'the story\'s own sheet stays down under it, and under a project page\'s own sheet');
+  assert.match(landing, /const linkedApp = linkedSlug && apps \? apps\.find\(\(a\) => a\.slug === linkedSlug\) \?\? null : null;/,
     'a public project\'s name, from the directory the screen loads anyway');
+});
+
+// THE GUEST PAGES TAKE THE LINKS A VISITOR CAN READ (features/guest): a link
+// to Discover opens the guest Discover, and a link to a PUBLIC project opens
+// its read-only page, with no sheet. The sheet stays for everything else, and
+// a project link waits for the directory before either shows.
+test('Discover and public project links open the guest pages; the rest keep the sheet', () => {
+  const landing = read('frontend/src/features/auth/landing.tsx');
+  assert.match(landing, /const guestOn = storyOn;/, 'the guest pages ride the story\'s switch');
+  assert.match(landing, /const guestProject = guestOn \? linkedApp : null;/);
+  assert.match(landing, /const linkPending = guestOn && !!linkedSlug && apps === null && !appsFailed;/);
+  assert.match(landing, /const discoverLink = deepPlace\?\.kind === 'screen' && deepPlace\.screen === 'discover';/);
+  assert.match(landing, /const gate = deepLink && !\(guestOn && discoverLink\) && !guestProject && !linkPending \? deepLink : null;/);
+  assert.match(landing, /setDeepLink\(target \? \{ target, place: deepLinkPlace\(target\) \} : null\);/,
+    'the on-show hook keeps the link as it came; what is left for the sheet is derived');
 });

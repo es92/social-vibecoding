@@ -43,6 +43,7 @@ const {
   waitlistResendIpLimiter,
   waitlistStatusLimiter,
   waitlistStatusIpLimiter,
+  publicProjectReadLimiter,
 } = require('../middleware/rate-limits');
 const { waitlistIntegratorAuth } = require('../services/waitlist-integrator');
 const waitlist = require('../services/waitlist');
@@ -52,6 +53,12 @@ const { sendWaitlistJoinMail, sendWaitlistCodeMail } = require('../services/topo
 const { inviteUrl, privacyNoticeUrl, siteUrl, waitlistUrl } = require('../services/marketing-links');
 const { loadContributors, shapeContributor } = require('../services/contributors');
 const { listPublicApps, isPublicDirectoryApp, HIDDEN_APP_STATUSES } = require('../services/public-app-directory');
+const { loadProjectOverview } = require('../services/public-project');
+
+// The guest project page's overview, kept for a short while per project: it
+// is the same for everyone who asks, and a shared link can bring a crowd.
+const OVERVIEW_TTL_MS = 30 * 1000;
+const OVERVIEW_CACHE_MAX = 500;
 const { loadMobileAppUrls } = require('../services/mobile-store-links');
 
 // The ONE body POST /api/public/waitlist/resend ever returns. Frozen and
@@ -158,6 +165,29 @@ function publicApiRoutes(config) {
       log.error('public-api', 'contributors failed', {
         slug: req.params.slug, message: err.message,
       });
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/public/apps/:slug/overview — the read-only project page a
+  // visitor with no account sees (services/public-project.js): the card,
+  // the changes up for a vote with their tallies, the last changes voted in
+  // and the titles of the open requests. 404 for anything the directory
+  // does not list, the same body as an unknown slug.
+  const overviewCache = new Map();
+  router.get('/api/public/apps/:slug/overview', publicProjectReadLimiter, async (req, res) => {
+    const slug = String(req.params.slug || '');
+    if (!/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug)) return res.status(404).json({ error: 'App not found' });
+    try {
+      const hit = overviewCache.get(slug);
+      if (hit && hit.expiresAt > Date.now()) return res.json(hit.body);
+      const body = await loadProjectOverview(pool, slug);
+      if (!body) return res.status(404).json({ error: 'App not found' });
+      if (overviewCache.size >= OVERVIEW_CACHE_MAX) overviewCache.clear();
+      overviewCache.set(slug, { body, expiresAt: Date.now() + OVERVIEW_TTL_MS });
+      res.json(body);
+    } catch (err) {
+      log.error('public-api', 'project overview failed', { slug, message: err.message });
       res.status(500).json({ error: 'Internal server error' });
     }
   });

@@ -1466,6 +1466,13 @@
       "preview": "`UPDATE chat_sessions SET last_activity_at = NOW() WHERE id = $1 AND status = 'active' AND ${OWNED_SOURCE_SQL} AND checks_commit_sha IS NOT DISTINCT FROM $2`"
     },
     {
+      "source": "src/services/public-project.js",
+      "kind": "structural-template",
+      "fingerprint": "8f593625b11c7947973f",
+      "count": 1,
+      "preview": "`SELECT cs.id, cs.pr_number, COALESCE(cs.pr_title, cs.session_title) AS title, cs.pr_summary_md, cs.promoted_at, (SELECT COUNT(*) FROM pr_votes pv WHERE pv.sess"
+    },
+    {
       "source": "src/services/report-ai.js",
       "kind": "structural-template",
       "fingerprint": "6300e3c7db647c91a87a",

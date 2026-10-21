@@ -23,6 +23,16 @@
 // conservative convention check, not a proof that arbitrary app-specific
 // login flows or optional authenticated features work anonymously.
 //
+// AS A GUEST TOO. Where the app-host sign-in half is on, a visitor with no
+// account reaches a public app as a guest (services/edge-gate.js, "Guests
+// (P15)"): every request carries the guest token the gate mints, which the
+// scaffold reads as `req.guest` and lets READ. The same two GETs are made a
+// second time carrying that token in `x-usernode-token`, the header the gate
+// hands the app, and the verdict lands on apps.guest_shell. An app already
+// open to a visitor with no credential at all needs no second pass. With the
+// sign-in half off there are no guests, so nothing is asked and the column
+// keeps what it had: `guest_ready` ignores it then (public-app-directory.js).
+//
 // Results land on apps.anon_shell + anon_shell_checked_at (schema.sql).
 // The sweep runs every SWEEP_INTERVAL_MS and re-probes an app when it has
 // never been probed, was deployed since its last probe, or its result is
@@ -34,6 +44,7 @@
 
 const http = require('http');
 const log = require('./logger');
+const platformJwt = require('./platform-jwt');
 const applicationRuntime = require('./application-runtime');
 const { getPool } = require('../db/pool');
 
@@ -87,10 +98,11 @@ function classifyResponse(statusCode, location, currentUrl) {
 
 // One GET without cookies/Sec-Fetch-Dest; resolves to the raw
 // { statusCode, location } pair. Rejects on network error / timeout.
-function fetchShell(url) {
+// `headers` adds to the request's own: the guest pass's token.
+function fetchShell(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const req = http.get(url, {
-      headers: { accept: 'text/html' },
+      headers: { accept: 'text/html', ...headers },
       timeout: PROBE_TIMEOUT_MS,
     }, (res) => {
       // Drain so the socket is reusable; the body content is irrelevant.
@@ -103,12 +115,12 @@ function fetchShell(url) {
 }
 
 // One endpoint: follows same-origin redirects up to MAX_REDIRECT_HOPS.
-async function probeEndpoint(url, { allowMissing = false } = {}) {
+async function probeEndpoint(url, { allowMissing = false, headers = {} } = {}) {
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECT_HOPS; hop++) {
     let res;
     try {
-      res = await fetchShell(current);
+      res = await fetchShell(current, headers);
     } catch {
       return 'unknown';
     }
@@ -123,13 +135,29 @@ async function probeEndpoint(url, { allowMissing = false } = {}) {
 // A successful document alone does not establish anonymous usability.
 // Keep this check in the probe, so every directory consumer gets the same
 // verdict and previously misclassified apps converge on the regular sweep.
-async function probeUrl(url) {
-  const shell = await probeEndpoint(url);
+async function probeUrl(url, { headers = {} } = {}) {
+  const shell = await probeEndpoint(url, { headers });
   if (shell !== 'public') return shell;
-  return probeEndpoint(new URL('/api/', url).toString(), { allowMissing: true });
+  return probeEndpoint(new URL('/api/', url).toString(), { allowMissing: true, headers });
 }
 
-async function probeApp(pool, app, config) {
+// The guest pass (see the header): null when there are no guests to ask
+// about, so the stored verdict is left alone.
+async function probeGuest(url, app, anonVerdict, { guestsOn = require('./edge-gate').signinEnabled() } = {}) {
+  if (!guestsOn) return null;
+  if (anonVerdict === 'public') return 'public';
+  let token;
+  try {
+    token = platformJwt.signGuestToken({ appId: app.id });
+  } catch (err) {
+    log.warn('shell-probe', 'Could not mint a guest token; guest pass skipped', { slug: app.slug, err: err.message });
+    return null;
+  }
+  return probeUrl(url, { headers: { 'x-usernode-token': token } });
+}
+
+// `guestsOn` defaults to the app-host sign-in switch (probeGuest).
+async function probeApp(pool, app, config, { guestsOn } = {}) {
   const url = appShellUrl(app, config);
   // No address to ask means no evidence either way. Leave the stored verdict
   // and its timestamp alone rather than writing 'unknown' over a good one.
@@ -138,13 +166,21 @@ async function probeApp(pool, app, config) {
     return app.anon_shell;
   }
   const verdict = await probeUrl(url);
+  const guest = await probeGuest(url, app, verdict, guestsOn === undefined ? undefined : { guestsOn });
   await pool.query(
-    `UPDATE apps SET anon_shell = $1, anon_shell_checked_at = NOW() WHERE id = $2`,
-    [verdict, app.id]
+    `UPDATE apps SET anon_shell = $1, anon_shell_checked_at = NOW(),
+            guest_shell = COALESCE($3, guest_shell)
+      WHERE id = $2`,
+    [verdict, app.id, guest]
   );
   if (verdict !== app.anon_shell) {
     log.info('shell-probe', 'App anon-shell classification changed', {
       slug: app.slug, from: app.anon_shell, to: verdict,
+    });
+  }
+  if (guest !== null && guest !== app.guest_shell) {
+    log.info('shell-probe', 'App guest-shell classification changed', {
+      slug: app.slug, from: app.guest_shell, to: guest,
     });
   }
   return verdict;
@@ -155,7 +191,7 @@ async function probeApp(pool, app, config) {
 // view-private apps never appear on the landing page anyway.
 async function selectDueApps(pool, refreshPublic = false) {
   const { rows } = await pool.query(
-    `SELECT id, slug, anon_shell, runtime_kind, runtime_name FROM apps
+    `SELECT id, slug, anon_shell, guest_shell, runtime_kind, runtime_name FROM apps
       WHERE status = 'running'
         AND self_hosted IS NOT TRUE
         AND view_visibility = 'public'
@@ -163,7 +199,7 @@ async function selectDueApps(pool, refreshPublic = false) {
           anon_shell_checked_at IS NULL
           OR last_deploy_at > anon_shell_checked_at
           OR anon_shell_checked_at < NOW() - ($1 * INTERVAL '1 millisecond')
-          OR ($2::boolean AND anon_shell = 'public' AND anon_shell_checked_at <= NOW())
+          OR ($2::boolean AND (anon_shell = 'public' OR guest_shell = 'public') AND anon_shell_checked_at <= NOW())
         )
       ORDER BY anon_shell_checked_at ASC NULLS FIRST`,
     // Future stamps belong to the container-free staging fixtures. Do not
@@ -204,6 +240,7 @@ module.exports = {
   // Exported for tests:
   classifyResponse,
   probeUrl,
+  probeGuest,
   probeApp,
   selectDueApps,
   appShellUrl,
