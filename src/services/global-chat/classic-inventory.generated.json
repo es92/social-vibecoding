@@ -10516,6 +10516,14 @@
     {
       "source": "src/routes/public-api.js",
       "method": "GET",
+      "path": "/api/public/apps/:slug/changes/:id/stills/:artifactId",
+      "expression": null,
+      "status": "exempt",
+      "reason": "anonymous public integration and waitlist surface"
+    },
+    {
+      "source": "src/routes/public-api.js",
+      "method": "GET",
       "path": "/api/public/app-host",
       "expression": null,
       "status": "exempt",

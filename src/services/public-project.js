@@ -10,7 +10,9 @@
 //
 //   * its directory card (name, icon, colour, description, counts);
 //   * the changes up for a vote, each with its plain-words summary and its
-//     counted tally (the tallies every vote card shows), never who voted;
+//     counted tally (the tallies every vote card shows), never who voted,
+//     and its before & after pictures where they may be shown to anybody
+//     (services/shots-public.js);
 //   * the last few changes voted in and live;
 //   * the titles of its open requests, read from its repository's public
 //     issues, never a body or who filed it.
@@ -24,6 +26,7 @@ const github = require('./github');
 const log = require('./logger');
 const { listPublicApps, publicChangeTitle } = require('./public-app-directory');
 const { countedVotePredicateSql } = require('./pr-vote-revision');
+const { publicStillsFor, publicStillUrl } = require('./shots-public');
 
 const VOTES_MAX = 10;
 const MERGED_MAX = 5;
@@ -107,7 +110,18 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
     ),
     pool.query('SELECT repo_url FROM apps WHERE id = $1', [app.id]),
   ]);
-  const requests = await openRequests(repo.rows[0] && repo.rows[0].repo_url, gh);
+  const [requests, stills] = await Promise.all([
+    openRequests(repo.rows[0] && repo.rows[0].repo_url, gh),
+    publicStillsFor(pool, votes.rows.map((r) => r.id)),
+  ]);
+  const pictures = (id) => {
+    const pair = stills.get(Number(id));
+    if (!pair) return null;
+    return {
+      before: pair.before ? publicStillUrl(app.slug, id, pair.before) : null,
+      after: publicStillUrl(app.slug, id, pair.after),
+    };
+  };
 
   const { contributors, ...card } = app;
   return {
@@ -120,6 +134,7 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
       yes: parseInt(r.yes_count, 10) || 0,
       no: parseInt(r.no_count, 10) || 0,
       promoted_at: r.promoted_at || null,
+      pictures: pictures(r.id),
     })),
     merged: merged.rows.map((r) => ({
       id: r.id,

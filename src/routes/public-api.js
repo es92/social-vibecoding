@@ -54,6 +54,7 @@ const { inviteUrl, privacyNoticeUrl, siteUrl, waitlistUrl } = require('../servic
 const { loadContributors, shapeContributor } = require('../services/contributors');
 const { listPublicApps, isPublicDirectoryApp, HIDDEN_APP_STATUSES } = require('../services/public-app-directory');
 const { loadProjectOverview } = require('../services/public-project');
+const { publicStillBytes } = require('../services/shots-public');
 
 // The guest project page's overview, kept for a short while per project: it
 // is the same for everyone who asks, and a shared link can bring a crowd.
@@ -188,6 +189,33 @@ function publicApiRoutes(config) {
       res.json(body);
     } catch (err) {
       log.error('public-api', 'project overview failed', { slug, message: err.message });
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // GET /api/public/apps/:slug/changes/:id/stills/:artifactId — a before or
+  // after picture of a change up for a vote on a public project, for the
+  // guest project page. Only a still services/shots-public.js lets anybody
+  // see, and only while the change is open at the head it was shot at: 404
+  // otherwise, the same as for one that does not exist.
+  router.get('/api/public/apps/:slug/changes/:id/stills/:artifactId', publicProjectReadLimiter, async (req, res) => {
+    const slug = String(req.params.slug || '');
+    const changeId = Number(req.params.id);
+    const artifactId = String(req.params.artifactId || '');
+    if (!/^[a-z0-9][a-z0-9-]{0,99}$/.test(slug) || !Number.isInteger(changeId) || changeId <= 0
+      || !/^[0-9a-f]{32}$/.test(artifactId)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    try {
+      const still = await publicStillBytes(pool, { slug, changeId, artifactId });
+      if (!still) return res.status(404).json({ error: 'Not found' });
+      res.setHeader('Content-Type', still.contentType || 'image/png');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      if (still.sha256) res.setHeader('ETag', `"${still.sha256}"`);
+      res.send(still.data);
+    } catch (err) {
+      log.error('public-api', 'change still failed', { slug, changeId, message: err.message });
       res.status(500).json({ error: 'Internal server error' });
     }
   });

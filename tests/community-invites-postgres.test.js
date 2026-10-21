@@ -84,10 +84,13 @@ async function connectPool() {
       status TEXT NOT NULL DEFAULT 'waiting', issue_number INTEGER);
     CREATE TABLE homeroom_bot_runs (
       id SERIAL PRIMARY KEY, app_id INTEGER, issue_number INTEGER, proposal_session_id INTEGER);
-    CREATE TABLE shot_runs (id TEXT PRIMARY KEY, state TEXT NOT NULL);
+    -- What a picture anybody may see reads (services/shots-public.js): the
+    -- declared changes' personas and screens, and the agent's all-clear.
+    CREATE TABLE shot_runs (id TEXT PRIMARY KEY, state TEXT NOT NULL, intent JSONB);
     CREATE TABLE shot_artifacts (
-      id TEXT PRIMARY KEY, run_id TEXT NOT NULL, story_id TEXT NOT NULL,
+      id TEXT PRIMARY KEY, run_id TEXT NOT NULL, story_id TEXT NOT NULL, viewport TEXT,
       side TEXT NOT NULL, variant TEXT NOT NULL, media TEXT NOT NULL,
+      theme TEXT NOT NULL DEFAULT 'light', public_safe BOOLEAN,
       content_type TEXT NOT NULL, data BYTEA NOT NULL, sha256 TEXT NOT NULL,
       width INTEGER, height INTEGER);
     CREATE TABLE app_illustrations (app_id INTEGER PRIMARY KEY, id TEXT NOT NULL, dark_id TEXT);
@@ -408,26 +411,48 @@ test('invite links against a real PostgreSQL', async (t) => {
       await pool.query(`INSERT INTO app_illustrations (app_id, id, dark_id) VALUES (2, 'light1', 'dark1')`);
       preview = await invites.preview(pool, made.link.token);
       assert.deepEqual(preview.project.picture, { kind: 'illustration', url: '/app-illustrations/light1', darkUrl: '/app-illustrations/dark1' });
-      // A merged change's phone-shaped after-shot wins; an unmerged one, a
-      // before-shot or a landscape one never shows.
+      // A merged change's after-shot on a phone wins, where anybody may see
+      // it (services/shots-public.js): shot as the member account, and
+      // cleared by the shots agent. An unmerged one, a before-shot, a
+      // desktop one, one shot as an admin or one never cleared never shows.
+      const member = JSON.stringify({ stories: [{ id: 's1', persona: 'member',
+        viewports: [{ name: 'phone', width: 390, height: 844 }, { name: 'desktop', width: 1280, height: 800 }] }] });
+      const admin = JSON.stringify({ stories: [{ id: 's1', persona: 'read_only_admin', viewports: [{ name: 'phone', width: 390, height: 844 }] }] });
+      // Only a public project's shots are anybody's to see: Book Club goes
+      // public for these, and back to private at the end.
+      await pool.query(`UPDATE apps SET view_visibility = 'public' WHERE id = 2`);
       await pool.query(`
-        INSERT INTO shot_runs (id, state) VALUES ('r1', 'verified'), ('r2', 'verified');
+        INSERT INTO shot_runs (id, state, intent) VALUES ('r1', 'verified', '${member}'), ('r2', 'verified', '${member}'),
+          ('r3', 'verified', '${admin}');
         INSERT INTO chat_sessions (id, app_id, merged_at, shots_state, shots_run_id) VALUES
           (1, 2, NOW() - INTERVAL '1 day', 'verified', 'r1'),
-          (2, 2, NULL, 'verified', 'r2');
-        INSERT INTO shot_artifacts (id, run_id, story_id, side, variant, media, content_type, data, sha256, width, height) VALUES
-          ('wide', 'r1', 's1', 'head', 'context', 'png', 'image/png', '\\x01', 'aa', 1280, 800),
-          ('before', 'r1', 's1', 'base', 'context', 'png', 'image/png', '\\x02', 'bb', 390, 844),
-          ('phone', 'r1', 's1', 'head', 'context', 'png', 'image/png', '\\x89504e47', 'cc', 390, 844),
-          ('unmerged', 'r2', 's1', 'head', 'context', 'png', 'image/png', '\\x03', 'dd', 390, 844);
+          (2, 2, NULL, 'verified', 'r2'),
+          (3, 2, NOW(), 'verified', 'r3');
+        INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, public_safe, content_type, data, sha256, width, height) VALUES
+          ('wide', 'r1', 's1', 'desktop', 'head', 'context', 'png', TRUE, 'image/png', '\\x01', 'aa', 1280, 800),
+          ('before', 'r1', 's1', 'phone', 'base', 'context', 'png', TRUE, 'image/png', '\\x02', 'bb', 390, 844),
+          ('phone', 'r1', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x89504e47', 'cc', 390, 844),
+          ('unmerged', 'r2', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x03', 'dd', 390, 844),
+          ('as-admin', 'r3', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x04', 'ee', 390, 844);
       `);
       preview = await invites.preview(pool, made.link.token);
       assert.deepEqual(preview.project.picture, { kind: 'shot', url: `/api/public/invites/${made.link.token}/picture`, darkUrl: null });
       const bytes = await invites.pictureBytes(pool, made.link.token);
       assert.deepEqual([bytes.contentType, bytes.sha256, bytes.data.toString('hex')], ['image/png', 'cc', '89504e47']);
+      const illustration = { kind: 'illustration', url: '/app-illustrations/light1', darkUrl: '/app-illustrations/dark1' };
+      // Not cleared by the shots agent: the card image instead.
+      await pool.query(`UPDATE shot_artifacts SET public_safe = NULL WHERE id = 'phone'`);
+      assert.deepEqual((await invites.preview(pool, made.link.token)).project.picture, illustration);
+      await pool.query(`UPDATE shot_artifacts SET public_safe = TRUE WHERE id = 'phone'`);
+      // A project that is not public shows no shot through a link.
+      await pool.query(`UPDATE apps SET view_visibility = 'private' WHERE id = 2`);
+      assert.deepEqual((await invites.preview(pool, made.link.token)).project.picture, illustration);
+      assert.equal(await invites.pictureBytes(pool, made.link.token), null);
+      await pool.query(`UPDATE apps SET view_visibility = 'public' WHERE id = 2`);
       // Turning the link off turns its picture off too.
       await invites.revokeInvite(pool, { inviteId: made.link.id, user: ADA });
       assert.equal(await invites.pictureBytes(pool, made.link.token), null);
+      await pool.query(`UPDATE apps SET view_visibility = 'private' WHERE id = 2`);
     });
 
     await t.test('WP-D: a link that works until it is turned off, for anyone it reaches', async () => {

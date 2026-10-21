@@ -219,9 +219,11 @@ class RunControl {
         { deviceDensity, density },
       );
       const slot = shots.slotKey(target);
-      this.saved.set(slot, flat
+      const entry = flat
         ? shots.stored(target, flatBuffer, flat, { density, data: buffer, ...info })
-        : shots.stored(target, buffer, info));
+        : shots.stored(target, buffer, info);
+      entry.publicSafe = publicSafeOf(rawTarget?.showsPrivate);
+      this.saved.set(slot, entry);
       this.dirty.add(slot);
       this.skipped.delete(target.storyId);
       this.failed.delete(target.storyId);
@@ -407,6 +409,14 @@ function dbSlot({ storyId, viewport, side, variant, theme, part }) {
 const mapOf = (value) => new Map(Object.entries(value && typeof value === 'object' ? value : {}));
 const objectOf = (map) => Object.fromEntries(map);
 
+// Whether a still may be shown to a visitor who is not signed in: only on
+// the agent's clear "shows nothing private" (save_shot's showsPrivate
+// false, "0" on the wire). Anything else, an unanswered save included, is
+// null: never public.
+function publicSafeOf(showsPrivate) {
+  return showsPrivate === '0' || showsPrivate === false ? true : null;
+}
+
 // A saved file as RunControl keeps it: everything but its bytes, which stay
 // in the database (a retake replaces the row; publication copies it).
 function fileEntry(row) {
@@ -425,6 +435,7 @@ function fileEntry(row) {
     ...(row.variant === 'closeup' ? { part: Number(row.part) || 1, scale: Number(row.scale), focusRect: row.focus_rect || null }
       : { focusRect: null }),
     stageLabels: null,
+    publicSafe: row.public_safe === true ? true : null,
   };
 }
 
@@ -478,7 +489,7 @@ async function load(db, runId, { lock = false } = {}) {
   if (!row) return null;
   const { rows: files } = await db.query(
     `SELECT slot, story_id, viewport, side, variant, media, theme, content_type, width, height, bytes, sha256,
-            density, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect
+            density, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect, public_safe
        FROM shot_run_files WHERE run_id = $1`, [runId]);
   return { row, control: fromRow(row, files) };
 }
@@ -500,20 +511,21 @@ async function persist(db, control) {
     await db.query(
       `INSERT INTO shot_run_files
          (run_id, slot, story_id, viewport, side, variant, media, theme, content_type, data, width, height, bytes, sha256,
-          density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23::jsonb)
+          density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect, public_safe)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23::jsonb, $24)
        ON CONFLICT (run_id, slot) DO UPDATE
          SET data = EXCLUDED.data, content_type = EXCLUDED.content_type, media = EXCLUDED.media,
              theme = EXCLUDED.theme, width = EXCLUDED.width, height = EXCLUDED.height, bytes = EXCLUDED.bytes,
              sha256 = EXCLUDED.sha256, density = EXCLUDED.density, dense_data = EXCLUDED.dense_data,
              dense_width = EXCLUDED.dense_width, dense_height = EXCLUDED.dense_height,
              dense_bytes = EXCLUDED.dense_bytes, dense_sha256 = EXCLUDED.dense_sha256,
-             part = EXCLUDED.part, scale = EXCLUDED.scale, focus_rect = EXCLUDED.focus_rect, saved_at = NOW()`,
+             part = EXCLUDED.part, scale = EXCLUDED.scale, focus_rect = EXCLUDED.focus_rect,
+             public_safe = EXCLUDED.public_safe, saved_at = NOW()`,
       [control.runId, slot, f.storyId, f.viewport, f.side, f.variant, f.media, f.theme || 'light', f.contentType, f.data,
         f.width, f.height, f.bytes, f.sha256, f.density > 1 ? f.density : 1, f.dense?.data || null,
         f.dense?.width || null, f.dense?.height || null, f.dense?.bytes ?? null, f.dense?.sha256 || null,
         f.variant === 'closeup' ? f.part : 0, f.variant === 'closeup' ? f.scale : null,
-        f.variant === 'closeup' && f.focusRect ? JSON.stringify(f.focusRect) : null]);
+        f.variant === 'closeup' && f.focusRect ? JSON.stringify(f.focusRect) : null, f.publicSafe === true ? true : null]);
   }
   control.dirty.clear();
 }

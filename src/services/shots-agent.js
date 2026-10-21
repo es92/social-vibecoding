@@ -95,7 +95,12 @@ For each declared change and each of its screen sizes (viewports):
    screen name, side "after", and kind "screen" or "element". When the same
    screen also shows another declared change at this size, list the
    screenshot again for that change in the same call instead of shooting it
-   twice.
+   twice. For each file also give showsPrivate: true if it shows a real
+   person's name, words they wrote or an email address, or another project;
+   false if it shows none of these. The shots' own accounts (such as
+   usernode-capture) and obviously made-up demo content do not count. A still
+   with false may be shown to people who are not signed in, so when unsure,
+   say true.
 7. Do the same on the before address with side "before". Frame it like
    the after shot: the same element scrolled into view at the same place, so
    the two shots differ only by the change. When

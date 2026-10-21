@@ -1008,11 +1008,11 @@ const WRITES = {
       `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, theme, content_type,
                                    data, width, height, bytes, sha256,
                                    density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256,
-                                   part, scale, focus_rect)
+                                   part, scale, focus_rect, public_safe)
        SELECT md5(f.run_id || ':' || f.slot), f.run_id, f.story_id, f.viewport, f.side, f.variant, f.media, f.theme,
               f.content_type, f.data, f.width, f.height, f.bytes, f.sha256,
               f.density, f.dense_data, f.dense_width, f.dense_height, f.dense_bytes, f.dense_sha256,
-              f.part, f.scale, f.focus_rect
+              f.part, f.scale, f.focus_rect, f.public_safe
          FROM shot_run_files f WHERE f.run_id = $1 AND f.slot = ANY($2::text[])
        ON CONFLICT DO NOTHING`, [w.runId, w.slots]);
     await moveRun(tx, w.runId, 'verified', { hardVerdict: w.verdict, planHash: w.planHash });

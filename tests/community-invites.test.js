@@ -402,9 +402,12 @@ test(`the preview is the project: its name, its line, its icon`, () => {
   assert.equal(message('shell:invite.from.made', { inviter: 'Maya' }), 'Maya made it and invited you.');
 });
 
-test('the picture is served only through a live link, and only an after-shot of a merged change', () => {
+test('the picture is served only through a live link, and only an after-shot of a merged change anybody may see', () => {
   const src = read('src/services/community-invites.js');
-  assert.match(src, /WHERE s\.app_id = \$1 AND s\.merged_at IS NOT NULL AND s\.shots_state = 'verified'\s+AND a\.side = 'head' AND a\.media = 'png'/);
+  // A public project's member-account phone still the shots agent cleared
+  // (services/shots-public.js; tests/community-invites-postgres.test.js).
+  assert.match(src, /const artifactId = await publicMergedStill\(db, appId\);\s+if \(artifactId\) return \{ kind: 'shot', artifactId \};/);
+  assert.match(read('src/services/shots-public.js'), /stillsSql\('s\.app_id = \$1 AND s\.merged_at IS NOT NULL'\)/);
   assert.match(src, /async function pictureBytes\(pool, token\) \{\s+const invite = await loadInvite\(pool, token\);\s+if \(deadReason\(invite\)\) return null;/);
   const route = read('src/routes/community-invites.js');
   assert.match(route, /router\.get\('\/api\/public\/invites\/:token\/picture', invitePreviewLimiter,/);

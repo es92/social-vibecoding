@@ -50,13 +50,26 @@ type Tab = 'hub' | 'workshop' | 'discussion';
 const CARD = 'rounded-[20px] bg-white shadow-[inset_0_0_0_1px_var(--app-sheet-line)] dark:bg-zinc-900';
 const LABEL = 'px-1 pb-2 pt-0';
 
-function VoteCard({ vote, app, onIntent }: { vote: GuestVote; app: GuestApp; onIntent: (i: GuestIntent) => void }) {
+export function VoteCard({ vote, app, onIntent }: { vote: GuestVote; app: GuestApp; onIntent: (i: GuestIntent) => void }) {
   const t = useMessages('auth');
   const total = vote.yes + vote.no;
   const pct = total ? Math.round((100 * vote.yes) / total) : 0;
   const title = vote.title || t('auth:guest.project.untitledChange');
+  const pictures = vote.pictures || null;
   return (
-    <article data-guest-vote={vote.id} className={cn(CARD, 'flex flex-col gap-2.5 p-3.5')}>
+    <article data-guest-vote={vote.id} className={cn(CARD, 'flex flex-col gap-2.5 overflow-hidden p-3.5')}>
+      {pictures ? (
+        <div data-guest-vote-pictures="" className={cn('-mx-3.5 -mt-3.5 grid gap-px bg-[color:var(--app-sheet-line)]', pictures.before ? 'grid-cols-2' : 'grid-cols-1')}>
+          {([['before', pictures.before], ['after', pictures.after]] as const).map(([side, src]) => (src ? (
+            <figure key={side} className="relative m-0 aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              <img src={src} alt="" loading="lazy" draggable={false} className="h-full w-full object-cover object-top" />
+              <figcaption className="absolute bottom-1.5 left-1.5 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[11px] font-bold text-white">
+                {side === 'before' ? t('auth:guest.project.before') : t('auth:guest.project.after')}
+              </figcaption>
+            </figure>
+          ) : null))}
+        </div>
+      ) : null}
       <div>
         <h3 className="text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{title}</h3>
         {vote.summary ? <p className="mt-0.5 text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400">{vote.summary}</p> : null}

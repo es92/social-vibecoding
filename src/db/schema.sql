@@ -10302,6 +10302,16 @@ BEGIN
   END IF;
 END $$;
 
+-- Whether a still may be shown to somebody who is not signed in: the shots
+-- agent's answer, as it saved the still, to "does this show a real person's
+-- name, words or email address, or another project?" (save_shot's
+-- showsPrivate). TRUE only on a clear no. NULL is a still saved without an
+-- answer, and is never shown publicly. The copies the shots are taken on
+-- start from the app's own data, so a still can show real people
+-- (services/shots-public.js says which stills a visitor may see).
+ALTER TABLE shot_run_files ADD COLUMN IF NOT EXISTS public_safe BOOLEAN;
+ALTER TABLE shot_artifacts ADD COLUMN IF NOT EXISTS public_safe BOOLEAN;
+
 -- #2377: experimental Global Chat. These records are deliberately separate
 -- from repository-development chat_sessions and user_agent_preferences: the
 -- inexpensive global assistant may discover and operate the product, while

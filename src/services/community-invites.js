@@ -47,6 +47,7 @@ const events = require('./events');
 const appAccess = require('./app-access');
 const appAdmins = require('./app-admins');
 const communities = require('./communities');
+const { publicMergedStill } = require('./shots-public');
 
 const DEFAULT_DAYS = 7;
 const DEFAULT_USES = 25;
@@ -557,19 +558,12 @@ async function memberCount(db, communityId) {
  * A project with neither shows its icon and description instead.
  */
 async function pictureFor(db, appId) {
-  const { rows } = await db.query(
-    `SELECT a.id
-       FROM chat_sessions s
-       JOIN shot_runs r ON r.id = s.shots_run_id AND r.state = 'verified'
-       JOIN shot_artifacts a ON a.run_id = r.id
-      WHERE s.app_id = $1 AND s.merged_at IS NOT NULL AND s.shots_state = 'verified'
-        AND a.side = 'head' AND a.media = 'png' AND a.variant IN ('context', 'focus')
-        AND a.width IS NOT NULL AND a.height IS NOT NULL AND a.height >= a.width
-      ORDER BY s.merged_at DESC, (a.variant = 'context') DESC, a.width ASC, a.story_id ASC
-      LIMIT 1`,
-    [appId]
-  );
-  if (rows[0]) return { kind: 'shot', artifactId: rows[0].id };
+  // A shot only where anybody may see it (services/shots-public.js): a
+  // public project's member-account phone still the shots agent said shows
+  // nobody's private things. The link's page is read by people who are not
+  // in the project yet, often not signed in.
+  const artifactId = await publicMergedStill(db, appId);
+  if (artifactId) return { kind: 'shot', artifactId };
   const { rows: ill } = await db.query(
     `SELECT f.id, f.dark_id
        FROM apps a JOIN app_illustrations f ON f.app_id = a.id

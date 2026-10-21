@@ -297,6 +297,10 @@ server.registerTool('save_shot', {
       theme: z.enum(['light', 'dark']).optional()
         .describe('Set "dark" only for a whole-screen shot taken with the page in dark mode.'),
       file: z.string().min(1).max(512),
+      showsPrivate: z.boolean().optional()
+        .describe('true if this screenshot shows a real person\'s name, words they wrote or an email address, or '
+          + 'another project; false if it shows none of these. A still with false may be shown to people who are '
+          + 'not signed in. When unsure, say true.'),
     })).min(1).max(24),
   },
   annotations,
@@ -305,13 +309,14 @@ server.registerTool('save_shot', {
   // not these requests. A refused file does not stop the others.
   const results = [];
   let pair = null;
-  for (const { change, screen, side, kind = 'screen', theme, file } of shots) {
+  for (const { change, screen, side, kind = 'screen', theme, file, showsPrivate } of shots) {
     try {
       const { image, origin, density } = savedScreenshot(file);
       pair = pair || await pairOrigins();
       requireOnApp(side, [origin], pair);
       const query = new URLSearchParams({
         change, screen, side, kind, ...(theme === 'dark' ? { theme } : {}), ...(density > 1 ? { density: String(density) } : {}),
+        ...(typeof showsPrivate === 'boolean' ? { showsPrivate: showsPrivate ? '1' : '0' } : {}),
       });
       const result = (await request(`/shot?${query}`, { method: 'POST', binary: image })).result;
       results.push({ change, screen, side, kind, file, saved: true, result });

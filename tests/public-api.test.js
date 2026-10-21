@@ -130,6 +130,9 @@ function makeMockPool() {
       const slug = params[1];
       return { rows: APPS.filter((a) => !slug || a.slug === slug).map((a) => ({ ...a })) };
     }
+    // The pictures anybody may see of those changes (services/shots-public.js):
+    // none here; tests/shots-public-postgres.test.js runs that query.
+    if (/FROM shot_artifacts|JOIN shot_artifacts f/i.test(s)) return { rows: [] };
     // The overview's changes up for a vote, and voted in.
     if (/FROM chat_sessions cs/i.test(s) && /status IN \('promoted', 'merging'\)/.test(s)) {
       return { rows: params[0] === 1 ? VOTES.map((r) => ({ ...r })) : [] };
@@ -331,6 +334,8 @@ test('overview: the card, the votes with plain summaries and tallies, and the ch
     assert.deepEqual(body.votes, [{
       id: 501, pr_number: 41, title: 'Named sections in the list',
       summary: 'What changes', yes: 4, no: 1, promoted_at: '2026-06-11T00:00:00.000Z',
+      // No still anybody may see: no pictures (services/shots-public.js).
+      pictures: null,
     }]);
     assert.equal(body.merged[0].title, 'Swipe to archive');
     assert.equal(body.merged[0].summary, 'Swipe a done task away.');

@@ -47,6 +47,12 @@ export interface GuestVote {
   summary: string | null;
   yes: number;
   no: number;
+  /**
+   * Its before and after, where anybody may see them (src/services/
+   * shots-public.js): a phone still the shots agent said shows nobody's
+   * private things. `before` is null for a new app's first change.
+   */
+  pictures?: { before: string | null; after: string } | null;
 }
 
 export interface GuestMerged {
