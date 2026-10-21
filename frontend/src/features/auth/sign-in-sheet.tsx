@@ -758,9 +758,10 @@ export type SignInSheetProps = {
   /** An invite's Join: a phone number first, since a private member signs up with one. */
   phone?: boolean;
   /**
-   * Phone sign-in is offered, but not first: the first step's "New to
-   * Homeroom? Join with your phone" leads to the phone step, as it does
-   * under an invite's. The signed-out front page's sheets (./landing.tsx).
+   * Phone sign-in is offered, but not first: the first step's "Use a phone
+   * number instead" leads to the phone step, as "New to Homeroom? Join with
+   * your phone" does under an invite's. The signed-out front page's sheets
+   * (./landing.tsx).
    */
   phoneLink?: boolean;
   /**
