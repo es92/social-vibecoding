@@ -106,7 +106,7 @@ test('Try it where it can open here: the viewer anywhere, the app\'s own address
   // Discover asks it for every card, with this page's answer (a signed-in
   // waitlisted account can open every project); the project page too.
   assert.match(read(DISCOVER), /const tryable = useCallback\(\(app: GuestApp\) => signedIn \|\| canTryHere\(app, inApp\), \[signedIn, inApp\]\);/);
-  assert.match(read(PROJECT), /\{canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink/);
+  assert.match(read(PROJECT), /\{signedIn \|\| canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink\s+app=\{app\}\s+inside=\{signedIn\}/);
   const { inHomeroomApp } = loadTsx(DATA);
   assert.equal(inHomeroomApp(), false, 'a server render is never the app');
 });
@@ -345,11 +345,12 @@ test('inside the Homeroom app the full story stays the front door, with Look aro
   // Read after mount from the head's class, so the first render is the
   // prerender's (browsers: Discover).
   assert.match(src, /setInApp\(document\.documentElement\.classList\.contains\('in-native-webview'\)\);/);
-  assert.match(src, /const storyFront = guestOn && inApp && !linkedSlug && !discoverLink && !gate;/);
+  // Only somebody signed out gets the story; a waitlisted account starts on Discover.
+  assert.match(src, /const storyFront = storyOn && inApp && !linkedSlug && !discoverLink && !gate;/);
   assert.match(src, /const guestPages = guestOn && !storyFront;/);
   assert.match(src, /\{storyFront \? \(\s+<Story [^>]*onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} lookAround \/>/);
   // Discover opened from it has a back, and the back returns to the story.
-  assert.match(src, /const appDiscover = guestOn && inApp && discoverLink;/);
+  assert.match(src, /const appDiscover = storyOn && inApp && discoverLink;/);
   assert.match(src, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
   assert.match(src, /location\.hash = appDiscover && !guestProject \? '#landing' : '#apps';/);
   // The full story keeps Continue and its email line, then the way to look
@@ -366,6 +367,37 @@ test('inside the Homeroom app the full story stays the front door, with Look aro
   assert.ok(html.indexOf('data-landing-story-how') < html.indexOf('data-landing-story-look'), 'under the Sign in line');
   // Without the prop (the browsers' short story, the first session) it is absent.
   assert.doesNotMatch(renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {} }), /data-landing-story-look/);
+});
+
+test('an account on the waitlist looks around: its card over Discover, every public app, and voting and joining later', () => {
+  // Routed to the guest pages, not the waiting room, for Discover and a project's page.
+  const app = read('public/js/app.js');
+  assert.match(app, /if \(!authRoute && \/\^\(\?:apps\|discover\|app\\\/\[\^\/\]\+\)\(\?:\\\/\|\$\)\/\.test\(hash\)\) \{\s+AuthScreens\.showGuestPagesFor\(App\._deepLinkTarget\(\)\);/);
+  assert.ok(app.indexOf('AuthScreens.showGuestPagesFor(') < app.indexOf("if (!authRoute && hash) AuthScreens.rememberDeepLink(App._deepLinkTarget());"),
+    'before the waiting room takes the link');
+  assert.match(read('public/js/auth-screens.js'), /showGuestPagesFor\(fullHash\) \{\s+AuthScreens\.rememberDeepLink\(fullHash\);\s+AuthScreens\._deepLinkSignIn = fullHash \|\| '';\s+AuthScreens\.show\('landing'\);/);
+  const landing = read(LANDING);
+  assert.match(landing, /hero=\{waitingGuest \? \(\s+<WaitlistCard email=\{sessionEmail\(\)\} \/>/);
+  assert.match(landing, /signedIn=\{waitingGuest\}/);
+  // The card: where it stands, and the way back to the waiting room.
+  const card = renderComponent('frontend/src/features/guest/waitlist-card.tsx', 'WaitlistCard', { email: 'ada@example.com' });
+  assert.deepEqual(text(card), [
+    message('auth:waiting.title'),
+    message('auth:guest.waitlist.leadEmail', { email: 'ada@example.com' }),
+    message('auth:landing.backToWaiting'),
+  ]);
+  assert.match(card, /<a href="#waiting" data-guest-waitlist-room=""/);
+  // A project's page: Try it opens any public app here, signed in; no Join,
+  // no Ask, and a vote waits.
+  const html = renderComponent(PROJECT, 'GuestProject', { ...projectProps(APPS[1]), signedIn: true });
+  assert.match(html, /data-guest-try="todo-list"/, 'even an app that needs an account');
+  assert.doesNotMatch(html, /data-guest-use=|data-guest-join-project=|data-guest-chat-join=/);
+  assert.ok(text(html).includes(message('auth:guest.project.joinLater')));
+  const vote = renderComponent(PROJECT, 'VoteCard', { vote: { id: 1, title: 'A', summary: null, yes: 1, no: 0 }, app: APPS[1], onIntent() {}, signedIn: true });
+  assert.match(vote, /data-guest-vote-later=""/);
+  assert.doesNotMatch(vote, /data-guest-vote-btn/);
+  // The waiting room leads there.
+  assert.match(read('frontend/src/features/auth/waiting.tsx'), /<a\s+href="#apps"\s+data-waiting-look-around=""/);
 });
 
 const SHEET = 'frontend/src/features/auth/sign-in-sheet.tsx';

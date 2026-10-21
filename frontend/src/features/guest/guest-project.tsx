@@ -50,7 +50,13 @@ type Tab = 'hub' | 'workshop' | 'discussion';
 const CARD = 'rounded-[20px] bg-white shadow-[inset_0_0_0_1px_var(--app-sheet-line)] dark:bg-zinc-900';
 const LABEL = 'px-1 pb-2 pt-0';
 
-export function VoteCard({ vote, app, onIntent }: { vote: GuestVote; app: GuestApp; onIntent: (i: GuestIntent) => void }) {
+export function VoteCard({ vote, app, onIntent, signedIn = false }: {
+  vote: GuestVote;
+  app: GuestApp;
+  onIntent: (i: GuestIntent) => void;
+  /** An account still on the waitlist: it votes once it is let in. */
+  signedIn?: boolean;
+}) {
   const t = useMessages('auth');
   const total = vote.yes + vote.no;
   const pct = total ? Math.round((100 * vote.yes) / total) : 0;
@@ -81,20 +87,31 @@ export function VoteCard({ vote, app, onIntent }: { vote: GuestVote; app: GuestA
         <span className="flex-1 text-[13px] text-zinc-500 dark:text-zinc-400">
           {t('auth:guest.project.tally', { yes: vote.yes, no: vote.no })}
         </span>
-        <button
-          type="button"
-          data-guest-vote-btn=""
-          className="h-9 rounded-full bg-violet-100 px-[18px] text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
-          onClick={() => onIntent({ kind: 'vote', app, change: title })}
-        >
-          {t('auth:guest.project.vote')}
-        </button>
+        {signedIn ? (
+          <span data-guest-vote-later="" className="text-[13px] font-semibold text-zinc-500 dark:text-zinc-400">
+            {t('auth:guest.project.voteLater')}
+          </span>
+        ) : (
+          <button
+            type="button"
+            data-guest-vote-btn=""
+            className="h-9 rounded-full bg-violet-100 px-[18px] text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:hover:bg-violet-900"
+            onClick={() => onIntent({ kind: 'vote', app, change: title })}
+          >
+            {t('auth:guest.project.vote')}
+          </button>
+        )}
       </div>
     </article>
   );
 }
 
-function MembersOnly({ app, onIntent, roomy = false }: { app: GuestApp; onIntent: (i: GuestIntent) => void; roomy?: boolean }) {
+function MembersOnly({ app, onIntent, roomy = false, signedIn = false }: {
+  app: GuestApp;
+  onIntent: (i: GuestIntent) => void;
+  roomy?: boolean;
+  signedIn?: boolean;
+}) {
   const t = useMessages('auth');
   return (
     <div
@@ -107,10 +124,10 @@ function MembersOnly({ app, onIntent, roomy = false }: { app: GuestApp; onIntent
       <div className={roomy ? '' : 'min-w-0 flex-1'}>
         <div className={cn('font-[650] text-zinc-900 dark:text-zinc-100', roomy ? 'text-[17px]' : 'text-[15px]')}>{t('auth:guest.project.chatMembers')}</div>
         <div className={cn('text-zinc-500 dark:text-zinc-400', roomy ? 'mt-1 text-[15px] leading-[21px]' : 'text-[13px] leading-[18px]')}>
-          {t('auth:guest.project.chatJoin', { project: app.name })}
+          {signedIn ? t('auth:guest.project.joinLater') : t('auth:guest.project.chatJoin', { project: app.name })}
         </div>
       </div>
-      {roomy ? (
+      {signedIn ? null : roomy ? (
         <Button
           type="button"
           data-guest-chat-join=""
@@ -150,9 +167,15 @@ function Row({ children, onClick, last }: { children: ReactNode; onClick?: () =>
   );
 }
 
-export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShare, startOnWorkshop = false }: {
+export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShare, startOnWorkshop = false, signedIn = false }: {
   /** The project's card from the public directory. */
   app: GuestApp;
+  /**
+   * An account still on the waitlist is looking (landing.tsx): every public
+   * app opens for it, signed in, and joining, voting and asking wait until
+   * it is let in.
+   */
+  signedIn?: boolean;
   /** The link asked for its changes up for a vote (a card's votes line): open on the Workshop. */
   startOnWorkshop?: boolean;
   primaryClass: string;
@@ -199,7 +222,7 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
   ];
 
   const voteCards = (limit: number) => votes.slice(0, limit).map((v) => (
-    <VoteCard key={v.id} vote={v} app={app} onIntent={onIntent} />
+    <VoteCard key={v.id} vote={v} app={app} onIntent={onIntent} signedIn={signedIn} />
   ));
 
   return (
@@ -232,9 +255,10 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
             <div data-guest-project-facts="" className="text-[13px] text-white/80">{t('auth:guest.card.week', { count: week })}</div>
           ) : null}
           <div className="mt-0.5 flex gap-2">
-            {canTryHere(app, inHomeroomApp()) ? (
+            {signedIn || canTryHere(app, inHomeroomApp()) ? (
               <TryLink
                 app={app}
+                inside={signedIn}
                 onOpenInside={onOpenInside}
                 className="flex h-11 flex-1 items-center justify-center rounded-full bg-white px-4 text-base font-semibold text-zinc-950 hover:bg-zinc-100 md:max-w-[240px]"
               >
@@ -250,14 +274,16 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
                 {t('auth:guest.project.signInToUse')}
               </button>
             )}
-            <button
-              type="button"
-              data-guest-join-project=""
-              className="h-11 shrink-0 rounded-full bg-white/15 px-5 text-base font-semibold text-white hover:bg-white/25"
-              onClick={() => onIntent({ kind: 'join', app })}
-            >
-              {t('auth:guest.project.join')}
-            </button>
+            {signedIn ? null : (
+              <button
+                type="button"
+                data-guest-join-project=""
+                className="h-11 shrink-0 rounded-full bg-white/15 px-5 text-base font-semibold text-white hover:bg-white/25"
+                onClick={() => onIntent({ kind: 'join', app })}
+              >
+                {t('auth:guest.project.join')}
+              </button>
+            )}
             <button
               type="button"
               aria-label={t('auth:guest.project.share')}
@@ -361,7 +387,7 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
 
           <section>
             <SectionHeader className={LABEL}>{t('auth:guest.project.fromChat')}</SectionHeader>
-            <MembersOnly app={app} onIntent={onIntent} />
+            <MembersOnly app={app} onIntent={onIntent} signedIn={signedIn} />
           </section>
         </div>
       ) : null}
@@ -379,15 +405,17 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
           <section>
             <div className="flex items-center justify-between gap-2 px-1 pb-2">
               <SectionHeader className="p-0">{t('auth:guest.project.requests')}</SectionHeader>
-              <button
-                type="button"
-                data-guest-ask=""
-                className="flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-semibold text-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                onClick={() => onIntent({ kind: 'ask', app })}
-              >
-                <PlusIcon className="h-[15px] w-[15px]" />
-                {t('auth:guest.project.ask')}
-              </button>
+              {signedIn ? null : (
+                <button
+                  type="button"
+                  data-guest-ask=""
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-sm font-semibold text-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  onClick={() => onIntent({ kind: 'ask', app })}
+                >
+                  <PlusIcon className="h-[15px] w-[15px]" />
+                  {t('auth:guest.project.ask')}
+                </button>
+              )}
             </div>
             {requests && requests.items.length ? (
               <GroupedList className="mx-0">
@@ -413,7 +441,7 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
         </div>
       ) : null}
 
-      {tab === 'discussion' ? <MembersOnly app={app} onIntent={onIntent} roomy /> : null}
+      {tab === 'discussion' ? <MembersOnly app={app} onIntent={onIntent} roomy signedIn={signedIn} /> : null}
     </div>
   );
 }

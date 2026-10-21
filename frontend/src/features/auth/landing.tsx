@@ -79,6 +79,7 @@ import { Story } from './story';
 import { GuestDiscover } from '../guest/guest-discover';
 import { type GuestIntent, GuestProject } from '../guest/guest-project';
 import { type GuestApp, linksToWorkshop, projectHash } from '../guest/guest-data';
+import { WaitlistCard } from '../guest/waitlist-card';
 import { useWaitlistOptions, type WaitlistOptions, waitlistOptions } from './waitlist-shared';
 import { WelcomePage } from './welcome-page';
 
@@ -725,6 +726,12 @@ export function intentTitle(intent: GuestIntent, t: Translate): string {
   }
 }
 
+/** The signed-in account's email, for the waitlist card; null when there is none. */
+function sessionEmail(): string | null {
+  const email = (legacy().App?.user as { email?: unknown } | undefined)?.email;
+  return typeof email === 'string' && email ? email : null;
+}
+
 export function LandingScreen() {
   const rootRef = useRef<HTMLElement>(null);
   useVisibilityHiddenClass(rootRef, AUTH_SCREEN_IDS.landing, false);
@@ -930,12 +937,16 @@ export function LandingScreen() {
     setSession(hasSession());
   }, []);
   const storyOn = waitlistPayload?.story_landing !== false && !onInvitePath && !session;
-  const pitchHidden = madeForYou || deadInvite || storyOn || invitePending;
+  // An account still on the waitlist looks around too: the guest Discover
+  // under its waitlist card, and a public project's page, where every public
+  // app opens for it, signed in (features/guest/waitlist-card.tsx).
+  const waitingGuest = session && waitlistPayload?.story_landing !== false && !onInvitePath;
+  const pitchHidden = madeForYou || deadInvite || storyOn || invitePending || waitingGuest;
   // THE GUEST PAGES (features/guest), wherever the story would be: the guest
   // Discover under the story's short hero, or a public project's read-only
   // page when the address names one. The same switch as the story, so with
   // the story off the landing is the waitlist pitch it was.
-  const guestOn = storyOn;
+  const guestOn = storyOn || waitingGuest;
   const deepPlace = deepLink?.place ?? null;
   const linkedSlug = deepPlace?.kind === 'project' ? deepPlace.slug : null;
   const linkedApp = linkedSlug && apps ? apps.find((a) => a.slug === linkedSlug) ?? null : null;
@@ -958,12 +969,14 @@ export function LandingScreen() {
   useEffect(() => {
     setInApp(document.documentElement.classList.contains('in-native-webview'));
   }, []);
-  const gate = deepLink && !(guestOn && discoverLink) && !guestProject && !linkPending ? deepLink : null;
-  const storyFront = guestOn && inApp && !linkedSlug && !discoverLink && !gate;
+  // A signed-in account is never asked to sign in: a link it cannot read
+  // shows Discover instead.
+  const gate = !session && deepLink && !(guestOn && discoverLink) && !guestProject && !linkPending ? deepLink : null;
+  const storyFront = storyOn && inApp && !linkedSlug && !discoverLink && !gate;
   // The guest pages (Discover, a project's page) and their bar.
   const guestPages = guestOn && !storyFront;
   // Discover inside the app, reached from the story: its bar has a back.
-  const appDiscover = guestOn && inApp && discoverLink;
+  const appDiscover = storyOn && inApp && discoverLink;
   // The project's name, when the link is for a public one.
   const gateProject = linkedApp?.name ? String(linkedApp.name) : null;
   // As the page opens for a new account's link, or over Get started's
@@ -2128,6 +2141,7 @@ export function LandingScreen() {
             <GuestProject
               app={guestProject}
               startOnWorkshop={!!deepLink && linksToWorkshop(deepLink.target)}
+              signedIn={waitingGuest}
               primaryClass={PRIMARY_PILL}
               onIntent={askFor}
               onOpenInside={(app) => { void live.current.openLandingApp(app); }}
@@ -2140,9 +2154,12 @@ export function LandingScreen() {
               failed={appsFailed && !apps}
               primaryClass={PRIMARY_PILL}
               waitlist
+              signedIn={waitingGuest}
               onContinue={() => setSheet('start')}
               onOpenInside={(app) => { void live.current.openLandingApp(app); }}
-              hero={(
+              hero={waitingGuest ? (
+                <WaitlistCard email={sessionEmail()} />
+              ) : (
                 <Story
                   compact
                   primaryClass={PRIMARY_PILL}

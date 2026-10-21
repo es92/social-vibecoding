@@ -432,7 +432,7 @@ test(`a live link's landing is "Made for you"; the pitch stays in the document, 
   const landing = read('frontend/src/features/auth/landing.tsx');
   assert.match(landing, /const \{ preview: invite, pending: invitePending \} = useInvitePreview\(\);/);
   assert.match(landing, /const madeForYou = !!invite\?\.live;/);
-  assert.match(landing, /const pitchHidden = madeForYou \|\| deadInvite \|\| storyOn \|\| invitePending;/);
+  assert.match(landing, /const pitchHidden = madeForYou \|\| deadInvite \|\| storyOn \|\| invitePending \|\| waitingGuest;/);
   for (const hidden of [
     "hiddenLast(pitchHidden, 'grow')",
     "hiddenLast(pitchHidden, 'mx-auto mt-6 block h-auto w-[272px] xl:w-[320px] max-w-full')",

@@ -403,6 +403,20 @@ export function WaitingScreen() {
             </p>
           ) : null}
           {/*
+              While they wait, the public projects: Discover and each
+              project's page are open to this account, signed in, and every
+              public app opens for it (features/auth/landing.tsx
+              waitingGuest). The QA 2026-09-24 Q12 promise is kept: it leads
+              somewhere that lists them.
+          */}
+          <a
+            href="#apps"
+            data-waiting-look-around=""
+            className="mx-auto mt-6 flex h-11 items-center justify-center rounded-full bg-white px-5 text-[15px] font-semibold text-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          >
+            {t('auth:waiting.lookAround')}
+          </a>
+          {/*
               The two optional questions the retired #waitlist form asked
               (#5261), right after the account is made: ./waiting-about.tsx.
           */}

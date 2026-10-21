@@ -189,6 +189,15 @@
       AuthScreens.show('landing');
     },
 
+    // Discover or a project's page for an account still on the waitlist
+    // (App.restoreFromHash): the landing's guest pages, signed in, with no
+    // sheet. Remembered as well, for the day it is let in.
+    showGuestPagesFor(fullHash) {
+      AuthScreens.rememberDeepLink(fullHash);
+      AuthScreens._deepLinkSignIn = fullHash || '';
+      AuthScreens.show('landing');
+    },
+
     // A `return_to` value this platform will actually navigate to, or ''.
     //
     // Resolved against this origin and then matched by pathname, so an

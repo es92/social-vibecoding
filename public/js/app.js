@@ -1015,7 +1015,13 @@ const App = {
     // `=== false` on purpose — an older cached /me without the field
     // must not lock anyone out.
     if (App.user?.hasPlatformAccess === false && window.AuthScreens) {
-      AuthScreens.showWaiting();
+      // A link to Discover or a project's page (a shared /app/<slug>) opens
+      // it, signed in, while the account waits: restoreFromHash's gated
+      // branch says the same for a link followed later.
+      const target = App._deepLinkTarget();
+      const route = target.replace(/^[#/]/, '').split('?')[0];
+      if (/^(?:apps|discover|app\/[^/]+)(?:\/|$)/.test(route)) AuthScreens.showGuestPagesFor(target);
+      else AuthScreens.showWaiting();
       App._liftFirstSessionBoot();
       return;
     }
@@ -4963,6 +4969,14 @@ const App = {
               // for (the link arrives in the join email).
               if (authRoute === 'more') {
                 AuthScreens.show('more', authSeg);
+                return;
+              }
+              // Discover and a public project's page are open to a waiting
+              // account too: it looks around and uses public projects while
+              // it waits, signed in (features/auth/landing.tsx, the guest
+              // pages). The link is still remembered for the day it is let in.
+              if (!authRoute && /^(?:apps|discover|app\/[^/]+)(?:\/|$)/.test(hash)) {
+                AuthScreens.showGuestPagesFor(App._deepLinkTarget());
                 return;
               }
               if (!authRoute && hash) AuthScreens.rememberDeepLink(App._deepLinkTarget());

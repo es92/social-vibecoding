@@ -107,11 +107,14 @@ test('the landing opens the sheet as it shows, titled for the link, and Close le
 // a project link waits for the directory before either shows.
 test('Discover and public project links open the guest pages; the rest keep the sheet', () => {
   const landing = read('frontend/src/features/auth/landing.tsx');
-  assert.match(landing, /const guestOn = storyOn;/, 'the guest pages ride the story\'s switch');
+  // The story's switch, and an account still on the waitlist looks around too.
+  assert.match(landing, /const guestOn = storyOn \|\| waitingGuest;/, 'the guest pages ride the story\'s switch');
+  assert.match(landing, /const waitingGuest = session && waitlistPayload\?\.story_landing !== false && !onInvitePath;/);
   assert.match(landing, /const guestProject = guestOn \? linkedApp : null;/);
   assert.match(landing, /const linkPending = guestOn && !!linkedSlug && apps === null && !appsFailed;/);
   assert.match(landing, /const discoverLink = deepPlace\?\.kind === 'screen' && deepPlace\.screen === 'discover';/);
-  assert.match(landing, /const gate = deepLink && !\(guestOn && discoverLink\) && !guestProject && !linkPending \? deepLink : null;/);
+  // A signed-in account is never asked to sign in.
+  assert.match(landing, /const gate = !session && deepLink && !\(guestOn && discoverLink\) && !guestProject && !linkPending \? deepLink : null;/);
   assert.match(landing, /setDeepLink\(target \? \{ target, place: deepLinkPlace\(target\) \} : null\);/,
     'the on-show hook keeps the link as it came; what is left for the sheet is derived');
 });

@@ -219,7 +219,7 @@ test('the placeholder stands where the cards go: one status line, quiet geometry
 test('the landing hides its pitch while the preview is pending and draws the placeholder in the cards\' place', () => {
   const landing = read('frontend/src/features/auth/landing.tsx');
   assert.match(landing, /const \{ preview: invite, pending: invitePending \} = useInvitePreview\(\);/);
-  assert.match(landing, /const pitchHidden = madeForYou \|\| deadInvite \|\| storyOn \|\| invitePending;/);
+  assert.match(landing, /const pitchHidden = madeForYou \|\| deadInvite \|\| storyOn \|\| invitePending \|\| waitingGuest;/);
   // Only until a preview is in hand, and above the live and dead cards.
   const pending = landing.indexOf('{invitePending && !invite ? <InvitePending /> : null}');
   const live = landing.indexOf('{madeForYou ? <MadeForYou ');

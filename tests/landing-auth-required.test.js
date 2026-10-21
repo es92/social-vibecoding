@@ -210,9 +210,11 @@ test('the guest viewer\'s theme parameter is the one the shell\'s other frames u
 
 test('the waiting room promises no app access it cannot deliver (QA 2026-09-24 Q12)', () => {
   // "Use apps while you wait" pointed at #landing, which stopped listing apps
-  // when its directory grid went and shows a waiting-room session one pill,
-  // back to this screen. Nothing a waiting-room account can reach lists apps,
-  // so the CTA is gone rather than pointed somewhere empty.
+  // when its directory grid went and showed a waiting-room session one pill,
+  // back to this screen, so the CTA went rather than point somewhere empty.
+  // Since 21 Oct 2026 Discover lists the public projects for a waiting
+  // account, and the room's "Look around while you wait" leads there, to
+  // #apps (tests/guest-discover.test.js); never to the old empty landing.
   assert.doesNotMatch(waitingSource, />\s*Use apps while you wait\s*</);
   assert.doesNotMatch(waitingSource, /Browse public apps while you wait/);
   assert.doesNotMatch(waitingSource, /href="#landing"/, 'no link into the empty landing');
