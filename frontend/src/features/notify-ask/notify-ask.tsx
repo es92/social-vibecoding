@@ -29,8 +29,8 @@ import type { NotifyMoment } from './decide';
  *   then, we'll email you" where email stands in for that moment.
  *
  * Renders nothing until the answers are read, from an effect: nothing of it
- * is in the prerendered shell, and nothing asks while a page draws. One ask
- * on screen at a time (claimAsk). Each answer is the account's
+ * is in the prerendered shell, and nothing asks while a page draws. One card
+ * per moment (claimAsk). Each answer is the account's
  * (POST /api/me/notification-asks), so a Not now holds on every device.
  *
  * The made screen's ask in the app stays the modal it was

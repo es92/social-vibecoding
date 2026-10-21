@@ -10,8 +10,8 @@
  *   - this device: a phone (a store link) or a computer (a code to scan).
  * One write: POST /api/me/notification-asks, with the answer.
  *
- * And one rule that is not the account's but the screen's: one ask on
- * screen at a time (claimAsk), so a hub and a composer never both ask.
+ * And one rule that is not the account's but the page's: one card per
+ * moment (claimAsk), so a moment drawn in two places asks once.
  */
 
 import { detectMobileOs, storeLabel, type MobileOs, type StoreUrls } from '../mobile-install/detect';
@@ -204,21 +204,30 @@ export function askTelemetry(): { done(outcome: string, fields?: Record<string, 
   };
 }
 
-let holder: NotifyMoment | null = null;
+const held = new Set<NotifyMoment>();
 
 /**
- * One ask on screen at a time: the first to claim it holds it until it
- * lets go. Resolves a release function, or null when another ask is up.
+ * One card per moment: the first to claim a moment holds it until it lets
+ * go, so a moment drawn in two places at once (two composers) asks once.
+ * Per moment, not per page: the shell keeps every screen mounted while it is
+ * hidden, so a page-wide hold let a project hub's card, left on a hidden
+ * screen, silence "Hear when they answer?" in Messages. Resolves a release
+ * function, or null when this moment's card is up elsewhere.
  */
 export function claimAsk(moment: NotifyMoment): (() => void) | null {
-  if (holder) return null;
-  holder = moment;
-  return () => { if (holder === moment) holder = null; };
+  if (held.has(moment)) return null;
+  held.add(moment);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    held.delete(moment);
+  };
 }
 
 /** Tests only: forget what this page has read and claimed. */
 export function resetAskStateForTests(): void {
   answers = null;
   storeUrls = null;
-  holder = null;
+  held.clear();
 }

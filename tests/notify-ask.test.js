@@ -225,6 +225,23 @@ test('the store links: only http(s), the device\'s own on a phone, every one on 
   assert.deepEqual(appLinks(null, null), []);
 });
 
+test('one card per moment, and no moment holds another back', () => {
+  // The shell keeps every screen mounted while hidden: a hub's card left on
+  // a hidden screen must not silence the reply ask in Messages.
+  const { claimAsk, resetAskStateForTests } = loadTsx('frontend/src/features/notify-ask/ask-state.ts');
+  resetAskStateForTests();
+  const hub = claimAsk('community');
+  assert.ok(hub, 'the hub\'s card claims its moment');
+  const reply = claimAsk('reply');
+  assert.ok(reply, 'another moment is never held back');
+  assert.equal(claimAsk('reply'), null, 'the same moment twice asks once');
+  reply();
+  reply();
+  assert.ok(claimAsk('reply'), 'released (once, however often called), it can be claimed again');
+  hub();
+  resetAskStateForTests();
+});
+
 test('every moment is placed where it means something', () => {
   const at = (file, pattern, why) => assert.match(read(...file.split('/')), pattern, why);
   at('frontend/src/features/first-session/made.tsx', /<NotifyAsk moment="invite_sent"/, 'the invite sheet, once the link is out');
