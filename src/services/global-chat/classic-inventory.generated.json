@@ -10391,6 +10391,22 @@
       "classicPath": "#admin"
     },
     {
+      "source": "src/routes/project-preview.js",
+      "method": "GET",
+      "path": "/app/:slug",
+      "expression": null,
+      "status": "exempt",
+      "reason": "a shared public project's document: the shell with its link preview, for whoever unfurls the link; never a model-visible capability"
+    },
+    {
+      "source": "src/routes/project-preview.js",
+      "method": "GET",
+      "path": "/api/public/apps/:slug/cover.png",
+      "expression": null,
+      "status": "exempt",
+      "reason": "anonymous public API rather than signed-in Classic"
+    },
+    {
       "source": "src/routes/proposal-handoff.js",
       "method": "POST",
       "path": "/api/apps/:slug/proposals/:id/update-from-fork",

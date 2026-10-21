@@ -97,6 +97,7 @@ const { debugRoutes } = require('./src/routes/debug');
 const { galleryRoutes } = require('./src/routes/gallery');
 const { appInstallRoutes } = require('./src/routes/app-install');
 const communityInviteRoutes = require('./src/routes/community-invites');
+const projectPreviewRoutes = require('./src/routes/project-preview');
 const memberWaitlistRoutes = require('./src/routes/member-waitlist');
 const {
   cliAuthGate,
@@ -830,6 +831,12 @@ app.use(appInstallRoutes(config));
 // `app.get('*')` catch-all, which would otherwise answer the page with a
 // plain index.html and no link preview.
 app.use(communityInviteRoutes(config));
+// A shared public project's link preview (routes/project-preview.js): the
+// `/app/<slug>` page with the project's name, description and cover in its
+// head, and the cover itself under /api/public/. AFTER authMiddleware, so a
+// signed-in person's own load passes straight to the catch-all, and BEFORE
+// the catch-all, which would answer an unfurler with a bare "Homeroom".
+app.use(projectPreviewRoutes(config));
 // A private member's waitlist card (routes/member-waitlist.js): joining the
 // waitlist from inside, with the account's own email or a confirmed one.
 app.use(memberWaitlistRoutes(config));

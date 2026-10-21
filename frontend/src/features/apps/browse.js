@@ -1103,6 +1103,12 @@ const Browse = {
   shareUrlFor(app) {
     if (!app || app.self_hosted) return null;
     if (app.status !== 'running' || !app.url) return null;
+    // A public project's link is its page on Homeroom, which a stranger
+    // opens as the project's page and a link preview names (dialogs/
+    // share.tsx publicPageUrl, routes/project-preview.js).
+    if (app.view_visibility === 'public' && app.slug && typeof location !== 'undefined') {
+      return `${location.origin}/app/${encodeURIComponent(app.slug)}`;
+    }
     const raw = String(app.url);
     try {
       return typeof window !== 'undefined' && typeof window.resolveDevHost === 'function'

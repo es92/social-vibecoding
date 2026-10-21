@@ -81,8 +81,11 @@ test('Invite people waits for the dialog to go, then opens the invite pane', () 
   assert.match(s, /\{audience === 'members' \? \(\s*<Button/);
 });
 
-test('the link handed out is the app’s own address for every audience', () => {
+test('the link handed out is a public project’s page, else the app’s own address', () => {
   const s = src();
+  // A public project's link is /app/<slug>, which previews with its name and
+  // cover (tests/project-preview.test.js); any other is the app's address.
+  assert.match(s, /const page = publicPageUrl\(window\.AppView\?\.appData\);/);
   assert.match(s, /window\.AppView\?\.appData\?\.url/);
   // Discover's Share hands out the same field.
   const browse = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/apps/browse.js'), 'utf8');

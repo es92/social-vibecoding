@@ -137,6 +137,10 @@ const REVIEWED_ROUTE_EXEMPTIONS = [
     reason: 'invite-link document: the shell with a link preview, represented by the invite-link capabilities',
   },
   {
+    matches: (route) => route.source === 'src/routes/project-preview.js' && route.path === '/app/:slug',
+    reason: 'a shared public project\'s document: the shell with its link preview, for whoever unfurls the link; never a model-visible capability',
+  },
+  {
     matches: (route) => route.source === 'server.js'
       && route.method === 'GET' && route.path === '/usernode-bridge/v1/platform.json',
     reason: 'bridge asset: where the platform is, read by the app-host Homeroom button, never a model-visible capability',

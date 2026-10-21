@@ -393,3 +393,4 @@ module.exports = communityInviteRoutes;
 module.exports.previewTags = previewTags;
 module.exports.withPreviewTags = withPreviewTags;
 module.exports.escapeAttr = escapeAttr;
+module.exports.requestOrigin = requestOrigin;

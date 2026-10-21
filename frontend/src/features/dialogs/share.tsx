@@ -59,6 +59,18 @@ export type ShareAudience = 'members' | 'public';
  * public costs a little reach, while saying "anyone" about a private one is
  * a promise the link will not keep.
  */
+
+/**
+ * A public project's page on Homeroom, `/app/<slug>`, the address Share
+ * copies for it; null for any other project, which shares its app's own.
+ */
+export function publicPageUrl(data: unknown): string | null {
+  const d = data as { slug?: unknown; view_visibility?: unknown; self_hosted?: unknown } | null | undefined;
+  if (!d || d.view_visibility !== 'public' || d.self_hosted || typeof d.slug !== 'string' || !d.slug) return null;
+  if (typeof location === 'undefined') return null;
+  return `${location.origin}/app/${encodeURIComponent(d.slug)}`;
+}
+
 export function shareAudience(app: { view_visibility?: unknown; audience?: unknown } | null | undefined): ShareAudience {
   if (!app) return 'members';
   if (app.view_visibility === 'public') return 'public';
@@ -104,11 +116,17 @@ export function ShareDialog() {
       inviteNext.current = false;
       setAudience(shareAudience(window.AppView?.appData as { view_visibility?: unknown; audience?: unknown } | undefined));
       const raw = (window.AppView?.appData?.url as string) || '';
-      // #4405: once a custom domain is live the server offers it as the
-      // share address (share_url); the Homeroom address keeps working and is
-      // named under the field.
-      const share = (window.AppView?.appData?.share_url as string) || raw;
-      const url = share && window.resolveDevHost ? window.resolveDevHost(share) : share;
+      // A public project's link is its page on Homeroom (21 Oct 2026): a
+      // stranger lands on the project's page, where Try it is one tap, and
+      // the link unfurls with its name, what it is and its cover
+      // (routes/project-preview.js); a member who opens it gets the app.
+      // The app's own address is named under the field.
+      const page = publicPageUrl(window.AppView?.appData);
+      // #4405: otherwise, once a custom domain is live the server offers it
+      // as the share address (share_url); the Homeroom address keeps working
+      // and is named under the field.
+      const share = page || (window.AppView?.appData?.share_url as string) || raw;
+      const url = share && !page && window.resolveDevHost ? window.resolveDevHost(share) : share;
       if (inputRef.current) inputRef.current.value = url;
       setHref(url);
       setAlsoAt(share && raw && share !== raw ? raw.replace(/^https?:\/\//, '') : '');
