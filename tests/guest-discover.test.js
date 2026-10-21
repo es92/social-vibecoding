@@ -48,7 +48,7 @@ const APPS = [
   },
   {
     slug: 'fresh-one', name: 'Fresh', description: null, category: null,
-    featured: false, featured_order: null, active_users: 0, open_votes: 2, created_at: TWO_DAYS_AGO,
+    featured: false, featured_order: null, active_users: 1, open_votes: 2, created_at: TWO_DAYS_AGO,
     member_count: 0, merged_count: 1, latest_change: 'Add a dark theme',
     contributors: [{}, {}, {}, {}, {}], guest_ready: true, requires_login: false, url: 'https://fresh-one.example',
   },
@@ -120,6 +120,8 @@ test('Featured is what an admin featured that a visitor can try, filled to three
   assert.deepEqual(featuredApps(APPS, here).map((a) => a.slug), ['game-corner', 'fresh-one']);
   assert.deepEqual(featuredApps(APPS).map((a) => a.slug), ['todo-list', 'game-corner', 'fresh-one']);
   assert.deepEqual(featuredApps(APPS, () => false), [], 'nothing to try, no Featured');
+  // Nobody active in it: never the fill.
+  assert.deepEqual(featuredApps(APPS.map((a) => (a.slug === 'fresh-one' ? { ...a, active_users: 0 } : a)), here).map((a) => a.slug), ['game-corner']);
   assert.equal(projectHash('game-corner'), '#app/game-corner/workshop');
   // A card's votes line opens the page at its Workshop, a signed-in
   // person's own address for it too.

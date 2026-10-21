@@ -133,7 +133,7 @@ export const FEATURED_MIN = 3;
 /**
  * The Featured row: what an admin featured that a visitor can try, in their
  * order. With fewer than FEATURED_MIN, the most active projects a visitor
- * can try fill it. A project a visitor cannot open is never featured to
+ * can try fill it, never one nobody is active in. A project a visitor cannot open is never featured to
  * them: Featured is where playing starts.
  */
 export function featuredApps(apps: readonly GuestApp[], tryable: (app: GuestApp) => boolean = () => true): GuestApp[] {
@@ -142,7 +142,9 @@ export function featuredApps(apps: readonly GuestApp[], tryable: (app: GuestApp)
     .slice()
     .sort((a, b) => (a.featured_order ?? Number.MAX_SAFE_INTEGER) - (b.featured_order ?? Number.MAX_SAFE_INTEGER));
   if (picked.length >= FEATURED_MIN) return picked;
-  const fill = sortApps(apps.filter((a) => tryable(a) && !picked.includes(a)), 'trending');
+  // Filled only with projects somebody uses: a test or a diagnostic app
+  // nobody opens is not where playing starts.
+  const fill = sortApps(apps.filter((a) => tryable(a) && !picked.includes(a) && (a.active_users || 0) > 0), 'trending');
   return [...picked, ...fill.slice(0, FEATURED_MIN - picked.length)];
 }
 
