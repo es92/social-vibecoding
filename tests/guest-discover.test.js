@@ -207,7 +207,7 @@ test('the overview it reads carries no names, and the page draws none', () => {
 
 // ─── the story's short version ────────────────────────────────────
 
-test('the short story heads Discover: welcome, headline, one line, then the ways to make an account', () => {
+test('the short story heads Discover: welcome, headline, one line, then one Sign up', () => {
   const html = renderComponent(STORY, 'Story', { compact: true, primaryClass: 'pill', onStart() {}, onSignIn() {} });
   assert.deepEqual(text(html), [
     'Welcome to Homeroom',
@@ -218,51 +218,32 @@ test('the short story heads Discover: welcome, headline, one line, then the ways
   // One Sign in on the page, the bar's: no Continue and no Sign in line of
   // its own under the short story.
   assert.doesNotMatch(html, /data-landing-story-start|data-landing-story-how|data-landing-story-signin/);
-  // The landing hands it the sign-up buttons.
-  assert.match(read(LANDING), /actions=\{<SignUpButtons methods=\{methods\} onPick=\{signUp\} primaryClass=\{PRIMARY_PILL\} \/>\}/);
-  // No examples: the real apps follow it. The picture only from md.
+  // On the page itself, no card, and short: the words, then a small picture
+  // beside them from md only.
+  assert.doesNotMatch(html, /rounded-\[20px\]|bg-white/);
+  assert.match(html, /class="hidden md:block h-auto w-\[200px\] shrink-0"/);
+  assert.ok(html.indexOf('<h1') < html.lastIndexOf('/brand/people.png'), 'the words first, the picture after');
+  // The landing hands it one Sign up, which opens the sheet with every way in.
+  assert.match(read(LANDING), /actions=\{\(\s+<Button\s+type="button"\s+variant="pillAccent"\s+size="pill"\s+ink="solid"\s+data-landing-story-sign-up=""\s+onClick=\{\(\) => setSheet\('start'\)\}\s+>\s+\{t\('auth:guest\.hero\.signUp'\)\}/);
+  // No examples: the real apps follow it.
   assert.doesNotMatch(html, /For example/);
-  assert.match(html, /class="hidden md:block h-auto w-\[240px\]/);
   // Nothing to fit, so no steps: the layout effect leaves it alone.
   assert.match(read(STORY), /if \(!story \|\| !foot \|\| !story\.offsetHeight\) return;\s+if \(compact\) return;/);
 });
 
 const SHEET = 'frontend/src/features/auth/sign-in-sheet.tsx';
 
-test('the sign-up buttons: Apple, Google, a phone and email, with the terms under the one-tap ways', () => {
-  const { signUpMethods } = loadTsx(SHEET);
-  assert.deepEqual(signUpMethods(['apple', 'google'], true), ['apple', 'google', 'phone', 'email']);
-  assert.deepEqual(signUpMethods(['google'], false), ['google', 'email']);
-  assert.deepEqual(signUpMethods([], false), ['email']);
-  const all = renderComponent(SHEET, 'SignUpButtons', { methods: ['apple', 'google', 'phone', 'email'], onPick() {}, primaryClass: 'pill' });
-  assert.deepEqual([...all.matchAll(/data-sign-up-method="([^"]+)"/g)].map((m) => m[1]), ['apple', 'google', 'phone', 'email']);
-  const words = text(all);
-  for (const label of [
-    message('auth:signUpButtons.continueWith', { provider: 'Apple' }),
-    message('auth:signUpButtons.continueWith', { provider: 'Google' }),
-    message('auth:signUpButtons.phone'),
-    message('auth:signUpButtons.email'),
-  ]) assert.ok(words.includes(label), label);
-  // Apple and Google make an account in one tap, so the terms sit under them.
-  assert.match(all, /<p[^>]*class="text-center text-\[13px\][^"]*md:text-left"/);
-  // Email alone (no provider set up, no phone): one button, the page's primary.
-  const email = renderComponent(SHEET, 'SignUpButtons', { methods: ['email'], onPick() {}, primaryClass: 'pill' });
-  assert.match(email, /<button type="button" data-sign-up-method="email" class="pill">Continue with email<\/button>/);
-  assert.doesNotMatch(email, /md:text-left/, 'no one-tap way, no terms under it');
-});
-
-test('each button opens the sheet at its own way in, and the landing\'s sheets offer a phone', () => {
+test('the ways in are the sheet\'s: Apple, Google and email, and a phone number on the landing\'s sheets', () => {
   const sheet = read(SHEET);
-  assert.match(sheet, /const firstStep: Step = phone \? 'phone' : start === 'email' \? 'email' : otherWays;/);
-  // Apple's or Google's starts at once, once per opening, not on the way back.
-  assert.match(sheet, /if \(startedWith\.current \|\| resume \|\| \(start !== 'apple' && start !== 'google'\)\) return;\s+startedWith\.current = true;\s+void continueWith\(start\);/);
+  // A phone where it is offered but not first: the link under the email.
+  assert.match(sheet, /\{phone \|\| phoneLink \? \(/);
   assert.match(sheet, /\{phone \? t\('auth:signInSheet\.toPhone'\) : t\('auth:signInSheet\.toPhoneLink'\)\}/);
   const landing = read(LANDING);
-  assert.match(landing, /const methods = useMemo\(\(\) => signUpMethods\(providers, phoneSignIn\), \[providers, phoneSignIn\]\);/);
-  assert.match(landing, /phone=\{phoneSignIn && sheet === 'start' && signUpWith === 'phone'\}\s+phoneLink=\{phoneSignIn\}\s+askName=\{false\}\s+start=\{sheet === 'start' \? signUpWith : null\}/);
-  // The project page's and a shared link's sheets offer it too.
+  // The story's sheet (Sign up, Sign in), a project page's and a shared
+  // link's: each offers it, and asks for a username after the code.
   assert.equal((landing.match(/phoneLink=\{phoneSignIn\}\s+askName=\{false\}/g) || []).length, 3);
-  assert.match(landing, /const closeSheet = useCallback\(\(\) => \{ setSheet\(null\); setResume\(null\); setSignUpWith\(null\); \}, \[\]\);/);
+  // And the page no longer draws the four buttons itself.
+  assert.doesNotMatch(landing, /SignUpButtons|signUpWith/);
 });
 
 test('on iPhone Safari the short story keeps no toolbar room under it', () => {
@@ -274,16 +255,32 @@ test('on iPhone Safari the short story keeps no toolbar room under it', () => {
 
 // ─── the landing ──────────────────────────────────────────────────
 
-test('the bar\'s one way in: a quiet Sign in, a button at the row\'s height, never for a signed-in visitor', () => {
+test('the guest bar: the wordmark at the column\'s left, Sign in and Sign up at its right, never for a signed-in visitor', () => {
   const src = read(LANDING);
   const header = src.slice(src.indexOf('id="landing-header"'), src.indexOf('</header>'));
-  const button = header.slice(header.indexOf('data-landing-sign-in'));
-  assert.match(button.slice(0, 400), /className=\{hiddenLast\(session \|\| !guestOn, 'absolute right-4 bottom-4 h-7 /);
-  assert.match(button.slice(0, 600), /onClick=\{\(\) => setSheet\('signin'\)\}/);
+  // Discover's own bar (guestTop), and a project's page or an open app keep
+  // the centred title with the back.
+  assert.match(src, /const guestTop = guestOn && !showBack && !gate;/);
+  assert.match(header, /data-guest-top=\{guestTop \? '' : undefined\}/);
+  // Its edges are the column's (max-w-6xl, px-4 blocks), with a hairline under it.
+  assert.match(src, /const GUEST_BAR = 'md:px-\[max\(1rem,calc\(\(100%_-_72rem\)\/2_\+_1rem\)\)\] shadow-\[inset_0_-1px_0_var\(--app-sheet-line\)\] \[&\[data-guest-top\]>div:first-child\]:\[display:none\]';/);
+  // The lead and trailing boxes give way on Discover, so the wordmark sits
+  // on the left edge; the title reads from the left there.
+  assert.match(header, /<div className="w-7 h-7 shrink-0 flex items-center justify-center">/);
+  assert.match(header, /\[\[data-guest-top\]_&\]:px-0 \[\[data-guest-top\]_&\]:text-left/);
+  assert.match(header, /<div className="w-7 shrink-0 \[\[data-guest-top\]_&\]:hidden" aria-hidden="true" \/>/);
+  // Sign in and Sign up, both at the row's 28px with no padding of their own.
+  const actions = header.slice(header.indexOf('data-landing-actions'));
+  assert.match(actions.slice(0, 300), /hiddenLast\(session \|\| !guestOn, guestTop \? 'flex shrink-0 items-center gap-1\.5' : `absolute bottom-4 right-4 /);
+  assert.match(actions, /data-landing-sign-in=""\s+className=\{hiddenLast\(session \|\| !guestOn, 'h-7 rounded-full px-2 /);
+  assert.match(actions, /onClick=\{\(\) => setSheet\('signin'\)\}/);
+  assert.match(actions, /<Button\s+type="button"\s+variant="pillAccent"\s+size="none"\s+ink="solid"\s+data-landing-sign-up=""/);
+  assert.match(actions, /data-landing-sign-up=""\s+className=[^\n]+\s+onClick=\{\(\) => setSheet\('start'\)\}/);
   assert.doesNotMatch(header, /<a[\s>]/, 'still no anchor in the bar');
-  // The mark stays on the bar's true centre: the button sits over the
-  // trailing box, and the title keeps clear of it on both sides.
+  // A project's page keeps its title centred and clear of the buttons.
   assert.match(header, /id="landing-header-title"\s+className="flex-1 min-w-0 px-10 /);
+  // The project page uses the same column, so one alignment fits both.
+  assert.doesNotMatch(read(PROJECT), /max-w-\[1040px\]/);
 });
 
 test('a project page\'s sheets are titled for what the visitor tried, and come back to the page', () => {
@@ -308,9 +305,10 @@ test('the landing\'s declared checks hold Discover and the bar\'s Sign in, folde
   assert.ok(story, 'the check keeps its name, so it keeps gating');
   assert.equal(story.path, '/?shot=anon#landing');
   assert.match(story.expectSelector, /#landing-header \[data-landing-sign-in\]:not\(\.hidden\)/);
-  assert.match(story.expectSelector, /\[data-guest-discover\] \[data-landing-story\] \[data-sign-up-methods\] button\[data-sign-up-method="email"\]/);
-  // And one Sign in, the bar's: the short story has no line of its own.
+  assert.match(story.expectSelector, /\[data-guest-discover\] \[data-landing-story\] button\[data-landing-story-sign-up\]$/);
+  // And one Sign in, the bar's, beside its Sign up: the short story has no
+  // Sign in line of its own.
   const one = manifest.tests.find((t) => /^Landing has one Sign in, in its bar/.test(t.name));
   assert.ok(one);
-  assert.match(one.expectSelector, /:not\(:has\(\[data-landing-story\] \[data-landing-story-signin\]\)\) #landing-header \[data-landing-sign-in\]:not\(\.hidden\)$/);
+  assert.match(one.expectSelector, /:has\(#landing-header button\[data-landing-sign-up\]\):not\(:has\(\[data-landing-story\] \[data-landing-story-signin\]\)\) #landing-header \[data-landing-sign-in\]:not\(\.hidden\)$/);
 });

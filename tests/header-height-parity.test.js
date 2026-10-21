@@ -229,17 +229,23 @@ test('CEILING: the landing bar is the wordmark at 28px, with no anchor and one q
   assert.deepEqual(bar.match(/<a[\s>]/g) || [], [],
     'the landing bar carries no anchor — both ways in are pills in the body');
 
-  // ONE QUIET SIGN IN CAME BACK (the guest Discover, 21 Oct 2026): a visitor
-  // who has an account looks around before signing in, and the bar is where
-  // they look for it. It is a BUTTON at the content row's own 28px with no
-  // padding of its own, so it cannot grow the bar the way the old chips did,
-  // and it sits over the trailing box rather than in the row, so the mark
-  // keeps the bar's true centre. Making an account is still the body's pill.
+  // SIGN IN AND SIGN UP CAME BACK (the guest Discover, 21 Oct 2026): a
+  // visitor looks around before deciding, and the bar is where they look
+  // for the way in. Both are BUTTONS at the content row's own 28px with no
+  // padding of their own, so they cannot grow the bar the way the old chips
+  // did. On Discover they sit in the row at the column's right edge, with
+  // the wordmark at its left (a centred mark between a corner Sign in and
+  // nothing read as scattered on a wide screen); on a project's page they
+  // sit over the trailing box, so its title keeps the bar's true centre.
   const signIn = bar.match(/<button[^>]*data-landing-sign-in=""[^>]*>/);
   assert.ok(signIn, 'the bar carries the Sign in button');
   assert.match(signIn[0], /\bh-7\b/, 'exactly the 28px content row');
   assert.doesNotMatch(signIn[0], /\b(?:sm:)?py-\d/, 'no vertical padding of its own');
-  assert.match(signIn[0], /\babsolute\b/, 'out of the row, so the title stays centred');
+  const signUp = bar.match(/<button[^>]*data-landing-sign-up=""[^>]*>/);
+  assert.ok(signUp, 'and the Sign up button');
+  assert.match(signUp[0], /\bh-7\b/, 'exactly the 28px content row');
+  assert.doesNotMatch(signUp[0], /\b(?:sm:)?py-\d/, 'no vertical padding of its own');
+  assert.match(bar, /<header[^>]*data-guest-top=""/, 'the prerender is Discover\'s own bar');
 
   // What took over the row's other job, saying which product this is: the
   // logotype, drawn at the content row's own height. `h-7` is this bar's

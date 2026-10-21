@@ -482,7 +482,7 @@ test('the sheet: Apple and Google first when offered, then email; the trip carri
   const src = read('frontend/src/features/auth/sign-in-sheet.tsx');
   // Apple and Google first, unless the invite's Join starts with the phone
   // (tests/phone-invite-join.test.js), when they sit under it past an "or".
-  assert.match(src, /const otherWays: Step = providers\.length \? 'choose' : 'email';\s+const firstStep: Step = phone \? 'phone' : start === 'email' \? 'email' : otherWays;/);
+  assert.match(src, /const otherWays: Step = providers\.length \? 'choose' : 'email';\s+const firstStep: Step = phone \? 'phone' : otherWays;/);
   assert.match(src, /\{t\('auth:signInSheet\.continueWith', \{ provider: PROVIDER_LABEL\[provider\] \}\)\}/);
   assert.equal(message('auth:signInSheet.continueWith', { provider: 'Apple' }), 'Continue with Apple');
   assert.match(src, /: t\('auth:signInSheet\.continueWithEmail'\)\}/);

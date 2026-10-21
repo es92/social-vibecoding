@@ -183,7 +183,7 @@ export function GuestProject({ app, primaryClass, onIntent, onOpenInside, onShar
   ));
 
   return (
-    <div data-guest-project={app.slug} className="mx-auto flex w-full max-w-[1040px] flex-col gap-[18px] px-4">
+    <div data-guest-project={app.slug} className="mx-auto flex w-full flex-col gap-[18px] px-4">
       <section
         data-guest-project-band=""
         className="flex flex-wrap items-start gap-x-5 gap-y-3.5 rounded-3xl p-3 text-white"

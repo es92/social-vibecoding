@@ -36,7 +36,7 @@ import { type KeyboardEvent, memo, useCallback, useEffect, useMemo, useRef, useS
 import { flushSync } from 'react-dom';
 
 import { alertVariants } from '@/components/ui/alert';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { ChevronLeftIcon, LockIcon, SpinnerArcIcon } from '@/components/ui/icons';
 import { Wordmark } from '@/components/ui/wordmark';
 import { cn } from '@/lib/utils';
@@ -73,9 +73,6 @@ import {
   SignInSheet,
   type SignInProvider,
   type SignInResume,
-  SignUpButtons,
-  type SignUpMethod,
-  signUpMethods,
   spendReleaseLink,
 } from './sign-in-sheet';
 import { Story } from './story';
@@ -437,6 +434,17 @@ export function LandingTile({
 // the finger as well as to the eye — the one live control on this screen that
 // missed the 44px floor, and the landing bar's copy of the class had simply
 // been dropped when it was transcribed from platform-header.tsx.
+// The guest Discover's bar (guestTop): the same 28px row, its padding
+// widened from md so the wordmark and the buttons sit on the column's own
+// edges (the column is max-w-6xl with px-4 blocks), and a hairline under it.
+// On Discover itself (data-guest-top) the lead box, which only ever holds
+// the back button, gives way so the wordmark sits on the column's edge; its
+// own class string is left as the shell inventory knows it.
+const GUEST_BAR = 'md:px-[max(1rem,calc((100%_-_72rem)/2_+_1rem))] shadow-[inset_0_-1px_0_var(--app-sheet-line)] [&[data-guest-top]>div:first-child]:[display:none]';
+// The same right edge for Sign in and Sign up where they sit over the bar
+// (a project's page, whose title stays centred between them and the back).
+const GUEST_BAR_RIGHT = 'md:right-[max(1rem,calc((100%_-_72rem)/2_+_1rem))]';
+
 const LANDING_BACK_CLASS = 'inline-flex items-center justify-center w-7 h-7 rounded-full'
   + ' border border-[color:var(--brand-line)] bg-[color:var(--brand-tint)]'
   + ' text-[color:var(--brand-ink)] un-touch-target';
@@ -745,9 +753,6 @@ export function LandingScreen() {
   // Which sign-in sheet is up (./sign-in-sheet.tsx): an invite's Join, or
   // the story's Make an account or Sign in.
   const [sheet, setSheet] = useState<null | 'join' | 'start' | 'signin'>(null);
-  // The way in the guest Discover's hero chose (SignUpButtons): the start
-  // sheet opens at it. Null for the sheet's own first step.
-  const [signUpWith, setSignUpWith] = useState<SignUpMethod | null>(null);
   // Back from Apple or Google: where the sheet picks up (./sign-in-sheet.tsx).
   const [resume, setResume] = useState<SignInResume | null>(null);
   // A waitlist "you're in" mail's link (AuthScreens.enter): this story with
@@ -756,7 +761,7 @@ export function LandingScreen() {
   // Closing the sheet keeps the link (Evan, 10 Oct 2026): Get started again
   // signs in from the email again, while the account it started is not set
   // up yet (src/services/release-links.js), rather than asking for a code.
-  const closeSheet = useCallback(() => { setSheet(null); setResume(null); setSignUpWith(null); }, []);
+  const closeSheet = useCallback(() => { setSheet(null); setResume(null); }, []);
   // A shared link opened while signed out (#5264, ./deep-link-sign-in.tsx):
   // the address it was for (remembered for after the sign-in by the router)
   // and the place it names. Set as the screen shows (landingOnShow), from
@@ -954,9 +959,6 @@ export function LandingScreen() {
   // (services/community-invites.js): the Join sheet starts there when the
   // server offers it.
   const phoneSignIn = waitlistPayload?.phone_sign_in === true;
-  // The hero's ways to make an account: Apple, Google, a phone, email.
-  const methods = useMemo(() => signUpMethods(providers, phoneSignIn), [providers, phoneSignIn]);
-  const signUp = useCallback((method: SignUpMethod) => { setSignUpWith(method); setSheet('start'); }, []);
   // Back from a provider without a session: reopen the sheet the trip left,
   // the invite's Join on its link, the story's otherwise.
   useEffect(() => {
@@ -1511,6 +1513,10 @@ export function LandingScreen() {
   // The bar's back button: out of the open app, else from a project's page
   // to Discover.
   const showBack = !!openApp || !!guestProject;
+  // The guest Discover's own bar: the wordmark at the left edge of the
+  // column, Sign in and Sign up at its right, a hairline under it. A
+  // project's page or an open app keeps the centred title and its back.
+  const guestTop = guestOn && !showBack && !gate;
   const onBack = useCallback(() => {
     if (st.openSlug) { live.current.closeLandingApp(); return; }
     location.hash = '#apps';
@@ -1567,7 +1573,8 @@ export function LandingScreen() {
       */}
       <header
         id="landing-header"
-        className="un-safe-top-extend relative flex items-center gap-3 px-4 pt-2 pb-4 shrink-0"
+        data-guest-top={guestTop ? '' : undefined}
+        className={`un-safe-top-extend relative flex items-center gap-3 px-4 pt-2 pb-4 shrink-0${guestOn ? ` ${GUEST_BAR}` : ''}`}
       >
         <div className="w-7 h-7 shrink-0 flex items-center justify-center">
           <button
@@ -1603,7 +1610,7 @@ export function LandingScreen() {
         */}
         <div
           id="landing-header-title"
-          className="flex-1 min-w-0 px-10 text-lg font-bold pointer-events-none truncate text-center"
+          className="flex-1 min-w-0 px-10 text-lg font-bold pointer-events-none truncate text-center [[data-guest-top]_&]:px-0 [[data-guest-top]_&]:text-left"
         >
           {openApp || guestProject ? headerTitle : <Wordmark className="h-7 w-auto inline-block align-middle text-zinc-950 dark:text-white" title={LANDING_TITLE} />}
         </div>
@@ -1615,7 +1622,7 @@ export function LandingScreen() {
             prose. No h-7 on it: the floor matcher there takes the FIRST div
             carrying h-7, and the lead group must stay that div.
         */}
-        <div className="w-7 shrink-0" aria-hidden="true" />
+        <div className="w-7 shrink-0 [[data-guest-top]_&]:hidden" aria-hidden="true" />
         {/*
             THE ONE WAY IN THE BAR CARRIES (the guest Discover, 21 Oct 2026):
             a quiet "Sign in", for somebody who has an account and is looking
@@ -1628,14 +1635,30 @@ export function LandingScreen() {
             Continue, under the sentence that says what this place is.
             Not for a waiting-room session, which is signed in already.
         */}
-        <button
-          type="button"
-          data-landing-sign-in=""
-          className={hiddenLast(session || !guestOn, 'absolute right-4 bottom-4 h-7 rounded-full px-1 text-[15px] font-semibold text-zinc-950 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300')}
-          onClick={() => setSheet('signin')}
+        <div
+          data-landing-actions=""
+          className={hiddenLast(session || !guestOn, guestTop ? 'flex shrink-0 items-center gap-1.5' : `absolute bottom-4 right-4 flex items-center gap-1.5 ${GUEST_BAR_RIGHT}`)}
         >
-          {t('auth:guest.header.signIn')}
-        </button>
+          <button
+            type="button"
+            data-landing-sign-in=""
+            className={hiddenLast(session || !guestOn, 'h-7 rounded-full px-2 text-[15px] font-semibold text-zinc-950 hover:text-zinc-600 dark:text-white dark:hover:text-zinc-300')}
+            onClick={() => setSheet('signin')}
+          >
+            {t('auth:guest.header.signIn')}
+          </button>
+          <Button
+            type="button"
+            variant="pillAccent"
+            size="none"
+            ink="solid"
+            data-landing-sign-up=""
+            className={guestTop ? 'h-7 px-3.5 text-[15px] font-semibold' : 'hidden md:inline-flex h-7 px-3.5 text-[15px] font-semibold'}
+            onClick={() => setSheet('start')}
+          >
+            {t('auth:guest.header.signUp')}
+          </Button>
+        </div>
       </header>
       {/*
           Inner scroller: the kit pull-to-refresh rubber-band translates the
@@ -2101,7 +2124,18 @@ export function LandingScreen() {
                   welcomeEmail={releaseEmail}
                   onStart={() => setSheet('start')}
                   onSignIn={() => setSheet('signin')}
-                  actions={<SignUpButtons methods={methods} onPick={signUp} primaryClass={PRIMARY_PILL} />}
+                  actions={(
+                    <Button
+                      type="button"
+                      variant="pillAccent"
+                      size="pill"
+                      ink="solid"
+                      data-landing-story-sign-up=""
+                      onClick={() => setSheet('start')}
+                    >
+                      {t('auth:guest.hero.signUp')}
+                    </Button>
+                  )}
                 />
               )}
             />
@@ -2190,10 +2224,8 @@ export function LandingScreen() {
           title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : t('auth:landing.sheet.continue')}
           providers={providers}
           native={nativeSignIn}
-          phone={phoneSignIn && sheet === 'start' && signUpWith === 'phone'}
           phoneLink={phoneSignIn}
           askName={false}
-          start={sheet === 'start' ? signUpWith : null}
           from={sheet === 'signin' ? 'signin' : 'story'}
           returnTo={guestProject ? `/${projectHash(guestProject.slug)}` : '/'}
           resume={resume}
