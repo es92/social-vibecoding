@@ -31,14 +31,15 @@ outside), **[I]** inferred, **[S]** speculative or untested.
   suspended does not matter much: its only installation is on a suspended
   account.
 
-**Conclusion [I, high confidence]:** the machine account `usernode-bot` is
-suspended. It held the PAT, owned every app repo, and authored every request.
-The suspension notice email went to whatever address that account was
-registered with.
+**Conclusion [V, confirmed by the team 2026-10-25]:** the machine account
+`usernode-bot` is suspended. It held the PAT, owned every app repo, and
+authored every request Homeroom filed. Usernode-Labs is unaffected, and
+people can still open and merge pull requests there.
 
 A plausible trigger **[S]**: one machine account creating repos and issues in
-bulk through a PAT. GitHub's terms allow one free machine account per
-human, used only for automation, and reserve suspension for "excessively
+bulk through a PAT. GitHub's Acceptable Use Policies (§4) forbid "any form of
+excessive automated bulk activity". Its terms allow one free machine account
+per human, used only for automation, and reserve suspension for "excessively
 frequent" API use. The 2026-10-04 exhaustion of the 5,000/hr PAT budget
 (`github.js` header comment) is consistent with that.
 
@@ -188,20 +189,45 @@ is never a dependency.
 
 | Option | Gives | Costs | Fit |
 | --- | --- | --- | --- |
-| A. New GitHub owner (org + org-owned App) | Back in days, little code | Same single point of failure; same usage pattern may re-trigger | Bridge only |
-| B. Forgejo, self-hosted in-cluster | Git over HTTPS, scoped tokens, web code browser, Actions (largely GitHub Actions syntax), OCI registry for images and Helm | One more stateful service (DB, PVC, backups, upgrades); Gitea-style API, so an adapter is needed either way | **Recommended** |
+| A. Move the app repos to Usernode-Labs or another GitHub account | Back in days, little code | Repeats the bulk automation that was suspended, on the last GitHub asset the platform has | **Rejected** (below) |
+| A′. A hosted forge (GitLab.com, Gitea Cloud, …) | Nothing to operate | A new counterparty whose abuse systems see one account creating repos in bulk: the same failure mode | Rejected |
+| B. Forgejo, self-hosted in-cluster | Git over HTTPS, scoped tokens, web code browser, push-to-create, pull mirrors, Actions (largely GitHub Actions syntax), OCI registry for images and Helm | One more stateful service (DB, PVC, backups, upgrades); Gitea-style API, so an adapter is needed either way | **Recommended** |
+| B′. Gitea, self-hosted | The same as B, today | The same as B | Acceptable alternative |
 | C. Platform-native bare repos (`git http-backend` on a retained PVC) | No extra service; fewest moving parts | Auth, GC, quotas and a code browser are ours to build; the platform repo and CI still need a home | Good later, behind the same interface |
 
 **Recommendation: B, used as storage only, behind the interface in §6.1.**
-Forgejo also takes over the platform's own repo, CI and registry (§6.6),
-which C cannot. Because Homeroom does its own merges (§6.4), Forgejo's PR and
-issue features stay unused. Moving later to C is then a backend swap, not a
-migration.
+Because Homeroom does its own merges (§6.4) and keeps its own requests
+(§6.2), Forgejo's PR and issue features stay unused. Moving later to B′ or C
+is then a backend swap, not a migration.
 
-Use A only if the appeal stalls and the team needs proposals moving before
-§6.3 lands. If so, put the repos in an **org**, use an **org-owned App**
-(installation tokens can create org repos with Administration: write), and
-use no machine-user PAT.
+**Forgejo over Gitea.** For what Homeroom needs (create a repo, clone, push,
+read and move refs, tokens) the two are interchangeable today: Forgejo forked
+from Gitea in 2022 and became a hard fork in early 2024. The tie-breaker is
+governance, which is the point of this exercise:
+
+- Forgejo is run by Codeberg e.V., a non-profit, with no enterprise edition.
+- Gitea is run by Gitea Ltd., which also sells Gitea Enterprise and Gitea
+  Cloud.
+- Forgejo is GPLv3+ since v9; Gitea is MIT. Neither matters for running an
+  unmodified server.
+
+Pick Gitea instead only if someone on the team already runs it, or wants
+paid support. Pin the version either way, because the two APIs are slowly
+diverging.
+
+**Why not A.** Usernode-Labs now holds the platform repo, its Actions, the
+images and Helm chart on `ghcr.io`, and `Usernode-Labs/infra` (Argo CD's
+source). Moving hundreds of bot-created repos and automated issues there
+repeats the activity GitHub suspended, on the one account the platform cannot
+lose. While the appeal is open, it can also read as evading the suspension
+**[I]**. The same goes for a new machine user, or a PAT on a person's
+account. Keep Usernode-Labs to what it is now: people opening and merging
+pull requests on the platform repo.
+
+**Side benefit [S].** Self-hosting lifts the "app repos must be public" rule
+(`github.js:2278-2289`), which existed only because workers clone
+anonymously. Code visibility can then follow the community's audience: a
+Just-you or Private project's code can be private too.
 
 ## 6. Target architecture
 
@@ -288,12 +314,21 @@ Today the platform depends on:
 - `ghcr.io` images and the OCI Helm chart
 - `Usernode-Labs/infra`, Argo CD's source
 
-Move the repo and infra to Forgejo, the workflows to Forgejo Actions, and the
-images and chart to Forgejo's registry or a cloud registry. Argo CD supports
-OCI Helm from any registry. Also update `release-watch.js`, which reads
-GitHub Actions run conclusions.
+This is ordinary human use of GitHub, and it is the vehicle for every phase
+below, so it moves **last**. When it does, move the repo and infra to
+Forgejo, the workflows to Forgejo Actions, and the images and chart to
+Forgejo's registry or a cloud registry. Argo CD supports OCI Helm from any
+registry. Also update `release-watch.js`, which reads GitHub Actions run
+conclusions (through the dead PAT today, so it already falls back to elapsed
+time).
 
 ## 7. Phases (each its own proposal)
+
+**Vehicle.** Every phase lands as a pull request on
+`Usernode-Labs/social-vibecoding`, opened and merged by people, released by
+the existing Actions → `ghcr.io` → Argo CD chain. Forgejo itself is deployed
+from `Usernode-Labs/infra`. **Before the first merge, do §3.2.3**: each
+release replaces the platform pod and its `/tmp` mirrors.
 
 The effort estimates are rough **[S]**. 288 files under `src/` and 660 test
 files mention GitHub.
@@ -301,30 +336,46 @@ files mention GitHub.
 | Phase | What | Exit criterion | Rough size |
 | --- | --- | --- | --- |
 | P0 Stop the bleeding | Ops steps in §3. Code: a suspension circuit breaker. Treat `account was suspended` / 401 on the PAT as a terminal credential state: halt clocks and the bot refresh, refuse merges explicitly (never `noGithub`), show "Code changes are paused" banners | No GitHub calls with the dead token; no silent merges | 1-2 days |
-| P1 Recover | Extract sources and rebuild history (§3.2.5-6); stand up Forgejo; push recovered repos | Every running app has a repo whose main matches its running image | ~1 week |
-| P2 Native requests | §6.2 plus backfill | Request boards survive a restart with GitHub unreachable | 1-2 weeks |
-| P3 `GitHost` | §6.1 and §6.3: URL parsing in one module, builders, workers, push proxy, repo creation | A new app can be created, edited in a dev session, previewed and deployed with no GitHub credential set | 2-3 weeks |
-| P4 Native proposals | §6.4: merges, settings changes, reverts, imports | A proposal is voted in and lands on main via CAS; no PR object anywhere | 2-3 weeks |
+| P1 Forgejo and recovery | Infra: Forgejo from its Helm chart, its DB on CNPG, repos on a retained PVC, an `apps` org, a service token for the platform. Platform: a one-off Job that rebuilds each app's main from its image (§3.2.5-6) and pushes it to `apps/<slug>` | Every running app has a Forgejo repo whose main matches its running image | ~1 week |
+| P2 `GitHost`, read and build path | §6.1 and §6.3: URL parsing in one module, clones, both builders, worker bootstrap, the push proxy, repo creation, starters, remix; `apps.repo_url` repointed | A new app can be created, edited in a dev session, previewed and deployed with no GitHub credential set | 2-3 weeks |
+| P3 Native requests (in parallel with P2) | §6.2 plus backfill | Requests can be filed, and boards survive a restart, with GitHub unreachable | 1-2 weeks |
+| P4 Native proposals | §6.4: merges, settings changes, reverts, imports | An app proposal is voted in and lands on main via CAS; no PR object anywhere | 2-3 weeks |
 | P5 Agents and identity | §6.5 | `prepare_work` / `submit_work` work for a user with no GitHub link | ~1 week |
-| P6 Platform supply chain | §6.6 | A platform release builds, publishes and rolls out with GitHub unreachable | ~1 week |
-| P7 Delete | Remove `github.js` write paths, the mock, the webhook and the budget; keep import/export as an optional adapter | `git grep -i 'api.github.com\|GITHUB_BOT_TOKEN'` is empty under `src/` | 1 week |
+| P6 Delete | Remove `github.js` write paths, the PAT, the mock, the webhook and the budget; keep import/export of public GitHub repos as an optional adapter | `git grep -i 'GITHUB_BOT_TOKEN'` is empty under `src/` | 1 week |
+| P7 Platform supply chain (optional timing) | §6.6 | A platform release builds, publishes and rolls out with GitHub unreachable | ~1 week |
 
-**Ordering rationale:** P0 and P1 are urgent and independent of the backend
-choice. P2 comes before P3 and P4 because request text is the asset most at
-risk of being lost for good. P6 is the least urgent because the Usernode-Labs
-org is healthy, but it carries the same risk.
+**Ordering rationale:**
+
+- P0 and P1 are urgent and need no design decision beyond the backend.
+- P2 restores the core loop's mechanics (create, edit, preview, deploy) for
+  every app.
+- P3 is independent and can run beside P2. The request text most at risk is
+  already protected by the snapshot and the archive request (§3.2), not by
+  code.
+- P4 closes the loop (vote → merge) and needs P2.
+- P7 is last because Usernode-Labs is healthy and is the vehicle for
+  everything before it.
+
+**Recovered history [S].** Where a main can be rebuilt at its original SHA
+(§3.2.6), GitHub's archive, if it arrives, connects to it as plain history.
+Where it cannot, record the original SHA in the recovered commit's message.
+Then push the archive's history under `refs/archive/github/*` rather than
+rewriting main.
 
 ## 8. Governance during the outage
 
-Homeroom cannot merge any change by vote, its own included, until P3 and P4
-or the bridge (option A) land, because merges go through the suspended PAT.
-P0 and P1 therefore need **admin merges made directly on GitHub**, outside
-the group vote. Say so in #general, link each out-of-band merge, and put
-each one to a retroactive vote once votes work again.
+Until P4, Homeroom cannot merge any app change by vote, because merges go
+through the suspended PAT. Its own platform changes are merged by people on
+GitHub (the vehicle above), outside the group vote, and that stays true
+until P7. Say so in #general, link each out-of-band merge, and put each one
+to a retroactive vote once votes work again. After P4, platform proposals can
+be voted in Homeroom and merged on GitHub by a person, as the human step of
+the vote.
 
 ## 9. Open questions
 
-1. Which account received the notice, and what reason was given?
+1. What reason did GitHub give for the suspension? The appeal or
+   reinstatement request should address it directly (§3.2.1).
 2. Where does `REGISTRY_REPOSITORY_PREFIX` point in production (§3.2.2)?
 3. Are issues on `Usernode-Labs/social-vibecoding` authored by `usernode-bot`
    now hidden as well? (Expected, unverified.)
@@ -332,3 +383,4 @@ each one to a retroactive vote once votes work again.
    public GitHub repo, or only the operational dependency?
 5. Who owns the GitHub OAuth apps (`GITHUB_LINK_*`, `WAITLIST_GITHUB_*`)?
    If `usernode-bot` owns them, they are dead too.
+6. Forgejo or Gitea (§5)?
