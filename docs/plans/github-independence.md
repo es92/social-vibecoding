@@ -4,6 +4,19 @@ Status: proposal, for discussion. Written 2026-10-25 against canonical main
 `b0b1ff542eb69d53be337a413d166881805597e8`, which is also the build
 production reports (`serverVersion 1.0.0+b0b1ff5`).
 
+**Decided so far (2026-10-26):**
+
+- `usernode-bot` is the suspended account; people can still merge on
+  Usernode-Labs.
+- App code is hosted only on Homeroom, on self-hosted Forgejo (§5).
+- Coding agents work through a **personal workspace repo**: one per person,
+  on their own GitHub account, with **branches, not patches**, as the way
+  work comes back (§6.5).
+- A one-way **mirror to GitHub** is optional, per project, done by the
+  owner (§6.7).
+- Users do not engage on GitHub; Homeroom stays the only place to request,
+  propose and vote.
+
 Markers used throughout: **[V]** verified (read in code, or observed from
 outside), **[I]** inferred, **[S]** speculative or untested.
 
@@ -296,14 +309,61 @@ checks. Remove the PR object:
   anonymous fetch). The webhook and the `imported-prs` / `merged-by-hand`
   clocks go away.
 
-### 6.5 Identity and external coding agents
+### 6.5 Coding agents: the personal workspace repo
 
-- **`prepare_work`.** Stop requiring a GitHub link. Mint a per-task push
-  token scoped to `refs/heads/usernode/ext-<task>/*` on the platform host.
-  The patch path (`external-agent-patch-upload.js`) stays as the fallback.
-  This also delivers #4856.
-- **GitHub link and waitlist OAuth.** These stay as optional social
-  identities only.
+Cloud coding agents (Claude Code on the web, Codex cloud) open sessions only
+on a GitHub repository. Each person therefore makes **one**
+`homeroom-workspace` repo on their own account, from a template Homeroom
+publishes. It is where the agent's session starts, and nothing more:
+
+- The app's code lives on Homeroom.
+- The agent fetches it from Homeroom.
+- Finished work comes back to Homeroom as a **branch**. Patches are the
+  last resort, because they have failed where branches did not.
+
+**The template** holds an `AGENTS.md` / `CLAUDE.md` with the steps, plus a
+setup script (`homeroom-fetch`). Its default branch holds only the template.
+
+**The flow:**
+
+1. **Get a work order.** `prepare_work` (connector) returns the app's fetch
+   URL, the exact base SHA, a per-task token, and the Homeroom branch to push
+   to.
+2. **Fetch the app.** The agent fetches the base, or the setup script does
+   on Codex, where setup has internet and the agent may not. It works on a
+   local branch whose history is the app's own. Unrelated histories in one
+   repo are fine for git.
+3. **Hand the branch back, by the first path that works:**
+   1. **Push to Homeroom.** The per-task token is scoped to
+      `refs/heads/ext/<task>/*`, so it can push nowhere else. This is the
+      default: the domain already has to be reachable to fetch the app, and
+      Homeroom never touches GitHub.
+   2. **Push to the workspace repo**, then `submit_work` names the repo,
+      branch and exact SHA. Homeroom runs one `git fetch` of that SHA and
+      checks it descends from the base. There is no API call and no write
+      to GitHub. This covers an agent that can push only to GitHub (Codex's
+      own branch flow, or a network that blocks Homeroom).
+   3. **Patch** through the connector, as today.
+4. **Key everything by task id and SHA, never by the workspace branch's
+   name.** Some cloud agents choose their own branch names.
+
+**Network setup, once per person.**
+- *Claude Code on the web:* access level Limited, with Homeroom's git domain
+  under Allowed domains.
+- *Codex cloud:* fetching works from the setup script. For path 1, turn
+  agent internet on with the domain allowlisted, including POST, because
+  `git push` posts.
+- The template's README walks through both.
+
+**Privacy.** Path 2 reads the workspace repo, so a public workspace repo
+exposes the work in it. That matches today, where every app repo is public.
+Once private projects get private code (§5), private projects use path 1,
+or a private workspace repo with a read-only grant. Decide that when private
+code lands.
+
+**Identity.** `prepare_work` and `submit_work` stop requiring a GitHub link,
+which also delivers #4856. GitHub link and waitlist OAuth stay as optional
+social identities only.
 
 ### 6.6 The platform's own supply chain
 
@@ -321,6 +381,19 @@ Forgejo's registry or a cloud registry. Argo CD supports OCI Helm from any
 registry. Also update `release-watch.js`, which reads GitHub Actions run
 conclusions (through the dead PAT today, so it already falls back to elapsed
 time).
+
+### 6.7 Optional mirror to GitHub
+
+A project's owner can mirror it to GitHub (#3797). The mirror is:
+
+- **one-way**: Homeroom pushes main to a repo the owner chose, in the
+  owner's own account;
+- **owner-authorized**: the owner grants access to that one repo;
+- **issues and pull requests off**, with a README line pointing back to the
+  project on Homeroom.
+
+It is never read back, so it is transparency, not a dependency. A failed
+mirror push shows on the project's settings and blocks nothing.
 
 ## 7. Phases (each its own proposal)
 
@@ -340,8 +413,8 @@ files mention GitHub.
 | P2 `GitHost`, read and build path | §6.1 and §6.3: URL parsing in one module, clones, both builders, worker bootstrap, the push proxy, repo creation, starters, remix; `apps.repo_url` repointed | A new app can be created, edited in a dev session, previewed and deployed with no GitHub credential set | 2-3 weeks |
 | P3 Native requests (in parallel with P2) | §6.2 plus backfill | Requests can be filed, and boards survive a restart, with GitHub unreachable | 1-2 weeks |
 | P4 Native proposals | §6.4: merges, settings changes, reverts, imports | An app proposal is voted in and lands on main via CAS; no PR object anywhere | 2-3 weeks |
-| P5 Agents and identity | §6.5 | `prepare_work` / `submit_work` work for a user with no GitHub link | ~1 week |
-| P6 Delete | Remove `github.js` write paths, the PAT, the mock, the webhook and the budget; keep import/export of public GitHub repos as an optional adapter | `git grep -i 'GITHUB_BOT_TOKEN'` is empty under `src/` | 1 week |
+| P5 Workspace repo and identity | §6.5: the template repo, per-task push tokens and the `ext/<task>/*` refs, the fetch-by-SHA path, connector changes | A Claude Code on the web session and a Codex cloud task each take a work order to a proposal through a branch, for a user with no GitHub link | 1-2 weeks |
+| P6 Delete, and the optional mirror | Remove `github.js` write paths, the PAT, the mock, the webhook and the budget. Keep only: import of a public repo, the fetch-by-SHA path (§6.5), and the owner-authorized mirror (§6.7) | `git grep -i 'GITHUB_BOT_TOKEN'` is empty under `src/` | 1 week |
 | P7 Platform supply chain (optional timing) | §6.6 | A platform release builds, publishes and rolls out with GitHub unreachable | ~1 week |
 
 **Ordering rationale:**
@@ -383,4 +456,6 @@ the vote.
    public GitHub repo, or only the operational dependency?
 5. Who owns the GitHub OAuth apps (`GITHUB_LINK_*`, `WAITLIST_GITHUB_*`)?
    If `usernode-bot` owns them, they are dead too.
-6. Forgejo or Gitea (§5)?
+6. ~~Forgejo or Gitea (§5)?~~ Forgejo.
+7. How does a private workspace repo grant Homeroom read access, once
+   private projects have private code (§6.5)?
