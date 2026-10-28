@@ -254,3 +254,60 @@ test('app creation hands its database to production only in such a preview, and 
   assert.equal((routes.match(/!url && !\w+\.self_hosted && previewProjects\.active\(\)\) url = previewProjects\.appUrl\(/g) || []).length, 2,
     'the list and the app read both');
 });
+
+// ── The starters this proposal changed, made as the preview boots ──────
+
+// A pool whose transactions are recorded: apps already there by slug.
+function seedPool({ existing = [], owner = 41 } = {}) {
+  const queries = [];
+  const apps = new Set(existing);
+  let nextId = 100;
+  const run = async (sql, params = []) => {
+    queries.push({ sql: sql.replace(/\s+/g, ' ').trim(), params });
+    if (sql.includes('FROM users WHERE username')) return { rows: owner ? [{ id: owner }] : [] };
+    if (sql.includes('INSERT INTO apps')) {
+      if (apps.has(params[1])) return { rows: [] };
+      apps.add(params[1]);
+      return { rows: [{ id: nextId++, slug: params[1] }] };
+    }
+    return { rows: [] };
+  };
+  return { queries, query: run, connect: async () => ({ query: run, release() {} }) };
+}
+
+test('each starter the proposal changed is made once, open, owned by the demo identity, as the dialog makes one', async (t) => {
+  setEnv(t, {});
+  const env = { ...previewEnv('http://usernode:3000'), PREVIEW_PROJECTS_STARTER_DIRS: 'tier-list,group-poll,Not Valid,tier-list' };
+  assert.deepEqual(client.settings(env).starterDirs, ['tier-list', 'group-poll', 'tier-list']);
+  const pool = seedPool();
+  const first = await client.seedChangedStarters(pool, null, env);
+  const appTemplates = require('../src/services/app-templates');
+  const tierId = appTemplates.READY_IDS.find((id) => appTemplates.dirOf(id) === 'tier-list');
+  const pollId = appTemplates.READY_IDS.find((id) => appTemplates.dirOf(id) === 'group-poll');
+  assert.deepEqual(first.made, [`${tierId}-this-change`, `${pollId}-this-change`]);
+  const insert = pool.queries.find((q) => q.sql.startsWith('BEGIN') === false && q.sql.includes('INSERT INTO apps'));
+  assert.deepEqual(insert.params, [`${appTemplates.get(tierId).title} (this change)`, `${tierId}-this-change`, 41, 'public', 'public']);
+  assert.match(insert.sql, /INSERT INTO app_collaborators/, 'with its creator\'s membership, which starts its setup');
+  assert.ok(pool.queries.some((q) => q.sql.startsWith('UPDATE apps SET governance_rules') && JSON.parse(q.params[0]).preset === 'you_or_the_group'));
+  assert.ok(pool.queries.some((q) => q.sql.startsWith('UPDATE apps SET template') && q.params[0] === tierId));
+  assert.match(client.changeStarterSlug(tierId), /^[a-z0-9-]+-this-change$/);
+  assert.ok(`${client.changeStarterSlug(tierId)}--s11513`.length <= 63, 'its host is one DNS label');
+
+  const again = await client.seedChangedStarters(seedPool({ existing: [`${tierId}-this-change`, `${pollId}-this-change`] }), null, env);
+  assert.deepEqual(again.made, [], 'a boot later leaves them as they are');
+});
+
+test('outside such a preview, without a demo owner, or for a directory with no ready-made starter, nothing is made', async (t) => {
+  setEnv(t, {});
+  const none = seedPool();
+  assert.deepEqual(await client.seedChangedStarters(none, null, { USERNODE_ENV: 'staging', PREVIEW_PROJECTS_STARTER_DIRS: 'tier-list' }), { made: [] });
+  assert.deepEqual(await client.seedChangedStarters(none, null, previewEnv('http://usernode:3000')), { made: [] }, 'no starters named');
+  assert.equal(none.queries.length, 0);
+  const env = { ...previewEnv('http://usernode:3000'), PREVIEW_PROJECTS_STARTER_DIRS: 'tier-list' };
+  assert.deepEqual(await client.seedChangedStarters(seedPool({ owner: null }), null, env), { made: [] });
+  assert.deepEqual(await client.seedChangedStarters(seedPool(), null, { ...env, PREVIEW_PROJECTS_STARTER_DIRS: 'no-such-starter' }), { made: [] });
+  const migrate = fs.readFileSync(path.join(__dirname, '..', 'src', 'db', 'migrate.js'), 'utf8');
+  const catalog = migrate.indexOf("require('../services/staging-apps').seedCatalog(pool, config)");
+  const changed = migrate.indexOf("require('../services/preview-projects-client').seedChangedStarters(pool, config)");
+  assert.ok(catalog > 0 && changed > catalog, 'made with the staging seeds, after the demo owner and catalog exist');
+});

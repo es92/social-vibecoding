@@ -166,6 +166,10 @@ async function migrate(config) {
   await seedStagingBotProjectNotification(pool);
   await seedStagingYourApps(pool, config);
   await require('../services/staging-apps').seedCatalog(pool, config);
+  // A platform preview that can make projects (services/preview-projects-client.js):
+  // one ready to open for each starter this proposal changed. Nothing
+  // anywhere else; never throws.
+  await require('../services/preview-projects-client').seedChangedStarters(pool, config);
   await seedStagingBrowseCardBranches(pool, config);
   // #1383: must run AFTER seedStagingBrowseCardBranches (it ranks that
   // fixture's four apps) and AFTER seedStagingMergedPrs, which owns the

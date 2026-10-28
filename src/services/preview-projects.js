@@ -167,14 +167,51 @@ async function authenticate(config, pool, token) {
   return { ok: true, sessionId: Number(row.session_id) };
 }
 
+// The starters a proposal changed: each `app-templates/<dir>/` its files
+// touch, from the shared ones (`_scaffold`, `_game-room`) apart, up to the
+// per-preview cap. Directories, not ready-made ids: the preview maps them
+// with its OWN app-templates.js, the proposal's, so a starter the proposal
+// adds is made too.
+function starterDirsIn(files) {
+  const dirs = [];
+  for (const file of Array.isArray(files) ? files : []) {
+    const m = /^app-templates\/([a-z0-9][a-z0-9-]*)\//.exec(String(file || ''));
+    if (m && !dirs.includes(m[1])) dirs.push(m[1]);
+  }
+  return dirs.slice(0, maxPerPreview());
+}
+
+async function changedStarterDirs(config, { app, commitHash }) {
+  if (!/^[0-9a-f]{40}$/i.test(String(commitHash || ''))) return [];
+  const ref = require('./repo-ref').parse(app.repo_url || config.platformRepoUrl);
+  if (!ref) return [];
+  try {
+    const { files } = await require('./github').compareRefs(ref.owner, ref.repo, `main...${commitHash}`);
+    return starterDirsIn(files);
+  } catch (err) {
+    log.warn('preview-projects', 'Could not list a preview\'s changed starters', { commitHash, err: err.message });
+    return [];
+  }
+}
+
 // What production adds to a platform preview's env when it deploys it
 // (services/staging.js), so the preview can reach this. Nothing for any
 // other app, or with the switch off. The token differs on every deploy, so
 // it is kept out of the env fingerprint (staging-env.js).
-async function previewEnv(config, { app, sessionId, pool = null }) {
+//
+// Two more things a preview that can make projects needs:
+//   * no server-wide app cap (MAX_APPS=0, as a shots copy of the platform
+//     has: shots-environment.js shotsCapacityEnv). Its sample tiles alone
+//     fill the 50, so nobody could press Make it; this broker caps it at
+//     MAX_PER_PREVIEW instead.
+//   * the starters this proposal changed (PREVIEW_PROJECTS_STARTER_DIRS),
+//     which the preview makes as it boots, ready to open
+//     (preview-projects-client.js seedChangedStarters).
+async function previewEnv(config, { app, sessionId, commitHash = null, pool = null }) {
   if (!enabled(config) || !app || app.slug !== config.selfAppSlug) return {};
   const token = await issueToken(pool || require('../db/pool').getPool(config), sessionId);
   if (!token) return {};
+  const starterDirs = await changedStarterDirs(config, { app, commitHash });
   const caddy = require('./caddy');
   const applicationRuntime = require('./application-runtime');
   const kubernetes = require('./kubernetes');
@@ -188,6 +225,8 @@ async function previewEnv(config, { app, sessionId, pool = null }) {
     PREVIEW_PROJECTS_SESSION_ID: String(sessionId),
     PREVIEW_PROJECTS_ORIGIN: `https://${caddy.stagingHostname(app.slug, `s${sessionId}`)}`,
     ...(internalOrigin ? { PREVIEW_PROJECTS_INTERNAL_ORIGIN: internalOrigin } : {}),
+    ...(starterDirs.length ? { PREVIEW_PROJECTS_STARTER_DIRS: starterDirs.join(',') } : {}),
+    MAX_APPS: '0',
   };
 }
 
@@ -667,6 +706,8 @@ module.exports = {
   tokenFromHeader,
   issueToken,
   authenticate,
+  starterDirsIn,
+  changedStarterDirs,
   previewEnv,
   checkSlug,
   checkFiles,

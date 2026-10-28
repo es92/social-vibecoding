@@ -557,7 +557,9 @@ async function buildAndDeployStagingInner(config, session, app, commitHash, { at
     // credential. Nothing for any other app, or with the switch off. The
     // credential is new on every deploy, so it stays out of the fingerprint
     // above, beside the database URL.
-    const previewProjectsEnv = await require('./preview-projects').previewEnv(config, { app, sessionId: session.id });
+    const previewProjectsEnv = await require('./preview-projects').previewEnv(config, {
+      app, sessionId: session.id, commitHash,
+    });
 
     const healthStartedAt = Date.now();
     reportBuildStep(config, session, 'health', timings, healthStartedAt);

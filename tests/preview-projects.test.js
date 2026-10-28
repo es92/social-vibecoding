@@ -124,12 +124,50 @@ test('a platform preview is given the address, its credential, its session and i
     assert.match(env.PREVIEW_PROJECTS_ORIGIN, /^https:\/\/usernode-2d5619--s11513\./);
     assert.equal(env.PREVIEW_PROJECTS_INTERNAL_ORIGIN, 'http://sv-preview-2-s11513.social-apps.svc:3000');
     assert.equal(queries[0].params[1], projects.hashToken(env.PREVIEW_PROJECTS_TOKEN), 'only the hash goes in');
+    assert.equal(env.MAX_APPS, '0', 'the broker caps it; the server-wide cap would stop Make it on the sample tiles alone');
+    assert.equal(env.PREVIEW_PROJECTS_STARTER_DIRS, undefined, 'no commit, no starters');
 
     const untouched = fakePool([]);
     assert.deepEqual(await projects.previewEnv(CONFIG, { app: { id: 7, slug: 'recipe-box' }, sessionId: 5, pool: untouched }), {});
     assert.deepEqual(await projects.previewEnv({ ...CONFIG, previewProjectsEnabled: false }, { app: { id: 2, slug: SELF }, sessionId: 5, pool: untouched }), {});
     assert.equal(untouched.queries.length, 0);
   });
+});
+
+test('the starters a proposal changed are its app-templates directories, not the shared ones, up to the cap', () => {
+  assert.deepEqual(projects.starterDirsIn([
+    'app-templates/tier-list/api.js', 'app-templates/tier-list/public/app.js', 'app-templates/_scaffold/server.js',
+    'app-templates/_game-room/x.js', 'src/services/app-templates.js', 'app-templates/group-poll/api.js',
+    'app-templates/chore-list/api.js', 'app-templates/grocery-list/api.js',
+  ]), ['tier-list', 'group-poll', 'chore-list']);
+  assert.deepEqual(projects.starterDirsIn(null), []);
+});
+
+test('production asks the repository what the preview\'s commit changed, and names those starters', async () => {
+  const github = require('../src/services/github');
+  const saved = github.compareRefs;
+  const asked = [];
+  github.compareRefs = async (owner, repo, basehead) => {
+    asked.push([owner, repo, basehead]);
+    return { files: ['app-templates/tier-list/api.js', 'README.md'], filesComplete: true };
+  };
+  try {
+    await withEnv({ USERNODE_ENV: 'production' }, async () => {
+      const sha = 'a'.repeat(40);
+      const app = { id: 2, slug: SELF, repo_url: 'https://github.com/Usernode-Labs/social-vibecoding' };
+      const pool = fakePool([['INSERT INTO preview_project_tokens', [{ id: 9 }]], ['DELETE FROM preview_project_tokens', []]]);
+      const env = await projects.previewEnv(CONFIG, { app, sessionId: 7, commitHash: sha, pool });
+      assert.equal(env.PREVIEW_PROJECTS_STARTER_DIRS, 'tier-list');
+      assert.deepEqual(asked, [['Usernode-Labs', 'social-vibecoding', `main...${sha}`]]);
+      github.compareRefs = async () => { throw new Error('GitHub is down'); };
+      assert.deepEqual(await projects.changedStarterDirs(CONFIG, { app, commitHash: sha }), [], 'a failed read names none');
+      assert.deepEqual(await projects.changedStarterDirs(CONFIG, { app, commitHash: 'latest' }), []);
+    });
+  } finally {
+    github.compareRefs = saved;
+  }
+  const staging = fs.readFileSync(path.join(__dirname, '..', 'src', 'services', 'staging.js'), 'utf8');
+  assert.match(staging, /previewEnv\(config, \{\s*app, sessionId: session\.id, commitHash,\s*\}\)/);
 });
 
 // ── Names ──────────────────────────────────────────────────────────────

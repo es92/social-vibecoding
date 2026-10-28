@@ -989,8 +989,11 @@ is real, so all session-gated routes work.
   the clone that right: production makes the database, build and runtime
   of each project someone makes in a platform preview, for that preview
   only, up to three, and retires them with it
-  (src/services/preview-projects.js). It needs the git host and the
-  preview database server. Off by default.
+  (src/services/preview-projects.js). Such a preview also lifts the
+  server-wide app cap, and makes one project ready to open for each starter
+  (`app-templates/<dir>/`) its proposal changed, at
+  `/app/<starter>-this-change`. It needs the git host and the preview
+  database server. Off by default.
 - Reading `deploy-status.json` (host-mounted file the staging container
   doesn't see).
 - `/api/auth/login` against any cloned account (passwords scrubbed —

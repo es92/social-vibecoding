@@ -55,7 +55,9 @@ function settings(env = process.env) {
     return null;
   }
   const internalOrigin = String(env.PREVIEW_PROJECTS_INTERNAL_ORIGIN || '').replace(/\/+$/, '') || null;
-  return { url, token, sessionId, origin, internalOrigin };
+  const starterDirs = String(env.PREVIEW_PROJECTS_STARTER_DIRS || '').split(',')
+    .map((d) => d.trim()).filter((d) => /^[a-z0-9][a-z0-9-]{0,63}$/.test(d));
+  return { url, token, sessionId, origin, internalOrigin, starterDirs };
 }
 
 function active(env = process.env) {
@@ -106,6 +108,99 @@ function appUrl(slug) {
 async function createDatabase(row) {
   await call('PUT', projectPath(row.slug), { appId: row.id, name: row.name });
   return { password: crypto.randomBytes(24).toString('hex') };
+}
+
+// ── The starters this proposal changed, made as the preview boots ──────
+//
+// A proposal that changes a starter (app-templates/<dir>/) is best tried in
+// a project made from it, so the preview makes one per changed starter
+// itself (production names the directories: PREVIEW_PROJECTS_STARTER_DIRS),
+// ready to open: `<starter id>-this-change`, e.g. /app/tier-list-
+// restaurants-this-change, a fixed address a proposal's testing path and the
+// "Test this change" link can name. Each is the first ready-made starter of
+// its directory in THIS preview's app-templates.js, the proposal's own.
+//
+// It is made the way the create dialog makes one (routes/apps.js POST
+// /api/apps): the row with its creator's membership, which starts
+// app-creation's setup, the rule a new project gets, and the template. Its
+// setup then runs through production as any project made here does. It is
+// owned by the seeded demo identity, never by whoever opens the preview, and
+// open to everyone, so anyone looking can open it and join it.
+//
+// Run with the staging seeds on every boot (db/migrate.js); one already
+// made is left as it is. NEVER THROWS.
+
+const CHANGE_SUFFIX = '-this-change';
+const DEMO_OWNER = 'staging-demo-user';
+
+function changeStarterSlug(templateId) {
+  return `${templateId}${CHANGE_SUFFIX}`;
+}
+
+async function seedChangedStarters(pool, _config = null, env = process.env) {
+  const made = [];
+  const s = settings(env);
+  if (!s || !s.starterDirs.length) return { made };
+  try {
+    const appTemplates = require('./app-templates');
+    const ids = [];
+    for (const dir of s.starterDirs) {
+      const id = appTemplates.READY_IDS.find((t) => appTemplates.dirOf(t) === dir);
+      if (id && !ids.includes(id)) ids.push(id);
+    }
+    if (!ids.length) return { made };
+    const { rows: [owner] } = await pool.query('SELECT id FROM users WHERE username = $1', [DEMO_OWNER]);
+    if (!owner) {
+      log.warn('preview-projects', 'No demo owner to make the changed starters with', { username: DEMO_OWNER });
+      return { made };
+    }
+    const createOptions = require('./create-options');
+    const governanceRules = require('./governance-rules');
+    for (const id of ids) {
+      const t = appTemplates.get(id);
+      const slug = changeStarterSlug(id);
+      const options = createOptions.parseCreateOptions({ name: t.title, audience: 'open', template: id }, { imported: false });
+      if (options.error) {
+        log.warn('preview-projects', 'A changed starter could not be made', { template: id, err: options.error });
+        continue;
+      }
+      const db = await pool.connect();
+      try {
+        await db.query('BEGIN');
+        const { rows: [app] } = await db.query(
+          `WITH new_app AS (
+             INSERT INTO apps (name, slug, repo_url, created_by, status, collab_visibility, view_visibility)
+             VALUES ($1, $2, NULL, $3, 'creating', $4, $5)
+             ON CONFLICT (slug) DO NOTHING
+             RETURNING *
+           ), membership AS (
+             INSERT INTO app_collaborators (app_id, user_id, status, accepted_at)
+             SELECT id, $3, 'member', NOW() FROM new_app
+             ON CONFLICT (app_id, user_id) DO NOTHING
+           )
+           SELECT * FROM new_app`,
+          [`${t.title} (this change)`, slug, owner.id, options.collabVisibility, options.viewVisibility]
+        );
+        if (app) {
+          await db.query('UPDATE apps SET governance_rules = $1::jsonb WHERE id = $2',
+            [JSON.stringify(governanceRules.storedForm(options.governance)), app.id]);
+          await db.query('UPDATE apps SET template = $1, icon_emoji = COALESCE($3, icon_emoji) WHERE id = $2',
+            [id, app.id, t.icon || null]);
+          made.push(slug);
+        }
+        await db.query('COMMIT');
+      } catch (err) {
+        await db.query('ROLLBACK').catch(() => {});
+        log.warn('preview-projects', 'A changed starter could not be made', { template: id, err: err.message });
+      } finally {
+        db.release();
+      }
+    }
+    if (made.length) log.info('preview-projects', 'Made the starters this change touches', { made });
+  } catch (err) {
+    log.warn('preview-projects', 'Making the changed starters failed (continuing)', { err: err.message });
+  }
+  return { made };
 }
 
 // ── application-runtime.js: build and deploy ───────────────────────────
@@ -246,6 +341,8 @@ module.exports = {
   settings,
   active,
   appUrl,
+  changeStarterSlug,
+  seedChangedStarters,
   createDatabase,
   readTree,
   projectEnv,
