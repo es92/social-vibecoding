@@ -177,11 +177,12 @@ test('scheduled audits resolve every reused component with its supported resolve
 test('scheduled release waits for successful reused-image scans and normal releases handle skipped audits', () => {
   const workflow = YAML.parse(fs.readFileSync(path.join(__dirname, '../.github/workflows/build-kubernetes-images.yml'), 'utf8'));
   const release = workflow.jobs.release;
-  assert.deepEqual(release.needs, ['build', 'scheduled-image-audit']);
+  assert.deepEqual(release.needs, ['build', 'scheduled-image-audit', ...GATES]);
   assert.match(release.if, /!cancelled\(\)/, 'override the default success() when the schedule-only dependency skips');
-  const allowed = (event, build, audit, cancelled = false) => workflowExpression(release.if, {
+  const allowed = (event, build, audit, cancelled = false, gates = 'success') => workflowExpression(release.if, {
     github: { event_name: event }, cancelled: () => cancelled,
-    needs: { build: { result: build }, 'scheduled-image-audit': { result: audit } },
+    needs: { build: { result: build }, 'scheduled-image-audit': { result: audit },
+      ...Object.fromEntries(GATES.map((gate) => [gate, { result: typeof gates === 'string' ? gates : gates[gate] }])) },
   });
   assert.equal(allowed('schedule', 'success', 'success'), true);
   for (const status of ['failure', 'cancelled', 'skipped']) {
@@ -193,6 +194,34 @@ test('scheduled release waits for successful reused-image scans and normal relea
   }
   assert.equal(allowed('pull_request', 'skipped', 'skipped'), false);
   assert.equal(allowed('schedule', 'success', 'success', true), false);
+  // The gates run beside the image builds (28 Oct 2026), so publishing is
+  // where they hold: every one must pass, on every event.
+  for (const gate of GATES) {
+    for (const status of ['failure', 'cancelled', 'skipped']) {
+      for (const event of ['push', 'workflow_dispatch', 'schedule']) {
+        assert.equal(allowed(event, 'success', event === 'schedule' ? 'success' : 'skipped', false, { ...Object.fromEntries(GATES.map((g) => [g, 'success'])), [gate]: status }), false, `${event}: ${gate} ${status}`);
+      }
+    }
+  }
+});
+
+const GATES = ['security-lockfiles', 'security-regressions', 'preview-schema-compatibility'];
+
+test('the gates run beside the image builds: they wait for the plan, skip a run that will not release, and run on every pull request', () => {
+  const workflow = YAML.parse(fs.readFileSync(path.join(__dirname, '../.github/workflows/build-kubernetes-images.yml'), 'utf8'));
+  assert.deepEqual([].concat(workflow.jobs.build.needs), ['plan'], 'the builds wait for nothing else');
+  for (const gate of GATES) {
+    const job = workflow.jobs[gate];
+    assert.deepEqual([].concat(job.needs), ['plan'], gate);
+    const runs = (event, plan, shouldRelease) => workflowExpression(job.if, {
+      github: { event_name: event }, cancelled: () => false,
+      needs: { plan: { result: plan, outputs: { should_release: shouldRelease } } },
+    });
+    assert.equal(runs('pull_request', 'skipped', undefined), true, `${gate}: a pull request (no plan) still runs it`);
+    assert.equal(runs('push', 'success', 'true'), true, `${gate}: a release runs it`);
+    assert.equal(runs('push', 'success', 'false'), false, `${gate}: a run that will not release skips it`);
+    assert.equal(runs('push', 'failure', undefined), false, `${gate}: no plan, no release, no gate`);
+  }
 });
 
 test('visible-change arrays reject excessive lengths before Zod visits any elements', () => {

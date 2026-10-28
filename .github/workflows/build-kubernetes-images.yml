@@ -29,6 +29,12 @@ concurrency:
 jobs:
   security-lockfiles:
     name: Audit all three lockfiles
+    # A gate on publishing, not on building (28 Oct 2026: the image builds
+    # waited ~1.7 min for these): the images build beside them and the release
+    # job waits for every one to pass. A run that will not release (a merge
+    # behind main's tip) skips them; a pull request still runs them.
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.plan.outputs.should_release == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,6 +59,9 @@ jobs:
 
   security-regressions:
     name: Security regressions (${{ matrix.os }})
+    # The same gate as the lockfile audit above.
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.plan.outputs.should_release == 'true') }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -81,6 +90,9 @@ jobs:
 
   preview-schema-compatibility:
     name: Preview schema compatibility (PostgreSQL 17/18)
+    # The same gate as the lockfile audit above.
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.plan.outputs.should_release == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -426,7 +438,8 @@ jobs:
 
   build:
     name: Resolve ${{ matrix.component }} image
-    needs: [plan, security-lockfiles, security-regressions, preview-schema-compatibility]
+    # The gates run beside the builds; the release job waits for them.
+    needs: [plan]
     if: needs.plan.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -437,11 +450,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22.23.4'
-      - run: |
-          npm install --global npm@11.21.1 undici@6.29.1
-          image_npm_root="$(npm root --global)"
-          rm -rf "$image_npm_root/npm/node_modules/undici"
-          mv "$image_npm_root/undici" "$image_npm_root/npm/node_modules/undici"
+      # No npm here: these steps run node scripts and Docker, never npm.
 
       - name: Normalize GHCR owner
         id: registry
@@ -572,12 +581,15 @@ jobs:
 
   release:
     name: Publish atomic Helm release
-    needs: [build, scheduled-image-audit]
+    needs: [build, scheduled-image-audit, security-lockfiles, security-regressions, preview-schema-compatibility]
     # Schedule-only audits skip on pushes/dispatches. Override the default
     # success() dependency check while still refusing a failed/skipped build,
-    # failed scheduled scans, or cancellation.
+    # failed scheduled scans, a gate that did not pass, or cancellation.
     if: >-
       ${{ !cancelled() && needs.build.result == 'success'
+          && needs['security-lockfiles'].result == 'success'
+          && needs['security-regressions'].result == 'success'
+          && needs['preview-schema-compatibility'].result == 'success'
           && (github.event_name != 'schedule' || needs['scheduled-image-audit'].result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
@@ -599,11 +611,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22.23.4'
-      - run: |
-          npm install --global npm@11.21.1 undici@6.29.1
-          image_npm_root="$(npm root --global)"
-          rm -rf "$image_npm_root/npm/node_modules/undici"
-          mv "$image_npm_root/undici" "$image_npm_root/npm/node_modules/undici"
+      # No npm here: these steps run node, Helm and Docker, never npm.
 
       - uses: azure/setup-helm@v4
         with:
