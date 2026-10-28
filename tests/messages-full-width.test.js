@@ -12,12 +12,12 @@
 //   1. ONE CONTROL: its labels, `aria-pressed`, the glyph swap, and the two
 //      classes dapp.json's checks and app.css select it by.
 //   2. EVERY PANE CARRIES IT, AT THE RIGHT: a conversation or #general (before
-//      ⋯), an app's channel, a dev session's bar, and the two agent panels,
-//      which take it as `headerAction` rather than importing this store.
+//      ⋯), an app's channel, a dev session's bar, and the agent session's
+//      panel, which takes it as `headerAction` rather than importing this
+//      store.
 //   3. IT DOES SOMETHING ON EVERY PANE: the layout folds the list for an
 //      agent thread too, not only for a conversation or a channel.
-//   4. IT STAYS PUT: hidden on a phone, and the agent chat's toolbar spans the
-//      pane so the control does not move in with the centred column.
+//   4. IT STAYS PUT: hidden on a phone, and out of the way of a side pane.
 //
 // Run with: node --test tests/messages-full-width.test.js
 
@@ -30,7 +30,6 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const SCREEN = read('frontend/src/features/messages/index.tsx');
-const CHAT = read('frontend/src/features/global-chat/index.tsx');
 const SESSION = read('frontend/src/features/agent-session/index.tsx');
 const ICONS = read('frontend/@/components/ui/icons.tsx');
 const CSS = read('public/css/app.css');
@@ -100,16 +99,8 @@ test('a dev session: in the pane\'s bar, after "Open full view"', () => {
   assert.match(CSS, /\.messages-session-bar \{\s*display: flex;\s*align-items: center;\s*justify-content: flex-end;\s*gap: 12px;/);
 });
 
-test('an agent chat and a Mayor session: handed to their panels, drawn at the end of their bars', () => {
-  assert.match(fn('AgentChatThread'), /<GlobalChatPanel embedded headerAction=\{<FullWidthToggle \/>\} \/>/);
+test('a Mayor session: handed to its panel, drawn at the end of its bar', () => {
   assert.match(fn('MayorSessionThread'), /<AgentSessionPanel embedded headerAction=\{<FullWidthToggle \/>\} \/>/);
-
-  // The global chat: last in its toolbar, after New. Its own screen passes
-  // nothing, so that surface is unchanged.
-  assert.match(CHAT, /export function GlobalChatPanel\(\{ embedded = false, headerAction = null \}: \{ embedded\?: boolean; headerAction\?: ReactNode \}\)/);
-  assert.match(CHAT, /<span>\{t\('chat:global\.toolbar\.new'\)\}<\/span>\s*<\/button>\s*\{headerAction\}\s*<\/header>/);
-  assert.equal(message('chat:global.toolbar.new'), 'New');
-  assert.match(CHAT, /\{snapshot\.host === 'messages' \? null : <GlobalChatPanel \/>\}/);
 
   // The Mayor: the session bar's `action`, after Changes, the "Open app"
   // button (#2779 follow-up), and just before the session's ⋯, as on the
@@ -137,7 +128,6 @@ test('app.css: a desktop control that keeps its ink, and stays under the pointer
   // chat, from 1024px up.
   assert.match(fn('FullWidthToggle'), /const specBeside = useSidePaneBeside\('messages'\);[\s\S]*if \(specBeside\) return null;/);
   assert.match(SCREEN, /className=\{`messages-list-pane \$\{specBeside \? 'hidden' : /);
-  assert.match(CSS, /\.global-chat-embedded > \.global-chat-toolbar \{ width: 100%; \}/);
 });
 
 // #4229: a strip too narrow for a readable conversation beside the list.

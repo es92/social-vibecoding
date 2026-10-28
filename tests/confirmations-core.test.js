@@ -1,20 +1,16 @@
 'use strict';
 
 // The storage-independent half of sealed one-use confirmations
-// (services/confirmations), shared by Global Chat and, from #2779 on, agent
-// sessions. Global Chat's own table and thread checks stay in
-// tests/global-chat-actions.test.js; this pins the rules both consumers rely
-// on, so a second consumer cannot quietly get a weaker copy of them.
+// (services/confirmations), used by agent sessions since #2779. This pins
+// the rules every consumer relies on, so a second consumer cannot quietly get
+// a weaker copy of them.
 //
 // Run with: node --test tests/confirmations-core.test.js
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 
 const confirmations = require('../src/services/confirmations');
-const globalChatActions = require('../src/services/global-chat/actions');
 
 const KEY = 'test-only-data-key';
 
@@ -79,13 +75,3 @@ test('an object revision is a bounded printable string, or none', () => {
   }
 });
 
-test('Global Chat uses the shared core rather than a copy of it', () => {
-  assert.equal(globalChatActions.ActionConfirmationError, confirmations.ActionConfirmationError);
-  assert.equal(globalChatActions.sha256, confirmations.sha256);
-  assert.equal(globalChatActions.normalizedJson, confirmations.normalizedJson);
-  assert.equal(globalChatActions.DEFAULT_TTL_MS, confirmations.DEFAULT_TTL_MS);
-  assert.equal(globalChatActions.MAX_TTL_MS, confirmations.MAX_TTL_MS);
-  const SRC = fs.readFileSync(path.join(__dirname, '../src/services/global-chat/actions.js'), 'utf8');
-  assert.doesNotMatch(SRC, /randomBytes\(32\)/, 'the token is minted in one place');
-  assert.doesNotMatch(SRC, /secrets\.encrypt/, 'and sealed in one place');
-});

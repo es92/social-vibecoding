@@ -359,10 +359,6 @@
     "text": "Messages",
     "description": "Title shown in the header bar, and as the browser tab's title, on the Messages screen, which lists the person's conversations with people and agents."
   },
-  "title.chat": {
-    "text": "Chat",
-    "description": "Title shown in the header bar, and as the browser tab's title, on a chat conversation screen. A noun."
-  },
   "title.agentSession": {
     "text": "Agent session",
     "description": "Title shown in the header bar, and as the browser tab's title, on the screen of one agent session, where an AI agent builds a change."

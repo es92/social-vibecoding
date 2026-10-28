@@ -740,13 +740,13 @@ export interface MessagesRoute {
    */
   appSlug: string | null;
   /**
-   * #2813: an AGENT thread open beside the list on a desktop — a global
-   * agent chat (`#messages/agent/<id>`) or an app's dev session
+   * #2813: an AGENT thread open beside the list on a desktop — an agent
+   * session (`#messages/agent/<id>`) or an app's dev session
    * (`#messages/session/<slug>/<id>`). Both used to navigate away to a
-   * screen of their own (`#chat/<id>`, `#app/<slug>/dev/sessions/<id>`).
+   * screen of their own (`#agent/<id>`, `#app/<slug>/dev/sessions/<id>`).
    * On a PHONE a dev session still goes to its own: the router swaps that
-   * address there. An agent chat and an agent session open here on a phone
-   * too, as the second level of the inbox's drawer (Evan, 18 Oct 2026).
+   * address there. An agent session opens here on a phone too, as the
+   * second level of the inbox's drawer (Evan, 18 Oct 2026).
    *
    * Mutually exclusive with the other two, for the same reason they are
    * with each other: one thread is open.
@@ -775,7 +775,6 @@ export interface MessagesRoute {
 
 /** An agent thread of the inbox (#2813). See `MessagesRoute.agent`. */
 export type MessagesAgentThread =
-  | { kind: 'chat'; id: string }
   | { kind: 'session'; slug: string; id: number }
   // #2779: an agent session, a conversation with the Mayor (a serial id), or
   // `new`: the one New change opens, unsent until its first message.
@@ -826,9 +825,10 @@ export interface MessagesSnapshot {
    * #2718: the other two kinds of thread this screen lists.
    *
    * `discussions` is GET /api/messages/app-discussions — the general thread
-   * on each app the viewer is a member of, one row per app. Agent chats are NOT here: they are
-   * already in features/global-chat's own store, and a second copy of a list
-   * that is loaded, merged and invalidated elsewhere is a copy that drifts.
+   * on each app the viewer is a member of, one row per app. Agent sessions
+   * are NOT here: they are already in features/agent-session's own store,
+   * and a second copy of a list that is loaded, merged and invalidated
+   * elsewhere is a copy that drifts.
    */
   discussions: AppDiscussion[];
   discussionsLoaded: boolean;

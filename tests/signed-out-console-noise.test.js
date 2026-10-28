@@ -2,8 +2,8 @@
 // member-only API.
 //
 // The shell is one document for everyone, so stores mounted on every page
-// fetched `/api/models`, `/api/agent-sessions` and
-// `/api/global-chat/bootstrap` for signed-out visitors (four 401s, each a red
+// fetched `/api/models` and `/api/agent-sessions` (and, until it was
+// removed, Global Chat's bootstrap) for signed-out visitors (four 401s, each a red
 // "Failed to load resource" line on every anonymous screen) and for
 // waiting-room accounts (403s). They now wait for a viewer the endpoints
 // answer (frontend/src/lib/platform-viewer.ts) and load on `sv:authed`, the
@@ -33,9 +33,7 @@ function world(user) {
   globalThis.document = doc;
   globalThis.fetch = async (url) => {
     requests.push(String(url));
-    const body = String(url).startsWith('/api/global-chat/bootstrap')
-      ? { thread: null, threads: [], profiles: { globalChat: { enabled: false } } }
-      : { sessions: [], models: [] };
+    const body = { sessions: [], models: [] };
     return { ok: true, status: 200, json: async () => body };
   };
   const authed = () => { for (const fn of listeners['sv:authed'] || []) fn(); };
@@ -54,14 +52,12 @@ test('signed out: no member request, and the load runs once the authed shell boo
   const w = world(null);
   try {
     const agent = loadTsx('frontend/src/features/agent-session/store.ts');
-    const chat = loadTsx('frontend/src/features/global-chat/store.ts');
     await agent.loadAgentSessions();
     await agent.loadAgentSessions(); // a second caller (recents, the app sheet)
     await agent.loadModelCatalog();
-    assert.equal(await chat.initializeGlobalChat(), null);
     await settle();
     assert.deepEqual(w.requests, [], 'nothing asked for a signed-out document');
-    assert.equal((w.listeners['sv:authed'] || []).length, 3, 'one deferred load per store, not one per caller');
+    assert.equal((w.listeners['sv:authed'] || []).length, 2, 'one deferred load per load, not one per caller');
 
     // A reload-free sign-in: App.user lands, then sv:authed fires.
     w.win.App.user = { id: 1, username: 'ada', hasPlatformAccess: true };
@@ -70,7 +66,6 @@ test('signed out: no member request, and the load runs once the authed shell boo
     await settle();
     assert.ok(w.requests.includes('/api/agent-sessions'));
     assert.ok(w.requests.includes('/api/models'));
-    assert.ok(w.requests.includes('/api/global-chat/bootstrap'));
   } finally { cleanup(); }
 });
 
@@ -78,10 +73,8 @@ test('the waiting room: an account without platform access asks nothing', async 
   const w = world({ id: 2, username: 'queued', hasPlatformAccess: false });
   try {
     const agent = loadTsx('frontend/src/features/agent-session/store.ts');
-    const chat = loadTsx('frontend/src/features/global-chat/store.ts');
     await agent.loadAgentSessions();
     await agent.loadModelCatalog();
-    await chat.initializeGlobalChat();
     // sv:authed does not fire for a waiting-room session, and if it did the
     // gate would still hold.
     w.authed();
@@ -96,12 +89,9 @@ test('a member loads straight away, as before', async () => {
   const w = world({ id: 3, username: 'member' });
   try {
     const agent = loadTsx('frontend/src/features/agent-session/store.ts');
-    const chat = loadTsx('frontend/src/features/global-chat/store.ts');
     await agent.loadAgentSessions();
-    await chat.initializeGlobalChat();
     await settle();
     assert.ok(w.requests.includes('/api/agent-sessions'));
-    assert.ok(w.requests.includes('/api/global-chat/bootstrap'));
   } finally { cleanup(); }
 });
 

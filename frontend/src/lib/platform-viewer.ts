@@ -3,8 +3,8 @@
  *
  * The shell is one document for everybody, so every store in it is mounted on
  * the signed-out landing and in the waiting room too. A store that fetched a
- * member-only endpoint at mount (`/api/models`, `/api/agent-sessions`,
- * `/api/global-chat/bootstrap`) therefore asked on every anonymous page and
+ * member-only endpoint at mount (`/api/models`, `/api/agent-sessions`)
+ * therefore asked on every anonymous page and
  * got a 401, and asked from the waiting room and got a 403. Each refusal is a
  * red "Failed to load resource" line in the console: four on every
  * signed-out screen, and a console error on a route fails proposal checks.

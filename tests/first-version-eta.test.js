@@ -466,7 +466,7 @@ test('on the App tab and the other screens the document does not scroll, the bar
   // too. Every other glass-bar route the document does not scroll gets the
   // same sticky bar; none of them is a page scroller (browser-scroll.ts PAGES).
   const sticky = /body:has\(:is\(([^)]*)\):not\(\.hidden\)\) #platform-header,/.exec(rule)[1].split(',').map((id) => id.trim());
-  assert.deepEqual(sticky, ['#messages-screen', '#workshop-screen', '#global-chat-screen', '#agent-session-screen', '#profile-proposals-screen']);
+  assert.deepEqual(sticky, ['#messages-screen', '#workshop-screen', '#agent-session-screen', '#profile-proposals-screen']);
   const scroll = read('frontend/src/lib/browser-scroll.ts');
   const pages = JSON.parse(/const PAGES = (\[[^\]]*\]);/.exec(scroll)[1].replace(/'/g, '"'));
   assert.deepEqual(pages, ['home-screen', 'browse-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen']);

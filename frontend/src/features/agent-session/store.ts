@@ -986,8 +986,8 @@ function openDraft(host: AgentSessionHost) {
   const hint = fresh ? (pendingHint || null) : null;
   pendingHint = undefined;
   const linked = takeHandoff();
-  // Started from a request (Start work), or handed a message (Global Chat,
-  // Explore): the box offers that first message (the composer reads it off
+  // Started from a request (Start work), or handed a message (Explore): the
+  // box offers that first message (the composer reads it off
   // the hint, ./request-seed.ts), not the text an earlier unsent
   // conversation left behind.
   if (draftSeed(hint)) writeUnsent('new', '');

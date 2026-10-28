@@ -1040,9 +1040,9 @@ const ADDED_IDS = {
   // in the bar, which lists the same conversations and the agents beside
   // them; its 'All messages' row and its pager went with it.
   'notifications-screen-mark-all': 'Mark-all-read on the sheet — same controller action as the drawer\'s #notifications-mark-all, React-wired instead of id-bound. Same naming note as the tab row above. It sat at the far RIGHT END of that tab row, in tab-sized ink on the same baseline as the three tabs, so a control that changes data read as a fourth place to go; it is a row UNDER the Unread tab now, with the list it empties, and renders nowhere else.',
-  // ── #2377: Global Chat (experimental) ───────────────────────────
-  'global-chat-screen': '#2377/#2543: the React-owned conversational screen. It ships hidden for hydration parity, then the hash router reveals the durable session selected from Improve.',
-  'global-chat-composer': '#2377: the compact prompt field inside Global Chat. The stable id gives its label and focus behavior one owner across desktop, mobile web, and the native wrapper.',
+  // #global-chat-screen and #global-chat-composer left this map when
+  // Global Chat (#2377, #2543) was removed with its screen. They were only
+  // ever ADDED ids, so they simply leave.
   // ── #2779: agent sessions (on for everyone; the Experimental pane's
   //    switch and its status line are retired and left this map) ──
   'agent-session-screen': '#2779: the React-owned agent session screen, one conversation with the Mayor that works on any app. Ships hidden and empty for hydration parity; the hash router reveals it at #agent/<id>, and App.REACT_SCREEN_IDS keeps its visibility single-owned. Everything inside it renders only once a conversation is open, so the root is its one static id.',

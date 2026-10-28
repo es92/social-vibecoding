@@ -159,8 +159,8 @@ import { JumpToLatest } from '../messages/jump-to-latest';
 import { linkRefsInHtml } from '../messages/channels';
 
 // Agent sessions (#2779, docs/agent-sessions.md "UI surfaces"): one
-// conversation with the Mayor that works on any app. Drawn on two surfaces,
-// like Global Chat: its own screen (#agent/<id>, a phone's only surface) and
+// conversation with the Mayor that works on any app. Drawn on two surfaces:
+// its own screen (#agent/<id>, a phone's only surface) and
 // the Messages pane beside the inbox on a desktop (#messages/agent/<id>).
 // One panel, so the two cannot drift. New change opens it UNSENT at `new`
 // (the store's `draft`): the same panel, with nothing created until the
@@ -1886,7 +1886,7 @@ function Composer({ id }: { id: string }) {
 
   // The conversation's unsent text, back after a reload or a switch. An
   // unsent conversation started from a request (Start work), or handed a
-  // message (Global Chat, Explore), offers that first message when nothing
+  // message (Explore), offers that first message when nothing
   // was typed (./request-seed.ts), from the hint, so it is kept only once
   // edited and never turns up in a later New change. A new hint is a new
   // start, even on the same address.
@@ -2552,7 +2552,7 @@ export function AgentSessionScreen() {
   useVisibilityHiddenClass(screenRef, 'agent-session-screen', false);
 
   // A cold deep link can reveal this island before app.js has routed it;
-  // resolve the address once after hydration, the way Global Chat does.
+  // resolve the address once after hydration.
   useEffect(() => {
     if (snapshot.open || !window.location.hash.startsWith('#agent/')) return;
     const [segment, section] = window.location.hash.slice('#agent/'.length).split('/');

@@ -345,14 +345,6 @@ declare global {
         currentId(): number | 'new' | null;
         refreshList(): Promise<void> | void;
       };
-      globalChat?: {
-        open(options?: { threadId?: string | null }): Promise<void> | void;
-        route(threadId?: string | null): Promise<void> | void;
-        close(classicPath?: string | null): void;
-        deactivate(): void;
-        isOpen(): boolean;
-        send(text: string): Promise<void> | void;
-      };
       [key: string]: unknown;
     };
     /** features/dev-chat/dev-chat.js — sanitized Markdown renderer. */

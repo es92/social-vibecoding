@@ -7,7 +7,7 @@
 // take (`allow_fallbacks`), so it has to ride on every request body.
 //
 // One helper, used by every call site that posts to OpenRouter: the platform's
-// own transports (src/services/global-chat/openrouter.js,
+// own transports (src/services/openrouter.js,
 // src/services/openrouter-mayor.js, src/services/dictation.js) and the coding
 // turns' request listeners (worker/codex-openrouter-request.js,
 // worker/claude-openrouter-request.js). It lives in worker/ because the worker

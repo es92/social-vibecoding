@@ -150,8 +150,8 @@ selects a skill.
   names the changed files yourself. A changed file no suite names is printed
   as such: for a screen, that is the test that does not exist yet; for shared
   code, it is the cue below. It also runs, on every change, the few fast
-  whole-tree guards that name no file (icons, inks, em dashes, the Global
-  Chat route inventory, …). A guard opts in with a
+  whole-tree guards that name no file (icons, inks, em dashes, the admin
+  console's registry, …). A guard opts in with a
   `// test:changed: always (…)` line; mark a new one only if it is fast.
   A suite that reaches a file only through a chain of modules declares it
   with a `// test:changed: when <path> (…)` line, and a change to that file

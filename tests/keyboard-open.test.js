@@ -551,7 +551,6 @@ const SENDS = [
   ['frontend/src/features/group-chat/composer.tsx', 'className="gc-send shrink-0"'],
   ['frontend/src/features/group-chat/composer.tsx', '<Button type="submit" size="sm" className="shrink-0"'],
   ['frontend/src/features/messages/composer.tsx', 'className="messages-send"'],
-  ['frontend/src/features/global-chat/index.tsx', 'className="global-chat-send"'],
   ['frontend/src/features/dev-chat/composer.tsx', 'className="dc-draft-btn dc-draft-send"'],
   // The agent session (the bot's chat): Send (Stop while it works), and
   // Stop and Save draft in its place while a draft is being saved.

@@ -34,8 +34,7 @@ const APP_JS = read('public/js/app.js');
 const EXEMPT = {
   'app-view': 'A project page scrolls in #dev-forum-scroll, which #3544 gives its pixel for the growing tabs (Hub, Workshop); Needs you and Discussion are fitted on purpose and scroll inside. A running app is somebody else\'s document.',
   'messages-screen': 'The root is `overflow: hidden`; the list scrolls in .messages-list-scroll, which carries the attribute (asserted below). A thread is a chat.',
-  'global-chat-screen': 'A chat: the transcript opens on its newest line and stays there. It is not a page.',
-  'agent-session-screen': 'A chat with an agent, as Global Chat.',
+  'agent-session-screen': 'A chat with an agent: the transcript opens on its newest line and stays there. It is not a page.',
 };
 
 function screenIds() {

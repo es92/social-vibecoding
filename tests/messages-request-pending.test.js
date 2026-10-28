@@ -173,7 +173,7 @@ test('a send refused as awaiting_acceptance leaves no Retry row, and its words g
 test('an unanswered direct request is named by its requester in the row and the header', () => {
   const helper = SCREEN.slice(SCREEN.indexOf('function directPerson('), SCREEN.indexOf('function ConversationRow('));
   assert.match(helper, /conversation\.membershipStatus === 'invited' \? conversation\.requester \|\| null : null/);
-  const row = SCREEN.slice(SCREEN.indexOf('function ConversationRow('), SCREEN.indexOf('function KindPill('));
+  const row = SCREEN.slice(SCREEN.indexOf('function ConversationRow('), SCREEN.indexOf('const GeneralChannelRow = memo('));
   assert.match(row, /const peer = directPerson\(conversation\);/);
   assert.match(row, /title=\{peer\?\.username \|\| conversation\.title\}/, 'the tile is theirs, not "DM"');
   const header = SCREEN.slice(SCREEN.indexOf('function ThreadHeader('), SCREEN.indexOf('/** The day a message was sent'));

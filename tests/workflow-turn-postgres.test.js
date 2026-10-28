@@ -1115,40 +1115,4 @@ test('turn machine against the full PostgreSQL schema', { timeout: 180000 }, asy
       await pool.query('UPDATE chat_sessions SET active_turn = NULL WHERE id = $1', [c.id]);
     }
   });
-
-  // ── 6. Global Chat: request-scoped, its Stop from any process ───────
-  await t.test('G1 a Stop is stamped on the thread\'s running turn and read by it; a later turn is not stopped by it', async () => {
-    const store = require('../src/services/global-chat/store');
-    const { rows: [u] } = await pool.query(`INSERT INTO users (username, password) VALUES ($1, 'x') RETURNING id`, [`gc_${++seq}`]);
-    const thread = await store.createThread(pool, u.id);
-    const args = { userId: u.id, threadId: thread.id };
-    assert.equal(await store.requestTurnCancel(pool, args), null, 'nothing runs: nothing to stop');
-    const first = await store.claimTurn(pool, args);
-    assert.equal(await store.turnCancelled(pool, args), false);
-    assert.equal(await store.requestTurnCancel(pool, args), first);
-    assert.equal(await store.turnCancelled(pool, args), true, 'the turn reads it on whichever process runs it');
-    await store.releaseTurn(pool, { ...args, turnId: first });
-    await store.claimTurn(pool, args);
-    assert.equal(await store.turnCancelled(pool, args), false, 'a Stop of one turn never stops the next');
-    await store.deleteThread(pool, u.id, thread.id);
-    assert.equal(await store.turnCancelled(pool, args), true, 'nor runs one on a thread that was deleted');
-  });
-
-  await t.test('G2 usage a turn never settled is settled as an interrupted error at its estimate, once no turn could settle it', async () => {
-    const accounting = require('../src/services/global-chat/accounting');
-    const { rows: [u] } = await pool.query(`INSERT INTO users (username, password) VALUES ($1, 'x') RETURNING id`, [`gu_${++seq}`]);
-    const row = async (age, outcome = 'unknown') => (await pool.query(
-      `INSERT INTO global_chat_usage (id, user_id, cost_usd, cost_source, outcome, created_at)
-       VALUES (gen_random_uuid(), $1, 0.01, 'catalog_estimate', $2, NOW() - make_interval(mins => $3)) RETURNING id`,
-      [u.id, outcome, age])).rows[0].id;
-    const left = await row(30);
-    const running = await row(2);
-    const settled = await row(30, 'success');
-    assert.deepEqual(await accounting.settleAbandonedReservations(pool), { settled: 1 });
-    const read = async (id) => (await pool.query('SELECT outcome, error_code, cost_usd::text AS cost FROM global_chat_usage WHERE id = $1', [id])).rows[0];
-    assert.deepEqual({ ...(await read(left)) }, { outcome: 'error', error_code: 'interrupted', cost: '0.01000000' }, 'kept at its estimate');
-    assert.equal((await read(running)).outcome, 'unknown', 'a turn may still settle it');
-    assert.equal((await read(settled)).outcome, 'success');
-    assert.deepEqual(await accounting.settleAbandonedReservations(pool), { settled: 0 });
-  });
 });

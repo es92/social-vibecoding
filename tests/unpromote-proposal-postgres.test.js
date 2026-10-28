@@ -393,7 +393,7 @@ test('the proposal menu and detail view offer the move to the author only', () =
   assert.match(APP_VIEW_SRC, /key: 'unpromote', cls: 'gc-vote-btn', label: PlatformI18n\.t\('changes:card\.actions\.moveBack'\)/);
   assert.equal(require('./lib/platform-i18n').message('changes:card.actions.moveBack'), 'Move back to Underway');
   assert.match(APP_VIEW_SRC, /fetch\(`\/api\/sessions\/\$\{sessionId\}\/unpromote`, \{ method: 'POST' \}\)/,
-    'the client path is spelled literally so the Global Chat inventory can see it');
+    'the client path is spelled literally, so a search for the route finds its caller');
   const fn = APP_VIEW_SRC.match(/async unpromoteProposal\(sessionId\) \{[\s\S]*?\n  \},/);
   assert.ok(fn);
   // The confirm copy is read from the catalog.

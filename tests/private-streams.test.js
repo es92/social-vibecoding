@@ -40,9 +40,6 @@ test('private SSE classifies current platform routes and rejects new/ambiguous s
     assert.deepEqual(streamResource('GET', '/api/agent-sessions/%31/events'), { kind: 'agent', id: 1 });
     assert.deepEqual(streamResource('POST', '/api/agent-sessions/1/turns'), { kind: 'agent', id: 1 });
     assert.deepEqual(streamResource('POST', '/api/apps/a%2Db/workshop/ask'), { kind: 'app', slug: 'a-b' });
-    const uuid = '00000000-0000-4000-8000-000000000001';
-    for (const tail of ['turns', 'more-suggestions'])
-        assert.deepEqual(streamResource('POST', `/api/global-chat/threads/${uuid}/${tail}`), { kind: 'global', thread: uuid });
     for (const path of ['/api/sessions/0/events', '/api/sessions/01/events', '/api/sessions/2147483648/events', '/api/sessions/1garbage/events', '/api/sessions/%2f/events', '/api/agent-sessions/%zz/events', '/api/apps/a%2Fb/workshop/ask', '/api/new-private-stream'])
         assert.equal(streamResource(path.includes('/apps/') ? 'POST' : 'GET', path), null, path);
 });
@@ -50,8 +47,6 @@ test('hosted connector policies expose no SSE routes; adding one needs a streami
     const paths = [
         ['GET', '/api/sessions/1/events'], ['POST', '/api/sessions/1/chat'],
         ['GET', '/api/agent-sessions/1/events'], ['POST', '/api/agent-sessions/1/turns'],
-        ['POST', '/api/global-chat/threads/00000000-0000-4000-8000-000000000001/turns'],
-        ['POST', '/api/global-chat/threads/00000000-0000-4000-8000-000000000001/more-suggestions'],
         ['POST', '/api/apps/example/workshop/ask'],
     ];
     for (const [method, path] of paths) {
@@ -66,7 +61,7 @@ test('production installs the stream boundary immediately after authentication',
     const guard = source.indexOf("app.use(require('./src/middleware/private-streams').privateStreamDelivery(config));");
     assert.ok(auth >= 0 && guard > auth);
     assert.doesNotMatch(source.slice(auth + 'app.use(authMiddleware(config));'.length, guard), /app\.use\(/, 'no router may bypass delivery between auth and the stream boundary');
-    for (const route of ['globalChatRoutes', 'agentSessionRoutes', 'sessionRoutes', 'workshopAskRoutes'])
+    for (const route of ['agentSessionRoutes', 'sessionRoutes', 'workshopAskRoutes'])
         assert.ok(source.indexOf(`app.use(${route}(config))`) > guard, route);
 });
 test('ordinary JSON responses bypass stream authorization and retain their bytes', async (t) => {

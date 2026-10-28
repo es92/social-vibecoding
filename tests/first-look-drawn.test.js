@@ -287,15 +287,6 @@ test('the frame\'s navigation goes past the service worker to the server, never 
   assert.equal(classifyRequest('GET', `${origin}${DRAWN}`, 'text/html', 'navigate', origin), 'bypass');
 });
 
-test('the Global Chat inventory lists the route as a read', () => {
-  const inventory = JSON.parse(read('src/services/global-chat/classic-inventory.generated.json'));
-  const routes = inventory.routes || Object.values(inventory).find(Array.isArray) || [];
-  const row = routes.find((r) => r.path === '/api/apps/:slug/first-version/first-look/drawn');
-  assert.ok(row, 'listed');
-  assert.equal(row.method, 'GET');
-  assert.equal(row.risk, 'read');
-});
-
 // ── The shell ────────────────────────────────────────────────────────────
 
 const DIR = 'frontend/src/features/first-session';

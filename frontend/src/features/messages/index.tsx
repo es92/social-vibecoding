@@ -9,7 +9,7 @@ import {
   JumpToLatestButton, NewMessagesBanner, NewMessagesDivider, TranscriptOverlay, groupsWithPrevious,
 } from '@/components/ui/chat';
 import {
-  ArrowsPointingInIcon, ArrowsPointingOutIcon, ChatIcon, ChevronDownIcon, DraftTrashIcon, EllipsisHorizontalIcon, PencilSparklesIcon,
+  ArrowsPointingInIcon, ArrowsPointingOutIcon, ChatIcon, ChevronDownIcon, EllipsisHorizontalIcon, PencilSparklesIcon,
   PlusIcon, SearchIcon, SparklesIcon, UserGroupIcon, XIcon,
 } from '@/components/ui/icons';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
@@ -97,7 +97,6 @@ import { AppIconContent, AppIconLink, appIconKind } from '../apps/app-card-view'
 import { PageBackButton } from '../dev-board/workshop/page-back';
 import { generalHubBack, openChannelHub, usePlatformSlug } from './channel-hub';
 import { ThreadActivityCard } from '../message-actions/thread-activity';
-import { GlobalChatPanel } from '../global-chat';
 import { AgentSessionPanel } from '../agent-session';
 import { useSidePaneBeside } from '../agent-session/spec-layout';
 import { agentActivity } from '../agent-session/activity';
@@ -115,18 +114,10 @@ import {
 import { listArchivedSessions } from '../agent-session/api';
 import type { AgentSession as MayorSession } from '../agent-session/api';
 import { changeRowWords } from '../agent-session/transcript';
-import {
-  deactivateGlobalChat,
-  getGlobalChatState,
-  initializeGlobalChat,
-  openGlobalChat,
-  removeGlobalChatThread,
-  useGlobalChatSelector,
-} from '../global-chat/store';
 import { Improve } from '../improve/improve-controller.js';
 import { improveStore } from '../improve/improve-store.js';
 import { SessionRow, type SessionRowView } from '../improve/session-row';
-import { INBOX_QUERY_MAX, INBOX_SECTIONS, buildInbox, savedInboxQuery, shownInSection, type AgentChat, type AppDiscussion, type InboxSection } from './inbox';
+import { INBOX_QUERY_MAX, INBOX_SECTIONS, buildInbox, savedInboxQuery, shownInSection, type AppDiscussion, type InboxSection } from './inbox';
 import { publishRailInbox, railConversations, type RailConversation } from './rail-inbox';
 import { useSidebarRows } from '../nav/sidebar-rows';
 import type { ConversationDetail, ConversationMessage, ConversationSummary, DiscussionMessage, MessagesAgentThread } from './types';
@@ -295,26 +286,6 @@ const ConversationRow = memo(function ConversationRow({ conversation, active, pr
 });
 
 /**
- * The mark that says what KIND of thread a row is (#2718).
- *
- * People get none, and that is the whole design of it: they are the
- * overwhelming majority of an inbox and a pill on every row is a pill that
- * says nothing. The two that are NOT a person say so — which is the
- * arrangement Slack and Teams land on with a channel, a DM and a bot thread
- * in one sidebar, and the one thing that makes a single list readable.
- */
-function KindPill({ kind }: { kind: 'agent' }) {
-  // Only an agent wears one now (#2783): the channels have a section of
-  // their own, headed, so an "App" pill on each of them said it twice.
-  const t = useMessages('messages');
-  return (
-    <span className="messages-kind-pill" data-kind={kind}>
-      {t('messages:inbox.agentPill')}
-    </span>
-  );
-}
-
-/**
  * #general, the room every user is in (#2783).
  *
  * A `channel` conversation, so unlike an app's channel it DOES carry an
@@ -422,128 +393,14 @@ const AppChannelRow = memo(function AppChannelRow({ discussion, active }: { disc
 });
 
 /**
- * An agent chat — a thread with the AI that builds.
- *
- * Read from features/global-chat's own store rather than copied into this
- * one: that list is already loaded, merged on every thread event and
- * invalidated by the chat itself, and a second copy of it is a copy that
- * drifts. The row's address is the same `#chat/<id>` the Improve panel's own
- * list uses.
- */
-/**
- * An agent chat, as a row of this inbox.
- *
- * ── It can be DELETED here (#2718 review) ─────────────────────────────
- *
- * The Improve panel's own list of these could, and the panel is retired: it
- * had become a drawer you opened to press one of two buttons, so the buttons
- * moved into the mark's menu and the drawer went. Everything else in it was
- * already somewhere better — the sessions in the Workshop, GitHub and Share
- * in About, these chats in this list — except the delete, which existed
- * nowhere else. So it comes here rather than going away, because retiring a
- * surface is not a reason to retire what only that surface offered.
- *
- * The confirm is a row rather than a dialog, which is what it was: a chat is
- * cheap to lose and a modal over a list to delete one row from it is the
- * heavier gesture.
- */
-const AgentChatRow = memo(function AgentChatRow({ chat, active }: { chat: AgentChat; active: boolean }) {
-  const t = useMessages('messages');
-  const at = chat.updatedAt || chat.createdAt || null;
-  const activity = at ? agoStamp(at) : null;
-  const [confirming, setConfirming] = useState(false);
-  const [removing, setRemoving] = useState(false);
-
-  async function remove() {
-    if (removing) return;
-    setRemoving(true);
-    try {
-      await removeGlobalChatThread(chat.id);
-    } catch {
-      setRemoving(false);
-      window.PlatformUI?.toast?.(t('messages:inbox.agentChat.deleteFailed'));
-    }
-  }
-
-  if (confirming) {
-    return (
-      <div className="messages-conversation-row messages-row-confirm" data-inbox-agent={chat.id}>
-        <span className="min-w-0 flex-1">{t('messages:inbox.agentChat.deleteConfirm')}</span>
-        <button
-          type="button"
-          className="messages-row-confirm-cancel"
-          disabled={removing}
-          onClick={() => setConfirming(false)}
-        >
-          {t('core:common.cancel')}
-        </button>
-        <button
-          type="button"
-          className="messages-row-confirm-delete"
-          disabled={removing}
-          onClick={() => void remove()}
-        >
-          {removing ? t('messages:inbox.agentChat.deleting') : t('messages:inbox.agentChat.delete')}
-        </button>
-      </div>
-    );
-  }
-  // #2813: the inbox's own address, so on a desktop the chat opens in the
-  // pane beside this list, and on a phone as the second level of its drawer
-  // (../nav-drawer/messages-drawer.ts), where it used to be a screen of its own.
-  const thread: MessagesAgentThread = { kind: 'chat', id: chat.id };
-  const href = agentThreadAddress(thread);
-  return (
-    <a
-      href={href}
-      data-inbox-agent={chat.id}
-      className={`messages-conversation-row ${active ? 'messages-conversation-active' : ''}`}
-      aria-current={active ? 'page' : undefined}
-      onClick={(event) => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
-        if (window.location.hash === href) { event.preventDefault(); openAgentThread(thread); }
-      }}
-    >
-      <span className="messages-inbox-tile messages-inbox-agent-tile" aria-hidden="true">
-        <SparklesIcon className="w-5 h-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="messages-row-line">
-          <span className="messages-row-name">{chat.title || t('messages:inbox.agentChat.untitled')}<KindPill kind="agent" /></span>
-          {activity
-            ? <time className="messages-row-time" dateTime={at || undefined} title={activity.title}>{activity.text}</time>
-            : null}
-        </div>
-        <div className="messages-row-line">
-          <span className="messages-row-preview">
-            {chat.busy ? t('messages:inbox.agentChat.working') : (chat.summary || t('messages:inbox.noMessages'))}
-          </span>
-        </div>
-      </div>
-      {/* Inside the anchor, so it rides the row's own layout — and it stops
-          the navigation itself, the way the Discover row's Add button does. */}
-      <button
-        type="button"
-        className="messages-row-delete"
-        aria-label={chat.title ? t('messages:inbox.agentChat.deleteNamed', { chat: chat.title }) : t('messages:inbox.agentChat.deleteUnnamed')}
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirming(true); }}
-      >
-        <DraftTrashIcon className="w-4 h-4" aria-hidden="true" />
-      </button>
-    </a>
-  );
-});
-
-/**
  * A change in flight, as a row of this inbox (#2770, #2772).
  *
  * ── A change IS an agent conversation ─────────────────────────────────
  *
  * A dev session is the viewer talking to the agent that builds, which is
- * what an agent chat is too — so it is listed under Agents beside them, and
- * New change lands on one. Until now Messages → Agents held only the global
- * chats, and a change somebody had just started was findable from the
- * Workshop and the bell's Agents tab but not from here.
+ * what an agent session is too — so it is listed under Agents beside them,
+ * and New change lands on one. A change somebody had just started was once
+ * findable from the Workshop and the bell's Agents tab but not from here.
  *
  * ── The same row, from the same list ──────────────────────────────────
  *
@@ -552,9 +409,6 @@ const AgentChatRow = memo(function AgentChatRow({ chat, active }: { chat: AgentC
  * fetch of /api/me/active-sessions). So this reads that store and draws that
  * row: a second copy of the list would drift, and a second row would let a
  * change's Working / Ready state say two things in two places.
- *
- * NOT GATED ON THE GLOBAL-CHAT FLAGS. Those decide whether the experimental
- * chat exists; a change is not that chat, and every collaborator has one.
  *
  * ── Where the row goes ────────────────────────────────────────────────
  *
@@ -847,12 +701,7 @@ function ConversationList({ drawer = false, litId = null }: {
 } = {}) {
   const t = useMessages('messages');
   const snap = useMessagesSnapshot();
-  // Agent chats come from the chat's OWN store (#2718): that list is already
-  // loaded, merged on every thread event and invalidated by the chat itself,
-  // and a second copy in this store is a copy that drifts. Gated on the same
-  // two flags the Improve panel's list is, so a shell where the feature is
-  // off sees no Agents rows and no Agents filter doing nothing.
-  // REMEMBERED PER DEVICE SINCE #5459, AND STILL NOT IN THE STORE. A daily
+  // The search: REMEMBERED PER DEVICE SINCE #5459, AND STILL NOT IN THE STORE. A daily
   // voter narrows the list to the changes waiting on them, leaves to vote,
   // and comes back: the query now survives that, kept in localStorage
   // (`usernode:messages-query`, ./inbox.ts) the way the folded sections are,
@@ -890,16 +739,6 @@ function ConversationList({ drawer = false, litId = null }: {
   // once, and the rows follow in a render React can interrupt with the next
   // one, so typing a word into a long inbox does not wait on it per letter.
   const deferredQuery = useDeferredValue(query);
-  // Two fields of the chat's store, not the whole of it: a turn streaming
-  // its progress in the Agents pane is not a reason to redraw this list.
-  const chatBootstrap = useGlobalChatSelector((s) => s.bootstrap);
-  const chatThreads = useGlobalChatSelector((s) => s.threads);
-  const agentsOn = !!chatBootstrap?.parityReady
-    && chatBootstrap.profiles.globalChat.enabled === true;
-  const agents = useMemo<AgentChat[]>(
-    () => (agentsOn ? (chatThreads as AgentChat[]) : []),
-    [agentsOn, chatThreads],
-  );
   // The viewer's changes in flight (#2770) — see AgentSessionRow. AFTER
   // MOUNT ONLY: app.js can have filled the Improve store before this island
   // hydrates, and rows the prerendered document did not have are a hydration
@@ -961,13 +800,11 @@ function ConversationList({ drawer = false, litId = null }: {
   // in the search box or per publish of a store this list does not draw.
   const inbox = useMemo(() => buildInbox({
     conversations: snap.conversations,
-    agents,
     sessions,
     mayors,
-  }), [snap.conversations, agents, sessions, mayors]);
+  }), [snap.conversations, sessions, mayors]);
   const byMayor = useMemo(() => new Map(mayors.map((item) => [String(item.id), item])), [mayors]);
   const byConversation = useMemo(() => new Map(snap.conversations.map((item) => [String(item.id), item])), [snap.conversations]);
-  const byAgent = useMemo(() => new Map(agents.map((item) => [item.id, item])), [agents]);
   const bySession = useMemo(() => new Map(sessions.map((item) => [item.key, item])), [sessions]);
 
   const q = deferredQuery.trim().toLowerCase();
@@ -990,8 +827,7 @@ function ConversationList({ drawer = false, litId = null }: {
       return !!m && (inboxMatches(m.title, q) || inboxMatches(m.focusApp?.name, q)
         || inboxMatches(m.activeChange?.title, q));
     }
-    const g = byAgent.get(entry.key.slice('agent:'.length));
-    return !!g && inboxMatches(g.title, q);
+    return false;
   };
   const searching = !!q;
   const found = inbox.filter(matches);
@@ -1004,7 +840,7 @@ function ConversationList({ drawer = false, litId = null }: {
       return !!session && open?.kind === 'session' && open.id === session.id;
     }
     if (entry.kind === 'mayor') return open?.kind === 'agent' && String(open.id) === entry.key.slice('mayor:'.length);
-    return open?.kind === 'chat' && open.id === entry.key.slice('agent:'.length);
+    return false;
   };
   const openKey = found.find(isOpen)?.key || null;
   // v3 (18 Oct 2026): what the desktop's sidebar nests under Messages
@@ -1028,7 +864,6 @@ function ConversationList({ drawer = false, litId = null }: {
       return !!session && (session.kind === 'task' || session.awaitingInput || session.busy);
     }
     if (entry.kind === 'mayor') return !!byMayor.get(entry.key.slice('mayor:'.length))?.busy;
-    if (entry.kind === 'agent') return !!byAgent.get(entry.key.slice('agent:'.length))?.busy;
     return false;
   };
 
@@ -1068,7 +903,7 @@ function ConversationList({ drawer = false, litId = null }: {
   // people you have not read. A zero says nothing. Unread is new to read,
   // grey like every unread count since #18 (19 Oct 2026 polish board); the
   // accent is for what waits on you.
-  const working = mayors.filter((item) => item.busy).length + agents.filter((item) => item.busy).length
+  const working = mayors.filter((item) => item.busy).length
     + sessions.filter((item) => item.busy).length;
   const unreadFromPeople = snap.conversations
     .filter((item) => !item.homeroomBot && item.kind !== 'channel')
@@ -1277,16 +1112,7 @@ function ConversationList({ drawer = false, litId = null }: {
         reselect: () => openAgentThread(thread),
       };
     }
-    const chat = byAgent.get(entry.key.slice('agent:'.length));
-    if (!chat) return null;
-    const thread: MessagesAgentThread = { kind: 'chat', id: chat.id };
-    return {
-      ...base,
-      href: agentThreadAddress(thread),
-      name: chat.title || t('messages:inbox.agentChat.untitled'),
-      lead: agentTile,
-      reselect: () => openAgentThread(thread),
-    };
+    return null;
   }
 
   function inboxRow(entry: { kind: string; key: string }) {
@@ -1315,10 +1141,7 @@ function ConversationList({ drawer = false, litId = null }: {
         ? <MayorSessionRow key={entry.key} session={session} active={open?.kind === 'agent' && open.id === session.id} />
         : null;
     }
-    const agent = byAgent.get(entry.key.slice('agent:'.length));
-    return agent
-      ? <AgentChatRow key={entry.key} chat={agent} active={open?.kind === 'chat' && open.id === agent.id} />
-      : null;
+    return null;
   }
 }
 
@@ -1460,39 +1283,30 @@ export function threadWords(active: ConversationDetail): { title: string; sub: s
 }
 
 /**
- * What an open agent thread is called and what it is, for the phone's header
- * to say (./phone-drawer.tsx; Evan, 18 Oct 2026), in the words its own pane
- * uses: an agent session's title and kind line, as its bar names it in the
- * pane (agent-session/index.tsx SessionBar, whose copy app.css leaves out on
- * the drawer), and an agent chat's title, as its row in the list names it,
- * with what it is. Read in the language on show by whoever renders it.
+ * What an open agent session is called and what it is, for the phone's
+ * header to say (./phone-drawer.tsx; Evan, 18 Oct 2026), in the words its own
+ * pane uses: its title and kind line, as its bar names it in the pane
+ * (agent-session/index.tsx SessionBar, whose copy app.css leaves out on the
+ * drawer). Read in the language on show by whoever renders it.
  */
 export function agentThreadWords(agent: MessagesAgentThread, seen: { title: string; app: string }): { title: string; sub: string } {
-  if (agent.kind === 'chat') {
-    return { title: seen.title || translate('messages:inbox.agentChat.untitled'), sub: translate('messages:drawer.chat.line') };
-  }
   return {
     title: seen.title || translate('agent:session.bar.newSession'),
     sub: seen.app ? translate('agent:session.bar.kindStartedFrom', { app: seen.app }) : translate('agent:session.bar.kind'),
   };
 }
 
-/** `agentThreadWords` for the open agent chat or agent session, from the stores their panes draw from; null for anything else. */
+/** `agentThreadWords` for the open agent session, from the store its pane draws from; null for anything else. */
 function useAgentThreadWords(agent: MessagesAgentThread | null): { title: string; sub: string } | null {
   // Subscribed, so the words re-read in the language on show.
   useMessages('messages');
   useMessages('agent');
-  const chatId = agent?.kind === 'chat' ? agent.id : null;
-  const chatTitle = useGlobalChatSelector((current) => (chatId
-    ? (current.threads.find((thread) => thread.id === chatId)
-      || (current.bootstrap?.thread?.id === chatId ? current.bootstrap.thread : null))?.title || ''
-    : ''));
   const sessionId = agent?.kind === 'agent' ? agent.id : null;
   const mine = (current: { id: number | null }) => sessionId != null && (sessionId === 'new' ? current.id === null : current.id === sessionId);
   const sessionTitle = useAgentSessionSelector((current) => (mine(current) ? current.session?.title || '' : ''));
   const sessionApp = useAgentSessionSelector((current) => (mine(current) ? (current.session || current.draft)?.focusApp?.name || '' : ''));
   if (!agent || agent.kind === 'session') return null;
-  return agentThreadWords(agent, agent.kind === 'chat' ? { title: chatTitle, app: '' } : { title: sessionTitle, app: sessionApp });
+  return agentThreadWords(agent, { title: sessionTitle, app: sessionApp });
 }
 
 function ThreadHeader() {
@@ -1828,33 +1642,21 @@ function AppDiscussionThread({ slug }: { slug: string }) {
 }
 
 /**
- * A global agent chat, as a thread of this inbox (#2813).
+ * An agent session (#2779), as a thread of this inbox (#2813).
  *
  * ── Rendered, not mounted ─────────────────────────────────────────────
  *
- * Unlike an app's discussion and a dev session, this chat is React already:
- * features/global-chat is a store and a component tree, so the pane draws
- * the chat's own panel (`GlobalChatPanel`) rather than hosting a legacy
- * surface. It is the SAME panel the chat's screen draws, reading the same
- * store — one transcript, loaded and invalidated in one place.
+ * Unlike an app's discussion and a dev session, an agent session is React
+ * already: features/agent-session is a store and a component tree, so the
+ * pane draws the SAME panel its own screen draws, reading the same store,
+ * told it is drawn here (`host: 'messages'`).
  *
- * ── The store is told who is drawing it ───────────────────────────────
- *
- * `host: 'messages'` is what makes New, delete-and-move-on and Close write
- * inbox addresses (`#messages/agent/<id>`, `#messages`) instead of taking
- * the viewer to the chat's own screen, and what hides that screen's copy of
- * the transcript while this one is up. Leaving the pane deactivates the chat
- * exactly as leaving its screen does — but only if the pane still owns it:
- * following a `#chat/<id>` link from here reopens the store for the screen
- * before this unmounts, and that open is not this pane's to undo.
- */
-/**
- * An agent session (#2779), as a thread of this inbox: the same panel its
- * own screen draws (features/agent-session), told it is drawn here. Leaving
- * the pane deactivates it only if the pane still owns it, as above — and
- * only if it is still THIS conversation: an unsent one (`new`) becomes its
- * session on the first message, and the thread for that address takes over
- * a store that is already showing it.
+ * Leaving the pane deactivates it exactly as leaving its screen does, but
+ * only if the pane still owns it (following a `#agent/<id>` link from here
+ * reopens the store for the screen before this unmounts, and that open is
+ * not this pane's to undo), and only if it is still THIS conversation: an
+ * unsent one (`new`) becomes its session on the first message, and the
+ * thread for that address takes over a store that is already showing it.
  */
 function MayorSessionThread({ id }: { id: number | 'new' }) {
   const t = useMessages('messages');
@@ -1953,26 +1755,6 @@ const MayorSessionRow = memo(function MayorSessionRow({ session, active }: { ses
     </a>
   );
 });
-
-function AgentChatThread({ id }: { id: string }) {
-  const t = useMessages('messages');
-  useEffect(() => {
-    void openGlobalChat({ threadId: id, host: 'messages' });
-    return () => {
-      const current = getGlobalChatState();
-      if (current.open && current.host === 'messages') deactivateGlobalChat();
-    };
-  }, [id]);
-  return (
-    <section
-      className="flex messages-thread-pane dc-lift dc-lift-session messages-thread-agent"
-      aria-label={t('messages:agent.chatName')}
-      data-agent-chat={id}
-    >
-      <GlobalChatPanel embedded headerAction={<FullWidthToggle />} />
-    </section>
-  );
-}
 
 /**
  * An app's dev session, as a thread of this inbox (#2813).
@@ -2355,7 +2137,6 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
     return embedded ? null : <section className="hidden md:flex messages-thread-pane messages-no-selection"><h2>{t('messages:thread.empty.title')}</h2></section>;
   }
   if (snap.route.appSlug) return <AppDiscussionThread slug={snap.route.appSlug} />;
-  if (snap.route.agent?.kind === 'chat') return <AgentChatThread key={snap.route.agent.id} id={snap.route.agent.id} />;
   if (snap.route.agent?.kind === 'agent') return <MayorSessionThread key={`agent/${snap.route.agent.id}`} id={snap.route.agent.id} />;
   if (snap.route.agent?.kind === 'session') {
     const { slug, id } = snap.route.agent;
@@ -3147,27 +2928,7 @@ export function MessagesScreen() {
   const snap = useMessagesSnapshot();
   useVisibilityHiddenClass(screenRef, 'messages-screen', false);
   useEffect(() => initializeMessagesStore(), []);
-  // THE AGENT HALF OF THIS INBOX HAS TO ASK FOR ITSELF (#2718 review).
-  //
-  // The list's `useGlobalChatSelector` reads a store that nothing on this screen
-  // was filling: the ONLY caller of initializeGlobalChat outside Settings
-  // was the Improve panel's own New chat button. So an inbox opened without
-  // ever having opened Improve saw `bootstrap: null`, which reads as "the
-  // feature is off" — no agent rows in the list, and no way to start one
-  // under the Agents tab. The tab was there and did nothing, which is what
-  // "there is no new agent button under agents" is.
-  //
-  // The same shape that button uses, and for the same reason: a boot-time
-  // 401 is expected before app.js has established the session, so `sv:authed`
-  // asks again. The call is idempotent — it returns the bootstrap it already
-  // has unless forced — so two surfaces asking costs one request.
-  useEffect(() => {
-    void initializeGlobalChat();
-    const retry = () => { void initializeGlobalChat({ force: true }); };
-    window.addEventListener('sv:authed', retry);
-    return () => window.removeEventListener('sv:authed', retry);
-  }, []);
-  // THE CHANGES HALF ASKS FOR ITSELF TOO (#2770). The Improve store's list
+  // THE CHANGES HALF OF THIS INBOX ASKS FOR ITSELF (#2770). The Improve store's list
   // is prefetched once per page when an app target is published, which a
   // viewer who lands on Messages first may not have had — and a list read
   // once at boot is stale by the time the inbox is opened. So opening

@@ -1,18 +1,20 @@
 'use strict';
 
-// Minimal OpenRouter Chat Completions transport for Global Chat. It accepts
-// only server-built messages and strict tools, asks OpenRouter for the
-// lowest-latency compatible provider, and returns a bounded OpenAI-compatible
-// assistant message plus content-free usage facts.
+// Minimal OpenRouter Chat Completions transport, shared by the model
+// helpers (llm.js), small changes, translation and the Homeroom bot. It
+// accepts only server-built messages and strict tools, asks OpenRouter for
+// the lowest-latency compatible provider, and returns a bounded
+// OpenAI-compatible assistant message plus content-free usage facts.
 
-const { platformHeaders } = require('../openrouter-client');
+const { platformHeaders } = require('./openrouter-client');
 // #5123: every OpenRouter request denies data collection (worker/openrouter-privacy.js).
-const { noTrainingProvider, withNoTraining } = require('../../../worker/openrouter-privacy');
-const { modelId, reasoningEffort } = require('./profile');
+const { noTrainingProvider, withNoTraining } = require('../../worker/openrouter-privacy');
+const { REASONING_EFFORT_SET } = require('./reasoning-efforts');
 
-// A Global Chat turn may make more than one short tool-planning call. Letting
-// any single provider request occupy the UI for 90 seconds made a transient
-// failure look like a frozen application and multiplied badly with retries.
+// A caller may make more than one short tool-planning call in one answer.
+// Letting any single provider request occupy the UI for 90 seconds made a
+// transient failure look like a frozen application and multiplied badly with
+// retries.
 const DEFAULT_TIMEOUT_MS = 25_000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 800;
 const MAX_OUTPUT_TOKENS = 4_096;
@@ -22,7 +24,9 @@ const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_CONTENT_CHARS = 512 * 1024;
 const MAX_TOOL_ARGUMENT_CHARS = 256 * 1024;
 
-class GlobalChatProviderError extends Error {
+const MODEL_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]*$/;
+
+class OpenRouterProviderError extends Error {
   constructor(code, message, {
     status = null,
     dispatched = false,
@@ -32,7 +36,7 @@ class GlobalChatProviderError extends Error {
     retryAfterMs = null,
   } = {}) {
     super(message);
-    this.name = 'GlobalChatProviderError';
+    this.name = 'OpenRouterProviderError';
     this.code = code;
     this.status = status;
     this.dispatched = dispatched;
@@ -44,10 +48,28 @@ class GlobalChatProviderError extends Error {
   }
 }
 
+function modelId(value, field = 'model') {
+  if (typeof value !== 'string') {
+    throw new OpenRouterProviderError('invalid_model', `${field} must be a model id`);
+  }
+  const normalized = value.trim();
+  if (!normalized || normalized.length > 255 || !MODEL_ID_RE.test(normalized)) {
+    throw new OpenRouterProviderError('invalid_model', `${field} must be a valid model id`);
+  }
+  return normalized;
+}
+
+function reasoningEffort(value) {
+  if (!REASONING_EFFORT_SET.has(value)) {
+    throw new OpenRouterProviderError('invalid_reasoning', 'Invalid reasoning effort');
+  }
+  return value;
+}
+
 function boundedInteger(value, fallback, min, max, field) {
   const chosen = value == null ? fallback : Number(value);
   if (!Number.isInteger(chosen) || chosen < min || chosen > max) {
-    throw new GlobalChatProviderError('invalid_request', `${field} is out of range`);
+    throw new OpenRouterProviderError('invalid_request', `${field} is out of range`);
   }
   return chosen;
 }
@@ -55,14 +77,14 @@ function boundedInteger(value, fallback, min, max, field) {
 function boundedNumber(value, fallback, min, max, field) {
   const chosen = value == null ? fallback : Number(value);
   if (!Number.isFinite(chosen) || chosen < min || chosen > max) {
-    throw new GlobalChatProviderError('invalid_request', `${field} is out of range`);
+    throw new OpenRouterProviderError('invalid_request', `${field} is out of range`);
   }
   return chosen;
 }
 
 function jsonArray(value, field, maxItems) {
   if (!Array.isArray(value) || value.length > maxItems) {
-    throw new GlobalChatProviderError(
+    throw new OpenRouterProviderError(
       'invalid_request',
       `${field} must be an array with at most ${maxItems} entries`,
     );
@@ -72,7 +94,7 @@ function jsonArray(value, field, maxItems) {
   try {
     return structuredClone(value);
   } catch {
-    throw new GlobalChatProviderError('invalid_request', `${field} must be JSON-serializable`);
+    throw new OpenRouterProviderError('invalid_request', `${field} must be JSON-serializable`);
   }
 }
 
@@ -93,11 +115,11 @@ function buildRequest({
   if (toolChoice && typeof toolChoice === 'object' && !Array.isArray(toolChoice)) {
     const name = toolChoice.function?.name;
     if (toolChoice.type !== 'function' || typeof name !== 'string' || !availableToolNames.has(name)) {
-      throw new GlobalChatProviderError('invalid_request', 'toolChoice must select an available tool');
+      throw new OpenRouterProviderError('invalid_request', 'toolChoice must select an available tool');
     }
     normalizedToolChoice = structuredClone(toolChoice);
   } else if (!['auto', 'required', 'none'].includes(toolChoice)) {
-    throw new GlobalChatProviderError('invalid_request', 'toolChoice is invalid');
+    throw new OpenRouterProviderError('invalid_request', 'toolChoice is invalid');
   }
   const request = {
     model: modelId(model),
@@ -105,8 +127,8 @@ function buildRequest({
     tools: copiedTools,
     tool_choice: normalizedToolChoice,
     // 'none' turns the model's thinking off (a helper call on a model other
-    // than GLM, services/helper-model.js thinkingFor); a Global Chat profile
-    // never names it, since profile.js does not accept it.
+    // than GLM, services/helper-model.js thinkingFor); reasoningEffort above
+    // does not accept it as an effort.
     reasoning: reasoning === 'none' ? { enabled: false } : { effort: reasoningEffort(reasoning) },
     max_tokens: boundedInteger(
       maxOutputTokens,
@@ -115,7 +137,7 @@ function buildRequest({
       MAX_OUTPUT_TOKENS,
       'maxOutputTokens',
     ),
-    // Global Chat consumes tool calls only after the complete response. An
+    // Callers consume tool calls only after the complete response. An
     // atomic response lets OpenRouter fail over before exposing a partial tool
     // envelope and avoids the interrupted SSE streams that previously caused
     // a second 15-second application retry.
@@ -148,7 +170,7 @@ function buildRequest({
   if (sessionId != null) {
     const normalized = String(sessionId).trim();
     if (!normalized || normalized.length > 256 || !/^[A-Za-z0-9._:-]+$/.test(normalized)) {
-      throw new GlobalChatProviderError('invalid_request', 'Invalid provider session id');
+      throw new OpenRouterProviderError('invalid_request', 'Invalid provider session id');
     }
     request.session_id = normalized;
   }
@@ -205,7 +227,7 @@ function appendToolCall(map, raw) {
     if (typeof raw.function.arguments === 'string') {
       existing.function.arguments += raw.function.arguments;
       if (existing.function.arguments.length > MAX_TOOL_ARGUMENT_CHARS) {
-        throw new GlobalChatProviderError('response_too_large', 'Tool arguments exceeded the limit', {
+        throw new OpenRouterProviderError('response_too_large', 'Tool arguments exceeded the limit', {
           dispatched: true,
         });
       }
@@ -224,7 +246,7 @@ function timingSnapshot(startedAt, state = {}) {
 
 async function readJsonBody(body, { startedAt, state }) {
   if (!body || typeof body[Symbol.asyncIterator] !== 'function') {
-    throw new GlobalChatProviderError('invalid_response', 'Provider returned no response body', {
+    throw new OpenRouterProviderError('invalid_response', 'Provider returned no response body', {
       dispatched: true,
       timings: timingSnapshot(startedAt, state),
     });
@@ -236,7 +258,7 @@ async function readJsonBody(body, { startedAt, state }) {
     const value = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     bytes += value.byteLength;
     if (bytes > MAX_RESPONSE_BYTES) {
-      throw new GlobalChatProviderError('response_too_large', 'Provider response exceeded the limit', {
+      throw new OpenRouterProviderError('response_too_large', 'Provider response exceeded the limit', {
         dispatched: true,
         timings: timingSnapshot(startedAt, state),
       });
@@ -246,7 +268,7 @@ async function readJsonBody(body, { startedAt, state }) {
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw new GlobalChatProviderError('invalid_response', 'Provider returned invalid JSON', {
+    throw new OpenRouterProviderError('invalid_response', 'Provider returned invalid JSON', {
       dispatched: true,
       timings: timingSnapshot(startedAt, state),
     });
@@ -315,13 +337,13 @@ async function streamChat({
   ...requestInput
 }) {
   if (typeof apiKey !== 'string' || !apiKey.trim()) {
-    throw new GlobalChatProviderError('authentication', 'OpenRouter key is unavailable');
+    throw new OpenRouterProviderError('authentication', 'OpenRouter key is unavailable');
   }
   if (typeof baseUrl !== 'string' || !baseUrl) {
-    throw new GlobalChatProviderError('invalid_request', 'OpenRouter base URL is unavailable');
+    throw new OpenRouterProviderError('invalid_request', 'OpenRouter base URL is unavailable');
   }
   if (typeof fetchImpl !== 'function') {
-    throw new GlobalChatProviderError('invalid_request', 'Fetch implementation is unavailable');
+    throw new OpenRouterProviderError('invalid_request', 'Fetch implementation is unavailable');
   }
   const body = buildRequest(requestInput);
   const startedAt = Date.now();
@@ -349,9 +371,9 @@ async function streamChat({
   } catch (err) {
     clearTimeout(timer);
     const timedOut = timeoutController.signal.aborted && !signal?.aborted;
-    throw new GlobalChatProviderError(
+    throw new OpenRouterProviderError(
       timedOut ? 'timeout' : (signal?.aborted ? 'cancelled' : 'network'),
-      timedOut ? 'Global Chat model timed out' : (signal?.aborted ? 'Global Chat model cancelled' : 'Could not reach Global Chat model'),
+      timedOut ? 'OpenRouter model timed out' : (signal?.aborted ? 'OpenRouter model cancelled' : 'Could not reach the OpenRouter model'),
       { dispatched: true, timings: timingSnapshot(startedAt, timingState) },
     );
   }
@@ -361,9 +383,9 @@ async function streamChat({
     // hold the caller past its timeout.
     const refused = await refusalDetails(response);
     clearTimeout(timer);
-    throw new GlobalChatProviderError(
+    throw new OpenRouterProviderError(
       providerErrorCode(response.status),
-      `Global Chat model request failed (HTTP ${response.status})`,
+      `OpenRouter model request failed (HTTP ${response.status})`,
       {
         status: response.status,
         dispatched: true,
@@ -384,7 +406,7 @@ async function streamChat({
     servedModel = typeof completion?.model === 'string' ? completion.model : null;
     provider = typeof completion?.provider === 'string' ? completion.provider : null;
     if (completion?.error) {
-      throw new GlobalChatProviderError('provider_error', 'Provider reported a generation error', {
+      throw new OpenRouterProviderError('provider_error', 'Provider reported a generation error', {
         dispatched: true,
         provider,
         generationId,
@@ -395,7 +417,7 @@ async function streamChat({
     const message = choice?.message || {};
     const content = contentDelta(message.content);
     if (content.length > MAX_CONTENT_CHARS) {
-      throw new GlobalChatProviderError('response_too_large', 'Provider response exceeded the limit', {
+      throw new OpenRouterProviderError('response_too_large', 'Provider response exceeded the limit', {
         dispatched: true,
         provider,
         generationId,
@@ -412,13 +434,13 @@ async function streamChat({
 
     // A missing terminal reason or a length cutoff is incomplete and must
     // never be accepted as a partial action. Distinguish output exhaustion so
-    // the orchestrator can grant just one larger retry.
+    // a caller can grant just one larger retry.
     if (!finishReason || finishReason === 'length') {
-      throw new GlobalChatProviderError(
+      throw new OpenRouterProviderError(
         finishReason === 'length' ? 'output_limit' : 'stream_error',
         finishReason === 'length'
-          ? 'Global Chat model response reached its output limit'
-          : 'Global Chat model response ended before completion',
+          ? 'OpenRouter model response reached its output limit'
+          : 'OpenRouter model response ended before completion',
         {
           dispatched: true,
           provider,
@@ -444,16 +466,16 @@ async function streamChat({
       timings: timingSnapshot(startedAt, timingState),
     };
   } catch (err) {
-    if (err instanceof GlobalChatProviderError) {
+    if (err instanceof OpenRouterProviderError) {
       err.provider ||= provider;
       err.generationId ||= generationId;
       err.timings ||= timingSnapshot(startedAt, timingState);
       throw err;
     }
     const timedOut = timeoutController.signal.aborted && !signal?.aborted;
-    throw new GlobalChatProviderError(
+    throw new OpenRouterProviderError(
       timedOut ? 'timeout' : (signal?.aborted ? 'cancelled' : 'stream_error'),
-      timedOut ? 'Global Chat model timed out' : (signal?.aborted ? 'Global Chat model cancelled' : 'Global Chat model response failed'),
+      timedOut ? 'OpenRouter model timed out' : (signal?.aborted ? 'OpenRouter model cancelled' : 'OpenRouter model response failed'),
       {
         dispatched: true,
         provider,
@@ -469,7 +491,9 @@ async function streamChat({
 module.exports = {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_MAX_OUTPUT_TOKENS,
-  GlobalChatProviderError,
+  OpenRouterProviderError,
+  modelId,
+  reasoningEffort,
   buildRequest,
   usageFrom,
   retryAfterMs,

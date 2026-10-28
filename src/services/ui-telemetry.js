@@ -40,6 +40,10 @@ const JOURNEY_SCREENS = Object.freeze(new Set([
 // The first-run sheets and the welcome tour are steps too: drawn over a
 // screen, they are where a newcomer is, and "shown, not answered" is read
 // from them. Each reports itself; closing one re-reports the screen under it.
+//
+// `assistant` was Global Chat's screen. Nothing reports it since Global Chat
+// was removed, but it stays a code so the visits already recorded still read
+// as steps (journey.js) and as landings in the page-load report.
 const NAV_SCREENS = Object.freeze(new Set([
   'home', 'discover', 'communities', 'challenges', 'profile', 'my_proposals',
   'settings', 'messages', 'assistant', 'agent_session', 'app', 'project',

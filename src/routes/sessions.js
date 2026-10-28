@@ -498,7 +498,7 @@ const MANUAL_SESSION_TITLE_MAX = 256;
 // browser — are phased out. New work starts in an agent session, whose
 // Mayor creates each change through POST /api/apps/:slug/sessions on a
 // delegated grant; nothing else may create one any more (not a browser, a
-// shell cached before the switch, a CLI token, nor Global Chat's loopback),
+// shell cached before the switch, nor a CLI token),
 // and forking a chat into a new classic session is retired with them. Only
 // the creation routes read this.
 //

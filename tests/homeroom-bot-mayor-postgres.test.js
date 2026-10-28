@@ -1096,7 +1096,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const busy = async (req) => {
       sessions.push(req.sessionId);
       if (sessions.length < 3) {
-        throw Object.assign(new Error('Global Chat model request failed (HTTP 429)'), { code: 'rate_limited', status: 429 });
+        throw Object.assign(new Error('OpenRouter model request failed (HTTP 429)'), { code: 'rate_limited', status: 429 });
       }
       return scripted([replyWith('Yes: one number per lesson. Want me to file that as a request?')])(req);
     };
@@ -1123,7 +1123,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
         const json = (text) => { try { JSON.parse(text); return true; } catch { return false; } };
         if (ids.some((id) => !id) || new Set(ids).size !== ids.length || !calls.every((c) => json(c.function.arguments))
             || req.messages.some((m) => m.role === 'tool' && !ids.includes(m.tool_call_id))) {
-          throw Object.assign(new Error('Global Chat model request failed (HTTP 400)'), { code: 'invalid_request', status: 400 });
+          throw Object.assign(new Error('OpenRouter model request failed (HTTP 400)'), { code: 'invalid_request', status: 400 });
         }
         const step = steps[Math.min(n, steps.length - 1)];
         n += 1;
@@ -1145,7 +1145,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const refusing = async (req) => {
       seen.push(req);
       if (req.tools.length > 1) {
-        throw Object.assign(new Error('Global Chat model request failed (HTTP 400)'), { code: 'invalid_request', status: 400 });
+        throw Object.assign(new Error('OpenRouter model request failed (HTTP 400)'), { code: 'invalid_request', status: 400 });
       }
       return scripted([replyWith('Good point: one number per lesson is simpler. I could not check the proposal just now.')])(req);
     };
@@ -1196,7 +1196,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const failsAfter = async (req) => {
       calls += 1;
       if (calls === 1) return scripted([[['answer_question', { project: 'note-board', number: 6 }]]])(req);
-      throw Object.assign(new Error('Global Chat model request failed (HTTP 503)'), { code: 'provider_unavailable', status: 503 });
+      throw Object.assign(new Error('OpenRouter model request failed (HTTP 503)'), { code: 'provider_unavailable', status: 503 });
     };
     const sent = await turn('by link please', failsAfter);
     const msg = await read(sent);
@@ -1262,7 +1262,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     const thenDown = async (req) => {
       asks += 1;
       if (asks === 1) return { ...await scripted([[['progress']]])(req), usage: { inputTokens: 500, outputTokens: 50, costUsd: 0.01 } };
-      throw Object.assign(new Error('Could not reach Global Chat model'), { code: 'network' });
+      throw Object.assign(new Error('Could not reach the OpenRouter model'), { code: 'network' });
     };
     const noCards = failing(/WHERE slug = LOWER\(\$1\) OR LOWER\(name\) = LOWER\(\$1\)/);
     const late = await run(noCards, await say('how far along are you?'), thenDown);
@@ -1317,7 +1317,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     scheduled.length = 0;
     let down = true;
     const flaky = async (req) => {
-      if (down) throw Object.assign(new Error('Global Chat model request failed (HTTP 429)'), { code: 'rate_limited', status: 429, retryAfterMs: 2000 });
+      if (down) throw Object.assign(new Error('OpenRouter model request failed (HTTP 429)'), { code: 'rate_limited', status: 429, retryAfterMs: 2000 });
       return scripted([[['reply', { text: 'Pin notes is up for a vote.' }]]])(req);
     };
     const first = await turn('is pin notes up yet?', flaky);

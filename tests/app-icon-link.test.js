@@ -37,7 +37,6 @@ test('every app surface that draws an icon links it', () => {
     'frontend/src/features/apps/browse-list.tsx',
     'frontend/src/features/apps/browse-detail.tsx',
     'frontend/src/features/app-context/about-pane.tsx',
-    'frontend/src/features/global-chat/renderers.tsx',
     'frontend/src/features/header/header-title.tsx',
     'frontend/src/features/messages/index.tsx',
     'frontend/src/features/workshop/index.tsx',

@@ -633,6 +633,17 @@ test('a frame names a real file of this checkout or nothing', () => {
   assert.equal(observer.realFrame(''), null);
 });
 
+test('a route\'s file is read from the literal paths the route files and server.js declare', () => {
+  assert.equal(observer.routeFileOf('POST', '/api/auth/phone/verify'), 'src/routes/phone-auth.js',
+    'auth.js only lists this path among its session-minting ones; phone-auth.js declares the route');
+  assert.equal(observer.routeFileOf('GET', '/api/apps/:slug/topics/:key/figures'), 'src/routes/topic-figures.js');
+  assert.equal(observer.routeFileOf('GET', '/health'), 'server.js');
+  assert.equal(observer.routeFileOf('get', '/health'), null, 'the method as Express records it: upper case');
+  assert.equal(observer.routeFileOf('GET', '/api/no-such-route'), null);
+  const src = fs.readFileSync(path.join(root, 'src/services/signal-observers/server-errors.js'), 'utf8');
+  assert.doesNotMatch(src, /inventory\.generated|require\([^)]*\.json/, 'no generated inventory is read');
+});
+
 test('the sweep runs this observer for its kind', async () => {
   const entry = observers.OBSERVERS.find((o) => o.kinds.includes('server_errors'));
   const pool = { query: async () => ({ rows: [row({ last_hour: 5 })] }) };

@@ -29,7 +29,6 @@
  *   messages/channel/<handle>      a `#name` reference to a channel: a
  *                                  pointer, rewritten to the channel's own
  *                                  address (isPointer)
- *   chat[/<uuid>]                  an agent chat
  *   agent/<id>[/changes]           an agent session (#2779): one conversation
  *                                  with the Mayor, on any app — `changes`
  *                                  is the same page with its drawer up
@@ -37,9 +36,7 @@
  *                                  row until its first message, when the
  *                                  address becomes the session's own
  *   messages/agent/<id|new>        the same, by the address Messages links
- *                                  it with; a numeric id or `new` only (a
- *                                  UUID there is a Global Chat thread, which
- *                                  the panel does not take)
+ *                                  it with; a numeric id or `new` only
  *   messages                       the inbox itself — never opened INTO the
  *                                  panel from outside it (it is a tab root,
  *                                  and a tab leaves the app), but it is where
@@ -72,7 +69,6 @@ export type PanelKind =
   | 'change'
   | 'new-change'
   | 'thread'
-  | 'chat'
   | 'agent'
   | 'messages';
 
@@ -202,9 +198,6 @@ export function panelPage(route: string): PanelPage | null {
     // A malformed id: the router degrades it to the list.
     return { kind: 'messages', slug: null, key: 'messages' };
   }
-  if (head === 'chat') {
-    return { kind: 'chat', slug: null, key: parts[1] ? `chat/${parts[1]}` : 'chat' };
-  }
   if (head === 'agent' && isAgentSessionId(parts[1])) {
     return { kind: 'agent', slug: null, key: `agent/${parts[1]}` };
   }
@@ -270,7 +263,6 @@ export function parentRoute(route: string): string | null {
   if (!page) return null;
   switch (page.kind) {
     case 'thread':
-    case 'chat':
     case 'agent':
       return 'messages';
     default:
@@ -295,7 +287,6 @@ const KIND_TITLE: Record<PanelKind, string> = {
   change: 'agent:sidePanel.title.change',
   'new-change': 'agent:sidePanel.title.newChange',
   thread: 'agent:sidePanel.title.thread',
-  chat: 'agent:sidePanel.title.chat',
   agent: 'agent:sidePanel.title.agent',
   messages: 'agent:sidePanel.title.messages',
 };
@@ -309,7 +300,7 @@ const FIXED_TITLE: ReadonlySet<PanelKind> = new Set<PanelKind>([
  * The header row's title for `route`, as the prototype draws it.
  *
  * The embedded document's own header title (`reported`) is the source where
- * it names the page: a conversation's name, an agent chat's title. The
+ * it names the page: a conversation's name, an agent session's title. The
  * Workshop, the inbox and a piece of work — a proposal, an issue, a change —
  * take their kind instead: "Workshop", "Messages", "Proposal", "Issue",
  * "Change", "New change". On those the header names only the APP (it draws

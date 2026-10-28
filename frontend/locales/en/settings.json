@@ -1263,162 +1263,6 @@
     "text": "Failed to load: fetch failed",
     "description": "Shown inside an expanded file row in Settings > Agent instructions & skills when the file's contents could not be fetched and the server gave no reason."
   },
-  "globalChat.title": {
-    "text": "Global Chat <0>(experimental)</0>",
-    "description": "Heading of the Global Chat section in Settings. Global Chat is the name of Homeroom's AI assistant chat; the part in the tag is shown smaller and grey and marks the feature as experimental."
-  },
-  "globalChat.intro": {
-    "text": "Fast, low-cost AI for navigating and using Homeroom. Development work keeps its own model and reasoning setting.",
-    "description": "Explanation under the Global Chat heading in Settings. \"Model\" is the AI model; \"development work\" is building apps with the coding agent."
-  },
-  "globalChat.loadFailed": {
-    "text": "Global Chat settings could not be loaded.",
-    "description": "Error in the Global Chat settings when they could not be fetched and no reason was given."
-  },
-  "globalChat.modelsLoadFailed": {
-    "text": "Compatible models could not be loaded.",
-    "description": "Error in the Global Chat settings when the list of AI models for the chosen reasoning effort could not be fetched."
-  },
-  "globalChat.chooseModelFirst": {
-    "text": "Choose a compatible model first.",
-    "description": "Error in the Global Chat settings when the person pressed Save with no AI model selected."
-  },
-  "globalChat.saving": {
-    "text": "Saving…",
-    "description": "Status line in the Global Chat settings while a change is being saved."
-  },
-  "globalChat.saveBusy": {
-    "text": "Saving…",
-    "description": "Label of the \"Save Global Chat settings\" button while the settings are being saved."
-  },
-  "globalChat.saved": {
-    "text": "Global Chat settings saved.",
-    "description": "Status line in the Global Chat settings after the model, reasoning effort and cap were saved."
-  },
-  "globalChat.saveFailed": {
-    "text": "Global Chat settings could not be saved.",
-    "description": "Error in the Global Chat settings when saving failed and no reason was given."
-  },
-  "globalChat.enabledNotice": {
-    "text": "Experimental Global Chat enabled.",
-    "description": "Status line in the Global Chat settings after the person switched the feature on."
-  },
-  "globalChat.disabledNotice": {
-    "text": "Experimental Global Chat disabled.",
-    "description": "Status line in the Global Chat settings after the person switched the feature off."
-  },
-  "globalChat.toggleFailed": {
-    "text": "Global Chat could not be updated.",
-    "description": "Error in the Global Chat settings when switching the feature on or off failed and no reason was given."
-  },
-  "globalChat.enable.label": {
-    "text": "Enable experimental Global Chat",
-    "description": "Label of the switch at the top of the Global Chat settings: turns the Global Chat feature on or off for this person."
-  },
-  "globalChat.enable.description": {
-    "text": "Show your Global Chat conversations in Messages. Classic remains the default experience.",
-    "description": "Explanation under the Enable experimental Global Chat switch. Messages is the name of a tab in Homeroom; Classic is the name of the regular, non-AI mode of that tab."
-  },
-  "globalChat.needsKey.text": {
-    "text": "Add or claim an OpenRouter key before choosing a Global Chat model.",
-    "description": "Shown in the Global Chat settings when the person has no OpenRouter API key yet. OpenRouter is the name of the AI provider; \"claim\" means taking the free key Homeroom offers."
-  },
-  "globalChat.needsKey.open": {
-    "text": "Open OpenRouter settings",
-    "description": "Button under that notice in the Global Chat settings: goes to the OpenRouter section of Settings (verb: open)."
-  },
-  "globalChat.model.label": {
-    "text": "Global Chat model",
-    "description": "Label of the list in the Global Chat settings where the person picks which AI model answers in Global Chat."
-  },
-  "globalChat.model.optionPriced": {
-    "text": "{{model}} · {{price}}",
-    "description": "An entry in the Global Chat model list. {{model}} is the AI model's name and {{price}} its price per million tokens, already written out (for example \"$0.10/M avg\"). Keep the middle dot."
-  },
-  "globalChat.model.optionRecommended": {
-    "text": "{{model}} · Recommended",
-    "description": "An entry in the Global Chat model list for the model Homeroom recommends, when its price is unknown. {{model}} is the AI model's name. Keep the middle dot."
-  },
-  "globalChat.model.optionRecommendedPriced": {
-    "text": "{{model}} · Recommended · {{price}}",
-    "description": "An entry in the Global Chat model list for the model Homeroom recommends. {{model}} is the AI model's name and {{price}} its price per million tokens, already written out (for example \"$0.10/M avg\"). Keep the middle dots."
-  },
-  "globalChat.model.priceAverage": {
-    "text": "{{price}}/M avg",
-    "description": "Price of an AI model in the Global Chat settings. {{price}} is a dollar amount such as $0.10; \"/M avg\" means the average per million tokens. Keep it as short as this."
-  },
-  "globalChat.model.priceInOut": {
-    "text": "{{input}} in · {{output}} out /M",
-    "description": "Price of an AI model in the Global Chat settings when input and output cost differently. {{input}} and {{output}} are dollar amounts per million tokens going in to and coming out of the model; \"/M\" means per million. Keep it as short as this."
-  },
-  "globalChat.model.selectedPriced": {
-    "text": "{{modelId}} · {{price}}",
-    "description": "Small line under the Global Chat model list. {{modelId}} is the selected AI model's technical identifier and {{price}} its price per million tokens, already written out. Keep the middle dot."
-  },
-  "globalChat.model.refresh": {
-    "text": "Refresh",
-    "description": "Button beside the Global Chat model list: fetches the list of available AI models again."
-  },
-  "globalChat.effort.label": {
-    "text": "Reasoning effort",
-    "description": "Label of the list in the Global Chat settings where the person picks how much reasoning the AI model does before it answers."
-  },
-  "globalChat.effort.low": {
-    "text": "Low · recommended for GLM Flash",
-    "description": "Option in the Reasoning effort list in the Global Chat settings. GLM Flash is the name of an AI model. Keep the middle dot."
-  },
-  "globalChat.effort.minimal": {
-    "text": "Minimal · only for supported models",
-    "description": "Option in the Reasoning effort list in the Global Chat settings: the least reasoning, which only some AI models accept. Keep the middle dot."
-  },
-  "globalChat.effort.medium": {
-    "text": "Medium",
-    "description": "Option in the Reasoning effort list in the Global Chat settings: a medium amount of reasoning."
-  },
-  "globalChat.effort.high": {
-    "text": "High",
-    "description": "Option in the Reasoning effort list in the Global Chat settings: a high amount of reasoning."
-  },
-  "globalChat.effort.xhigh": {
-    "text": "Extra high",
-    "description": "Option in the Reasoning effort list in the Global Chat settings: the highest amount of reasoning."
-  },
-  "globalChat.cap.label": {
-    "text": "Monthly Chat cap in USD · optional",
-    "description": "Label of the field in the Global Chat settings for the most this person lets Global Chat spend per month, in US dollars. Chat here is short for Global Chat. Keep the middle dot."
-  },
-  "globalChat.cap.placeholder": {
-    "text": "No separate cap",
-    "description": "Placeholder of the monthly cap field in the Global Chat settings: left empty, Global Chat has no spending limit of its own."
-  },
-  "globalChat.usage.thisMonth": {
-    "text": "Global Chat this month",
-    "description": "Label of a row in the Global Chat settings; the amount Global Chat has spent this month is shown at the other end of the row."
-  },
-  "globalChat.usage.spentOfCap": {
-    "text": "{{spent}} / {{cap}}",
-    "description": "Value on the \"Global Chat this month\" row when a monthly cap is set. {{spent}} is the dollar amount spent this month and {{cap}} the dollar amount of the cap."
-  },
-  "globalChat.usage.overallRemaining": {
-    "text": "Overall OpenRouter remaining",
-    "description": "Label of a row in the Global Chat settings; the credit left on the person's whole OpenRouter key is shown at the other end of the row. OpenRouter is the AI provider's name."
-  },
-  "globalChat.usage.unavailable": {
-    "text": "Unavailable",
-    "description": "Value on the \"Overall OpenRouter remaining\" row in the Global Chat settings when the remaining credit is not known."
-  },
-  "globalChat.save": {
-    "text": "Save Global Chat settings",
-    "description": "Main button in the Global Chat settings: saves the chosen model, reasoning effort and monthly cap."
-  },
-  "globalChat.developmentSettings": {
-    "text": "Development AI settings",
-    "description": "Secondary button in the Global Chat settings: goes to the OpenRouter section of Settings, which holds the AI settings used for building apps."
-  },
-  "globalChat.footnote": {
-    "text": "Classic is always the startup mode. This profile only controls Global Chat; development sessions keep their separate defaults.",
-    "description": "Small print at the end of the Global Chat settings. Classic is the name of the regular, non-AI mode of Messages; \"profile\" means this group of Global Chat settings."
-  },
   "experimental.title": {
     "text": "Experimental",
     "description": "Heading of the section in Settings that holds switches for features still being tested."
@@ -2211,10 +2055,6 @@
     "text": "Agent instructions & skills",
     "description": "Name of a part of Settings: the page where a person writes instruction files and skills that their AI coding agents read. Shown as a row in the Settings menu or under a matching row when filtering, and as the phone header title when the part is a page of its own."
   },
-  "nav.part.globalChat": {
-    "text": "Global Chat (experimental)",
-    "description": "Name of a part of Settings: the page of settings for Global Chat, an experimental feature. Global Chat is a feature name. Shown as a row in the Settings menu or under a matching row when filtering, and as the phone header title when the part is a page of its own."
-  },
   "nav.part.experimental": {
     "text": "Experimental",
     "description": "Name of a part of Settings: the page of experimental features that can be switched on. Shown as a row in the Settings menu or under a matching row when filtering, and as the phone header title when the part is a page of its own."
@@ -2329,7 +2169,7 @@
   },
   "nav.group.advanced": {
     "text": "Advanced",
-    "description": "Heading over the last group of rows in the Settings menu: the experimental features a person can switch on to try, and Global Chat's own settings."
+    "description": "Heading over the last group of rows in the Settings menu: the experimental features a person can switch on to try."
   },
   "nav.group.other": {
     "text": "Other",
@@ -2394,10 +2234,6 @@
   "nav.keywords.agentFiles": {
     "text": "instructions skills agents md claude md prompt files",
     "description": "Not shown on screen. Extra search words for \"Agent instructions & skills\" in the Settings menu's filter box: lower-case words separated by spaces that people might type to find it. Translate them into the words people would type in your language; you may add or drop words."
-  },
-  "nav.keywords.globalChat": {
-    "text": "model cap chat",
-    "description": "Not shown on screen. Extra search words for \"Global Chat (experimental)\" in the Settings menu's filter box: lower-case words separated by spaces that people might type to find it. Translate them into the words people would type in your language; you may add or drop words."
   },
   "nav.keywords.experimental": {
     "text": "beta labs progress estimate session bridge local agent new look design",

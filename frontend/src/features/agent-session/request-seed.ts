@@ -47,8 +47,8 @@ export function requestSeed(hint: AgentHint | null | undefined): string {
     : t('agent:session.requestSeed.untitled', { number: request.number });
 }
 
-// A handed-over message is the user's own request (Global Chat's task) or
-// one the platform wrote (Explore's), so it is kept whole, up to the length
+// A handed-over message is the user's own request or one the platform
+// wrote (Explore's), so it is kept whole, up to the length
 // a turn accepts (MAX_MESSAGE_CHARS in src/routes/agent-sessions.js).
 const MESSAGE_MAX = 20000;
 

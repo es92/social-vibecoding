@@ -171,13 +171,6 @@ export const JOBS: readonly Job[] = Object.freeze([
     run: (_ctx: WorkContext, { pool }: JobDeps) => legacy('services/local-agent').sweepExpiredLeases(pool).then((n: number) => ({ released: n })),
   },
   {
-    // Global Chat usage a turn never settled (its request's process went
-    // mid-call): an error at its estimate, once no turn could still settle
-    // it (services/global-chat/accounting.js).
-    name: 'global-chat-usage-settle', everyMs: 15 * MIN,
-    run: (_ctx: WorkContext, { pool }: JobDeps) => legacy('services/global-chat/accounting').settleAbandonedReservations(pool),
-  },
-  {
     // A coding record no work item holds (the old orphan sweep's and
     // watchdog's case): a `recover` turn asked for it
     // (services/turn-leftovers.js).

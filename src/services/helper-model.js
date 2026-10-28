@@ -61,7 +61,7 @@ async function current(config, { pool = null } = {}) {
 /**
  * The reasoning a helper call sends with `model`: 'low' for GLM, as it
  * always was (it thinks for a few dozen tokens there), else 'none', its
- * thinking off (global-chat/openrouter.js sends `{ enabled: false }`). Pure.
+ * thinking off (services/openrouter.js sends `{ enabled: false }`). Pure.
  */
 function thinkingFor(model) {
   return /^~?z-ai\/glm-/i.test(String(model || '')) ? 'low' : 'none';

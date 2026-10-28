@@ -2183,10 +2183,6 @@
     "text": "Belum ada pesan",
     "source": "f42e0f66017d9937cc398684d9ba991ac7c0ec17f7cea27c68078e54176e277b"
   },
-  "inbox.agentPill": {
-    "text": "Agen",
-    "source": "11b39c93777e8f1f3983bdba7c72b22fe68cfea20c677e9de53e17cb7dbfb19f"
-  },
   "inbox.previewBy": {
     "text": "@{{username}}: {{message}}",
     "source": "760146d15fb4e6165927ddb63160f6058c544c720ab506d0e0ed158562b14400"
@@ -2194,38 +2190,6 @@
   "inbox.everyone": {
     "text": "Semua orang di Homeroom",
     "source": "7af179f445089856e275472ab215530ebda3bc45cbca4d6519077deb05af30e6"
-  },
-  "inbox.agentChat.deleteFailed": {
-    "text": "Tidak bisa menghapus obrolan ini.",
-    "source": "54945b07d93667cee23fd299fc9d9066d75bc26947262d160445f604cbe4d708"
-  },
-  "inbox.agentChat.deleteConfirm": {
-    "text": "Hapus obrolan ini?",
-    "source": "848dad9ba0a4bacc6810e23088a156b011693714583edb406148ebe325ad5dec"
-  },
-  "inbox.agentChat.deleting": {
-    "text": "Menghapus…",
-    "source": "43b5894c3e4e2b24f13c935f4fae0a0a8fbe7d7792750a09b88c2097fd9a32b8"
-  },
-  "inbox.agentChat.delete": {
-    "text": "Hapus",
-    "source": "e2d0a54968ead24efc0dffa6ac78fc606dceec34a0f586177a74a54cc2272cf8"
-  },
-  "inbox.agentChat.untitled": {
-    "text": "Obrolan tanpa judul",
-    "source": "4d4e126c2185da5e86b7478f0f12fc30009339941ef0d8627959aeb4641b6f69"
-  },
-  "inbox.agentChat.working": {
-    "text": "Sedang bekerja…",
-    "source": "5474eef8d0f179c707cf418e2bbb468c77cc24edc5e9f5f4e137e85e06a8eea0"
-  },
-  "inbox.agentChat.deleteNamed": {
-    "text": "Hapus {{chat}}",
-    "source": "14f242ae252bd0c47545a7338cc502bd69b353dd98fcedfa110d9102d45cd647"
-  },
-  "inbox.agentChat.deleteUnnamed": {
-    "text": "Hapus obrolan ini",
-    "source": "45b0a773a0cda6621b59e4ee873f26b3d4d2ea5d0a84d0388c1349e2945f3c16"
   },
   "inbox.filterGroup": {
     "text": "Tampilkan",
@@ -2514,10 +2478,6 @@
   "agent.sessionName": {
     "text": "Sesi agen",
     "source": "da3d3fb8f5983aa4a93c71fb29e22a58a9f1fbcf2b15bb11ca32eff3d7630d9f"
-  },
-  "agent.chatName": {
-    "text": "Obrolan agen",
-    "source": "3b6628926bd28b0522ad00dba9f5c5afb8ff8effe57c1ab6bb3a6777232fb41b"
   },
   "agent.row.prNumber": {
     "text": "PR #{{number}}",

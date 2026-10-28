@@ -3,8 +3,8 @@
 // #2813: agent threads open BESIDE the Messages list on a desktop.
 //
 // DMs, groups and app channels already opened in the pane next to the
-// conversation list. The two agent kinds did not: a global agent chat went
-// to its own screen (`#chat/<id>`) and an app's dev session to the app view
+// conversation list. The agent kinds did not: an agent chat went to its own
+// screen and an app's dev session to the app view
 // (`#app/<slug>/dev/sessions/<id>`), so picking one took the list away.
 //
 // What is pinned here, each a way the feature quietly comes undone:
@@ -14,14 +14,14 @@
 //   2. ON A PHONE A DEV SESSION KEEPS ITS FULL-SCREEN BEHAVIOUR: the router
 //      swaps its address in place (replaceState, then routes the new one)
 //      for the app view's, and records the session's origin so its chevron
-//      comes back to the inbox. An agent chat and an agent session open in
-//      the inbox there too, as the second level of its drawer (Evan, 18 Oct
-//      2026), and their own screens' addresses are swapped for the inbox's.
+//      comes back to the inbox. An agent session opens in the inbox there
+//      too, as the second level of its drawer (Evan, 18 Oct 2026), and its
+//      own screen's addresses are swapped for the inbox's.
 //   3. ONE THREAD IS OPEN — an agent thread clears a conversation and a
 //      discussion, and hides the list on a phone like any other thread.
-//   4. THE GLOBAL CHAT IS ONE PANEL ON TWO SURFACES, told which one is
-//      drawing it, so its New / delete / Close write inbox addresses in the
-//      pane and the hidden screen does not draw a second transcript.
+//   4. GLOBAL CHAT'S OLD ADDRESSES OPEN THE INBOX: it was removed, and
+//      `#chat`, `#chat/<id>` and `#messages/agent/<uuid>` now land on
+//      `#messages` rather than on a thread nothing can draw.
 //   5. THE DEV SESSION IS MOUNTED, NOT RE-IMPLEMENTED: a constant host that
 //      AppView fills with the same session view the app view shows, and
 //      that is retired only while no app view has taken over.
@@ -37,8 +37,6 @@ const ROOT = path.join(__dirname, '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const SCREEN = read('frontend/src/features/messages/index.tsx');
 const STORE = read('frontend/src/features/messages/store.ts');
-const CHAT_SCREEN = read('frontend/src/features/global-chat/index.tsx');
-const CHAT_STORE = read('frontend/src/features/global-chat/store.ts');
 const APP = read('public/js/app.js');
 const APP_VIEW = read('public/js/app-view.js');
 const DEV_CHAT = read('frontend/src/features/dev-chat/dev-chat.js');
@@ -46,24 +44,26 @@ const DEV_CHAT = read('frontend/src/features/dev-chat/dev-chat.js');
 const store = loadTsx('frontend/src/features/messages/store.ts');
 
 test('agent threads have inbox addresses, and a phone has the full-screen ones', () => {
-  const chat = { kind: 'chat', id: '5f0c2a1e-8d7b-4c2a-9e11-0b6f3f3c9a10' };
+  const agent = { kind: 'agent', id: 12 };
   const session = { kind: 'session', slug: 'notes-ab12', id: 42 };
-  assert.equal(store.agentThreadAddress(chat), `#messages/agent/${chat.id}`);
+  assert.equal(store.agentThreadAddress(agent), '#messages/agent/12');
   assert.equal(store.agentThreadAddress(session), '#messages/session/notes-ab12/42');
-  assert.equal(store.fullScreenAddress(chat), `#chat/${chat.id}`);
+  assert.equal(store.fullScreenAddress(agent), '#agent/12');
   assert.equal(store.fullScreenAddress(session), '#app/notes-ab12/dev/sessions/42');
 });
 
 test('the store validates an agent thread out of the address bar', () => {
-  assert.deepEqual(store.validAgentThread({ kind: 'chat', id: ' abc-1 ' }), { kind: 'chat', id: 'abc-1' });
+  assert.deepEqual(store.validAgentThread({ kind: 'agent', id: 7 }), { kind: 'agent', id: 7 });
+  assert.deepEqual(store.validAgentThread({ kind: 'agent', id: 'new' }), { kind: 'agent', id: 'new' });
   assert.deepEqual(
     store.validAgentThread({ kind: 'session', slug: 'notes-ab12', id: 7 }),
     { kind: 'session', slug: 'notes-ab12', id: 7 },
   );
   for (const bad of [
     null,
-    { kind: 'chat', id: '' },
-    { kind: 'chat', id: '../settings' },
+    // A Global Chat thread was one; it was removed, and its kind with it.
+    { kind: 'chat', id: '5f0c2a1e-8d7b-4c2a-9e11-0b6f3f3c9a10' },
+    { kind: 'agent', id: 0 },
     { kind: 'session', slug: 'notes', id: 0 },
     { kind: 'session', slug: 'notes', id: 2_147_483_648 },
     { kind: 'session', slug: '<b>', id: 3 },
@@ -85,9 +85,9 @@ test('one thread is open: an agent thread yields to a conversation or a discussi
 });
 
 test('the rows link to the inbox addresses and mark the open one', () => {
-  assert.match(SCREEN, /const href = agentThreadAddress\(thread\);[\s\S]*?href=\{href\}\s*data-inbox-agent=\{chat\.id\}/);
+  assert.match(SCREEN, /const href = agentThreadAddress\(thread\);[\s\S]*?href=\{href\}\s*data-inbox-agent-session=\{session\.id\}/);
   assert.match(SCREEN, /href: agentThreadAddress\(\{ kind: 'session', slug: session\.appSlug, id: session\.id \}\)/);
-  assert.match(SCREEN, /active=\{open\?\.kind === 'chat' && open\.id === agent\.id\}/);
+  assert.match(SCREEN, /active=\{open\?\.kind === 'agent' && open\.id === session\.id\}/);
   assert.match(SCREEN, /active=\{open\?\.kind === 'session' && open\.id === session\.id\}/);
   // The row no longer records the session's origin itself: on a desktop the
   // session is not left for, and on a phone the router records it.
@@ -136,35 +136,31 @@ test('the router opens agent threads in the pane, and on a phone swaps only a de
   assert.match(block, /Improve\.enterSessionFrom\?\.\('#messages'\)/);
   assert.match(block, /App\.restoreFromHash\(\);/);
   assert.match(block, /`#app\/\$\{encodeURIComponent\(agent\.slug\)\}\/dev\/sessions\/\$\{agent\.id\}`/);
-  assert.doesNotMatch(block, /`#chat\//, 'an agent chat stays in the inbox on a phone');
-  assert.doesNotMatch(block, /`#agent\//, 'and so does an agent session');
+  assert.doesNotMatch(block, /`#agent\//, 'an agent session stays in the inbox on a phone');
   // Their own screens' addresses come to the inbox on a phone, a ?flow= with them.
   assert.match(APP, /_agentToInbox\(address, fragQuery\) \{\s*if \(App\.embeddedPanel \|\| window\.matchMedia\('\(min-width: 768px\)'\)\.matches\) return false;/);
   assert.match(APP, /history\.replaceState\(null, '', App\._rootUrl\(`\$\{address\}\$\{fragQuery \? `\?\$\{fragQuery\}` : ''\}`\)\);/);
-  assert.match(APP, /if \(parts\.length === 2 && \(\(parts\[0\] === 'chat' && parts\[1\]\)\s*\|\| \(parts\[0\] === 'agent' && \(parts\[1\] === 'new' \|\| App\._numericSegment\(parts\[1\]\) != null\)\)\)\s*&& App\._agentToInbox\(`#messages\/agent\/\$\{parts\[1\]\}`, fragQuery\)\) return;\s*(?:\/\/[^\n]*\n\s*)*if \(parts\[0\] === 'chat'\) \{/,
-    'a chat with its id, an agent session or a new one; a bare #chat and #agent/<id>/changes keep their screens');
+  assert.match(APP, /if \(parts\.length === 2 && parts\[0\] === 'agent'\s*&& \(parts\[1\] === 'new' \|\| App\._numericSegment\(parts\[1\]\) != null\)\s*&& App\._agentToInbox\(`#messages\/agent\/\$\{parts\[1\]\}`, fragQuery\)\) return;/,
+    'an agent session or a new one; #agent/<id>/changes keeps its screen');
   // #2387: a fourth argument carries a reply thread or a message link.
   assert.match(APP, /navigateToMessages\(conversationId, appSlug, agent, extras\) \{/);
   assert.match(APP, /messages\.route\?\.\(conversationId \|\| null, appSlug \|\| null, agent \|\| null, more\);/);
   assert.match(APP, /_messagesAgentThread\(parts\) \{[\s\S]*?parts\[1\] === 'agent'[\s\S]*?parts\[1\] === 'session'/);
 });
 
-test('the global chat is one panel on two surfaces, told which one is drawing it', () => {
-  assert.match(CHAT_SCREEN, /export function GlobalChatPanel\(\{ embedded = false, headerAction = null \}/);
-  assert.match(CHAT_SCREEN, /\{snapshot\.host === 'messages' \? null : <GlobalChatPanel \/>\}/);
-  assert.match(CHAT_SCREEN, /<Composer id=\{globalChatComposerId\(embedded \? 'messages' : 'screen'\)\} \/>/);
-  // The prerendered screen is exactly what it was: the store starts on it.
-  assert.match(CHAT_STORE, /open: false,\s*host: 'screen',/);
-  assert.match(CHAT_STORE, /return host === 'messages' \? 'messages-agent-composer' : 'global-chat-composer';/);
-  assert.match(CHAT_STORE, /`#messages\/agent\/\$\{encodeURIComponent\(threadId\)\}`/);
-  assert.match(CHAT_STORE, /const target = threadAddress\(created\.thread\.id\);/);
-  assert.match(CHAT_STORE, /window\.location\.hash = threadAddress\(nextThread\.id\);/);
-  assert.match(CHAT_STORE, /classicPath \|\| \(state\.host === 'messages' \? '#messages' : '#home'\)/);
-
-  assert.match(SCREEN, /openGlobalChat\(\{ threadId: id, host: 'messages' \}\)/);
-  // Leaving the pane only undoes the pane's own open.
-  assert.match(SCREEN, /if \(current\.open && current\.host === 'messages'\) deactivateGlobalChat\(\);/);
-  assert.match(SCREEN, /<GlobalChatPanel embedded headerAction=\{<FullWidthToggle \/>\} \/>/);
+test('Global Chat\'s old addresses open the inbox, at #messages', () => {
+  // `#chat` and `#chat/<id>`: the inbox, whatever the viewport.
+  assert.match(APP, /if \(parts\[0\] === 'chat'\) \{\s*(?:\/\/[^\n]*\n\s*)*App\._retiredChatToInbox\(\);\s*return;\s*\}/);
+  // `#messages/agent/<uuid>`: a number or `new` names an agent session, and
+  // nothing else names a thread any more.
+  assert.match(APP, /if \(agent\) \{[\s\S]*?\n        \}\n(?:\s*\/\/[^\n]*\n)*\s*if \(parts\[1\] === 'agent' && parts\[2\]\) \{\s*App\._retiredChatToInbox\(\);\s*return;\s*\}/);
+  const thread = APP.slice(APP.indexOf('  _messagesAgentThread(parts) {'));
+  assert.doesNotMatch(thread.slice(0, thread.indexOf('\n  },')), /kind: 'chat'/);
+  // The old address is replaced, so a reload or Back does not route it again.
+  const retired = APP.slice(APP.indexOf('  _retiredChatToInbox() {'));
+  assert.match(retired.slice(0, retired.indexOf('\n  },')),
+    /history\.replaceState\(history\.state, '', App\._rootUrl\('#messages'\)\);[\s\S]*App\.navigateToMessages\(null\);/);
+  assert.doesNotMatch(APP, /navigateToGlobalChat|_inGlobalChat|global-chat-screen/);
 });
 
 test('the dev session is mounted into a host, like a discussion', () => {

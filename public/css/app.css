@@ -312,8 +312,8 @@
      composer row is the bottom of a column that reaches the viewport, so
      what it has to clear is whichever of the tab bar and the home-indicator
      strip is taller — never both stacked. Every surface that wears this
-     class sits on a screen where the bar is EITHER up (#messages-screen,
-     #global-chat-screen) or hidden (everything inside #app-view), and in the
+     class sits on a screen where the bar is EITHER up (#messages-screen)
+     or hidden (everything inside #app-view), and in the
      hidden case `--platform-tabs-h` is 0px and this is exactly the
      declaration it has always been. */
   padding-bottom: calc(0.5rem + max(var(--platform-tabs-h, 0px), var(--platform-safe-bottom))) !important;
@@ -1448,7 +1448,7 @@ html.dark .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req
 
 /* #3624: the Homeroom bot's messages. Its name carries a small "Bot"
    badge; a question it asks carries its suggested answers as pills in the
-   suggestion language Global Chat uses (the default first, marked), a
+   suggestion language (the default first, marked), a
    "Something else" pill in the neutral fill, and one muted line saying the
    answer is posted publicly on the request. */
 .messages-bot-badge {
@@ -2296,58 +2296,18 @@ form.agent-session-composer:focus-within {
    component. All it does is let the host fill the pane, because the sheet
    inside is `h-full` and a host that collapsed would give it nothing to be
    the height of. */
-/* The agent row's delete, and the confirm that replaces the row (#2718
-   review). Both came from the Improve panel's own list of these chats, which
-   was the only surface that offered the delete — so it moved here with them
-   rather than retiring with the panel. */
-.messages-row-delete {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 9999px;
-  color: var(--text-muted);
-  opacity: 0;
-  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
-}
-.messages-conversation-row:hover .messages-row-delete,
-.messages-row-delete:focus-visible { opacity: 1; }
-.messages-row-delete:hover { background: var(--messages-surface-2); color: var(--text-primary); }
-/* Touch has no hover to reveal it with, so it is simply there. */
-@media (hover: none) { .messages-row-delete { opacity: 1; } }
-.messages-row-confirm { gap: 8px; font-size: 14px; color: var(--text-primary); }
-.messages-row-confirm-cancel,
-.messages-row-confirm-delete {
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-.messages-row-confirm-cancel { color: var(--text-muted); }
-.messages-row-confirm-delete { color: #dc2626; }
-.dark .messages-row-confirm-delete { color: #f87171; }
-
 .messages-discussion-host { display: flex; flex-direction: column; min-height: 0; }
 .messages-discussion-host > * { flex: 1 1 auto; min-height: 0; }
 
 /* ── An agent thread, as a thread of this inbox (#2813) ─────────────────
-   A global agent chat is the chat's own panel drawn on the conversation
-   pane's sheet, so the panel adds no plane of its own. A dev session is
+   An agent session is its own panel drawn on the conversation pane's
+   sheet, so the panel adds no plane of its own. A dev session is
    DevChat's whole session view in a host, which draws its own sheet — the
    same arrangement as a discussion above, so the host only has to fill the
    pane. The bar above it carries what the pane adds: the session's own
    full-window address, for the spec and preview at full width, and the
    full-width toggle every discussion pane ends its header with. */
 .messages-thread-agent { overflow: hidden; }
-.global-chat-embedded { flex: 1 1 auto; }
-/* In the pane the toolbar spans the sheet, as every discussion's header
-   does, and only the transcript and composer keep their reading column —
-   so the full-width toggle at its end stays under the pointer when the
-   pane widens, rather than moving in with a centred column. */
-.global-chat-embedded > .global-chat-toolbar { width: 100%; }
 .messages-session-host { display: flex; flex-direction: column; min-height: 0; }
 .messages-session-host > * { flex: 1 1 auto; min-height: 0; }
 .messages-session-host[hidden] { display: none; }
@@ -2386,604 +2346,6 @@ form.agent-session-composer:focus-within {
   .messages-invite-decline, .messages-invite-block, .messages-invite-accept { flex: 1 1 auto; }
   .messages-message { padding-right: 12px; padding-left: 12px; }
   .messages-attachment img { width: 112px; }
-}
-
-/* ── Global Chat (experimental) ────────────────────────────────────────
-   A normal hash-routed, React-owned sibling screen. App._showOnlyScreen owns
-   mutual exclusion with the other roots, so this surface needs no body mode
-   or cross-screen inert writes. Each durable session has a #chat/<uuid> URL. */
-#global-chat-screen {
-  position: relative;
-  z-index: 8;
-  width: 100%;
-}
-.global-chat-shell {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  width: 100%;
-  overflow: hidden;
-}
-/* THE EXPERIMENTAL CHAT ENTRY IS THE INBOX'S NOW (#2718 review).
- * `.global-chat-new-chat-btn` styled a pill at the head of the Improve
- * panel's Chats section — first a header toggle flipping `Chat` / `Classic`,
- * then an entry point in the panel. The panel retired, and the control had
- * already been superseded: `#messages-new-agent` under the Messages inbox's
- * Agents filter starts a chat, gated on the same two flags, beside the rows
- * that resume one. One list, one way in.
- */
-.global-chat-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
-  width: min(100%, 54rem);
-  margin: 0 auto;
-  padding: 16px 16px 8px;
-}
-.global-chat-toolbar h2 {
-  color: var(--text-primary);
-  font-size: 22px;
-  font-weight: 750;
-  line-height: 1.15;
-}
-.global-chat-toolbar h2 span {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-.global-chat-toolbar p {
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.global-chat-budget {
-  margin-left: auto;
-  color: var(--text-muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-.global-chat-new {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 9999px;
-  color: var(--text-primary);
-  background: var(--dc-raised);
-  font-size: 13px;
-  font-weight: 650;
-}
-.global-chat-new:disabled { opacity: .45; }
-.global-chat-transcript {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: min(100%, 54rem);
-  margin: 0 auto;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 8px 16px 18px;
-  scroll-padding-bottom: 100px;
-}
-.global-chat-turn {
-  width: 100%;
-  margin: 8px 0;
-}
-.global-chat-turn-user {
-  display: flex;
-  justify-content: flex-end;
-}
-.global-chat-turn-user p {
-  max-width: min(78%, 38rem);
-  padding: 9px 14px;
-  border-radius: 18px;
-  color: var(--text-primary);
-  background: var(--accent-tint);
-  font-size: 16px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-.global-chat-turn-assistant {
-  padding-right: min(8vw, 64px);
-}
-.global-chat-assistant-copy {
-  margin: 0 0 8px;
-  color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.global-chat-first-use,
-.global-chat-unavailable {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  justify-content: center;
-  min-height: min(48vh, 380px);
-  padding: 28px 0;
-}
-.global-chat-first-use h3,
-.global-chat-unavailable h3 {
-  color: var(--text-primary);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-.global-chat-suggestion-hint {
-  margin-top: 6px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.global-chat-unavailable p {
-  max-width: 34rem;
-  margin-top: 5px;
-  color: var(--text-muted);
-  font-size: 15px;
-}
-.global-chat-suggestions,
-.global-chat-inline-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-}
-.global-chat-suggestions { margin-top: 10px; }
-.global-chat-related-suggestions {
-  display: flex;
-  flex: 0 0 100%;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding-top: 1px;
-}
-.global-chat-related-suggestions button {
-  color: var(--text-secondary);
-  background: var(--dc-raised);
-}
-.global-chat-suggestions button,
-.global-chat-inline-actions button,
-.global-chat-expand,
-.global-chat-history {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 13px;
-  border-radius: 9999px;
-  color: var(--brand-ink);
-  background: var(--brand-tint);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.1;
-}
-.global-chat-suggestions button:hover,
-.global-chat-inline-actions button:hover,
-.global-chat-expand:hover,
-.global-chat-history:hover { filter: brightness(.97); }
-.global-chat-suggestions .global-chat-more-suggestions,
-.global-chat-inline-actions button:last-child,
-.global-chat-expand,
-.global-chat-history {
-  color: var(--text-secondary);
-  background: var(--dc-raised);
-}
-.global-chat-inline-actions .global-chat-action-primary {
-  color: var(--accent-ink);
-  background: var(--accent);
-}
-.global-chat-inline-actions button:disabled { opacity: .5; }
-.global-chat-result {
-  margin: 8px 0;
-  overflow: hidden;
-  border-radius: 18px;
-  background: var(--dc-sheet-fill);
-  box-shadow: 0 1px 0 var(--app-sheet-line);
-  backdrop-filter: var(--dc-frost);
-  -webkit-backdrop-filter: var(--dc-frost);
-}
-.global-chat-result-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 7px 12px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .035em;
-}
-.global-chat-result-head button {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: auto;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 650;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.global-chat-result-items > :not(:last-child) {
-  border-bottom: 1px solid var(--border-light);
-}
-.global-chat-result[data-renderer="app"] .global-chat-result-items {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-top: 1px solid var(--border-light);
-}
-.global-chat-result[data-renderer="app"] .global-chat-result-items > .global-chat-item {
-  min-width: 0;
-  border-right: 1px solid var(--border-light);
-  border-bottom: 1px solid var(--border-light);
-}
-.global-chat-result[data-renderer="app"] .global-chat-result-items > .global-chat-item:nth-child(even) {
-  border-right: 0;
-}
-.global-chat-item {
-  display: flex;
-  gap: 10px;
-  padding: 10px 12px 11px;
-}
-.global-chat-result[data-renderer="app"] .global-chat-item {
-  gap: 8px;
-  padding: 8px 10px;
-}
-.global-chat-app-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-.global-chat-item-toggle {
-  display: flex;
-  width: 100%;
-  align-items: flex-start;
-  gap: 8px;
-  border-radius: 8px;
-  text-align: left;
-}
-.global-chat-item-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.global-chat-item-title {
-  display: block;
-  color: var(--text-primary);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-.global-chat-item-meta {
-  display: block;
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-.global-chat-item-chevron {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--text-muted);
-  transition: transform .16s ease;
-}
-.global-chat-item[data-expanded] .global-chat-item-chevron { transform: rotate(180deg); }
-.global-chat-item-selector .global-chat-item-toggle {
-  min-height: 34px;
-  align-items: center;
-}
-.global-chat-item-selector .global-chat-item-title { font-size: 14px; }
-.global-chat-item-details { padding-top: 3px; }
-.global-chat-item-summary {
-  margin-top: 4px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.35;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.global-chat-item-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 6px 12px;
-  margin-top: 8px;
-}
-.global-chat-item-fields dt {
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 650;
-}
-.global-chat-item-fields dd {
-  margin: 1px 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.global-chat-inline-actions { margin-top: 8px; }
-.global-chat-inline-actions button {
-  min-height: 30px;
-  padding: 0 10px;
-  font-size: 12px;
-}
-.global-chat-expand {
-  gap: 4px;
-  margin: 8px 12px 12px;
-  min-height: 32px;
-}
-.global-chat-client-action { padding: 0 12px 12px; }
-.global-chat-result-nested {
-  margin: 9px 0 2px;
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  background: var(--dc-raised);
-  box-shadow: none;
-}
-.global-chat-inline-loading,
-.global-chat-inline-error {
-  margin-top: 8px;
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.global-chat-inline-error { color: var(--danger, #b91c1c); }
-.global-chat-setting-edit {
-  margin-top: 9px;
-  color: var(--brand-ink);
-  font-size: 12px;
-  font-weight: 650;
-}
-.global-chat-setting-controls { margin-top: 9px; }
-.global-chat-setting-instruction {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 9px;
-}
-.global-chat-setting-instruction input {
-  min-width: min(100%, 260px);
-  flex: 1 1 260px;
-  min-height: 36px;
-  padding: 7px 10px;
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  color: var(--text-primary);
-  background: var(--bg-input, var(--dc-sheet));
-  font-size: 13px;
-}
-.global-chat-setting-instruction button {
-  min-height: 36px;
-  padding: 0 11px;
-  border-radius: 9999px;
-  color: var(--brand-ink);
-  background: var(--brand-tint);
-  font-size: 12px;
-  font-weight: 650;
-}
-.global-chat-setting-instruction button:last-child {
-  color: var(--text-secondary);
-  background: var(--dc-raised);
-}
-.global-chat-setting-instruction button:disabled { opacity: .45; }
-.global-chat-settings-editor { padding: 2px 12px 14px; }
-.global-chat-settings-editor > :last-child { margin-bottom: 0; }
-.global-chat-development-editor {
-  display: grid;
-  gap: 12px;
-}
-.global-chat-setting-status {
-  color: #047857;
-  font-size: 12px;
-}
-.global-chat-setting-note {
-  color: var(--text-muted);
-  font-size: 11px;
-  line-height: 1.4;
-}
-.dark .global-chat-setting-status { color: #6ee7b7; }
-.global-chat-result-done {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 9px 12px 12px;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 650;
-}
-.global-chat-confirmation {
-  margin: 8px 0;
-  padding: 12px;
-  border-radius: 18px;
-  color: var(--text-primary);
-  background: var(--state-attention-bg);
-}
-.global-chat-confirmation strong { font-size: 15px; }
-.global-chat-confirmation p { margin-top: 2px; color: var(--text-muted); font-size: 12px; }
-.global-chat-confirmation-details {
-  display: grid;
-  gap: 4px;
-  margin-top: 8px;
-}
-.global-chat-confirmation-details > div {
-  display: grid;
-  grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.35;
-}
-.global-chat-confirmation-details dt {
-  color: var(--text-muted);
-  text-transform: capitalize;
-}
-.global-chat-confirmation-details dd {
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
-}
-.global-chat-confirmation-muted { color: var(--text-muted); background: var(--dc-raised); font-size: 13px; }
-.global-chat-result-loading,
-.global-chat-loading,
-.global-chat-activity {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-.global-chat-progress {
-  margin: 9px 0;
-  padding: 9px 11px;
-  border: 1px solid var(--border-light);
-  border-radius: 14px;
-  color: var(--text-muted);
-  background: var(--dc-raised);
-  font-size: 12px;
-}
-.global-chat-progress-current {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 22px;
-}
-.global-chat-progress-current span {
-  min-width: 0;
-  flex: 1 1 auto;
-  color: var(--text-secondary);
-  overflow-wrap: anywhere;
-}
-.global-chat-progress-current time {
-  flex: 0 0 auto;
-  font-variant-numeric: tabular-nums;
-}
-.global-chat-progress details { margin-top: 5px; }
-.global-chat-progress summary {
-  width: max-content;
-  cursor: pointer;
-  color: var(--accent);
-  font-weight: 650;
-}
-.global-chat-progress-details {
-  display: grid;
-  gap: 4px;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-light);
-}
-.global-chat-progress-details ol,
-.global-chat-progress-details ul {
-  display: grid;
-  gap: 3px;
-  margin: 0;
-  padding-left: 18px;
-}
-.global-chat-progress-details li[data-status="completed"] { color: var(--text-secondary); }
-.global-chat-progress-details li[data-status="failed"] { color: var(--danger, #b91c1c); }
-.global-chat-history { margin: 0 auto 10px; }
-.global-chat-error {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0;
-  padding: 9px 12px;
-  border-radius: 14px;
-  color: var(--state-blocked);
-  background: var(--state-blocked-bg);
-  font-size: 13px;
-}
-.global-chat-error span { min-width: 0; flex: 1 1 auto; }
-.global-chat-error button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex: 0 0 auto;
-  font-weight: 700;
-}
-.global-chat-composer {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  flex: 0 0 auto;
-  width: min(calc(100% - 24px), 52rem);
-  margin: 0 auto;
-  /* THE BOTTOM IS THE SAFE BAR'S. The form wears `.platform-safe-bar` (top of
-     this file): its 8px base gap plus the larger of the tab bar's band and
-     the home-indicator strip, since #global-chat-screen keeps the platform
-     tab bar up on a phone. This rule cleared the strip alone — `calc(10px +
-     var(--platform-safe-bottom))` — so the field sat under the tab bar. The
-     8px declared here is the value the class computes with no bar and no
-     inset, so the two cannot disagree on a desktop. */
-  padding: 10px 12px 8px;
-  border-radius: 22px 22px 0 0;
-  background: var(--dc-sheet-fill);
-  box-shadow: 0 -5px 18px rgba(0, 0, 0, .06);
-  backdrop-filter: var(--dc-frost);
-  -webkit-backdrop-filter: var(--dc-frost);
-}
-.global-chat-composer textarea {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 40px;
-  max-height: 144px;
-  resize: none;
-  overflow-y: auto;
-  border: 0;
-  outline: 0;
-  padding: 9px 4px;
-  color: var(--text-primary);
-  background: transparent;
-  font-size: 16px;
-  line-height: 1.35;
-}
-.global-chat-composer textarea::placeholder { color: var(--text-faint); }
-.global-chat-send {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  color: var(--accent-ink);
-  background: var(--accent);
-}
-.global-chat-send:disabled { opacity: .35; }
-.global-chat-stop-mark {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
-  background: currentColor;
-}
-@media (max-width: 639px) {
-  .global-chat-toolbar { padding-right: 12px; padding-left: 12px; }
-  .global-chat-toolbar p { display: none; }
-  .global-chat-budget { display: none; }
-  .global-chat-new { width: 44px; min-height: 44px; padding: 0; }
-  .global-chat-new span { display: none; }
-  .global-chat-transcript { padding-right: 12px; padding-left: 12px; }
-  .global-chat-turn-assistant { padding-right: 0; }
-  .global-chat-turn-user p { max-width: 86%; }
-  .global-chat-suggestions button { min-height: 42px; }
-  .global-chat-inline-actions button { min-height: 36px; }
-  .global-chat-result[data-renderer="app"] .global-chat-result-items { grid-template-columns: minmax(0, 1fr); }
-  .global-chat-result[data-renderer="app"] .global-chat-result-items > .global-chat-item { border-right: 0; }
-  .global-chat-item { padding-top: 12px; padding-bottom: 12px; }
-  .global-chat-item-toggle { min-height: 36px; }
-  .global-chat-setting-instruction input,
-  .global-chat-setting-instruction button { min-height: 42px; }
-  .global-chat-progress { padding: 9px 10px; }
-  .global-chat-composer { width: calc(100% - 16px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .global-chat-result-loading svg,
-  .global-chat-loading svg,
-  .global-chat-activity svg { animation: none; }
-  .global-chat-progress-current svg { animation: none; }
 }
 
 
@@ -4110,7 +3472,7 @@ html[data-browser-scroller="auth-landing-scroll"] #app-viewer {
    NOT the Communities Needs you feed (`[data-workshop-pane="needs"]`): it
    is fitted to the screen on purpose (#3516) and scrolls inside, like a
    project's Needs you and Discussion, which #3544 leaves fitted too. NOT the
-   chats (a Messages thread, Global Chat, an agent session): a transcript
+   chats (a Messages thread, an agent session): a transcript
    opens on its newest line and stays there; it is not a page. A project
    page is #3544's rule. tests/page-overscroll.test.js holds App.SCREEN_IDS
    against the attribute, so a new screen root carries it or is named there
@@ -4399,7 +3761,7 @@ html:root body:has(#app-view:not(.hidden):not([data-app-surface="platform"])),
    what makes the launcher → app push read as one bar: both routes paint
    the same wallpaper under the same cleared bar, so the bar's snapshot is
    identical on both sides of the transition and only the page moves. */
-body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #profile-proposals-screen, #global-chat-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) #platform-header {
+body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) #platform-header {
   background-color: transparent;
 }
 
@@ -4429,7 +3791,7 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
    notch in half. The frost IS the edge here. */
 body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
              #settings-screen, #messages-screen, #workshop-screen,
-             #global-chat-screen, #agent-session-screen,
+             #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header {
   background-color: var(--dc-sheet-fill);
   backdrop-filter: var(--dc-frost);
@@ -4458,7 +3820,7 @@ body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
    reaches past its box, so the clip cuts nothing. */
 body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
              #settings-screen, #messages-screen, #workshop-screen,
-             #global-chat-screen, #agent-session-screen,
+             #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header,
 body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
   background-color: transparent;
@@ -4476,7 +3838,7 @@ body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
    on the bar changes; only the strip does. */
 html.un-ios.web-browser-chrome:not([data-community-tint]) body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
              #settings-screen, #messages-screen, #workshop-screen,
-             #global-chat-screen, #agent-session-screen,
+             #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header,
 html.un-ios.web-browser-chrome:not([data-community-tint]) body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
   background-color: var(--dc-sheet-solid);
@@ -4505,7 +3867,7 @@ html.un-ios.web-browser-chrome:not([data-community-tint]) body:has(#app-view:not
    (`overflow: hidden`, 100dvh), scrolls, and nothing scrolls it, so the
    bar stays where it sits in the flow; and it is already `relative z-10`,
    so it was a stacking context and a containing block before. */
-html.un-ios.web-browser-chrome:not([data-community-tint]):not([data-browser-scroller]) body:has(:is(#messages-screen, #workshop-screen, #global-chat-screen,
+html.un-ios.web-browser-chrome:not([data-community-tint]):not([data-browser-scroller]) body:has(:is(#messages-screen, #workshop-screen,
              #agent-session-screen, #profile-proposals-screen):not(.hidden)) #platform-header,
 html.un-ios.web-browser-chrome:not([data-community-tint]):not([data-browser-scroller]) body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
   position: sticky;
@@ -20029,7 +19391,6 @@ html[data-nav-drawer] #app-view { touch-action: pan-y; }
   }
   .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row > .messages-group-faces > :last-child { display: none; }
   .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row .messages-row-time,
-  .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row .messages-kind-pill,
   .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row .messages-group-tag { display: none; }
   .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row .messages-row-name { font-size: 15px; font-weight: 400; }
   .messages-layout.messages-drawer > .messages-list-pane .messages-conversation-row .messages-row-preview { font-size: 12px; line-height: 16px; }
@@ -22348,7 +21709,7 @@ html.un-kb #platform-tabs {
 .platform-parked::before,
 body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
              #settings-screen, #messages-screen, #workshop-screen,
-             #global-chat-screen, #agent-session-screen,
+             #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header::before,
 body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header::before,
 html[data-browser-scroller] #landing-header::before {
@@ -23080,7 +22441,7 @@ html[data-side-strip="left"] #platform-header {
      tabs and the back button. Over the ground it slides under the strip
      instead, as off a phone's edge. Under the header (z-index 10), over
      the screens. */
-  html[data-side-strip] body:has(:is(#messages-screen, #settings-screen, #agent-session-screen, #global-chat-screen):not(.hidden) .dc-lift-strip:not(.messages-drawer)) .platform-side-strip-ground {
+  html[data-side-strip] body:has(:is(#messages-screen, #settings-screen, #agent-session-screen):not(.hidden) .dc-lift-strip:not(.messages-drawer)) .platform-side-strip-ground {
     position: fixed;
     z-index: 9;
     top: calc(var(--browser-banner-h, 0px) + var(--platform-header-h) + var(--platform-safe-top, 0px) - 0.5rem);
@@ -23092,7 +22453,7 @@ html[data-side-strip="left"] #platform-header {
     clip-path: inset(0 round 0 1.75rem 0 0);
     pointer-events: none;
   }
-  html[data-side-strip="left"] body:has(:is(#messages-screen, #settings-screen, #agent-session-screen, #global-chat-screen):not(.hidden) .dc-lift-strip:not(.messages-drawer)) .platform-side-strip-ground {
+  html[data-side-strip="left"] body:has(:is(#messages-screen, #settings-screen, #agent-session-screen):not(.hidden) .dc-lift-strip:not(.messages-drawer)) .platform-side-strip-ground {
     left: 0;
     right: auto;
     border-top-right-radius: 0;
@@ -23733,7 +23094,7 @@ html.un-kb #platform-parked {
      began under the rail. */
   :is(#home-screen, #browse-screen, #workshop-screen, #leaderboard-screen,
       #profile-screen, #admin-screen, #settings-screen, #messages-screen,
-      #global-chat-screen, #agent-session-screen, #profile-proposals-screen) {
+      #agent-session-screen, #profile-proposals-screen) {
     /* A GUTTER AFTER THE RAIL, MIRRORED ON THE FAR EDGE (#2718 review).
        The rail's hairline was the content's left margin, so a card began
        where the rail ended and the page had air on the right and none on the
@@ -24882,28 +24243,6 @@ section + .workshop-search {
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
-}
-
-/* THE KIND MARK. People get none — they are the overwhelming majority of an
-   inbox, and a pill on every row is a pill that says nothing. It rides
-   INSIDE the name line rather than on the trailing edge, because the
-   trailing edge is the time-and-count column and a third thing in it turns
-   two readable columns into three cramped ones. */
-.messages-kind-pill {
-  display: inline-flex;
-  align-items: center;
-  height: 17px;
-  margin-left: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
-  vertical-align: 1px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  background: var(--brand-tint);
-  color: var(--brand-ink);
-  border: 1px solid var(--brand-line);
 }
 
 /* The two new rows' leading tiles, at the `lg` square UserAvatar's 44px box

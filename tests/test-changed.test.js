@@ -200,7 +200,7 @@ test('a suite marked "test:changed: always" runs on every change; the marker mus
   const marked = tc.alwaysSuites(new Map(fs.readdirSync(path.join(root, 'tests'))
     .filter((f) => f.endsWith('.test.js'))
     .map((f) => [`tests/${f}`, fs.readFileSync(path.join(root, 'tests', f), 'utf8')])));
-  for (const suite of ['shell-icon-set', 'global-chat-inventory', 'theme-ink-guards', 'no-em-dash-in-copy', 'admin-ui-registry']) {
+  for (const suite of ['shell-icon-set', 'theme-ink-guards', 'no-em-dash-in-copy', 'admin-ui-registry']) {
     assert.ok(marked.includes(`tests/${suite}.test.js`), `${suite} is marked`);
   }
   assert.ok(marked.length <= 12, 'a short list of fast guards, not a second npm test');

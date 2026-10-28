@@ -50,11 +50,11 @@ const nativeJs = fs.readFileSync(
 // your apps is a page in the chip's menu, so it replaces the screen you were
 // on rather than presenting over it, and it takes the navigate/exit pair every
 // other root has.
-// #agent-session-screen (#2779) is a root with the same navigate/exit pair
-// as Global Chat's: one conversation with the Mayor at #agent/<id>.
+// #agent-session-screen (#2779) is a root with the same navigate/exit pair:
+// one conversation with the Mayor at #agent/<id>.
 const SCREEN_ROOTS = ['app-view', 'home-screen', 'browse-screen',
   'workshop-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
-  'settings-screen', 'messages-screen', 'global-chat-screen', 'agent-session-screen',
+  'settings-screen', 'messages-screen', 'agent-session-screen',
   'profile-proposals-screen'];
 
 const NAVIGATIONS = [
@@ -64,14 +64,13 @@ const NAVIGATIONS = [
   { fn: 'navigateToAdminConsole', reveal: 'admin-screen' },
   { fn: 'navigateToSettings', reveal: 'settings-screen' },
   { fn: 'navigateToMessages', reveal: 'messages-screen' },
-  { fn: 'navigateToGlobalChat', reveal: 'global-chat-screen' },
   { fn: 'navigateToAgentSession', reveal: 'agent-session-screen' },
   { fn: 'navigateToWorkshop', reveal: 'workshop-screen' },
   { fn: 'navigateToProfileProposals', reveal: 'profile-proposals-screen' },
 ];
 
 const EXITS = ['_exitLeaderboard', '_exitProfile', '_exitBrowse',
-  '_exitAdminConsole', '_exitSettings', '_exitMessages', '_exitGlobalChat', '_exitAgentSession', '_exitWorkshop',
+  '_exitAdminConsole', '_exitSettings', '_exitMessages', '_exitAgentSession', '_exitWorkshop',
   '_exitProfileProposals'];
 
 // The body of a top-level App method, from its two-space-indented
@@ -220,7 +219,6 @@ test('every screen entry is guarded against a duplicate dispatch', () => {
     navigateToBrowse: /if \(App\._inBrowse && window\.Browse\?\.isOpen\?\.\(\)\)/,
     navigateToAdminConsole: /if \(App\._inAdmin && window\.AdminConsole\?\.isOpen\?\.\(\)\)/,
     navigateToSettings: /if \(App\._inSettings && window\.Settings\?\.isOpen\?\.\(\)\)/,
-    navigateToGlobalChat: /if \(App\._inGlobalChat && globalChat\?\.isOpen\?\.\(\)\)/,
     // navigateToMessages was here. It is a sheet resolver now, and a sheet
     // needs no duplicate-dispatch guard: presenting one that is already
     // presented is a no-op in the controller, and there is no View Transition

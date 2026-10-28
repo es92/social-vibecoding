@@ -347,7 +347,7 @@ test('a tab root shows nothing; a sub-page shows an arrow to its tab', () => {
     assert.equal(ui.backButtonStore.get().mode, 'none', `${screen} is a root`);
   }
   for (const [screen, href] of [['settings-screen', '#profile'], ['admin-screen', '#profile'],
-    ['leaderboard-screen', '#profile'], ['global-chat-screen', '#messages']]) {
+    ['leaderboard-screen', '#profile'], ['agent-session-screen', '#messages']]) {
     h.App._showOnlyScreen('home-screen');
     h.App._showOnlyScreen(screen);
     assert.equal(ui.backButtonStore.get().mode, 'arrow', `${screen} has a level above`);

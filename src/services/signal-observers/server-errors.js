@@ -63,19 +63,44 @@ function topicOf(route) {
   return 'infra';
 }
 
-// The file that declares each route, from the inventory the Global Chat
-// generates of every route (scripts/generate-global-chat-inventory.js):
-// `METHOD path` → its source. Read once, when first needed.
+// The file that declares each route: src/routes/ (its subfolders too) and
+// server.js, scanned once, when first needed, for the routes they declare
+// with a literal path (`router.get('/api/...'`, `app.post("/health"`):
+// `METHOD path` -> its file. A route declared from a variable or a template
+// is not found, and its frame alone says where. When two files declare the
+// same route (a middleware on one path, say), the last one read is kept.
+const ROUTE_DECLARATION = /\b(?:router|app)\.(get|post|put|patch|delete)\(\s*['"`](\/[^'"`]+)['"`]/g;
+
+function routeSources() {
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(rel);
+      else if (entry.name.endsWith('.js')) files.push(rel);
+    }
+  };
+  files.push('server.js');
+  try { walk('src/routes'); } catch { /* no routes folder: server.js alone */ }
+  return files;
+}
+
 let routeFiles = null;
 function routeFileOf(method, route) {
   if (!routeFiles) {
     routeFiles = new Map();
-    try {
-      const inventory = require('../global-chat/classic-inventory.generated.json');
-      for (const r of inventory.routes || []) {
-        if (r && r.path && r.source) routeFiles.set(`${r.method} ${r.path}`, r.source);
+    for (const file of routeSources()) {
+      let text;
+      try {
+        text = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      } catch {
+        continue; // unreadable: the frame alone says where
       }
-    } catch { /* no inventory: the frame alone says where */ }
+      for (const m of text.matchAll(ROUTE_DECLARATION)) {
+        routeFiles.set(`${m[1].toUpperCase()} ${m[2]}`, file);
+      }
+    }
   }
   return routeFiles.get(`${method} ${route}`) || null;
 }

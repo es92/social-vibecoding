@@ -8,15 +8,16 @@
 //      history page, a membership change) rebuilt every row object, so every
 //      row rendered again; the thread head was a fresh copy each render.
 //   2. Messages inbox: every keystroke in the search box re-ran buildInbox and
-//      re-rendered every row, and so did every publish of the global chat's
-//      and the agent sessions' stores.
+//      re-rendered every row, and so did every publish of the agent
+//      sessions' store (and of Global Chat's, before it was removed).
 //   3. Topic head: nine blocks of another renderer's markup took an inline
 //      `{ __html }` object, and the head republishes on the 20s checks poll
 //      and on websocket events, so each block's innerHTML (the before/after
 //      tiles' images included) was rebuilt each time.
 //   4. Workshop Needs-you deck: typing in Ask, and each token of its answer,
 //      re-rendered every item of the deck.
-//   5. Global chat store: a patch that changed nothing still notified.
+//   5. Global chat store: a patch that changed nothing still notified. Its
+//      pin left with Global Chat.
 //   6. Auto-growing text boxes: two layouts per keystroke.
 //   7. lib/browser-scroll.ts (see tests/browser-scroll.test.js).
 //
@@ -110,7 +111,7 @@ test('the open reply thread lights its chip through a prop, read on every render
 
 test('the inbox rows are memo()\'d and the list filters on the deferred query', () => {
   const src = read('frontend/src/features/messages/index.tsx');
-  for (const name of ['ConversationRow', 'GeneralChannelRow', 'AppChannelRow', 'AgentChatRow', 'AgentSessionRow', 'MayorSessionRow']) {
+  for (const name of ['ConversationRow', 'GeneralChannelRow', 'AppChannelRow', 'AgentSessionRow', 'MayorSessionRow']) {
     assert.match(src, new RegExp(`^const ${name} = memo\\(function ${name}\\(`, 'm'), `${name} is memo()'d`);
   }
   const list = src.slice(src.indexOf('function ConversationList('));
@@ -120,10 +121,8 @@ test('the inbox rows are memo()\'d and the list filters on the deferred query', 
   assert.match(body, /value=\{query\}/, 'while the field shows every keystroke at once');
   assert.match(body, /const inbox = useMemo\(\(\) => buildInbox\(/, 'the inbox is built once per change to its inputs');
   // Other stores are read through the fields the list draws.
-  assert.match(body, /useGlobalChatSelector\(\(s\) => s\.bootstrap\)/);
-  assert.match(body, /useGlobalChatSelector\(\(s\) => s\.threads\)/);
   assert.match(body, /const mayorSessions = useAgentSessions\(\);/);
-  assert.doesNotMatch(body, /useGlobalChatState\(|useAgentSessionState\(/);
+  assert.doesNotMatch(body, /useAgentSessionState\(/);
 });
 
 // ── 3. Topic head ───────────────────────────────────────────────────────
@@ -158,25 +157,6 @@ test('a Needs-you item does not re-render for the Ask sheet\'s keystrokes or str
   const feed = src.slice(src.indexOf('function NeedsFeed('), src.indexOf('function GroupStrip('));
   assert.match(feed, /const openFull = useCallback\(\(el: HTMLElement\) => callAppView\(/, 'the one callback an item takes is stable');
   assert.match(feed, /onFull=\{openFull\}/);
-});
-
-// ── 5. Global chat store ────────────────────────────────────────────────
-
-test('a global chat patch that changes nothing notifies no one', () => {
-  globalThis.window = { location: { hash: '' }, App: {}, UsernodeReact: {} };
-  try {
-    const store = loadTsx('frontend/src/features/global-chat/store.ts');
-    const before = store.getGlobalChatState();
-    // Leaving the chat when it is not open: every field it writes already
-    // holds that value. The Messages pane does this on every unmount.
-    store.deactivateGlobalChat();
-    store.deactivateGlobalChat();
-    assert.equal(store.getGlobalChatState(), before, 'the same snapshot: no subscriber renders');
-    store.dismissConfirmation('r1');
-    assert.notEqual(store.getGlobalChatState(), before, 'a real change still publishes');
-  } finally {
-    delete globalThis.window;
-  }
 });
 
 // ── 6. Auto-growing text boxes ──────────────────────────────────────────

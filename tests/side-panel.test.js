@@ -64,7 +64,7 @@ const R = api.routes;
 
 // ── 1. The address table ─────────────────────────────────────────────────
 
-test('the panel\'s pages: an app\'s work, conversations, agent chats; its community is known but never the panel\'s', () => {
+test('the panel\'s pages: an app\'s work and conversations; its community is known but never the panel\'s', () => {
   const kinds = {
     'app/notes-ab12/workshop': 'workshop',
     'app/notes-ab12/board': 'workshop',
@@ -84,8 +84,6 @@ test('the panel\'s pages: an app\'s work, conversations, agent chats; its commun
     'messages/app/notes-ab12': 'workshop',
     'messages/4242': 'thread',
     'messages': 'messages',
-    'chat': 'chat',
-    'chat/5f0c1d2e-aaaa-bbbb-cccc-000000000001': 'chat',
   };
   for (const [route, kind] of Object.entries(kinds)) {
     const page = R.panelPage(route);
@@ -97,10 +95,12 @@ test('the panel\'s pages: an app\'s work, conversations, agent chats; its commun
     assert.equal(R.isPanelRoute(route), !community && kind !== 'messages', `${route} beside the app`);
     assert.equal(R.embeddedAllows(route), !community, `the panel's own document shows ${route}`);
   }
-  // Everything else is somewhere the panel does not go.
+  // Everything else is somewhere the panel does not go, Global Chat's old
+  // addresses included: the top window opens Messages for them.
   for (const route of ['', 'apps', 'apps/notes-ab12', 'workshop', 'profile', 'profile/dana',
     'settings', 'leaderboard', 'admin', 'notifications', 'create',
-    'app/notes-ab12', 'app/notes-ab12/app', 'app/notes-ab12/full']) {
+    'app/notes-ab12', 'app/notes-ab12/app', 'app/notes-ab12/full',
+    'chat', 'chat/5f0c1d2e-aaaa-bbbb-cccc-000000000001']) {
     assert.equal(R.panelPage(route), null, `${route || '(home)'} is not a panel page`);
     assert.equal(R.isPanelRoute(route), false);
     assert.equal(R.embeddedAllows(route), false);
@@ -122,7 +122,7 @@ test('an agent session opens beside the app by either address, climbs to Message
   assert.equal(R.samePage('messages/agent/7', 'agent/7'), true, 'the in-place swap is not a navigation');
   assert.equal(R.samePage('agent/7/changes', 'agent/7'), true, 'the drawer is the same page');
   assert.equal(R.samePage('agent/7', 'agent/8'), false);
-  // A UUID under messages/agent is a Global Chat thread, which stays out.
+  // A UUID under messages/agent was a Global Chat thread; it stays out.
   assert.equal(R.isPanelRoute('messages/agent/5f0c1d2e-aaaa-bbbb-cccc-000000000001'), false);
   for (const route of ['agent', 'agent/abc', 'agent/0']) {
     assert.equal(R.panelPage(route), null, `${route} is not a panel page`);
@@ -140,7 +140,7 @@ test('an agent session opens beside the app by either address, climbs to Message
 test('the inbox is where Back climbs to, but a link to it is the Messages TAB and leaves the app', () => {
   assert.equal(R.isPanelRoute('messages'), false, 'the sidebar\'s tabs keep their meaning');
   assert.equal(R.embeddedAllows('messages'), true, 'and the panel\'s own document still shows it');
-  for (const route of ['messages/4242', 'chat', 'app/other-app/dev/proposals/9']) {
+  for (const route of ['messages/4242', 'app/other-app/dev/proposals/9']) {
     assert.equal(R.isPanelRoute(route), true, `${route} opens beside the app`);
   }
   // A community leaves the app too, like a tab, wherever it is linked from.
@@ -185,7 +185,6 @@ test('Back climbs: a message to Messages; a proposal, an issue or a change has n
     'the redirect to the page is not a navigation');
   assert.equal(R.samePage('app/notes-ab12/dev/chat', 'app/notes-ab12/workshop'), true);
   assert.equal(R.parentRoute('messages/4242'), 'messages');
-  assert.equal(R.parentRoute('chat/abc'), 'messages');
   // Its community is never the panel's, and climbing to it would leave the app.
   for (const route of ['app/notes-ab12/dev/proposals/12', 'app/notes-ab12/dev/issues/7',
     'app/notes-ab12/dev/sessions/41', 'app/notes-ab12/dev/sessions/new', 'app/notes-ab12/dev/shared/41']) {

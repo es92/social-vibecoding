@@ -864,7 +864,7 @@ async function askHelperModel({
   if (!apiKey) return { ok: false, reason: 'no_key' };
   const model = await helperModelNow();
   const reasoning = require('./helper-model').thinkingFor(model);
-  const transport = (helperTestDeps && helperTestDeps.openrouter) || require('./global-chat/openrouter');
+  const transport = (helperTestDeps && helperTestDeps.openrouter) || require('./openrouter');
   const cfg = (helperTestDeps && helperTestDeps.config) || helperConfig || {};
   const maxOutputTokens = Math.min(
     HELPER_OUTPUT_LIMIT[helper] || HELPER_MAX_OUTPUT_TOKENS,

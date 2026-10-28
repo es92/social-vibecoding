@@ -86,7 +86,6 @@ import { PlatformHeader } from './features/header/platform-header';
 import { MessagesScreen } from './features/messages';
 import { ParkedStrip, PlatformTabs, SkipToNavigation, StripBack } from './features/nav';
 import { SidePanel } from './features/side-panel';
-import { GlobalChatScreen } from './features/global-chat';
 import { AgentSessionScreen } from './features/agent-session';
 import { WorkshopScreen } from './features/workshop';
 import { ProfileProposalsScreen } from './features/profile/my-proposals';
@@ -303,15 +302,8 @@ export function Shell() {
       */}
       <Island name="MessagesScreen"><MessagesScreen /></Island>
       {/*
-          Global Chat (#2377, #2543) is a React-owned sibling screen. It ships
-          hidden for hydration parity, then the hash router reveals it at the
-          stable #chat/<uuid> address of a session selected from Improve.
-          App.REACT_SCREEN_IDS keeps visibility single-owned by React.
-      */}
-      <Island name="GlobalChatScreen"><GlobalChatScreen /></Island>
-      {/*
           Agent sessions (#2779): one conversation with the Mayor that works
-          on any app. A React-owned sibling screen like Global Chat above,
+          on any app. A React-owned sibling screen like Messages above,
           shipped hidden and empty, revealed by the hash router at #agent/<id>
           (a phone's surface; a desktop draws the same panel in the Messages
           pane). Listed in App.REACT_SCREEN_IDS, so React alone writes its

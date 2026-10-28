@@ -24,7 +24,7 @@
  * One clock for all three, because an inbox sorted per-kind is three lists
  * stacked rather than one list. A row with no timestamp at all sorts last
  * rather than first: "we do not know when" is not "just now", and an agent
- * chat that has never been opened would otherwise lead the inbox.
+ * session that has never been opened would otherwise lead the inbox.
  *
  * ── Channels live in their communities now ────────────────────────────
  *
@@ -62,8 +62,8 @@
  * One clock put the bot's news, an agent turning, and a person's message in
  * one queue, so a person was easily three screens down under bot news. The
  * list is three headed sections now, in a fixed order: the Homeroom bot's
- * chat (always first, as B5 pinned it), then Agents (the agent sessions,
- * the agent chats and the changes in flight), then People (direct messages
+ * chat (always first, as B5 pinned it), then Agents (the agent sessions
+ * and the changes in flight), then People (direct messages
  * and group chats). Each is newest first on its own clock. The filter chips
  * (All, People, Agents) went with it: the headings say which is which, and
  * a section folds from its heading (./index.tsx).
@@ -78,9 +78,8 @@
  */
 
 // `mayor` is an agent session (#2779): a conversation with the Mayor that
-// works on any app, as opposed to `agent` (a Global Chat thread) and
-// `session` (one change's classic dev chat).
-export type InboxKind = 'person' | 'channel' | 'app' | 'agent' | 'session' | 'mayor';
+// works on any app, as opposed to `session` (one change's classic dev chat).
+export type InboxKind = 'person' | 'channel' | 'app' | 'session' | 'mayor';
 
 /** Which section of the list an entry is drawn in, in the order they are drawn. */
 export type InboxSection = 'agents' | 'people';
@@ -120,22 +119,13 @@ export interface AppDiscussion {
   unreadCount?: number;
 }
 
-export interface AgentChat {
-  id: string;
-  title: string;
-  busy?: boolean;
-  summary?: string | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-
 /**
  * A change in flight — a dev session, or a work order handed to an agent
  * elsewhere (#2770).
  *
  * A CHANGE IS AN AGENT CONVERSATION: the viewer talks to the agent that
- * builds, the same as in an agent chat, so it is listed under Agents beside
- * them. The row is ../improve/session-row.tsx's, drawn from the Improve
+ * builds, the same as in an agent session, so it is listed under Agents
+ * beside them. The row is ../improve/session-row.tsx's, drawn from the Improve
  * store's own list, so this shape is only the part the merge needs — the
  * view carries the rest through untouched.
  */
@@ -215,8 +205,7 @@ function byClock(a: InboxEntry, b: InboxEntry): number {
  */
 export function buildInbox(input: {
   conversations: Array<{ id: number; lastActivityAt: string; kind?: string; homeroomBot?: boolean }>;
-  agents: AgentChat[];
-  /** Optional so a caller with no Improve store still merges three kinds. */
+  /** Optional so a caller with no Improve store still merges the others. */
   sessions?: AgentSession[];
   /** Agent sessions (#2779), newest activity first like everything else. */
   mayors?: Array<{ id: number; lastActivityAt: string | null }>;
@@ -232,9 +221,6 @@ export function buildInbox(input: {
       ? { key, kind: 'person', section: 'agents', at: item.lastActivityAt, pinned: true }
       : { key, kind: 'person', section: 'people', at: item.lastActivityAt };
     (item.homeroomBot ? bot : people).push(entry);
-  }
-  for (const item of input.agents) {
-    agents.push({ key: `agent:${item.id}`, kind: 'agent', section: 'agents', at: item.updatedAt || item.createdAt || null });
   }
   for (const item of input.sessions || []) {
     agents.push({ key: `session:${item.key}`, kind: 'session', section: 'agents', at: item.lastActivityAt || null });

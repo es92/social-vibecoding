@@ -185,28 +185,6 @@
       ],
       "why": "MentionAutocomplete.BOT_NAME: the assistant's name used as data (matched against what is typed after @, inserted into the message as the mention). A product name, never translated. `PR #n: title` is matched against the start of a server-composed line to cut it off, never drawn. The key names are KeyboardEvent.key values."
     },
-    "frontend/src/features/global-chat/development-settings-editor.tsx": {
-      "texts": [
-        "OpenRouter",
-        "Claude Code"
-      ],
-      "why": "Product names of the two AI services, shown as the options of the Development AI select."
-    },
-    "frontend/src/features/global-chat/store.ts": {
-      "texts": [
-        "New chat",
-        "More suggestions"
-      ],
-      "why": "Sentinel: the server's default thread title, compared (`selected.title === 'New chat'`) and written back as the same placeholder so the next message can replace it. The toolbar's visible \"New chat\" is chat:global.toolbar.newChat. requestMoreSuggestions sends this as the `text` of a `more: true` turn; it is protocol for the server and the model (services/global-chat uses the same literal). What the person sees is chat:global.turn.moreSuggestions and chat:global.suggestions.more."
-    },
-    "frontend/src/features/global-chat/renderers.tsx": {
-      "texts": [
-        "In the \"${…}\" settings group (key: ${…}), ${…}.",
-        "Preserve every value I did not ask to change, use only capabilities for this settings group,",
-        "and show the exact confirmation before saving."
-      ],
-      "why": "SettingInstruction builds a prompt for the assistant around what the person typed; its wording is an instruction to the model (and pinned by tests/global-chat-ui.test.js), not interface copy. See borderline."
-    },
     "frontend/src/features/dev-chat/dev-chat.js": {
       "texts": [
         "Homeroom · OpenRouter",

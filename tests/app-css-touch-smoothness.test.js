@@ -57,10 +57,6 @@ test('a Messages row tints on hover only where a pointer can hover', () => {
   assert.match(hover, /\.messages-conversation-row:hover \{ background: var\(--messages-selected\); \}/);
   assert.match(TOP_LEVEL, /\.messages-conversation-active \{ background: var\(--messages-selected\); \}/,
     'the open conversation is marked everywhere');
-  // The row's delete stays as it was: on touch it is always shown by the
-  // `(hover: none)` rule, so its `:hover` reveal never decides anything there.
-  assert.match(TOP_LEVEL, /\.messages-conversation-row:hover \.messages-row-delete,\s*\.messages-row-delete:focus-visible \{ opacity: 1; \}/);
-  assert.ok(mediaBlocks(RULES, '(hover: none)').some((b) => /\.messages-row-delete \{ opacity: 1; \}/.test(b)));
 });
 
 test('the dev chat pane does not smooth-scroll its own follow-to-bottom', () => {

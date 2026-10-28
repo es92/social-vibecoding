@@ -1219,162 +1219,6 @@
     "text": "Falha ao carregar: falha na busca",
     "source": "1d91b9911ffc7b9e35cd945e9beb61e3684eab4362a246f58846811d1e4db9d5"
   },
-  "globalChat.title": {
-    "text": "Chat Global <0>(experimental)</0>",
-    "source": "abba10de894a6763d08875c127ca41afb5b9d5ffd9919566bcb0b29ddefa98b0"
-  },
-  "globalChat.intro": {
-    "text": "IA rápida e de baixo custo para navegar e usar o Homeroom. O trabalho de desenvolvimento mantém o próprio modelo e a própria configuração de raciocínio.",
-    "source": "6284220efb06b83941dda036e13bb1b5fca8e9aecbe8381c449d155d4b77ee50"
-  },
-  "globalChat.loadFailed": {
-    "text": "Não foi possível carregar as configurações do Chat Global.",
-    "source": "b1ed417acf0ea3aa2bbe4dc83754125bf7f59437edb256d84b809a1c33204789"
-  },
-  "globalChat.modelsLoadFailed": {
-    "text": "Não foi possível carregar os modelos compatíveis.",
-    "source": "e7d3d9ee7b6c979b9ba9a14f55a9064cc15d59e6e172f0d9cf71ea8e965173d1"
-  },
-  "globalChat.chooseModelFirst": {
-    "text": "Escolha primeiro um modelo compatível.",
-    "source": "83918e8cc6bf3d1c2685d1aeeadee3eca77c220f29feed3f910a13dc2562b2a8"
-  },
-  "globalChat.saving": {
-    "text": "Salvando…",
-    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
-  },
-  "globalChat.saveBusy": {
-    "text": "Salvando…",
-    "source": "23e39291d6135814ed7c936e278974544b0df5fbf0eb0427b6700979b7472a93"
-  },
-  "globalChat.saved": {
-    "text": "Configurações do Chat Global salvas.",
-    "source": "3fb241407a472de6e974192e4e7b1a28ed2fb37d6683b8b5e2e3faf68bf80444"
-  },
-  "globalChat.saveFailed": {
-    "text": "Não foi possível salvar as configurações do Chat Global.",
-    "source": "269bb313a4b7a441b91b2027787f3e551fb86558c296e3cdd54b9589235ae142"
-  },
-  "globalChat.enabledNotice": {
-    "text": "Chat Global experimental ativado.",
-    "source": "48d8e666284ebb18e5fac86519617d0b90e2fcac282fecfdecc442b3406123de"
-  },
-  "globalChat.disabledNotice": {
-    "text": "Chat Global experimental desativado.",
-    "source": "f7df9614276d9fc289dd6babf1f4e78b52338e3c9f1ffbb3d61d2607bad72c31"
-  },
-  "globalChat.toggleFailed": {
-    "text": "Não foi possível atualizar o Chat Global.",
-    "source": "b4b1a660bbbd82953b6b64f2e38bf4c1642fbe48e096fb49ae5d17587706ce91"
-  },
-  "globalChat.enable.label": {
-    "text": "Ativar o Chat Global experimental",
-    "source": "f6baece434d8d5a0eb441c4851ad7d25929b8aed1d45259bc89560558d610ac8"
-  },
-  "globalChat.enable.description": {
-    "text": "Mostre suas conversas do Chat Global em Mensagens. O modo Clássico continua sendo o padrão.",
-    "source": "147d8909e53ff1b2c061c2e83f04a358967822965bfe49e262ace271904fe417"
-  },
-  "globalChat.needsKey.text": {
-    "text": "Adicione ou resgate uma chave do OpenRouter antes de escolher um modelo do Chat Global.",
-    "source": "f95349478723c1311ff3e9c230c01d6d36b656689066c8508df7ca607900e4a1"
-  },
-  "globalChat.needsKey.open": {
-    "text": "Abrir configurações do OpenRouter",
-    "source": "43a49afc3547fbf162ce73fb5092dfe6d54491d6c3fd10e3996d6c988edfec13"
-  },
-  "globalChat.model.label": {
-    "text": "Modelo do Chat Global",
-    "source": "0f65a60c5747693afacf2aa069914f251b1a6ec18d132b72682ac909eb7b25bb"
-  },
-  "globalChat.model.optionPriced": {
-    "text": "{{model}} · {{price}}",
-    "source": "ec4e1cd6a09d6c1ecce75fa1221c23af6da061e3888bf424ef9215b04b764623"
-  },
-  "globalChat.model.optionRecommended": {
-    "text": "{{model}} · Recomendado",
-    "source": "420ba63cbefaf0627a7828685eed59334100ea636fa4cd760693232dfda57db5"
-  },
-  "globalChat.model.optionRecommendedPriced": {
-    "text": "{{model}} · Recomendado · {{price}}",
-    "source": "edf690bdb83c0703632329eb05ac497ccb853d8af39b609ab525852417ddcc25"
-  },
-  "globalChat.model.priceAverage": {
-    "text": "{{price}}/M méd.",
-    "source": "475fe5df1c38b899a0b4d1e9f6f60cb619c02c23912c23598358c42cac6dacb7"
-  },
-  "globalChat.model.priceInOut": {
-    "text": "{{input}} entrada · {{output}} saída /M",
-    "source": "83532d0ba7a46aacf25f71a922ba3dfdd82ff7104de44aedf2397deae98fa61d"
-  },
-  "globalChat.model.selectedPriced": {
-    "text": "{{modelId}} · {{price}}",
-    "source": "a4f4d82a83173116f2906530bdebdb52fbe8ad3aa9ed39a9032fca7ed3fc5f9c"
-  },
-  "globalChat.model.refresh": {
-    "text": "Atualizar",
-    "source": "0e91610117029a62a478b7fa7df0b8598bebe3ab1e192d4b1882e310719c9671"
-  },
-  "globalChat.effort.label": {
-    "text": "Esforço de raciocínio",
-    "source": "3236aeec43e563ca9ea03a7d0c077021021a3e36b4a0648ea5539d07d9e0f379"
-  },
-  "globalChat.effort.low": {
-    "text": "Baixo · recomendado para GLM Flash",
-    "source": "0ff85ed61f6308f34d856b5ef768209133d52d33facac0d6c2fd35d02f2aa292"
-  },
-  "globalChat.effort.minimal": {
-    "text": "Mínimo · só em modelos compatíveis",
-    "source": "a81c4df1b139470d5e8fc57864ad75aa5a8b8ac9fb080a9e32f764700496731c"
-  },
-  "globalChat.effort.medium": {
-    "text": "Médio",
-    "source": "8e588cd187741f1cd76f5fab77b7208782a8c21d764ce7d7a4cf3ac4e0968873"
-  },
-  "globalChat.effort.high": {
-    "text": "Alto",
-    "source": "c4ebc6d4a5832cd9415f906ad03661110c705a72381c8b8b145761d02e2dd23a"
-  },
-  "globalChat.effort.xhigh": {
-    "text": "Muito alto",
-    "source": "70eb321d8c393f2c586a249c8d6be866a37121ef46a8313e98a9952ff5e964fc"
-  },
-  "globalChat.cap.label": {
-    "text": "Limite mensal do Chat em USD · opcional",
-    "source": "9b91ea1979a91bfe1c45af0b20172a6184e9359f680962253f0105b90c3babd3"
-  },
-  "globalChat.cap.placeholder": {
-    "text": "Sem limite separado",
-    "source": "7f5111c6b1afaf0db6e95d1acce55712f37531b3ab019a2bfb74eaf7f9692a0b"
-  },
-  "globalChat.usage.thisMonth": {
-    "text": "Chat Global neste mês",
-    "source": "1fe5240043650878d5c82531f9ae0c57e439295bba69b99bed9b69197e7e321d"
-  },
-  "globalChat.usage.spentOfCap": {
-    "text": "{{spent}} / {{cap}}",
-    "source": "df46c8177fbe1a80de57eb4071eaec1566e27ca0cef7bc0d5dd9ea4bc520b5b3"
-  },
-  "globalChat.usage.overallRemaining": {
-    "text": "Restante geral do OpenRouter",
-    "source": "11be62abd3d3d8866abde178e63eee0f741a1f1bca0dcdcb2259943b6f82cf27"
-  },
-  "globalChat.usage.unavailable": {
-    "text": "Indisponível",
-    "source": "ca184496974204a0bd3fd4925e0540bc4b0df6fcc232994d29754272b7183812"
-  },
-  "globalChat.save": {
-    "text": "Salvar configurações do Chat Global",
-    "source": "604bc43266773fe4868a0f04ac6102ff75b71fcece78c096b87bdd921f872725"
-  },
-  "globalChat.developmentSettings": {
-    "text": "Configurações de IA do desenvolvimento",
-    "source": "f0ae8065330894efbf3c11325b335034a2fa92495dc4905e0c91e851c423cf7b"
-  },
-  "globalChat.footnote": {
-    "text": "O modo Clássico é sempre o inicial. Este perfil controla apenas o Chat Global; as sessões de desenvolvimento mantêm seus próprios padrões.",
-    "source": "221f905cc84e5ade6ce877d72f56f6d51c7f04f1fc5910e2aacb317286146585"
-  },
   "experimental.title": {
     "text": "Experimental",
     "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
@@ -1975,10 +1819,6 @@
     "text": "Instruções e habilidades do agente",
     "source": "7c5c797501a2f24ebef712d1c00661d32cc0cdfe593764d603e218cdf1af65c4"
   },
-  "nav.part.globalChat": {
-    "text": "Global Chat (experimental)",
-    "source": "1dfd6900d8677c63cece52755670a07abc961cce8b62592344646d7d29a8c31e"
-  },
   "nav.part.experimental": {
     "text": "Experimental",
     "source": "3dc9f569422dcfdadcb2c33f3eb2ee6fcebc8ba679bd63e690f9ddd0ff7c24be"
@@ -2118,10 +1958,6 @@
   "nav.keywords.agentFiles": {
     "text": "instruções habilidades agentes md claude md prompt arquivos",
     "source": "cef4a94c8d946971c4cc219eeec502ea65e59494c5b081c95b1d7f4be52f9353"
-  },
-  "nav.keywords.globalChat": {
-    "text": "modelo limite chat global",
-    "source": "e2314f06cef7a37e56fa984edbe339d410e72f26c284b0c9d1064c1258bb1a51"
   },
   "nav.keywords.experimental": {
     "text": "beta laboratório progresso estimativa sessão ponte agente local atalho teclado sugerir melhoria",

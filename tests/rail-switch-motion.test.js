@@ -90,7 +90,7 @@ test('Home from the rail is a cut too, but backing out of an app still zooms', (
 test('everything that is not a rail switch keeps its motion', () => {
   const { App, element } = harness();
   // A drill-in within a tab goes somewhere; it keeps its push.
-  for (const id of ['settings-screen', 'leaderboard-screen', 'global-chat-screen', 'admin-screen']) {
+  for (const id of ['settings-screen', 'leaderboard-screen', 'agent-session-screen', 'admin-screen']) {
     assert.equal(App._entryTransition('push', element(id)), 'push', `${id} is a drill-in`);
   }
   assert.equal(App._entryTransition('zoom-in', element('app-view')), 'zoom-in', 'opening an app still zooms');

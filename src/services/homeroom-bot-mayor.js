@@ -106,7 +106,8 @@ const RETRYABLE_MODEL_ERRORS = new Set([
 const MAX_ATTEMPTS = 3;
 const RETRY_WITHIN_MS = 90_000;
 // #3772: one model request's clock. The DM's requests are not streamed, so
-// Global Chat's 25 seconds timed a whole reasoning answer out on 2 October.
+// the transport's default 25 seconds timed a whole reasoning answer out on
+// 2 October.
 const REQUEST_TIMEOUT_MS = 45_000;
 // The longest a provider's Retry-After is waited for within a turn.
 const MAX_RETRY_AFTER_WAIT_MS = 20_000;
@@ -134,7 +135,7 @@ const PLAIN_HISTORY = 8;
 // A round answers at most this many of the model's calls, so a turn always
 // fits the transport's limit on messages.
 const MAX_CALLS_PER_ROUND = 8;
-// That limit (global-chat/openrouter.js MAX_MESSAGES).
+// That limit (services/openrouter.js MAX_MESSAGES).
 const MAX_MESSAGES = 100;
 const MAX_FAILURES_RECORDED = 20;
 // A message that asks how their work is going. Read only when the model
@@ -2253,7 +2254,7 @@ async function answer(pool, config, { bot, user, settings, conversationId, messa
   const t = {
     config, user, settings, message, ctx,
     model: require('./default-model').fromSettings(settings, config) || DEFAULT_MODEL,
-    chat: deps.chat || require('./global-chat/openrouter').streamChat,
+    chat: deps.chat || require('./openrouter').streamChat,
     sleep: deps.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms))),
     apiKey: deps.apiKey,
     route: 1,

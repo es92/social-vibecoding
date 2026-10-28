@@ -23,8 +23,8 @@
 // translation to OpenRouter's Chat Completions API happens here and is pure,
 // so it is tested without a network.
 //
-// The request is non-streaming on purpose, as Global Chat's is
-// (services/global-chat/openrouter.js): an atomic response lets OpenRouter
+// The request is non-streaming on purpose, as the shared transport's is
+// (services/openrouter.js): an atomic response lets OpenRouter
 // fail over to another provider before any partial tool call is exposed.
 // The Mayor's replies are 1-4 sentences, so the whole reply arriving at once
 // costs the reader very little.
@@ -48,7 +48,7 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 8_192;
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 // The Mayor chats and routes; it does not write code. Low effort keeps a
-// reply quick, the same reasoning Global Chat's profile uses.
+// reply quick.
 const MAYOR_REASONING_EFFORT = 'low';
 const REASONING_EFFORT_ORDER = Object.freeze(['minimal', 'low', 'medium', 'high', 'xhigh']);
 // Persisted Mayor rows name the model the same way the direct path's reply

@@ -4,15 +4,13 @@
 //
 // The platform now runs coding turns at 'xhigh', the top of its effort scale,
 // for the models it recommends (GLM 5.3 Flash, DeepSeek v4.1 Flash) and for
-// the OpenRouter coding default generally. These tests pin three things that
+// the OpenRouter coding default generally. These tests pin two things that
 // are easy to break later:
 //
 //   1. the configured default itself, and that it is read from config rather
 //      than hardcoded at the call site;
 //   2. that a user's own choice in Settings still wins over it — raising a
-//      default must never overwrite somebody's setting;
-//   3. that Global Chat, which is a separate profile on a deliberately cheap
-//      low-effort default, is untouched by any of it.
+//      default must never overwrite somebody's setting.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -34,7 +32,6 @@ function loadConfig(env = {}) {
   const keys = [
     'DATABASE_URL', 'SESSION_SECRET', 'ADMIN_USERNAME', 'ADMIN_PASSWORD',
     'USERNODE_ENV', 'OPENROUTER_DEFAULT_CODEX_REASONING',
-    'OPENROUTER_DEFAULT_GLOBAL_CHAT_REASONING',
   ];
   const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   Object.assign(process.env, {
@@ -45,7 +42,6 @@ function loadConfig(env = {}) {
     USERNODE_ENV: 'staging',
   });
   delete process.env.OPENROUTER_DEFAULT_CODEX_REASONING;
-  delete process.env.OPENROUTER_DEFAULT_GLOBAL_CHAT_REASONING;
   for (const [key, value] of Object.entries(env)) process.env[key] = value;
   const realLog = console.log;
   console.log = () => {};
@@ -60,30 +56,24 @@ function loadConfig(env = {}) {
   }
 }
 
-test('the OpenRouter coding default is xhigh, and Global Chat stays low', () => {
+test('the OpenRouter coding default is xhigh', () => {
   const config = loadConfig();
   assert.equal(config.openrouterDefaultCodexReasoning, 'xhigh');
-  // The two profiles are configured independently and must stay that way:
-  // Global Chat is cheap navigation chatter, not repository work.
-  assert.equal(config.openrouterDefaultGlobalChatReasoning, 'low');
-  assert.notEqual(
-    config.openrouterDefaultCodexReasoning,
-    config.openrouterDefaultGlobalChatReasoning,
-  );
 });
 
-test('an operator can configure the coding default without touching Global Chat', () => {
+test('an operator can configure the coding default', () => {
   const config = loadConfig({ OPENROUTER_DEFAULT_CODEX_REASONING: 'medium' });
   assert.equal(config.openrouterDefaultCodexReasoning, 'medium');
-  assert.equal(config.openrouterDefaultGlobalChatReasoning, 'low');
 });
 
 test('the coding default is validated against the platform effort scale', () => {
   const source = fs.readFileSync(path.join(root, 'src/config.js'), 'utf8');
-  // One scale for both profiles: a second hardcoded list is how the two
-  // vocabularies drift apart.
+  // One scale for the platform, shared with the OpenRouter transport: a
+  // second hardcoded list is how two vocabularies drift apart.
   assert.match(source, /REASONING_EFFORT_LEVELS\.has\(codexDefaultReasoningEffort\)/);
-  assert.match(source, /REASONING_EFFORT_LEVELS\.has\(globalChatDefaultReasoningEffort\)/);
+  assert.match(source, /require\('\.\/services\/reasoning-efforts'\)/);
+  assert.match(fs.readFileSync(path.join(root, 'src/services/openrouter.js'), 'utf8'),
+    /require\('\.\/reasoning-efforts'\)/);
 });
 
 // ── What a turn actually sends ────────────────────────────────────────

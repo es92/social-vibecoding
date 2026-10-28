@@ -168,7 +168,7 @@ test('an agent session\'s change: the drawer says when, the rows say it short', 
 
   // Messages' agent rows read the same words.
   const messages = read('frontend/src/features/messages/index.tsx');
-  const row = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentChatThread('));
+  const row = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentSessionThread('));
   // The change's name, then where it stands, as two facts on one line (bot-shared dotText).
   assert.match(row, /dotText\(\[\s*change\.title \|\|[^\n]*\n\s*changeRowWords\(change\),\s*\]\)/);
 });

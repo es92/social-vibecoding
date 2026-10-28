@@ -448,6 +448,13 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
     'M3 12a9 9 0 1 0 2.64-6.36',
     'M3 4.5V9h4.5',
     'M12 7.5V12l3 2',
+    // ── Global Chat is removed ─────────────────────────────────────────
+    //
+    // Its composer was in the static document and drew MicrophoneIcon and
+    // ArrowUpIcon there. The other composers draw both only once a
+    // conversation or a dev chat is open.
+    'M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z',
+    'M12 19V5M5 12l7-7 7 7',
   ];
   assert.deepEqual(absent.sort(), expected.sort());
 });

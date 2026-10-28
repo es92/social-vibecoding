@@ -91,7 +91,7 @@ test('GLM answers: the forced tool carries the helper schema, and Haiku is never
     // #3772: not even `false`, which would route GLM 5.3 Flash to the one
     // provider that takes parallel_tool_calls.
     assert.equal(sent.parallelToolCalls, null);
-    assert.equal('parallel_tool_calls' in require('../src/services/global-chat/openrouter').buildRequest(sent), false);
+    assert.equal('parallel_tool_calls' in require('../src/services/openrouter').buildRequest(sent), false);
     assert.deepEqual(sent.tools[0].function.parameters, llm.SESSION_TITLE_SCHEMA);
     assert.equal(sent.messages[0].role, 'system');
     assert.equal(sent.messages[1].role, 'user');
@@ -581,12 +581,12 @@ test('thinkingFor: GLM at low as before; any other model with its thinking off',
   assert.equal(helperModel.thinkingFor('~z-ai/glm-5.3-flash'), 'low');
   assert.equal(helperModel.thinkingFor(DS), 'none');
   assert.equal(helperModel.thinkingFor('anthropic/claude-haiku-5.5'), 'none');
-  const { buildRequest } = require('../src/services/global-chat/openrouter');
+  const { buildRequest, reasoningEffort } = require('../src/services/openrouter');
   const base = { model: DS, messages: [{ role: 'user', content: 'hi' }], tools: [] };
   assert.deepEqual(buildRequest({ ...base, reasoning: 'none' }).reasoning, { enabled: false }, 'OpenRouter\'s switch for thinking off');
   assert.deepEqual(buildRequest({ ...base, reasoning: 'low' }).reasoning, { effort: 'low' });
-  assert.throws(() => require('../src/services/global-chat/profile').reasoningEffort('none'), /Invalid reasoning effort/,
-    'a Global Chat profile still cannot choose it');
+  assert.throws(() => reasoningEffort('none'), /Invalid reasoning effort/,
+    'thinking off is not an effort on the scale');
 });
 
 test('a helper model other than GLM is asked by name, with its thinking off, and recorded as asked', async () => {

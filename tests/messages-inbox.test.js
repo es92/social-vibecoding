@@ -64,36 +64,23 @@ test('three sections in a fixed order, each on its own clock; the channels are n
       { slug: 'quiet', lastAt: null },
       { slug: 'notes', lastAt: at('2026-01-03T00:00:00Z') },
     ],
-    agents: [{ id: 'a1', updatedAt: at('2026-01-01T00:00:00Z') }],
+    mayors: [{ id: 5, lastActivityAt: at('2026-01-01T00:00:00Z') }],
     filter: 'all',
   });
   // Messages is people and agents. #general is the Homeroom community's
   // channel and each app's channel is its own community's, drawn on the
   // hub (features/dev-board/workshop/hub-cards.tsx), so neither is a row.
   // Agents before People, whatever the clock says between them.
-  assert.deepEqual(merged.map((e) => e.key), ['agent:a1', 'person:1']);
+  assert.deepEqual(merged.map((e) => e.key), ['mayor:5', 'person:1']);
   assert.deepEqual(merged.map((e) => e.section), ['agents', 'people']);
 });
 
 test('a row with no timestamp sorts last in its section, not first', () => {
   const merged = inbox.buildInbox({
     conversations: [{ id: 1, lastActivityAt: at('2020-01-01T00:00:00Z') }],
-    agents: [{ id: 'never', updatedAt: null, createdAt: null }, { id: 'dated', updatedAt: at('2019-01-01T00:00:00Z') }],
+    mayors: [{ id: 1, lastActivityAt: null }, { id: 2, lastActivityAt: at('2019-01-01T00:00:00Z') }],
   });
-  assert.deepEqual(merged.map((e) => e.key), ['agent:dated', 'agent:never', 'person:1']);
-});
-
-test('an agent chat falls back to when it was created', () => {
-  const merged = inbox.buildInbox({
-    conversations: [],
-    discussions: [],
-    agents: [
-      { id: 'new', createdAt: at('2026-02-02T00:00:00Z') },
-      { id: 'old', createdAt: at('2026-01-01T00:00:00Z') },
-    ],
-    filter: 'all',
-  });
-  assert.deepEqual(merged.map((e) => e.key), ['agent:new', 'agent:old']);
+  assert.deepEqual(merged.map((e) => e.key), ['mayor:2', 'mayor:1', 'person:1']);
 });
 
 test('the sections are Agents and Direct messages, and there are no filter chips', () => {
@@ -105,7 +92,6 @@ test('the sections are Agents and Direct messages, and there are no filter chips
   assert.doesNotMatch(SCREEN, /InboxFilters|setFilter|messages-filter/);
   const people = inbox.buildInbox({
     conversations: [{ id: 1, lastActivityAt: at('2026-01-02T00:00:00Z') }, { id: 9, kind: 'channel', lastActivityAt: null }],
-    agents: [],
   });
   assert.deepEqual(people.map((e) => e.key), ['person:1'], 'a channel is no one\'s person row');
 });
@@ -116,29 +102,12 @@ test('#18 (WP3): the Homeroom bot\'s DM is pinned first in Agents, and is still 
     { id: 2, kind: 'direct', homeroomBot: true, lastActivityAt: at('2026-01-01T00:00:00Z') },
   ];
   const sessions = [{ key: 's7', lastActivityAt: at('2026-01-03T00:00:00Z') }];
-  const merged = inbox.buildInbox({ conversations, agents: [], sessions });
+  const merged = inbox.buildInbox({ conversations, sessions });
   assert.deepEqual(merged.map((e) => e.key), ['person:2', 'session:s7', 'person:1'], 'first, whatever was said last');
   assert.deepEqual(merged.map((e) => e.section), ['agents', 'agents', 'people']);
   assert.deepEqual(merged.map((e) => !!e.pinned), [true, false, false], 'the bot\'s row alone is pinned');
   assert.equal(merged[0].kind, 'person', 'drawn by the conversation row, as before');
   assert.match(SCREEN, /conversations: snap\.conversations,/, 'the screen hands the merge the summaries that carry the mark');
-});
-
-test('agent chats are read, not copied', () => {
-  // Through a selector, the two fields it draws, so a turn streaming in the
-  // chat does not redraw the list.
-  assert.match(SCREEN, /useGlobalChatSelector\(\(s\) => s\.threads\)/,
-    'the screen reads the chat’s own store');
-  // The word appears once in this store, in a comment about typing indicators
-  // hopping between threads, so the check is on the STATE rather than on the
-  // text: no field of it holds an agent-chat list.
-  assert.doesNotMatch(STORE, /threads:/,
-    'and this store holds no second copy of that list');
-  assert.doesNotMatch(STORE, /agents:/);
-  // …gated on the same two flags the Improve panel's list is, so a shell
-  // with the feature off shows no Agents rows and no filter doing nothing.
-  assert.match(SCREEN, /parityReady/);
-  assert.match(SCREEN, /profiles\.globalChat\.enabled === true/);
 });
 
 test('the discussions read fails quietly', () => {
@@ -288,9 +257,8 @@ test('the search and the plus ship in the prerendered document; the filter row i
 });
 
 test('one row shape per kind, under two headed sections; Agents shows the bot, then five from its week', () => {
-  assert.match(SCREEN, /function AgentChatRow/);
+  assert.match(SCREEN, /const MayorSessionRow = memo\(function MayorSessionRow/);
   assert.doesNotMatch(SCREEN, /<KindPill kind="app" \/>/, 'a section heading says it once');
-  assert.match(SCREEN, /<KindPill kind="agent" \/>/, 'an agent row still says so on a phone');
   assert.match(SCREEN, /const SECTION_LABELS: Record<InboxSection, string> = \{\s*agents: 'messages:inbox\.section\.agents',\s*people: 'messages:inbox\.section\.people',\s*\};/);
   assert.match(SCREEN, /\{INBOX_SECTIONS\.map\(\(section\) => \{/, 'every section, in order');
   assert.match(SCREEN, /<SectionHead section=\{section\} folded=\{folded\} aside=\{asides\[section\]\.text\} ask=\{asides\[section\]\.ask\} \/>/);
@@ -346,7 +314,7 @@ test('one row shape per kind, under two headed sections; Agents shows the bot, t
   assert.equal(message('messages:inbox.older.show', { count: 1 }), '1 older chat');
   assert.equal(message('messages:inbox.older.show', { count: 13 }), '13 older chats');
   assert.equal(message('messages:inbox.older.hide'), 'Hide older chats');
-  const conversationRow = SCREEN.slice(SCREEN.indexOf('function ConversationRow'), SCREEN.indexOf('function KindPill'));
+  const conversationRow = SCREEN.slice(SCREEN.indexOf('function ConversationRow'), SCREEN.indexOf('const GeneralChannelRow = memo('));
   assert.doesNotMatch(conversationRow, /KindPill/,
     'a person gets none: they are the majority, and a pill on every row says nothing');
 });
@@ -386,7 +354,7 @@ test('#5393: a group row shows its members\' faces and names the person who spok
   assert.match(faces, /<UserAvatar user=\{others\[0\]\} size="sm" shape="square" \/>/, 'each face the kit\'s own sm square');
   // The row draws it for a group the viewer is in; a DM and an unanswered
   // invitation keep today's tile.
-  const row = SCREEN.slice(SCREEN.indexOf('const ConversationRow = memo('), SCREEN.indexOf('function KindPill'));
+  const row = SCREEN.slice(SCREEN.indexOf('const ConversationRow = memo('), SCREEN.indexOf('const GeneralChannelRow = memo('));
   assert.match(row, /conversation\.kind === 'group' && !invited\s*\? <GroupFaces conversation=\{conversation\} \/>/);
   assert.doesNotMatch(row.slice(row.indexOf('<UserAvatar')), /<GroupFaces/, 'the fallback tile is the old one');
   // The preview names its last sender, the way #general's row already does.
@@ -447,52 +415,25 @@ test('a change in flight lines up with the conversation rows on the cards (#5378
   assert.match(css.slice(at, css.indexOf('}', at)), /width: 44px;\s*height: 44px;\s*border-radius: 12px;/, 'the avatars\' 44px');
 });
 
-// ── The agent half has to ask for itself (#2718 review) ────────────────
-
-test('the inbox initialises the global-chat bootstrap it reads', () => {
-  // `useGlobalChatSelector` reads a store nothing on this screen was filling:
-  // the only caller of initializeGlobalChat outside Settings was the Improve
-  // panel's own New chat button. So an inbox opened without ever having
-  // opened Improve saw `bootstrap: null` — which reads as "the feature is
-  // off" — and drew no agent rows and no way to start one under the Agents
-  // tab, which is what "there is no new agent button under agents" was.
-  // `removeGlobalChatThread` joined them when the Improve panel retired: its
-  // list of these chats was the only surface that offered the delete, so the
-  // delete came to this one rather than going away (#2718 review).
-  const imports = SCREEN.slice(0, SCREEN.indexOf("} from '../global-chat/store';"));
-  for (const name of ['initializeGlobalChat', 'removeGlobalChatThread', 'useGlobalChatSelector']) {
-    assert.match(imports.slice(imports.lastIndexOf('import {')), new RegExp(`\\b${name},`));
-  }
-  const screen = SCREEN.slice(SCREEN.indexOf('export function MessagesScreen'));
-  assert.match(screen, /void initializeGlobalChat\(\);/);
-  // The same shape the button uses: a boot-time 401 is expected before
-  // app.js has established the session, so `sv:authed` asks again. The call
-  // is idempotent, so two surfaces asking costs one request.
-  assert.match(screen, /window\.addEventListener\('sv:authed', retry\);/);
-  assert.match(screen, /return \(\) => window\.removeEventListener\('sv:authed', retry\);/);
-});
-
 // ── A change is an agent conversation (#2770, #2772) ────────────────────
 
 test('a change sorts on the Agents clock and files under Agents', () => {
   const merged = inbox.buildInbox({
     conversations: [{ id: 1, lastActivityAt: at('2026-01-02T00:00:00Z') }],
-    agents: [{ id: 'a1', updatedAt: at('2026-01-01T00:00:00Z') }],
+    mayors: [{ id: 4, lastActivityAt: at('2026-01-01T00:00:00Z') }],
     sessions: [{ key: 's7', lastActivityAt: at('2026-01-03T00:00:00Z') }],
   });
-  assert.deepEqual(merged.map((e) => e.key), ['session:s7', 'agent:a1', 'person:1']);
+  assert.deepEqual(merged.map((e) => e.key), ['session:s7', 'mayor:4', 'person:1']);
   assert.deepEqual(merged.map((e) => e.section), ['agents', 'agents', 'people']);
 });
 
-test('changes are read from the Improve store, drawn by SessionRow, and not gated on the chat flags', () => {
+test('changes are read from the Improve store and drawn by SessionRow', () => {
   assert.match(SCREEN, /useStoreState\(improveStore\)/, 'one list, the Improve store’s');
   assert.match(SCREEN, /<SessionRow\b/, 'drawn by the same row the bell’s Messages tab uses for agents');
   const list = SCREEN.slice(SCREEN.indexOf('function ConversationList'));
   const body = list.slice(0, list.indexOf('\n}\n'));
   assert.match(body, /const sessions = useMemo<SessionRowView\[\]>\(\(\) => \(mounted\s*\?/,
     'after mount only, so the first client render matches the prerender');
-  assert.doesNotMatch(body.slice(body.indexOf('const sessions'), body.indexOf('const inbox')), /agentsOn/,
-    'a change is not the experimental global chat');
   // #2813: the row's address is the inbox's own, so on a desktop the session
   // opens beside the list. On a phone the router swaps it for the session
   // itself and records Messages as where it hangs off.
@@ -677,7 +618,7 @@ test('bug h: the discussion context carries the app artwork, for a header with n
 test('a new account\'s Messages says it is empty: #general is read but never listed here (sign-up test, 19 Oct 2026)', () => {
   // Every account is in #general, so the read always has it, and the list
   // leaves it out: the empty state has to ask the list, or it never shows.
-  assert.deepEqual(inbox.buildInbox({ conversations: [{ id: 3, kind: 'channel', lastActivityAt: at('2026-10-19T00:00:00Z') }], agents: [] }), []);
+  assert.deepEqual(inbox.buildInbox({ conversations: [{ id: 3, kind: 'channel', lastActivityAt: at('2026-10-19T00:00:00Z') }] }), []);
   assert.match(SCREEN, /\{!snap\.loadingList && !snap\.error && snap\.listLoaded && !inbox\.length\n\s+\? <div className="messages-empty"><h3>\{t\('messages:inbox\.empty\.title'\)\}<\/h3>/);
   assert.doesNotMatch(SCREEN, /!snap\.conversations\.length && !inbox\.length/);
   assert.equal(message('messages:inbox.empty.title'), 'No messages yet');

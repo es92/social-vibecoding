@@ -53,7 +53,6 @@ import { CliSection } from './cli';
 import { ConnectorsSection, LinkedAccountsSection } from './connectors';
 import { DevConsoleSection } from './dev-console';
 import { ExperimentalSection } from './experimental';
-import { GlobalChatSettingsSection } from './global-chat';
 import { LanguageSection } from './language';
 import { LinkedPhonesSection } from './linked-phones';
 import { OpenRouterSection } from './openrouter';
@@ -132,10 +131,8 @@ export function SettingsSections() {
       <UsernodeSection />
       <AboutSection />
       {/* ── Advanced ── #5994: the features you switch on to try, at the
-          foot of the menu: the Experimental switches, then Global Chat's
-          own settings. */}
+          foot of the menu: the Experimental switches. */}
       <ExperimentalSection />
-      <GlobalChatSettingsSection />
     </>
   );
 }

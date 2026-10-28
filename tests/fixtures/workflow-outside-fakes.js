@@ -315,8 +315,8 @@ module.exports = function install(fakes) {
   // scripted answer, a reply that names the message it answers, stopping at
   // `bot.model` while it is asked. Its key is the bot's own, read from the
   // credential store, which answers here that it has one.
-  const openrouter = require(path.join(SRC, 'services/global-chat/openrouter'));
-  fakes.stub(path.join(SRC, 'services/global-chat/openrouter'), {
+  const openrouter = require(path.join(SRC, 'services/openrouter'));
+  fakes.stub(path.join(SRC, 'services/openrouter'), {
     ...openrouter,
     async streamChat(req) {
       const last = [...(req.messages || [])].reverse().find((m) => m.role === 'user');

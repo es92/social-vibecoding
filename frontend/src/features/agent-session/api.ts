@@ -188,8 +188,8 @@ export interface AgentHint {
   issueTitle?: string;
   /**
    * The first message the unsent conversation offers, unsent and editable,
-   * when the entry point has one to hand over: Global Chat's development
-   * task, or Explore's message about a proposal. For the screen only, like
+   * when the entry point has one to hand over: Explore's message about a
+   * proposal. For the screen only, like
    * the title (./request-seed.ts draftSeed).
    */
   message?: string;

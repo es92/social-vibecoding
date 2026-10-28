@@ -210,44 +210,6 @@ function accessFlags(app, user, isCollaborator, adminAppIds = null, contributorC
   };
 }
 
-// The Classic app directory intentionally carries deployment, manifest and
-// curation detail for every card. Global Chat's app chooser needs a much
-// smaller shape: enough to render the icon, identify the exact app, show its
-// useful activity counts and derive safe follow-up actions. Keeping this an
-// explicit projection avoids encrypting and sending hundreds of kilobytes of
-// unrelated manifest data for a one-click direct action.
-function compactGlobalChatApp(app, user, adminAppIds = new Set()) {
-  const isCollaborator = !!app.is_collaborator;
-  const isAppAdmin = adminAppIds.has(app.id);
-  const description = typeof app.description === 'string'
-    ? app.description.replace(/\s+/g, ' ').trim().slice(0, 500)
-    : '';
-  return {
-    id: app.id,
-    slug: app.slug,
-    name: app.name,
-    ...(description ? { description } : {}),
-    status: app.status,
-    icon_emoji: app.icon_emoji || null,
-    icon_url: app.icon_image_id ? `/app-icons/${app.icon_image_id}` : null,
-    icon_color: app.icon_color || null,
-    isFavorited: !!app.is_favorited,
-    isCollaborator,
-    canCollaborate: !!user?.isAdmin || app.collab_visibility !== 'private' || isCollaborator,
-    canManage: !!user?.canAdminWrite
-      || (user?.id != null && app.created_by === user.id)
-      || isAppAdmin,
-    messagesLast7Days: parseInt(app.message_count, 10) || 0,
-    activitySecondsLast7Days: parseInt(app.total_seconds, 10) || 0,
-    activeUsers: parseInt(app.active_users, 10) || 0,
-    openIssues: parseInt(app.open_issues, 10) || 0,
-    openProposals: parseInt(app.open_prs, 10) || 0,
-    activeDevelopment: parseInt(app.active_sessions, 10) || 0,
-    createdAt: app.created_at || null,
-    updatedAt: app.last_deploy_at || app.created_at || null,
-  };
-}
-
 // Local-dev URL fallback ("http://localhost:<hostport>" instead of the
 // real "https://<slug>.<USERNODE_DOMAIN>") is opt-in via env. Previously
 // any value of DOCKER_NETWORK flipped this on, but standalone production
@@ -806,8 +768,6 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
   router.get('/api/apps', async (req, res) => {
     try {
       const appDeployStatus = require('../services/app-deploy-status');
-      const compactForGlobalChat = req.get('x-global-chat-loopback') === '1'
-        && req.query.view === 'global-chat';
       // SELF-HOSTING.md sub-step 2j: hide self_hosted rows from
       // non-admin listings. Admins see them so they can reach the
       // self-app's settings, dev-chat, etc. The same filter is applied
@@ -957,12 +917,6 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       // of, so accessFlags below can resolve can_manage per row without
       // a round-trip each.
       const adminAppIds = await appAdmins.getAdminAppIdsForUser(pool, req.user?.id);
-
-      if (compactForGlobalChat) {
-        return res.json({
-          apps: rows.map((app) => compactGlobalChatApp(app, req.user, adminAppIds)),
-        });
-      }
 
       // How many people BUILT each app, for the Discover cards on the
       // launcher. One round trip for the whole page over the shared
@@ -4668,7 +4622,7 @@ module.exports = {
   // For tests/demo-mode-lineage.test.js: the masking is a property of this
   // one resolver, so it is pinned there rather than through a route.
   attachForkLineage,
-  appRoutes, accessFlags, canDeleteApp, compactGlobalChatApp,
+  appRoutes, accessFlags, canDeleteApp,
   deleteBlockReason, isCoreApp, hubFirstVersion, firstVersionLinesFor, sharedPlan, waitingMemberFields, firstVersionShowcaseFields,
   firstVersionLiveFields, stoppedThread, inviteLinkOut, storedSecretKeysFor,
   // #2524: the activity guard and its two bounds, so the contract is

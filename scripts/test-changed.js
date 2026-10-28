@@ -40,7 +40,7 @@
 //
 // A few suites are rules over a whole tree rather than pins on a file: no
 // raw <svg> in a feature file, no unpaired zinc-400 ink, no em dash in copy,
-// the Global Chat route inventory, and the like. They walk a directory, so
+// the admin console's registry, and the like. They walk a directory, so
 // they name no file and the mapping above never selects them, and a change
 // that breaks one found out only when Homeroom ran everything. Such a suite
 // opts in with a line of its own, at the start of a line:

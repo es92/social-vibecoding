@@ -24,8 +24,8 @@ const { KUDOS_PARKED } = require('../workflow/rules/kudos-parked.ts');
 
 // Notification kinds whose feature is parked. Their rows stay in the table;
 // listForUser (the feed and its Saved section), getForUser and countUnread
-// (services/notifications.js) skip them, so the bell, its badge, the badge on
-// the phone's icon and Global Chat's notifications all agree.
+// (services/notifications.js) skip them, so the bell, its badge and the badge
+// on the phone's icon all agree.
 // mobile-push-policy.js wakes no phone for one either.
 const PARKED_NOTIFICATION_KINDS = Object.freeze(KUDOS_PARKED ? ['kudos'] : []);
 

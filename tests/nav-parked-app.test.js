@@ -240,7 +240,7 @@ function router({ launcher = [WHITEBOARD, PLATFORM], record = null } = {}) {
 
 const named = (park) => (park ? park.name : null);
 const LEAVES = ['navigateHome', 'navigateToBrowse', 'navigateToMessages', 'navigateToWorkshop',
-  'navigateToProfile', 'navigateToSettings', 'navigateToLeaderboard', 'navigateToGlobalChat',
+  'navigateToProfile', 'navigateToSettings', 'navigateToLeaderboard',
   'navigateToAdminConsole'];
 
 test('THE REGRESSION (#2762): every way out of a running app parks it', async () => {

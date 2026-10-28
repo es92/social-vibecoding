@@ -46,7 +46,7 @@ test('working is a spinner, finished-unseen a green dot, and nothing else is mar
 test('the mark\'s Continue rows and Messages both draw it', () => {
 
   const messages = read('frontend/src/features/messages/index.tsx');
-  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentChatThread('));
+  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentSessionThread('));
   assert.match(mayorRow, /const mark = agentActivity\(session\);/);
   // The mark menu's rows left with its Agent chats section (#4729); the
   // mark, the list that remains, is Messages'.
@@ -61,7 +61,7 @@ test('#3028: while a session works, its spinner replaces the row\'s icon rather 
     'the same spinner, at the slot\'s size, decoration only');
 
   const messages = read('frontend/src/features/messages/index.tsx');
-  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentChatThread('));
+  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentSessionThread('));
   assert.match(mayorRow, /\{mark\s*\? <AgentActivityIcon activity=\{mark\} className="w-5 h-5" \/>\s*: <SparklesIcon className="w-5 h-5" \/>\}/);
   assert.match(mayorRow, /\{mark \? <span className="sr-only">\{t\(ACTIVITY_SAID\[mark\]\)\}<\/span> : null\}/,
     'the icon slot is aria-hidden, so the row still says "Working" or "Finished" in words');
@@ -84,7 +84,7 @@ test('#3076: the finished dot replaces the icon too, in the mark\'s Continue row
   // Messages' Agents list: the tile's sparkle gives way to the spinner or the
   // dot (it kept its icon while working before), and the name says which.
   const messages = read('frontend/src/features/messages/index.tsx');
-  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentChatThread('));
+  const mayorRow = messages.slice(messages.indexOf('function MayorSessionRow('), messages.indexOf('function AgentSessionThread('));
   assert.match(mayorRow, /<span className="messages-inbox-tile messages-inbox-agent-tile" aria-hidden="true">\s*\{mark\s*\? <AgentActivityIcon activity=\{mark\} className="w-5 h-5" \/>\s*: <SparklesIcon className="w-5 h-5" \/>\}/);
   assert.equal(message('messages:agent.row.activity.working'), ', working');
   assert.equal(message('messages:agent.row.activity.done'), ', finished');

@@ -1008,7 +1008,7 @@ function chatRoutes(config) {
   // anybody the viewer blocked).
   //
   // Nothing advances the cursor on a READ of the transcript: opening a chat
-  // through Global Chat or an agent's connector is not the person reading
+  // through an agent's connector is not the person reading
   // it, and a "mark unread" would not survive the next reload if loading
   // the page marked it read again. The client says so explicitly; posting
   // in the general stream is the one implicit move (services/ws.js).

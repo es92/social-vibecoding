@@ -26,6 +26,9 @@ const repoRef = require('./repo-ref');
 const TITLE_MAX = 256;
 const LIST_LIMIT_MAX = 50;
 const MESSAGES_LIMIT_MAX = 200;
+// 'global-chat' is no longer sent (Global Chat was removed); it stays
+// accepted, as the sessions it started keep it in focus_context and
+// mayor/agent-prompt.js still names where they came from.
 const ENTRIES = Object.freeze(['improve', 'workshop', 'app', 'issue', 'feedback', 'proposal', 'messages', 'banner', 'global-chat']);
 
 // The stored choice as it is shown and run. A Claude model the platform has

@@ -6,15 +6,11 @@ const {
   DEFAULT_MARKETING_BASE_URL,
   normalizeBaseUrl,
 } = require('./services/marketing-links');
-const {
-  DEFAULT_MODEL: DEFAULT_GLOBAL_CHAT_MODEL,
-  DEFAULT_REASONING_EFFORT: DEFAULT_GLOBAL_CHAT_REASONING_EFFORT,
-  // One effort scale for the whole platform (minimal, low, medium, high,
-  // xhigh). Global Chat happens to declare it, but it is not Global Chat's:
-  // the coding-agent default below is validated against the same list so the
-  // two profiles can never drift onto different vocabularies.
-  REASONING_EFFORTS: REASONING_EFFORT_LEVELS,
-} = require('./services/global-chat/prompt');
+// One effort scale for the whole platform (minimal, low, medium, high,
+// xhigh): the coding-agent default below is validated against the same list
+// the OpenRouter transport uses, so the two can never drift onto different
+// vocabularies.
+const { REASONING_EFFORT_SET: REASONING_EFFORT_LEVELS } = require('./services/reasoning-efforts');
 const { parseOpenRouterHarnessMap } = require('./agents/registry');
 
 // #2600: the default reasoning effort for an OpenRouter CODING turn when the
@@ -23,8 +19,7 @@ const { parseOpenRouterHarnessMap } = require('./agents/registry');
 // recommends for coding (GLM 5.3 Flash, DeepSeek v4.1 Flash) are cheap enough
 // per token that thinking longer is the better trade on repository work: a
 // change that lands first time costs less than a cheap one that has to be
-// re-run. Global Chat is a SEPARATE profile and deliberately stays at its own
-// low default; do not collapse the two.
+// re-run.
 const DEFAULT_CODEX_REASONING_EFFORT = 'xhigh';
 
 const REQUIRED = [
@@ -347,13 +342,6 @@ function load() {
     console.error('[config] NATIVE_SESSION_V2_TESTNET_CHAIN_ID must be a canonical Rust ChainId.');
     process.exit(1);
   }
-  const globalChatDefaultReasoningEffort =
-    process.env.OPENROUTER_DEFAULT_GLOBAL_CHAT_REASONING
-      || DEFAULT_GLOBAL_CHAT_REASONING_EFFORT;
-  if (!REASONING_EFFORT_LEVELS.has(globalChatDefaultReasoningEffort)) {
-    console.error('[config] OPENROUTER_DEFAULT_GLOBAL_CHAT_REASONING must be minimal, low, medium, high, or xhigh.');
-    process.exit(1);
-  }
   const codexDefaultReasoningEffort =
     process.env.OPENROUTER_DEFAULT_CODEX_REASONING
       || DEFAULT_CODEX_REASONING_EFFORT;
@@ -460,14 +448,6 @@ function load() {
     // choice. A user's Settings choice is stored on the session and still
     // wins; this only fills the blank.
     openrouterDefaultCodexReasoning: codexDefaultReasoningEffort,
-    // Global Chat is a separate profile from repository development. Its
-    // inexpensive, minimal-effort defaults never rewrite the coding-agent choice.
-    openrouterDefaultGlobalChatModel:
-      process.env.OPENROUTER_DEFAULT_GLOBAL_CHAT_MODEL || DEFAULT_GLOBAL_CHAT_MODEL,
-    openrouterDefaultGlobalChatReasoning: globalChatDefaultReasoningEffort,
-    openrouterGlobalChatFallbackModels:
-      (process.env.OPENROUTER_GLOBAL_CHAT_FALLBACK_MODELS || 'deepseek/deepseek-v4-flash-0731')
-        .split(',').map((s) => s.trim()).filter(Boolean),
     // Curated badges in the model picker, and — since #2569 — the OpenRouter
     // models a new account STARTS with. Exact ids keep the recommendation
     // deliberate: adding a provider prefix here would label dozens of old,
@@ -1108,9 +1088,6 @@ function load() {
   console.log(`  OPENROUTER_MANAGED_WORKSPACE_ID=${config.openrouterManagedWorkspaceId || '(default workspace)'}`);
   console.log(`  OPENROUTER_DEFAULT_CODEX_MODEL=${config.openrouterDefaultCodexModel}`);
   console.log(`  OPENROUTER_DEFAULT_CODEX_REASONING=${config.openrouterDefaultCodexReasoning}`);
-  console.log(`  OPENROUTER_DEFAULT_GLOBAL_CHAT_MODEL=${config.openrouterDefaultGlobalChatModel}`);
-  console.log(`  OPENROUTER_DEFAULT_GLOBAL_CHAT_REASONING=${config.openrouterDefaultGlobalChatReasoning}`);
-  console.log(`  OPENROUTER_GLOBAL_CHAT_FALLBACK_MODELS=${config.openrouterGlobalChatFallbackModels.join(',') || '(none)'}`);
   console.log(`  OPENROUTER_RECOMMENDED_MODELS=${config.openrouterRecommendedModels.join(',') || '(none)'}`);
   console.log(`  IDENTITY_CREDIT_POLICY=${config.identityCreditPolicy}`);
   console.log(`  GITHUB_LINK=${config.githubLinkClientId && config.githubLinkClientSecret ? '(enabled)' : '(disabled)'}`);

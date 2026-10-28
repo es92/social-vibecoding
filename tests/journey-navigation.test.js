@@ -60,8 +60,13 @@ test('every screen root maps to a navigation code the server accepts', () => {
   // The first-run sheets and the tour report themselves; the rest are the
   // screen roots this hook names.
   const overlays = ['username_sheet', 'terms_sheet', 'join_sheet', 'tour'];
-  assert.deepEqual([...codes, ...overlays].sort(), [...serverTelemetry.NAV_SCREENS].sort(),
+  // `assistant` was Global Chat's screen. Nothing reports it since Global
+  // Chat was removed; the collector keeps the code so the visits already
+  // recorded still read (src/services/ui-telemetry.js).
+  const retired = ['assistant'];
+  assert.deepEqual([...codes, ...overlays, ...retired].sort(), [...serverTelemetry.NAV_SCREENS].sort(),
     'the shell and the collector name the same screens');
+  for (const code of retired) assert.ok(!codes.has(code), `${code} is no screen's any more`);
   for (const id of App.SCREEN_IDS) {
     if (id === 'app-view' || id === 'admin-screen') continue;
     assert.ok(App._NAV_CODE_FOR_SCREEN[id], `${id} is reported`);

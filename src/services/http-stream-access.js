@@ -84,9 +84,6 @@ function streamResource(method, path) {
         && ((method === 'GET' && m[2].toLowerCase() === 'events') || (method === 'POST' && m[2].toLowerCase() === 'turns'))) {
         return positiveId(m[1]) ? { kind: 'agent', id: positiveId(m[1]) } : null;
     }
-    if (method === 'POST' && (m = /^\/api\/global-chat\/threads\/([0-9a-f-]{36})\/(turns|more-suggestions)$/i.exec(path))) {
-        return /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(m[1]) ? { kind: 'global', thread: m[1] } : null;
-    }
     if (method === 'POST' && (m = /^\/api\/apps\/([^/]+)\/workshop\/ask$/i.exec(path))) {
         try {
             const slug = decodeURIComponent(m[1]);
@@ -105,8 +102,7 @@ const AUTHORIZE_SQL = `
   SELECT 1 FROM users u
   LEFT JOIN chat_sessions cs ON $5::text = 'classic' AND cs.id = $6::int
   LEFT JOIN agent_sessions ag ON $5::text = 'agent' AND ag.id = $6::int
-  LEFT JOIN global_chat_threads gc ON $5::text = 'global' AND gc.id = $7::uuid
-  LEFT JOIN apps a ON ($5::text = 'classic' AND a.id = cs.app_id) OR ($5::text = 'app' AND a.slug = $8::text)
+  LEFT JOIN apps a ON ($5::text = 'classic' AND a.id = cs.app_id) OR ($5::text = 'app' AND a.slug = $7::text)
   WHERE u.id = $1 AND u.anonymised_at IS NULL
    AND (
     ($2::text = 'cookie' AND NOT u.is_synthetic
@@ -120,13 +116,12 @@ const AUTHORIZE_SQL = `
    AND CASE $5::text
     WHEN 'classic' THEN cs.id IS NOT NULL AND (cs.user_id = u.id OR u.is_admin)
     WHEN 'agent' THEN ag.user_id = u.id
-    WHEN 'global' THEN gc.user_id = u.id
     WHEN 'app' THEN a.id IS NOT NULL
     ELSE FALSE END
    AND ($5::text NOT IN ('classic', 'app') OR ($5::text = 'classic' AND cs.app_id IS NULL) OR (
     a.id IS NOT NULL AND a.moderation_suspended_at IS NULL
     AND NOT EXISTS (SELECT 1 FROM user_app_blocks b WHERE b.app_id = a.id AND b.user_id = u.id)
-    AND (u.is_admin OR (CASE WHEN $9::boolean THEN a.collab_visibility ELSE a.view_visibility END) = 'public'
+    AND (u.is_admin OR (CASE WHEN $8::boolean THEN a.collab_visibility ELSE a.view_visibility END) = 'public'
      OR EXISTS (SELECT 1 FROM app_collaborators m WHERE m.app_id = a.id AND m.user_id = u.id AND m.status = 'member'))
    ))
  ) AS allowed`;
@@ -140,7 +135,7 @@ function captureStreamAuthority(req, pool) {
     const cookie = req[SESSION] || req.cookies?.session;
     const source = cli ? 'cli' : 'cookie';
     const params = [id, source, cookie || null, cli, resource?.kind || null, resource?.id || null,
-        resource?.thread || null, resource?.slug || null, !!resource?.collab];
+        resource?.slug || null, !!resource?.collab];
     const check = async (db) => (await db.query(AUTHORIZE_SQL, params)).rows[0]?.allowed === true;
     return async () => {
         if (!id || !resource || unsupportedBearer || (!cli && !cookie))

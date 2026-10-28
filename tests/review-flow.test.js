@@ -104,7 +104,6 @@ test('the server keeps the switch on the account and serves it with the user', (
   assert.match(routes, /reviewFlowEnabled: !!req\.user\.reviewFlowEnabled/);
   const mw = read('src/middleware/auth.js');
   assert.equal((mw.match(/review_flow_enabled/g) || []).length, 4, 'both reads select it and both shapes carry it');
-  assert.match(read('src/services/global-chat/classic-capabilities.js'), /experimental: \['aiProgressEstimate', 'sessionBridgeEnabled', 'reviewFlowEnabled'\]/);
 });
 
 test('the bridge settings.js reads and saves the switch through', () => {

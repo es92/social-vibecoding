@@ -292,14 +292,5 @@ test('private platform SSE uses current authority', { timeout: 30000 }, async (t
         const ag = await fixture('agent');
         assert.equal(await allowed(req(ag.owner, 'POST', '/api/agent-sessions/' + ag.s.id + '/turns')), true);
         assert.equal(await allowed(req(outside, 'POST', '/api/agent-sessions/' + ag.s.id + '/turns')), false);
-        const uuid = crypto.randomUUID();
-        await pool.query('INSERT INTO global_chat_threads(id,user_id) VALUES($1,$2)', [uuid, f.owner.id]);
-        for (const tail of ['turns', 'more-suggestions']) {
-            const target = '/api/global-chat/threads/' + uuid + '/' + tail;
-            assert.equal(await allowed(req(f.owner, 'POST', target)), true);
-            assert.equal(await allowed(req(outside, 'POST', target)), false);
-        }
-        await pool.query('DELETE FROM global_chat_threads WHERE id=$1', [uuid]);
-        assert.equal(await allowed(req(f.owner, 'POST', '/api/global-chat/threads/' + uuid + '/turns')), false);
     });
 });

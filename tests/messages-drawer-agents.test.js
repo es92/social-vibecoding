@@ -41,14 +41,8 @@ test('the header says what the agent\'s own pane says', () => {
   const bar = read('frontend/src/features/agent-session/index.tsx');
   assert.match(bar, /\{session\?\.title \|\| t\('agent:session\.bar\.newSession'\)\}/, 'the same heading as the bar');
   assert.match(bar, /t\('agent:session\.bar\.kindStartedFrom', \{ app: about\.focusApp\.name \}\)/, 'the same kind line');
-  // An agent chat: its row's title, and what it is.
-  assert.match(words, /title: seen\.title \|\| translate\('messages:inbox\.agentChat\.untitled'\), sub: translate\('messages:drawer\.chat\.line'\)/);
-  assert.equal(message('messages:drawer.chat.line'), 'Agent chat');
-  const catalog = JSON.parse(read('frontend/locales/en/messages.json'));
-  assert.ok(catalog['drawer.chat.line'].description);
-  // Read from the stores the panes draw from, for the thread the route names.
+  // Read from the store the pane draws from, for the thread the route names.
   const hook = index.slice(index.indexOf('function useAgentThreadWords('), index.indexOf('function ThreadHeader('));
-  assert.match(hook, /current\.threads\.find\(\(thread\) => thread\.id === chatId\)/);
   assert.match(hook, /sessionId === 'new' \? current\.id === null : current\.id === sessionId/);
   assert.match(hook, /if \(!agent \|\| agent\.kind === 'session'\) return null;/);
 });

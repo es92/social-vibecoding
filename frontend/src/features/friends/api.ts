@@ -115,7 +115,7 @@ export async function friendState(userId: number): Promise<FriendState> {
 
 /**
  * The route each action is. Spelled out one literal per action rather than
- * assembled, so the Global Chat inventory's client scan finds every path.
+ * assembled, so a search for a route finds its caller.
  */
 export function actionRoute(userId: number, action: FriendAction): { method: string; path: string } {
   switch (action) {

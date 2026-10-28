@@ -130,7 +130,7 @@ test('the bot\'s other readers of the default go through the resolver', () => {
   // an admin's choice never reached.
   for (const file of [
     'src/services/homeroom-bot-voice.js', 'src/services/homeroom-bot-mayor.js', 'src/services/agent-turn.js',
-    'src/services/openrouter-mayor.js', 'src/routes/credentials.js', 'src/routes/global-chat.js',
+    'src/services/openrouter-mayor.js', 'src/routes/credentials.js',
     'src/services/openrouter-managed-keys.js', 'src/services/agent-models.js',
   ]) {
     assert.match(read(file), /default-model/, `${file} reads the platform default through services/default-model.js`);

@@ -13,8 +13,6 @@
 //   4. A bounty pledged before parking is still paid on merge, with its
 //      event, and no line in the proposal's thread.
 //   5. The bounty lines already written are not served in a thread.
-//   6. Global Chat's "View leaderboard" reads the Standings ranking, not the
-//      kudos board.
 //
 // Giving and retracting kudos answering 410 is pinned in tests/kudos.test.js,
 // a feedback submit filing without its bounty in tests/feedback-bounty.test.js,
@@ -162,32 +160,6 @@ test('a request\'s and a proposal\'s thread are read without the bounty lines', 
   const chat = read('src/routes/chat.js');
   assert.match(chat, /const \{ parkedSystemLineSql \} = require\('\.\.\/services\/kudos-parked'\);/);
   assert.match(chat, /if \(thread\.type === 'issue' \|\| thread\.type === 'session'\) \{\s*where \+= ` AND \$\{parkedSystemLineSql\('m'\)\}`;/);
-});
-
-// ── 6. Global Chat's "View leaderboard" ────────────────────────────────
-
-test('"View leaderboard" reads the Standings ranking, and no action reads the kudos boards', () => {
-  const { resolveAction, routeCapability, ACTIONS } = require('../src/services/global-chat/suggestion-actions');
-  const action = resolveAction({ suggestionId: 'next.general.leaderboard' });
-  assert.equal(action.id, 'leaderboard.users');
-  assert.deepEqual(action.steps.map((s) => s.capabilityId), [routeCapability('GET', '/api/v4/leaderboard')]);
-  assert.deepEqual(action.steps[0].input.query, [{ name: 'per_page', value: '10' }]);
-  assert.equal(ACTIONS['leaderboard.prs'], undefined, 'the "Merged work" action is gone');
-
-  const inventory = require('../src/services/global-chat/classic-inventory.generated.json');
-  for (const p of ['/api/leaderboard/prs', '/api/leaderboard/users', '/api/leaderboard/users/:username/prs']) {
-    const route = inventory.routes.find((r) => r.method === 'GET' && r.path === p);
-    assert.equal(route.status, 'exempt', `${p} is offered to no assistant`);
-    assert.match(route.reason, /kudos is parked/);
-  }
-  const history = inventory.routes.find((r) => r.method === 'GET' && r.path === '/api/me/history');
-  assert.equal(history.status, 'mapped', 'Your votes still reads its history');
-  assert.doesNotMatch(read('src/services/global-chat/suggestion-actions.js'), /routeStep\(\s*'GET', '\/api\/leaderboard\//);
-
-  const renderers = read('frontend/src/features/global-chat/renderers.tsx');
-  assert.match(renderers, /add\(translate\('chat:global\.field\.rank'\), \['rank'\]\);/);
-  assert.match(renderers, /add\(translate\('chat:global\.field\.points'\), \['total_points', 'totalPoints'\]\);/);
-  assert.doesNotMatch(renderers, /global\.field\.kudos|leaderboard\.prs/);
 });
 
 // ── Homeroom bot's move reply ──────────────────────────────────────────

@@ -884,16 +884,12 @@ export function route(
 }
 
 /**
- * An agent thread out of the address bar (#2813). A global chat's id is a
- * UUID and a session's a serial; anything else is not a thread this inbox
- * can open, and the pane falls back to "choose a conversation".
+ * An agent thread out of the address bar (#2813). A session's id is a
+ * serial; anything else is not a thread this inbox can open, and the pane
+ * falls back to "choose a conversation".
  */
 export function validAgentThread(agent?: MessagesAgentThread | null): MessagesAgentThread | null {
   if (!agent || typeof agent !== 'object') return null;
-  if (agent.kind === 'chat') {
-    const id = typeof agent.id === 'string' ? agent.id.trim() : '';
-    return /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(id) ? { kind: 'chat', id } : null;
-  }
   if (agent.kind === 'session') {
     const slug = validSlug(agent.slug);
     return slug && validId(agent.id) ? { kind: 'session', slug, id: agent.id } : null;
@@ -907,7 +903,6 @@ export function validAgentThread(agent?: MessagesAgentThread | null): MessagesAg
 
 function sameAgentThread(a: MessagesAgentThread | null, b: MessagesAgentThread | null): boolean {
   if (!a || !b) return a === b;
-  if (a.kind === 'chat' && b.kind === 'chat') return a.id === b.id;
   if (a.kind === 'session' && b.kind === 'session') return a.slug === b.slug && a.id === b.id;
   if (a.kind === 'agent' && b.kind === 'agent') return a.id === b.id;
   return false;
@@ -919,17 +914,13 @@ function sameAgentThread(a: MessagesAgentThread | null, b: MessagesAgentThread |
  */
 export function agentThreadAddress(agent: MessagesAgentThread): string {
   if (agent.kind === 'agent') return `#messages/agent/${agent.id}`;
-  return agent.kind === 'chat'
-    ? `#messages/agent/${encodeURIComponent(agent.id)}`
-    : `#messages/session/${encodeURIComponent(agent.slug)}/${agent.id}`;
+  return `#messages/session/${encodeURIComponent(agent.slug)}/${agent.id}`;
 }
 
 /** Where the same thread lives as a screen of its own — a phone's destination. */
 export function fullScreenAddress(agent: MessagesAgentThread): string {
   if (agent.kind === 'agent') return `#agent/${agent.id}`;
-  return agent.kind === 'chat'
-    ? `#chat/${encodeURIComponent(agent.id)}`
-    : `#app/${encodeURIComponent(agent.slug)}/dev/sessions/${agent.id}`;
+  return `#app/${encodeURIComponent(agent.slug)}/dev/sessions/${agent.id}`;
 }
 
 /**

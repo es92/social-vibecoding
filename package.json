@@ -21,8 +21,6 @@
     "shots:dry-run": "node scripts/shots-dry-run.js",
     "shots:pair": "node scripts/shots-dry-run-pair.js",
     "test:shell-upgrade:browser": "node scripts/verify-shell-upgrade.js",
-    "global-chat:inventory": "node scripts/generate-global-chat-inventory.js",
-    "global-chat:inventory:check": "node scripts/generate-global-chat-inventory.js --check",
     "ensure:shell": "node scripts/ensure-shell-artifacts.js --runtime",
     "migrate:kubernetes": "node scripts/migrate-kubernetes.js",
     "cutover:native-delegation": "node scripts/cutover-native-delegation.js",

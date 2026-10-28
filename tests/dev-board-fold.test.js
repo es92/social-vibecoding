@@ -1698,7 +1698,9 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // an invite link loaded five times, the landing, the sign-in sheet and a
   // public project's page. 743 leaves 137 slots under MAX_DECLARED_TESTS
   // (880), far clear of the 20-slot floor.
-  checkCap.assertPinned(DAPP.tests.length, 743);
+  // 743 → 742: −1: Global Chat is removed, and with it the check that its
+  // composer wore the safe-bar contract. 742 leaves 138 slots.
+  checkCap.assertPinned(DAPP.tests.length, 742);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

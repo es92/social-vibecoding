@@ -59,8 +59,8 @@ test('an "allow" from anywhere upstream never survives', () => {
 
 // ── The call sites ──────────────────────────────────────────────────────
 
-test('Global Chat\'s transport (Global Chat, model helpers, translation, small changes, the bot) denies it', async () => {
-  const transport = require('../src/services/global-chat/openrouter');
+test('the shared transport (model helpers, translation, small changes, the bot) denies it', async () => {
+  const transport = require('../src/services/openrouter');
   assertDenied(transport.buildRequest({ model: 'z-ai/glm-5.3-flash', reasoning: 'low', messages: [], tools: [] }), 'buildRequest');
   const sent = [];
   await transport.streamChat({
@@ -77,7 +77,7 @@ test('Global Chat\'s transport (Global Chat, model helpers, translation, small c
   });
   assert.equal(sent.length, 1);
   assert.match(sent[0].url, /\/chat\/completions$/);
-  assertDenied(sent[0].body, 'global-chat streamChat');
+  assertDenied(sent[0].body, 'openrouter.js streamChat');
   assert.equal(sent[0].body.provider.allow_fallbacks, true, 'fallbacks stay on, now only among hosts that do not train');
   assert.equal(sent[0].body.provider.sort, 'latency');
 });
@@ -205,7 +205,7 @@ test('a Claude Code coding turn\'s listener denies it, over an "allow", on messa
 const OPENROUTER_REFERENCE = /openrouterApiBase|OPENROUTER_API_BASE|openrouter\.ai\/api|\/chat\/completions|\/audio\/(?:transcriptions|speech)|\/embeddings\b|\/images\/generations|\/completions['"`]|upstreamBase\}\/responses/;
 
 const SENDERS = new Map([
-  ['src/services/global-chat/openrouter.js', 'POST /chat/completions for Global Chat, llm.js helpers, translation, small changes and the bot'],
+  ['src/services/openrouter.js', 'POST /chat/completions for llm.js helpers, translation, small changes and the bot'],
   ['src/services/openrouter-mayor.js', 'POST /chat/completions for the Mayor, bot review and the bot\'s OpenRouter turns'],
   ['src/services/dictation.js', 'POST /audio/transcriptions'],
   ['worker/codex-openrouter-request.js', 'POST /responses for every Codex coding turn'],
@@ -216,17 +216,15 @@ const NOT_SENDERS = new Map([
   ['src/agents/codex-openrouter.js', 'writes Codex\'s config.toml; Codex reaches OpenRouter only through worker/codex-openrouter-request.js'],
   ['src/config.js', 'reads the base URL'],
   ['src/routes/credentials.js', 'validates a key (GET /key)'],
-  ['src/routes/global-chat.js', 'hands the base to the Global Chat transport'],
   ['src/services/account-deletion-cleanup.js', 'OpenRouter\'s key management API, no model request'],
   ['src/services/agent-models.js', 'reads the model catalog (GET /models)'],
   ['src/services/agent-turn.js', 'hands the base to the worker, whose listeners send'],
   ['src/services/bot-review.js', 'sends through openrouter-mayor.js'],
-  ['src/services/global-chat/accounting.js', 'sends through global-chat/openrouter.js'],
-  ['src/services/homeroom-bot-mayor.js', 'sends through global-chat/openrouter.js and openrouter-mayor.js'],
-  ['src/services/llm.js', 'sends through global-chat/openrouter.js'],
+  ['src/services/homeroom-bot-mayor.js', 'sends through openrouter.js and openrouter-mayor.js'],
+  ['src/services/llm.js', 'sends through openrouter.js'],
   ['src/services/model-costs.js', 'names the catalog URL in a comment'],
   ['src/services/openrouter-managed-keys.js', 'OpenRouter\'s key management API, no model request'],
-  ['src/services/small-change.js', 'sends through global-chat/openrouter.js'],
+  ['src/services/small-change.js', 'sends through openrouter.js'],
   ['src/services/worker.js', 'hands the base to the worker, whose listeners send'],
   ['worker/run-cc.sh', 'starts claude only through worker/claude-openrouter-request.js'],
   ['worker/run-codex-agent.sh', 'starts codex only through worker/codex-openrouter-request.js'],

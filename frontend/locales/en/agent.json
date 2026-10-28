@@ -2103,10 +2103,6 @@
     "text": "Messages",
     "description": "Title in the header of the side panel (the pane docked beside an app on a wide screen) when it shows a conversation whose own name has not loaded. The name of the Messages screen."
   },
-  "sidePanel.title.chat": {
-    "text": "Chat",
-    "description": "Title in the header of the side panel (the pane docked beside an app on a wide screen) when it shows a chat with Homeroom's assistant whose own title has not loaded. A noun."
-  },
   "sidePanel.title.agent": {
     "text": "Agent session",
     "description": "Title in the header of the side panel (the pane docked beside an app on a wide screen) when it shows a conversation with the coding agent whose own title has not loaded."

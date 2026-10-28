@@ -271,7 +271,7 @@ function recordTelemetry(pool, { appId, sessionId, model, reasoning, result, err
 }
 
 async function askModel({ pool, config, appId, sessionId, compare, deps }) {
-  const transport = deps.openrouter || require('./global-chat/openrouter');
+  const transport = deps.openrouter || require('./openrouter');
   const apiKey = await botKey(pool, config, deps);
   if (!apiKey) return { verdict: 'unavailable', error: 'no_key' };
   const model = await helperModel.current(config, { pool });

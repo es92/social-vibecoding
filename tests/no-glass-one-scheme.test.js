@@ -133,16 +133,14 @@ test('a faked bar whose edge is a border redraws it above the layer', () => {
 
 test('where nothing passes behind, the plain translucent fill is the glass', () => {
   // The docked desktop rail has the page laid out beside it; the scrolled
-  // session header and the Global Chat composer sit in flow beside their
-  // scrollers. Only the fixed wallpaper is behind them, so their own
+  // session header sits in flow beside its scroller. Only the fixed
+  // wallpaper is behind them, so their own
   // translucent fills are exact, borders and shadows included.
   const desk = css.slice(css.indexOf('@media (min-width: 768px) {\n  .platform-tabs {\n    background-color: var(--dc-sheet-fill);'));
   assert.match(desk.slice(0, desk.indexOf('\n}') + 2), /clip-path: none;[\s\S]*?\.platform-tabs::before,\s*\.platform-parked::before \{ content: none; \}[\s\S]*?\.platform-parked \{ clip-path: none; \}/,
     'the docked rail draws its fill, not the fake, and the parked row inside it drops its layer');
   assert.match(block('#dc-session-header.un-scrolled {'), /background-color: var\(--dc-strip-fill\);/);
   assert.doesNotMatch(css, /#dc-session-header\.un-scrolled \{ background-color: var\(--dc-strip(-solid)?\); \}/);
-  assert.match(block('.global-chat-composer {\n  display: flex;'), /background: var\(--dc-sheet-fill\);[\s\S]*?box-shadow: 0 -5px 18px/);
-  assert.doesNotMatch(css, /\.global-chat-composer \{ background: var\(--dc-sheet(-solid)?\); \}/);
   // The peeked rail floats over the page: solid, unclipped, shadow intact.
   const peek = block('.platform-tabs.platform-tabs-peek {');
   assert.match(peek, /background-color: var\(--dc-sheet-solid\);/);
@@ -169,7 +167,7 @@ test('the fake and the wallpaper paint the same washes', () => {
 
 test('the planes that only sit on the wallpaper keep their fills', () => {
   for (const sel of ['.dc-lift-strip', '.dc-lift-session', '.dev-ws-strip', '.dev-topic-sheet',
-    '.gc-event-box', '.global-chat-result']) {
+    '.gc-event-box']) {
     const esc = sel.replace(/[.#]/g, (c) => `\\${c}`);
     assert.doesNotMatch(css, new RegExp(`(^|\\n)${esc} \\{ background(-color)?: var\\(--dc-(sheet|strip)(-solid)?\\); \\}`),
       `${sel} is never swapped for an opaque fill`);

@@ -276,9 +276,9 @@ test('#3772: the DM never sends parallel_tool_calls, so every provider of its mo
   assert.match(askModel, /parallelToolCalls: null,\n\s+timeoutMs: REQUEST_TIMEOUT_MS,/);
   // Set before the caller's own fields, so no caller can bring it back by accident.
   assert.ok(askModel.indexOf('parallelToolCalls: null') < askModel.indexOf('...rest,\n'));
-  assert.ok(mayor.REQUEST_TIMEOUT_MS > 25_000, 'longer than Global Chat\'s: the DM\'s answers are not streamed');
+  assert.ok(mayor.REQUEST_TIMEOUT_MS > 25_000, 'longer than the transport\'s default: the DM\'s answers are not streamed');
   // streamChat sends the field only for true.
-  const { buildRequest } = require('../src/services/global-chat/openrouter');
+  const { buildRequest } = require('../src/services/openrouter');
   const base = { model: 'z-ai/glm-5.3-flash', reasoning: 'low', messages: [], tools: [] };
   assert.equal('parallel_tool_calls' in buildRequest({ ...base, parallelToolCalls: null }), false);
   assert.equal('parallel_tool_calls' in buildRequest({ ...base, parallelToolCalls: false }), false);

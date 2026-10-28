@@ -2779,10 +2779,6 @@
     "text": "{{count}} members",
     "description": "Spoken name and hover text of the people glyph and number on a group conversation's row in the conversation list: how many people are in the group. {{count}} is that number."
   },
-  "inbox.agentPill": {
-    "text": "Agent",
-    "description": "Small tag on a row of the conversation list: the conversation is with an AI agent."
-  },
   "inbox.newCount_one": {
     "text": "{{count}} new",
     "description": "At the end of a conversation's row in the Messages list, in grey: how many messages in it the person has not read yet. {{count}} is that number."
@@ -2802,38 +2798,6 @@
   "inbox.everyone": {
     "text": "Everyone on Homeroom",
     "description": "Second line of the #general channel's row in the conversation list while nothing has been written there: who the channel is for. Homeroom is the product's name."
-  },
-  "inbox.agentChat.deleteFailed": {
-    "text": "Could not delete this chat.",
-    "description": "Brief error after deleting a conversation with an AI agent from the conversation list failed."
-  },
-  "inbox.agentChat.deleteConfirm": {
-    "text": "Delete this chat?",
-    "description": "Question shown in place of a row of the conversation list after pressing the bin on a conversation with an AI agent."
-  },
-  "inbox.agentChat.deleting": {
-    "text": "Deleting…",
-    "description": "Label of the confirm button while a conversation with an AI agent is being deleted."
-  },
-  "inbox.agentChat.delete": {
-    "text": "Delete",
-    "description": "Confirm button beside \"Delete this chat?\" in the conversation list: deletes the conversation with the AI agent."
-  },
-  "inbox.agentChat.untitled": {
-    "text": "Untitled chat",
-    "description": "Name of a conversation with an AI agent that has no title yet, in the conversation list."
-  },
-  "inbox.agentChat.working": {
-    "text": "Working…",
-    "description": "Second line of a row for a conversation with an AI agent while the agent is producing its answer."
-  },
-  "inbox.agentChat.deleteNamed": {
-    "text": "Delete {{chat}}",
-    "description": "Accessible name of the bin button on a conversation with an AI agent in the conversation list. {{chat}} is the conversation's title."
-  },
-  "inbox.agentChat.deleteUnnamed": {
-    "text": "Delete this chat",
-    "description": "Accessible name of the bin button on a conversation with an AI agent that has no title, in the conversation list."
   },
   "inbox.new.agent.label": {
     "text": "Agent chat",
@@ -3194,10 +3158,6 @@
   "agent.sessionName": {
     "text": "Agent session",
     "description": "Accessible name of the pane in Messages that shows a working session with a coding agent."
-  },
-  "agent.chatName": {
-    "text": "Agent chat",
-    "description": "Accessible name of the pane in Messages that shows a conversation with an AI agent."
   },
   "agent.row.prNumber": {
     "text": "PR #{{number}}",
@@ -3850,9 +3810,5 @@
   "drawer.peek.open": {
     "text": "Open {{name}}",
     "description": "On a phone, what a screen reader says for the last conversation, peeking in beside the list of conversations; pressing it opens that conversation. {{name}} is the conversation's name: a person's name or a group's title."
-  },
-  "drawer.chat.line": {
-    "text": "Agent chat",
-    "description": "On a phone, the small line under an agent chat's name in the top bar while the chat is open: says what kind of conversation it is."
   }
 }

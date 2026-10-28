@@ -281,7 +281,7 @@ test('moderation enforces scope, retains evidence, serializes decisions and reve
 });
 
 test('participation restrictions preserve safety/settings/history while denying social/build mutations', () => {
-  for (const route of ['/api/apps','/API/APPS','/api/apps/a/messages','/api/apps/a/proposal-handoffs','/api/sessions/42/proposal-handoff/build','/api/conversations/1/messages','/api/issues/1/vote','/api/global-chat/threads','/api/invites/2/accept','/api/approver-invites/2/accept']) assert.equal(participationWrite(route,'POST'),true,route);
+  for (const route of ['/api/apps','/API/APPS','/api/apps/a/messages','/api/apps/a/proposal-handoffs','/api/sessions/42/proposal-handoff/build','/api/conversations/1/messages','/api/issues/1/vote','/api/invites/2/accept','/api/approver-invites/2/accept']) assert.equal(participationWrite(route,'POST'),true,route);
   for (const route of ['/api/reports','/api/me/blocks/2','/api/me/account','/api/conversations/1/read','/api/conversations/1/leave','/api/conversations/1/messages/2/report','/api/profiles/a/report','/api/users/a/report','/api/apps/a/report','/api/apps/a/messages/1/report']) assert.equal(participationWrite(route,'POST'),false,route);
   assert.equal(participationWrite('/api/conversations/1/messages','GET'),false);
 });

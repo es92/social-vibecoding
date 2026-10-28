@@ -10,7 +10,7 @@ function participationWrite(path, method) {
   if (/^\/api\/conversations\/\d+\/(read|leave|messages\/\d+\/(report|bookmark))$/.test(path)) return false;
   if (/^\/api\/apps\/[^/]+\/(?:messages\/\d+\/)?report$/.test(path)) return false;
   if (/^\/api\/profiles\/[^/]+\/report$/.test(path)) return false;
-  return /^\/api\/(apps(?:\/|$)|sessions(?:\/|$)|conversations(?:\/|$)|global-chat(?:\/|$)|issues(?:\/|$)|kudos(?:\/|$)|admin(?:\/|$)|invites(?:\/|$)|approver-invites(?:\/|$)|campaigns(?:\/|$)|feedback(?:\/|$)|workshop(?:\/|$))/.test(path);
+  return /^\/api\/(apps(?:\/|$)|sessions(?:\/|$)|conversations(?:\/|$)|issues(?:\/|$)|kudos(?:\/|$)|admin(?:\/|$)|invites(?:\/|$)|approver-invites(?:\/|$)|campaigns(?:\/|$)|feedback(?:\/|$)|workshop(?:\/|$))/.test(path);
 }
 function moderationGuard(config, { pool = getPool(config) } = {}) {
   return async (req,res,next) => {
