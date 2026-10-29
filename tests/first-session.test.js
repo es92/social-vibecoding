@@ -172,7 +172,7 @@ test('the Communities and AI steps point at the bar\'s own tabs, the same elemen
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(bar, /\{ key: 'workshop' as const, label: 'core:tabs\.communities', href: '#communities', Icon: UserGroupIcon \}/);
   assert.match(bar, /\{ key: 'messages' as const, label: 'core:tabs\.messages', href: '#messages', Icon: ChatIcon \}/);
-  assert.match(bar, /\{ key: 'ai' as const, label: 'core:tabs\.ai', href: '#ai', Icon: SparklesIcon \}/);
+  assert.match(bar, /\{ key: 'ai' as const, label: 'core:tabs\.ai', href: '#ai', Icon: HomeroomBotIcon \}/);
   assert.deepEqual(['communities', 'messages', 'ai'].map((tab) => message(`core:tabs.${tab}`)),
     ['Communities', 'Messages', 'Homeroom bot']);
   assert.match(bar, /id=\{`platform-tab-\$\{key\}`\}/);

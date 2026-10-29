@@ -220,8 +220,9 @@ test('the look: one indent a level, one unbroken line, the parent unfilled; AI a
   assert.match(css, /\.platform-rail-community\[data-rail-open\]\[aria-current="page"\],\n  \.platform-tabs:has\(#platform-rail-conversations > \[data-nest="open"\] \[aria-current="page"\]\) #platform-tab-messages\[aria-current="page"\] \{\n    background: transparent;/);
   assert.match(css, /--platform-rail-full: 212px;/, 'the deeper rows need 212px');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
-  // #6019: AI is a sparkle. The rail keeps Discover's compass under Home
-  // (29 Oct 2026); on a phone it is a page of Home's.
-  assert.match(bar, /\{ key: 'ai' as const, label: 'core:tabs\.ai', href: '#ai', Icon: SparklesIcon \}/);
+  // #6019: the Homeroom bot tab wears the bot's picture in line, not a
+  // sparkle. The rail keeps Discover's compass under Home (29 Oct 2026); on a
+  // phone it is a page of Home's.
+  assert.match(bar, /\{ key: 'ai' as const, label: 'core:tabs\.ai', href: '#ai', Icon: HomeroomBotIcon \}/);
   assert.match(bar, /\{ key: 'discover' as const, label: 'core:tabs\.discover', href: '#apps', Icon: CompassIcon \}/);
 });

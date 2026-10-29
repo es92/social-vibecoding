@@ -468,6 +468,17 @@ export const SparklesIcon = stroked(
   'SparklesIcon',
   'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z',
 );
+// #6019 follow-up (Evan, 29 Oct 2026): the Homeroom bot tab's glyph, its
+// picture drawn in the bar's lines. A new glyph, so not transcribed: the brush
+// H of public/icons/v3/icon.svg traced onto the 24 grid (two stems, the
+// crossbar sweeping in from the left), and the four-point star beside it
+// outlined, as everything else on the bar is.
+export const HomeroomBotIcon = stroked('HomeroomBotIcon', [
+  'M9.8 7.2 7.4 19',
+  'M14.8 5.6 13.4 13.8C12.9 16.8 14 17.7 15.3 17.6 16.4 17.5 17.4 16.5 18.1 15.3',
+  'M2.9 17C2.9 14.6 5.6 13.2 9 12.8 10.6 12.6 12.1 12.5 13.3 12.2',
+  'M19.6 3.6Q20.18 6.62 23.2 7.2 20.18 7.78 19.6 10.8 19.02 7.78 16 7.2 19.02 6.62 19.6 3.6Z',
+]);
 export const PlayIcon = stroked(
   'PlayIcon',
   'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z',
