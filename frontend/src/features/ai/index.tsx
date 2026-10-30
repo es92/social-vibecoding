@@ -54,6 +54,7 @@ import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { EmbeddedConversation } from '../messages';
 import { openBotConversation } from '../messages/api';
 import { BOT_AVATAR } from '../messages/format';
+import { SidePanelDivider } from '../side-panel/side-panel';
 import {
   NEXT_FIRST, foldWork, heroWords, inProgress, isTopicHref, needsYou, nextWords, owedCount, upNext,
   type AiApp, type AiThread, type AiWork, type NeedItem, type Phrase, type Who, type WorkRow,
@@ -208,6 +209,7 @@ export function AiScreen(): ReactNode {
   const t = useMessages('messages');
   const say = (p: Phrase) => t(p.id, p.values);
   const screenRef = useRef<HTMLElement | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
   useVisibilityHiddenClass(screenRef, 'ai-screen', false);
   const visible = useVisibility('ai-screen', false);
   const wide = useWide();
@@ -375,8 +377,12 @@ export function AiScreen(): ReactNode {
         </a>
       </div>
 
+      {/* Main's left edge is the side panel's handle (30 Oct 2026): drag it,
+          or use the arrow keys, to share the window between the list and
+          Main; a page opened in Main's place keeps the width. */}
       {docked ? (
-        <aside className="ai-main-pane" aria-labelledby="ai-main-title" data-ai-main="">
+        <aside id="ai-main-pane" ref={mainRef} className="ai-main-pane" aria-labelledby="ai-main-title" data-ai-main="">
+          <SidePanelDivider panelRef={mainRef} shown={docked} id="ai-main-divider" controls="ai-main-pane" />
           <header className="ai-main-head" data-ai-main-head="">
             <img src={BOT_AVATAR} alt="" className="w-8 h-8 rounded-[10px] object-cover shrink-0" />
             <span className="min-w-0 flex flex-col">

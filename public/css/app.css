@@ -18104,7 +18104,8 @@ body:has(#ai-screen:not(.hidden)) {
    place, and Main back when the panel closes. It is drawn as this page's
    own column, not as a panel of its own (29 Oct 2026): Main's width, edge
    and header, with ‹ Main and the project the page is in over it, and none
-   of the panel's own controls (side-panel.tsx). */
+   of the panel's own controls (side-panel.tsx) but its left edge: that is
+   the handle Main's own edge is (30 Oct 2026), and both set one width. */
 html[data-side-panel] #ai-screen .ai-main-pane { display: none; }
 @media (min-width: 1024px) {
   html[data-side-panel] #ai-screen { padding-right: var(--ai-main-w); }
@@ -18115,7 +18116,7 @@ body:has(#ai-screen:not(.hidden)) .side-panel {
   border-top-left-radius: 1.75rem;
 }
 .side-panel-head > :is(.side-panel-main, .side-panel-place) { display: none; }
-body:has(#ai-screen:not(.hidden)) .side-panel :is(#side-panel-back, #side-panel-title, #side-panel-expand, #side-panel-close, .side-panel-divider) {
+body:has(#ai-screen:not(.hidden)) .side-panel :is(#side-panel-back, #side-panel-title, #side-panel-expand, #side-panel-close) {
   display: none;
 }
 body:has(#ai-screen:not(.hidden)) .side-panel :is(.side-panel-main, .side-panel-place) { display: inline-flex; }

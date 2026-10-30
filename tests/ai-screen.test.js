@@ -293,7 +293,7 @@ test('the first render is the prerender: hidden, the bot\'s name, no rows; lists
   assert.match(src, /readJson<AiWork>\(`\/api\/ai\/work\$\{qs\}`\)/);
   // Main docked beside it only on a wide window, after mount.
   assert.match(src, /const \[wide, setWide\] = useState\(false\);/);
-  assert.match(src, /\{docked \? \(\s*<aside className="ai-main-pane"/);
+  assert.match(src, /\{docked \? \(\s*<aside id="ai-main-pane" ref=\{mainRef\} className="ai-main-pane"/);
   assert.match(src, /<EmbeddedConversation conversationId=\{botId!\} active=\{visible\} at=\{at\} \/>/);
   // Ask Homeroom bot opens Main; a private thread opens in it.
   assert.match(src, /<a href="#homeroom-bot\/main" className="messages-composer-card ai-askbar-card"/);
@@ -341,7 +341,7 @@ test('the screen renders as the prerender does: hidden, the bot\'s name, Needs y
 
 test('a thread opens on this page: beside the list in Main\'s place, or on its page with a way back here', () => {
   const src = read('frontend/src/features/ai/index.tsx');
-  assert.match(src, /<aside className="ai-main-pane" aria-labelledby="ai-main-title" data-ai-main="">\s+<header className="ai-main-head" data-ai-main-head="">/);
+  assert.match(src, /<aside id="ai-main-pane" ref=\{mainRef\} className="ai-main-pane" aria-labelledby="ai-main-title" data-ai-main="">\s+<SidePanelDivider [^>]*\/>\s+<header className="ai-main-head" data-ai-main-head="">/);
   assert.match(src, /<span id="ai-main-title"[^>]*>\s+\{t\('messages:store\.header\.main'\)\}/);
   assert.match(src, /\{t\('messages:ai\.main\.sub'\)\}/);
   assert.equal(message('messages:ai.main.sub'), 'Your chat with Homeroom bot. Only you can see it.');
@@ -382,7 +382,8 @@ test('beside this page the panel is the page\'s own column: ‹ Main and the pro
   assert.match(controller, /classList\.toggle\(BESIDE_AI_CLASS, isBesideAi\(\)\)/);
   assert.match(controller, /const \{ place = null, \.\.\.rest \} = given \|\| \{\};/, 'the project is this document\'s, not the page\'s hint');
   const css = read('public/css/app.css');
-  assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \.side-panel :is\(#side-panel-back, #side-panel-title, #side-panel-expand, #side-panel-close, \.side-panel-divider\) \{\s+display: none;\s+\}/);
+  assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \.side-panel :is\(#side-panel-back, #side-panel-title, #side-panel-expand, #side-panel-close\) \{\s+display: none;\s+\}/,
+    'the panel\'s controls go, but not its left edge, the handle Main\'s edge is too');
   assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \.side-panel :is\(\.side-panel-main, \.side-panel-place\) \{ display: inline-flex; \}/);
   assert.match(css, /\.side-panel-head > :is\(\.side-panel-main, \.side-panel-place\) \{ display: none; \}/, 'and beside an app, as it was');
   assert.match(css, /html\.in-side-panel\.side-panel-beside-ai :is\(\.dev-topic-backs, \.dev-topic-back\) \{ display: none; \}/,
@@ -399,6 +400,11 @@ test('Main\'s column is held inside the window, and the panel takes its place at
   assert.match(css, /html\[data-side-panel\] #ai-screen \.ai-main-pane \{ display: none; \}/);
   assert.match(css, /@media \(min-width: 1024px\) \{\s+html\[data-side-panel\] #ai-screen \{ padding-right: var\(--ai-main-w\); \}\s+\}/);
   assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \.side-panel \{\s+width: var\(--ai-main-w\);/, 'so the list does not move');
+  // 30 Oct 2026: Main's left edge is the side panel's handle, and sets the same width.
+  const src = read('frontend/src/features/ai/index.tsx');
+  assert.match(src, /import \{ SidePanelDivider \} from '\.\.\/side-panel\/side-panel';/);
+  assert.match(src, /<aside id="ai-main-pane" ref=\{mainRef\} className="ai-main-pane"[^>]*>\s+<SidePanelDivider panelRef=\{mainRef\} shown=\{docked\} id="ai-main-divider" controls="ai-main-pane" \/>/);
+  assert.match(read('frontend/src/features/side-panel/side-panel.tsx'), /export function SidePanelDivider\(\{\s+panelRef,\s+shown,\s+id = 'side-panel-divider',\s+controls = 'platform-side-panel',/);
 });
 
 test('the tab says Homeroom bot: a wide seat on a phone, two lines in the Duo column', () => {

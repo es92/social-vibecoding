@@ -266,13 +266,21 @@ interface WidthRange {
  *
  * The value is published only once it is known — after mount, while the panel
  * is on screen — so the prerender and the first client render carry none.
+ *
+ * The Homeroom bot page's Main is the same column (features/ai, 30 Oct
+ * 2026): its left edge is this handle too, with its own `id` and the pane it
+ * controls, and it sets the same width.
  */
-function SidePanelDivider({
+export function SidePanelDivider({
   panelRef,
   shown,
+  id = 'side-panel-divider',
+  controls = 'platform-side-panel',
 }: {
   panelRef: RefObject<HTMLElement | null>;
   shown: boolean;
+  id?: string;
+  controls?: string;
 }): ReactNode {
   const t = useMessages('agent');
   const [range, setRange] = useState<WidthRange | null>(null);
@@ -368,11 +376,11 @@ function SidePanelDivider({
 
   return (
     <div
-      id="side-panel-divider"
+      id={id}
       className="side-panel-divider"
       role="separator"
       aria-orientation="vertical"
-      aria-controls="platform-side-panel"
+      aria-controls={controls}
       aria-label={t('agent:sidePanel.resize')}
       aria-valuenow={range ? range.now : undefined}
       aria-valuemin={range ? range.min : undefined}
