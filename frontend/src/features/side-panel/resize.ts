@@ -104,10 +104,21 @@ export function clearStoredWidth(store: StorageLike | null = storage()): void {
   }
 }
 
-/** Apply `width` to the layout, or null to hand it back to the stylesheet. */
+/**
+ * Apply `width` to the layout, or null to hand it back to the stylesheet.
+ * `--side-panel-chosen-w` is the same width, set only while one is chosen:
+ * the Homeroom bot page's Main takes the room its list does not need when
+ * nothing is chosen (app.css `--ai-main-auto`), and the stylesheet's
+ * `--side-panel-w` cannot say whether it is a choice.
+ */
 export function applyWidth(width: number | null, root: HTMLElement = document.documentElement): void {
-  if (width == null) root.style.removeProperty('--side-panel-w');
-  else root.style.setProperty('--side-panel-w', `${Math.round(width)}px`);
+  if (width == null) {
+    root.style.removeProperty('--side-panel-w');
+    root.style.removeProperty('--side-panel-chosen-w');
+  } else {
+    root.style.setProperty('--side-panel-w', `${Math.round(width)}px`);
+    root.style.setProperty('--side-panel-chosen-w', `${Math.round(width)}px`);
+  }
 }
 
 /**

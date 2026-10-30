@@ -1405,8 +1405,10 @@ test('a width is the layout\'s own knob on <html>, and none hands it back to the
   } };
   applyWidth(544.2, root);
   assert.equal(props.get('--side-panel-w'), '544px');
+  assert.equal(props.get('--side-panel-chosen-w'), '544px', 'and says it was chosen, for the bot page\'s Main');
   applyWidth(null, root);
   assert.equal(props.has('--side-panel-w'), false);
+  assert.equal(props.has('--side-panel-chosen-w'), false);
 });
 
 test('the divider drags, takes the keys, resets on a double-click, and lets the frames stand aside while held', () => {

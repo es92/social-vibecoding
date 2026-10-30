@@ -18069,9 +18069,16 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
    would otherwise run Main under the rail and over the list on a narrower
    window. The list keeps the 480px an app keeps beside the panel. Set on
    <body> while the page is up, so the panel (a sibling of the page, not in
-   it) takes the same width in Main's place. */
+   it) takes the same width in Main's place.
+   UNTIL A WIDTH IS CHOSEN (30 Oct 2026), Main takes the room the list does
+   not need: the list is 672px (max-w-2xl) and a gutter each side, so Main
+   is the rest of the window, 400px to 720px. With the panel's own default
+   (36vw, at most 560px) a wide window left the slack as margins around the
+   list, between it and Main. A width dragged on Main's edge or beside an
+   app (`--side-panel-chosen-w`, features/side-panel/resize.ts) wins. */
 body:has(#ai-screen:not(.hidden)) {
-  --ai-main-w: max(320px, min(var(--side-panel-w, 400px), calc(100vw - var(--platform-rail-w, 0px) - 480px)));
+  --ai-main-auto: clamp(400px, calc(100vw - var(--platform-rail-w, 0px) - 720px), 720px);
+  --ai-main-w: max(320px, min(var(--side-panel-chosen-w, var(--ai-main-auto)), calc(100vw - var(--platform-rail-w, 0px) - 480px)));
 }
 #ai-screen[data-ai-docked] { padding-right: var(--ai-main-w); }
 #ai-screen .ai-main-pane {

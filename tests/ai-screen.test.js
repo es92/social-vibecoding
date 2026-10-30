@@ -392,8 +392,10 @@ test('beside this page the panel is the page\'s own column: ‹ Main and the pro
 
 test('Main\'s column is held inside the window, and the panel takes its place at its width', () => {
   const css = read('public/css/app.css');
-  // A width chosen beside an app on a wide monitor must not run Main under the rail.
-  assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \{\s+--ai-main-w: max\(320px, min\(var\(--side-panel-w, 400px\), calc\(100vw - var\(--platform-rail-w, 0px\) - 480px\)\)\);\s+\}/);
+  // A width chosen beside an app on a wide monitor must not run Main under
+  // the rail; with none chosen, Main takes the room the list does not need
+  // (30 Oct 2026), 400px to 720px.
+  assert.match(css, /body:has\(#ai-screen:not\(\.hidden\)\) \{\s+--ai-main-auto: clamp\(400px, calc\(100vw - var\(--platform-rail-w, 0px\) - 720px\), 720px\);\s+--ai-main-w: max\(320px, min\(var\(--side-panel-chosen-w, var\(--ai-main-auto\)\), calc\(100vw - var\(--platform-rail-w, 0px\) - 480px\)\)\);\s+\}/);
   assert.match(css, /#ai-screen\[data-ai-docked\] \{ padding-right: var\(--ai-main-w\); \}/);
   assert.match(css, /#ai-screen \.ai-main-pane \{[^}]*width: var\(--ai-main-w\);/);
   assert.match(css, /#ai-screen \.ai-main-pane > \.messages-layout \{ flex: 1 1 auto; height: auto; min-height: 0; \}/);
