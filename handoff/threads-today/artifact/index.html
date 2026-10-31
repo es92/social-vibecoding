@@ -1,0 +1,323 @@
+<title>Homeroom Threads Today</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a review board. One section per kind of thread, each a row of
+   desktop beside phone, with a strip of views (request page, change page)
+   and a few notes on what shows. */
+:root {
+  --ground: #f3f4f7;
+  --sheet: #ffffff;
+  --ink: #171a21;
+  --ink-soft: #565d6d;
+  --line: #dde0e7;
+  --accent: #1f62e0;
+  --accent-tint: #e6eefc;
+  --flag: #b4400f;
+  --flag-tint: #fbece4;
+  --display: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #12141a; --sheet: #1b1e26; --ink: #eceef3; --ink-soft: #a3a9b7; --line: #2c303b;
+    --accent: #7aa7ff; --accent-tint: #1f2a44; --flag: #ff9d6b; --flag-tint: #3a2419;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #12141a; --sheet: #1b1e26; --ink: #eceef3; --ink-soft: #a3a9b7; --line: #2c303b;
+  --accent: #7aa7ff; --accent-tint: #1f2a44; --flag: #ff9d6b; --flag-tint: #3a2419;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--ground); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+.num { font-family: var(--mono); font-size: 0.92em; }
+.lede { display: flex; flex-direction: column; gap: 12px; }
+.lede p { color: var(--ink-soft); }
+.made { font-size: 13px; color: var(--ink-soft); }
+
+/* What stands out */
+.findings { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+.findings ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.findings li { max-width: 80ch; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+.tag.bug { background: var(--flag-tint); color: var(--flag); }
+.tag.gap { background: var(--accent-tint); color: var(--accent); }
+
+/* Case index */
+.index { display: flex; flex-wrap: wrap; gap: 8px; }
+.index a { text-decoration: none; color: var(--ink); background: var(--sheet); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 14px; }
+.index a:hover { border-color: var(--accent); }
+.index a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* A case */
+.case { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
+.case-head { display: flex; flex-direction: column; gap: 6px; }
+.case-head .k { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+.views { display: flex; flex-wrap: wrap; gap: 6px; }
+.views button {
+  font: 500 14px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+.views button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+.view { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
+.view.solo { grid-template-columns: minmax(0, 1fr); }
+.shot { display: flex; flex-direction: column; gap: 8px; min-width: 0; margin: 0; }
+.shot figcaption { font-size: 13px; color: var(--ink-soft); }
+.shot button { all: unset; cursor: zoom-in; display: block; border-radius: 10px; }
+.shot img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--sheet); }
+.shot.phone img { border-radius: 22px; }
+.notes { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+.notes ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.notes li { max-width: 90ch; }
+@media (max-width: 760px) {
+  .view { grid-template-columns: minmax(0, 1fr); }
+  .shot.phone { max-width: 320px; }
+}
+
+/* Full size */
+.zoom { position: fixed; inset: 0; z-index: 20; background: rgba(10, 12, 16, 0.86); overflow: auto; padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.zoom img { display: block; margin: 0 auto; max-width: min(100%, 1280px); height: auto; border-radius: 10px; }
+.zoom .close {
+  position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+  font: 600 14px var(--body); color: #fff; background: rgba(255, 255, 255, 0.14); border: 0; border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) { .views button { transition: background-color 120ms, color 120ms; } }
+</style>
+
+<div class="wrap">
+  <header class="lede">
+    <h1>Threads, as they show today</h1>
+    <p>The five kinds of thread you named, drawn by Homeroom's own pages as of main <span class="num">d5db478</span> (with #6057, the bot page redesign). Each one is a real thread in a local copy of the platform, seen by an ordinary member, on a 1280px window and a phone.</p>
+    <p class="made">Fake people, fake requests, all "Staging demo". How they were made is at the end.</p>
+    <nav class="index" aria-label="Kinds of thread">
+      <a href="#private">1 · Private idea</a>
+      <a href="#request">2 · Request</a>
+      <a href="#change">3 · Request + change</a>
+      <a href="#plan">4 · Request + plan + change</a>
+      <a href="#ballot">5 · Two plans, two changes</a>
+    </nav>
+  </header>
+
+  <section class="findings" aria-labelledby="findings-title">
+    <h2 id="findings-title">What stands out</h2>
+    <ol>
+      <li><span class="tag bug">Bug</span>A private thread opened from the bot page on a desktop splits the 400px Main Chat column into the chat and the thread side by side, so both wrap a word or two a line. <a href="#private">See 1</a>.</li>
+      <li><span class="tag gap">Two pages</span>A thread with a change has two pages: the request's and the change's, each with its own head, votes and Mute. The change page points back ("Conversation lives on #6062", "In this thread"). From the bot page, a vote opens the change page, not the thread. <a href="#plan">See 4</a>.</li>
+      <li><span class="tag gap">Plans</span>A plan shows twice on the request page: a card under the request, and a "posted plan v1 · Read" line among the replies (which the "2 replies" count leaves out). <a href="#plan">See 4</a>.</li>
+      <li><span class="tag gap">Plans</span>With two plans and two changes, the request page lists the plans, then changes A and B, with nothing saying which plan each change was built from. Only the change page shows its plan. <a href="#ballot">See 5</a>.</li>
+      <li><span class="tag gap">Votes</span>The A/B vote reads 0 · 0 · 0 though A has one Yes and B two. None are from approvers; the single change's card says such votes don't count, the A/B card doesn't. And change A's own page shows two Votes cards: the A/B vote, and A's own with its own Vote button and "Needs 1 more yes". <a href="#ballot">See 5</a>.</li>
+      <li><span class="tag gap">Names</span>On the Messages screen the same chat is "Main Chat" in the header and "Homeroom bot · Builds what you ask for" over the conversation. <a href="#private">See 1</a>.</li>
+      <li><span class="tag gap">Status</span>Only the request with nothing built shows the Asked · Plan · Built · Voted in steps. Once a change is up, the change's row takes their place, so the request no longer says where it is in those steps. <a href="#request">See 2</a> and <a href="#change">3</a>.</li>
+    </ol>
+  </section>
+
+  <section class="case" id="private" aria-labelledby="private-title">
+    <div class="case-head">
+      <span class="k">No request · private</span>
+      <h2 id="private-title">1 · A private idea, started from scratch</h2>
+      <p>In Main Chat, usernode-capture writes an idea for a weekly digest email; Homeroom bot asks two questions and writes it up. It is in no project yet, so only File it, Post it and New project move it on.</p>
+    </div>
+    <div class="views" role="tablist" aria-label="Views of the private idea">
+      <button role="tab" aria-selected="true" aria-controls="private-1" id="private-1-tab">In Main Chat</button>
+      <button role="tab" aria-selected="false" aria-controls="private-2" id="private-2-tab">From the Homeroom bot page</button>
+    </div>
+    <div class="view" role="tabpanel" id="private-1" aria-labelledby="private-1-tab">
+      <figure class="shot"><button type="button" data-zoom="img/private-messages-desk.webp"><img src="img/private-messages-desk.webp" width="1280" height="1050" alt="Desktop: the Messages screen titled Main Chat, the bot conversation with the idea, and its thread on the right with File it, Post it and New project"></button><figcaption>Desktop · #homeroom-bot/thread/… opens the Messages screen, thread on the right</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/private-messages-phone.webp"><img src="img/private-messages-phone.webp" width="390" height="844" alt="Phone: the thread full screen, titled Thread, with File it, Post it and New project"></button><figcaption>Phone · the thread, full screen</figcaption></figure>
+      <div class="notes"><ul>
+        <li>The thread's actions sit at its top: "Only you can see this thread", then File it, Post it, New project.</li>
+        <li>Main Chat's stream shows the idea once, with "3 updates in its thread".</li>
+        <li>The same chat has two names on one screen: "Main Chat" in the header, "Homeroom bot · Builds what you ask for" over the conversation.</li>
+      </ul></div>
+    </div>
+    <div class="view" role="tabpanel" id="private-2" aria-labelledby="private-2-tab" hidden>
+      <figure class="shot"><button type="button" data-zoom="img/private-bot-page-desk.webp"><img src="img/private-bot-page-desk.webp" width="1280" height="900" alt="Desktop: the bot page with the idea under Only you, and the docked Main Chat split into two narrow panes, text wrapping a word a line"></button><figcaption>Desktop · the idea's row under Only you, opened in the docked Main Chat</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/private-bot-page-phone.webp"><img src="img/private-bot-page-phone.webp" width="390" height="844" alt="Phone: Main Chat slid in over the list, with the thread open in it"></button><figcaption>Phone · Main Chat slides in, at the thread</figcaption></figure>
+      <div class="notes"><ul>
+        <li><strong>The bug:</strong> on a desktop the docked column is 400px, and the thread opens beside the chat inside it, two panes of about 200px each.</li>
+        <li>On a phone it reads well: Main Chat slides in with its back arrow and the thread over it.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="case" id="request" aria-labelledby="request-title">
+    <div class="case-head">
+      <span class="k">1 request · no change</span>
+      <h2 id="request-title">2 · <span class="num">#6061</span> Show unread counts on the Communities tab</h2>
+      <p>Filed by usernode-capture; two people replied and she answered. Nobody is building it.</p>
+    </div>
+    <div class="view" id="request-1">
+      <figure class="shot"><button type="button" data-zoom="img/request-desk.webp"><img src="img/request-desk.webp" width="1280" height="900" alt="Desktop: Request #6061 with its text, the Asked Plan Built Voted in steps, Build it now, Mute, Merge and Break it up, then three replies"></button><figcaption>Desktop · dev/issues/6061</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/request-phone.webp"><img src="img/request-phone.webp" width="390" height="1062" alt="Phone: the same request page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>The head is "Request #6061" and its title, then the request again as the first message, with the asker and its text.</li>
+        <li>Asked · Plan · Built · Voted in, "Nobody is working on this yet", Build it now, and Build it with your own Claude Code.</li>
+        <li>Mute, then the thread moves (Merge into another thread, Break it up), then "3 replies".</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="case" id="change" aria-labelledby="change-title">
+    <div class="case-head">
+      <span class="k">1 request · 1 change</span>
+      <h2 id="change-title">3 · <span class="num">#6062</span> Let me pin a message in a channel</h2>
+      <p>staging-demo-dewi built change <span class="num">#6063</span> for it; it passed its checks and has two Yes votes, from people who aren't approvers.</p>
+    </div>
+    <div class="views" role="tablist" aria-label="Views of the request with one change">
+      <button role="tab" aria-selected="true" aria-controls="change-1" id="change-1-tab">Request #6062</button>
+      <button role="tab" aria-selected="false" aria-controls="change-2" id="change-2-tab">Change #6063</button>
+    </div>
+    <div class="view" role="tabpanel" id="change-1" aria-labelledby="change-1-tab">
+      <figure class="shot"><button type="button" data-zoom="img/change-desk.webp"><img src="img/change-desk.webp" width="1280" height="900" alt="Desktop: Request #6062, Up for a vote, with Change #6063 under the request: its Votes card and Tested card"></button><figcaption>Desktop · dev/issues/6062</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/change-phone.webp"><img src="img/change-phone.webp" width="390" height="1109" alt="Phone: the same request page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>"Up for a vote" beside the number. The change sits under the request as "Change #6063 · staging-demo-dewi" with its title, a Votes card (Needs 1 more yes, Vote) and a Tested card (All checks passed).</li>
+        <li>The steps and Build it now are gone; Split one out joins the moves.</li>
+      </ul></div>
+    </div>
+    <div class="view" role="tabpanel" id="change-2" aria-labelledby="change-2-tab" hidden>
+      <figure class="shot"><button type="button" data-zoom="img/change-page-desk.webp"><img src="img/change-page-desk.webp" width="1280" height="900" alt="Desktop: Change #6063 with its summary, Built for #6062, In this thread with the request's card, the moves, Votes and Tested, and Conversation lives on #6062"></button><figcaption>Desktop · dev/changes/6063</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/change-page-phone.webp"><img src="img/change-page-phone.webp" width="390" height="865" alt="Phone: the same change page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>Its own page: "Change #6063" with "0 of 1 approval", the summary, "Built for #6062", then "In this thread" with the request as a card, Mute and the moves again.</li>
+        <li>No replies here: "Conversation lives on #6062".</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="case" id="plan" aria-labelledby="plan-title">
+    <div class="case-head">
+      <span class="k">1 request · 1 plan · 1 change</span>
+      <h2 id="plan-title">4 · <span class="num">#6064</span> Sort Discover by most active</h2>
+      <p>staging-demo-ana posted a plan, usernode-capture said go ahead, and ana built change <span class="num">#6065</span> from it.</p>
+    </div>
+    <div class="views" role="tablist" aria-label="Views of the request with a plan and a change">
+      <button role="tab" aria-selected="true" aria-controls="plan-1" id="plan-1-tab">Request #6064</button>
+      <button role="tab" aria-selected="false" aria-controls="plan-2" id="plan-2-tab">Change #6065</button>
+      <button role="tab" aria-selected="false" aria-controls="plan-3" id="plan-3-tab">From the Homeroom bot page</button>
+    </div>
+    <div class="view" role="tabpanel" id="plan-1" aria-labelledby="plan-1-tab">
+      <figure class="shot"><button type="button" data-zoom="img/plan-desk.webp"><img src="img/plan-desk.webp" width="1280" height="917" alt="Desktop: Request #6064 with a Plan v1 card, then Change #6065 with Votes and Tested, then replies starting with posted plan v1 Read"></button><figcaption>Desktop · dev/issues/6064</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/plan-phone.webp"><img src="img/plan-phone.webp" width="390" height="1231" alt="Phone: the same request page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>The plan is a card under the request ("Plan · v1", its title, by and when, Read), above the change.</li>
+        <li>It shows again among the replies: "staging-demo-ana posted plan v1 · Read". The count says "2 replies" and leaves it out.</li>
+      </ul></div>
+    </div>
+    <div class="view" role="tabpanel" id="plan-2" aria-labelledby="plan-2-tab" hidden>
+      <figure class="shot"><button type="button" data-zoom="img/plan-change-page-desk.webp"><img src="img/plan-change-page-desk.webp" width="1280" height="900" alt="Desktop: Change #6065 with its summary, its Plan v1 card, Built for #6064 and In this thread"></button><figcaption>Desktop · dev/changes/6065</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/plan-change-page-phone.webp"><img src="img/plan-change-page-phone.webp" width="390" height="997" alt="Phone: the same change page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>The change page shows the plan it was built from, right under its summary.</li>
+      </ul></div>
+    </div>
+    <div class="view solo" role="tabpanel" id="plan-3" aria-labelledby="plan-3-tab" hidden>
+      <figure class="shot"><button type="button" data-zoom="img/from-bot-page-desk.webp"><img src="img/from-bot-page-desk.webp" width="1280" height="900" alt="Desktop: the bot page with #6064 Sort Discover by most active in Needs you, and the change page opened in Main Chat's place"></button><figcaption>Desktop · Needs you's "#6064 Sort Discover by most active · Vote", pressed</figcaption></figure>
+      <div class="notes"><ul>
+        <li>The row says #6064, the request, and opens Change #6065 in Main Chat's place, headed "Homeroom · Change #6065". The thread's replies are one more tap away, on the request's card.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="case" id="ballot" aria-labelledby="ballot-title">
+    <div class="case-head">
+      <span class="k">1 request · 2 plans · 2 changes</span>
+      <h2 id="ballot-title">5 · <span class="num">#6066</span> A dark theme</h2>
+      <p>ana planned "Follow the system setting" and dewi "A switch in Settings"; each built theirs, <span class="num">#6067</span> and <span class="num">#6068</span>. With two changes up for one request, it is a pick between them.</p>
+    </div>
+    <div class="views" role="tablist" aria-label="Views of the request with two plans and two changes">
+      <button role="tab" aria-selected="true" aria-controls="ballot-1" id="ballot-1-tab">Request #6066</button>
+      <button role="tab" aria-selected="false" aria-controls="ballot-2" id="ballot-2-tab">Change #6067 (A)</button>
+    </div>
+    <div class="view" role="tabpanel" id="ballot-1" aria-labelledby="ballot-1-tab">
+      <figure class="shot"><button type="button" data-zoom="img/ballot-desk.webp"><img src="img/ballot-desk.webp" width="1280" height="1147" alt="Desktop: Request #6066, Pick one, two Plan v1 cards, 2 changes for #6066 as rows A and B, a Votes card with A, B and Neither, then replies"></button><figcaption>Desktop · dev/issues/6066</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/ballot-phone.webp"><img src="img/ballot-phone.webp" width="390" height="1604" alt="Phone: the same request page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>"Pick one" beside the number. Two plan cards, then "2 changes for #6066" as rows A and B, each with its author, number and checks.</li>
+        <li>One Votes card for both: A, B and Neither, with "The first to pass Homeroom's approval rule goes live, and the others close. Neither counts as a No on each."</li>
+        <li>Nothing pairs a plan with its change: "Follow the system setting" is A, "A switch in Settings" is B, but you'd have to read the titles to know.</li>
+      </ul></div>
+    </div>
+    <div class="view" role="tabpanel" id="ballot-2" aria-labelledby="ballot-2-tab" hidden>
+      <figure class="shot"><button type="button" data-zoom="img/ballot-change-page-desk.webp"><img src="img/ballot-change-page-desk.webp" width="1280" height="1182" alt="Desktop: Change #6067 with its plan, Built for #6066, In this thread, the A/B vote, and a second Votes card of its own"></button><figcaption>Desktop · dev/changes/6067</figcaption></figure>
+      <figure class="shot phone"><button type="button" data-zoom="img/ballot-change-page-phone.webp"><img src="img/ballot-change-page-phone.webp" width="390" height="1535" alt="Phone: the same change page"></button><figcaption>Phone</figcaption></figure>
+      <div class="notes"><ul>
+        <li>Change A's page carries its plan, then "In this thread" with the request and change B, then the same A/B vote as the request.</li>
+        <li>Under that is a second Votes card, A's own: "Needs 1 more yes", "1 yes so far is from someone who isn't an approver", and its own Vote button. So there are two ways to vote on A here, and the two cards count differently.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="findings" aria-labelledby="how-title">
+    <h2 id="how-title">How these were made</h2>
+    <ul class="made" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px">
+      <li>Homeroom at main <span class="num">d5db478</span>, run in this session on a fresh database in staging mode, signed in as usernode-capture: a member of the Homeroom project, not an admin.</li>
+      <li>Requests were filed through the platform's request service with the twin row its filing route writes; plans were posted through the same service Homeroom's post_spec uses; changes, votes, replies and the private thread are rows shaped as the platform's own staging seeds write them. Numbers start at <span class="num">#6061</span>, near Homeroom's real ones.</li>
+      <li>One stand-in: a staging copy fills a request with no comments with "[Mock]" ones, so the screenshots got production's answer instead, an empty list.</li>
+      <li>Not shown: change previews, before &amp; after shots and Homeroom bot's own posts, which need the platform's builders. On the phone, the "Get the app" bar is what a phone browser shows.</li>
+    </ul>
+  </section>
+</div>
+
+<div class="zoom" id="zoom" hidden role="dialog" aria-modal="true" aria-label="Screenshot at full size">
+  <button type="button" class="close" id="zoom-close">Close</button>
+  <img id="zoom-img" alt="">
+</div>
+
+<script>
+(() => {
+  // Each case's views: a tab strip that shows one panel at a time.
+  for (const list of document.querySelectorAll('[role="tablist"]')) {
+    const tabs = [...list.querySelectorAll('[role="tab"]')];
+    const select = (tab) => {
+      for (const t of tabs) {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+      }
+    };
+    tabs.forEach((t, i) => {
+      t.tabIndex = t.getAttribute('aria-selected') === 'true' ? 0 : -1;
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        select(next); next.focus();
+      });
+    });
+  }
+  // A screenshot at full size.
+  const zoom = document.getElementById('zoom');
+  const img = document.getElementById('zoom-img');
+  let from = null;
+  const close = () => { zoom.hidden = true; img.removeAttribute('src'); from?.focus(); };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-zoom]');
+    if (!b) return;
+    from = b;
+    img.src = b.dataset.zoom;
+    img.alt = b.querySelector('img')?.alt || '';
+    zoom.hidden = false; zoom.scrollTop = 0;
+    document.getElementById('zoom-close').focus();
+  });
+  document.getElementById('zoom-close').addEventListener('click', close);
+  zoom.addEventListener('click', (e) => { if (e.target === zoom) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !zoom.hidden) close(); });
+})();
+</script>
