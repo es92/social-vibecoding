@@ -9,8 +9,10 @@
  * people's threads too, and only what waits on you; In progress is what is
  * being worked on; what waits on someone else (other people's votes, a free
  * builder or slot) is Waiting. 30 Oct 2026, from his Task Assistant
- * prototype: one line a row, grouped by project, on three sheets, with a
- * chip for each project (./lists.tsx draws them):
+ * prototype: one line a row, grouped by project, on sheets, with a chip
+ * for each project (./lists.tsx draws them). 2 Nov 2026: In progress and
+ * Waiting are one list on a sheet of their own, Waiting & in progress, so
+ * the first sheet is only Needs you:
  *
  *   [bot] Homeroom bot             Needs you: 2 · In progress: 1
  *   ( All ) ( Garden club ) ( Bread bot )
@@ -19,10 +21,8 @@
  *   [tile] Garden club
  *     ☑ #403  Dark mode                                     Vote
  *     ▶ #410  A reminder email                          Build it
- *   ─────────
- *   IN PROGRESS · 1
- *   ─────────
- *   WAITING · 2
+ *
+ *   WAITING & IN PROGRESS · 3
  *
  *   LIVE THIS WEEK · 1
  *   ( Ask Homeroom bot )                  ← a phone: Main

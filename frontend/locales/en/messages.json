@@ -4887,14 +4887,6 @@
     "text": "Needs you",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Pill at the end of a row that waits on the person, when it says no more than that."
   },
-  "ai.next.titleCount_one": {
-    "text": "In progress · {{count}}",
-    "description": "The AI tab's main view: the label over the person's work being worked on, with how many."
-  },
-  "ai.next.titleCount_other": {
-    "text": "In progress · {{count}}",
-    "description": "The AI tab's main view: the label over the person's work being worked on, with how many."
-  },
   "ai.next.goingLive": {
     "text": "{{project}} · #{{number}} · Going live",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Tooltip of an In progress row (its whole line; read by a screen reader too): its change was approved and is being put live."
@@ -4930,14 +4922,6 @@
   "ai.next.claimed": {
     "text": "{{project}} · #{{number}} · {{username}} is building it",
     "description": "The AI tab's main view, In progress: tooltip of the row of a request of the person's that someone has claimed to build and has no change for yet. {{username}} is who claimed it."
-  },
-  "ai.up.titleCount_one": {
-    "text": "Waiting · {{count}}",
-    "description": "The AI tab's main view: the label over the person's work with nothing for them to do on it, with how many."
-  },
-  "ai.up.titleCount_other": {
-    "text": "Waiting · {{count}}",
-    "description": "The AI tab's main view: the label over the person's work with nothing for them to do on it, with how many."
   },
   "ai.up.vote": {
     "text": "{{project}} · #{{number}} · Waiting for votes",
@@ -5026,6 +5010,14 @@
   "ai.up.quiet_other": {
     "text": "{{project}} · #{{number}} · Nobody is building it yet · quiet {{count}} days",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Tooltip of a Waiting row (its whole line; read by a screen reader too): a request nobody has started a change for and nobody has written on lately. {{count}} is how many days."
+  },
+  "ai.busy.title_one": {
+    "text": "Waiting & in progress · {{count}}",
+    "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Label over the card of the person's work that is being worked on or waiting on someone else (other people's votes, checks, a free builder or slot), one list under each project. {{count}} is how many rows it has. It is a count, not a link."
+  },
+  "ai.busy.title_other": {
+    "text": "Waiting & in progress · {{count}}",
+    "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Label over the card of the person's work that is being worked on or waiting on someone else (other people's votes, checks, a free builder or slot), one list under each project. {{count}} is how many rows it has. It is a count, not a link."
   },
   "ai.live.title_one": {
     "text": "Live this week · {{count}}",

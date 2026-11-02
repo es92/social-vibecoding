@@ -5187,9 +5187,9 @@
       "expectText": "Try again"
     },
     {
-      "name": "#6019: the AI tab's In progress lists your work being worked on, soonest first (going live before being built), and a request somebody claimed by who has it; Waiting what waits on someone else (other people's votes on a change or on a group decision, then a build held back as Homeroom bot says in Main)",
+      "name": "#6019: the AI tab's Waiting & in progress is a card of its own, after Needs you's: under each project, your work being worked on first, soonest first (going live before being built), then what waits on someone else (other people's votes, a turn to be built)",
       "path": "/?demo=1#homeroom-bot",
-      "expectSelector": "#ai-screen:not(.hidden):has([data-ai-list=\"up\"] [data-ai-line=\"vote\"] ~ [data-ai-line=\"decision\"] ~ [data-ai-line=\"held\"]):has([data-ai-group$=\"-icon\"] [data-ai-line=\"building\"]) [data-ai-list=\"next\"] [data-ai-line=\"going_live\"] ~ [data-ai-line=\"building\"]",
+      "expectSelector": "#ai-screen:not(.hidden) [data-ai-sheet=\"open\"] + [data-ai-sheet=\"busy\"]:has([data-ai-line=\"build_queued\"]) [data-ai-group=\"staging-demo-your-app\"] [data-ai-line=\"going_live\"] ~ [data-ai-line=\"building\"] ~ [data-ai-line=\"vote\"]",
       "expectText": "Going live"
     }
   ],

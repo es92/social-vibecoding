@@ -14,10 +14,13 @@
  *     ☑ #6038  Spell out the approval rules…      Vote
  *     ▶ #6000  Add reopen proposal…               Build it
  *              Show 5 more ⌄
- *   ─────────────────────────
- *   IN PROGRESS · 3                  ← a line over each after the first
- *   ─────────────────────────
- *   WAITING · 5
+ *
+ *   WAITING & IN PROGRESS · 8        ← 2 Nov 2026 (Evan): a sheet of its
+ *   [tile] Homeroom                     own, drawn as Live this week is, so
+ *     ⟨⟩ #6151  Design threads…        Bot     Needs you is the only list
+ *     ◷ #6153  Homeroom bot tab…      Checks  on the first sheet. One list:
+ *                                      a project's work under way first,
+ *                                      then what waits on someone else.
  *
  *   LIVE THIS WEEK · 41              ← a sheet of its own, quieter rows
  *
@@ -40,8 +43,8 @@
  *                    more", opens every project with a search
  *                    (./project-picker.tsx, 30 Oct 2026: a chip a project
  *                    was unusable with dozens).
- *   no row lines     space and the project's name group the rows; the only
- *                    lines are over In progress and Waiting.
+ *   no row lines     space and the project's name group the rows, and
+ *                    each list is a sheet of its own under its band.
  *
  * Rows here are 14px over one line, not the shell's 15 over 13 (AGENTS.md,
  * "Type and colour"): this page's exception, recorded there.
@@ -268,8 +271,8 @@ function GroupMore({ hidden, open, onClick }: { hidden: number; open: boolean; o
   );
 }
 
-function Section({ list, head, owe = false, lines, quiet = false, empty = null, note = null, keep = false, first, heads, top }: {
-  /** Which list, for the page's checks: work, next, up, live. */
+function Section({ list, head, owe = false, lines, quiet = false, empty = null, note = null, keep = false, first, heads }: {
+  /** Which list, for the page's checks: work, busy, live. */
   list: string;
   /** Said over the rows, whatever they are: why the lists show less than they should. */
   note?: ReactNode;
@@ -284,8 +287,6 @@ function Section({ list, head, owe = false, lines, quiet = false, empty = null, 
   first: number;
   /** The project's name over its rows; not when one project's chip says it already. */
   heads: boolean;
-  /** How the section opens: on a band (a sheet's first), on a line, or plain. */
-  top: 'band' | 'line';
 }): ReactNode {
   const t = useMessages('messages');
   const [opened, setOpened] = useState<Record<string, boolean>>({});
@@ -339,21 +340,13 @@ function Section({ list, head, owe = false, lines, quiet = false, empty = null, 
       })}
     </>
   );
-  if (top === 'band') {
-    return (
-      <section className="pb-1" data-ai-list={list}>
-        <div className="mb-1 rounded-t-[20px] bg-zinc-900/[0.035] px-4 pt-3 pb-2 dark:bg-white/[0.045]" data-ai-band="">
-          <SectionHeader className={`px-0 pt-0 pb-0 ${label}`}>{head}</SectionHeader>
-        </div>
-        <div className="px-4">{body}</div>
-      </section>
-    );
-  }
+  // Each list is a sheet of its own and opens on a band, the sheet's width.
   return (
-    <section className="px-4 pt-3" data-ai-list={list}>
-      <div className="mb-4 h-px bg-[color:var(--app-sheet-line)]" aria-hidden="true" />
-      <SectionHeader className={`px-0 pt-0 pb-1 ${label}`}>{head}</SectionHeader>
-      {body}
+    <section className="pb-1" data-ai-list={list}>
+      <div className="mb-1 rounded-t-[20px] bg-zinc-900/[0.035] px-4 pt-3 pb-2 dark:bg-white/[0.045]" data-ai-band="">
+        <SectionHeader className={`px-0 pt-0 pb-0 ${label}`}>{head}</SectionHeader>
+      </div>
+      <div className="px-4">{body}</div>
     </section>
   );
 }
@@ -457,8 +450,15 @@ export function AiLists({ hero, main, lit = null, ready, failed = null, onRetry,
     owe: false,
     open: () => openThread(th),
   });
-  const progressShown = progress.filter((x) => shows(x.app));
-  const waitingShown = waiting.filter((x) => shows(x.app));
+  // 2 Nov 2026 (Evan): In progress and Waiting are one list on a sheet of
+  // their own, so the first sheet is only what needs you. Under each
+  // project, its work under way comes first, then what waits on someone
+  // else, each in the order the server put it; the glyph and the word on
+  // the right still say which a row is.
+  const busyLines: Line[] = [
+    ...progress.filter((x) => shows(x.app)).map(threadLine(nextGlyph)),
+    ...waiting.filter((x) => shows(x.app)).map(threadLine(() => <ClockIcon className={G} />)),
+  ];
   const liveLines: Line[] = live.filter((x) => shows(x.app)).map((th) => ({
     ...threadLine(() => <CheckIcon className={G} />)(th),
     right: dayOf(th.at, t),
@@ -521,7 +521,6 @@ export function AiLists({ hero, main, lit = null, ready, failed = null, onRetry,
         <Section
           list="work"
           keep
-          top="band"
           head={owedShown ? t('messages:ai.work.titleCount', { count: owedShown }) : t('messages:ai.work.title')}
           owe={owedShown > 0}
           lines={needLines}
@@ -544,12 +543,15 @@ export function AiLists({ hero, main, lit = null, ready, failed = null, onRetry,
           first={GROUP_FIRST.needs}
           heads={heads}
         />
-        <Section list="next" top="line" head={t('messages:ai.next.titleCount', { count: progressShown.length })} lines={progressShown.map(threadLine(nextGlyph))} first={GROUP_FIRST.next} heads={heads} />
-        <Section list="up" top="line" head={t('messages:ai.up.titleCount', { count: waitingShown.length })} lines={waitingShown.map(threadLine(() => <ClockIcon className={G} />))} first={GROUP_FIRST.waiting} heads={heads} />
       </div>
+      {busyLines.length ? (
+        <div className={`${PLANE} pb-2`} data-ai-sheet="busy">
+          <Section list="busy" quiet head={t('messages:ai.busy.title', { count: busyLines.length })} lines={busyLines} first={GROUP_FIRST.busy} heads={heads} />
+        </div>
+      ) : null}
       {liveLines.length ? (
         <div className={`${PLANE} pb-2`} data-ai-sheet="live">
-          <Section list="live" top="band" quiet head={t('messages:ai.live.title', { count: liveLines.length })} lines={liveLines} first={GROUP_FIRST.live} heads={heads} />
+          <Section list="live" quiet head={t('messages:ai.live.title', { count: liveLines.length })} lines={liveLines} first={GROUP_FIRST.live} heads={heads} />
         </div>
       ) : null}
     </div>

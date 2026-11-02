@@ -163,9 +163,9 @@ export interface WorkRow {
 /**
  * How many rows each project shows in a section before its own Show more
  * (./lists.tsx groups every section's rows by project). Needs you shows the
- * most: it is what you came for.
+ * most: it is what you came for. Busy is Waiting & in progress, one list.
  */
-export const GROUP_FIRST = { needs: 5, next: 3, waiting: 3, live: 3 } as const;
+export const GROUP_FIRST = { needs: 5, busy: 3, live: 3 } as const;
 
 /** Pure: rows under their project, once each, in the order the projects first come. */
 export function byProject<T extends { app: AiApp | null }>(rows: T[]): { app: AiApp | null; items: T[] }[] {

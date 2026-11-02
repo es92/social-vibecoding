@@ -130,7 +130,7 @@ test('each section groups its rows by project, and a project shows its first few
     ['games', ['need:proposal:2']],
     [null, ['private:91']],
   ], 'under each project once, in the order the projects first come; a private idea in no project apart');
-  assert.deepEqual({ ...GROUP_FIRST }, { needs: 5, next: 3, waiting: 3, live: 3 }, 'Needs you shows the most: it is what you came for');
+  assert.deepEqual({ ...GROUP_FIRST }, { needs: 5, busy: 3, live: 3 }, 'Needs you shows the most: it is what you came for');
   const lists = read('frontend/src/features/ai/lists.tsx');
   // 1 Nov 2026: the row whose chat is in the column is never folded away:
   // past the first rows, it joins them.
@@ -272,8 +272,7 @@ test('each In progress and Waiting row says what it waits on, in the bot\'s word
     'Garden club · Waiting for votes', 'Garden club · Waiting for votes · you voted Yes',
     'Garden club · Waiting for votes · you voted No',
   ]);
-  assert.equal(message('messages:ai.next.titleCount', { count: 2 }), 'In progress · 2');
-  assert.equal(message('messages:ai.up.titleCount', { count: 2 }), 'Waiting · 2');
+  assert.equal(message('messages:ai.busy.title', { count: 2 }), 'Waiting & in progress · 2');
   assert.equal(words(heroWords(2, 3)), 'Needs you: 2 · In progress: 3');
   assert.equal(words(heroWords(0, 3)), 'In progress: 3');
   // Y03: a zero says nothing, and with neither there is no line.
@@ -680,6 +679,38 @@ test('Main Chat is the list\'s first row: the bot\'s mark, its name, what is new
   assert.match(src, /const LIT_ROW = '[^']*bg-\[color:var\(--lit-tint\)\] text-\[color:var\(--lit-ink\)\]';/, 'the lit tint and ink, as the rail\'s rows are');
   // The page lights Main, a thread, or nothing while a page or a blank thread holds the column.
   assert.match(read('frontend/src/features/ai/index.tsx'), /const lit = !columnShows \|\| blank \? null : openRoot \? `private:\$\{openRoot\}` : 'main';/);
+});
+
+test('Waiting & in progress is a card of its own, drawn as Live this week is: under each project, its work under way, then what waits', () => {
+  const { renderComponent } = require('./lib/render-tsx');
+  const games = { slug: 'games', name: 'Game corner', icon_url: null, icon_emoji: null };
+  const props = (progress, waiting) => ({
+    hero: null, main: { open() {}, lit: false, unread: 0 }, ready: true, rows: [], owed: 0,
+    progress, waiting, live: [thread(9, 420, 'live', { group: 'live', app: games })], openRow() {}, openThread() {},
+  });
+  const LISTS = 'frontend/src/features/ai/lists.tsx';
+  const html = renderComponent(LISTS, 'AiLists', props(
+    [thread(1, 401, 'building', { group: 'next', by: 'bot' }), thread(2, 402, 'going_live', { group: 'next', app: games })],
+    [thread(3, 403, 'vote'), thread(4, 404, 'build_queued', { app: games })],
+  ));
+  // Needs you's sheet holds Needs you alone; the new card comes between it and Live this week.
+  const sheets = [...html.matchAll(/data-ai-sheet="(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(sheets, ['head', 'main', 'open', 'busy', 'live']);
+  const open = html.slice(html.indexOf('data-ai-sheet="open"'), html.indexOf('data-ai-sheet="busy"'));
+  assert.deepEqual([...open.matchAll(/data-ai-list="(\w+)"/g)].map((m) => m[1]), ['work']);
+  const busy = html.slice(html.indexOf('data-ai-sheet="busy"'), html.indexOf('data-ai-sheet="live"'));
+  assert.match(busy, /<section class="pb-1" data-ai-list="busy"><div class="[^"]*" data-ai-band=""><h2 class="[^"]*">Waiting &amp; in progress · 4<\/h2><\/div>/,
+    'on a band with its count, as Live this week is');
+  // One list: each project's work under way first, then what waits, under the project's name once.
+  assert.deepEqual([...busy.matchAll(/data-ai-group="(\w+)"|data-ai-line="(\w+)"/g)].map((m) => m[1] || m[2]),
+    ['garden', 'building', 'vote', 'games', 'going_live', 'build_queued']);
+  // Its rows are Live this week's quieter ones.
+  const quiet = (part) => (part.match(/text-\[13px\] leading-5 text-zinc-600/g) || []).length;
+  assert.equal(quiet(busy), 4);
+  // Nothing under way or waiting: no card, not an empty one.
+  const none = renderComponent(LISTS, 'AiLists', props([], []));
+  assert.ok(!none.includes('data-ai-sheet="busy"'));
+  assert.ok(!none.includes('Waiting &amp; in progress'));
 });
 
 test('the column from 768px: Main, or one thread alone under its own head; a page the panel holds puts Main back under it', () => {
