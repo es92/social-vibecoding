@@ -2250,6 +2250,7 @@ async function sendPlanCard(pool, { app, issueNumber, runId, plan, bot, ws = nul
   // #4488: a complicated change on an existing project: not a first version,
   // with its spec (read on the request, whose card goes under the plan).
   const complicated = plan.complicated === true;
+  const planStarted = await requestStart(pool, { userId: requester.userId, appId: app.id, issueNumber });
   const sent = await sendDm(pool, {
     bot,
     userId: requester.userId,
@@ -2272,11 +2273,13 @@ async function sendPlanCard(pool, { app, issueNumber, runId, plan, bot, ws = nul
     // 13 Oct 2026: a plan its maker already decided on the made screen
     // (homeroom-bot.js planFromEarly) rings nothing: it is built at once.
     ...(quiet ? { moment: null } : {}),
-    replyToId: await requestStart(pool, { userId: requester.userId, appId: app.id, issueNumber }),
-    // B02 (audit 2 Nov 2026): in Main, where a plan waiting on them is drawn
-    // whole and Review the plan opens. Quoting a message in its card's
-    // thread put a first version's plan there, which only opens its hub.
-    threadRootId: false,
+    replyToId: planStarted,
+    // B02 (audit 2 Nov 2026): never under a request's card, whose thread only
+    // opens its page or hub: in Main, where a plan waiting on them is drawn
+    // whole, or in the private thread the request started in, where every
+    // door to the plan follows it (waitingPlan's threadRootId, the track's
+    // askThreadId).
+    ...await outsideCardThread(pool, planStarted),
   });
   if (!sent?.messageId) {
     await pool.query('UPDATE homeroom_bot_dm_actions SET status = \'failed\', error = $2 WHERE id = $1', [action.id, 'not_sent']);
@@ -2764,7 +2767,8 @@ async function buildWaitingPlan(pool, { user, appId, issueNumber, deps = {} }) {
  */
 async function waitingPlan(pool, { userId, appId, issueNumber }) {
   const { rows } = await pool.query(
-    `SELECT d.message_id, d.conversation_id, a.id AS action_id, m.metadata->'homeroomBot'->'plan' AS plan
+    `SELECT d.message_id, d.conversation_id, a.id AS action_id, m.metadata->'homeroomBot'->'plan' AS plan,
+            m.thread_root_id
        FROM homeroom_bot_dm_messages d
        JOIN conversation_messages m ON m.id = d.message_id AND m.deleted_at IS NULL
        JOIN homeroom_bot_dm_actions a ON a.message_id = d.message_id AND a.status = 'open'
@@ -2780,6 +2784,9 @@ async function waitingPlan(pool, { userId, appId, issueNumber }) {
     actionId: Number(row.action_id),
     messageId: Number(row.message_id),
     conversationId: Number(row.conversation_id) || null,
+    // The private thread it was said in, when it was (sendPlanCard): where
+    // Review the plan opens it. Null in Main.
+    threadRootId: Number(row.thread_root_id) || null,
   };
 }
 
@@ -3785,13 +3792,15 @@ async function noteProposalMerged(pool, session, { deps = {} } = {}) {
   // #4231: a new project's first version also offers its community and
   // inviting people to it.
   const actions = open ? [open, ...(context.firstVersion ? firstLiveActions({ slug: run.slug }) : [])] : [];
+  const liveStarted = card ? null : await requestStart(pool, { userId: requester.userId, appId: run.app_id, issueNumber: run.issue_number });
   return sendDm(pool, {
     bot,
     userId: requester.userId,
-    replyToId: card ? null : await requestStart(pool, { userId: requester.userId, appId: run.app_id, issueNumber: run.issue_number }),
-    // B23 (audit 2 Nov 2026): said in Main either way, beside its card. With
-    // no card, quoting a message in a thread put "it's live" in the thread.
-    threadRootId: card ? card.messageId : false,
+    replyToId: liveStarted,
+    // B23 (audit 2 Nov 2026): beside its card in Main; with no card, never in
+    // another request's card's thread, where nobody saw it, but in the
+    // thread the request started in when that is the person's own.
+    ...(card ? { threadRootId: card.messageId } : await outsideCardThread(pool, liveStarted)),
     idempotencyKey: `hrbot-merged-${session.id}`,
     content: mergedText({
       line: card ? null : requestLine(context), appName: context.appName, live, platform, card: !!open, change: !context.firstVersion,

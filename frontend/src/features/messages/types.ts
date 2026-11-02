@@ -435,6 +435,12 @@ export interface BotTrack {
   rootId: number | null;
   /** Its message still waiting on the person, when there is one. */
   askId: number | null;
+  /**
+   * The private thread that message is in, when it is said in one of the
+   * person's own threads rather than in Main (a plan for a request started
+   * there); null in Main. Optional so an older server reads as Main.
+   */
+  askThreadId?: number | null;
   /** Its change up for a vote, when there is one. */
   proposalId: number | null;
   /** The session its plan and change live in. */

@@ -307,6 +307,15 @@ function hubFirstVersion(state, viewerId, { member = false } = {}) {
     creator: state.creator || null,
     waits_on: mine && !ready ? (state.plan ? 'plan' : state.question ? 'question' : null) : null,
     conversation_id: mine ? (Number(state.conversationId) || null) : null,
+    // Its plan, for its maker, when it was said in a private thread of theirs
+    // (homeroom-bot-dm.js waitingPlan): Review the plan opens it there.
+    ...(mine && state.plan && Number(state.plan.threadRootId) > 0 ? {
+      plan_at: {
+        conversationId: Number(state.plan.conversationId) || Number(state.conversationId) || null,
+        threadRootId: Number(state.plan.threadRootId),
+        messageId: Number(state.plan.messageId) || null,
+      },
+    } : {}),
     session_id: Number.isInteger(sessionId) && sessionId > 0 ? sessionId : null,
     plan: member && !mine && !ready && !state.stopped ? sharedPlan(state.plan || state.chosenPlan) : null,
     // 14 Oct 2026: its build stopped (line 'stopped'), and for its maker

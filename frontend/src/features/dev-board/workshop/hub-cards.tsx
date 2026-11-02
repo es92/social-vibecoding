@@ -80,6 +80,7 @@ import { AppIconContent, appIconKind } from '../../apps/app-card-view';
 import { madeAppUrl } from '../../first-session/made';
 import { ThumbRow } from '../../first-session/sketch-card';
 import { open as openConversation, openBot } from '../../messages/store';
+import { openBotTab } from '../../ai/door';
 import type { DevWorkshopView, ListRow as BoardRow } from '../card/model';
 import { isNeedsSeen, needsRowKey, useNeedsSeen } from '../../workshop/needs-seen';
 import { reloadCommunity, type CommunityPayload, type HubFirstVersion } from './community-card';
@@ -220,7 +221,10 @@ export function FirstVersionCard({ slug, data, emoji = null, onSeePlan }: {
   const left = countsDown(line) ? leftNote(estimateOf(fv.estimate), now) : null;
   const named = phaseLine(line, fv.phase, now, null, left);
   const press = () => {
-    if (action === 'review' || action === 'answer') {
+    if (action === 'review' && fv.plan_at?.threadRootId) {
+      // Its plan waits in a private thread of theirs: open it there, at the plan.
+      openBotTab({ threadRootId: fv.plan_at.threadRootId, focusMessageId: fv.plan_at.messageId ?? null });
+    } else if (action === 'review' || action === 'answer') {
       if (fv.conversation_id) openConversation(fv.conversation_id);
       else void openBot();
     } else if (action === 'try' && fv.session_id) {

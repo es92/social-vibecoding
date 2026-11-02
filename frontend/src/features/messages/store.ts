@@ -1452,6 +1452,12 @@ export async function openBotRequest(slug: string, number: number): Promise<void
     const about = (item: ConversationMessage) => !item.threadRootId && item.sender.bot
       && item.metadata?.homeroomBot?.appSlug === slug && Number(item.metadata?.homeroomBot?.issueNumber) === Number(number);
     const last = [...state.messages].reverse().find(about);
+    // A plan said in the private thread its request started in (never a
+    // request's card's: the server leaves those out) opens there, at the plan.
+    if (track?.askId && track.askThreadId) {
+      openBotTab({ threadRootId: track.askThreadId, focusMessageId: track.askId });
+      return;
+    }
     const at = ask || last?.id || null;
     if (at) openBotTab({ threadRootId: null, focusMessageId: at });
   } catch { /* the chat itself, then */ }

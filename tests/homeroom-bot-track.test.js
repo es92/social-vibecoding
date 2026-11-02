@@ -146,7 +146,7 @@ test('a stopped build says why, in codes, never the agent\'s words', () => {
 
 test('a track carries codes and links, never words', () => {
   const t = track.trackOf({ job: job({ stage: 'vote', cardId: 44, proposalId: 9, links: { request: '/r', proposal: '/p', project: '/x' } }) });
-  assert.deepEqual(Object.keys(t).sort(), ['appName', 'appSlug', 'askId', 'busy', 'firstVersion', 'iconEmoji', 'iconUrl', 'issueNumber',
+  assert.deepEqual(Object.keys(t).sort(), ['appName', 'appSlug', 'askId', 'askThreadId', 'busy', 'firstVersion', 'iconEmoji', 'iconUrl', 'issueNumber',
     'key', 'links', 'proposalId', 'rootId', 'sessionId', 'since', 'state', 'step', 'title', 'try', 'tryStartedAt', 'tryStarts',
     'waitingOn', 'why'].sort());
   assert.equal(t.sessionId, 9, 'its plan and change: the change');
@@ -266,4 +266,15 @@ test('B23: a request its own change made live reads live once it closed, whateve
     runs: [runs[0], { ...runs[1], proposal_status: 'closed' }],
   });
   assert.equal(closed.state, 'closed');
+});
+
+test('a plan said in a private thread names that thread on its track, for its doors; one in Main names none', () => {
+  const inThread = track.trackOf({ job: job({ outcome: 'question', ask: { messageId: 62, kind: 'plan', threadRootId: 58 } }) });
+  assert.deepEqual([inThread.askId, inThread.askThreadId], [62, 58]);
+  const inMain = track.trackOf({ job: job({ outcome: 'question', ask: { messageId: 62, kind: 'plan' } }) });
+  assert.deepEqual([inMain.askId, inMain.askThreadId], [62, null]);
+  // The tray names the thread only when it is the person's own, never a request's card's.
+  const rows = (own) => [{ message_id: 62, kind: 'plan', issue_number: 5, slug: 'notes', thread_root_id: 58, in_own_thread: own, meta: { status: 'open' } }];
+  assert.equal([...tray.threadsOf(rows(true)).values()][0].ask.threadRootId, 58);
+  assert.equal([...tray.threadsOf(rows(false)).values()][0].ask.threadRootId, undefined);
 });

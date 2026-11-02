@@ -98,6 +98,15 @@ test('"See progress" opens Main Chat at the request, never inside a thread of it
   // 1 Nov 2026: on the Homeroom bot tab, Main Chat at that message.
   assert.match(fn, /if \(at\) openBotTab\(\{ threadRootId: null, focusMessageId: at \}\);/);
   assert.doesNotMatch(fn, /openThreadAt\(track\.rootId/);
+  // A plan said in the private thread its request started in opens there, at the plan.
+  assert.match(fn, /if \(track\?\.askId && track\.askThreadId\) \{\s*openBotTab\(\{ threadRootId: track\.askThreadId, focusMessageId: track\.askId \}\);\s*return;\s*\}/);
+});
+
+test('the Hub\'s Review the plan follows a first version\'s plan into its maker\'s private thread', () => {
+  const hub = read('frontend/src/features/dev-board/workshop/hub-cards.tsx');
+  assert.match(hub, /if \(action === 'review' && fv\.plan_at\?\.threadRootId\) \{[\s\S]{0,120}openBotTab\(\{ threadRootId: fv\.plan_at\.threadRootId, focusMessageId: fv\.plan_at\.messageId \?\? null \}\);/);
+  const apps = read('src/routes/apps.js');
+  assert.match(apps, /\.\.\.\(mine && state\.plan && Number\(state\.plan\.threadRootId\) > 0 \? \{\s*plan_at: \{/);
 });
 
 test('an answer to a moment from an old story thread is said in Main Chat; a thread of one\'s own keeps its answers', () => {

@@ -117,6 +117,9 @@ export type HubFirstVersion = {
   waits_on: 'plan' | 'question' | null;
   /** The maker's DM with the bot, for them alone. */
   conversation_id: number | null;
+  /** For its maker alone: where its plan waits, when that is a private
+      thread of theirs rather than Main (routes/apps.js hubFirstVersion). */
+  plan_at?: { conversationId: number | null; threadRootId: number; messageId: number | null } | null;
   /** The change, once it is ready to try. */
   session_id: number | null;
   /** #4074: the plan waiting for its maker's Build it, read only, for a

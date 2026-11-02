@@ -268,6 +268,8 @@ function trackOf({ job, entry = null, runs = [], held = null, doneBy = null, unt
     since,
     rootId: Number(job.cardId) || Number(job.ask?.messageId) || null,
     askId: Number(job.ask?.messageId) || null,
+    // The private thread that message is in, when it is not Main (tray threadsOf).
+    askThreadId: Number(job.ask?.threadRootId) || null,
     proposalId: Number(job.proposalId) || Number(entry?.proposal?.proposal) || null,
     // The session its plan and change live in: the change, else its build.
     sessionId: Number(job.proposalId) || Number(entry?.proposal?.proposal) || Number(lastBuild?.build_session_id) || null,

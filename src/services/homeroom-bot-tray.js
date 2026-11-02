@@ -653,6 +653,9 @@ function threadsOf(rows) {
           kind: row.kind,
           ...(meta.said ? { said: String(meta.said) } : {}),
           ...(typeof meta.question === 'string' && meta.question ? { question: meta.question.slice(0, 300) } : {}),
+          // A plan said in the private thread its request started in: the
+          // thread its doors open (homeroom-bot-track.js askThreadId).
+          ...(row.in_own_thread === true && row.thread_root_id ? { threadRootId: Number(row.thread_root_id) } : {}),
         };
       }
     }
@@ -669,7 +672,11 @@ async function withThreads(pool, userId, work) {
   try {
     const { rows } = await pool.query(
       `SELECT d.message_id, d.kind, d.issue_number, d.question_status, d.answered_at, a.slug,
-              m.thread_root_id, m.metadata->'homeroomBot' AS meta
+              m.thread_root_id, m.metadata->'homeroomBot' AS meta,
+              -- In a thread of the person's own, not under a request's card.
+              (m.thread_root_id IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM homeroom_bot_dm_messages c WHERE c.message_id = m.thread_root_id AND c.kind = 'activity'
+              )) AS in_own_thread
          FROM homeroom_bot_dm_messages d
          JOIN apps a ON a.id = d.app_id
          JOIN conversation_messages m ON m.id = d.message_id AND m.deleted_at IS NULL
