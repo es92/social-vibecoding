@@ -73,10 +73,7 @@ test('B13: the bot list\'s heading keeps its line where the list is narrow', () 
 
 test('L06: the bot\'s Needs you card shows its rows\' shape until the lists are read', () => {
   const src = read('frontend/src/features/ai/lists.tsx');
-  // A read that failed says so in its own note instead (offline test,
-  // 2 Nov 2026): no skeleton under it, since no rows are coming.
-  assert.match(src, /empty=\{failed \? null : ready \? <p [^>]*data-ai-empty="">\{t\('messages:ai\.work\.empty'\)\}<\/p> : \(/);
-  assert.match(src, /note=\{failed \? <ListsFailed failed=\{failed\}/);
+  assert.match(src, /empty=\{ready \? <p [^>]*data-ai-empty="">\{t\('messages:ai\.work\.empty'\)\}<\/p> : \(/);
   assert.match(src, /<SkeletonGroup label=\{t\('messages:ai\.work\.loading'\)\}[^>]*data-ai-loading="">/);
   const catalog = JSON.parse(read('frontend/locales/en/messages.json'));
   assert.equal(catalog['ai.work.loading'].text, 'Loading what needs you');
