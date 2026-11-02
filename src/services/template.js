@@ -211,6 +211,14 @@ const DESIGN_KIT_CSS = `
   [hidden]:where(:not([hidden="until-found"])) {
     display: none !important;
   }
+  /* The phone's own bars. Inside Homeroom the app runs to the foot of the
+     screen, and the bridge hands it the screen's safe area as
+     --un-safe-inset-* (a frame sees no env() of its own); standalone,
+     env() is the real thing. Without this a page's last lines sat under
+     Android's navigation bar. Fixed bars of your own clear it the same way. */
+  body {
+    padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ── Components ───────────────────────────────────────────────────────────

@@ -937,8 +937,8 @@ function replyToEventsClient(client, frame) {
 }
 
 // A tab's frames on /ws/events. Small, few (a tab sends one when it opens
-// or leaves a session), and capped per socket so a script cannot make one
-// socket cost a query per frame for long.
+// or leaves a session, and a `ping` after a quiet spell), and capped per
+// socket so a script cannot make one socket cost a query per frame for long.
 const EVENTS_FRAME_MAX_BYTES = 512;
 const EVENTS_FRAME_BUDGET = 120; // per socket per minute
 async function handleEventsFrame(pool, client, raw) {
@@ -947,12 +947,20 @@ async function handleEventsFrame(pool, client, raw) {
   let msg;
   try { msg = JSON.parse(raw); } catch { return; }
   if (!msg || typeof msg !== 'object') return;
-  if (msg.type !== 'watch_session' && msg.type !== 'unwatch_session') return;
+  if (msg.type !== 'watch_session' && msg.type !== 'unwatch_session' && msg.type !== 'ping') return;
   const now = Date.now();
   if (!client.frameWindow || client.frameWindow.resetAt <= now) {
     client.frameWindow = { used: 0, resetAt: now + SOCKET_RATE_WINDOW_MS };
   }
   if (++client.frameWindow.used > EVENTS_FRAME_BUDGET) return;
+  // The tab asking whether this socket still carries anything: on a network
+  // that passes nothing, an open socket never closes, so the tab only learns
+  // it is dead when no answer comes (public/js/app.js, _checkEvents).
+  // Answered at once, with no query.
+  if (msg.type === 'ping') {
+    replyToEventsClient(client, { type: 'pong' });
+    return;
+  }
   const sessionId = positiveSessionId(msg.sessionId);
   if (sessionId == null) return;
   if (!client.wantWatch) client.wantWatch = new Map();

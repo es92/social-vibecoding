@@ -114,7 +114,7 @@ test('it draws the screen with Sonnet at low effort, pictures it in the bot sess
   assert.deepEqual(seen.llm[0].telemetryContext, { pool, appId: APP.id });
   assert.match(seen.llm[0].user, /When does a vote end\? Suggested: When you close it\. The others: After 24 hours\./);
   assert.match(seen.llm[0].system, /Draw ONE screen: the main screen of the finished first version/);
-  assert.match(seen.llm[0].system, /No "Staging demo"\s+label/);
+  assert.match(seen.llm[0].system, /No "Sample data"\s+label/);
   assert.deepEqual(seen.spent, [[USER.id, 4.2]], 'paid for by its maker, as the plan is');
 
   // The worker: the app's bot session's, on scratch storage; the drawing is the first look's.

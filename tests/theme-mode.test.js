@@ -166,8 +166,8 @@ test('the theme control lives in its own Settings section', () => {
   assert.ok(pane !== -1, 'the theme settings pane is missing');
   assert.ok(track !== -1, 'drawer-theme-track missing');
   assert.ok(track > pane, 'the track lives inside the theme settings pane');
-  // …and there is only ONE of it. Two copies would be two owners of one
-  // `--theme-caret-index`, and of the highlight the caret follows. It used to
+  // …and there is only ONE of it. Two copies would be two owners of the
+  // highlight. It used to
   // be worth checking the hamburger drawer specifically; the drawer is
   // retired, so the honest check is that the track appears once anywhere.
   assert.equal(src.indexOf('id="drawer-theme-track"', track + 1), -1,
@@ -176,13 +176,14 @@ test('the theme control lives in its own Settings section', () => {
     'the drawer row that wrapped it is retired');
 });
 
-// The ids did NOT change with the move: app.css keys the segmented track and
-// its sliding caret off exactly these, and renaming them would have been a
-// restyle of the one control this change is not restyling.
-test('the moved control keeps the ids app.css draws it with', () => {
+// The track's id did NOT change with the move: app.css keys the segmented
+// track off it. The caret's two ids are retired (overnight UI audit D10,
+// recorded in tests/shell-id-inventory.test.js RETIRED_IDS).
+test('the moved control keeps the id app.css draws it with, and no caret', () => {
   const src = shellMarkup();
-  for (const id of ['drawer-theme-track', 'drawer-theme-caret-track', 'drawer-theme-caret']) {
-    assert.ok(src.includes(`id="${id}"`), `#${id} survived the move`);
+  assert.ok(src.includes('id="drawer-theme-track"'), '#drawer-theme-track survived the move');
+  for (const id of ['drawer-theme-caret-track', 'drawer-theme-caret']) {
+    assert.ok(!src.includes(`id="${id}"`), `#${id} is gone (audit D10)`);
   }
 });
 
@@ -235,15 +236,6 @@ test('the three modes render as a labelled radiogroup of segments', () => {
   }
 });
 
-test('the selection caret ships exactly once, inside the track', () => {
-  const src = shellMarkup();
-  const carets = src.match(/id="drawer-theme-caret"/g) || [];
-  assert.equal(carets.length, 1, 'exactly one #drawer-theme-caret');
-  const track = src.indexOf('id="drawer-theme-track"');
-  assert.ok(src.indexOf('id="drawer-theme-caret"') > track,
-    'the caret lives inside the segmented track (it positions against it)');
-});
-
 // ── The segmented control's wiring ───────────────────────────────────────
 //
 // #1079 chunk B made #header-menu-panel a React island and the theme segments
@@ -270,33 +262,25 @@ test('the theme control wires Theme.get / Theme.set', () => {
     'app.js must not still render the segments');
 });
 
-test('the control drives the caret through the CSS custom property', () => {
+test('the control marks the chosen segment, and draws no caret', () => {
   const src = themeControlSrc();
   const at = src.indexOf('function ThemeControl()');
   assert.ok(at !== -1, 'ThemeControl located');
   const body = src.slice(at, src.indexOf('export function ThemeSection()', at));
-  assert.match(body, /setProperty\(\s*\n?\s*'--theme-caret-index'/,
-    'the caret is positioned by writing --theme-caret-index on the track');
   assert.match(body, /theme-seg-active/,
     'the active segment is marked with a class, not inline utility toggles');
-  // A pixel measurement would be read BEFORE PlatformUI.panel resizes the
-  // panel on touch, so it would be wrong exactly where the control is widest.
-  // The percentage transform must stay.
-  assert.ok(!/offsetLeft|getBoundingClientRect/.test(body),
-    'caret position must not be measured in JS — CSS percentages handle both panel widths');
-  // Hydration equality: the shipped markup has no active segment and no
-  // custom property, so the first render must produce exactly that.
+  assert.doesNotMatch(body, /theme-caret|drawer-theme-caret/, 'audit D10: no caret, and nothing positions one');
+  // Hydration equality: the shipped markup has no active segment, so the
+  // first render must produce exactly that.
   assert.match(body, /useState<ThemeMode \| null>\(null\)/,
     'reading Theme.get() during render would mismatch the prerendered markup');
-  assert.match(body, /if \(!track \|\| mode === null\) return/,
-    'and the caret index must not be written until a mode is actually known');
 });
 
 // #5285: the chosen segment was a white face on the light track, white on
 // zinc-100, and hardly showed. It wears the lit tokens now (the palette's
-// "where you are"), which every theme defines, and the caret under it the
-// lit ink.
-test('the chosen segment and its caret wear the lit tokens', () => {
+// "where you are"), which every theme defines. The caret that pointed at it
+// is gone (audit D10): the lit segment is the whole answer.
+test('the chosen segment wears the lit tokens, and app.css draws no caret', () => {
   const css = read('css', 'app.css');
   const rule = /\.theme-seg\.theme-seg-active \{([^}]*)\}/.exec(css);
   assert.ok(rule, '.theme-seg.theme-seg-active rule located');
@@ -304,22 +288,14 @@ test('the chosen segment and its caret wear the lit tokens', () => {
   assert.match(rule[1], /color:\s*var\(--lit-ink\)/, 'labelled in the lit ink');
   assert.match(rule[1], /box-shadow:\s*inset 0 0 0 1px var\(--lit-line\)/, 'ringed by the lit line');
   assert.doesNotMatch(rule[1], /var\(--bg-primary\)/, 'no longer the page colour, which vanished on light');
-  const caret = /#drawer-theme-caret::after \{([^}]*)\}/.exec(css);
-  assert.ok(caret, 'caret arrow rule located');
-  assert.match(caret[1], /border-bottom:\s*4px solid var\(--lit-ink\)/, 'the caret points in the same ink');
+  assert.doesNotMatch(css, /drawer-theme-caret|--theme-caret-index/, 'no caret rules left');
 });
 
-test('the caret is a CSS transform with a reduced-motion escape hatch', () => {
-  const css = read('css', 'app.css');
-  const block = css.slice(css.indexOf('#drawer-theme-caret {'));
-  assert.ok(block.length > 0, '#drawer-theme-caret rule located');
-  assert.match(block.slice(0, 400), /transform:\s*translateX\(calc\(var\(--theme-caret-index\)/,
-    'the caret translates by --theme-caret-index');
-  assert.match(block.slice(0, 400), /transition:\s*transform/,
-    'the caret slides between segments');
-  const rm = css.slice(css.indexOf('#drawer-theme-caret {'));
-  assert.match(rm, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*#drawer-theme-caret\s*\{\s*transition:\s*none/,
-    'reduced-motion users get a jump, not a slide');
+test('the Suggest form\'s destination picker draws no caret either', () => {
+  const form = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'features', 'dialogs', 'feedback.tsx'), 'utf8');
+  const controller = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'features', 'dialogs', 'feedback-controller.js'), 'utf8');
+  assert.doesNotMatch(form, /feedback-caret/);
+  assert.doesNotMatch(controller, /feedback-caret|feedbackCaret/);
 });
 
 test('the theme button click handler does NOT close the drawer', () => {

@@ -17,7 +17,10 @@ const json = (body, scope = A, { status = 200, policy = 'private', headers = {} 
 // Real worker code and native Request/Response/streams, with only the browser
 // storage/network/lifecycle APIs replaced. Cache handles survive deletion,
 // matching Cache Storage's behavior rather than hiding late-write races.
-function worker({ source = fs.readFileSync(require.resolve('../../public/sw.js'), 'utf8'), fetcher } = {}) {
+// `timers` replaces setTimeout/clearTimeout, so a test can fire a deadline
+// on demand instead of waiting it out.
+function worker({ source = fs.readFileSync(require.resolve('../../public/sw.js'), 'utf8'), fetcher,
+  timers = { setTimeout, clearTimeout } } = {}) {
   const stores = new Map(), handlers = {}, messages = [], requests = [], lifetime = [];
   let network = fetcher || (async () => json({ fake: 'A' }));
   const requestOf = key => typeof key === 'string' ? new Request(new URL(key, ORIGIN)) : key;
@@ -60,7 +63,7 @@ function worker({ source = fs.readFileSync(require.resolve('../../public/sw.js')
       clients: { claim: async () => {}, matchAll: async () => [{ postMessage: m => messages.push(m) }] },
       skipWaiting: async () => {} },
     URL, Headers, Request, Response, ReadableStream, DOMException,
-    caches, fetch, setTimeout, clearTimeout,
+    caches, fetch, setTimeout: timers.setTimeout, clearTimeout: timers.clearTimeout,
   });
   const waitUntil = promise => { lifetime.push(Promise.resolve(promise)); };
   return {

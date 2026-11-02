@@ -695,7 +695,7 @@ async function shotImages(pool, sessionId) {
     return { ok: true, sessionId: Number(s.id), state: s.shots_state || null, images: [], note: 'This proposal has no verified before/after shots.' };
   }
   const { rows } = await pool.query(
-    `SELECT id, story_id, viewport, side, variant, content_type, data, object_key, bytes, width, height
+    `SELECT id, story_id, viewport, side, variant, content_type, object_key, bytes, width, height
        FROM shot_artifacts
       WHERE run_id = $1 AND media = 'png' AND variant IN ('focus', 'context')
       ORDER BY CASE variant WHEN 'focus' THEN 0 ELSE 1 END, story_id, viewport, CASE side WHEN 'base' THEN 0 ELSE 1 END
@@ -707,7 +707,7 @@ async function shotImages(pool, sessionId) {
   let leftOut = 0;
   const store = require('../media-store').getStore();
   for (const r of rows) {
-    const size = r.object_key ? Number(r.bytes) : Buffer.byteLength(r.data || '');
+    const size = Number(r.bytes);
     if (!size) continue;
     if (images.length >= MAX_SHOT_IMAGES || total + size > MAX_SHOT_IMAGE_BYTES) { leftOut += 1; continue; }
     const data = await require('../media-store').bytes(store, r);

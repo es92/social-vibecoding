@@ -317,6 +317,26 @@ test('#4511/#4513: a Messages reply thread follows only a pinned reader, and hol
     'no unconditional jump on every reply');
 });
 
+test('B19 follow-up: a reply thread opens at its first unread reply, with the New line, else at its newest', () => {
+  const panel = THREAD.slice(THREAD.indexOf('function ReplyThreadPanel('), THREAD.indexOf('function AppReplyThreadPanel('));
+  // Where it opens: the conversation's own rule, on the thread's first unread reply.
+  assert.match(panel, /const firstUnread = thread && !thread\.loading \? thread\.firstUnreadId \?\? null : null;/);
+  assert.match(panel, /const opening = openingScrollTop\(\{ lineTop: lineTopIn\(el, line\), scrollHeight: el\.scrollHeight, clientHeight: el\.clientHeight \}\);\s*el\.scrollTop = opening\.top;\s*pinned\.current = opening\.pinned;/);
+  // Once per open, and never over a message the thread was opened at.
+  assert.match(panel, /if \(!el \|\| !thread \|\| thread\.loading \|\| openedAt\.current === key\) return;/);
+  assert.match(panel, /if \(!firstUnread \|\| !line \|\| snap\.threadFocusId \|\| snap\.route\.focusMessageId\) return;/,
+    'nothing unread: it stays at its newest reply');
+  // The New line, once, above that reply.
+  assert.match(panel, /const line = firstUnread && message\.id === firstUnread\s*\? <NewMessagesDivider key="unread-line" ref=\{unreadLine\} \/> : null;/);
+  // The opening effect runs after the one that follows new replies to the bottom.
+  assert.ok(panel.indexOf('el.scrollTop = el.scrollHeight;') < panel.indexOf('el.scrollTop = opening.top;'));
+  // Taken from the first page, and kept through a re-read while it is open.
+  const store = fs.readFileSync(path.join(__dirname, '../frontend/src/features/messages/store.ts'), 'utf8');
+  assert.match(store, /firstUnreadId: same && current && current\.firstUnreadId !== undefined \? current\.firstUnreadId : page\.firstUnreadId,/);
+  const api = fs.readFileSync(path.join(__dirname, '../frontend/src/features/messages/api.ts'), 'utf8');
+  assert.match(api, /firstUnreadId: strictId\(pick\(record\(pick\(data, 'read'\)\), 'firstUnreadId', 'first_unread_id'\)\),/);
+});
+
 // ── 5. #5050: a message link moves its own scroller, never the screen ───
 
 test('#5050: centreInScroller centres a row by scrolling its scroller alone, clamped to the content', () => {

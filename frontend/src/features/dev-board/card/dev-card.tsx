@@ -610,10 +610,9 @@ export function VoteButton({ yes, no }: { yes: ActionSpec; no: ActionSpec }): Re
   const t = useMessages('project');
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<{ top: number; bottom: number; right: number } | null>(null);
-  // The switch's side while the picker is up: the viewer's own vote when
-  // they have one, so changing a No starts from No; otherwise neither (V04),
-  // see startSide.
-  const [side, setSide] = useState<'yes' | 'no' | null>(null);
+  // The switch's side while the picker is up: Yes by default, the viewer's
+  // own vote when they have one, so changing a No starts from No.
+  const [side, setSide] = useState<'yes' | 'no'>('yes');
   const [line, setLine] = useState('');
   // A No's reason: the answer it picked. The vote is sent only with one.
   const [noChoice, setNoChoice] = useState<NoChoice | null>(null);
@@ -656,13 +655,7 @@ export function VoteButton({ yes, no }: { yes: ActionSpec; no: ActionSpec }): Re
   const sendKey = `${yes.act?.fn}:${String(yes.act?.args?.[0] ?? '')}`;
   const sendingAll = useStoreState(voteSendingStore);
   const sending = isVote ? (sendingAll[sendKey] || null) : null;
-  // V04 (audit, 2 Nov 2026): a group's vote opens with NEITHER side chosen,
-  // so "Vote yes" is not one tap away from a decision the viewer has not
-  // made yet. Their own vote, or an earlier Yes ("Still yes?"), is where a
-  // change of mind starts; an approval on a project that is just theirs is
-  // nobody else's decision to nudge, and keeps Approve.
-  const startSide = (): 'yes' | 'no' | null => (mine === 'no' ? 'no'
-    : (mine === 'yes' || prior === 'yes' || approve ? 'yes' : null));
+  const startSide = (): 'yes' | 'no' => (mine === 'no' ? 'no' : 'yes');
   const shut = () => {
     setOpen(false);
     setLine('');
@@ -841,7 +834,6 @@ export function VoteButton({ yes, no }: { yes: ActionSpec; no: ActionSpec }): Re
   // A Yes sends with its optional line. A No sends only once an answer is
   // picked, and carries that answer (with the line, if one was written).
   const submit = () => {
-    if (!side) return;
     if (!isVote) { send(spec, null); return; }
     if (side === 'no') {
       if (!noChoice) return;
@@ -941,10 +933,9 @@ export function VoteButton({ yes, no }: { yes: ActionSpec; no: ActionSpec }): Re
 
 /**
  * The picker's one panel: a "Your vote" header over the two-way switch
- * across the top (neither side on until one is picked, V04; each half
- * carrying its tally), the line box under its own label once a side is, and
- * Cancel beside the one button that reads "Vote yes" or "Vote no" with the
- * switch (a plain "Vote", off, before either). One drawing for both of its homes,
+ * across the top (Yes on by default, each half carrying its tally), the line
+ * box under its own label, and Cancel beside the one button that reads
+ * "Vote yes" or "Vote no" with the switch. One drawing for both of its homes,
  * `VoteButton`'s anchored popover on desktop and its kit bottom sheet on
  * touch, so the wording and the rules cannot drift between the two.
  * `withLine` is false on a governance vote, which carries no line. `solo` is
@@ -971,8 +962,7 @@ export function VotePicker({
   uncounted?: boolean;
   /** #4747: the viewer's vote is advisory, it does not decide (`ActionSpec.advisory`). */
   advisory?: boolean;
-  /** The switch's side; null while neither is chosen (V04), and nothing is sent. */
-  side: 'yes' | 'no' | null;
+  side: 'yes' | 'no';
   line: string;
   /** The No's picked answer, if any; a No is sent only with one. */
   noChoice?: NoChoice | null;
@@ -993,7 +983,6 @@ export function VotePicker({
   const t = useMessages('project');
   const tc = useMessages('core');
   const yesOn = side === 'yes';
-  const noOn = side === 'no';
   // The header over the switch is also the switch's accessible name.
   const headId = `${reasonId}-head`;
   // The reason list's own name, and its four answers' words.
@@ -1007,11 +996,9 @@ export function VotePicker({
   const noWord = approve
     ? t('project:card.vote.picker.dontApprove')
     : (prior === 'yes' ? t('project:card.vote.picker.notThisTime') : t('project:card.vote.picker.no'));
-  const sendWord = !side
-    ? t('project:card.vote.picker.sendPick')
-    : approve
-      ? (yesOn ? t('project:card.vote.picker.sendApprove') : t('project:card.vote.picker.sendDontApprove'))
-      : (yesOn ? t('project:card.vote.picker.sendYes') : t('project:card.vote.picker.sendNo'));
+  const sendWord = approve
+    ? (yesOn ? t('project:card.vote.picker.sendApprove') : t('project:card.vote.picker.sendDontApprove'))
+    : (yesOn ? t('project:card.vote.picker.sendYes') : t('project:card.vote.picker.sendNo'));
   return (
     <>
       <div className="dev-vote-switch-label" id={headId}>{approve ? t('project:card.vote.picker.headApproval') : t('project:card.vote.picker.headVote')}</div>
@@ -1036,7 +1023,7 @@ export function VotePicker({
         <button
           type="button"
           className="dev-vote-switch-opt dev-vote-switch-no"
-          aria-pressed={noOn}
+          aria-pressed={!yesOn}
           title={approve ? undefined : no.title}
           data-act={no.act?.fn}
           onClick={() => onSide('no')}
@@ -1046,7 +1033,7 @@ export function VotePicker({
           {approve ? null : <span className="dev-vote-n">{tally(no)}</span>}
         </button>
       </div>
-      {withLine && noOn ? (
+      {withLine && !yesOn ? (
         // A No says why: the answer it picks is the reason it sends, and the
         // vote button stays off until one is picked. The heading is the
         // group's name, so the buttons need no visible question.
@@ -1065,8 +1052,7 @@ export function VotePicker({
           ))}
         </div>
       ) : null}
-      {/* The line box once a side is chosen: what it asks follows the side. */}
-      {withLine && side ? (
+      {withLine ? (
         <div className="dev-vote-reason" data-vote-reason={side}>
           <label className="dev-vote-reason-label" htmlFor={reasonId}>
             {yesOn
@@ -1090,10 +1076,9 @@ export function VotePicker({
         <button type="button" className="dev-vote-reason-cancel" onClick={onCancel}>{tc('core:common.cancel')}</button>
         <button
           type="button"
-          className={`dev-vote-reason-send dev-vote-reason-send-${side || 'none'}`}
-          // Nothing is sent before a side is chosen (V04). The line is
-          // optional on a Yes. A No needs its answer first.
-          disabled={!side || (withLine && noOn && !noChoice)}
+          className={`dev-vote-reason-send dev-vote-reason-send-${side}`}
+          // The line is optional on a Yes. A No needs its answer first.
+          disabled={withLine && !yesOn && !noChoice}
           onMouseDown={(event) => event.preventDefault()}
           onClick={onSend}
         >

@@ -37,6 +37,7 @@ import { AttrPopover } from './attr-popover';
 import { attrPopoverStore, type AttrPopoverState } from './attr-popover-store';
 import { DevBoardFrame, type DevBoardFrameProps } from './board-frame';
 import { CardMenu } from './card-menu';
+import { menuIconElement } from './menu-icons';
 import { cardMenuStore, type CardMenuRowView } from './card-menu-store';
 import { DevChatSubView } from './chat-frame';
 import { KanbanFilters } from './kanban-filters';
@@ -104,6 +105,8 @@ export interface DevBoardBridge {
   publishAttrPopover(patch: Partial<AttrPopoverState>): void;
   mountCardMenu(host: Element | null): void;
   publishCardMenu(rows: CardMenuRowView[]): void;
+  /** A ⋯ row's line icon as a detached svg element, for the kit's action sheet (`iconEl`). */
+  menuIconElement(key: string): Element | null;
   publishMainPause(state: MainPauseState): void;
   publishReleaseStall(state: ReleaseStallState): void;
   publishCodePause(state: CodePauseState): void;
@@ -257,6 +260,12 @@ export const devBoardBridge: DevBoardBridge = {
 
   publishCardMenu(rows) {
     cardMenuStore.set({ rows });
+  },
+
+  // The touch sheet's rows are the kit's, built from data by app-view.js; it
+  // asks here for each row's icon (./menu-icons.tsx, audit D08).
+  menuIconElement(key) {
+    return menuIconElement(key);
   },
 
   // Whether a red main is pausing the app's merges, and for whom the banner

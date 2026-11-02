@@ -56,6 +56,9 @@ const Browse = {
 
   _open: false,
   _apps: [],
+  // L06: whether the directory has been read once (here, or by Home before
+  // this screen opened). Until then an empty list is a list not yet loaded.
+  _loaded: false,
   _query: '',
   // Which of Browse.SORTS orders the list (#1383). 'recommended' is the
   // default and the store's initial value; the persisted / URL choice is
@@ -151,6 +154,7 @@ const Browse = {
     else Browse._pendingOrigin = null;
     if (!Browse._apps.length && Array.isArray(Home._apps) && Home._apps.length) {
       Browse._apps = Home._apps;
+      Browse._loaded = true;
     }
     Browse._applyInitialSort();
     Browse._applyInitialFilter();
@@ -345,6 +349,7 @@ const Browse = {
   syncFrom(apps) {
     if (!Array.isArray(apps)) return;
     Browse._apps = apps;
+    Browse._loaded = true;
     // A delete that succeeded takes its app out of the payload — there is
     // no page left to show, so fall back to the list.
     if (Browse._slug && !Browse.appBySlug(Browse._slug)) {
@@ -371,11 +376,12 @@ const Browse = {
       const { apps } = await res.json();
       Browse._apps = apps;
       Home._apps = apps;
+      Browse._loaded = true;
       Browse.render();
       if (Browse._slug) Browse._syncLevel();
     } catch (err) {
       if (Browse._store && !Browse._slug) {
-        Browse._store.set({ rows: [], empty: null, make: null, error: true });
+        Browse._store.set({ rows: [], empty: null, make: null, error: true, loading: false });
       }
     }
   },
@@ -1118,10 +1124,15 @@ const Browse = {
     // The "Open site" row, when the query is a web address (#5364). It rides
     // the list descriptor; browse-list.tsx draws it above the app rows.
     const site = Browse.siteFor(query);
+    // L06: before the directory's first answer, nothing here is final. The
+    // list shows its skeleton and the empty line ("No apps to show yet")
+    // waits; a typed web address still offers its site row.
+    const loading = !Browse._loaded && !(Browse._apps || []).length;
 
     Browse._store.set({
       site,
       rows,
+      loading: loading && !site,
       // Republished on every list render so the switch, the Filters count and
       // the #browse-list[data-*] anchors can never lag the rows they describe.
       sort: Browse._sort,
@@ -1146,10 +1157,10 @@ const Browse = {
       error: false,
       // The site row IS a result, so the "No apps match" line never shows
       // right under it.
-      empty: site ? null : (rows.length ? null : Browse.emptyText(query, Browse.derivedFilter(), category)),
+      empty: site || loading ? null : (rows.length ? null : Browse.emptyText(query, Browse.derivedFilter(), category)),
       // The empty line's "Make" action: a search nothing in the directory
       // answers is an idea for a project (#5928).
-      make: site || rows.length ? null : Browse.makeIdeaFor(query, Browse._apps),
+      make: site || loading || rows.length ? null : Browse.makeIdeaFor(query, Browse._apps),
     });
 
     Browse._maybeShotDetail(rows);

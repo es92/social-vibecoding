@@ -73,6 +73,7 @@ import { installJoinRequired } from './lib/join-required';
 import { installAdultGate } from './features/auth/adult-gate';
 import { installSessionRenewalRetry } from './lib/session-renewal-retry';
 import { installApiCacheIdentity } from './lib/api-cache-identity';
+import { installReadTimeout } from './lib/read-timeout';
 // Publishes window.UsernodeReact.devBoard at module scope. Imported for the
 // side effect, and imported HERE (rather than reached from a Shell island)
 // because the Dev surfaces are runtime-injected into an empty #app-content and
@@ -229,6 +230,12 @@ bootStep('installAdultGate', () => installAdultGate());
 // mobile app a request refused 401 while the native bridge renewed the web
 // session is sent again once it lands (./lib/session-renewal-retry.ts, #5049).
 bootStep('installSessionRenewalRetry', () => installSessionRenewalRetry());
+// Outermost: a page read that has no answer in 15s is given up as a network
+// failure and nudges the connectivity probe (./lib/read-timeout.ts). Last, so
+// its limit covers everything the wrappers above make a read wait on (the
+// identity confirmation, a native renewal and its one retry), and its signal
+// reaches the request that goes out.
+bootStep('installReadTimeout', () => installReadTimeout());
 
 // document.body is the hydration container, not a wrapper <div>, because the
 // body element itself is the flex column the layout depends on

@@ -1479,7 +1479,7 @@ function triageHarness({ verdictText, routed = null, budgetError = null, session
     },
     worker: {
       async ensureWorkerImage() {},
-      async ensureWorker(id, opts) { calls.ensured.push({ id, opts }); return `usernode-worker-${sessionId}`; },
+      async ensureWorker(id, opts) { calls.ensured.push({ id, opts }); calls.moves.push(['ensureWorker', id, calls.exec.length]); return `usernode-worker-${sessionId}`; },
       async execInWorker(id, opts) { calls.exec.push({ id, opts }); return result || { lastResultText: verdictText, inputTokens: 1000, outputTokens: 50 }; },
       isInFlight: () => false,
       async clearActiveTurn() {},
@@ -1549,8 +1549,11 @@ test('runTriage: one scout turn, a fresh thread, a recorded verdict, a debited c
   assert.ok(!calls.queries.some((q) => /homeroom_bot_queue/.test(q.s)),
     'the lane granted the look, so nothing here claims, updates or deletes a queue row');
   // Through the proposal machine: the slot taken before the turn, given
-  // back after it.
-  assert.deepEqual(calls.moves, [['takeSlot', 501, 0], ['restSession', 501, 1]], 'active only while the turn runs');
+  // back after it. B15: taken before the worker is ensured, so a removal
+  // the last read's rest still owed is cancelled or waited for, never run
+  // under a worker this read already took as warm.
+  assert.deepEqual(calls.moves, [['takeSlot', 501, 0], ['ensureWorker', 501, 0], ['restSession', 501, 1]],
+    'the slot first, then the worker, and active only while the turn runs');
 });
 
 test('runTriage: an issue carrying the bot\'s own GitHub comment triages instead of throwing', async () => {
@@ -1708,7 +1711,7 @@ test('runTriage: a reply that decided in words is asked once, on its own thread,
   assert.ok(Math.abs(insert.params[14] - 0.025) < 1e-9, 'the row costs both turns');
   assert.deepEqual([insert.params[15], insert.params[16]], [2200, 80], 'and carries both turns\' tokens');
   assert.deepEqual(h.calls.spend.map((s) => s.cents), [2, 0.5], 'each turn joins the weekly pool');
-  assert.deepEqual(h.calls.moves, [['takeSlot', 951, 0], ['restSession', 951, 1], ['takeSlot', 951, 1], ['restSession', 951, 2]],
+  assert.deepEqual(h.calls.moves, [['takeSlot', 951, 0], ['ensureWorker', 951, 0], ['restSession', 951, 1], ['takeSlot', 951, 1], ['restSession', 951, 2]],
     'active only while each turn runs');
   assert.equal(look.out.queue, 'consume', 'the debt is consumed by the verdict');
 });

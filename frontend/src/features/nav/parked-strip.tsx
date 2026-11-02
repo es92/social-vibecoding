@@ -103,6 +103,7 @@ import { useClassToggle, useHiddenClass, useIsomorphicLayoutEffect } from '../..
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibility } from '../../lib/visibility-store';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
+import { useNamedApp } from './app-names';
 import { navStore } from './nav-store.js';
 import { parkedStore, readParked, setParked } from './parked-store.js';
 import { enterPeekByMouse, leavePeekByMouse } from './rail-peek';
@@ -217,8 +218,12 @@ export function ParkedStrip() {
     }
   }, []);
 
-  const record = shown
-    ? { icon_url: shown.iconUrl, icon_emoji: shown.iconEmoji, name: shown.name }
+  // Drawn by its name, never its slug, while this device remembers the name
+  // (./app-names.ts): an app parked offline, with no record to name it by,
+  // was stored as its slug.
+  const named = useNamedApp(shown);
+  const record = named
+    ? { icon_url: named.iconUrl, icon_emoji: named.iconEmoji, name: named.name }
     : null;
 
   return (
@@ -256,14 +261,14 @@ export function ParkedStrip() {
             >
               <AppIconContent app={record} />
             </span>
-            <span className="platform-parked-name">{shown.name}</span>
+            <span className="platform-parked-name">{record.name}</span>
             <span className="platform-parked-pill">{t('core:parked.resume')}</span>
           </a>
           <button
             id="platform-parked-forget"
             type="button"
             className="platform-parked-x"
-            aria-label={t('core:parked.forget', { app: shown.name })}
+            aria-label={t('core:parked.forget', { app: record.name })}
             onClick={() => forgetParked(app)}
           >
             <XIcon className="w-4 h-4" />

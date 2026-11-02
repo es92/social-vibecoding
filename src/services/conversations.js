@@ -819,6 +819,23 @@ async function listThread(pool, user, conversationId, rootId, { before = null, l
     hydrateMessages(pool, user, root.rows),
     hydrateMessages(pool, user, page),
   ]);
+  // B19 follow-up (audit, 2 Nov 2026): a thread opens at its first reply this
+  // reader has not read. A thread has no read cursor of its own; its read
+  // state is its alerts (#2387: reading a thread up to a reply clears them up
+  // to it, markRead). Read here, on the first page, before the open reads it.
+  // Null with nothing unread: the thread opens at its newest reply.
+  let read = null;
+  if (before == null) {
+    const { rows: [unread] } = await pool.query(
+      `SELECT MIN(m.id)::int AS first_unread_id, COUNT(*)::int AS unread_count
+         FROM notifications n
+         JOIN conversation_messages m ON m.id = n.conversation_message_id
+        WHERE n.user_id = $1 AND n.conversation_id = $2 AND n.read_at IS NULL
+          AND m.thread_root_id = $3 AND m.deleted_at IS NULL`,
+      [user.id, conversationId, rootId]
+    );
+    if (unread?.first_unread_id) read = { firstUnreadId: unread.first_unread_id, unreadCount: unread.unread_count };
+  }
   let discussion = null;
   // #5219: when the discussion came back, the page may still hold the bot's
   // quiet note about a reply it mirrored; the reply is shown in full here, so
@@ -840,6 +857,7 @@ async function listThread(pool, user, conversationId, rootId, { before = null, l
     messages: shown,
     nextBefore: rows.length > safeLimit && page.length ? page[0].id : null,
     discussion,
+    ...(read ? { read } : {}),
   };
 }
 
@@ -1746,6 +1764,10 @@ async function sendMessage(pool, user, conversationId, input, {
   // instead, or { refuse: true } to send nothing; `afterInsert(db, { messageId,
   // membership, memberIds })` after it.
   prepare = null, afterInsert = null,
+  // B09: the person a platform-written message's cards are for, whose view
+  // of the project the cards are checked against (shared-objects.js
+  // validateForShare `viewer`). Only the Homeroom bot's DM passes it.
+  cardsViewer = null,
 } = {}) {
   const attachmentIds = normalizeAttachmentIds(input.attachment_ids ?? input.attachmentIds);
   const refsRaw = input.objects ?? (input.object ? [input.object] : []);
@@ -1837,7 +1859,7 @@ async function sendMessage(pool, user, conversationId, input, {
     }
     const objectRefs = [];
     for (const raw of refsRaw) {
-      const validated = await sharedObjects.validateForShare(db, user, raw, { conversationId });
+      const validated = await sharedObjects.validateForShare(db, user, raw, { conversationId, viewer: cardsViewer });
       if (!validated) return null;
       objectRefs.push(validated);
     }

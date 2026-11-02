@@ -1,4 +1,5 @@
 'use strict';
+require('./lib/media-store').useMemoryMedia(require('node:test'));
 
 // The staging fixture that makes the before & after card's "Also noticed"
 // reachable on a preview (src/db/migrate.js seedStagingShotsNoticed),
@@ -63,6 +64,7 @@ test('a staging preview has a published run whose card lists what the shots agen
     pool = new Pool({ connectionString: url.toString() });
     pool.on('error', () => {});
     await pool.query(fs.readFileSync(path.join(__dirname, '../src/db/schema.sql'), 'utf8'));
+    await require('./lib/media-store').dropMediaByteColumns(pool);
     // What seedStagingGalleryProposals leaves for it: the demo owner and the
     // gallery's own demo app.
     await pool.query(`INSERT INTO users (username, password) VALUES ('staging-demo-user', 'staging-demo-not-a-login')`);

@@ -314,6 +314,41 @@ const NEEDS_FEED = [
   { kind: 'proposal', id: 9201, title: 'Bed labels on the garden map', summary: 'Each bed on the map shows what is planted in it.', author: PAT.username, number: 33, epoch: 1, at: ago(80), yes: 1, no: 0, staging_url: 'https://example.invalid/staging', shots: null, touches: null, app: { slug: 'audit-garden', name: 'Audit Garden', icon_url: null, icon_emoji: '🌱' }, request: { number: 18, title: 'Bed labels on the garden map' }, diagram: null, diagram_source: 'none' },
 ];
 
+// A request on Audit Garden, as the request page reads it
+// (routes/issues.js GET /github-issues/:number). Its thread is the
+// project's chat lines above, which the messages route answers for any
+// thread.
+const REQUEST = {
+  number: 21,
+  title: 'Remind whoever is on watering duty',
+  body: 'Each morning at eight, the app reminds whoever is on watering duty that day, and lets them hand the turn to someone else with one tap.',
+  labels: ['usernode'],
+  createdAt: ago(60 * 26),
+  updatedAt: ago(60 * 2),
+  htmlUrl: 'https://example.invalid/audit-garden/issues/21',
+  user: PAT.username,
+  state: 'open',
+  closedAt: null,
+  bounty_count: 0,
+  my_bounty: false,
+  created_by_username: PAT.username,
+  headless: null,
+  in_progress: null,
+  bot: null,
+  botAwaits: null,
+  botHold: null,
+  track: null,
+  myPrSessionId: null,
+  addressed_by: null,
+  closed_via: null,
+  chatCount: CHANNEL.length,
+  lastMessageAt: ago(110),
+  title_fallback: false,
+  priority: null,
+  assignee: null,
+  category: null,
+};
+
 // ── Routes ──────────────────────────────────────────────────────────────
 
 const json = (status, body) => ({ status, json: body, fixture: true });
@@ -325,6 +360,15 @@ const ROUTES = [
   ['GET', /^\/api\/languages$/, () => ok({ languages: { en: 'English' }, manifest: {} })],
   ['GET', /^\/api\/public\/waitlist\/options$/, () => ok({ discovery_sources: {}, group_sizes: {}, group_roles: {}, group_tools: {}, loss_answers: {}, loss_kinds: {}, countries: {}, waitlist_url: 'https://example.invalid/waitlist', marketing_url: 'https://example.invalid', story_landing: false, sign_in_providers: [], phone_sign_in: false, terms_link: 'https://example.invalid/terms', privacy_link: 'https://example.invalid/privacy', child_safety_link: 'https://example.invalid/safety', account_deletion_link: 'https://example.invalid/delete', native_sign_in_providers: [] })],
   ['GET', /^\/api\/platform\/about$/, () => ok({ name: 'Homeroom', tagline: 'Build things together', repoUrl: 'https://example.invalid/homeroom', version: 'audit', updatedAt: ago(600), stats: { apps: 4, members: 3, merged: 40 }, selfAppSlug: SELF_SLUG, served: true })],
+  // A phone browser is offered the app, as it is wherever a store link is
+  // published: the strip over the top of the page is part of its shape. The
+  // app's own shapes are the app (their bridge says so; the audit's stand-in
+  // for it does not reach this island), so nothing is offered there.
+  // (Answered as a failed read there: a missing listing still offers the
+  // home-screen install.)
+  ['GET', /^\/api\/public\/mobile-app$/, (m, url, shape) => (shape && shape.native
+    ? json(503, { error: 'not offered in the app' })
+    : ok({ ios: 'https://example.invalid/ios', android: 'https://example.invalid/android' }))],
   ['GET', /^\/api\/me\/community-pins$/, () => ok({ pins: [] })],
   ['GET', /^\/api\/me\/session-state$/, () => ok({ bootId: 'audit', at: NOW, sessions: [] })],
   ['GET', /^\/api\/me\/app-allowance$/, () => ok({ quota: { used: 2, limit: 5, remaining: 3 }, canCreateApps: true, requestedAt: null, server: null })],
@@ -339,6 +383,9 @@ const ROUTES = [
   ['GET', /^\/api\/apps\/([^/]+)$/, (m) => (appBySlug(decodeURIComponent(m[1])) ? ok({ app: appBySlug(decodeURIComponent(m[1])) }) : json(404, { error: 'not found' }))],
   ['GET', /^\/api\/apps\/([^/]+)\/messages$/, () => ok({ messages: CHANNEL, has_more_before: false, has_more_after: false, read: { last_read_message_id: CHANNEL[CHANNEL.length - 1].id, unread_count: 0 } })],
   ['GET', /^\/api\/messages\/app-discussions$/, () => ok({ discussions: APPS.filter((a) => a.is_member).map((a) => ({ slug: a.slug, name: a.name, channel: 'general', iconUrl: null, iconEmoji: a.icon_emoji, lastMessage: SAID[1], lastAt: ago(30), lastBy: PAT.username, section: 'projects', unreadCount: a.slug === 'audit-garden' ? 3 : 0 })) })],
+  ['GET', /^\/api\/apps\/audit-garden\/github-issues$/, () => ok({ issues: [REQUEST], truncatedList: false })],
+  ['GET', /^\/api\/apps\/audit-garden\/github-issues\/21$/, () => ok({ issue: REQUEST })],
+  ['GET', /^\/api\/apps\/audit-garden\/github-issues\/21\/comments$/, () => ok({ comments: [], truncated: false })],
   ['GET', /^\/api\/workshop\/counts$/, () => ok({ counts: { 'audit-garden': { working: 1, needs: 2, owed: ['vote', 'review'] }, 'tide-tables': { working: 0, needs: 1, owed: ['decide'] }, [SELF_SLUG]: { working: 2, needs: 0, owed: [] } } })],
   ['GET', /^\/api\/workshop\/needs-feed$/, () => ok({ items: NEEDS_FEED, max: 50 })],
   ['GET', /^\/api\/ai\/work$/, () => ok(AI_WORK)],
@@ -360,11 +407,11 @@ const ROUTES = [
   ['PUT', /^\/api\/conversations\/\d+\/read$/, () => ok({ ok: true })],
 ];
 
-export function answer(method, url) {
+export function answer(method, url, shape = null) {
   for (const [m, pattern, build] of ROUTES) {
     if (m !== method) continue;
     const match = url.pathname.match(pattern);
-    if (match) return build(match, url);
+    if (match) return build(match, url, shape);
   }
   return { status: 404, json: { error: 'not in the layout audit\'s made-up world' }, fixture: false };
 }
@@ -378,6 +425,7 @@ export const SCREENS = [
   { id: 'direct-message', route: '#messages/7002', screen: '#messages-screen', composer: true },
   { id: 'group', route: '#messages/7003', screen: '#messages-screen', composer: true },
   { id: 'project-hub', route: '#app/audit-garden', screen: '#app-view', composer: true },
+  { id: 'request', route: '#app/audit-garden/dev/issues/21', screen: '#app-view', composer: true },
   { id: 'profile', route: '#profile', screen: '#profile-screen' },
   { id: 'settings', route: '#settings', screen: '#settings-screen' },
   { id: 'discover', route: '#apps', screen: '#browse-screen' },

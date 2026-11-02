@@ -680,8 +680,9 @@ test('a correction does not answer itself from the cache it is correcting', () =
   assert.match(SW_SRC, /const correcting = new Set\(\);/);
   const body = strategyBody('networkFirstApi');
   // Consumed on read: exactly one lane-skipped request per correction. A
-  // fresh read (#4177) has no deadline to skip, so it leaves the mark alone.
-  assert.match(body, /const laned = !fresh && !correcting\.delete\(event\.request\.url\)/,
+  // fresh read (#4177) consumes it too: it has a lane deadline of its own
+  // (FRESH_BOOT_API_TIMEOUT_MS), and every page read is a fresh one.
+  assert.match(body, /const laned = !correcting\.delete\(event\.request\.url\)/,
     'the mark is consumed when the deadline is chosen');
   assert.match(body, /if \(laned\) \{[\s\S]*?correcting\.add\(event\.request\.url\)/,
     'and set only by a LANE serve — a slow answer on the 1s deadline is not a loop');
@@ -700,11 +701,11 @@ test('a slow endpoint that differs every time is re-pulled from the network, not
   assert.match(SW_SRC, /const awaitingNetwork = new Set\(\);/);
   assert.match(SW_SRC, /const CORRECTION_WAIT_MS = \d+;/);
   const body = strategyBody('networkFirstApi');
-  assert.match(body, /const settling = !fresh && awaitingNetwork\.delete\(event\.request\.url\);/,
-    'the mark is consumed when the deadline is chosen');
-  // #4177: a read that asks for a fresh answer comes first, with no deadline
-  // at all (tests/live-reads.test.js); the settling rule is the next one.
-  assert.match(body, /const timeoutMs = fresh \? null\s*: settling \? CORRECTION_WAIT_MS/,
+  assert.match(body, /const settling = awaitingNetwork\.delete\(event\.request\.url\);/,
+    'the mark is consumed when the deadline is chosen, by a fresh read too');
+  // The settling rule comes first, ahead of a fresh read's own deadline:
+  // every page read is fresh (#4177), so a re-pull after a correction is one.
+  assert.match(body, /const timeoutMs = settling \? CORRECTION_WAIT_MS\s*: fresh \? \(laned \? FRESH_BOOT_API_TIMEOUT_MS : FRESH_API_TIMEOUT_MS\)/,
     'and that request waits for the network instead of racing the cache');
   assert.match(body, /&& !settling\s*&& bootLaneApplies/, 'a settling request is never laned');
   assert.match(body, /\} else \{[\s\S]*?awaitingNetwork\.add\(event\.request\.url\)/,
@@ -712,6 +713,222 @@ test('a slow endpoint that differs every time is re-pulled from the network, not
   assert.match(body, /awaitingNetwork\.size >= CORRECTING_MAX/, 'and the set is bounded');
   assert.ok(!/lastCorrectionAt|CORRECTION_COOLDOWN_MS/.test(SW_SRC),
     'no time-based cooldown: it would strand a second tab on stale data');
+});
+
+// ── 2c. Fresh reads on a link that carries nothing ───────────────────────
+//
+// Offline findings, 2 Nov 2026: on a link that connects but passes nothing,
+// a cold launch sat on Home's skeleton for over a minute while the saved apps
+// sat in the API cache. Every page read is a fresh one (`reload`, from the
+// identity wrapper), and a fresh read used to fall back only when the fetch
+// REJECTED, which such a link never does. These drive the real worker
+// (tests/lib/private-cache-worker.js) with deadlines fired on demand.
+
+const harness = require('./lib/private-cache-worker');
+const {
+  FRESH_API_TIMEOUT_MS,
+  FRESH_BOOT_API_TIMEOUT_MS,
+  RETIRING_STATUSES,
+  declinedAnswerRetiresCopy,
+} = require('../public/sw.js');
+
+function manualTimers() {
+  const all = [];
+  const timers = {
+    setTimeout(fn, ms) { const t = { fn, ms, cancelled: false, fired: false }; all.push(t); return t; },
+    clearTimeout(t) { if (t) t.cancelled = true; },
+    live: () => all.filter((t) => !t.cancelled && !t.fired),
+    fire() { for (const t of timers.live()) { t.fired = true; t.fn(); } },
+    all,
+  };
+  return timers;
+}
+
+const tick = () => new Promise((resolve) => setImmediate(resolve));
+async function until(check, what) {
+  for (let i = 0; i < 200; i++) { if (check()) return; await tick(); }
+  assert.fail(`timed out waiting for ${what}`);
+}
+// The worker's messages, copied out of its realm so deepEqual compares data.
+const posted = (h) => h.messages.map((m) => ({ ...m }));
+// Did the worker answer yet? Never awaits the answer itself.
+function watch(promise) {
+  const state = { settled: false, value: undefined };
+  promise.then((value) => { state.settled = true; state.value = value; },
+    (error) => { state.settled = true; state.error = error; });
+  return state;
+}
+
+// A worker holding one saved copy of `path`, made by an answer that came in
+// time, and a network that now waits for the test to answer it.
+async function savedCopyWorker(path = '/api/private-fixture', body = { fake: 'saved' }) {
+  const timers = manualTimers();
+  const h = harness.worker({ timers, fetcher: async () => harness.json(body) });
+  await (await h.get(harness.A, path)).json();
+  await h.drain();
+  assert.equal(timers.live().length, 0, 'an answer in time leaves no deadline running');
+  const held = deferred();
+  h.setNetwork(() => held.promise);
+  return { h, timers, held };
+}
+
+test('a fresh read with a saved copy is answered from it once the network misses the long deadline', async () => {
+  const { h, timers, held } = await savedCopyWorker();
+  const answer = watch(h.get(harness.A));
+  await until(() => timers.live().length === 1, 'the deadline');
+  assert.equal(timers.live()[0].ms, FRESH_API_TIMEOUT_MS, 'a fresh read gets the long deadline');
+  await tick();
+  assert.equal(answer.settled, false, 'nothing is served before the deadline');
+  timers.fire();
+  await until(() => answer.settled, 'the saved copy');
+  assert.deepEqual(await answer.value.json(), { fake: 'saved' });
+  assert.ok(answer.value.headers.get('sw-cached-at'), 'marked as the saved copy, as the offline fallback is');
+  assert.equal(h.messages.length, 0, 'nothing to correct yet');
+
+  // The request kept going. Its answer is stored, and the page is told.
+  held.resolve(harness.json({ fake: 'current' }));
+  await h.drain();
+  const cache = await h.caches.open(API_CACHE);
+  const keys = await cache.keys();
+  assert.equal(keys.length, 1);
+  assert.deepEqual(await (await cache.match(keys[0])).json(), { fake: 'current' },
+    'the late answer replaces the saved copy under the usual rules');
+  assert.deepEqual(posted(h), [{ type: 'api-updated', url: `${harness.ORIGIN}/api/private-fixture`, scope: harness.A }]);
+
+  // The page's re-pull after that correction waits longer for the network,
+  // so a body that changes on every answer cannot loop, and on the deadline
+  // it would get the corrected copy rather than the old one.
+  const again = deferred();
+  h.setNetwork(() => again.promise);
+  const repull = watch(h.get(harness.A));
+  await until(() => timers.live().length === 1, 'the re-pull deadline');
+  assert.ok(timers.live()[0].ms > FRESH_API_TIMEOUT_MS, 'a settling re-pull waits CORRECTION_WAIT_MS');
+  timers.fire();
+  await until(() => repull.settled, 'the corrected copy');
+  assert.deepEqual(await repull.value.json(), { fake: 'current' });
+  again.resolve(harness.json({ fake: 'current' }));
+  await h.drain();
+});
+
+test('a fresh boot read waits the shorter boot deadline, and a refresh shuts that lane', async () => {
+  const { h, timers, held } = await savedCopyWorker('/api/apps', { apps: ['saved'] });
+  const answer = watch(h.get(harness.A, '/api/apps'));
+  await until(() => timers.live().length === 1, 'the deadline');
+  assert.equal(timers.live()[0].ms, FRESH_BOOT_API_TIMEOUT_MS);
+  timers.fire();
+  await until(() => answer.settled, 'the saved launcher');
+  assert.deepEqual(await answer.value.json(), { apps: ['saved'] });
+
+  // Sent the way the page sends it; h.message() would also wait out the
+  // first request, which is still held.
+  h.handlers.message({ data: { type: 'refresh-intent' }, waitUntil() {} });
+  const pulled = watch(h.get(harness.A, '/api/apps'));
+  await until(() => timers.live().length === 1, 'the pull deadline');
+  assert.equal(timers.live()[0].ms, FRESH_API_TIMEOUT_MS, 'a pull pays the ordinary fresh deadline');
+  held.resolve(harness.json({ apps: ['saved'] }));
+  await until(() => pulled.settled, 'the pull');
+  await h.drain();
+  assert.equal(h.messages.length, 0, 'an identical late answer posts nothing');
+
+  // The deadlines keep their order: a working link answers first.
+  assert.ok(FRESH_BOOT_API_TIMEOUT_MS >= 1500 && FRESH_BOOT_API_TIMEOUT_MS < FRESH_API_TIMEOUT_MS);
+  assert.ok(FRESH_API_TIMEOUT_MS > API_TIMEOUT_MS && FRESH_API_TIMEOUT_MS <= 5000,
+    'long enough for a working link, and well inside the page\'s own read timeout');
+});
+
+test('a fresh read the network answers in time is the network\'s answer, exactly as before', async () => {
+  const { h, timers, held } = await savedCopyWorker();
+  const answer = watch(h.get(harness.A));
+  await until(() => timers.live().length === 1, 'the deadline');
+  held.resolve(harness.json({ fake: 'current' }));
+  await until(() => answer.settled, 'the answer');
+  assert.deepEqual(await answer.value.json(), { fake: 'current' });
+  assert.equal(answer.value.headers.get('sw-cached-at'), null);
+  await h.drain();
+  assert.equal(timers.live().length, 0, 'the deadline is cancelled');
+  assert.equal(h.messages.length, 0, 'the page already has this answer');
+});
+
+test('with no saved copy a fresh read waits for the network, however long it takes', async () => {
+  const timers = manualTimers();
+  const held = deferred();
+  const h = harness.worker({ timers, fetcher: () => held.promise });
+  const answer = watch(h.get(harness.A));
+  await until(() => timers.live().length === 1, 'the deadline');
+  timers.fire();
+  for (let i = 0; i < 20; i++) await tick();
+  assert.equal(answer.settled, false, 'the deadline unlocks nothing and cuts nothing off');
+  held.resolve(harness.json({ fake: 'slow but real' }));
+  await until(() => answer.settled, 'the network');
+  assert.deepEqual(await answer.value.json(), { fake: 'slow but real' });
+
+  // Another viewer's copy is never "a saved copy" for this one.
+  const other = deferred();
+  h.setNetwork(() => other.promise);
+  const b = watch(h.get(harness.B));
+  await until(() => timers.live().length === 1, 'B\'s deadline');
+  timers.fire();
+  for (let i = 0; i < 20; i++) await tick();
+  assert.equal(b.settled, false, 'a different session waits for its own answer');
+  other.resolve(harness.json({ fake: 'B' }, harness.B));
+  await until(() => b.settled, 'B\'s answer');
+  assert.deepEqual(await b.value.json(), { fake: 'B' });
+});
+
+test('no-store reads and the identity read are still the network\'s alone', async () => {
+  const { h, timers } = await savedCopyWorker();
+  const before = timers.all.length;
+  let responded = false;
+  const request = new Request(`${harness.ORIGIN}/api/private-fixture`, {
+    cache: 'no-store', headers: { [harness.SCOPE_HEADER]: harness.A },
+  });
+  h.handlers.fetch({ request, waitUntil() {}, respondWith() { responded = true; } });
+  assert.equal(responded, false, 'a no-store read never reaches the worker\'s cache');
+  let me;
+  h.handlers.fetch({
+    request: new Request(`${harness.ORIGIN}/api/auth/me`, { cache: 'reload', headers: { [harness.SCOPE_HEADER]: harness.A } }),
+    waitUntil() {}, respondWith(p) { me = p; p.catch(() => {}); },
+  });
+  assert.ok(me, 'the identity read is answered by the network directly');
+  await tick();
+  assert.equal(h.requests.at(-1).cache, 'no-store');
+  assert.equal(timers.all.length, before, 'neither one races a deadline');
+});
+
+test('a late refusal retires the copy the page was shown, and tells the page', async (t) => {
+  for (const [label, late, tells] of [
+    ['403', () => harness.json({ error: 'FAKE_REVOKED' }, harness.A, { status: 403, policy: 'no-store' }), true],
+    ['401', () => new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }), true],
+    ['no-store', () => harness.json({ fake: 'current' }, harness.A, { policy: 'private, no-store' }), true],
+    ['another scope', () => harness.json({ fake: 'FAKE_OTHER' }, harness.B), true],
+    ['503', () => harness.json({ error: 'FAKE_DOWN' }, harness.A, { status: 503, policy: 'no-store' }), false],
+  ]) await t.test(label, async () => {
+    const { h, timers, held } = await savedCopyWorker();
+    const answer = watch(h.get(harness.A));
+    await until(() => timers.live().length === 1, 'the deadline');
+    timers.fire();
+    await until(() => answer.settled, 'the saved copy');
+    assert.deepEqual(await answer.value.json(), { fake: 'saved' });
+    held.resolve(late());
+    await h.drain();
+    assert.equal((await (await h.caches.open(API_CACHE)).keys()).length, 0,
+      'the entry is retired, as a refusal in time retires it');
+    assert.deepEqual(posted(h), tells
+      ? [{ type: 'api-updated', url: `${harness.ORIGIN}/api/private-fixture`, scope: harness.A }] : [],
+    tells ? 'the page re-reads instead of keeping a copy it may no longer see'
+      : 'a server error says nothing about the copy on screen');
+  });
+});
+
+test('only answers that speak about the copy retire it on screen', () => {
+  assert.deepEqual(RETIRING_STATUSES, [401, 403, 404, 410]);
+  for (const status of RETIRING_STATUSES) assert.equal(declinedAnswerRetiresCopy({ status }), true, String(status));
+  assert.equal(declinedAnswerRetiresCopy({ status: 200 }), true, 'a 200 the cache declined (policy, scope, type)');
+  assert.equal(declinedAnswerRetiresCopy({ status: 200, redirected: true }), true);
+  for (const status of [304, 408, 429, 500, 502, 503]) {
+    assert.equal(declinedAnswerRetiresCopy({ status }), false, String(status));
+  }
+  assert.equal(declinedAnswerRetiresCopy(null), false);
 });
 
 test('a full API cache evicts ordinary entries before a screen\'s standing state', async () => {

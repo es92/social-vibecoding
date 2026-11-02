@@ -480,7 +480,13 @@ function sheetWords(surface) {
  * Pure: the turn's instructions. `design` is the thread's design (null while
  * it holds none yet); `version`/`html` the version shown now (none yet: 0).
  */
-function designPrompt({ username, design = null, surface = null, app = null, version = 0, html = '', brief = null, pictures = [] }) {
+function designPrompt({ username, design = null, surface = null, app = null, version = 0, html = '', brief = null, pictures = [], now = new Date() }) {
+  // B22 (overnight audit, 1 Nov 2026): a drawn first screen dated its week
+  // "Mon 9 to Sun 15 June · week 24" in November. Told nothing of today, the
+  // model made dates up; it is told today and the weekdays' dates around it,
+  // as a sketch is (services/sketch-dates.js).
+  const sketchDates = require('./sketch-dates');
+  const today = sketchDates.localToday(now);
   const drawn = design || { surface: surface || 'new', app };
   const where = whereWords({ surface: drawn.surface, app: drawn.app || app });
   const lines = [
@@ -506,6 +512,9 @@ function designPrompt({ username, design = null, surface = null, app = null, ver
     '- Draw from their words, from the project\'s code (list_source to find how its screens are built, then read_source:',
     '  its markup, its classes, its words) and from any picture they sent. Real words that fit the project, never',
     '  placeholder text.',
+    `- Any date on the screen is a real one around today, ${sketchDates.todayLine(now)}, read off this calendar, never`,
+    '  made up from another month:',
+    ...sketchDates.calendarLines(today, 2).map((line) => `  ${line}`),
     `- A <style ${SHEET_ATTR}> block is one of the project's stylesheets, written in by Homeroom: leave it as it is.`,
     '- You may add inline styles and small inline <script>s for interactive states. Nothing may load from the network:',
     '  no external src, href, @import, fetch or font. The preview blocks it anyway.',

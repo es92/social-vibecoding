@@ -1728,8 +1728,9 @@ const GroupChat = {
     // #4640: a first page that never answers held "Loading…" up forever —
     // nothing else re-reads a thread that is neither loaded nor failed. The
     // abort lands in the catch below, so the state records the failure and
-    // the transcript offers "Try again". Later pages keep the browser's own
-    // timeout; "Load earlier" and catch-ups are unchanged.
+    // the transcript offers "Try again". Later pages keep the page's own
+    // read limit (frontend/src/lib/read-timeout.ts); "Load earlier" and
+    // catch-ups are unchanged.
     let abort = null;
     let timeout = null;
     const init = {};
@@ -1737,6 +1738,8 @@ const GroupChat = {
       try {
         abort = new AbortController();
         init.signal = abort.signal;
+        // Its own limit, not the page's (frontend/src/lib/read-timeout.ts).
+        init.readTimeout = GroupChat.THREAD_FIRST_PAGE_TIMEOUT_MS;
         timeout = setTimeout(() => abort.abort(), GroupChat.THREAD_FIRST_PAGE_TIMEOUT_MS);
       } catch { /* no timeout: the browser's own applies */ }
     }
@@ -1869,8 +1872,9 @@ const GroupChat = {
   // earlier" and every later ask would wait behind it. A browser without
   // `AbortSignal.timeout` (Safari before 16) gets the same from a timer.
   _freshInit() {
-    const init = { cache: 'no-cache' };
     const ms = GroupChat.CATCH_UP_TIMEOUT_MS;
+    // Its own limit, longer than the page's (frontend/src/lib/read-timeout.ts).
+    const init = { cache: 'no-cache', readTimeout: ms };
     try {
       if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
         init.signal = AbortSignal.timeout(ms);

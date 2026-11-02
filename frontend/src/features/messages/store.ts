@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { t } from '../../lib/i18n/runtime';
+import { isOffline, probe } from '../../lib/offline';
 import { botTabAddress, botTabFromMessages, goBotAddress, knownBotConversation, noteBotConversation, openBotTab } from '../ai/door';
 import { navStore } from '../nav/nav-store.js';
 import { messagesDrawerApplies } from '../nav-drawer/messages-drawer';
@@ -9,6 +10,7 @@ import { WORK_CHANGED_EVENT, inMainStream, openAppTarget, threadsAllowed } from 
 import { channelDirectory, normalizeHandle, type ChannelRef } from './channels';
 import { platformHubServed, platformSlug, subscribePlatformSlug } from './channel-hub';
 import { type AppDiscussion, type InboxSection } from './inbox';
+import { MAX_UNSENT, messagesOutbox, type PendingSend, type UnsentState } from './outbox';
 import { openRequestPage, requestPageOf, type RequestPage } from './request-page';
 import { markFor } from './unread-anchor';
 import type {
@@ -26,16 +28,6 @@ import type {
 } from './types';
 
 const MAX_ID = 2_147_483_647;
-
-interface PendingSend {
-  content: string;
-  replyToId?: number;
-  /** #2387: a reply inside this thread rather than the conversation's own transcript. */
-  threadRootId?: number;
-  attachmentIds?: string[];
-  object?: SharedObjectReference;
-  idempotencyKey: string;
-}
 
 /**
  * A name on the typing line. The line shows each name once, as it always has:
@@ -151,21 +143,47 @@ function scopeThread(scope: ComposerScope): number | null {
 
 const drafts = new Map<ComposerScope, string>();
 const replyTargets = new Map<ComposerScope, ConversationMessage>();
-const pendingByConversation = new Map<number, PendingSend[]>();
 /*
  * THE SENDER'S OWN ROWS OUTLIVE A REFRESH (#2907). A send draws its message
- * at once, faded, and nothing else: no spinner, no "sending…" line. The
- * realtime echo of that same send re-reads the thread, and the page it reads
- * back must not take the row away (it is still in flight) nor draw it twice
- * (the server already has it). `unsent` holds each local row's payload by its
- * client key — what a failed row's Retry sends again, under the same
- * idempotency key so the server never stores it twice — and `sentKeys` maps a
- * confirmed server id back to the client key the row was drawn under, so the
- * row keeps its React key and is updated in place rather than remounted.
- * `after` is the newest server id the transcript held when the row was drawn:
- * the server's copy of that send can only be newer (withLocalRows).
+ * at once, faded. The realtime echo of that same send re-reads the thread,
+ * and the page it reads back must not take the row away (it is still in
+ * flight) nor draw it twice (the server already has it). `unsent` holds each
+ * local row by its client key: its payload, which a failed row's Retry sends
+ * again under the same idempotency key so the server never stores it twice,
+ * and the row itself as last drawn. `sentKeys` maps a confirmed server id back
+ * to the client key the row was drawn under, so the row keeps its React key
+ * and is updated in place rather than remounted. `after` is the newest server
+ * id the transcript held when the row was drawn: the server's copy of that
+ * send can only be newer (withLocalRows).
+ *
+ * AND THEY OUTLIVE THE SCREEN (offline test, 2 Nov 2026, finding 1). A
+ * message sent on a network that connects but passes nothing looked sent and
+ * then vanished: the transcript was the only place its row was kept, so
+ * opening the conversation again, or any re-read that started from an empty
+ * one, dropped it. Every page read now draws its conversation's unsent rows
+ * from here, in the order they were written, until the server confirms each
+ * or the sender discards it; and each one written on a row is kept on the
+ * device too (./outbox.ts), so a reload brings it back.
  */
-const unsent = new Map<string, { conversationId: number; payload: PendingSend; after: number }>();
+interface LocalSend {
+  conversationId: number;
+  payload: PendingSend;
+  after: number;
+  /** The row as last drawn, with its state's flags (rowIn). */
+  row: ConversationMessage;
+  state: UnsentState;
+  /**
+   * Drawn on a row the sender can see. An answer tapped on a moment of the
+   * chat with Homeroom bot whose thread is not open has none (send
+   * `anyThread`): it is sent once, never queued or kept, and a failure is
+   * the caller's to say.
+   */
+  drawn: boolean;
+  /** The account that wrote it; 0 when none was signed in, and then it is not kept. */
+  viewer: number;
+  savedAt: number;
+}
+const unsent = new Map<string, LocalSend>();
 const sentKeys = new Map<number, string>();
 const typingSentAt = new Map<ComposerScope, number>();
 const typingExpiry = new Map<string, number>();
@@ -882,6 +900,12 @@ function drawKeptThread(conversationId: number): boolean {
  * before the send landed — a refresh already in flight, or a cached copy —
  * and taking its word took the sender's message away until a reload. A
  * later page that holds it, or anything newer, settles it as usual.
+ *
+ * The local rows come from `unsent`, not from the transcript on screen
+ * (offline test, finding 1): an open starts from an empty transcript, and
+ * reading them from there lost every one still in flight, waiting for a
+ * connection or not sent. They follow the server's rows in the order they
+ * were written.
  */
 function withLocalRows(conversationId: number, page: ConversationMessage[], reachesPresent = true): ConversationMessage[] {
   const me = currentUser().id;
@@ -893,21 +917,19 @@ function withLocalRows(conversationId: number, page: ConversationMessage[], reac
   const newest = newestServerId(messages);
   const local: ConversationMessage[] = [];
   for (const row of state.messages) {
-    if (row.conversationId !== conversationId || !row.clientKey) continue;
-    if (row.id > 0) {
-      if (reachesPresent && row.id > newest && sentKeys.get(row.id) === row.clientKey) local.push(row);
+    if (row.conversationId !== conversationId || !row.clientKey || row.id <= 0) continue;
+    if (reachesPresent && row.id > newest && sentKeys.get(row.id) === row.clientKey) local.push(row);
+  }
+  for (const [key, entry] of unsent) {
+    if (entry.conversationId !== conversationId || !entry.drawn || entry.payload.threadRootId || claimed.has(key)) continue;
+    const match = messages.find((item) => !item.clientKey && item.id > entry.after
+      && item.sender.id === me && item.content === entry.row.content);
+    if (match && entry.state === 'sending') {
+      sentKeys.set(match.id, key);
+      match.clientKey = key;
       continue;
     }
-    if (claimed.has(row.clientKey)) continue;
-    const after = unsent.get(row.clientKey)?.after || 0;
-    const match = messages.find((item) => !item.clientKey && item.id > after
-      && item.sender.id === me && item.content === row.content);
-    if (match && row.pending) {
-      sentKeys.set(match.id, row.clientKey);
-      match.clientKey = row.clientKey;
-      continue;
-    }
-    local.push(row);
+    local.push(entry.row);
   }
   return messages.concat(local.sort(transcriptOrder));
 }
@@ -1905,6 +1927,80 @@ function idempotencyKey(): string {
   return `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * How long a send may go unanswered before it is given up (offline test,
+ * finding 1). A network that connects but passes nothing never fails a
+ * request: the POST waited for as long as the web view let it, a minute and
+ * more, with the row looking sent. Its idempotency key makes giving up safe:
+ * if the server did store it, sending it again returns that message.
+ */
+export const SEND_TIMEOUT_MS = 15_000;
+
+/**
+ * Whether the app takes itself to be offline: the browser's word, or the
+ * shell's own probe of /health (../../lib/offline.ts), which also hears a
+ * network that connects but passes nothing, and is what the offline banner
+ * shows.
+ */
+function offlineNow(): boolean {
+  return browserOffline() || isOffline();
+}
+
+/** A send the server never answered: it did not go, or went unanswered until SEND_TIMEOUT_MS. */
+function unanswered(error: unknown): boolean {
+  return !(error instanceof api.MessagesApiError);
+}
+
+/** A row drawn for an unconfirmed message in `next` state: faded on its way, a note when waiting or not sent. */
+function rowIn(row: ConversationMessage, next: UnsentState): ConversationMessage {
+  return { ...row, pending: next === 'sending', queued: next === 'queued', failed: next === 'failed' };
+}
+
+/** Keep an unconfirmed message on the device (./outbox.ts): one drawn on a row, written by somebody signed in. */
+function keepOnDevice(key: string): void {
+  const entry = unsent.get(key);
+  if (!entry || !entry.drawn || !entry.viewer) return;
+  messagesOutbox().save({
+    key, viewer: entry.viewer, conversationId: entry.conversationId, payload: entry.payload,
+    row: entry.row, after: entry.after, state: entry.state, savedAt: entry.savedAt,
+  });
+}
+
+function forgetLocal(key: string): void {
+  const entry = unsent.get(key);
+  unsent.delete(key);
+  if (entry?.drawn) messagesOutbox().drop(key);
+}
+
+/** The server has this message, as `messageId`. */
+function confirmLocal(key: string, messageId: number): void {
+  forgetLocal(key);
+  sentKeys.set(messageId, key);
+}
+
+/** Move an unconfirmed message to `next`, on the device and on every row that draws it. */
+function settleLocal(key: string, next: UnsentState): void {
+  const entry = unsent.get(key);
+  if (!entry) return;
+  entry.state = next;
+  entry.row = rowIn(entry.row, next);
+  keepOnDevice(key);
+  const paint = (item: ConversationMessage) => (item.clientKey === key && item.id < 0 ? rowIn(item, next) : item);
+  const thread = state.thread;
+  publish({
+    messages: state.messages.map(paint),
+    ...(thread ? { thread: { ...thread, messages: thread.messages.map(paint) } } : {}),
+  });
+}
+
+function queuedCount(conversationId?: number): number {
+  let count = 0;
+  for (const entry of unsent.values()) {
+    if (entry.state === 'queued' && (conversationId === undefined || entry.conversationId === conversationId)) count += 1;
+  }
+  return count;
+}
+
 export async function send(input: {
   content: string; attachmentIds?: string[]; object?: SharedObjectReference; attachments?: ConversationMessage['attachments']; threadRootId?: number | null;
   /**
@@ -1929,7 +2025,14 @@ export async function send(input: {
     ...(threadRootId ? { threadRootId } : {}),
     idempotencyKey: idempotencyKey(),
   };
-  const optimistic: ConversationMessage = {
+  const drawn = !threadRootId || (open && !!state.thread);
+  // OFFLINE, IT WAITS INSTEAD OF GOING (offline test, finding 1): when the
+  // app says it has no connection, which a network passing nothing makes it
+  // say once its probe has looked, and not only when the browser says so.
+  // And behind anything of this conversation's already waiting, so the
+  // messages arrive in the order they were written.
+  const wait = drawn && (offlineNow() || queuedCount(conversationId) > 0) && queuedCount() < MAX_UNSENT;
+  const optimistic: ConversationMessage = rowIn({
     id: -Date.now(),
     conversationId,
     sender: currentUser(),
@@ -1938,10 +2041,14 @@ export async function send(input: {
     reply: reply ? { id: reply.id, sender: reply.sender, content: reply.content } : null,
     // The files already uploaded draw with the row, so a file-only send is
     // not an empty line while it is in flight.
-    reactions: [], attachments: input.attachments || [], objects: [], pending: true, clientKey: pending.idempotencyKey,
+    reactions: [], attachments: input.attachments || [], objects: [], clientKey: pending.idempotencyKey,
     threadRootId,
-  };
-  unsent.set(pending.idempotencyKey, { conversationId, payload: pending, after: newestServerId(state.messages) });
+  }, wait ? 'queued' : 'sending');
+  unsent.set(pending.idempotencyKey, {
+    conversationId, payload: pending, after: newestServerId(state.messages), row: optimistic,
+    state: wait ? 'queued' : 'sending', drawn, viewer: currentUser().id, savedAt: Date.now(),
+  });
+  keepOnDevice(pending.idempotencyKey);
   setDraft(scope, '');
   setReply(scope, null);
   if (threadRootId && open && state.thread) {
@@ -1955,8 +2062,17 @@ export async function send(input: {
     // where the message lands — the way every messenger does it.
     if (state.nextAfter) jumpToPresent();
   }
+  if (wait) {
+    const offline = offlineNow();
+    publish({ online: !offline, ...(offline ? { threadError: t('messages:store.error.queued') } : {}) });
+    if (!offline) void flushQueued();
+    return;
+  }
   await deliver(conversationId, pending);
 }
+
+/** How a send settled: the server has it, it waits for a connection, it was not sent, or it is no longer there to settle. */
+type Delivery = 'sent' | 'queued' | 'failed' | 'gone';
 
 /**
  * Send a local row's payload and settle the row: the server's message in its
@@ -1964,13 +2080,12 @@ export async function send(input: {
  * row marked failed with its Retry. The row is found by client key, not by
  * its temporary id, because a refresh can have re-read the thread meanwhile.
  */
-async function deliver(conversationId: number, pending: PendingSend): Promise<void> {
+async function deliver(conversationId: number, pending: PendingSend): Promise<Delivery> {
   const key = pending.idempotencyKey;
-  if (pending.threadRootId) { await deliverToThread(conversationId, pending); return; }
+  if (pending.threadRootId) return deliverToThread(conversationId, pending);
   try {
-    const message = await api.sendMessage(conversationId, pending);
-    unsent.delete(key);
-    sentKeys.set(message.id, key);
+    const message = await api.sendMessage(conversationId, pending, { timeoutMs: SEND_TIMEOUT_MS });
+    confirmLocal(key, message.id);
     if (state.route.conversationId === conversationId) {
       // The member-scoped WS event can win the race with this HTTP response
       // and refresh the real row into the thread first. Remove both the
@@ -1983,6 +2098,7 @@ async function deliver(conversationId: number, pending: PendingSend): Promise<vo
       publish({ messages });
     }
     await loadConversations(true);
+    return 'sent';
   } catch (error) {
     if (isAwaitingAcceptance(error)) {
       // QA 2026-09-24 Q2: a send that cannot go through until the other
@@ -1990,25 +2106,46 @@ async function deliver(conversationId: number, pending: PendingSend): Promise<vo
       // succeed, and a reload dropped it. The words go back to the draft
       // (unless a new one has been started) and the conversation is re-read,
       // so the thread says who it is waiting for in place of the composer.
-      unsent.delete(key);
+      forgetLocal(key);
       const scope = scopeKey(conversationId, null);
       if (!draftFor(scope) && pending.content) setDraft(scope, pending.content);
       publish({ messages: state.messages.filter((item) => item.clientKey !== key) });
       if (state.route.conversationId === conversationId) void loadThread(conversationId, true);
-      return;
+      return 'gone';
     }
-    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    if (offline) {
-      const queue = pendingByConversation.get(conversationId) || [];
-      queue.push(pending);
-      pendingByConversation.set(conversationId, queue.slice(-50));
-    }
-    publish({
-      online: !offline,
-      messages: state.messages.map((item) => item.clientKey === key ? { ...item, pending: false, failed: true } : item),
-      threadError: offline ? t('messages:store.error.queued') : errorMessage(error, t('messages:store.error.send')),
-    });
+    return settleFailed(key, error, t('messages:store.error.send'));
   }
+}
+
+/**
+ * A send that did not go through. One the server answered is not sent, with
+ * its Retry. One it never answered asks the shell's connectivity probe first
+ * (offline test, finding 1: nothing else would have noticed a network that
+ * passes nothing): when the connection is gone the message waits for it and
+ * goes by itself when it is back, and when the connection is there it is not
+ * sent, with its Retry. Either way it keeps its idempotency key, so nothing
+ * that sends it again can post it twice.
+ */
+async function settleFailed(key: string, error: unknown, words: string): Promise<Delivery> {
+  // A re-read already drew the server's copy (withLocalRows): it went, and
+  // only its answer was lost.
+  for (const claimed of sentKeys.values()) {
+    if (claimed === key) { forgetLocal(key); return 'sent'; }
+  }
+  const network = unanswered(error);
+  if (network && !offlineNow()) {
+    try { await probe(); } catch { /* the state it leaves is the answer */ }
+  }
+  if (!unsent.has(key)) return 'gone';
+  const offline = network && offlineNow();
+  const queue = offline && queuedCount() < MAX_UNSENT;
+  settleLocal(key, queue ? 'queued' : 'failed');
+  // Plain words for a network that did not answer, never its exception's.
+  publish({
+    online: !offline,
+    threadError: queue ? t('messages:store.error.queued') : network ? words : errorMessage(error, words),
+  });
+  return queue ? 'queued' : 'failed';
 }
 
 /**
@@ -2017,13 +2154,12 @@ async function deliver(conversationId: number, pending: PendingSend): Promise<vo
  * settled in the thread's own page; the conversation's transcript is then
  * re-read for the reply count on the message the thread hangs off.
  */
-async function deliverToThread(conversationId: number, pending: PendingSend): Promise<void> {
+async function deliverToThread(conversationId: number, pending: PendingSend): Promise<Delivery> {
   const key = pending.idempotencyKey;
   const rootId = pending.threadRootId as number;
   try {
-    const message = await api.sendMessage(conversationId, pending);
-    unsent.delete(key);
-    sentKeys.set(message.id, key);
+    const message = await api.sendMessage(conversationId, pending, { timeoutMs: SEND_TIMEOUT_MS });
+    confirmLocal(key, message.id);
     const thread = state.thread;
     if (thread && thread.conversationId === conversationId && thread.rootId === rootId) {
       const messages = thread.messages
@@ -2033,23 +2169,25 @@ async function deliverToThread(conversationId: number, pending: PendingSend): Pr
       publish({ thread: { ...thread, messages } });
     }
     if (state.route.conversationId === conversationId) void loadThread(conversationId, true);
+    return 'sent';
   } catch (error) {
-    const thread = state.thread;
-    if (thread && thread.rootId === rootId) {
-      publish({
-        thread: {
-          ...thread,
-          messages: thread.messages.map((item) => item.clientKey === key ? { ...item, pending: false, failed: true } : item),
-          error: errorMessage(error, t('messages:store.error.sendReply')),
-        },
-      });
-    } else if (state.route.conversationId === conversationId) {
+    if (unsent.get(key)?.drawn === false) {
       // Sent into a thread that is not open (send `anyThread`): it has no
       // row of its own to fail on, so the conversation says it.
-      unsent.delete(key);
-      publish({ threadError: errorMessage(error, t('messages:store.error.sendReply')) });
-      throw error;
+      forgetLocal(key);
+      if (state.route.conversationId === conversationId) {
+        publish({ threadError: errorMessage(error, t('messages:store.error.sendReply')) });
+        throw error;
+      }
+      return 'gone';
     }
+    const outcome = await settleFailed(key, error, t('messages:store.error.sendReply'));
+    const thread = state.thread;
+    if (outcome === 'failed' && thread && thread.rootId === rootId) {
+      const words = t('messages:store.error.sendReply');
+      publish({ thread: { ...thread, error: unanswered(error) ? words : errorMessage(error, words) } });
+    }
+    return outcome;
   }
 }
 
@@ -2069,26 +2207,28 @@ function findRow(messageId: number): ConversationMessage | undefined {
     || state.thread?.messages.find((item) => item.id === messageId);
 }
 
-/** Send a failed row again, in place (#2907). */
+/**
+ * Send a failed row again, in place (#2907). Offline, it waits for the
+ * connection instead, and the shell's probe looks again, since a Retry is
+ * somebody saying the connection may be back.
+ */
 export async function retrySend(clientKey: string): Promise<void> {
   const entry = unsent.get(clientKey);
   if (!entry) return;
-  const queue = pendingByConversation.get(entry.conversationId);
-  if (queue) pendingByConversation.set(entry.conversationId, queue.filter((item) => item.idempotencyKey !== clientKey));
   publish({ threadError: null });
-  mapRows((item) => item.clientKey === clientKey ? { ...item, pending: true, failed: false } : item);
+  if (offlineNow()) {
+    settleLocal(clientKey, 'queued');
+    void probe().catch(() => {});
+    return;
+  }
+  settleLocal(clientKey, 'sending');
   await deliver(entry.conversationId, entry.payload);
 }
 
-/** Drop a failed row the sender no longer wants to send. */
+/** Drop a row the sender no longer wants to send: not sent, or waiting for a connection. */
 export function discardFailed(clientKey: string): void {
-  const entry = unsent.get(clientKey);
-  unsent.delete(clientKey);
-  if (entry) {
-    const queue = pendingByConversation.get(entry.conversationId);
-    if (queue) pendingByConversation.set(entry.conversationId, queue.filter((item) => item.idempotencyKey !== clientKey));
-  }
-  const keep = (item: ConversationMessage) => !(item.clientKey === clientKey && item.failed);
+  forgetLocal(clientKey);
+  const keep = (item: ConversationMessage) => !(item.clientKey === clientKey && (item.failed || item.queued));
   const thread = state.thread;
   publish({
     messages: state.messages.filter(keep),
@@ -2096,24 +2236,108 @@ export function discardFailed(clientKey: string): void {
   });
 }
 
-export async function retryPending(): Promise<void> {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return;
-  publish({ online: true });
-  for (const [conversationId, queue] of [...pendingByConversation]) {
-    const remaining: PendingSend[] = [];
-    for (const pending of queue) {
-      try {
-        const message = await api.sendMessage(conversationId, pending);
-        unsent.delete(pending.idempotencyKey);
-        sentKeys.set(message.id, pending.idempotencyKey);
+let flushing: Promise<void> | null = null;
+let flushAgain = false;
+
+/**
+ * Send what waited for a connection, oldest first, under the keys it was
+ * written with. Run when the connection is back: the browser's `online`, the
+ * shell's probe saying so (`usernode:offline-change`), the events socket
+ * reopening (resync), and a reload that brought messages back. One run at a
+ * time; a message queued while it runs is sent by the same run. A message
+ * that finds the connection gone again stops it, and the rest wait with it.
+ */
+export function flushQueued(): Promise<void> {
+  if (offlineNow()) return Promise.resolve();
+  if (flushing) { flushAgain = true; return flushing; }
+  if (!queuedCount()) return Promise.resolve();
+  flushing = (async () => {
+    publish({ online: true });
+    do {
+      flushAgain = false;
+      for (const [key, entry] of [...unsent]) {
+        if (entry.state !== 'queued' || unsent.get(key) !== entry) continue;
+        if (offlineNow()) return;
+        settleLocal(key, 'sending');
+        if (await deliver(entry.conversationId, entry.payload) === 'queued') return;
       }
-      catch { remaining.push(pending); }
-    }
-    if (remaining.length) pendingByConversation.set(conversationId, remaining);
-    else pendingByConversation.delete(conversationId);
+    } while (flushAgain && !offlineNow());
+  })().finally(() => { flushing = null; });
+  return flushing;
+}
+
+/**
+ * The unconfirmed messages this account left on the device, back in their
+ * conversations (offline test, finding 1): one that was waiting waits again,
+ * and goes once the connection allows; one not sent keeps its Retry; one
+ * that was on its way when the app closed waits too, since sending it again
+ * under its key cannot post it twice. Once per account per document.
+ */
+let restoredFor = 0;
+export async function restoreUnsent(): Promise<void> {
+  const viewer = currentUser().id;
+  if (!viewer || restoredFor === viewer) return;
+  restoredFor = viewer;
+  const records = await messagesOutbox().load(viewer);
+  if (currentUser().id !== viewer || restoredFor !== viewer) return;
+  let restored = 0;
+  for (const record of records) {
+    if (unsent.has(record.key)) continue;
+    const next: UnsentState = record.state === 'failed' ? 'failed' : 'queued';
+    unsent.set(record.key, {
+      conversationId: record.conversationId, payload: record.payload, after: record.after,
+      row: rowIn(record.row, next), state: next, drawn: true, viewer, savedAt: record.savedAt,
+    });
+    restored += 1;
   }
-  if (state.route.conversationId) await loadThread(state.route.conversationId, true);
-  await loadConversations(true);
+  if (!restored) return;
+  drawLocalRows();
+  void flushQueued();
+}
+
+/**
+ * Put the open conversation's unsent rows on screen when they arrived after
+ * its page did (a restore). A page still loading draws them itself
+ * (withLocalRows, loadReplyThread).
+ */
+function drawLocalRows(): void {
+  const conversationId = state.route.conversationId;
+  if (!conversationId || state.loadingThread || state.active?.id !== conversationId) return;
+  const shown = new Set(state.messages.map((item) => item.clientKey).filter(Boolean));
+  const thread = state.thread;
+  const threadShown = new Set((thread?.messages || []).map((item) => item.clientKey).filter(Boolean));
+  const main: ConversationMessage[] = [];
+  const replies: ConversationMessage[] = [];
+  for (const [key, entry] of unsent) {
+    if (entry.conversationId !== conversationId || !entry.drawn) continue;
+    if (!entry.payload.threadRootId) { if (!shown.has(key)) main.push(entry.row); continue; }
+    if (thread && !thread.loading && thread.conversationId === conversationId && thread.rootId === entry.payload.threadRootId
+        && !threadShown.has(key)) replies.push(entry.row);
+  }
+  if (!main.length && !replies.length) return;
+  publish({
+    ...(main.length ? { messages: [...state.messages, ...main].sort(transcriptOrder) } : {}),
+    ...(replies.length && thread ? { thread: { ...thread, messages: [...thread.messages, ...replies] } } : {}),
+  });
+}
+
+/**
+ * Forget every unconfirmed message, on screen and on the device: the session
+ * is over (App._dropCachedSession, on sign-out or another account), and what
+ * one account wrote is never left for the next.
+ */
+export function clearUnsent(): void {
+  const keys = new Set(unsent.keys());
+  unsent.clear();
+  restoredFor = 0;
+  messagesOutbox().clear();
+  if (!keys.size) return;
+  const keep = (item: ConversationMessage) => !(item.id < 0 && item.clientKey && keys.has(item.clientKey));
+  const thread = state.thread;
+  publish({
+    messages: state.messages.filter(keep),
+    ...(thread ? { thread: { ...thread, messages: thread.messages.filter(keep) } } : {}),
+  });
 }
 
 export async function edit(messageId: number, content: string): Promise<void> {
@@ -2267,6 +2491,20 @@ export function closeThread(): void {
 }
 
 /**
+ * The sender's unconfirmed replies in a thread, from `unsent` as
+ * withLocalRows draws a conversation's (offline test, finding 1): a thread
+ * opened again starts empty. One still on its way gives way to the server's
+ * copy of the same words in `page`; one waiting or not sent is not there.
+ */
+function localReplies(conversationId: number, rootId: number, page: ConversationMessage[]): ConversationMessage[] {
+  const claimed = new Set(sentKeys.values());
+  return [...unsent].filter(([key, entry]) => entry.conversationId === conversationId && entry.drawn
+    && entry.payload.threadRootId === rootId && !claimed.has(key)
+    && !(entry.state === 'sending' && page.some((row) => row.sender.id === entry.row.sender.id && row.content === entry.row.content)))
+    .map(([, entry]) => entry.row);
+}
+
+/**
  * A reply thread's page (#2387): the message it hangs off and its replies.
  * Its own request counter, so a slow thread cannot paint over the next one.
  */
@@ -2296,8 +2534,7 @@ export async function loadReplyThread(conversationId: number, rootId: number, fo
       openAddress(threadAddress(conversationId, page.root.id));
       return;
     }
-    const local = (state.thread?.messages || []).filter((item) => item.id < 0 && item.threadRootId === rootId
-      && !page.messages.some((row) => row.sender.id === item.sender.id && row.content === item.content));
+    const local = localReplies(conversationId, rootId, page.messages);
     const known = page.messages.map((item) => {
       const key = sentKeys.get(item.id);
       return key ? { ...item, clientKey: key } : item;
@@ -2317,6 +2554,8 @@ export async function loadReplyThread(conversationId: number, rootId: number, fo
         loading: false, error: null, nextBefore: page.nextBefore,
         // #5219: the request's public discussion behind a bot-card thread, merged in by the pane.
         discussion: page.discussion,
+        // B19 follow-up: where it opens, taken once, before the open reads it.
+        firstUnreadId: same && current && current.firstUnreadId !== undefined ? current.firstUnreadId : page.firstUnreadId,
       },
     });
     const newest = known.reduce((top, item) => Math.max(top, item.id), 0);
@@ -2529,8 +2768,12 @@ function showing(): boolean {
  * "Working on…" for work long done. Through the window event both already
  * re-read on, fresh: this module cannot import them, since the cards' store
  * imports this one.
+ *
+ * A reconnect is the connection back, too: what waited for it goes now
+ * (flushQueued, which does nothing while the app is offline).
  */
 export async function resync(): Promise<void> {
+  void flushQueued();
   void loadAppDiscussions();
   const reads = [loadConversations(true)];
   const conversationId = state.route.conversationId;
@@ -2746,11 +2989,12 @@ export async function share(reference?: SharedObjectReference): Promise<void> {
  */
 export async function shareToConversation(conversationId: number, object: SharedObjectReference, note = ''): Promise<void> {
   if (!validId(conversationId)) throw new Error(t('messages:store.error.chooseConversation'));
+  // Bounded like the composer's sends: the dialog says it failed rather than waiting on a dead network.
   const message = await api.sendMessage(conversationId, {
     content: note.trim().slice(0, 8000),
     object,
     idempotencyKey: idempotencyKey(),
-  });
+  }, { timeoutMs: SEND_TIMEOUT_MS });
   if (state.route.conversationId === conversationId && message.id > 0) {
     publish({
       messages: state.messages
@@ -2827,16 +3071,30 @@ export const messagesController = {
   // #3705: the inbox AND the conversation on screen (see resync).
   resync,
   showing,
+  // Offline test, finding 1: App._dropCachedSession's sweep, when a session ends.
+  clearUnsent,
 };
 
 export function initializeMessagesStore(): () => void {
-  const onOnline = () => { void retryPending(); };
+  const onOnline = () => { void flushQueued(); };
   const onOffline = () => publish({ online: false });
+  // Offline test, finding 1: the shell's own probe of the connection
+  // (../../lib/offline.ts), which also hears a network that connects and
+  // passes nothing, where the browser never fires `online`. Back online by
+  // its word, what waited goes.
+  const onConnectivity = (event: Event) => {
+    const offline = (event as CustomEvent<{ offline?: boolean }>).detail?.offline;
+    if (typeof offline !== 'boolean') return;
+    publish({ online: !offline });
+    if (!offline) void flushQueued();
+  };
   // #2783: the app channels too, so a `#name` for one chips in any chat — an
   // app's own discussion included — before Messages has ever been opened.
-  const onAuthed = () => { void loadConversations(); void loadAppDiscussions(); };
+  // And the messages this account left unsent on the device (restoreUnsent).
+  const onAuthed = () => { void loadConversations(); void loadAppDiscussions(); void restoreUnsent(); };
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
+  window.addEventListener('usernode:offline-change', onConnectivity);
   // 5 October: somebody using the page, or coming back to it, is somebody
   // there to read what is open (notePresence, readWhenThere). Captured and
   // passive: it only notes the time, and never stands in a gesture's way.
@@ -2859,6 +3117,7 @@ export function initializeMessagesStore(): () => void {
   if (window.App?.user) void loadConversations();
   else document.addEventListener('sv:authed', onAuthed, { once: true });
   if (window.App?.user) void loadAppDiscussions();
+  if (window.App?.user) void restoreUnsent();
   // #2387 / #2967: the two layout preferences, read after mount so the first
   // render matches the prerendered shell. The folded sections are the third,
   // remembered the same way.
@@ -2874,6 +3133,7 @@ export function initializeMessagesStore(): () => void {
   return () => {
     window.removeEventListener('online', onOnline);
     window.removeEventListener('offline', onOffline);
+    window.removeEventListener('usernode:offline-change', onConnectivity);
     for (const type of PRESENCE_EVENTS) window.removeEventListener(type, onPresence, presence);
     document.removeEventListener('visibilitychange', onPresence);
     document.removeEventListener('homeroom:language-changed', onLanguage);

@@ -621,11 +621,11 @@ async function pictureBytes(pool, token) {
   const picture = await pictureFor(pool, invite.app_id);
   if (!picture || picture.kind !== 'shot') return null;
   const { rows } = await pool.query(
-    'SELECT data, object_key, bytes, content_type, sha256 FROM shot_artifacts WHERE id = $1',
+    'SELECT object_key, bytes, content_type, sha256 FROM shot_artifacts WHERE id = $1',
     [picture.artifactId]
   );
   if (!rows[0]) return null;
-  return { data: rows[0].data, objectKey: rows[0].object_key, sizeBytes: rows[0].bytes,
+  return { objectKey: rows[0].object_key, sizeBytes: rows[0].bytes,
     contentType: rows[0].content_type, sha256: rows[0].sha256 };
 }
 

@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
 const routes = require('../src/routes/shots');
+const media = require('../src/services/media-store');
 const fixtures = require('./fixtures/shots');
 const db = require('../src/db/pool');
 const appAccess = require('../src/services/app-access');
@@ -445,6 +446,9 @@ test('a dense still is served only at its own address, and only to an account in
   const session = { id: 42, app_id: 9, user_id: 7, source: 'imported', imported_pr_head_sha: 'b'.repeat(40), shots_state: 'verified' };
   const FLAT = Buffer.from('flat-png');
   const DENSE = Buffer.from('dense-png-at-2x');
+  const store = require('./lib/media-store').useMemoryMedia(t);
+  await store.putObject(media.objectKey(FLAT), FLAT, 'image/png');
+  await store.putObject(media.objectKey(DENSE), DENSE, 'image/png');
   const asked = [];
   const pool = { query: async (sql, params) => {
     if (String(sql).includes('FROM chat_sessions cs')) return { rows: [session] };
@@ -452,7 +456,7 @@ test('a dense still is served only at its own address, and only to an account in
     if (String(sql).includes('FROM shot_artifacts a')) {
       asked.push(params[3]);
       // The query's CASE: the original only when asked for, the 1x copy otherwise.
-      return { rows: [{ data: params[3] ? DENSE : FLAT, sha256: (params[3] ? 'd' : 'f').repeat(64), content_type: 'image/png', bytes: 8 }] };
+      return { rows: [{ object_key: media.objectKey(params[3] ? DENSE : FLAT), sha256: (params[3] ? 'd' : 'f').repeat(64), content_type: 'image/png', bytes: (params[3] ? DENSE : FLAT).length }] };
     }
     throw new Error(`Unexpected query: ${String(sql).slice(0, 80)}`);
   } };
@@ -474,16 +478,19 @@ test('a dense still is served only at its own address, and only to an account in
   assert.deepEqual(await body(`${url}?density=device`), ['flat-png', `"${'f'.repeat(64)}"`]);
   assert.deepEqual(asked, [true, false, false]);
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/routes/shots.js'), 'utf8');
-  assert.match(src, /CASE WHEN \$4 THEN COALESCE\(a\.dense_data, a\.data\) ELSE a\.data END AS data/);
+  assert.match(src, /CASE WHEN \$4 THEN COALESCE\(a\.dense_object_key, a\.object_key\) ELSE a\.object_key END AS object_key/);
 });
 
 test('a close-up is served only to an account in the experiment, at its own address', async (t) => {
   const session = { id: 42, app_id: 9, user_id: 7, source: 'imported', imported_pr_head_sha: 'b'.repeat(40), shots_state: 'verified' };
+  const store = require('./lib/media-store').useMemoryMedia(t);
+  const data = Buffer.from('closeup-png');
+  await store.putObject(media.objectKey(data), data, 'image/png');
   const pool = { query: async (sql, params) => {
     if (String(sql).includes('FROM chat_sessions cs')) return { rows: [session] };
     if (String(sql).includes('review_flow_enabled')) return { rows: [{ review_flow_enabled: params[0] === 7 }] };
     if (String(sql).includes('FROM shot_artifacts a')) {
-      return { rows: [{ data: Buffer.from('closeup-png'), sha256: 'e'.repeat(64), content_type: 'image/png', bytes: 11, variant: 'closeup' }] };
+      return { rows: [{ object_key: media.objectKey(data), sha256: 'e'.repeat(64), content_type: 'image/png', bytes: 11, variant: 'closeup' }] };
     }
     throw new Error(`Unexpected query: ${String(sql).slice(0, 80)}`);
   } };

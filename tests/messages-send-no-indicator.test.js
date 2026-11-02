@@ -49,7 +49,9 @@ function harness() {
   const server = { messages: [serverMessage(1, THEM, 'hello')], nextId: 2, posts: [], failNext: 0 };
   const deferred = [];
   const api = {
-    MessagesApiError: class extends Error {},
+    // The server's own answer, as api.ts throws it: a refused send is not
+    // a network that went quiet (messages-send-offline.test.js has those).
+    MessagesApiError: class extends Error { constructor(status, text) { super(text); this.status = status; } },
     strictId: (value) => (Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : null),
     listConversations: async () => ({ conversations: [CONVERSATION] }),
     getConversation: async () => CONVERSATION,
@@ -59,7 +61,7 @@ function harness() {
     sendMessage: (id, payload) => new Promise((resolve, reject) => {
       server.posts.push(payload);
       deferred.push(() => {
-        if (server.failNext) { server.failNext -= 1; reject(new Error('Server hiccup')); return; }
+        if (server.failNext) { server.failNext -= 1; reject(new api.MessagesApiError(500, 'Server hiccup')); return; }
         // Idempotent, as services/conversations.js is: the same key is one row.
         const existing = server.messages.find((item) => item.key === payload.idempotencyKey);
         if (existing) { resolve({ ...existing }); return; }
@@ -77,7 +79,12 @@ function harness() {
     addEventListener() {}, removeEventListener() {}, dispatchEvent() {},
     matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }),
   };
-  const store = loadTsx('frontend/src/features/messages/store.ts', { stubs: { './api': api, react } });
+  // Online by the shell's probe too, and nothing kept on a device.
+  const offline = { isOffline: () => false, probe: async () => {} };
+  const outbox = { load: async () => [], save() {}, drop() {}, clear() {} };
+  const store = loadTsx('frontend/src/features/messages/store.ts', {
+    stubs: { './api': api, react, '../../lib/offline': offline, './outbox': { MAX_UNSENT: 50, messagesOutbox: () => outbox } },
+  });
   store.useMessagesSnapshot();
   const flush = () => new Promise((resolve) => setImmediate(resolve));
   const settle = async () => { while (deferred.length) deferred.shift()(); await flush(); await flush(); };

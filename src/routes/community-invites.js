@@ -246,7 +246,7 @@ function communityInviteRoutes(config) {
         : null;
       if (!picture) return res.status(404).json({ error: 'No picture' });
       const media = require('../services/media-store');
-      const size = picture.objectKey ? picture.sizeBytes : Buffer.byteLength(picture.data || '');
+      const size = picture.sizeBytes;
       res.set({
         'Content-Type': picture.contentType,
         'Content-Length': String(size),
@@ -255,7 +255,7 @@ function communityInviteRoutes(config) {
         'X-Content-Type-Options': 'nosniff',
         'Content-Disposition': 'inline',
       });
-      return await media.respond(res, media.getStore(), { object_key: picture.objectKey, data: picture.data });
+      return await media.respond(res, media.getStore(), { object_key: picture.objectKey });
     } catch (err) {
       log.error('invites', 'Invite picture failed', { err: err.message });
       if (res.headersSent || res.destroyed) return res.destroy();

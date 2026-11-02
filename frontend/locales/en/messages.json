@@ -2383,6 +2383,10 @@
     "text": "Request failed ({{status}})",
     "description": "Error in Messages when a request to the server failed and the server gave no explanation. \"Request\" is a noun, the network request. {{status}} is the HTTP status number."
   },
+  "api.sendTimedOut": {
+    "text": "No answer from Homeroom. Check your connection and try again.",
+    "description": "Error in Messages when sending a message or sharing an item got no answer from the server for several seconds, usually because the connection stopped passing anything, and sending was given up."
+  },
   "api.contactRestricted": {
     "text": "This person only takes new messages and invitations from people in projects with them. You can send them an invite link instead.",
     "description": "Error in Messages when you try to start a conversation with someone, or invite them to a group, and their Privacy setting allows that only from people who share a project with them. It must not say anything else about the person."
@@ -3066,6 +3070,14 @@
   "row.notSent": {
     "text": "Not sent",
     "description": "Red note under your message when sending it failed."
+  },
+  "row.sending": {
+    "text": "Sending…",
+    "description": "Quiet grey note under your message while it is still on its way. Shown only once sending has taken more than a couple of seconds, on a slow or silent connection."
+  },
+  "row.queued": {
+    "text": "Will send when you’re back online",
+    "description": "Grey note under your message when it was written without a connection: it is kept on this device and sent by itself once the connection returns. A Discard button beside it throws the message away."
   },
   "row.discard": {
     "text": "Discard",
@@ -4759,6 +4771,10 @@
     "text": "Nothing needs you right now.",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Shown in the Needs you list when it is empty."
   },
+  "ai.work.loading": {
+    "text": "Loading what needs you",
+    "description": "The Homeroom bot tab: announced to screen readers in the Needs you list while it is still loading; on screen its rows show as grey placeholders."
+  },
   "ai.work.unreachable": {
     "text": "Couldn’t reach Homeroom. Your lists will load when you’re back online.",
     "description": "The AI tab's main view: shown at the top of the Needs you list, above a Try again button, when the person's lists (what needs them, what is in progress, what is waiting) could not be fetched because there was no connection and this device has no saved copy of them."
@@ -4818,6 +4834,10 @@
   "ai.pill.vote": {
     "text": "Vote",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Pill at the end of a row: the person owes a vote on it."
+  },
+  "ai.pill.approve": {
+    "text": "Approve",
+    "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Pill at the end of a row: a change on a project that is just this person's waits for their approval (their yes alone decides it). A verb."
   },
   "ai.pill.pick": {
     "text": "Pick one",

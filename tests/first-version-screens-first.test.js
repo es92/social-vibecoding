@@ -217,7 +217,7 @@ test('the screens-first instruction comes straight after the plan, before the fo
 
 test('the first screen is drawn without the staging label the demo wears', () => {
   const { FIRST_VERSION_SCREENS_BRIEF } = require('../src/services/prompts');
-  assert.match(FIRST_VERSION_SCREENS_BRIEF, /The first is normally the main screen, populated with the demo data your Design subsection describes but drawn WITHOUT its "Staging demo" label/);
+  assert.match(FIRST_VERSION_SCREENS_BRIEF, /The first is normally the main screen, populated with the demo data your Design subsection describes but drawn WITHOUT its "Sample data" label/);
   assert.match(FIRST_VERSION_SCREENS_BRIEF, /the Design subsection still says where the label goes, and the build adds it there/);
   assert.doesNotMatch(FIRST_VERSION_SCREENS_BRIEF, /—/);
 });

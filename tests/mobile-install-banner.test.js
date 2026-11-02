@@ -286,12 +286,27 @@ test('#4899: the island reads the tour\'s own flag, and asks again when it chang
   assert.match(src, /\}, \[urls, dismissed, member, privateMember, tab, touring\]\);/);
   // That decision is an effect, a render behind the flag, so the strip and the
   // body's room for it read the flag too: down in the frame the tour comes up.
-  assert.match(src, /const up = !!offer && !touring;\n\n  useHiddenClass\(ref, !up\);/);
+  assert.match(src, /const up = !!offer && !touring && \(!short \|\| stepsOpen\);\n\n  useHiddenClass\(ref, !up\);/);
   assert.match(src, /body\.classList\.toggle\(BODY_CLASS, up\);\n[^\n]*\n  \}, \[up\]\);/);
   // Nobody who never takes a tour is held: the flag is false until a Tour
   // mounts, and the Tour puts it back as it unmounts.
   const tour = loadTsx('frontend/src/features/first-session/tour-running.ts');
   assert.equal(tour.tourRunning(), false);
+});
+
+test('L04: held on a short screen (a phone held sideways), offered again upright', () => {
+  // Overnight audit, 2 Nov 2026: on an iPhone held sideways in Safari the
+  // strip took 48 of 393px on every screen, above the header and over the
+  // conversation being typed into. Held while the screen is that short, as
+  // during a tour, not dismissed; its steps sheet, once open, stays.
+  const src = fs.readFileSync(
+    path.join(ROOT, 'frontend/src/features/mobile-install/install-banner.tsx'), 'utf8');
+  assert.match(src, /export const SHORT_SCREEN_QUERY = '\(max-height: 500px\)';/);
+  assert.match(src, /const short = useShortScreen\(\);/);
+  assert.match(src, /list\.addEventListener\?\.\('change', sync\)/, 'turning the phone brings it back');
+  assert.doesNotMatch(src.slice(src.indexOf('function useShortScreen')), /writeDismissed\(\);\n\s+\}, \[short/, 'held, never dismissed');
+  // Its first render is still the hidden strip: the hook starts false.
+  assert.match(src, /function useShortScreen\(\): boolean \{\n  const \[short, setShort\] = useState\(false\);/);
 });
 
 test('a first visit holds the strip to its end, and only the first session\'s own screens make one', () => {

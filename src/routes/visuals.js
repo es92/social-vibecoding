@@ -40,13 +40,13 @@ function visualsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
     }
     try {
       const { rows } = await pool.query(
-        `SELECT content_type, data, object_key, bytes, legacy_etag FROM session_visuals WHERE id = $1`,
+        `SELECT content_type, object_key, bytes, legacy_etag FROM session_visuals WHERE id = $1`,
         [id]
       );
-      if (!rows.length || (rows[0].data == null && !rows[0].object_key)) return res.status(404).end();
+      if (!rows.length) return res.status(404).end();
       const row = rows[0];
       const contentType = row.content_type || 'application/octet-stream';
-      const total = row.object_key ? Number(row.bytes) : row.data.length;
+      const total = Number(row.bytes);
 
       // #2515: the type here is a STORED value, so a capture whose recorded
       // content_type says image/* while its bytes are markup must not be
@@ -64,7 +64,6 @@ function visualsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
       if (range) {
         res.status(206);
         res.set('Content-Range', `bytes ${range.start}-${range.end}/${total}`);
-        if (!row.object_key) return res.send(row.data.subarray(range.start, range.end + 1));
         // Express previously hashed the sliced response for its weak ETag.
         // Read ONLY the requested range (at most this route's 8 MB cap),
         // keeping that exact validator without downloading the full video.
@@ -72,7 +71,6 @@ function visualsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
         for await (const chunk of await mediaStore.stream(store, row.object_key, range)) chunks.push(Buffer.from(chunk));
         return res.send(Buffer.concat(chunks));
       }
-      if (!row.object_key) return res.send(row.data);
       res.set('ETag', row.legacy_etag);
       res.set('Content-Length', String(total));
       if (req.fresh) {

@@ -91,7 +91,7 @@ async function connectPool() {
       id TEXT PRIMARY KEY, run_id TEXT NOT NULL, story_id TEXT NOT NULL, viewport TEXT,
       side TEXT NOT NULL, variant TEXT NOT NULL, media TEXT NOT NULL,
       theme TEXT NOT NULL DEFAULT 'light', public_safe BOOLEAN,
-      content_type TEXT NOT NULL, data BYTEA NOT NULL, sha256 TEXT NOT NULL, object_key TEXT, bytes INTEGER,
+      content_type TEXT NOT NULL, sha256 TEXT NOT NULL, object_key TEXT, bytes INTEGER,
       width INTEGER, height INTEGER);
     CREATE TABLE app_illustrations (app_id INTEGER PRIMARY KEY, id TEXT NOT NULL, dark_id TEXT);
     CREATE TABLE community_members (
@@ -430,17 +430,17 @@ test('invite links against a real PostgreSQL', async (t) => {
           (1, 2, NOW() - INTERVAL '1 day', 'verified', 'r1'),
           (2, 2, NULL, 'verified', 'r2'),
           (3, 2, NOW(), 'verified', 'r3');
-        INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, public_safe, content_type, data, sha256, width, height) VALUES
-          ('wide', 'r1', 's1', 'desktop', 'head', 'context', 'png', TRUE, 'image/png', '\\x01', 'aa', 1280, 800),
-          ('before', 'r1', 's1', 'phone', 'base', 'context', 'png', TRUE, 'image/png', '\\x02', 'bb', 390, 844),
-          ('phone', 'r1', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x89504e47', 'cc', 390, 844),
-          ('unmerged', 'r2', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x03', 'dd', 390, 844),
-          ('as-admin', 'r3', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', '\\x04', 'ee', 390, 844);
+        INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, public_safe, content_type, object_key, sha256, width, height) VALUES
+          ('wide', 'r1', 's1', 'desktop', 'head', 'context', 'png', TRUE, 'image/png', 'media/sha256/4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a', 'aa', 1280, 800),
+          ('before', 'r1', 's1', 'phone', 'base', 'context', 'png', TRUE, 'image/png', 'media/sha256/dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986', 'bb', 390, 844),
+          ('phone', 'r1', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', 'media/sha256/0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543', 'cc', 390, 844),
+          ('unmerged', 'r2', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', 'media/sha256/084fed08b978af4d7d196a7446a86b58009e636b611db16211b65a9aadff29c5', 'dd', 390, 844),
+          ('as-admin', 'r3', 's1', 'phone', 'head', 'context', 'png', TRUE, 'image/png', 'media/sha256/e52d9c508c502347344d8c07ad91cbd6068afc75ff6292f062a09ca381c89e71', 'ee', 390, 844);
       `);
       preview = await invites.preview(pool, made.link.token);
       assert.deepEqual(preview.project.picture, { kind: 'shot', url: `/api/public/invites/${made.link.token}/picture`, darkUrl: null });
       const bytes = await invites.pictureBytes(pool, made.link.token);
-      assert.deepEqual([bytes.contentType, bytes.sha256, bytes.data.toString('hex')], ['image/png', 'cc', '89504e47']);
+      assert.deepEqual([bytes.contentType, bytes.sha256, bytes.objectKey], ['image/png', 'cc', 'media/sha256/0f4636c78f65d3639ece5a064b5ae753e3408614a14fb18ab4d7540d2c248543']);
       const illustration = { kind: 'illustration', url: '/app-illustrations/light1', darkUrl: '/app-illustrations/dark1' };
       // Not cleared by the shots agent: the card image instead.
       await pool.query(`UPDATE shot_artifacts SET public_safe = NULL WHERE id = 'phone'`);

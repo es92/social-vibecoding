@@ -221,7 +221,7 @@ function publicApiRoutes(config) {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Cache-Control', 'public, max-age=300');
       if (still.sha256) res.setHeader('ETag', `"${still.sha256}"`);
-      res.setHeader('Content-Length', String(still.objectKey ? still.sizeBytes : Buffer.byteLength(still.data || '')));
+      res.setHeader('Content-Length', String(still.sizeBytes));
       // res.send previously handled conditional still reads. Keep its 304
       // behavior while streaming the body, without opening S3 for a match.
       if (req.fresh) {
@@ -229,7 +229,7 @@ function publicApiRoutes(config) {
         res.removeHeader('Content-Length');
         return res.status(304).end();
       }
-      await mediaStore.respond(res, mediaStore.getStore(), { object_key: still.objectKey, data: still.data });
+      await mediaStore.respond(res, mediaStore.getStore(), { object_key: still.objectKey });
     } catch (err) {
       log.error('public-api', 'change still failed', { slug, changeId, message: err.message });
       if (res.headersSent || res.destroyed) return res.destroy();

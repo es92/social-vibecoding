@@ -80,6 +80,12 @@ test('Needs you: the feed, then the bot\'s plans waiting for Build it, then priv
   ], '#390 is the question owed above, so its plan is not listed again; nothing waiting on others is here');
   assert.deepEqual(rows.map((r) => r.pill && message(r.pill.id)), ['Vote', 'Pick one', 'Answer', 'Vote', 'Build it', null, null]);
   assert.equal(owedCount(rows), 5, 'the heading counts what asks for you, not your private threads');
+  // B17: on a project that is just yours, your yes alone approves it, and
+  // the row says so as its card and the project's Needs you do.
+  const [solo] = needsYou([{ kind: 'proposal', id: 21, number: 5, title: 'Darker header', app, approve: true }], null);
+  assert.equal(message(solo.pill.id), 'Approve');
+  const [ruleOnly] = needsYou([{ kind: 'governance', id: 22, number: null, title: 'Rename it', app, approve: true }], null);
+  assert.equal(message(ruleOnly.pill.id), 'Vote', 'only a change is approved alone');
   assert.equal(rows[1].title, 'Night theme', 'a ballot is named for the request its changes compete for');
   assert.equal(words(rows[1].sub), 'Garden club · #401');
   assert.equal(rows[1].href, '#app/garden/dev/issues/401', 'and is decided on its page');
@@ -871,10 +877,12 @@ test('Main\'s column is held inside the window, and the panel takes its place at
 test('the tab says Homeroom bot: a wide seat on a phone, two lines in the Duo column', () => {
   assert.equal(message('core:tabs.ai'), 'Homeroom bot');
   const css = read('public/css/app.css');
-  // Measured in the bar's font: 79px of label in an 83-87px seat at 375-390, 76 in 80 at 360.
-  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.3fr 1\.3fr 1fr 1fr; \}/,
+  // Measured in the bar's font: 77px of label in a 94px seat at 375, 70 in 88 at 360.
+  // Home and You give Messages and the bot room (overnight audit M01): a lit
+  // Messages pill clears the bot's name by about 10px.
+  assert.match(css, /#platform-tabs \{ grid-template-columns: \.85fr 1\.3fr 1\.4fr 1\.1fr \.85fr; \}/,
     'Communities, second, and Homeroom bot, third, take the wide seats');
-  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.2fr 1\.2fr 1fr 1fr; \}/, 'a little less on the smallest phones');
+  assert.match(css, /#platform-tabs \{ grid-template-columns: \.85fr 1\.25fr 1\.35fr 1\.1fr \.85fr; \}/, 'a little less on the smallest phones');
   assert.match(css, /:is\(#platform-tab-workshop, #platform-tab-ai\) \.platform-tab-label \{\s+letter-spacing: -\.02em;\s+overflow: visible;\s+text-overflow: clip;\s+\}/,
     'tightened and let out of the cell rather than cut');
   assert.match(css, /html\[data-side-strip\] #platform-tab-ai \.platform-tab-label \{\s+font-size: 9\.5px;\s+letter-spacing: -\.02em;\s+line-height: 1\.05;\s+white-space: normal;\s+text-align: center;\s+\}/,

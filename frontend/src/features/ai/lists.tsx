@@ -55,6 +55,7 @@ import type { ReactNode } from 'react';
 
 import { Chip } from '@/components/ui/chip';
 import { SectionHeader } from '@/components/ui/grouped-list';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import {
   ArrowPathIcon, ArrowUpTrayIcon, BallotIcon, ChatIcon, CheckIcon, ChevronDownIcon, ClockIcon, CodeIcon,
   CogIcon, EyeIcon, HandRaisedIcon, LockIcon, PlayIcon, ReplyArrowIcon,
@@ -523,7 +524,19 @@ export function AiLists({ hero, main, lit = null, ready, failed = null, onRetry,
           owe={owedShown > 0}
           lines={needLines}
           note={failed ? <ListsFailed failed={failed} onRetry={() => onRetry?.()} /> : null}
-          empty={ready && !failed ? <p className="py-3 text-sm text-zinc-500 dark:text-zinc-400" data-ai-empty="">{t('messages:ai.work.empty')}</p> : null}
+          // A failed read says so in its note (ListsFailed) and draws no rows,
+          // no empty line and no skeleton under it.
+          empty={failed ? null : ready ? <p className="py-3 text-sm text-zinc-500 dark:text-zinc-400" data-ai-empty="">{t('messages:ai.work.empty')}</p> : (
+            // L06 (overnight audit, 2 Nov 2026): until the lists are read the
+            // card said nothing at all, an empty card that read as final.
+            // Two rows' lines at the one-line row's spacing instead: two
+            // bars and no more, as the screen is in the prerendered document
+            // (tests/mount-on-reveal.test.js counts its elements).
+            <SkeletonGroup label={t('messages:ai.work.loading')} className="flex flex-col gap-8 py-4" data-ai-loading="">
+              <Skeleton className="w-1/2" />
+              <Skeleton className="w-2/5" />
+            </SkeletonGroup>
+          )}
           first={GROUP_FIRST.needs}
           heads={heads}
         />

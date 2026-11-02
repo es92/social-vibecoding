@@ -155,12 +155,22 @@ const NO_LINKS: readonly HomeroomLink[] = [];
 export function BotHeadCard({ head, objects }: { head: BotHead; objects: readonly SharedObjectCard[] }) {
   const t = useMessages('messages');
   const carried = objects.find((object) => object.available && isHeadCard(head, object)) || null;
-  const [read] = useLinkCards(carried || head.kind !== 'request' || !head.link ? NO_LINKS : [head.link]);
   // A project's card wears the project's own icon (run four, 13 Oct: it was
   // "◆"): the tray's, as the strip and the news lines draw it, else the
-  // emoji the message carries; with neither, the glyph.
+  // emoji the message carries, else (B21, overnight audit, 1 Nov 2026) the
+  // project's own hub card, read for its icon alone: a newcomer's first
+  // project is in none of the tray's lists once it is live, and its icon is
+  // an image the message never carried. With none of them, the glyph.
   const { work } = useBotWork();
-  const icon = head.kind === 'project' ? newsIcon(work, head.appSlug, head.appName) : null;
+  const tray = head.kind === 'project' ? newsIcon(work, head.appSlug, head.appName) : null;
+  const iconless = head.kind === 'project' && !!head.appSlug && !tray?.iconUrl && !tray?.iconEmoji && !head.appEmoji;
+  const hub = iconless ? pageOf(`app/${head.appSlug}/workshop`) : null;
+  const [read] = useLinkCards(carried ? NO_LINKS
+    : head.kind === 'request' && head.link ? [head.link]
+      : hub ? [hub] : NO_LINKS);
+  const fetched = read?.card?.available ? read.card : null;
+  const icon = head.kind !== 'project' ? null
+    : iconless && fetched ? { iconUrl: fetched.iconUrl || null, iconEmoji: fetched.iconEmoji || null } : tray;
   const own: SharedObjectCard = {
     type: head.kind === 'project' ? 'app' : head.kind === 'change' ? 'proposal' : 'issue',
     available: true,
@@ -172,7 +182,7 @@ export function BotHeadCard({ head, objects }: { head: BotHead; objects: readonl
     ...(icon && (icon.iconUrl || icon.iconEmoji || head.appEmoji)
       ? { iconUrl: icon.iconUrl, iconEmoji: icon.iconEmoji || head.appEmoji || null } : {}),
   };
-  const card = carried || read?.card || own;
+  const card = carried || (head.kind === 'request' ? read?.card : null) || own;
   const quiet = head.kind === 'request' ? { author: null, state: null } : { author: null };
   return (
     <div className="mb-1.5 mt-1 max-w-[480px]" data-bot-head-card={head.kind} data-bot-request-card={head.issueNumber || undefined}>

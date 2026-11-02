@@ -59,6 +59,30 @@ const DISMISS_KEY = 'mobileInstallBannerDismissed';
 const BODY_CLASS = 'has-install-strip';
 
 /**
+ * NOT ON A SHORT SCREEN (overnight audit L04, 2 Nov 2026). A phone held
+ * sideways is about 393px tall, and the strip took 48 of them on every
+ * screen, above a header and over the conversation being typed into (with
+ * the keys up a sideways iPhone shows 184px). It is held while the screen
+ * is this short, as it is during a tour, not dismissed: turned upright, the
+ * strip comes back. The same height app.css folds a conversation's header at.
+ */
+export const SHORT_SCREEN_QUERY = '(max-height: 500px)';
+
+function useShortScreen(): boolean {
+  const [short, setShort] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
+    let list: MediaQueryList;
+    try { list = window.matchMedia(SHORT_SCREEN_QUERY); } catch { return undefined; }
+    const sync = () => setShort(list.matches);
+    sync();
+    list.addEventListener?.('change', sync);
+    return () => list.removeEventListener?.('change', sync);
+  }, []);
+  return short;
+}
+
+/**
  * #1514: the dismissal lasts a SESSION, not forever.
  *
  * It used to be written to `localStorage`, so the one person who tapped the
@@ -110,6 +134,7 @@ export function MobileInstallBanner() {
   const touringNow = useTourRunning();
   const firstVisit = useFirstSessionVisit();
   const touring = touringNow || firstVisit;
+  const short = useShortScreen();
   const [offer, setOffer] = useState<InstallOffer | null>(null);
   // #1513: the home-screen instructions are one tap away rather than always
   // on. #4400: that tap opens a sheet (./install-steps-sheet.tsx) rather than
@@ -170,7 +195,8 @@ export function MobileInstallBanner() {
   // an effect, settled a render after the tour comes up; this takes the strip
   // down in the frame the tour's first card is drawn, rather than one frame
   // later with the page jumping up under the card.
-  const up = !!offer && !touring;
+  // L04: held on a short screen too, unless its steps are open over it.
+  const up = !!offer && !touring && (!short || stepsOpen);
 
   useHiddenClass(ref, !up);
 

@@ -221,3 +221,20 @@ test('app.css writes each measurement of the foot once', () => {
   assert.doesNotMatch(css, /#gc-(thread-)?typing:empty/);
   assert.doesNotMatch(css, /\.messages-composer,\n\.messages-composer-disabled \{/);
 });
+
+// ── B11 (overnight audit, 1 Nov 2026): the floating controls sit on a clear band ──
+
+test('the transcript fades out under Jump to latest and "N new messages" while each is up', () => {
+  const css = read('public/css/app.css');
+  // Chosen by the control's own state (shown is inert-free), on the box
+  // beside it, so nothing is written to a scroller group-chat.js owns.
+  assert.match(css, /\n:has\(\+ \[data-transcript-overlay="foot"\] \[data-jump-latest\]:not\(\[inert\]\)\) \{\n  -webkit-mask-image: linear-gradient\(to bottom, #000 calc\(100% - 64px\), transparent calc\(100% - 12px\)\);/);
+  assert.match(css, /\n\[data-transcript-overlay="top"\]:has\(\[data-unread-banner\]:not\(\[inert\]\)\) \+ \* \{\n  -webkit-mask-image: linear-gradient\(to bottom, transparent 10px, #000 52px\);/);
+  // Both up at once: one mask with both edges.
+  assert.match(css, /\[data-transcript-overlay="top"\]:has\(\[data-unread-banner\]:not\(\[inert\]\)\) \+ :has\(\+ \[data-transcript-overlay="foot"\] \[data-jump-latest\]:not\(\[inert\]\)\) \{/);
+  const chat = loadTsx(CHAT);
+  // The selectors read what the primitives render: inert while hidden.
+  assert.match(renderToHtml(createElement(chat.JumpToLatestButton, { shown: false })), /data-jump-latest="" inert=""|inert="" data-jump-latest=""/);
+  assert.doesNotMatch(renderToHtml(createElement(chat.JumpToLatestButton, { shown: true })), /inert/);
+  assert.match(renderToHtml(createElement(chat.TranscriptOverlay, { edge: 'foot' })), /data-transcript-overlay="foot"/);
+});

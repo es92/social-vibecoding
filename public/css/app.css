@@ -468,6 +468,31 @@ html.un-kb .platform-kb-column .un-kb-avoid {
 .chat-transcript.platform-safe-scroll:has(~ .platform-safe-bar) {
   padding-bottom: 12px !important;
 }
+/* THE WORDS FADE OUT BEFORE THE FLOATING CONTROLS (B11, overnight audit,
+   1 November 2026). Jump to latest floats centred over the transcript's
+   foot and "3 new messages" over its top (@/components/ui/chat
+   TranscriptOverlay), and a line of a message scrolled under either one
+   was printed through it: "top with the[v]tup date", "schedul[3 new
+   messages]on picks the days". While a control is up, the scroller's
+   edge under it fades to nothing, so it sits on a clear band rather than
+   on words; scrolling brings them out of the band. The mask is on the
+   scroller's own box, which does not move with what it scrolls, and is
+   chosen by the control's own state (shown is `inert`-free), so nothing
+   is written to the scroller, which public/js/group-chat.js owns in the
+   group chat. The foot's control hangs from the box right after the
+   scroller, the top's from the box right before it. */
+:has(+ [data-transcript-overlay="foot"] [data-jump-latest]:not([inert])) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent calc(100% - 12px));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 64px), transparent calc(100% - 12px));
+}
+[data-transcript-overlay="top"]:has([data-unread-banner]:not([inert])) + * {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 10px, #000 52px);
+  mask-image: linear-gradient(to bottom, transparent 10px, #000 52px);
+}
+[data-transcript-overlay="top"]:has([data-unread-banner]:not([inert])) + :has(+ [data-transcript-overlay="foot"] [data-jump-latest]:not([inert])) {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 10px, #000 52px, #000 calc(100% - 64px), transparent calc(100% - 12px));
+  mask-image: linear-gradient(to bottom, transparent 10px, #000 52px, #000 calc(100% - 64px), transparent calc(100% - 12px));
+}
 /* WHO IS TYPING TAKES NO ROOM UNTIL SOMEBODY TYPES (1 November 2026). The
    line held 18px open between the transcript and the reply box whether or
    not it said anything (20px in the group chat, whose lines were Tailwind
@@ -880,6 +905,29 @@ html.un-kb .platform-kb-column .un-kb-avoid {
     display: none;
   }
 }
+/* …AND THE REST OF THE CHROME ABOVE IT, WHEREVER THE KEYS LEAVE LITTLE
+   (overnight audit K01 and L03, 2 November 2026). Folding the conversation's
+   header was not enough: on a request's page the "‹ Workshop" chip and the
+   platform's header stayed, and a phone held sideways showed the chip and
+   the reply box with nothing of the thread between them; an Android phone in
+   Chrome (about 300px left above its keys, and taller than 500px at rest)
+   folded nothing at all. `platform-kb-short` is on while a field holds the
+   keys and less than 400px of the page is left to see
+   (lib/keyboard-open.ts), at any width and in the app as well. Then the
+   page's way back folds with the conversation's header, and in a browser
+   tab the platform's header does too, so the thread and its reply box have
+   the room. Not in the app, whose header is also the band under the status
+   bar. The rail beside a page stays, as the keyboard rule for 768px and up
+   says it must. All of it comes back the moment the keys go. */
+html.platform-kb-short :is(.messages-thread-header, #ai-screen .ai-main-head, .dev-request-back) {
+  display: none;
+}
+html.web-browser-chrome.platform-kb-short #platform-header {
+  display: none;
+}
+html.web-browser-chrome.platform-kb-short {
+  --platform-header-h: 0px;
+}
 .messages-thread-name,
 .messages-thread-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .messages-thread-name { color: var(--text-primary); font-size: 17px; font-weight: 700; }
@@ -993,19 +1041,25 @@ html.un-kb .platform-kb-column .un-kb-avoid {
   padding: 8px 16px;
 }
 /* A message in flight is drawn at once, faded, and changes nothing else
-   (#2907): no spinner, no "sending…" line, so confirming it moves no row.
-   The fade lifts when the server has it. */
+   (#2907): no spinner, and no "Sending…" line for a send that answers in a
+   couple of seconds, so confirming it moves no row. The fade lifts when the
+   server has it. One out longer says "Sending…" on the line under it, where
+   "Not sent" or "Will send when you're back online" comes if it does
+   (message-row.tsx SLOW_SEND_MS; offline test, finding 1). */
 .messages-message { transition: opacity .15s ease-out; }
 .messages-message-pending { opacity: .55; }
 .messages-message-failed { background: rgba(239, 68, 68, .06); }
-.messages-message-meta.messages-message-failed-note { display: flex; align-items: baseline; gap: 12px; padding: 2px 0 0; }
-.messages-message-failed-note button {
+.messages-message-meta.messages-message-failed-note,
+.messages-message-meta.messages-message-send-note { display: flex; align-items: baseline; gap: 12px; padding: 2px 0 0; }
+.messages-message-failed-note button,
+.messages-message-send-note button {
   color: var(--accent);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.messages-message-failed-note button.messages-discard { color: var(--text-muted); font-weight: 400; }
+.messages-message-failed-note button.messages-discard,
+.messages-message-send-note button.messages-discard { color: var(--text-muted); font-weight: 400; }
 .messages-message-head {
   display: flex;
   flex-wrap: wrap;
@@ -3365,6 +3419,18 @@ html.platform-page-locked[data-browser-scroller] {
 html.platform-page-locked [data-page-locked] {
   opacity: 0 !important;
 }
+/* THE STRIPS ARE RESERVED ON EVERY SCREEN, NOT ONLY A PAGED ONE (overnight
+   audit L01, 2 Nov 2026). Body padding moves the header down by the strips
+   above it on the fixed shell too (Communities, Messages, the bot, a
+   request), and every fixed layer placed under the header reads this token
+   for them: the sidebar's rail among them. Set only for the paged screens
+   below, it was 0 on the others, so on a phone held sideways (and an iPad in
+   Safari) the rail started a strip's height too high and its Home row was
+   printed over the page's title. Declared before the paged rules, which
+   outrank it and say the same. */
+body.has-install-strip { --browser-banner-h: var(--install-strip-h); }
+body.is-offline { --browser-banner-h: var(--offline-strip-h); }
+body.is-offline.has-install-strip { --browser-banner-h: calc(var(--offline-strip-h) + var(--install-strip-h)); }
 /* Body padding reserves these fixed strips at the start of a page. Sticky
    headers must keep reserving them after that padding scrolls away. */
 html[data-browser-scroller] body.has-install-strip {
@@ -8406,21 +8472,24 @@ span.gc-vote-btn-icon { cursor: default; }
   color: var(--text-primary);
   cursor: pointer;
 }
-/* The leading icon column. FIXED width rather than intrinsic: the
-   vocabulary mixes one-em emoji with narrower text glyphs (✕, ↗, @), and
-   an intrinsic column would step every label a pixel or two left or right
-   of its neighbours — the exact scanning cost the icons were added to
-   remove. Decorative, so it carries aria-hidden in the markup. */
+/* The leading icon column, a fixed 16px so every label starts on one
+   line. The icon is a line icon in the row's ink (overnight UI audit D08,
+   features/dev-board/menu-icons.tsx), where it used to be a text glyph or
+   a colour emoji. Decorative, so it carries aria-hidden in the markup. */
 .dev-card-menu-icon {
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 1;
-  /* Emoji ignore `color`, but the text glyphs don't — holding them a shade
-     back from the label keeps the icon a signpost rather than a shout,
-     while a danger row's red still reads straight through. */
+  height: 16px;
+  /* Held a shade back from the label keeps the icon a signpost rather than
+     a shout, while a danger row's red still reads straight through. */
   opacity: 0.75;
+}
+.dev-card-menu-icon > svg {
+  width: 15px;
+  height: 15px;
 }
 .dev-card-menu-label {
   min-width: 0;
@@ -12552,8 +12621,17 @@ html.web-browser-chrome {
    tests/header-title-centering.test.js and by the measurement contract
    use-header-layout.ts documents, and retiring a measured seam is its own
    change with its own evidence. Worth doing, and named here so it is not
-   forgotten. */
-@media (min-width: 768px) {
+   forgotten.
+
+   FROM 640px, NOT 768 (overnight audit U03, 2 November 2026). Between the
+   two the hook still centred, and only there: on an iPhone Duo held upright
+   (669px) Home, the bot and Discover had their titles in the middle while a
+   conversation, a hub and every phone and iPad screen had theirs on the
+   left, and Messages had none at all. Its title is the phone drawer's
+   animated one, laid out absolutely, so the hook measured it 0px wide,
+   centred it, and the box it was cut to was 0px wide. One rule now: the
+   title is on the left at every width. */
+@media (min-width: 640px) {
   #header-title.is-centered {
     position: static;
     transform: none;
@@ -13105,23 +13183,14 @@ a.drawer-ver--fork:hover {
   opacity: 1;
 }
 
-/* ── Drawer theme selector: 3-segment toggle + sliding caret ──────
-   The first control in the drawer. Segment faces reuse the segmented
-   language the retired create-app modal's mode pills had verbatim, so
-   the platform has ONE segmented look; the caret underneath is what's
-   new here, and it's the affordance that says "this one is selected"
-   without relying on the raised face alone.
-
-   Positioning is entirely CSS off --theme-caret-index (0|1|2), which
-   App.HeaderMenu._renderThemeButtons writes on the track. A
-   thirds-width element translated by index * 100% lands centred under
-   segment N at ANY track width — which matters because the panel is
-   15rem as a desktop slide-over and --un-panel-width as a touch side
-   drawer, and the index is written before the kit panel resizes it.
-   Never replace this with an offsetLeft measurement. */
-#drawer-theme-track {
-  --theme-caret-index: 0;
-}
+/* ── Settings theme selector: 3-segment toggle ─────────────────────
+   Segment faces reuse the segmented language the retired create-app
+   modal's mode pills had verbatim, so the platform has ONE segmented look.
+   The chosen segment wears the lit tokens (below). The sliding caret that
+   pointed at it from underneath is gone (overnight UI audit D10, the
+   owner's decision of 2 Nov 2026): once the segment itself was lit
+   (#5285) the caret said nothing more, and on its own below the track it
+   read as a stray tooltip arrow. */
 .theme-seg {
   color: var(--text-muted);
   cursor: pointer;
@@ -13144,44 +13213,6 @@ a.drawer-ver--fork:hover {
    the same recessed-track / raised-face system as .theme-seg above. THE UI
    OVERHAUL retired the control, so the rules went with it — the theme
    selector is the platform's one segmented control again. */
-
-/* Caret rail: spans the track, sits just below it. The track's parent
-   row reserves the height with its pb-2.5 so the arrow can never collide
-   with the row's bottom border. */
-#drawer-theme-caret-track {
-  position: absolute;
-  left: 0;
-  top: 100%;
-  width: 100%;
-  display: block;
-  pointer-events: none;
-}
-#drawer-theme-caret {
-  display: block;
-  width: calc(100% / 3);
-  height: 4px;
-  transform: translateX(calc(var(--theme-caret-index) * 100%));
-  transition: transform 180ms ease-out;
-}
-/* The arrow itself — an upward CSS triangle centred in the third.
-   Never the segment's old white face, which vanished on a white surface
-   in light mode. #5285 colours it with the lit ink, like the segment it
-   points at, which reads against the page in both themes. */
-#drawer-theme-caret::after {
-  content: '';
-  display: block;
-  width: 0;
-  height: 0;
-  margin: 0 auto;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-bottom: 4px solid var(--lit-ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  #drawer-theme-caret {
-    transition: none;
-  }
-}
 
 /* The Members modal's visibility pills: the recessed-track look the
    retired create dialog wore before #1910 restyled it. The Members modal is
@@ -14023,6 +14054,26 @@ body.is-offline.has-install-strip #auth-more-screen {
    its authored inline value. */
 body.is-offline.has-install-strip [data-auth-back] {
   top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}
+
+/* THE STRIP GOES WHILE THE KEYS LEAVE LITTLE (overnight audit K01, 2 Nov
+   2026). On an Android phone in Chrome the keys leave about 300px, and the
+   strip took 48 of them over the thread being replied to. While
+   `platform-kb-short` is on (lib/keyboard-open.ts; the header folds with it,
+   near the top of this file) the strip is not drawn and reserves nothing; an
+   offline strip keeps its own place. A short screen does not offer it at
+   all (install-banner.tsx SHORT_SCREEN_QUERY). After the rules above, which
+   these equal or outrank. */
+html.platform-kb-short #mobile-install-banner:not(.hidden) {
+  display: none;
+}
+html.platform-kb-short body.has-install-strip {
+  padding-top: 0;
+  --browser-banner-h: 0px;
+}
+html.platform-kb-short body.is-offline.has-install-strip {
+  padding-top: var(--offline-strip-h);
+  --browser-banner-h: var(--offline-strip-h);
 }
 
 /* Blocks that exist only to explain the offline state. Hidden — and
@@ -17872,9 +17923,8 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      so the page starts that much lower and this floor has to give the same
      length back. Without it a phone browser showing "Get the app" pushed
      the foot of every Needs you card, its chips and the rail's More, under
-     the tab bar. The token is declared only in the browser-scroller layout,
-     the only layout that reads this number (the native layout's flex chain
-     already sits inside the padded body), hence the 0px fallback. */
+     the tab bar. The token is 0 with no strip up, hence the fallback; since
+     2 Nov 2026 it is declared on every screen (L01), not only the paged ones. */
   --ws-area: calc(
     100dvh - var(--browser-banner-h, 0px)
     - var(--platform-header-h, 56px) - var(--platform-safe-top, 0px)
@@ -18204,11 +18254,11 @@ html[data-browser-scroller] .dev-ws { min-height: var(--ws-area); }
      at the top (`--platform-safe-top`, 47-62px) and the bar spends part of
      the home indicator at the foot (`--platform-tabs-inset`). Nothing
      parked, the feed still ended 60px under the bar there.
-   - THE "GET THE APP" BANNER in a phone browser. `--browser-banner-h` is
-     declared only on `html[data-browser-scroller]` routes, and this screen is
-     not one (browser-scroll.ts `PAGES`): its root scrolls itself in every
-     layout, so the token read 0 here while the banner pushed the page 48px
-     down.
+   - THE "GET THE APP" BANNER in a phone browser. `--browser-banner-h` was
+     declared only on `html[data-browser-scroller]` routes then, and this
+     screen is not one (browser-scroll.ts `PAGES`): its root scrolls itself in
+     every layout, so the token read 0 here while the banner pushed the page
+     48px down.
 
    And the foot could not be scrolled into view. `.dev-ws-needs-scroll` is
    `overscroll-behavior: contain`, so a drag on the feed moves between items
@@ -18385,7 +18435,7 @@ html:not([data-side-strip]):not([data-side-corner]) body:has(#ai-screen:not(.hid
   z-index: 20;
   right: 0;
   bottom: 0;
-  top: calc(var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
+  top: calc(var(--browser-banner-h, 0px) + var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
   width: calc(var(--ai-main-w) + var(--ai-edge, 0px));
   display: flex;
   flex-direction: column;
@@ -18394,6 +18444,19 @@ html:not([data-side-strip]):not([data-side-corner]) body:has(#ai-screen:not(.hid
   border-top: 1px solid var(--app-sheet-line);
   border-left: 1px solid var(--app-sheet-line);
   border-top-left-radius: 1.75rem;
+}
+/* THE LIST'S HEADING KEEPS ITS LINE WHERE THE LIST IS NARROW (overnight
+   audit B13, 2 November 2026). Between 768 and 1024px the list is 280px at
+   its floor (below), and its heading's mark, name and + left the name about
+   120px: "Homeroom / bot" on two lines and the counts under it a word or two
+   a line. Under 340px of heading the mark steps aside, as a phone's
+   conversation drops its avatar, and the name has the room. */
+#ai-screen [data-ai-hero] { container-type: inline-size; }
+@container (max-width: 340px) {
+  #ai-screen [data-ai-hero] > img { display: none; }
+}
+@container (max-width: 260px) {
+  #ai-screen [data-ai-hero] h1 { font-size: 1.25rem; }
 }
 /* Its name over it, as a conversation's header names a room: the rows' 15
    over 13. The chat fills what is left (as a project page's chat does). */
@@ -18442,6 +18505,19 @@ html:not([data-side-strip]):not([data-side-corner]) body:has(#ai-screen:not(.hid
 #ai-screen .ai-main-pane .messages-thread-header[data-reply-head="main"] {
   padding-right: calc(16px + var(--ai-edge, 0px));
 }
+/* AND THE CHAT UNDER THE HEAD STOPS AT THE DUO'S COLUMN TOO (overnight
+   audit B25, 2 November 2026). Run under it (1 Nov), the chat put its Send
+   button, the "Live ›" row's chevron and the New divider's label inside the
+   84px column, where the system's own apps put nothing but their bars: every
+   other screen, and the column's head above, stop short of it. The sheet
+   still reaches the screen's edge, so no band of another colour is left
+   beside it: the chat's own sheet carries on under the column as padding,
+   and only what is drawn in it stops. A thread opened in the column does the
+   same, its head keeping its own clearance above. */
+html[data-side-strip="right"] #ai-screen .ai-main-pane .messages-layout[data-main-chat] > .messages-thread-pane,
+html[data-side-strip="right"] #ai-screen .ai-main-pane .messages-layout[data-main-chat] > .messages-reply-pane :is(.chat-transcript, .chat-status, .chat-composer-bar) {
+  padding-right: var(--ai-edge, 0px);
+}
 /* A request or a change opened from the list: the side panel in Main's
    place, and Main back when the panel closes. It is drawn as this page's
    own column, not as a panel of its own (29 Oct 2026): Main's width, edge
@@ -18488,7 +18564,7 @@ html.in-side-panel.side-panel-beside-ai .dev-request-bar:not(:has(.dev-card-menu
   z-index: 21;
   right: 0;
   bottom: 0;
-  top: calc(var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
+  top: calc(var(--browser-banner-h, 0px) + var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
   width: calc(var(--ai-preview-w) + var(--ai-edge, 0px));
   padding-right: var(--ai-edge, 0px);
   display: flex;
@@ -18564,8 +18640,19 @@ html.in-side-panel.side-panel-beside-ai .dev-request-bar:not(:has(.dev-card-menu
    A thread alone in the column has its own (1 Nov 2026), the same way. */
 .ai-drawer[data-level="0"] :is(.ai-drawer-back, .messages-thread-back) { opacity: 0; transform: translateX(8px); pointer-events: none; }
 .ai-drawer-thread > .ai-drawer-peek { z-index: 5; }
-/* The Ask bar sits at the list's foot, in its column, not over the screen. */
-#ai-screen .ai-drawer-list .ai-askbar { position: sticky; left: auto; right: auto; bottom: 0; }
+/* The Ask bar sits at the list's foot, in its column, not over the screen.
+   ON THE TAB BAR, NOT UNDER IT (overnight audit B14, 2 November 2026). The
+   list runs to the foot of the screen, under the tab bar, and the bar stuck
+   to that foot was behind the tab bar on every phone; in the Android app its
+   words showed through under the system's navigation bar. It sticks the
+   bar's height up, and keeps that much room after the list's last row, so
+   scrolled to the end the last row still clears it. With the keys up the
+   bar's height is 0, and so is this. */
+#ai-screen .ai-drawer-list .ai-askbar {
+  position: sticky; left: auto; right: auto;
+  bottom: var(--platform-tabs-h, 0px);
+  margin-bottom: var(--platform-tabs-h, 0px);
+}
 #ai-screen .ai-drawer-list .ai-askbar-gap { display: none; }
 @media (prefers-reduced-motion: reduce) { .ai-drawer-back { transition: none; } }
 .ai-drawer[data-panning] { user-select: none; -webkit-user-select: none; }
@@ -22849,15 +22936,22 @@ html.un-android.in-native-webview:not(.web-browser-chrome) {
    labels tighten their tracking and are let out of their cells rather than
    cut: they are centred, and their seats are wider than the others.
    Narrower than 375px they drop half a point as well. Measured in the bar's
-   own font: the bot's name has 4px to spare at 360 and 375, 8 at 390, and
-   the lit pill around it clears "Messages" by 2px. The rail has room and is
-   left alone. */
+   own font: the bot's name has 4px to spare at 360 and 375, 8 at 390. The
+   rail has room and is left alone.
+
+   AND THE ROOM BESIDE IT GOES TO MESSAGES (overnight audit M01, 2 Nov 2026).
+   With Messages lit its pill reaches 8px past its label, and on an iPhone 13
+   mini that pill ran into "Homeroom bot" (2px apart in the bar's font, none
+   in the phone's). Home's and You's words are short and their seats had 30px
+   to spare, so they give some: Messages' seat is a little wider and the
+   bot's a little more, and the pill now clears the bot's name by about 9px
+   at 375 and 12 at 360. */
 @media (max-width: 767.98px) {
   /* Communities' seat, the second (#6019), and Homeroom bot's, the third,
      are a little wider than the other three: they hold the longest words,
      and the bar's other labels (Home, Messages, and your name last, which
      ellipsizes) have room to spare in theirs. */
-  #platform-tabs { grid-template-columns: 1fr 1.3fr 1.3fr 1fr 1fr; }
+  #platform-tabs { grid-template-columns: .85fr 1.3fr 1.4fr 1.1fr .85fr; }
   :is(#platform-tab-workshop, #platform-tab-ai) { overflow: visible; }
   :is(#platform-tab-workshop, #platform-tab-ai) .platform-tab-label {
     letter-spacing: -.02em;
@@ -22868,7 +22962,7 @@ html.un-android.in-native-webview:not(.web-browser-chrome) {
 @media (max-width: 374.98px) {
   /* The smallest phones: every label drops half a point and tightens, the
      cells lose their 2px sides, and the two wide seats widen a little less. */
-  #platform-tabs { grid-template-columns: 1fr 1.2fr 1.2fr 1fr 1fr; }
+  #platform-tabs { grid-template-columns: .85fr 1.25fr 1.35fr 1.1fr .85fr; }
   .platform-tab { padding: 0; }
   .platform-tab .platform-tab-label { font-size: 10.5px; letter-spacing: -.02em; }
 }
@@ -23198,9 +23292,12 @@ html[data-side-strip="left"] #platform-header {
     font-size: 10px;
     letter-spacing: 0;
   }
+  /* 9px and tighter (overnight audit U02, 2 November 2026): at 9.5px
+     "Communities" was wider than its lit pill in the phone's own font and ran
+     past both its sides. */
   html[data-side-strip] #platform-tab-workshop .platform-tab-label {
-    font-size: 9.5px;
-    letter-spacing: -.02em;
+    font-size: 9px;
+    letter-spacing: -.03em;
   }
   /* The bot's name does not fit a 64px column on one line at any size that
      still reads, so here it takes two, "Homeroom" over "bot": the cell's
@@ -23304,6 +23401,16 @@ html[data-side-strip="left"] #platform-header {
     color: var(--text-muted);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+  }
+  /* A FINGER'S TARGET, NOT A POINTER'S (overnight audit U02). The ✕ that
+     forgets an app was its 20px glyph box, perched on the tile's corner: it
+     is pressed as 32px now, out over the tile's corner and the cell's edge,
+     and drawn as before. Above the app's own target (z-index 2), so a press
+     near the corner forgets rather than opens. */
+  html[data-side-strip] .platform-side-app-x::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
   }
   html[data-side-strip] #platform-parked {
     display: none;
@@ -25610,7 +25717,7 @@ body:has(#ai-screen:not(.hidden)) :is(#side-panel-divider, #ai-main-divider) {
   --divider-at: calc(var(--ai-main-w) + var(--ai-edge, 0px) + 8px);
 }
 #ai-main-divider {
-  top: calc(var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
+  top: calc(var(--browser-banner-h, 0px) + var(--platform-header-h) + var(--platform-safe-top, 0px) - .5rem);
 }
 .side-panel-divider::after {
   content: "";

@@ -23,10 +23,8 @@ test('check visuals preserve Express validators and range responses when bytes m
   const key = media.objectKey(data);
   const meta = metadata(data);
   await store.putObject(key, data, 'video/webm');
-  let keyed = false;
   let absent = false;
-  const pool = { query: async () => ({ rows: absent ? [] : [{ content_type: 'video/webm', data: keyed ? null : data,
-    object_key: keyed ? key : null, bytes: keyed ? meta.bytes : null, legacy_etag: keyed ? meta.legacyEtag : null }] }) };
+  const pool = { query: async () => ({ rows: absent ? [] : [{ content_type: 'video/webm', object_key: key, bytes: meta.bytes, legacy_etag: meta.legacyEtag }] }) };
   t.mock.method(require('../src/db/pool'), 'getPool', () => pool);
   const app = express();
   app.use(require('../src/routes/visuals').visualsRoutes({}, { store }));
@@ -58,8 +56,7 @@ test('check visuals preserve Express validators and range responses when bytes m
     }
     return actual;
   };
-  for (const objectStorage of [false, true]) {
-    keyed = objectStorage;
+  {
     for (const [header, result] of [
       [null, { status: 200 }], ['nonsense', { status: 200 }], ['bytes=1-2,4-5', { status: 200 }],
       ['bytes=3-7', { status: 206, start: 3, end: 7 }], ['bytes=30-', { status: 206, start: 30, end: 35 }],
@@ -86,7 +83,7 @@ test('check visuals preserve Express validators and range responses when bytes m
   assert.equal((await request(url)).status, 404);
   assert.equal((await request(origin + '/visuals/not-an-id')).status, 404);
   assert.equal(store.calls.length, before);
-  absent = false; keyed = true; store.files.delete(key);
+  absent = false; store.files.delete(key);
   const broken = await request(url);
   assert.equal(broken.status, 500);
   assert.equal(broken.headers['cache-control'], undefined);

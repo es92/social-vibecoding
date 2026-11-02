@@ -545,8 +545,6 @@ export function init() {
     const feedbackTextError = document.getElementById('feedback-text-error');
     const feedbackTargetApp = document.getElementById('feedback-target-app');
     const feedbackTargetPlatform = document.getElementById('feedback-target-platform');
-    const feedbackCaretApp = document.getElementById('feedback-caret-app');
-    const feedbackCaretPlatform = document.getElementById('feedback-caret-platform');
     const feedbackTargetGroup = document.getElementById('feedback-target');
     const feedbackTargetHint = document.getElementById('feedback-target-hint');
 
@@ -730,10 +728,6 @@ export function init() {
         feedbackTargetApp.classList.toggle(c, !onApp);
         feedbackTargetPlatform.classList.toggle(c, !onPlatform);
       });
-      // Move the caret under the selected option — and under neither while
-      // the question is still open.
-      feedbackCaretApp.classList.toggle('hidden', !onApp);
-      feedbackCaretPlatform.classList.toggle('hidden', !onPlatform);
       // #685: app state only travels with app-targeted feedback — the
       // shell has no provider of its own, so the row hides on Platform.
       stateRow.classList.toggle('hidden', !(stateAvailable && onApp) || privateChosen());

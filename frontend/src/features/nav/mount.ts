@@ -12,6 +12,7 @@
 
 import { flushSync } from 'react-dom';
 
+import { knownApp, withKnownName } from './app-names';
 import { navStore, tabForScreen } from './nav-store.js';
 import { parkedStore, setParked, setRunningApp } from './parked-store.js';
 import { SIDEBAR_ROWS_QUERY } from './sidebar-rows';
@@ -192,20 +193,26 @@ if (typeof window !== 'undefined') {
      * by the time the screen swap runs (#2762).
      *
      * @param app `{ slug, name, iconUrl, iconEmoji }`, or null to clear.
+     *
+     * A capture with no record behind it (offline, a cold start has none)
+     * names the app by its slug. That stand-in never replaces the name this
+     * device remembers (./app-names.ts): it is named from there first, so
+     * neither the strip nor the apps you left are written down as a slug.
      */
     park(app: {
       slug?: string; name?: string; iconUrl?: string | null; iconEmoji?: string | null;
     } | null) {
-      // The desktop rail's Recents keeps every app you left, with when
-      // (#2802). A park with null is the router clearing the strip because
-      // you went back into the app; it is still recent, so nothing is removed.
-      if (app && app.slug) rememberRecentApp(app, navStore.get().viewer);
-      setParked(app && app.slug ? {
+      const parked = app && app.slug ? withKnownName({
         slug: app.slug,
         name: app.name || app.slug,
         iconUrl: app.iconUrl || null,
         iconEmoji: app.iconEmoji || null,
-      } : null);
+      }) : null;
+      // The desktop rail's Recents keeps every app you left, with when
+      // (#2802). A park with null is the router clearing the strip because
+      // you went back into the app; it is still recent, so nothing is removed.
+      if (parked) rememberRecentApp(parked, navStore.get().viewer);
+      setParked(parked);
     },
     /**
      * The app on screen now, or null when there is none (iPhone Duo's side
@@ -215,7 +222,16 @@ if (typeof window !== 'undefined') {
     running(app: {
       slug?: string; name?: string; iconUrl?: string | null; iconEmoji?: string | null;
     } | null) {
-      setRunningApp(app && app.slug ? { slug: app.slug, name: app.name || app.slug, iconUrl: app.iconUrl || null, iconEmoji: app.iconEmoji || null } : null);
+      setRunningApp(app && app.slug ? withKnownName({ slug: app.slug, name: app.name || app.slug, iconUrl: app.iconUrl || null, iconEmoji: app.iconEmoji || null }) : null);
+    },
+    /**
+     * The name and face this device remembers for `slug`, with whether it is
+     * the platform's own row, or null (./app-names.ts). For the router, which
+     * names the App tab's header from the launcher's cached row and has none
+     * when no list of apps has loaded (`App._rememberedAppRecord`).
+     */
+    knownApp(slug: string) {
+      return knownApp(slug);
     },
     /**
      * #3618: the app you just left shrinks into its Resume control, from
@@ -227,7 +243,10 @@ if (typeof window !== 'undefined') {
     collapse(app: { slug?: string; name?: string; iconUrl?: string | null; iconEmoji?: string | null } | null,
       from?: { left: number; top: number; width: number; height: number } | null) {
       if (!app || !app.slug) return false;
-      return collapseIntoResume({ ...app, slug: app.slug }, from);
+      // Named like the control it shrinks into (./app-names.ts).
+      return collapseIntoResume(withKnownName({
+        slug: app.slug, name: app.name || app.slug, iconUrl: app.iconUrl || null, iconEmoji: app.iconEmoji || null,
+      }), from);
     },
     /** #3618: the Resume control for `slug` on screen now, or null. */
     resumeHandle(slug: string) {

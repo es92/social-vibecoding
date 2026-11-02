@@ -422,7 +422,7 @@ test('the ⋯ menu carries Details as a row of its own, which opens the sheet', 
   const menu = av._cardMenuItems(v.card.rail.menuKey);
   assert.equal(menu[0].label, 'Details');
   assert.equal(menu[0].icon, 'details');
-  assert.ok(av.MENU_ICONS.details, 'the glyph resolves');
+  assert.ok(av.MENU_ICONS.includes('details'), 'the icon key resolves');
   assert.ok(!menu.some((a) => a.label === 'Open on GitHub'), 'B10b: GitHub is in Details');
   assert.ok(menu.some((a) => a.label === 'View PR on GitHub'), '#4455: and a ⋯ row, now the page has no PR link');
   // The sheet is body-mounted: the page itself renders none of it.

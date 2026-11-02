@@ -186,6 +186,19 @@ test('a watch on a session the user may not open is refused, and hears nothing',
   stranger.terminate();
 });
 
+test('a ping is answered with a pong, on that socket alone', async () => {
+  // The tab's check that an open socket still carries anything
+  // (public/js/app.js _checkEvents): on a quiet network nothing closes it.
+  const asker = await openEvents('stranger');
+  const other = await openEvents('stranger');
+  await settle();
+  asker.send(JSON.stringify({ type: 'ping' }));
+  await settle();
+  assert.deepEqual(asker.received.filter((m) => m.type === 'pong'), [{ type: 'pong' }]);
+  assert.equal(other.received.filter((m) => m.type === 'pong').length, 0);
+  for (const s of [asker, other]) s.terminate();
+});
+
 test('the watch rule is the live stream\'s: owner or admin', () => {
   const row = { user_id: 1 };
   assert.equal(ws.canWatchSessionRow(row, { id: 1, isAdmin: false }), true);

@@ -499,9 +499,8 @@ async function load(db, runId, { lock = false } = {}) {
 
 async function persist(db, control, store) {
   const dirty = [...control.dirty].map((key) => control.saved.get(key));
-  // Backfill locks a source row before its registry keys. Take existing
-  // slot locks in that order too, before uploading a retake of the same
-  // bytes; otherwise each transaction could wait on the other's lock.
+  // Serialize retakes of existing slots before taking shared registry
+  // keys, so concurrent saves keep the same row/key lock order.
   if (dirty.length) await db.query(
     'SELECT slot FROM shot_run_files WHERE run_id = $1 AND slot = ANY($2::text[]) ORDER BY slot FOR UPDATE',
     [control.runId, dirty.map(dbSlot)]);
@@ -525,21 +524,21 @@ async function persist(db, control, store) {
     const slot = dbSlot(f);
     await db.query(
       `INSERT INTO shot_run_files
-         (run_id, slot, story_id, viewport, side, variant, media, theme, content_type, data, width, height, bytes, sha256,
-          density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect, public_safe,
+         (run_id, slot, story_id, viewport, side, variant, media, theme, content_type, width, height, bytes, sha256,
+          density, dense_width, dense_height, dense_bytes, dense_sha256, part, scale, focus_rect, public_safe,
           object_key, dense_object_key)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23::jsonb, $24, $25, $26)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21::jsonb, $22, $23, $24)
        ON CONFLICT (run_id, slot) DO UPDATE
-         SET data = EXCLUDED.data, object_key = EXCLUDED.object_key, dense_object_key = EXCLUDED.dense_object_key,
+         SET object_key = EXCLUDED.object_key, dense_object_key = EXCLUDED.dense_object_key,
              content_type = EXCLUDED.content_type, media = EXCLUDED.media,
              theme = EXCLUDED.theme, width = EXCLUDED.width, height = EXCLUDED.height, bytes = EXCLUDED.bytes,
-             sha256 = EXCLUDED.sha256, density = EXCLUDED.density, dense_data = EXCLUDED.dense_data,
+             sha256 = EXCLUDED.sha256, density = EXCLUDED.density,
              dense_width = EXCLUDED.dense_width, dense_height = EXCLUDED.dense_height,
              dense_bytes = EXCLUDED.dense_bytes, dense_sha256 = EXCLUDED.dense_sha256,
              part = EXCLUDED.part, scale = EXCLUDED.scale, focus_rect = EXCLUDED.focus_rect,
              public_safe = EXCLUDED.public_safe, saved_at = NOW()`,
-      [control.runId, slot, f.storyId, f.viewport, f.side, f.variant, f.media, f.theme || 'light', f.contentType, null,
-        f.width, f.height, f.bytes, f.sha256, f.density > 1 ? f.density : 1, null,
+      [control.runId, slot, f.storyId, f.viewport, f.side, f.variant, f.media, f.theme || 'light', f.contentType,
+        f.width, f.height, f.bytes, f.sha256, f.density > 1 ? f.density : 1,
         f.dense?.width || null, f.dense?.height || null, f.dense?.bytes ?? null, f.dense?.sha256 || null,
         f.variant === 'closeup' ? f.part : 0, f.variant === 'closeup' ? f.scale : null,
         f.variant === 'closeup' && f.focusRect ? JSON.stringify(f.focusRect) : null, f.publicSafe === true ? true : null,
@@ -647,13 +646,13 @@ async function read(pool, runId) {
 // Every saved file with its bytes, for the slots named (the screen diff).
 async function filesFor(pool, runId, slots = null, { withData = true, store = mediaStore.getStore() } = {}) {
   const { rows } = await pool.query(
-    `SELECT slot, story_id, viewport, side, variant, media, theme, content_type, data, width, height, bytes, sha256,
+    `SELECT slot, story_id, viewport, side, variant, media, theme, content_type, width, height, bytes, sha256,
             density, part, scale, focus_rect, object_key
        FROM shot_run_files WHERE run_id = $1 ${slots ? 'AND slot = ANY($2::text[])' : ''}`,
     slots ? [runId, slots] : [runId]);
   const files = [];
   for (const row of rows) files.push({ ...fileEntry(row), objectKey: row.object_key || null,
-    data: withData ? await mediaStore.bytes(store, row) : row.data });
+    data: withData ? await mediaStore.bytes(store, row) : undefined });
   return files;
 }
 

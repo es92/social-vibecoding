@@ -1,4 +1,6 @@
 'use strict';
+require('./lib/media-store').useMemoryMedia(require('node:test'));
+const { fixtureKey } = require('./lib/media-store');
 
 // The preview machine (src/workflow/preview/) against the full PostgreSQL
 // schema: admission, supersession, publication, settlement, the error lane,
@@ -663,9 +665,15 @@ test('preview machine against the full PostgreSQL schema', { timeout: 120000 }, 
   });
   await t.test('P14 a run\'s media is published with its verdict, and a stale run\'s never is', async () => {
     const s = await proposal(await app(), { status: 'active', bot: true });
-    const media = async (runId, id) => pool.query(
-      `INSERT INTO check_run_media (id, run_id, session_id, commit_hash, kind, media, content_type, data)
-       VALUES ($1, $2, $3, $4, 'after', 'png', 'image/png', decode('00', 'hex'))`, [id, runId, s.id, SHA('a')]);
+    const media = async (runId, id) => {
+      const data = Buffer.from([0]);
+      const key = await fixtureKey(pool, data);
+      const meta = require('../src/services/check-visual-media').metadata(data);
+      return pool.query(
+        `INSERT INTO check_run_media (id, run_id, session_id, commit_hash, kind, media, content_type, object_key, sha256, bytes, legacy_etag)
+         VALUES ($1, $2, $3, $4, 'after', 'png', 'image/png', $5, $6, $7, $8)`,
+        [id, runId, s.id, SHA('a'), key, meta.sha256, meta.bytes, meta.legacyEtag]);
+    };
     work.answer.set(WORK.run, async (input) => {
       await media(input.runId, `m-${input.runId}`.slice(0, 32));
       return verdict('passing', { visuals: { captures: [{ index: 0 }] } })();

@@ -3034,9 +3034,9 @@
       "expectSelector": "#drawer-row-ai-budget #ai-budget-slot"
     },
     {
-      "name": "Theme selector ships its 3-segment track and caret",
+      "name": "Theme selector ships its 3-segment track",
       "path": "/#settings/theme",
-      "expectSelector": "#settings-theme-section #drawer-theme-track[role=\"radiogroup\"] [data-theme-mode=\"system\"] ~ #drawer-theme-caret-track #drawer-theme-caret"
+      "expectSelector": "#settings-theme-section #drawer-theme-track[role=\"radiogroup\"] [data-theme-mode=\"light\"] ~ [data-theme-mode=\"system\"]"
     },
     {
       "name": "A bare #settings opens the Account page, led by the Profile card",

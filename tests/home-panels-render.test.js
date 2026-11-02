@@ -970,7 +970,7 @@ test('render: the heading says First, Next or Challenges, with See all beside it
   }).host('challenges').innerHTML);
 
   const first = heading([challenge({ id: 1, label: 'ONBOARDING' }), challenge({ id: 2, label: 'WEEKLY' })]);
-  assert.match(first, /<span class="min-w-0 flex-1 truncate whitespace-nowrap">First challenges<\/span>/);
+  assert.match(first, /<span class="min-w-0 flex-1 truncate whitespace-nowrap[^"]*">First challenges<\/span>/);
   assert.match(first, SEE_ALL, 'a real link to the Challenges tab, at the right of the heading');
 
   const next = heading([challenge({ id: 1, label: 'ONBOARDING', progress: DONE }), challenge({ id: 2, label: 'WEEKLY' })]);
@@ -1294,7 +1294,7 @@ test('the heading and its link are single-line too', () => {
   // (the season progress and its points are gone from Home altogether), and
   // the name truncates rather than wraps beside the link on a 320px phone.
   const heading = headingOf(html);
-  assert.match(heading, /min-w-0 flex-1 truncate whitespace-nowrap">Next challenges<\/span>/);
+  assert.match(heading, /min-w-0 flex-1 truncate whitespace-nowrap[^"]*">Next challenges<\/span>/);
   assert.doesNotMatch(heading, /24,300|2 of 9| · /, 'no counter appended to the label');
   assert.match(heading, /home-panel-see-all shrink-0[^"]*whitespace-nowrap/, 'the link never shrinks or wraps');
   assert.match(heading, /<span class="whitespace-nowrap">See all<\/span><\/a>/, 'and has no chevron, as Discover\'s See all has none');

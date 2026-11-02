@@ -167,19 +167,25 @@ test('the public-profile controls are a group of the Edit profile sheet, headed 
 });
 
 test('one site keeps its own treatment, deliberately', () => {
-  // NEITHER of these is "a label over a group", and forcing one of the two
-  // primitives onto them would look wrong on its own screen.
+  // NEITHER of these is "a label over a group" drawn by one of the two
+  // primitives, and each has its reason.
   //
-  // 1. The home screen's area titles (home/panels/ui.tsx). Already ONE shared
-  //    primitive rather than a copied class string, deliberately restyled as
-  //    the area TITLE — 16px at weight 550 in the primary ink — rather than a
-  //    caption, and pinned by three declared dapp.json checks as
-  //    `h2.home-area-label`. Its sections carry their own `px-3` gutter, so
-  //    the grouped-list label's `px-4` would indent every home label away from
-  //    the panel it heads.
+  // 1. The home screen's area labels (home/panels/ui.tsx). ONE shared
+  //    primitive rather than a copied class string, pinned by three declared
+  //    dapp.json checks as `h2.home-area-label`. Since the owner's decision of
+  //    2 Nov 2026 (audit Y02) its LABEL wears SectionHeader's literals, the
+  //    small caps every other screen uses; it stays its own component because
+  //    the row carries the area's link beside the label, and its sections
+  //    carry their own `px-3` gutter, so the grouped-list label's `px-4`
+  //    would indent every home label away from the panel it heads.
   const home = read('frontend/src/features/home/panels/ui.tsx');
-  assert.match(home, /className="home-area-label[^"]*text-base font-\[550\]/,
-    'the home area title is unchanged — see the note in this test');
+  assert.match(home, /<h2 className="home-area-label flex items-center gap-2 pt-4 pb-1\.5 leading-tight">/,
+    'the row is unchanged, and carries no type of its own for the link to inherit');
+  assert.match(home, /<span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-bold uppercase tracking-\[0\.06em\] text-zinc-500 dark:text-zinc-400">\{children\}<\/span>/,
+    'the label is SectionHeader\'s small caps');
+  const primitive = read('frontend/@/components/ui/grouped-list.tsx');
+  assert.match(primitive, /text-xs font-bold uppercase tracking-\[0\.06em\] text-zinc-500 dark:text-zinc-400/,
+    'the literals it copies are still the primitive\'s');
   // 2. THE SECOND SITE RETIRED (#2718 review). It was the Improve panel's
   //    `<h2>Improve</h2>` — the PANEL'S TITLE, on one baseline with the
   //    target app's name and the close control, which is a dialog title bar

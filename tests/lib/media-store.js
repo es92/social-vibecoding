@@ -43,3 +43,25 @@ function useMemoryMedia(context, options) {
 }
 
 module.exports = { memoryMediaStore, useMemoryMedia };
+
+// Hand-written database fixtures use the same immutable store as capture
+// saves. Production atomicity is tested through the actual save methods;
+// this helper only supplies a registered key for a test's subsequent INSERT.
+async function fixtureKey(pool, data, contentType = 'image/png') {
+  return require('../../src/services/staging-media').withStagingMedia(
+    pool, data, contentType, async (_tx, { key }) => key);
+}
+module.exports.fixtureKey = fixtureKey;
+
+// Rehearse the subsequent contract migration in disposable databases. The
+// cleanup release itself keeps these empty columns for rolling old pods.
+async function dropMediaByteColumns(pool) {
+  for (const table of ['shot_run_files', 'shot_artifacts', 'shots_eval_artifacts',
+    'shot_diagnostic_artifacts', 'check_run_media', 'session_visuals']) {
+    await pool.query(`ALTER TABLE ${table} DROP COLUMN data`);
+    if (['shot_run_files', 'shot_artifacts'].includes(table)) {
+      await pool.query(`ALTER TABLE ${table} DROP COLUMN dense_data`);
+    }
+  }
+}
+module.exports.dropMediaByteColumns = dropMediaByteColumns;

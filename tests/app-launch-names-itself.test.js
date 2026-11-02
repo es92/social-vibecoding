@@ -50,7 +50,9 @@ test('the header names the app being opened from the launcher\'s record', () => 
   assert.ok(at > nav.indexOf('PlatformUI.transition('), 'as the view is revealed, inside the transition (#979)');
   assert.ok(at < nav.indexOf('AppView.beginLaunch(slug, tab)'), 'in the same callback, before the frame mounts');
   assert.ok(at < nav.indexOf('await'), 'before anything is awaited: in the tap\'s own task');
-  assert.match(nav, /try \{ named = AppView\.launchRecordFor\?\.\(slug\) \|\| null; \} catch \(_\) \{ named = null; \}\s*if \(named && named\.name && !named\.self_hosted\) \{\s*App\.setHeaderTitle\(named\.name\);\s*App\.ImproveStatus\.setPendingApp\(named\);\s*\}/);
+  // With no launcher row, the name the device remembers (offline, finding 7;
+  // tests/nav-parked-app.test.js drives it).
+  assert.match(nav, /try \{ named = AppView\.launchRecordFor\?\.\(slug\) \|\| App\._rememberedAppRecord\(slug\); \} catch \(_\) \{ named = null; \}\s*if \(named && named\.name && !named\.self_hosted\) \{\s*App\.setHeaderTitle\(named\.name\);\s*App\.ImproveStatus\.setPendingApp\(named\);\s*\}/);
   assert.match(app, /setPendingApp\(record\) \{ window\.ImproveStatus\?\.setPendingApp\?\.\(record\); \},/);
 });
 

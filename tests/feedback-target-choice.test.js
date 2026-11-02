@@ -69,13 +69,9 @@ test('neither destination is pre-checked in the shipped markup', () => {
   }
 });
 
-test('neither caret is shown in the shipped markup', () => {
+test('the picker draws no caret: the filled option says which is chosen (audit D10)', () => {
   const html = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
-  for (const id of ['feedback-caret-app', 'feedback-caret-platform']) {
-    const caret = html.match(new RegExp(`<div[^>]*id="${id}"[^>]*>`));
-    assert.ok(caret, `#${id} is in the document`);
-    assert.match(caret[0], /class="[^"]*\bhidden\b/, `#${id} starts hidden`);
-  }
+  assert.doesNotMatch(html, /id="feedback-caret-(app|platform)"/);
 });
 
 test('the hint ships empty, hidden and adjacent to the row it is about', () => {
@@ -353,7 +349,6 @@ function makeHarness({ appData = null, sessionDraft = null } = {}) {
     filed: () => fetchCalls.filter((c) => c.url === '/api/feedback'),
     hintShown: () => !el('feedback-target-hint').classList.contains('hidden'),
     checked: (which) => el(`feedback-target-${which}`).getAttribute('aria-checked'),
-    caretShown: (which) => !el(`feedback-caret-${which}`).classList.contains('hidden'),
     async submit() {
       el('feedback-submit').fire('click');
       await new Promise((r) => setImmediate(r));
@@ -374,8 +369,6 @@ test('with two destinations, the dialog opens on the open app', () => {
 
   assert.equal(h.checked('app'), 'true', 'the open app is preselected (#5992)');
   assert.equal(h.checked('platform'), 'false', 'Homeroom is not');
-  assert.equal(h.caretShown('app'), true, 'the caret marks the default destination');
-  assert.equal(h.caretShown('platform'), false);
   assert.equal(h.el('feedback-target-app').disabled, false, 'both options are tappable');
   assert.equal(h.el('feedback-target-platform').disabled, false);
   assert.equal(h.el('feedback-submit').disabled, false, 'Post request is live at once');
@@ -393,8 +386,6 @@ test('tapping Homeroom moves the destination to the platform', () => {
 
   assert.equal(h.checked('platform'), 'true');
   assert.equal(h.checked('app'), 'false');
-  assert.equal(h.caretShown('platform'), true);
-  assert.equal(h.caretShown('app'), false);
   assert.equal(h.el('feedback-target').getAttribute('aria-invalid'), null);
   assert.equal(h.hintShown(), false);
   assert.equal(h.el('feedback-submit').disabled, false, 'Submit is live');
@@ -451,7 +442,6 @@ test('#21: opened from inside an app, "This app" is chosen and Submit is live', 
 
   assert.equal(h.checked('app'), 'true', 'the app the change is for');
   assert.equal(h.checked('platform'), 'false');
-  assert.equal(h.caretShown('app'), true);
   assert.equal(h.hintShown(), false, 'nothing left to ask');
   assert.equal(h.el('feedback-submit').disabled, false);
 
@@ -481,7 +471,6 @@ test('with ONE destination it stays selected and Submit is live on open', () => 
 
   assert.equal(h.el('feedback-target-app').disabled, true, '"This app" is not selectable');
   assert.equal(h.checked('platform'), 'true', 'the only destination is chosen');
-  assert.equal(h.caretShown('platform'), true);
   assert.equal(h.hintShown(), false, 'and nothing asks for a choice that does not exist');
   assert.equal(h.el('feedback-submit').disabled, false, 'Submit is live immediately');
 });

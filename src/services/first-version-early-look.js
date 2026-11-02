@@ -131,7 +131,7 @@ const LOOK_RULES = [
   '- The light look only. System typefaces only (such as ui-rounded, ui-serif, ui-monospace or system-ui, each with a',
   '  fallback stack): no web fonts.',
   '- Its content is realistic and varied: the viewer\'s own things as well as other people\'s, filling the screen. The',
-  '  viewer is "You"; anybody else has a plain first name. Dates, times and numbers are plausible. No "Staging demo"',
+  '  viewer is "You"; anybody else has a plain first name. Dates, times and numbers are plausible. No "Sample data"',
   '  label, no placeholder text and nothing about the drawing itself: every word on it is the app\'s own.',
   // Newcomer run seven (14 Oct 2026): Club Votes, whose description never
   // mentioned chess, was drawn titled "Harbour Road Chess Club".

@@ -1,4 +1,6 @@
 'use strict';
+require('./lib/media-store').useMemoryMedia(require('node:test'));
+const { fixtureKey } = require('./lib/media-store');
 // Which before & after stills somebody who is not signed in may see
 // (src/services/shots-public.js), against the full PostgreSQL schema: a
 // public project's change up for a vote, shot as the member account on a
@@ -81,10 +83,10 @@ test('public before & after stills against the full PostgreSQL schema', { timeou
       const id = ART();
       ids[`${side}:${variant}:${viewport}`] = id;
       await pool.query(
-        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, theme, content_type, data,
+        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, theme, content_type, object_key,
                                      width, height, bytes, sha256, public_safe)
-         VALUES ($1, $2, 'c1', $3, $4, $5, 'png', 'light', 'image/png', '\\x89504e47'::bytea, 390, 844, 4, $6, $7)`,
-        [id, run, viewport, side, variant, SHA(side === 'base' ? 'd' : 'e').padEnd(64, '0'), safe]);
+         VALUES ($1, $2, 'c1', $3, $4, $5, 'png', 'light', 'image/png', $8, 390, 844, 4, $6, $7)`,
+        [id, run, viewport, side, variant, SHA(side === 'base' ? 'd' : 'e').padEnd(64, '0'), safe, await fixtureKey(pool, Buffer.from('89504e47', 'hex'))]);
     }
     return { id: s.id, ids };
   }
@@ -127,7 +129,7 @@ test('public before & after stills against the full PostgreSQL schema', { timeou
     const after = good.ids['head:focus:phone'];
     const bytes = await publicStillBytes(pool, { slug: pub.slug, changeId: good.id, artifactId: after });
     assert.equal(bytes.contentType, 'image/png');
-    assert.equal(bytes.data.toString('hex'), '89504e47');
+    assert.equal((await require('../src/services/media-store').bytes(require('../src/services/media-store').getStore(), { object_key: bytes.objectKey })).toString('hex'), '89504e47');
     assert.equal(await publicStillBytes(pool, { slug: 'another', changeId: good.id, artifactId: after }), null);
     assert.equal(await publicStillBytes(pool, { slug: pub.slug, changeId: good.id, artifactId: good.ids['head:context:desktop'] }), null);
     assert.equal(await publicStillBytes(pool, { slug: pub.slug, changeId: unsafe.id, artifactId: unsafe.ids['head:focus:phone'] }), null);

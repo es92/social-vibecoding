@@ -7,15 +7,13 @@ const crypto = require('node:crypto');
 const { Pool } = require('pg');
 const visuals = require('../src/services/visuals');
 const media = require('../src/services/media-store');
-const backfill = require('../src/services/media-check-visuals-backfill');
 const { metadata } = require('../src/services/check-visual-media');
 const { useMemoryMedia } = require('./lib/media-store');
-const { waitFor } = require('./lib/wait-for');
 
 const DSN = process.env.TEST_DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
 const id = () => crypto.randomBytes(16).toString('hex');
 
-test('check visual uploads, atomic publication and workflow backfill against PostgreSQL', { timeout: 30000 }, async (t) => {
+test('check visual uploads, atomic publication against PostgreSQL', { timeout: 30000 }, async (t) => {
   const admin = new Pool({ connectionString: DSN, connectionTimeoutMillis: 2000 });
   admin.on('error', () => {});
   try { await admin.query('SELECT 1'); } catch (err) {
@@ -30,6 +28,7 @@ test('check visual uploads, atomic publication and workflow backfill against Pos
   pool.on('error', () => {});
   t.after(async () => { await pool.end(); await admin.query(`DROP DATABASE ${name} WITH (FORCE)`); await admin.end(); });
   await pool.query(fs.readFileSync(require.resolve('../src/db/schema.sql'), 'utf8'));
+    await require('./lib/media-store').dropMediaByteColumns(pool);
   const store = useMemoryMedia(t, { now: () => 0 });
   const { rows: [user] } = await pool.query("INSERT INTO users (username, password) VALUES ('visual-test', 'x') RETURNING id");
   const { rows: [app] } = await pool.query("INSERT INTO apps (name, slug, created_by) VALUES ('Visual', 'visual', $1) RETURNING id", [user.id]);
@@ -51,7 +50,7 @@ test('check visual uploads, atomic publication and workflow backfill against Pos
       ['SELECT * FROM check_run_media WHERE id = $1', held.captures[0].after.png],
     ]) {
       const { rows: [row] } = await pool.query(sql, [artifactId]);
-      assert.equal(row.data, null); assert.equal(row.object_key, media.objectKey(data));
+      assert.equal(row.data, undefined); assert.equal(row.object_key, media.objectKey(data));
       assert.equal(row.sha256, metadata(data).sha256); assert.equal(row.bytes, data.length);
       assert.equal(row.legacy_etag, metadata(data).legacyEtag);
       assert.deepEqual(await media.bytes(store, row), data);
@@ -90,85 +89,4 @@ test('check visual uploads, atomic publication and workflow backfill against Pos
     assert.ok(store.files.has(media.objectKey(data)));
   });
 
-  const legacyId = id();
-  await t.test('backfill covers both tables, preserves old ids and validators, and leaves failed rows intact', async () => {
-    await pool.query(`INSERT INTO session_visuals (id, session_id, kind, media, content_type, data, created_at)
-      VALUES ($1, $2, 'after', 'png', 'image/png', $3, NOW() - INTERVAL '365 days')`, [legacyId, merged.id, legacy]);
-    await pool.query(`INSERT INTO check_run_media (id, run_id, session_id, kind, media, content_type, data)
-      VALUES ($1, 'checks:old', $2, 'after', 'png', 'image/png', $3)`, [id(), session.id, legacy]);
-    const broken = { ...store, putObject: async () => { throw new Error('provider unavailable'); } };
-    await assert.rejects(backfill.run(pool, broken), /provider unavailable/);
-    assert.deepEqual((await pool.query('SELECT data FROM session_visuals WHERE id = $1', [legacyId])).rows[0].data, legacy);
-    assert.equal((await backfill.run(pool, store, { shouldStop: () => true })).migrated, 0);
-    const first = await backfill.run(pool, store, { limit: 1 });
-    assert.equal(first.migrated, 1); assert.equal(first.done, false);
-    const rest = await backfill.run(pool, store);
-    assert.equal(rest.migrated, 1); assert.equal(rest.done, true);
-    assert.deepEqual(rest.remaining, { check_run_media: 0, session_visuals: 0 });
-    const { rows: [row] } = await pool.query('SELECT * FROM session_visuals WHERE id = $1', [legacyId]);
-    assert.equal(row.data, null); assert.equal(row.object_key, media.objectKey(legacy));
-    assert.equal(row.legacy_etag, metadata(legacy).legacyEtag);
-    assert.deepEqual(await media.bytes(store, row), legacy);
-    assert.equal(store.calls.filter((c) => c.op === 'put' && c.key === row.object_key).length, 1);
-    assert.equal((await media.sweep(pool, store)).removed, 0, 'merged and held references retain the old object');
-    assert.equal((await backfill.run(pool, store)).migrated, 0, 'a completed batch is safe to retry');
-  });
-
-  await t.test('a locked legacy row is counted as remaining, never mistaken for completion', async () => {
-    const rowId = id();
-    await pool.query(`INSERT INTO session_visuals (id, session_id, kind, media, content_type, data)
-      VALUES ($1, $2, 'after', 'png', 'image/png', $3)`, [rowId, merged.id, legacy]);
-    const tx = await pool.connect();
-    await tx.query('BEGIN');
-    await tx.query('SELECT id FROM session_visuals WHERE id = $1 FOR UPDATE', [rowId]);
-    try {
-      const result = await backfill.run(pool, store);
-      assert.equal(result.migrated, 0); assert.equal(result.done, false);
-      assert.equal(result.remaining.session_visuals, 1);
-    } finally { await tx.query('ROLLBACK'); tx.release(); }
-    assert.equal((await backfill.run(pool, store)).done, true);
-  });
-
-  await t.test('the actual backfill clock resumes committed batches in a second process', async (t) => {
-    for (let i = 0; i < 24; i++) await pool.query(`INSERT INTO session_visuals (id, session_id, kind, media, content_type, data)
-      VALUES ($1, $2, 'after', 'png', 'image/png', $3)`, [id(), merged.id, legacy]);
-    t.mock.method(media, 'createMediaStore', () => store);
-    const { createRuntime } = require('../src/workflow/kernel/index.ts');
-    const { clock, MACHINE, clockKey } = require('../src/workflow/clock/machine.ts');
-    const { JOBS, clockServices } = require('../src/workflow/clock/services.ts');
-    const job = JOBS.find((job) => job.name === 'media-check-visuals-backfill');
-    const make = () => createRuntime({ pool, machines: [clock()], services: clockServices([job], { pool, config: {} }), pollMs: 10 });
-    const status = async () => (await pool.query('SELECT state, data FROM wf_instances WHERE machine = $1 AND key = $2',
-      [MACHINE, clockKey(job.name)])).rows[0];
-    const ask = (runtime, n) => runtime.appendAndWait(MACHINE, clockKey(job.name), { type: 'RunNow', payload: {} },
-      { requestKey: 'visual-test:' + n, source: { kind: 'admin', name: 'test' } });
-    let active = make();
-    t.after(() => active.stop());
-    await active.start({ loops: true });
-    await active.appendAndWait(MACHINE, clockKey(job.name), { type: 'Arm', payload: { job: job.name, everyMs: job.everyMs, onDemand: true } },
-      { requestKey: 'visual-test:arm', source: { kind: 'system', name: 'test' } });
-    await ask(active, 1);
-    const first = await waitFor(async () => {
-      const row = await status(); return row?.state === 'waiting' && row.data.last?.n === 1 ? row : null;
-    }, { label: 'the first check-visual batch to settle', timeoutMs: 10000 });
-    assert.equal(first.data.last.ok, true);
-    assert.equal(first.data.last.result.migrated, 20);
-    assert.equal(first.data.last.result.remaining.session_visuals, 4);
-    await active.stop(); active = make();
-    await active.start({ loops: true }); await ask(active, 2);
-    const second = await waitFor(async () => {
-      const row = await status(); return row?.state === 'waiting' && row.data.last?.n === 2 ? row : null;
-    }, { label: 'the restarted check-visual backfill to finish', timeoutMs: 10000 });
-    assert.equal(second.data.last.ok, true);
-    assert.equal(second.data.last.result.migrated, 4); assert.equal(second.data.last.result.done, true);
-  });
-
-  await t.test('a supplied checksum mismatch never clears legacy bytes', async () => {
-    const rowId = id();
-    await pool.query(`INSERT INTO session_visuals (id, session_id, kind, media, content_type, data, sha256)
-      VALUES ($1, $2, 'after', 'png', 'image/png', $3, $4)`, [rowId, merged.id, legacy, 'f'.repeat(64)]);
-    await assert.rejects(backfill.run(pool, store), /checksum mismatch/);
-    const { rows: [row] } = await pool.query('SELECT data, object_key FROM session_visuals WHERE id = $1', [rowId]);
-    assert.deepEqual(row.data, legacy); assert.equal(row.object_key, null);
-  });
 });

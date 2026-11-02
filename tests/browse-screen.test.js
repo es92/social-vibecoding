@@ -1804,8 +1804,37 @@ test('render: empty result explains itself, with the query when there is one', (
   Browse.render();
   assert.equal(state.empty, null, 'a populated grid hides the empty note');
   Browse._apps = [];
+  Browse._loaded = true;
   Browse.render();
   assert.match(state.empty, /No apps to show yet/, 'and a truly empty directory says so');
+  assert.equal(state.loading, false);
+});
+
+test('L06: before the directory answers, the list is loading, not empty', async () => {
+  // Overnight audit, 2 Nov 2026: a slow load on an iPhone Pro Max showed
+  // "No apps to show yet." while every other device listed eleven apps.
+  const { Browse, state } = makeBrowse({ apps: [app({ slug: 'chess', name: 'Chess' })] });
+  Browse.render();
+  assert.equal(state.loading, true, 'its rows\' place shows their skeleton');
+  assert.equal(state.empty, null, 'and nothing claims the directory is empty');
+  assert.equal(state.make, null);
+  Browse._query = 'plant swap';
+  Browse.render();
+  assert.equal(state.empty, null, 'a search waits for the directory too');
+  Browse._query = '';
+  await Browse._load();
+  assert.equal(state.loading, false);
+  assert.deepEqual(slugs(state), ['chess']);
+  // A directory that answers with nothing is empty, and says so.
+  const none = makeBrowse({ apps: [] });
+  await none.Browse._load();
+  assert.equal(none.state.loading, false);
+  assert.match(none.state.empty, /No apps to show yet/);
+  // A failed read is the error card, never the skeleton.
+  const failed = makeBrowse({ fetchOk: false });
+  await failed.Browse._load();
+  assert.equal(failed.state.loading, false);
+  assert.equal(failed.state.error, true);
 });
 
 test('#5928: a search no app answers offers to make it; a filtered-away match does not', () => {
@@ -1833,6 +1862,7 @@ test('#5928: a search no app answers offers to make it; a filtered-away match do
 
   // No search, no offer, even when the list is empty.
   Browse._apps = [];
+  Browse._loaded = true;
   Browse._query = '';
   Browse.render();
   assert.match(state.empty, /No apps to show yet/);

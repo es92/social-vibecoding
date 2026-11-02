@@ -269,7 +269,9 @@ test('each run in recent shots says how each declared change came out, and count
   assert.equal(odd.claims[0].status, null, 'a status it does not know is not passed on');
 });
 
-test('one proposal\'s shots: only a verified run\'s stills, focus first, within the count and the bytes', async () => {
+test('one proposal\'s shots: only a verified run\'s stills, focus first, within the count and the bytes', async (t) => {
+  const media = require('../src/services/media-store');
+  const store = require('./lib/media-store').useMemoryMedia(t);
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
   const pool = (session, artifacts) => ({
     async query(sql) {
@@ -282,8 +284,9 @@ test('one proposal\'s shots: only a verified run\'s stills, focus first, within 
   assert.deepEqual(unverified.images, []);
   assert.match(unverified.note, /no verified/);
 
+  await store.putObject(media.objectKey(png), png, 'image/png');
   const rows = Array.from({ length: data.MAX_SHOT_IMAGES + 3 }, (_, i) => ({
-    id: i, story_id: `c${i}`, viewport: 'phone', side: i % 2 ? 'head' : 'base', variant: 'focus', content_type: 'image/png', data: png, width: 1, height: 1,
+    id: i, story_id: `c${i}`, viewport: 'phone', side: i % 2 ? 'head' : 'base', variant: 'focus', content_type: 'image/png', object_key: media.objectKey(png), bytes: png.length, width: 1, height: 1,
   }));
   const out = await data.shotImages(pool({ id: 1, shots_run_id: 4, shots_state: 'verified', pr_number: 12, app_slug: 'bread' }, rows), 1);
   assert.equal(out.images.length, data.MAX_SHOT_IMAGES);

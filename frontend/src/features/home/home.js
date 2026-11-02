@@ -163,6 +163,11 @@ const Home = {
     window.HomePanels?.ensureLoaded()?.then(repaint);
     Home._ensureLayoutLoaded()?.then(repaint);
 
+    // The read itself failed: no answer in time, or no network at all
+    // (lib/read-timeout.ts). That says nothing about the apps, so a grid
+    // already drawn stays, as it does offline, and the probe the failure
+    // nudged decides whether to say so.
+    let unreached = false;
     try {
       // The viewer's own proposals / active sessions used to ride along
       // here as two strips at the top of the grid; both moved into the
@@ -172,9 +177,10 @@ const Home = {
       // tiles there (routes/apps.js demoIconApps). No-op in production.
       const params = new URLSearchParams(location.search);
       const demoQS = params.get('demo') === '1' ? `?demo=1${params.get('curation') === '1' ? '&curation=1' : ''}` : '';
-      const res = await fetch(`/api/apps${demoQS}`);
+      const res = await fetch(`/api/apps${demoQS}`).catch((err) => { unreached = true; throw err; });
       if (!res.ok) throw new Error('Failed to load apps');
       const { apps } = await res.json();
+      Home._lastLoadFailed = false;
       Home._apps = apps;
       // Set before render: currentLayout may now safely reconcile the stored
       // account layout against the complete app catalog.
@@ -195,13 +201,14 @@ const Home = {
       // most common reason this fetch throws. "Failed to load apps" in
       // red reads like the platform is broken; say what actually happened
       // and offer the retry. Anything already cached stays on screen.
+      Home._lastLoadFailed = true;
       let offline = false;
       try { offline = !!(window.Offline && Offline.isOffline()); } catch (_) { offline = false; }
       if (!Home._appsLoaded) {
         Home._appsSettled = true;
         window.HomePanels?.render();
       }
-      if (offline) {
+      if (offline || (unreached && Home._apps.length)) {
         if (Home._apps.length) {
           Home.render();
         } else {
@@ -250,6 +257,10 @@ const Home = {
   // (HomePanels.readyToPaint), and a read that will not come must not hold
   // them: they draw from what they have.
   _appsSettled: false,
+  // The latest /api/apps read failed (cleared by the next one that lands):
+  // the grid on screen is a kept copy, a note or the error card, and coming
+  // back online reads it again.
+  _lastLoadFailed: false,
   _query: '',
 
   // ── Edit mode (#4669) ──────────────────────────────────────────────
@@ -5708,14 +5719,25 @@ function formatRelativeTime(input) {
   return message('home:time.yearsAgo', { count: Math.floor(seconds / (86400 * 365)) });
 }
 
-// Back online: refill a grid that could only show the offline note. Guarded
-// on an empty cache so a reconnect never yanks a populated grid out from
-// under someone mid-scroll (App.resyncCurrentView owns the general case).
+// Back online: refill a grid that could only show the offline note, or
+// whose last read failed (a quiet network times reads out while it still
+// says it is online, so the grid can be a kept copy or the error card).
+// Guarded on that so a reconnect never yanks a current grid out from under
+// someone mid-scroll (App.resyncCurrentView owns the general case). It
+// waits HOME_RECOVERY_MS first and stands down when a load is out or has
+// landed by then: the resync that the same return starts (the probe, or the
+// events socket reopening) loads a visible Home itself, and two reads of
+// one return would be one too many.
 // (Guarded: the icon-renderer tests eval this file in a bare sandbox with
 // no event target on `window`.)
+const HOME_RECOVERY_MS = 1500;
+const homeOwesRead = () => !Home._appsLoaded || Home._lastLoadFailed;
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('usernode:offline-change', (e) => {
     if (!e.detail || e.detail.offline !== false) return;
-    if (window.Home && !Home._apps.length) Home.load();
+    if (!window.Home || !homeOwesRead()) return;
+    setTimeout(() => {
+      if (!Home._loadInFlight && homeOwesRead()) Home.load();
+    }, HOME_RECOVERY_MS);
   });
 }

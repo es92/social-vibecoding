@@ -267,12 +267,6 @@ export function FeedbackDialog() {
               <span id="feedback-target-app-name" className="block truncate text-sm font-semibold"><ControllerText id="dialogs:feedback.target.thisApp" /></span>
               <span id="feedback-target-app-sub" className="block truncate text-xs opacity-75">{t('dialogs:feedback.target.appSub')}</span>
             </button>
-            {/* Caret indicating the selected option; shown/hidden by the controller. */}
-            <div
-              id="feedback-caret-app"
-              className="hidden mt-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-violet-600"
-            >
-            </div>
           </div>
           <div className="flex-1 flex flex-col items-center">
             <button
@@ -286,11 +280,6 @@ export function FeedbackDialog() {
               <span className="block truncate text-sm font-semibold">Homeroom</span>
               <span className="block truncate text-xs opacity-75">{t('dialogs:feedback.target.platformSub')}</span>
             </button>
-            <div
-              id="feedback-caret-platform"
-              className="hidden mt-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-violet-600"
-            >
-            </div>
           </div>
         </div>
         {/*

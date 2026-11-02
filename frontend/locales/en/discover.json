@@ -718,5 +718,9 @@
   "illustration.pleaseWait": {
     "text": "Please wait…",
     "description": "Label of the main button of the featured illustration editor while an upload or save is in progress."
+  },
+  "list.loading": {
+    "text": "Loading apps",
+    "description": "Announced to screen readers on Discover while the list of apps is still loading; on screen the rows show as grey placeholders."
   }
 }

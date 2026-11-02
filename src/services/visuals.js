@@ -1547,7 +1547,7 @@ async function storeArtifacts(pool, sessionId, commitHash, targets, shots, dropp
     await client.query('BEGIN');
     // Serializes replacement sets for a session, while keeping uploads and
     // their references in the existing transaction. Deletes lock old rows
-    // before registry keys, the same order the backfill takes.
+    // before shared registry keys, keeping concurrent replacements ordered.
     await client.query('SELECT id FROM chat_sessions WHERE id = $1 FOR UPDATE', [sessionId]);
     if (hold) await client.query('DELETE FROM check_run_media WHERE run_id = $1', [hold.runId]);
     else await client.query('DELETE FROM session_visuals WHERE session_id = $1', [sessionId]);
@@ -1555,22 +1555,22 @@ async function storeArtifacts(pool, sessionId, commitHash, targets, shots, dropp
     const keys = await mediaStore.putMany(client, store, kept.map((r) => ({ data: r.buf, contentType: CONTENT_TYPES[r.media] })));
     for (const [i, r] of kept.entries()) {
       const meta = visualMedia.metadata(r.buf);
-      const values = [r.id, sessionId, commitHash || null, r.kind, r.media, CONTENT_TYPES[r.media], null, r.capturedPath || null, r.index, r.capturedViewport,
+      const values = [r.id, sessionId, commitHash || null, r.kind, r.media, CONTENT_TYPES[r.media], r.capturedPath || null, r.index, r.capturedViewport,
         Number.isInteger(r.status) && r.status > 0 ? r.status : null,
         r.kind === 'before' && !!r.fellBack,
         r.scenarioId, r.scenarioFingerprint];
       if (hold) {
         await client.query(
-          `INSERT INTO check_run_media (id, session_id, commit_hash, kind, media, content_type, data, captured_path, capture_index, captured_viewport, shot_status, before_fell_back, scenario_id, scenario_fingerprint, run_id,
+          `INSERT INTO check_run_media (id, session_id, commit_hash, kind, media, content_type, captured_path, capture_index, captured_viewport, shot_status, before_fell_back, scenario_id, scenario_fingerprint, run_id,
             object_key, sha256, bytes, legacy_etag)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
           [...values, hold.runId, keys[i], meta.sha256, meta.bytes, meta.legacyEtag]
         );
       } else {
         await client.query(
-          `INSERT INTO session_visuals (id, session_id, commit_hash, kind, media, content_type, data, captured_path, capture_index, captured_viewport, shot_status, before_fell_back, scenario_id, scenario_fingerprint,
+          `INSERT INTO session_visuals (id, session_id, commit_hash, kind, media, content_type, captured_path, capture_index, captured_viewport, shot_status, before_fell_back, scenario_id, scenario_fingerprint,
             object_key, sha256, bytes, legacy_etag)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
           [...values, keys[i], meta.sha256, meta.bytes, meta.legacyEtag]
         );
       }

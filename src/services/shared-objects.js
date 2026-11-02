@@ -118,10 +118,18 @@ function isTransientIssueRead(result) {
   return !result?.issue && ['rate limited', 'fetch failed'].includes(result?.note);
 }
 
-async function validateForShare(pool, user, raw, { conversationId = null } = {}) {
+async function validateForShare(pool, user, raw, { conversationId = null, viewer = null } = {}) {
   const ref = normalizeInput(raw);
   if (!ref) return null;
-  const app = await resolveApp(pool, user, ref);
+  // B09 (audit, 1 Nov 2026): `viewer` is the person a platform-written
+  // message is for (the Homeroom bot's DM to them; homeroom-bot-dm.js
+  // sendDm). The bot is no member of a private project, so judged as the
+  // sender every card about one was refused and its plan and its "live"
+  // arrived as bare text. Who sees the card is the person, so whether the
+  // project is visible is asked of them; the object itself (a change the
+  // bot made, a spec) is still checked as the sender's below. Never taken
+  // from a request: only sendMessage's own caller passes it.
+  const app = await resolveApp(pool, viewer || user, ref);
   if (!app) return null;
 
   let row = null;

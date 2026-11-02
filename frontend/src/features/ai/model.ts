@@ -92,6 +92,12 @@ export interface NeedItem {
   request?: { number?: number | null; title?: string | null } | null;
   /** Who proposed it, by username: Homeroom bot's own changes hold its slots. */
   author?: string | null;
+  /**
+   * B17: the change is on a project that is just this person's, so their
+   * yes alone approves it (workshop-overview.js approvedAlone). Its row says
+   * Approve, as its card and the project's own Needs you do; Vote elsewhere.
+   */
+  approve?: boolean;
 }
 
 /** Homeroom bot's account: its changes up for a vote hold a project's build slots. */
@@ -296,7 +302,9 @@ export function needsYou(needs: NeedItem[] | null, work: AiWork | null): WorkRow
       sub: app && held.has(app.slug) && holdsSlot(item)
         ? { id: 'messages:ai.row.voteFreesSlot', values: where(app, shownNumber(item)) }
         : whereLine(app, shownNumber(item)),
-      pill: { id: PILLS[item.kind] || 'messages:ai.pill.needsYou' },
+      pill: item.kind === 'proposal' && item.approve === true
+        ? { id: 'messages:ai.pill.approve' }
+        : { id: PILLS[item.kind] || 'messages:ai.pill.needsYou' },
       href: needHref(item),
       rootId: null,
     });

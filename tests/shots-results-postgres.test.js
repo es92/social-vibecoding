@@ -1,4 +1,6 @@
 'use strict';
+require('./lib/media-store').useMemoryMedia(require('node:test'));
+const { fixtureKey } = require('./lib/media-store');
 
 // How the admin connector reads the before & after shots of merged
 // proposals (routes/gallery.js shotsStats, services/bench/connector-data.js

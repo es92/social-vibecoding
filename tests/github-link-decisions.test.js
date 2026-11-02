@@ -116,7 +116,7 @@ test('a ⋯ row to a pull request on GitHub keeps "View PR on GitHub" and the Gi
   const gh = Array.from(items).find((it) => it.githubPr);
   assert.ok(gh, 'the proposal menu offers it');
   assert.equal(gh.label, message('changes:proposal.menu.viewPr'));
-  assert.equal(AppView._menuIconGlyph(gh), AppView.MENU_ICONS.github);
+  assert.equal(AppView._menuIconKey(gh), 'github');
 });
 
 test('a change kept in Homeroom has no GitHub row: its pull-request address is its own page', () => {
@@ -139,8 +139,8 @@ test('code on the git host is "View code", with the neutral code mark', () => {
   assert.equal(row.label, 'View code');
   assert.equal(row.icon, 'code');
   assert.equal(row.codePr, true);
-  assert.notEqual(AppView._menuIconGlyph(row), AppView.MENU_ICONS.github);
-  assert.ok(AppView.MENU_ICONS.code);
+  assert.equal(AppView._menuIconKey(row), 'code');
+  assert.ok(AppView.MENU_ICONS.includes('code'));
   assert.equal(message('changes:proposal.menu.viewCode'), 'View code');
 });
 

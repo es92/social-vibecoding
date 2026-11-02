@@ -42,7 +42,7 @@ test('check visual reader release publishes keys and retains merged visuals inde
     await tx.query('BEGIN');
     const key = await media.put(tx, store, data, 'image/png');
     await tx.query(`INSERT INTO check_run_media (id, run_id, session_id, commit_hash, kind, media, content_type,
-      data, object_key, bytes, sha256, legacy_etag) VALUES ($1, 'checks:test', $2, $3, 'after', 'png', 'image/png', NULL, $4, $5, $6, $7)`,
+      object_key, bytes, sha256, legacy_etag) VALUES ($1, 'checks:test', $2, $3, 'after', 'png', 'image/png', $4, $5, $6, $7)`,
     [artifactId, session.id, head, key, meta.bytes, meta.sha256, meta.legacyEtag]);
     await tx.query('COMMIT');
   } catch (err) { await tx.query('ROLLBACK'); throw err; } finally { tx.release(); }

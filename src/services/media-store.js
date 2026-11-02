@@ -2,7 +2,7 @@
 
 // Immutable platform media. The caller uploads and inserts its reference in
 // ONE transaction; upload failure aborts that transaction, never falls back
-// to storing bytes. During backfill only, a row without a key reads data.
+// to storing bytes. All readers require an object key.
 //
 // Every key column must REFERENCES media_objects(object_key), with an
 // immediate foreign key. Its registry row serializes uploads with cleanup.
@@ -58,6 +58,8 @@ function createMediaStore(config, { client } = {}) {
 // No cached disabled state: a caller supplies its own config/store. Routes
 // may construct one store at boot, while tests inject the in-memory store.
 function getStore(config) {
+  // Previews serve their own fake fixtures without production credentials.
+  if (process.env.USERNODE_ENV === 'staging') return require('./staging-media-store').createStagingMediaStore();
   return createMediaStore(config || {
     mediaStorageEndpoint: process.env.MEDIA_STORAGE_ENDPOINT,
     mediaStorageBucket: process.env.MEDIA_STORAGE_BUCKET,
@@ -103,13 +105,9 @@ async function stream(store, key, range = null) {
   return requireStore(store).getObjectStream(checkedKey(key), range);
 }
 
-async function bytes(store, row, { key = 'object_key', data = 'data' } = {}) {
-  if (!row[key]) {
-    if (row[data] == null) throw new Error('Media row has neither an object key nor bytes');
-    return Buffer.isBuffer(row[data]) ? row[data] : Buffer.from(row[data]);
-  }
-  // A keyed object failure must propagate. Its old byte column may be
-  // empty, and falling back would conceal a missing/corrupt object.
+async function bytes(store, row, { key = 'object_key' } = {}) {
+  // Missing keys and storage failures propagate; database bytes are no
+  // longer a representation after the production backfills completed.
   const chunks = [];
   for await (const chunk of await stream(store, row[key])) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks);
@@ -119,9 +117,7 @@ async function bytes(store, row, { key = 'object_key', data = 'data' } = {}) {
 // receives the range itself; no full video is downloaded just to slice it.
 async function respond(res, store, row, range = null) {
   try {
-    if (row.object_key) return await pipeline(await stream(store, row.object_key, range), res);
-    const data = await bytes(store, row);
-    return res.end(range ? data.subarray(range.start, range.end + 1) : data);
+    return await pipeline(await stream(store, row.object_key, range), res);
   } catch (err) {
     // A failed object open must not leave an immutable media cache policy
     // or a media ETag on the caller's error response.

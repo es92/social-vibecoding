@@ -31,8 +31,11 @@ export interface CardMenuRowView {
   label: string;
   /** Tooltip, or the reason a disabled row is disabled. */
   title: string | null;
-  /** The decorative glyph — `aria-hidden`, never part of the name. */
-  glyph: string;
+  /**
+   * The row's icon, a key of AppView.MENU_ICONS drawn by ./menu-icons.tsx —
+   * decorative, `aria-hidden`, never part of the name.
+   */
+  icon: string;
   /**
    * The descriptor's icon KEY, which doubles as a stable hook for the row's
    * meaning: `?shot=card-menu&row=assignee` aims at it and a dapp.json test

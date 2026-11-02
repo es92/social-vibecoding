@@ -28,6 +28,13 @@ export const browseStore = createStore({
   /** null until the first _renderList; else an array of row descriptors. */
   rows: null,
   /**
+   * The directory has not answered yet and nothing is held from Home's own
+   * read (overnight audit L06): the rows' place shows their skeleton, and the
+   * empty line waits rather than saying there are no apps. False in the
+   * prerender, which renders neither.
+   */
+  loading: false,
+  /**
    * The "Open site" row's descriptor ({ href, label }) while the search text
    * is a web address (#5364), else null — so the prerender, which has no
    * query, renders no site row and hydration is silent.

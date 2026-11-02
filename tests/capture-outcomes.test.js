@@ -262,11 +262,11 @@ test('storeArtifacts persists shot_status and before_fell_back per row', async (
     { kind: 'after', media: 'png', status: 404, index: 0, buf },
   ];
   const stored = await visuals.storeArtifacts(pool, 7, 'abc', targets, shots);
-  // $11 = shot_status, $12 = before_fell_back (0-indexed 10 / 11).
-  assert.equal(pool.inserted[0][10], 200);
-  assert.equal(pool.inserted[0][11], true);
-  assert.equal(pool.inserted[1][10], 404);
-  assert.equal(pool.inserted[1][11], false); // fellBack only sticks to "before" rows
+  // $10 = shot_status, $11 = before_fell_back (0-indexed 9 / 10).
+  assert.equal(pool.inserted[0][9], 200);
+  assert.equal(pool.inserted[0][10], true);
+  assert.equal(pool.inserted[1][9], 404);
+  assert.equal(pool.inserted[1][10], false); // fellBack only sticks to "before" rows
   // The grouped shape carries the flag so renderers can caption the pair.
   assert.equal(stored.captures[0].beforeFellBack, true);
 });
@@ -310,7 +310,7 @@ test('storeArtifacts stores a null shot_status when the frame carried none', asy
     pool, 7, null, [{ index: 0, path: '/' }],
     [{ kind: 'after', media: 'png', status: 0, index: 0, buf }]
   );
-  assert.equal(pool.inserted[0][10], null);
+  assert.equal(pool.inserted[0][9], null);
 });
 
 test('storeArtifacts attributes a companion still to its parent route, mobile frame, and scenario', async () => {
@@ -323,11 +323,11 @@ test('storeArtifacts attributes a companion still to its parent route, mobile fr
     [{ kind: 'after', media: 'png', status: 200, index: 1, buf }]
   );
   const params = pool.inserted[0];
-  assert.equal(params[7], '/board?demo=1');
-  assert.equal(params[8], 1);
-  assert.equal(params[9], 'mobile');
-  assert.equal(params[12], 'board.main');
-  assert.equal(params[13], 'f'.repeat(64));
+  assert.equal(params[6], '/board?demo=1');
+  assert.equal(params[7], 1);
+  assert.equal(params[8], 'mobile');
+  assert.equal(params[11], 'board.main');
+  assert.equal(params[12], 'f'.repeat(64));
   assert.equal(stored.captures[0].path, '/board?demo=1');
   assert.equal(stored.captures[0].viewport, 'mobile');
   assert.equal(stored.captures[0].scenarioId, 'board.main');

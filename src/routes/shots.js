@@ -250,10 +250,8 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
       // gets the 1x copy every other address serves.
       const dense = req.query.density === 'device' && await view.viewerSeesDense(pool, req.user);
       const { rows } = await pool.query(
-        `SELECT CASE WHEN $4 THEN COALESCE(a.dense_data, a.data) ELSE a.data END AS data,
-                CASE WHEN $4 THEN COALESCE(a.dense_sha256, a.sha256) ELSE a.sha256 END AS sha256,
-                CASE WHEN $4 AND (a.dense_object_key IS NOT NULL OR a.dense_data IS NOT NULL)
-                  THEN a.dense_object_key ELSE a.object_key END AS object_key,
+        `SELECT CASE WHEN $4 THEN COALESCE(a.dense_sha256, a.sha256) ELSE a.sha256 END AS sha256,
+                CASE WHEN $4 THEN COALESCE(a.dense_object_key, a.object_key) ELSE a.object_key END AS object_key,
                 CASE WHEN $4 THEN COALESCE(a.dense_bytes, a.bytes) ELSE a.bytes END AS bytes,
                 a.content_type, a.variant
            FROM shot_artifacts a
@@ -276,7 +274,7 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
       // A close-up (services/shots-closeups.js) is only ever shown to an
       // account in the experiment, at its own address.
       if (!artifact || (artifact.variant === 'closeup' && !dense)) return res.status(404).json({ error: 'Shots artifact not found' });
-      const size = artifact.object_key ? Number(artifact.bytes) : Buffer.byteLength(artifact.data || '');
+      const size = Number(artifact.bytes);
       const range = parseRange(req.headers.range, size);
       res.set({
         'Content-Type': artifact.content_type,

@@ -591,9 +591,12 @@ function systemPrompt({ username, perPerson = 2, today = new Date(), platform = 
     'unless the conversation has plainly ended.',
     '',
     'HOW HOMEROOM WORKS',
-    '- Each project has a board of requests (features and bugs) and a group of members. A change to a project has',
-    '  a staging preview to try, automated checks that must pass and a vote by the',
+    '- Each project has its requests (features and bugs), listed in its Workshop, and a group of members. A change to',
+    '  a project has a preview to try, automated checks that must pass and a vote by the',
     '  project\'s group. It goes live only when the group approves it and its checks pass.',
+    '- A project that is just theirs (audience just_you in my_projects) has no group yet: their own yes approves its',
+    '  changes. Asked how it decides, say that, and that inviting people makes it a group that votes; never',
+    '  describe a group vote for it.',
     '- How a project\'s changes are approved (who says yes, how many yeses) and who can see it are set by its creator',
     '  or admins on the project\'s page: ⋯, Settings & rules, Who can see & change it. What they pick goes to the group',
     '  as one change. A request to change them is not built: say where it is changed, and that its creator or admins',
@@ -626,7 +629,8 @@ function systemPrompt({ username, perPerson = 2, today = new Date(), platform = 
     '  mention it as that, never as the wait. Never guess a time of your own, and never say it is nearly done.',
     '- Plain everyday words. No code and no internal ids. Show the requests, changes and projects you mention',
     '  as cards: they are the links. Write a link in the text only when a tool returned it, exactly as returned.',
-    '  Call things "request", "change" and the project by its name.',
+    '  Call things "request", "change" and the project by its name. Where a project\'s requests are listed is its',
+    '  Workshop, never a "board".',
     '- Answer in the language of their latest message, and in the language they wrote in before when it is too short',
     '  to tell. English only when you cannot tell.',
     '- When something they ask for already exists, say where they find it, in the words they see on screen: the',
@@ -699,7 +703,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'my_projects',
-      description: 'The projects this person is a member of, where they can file requests, and whether you build on each.',
+      description: 'The projects this person is a member of, where they can file requests, whether you build on each, and who each is for (audience: just_you, private_community or public_community).',
       parameters: { type: 'object', properties: {}, additionalProperties: false },
     },
   },
@@ -1401,9 +1405,16 @@ async function requestDetail(pool, { user, project, number, settings = null, dep
   };
 }
 
+// communities.audienceSql's three, as my_projects says them: the screen's own
+// names (AGENTS.md, "Communities own projects").
+const AUDIENCE_WORDS = Object.freeze({ solo: 'just_you', invited: 'private_community', open: 'public_community' });
+
 async function myProjects(pool, { user, settings = null, deps = {} }) {
   const { rows } = await pool.query(
-    `SELECT a.slug, a.name FROM apps a
+    `SELECT a.slug, a.name,
+            ${require('./communities').audienceSql('a', '(SELECT COUNT(*) FROM community_members cm WHERE cm.community_id = a.community_id)')}
+              AS audience
+       FROM apps a
        JOIN community_members m ON m.community_id = a.community_id
       WHERE m.user_id = $1 AND a.repo_url IS NOT NULL
       ORDER BY LOWER(a.name), a.id
@@ -1413,6 +1424,10 @@ async function myProjects(pool, { user, settings = null, deps = {} }) {
   return {
     projects: rows.map((r) => ({
       project: r.slug, projectName: r.name || r.slug, botBuildsHere: liveModule(deps).isLiveFor(settings, { slug: r.slug }),
+      // B27 (overnight audit, 1 Nov 2026): who it is for, as the screen
+      // names it, so a project that is just theirs is not explained as a
+      // group's vote.
+      ...(AUDIENCE_WORDS[r.audience] ? { audience: AUDIENCE_WORDS[r.audience] } : {}),
     })),
   };
 }

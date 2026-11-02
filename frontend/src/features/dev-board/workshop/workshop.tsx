@@ -1418,8 +1418,7 @@ export function NeedsVoteForm({ row, slug, side, line, noChoice, boxRef, onSide,
   row: QueueRow;
   /** The open project's, for a row that does not name its own (rowSlug). */
   slug?: string;
-  /** Null while neither side is chosen (V04). */
-  side: 'yes' | 'no' | null;
+  side: 'yes' | 'no';
   line: string;
   /** The No's picked answer; the vote is sent only with one. */
   noChoice?: NoChoice | null;
@@ -1437,7 +1436,7 @@ export function NeedsVoteForm({ row, slug, side, line, noChoice, boxRef, onSide,
   const solo = useCommunity(rowSlug(row, slug || ''))?.audience === 'solo';
   const t = useMessages('project');
   return (
-    <div className="dev-ws-vote-form" data-ws-vote-form="" data-side={side || undefined}>
+    <div className="dev-ws-vote-form" data-ws-vote-form="" data-side={side}>
       <VotePicker
         yes={{ key: 'yes', label: row.yes ? row.yes.label : t('project:needsYou.vote.yes'), tally: row.yes ? row.yes.tally : undefined, act: row.yes && row.yes.act ? row.yes.act as ActionRef : undefined }}
         no={{ key: 'no', label: row.no ? row.no.label : t('project:needsYou.vote.no'), tally: row.no ? row.no.tally : undefined, act: row.no && row.no.act ? row.no.act as ActionRef : undefined }}
@@ -2681,9 +2680,7 @@ export function NeedsFeed({ rows, models, slug, canPost, onDone, onHub, onSugges
   // Yes/No switch, the line for the group and the send button, so the line
   // is written on the sheet rather than in a prompt card castVote raises
   // after the press.
-  // V04 (audit, 2 Nov 2026): the vote sheet opens with neither side chosen
-  // (see openVoteSide); null until the viewer picks one.
-  const [voteSide, setVoteSide] = useState<'yes' | 'no' | null>(null);
+  const [voteSide, setVoteSide] = useState<'yes' | 'no'>('yes');
   const [voteLine, setVoteLine] = useState('');
   // The No's picked answer: the sheet's picker sends the vote only with one.
   const [voteChoice, setVoteChoice] = useState<NoChoice | null>(null);
@@ -2994,10 +2991,8 @@ export function NeedsFeed({ rows, models, slug, canPost, onDone, onHub, onSugges
     if (sheet === kind) { closeSheet(); return; }
     setLeaving(null);
     setSheet(kind);
-    // The vote form opens fresh: with neither side chosen (V04), an empty
-    // line and no answer. An approval on a project that is just yours is
-    // nobody else's decision to nudge, and opens on Approve.
-    if (kind === 'vote') { setVoteSide(row && approves(row) ? 'yes' : null); setVoteLine(''); setVoteChoice(null); }
+    // The vote form opens fresh: on Yes, with an empty line and no answer.
+    if (kind === 'vote') { setVoteSide('yes'); setVoteLine(''); setVoteChoice(null); }
   };
   // The leave animation's length, then the sheet is gone. Nothing to wait
   // for where motion is unwelcome — app.css runs no animation there.
@@ -3175,7 +3170,6 @@ export function NeedsFeed({ rows, models, slug, canPost, onDone, onHub, onSugges
    */
   const voteTrimmed = voteLine.replace(/\s+/g, ' ').trim();
   const submitVote = () => {
-    if (!voteSide) return;
     if (voteSide === 'no') {
       if (!voteChoice) return;
       const choice = {

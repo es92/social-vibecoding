@@ -1312,6 +1312,13 @@
       "preview": "`SELECT ${require('./app-access').nonSecretAppColumnList()} FROM apps WHERE slug = LOWER($1) OR LOWER(name) = LOWER($1) ORDER BY (slug = LOWER($1)) DESC, id LIM"
     },
     {
+      "source": "src/services/homeroom-bot-mayor.js",
+      "kind": "structural-template",
+      "fingerprint": "fdb7e64ac3ee12ccb1f3",
+      "count": 1,
+      "preview": "`SELECT a.slug, a.name, ${require('./communities').audienceSql('a', '(SELECT COUNT(*) FROM community_members cm WHERE cm.community_id = a.community_id)')} AS au"
+    },
+    {
       "source": "src/services/homeroom-bot-progress.js",
       "kind": "structural-template",
       "fingerprint": "78c2595a6c02401a3e85",
@@ -1678,16 +1685,16 @@
     {
       "source": "src/services/shots-control.js",
       "kind": "structural-template",
-      "fingerprint": "36a17722f351328f3ee1",
+      "fingerprint": "13ee25334e0c09d7d0d7",
       "count": 1,
-      "preview": "`SELECT * FROM shot_run_control WHERE run_id = $1${lock ? ' FOR UPDATE' : ''}`"
+      "preview": "`SELECT slot, story_id, viewport, side, variant, media, theme, content_type, width, height, bytes, sha256, density, part, scale, focus_rect, object_key FROM sho"
     },
     {
       "source": "src/services/shots-control.js",
       "kind": "structural-template",
-      "fingerprint": "d6f860ff0554e7f6405d",
+      "fingerprint": "36a17722f351328f3ee1",
       "count": 1,
-      "preview": "`SELECT slot, story_id, viewport, side, variant, media, theme, content_type, data, width, height, bytes, sha256, density, part, scale, focus_rect, object_key FR"
+      "preview": "`SELECT * FROM shot_run_control WHERE run_id = $1${lock ? ' FOR UPDATE' : ''}`"
     },
     {
       "source": "src/services/shots-demo-states.js",

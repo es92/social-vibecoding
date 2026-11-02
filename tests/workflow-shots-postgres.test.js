@@ -1,4 +1,7 @@
 'use strict';
+const mediaStore = require('../src/services/media-store');
+const mediaTestStore = require('./lib/media-store').useMemoryMedia(require('node:test'));
+const { fixtureKey } = require('./lib/media-store');
 
 // The shots machine (src/workflow/shots/) against the full PostgreSQL
 // schema: a proposal's declaration, its runs (revision, copies, the agent's
@@ -108,9 +111,9 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
   const PNG = Buffer.from('fake-png');
   async function saved(runId, side) {
     await pool.query(
-      `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, data, bytes, sha256)
+      `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, object_key, bytes, sha256)
        VALUES ($1, $2, 'c1', 'desktop', $3, 'context', 'png', 'image/png', $4, $5, $6)`,
-      [runId, `c1/desktop/${side}/context`, side, PNG, PNG.length, crypto.createHash('sha256').update(side).digest('hex')]);
+      [runId, `c1/desktop/${side}/context`, side, await fixtureKey(pool, PNG), PNG.length, crypto.createHash('sha256').update(side).digest('hex')]);
   }
   const READY_VERDICT = { passed: true, mode: 'shots', runs: 1, stories: [{ id: 'c1', status: 'ready', files: 2 }] };
   const passed = (input) => ({
@@ -199,8 +202,8 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     assert.equal(r.shots_state, 'verified');
     assert.equal(r.shots_run_id, run.id);
     assert.equal(r.shots_detail.artifactSummary.length, 2, 'the saved files became the run\'s shots');
-    const { rows: arts } = await pool.query('SELECT side, data FROM shot_artifacts WHERE run_id = $1 ORDER BY side', [run.id]);
-    assert.deepEqual(arts.map((a) => [a.side, a.data.toString()]), [['base', 'fake-png'], ['head', 'fake-png']]);
+    const { rows: arts } = await pool.query('SELECT side, object_key FROM shot_artifacts WHERE run_id = $1 ORDER BY side', [run.id]);
+    assert.deepEqual(await Promise.all(arts.map(async (a) => [a.side, (await mediaStore.bytes(mediaTestStore, a)).toString()])), [['base', 'fake-png'], ['head', 'fake-png']]);
     assert.equal((await pool.query('SELECT 1 FROM shot_run_control WHERE run_id = $1', [run.id])).rowCount, 0, 'workspace gone');
     assert.deepEqual(calls(WORK.cleanup).map((c) => [c.input.runId, c.input.stopTurn, c.input.worker]), [[run.id, true, false]]);
     assert.ok(await settledTold(s) >= 1, 'the bot hears the slot settled');
@@ -223,9 +226,9 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
       await saved(input.runId, 'base');
       await saved(input.runId, 'head');
       await pool.query(
-        `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, theme, content_type, data, bytes, sha256)
+        `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, theme, content_type, object_key, bytes, sha256)
          VALUES ($1, $2, 'c1', 'desktop', 'head', 'context', 'png', 'dark', 'image/png', $3, $4, $5)`,
-        [input.runId, 'c1/desktop/head/context/dark', DARK, DARK.length,
+        [input.runId, 'c1/desktop/head/context/dark', await fixtureKey(pool, DARK), DARK.length,
           crypto.createHash('sha256').update('dark').digest('hex')]);
       return { ...passed(input), slots: [...passed(input).slots, 'c1/desktop/head/context/dark'] };
     });
@@ -237,8 +240,8 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     const [run] = await runs(s);
     assert.equal(run.state, 'verified');
     const { rows: arts } = await pool.query(
-      'SELECT side, theme, data FROM shot_artifacts WHERE run_id = $1 ORDER BY side, theme', [run.id]);
-    assert.deepEqual(arts.map((a) => [a.side, a.theme, a.data.toString()]), [
+      'SELECT side, theme, object_key FROM shot_artifacts WHERE run_id = $1 ORDER BY side, theme', [run.id]);
+    assert.deepEqual(await Promise.all(arts.map(async (a) => [a.side, a.theme, (await mediaStore.bytes(mediaTestStore, a)).toString()])), [
       ['base', 'light', 'fake-png'], ['head', 'dark', 'fake-png-dark'], ['head', 'light', 'fake-png'],
     ], 'light and dark of one slot coexist, each with its theme');
     const summary = (await row(s)).shots_detail.artifactSummary;
@@ -246,7 +249,7 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
   });
 
   // A run taken at device density (services/shots-density.js) keeps each
-  // dense still twice: `data` its 1x copy, dense_* the original. Publication
+  // dense still twice: object_key its 1x copy, dense_* the original. Publication
   // copies both, and the database holds the pair together.
   await t.test('S9b a dense still publishes with its 1x copy and its original', async () => {
     defaults();
@@ -254,12 +257,12 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     work.answer.set(WORK.agent, async (input) => {
       await saved(input.runId, 'base');
       await pool.query(
-        `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, data, width, height, bytes, sha256,
-                                     density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256)
+        `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, object_key, width, height, bytes, sha256,
+                                     density, dense_object_key, dense_width, dense_height, dense_bytes, dense_sha256)
          VALUES ($1, 'c1/desktop/head/context', 'c1', 'desktop', 'head', 'context', 'png', 'image/png', $2, 1280, 800, $3, $4,
                  2, $5, 2560, 1600, $6, $7)`,
-        [input.runId, Buffer.from('fake-png'), 8, crypto.createHash('sha256').update('flat').digest('hex'),
-          DENSE, DENSE.length, crypto.createHash('sha256').update('dense').digest('hex')]);
+        [input.runId, await fixtureKey(pool, Buffer.from('fake-png')), 8, crypto.createHash('sha256').update('flat').digest('hex'),
+          await fixtureKey(pool, DENSE), DENSE.length, crypto.createHash('sha256').update('dense').digest('hex')]);
       return passed(input);
     });
     const s = await proposal();
@@ -270,16 +273,16 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     const [run] = await runs(s);
     assert.equal(run.state, 'verified');
     const { rows: [head] } = await pool.query(
-      `SELECT data, width, density, dense_data, dense_width, dense_height FROM shot_artifacts WHERE run_id = $1 AND side = 'head'`, [run.id]);
-    assert.deepEqual([head.data.toString(), head.width, head.density, head.dense_data.toString(), head.dense_width, head.dense_height],
+      `SELECT object_key, width, density, dense_object_key, dense_width, dense_height FROM shot_artifacts WHERE run_id = $1 AND side = 'head'`, [run.id]);
+    assert.deepEqual([(await mediaStore.bytes(mediaTestStore, head)).toString(), head.width, head.density, (await mediaStore.bytes(mediaTestStore, head, { key: 'dense_object_key' })).toString(), head.dense_width, head.dense_height],
       ['fake-png', 1280, 2, 'fake-png-dense', 2560, 1600]);
     const { rows: [base] } = await pool.query(
-      `SELECT density, dense_data FROM shot_artifacts WHERE run_id = $1 AND side = 'base'`, [run.id]);
-    assert.deepEqual([base.density, base.dense_data], [1, null], 'a 1x still is one copy');
+      `SELECT density, dense_object_key FROM shot_artifacts WHERE run_id = $1 AND side = 'base'`, [run.id]);
+    assert.deepEqual([base.density, base.dense_object_key], [1, null], 'a 1x still is one copy');
     // A density without its original, or an original at 1x, is refused.
     for (const [density, dense] of [[2, null], [1, DENSE]]) {
       await assert.rejects(pool.query(
-        `UPDATE shot_artifacts SET density = $2, dense_data = $3 WHERE run_id = $1 AND side = 'base'`, [run.id, density, dense]),
+        `UPDATE shot_artifacts SET density = $2, dense_object_key = $3 WHERE run_id = $1 AND side = 'base'`, [run.id, density, dense ? await fixtureKey(pool, dense) : null]),
       /shot_artifacts_density_check/);
     }
   });
@@ -295,10 +298,10 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
       await saved(input.runId, 'head');
       for (const part of [1, 2]) {
         await pool.query(
-          `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, data, width, height, bytes, sha256,
+          `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, object_key, width, height, bytes, sha256,
                                        part, scale, focus_rect)
            VALUES ($1, $2, 'c1', 'desktop', 'head', 'closeup', 'png', 'image/png', $3, 594, 360, $4, $5, $6, $7, $8::jsonb)`,
-          [input.runId, `c1/desktop/head/closeup/${part}`, CLOSE, CLOSE.length, sha(`c${part}`), part, part === 1 ? 9 : 8.2,
+          [input.runId, `c1/desktop/head/closeup/${part}`, await fixtureKey(pool, CLOSE), CLOSE.length, sha(`c${part}`), part, part === 1 ? 9 : 8.2,
             JSON.stringify({ x: 40 * part, y: 30, w: 66, h: 40 })]);
       }
       return { ...passed(input), slots: [...passed(input).slots, 'c1/desktop/head/closeup/1', 'c1/desktop/head/closeup/2'] };
@@ -320,9 +323,9 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     // A close-up without its number or region, or a still with a number, is refused.
     for (const [variant, part, scale, rect] of [['closeup', 0, 9, '{}'], ['closeup', 1, null, '{}'], ['closeup', 1, 9, null], ['context', 1, null, null]]) {
       await assert.rejects(pool.query(
-        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, content_type, data, bytes, sha256, part, scale, focus_rect)
-         VALUES ($1, $2, 'c1', 'phone', 'head', $3, 'png', 'image/png', '\\x00', 1, $4, $5, $6, $7::jsonb)`,
-        [crypto.randomBytes(16).toString('hex'), run.id, variant, sha('x'), part, scale, rect]), /variant_closeup_check/, `${variant} ${part}`);
+        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, content_type, object_key, bytes, sha256, part, scale, focus_rect)
+         VALUES ($1, $2, 'c1', 'phone', 'head', $3, 'png', 'image/png', $8, 1, $4, $5, $6, $7::jsonb)`,
+        [crypto.randomBytes(16).toString('hex'), run.id, variant, sha('x'), part, scale, rect, await fixtureKey(pool, Buffer.from([0]))]), /variant_closeup_check/, `${variant} ${part}`);
     }
   });
 

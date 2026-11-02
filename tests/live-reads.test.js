@@ -176,12 +176,18 @@ test('a no-cache or reload read asks the worker for the current answer', () => {
   assert.equal(sw.wantsFreshAnswer('default'), false);
   assert.equal(sw.wantsFreshAnswer(undefined), false);
   const src = read('public/sw.js');
-  assert.match(src, /const fresh = wantsFreshAnswer\(event\.request\.cache\);[\s\S]{0,800}const timeoutMs = fresh \? null/,
-    'networkFirstApi gives such a read no deadline');
-  // ...and leaves the correction marks for the next ordinary re-pull, which
-  // they exist to guard (adversarial review).
-  assert.match(src, /const settling = !fresh && awaitingNetwork\.delete\(event\.request\.url\);/);
-  assert.match(src, /const laned = !fresh && !correcting\.delete\(event\.request\.url\)/);
+  // Such a read waits for the network far longer than the 1s deadline: the
+  // saved copy answers it only on a link that has not answered at all
+  // (FRESH_API_TIMEOUT_MS, offline findings 2 Nov 2026), and the late answer
+  // still corrects the screen (tests/pwa-offline-cache.test.js).
+  assert.match(src, /const fresh = wantsFreshAnswer\(event\.request\.cache\);[\s\S]{0,800}: fresh \? \(laned \? FRESH_BOOT_API_TIMEOUT_MS : FRESH_API_TIMEOUT_MS\)/,
+    'networkFirstApi gives such a read the long fresh deadline');
+  assert.ok(sw.FRESH_API_TIMEOUT_MS >= 3 * sw.API_TIMEOUT_MS,
+    'far longer than the ordinary deadline a working link can lose');
+  // A re-pull after a correction is a fresh read now, so it consumes the
+  // correction marks they exist to guard (adversarial review).
+  assert.match(src, /const settling = awaitingNetwork\.delete\(event\.request\.url\);/);
+  assert.match(src, /const laned = !correcting\.delete\(event\.request\.url\)/);
 });
 
 test('with no deadline, a slow network answer wins over the saved copy', async () => {

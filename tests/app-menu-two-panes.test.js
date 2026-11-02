@@ -222,7 +222,9 @@ test('the desktop rail un-centres the header title', () => {
   const at = css.indexOf('NOT WHILE THE DESKTOP RAIL IS UP');
   assert.ok(at > 0, 'the rule states its reason');
   const block = css.slice(at, css.indexOf('}', css.indexOf('text-align: left;', at)));
-  assert.match(block, /@media \(min-width: 768px\)/);
+  // From 640px since the overnight audit's U03: the band between, where only
+  // the iPhone Duo held upright lives, was the one place a title centred.
+  assert.match(block, /@media \(min-width: 640px\)/);
   // IT IS NOT KEYED OFF THE RAIL ANY MORE (#2718 review). That left exactly
   // one live case for centring — a desktop window with no rail, which is a
   // running app — so an app's name floated mid-bar while every platform

@@ -75,13 +75,12 @@ test('immutable SHA-256 upload takes the registry lock before I/O and deduplicat
   await assert.rejects(media.put({ query: async () => {} }, store, data), /size mismatch/);
 });
 
-test('backfill reads by row state; a keyed read never falls back on storage failure', async () => {
-  assert.equal((await media.bytes(null, { object_key: null, data: Buffer.from('old') })).toString(), 'old');
+test('reads require a key and never fall back to database bytes', async () => {
+  await assert.rejects(media.bytes(memoryMediaStore(), { object_key: null, data: Buffer.from('old') }), /Invalid media object key/);
   await assert.rejects(media.bytes(null, { object_key: media.objectKey(Buffer.from('x')), data: Buffer.from('old') }),
     { code: 'media_storage_unavailable' });
   await assert.rejects(media.bytes(memoryMediaStore(), { object_key: media.objectKey(Buffer.from('x')), data: Buffer.from('old') }),
     { code: 'NoSuchKey' });
-  await assert.rejects(media.bytes(null, { object_key: null, data: null }), /neither an object key nor bytes/);
   await assert.rejects(media.stream(memoryMediaStore(), 'some/other/prefix'), /Invalid media object key/);
 });
 

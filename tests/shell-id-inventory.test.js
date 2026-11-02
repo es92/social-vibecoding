@@ -58,6 +58,14 @@ const withInteriors = `${after}\n${lazyInteriorsHtml()}`;
 
 // Ids a conversion chunk deliberately removed, each with the reason.
 const RETIRED_IDS = {
+  // ── Overnight UI audit D10: the selection carets are gone ─────────
+  // The owner's decision of 2 Nov 2026. Each pointed from the chosen option
+  // to nothing below it, and read as a stray tooltip arrow once the option
+  // itself was lit (#5285) or filled.
+  'drawer-theme-caret-track': 'The rail under Settings \u203a Appearance\'s Light / Dark / System track that the caret slid along. The caret is gone; the lit segment says which is chosen (features/settings/sections/theme.tsx).',
+  'drawer-theme-caret': 'The small triangle under the chosen Appearance segment (audit D10). The lit segment says which is chosen.',
+  'feedback-caret-app': 'The triangle under "This app" in the Suggest form\'s "Where should this go?" picker (audit D10). The filled option says which is chosen (features/dialogs/feedback.tsx).',
+  'feedback-caret-platform': 'The triangle under "Homeroom" in the Suggest form\'s "Where should this go?" picker (audit D10). The filled option says which is chosen.',
   // ── #4073: the waiting screen says the waitlist in one line ────────
   'waiting-who': 'The username inside "Your account … doesn\'t have platform access yet." on the waiting screen. The screen says "You\'re on the waitlist" and one line about your spot now (features/auth/waiting.tsx), as the onboarding canvas draws it, so nothing names the account there.',
   'waiting-check-state': 'The waiting screen\'s "Last checked …" / "Connection issue, will retry" line. The screen still checks every 30 seconds and lets the account in the moment access is granted; it no longer reports each check, and a check that fails is tried again on the next one.',

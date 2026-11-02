@@ -198,7 +198,10 @@ const App = {
       const snap = JSON.parse(raw);
       if (!snap || !snap.user || !snap.user.id) return null;
       if (!snap.cacheScope || snap.cacheScope !== App._sessionCacheScope()) {
-        App._dropCachedSession();
+        // Another session token, not necessarily another person (a native
+        // app's restored session is a new token): unsent messages stay, and
+        // only the account that wrote them is ever given them back.
+        App._dropCachedSession({ keepUnsent: true });
         return null;
       }
       const age = Date.now() - Number(snap.savedAt || 0);
@@ -229,7 +232,11 @@ const App = {
   // Ask the service worker to drop the cached API responses of a session
   // that is definitively over. Fire-and-forget: the snapshot has already
   // been cleared, so a worker that never answers changes nothing.
-  _dropCachedSession({ apiCache = true } = {}) {
+  //
+  // `keepUnsent` keeps the messages the account wrote that the server has
+  // not had yet (below): only for a snapshot whose session token has merely
+  // changed, which a native app's restored session does to the same person.
+  _dropCachedSession({ apiCache = true, keepUnsent = false } = {}) {
     window.UsernodeReact?.apiCache?.reset?.({ broadcast: apiCache });
     App.clearSessionSnapshot();
     // The remembered top-bar state goes with it, for the same reason and on
@@ -274,6 +281,14 @@ const App = {
     try {
       if (typeof AppView !== 'undefined') AppView.clearOfflineReady();
     } catch (err) { /* ignore */ }
+    // …and the messages this account wrote that the server has not had yet,
+    // kept on the device so a reload cannot lose them (offline test, finding
+    // 1; frontend/src/features/messages/outbox.ts). They are never left for
+    // the next account, which is also why the outbox only ever gives back
+    // the signed-in account's own.
+    try {
+      if (!keepUnsent) window.UsernodeReact?.messages?.clearUnsent?.();
+    } catch (err) { /* nothing kept, or no bridge */ }
   },
 
   // True while the shell is running on the snapshot rather than a verified
@@ -1142,6 +1157,9 @@ const App = {
     // the connectivity probe reports we're back.
     window.addEventListener('usernode:offline-change', (e) => {
       if (e.detail && e.detail.offline === false) App._reconcileSession();
+      // The events socket follows the probe too, both ways, and the screen
+      // is re-read when the network comes back (_eventsNetworkChanged).
+      if (e.detail) App._eventsNetworkChanged(e.detail.offline === true);
     });
 
     // The service worker answered a slow /api/* from cache and the real
@@ -3054,6 +3072,143 @@ const App = {
     try { socket.send(JSON.stringify({ type, sessionId })); } catch { /* closed */ }
   },
 
+  // ── The events socket on a quiet network (2 Nov 2026) ─────────────────
+  //
+  // A network that passes nothing (bars showing, no packet through: a lift,
+  // a train, Wi-Fi handing over to cellular) never closes a socket: a new
+  // one hangs in CONNECTING, and an open one just goes silent. Nothing fired
+  // onclose, so nothing nudged the probe, retried or re-read the screen. So:
+  //
+  //   - a socket not open EVENTS_CONNECT_TIMEOUT_MS after it was made is
+  //     given up;
+  //   - an open one sends `ping` when nothing has come for EVENTS_QUIET_MS
+  //     (and once as it opens), and is given up when nothing at all comes
+  //     back within EVENTS_PONG_TIMEOUT_MS. The server answers `pong`
+  //     (src/services/ws.js handleEventsFrame). A socket that never answered
+  //     one (a server from before pings, mid-rollout) is not held to it;
+  //   - a socket given up, or closed, nudges the probe and is tried again
+  //     after a delay that doubles from EVENTS_RETRY_MIN_MS to
+  //     EVENTS_RETRY_MAX_MS, with jitter so a crowd of tabs does not come
+  //     back at once, and starts again from the minimum once one opens;
+  //   - when the probe says the network is back (usernode:offline-change),
+  //     a socket that is not open starts over at once, and an open one
+  //     re-reads the screen (_eventsNetworkChanged).
+  //
+  // A socket given up is detached before it is closed: on a quiet network
+  // its close may never be delivered, and a late one must not start a
+  // second retry beside the first.
+  EVENTS_CONNECT_TIMEOUT_MS: 10000,
+  EVENTS_QUIET_MS: 25000,
+  EVENTS_PONG_TIMEOUT_MS: 10000,
+  EVENTS_RETRY_MIN_MS: 3000,
+  EVENTS_RETRY_MAX_MS: 30000,
+  _eventsFailures: 0,
+  _eventsRetryTimer: null,
+  _eventsWatchTimer: null,
+  _eventsStartedAt: 0,
+  _eventsHeardAt: 0,
+  _eventsPingAt: 0,
+  _eventsAwaiting: false,
+  _eventsPongSeen: false,
+
+  _watchEvents(socket, ms) {
+    // Guarded: unit tests run connectEvents in bare vm sandboxes with no
+    // timers.
+    if (typeof setTimeout !== 'function') return;
+    clearTimeout(App._eventsWatchTimer);
+    App._eventsWatchTimer = setTimeout(() => App._checkEvents(socket), Math.max(0, ms));
+  },
+
+  _checkEvents(socket) {
+    if (App.eventsWs !== socket) return;
+    const now = Date.now();
+    if (socket.readyState === 0) {
+      const left = App._eventsStartedAt + App.EVENTS_CONNECT_TIMEOUT_MS - now;
+      if (left > 0) App._watchEvents(socket, left);
+      else App._dropEventsSocket(socket);
+      return;
+    }
+    if (socket.readyState !== 1) return; // closing: onclose retries
+    if (App._eventsAwaiting) {
+      const left = App._eventsPingAt + App.EVENTS_PONG_TIMEOUT_MS - now;
+      if (left > 0) { App._watchEvents(socket, left); return; }
+      if (App._eventsPongSeen) { App._dropEventsSocket(socket); return; }
+      App._eventsAwaiting = false;
+    }
+    const quiet = now - Math.max(App._eventsHeardAt, App._eventsPingAt);
+    if (quiet < App.EVENTS_QUIET_MS) { App._watchEvents(socket, App.EVENTS_QUIET_MS - quiet); return; }
+    // A hidden tab is not asked: nobody is reading it, and a phone's radio
+    // can stay asleep. It is asked again within EVENTS_QUIET_MS of being seen.
+    if (document.visibilityState === 'hidden') { App._watchEvents(socket, App.EVENTS_QUIET_MS); return; }
+    App._pingEvents(socket);
+  },
+
+  _pingEvents(socket) {
+    if (App.eventsWs !== socket || socket.readyState !== 1) return;
+    App._eventsPingAt = Date.now();
+    App._eventsAwaiting = true;
+    try { socket.send(JSON.stringify({ type: 'ping' })); } catch { /* closing: onclose follows */ }
+    App._watchEvents(socket, App.EVENTS_PONG_TIMEOUT_MS);
+  },
+
+  _detachEventsSocket(socket) {
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onerror = null;
+    socket.onclose = null;
+    try { socket.close(); } catch { /* already closing */ }
+  },
+
+  // `socket` carries nothing (it never opened, or went silent): give it up
+  // and go the way a close goes.
+  _dropEventsSocket(socket) {
+    if (App.eventsWs !== socket) return;
+    App._detachEventsSocket(socket);
+    App._eventsLost();
+  },
+
+  _eventsLost() {
+    // A dropped global-events socket is the strongest early signal that
+    // we've gone offline: nudge the connectivity probe so the offline
+    // banner appears without waiting for a browser `offline` event.
+    if (window.Offline) Offline.nudge();
+    App._eventsFailures += 1;
+    const step = Math.min(App.EVENTS_RETRY_MAX_MS,
+      App.EVENTS_RETRY_MIN_MS * 2 ** (App._eventsFailures - 1));
+    const delay = Math.round(step * (0.8 + Math.random() * 0.4));
+    clearTimeout(App._eventsRetryTimer);
+    App._eventsRetryTimer = setTimeout(() => {
+      App._eventsRetryTimer = null;
+      App.connectEvents();
+    }, delay);
+  },
+
+  // The connectivity probe changed its answer (usernode:offline-change).
+  _eventsNetworkChanged(offline) {
+    const socket = App.eventsWs;
+    // No socket yet: a boot from the saved session, whose _reconcileSession
+    // connects and re-reads, or a page nobody is signed in to.
+    if (!socket) return;
+    if (offline) {
+      // Ask the socket now rather than after its next quiet spell.
+      if (socket.readyState === 1 && !App._eventsAwaiting) App._pingEvents(socket);
+      return;
+    }
+    if (socket.readyState !== 1) {
+      // Back: a retry waiting out its delay, or a handshake begun on the
+      // dead network, starts over now. Counted as a failure, so its open
+      // re-reads the screen whatever came before it.
+      App._eventsFailures = Math.max(App._eventsFailures, 1);
+      App.connectEvents();
+      return;
+    }
+    // The socket stayed open, but a read made while the network was gone
+    // failed or timed out: re-read the screen. Once: the socket reopening
+    // nudges this same probe, and its own resync has just run.
+    if (Date.now() - App._lastResyncAt < App.RESYNC_SETTLE_MS) return;
+    App.resyncCurrentView();
+  },
+
   connectEvents() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     // Same staging-iframe token fallback as GroupChat._openSocket — the
@@ -3063,11 +3218,27 @@ const App = {
     // may have stripped the query by now).
     const token = new URLSearchParams(location.search).get('token') || App._bootToken;
     const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+    // One socket at a time: a retry waiting out its delay, or a socket still
+    // trying, gives way to this one.
+    if (App._eventsRetryTimer) {
+      clearTimeout(App._eventsRetryTimer);
+      App._eventsRetryTimer = null;
+    }
+    if (App.eventsWs) App._detachEventsSocket(App.eventsWs);
     App.eventsWs = new WebSocket(`${proto}//${location.host}/ws/events${qs}`);
+    const socket = App.eventsWs;
+    App._eventsStartedAt = Date.now();
+    App._eventsAwaiting = false;
+    App._eventsPongSeen = false;
+    App._watchEvents(socket, App.EVENTS_CONNECT_TIMEOUT_MS);
 
     App.eventsWs.onopen = () => {
-      const isReconnect = App._eventsWsHasConnected;
+      // A first open after failed attempts is a reconnect too: whatever the
+      // screen read meanwhile may have failed.
+      const isReconnect = App._eventsWsHasConnected || App._eventsFailures > 0;
       App._eventsWsHasConnected = true;
+      App._eventsFailures = 0;
+      App._eventsHeardAt = Date.now();
       console.log(`[ws] Global events ${isReconnect ? 'reconnected' : 'connected'}`);
       // A (re)opened socket proves we're online — clear the offline
       // banner immediately instead of waiting for the slow re-probe loop.
@@ -3075,6 +3246,9 @@ const App = {
       // #4318: a new socket watches nothing until told; tell it every
       // session still on screen before anything else can be missed.
       for (const id of App._watchedSessions.keys()) App._sendSessionWatch('watch_session', id);
+      // Whether this server answers a ping: its pong holds the socket to
+      // the silence check (_checkEvents).
+      App._pingEvents(socket);
       if (isReconnect) App.resyncCurrentView();
     };
 
@@ -3083,6 +3257,9 @@ const App = {
     };
 
     App.eventsWs.onmessage = (event) => {
+      // Any frame at all says the socket still carries (_checkEvents).
+      App._eventsHeardAt = Date.now();
+      App._eventsAwaiting = false;
       try {
         const data = JSON.parse(event.data);
         // The Homeroom bot page keeps its lists current from these: it
@@ -3097,6 +3274,11 @@ const App = {
           // rather than a second one that could drift from it.
           case 'resync_hint':
             App.resyncCurrentView();
+            break;
+          // The answer to the socket's own `ping` (_pingEvents): this
+          // server answers, so from now on a silence is held against it.
+          case 'pong':
+            App._eventsPongSeen = true;
             break;
           // Which platform build is live, from the server rather than the
           // next /api/version poll (#2545) — see handlePlatformVersion.
@@ -3263,11 +3445,10 @@ const App = {
     };
 
     App.eventsWs.onclose = () => {
-      // A dropped global-events socket is the strongest early signal that
-      // we've gone offline — nudge the connectivity probe so the offline
-      // banner appears without waiting for a browser `offline` event.
-      if (window.Offline) Offline.nudge();
-      setTimeout(() => App.connectEvents(), 3000);
+      // Nudges the probe and retries with backoff (_eventsLost). A socket
+      // already replaced or given up is detached and never gets here.
+      if (App.eventsWs !== socket) return;
+      App._eventsLost();
     };
   },
 
@@ -3276,7 +3457,14 @@ const App = {
   // for tabs that come back from being backgrounded). Each branch maps
   // to a corresponding `case` in onmessage — the rule is simply "if a
   // WS event would have driven this view, refetch the same data here."
+  //
+  // `_lastResyncAt` is when it last ran: the probe's "back online" re-read
+  // (_eventsNetworkChanged) stands down within RESYNC_SETTLE_MS of one, as
+  // the socket reopening and the probe it nudges say the same thing.
+  _lastResyncAt: 0,
+  RESYNC_SETTLE_MS: 5000,
   resyncCurrentView() {
+    App._lastResyncAt = Date.now();
     // `Home` and `AppView` are classic-script top-level `const` — they
     // live in the script-global lexical env but are NOT on `window`,
     // so `window.Home` / `window.AppView` would silently be undefined.
@@ -6209,6 +6397,26 @@ const App = {
     };
   },
 
+  // The name and face this device remembers for `slug`, shaped like the
+  // launcher's row (name, icon_url, icon_emoji, self_hosted), or null. For
+  // when no list of apps has loaded: offline, a cold start has none, and the
+  // slug is not a name. What is remembered is your communities, the app you
+  // left, the apps you left and your pins (frontend/src/features/nav/
+  // app-names.ts, through the nav bridge's `knownApp`); the bridge names a
+  // parked app from the same place, so `_parkRecord` may still hand it a slug.
+  _rememberedAppRecord(slug) {
+    let known = null;
+    try { known = window.UsernodeReact?.nav?.knownApp?.(slug) || null; } catch (_) { known = null; }
+    if (!known || !known.name) return null;
+    return {
+      slug,
+      name: known.name,
+      icon_url: known.iconUrl || null,
+      icon_emoji: known.iconEmoji || null,
+      self_hosted: !!known.selfHosted,
+    };
+  },
+
   // ── #workshop — the app Workshop you left (#2776) ───────────────────
   //
   // The Workshop tab is a stack, like every tab in an iOS tab bar: the
@@ -8620,9 +8828,11 @@ const App = {
       // showed, so the header says them as the view is revealed (here, not
       // before the transition: #979); the read below confirms them, or says
       // the app is not available. The App tab only: a Dev view names itself.
+      // With no launcher row (offline, nothing has listed the apps yet) the
+      // name this device remembers says it instead of the screen you left.
       if (initialRoute.tab === 'app') {
         let named = null;
-        try { named = AppView.launchRecordFor?.(slug) || null; } catch (_) { named = null; }
+        try { named = AppView.launchRecordFor?.(slug) || App._rememberedAppRecord(slug); } catch (_) { named = null; }
         if (named && named.name && !named.self_hosted) {
           App.setHeaderTitle(named.name);
           App.ImproveStatus.setPendingApp(named);

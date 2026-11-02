@@ -1,8 +1,8 @@
 'use strict';
 
 // The vote picker is ONE panel (dev-card.tsx VoteButton / VotePicker): a
-// two-way switch across the top with neither side on until one is picked
-// (V04), the line box under it once one is, and Cancel beside the one button that reads "Vote yes"
+// two-way switch across the top with Yes on by default, the line box under
+// it from the start, and Cancel beside the one button that reads "Vote yes"
 // or "Vote no" with the switch. The same panel is the anchored popover on
 // desktop and a kit bottom sheet on touch (#1688 follow-ups).
 //
@@ -41,18 +41,7 @@ const picker = (over) => renderComponent(CARD, 'VotePicker', {
 
 // ── 1. The panel ──────────────────────────────────────────────────────
 
-test('V04: the picker opens with neither side chosen, and nothing can be sent until one is', () => {
-  const html = picker({ side: null });
-  assert.match(html, /dev-vote-switch-yes" aria-pressed="false"/);
-  assert.match(html, /dev-vote-switch-no" aria-pressed="false"/);
-  assert.doesNotMatch(html, /dev-vote-reason"/, 'no line box before a side is chosen');
-  assert.doesNotMatch(html, /dev-vote-why/);
-  assert.match(html, /<button type="button" class="dev-vote-reason-send dev-vote-reason-send-none" disabled="">Vote<\/button>/,
-    'a plain "Vote", off');
-  assert.doesNotMatch(html, /Vote yes|Vote no/);
-});
-
-test('the switch: Yes on with its tally, No beside it; "Still yes" / "Not this time" on a prior Yes', () => {
+test('the switch: Yes on by default with its tally, No beside it; "Still yes" / "Not this time" on a prior Yes', () => {
   const html = picker();
   assert.match(html, /<div class="dev-vote-switch-label" id="dev-vote-reason-7-head">Your vote<\/div><div class="dev-vote-switch" role="group" aria-labelledby="dev-vote-reason-7-head">/,
     'the "Your vote" header, then the switch it names');
@@ -177,10 +166,7 @@ test('VoteButton draws the panel once for both homes, opens on Yes, and sends on
   assert.match(fn, /const heading = approve \? t\('project:card\.vote\.dialog\.approval'\) : t\('project:card\.vote\.dialog\.vote'\);/);
   assert.deepEqual([message('project:card.vote.dialog.approval'), message('project:card.vote.dialog.vote')], ['Your approval', 'Your vote']);
   assert.match(fn, /aria-haspopup="dialog"/, 'the face says what it opens');
-  // V04: neither side by default; a viewer who voted starts from their vote,
-  // an earlier Yes from Still yes, and an approval on Approve.
-  assert.match(fn, /const startSide = \(\): 'yes' \| 'no' \| null => \(mine === 'no' \? 'no'\s*: \(mine === 'yes' \|\| prior === 'yes' \|\| approve \? 'yes' : null\)\);/);
-  assert.match(fn, /const submit = \(\) => \{\s*if \(!side\) return;/, 'nothing is sent before a side is chosen');
+  assert.match(fn, /const startSide = \(\): 'yes' \| 'no' => \(mine === 'no' \? 'no' : 'yes'\);/, 'Yes by default; a viewer who voted No starts from No');
   assert.match(fn, /if \(open \|\| sheetRef\.current\) \{ shut\(\); return; \}\s*setSide\(startSide\(\)\);\s*setLine\(''\);/, 'reset on every open');
   assert.match(fn, /if \(!isVote\) \{ send\(spec, null\); return; \}/, 'anything that is not a vote sends no reason');
   assert.match(fn, /if \(side === 'no'\) \{\s*if \(!noChoice\) return;\s*send\(no, composeNoReason\(/, 'a No is held back until an answer is picked');

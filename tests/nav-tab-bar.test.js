@@ -1348,7 +1348,8 @@ test('recent apps are remembered per account, and an app appears once, at the fr
     delete global.window;
   }
   const mount = read('frontend/src/features/nav/mount.ts');
-  assert.match(mount, /if \(app && app\.slug\) rememberRecentApp\(app, navStore\.get\(\)\.viewer\);/);
+  // Named first (./nav-app-names.test.js): a slug never replaces a name there.
+  assert.match(mount, /if \(parked\) rememberRecentApp\(parked, navStore\.get\(\)\.viewer\);/);
 });
 
 test('#2795, #2798: the peeked strip is the frosted one and fades; a blue hover on the tabs', () => {

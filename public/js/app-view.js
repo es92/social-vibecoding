@@ -8217,7 +8217,7 @@ const AppView = {
   // A descriptor is { label, title?, icon?, disabled?, danger?, act? }:
   //   label    — the row text (same wording the pill had)
   //   title    — tooltip / the disabled reason
-  //   icon     — a MENU_ICONS key; the glyph is decorative, never the name
+  //   icon     — a MENU_ICONS key; the icon is decorative, never the name
   //   disabled — renders inert (kept, rather than hidden, so "Close proposed"
   //              still explains itself)
   //   danger   — red row (Archive, Withdraw, Undo)
@@ -8367,67 +8367,79 @@ const AppView = {
   // ── One icon vocabulary for every ⋯ menu ──────────────────────────────
   //
   // Keyed by MEANING, not by card type, so the same action wears the same
-  // glyph wherever it appears: "Admin merge" is ⚡ on a proposal card, a
+  // icon wherever it appears: "Admin merge" is the bolt on a proposal card, a
   // governance card and the topic head alike, and a reader who learns one
   // menu has learned all five. Because it is looked up from the descriptor
   // (never baked into the label), the anchored dropdown and the touch action
   // sheet render from ONE source — the whole point of descriptors over HTML.
   //
-  // The glyph is DECORATIVE: `aria-hidden` in the dropdown and never part of
-  // the accessible name, so a screen reader still hears "Withdraw", not
-  // "multiplication sign Withdraw". Danger rows deliberately use monochrome
-  // text glyphs rather than emoji, so they inherit the row's red instead of
-  // sitting in it as a coloured sticker.
-  MENU_ICONS: {
-    merge: '⚡',            // ⚡ admin bypass of the vote
-    session: '💻',    // 💻 the dev session behind a proposal
-    withdraw: '✕',         // ✕ danger
-    undo: '↩',             // ↩ danger
-    unpromote: '↶',        // ↶ back a column, from In review to Underway
-    kudos: '★',            // ★ matches the bounty badge on the meta line
-    explore: '✨',          // ✨ was inline in the label; now the icon
-    generate: '✧',         // ✧ sibling sparkle: the headless AI run
-    retry: '↻',            // ↻
-    checks: '✓',          // check results
-    visuals: '🖼',    // 🖼 before/after captures
-    github: '↗',           // ↗ leaves the platform, for GitHub
-    code: '‹›',            // ‹› the code, on Homeroom's own git host
-    priority: '⚑',         // ⚑ the same flag the priority chip uses
-    category: '🏷',   // 🏷
-    assignee: '@',              // the assignee chip renders "@name"
-    progress: '◐',         // ◐ half-filled: in progress
-    clear: '○',            // ○ the same circle, emptied
-    close: '⊘',            // ⊘ danger
-    visible: '👁',    // 👁
-    hide: '🔒',       // 🔒 private again
-    chat: '💬',       // 💬 matches the message-count badge
-    archive: '📦',    // 📦
-    campaign: '📊',   // 📊
-    open: '▢',             // ▢ the card on its own page
-    details: '≡',          // ≡ the technical half, as a sheet
-    edit: '✎',             // edit the reader-facing description
-    share: '↑',            // ↑ into Messages, distinct from ↗ leaving the platform
-    notify: '🔔',          // 🔔 a thread's Notify me, and Unmute
-    mute: '🔕',            // 🔕 a thread's Mute
-    move: '⇄',             // ⇄ a thread's merge, split or break up
+  // THESE ARE KEYS, NOT GLYPHS (overnight UI audit D08, the owner's decision
+  // of 2 Nov 2026). Each key used to be a text glyph or a colour emoji (✎ ⚑
+  // 🏷 🔕), so a request's ⋯ sheet mixed monochrome marks with coloured
+  // stickers whose colours meant nothing. The shell's line icons draw them
+  // now, from one table keyed by these names
+  // (frontend/src/features/dev-board/menu-icons.tsx, which a test holds to
+  // this list): the dropdown renders the icon, the touch sheet hands the kit
+  // the same svg element as `iconEl`, as the hub's ⋯ sheet does. The icon is
+  // DECORATIVE: `aria-hidden`, never part of the accessible name, and drawn in
+  // the row's ink, so a danger row's icon is red with its label.
+  MENU_ICONS: Object.freeze([
+    'merge',      // admin bypass of the vote
+    'session',    // the dev session behind a proposal
+    'withdraw',   // danger
+    'undo',       // danger
+    'unpromote',  // back a column, from In review to Underway
+    'kudos',      // matches the bounty badge on the meta line
+    'explore',    // was inline in the label; now the icon
+    'generate',   // the headless AI run
+    'retry',
+    'checks',     // check results
+    'visuals',    // before/after captures
+    'github',     // leaves the platform, for GitHub
+    'code',       // the code, on Homeroom's own git host
+    'priority',   // the same flag the priority chip uses
+    'category',
+    'assignee',
+    'progress',   // claim: in progress
+    'clear',      // let a claim go
+    'close',      // danger
+    'visible',
+    'hide',       // private again
+    'chat',       // matches the message-count badge
+    'archive',
+    'campaign',
+    'open',       // the card on its own page
+    'details',    // the technical half, as a sheet
+    'edit',       // edit the reader-facing description
+    'share',      // into Messages, distinct from leaving the platform
+    'notify',     // a thread's Notify me, and Unmute
+    'mute',       // a thread's Mute
+    'move',       // a thread's merge, split or break up
     // Nothing should reach this, but a descriptor added later without an
     // icon must still line up with its neighbours rather than losing the
     // leading column and shifting its own label left.
-    default: '•',          // •
-  },
+    'default',
+  ]),
 
-  // The glyph for one descriptor. Unknown / absent keys fall back to the
-  // neutral bullet so the fixed-width leading column is never empty.
-  _menuIconGlyph(it) {
+  // The icon key for one descriptor. Unknown / absent keys fall back to the
+  // neutral `default` so the fixed-width leading column is never empty.
+  _menuIconKey(it) {
     const key = it && it.icon;
-    return (key && AppView.MENU_ICONS[key]) || AppView.MENU_ICONS.default;
+    return key && AppView.MENU_ICONS.includes(key) ? key : 'default';
   },
 
-  // The touch action sheet takes a plain string per row (the native kit
-  // owns that markup), so the SAME glyph rides in as a label prefix there.
-  // Two spaces, not one: the sheet has no leading column to align against.
-  _menuSheetLabel(it) {
-    return `${AppView._menuIconGlyph(it)}  ${it.label}`;
+  // The touch action sheet's row: the kit owns that markup and takes the
+  // artwork as `iconEl`, an svg element the React side draws from the same table.
+  // Before the bundle is there (it always is by the time a ⋯ can be pressed)
+  // the row is its words alone.
+  _menuSheetAction(it) {
+    const icon = AppView._reactDevBoard()?.menuIconElement?.(AppView._menuIconKey(it)) || null;
+    return {
+      label: it.label,
+      ...(icon ? { iconEl: icon } : {}),
+      destructive: !!it.danger,
+      handler: () => { try { it.act(); } catch { /* handler owns its errors */ } },
+    };
   },
 
   // ── What a link is: GitHub's, a Homeroom page, or the git host's code ──
@@ -8668,11 +8680,7 @@ const AppView = {
     // "+" menu's behaviour rather than anchoring a dropdown under a finger.
     if (typeof PlatformUI !== 'undefined' && PlatformUI.isTouch && PlatformUI.isTouch()) {
       PlatformUI.actionSheet({
-        actions: items.filter((it) => !it.disabled && it.act).map((it) => ({
-          label: AppView._menuSheetLabel(it),
-          destructive: !!it.danger,
-          handler: () => { try { it.act(); } catch { /* handler owns its errors */ } },
-        })),
+        actions: items.filter((it) => !it.disabled && it.act).map((it) => AppView._menuSheetAction(it)),
       });
       return;
     }
@@ -8736,7 +8744,7 @@ const AppView = {
     AppView._reactDevBoard()?.publishCardMenu((items || []).map((it) => ({
       label: it.label,
       title: it.title || null,
-      glyph: AppView._menuIconGlyph(it),
+      icon: AppView._menuIconKey(it),
       row: it.icon || null,
       // A purely informational row ("Close proposed") has no `act` and is
       // rendered inert rather than hidden, so it can still explain itself.

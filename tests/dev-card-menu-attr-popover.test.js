@@ -401,7 +401,9 @@ test('every ⋯ row exposes its meaning as data-menu-row', () => {
   // …and the three things the delegated handler and the styles need.
   assert.match(html, /data-menu-idx="0"[^>]*data-menu-row="assignee"/);
   assert.match(html, /role="menuitem"/);
-  assert.match(html, /<span class="dev-card-menu-icon" aria-hidden="true">@<\/span><span class="dev-card-menu-label">Change assignee…<\/span>/);
+  // Audit D08: the icon is a line icon (UserCheckIcon), not the old "@".
+  assert.match(html, /<span class="dev-card-menu-icon" aria-hidden="true"><svg[^>]*>[\s\S]*?<\/svg><\/span><span class="dev-card-menu-label">Change assignee…<\/span>/);
+  assert.match(html, /d="M16 11l2 2 4-4"/, 'the assignee row draws the person-with-a-tick');
 });
 
 test('a danger row is red, and an inert row is disabled rather than hidden', () => {

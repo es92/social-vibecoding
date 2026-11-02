@@ -27,6 +27,7 @@ import { XIcon } from '@/components/ui/icons';
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
+import { useNamedApp } from './app-names';
 import { forgetParked } from './parked-strip';
 import { parkedStore, runningAppStore } from './parked-store.js';
 import { noteResumeOrigin } from './resume-motion';
@@ -58,8 +59,10 @@ function AppTile({ app }: { app: StripApp }) {
 
 export function SideApps() {
   const t = useMessages();
-  const running = useStoreState(runningAppStore).app as StripApp | null;
-  const parked = useStoreState(parkedStore).app as StripApp | null;
+  // Each by its name while this device remembers it, never its slug
+  // (./app-names.ts).
+  const running = useNamedApp(useStoreState(runningAppStore).app as StripApp | null);
+  const parked = useNamedApp(useStoreState(parkedStore).app as StripApp | null);
   const left = parked && parked.slug !== running?.slug ? parked : null;
   return (
     <div className={'platform-side-apps' + (running || left ? '' : ' hidden')}>

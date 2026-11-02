@@ -1,4 +1,5 @@
 'use strict';
+const { fixtureKey } = require('./lib/media-store');
 require('./lib/media-store').useMemoryMedia(require('node:test'));
 
 // Before & after shots evals against the REAL schema in a throwaway
@@ -112,9 +113,9 @@ async function seed(pool) {
     for (const [side, shade] of [['base', 30], ['head', 220]]) {
       const data = fixtures.png({ shade });
       await pool.query(
-        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, content_type, data, width, height, bytes, sha256)
+        `INSERT INTO shot_artifacts (id, run_id, story_id, viewport, side, variant, media, content_type, object_key, width, height, bytes, sha256)
          VALUES ($1, $2, 'board-sort', 'desktop', $3, 'context', 'png', 'image/png', $4, 4, 3, $5, $6)`,
-        [crypto.randomBytes(16).toString('hex'), runId, side, data, data.length, crypto.createHash('sha256').update(data).digest('hex')]
+        [crypto.randomBytes(16).toString('hex'), runId, side, await fixtureKey(pool, data), data.length, crypto.createHash('sha256').update(data).digest('hex')]
       );
     }
   };

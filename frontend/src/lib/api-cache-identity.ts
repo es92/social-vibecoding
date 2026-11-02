@@ -1,3 +1,5 @@
+import { fetchWithin, READ_TIMEOUT_MS } from './read-timeout';
+
 /** Session partitions are cache labels, never credentials or authorization. */
 export const API_SCOPE_COOKIE = 'usernode_api_scope';
 export const API_SCOPE_HEADER = 'X-Usernode-Cache-Scope';
@@ -161,9 +163,11 @@ export function installApiCacheIdentity(win: any = typeof window !== 'undefined'
       // An already-admitted native document skips admission's /me on resume.
       // Confirm the rotated cookie once, before any ordinary request can
       // consume an offline copy. Use the original fetch to avoid recursion.
-      const res = await send(new Request(new URL('/api/auth/me', win.location.href), {
+      // Bounded like any read (./read-timeout.ts): every read waits on this
+      // one, so a confirmation begun on a dead network must not outlive it.
+      const res = await fetchWithin(send, new Request(new URL('/api/auth/me', win.location.href), {
         credentials: 'same-origin', cache: 'no-store',
-      }));
+      }), undefined, READ_TIMEOUT_MS);
       await adoptNativeIdentity(res, context, boundaryAtStart, expectedViewer);
     })();
     const verification = { epoch: context.nativeEpoch, boundary: boundaryAtStart, pending };
@@ -272,8 +276,8 @@ export function installApiCacheIdentity(win: any = typeof window !== 'undefined'
       && verifiedNativeEpoch === before.nativeEpoch;
     if (permitted) headers.set(API_SCOPE_HEADER, before.scope!);
     // Revalidate the browser's HTTP copy too. Permitted offline fallbacks
-    // still work in the worker; private reads do not race a stale deadline
-    // against the server's current permission decision.
+    // still work in the worker; private reads skip its sub-second deadlines
+    // and get the saved copy only from a network silent for seconds.
     const boundaryBefore = boundary, expectedViewer = currentViewer();
     const confirmsNative = identityRead && !tokenRequest && req.credentials !== 'omit'
       && verifiedNativeEpoch !== before.nativeEpoch;

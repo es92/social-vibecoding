@@ -210,14 +210,25 @@ export function cardTint(key: string, tint?: unknown): string {
  * semibold in the brand periwinkle (--brand-ink) and no glyph in front of it.
  * The row's shape is label + link: the ⋮ that used to ride here is gone
  * Section hiding is retired (#1801).
+ *
+ * THE OWNER'S DECISION, 2 Nov 2026 (overnight UI audit, Y02): Home's labels
+ * are the small-caps label every other screen puts over a card, so the shell
+ * has one style of section heading, not three. The LABEL takes
+ * @/components/ui/grouped-list's SectionHeader literals (12px bold
+ * uppercase, tracked 0.06em, muted); the row, its link and the `h2.home-area-
+ * label` the declared checks select on stay as they were. The type sits on
+ * the label's span, not the h2, so the link beside it (See all, Edit) does
+ * not inherit the uppercase or the tracking. No gutter of SectionHeader's:
+ * Home's sections carry their own `px-3`, and its `px-4` would indent every
+ * label away from the card it heads.
  */
 export function SectionHeading({ children, action }: {
   children: ReactNode;
   action?: ReactNode;
 }) {
   return (
-    <h2 className="home-area-label flex items-center gap-2 pt-4 pb-1.5 text-base font-[550] leading-tight text-zinc-900 dark:text-zinc-100">
-      <span className="min-w-0 flex-1 truncate whitespace-nowrap">{children}</span>
+    <h2 className="home-area-label flex items-center gap-2 pt-4 pb-1.5 leading-tight">
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap text-xs font-bold uppercase tracking-[0.06em] text-zinc-500 dark:text-zinc-400">{children}</span>
       {action}
     </h2>
   );

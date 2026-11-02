@@ -140,9 +140,9 @@ async function publicMergedStill(db, appId) {
 async function publicStillBytes(db, { slug, changeId, artifactId }) {
   const pair = (await publicStillsFor(db, [changeId])).get(Number(changeId));
   if (!pair || pair.slug !== slug || (pair.before !== artifactId && pair.after !== artifactId)) return null;
-  const { rows } = await db.query('SELECT data, object_key, bytes, content_type, sha256 FROM shot_artifacts WHERE id = $1', [artifactId]);
+  const { rows } = await db.query('SELECT object_key, bytes, content_type, sha256 FROM shot_artifacts WHERE id = $1', [artifactId]);
   if (!rows[0]) return null;
-  return { data: rows[0].data, objectKey: rows[0].object_key, sizeBytes: rows[0].bytes,
+  return { objectKey: rows[0].object_key, sizeBytes: rows[0].bytes,
     contentType: rows[0].content_type, sha256: rows[0].sha256 };
 }
 

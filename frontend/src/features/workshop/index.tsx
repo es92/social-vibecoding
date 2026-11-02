@@ -257,7 +257,10 @@ export function AudienceChips({ tallies, pressed, onPress, scope }: {
           <Chip
             key={key}
             size="bar"
-            className={key !== 'all' && !count ? 'hidden' : 'gap-1.5 px-4'}
+            // 12px sides, not 16 (overnight audit M01): the four chips fit
+            // a 393px phone whole; narrower, the row still scrolls under
+            // its fade.
+            className={key !== 'all' && !count ? 'hidden' : 'gap-1.5 px-3'}
             selected={pressed === key}
             aria-label={label}
             onClick={() => onPress(key)}

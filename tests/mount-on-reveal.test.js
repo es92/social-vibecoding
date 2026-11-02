@@ -180,8 +180,15 @@ test('the prerendered document is a fraction of what it was', () => {
   // 1075 → 1100 with the create dialog's rework: "What are you making?"
   // became three rows, a group's invites a step of their own, and "How do
   // you want to start?" moved last with a third row. About 25 elements.
+  //
+  // 1100 → 1125 with the overnight audit's L06 (2 Nov 2026): the Homeroom
+  // bot tab's Needs you card draws a loading placeholder (a status line and
+  // two bars, four elements) until its first read, where it used to claim
+  // "Nothing needs you" before anything had loaded. Main stood at 1097, so
+  // those four tipped it to 1101; the rest of the headroom is for ordinary
+  // edits.
   const html = read('public/index.html');
   const elements = (html.match(/<[a-zA-Z]/g) || []).length;
-  assert.ok(elements < 1100,
+  assert.ok(elements < 1125,
     `public/index.html carries ${elements} elements; the two mount-on-reveal interiors alone were 681`);
 });

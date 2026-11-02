@@ -54,7 +54,8 @@ const MAIN = read('frontend/src/main.tsx');
 const { physics } = require('../public/usernode-native/v1/native.js');
 const {
   KB_OPEN_CLASS, PHONE_QUERY, KB_SHRINK_MIN, PRESS_WINDOW_MS, CLICK_WAIT_MS,
-  describeFocus, canHoldKeyboard, visibleHeight, keyboardOpen, initKeyboardOpen,
+  KB_SHORT_CLASS, KB_SHORT_PX,
+  describeFocus, canHoldKeyboard, visibleHeight, keyboardOpen, keyboardShort, initKeyboardOpen,
 } = loadTsx('frontend/src/lib/keyboard-open.ts');
 
 const SCREEN = 874; // iPhone 17 Pro, points
@@ -101,6 +102,7 @@ function harness({ width = WIDTH, height = SCREEN, phone = true, kit = { physics
   initKeyboardOpen(doc, win);
   return {
     get open() { return classes.has(KB_OPEN_CLASS); },
+    get short() { return classes.has(KB_SHORT_CLASS); },
     get toggles() { return toggles; },
     get timers() { return timers.length; },
     // Move the clock, running each timer that falls due, in order.
@@ -561,7 +563,7 @@ const SENDS = [
   ['frontend/src/features/agent-session/propose-confirm.tsx', 'data-agent-session-propose-confirm'],
   ['frontend/src/features/dev-board/workshop/workshop.tsx', 'className="dc-send-btn dc-circle-send dev-ws-ask-send"'],
   ['frontend/src/features/dev-board/card/feed-thread.tsx', 'className="dev-feed-send shrink-0'],
-  ['frontend/src/features/dev-board/card/dev-card.tsx', 'className={`dev-vote-reason-send dev-vote-reason-send-${side || \'none\'}`}'],
+  ['frontend/src/features/dev-board/card/dev-card.tsx', 'className={`dev-vote-reason-send dev-vote-reason-send-${side}`}'],
   ['frontend/src/features/dev-chat/spec-viewer.tsx', 'id="dc-spec-share-send"'],
 ];
 
@@ -626,4 +628,60 @@ test('"Send answers" is left to the press hold: its fields commit on their own b
   const tag = openingTag('frontend/src/features/dev-chat/transcript.tsx', 'className="dc-qa-send"');
   assert.doesNotMatch(tag, /onMouseDown/);
   assert.match(read('frontend/src/features/dev-chat/transcript.tsx'), /onBlur=\{\(e\) => controller\(\)\?\._onQaTypedCommit\?\.\(e\.currentTarget\)\}/);
+});
+
+// ── 3. The keys leave a short page (overnight audit K01, L03) ──────────────
+
+test('short: a keyboard that leaves under KB_SHORT_PX of page, at any width', () => {
+  const base = { focused: true, resting: 393, height: 184 };
+  assert.equal(keyboardShort(base), true, 'a phone held sideways in Safari');
+  assert.equal(keyboardShort({ ...base, focused: false }), false);
+  assert.equal(keyboardShort({ ...base, height: 393 - (KB_SHRINK_MIN - 1) }), false, 'a toolbar, not keys');
+  assert.equal(keyboardShort({ focused: true, resting: 874, height: 538 }), false, 'an iPhone upright keeps 538px');
+  assert.equal(keyboardShort({ focused: true, resting: 560, height: 300 }), true, 'a small Android phone in Chrome');
+  assert.equal(keyboardShort({ focused: true, resting: 669, height: 669 - 264 }), false, 'an iPhone Duo sideways keeps 405px');
+  assert.equal(KB_SHORT_PX, 400);
+});
+
+test('short: published on <html> beside the phone-only class, and off with the keys', () => {
+  // Sideways: 852 wide is no phone layout, so only the short class comes on.
+  const h = harness({ width: 852, height: 393, phone: false });
+  h.focus(TEXTAREA);
+  h.covered(184);
+  assert.equal(h.open, false, 'platform-kb-open stays a phone layout\'s');
+  assert.equal(h.short, true);
+  h.blur();
+  assert.equal(h.short, false, 'off the moment the field lets go');
+  // A small Android phone upright: both.
+  const a = harness({ width: 360, height: 560 });
+  a.focus(TEXTAREA);
+  a.covered(300);
+  assert.equal(a.open, true);
+  assert.equal(a.short, true);
+  // A tall phone: open, not short.
+  const t = harness();
+  t.focus(TEXTAREA);
+  t.covered(SCREEN - KEYBOARD);
+  assert.equal(t.open, true);
+  assert.equal(t.short, false);
+});
+
+test('short: a blur under a press keeps it until the press\'s click, as the open class does', () => {
+  const h = harness({ width: 852, height: 393, phone: false });
+  h.focus(TEXTAREA);
+  h.covered(184);
+  h.press();
+  h.blur();
+  assert.equal(h.short, true, 'held for the click');
+  h.release();
+  h.click();
+  h.advance(1);
+  assert.equal(h.short, false);
+});
+
+test('short: app.css folds the page\'s chrome on it, the platform header only in a browser tab', () => {
+  assert.match(APP_CSS, /html\.platform-kb-short :is\(\.messages-thread-header, #ai-screen \.ai-main-head, \.dev-request-back\) \{\s*display: none;/);
+  assert.match(APP_CSS, /html\.web-browser-chrome\.platform-kb-short #platform-header \{\s*display: none;/);
+  assert.match(APP_CSS, /html\.web-browser-chrome\.platform-kb-short \{\s*--platform-header-h: 0px;/);
+  assert.match(APP_CSS, /html\.platform-kb-short #mobile-install-banner:not\(\.hidden\) \{\s*display: none;/);
 });

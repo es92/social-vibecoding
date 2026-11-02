@@ -221,10 +221,20 @@ module.exports = function install(fakes) {
   // are built (handed over for the step's checkpoint) and before anything
   // else, and they write the agent's workspace as the real step does; the
   // agent saves a before and an after into it.
-  const shotsFile = (runId, side) => pool().query(
-    `INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, data, bytes, sha256)
-     VALUES ($1, $2, 'c1', 'desktop', $3, 'context', 'png', 'image/png', $4, 3, $5) ON CONFLICT DO NOTHING`,
-    [runId, `c1/desktop/${side}/context`, side, Buffer.from(side), side === 'base' ? 'b'.repeat(64) : 'd'.repeat(64)]);
+  // The outside agent/storage are fake here; publication still uses real
+  // registered keys. These two-process tests never serve the fake images.
+  const shotsFile = (runId, side) => {
+    const sha256 = require('node:crypto').createHash('sha256').update(side).digest('hex');
+    const key = 'media/sha256/' + sha256;
+    return pool().query(
+      `WITH registered AS (
+         INSERT INTO media_objects (object_key) VALUES ($4) ON CONFLICT (object_key) DO UPDATE SET object_key = EXCLUDED.object_key
+         RETURNING object_key)
+       INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type, object_key, bytes, sha256)
+       SELECT $1, $2, 'c1', 'desktop', $3, 'context', 'png', 'image/png', object_key, $5, $6 FROM registered
+       ON CONFLICT DO NOTHING`,
+      [runId, `c1/desktop/${side}/context`, side, key, Buffer.byteLength(side), sha256]);
+  };
   const pool = () => require(path.join(SRC, 'db/pool')).getPool();
   outside(fakes, 'services/shots-orchestrator', {
     keep: ['platformFault', 'visibleError', 'exactSha', 'headForSession', 'loadSession', 'publicSessionAndApp'],

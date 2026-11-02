@@ -29,6 +29,7 @@ import { GlobeIcon, PlusIcon } from '@/components/ui/icons';
 import { IconTile } from '@/components/ui/icon-tile';
 import { ListRow, SectionHeader } from '@/components/ui/grouped-list';
 import { Button } from '@/components/ui/button';
+import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { useMessages } from '../../lib/i18n/react';
 import { AppIconContent, AppIconLink, AppPills, appIconKind, hasAppPills } from './app-card-view';
 
@@ -323,6 +324,29 @@ function SiteRow({ site }: { site: { href: string; label: string } }): ReactNode
       title={<span className="browse-row-name truncate">{site.label}</span>}
       subtitle={<span className="block truncate">{t('discover:site.subtitle')}</span>}
     />
+  );
+}
+
+/**
+ * L06 (overnight audit, 2 Nov 2026): the rows' shape while the directory has
+ * not answered. It said "No apps to show yet." on a slow load, which reads as
+ * final. Four rows at the real row's geometry (a 48px tile, a title and a
+ * line under it), so nothing jumps when they arrive; the label is announced
+ * once.
+ */
+export function BrowseRowsLoading({ label }: { label: string }): ReactNode {
+  return (
+    <SkeletonGroup label={label} className="md:col-span-full" data-browse-loading="">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <Skeleton shape="block" className="w-12 h-12 rounded-xl" />
+          <div className="min-w-0 flex-1 flex flex-col gap-2">
+            <Skeleton className={i % 2 ? 'w-1/3' : 'w-1/2'} />
+            <Skeleton shape="muted" className={i % 2 ? 'w-2/3' : 'w-3/4'} />
+          </div>
+        </div>
+      ))}
+    </SkeletonGroup>
   );
 }
 

@@ -50,7 +50,7 @@ test('the form is the card\'s vote picker: the switch, the line for the group, C
   const html = form();
   assert.match(html, /^<div class="dev-ws-vote-form" data-ws-vote-form="" data-side="yes">/);
   assert.match(html, /class="dev-vote-switch"/, 'the card\'s Yes/No switch');
-  assert.match(html, /class="dev-vote-switch-opt dev-vote-switch-yes" aria-pressed="true"[^>]*data-act="castVote"/, 'Yes on, voting with castVote');
+  assert.match(html, /class="dev-vote-switch-opt dev-vote-switch-yes" aria-pressed="true"[^>]*data-act="castVote"/, 'Yes on by default, voting with castVote');
   assert.match(html, /<label class="dev-vote-reason-label" for="dev-ws-vote-reason-needs-proposal-42">Add a line for the group, if you like\.<\/label>/,
     'the line for the group is right there, labelled as on a card');
   assert.match(html, /<textarea id="dev-ws-vote-reason-needs-proposal-42"[^>]*class="dev-vote-reason-box"/, 'with its box inline');
@@ -168,14 +168,4 @@ test('#22: on a solo project the Yes line is a note, asked of the row\'s own pro
   audience = 'invited';
   assert.match(draw(), /Add a line for the group, if you like\./, 'a group keeps its wording');
   assert.match(WORKSHOP, /<NeedsVoteForm\s+row=\{row\}\s+slug=\{slug\}/, 'the sheet hands the form the page\'s project for rows without their own');
-});
-
-test('V04: the vote sheet opens with neither side chosen, except an approval of your own', () => {
-  const html = form({ side: null });
-  assert.match(html, /^<div class="dev-ws-vote-form" data-ws-vote-form="">/, 'no data-side yet');
-  assert.match(html, /dev-vote-switch-yes" aria-pressed="false"/);
-  assert.match(html, /dev-vote-switch-no" aria-pressed="false"/);
-  assert.match(html, /class="dev-vote-reason-send dev-vote-reason-send-none" disabled="">Vote</);
-  assert.match(WORKSHOP, /if \(kind === 'vote'\) \{ setVoteSide\(row && approves\(row\) \? 'yes' : null\);/);
-  assert.match(WORKSHOP, /const submitVote = \(\) => \{\s*if \(!voteSide\) return;/);
 });

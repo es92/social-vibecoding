@@ -67,7 +67,7 @@ import { useMessages } from '../../lib/i18n/react';
 import { useVisibilityHiddenClass } from '../../lib/visibility-store';
 import { useStoreState } from '../../lib/use-store-state';
 import { BrowseDetail } from './browse-detail';
-import { BOX_COLUMNS, BrowseRows } from './browse-list';
+import { BOX_COLUMNS, BrowseRows, BrowseRowsLoading } from './browse-list';
 import { openBrowseFilterSheet } from './browse-filter-sheet';
 import { AppsLoadError } from './load-error';
 import { browseStore } from './mount';
@@ -400,7 +400,9 @@ export function BrowseScreen() {
                 onRetry={() => browse()?._load?.()}
               />
             )
-            : <BrowseRows rows={state.rows} site={state.site} curated={state.curated} grouped={state.grouped} moreExpanded={state.moreExpanded} />}
+            : state.loading
+              ? <BrowseRowsLoading label={t('discover:list.loading')} />
+              : <BrowseRows rows={state.rows} site={state.site} curated={state.curated} grouped={state.grouped} moreExpanded={state.moreExpanded} />}
         </div>
         {/*
             The nothing-to-show line. On a phone it stands in for the list as

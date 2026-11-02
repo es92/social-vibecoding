@@ -134,7 +134,8 @@ test('sign-up test, 19 Oct 2026: a ready-made app\'s maker hears the maker\'s he
     `${dm.MAKER_HELLO}\n\n**City Tier List**\n\nAsk me here for changes, like “add a photo of each city”.`);
   assert.equal(dm.readyMadeHello('Chores', null),
     `${dm.MAKER_HELLO}\n\n**Chores**\n\nAsk me here for any change you'd like.`);
-  assert.deepEqual(dm.READY_MADE_PROMPTS, ['What can I ask for?', 'How do I invite friends?', 'How does the group decide?']);
+  assert.deepEqual(dm.READY_MADE_PROMPTS, ['What can I ask for?', 'How do I invite friends?', 'Who decides on changes?'],
+    'B27: a ready-made app starts just its maker\'s, with no group yet');
   for (const text of [dm.readyMadeHello('X', 'add a y'), ...dm.READY_MADE_PROMPTS]) {
     assert.doesNotMatch(text, /—|homeroom_bot/);
   }

@@ -107,6 +107,23 @@ export const PRESS_WINDOW_MS = 500;
 export const CLICK_WAIT_MS = 350;
 /** How much of the layout viewport's foot is out of sight while the keyboard is open (px, on <html>). */
 export const KB_COVER_VAR = '--platform-kb-cover';
+/**
+ * THE KEYS LEAVE A SHORT PAGE (overnight audit K01 and L03, 2 Nov 2026).
+ * A phone held sideways keeps 184px above its keys; an Android phone in
+ * Chrome about 300. The platform's header, a page's way back and a
+ * conversation's own header took all of it: a request's page kept its
+ * "‹ Workshop" chip and its reply box and nothing of the thread, a chat
+ * nothing but its reply box. While a field holds the keyboard and less than
+ * KB_SHORT_PX of the page is left to see, this class is on <html> and app.css
+ * folds that chrome away, as a conversation's header already folded on a
+ * screen under 500px tall. At any width, unlike `platform-kb-open`: the
+ * sideways phone is 852px wide, and its rail stays (the shift rule at 768px
+ * and up). Its own measure, so a hardware keyboard or a field focused from
+ * code (no shrink) never sets it.
+ */
+export const KB_SHORT_CLASS = 'platform-kb-short';
+/** Under this much visible page with the keys up, the page folds its chrome (px). */
+export const KB_SHORT_PX = 400;
 
 type FocusTarget = {
   tagName?: string;
@@ -223,6 +240,18 @@ export function keyboardOpen(input: {
   return input.resting - input.height >= KB_SHRINK_MIN;
 }
 
+/** The short decision: a field holds the keys, the page is shorter than at
+ *  rest by a keyboard, and what is left is under KB_SHORT_PX. Any width. */
+export function keyboardShort(input: {
+  focused: boolean;
+  height: number;
+  resting: number;
+}): boolean {
+  if (!input.focused) return false;
+  if (!(input.height > 0) || !(input.resting > 0)) return false;
+  return input.resting - input.height >= KB_SHRINK_MIN && input.height < KB_SHORT_PX;
+}
+
 type DocLike = {
   activeElement: unknown;
   body?: unknown;
@@ -301,7 +330,15 @@ export function initKeyboardOpen(doc: DocLike, win: WinLike): () => void {
     vv: win.visualViewport,
   }).cover;
 
-  const write = (next: boolean) => {
+  let short = false;
+  const writeShort = (next: boolean) => {
+    if (next === short) return;
+    short = next;
+    root.classList.toggle(KB_SHORT_CLASS, next);
+  };
+
+  const write = (next: boolean, nextShort = false) => {
+    writeShort(nextShort);
     // While open the cover follows every viewport event; it is 0 the moment
     // the class comes off, so a surface comes down with the keys.
     writeCover(next ? readCover() : 0);
@@ -335,16 +372,17 @@ export function initKeyboardOpen(doc: DocLike, win: WinLike): () => void {
 
   const apply = () => {
     const height = measure();
-    const next = keyboardOpen({
-      phone: phone(),
-      focused: canHoldKeyboard(doc.activeElement as FocusTarget, win.unNative, doc.body, root),
-      height,
-      resting,
-    });
+    const focused = canHoldKeyboard(doc.activeElement as FocusTarget, win.unNative, doc.body, root);
+    const next = keyboardOpen({ phone: phone(), focused, height, resting });
+    const nextShort = keyboardShort({ focused, height, resting });
     // The keys going down resize the page too; under a press, the bars still
     // wait for its click (and the band stays where it was with them).
-    if (!next && holding) return;
-    write(next);
+    if (holding) {
+      if (!next && open) return;
+      write(next, nextShort || short);
+      return;
+    }
+    write(next, nextShort);
   };
 
   const settle = () => {
@@ -371,7 +409,7 @@ export function initKeyboardOpen(doc: DocLike, win: WinLike): () => void {
   // during the focusout itself the document has no active element yet.
   const onFocusOut = (event: { relatedTarget?: unknown }) => {
     if (canHoldKeyboard(event.relatedTarget as FocusTarget, win.unNative, doc.body, root)) return;
-    if (open && pressing()) {
+    if ((open || short) && pressing()) {
       if (!holding) {
         holding = true;
         held = later(settle, CLICK_WAIT_MS);

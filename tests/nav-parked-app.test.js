@@ -182,7 +182,7 @@ function fakeElement() {
 // else AppView and Home are asked for is a no-op. PlatformUI.transition runs
 // the reveal and then `after`, synchronously, and counts the parks the reveal
 // made so a test can tell which frame they landed in.
-function router({ launcher = [WHITEBOARD, PLATFORM], record = null } = {}) {
+function router({ launcher = [WHITEBOARD, PLATFORM], record = null, known = [] } = {}) {
   const parks = [];
   const inReveal = [];
   const noop = () => undefined;
@@ -217,7 +217,11 @@ function router({ launcher = [WHITEBOARD, PLATFORM], record = null } = {}) {
   context.window = context;
   vm.runInContext(APP_JS, context);
   context.UsernodeReact = {
-    nav: { setScreen() {}, setViewer() {}, park: (app) => parks.push(app) },
+    nav: {
+      setScreen() {}, setViewer() {}, park: (app) => parks.push(app),
+      // What the device remembers (frontend/src/features/nav/app-names.ts).
+      knownApp: (slug) => known.find((k) => k.slug === slug) || null,
+    },
     backButton: { set() {} },
   };
   const appView = {
@@ -235,7 +239,7 @@ function router({ launcher = [WHITEBOARD, PLATFORM], record = null } = {}) {
   };
   context.AppView = new Proxy(appView, { get: (t, k) => (k in t ? t[k] : noop) });
   context.Home = new Proxy({}, { get: () => noop });
-  return { App: context.App, AppView: context.AppView, parks, inReveal };
+  return { App: context.App, AppView: context.AppView, parks, inReveal, document: context.document };
 }
 
 const named = (park) => (park ? park.name : null);
@@ -308,6 +312,50 @@ test('a cold link with no launcher row is named by slug, until its record lands'
     await App.navigateToApp('whiteboard-ab12cd');
     App.navigateToMessages();
     assert.equal(named(parks.at(-1)), 'Whiteboard');
+  }
+});
+
+test('with no launcher row, the App tab\'s header says the name the device remembers', () => {
+  // Offline (finding 7, 2 Nov 2026) a cold start has listed no apps, and the
+  // header kept the screen you left ("Communities") while the app's own read
+  // waited. The bridge's remembered name says it instead, as the launcher's
+  // row would; the read still confirms it or says the app is not available.
+  {
+    const { App, document } = router({
+      launcher: [], record: 'pending',
+      known: [{ slug: 'whiteboard-ab12cd', name: 'Whiteboard', iconUrl: null, iconEmoji: '🎨', selfHosted: false }],
+    });
+    App.navigateToApp('whiteboard-ab12cd');
+    assert.equal(document.title, 'Whiteboard');
+    assert.deepEqual({ ...App._rememberedAppRecord('whiteboard-ab12cd') }, {
+      slug: 'whiteboard-ab12cd', name: 'Whiteboard', icon_url: null, icon_emoji: '🎨', self_hosted: false,
+    }, 'shaped like the launcher\'s row');
+  }
+  {
+    // The launcher's row, when there is one, is still what names it.
+    const { App, document } = router({
+      record: 'pending', known: [{ slug: 'whiteboard-ab12cd', name: 'Old name', selfHosted: false }],
+    });
+    App.navigateToApp('whiteboard-ab12cd');
+    assert.equal(document.title, 'Whiteboard');
+  }
+  {
+    // Nothing remembered: the header is left alone, never set to the slug.
+    const { App, document } = router({ launcher: [], record: 'pending' });
+    document.title = 'Communities';
+    App.navigateToApp('whiteboard-ab12cd');
+    assert.equal(document.title, 'Communities');
+    assert.equal(App._rememberedAppRecord('whiteboard-ab12cd'), null);
+  }
+  {
+    // The platform's own row is never named as an app, remembered or not.
+    const { App, document } = router({
+      launcher: [], record: 'pending',
+      known: [{ slug: 'usernode-2d5619', name: 'Homeroom', selfHosted: true }],
+    });
+    document.title = 'Communities';
+    App.navigateToApp('usernode-2d5619');
+    assert.equal(document.title, 'Communities');
   }
 });
 

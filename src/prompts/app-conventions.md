@@ -65,7 +65,7 @@ Ordered by how badly an agent working offline gets each one wrong.
    creates and `staging:private` tables are EMPTY. Seed what a testing
    step needs in the same commit, in a boot-time block gated on
    `IS_STAGING`: idempotent (`ON CONFLICT DO NOTHING`), obviously fake
-   ("Staging demo …"), a handful of rows, never cloned from real users.
+   ("Sample data …"), a handful of rows, never cloned from real users.
    Seed FAKE identities only — never rows owned by whoever opened the
    preview, and never a signal your own logic reads ("has this user
    done X?"). Every check runs against staging, so seeding that
@@ -541,7 +541,7 @@ above:
   if (IS_STAGING) {
     await pool.query(
       `INSERT INTO posts (id, username, title)
-       VALUES (900001, 'staging-demo-user', 'Staging demo post #1')
+       VALUES (900001, 'staging-demo-user', 'Sample data post #1')
        ON CONFLICT (id) DO NOTHING`
     );
   }
@@ -557,22 +557,29 @@ Seed rules:
 - **Idempotent.** Staging containers rebuild on every push, so seeds
   re-run on each boot — use an existence check or
   `ON CONFLICT DO NOTHING`.
-- **Obviously fake.** Give seeded rows a consistent "Staging demo …"
+- **Obviously fake.** Give seeded rows a consistent "Sample data …"
   prefix so they can't be mistaken for real user content. (A first
   version's `?demo=1` demo, and any rows it seeds on boot, are
   labelled once instead, on an element marked
   `data-usernode-demo-note`: see "A first version's populated demo"
-  below.)
+  below.) The people trying a preview never see the word "staging":
+  it names Homeroom's environment, not anything on their screen.
 - **Small.** A handful of rows — just enough for the testing steps.
   (A project's first version is the one exception: see "A first
   version's populated demo" below.)
 - **Never reference real users.** Use fake usernames/IDs
   (e.g. `staging-demo-user`), never rows cloned from prod.
+- **Made-up people read as people.** Where the screen prints a
+  seeded person's name, it prints a plain made-up name ("Priya",
+  "Sam"), never an id-shaped handle such as `staging-demo-priya`:
+  the people trying the preview read those names, and the screen's
+  one label already says the rows are made up. Keep any prefix to
+  ids and usernames the screen does not print.
 - **Strictly a no-op outside staging.** The whole block is gated on
   `USERNODE_ENV === 'staging'`; production data is never touched.
 
 Tie-in with testing instructions: the testing steps you emit must
-reference the seeded entities by name ("Open the thread 'Staging demo
+reference the seeded entities by name ("Open the thread 'Sample data
 thread' and …"), so a tester knows exactly what they should be seeing.
 
 ### A first version's populated demo
@@ -586,13 +593,13 @@ seed rules change. Every later change keeps the rules above.
 - **Enough to look lived in.** Varied, realistic rows filling about a
   screen and a half of the main screen at phone width (390×844), not
   a handful.
-- **Labelled once, not on every row.** The screen says "Staging demo"
+- **Labelled once, not on every row.** The screen says "Sample data"
   once, plainly and visibly: a banner or a line of its own at the top
   of the screen (never the app's name, nor in place of its tagline),
   or the name of the list or collection the rows belong to.
-  Each row needs no label of its own (a "Staging demo" pill or prefix
+  Each row needs no label of its own (a "Sample data" pill or prefix
   on every row only clutters the screen), and this replaces the
-  "Staging demo …" prefix above for these rows. The rows themselves
+  "Sample data …" prefix above for these rows. The rows themselves
   stay obviously made up: no real people and no real private data.
   The element that carries the label gets the attribute
   `data-usernode-demo-note`: the banner or the line itself, or, in a

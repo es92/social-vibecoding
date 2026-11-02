@@ -3854,6 +3854,17 @@ async function runTriage(pool, config, {
   // turn runs whatever it carries (agent-turn resolveCodexRuntimeContext).
   await live.stampSessionModel(pool, session, model);
 
+  // B15 (overnight audit, 1 Nov 2026): the slot is taken BEFORE the worker
+  // is ensured. The last read's rest (pauseIdleSession) owes the worker's
+  // removal as durable work (the proposal machine's worker.destroy), which
+  // runs a moment later. Ensured first, a worker still up was taken as
+  // warm, then that removal ran and dropped it from the registry, and the
+  // turn failed "no warm worker registered" (several requests at once on
+  // one project: reads back to back). Taking the slot first cancels a
+  // removal still owed and waits for one under way (platform.ts
+  // afterTeardown), so the ensure below sees what is really there.
+  await require('./session-lifecycle').takeSlot({ pool, sessionId: session.id, source: 'homeroom-bot' });
+
   let containerName = null;
   try {
     await worker.ensureWorkerImage();
@@ -3866,6 +3877,8 @@ async function runTriage(pool, config, {
       onProgress: () => {},
     });
   } catch (err) {
+    // Back to rest: the slot above was taken for a turn that never ran.
+    await pauseIdleSession(pool, session.id);
     // #4533: a worker that cannot change its storage under a running turn
     // is a busy session, never a platform fault that pauses the whole bot.
     if (err?.code === 'session_busy') return recordFailure('session_busy', { sessionId: session.id });
@@ -3887,7 +3900,7 @@ async function runTriage(pool, config, {
   // context, its usage a running total that passed 2.7 billion tokens.
   // Clearing the saved thread here, in the row and in the object the
   // runtime is resolved from, is what makes every path resolve to none.
-  await require('./session-lifecycle').takeSlot({ pool, sessionId: session.id, source: 'homeroom-bot' });
+  // (Its slot was taken before its worker was ensured, above: B15.)
   await pool.query('UPDATE chat_sessions SET agent_thread_id = NULL WHERE id = $1', [session.id]);
   session.agent_thread_id = null;
   // The budget (#2737): the turn's own clock (services/durable-turn.js),

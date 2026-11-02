@@ -37,7 +37,10 @@ test('the prompt keeps the model to the tools, plain words and Homeroom\'s conte
   assert.doesNotMatch(own, /—/, 'no em dash in what this module writes');
   // How Homeroom works, and the platform rules the agent-session Mayor reads,
   // less the sections about its own change lifecycle.
-  assert.match(prompt, /HOW HOMEROOM WORKS\n- Each project has a board of requests/);
+  assert.match(prompt, /HOW HOMEROOM WORKS\n- Each project has its requests \(features and bugs\), listed in its Workshop/);
+  // B27: "board" is not a word people see, and a Just-you project has no group vote.
+  assert.doesNotMatch(prompt.slice(0, prompt.indexOf('PLATFORM RULES')), /\bboard of requests\b|project's board/);
+  assert.match(prompt, /- A project that is just theirs \(audience just_you in my_projects\) has no group yet: their own yes approves its\n  changes\./);
   // Whoever has the bot (a list, or everyone): botBuildsHere says where it builds.
   assert.match(prompt, /You build only on the projects you are switched on for, which botBuildsHere in my_work and my_projects says/);
   // The welcome and the maker's hello both offer "How do I invite friends?".

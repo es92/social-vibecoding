@@ -27,7 +27,7 @@ Each storage wait has a two-minute deadline that aborts its MinIO HTTP requests.
 A checked-out client disconnect rejects that operation instead of becoming an
 unhandled process error; the caller rolls back and workflow work can retry.
 The same guard covers cleanup's storage calls. Global database timeouts stay
-unchanged, and a stalled upload never clears the row's original bytes.
+unchanged, and a stalled upload rolls back the reference transaction.
 
 Every key column must have an immediate foreign key to
 `media_objects(object_key)`, with the ordinary restrictive delete behavior.
@@ -35,11 +35,11 @@ Index that referencing column so the cleanup foreign-key check is bounded.
 This small registry stores no bytes; it is the lock that protects an upload
 or a new reference from concurrent cleanup, across all migrated tables.
 
-During backfill, `bytes(store, row)` reads the object if `object_key` is set,
-otherwise the old `data` column. A storage failure for a keyed row propagates;
-it never falls back. HTTP readers can use `stream(store, key, range)` to pass
-an already-validated inclusive byte range to S3 without reading the whole
-object. Routes retain their own access checks, ETags, and cache headers.
+`bytes(store, row)` requires an `object_key` and reads that object. Missing
+keys and storage failures propagate; there is no database-byte fallback.
+HTTP readers can use `stream(store, key, range)` to pass an already-validated
+inclusive byte range to S3 without reading the whole object. Routes retain
+their own access checks, ETags, and cache headers.
 
 ## Cleanup
 
@@ -56,8 +56,8 @@ failure rolls back that deletion and fails the work, so the clock retries.
 An upload arriving behind cleanup waits for the lock and recreates the
 object before it commits any reference.
 An ordinary reference lookup avoids locking an owner's row during cleanup;
-retakes and backfill take source-row locks before registry-key locks. This
-keeps a retake of the same bytes from deadlocking with either job.
+retakes take source-row locks before registry-key locks, preserving the
+lock order across concurrent saves and cleanup.
 
 ## Local checks
 
@@ -79,65 +79,68 @@ Run the suites covering a branch with:
 npm run test:changed -- --base <exact-base-sha>
 ```
 
-## Two-release rollout
+## Rollout and final column removal
 
-Shots and check visuals ship together in two releases, with no feature flag:
+The original readers/schema shipped in #6050 (with release fix #6064), then
+both writers and workflow backfills in #6051. #6066 bounded transaction
+storage waits. Both backfills report `done: true`, and all six tables have
+zero remaining byte rows, verified read-only on 1 and 2 November 2026.
+The former check-visual PRs #6052/#6053 were superseded by #6050/#6051.
 
-1. [#6050](https://github.com/Usernode-Labs/social-vibecoding/pull/6050),
-   `codex/media-storage-readers`: expand the schema for all six media tables,
-   add the shared registry and orphan cleanup, and teach every media reader
-   and publication path about object keys. Capture saves continue writing
-   bytes; legacy shot retakes clear old keys when replacing bytes. Neither
-   backfill runs and neither capture writer creates object keys in this
-   release. Wait until all web and conductor processes, including draining
-   workers, run this release or later.
-2. [#6051](https://github.com/Usernode-Labs/social-vibecoding/pull/6051),
-   `codex/media-storage-shots`: switch both capture writers to immutable
-   objects and run both workflow backfills. A remaining process from the
-   reader release can read keys or safely write a transitional byte row;
-   the backfills catch those rows. The existing branch name covers both
-   media families after consolidation.
+This cleanup release removes the per-row byte fallback, all runtime SQL
+references to byte columns, and both completed backfill modules/jobs. The
+workflow's normal release reconciliation retires clocks absent from JOBS;
+no manual workflow-row deletion or production command is needed. Staging
+fixtures upload fake media and commit its key in the same transaction as
+their reference. Previews have no production bucket credentials: their
+small fake files use `staging-media-store.js` inside the preview container,
+recreated idempotently by those seeds on every boot. Production always
+uses the configured S3 store. Unit tests inject an in-memory store.
 
-The bucket and credentials from infra #56 must be live before release 2.
-After #6050 merges, refresh #6051 against its actual merged SHA and require
-passing checks. A squash merge can change ancestry. Do not merge both PRs
-before release 1 has fully rolled out: an original process cannot read the
-keyed rows that release 2 starts writing and backfilling.
+**Column removal must be a subsequent release.** The migration hook runs
+at sync wave -1, before web/conductor replacement. The previous release
+still selects `data` and writes explicit NULL byte columns, even for keyed
+rows. Dropping them in this release's pre-deployment migration would break
+those old processes during the rolling update.
 
-After the first key is written, rollback must preserve #6050's key-aware
-readers for both media families. The per-row byte read remains only while a
-row has not been backfilled. No dual byte/object write path is introduced.
-The former check-visual PRs #6052 and #6053 are superseded by these two PRs.
+After this release is fully deployed, including the last draining process:
 
-Dropping byte columns and the compatibility read branch waits for both
-backfills to reach zero, older byte writers to be gone, and staging fixture
-seeds to be converted. That is a separate roadmap step 4 PR. Bruno schedules
-VACUUM FULL afterwards at a quiet time. These notes authorize no merge,
-deployment or maintenance action.
+1. Verify no remaining process runs code that references byte columns and
+   both removed backfill clocks are retired. Recheck that all six tables
+   still have zero byte rows and no missing normal keys.
+2. Add the next tracked SQL migration (never edit the immutable baseline).
+   Refuse the migration if any bytes remain or any required key/metadata
+   is missing; preserve every object key, FK and index. Drop `data` from
+   `shot_run_files`, `shot_artifacts`, `shots_eval_artifacts`,
+   `shot_diagnostic_artifacts`, `check_run_media`, `session_visuals`, and
+   `dense_data` from the first two. Replace constraints that depend on the
+   dropped columns with key-only invariants, including required normal
+   keys, visual metadata, and density/original consistency.
+3. Update tests and the preview schema policy as needed. Verify fresh and
+   existing database migration paths; the cleanup's PostgreSQL media and
+   staging suites already exercise real code after removing the columns
+   in a disposable database.
+4. Deploy that migration release; Bruno schedules `VACUUM FULL` afterwards
+   at a quiet time. It locks the tables and is separate operator maintenance.
+
+After the column drop, roll forward with compatible code. An older image
+is not a schema down-migration. No merge, deployment, or maintenance is
+authorized by these notes.
 
 ## Shots
 
 The shots integration includes both densities in `shot_run_files` and
 `shot_artifacts`, plus `shots_eval_artifacts` and `shot_diagnostic_artifacts`.
-New saves upload first and write keys with no bytes in their existing
-transaction. Publication copies keys; eval publication does the same, with
-an upload only for a source row not yet backfilled.
-
-The `media-shots-backfill` workflow clock processes bounded, round-robin
-batches. It verifies each legacy row's checksum, uploads it under a row
-lock, and commits its keys and byte clearing together. It reports remaining
-row counts for each table and `done` only at zero. A restart resumes from
-those committed rows. The clock keeps checking for byte rows an older,
-compatible release wrote during a rollout. Density and retention behavior
-are unchanged; dense originals are retained as Bruno approved on 30 Oct.
+New saves upload first and write keys in their existing transaction.
+Publication and eval publication copy keys without S3 I/O. Normal and dense
+objects remain referenced independently, and both retain their existing
+metadata, access gates, and retention rules. Dense originals are retained
+as Bruno approved on 30 October.
 
 ## Check visuals
 
-Check-visual readers and preview publication are in release 1; their keyed
-writer and workflow backfill are in release 2, alongside the shots changes.
-
 `check_run_media` holds a run's media until the preview machine publishes it
-to `session_visuals`. Both tables gain an indexed restrictive registry FK,
+to `session_visuals`. Both tables have an indexed restrictive registry FK,
 SHA-256, size and the old full-response ETag. Publication copies the key and
 metadata, preserving the artifact ID and its `/visuals/:id` URL. The GC's
 ordinary reference lookup covers both tables, so it never takes a row lock
@@ -162,9 +165,6 @@ hash, size and full-response validator. Its existing replacement transaction
 locks the session and old rows before registry keys. Upload or insert failure
 rolls back the replacement; any orphaned upload is left to `media-gc`.
 
-`media-check-visuals-backfill` runs through the workflow clock in bounded,
-round-robin batches over both tables. It reports `remaining.check_run_media`,
-`remaining.session_visuals` and `done`. Each row's committed key is the
-checkpoint across retries and process restarts. A missing store is never a
-completed backfill. Existing ids, timestamps, capture provenance, merged
-history and the old full-body ETag survive the migration.
+Both historical backfills are complete and removed from this build. IDs,
+timestamps, capture provenance, merged history and the old full-body ETag
+survive the migration.

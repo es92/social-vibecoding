@@ -19,6 +19,7 @@
 
 import { useStoreState } from '../../lib/use-store-state';
 import { cardMenuStore, type CardMenuState } from './card-menu-store';
+import { MenuIcon } from './menu-icons';
 
 export function CardMenuView({ rows }: CardMenuState) {
   return (
@@ -35,11 +36,12 @@ export function CardMenuView({ rows }: CardMenuState) {
           disabled={row.disabled}
         >
           {/*
-              The glyph is decorative: `aria-hidden`, and the label keeps its
+              The icon is decorative: `aria-hidden`, and the label keeps its
               own element, so the button's accessible name is exactly the
-              label text — "Withdraw", never "multiplication sign Withdraw".
+              label text. A line icon in the row's ink (audit D08), from the
+              same table the touch sheet's icons come from.
           */}
-          <span className="dev-card-menu-icon" aria-hidden="true">{row.glyph}</span>
+          <span className="dev-card-menu-icon" aria-hidden="true"><MenuIcon name={row.icon} /></span>
           <span className="dev-card-menu-label">{row.label}</span>
         </button>
       ))}

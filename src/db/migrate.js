@@ -13,6 +13,7 @@ const issueDraftSvc = require('../services/issue-draft');
 const { reindexAfterHostMove } = require('./reindex-after-host-move');
 const { applySchemaWithLockRetry } = require('./schema-migrations');
 const { seedReferenceData } = require('./reference-data');
+const { withStagingMedia } = require('../services/staging-media');
 // Read by seedStagingPlatformMail's at-the-ceiling fixture, so the number
 // of seeded sends tracks the rule instead of restating it.
 const mailRateLimit = require('../services/mail/rate-limit');
@@ -5484,16 +5485,16 @@ async function seedStagingTranscriptShowcase(pool, config) {
     { id: '9'.repeat(31) + '6', kind: 'after', idx: 3, path: '/settings' },
   ];
   for (const r of vis) {
-    await pool.query(
+    await withStagingMedia(pool, PNG_1X1, 'image/png', (tx, m) => tx.query(
       `INSERT INTO session_visuals
-         (id, session_id, commit_hash, kind, media, content_type, data,
-          captured_path, capture_index, captured_viewport, before_fell_back)
-       SELECT $1, $2, NULL, $3, 'png', 'image/png', $4, $5, $6, $7, $8
+         (id, session_id, commit_hash, kind, media, content_type, object_key,
+          captured_path, capture_index, captured_viewport, before_fell_back, sha256, bytes, legacy_etag)
+       SELECT $1, $2, NULL, $3, 'png', 'image/png', $4, $5, $6, $7, $8, $9, $10, $11
         WHERE EXISTS (SELECT 1 FROM chat_sessions WHERE id = $2)
        ON CONFLICT (id) DO NOTHING`,
-      [r.id, STAGING_TRANSCRIPT_SESSION_ID, r.kind, PNG_1X1, r.path, r.idx,
-       r.viewport || null, !!r.fellBack]
-    );
+      [r.id, STAGING_TRANSCRIPT_SESSION_ID, r.kind, m.key, r.path, r.idx,
+       r.viewport || null, !!r.fellBack, m.sha256, m.bytes, m.legacyEtag]
+    ));
   }
 
   log.info('db', 'Staging transcript fixture seeded', {
@@ -8109,14 +8110,16 @@ async function seedStagingVisuals(pool) {
     );
     for (const r of rows) {
       const data = r.media === 'webm' ? WEBM_PLACEHOLDER : PNG_1X1;
-      await pool.query(
+      await withStagingMedia(pool, data, CT[r.media], (tx, m) => tx.query(
         `INSERT INTO session_visuals
-           (id, session_id, commit_hash, kind, media, content_type, data, captured_path, capture_index, captured_viewport, before_fell_back)
-         SELECT $1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10
+           (id, session_id, commit_hash, kind, media, content_type, object_key, captured_path, capture_index, captured_viewport, before_fell_back,
+            sha256, bytes, legacy_etag)
+         SELECT $1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
           WHERE EXISTS (SELECT 1 FROM chat_sessions WHERE id = $2)
          ON CONFLICT (id) DO NOTHING`,
-        [r.id, DEMO_SESSION_ID, r.kind, r.media, CT[r.media], data, r.path, r.idx, r.viewport || null, !!r.fellBack]
-      );
+        [r.id, DEMO_SESSION_ID, r.kind, r.media, CT[r.media], m.key, r.path, r.idx, r.viewport || null, !!r.fellBack,
+          m.sha256, m.bytes, m.legacyEtag]
+      ));
     }
     // Give the promoted demo session a 'partial' capture outcome so the
     // proposal card's capture-state surfaces render against it (its group 1
@@ -8318,17 +8321,16 @@ async function seedStagingGalleryProposals(pool) {
         // Deterministic 32-hex id per (session, artifact) so the seed is
         // idempotent across container rebuilds.
         const id = (`${p.id}`.padStart(8, '0') + `${i}`.padStart(2, '0')).padEnd(32, 'a');
-        await pool.query(
+        await withStagingMedia(pool, a.media === 'webm' ? WEBM_PLACEHOLDER : PNG_1X1, CT[a.media], (tx, m) => tx.query(
           `INSERT INTO session_visuals
-             (id, session_id, commit_hash, kind, media, content_type, data,
-              captured_path, capture_index, captured_viewport, shot_status, before_fell_back)
-           SELECT $1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, 200, $10
+             (id, session_id, commit_hash, kind, media, content_type, object_key,
+              captured_path, capture_index, captured_viewport, shot_status, before_fell_back, sha256, bytes, legacy_etag)
+           SELECT $1, $2, NULL, $3, $4, $5, $6, $7, $8, $9, 200, $10, $11, $12, $13
             WHERE EXISTS (SELECT 1 FROM chat_sessions WHERE id = $2)
            ON CONFLICT (id) DO NOTHING`,
-          [id, p.id, a.kind, a.media, CT[a.media],
-            a.media === 'webm' ? WEBM_PLACEHOLDER : PNG_1X1,
-            a.path, a.idx, a.viewport || null, !!a.fellBack]
-        );
+          [id, p.id, a.kind, a.media, CT[a.media], m.key,
+            a.path, a.idx, a.viewport || null, !!a.fellBack, m.sha256, m.bytes, m.legacyEtag]
+        ));
       }
     }
     log.info('db', 'Staging gallery fixtures seeded', { proposals: proposals.length });
@@ -8501,17 +8503,17 @@ async function seedStagingShotsNoticed(pool) {
         JSON.stringify(cleaned)]
     );
     for (const file of files) {
-      await pool.query(
+      await withStagingMedia(pool, file.data, 'image/png', (tx, m) => tx.query(
         `INSERT INTO shot_artifacts
            (id, run_id, story_id, viewport, side, variant, media, content_type,
-            data, width, height, bytes, sha256, theme)
+            object_key, width, height, bytes, sha256, theme)
          SELECT $1::varchar, $2::varchar, 'board-sort', $3::varchar, $4::varchar, 'context', 'png', 'image/png',
-                $5::bytea, $6::int, $7::int, $8::int, $9::varchar, $10::varchar
+                $5::text, $6::int, $7::int, $8::int, $9::varchar, $10::varchar
           WHERE EXISTS (SELECT 1 FROM shot_runs WHERE id = $2::varchar)
          ON CONFLICT (id) DO NOTHING`,
-        [file.id, runId, file.viewport, file.side, file.data, file.width, file.height,
+        [file.id, runId, file.viewport, file.side, m.key, file.width, file.height,
           file.data.length, file.sha256, file.theme]
-      );
+      ));
     }
     log.info('db', 'Staging shots "Also noticed" fixture seeded', { sessionId: id });
   } catch (err) {
@@ -8648,17 +8650,17 @@ async function seedStagingShotsScreens(pool) {
         JSON.stringify(cleaned)]
     );
     for (const file of files) {
-      await pool.query(
+      await withStagingMedia(pool, file.data, 'image/png', (tx, m) => tx.query(
         `INSERT INTO shot_artifacts
            (id, run_id, story_id, viewport, side, variant, media, content_type,
-            data, width, height, bytes, sha256, theme)
+            object_key, width, height, bytes, sha256, theme)
          SELECT $1::varchar, $2::varchar, $3::varchar, 'phone', $4::varchar, 'context', 'png', 'image/png',
-                $5::bytea, $6::int, $7::int, $8::int, $9::varchar, 'light'
+                $5::text, $6::int, $7::int, $8::int, $9::varchar, 'light'
           WHERE EXISTS (SELECT 1 FROM shot_runs WHERE id = $2::varchar)
          ON CONFLICT (id) DO NOTHING`,
-        [file.id, runId, file.story, file.side, file.data, phone.width, phone.height,
+        [file.id, runId, file.story, file.side, m.key, phone.width, phone.height,
           file.data.length, file.sha256]
-      );
+      ));
     }
     log.info('db', 'Staging three-screen shots fixture seeded', { sessionId: id });
   } catch (err) {
@@ -16005,6 +16007,7 @@ module.exports = {
   seedStagingTopicScrollThreads, seedStagingLlmUsage, seedStagingHomeLayout,
   seedStagingAnalyticsCharts, seedStagingSpendDistribution,
   seedStagingGeneralChannel, seedStagingShotsNoticed, seedStagingShotsScreens,
+  seedStagingTranscriptShowcase, seedStagingVisuals, seedStagingGalleryProposals,
   // A test seam: preview-projects-source-repo.test.js counts what a preview's
   // sample apps leave room for under the limit it runs with.
   seedStagingAppCapApps,

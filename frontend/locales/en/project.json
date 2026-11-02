@@ -4063,10 +4063,6 @@
     "text": "Vote no",
     "description": "Button at the bottom of the vote picker when No is chosen: sends a No vote. \"Vote\" is a verb."
   },
-  "card.vote.picker.sendPick": {
-    "text": "Vote",
-    "description": "Button at the bottom of the vote picker before Yes or No is chosen: it stays off until one is. \"Vote\" is a verb."
-  },
   "card.vote.picker.sendApprove": {
     "text": "Approve",
     "description": "Button at the bottom of the picker on a project that is just the person's, when Approve is chosen: sends the approval. A verb."

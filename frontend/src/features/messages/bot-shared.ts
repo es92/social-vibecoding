@@ -260,6 +260,14 @@ export interface ChangeBlocksOptions {
    * same block may drop its own.
    */
   showsRequest: (message: ConversationMessage) => boolean;
+  /**
+   * B12 (overnight audit, 1 Nov 2026): a row the transcript draws as
+   * something other than a message (the bot's one-line news about a
+   * request, ./bot-news-line.tsx). It is in no block and ends one, as a
+   * thread reply does: counted in, it left the block's outline open above
+   * and below a line that draws none ("a bubble with no top edge").
+   */
+  apart?: (message: ConversationMessage) => boolean;
 }
 
 /**
@@ -285,7 +293,7 @@ export interface ChangeBlocksOptions {
  */
 export function changeBlocks(
   messages: readonly ConversationMessage[],
-  { hidden, together, showsRequest }: ChangeBlocksOptions,
+  { hidden, together, showsRequest, apart = () => false }: ChangeBlocksOptions,
 ): Map<number, ChangeBlock> {
   const blocks = new Map<number, ChangeBlock>();
   let run: ConversationMessage[] = [];
@@ -308,7 +316,7 @@ export function changeBlocks(
     if (hidden(message)) continue;
     const key = changeKey(message);
     const previous = run[run.length - 1];
-    const blocked = !!key && !threaded(message);
+    const blocked = !!key && !threaded(message) && !apart(message);
     const joins = blocked && !!previous && changeKey(previous) === key && together(previous, message);
     if (!joins) close();
     if (blocked) run.push(message);

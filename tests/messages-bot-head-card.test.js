@@ -254,10 +254,17 @@ test('a message that names no project draws the card without a link and asks not
 });
 
 test('a project’s card opens its App tab, and a first version gone live with its Open button draws none', () => {
-  answer = { type: 'app', available: true, title: 'Never asked' };
+  answer = { type: 'hub', available: true, title: 'Never asked' };
   const html = draw(botHead('**Todo List**, its first version\n\nBuilding the first version now.', FIRST));
-  assert.deepEqual(asked, [[]], 'nothing to read: the line is the card');
-  assert.match(html, /data-bot-head-card="project"><a href="#app\/todo-list-b91765\/app" class="messages-object-card" rel="noopener noreferrer"><span class="messages-object-icon">◆<\/span>/);
+  // B21: with no icon from the tray or the message, the project's hub card
+  // is read for its icon alone; the line is still the card.
+  assert.deepEqual(asked, [['hub:todo-list-b91765:']], 'its hub, read for its icon');
+  assert.match(html, /data-bot-head-card="project"><a href="#app\/todo-list-b91765\/app" class="messages-object-card" rel="noopener noreferrer"><span class="messages-object-icon">◆<\/span>/,
+    'a hub with no icon of its own leaves the glyph');
+  answer = { type: 'hub', available: true, title: 'Never asked', iconUrl: '/app-icons/f00d' };
+  assert.match(draw(botHead('**Todo List**, its first version\n\nBuilding the first version now.', FIRST)),
+    /data-bot-head-card="project"><a href="#app\/todo-list-b91765\/app" class="messages-object-card" rel="noopener noreferrer"><span class="messages-object-icon overflow-hidden" data-object-icon="image"><img src="\/app-icons\/f00d"/,
+    'B21: a newcomer\'s first project, in none of the tray\'s lists, wears its own icon');
   assert.match(html, />Todo List<\/div><div class="text-sm text-zinc-500 dark:text-zinc-400 truncate">First version</);
   assert.doesNotMatch(html, /data-bot-request-card|Never asked/);
 

@@ -95,6 +95,16 @@ test('the starter defines the colour tokens once, for both looks, as channels ra
   assert.doesNotMatch(stripComments(css), /#[0-9a-f]{3,8}\b/i, 'no hex literal');
 });
 
+test('G02: the page clears the phone\'s bottom bar, from the inset the bridge forwards', () => {
+  // Overnight audit, 2 Nov 2026: in the Homeroom app on Android the
+  // starter's last line sat under the system navigation bar. The frame runs
+  // to the foot of the screen by design (app.css, the surface contract), and
+  // a frame has no env() of its own, so the page pads by the bridge's inset.
+  const css = file(generate(), 'styles/tailwind-input.css');
+  const base = css.slice(css.indexOf('@layer base {'), css.indexOf('@layer components {'));
+  assert.match(base, /\n  body \{\n    padding-bottom: var\(--un-safe-inset-bottom, env\(safe-area-inset-bottom, 0px\)\);\n  \}/);
+});
+
 test('every text pair the tokens are meant for passes WCAG AA in both looks', () => {
   const math = capture.colorMath();
   const looks = tokensOf(file(generate(), 'styles/tailwind-input.css'));

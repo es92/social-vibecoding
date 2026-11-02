@@ -1,5 +1,7 @@
 'use strict';
 
+// test:changed: when src/ server.js sql-dynamic-baseline.json (backend SQL changes must match the reviewed dynamic inventory)
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

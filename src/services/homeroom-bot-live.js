@@ -2699,7 +2699,7 @@ const FIRST_VERSION_DESIGN_LINES = Object.freeze([
   'Build the populated demo the spec describes, the staging preview opened with `?demo=1`: the viewer\'s own data as',
   'well as other people\'s, varied realistic rows filling about a screen and a half at phone width, every control the',
   'real screen has (never a view-only demo), and the app\'s main result already there (the scores added up, the',
-  'schedule filled in, the totals worked out), not only what goes into it. It is labelled "Staging demo" once, plainly,',
+  'schedule filled in, the totals worked out), not only what goes into it. It is labelled "Sample data" once, plainly,',
   'as a banner or a line of its own at the top of the screen (never the app\'s name, nor in place of its tagline) or',
   'in the name of its list, not on each row, and rows the app seeds on boot carry no label of their own either; every',
   'row stays obviously made up. On staging and with `?demo=1` only, and idempotent, as the platform conventions\'',
@@ -2707,7 +2707,7 @@ const FIRST_VERSION_DESIGN_LINES = Object.freeze([
   // Newcomer run seven (14 Oct 2026): Homeroom shows a first version with
   // its sample data under a label of its own (the App tab's Live replay),
   // and hides the app's own by this attribute.
-  'The element that carries the "Staging demo" label gets the attribute `data-usernode-demo-note` (the banner or the',
+  'The element that carries the "Sample data" label gets the attribute `data-usernode-demo-note` (the banner or the',
   'line itself; in a list\'s name, a `<span data-usernode-demo-note>` around the label\'s own words, so the name',
   'stays), so Homeroom can hide it where it shows the app with its sample data.',
 ]);

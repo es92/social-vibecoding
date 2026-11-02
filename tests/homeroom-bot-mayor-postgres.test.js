@@ -351,6 +351,8 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     assert.equal(off.requests.find((r) => r.project === 'note-board').botBuildsHere, false);
     const projects = await mayor.myProjects(pool, { user: ada, settings: { ...settings, pausedApps: ['note-board'] } });
     assert.deepEqual(projects.projects.map((p) => `${p.project}:${p.botBuildsHere}`).sort(), ['note-board:false', 'seed-swap:true']);
+    // B27: and who each is for, in the screen's own words.
+    for (const p of projects.projects) assert.ok(['just_you', 'private_community', 'public_community'].includes(p.audience), p.project);
   });
 
   await t.test('it reads the platform through the Mayor\'s connector: reads only, on its own grant, closed after', async () => {

@@ -365,6 +365,12 @@ test('conversation threads, soft delete, permalinks and mark-unread on the real 
     const aliceAlert = () => alerts(`user_id = $1 AND conversation_message_id = $2`, [alice.id, reply]);
     assert.equal((await aliceAlert())[0].kind, 'conversation_thread_reply');
     assert.equal((await aliceAlert())[0].read_at, null);
+    // B19 follow-up: the thread's first page says where it opens for her,
+    // its first reply she has not read, until she reads the thread.
+    const opened = await conversations.listThread(pool, alice, paging, m[2]);
+    assert.deepEqual(opened.read, { firstUnreadId: reply, unreadCount: 1 });
+    assert.equal((await conversations.listThread(pool, alice, paging, m[2], { before: reply + 1 })).read, undefined,
+      'an older page says nothing about it');
     const later = await send(bob, paging, { content: 'main stream after the reply' });
     const mainRead = await conversations.markRead(pool, alice, paging, later.messageId);
     assert.equal(mainRead.threadRootId, null);
@@ -373,6 +379,8 @@ test('conversation threads, soft delete, permalinks and mark-unread on the real 
     assert.equal(threadRead.threadRootId, m[2]);
     assert.equal(threadRead.messageId, later.messageId, 'the cursor did not move');
     assert.notEqual((await aliceAlert())[0].read_at, null);
+    assert.equal((await conversations.listThread(pool, alice, paging, m[2])).read, undefined,
+      'read: it opens at its newest reply');
   });
 
   await t.test('deleting your own message leaves a placeholder and removes what hung off it', async () => {

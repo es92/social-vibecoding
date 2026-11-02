@@ -20,7 +20,7 @@
 //     (homeroom-bot-live.js specPlanLines, planNoteText);
 //   - the early first look names the app by its name, never an invented one
 //     (first-version-early-look.js), after it drew "Harbour Road Chess Club";
-//   - a first version's "Staging demo" label is marked with
+//   - a first version's "Sample data" label is marked with
 //     `data-usernode-demo-note`, so Homeroom can hide it where it shows the
 //     app with its sample data.
 //
@@ -278,16 +278,16 @@ test('the early first look names the app, its group and its place by the app\'s 
 
 // ── The demo's label is marked ───────────────────────────────────────────
 
-test('a first version\'s "Staging demo" label is marked with data-usernode-demo-note wherever builds and specs are told about it', () => {
+test('a first version\'s "Sample data" label is marked with data-usernode-demo-note wherever builds and specs are told about it', () => {
   const design = flat(live.FIRST_VERSION_DESIGN_LINES.join('\n'));
-  assert.match(design, /labelled "Staging demo" once[^.]*\. On staging and with `\?demo=1` only, and idempotent, as the platform conventions' "Staging mock data" says\. The element that carries the "Staging demo" label gets the attribute `data-usernode-demo-note`/);
+  assert.match(design, /labelled "Sample data" once[^.]*\. On staging and with `\?demo=1` only, and idempotent, as the platform conventions' "Staging mock data" says\. The element that carries the "Sample data" label gets the attribute `data-usernode-demo-note`/);
   // A game starter's and the one_look build keep it.
   assert.match(flat(live.firstVersionDesignLines('game-board').join('\n')), /data-usernode-demo-note/);
   assert.match(flat(live.firstVersionDesignLines(null, { oneLook: true }).join('\n')), /data-usernode-demo-note/);
-  assert.match(prompts.FIRST_VERSION_SPEC_DESIGN_BRIEF, /labelled "Staging demo" once, plainly and visibly, [^;]*, and the element that carries the label marked with the attribute `data-usernode-demo-note`/);
+  assert.match(prompts.FIRST_VERSION_SPEC_DESIGN_BRIEF, /labelled "Sample data" once, plainly and visibly, [^;]*, and the element that carries the label marked with the attribute `data-usernode-demo-note`/);
   const conventions = flat(read('src/prompts/app-conventions.md'));
   assert.match(conventions, /\*\*Labelled once, not on every row\.\*\*[^*]*The element that carries the label gets the attribute `data-usernode-demo-note`/);
   // The drawn first look is still drawn without the label at all.
-  assert.match(prompts.FIRST_VERSION_SCREENS_BRIEF, /drawn WITHOUT its "Staging demo" label/);
+  assert.match(prompts.FIRST_VERSION_SCREENS_BRIEF, /drawn WITHOUT its "Sample data" label/);
   assert.doesNotMatch(prompts.FIRST_VERSION_SCREENS_BRIEF, /data-usernode-demo-note/);
 });

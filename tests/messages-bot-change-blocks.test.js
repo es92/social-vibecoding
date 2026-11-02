@@ -283,3 +283,18 @@ test('the stylesheet draws every part of the block from the one hairline', () =>
   assert.match(css, /\.messages-bot-block-first, \.messages-bot-block-middle \{ padding-bottom: 0; \}/);
   assert.match(css, /\.messages-bot-block-middle, \.messages-bot-block-last \{ padding-top: 0; \}/);
 });
+
+// B12 (overnight audit, 1 Nov 2026): the bot's one-line news about a
+// request is drawn as a line with no outline, and counted into the block
+// it left the plan's bubble with no foot and the next with no top edge.
+test('a row drawn apart (a news line) is in no block and ends one', () => {
+  const blocks = changeBlocksOf([botMessage(1), botMessage(2), botMessage(3)], {
+    apart: (m) => m.id === 2,
+  });
+  assert.deepEqual(parts(blocks), [[1, 'only', false], [3, 'only', false]]);
+  const source = read('frontend/src/features/messages/index.tsx');
+  assert.match(source, /apart: \(message\) => isBotNews\(message\) && !asks\(message\),/,
+    'the transcript names the rows it draws as news lines');
+  assert.match(source, /plans\.hidden\.has\(message\.id\) \|\| folded\.has\(message\.id\),/,
+    'and skips the news it folds into a newer line, as its loop does');
+});

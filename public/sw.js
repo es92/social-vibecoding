@@ -24,8 +24,10 @@
 //   - Only GETs are ever intercepted. Writes, SSE streams, auth flows and
 //     credentials are hard-bypassed (see classifyRequest below).
 //   - Permitted GET /api/* JSON lets previously-viewed screens re-render
-//     offline. The page requests fresh reads, so these fall back only on
-//     network failure. Entries honor response policy, require matching
+//     offline. The page requests fresh reads, so these fall back on network
+//     failure, or when the network has not answered within
+//     FRESH_API_TIMEOUT_MS (a link that connects but carries nothing never
+//     fails). Entries honor response policy, require matching
 //     page/server session labels, and are fenced and cleared at identity
 //     boundaries. Identity and credential reads never enter the cache.
 //
@@ -143,7 +145,8 @@ const IMMUNE_API_PATHS = [];
 // networkFirstApi: the page is told when the real answer lands and
 // disagrees. Do not shorten this one without keeping that.
 // The platform's identity fetch wrapper requests fresh reads (`reload`),
-// which skip these compatibility deadlines and fall back on failure only.
+// which skip these compatibility deadlines for the much longer
+// FRESH_API_TIMEOUT_MS below.
 const NAVIGATE_TIMEOUT_MS = 200;
 const SHELL_TIMEOUT_MS = 200;
 const API_TIMEOUT_MS = 1000;
@@ -171,7 +174,9 @@ const API_TIMEOUT_MS = 1000;
 // previous session's launcher paints on the first frame, complete with its
 // icons (cache-first '/app-icons' and '/avatars' already hold them), and the
 // board paints its previous cards instead of a skeleton — then both are
-// corrected in place by the api-updated path below.
+// corrected in place by the api-updated path below. (A FRESH read, which is
+// what the page's identity wrapper sends, waits FRESH_BOOT_API_TIMEOUT_MS
+// here instead; see there.)
 //
 // Why THESE and not the API tier at large: each one is a screen's own
 // standing state, on a screen this device has already rendered once, with a
@@ -233,6 +238,46 @@ const BOOT_READ_PATTERNS = [
 ];
 
 const BOOT_API_TIMEOUT_MS = 0;
+
+// ── Fresh reads on a link that is not answering ──────────────────────
+//
+// Every permitted page read arrives as a fresh read: the page's identity
+// wrapper (frontend/src/lib/api-cache-identity.ts) sends them all with
+// `cache: 'reload'`, and live-reads' re-reads ask with 'no-cache' (#4177).
+// Such a read used to get no deadline at all, so the saved copy answered only
+// when the fetch REJECTED. A link that connects but carries nothing (a Wi-Fi
+// with no internet behind it, a connection that died silently between
+// networks, a lift) never rejects: in the offline test of 2 Nov 2026 a cold
+// launch sat on Home's skeleton for over a minute with the saved apps in this
+// cache, while the same launch with the internet fully off showed them at
+// once.
+//
+// So a fresh read gets a deadline too, a long one. It is not a race the cache
+// is meant to win: a working link answers well inside it, and then nothing
+// differs from before. Only a read the network has not answered by then gets
+// the saved copy, and it is exactly the copy a failed fetch would get (the
+// same entry, the same scope and age rules, the same `sw-cached-at` stamp).
+// The request keeps going: its answer is stored under the usual rules, and
+// networkFirstApi posts `api-updated` when that answer differs from the copy
+// or retires it. With nothing saved, the deadline unlocks nothing and the
+// read waits for the network exactly as before; the page's own read timeout
+// decides when a read with nothing to show has waited too long, because only
+// the page can tell a dead link from a slow answer worth waiting for.
+//
+// 4s sits far above a healthy round trip on any mobile network and well
+// inside the page's read timeout, so the copy arrives before the page gives
+// up on the read.
+const FRESH_API_TIMEOUT_MS = 4000;
+// The boot reads get a shorter one, for the reasons that give them a zero
+// deadline when they are not fresh: each is a screen's standing state, on a
+// screen this device has drawn before, with an in-place repaint for the
+// correction. And the board's reads are a SERIAL chain (the app record has
+// to answer before the board's nine reads can start), so 4s per stage would
+// add up to a skeleton twice as long. 2s is still several healthy round
+// trips, connection setup included, so a working link keeps answering first;
+// the lane rules (`correcting`, a refresh's intent) shut it as they do for
+// the zero deadline, and such a read then waits FRESH_API_TIMEOUT_MS.
+const FRESH_BOOT_API_TIMEOUT_MS = 2000;
 
 /**
  * Is this one of the reads that gates a screen's first paint? Pure and
@@ -710,11 +755,30 @@ const TIMED_OUT = { timedOut: true };
 // `cache: 'no-cache'`, and a re-read answered from this cache after the 1s
 // deadline would be the stale copy the re-read exists to replace. Such a
 // request waits for the network, keeps refreshing the cache, and falls back
-// to the cached copy only when the network fails, so offline still works.
+// to the cached copy when the network fails, so offline still works, or when
+// it has not answered within FRESH_API_TIMEOUT_MS, so a link that carries
+// nothing does too. That deadline is long enough that a working link always
+// answers first, and the late answer still corrects the screen.
 // `reload` asks for the same thing more strongly. `no-store` never gets here:
 // the fetch handler leaves it to the browser.
 function wantsFreshAnswer(cacheMode) {
   return cacheMode === 'no-cache' || cacheMode === 'reload';
+}
+
+// For an answer networkFirstApi has just declined to keep: does it also say
+// that the saved copy is no longer this viewer's to see? A 200 the cache may
+// not keep (no-store, another session's scope, not JSON), a redirect, a
+// refusal (401, 403) and a "gone" (404, 410) do. The entry is retired either
+// way; this decides whether a page already SHOWN that copy, because the
+// network missed its deadline, is told so. A server error, a rate limit or a
+// 304 says nothing about the copy, so the screen keeps it, and its next read
+// asks the network.
+const RETIRING_STATUSES = [401, 403, 404, 410];
+
+function declinedAnswerRetiresCopy(response) {
+  if (!response) return false;
+  return !!response.redirected || response.status === 200
+    || RETIRING_STATUSES.includes(response.status);
 }
 
 // Network-first WITH a deadline (#1021). Pure: every effect is injected,
@@ -734,10 +798,13 @@ function wantsFreshAnswer(cacheMode) {
 //     cache, which is what keeps the freshness contract honest.
 //   - deadline first, cache MISS    → keep waiting on the network. A
 //     first-ever load (or a screen this device has never visited) must
-//     never fail early just because it is slow.
+//     never fail early just because it is slow. No cap is added here: the
+//     worker cannot tell a dead link from a slow answer, and the page's own
+//     read timeout owns that decision (FRESH_API_TIMEOUT_MS).
 //   - `timeoutMs: null`             → no deadline at all: the network's
 //     answer, however long it takes, and the cached copy only when the
-//     network fails (see `wantsFreshAnswer`).
+//     network fails. No strategy passes it now; fresh reads take
+//     FRESH_API_TIMEOUT_MS (see `wantsFreshAnswer`).
 //
 // `schedule(fn, ms)` returns a cancel function.
 async function raceNetworkAndCache({ startFetch, matchCache, timeoutMs, schedule }) {
@@ -905,12 +972,16 @@ if (typeof module !== 'undefined' && module.exports) {
     BOOT_READ_PATHS,
     BOOT_READ_PATTERNS,
     BOOT_API_TIMEOUT_MS,
+    FRESH_API_TIMEOUT_MS,
+    FRESH_BOOT_API_TIMEOUT_MS,
     API_TIMEOUT_MS,
     isImmuneApiRequest,
     isShellDocumentUrl,
     SHELL_DOCUMENT_PATHS,
     raceNetworkAndCache,
     wantsFreshAnswer,
+    declinedAnswerRetiresCopy,
+    RETIRING_STATUSES,
     bytesEqual,
     SHELL_ASSETS,
     parseBuildScopedPath,
@@ -1465,16 +1536,19 @@ if (typeof module !== 'undefined' && module.exports) {
     // just-missed response found it still false.
     const served = { fromCache: false };
 
-    // #4177: a read that asks for the current answer has no deadline at all,
-    // so it leaves the correction marks for the next ordinary re-pull.
+    // #4177: a read that asks for the current answer (every page read, see
+    // FRESH_API_TIMEOUT_MS) gets the long deadline, so the saved copy answers
+    // it only on a link that is not answering. It consumes the correction
+    // marks like any read: a re-pull after a correction is such a read, and
+    // it is the request those marks exist to slow down.
     const fresh = wantsFreshAnswer(event.request.cache);
     // Consume the correction mark, if any: this request pays the ordinary
     // deadline once and the next one is back in the lane.
-    const settling = !fresh && awaitingNetwork.delete(event.request.url);
-    const laned = !fresh && !correcting.delete(event.request.url) && !settling
+    const settling = awaitingNetwork.delete(event.request.url);
+    const laned = !correcting.delete(event.request.url) && !settling
       && bootLaneApplies(event.request.url, ORIGIN, Date.now(), refreshIntentUntil);
-    const timeoutMs = fresh ? null
-      : settling ? CORRECTION_WAIT_MS
+    const timeoutMs = settling ? CORRECTION_WAIT_MS
+      : fresh ? (laned ? FRESH_BOOT_API_TIMEOUT_MS : FRESH_API_TIMEOUT_MS)
         : laned ? BOOT_API_TIMEOUT_MS : API_TIMEOUT_MS;
 
     const { response, fromCache, pending } = await raceNetworkAndCache({
@@ -1492,9 +1566,9 @@ if (typeof module !== 'undefined' && module.exports) {
             await trimApiCache(cache);
             if (served.fromCache && changed) {
               // Only a LANE serve arms the guard. A stale answer on the
-              // ordinary 1s deadline means the network was slow, not that
-              // this URL is in a correction loop, and it re-races honestly
-              // next time.
+              // ordinary deadline (1s, or FRESH_API_TIMEOUT_MS for a fresh
+              // read) means the network was slow, not that this URL is in a
+              // correction loop, and it re-races honestly next time.
               if (laned) {
                 if (correcting.size >= CORRECTING_MAX) correcting.clear();
                 correcting.add(event.request.url);
@@ -1508,7 +1582,15 @@ if (typeof module !== 'undefined' && module.exports) {
         } else if (currentApiContext(context)) {
           // A known refusal, changed policy or 304 always retires the old
           // body, regardless of overlapping requests or their start order.
-          event.waitUntil(invalidateApiEntry(key));
+          // When this request was ANSWERED with that body (its deadline
+          // passed first), retiring the entry is not enough: the screen is
+          // showing it. Once the entry is gone, tell the page, the same
+          // message a changed answer gets, so its re-read meets the
+          // network's answer instead of the copy (declinedAnswerRetiresCopy).
+          event.waitUntil(invalidateApiEntry(key).then(() => {
+            if (!served.fromCache || !declinedAnswerRetiresCopy(res)) return undefined;
+            return notifyClients({ type: 'api-updated', url: event.request.url, scope: context.scope });
+          }));
         }
         return res;
       }),

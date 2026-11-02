@@ -47,9 +47,9 @@ test('reader release can publish keyed files and retake a keyed slot without ret
     const keys = await media.putMany(tx, store, [{ data: old }, { data: dense }]);
     oldKey = keys[0];
     await tx.query(`INSERT INTO shot_run_files (run_id, slot, story_id, viewport, side, variant, media, content_type,
-      data, width, height, bytes, sha256, density, dense_data, dense_width, dense_height, dense_bytes, dense_sha256, object_key, dense_object_key)
+      width, height, bytes, sha256, density, dense_width, dense_height, dense_bytes, dense_sha256, object_key, dense_object_key)
       VALUES ($1, 'invite-suggestions/desktop/head/context', 'invite-suggestions', 'desktop', 'head', 'context', 'png', 'image/png',
-        NULL, 4, 3, $2, $3, 2, NULL, 8, 6, $4, $5, $6, $7)`,
+        4, 3, $2, $3, 2, 8, 6, $4, $5, $6, $7)`,
     [runId, old.length, oldKey.slice(media.PREFIX.length), dense.length, keys[1].slice(media.PREFIX.length), oldKey, keys[1]]);
     const machine = require('../src/workflow/shots/machine.ts').shots({});
     await machine.writes.get('published')(tx, { runId, slots: ['invite-suggestions/desktop/head/context'],

@@ -375,9 +375,9 @@ test('storeArtifacts groups rows by capture_index and labels each group', async 
   assert.equal(stored.captures[1].path, '/board');
   // Each row was persisted with its capture_index (last param) + path.
   assert.equal(pool.inserted.length, 4);
-  assert.equal(pool.inserted[0][8], 0); // capture_index column
-  assert.equal(pool.inserted[2][7], '/board'); // captured_path column
-  assert.equal(pool.inserted[2][8], 1);
+  assert.equal(pool.inserted[0][7], 0); // capture_index column
+  assert.equal(pool.inserted[2][6], '/board'); // captured_path column
+  assert.equal(pool.inserted[2][7], 1);
 });
 
 test('storeArtifacts keeps only groups that have an after artifact', async () => {
@@ -419,9 +419,9 @@ test('storeArtifacts persists and returns each group viewport label', async () =
   assert.equal(stored.captures[0].viewport, null);
   assert.equal(stored.captures[1].viewport, 'mobile');
   assert.equal(stored.captures[1].path, '/board');
-  // captured_viewport is the 10th INSERT param.
-  assert.equal(pool.inserted[0][9], null);
-  assert.equal(pool.inserted[1][9], 'mobile');
+  // captured_viewport is the 9th INSERT param.
+  assert.equal(pool.inserted[0][8], null);
+  assert.equal(pool.inserted[1][8], 'mobile');
 });
 
 test('storeArtifacts leaves viewport null for targets without one (pre-#768 shape)', async () => {
