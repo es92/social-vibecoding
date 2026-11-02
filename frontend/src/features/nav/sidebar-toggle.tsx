@@ -65,8 +65,6 @@
  * period. Handlers only — nothing about the markup changes with the peek.
  */
 
-import { useEffect } from 'react';
-
 import { SidebarIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
@@ -92,37 +90,7 @@ const TOGGLE_CLASS = 'platform-sidebar-toggle shrink-0 w-7 h-7 items-center just
   + ' rounded-full un-touch-target border border-transparent text-[color:var(--brand-ink)]'
   + ' hover:bg-[color:var(--brand-tint)] hover:border-[color:var(--brand-line)]';
 
-/**
- * A PHONE HELD SIDEWAYS STARTS WITH THE RAIL FOLDED (overnight audit L02 and
- * B13, 2 November 2026). Sideways a phone is 852px wide, past the rail's
- * 768px, and only about 393 tall: the rail took 271 of the 852 (its 212 and
- * the notch's inset), so Settings drew three columns, the Communities rows
- * cut their lines short, and the bot's list was left 170px, its heading a
- * word a line. Folded, the page has the width and this button brings the
- * rail back, docked, as it does on a desktop. Decided as the shape comes
- * about (a load, or turning the phone), never against a press: a reader who
- * opens it keeps it open until the phone turns again. The state the toggle
- * already draws; nothing else changes.
- */
-export const SIDEWAYS_PHONE_QUERY = '(min-width: 768px) and (max-height: 500px) and (pointer: coarse)';
-
-function useFoldRailSideways(): void {
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
-    let list: MediaQueryList;
-    try { list = window.matchMedia(SIDEWAYS_PHONE_QUERY); } catch { return undefined; }
-    const sync = () => {
-      const open = !list.matches;
-      if (navStore.get().railOpen !== open) navStore.set({ railOpen: open, peek: false, peekOut: false });
-    };
-    if (list.matches) sync();
-    list.addEventListener?.('change', sync);
-    return () => list.removeEventListener?.('change', sync);
-  }, []);
-}
-
 export function SidebarToggle() {
-  useFoldRailSideways();
   // IT ALWAYS RENDERS, and app.css decides whether it is seen (#2718 review).
   //
   // This read `useVisibility('platform-tabs')` and returned null on a route
