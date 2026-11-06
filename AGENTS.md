@@ -326,10 +326,9 @@ is no replay plan to write and nothing to verify locally.
   the Hub, and up to the Hub from any other place
   (`features/nav-drawer/header-drawer.tsx`); where that header is off, a
   tray behind the place bar names where you are (`place-bar.tsx`,
-  `places-tray.tsx`). From 768px the sidebar nests no places under a
-  community's row (One Home), only its App row while that app is on screen
-  or kept open (`rail-communities.tsx`, `rail-nest.tsx`); the page still
-  publishes where it is (`place-store.ts`). While an app runs in a
+  `places-tray.tsx`); from 768px it nests under the community's row in the
+  sidebar (`rail-communities.tsx`, `rail-nest.tsx`), and the page publishes
+  where it is for it (`place-store.ts`). While an app runs in a
   kept frame its App row carries the green still-open dot, and that
   community keeps its row and its App row in the sidebar until the frame
   goes (`features/app-frame/live-apps.tsx`). **All

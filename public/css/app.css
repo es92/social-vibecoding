@@ -25337,9 +25337,12 @@ section + .workshop-search {
   .platform-tabs:has(#platform-rail-conversations > [data-nest="open"] [aria-current="page"]) #platform-tab-messages[aria-current="page"] .platform-tab-glyph {
     color: var(--text-primary);
   }
-  /* ONE HOME (#6361): the sidebar nests no places under a community's row,
-     so the place bar's button to the tray is the way to them on a wide
-     window too, sidebar shown or folded, as it is on a phone. */
+  /* The places are in the sidebar, so the place bar's button to the tray has
+     nothing to open beside it. Folded, the sidebar is away and the button
+     is the way to the places again. */
+  body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek):not(.platform-tabs-folded)) .dev-ws-places-btn {
+    display: none;
+  }
 
   /* ── MESSAGES, ONE PANE AT A TIME (v3) ───────────────────────────────
      features/messages/index.tsx. The list is in the sidebar, so an open

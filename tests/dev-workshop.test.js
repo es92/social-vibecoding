@@ -4299,13 +4299,10 @@ test('#2915: declared checks open the Workshop page and the hub with a search on
   assert.ok(whole, 'a check opens the Workshop tab narrowed by ?q=');
   assert.match(whole.expectSelector, /\.dev-ws\[data-ws-tab="workshop"\]:not\(:has\(\[data-ws-empty\]\)\)/,
     'and expects no "nothing here" note on it');
-  // #4417, moved by One Home (#6361): the places list is behind the place
-  // bar's button on every width now (the sidebar nests none), so the check
-  // reads the bar naming the Workshop beside that button; the Workshop row's
-  // dot for the search is drawn in the tray it opens (ProjectPlaces
-  // `filtered`).
-  assert.match(whole.expectSelector, /:has\(> \[data-place-bar="workshop"\] \.dev-ws-places-btn \+ \[data-place-title\]\)/);
-  assert.match(whole.expectSelector, /\[data-ws-part="overview"\] \+ \[data-ws-dashboard\]$/, 'and its Overview stands whole');
+  // #4417: and the dot on the Workshop's row in the places list says the
+  // search is still on (folded into the same check: the row is lit there).
+  assert.match(whole.expectSelector, /\[data-places\] \[data-place="workshop"\]\[aria-current="page"\] \[data-ws-filtered\]/);
+  assert.match(whole.expectSelector, /:has\(> \[data-place-bar="workshop"\]\) \[data-ws-part="overview"\] \+ \[data-ws-dashboard\]$/, 'and its Overview stands whole');
 });
 
 test('#5391: the Overview names no categories; the "Most open work is in" chips and what fed them are gone', () => {

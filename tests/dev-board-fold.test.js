@@ -1730,12 +1730,11 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   //
   // 752 → 753: #6134's Needs attention card. It needs its own ?demo= fixture
   // (connectors-attention), so it has no check to fold into.
-  // 753 → 748: −5 (One Home, #6361) Home's Discover lane went, and its three
-  // checks with it (populated empty note, the add round trip, the drag onto
-  // the grid), the Communities tab's glyph on All communities (the tab is
-  // drawn on neither bar), and the places nested under a sidebar row (the
-  // hub lists them). Its new states folded into existing checks instead.
-  checkCap.assertPinned(DAPP.tests.length, 748);
+  // 753 → 749: −4 (One Home, #6361) Home's Discover lane went, and its three
+  // checks with it (its empty note, the add round trip, the drag onto the
+  // grid), and the Communities tab's glyph on All communities (the tab is
+  // drawn on neither bar). Its new states folded into existing checks instead.
+  checkCap.assertPinned(DAPP.tests.length, 749);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

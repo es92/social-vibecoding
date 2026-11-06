@@ -2576,9 +2576,9 @@
       "expectText": "Nothing here matches the current search and filters."
     },
     {
-      "name": "Workshop: the Workshop is the place named on the place bar, with the bar's button to the places beside it, and All items' search leaves the Overview whole, with no 'nothing matches' note (#2915, #4417; One Home #6361 put the places behind that button on a wide window too)",
+      "name": "Workshop: the Workshop is the place lit, a dot on its row says All items' search is still on, and the search leaves the Overview whole, with no 'nothing matches' note (#2915, #4417)",
       "path": "/?demo=1&ws=workshop&q=nothing-matches-this#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"workshop\"]:not(:has([data-ws-empty])):has(> [data-place-bar=\"workshop\"] .dev-ws-places-btn + [data-place-title]) [data-ws-part=\"overview\"] + [data-ws-dashboard]",
+      "expectSelector": "body:has([data-places] [data-place=\"workshop\"][aria-current=\"page\"] [data-ws-filtered]) #dev-workshop .dev-ws[data-ws-tab=\"workshop\"]:not(:has([data-ws-empty])):has(> [data-place-bar=\"workshop\"]) [data-ws-part=\"overview\"] + [data-ws-dashboard]",
       "expectText": "All items"
     },
     {
@@ -2664,10 +2664,10 @@
       "expectText": "Recently live"
     },
     {
-      "name": "On a wide window a project page's place bar names the Hub and carries the button to its places (Hub, Needs you, Workshop, #general and its topics), now that the sidebar nests none (#4417; One Home, #6361)",
+      "name": "A project page's places are Hub, Needs you and Workshop, a line, then #general under Channels and its topics under Topics, in the column beside the strip (#4417)",
       "path": "/?demo=1&ws=status#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"status\"] > [data-place-bar=\"status\"] .dev-ws-places-btn[aria-expanded=\"false\"] + h2[data-place-title]",
-      "expectText": "Hub"
+      "expectSelector": "[data-places=\"usernode-2d5619\"] > nav > [data-place=\"status\"][aria-current=\"page\"] + [data-place=\"needs\"] + [data-place=\"workshop\"] + [role=\"separator\"] + [data-places-group=\"channels\"] + [data-places-group=\"topics\"] > [data-place=\"c:onboarding\"]",
+      "expectText": "general"
     },
     {
       "name": "On a wide window the sidebar's Recents lists your communities with the one you are on lit, each row carrying its pin after the link (#3709, D; One Home #6361)",
@@ -4881,6 +4881,12 @@
       "name": "#2800: you are the sidebar's foot, with your Settings beside you (#6019; One Home #6361 draws no Communities row above you, its node kept for #communities)",
       "path": "/?demo=1",
       "expectSelector": "#platform-tabs > #platform-tab-workshop + a#platform-tab-me + a#platform-rail-settings:last-child"
+    },
+    {
+      "name": "#4417, v3: on a desktop a project's places are nested under its row in the sidebar, the place on show lit there (Needs you), with no column beside it",
+      "path": "/?demo=1&ws=needs#app/usernode-2d5619/workshop",
+      "expectSelector": "body:not(:has(#platform-section-column)) #platform-rail-communities > a[data-rail-community=\"usernode-2d5619\"][aria-current=\"page\"][data-rail-open] + .platform-rail-nest [data-places=\"usernode-2d5619\"] [data-place=\"needs\"][aria-current=\"page\"]",
+      "expectText": "Needs you"
     },
     {
       "name": "#2798: the sidebar toggle and the bell show their blue disc on hover only, not at rest",

@@ -114,7 +114,12 @@ import {
   closeLiveApp, currentAppOnScreen, liveAppLabel, LiveAppDot, useCurrentAppSlug, useLiveAppSlugs,
 } from '../app-frame/live-apps';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
+import { devWorkshopStore } from '../dev-board/card/cards-store';
 import { useCommunity } from '../dev-board/workshop/community-card';
+import { itemReturnPlace, openPlace, placeStore } from '../dev-board/workshop/place-store';
+import type { PlaceKey } from '../dev-board/workshop/places';
+import { improveStore } from '../improve/improve-store.js';
+import { ProjectPlaces } from '../dev-board/workshop/project-places';
 import { openCommunitiesSearch } from '../workshop/communities-search';
 import { communityScopeStore, goToCommunity, type CommunityInfo } from '../workshop/community-scope';
 import { pressLitTab } from '../workshop/tab-ladder';
@@ -128,6 +133,9 @@ import { useSidebarRows } from './sidebar-rows';
 
 /** How many communities the sidebar lists. */
 export const RAIL_COMMUNITIES = 5;
+
+/** How many of a community's topics its nested places draw before "Show N more". */
+export const RAIL_TOPICS = 2;
 
 /**
  * The rows the sidebar drags onto My apps (#6025): the communities under
@@ -264,6 +272,37 @@ export function useRailCommunities(): string[] {
   return shown;
 }
 
+/** A community's places, nested under its row: the project's own list, kept short. */
+function RailPlaces({ slug, onPage, needs = 0 }: { slug: string; onPage: boolean; needs?: number }) {
+  const place = useStoreState(placeStore);
+  const v = useStoreState(devWorkshopStore);
+  const improve = useStoreState(improveStore) as { slug: string | null; tab: string | null; subTab: string | null };
+  const community = useCommunity(slug);
+  // In its app, no place is lit: App is.
+  const here = onPage && place.slug === slug;
+  // A request's or a change's page lights the place its back chip returns
+  // to (itemReturnPlace), as All items lights the Workshop: with none lit
+  // the sidebar said nothing of where you were (audit N05, 1 Nov 2026).
+  const onItem = onPage && improve.slug === slug && improve.tab === 'dev' && improve.subTab === 'topic';
+  return (
+    <ProjectPlaces
+      slug={slug}
+      name={community?.name || slug}
+      // Nothing lit until the page has said where it is.
+      place={here ? place.place : (onItem ? itemReturnPlace(slug) as PlaceKey : null)}
+      // Off its page (in its app) the row's own count moves here: it hid
+      // the row's figure when the part opened, and Needs you drew nothing,
+      // so the one count that asks for you vanished (audit N04).
+      owed={here ? place.owed : needs}
+      places={community?.places}
+      // #2915: the Workshop's dot, as the page's own list draws it.
+      filtered={here && v.slug === slug && !!v.meta?.filtered && place.place !== 'all'}
+      fold={RAIL_TOPICS}
+      onPlace={(key) => { openPlace(slug, key); }}
+    />
+  );
+}
+
 function isNativeClick(event: MouseEvent): boolean {
   const nav = (window as unknown as { NavLink?: { isNativeClick?: (e: unknown) => boolean } }).NavLink;
   return !!nav?.isNativeClick?.(event);
@@ -363,12 +402,7 @@ export function RailCommunityRow({ slug, here, record = null, pin }: {
   // Its places open while you are on its page, or in its app when it is one
   // of yours: an app you have not joined shows its App row alone.
   const inside = onPage === slug || onApp === slug;
-  // ONE HOME (#6361): a community's places are no longer nested under its
-  // row. They are on its hub (Hub, Needs you, Workshop, its channels), and
-  // the header's back button returns to Home. What stays under the row is
-  // its App row, only while that app is on screen or kept open behind
-  // another page: the row a running app's green dot and close X live on.
-  const open = false;
+  const open = sidebarRows && (onPage === slug || (onApp === slug && yours));
   const app = hasAppRow(slug, info, list);
   const running = live.includes(slug);
   // The "still open" dot is for an app you are NOT in: it marks the one kept
@@ -389,8 +423,8 @@ export function RailCommunityRow({ slug, here, record = null, pin }: {
   const dragToHome = !pin && sidebarRows && screen === 'home-screen';
   const stuck = !!pin || isPinned(slug);
   const keepTop = () => togglePin({ slug, name, iconUrl: icon.icon_url, iconEmoji: icon.icon_emoji });
-  // The part: its App row alone, while its app runs or is on screen.
-  const part = sidebarRows && app && (running || onApp === slug);
+  // The part: everything while you are in it, its App row alone while its app runs.
+  const part = open || (sidebarRows && app && (running || onApp === slug));
   return (
     <Fragment>
       {/* RECENTS' ROW (One Home, #6361): the link fills the row, and the pin
@@ -460,7 +494,7 @@ export function RailCommunityRow({ slug, here, record = null, pin }: {
         </span>
       ) : null}
       </div>
-      <NestSlot open={!!part} className="platform-rail-nest" rows=".platform-rail-app">
+      <NestSlot open={part} className="platform-rail-nest" rows=".platform-rail-app, .dev-ws-place, .dev-ws-places-head">
         {app ? (
           // A row wrapper, because the close control cannot live inside the
           // anchor: a button in a link is not allowed. The dot stays in the
@@ -517,6 +551,9 @@ export function RailCommunityRow({ slug, here, record = null, pin }: {
             ) : null}
           </div>
         ) : null}
+        <NestSlot open={open} className="platform-rail-nest platform-rail-places" rows=".dev-ws-place, .dev-ws-places-head">
+          <RailPlaces slug={slug} onPage={onPage === slug} needs={needs} />
+        </NestSlot>
       </NestSlot>
     </Fragment>
   );

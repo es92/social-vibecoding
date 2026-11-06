@@ -58,40 +58,44 @@ test('which communities lead with App: not Homeroom\'s own, and not before it is
   assert.equal(hasAppRow('stranger', {}, ['chess']), true, 'one that is not yours is never Homeroom, which every account is in');
 });
 
-test('in its app: the row lit, its App row under it lit without the dot, and no places (One Home, #6361)', () => {
+test('in its app: the community open, App first and lit without the dot, no place lit', () => {
   const html = drawRow({ onApp: 'chess', live: ['chess'] }, { info: CHESS });
-  assert.match(html, /<a class="platform-rail-community" href="#app\/chess\/workshop" data-rail-community="chess" title="Chess" aria-current="page">/);
-  assert.doesNotMatch(html, /data-rail-open|data-places=/, 'a community\'s places are its hub\'s, not the sidebar\'s');
+  assert.match(html, /<a class="platform-rail-community" href="#app\/chess\/workshop" data-rail-community="chess" data-rail-open="" title="Chess" aria-current="page">/);
+  const app = html.indexOf('data-rail-app="chess"');
+  const places = html.indexOf('data-places="chess"');
+  assert.ok(app > 0 && places > app, 'App, then its places');
   assert.match(html, /<div class="platform-rail-nest" data-nest="open"><div class="platform-rail-nest-in"><div class="platform-rail-app-row"><a class="platform-rail-sub platform-rail-app" href="\/app\/chess" data-rail-app="chess" data-live="true" title="Chess app" aria-label="Chess app" aria-current="page">/);
   assert.match(html, /class="platform-rail-sub-glyph"/);
   // No "still open" dot on the app you are in (audit N04): it is for an app
   // kept loaded behind another page, where its close X sits.
   assert.match(html, new RegExp(`<span class="platform-rail-sub-name">${message('core:rail.app')}</span></a>`));
   assert.doesNotMatch(html, /app-live-dot/);
+  assert.match(html, /<div class="platform-rail-nest platform-rail-places" data-nest="open">/, 'the places in a part inside it');
+  assert.doesNotMatch(html.slice(places), /aria-current/, 'in the app, App is lit and no place is');
 });
 
-test('in another community: a running app keeps its App row; a stopped one keeps nothing, on its page too', () => {
+test('in another community: a running app keeps its App row alone; a stopped one keeps nothing', () => {
   const kept = drawRow({ screen: 'app-view', onPage: 'other', live: ['chess'] }, { info: CHESS });
   assert.match(kept, /data-rail-app="chess" data-live="true"/);
   assert.doesNotMatch(kept, /aria-current/, 'nothing of it is lit');
-  assert.doesNotMatch(kept, /data-rail-open|data-places=/);
+  assert.doesNotMatch(kept, /data-rail-open/);
+  assert.doesNotMatch(kept, /data-places=/, 'its places folded away');
   const gone = drawRow({ screen: 'app-view', onPage: 'other', live: [] }, { info: CHESS });
   assert.doesNotMatch(gone, /platform-rail-nest/, 'no part at all');
-  // One Home (#6361): on its page the row is lit and flat; the hub lists
-  // its places and opens its app.
+  // On its page, App is there without the dot until the app has run.
   const page = drawRow({ onPage: 'chess' }, { info: CHESS });
-  assert.match(page, /data-rail-community="chess" title="Chess" aria-current="page"/);
-  assert.doesNotMatch(page, /platform-rail-nest|data-rail-app|data-places=/);
-  // Homeroom's own community: no App row, and no places either.
+  assert.match(page, /<a class="platform-rail-sub platform-rail-app" href="\/app\/chess" data-rail-app="chess" title="Chess app" aria-label="Chess app">/);
+  // Homeroom's own community: its places, and no App row.
   const home = drawRow({ onPage: 'home' }, { slug: 'home', info: { home: { slug: 'home', name: 'Homeroom', selfHosted: true } } });
-  assert.doesNotMatch(home, /data-rail-app|data-places=/);
+  assert.match(home, /data-places="home"/);
+  assert.doesNotMatch(home, /data-rail-app/);
 });
 
 test('in the app of a community you have not joined: its App row alone, lit, and no record read', () => {
   const html = drawRow({ onApp: 'stranger', live: ['stranger'] }, { slug: 'stranger', info: {}, list: ['chess'] });
   assert.match(html, /data-rail-community="stranger" title="stranger" aria-current="page"/, 'lit, named by what is known');
   assert.match(html, /data-rail-app="stranger" data-live="true"[^>]*aria-current="page"/);
-  assert.doesNotMatch(html, /data-places=|data-rail-open/, 'no places');
+  assert.doesNotMatch(html, /data-places=|data-rail-open/, 'no places, so nothing reads its community record');
   // Only a page you are visiting is read for its name.
   assert.match(read(RAIL), /const visit = useCommunity\(c \|\| record \|\| recent \|\| onPage !== slug \? '' : slug\);/);
 });
@@ -132,11 +136,10 @@ test('a still-open app off screen offers its close X; the one on screen does not
   assert.match(css, /\.platform-rail-nest \.platform-rail-app-row:has\(\.platform-rail-live-stop:is\(:hover, :focus-visible\)\) \.platform-rail-live \{\n {4}visibility: hidden;\n {2}\}/);
 });
 
-test('the source: the part holds App alone; the five leave the pins out and keep a running app', () => {
+test('the source: the part holds App, then the places; the five leave the pins out and keep a running app', () => {
   const src = read(RAIL);
-  assert.match(src, /const part = sidebarRows && app && \(running \|\| onApp === slug\);/);
-  assert.match(src, /<NestSlot open=\{!!part\} className="platform-rail-nest" rows="\.platform-rail-app">\s*\{app \? \(/);
-  assert.doesNotMatch(src, /RailPlaces|ProjectPlaces|RAIL_TOPICS/, 'One Home (#6361): no places nested under a row');
+  assert.match(src, /const part = open \|\| \(sidebarRows && app && \(running \|\| onApp === slug\)\);/);
+  assert.match(src, /<NestSlot open=\{part\} className="platform-rail-nest" rows="\.platform-rail-app, \.dev-ws-place, \.dev-ws-places-head">\s*\{app \? \(/);
   assert.match(src, /\(window as unknown as \{ App\?: \{ openAppTab\?: \(slug: string, tab: string\) => void \} \}\)\.App\?\.openAppTab\?\.\(slug, 'app'\);/,
     'App opens through the router, which switches to a kept app');
   // The five are the most recent of yours that are not pinned, and opening
@@ -151,6 +154,12 @@ test('the source: the part holds App alone; the five leave the pins out and keep
   // less the pinned ones.
   assert.match(src, /railRows\(shown, here\.onPage \|\| here\.onApp, here\.live\)/);
   assert.match(src, /\.filter\(\(slug\) => !pinned\.includes\(slug\)\);/);
+  // #18 (19 Oct polish board): the All row states every vote waiting on
+  // you, the tab's own figure, not the remainder after the rows above it.
+  const bar = read('frontend/src/features/nav/tab-bar.tsx');
+  assert.match(bar, /const allVotes = Number\(scope\.badgeNeeds\) \|\| 0;/);
+  assert.match(bar, /key === 'workshop' && allVotes > 0 \? \(\s*<span className="platform-tab-all-votes" aria-label=\{t\('core:tabs\.votesWaiting', \{ count: allVotes \}\)\}>/);
+  assert.doesNotMatch(bar, /votesElsewhere/);
 });
 
 test('the pinned section: its own heading, the pins drawn as rows, the slot while a tile is in the air', () => {
@@ -179,20 +188,20 @@ test('a part inside a part: the inner one opens with the outer, not after it', (
   assert.match(css, /\.platform-rail-nest \.platform-rail-live \{\n {4}width: 8px;\n {4}height: 8px;/, 'the dot at a row\'s size');
 });
 
-test('the row\'s votes stay on it, in its app too, with no places to move them to (audit N04; One Home, #6361)', () => {
+test('in its app, the row\'s votes move to Needs you under it instead of vanishing (audit N04)', () => {
   const info = { chess: { ...CHESS.chess, needs: 2 } };
-  const votes = new RegExp(`<span class="sr-only">${message('core:tabs.votesWaiting', { count: 2 })}</span></a>`);
-  // Another page: the row carries the figure, after its pin, and says it in
-  // words inside its link.
+  // Folded (another page): the row carries the figure, after its pin (One
+  // Home, #6361), and says it in words inside its link.
   const folded = drawRow({ onPage: 'other' }, { info });
-  assert.match(folded, /<div class="platform-rail-row" data-rail-row="chess" data-votes="">/);
   assert.match(folded, /<button type="button" class="platform-rail-pin"[^>]*>[\s\S]*?<\/button><span class="platform-rail-votes" aria-hidden="true">2<\/span><\/div>/);
-  assert.match(folded, votes);
-  // In its app: the same figure, on the same row.
+  assert.match(folded, new RegExp(`<span class="sr-only">${message('core:tabs.votesWaiting', { count: 2 })}</span></a>`));
+  // In its app the part opens: the row gives its figure to Needs you.
   const inApp = drawRow({ onApp: 'chess', live: ['chess'] }, { info });
-  assert.match(inApp, /<span class="platform-rail-votes" aria-hidden="true">2<\/span>/);
-  assert.match(inApp, votes);
-  // An unchosen community's votes stay off it.
+  assert.doesNotMatch(inApp, /platform-rail-votes/);
+  const needs = inApp.slice(inApp.indexOf('data-place="needs"'));
+  assert.ok(inApp.includes('data-place="needs"'), 'Needs you is listed');
+  assert.match(needs.slice(0, 1200), /class="dev-ws-place-count"[^>]*>2<\/span>/, 'and counts the same 2');
+  // An unchosen community's votes stay off both.
   const unchosen = drawRow({ onApp: 'chess', live: ['chess'] }, { info: { chess: { ...info.chess, unchosen: true } } });
-  assert.doesNotMatch(unchosen, /platform-rail-votes/);
+  assert.doesNotMatch(unchosen, /dev-ws-place-count/);
 });

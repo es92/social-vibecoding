@@ -444,10 +444,9 @@ test('a topic\'s chip names where its press goes: a step Back to the place left,
   // The press and the words read the same test.
   assert.match(TOPIC_BACK, /chipFor\(href, workshopTab, stepsBackTo\(href\)\)/);
   assert.match(read('public/js/app.js'), /_stepBackTo\(href\) \{\s*if \(!App\._canStepBackTo\(href\)\) return false;/);
-  // The phone header reads the same answer on a request's page. The
-  // sidebar lists no places since One Home (#6361), so it has none to light.
+  // The sidebar and the phone header read the same answer on a request's page.
   const rail = read('frontend/src/features/nav/rail-communities.tsx');
-  assert.doesNotMatch(rail, /itemReturnPlace|<ProjectPlaces/);
+  assert.match(rail, /place=\{here \? place\.place : \(onItem \? itemReturnPlace\(slug\) as PlaceKey : null\)\}/);
   assert.match(read('frontend/src/features/nav-drawer/nav-drawer.tsx'), /improve\.subTab === 'topic'\s*\? itemReturnPlace\(slug\)/);
 });
 

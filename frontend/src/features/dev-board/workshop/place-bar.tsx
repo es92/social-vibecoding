@@ -12,9 +12,9 @@
  * dot, with an `sr-only` phrase, while something in the project waits for
  * you: votes owed, or unread in a channel you are not reading.
  *
- * On a wide window the bar is the page's title row that names the place, in
- * the page's own ink, with the same button to the tray: since One Home
- * (#6361) the sidebar nests no places under a community's row.
+ * On a wide window the list is nested under the community's row in the
+ * sidebar (../../nav/rail-communities.tsx), so the bar is the page's title
+ * row that names the place, in the page's own ink, with no button (app.css).
  *
  * It keeps the band's box (`.dev-ws-tabs.dev-ws-band` > `.dev-ws-tabtrack`,
  * `data-ws-band`): it is what pins under the header, and what the pinned

@@ -3702,9 +3702,9 @@ export function DevWorkshop(): ReactNode {
      #4417: the four tabs are gone; the project's places are one list (Hub,
      Needs you, Workshop, then its channels: ./project-places.tsx). On a
      phone it is a tray behind the place bar's button, the bar naming where
-     you are (./place-bar.tsx); on a wide window the bar is the page's title
-     row, with the same button (One Home, #6361: the sidebar nests no places
-     any more). Under the bar, All items leads with its way back to
+     you are (./place-bar.tsx); on a wide window it is nested under the
+     community's row in the sidebar (../../nav/rail-communities.tsx) and the
+     bar is the page's title row. Under the bar, All items leads with its way back to
      the Workshop it is a page of.
 
      THE BAR IS THE BAND'S BOX, ON EVERY PAGE (#3651). It is what pins, and
