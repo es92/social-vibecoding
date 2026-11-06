@@ -887,6 +887,10 @@
     "text": "Communities",
     "description": "Heading over the cards of public communities at the bottom of Home for a visitor who is not signed in."
   },
+  "join.featured": {
+    "text": "Featured",
+    "description": "Small heading over the sideways row of communities the platform features, the first row of cards in Communities to join on Home (signed in or out)."
+  },
   "join.votes_one": {
     "text": "{{count}} up for a vote",
     "description": "Line on a community's card in Communities to join: how many changes are waiting for its members' votes. Singular."

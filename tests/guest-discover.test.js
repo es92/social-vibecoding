@@ -146,10 +146,12 @@ const discoverProps = (over = {}) => ({
 
 test('every card opens its project\'s page, no card is locked, and each project is one card: featured first, then the most active (One Home, #6361)', () => {
   const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps());
-  // The signed-out Home's Communities: one list, what an admin featured (in
-  // its order) first, then the rest by people active. No Featured lane.
-  assert.deepEqual([...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]), []);
-  assert.deepEqual([...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]), ['todo-list', 'game-corner', 'fresh-one']);
+  // The signed-out Home's Communities: Featured first, what an admin
+  // featured in its order, as one sideways row (One Home follow-up, #6361);
+  // then the rest by people active, each project once.
+  assert.deepEqual([...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]), ['todo-list', 'game-corner']);
+  assert.deepEqual([...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]), ['fresh-one']);
+  assert.ok(html.indexOf('data-home-join-featured=""') < html.indexOf('<article data-guest-card="fresh-one"'), 'the strip leads');
   // ONE link per card, its name, at the page's clean address a search
   // engine can follow; it stretches over the whole card, so the picture and
   // the gaps open it too, and nothing is nested in a link.
@@ -259,9 +261,10 @@ test('a card\'s only buttons are Pin and Join, under its words: Try it is the pr
   }
   // Pin keeps it on this device; Join asks the landing to sign up for it.
   assert.match(read(DISCOVER), /onPin=\{\(app\) => \{ toggleDevicePin\('communities', app\.slug\); \}\}\s*onJoin=\{\(app\) => \{ onIntent\?\.\(\{ kind: 'join', app \}\); \}\}/);
-  // A waitlisted account is signed in: every project is still there.
+  // A waitlisted account is signed in: every project is still there,
+  // Featured's and the rest.
   const signedIn = renderComponent(DISCOVER, 'GuestDiscover', discoverProps({ signedIn: true }));
-  assert.deepEqual([...signedIn.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]), ['todo-list', 'game-corner', 'fresh-one']);
+  assert.deepEqual([...signedIn.matchAll(/<article data-guest-(?:featured|card)="([^"]+)"/g)].map((m) => m[1]), ['todo-list', 'game-corner', 'fresh-one']);
   assert.doesNotMatch(signedIn, /data-guest-join=/);
 });
 
@@ -270,6 +273,41 @@ const MANY = Array.from({ length: 20 }, (_, i) => ({
   slug: `a${String(i + 1).padStart(2, '0')}`, name: `App ${i + 1}`, active_users: 20 - i, member_count: 0,
   created_at: ago(200), requires_login: i % 2 !== 0, guest_ready: false, url: `https://a${i + 1}.example`, contributors: [],
 }));
+
+test('Featured is the first strip of Communities to join, signed in or out: the chosen kind of it, none while searching, never twice', () => {
+  const { CommunitiesToJoin } = loadTsx(JOIN);
+  const { renderToHtml, createElement } = require('./lib/render-tsx');
+  const draw = (over = {}) => renderToHtml(createElement(CommunitiesToJoin, {
+    apps: APPS, exclude: new Set(), signedIn: true, query: '', onJoin() {}, ...over,
+  }));
+  const featuredOf = (html) => [...html.matchAll(/data-guest-featured="([^"]+)"/g)].map((m) => m[1]);
+  const cardsOf = (html) => [...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]);
+  const html = draw();
+  assert.deepEqual(featuredOf(html), ['todo-list', 'game-corner'], 'in the order an admin set');
+  assert.deepEqual(cardsOf(html), ['fresh-one'], 'and not again in the grid');
+  assert.match(html, /<div data-home-join-featured=""[^>]*><h3 id="home-join-featured-label" class="text-xs font-bold uppercase tracking-\[0\.06em\][^"]*">Featured<\/h3><div role="list" aria-labelledby="home-join-featured-label" class="[^"]*\bsnap-x\b[^"]*\boverflow-x-auto\b/);
+  assert.equal(message('home:join.featured'), 'Featured');
+  // Each featured card keeps what a card can do: Join, signed in.
+  assert.match(cardOf(html, 'game-corner'), /data-home-join="game-corner"/);
+  // A community already on this Home is in neither.
+  const mine = draw({ exclude: new Set(['todo-list']) });
+  assert.deepEqual(featuredOf(mine), ['game-corner']);
+  // Searching: no strip; the matches are the grid, featured first.
+  const found = draw({ query: 'o' });
+  assert.deepEqual(featuredOf(found), []);
+  assert.deepEqual(cardsOf(found), ['todo-list', 'game-corner', 'fresh-one']);
+  assert.doesNotMatch(found, /data-home-join-featured/);
+  // Signed out the same strip, with Pin then Join on each card, and its own
+  // label id (the landing and Home share a document).
+  const guest = draw({ signedIn: false, pinned: new Set(), onPin() {} });
+  assert.deepEqual(featuredOf(guest), ['todo-list', 'game-corner']);
+  assert.match(guest, /id="guest-join-featured-label"/);
+  assert.match(cardOf(guest, 'todo-list'), /data-home-pin="todo-list"[\s\S]*data-home-join="todo-list"/);
+  // Nothing featured: no strip, and the grid is everything.
+  const none = draw({ apps: APPS.map((a) => ({ ...a, featured: false })) });
+  assert.doesNotMatch(none, /data-home-join-featured/);
+  assert.deepEqual(cardsOf(none), ['game-corner', 'todo-list', 'fresh-one']);
+});
 
 test('the list is the same cards, most active first, eight at a time, more as you scroll near its end (One Home, #6361)', () => {
   const html = renderComponent(DISCOVER, 'GuestDiscover', discoverProps({ apps: MANY }));

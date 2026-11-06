@@ -8,8 +8,12 @@
  *                and pins the community; the card leaves this list then).
  *   signed out   Pin (kept on the device) and Join (which asks to sign up).
  *
- * Kind chips over the cards; featured first, then the most used; more load
- * as the reader reaches the end (an IntersectionObserver on the last card's
+ * Kind chips over the cards. Then FEATURED, the communities an admin
+ * featured, in their order (featured_order), as one sideways row of the
+ * same cards: the first strip of the section, of the chosen kind, and left
+ * out while a search is typed (its matches are the grid, featured first).
+ * Then the rest, the most used first; more load as the reader reaches the
+ * end (an IntersectionObserver on the last card's
  * sentinel, inside Home's own scroller), with two placeholder cards while
  * they come. The directory is GET /api/public/apps, which answers every
  * public project at once today, so "more" pages through it here.
@@ -20,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Chip, ChipRail } from '@/components/ui/chip';
 
 import { useMessages } from '../../lib/i18n/react';
-import { CARD_GRID, Card } from '../guest/guest-discover';
+import { CARD_GRID, Card, SMALL_CAPS_LABEL } from '../guest/guest-discover';
 import { featuredApps, presentCategories, sortApps, type GuestApp } from '../guest/guest-data';
 import { SectionHeading } from './panels/ui';
 import { matchesQuery } from './use-home-query';
@@ -56,9 +60,14 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
 
   const pool = useMemo(() => (apps || []).filter((a) => !exclude.has(a.slug)), [apps, exclude]);
   const kinds = useMemo(() => presentCategories(pool), [pool]);
-  const list = useMemo(() => joinOrder(pool)
-    .filter((a) => !kind || a.category === kind)
-    .filter((a) => matchesQuery(query, a.name, a.slug, a.description)), [pool, kind, query]);
+  const featured = useMemo(() => (query ? [] : featuredApps(pool).filter((a) => !kind || a.category === kind)), [pool, kind, query]);
+  const list = useMemo(() => {
+    const lead = new Set(featured.map((a) => a.slug));
+    return joinOrder(pool)
+      .filter((a) => !lead.has(a.slug))
+      .filter((a) => !kind || a.category === kind)
+      .filter((a) => matchesQuery(query, a.name, a.slug, a.description));
+  }, [pool, featured, kind, query]);
   useEffect(() => { setShown(JOIN_PAGE); }, [kind, query]);
   const more = list.length > shown;
 
@@ -82,6 +91,34 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
   }, [more, shown]);
 
   if (query && !list.length) return null;
+  const footerFor = (app: GuestApp) => (signedIn ? (
+      <>
+        <span className="min-w-0 flex-1 truncate text-[12.5px] text-zinc-500 dark:text-zinc-400">
+          {app.open_votes
+            ? t('home:join.votes', { count: app.open_votes })
+            : t('home:join.members', { count: app.member_count || 0 })}
+        </span>
+        <Button type="button" variant="pillAccent" size="sm" ink="solid" className="h-8 py-0" data-home-join={app.slug}
+          aria-label={t('home:join.buttonNamed', { community: app.name })}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin(app); }}>
+          {t('home:join.button')}
+        </Button>
+      </>
+    ) : (
+      <>
+        <Button type="button" variant="pillNeutral" size="sm" ink="neutral" className="h-8 flex-1 py-0" data-home-pin={app.slug}
+          aria-pressed={!!pinned?.has(app.slug)}
+          aria-label={t('home:join.pinNamed', { community: app.name })}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin?.(app); }}>
+          {pinned?.has(app.slug) ? t('home:join.pinned') : t('home:join.pin')}
+        </Button>
+        <Button type="button" variant="pillAccent" size="sm" ink="solid" className="h-8 py-0" data-home-join={app.slug}
+          aria-label={t('home:join.buttonNamed', { community: app.name })}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin(app); }}>
+          {t('home:join.button')}
+        </Button>
+      </>
+    ));
   const heading = signedIn ? t('home:join.heading') : t('home:join.headingSignedOut');
   return (
     // The id is the signed-in Home's (the tours and the declared checks find
@@ -101,6 +138,22 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
           ))}
         </ChipRail>
       ) : null}
+      {featured.length ? (
+        <div data-home-join-featured="" className="pb-4">
+          <h3 id={signedIn ? 'home-join-featured-label' : 'guest-join-featured-label'} className={`${SMALL_CAPS_LABEL} px-1 pb-2`}>{t('home:join.featured')}</h3>
+          <div
+            role="list"
+            aria-labelledby={signedIn ? 'home-join-featured-label' : 'guest-join-featured-label'}
+            className="-mx-3 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {featured.map((app, i) => (
+              <div key={app.slug} role="listitem" className="flex w-[min(17rem,72vw)] shrink-0 snap-start [&>article]:flex-1">
+                <Card app={app} eager={i < 3} featured footer={footerFor(app)} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {!apps ? (
         <div className={`${CARD_GRID} px-1`} aria-label={ta('auth:guest.loading')}>
           {[0, 1, 2, 3].map((i) => <span key={i} className="aspect-[16/10] rounded-[20px] bg-black/5 dark:bg-white/10" />)}
@@ -112,38 +165,11 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
               key={app.slug}
               app={app}
               eager={i < 4}
-              footer={signedIn ? (
-                <>
-                  <span className="min-w-0 flex-1 truncate text-[12.5px] text-zinc-500 dark:text-zinc-400">
-                    {app.open_votes
-                      ? t('home:join.votes', { count: app.open_votes })
-                      : t('home:join.members', { count: app.member_count || 0 })}
-                  </span>
-                  <Button type="button" variant="pillAccent" size="sm" ink="solid" className="h-8 py-0" data-home-join={app.slug}
-                    aria-label={t('home:join.buttonNamed', { community: app.name })}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin(app); }}>
-                    {t('home:join.button')}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button type="button" variant="pillNeutral" size="sm" ink="neutral" className="h-8 flex-1 py-0" data-home-pin={app.slug}
-                    aria-pressed={!!pinned?.has(app.slug)}
-                    aria-label={t('home:join.pinNamed', { community: app.name })}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin?.(app); }}>
-                    {pinned?.has(app.slug) ? t('home:join.pinned') : t('home:join.pin')}
-                  </Button>
-                  <Button type="button" variant="pillAccent" size="sm" ink="solid" className="h-8 py-0" data-home-join={app.slug}
-                    aria-label={t('home:join.buttonNamed', { community: app.name })}
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin(app); }}>
-                    {t('home:join.button')}
-                  </Button>
-                </>
-              )}
+              footer={footerFor(app)}
             />
           ))}
         </div>
-      ) : (
+      ) : featured.length ? null : (
         <p className="px-2 py-4 text-[14px] text-zinc-500 dark:text-zinc-400">{t('home:join.allJoined')}</p>
       )}
       {more ? (

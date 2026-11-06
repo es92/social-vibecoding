@@ -5018,11 +5018,11 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Signed out, 3 loads: the landing shows its story or pitch, with its project cards, each with Pin then Join (One Home, #6361), and not \"could not load\" (#6003, #6015)",
+      "name": "Signed out, 3 loads: the landing shows its story or pitch, with its project cards led by Featured's row, each with Pin then Join (One Home, #6361), and not \"could not load\" (#6003, #6015)",
       "path": "/?shot=anon#landing",
       "repeat": 3,
       "persona": "guest",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-guest-discover] [data-guest-card-footer] > [data-home-pin][aria-pressed=\"false\"] + [data-home-join]):not(:has([data-guest-retry])) :is([data-landing-story] h1, div:not(.hidden) > h1)",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-guest-discover] [data-home-join-featured] [data-guest-card-footer] > [data-home-pin][aria-pressed=\"false\"] + [data-home-join]):not(:has([data-guest-retry])) :is([data-landing-story] h1, div:not(.hidden) > h1)",
       "allowConsoleErrors": true
     },
     {
