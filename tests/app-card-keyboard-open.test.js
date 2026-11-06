@@ -153,18 +153,3 @@ test('Discover card: Enter/Space on the card press it; keys on the ⊕ badge do 
     assert.equal(ev.currentTarget.clicks, 0, `${JSON.stringify(ev.key)} is not a card press`);
   }
 });
-
-test('Discover card: the key press reuses Home\'s click wiring, not a second opener', () => {
-  // The keyboard path is a click() on the card, so it runs exactly what a tap
-  // runs: _wireDiscoveryCards' click activation, with its demo / not-running
-  // guards and its #apps/<slug> detail route. Pin that the wiring is still a
-  // click binding on `.app-card`, and that discover.tsx sets no hash itself.
-  const home = read('frontend/src/features/home/home.js');
-  const wire = home.slice(home.indexOf('_wireDiscoveryCards(listEl, onChange) {'));
-  assert.match(wire.slice(0, 4000), /querySelectorAll\('\.app-card'\)/);
-  assert.match(wire.slice(0, 4000), /NavLink\.wireModified\(card, hrefFor, activate\)/);
-  assert.match(wire.slice(0, 4000), /card\.addEventListener\('click', activate\)/);
-  const src = read('frontend/src/features/home/panels/discover.tsx');
-  assert.doesNotMatch(src, /location\.hash\s*=/);
-  assert.match(src, /e\.currentTarget\.click\(\)/);
-});

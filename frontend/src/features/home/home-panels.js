@@ -1,9 +1,8 @@
 // Home-screen sections (issue #911) — the blocks stacked under the launcher
-// grid. THE UI OVERHAUL fixed their order and their hosts:
+// grid. THE UI OVERHAUL fixed their order and their hosts; One Home (#6361)
+// took Discover's lane off Home (its directory is Communities to join), so
+// one is left:
 //
-//   discover   — the admin-curated featured tiles, the Popular lane, and
-//                "See all". The shell's ONLY door to the app
-//                directory, which is why it cannot be hidden.
 //   challenges — what the viewer can do next: their First challenges while
 //                any is unfinished, then up to three open ones, in the
 //                Challenges tab's order, or one line when nothing is open. "See all"
@@ -350,7 +349,6 @@ const HomePanels = {
   // there" one list rather than a call site per block. `create` left this map
   // when Create app became the launcher grid's trailing tile.
   SECTION_HOSTS: {
-    discover: 'home-discover-section',
     challenges: 'home-challenges-section',
   },
 
@@ -389,7 +387,6 @@ const HomePanels = {
     };
     panelsStore.set({
       painted: true,
-      discover: viewFor('discover', HomePanels.discoverView),
       challenges: viewFor('challenges', HomePanels.challengesView),
     });
   },
@@ -637,90 +634,6 @@ const HomePanels = {
   // `challengesView` above; the second counted the standings-preview rows the
   // renderer had actually drawn, and went with the preview itself.
 
-  // ── Discover ───────────────────────────────────────────────────────
-  //
-  // The former "Featured apps" section, now a widget in the grid: the
-  // admin-curated tiles plus the way into the #apps directory. The tiles are
-  // the same per-viewer `featured` flags GET /api/apps already serializes
-  // (Home.featuredApps derives them; no second query), and the browse
-  // control is the same #home-browse-btn that used to sit under the old card.
-  //
-  // Tiles are the COMPACT 40px treatment (the widget-strip tile, not the
-  // 56px launcher card): the block is ~366px wide on a phone and ~397px on
-  // desktop, and a full card simply does not fit.
-  //
-  // ONE SHAPE AT EVERY WIDTH. It used to be two (#949), because the widget's
-  // registry footprint was asymmetric — 4x1 on a phone, 2x2 on desktop — and
-  // the content had to follow: a phone got the title bar and the featured
-  // lane and nothing else, because the second lane would not fit the one row
-  // it owned. THE UI OVERHAUL made Discover a fixed section, so the Popular
-  // lane — the public communities this viewer hasn't joined, most members
-  // first (Home.popularApps) — renders everywhere. That is the point of an area
-  // called Discover rather than a strip of curated tiles: the curated lane
-  // alone is whatever an admin got round to featuring.
-  //
-  // THE BROWSE CONTROL RIDES IN THE TITLE BAR, not in a footer of its own.
-  // Discover has ONE destination, so it belongs beside the title rather than
-  // in 27px of chrome under two lanes. (Challenges' "See all" sits in its
-  // heading for the same reason.)
-  //
-  // The browse control ALWAYS renders — it is THE discovery path, so it must
-  // not depend on curation existing. With nothing left to feature the tile
-  // lane is dropped entirely (rather than drawn empty) and one centred line
-  // takes its place.
-  discoverView(panel) {
-    const hasHome = !!(window.Home && typeof Home.featuredApps === 'function');
-    const featured = hasHome ? Home.featuredApps(Home._apps || []) : [];
-    // The "Popular" lane was DESKTOP ONLY: it was the second row the widget
-    // earned at its 2x2 desktop footprint, and there was no room for it in the
-    // one cell it owned on a phone. A fixed section has room at every width, so
-    // it always renders now — which is the point of the area being called
-    // Discover rather than being a strip of curated tiles.
-    const popular = (hasHome && typeof Home.popularApps === 'function')
-      ? Home.popularApps(Home._apps || []) : [];
-    return {
-      key: panel.key,
-      title: panel.title || message('home:discover.fallbackTitle'),
-      featured: featured.map((a) => HomePanels.discoverTileView(a)),
-      popular: popular.map((a) => HomePanels.discoverTileView(a)),
-    };
-  },
-
-  // One compact discovery tile. `added` is the whole of the +/✓ badge's
-  // treatment, and it is read HERE rather than in the component because
-  // `Home.isYours` is the same predicate the launcher grid partitions on —
-  // the badge and "Your apps" can never disagree about what is added.
-  //
-  // The icon is spelled out rather than delegated to AppCard.iconViewFor for
-  // one reason: this module has no import of the card builders and the tests
-  // that run it in a vm supply no binding for one. The three kinds and their
-  // priority order are the same, and tests/home-panels-render.test.js pins
-  // that against the shared helper.
-  discoverTileView(app) {
-    let icon;
-    if (app.icon_url) icon = { kind: 'image', src: app.icon_url };
-    else if (app.icon_emoji) icon = { kind: 'emoji', emoji: app.icon_emoji };
-    else icon = { kind: 'letter', letter: String(app.name || '?').charAt(0).toUpperCase() };
-    const blurb = HomePanels.appBlurb(app);
-    return {
-      slug: app.slug,
-      name: String(app.name || ''),
-      status: String(app.status || ''),
-      demo: !!app.demo,
-      added: !!(window.Home && Home.isYours && Home.isYours(app)),
-      joined: !!(window.Home && Home.isJoined && Home.isJoined(app)),
-      icon,
-      illustration: app.featured_illustration || null,
-      blurb,
-      // The facts line is the fallback for a missing description, never a
-      // second line under one — the sentence and the same facts again is
-      // noise on a 152px card.
-      meta: blurb ? null
-        : (window.Home && Home.discoverMetaLine && Home.discoverMetaLine(app)) || null,
-      contributors: Number(app.contributor_count) || 0,
-    };
-  },
-
   // The card's sentence. There is no description COLUMN on `apps` — the
   // directory's rows derive a meta line instead — so the one place an app can
   // say what it is in its own words is its manifest, and the row already
@@ -896,14 +809,11 @@ const HomePanels = {
   // expand toggle, the ⋮, Discover's browse control, and the create tile's two
   // branches.
   //
-  // Two of its calls did not become props, for two different reasons:
+  // Two of its calls did not become props. `Home._wireDiscoveryCards(lane)`
+  // ran from the Discover lane's effect until One Home (#6361) took the lane
+  // off Home; it went with it. And:
   //
-  //   * `Home._wireDiscoveryCards(lane)` still runs, from an effect in
-  //     ./panels/discover.tsx. It binds tap-to-open, the modified-click anchor
-  //     and the +/✓ badge — attaching listeners to nodes and writing no
-  //     markup, which is the split AGENTS.md sanctions and the same one
-  //     app-grid.tsx makes for the canvas recognizer.
-  //   * `Home.wireCreateButtons()` does NOT, and is gone. It was a `cloneNode`
+  //   * `Home.wireCreateButtons()` is gone. It was a `cloneNode`
   //     + `replaceChild` — a structural DOM write, and discipline the string
   //     renderer needed only because every paint rebuilt the node. React keeps
   //     the element and the handler is a prop, so both problems go together;

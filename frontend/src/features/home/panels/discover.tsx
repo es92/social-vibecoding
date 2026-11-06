@@ -1,81 +1,24 @@
 /**
- * The Discover block: the admin-curated apps, the most-used apps this viewer
- * doesn't have yet, and the way into the `#apps` directory.
+ * The Discover card, drawn now only as the featured-illustration editor's
+ * preview (../../apps/featured-illustration-editor.tsx).
  *
- * ── The lane is a RAIL OF CARDS now, not a grid of icons ──────────────
- *
- * It was six 40px icon tiles in a grid inside the block's white card, so the
- * most an area called Discover could say about an app was its name, clamped
- * to two lines at 9.6px. The homescreen design draws it as the reference
- * does: a horizontal rail of cards, each with art, the app's name, its own
- * sentence and how many people built it — which is what makes the area answer
- * "should I open this?" rather than "here are some logos".
- *
- * What that costs and why it is paid: a rail is taller than a lane (a card is
- * ~13rem against the tile's ~5.25rem). The block's height cap is long gone —
- * a section is as tall as its content — and the launcher is a scrolling feed,
- * so the cost is scroll rather than clipping. What it buys is the sentence: an
- * app that says what it is gets opened, and the directory is one tap away for
- * everything else.
- *
- * ── ONE LANE, NOT TWO ─────────────────────────────────────────────────
- *
- * Discover is ONE category. It used to draw two rails — the curated apps,
- * then a "Popular" caption row, then the most-used apps this viewer doesn't
- * have — and the caption was the only thing saying they were different. The
- * distinction is an implementation detail of how the list is assembled, not
- * something a reader of the home feed has to be told, so both sources now
- * flow into a single continuous rail under the one "Discover" heading.
- *
- * What did NOT change: the ORDER. Curated first (by `featured_order`), then
- * popular (public communities you have not joined, by members) — exactly the sequence the two rails drew in,
- * concatenated. `discoverView` still derives the two lists separately and
- * both counts are still stamped on the article, because they describe the
- * block's composition and dapp.json selects on them; only the rendering is
- * flat.
- *
- * ── The tiles keep Home's wiring ─────────────────────────────────────
- *
- * `Home._wireDiscoveryCards(lane)` binds tap-to-open, the modified-click
- * anchor and the +/✓ badge. It selects on `.app-card`, `.card-add-btn` and
- * `.card-menu-btn`, so the CARD keeps those class names however it is drawn;
- * it attaches listeners and writes no markup, which is what keeps one owner
- * for the subtree. Per LANE, not per block: a lane whose cards were never
- * wired looks identical in a screenshot while every tap in it is dead. With
- * the merge there is exactly one lane to hand it, which retires the whole
- * class of bug where the sweep bound the first rail and left the second
- * inert.
- *
- * It is also IDEMPOTENT (#1567), which the effect below now depends on: the
- * badge really does flip between renders since an add repaints in place, and
- * React hands back the same card elements it kept.
- *
- * ── AND THE RAIL IS A DRAG SURFACE (#1763) ────────────────────────────
- *
- * A card can be long-pressed and dragged onto the launcher grid above, which
- * adds the app AND places it in the cell it was dropped in — the ⊕ badge can
- * only append it wherever the layout happens to have room. That is the kit's
- * own placement recognizer, attached per LANE by the second effect below and
- * driven entirely by `Home._attachDiscoverPlacement`; nothing about it lives
- * here, for the same reason none of the click wiring does.
- *
- * It also means the rail may not deny vertical panning. `.home-discover-rail`
- * declares `touch-action: pan-x pan-y` for that (#1762) — `pan-x` alone took
- * the feed's own scroll away from every touch landing on a card — and the
- * lift survives it because the kit arms on a long press with a movement slop:
- * a scroll cancels the press rather than competing with it.
+ * One Home (#6361) took the Discover lane off Home: its directory is
+ * Communities to join (../communities-to-join.tsx), and the lane, its rail and
+ * its wiring went with it. The card stays because an illustration is still
+ * framed and tinted against it: the art box, the tint, the name, the sentence
+ * and the builders line, in the shape the lane drew them.
  */
 
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 
-import { CheckIcon, ChevronRightIcon, PlusWideIcon } from '@/components/ui/icons';
+import { CheckIcon, PlusWideIcon } from '@/components/ui/icons';
 
 import { clampFrame } from '../../../lib/illustration-framing';
 
 import type { IconView } from '../grid-store';
 import { useMessages } from '../../../lib/i18n/react';
-import type { DiscoverTileView, DiscoverView } from '../panels-store';
-import { PanelShell, cardTint } from './ui';
+import type { DiscoverTileView } from '../panels-store';
+import { cardTint } from './ui';
 
 function home(): any {
   return (typeof window !== 'undefined' ? (window as any).Home : null) || null;
@@ -260,112 +203,3 @@ export function DiscoverCard({ tile, preview = false, previewTheme }: { tile: Di
   );
 }
 
-function Lane({ tiles, extraClass }: { tiles: DiscoverTileView[]; extraClass?: string }) {
-  const laneRef = useRef<HTMLDivElement | null>(null);
-
-  // Re-bind whenever the tiles change identity — a slug added or removed
-  // replaces the element the handler was on. Home owns every callback; this
-  // owns only WHEN the binding happens.
-  //
-  // The `added` half of the key is no longer hypothetical: #1567 repaints the
-  // rail the moment the badge is tapped, so this effect re-runs over cards
-  // React KEPT (they are keyed by slug). Re-binding them would give one badge
-  // two click handlers and make a single tap toggle twice; _wireDiscoveryCards
-  // skips what it has already wired, so the second sweep only ever picks up
-  // genuinely new cards.
-  useEffect(() => {
-    const el = laneRef.current;
-    if (el) home()?._wireDiscoveryCards?.(el);
-    // The screenshot state (?shot=discover-drag) needs A CARD to lift, and
-    // on first mount this lane has none: the tiles arrive with their own
-    // fetch. The effect below runs once, finds nothing, and returns — and
-    // nothing called it again, because the grid's own post-commit effect
-    // (the other caller) does not re-commit when a PANEL's data lands. So
-    // the state painted only when the cards happened to beat the mount, and
-    // stopped painting at all once curation (#1753) changed how the lanes
-    // fill. Calling it here as well is the fix: this effect already runs on
-    // every tile change, and the state is repeatable by design.
-    home()?._maybeShowShotIncoming?.();
-  }, [tiles.map((t) => `${t.slug}:${t.added}:${t.joined}`).join(',')]);
-
-  // The drag-to-add recognizer (#1763), and the screenshot state that stands
-  // in for it (?shot=discover-drag). ONCE PER LANE, not once per tile change:
-  // the kit binds to this element and re-queries its items on every press, so
-  // cards coming and going need no re-attachment — unlike the click wiring
-  // above, which is per element. Two lanes means two handles, which is why
-  // Home hands one back rather than parking it on itself.
-  useEffect(() => {
-    const el = laneRef.current;
-    if (!el) return undefined;
-    home()?._maybeShowShotIncoming?.();
-    return home()?._attachDiscoverPlacement?.(el) || undefined;
-  }, []);
-
-  return (
-    <div
-      ref={laneRef}
-      className={`home-discover-lane home-discover-rail${extraClass ? ` ${extraClass}` : ''}`}
-    >
-      {tiles.map((tile) => <DiscoverCard key={tile.slug} tile={tile} />)}
-    </div>
-  );
-}
-
-/**
- * NO CARD AROUND THE RAILS. `PanelShell` still draws the article — it is what
- * carries `data-panel` and the lane stamps — but without the white plate: the
- * cards ARE the surface now, and a white box behind a row of tinted cards is
- * a second frame around things that already have one. It also lets the rail
- * bleed to both screen edges, which is the affordance that says the row
- * continues (see `.home-discover-rail` in app.css).
- */
-export function DiscoverPanel({ view }: { view: DiscoverView }) {
-  const t = useMessages('home');
-  // Curated first, then popular — the same order the two rails drew in, now
-  // as one list. Deduped by slug because the two derivations are independent:
-  // `popularApps` excludes `featured` today, but a flat lane is where that
-  // would show up as the same card twice rather than as one card per rail.
-  const seen = new Set<string>();
-  const tiles = [...view.featured, ...view.popular]
-    .filter((tile) => (seen.has(tile.slug) ? false : (seen.add(tile.slug), true)));
-
-  return (
-    <PanelShell
-      panelKey={view.key}
-      plate="none"
-      stamps={{ featured: view.featured.length, popular: view.popular.length }}
-    >
-      {tiles.length ? (
-        <Lane tiles={tiles} />
-      ) : (
-        /* #1913: the empty state is a CARD, not a grey caption. It was one
-           centred 12px line, which read as an error note where the rail of
-           cards usually is. Now it wears the rail's own card language — a
-           tinted plate with a hairline — and the whole plate is the way on
-           to the directory, the one thing there is to do here. A fixed tint
-           rather than `cardTint`: it is not an app, so there is no slug to
-           hash, and a constant keeps the prerender and the client equal.
-
-           It is the WHOLE block's empty state now. With two rails it stood
-           in for the curated half only, so it could sit directly above six
-           perfectly good popular cards; one lane makes that a contradiction,
-           and the wording says "discover" because that is the category it is
-           reporting on. */
-        <a
-          href="#apps"
-          className="home-discover-lane home-discover-empty home-tint-2 flex items-center gap-3"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
-              {t('home:discover.empty.title')}
-            </span>
-            <span className="block text-[13px] leading-snug text-zinc-600 dark:text-zinc-300">
-              {t('home:discover.empty.detail')}
-            </span>
-          </span>
-          <ChevronRightIcon className="w-5 h-5 shrink-0 text-zinc-500 dark:text-zinc-400" aria-hidden="true" />
-        </a>
-      )}
-    </PanelShell>
-  );
-}

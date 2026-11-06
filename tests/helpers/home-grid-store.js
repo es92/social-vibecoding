@@ -82,7 +82,6 @@ function installGridStore(sandbox) {
 /** Mirrors INITIAL_PANELS in frontend/src/features/home/panels-store.ts. */
 const INITIAL_PANELS = {
   painted: false,
-  discover: null,
   challenges: null,
 };
 

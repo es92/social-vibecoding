@@ -235,34 +235,6 @@ export function SectionHeading({ children, action }: {
 }
 
 /**
- * Discover's one destination — the `#apps` directory.
- *
- * Lifted out of DiscoverPanel with the rest of the block's chrome, so the
- * section heading can render it beside the label. Same id, same classes, same
- * hash navigation: `#home-browse-btn` is selected on from dapp.json.
- */
-export function BrowseLink() {
-  const t = useMessages('home');
-  return (
-    <button
-      type="button"
-      id="home-browse-btn"
-      className="home-panel-browse shrink-0 flex items-center gap-1 text-[14px] font-semibold text-[color:var(--accent)] hover:underline whitespace-nowrap un-touch-target"
-      title={t('home:discover.browseAll.tip')}
-      aria-label={t('home:discover.browseAll.label')}
-      onClick={(e) => {
-        e.stopPropagation();
-        // Through the hash, so the browse screen gets a real history entry and
-        // the OS back gesture returns here.
-        window.location.hash = '#apps';
-      }}
-    >
-      <span className="whitespace-nowrap">{t('home:discover.browseAll.text')}</span>
-    </button>
-  );
-}
-
-/**
  * The bordered block: its body, and nothing else.
  *
  * IT HAS NO TITLE BAR ANY MORE. The bar held the block's title until the

@@ -396,7 +396,9 @@ test('the panel sections publish through a store, on one paint', () => {
 
   const state = JSON.parse(JSON.stringify(store.get()));
   assert.equal(state.painted, true, 'Home.render() paints the panels too');
-  assert.equal(state.discover.title, 'Discover');
+  // One Home (#6361): the registry's `discover` marker builds nothing now,
+  // as `create` does not: Home draws no Discover lane.
+  assert.equal('discover' in state, false, 'no discover block in the panels model');
   assert.equal(state.challenges, null, 'a block the registry does not carry is absent');
   // The server's registry still lists `create` (an older cached shell renders
   // its section from it), but the panels no longer build it: Create is the

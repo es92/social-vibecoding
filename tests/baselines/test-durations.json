@@ -703,8 +703,6 @@
 "tests/dialog-import-pr.test.js":[0.3,0.7],
 "tests/dialog-suspend-exit.test.js":[0.6,0.5],
 "tests/dictation.test.js":[1.3,0.9],
-"tests/discover-empty-card.test.js":[0.2,0.8],
-"tests/discover-opens-detail.test.js":[0.1,0.8],
 "tests/discovery-curation.test.js":[0.8,0.6],
 "tests/discussion-in-hub.test.js":[0.9,0.5],
 "tests/dns-label-limits.test.js":[0.4,1],

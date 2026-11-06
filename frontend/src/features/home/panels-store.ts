@@ -78,13 +78,6 @@ export interface DiscoverTileView {
   contributors: number;
 }
 
-export interface DiscoverView {
-  key: string;
-  title: string;
-  featured: DiscoverTileView[];
-  popular: DiscoverTileView[];
-}
-
 // ── Challenges ────────────────────────────────────────────────────────
 
 export interface ChallengeMeterView {
@@ -151,13 +144,11 @@ export interface ChallengesView {
 
 export interface HomePanelsState {
   painted: boolean;
-  discover: DiscoverView | null;
   challenges: ChallengesView | null;
 }
 
 export const INITIAL_PANELS: HomePanelsState = {
   painted: false,
-  discover: null,
   challenges: null,
 };
 

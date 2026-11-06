@@ -5169,48 +5169,11 @@ html.first-paint-reserved #home-challenges-section.home-section-pending {
   pointer-events: none;
 }
 
-/* ── THE TILE GRID IS RETIRED ───────────────────────────────
-   `.home-discover-tiles` was six explicit grid tracks (`--lane-tracks`, set
-   from the lane's own count and floored at four), `.home-discover-icon-wrap`
-   capped the fluid icon at the 40px the tile always drew at, `.home-discover-
-   icon` held it square, `.home-discover-tiles .home-discover-tile` stripped
-   the launcher card's padding back off, and `.home-discover-name` clamped the
-   label to two lines because a ~55px track rendered most names as "Opinio…".
-   Every one of those existed to fit six icons into ONE grid cell on a phone.
-
-   The lane is a rail of cards (see `.home-discover-rail` below) and the block
-   is a section that grows to its content, so none of that arithmetic has
-   anything left to constrain. What survives is the lane wrapper and the
-   empty note.
-
-   The NAME keeps its class and loses its clamp: on a 152px card a real name
-   has room to be read on one line, and the second line would only ever be
-   spent on the longest few. Truncation is a utility on the element now. */
-.home-discover-lane {
-  flex: 1 1 auto;
-}
-/* `.home-discover-divider` is RETIRED. It drew the hairline row that carried
-   the "Popular" caption between the block's two rails. Discover is one
-   category and one rail now — the curated apps and the most-used ones flow
-   as a single continuous set of cards — so there is no sub-group left to
-   label and no seam left to draw. */
-/* The empty state: no rail at all, one centred line in its place, so the
-   block reads as a compact strip rather than a mostly-blank box. */
-/* #1913: a card now, in the rail's card language (the tint vars come from
-   the `.home-tint-*` class on the element) — so the empty lane still reads
-   as a lane with something in it, and the whole plate is the link on to
-   the directory. */
-.home-discover-empty {
-  display: flex;
-  padding: 0.875rem 1rem;
-  border-radius: 0.875rem;
-  background: var(--tint-bg);
-  border: 1px solid var(--tint-line);
-  text-decoration: none;
-}
-.home-discover-empty:hover { filter: brightness(0.98); }
-.home-discover-empty:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
+/* ── THE DISCOVER LANE IS RETIRED (One Home, #6361) ───────────
+   Home's Discover section, its rail of cards, its empty note and its tile
+   grid before that went with it: Communities to join is the directory now.
+   The card itself (`.home-discover-card` and its art, below) stays, as the
+   featured-illustration editor's preview. */
 /* ── THE CARD LANGUAGE: TINTS ───────────────────────────────
    Discover's app cards and Challenges' challenge cards are the same object
    in two sizes — a tinted plate with art on it — and they share one palette
@@ -5267,102 +5230,6 @@ html.first-paint-reserved #home-challenges-section.home-section-pending {
 }
 .dark :is(.home-tone-cream, .home-tone-yellow, .home-tone-orange, .home-tone-coral, .home-tone-pink, .home-tone-purple, .home-tone-indigo, .home-tone-blue, .home-tone-teal, .home-tone-mint, .home-tone-sage, .home-tone-gray)[data-preview-theme="light"], :is(.home-tone-cream, .home-tone-yellow, .home-tone-orange, .home-tone-coral, .home-tone-pink, .home-tone-purple, .home-tone-indigo, .home-tone-blue, .home-tone-teal, .home-tone-mint, .home-tone-sage, .home-tone-gray)[data-preview-theme="light"] {
   --tint-bg: var(--tone-50); --tint-line: var(--tone-light-line); --tint-art: var(--tone-50);
-}
-
-/* ── Discover: the card rail ────────────────────────────────
-   The lane was a GRID of six 40px icon tiles inside the block's white card:
-   the most an area called Discover could say about an app was its name,
-   clamped to two lines at 9.6px. It is a horizontal rail of cards now — art,
-   name, the app's own sentence, and how many people built it — which is what
-   the design asks for and what makes the area answer "should I open this?"
-
-   IT BLEEDS TO BOTH SCREEN EDGES. The negative margin cancels the section's
-   px-3 gutter so the first card starts on the text's left edge and the last
-   one runs off the right, which is the affordance: a card cut by the edge
-   says there are more. #home-screen states `overflow-x: hidden` (see the
-   gesture rule above, pinned by tests/home-vertical-scroll-only.test.js), so
-   the overhang is clipped by the feed rather than widening it.
-
-   BOTH AXES, AND THE SECOND ONE IS NOT OPTIONAL (#1762). This rule said
-   `touch-action: pan-x` for the same reason the switcher's app rail carries
-   it — without it a diagonal drag that starts here can be claimed by the
-   vertical feed and the rail never moves — under a comment claiming that "a
-   VERTICAL drag still reaches the page, the browser only takes the axis this
-   element declares". That claim is simply false, and it cost the whole
-   screen: `touch-action` is not a preference about which axis this element
-   would like, it is the complete set of gestures the browser may run for a
-   touch that STARTS here, intersected down the ancestor chain. `pan-x`
-   therefore DENIES vertical panning; it does not hand it to the feed. Two
-   rails of ~13rem cards bleeding to both screen edges is most of the
-   Discover block, so on a phone that was a band you could not scroll the
-   page from at all — put a finger on a card, drag up, and nothing moved, not
-   even the rubber band. (`.un-sheet:has(#notifications-sheet)` a thousand lines up
-   has to opt vertical panning back IN for its scroller for exactly this
-   reason, and states the rule correctly.)
-
-   `pan-x pan-y` is what `html, body` already declares, so this is the page's
-   own value rather than a new one: both axes are legal for a touch starting
-   here and the browser's axis lock picks the one the drag is going in — a
-   mostly-horizontal drag scrolls the rail, a mostly-vertical one scrolls the
-   feed. What that costs is the narrow case the `pan-x` was written for: a
-   genuinely diagonal drag that is slightly more vertical now scrolls the
-   feed instead of the rail. That is the trade every horizontal rail on the
-   web makes, and it is the right side of it — failing to scroll the rail
-   costs one retry, failing to scroll the page costs the screen.
-
-   It also has to stay `pan-y` for the drag-to-add gesture (#1763): the kit
-   arms a lift on a long press with a movement slop, so a scroll that starts
-   here cancels the press rather than competing with it — but only if the
-   scroll is allowed to start. */
-.home-discover-rail {
-  display: flex;
-  gap: 0.625rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-  scrollbar-width: none;
-  margin-inline: -0.75rem;
-  padding-inline: 0.75rem;
-  /* The snap position must be the KEYLINE, not the rail's own edge. Without
-     it `scroll-snap-align: start` lines the first card up with the scrollport
-     edge — 0.75rem outside the section's gutter, since the negative margin
-     above cancelled it — and WebKit applies that snap on layout, so on iOS
-     the rail arrived pre-scrolled with the first card stuck to the screen. */
-  scroll-padding-inline: 0.75rem;
-  /* Room for the cards' own shadow-less hairline to not be clipped, and for
-     a focus ring on the last card. */
-  padding-block: 0.125rem;
-}
-.home-discover-rail::-webkit-scrollbar { display: none; }
-
-/* ── THE RAIL STOPS AT THE CONTENT'S EDGE, AND FADES THERE (#2718 review) ──
-
-   On a phone the rail BLEEDS: `margin-inline: -0.75rem` with the padding
-   added back lets a card scroll flush to the screen edge, which is the whole
-   affordance — the row visibly continues past the frame.
-
-   On a desktop the frame is not the screen. The page has a rail on its left
-   and a gutter mirrored on its right (see --platform-gutter), and a lane that
-   bleeds 12px past that gutter puts its cards 12px closer to the window edge
-   than every other thing on the page — which reads as the lane being
-   misaligned rather than as it continuing.
-
-   So the bleed is cancelled and a MASK says the same thing instead: the last
-   2rem of the scrollport fades to transparent, so a row with more in it
-   trails off rather than being cut. The mask is static rather than driven by
-   scroll position — a lane shorter than the port fades empty space, which is
-   invisible, and the alternative is a scroll-timeline this shell cannot rely
-   on in every browser it ships to. */
-@media (min-width: 768px) {
-  .home-discover-rail {
-    margin-inline: 0;
-    padding-inline: 0;
-    scroll-padding-inline: 0;
-    -webkit-mask-image: linear-gradient(to var(--fade-to-inline-end, right), #000 calc(100% - 2rem), transparent);
-    mask-image: linear-gradient(to var(--fade-to-inline-end, right), #000 calc(100% - 2rem), transparent);
-  }
 }
 
 /* The card was enlarged for #6012, from 9.5rem to 11.25rem, so the artwork
@@ -21461,7 +21328,7 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
   align-items: flex-start;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  /* BOTH AXES. `.home-discover-rail` carries the post-mortem (#1762): a rail
+  /* BOTH AXES. The Discover rail carried the post-mortem (#1762): a rail
      that declares `touch-action: pan-x` DENIES vertical panning for every
      touch that starts on it, so on a phone it becomes a band you cannot
      scroll the page from. Failing to page the deck costs one retry; failing

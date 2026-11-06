@@ -40,8 +40,7 @@ import { useMessages } from '../../../lib/i18n/react';
 import { useStoreState } from '../../../lib/use-store-state';
 import { panelsStore, type HomePanelsState, type PanelStamps } from '../panels-store';
 import { ChallengesPanel } from './challenges';
-import { DiscoverPanel } from './discover';
-import { BrowseLink, SectionHeading, SeeAllLink, stampProps } from './ui';
+import { SectionHeading, SeeAllLink, stampProps } from './ui';
 
 /**
  * One host. `slot` names WHICH block it is for — it rides along from the grid
@@ -97,20 +96,13 @@ function Section({
 }
 
 /**
- * The two skeletons, each the shape of what usually arrives: Discover's
- * one-card lane (its empty card is 66px) and three challenge cards (the
+ * The skeleton, the shape of what usually arrives: three challenge cards (the
  * shared card is 104px, `gap-2.5` apart under a `pt-2`, as ./challenges.tsx
  * lays them out). A device that has drawn Home before holds each section at
  * the height it last drew instead (../../../lib/first-paint-reserve.ts and app.css), so these set
  * the shape only for a first visit. Decorative: the grid's skeleton already
  * says "Loading" to a screen reader once.
  */
-const DISCOVER_SKELETON = (
-  <div className="animate-pulse" aria-hidden="true">
-    <div className="h-[66px] rounded-[0.875rem] bg-zinc-200/70 dark:bg-zinc-800/70" />
-  </div>
-);
-
 const CHALLENGES_SKELETON = (
   <div className="home-panel-body pt-2 animate-pulse" aria-hidden="true">
     <div className="flex flex-col gap-2.5">
@@ -130,34 +122,6 @@ const CHALLENGES_SKELETON = (
  * in a vm and then renders what it pushed, and a component that reads the
  * bundle's own store through a hook cannot be handed a sandbox's state.
  */
-export function DiscoverSectionView({ painted, discover }: HomePanelsState) {
-  const t = useMessages('home');
-  return (
-    <Section
-      id="home-discover-section"
-      slot="discover"
-      // #4184: the section names what its cards are. The tab bar's
-      // "Discover" and the panel registry's title keep their words; the
-      // link is "See all" (polish N3), as Challenges' is, rather than an
-      // "apps" beside a heading that says communities. At 320px the heading
-      // ellipsises beside the link.
-      label={t('home:discover.heading')}
-      // CONSTANT, like the label: both are rendered in the prerender and by
-      // the first client render, so neither can disagree with the document
-      // the shell ships. Nothing here reads the view model — the ⋮ names its
-      // block by key and the link goes to a fixed hash.
-      action={<BrowseLink />}
-      painted={painted}
-      stamps={discover
-        ? { featured: discover.featured.length, popular: discover.popular.length }
-        : undefined}
-      skeleton={DISCOVER_SKELETON}
-    >
-      {discover ? <DiscoverPanel view={discover} /> : null}
-    </Section>
-  );
-}
-
 // No mirrored attributes: `data-rows` describes the block's COMPOSITION and
 // is selected on the article itself, which is where the string renderer put
 // it too.
@@ -197,10 +161,6 @@ export function ChallengesSectionView({ painted, challenges }: HomePanelsState) 
       {challenges ? <ChallengesPanel view={challenges} /> : null}
     </Section>
   );
-}
-
-export function DiscoverSection() {
-  return <DiscoverSectionView {...useStoreState(panelsStore)} />;
 }
 
 export function ChallengesSection() {
