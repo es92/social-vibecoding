@@ -17,6 +17,15 @@
  *                    quota) without the quota to make one, as that tile was.
  *                    It keeps the tile's `data-panel-slot="create"` hook.
  *
+ *   Needs you        while any vote waits on you, the way to Needs you
+ *                    (#needs), every decision owed across your projects,
+ *                    with the one count of votes waiting (community-scope
+ *                    `badgeNeeds`, the number a vote cast or skipped lowers
+ *                    at once). A zero says nothing, so the tile is not drawn
+ *                    on a quiet day. It is what is left of the Communities
+ *                    screen's Needs you row; the list under it is All
+ *                    communities, here.
+ *
  * Edit, as on Pinned apps: the tiles wiggle and each takes a − to unpin it.
  * Unpinning keeps the membership; leaving is the hub's.
  *
@@ -25,13 +34,14 @@
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { PlusIcon, Squares2X2Icon } from '@/components/ui/icons';
+import { PlusIcon, SpeechCheckIcon, Squares2X2Icon } from '@/components/ui/icons';
 
 import { useCommunityColor } from '../../lib/community-color';
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { SectionHeading } from './panels/ui';
+import { communityScopeStore } from '../workshop/community-scope';
 import { homePinsStore, importDevicePins, loadHomePins, setHomePin, wireHomePins, type HomePin } from './home-pins-store';
 import { matchesQuery, useHomeQuery } from './use-home-query';
 
@@ -125,6 +135,31 @@ function PinTile({ pin, votes, editing, faded = false, onUnpin, onPin }: {
   );
 }
 
+/**
+ * Needs you's tile: a link to the page (`#needs`), so a modified click opens
+ * it in a new tab, wearing the votes-waiting number a community's tile wears.
+ */
+function NeedsTile({ count }: { count: number }) {
+  const t = useMessages('home');
+  return (
+    <a
+      href="#needs"
+      id="home-needs-tile"
+      className={TILE}
+      data-home-needs={String(count)}
+      aria-label={t('home:communities.needsNamed', { count })}
+    >
+      <span className="relative inline-flex">
+        <span className={`${ACTION_FACE} bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300`}>
+          <SpeechCheckIcon className="w-7 h-7" aria-hidden="true" />
+        </span>
+        <span className={VOTES} aria-hidden="true">{count > 99 ? '99+' : count}</span>
+      </span>
+      <span className={NAME}>{t('home:communities.needs')}</span>
+    </a>
+  );
+}
+
 function ActionTile({ label, icon, onClick, dashed = false, muted = false, pressed, id, attrs }: {
   label: string; icon: ReactNode; onClick: () => void; dashed?: boolean; muted?: boolean; pressed?: boolean; id?: string;
   attrs?: Record<string, string | undefined>;
@@ -150,6 +185,15 @@ export function PinnedCommunities() {
   const query = useHomeQuery();
   const [editing, setEditing] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  // "All communities" elsewhere (the switcher, the tour's last step) opens
+  // this section's (Home.showCommunities, SHOW_ALL_COMMUNITIES).
+  useEffect(() => {
+    const open = () => setShowAll(true);
+    document.addEventListener('home:show-all-communities', open);
+    return () => document.removeEventListener('home:show-all-communities', open);
+  }, []);
+  const { badgeNeeds } = useStoreState(communityScopeStore) as { badgeNeeds?: number };
+  const needs = Math.max(0, Number(badgeNeeds) || 0);
 
   useEffect(() => {
     const moved = (count: number) => t('home:devicePins.moved', { count });
@@ -180,7 +224,7 @@ export function PinnedCommunities() {
   const offerCreate = state.ready && !win?.App?.user?.privateMember;
   const createOn = offerCreate && !!win?.Home?.canCreate?.();
   const locked = t('home:communities.newLocked', { hint: t('home:create.disabledHint') });
-  const visible = state.ready && (pinned.length > 0 || unpinned.length > 0 || (!query && offerCreate));
+  const visible = state.ready && (pinned.length > 0 || unpinned.length > 0 || (!query && (offerCreate || needs > 0)));
 
   return (
     <section id="home-communities-section" className="px-3" hidden={!visible} data-editing={editing ? '' : undefined}>
@@ -218,6 +262,7 @@ export function PinnedCommunities() {
             onPin={() => { void setHomePin({ ...c, member: true } as HomePin, true, say(c.name)); }}
           />
         )) : null}
+        {needs > 0 && !query && !editing ? <NeedsTile count={needs} /> : null}
         {unpinned.length && !query && !editing ? (
           <ActionTile
             id="home-all-communities"

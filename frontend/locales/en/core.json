@@ -227,10 +227,6 @@
     "text": "Unread notifications",
     "description": "Accessible name of the number badge on the header's bell button."
   },
-  "header.communitiesSwitch": {
-    "text": "Communities: all of yours, or open one",
-    "description": "Accessible name of the header button on the Communities screen: opens the list for switching between all communities and a single one."
-  },
   "header.communities": {
     "text": "Communities",
     "description": "Title in the header on the screen that lists all of the person's communities."

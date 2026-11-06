@@ -119,7 +119,7 @@ test('the slug lands while resolve() still waits on the app row: heard at once, 
   };
   await withEnv({ fetchImpl }, async ({ win, landed, PlatformTarget, HUB }) => {
     assert.equal(HUB.platformSlug(), null, 'nothing knows the slug at first draw');
-    assert.deepEqual(HUB.generalHubBack(HUB.platformSlug()).label, 'Communities');
+    assert.deepEqual(HUB.generalHubBack(HUB.platformSlug()).label, 'Home');
     let heard = 0;
     const off = HUB.subscribePlatformSlug(() => { heard += 1; });
     const pending = PlatformTarget.resolve();
@@ -147,7 +147,7 @@ test('after a failed, throttled resolve, the version poll that knows the slug is
     assert.ok(PlatformTarget._failedAt > 0, 'the lookup failed');
     await PlatformTarget.resolve(); // throttled: returns at once, learns nothing
     assert.deepEqual(heard, []);
-    assert.equal(HUB.generalHubBack(HUB.platformSlug()).label, 'Communities');
+    assert.equal(HUB.generalHubBack(HUB.platformSlug()).label, 'Home');
     // What App.loadVersion does when /api/version answers.
     win.App._lastVersionInfo = { sha: 'abc', selfAppSlug: 'homeroom' };
     PlatformTarget.notifySlug();
@@ -161,11 +161,14 @@ test('after a failed, throttled resolve, the version poll that knows the slug is
   });
 });
 
-test('a press before anything knows the slug goes to Communities, without a hub landing', async () => {
+test('a press before anything knows the slug goes Home, where the communities are, without a hub landing (One Home, #6361)', async () => {
   await withEnv({ fetchImpl: () => Promise.resolve(json(null, false)) }, ({ win, landed, HUB }) => {
+    const home = [];
+    win.App.navigateHome = () => home.push('home');
     HUB.generalHubBack(HUB.platformSlug()).onBack();
     assert.deepEqual(landed, []);
-    assert.equal(win.location.hash, '#communities');
+    assert.deepEqual(home, ['home']);
+    assert.equal(win.location.hash, '#messages/7', 'and no address of its own');
   });
 });
 
@@ -219,8 +222,8 @@ test('a cold #general: the header arrow follows the slug to the hub, with the di
     store.route(GENERAL, null, null, {});
     for (let i = 0; i < 5; i += 1) await new Promise((r) => setTimeout(r, 5));
     store.syncChrome();
-    assert.deepEqual(backIcons.at(-1), ['arrow', '#communities'], 'slugless: the arrow goes to Communities');
-    assert.equal(HUB.generalHubBack(HUB.platformSlug()).label, 'Communities', '…and so does the disc');
+    assert.deepEqual(backIcons.at(-1), ['arrow', '/'], 'slugless: the arrow goes Home');
+    assert.equal(HUB.generalHubBack(HUB.platformSlug()).label, 'Home', '…and so does the disc');
 
     window.App._lastVersionInfo = { sha: 'abc', selfAppSlug: 'homeroom' };
     PlatformTarget.notifySlug();

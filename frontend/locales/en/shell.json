@@ -339,6 +339,10 @@
     "text": "Discover",
     "description": "Title shown in the header bar, and as the browser tab's title, on the screen that lists every app on Homeroom."
   },
+  "title.needs": {
+    "text": "Needs you",
+    "description": "Title shown in the header bar, and as the browser tab's title, on the Needs you page: every vote and decision waiting on the person across their projects, one at a time."
+  },
   "title.communities": {
     "text": "Communities",
     "description": "Title shown in the header bar, and as the browser tab's title, on the Communities screen, which lists the communities the person is in."

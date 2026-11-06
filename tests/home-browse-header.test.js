@@ -234,13 +234,15 @@ test('a tab root shows nothing; a sub-page shows an arrow to its tab', () => {
   // those roots have a genuine level above and say so with a chevron that
   // lands on it.
   const h = harness();
-  for (const screen of ['profile-screen', 'messages-screen', 'workshop-screen']) {
+  for (const screen of ['profile-screen', 'messages-screen']) {
     h.App._showOnlyScreen('home-screen');
     h.App._showOnlyScreen(screen);
     assert.equal(ui.backButtonStore.get().mode, 'none', `${screen} is a root`);
   }
+  // One Home (#6361): Needs you, the page left of the Communities screen,
+  // is a level under Home.
   for (const [screen, href] of [['settings-screen', '#profile'], ['admin-screen', '#profile'],
-    ['leaderboard-screen', '#profile'], ['agent-session-screen', '#messages']]) {
+    ['leaderboard-screen', '#profile'], ['agent-session-screen', '#messages'], ['workshop-screen', '/']]) {
     h.App._showOnlyScreen('home-screen');
     h.App._showOnlyScreen(screen);
     assert.equal(ui.backButtonStore.get().mode, 'arrow', `${screen} has a level above`);

@@ -66,27 +66,17 @@
  * project page this bar wears the community's colour (app.css, "The
  * project's colour"), so the name and ⌄ read as the community's own.
  *
- * ── And on the Communities screen, its switcher (#3271, #852) ──────────
+ * ── The Communities screen's switcher went with its list ──────────────
  *
- * The Communities screen led with the same kind of chip, "All ⌄". On a phone
- * it sat under a header that only said "Communities" (which the lit tab
- * already says), costing a whole row, so the header's title became the chip
- * there (#3271), `#header-scope-switch`. #852 makes that every width and
- * drops the chip from the page: the control that says where you are lives
- * in the bar that says it everywhere else. It opens "Your communities", as
- * the app's name does, and it reads "Communities ⌄": the screen's own name,
- * with "All communities" kept for the switcher's first row.
- *
- * The width is a media flag settled in an effect, so the first client render
- * is the prerender's (no button) and nothing here can mismatch hydration; by
- * the time anybody reaches the Communities screen the flag has long since
- * landed. The app's switcher needs no flag: it follows the route, which the
- * prerender does not have either.
+ * The Communities screen's title was its switcher, "Communities ⌄"
+ * (`#header-scope-switch`, #3271, #852), opening Your communities. One Home
+ * (#6361) gave that list to Home and left the screen as Needs you, a page
+ * whose bar says its name, so the switcher left the bar with it.
  */
 
 import type { RefObject } from 'react';
 
-import { ChevronDownIcon, Squares2X2Icon } from '@/components/ui/icons';
+import { ChevronDownIcon } from '@/components/ui/icons';
 import { Wordmark } from '@/components/ui/wordmark';
 
 import { useMessages } from '../../lib/i18n/react';
@@ -117,7 +107,7 @@ export function HeaderTitle({ titleRef }: { titleRef: RefObject<HTMLHeadingEleme
   const { life } = useStoreState(sessionHeaderStore);
   const viewMode = useDevViewMode();
     // "Your communities" (features/workshop/community-switcher.tsx): the
-  // app's name opens it, and so does the Communities screen's All chip.
+  // app's name opens it.
   const { switcher } = useStoreState(communityScopeStore);
   const switcherOpen = !!switcher;
   // THE PHONE'S DRAWER (../nav-drawer/): on a community's page under 768px
@@ -153,9 +143,6 @@ export function HeaderTitle({ titleRef }: { titleRef: RefObject<HTMLHeadingEleme
   const communityPage = onWorkshop || onCard;
   // At every width (#3295): the Workshop draws no chip of its own any more.
   const appSwitch = communityPage && !sidebarRows;
-  // The Communities screen: the title is its switcher, but beside the
-  // sidebar's own list.
-  const allAppsSwitcher = screen === 'workshop-screen' && !sidebarRows;
   // Beside the sidebar, the community's name where the switcher would be.
   const communityName = communityPage && sidebarRows;
   const showTile = inApp;
@@ -195,27 +182,7 @@ export function HeaderTitle({ titleRef }: { titleRef: RefObject<HTMLHeadingEleme
       {drawerOn ? <DrawerTitles /> : (
       <span className="inline-flex items-center gap-2 max-w-full align-middle">
         {appSwitch ? null : tile}
-        {allAppsSwitcher ? (
-          /* THE COMMUNITIES SWITCHER, in the bar (#3271, at every width
-             since #852): the grid, "Communities" and the ⌄, opening Your
-             communities. */
-          <button
-            id="header-scope-switch"
-            type="button"
-            className="pointer-events-auto un-touch-target inline-flex items-center gap-2 min-w-0 max-w-full
-                       text-start font-semibold"
-            data-community-switch=""
-            aria-haspopup="dialog"
-            aria-expanded={switcherOpen ? 'true' : 'false'}
-            aria-controls="community-switcher"
-            aria-label={t('core:header.communitiesSwitch')}
-            onClick={(e) => toggleSwitcher('header', e.currentTarget)}
-          >
-            <Squares2X2Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
-            <span id="header-title-name" className="min-w-0 truncate">{t('core:header.communities')}</span>
-            <ChevronDownIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
-          </button>
-        ) : appSwitch ? (
+        {appSwitch ? (
           /* THE SWITCHER. `pointer-events-auto` because the h1 around it is
              `pointer-events-none` so its overlap never eats a tap meant for a
              control beside it — this is the one part of it that IS a

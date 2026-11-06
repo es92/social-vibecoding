@@ -1,9 +1,9 @@
 /**
  * How a list of your communities is arranged, in one place (#3363).
  *
- * The Communities screen (./index.tsx) sorts and folds its list here:
- * Public communities, Private communities, Just you; newest first inside
- * each; three shown, then "Show N more". "Your communities"
+ * The Communities screen sorted and folded its list here (its list went to
+ * Home with One Home, #6361): Public communities, Private communities, Just
+ * you; newest first inside each; three shown, then "Show N more". "Your communities"
  * (./community-switcher.tsx, through ./community-scope.ts) lists the same
  * communities in the same newest-first order, reading `orderRows` from here
  * rather than from the screen, which it must not import — and draws the same

@@ -595,7 +595,7 @@ export function RailCommunities({ shown }: { shown: string[] }) {
         <a
           id="platform-rail-search"
           className="platform-rail-search"
-          href="#communities"
+          href="/"
           aria-label={t('core:rail.search')}
           title={t('core:rail.search')}
           onClick={(event) => {

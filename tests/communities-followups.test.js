@@ -61,7 +61,7 @@ test('#3270, #3488: the feed\'s rows are a project\'s own Needs you rows, each c
 });
 
 
-test('#3516: on a phone the Communities feed ends where the screen\'s clearance begins', () => {
+test('#3516: on a phone the Needs you feed ends where the screen\'s clearance begins', () => {
   // "Some elements get hidden under the resume app banner." The feed was
   // `calc(100dvh - 180px - var(--browser-banner-h, 0px))`, a guess that knew a
   // 56px bar and nothing else: not the parked app's strip, not an installed
@@ -100,12 +100,11 @@ test('#3516: on a phone the Communities feed ends where the screen\'s clearance 
   const screen = read('frontend/src/features/workshop/index.tsx');
   assert.match(screen, /id="workshop-screen"\s+className="hidden flex-1 overflow-y-auto platform-safe-scroll"/,
     'the screen scrolls itself and carries the clearance');
-  assert.match(screen, /style=\{\{ position: 'relative' \}\}\s*>\s*\{\/\*[\s\S]*?\*\/\}\s*<div className="max-w-2xl mx-auto pb-8" data-workshop-panes="">/,
+  assert.match(screen, /style=\{\{ position: 'relative' \}\}\s*>\s*<div className="max-w-2xl mx-auto pb-8">/,
     'its first element is the column');
-  // v3: the feed is its own page at every width again, as on a phone; from
-  // 1024px it was drawn beside the list (D) until the sidebar nested its
-  // second columns.
-  assert.match(screen, /\{state\.tab === 'needs' \? \(\n\s*<div data-workshop-pane="needs">/);
+  // v3: the feed is its own page at every width, as on a phone; One Home
+  // (#6361) made it the whole page (#needs), drawn while the page is open.
+  assert.match(screen, /\{state\.open \? \(\n\s*<div data-workshop-pane="needs">/);
   // And the clearance counts the strip: one token for the bar and the strip,
   // read by every screen through .platform-safe-scroll.
   assert.match(css, /\.platform-safe-scroll \{[^}]*padding-bottom: max\(var\(--platform-tabs-h, 0px\), var\(--platform-safe-bottom\)\) !important;/);
@@ -144,15 +143,14 @@ test('#3270: the feed reads the owed populations for member projects only, newes
   assert.ok(route.DEMO_NEEDS_FEED.some((it) => it.kind === 'governance'));
 });
 
-test('#3271, #852: the Communities screen\'s header is its switcher, at every width', () => {
+test('#3271, #852: the Communities screen\'s switcher left the bar with its list (One Home, #6361)', () => {
   const header = read('frontend/src/features/header/header-title.tsx');
-  // Up to the sidebar of rows (D, 18 Oct 2026), which lists the
-  // communities itself: there the title is the screen's name.
-  assert.match(header, /const allAppsSwitcher = screen === 'workshop-screen' && !sidebarRows;/);
-  assert.match(header, /id="header-scope-switch"[\s\S]{0,400}aria-controls="community-switcher"[\s\S]{0,200}onClick=\{\(e\) => toggleSwitcher\('header', e\.currentTarget\)\}/,
-    'it opens Your communities (#852)');
+  // The bar on Needs you says its name; Your communities opens from a
+  // project's name and ⌄, as before.
+  assert.doesNotMatch(header, /allAppsSwitcher|id="header-scope-switch"/);
+  assert.match(header, /onClick=\{\(e\) => toggleSwitcher\('header', e\.currentTarget\)\}/, 'the project\'s switcher stays');
   assert.doesNotMatch(header, /usePhone|PHONE_QUERY/, 'no width in it any more');
-  // The in-page chip is gone: the bar is the one place it lives.
+  // The in-page chip is gone too.
   assert.doesNotMatch(read('frontend/src/features/workshop/index.tsx'), /AllAppsScope|id="workshop-scope"/);
   assert.doesNotMatch(read('public/css/app.css'), /#workshop-scope\b/);
 });

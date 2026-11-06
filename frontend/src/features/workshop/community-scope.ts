@@ -507,13 +507,14 @@ export function warmCommunities(delayMs = 1500): () => void {
 }
 
 /**
- * Go to a community from the switcher: All communities is the list (and
+ * Go to a community from the switcher: All communities is Home's (and
  * forgets the page the tab reopened); a community opens on the place you
  * were on when it has it, else its hub (landKeepingPlace).
  *
- * ON A PHONE, ALL COMMUNITIES IS ITS PAGE TOO (3 Nov 2026), drawn as a grid
- * (./index.tsx): the drawer's list that stood in for it there is gone. The
- * Hub's grid button and the lit tab's last step both come here.
+ * ALL COMMUNITIES IS HOME'S (One Home, #6361): its Pinned communities, with
+ * the section's All communities open (Home.showCommunities), where the
+ * Communities screen's list was. The Hub's grid button and the lit tab's
+ * last step both come here.
  */
 export function goToCommunity(slug: string | null): void {
   closeSwitcher();
@@ -521,7 +522,9 @@ export function goToCommunity(slug: string | null): void {
   if (!slug) {
     setScope(null);
     try { app?._forgetWorkshopView?.(); } catch { /* nothing to forget */ }
-    if (window.location.hash !== '#communities') window.location.hash = '#communities';
+    const home = (window as any).Home;
+    if (home?.showCommunities) home.showCommunities({ all: true });
+    else app?.navigateHome?.();
     return;
   }
   setScope(slug);

@@ -63,8 +63,9 @@ test('every screen root maps to a navigation code the server accepts', () => {
   // `assistant` was Global Chat's screen. Nothing reports it since Global
   // Chat was removed; the collector keeps the code so the visits already
   // recorded still read (src/services/ui-telemetry.js). `discover` was
-  // Discover's, retired with One Home (#6361) the same way.
-  const retired = ['assistant', 'discover'];
+  // Discover's and `communities` the Communities list's, retired with One
+  // Home (#6361) the same way.
+  const retired = ['assistant', 'discover', 'communities'];
   assert.deepEqual([...codes, ...overlays, ...retired].sort(), [...serverTelemetry.NAV_SCREENS].sort(),
     'the shell and the collector name the same screens');
   for (const code of retired) assert.ok(!codes.has(code), `${code} is no screen's any more`);
@@ -104,7 +105,7 @@ test('nothing is reported under a first-run sheet; the screen showing when it cl
   await tick();
   assert.deepEqual(calls, [['navigate', 'challenges', null]], 'only the latest screen, once');
   App._syncPlatformTabs('workshop-screen');
-  assert.deepEqual(calls.at(-1), ['navigate', 'communities', null], 'later steps go straight through');
+  assert.deepEqual(calls.at(-1), ['navigate', 'needs', null], 'later steps go straight through');
 });
 
 test('the signed-out shell and the side panel report nothing', async () => {

@@ -1382,8 +1382,9 @@ const Notifications = {
     }
     if (item.kind === 'vote_digest' && !item.appSlug) {
       Notifications._dismissSheetForNav();
-      window.UsernodeReact?.workshop?.setTab?.('needs');
-      window.location.hash = '#communities';
+      // Needs you, the page of every vote owed across your projects (One
+      // Home, #6361: the Communities screen's list is gone).
+      window.location.hash = '#needs';
       return;
     }
     // #5404: the Monday count of the changes you voted on that were decided

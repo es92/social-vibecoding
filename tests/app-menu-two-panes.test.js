@@ -202,10 +202,11 @@ test('a platform screen is named by the bar, and says it once', () => {
   // of three kinds of message. The Workshop says which workshop with a scope
   // chip: #2759 took it off while the screen was only the list of your apps,
   // and #3051 brought it back as "All apps" over the list it scopes, with
-  // the votes owed across it as one Needs you row.
+  // the votes owed across it as one Needs you row. One Home (#6361) left
+  // only the feed on the page, under the bar's "Needs you".
   assert.doesNotMatch(workshop, /AllAppsScope/,
     'the all-apps screen\'s "All" is the bar\'s own title now (#852), not a chip under it');
-  assert.match(workshop, /data-workshop-needs-open=""/);
+  assert.match(workshop, /<div data-workshop-pane="needs">/);
   // Messages says which of three kinds each conversation is by its
   // section's heading (Homeroom bot, Agents, People; 16 Oct 2026).
   assert.match(messages, /<SectionHead section=\{section\}/);

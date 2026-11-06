@@ -98,12 +98,13 @@ test('the layout audit has the Android app\'s shape, with its navigation bar', a
   assert.match(read('scripts/layout-audit/run.mjs'), /un-platform=\$\{profile\.platform \|\| 'ios'\}/);
 });
 
-test('M01: on a narrow phone the lit Messages pill clears "Homeroom bot"; the audience chips fit at 393', () => {
+test('M01: on a narrow phone the lit Messages pill clears "Homeroom bot"', () => {
   // Home's and You's short words give the bot's and Messages' seats room;
   // four seats since One Home (#6361).
   assert.match(APP_CSS, /@media \(max-width: 767\.98px\) \{[\s\S]{0,600}#platform-tabs \{ grid-template-columns: 1fr 1\.4fr 1\.15fr 1fr; \}/);
   assert.match(APP_CSS, /@media \(max-width: 374\.98px\) \{[\s\S]{0,300}#platform-tabs \{ grid-template-columns: 1fr 1\.35fr 1\.15fr 1fr; \}/);
-  assert.match(read('frontend/src/features/workshop/index.tsx'), /className=\{key !== 'all' && !count \? 'hidden' : 'gap-1\.5 px-3'\}/);
+  // The audience chips that had to fit at 393 went with All communities'
+  // list (One Home, #6361).
 });
 
 test('U03: the header\'s title is on the left from 640px, as on phones and the iPad', () => {

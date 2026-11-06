@@ -228,17 +228,18 @@ test('an app that is gone falls back to the selector, quietly', async () => {
   assert.deepEqual(r.errors, []);
 });
 
-test('a card that is gone falls back to the selector, quietly', async () => {
+test('a card that is gone falls back to Home, quietly (One Home, #6361)', async () => {
   const r = router();
   await onCard(r);
   r.App.navigateToMessages();
   r.App.resumeWorkshopView();
   await r.settle();
-  // What the topic view does when the card does not resolve.
+  // What the topic view does when the card does not resolve. It fell back to
+  // the Communities screen's list; that list is Home's now.
   assert.equal(r.App._abandonWorkshopResume(), true);
   assert.equal(r.App.currentApp, null);
-  assert.equal(r.App._inWorkshop, true, 'on the selector');
-  assert.equal(r.context.location.hash, '#communities');
+  assert.equal(r.App._inWorkshop, false, 'not on Needs you');
+  assert.equal(r.context.location.hash, '');
   assert.equal(r.storage.has(KEY), false);
   assert.deepEqual(r.errors, []);
   const view = read('public/js/app-view.js');

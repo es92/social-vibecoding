@@ -64,20 +64,14 @@ const SCREEN = read('frontend/src/features/workshop/index.tsx');
 const SCOPE = read('frontend/src/features/workshop/community-scope.ts');
 const SWITCHER = read('frontend/src/features/workshop/community-switcher.tsx');
 
-const screen = loadTsx('frontend/src/features/workshop/index.tsx');
-
-const app = (slug, working, needs) => ({ slug, name: slug, working, needs });
-
-test('picking a community keeps the page you were on, and All communities goes to the list', () => {
+test('picking a community keeps the page you were on, and All communities goes to Home\'s (One Home, #6361)', () => {
   const at = SCOPE.indexOf('export function goToCommunity(');
   const fn = SCOPE.slice(at, SCOPE.indexOf('\n}\n', at));
   assert.match(fn, /closeSwitcher\(\);/, 'the switcher closes either way');
-  assert.match(fn, /setScope\(null\);[\s\S]*?_forgetWorkshopView[\s\S]*?window\.location\.hash = '#communities';/,
-    'All communities is the list, by the same address the tab carries');
+  assert.match(fn, /setScope\(null\);[\s\S]*?_forgetWorkshopView[\s\S]*?home\.showCommunities\(\{ all: true \}\);/,
+    'All communities is Home\'s Pinned communities, with its All communities open');
   assert.match(fn, /setScope\(slug\);[\s\S]*?if \(onPage\) return;\s*landKeepingPlace\(slug\);/,
     'a community opens on the place you were on, else its hub');
-  assert.match(SCREEN, /landKeepingPlace\(row\.slug\);\s*win\.App\?\.navigateToApp\?\.\(row\.slug, 'dev'\);/,
-    'a row of All communities is a switch too');
   assert.match(fn, /void app\?\.navigateToApp\?\.\(slug, 'dev'\);/);
   assert.ok(!fn.includes('startSession') && !fn.includes('giveFeedback'), 'nothing is started from the switcher');
   // Join a community is Discover; #3543: Start a community is the new-project dialog.
@@ -86,7 +80,7 @@ test('picking a community keeps the page you were on, and All communities goes t
   assert.match(SWITCHER, /data-switcher-start=""\s*onClick=\{\(\) => \{ closeSwitcher\(\); \(window as any\)\.App\?\.showCreateModal\?\.\(\); \}\}/);
 });
 
-test('3 Nov 2026: on a phone All communities is the page again, drawn as a grid, as on a wide window', () => {
+test('All communities is Home\'s at every width, with nothing opened behind it (One Home, #6361)', () => {
   const calls = [];
   const mod = loadTsx('frontend/src/features/workshop/community-scope.ts', {
     stubs: {
@@ -99,9 +93,11 @@ test('3 Nov 2026: on a phone All communities is the page again, drawn as a grid,
   const had = { window: global.window, document: global.document };
   let phone = true;
   const location = { hash: '#home' };
+  const shown = [];
   global.window = {
     matchMedia: (q) => ({ matches: q.includes('768px') ? !phone : false }),
     location,
+    Home: { showCommunities: (opts) => shown.push(opts) },
     App: {
       currentApp: null,
       navigateToApp: (slug, tab) => { calls.push(['nav', slug, tab]); return Promise.resolve(); },
@@ -109,24 +105,18 @@ test('3 Nov 2026: on a phone All communities is the page again, drawn as a grid,
   };
   global.document = { querySelector: () => null };
   try {
-    // A phone: the page, with no community opened behind it (#5581's drawer
-    // list over the most recent community is gone with the drawer).
     mod.goToCommunity(null);
-    assert.equal(location.hash, '#communities');
+    assert.deepEqual(shown, [{ all: true }], 'a phone: Home\'s All communities');
     assert.deepEqual(calls, [], 'nothing opened behind it');
     // The community the tab is on does not change that.
-    location.hash = '#home';
     mod.communityScopeStore.set({ slug: 'swap', list: ['garden', 'swap'] });
     mod.goToCommunity(null);
-    assert.equal(location.hash, '#communities');
-    assert.deepEqual(calls, []);
-    // A wide window is the sidebar's own All row: the page, as before.
+    // A wide window is the sidebar's own All row: the same.
     phone = false;
-    location.hash = '#home';
-    mod.communityScopeStore.set({ slug: 'garden', list: ['garden'] });
     mod.goToCommunity(null);
-    assert.equal(location.hash, '#communities');
+    assert.deepEqual(shown, [{ all: true }, { all: true }, { all: true }]);
     assert.deepEqual(calls, []);
+    assert.equal(location.hash, '#home', 'no address of its own: Home is where it lands');
   } finally {
     global.window = had.window;
     global.document = had.document;
@@ -221,88 +211,32 @@ test('#852: every class the switcher draws with has a rule, and the menu floats 
   assert.match(CSS, /\.platform-tab-tile > img \{ width: 100%; height: 100%;/, 'as the tab\'s tile does');
 });
 
-test('All items, the plus and now the tabs are gone; Needs you is a row (#3051)', () => {
+test('All items, the plus and the tabs are gone, and so is the list (#3051; One Home, #6361)', () => {
   for (const id of ['workshop-tabs', 'workshop-tab-all', 'workshop-tab-empty', 'workshop-plus',
     'workshop-plus-change', 'workshop-plus-issue', 'workshop-plus-create', 'workshop-picker',
     'workshop-tab-status', 'workshop-tab-needs', 'workshop-total-working', 'workshop-total-needs']) {
     assert.ok(!SCREEN.includes(`id="${id}"`), `#${id} is not on the screen either`);
     assert.ok(!HTML.includes(`id="${id}"`), `#${id} is not in the shipped shell`);
   }
-  // NOTHING NARROWS THE LIST BY WHAT WAITS, which is the argument that
-  // retired the old strip: the Needs you feed is a page of its own over the
-  // list. The one list's chips and search (#5296) narrow it by audience and
-  // by name only.
-  const filter = SCREEN.slice(SCREEN.indexOf('export function filterRows'), SCREEN.indexOf('/** Each chip\'s words'));
-  assert.ok(filter.length > 0 && !/needs|owed|working/.test(filter), 'the list is never filtered by its counts');
+  // One Home (#6361): the list went to Home, and the feed is the page.
   const store = read('frontend/src/features/workshop/workshop-store.js');
-  assert.match(store, /^\s*tab: 'status',/m, 'the list is the default, and the prerender');
+  assert.doesNotMatch(store, /^\s*(?:tab|rows):/m, 'the store holds the feed alone');
   assert.doesNotMatch(store, /scopeOpen/, 'Your communities keeps its own open flag (#852)');
   assert.doesNotMatch(store, /itemsError|^\s*items:/m, 'the items read left with the pane it filled');
   // The chip's module went with the chip and its panel (#852).
   assert.ok(!fs.existsSync(path.join(ROOT, 'frontend/src/features/workshop/workshop-chrome.tsx')));
 });
 
-test('the Needs you row opens the feed over the list without redrawing it', () => {
-  const html = () => renderToHtml(createElement(screen.WorkshopScreen, {}));
-  screen.workshopStore.set({
-    open: true, error: false, tab: 'status',
-    rows: [app('staging-demo-your-app', 2, 3)],
-  });
-  let out = html();
-  assert.match(out, /data-workshop-pane="status" class=""/);
-  assert.match(out, /data-workshop-needs-open=""/);
-  assert.doesNotMatch(out, /data-workshop-pane="needs"/, 'the feed renders only while showing');
-  screen.workshopController.setTab('needs');
-  out = html();
-  assert.match(out, /data-workshop-pane="status" class="hidden"/);
-  assert.match(out, /data-workshop-pane="needs"/);
-  assert.match(out, /data-workshop-needs-back=""[^>]*aria-label="Back to Communities"/);
-  assert.match(out, /data-workshop-app="staging-demo-your-app"/,
-    'the list is still in the document, hidden, not unmounted');
-  screen.workshopController.setTab('nonsense');
-  assert.equal(screen.workshopStore.get().tab, 'status', 'anything else is the list');
-  screen.workshopStore.set({ tab: 'status', rows: null });
-});
-
-test('the Needs you row totals every project, and says nothing over a zero', () => {
-  // The legend that totalled both figures is gone (your own work is
-  // Profile's now); the votes total is the row's title, and it is drawn
-  // only when a vote waits.
-  const at = SCREEN.indexOf('const totals = all');
-  const decl = SCREEN.slice(at, SCREEN.indexOf('const empty', at));
-  assert.match(decl, /all\.length > 0/,
-    'no totals with no apps: the empty card already says why the screen is bare');
-  assert.match(decl, /acc\.needs \+ \(row\.needs \|\| 0\)/);
-  assert.ok(!decl.includes('rows'), 'it sums `all`, every project');
-  // #3526: drawn while ANY vote is owed (`owed`), the ones swiped past too:
-  // it is the screen's only door to the feed, and a skipped vote is still
-  // one you can cast. `needs`, what the title counts, is the unseen ones.
-  assert.match(decl, /acc\.owed \+ \(row\.owedCount \|\| 0\)/);
-  assert.match(SCREEN, /\{totals && totals\.owed > 0 \? \(\n\s*<section data-workshop-needs-door=""/);
-  const dapp = JSON.parse(read('dapp.json'));
-  assert.ok(!dapp.tests.some((t) => t.expectText === 'Votes waiting on you'),
-    'no declared check waits for the retired legend');
-  assert.ok(!HTML.includes('data-workshop-needs-door'),
-    'a row read from data is not in a cold document');
-});
-
-test('#3051, #852: the header\'s "Communities" switcher is there at every width, and opens Your communities', () => {
-  // #2759 took the all-apps chip off while the screen was only the list of
-  // your apps; the owner asked for it back as "All apps" (#3051), leading the
-  // page. #852 puts it in the bar at every width, where a phone already had
-  // it (#3271): the bar is what says where you are.
+test('#3051, #852: Needs you\'s bar says its name, with no switcher and no chip (One Home, #6361)', () => {
+  // #852 put the Communities switcher in the bar at every width; One Home
+  // left the screen as Needs you, whose bar names it.
   assert.doesNotMatch(SCREEN, /AllAppsScope|id="workshop-scope"/);
   assert.ok(!HTML.includes('id="workshop-scope"'), 'no chip in the cold document');
   assert.ok(!HTML.includes('id="community-switcher"'), 'and the switcher is behind a press');
   const html = renderHeader({ screen: 'workshop-screen' });
-  assert.match(html, /<button id="header-scope-switch" type="button" class="[^"]*" data-community-switch="" aria-haspopup="dialog" aria-expanded="false" aria-controls="community-switcher" aria-label="Communities: all of yours, or open one">/);
-  // The screen's own name (#852 review; it read "All", #3277), with "All
-  // communities" kept for the switcher's first row.
-  assert.match(html, /<span id="header-title-name" class="min-w-0 truncate">Communities<\/span>/, 'the word Communities');
-  assert.doesNotMatch(html, /truncate">All<\/span>/);
+  assert.doesNotMatch(html, /id="header-scope-switch"/);
   // The page still steps down past the header's notch before its first row.
   assert.match(SCREEN, /<div className="pt-5" aria-hidden="true" \/>/);
-  assert.doesNotMatch(SCREEN, /<p className="px-4 pt-1 pb-2 flex flex-wrap/);
 });
 
 // ── #3363's sections live on the Communities screen ───────────────────
@@ -313,13 +247,12 @@ test('#3051, #852: the header\'s "Communities" switcher is there at every width,
 
 const SECTIONS_SRC = read('frontend/src/features/workshop/sections.ts');
 
-test('#3363: the order is the screen\'s own, from one shared module', () => {
+test('#3363: the order is one shared module\'s', () => {
   for (const name of ['groupRows', 'orderRows', 'sectionFold', 'SECTION_LIMIT', 'SECTION_STEP', 'SECTIONS']) {
     assert.match(SECTIONS_SRC, new RegExp(`export (?:function|const) ${name}\\b`), `${name} lives in sections.ts`);
-    assert.doesNotMatch(SCREEN, new RegExp(`(?:function|const) ${name}\\b`), `and the screen has no second ${name}`);
+    assert.doesNotMatch(SCREEN, new RegExp(`(?:function|const) ${name}\\b`), `and the page has no second ${name}`);
     assert.doesNotMatch(SCOPE, new RegExp(`(?:function|const) ${name}\\b`), 'nor the switcher\'s store');
   }
-  assert.match(SCREEN, /from '\.\/sections';/);
   assert.match(SCOPE, /import \{ orderRows \} from '\.\/sections';/);
   assert.match(SCOPE, /const ordered = orderRows\(joined as any\)/, 'newest first, as the screen orders them');
 });
@@ -411,9 +344,9 @@ test('#2768, #3295, #852: on the app\'s Workshop the header\'s name opens Your c
     assert.doesNotMatch(renderHeader({ subTab }), /header-app-switch/);
   }
 
-  // The Communities screen's title is the bar's switcher too (#852), up to
-  // the sidebar of rows (D), which is the one width in it.
-  assert.match(header, /const allAppsSwitcher = screen === 'workshop-screen' && !sidebarRows;/);
+  // The Communities screen's title was the bar's switcher too (#852), until
+  // One Home (#6361) gave its list to Home.
+  assert.doesNotMatch(header, /allAppsSwitcher/);
   assert.match(header, /const sidebarRows = useSidebarRows\(\);/);
   assert.doesNotMatch(header, /PHONE_QUERY|usePhone/);
 });

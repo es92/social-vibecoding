@@ -214,6 +214,14 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
   // count glyphs are the same pair the app's own Workshop tab uses, which is
   // the point: the number on a row and the pane it counts wear one mark.
   const expected = [
+    // ── One Home (#6361) retired Discover's screen and its tab ──────────
+    //
+    // The rail's Discover tab drew CompassIcon (two paths) in the static
+    // document; the compass still draws behind state (a Settings row). Its
+    // filter sheet's button drew FilterIcon there too.
+    'M12 3.5a8.5 8.5 0 110 17 8.5 8.5 0 010-17z',
+    'M15.5 8.5l-2 5-5 2 2-5z',
+    'M4 6h16M7 12h10M10 18h4',
     // ── The create dialog is retired ───────────────────────────────────
     //
     // Its "A private community" row drew LockIcon in the static document;

@@ -183,15 +183,10 @@ test('Workshop and Profile draw their cards in the plane colour', () => {
   assert.match(primitive, /tone: \{\s*card: 'bg-white dark:bg-zinc-900',\s*plane: 'bg-\[color:var\(--dc-sheet-solid\)\]',\s*\}/);
   assert.match(primitive, /defaultVariants: \{ tone: 'card' \}/, 'every other list keeps the white card');
   const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
-  const workshop = read('frontend/src/features/workshop/index.tsx');
-  // #workshop-list holds ONE card of every community, under the audience
-  // chips (#5296; #5581 took the per-audience sections out of the phone
-  // drawer too, so nothing draws them any more), so the plane tone is on
-  // that card, not the wrapper.
-  assert.match(workshop, /<div id="workshop-list">/);
-  assert.match(workshop, /<GroupedList tone="plane" data-workshop-rows=\{pressed\}>/);
-  assert.doesNotMatch(workshop, /<GroupedList(?![^>]*tone="plane")[^>]*>/,
-    'every list on the Workshop screen (the app list, the per-app item groups, their skeleton) is a plane list');
+  // The Workshop screen's list of communities wore it until One Home
+  // (#6361) gave that list to Home; the page left there is the Needs you
+  // feed, which draws no grouped list.
+  assert.doesNotMatch(read('frontend/src/features/workshop/index.tsx'), /<GroupedList/);
   assert.match(read('frontend/src/features/profile/account-panel.tsx'), /<GroupedList className="mx-0" tone="plane">/);
   const friends = read('frontend/src/features/profile/friends-section.tsx');
   for (const id of ['profile-friend-requests', 'profile-friends-list', 'profile-friend-sent']) {

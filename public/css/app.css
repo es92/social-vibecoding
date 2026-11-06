@@ -24286,47 +24286,8 @@ html.un-android #back-btn > #back-icon-arrow:not(.hidden) + .back-icon-android {
   display: none;
 }
 
-/* ── ALL COMMUNITIES: ONE LIST, UNDER A SEARCH AND ITS CHIPS (#5296) ──
-   features/workshop/index.tsx. The search heads the list at every width
-   (D drew it from 768px only); the sidebar's Communities heading opens it
-   lit. A search's answer is the list itself, so nothing here hides
-   anything while it is up: the screen leaves Join and Start out itself. */
-.workshop-search {
-  margin: 0 16px 10px;
-}
-.workshop-search .messages-search {
-  margin: 0;
-}
-/* THE SEARCH SITS A SMALL GAP UNDER THE NEEDS YOU CARD (UX audit, 20 Oct
-   2026). The card's section carried no bottom margin, so the field touched
-   it. Twelve is the gap the chip row already keeps below the search. Only
-   when something heads the list: with no card (or with no loading skeleton
-   in its place) the search keeps the place it had. */
-section + .workshop-search {
-  margin-top: 12px;
-}
-/* THE CHIP ROW FADES WHERE IT IS CUT, the same 2rem fade Home's Discover
-   lane uses on desktop (`.home-discover-rail`). The rail scrolls sideways
-   with its scrollbar hidden, so without a cue a half-visible "Just you" read
-   as the end of the row. `data-more` is set by AudienceChips from its own
-   scroll measurement — on only while a chip is past the right edge. */
-.audience-chips[data-more] {
-  -webkit-mask-image: linear-gradient(to var(--fade-to-inline-end, right), #000 calc(100% - 2rem), transparent);
-  mask-image: linear-gradient(to var(--fade-to-inline-end, right), #000 calc(100% - 2rem), transparent);
-}
-/* LIT, from the sidebar's search (features/workshop/communities-search.ts),
-   until focus leaves it: the place's own tint, so the eye lands on it. */
-.workshop-search[data-lit] .messages-search-input {
-  border-color: var(--lit-ink);
-  background: var(--lit-tint);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lit-ink) 22%, transparent);
-}
-.workshop-search-none {
-  margin: 0;
-  padding: 12px 22px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
+/* All communities' search and audience chips went with its list, which is
+   Home's since One Home (#6361). */
 
 @media (min-width: 768px) {
   /* THE ONE NUMBER THE REST FOLLOWS. Everything the strip's width placed

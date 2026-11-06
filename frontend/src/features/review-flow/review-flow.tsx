@@ -508,12 +508,12 @@ export function ReviewFlow({ items, error, capped, onDone, doneLabel, onAnswered
   error: boolean;
   capped: boolean;
   onDone: () => void;
-  /** The end's way on; "Back to your communities" when not given. */
+  /** The end's way on; "Back to Home" when not given. */
   doneLabel?: string;
   /**
-   * Whose header the run sits under: the Communities screen's, which the run
-   * names (../header/review-run-store.js), or a project's, which already
-   * names the community and the place.
+   * Whose header the run sits under: Needs you's (#needs, the page left of
+   * the Communities screen, One Home #6361), whose way back is Home, or a
+   * project's, which already names the community and the place.
    */
   header?: 'communities' | 'project';
   onAnswered?: (id: number, epoch: number | null) => void;
@@ -790,7 +790,7 @@ export function ReviewFlow({ items, error, capped, onDone, doneLabel, onAnswered
   // opened from. The shell's header steps aside for it on a phone, as it did
   // for the run's old head.
   const toProject = header === 'project' && item && item.app ? item.app.name : '';
-  const backName = t('communities:review.back.label', { place: toProject || t('communities:switcher.all.name') });
+  const backName = t('communities:review.back.label', { place: toProject || t('core:tabs.home') });
 
   /* ── Drawing ── */
   if (error) {

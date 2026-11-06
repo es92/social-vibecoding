@@ -15,7 +15,8 @@
  * /api/platform/about, its own lookup), so the header SUBSCRIBES to it
  * (PlatformTarget.onSlug, fired wherever it becomes known) and draws the
  * label and the press from that one value (`generalHubBack`), so the two
- * can never disagree. Before anything knows it, the way back is Communities.
+ * can never disagree. Before anything knows it, the way back is Home, where
+ * the communities are (One Home, #6361).
  */
 
 import { useEffect, useSyncExternalStore } from 'react';
@@ -57,12 +58,18 @@ export function platformHubServed(): boolean {
   }
 }
 
-/** Open `slug`'s hub, or Communities when there is no slug. */
+/** Open `slug`'s hub, or Home when there is no slug. */
 export function openChannelHub(slug: string | null): void {
-  const win = window as unknown as { AppView?: { _landOnHub?: (slug: string) => void } };
-  if (slug) win.AppView?._landOnHub?.(slug);
+  const win = window as unknown as { AppView?: { _landOnHub?: (slug: string) => void }; App?: { navigateHome?: () => void } };
+  if (!slug) {
+    // One Home (#6361): the communities are Home's.
+    if (win.App?.navigateHome) win.App.navigateHome();
+    else window.location.hash = '';
+    return;
+  }
+  win.AppView?._landOnHub?.(slug);
   // The Hub's own address, as the header's arrow (messages/store.ts channelHub).
-  window.location.hash = slug ? `#app/${encodeURIComponent(slug)}/dev/hub` : '#communities';
+  window.location.hash = `#app/${encodeURIComponent(slug)}/dev/hub`;
 }
 
 /** Hear when the platform's slug changes; the unsubscribe. */
@@ -78,7 +85,7 @@ export function subscribePlatformSlug(onChange: () => void): () => void {
  */
 export function generalHubBack(slug: string | null): { label: string; onBack: () => void } {
   return {
-    label: slug ? 'Homeroom' : t('messages:channel.backCommunities'),
+    label: slug ? 'Homeroom' : t('core:tabs.home'),
     onBack: () => openChannelHub(slug),
   };
 }

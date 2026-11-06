@@ -67,7 +67,10 @@ test('the tabs are the ones the bar renders', () => {
   // stays lit over Main, the Messages screen's chat with the bot (the nav
   // store's `bot`). The desktop rail added Discover's (29 Oct 2026), retired
   // with its screen by One Home (#6361), so the rail answers as the phone.
-  assert.deepEqual(sections, ['ai', 'home', 'me', 'messages', 'workshop']);
+  // One Home (#6361): no screen is the Communities tab's own; Needs you,
+  // the page left of its screen, is Home's. The tab still lights for a
+  // project's own Workshop (app.js, below), on neither bar.
+  assert.deepEqual(sections, ['ai', 'home', 'me', 'messages']);
   assert.deepEqual({ ...RAIL_TAB_FOR_SCREEN }, {});
   assert.equal(tabForScreen('home-screen', true), 'home', 'the rail answers as the phone');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
@@ -776,12 +779,12 @@ test('an app\'s channel belongs to its community, and a change to Messages', () 
     'and the back slot agrees with the tab that lights');
   assert.match(appJs, /if \(App\._isChannelThread\(\)\) return \['arrow', App\._hubHref\(App\.currentApp\)\];/,
     'the channel\'s way up is its hub');
-  assert.match(appJs, /_hubHref\(slug\) \{\s*return slug \? `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub` : '#communities';/,
-    'a hash, because the back button follows only a hash');
+  assert.match(appJs, /_hubHref\(slug\) \{\s*(?:\/\/[^\n]*\n\s*)*return slug \? `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub` : '\/';/,
+    'a hash, because the back button follows only a hash; with no project, Home (One Home, #6361)');
   const appView = read('public/js/app-view.js');
   const branch = appView.slice(appView.indexOf("if (subTab === 'chat') {"));
   assert.match(branch.slice(0, branch.indexOf('\n    }')),
-    /App\.setBackIcon\?\.\('arrow', App\._hubHref\?\.\(App\.currentApp\) \|\| '#communities'\);/,
+    /App\.setBackIcon\?\.\('arrow', App\._hubHref\?\.\(App\.currentApp\) \|\| '\/'\);/,
     'a level inside the hub shows the way up to it');
   // A CHANGE IS AN AGENT CONVERSATION (#2770): its screen hangs off Messages
   // the same way, rather than off the board it used to point at.

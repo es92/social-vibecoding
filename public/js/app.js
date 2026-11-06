@@ -5546,15 +5546,36 @@ const App = {
         App.navigateToProfile(parts[1] ? decodeURIComponent(parts[1]) : null);
         return;
       }
-      if (parts[0] === 'communities' || parts[0] === 'workshop') {
-        // The Communities screen (#communities; #workshop is its old name and
-        // still lands here): the viewer's communities with their two
-        // Workshop numbers. No gate beyond the anonymous-shell branch above —
-        // the counts endpoint is me-scoped server-side and answers 401 to a
-        // caller with no session. No second segment: the drill-in is the
-        // app's own /app/<slug>/workshop route, not a level of this screen.
+      if (parts[0] === 'needs') {
+        // Needs you (#needs): every decision owed by you across your
+        // projects, one page (features/workshop/index.tsx). No gate beyond
+        // the anonymous-shell branch above — the feed and the counts are
+        // me-scoped server-side and answer 401 to a caller with no session.
         App.setChromeless(false);
         App.navigateToWorkshop();
+        return;
+      }
+      if (parts[0] === 'communities' || parts[0] === 'workshop') {
+        // ONE HOME (#6361): the Communities screen's list is retired. Home
+        // holds your communities (Pinned communities and its All
+        // communities), and Needs you, the feed the list's top row opened,
+        // is its own page. Both addresses still arrive (a shared link, an
+        // older notification, a bookmark), so they are rewritten in place,
+        // which adds no Back step: with `?ws=needs` (in the query or the
+        // fragment's) to #needs, else to Home.
+        App.setChromeless(false);
+        let toNeeds = false;
+        try {
+          toNeeds = new URLSearchParams(location.search).get('ws') === 'needs'
+            || new URLSearchParams(fragQuery).get('ws') === 'needs';
+        } catch (_) { toNeeds = false; }
+        if (toNeeds) {
+          try { history.replaceState(null, '', App._rootUrl('#needs')); } catch (err) { /* non-fatal */ }
+          App.navigateToWorkshop();
+          return;
+        }
+        try { history.replaceState(null, '', App._rootUrl('')); } catch (err) { /* non-fatal */ }
+        App.navigateHome();
         return;
       }
       if (parts[0] === 'apps' || parts[0] === 'discover') {
@@ -6264,8 +6285,9 @@ const App = {
 
   // The rail's own places: the roots its tabs navigate to. #6019: AI is the
   // Messages screen's bot chat. This list is only read at the rail's width.
-  _RAIL_ROOTS: ['home-screen', 'messages-screen',
-    'workshop-screen', 'profile-screen', 'ai-screen'],
+  // Needs you (#workshop-screen) is a page under Home since One Home
+  // (#6361), reached from it, not a place of the rail's.
+  _RAIL_ROOTS: ['home-screen', 'messages-screen', 'profile-screen', 'ai-screen'],
 
   // Whether entering `screenEl` with `preferred` is a switch between places
   // on the desktop rail. The rail has to be on screen now (not hidden inside
@@ -6726,7 +6748,7 @@ const App = {
   _abandonWorkshopResume() {
     if (!App._resumingWorkshop || App._resumingWorkshop !== location.pathname) return false;
     App._forgetWorkshopView();
-    try { history.replaceState(null, '', App._rootUrl('#communities')); } catch (_) { return false; }
+    try { history.replaceState(null, '', App._rootUrl('')); } catch (_) { return false; }
     App.restoreFromHash();
     return true;
   },
@@ -6893,7 +6915,7 @@ const App = {
   // is reported then.
   _NAV_CODE_FOR_SCREEN: Object.freeze({
     'home-screen': 'home',
-    'workshop-screen': 'communities',
+    'workshop-screen': 'needs',
     'leaderboard-screen': 'challenges',
     'profile-screen': 'profile',
     'profile-proposals-screen': 'my_proposals',
@@ -7118,7 +7140,8 @@ const App = {
   },
 
   _hubHref(slug) {
-    return slug ? `#app/${encodeURIComponent(slug)}/dev/hub` : '#communities';
+    // With no project, Home: the communities are Home's (One Home, #6361).
+    return slug ? `#app/${encodeURIComponent(slug)}/dev/hub` : '/';
   },
 
   // ── A discussion is its project page's Discussion tab (#3653) ─────────
@@ -7868,10 +7891,9 @@ const App = {
       if (leavingApp) AppView.close();
       App._showOnlyScreen('workshop-screen');
       App._enterScreenChrome();
-      App.setHeaderTitle(PlatformI18n.t('shell:title.communities'));
-      // Nothing in the left slot: the Workshop is a tab root, and its tab is
-      // on screen beside it. _showOnlyScreen publishes that from App._BACK_SLOT
-      // — see the table for why a root shows no glyph at all.
+      App.setHeaderTitle(PlatformI18n.t('shell:title.needs'));
+      // An arrow up to Home in the left slot: Needs you is a page under it
+      // (One Home, #6361). _showOnlyScreen publishes that from App._BACK_SLOT.
     }, { type: App._entryTransition(fromIframe ? 'none' : 'push', screen) });
   },
 
@@ -9256,11 +9278,10 @@ const App = {
   // a tab it is not the root of is listed here with that tab's address.
   _BACK_SLOT: {
     'home-screen': ['none'],
-    // #6019: on a phone Discover is a page of Home's (its Discover block
-    // opens it), so its list level has an arrow back to Home. On the desktop
-    // rail it is a tab, a root, and _backSlotFor answers 'none' there.
     'messages-screen': ['none'],
-    'workshop-screen': ['none'],
+    // One Home (#6361): Needs you is a page under Home (its tile opens it),
+    // so it has an arrow up to Home, as Challenges has one up to Me.
+    'workshop-screen': ['arrow', '/'],
     // #6019 follow-up: the AI tab's page is a tab root; Main is a level
     // under it (the Messages store's syncChrome points its arrow here).
     'ai-screen': ['none'],
@@ -10018,6 +10039,7 @@ App._bootScreenFor = function _bootScreenFor(hash, pathname, signedIn) {
     // to its project's hub (restoreFromHash).
     case 'apps': return frag.split('/')[1] ? 'app-view' : null;
     case 'discover': return frag.split('/')[1] ? 'app-view' : null;
+    case 'needs': return 'workshop-screen';  // Needs you (One Home, #6361)
     case 'profile': return 'profile-screen';
     case 'settings': return 'settings-screen';
     case 'admin': return 'admin-screen';

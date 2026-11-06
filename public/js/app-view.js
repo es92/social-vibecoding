@@ -4916,7 +4916,7 @@ const AppView = {
       // it (App._syncPlatformTabs, App._isChannelThread) and the hub is what
       // it hangs off. The reset above publishes 'none', which is right for
       // the hub and the board; this thread has somewhere to go up TO.
-      App.setBackIcon?.('arrow', App._hubHref?.(App.currentApp) || '#communities');
+      App.setBackIcon?.('arrow', App._hubHref?.(App.currentApp) || '/');
       AppView._renderChatSubView(content);
       return;
     }

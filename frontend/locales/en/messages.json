@@ -2119,10 +2119,6 @@
     "text": "From {{project}}",
     "description": "On a card for a request, change or other item shared in a project's channel, when the item belongs to a different project than the channel's: says which project it comes from. {{project}} is that project's name. Joined to the item's status with a middle dot, for example \"From KasirKU · open\"."
   },
-  "channel.backCommunities": {
-    "text": "Communities",
-    "description": "Label of the back control on the #general channel when it leads to the Communities screen."
-  },
   "thread.jumpToLatest": {
     "text": "Jump to latest",
     "description": "Tooltip and accessible name of the round arrow button over a conversation: scrolls down to the newest message."

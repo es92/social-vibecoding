@@ -544,17 +544,17 @@ test('a Homeroom line kept in #general, as the root of somebody\'s thread, is dr
   assert.match(CSS, /\.messages-message-system \.messages-message-author \{ color: var\(--text-muted\); \}/);
 });
 
-test('the Communities screen has no toggle: Needs you is a row that opens a page', () => {
+test('Needs you has no toggle: it is a page of its own, the header its way back', () => {
   // It had two tabs, Current status and Needs you, drawn as the project
   // page's strip. The UI overhaul made the list the page and Needs you a
-  // row at its top ("3 votes waiting on you"), which opens the feed with a
-  // way back; the strip and its CSS went with the tabs.
+  // row at its top that opened the feed with a back disc; One Home (#6361)
+  // gave the list to Home and left the feed as the page (#needs), whose way
+  // back is the header's arrow up to Home.
   const screen = read('frontend/src/features/workshop/index.tsx');
   assert.doesNotMatch(screen, /SECTION_TAB_ACTIVE|<TabsList|workshop-scope-tab/);
   assert.doesNotMatch(CSS, /\.workshop-scope-tabs? \{/);
-  assert.match(screen, /<ListRow\s+as="button"\s+data-workshop-needs-open=""/);
-  assert.match(screen, /className="dev-ws-page-back un-touch-target"\s+data-workshop-needs-back=""/,
-    'the way back is the project page\'s own back disc');
+  assert.doesNotMatch(screen, /data-workshop-needs-(?:open|back)=/, 'no door and no disc: the page is all feed');
+  assert.match(read('public/js/app.js'), /'workshop-screen': \['arrow', '\/'\],/);
 });
 
 test('Home\'s See all links carry the accent, not the header\'s periwinkle', () => {

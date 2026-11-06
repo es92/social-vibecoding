@@ -54,21 +54,3 @@ test('on a phone For you\'s Workshop row is always there, and named for the plac
   assert.match(cards, /<WorkRow mine=\{mine\} onOpen=\{onWork\} place=\{places\} \/>/);
   assert.match(cards, /title=\{place \? placeName\('workshop'\) : t\('project:hub\.work\.title'\)\}/);
 });
-
-test('on a phone All communities is a grid of tiles, each a door to its Hub', () => {
-  const screen = read('frontend/src/features/workshop/index.tsx');
-  assert.match(screen, /phone \? \(\s*\/\*[\s\S]*?\*\/\s*<div className="grid grid-cols-4 gap-x-1 gap-y-4 px-3 pt-1" data-workshop-rows=\{pressed\} data-workshop-grid="">/,
-    'four to a row, keeping the list\'s data attribute for the checks');
-  assert.match(screen, /\{shown\.map\(\(row\) => <CommunityTile key=\{row\.slug\} row=\{row\} \/>\)\}/);
-  const tile = screen.slice(screen.indexOf('export function CommunityTile('), screen.indexOf('/**\n * Four rows of the real geometry'));
-  // A door to the Hub (AGENTS.md: a door calls AppView._landOnHub first).
-  assert.match(tile, /win\.AppView\?\._landOnHub\?\.\(row\.slug\);[^\n]*\n\s*win\.App\?\.navigateToApp\?\.\(row\.slug, 'dev'\);/);
-  assert.match(tile, /href=\{href\}/, 'an anchor with the hub\'s address, so a new tab opens it too');
-  assert.match(tile, /data-workshop-app=\{row\.slug\}/);
-  // The votes it waits on you for: a badge in the accent, said in words to a reader.
-  assert.match(tile, /bg-violet-600 text-white/);
-  assert.match(tile, /\{votes > 0 \? <span className="sr-only">\{t\('communities:row\.toVote', \{ count: votes \}\)\}<\/span> : null\}/);
-  assert.doesNotMatch(tile, /\{votes\}\s*<\/span>\s*\) : \(/, 'a zero says nothing');
-  // Settled after mount, so the first render is the prerender's list.
-  assert.match(screen, /function usePhoneWidth\(\): boolean \{\s*const \[phone, setPhone\] = useState\(false\);/);
-});

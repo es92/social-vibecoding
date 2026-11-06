@@ -53,19 +53,19 @@ test('#5164, #5462: the quiet reads and re-entry ask for the current answer, not
   assert.match(workshopTsx, /fetch\(`\/api\/workshop\/needs-feed\$\{demo\}`, \{ cache: 'no-cache' \}\)/,
     'and the Needs you feed with it');
   // #5462: reload()'s re-entry read goes fresh the same way. The store
-  // already holding rows or a feed is what says this is a return — open()
-  // has painted that kept copy, so waiting for the network costs no visible
+  // already holding a feed is what says this is a return — open() has
+  // painted that kept copy, so waiting for the network costs no visible
   // time, and the saved copy the boot lane would answer with is exactly the
-  // one a vote cast while the screen was away leaves behind.
-  assert.match(workshopTsx, /const fresh = state\.rows != null \|\| state\.feed != null;/,
-    're-entry is read off the store, which rows: null marks until the first answer');
-  assert.match(workshopTsx, /const freshOpts = fresh \? \{ cache: 'no-cache' as const \} : undefined;/,
+  // one a vote cast while the page was away leaves behind.
+  assert.match(workshopTsx, /const fresh = workshopStore\.get\(\)\.feed != null;/,
+    're-entry is read off the store, which feed: null marks until the first answer');
+  assert.match(workshopTsx, /const opts = fresh \? \{ cache: 'no-cache' as const \} : undefined;/,
     'the conditional is the one spelling, shared by both reads');
-  // The FIRST paint stays a boot read: freshOpts is undefined there, so the
-  // fast lane #5164 kept for the cold start is untouched.
-  assert.match(workshopTsx, /fetch\(`\/api\/workshop\/counts\$\{demo\}`, freshOpts\)\.catch/,
+  // The FIRST paint stays a boot read: opts is undefined there, so the fast
+  // lane #5164 kept for the cold start is untouched.
+  assert.match(workshopTsx, /fetch\(`\/api\/workshop\/counts\$\{demo\}`, opts\)\.catch/,
     'reload() passes the conditional mode to the counts read');
-  assert.match(workshopTsx, /fetch\(`\/api\/workshop\/needs-feed\$\{demo\}`, freshOpts\)\.catch/,
+  assert.match(workshopTsx, /fetch\(`\/api\/workshop\/needs-feed\$\{demo\}`, opts\)\.catch/,
     'and to the Needs you feed with it');
 });
 

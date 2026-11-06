@@ -2557,7 +2557,7 @@
       "expectSelector": "#dev-workshop [data-rf-project=\"usernode-2d5619\"] [data-review-flow]"
     },
     {
-      "name": "Needs you draws the review flow's change page in place in the pane, not over the shell, with its own Back (#6276)",
+      "name": "Needs you draws the review flow's change page in place in the pane, not over the shell, with its own Back (#6276); the old #workshop?ws=needs address lands on it (One Home, #6361)",
       "path": "/?demo=1&ws=needs#workshop",
       "expectSelector": "body:not(:has(> [data-rf-page])) #workshop-screen:not(.hidden) [data-workshop-pane=\"needs\"] [data-rf-page] [data-rf-back]"
     },
@@ -3224,40 +3224,14 @@
       "expectText": "Go to community"
     },
     {
-      "id": "workshop.all-apps",
-      "name": "Workshop links joined communities to their actual app Workshop",
-      "path": "/?demo=1#workshop",
-      "expectSelector": "#workshop-screen:not(.hidden) #workshop-list [data-workshop-rows=\"all\"] a[data-workshop-app][data-workshop-audience=\"open\"][href$=\"/workshop\"]",
-      "expectText": "Public",
-      "visual": true,
-      "impact": [
-        "frontend/src/features/workshop/**",
-        "frontend/src/features/app-context/app-context-sheet.tsx",
-        "src/routes/workshop-overview.js",
-        "public/js/app.js",
-        "public/js/app-view.js"
-      ]
+      "name": "#communities, the old Communities screen, opens Home: beside the sidebar's search glyph, Pinned communities offers Needs you with the votes waiting (One Home, #6361; #3051, D)",
+      "path": "/?demo=1#communities",
+      "expectSelector": "body:has(#platform-rail-search) #home-screen:not(.hidden) #home-communities-section:not([hidden]) a#home-needs-tile[href=\"#needs\"][data-home-needs]",
+      "expectText": "Needs you"
     },
     {
-      "name": "Workshop rows carry both counts from their stored app data",
-      "path": "/?demo=1#workshop",
-      "expectSelector": "#workshop-screen:not(.hidden) #workshop-list a[data-workshop-app]:has([data-workshop-working] + [data-workshop-needs])"
-    },
-    {
-      "name": "All communities is one list under audience chips, All pressed, then Public, Private and Just you in that order, with every community out and no Show more (#5296)",
-      "path": "/?demo=1#workshop",
-      "expectSelector": "#workshop-screen:not(.hidden):not(:has([data-workshop-more])) [data-workshop-chips] [data-workshop-chip=\"all\"][aria-pressed=\"true\"] ~ [data-workshop-chip=\"open\"][aria-pressed=\"false\"] ~ [data-workshop-chip=\"invited\"] ~ [data-workshop-chip=\"solo\"]",
-      "expectText": "Public"
-    },
-    {
-      "name": "The Communities screen draws no empty-state line while it has rows; beside the sidebar, whose Communities heading holds its search, it is one page of your communities under a search, nothing beside it; no scope chip on the page, and the page bounces (#3051, #852, #3566, D, v3)",
-      "path": "/?demo=1#workshop",
-      "expectSelector": "body:has(#platform-rail-search) #workshop-screen[data-page-bounce]:not(.hidden):has(#workshop-search):not(:has([data-workshop-pane=\"needs\"])):has(#workshop-list [data-workshop-app]) [data-workshop-pane=\"status\"]:not(.hidden) #workshop-empty.hidden",
-      "expectText": "Join a community"
-    },
-    {
-      "name": "Communities: Needs you is the review flow, one change's page in the pane with its vote bar (#6276)",
-      "path": "/?demo=1&ws=needs&shot=needs-approve#workshop",
+      "name": "Needs you (#needs) is the review flow, one change's page in the pane with its vote bar (#6276; One Home, #6361)",
+      "path": "/?demo=1&shot=needs-approve#needs",
       "expectSelector": "#workshop-screen:not(.hidden) [data-workshop-pane=\"needs\"] [data-rf-page] [data-rf-back]",
       "expectText": "Skip"
     },

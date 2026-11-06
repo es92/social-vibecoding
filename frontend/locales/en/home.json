@@ -879,6 +879,18 @@
     "text": "Couldn't update your Home: {{reason}}",
     "description": "Brief notice when pinning or unpinning a community on Home failed. {{reason}} is the server's explanation."
   },
+  "communities.needs": {
+    "text": "Needs you",
+    "description": "Name under the tile in Home's Pinned communities that opens Needs you, the page of every vote and decision waiting on the viewer across their projects. Shown only while something waits."
+  },
+  "communities.needsNamed_one": {
+    "text": "Needs you: {{count}} vote waiting on you",
+    "description": "Accessible name of the Needs you tile on Home, with how many votes wait on the viewer across their projects. Singular."
+  },
+  "communities.needsNamed_other": {
+    "text": "Needs you: {{count}} votes waiting on you",
+    "description": "Accessible name of the Needs you tile on Home, with how many votes wait on the viewer across their projects. Plural."
+  },
   "join.heading": {
     "text": "Communities to join",
     "description": "Heading over the cards of public communities at the bottom of Home that the viewer has not joined."

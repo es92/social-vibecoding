@@ -120,8 +120,9 @@ test('a digest of several opens Needs you, which lists them, instead of nothing'
   const { N, calls, location } = load();
   N.items = [{ id: 2, readAt: null, kind: 'vote_digest', detail: '3', appSlug: null, sessionId: null }];
   N._onItemClick(2);
-  assert.deepEqual(nav(calls), [['setTab', 'needs']]);
-  assert.equal(location.hash, '#communities', 'not the screen it was tapped on (the bot DM, on 4 October)');
+  // One Home (#6361): Needs you is a page of its own, #needs.
+  assert.deepEqual(nav(calls), []);
+  assert.equal(location.hash, '#needs', 'not the screen it was tapped on (the bot DM, on 4 October)');
 });
 
 test('the digest names its change when there is exactly one, and nothing when there are several', async () => {

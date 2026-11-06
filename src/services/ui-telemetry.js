@@ -45,9 +45,11 @@ const JOURNEY_SCREENS = Object.freeze(new Set([
 // `assistant` was Global Chat's screen. Nothing reports it since Global Chat
 // was removed, but it stays a code so the visits already recorded still read
 // as steps (journey.js) and as landings in the page-load report. `discover`
-// is kept the same way since One Home (#6361) retired Discover's screen.
+// and `communities` are kept the same way since One Home (#6361) retired
+// Discover's screen and the Communities list; `needs` is the page left of
+// the latter.
 const NAV_SCREENS = Object.freeze(new Set([
-  'home', 'discover', 'communities', 'challenges', 'profile', 'my_proposals',
+  'home', 'discover', 'communities', 'needs', 'challenges', 'profile', 'my_proposals',
   'settings', 'messages', 'assistant', 'agent_session', 'ai', 'app', 'project',
   'username_sheet', 'terms_sheet', 'join_sheet', 'tour',
 ]));

@@ -77,18 +77,6 @@ test('an unread count is grey wherever it is, and said in words on a full row', 
   assert.doesNotMatch(rule('\n.dev-ws-places-dot'), /#ff5a4f/);
 });
 
-test('a community\'s row: its votes in the blue pill, its unread said in grey words, never a second number', () => {
-  const src = read('frontend/src/features/workshop/index.tsx');
-  const row = src.slice(src.indexOf('export function AppRow'), src.indexOf('Four rows of the real geometry'));
-  // #5296's one pill is the votes, and only the votes.
-  assert.match(row, /trailing=\{row\.needs > 0 \? <VotePill count=\{row\.needs\} \/> : null\}/);
-  assert.doesNotMatch(row, /messages-unread/, 'no unread bubble at the row\'s end');
-  assert.match(row, /<StatusLine working=\{row\.working\} needs=\{row\.needs\} needsInPill \/>\s*\{unread > 0 \? \(\s*<span data-workshop-unread=\{String\(unread\)\} className="text-zinc-500 dark:text-zinc-400">/);
-  assert.match(row, /t\('communities:row\.newMessages', \{ count: unread \}\)/);
-  assert.equal(message('communities:row.newMessages', { count: 5 }), '5 new messages');
-  assert.equal(message('communities:row.newMessages', { count: 1 }), '1 new message');
-});
-
 // ── N17, N14, #20 ──────────────────────────────────────────────────────
 
 test('the "still open" dot is quiet grey, and stays where the close control finds it', () => {

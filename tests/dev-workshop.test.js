@@ -6509,7 +6509,8 @@ test('the Hub has its own address, #app/<slug>/dev/hub, for links that mean the 
   assert.deepEqual(parts, ['app', 'garden', 'workshop'], 'rewritten to the page\'s own address');
   assert.equal(view._workshopTab(), 'status', 'on its Hub');
   assert.equal(view._takePlaceDecision('garden'), true, 'a decision the /workshop link rule then honours');
-  assert.match(appSrc, /_hubHref\(slug\) \{\s*return slug \? `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub` : '#communities';/);
+  // With no project, Home: the communities are Home's (One Home, #6361).
+  assert.match(appSrc, /_hubHref\(slug\) \{\s*(?:\/\/[^\n]*\n\s*)*return slug \? `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub` : '\/';/);
   assert.match(read('src/services/homeroom-bot-dm.js'), /id: 'open_community'[^\n]*target: `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub`/);
   assert.match(read('src/services/shared-objects.js'), /href: link\.type === 'hub' \? `#app\/\$\{slug\}\/dev\/hub`/);
 });

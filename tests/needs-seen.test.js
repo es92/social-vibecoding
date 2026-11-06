@@ -287,35 +287,6 @@ test('the Communities tab\'s count drops as votes are swiped past anywhere', () 
   assert.match(SRC, /owedCount: Number\(counts\[r\.slug\]\?\.needs\) \|\| 0,\s*owed: Array\.isArray\(owed\) \? owed\.map\(String\) : undefined,/);
 });
 
-test('the Communities list and its Needs you row leave out what you skipped, and keep the door', () => {
-  const seen = loadTsx(SEEN_SRC);
-  // Loaded before the window exists, as the screen's own tests load it: its
-  // imports bind browser listeners when there is one.
-  const mod = loadTsx('frontend/src/features/workshop/index.tsx', { stubs: { './needs-seen': seen } });
-  fakeWindow(7);
-  seen.hydrateNeedsSeen();
-  const rows = mod.joinCounts([{ slug: 'garden', name: 'Garden' }, { slug: 'swap', name: 'Swap' }], {
-    garden: { working: 0, needs: 2, owed: ['proposal:1@0', 'proposal:2@0'] },
-    swap: { working: 0, needs: 1, owed: ['governance:9'] },
-  });
-  assert.deepEqual(rows[0].owed, ['proposal:1@0', 'proposal:2@0'], 'the counts say which votes, and the row keeps them');
-  const html = () => renderToHtml(createElement(mod.WorkshopScreen, {}));
-  mod.workshopStore.set({ open: true, error: false, tab: 'status', rows, feed: null, feedError: false, feedCapped: false });
-  assert.match(html(), /3 votes waiting on you/);
-  seen.markNeedsSeen('garden', 'proposal:1@0');
-  seen.markNeedsSeen('garden', 'proposal:2@0');
-  let out = html();
-  assert.match(out, /1 vote waiting on you/);
-  assert.match(out, /data-workshop-needs-door=""[\s\S]*?>Swap</, 'naming only the projects with something new');
-  seen.markNeedsSeen('swap', 'governance:9');
-  out = html();
-  assert.match(out, /data-workshop-needs-door=""/, 'the only door to the feed on this screen stays');
-  assert.match(out, /3 votes you skipped/);
-  assert.match(out, /Garden, Swap/);
-  assert.equal(mod.unseenRow({ slug: 'garden', name: 'Garden', working: 0, needs: 2, owed: ['proposal:1@0', 'proposal:2@0'] }).needs, 0);
-  mod.workshopStore.set({ open: false, rows: null });
-});
-
 test('the app menu\'s "to vote" is the same number', () => {
   const SHEET = read('frontend/src/features/app-context/app-context-sheet.tsx');
   assert.match(SHEET, /unseenNeeds\(slug, c\.needs, Array\.isArray\(c\.owed\) \? c\.owed : null\)/);

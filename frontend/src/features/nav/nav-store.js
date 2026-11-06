@@ -71,7 +71,9 @@ export const TAB_FOR_SCREEN = Object.freeze({
   // #6019 follow-up: the AI tab's own page. Main, the chat with the bot, is
   // a conversation of the Messages screen, lit as AI by the bar itself.
   'ai-screen': 'ai',
-  'workshop-screen': 'workshop',
+  // One Home (#6361): Needs you, the page left of the Communities screen, is
+  // a page under Home, reached from it.
+  'workshop-screen': 'home',
   'profile-screen': 'me',
   'leaderboard-screen': 'me',
   'settings-screen': 'me',

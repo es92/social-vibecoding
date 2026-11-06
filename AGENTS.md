@@ -242,7 +242,7 @@ is no replay plan to write and nothing to verify locally.
   community** (`invited`) or **Public community** (`open`) — and what it
   owns are **projects**. Use "project" in user-facing copy where the app is
   the thing being built; keep "app" where it is the thing being used (the
-  App tab, Discover).
+  App tab, Pinned apps).
 - **The phone's bar is Home · AI · Messages · You; the desktop sidebar is
   Home, AI, Messages, then Recents and You** (#6019; One Home, #6361). AI is the Homeroom bot's chat, which is not a row of Messages
   and is never drawn on the Messages screen: its page
@@ -279,9 +279,11 @@ is no replay plan to write and nothing to verify locally.
   opens the app; hidden until the first pin), **Pinned communities**
   (`home_community_pins`, `services/home-pins.js`, `/api/me/home-pins`,
   `features/home/pinned-communities.tsx`: a tile opens the hub; its All
-  communities tile shows the ones you are in but have not pinned, and New
-  community starts a project), Challenges as a sideways row, then
-  **Communities to join** (the public directory, more as you scroll,
+  communities tile shows the ones you are in but have not pinned, its Needs
+  you tile, drawn while a vote waits, opens Needs you, and New community
+  starts a project), Challenges as a sideways row, then **Communities to
+  join** (the public directory: **Featured**, what an admin featured, as
+  its first sideways row, then the rest, more as you scroll,
   `features/home/communities-to-join.tsx`). The two pins are separate acts
   and neither joins: you may pin what you have not joined. Joining pins the
   community (`communities.join`); leaving unpins it and keeps the app's
@@ -289,13 +291,20 @@ is no replay plan to write and nothing to verify locally.
   device (`features/guest/device-pins.ts`) and moved to the account at
   sign-in (`POST /api/me/home-pins/import`). Who hears about a project's
   votes and merges is `app_stakes` (members who pinned its app or its
-  community), not every favorite. Discover and the Communities tab are
-  drawn on neither bar (app.css); their nodes, `#apps` and `#communities`
-  stay for the links that name them. The markup is the rail's order, and
-  app.css orders the phone's four cells.
-  `#communities` (`#workshop` still routes there; the hidden tab's key and
-  ids keep `workshop`) is All communities: every community you are in, as
-  one list under a search and All, Public, Private and Just you chips.
+  community), not every favorite. Discover's screen and the Communities
+  screen's list are gone: their addresses are rewritten in place by the
+  router, `#apps` and `#communities` (or `#workshop`) to Home, `#apps/<slug>`
+  to that project's hub, and `#communities?ws=needs` to `#needs`. A Home
+  card's "Go to community" opens the hub (`Home.openHub`), and "All
+  communities" anywhere (the switcher, the sidebar's All row) is Home's
+  (`Home.showCommunities({ all: true })`). The Communities tab is drawn on
+  neither bar (app.css); its node stays, with its key `workshop`. The markup
+  is the rail's order, and app.css orders the phone's four cells.
+  **Needs you** (`#needs`, `features/workshop/index.tsx`, the
+  `#workshop-screen` root) is a page under Home, its header's arrow up to
+  it: every decision owed across your projects
+  (`GET /api/workshop/needs-feed`), drawn by the review flow. The vote
+  digest opens it.
   Under 768px the header's name and ⌄ open **Your communities**
   (`features/workshop/community-switcher.tsx`, scope in
   `community-scope.ts`). From 768px the rail is a 212px sidebar of rows
@@ -337,9 +346,7 @@ is no replay plan to write and nothing to verify locally.
   channel and a category at once: an entry of dapp.json's `topics`,
   reconciled into `app_category_registry` (origin `'topic'`) when a change
   merges, its channel a `'category'` thread; a new topic, a rename, a merge
-  or an archive is a proposal (Settings & rules › Topics). The Communities
-  screen's Needs you is one feed of every decision owed across your projects
-  (`GET /api/workshop/needs-feed`). A project's channel lives on its page,
+  or an archive is a proposal (Settings & rules › Topics). A project's channel lives on its page,
   not in Messages, and #general is the Homeroom community's channel;
   Messages is people and agents. **A channel
   is what people said:** Homeroom writes no activity (a proposal put up for a
@@ -365,11 +372,10 @@ is no replay plan to write and nothing to verify locally.
   first, so it opens on the hub; every door or switch that names its place
   goes through `AppView._landOnTab`, and the router takes that decision
   over the link's (`_takePlaceDecision`). A switch is not a door: the
-  header's ⌄ menu and a row of All communities open the other community on
-  the place you were on when it has it, else its hub (`landKeepingPlace` in
-  `place-store.ts`); a phone's grid of All communities and Home's community
-  tiles are doors to the hub (`CommunityTile`), and the Communities tab's
-  code still reopens the page you left on its place.
+  header's ⌄ menu opens the other community on the place you were on when
+  it has it, else its hub (`landKeepingPlace` in `place-store.ts`); Home's
+  community tiles are doors to the hub, and the Communities tab's code
+  still reopens the page you left on its place.
   Back, Forward and a reload are not doors either: the page reopens on the
   place its history entry names, read fresh when it mounts. A request's
   "‹" chip names where its press goes: a step Back to the place the page

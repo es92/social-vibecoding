@@ -201,11 +201,13 @@ test('the tab reads its number from tabVotes, and the counts route carries the f
   const route = read('src/routes/workshop-overview.js');
   assert.match(route, /communities\.unchosenCommunities\(pool, req\.user\.id\)/);
   assert.match(route, /\.\.\.\(unchosen\.has\(row\.slug\) \? \{ unchosen: true \} : \{\}\),/);
-  // The switcher and the app menu still count every vote owed. The
-  // Communities list and its Needs you row no longer do (#5296): they say
-  // the tab's number, through the tab's own `votesWaiting`, because the page
-  // saying 14 under a tab that said 13 was the bug.
-  assert.match(read('frontend/src/features/workshop/index.tsx'), /votesWaiting\(/);
+  // The switcher and the app menu still count every vote owed. Home's Needs
+  // you tile does not (#5296): it says the tab's number, `badgeNeeds`, the
+  // sum of the tab's own `votesWaiting`, because a page saying 14 under a
+  // tab that said 13 was the bug. (It was the Communities list's Needs you
+  // row until One Home, #6361.)
+  assert.match(read('frontend/src/features/workshop/community-scope.ts'), /badgeNeeds \+= votesWaiting\(info\[s\]\);/);
+  assert.match(read('frontend/src/features/home/pinned-communities.tsx'), /const \{ badgeNeeds \} = useStoreState\(communityScopeStore\)/);
   for (const file of [
     'frontend/src/features/workshop/community-switcher.tsx',
     'frontend/src/features/app-context/app-context-sheet.tsx',

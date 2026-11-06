@@ -61,7 +61,8 @@ test('the markup: the section sits between Home and the Communities tab, its hea
   assert.ok(at('platform-rail-communities') < at('platform-tab-workshop'));
   assert.match(html, /<div id="platform-rail-communities" class="platform-rail-communities" role="group" aria-labelledby="platform-rail-communities-label">/);
   assert.match(html, new RegExp(`<span id="platform-rail-communities-label" class="platform-rail-head-label">${message('core:rail.communities')}</span>`));
-  assert.match(html, new RegExp(`<a id="platform-rail-search" class="platform-rail-search" href="#communities" aria-label="${message('core:rail.search')}"`));
+  // One Home (#6361): the search is Home's, so the link names Home.
+  assert.match(html, new RegExp(`<a id="platform-rail-search" class="platform-rail-search" href="/" aria-label="${message('core:rail.search')}"`));
   assert.doesNotMatch(html, /data-rail-community=/, 'no rows before the community list is read');
   // The All row's face rides in the Communities tab, for app.css to show.
   const tab = html.slice(at('platform-tab-workshop'), html.indexOf('</a>', at('platform-tab-workshop')));
@@ -112,23 +113,26 @@ test('the presses: a row switches in place, the lit one climbs to its Hub and st
   }
 });
 
-test('the search: All communities, with its box focused and lit once it shows', () => {
-  const calls = [];
+test('the search: Home, with its search box focused (One Home, #6361)', () => {
+  const closed = [];
   const search = loadTsx('frontend/src/features/workshop/communities-search.ts', {
-    stubs: { './community-scope': { goToCommunity: (slug) => calls.push(slug) } },
+    stubs: { './community-scope': { closeSwitcher: () => closed.push(true) } },
   });
-  assert.equal(search.communitiesSearchStore.get().asked, 0);
-  search.openCommunitiesSearch();
-  search.openCommunitiesSearch();
-  assert.equal(search.communitiesSearchStore.get().asked, 2, 'each press is a new request');
-  assert.deepEqual(calls, [null, null]);
-  const screen = read('frontend/src/features/workshop/index.tsx');
-  assert.match(screen, /if \(!state\.open \|\| !wide \|\| asked <= answered\.current\) return undefined;/, 'answered once, on the open screen');
-  assert.match(screen, /input\.focus\(\{ preventScroll: true \}\);/);
-  assert.match(screen, /onBlur=\{\(\) => setLit\(false\)\}/, 'lit until focus leaves');
-  assert.match(screen, /placeholder=\{t\('communities:drawer\.search\.placeholder'\)\}/, 'the drawer\'s words');
-  assert.match(screen, /\{state\.tab === 'needs' \? \(/, 'v3: Needs you is its own page, not beside the list');
-  assert.match(screen, /if \(state\.tab !== 'status'\) workshopController\.setTab\('status'\);/, 'the search is at the list\'s head');
+  const had = global.window;
+  const asked = [];
+  global.window = { Home: { focusSearch: () => asked.push('search') } };
+  try {
+    search.openCommunitiesSearch();
+    search.openCommunitiesSearch();
+  } finally {
+    global.window = had;
+  }
+  assert.deepEqual(asked, ['search', 'search'], 'each press focuses Home\'s search');
+  assert.equal(closed.length, 2, 'and closes the switcher first');
+  const home = read('frontend/src/features/home/home.js');
+  assert.match(home, /focusSearch\(\) \{\n\s*if \(typeof App !== 'undefined' && App\.navigateHome\) App\.navigateHome\(\);[\s\S]*?document\.getElementById\('home-search-input'\);[\s\S]*?input\.focus\(/);
+  // The Communities screen's own search is gone with its list.
+  assert.doesNotMatch(read('frontend/src/features/workshop/index.tsx'), /id="workshop-search"|communitiesSearchStore/);
 });
 
 test('the width: one block on every desktop window, from 768px; the phone\'s bar and the header\'s switcher below it', () => {
@@ -153,7 +157,7 @@ test('the width: one block on every desktop window, from 768px; the phone\'s bar
   // The header's name: the switcher on a phone, a name beside the sidebar.
   const header = read('frontend/src/features/header/header-title.tsx');
   assert.match(header, /const appSwitch = communityPage && !sidebarRows;/);
-  assert.match(header, /const allAppsSwitcher = screen === 'workshop-screen' && !sidebarRows;/);
+  assert.doesNotMatch(header, /allAppsSwitcher/, 'the Communities screen\'s switcher left with its list (One Home, #6361)');
   // The tab's own name follows what it shows.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(bar, /\? \(sidebarRows \? undefined : communitiesAriaLabel\(scoped, votes\)\)/);

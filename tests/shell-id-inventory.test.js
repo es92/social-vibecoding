@@ -537,9 +537,9 @@ const ADDED_IDS = {
   // somebody has tapped or once a tab has filtered to nothing, so none of
   // them is in the prerendered document, which is what this map is for.
   // #workshop-scope left this map with the chip itself (#2759), came back
-  // with it in #3051, and left again in #852: the Communities screen's "All
-  // ⌄" is the header's #header-scope-switch at every width now, which is
-  // conditional and so not in this map. The chip on an app's own Workshop
+  // with it in #3051, and left again in #852 for the header's
+  // #header-scope-switch, which was conditional and left with the screen's
+  // list (One Home, #6361). The chip on an app's own Workshop
   // was #dev-ws-scope-chip, which rendered client-side and was never in the
   // prerendered document; #3295 retired it for the header's
   // #header-app-switch, which is conditional and so not in this map either.
@@ -651,10 +651,8 @@ const ADDED_IDS = {
   // The app's own Workshop page answers "what is happening in THIS app";
   // nothing answered "which of my apps wants something from me", short of
   // opening each one in turn. This is that page's two numbers, once per app.
-  'workshop-screen': 'The Workshop SCREEN root (#workshop), a React-owned sibling of #messages-screen: every app in the viewer\'s "Your apps", with how many items that app\'s own Workshop page holds for them. Ships hidden and EMPTY — the rows arrive from GET /api/apps + GET /api/workshop/counts in the controller\'s open() — so the prerender and the first client render agree.',
+  'workshop-screen': 'The Needs you SCREEN root (#needs; One Home, #6361: it was the Communities screen, #communities, whose list went to Home), a React-owned sibling of #messages-screen: every decision owed by the viewer across their projects, as the review flow. Ships hidden and EMPTY — the feed arrives from GET /api/workshop/needs-feed in the controller\'s open() — so the prerender and the first client render agree. Its list\'s #workshop-list, #workshop-empty and #workshop-search went with it.',
   'profile-proposals-screen': '#5310: the "Your proposals" SCREEN root (#profile/proposals), a React-owned sibling of #workshop-screen: every proposal the viewer has started, grouped by status. Ships hidden and EMPTY; the rows arrive from GET /api/me/proposal-history in the controller\'s open(), so the prerender and the first client render agree.',
-  'workshop-list': 'That screen\'s card of rows — a <GroupedList> from @/components/ui/grouped-list, the widget language\'s primary content shape, so the id sits on the primitive rather than on a hand-rolled div. It carries no rows in the prerender, like #browse-list beside it; a row is a <ListRow as="a"> with `[data-workshop-app="<slug>"]` carrying `[data-workshop-working]` and `[data-workshop-needs]`, which is what the declared checks select on.',
-  'workshop-empty': 'Its nothing-to-show state, for an account with no apps. #2445 made it a CARD rather than the grey caption line it shipped as — a <ListRow as="a" href="#apps"> reading as an invitation to the directory, the way Home\'s Discover block\'s own empty card does (#1913): title over subtitle with the row\'s disclosure chevron. THE ID IS ON A WRAPPER <div>, NOT ON THAT ANCHOR, and that is load-bearing in two directions. dapp.json selects `#workshop-empty.hidden`, so the id and the `hidden` class toggle stay together on one element and visibility is never conditional rendering; and a SECOND declared check selects `#workshop-list a[data-workshop-app]:first-of-type`, which an `<a id="workshop-empty">` sibling of the rows silently steals — `:first-of-type` is structural and `display: none` does not exempt it. That shipped once and failed on the next run; the wrapper is the fix. Ships `hidden`, and stays hidden while the list is still loading — the skeleton rows are that state, and an empty list that reads as "you have no apps" before the fetch lands is the bug this distinction prevents. It is the list\'s FIRST child, not its last: GroupedList\'s row separator is `[&:not(:last-child)]:after:*` on the row, so a note after the rows would leave the last one drawing a hairline under nothing.',
   'app-settings-modal': '#2158: dedicated app settings and danger zone.',
   'app-delete-name': '#2158: named confirmation before app deletion.',
   // ── #2304: access is an app setting ──────────────────────────────
@@ -1227,8 +1225,7 @@ const ADDED_IDS = {
   // heading and no rows; the pins arrive from localStorage after mount.
   'platform-rail-pinned': 'The sidebar\'s Pinned section (role=group), between #platform-rail-conversations and #platform-rail-communities, hidden while nothing is pinned. Home\'s drag recognizer drops a My apps tile on it; dapp.json pins the bar order through it.',
   'platform-rail-pinned-label': 'The section\'s "Pinned" heading, which names the group.',
-  'platform-rail-search': 'D: the search beside that heading, shown on hover or focus: All communities with its search box focused and lit (features/workshop/communities-search.ts). dapp.json selects on it.',
-  'workshop-search': 'D: the search at the head of All communities (features/workshop/index.tsx), at every width since #5296: your communities by name, in the one list. Prerendered empty.',
+  'platform-rail-search': 'D: the search beside that heading, shown on hover or focus: Home with its search box focused (features/workshop/communities-search.ts; All communities\' search until One Home, #6361). dapp.json selects on it.',
 };
 
 test('the shell still carries every id in the frozen baseline', () => {

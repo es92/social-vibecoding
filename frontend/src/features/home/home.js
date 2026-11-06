@@ -366,6 +366,38 @@ const Home = {
     else location.hash = `#app/${encodeURIComponent(slug)}/dev/hub`;
   },
 
+  // Home's Pinned communities (One Home, #6361), where the communities you
+  // are in live: Home, scrolled to them once they are drawn. `all` opens
+  // the section's All communities too (the ones you are in but have not
+  // pinned), which is what "All communities" anywhere else names now that
+  // the Communities screen's list is gone (features/home/pinned-communities.tsx
+  // listens for SHOW_ALL_COMMUNITIES).
+  SHOW_ALL_COMMUNITIES: 'home:show-all-communities',
+  showCommunities({ all = false } = {}) {
+    if (typeof App !== 'undefined' && App.navigateHome) App.navigateHome();
+    if (all) {
+      try { document.dispatchEvent(new CustomEvent(Home.SHOW_ALL_COMMUNITIES)); } catch (err) { /* the section opens on its own press */ }
+    }
+    const scroll = () => {
+      const el = document.getElementById('home-communities-section');
+      if (el && !el.hidden) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(scroll));
+  },
+
+  // The sidebar's search glyph (features/nav/rail-communities.tsx): Home,
+  // with its search box focused, which finds your apps and communities by
+  // name. It opened the Communities screen's search until One Home (#6361).
+  focusSearch() {
+    if (typeof App !== 'undefined' && App.navigateHome) App.navigateHome();
+    const focus = () => {
+      const input = document.getElementById('home-search-input');
+      if (!input) return;
+      try { input.focus({ preventScroll: false }); input.select?.(); } catch (err) { /* nothing to focus */ }
+    };
+    requestAnimationFrame(() => requestAnimationFrame(focus));
+  },
+
   // Home's Communities to join (One Home, #6361), the directory Discover
   // was: Home, scrolled to it once it is drawn.
   showCommunitiesToJoin() {

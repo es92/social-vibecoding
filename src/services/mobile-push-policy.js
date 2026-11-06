@@ -636,7 +636,7 @@ function buildCopy(kind, context, now, t) {
     case 'vote_digest': {
       const count = /^\d+$/.test(detail) ? Math.max(0, Number(detail)) : 0;
       // Where a tap goes (notifications.js): one change opens that change,
-      // several the Communities screen's Needs you, which lists them.
+      // several Needs you (#needs), which lists them.
       return {
         title: count ? t('push:voteDigest.title', { count }) : t('push:voteDigest.title.plain'),
         body: count === 1 ? t('push:voteDigest.body.one') : t('push:voteDigest.body.many'),

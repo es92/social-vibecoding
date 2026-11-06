@@ -188,7 +188,7 @@ test('the motion: one clock for both parts, on the content\'s own height', () =>
   assert.match(css, /\.platform-rail-communities > \.platform-rail-nest \{\n    margin-top: -1px;\n  \}/, 'the section\'s gap does not arrive with it');
 });
 
-test('the pages: one pane at a time in the inbox, All communities one page, and the All row goes there', () => {
+test('the pages: one pane at a time in the inbox, and the All row goes to All communities', () => {
   const inbox = read('frontend/src/features/messages/index.tsx');
   assert.match(inbox, /const railClass = sidebarRows && !drawer\.on \? \(discussionOpen \? ' messages-list-in-rail' : ' messages-list-page'\) : '';/);
   const store = read('frontend/src/features/messages/store.ts');
@@ -205,9 +205,8 @@ test('the pages: one pane at a time in the inbox, All communities one page, and 
   assert.doesNotMatch(all, /MESSAGES' COLUMN IS ITS OWN LIST/);
   assert.doesNotMatch(css, /data-workshop-panes/, 'no column and page on All communities');
   // #5296: a search's answer IS the one list, narrowed in place, so no CSS
-  // hides the list for it; the screen leaves Join and Start out itself.
+  // hides the list for it. One Home (#6361): that list is Home's now.
   assert.doesNotMatch(all, /data-workshop-results/, 'no second list for a search');
-  assert.match(read('frontend/src/features/workshop/index.tsx'), /\{rows !== null && !state\.error && !q \? \(/, 'a search\'s answer is the whole list');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(bar, /if \(key === 'workshop' && sidebarRows\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'workshop-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);/);
   // The places button has nothing to open beside the docked sidebar.

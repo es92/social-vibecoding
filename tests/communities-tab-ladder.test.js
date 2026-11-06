@@ -211,9 +211,10 @@ test('the tab bar: the lit Communities tab is the ladder at every width, and hol
   assert.doesNotMatch(ladder, /createHold|createSwitcherHold|HOLD_MS|openSwitcher/);
   const css = read('public/css/app.css');
   assert.doesNotMatch(css, /#platform-tab-workshop \{\s*-webkit-touch-callout: none;/);
-  // The header's name still opens it, unchanged.
+  // The header's name still opens it, unchanged; the Communities screen's
+  // title, its second door, left with its list (One Home, #6361).
   const header = read('frontend/src/features/header/header-title.tsx');
-  assert.equal((header.match(/onClick=\{\(e\) => toggleSwitcher\('header', e\.currentTarget\)\}/g) || []).length, 2);
+  assert.equal((header.match(/onClick=\{\(e\) => toggleSwitcher\('header', e\.currentTarget\)\}/g) || []).length, 1);
 });
 
 test('the pages say what is below their tabs: All items on the project page, a reply thread beside its Discussion', () => {

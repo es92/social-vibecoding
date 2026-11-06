@@ -426,25 +426,24 @@ test('a tall target is scrolled to its start, not centred past it', () => {
 
 test('the card keeps clear of the status bar, and the tour hands Home back at its top', () => {
   assert.match(OVERLAY_SRC, /--platform-safe-top/, 'the status bar is measured from the shell token');
-  // #5528: handing Home back at its top is the SKIP path now; Finish ends on
-  // the Communities page instead. The branch sits inside finish(), after the
-  // shared bookkeeping, and the hand-back comes after it.
+  // #5528: handing Home back at its top is the SKIP path; Finish ends on
+  // Home's Pinned communities instead (One Home, #6361). The branch sits
+  // inside finish(), after the shared bookkeeping.
   const finish = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('const finish = useCallback(('));
   const fbody = finish.slice(0, finish.indexOf('}, [userId]);'));
   const main = fbody.slice(fbody.indexOf('clearStep(userId);'));
-  const branchAt = main.indexOf("if (ended === 'finish') {");
-  const handBackAt = main.indexOf('backToTopOfHome();');
-  assert.ok(branchAt !== -1 && handBackAt !== -1 && branchAt < handBackAt,
-    'the hand-back sits on the skip path, after the branch that goes to Communities');
+  assert.match(main, /if \(ended === 'finish'\) goToCommunities\(\);\s*else backToTopOfHome\(\);/,
+    'the hand-back is the skip path; Finish brings Pinned communities into view');
   // The first-touch wait was for a tour that started by itself under the
   // phone's own post-sign-in dialog. It starts on a press now (#3240).
   assert.doesNotMatch(OVERLAY_SRC, /FIRST_TOUCH_WAIT_MS|whenUserSettled/);
 });
 
-test('Finish ends on the Communities page, Skip stays on Home (#5528)', () => {
+test('Finish ends on your communities, Skip stays on Home\'s top (#5528; One Home, #6361)', () => {
   // The tour's last card says Finish takes you to your communities, and it
-  // does: the same page the Communities tab opens. Skip, and Escape then
-  // "Skip the tour", still leave the viewer on Home, at its top.
+  // does: Home's Pinned communities, brought into view, where it was the
+  // Communities page. Skip, and Escape then "Skip the tour", leave the
+  // viewer on Home, at its top.
   const finish = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('const finish = useCallback(('));
   const fbody = finish.slice(0, finish.indexOf('}, [userId]);'));
   // The real path and the screenshot route branch the same way; the shot
@@ -453,21 +452,19 @@ test('Finish ends on the Communities page, Skip stays on Home (#5528)', () => {
     'both the shot route and the real one branch on `ended`');
   assert.ok(fbody.indexOf('if (isTourShot()) {') < fbody.indexOf('writeDone(userId);'),
     'the shot returns before anything is written');
-  // The helper is the tab's own navigation: the href the tab bar pins
-  // (asserted at the communities step above), assigned as a plain hash so
-  // Back returns to Home. NOT goToCommunity(null): that would reset the
-  // tab's chosen community scope, which the tour has no business doing.
+  // The helper asks Home to show the section. NOT goToCommunity(null): that
+  // would reset the tab's chosen community scope, which the tour has no
+  // business doing.
   const helper = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('function goToCommunities()'));
   const helperBody = helper.slice(0, helper.indexOf('\n}'));
-  assert.match(helperBody, /window\.location\.hash !== '#communities'/);
-  assert.match(helperBody, /window\.location\.hash = '#communities';/);
+  assert.match(helperBody, /home\?\.showCommunities\?\.\(\);/);
+  assert.doesNotMatch(helperBody, /#communities/);
   assert.doesNotMatch(OVERLAY_SRC, /goToCommunity\(/);
-  // The finish path's landing is reported by the hash change itself, so
-  // _renotifyNavigation stays with the skip path only.
+  assert.match(read('frontend/src/features/home/home.js'), /showCommunities\(\{ all = false \} = \{\}\) \{[\s\S]*?document\.getElementById\('home-communities-section'\);/);
+  // Either way the screen under the tour is Home, so its step is re-reported.
   assert.equal((fbody.match(/_renotifyNavigation/g) || []).length, 1);
   const main = fbody.slice(fbody.indexOf('clearStep(userId);'));
-  assert.ok(main.indexOf('goToCommunities();') < main.indexOf('_renotifyNavigation'),
-    'the renotify sits after the branch, on the skip path');
+  assert.ok(main.indexOf('goToCommunities();') < main.indexOf('_renotifyNavigation'));
   // And the copy on the last card says so.
   assert.match(message('onboarding:tour.step.settings.body'), /Finish takes you to your communities/);
 });

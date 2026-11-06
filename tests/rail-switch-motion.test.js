@@ -67,14 +67,16 @@ function harness({ wide = true, railHidden = false } = {}) {
 
 test('a push into any of the rail\'s places is a cut on the desktop layout', () => {
   const { App, element } = harness();
-  // #6019: AI is the Messages screen's bot chat, and Discover a page of
-  // Home's that pushes in like any other page.
-  for (const id of ['home-screen', 'messages-screen', 'workshop-screen', 'profile-screen']) {
+  // #6019: AI is the Messages screen's bot chat. One Home (#6361): Needs
+  // you (#workshop-screen, the Communities screen once) is a page under
+  // Home, and pushes in like any other page.
+  for (const id of ['home-screen', 'messages-screen', 'profile-screen']) {
     const screen = element(id);
     assert.equal(App._entryTransition('push', screen), 'none', `${id} is a tab switch`);
     assert.equal(screen.getAttribute('data-entered'), 'none',
       'the stamp is the RESOLVED type, so a check reads what actually ran');
   }
+  assert.equal(App._entryTransition('push', element('workshop-screen')), 'push', 'Needs you is a page, not a place');
 });
 
 test('Home from the rail is a cut too, but backing out of an app still zooms', () => {

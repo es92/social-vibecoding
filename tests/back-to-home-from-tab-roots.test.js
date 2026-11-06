@@ -133,7 +133,8 @@ function router() {
 
 for (const [label, address, screen, flag] of [
   ['Messages', '#messages', 'messages-screen', '_inMessages'],
-  ['the Workshop', '#workshop', 'workshop-screen', '_inWorkshop'],
+  // One Home (#6361): the Communities screen (#workshop) is Needs you now.
+  ['Needs you', '#needs', 'workshop-screen', '_inWorkshop'],
 ]) {
   test(`QA Q1: Back from ${label} to "/" leaves exactly Home on screen, Home lit`, () => {
     const r = router();
@@ -153,10 +154,10 @@ for (const [label, address, screen, flag] of [
   });
 }
 
-test('QA Q1: the Workshop island is told it closed', () => {
+test('QA Q1: the Needs you island is told it closed', () => {
   const r = router();
   r.App.restoreFromHash();
-  r.go('#workshop');
+  r.go('#needs');
   assert.equal(r.workshopOpen(), true);
   r.back();
   assert.equal(r.workshopOpen(), false);

@@ -16758,7 +16758,7 @@ async function seedStagingFirstChallenges(pool) {
           'First challenge fixture (Getting started).', 'Find an app', '#apps', NOW(), NOW()),
          (900510, 'ONBOARDING', 'Vote on an app (staging demo)',
           'Vote on a change somebody proposed.', '250 pts',
-          'First challenge fixture (Getting started).', 'See what needs you', '#communities', NOW(), NOW()),
+          'First challenge fixture (Getting started).', 'See what needs you', '#needs', NOW(), NOW()),
          (900511, 'ONBOARDING', 'Send feedback (staging demo)',
           'Tell a community what would make it better.', '250 pts',
           'First challenge fixture (Getting started).', NULL, NULL, NOW(), NOW())

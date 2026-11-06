@@ -147,6 +147,5 @@ test('a door to a project\'s hub opens the hub; a page opened again reads the ta
   // `#apps/<slug>` details address are doors to the hub too.
   assert.match(read('frontend/src/features/home/home.js'), /openHub\(slug\) \{\n\s*if \(!slug\) return;\n\s*try \{ window\.AppView\?\._landOnHub\?\.\(slug\); \}/);
   assert.match(read('public/js/app.js'), /history\.replaceState\(null, '', App\._rootUrl\(App\._hubHref\(slug\)\)\); \} catch \(err\) \{ \/\* non-fatal \*\/ \}\n\s*try \{ window\.AppView\?\._landOnHub\?\.\(slug\); \}/);
-  assert.match(read('frontend/src/features/workshop/index.tsx'), /landKeepingPlace\(row\.slug\);\n\s*win\.App\?\.navigateToApp\?\.\(row\.slug, 'dev'\);/);
   assert.match(read('frontend/src/features/workshop/needs-reel.tsx'), /onClick=\{\(\) => \{ \(window as any\)\.AppView\?\._landOnHub\?\.\(app\.slug\); \}\}/);
 });
