@@ -433,17 +433,15 @@ test('the resolver is published before App.init can ask it', () => {
     /if \(typeof window !== 'undefined'\) \{\s*window\.PlatformTarget = PlatformTarget;/);
 });
 
-test('the pane reads Discover\'s own sources, not copies of them', () => {
-  // frontend/src/features/app-context/about-data.ts: the same contributors
-  // endpoint and ?demo=1 passthrough Discover's app page uses
-  // (../apps/browse.js _fetchContributors), the list rows Home and Browse
-  // already hold, and Homeroom's figures through the resolver's one read.
+test('the pane reads the platform\'s own sources, not copies of them', () => {
+  // frontend/src/features/app-context/about-data.ts: the app's contributors
+  // endpoint with the ?demo=1 passthrough, the list rows Home already holds
+  // (One Home, #6361: Discover's own list went with its screen), and
+  // Homeroom's figures through the resolver's one read.
   const data = read('frontend/src/features/app-context/about-data.ts');
-  const browse = read('frontend/src/features/apps/browse.js');
   assert.match(data, /fetch\(`\/api\/apps\/\$\{encodeURIComponent\(slug\)\}\/contributors\$\{demoQS\(\)\}`\)/);
-  assert.match(browse, /fetch\(`\/api\/apps\/\$\{encodeURIComponent\(slug\)\}\/contributors\$\{demoQS\}`\)/,
-    'the endpoint Discover\'s page reads');
-  assert.match(data, /for \(const list of \[g\(\)\.Home\?\._apps, g\(\)\.Browse\?\._apps\]\)/);
+  assert.match(data, /for \(const list of \[g\(\)\.Home\?\._apps\]\)/);
+  assert.doesNotMatch(data, /Browse\?\._apps/, 'no second list to read');
   assert.match(data, /void platform\.about\(\)\.then/, 'About Homeroom shares the resolver\'s read');
   assert.doesNotMatch(data, /fetch\(`\/api\/platform\/about/, 'and never makes a second one');
 });

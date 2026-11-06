@@ -465,7 +465,7 @@ test('card: Retry renders inline only on errored cards, creator or full admin', 
 // Array.prototype, which deepStrictEqual rejects.
 const keys = (items) => Array.from(items, (i) => i.key);
 
-test('menu: plain user on a non-member app gets App details + the favorite toggle', () => {
+test('menu: plain user on a non-member app gets Go to community + the favorite toggle', () => {
   const Home = makeHome({ id: ME });
   const items = Home.menuItemsFor(baseApp());
   assert.deepEqual(keys(items), ['app-details', 'github', 'favorite', 'notifications', 'report'],
@@ -555,15 +555,13 @@ test('menu: the favorite entry IS toggleAdded now, so the menu paints like the r
   assert.deepEqual(calls, [['plain', true], ['mine', false], ['starred', false]]);
 });
 
-// ── App details ───────────────────────────────────────────────────
+// ── Go to community ───────────────────────────────────────────────
 //
-// The menu's way to the app's own page — the SAME destination a row in
-// the browse-all-apps list opens (#apps/<slug>), so the two entry points
-// share one screen. Browse.DETAIL_EXCLUDED_KEYS drops it again on that
-// page (pinned in tests/browse-screen.test.js) so it can't link to
-// itself.
+// The menu's way to the app's community (key `app-details`, which named
+// Discover's details page until One Home, #6361): its project's hub, by
+// the door that lands there (Home.openHub, AppView._landOnHub first).
 
-test('menu: App details leads the list, on every app and for every viewer', () => {
+test('menu: Go to community leads the list, on every app and for every viewer', () => {
   for (const user of [
     { id: ME },
     { id: ME, isAdmin: true, canAdminWrite: false },
@@ -581,28 +579,28 @@ test('menu: App details leads the list, on every app and for every viewer', () =
       const items = Home.menuItemsFor(baseApp(over));
       assert.equal(items[0].key, 'app-details',
         `first for ${JSON.stringify(over)} / ${JSON.stringify(user)}`);
-      assert.equal(items[0].label, 'App details');
+      assert.equal(items[0].label, 'Go to community');
     }
   }
 });
 
-test('menu: App details routes through the hash, like a browse row tap', () => {
-  // Assigning location.hash (rather than calling a navigate helper) is
-  // what keeps the browser/OS back gesture working.
+test('menu: Go to community opens the project\'s hub', () => {
+  // With the router loaded it is App.navigateToApp(slug, 'dev'); without
+  // it, the hub's own address, which keeps the back gesture working.
   const { Home, sandbox } = makeHomeEnv({ id: ME });
   Home.menuItemsFor(baseApp({ slug: 'chess-arena' }))
     .find((i) => i.key === 'app-details').run();
-  assert.equal(sandbox.location.hash, '#apps/chess-arena');
+  assert.equal(sandbox.location.hash, '#app/chess-arena/dev/hub');
 });
 
-test('menu: App details escapes the slug into the hash', () => {
+test('menu: Go to community escapes the slug into the hash', () => {
   const { Home, sandbox } = makeHomeEnv({ id: ME });
   Home.menuItemsFor(baseApp({ slug: 'a b&c' }))
     .find((i) => i.key === 'app-details').run();
-  assert.equal(sandbox.location.hash, `#apps/${encodeURIComponent('a b&c')}`);
+  assert.equal(sandbox.location.hash, `#app/${encodeURIComponent('a b&c')}/dev/hub`);
 });
 
-test('menu: the inert ?demo=1 tiles get no App details row', () => {
+test('menu: the inert ?demo=1 tiles get no Go to community row', () => {
   // Their slugs 404 on GET /api/apps/:slug, so the page would open on an
   // inline "not available" state — same reason a demo row doesn't drill in.
   const Home = makeHome({ id: ME });
@@ -688,7 +686,7 @@ test('menu: check-updates hidden without repo / when not running / when self-hos
 test('menu: view-only admins (no canAdminWrite) get no mutating items (#311)', () => {
   const Home = makeHome({ id: ME, isAdmin: true, canAdminWrite: false });
   const items = Home.menuItemsFor(baseApp({ status: 'error' }));
-  // App details is navigation, not a mutation, so it survives the gate.
+  // Go to community is navigation, not a mutation, so it survives the gate.
   assert.deepEqual(keys(items), ['app-details', 'github', 'favorite', 'notifications', 'report'],
     'no retry/check/lock/delete');
 });

@@ -79,9 +79,6 @@ test('L06: the bot\'s Needs you card shows its rows\' shape until the lists are 
   assert.match(src, /<SkeletonGroup label=\{t\('messages:ai\.work\.loading'\)\}[^>]*data-ai-loading="">/);
   const catalog = JSON.parse(read('frontend/locales/en/messages.json'));
   assert.equal(catalog['ai.work.loading'].text, 'Loading what needs you');
-  // Discover's list: the store's prerender value draws nothing, as before.
-  assert.match(read('frontend/src/features/apps/browse-store.js'), /\n  loading: false,/);
-  assert.match(read('frontend/src/features/apps/browse-screen.tsx'), /: state\.loading\n\s+\? <BrowseRowsLoading label=\{t\('discover:list\.loading'\)\} \/>/);
 });
 
 test('B14: the bot\'s Ask bar sticks on the tab bar, not behind it', () => {

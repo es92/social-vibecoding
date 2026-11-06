@@ -81,7 +81,8 @@ test('picking a community keeps the page you were on, and All communities goes t
   assert.match(fn, /void app\?\.navigateToApp\?\.\(slug, 'dev'\);/);
   assert.ok(!fn.includes('startSession') && !fn.includes('giveFeedback'), 'nothing is started from the switcher');
   // Join a community is Discover; #3543: Start a community is the new-project dialog.
-  assert.match(SWITCHER, /data-switcher-join=""\s*onClick=\{\(\) => \{ closeSwitcher\(\); window\.location\.hash = '#apps'; \}\}/);
+  // One Home (#6361): joining one is Home's Communities to join.
+  assert.match(SWITCHER, /data-switcher-join=""\s*(?:\/\/[^\n]*\n\s*)?onClick=\{\(\) => \{ closeSwitcher\(\); \(window as any\)\.Home\?\.showCommunitiesToJoin\?\.\(\); \}\}/);
   assert.match(SWITCHER, /data-switcher-start=""\s*onClick=\{\(\) => \{ closeSwitcher\(\); \(window as any\)\.App\?\.showCreateModal\?\.\(\); \}\}/);
 });
 

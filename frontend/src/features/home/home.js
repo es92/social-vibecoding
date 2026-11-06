@@ -178,12 +178,6 @@ const Home = {
       // account layout against the complete app catalog.
       Home._appsLoaded = true;
       Home.render();
-      // The #apps browse screen shares this payload and can be the screen
-      // actually on top — its cards run the same "…" menu, whose actions
-      // (add/remove, retry, lock, delete) all settle by calling back into
-      // Home.load(). Without this hand-off the browse grid would keep
-      // rendering pre-action state until the user navigated away.
-      if (window.Browse?.isOpen?.()) Browse.syncFrom(apps);
       // The shortcut probe's heal pass may have run before _apps was
       // populated (it needs the app objects for icon payloads); retry
       // now that they're here. No-op when everything has an icon.
@@ -361,6 +355,26 @@ const Home = {
   // propose and vote, and it is what the Workshop lists.
   isJoined(app) {
     return !!(app && app.is_member);
+  },
+
+  // Open a project's hub: a door, so it names its place first
+  // (AppView._landOnHub), then the router's own way into a project.
+  openHub(slug) {
+    if (!slug) return;
+    try { window.AppView?._landOnHub?.(slug); } catch (err) { /* the page opens on what it remembers */ }
+    if (typeof App !== 'undefined' && App.navigateToApp) App.navigateToApp(slug, 'dev');
+    else location.hash = `#app/${encodeURIComponent(slug)}/dev/hub`;
+  },
+
+  // Home's Communities to join (One Home, #6361), the directory Discover
+  // was: Home, scrolled to it once it is drawn.
+  showCommunitiesToJoin() {
+    if (typeof App !== 'undefined' && App.navigateHome) App.navigateHome();
+    const scroll = () => {
+      const el = document.getElementById('home-join-section');
+      if (el && !el.hidden) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    };
+    requestAnimationFrame(() => requestAnimationFrame(scroll));
   },
 
   // Split the full list into { yours, rest }. Personal ordering
@@ -1938,12 +1952,10 @@ const Home = {
   // cold-load paint, while this consume-on-success rule remains necessary for
   // genuinely empty accounts and for the Browse grid racing the Home grid.
   //
-  // Called by BOTH launcher grids that carry the menu: home's #app-list
-  // and the #apps browse screen's #browse-list. Whichever one is actually
-  // on screen wins — a hidden grid has no offsetParent, so it neither
-  // opens a menu the user can't see nor burns the once-only flag. That is
-  // what makes `/?shot=card-menu#apps` land on the browse grid even
-  // though home rendered first during boot.
+  // Called by the launcher grid that carries the menu, home's #app-list
+  // (Discover's #browse-list was the second until One Home, #6361). A
+  // hidden grid has no offsetParent, so it neither opens a menu the user
+  // can't see nor burns the once-only flag.
   _shotMenuDone: false,
   _shotMenuPending: false,
 
@@ -2158,17 +2170,10 @@ const Home = {
   // frame. `onChange` still runs, because the browse screen's own list is
   // outside Home's paint.
   async toggleAdded(slug, desired, onChange) {
-    // BOTH READERS OF /api/apps, not just this one. `Browse._apps` is the
-    // same payload — Browse._load() assigns to both — but the two DRIFT:
-    // Browse._fetchDetail adds a cold deep link's app to its own list alone,
-    // so a row this list has never heard of can be on screen with an Add
-    // button under it. Looking only in Home._apps made that button a silent
-    // no-op: no flip, no request, no toast, nothing to tell the reader their
-    // press was received. That is "add to your apps does nothing for some
-    // apps", and which apps depended on what had been opened beforehand.
+    // An app this list has not loaded yet is not a silent no-op: see
+    // _favoriteUnknown below.
     const known = (list) => (Array.isArray(list) ? list : []).find((a) => a && a.slug === slug);
-    const app = known(Home._apps)
-      || known(typeof window !== 'undefined' ? window.Browse?._apps : null);
+    const app = known(Home._apps);
     // Staging ?demo=1 tiles have no DB row — a POST would 404. An app NEITHER
     // list holds is not that case: it is a list this tab has not loaded yet,
     // and the server is the authority on whether the slug exists. Ask it, and
@@ -2239,9 +2244,7 @@ const Home = {
   // Resolves true when the membership is now `desired`, false otherwise.
   async setMembership(slug, desired, onChange, opts = {}) {
     const known = (list) => (Array.isArray(list) ? list : []).find((a) => a && a.slug === slug);
-    const app = known(Home._apps)
-      || known(typeof window !== 'undefined' ? window.Browse?._apps : null)
-      || null;
+    const app = known(Home._apps) || null;
     if (app && app.demo) return false;
     const name = (app && app.name) || opts.name || slug;
     if (!desired && !opts.confirmed) {
@@ -3646,29 +3649,18 @@ const Home = {
     const user = App.user || {};
     const isRunning = app.status === 'running';
     const isError = app.status === 'error';
-    // The way to the app's own page (#apps/<slug>) — the same destination a
-    // row in the browse-all-apps list opens, so both entry points land on
-    // one screen rather than the page duplicating the menu. First in the
-    // list because it's navigation, not an action.
-    //
-    // Routed by assigning location.hash so the browser/OS back gesture
-    // works, exactly as Browse._wireRows does. Skipped for the inert
-    // ?demo=1 tiles, whose slugs 404 on GET /api/apps/:slug — and filtered
-    // out of the detail page's own action rows by
-    // Browse.DETAIL_EXCLUDED_KEYS, so the page can never link to itself.
-    //
-    // noteDetailOrigin('home') first: the browse list is never shown on
-    // this path, so the detail page's back button has to return HERE
-    // rather than to a list the user never saw.
+    // The way to the app's community, its hub (One Home, #6361: the hub
+    // is the project's page, so the details page Discover drew went). First
+    // in the list because it is navigation, not an action. A door to the
+    // hub, so it says so first (AppView._landOnHub), as Home's community
+    // tiles do. Skipped for the inert ?demo=1 tiles, whose slugs have no
+    // project behind them.
     if (!app.demo && app.slug) {
       items.push({
         key: 'app-details',
         label: message('home:menu.details.label'),
         title: message('home:menu.details.tip'),
-        run: () => {
-          window.Browse?.noteDetailOrigin?.('home');
-          location.hash = `#apps/${encodeURIComponent(app.slug)}`;
-        },
+        run: () => { Home.openHub(app.slug); },
       });
     }
     // The app's source. This was a row in the hamburger drawer's reference

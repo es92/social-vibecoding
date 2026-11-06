@@ -52,7 +52,7 @@ const nativeJs = fs.readFileSync(
 // other root has.
 // #agent-session-screen (#2779) is a root with the same navigate/exit pair:
 // one conversation with the Mayor at #agent/<id>.
-const SCREEN_ROOTS = ['app-view', 'home-screen', 'browse-screen',
+const SCREEN_ROOTS = ['app-view', 'home-screen',
   'workshop-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
   'settings-screen', 'messages-screen', 'agent-session-screen',
   'profile-proposals-screen', 'ai-screen'];
@@ -60,7 +60,6 @@ const SCREEN_ROOTS = ['app-view', 'home-screen', 'browse-screen',
 const NAVIGATIONS = [
   { fn: 'navigateToLeaderboard', reveal: 'leaderboard-screen' },
   { fn: 'navigateToProfile', reveal: 'profile-screen' },
-  { fn: 'navigateToBrowse', reveal: 'browse-screen' },
   { fn: 'navigateToAdminConsole', reveal: 'admin-screen' },
   { fn: 'navigateToSettings', reveal: 'settings-screen' },
   { fn: 'navigateToMessages', reveal: 'messages-screen' },
@@ -70,7 +69,7 @@ const NAVIGATIONS = [
   { fn: 'navigateToAi', reveal: 'ai-screen' },
 ];
 
-const EXITS = ['_exitLeaderboard', '_exitProfile', '_exitBrowse',
+const EXITS = ['_exitLeaderboard', '_exitProfile',
   '_exitAdminConsole', '_exitSettings', '_exitMessages', '_exitAgentSession', '_exitWorkshop',
   '_exitProfileProposals'];
 
@@ -217,7 +216,6 @@ test('every screen entry is guarded against a duplicate dispatch', () => {
   const guards = {
     navigateToLeaderboard: /if \(App\._inLeaderboard && window\.Leaderboard\?\.isOpen\?\.\(\)\)/,
     navigateToProfile: /if \(App\._inProfile && window\.Profile\?\.isOpen\?\.\(\)\)/,
-    navigateToBrowse: /if \(App\._inBrowse && window\.Browse\?\.isOpen\?\.\(\)\)/,
     navigateToAdminConsole: /if \(App\._inAdmin && window\.AdminConsole\?\.isOpen\?\.\(\)\)/,
     navigateToSettings: /if \(App\._inSettings && window\.Settings\?\.isOpen\?\.\(\)\)/,
     // navigateToMessages was here. It is a sheet resolver now, and a sheet
@@ -236,7 +234,7 @@ test('every screen entry is guarded against a duplicate dispatch', () => {
 
 test('every in-screen router is idempotent for a duplicate dispatch', () => {
   // The other half of the same defect (#1102). The guards above stop the
-  // duplicate replaying the screen ENTRY, but each of these three screens
+  // duplicate replaying the screen ENTRY, but each of these two screens
   // has a SECOND level of navigation inside an already-VISIBLE root, and
   // app.js hands the duplicate straight to it. Its second call resolves the
   // same level, so it asks for type 'none' — and 'none' runs SYNCHRONOUSLY
@@ -259,11 +257,6 @@ test('every in-screen router is idempotent for a duplicate dispatch', () => {
       state: 'AdminConsole',
       transition: 'AdminConsole._transition(',
     },
-    'frontend/src/features/apps/browse.js': {
-      open: '  route(slug) {',
-      state: 'Browse',
-      transition: 'PlatformUI.transition(',
-    },
   };
   for (const [file, { open, state, transition }] of Object.entries(routers)) {
     const src = fs.readFileSync(path.join(root, file), 'utf8');
@@ -274,12 +267,9 @@ test('every in-screen router is idempotent for a duplicate dispatch', () => {
     const close = `\n${' '.repeat(open.length - open.trimStart().length)}},`;
     const body = src.slice(at, src.indexOf(close, at) + close.length);
     // An early-out that compares the RESOLVED target to the current state
-    // and returns. Browse's target is a single slug; the two-level consoles
-    // resolve a (level, section) pair.
-    const early = state === 'Browse'
-      ? new RegExp(`if \\(next === ${state}\\._slug\\) \\{`)
-      : new RegExp(
-        `if \\(targetLevel === ${state}\\._level && targetSection === ${state}\\._section\\) \\{`);
+    // and returns. Both consoles resolve a (level, section) pair.
+    const early = new RegExp(
+      `if \\(targetLevel === ${state}\\._level && targetSection === ${state}\\._section\\) \\{`);
     assert.match(body, early,
       `${file}: route() must early-out when the resolved target is already showing — `
       + 'otherwise a duplicate dispatch repaints inside the first dispatch\'s '
@@ -314,11 +304,10 @@ for (const name of EXITS) {
 
 // ── The modules cooperate ──────────────────────────────────────────────
 
-test('the three chrome-writing screen modules accept chrome: false', () => {
+test('the two chrome-writing screen modules accept chrome: false', () => {
   const files = {
     'frontend/src/features/settings/settings.js': 'Settings',
     'frontend/src/features/admin/admin-console.js': 'AdminConsole',
-    'frontend/src/features/apps/browse.js': 'Browse',
   };
   for (const [file, name] of Object.entries(files)) {
     const src = fs.readFileSync(path.join(root, file), 'utf8');

@@ -11,6 +11,11 @@
 // therefore the CORRESPONDENCE between the fixture profiles and the orders
 // they have to separate, not the row count.
 //
+// Discover's Sort control went with One Home (#6361). The rows stay: they
+// are the merge history a preview's projects show (a guest project page's
+// last change, the directory's last_merged_at), and the profiles still keep
+// those apps apart.
+//
 // Source-level, deliberately: seeding runs against a live Postgres on boot and
 // there is none in a unit run. Everything asserted here is a property of the
 // seed's text, which is where a drift would land.
@@ -24,8 +29,6 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const migrate = fs.readFileSync(path.join(root, 'src/db/migrate.js'), 'utf8');
-const browse = fs.readFileSync(
-  path.join(root, 'frontend/src/features/apps/browse.js'), 'utf8');
 
 /** The body of the seed function, from its declaration to the next one. */
 function seedBody() {
@@ -187,16 +190,4 @@ test('the four profiles put a DIFFERENT app on top under each order', () => {
   assert.equal(lifetime(byId[900204]), 0,
     'one app must have merged nothing at all — the NULL last_merged_at arm');
   assert.ok(byId[900204].createdDaysAgo > topNew.createdDaysAgo);
-});
-
-test('the fixture ranks on exactly the fields the comparators read', () => {
-  // Read from the controller, so renaming a signal there fails here rather
-  // than leaving a fixture that ranks on nothing.
-  for (const field of ['merged_prs_recent', 'merged_prs', 'last_merged_at',
-    'last_deploy_at', 'created_at']) {
-    assert.match(browse, new RegExp(`\\b${field}\\b`), `${field} left the comparators`);
-  }
-  const body = seedBody();
-  assert.match(body, /last_deploy_at = NOW\(\)/, 'the fixture stamps the deploy age too — '
-    + '"Most active" falls back to it when the 30-day counts tie');
 });

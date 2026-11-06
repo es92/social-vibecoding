@@ -66,7 +66,6 @@
 import { Button } from '@/components/ui/button';
 import { AdminScreen } from './features/admin';
 import { AppViewIsland } from './features/app-frame';
-import { BrowseScreen } from './features/apps/browse-screen';
 import { ProfileScreen } from './features/profile';
 import { LandingScreen } from './features/auth/landing';
 import { LoginScreen } from './features/auth/login';
@@ -180,13 +179,10 @@ export function Shell() {
       */}
       <Island name="HomeScreen"><HomeScreen /></Island>
       {/*
-          Browse-all-apps screen (#apps). Sibling of #home-screen: every app
-          this viewer may see, featured first, with per-tile add/remove badges.
-          A React island since #1083 chunk F — the markup and the module that
-          fills it both live in frontend/src/features/apps/. Still mounted by
-          App.navigateToBrowse, which now shows it through the visibility store.
+          The browse-all-apps screen (#apps) was here until One Home (#6361):
+          Home's Communities to join is the directory now, and #apps and
+          #apps/<slug> rewrite to Home and to the project's hub (app.js).
       */}
-      <Island name="BrowseScreen"><BrowseScreen /></Island>
       {/*
           Workshop screen (#workshop): the viewer's apps with, on each row, how
           many items that app's own Workshop page holds for them — what they
@@ -615,7 +611,7 @@ export function Shell() {
           NavLink (#1036) — the "navigation controls behave like real links"
           seam (cmd/ctrl-click, middle-click and shift-click open a new tab).
           No dependencies of its own and consumed by app.js, app-view.js and
-          dev-chat.js among the classic scripts, plus features/apps/browse.js,
+          dev-chat.js among the classic scripts, plus
           features/home/home.js and features/leaderboard/leaderboard.js from
           inside the React bundle, so it loads ahead of the whole bundle.
       */}
@@ -863,9 +859,10 @@ export function Shell() {
           /js/browse.js used to load after home.js too, because it reached the
           shared card markup through `window.Home`. Step 1 of the chunk moved it
           into the bundle (features/apps/browse.js, imported by the
-          #browse-screen island) and split that markup out as
-          features/apps/app-card.js; step 4 turned home.js's delegation to it
-          into a plain import. Load order stopped mattering for any of them.
+          #browse-screen island, both retired with One Home, #6361) and split
+          that markup out as features/apps/app-card.js; step 4 turned home.js's
+          delegation to it into a plain import. Load order stopped mattering
+          for any of them.
       */}
       {/*
           Anonymous shell screens (fold-auth-pages-into-SPA): landing /

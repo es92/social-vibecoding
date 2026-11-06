@@ -55,7 +55,6 @@ export const SCROLLER_OF: ReadonlyArray<readonly [root: string, scroller: string
   ['home-screen', 'home-screen'],
   ['leaderboard-screen', 'leaderboard-screen'],
   ['profile-screen', 'profile-screen'],
-  ['browse-screen', 'browse-screen'],
   ['settings-screen', 'settings-screen'],
 ];
 

@@ -58,6 +58,18 @@ const withInteriors = `${after}\n${lazyInteriorsHtml()}`;
 
 // Ids a conversion chunk deliberately removed, each with the reason.
 const RETIRED_IDS = {
+  // ── One Home (#6361): the Discover screen (#apps) is retired ────────
+  // Home's Communities to join is the directory, and #apps / #apps/<slug>
+  // rewrite to Home and to the project's hub (app.js), so the screen and its
+  // two levels left the shell with features/apps/browse*.
+  'browse-screen': 'Discover\'s screen root (#apps). Retired with the screen: Home\'s Communities to join is the directory (One Home, #6361).',
+  'browse-search-bar': 'Discover\'s search bar, gone with its screen (One Home, #6361); Home\'s search reads apps and communities.',
+  'browse-search-input': 'Discover\'s search field, gone with its screen (One Home, #6361).',
+  'browse-search-clear': 'Discover\'s search clear button, gone with its screen (One Home, #6361).',
+  'browse-list-level': 'Discover\'s list level, gone with its screen (One Home, #6361).',
+  'browse-list': 'Discover\'s rows, gone with its screen (One Home, #6361): Communities to join draws the directory on Home.',
+  'browse-empty': 'Discover\'s empty note, gone with its screen (One Home, #6361).',
+  'browse-detail': 'Discover\'s app details level (#apps/<slug>), gone with its screen (One Home, #6361): the address rewrites to the project\'s hub, and the tile menu\'s row opens the hub.',
   // ── Overnight UI audit D10: the selection carets are gone ─────────
   // The owner's decision of 2 Nov 2026. Each pointed from the chosen option
   // to nothing below it, and read as a stray tooltip arrow once the option
@@ -574,7 +586,6 @@ const ADDED_IDS = {
   // #6019: Discover left the phone's bar for a page Home's Discover block
   // opens; its seat there went to AI, the Homeroom bot's chat, which left
   // the Messages list. The desktop rail keeps a Discover tab (29 Oct 2026).
-  'platform-tab-discover': '#2718: the Discover tab, to #apps. #6019 retired it with Discover\'s seat on the phone\'s bar; it comes back on 29 Oct 2026 as the DESKTOP RAIL\'S, under Home (Evan: Home, Discover, Messages, AI, Communities). app.css hides it below 768px, where Home\'s Discover block opens the page.',
   'platform-tab-ai': '#6019: the AI tab, to #homeroom-bot (#ai until 29 Oct 2026): the Homeroom bot\'s chat, lit while it is the conversation on the Messages screen (features/nav/tab-bar.tsx). Takes the seat the Discover tab (#platform-tab-discover, #2718) had on the phone\'s bar, which left it for a page of Home\'s there.',
   // #6019 follow-up: the AI tab's own page, which #homeroom-bot opens.
   'ai-screen': '#6019 follow-up: the AI tab\'s main view (features/ai/index.tsx): Your work, In progress (Up next until 29 Oct 2026) and Live this week, with Main, the chat with Homeroom bot, docked beside it on a wide window. Ships hidden and empty; its lists load in effects.',
@@ -1148,9 +1159,6 @@ const ADDED_IDS = {
   'side-panel-body': 'The panel\'s body: the one <iframe> of the panel\'s document (#side-panel-frame, rendered only while open, so absent here) and the loading spinner after it.',
   'side-panel-loading': 'The spinner shown over the panel\'s body until its document has booted and drawn its first page. Ships hidden.',
   // ── Discover's view switch, type row and Filters button ────────────
-  'browse-view-switch': 'The For you / Browse / Joined switch under Discover\'s search field. It replaced the All / Featured / Not joined / Joined / New chip row; the store\'s prerender value (For you) is the pressed part.',
-  'browse-type-row': 'The always-drawn row holding Discover\'s app-type chips and the Filters button at its end. It is rendered even when no project has a type, because the Filters button lives here and must stay reachable.',
-  'browse-filters-btn': 'The Filters button at the end of Discover\'s type row. It opens the Filters sheet, and carries data-active-count (the number of filters on) only when one is on.',
   // The prototype's History segment (#leaderboard-history-root, added above
   // as the Leaderboard screen's fourth pane) retired with the seasons it
   // listed (the Semi design, 2026-10-16); #leaderboard/seasons lands on

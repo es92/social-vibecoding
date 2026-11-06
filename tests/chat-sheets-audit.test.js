@@ -77,14 +77,3 @@ test('D07: the waiting decisions sit under "Go to community", and an Invite open
   const controller = read('frontend/src/features/app-context/app-context-controller.js');
   assert.match(controller, /appContextStore\.set\(\{ back: opts\.back === 'about' \? 'about' : 'none' \}\);/);
 });
-
-test('D01: a touch action sheet and Discover\'s Filters close when Back or a link moves the page', () => {
-  const kit = read('public/usernode-native/v1/native.js');
-  const sheet = kit.slice(kit.indexOf('  function actionSheet(options) {'), kit.indexOf('   * Anchored popover / dropdown menu'));
-  assert.match(sheet, /var openedAt = currentHref\(\);\n\s*function onNav\(\) \{ if \(currentHref\(\) !== openedAt\) settle\(null\); \}/);
-  assert.match(sheet, /window\.addEventListener\('popstate', onNav\);\n\s*window\.addEventListener\('hashchange', onNav\);/);
-  assert.match(sheet, /function finishSettle\(\) \{\n\s*if \(unwatch\) unwatch\(\);\n\s*stopNavWatch\(\);/, 'and stops listening once it is gone');
-  const filters = read('frontend/src/features/apps/browse-filter-sheet.tsx');
-  assert.match(filters, /const onNav = \(\) => \{ if \(window\.location\.href !== openedAt\) leave\(\); \};/);
-  assert.match(filters, /window\.removeEventListener\('hashchange', onNav\);/);
-});

@@ -3504,7 +3504,6 @@ html[data-browser-scroller] body::before {
   background: var(--home-wallpaper);
 }
 html[data-browser-scroller="home-screen"] #home-screen,
-html[data-browser-scroller="browse-screen"] #browse-screen,
 html[data-browser-scroller="leaderboard-screen"] #leaderboard-screen,
 html[data-browser-scroller="profile-screen"] #profile-screen,
 html[data-browser-scroller="settings-screen"] #settings-screen,
@@ -3600,7 +3599,7 @@ html[data-browser-scroller="auth-landing-scroll"] #auth-landing-scroll > :has(> 
    painted from the last-session snapshot. In document flow those roots must
    leave the layout too, so visitors see only the anonymous page. */
 html[data-browser-scroller^="auth-"] :is(
-  #platform-header, #home-screen, #browse-screen, #leaderboard-screen,
+  #platform-header, #home-screen, #leaderboard-screen,
   #profile-screen, #settings-screen, #messages-screen, #admin-screen, #app-view
 ) {
   display: none;
@@ -3642,9 +3641,6 @@ html[data-browser-scroller] #landing-header {
   --fake-glass-tint: color-mix(in srgb, var(--home-ground) 92%, transparent);
   background: transparent;
   clip-path: inset(0);
-}
-html[data-browser-scroller="browse-screen"] #browse-search-bar {
-  top: calc(var(--browser-banner-h) + var(--platform-header-h) + var(--platform-safe-top));
 }
 html[data-browser-scroller^="auth-"] :is(
   #auth-login-screen, #auth-register-screen, #auth-waiting-screen
@@ -3937,7 +3933,7 @@ html[data-browser-scroller="auth-landing-scroll"] #app-viewer {
    these lists and was on none of them: the page kept the gray body and the
    bar its zinc-200 surface. Every list here that names #workshop-screen,
    its React-owned sibling, names it as well. */
-body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
+body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
   --home-ground: #f4f2e4;
   /* The kit's tile-zoom paints the moving #app-view on this (native.js
      sets its inline background to the variable), and it is read from
@@ -3975,7 +3971,7 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
    screen — so on every other route these selectors are exactly the two they
    were. See "THE BAR TAKES THE APP'S TONE" below for the tokens that ride
    along with the ground. */
-:is(.dark:not([data-app-tone="light"]), [data-app-tone="dark"]) body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
+:is(.dark:not([data-app-tone="light"]), [data-app-tone="dark"]) body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
   --home-ground: #0b0d1b;
   /* THE STAR IS AS QUIET HERE AS IT IS ON CREAM. The same halftone raster,
      with its one palette entry re-tinted: #DEEDF8 on #F4F2E4 is a faint cool
@@ -4015,7 +4011,7 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
    at every width on its own — the second rule here gives dark the same
    four extra washes, in its own tints. */
 @media (min-width: 640px) {
-  body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
+  body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
     --home-washes:
       radial-gradient(circle at calc(100% - 92px) 115px, rgba(229, 216, 239, 0.55) 138px, rgba(229, 216, 239, 0.275) 198px, rgba(229, 216, 239, 0) 258px) 0 0 / 100% 100% no-repeat,
       radial-gradient(circle at calc(100% - 62px) 59%, rgba(245, 215, 230, 0.65) 50px, rgba(245, 215, 230, 0.325) 120px, rgba(245, 215, 230, 0) 190px) 0 0 / 100% 100% no-repeat,
@@ -4029,7 +4025,7 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
       var(--home-grain) 0 0 / 240px 240px repeat,
       var(--home-washes);
   }
-  :is(.dark:not([data-app-tone="light"]), [data-app-tone="dark"]) body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
+  :is(.dark:not([data-app-tone="light"]), [data-app-tone="dark"]) body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) {
     --home-washes:
       radial-gradient(circle at calc(100% - 92px) 115px, rgba(80, 48, 105, 0.55) 138px, rgba(80, 48, 105, 0.275) 198px, rgba(80, 48, 105, 0) 258px) 0 0 / 100% 100% no-repeat,
       radial-gradient(circle at calc(100% - 62px) 59%, rgba(117, 36, 77, 0.65) 50px, rgba(117, 36, 77, 0.325) 120px, rgba(117, 36, 77, 0) 190px) 0 0 / 100% 100% no-repeat,
@@ -4072,7 +4068,7 @@ html:root body:has(#app-view:not(.hidden):not([data-app-surface="platform"])),
    what makes the launcher → app push read as one bar: both routes paint
    the same wallpaper under the same cleared bar, so the bar's snapshot is
    identical on both sides of the transition and only the page moves. */
-body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) #platform-header {
+body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) #platform-header {
   background-color: transparent;
 }
 
@@ -4100,7 +4096,7 @@ body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #bro
    this bar's bottom edge is `rounded-b-2xl -mb-2`, a notch every platform
    surface below tucks 8px up into, so a line drawn across it would cut the
    notch in half. The frost IS the edge here. */
-body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
+body:has(:is(#home-screen, #leaderboard-screen, #profile-screen,
              #settings-screen, #messages-screen, #workshop-screen, #ai-screen,
              #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header {
@@ -4129,7 +4125,7 @@ body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
    bar's own `rounded-b-2xl` (1.25rem in tailwind.config.js), so the notch
    the surfaces below tuck into keeps its shape. Nothing inside the header
    reaches past its box, so the clip cuts nothing. */
-body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
+body:has(:is(#home-screen, #leaderboard-screen, #profile-screen,
              #settings-screen, #messages-screen, #workshop-screen, #ai-screen,
              #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header,
@@ -4147,7 +4143,7 @@ body:has(#app-view:not(.hidden)[data-app-surface="platform"]) #platform-header {
    opaque ground under its glass, the glass's own solid plane colour. The
    layer covers it whole (its washes end on the ground colour), so nothing
    on the bar changes; only the strip does. */
-html.un-ios.web-browser-chrome:not([data-community-tint]) body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
+html.un-ios.web-browser-chrome:not([data-community-tint]) body:has(:is(#home-screen, #leaderboard-screen, #profile-screen,
              #settings-screen, #messages-screen, #workshop-screen, #ai-screen,
              #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header,
@@ -4384,7 +4380,7 @@ html.un-ios.web-browser-chrome:not([data-community-tint]):not([data-browser-scro
    value, so the browser chrome and a cold launch frame the page in it.
    The launch cover reads the same ground, so the app opens on the page's
    colour in both modes. */
-body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #browse-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) .app-launch-cover {
+body:has(:is(#home-screen, #app-view, #leaderboard-screen, #profile-screen, #settings-screen, #messages-screen, #workshop-screen, #ai-screen, #profile-proposals-screen, #agent-session-screen, #auth-landing-screen, #auth-login-screen, #auth-register-screen, #auth-waiting-screen, #auth-waitlist-screen, #auth-more-screen):not(.hidden)) .app-launch-cover {
   background-color: var(--home-ground);
 }
 /* THE LANDING ROOT PAINTS THE WALLPAPER ITSELF. #auth-landing-screen is a
@@ -5524,200 +5520,8 @@ html[data-browser-scroller="home-screen"] .home-body-fill {
    min-height is what keeps the hidden search bar pullable on a short page,
    which was always a separate job. */
 
-/* ── Browse screen rows / boxes ─────────────────────────────
-   The #apps screen renders ONE row markup (icon · name+meta · Add
-   button) and lets CSS pick the layout: a hairline-divided vertical
-   list on a phone, bordered app boxes in a 2/3-column grid on a wide
-   screen — the Apple App Store shape at both sizes. Only the GRID is
-   Tailwind (responsive classes on #browse-list); every border lives
-   here, which is deliberate and load-bearing:
-
-   Tailwind's `divide-y` compiles to
-     .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px;
-                                                   border-bottom-width: 0 }
-   and `md:divide-y-0` zeroes BOTH widths on the same selector. That
-   selector is (0,3,0) and beats a bare `.browse-row` (0,1,0), so mixing
-   the two mechanisms stripped the top AND bottom border from every box
-   except the first child — which is exactly the bug this replaced. The
-   hairline is therefore a sibling rule here, in the same cascade as the
-   box, and #browse-list carries no divide-* utilities at all.
-
-   Written as one min-width query matching Tailwind's `md` (768px) —
-   keep the two in step if the container's breakpoint ever moves. */
-
-.browse-row {
-  /* One hairline token per theme so the rules below never need a `.dark`
-     variant (which would out-specify the sibling/hover rules). */
-  --browse-border: var(--border-light);
-  transition: background-color 150ms, border-color 150ms;
-}
-.dark .browse-row { --browse-border: var(--border); }
-/* Neutral, not --bg-card: that token is an accent TINT, so a plain hover read
-   as a selected/highlighted row once the accent turned blue. */
-.browse-row:hover { background-color: var(--bg-secondary); }
-
-/* ONE ROW SHAPE AT EVERY WIDTH (overnight audit W08, 1 Nov 2026): icon,
-   then the name over its meta line, then Join, centred on the row. #1617
-   gave a phone the name on a row of its own, with the meta line and a 44px
-   Join under it in a three-cell grid; the Join set the second row's height,
-   so the meta line fell ~37px under the name and each row was ~96px tall,
-   which read as a wrapping bug and fitted three apps on a phone. The Duo
-   upright, which never had the grid, showed the compact row this is.
-
-   The name may take TWO lines before it ellipsises (QA 2026-09-24 Q10, which
-   cut "Staging demo Puzzle Chain" to "Staging de..." in a desktop box), and
-   it breaks BETWEEN words (L05): `overflow-wrap: anywhere` cut "Group" to
-   "Grou / p" in a narrow card. `break-word` still breaks a single word too
-   long for the line, as the last resort. */
-.browse-row .browse-row-title { white-space: normal; }
-.browse-row .browse-row-title > span { align-items: baseline; }
-.browse-row .browse-row-name {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  white-space: normal;
-  overflow-wrap: break-word;
-}
-
-/* Phone: a single hairline BETWEEN consecutive rows, INSET to the text column.
-   The rows sit in one white card now (#browse-list carries the card classes
-   below md), so a rule running the card's full width would reach its corner
-   radius — the same reason the home panels' hairlines are inset, and the same
-   4.75rem depth @/components/ui/grouped-list.tsx uses for a row with a leading
-   tile (px-4 1rem + tile 2.75rem + gap-4 1rem).
-
-   A pseudo-element rather than `border-top` so the md+ box below can own the
-   `border` shorthand outright: .browse-row is a ListRow, which is already
-   `relative`. */
-.browse-row + .browse-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline-start: 4.75rem;
-  inset-inline-end: 0;
-  height: 1px;
-  background: var(--browse-border);
-  pointer-events: none;
-}
-
-/* md+: every row is its own complete box. The sibling selector is listed
-   alongside so this wins over the phone rule at equal specificity rather
-   than relying on source order alone. */
-@media (min-width: 768px) {
-  /* Each row is its own box here, so the between-rows hairline has nothing to
-     separate — it would draw across the top of every box but the first. */
-  .browse-row + .browse-row::before { content: none; }
-  .browse-row,
-  .browse-row + .browse-row {
-    /* The widget language separates by figure/ground, and the box is still a
-       white surface on the grey page, but the fill alone let the rows run
-       together (#5928 item 11): the wallpaper's pale end is a point or two off
-       white, and in dark the box is near-black on near-black. So at rest it
-       wears the hairline every card wears, the sheets' own --app-sheet-line,
-       which has its dark and more-contrast values. Width is unchanged from
-       when this border was transparent, so the hover rule below only recolours
-       it and the box does not change size under the cursor. */
-    border: 1px solid var(--app-sheet-line);
-    background-color: var(--bg-primary);
-    border-radius: 1rem;
-  }
-  .browse-row:hover,
-  .browse-row + .browse-row:hover { border-color: var(--accent-light); }
-}
-
-/* ── The phone directory: controls on the ground, the list in a card ────
-   SINCE THE COMMUNITIES PROTOTYPE the search, the filter chips and Sort sit
-   on the ground above the card rather than as its head: the card holds what
-   it lists, and the controls over it read as the control rows over Home's
-   and the Communities screen's cards do. What follows is #1919's reasoning
-   for the one-pane shape it replaces; the parts, the page-scoped classes
-   and the empty-note rule still hold, and the split ring does not (the
-   body and the note are whole cards now).
-
-   #1919: below md the search bar, the Sort control and the list they narrow wear
-   the Workshop's working pane (`.dev-ws-pane`, further down): one frosted
-   sheet (`--dc-sheet-fill` over `--dc-frost`), a 22px radius and a hairline
-   ring, with the head pinned at the top and the rows sliding under its
-   frost. Before this the bar was a wallpaper-coloured strip and the list a
-   plain white rounded-2xl card below it, which is the pre-pane shape every
-   other recent screen has moved off.
-
-   PAGE-SCOPED CLASSES, deliberately not the Workshop's own. The two panes
-   are the same treatment today and should be allowed to move separately;
-   sharing `.dev-ws-pane-*` would also drag the Workshop's sticky offset and
-   its stage-board width rules onto a screen that has neither.
-
-   NO WRAPPER, so no single element to ring. The head (#browse-search-bar)
-   and the body (#browse-list) are siblings under #browse-screen — the head
-   sticks against the SCREEN's scroller, and wrapping both in a pane would
-   put a new ancestor between the head and the thing it sticks in. So the
-   ring is a `border` split across the two parts (the head keeps no bottom
-   edge, the body no top edge) rather than the Workshop's inset box-shadow,
-   which cannot leave one side out. Same margins on both parts is what makes
-   the two half-rings meet as one.
-
-   The parts paint the SAME fill over the SAME backdrop, for the reason the
-   Workshop's note gives: a fill on a wrapper plus a fill on the sticky head
-   stacks 50% on 50% and draws a lighter band across the controls.
-
-   THE NOTE IS THE BODY WHEN THE LIST IS EMPTY. A search that matches nothing
-   leaves #browse-list with no children and #browse-empty with the sentence;
-   the empty list collapses (`:empty`) and the note takes the body's bottom
-   half of the ring instead, so the pane still closes. And while neither is
-   drawn — the directory is still loading, or the load failed and the error
-   card is the body's only child — the head closes itself (`:has`, the same
-   way the shell's body rules already read screen state).
-
-   Written as one max-width query matching the md breakpoint's lower edge
-   (767px), the mirror of the min-width query above — keep the two in step
-   if the container's breakpoint ever moves. */
-@media (max-width: 767px) {
-  /* The controls on the ground (the prototype's Discover): no sheet, no
-     ring, no fill, and NOT PINNED on a phone. A pinned head has to hide the
-     rows sliding under it, which takes a fill, and a fill is a band across
-     the wallpaper's washes and star that no flat colour matches (the header
-     fakes its glass for the same reason; a fixed layer inside this
-     scroller is not safe to fake, since the screen transitions transform
-     it). So on a phone the controls scroll away with the list, as a search
-     over a store list does. md+ keeps its pinned bar as it was. */
-  #browse-screen .browse-pane-head {
-    position: static;
-    margin: 0;
-    /* 20px at the top: 8 under the header's notch, 12 of air (12 left the
-       search field 4px under the bar). */
-    padding: 20px 12px 10px;
-    background: transparent;
-  }
-  #browse-screen .browse-pane-body,
-  #browse-screen .browse-pane-note {
-    background-color: var(--dc-sheet-fill);
-    backdrop-filter: var(--dc-frost);
-    -webkit-backdrop-filter: var(--dc-frost);
-    border: 1px solid var(--app-sheet-line);
-    margin: 0 12px 12px;
-    border-radius: 22px;
-    /* The rows' hover fill and the hairlines would otherwise poke out of
-       the corners. Nothing in the body positions itself outside it (the
-       "+" menu the Workshop pane keeps `overflow: visible` for has no
-       counterpart here). */
-    overflow: hidden;
-  }
-  #browse-screen .browse-pane-body:empty { display: none; }
-  #browse-screen .browse-pane-note { padding: 12px 14px 16px; }
-}
-/* Where there is no backdrop-filter the fill is all there is, and 50% white
-   with rows sliding crisply under the pinned head is the rendering fault the
-   frost prevents. All three parts go opaque together, because they must stay
-   the same colour as each other above all. */
-/* SOLID ON A PHONE, ALL THREE TOGETHER, on every platform. The list scrolls
-   under the pinned head, so with no blur the head has to be opaque, and the
-   three parts are one pane, so they stay one colour (see --dc-sheet-solid).
-   md+ is untouched: there the bar wears the wallpaper's own ground. */
-@media (max-width: 767px) {
-  #browse-screen .browse-pane-body,
-  #browse-screen .browse-pane-note { background-color: var(--dc-sheet-solid); }
-}
+/* Discover's rows and its phone pane (#apps) went with its screen (One
+   Home, #6361): its directory is Home's Communities to join. */
 
 /* ── App-card "…" actions menu ─────────────────────────────
    Popover built by Home.openCardMenu (appended to <body>, fixed-
@@ -20901,7 +20705,7 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
      and the header is sticky over it, so 0 was the top of the SCREEN: the
      strip pinned there drew straight over the header and hid it. There it
      is the header's own height, as everything else that sticks under the
-     header in that mode is measured (#browse-search-bar). */
+     header in that mode is measured. */
   #dev-workshop { --ws-pin-top: var(--dev-ws-head-foot, 7px); }
   html[data-browser-scroller="dev-forum-scroll"] #dev-workshop {
     --ws-pin-top: calc(var(--browser-banner-h) + var(--platform-header-h) + var(--platform-safe-top));
@@ -22615,7 +22419,7 @@ html:not(.un-kb) body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek)):
    route with no wallpaper gets the solid plane colour. */
 .platform-tabs::before,
 .platform-parked::before,
-body:has(:is(#home-screen, #leaderboard-screen, #profile-screen, #browse-screen,
+body:has(:is(#home-screen, #leaderboard-screen, #profile-screen,
              #settings-screen, #messages-screen, #workshop-screen, #ai-screen,
              #agent-session-screen,
              #profile-proposals-screen):not(.hidden)) #platform-header::before,
@@ -22629,40 +22433,6 @@ html[data-browser-scroller] #landing-header::before {
   background:
     linear-gradient(var(--fake-glass-tint, var(--dc-sheet-fill)), var(--fake-glass-tint, var(--dc-sheet-fill))),
     var(--home-washes, var(--dc-sheet-solid));
-}
-/* DISCOVER'S SEARCH BAND FROM 768px (polish N12), the same faked layer.
-   It pinned on a flat `--home-ground` fill: the washes behind the page do
-   not reach it, so it read as a band of a different colour across them, and
-   with no edge the cards slid under it into nothing. Now it paints the
-   wallpaper's own grain and washes, fixed so they line up with the body's
-   pixel for pixel: the band is the page, opaque, and only its hairline
-   says where the cards pass under. The phone's head is not sticky
-   (`browse-pane-head` above) and keeps its transparent fill. */
-@media (min-width: 768px) {
-  #browse-search-bar {
-    background: transparent;
-    clip-path: inset(0);
-  }
-  #browse-search-bar::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-      var(--home-grain, none) 0 0 / 240px 240px repeat,
-      var(--home-washes, var(--dc-sheet-solid));
-  }
-  #browse-search-bar::after {
-    content: '';
-    position: absolute;
-    inset-inline-start: 0;
-    inset-inline-end: 0;
-    bottom: 0;
-    height: 1px;
-    background: var(--app-sheet-line);
-    pointer-events: none;
-  }
 }
 /* THE HAIRLINE GOES BACK ON TOP. The layer paints over its surface's own
    border (a stacking context's negative layer comes after its background and
@@ -22947,25 +22717,22 @@ html.un-android.in-native-webview:not(.web-browser-chrome) {
 }
 
 /* TWO ORDERS, ONE MARKUP (Evan, 29 Oct 2026). The tabs' markup is the
-   desktop rail's order, Home, Discover, Messages, AI, Communities, then you,
-   so a keyboard on a desktop moves through them in the order it sees
-   (features/nav/tab-bar.tsx TABS). The phone's bar keeps #6019's order,
-   Home · Communities · AI · Messages · You, as five cells: `order` lays it
-   out, and the Discover tab is the rail's alone (Home's Discover block opens
-   the page there). The orders are below zero so the side strip's own
-   (`order: 1` for the app you left, `2` for you, further down) still come
-   after the four. You keeps the default, last in the markup. */
+   desktop rail's order, Home, AI, Messages, Communities, then you, so a
+   keyboard on a desktop moves through them in the order it sees
+   (features/nav/tab-bar.tsx TABS). The phone's bar is four cells since One
+   Home (#6361), Home · AI · Messages · You, which `order` lays out. The
+   orders are below zero so the side strip's own (`order: 1` for the app you
+   left, `2` for you, further down) still come after the three. You keeps
+   the default, last in the markup. */
 @media (max-width: 767.98px) {
-  #platform-tab-discover { display: none; }
   #platform-tab-home { order: -4; }
   #platform-tab-ai { order: -3; }
   #platform-tab-messages { order: -2; }
 }
-/* ONE HOME (#6361): the Communities tab is drawn on neither bar, and
-   Discover on neither: Home holds your communities and the ones to join.
-   Both nodes stay, for the routes and links that still name them. */
-#platform-tab-workshop,
-#platform-tab-discover { display: none !important; }
+/* ONE HOME (#6361): the Communities tab is drawn on neither bar: Home holds
+   your communities and the ones to join. Its node stays, for the route and
+   links that still name it. */
+#platform-tab-workshop { display: none !important; }
 
 /* A QUIET GREY DISC, NOT THE BELL'S RED (#2912). This used to be the same
    red disc as #notifications-badge, on the argument that two counts on one
@@ -24264,7 +24031,7 @@ html.un-android #back-btn > #back-icon-arrow:not(.hidden) + .back-icon-android {
      #profile-proposals-screen likewise (#3498): Your requests and Your votes
      centred in the whole window, so from a laptop width down their cards
      began under the rail. */
-  :is(#home-screen, #browse-screen, #workshop-screen, #ai-screen, #leaderboard-screen,
+  :is(#home-screen, #workshop-screen, #ai-screen, #leaderboard-screen,
       #profile-screen, #admin-screen, #settings-screen, #messages-screen,
       #agent-session-screen, #profile-proposals-screen) {
     /* A GUTTER AFTER THE RAIL, MIRRORED ON THE FAR EDGE (#2718 review).

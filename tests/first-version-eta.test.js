@@ -469,7 +469,7 @@ test('on the App tab and the other screens the document does not scroll, the bar
   assert.deepEqual(sticky, ['#messages-screen', '#workshop-screen', '#ai-screen', '#agent-session-screen', '#profile-proposals-screen']);
   const scroll = read('frontend/src/lib/browser-scroll.ts');
   const pages = JSON.parse(/const PAGES = (\[[^\]]*\]);/.exec(scroll)[1].replace(/'/g, '"'));
-  assert.deepEqual(pages, ['home-screen', 'browse-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen']);
+  assert.deepEqual(pages, ['home-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen']);
   const glass = /THE STRIP OVER THE BAR FOLLOWS IT HOME[\s\S]*?body:has\(:is\(([^)]*)\):not\(\.hidden\)\) #platform-header,/.exec(css)[1].split(',').map((id) => id.trim());
   assert.deepEqual(glass.filter((id) => !pages.includes(id.slice(1))), sticky, 'every opaque-ground route that is not a page scroller, and only those');
   // Its ground is the opaque one the strip takes (run three's rule), and the

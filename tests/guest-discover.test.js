@@ -277,12 +277,27 @@ test('the list is the same cards, most active first, eight at a time, more as yo
   assert.deepEqual([...html.matchAll(/<article data-guest-card="([^"]+)"/g)].map((m) => m[1]),
     ['a01', 'a02', 'a03', 'a04', 'a05', 'a06', 'a07', 'a08'], 'in order of people active, tryable or not');
   // No Show more: a sentinel under the cards, which the scroller's own
-  // IntersectionObserver reads (Home scrolls #home-screen, not the window).
+  // IntersectionObserver reads: the nearest ancestor that scrolls, Home's
+  // #home-screen signed in and the landing's #auth-landing-scroll signed out.
+  // Rooted on #home-screen alone, a visitor never got past the first page.
   assert.match(html, /data-home-join-more=""/);
   assert.doesNotMatch(html, /data-guest-show-more=|data-guest-(?:more|row)=/);
   const src = read(JOIN);
   assert.match(src, /export const JOIN_PAGE = 8;/);
-  assert.match(src, /const root = document\.getElementById\('home-screen'\);/);
+  assert.match(src, /const root = scrollParent\(el\);/);
+  assert.doesNotMatch(src, /getElementById\('home-screen'\)/);
+  const { scrollParent } = loadTsx(JOIN);
+  const node = (overflowY, parent = null) => ({ overflowY, parentElement: parent });
+  const landing = node('auto');
+  const card = node('visible', node('visible', landing));
+  const saved = globalThis.getComputedStyle;
+  globalThis.getComputedStyle = (el) => ({ overflowY: el.overflowY });
+  try {
+    assert.equal(scrollParent(card), landing, 'the box that scrolls the cards');
+    assert.equal(scrollParent(node('visible', node('visible'))), null, 'else the viewport');
+  } finally {
+    if (saved) globalThis.getComputedStyle = saved; else delete globalThis.getComputedStyle;
+  }
   assert.match(src, /setShown\(\(n\) => n \+ JOIN_PAGE\)/);
   assert.doesNotMatch(read(DISCOVER), /CARDS_STEP|setShown\(cards\.length/);
   const catalog = JSON.parse(read('frontend/locales/en/auth.json'));

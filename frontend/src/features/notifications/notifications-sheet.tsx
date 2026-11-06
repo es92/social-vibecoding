@@ -1877,7 +1877,8 @@ export function NotificationsSheetView() {
       </div>
       {/*
           #5405: the search field, between the title and the tab strip — the
-          Discover field's shape (browse-screen.tsx): a white rounded field,
+          Discover field's shape (Discover's search, retired with One Home,
+          #6361): a white rounded field,
           a magnifying glass on its left, grey hint text, filtering as you
           type with no button to press. Escape with text in it empties the
           field instead of reaching whatever else would hear it; an empty

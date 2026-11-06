@@ -16,9 +16,11 @@
 // native kit by lib/kit-surface.ts. Its no-kit fallback was already "leave the
 // panel at the top of #profile-root", which is exactly where React puts it.
 //
-// Visibility comes from the store; `false` is the shipped state. See
-// browse-screen.tsx for why it has to be useVisibilityHiddenClass and not
-// useVisibility.
+// Visibility comes from the store; `false` is the shipped state. It has to be
+// useVisibilityHiddenClass and not useVisibility: App._showOnlyScreen runs
+// inside PlatformUI.transition(fn), and the kit snapshots the DOM before fn
+// returns, so the class is written synchronously inside the publish
+// (lib/visibility-store.ts).
 
 import { useRef } from 'react';
 import { useVisibilityHiddenClass } from '../../lib/visibility-store';

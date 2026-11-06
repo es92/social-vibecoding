@@ -261,7 +261,8 @@ export function SwitcherBody(): ReactNode {
           type="button"
           className="community-switcher-row"
           data-switcher-join=""
-          onClick={() => { closeSwitcher(); window.location.hash = '#apps'; }}
+          // One Home (#6361): the directory is Home's Communities to join.
+          onClick={() => { closeSwitcher(); (window as any).Home?.showCommunitiesToJoin?.(); }}
         >
           <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
             <SearchIcon className="w-5 h-5" />

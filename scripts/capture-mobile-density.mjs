@@ -85,10 +85,12 @@ try {
     await context.routeWebSocket('**/ws/**', () => {});
     page.setDefaultTimeout(10000);
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(`${origin}/?shot=mobile-density#apps`);
-    await page.locator('#browse-list .browse-row').first().waitFor();
+    // Discover's list (#apps) went with One Home (#6361); Home is the page
+    // of apps and communities now.
+    await page.goto(`${origin}/?shot=mobile-density`);
+    await page.locator('#home-screen:not(.hidden)').waitFor();
     await page.waitForTimeout(900);
-    await page.screenshot({ path: path.join(output, `discover-${phase}-${width}.png`) });
+    await page.screenshot({ path: path.join(output, `home-${phase}-${width}.png`) });
     await page.goto(`${origin}/?shot=dev-chat-first-use#app/my-page/dev/sessions/161700`);
     await page.locator('#dc-session-header').waitFor({ timeout: 15000 });
     await page.waitForTimeout(900);
@@ -140,11 +142,11 @@ try {
       await page.locator('#dc-return-hint').waitFor({ state: 'hidden' });
       await page.locator('#dc-new-change-btn').click();
       await page.waitForFunction(() => location.pathname.endsWith('/dev/sessions/new'));
-      await page.evaluate(() => { location.hash = '#apps'; });
-      await page.locator('#browse-list .browse-row').first().waitFor();
+      await page.evaluate(() => { location.hash = ''; });
+      await page.locator('#home-screen:not(.hidden)').waitFor();
       await page.waitForTimeout(900);
-      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), '320px Discover has no horizontal overflow');
-      await page.screenshot({ path: path.join(output, 'discover-dark-320.png') });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), '320px Home has no horizontal overflow');
+      await page.screenshot({ path: path.join(output, 'home-dark-320.png') });
     }
     if (phase === 'after' && width === 1280) {
       assert.ok(await page.locator('#dc-venue-select').isVisible());

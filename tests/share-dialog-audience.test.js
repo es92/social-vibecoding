@@ -87,7 +87,4 @@ test('the link handed out is a public project’s page, else the app’s own add
   // cover (tests/project-preview.test.js); any other is the app's address.
   assert.match(s, /const page = publicPageUrl\(window\.AppView\?\.appData\);/);
   assert.match(s, /window\.AppView\?\.appData\?\.url/);
-  // Discover's Share hands out the same field.
-  const browse = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/apps/browse.js'), 'utf8');
-  assert.match(browse, /shareUrlFor\(app\) \{[\s\S]*?const raw = String\(app\.url\);/);
 });

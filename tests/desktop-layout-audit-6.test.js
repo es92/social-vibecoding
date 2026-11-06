@@ -15,30 +15,6 @@ const { message } = require('./lib/platform-i18n');
 const ROOT = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const CSS = read('public/css/app.css');
-const SCREEN = read('frontend/src/features/apps/browse-screen.tsx');
-
-test('W02: Discover sits in the page column Home, Settings and Challenges share', () => {
-  assert.match(SCREEN, /const PAGE_COLUMN = 'max-w-5xl mx-auto';/);
-  assert.match(SCREEN, /id="browse-list-level" className=\{onDetail \? `hidden \$\{PAGE_COLUMN\}` : PAGE_COLUMN\}/);
-  assert.match(read('frontend/src/features/settings/index.tsx'), /id="settings-root" className="max-w-5xl mx-auto/);
-  assert.match(read('frontend/src/features/leaderboard/index.tsx'), /className="max-w-5xl mx-auto px-4 pt-5 pb-4 w-full"/);
-  const home = CSS.slice(CSS.indexOf('\n.home-column {'));
-  assert.match(home.slice(0, 200), /max-width: 64rem;/, 'Home\'s column is the same 64rem (max-w-5xl)');
-});
-
-test('W04 / I9: the search, the view switch and the type row end where the boxes do', () => {
-  assert.match(SCREEN, /const CONTROL_COLUMN = 'max-w-\[62\.5rem\] mx-auto';/);
-  assert.equal((SCREEN.match(/\$\{CONTROL_COLUMN\}/g) || []).length, 3);
-  assert.doesNotMatch(SCREEN, /className=[^\n]*max-w-xl/, 'none of them stops at 576px any more');
-  // inline-flex beat flex in the cascade and left the strip an inline box.
-  assert.match(SCREEN, /SECTION_TABS_LIST_BASE\.replace\('inline-flex', 'flex'\)/);
-});
-
-test('W03: the box grid counts its columns from its own width', () => {
-  assert.match(read('frontend/src/features/apps/browse-list.tsx'),
-    /export const BOX_COLUMNS = 'md:grid-cols-\[repeat\(auto-fill,minmax\(20rem,1fr\)\)\]';/);
-  assert.match(SCREEN, /className=\{`browse-pane-body md:grid \$\{BOX_COLUMNS\} md:gap-3 md:p-3`\}/);
-});
 
 test('W06, reversed by #6154: My apps keeps four columns across the whole column; Home\'s search clears the bar', () => {
   // The audit capped the grid at 40rem. That left a block empty on its right on

@@ -1,4 +1,4 @@
-// Back/home buttons on secondary screens; a shared Home/Browse root header (#1569).
+// Back/home buttons on secondary screens; Home's root header (#1569).
 //
 // ── What the bar looked like before ────────────────────────────────────
 //
@@ -102,7 +102,7 @@ test('setBackIcon maps the four modes and toggles all three glyphs', () => {
   assert.match(body, /back-icon-close'\)\?\.classList\.toggle\('hidden', slot !== 'close'\)/);
 });
 
-// ── 2. Home and Browse share one root-header rule ──────────────────────
+// ── 2. Home's root-header rule ─────────────────────────────────────────
 
 test('Home is the only root, and it gets that from the shared screen reveal', () => {
   // navigateHome is the obvious one. The other is the unrecognised-hash
@@ -131,7 +131,6 @@ test('Home is the only root, and it gets that from the shared screen reveal', ()
   for (const [label, anchor] of [
     ['navigateHome', "App._showOnlyScreen('home-screen', ['app-view']);"],
     ['the cold-boot branch', "App._showOnlyScreen('home-screen');"],
-    ['Browse entry', "App._showOnlyScreen('browse-screen');"],
   ]) {
     const at = APP_JS.indexOf(anchor);
     assert.ok(at > 0, `${label} must reveal its root through the shared helper`);
@@ -652,65 +651,6 @@ test('the bell renders BEFORE the mark, to its left', () => {
     'the bell is inside the measured right group');
 });
 
-// ── #2639: the Browse list shows the house ─────────────────────────────
-//
-// TWO writers own the bar across this one transition, and the LATER one
-// wins. `navigateToBrowse` calls `_showOnlyScreen('browse-screen')` and then
-// `Browse.syncChrome()`, whose `_syncChrome` calls `setBackIcon`
-// unconditionally. A first attempt at this issue changed only app.js and was
-// a complete no-op for that reason: the house was published and overwritten
-// inside the same transition, and the header stayed empty exactly as
-// reported.
-//
-// So this asserts BOTH writers agree, not just the one that reads first.
-
-test('both writers of the bar agree about the Browse list: a root on the rail, back to Home on a phone', () => {
-  const browse = fs.readFileSync(
-    path.join(__dirname, '..', 'frontend/src/features/apps/browse.js'), 'utf8'
-  );
-
-  // #6019: ON A PHONE Discover is a PAGE OF HOME'S, opened from Home's
-  // Discover section, so the list level has an arrow back to Home. ON THE
-  // DESKTOP RAIL it is a tab again (29 Oct 2026), a root with an empty
-  // corner, as #2718 had it. One predicate, App._discoverIsTab, decides for
-  // both writers.
-  //
-  // Writer 1: the screen reveal, through the table.
-  const at = APP_JS.indexOf('  _showOnlyScreen(revealId, keepAlso) {');
-  const body = APP_JS.slice(at, APP_JS.indexOf('\n  },', at));
-  assert.match(body, /App\.setBackIcon\(\.\.\.App\._backSlotFor\(revealId\)\);/);
-  assert.match(APP_JS, /'browse-screen': \['arrow', '\/'\],/, 'the table says the phone\'s answer, up to Home');
-  assert.match(APP_JS, /if \(revealId === 'browse-screen' && App\._discoverIsTab\(\)\) return \['none'\];/,
-    'and the rail\'s is a root');
-  assert.match(APP_JS, /_discoverIsTab\(\) \{\n    return !App\._isPhoneLayout\(\);\n  \},/);
-
-  // Writer 2: Browse's own chrome sync, which runs after it and so decides.
-  assert.match(browse, /const root = !upToList && !!App\._discoverIsTab\?\.\(\);\n    App\.setBackIcon\(root \? 'none' : 'arrow', upToList \? '#apps' : \(root \? undefined : '\/'\)\);/,
-    'the list level agrees with the table');
-  assert.doesNotMatch(browse, /: 'home';/,
-    'no remaining house in the chrome sync');
-
-  // And the order that makes the second one decisive is still the order.
-  const nav = APP_JS.slice(APP_JS.indexOf('navigateToBrowse'));
-  const reveal = nav.indexOf("_showOnlyScreen('browse-screen')");
-  const sync = nav.indexOf('syncChrome()');
-  assert.ok(reveal > -1 && sync > -1 && sync > reveal,
-    'syncChrome still runs after the reveal, so it is the value that survives');
-});
-
-test('the detail level keeps its own two answers', () => {
-  const browse = fs.readFileSync(
-    path.join(__dirname, '..', 'frontend/src/features/apps/browse.js'), 'utf8'
-  );
-  // Up to the list normally, and, when the detail was opened from a Home
-  // card and there is no list behind it, what the list itself shows: an
-  // arrow back to Home on a phone, nothing on the rail (#6019).
-  assert.match(browse, /const upToList = onDetail && Browse\._detailOrigin !== 'home';/);
-  assert.match(browse, /App\.setBackIcon\(root \? 'none' : 'arrow', upToList \? '#apps' : \(root \? undefined : '\/'\)\);/);
-  // A window resized across 768px syncs it again.
-  assert.match(browse, /window\.matchMedia\?\.\('\(min-width: 768px\)'\)\?\.addEventListener\?\.\('change', \(\) => \{\n        const screen = document\.getElementById\('browse-screen'\);\n        if \(screen && !screen\.classList\.contains\('hidden'\)\) Browse\._syncChrome\(\);/);
-});
-
 test('the back-slot table and the tab map agree about what is a root', () => {
   // TWO TABLES SAYING ONE THING, which is the shape that rots. App._BACK_SLOT
   // decides what the header's left slot shows for a screen; TAB_FOR_SCREEN
@@ -765,10 +705,11 @@ test('the back-slot table and the tab map agree about what is a root', () => {
 
   // THE RAIL'S OWN ANSWERS (29 Oct 2026): a screen the desktop rail lights
   // a tab of its own for is that tab's root there, so _backSlotFor empties
-  // its corner at the rail's width. Today that is Discover alone.
+  // its corner at the rail's width. That was Discover alone, retired with
+  // One Home (#6361), so the rail and the phone agree on every screen now.
   const railBody = nav.match(/RAIL_TAB_FOR_SCREEN = Object\.freeze\(\{([\s\S]*?)\}\)/)[1];
   const railFor = Object.fromEntries([...railBody.matchAll(/'([a-z-]+)': '([a-z]+)'/g)].map((m) => [m[1], m[2]]));
-  assert.deepEqual(railFor, { 'browse-screen': 'discover' });
+  assert.deepEqual(railFor, {});
   for (const screen of Object.keys(railFor)) {
     assert.match(APP_JS, new RegExp(`if \\(revealId === '${screen}' && App\\._discoverIsTab\\(\\)\\) return \\['none'\\];`),
       `${screen} is a root on the rail`);

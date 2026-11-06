@@ -2246,10 +2246,7 @@ const AppView = {
     const home = AppView._home();
     const fromHome = home && Array.isArray(home._apps)
       ? home._apps.find((a) => a && a.slug === slug) : null;
-    if (fromHome) return fromHome;
-    const fromBrowse = window.Browse && typeof Browse.appBySlug === 'function'
-      ? Browse.appBySlug(slug) : null;
-    return fromBrowse || null;
+    return fromHome || null;
   },
 
   // Only launch eagerly when the frame we'd mount is the same frame

@@ -27,15 +27,6 @@ const html = shellMarkup();
 const swJs = read('public/js/../sw.js');
 const appJs = read('public/js/app.js');
 const appViewJs = read('public/js/app-view.js');
-const browseJs = read('frontend/src/features/apps/browse.js');
-// #1191 slice 6 conversion 3 split the browse screen the same way chunk G
-// split the dev chat: browse.js still decides where a row or the back link
-// GOES, and the two components below are what carry the anchor and the
-// NavLink wiring. Both halves are read here, and the browse entries that used
-// to ride the shared ANCHORS / ROWS tables are hand-written below instead —
-// one table row cannot span two files.
-const browseListTsx = read('frontend/src/features/apps/browse-list.tsx');
-const browseDetailTsx = read('frontend/src/features/apps/browse-detail.tsx');
 const devChatJs = read('frontend/src/features/dev-chat/dev-chat.js');
 const chatFrameTsx = read('frontend/src/features/dev-board/chat-frame.tsx');
 const topicFrameTsx = read('frontend/src/features/dev-board/topic-frame.tsx');
@@ -44,7 +35,6 @@ const topicBackTsx = read('frontend/src/features/dev-board/topic/topic-back.tsx'
 const topicHeadTsx = read('frontend/src/features/dev-board/topic/topic-head.tsx');
 const headerTsx = read('frontend/src/features/header/platform-header.tsx');
 const improveStoreJs = read('frontend/src/features/improve/improve-store.js');
-const { HOME_SRC: homeJs } = require('./helpers/home-modules');
 const leaderboardJs = read('frontend/src/features/leaderboard/leaderboard.js');
 const kudosPaneTsx = read('frontend/src/features/leaderboard/kudos-pane.tsx');
 const settingsJs = read('frontend/src/features/settings/settings.js');
@@ -142,11 +132,9 @@ test('no converted control opts into target=_blank', () => {
   assert.ok(!/id="back-btn"[^>]*target=/.test(html),
     'the header control must not carry target — see NavLink\'s header comment');
   for (const [name, src] of [['app-view.js', appViewJs], ['dev-chat.js', devChatJs],
-    ['browse.js', browseJs], ['browse-list.tsx', browseListTsx],
-    ['browse-detail.tsx', browseDetailTsx], ['leaderboard.js', leaderboardJs],
+    ['leaderboard.js', leaderboardJs],
     ['kudos-pane.tsx', kudosPaneTsx]]) {
-    for (const id of ['dc-back', 'dev-chat-back', 'dev-topic-back',
-      'browse-detail-back', 'data-lb-back']) {
+    for (const id of ['dc-back', 'dev-chat-back', 'dev-topic-back', 'data-lb-back']) {
       const at = src.indexOf(`${id}"`) !== -1 ? src.indexOf(`${id}"`) : src.indexOf(id);
       if (at === -1) continue;
       const tag = src.slice(at, src.indexOf('>', at));
@@ -228,10 +216,11 @@ test('the header click handler guards before it preventDefaults', () => {
   // The existing screen-hook chain is unchanged and still ordered — with the
   // dev session's claim (Streamlined Concept) last before the home fallback.
   assert.ok(body.indexOf('AdminConsole?.handleBack') < body.indexOf('Settings?.handleBack'));
-  assert.ok(body.indexOf('Settings?.handleBack') < body.indexOf('Browse?.handleBack'));
   // The Challenges tab's detail page is a level of the Leaderboard screen and
-  // claims the chevron the same way, after Browse and before a dev session.
-  assert.ok(body.indexOf('Browse?.handleBack') < body.indexOf('TopochainChallenges?.handleBack'));
+  // claims the chevron the same way, after Settings and before a dev session.
+  // (Discover's detail claimed it between them until One Home, #6361.)
+  assert.ok(body.indexOf('Settings?.handleBack') < body.indexOf('TopochainChallenges?.handleBack'));
+  assert.doesNotMatch(body, /Browse\?\.handleBack/);
   assert.ok(body.indexOf('TopochainChallenges?.handleBack') < body.indexOf('DevChat?.handleBack'));
   assert.ok(body.indexOf('DevChat?.handleBack') < body.indexOf('App.navigateHome()'));
 });
@@ -243,7 +232,7 @@ test('setBackIcon owns the anchor href, defaulting to home', () => {
   assert.match(fn, /setAttribute\('href'/, 'it writes the target onto the anchor');
   assert.match(fn, /href \|\| \(window\.NavLink \? NavLink\.homeHref\(\) : '\/'\)/,
     'omitting the argument means home — correct for every screen except the '
-    + 'three that claim the chevron as "up one level"');
+    + 'two that claim the chevron as "up one level"');
   // The accessible name is a CONSTANT now: the control means one thing, so
   // there is no second name for it to track. It is set on the element rather
   // than here — see features/header/platform-header.tsx.
@@ -268,24 +257,17 @@ test('every screen entry refreshes the href through the one choke point', () => 
     'and the answer comes from the table rather than a chain of conditions');
 });
 
-test('the three up-one-level screens pass their own target', () => {
-  // Browse's detail view is a level INSIDE that screen and draws the arrow.
-  // Settings and Admin draw one at level 2 as well — the mobile drill-in,
-  // which is likewise a level inside the screen and would strand a phone
-  // viewer without it.
+test('the two up-one-level screens pass their own target', () => {
+  // Settings and Admin draw an arrow at level 2 — the mobile drill-in, a
+  // level inside the screen that would strand a phone viewer without it.
+  // (Discover's detail view was a third until One Home, #6361.)
   //
-  // THE HOUSE IS GONE FROM ALL THREE (#2718 review). It was the answer while
+  // THE HOUSE IS GONE FROM BOTH (#2718 review). It was the answer while
   // these screens hung off Home's account row; the five-tab bar answers "how
   // do I get out of here" now, so a house is either a duplicate of the Home
   // tab or — worse, on Settings and Admin — a jump PAST the Me tab the viewer
   // came through and which is still lit. What is left is the honest pair: an
   // arrow when there is a level above, nothing when there is not.
-  assert.match(browseJs, /const upToList = onDetail && Browse\._detailOrigin !== 'home';/,
-    'browse names the one state with a list above it…');
-  assert.match(browseJs, /App\.setBackIcon\(root \? 'none' : 'arrow', upToList \? '#apps' : \(root \? undefined : '\/'\)\);/,
-    '…and that state alone goes up to the list; the list and a detail opened '
-    + 'from a Home card show nothing on the rail, where Discover is a tab, and '
-    + 'go back to Home on a phone, where it is a page of Home\'s (#6019)');
   assert.match(adminConsoleJs, /setBackIcon\('arrow', inSection \? '#admin' : '#profile'\)/,
     'the admin section chevron pops to the console menu; its root goes up to '
     + 'the Me tab it was opened from');
@@ -526,54 +508,6 @@ test('[data-lb-back] keeps its bottom margin as an anchor', () => {
     + 'without this the button-to-anchor swap silently collapses the gap');
 });
 
-// The browse detail page's back link, JSX in browse-detail.tsx since #1191
-// slice 6. Same three properties the ANCHORS loop asserts for every other
-// control — a real <a>, a resolvable target, and a guard that runs before
-// preventDefault — written out because the control is a component now.
-test('"back to all apps" is a real anchor with a real target', () => {
-  const at = browseDetailTsx.indexOf('id="browse-detail-back"');
-  assert.ok(at !== -1, 'browse-detail.tsx: #browse-detail-back went missing');
-  const tag = browseDetailTsx.slice(browseDetailTsx.lastIndexOf('<', at), at + 400);
-  assert.match(tag, /^<a\b/, 'browse-detail.tsx: the control must be an <a>');
-  assert.match(tag, /href="#apps"/, 'it must carry a resolvable href');
-  assert.ok(!/<button[^>]*id="browse-detail-back"/.test(browseDetailTsx + browseJs),
-    'the old <button> tag is gone from both halves');
-});
-
-test('"back to all apps" leaves a modified click to the browser', () => {
-  const at = browseDetailTsx.indexOf('id="browse-detail-back"');
-  const body = browseDetailTsx.slice(at, at + 700);
-  // `e` is React's SyntheticEvent here, so the guard reads the native one out
-  // of it — the same NavLink call, one hop further in.
-  const guard = body.indexOf('isNativeClick(e.nativeEvent)');
-  const prevent = body.indexOf('e.preventDefault()');
-  assert.ok(guard !== -1, 'browse-detail.tsx: the modified-click guard went missing');
-  assert.ok(prevent !== -1, 'browse-detail.tsx: a plain click must still be intercepted');
-  assert.ok(guard < prevent,
-    'browse-detail.tsx: preventDefault ahead of the guard swallows the new tab');
-});
-
-test('#browse-detail-back keeps its own layout as an anchor', () => {
-  const at = browseDetailTsx.indexOf('id="browse-detail-back"');
-  const tag = browseDetailTsx.slice(at, at + 400);
-  assert.match(tag, /\binline-block\b/, 'same inline-vs-inline-block trap');
-});
-
-// ── The rows that stay buttons / divs ──────────────────────────────────
-
-// The App/Dev switch used to be tested here as the one control that had to
-// use NavLink mechanism B (hand interception) rather than a plain href: an
-// <a> cannot carry role="radio" inside a role="radiogroup". THE UI OVERHAUL
-// retired the switch, so the exception is gone with it — every navigating
-// control in the shell is an anchor or goes through App's router now.
-//
-// #app-menu-row-improve is deliberately NOT a new exception — nor was
-// #improve-btn, the header pill it replaced when #2718 retired that. It opens
-// a panel rather than navigating, so there is no destination for a cmd-click
-// to open; the panel's own rows are where navigation happens, and those ARE
-// anchors (see features/improve/session-row.tsx). Same for
-// #app-menu-row-about, a button for the same reason: the pane it opens is the
-// sheet in another state, not an address.
 test('the retired App/Dev switch left no interception behind', () => {
   assert.equal(appJs.indexOf(".querySelectorAll('.app-mode-seg')"), -1,
     'the switch wiring is gone from app.js');
@@ -583,85 +517,21 @@ test('the retired App/Dev switch left no interception behind', () => {
     'no orphan segment survived the retirement');
 });
 
-const ROWS = [
-  {
-    label: 'home app cards',
-    src: () => homeJs, file: 'home.js',
-    anchor: ".querySelectorAll('.app-card')",
-    wire: /NavLink\.wireModified\(card, hrefFor, activate\)/,
-    // #1562: a Discover tap opens the app's detail page, not the app. The
-    // modified-click contract is unchanged — it just names a different route.
-    href: /detailHref\(card\.dataset\.slug\)/,
-    guards: ['card-add-btn', 'card-menu-btn', "card.dataset.demo === 'true'", 'awaiting_secrets'],
-  },
-  // The dev chat's cross-app "Active Sessions" rows were the second entry
-  // here. They are gone (#1367): `#dc-active-list` and `#dc-active-counter`
-  // exist in no markup, so `renderActiveSessions` resolved nothing and
-  // returned on its first line, and the 5s poll that drove it had no caller
-  // left. A modifier-click contract for rows nobody can see is not a
-  // contract — the assertion below replaces it, so the wiring cannot come
-  // back without the surface.
-];
+// Home's Discover cards were the last row here: a ⌘-click opened the app's
+// details in a new tab. They went with One Home (#6361). The dev
+// chat's cross-app "Active Sessions" rows were the second entry. They are
+// gone (#1367): `#dc-active-list` and `#dc-active-counter` exist in no
+// markup, so `renderActiveSessions` resolved nothing and returned on its
+// first line, and the 5s poll that drove it had no caller left. A
+// modifier-click contract for rows nobody can see is not a contract — the
+// assertion below replaces it, so the wiring cannot come back without the
+// surface.
 
 test('the retired cross-app session rows leave no half of themselves behind', () => {
   assert.ok(!/dc-active-item/.test(devChatJs), 'no rows');
   assert.ok(!/dc-active-list|dc-active-counter/.test(devChatJs.replace(/\/\/[^\n]*/g, '')),
     'and no lookups for the hosts they needed');
 });
-
-for (const r of ROWS) {
-  test(`${r.label} open in a new tab under a modifier`, () => {
-    const at = r.src().indexOf(r.anchor);
-    assert.ok(at !== -1, `${r.file}: ${r.anchor} went missing`);
-    // A window, not a parse: wide enough to hold the wiring block plus the
-    // comment above it. Raised from 1600 when #1562 gave the Discover card a
-    // named destination helper and two more lines of guard.
-    const body = r.src().slice(at, at + 2400);
-    assert.match(body, r.wire, `${r.file}: must route through NavLink.wireModified`);
-    assert.match(body, r.href, `${r.file}: the new tab must open the row's own route`);
-    // hrefFor has to repeat the plain click's guards, or a modified click
-    // would drill into a row the plain click treats as inert.
-    const hrefFor = body.slice(body.indexOf('const hrefFor'), body.indexOf('const activate'));
-    for (const g of r.guards) {
-      assert.ok(hrefFor.includes(g),
-        `${r.file}: hrefFor must repeat the "${g}" guard — otherwise cmd-click `
-        + 'drills into a row a plain click refuses');
-    }
-    assert.ok(hrefFor.includes('return null'),
-      `${r.file}: a guarded-out row must resolve to no href, i.e. stay inert`);
-  });
-}
-
-// The browse list rows, split across the same two files as the back link: the
-// wiring is an effect in browse-list.tsx (the row is a component now, so there
-// is no querySelectorAll pass to hang it off), and the route plus the inert-row
-// guards are Browse.rowHref.
-test('browse list rows open in a new tab under a modifier', () => {
-  const at = browseListTsx.indexOf('const nav = (window as any).NavLink;');
-  assert.ok(at !== -1, 'browse-list.tsx: the NavLink wiring went missing');
-  const body = browseListTsx.slice(at, at + 1200);
-  assert.match(body, /nav\.wireModified\(node, hrefFor, activate\)/,
-    'browse-list.tsx: must route through NavLink.wireModified');
-  const hrefFor = body.slice(body.indexOf('const hrefFor'), body.indexOf('const activate'));
-  assert.ok(hrefFor.includes('browse-add-btn'),
-    'browse-list.tsx: hrefFor must repeat the Add-button guard — otherwise '
-    + 'cmd-click drills into a row a plain click refuses');
-  assert.ok(hrefFor.includes('return null'),
-    'browse-list.tsx: a guarded-out row must resolve to no href, i.e. stay inert');
-  // The row's own route and its demo guard are the controller's, and hrefFor
-  // and the plain click reach them through the SAME method, so they cannot
-  // disagree the way two copies of the guard could.
-  assert.match(hrefFor, /rowHref\(view\)/);
-  const rowHref = browseJs.slice(browseJs.indexOf('rowHref(view) {'),
-    browseJs.indexOf('openRow(view) {'));
-  assert.match(rowHref, /#app\/\$\{encodeURIComponent\(view\.slug\)\}\/dev\/hub/,
-    'the new tab must open the row\'s own route: the project\'s hub');
-  assert.match(rowHref, /view\.demo/, 'a staging demo row has no page to open');
-  assert.match(rowHref, /return null/);
-  assert.match(browseJs, /openRow\(view\) \{\s*\n\s*const href = Browse\.rowHref\(view\);/,
-    'the plain click resolves through the same guard');
-});
-
 
 // The drawer is retired. The rule it pinned — a modified click belongs to the
 // browser and is never intercepted — is asserted shell-wide by the tests
@@ -702,13 +572,15 @@ test('dapp.json pins the anchors that a capture can actually see', () => {
   assert.match(home.expectSelector, /a#back-btn/,
     'a <button id="back-btn"> must fail this selector');
 
+  // It was Discover's details page, up to the list, until One Home (#6361);
+  // Challenges, a level under Me, is the one checked now.
   const upLevel = checks.find(
     (t) => typeof t.expectSelector === 'string'
-      && t.expectSelector.includes('a#back-btn[href="#apps"]')
+      && t.expectSelector.includes('a#back-btn[href="#profile"]')
   );
   assert.ok(upLevel, 'the setBackIcon(mode, href) plumbing needs its own regression check');
   // The self-app is hash-routed, so its declared paths carry the fragment.
-  assert.match(upLevel.path, /^\/#apps\/[^/]+$/, 'it has to be on an app detail page');
+  assert.match(upLevel.path, /^\/#leaderboard/, 'it has to be on a level under a tab');
 
   // Ungated, ordinary routes: an env-gated path starves the production
   // "before" shot forever (same rule as tests/drawer-nav-motion.test.js).

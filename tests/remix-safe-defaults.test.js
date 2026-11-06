@@ -123,7 +123,7 @@ test('the allowance line names versions among what shares it', () => {
   assert.doesNotMatch(src, /importing and forking/);
 });
 
-test('the four doors say "Make your own", and keep their ids and data attributes', () => {
+test('the three doors say "Make your own", and keep their ids and data attributes', () => {
   const about = read('frontend/src/features/app-context/about-pane.tsx');
   assert.match(about, /id="app-about-fork"[\s\S]{0,120}label=\{t\('agent:appContext\.about\.remix'\)\}\s+sub=\{t\('agent:appContext\.about\.remixSub'\)\}/);
   assert.equal(message('agent:appContext.about.remix'), 'Make your own');
@@ -135,13 +135,10 @@ test('the four doors say "Make your own", and keep their ids and data attributes
 
   const home = read('frontend/src/features/home/home.js');
   assert.match(home, /key: 'fork',\s+label: message\('home:menu\.remix\.label'\),\s+sub: message\('home:menu\.remix\.sub'\),/,
-    'the card menu, which Discover\'s page draws its rows from too');
+    'the card menu');
   assert.equal(message('home:menu.remix.label'), 'Make your own');
   assert.equal(message('home:menu.remix.sub'), 'Your own version to change');
   assert.equal(message('dialogs:createProgress.title.remixing', { app: 'Book club picks' }), 'Making Book club picks');
-
-  const detail = read('frontend/src/features/apps/browse-detail.tsx');
-  assert.match(detail, /subtitle=\{a\.sub \|\| undefined\}/, 'Discover shows the line under the label');
 
   for (const [file, src] of [['about-pane', about], ['actions-row', plus], ['home', home]]) {
     assert.doesNotMatch(src, /'Fork this app'|"Fork this app"/, `${file}: people never see "Fork this app"`);
@@ -152,8 +149,6 @@ test('lineage reads "Made from" wherever people see it', () => {
   // Where the line is a catalog message, the file names its id and the catalog
   // holds the words; a file that still writes the line holds it itself.
   for (const [file, ids] of [
-    ['frontend/src/features/apps/browse-detail.tsx',
-      ['discover:detail.remixedFrom.line', 'discover:detail.remixedFrom.openOriginal']],
     ['frontend/src/features/home/home.js', ['home:grid.tile.remixedFrom']],
     ['frontend/src/features/home/app-grid.tsx', ['home:grid.tile.remixedFrom']],
     ['frontend/src/features/app-context/about-pane.tsx',
@@ -187,7 +182,7 @@ test('no screen word says remix, fork or upstream in the catalogs this change to
     'dialogs:fork.title.named', 'dialogs:fork.intro', 'dialogs:fork.nameLabel', 'dialogs:fork.submit',
     'dialogs:fork.follow.title', 'dialogs:fork.follow.sub', 'dialogs:createProgress.title.remixing',
     'agent:appContext.about.remix', 'agent:appContext.about.lineage.remixedFrom',
-    'home:menu.remix.label', 'home:grid.tile.remixedFrom', 'discover:detail.remixedFrom.line',
+    'home:menu.remix.label', 'home:grid.tile.remixedFrom',
     'project:menu.remix.title', 'project:menu.button.remix', 'project:menu.suggestBack.title',
     'project:suggestBack.title', 'project:suggestBack.intro', 'project:suggestBack.notSent',
   ];

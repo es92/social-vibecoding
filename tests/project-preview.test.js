@@ -168,7 +168,6 @@ test('mounted after sign-in is read and before the catch-all; Share copies the p
     assert.equal(publicPageUrl({ slug: 'usernode-2d5619', view_visibility: 'public', self_hosted: true }), null);
   } finally { delete globalThis.location; }
   assert.match(read('frontend/src/features/dialogs/share.tsx'), /const share = page \|\| \(window\.AppView\?\.appData\?\.share_url as string\) \|\| raw;/);
-  assert.match(read('frontend/src/features/apps/browse.js'), /if \(app\.view_visibility === 'public' && app\.slug && typeof location !== 'undefined'\) \{\s+return `\$\{location\.origin\}\/app\/\$\{encodeURIComponent\(app\.slug\)\}`;/);
 });
 
 test('one address per project for a search engine: the canonical link names the clean path', () => {

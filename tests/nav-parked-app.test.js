@@ -243,7 +243,7 @@ function router({ launcher = [WHITEBOARD, PLATFORM], record = null, known = [] }
 }
 
 const named = (park) => (park ? park.name : null);
-const LEAVES = ['navigateHome', 'navigateToBrowse', 'navigateToMessages', 'navigateToWorkshop',
+const LEAVES = ['navigateHome', 'navigateToMessages', 'navigateToWorkshop',
   'navigateToProfile', 'navigateToSettings', 'navigateToLeaderboard',
   'navigateToAdminConsole'];
 

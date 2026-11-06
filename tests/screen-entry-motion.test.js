@@ -45,7 +45,7 @@ test('the resolved type is stamped on the screen element', () => {
 
 // ── Every screen entry routes through it ───────────────────────────────
 
-test('all twelve screen transitions go through App._entryTransition', () => {
+test('all eleven screen transitions go through App._entryTransition', () => {
   // It was nine, then eight, nine again, Global Chat made ten, and an agent
   // session's own screen (#2779, #agent/<id> on a phone) makes eleven. Notifications and Messages
   // gave one back each when they stopped being screens — a sheet presents over
@@ -54,13 +54,14 @@ test('all twelve screen transitions go through App._entryTransition', () => {
   // it is a root that replaces the screen you were on. "Your proposals"
   // (#5310, #profile/proposals) made twelve, and Global Chat's removal gave
   // its one back: eleven. The AI tab's own page (#6019 follow-up, #homeroom-bot) is a
-  // root that replaces the screen you were on: twelve.
+  // root that replaces the screen you were on: twelve. One Home (#6361)
+  // retired Discover's screen, which gave one back: eleven.
   const calls = appJs.match(/PlatformUI\.transition\(/g) || [];
-  assert.equal(calls.length, 12,
-    `expected 12 PlatformUI.transition call sites in app.js, found ${calls.length} — `
+  assert.equal(calls.length, 11,
+    `expected 11 PlatformUI.transition call sites in app.js, found ${calls.length} — `
     + 'a new one must route its type through App._entryTransition too');
   const routed = appJs.match(/type: App\._entryTransition\(/g) || [];
-  assert.equal(routed.length, 12,
+  assert.equal(routed.length, 11,
     'every call site must take its type from the gate, or that screen keeps '
     + 'animating over the closing drawer');
 });
@@ -79,7 +80,7 @@ test('each named screen entry passes its own screen element to the gate', () => 
   // Messages and Notifications are off this list: they are sheets, and a
   // sheet has no screen element for the gate to stamp `data-entered` on.
   for (const nav of ['navigateToLeaderboard', 'navigateToProfile',
-    'navigateToBrowse', 'navigateToAdminConsole', 'navigateToSettings',
+    'navigateToAdminConsole', 'navigateToSettings',
     'navigateToAgentSession']) {
     const at = appJs.indexOf(`  ${nav}(`);
     assert.ok(at !== -1, `${nav} went missing`);

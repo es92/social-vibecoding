@@ -287,7 +287,7 @@ test('an app opened from inside another closes to the page under both', async ()
 });
 
 test('what the app\'s frame wrote into history is crossed, not rewound', async () => {
-  const r = router('/#apps');
+  const r = router('/#profile');
   await boot(r);
   const list = r.h.at;
   await r.App.openAppTab('garden-ab12', 'app');
@@ -295,7 +295,7 @@ test('what the app\'s frame wrote into history is crossed, not rewound', async (
   r.h.frameNavigates();
   assert.equal(r.h.history.length, list + 4, 'history counts the frame\'s entries…');
   r.clickClose();
-  assert.equal(r.h.route(), '/#apps', '…and the ✕ still lands on the page, where history.back() would have rewound the frame');
+  assert.equal(r.h.route(), '/#profile', '…and the ✕ still lands on the page, where history.back() would have rewound the frame');
   assert.equal(r.h.at, list);
   assert.equal(r.App.currentApp, null);
 });

@@ -34,7 +34,7 @@ const AUTH_PAGES = [
   'auth-login-screen', 'auth-register-screen', 'auth-waiting-screen',
   'auth-waitlist-screen', 'auth-more-screen', 'auth-landing-screen',
 ];
-const PAGES = ['home-screen', 'browse-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen'];
+const PAGES = ['home-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen'];
 
 export function pageScroller(doc: Document, preferred?: string | null): HTMLElement | null {
   const visible = (id: string) => {

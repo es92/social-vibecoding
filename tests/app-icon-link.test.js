@@ -24,18 +24,12 @@ test('a tap on the icon is never also the card\'s', () => {
   // Inside another link or button the tile is a focusable role="link" span,
   // since an anchor inside an anchor is invalid markup.
   assert.match(VIEW, /if \(nested\) \{[\s\S]*?role="link"\s+tabIndex=\{0\}/);
-  // The Discover row is wired natively, so it skips taps on the tile itself
-  // (and on its own buttons: Join or Open, and the Joined view's Leave, #5953).
-  const list = read('frontend/src/features/apps/browse-list.tsx');
-  assert.equal((list.match(/closest\?\.\('\.browse-add-btn, \.browse-leave-btn, \.app-icon-link'\)/g) || []).length, 2);
 });
 
 // The project hub's hero drew one until #852; the community's tile is the
 // coloured header's now (header-title.tsx, below).
 test('every app surface that draws an icon links it', () => {
   for (const file of [
-    'frontend/src/features/apps/browse-list.tsx',
-    'frontend/src/features/apps/browse-detail.tsx',
     'frontend/src/features/app-context/about-pane.tsx',
     'frontend/src/features/header/header-title.tsx',
     'frontend/src/features/messages/index.tsx',

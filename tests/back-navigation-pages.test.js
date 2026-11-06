@@ -12,14 +12,14 @@
 //      Back skipped the hub. A press now pushes an entry at the same address
 //      naming its tab (AppView._pushWorkshopTab), and the router shows the tab
 //      an entry names when Back or Forward lands on it.
-//   2. An up arrow (the header's, a topic's "‹ Workshop", Discover's detail,
-//      a dev session's) is a STEP BACK when the entry below is where it
+//   2. An up arrow (the header's, a topic's "‹ Workshop", a dev session's;
+//      Discover's detail had one until One Home, #6361) is a STEP BACK when the entry below is where it
 //      points (App._stepBackTo). Following its href pushed the parent on top
 //      of the page, so the next Back reopened the page just left.
 //   3. The Leaderboard's tabs push when pressed; a router pass still replaces.
 //   4. A Discover row bound one more click listener on every list render, so
-//      one tap opened the project two or three times over — three entries at
-//      one address, and Back stayed on the hub.
+//      one tap opened the project two or three times over (Discover's screen
+//      went with One Home, #6361, and its test with it).
 //
 // The declared check "Back from a project's Workshop tab returns to its Hub"
 // walks flow 1 in a browser through ?shot=tab-back.
@@ -42,8 +42,6 @@ const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const APP_JS = read('public/js/app.js');
 const APP_VIEW = read('public/js/app-view.js');
 const WORKSHOP = read('frontend/src/features/dev-board/workshop/workshop.tsx');
-const BROWSE_JS = read('frontend/src/features/apps/browse.js');
-const BROWSE_LIST = read('frontend/src/features/apps/browse-list.tsx');
 const DEV_CHAT = read('frontend/src/features/dev-chat/dev-chat.js');
 const TOPIC_BACK = read('frontend/src/features/dev-board/topic/topic-back.tsx');
 const LEADERBOARD = read('frontend/src/features/leaderboard/leaderboard.js');
@@ -352,9 +350,6 @@ test('every up arrow that followed its href asks to step back first', () => {
   const chain = backBtn.slice(0, backBtn.indexOf('App.navigateHome();'));
   assert.match(chain, /if \(App\._stepBackTo\(href\)\) return;[^\n]*\n\s*window\.location\.hash = href;/,
     'the header\'s arrow');
-  const handleBack = BROWSE_JS.slice(BROWSE_JS.indexOf('  handleBack() {'), BROWSE_JS.indexOf('  _syncLevel() {'));
-  assert.match(handleBack, /App\._stepBackTo\('#apps'\)\) return true;\s*\n\s*location\.hash = '#apps';/,
-    'Discover\'s detail page');
   const leave = DEV_CHAT.slice(DEV_CHAT.indexOf('  leaveSession() {'));
   const leaveBody = leave.slice(0, leave.indexOf('\n  },'));
   assert.match(leaveBody, /if \(!stepBack\(origin\)\) location\.hash = origin;/, 'a dev session\'s arrow');
@@ -411,17 +406,6 @@ test('a Leaderboard tab pressed on the open screen pushes; the router\'s own pas
   const same = loadLeaderboard();
   same.Leaderboard._syncHash();
   assert.deepEqual(same.writes, [], 'the address already says it');
-});
-
-// ── 4. Discover's rows ─────────────────────────────────────────────────
-
-test('a Discover row binds its click once, however often the list renders', () => {
-  const at = BROWSE_LIST.indexOf('const nav = (window as any).NavLink;');
-  const effect = BROWSE_LIST.slice(BROWSE_LIST.lastIndexOf('useEffect(() => {', at), BROWSE_LIST.indexOf('const warm = ', at));
-  assert.match(effect, /\n {2}\}, \[\]\);\s*$/, 'the wiring effect runs once per mounted row');
-  assert.match(effect, /const view = latest\.current;[\s\S]*rowHref\(view\)/, 'hrefFor reads the current row');
-  assert.match(effect, /const view = latest\.current;[\s\S]*openRow\(view\)/, 'and so does the plain click');
-  assert.match(BROWSE_LIST, /const latest = useRef<RowView>\(view\);\s*\n\s*latest\.current = view;/);
 });
 
 test('a topic\'s chip names where its press goes: a step Back to the place left, else the Workshop its link opens (audit N05, N03 follow-up)', () => {

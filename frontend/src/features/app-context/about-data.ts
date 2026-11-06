@@ -6,8 +6,8 @@
  * The pane is the app's page as a pop-up (the design's own note on it), so it
  * reads what that page reads (../apps/browse.js, ../apps/browse-detail.tsx):
  *
- *   the app row       GET /api/apps's row for the slug — Home._apps or
- *                     Browse._apps, whichever this tab has loaded — over the
+ *   the app row       GET /api/apps's row for the slug, Home._apps, when
+ *                     this tab has loaded it, over the
  *                     open app's own GET /api/apps/:slug payload, which is
  *                     always in hand for the app the menu is about
  *                     (AppView.appData). The list row wins where both have a
@@ -124,7 +124,7 @@ export function owedHomeWalk(): boolean {
 /** The list row for `slug`, from whichever copy of GET /api/apps this tab holds. */
 export function listRowFor(slug: string | null): AppRow | null {
   if (!slug) return null;
-  for (const list of [g().Home?._apps, g().Browse?._apps]) {
+  for (const list of [g().Home?._apps]) {
     if (!Array.isArray(list)) continue;
     const row = list.find((a) => a && a.slug === slug);
     if (row) return row;

@@ -28,7 +28,7 @@ import { dirSign } from '../../lib/i18n/direction';
 export const RAIL_SLIDE: KeyframeAnimationOptions = { duration: 200, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
 
 /** The screens the rail's width moves over (app.css, "THE SCREENS MOVE OVER"). */
-const SCREENS = '#home-screen, #browse-screen, #workshop-screen, #leaderboard-screen, #profile-screen, '
+const SCREENS = '#home-screen, #workshop-screen, #leaderboard-screen, #profile-screen, '
   + '#admin-screen, #settings-screen, #messages-screen, #agent-session-screen, #ai-screen, '
   + '#profile-proposals-screen, #app-view';
 

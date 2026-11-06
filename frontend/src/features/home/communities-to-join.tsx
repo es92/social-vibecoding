@@ -65,7 +65,11 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
   useEffect(() => {
     const el = sentinel.current;
     if (!el || !more || typeof IntersectionObserver === 'undefined') return undefined;
-    const root = document.getElementById('home-screen');
+    // The scroller the list is in: Home's own signed in, the landing's
+    // (#auth-landing-scroll) signed out. An observer rooted on a box that
+    // does not hold the cards never fires, which left a visitor with the
+    // first page alone, the featured ones.
+    const root = scrollParent(el);
     let timer = 0;
     const io = new IntersectionObserver((entries) => {
       if (!entries.some((e) => e.isIntersecting) || timer) return;
@@ -158,6 +162,15 @@ export function CommunitiesToJoin({ apps, exclude, signedIn, query, onJoin, onPi
       ) : null}
     </section>
   );
+}
+
+/** The nearest ancestor that scrolls, or null (the viewport). */
+export function scrollParent(el: Element | null): Element | null {
+  for (let node = el?.parentElement || null; node; node = node.parentElement) {
+    const y = getComputedStyle(node).overflowY;
+    if (y === 'auto' || y === 'scroll') return node;
+  }
+  return null;
 }
 
 /** The public directory, read once per page load (GET /api/public/apps). */

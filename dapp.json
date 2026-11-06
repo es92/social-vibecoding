@@ -1472,35 +1472,6 @@
       "expectText": "Staging demo light app"
     },
     {
-      "name": "The app detail page opens from a browse row (?shot=browse-detail)",
-      "path": "/?shot=browse-detail#apps",
-      "expectText": "Your own version to change",
-      "expectSelector": "#browse-detail #browse-detail-open"
-    },
-    {
-      "name": "App details shows the ranked Contributors section (?demo=1)",
-      "path": "/?demo=1&shot=browse-detail#apps",
-      "expectSelector": "#browse-detail-contributors .browse-contrib-row",
-      "expectText": "staging-demo-lead"
-    },
-    {
-      "name": "Discover leads with the For you / Browse / Joined switch and a Filters button that shows no count by default",
-      "path": "/#apps",
-      "expectSelector": "#browse-screen:not(.hidden):has(#browse-view-switch > [data-view=\"foryou\"][aria-current=\"page\"] + [data-view=\"browse\"] + [data-view=\"joined\"]):has(#browse-type-row #browse-filters-btn:not([data-active-count]))",
-      "expectText": "For you"
-    },
-    {
-      "name": "The Featured switch narrows Discover to the admin's featured apps (?filter=featured)",
-      "path": "/?demo=1&filter=featured#apps",
-      "expectSelector": "#browse-screen:has(#browse-filters-btn[data-active-count=\"1\"]) #browse-list[data-filter=\"featured\"]:not(:has(.browse-row[data-slug=\"staging-demo-popular-1\"])) .browse-row[data-slug=\"staging-demo-featured\"]"
-    },
-    {
-      "name": "A stored sample without a live runtime does not offer a nonexistent Share link",
-      "path": "/#apps/staging-demo-forkable",
-      "expectSelector": "#browse-detail:has(h2):not(:has(#browse-detail-share))",
-      "expectText": "Staging demo forkable app"
-    },
-    {
       "name": "Bare #leaderboard renders all three tabs and opens on Challenges (#962, #2374)",
       "path": "/#leaderboard",
       "expectSelector": "#leaderboard-screen:not(.hidden):has(#standings-tabs [data-standings-tab=\"challenges\"] ~ [data-standings-tab=\"topochain\"]) #challenges-root:not(.hidden) #tc-se-grid"
@@ -1522,23 +1493,6 @@
       "path": "/?demo=1",
       "expectSelector": "#home-body:not(:has(#home-discover-section)):not(:has(#home-continue-card)) #home-apps-section ~ #home-communities-section ~ #home-join-section:not([hidden]) > h2.home-area-label",
       "expectText": "Communities to join"
-    },
-    {
-      "name": "Directory leads with Featured and leaves a flagged app out (#1523, #5267, #5928)",
-      "path": "/?demo=1&curation=1&sort=recommended#apps",
-      "expectSelector": "#browse-list:has(h2 ~ [data-slug=\"directory-sample-listed\"][data-directory-state=\"listed\"]):not(:has(.browse-row[data-slug=\"directory-sample-flagged\"])) button[aria-controls=\"browse-more-apps\"][aria-expanded=\"false\"]",
-      "expectText": "Featured"
-    },
-    {
-      "name": "Show more is on every sort, not just Recommended (#1912)",
-      "path": "/?demo=1&curation=1&sort=users#apps",
-      "expectSelector": "#browse-list[data-sort=\"users\"]:not(:has(h2)):not(:has(.browse-row[data-slug=\"directory-sample-flagged\"])) button[aria-controls=\"browse-more-apps\"][aria-expanded=\"false\"]"
-    },
-    {
-      "name": "Show more holds an app with no icon, and a flagged app is in neither list (#1523)",
-      "path": "/?demo=1&curation=1&sort=recommended&shot=browse-more#apps",
-      "expectSelector": "#browse-list:not(:has([data-slug=\"directory-sample-flagged\"])) #browse-more-apps [data-slug=\"directory-sample-no-icon\"][data-directory-state=\"missing_icon\"]",
-      "expectText": "Show less"
     },
     {
       "name": "The launcher grid shows two rows by default, with a way to the rest",
@@ -1574,16 +1528,10 @@
       "expectSelector": "#app-list .app-card:not(:has(.users-badge)):not(:has(.status-dot))"
     },
     {
-      "name": "#apps still opens Discover's app-store rows with a Join button, under a bar with no back slot (#2639, #2718); no tab draws it since One Home (#6361), whose Communities to join is the directory",
+      "name": "#apps, Discover's old address, opens Home on its Communities to join (One Home, #6361: the directory is Home's)",
       "path": "/#apps",
-      "expectSelector": "body:has(#browse-screen:not(.hidden)):has(#platform-header #notifications-btn ~ #platform-mark-btn):has(#platform-header a#back-btn.hidden) #browse-list .browse-row .browse-add-btn",
-      "expectText": "Discover"
-    },
-    {
-      "name": "Browse rows carry a compact Join pill whose accessible name says what is joined (communities; QA 2026-09-24 Q10)",
-      "path": "/#apps",
-      "expectSelector": "#browse-list .browse-row .browse-add-btn[data-added=\"false\"][aria-label^=\"Join \"][title^=\"Join \"]",
-      "expectText": "Join"
+      "expectSelector": "#home-screen:not(.hidden) #home-body #home-join-section:not([hidden]) > h2.home-area-label",
+      "expectText": "Communities to join"
     },
     {
       "name": "The hidden search bar is revealed by a pull (?shot=home-search)",
@@ -3045,12 +2993,6 @@
       "expectText": "Homeroom news by email"
     },
     {
-      "name": "View on GitHub is an action on the app's own page, not a drawer row",
-      "path": "/#apps/staging-demo-dormant-approvers",
-      "expectSelector": "#browse-detail .browse-detail-action",
-      "expectText": "View on GitHub"
-    },
-    {
       "name": "The header carries the mark and the bell, and no second alerting glyph (#2718)",
       "path": "/",
       "expectSelector": "#platform-header:not(:has(#messages-btn)):has(#platform-mark-btn) #notifications-btn"
@@ -3664,16 +3606,6 @@
       "name": "Home fork-lineage tag renders on forked tiles",
       "path": "/",
       "expectSelector": ".fork-tag"
-    },
-    {
-      "name": "The app's own page shows the Made-from label",
-      "path": "/#apps/staging-demo-fork",
-      "expectText": "Made from"
-    },
-    {
-      "name": "Fork lineage renders under the version it qualifies",
-      "path": "/#apps/staging-demo-fork",
-      "expectSelector": "#browse-detail #browse-detail-fork a[href=\"#app/staging-demo-forkable\"]"
     },
     {
       "name": "Home feed renders the seeded errored app tile",
@@ -4318,9 +4250,14 @@
       "expectSelector": "#platform-header:not(:has(#improve-btn)) #platform-mark-btn:has(#feedback-queue-dot):has(#improve-working-dot)"
     },
     {
-      "name": "Inside an app's detail page the header arrow links back to the list (#1036)",
+      "name": "A level under a tab names its own way up: the header arrow on Challenges links to Me (#1036; Discover's details carried it until One Home, #6361)",
+      "path": "/#leaderboard",
+      "expectSelector": "a#back-btn[href=\"#profile\"]"
+    },
+    {
+      "name": "#apps/<slug>, an app's old details address, opens its project's hub (One Home, #6361)",
       "path": "/#apps/usernode-2d5619",
-      "expectSelector": "a#back-btn[href=\"#apps\"]"
+      "expectSelector": "#app-view:not(.hidden) #dev-workshop .dev-ws[data-ws-tab=\"status\"]"
     },
     {
       "name": "A connector-imported proposal names the coding agent that built it (#967)",
@@ -4342,30 +4279,6 @@
       ],
       "path": "/?un-platform=android&un-native-webview=1",
       "expectSelector": "html.un-android.in-native-webview:not(.web-browser-chrome) #platform-header.un-safe-top-extend"
-    },
-    {
-      "name": "Browse draws the image icon tile for a seeded app (#1120)",
-      "path": "/#apps",
-      "expectSelector": "#browse-list .browse-row .app-icon-tile[data-icon=\"image\"] img",
-      "expectText": "Staging demo app — image icon"
-    },
-    {
-      "name": "Browse draws the emoji icon tile for a seeded app (#1120)",
-      "path": "/#apps",
-      "expectSelector": "#browse-list .browse-row .app-icon-tile[data-icon=\"emoji\"]",
-      "expectText": "Staging demo app — emoji icon"
-    },
-    {
-      "name": "Browse draws the first-letter fallback tile for a seeded app (#1120)",
-      "path": "/?sort=recommended&shot=browse-more#apps",
-      "expectSelector": "#browse-list .browse-row .app-icon-tile[data-icon=\"letter\"]",
-      "expectText": "Staging demo app — letter tile"
-    },
-    {
-      "name": "Discover's search and filters sit over the list's card, with the rows inside the card (communities prototype; #1919)",
-      "path": "/#apps",
-      "expectSelector": "#browse-screen > #browse-search-bar.browse-pane-head:not(.hidden) + #browse-list-level > #browse-list.browse-pane-body .browse-row",
-      "expectText": "Filters"
     },
     {
       "name": "Shared report link serves the report document without a session",
@@ -4459,23 +4372,6 @@
       "name": "Real sessions still render beside it in Messages (#1417, #5289)",
       "path": "/?demo=1#messages",
       "expectSelector": "#messages-screen:not(.hidden):has([data-improve-row=\"task\"]) [data-inbox-session] a[data-improve-row=\"session\"][href^=\"#messages/session/\"]"
-    },
-    {
-      "name": "The all-apps directory offers its Sort order inside the Filters sheet, defaulting to Recommended (#1383)",
-      "path": "/#apps",
-      "expectSelector": "#browse-screen:has(#browse-search-bar #browse-filters-btn) #browse-list[data-sort=\"recommended\"]",
-      "expectText": "Filters"
-    },
-    {
-      "name": "?sort= orders the touch directory, under a bar with no back slot on the desktop rail, where Discover is a tab of its own (#1383, #2718; #6019)",
-      "path": "/?sort=new&un-platform=ios#apps",
-      "expectSelector": "body:has(#browse-screen:not(.hidden)):has(#platform-header #notifications-btn ~ #platform-mark-btn):has(#platform-header a#back-btn.hidden) #browse-list[data-sort=\"new\"] .browse-row"
-    },
-    {
-      "name": "Sorting by activity shows what it sorted on (#1383), in live words (B10d)",
-      "path": "/?demo=1&sort=active#apps",
-      "expectSelector": "#browse-list[data-sort=\"active\"] .browse-row",
-      "expectText": "live in 30d"
     },
     {
       "name": "Dark mode pins by deep link and paints the launcher on the inverted ground",

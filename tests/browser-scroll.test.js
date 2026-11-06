@@ -49,23 +49,23 @@ test('mobile browser pages use the document; native, installed, desktop and embe
 test('screen positions survive navigation even when hiding a page clamps document scroll', () => {
   const { add, doc, html, controller, scroll } = fixture();
   const home = add('home-screen');
-  const browse = add('browse-screen', true);
+  const profile = add('profile-screen', true);
   controller.sync();
   assert.equal(controller.scrollElement(home), html);
   scroll(640);
   home.hidden = true;
-  browse.hidden = false;
+  profile.hidden = false;
   html.scrollTop = 0; // outgoing content is now display:none
   controller.onScroll({ target: doc });
   controller.sync();
-  assert.equal(controller.scrollElement(browse), html);
+  assert.equal(controller.scrollElement(profile), html);
   assert.equal(html.scrollTop, 0);
   scroll(120);
-  browse.hidden = true;
+  profile.hidden = true;
   home.hidden = false;
   controller.sync();
   assert.equal(html.scrollTop, 640);
-  assert.equal(controller.scrollElement(browse), browse, 'hidden screens never borrow the current page');
+  assert.equal(controller.scrollElement(profile), profile, 'hidden screens never borrow the current page');
 });
 
 test('opening a guest app bounds its iframe and returning restores the directory', () => {
@@ -331,7 +331,7 @@ test('#3565: the paged document is marked from PAST_TOP_PX below its top, and on
   assert.equal(PAST_TOP_PX, 64);
   const { add, doc, win, html, controller, scroll } = fixture();
   const home = add('home-screen');
-  const browse = add('browse-screen', true);
+  const profile = add('profile-screen', true);
   controller.sync();
   assert.equal(marked(html), false, 'a page that opens at its top is not marked');
   scroll(PAST_TOP_PX - 1);
@@ -352,13 +352,13 @@ test('#3565: the paged document is marked from PAST_TOP_PX below its top, and on
   // event, and one that restores the top is cleared the same way.
   scroll(640);
   home.hidden = true;
-  browse.hidden = false;
+  profile.hidden = false;
   html.scrollTop = 0; // outgoing content is now display:none
   controller.onScroll({ target: doc });
   controller.sync();
   assert.equal(html.scrollTop, 0);
   assert.equal(marked(html), false, 'Discover opens at its own top');
-  browse.hidden = true;
+  profile.hidden = true;
   home.hidden = false;
   controller.sync();
   assert.equal(html.scrollTop, 640);

@@ -80,18 +80,6 @@ test('the hero says what a version was made from, and how many versions an origi
   assert.doesNotMatch(gets + not, NEVER);
 });
 
-test('Discover\'s page says how many versions an original has, and nothing for none', () => {
-  const src = read('frontend/src/features/apps/browse.js');
-  assert.match(src, /versions: Browse\.versionsLineFor\(app\),/);
-  assert.match(src, /const forkRef = app\.forked_from \|\| app\.upstream_link;/, 'a ready-made version is linked by upstream_link');
-  const detail = read('frontend/src/features/apps/browse-detail.tsx');
-  assert.match(detail, /\{view\.versions \? \(\s*<p id="browse-detail-versions"[^>]*>\{view\.versions\}<\/p>/);
-  assert.equal(message('discover:detail.versions.manyGetUpdates', { count: 160, versions: 214 }), '214 versions · 160 get its updates');
-  assert.equal(message('discover:detail.versions.manyGetUpdates', { count: 1, versions: 214 }), '214 versions · 1 gets its updates');
-  assert.equal(message('discover:detail.versions.count', { count: 2 }), '2 versions');
-  assert.equal(message('discover:detail.versions.oneGetsUpdates'), '1 version · it gets its updates');
-});
-
 // ── The hub's cards ─────────────────────────────────────────────────────
 
 const up = (over = {}) => ({

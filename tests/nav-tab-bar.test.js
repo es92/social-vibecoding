@@ -65,17 +65,16 @@ test('the tabs are the ones the bar renders', () => {
   const sections = [...new Set(Object.values(TAB_FOR_SCREEN))].sort();
   // #6019: each of the five is a screen's own tab. AI is its own page, and
   // stays lit over Main, the Messages screen's chat with the bot (the nav
-  // store's `bot`). The desktop rail adds Discover's (29 Oct 2026).
+  // store's `bot`). The desktop rail added Discover's (29 Oct 2026), retired
+  // with its screen by One Home (#6361), so the rail answers as the phone.
   assert.deepEqual(sections, ['ai', 'home', 'me', 'messages', 'workshop']);
-  assert.deepEqual({ ...RAIL_TAB_FOR_SCREEN }, { 'browse-screen': 'discover' });
-  assert.equal(tabForScreen('browse-screen'), 'home', 'a phone lights Home on Discover');
-  assert.equal(tabForScreen('browse-screen', true), 'discover', 'the rail lights its Discover tab');
-  assert.equal(tabForScreen('home-screen', true), 'home', 'and answers as the phone everywhere else');
+  assert.deepEqual({ ...RAIL_TAB_FOR_SCREEN }, {});
+  assert.equal(tabForScreen('home-screen', true), 'home', 'the rail answers as the phone');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   const keys = [...bar.matchAll(/key: '([a-z]+)' as const/g)].map((m) => m[1]);
   // The rail's order is the markup's; app.css orders the phone's four and
-  // draws neither Discover nor Communities (One Home, #6361: AI above Messages).
-  assert.deepEqual(keys, ['home', 'discover', 'ai', 'messages', 'workshop', 'me']);
+  // draws no Communities (One Home, #6361: AI above Messages, Discover gone).
+  assert.deepEqual(keys, ['home', 'ai', 'messages', 'workshop', 'me']);
   assert.match(bar, /const tab = routedTab === 'messages' && bot \? 'ai' : routedTab;/);
   assert.match(read('frontend/src/features/messages/store.ts'),
     /bot: !!state\.route\.open && !!botId && state\.route\.conversationId === botId,/);
@@ -86,7 +85,7 @@ test('the tabs are the ones the bar renders', () => {
 test('the initial render is the markup the prerender ships', () => {
   const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
 
-  for (const key of ['home', 'discover', 'messages', 'ai', 'workshop', 'me']) {
+  for (const key of ['home', 'messages', 'ai', 'workshop', 'me']) {
     assert.match(html, new RegExp(`id="platform-tab-${key}"`), `#platform-tab-${key} renders`);
   }
   assert.match(html, /id="platform-tabs"/);
@@ -109,7 +108,7 @@ test('Home is the one tab addressed as a path, so a modified click opens a tab',
   const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
   assert.match(html, /id="platform-tab-home"[^>]*href="\/"/);
   for (const [key, href] of [
-    ['discover', '#apps'], ['messages', '#messages'], ['ai', '#homeroom-bot'],
+    ['messages', '#messages'], ['ai', '#homeroom-bot'],
     ['workshop', '#communities'], ['me', '#profile'],
   ]) {
     assert.match(html, new RegExp(`id="platform-tab-${key}"[^>]*href="${href.replace('#', '\\#')}"`));
@@ -495,8 +494,9 @@ test('every screen change clears the peek, and nothing else does', () => {
   // map is a tab ROOT, and tests/header-back-home.test.js derives "shows no
   // back control" from being in it, which the app view's ✕ contradicts.
   assert.match(mount, /tab: tabOverride \|\| \(screen \? tabForScreen\(screen, railLayout\(\)\) : null\),/);
-  // The rail's width decides Discover's light (29 Oct 2026), and a window
-  // resized across it moves the light, unless the router named the tab.
+  // The rail's width can decide a screen's light (29 Oct 2026; Discover's,
+  // until One Home, #6361), and a window resized across it moves the light,
+  // unless the router named the tab.
   assert.match(mount, /tabNamed = !!tabOverride;/);
   assert.match(mount, /window\.matchMedia\?\.\(SIDEBAR_ROWS_QUERY\)\.addEventListener\?\.\('change', \(\) => \{\n      const \{ screen, tab \} = navStore\.get\(\);\n      if \(!screen \|\| tabNamed\) return;/);
   assert.match(read('public/js/app.js'),
@@ -968,7 +968,7 @@ test('a press navigates once the frame that lights the tab is painted, not after
   // The press's own frame, then the task after it.
   const holder = { current: null };
   let went = 0;
-  schedulePress(holder, 'discover', () => { went += 1; }, () => {}, raf, caf, clock);
+  schedulePress(holder, 'messages', () => { went += 1; }, () => {}, raf, caf, clock);
   assert.equal(went, 0, 'not in the press\'s own task: the lit tab paints first');
   frame();
   assert.equal(went, 0, 'not inside the frame either: that is where #3259 saw the slide shown from its middle');
@@ -987,14 +987,14 @@ test('a press navigates once the frame that lights the tab is painted, not after
   // A second press before the first navigates replaces it, frame or task.
   const twice = { current: null };
   const gone = [];
-  schedulePress(twice, 'discover', () => gone.push('discover'), () => {}, raf, caf, clock);
+  schedulePress(twice, 'messages', () => gone.push('messages'), () => {}, raf, caf, clock);
   schedulePress(twice, 'me', () => gone.push('me'), () => {}, raf, caf, clock);
   frame();
   fire(0);
   assert.deepEqual(gone, ['me']);
   const late = { current: null };
   const lateGone = [];
-  schedulePress(late, 'discover', () => lateGone.push('discover'), () => {}, raf, caf, clock);
+  schedulePress(late, 'messages', () => lateGone.push('messages'), () => {}, raf, caf, clock);
   frame();
   schedulePress(late, 'me', () => lateGone.push('me'), () => {}, raf, caf, clock);
   fire(0);
@@ -1042,9 +1042,10 @@ test('a plain press on another tab lights it and slides first; the router answer
   assert.match(src, /if \(!pending\.current \|\| pending\.current\.key !== tab\) return;\s*pending\.current\.cancel\(\);\s*pending\.current = null;\s*setPressed\(null\);/);
 });
 
-// ── #5730: a Communities press from Me or Discover lands on Communities ──
+// ── #5730: a Communities press from Me or Messages lands on Communities ──
 //
-// Pressed from Me (#profile) or Discover (#apps), the Communities tab could
+// Pressed from Me (#profile) or Discover (#apps, retired with One Home,
+// #6361), the Communities tab could
 // light for a moment and then slide back: the resume it runs
 // (App.resumeWorkshopView) hands off to navigateToApp, and the phone's list
 // road (goToCommunity(null)) needs a community to open over, so neither
@@ -1071,7 +1072,7 @@ function pressClock() {
   return { raf, caf, frame, clock, fire };
 }
 
-for (const from of ['me', 'discover']) {
+for (const from of ['me', 'messages']) {
   test(`#5730: a Communities press from ${from} that reveals nothing falls back, then stays lit`, () => {
     const { schedulePress, PRESS_SETTLE_MS } = loadTsx('frontend/src/features/nav/tab-press.ts');
     const { raf, caf, frame, clock, fire } = pressClock();
@@ -1134,7 +1135,7 @@ test('#5730: a newer press calls off the fallback waiting on the first', () => {
   frame();
   fire(0);
   // The person presses another tab while Communities is still unanswered.
-  schedulePress(holder, 'discover', () => {}, () => {}, raf, caf, clock);
+  schedulePress(holder, 'messages', () => {}, () => {}, raf, caf, clock);
   fire(PRESS_SETTLE_MS);
   assert.equal(fellBack, 0, 'the abandoned press never falls back');
 });
@@ -1295,7 +1296,7 @@ test('#3096: an app is lit only while it is the screen on show', () => {
   const lit = (screen, tab, frameSlug = 'notes') => currentAppOnScreen({ frameSlug, screen, tab });
   assert.equal(lit('app-view', null), 'notes', 'in the app');
   for (const [screen, tab] of [
-    ['messages-screen', 'messages'], ['browse-screen', 'discover'], ['workshop-screen', 'workshop'],
+    ['messages-screen', 'messages'], ['leaderboard-screen', 'me'], ['workshop-screen', 'workshop'],
     ['profile-screen', 'me'], ['settings-screen', 'me'], ['home-screen', 'home'],
   ]) assert.equal(lit(screen, tab), null, `${screen} lights no app`);
   assert.equal(lit('app-view', 'workshop'), null, 'the app\'s Workshop');

@@ -44,9 +44,3 @@ test('Home\'s grid draws the card for an error notice and retries through Home.l
   assert.match(read('frontend/src/features/home/home.js'), /notice: \{ text: message\('home:grid\.notice\.loadFailed'\), tone: 'error' \}/);
   assert.equal(message('home:grid.notice.loadFailed'), "Couldn't load your apps");
 });
-
-test('the directory screen draws the same card and retries its own load', () => {
-  const screen = read('frontend/src/features/apps/browse-screen.tsx');
-  assert.match(screen, /<AppsLoadError[\s\S]*?onRetry=\{\(\) => browse\(\)\?\._load\?\.\(\)\}/);
-  assert.doesNotMatch(screen, /Failed to load apps/);
-});

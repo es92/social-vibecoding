@@ -428,6 +428,5 @@ export const SCREENS = [
   { id: 'request', route: '#app/audit-garden/dev/issues/21', screen: '#app-view', composer: true },
   { id: 'profile', route: '#profile', screen: '#profile-screen' },
   { id: 'settings', route: '#settings', screen: '#settings-screen' },
-  { id: 'discover', route: '#apps', screen: '#browse-screen' },
   { id: 'challenges', route: '#leaderboard', screen: '#leaderboard-screen' },
 ];

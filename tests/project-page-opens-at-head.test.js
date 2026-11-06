@@ -135,10 +135,9 @@ test('the strip pins at the header\'s foot, whichever element scrolls the page',
   // in-flow strip between the header and the frame cannot pull the band off
   // it; 7px is the fallback for the frame before the first measurement.
   assert.match(decls, /\n  #dev-workshop \{ --ws-pin-top: var\(--dev-ws-head-foot, 7px\); \}/);
-  // The document: the header's own height, as #browse-search-bar measures it.
+  // The document: the header's own height (Discover's search bar measured
+  // the same until One Home, #6361, retired it).
   assert.match(decls, /html\[data-browser-scroller="dev-forum-scroll"\] #dev-workshop \{\s*--ws-pin-top: calc\(var\(--browser-banner-h\) \+ var\(--platform-header-h\) \+ var\(--platform-safe-top\)\);\s*\}/);
-  assert.match(CSS, /html\[data-browser-scroller="browse-screen"\] #browse-search-bar \{\s*top: calc\(var\(--browser-banner-h\) \+ var\(--platform-header-h\) \+ var\(--platform-safe-top\)\);/,
-    'the same measure the other sticky-under-the-header rule uses');
   // The strip, its band under 768px (where it rests, tucked), and the head.
   const rail = /\n  \.dev-ws-tabs \{([\s\S]*?)\n  \}/.exec(decls);
   assert.match(rail[1], /top: var\(--ws-pin-top, 0px\);/);

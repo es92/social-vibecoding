@@ -316,24 +316,6 @@ test('version information contains no particular dApp version', () => {
     'the semantic version/build is labelled as the installed mobile app');
 });
 
-test('fork lineage renders from the app page descriptor, not a written slot', () => {
-  const browseJs = fs.readFileSync(
-    path.join(root, 'frontend/src/features/apps/browse.js'), 'utf8');
-  const detailTsx = fs.readFileSync(
-    path.join(root, 'frontend/src/features/apps/browse-detail.tsx'), 'utf8');
-  // The two states the badge had, now derived rather than written: a linkable
-  // source becomes an href, a deleted one ("<deleted>") stays inert text.
-  assert.match(browseJs, /const forkedFrom = /, 'the detail descriptor carries lineage');
-  assert.match(browseJs, /forkRef\.linkable && forkRef\.slug/,
-    'linkable sources get a href, deleted ones do not');
-  assert.match(detailTsx, /id="browse-detail-fork"/, 'and the page renders it');
-  // Never markup: the source name is user-supplied and React escapes text
-  // children, which is why the imperative version needed escapeHtml at all.
-  const forkBlock = detailTsx.slice(detailTsx.indexOf('id="browse-detail-fork"'));
-  assert.ok(!forkBlock.slice(0, 900).includes('dangerouslySetInnerHTML'),
-    'the source name is a text child, never markup');
-});
-
 // ─── Status-pane rows are not clickable containers ───────────────────────
 
 test('reference rows are plain divs — the pills carry their own anchors', () => {

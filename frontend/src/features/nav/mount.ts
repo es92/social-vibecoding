@@ -36,8 +36,9 @@ pinDropStore.setFlush(flushSync);
 
 export { navStore, parkedStore };
 
-// The desktop rail is the layout (./sidebar-rows.ts): from 768px up, where it
-// keeps a Discover tab of its own (nav-store.js RAIL_TAB_FOR_SCREEN). Asked
+// The desktop rail is the layout (./sidebar-rows.ts): from 768px up, where a
+// screen may light a tab of its own (nav-store.js RAIL_TAB_FOR_SCREEN; none
+// does since One Home retired Discover's, #6361). Asked
 // when a screen is revealed, which is after hydration, so the lit tab is not
 // part of the prerender's question. Unreadable answers the phone.
 function railLayout(): boolean {
@@ -54,9 +55,10 @@ function railLayout(): boolean {
 let tabNamed = false;
 
 if (typeof window !== 'undefined') {
-  // A WINDOW RESIZED ACROSS 768px with Discover open moves its light: from
-  // its own tab on the rail to Home on the phone's bar, and back. App.js
-  // moves the header's back slot at the same width (_watchRailBreakpoint).
+  // A WINDOW RESIZED ACROSS 768px with such a screen open moves its light:
+  // from its own tab on the rail to its tab on the phone's bar, and back.
+  // App.js moves the header's back slot at the same width
+  // (_watchRailBreakpoint).
   try {
     window.matchMedia?.(SIDEBAR_ROWS_QUERY).addEventListener?.('change', () => {
       const { screen, tab } = navStore.get();

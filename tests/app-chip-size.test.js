@@ -47,20 +47,3 @@ test('the Home menu\'s string renderer draws every chip at text-xs', () => {
   const { renderAppPillsHtml } = loadTsx('frontend/src/features/apps/app-card.js');
   assertTwelvePixels(renderAppPillsHtml(APP));
 });
-
-test('a Discover row lets its chip break rather than clip on a narrow phone', () => {
-  const { BrowseRows } = loadTsx('frontend/src/features/apps/browse-list.tsx');
-  const html = renderToHtml(createElement(BrowseRows, {
-    grouped: false,
-    rows: [{
-      slug: 'chips', name: 'Chips', meta: '11 users', statusDot: 'running', status: 'running',
-      openable: true, canOpen: true, added: true, app: { name: 'Chips', slug: 'chips', collab_visibility: 'private' },
-    }],
-  }));
-  // The row's subtitle is `truncate`, so without this the chip inherits
-  // `nowrap` and the subtitle's overflow cuts it off mid-word.
-  const holder = html.match(/<span class="([^"]*)"><span class="[^"]*rounded-full/);
-  assert.ok(holder, 'the chip has its holder');
-  assert.match(holder[1], /(^| )whitespace-normal( |$)/);
-  assert.match(holder[1], /(^| )flex-wrap( |$)/);
-});

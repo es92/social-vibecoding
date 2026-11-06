@@ -113,7 +113,7 @@ test('#3516: on a phone the Communities feed ends where the screen\'s clearance 
   // Communities is not a page the document scrolls in a phone browser, which
   // is why its root is a bounded scroller in both layouts.
   assert.match(read('frontend/src/lib/browser-scroll.ts'),
-    /const PAGES = \['home-screen', 'browse-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen'\];/);
+    /const PAGES = \['home-screen', 'leaderboard-screen', 'profile-screen', 'settings-screen'\];/);
 });
 
 test('#3270: the feed reads the owed populations for member projects only, newest first, bounded', () => {

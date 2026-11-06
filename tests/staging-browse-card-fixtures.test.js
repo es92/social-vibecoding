@@ -34,15 +34,6 @@ function seedBody() {
   return migrate.slice(from, next === -1 ? migrate.length : next);
 }
 
-test('the letter-icon check expands iconless apps without weakening its assertions', () => {
-  const dapp = JSON.parse(fs.readFileSync(path.join(root, 'dapp.json'), 'utf8'));
-  const check = dapp.tests.find((t) => t.name === 'Browse draws the first-letter fallback tile for a seeded app (#1120)');
-  assert.ok(check);
-  assert.equal(check.path, '/?sort=recommended&shot=browse-more#apps');
-  assert.equal(check.expectSelector, '#browse-list .browse-row .app-icon-tile[data-icon="letter"]');
-  assert.equal(check.expectText, 'Staging demo app — letter tile');
-});
-
 test('the seed runs on boot and only on staging', () => {
   // Registration is half the fixture: a seed nobody calls is rows that
   // never exist, and the failure looks exactly like an empty screen.

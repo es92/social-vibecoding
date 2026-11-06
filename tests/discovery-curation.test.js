@@ -6,7 +6,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const curation = require('../src/services/discovery-curation');
 const { loadTsx, renderToHtml, createElement } = require('./lib/render-tsx');
-const { BrowseRows } = loadTsx('frontend/src/features/apps/browse-list.tsx');
 
 const app = (over = {}) => ({
   status: 'running', main_sha: 'a'.repeat(40), icon_emoji: '🎮',
@@ -54,58 +53,6 @@ test('featuring needs an icon and no flag, and says which is missing', () => {
   assert.match(curation.featureRefusal(app({ directory_review_status: 'broken' })), /is flagged[\s\S]*Clear the flag/);
 });
 
-const row = (slug, override = {}) => {
-  const a = { slug, name: slug, ...app(override) };
-  a.directory = curation.describe(a);
-  return { app: a, slug, name: slug, meta: '1 user', status: 'Running', statusDot: 'bg-green-500',
-    demo: false, openable: true, added: false, addTitle: 'Add to Your apps',
-    directoryTier: a.directory.tier === 'listed' ? 'ready' : 'more' };
-};
-const rows = [row('ready'), row('second'),
-  row('stopped', { status: 'error' }), row('creating', { status: 'creating' }),
-  row('iconless', { icon_emoji: null })];
-const render = (props = {}) => renderToHtml(createElement(BrowseRows, { rows, curated: true, ...props }));
-
-test('directory lists the apps that run, and discloses the rest accessibly', () => {
-  const html = render();
-  assert.ok(html.indexOf('data-slug="ready"') < html.indexOf('data-slug="second"'));
-  // #5267: one heading over them.
-  assert.match(html, /<h2[^>]*>Apps to try</);
-  assert.match(html, /Show more \(3\)/);
-  assert.match(html, /aria-expanded="false" aria-controls="browse-more-apps"/);
-  assert.match(html, /id="browse-more-apps" class="hidden"/);
-  for (const slug of ['stopped', 'creating', 'iconless']) assert.ok(!html.includes(`data-slug="${slug}"`));
-  const expanded = render({ moreExpanded: true });
-  assert.match(expanded, /aria-expanded="true"/);
-  assert.match(expanded, /Show less/);
-  for (const slug of ['stopped', 'creating', 'iconless']) assert.ok(expanded.includes(`data-slug="${slug}"`));
-  assert.match(expanded, /Not running/);
-  assert.match(expanded, /Needs an icon/);
-  assert.doesNotMatch(expanded, /data-demo="true"/, 'real apps retain their navigation and Add actions');
-});
-
-test('#1912: a metric sort is one list in its own order, and still discloses the rest', () => {
-  // Supplied in "sort order" with the second app FIRST: ungrouped keeps it
-  // there.
-  const ordered = [rows[1], rows[0], rows[2], rows[3], rows[4]];
-  const html = render({ rows: ordered, grouped: false });
-  assert.ok(html.indexOf('data-slug="second"') < html.indexOf('data-slug="ready"'), 'the sort order holds');
-  assert.doesNotMatch(html, /<h2/, 'no headings');
-  assert.match(render(), /<h2[^>]*>Apps to try</, 'while the default list keeps its heading');
-  assert.match(html, /Show more \(3\)/, 'the same disclosure as Recommended');
-  for (const slug of ['stopped', 'creating', 'iconless']) assert.ok(!html.includes(`data-slug="${slug}"`));
-  const expanded = render({ rows: ordered, grouped: false, moreExpanded: true });
-  for (const slug of ['stopped', 'creating', 'iconless']) assert.ok(expanded.includes(`data-slug="${slug}"`));
-});
-
-test('search renders all supplied results without disclosure', () => {
-  const html = render({ curated: false });
-  for (const { slug } of rows) assert.ok(html.includes(`data-slug="${slug}"`));
-  assert.doesNotMatch(html, /Show more|browse-more-apps/);
-  assert.equal(render({ rows: null }), '', 'no data-dependent markup before hydration');
-  assert.equal(render({ rows: [] }), '', 'no dead disclosure on an empty directory');
-  assert.match(render({ rows: [rows[2]] }), /Show more \(1\)/, 'even a directory of stopped apps remains reachable');
-});
 
 test('staging preview fixtures exercise the flag without touching real apps', () => {
   const { catalogFixtures: fixture } = require('../src/services/staging-apps');
@@ -119,81 +66,6 @@ test('staging preview fixtures exercise the flag without touching real apps', ()
   assert.match(seed, /main_sha, directory_review_status, directory_reviewed_at\)/);
   assert.doesNotMatch(seed, /directory_reviewed_sha/);
   assert.match(fs.readFileSync(path.join(__dirname, '../src/routes/apps.js'), 'utf8'), /req.query.demo === '1'/);
-});
-
-test('a row names why it is under Show more, and a listed row says nothing', () => {
-  const { rowDirectoryLabel } = loadTsx('frontend/src/features/apps/browse-list.tsx');
-  assert.equal(rowDirectoryLabel(rows[0].app.directory), null);
-  assert.equal(rowDirectoryLabel(rows[2].app.directory), 'Not running');
-  assert.equal(rowDirectoryLabel(rows[4].app.directory), 'Needs an icon');
-  // Only the Joined view lists a flagged app, and its row says why it is
-  // nowhere else in Discover.
-  assert.equal(rowDirectoryLabel(curation.describe(app({ directory_review_status: 'broken' }))), 'Hidden from Discover');
-  assert.equal(rowDirectoryLabel(null), null);
-  for (const html of [render(), render({ grouped: false }), render({ curated: false })]) {
-    assert.doesNotMatch(html, /review/i);
-  }
-});
-
-test('#5267, #5928: Featured leads the default list, and the rest is More apps', () => {
-  const picked = { ...row('picked'), recommended: true };
-  const html = render({ rows: [picked, rows[0], rows[1]] });
-  // Staff picks, not a personal recommendation (#5928): the heading says so.
-  assert.doesNotMatch(html, /Recommended for you/);
-  const rec = html.indexOf('>Featured</h2>');
-  const more = html.indexOf('>More apps</h2>');
-  assert.ok(rec >= 0 && rec < html.indexOf('data-slug="picked"'));
-  assert.ok(html.indexOf('data-slug="picked"') < more && more < html.indexOf('data-slug="ready"'));
-  assert.doesNotMatch(html, />Apps to try</);
-  // A joined row offers Open; a row you are not in offers Join.
-  const joined = { ...row('joined'), added: true, canOpen: true };
-  const both = render({ rows: [joined, rows[0]], curated: false });
-  assert.match(both, /data-added="true" data-action="open" aria-label="Open joined"[^>]*>Open</);
-  assert.match(both, /data-added="false" data-action="join" aria-label="Join ready"/);
-  assert.doesNotMatch(both, />Joined</);
-  // One that cannot run has nothing to open: the row itself opens its page.
-  assert.doesNotMatch(render({ rows: [{ ...joined, canOpen: false }], curated: false }), /browse-add-btn/);
-});
-
-test('#5928: Join is the accent pill, Open the quieter neutral one, both through Button', () => {
-  const { buttonVariants } = loadTsx('frontend/@/components/ui/button.tsx');
-  const joined = { ...row('joined'), added: true, canOpen: true, canLeave: true };
-  const html = render({ rows: [joined, rows[0]], curated: false });
-  const classOf = (action) => {
-    const tag = (html.match(new RegExp(`<button[^>]*data-action="${action}"[^>]*>`)) || [])[0];
-    assert.ok(tag, `a ${action} button`);
-    return tag.match(/class="([^"]*)"/)[1].split(/\s+/);
-  };
-  const has = (classes, run) => run.split(/\s+/).every((c) => classes.includes(c));
-  const join = classOf('join');
-  const open = classOf('open');
-  // The primitive's own variants, not a hand-copied fill.
-  assert.ok(has(join, buttonVariants({ variant: 'pillAccent', size: 'none', ink: 'solid' })), 'Join is Button pillAccent');
-  assert.ok(has(open, buttonVariants({ variant: 'pillNeutral', size: 'none', ink: 'neutral' })), 'Open is Button pillNeutral');
-  assert.ok(!open.some((c) => c.includes('violet')), 'Open carries no accent');
-  for (const classes of [join, open]) assert.ok(classes.includes('browse-add-btn'), 'the click guard and checks hook stays');
-  // 44px to tap at every width below the shell's md (768px): on the element
-  // itself, released only from md up. Leave beside Open too.
-  for (const [name, classes] of [['join', join], ['open', open], ['leave', classOf('leave')]]) {
-    assert.ok(classes.includes('min-h-[44px]'), `${name} is 44px tall below md`);
-    assert.ok(classes.includes('md:min-h-0'), `${name} returns to its compact size from md`);
-    assert.ok(!classes.some((c) => /^(sm):min-h/.test(c)), `${name} is not released at 640px`);
-  }
-  // md is Tailwind's default 768px: the config sets no screens of its own.
-  const config = require('../tailwind.config.js');
-  assert.equal(config.theme?.screens ?? config.theme?.extend?.screens, undefined);
-});
-
-test('#5928: a row says what the app is, in its own words, when it has them', () => {
-  const described = { ...row('described'), about: 'Count sheep before bed.' };
-  const html = render({ rows: [described, rows[0]], curated: false });
-  const at = html.indexOf('data-slug="described"');
-  const about = html.indexOf('class="browse-row-about', at);
-  assert.ok(about > at && about < html.indexOf('data-slug="ready"'), 'the line is on its own row');
-  assert.match(html, /class="browse-row-about[^"]*"[^>]*>Count sheep before bed\.<\/span>/);
-  assert.equal((html.match(/browse-row-about/g) || []).length, 1, 'no filler line on a row without one');
-  // Not the small label's size.
-  assert.doesNotMatch(html, /class="browse-row-about[^"]*text-xs/);
 });
 
 test('the admin console lists flagged apps and flags one only after asking; a view-only admin reads the list', () => {

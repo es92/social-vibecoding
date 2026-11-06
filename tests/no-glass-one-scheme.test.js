@@ -75,7 +75,6 @@ test('what content scrolls or slides behind is solid, in the plane colour', () =
     // The Browse list's card and its empty note, on a phone. Its search and
     // filters sit on the ground above it now and scroll with it, so there is
     // no pinned head for the rows to pass behind.
-    [/@media \(max-width: 767px\) \{\s*#browse-screen \.browse-pane-body,\s*#browse-screen \.browse-pane-note \{ background-color: var\(--dc-sheet-solid\); \}/, 'the Browse card, on a phone, with its note'],
   ];
   for (const [re, what] of solid) assert.match(css, re, `${what} is solid`);
 });

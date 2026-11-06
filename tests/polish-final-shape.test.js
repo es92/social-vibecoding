@@ -65,8 +65,9 @@ test('#11: an image icon shows the app\'s initial until the picture has drawn', 
   const css = read('public/css/app.css');
   assert.match(css, /:where\(:has\(> \.app-icon-wait\)\) \{ position: relative; \}/);
   assert.match(css, /\.app-icon-wait \{\s*position: absolute; inset: 0;/);
-  const list = read('frontend/src/features/apps/browse-list.tsx');
-  assert.match(list, /eager=\{drawn\+\+ < EAGER_ICON_ROWS\}/, 'Discover\'s first rows ask at once');
+  // One Home (#6361): Discover's list is Home's Communities to join now.
+  const list = read('frontend/src/features/home/communities-to-join.tsx');
+  assert.match(list, /eager=\{i < 4\}/, 'the first cards ask at once');
 });
 
 // ── #12: the request page ───────────────────────────────────────────────

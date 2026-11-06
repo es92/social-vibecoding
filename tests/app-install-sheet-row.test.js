@@ -249,13 +249,6 @@ test('run opens the install page the way the host needs', async () => {
   assert.deepEqual(env.calls, [['open', 'https://sv.test/app/recipe-box/install', '_blank', 'noopener']]);
 });
 
-test('the app details page keeps the item: it is not one of the excluded keys', () => {
-  const browse = read('frontend/src/features/apps/browse.js');
-  const excluded = browse.match(/DETAIL_EXCLUDED_KEYS: \[([^\]]*)\]/);
-  assert.ok(excluded, 'located DETAIL_EXCLUDED_KEYS');
-  assert.doesNotMatch(excluded[1], /'install'/);
-});
-
 // ── Shared helpers, not copies ──────────────────────────────────────
 
 test('the environment helpers are shared with the install banner, not copied', () => {

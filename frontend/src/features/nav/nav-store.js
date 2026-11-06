@@ -49,7 +49,7 @@
 import { createStore } from '../../lib/plain-store.js';
 
 /**
- * @typedef {'home'|'discover'|'workshop'|'ai'|'messages'|'me'} TabKey
+ * @typedef {'home'|'workshop'|'ai'|'messages'|'me'} TabKey
  */
 
 /**
@@ -66,10 +66,6 @@ import { createStore } from '../../lib/plain-store.js';
  */
 export const TAB_FOR_SCREEN = Object.freeze({
   'home-screen': 'home',
-  // #6019: on a phone Discover is a page of Home's, opened from its
-  // Discover block, so Home stays lit on it. The desktop rail has a
-  // Discover tab of its own (RAIL_TAB_FOR_SCREEN below).
-  'browse-screen': 'home',
   'messages-screen': 'messages',
   'agent-session-screen': 'messages',
   // #6019 follow-up: the AI tab's own page. Main, the chat with the bot, is
@@ -84,17 +80,14 @@ export const TAB_FOR_SCREEN = Object.freeze({
 });
 
 /**
- * Where the desktop rail answers differently (Evan, 29 Oct 2026): it keeps a
- * Discover tab under Home, so Discover is a root there and lights its own
- * tab. Read from 768px up, the width app.css turns the bar into the rail at
- * (./sidebar-rows.ts SIDEBAR_ROWS_QUERY); App._backSlotFor agrees, giving
- * the screen no back arrow there.
+ * Where the desktop rail answers differently from the phone's bar, read from
+ * 768px up (./sidebar-rows.ts SIDEBAR_ROWS_QUERY). Nothing does since One
+ * Home (#6361) retired Discover, the one screen that did (it was a tab of its
+ * own on the rail and a page of Home's on a phone).
  *
  * @type {Readonly<Record<string, TabKey>>}
  */
-export const RAIL_TAB_FOR_SCREEN = Object.freeze({
-  'browse-screen': 'discover',
-});
+export const RAIL_TAB_FOR_SCREEN = Object.freeze({});
 
 /**
  * @typedef {object} NavState

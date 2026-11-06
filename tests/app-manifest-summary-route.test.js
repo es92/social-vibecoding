@@ -166,11 +166,8 @@ test('the shell reads the app record as a summary', () => {
   assert.match(target, /\/api\/apps\/\$\{encodeURIComponent\(slug\)\}\?manifest=summary/,
     'the Improve target reads the summary');
   // One address for all of them, so the service worker holds one copy and an
-  // app opened from its channel or its Discover page is already warm.
+  // app opened from its channel is already warm.
   const messages = fs.readFileSync(path.join(root, 'frontend/src/features/messages/store.ts'), 'utf8');
   assert.match(messages, /\/api\/apps\/\$\{encodeURIComponent\(want\)\}\?manifest=summary/,
     'the discussion pane reads the summary');
-  const browse = fs.readFileSync(path.join(root, 'frontend/src/features/apps/browse.js'), 'utf8');
-  assert.match(browse, /\/api\/apps\/\$\{encodeURIComponent\(slug\)\}\?manifest=summary/,
-    'the Discover detail reads the summary');
 });

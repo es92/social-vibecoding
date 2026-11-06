@@ -61,8 +61,10 @@ test('a signed-in address resolves to the root it lands on', () => {
     ['#app/demo-app/board', 'app-view'],
     ['#app/demo-app/activity', 'app-view'],
     ['#app/demo-app/dev/sessions/12', 'app-view'],
-    ['#apps', 'browse-screen'],
-    ['#apps/demo-app', 'browse-screen'],
+    // One Home (#6361): Discover's old addresses are rewritten in place,
+    // its list to Home (the prerender), an app's details to its hub.
+    ['#apps', null],
+    ['#apps/demo-app', 'app-view'],
     ['#settings', 'settings-screen'],
     ['#settings/notifications', 'settings-screen'],
     ['#admin', 'admin-screen'],

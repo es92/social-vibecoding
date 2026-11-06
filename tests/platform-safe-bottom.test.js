@@ -7,7 +7,7 @@
 //     (Dev mode), so each surface was shrunk by the inset and the strip
 //     below it was dead background — the dev-chat composer floated above
 //     an empty band and the message list lost that height;
-//   - the top-level screens (Settings, Admin, Profile, Browse,
+//   - the top-level screens (Settings, Admin, Profile,
 //     Leaderboard, the auth screens) reserved nothing at all, so their
 //     last row scrolled UNDER the indicator;
 //   - the full-screen spec viewer is `position: fixed; inset: 0`, so it
@@ -68,7 +68,7 @@ test('app.css defines both safe-area tokens exactly once, in the kit form', () =
 });
 
 test('the token is defined on :root so screens OUTSIDE #app-view get it', () => {
-  // Settings / Admin / Profile / Browse / Leaderboard / the auth screens
+  // Settings / Admin / Profile / Leaderboard / the auth screens
   // are siblings of #app-view, not children — a token scoped only to the
   // surface rules would leave every one of them at 0.
   const rootBlock = /:root\s*\{([\s\S]*?)\}/.exec(APP_CSS);
@@ -222,7 +222,6 @@ test('every composer column reserves the keyboard inset, exactly once', () => {
 // forgets the class fails here rather than shipping a row under the
 // home indicator.
 const SAFE_SCROLL_IDS = [
-  'browse-screen',
   'leaderboard-screen',
   'profile-screen',
   'admin-screen',

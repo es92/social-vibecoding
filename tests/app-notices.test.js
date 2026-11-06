@@ -131,7 +131,7 @@ test('a door to a project\'s hub opens the hub; a page opened again reads the ta
   // a tab the viewer has since left, which is what Back used to reopen on.
   assert.match(lander, /useState<TabKey>\(\(\) => freshTab\(\) \|\| v\.tab \|\| 'status'\)/);
   assert.match(lander, /export function freshTab\(\): TabKey \| null \{\n\s*const tab = callAppView\('_workshopTab'\);/);
-  // The doors: the logo menu row, Discover's rows and a Needs you card's
+  // The doors: the logo menu row, Home's "Go to community" and a Needs you card's
   // project name. Back and Forward are not doors, and nor is a row of All
   // communities: a switch keeps the place you were on (landKeepingPlace).
   // The menu row lands on the hub before it follows its link, which is full
@@ -143,7 +143,10 @@ test('a door to a project\'s hub opens the hub; a page opened again reads the ta
   const sheetSrc = read('frontend/src/features/app-context/app-context-sheet.tsx');
   assert.match(sheetSrc, /onClick=\{\(e\) => openCommunityRow\(e, slug, owed\)\}/);
   assert.match(sheetSrc, /if \(communityRowPlace\(owed\) === 'needs'\) view\?\._landOnTab\?\.\(slug, 'needs'\);\n\s*else view\?\._landOnHub\?\.\(slug\);\n\s*\}\n\s*followThenDismiss\(e,/);
-  assert.match(read('frontend/src/features/apps/browse.js'), /if \(typeof AppView !== 'undefined' && AppView\._landOnHub\) AppView\._landOnHub\(view\.slug\);\n\s*location\.hash = href;/);
+  // One Home (#6361): a Home card's "Go to community" and an old
+  // `#apps/<slug>` details address are doors to the hub too.
+  assert.match(read('frontend/src/features/home/home.js'), /openHub\(slug\) \{\n\s*if \(!slug\) return;\n\s*try \{ window\.AppView\?\._landOnHub\?\.\(slug\); \}/);
+  assert.match(read('public/js/app.js'), /history\.replaceState\(null, '', App\._rootUrl\(App\._hubHref\(slug\)\)\); \} catch \(err\) \{ \/\* non-fatal \*\/ \}\n\s*try \{ window\.AppView\?\._landOnHub\?\.\(slug\); \}/);
   assert.match(read('frontend/src/features/workshop/index.tsx'), /landKeepingPlace\(row\.slug\);\n\s*win\.App\?\.navigateToApp\?\.\(row\.slug, 'dev'\);/);
   assert.match(read('frontend/src/features/workshop/needs-reel.tsx'), /onClick=\{\(\) => \{ \(window as any\)\.AppView\?\._landOnHub\?\.\(app\.slug\); \}\}/);
 });

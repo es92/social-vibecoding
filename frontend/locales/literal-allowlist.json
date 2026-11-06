@@ -305,12 +305,6 @@
       ],
       "why": "Example of a six-digit code in a placeholder; digits only."
     },
-    "frontend/src/features/apps/browse-screen.tsx": {
-      "texts": [
-        "&times;"
-      ],
-      "why": "The × glyph of the clear-search button, not a word. Its name is discover:search.clear."
-    },
     "frontend/src/features/home/index.tsx": {
       "texts": [
         "&times;"
@@ -634,12 +628,6 @@
         "app.example.com"
       ],
       "why": "The address box's placeholder: a sample hostname on the reserved example.com domain, the same in every language."
-    },
-    "frontend/src/features/apps/browse.js": {
-      "texts": [
-        "unknown"
-      ],
-      "why": "'unknown' is the key of a contributor row with no username (data-username, openContributor). It is never drawn: the row shows discover:detail.contributor.unknownHandle and its tooltip has an unnamed wording."
     },
     "frontend/src/features/dev-board/release-stall-store.ts": {
       "texts": [

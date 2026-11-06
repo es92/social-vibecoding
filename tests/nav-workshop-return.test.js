@@ -145,7 +145,7 @@ test('coming back to the Workshop tab returns to the card you left', async () =>
 });
 
 test('the board you left comes back too, and from any tab', async () => {
-  for (const leave of ['navigateHome', 'navigateToBrowse', 'navigateToMessages', 'navigateToProfile']) {
+  for (const leave of ['navigateHome', 'navigateToMessages', 'navigateToProfile']) {
     const r = router();
     r.App.navigateToWorkshop();
     await r.App.navigateToApp(NOTES.slug, 'dev', null, null);

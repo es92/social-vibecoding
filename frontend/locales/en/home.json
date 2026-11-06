@@ -156,12 +156,12 @@
     "description": "Line in the header of an app tile's menu: when the app's latest version went live. {{when}} is a short relative time such as \"3d ago\" or \"just now\"."
   },
   "menu.details.label": {
-    "text": "App details",
-    "description": "Item in an app tile's menu on Home: opens the app's page in Discover."
+    "text": "Go to community",
+    "description": "Item in an app tile's menu on Home: opens the hub of the app's community, its project page."
   },
   "menu.details.tip": {
-    "text": "Version, status and everything you can do with this app",
-    "description": "Tooltip of the \"App details\" item in an app tile's menu."
+    "text": "Who it is for, what is changing, and how to join",
+    "description": "Tooltip of the \"Go to community\" item in an app tile's menu: what the community's hub shows."
   },
   "menu.editMyApps.label": {
     "text": "Edit Pinned apps",

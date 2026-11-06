@@ -39,10 +39,6 @@ test('the hand-drawn truncated titles carry their text as the hint', () => {
 
   assert.match(read('frontend/src/features/home/widget-strip.tsx'),
     /className="[^"]*truncate[^"]*" title=\{tile\.name\}>/);
-  assert.match(read('frontend/src/features/apps/browse-list.tsx'),
-    /className="browse-row-name truncate" title=\{view\.name\}/);
-  assert.match(read('frontend/src/features/apps/browse-list.tsx'),
-    /className="browse-row-name truncate" title=\{site\.label\}/);
   assert.match(read('frontend/src/features/dev-board/workshop/bot-slots.tsx'),
     /tooltip=\{title \|\| undefined\}/);
   // A request's thread lists its items through the shared rows; both the

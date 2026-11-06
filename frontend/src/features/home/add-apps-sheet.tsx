@@ -192,10 +192,9 @@ export function openAddAppsSheet(): void {
   mountLegacyPortal(panel, (
     <AddAppsSheet
       onBrowse={() => {
-        // Through the hash, so the browse screen gets a real history entry
-        // and the OS back gesture returns here — BrowseLink's own way out.
+        // One Home (#6361): the directory is Home's own Communities to join.
         leave();
-        window.location.hash = '#apps';
+        (window as unknown as { Home?: { showCommunitiesToJoin?: () => void } }).Home?.showCommunitiesToJoin?.();
       }}
     />
   ));

@@ -800,7 +800,7 @@ test('#3498: every wallpaper and bar rule that names Workshop names Your work to
 
 test('#3498: on a desktop the screen moves over for the rail like its siblings', () => {
   const desktop = CSS.slice(CSS.indexOf('--platform-rail-w: var(--platform-rail-full);'));
-  const at = desktop.indexOf(':is(#home-screen, #browse-screen, #workshop-screen');
+  const at = desktop.indexOf(':is(#home-screen, #workshop-screen');
   assert.ok(at > 0, 'the rail\'s list of screens that move over is found');
   const rule = desktop.slice(at, desktop.indexOf('}', at));
   const roots = rule.slice(0, rule.indexOf('{'));

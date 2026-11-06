@@ -359,7 +359,6 @@ test('a stand-in for a missing name never reaches a sentence as the name, wherev
     ['leaderboard:standings.openDetails', 'leaderboard:standings.openDetailsAnonymous', { name: message('leaderboard:standings.anonymous') }],
     ['leaderboard:kudos.row.by', 'leaderboard:kudos.row.byUnknown', { username: message('leaderboard:kudos.unknownUser') }],
     ['session:transcript.attachment.title', 'session:transcript.attachment.titleUnnamed', { filename: message('session:transcript.attachment.unnamed') }],
-    ['discover:detail.contributor.viewChanges', 'discover:detail.contributor.viewChangesUnnamed', { username: 'unknown' }],
   ]) {
     assert.equal(message(unnamed, rest), message(named, { ...rest, ...standIn }), unnamed);
   }
@@ -396,9 +395,6 @@ test('a stand-in for a missing name never reaches a sentence as the name, wherev
   assert.match(read('frontend/src/features/leaderboard/leaderboard.js'), /authorUnknown: !row\.author_username,/);
   assert.match(read('frontend/src/features/leaderboard/kudos-pane.tsx'), /row\.authorUnknown \? t\('leaderboard:kudos\.row\.byUnknown'\)/);
   assert.match(read('public/js/session-transcript.js'), /htmlText\('session:transcript\.attachment\.titleUnnamed'\)/);
-  assert.match(read('frontend/src/features/apps/browse-detail.tsx'), /row\.unnamed \? t\('discover:detail\.contributor\.viewChangesUnnamed'\)/);
-  assert.equal(message('discover:detail.contributor.unknownHandle'), '@unknown', 'the row shows what it always showed');
-  assert.match(read('frontend/src/features/apps/browse-detail.tsx'), /row\.unnamed \? t\('discover:detail\.contributor\.unknownHandle'\) : `@\$\{row\.who\}`/);
 });
 
 test('a normalizer says whether the name it gives is real, and the sentence downstream uses that', async (t) => {
@@ -483,8 +479,6 @@ test('every unnamed wording added for a stand-in reads as the named one did with
     ['devchat:transcript.attachment.download', 'devchat:transcript.attachment.downloadUnnamed', { name: 'file' }],
     ['agent:appContext.about.lineage.linkTitle', 'agent:appContext.about.lineage.linkTitleDeleted', { app: '<deleted>' }],
     ['agent:appContext.about.lineage.remixedFrom', 'agent:appContext.about.lineage.remixedFromDeleted', { app: '<deleted>' }],
-    ['discover:detail.remixedFrom.line', 'discover:detail.remixedFrom.lineDeleted', { app: '<deleted>' }],
-    ['discover:detail.remixedFrom.openOriginal', 'discover:detail.remixedFrom.openOriginalDeleted', { app: '<deleted>' }],
     ['home:grid.tile.remixedFrom', 'home:grid.tile.remixedFromDeleted', { app: '<deleted>' }],
     ['project:communityCard.inviteCard.join', 'project:communityCard.inviteCard.joinUnnamed', { project: 'this community' }],
   ];

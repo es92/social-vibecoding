@@ -327,8 +327,6 @@ const OWNED = [
   { sel: '#settings-local-agents-list' },    // features/settings/local-agents-list.tsx
   { sel: '#agent-files-instructions-list' }, // features/settings/agent-files-list.tsx
   { sel: '#agent-files-skills-list' },
-  { sel: '#browse-list' },                   // features/apps/browse-list.tsx
-  { sel: '#browse-sort-bar' },               // features/apps/browse-screen.tsx (#1383)
   // The WHOLE Workshop screen (#workshop): features/workshop/index.tsx renders
   // and reconciles every node under this root, and no public/js/** module has
   // ever written inside it — App.navigateToWorkshop drives it through the
@@ -400,7 +398,7 @@ const OWNED = [
 const ROUTES = [
   '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990411',
   '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990401',
-  '#home', '#apps', '#apps/recipebot', '#workshop', '#ai', '#settings', '#settings/app-ai',
+  '#home', '#workshop', '#ai', '#settings', '#settings/app-ai',
   '#settings/email', '#settings/agent-files', '#settings/api-key', '#settings/cli', '#settings/connectors', '#settings/linked-accounts', '#settings/experimental', '#profile', '#leaderboard', '#leaderboard/challenges', '#messages', '#notifications',
   '#agent/990801', '#agent/990801/changes', '#messages/agent/990801',
   '#app/recipebot', '#app/recipebot/app', '#app/recipebot/dev', '#app/recipebot/dev/chat',

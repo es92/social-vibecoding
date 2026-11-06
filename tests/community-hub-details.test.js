@@ -544,13 +544,6 @@ test('a Homeroom line kept in #general, as the root of somebody\'s thread, is dr
   assert.match(CSS, /\.messages-message-system \.messages-message-author \{ color: var\(--text-muted\); \}/);
 });
 
-test('Discover rows open the hub; the controls sit over the list\'s card', () => {
-  const browse = read('frontend/src/features/apps/browse.js');
-  assert.match(browse, /rowHref\(view\) \{\s*if \(!view \|\| view\.demo \|\| !view\.slug\) return null;\s*return `#app\/\$\{encodeURIComponent\(view\.slug\)\}\/dev\/hub`;/);
-  assert.match(read('public/js/app.js'), /return slug \? `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub` : '#communities';/,
-    'the same address App._hubHref builds');
-});
-
 test('the Communities screen has no toggle: Needs you is a row that opens a page', () => {
   // It had two tabs, Current status and Needs you, drawn as the project
   // page's strip. The UI overhaul made the list the page and Needs you a
@@ -564,9 +557,10 @@ test('the Communities screen has no toggle: Needs you is a row that opens a page
     'the way back is the project page\'s own back disc');
 });
 
-test('Home\'s Browse all links carry the accent, not the header\'s periwinkle', () => {
+test('Home\'s See all links carry the accent, not the header\'s periwinkle', () => {
   const ui = read('frontend/src/features/home/panels/ui.tsx');
-  for (const cls of ['home-panel-browse', 'home-panel-see-all']) {
+  // Browse all (`home-panel-browse`) went with Home's Discover lane (#6361).
+  for (const cls of ['home-panel-see-all']) {
     const tag = ui.slice(ui.indexOf(`className="${cls} `), ui.indexOf('"', ui.indexOf(`className="${cls} `) + 12));
     assert.match(tag, /text-\[color:var\(--accent\)\]/, `${cls} is the accent`);
     assert.doesNotMatch(tag, /brand-ink/);
