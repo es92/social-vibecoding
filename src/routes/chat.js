@@ -975,9 +975,16 @@ function chatRoutes(config) {
       // Validate only after the existence-hiding gate. A denied caller gets
       // the same 404 regardless of whether its payload happens to be valid.
       const body = req.body;
-      if (!body || Array.isArray(body) || typeof body !== 'object'
-          || typeof body.content !== 'string' || !body.content.trim()) {
+      if (!body || Array.isArray(body) || typeof body !== 'object') {
         return res.status(400).json({ error: 'A non-empty content string is required' });
+      }
+      const attIds = attachmentsSvc.sanitizeAttachmentIds(body.attachment_ids);
+      if (attIds === null) {
+        return res.status(400).json({ error: 'attachment_ids must be at most four attachment ids.' });
+      }
+      const content = typeof body.content === 'string' ? body.content : '';
+      if (!content.trim() && !attIds.length) {
+        return res.status(400).json({ error: 'A non-empty content string is required, unless files are attached.' });
       }
 
       const hasThreadType = Object.prototype.hasOwnProperty.call(body, 'thread_type');
@@ -999,7 +1006,7 @@ function chatRoutes(config) {
         // rather than in the message: it describes who is holding the pen,
         // and the body is the one thing a caller gets to write.
         { user: req.user, appId: app.id, appSlug: app.slug, postedVia: postedViaFor(req) },
-        { type: 'chat', content: body.content, ...(thread ? { thread } : {}) }
+        { type: 'chat', content, ...(attIds.length ? { attachmentIds: attIds } : {}), ...(thread ? { thread } : {}) }
       );
       if (!result?.ok) {
         if (result?.code === 'not_collaborator') {
@@ -1010,6 +1017,15 @@ function chatRoutes(config) {
         }
         if (result?.code === 'invalid_thread') {
           return res.status(400).json({ error: 'Invalid thread_type/thread_ref' });
+        }
+        if (result?.code === 'invalid_attachment_ids') {
+          return res.status(400).json({ error: 'attachment_ids must be at most four attachment ids.' });
+        }
+        if (result?.code === 'attachment_not_owned') {
+          return res.status(400).json({ error: 'Those files are not yours to attach, or were already sent.' });
+        }
+        if (result?.code === 'empty_message') {
+          return res.status(400).json({ error: 'A non-empty content string is required, unless files are attached.' });
         }
         if (result?.code === 'channel_moved') {
           return res.status(409).json({ error: communities.CHANNEL_MOVED, code: 'channel_moved' });

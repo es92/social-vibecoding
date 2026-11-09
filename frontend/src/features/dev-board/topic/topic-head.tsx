@@ -190,9 +190,23 @@ function TestOutput({ details }: { details: NonNullable<CheckRow['details']> }):
 function UnitSuiteRow({ r }: { r: CheckRow }): ReactNode {
   const t = useMessages('project');
   const tests = r.details || [];
+  // The first failing test leads; the rest fold under one line.
+  const first = tests.slice(0, 1);
+  const rest = tests.slice(1);
   const tally = r.unitTally || null;
   // Without per-test output, the reason's own first part names the files.
   const reason = String(r.reason || '').split(/\s\|\s#\s/)[0].trim();
+  const testItem = (d: NonNullable<CheckRow['details']>[number], i: number) => (
+    <li key={i}>
+      <span className="dev-ledger-unit-test">{d.test}</span>
+      {d.said ? <span className="dev-ledger-unit-said">{t('project:topic.check.unit.said', { said: d.said })}</span> : null}
+      {d.file ? (
+        <span className="dev-ledger-unit-where font-mono">
+          {d.line ? t('project:topic.check.unit.fileLine', { file: d.file, line: d.line }) : d.file}
+        </span>
+      ) : null}
+    </li>
+  );
   return (
     <li className={`dev-ledger-check dev-ledger-check-unit${r.advisory ? ' opacity-70' : ''}`} data-check-unit="">
       <div className="dev-ledger-unit-head">
@@ -212,18 +226,18 @@ function UnitSuiteRow({ r }: { r: CheckRow }): ReactNode {
         <div className="dev-ledger-unit-part">
           <div className="dev-ledger-unit-k">{t('project:topic.check.unit.testsThatFailed', { count: tests.length })}</div>
           <ul className="dev-ledger-unit-tests">
-            {tests.map((d, i) => (
-              <li key={i}>
-                <span className="dev-ledger-unit-test">{d.test}</span>
-                {d.said ? <span className="dev-ledger-unit-said">{t('project:topic.check.unit.said', { said: d.said })}</span> : null}
-                {d.file ? (
-                  <span className="dev-ledger-unit-where font-mono">
-                    {d.line ? t('project:topic.check.unit.fileLine', { file: d.file, line: d.line }) : d.file}
-                  </span>
-                ) : null}
-              </li>
-            ))}
+            {first.map(testItem)}
           </ul>
+          {rest.length ? (
+            <details className="dev-ledger-why dev-ledger-unit-more">
+              <summary className="dev-ledger-check-line">
+                <span className="dev-ledger-check-open">{t('project:topic.check.unit.showMore', { count: rest.length })}</span>
+              </summary>
+              <ul className="dev-ledger-unit-tests">
+                {rest.map(testItem)}
+              </ul>
+            </details>
+          ) : null}
         </div>
       ) : (reason ? <p className="dev-ledger-unit-reason">{reason}</p> : null)}
       {tests.length ? (
@@ -286,18 +300,27 @@ function CheckRowView({ r }: { r: CheckRow }): ReactNode {
             />
           ) : (r.reason || t('project:topic.check.failed'))}
           {r.note ? <div className="dev-ledger-why-note mt-1">{r.note}</div> : null}
-          {r.errors && r.errors.length ? (
-            <ul className="dev-ledger-why-errors">
-              {r.errors.map((e, i) => (
-                <li key={i}>
-                  <span className="opacity-70">{`[${e.kind}] `}</span>
-                  {e.message}
-                  {e.source ? <span className="opacity-60">{` (${e.source})`}</span> : null}
-                </li>
-              ))}
-            </ul>
+          {r.errors?.length || r.details?.length ? (
+            <details className="dev-ledger-why dev-ledger-why-full">
+              <summary className="dev-ledger-check-line">
+                <span className="dev-ledger-check-open">{t('project:topic.check.showFullOutput')}</span>
+              </summary>
+              <div className="dev-ledger-why-body">
+                {r.errors && r.errors.length ? (
+                  <ul className="dev-ledger-why-errors">
+                    {r.errors.map((e, i) => (
+                      <li key={i}>
+                        <span className="opacity-70">{`[${e.kind}] `}</span>
+                        {e.message}
+                        {e.source ? <span className="opacity-60">{` (${e.source})`}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {r.details && r.details.length ? <TestOutput details={r.details} /> : null}
+              </div>
+            </details>
           ) : null}
-          {r.details && r.details.length ? <TestOutput details={r.details} /> : null}
         </div>
       </details>
     </li>

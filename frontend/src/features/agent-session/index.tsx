@@ -151,6 +151,7 @@ import { openFocusedApp } from './open-app';
 import { isEmbeddedPanel } from '../../lib/side-panel-mode';
 import { AppIconContent, AppIconLink, appIconKind } from '../apps/app-card-view';
 import { ProposeButton } from './propose-confirm';
+import { askVotesInView } from '../dev-board/topic/votes-in-view';
 import { fixChecksHeading, fixChecksMessage, fixChecksOffer, type FixChecksOffer } from './fix-checks';
 import { readUnsent, writeUnsent } from './unsent';
 import { draftRequest, draftSeed, type DraftRequest } from './request-seed';
@@ -811,6 +812,8 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
     ? changeLink(change.appSlug, item.changeId, prNumber)
     : null;
   const inVote = change && (change.status === 'promoted' || change.status === 'merging');
+  // #6473: the vote is open — a change going live ("merging") is past it.
+  const voteOpen = change && change.status === 'promoted';
   const merged = change && change.status === 'merged';
   const proposable = change && (change.status === 'active' || change.status === 'paused');
   return (
@@ -843,6 +846,19 @@ export function PreviewCardView({ item, change, wide, action, busy }: {
       {item.failed && item.error ? <p className="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">{item.error}</p> : null}
       {checks && checks.reason ? <p className={CHECK_REASON} data-agent-session-checks-reason>{checks.reason}</p> : null}
       <div className="mt-2 flex flex-wrap gap-2">
+        {/* #6473: while the vote is open, voting is the card's next step, and
+            its page opens at the Votes card (the same door the group chat's
+            vote cards use) rather than at the top. */}
+        {voteOpen && changeHref && item.changeId != null ? (
+          <a
+            className={CARD_PRIMARY}
+            href={changeHref}
+            onClick={() => askVotesInView(item.changeId)}
+            data-agent-session-preview-vote
+          >
+            {t('agent:session.preview.vote')}
+          </a>
+        ) : null}
         {item.failed ? (
           item.changeId != null ? (
             <button type="button" className={CARD_BUTTON} disabled={busy} onClick={() => void retryStaging(item.changeId as number)} data-agent-session-preview-retry>

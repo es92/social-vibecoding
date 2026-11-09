@@ -123,6 +123,14 @@ const KINDS = Object.freeze({
     topic: 'infra', fixer: 'infra', source: 'poll', fileAfterMs: 0, quietMs: 30 * MINUTE, admin: 'status',
     done: 'Alertmanager\'s Watchdog heartbeat arrives again every hour.',
   }),
+  security: Object.freeze({
+    topic: 'infra', fixer: 'bot', source: 'poll', fileAfterMs: 0, quietMs: 30 * MINUTE, admin: 'status',
+    done: 'A complete current security audit no longer finds this advisory.',
+  }),
+  security_audit: Object.freeze({
+    topic: 'infra', fixer: 'person', source: 'poll', fileAfterMs: 0, quietMs: 30 * MINUTE, admin: 'status',
+    done: 'A complete successful security audit is available again.',
+  }),
   // ── Wave 2: detectors that did not exist before ──
   server_errors: Object.freeze({
     topic: 'infra', fixer: 'bot', source: 'poll', fileAfterMs: 0, quietMs: 6 * HOUR, admin: 'status',
@@ -181,6 +189,16 @@ function mode(env = process.env) {
   const fallback = env.USERNODE_ENV === 'staging' ? 'off' : 'shadow';
   const v = String(env.PLATFORM_SIGNALS ?? fallback).trim().toLowerCase();
   return v === 'off' || v === 'shadow' || v === 'file' ? v : 'off';
+}
+
+function securityKind(kind) { return kind === 'security' || kind === 'security_audit'; }
+
+// Enable only these two detectors while other signals remain in shadow.
+// The global off switch, staging default and kind allowlist still apply.
+function modeForKind(kind, env = process.env) {
+  const global = mode(env);
+  return global === 'shadow' && env.USERNODE_ENV !== 'staging' && securityKind(kind)
+    && String(env.PLATFORM_SIGNALS_SECURITY_AUDIT).toLowerCase() === 'on' ? 'file' : global;
 }
 
 /** The kinds allowed to file: null for every kind. */
@@ -259,7 +277,7 @@ function decide(row, { now, def, modeName, allowed, held = {}, capFull = false, 
   }
   if (row.state === 'clearing') {
     if (clearedFor < def.quietMs) return 'keep';
-    if (held.proposal || held.person) return 'keep';
+    if (held.proposal || held.person || held.sourceUnavailable) return 'keep';
     return 'close';
   }
   return 'keep';
@@ -267,6 +285,7 @@ function decide(row, { now, def, modeName, allowed, held = {}, capFull = false, 
 
 /** Pure: whether an open, filed row's body is worth rewriting. */
 function isMaterial(row) {
+  if (securityKind(row.kind)) return !!row.subject?.materialKey && row.subject.materialKey !== row.subject.publishedKey;
   const published = Number(row.published_occurrences) || 0;
   const now = Number(row.occurrences) || 0;
   return published > 0 && now >= published * MATERIAL_RATIO;
@@ -292,6 +311,8 @@ const RAISE_SQL = `
      SET last_seen_at = NOW(),
          occurrences = GREATEST(platform_signals.occurrences, COALESCE($8, platform_signals.occurrences)),
          subject = EXCLUDED.subject,
+         fixer = CASE WHEN EXCLUDED.kind IN ('security', 'security_audit') THEN EXCLUDED.fixer ELSE platform_signals.fixer END,
+         title = CASE WHEN EXCLUDED.kind IN ('security', 'security_audit') THEN EXCLUDED.title ELSE platform_signals.title END,
          evidence = EXCLUDED.evidence,
          evidence_private = EXCLUDED.evidence_private,
          evidence_at = NOW(),
@@ -475,9 +496,10 @@ async function fileRow(pool, config, row, deps) {
   }
   await pool.query(
     `UPDATE platform_signals
-        SET state = 'open', issue_number = $2, filed_at = NOW(), published_occurrences = occurrences, last_error = NULL
+        SET state = 'open', issue_number = $2, filed_at = NOW(), published_occurrences = occurrences, last_error = NULL,
+            subject = subject || $3::jsonb
       WHERE id = $1`,
-    [row.id, issueNumber]);
+    [row.id, issueNumber, JSON.stringify(publishedSubject(row))]);
   await handOff(pool, row, app, issueNumber, deps);
   log.info('platform-signals', reopen ? 'Reopened a signal request' : 'Filed a signal request', {
     kind: row.kind, fingerprint: row.fingerprint, issueNumber, fixer: row.fixer,
@@ -518,7 +540,15 @@ async function rewriteBody(pool, row, deps) {
     signal: row, kind: { ...KINDS[row.kind], fixer: row.fixer }, evidence: row.evidence, summary: row.subject?.summary, done: row.subject?.done,
   });
   await github.patchIssueBody(parsed.owner, parsed.repo, row.issue_number, body);
-  await pool.query('UPDATE platform_signals SET published_occurrences = occurrences WHERE id = $1', [row.id]);
+  await pool.query('UPDATE platform_signals SET published_occurrences = occurrences, subject = subject || $2::jsonb WHERE id = $1',
+    [row.id, JSON.stringify(publishedSubject(row))]);
+  if (securityKind(row.kind) && row.fixer === 'bot' && row.subject?.publishedFixer !== 'bot') {
+    await handOff(pool, row, { id: row.app_id, slug: row.app_slug }, row.issue_number, deps);
+  }
+}
+
+function publishedSubject(row) {
+  return securityKind(row.kind) ? { publishedKey: row.subject?.materialKey, publishedFixer: row.fixer } : {};
 }
 
 async function closeRow(pool, row, deps, { reason = 'cleared', comment = true } = {}) {
@@ -596,6 +626,12 @@ async function sweepLocked(pool, config, { deps, now, modeName }) {
   for (const row of rows) {
     const def = KINDS[row.kind];
     if (!def) continue;
+    // Unknown time cannot confirm resolution. A still-observed finding
+    // also breaks the quiet window if its refresh upsert failed above.
+    if (securityKind(row.kind) && (!ok.has(row.kind) || seen.has(row.fingerprint)) && row.state === 'clearing') {
+      await pool.query("UPDATE platform_signals SET state = 'open', cleared_at = NULL WHERE id = $1", [row.id]);
+      row.state = 'open';
+    }
     if (row.issue_number && row.issue_status === 'closed' && row.state !== 'pending') {
       await closeRow(pool, row, deps, { reason: 'closed', comment: false });
       out.closed += 1;
@@ -625,13 +661,14 @@ async function sweepLocked(pool, config, { deps, now, modeName }) {
     const def = KINDS[row.kind];
     if (!def) continue;
     try {
-      let held = { release };
+      let held = { release, sourceUnavailable: securityKind(row.kind) && !ok.has(row.kind) };
       if (row.state === 'clearing' && row.issue_number && row.app_id) {
         const { rows: [h] } = await pool.query(HELD_OPEN_SQL, [row.app_id, row.issue_number, PERSON_RECENT_MS]);
         held = { ...held, proposal: !!h?.proposal, person: !!h?.person };
       }
       const capFull = filedHour >= MAX_FILED_PER_HOUR || filedDay >= MAX_FILED_PER_DAY;
-      const what = decide(row, { now, def, modeName, allowed, held, capFull, budgetOk });
+      const rowMode = modeForKind(row.kind);
+      const what = decide(row, { now, def, modeName: rowMode, allowed, held, capFull, budgetOk });
       if (what === 'record') {
         await pool.query(`UPDATE platform_signals SET state = 'open' WHERE id = $1 AND state = 'pending'`, [row.id]);
       } else if (what === 'file') {
@@ -641,7 +678,7 @@ async function sweepLocked(pool, config, { deps, now, modeName }) {
       } else if (what === 'close') {
         await closeRow(pool, row, deps);
         out.closed += 1;
-      } else if (row.state === 'open' && row.issue_number && modeName === 'file' && isMaterial(row)) {
+      } else if (row.state === 'open' && row.issue_number && rowMode === 'file' && isMaterial(row)) {
         await rewriteBody(pool, row, deps);
         out.rewritten += 1;
       }
@@ -672,9 +709,8 @@ const FOR_TOPIC_SQL = `
 async function openForTopic(pool, { appId, topicKey, fullAdmin = false }) {
   if (mode() === 'off') return { signals: [] };
   const { rows } = await pool.query(FOR_TOPIC_SQL, [Number(appId), String(topicKey || '')]);
-  const filing = mode() === 'file';
   const signals = rows
-    .filter((r) => fullAdmin || (filing && r.issue_number))
+    .filter((r) => fullAdmin || (modeForKind(r.kind) === 'file' && r.issue_number))
     .map((r) => {
       const who = r.fixer === 'bot' && !botOn() ? 'person' : r.fixer;
       return {
@@ -759,6 +795,7 @@ module.exports = {
   REOPEN_MS,
   PUSH_STALE_MS,
   mode,
+  modeForKind,
   kindsAllowed,
   botOn,
   fingerprintOf,

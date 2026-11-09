@@ -41,6 +41,7 @@ const path = require('path');
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const inviteActivity = require('../services/invite-activity');
+const arrivalSource = require('../services/arrival-source');
 const journeyEvents = require('../services/journey-events');
 const log = require('../services/logger');
 const appAccess = require('../services/app-access');
@@ -224,7 +225,8 @@ function communityInviteRoutes(config) {
   const countOpen = (req, res, token, viewerId = null) => {
     const seenBefore = inviteActivity.countedBefore(req, token);
     const browser = inviteActivity.ensureBrowser(req, res);
-    void inviteActivity.noteOpened(pool, { token, viewerId, browser, seenBefore });
+    const source = inviteActivity.sourceFrom(req);
+    void inviteActivity.noteOpened(pool, { token, viewerId, browser, seenBefore, source });
   };
 
   // Anonymous: under /api/public/, so authMiddleware never resolves a user
@@ -451,6 +453,17 @@ function communityInviteRoutes(config) {
         // The page's two reads (the preview and, signed in, the standing)
         // may start together: both carry this browser, so it counts once.
         inviteActivity.ensureBrowser(req, res);
+        // Where they came from (#6540): the referring site's host only, and
+        // the link's own short tag. A reload, or a link inside Homeroom,
+        // names this same host and leaves the first visit's source alone.
+        const referrerHost = arrivalSource.hostOf(req.get('referer'));
+        const ownHost = arrivalSource.hostOf(req.headers.host || requestOrigin(req));
+        if (!referrerHost || referrerHost !== ownHost) {
+          inviteActivity.setSourceCookie(req, res, {
+            referrerHost: referrerHost || 'none',
+            via: arrivalSource.cleanVia(req.query.via),
+          });
+        }
       }
       const html = await fs.promises.readFile(INDEX_PATH, 'utf8');
       res.setHeader('Cache-Control', 'no-store');

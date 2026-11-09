@@ -56,6 +56,16 @@ test('every Journey route has a labelled demo payload with the real shape', asyn
   const mile = await (await fetch(`${base}/api/admin/journey/first-mile?admitted=2026-10-05&demo=1`)).json();
   assert.deepEqual(mile.people.map((p) => p.onboard && (p.onboard.shown ? `${p.onboard.done}/${p.onboard.total}` : 'no card')),
     ['3/5', '1/5', 'no card', null]);
+  // #6540: where the cohort came from, counted once each by the earlier way
+  // in, and each person's own two records.
+  assert.deepEqual(mile.sources, [
+    { way: 'invite', from: 'discord.com', people: 2 },
+    { way: 'invite', from: 'none', people: 1 },
+    { way: 'unknown', from: null, people: 1 },
+  ]);
+  assert.equal(mile.people[1].cameFrom.invite.referrerHost, 'discord.com');
+  assert.equal(mile.people[1].cameFrom.waitlist.referrerHost, 'none');
+  assert.equal((await (await fetch(`${base}/api/admin/journey/people/900102?demo=1`)).json()).cameFrom.invite.via, 'copied');
   const loops = await (await fetch(`${base}/api/admin/journey/loops?demo=1`)).json();
   assert.deepEqual(loops.change.atStep.hear_back, { status: 'coming' }, 'Hear back is coming in the demo too');
 

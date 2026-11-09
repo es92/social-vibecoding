@@ -362,7 +362,7 @@ test('both rubrics ask for a reason written to the person who did it, not an adm
 // A pool that answers by matching the query text. Deliberately not a SQL
 // engine: what these tests pin is the ORDER of operations and what ends up in
 // `inserted`, not Postgres's behaviour.
-function scriptedPool({ challenges = [], candidates = [], credited = [], feedback = [] } = {}) {
+function scriptedPool({ challenges = [], candidates = [], credited = [], feedback = [], ledgerNewer = false } = {}) {
   const inserted = [];
   const runs = [];
   const handle = async (sql, params) => {
@@ -381,6 +381,7 @@ function scriptedPool({ challenges = [], candidates = [], credited = [], feedbac
     }
     if (sql.includes('BEGIN') || sql.includes('COMMIT') || sql.includes('ROLLBACK')) return { rows: [] };
     if (sql.includes('MAX(snapshot_at)')) return { rows: [{ at: new Date(NOW) }] };
+    if (sql === scorer.LEDGER_NEWER_SQL) return { rows: [{ newer: ledgerNewer }] };
     return { rows: [] };
   };
   return {
@@ -546,8 +547,22 @@ test('the standings are left alone while nothing in the ledger is newer than the
   const pool = standingsPool({ at: NOW, fresh: NOW + 10 * MIN, newer: () => false });
   assert.equal(await scorer.maybeAggregate(pool, { hours: 6, now: NOW + HOUR }), null);
   assert.equal(calls.length, 0);
-  assert.equal(pool.seen[1].params[0].getTime(), NOW + 10 * MIN,
-    'compared with when the snapshot was last WRITTEN, or a refresh would repeat on every check');
+  assert.equal(pool.seen[1].params[0].getTime(), NOW + 10 * MIN - scorer.REFRESH_OVERLAP_MS,
+    'compared with a minute behind when the snapshot was last WRITTEN, or a refresh would repeat on every check');
+}));
+
+test('a credit that committed during the last rebuild is still newer than the snapshot', () => withBuilder(async (calls) => {
+  // The builder reads the sums, then upserts with `updated_at = NOW()`. A
+  // credit that committed in that window is missing from the snapshot but is
+  // older than the new `fresh`, so a comparison against `fresh` alone never
+  // saw it and it waited for the next six-hour generation (#6499).
+  const fresh = NOW + 10 * MIN;
+  const creditAt = fresh - 30_000;
+  const pool = standingsPool({ at: NOW, fresh, newer: (cutoff) => creditAt > cutoff.getTime() });
+  assert.deepEqual(await scorer.maybeAggregate(pool, { hours: 6, now: NOW + HOUR }),
+    { events: 1, refreshed: true });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].now.getTime(), NOW, 'still a rewrite in place, not a new chart point');
 }));
 
 test('a newer credit refreshes the latest snapshot in place, not a new chart point', () => withBuilder(async (calls) => {
@@ -565,6 +580,27 @@ test('a snapshot older than the cadence gets a new one, as before', () => withBu
   const none = standingsPool({ at: null, newer: () => false });
   assert.deepEqual(await scorer.maybeAggregate(none, { hours: 6, now: NOW }), { events: 1 }, 'and with no snapshot at all');
   assert.equal(await scorer.maybeAggregate(none, { hours: 0, now: NOW }), null, 'hours 0 leaves it to the admin button');
+}));
+
+test('a pass that credits points refreshes the standings even when the scheduled check is not due', () => withBuilder(async (calls) => {
+  // #6499: credits were written on a beat that skipped the standings, so a
+  // place did not move until a later batch. The same pass now rebuilds them.
+  const pool = scriptedPool({ challenges: [challengeRow()], candidates: appActivityRows, ledgerNewer: true });
+  const summary = await scorer.runOnce(pool, { trigger: 'schedule', now: NOW, aggregate: false });
+
+  assert.equal(summary.credits, 3);
+  assert.equal(calls.length, 1, 'the pass that wrote the credits also rebuilt the standings');
+  assert.equal(calls[0].now.getTime(), NOW, 'rewritten at the latest snapshot_at: no new chart point');
+  assert.deepEqual(summary.aggregated, { events: 1, refreshed: true });
+  assert.equal(summary.aggregateChecked, true);
+}));
+
+test('a pass with no credits leaves the standings to the scheduled check', () => withBuilder(async (calls) => {
+  const pool = scriptedPool({ challenges: [challengeRow()], candidates: [], ledgerNewer: true });
+  const summary = await scorer.runOnce(pool, { trigger: 'schedule', now: NOW, aggregate: false });
+  assert.equal(summary.credits, 0);
+  assert.equal(calls.length, 0);
+  assert.equal(summary.aggregateChecked, undefined);
 }));
 
 // ─── Dates ─────────────────────────────────────────────────────────────
@@ -822,6 +858,7 @@ test('a run takes the SQL-only rules before the graded ones, longest-waiting fir
 // A pool for the cadence tests: several rules at once, the stamps recorded.
 function cadencePool({
   ruleRows = [], dueRows = [], candidates = [], feedback = [], lastScheduledRun = null, locked = false,
+  ledgerNewer = false,
 } = {}) {
   const pool = {
     inserted: [], runStarts: [], runEnds: [], stamps: [], cutShort: [], seen: [],
@@ -842,6 +879,7 @@ function cadencePool({
     if (sql.includes('UPDATE challenge_scorer_runs')) { pool.runEnds.push(params); return { rows: [] }; }
     if (sql.includes('INSERT INTO user_activities')) { pool.inserted.push(params); return { rows: [{ id: pool.inserted.length }] }; }
     if (sql.includes('MAX(snapshot_at)')) return { rows: [{ at: new Date(NOW) }] };
+    if (sql === scorer.LEDGER_NEWER_SQL) return { rows: [{ newer: ledgerNewer }] };
     return { rows: [] };
   };
   pool.query = handle;
@@ -957,6 +995,24 @@ test('a beat runs exactly the due rules', async () => {
   assert.equal(pool.runStarts.length, 1);
   assert.deepEqual(pool.stamps.map((s) => s.id), [1], 'the ten-minute rule was scored two minutes ago and sits this one out');
 });
+
+test('a credit-forced refresh restarts the scheduled check clock', () => withBuilder(async (calls) => {
+  // The beat was not due a scheduled check, but it wrote credits, so it
+  // rebuilt the standings. That rebuild IS the check: the next one is a full
+  // interval away rather than on the very next beat.
+  const pool = cadencePool({
+    ruleRows: [challengeRow()],
+    candidates: appActivityRows,
+    dueRows: [{ id: 1, measure: 'TRY_APPS', interval_minutes: null, last_scored_at: new Date(NOW - 20 * MIN) }],
+    ledgerNewer: true,
+  });
+  const result = await scorer.tick(pool,
+    { challengeScorer: { intervalMinutes: 10 } },
+    { now: NOW, lastAggregateCheckAt: NOW - MIN });
+  assert.equal(result.credits, 3);
+  assert.equal(calls.length, 1);
+  assert.equal(result.aggregateCheckedAt, NOW);
+}));
 
 test('a quiet stretch still gets one run per default interval', async () => {
   // No rule is due — or there are no rules at all — and the service still has

@@ -112,8 +112,9 @@ test('each kind is held to the limit of the field it feeds', () => {
   assert.equal(uploads.maxBytesFor('plan'), require('../src/services/request-specs').MAX_SPEC_HTML_CHARS * 4);
   assert.equal(uploads.maxBytesFor('video'), 50 * 1024 * 1024);
   assert.equal(uploads.maxBytesFor('screenshot'), feedback.MAX_SCREENSHOT_BYTES);
+  assert.equal(uploads.maxBytesFor('design'), require('../src/services/attachments').MAX_HTML_BYTES);
   assert.equal(uploads.maxBytesFor('zip'), 0);
-  assert.deepEqual([...uploads.KINDS], ['plan', 'video', 'screenshot']);
+  assert.deepEqual([...uploads.KINDS], ['plan', 'video', 'screenshot', 'design']);
 });
 
 // ── 2. The route ───────────────────────────────────────────────────────
@@ -280,6 +281,18 @@ test('checkFile holds a plan to post_spec\'s own rules', () => {
   assert.equal(out.code, 'spec_too_long');
   assert.ok(out.limitChars > 0);
   assert.equal(checkFile('plan', Buffer.from('# Plan\n\nWords.')).contentType, 'text/markdown');
+});
+
+test('#6534: a design upload is one HTML file, under the chat composer\'s own limit', () => {
+  const ok = checkFile('design', Buffer.from('<!doctype html><html><body><p>Before and after</p></body></html>'));
+  assert.equal(ok.ok, true);
+  assert.equal(ok.contentType, 'text/html');
+  const png = checkFile('design', Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.alloc(40, 1)]));
+  assert.equal(png.ok, false);
+  assert.equal(png.code, 'invalid_design');
+  const over = checkFile('design', Buffer.alloc(require('../src/services/attachments').MAX_HTML_BYTES + 10, 0x61));
+  assert.equal(over.ok, false);
+  assert.equal(over.code, 'upload_too_large');
 });
 
 test('the route is rate-limited, closed on a staging preview, and mounted before the parsers and auth', async () => {

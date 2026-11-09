@@ -347,8 +347,68 @@ test('preview machine against the full PostgreSQL schema', { timeout: 120000 }, 
     assert.equal((await row(s.id)).consecutive_check_failures, 0);
   });
 
-  await t.test('P5 a run that cannot say is an error, never a verdict, and adds no history', async () => {
-    const s = await proposal(await app(), { status: 'active', bot: true });
+  await t.test('P-build: a failed preview build keeps its own first error, and the sweep stops rebuilding the same head (#6536)', async () => {
+    const s = await proposal(await app(), { pin: SHA('1'), bot: true });
+    const BUILD = {
+      ok: false,
+      detail: 'The preview build failed: frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+      buildError: {
+        line: 'frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+        excerpt: 'vite v5.4.21 building for production...\n✗ Build failed in 1.2s\nerror during build:\nfrontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+      },
+    };
+    work.answer.set(WORK.prepare, () => BUILD);
+    await submit(s, SHA('1'));
+    await settle();
+
+    let r = await row(s.id);
+    assert.equal(r.check_state, 'error', 'the merge gate is unchanged');
+    assert.match(r.check_error_detail, /^The preview build failed: .*index\.tsx:104:1: ERROR: Unexpected "\*\*"/);
+    assert.equal(r.test_results.length, 1, 'the build error is a check row');
+    assert.equal(r.test_results[0].previewBuild, true);
+    assert.match(r.test_results[0].buildExcerpt, /index\.tsx:104:1/);
+    // get_change/get_proposal read the same snapshot: the sentence as the
+    // error, the row among the failures, its excerpt in details.
+    const checks = require('../src/services/mcp-tools').shapeChecks(r);
+    assert.match(checks.error, /The preview build failed: .*index\.tsx:104/);
+    assert.equal(checks.failures.length, 1);
+    assert.match(checks.failures[0].name, /Preview build/);
+    assert.match(checks.failures[0].reason, /The preview build failed/);
+    assert.match(checks.failures[0].details[0].excerpt, /index\.tsx:104:1/);
+
+    // The first failure is retried as today; the second, identical one sets
+    // no retry clock.
+    assert.ok((await instance(s)).deadline_at, 'the first failure is retried');
+    await due(s);
+    await rt.fireTimers();
+    await settle();
+    const second = await instance(s);
+    assert.equal(second.data.buildBroken.count, 2);
+    assert.equal(second.deadline_at, null, 'no automatic retry after the same build error twice');
+
+    // The sweep's own event does not rebuild it.
+    const before = (await workOf(s, WORK.prepare)).length;
+    await send(s, 'RetryDue', {}, { kind: 'system', name: 'stuck-sweep' });
+    await settle();
+    assert.equal((await workOf(s, WORK.prepare)).length, before, 'the sweep leaves the deterministically broken head alone');
+
+    // A person's Re-run still builds it.
+    await send(s, 'RecheckRequested', { reason: 'manual' }, { kind: 'route' });
+    await settle();
+    assert.equal((await workOf(s, WORK.prepare)).length, before + 1, 'a person\'s re-run builds the head anyway');
+
+    // A new head builds as usual.
+    work.answer.set(WORK.prepare, prepareOk);
+    await pool.query('UPDATE chat_sessions SET reviewed_head_sha = $2 WHERE id = $1', [s.id, SHA('2')]);
+    await submit(s, SHA('2'));
+    await settle();
+    const moved = await instance(s);
+    assert.equal(moved.state, 'settled');
+    assert.equal(moved.data.buildBroken, null, 'a new head clears the broken build');
+    assert.equal((await row(s.id)).staging_commit_sha, SHA('2'));
+  });
+
+  await t.test('P5 a run that cannot say is an error, never a verdict, and adds no history', async () => {    const s = await proposal(await app(), { status: 'active', bot: true });
     work.answer.set(WORK.run, { outcome: 'blocked', reason: 'The capture Job output could not be read' });
     await submit(s, SHA('e'));
     await settle();

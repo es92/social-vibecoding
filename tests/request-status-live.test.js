@@ -126,6 +126,40 @@ test('#6390: someone else\'s bot gets the greyed reading button, never Ask', () 
   assert.equal(status.action.disabled, true);
 });
 
+test('#6532: a ready build waiting its turn says it will build next, not that it is building', () => {
+  const { AppView } = makeAppView();
+  const bot = { what: 'building', since: '2026-11-09T10:00:00Z', askedBy: 'me', mine: true };
+  const leadFor = (track) => plain(AppView._requestStatusView(baseIssue({ bot, track }))).lead;
+  assert.equal(
+    leadFor({ busy: false, work: { stage: 'building', line: { code: 'queued', place: 1 } } }),
+    'Homeroom bot will build this next.',
+    'next in line says so, as the progress card does',
+  );
+  assert.equal(
+    leadFor({ busy: false, work: { stage: 'building', line: { code: 'held_builds' } } }),
+    'Homeroom bot will start when one of the changes it is building here is done.',
+  );
+  assert.equal(
+    leadFor({ busy: false, work: { stage: 'building', line: { code: 'held_waiting' } } }),
+    'Homeroom bot will start when one of its changes here is voted in or closed.',
+  );
+  assert.equal(
+    leadFor({ busy: true, work: { stage: 'building', line: { code: 'queued', place: 1 } } }),
+    'Homeroom bot is building this.',
+    'a build that has really started still says so',
+  );
+  assert.equal(
+    leadFor({ busy: false, work: { stage: 'building', line: { code: 'fixing' } } }),
+    'Homeroom bot is building this.',
+    'a fix in progress is never a queued build',
+  );
+  assert.equal(
+    leadFor({ busy: false, work: { stage: 'building', line: { code: 'claimed', by: 'maya' } } }),
+    'Homeroom bot is building this.',
+    "a person's claim keeps today's wording",
+  );
+});
+
 test('#6390: a work event re-reads the request open beside the bot tab', async () => {
   const { AppView, sandbox, fetches, renders, listeners } = makeAppView();
   const stale = baseIssue();

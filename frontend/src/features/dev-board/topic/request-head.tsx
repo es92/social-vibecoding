@@ -541,7 +541,17 @@ export function RequestHead({ r }: { r: RequestView }): ReactNode {
   // section held open while the thread loads counts the same way: its own
   // outline already says where things stand.
   const working = layout.changes.length > 0 || (!!layout.close && layout.close.status === 'open') || holding;
-  const pill = requestPill(layout, r.status.closed ? 'closed' : track ? track.work.stage : null, (id) => translate(id));
+  // #6532: a build waiting its turn reads Ready to build, as the progress
+  // card under the bar does, never Being built.
+  const stand = useMemo(() => {
+    if (r.status.closed) return 'closed';
+    if (!track) return null;
+    const code = track.work.line?.code;
+    if (track.work.stage === 'building' && !track.busy
+      && (code === 'queued' || code === 'held_builds' || code === 'held_waiting')) return 'ready_to_build';
+    return track.work.stage;
+  }, [track, r.status.closed]);
+  const pill = requestPill(layout, stand, (id) => translate(id));
   // A plan a change in the thread was built from goes with that change.
   const { plans, unbuilt } = useMemo(() => plansByChange(specs, layout.changes), [specs, layout.changes]);
   // 1 Nov 2026 (one page per thread): its changes' replies are in its one

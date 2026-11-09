@@ -6511,14 +6511,19 @@ const AppView = {
       lead = who === 'you' ? PlatformI18n.t('changes:request.status.lead.reviewYours')
         : who ? PlatformI18n.t('changes:request.status.lead.reviewNamed', { username: who }) : PlatformI18n.t('changes:request.status.lead.review');
     } else if (st.key === 'bot') {
+      // #6532: `issue.bot` says `building` while the stored track can still say
+      // the build waits its turn (`busy` false). Say what the progress card
+      // under this sentence says, never both.
+      const waitingBuild = AppView._botWaitingBuildLead(issue.track);
       // #6156: held for its turn among the project's builds (`turn`), not for a vote.
       lead = bot && bot.held ? (bot.turn ? PlatformI18n.t('changes:request.status.lead.botHeldTurn') : PlatformI18n.t('changes:request.status.lead.botHeld'))
         : bot && bot.plan
           // B06 (audit 2 Nov 2026): the person it waits for reads "you", not their own @name.
           ? (bot.mine ? PlatformI18n.t('changes:request.status.lead.botPlanYours')
             : bot.askedBy ? PlatformI18n.t('changes:request.status.lead.botPlanWaiting', { username: bot.askedBy }) : PlatformI18n.t('changes:request.status.lead.botPlanWaitingUnnamed'))
-          : bot && bot.what === 'queued' ? PlatformI18n.t('changes:request.status.lead.botQueued')
-            : AppView._botWorkReading(bot) ? PlatformI18n.t('changes:request.status.lead.botReading') : PlatformI18n.t('changes:request.status.lead.botBuilding');
+          : waitingBuild ? waitingBuild
+            : bot && bot.what === 'queued' ? PlatformI18n.t('changes:request.status.lead.botQueued')
+              : AppView._botWorkReading(bot) ? PlatformI18n.t('changes:request.status.lead.botReading') : PlatformI18n.t('changes:request.status.lead.botBuilding');
     } else if (st.key === 'auto_solving') lead = PlatformI18n.t('changes:request.status.lead.autoSolving');
     else if (st.key === 'answer_needed') lead = PlatformI18n.t('changes:request.status.lead.answerNeeded');
     else if (st.key === 'draft_ready') lead = PlatformI18n.t('changes:request.status.lead.draftReady');
@@ -6683,6 +6688,24 @@ const AppView = {
     if (id) return PlatformI18n.t(id);
     const date = track.held && track.held.until ? AppView._workDateText(Date.parse(track.held.until)) : '';
     return date ? PlatformI18n.t('changes:request.status.lead.botOnHoldUntil', { date }) : null;
+  },
+
+  // #6532: Homeroom bot's build for a request can wait its turn while
+  // `issue.bot` already says `building` (homeroom-bot-progress.js
+  // botWorkByIssue sets it for a ready live run with live_build_waiting_at).
+  // The stored track says how it really stands — `busy` false with a queued
+  // or held line — so the status card says what the progress card under it
+  // says. Null when the track is not a build waiting its turn.
+  _botWaitingBuildLead(track) {
+    const work = track && track.work;
+    const code = work && work.line && work.line.code;
+    if (!work || track.busy !== false) return null;
+    if (work.stage !== 'building' && work.stage !== 'reading') return null;
+    if (code === 'queued') return PlatformI18n.t('changes:request.status.lead.botQueued');
+    if (code === 'held_builds') return PlatformI18n.t('changes:request.status.lead.botHeldTurn');
+    if (code === 'held_waiting') return PlatformI18n.t('changes:request.status.lead.botHeld');
+    if (code === 'on_hold') return AppView._requestHoldLead(track);
+    return null;
   },
 
   // #6399: the sentence for a request Homeroom bot handed back to the viewer
@@ -7814,10 +7837,13 @@ const AppView = {
     // A change still being built or closed has no pill worth repeating: its
     // card pill would read as a bare tally, and the Votes card under the
     // title already says where those stand. The card's own state wins, so
-    // the kind (proposal or gov) and majority stay the card's.
+    // the kind (proposal or gov) and majority stay the card's — EXCEPT once
+    // the change merged or is merging: a card drawn before the merge carries
+    // the open-vote pill, so the row's current status decides then (#6490).
+    const settled = item.status === 'merged' || item.status === 'merging';
     const statusState = ['active', 'paused', 'closed'].includes(item.status)
       ? null
-      : ((card && card.pill && card.pill.state) || AppView.statusPillState(item, kind === 'gov' ? { kind: 'gov' } : {}) || null);
+      : ((!settled && card && card.pill && card.pill.state) || AppView.statusPillState(item, kind === 'gov' ? { kind: 'gov' } : {}) || null);
     return {
       number: n || null,
       category,
@@ -7954,7 +7980,12 @@ const AppView = {
         note: [PlatformI18n.t('changes:page.votes.note.closed')],
       };
     }
-    const pill = (card && card.pill && card.pill.state) || AppView.statusPillState(item, {}) || {};
+    // #6490: a card drawn before the merge keeps the open-vote pill in its
+    // state. While the change merged or is merging the row's own status is
+    // what the card says; an open row still prefers the card's, so its
+    // majority and kind stay the same.
+    const settled = item.status === 'merged' || item.status === 'merging';
+    const pill = ((!settled && card && card.pill && card.pill.state) || AppView.statusPillState(item, {}) || {});
     const yes = Number(pill.yes) || 0;
     const maj = Math.max(1, Number(pill.majority) || 1);
     const roster = AppView._voteRoster[item.id];
@@ -7972,6 +8003,24 @@ const AppView = {
     if (force && item.status !== 'merged') return AppView._forceVotesView(item, force, yes, maj);
     const note = [];
     if (updateComing) note.push(PlatformI18n.t('changes:page.votes.note.updateComing'));
+    // #6531: a conflicting promoted change says what its conflict means for
+    // the vote, in the same words as the Homeroom bot tab's row. A conflict
+    // only its author can move keeps the integration line's own wording.
+    // #6546: approved, and GitHub's required checks are what hold its merge.
+    {
+      const held = item.status === 'promoted' && item.integration && Array.isArray(item.integration.blockReasons)
+        ? item.integration.blockReasons : [];
+      if (held.indexOf('github_checks') !== -1) note.push(PlatformI18n.t('changes:page.votes.note.githubChecks'));
+      else if (held.indexOf('github_checks_failing') !== -1) note.push(PlatformI18n.t('changes:page.votes.note.githubChecksFailing'));
+    }
+    if (!updateComing && item.status === 'promoted' && item.integration_merges_clean === false) {
+      const blocked = item.integration && Array.isArray(item.integration.blockReasons) ? item.integration.blockReasons : [];
+      const authors = ['unresolvable', 'fork_head', 'checks_failing', 'checks_error'];
+      if (blocked.indexOf('awaiting_approval') !== -1) note.push(PlatformI18n.t('changes:page.votes.note.conflictOnYes'));
+      else if (blocked.indexOf('integrating') !== -1 || !blocked.some((r) => authors.indexOf(r) !== -1)) {
+        note.push(PlatformI18n.t('changes:page.votes.note.syncing'));
+      }
+    }
     if (forceDropped) {
       const by = forceDropped.by || PlatformI18n.t('changes:page.votes.note.adminMergeNoName');
       const head = forceDropped.head ? String(forceDropped.head).slice(0, 7) : null;
@@ -8033,8 +8082,11 @@ const AppView = {
       if (approvers) note.push(PlatformI18n.t('changes:page.votes.note.anyApprover', { count: approvers }));
       else if (members > 1) note.push(PlatformI18n.t('changes:page.votes.note.anyMember', { count: members }));
     }
-    // A countdown or a contest says what happens next, in a few words.
-    if (pill.key === 'merge_countdown') note.push(PlatformI18n.t('changes:page.votes.note.mergeCountdown'));
+    // A countdown or a contest says what happens next, in a few words. Once
+    // the vote is decided nobody can object from this card, so it promises
+    // nothing of the sort (#6505).
+    if (pill.key === 'merge_countdown') note.push(PlatformI18n.t(AppView._votesDecided(item)
+      ? 'changes:page.votes.note.mergeCountdownDecided' : 'changes:page.votes.note.mergeCountdown'));
     else if (pill.key === 'reject_countdown') note.push(PlatformI18n.t('changes:page.votes.note.rejectCountdown'));
     else if (pill.key === 'contested') note.push(PlatformI18n.t('changes:page.votes.note.contested'));
     const earlierYes = ready && Array.isArray(ready.earlierYes) ? ready.earlierYes : [];
@@ -10434,21 +10486,49 @@ const AppView = {
   // Waiting for approval — and, while the board they belong to is NOT
   // showing live (the board's own burst refresh covers that), re-reads its
   // proposals + merged parts in the background, so the row is in Done when
-  // the board next paints. Writes caches only, and never repaints: an open
-  // proposal page is undisturbed (_topicRowFor also looks in _merged, so it
-  // still finds the row there after the partial load moves it).
+  // the board next paints. The open change page and topic head are told of
+  // the patch too, so their pill flips without a reload (#6490).
   //
   // `appSlug` decides whose lists these are (_devDataSlug names the app the
   // last load was made for), so a merge on one app never touches another's
   // caches, and a board that has not loaded whole once does nothing here —
   // its own whole load on open is already correct.
-  noteSessionMerged(sessionId, appSlug) {
+  //
+  // #6490: the merge reaches EVERY cached copy of the row, not just the open
+  // list's. A viewer's own card (_mySessions), a shared card
+  // (_sharedSessions), a merged column's row and the change open on its page
+  // (_topicProposal) otherwise kept drawing the open-vote pill. The change
+  // page and the request page's section are told too, so their pill re-derives
+  // from the patched status. `live` (a vote_update once production runs it)
+  // fills `live_at`, which statusPillState reads; without it a freshly merged
+  // row must carry `live_at: null` or it would read ✓ Live too early.
+  noteSessionMerged(sessionId, appSlug, opts) {
     if (!appSlug || AppView._devDataSlug !== appSlug) return false;
     const id = Number(sessionId);
     if (!Number.isFinite(id)) return false;
-    const row = (AppView._proposals || []).find((p) => p && Number(p.id) === id);
-    if (row && (row.status === 'promoted' || row.status === 'merging')) {
-      row.status = 'merged';
+    const live = !!(opts && opts.live);
+    // The lists _topicRowFor reads. The open topic row is often the very
+    // object in _proposals, so patch each row object once.
+    const rows = [];
+    for (const list of [AppView._proposals, AppView._mySessions, AppView._sharedSessions, AppView._merged]) {
+      const row = (list || []).find((p) => p && Number(p.id) === id);
+      if (row && !rows.includes(row)) rows.push(row);
+    }
+    if (AppView._topicProposal && Number(AppView._topicProposal.id) === id
+        && !rows.includes(AppView._topicProposal)) rows.push(AppView._topicProposal);
+    let patch = null;
+    for (const row of rows) {
+      const moving = row.status === 'promoted' || row.status === 'merging';
+      // A second merged event is a no-op, except that `live` fills `live_at`
+      // on a row that merged before production ran it.
+      if (!moving && !(live && row.status === 'merged')) continue;
+      const kept = row.live_at !== null && row.live_at !== undefined;
+      patch = { status: 'merged', live_at: live ? (kept ? row.live_at : new Date().toISOString()) : null };
+      Object.assign(row, patch);
+    }
+    if (patch) {
+      AppView._forwardChangePatch(id, patch);
+      AppView._repaintTopicIfShowing(id);
     }
     if (!AppView._devDataReady) return false;
     if (!AppView.appData || AppView.appData.slug !== appSlug) return false;
@@ -18464,6 +18544,9 @@ const AppView = {
     if (!pr || pr.status !== 'promoted') return [];
     // A project's first version is not put to a vote (D1): no Yes or No.
     if (pr.first_version === true) return [];
+    // #6505: the yes votes its rule asks for are in, so the vote is decided
+    // and the button takes no further part in it.
+    if (AppView._votesDecided(pr)) return [];
     // #2038: the vote carries the approval EPOCH the card was rendered with,
     // not the commit. A commit changes whenever the platform brings the
     // proposal up to date with main, and comparing commits made every one of
@@ -18510,6 +18593,23 @@ const AppView = {
         act: { fn: 'castVote', args: [pr.id, 'no', ...rev] },
       },
     ];
+  },
+
+  // #6505: the vote is DECIDED, so there is nothing left to press. True once
+  // the yes votes its rule asks for are in (the pill's own tally, which is
+  // already the approvals-mode n) and the change is not waiting on another
+  // member's Yes. A change counting down to go live is decided while the
+  // clock runs; one being set aside or contested is not, because a vote
+  // there can still change how it ends. A leading change below its majority
+  // (lazyLead) keeps its buttons too.
+  //
+  // Only the controls this reads go: the server's vote rules are unchanged.
+  _votesDecided(pr) {
+    if (!pr || pr.status !== 'promoted' || pr.first_version === true) return false;
+    const st = AppView.statusPillState(pr);
+    if (!st || st.key === 'reject_countdown' || st.key === 'contested') return false;
+    if (!(Number(st.yes) >= Math.max(1, Number(st.majority) || 1))) return false;
+    return !AppView._awaitingOtherMember(pr);
   },
 
   // The Needs-you card's "your yes puts it live" (and the end card's "Your
@@ -25364,6 +25464,26 @@ const AppView = {
         waiting: true,
       });
     }
+    // #6546: GitHub's required checks held it back: still running, or failed
+    // and being run again on today's main (amber, Homeroom acts), or failed
+    // again after that (its author's to fix).
+    if (served.includes('github_checks')) {
+      out.push({
+        key: 'github_checks',
+        label: PlatformI18n.t('changes:badge.reason.githubChecks.label'),
+        detail: heldSoon
+          ? PlatformI18n.t('changes:badge.reason.githubChecks.detailSoon')
+          : PlatformI18n.t('changes:badge.reason.githubChecks.detail', { time: heldTime }),
+        waiting: true,
+      });
+    }
+    if (served.includes('github_checks_failing')) {
+      out.push({
+        key: 'github_checks_failing',
+        label: PlatformI18n.t('changes:badge.reason.githubChecksFailing.label'),
+        detail: PlatformI18n.t('changes:badge.reason.githubChecksFailing.detail'),
+      });
+    }
     // The APP's merges are paused by a red main (services/main-watch.js).
     // Not the proposal's fault and not in any column of its own: the row's
     // requirements ledger carries the main-health step live (services/
@@ -28216,10 +28336,13 @@ const AppView = {
   // started after the server answered has landed.
   _pendingVotes: new Map(),
   // The optimistic change to one cached row: the viewer's side and the raw
-  // counts. `qualified_yes_count` is left to the server — whether this voter
-  // qualifies is the invited-approver roster's call, not the client's. A
-  // null vote is a vote taken back (retractVote): the side it was on loses
-  // one and nothing gains.
+  // counts. A vote taken back also lowers the qualified count of its own side
+  // when that vote counted (#6477: every screen draws `qualified_yes_count`,
+  // so leaving it to the server kept the figure where it was until a reload);
+  // casting still leaves the qualified counts to the server, because whether
+  // this voter qualifies is the invited-approver roster's call. A null vote is
+  // a vote taken back (retractVote): the side it was on loses one and nothing
+  // gains.
   _applyVoteToRow(row, vote) {
     if (!row || row.my_vote === vote) return;
     if (vote == null && row.my_vote == null) return;
@@ -28227,9 +28350,16 @@ const AppView = {
       if (row[key] == null) return;
       row[key] = Math.max(0, (parseInt(row[key], 10) || 0) + by);
     };
+    const counted = row.my_vote_uncounted !== true && row.my_vote_advisory !== true;
     if (row.my_vote === 'yes') bump('yes_count', -1);
     if (row.my_vote === 'no') bump('no_count', -1);
     if (vote === 'yes' || vote === 'no') bump(vote === 'yes' ? 'yes_count' : 'no_count', 1);
+    // #6477: a counted vote taken back lowers the figure every screen draws,
+    // on the spot. An uncounted or advisory one never raised it.
+    if (vote == null && counted) {
+      if (row.my_vote === 'yes') bump('qualified_yes_count', -1);
+      if (row.my_vote === 'no') bump('qualified_no_count', -1);
+    }
     row.my_vote = vote == null ? null : vote;
   },
   _overlayPendingVote(row) {
@@ -28660,10 +28790,10 @@ const AppView = {
       ? AppView.voteState.bySession[String(sessionId)] : null;
     const targets = [];
     if (pr && pr.my_vote) {
-      targets.push({ row: pr, prev: { my_vote: pr.my_vote, yes_count: pr.yes_count, no_count: pr.no_count } });
+      targets.push({ row: pr, prev: { my_vote: pr.my_vote, yes_count: pr.yes_count, no_count: pr.no_count, qualified_yes_count: pr.qualified_yes_count, qualified_no_count: pr.qualified_no_count } });
     }
     if (live && live !== pr && live.my_vote) {
-      targets.push({ row: live, prev: { my_vote: live.my_vote, yes_count: live.yes_count, no_count: live.no_count } });
+      targets.push({ row: live, prev: { my_vote: live.my_vote, yes_count: live.yes_count, no_count: live.no_count, qualified_yes_count: live.qualified_yes_count, qualified_no_count: live.qualified_no_count } });
     }
     // The side being taken back, for the "Sending…" mark every Vote button
     // for this change reads (#3984), whichever surface it is on.

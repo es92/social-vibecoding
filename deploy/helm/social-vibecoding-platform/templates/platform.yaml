@@ -277,6 +277,7 @@ the chart's context plus processRole: "" (all: serves and stands for leader),
             - {name: PLATFORM_SIGNALS, value: {{ .Values.config.platformSignals.mode | default "shadow" | quote }}}
             - {name: PLATFORM_SIGNALS_KINDS, value: {{ .Values.config.platformSignals.kinds | default "" | quote }}}
             - {name: PLATFORM_SIGNALS_BOT, value: {{ .Values.config.platformSignals.bot | default "on" | quote }}}
+            - {name: PLATFORM_SIGNALS_SECURITY_AUDIT, value: {{ .Values.config.platformSignals.securityAudit | default "off" | quote }}}
             - {name: WORKER_CPUS, value: {{ .Values.config.workerCpus | quote }}}
             - {name: CAPTURE_MEMORY, value: {{ .Values.config.captureMemory | quote }}}
             - {name: CAPTURE_CPUS, value: {{ .Values.config.captureCpus | quote }}}

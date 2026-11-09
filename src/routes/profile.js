@@ -212,6 +212,38 @@ const SUMMARY_ACTIVITY_DAYS_SQL = `
    GROUP BY days.day
    ORDER BY days.day`;
 
+// The week's accomplishments (#6464), over the same seven UTC days the two
+// reads above count: the viewer's own changes that went live in the window.
+// `live_at` is what makes a merge visible to people, exactly as the merged
+// stat and the contributions list count it; a headless auto session is not
+// something a person authored.
+const SUMMARY_WEEK_MERGED_SQL = `
+  WITH since AS (
+    SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - 6 AS day
+  )
+  SELECT COUNT(*)::int AS merged
+    FROM chat_sessions cs, since
+   WHERE cs.user_id = $1 AND cs.is_headless = FALSE
+     AND cs.status = 'merged' AND cs.live_at IS NOT NULL
+     AND cs.merged_at >= (since.day::timestamp AT TIME ZONE 'UTC')`;
+
+// The apps those live changes were in, a distinct name per app, the most
+// recently merged first. Capped like the contributions list so one busy week
+// cannot turn the share card into an unbounded list.
+const SUMMARY_WEEK_APPS_SQL = `
+  WITH since AS (
+    SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - 6 AS day
+  )
+  SELECT a.slug, a.name
+    FROM chat_sessions cs
+    JOIN apps a ON a.id = cs.app_id, since
+   WHERE cs.user_id = $1 AND cs.is_headless = FALSE
+     AND cs.status = 'merged' AND cs.live_at IS NOT NULL
+     AND cs.merged_at >= (since.day::timestamp AT TIME ZONE 'UTC')
+   GROUP BY a.slug, a.name
+   ORDER BY MAX(cs.merged_at) DESC
+   LIMIT 10`;
+
 // Apps opened or used: an open is an event, and events are staging:private,
 // so a preview's clone still counts the apps its app_activity rows name.
 const SUMMARY_ACTIVITY_APPS_SQL = `
@@ -264,9 +296,22 @@ function shapeContribution(r) {
   };
 }
 
+// Pure (exported for tests): the week's merged read, its app rows and the
+// challenges completed in the window → the card's `week`.
+function shapeWeek(mergedRow, appRows, challengesDone) {
+  return {
+    merged: Number(mergedRow && mergedRow.merged) || 0,
+    apps: (appRows || [])
+      .filter((row) => row && row.slug)
+      .slice(0, 10)
+      .map((row) => ({ slug: String(row.slug), name: row.name ? String(row.name) : String(row.slug) })),
+    challengesDone: Number(challengesDone) || 0,
+  };
+}
+
 // Pure (exported for tests): the three counts, the contributions and the
 // challenge totals → the response body.
-function shapeSummary({ counts, contributions, challenges, activity }) {
+function shapeSummary({ counts, contributions, challenges, activity, week }) {
   const c = counts || {};
   return {
     merged: Number(c.merged) || 0,
@@ -284,6 +329,7 @@ function shapeSummary({ counts, contributions, challenges, activity }) {
     },
     contributions: (contributions || []).map(shapeContribution),
     ...(activity ? { activity } : {}),
+    ...(week ? { week } : {}),
   };
 }
 
@@ -312,6 +358,13 @@ function withDemoSummary(summary, selfApp, now = Date.now()) {
     proposalsTotal: Math.max(summary.proposalsTotal, contributions.length),
     kudos: Math.max(summary.kudos, contributions.reduce((n, row) => n + row.kudos, 0)),
     contributions,
+    // One demo row was merged today (its `days` is 0), so the week's own
+    // figures show something to share. The challenges stay real.
+    week: {
+      merged: 1,
+      apps: [{ slug: selfApp.slug, name: selfApp.name || selfApp.slug }],
+      challengesDone: Number(summary.week && summary.week.challengesDone) || 0,
+    },
     demo: true,
   };
 }
@@ -847,6 +900,28 @@ async function readChallengeTotals(pool, userId, seasonId, rule = null) {
   return row ? { total: Number(row.total) || 0, done: Number(row.done) || 0 } : null;
 }
 
+// How many of the season's challenges the viewer DONE this week (#6464):
+// the same done rule and scope as readChallengeTotals, narrowed to rows whose
+// latest credit fell in today and the six UTC days before it. Homeroom keeps
+// no separate "completed at" time, so the latest credit is the closest true
+// reading. `rule` is passed by a caller that already read it.
+async function readChallengesDoneSince(pool, userId, seasonId, rule = null) {
+  const done = rule || await viewerDoneRule(pool, userId, seasonId);
+  const { rows } = await pool.query(
+        `SELECT COUNT(*)::int AS done
+           FROM challenges c
+           JOIN season_events se ON se.id = c.season_event_id
+           LEFT JOIN challenge_templates ct ON ct.id = c.challenge_template_id
+          WHERE se.season_id = $2 AND ${ALL_CHALLENGE_WHERE}
+            AND (${done.sql(3)})
+            AND (SELECT MAX(ua.activity_at) FROM user_activities ua
+                  WHERE ua.user_id = $1 AND ua.challenge_id = c.id)
+                >= (((CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - 6)::timestamp AT TIME ZONE 'UTC')`,
+        [userId, seasonId, ...done.params]
+  );
+  return Number(rows[0] && rows[0].done) || 0;
+}
+
 function profileRoutes(config) {
   const router = Router();
   const pool = getPool(config);
@@ -1380,14 +1455,24 @@ function profileRoutes(config) {
   // only the challenge totals wait, on the season they are scoped to.
   router.get('/api/me/summary', requireUser, async (req, res) => {
     try {
-      const [countRows, contributionRows, activityDays, activityApps, season] = await Promise.all([
+      const [countRows, contributionRows, activityDays, activityApps, weekMerged, weekApps, season] = await Promise.all([
         pool.query(SUMMARY_COUNTS_SQL, [req.user.id]),
         pool.query(SUMMARY_CONTRIBUTIONS_SQL, [req.user.id, SUMMARY_CONTRIBUTIONS_LIMIT]),
         pool.query(SUMMARY_ACTIVITY_DAYS_SQL, [req.user.id]),
         pool.query(SUMMARY_ACTIVITY_APPS_SQL, [req.user.id]),
+        pool.query(SUMMARY_WEEK_MERGED_SQL, [req.user.id]),
+        pool.query(SUMMARY_WEEK_APPS_SQL, [req.user.id]),
         fetchProfileSeason(pool, IS_STAGING ? 900500 : null),
       ]);
-      const totals = season ? await readChallengeTotals(pool, req.user.id, season.id) : null;
+      // The viewer's done rule is read once and given to both challenge
+      // reads, so this week's figure and the season total cannot disagree.
+      const rule = season ? await viewerDoneRule(pool, req.user.id, season.id) : null;
+      const [totals, challengesDone] = season
+        ? await Promise.all([
+          readChallengeTotals(pool, req.user.id, season.id, rule),
+          readChallengesDoneSince(pool, req.user.id, season.id, rule),
+        ])
+        : [null, 0];
       let summary = shapeSummary({
         counts: countRows.rows[0],
         contributions: contributionRows.rows,
@@ -1395,6 +1480,7 @@ function profileRoutes(config) {
           ? { done: totals ? totals.done : 0, total: totals ? totals.total : 0, season }
           : null,
         activity: shapeActivity(activityDays.rows, activityApps.rows[0]),
+        week: shapeWeek(weekMerged.rows[0], weekApps.rows, challengesDone),
       });
       if (IS_STAGING && req.query.demo === '1') {
         const { rows: selfRows } = await pool.query(SELF_APP_SQL);
@@ -1476,11 +1562,15 @@ module.exports = {
   shapeProfile,
   fetchProfileSeason,
   readChallengeTotals,
+  readChallengesDoneSince,
   shapeContribution,
   shapeSummary,
+  shapeWeek,
   withDemoSummary,
   SUMMARY_ACTIVITY_DAYS_SQL,
   SUMMARY_ACTIVITY_APPS_SQL,
+  SUMMARY_WEEK_MERGED_SQL,
+  SUMMARY_WEEK_APPS_SQL,
   shapeActivity,
   withDemoActivity,
   DEMO_ACTIVITY_MINUTES,

@@ -634,7 +634,24 @@ function buildCopy(kind, context, now, t) {
     }
     // #1688: the Friday card. `detail` is "<merged>:<open>" — how many
     // changes went live this week and how many proposals are waiting.
+    // #6371: the one person-wide row carries
+    // `w:<projects>:<merged>:<open>` and says it is ready, under every
+    // project; the per-project format keeps today's wording.
     case 'weekly_digest': {
+      const week = /^w:(\d+):(\d+):(\d+)$/.exec(detail || '');
+      if (week) {
+        const merged = Number(week[2]);
+        const open = Number(week[3]);
+        const shipped = merged === 0
+          ? t('push:weeklyDigest.body.nothing')
+          : t('push:weeklyDigest.body.shipped', { count: merged });
+        return {
+          title: t('push:weeklyDigest.title.ready'),
+          body: open === 0
+            ? shipped
+            : t('push:weeklyDigest.body.both', { shipped, waiting: t('push:weeklyDigest.body.waiting', { count: open }) }),
+        };
+      }
       const counts = /^(\d+):(\d+)$/.exec(detail || '');
       const merged = counts ? Number(counts[1]) : 0;
       const open = counts ? Number(counts[2]) : 0;

@@ -207,3 +207,17 @@ test('#6001: both redeploy handlers ask the open change to catch up', () => {
   assert.match(version, /AppView\.refreshOpenChangeForRelease\?\.\(slug\)/,
     'a written version means the release finished too');
 });
+
+// #6490: the request page reads a change again when its status moves
+// (promoted → merged). Without `fresh`, the service worker can answer with the
+// copy it saved before the merge, which still says the change is up for a vote.
+test('#6490: a change read again after its status moved asks past the service worker', () => {
+  const src = read('frontend/src/features/dev-board/topic/thread-changes.tsx');
+  const start = src.indexOf('function useChangeViews');
+  assert.ok(start >= 0, 'useChangeViews is defined');
+  const hook = src.slice(start, src.indexOf('\n}\n', start));
+  assert.match(hook, /const seen = useRef<Record<number, string>>\(\{\}\)/, 'each change’s last status is remembered');
+  assert.match(hook, /before !== undefined && before !== item\.status/, 'a moved status is recognised');
+  assert.match(hook, /readChangeDetail\([\s\S]*?\{ fresh \}\)/, 'and that read skips the saved copy');
+});
+

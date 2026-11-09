@@ -1838,6 +1838,84 @@ test('backdrop dismiss: an un-pressed click past the window still dismisses', ()
   assert.equal(physics.decideBackdropDismiss({ pressed: false, elapsedMs: 5000 }), true);
 });
 
+test('backdrop dismiss: a point on or near the surface never dismisses', () => {
+  // #6475. A tap on the card (or a click retargeted to the backdrop from a
+  // press on the card's padding) must not close the surface, whatever else
+  // the decision would have said.
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: true, elapsedMs: 0, nearSurface: true }),
+    false,
+    'a press on the surface is still inside it'
+  );
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: false, elapsedMs: 5000, nearSurface: true }),
+    false,
+    'near the surface refuses even a late, un-pressed click'
+  );
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: true, elapsedMs: 0, nearSurface: false }),
+    true,
+    'a press on the backdrop, clear of the surface, still dismisses'
+  );
+});
+
+test('backdrop dismiss: a real pointer click with no backdrop press is refused', () => {
+  // A pointer click (`detail > 0`) that began inside the card and ended on
+  // the backdrop — selecting text, a small slip — is not a dismissal.
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: false, elapsedMs: 5000, pointerClick: true }),
+    false
+  );
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: true, elapsedMs: 5000, pointerClick: true }),
+    true,
+    'the press began on the backdrop, so it is outside'
+  );
+  // A programmatic or assistive-tech click has no pointer sequence at all and
+  // keeps working once the ghost window has passed.
+  assert.equal(
+    physics.decideBackdropDismiss({ pressed: false, elapsedMs: 5000, pointerClick: false }),
+    true
+  );
+});
+
+test('backdrop dismiss: the kit\'s edge tolerance matches the React layer\'s', () => {
+  // The kit cannot import TypeScript and keeps its own copy of the number;
+  // two different values would mean a tap near a surface closes one kind of
+  // popup but not the other.
+  const edge = fs.readFileSync(
+    path.join(__dirname, '..', 'frontend', 'src', 'lib', 'dismiss-edge.ts'), 'utf8');
+  const react = Number(/DISMISS_EDGE_TOLERANCE_PX\s*=\s*(\d+)/.exec(edge)[1]);
+  assert.equal(physics.DISMISS_EDGE_PX, react,
+    `kit tolerance ${physics.DISMISS_EDGE_PX}px vs React tolerance ${react}px`);
+});
+
+test('native.js: every dismissible backdrop is given its surface', () => {
+  // Without the surface the near-edge rule has nothing to measure, so each of
+  // the four presenters must pass one.
+  for (const surface of ['sheet', 'card', 'panel', 'wrap']) {
+    assert.match(
+      NATIVE_JS,
+      new RegExp(`onBackdropDismiss\\(backdrop, function \\(\\) \\{[^\\n]*\\}, ${surface}\\);`),
+      `the ${surface} presenter does not hand its surface to the dismiss rule`
+    );
+  }
+});
+
+test('native.js: a press is consumed per click and cleared from elsewhere', () => {
+  const at = NATIVE_JS.indexOf('function onBackdropDismiss(');
+  const fn = NATIVE_JS.slice(at, NATIVE_JS.indexOf('\n  // presentSheet(', at));
+  assert.match(fn, /document\.addEventListener\('pointerdown', onDocPointerDown, true\)/,
+    'a press anywhere is observed, not only on the backdrop');
+  assert.match(fn, /if \(e\.target !== backdrop\) clearPress\(\);/,
+    'a press that did not land on the backdrop clears the one before it');
+  assert.match(fn, /clearPress\(\);\s*if \(answer\)/,
+    'each click consumes the press that led to it');
+  assert.match(fn, /nearSurface\(click\)/, 'the click point is checked against the surface');
+  assert.match(fn, /pointerClick: pointerClick/);
+});
+
+
 test('backdrop dismiss: the kit\'s window matches the React dialog layer\'s', () => {
   // frontend/src/lib/static-modal.ts guards the same failure for the nine
   // static dialogs with MODAL_GESTURE_GUARD_MS. Two different numbers
@@ -1858,9 +1936,15 @@ test('native.js: every dismissible backdrop goes through the guard', () => {
   NATIVE_JS.split('\n').forEach((line, i) => {
     if (/backdrop\.addEventListener\(\s*'click'/.test(line)) raw.push(i + 1);
   });
-  const helperAt = NATIVE_JS.slice(0, NATIVE_JS.indexOf('function onBackdropDismiss('))
-    .split('\n').length;
-  const helperEnd = helperAt + 40;
+  const helperStart = NATIVE_JS.indexOf('function onBackdropDismiss(');
+  const helperAt = NATIVE_JS.slice(0, helperStart).split('\n').length;
+  // The window runs to the next section marker rather than a fixed number of
+  // lines, so the helper can grow (the near-edge rule added quite a few)
+  // without the raw listener it legitimately binds falling outside it.
+  const helperEnd = NATIVE_JS.slice(
+    0,
+    NATIVE_JS.indexOf('\n  // presentSheet(', helperStart),
+  ).split('\n').length;
   const strays = raw.filter((n) => n < helperAt || n > helperEnd);
   assert.deepEqual(strays, [],
     'a backdrop binds click directly instead of via onBackdropDismiss — '

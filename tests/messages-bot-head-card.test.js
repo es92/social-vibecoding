@@ -41,7 +41,7 @@ const HEAD = 'frontend/src/features/messages/bot-head-card.tsx';
 // server's reading (tests/messages-link-embeds.test.js pins the real one).
 let asked = [];
 let answer = null;
-const { botHead, isHeadCard, BotHeadWords } = loadTsx(HEAD, {
+const { botHead, draftPreviewOf, isHeadCard, BotHeadWords } = loadTsx(HEAD, {
   stubs: {
     './link-cards': {
       useLinkCards: (links) => {
@@ -342,6 +342,34 @@ test('an offer draws the change it carries in its line’s place, or the request
   assert.equal(botHead('Want me to withdraw it?\n\n**Plant pal** · proposal: Plant photos', { ...offer, issueNumber: 14 }).kind, 'change');
 });
 
+// #6248: while a file-request offer waits, its draft's card opens the
+// read-only preview in the AI tab's column. A filed or declined draft's card
+// goes back to what it did.
+test('an open draft’s card offers a preview, and only while the offer waits', () => {
+  const offer = { kind: 'confirm', appSlug: 'plant-pal', appName: 'Plant pal', actionId: 42, status: 'open' };
+  const head = botHead('Want me to file this?\n\n**Plant pal** · new request: Add a search box\n\nSearch notes by their text.', offer);
+  const at = draftPreviewOf(head, offer, null, 7);
+  assert.deepEqual(at, {
+    conversationId: 7, rootId: null, actionId: 42,
+    title: 'Add a search box', project: 'Plant pal', details: 'Search notes by their text.', appSlug: 'plant-pal',
+  }, 'a draft said in Main: no thread root, and the message’s own copy');
+  assert.equal(draftPreviewOf(head, offer, 9, 7).rootId, 9, 'in its own thread: that thread');
+  assert.equal(draftPreviewOf(head, { ...offer, status: 'answered' }, null, 7), null, 'answered');
+  assert.equal(draftPreviewOf(head, { ...offer, actionId: undefined }, null, 7), null, 'no action to read');
+  assert.equal(draftPreviewOf(head, offer, null, 0), null, 'no conversation');
+  assert.equal(draftPreviewOf({ ...head, kind: 'change' }, offer, null, 7), null, 'a change’s offer has no draft');
+  const filed = botHead('Want me to file this?\n\n**Plant pal** · new request: Add a search box',
+    { ...offer, issueNumber: 14, issueTitle: 'Add a search box', status: 'answered', chosen: 'yes' });
+  assert.equal(draftPreviewOf(filed, offer, null, 7), null, 'filed: it is the request’s card now');
+
+  // Drawn with the preview it opens: a button, with the › every openable card has.
+  const html = renderToHtml(createElement(BotHeadWords, { head, objects: [], draft: at }));
+  assert.match(html, /data-bot-head-card="draft"><button type="button" class="messages-object-card w-full text-start">/);
+  assert.match(html, /<span aria-hidden="true" class="text-zinc-500 dark:text-zinc-400">›<\/span>/);
+  assert.match(html, />Add a search box</);
+  assert.match(html, />Plant pal · not filed yet</);
+});
+
 test('a line with nothing after it is the card alone', () => {
   answer = null;
   assert.doesNotMatch(draw(botHead(LINE, META)), /messages-markdown/);
@@ -351,11 +379,13 @@ test('a line with nothing after it is the card alone', () => {
 
 test('the row draws the card in place of the line, and not again under the words', () => {
   const row = read('frontend/src/features/messages/message-row.tsx');
-  assert.match(row, /import \{ BotHeadWords, botHead, isHeadCard \} from '\.\/bot-head-card';/);
+  assert.match(row, /import \{ BotHeadWords, botHead, draftPreviewOf, isHeadCard \} from '\.\/bot-head-card';/);
   assert.match(row, /const head = botHead\(message\.content, botMeta\(message\)\);/,
     'only the bot’s own messages (botMeta reads it off a bot sender only)');
   assert.match(row, /const objects = head \? message\.objects\.filter\(\(object\) => !isHeadCard\(head, object\)\) : message\.objects;/);
-  assert.match(row, /\? <BotHeadWords head=\{head\} objects=\{message\.objects\} channels=\{channels\} \/>/);
+  // #6248: only in the bot's DM, and only for a draft.
+  assert.match(row, /const draft = botChat && kind === 'direct'\n\s+\? draftPreviewOf\(head, botMeta\(message\), message\.threadRootId, message\.conversationId \|\| conversationId\)\n\s+: null;/);
+  assert.match(row, /<BotHeadWords head=\{head\} objects=\{message\.objects\} channels=\{channels\} draft=\{draft\} \/>/);
   assert.match(row, /\{objects\.length \? <div className="messages-object-list">\{objects\.map\(/);
   assert.doesNotMatch(row, /message\.objects\.map\(/);
 });

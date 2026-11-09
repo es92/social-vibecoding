@@ -80,3 +80,62 @@ test('#6228: the bot\'s own answer is the end of its line', () => {
   h.gc._handleThreadIncoming({ id: 99, username: 'homeroom_bot', msgType: 'message', thread: { type: 'issue', ref: 5 } });
   assert.equal(h.published.at(-1)[1].bot, null);
 });
+
+// ── #6538: the line in a change, a channel and a reply thread ───────────
+
+const slotOf = (published, scope) => published.filter(([s]) => s === scope).at(-1)[1];
+
+test('#6538: a change\'s frame shows in the thread slot when that change is open', () => {
+  const h = setup();
+  h.gc.activeThread = { type: 'session', ref: 9, language: 'flat' };
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'session', ref: 9 }, status: 'reading', authorId: 7, replyId: 500 });
+  assert.equal(slotOf(h.published, 'thread').bot.state, 'reading');
+  assert.equal(slotOf(h.published, 'thread').bot.mine, true);
+  assert.deepEqual(h.refreshed, [], 'only a request\'s page re-reads its track');
+  // Another change's frame stays out of this one: this one keeps its own.
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'session', ref: 10 }, status: 'will_read', authorId: 7, replyId: 1 });
+  assert.equal(slotOf(h.published, 'thread').bot.state, 'reading');
+});
+
+test('#6538: a channel\'s frame shows in the general slot while that channel is open', () => {
+  const h = setup();
+  h.gc._channel = { type: 'category', ref: 12 };
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'category', ref: 12 }, status: 'will_read', authorId: 7, replyId: 500 });
+  assert.equal(slotOf(h.published, 'general').bot.state, 'will_read');
+  // Another topic is on screen: its line is not this one's.
+  h.gc._channel = { type: 'category', ref: 13 };
+  h.gc._syncBotStatus();
+  assert.equal(slotOf(h.published, 'general').bot, null);
+  // Back to it: its line is still kept.
+  h.gc._channel = { type: 'category', ref: 12 };
+  h.gc._syncBotStatus();
+  assert.equal(slotOf(h.published, 'general').bot.state, 'will_read');
+  assert.deepEqual(h.refreshed, []);
+});
+
+test('#6538: the main channel\'s line shows when no channel is set', () => {
+  const h = setup();
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'chat', ref: null }, status: 'reading', authorId: 8, replyId: 700 });
+  assert.equal(slotOf(h.published, 'general').bot.state, 'reading');
+  assert.equal(slotOf(h.published, 'general').bot.mine, false);
+  assert.deepEqual(h.refreshed, []);
+});
+
+test('#6538: the bot\'s answer in the reply thread clears the channel\'s line', () => {
+  const h = setup();
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'chat', ref: null }, status: 'reading', authorId: 7, replyId: 42 });
+  assert.equal(slotOf(h.published, 'general').bot.state, 'reading');
+  // A channel answers in the reply thread under the person's message.
+  h.gc._handleThreadIncoming({ id: 99, username: 'homeroom_bot', msgType: 'message', thread: { type: 'message', ref: 42 } });
+  assert.equal(slotOf(h.published, 'general').bot, null);
+});
+
+test('#6538: the bot\'s answer in a change\'s discussion clears its line', () => {
+  const h = setup();
+  h.gc.activeThread = { type: 'session', ref: 9, language: 'flat' };
+  h.gc._applyBotStatus({ type: 'bot_status', thread: { type: 'session', ref: 9 }, status: 'reading', authorId: 7, replyId: 500 });
+  assert.equal(slotOf(h.published, 'thread').bot.state, 'reading');
+  h.gc._handleThreadIncoming({ id: 99, username: 'homeroom_bot', msgType: 'message', thread: { type: 'session', ref: 9 } });
+  assert.equal(slotOf(h.published, 'thread').bot, null);
+});
+

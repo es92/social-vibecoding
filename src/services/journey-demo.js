@@ -26,6 +26,11 @@ const step = (key, state, at = null, note = null) => ({ key, state, at, note });
 const onboard = (done, total = 5) => ({ shown: true, done, total, complete: done === total });
 const NO_CARD = Object.freeze({ shown: false, done: null, total: null, complete: false });
 
+// Where somebody came from (#6540), shaped as journey.person's cameFrom.
+const inviteFrom = (referrerHost, via, project, at) => ({ referrerHost, via, project, at });
+const waitlistFrom = (referrerHost, utmSource, utmCampaign, ref, at) => ({ referrerHost, utmSource, utmCampaign, ref, at });
+const cameFrom = (invite, waitlist) => ({ invite: invite || null, waitlist: waitlist || null });
+
 function firstMilePerson(p, steps, extra = {}) {
   const stuck = steps.find((s) => s.state === 'stuck');
   const done = steps.filter((s) => s.state === 'done');
@@ -56,15 +61,24 @@ const allDone = (p, at, extra = {}) => firstMilePerson(p, journey.FIRST_MILE_STE
 
 function firstMile(day) {
   if (day === '2026-09-24') {
-    const people = [P.okafor, P.jun, P.sable].map((p) => allDone(p, '2026-09-24T10:00:00Z'));
+    const people = [
+      allDone(P.okafor, '2026-09-24T10:00:00Z', { cameFrom: cameFrom(null, waitlistFrom('t.co', 'x', 'launch', null, '2026-09-22T09:00:00Z')) }),
+      allDone(P.jun, '2026-09-24T10:00:00Z', { cameFrom: cameFrom(inviteFrom('discord.com', 'copied', 'Run Club', '2026-09-23T18:00:00Z')) }),
+      allDone(P.sable, '2026-09-24T10:00:00Z', { cameFrom: cameFrom(null, null) }),
+    ];
     return { demo: true, cohort: day, people, steps: journey.firstMileCounts(people),
+      sources: journey.cohortSources(people),
       mail: journey.notRecorded('No admit mail in this cohort was tracked: tracking began on 7 Oct 2026.'),
       notRecorded: {} };
   }
   if (day === 'other_way') {
-    const people = [allDone(P.rafa, '2026-09-20T10:00:00Z', { door: 'activation code' })];
+    const people = [allDone(P.rafa, '2026-09-20T10:00:00Z', {
+      door: 'activation code',
+      cameFrom: cameFrom(inviteFrom('web.whatsapp.com', 'shared', 'Tally', '2026-09-19T15:00:00Z')),
+    })];
     people[0].steps = people[0].steps.slice(journey.FIRST_MILE_STEPS.indexOf('account'));
     return { demo: true, cohort: day, people, steps: journey.firstMileCounts(people),
+      sources: journey.cohortSources(people),
       mail: journey.notRecorded('No admit mail in this cohort was tracked: tracking began on 7 Oct 2026.'),
       notRecorded: {} };
   }
@@ -76,32 +90,37 @@ function firstMile(day) {
       step('opened', 'done', '2026-10-05T18:34:00Z'), step('username', 'done'),
       step('join', 'done', '2026-10-05T18:36:00Z', 'joined'),
       step('first_act', 'done', '2026-10-05T18:52:00Z', 'message'),
-    ], { mail: { opened: true, clicked: true }, tour: { ended: 'finish', step: 3, at: '2026-10-05T18:40:00Z' }, onboard: onboard(3) }),
+    ], { mail: { opened: true, clicked: true }, tour: { ended: 'finish', step: 3, at: '2026-10-05T18:40:00Z' }, onboard: onboard(3),
+      cameFrom: cameFrom(inviteFrom('discord.com', 'copied', 'Pixel Garden', '2026-10-05T08:00:00Z')) }),
     firstMilePerson(P.tobi, [
       step('admitted', 'done', D), step('mail_sent', 'done', D, 'opened'), step('code_asked', 'done', '2026-10-06T07:48:00Z', 'a sign-in code'),
       step('account', 'done', '2026-10-06T07:49:00Z'), step('access', 'done', '2026-10-06T07:49:00Z'),
       step('opened', 'done', '2026-10-06T07:51:00Z'), step('username', 'done'),
       step('join', 'done', '2026-10-06T07:52:00Z', 'skipped'),
       step('first_act', 'stuck', null, 'Inside, no act yet'),
-    ], { mail: { opened: true, clicked: false }, failedAttempts: 2, repeatedTaps: 1, tour: { ended: 'skip', step: 1, at: '2026-10-06T07:53:00Z' }, onboard: onboard(1) }),
+    ], { mail: { opened: true, clicked: false }, failedAttempts: 2, repeatedTaps: 1, tour: { ended: 'skip', step: 1, at: '2026-10-06T07:53:00Z' }, onboard: onboard(1),
+      cameFrom: cameFrom(inviteFrom('discord.com', 'copied', 'Pixel Garden', '2026-10-05T08:10:00Z'),
+        waitlistFrom('none', 'x', 'launch', null, '2026-10-05T12:00:00Z')) }),
     firstMilePerson(P.lena, [
       step('admitted', 'done', D), step('mail_sent', 'done', D, 'clicked the link'), step('code_asked', 'done', '2026-10-05T12:20:00Z', 'its sign-in link'),
       step('account', 'done', '2026-10-05T12:22:00Z'), step('access', 'done', '2026-10-05T12:22:00Z'),
       step('opened', 'done', '2026-10-05T12:25:00Z'), step('username', 'done'),
       step('join', 'stuck', null, 'Join screen shown, not answered'), step('first_act', 'not_yet'),
-    ], { mail: { opened: true, clicked: true }, onboard: NO_CARD }),
+    ], { mail: { opened: true, clicked: true }, onboard: NO_CARD,
+      cameFrom: cameFrom(inviteFrom('none', null, 'Pixel Garden', '2026-10-05T09:00:00Z')) }),
     firstMilePerson(null, [
       step('admitted', 'done', D), step('mail_sent', 'done', D, 'no open seen'),
       step('code_asked', 'stuck', null, 'Admitted, never followed the mail'),
       step('account', 'not_yet'), step('access', 'not_yet'), step('opened', 'not_yet'),
       step('username', 'not_yet'), step('join', 'not_yet'), step('first_act', 'not_yet'),
-    ], { mail: { opened: false, clicked: false } }),
+    ], { mail: { opened: false, clicked: false }, cameFrom: cameFrom(null, null) }),
   ];
   return {
     demo: true,
     cohort: day || '2026-10-05',
     people,
     steps: journey.firstMileCounts(people),
+    sources: journey.cohortSources(people),
     mail: { tracked: 4, opened: 3, clicked: 2 },
     notRecorded: {},
   };
@@ -245,6 +264,8 @@ function person(userId) {
     name: P.tobi.name,
     cohort: '2026-10-05',
     firstMile: firstMile().people[1],
+    cameFrom: cameFrom(inviteFrom('discord.com', 'copied', 'Pixel Garden', '2026-10-05T08:10:00Z'),
+      waitlistFrom('none', 'x', 'launch', null, '2026-10-05T12:00:00Z')),
     found: [],
     cameBackTo: [],
     usedOftenNotOnHome: [],

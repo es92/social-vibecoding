@@ -42,9 +42,14 @@ function stateOf(status) {
  * is owner-scoped: it is navigable only to its owner, or once its owner
  * shared it with the group — the same rule `pickInProgressTarget` applies to
  * the in-progress chip, so the two never disagree about what is clickable.
+ *
+ * #6488: a change that was ever up for a vote (`promoted_at`, set then and
+ * never cleared) stays public afterwards, even closed or reopened: its
+ * discussion was public, and history keeps it readable.
  */
 function isNavigable(row, viewerId) {
   if (row.status === 'merged' || row.status === 'merging' || row.status === 'promoted') return true;
+  if (row.promoted_at) return true;
   return !!row.shared_at || (viewerId != null && Number(row.user_id) === Number(viewerId));
 }
 
@@ -67,7 +72,7 @@ async function resolveIssueProposalRefs(pool, appId, numbers, viewerId) {
   // Paused rows age out on the same window the in-progress rules use, so an
   // abandoned chat stops claiming an issue here too.
   const { rows } = await pool.query(
-    `SELECT cs.id, cs.status, cs.user_id, cs.shared_at, cs.pr_number, cs.pr_url,
+    `SELECT cs.id, cs.status, cs.user_id, cs.shared_at, cs.promoted_at, cs.pr_number, cs.pr_url,
             cs.linked_issues, cs.created_from_issue_number,
             cs.last_activity_at, cs.created_at,
             COALESCE(NULLIF(cs.pr_title, ''), NULLIF(cs.session_title, ''),

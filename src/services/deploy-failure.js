@@ -132,11 +132,60 @@ function bootFailureIsInfrastructure(err) {
     || mentionsConnectionLimit(err.message);
 }
 
+// ─── The preview build's own error (#6536) ─────────────────────────────
+//
+// A BuildKit Job that fails gives checks nothing but the Job's name and
+// "BackoffLimitExceeded" unless the Pod's log is read. The log says what the
+// app's build actually printed ("Unexpected `**` at …index.tsx:104"), which
+// is the difference between "wait for a retry" and "fix the code".
+//
+// The first error, not the last: a build stops at its first failure and the
+// lines after it are the bundler's stack. Vite prints its "error during
+// build" wrapper one line before the specific `file:line:col: ERROR: …`, so
+// among consecutive Vite lines the more specific one wins.
+const BUILD_ERROR_RE = /\bERROR:|error TS\d+|SyntaxError|Unexpected|Transform failed|error during build/;
+const BUILD_ERROR_SPECIFIC_RE = /:\d+:\d+:\s*(?:ERROR|error)\b/;
+const BUILD_ERROR_LINE_MAX = 240;
+const BUILD_ERROR_EXCERPT_LINES = 40;
+const BUILD_ERROR_EXCERPT_MAX = 4000;
+
+// The log up to and including its first error line, scrubbed, or null when
+// this is not a failed build or the log has no error line at all (a timeout,
+// an infrastructure failure, a log that was not captured).
+function firstBuildError(err) {
+  if (!err || !err.buildFailed || err.killed || !err.buildLog) return null;
+  const lines = truncateLog(err.buildLog).split('\n');
+  let at = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (BUILD_ERROR_RE.test(lines[i])) { at = i; break; }
+  }
+  if (at === -1) {
+    for (let i = 0; i < lines.length; i += 1) {
+      if (ERR_LINE_RE.test(lines[i])) { at = i; break; }
+    }
+  }
+  if (at === -1) return null;
+  // The line the bundler names a file and position on is the useful one;
+  // "error during build:" is its heading, a line or two above.
+  for (let i = at; i < Math.min(lines.length, at + 6); i += 1) {
+    if (BUILD_ERROR_SPECIFIC_RE.test(lines[i])) { at = i; break; }
+  }
+  const line = redactString(stripAnsi(lines[at]).trim()).slice(0, BUILD_ERROR_LINE_MAX);
+  const excerptLines = lines.slice(Math.max(0, at - (BUILD_ERROR_EXCERPT_LINES - 1)), at + 1);
+  let excerpt = redactString(stripAnsi(excerptLines.join('\n')).trim());
+  if (excerpt.length > BUILD_ERROR_EXCERPT_MAX) excerpt = excerpt.slice(-BUILD_ERROR_EXCERPT_MAX);
+  return { line, excerpt };
+}
+
 // Legacy shape: extract a concise, human-readable reason from a
 // build/boot failure (docker.waitForHealthy attaches containerLogs /
 // containerStatus to the thrown error). Kept byte-compatible with the
 // old visuals.summarizeBootFailure for check_error_detail consumers.
 function summarizeBootFailure(err) {
+  // #6536: a preview build that failed has an error of its own, and it is
+  // the only thing that tells its author what to fix.
+  const build = firstBuildError(err);
+  if (build) return capReason(`The preview build failed: ${build.line}`);
   // One exception to the byte-compatibility above, and it is the point of
   // #1771: when the boot logs show the shared Postgres refusing the
   // connection, the most specific error line is the WRONG answer. It is
@@ -303,6 +352,7 @@ module.exports = {
   syntheticRecord,
   sameIncident,
   summarizeBootFailure,
+  firstBuildError,
   bootFailureIsInfrastructure,
   truncateLog,
   stripAnsi,

@@ -42,13 +42,14 @@ function preset(key) {
   return govFor(rules.parseRulesBlock({ preset: key }));
 }
 
-function gate(gov, { yes = [], no = [], author = MAYA, f = facts(), explicitApproval = false, reason, openedAt = OPENED, now = NOW } = {}) {
+function gate(gov, { yes = [], no = [], author = MAYA, f = facts(), explicitApproval = false, reason, openedAt = OPENED, now = NOW, authorWithdrew = false } = {}) {
   return governance.computeGate(gov, f.membersActive, yes.length, no.length, openedAt, now, {
     voters: { yes: new Set(yes), no: new Set(no) },
     rulesFacts: f,
     authorId: author,
     memberCount: f.memberCount,
     explicitApproval,
+    authorWithdrew,
     ...(reason !== undefined ? { explicitReason: reason } : {}),
   });
 }
@@ -232,6 +233,44 @@ test('Two yeses: alone in the project, your yes is enough', () => {
   const g = gate(preset('two_yeses'), { author: EVAN, f: facts({ memberCount: 1, membersActive: 1 }) });
   assert.equal(g.mergeable, true);
   assert.equal(g.required, 1);
+});
+
+// ── #6477: an author who took their vote back ─────────────────────────
+
+function evalCtx(over = {}) {
+  return {
+    facts: facts(), voters: { yes: new Set(), no: new Set() }, counts: { yes: 0, no: 0 },
+    authorId: MAYA, openedAt: OPENED, now: NOW, noTimers: false, memberFloor: null,
+    mergeGate: governance.mergeGate, applyNoTimerMerge: governance.applyNoTimerMerge,
+    atLeastGate: governance.atLeastGate, ...over,
+  };
+}
+
+test('#6477: an author who took their vote back has no yes for proposing', () => {
+  const rule = { group: 'members', kind: 'atLeast', n: 2 };
+  const proposing = rules.evaluateRule(rule, evalCtx());
+  assert.equal(proposing.yes, 1, 'proposing counts as their yes');
+  assert.equal(proposing.authorYes, true);
+  const withdrew = rules.evaluateRule(rule, evalCtx({ authorWithdrew: true }));
+  assert.equal(withdrew.yes, 0);
+  assert.equal(withdrew.authorYes, false, 'and the card stops saying it counts as their yes');
+  // Their own cast yes still counts, as it does for anyone.
+  assert.equal(rules.evaluateRule(rule, evalCtx({ voters: { yes: new Set([MAYA]), no: new Set() }, authorWithdrew: true })).yes, 1);
+});
+
+test('#6477: a share of the group gives no yes for proposing after a withdrawal', () => {
+  const rule = { group: 'members', kind: 'percentOfEveryone', n: 50 };
+  assert.equal(rules.evaluateRule(rule, evalCtx()).yes, 1);
+  assert.equal(rules.evaluateRule(rule, evalCtx({ authorWithdrew: true })).yes, 0);
+});
+
+test('#6477: the gate’s figure and the creator’s yes follow the withdrawal', () => {
+  const g = gate(preset('two_yeses'), { author: MAYA, authorWithdrew: true });
+  assert.equal(g.qualifiedYes, 0);
+  assert.equal(g.mergeable, false);
+  const own = gate(preset('you_or_the_group'), { author: EVAN, authorWithdrew: true });
+  assert.equal(own.creatorYes, false);
+  assert.equal(own.qualifiedYes, 0, 'and nothing else has been cast on it');
 });
 
 // ── Open floor and Group vote ─────────────────────────────────────────

@@ -196,8 +196,17 @@ function isPhoneViewport(): boolean {
   try { return !!window.matchMedia(PHONE_QUERY).matches; } catch { return false; }
 }
 
-/** The card of a sheet-mode root: the first element inside the backdrop. */
-function sheetCard(root: HTMLElement): HTMLElement | null {
+/**
+ * The card of a dialog root: the first element inside `[data-modal-backdrop]`,
+ * or the root's own first element for a `centered` layout.
+ *
+ * Exported for `use-dialog.ts`, whose backdrop rule grows this box by a
+ * finger's width so a near-edge tap counts as a tap on the dialog (#6475).
+ * Until the kit lifts the card out, this is the same node `present()` hands
+ * it; a sheet-mode or no-kit presentation leaves it right here.
+ */
+export function dialogCard(root: HTMLElement | null | undefined): HTMLElement | null {
+  if (!root) return null;
   const backdrop = root.querySelector('[data-modal-backdrop]');
   return ((backdrop && backdrop.firstElementChild) || root.firstElementChild) as HTMLElement | null;
 }
@@ -209,7 +218,7 @@ function sheetCard(root: HTMLElement): HTMLElement | null {
  * lifted and nothing has to be restored — the card never leaves its root.
  */
 function presentSheet(root: HTMLElement, stillOwns: () => boolean): void {
-  const card = sheetCard(root);
+  const card = dialogCard(root);
   if (!card) return;
   root.dataset.dialogSheet = '';
   card.setAttribute('role', 'dialog');
@@ -230,7 +239,7 @@ function presentSheet(root: HTMLElement, stillOwns: () => boolean): void {
 
 /** Take the sheet presentation off again: the card goes back to bare markup. */
 function unnameSheet(root: HTMLElement): void {
-  const card = sheetCard(root);
+  const card = dialogCard(root);
   if (!card) return;
   card.removeAttribute('role');
   card.removeAttribute('aria-modal');

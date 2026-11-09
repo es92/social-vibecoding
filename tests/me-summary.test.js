@@ -125,10 +125,13 @@ function mockPool(state) {
       calls.push({ sql, params });
       if (sql.includes('AS direct_kudos')) return { rows: [state.counts || {}] };
       if (sql.includes('AS apps_opened')) return { rows: [{ apps_opened: state.appsOpened || 0 }] };
+      if (sql.includes('FROM chat_sessions cs, since')) return { rows: [{ merged: state.weekMerged || 0 }] };
+      if (sql.includes('JOIN apps a ON a.id = cs.app_id, since')) return { rows: state.weekApps || [] };
       if (sql.includes('LEFT JOIN app_activity')) return { rows: state.activityDays || WEEK };
       if (sql.includes("cs.status = 'merged' AND cs.live_at IS NOT NULL ORDER BY cs.merged_at")) return { rows: state.contributions || [] };
       if (sql.includes('FROM apps WHERE self_hosted = TRUE')) return { rows: state.selfApp ? [state.selfApp] : [] };
       if (sql.includes('FROM seasons')) return { rows: state.season ? [state.season] : [] };
+      if (sql.includes('COUNT(*)::int AS done')) return { rows: [{ done: state.challengesDoneSince || 0 }] };
       if (sql.includes('COUNT(*)::int AS total')) return { rows: [state.totals || { total: 0, done: 0 }] };
       // The season's First challenges, read so a First challenge done counts
       // the way Home counts it (profile.js viewerDoneRule, 2026-10-01). None
@@ -282,5 +285,82 @@ test('the week\'s overlay is staging\'s alone, and independent of the merged moc
   const { body } = await get(staging.app, '/api/me/summary?demo=1');
   assert.ok(!body.demo, 'the real merged work stands');
   assert.equal(body.activity.demo, true);
+});
+
+// ─── The week's accomplishments (#6464) ─────────────────────────────────
+
+test('the week is its live changes, the apps they were in, and challenges done', () => {
+  const week = profile.shapeWeek(
+    { merged: '2' },
+    [{ slug: 'notes', name: 'Notes' }, { slug: 'homeroom', name: null }],
+    1,
+  );
+  assert.deepEqual(week, {
+    merged: 2,
+    apps: [{ slug: 'notes', name: 'Notes' }, { slug: 'homeroom', name: 'homeroom' }],
+    challengesDone: 1,
+  });
+  assert.deepEqual(profile.shapeWeek(undefined, undefined, undefined),
+    { merged: 0, apps: [], challengesDone: 0 }, 'an account with nothing yet is zeros');
+  assert.equal(profile.shapeWeek({ merged: 1 }, new Array(12).fill({ slug: 'a', name: 'A' }), 0).apps.length, 10,
+    'the app list is capped like the contributions list');
+});
+
+test('the summary carries the week when the route read it, and no week when it did not', () => {
+  const without = profile.shapeSummary({ counts: {}, contributions: [], challenges: null });
+  assert.ok(!('week' in without), 'an older cached summary has no week');
+  const summary = profile.shapeSummary({
+    counts: {}, contributions: [], challenges: null,
+    week: { merged: 1, apps: [{ slug: 'a', name: 'A' }], challengesDone: 2 },
+  });
+  assert.deepEqual(summary.week, { merged: 1, apps: [{ slug: 'a', name: 'A' }], challengesDone: 2 });
+});
+
+test('the week reads the viewer\'s own authored changes that went live in the seven UTC days', () => {
+  const merged = collapse(profile.SUMMARY_WEEK_MERGED_SQL);
+  assert.match(merged, /cs\.user_id = \$1 AND cs\.is_headless = FALSE/);
+  assert.match(merged, /cs\.status = 'merged' AND cs\.live_at IS NOT NULL/);
+  assert.match(merged, /cs\.merged_at >= \(since\.day::timestamp AT TIME ZONE 'UTC'\)/);
+  assert.match(merged, /\(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'\)::date - 6 AS day/);
+  const apps = collapse(profile.SUMMARY_WEEK_APPS_SQL);
+  assert.match(apps, /SELECT a\.slug, a\.name/);
+  assert.match(apps, /JOIN apps a ON a\.id = cs\.app_id/);
+  assert.match(apps, /GROUP BY a\.slug, a\.name/);
+  assert.match(apps, /ORDER BY MAX\(cs\.merged_at\) DESC/);
+  assert.match(apps, /LIMIT 10/);
+  assert.match(apps, /cs\.user_id = \$1 AND cs\.is_headless = FALSE/);
+});
+
+test('the route reads the week and gives both challenge reads one done rule', async () => {
+  const { app, pool } = makeApp({
+    counts: {}, season: { id: 3, name: 'Season 3' },
+    weekMerged: 2, weekApps: [{ slug: 'notes', name: 'Notes' }], challengesDoneSince: 1,
+    totals: { total: 7, done: 3 }, onboardingRows: [],
+  }, { user: USER });
+  const { status, body } = await get(app, '/api/me/summary');
+  assert.equal(status, 200);
+  assert.deepEqual(body.week, { merged: 2, apps: [{ slug: 'notes', name: 'Notes' }], challengesDone: 1 });
+  assert.equal(body.challenges.done, 3);
+  const rules = pool.calls.filter((c) => /AS done|AS total/.test(c.sql));
+  assert.ok(rules.length >= 2);
+  for (const call of rules) {
+    assert.equal(call.params[0], 7, 'the SESSION user alone');
+    assert.equal(call.params[1], 3, 'the profile season');
+  }
+});
+
+test('?demo=1 fills an empty week with the demo row merged today, and never covers real data', () => {
+  const empty = profile.shapeSummary({
+    counts: {}, contributions: [], challenges: { done: 0, total: 3, season: { id: 1, name: 'S1' } },
+    week: { merged: 0, apps: [], challengesDone: 2 },
+  });
+  const demo = profile.withDemoSummary(empty, SELF_APP);
+  assert.deepEqual(demo.week, {
+    merged: 1,
+    apps: [{ slug: 'usernode-2d5619', name: 'Homeroom' }],
+    challengesDone: 2,
+  }, 'the challenges stay real');
+  const real = { ...empty, merged: 1, contributions: [{ sessionId: 5 }] };
+  assert.equal(profile.withDemoSummary(real, SELF_APP).week, empty.week, 'REAL DATA WINS');
 });
 

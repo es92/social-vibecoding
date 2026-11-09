@@ -656,6 +656,10 @@ export interface GateOpts {
   // external_agent): proposing is not their yes until they tap it
   // (governance-rules.ts, "Only proposing ON HOMEROOM is a yes").
   madeByAgent?: boolean;
+  // The author took their own vote back on this version
+  // (chat_sessions.author_yes_withdrawn_epoch): proposing is not their yes
+  // again until they vote or a new version lands (governance-rules.ts).
+  authorWithdrew?: boolean;
   rulesFacts?: RulesFacts | null;
   // The change is its project's first version (services/first-version-
   // rule.js): applyFirstVersion below.
@@ -819,6 +823,7 @@ export function computeRulesGate(
     ? int(opts.authorId) : null;
   const authorIsBot = !!opts.authorIsBot;
   const madeByAgent = !!opts.madeByAgent;
+  const authorWithdrew = !!opts.authorWithdrew;
   // The member floor on the majority rules of a flagged proposal: a yes from
   // someone other than its author, once the community has more than one member.
   let floor: Floor | null = null;
@@ -836,6 +841,7 @@ export function computeRulesGate(
     authorId,
     authorIsBot,
     madeByAgent,
+    authorWithdrew,
     openedAt,
     now,
     noTimers: explicitApproval,
@@ -847,7 +853,7 @@ export function computeRulesGate(
   const { gate, owner, shown, results, passedBy } = evaluated;
   const creatorYes = !!(facts.creatorId && voters
     && (voters.yes.has(facts.creatorId)
-      || (authorId === facts.creatorId && !authorIsBot && !madeByAgent && !voters.no.has(facts.creatorId))));
+      || (authorId === facts.creatorId && !authorIsBot && !madeByAgent && !authorWithdrew && !voters.no.has(facts.creatorId))));
   return {
     ...gate,
     policy: 'anyone',

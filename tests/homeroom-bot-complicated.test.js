@@ -162,7 +162,9 @@ test('the DM card names the request, and its words say its screens are there', (
   assert.equal(dm.isPlanGoWord('@Homeroom bot build it'), true);
   assert.equal(dm.isPlanGoWord('@\u200bHomeroom bot build it'), true, 'as the composer writes the mention');
   assert.equal(dm.isPlanGoWord('@homeroom_bot, go ahead!'), true);
+  assert.equal(dm.isPlanGoWord('@homeroombot build it'), true);
   assert.equal(dm.isPlanGoWord('@homeroom_bot_x build it'), false, 'somebody else\'s handle');
+  assert.equal(dm.isPlanGoWord('@homeroombotx build it'), false, 'somebody else\'s handle');
   assert.equal(dm.isPlanGoWord('@Homeroom bot status'), false);
   assert.equal(dm.isPlanGoWord('@Homeroom bot build it but make it blue'), false);
 });

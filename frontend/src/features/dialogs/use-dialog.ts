@@ -22,11 +22,20 @@
  *     opening gesture's ghost-click window does not.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+} from 'react';
 
 import { afterBackSettles, pushDismissible, type Release, type ReleaseOptions } from '../../lib/back-stack';
+import { DISMISS_EDGE_TOLERANCE_PX, nearRect } from '../../lib/dismiss-edge';
 import { useIsomorphicLayoutEffect } from '../../lib/legacy-dom';
-import { isDismissGuarded, useStaticModal } from '../../lib/static-modal';
+import { dialogCard, isDismissGuarded, useStaticModal } from '../../lib/static-modal';
 
 export interface DialogController<T = void> {
   /** True while the dialog is presented. */
@@ -120,7 +129,10 @@ export interface UseDialogResult<T> {
   closeThen: (next: () => void) => void;
   suspend: () => Promise<void>;
   resume: () => void;
-  backdropProps: { onClick: (event: MouseEvent<HTMLElement>) => void };
+  backdropProps: {
+    onPointerDown: (event: PointerEvent<HTMLElement>) => void;
+    onClick: (event: MouseEvent<HTMLElement>) => void;
+  };
 }
 
 export function useDialog<T = void>(
@@ -294,19 +306,47 @@ export function useDialog<T = void>(
     if (isOpen) opts.current.onOpen?.(payloadRef.current);
   }, [isOpen]);
 
-  const backdropProps = useMemo(
-    () => ({
+  // The press that may have opened the click that follows it. A click carries
+  // no history of where the finger went down, so the decision below needs it
+  // recorded first: a press inside the card released on the backdrop fires
+  // the click on their common ancestor — the backdrop — and used to dismiss
+  // the dialog mid-selection (#6475).
+  const backdropProps = useMemo(() => {
+    let press: { onBackdrop: boolean; x: number; y: number } | null = null;
+    return {
+      onPointerDown: (event: PointerEvent<HTMLElement>) => {
+        const target = event.target as HTMLElement;
+        const isBackdrop =
+          target === event.currentTarget || target.dataset?.modalBackdrop !== undefined;
+        press = { onBackdrop: isBackdrop, x: event.clientX, y: event.clientY };
+      },
       onClick: (event: MouseEvent<HTMLElement>) => {
+        const started = press;
+        press = null;
         const target = event.target as HTMLElement;
         const isBackdrop =
           target === event.currentTarget || target.dataset?.modalBackdrop !== undefined;
         if (!isBackdrop) return;
         if (isDismissGuarded(rootRef.current)) return;
+        // A pointer click that did not begin on the backdrop is a release from
+        // inside the card — a text selection, a small slip — and is never a
+        // dismissal. A click with no pointer sequence of its own (programmatic,
+        // or assistive technology) keeps the decision it had.
+        if (event.detail > 0 && !(started && started.onBackdrop)) return;
+        // A tap on the card, or within a finger's width of its edge, is ON the
+        // card however the browser retargeted the click.
+        const card = dialogCard(rootRef.current);
+        if (card) {
+          const rect = card.getBoundingClientRect();
+          const insideCard = (x: number, y: number) =>
+            nearRect(x, y, rect, DISMISS_EDGE_TOLERANCE_PX);
+          if (insideCard(event.clientX, event.clientY)) return;
+          if (started && insideCard(started.x, started.y)) return;
+        }
         close();
       },
-    }),
-    [close],
-  );
+    };
+  }, [close]);
 
   // Publish the controller for `public/js/**`. The legacy entry points
   // (`App.showCreateModal`, `AppView.promptRename`, …) forward here.

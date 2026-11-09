@@ -597,12 +597,15 @@ test('the merge against the full PostgreSQL schema', { timeout: 240000 }, async 
     assert.equal((await sentTo('merge-followups', sessionKey(s.id)))[0].payload.force, true);
 
     // A mechanical merge of main is pure git over a: the force follows it,
-    // red checks and all.
+    // red checks and all. The stale failing verdict was made against an
+    // older main, so the conflict lane still resolves it first (#6531): the
+    // free resolution is spent, and the head it writes is checked afresh.
     defaults();
     const m = await proposalRow({ clean: false, approvalsRequired: 5, checks: 'failing' });
     await toProposal(m, 'ForceMerge', { from: 'promoted', userId: m.owner.id, username: 'admin' }, { kind: 'route' });
     await settle();
-    assert.equal(calls(WORK.sync).length, 0, 'the conflict lane spends nothing on a head whose checks fail');
+    assert.equal(calls(WORK.sync).length, 1, 'a stale verdict does not block the conflict lane');
+    assert.equal(calls(WORK.sync)[0].input.reason, 'conflict');
     await toProposal(m, 'ReviewHeadMoved', { column: 'reviewed', from: SHA('a'), to: SHA('c'), keepVotes: true, reason: 'mechanical' });
     await rt.drain();
     assert.equal((await pInst(m)).data.force.head, SHA('c'));

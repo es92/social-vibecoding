@@ -59,10 +59,12 @@ function makeAppView(userId) {
 }
 
 const ME = 42;
+// An OPEN vote: more yeses are still needed, so #6505's decided guard leaves
+// the pair alone. The #6505 cases below set their own `votes_required`.
 const proposal = (over) => ({
   id: 7, pr_number: 700, pr_title: 'Tidy the header', username: 'evan',
   user_id: 999, status: 'promoted', yes_count: 1, no_count: 0, approval_epoch: 3,
-  created_at: '2026-06-01T00:00:00Z', ...over,
+  votes_required: 99, created_at: '2026-06-01T00:00:00Z', ...over,
 });
 
 test('the model carries the prior side on the Yes spec, only while nothing of the viewer\'s counts', () => {
@@ -183,3 +185,55 @@ test('the plain vote pill says so in a field, so nothing has to recognise its En
   }
 });
 
+
+// #6505: once the yes votes its rule asks for are in, the card offers no
+// vote at all — the request's "felt like I could un-merge it by accident".
+// The pair is REMOVED, not greyed: every site that draws the Vote button
+// (the card, the change's page, a request's change section, the project's
+// Needs you) reads this one pair.
+test('#6505: the vote pair is gone once the yes votes the rule asks for are in', () => {
+  const AppView = makeAppView(ME);
+  assert.equal(AppView._cardVoteButtonSpecs(proposal({ yes_count: 3, votes_required: 3 })).length, 0,
+    'at the threshold: no Yes, no No');
+  assert.equal(AppView._cardVoteButtonSpecs(proposal({ yes_count: 4, votes_required: 3 })).length, 0,
+    'over it is decided too');
+  const short = AppView._cardVoteButtonSpecs(proposal({ yes_count: 2, votes_required: 3 }));
+  assert.equal(short.map((b) => b.key).join(','), 'yes,no', 'one short still asks');
+});
+
+test('#6505: a decided countdown, and an approvals count, lose the pair as well', () => {
+  const AppView = makeAppView(ME);
+  const hoursAhead = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
+  assert.equal(AppView._cardVoteButtonSpecs(proposal({
+    yes_count: 3, votes_required: 3, merge_window_ends_at: hoursAhead(2),
+  })).length, 0, 'counting down to go live is decided');
+  assert.equal(AppView._cardVoteButtonSpecs(proposal({
+    yes_count: 2, approvals_required: 2,
+  })).length, 0, 'approvals mode: its own n is the rule');
+});
+
+test('#6505: an unwon countdown, a contested change and one being set aside keep their pair', () => {
+  const AppView = makeAppView(ME);
+  const hoursAhead = (h) => new Date(Date.now() + h * 3600 * 1000).toISOString();
+  const keys = (p) => AppView._cardVoteButtonSpecs(p).map((b) => b.key);
+  // Leads, but below its majority: still a vote to win.
+  assert.equal(keys(proposal({ yes_count: 1, votes_required: 3, merge_window_ends_at: hoursAhead(2) })).join(','), 'yes,no');
+  // Contested: another vote can still change how it ends.
+  assert.equal(keys(proposal({ yes_count: 3, votes_required: 3, contested: true })).join(','), 'yes,no');
+  // Armed rejection window: same reason, the other way.
+  assert.equal(keys(proposal({
+    yes_count: 3, votes_required: 3, rejection_armed: true, reject_window_ends_at: hoursAhead(2),
+  })).join(','), 'yes,no');
+});
+
+test('#6505: the member floor keeps the pair while the other member\'s yes is missing', () => {
+  const AppView = makeAppView(ME);
+  const keys = (p) => AppView._cardVoteButtonSpecs(p).map((b) => b.key);
+  const floor = {
+    yes_count: 3, votes_required: 3,
+    requires_explicit_approval: true, needs_other_member_yes: true, other_member_yes_count: 0,
+  };
+  assert.equal(keys(proposal(floor)).join(','), 'yes,no', 'the yes it waits on is still a vote to cast');
+  assert.equal(keys(proposal({ ...floor, other_member_yes_count: 1 })).length, 0,
+    'once that yes is in, the vote is decided');
+});

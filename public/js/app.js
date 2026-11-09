@@ -3956,6 +3956,14 @@ const App = {
         });
       }
     }
+    // #6490: a merge that arrives as a plain session update patches the same
+    // caches the vote_update path does, so the card's pill flips whichever
+    // event carried the news. No server sends one today; the guard keeps
+    // every merge path patching the same way.
+    if ((data.merged === true || data.status === 'merged')
+        && typeof AppView !== 'undefined' && AppView.noteSessionMerged) {
+      AppView.noteSessionMerged(data.sessionId, data.appSlug, { live: data.live === true });
+    }
     // Refresh proposals / inline chat vote state on the other dev sub-tabs,
     // and the drawer and Home, once for the whole burst (see _liveRefresh).
     App._liveRefresh('session', data.sessionId, { appSlug: data.appSlug, home: true });
@@ -4626,7 +4634,7 @@ const App = {
     // belong to, so it is called whatever is showing here; the burst below
     // covers the board showing live.
     if (data.merged && typeof AppView !== 'undefined' && AppView.noteSessionMerged) {
-      AppView.noteSessionMerged(data.sessionId, data.appSlug);
+      AppView.noteSessionMerged(data.sessionId, data.appSlug, { live: !!data.live });
     }
     // Refresh the proposals tab / inline chat vote state if we're in this
     // app's Dev view, and the work drawer and Home, which track tallies:
@@ -4695,10 +4703,14 @@ const App = {
     if (home) {
       // The Challenges block keeps its read for a minute (HomePanels.TTL_MS),
       // which a pull must not be answered from (#3985): it reads again,
-      // fresh, and Home.load() joins that read.
+      // fresh. The tiles' vote counts are re-read too (request 6500), by the
+      // same forced path the pull is for; it goes before Home.load() so the
+      // forced read is the one that starts, rather than Home's own unforced
+      // read already being under way.
       PlatformUI.pullToRefresh(home,
         () => App._refreshOrReload(() => Promise.all([
           window.HomePanels?.ensureLoaded?.({ force: true, fresh: true }),
+          window.UsernodeReact?.homePins?.refresh?.({ force: true }),
           Home.load(),
         ])));
     }
@@ -5670,6 +5682,15 @@ const App = {
         App.navigateToProfile(parts[1] ? decodeURIComponent(parts[1]) : null);
         return;
       }
+      if (parts[0] === 'week') {
+        // This week (#6371): the page the Friday "Your weekly digest is
+        // ready" row opens, listing what happened in your projects over the
+        // last seven days (features/weekly-digest/index.tsx). The read is
+        // me-scoped server-side and answers 401 to a caller with no session.
+        App.setChromeless(false);
+        App.navigateToWeeklyDigest();
+        return;
+      }
       if (parts[0] === 'needs') {
         // Needs you (#needs): every decision owed by you across your
         // projects, one page (features/workshop/index.tsx). No gate beyond
@@ -6450,7 +6471,7 @@ const App = {
   // two visible roots split the viewport 50/50 — see the #764 note on
   // the zoom transition).
   SCREEN_IDS: ['app-view', 'home-screen',
-    'workshop-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
+    'workshop-screen', 'weekly-digest-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
     'settings-screen', 'messages-screen',
     'agent-session-screen', 'ai-screen'],
 
@@ -7059,6 +7080,8 @@ const App = {
     'messages-screen': 'messages',
     'agent-session-screen': 'agent_session',
     'ai-screen': 'ai',
+    // This week (#6371): the page the weekly digest's bell row opens.
+    'weekly-digest-screen': 'weekly_digest',
   }),
 
   _navPending: null,
@@ -7534,6 +7557,9 @@ const App = {
     // features/workshop/index.tsx takes useVisibilityHiddenClass, so it has to
     // be listed here or the class gets the two owners the note above describes.
     'workshop-screen',
+    // This week (#6371): features/weekly-digest/index.tsx takes
+    // useVisibilityHiddenClass from its first commit, same seam.
+    'weekly-digest-screen',
     // The AI tab's main view (#6019 follow-up): features/ai/index.tsx takes
     // useVisibilityHiddenClass from its first commit, same seam.
     'ai-screen',
@@ -7981,6 +8007,31 @@ const App = {
       App.setHeaderTitle(PlatformI18n.t('shell:title.needs'));
       // An arrow up to Home in the left slot: Needs you is a page under it
       // (One Home, #6361). _showOnlyScreen publishes that from App._BACK_SLOT.
+    }, { type: App._entryTransition(fromIframe ? 'none' : 'push', screen) });
+  },
+
+  // This week (#6371): the page the Friday "Your weekly digest is ready"
+  // bell row opens. Read-only, a page under Home like Needs you, so it takes
+  // the same slot and leaves the app the same way. The island owns the whole
+  // root; it loads from the controller's open() while still hidden.
+  navigateToWeeklyDigest() {
+    if (App._revealedScreen === 'weekly-digest-screen' && !App.currentApp) return;
+    const fromIframe = !!(App.currentApp && App.currentTab === 'app');
+    const leavingApp = !!App.currentApp;
+    App.currentApp = null;
+    if (App._inLeaderboard) App._exitLeaderboard();
+    if (App._inProfile) App._exitProfile();
+    if (App._inAdmin) App._exitAdminConsole();
+    if (App._inSettings) App._exitSettings();
+    if (App._inMessages) App._exitMessages();
+    if (App._inWorkshop) App._exitWorkshop();
+    const screen = document.getElementById('weekly-digest-screen');
+    window.UsernodeReact?.weeklyDigest?.open?.();
+    PlatformUI.transition(() => {
+      if (leavingApp) AppView.close();
+      App._showOnlyScreen('weekly-digest-screen');
+      App._enterScreenChrome();
+      App.setHeaderTitle(PlatformI18n.t('weekly-digest:title'));
     }, { type: App._entryTransition(fromIframe ? 'none' : 'push', screen) });
   },
 
@@ -9367,6 +9418,9 @@ const App = {
     // One Home (#6361): Needs you is a page under Home (its tile opens it),
     // so it has an arrow up to Home, as Challenges has one up to Me.
     'workshop-screen': ['arrow', '/'],
+    // This week (#6371) is a page under Home too: the weekly digest row
+    // opens it, and its arrow goes back up.
+    'weekly-digest-screen': ['arrow', '/'],
     // #6019 follow-up: the AI tab's page is a tab root; Main is a level
     // under it (the Messages store's syncChrome points its arrow here).
     'ai-screen': ['none'],
@@ -10130,6 +10184,7 @@ App._bootScreenFor = function _bootScreenFor(hash, pathname, signedIn) {
     case 'apps': return frag.split('/')[1] ? 'app-view' : null;
     case 'discover': return frag.split('/')[1] ? 'app-view' : null;
     case 'needs': return 'workshop-screen';  // Needs you (One Home, #6361)
+    case 'week': return 'weekly-digest-screen'; // This week (#6371)
     case 'profile': return 'profile-screen';
     case 'settings': return 'settings-screen';
     case 'admin': return 'admin-screen';

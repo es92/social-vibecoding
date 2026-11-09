@@ -320,6 +320,13 @@ test('every dialog backdrop consults the shared dismiss guard', () => {
     'the guard is exported from the seam');
   assert.match(USE_DIALOG_SRC, /isDismissGuarded\(/,
     'and the shared backdropProps consults it');
+  // #6475: a tap on the dialog, or within a finger's width of its edge, is
+  // not an outside press either, and a press inside the card released on the
+  // backdrop no longer closes the dialog.
+  assert.match(USE_DIALOG_SRC, /nearRect\(/,
+    'the shared backdropProps also applies the near-edge rule');
+  assert.match(USE_DIALOG_SRC, /onPointerDown:/,
+    'and records where the press that led to the click began');
   // Settings is NOT in this set: the settings-modal-to-screen conversion
   // turned it into the #settings screen, so it has no backdrop to guard.
   // tests/settings-screen.test.js pins that it stays that way.

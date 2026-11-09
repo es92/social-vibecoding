@@ -3835,6 +3835,26 @@
     "text": "Close the preview",
     "description": "The × at the right of a design's preview, the column beside a private thread on the Homeroom bot tab: closes the preview. Its accessible name and tooltip."
   },
+  "draft.pane.label": {
+    "text": "Request draft",
+    "description": "Accessible name of the pane that previews a request Homeroom bot drafted before it is filed, beside the chat on the Homeroom bot tab."
+  },
+  "draft.pane.sub": {
+    "text": "Request draft · {{project}}",
+    "description": "The small grey line under a draft request's title in its preview: what is being read and the project it will be filed on. {{project}} is the project's name."
+  },
+  "draft.pane.nothingFiled": {
+    "text": "Nothing is filed until you press File it under the bot's reply.",
+    "description": "The quiet note at the foot of a request draft's preview, saying that reading it files nothing: the File it button stays on the card in the chat."
+  },
+  "draft.pane.close": {
+    "text": "Close the preview",
+    "description": "The × at the right of a request draft's preview, the column beside the chat on the Homeroom bot tab: closes the preview. Its accessible name and tooltip."
+  },
+  "draft.pane.back": {
+    "text": "Back to the chat",
+    "description": "On a phone, the arrow at the top left of a request draft's preview, which covers the screen: goes back to the chat with Homeroom bot. Its accessible name and tooltip."
+  },
   "design.card.open": {
     "text": "Open preview",
     "description": "Button under the small picture of a design's version, in a private thread with Homeroom bot: opens the design's preview beside the thread, at that version."
@@ -4055,11 +4075,42 @@
     "text": "{{letter}} · dark",
     "description": "Caption under a picture in the bot's picture grid when it comes in a light and a dark version: this is the dark one. {{letter}} is A to D."
   },
+  "botCards.gallery.changeGroup": {
+    "text": "What this change looks like",
+    "description": "Accessible name of the grid of pictures under Homeroom bot's reply in a change's thread: its emails, today and with the change, and its before and after screens."
+  },
+  "botCards.gallery.today": {
+    "text": "Today",
+    "description": "Label under a picture of an email as it is today, before the change."
+  },
+  "botCards.gallery.withChange": {
+    "text": "With this change",
+    "description": "Label under a picture of an email as the change will make it."
+  },
+  "botCards.gallery.newMark": {
+    "text": "New",
+    "description": "Added to the label under a picture of an email the change adds, which has no today version."
+  },
+  "botCards.gallery.openEmail": {
+    "text": "Open the email: {{subject}}",
+    "description": "Accessible name of one email picture under Homeroom bot's reply: tapping it opens the whole email. {{subject}} is its subject line."
+  },
+  "botCards.gallery.openScreen": {
+    "text": "Open the screen: {{caption}}",
+    "description": "Accessible name of one before or after screen picture under Homeroom bot's reply: tapping it opens it full size. {{caption}} is what the screen shows."
+  },
+  "botCards.gallery.emailFrame": {
+    "text": "The email, {{subject}}",
+    "description": "What screen readers call the frame that draws an email's body. {{subject}} is its subject line."
+  },
+  "botCards.gallery.subjectLine": {
+    "text": "Subject: {{subject}}",
+    "description": "The subject line shown above an opened email picture. {{subject}} is the email's subject."
+  },
   "botCards.gallery.pickGroup": {
     "text": "Which picture",
     "description": "Accessible name of the row of letters (A, B, C, D) under the bot's picture grid that chooses which picture the buttons below act on."
-  },
-  "botCards.gallery.pick": {
+  },  "botCards.gallery.pick": {
     "text": "Picture {{letter}}",
     "description": "Accessible name of one letter button under the bot's picture grid: chooses picture {{letter}} for the buttons below."
   },
@@ -4691,6 +4742,10 @@
     "text": "{{project}} · #{{number}} · Your vote helps free a build slot",
     "description": "The AI tab's main view, Needs you: tooltip of the row of a vote on one of Homeroom bot's changes while a request of the person's waits for one of its slots on that project; deciding the change frees one."
   },
+  "ai.row.voteConflict": {
+    "text": "{{project}} · #{{number}} · Conflicts with main: Homeroom resolves it once you approve",
+    "description": "The AI tab's main view, Needs you: tooltip of the Vote row of a change that conflicts with main and that only a yes can move. {{project}} is the project's name and {{number}} the request or change number."
+  },
   "ai.row.project": {
     "text": "{{project}}",
     "description": "The AI tab's main view: the person's work with Homeroom bot across every project, beside Main, their private chat with it. Tooltip of a row (its whole line; read by a screen reader too) that needs the person and has no number: the project's name."
@@ -5098,6 +5153,10 @@
   "ai.why.voteFreesSlot": {
     "text": "Your vote helps free a build slot",
     "description": "Homeroom bot tab, on a phone: the second line of a vote on one of Homeroom bot's changes, where a request of yours waits for its build slot."
+  },
+  "ai.why.voteConflict": {
+    "text": "Conflicts with main: Homeroom resolves it once you approve",
+    "description": "Homeroom bot tab, on a phone: the second line of a Vote row on a change that conflicts with main; a yes lets Homeroom resolve the conflict and merge it without asking again."
   },
   "ai.why.heldYours_one": {
     "text": "A vote you owe can free its slot",

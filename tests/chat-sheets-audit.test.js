@@ -62,7 +62,9 @@ test('D09: the new-message picker offers no Block beside each person', () => {
 test('D03: the Invite pane says a link went out on its first Copy or Share, not on opening', () => {
   const pane = read('frontend/src/features/app-context/invite-pane.tsx');
   assert.match(pane, /void inviteApi\(`\/api\/invite-links\/\$\{link\.id\}\/shared`, \{ method: 'POST' \}\)/);
-  assert.match(pane, /await navigator\.clipboard\.writeText\(url\);\n\s*noteSent\(current\);/);
+  // The link now carries the "copied" tag (#6540); the sent note still
+  // fires on the press itself, before anything else.
+  assert.match(pane, /await navigator\.clipboard\.writeText\(withVia\(url, 'copied'\)\);\n\s*noteSent\(current\);/);
   assert.match(pane, /if \(current\) noteSent\(current\);\n\s*setSentOut\(true\);/);
   const route = read('src/routes/community-invites.js');
   assert.match(route, /router\.post\('\/api\/invite-links\/:id\/shared', drainGuard, sameOriginBrowserOnly,/);

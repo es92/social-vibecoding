@@ -68,10 +68,11 @@ test('a vote is asked only once the checks pass and it merges cleanly', { timeou
   await pool.query(`INSERT INTO requests (app_id, number, title, created_by) VALUES ($1, 7, 'Night mode', $2)`, [app.id, ada.id]);
   const change = async (by, pr, linked, extra = {}) => (await pool.query(
     `INSERT INTO chat_sessions (app_id, user_id, status, linked_issues, pr_number, pr_title, check_state,
-                                check_phase, merge_conflict_state, integration_merges_clean, promoted_at)
-     VALUES ($1, $2, 'promoted', $3::int[], $4, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
+                                check_phase, merge_conflict_state, integration_merges_clean, integration_block_reasons,
+                                promoted_at)
+     VALUES ($1, $2, 'promoted', $3::int[], $4, $5, $6, $7, $8, $9, $10::jsonb, NOW()) RETURNING id`,
     [app.id, by.id, linked, pr, `Change ${pr}`, extra.checkState ?? 'passing', extra.checkPhase ?? null,
-      extra.conflict ?? null, extra.clean ?? null])).rows[0];
+      extra.conflict ?? null, extra.clean ?? null, JSON.stringify(extra.reasons ?? [])])).rows[0];
 
   // What the four readers say about the change for ada, who would owe it.
   const feed = async () => (await pool.query(
@@ -131,6 +132,21 @@ test('a vote is asked only once the checks pass and it merges cleanly', { timeou
         JSON.stringify(extra));
       await pool.query('DELETE FROM chat_sessions WHERE id = $1', [c.id]);
     }
+  });
+
+  await t.test('#6531: a conflict only a yes can move is owed, and says so on its row', async () => {
+    const c = await change(bob, 33, [7], { clean: false, reasons: ['awaiting_approval'] });
+    assert.deepEqual(await everywhere(), {
+      feed: [c.id], needs: 1, owed: [`proposal:${c.id}@0`], waiting: 1, digest: 1,
+    });
+    const row = (await pool.query(overview.NEEDS_FEED_SQL, [ada.id, false, false, overview.NEEDS_FEED_MAX]))
+      .rows.find((r) => Number(r.id) === Number(c.id));
+    assert.equal(row.conflict_on_yes, true, 'its Vote row names the conflict');
+    assert.equal(overview.shapeNeedsFeed([row])[0].conflictOnYes, true);
+    // A conflict the lane is still resolving is not owed.
+    await pool.query(`UPDATE chat_sessions SET integration_block_reasons = '["integrating"]'::jsonb WHERE id = $1`, [c.id]);
+    assert.deepEqual(await everywhere(), { feed: [], needs: 0, owed: [], waiting: 0, digest: 0 });
+    await pool.query('DELETE FROM chat_sessions WHERE id = $1', [c.id]);
   });
 
   await t.test('skipped checks and a never-measured merge count as clean', async () => {

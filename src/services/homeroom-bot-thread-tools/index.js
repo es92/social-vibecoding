@@ -32,6 +32,7 @@ const MODULES = Object.freeze([
   ['steer', () => require('./steer')], // P5: a note into a running build, stop and redo
   ['admin', () => require('./admin')], // P7: admin tools behind confirm cards
   ['pictures', () => require('./pictures')], // P8: pictures from an outside image model
+  ['change-pictures', () => require('./change-pictures')], // #6533: what a change looks like
   ['investigate', () => require('./investigate')], // P9: investigations that run for days
   ['follow-up', () => require('./follow-up')], // #6264: tell me when it is done
 ]);

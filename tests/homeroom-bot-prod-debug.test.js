@@ -222,13 +222,18 @@ test('the tool lists of project threads, request discussions and chat mentions n
       for (const name of PROD) assert.ok(!offered.includes(name), `${type}: ${name} is never offered`);
     }
   }
-  // Neither public surface loads the thread tools, and homeroom-bot-chat.js
-  // gives its model no tools at all; only the chat with the bot does.
+  // No public surface loads the admin registry, and homeroom-bot-chat.js
+  // gives its model no thread tools at all; only the chat with the bot does.
+  // #6534 lets a project thread offer the pictures tool, so voice may load
+  // that one module and nothing else from the thread tools.
   for (const file of ['src/services/homeroom-bot-voice.js', 'src/services/homeroom-bot-chat.js']) {
     const source = read(file);
-    assert.doesNotMatch(source, /homeroom-bot-thread-tools/, `${file} never loads the thread tools`);
     for (const name of PROD) assert.ok(!source.includes(name), `${file} never names ${name}`);
   }
+  assert.doesNotMatch(read('src/services/homeroom-bot-chat.js'), /homeroom-bot-thread-tools/, 'the chat with the bot never loads the thread tools');
+  const threadToolImports = [...read('src/services/homeroom-bot-voice.js')
+    .matchAll(/require\('\.\/homeroom-bot-thread-tools\/([^']+)'\)/g)].map((m) => m[1]);
+  assert.deepEqual(threadToolImports, ['pictures'], 'a public thread loads only the pictures module, never the admin or follow-up tools');
   const loaders = ['src/services/homeroom-bot-voice.js', 'src/services/homeroom-bot-chat.js', 'src/services/homeroom-bot-mayor.js']
     .filter((file) => /require\('\.\/homeroom-bot-thread-tools'\)/.test(read(file)));
   assert.deepEqual(loaders, ['src/services/homeroom-bot-mayor.js']);

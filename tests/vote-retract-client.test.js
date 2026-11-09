@@ -218,3 +218,53 @@ test('_applyVoteToRow takes a vote back without counting a side', () => {
   AppView._applyVoteToRow(none, null);
   assert.deepEqual([none.yes_count, none.no_count], [1, 1], 'no vote to take back moves no count');
 });
+
+// ── 4. #6477: the figure every screen draws drops at once ─────────────
+
+test('a counted Yes taken back lowers the qualified figure at once, not only after a reload', async () => {
+  const AppView = makeAppView();
+  const pr = votedRow({ qualified_yes_count: 6, qualified_no_count: 2 });
+  AppView._proposals = [pr];
+  AppView.refreshDevData = () => {};
+  AppView.__sandbox.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true, retracted: true }) });
+  assert.equal(await AppView.retractVote(7), true);
+  assert.deepEqual([pr.qualified_yes_count, pr.qualified_no_count], [5, 2], 'the Yes figure falls by one, and only it');
+});
+
+test('a counted No taken back lowers the qualified No, and never raises the Yes', async () => {
+  const AppView = makeAppView();
+  const pr = votedRow({ my_vote: 'no', qualified_yes_count: 6, qualified_no_count: 2 });
+  AppView._proposals = [pr];
+  AppView.refreshDevData = () => {};
+  AppView.__sandbox.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true, retracted: true }) });
+  assert.equal(await AppView.retractVote(7), true);
+  assert.deepEqual([pr.qualified_yes_count, pr.qualified_no_count], [6, 1]);
+});
+
+test('an advisory or uncounted vote taken back leaves the qualified figure alone', async () => {
+  for (const flag of ['my_vote_uncounted', 'my_vote_advisory']) {
+    const AppView = makeAppView();
+    const pr = votedRow({ qualified_yes_count: 6, [flag]: true });
+    AppView._proposals = [pr];
+    AppView.refreshDevData = () => {};
+    AppView.__sandbox.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true, retracted: true }) });
+    assert.equal(await AppView.retractVote(7), true);
+    assert.equal(pr.qualified_yes_count, 6, `${flag}: it never raised the figure, so it does not lower it`);
+  }
+});
+
+test('a refusal, or a request that never arrives, puts the qualified figure back with the vote', async () => {
+  const answers = [
+    async () => ({ ok: false, status: 409, json: async () => ({ code: 'vote_locked', error: 'No.' }) }),
+    async () => { throw new TypeError('Failed to fetch'); },
+  ];
+  for (const answer of answers) {
+    const AppView = makeAppView();
+    const pr = votedRow({ qualified_yes_count: 6 });
+    AppView._proposals = [pr];
+    AppView.refreshDevData = async () => {};
+    AppView.__sandbox.fetch = answer;
+    assert.equal(await AppView.retractVote(7), false);
+    assert.deepEqual([pr.my_vote, pr.qualified_yes_count], ['yes', 6], 'the rollback restores both counts');
+  }
+});

@@ -271,10 +271,16 @@ function look(s: BState, e: Event<any>, f: Facts, ctx: TransitionContext): Outco
 }
 
 // Its preview will not start: said quietly, once per epoch. What the change
-// waits on otherwise (its shots, the bot's round) keeps its clock.
-function stopped(s: BState, e: Event<any>, f: Facts): Outcome<BState> {
+// waits on otherwise (its shots, the bot's round) keeps its clock. #6536: a
+// preview build that failed with its own error is a fix due, so the same
+// decision that sends failing checks back to the bot sends this one.
+function stopped(s: BState, e: Event<any>, f: Facts, ctx: TransitionContext): Outcome<BState> {
   const live = s.name === NONE ? null : (s as Live);
   const d = live ? live.data : created(e, f);
+  if (live && live.name !== 'closed'
+      && checksDue({ ...f.row!, looked: f.looked, fix_revised: f.fixRevised })) {
+    return decide(live, f, ctx, d);
+  }
   const name: Name = !live || live.name === 'checking' || live.name === 'ready' ? 'stopped' : live.name as Name;
   const epoch = Number(f.row!.approval_epoch) || 0;
   if (f.row!.status !== 'promoted' || d.stoppedEpoch === epoch) return step((live?.name as Name) || 'checking', d);

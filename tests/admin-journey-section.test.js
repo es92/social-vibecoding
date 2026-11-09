@@ -303,3 +303,22 @@ test('one declared check opens the demo page', () => {
   assert.equal(checks.length, 1);
   assert.equal(checks[0].expectSelector, '#admin-journey-north-star');
 });
+
+test('where people came from: a Came from section on the person, a line under each cohort (#6540)', () => {
+  // The person's own two records, in the words the spec fixes.
+  assert.match(src, /\{section\('Came from', \(p\.cameFrom\?\.invite \|\| p\.cameFrom\?\.waitlist\) \? \(/);
+  assert.match(src, /data-journey-came-from="invite"/);
+  assert.match(src, /data-journey-came-from="waitlist"/);
+  assert.match(src, /<span className="text-sm w-44 shrink-0">Invite link<\/span>/);
+  assert.match(src, /<span className="text-sm w-44 shrink-0">Waitlist<\/span>/);
+  assert.match(src, /\) : <Empty>Not recorded\.<\/Empty>\)\}/, 'neither record says Not recorded');
+  assert.match(src, /if \(host === 'none'\) return 'no referrer';/);
+  assert.match(src, /if \(via === 'copied'\) return 'link was copied';/);
+  assert.match(src, /if \(via === 'shared'\) return 'link was shared';/);
+  // The cohort's count sits under its existing heading, in the small grey
+  // note type Journey already uses.
+  assert.match(src, /data-journey-mile-sources=""/);
+  assert.match(src, /`Came from: \$\{m\.sources\.map\(\(s\) => `\$\{sourceWords\(s\)\} \$\{s\.people\}`\)\.join\(', '\)\}`/);
+  assert.match(src, /return s\.from \? `invite link from \$\{s\.from\}` : 'invite link, not recorded';/);
+  assert.match(src, /return s\.from \? `waitlist from \$\{s\.from\}` : 'waitlist, not recorded';/);
+});

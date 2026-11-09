@@ -257,7 +257,8 @@ async function projectFor(pool, user, project) {
  * passes on. Reads only; never throws for a refusal.
  */
 // What a refusal says it cannot do, by what was asked.
-const GATE_DOING = Object.freeze({ look: 'look into its code', investigation: 'run an investigation on it' });
+// #6537: and the update of a change its author asked for (homeroom-bot-takeover.js).
+const GATE_DOING = Object.freeze({ look: 'look into its code', investigation: 'run an investigation on it', update: 'update that change' });
 
 async function gate(pool, { user, app, settings, bot = null, deps = {}, doing = 'look' }) {
   const live = deps.live || require('../homeroom-bot-live');
@@ -282,7 +283,7 @@ async function gate(pool, { user, app, settings, bot = null, deps = {}, doing = 
 async function clearStale(pool, userId) {
   await pool.query(
     `UPDATE homeroom_bot_looks SET state = 'failed', error = 'it did not finish', ended_at = NOW()
-      WHERE user_id = $1 AND state = 'running' AND created_at < NOW() - make_interval(secs => $2)`,
+      WHERE user_id = $1 AND kind = 'look' AND state = 'running' AND created_at < NOW() - make_interval(secs => $2)`,
     [userId, STALE_LOOK_MS / 1000],
   ).catch((err) => log.warn('homeroom-bot-look', 'Could not clear a stale look', { userId, err: err.message }));
 }
@@ -570,6 +571,9 @@ async function runLookWork(ctx, { pool, config, deps = {} }) {
   steps.turnOwner = { machine: MACHINE, key, kind: ctx.kind || 'look.run', workKey: ctx.key || 'run', workId: ctx.workId || null };
   let row = await loadLook(pool, id);
   if (!row) return { skipped: 'gone' };
+  // #6537: an update of a change its author asked for is a look of its own
+  // kind, run by the same machine (homeroom-bot-takeover.js).
+  if (row.kind === 'update') return require('../homeroom-bot-takeover').runUpdateWork(ctx, { pool, config, deps }, row, steps);
   if (row.state === 'running') {
     const out = await steps.once('look', async () => {
       const [user, app] = await Promise.all([personOf(pool, row.user_id), appOf(pool, row.app_id)]);
@@ -596,6 +600,8 @@ async function runLookWork(ctx, { pool, config, deps = {} }) {
 /** The bot-look machine's `look.failed`: a look whose work failed for good, recorded and said once. */
 async function lookFailed(ctx, { pool, config, deps = {} }) {
   const id = Number(ctx.input?.lookId);
+  const before = await loadLook(pool, id);
+  if (before && before.kind === 'update') return require('../homeroom-bot-takeover').updateFailed(ctx, { pool, config, deps }, before);
   let row = await finishLook(pool, id, { ok: false, error: 'it did not finish' });
   if (row && row.deliver === 'post' && !row.posted_message_id) {
     await postFindings(pool, config, row, { deps });

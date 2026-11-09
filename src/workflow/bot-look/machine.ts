@@ -16,6 +16,12 @@
 // waiting has its findings posted when the run ends (`deliver = 'post'`).
 // A run that fails for good is recorded as failed, and said in that chat
 // when it stopped waiting (`look.failed`).
+//
+// #6537: the same machine runs an update of a change its author made in
+// Claude Code or Codex and asked the bot for (a row of kind 'update',
+// services/homeroom-bot-takeover.js): one build turn on that change's own
+// branch, on the same durable steps, its report said where the asks were
+// made. look-into.js runLookWork hands such a row over.
 
 import { NONE, appendEvent, defineMachine, ok, reject } from '../kernel/index.ts';
 import type { Event, Json, Outcome, Queryable, State, WorkResultPayload } from '../kernel/index.ts';

@@ -183,9 +183,17 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   const voting = render({ change: change({ status: 'promoted', checkState: 'passing' }) });
   assert.match(voting, /data-agent-session-preview-status[^>]*>Waiting for approval</);
   assert.match(voting, />View change</);
+  // #6473: while the vote is open, Vote leads the row and opens the change's
+  // page at its Votes card; it goes once the change is going live or live.
+  assert.match(voting, /<a[^>]*href="#app\/notes\/dev\/changes\/14"[^>]*data-agent-session-preview-vote[^>]*>Vote</);
+  assert.ok(voting.indexOf('data-agent-session-preview-vote') < voting.indexOf('data-agent-session-preview-open'), 'Vote comes first');
+  assert.match(voting, /data-agent-session-preview-change[^>]*>View change</);
   assert.doesNotMatch(voting, /Propose to group/, 'proposed once');
   assert.match(voting, /data-agent-session-checks="passing"/);
   assert.doesNotMatch(voting, /data-agent-session-checks-reason/, 'a real verdict needs no reason line');
+  assert.doesNotMatch(live, /data-agent-session-preview-vote/, 'a draft has Propose to group, not Vote');
+  assert.doesNotMatch(render({ change: change({ status: 'merging' }) }), /data-agent-session-preview-vote/, 'going live is past the vote');
+  assert.match(render({ item: item({ failed: true, url: null }), change: change({ status: 'promoted' }) }), /data-agent-session-preview-vote[^>]*>Vote</, 'a failed preview in its vote still offers it');
   // #3180: a skipped run says so, and why, as text under the line (a touch
   // screen cannot open a tooltip); a row with no reason reads the fallback.
   const skipped = render({ change: change({ checkState: 'skipped', checkSkipReason: 'branch has no commits beyond main, so there is nothing to test' }) });
@@ -198,6 +206,7 @@ test('the card: its actions for each state, and nothing on a superseded one', ()
   const merged = render({ change: change({ status: 'merged' }) });
   assert.match(merged, />Live</);
   assert.match(merged, />View change</, 'a merged change is no draft');
+  assert.doesNotMatch(merged, /data-agent-session-preview-vote/, 'a live change has nothing to vote on');
   assert.match(render({ action: 'propose', busy: true }), /disabled=""[^>]*data-agent-session-preview-propose[^>]*>Proposing…</);
 
   const failed = render({ item: item({ failed: true, url: null, error: 'npm ci failed', text: 'Staging build failed' }) });

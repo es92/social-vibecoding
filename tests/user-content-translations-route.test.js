@@ -90,6 +90,20 @@ test('the translation endpoint', { timeout: 30000 }, async (t) => {
   assert.equal(res.status, 503);
   assert.deepEqual(await res.json(), { error: 'translation_unavailable' });
 
+  // #6525: the same bound on an automatic ask answers 200 with a failed
+  // result per text. A chat translating itself as it is read must not put a
+  // failed request in the browser's console, which is a console error to the
+  // checks and reads as a broken page.
+  outcome = { results: [{ state: 'failed' }], blocked: 'translation_unavailable' };
+  res = await ask({ texts: ['x'], auto: true });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { language: 'en', results: [{ state: 'failed' }] });
+
+  outcome = { results: [{ state: 'failed' }], blocked: 'translation_limit' };
+  res = await ask({ texts: ['x'], auto: true });
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { language: 'en', results: [{ state: 'failed' }] });
+
   // A cached text still arrives beside one the bound could not serve.
   outcome = {
     results: [{ state: 'translated', text: 'Bonjour', from: 'en' }, { state: 'failed' }],

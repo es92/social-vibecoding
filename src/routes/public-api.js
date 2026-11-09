@@ -47,6 +47,7 @@ const {
 } = require('../middleware/rate-limits');
 const { waitlistIntegratorAuth } = require('../services/waitlist-integrator');
 const waitlist = require('../services/waitlist');
+const arrivalSource = require('../services/arrival-source');
 const releaseLinks = require('../services/release-links');
 const questions = require('../services/waitlist-questions');
 const { sendWaitlistJoinMail, sendWaitlistCodeMail } = require('../services/topochain/mailer');
@@ -408,6 +409,18 @@ function publicApiRoutes(config) {
         // An unresolvable code is ignored rather than refused: a stale
         // link must never block a join.
         inviteCode: typeof req.body?.invite_code === 'string' ? req.body.invite_code : null,
+        // Where the landing page sent them (#6540): a host only, never the
+        // full address, plus the page's short utm and ref tags. A
+        // referrer_host that is present but empty or unreadable is 'none'
+        // (looked for, none given); an absent one is not recorded.
+        source: {
+          referrerHost: Object.prototype.hasOwnProperty.call(req.body || {}, 'referrer_host')
+            ? (arrivalSource.hostOf(req.body?.referrer_host) || 'none')
+            : null,
+          utmSource: arrivalSource.cleanTag(req.body?.utm_source),
+          utmCampaign: arrivalSource.cleanTag(req.body?.utm_campaign),
+          ref: arrivalSource.cleanTag(req.body?.ref),
+        },
       });
       // CASE 1 — a brand new address. Joined, code mailed, step 2 next.
       if (created) {

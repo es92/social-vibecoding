@@ -469,6 +469,8 @@ test('reminder 1\'s copy: a short note, no date, no "still want in"', () => {
     assert.ok(fresh.text.includes(`${line}\n\n`), line);
   }
   assert.match(fresh.html, />Get started<\/a>/);
+  assert.match(fresh.html, /<td style="text-align:left"><p style="margin:8px 0 20px"><a href=/, 'the button sits left, with the note (Drea, on 6508)');
+  assert.doesNotMatch(fresh.html, /text-align:center/);
   assert.match(fresh.html, /See you in there,<br>Evan<\/p>/);
   assert.match(fresh.text, /Get started:\n\S+\n\nSee you in there,\nEvan/);
   assert.doesNotMatch(JSON.stringify(fresh), /Still want in|We let you in|works until|13 Nov/, 'no date, nothing pointed');
@@ -500,6 +502,7 @@ test('the last reminder\'s copy: one last nudge, the date under the button, no r
   assert.match(fresh.html, />Get started<\/a><\/p><\/td><\/tr><\/table><p [^>]*>This button works until 13 Nov, but you can still sign in with this email anytime afterward\.<\/p>/);
   assert.match(fresh.text, /This link works until 13 Nov, but you can still sign in with this email anytime afterward\./);
   assert.match(fresh.html, /Hope to see you around,<br>Evan<\/p>/);
+  assert.doesNotMatch(fresh.html, /text-align:center/, 'the button sits left here too');
   assert.doesNotMatch(JSON.stringify(fresh), /reply and tell me|We won't email you about this again|invite link/, 'no reply line, and no "invite link"');
   assert.match(fresh.html, /You are receiving this because you were let in from the waitlist and haven't signed in yet\. This is the last reminder\./);
   assert.doesNotMatch(fresh.html, /Stop these reminders/, 'nothing more to stop');

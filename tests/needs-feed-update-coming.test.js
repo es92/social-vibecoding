@@ -101,6 +101,20 @@ test('#6282: a change being updated is In progress, never the vote it would owe'
   assert.deepEqual([derive({ ...facts, update_coming: 'running' }).stage, derive({ ...facts, update_coming: 'running' }).line],
     ['building', { code: 'revising' }]);
   assert.deepEqual(derive({ ...facts, update_coming: 'queued' }).line, { code: 'update_queued' });
+
+  // #6545: a change whose tests failed, with Homeroom bot's fix queued, is
+  // Checking, not Up for a vote. Only a running update overrides that.
+  const failingFix = { ...facts, check_state: 'failing', failed_checks: 4,
+    queue_id: 9, enqueued_at: '2026-11-04T11:30:00Z', queue_reason: 'checks_failing' };
+  const waiting = derive({ ...failingFix, update_coming: 'queued' });
+  assert.deepEqual([waiting.stage, waiting.line], ['checking', { code: 'checks_failing', failing: 4 }]);
+  const running = derive({ ...failingFix, update_coming: 'running' });
+  assert.deepEqual([running.stage, running.line], ['building', { code: 'revising' }]);
+  // The AI tab's fallback (services/ai-work.js fallbackState) agrees. With no
+  // stored work state, a failing change with a queued update reads Checking.
+  const fallback = standing(row({ check_state: 'failing', update_coming: 'queued' }), 7, NOW);
+  assert.deepEqual([fallback.work.stage, fallback.work.line], ['checking', { code: 'checks_failing' }]);
+  assert.equal(fallback.group, 'waiting');
 });
 
 test('#6282: the ask is one line of at most 80 characters', () => {

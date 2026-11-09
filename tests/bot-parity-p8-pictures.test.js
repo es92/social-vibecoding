@@ -402,3 +402,38 @@ test('the gallery card: a two-column grid of thumbnails that open in the viewer,
   assert.match(src, /<ImageViewer src=\{image\.url\}/);
   assert.doesNotMatch(src, /\b(?:gray|indigo)-\d/);
 });
+
+test('#6533: a change\'s pictures read as Today and With this change, from ids only, at most twelve', () => {
+  const mod = loadGallery();
+  const id = (c) => c.repeat(32);
+  const shot = `/api/apps/pear/proposals/77/shots/${id('a')}`;
+  const card = {
+    type: 'gallery', v: 1, purpose: 'change', project: { slug: 'pear', name: 'Pear' }, change: { sessionId: 77, number: 6508 },
+    images: [
+      { id: id('e'), source: 'email', side: 'before', isNew: false, caption: "You're in", url: 'https://evil.test/x' },
+      { id: id('f'), source: 'email', side: 'after', isNew: false, caption: 'Bring your people' },
+      { id: id('a'), source: 'shot', side: 'after', isNew: false, caption: 'The invite sheet', url: shot },
+      { id: 'bad' },
+    ],
+  };
+  const g = mod.changeGalleryOf(card);
+  assert.equal(g.images.length, 3);
+  assert.equal(g.images[0].url, null, 'an email address is built from its id, never the card\'s url');
+  assert.equal(g.images[2].url, shot, 'a screen keeps its own same-origin address');
+  const many = {
+    ...card,
+    images: Array.from({ length: 14 }, (_, i) => ({ id: (i % 10).toString().repeat(32), source: 'email', side: 'after', caption: 'x' })),
+  };
+  assert.equal(mod.changeGalleryOf(many).images.length, 12);
+
+  const html = renderToHtml(createElement(mod.ChangePictures, { card }));
+  assert.match(html, /data-bot-change="77"/);
+  assert.match(html, new RegExp(message('messages:botCards.gallery.today')));
+  assert.match(html, new RegExp(message('messages:botCards.gallery.withChange')));
+  assert.doesNotMatch(html, /evil\.test/);
+  const withNew = renderToHtml(createElement(mod.ChangePictures, {
+    card: { ...card, images: [{ id: id('c'), source: 'email', side: 'after', isNew: true, caption: 'Reminder' }] },
+  }));
+  assert.match(withNew, new RegExp(`${message('messages:botCards.gallery.withChange')} · ${message('messages:botCards.gallery.newMark')}`));
+  assert.equal(mod.changeGalleryOf({ type: 'gallery', images: [] }), null, 'an ordinary gallery is not a change\'s');
+});

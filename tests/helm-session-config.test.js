@@ -31,6 +31,8 @@ test('Helm session and capture settings reach the runtime as decimal strings, in
     const rendered = execFileSync('helm', [...args, ...overrides], { encoding: 'utf8' });
     const env = Object.fromEntries([...rendered.matchAll(/\{name: ([A-Z0-9_]+), value: "([^"]*)"\}/g)]
       .map(([, key, value]) => [key, value]));
+    assert.equal(env.PLATFORM_SIGNALS, 'shadow', 'other platform signals retain their mode');
+    assert.equal(env.PLATFORM_SIGNALS_SECURITY_AUDIT, 'on', 'only security filing opts in');
     for (const [name, value] of Object.entries({
       CHECKS_MAX_CONCURRENT_RUNS: '4',
       ...expected, MAX_USER_SESSIONS: '3', MAX_USER_PROMOTED_SESSIONS: '5',
@@ -47,6 +49,8 @@ test('Helm session and capture settings reach the runtime as decimal strings, in
     assert.equal(env.EARLY_UNIT_SUITE, expected.EARLY_UNIT_SUITE,
       'required mode disables early suites; other modes preserve an imported switch');
   }
+  const securityOff = execFileSync('helm', [...args, '--set-string', 'config.platformSignals.securityAudit=off'], { encoding: 'utf8' });
+  assert.match(securityOff, /name: PLATFORM_SIGNALS_SECURITY_AUDIT, value: "off"/);
   assert.throws(() => execFileSync('helm', [...args, '--set',
     'config.checkNodePoolRequired=true,config.checksMaxConcurrentRuns=0',
     '--set-string', 'config.checkNodePool=pool=checks'], { encoding: 'utf8', stdio: 'pipe' }),

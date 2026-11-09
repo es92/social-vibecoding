@@ -1163,7 +1163,7 @@ const REQUEST_RECORD_COLUMNS = `q.id AS queue_id, q.started_at, q.enqueued_at, q
             -- #6528: the change's before & after shots, so a passing change
             -- still being shot reads as checking rather than ready.
             cs.shots_state, cs.shots_run_id, cs.shots_detail, cs.shots_updated_at,
-            cs.merge_conflict_state, cs.integration_merges_clean,
+            cs.merge_conflict_state, cs.integration_merges_clean, cs.integration_block_reasons,
             cs.checks_progress, cs.checks_checked_at AS checks_at, cs.test_results,
             -- N5: which commit the verdict is about, and the head up for
             -- approval (checksOnHead).

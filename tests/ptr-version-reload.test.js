@@ -100,8 +100,9 @@ test('home PTR routes through _refreshOrReload', () => {
     appJs.indexOf('bindEvents() {')
   );
   // #3985: the pull also reads Home's Challenges block again, fresh, before
-  // Home.load() joins that read.
-  assert.match(fn, /pullToRefresh\(home,\s*\n?\s*\(\) => App\._refreshOrReload\(\(\) => Promise\.all\(\[\s*window\.HomePanels\?\.ensureLoaded\?\.\(\{ force: true, fresh: true \}\),\s*Home\.load\(\),\s*\]\)\)\)/);
+  // Home.load() joins that read. Request 6500 adds the tiles' vote-count read
+  // (forced) to the same Promise.all.
+  assert.match(fn, /pullToRefresh\(home,\s*\n?\s*\(\) => App\._refreshOrReload\(\(\) => Promise\.all\(\[\s*window\.HomePanels\?\.ensureLoaded\?\.\(\{ force: true, fresh: true \}\),\s*(?:window\.UsernodeReact\?\.homePins\?\.refresh\?\.\(\{ force: true \}\),\s*)?Home\.load\(\),\s*\]\)\)\)/);
 });
 
 test('landing PTR routes through _refreshOrReload', () => {

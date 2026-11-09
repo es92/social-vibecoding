@@ -84,7 +84,7 @@ const { firstVersionSql } = require('../services/first-version-rule');
 const { governanceKindsSql } = require('../services/governance-kinds');
 const { threadsInSql } = require('../services/ai-work');
 const { updateComingSql } = require('../services/homeroom-bot-progress');
-const { voteReadySql } = require('../services/vote-ready');
+const { voteReadySql, awaitingYesSql } = require('../services/vote-ready');
 const communities = require('../services/communities');
 const governance = require('../services/governance');
 const codeMissing = require('../services/code-missing');
@@ -526,6 +526,10 @@ const needsFeedSql = ({ inThreads = false } = {}) => `
            cs.check_state::text AS check_state,
            cs.mergeability::text AS mergeability,
            cs.integration_merges_clean,
+           -- #6531: a conflicting change only a yes can move says so on its
+           -- Vote row ("Conflicts with main: Homeroom resolves it once you
+           -- approve"), exactly as the bot tab does.
+           ${awaitingYesSql('cs')} AS conflict_on_yes,
            cs.merge_conflict_state::text AS merge_conflict_state,
            (SELECT COUNT(*) FROM pr_votes pv
              WHERE pv.session_id = cs.id AND pv.vote = 'yes'
@@ -565,7 +569,7 @@ const needsFeedSql = ({ inThreads = false } = {}) => `
            LEFT(COALESCE(i.description, ''), ${NEEDS_FEED_SUMMARY_MAX})::text,
            u.username::text, NULL::int, NULL::int, i.created_at,
            NULL::int, NULL::int,
-           NULL::int, NULL::text, NULL::text, NULL::text, NULL::boolean, NULL::text, NULL::int,
+           NULL::int, NULL::text, NULL::text, NULL::text, NULL::boolean, NULL::boolean, NULL::text, NULL::int,
            NULL::text, NULL::jsonb, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text,
            NULL::jsonb, NULL::text, NULL::jsonb, NULL::text, NULL::jsonb,
            i.kind::text, i.payload,
@@ -580,7 +584,7 @@ const needsFeedSql = ({ inThreads = false } = {}) => `
            q.question::text, NULL::text,
            qu.username::text, q.issue_number, NULL::int, q.created_at,
            NULL::int, NULL::int,
-           NULL::int, NULL::text, NULL::text, NULL::text, NULL::boolean, NULL::text, NULL::int,
+           NULL::int, NULL::text, NULL::text, NULL::text, NULL::boolean, NULL::boolean, NULL::text, NULL::int,
            NULL::text, NULL::jsonb, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text, NULL::text,
            NULL::jsonb, NULL::text, NULL::jsonb, NULL::text, NULL::jsonb,
            NULL::text, NULL::jsonb,
@@ -598,7 +602,7 @@ const needsFeedSql = ({ inThreads = false } = {}) => `
          o.kind, o.id, o.title, o.summary, o.author, o.number, o.epoch,
          o.at, o.yes, o.no, a.repo_url,
          o.author_id, o.external_agent, o.check_state, o.mergeability,
-         o.integration_merges_clean, o.merge_conflict_state, o.other_yes,
+         o.integration_merges_clean, o.conflict_on_yes, o.merge_conflict_state, o.other_yes,
          o.shots_run_id, o.shots_detail, o.status, o.source, o.imported_pr_head_sha,
          o.reviewed_head_sha, o.checks_commit_sha, o.handoff_head_sha,
          o.pr_diagram, o.pr_diagram_source, o.pr_touches, o.pr_touches_sha, o.visuals_agg,
@@ -1041,6 +1045,9 @@ function shapeNeedsFeed(rows, { inThreads = false } = {}) {
     // Its code did not come across from GitHub (withCodeMissing): the card
     // says so. Only when set, as the two flags above.
     ...(row.kind === 'proposal' && row.code_missing === true ? { codeMissing: true } : {}),
+    // #6531: a conflicting change only a yes can move names the conflict on
+    // its Vote row, as the bot tab does.
+    ...(row.kind === 'proposal' && row.conflict_on_yes === true ? { conflictOnYes: true } : {}),
     // "Try it" from the feed: a change's live preview, as its project's own
     // card has it (feedStagingUrl). Proposals only.
     ...(row.kind === 'proposal' ? { staging_url: feedStagingUrl(row) } : {}),

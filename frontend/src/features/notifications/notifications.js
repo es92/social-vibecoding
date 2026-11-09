@@ -1430,6 +1430,14 @@ const Notifications = {
       window.location.hash = `#app/${encodeURIComponent(item.appSlug)}`;
       return;
     }
+    // #6371: the one weekly digest covers every project and names none, so
+    // its row (no app) opens the This week page. An older per-project row
+    // still falls through with its app and opens that project's discussion.
+    if (item.kind === 'weekly_digest' && !item.appSlug && /^w:/.test(String(item.detail || ''))) {
+      Notifications._dismissSheetForNav();
+      window.location.hash = '#week';
+      return;
+    }
     if (item.kind === 'vote_digest' && !item.appSlug) {
       Notifications._dismissSheetForNav();
       // Needs you, the page of every vote owed across your projects (One
@@ -3546,7 +3554,34 @@ function rowWords(n) {
   // #1688: the Friday card. `detail` is "<merged>:<open>" — what went live
   // this week and what is waiting on votes. This is the whole card now: a
   // channel carries no activity (services/ws.js sendSystemMessage).
+  //
+  // #6371: one row now covers every project, with `w:<projects>:<merged>:<open>`
+  // (services/weekly-digest.js notifyPeople). Its label says the digest is
+  // ready and its subject adds up the week; tapping it opens This week. An
+  // older per-project row keeps its wording and still opens its project.
   if (n.kind === 'weekly_digest') {
+    const week = /^w:(\d+):(\d+):(\d+)$/.exec(String(n.detail || ''));
+    if (week) {
+      const merged = Number(week[2]);
+      const open = Number(week[3]);
+      const shipped = merged === 0
+        ? t('notifications:row.weekly.nothing')
+        : t('notifications:row.weekly.wentLive', { count: merged });
+      const waiting = open
+        ? t('notifications:row.weekly.waiting', { count: open })
+        : '';
+      return {
+        ...base,
+        // The shell's own newspaper glyph (components/ui/icons), drawn by
+        // the sheet's tile: an icon is a line icon, never an emoji.
+        icon: null,
+        lineIcon: 'newspaper',
+        ...headline(
+          t('notifications:row.weekly.ready'),
+          waiting ? t('notifications:row.factPair', { first: shipped, second: waiting }) : shipped,
+        ),
+      };
+    }
     const counts = /^(\d+):(\d+)$/.exec(String(n.detail || ''));
     const merged = counts ? Number(counts[1]) : 0;
     const open = counts ? Number(counts[2]) : 0;

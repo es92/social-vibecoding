@@ -116,6 +116,12 @@ test('#3733: a failed model request is asked again while that can help, and neve
   assert.deepEqual(mayor.retryPlan(err('output_limit')), { maxOutputTokens: mayor.RETRY_OUTPUT_TOKENS },
     'cut off at its limit: more room');
   assert.ok(mayor.RETRY_OUTPUT_TOKENS > mayor.MAX_OUTPUT_TOKENS);
+  // #6358: a caller (the design turn) may bring its own retried allowance; it
+  // is not sent to the model, only used when a draw is cut off.
+  assert.deepEqual(mayor.retryPlan(err('output_limit'), { retryOutputTokens: 32000 }), { maxOutputTokens: 32000 });
+  const askSrc = read('src/services/homeroom-bot-mayor.js');
+  assert.match(askSrc, /async function askModel\(t, \{[^}]*retryOutputTokens[^}]*\.\.\.rest \}\)/);
+  assert.match(askSrc, /retryPlan\(err, \{ forced, elapsedMs: Date\.now\(\) - t\.startedMs, attempt, retryOutputTokens \}\)/);
   for (const code of ['timeout', 'network', 'provider_unavailable', 'provider_error', 'invalid_response', 'stream_error',
     'response_too_large', 'empty_answer']) {
     assert.deepEqual(mayor.retryPlan(err(code)), { waitMs: 0 }, `${code}: at once, on a fresh route`);
@@ -1151,4 +1157,25 @@ test('#6346: an offer on the chat\'s last round is the answer, with no fallback'
   assert.equal(turn.sent.length, 1);
   assert.match(String(turn.sent[0].content), /new request/i, 'the offer card is sent');
   assert.doesNotMatch(String(turn.sent[0].content), /couldn't answer just now/);
+});
+
+test('#6534: a reply saying pictures are posted is caught unless files were stored', async () => {
+  const pool = { query: async () => ({ rows: [{ n: 13 }] }) };
+  const ctx = { user: { id: 1 }, appIds: new Set() };
+  const kinds = async (text, extra = {}) => (await mayor.claimProblems(pool, { ...ctx, ...extra }, text)).map((p) => p.kind);
+  assert.deepEqual(await kinds('Here are the pictures for the empty state.'), ['posted_pictures']);
+  assert.deepEqual(await kinds('I\'ve attached the before and after shots.'), ['posted_pictures']);
+  assert.deepEqual(await kinds('The comparisons are attached below.'), ['posted_pictures']);
+  assert.deepEqual(await kinds('Here are the pictures.',
+    { attached: [{ id: 'a'.repeat(32), kind: 'image' }] }), [], 'stored under the reply');
+  assert.deepEqual(await kinds('I made two options for you.',
+    { pictures: { made: 2 } }), [], 'made this turn in the chat');
+  assert.deepEqual(await kinds('Here are the pictures.',
+    { place: { type: 'issue', ref: 1 }, pictures: { made: 2 } }), ['posted_pictures'],
+  'made but not stored in a project thread');
+  assert.deepEqual(await kinds('Here are the pictures.',
+    { place: { type: 'issue', ref: 1 }, attached: [{ id: 'b'.repeat(32), kind: 'image' }] }), [],
+  'stored under a reply in a project thread');
+  assert.deepEqual(await kinds('The pictures are in the thread above.'), [],
+    'not a claim that they were posted now');
 });

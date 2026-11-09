@@ -135,6 +135,9 @@ const CONNECTOR_ALLOWED_ROUTES = Object.freeze([
   { method: 'GET', pattern: '/api/apps/:slug/promoted' },
   { method: 'GET', pattern: '/api/apps/:slug/messages' },
   { method: 'POST', pattern: '/api/apps/:slug/messages' },
+  // #6534: a message's pictures and design are uploaded first, then named in
+  // attachment_ids on that message.
+  { method: 'POST', pattern: '/api/apps/:slug/chat-attachments' },
   { method: 'POST', pattern: '/api/apps/:slug/issues' },
   // create_request's screenshots: one image upload, the same route the
   // feedback dialog uses. On the list because an upload decides nothing: it

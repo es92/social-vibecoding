@@ -32,14 +32,15 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const botChat = require('../src/services/homeroom-bot-chat');
 
 test('B9: what counts as asking the bot, and what was asked', () => {
-  for (const text of ['@Homeroom bot could it remind us?', 'hey @homeroom_bot, add tags', '@HOMEROOM  BOT hi']) {
+  for (const text of ['@Homeroom bot could it remind us?', 'hey @homeroom_bot, add tags', '@HOMEROOM  BOT hi', '@homeroombot could it remind us?', '@HomeroomBot hi']) {
     assert.equal(botChat.mentionsBot(text), true, text);
   }
-  for (const text of ['@Homeroom could it', 'mail a@homeroom_bot', '@homeroom_botty', 'no mention']) {
+  for (const text of ['@Homeroom could it', 'mail a@homeroom_bot', '@homeroom_botty', '@homeroombotx', 'mail a@homeroombot.example', 'no mention']) {
     assert.equal(botChat.mentionsBot(text), false, text);
   }
   assert.equal(botChat.askedWords('@Homeroom bot could it remind us on Sundays?'), 'could it remind us on Sundays?');
   assert.equal(botChat.askedWords('hey @homeroom_bot, add tags'), 'hey add tags');
+  assert.equal(botChat.askedWords('hey @homeroombot, add tags'), 'hey add tags');
   assert.equal(botChat.fallbackTitle('could it remind us on Sundays? thanks'), 'Could it remind us on Sundays');
   assert.equal(botChat.fallbackTitle(''), 'A request from the chat');
 });

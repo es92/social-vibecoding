@@ -334,6 +334,7 @@ const OWNED = [
   // uses. Listed on the day it shipped so it cannot acquire a second author
   // later without the sweep saying so.
   { sel: '#workshop-screen' },               // features/workshop/index.tsx
+  { sel: '#weekly-digest-screen' },          // features/weekly-digest/index.tsx (#6371)
   { sel: '#standings-tabs' },                // @/components/ui/tabs, via the leaderboard
   { sel: '#leaderboard-event-bar' },         // features/leaderboard/event-bar.tsx
   { sel: '#admin-section-content', when: '#admin/e2e' },     // features/admin/admin-e2e.tsx
@@ -399,7 +400,7 @@ const OWNED = [
 const ROUTES = [
   '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990411',
   '?shot=launchpad&venue=own-tools-pr#app/usernode-2d5619/dev/sessions/990401',
-  '#home', '#workshop', '#ai', '#settings', '#settings/app-ai',
+  '#home', '#workshop', '#week', '#ai', '#settings', '#settings/app-ai',
   '#settings/email', '#settings/agent-files', '#settings/api-key', '#settings/cli', '#settings/connectors', '#settings/linked-accounts', '#settings/experimental', '#profile', '#leaderboard', '#leaderboard/challenges', '#messages', '#notifications',
   '#agent/990801', '#agent/990801/changes', '#messages/agent/990801',
   '#app/recipebot', '#app/recipebot/app', '#app/recipebot/dev', '#app/recipebot/dev/chat',

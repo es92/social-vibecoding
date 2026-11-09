@@ -42,6 +42,25 @@ test('a problem is its kind and its subject, whitespace aside', () => {
   assert.equal(signals.fingerprintOf('workflow', 'x'.repeat(500)).length, 'workflow:'.length + 200);
 });
 
+test('security filing is isolated from unrelated shadow signals and respects off/staging', () => {
+  const env = { PLATFORM_SIGNALS: 'shadow', PLATFORM_SIGNALS_SECURITY_AUDIT: 'on' };
+  assert.equal(signals.modeForKind('security', env), 'file');
+  assert.equal(signals.modeForKind('security_audit', env), 'file');
+  assert.equal(signals.modeForKind('workflow', env), 'shadow');
+  assert.equal(signals.modeForKind('security', { ...env, PLATFORM_SIGNALS: 'off' }), 'off');
+  assert.equal(signals.modeForKind('security', { ...env, USERNODE_ENV: 'staging' }), 'shadow');
+  assert.equal(signals.modeForKind('security', { USERNODE_ENV: 'staging', PLATFORM_SIGNALS_SECURITY_AUDIT: 'on' }), 'off');
+  assert.equal(signals.modeForKind('security', {}), 'shadow');
+});
+
+test('security changes rewrite once per dependency change and an unavailable source holds closure', () => {
+  assert.equal(signals.isMaterial({ kind: 'security', subject: { materialKey: 'a', publishedKey: 'a' } }), false);
+  assert.equal(signals.isMaterial({ kind: 'security', subject: { materialKey: 'b', publishedKey: 'a' } }), true);
+  const now = Date.now();
+  assert.equal(signals.decide({ kind: 'security', state: 'clearing', cleared_at: at(now - HOUR) },
+    { now, def: signals.KINDS.security, modeName: 'file', held: { sourceUnavailable: true } }), 'keep');
+});
+
 test('an item takes its kind\'s defaults, and may name its own fixer, topic and delay', () => {
   assert.equal(signals.normalizeItem({ kind: 'not_a_kind', key: 'x' }), null);
   const it = signals.normalizeItem({ kind: 'workflow', key: 'bot-build:faulted:x', title: 'Stuck', evidence: { lines: ['a@b.com failed'] } });
@@ -210,6 +229,14 @@ test('an observer that throws clears nothing of its kinds', async () => {
   });
   assert.deepEqual(items.map((i) => i.key), ['apps']);
   assert.deepEqual([...ok], ['limit']);
+});
+
+test('a partial observer may retain findings without claiming resolution authority', async () => {
+  const found = await observers.observeAll({}, { observers: [{ kinds: ['security', 'security_audit'], run: async () => ({
+    items: [{ kind: 'security', key: 'CVE-2026-12345' }], ok: new Set(['security_audit', 'workflow']),
+  }) }] });
+  assert.equal(found.items.length, 1);
+  assert.deepEqual([...found.ok], ['security_audit']);
 });
 
 test('Alertmanager: the token, the resource an alert is about, and which alerts file', () => {

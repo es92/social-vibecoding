@@ -53,17 +53,25 @@ const FRIDAY_EARLY = new Date('2026-09-18T09:00:00.000Z');
 
 function makePool({ apps = [], merged = {}, open = {}, claimable = true } = {}) {
   const queries = [];
+  // The per-person guard is SQL in the service; the fake pool remembers the
+  // last weekly row it handed out so a second sweep in a week sees it.
+  const lastWeekly = new Map();
   const query = async (sql, params) => {
     const s = String(sql);
     queries.push({ sql: s, params });
     if (/pg_try_advisory_lock/.test(s)) return { rows: [{ acquired: true }] };
     if (/pg_advisory_unlock/.test(s)) return { rows: [] };
     if (/FROM apps\s+WHERE weekly_digest_at IS NULL/.test(s)) return { rows: apps };
+    if (/JOIN community_members/.test(s)) return { rows: apps };
     if (/cs\.status = 'merged'/.test(s)) return { rows: merged[params[0]] || [] };
     if (/cs\.status = 'promoted'/.test(s)) return { rows: open[params[0]] || [] };
     if (/UPDATE apps\s+SET weekly_digest_at/.test(s)) return { rows: claimable ? [{ id: params[0] }] : [] };
     if (/INSERT INTO notifications/.test(s)) {
-      return { rows: [{ id: 1000 + queries.length, user_id: params[0], app_id: params[1], kind: 'weekly_digest', detail: params[2] }] };
+      const [userId, detail, nowIso] = params;
+      const last = lastWeekly.get(userId);
+      if (last && new Date(nowIso).getTime() - last < 6 * 24 * 60 * 60 * 1000) return { rows: [] };
+      lastWeekly.set(userId, new Date(nowIso).getTime());
+      return { rows: [{ id: 1000 + queries.length, user_id: userId, app_id: null, source_user_id: null, kind: 'weekly_digest', detail }] };
     }
     return { rows: [] };
   };
@@ -118,11 +126,15 @@ test('on Friday a due app gets one card with its data, and its active members a 
   ], 'newest first, and nobody named: no author, no backers (#3678)');
   assert.deepEqual(weekly.open, [{ id: 44, prNumber: 44, title: 'Dark mode toggle' }]);
 
-  // #3678: the card names nobody, so neither read fetches a name: no join to
-  // users for the author, and no walk of the votes for the backers.
+  // #3678: the card names nobody, so neither read fetches a name. #6371's
+  // open read does ask whether the viewer voted (the This week page's Vote
+  // pill reads the same helper), but no author and no backers.
   const reads = pool.queries.filter((q) => /cs\.status = '(merged|promoted)'/.test(q.sql));
   assert.equal(reads.length, 2);
-  for (const q of reads) assert.doesNotMatch(q.sql, /username|JOIN users|pr_votes/);
+  for (const q of reads) assert.doesNotMatch(q.sql, /username|JOIN users/);
+  const [mergedRead, openRead] = reads;
+  assert.doesNotMatch(mergedRead.sql, /pr_votes/);
+  assert.match(openRead.sql, /pr_votes/, 'the Vote pill asks whether the viewer voted');
 
   const claim = pool.queries.find((q) => /UPDATE apps\s+SET weekly_digest_at/.test(q.sql));
   assert.ok(claim, 'the stamp is the claim');
@@ -130,11 +142,101 @@ test('on Friday a due app gets one card with its data, and its active members a 
   assert.match(claim.sql, /weekly_digest_at IS NULL OR weekly_digest_at </, 'guarded on the last card being old');
 
   const inserts = pool.queries.filter((q) => /INSERT INTO notifications/.test(q.sql));
-  assert.deepEqual(inserts.map((q) => q.params[0]), [1, 3], 'active members, minus the one who muted the category');
-  assert.equal(inserts[0].params[2], '2:1', 'detail carries merged:open');
+  assert.deepEqual(inserts.map((q) => q.params[0]), [1, 3], 'one row per person, minus the one who muted the category');
+  assert.equal(inserts[0].params[1], 'w:1:2:1', 'detail carries projects:merged:open');
   assert.match(inserts[0].sql, /kind = 'weekly_digest'[\s\S]*created_at >/, 'never twice in a week');
   assert.equal(r.notified, 2);
   assert.equal(pushed.length, 2, 'every row is pushed live');
+});
+
+test('two projects sharing a member send that member one row, and a second sweep in the week sends none', async () => {
+  sent.length = 0;
+  pushed.length = 0;
+  const other = { id: 7, slug: 'other', name: 'Other Project' };
+  const pool = makePool({
+    apps: [tiers, other],
+    merged: { 3: landed, 7: [{ id: 51, pr_number: 51, pr_title: 'A second project change', merged_at: '2026-09-17T10:00:00Z' }] },
+    open: { 3: waiting, 7: [] },
+  });
+  const r = await digest.sweep(pool, FRIDAY_16_UTC);
+  assert.equal(r.posted, 2, 'each project still gets its own Workshop card');
+  const inserts = pool.queries.filter((q) => /INSERT INTO notifications/.test(q.sql));
+  assert.deepEqual(inserts.map((q) => q.params[0]), [1, 3], 'one row per person, not one per project');
+  assert.equal(inserts[0].params[1], 'w:2:3:1', 'both projects added up');
+  assert.equal(r.notified, 2);
+
+  // The same week again: the per-person guard hands out no second row.
+  const before = pushesLength();
+  const r2 = await digest.sweep(pool, FRIDAY_16_UTC);
+  assert.equal(r2.notified, 0, 'never twice in a week');
+  assert.equal(pushesLength(), before, 'and nothing is pushed again');
+});
+
+function pushesLength() {
+  return pushed.length;
+}
+
+test('opting out of one project drops it from that person’s counts', async () => {
+  const prefs = require('../src/services/notification-preferences');
+  const realFilter = prefs.filterUsersByCategory;
+  prefs.filterUsersByCategory = async (pool, opts) => (opts.appId === 7 ? [] : realFilter(pool, opts));
+  try {
+    const other = { id: 7, slug: 'other', name: 'Other Project' };
+    const pool = makePool({
+      apps: [tiers, other],
+      merged: { 3: landed, 7: [{ id: 51, pr_number: 51, pr_title: 'A second project change', merged_at: '2026-09-17T10:00:00Z' }] },
+      open: { 3: waiting, 7: [] },
+    });
+    await digest.sweep(pool, FRIDAY_16_UTC);
+    const inserts = pool.queries.filter((q) => /INSERT INTO notifications/.test(q.sql));
+    assert.deepEqual(inserts.map((q) => q.params[0]), [1, 3], 'the project they opted out of contributes no recipients');
+    assert.equal(inserts[0].params[1], 'w:1:2:1', 'and none of its counts');
+  } finally {
+    prefs.filterUsersByCategory = realFilter;
+  }
+});
+
+test('forUser groups the week by project, newest first, and reports a vote already cast', async () => {
+  const other = { id: 7, slug: 'other', name: 'Other Project' };
+  const pool = makePool({
+    apps: [tiers, other],
+    merged: {
+      3: landed,
+      7: [{ id: 51, pr_number: 51, pr_title: 'A second project change', merged_at: '2026-09-17T10:00:00Z' }],
+    },
+    open: {
+      3: [{ id: 44, pr_number: 44, pr_title: 'Dark mode toggle', my_vote: false }],
+      7: [{ id: 52, pr_number: 52, pr_title: 'Something voted on', my_vote: true }],
+    },
+  });
+  const week = await digest.forUser(pool, 1, FRIDAY_16_UTC);
+  assert.equal(week.projectCount, 2);
+  assert.equal(week.mergedTotal, 3);
+  assert.deepEqual(week.projects.map((p) => p.slug), ['other', 'tiers'], 'the newest merge leads');
+  assert.deepEqual(week.projects[1].merged[0], {
+    sessionId: 41, prNumber: 41, title: 'Custom tier colors', mergedAt: '2026-09-16T10:00:00Z',
+  });
+  assert.equal(week.projects[1].open[0].myVote, false);
+  assert.equal(week.projects[0].open[0].myVote, true);
+  assert.match(pool.queries.find((q) => /JOIN community_members/.test(q.sql)).sql, /m\.user_id = \$1/);
+});
+
+test('forUser leaves out a project whose week is empty, and caps each list', async () => {
+  const big = {
+    id: 8, slug: 'big', name: 'Big Project',
+  };
+  const manyMerged = Array.from({ length: 25 }, (_, i) => ({
+    id: 100 + i, pr_number: 100 + i, pr_title: `Change ${i}`, merged_at: `2026-09-1${(i % 7) + 1}T10:00:00Z`,
+  }));
+  const pool = makePool({
+    apps: [{ id: 3, slug: 'empty', name: 'Empty' }, big],
+    merged: { 3: [], 8: manyMerged },
+    open: { 3: [], 8: [] },
+  });
+  const week = await digest.forUser(pool, 1, FRIDAY_16_UTC);
+  assert.deepEqual(week.projects.map((p) => p.slug), ['big'], 'a project with nothing is left out');
+  assert.equal(week.projects[0].merged.length, digest.PAGE_LISTED);
+  assert.equal(week.projects[0].mergedTotal, 25);
 });
 
 test('a quiet app gets no card', async () => {

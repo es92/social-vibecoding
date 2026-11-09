@@ -183,6 +183,31 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
     }
   });
 
+  // #6248: the saved request draft an offer waits on, for the read-only
+  // preview beside the chat (services/homeroom-bot-mayor.js readDraft). The
+  // message clips its details at 1200 characters; this reads the row's own.
+  // Their own open action only. A browser's read, not a connector's: it is
+  // on no list (services/cli-api-policy.js is fail-closed).
+  //
+  //   GET /api/conversations/homeroom-bot/actions/:actionId/draft
+  //   → 200 { title, details, status, app: { slug, name }, footer } | 404
+  router.get('/api/conversations/homeroom-bot/actions/:actionId/draft', sameOriginBrowserOnly, async (req, res) => {
+    try {
+      if (!req.user?.id || req.user.isSynthetic) return res.status(403).json({ error: 'forbidden' });
+      const actionId = Number(req.params.actionId);
+      if (!Number.isInteger(actionId) || actionId <= 0) return res.status(404).json({ error: 'No such draft' });
+      // The staging demo's offer is not a real row to read: the pane keeps
+      // the message's own copy.
+      if (isDemo(req)) return res.status(404).json({ error: 'No such draft' });
+      const out = await require('../services/homeroom-bot-mayor').readDraft(pool, { user: req.user, actionId });
+      if (!out.ok) return res.status(404).json({ error: 'No such draft' });
+      return res.json({ title: out.title, details: out.details, status: out.status, app: out.app, footer: out.footer });
+    } catch (err) {
+      log.error('conversations', 'reading a request draft failed', { err: err.message, userId: req.user?.id });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // B3: a tap on one of a Homeroom bot message's buttons (its metadata's
   // `actions`), decided on the server as the person it was offered to, once
   // (services/homeroom-bot-mayor.js decideOfferTap). It used to be the

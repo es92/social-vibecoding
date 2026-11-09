@@ -51,6 +51,8 @@ export interface CommentPost {
   text: string;
   target: Target;
   appSlug: string | null;
+  /** The app's name as the box showed it, so the form can name it with no app tab open. */
+  appName?: string | null;
   /** The pages, each with its pins. */
   shots?: CommentShot[];
   /** The person's own images, after the pages. */
@@ -217,6 +219,12 @@ export function handOverOptions(post: CommentPost): Record<string, unknown> {
     target: post.target,
     description: descriptionFor(post.text, post.change),
   };
+  // The destination travels with the words: the form files on the app the
+  // person picked, even when no app tab is open behind it (#6485).
+  if (post.target === 'app' && post.appSlug) {
+    opts.appSlug = post.appSlug;
+    if (post.appName) opts.appName = post.appName;
+  }
   if (screenshots.length) opts.screenshots = screenshots.slice(0, MAX_PICTURES);
   const title = String(post.title || '').trim();
   if (title) opts.title = title;

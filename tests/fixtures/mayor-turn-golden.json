@@ -1034,6 +1034,7 @@
       "SELECT (cs.active_turn IS NOT NULL OR EXISTS (SELECT 1 FROM local_agent_turns t WHERE t.session_id = cs.id AND t.status … <sha:606178aea56d8f55 len:1515> :: [4242]",
       "SELECT linked_issues, pr_linked_issues_applied FROM chat_sessions WHERE id = $1 :: [4242]",
       "UPDATE chat_sessions SET linked_issues = $1 WHERE id = $2 :: [[34],4242]",
+      "SELECT cs.id AS session_id, cs.app_id, cs.pr_number, n.number AS request_number, a.repo_url FROM chat_sessions cs JOIN a… <sha:720383c75afaa40f len:749> :: [4242,null]",
       "SELECT a.self_hosted, u.is_admin, cs.user_id FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id JOIN users u ON u.id = cs.user_id WHERE cs.id = $1 :: [4242]",
       "INSERT INTO chat_session_messages (session_id, role, content, metadata) VALUES ($1, 'system', $2, $3) :: [4242,\"Scouting the repo for context (Opus)...\",{\"json\":{\"agentBackend\":\"claude_code\",\"agentModel\":\"claude-opus-5-5\"}}]",
       "SELECT spec_md, spec_html FROM chat_sessions WHERE id = $1 :: [4242]",

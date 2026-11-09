@@ -663,6 +663,10 @@
     "text": "Checking",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). The stage word: its change's tests are running, or some failed."
   },
+  "work.stage.syncing": {
+    "text": "Syncing with main",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). The stage word: its change conflicts with main and Homeroom is resolving that now or next, with nobody asked for anything."
+  },
   "work.stage.upForVote": {
     "text": "Up for a vote",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). The stage word: its change is waiting for the group's votes."
@@ -826,6 +830,22 @@
   "work.line.syncWait": {
     "text": "Waiting to sync with main",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line under Checking: the change conflicts with main, so its tests wait until it is synced, and nobody is asked to vote on it yet."
+  },
+  "work.line.conflictOnYes": {
+    "text": "Conflicts with main: Homeroom resolves it once you approve",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line of a change up for a vote that conflicts with main: a yes lets Homeroom resolve the conflict, re-run the checks and merge it without asking again."
+  },
+  "work.line.githubChecks": {
+    "text": "Waiting for GitHub's checks",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line under Going live: the change has the yes it needs, and GitHub has not merged it yet because the required checks GitHub runs on it are still running, or failed and are being run again on today's main. Homeroom merges it once they pass."
+  },
+  "work.line.githubChecksFailing": {
+    "text": "GitHub's checks are failing",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line under Checking: the change has the yes it needs, but the required checks GitHub runs on it failed again after Homeroom brought it up to date with main, so its author (or Homeroom bot, for its own change) has to fix them before it can merge."
+  },
+  "work.line.githubWait": {
+    "text": "Waiting on GitHub",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line under Going live: the change has the yes it needs, and GitHub held its merge back for a moment (busy, or a refusal nobody has to act on). Homeroom tries again in a few minutes."
   },
   "work.line.firstVersion": {
     "text": "First version: it goes live without a vote",

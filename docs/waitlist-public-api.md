@@ -239,6 +239,10 @@ X-Waitlist-Client-IP: <end user address, optional>
 | `discovery_source` | string | no | One key from `discovery_sources`. An unknown key is a `422`. |
 | `country` | string | no | One key from `countries`, case-insensitive, stored uppercased. An unknown code is a `422`. |
 | `invite_code` | string | no | A 10-character `[a-z0-9]` referral code from another signup's invite link (`<marketing origin>/waitlist?ref=<code>`, and `/#waitlist?ref=<code>` for links minted before the marketing page owned it). An unresolvable code is ignored rather than refused, so a stale link never blocks a join. |
+| `referrer_host` | string | no | The hostname of the page that sent the person, for example `t.co` or `discord.com`. Only a host is accepted: a full URL is reduced to its hostname, and a value that names no host is stored as `none` ("looked for, none given"). Omit it when nothing was read; the source is then not recorded. |
+| `utm_source` | string | no | The landing URL's `utm_source`, at most 64 characters of `[A-Za-z0-9._-]`. Anything else is dropped. |
+| `utm_campaign` | string | no | The landing URL's `utm_campaign`, same format and limit as `utm_source`. |
+| `ref` | string | no | The landing URL's `ref`, same format and limit. A value that is itself a resolvable referral code is carried as the referral instead and not stored again. |
 
 A bare `{"email": "…"}` is a complete, valid signup.
 

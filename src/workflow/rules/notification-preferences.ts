@@ -183,14 +183,15 @@ export const APP_CATEGORY_DEFINITIONS: readonly Category[] = Object.freeze([
     defaultEnabled: true,
     kinds: Object.freeze(['revision_recheck']),
   }),
-  // #1688: the Friday card. Once a week per app, what went live and who
-  // made it, and what is waiting on votes; nothing at all on a quiet week.
-  // The card itself lands in the app's chat regardless — this gates the
-  // notification and push that point at it.
+  // #1688: the Friday card. Once a week, what went live and what is
+  // waiting on votes; nothing at all on a quiet week.
+  // #6371: ONE notification covers every project the person is in, and
+  // opens the This week page; each project's own card still lands in its
+  // Workshop (services/app-notices.js) and is not gated by this.
   Object.freeze({
     key: 'weekly_digest',
-    label: 'Weekly summary of what shipped',
-    description: 'One card a week in the app’s chat: what went live and who made it, and what is waiting on votes. Nothing on a quiet week.',
+    label: 'Weekly digest',
+    description: 'One notification on Friday covers what went live and what is waiting for approval across your projects. Each project’s own card stays in its Workshop.',
     defaultEnabled: true,
     kinds: Object.freeze(['weekly_digest']),
   }),

@@ -88,6 +88,7 @@ import { SidePanel } from './features/side-panel';
 import { AgentSessionScreen } from './features/agent-session';
 import { AiScreen } from './features/ai';
 import { WorkshopScreen } from './features/workshop';
+import { WeeklyDigestScreen } from './features/weekly-digest';
 import { NotificationsIsland } from './features/notifications';
 import { MobileInstallBanner } from './features/mobile-install';
 import { SettingsScreen } from './features/settings';
@@ -199,6 +200,15 @@ export function Shell() {
           App.REACT_SCREEN_IDS).
       */}
       <Island name="WorkshopScreen"><WorkshopScreen /></Island>
+      {/*
+          This week (#6371): the page the Friday weekly digest notification
+          opens, listing each project's changes that went live and its open
+          votes over the last seven days. A fully React-owned sibling screen
+          like #workshop-screen: it ships hidden and empty, loads from the
+          controller's open(), and is shown through the visibility store
+          (#weekly-digest-screen is in App.REACT_SCREEN_IDS).
+      */}
+      <Island name="WeeklyDigestScreen"><WeeklyDigestScreen /></Island>
       {/*
           Leaderboard screen (hidden by default): the one place the group's
           shared progress lives — the Topochain standings, the Kudos

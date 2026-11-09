@@ -71,6 +71,102 @@
     "text": "No time in apps this week yet. Open an app and your days show here.",
     "description": "The one line in the \"This week\" card on the viewer's profile when they spent no time in apps and opened none in the last seven days."
   },
+  "activity.mergedLabel_one": {
+    "text": "change live",
+    "description": "Label under the number 1 in the \"This week\" card on the viewer's profile: how many of their changes went live in the last seven days. Lower case."
+  },
+  "activity.mergedLabel_other": {
+    "text": "changes live",
+    "description": "Label under a number in the \"This week\" card on the viewer's profile: how many of their changes went live in the last seven days. Lower case."
+  },
+  "activity.challengesLabel_one": {
+    "text": "challenge done",
+    "description": "Label under the number 1 in the \"This week\" card on the viewer's profile: how many challenges they completed in the last seven days. Lower case."
+  },
+  "activity.challengesLabel_other": {
+    "text": "challenges done",
+    "description": "Label under a number in the \"This week\" card on the viewer's profile: how many challenges they completed in the last seven days. Lower case."
+  },
+  "activity.share": {
+    "text": "Share",
+    "description": "Button beside the title of the \"This week\" card on the viewer's profile. It opens the card that shares those figures."
+  },
+  "weekShare.title": {
+    "text": "Share your week",
+    "description": "Title of the card opened by Share on the viewer's profile, where they choose which of the week's figures to share."
+  },
+  "weekShare.note": {
+    "text": "Choose what to include. Nothing is posted for you, and sharing earns no points.",
+    "description": "One line under the title of the \"Share your week\" card. It says the viewer controls what is included, that nothing is published on their behalf, and that sharing awards no points."
+  },
+  "weekShare.preview": {
+    "text": "Preview",
+    "description": "Label above the exact text that will be shared from the \"Share your week\" card."
+  },
+  "weekShare.intro": {
+    "text": "My week on Homeroom:\n{{facts}}",
+    "description": "The opening line of the text a viewer shares from their profile, above one line for each figure they chose. {{facts}} is those lines, one per figure, such as \"3h 40m time in apps\", each followed by the address where that week can be seen, already separated by line breaks."
+  },
+  "weekShare.itemWithUrl": {
+    "text": "{{fact}} {{url}}",
+    "description": "One line of the text a viewer shares from their profile: one figure from their week followed by the address where that week can be seen, which is the viewer's public profile page or, when that page is not public, Homeroom's own address. {{fact}} is the figure, such as \"3h 40m time in apps\"; {{url}} is the address."
+  },
+  "weekShare.item.time": {
+    "text": "{{time}} time in apps",
+    "description": "One switchable figure on the \"Share your week\" card: a length of time, such as \"3h 40m\", followed by what it measures. {{time}} is already written in this language's short form."
+  },
+  "weekShare.item.apps_one": {
+    "text": "{{number}} app opened",
+    "description": "One switchable figure on the \"Share your week\" card: the number 1, followed by what it counts (apps opened in the last seven days)."
+  },
+  "weekShare.item.apps_other": {
+    "text": "{{number}} apps opened",
+    "description": "One switchable figure on the \"Share your week\" card: a number followed by what it counts (apps opened in the last seven days)."
+  },
+  "weekShare.item.merged_one": {
+    "text": "{{number}} change live",
+    "description": "One switchable figure on the \"Share your week\" card: the number 1, followed by what it counts (the viewer's changes that went live in the last seven days)."
+  },
+  "weekShare.item.merged_other": {
+    "text": "{{number}} changes live",
+    "description": "One switchable figure on the \"Share your week\" card: a number followed by what it counts (the viewer's changes that went live in the last seven days)."
+  },
+  "weekShare.item.built": {
+    "text": "Built in: {{apps}}",
+    "description": "One switchable figure on the \"Share your week\" card, and the line it becomes in the shared text: the names of the apps the viewer's changes went live in, such as \"Built in: Homeroom, Notes\". {{apps}} is a comma-separated list of app names, each followed by its own address in the shared text."
+  },
+  "weekShare.appWithUrl": {
+    "text": "{{name}} {{url}}",
+    "description": "One app inside the line of shared text that names the apps the viewer's changes went live in: the app's own name followed by its own address, such as \"Notes https://app.onhomeroom.com/#app/notes\", so a reader can tell which link belongs to which app. {{name}} is the app's name; {{url}} is its address."
+  },
+  "weekShare.item.challenges_one": {
+    "text": "{{number}} challenge done",
+    "description": "One switchable figure on the \"Share your week\" card: the number 1, followed by what it counts (challenges the viewer completed in the last seven days)."
+  },
+  "weekShare.item.challenges_other": {
+    "text": "{{number}} challenges done",
+    "description": "One switchable figure on the \"Share your week\" card: a number followed by what it counts (challenges the viewer completed in the last seven days)."
+  },
+  "weekShare.share": {
+    "text": "Share",
+    "description": "The primary button on the \"Share your week\" card. It opens the device's own share menu with the chosen figures."
+  },
+  "weekShare.copy": {
+    "text": "Copy",
+    "description": "Button beside Share on the \"Share your week\" card. It copies the chosen figures to the clipboard."
+  },
+  "weekShare.copied": {
+    "text": "Copied",
+    "description": "Confirmation shown on the \"Share your week\" card after its Copy button put the text on the clipboard."
+  },
+  "weekShare.copyFailed": {
+    "text": "Couldn't copy",
+    "description": "Shown on the \"Share your week\" card when the text could not be put on the clipboard."
+  },
+  "weekShare.close": {
+    "text": "Close",
+    "description": "Accessible name of the × button that closes the \"Share your week\" card. It is not shown on screen."
+  },
   "stats.live": {
     "text": "live",
     "description": "Label under a number on the viewer's profile: how many of their changes were approved and are running. Lower case; an adjective."

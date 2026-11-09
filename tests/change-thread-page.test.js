@@ -440,15 +440,16 @@ test('#6237: on a GitHub-hosted project a change reads "PR 6230", and "#" is a r
   assert.equal(message('project:topic.thread.page.changeNumberedPr', { number: 6230, by: 'homeroom_bot' }),
     'Change · PR 6230 · homeroom_bot');
 
-  // The elsewhere line: its own change reads PR, the request it lives on
+  // The elsewhere card: its own change reads PR, the request it lives on
   // keeps '#', so the two numbers can never be mistaken for one another.
   const elsewhere = withRepo('https://github.com/Usernode-Labs/social-vibecoding', () =>
-    renderComponent(CHANGES, 'Elsewhere', { list: [{ id: 91, number: 6223, on: 6207 }] }));
-  assert.match(elsewhere, /Change PR 6223 for this request is on/);
-  assert.match(elsewhere, /#6207/);
+    renderComponent(CHANGES, 'Elsewhere', { list: [{ id: 91, number: 6223, on: 6207, request: 6210 }] }));
+  assert.match(elsewhere, /Change PR 6223/);
+  assert.match(elsewhere, /says it closes this/);
+  assert.match(elsewhere, /href="#app\/homeroom\/dev\/issues\/6207"/);
   assert.doesNotMatch(elsewhere, /Change #6223/);
-  assert.equal(message('project:topic.thread.page.elsewherePr', { number: 6223, on: 6207 }),
-    'Change PR 6223 for this request is on <0>#6207</0>');
+  assert.equal(message('project:topic.thread.page.claimsPr', { number: 6223 }),
+    '<0>Change PR 6223</0> says it closes this');
 
   // The tag on a reply written on the change.
   assert.equal(message('project:topic.request.stream.onChangePr', { number: 6230 }), 'on change PR 6230');
@@ -462,8 +463,9 @@ test('#6237: on Homeroom\'s git host, requests and changes share one counter and
   assert.match(html, /Change #6230 · homeroom_bot/);
   assert.doesNotMatch(html, /PR 6230/);
   const elsewhere = withRepo('https://git.onhomeroom.com/apps/social-vibecoding', () =>
-    renderComponent(CHANGES, 'Elsewhere', { list: [{ id: 91, number: 6223, on: 6207 }] }));
-  assert.match(elsewhere, /Change #6223 for this request is on/);
+    renderComponent(CHANGES, 'Elsewhere', { list: [{ id: 91, number: 6223, on: 6207, request: 6210 }] }));
+  assert.match(elsewhere, /Change #6223/);
+  assert.match(elsewhere, /says it closes this/);
 });
 
 test('#6406: a change built from v1, with a v2 on the request, says so on its plan line', () => {

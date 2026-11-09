@@ -74,6 +74,9 @@ export const TAB_FOR_SCREEN = Object.freeze({
   // One Home (#6361): Needs you, the page left of the Communities screen, is
   // a page under Home, reached from it.
   'workshop-screen': 'home',
+  // This week (#6371): the page the weekly digest's bell row opens. A page
+  // under Home too, with its arrow up.
+  'weekly-digest-screen': 'home',
   'profile-screen': 'me',
   'leaderboard-screen': 'me',
   'settings-screen': 'me',

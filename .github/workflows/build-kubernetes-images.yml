@@ -29,10 +29,8 @@ concurrency:
 jobs:
   security-lockfiles:
     name: Audit all three lockfiles
-    # A gate on publishing, not on building (28 Oct 2026: the image builds
-    # waited ~1.7 min for these): the images build beside them and the release
-    # job waits for every one to pass. A run that will not release (a merge
-    # behind main's tip) skips them; a pull request still runs them.
+    # Findings block PR merges. After merge they are advisory; a broken audit
+    # still fails. Runs that will not release skip this job.
     needs: plan
     if: ${{ !cancelled() && (github.event_name == 'pull_request' || needs.plan.outputs.should_release == 'true') }}
     runs-on: ubuntu-latest
@@ -48,21 +46,19 @@ jobs:
           image_npm_root="$(npm root --global)"
           rm -rf "$image_npm_root/npm/node_modules/undici"
           mv "$image_npm_root/undici" "$image_npm_root/npm/node_modules/undici"
-      # A finding blocks only when this change introduces it: compared with a
-      # pull request's base, or, for a release, with what is live (the newest
-      # stable chart's source revision). One production already ships is
-      # reported as a warning (scripts/security-findings.js). With no
-      # readable baseline every finding blocks, as before.
+      # Main has required pre-merge scans. Other release branches keep their
+      # existing baseline gate until they have the same merge protection.
       - uses: azure/setup-helm@v4
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
         with:
           version: v3.19.0
       - name: Read the live release
         id: live
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
         run: node scripts/live-release.js
       - name: Fetch the baseline commit
         id: baseline
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -74,12 +70,13 @@ jobs:
             echo "revision=$revision" >> "$GITHUB_OUTPUT"
             echo "name=$name (${revision:0:9})" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning title=Security baseline::No baseline commit could be read; every finding blocks."
+            echo "::warning title=Security baseline::No baseline commit could be read; findings require retry or review of the unavailable comparison."
           fi
       - run: node scripts/security-audit.js
         env:
           SECURITY_BASELINE_REVISION: ${{ steps.baseline.outputs.revision }}
           SECURITY_BASELINE_NAME: ${{ steps.baseline.outputs.name }}
+          SECURITY_AUDIT_ONLY: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && '1' || '0' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -87,6 +84,25 @@ jobs:
           path: security-reports/
           if-no-files-found: error
           retention-days: 30
+
+  security-merge-gate:
+    name: Security merge gate
+    needs: [security-lockfiles, security-images]
+    # A skipped dependency is not a successful scan. Run even after failure
+    # or cancellation so GitHub cannot treat a skipped gate as a pass.
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require successful lockfile and image checks
+        env:
+          LOCKFILES_RESULT: ${{ needs.security-lockfiles.result }}
+          IMAGES_RESULT: ${{ needs.security-images.result }}
+        run: |
+          if [ "$LOCKFILES_RESULT" != success ] || [ "$IMAGES_RESULT" != success ]; then
+            echo "::error title=Security merge gate::Lockfiles: $LOCKFILES_RESULT; images: $IMAGES_RESULT. All security checks must succeed before merging."
+            exit 1
+          fi
 
   security-regressions:
     name: Security regressions (${{ matrix.os }})
@@ -113,7 +129,7 @@ jobs:
           mv "$image_npm_root/undici" "$image_npm_root/npm/node_modules/undici"
       - run: npm ci
       # Deliberately no --test-force-exit: open handles must fail the check.
-      - run: node --require ./tests/lib/test-net.js --test --test-timeout=180000 tests/build-stop-hook.test.js tests/inloop-launch.test.js tests/security-update.test.js tests/web-fetch.test.js tests/web-fetch-dns-pinning.test.js
+      - run: node --require ./tests/lib/test-net.js --test --test-timeout=180000 tests/build-stop-hook.test.js tests/inloop-launch.test.js tests/security-update.test.js tests/security-gate-baseline.test.js tests/security-audit-report.test.js tests/web-fetch.test.js tests/web-fetch-dns-pinning.test.js
         timeout-minutes: 6
 
       - run: node --require ./tests/lib/test-net.js --test --test-timeout=60000 tests/private-streams.test.js
@@ -161,6 +177,7 @@ jobs:
           node --test --test-timeout=60000 tests/workflow-event-authority-postgres.test.js tests/turn-publication-postgres.test.js tests/worker-release-workflow-postgres.test.js
           node --test --test-timeout=60000 tests/worker-eviction-postgres.test.js
           node --test --test-timeout=60000 tests/worker-stop-workflow-postgres.test.js tests/platform-preview-startup-postgres.test.js
+          node --require ./tests/lib/test-net.js --test --test-timeout=180000 tests/platform-signals.test.js tests/platform-signals-postgres.test.js
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres17.ports[5432] }}/postgres
           TEST_PREVIEW_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres18.ports[5432] }}/postgres
@@ -232,36 +249,27 @@ jobs:
           buildkitd-config-inline: |
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
-      # The live image of this component is the baseline: a finding on a
-      # package it already ships, at the same version, is reported rather than
-      # blocking (scripts/check-image-security.sh). Standalone and the starter
-      # have no live image and keep the strict rule.
-      - uses: azure/setup-helm@v4
-        with:
-          version: v3.19.0
-      - name: Read the live release
-        id: live
-        run: node scripts/live-release.js
+      # Baselines are built lazily from the exact PR base. Never restore an
+      # inventory cache that an earlier PR revision could have written.
       - name: Build and scan the finished image
         shell: bash
         env:
           COMPONENT: ${{ matrix.component }}
           DOCKERFILE: ${{ matrix.dockerfile }}
           CONTEXT: ${{ matrix.context }}
-          LIVE_DIGEST: ${{ steps.live.outputs[matrix.component] }}
+          SECURITY_BASELINE_REVISION: ${{ github.event.pull_request.base.sha }}
+          SECURITY_SCAN_PLATFORM: linux/amd64
         run: |
           set -euo pipefail
-          if [ -n "$LIVE_DIGEST" ]; then
-            export BASELINE_IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/social-vibecoding-$COMPONENT@$LIVE_DIGEST"
-          fi
+          out="$RUNNER_TEMP/security-$COMPONENT"
+          mkdir -p "$out"
+          trap 'if [ ! -s "$out/assessment.json" ]; then node scripts/security-findings.js --unavailable "$out" "$COMPONENT" "Image build or inventory generation failed"; fi' ERR
           if [ "$COMPONENT" = starter ]; then
             node scripts/security-starter.js "$RUNNER_TEMP/starter-source"
             CONTEXT="$RUNNER_TEMP/starter-source"
             DOCKERFILE="$CONTEXT/Dockerfile"
           fi
           docker buildx build --load --pull --platform linux/amd64 -t "security-$COMPONENT" -f "$DOCKERFILE" "$CONTEXT"
-          out="$RUNNER_TEMP/security-$COMPONENT"
-          mkdir -p "$out"
           sh scripts/create-image-sbom.sh "security-$COMPONENT" "$out/sbom.spdx.json"
           sh scripts/check-image-security.sh "security-$COMPONENT" "$out" "$out/sbom.spdx.json" "$COMPONENT"
       - name: Verify capture browser and media
@@ -275,55 +283,6 @@ jobs:
         with:
           name: pr-image-security-${{ matrix.component }}
           path: ${{ runner.temp }}/security-${{ matrix.component }}/
-          if-no-files-found: error
-          retention-days: 30
-
-  scheduled-image-audit:
-    name: Audit reused ${{ matrix.component }} image
-    if: github.event_name == 'schedule'
-    needs: plan
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        component: [platform, worker, capture]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '22.23.4'
-      - run: |
-          npm install --global npm@11.21.1 undici@6.29.1
-          image_npm_root="$(npm root --global)"
-          rm -rf "$image_npm_root/npm/node_modules/undici"
-          mv "$image_npm_root/undici" "$image_npm_root/npm/node_modules/undici"
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@v4
-      - name: Resolve the existing image
-        id: reuse
-        env:
-          COMPONENT: ${{ matrix.component }}
-          FORCE_REBUILD: none
-          REUSE_CURRENT_PLATFORM: ${{ matrix.component == 'platform' }}
-          CLAUDE_CODE_VERSION: ${{ needs.plan.outputs.claude_code_version }}
-        run: node scripts/resolve-kubernetes-image.js
-      # A missing worker is built and checked by the ordinary build job in
-      # this same run. Existing images are scanned even when no release runs.
-      - name: Scan existing immutable image
-        if: steps.reuse.outputs.digest != ''
-        env:
-          IMAGE: ${{ steps.reuse.outputs.image }}@${{ steps.reuse.outputs.digest }}
-          REPORT: ${{ runner.temp }}/scheduled-security-${{ matrix.component }}
-        run: sh scripts/check-published-image.sh "$IMAGE" "$REPORT" "${{ matrix.component }}"
-      - uses: actions/upload-artifact@v4
-        if: always() && steps.reuse.outputs.digest != ''
-        with:
-          name: scheduled-image-security-${{ matrix.component }}
-          path: ${{ runner.temp }}/scheduled-security-${{ matrix.component }}/
           if-no-files-found: error
           retention-days: 30
 
@@ -609,9 +568,8 @@ jobs:
           provenance: mode=max
           sbom: true
 
-      # The live image of this component is the baseline: a finding on a
-      # package it already ships, at the same version, is reported rather than
-      # blocking the release (scripts/check-image-security.sh).
+      # After merge, findings warn instead of holding delivery. Runtime,
+      # inventory and scanner failures still fail this job.
       - uses: azure/setup-helm@v4
         with:
           version: v3.19.0
@@ -624,6 +582,7 @@ jobs:
           REPORT: ${{ runner.temp }}/security-${{ matrix.component }}
           LIVE_DIGEST: ${{ steps.live.outputs[matrix.component] }}
           REGISTRY_OWNER: ${{ steps.registry.outputs.owner }}
+          SECURITY_AUDIT_ONLY: ${{ github.ref == 'refs/heads/main' && '1' || '0' }}
         run: |
           if [ -n "$LIVE_DIGEST" ]; then
             export BASELINE_IMAGE="ghcr.io/$REGISTRY_OWNER/social-vibecoding-${{ matrix.component }}@$LIVE_DIGEST"
@@ -672,16 +631,14 @@ jobs:
 
   release:
     name: Publish atomic Helm release
-    needs: [build, scheduled-image-audit, security-lockfiles, security-regressions, preview-schema-compatibility]
-    # Schedule-only audits skip on pushes/dispatches. Override the default
-    # success() dependency check while still refusing a failed/skipped build,
-    # failed scheduled scans, a gate that did not pass, or cancellation.
+    needs: [build, security-lockfiles, security-regressions, preview-schema-compatibility]
+    # Full daily audits maintain alerts in security-audit.yml. Publishing
+    # depends on candidate regression checks, not existing audit findings.
     if: >-
       ${{ !cancelled() && needs.build.result == 'success'
           && needs['security-lockfiles'].result == 'success'
           && needs['security-regressions'].result == 'success'
-          && needs['preview-schema-compatibility'].result == 'success'
-          && (github.event_name != 'schedule' || needs['scheduled-image-audit'].result == 'success') }}
+          && needs['preview-schema-compatibility'].result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       # Reads this workflow's own runs: when the newest release went out, and

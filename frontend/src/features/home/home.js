@@ -119,6 +119,10 @@ const Home = {
     // later refreshes must preserve the position the user chose.
     Home._searchReveal.sync();
     if (App.user && !App._sessionFromSnapshot) window.UsernodeReact?.appAllowance?.refresh?.();
+    // The tiles' vote counts (request 6500): a bridge read, the same as the
+    // allowance above, so every path into load() (a visit to Home, a pull,
+    // the late-answer correction) re-reads what the tiles count.
+    if (App.user) window.UsernodeReact?.homePins?.refresh?.();
     Home._probeShortcutSupport();
     // The header's standing action, from the remembered row, BEFORE the
     // fetch below rather than after it. render() is the call every path

@@ -60,6 +60,7 @@
 const crypto = require('crypto');
 const events = require('./events');
 const log = require('./logger');
+const arrivalSource = require('./arrival-source');
 
 const KINDS = Object.freeze(['invite_opened', 'member_joined', 'first_message']);
 // A first message counts as a hello for this long after joining. Past it, the
@@ -77,6 +78,43 @@ const BROWSER_VALUE_RE = /^[A-Za-z0-9_-]{22,64}$/;
 // The cookie a browser was counted with before an open counted a person
 // once (one per link, valued '1'): that browser has been told about already.
 const LEGACY_COOKIE_PREFIX = 'hr_io_';
+
+// Where the visitor came from (#6540): the invite page's request records the
+// referring host and the link's own `via` tag here, HttpOnly, for one hour.
+// It is read by the page's two API reads, which are what count the open, so
+// the source travels with the open without the page having to send it. Only
+// a host and a short tag are ever kept (`arrival-source.js`).
+const SOURCE_COOKIE = 'hr_iv_src';
+const SOURCE_COOKIE_MAX_AGE_MS = 60 * 60 * 1000;
+
+/**
+ * Record where this visitor came from, when `source` holds anything to
+ * record. `host` is a hostname or 'none' (looked for, none given); `via` is
+ * the link's short tag. A null `source` leaves an existing cookie alone.
+ */
+function setSourceCookie(req, res, source) {
+  if (!source) return;
+  const host = source.referrerHost === 'none' ? 'none' : arrivalSource.hostOf(source.referrerHost);
+  if (host !== 'none' && !host) return;
+  const via = arrivalSource.cleanVia(source.via) || '';
+  res.cookie(SOURCE_COOKIE, `${host}|${via}`, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: req.secure || req.headers?.['x-forwarded-proto'] === 'https',
+    maxAge: SOURCE_COOKIE_MAX_AGE_MS,
+    path: '/',
+  });
+}
+
+/** The source this request's browser carries, or null when it carries none. */
+function sourceFrom(req) {
+  const value = req?.cookies?.[SOURCE_COOKIE];
+  if (typeof value !== 'string' || !value) return null;
+  const [rawHost, rawVia] = value.split('|');
+  const host = rawHost === 'none' ? 'none' : arrivalSource.hostOf(rawHost);
+  if (host !== 'none' && !host) return null;
+  return { referrerHost: host, via: arrivalSource.cleanVia(rawVia) };
+}
 
 /** This request's browser, as the hash an open is kept by, or null. */
 function browserFrom(req) {
@@ -207,7 +245,7 @@ const opensLock = (makerId, appId) => `invite-activity:${makerId}:${appId}:invit
  */
 async function openersOf(client, { makerId, appId, userId = null, browser = null }) {
   const { rows } = await client.query(
-    `SELECT id, user_id, browser, notification_id
+    `SELECT id, user_id, browser, notification_id, referrer_host, via
        FROM community_invite_opens
       WHERE maker_id = $1 AND app_id = $2
         AND (($3::int IS NOT NULL AND user_id = $3::int) OR ($4::text IS NOT NULL AND browser = $4::text))
@@ -230,11 +268,20 @@ async function mergeOpeners(client, rows, { userId = null, browser = null }) {
     await client.query('DELETE FROM community_invite_opens WHERE id = $1', [extra.id]);
     if (extra.notification_id != null) touched.add(Number(extra.notification_id));
   }
+  // The first open's source wins; a gap in the kept row is filled from the
+  // earliest row merged into it, so merging never loses where somebody came
+  // from.
+  const earliest = [...rest].sort((a, b) => a.id - b.id);
+  const firstHost = keep.referrer_host != null ? keep.referrer_host
+    : (earliest.find((r) => r.referrer_host != null) || {}).referrer_host ?? null;
+  const firstVia = keep.via != null ? keep.via
+    : (earliest.find((r) => r.via != null) || {}).via ?? null;
   await client.query(
     `UPDATE community_invite_opens
-        SET user_id = COALESCE(user_id, $2::int), browser = COALESCE(browser, $3::text)
+        SET user_id = COALESCE(user_id, $2::int), browser = COALESCE(browser, $3::text),
+            referrer_host = COALESCE(referrer_host, $4::text), via = COALESCE(via, $5::text)
       WHERE id = $1`,
-    [keep.id, userId, browser],
+    [keep.id, userId, browser, firstHost, firstVia],
   );
   return touched;
 }
@@ -366,7 +413,7 @@ async function tellMaker(client, { makerId, appId, openId }) {
  * false } when they were not (anybody signed out, or somebody who had
  * opened it before), or null when nothing was counted.
  */
-async function noteOpened(pool, { token, viewerId = null, browser = null, seenBefore = false }) {
+async function noteOpened(pool, { token, viewerId = null, browser = null, seenBefore = false, source = null }) {
   try {
     const { rows } = await pool.query(
       `SELECT ci.id, ci.created_by, ci.app_id, ci.community_id,
@@ -418,15 +465,17 @@ async function noteOpened(pool, { token, viewerId = null, browser = null, seenBe
         if (untold) told = await tellMaker(client, { makerId, appId, openId: known[0].id });
       } else if (seenBefore || joinedSince.length) {
         await client.query(
-          `INSERT INTO community_invite_opens (maker_id, app_id, user_id, browser) VALUES ($1, $2, $3, $4)`,
-          [makerId, appId, viewerId, browser],
+          `INSERT INTO community_invite_opens (maker_id, app_id, user_id, browser, referrer_host, via)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [makerId, appId, viewerId, browser, source?.referrerHost ?? null, source?.via ?? null],
         );
       } else {
         counted = true;
         const { rows: made } = await client.query(
-          `INSERT INTO community_invite_opens (maker_id, app_id, user_id, browser) VALUES ($1, $2, $3, $4)
+          `INSERT INTO community_invite_opens (maker_id, app_id, user_id, browser, referrer_host, via)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id`,
-          [makerId, appId, viewerId, browser],
+          [makerId, appId, viewerId, browser, source?.referrerHost ?? null, source?.via ?? null],
         );
         if (signedIn) told = await tellMaker(client, { makerId, appId, openId: made[0].id });
       }
@@ -447,7 +496,7 @@ async function noteOpened(pool, { token, viewerId = null, browser = null, seenBe
         type: events.EVENT_TYPES.INVITE_OPENED,
         userId: viewerId ?? undefined,
         appId,
-        metadata: { inviteId: invite.id, signedIn },
+        metadata: { inviteId: invite.id, signedIn, referrerHost: source?.referrerHost ?? null, via: source?.via ?? null },
       });
     }
     if (!told || !told.row) return { row: null, fresh: false };
@@ -532,8 +581,11 @@ module.exports = {
   HELLO_WITHIN_DAYS,
   OPEN_PUSH_DELAY_MINUTES,
   BROWSER_COOKIE,
+  SOURCE_COOKIE,
   browserFrom,
   ensureBrowser,
+  setSourceCookie,
+  sourceFrom,
   countedBefore,
   ring,
   noteJoined,

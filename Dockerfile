@@ -63,9 +63,10 @@ COPY --from=shell /build/public/index.html ./public/index.html
 COPY frontend ./frontend
 RUN npm run build:css
 
-# Same Docker/buildx versions as Alpine, from the upstream security rebuild
-# with Go 1.26.10 (Alpine's binaries still embed Go 1.26.9).
+# Docker CLI from the upstream Go security rebuild.
 FROM docker:29.9.2-cli AS docker-tools
+# Stable Buildx still embeds vulnerable x/net; this official RC carries v0.62.0.
+FROM docker/buildx-bin:0.39.0-rc1@sha256:a765b549a3ac9bc905152f4387c2f03763930a9b08020b9c3eae1c9d3290f559 AS buildx-tools
 
 # Stage 3 — production runtime.
 FROM node:22.23.4-alpine
@@ -88,7 +89,7 @@ RUN npm install --global npm@11.21.1 undici@6.29.1 \
 # Service/network connection in both Docker and Kubernetes modes.
 RUN apk add --no-cache git postgresql-client
 COPY --from=docker-tools /usr/local/bin/docker /usr/local/bin/docker
-COPY --from=docker-tools /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
+COPY --from=buildx-tools /buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --production

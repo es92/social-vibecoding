@@ -1484,6 +1484,36 @@ function issueRoutes(config) {
     }
   });
 
+  // #6420: a change's `linked_issues` is a claim, not a merge. The request's
+  // requester can answer "This doesn't close it": the claim is marked (the
+  // change's vote card reads the same row) and one line is posted in the
+  // change's discussion so voters see it. The request stays linked: only its
+  // builder can remove it, and merging still closes it.
+  //
+  //   POST /api/apps/:slug/issues/:number/changes/:sessionId/not-closing
+  router.post('/api/apps/:slug/issues/:number/changes/:sessionId/not-closing', issueKindLimiter, sameOriginBrowserOnly,
+    communities.requireAppMembership(pool), async (req, res) => {
+      try {
+        const n = Number(req.params.number);
+        const sessionId = Number(req.params.sessionId);
+        if (!Number.isSafeInteger(n) || n <= 0 || !Number.isSafeInteger(sessionId) || sessionId <= 0) {
+          return res.status(400).json({ error: 'Invalid request or change' });
+        }
+        const app = await appAccess.getAppForUser(
+          pool, req.params.slug, req.user, 'view', appAccess.ACCESS_COLUMNS,
+        );
+        if (!app) return res.status(404).json({ error: 'App not found' });
+        const out = await require('../services/change-claims').dispute(pool, {
+          appId: app.id, requestNumber: n, sessionId, userId: req.user.id, username: req.user.username,
+        });
+        if (!out.ok) return res.status(out.status || 400).json({ error: out.error, ...(out.code ? { code: out.code } : {}) });
+        return res.json({ ok: true, disputed: true });
+      } catch (err) {
+        log.error('issues', 'Answering a change\'s claim failed', { message: err.message, slug: req.params.slug });
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
   router.post('/api/apps/:slug/issues', issueKindLimiter, communities.requireAppMembership(pool), async (req, res) => {
     let { title, description, kind = 'general', payload = {} } = req.body || {};
 

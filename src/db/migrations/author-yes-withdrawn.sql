@@ -1,0 +1,11 @@
+-- #6477: the approval epoch of a change whose author took their own vote back.
+--
+-- On the counted rules (atLeast, percentOfEveryone, percentOfActive) proposing
+-- a change counts as its author's yes while they have neither voted yes nor
+-- no. Without this column, taking that yes back put it straight back: the
+-- gate re-added the proposing yes because the author was in neither voter
+-- set, so the count never moved (and taking back a No moved it UP). A
+-- retraction by the author now records the epoch it was made at; the gate
+-- gives no yes for proposing while it matches the current epoch, and a new
+-- version (an epoch bump) counts proposing again.
+ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS author_yes_withdrawn_epoch INTEGER;

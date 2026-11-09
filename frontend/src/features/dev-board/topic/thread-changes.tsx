@@ -55,7 +55,7 @@
  */
 
 import { createContext, Fragment, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode, RefObject } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode, RefObject } from 'react';
 
 import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { i18n, t as translate } from '../../../lib/i18n/runtime';
@@ -63,6 +63,7 @@ import { projectChangesOnGithub } from '../../../lib/change-ref';
 import { reload as reloadTab } from '../../../lib/tab-build';
 import { detailDrawn, detailEntry, markShotsArrival, takeShotsArrival } from '../../ai/detail';
 import { CheckIcon, ChevronDownIcon, EllipsisHorizontalIcon, XIcon } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/feed';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { ActionButton, StatusPill } from '../card/dev-card';
@@ -140,19 +141,32 @@ function changeBotAtWork(item: ThreadItem, view: ChangeView | null): boolean {
  * being built is read too, for its ⋯ (its page's rows, the Build door among
  * them); it draws its cards once it is up for a vote.
  */
-function useChangeViews(items: ThreadItem[]): Array<ChangeView | null> {
+function useChangeViews(items: ThreadItem[], tick = 0): Array<ChangeView | null> {
   const [rows, setRows] = useState<Record<number, any>>({});
   const [revision, setRevision] = useState(0);
+  // #6477: a caller's own bump (the ballot, after it picks) is a re-read after
+  // a vote moved the figures, so it skips the cached copy the first read
+  // painted.
+  const seenTick = useRef(tick);
+  // #6490: the status each change was last read at. When a merge arrives, the
+  // item's status moves (promoted → merged) but the service worker may still
+  // answer with its saved pre-merge copy, so a moved status asks past it.
+  const seen = useRef<Record<number, string>>({});
   const key = items.map((i) => `${i.id}:${i.status}`).join(',');
   useEffect(() => {
     if (!items.length) return undefined;
+    const bumped = seenTick.current !== tick;
+    seenTick.current = tick;
     const abort = new AbortController();
     // #6441: a change's page is the request's page now, so a change drawn
     // here has been seen: its "ready to try" leaves the bell. The call is a
     // no-op while nothing is unread.
     for (const item of items) window.Notifications?.markProposalSeen?.(item.id);
     for (const item of items) {
-      readChangeDetail({ id: item.id, status: item.status }, false, abort.signal)
+      const before = seen.current[item.id];
+      const fresh = bumped || (before !== undefined && before !== item.status);
+      seen.current[item.id] = item.status;
+      readChangeDetail({ id: item.id, status: item.status }, false, abort.signal, { fresh })
         .then((row) => { if (!abort.signal.aborted && row) setRows((was) => ({ ...was, [item.id]: row })); })
         .catch(() => {});
     }
@@ -168,7 +182,7 @@ function useChangeViews(items: ThreadItem[]): Array<ChangeView | null> {
     };
     window.addEventListener('change-detail-refresh', refresh);
     return () => { abort.abort(); window.removeEventListener('change-detail-refresh', refresh); };
-  }, [key, revision]);
+  }, [key, revision, tick]);
   return useMemo(() => items.map((item) => {
     const av = appView();
     const row = rows[item.id];
@@ -466,14 +480,16 @@ function AlsoCloses({ item, request }: { item: ThreadItem; request: number }): R
   const merged = item.state === 'merged';
   const linkClass = 'font-semibold text-violet-700 hover:underline dark:text-violet-300';
   const parts: ReactNode[] = shown.map((n) => (
-    <a
-      key={`n${n}`}
-      href={slug ? `#app/${encodeURIComponent(slug)}/dev/issues/${n}` : `#${n}`}
-      className={linkClass}
-      data-thread-change-also-on={n}
-    >
-      {`#${n}`}
-    </a>
+    <Fragment key={`n${n}`}>
+      <a
+        href={slug ? `#app/${encodeURIComponent(slug)}/dev/issues/${n}` : `#${n}`}
+        className={linkClass}
+        data-thread-change-also-on={n}
+      >
+        {`#${n}`}
+      </a>
+      {item.notConfirmed?.includes(n) ? ` ${t('project:topic.thread.page.claimNotConfirmed')}` : null}
+    </Fragment>
   ));
   if (rest > 0) {
     parts.push(
@@ -650,37 +666,92 @@ function FoldedChange({ item, i, view, plan, request, open, onToggle }: {
 }
 
 /**
- * D4: a change for this request that lives on another request's page (a
- * change for several requests is on its first one's): one line that says
- * where, whose number opens that page at the change.
+ * #6420: a change for this request that lives on another request's page (a
+ * change for several requests is on its first one's): a small card that says
+ * the change claims to close this request, names it, and gives the requester
+ * "This doesn't close it". Pressing the number or the title opens the change
+ * where it lives. Nothing is unlinked.
  */
-export function Elsewhere({ list }: { list: ThreadElsewhere[] }): ReactNode {
-  const slug = appView()?.appData?.slug || '';
+export function Elsewhere({ list, slug = null, onChanged }: {
+  list: ThreadElsewhere[];
+  slug?: string | null;
+  onChanged?: () => void;
+}): ReactNode {
+  const t = useMessages('project');
+  const [sending, setSending] = useState<number | null>(null);
+  const [failed, setFailed] = useState<number | null>(null);
+  const current = slug || appView()?.appData?.slug || '';
   const github = projectChangesOnGithub();
   if (!list.length) return null;
+  async function dispute(e: ThreadElsewhere) {
+    if (sending != null || !current) return;
+    setSending(e.id);
+    setFailed(null);
+    try {
+      const res = await fetch(
+        `/api/apps/${encodeURIComponent(current)}/issues/${e.request}/changes/${e.id}/not-closing`,
+        { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+      );
+      if (!res.ok) throw new Error(String(res.status));
+      onChanged?.();
+    } catch {
+      setFailed(e.id);
+    } finally {
+      setSending(null);
+    }
+  }
+  const linkClass = 'font-semibold text-violet-700 hover:underline dark:text-violet-300';
   return (
-    <div className="mt-3 flex flex-col gap-1" data-thread-elsewhere={list.length}>
-      {list.map((e) => (
-        <p key={e.id} className="text-[13px] text-zinc-500 dark:text-zinc-400" data-thread-elsewhere-change={e.id}>
-          <RichMessage
-            id={e.number
-              ? (github ? 'project:topic.thread.page.elsewherePr' : 'project:topic.thread.page.elsewhere')
-              : 'project:topic.thread.page.elsewhereUnnumbered'}
-            values={e.number ? { number: e.number, on: e.on } : { on: e.on }}
-            components={[<a
-              key="on"
-              href={slug ? `#app/${encodeURIComponent(slug)}/dev/issues/${e.on}` : `#${e.on}`}
-              className="font-semibold text-violet-700 hover:underline dark:text-violet-300"
-              data-thread-elsewhere-on={e.on}
-              onClick={(event) => {
-                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                appView()?._openChangeOnRequest?.(e.on, e.id);
-              }}
-            />]}
-          />
-        </p>
-      ))}
+    <div className="mt-3 flex flex-col gap-2" data-thread-elsewhere={list.length}>
+      {list.map((e) => {
+        const href = current ? `#app/${encodeURIComponent(current)}/dev/issues/${e.on}` : `#${e.on}`;
+        const keep = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          appView()?._openChangeOnRequest?.(e.on, e.id);
+        };
+        return (
+          <div key={e.id} className="rounded-[20px] bg-[color:var(--dc-sheet-solid)] px-3.5 py-3 shadow-[inset_0_0_0_1px_var(--app-sheet-line)]" data-thread-elsewhere-change={e.id}>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400">
+              <RichMessage
+                id={e.number
+                  ? (github ? 'project:topic.thread.page.claimsPr' : 'project:topic.thread.page.claims')
+                  : 'project:topic.thread.page.claimsUnnumbered'}
+                values={e.number ? { number: e.number } : {}}
+                components={[<a key="n" href={href} className={linkClass} data-thread-elsewhere-on={e.on} onClick={keep} />]}
+              />
+            </p>
+            <p className="mt-0.5 text-[15px] font-[650] leading-snug text-zinc-900 dark:text-zinc-100">
+              <a href={href} className="hover:underline" onClick={keep}>{e.title || t('project:topic.thread.item.changeUnnumbered')}</a>
+            </p>
+            {e.summary ? <p className="mt-0.5 truncate text-[13px] text-zinc-500 dark:text-zinc-400">{e.summary}</p> : null}
+            {e.ask ? (
+              <Button
+                type="button"
+                variant="pillNeutral"
+                size="sm"
+                ink="neutral"
+                className="mt-2.5"
+                disabled={sending === e.id}
+                data-thread-elsewhere-dispute={e.id}
+                onClick={() => void dispute(e)}
+              >
+                {t('project:topic.thread.page.claimDispute')}
+              </Button>
+            ) : null}
+            {e.disputed && e.mine ? (
+              <p className="mt-2.5 text-[13px] text-zinc-500 dark:text-zinc-400" data-thread-elsewhere-disputed={e.id}>
+                {t('project:topic.thread.page.claimDisputed')}
+              </p>
+            ) : null}
+            {failed === e.id ? (
+              <p className="mt-1 text-[13px] text-[color:var(--state-blocked)]" role="alert">
+                {t('project:topic.thread.page.claimDisputeFailed')}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -785,7 +856,7 @@ export function Competing({ slug, data, anchor, options, close, onChanged, plans
   // D5: which changes are open under the ballot; each starts folded.
   const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
   const box = useRef<HTMLDivElement>(null);
-  const views = useChangeViews(options);
+  const views = useChangeViews(options, revision);
   const closeRow = useCloseRow(slug, close, revision);
   // A door to one of these changes (./votes-in-view.ts) lands on the ballot,
   // where it is voted on.
@@ -1237,7 +1308,7 @@ export function ThreadChanges({ slug, data, number, changes, close, onChanged, p
         ) : null}
         {rest.map((item) => <Fragment key={item.id}><ChangeBlock item={item} plan={plans?.get(item.id) || null} request={number} /></Fragment>)}
         {closeAlone ? <CloseVote slug={slug} close={closeAlone} onChanged={onChanged} /> : null}
-        <Elsewhere list={elsewhere} />
+        <Elsewhere list={elsewhere} slug={slug} onChanged={onChanged} />
       </section>
     </ThreadRequests.Provider>
   );

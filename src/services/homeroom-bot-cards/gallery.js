@@ -25,6 +25,8 @@ function sibling(card, image, variant) {
 }
 
 async function decide(pool, config, { user, card, action, value, deps = {} }) {
+  // #6533: a change's pictures are for looking at; they have no actions.
+  if (card?.purpose === 'change') return { ok: false, status: 400, error: 'These pictures are only for looking at.' };
   const p = pictures(deps);
   const image = p.cardImage(card, value);
   if (!image) return { ok: false, status: 404, error: 'No such picture' };

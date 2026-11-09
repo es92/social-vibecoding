@@ -433,7 +433,9 @@ test('Me counts the SAME completions, through the one totals query', () => {
   // rule — so the card, Home and the Challenges tab agree.
   const route = read('src/routes/profile.js');
   const summary = route.slice(route.indexOf("router.get('/api/me/summary'"));
-  assert.match(summary, /readChallengeTotals\(pool, req\.user\.id, season\.id\)/);
+  // The done rule is read once and given to both challenge reads (#6464: the
+  // season total and the week's completed figure), so they agree.
+  assert.match(summary, /readChallengeTotals\(pool, req\.user\.id, season\.id, rule\)/);
   const completed = route.slice(route.indexOf("router.get('/api/me/challenges/completed'"),
     route.indexOf("router.get('/api/me/summary'"));
   // The completed list reads the viewer's done rule once and hands it to the

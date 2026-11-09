@@ -175,6 +175,9 @@ function seed(AppView) {
     id: 34, pr_number: 41, pr_title: 'Persist the theme', status: 'promoted', username: 'carol',
     created_at: at(3), promoted_at: at(3), last_message_at: at(3), linked_issues: [], my_vote: null,
     votes_for: 1, votes_against: 0, yes_count: 1, no_count: 0,
+    // One yes short of its 2, so its vote is still open (#6505: a decided
+    // change draws no Vote at all).
+    votes_required: 2,
   }];
   AppView._govProposals = [];
   AppView._merged = [{

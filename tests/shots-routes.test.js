@@ -113,6 +113,36 @@ test('a retry hands the shots machine the declaration it was given, validated, a
   assert.deepEqual(asked, [{ sessionId: 42, appId: 9, intent: null, actor: 'user:7' }]);
 });
 
+test('#6533: one of a change\'s email pictures answers JSON for a viewer, and 404 for anyone else', async (t) => {
+  const media = require('../src/services/media-store');
+  const store = require('./lib/media-store').useMemoryMedia(t);
+  const body = { kind: 'waitlist_released', side: 'after', subject: "You're in", preheader: 'Bring a friend', html: '<p>Hi</p>', text: 'Hi' };
+  const bytes = Buffer.from(JSON.stringify(body));
+  const key = media.objectKey(bytes);
+  await store.putObject(key, bytes, 'application/json');
+  let allowed = true;
+  const pool = { query: async (sql) => {
+    const text = String(sql);
+    if (text.includes('FROM chat_sessions cs')) return { rows: [{ id: 42, app_id: 9 }] };
+    if (text.includes('FROM change_pictures')) return { rows: [{ id: 'f'.repeat(32), object_key: key, subject: body.subject, preheader: body.preheader }] };
+    throw new Error(`Unexpected query: ${text.slice(0, 80)}`);
+  } };
+  const base = await serve(t, { pool, user: () => 7,
+    stubs: [[appAccess, 'getAppForUser', async () => allowed ? { id: 9, slug: 'demo' } : null]],
+  });
+  const url = base.replace('/shots', `/pictures/${'f'.repeat(32)}`);
+  const res = await fetch(url);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'application/json; charset=utf-8');
+  assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(res.headers.get('cache-control'), 'private, max-age=31536000, immutable');
+  assert.deepEqual(await res.json(), body);
+  allowed = false;
+  assert.equal((await fetch(url)).status, 404);
+  // A picture id that is not this session's is never served.
+  assert.equal((await fetch(base.replace('/shots', '/pictures/not-hex'))).status, 404);
+});
+
 test('artifact range parsing supports full, open, and suffix ranges and fails closed', () => {
   assert.equal(routes.parseRange(undefined, 100), null);
   assert.deepEqual(routes.parseRange('bytes=0-9', 100), { start: 0, end: 9 });

@@ -1,0 +1,9 @@
+[
+  "Security merge gate",
+  "Audit all three lockfiles",
+  "Build and scan platform",
+  "Build and scan standalone",
+  "Build and scan worker",
+  "Build and scan capture",
+  "Build and scan starter"
+]

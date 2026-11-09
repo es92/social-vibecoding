@@ -2376,7 +2376,7 @@ const PLAN_GO_WORDS = new Set([
 // first, its handle or its display name (with the zero-width character the
 // composer writes after the @: homeroom-bot-holds.js mentionPattern).
 const LEADING_MENTIONS_RE = new RegExp(
-  `^\\s*(?:@[\\u200b\\u200c\\u200d\\u2060]?(?:${BOT_USERNAME}|homeroom bot)(?![a-z0-9_-])[\\s,:;.!-]*)+`, 'i',
+  `^\\s*(?:@[\\u200b\\u200c\\u200d\\u2060]?(?:${BOT_USERNAME}|homeroombot|homeroom bot)(?![a-z0-9_-])[\\s,:;.!-]*)+`, 'i',
 );
 
 /** Pure (#4488): whether words written under a plan say to go ahead (PLAN_GO_WORDS). */

@@ -90,6 +90,49 @@ test('apps opened with no time keeps the apps figure and draws no empty chart', 
   assert.deepEqual(view.days, []);
 });
 
+// ─── The week's accomplishments and Share (#6464) ───────────────────────
+
+const WEEK_WORK = { ...WEEK, week: { merged: 2, apps: [{ slug: 'notes', name: 'Notes' }], challengesDone: 1 } };
+
+test('live changes and completed challenges are figures of the same week', () => {
+  const view = store.activityView(WEEK_WORK);
+  assert.equal(view.empty, false);
+  assert.equal(view.merged, '2');
+  assert.equal(view.mergedLabel, 'changes live');
+  assert.equal(view.challenges, '1');
+  assert.equal(view.challengesLabel, 'challenge done');
+  assert.equal(view.canShare, true, 'there is something to share');
+});
+
+test('a zero accomplishment says nothing, and a week with none of them still reads empty', () => {
+  const zero = store.activityView({ ...WEEK, week: { merged: 0, apps: [], challengesDone: 0 } });
+  assert.equal(zero.merged, null);
+  assert.equal(zero.mergedLabel, null);
+  assert.equal(zero.challenges, null);
+  assert.deepEqual(store.activityView(week([0, 0, 0, 0, 0, 0, 0], 0)), { empty: true },
+    'no time, no apps, nothing live and no challenge is still one quiet line');
+});
+
+test('work with no time in apps shows its figures without an empty chart', () => {
+  const view = store.activityView({
+    ...week([0, 0, 0, 0, 0, 0, 0], 0),
+    week: { merged: 2, apps: [{ slug: 'notes', name: 'Notes' }], challengesDone: 1 },
+  });
+  assert.equal(view.empty, false);
+  assert.equal(view.time, null);
+  assert.deepEqual(view.days, []);
+  assert.equal(view.merged, '2');
+  assert.equal(view.challenges, '1');
+});
+
+test('the card carries a Share action only when it has something to share', () => {
+  const full = render({ ranking: {}, summary: WEEK_WORK, ownerPublicProfile: null });
+  assert.ok(full.includes('id="profile-activity-share"'));
+  const empty = render({ ranking: {}, summary: week([0, 0, 0, 0, 0, 0, 0], 0), ownerPublicProfile: null });
+  assert.ok(!empty.includes('id="profile-activity-share"'), 'the one quiet line has nothing to share');
+  assert.ok(!render({ ranking: {}, summary: null, ownerPublicProfile: null }).includes('id="profile-activity-share"'));
+});
+
 test('your own profile draws the card under the stat cards, before Your work', () => {
   const html = render({ ranking: {}, summary: { merged: 2, ...WEEK }, ownerPublicProfile: null });
   const stats = html.indexOf('id="profile-stats"');

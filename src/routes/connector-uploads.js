@@ -7,6 +7,7 @@ const { clientIp } = require('../services/client-ip');
 const uploads = require('../services/connector-uploads');
 const requestSpecs = require('../services/request-specs');
 const { validateVideoUpload, validateScreenshotUpload } = require('./feedback');
+const { validateChatUpload } = require('../services/attachments');
 
 // PUT /api/connector-uploads/:uploadId — a coding agent sends one plan, video
 // or screenshot for a connector call without retyping it into the call.
@@ -89,6 +90,16 @@ function checkFile(kind, body) {
     const prepared = requestSpecs.prepareSpec(text);
     if (!prepared.ok) return { ...prepared, ok: false, status: 400 };
     return { ok: true, contentType: prepared.format === 'html' ? 'text/html' : 'text/markdown' };
+  }
+  if (kind === 'design') {
+    const verdict = validateChatUpload({ filename: 'design.html', data: body });
+    if (!verdict.ok) {
+      return { ok: false, status: 400, code: 'invalid_design', message: verdict.error };
+    }
+    if (verdict.kind !== 'html') {
+      return { ok: false, status: 400, code: 'invalid_design', message: 'A design upload must be one HTML file.' };
+    }
+    return { ok: true, contentType: 'text/html' };
   }
   const verdict = kind === 'video' ? validateVideoUpload(body) : validateScreenshotUpload(body);
   if (!verdict.ok) {

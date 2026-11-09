@@ -162,7 +162,46 @@ test('the frontend no longer defines markReadOnOpen or sends keep_plain_messages
     'nothing in the app sends the narrow clear; the server option remains');
 });
 
-// ── 5. the query itself, against a real PostgreSQL ──────────────────────
+// ── 5. the capture page draws the named unread row bold (#6526) ─────────
+//
+// #6526: the shot page (`/?shot=notifications&demo=1`) is a picture of an
+// unread list, not somebody reading their notifications. It failed on changes
+// that never touched notifications because opening the sheet used to mark
+// every unread row read (#6498); #6506 then drew a read subject
+// regular-weight, so dapp.json's bold-subject selector went missing. #6527
+// removed the automatic clear, so opening the sheet only refreshes and a
+// capture's rows stay unread. The check is tightened here to insist on the
+// bold subject of the row it already names: "any row's bold subject" let a
+// different unread row satisfy a row that had gone read.
+
+const DAPP = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'dapp.json'), 'utf8'));
+
+test('the notification shot check needs the named unread row itself to be bold', () => {
+  const check = DAPP.tests.find((t) => t.name === 'Unread notification rows read source, bold subject, muted preview');
+  assert.ok(check, 'the declared check still exists');
+  assert.equal(check.path, '/?shot=notifications&demo=1');
+  assert.ok(check.expectSelector.includes(
+    '.notifications-row-slot > [data-notif-id="990211"] + button[data-notification-clear="990211"]'
+  ), 'the check still requires the unread row and its clear control');
+  assert.ok(check.expectSelector.includes(
+    '[data-notif-id="990211"] .text-xs + .text-sm.font-semibold'
+  ), "and the bold subject has to be that row's, not any row's");
+});
+
+test('the demo fixture leaves the checked row unread', () => {
+  // The unread rendering, and so the bold subject the check selects, depends
+  // on this row having no readAt. A fixture that quietly stamped one would
+  // turn the check red for every change again.
+  const base = ROUTE_SRC.match(/const base = \{[\s\S]*?\n  \};/);
+  assert.ok(base, 'the demo base row is defined');
+  assert.match(base[0], /readAt: null/, 'every demo row starts unread');
+  const at = ROUTE_SRC.indexOf('id: 990211,');
+  assert.ok(at > 0, 'the checked row is in the demo fixture');
+  const entry = ROUTE_SRC.slice(at, ROUTE_SRC.indexOf('\n    },', at));
+  assert.doesNotMatch(entry, /readAt/, '990211 does not override its read state');
+});
+
+// ── 6. the query itself, against a real PostgreSQL ──────────────────────
 //
 // The stub tests pin the SQL text; this runs the same call through the real
 // service against the full schema, so a predicate that reads right but

@@ -172,8 +172,8 @@ function decide({ holds = [], mentions = [], notes = [] }) {
 
 /**
  * #4530: the text of the regex a mention of the bot matches, so every place
- * that looks for one matches it identically: @homeroom_bot, and not
- * @homeroom_bot_x or the tail of an email address.
+ * that looks for one matches it identically: @homeroom_bot and @homeroombot,
+ * and not @homeroom_bot_x or the tail of an email address.
  *
  * #4610: and its display name, "@Homeroom bot", which is what the composer
  * writes when a person picks the bot from its list: with a zero-width
@@ -183,7 +183,7 @@ function decide({ holds = [], mentions = [], notes = [] }) {
  */
 const ZERO_WIDTH = '\u200b\u200c\u200d\u2060';
 function mentionPattern() {
-  return `(^|[^a-z0-9_])@(${live.BOT_USERNAME}|[${ZERO_WIDTH}]?homeroom bot)([^a-z0-9_-]|$)`;
+  return `(^|[^a-z0-9_])@(${live.BOT_USERNAME}|homeroombot|[${ZERO_WIDTH}]?homeroom bot)([^a-z0-9_-]|$)`;
 }
 
 /** Recent mentions of the bot by people, in the discussions of `numbers`, oldest first. */

@@ -294,6 +294,9 @@ export interface CommentCarry {
   images?: Blob[];
   bounty?: boolean;
   target?: Target | null;
+  /** The app the form's "This app" option stood for, when it was the picked one. */
+  appSlug?: string | null;
+  appName?: string | null;
 }
 
 export interface OpenOptions {
@@ -1124,6 +1127,7 @@ function CommentMode({ session, onClose }: { session: Session; onClose: () => vo
       text: numberedWords(live.map((c) => c.text)),
       target,
       appSlug: app?.slug ?? null,
+      appName: app?.name ?? null,
       shots,
       images: d.images.map((i) => i.blob),
       title: titleToSend(d),
@@ -2690,7 +2694,15 @@ export function openCommentMode(opts: OpenOptions = {}): void {
   host.id = HOST_ID;
   document.body.appendChild(host);
   openHost = host;
-  const session: Session = { host, app: appTarget(), carry: opts.carry ?? null };
+  const session: Session = {
+    host,
+    // A form that handed over an app keeps it, even with no app tab open
+    // behind the box (#6485): the destination row already showed that app.
+    app: opts.carry?.target === 'app' && opts.carry.appSlug
+      ? { slug: opts.carry.appSlug, name: opts.carry.appName || opts.carry.appSlug }
+      : appTarget(),
+    carry: opts.carry ?? null,
+  };
   const close = () => { if (openHost === host) closeCommentMode(); };
   mountLegacyPortal(host, createElement(CommentMode, { session, onClose: close }));
 }

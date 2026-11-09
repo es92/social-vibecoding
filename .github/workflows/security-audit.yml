@@ -1,0 +1,124 @@
+name: Security audit
+
+on:
+  schedule:
+    - cron: '41 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      platform: ${{ steps.live.outputs.platform }}
+      worker: ${{ steps.live.outputs.worker }}
+      capture: ${{ steps.live.outputs.capture }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.23.4'
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Snapshot release image digests
+        id: live
+        run: node scripts/live-release.js
+
+  scan:
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    name: Audit ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { component: platform, dockerfile: Dockerfile.kubernetes, context: '.' }
+          - { component: standalone, dockerfile: Dockerfile, context: '.' }
+          - { component: worker, dockerfile: worker/Dockerfile, context: worker }
+          - { component: capture, dockerfile: capture/Dockerfile, context: '.' }
+          - { component: starter, dockerfile: '', context: '' }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.23.4'
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: image=mirror.gcr.io/moby/buildkit:buildx-stable-1
+      - name: Scan the complete image
+        shell: bash
+        env:
+          COMPONENT: ${{ matrix.component }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          CONTEXT: ${{ matrix.context }}
+          LIVE_DIGEST: ${{ needs.plan.outputs[matrix.component] }}
+          SECURITY_AUDIT_ONLY: '1'
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/audit-$COMPONENT"
+          mkdir -p "$out"
+          trap 'if [ ! -s "$out/assessment.json" ]; then node scripts/security-findings.js --unavailable "$out" "$COMPONENT" "Image retrieval, build or inventory generation failed"; fi' ERR
+          if [[ "$COMPONENT" =~ ^(platform|worker|capture)$ ]]; then
+            [[ "$LIVE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+            image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/social-vibecoding-$COMPONENT@$LIVE_DIGEST"
+            sh scripts/check-published-image.sh "$image" "$out" "$COMPONENT"
+          else
+            if [ "$COMPONENT" = starter ]; then
+              node scripts/security-starter.js "$RUNNER_TEMP/starter-source"
+              CONTEXT="$RUNNER_TEMP/starter-source"
+              DOCKERFILE="$CONTEXT/Dockerfile"
+            fi
+            docker buildx build --load --pull --platform linux/amd64 -t "audit-$COMPONENT" -f "$DOCKERFILE" "$CONTEXT"
+            sh scripts/create-image-sbom.sh "audit-$COMPONENT" "$out/sbom.spdx.json"
+            sh scripts/check-image-security.sh "audit-$COMPONENT" "$out" "$out/sbom.spdx.json" "$COMPONENT"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-${{ github.run_attempt }}-${{ matrix.component }}
+          path: ${{ runner.temp }}/audit-${{ matrix.component }}/
+          if-no-files-found: error
+          retention-days: 30
+
+  report:
+    name: Publish audit data for Homeroom
+    needs: [plan, scan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.23.4'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: security-audit-${{ github.run_attempt }}-*
+          path: security-audit-reports
+      - name: Aggregate the verified assessments
+        run: node scripts/security-audit-report.js security-audit-reports security-audit-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: homeroom-security-audit-${{ github.run_attempt }}
+          path: security-audit-report.json
+          if-no-files-found: error
+          retention-days: 30

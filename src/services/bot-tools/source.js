@@ -20,10 +20,28 @@ const PATH = { type: 'string', description: 'The file\'s path, from list_source.
 const FROM_LINE = { type: 'integer', description: 'The first line to read (1 by default).' };
 const PROJECT_MAIN = { type: 'string', description: 'The project\'s name or short name.' };
 const PROJECT_DESIGN = { type: 'string', description: 'Another project they can build on, by name; leave it out for this design\'s.' };
+// #6533: a change's code, at the point it started from or as it is now.
+const AT = {
+  type: 'string',
+  enum: ['main', 'today', 'with_change'],
+  description: 'Which version: main (the project today), today (the change\'s starting point), or with_change (the change\'s newest version). main unless asked; today and with_change need a change here.',
+};
 
 const NEW_PROJECT_ERROR = 'This design is for a new project, which has no code yet. Name a project they can build on to read its code.';
 
 const mayor = (ctx) => ctx.deps?.mayor || require('../homeroom-bot-mayor');
+
+/** The commit `at` names for this call, or an error: today and with_change need a change here. */
+async function refFor(args, ctx) {
+  const at = ['today', 'with_change'].includes(args.at) ? args.at : 'main';
+  if (at === 'main') return { sha: null, at };
+  if (ctx.scope !== 'thread' || !ctx.change?.id) return { error: 'This thread is not about a change.' };
+  const refs = await mayor(ctx).changeRefs(ctx.pool, ctx.change.id, ctx.app?.id);
+  if (refs.error) return { error: refs.error };
+  const sha = at === 'today' ? refs.base : refs.head;
+  if (!sha) return { error: at === 'today' ? 'That change has no starting point to read.' : 'That change\'s newest version cannot be read yet.' };
+  return { sha, at };
+}
 
 /** The project a call reads, by scope, or an error for a design with none. */
 function projectOf(args, ctx) {
@@ -61,14 +79,19 @@ define({
       };
     }
     return {
-      description: 'Files in the project\'s code on main, by folder or name.',
-      parameters: object({ dir: { type: 'string' }, match: { type: 'string' } }, [], { always: true }),
+      description: 'Files in the project\'s code, by folder or name. `at` reads it on main (default), at the change\'s starting point (today), or at its newest version (with_change).',
+      parameters: object({ dir: { type: 'string' }, match: { type: 'string' }, at: AT }, [], { always: true }),
     };
   },
   async run(args, ctx) {
     const where = projectOf(args, ctx);
     if (where.error) return { ok: false, error: where.error };
-    return mayor(ctx).listSource(ctx.pool, { user: ctx.user, project: where.project, dir: args.dir, match: args.match, deps: ctx.deps || {} });
+    const ref = await refFor(args, ctx);
+    if (ref.error) return { ok: false, error: ref.error };
+    return mayor(ctx).listSource(ctx.pool, {
+      user: ctx.user, project: where.project, dir: args.dir, match: args.match,
+      ref: ref.sha, at: ref.at, deps: ctx.deps || {},
+    });
   },
 });
 
@@ -91,15 +114,36 @@ define({
       };
     }
     return {
-      description: 'Read one file of the project\'s code on main.',
-      parameters: object({ path: { type: 'string' }, fromLine: { type: 'integer' } }, ['path']),
+      description: 'Read one file of the project\'s code, on main or at the change\'s two versions (see `at`).',
+      parameters: object({ path: { type: 'string' }, fromLine: { type: 'integer' }, at: AT }, ['path']),
     };
   },
   async run(args, ctx) {
     const where = projectOf(args, ctx);
     if (where.error) return { ok: false, error: where.error };
+    const ref = await refFor(args, ctx);
+    if (ref.error) return { ok: false, error: ref.error };
     return mayor(ctx).readSource(ctx.pool, {
-      user: ctx.user, project: where.project, path: args.path, fromLine: args.fromLine, deps: ctx.deps || {},
+      user: ctx.user, project: where.project, path: args.path, fromLine: args.fromLine,
+      ref: ref.sha, at: ref.at, deps: ctx.deps || {},
+    });
+  },
+});
+
+// #6533: the paths a change alters, so a reader can find the file to read.
+define({
+  name: 'list_change_files',
+  scopes: ['thread'],
+  schemaFor() {
+    return {
+      description: 'The files this change adds, changes or removes, between its starting point and its newest version.',
+      parameters: object({}, [], { always: true }),
+    };
+  },
+  async run(args, ctx) {
+    if (!ctx.change?.id) return { ok: false, error: 'This thread is not about a change.' };
+    return mayor(ctx).listChangeFiles(ctx.pool, {
+      user: ctx.user, project: ctx.app?.slug, change: ctx.change, deps: ctx.deps || {},
     });
   },
 });

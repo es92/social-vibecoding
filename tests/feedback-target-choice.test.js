@@ -549,6 +549,127 @@ test('a two-destination open does not leak into the next, no-app open', () => {
   assert.equal(h.hintShown(), false);
 });
 
+// ── #6485: the destination is the app the person picked ───────────────
+//
+// A note about one app was filed under the platform: a comment pinned on a
+// change preview (or any app whose tab is not mounted) was handed to the
+// form, which only kept 'app' when an app tab was open, and filed on
+// whatever app was mounted at submit. The pick is captured when it is made
+// and travels with the words, drafts and refusals alike.
+
+test('a handed-over app is the destination with no app tab open', async () => {
+  const h = makeHarness({ appData: null });
+  h.sandbox.App.currentApp = null;
+  h.sandbox.App.currentTab = 'home';
+  h.open({ target: 'app', appSlug: 'inbox', appName: 'Inbox' });
+
+  assert.equal(h.checked('app'), 'true', 'the app the comment was pinned on');
+  assert.equal(h.checked('platform'), 'false');
+  assert.equal(h.el('feedback-target-app').disabled, false, 'and it is a real choice');
+  assert.equal(h.el('feedback-target-app-name').textContent, 'Inbox',
+    'named by the app, over "This app"');
+  assert.equal(h.el('feedback-target-app-sub').classList.contains('hidden'), false);
+  assert.equal(h.hintShown(), false);
+
+  h.type('The unread count does not clear after I open a message.');
+  await h.submit();
+
+  const [call] = h.filed();
+  assert.ok(call, 'it was sent');
+  const body = JSON.parse(call.opts.body);
+  assert.equal(body.target, 'app');
+  assert.equal(body.appSlug, 'inbox', 'filed on the app the person picked');
+  assert.equal(h.el('feedback-status').textContent, 'Posted to Inbox.',
+    'the confirmation names the app it was filed on');
+  assert.equal(h.el('feedback-sent-title').textContent, 'Thanks! Posted to Inbox');
+});
+
+test('the picked app is kept when another app mounts before submit', async () => {
+  const h = makeHarness({ appData: OPEN_APP });
+  h.open();
+  assert.equal(h.checked('app'), 'true');
+  h.type('Dragging a card scrolls the board back to the top.');
+
+  // The person moves on while the form is still open: a different app is
+  // now the mounted one. The request still goes where they picked.
+  h.sandbox.App.currentApp = 'another-app';
+  h.sandbox.AppView.appData = { name: 'Another App', repo_url: 'https://github.com/acme/another' };
+
+  await h.submit();
+
+  const body = JSON.parse(h.filed()[0].opts.body);
+  assert.equal(body.appSlug, 'example-app', 'the app that was open when the form opened');
+  assert.equal(h.el('feedback-status').textContent, 'Posted to Example App.');
+});
+
+test('a rescued draft comes back on the app it was written for', async () => {
+  const h = makeHarness({
+    appData: null,
+    sessionDraft: {
+      description: 'The unread count does not clear after I open a message.',
+      title: '', titleDirty: false, target: 'app', appSlug: 'inbox', appName: 'Inbox',
+      savedAt: Date.now(),
+    },
+  });
+  h.sandbox.App.currentTab = 'home';
+  h.open();
+
+  assert.equal(h.checked('app'), 'true', 'the app came back with the words');
+  assert.equal(h.el('feedback-target-app-name').textContent, 'Inbox');
+
+  await h.submit();
+  assert.equal(JSON.parse(h.filed()[0].opts.body).appSlug, 'inbox');
+});
+
+test('a refused request comes back on the app it was filed on', async () => {
+  const h = makeHarness({ appData: null });
+  h.sandbox.App.currentTab = 'home';
+  h.el('feedback-modal').classList.remove('hidden');
+  h.sandbox.FeedbackQueue = {
+    count: async () => 1,
+    takeFailed: async () => ({
+      payload: { description: 'The unread count does not clear.', target: 'app', appSlug: 'inbox' },
+      lastError: 'This app has no repository yet.',
+    }),
+    putBack: async () => {},
+  };
+  h.open();
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r));
+
+  assert.equal(h.checked('app'), 'true', 'the refused request keeps its app');
+  assert.equal(h.el('feedback-target-app-name').textContent, 'inbox',
+    'its address names it where the screen does not know its name');
+
+  await h.submit();
+  assert.equal(JSON.parse(h.filed()[0].opts.body).appSlug, 'inbox');
+});
+
+test('the form hands its picked app to comment mode', () => {
+  const h = makeHarness({ appData: OPEN_APP });
+  h.open();
+
+  const draft = h.sandbox.Feedback._takeDraft();
+  assert.equal(draft.target, 'app');
+  assert.equal(draft.appSlug, 'example-app');
+  assert.equal(draft.appName, 'Example App');
+});
+
+test('a handed-over app that is not mounted hides "Include app state"', () => {
+  const mounted = makeHarness({ appData: OPEN_APP });
+  mounted.sandbox.AppView.issueStateAvailable = () => true;
+  mounted.open();
+  assert.equal(mounted.el('feedback-state-row').classList.contains('hidden'), false,
+    'the mounted app can offer its own state');
+
+  const other = makeHarness({ appData: OPEN_APP });
+  other.sandbox.AppView.issueStateAvailable = () => true;
+  other.open({ target: 'app', appSlug: 'inbox', appName: 'Inbox' });
+  assert.equal(other.checked('app'), 'true', 'the handed-over app is the destination');
+  assert.equal(other.el('feedback-state-row').classList.contains('hidden'), true,
+    'but its state is not the mounted app\'s to collect');
+});
+
 // ── QA 2026-09-24: what the dialog calls itself, and what a failure says ──
 
 test('the dialog is headed Suggest an improvement from every way in', () => {

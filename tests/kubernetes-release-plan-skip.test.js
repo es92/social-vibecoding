@@ -172,5 +172,5 @@ test('Select release work: a run that can release builds and publishes; one that
   // The build and the release job both follow should_release.
   assert.equal(workflow.jobs.build.if, "needs.plan.outputs.should_release == 'true'");
   assert.deepEqual([].concat(workflow.jobs.release.needs),
-    ['build', 'scheduled-image-audit', 'security-lockfiles', 'security-regressions', 'preview-schema-compatibility']);
+    ['build', 'security-lockfiles', 'security-regressions', 'preview-schema-compatibility']);
 });

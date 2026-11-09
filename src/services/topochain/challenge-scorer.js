@@ -986,6 +986,21 @@ const LEDGER_NEWER_SQL = `
 // Before this, totals waited for the next new point: a member saw "750 pts
 // earned" on the challenge and 500 fewer on the leaderboard for up to six
 // hours, and read it as lost points (#3650).
+//
+// The ledger is read with REFRESH_OVERLAP_MS of slack behind when the
+// snapshot was last written. buildSnapshots reads the activity sums and then
+// upserts with `updated_at = NOW()`; a credit whose transaction began before
+// that write but committed after the read is missing from the snapshot, yet
+// its timestamp is older than the new `fresh`, so a comparison against
+// `fresh` alone never saw it and it waited for the next six-hour generation
+// (#6499). Looking back one minute catches it on the next refresh. The
+// overlap stops itself: that refresh writes a new `fresh` past it.
+//
+// `runOnce` also calls this on a pass that wrote credits even when the
+// scheduled check is not due, so the place a credit moves is the pass that
+// counts it rather than a later batch.
+const REFRESH_OVERLAP_MS = 60_000;
+
 async function maybeAggregate(pool, { hours, now = Date.now() }) {
   if (!(hours > 0)) return null;
   const { rows } = await pool.query(LAST_AGGREGATE_SQL);
@@ -996,7 +1011,9 @@ async function maybeAggregate(pool, { hours, now = Date.now() }) {
     return { events: result.events.length };
   }
   const fresh = rows[0].fresh ? new Date(rows[0].fresh) : last;
-  const { rows: newer } = await pool.query(LEDGER_NEWER_SQL, [fresh]);
+  const { rows: newer } = await pool.query(
+    LEDGER_NEWER_SQL, [new Date(fresh.getTime() - REFRESH_OVERLAP_MS)]
+  );
   if (!newer[0] || newer[0].newer !== true) return null;
   const result = await buildSnapshots(pool, { now: last });
   return { events: result.events.length, refreshed: true };
@@ -1015,7 +1032,13 @@ async function runOnce(pool, {
   const apiKey = (config && config.anthropicApiKey) || null;
   try {
     const summary = await score(pool, { dryRun, now, apiKey, only });
-    if (!dryRun && aggregate) {
+    // A pass that wrote credits checks the standings even when the scheduled
+    // check is not due, so a place moves in the pass that counted the points.
+    // A dry run never aggregates, and a pass with no credits leaves the
+    // scheduled rhythm alone so an idle deployment does not rebuild every
+    // minute.
+    if (!dryRun && (aggregate || summary.credits > 0)) {
+      summary.aggregateChecked = true;
       const hours = aggregateHours(config);
       try {
         const aggregated = await maybeAggregate(pool, { hours, now });
@@ -1178,7 +1201,9 @@ async function tickLocked(pool, config, { now, lastAggregateCheckAt }) {
   }
   const aggregate = now - (Number(lastAggregateCheckAt) || 0) >= defaultMs - rules.DUE_SLACK_MS;
   const ran = await runOnce(pool, { trigger: 'schedule', config, now, only: due, aggregate });
-  return { ...ran, aggregateCheckedAt: aggregate ? now : (Number(lastAggregateCheckAt) || 0) };
+  // A credit-forced refresh restarts the scheduled check clock too: this beat
+  // already rebuilt the standings, so the next one has no reason to.
+  return { ...ran, aggregateCheckedAt: ran.aggregateChecked ? now : (Number(lastAggregateCheckAt) || 0) };
 }
 
 // ── On the moment it happens (#3564, #3568, #3569, #3570) ──────────────
@@ -1362,6 +1387,7 @@ module.exports = {
   aggregateHours,
   LAST_AGGREGATE_SQL,
   LEDGER_NEWER_SQL,
+  REFRESH_OVERLAP_MS,
   MAX_CREDITS_PER_RUN,
   MAX_GRADES_PER_RUN,
   CANDIDATE_LIMIT,

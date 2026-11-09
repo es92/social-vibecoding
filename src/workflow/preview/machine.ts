@@ -121,6 +121,11 @@ export interface Data {
   // changes nothing (withRest).
   due?: { type: string; at: string; v: number } | null;
   previewOnly?: boolean;         // a session previewed with no checks (the App bench): every attempt is
+  // #6536: the build that last failed on `head`, with its first error line,
+  // and how many times in a row that same head failed the same way. From the
+  // second failure the sweep leaves the head for a person or a new one: a
+  // deterministic build failure cannot pass by being built again.
+  buildBroken?: { head: string; line: string; count: number } | null;
 }
 
 const STATES = ['idle', 'preparing', 'checking', 'deferred', 'settled', 'failed', 'retiring', 'retired', 'detached'] as const;
@@ -476,9 +481,19 @@ function startRun(s: Live, trigger: string | null, ctx: TransitionContext,
 // row in its scope, while the streak is under the cap (or, for the
 // platform's own fault, for a day: rules/check-retries.ts).
 function errorTimer(d: Data, f: Facts, deps: Deps, ctx: TransitionContext, streakBefore: number): TimerRequest | null {
+  // #6536: the same head failing its build the same way twice is no
+  // transient fault; the sweep waits for a new head (or a person) instead.
+  if (d.buildBroken && d.buildBroken.count >= 2) return null;
   if (!f.session?.retryScope) return null;
   if (!withinAutoRetries(d, deps.maxRetries, ctx.now.getTime())) return null;
   return { at: new Date(ctx.now.getTime() + retryDelayMs(streakBefore)), event: { type: 'RetryDue' } };
+}
+
+// Whether `head` is a build the sweep must not rebuild: the same commit has
+// already failed with the same first error line. A person's Re-run or
+// Preview is never held by this (#6536).
+function buildBrokenHead(d: Data, head?: string | null): boolean {
+  return !!(d.buildBroken && d.buildBroken.count >= 2 && (!head || d.buildBroken.head === head));
 }
 
 // ── Housekeeping ────────────────────────────────────────────────────────
@@ -934,6 +949,7 @@ function rawTransitions(deps: Deps): Record<string, Record<string, Entry>> {
       const since = Date.parse(s.data.serving.since ?? '');
       const losses = ctx.now.getTime() - since < LOST_SOON_MS ? (s.data.losses ?? 0) + 1 : 1;
       if (losses > 1) return lostAgain(s, e, losses, f, ctx, deps);
+      if (buildBrokenHead(s.data, s.data.head || s.data.serving.head)) return step({ name: s.name, data: s.data, timer: null });
       return begin({ name: s.name, data: { ...s.data, losses } }, s.data.head || s.data.serving.head, 'stuck-sweep', ctx, deps);
     },
   };
@@ -993,9 +1009,15 @@ function rawTransitions(deps: Deps): Record<string, Record<string, Entry>> {
 
   const retryDue: Entry = {
     guard: (s, e, f) => (f.session?.retryScope ? ok() : reject('out_of_scope')),
-    to: (s, e, f, ctx) => (s.name === 'failed' || !s.data.serving || s.data.serving.head !== s.data.head
-      ? begin(s, s.data.head, 'stuck-sweep', ctx, deps)
-      : startRun(s, 'stuck-sweep', ctx)),
+    to: (s, e, f, ctx) => {
+      if (s.name === 'failed' || !s.data.serving || s.data.serving.head !== s.data.head) {
+        // #6536: the same head that failed the same build again is not
+        // rebuilt by the sweep; it waits for a new head or a person.
+        if (buildBrokenHead(s.data, s.data.head)) return step({ name: s.name, data: s.data, timer: null });
+        return begin(s, s.data.head, 'stuck-sweep', ctx, deps);
+      }
+      return startRun(s, 'stuck-sweep', ctx);
+    },
   };
   const adminRetry: Entry = {
     to: (s, e, f, ctx) => {
@@ -1076,9 +1098,15 @@ function rawTransitions(deps: Deps): Record<string, Record<string, Entry>> {
       if (!owed) return step({ name: s.name, data: s.data, timer: null });
       if (worked(s, f)) return step({ name: s.name, data: s.data, timer: { at: new Date(ctx.now.getTime() + WORKED_RECHECK_MS), event: { type: 'ChecksDue' } } });
       const trigger = owed.fresh ? 'manual-recheck' : 'stuck-sweep';
-      return owed.head !== s.data.head || !servesHead(s.data, owed.head)
-        ? begin(s, owed.head, trigger, ctx, deps)
-        : startRun(s, trigger, ctx);
+      if (owed.head !== s.data.head || !servesHead(s.data, owed.head)) {
+        // #6536: the sweep does not rebuild a head whose build keeps failing
+        // the same way; a person's fresh run still does.
+        if (trigger === 'stuck-sweep' && buildBrokenHead(s.data, owed.head)) {
+          return step({ name: s.name, data: s.data, timer: null });
+        }
+        return begin(s, owed.head, trigger, ctx, deps);
+      }
+      return startRun(s, trigger, ctx);
     },
   };
   // Built with another build's environment: a vote-backed preview is built
@@ -1090,7 +1118,9 @@ function rawTransitions(deps: Deps): Record<string, Record<string, Entry>> {
       return !underReview(f) && worked(s, f) ? reject('worked_on') : ok();
     },
     to: (s, e, f, ctx) => (underReview(f)
-      ? begin(s, s.data.head || s.data.serving.head, 'stuck-sweep', ctx, deps)
+      ? (buildBrokenHead(s.data, s.data.head || s.data.serving.head)
+        ? step({ name: s.name, data: s.data, timer: null })
+        : begin(s, s.data.head || s.data.serving.head, 'stuck-sweep', ctx, deps))
       : toRetiring(s, 'stale-env', false, ctx, deps)),
   };
   const house = (name: Name): Record<string, Entry> => ({
@@ -1308,6 +1338,7 @@ export interface PrepareResult {
   // A failure: the reason for the card, and what to tell the author.
   detail?: string; infrastructure?: boolean; platformFault?: boolean; aboutMain?: string | null; sync?: boolean;
   servingRemoved?: boolean;     // Docker removes the old container before it runs the new one
+  buildError?: { line: string; excerpt: string } | null;  // a failed build's own first error (#6536)
 }
 
 export interface RunResult {
@@ -1371,7 +1402,8 @@ function prepared(s: Live, e: Event<any>, outcome: string, f: Facts, ctx: Transi
     };
     const previous = d0.serving && d0.serving.n !== served.n ? d0.serving : null;
     const gone = previous ? retire(d0, previous, ctx, deps) : null;
-    const d: Data = { ...d0, preparing: null, serving: served, retiring: gone ? [...d0.retiring, gone.entry] : d0.retiring };
+    const d: Data = { ...d0, preparing: null, serving: served, buildBroken: null,
+      retiring: gone ? [...d0.retiring, gone.entry] : d0.retiring };
     const dropped = leftovers.length ? [{ kind: WORK.dropClaims, key: `drop-claims:${served.n}`,
       input: { sessionId: d.sessionId, dbs: leftovers } }] : [];
     const up = [
@@ -1403,10 +1435,23 @@ function prepared(s: Live, e: Event<any>, outcome: string, f: Facts, ctx: Transi
     : r?.detail || e.payload.error?.message || 'The preview could not be prepared';
   const infrastructure = !!r?.infrastructure;
   const servingRemoved = !!r?.servingRemoved;
+  // #6536: the build's own first error, and the run of identical failures on
+  // this head. A failure that names no error line (a timeout, an
+  // infrastructure fault) changes nothing here.
+  const buildError = ended ? null : (r?.buildError ?? null);
+  const brokenBefore = d0.buildBroken;
+  const buildBroken: Data['buildBroken'] = buildError?.line
+    ? {
+      head: attempt.head,
+      line: buildError.line,
+      count: brokenBefore && brokenBefore.head === attempt.head && brokenBefore.line === buildError.line
+        ? brokenBefore.count + 1 : 1,
+    }
+    : null;
   const streakBefore = d0.streak;
   const d: Data = {
     ...d0, preparing: null, verdict: 'error', failure: detail, platformFault: !!r?.platformFault, streak: streakBefore + 1,
-    firstFailureAt: d0.firstFailureAt ?? ctx.now.toISOString(),
+    firstFailureAt: d0.firstFailureAt ?? ctx.now.toISOString(), buildBroken,
     serving: servingRemoved ? null : d0.serving,
   };
   const failedAttempt = retire(d0, attempt, ctx, deps, ended);
@@ -1427,6 +1472,7 @@ function prepared(s: Live, e: Event<any>, outcome: string, f: Facts, ctx: Transi
   const writes: DomainWrite[] = [{
     type: 'prepareFailed', eventId: e.id, sessionId: d.sessionId, appId: d.appId, userId: d.userId, head: attempt.head,
     detail, infrastructure, platformFault: !!r?.platformFault, aboutMain: r?.aboutMain ?? null, sync: !!r?.sync,
+    buildError,
     source: f.session?.source ?? null, prNumber: f.session?.prNumber ?? null,
   }];
   if (servingRemoved && d0.serving) writes.push({ type: 'unpublished', sessionId: d.sessionId });
@@ -1470,7 +1516,7 @@ function lostAgain(s: Live, e: Event<any>, losses: number, f: Facts, ctx: Transi
     + (e.payload.detail ? ` (${e.payload.detail})` : '');
   const streak = Math.max(d0.streak + 1, losses - 1);
   const d: Data = {
-    ...d0, run: null, verdict: 'error', failure: detail, platformFault: false, streak,
+    ...d0, run: null, verdict: 'error', failure: detail, platformFault: false, streak, buildBroken: null,
     firstFailureAt: d0.firstFailureAt ?? ctx.now.toISOString(), losses, retiring: old.retiring,
     serving: { ...d0.serving!, lost: true },
   };
@@ -1528,7 +1574,7 @@ function ran(s: Live, e: Event<any>, outcome: string, f: Facts, ctx: TransitionC
   // being lost). An admin ending a hung run is not counted as either.
   const platformFault = state === 'error' && (!!r?.platformFault || (!ended && outcome !== 'succeeded'));
   const d: Data = {
-    ...d0, run: null, verdict: state, failure: state === 'error' ? detail : null, platformFault,
+    ...d0, run: null, verdict: state, failure: state === 'error' ? detail : null, platformFault, buildBroken: null,
     streak: state === 'error' ? streakBefore + 1 : 0,
     firstFailureAt: state === 'error' ? (d0.firstFailureAt ?? ctx.now.toISOString()) : null,
   };
@@ -1819,8 +1865,17 @@ const WRITES = {
         `INSERT INTO chat_session_messages (session_id, role, content, metadata) VALUES ($1, 'system', 'Staging build failed', $2)`,
         [w.sessionId, JSON.stringify({ stagingFailed: true, error: w.detail, changesReady: true, prNumber: w.prNumber ?? null })]);
     }
+    // #6536: a failed build keeps its own first error as a check row, so
+    // get_change, the Testing card and the bot's fix turn see what broke
+    // rather than only the Job's failure. A rollout or infrastructure
+    // failure has no build error and stays as it was.
+    const buildError = w.buildError && w.buildError.excerpt ? w.buildError : null;
+    const results = buildError ? [{
+      name: 'Preview build', path: null, status: 'fail', previewBuild: true,
+      failureReason: w.detail, buildExcerpt: buildError.excerpt,
+    }] : [];
     const stored = await rowStore.storeChecks(tx, w.sessionId, w.head,
-      { state: 'error', results: [], ...(w.platformFault ? { platformFault: true } : {}), ...(w.retry ? { retry: w.retry } : {}) },
+      { state: 'error', results, ...(w.platformFault ? { platformFault: true } : {}), ...(w.retry ? { retry: w.retry } : {}) },
       w.detail);
     if (!stored || w.infrastructure) return;
     const { rows: [first] } = await tx.query(

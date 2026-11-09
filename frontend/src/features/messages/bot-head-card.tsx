@@ -1,4 +1,5 @@
 import { useMessages } from '../../lib/i18n/react';
+import { openDraftPreview, type PreviewDraftCopy } from '../ai/preview';
 import { appTabSlug, newsIcon } from './bot-shared';
 import { useBotWork } from './bot-work';
 import { MessageMarkdown, ObjectCard } from './format';
@@ -149,10 +150,50 @@ export function isHeadCard(head: BotHead | null, object: SharedObjectCard): bool
   return head.kind === 'request' && !!head.link && sameItem(head.link, object);
 }
 
+// #6248: a draft's card, while its offer waits for File it or Not now.
+export interface DraftPreview extends PreviewDraftCopy {
+  conversationId: number;
+  rootId: number | null;
+  actionId: number;
+}
+
+function validId(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) > 0 && (value as number) <= 2147483647;
+}
+
+/**
+ * Pure (#6248): the preview an open request draft's card opens, or null.
+ * Only the bot's file-request offer, still waiting: a filed or declined
+ * draft's card goes back to what it did, and a change's offer has no draft.
+ * `threadRootId` is the thread the message was said in: null in Main.
+ */
+export function draftPreviewOf(
+  head: BotHead | null,
+  meta: HomeroomBotMeta | null,
+  threadRootId: number | null | undefined,
+  conversationId: number,
+): DraftPreview | null {
+  if (!head || head.kind !== 'draft' || !meta) return null;
+  if (meta.kind !== 'confirm' || meta.status !== 'open') return null;
+  const actionId = Number(meta.actionId);
+  if (!validId(actionId) || !validId(conversationId)) return null;
+  const root = Number(threadRootId);
+  return {
+    conversationId,
+    rootId: validId(root) ? root : null,
+    actionId,
+    // The message's own copy, shown while the saved row is read (the pane).
+    title: head.title || '',
+    project: head.appName,
+    details: head.rest,
+    appSlug: head.appSlug,
+  };
+}
+
 const NO_LINKS: readonly HomeroomLink[] = [];
 
 /** The card the line names, from the best source there is (above). */
-export function BotHeadCard({ head, objects }: { head: BotHead; objects: readonly SharedObjectCard[] }) {
+export function BotHeadCard({ head, objects, draft = null }: { head: BotHead; objects: readonly SharedObjectCard[]; draft?: DraftPreview | null }) {
   const t = useMessages('messages');
   const carried = objects.find((object) => object.available && isHeadCard(head, object)) || null;
   // A project's card wears the project's own icon (run four, 13 Oct: it was
@@ -186,23 +227,30 @@ export function BotHeadCard({ head, objects }: { head: BotHead; objects: readonl
   const quiet = head.kind === 'request' ? { author: null, state: null } : { author: null };
   return (
     <div className="mb-1.5 mt-1 max-w-[480px]" data-bot-head-card={head.kind} data-bot-request-card={head.issueNumber || undefined}>
-      <ObjectCard object={{ ...card, ...quiet, href: head.link?.href || (head.kind === 'change' ? card.href : null) || null }} />
+      <ObjectCard
+        object={{ ...card, ...quiet, href: head.link?.href || (head.kind === 'change' ? card.href : null) || null }}
+        onOpen={draft ? () => openDraftPreview({
+          conversationId: draft.conversationId, rootId: draft.rootId, actionId: draft.actionId, copy: draft,
+        }) : undefined}
+      />
     </div>
   );
 }
 
 /** The words before the line, the card it names, then the words after it. */
-export function BotHeadWords({ head, objects, channels }: {
+export function BotHeadWords({ head, objects, channels, draft = null }: {
   head: BotHead;
   objects: readonly SharedObjectCard[];
   channels?: ReadonlySet<string>;
+  /** #6248: the preview an open draft's card opens, when this is one. */
+  draft?: DraftPreview | null;
 }) {
   const words = (text: string) => (text ? <MessageMarkdown content={text} channels={channels} appSlug={head.appSlug} /> : null);
   if (head.hidden) return words([head.before, head.rest].filter(Boolean).join('\n\n'));
   return (
     <>
       {words(head.before)}
-      <BotHeadCard head={head} objects={objects} />
+      <BotHeadCard head={head} objects={objects} draft={draft} />
       {words(head.rest)}
     </>
   );

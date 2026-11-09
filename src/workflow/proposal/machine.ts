@@ -202,7 +202,14 @@ export interface Data {
   // after a sync the machinery under it broke. `at` is when it was recorded;
   // `retryAt` is when the queue may try it again, or null for a refusal that
   // stays held until the head or main moves.
-  refused?: { head: string | null; main: string | null; kind: string; at?: string; retryAt?: string | null } | null;
+  // `checks` (#6546): the refusal was GitHub's required status checks, still
+  // running ('pending') or failed ('failing').
+  refused?: { head: string | null; main: string | null; kind: string; at?: string; retryAt?: string | null; checks?: GithubChecks | null } | null;
+  // #6546: GitHub's required checks failed on this approved change and it was
+  // brought up to date with main so they run again on today's main: once per
+  // approval epoch (a clean sync keeps the votes, so the epoch stays), so a
+  // change whose own code fails them is not synced again on every move of main.
+  githubChecksSync?: { epoch: number; head: string | null; at: string } | null;
   gaveUp?: { head: string | null; main: string | null } | null;
   backoff?: { until: string; failures: number } | null;
   // The change under this one's base is on main: its pull request is being
@@ -289,8 +296,20 @@ const NOTHING_RAN: ReadonlySet<string> = new Set(['unmeasured', 'over_budget', '
 export const SYNC_BACKOFF_MAX_MS = 30 * 60 * 1000;
 // Why a sync with main is asked for.
 export const SYNC_REASONS: ReadonlySet<string> = new Set([
-  'person', 'resume', 'conflict', 'boot_failure', 'fixed_check', 'bot_fix', 'bot_handoff', 'parent_merged',
+  'person', 'resume', 'conflict', 'boot_failure', 'fixed_check', 'bot_fix', 'bot_handoff', 'parent_merged', 'github_checks',
 ]);
+// #6546: what GitHub's required status checks said when it refused a merge.
+export type GithubChecks = 'pending' | 'failing';
+// The sync for an approved change whose required GitHub checks failed: their
+// run tested the pull request against the main it was opened on, and a merge
+// of today's main pushes a head GitHub checks again (githubChecksSyncNow).
+export const GITHUB_CHECKS_SYNC = 'github_checks';
+// The block reasons a GitHub refusal puts on the card (mergeHeld), all of
+// them cleared together when the next one is written or the head moves.
+// 'github_checks': its required checks are still running, or failed and are
+// being run again; 'github_checks_failing': they failed again after that.
+// The SQL writes (mergeHeld, headMoved) spell the same four out.
+export const GITHUB_HOLD_REASONS = Object.freeze(['github_busy', 'github_refused', 'github_checks', 'github_checks_failing']);
 // The platform's syncs for a failing check: once per head, the keys recorded
 // beside it (services/fixed-check-sync.js).
 const CHECK_SYNCS: ReadonlySet<string> = new Set(['fixed_check', 'bot_fix', 'bot_handoff']);
@@ -436,7 +455,8 @@ const EVENTS = {
     const keys = p?.keys == null ? null : (Array.isArray(p.keys) ? p.keys : [])
       .map((k: unknown) => text(k, 300)).filter(Boolean) as string[];
     return { ...session(p), reason, head: optSha(p?.head, 'head'), keys, queueN: optInt(p?.queueN, 'queueN'),
-      approved: !!p?.approved, userId: optInt(p?.userId, 'userId'), githubConflict: !!p?.githubConflict };
+      approved: !!p?.approved, userId: optInt(p?.userId, 'userId'), githubConflict: !!p?.githubConflict,
+      mechanical: !!p?.mechanical };
   },
   // A person's Stop of the turn the proposal's sync runs (the session's
   // Stop routes, through platform.stopWorkflowTurn).
@@ -1108,7 +1128,13 @@ function attempted(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext, dep
       // Refused: named once per head, so a refusal the queue meets again
       // says nothing new (merge trace bug 2). Main moving twice is not a
       // refusal of this head (an earlier one is forgotten): the next ask tries it again.
-      const said = s.data.refused && s.data.refused.head === f.row!.head && s.data.refused.kind === kind;
+      // #6546: GitHub's required checks (routes/votes.js githubChecksOf). A
+      // refusal over them is named again when it turns from still running to
+      // failed, which its own line tells apart.
+      const checks: GithubChecks | null = kind === 'blocked' && (r?.githubChecks === 'pending' || r?.githubChecks === 'failing')
+        ? r.githubChecks : null;
+      const said = s.data.refused && s.data.refused.head === f.row!.head && s.data.refused.kind === kind
+        && (s.data.refused.checks ?? null) === checks;
       const writes: DomainWrite[] = kind === 'conflict' ? [{ type: 'conflictMarked', sessionId: s.data.sessionId }] : [];
       // GitHub busy, or a plain refusal nobody has to act on: the queue may
       // simply meet it again, so it comes back on the sweep and the card says
@@ -1117,17 +1143,23 @@ function attempted(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext, dep
       const retryAt = kind === 'github_busy' || (kind === 'blocked' && !r?.codeMissing)
         ? new Date(ctx.now.getTime() + REFUSAL_RETRY_MS).toISOString()
         : null;
+      // Failed once more after Homeroom already brought this approval's head
+      // up to date with main: its own, not a run against an older main.
+      const failedAgain = checks === 'failing' && githubChecksTried(s.data, f.row!);
       if (retryAt) {
         writes.push({ type: 'mergeHeld', sessionId: s.data.sessionId,
-          reason: kind === 'github_busy' ? 'github_busy' : 'github_refused' });
+          reason: kind === 'github_busy' ? 'github_busy'
+            : checks ? (failedAgain ? 'github_checks_failing' : 'github_checks')
+              : 'github_refused' });
       }
-      return backToReview(s, e, f, ctx, deps, {
-        outcome: 'refused', extra: { kind }, line: said ? null : (r?.message || null), writes,
+      const out = backToReview(s, e, f, ctx, deps, {
+        outcome: 'refused', extra: { kind, ...(checks ? { checks } : {}) }, line: said ? null : (r?.message || null), writes,
         push: { mergeFailed: true, resolving: kind === 'conflict' },
         refused: kind === 'base_moved' ? null : {
-          head: f.row!.head, main: f.row!.integrationMain, kind, at: ctx.now.toISOString(), retryAt,
+          head: f.row!.head, main: f.row!.integrationMain, kind, at: ctx.now.toISOString(), retryAt, checks,
         },
       });
+      return checks === 'failing' ? githubChecksSyncNow(out, f, ctx) : out;
     }
   }
 }
@@ -1185,9 +1217,17 @@ function syncRefusal(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext): 
   // A platform sync for a head (a boot failure, a failing check) waits in its
   // work for whoever is working on the session (sync-main.waitForIdle), as
   // the old one did; a person's and the queue's are refused.
-  const waits = p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason);
+  const waits = p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason) || p.reason === GITHUB_CHECKS_SYNC;
   if (!waits && (row.activeTurn || moving(row))) return 'busy';
   if (!row.branch || !row.repo) return 'no_branch';
+  // #6546: an approved change GitHub refused over failed required checks
+  // (githubChecksSyncNow): in review, on a branch Homeroom can push to, once
+  // per approval epoch.
+  if (p.reason === GITHUB_CHECKS_SYNC) {
+    if (s.name !== 'in_review') return 'not_promoted';
+    if (row.forkHead) return 'fork_head';
+    if (githubChecksTried(s.data, row)) return 'already_tried';
+  }
   if (p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason)) {
     if (s.name !== 'in_review') return 'not_promoted';
     if (s.data.imported) return 'imported';
@@ -1209,7 +1249,7 @@ function syncRefusal(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext): 
     const g = s.data.gaveUp;
     if (g && g.head === row.integrationHead && (g.main == null || row.integrationMain == null || g.main === row.integrationMain)) return 'unresolvable';
     if (s.data.backoff && Date.parse(s.data.backoff.until) > ctx.now.getTime()) return 'sync_backoff';
-    if (!p.approved && row.integrationResolvedEpoch === row.epoch) return 'awaiting_approval';
+    if (!p.approved && !p.mechanical && row.integrationResolvedEpoch === row.epoch) return 'awaiting_approval';
   }
   return null;
 }
@@ -1242,15 +1282,21 @@ function beginSync(s: Live, p: any, f: Facts, ctx: TransitionContext): Outcome<P
     writes.push({ type: 'fixedCheckClaim', sessionId: s.data.sessionId, head: p.head, keys });
   }
   if (p.reason === 'conflict') {
-    if (!p.approved) writes.push({ type: 'resolutionSpent', sessionId: s.data.sessionId });
+    if (!p.approved && !p.mechanical) writes.push({ type: 'resolutionSpent', sessionId: s.data.sessionId });
     writes.push({ type: 'blockReasons', sessionId: s.data.sessionId, reasons: ['integrating'] });
   }
+  // #6546: a platform sync like a failing check's: only a head behind main
+  // that merges with it cleanly is synced (measured first), after whoever is
+  // working on the session; its once-record is this approval's epoch.
+  const platformSync = p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason) || p.reason === GITHUB_CHECKS_SYNC;
+  const githubChecksSync = p.reason === GITHUB_CHECKS_SYNC
+    ? { epoch: row.epoch, head: row.head ?? null, at: ctx.now.toISOString() } : s.data.githubChecksSync;
   // Any sync with main is the one a move onto main owed.
-  return step({ name: s.name, data: { ...s.data, n, sync, owedSync: null } } as Live, {
+  return step({ name: s.name, data: { ...s.data, n, sync, owedSync: null, ...(githubChecksSync !== undefined ? { githubChecksSync } : {}) } } as Live, {
     writes,
     push: p.reason === 'conflict' ? [votes(f, { integrating: true })] : [],
     work: [{ kind: WORK.sync, key: `sync:${n}`, input: { sessionId: s.data.sessionId, n, reason: p.reason,
-      measureFirst: p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason), waitForIdle: p.reason === 'boot_failure' || CHECK_SYNCS.has(p.reason),
+      measureFirst: platformSync, waitForIdle: platformSync,
       githubConflict: !!p.githubConflict } }],
   });
 }
@@ -1340,6 +1386,33 @@ function owedSyncNow(out: Outcome<PState>, f: Facts, ctx: TransitionContext): Ou
     push: [...(out.push || []), ...(synced.push || [])] };
 }
 
+// #6546: whether this approval's head was already brought up to date with
+// main because GitHub's required checks failed on it (once per epoch).
+function githubChecksTried(d: Data, row: NonNullable<Facts['row']>): boolean {
+  return !!d.githubChecksSync && d.githubChecksSync.epoch === row.epoch;
+}
+
+// #6546: GitHub refused an approved change because its required checks
+// failed. The workflow behind them runs on the pull request, so it tested the
+// change against the main it was opened (or last pushed) on: a network blip
+// or a failure main has fixed since stays failed, and every retry meets it
+// again. A merge of today's main pushes a new head, which GitHub checks anew,
+// and a clean one keeps the votes. Begun with the refusal's own transition
+// (as owedSyncNow begins an owed sync), once per approval epoch, and only for
+// a head the mirror does not measure level with main (the sync measures again
+// and does nothing to a level or conflicting head).
+function githubChecksSyncNow(out: Outcome<PState>, f: Facts, ctx: TransitionContext): Outcome<PState> {
+  const next = out.next as Live;
+  const row = f.row;
+  if (!next?.data || !row) return out;
+  if (row.integrationBehindBy === 0) return out;
+  const p = { reason: GITHUB_CHECKS_SYNC, head: row.head };
+  if (syncRefusal(next, { payload: p } as Event<any>, f, ctx)) return out;
+  const begun = beginSync(next, p, f, ctx);
+  return { ...out, next: begun.next, writes: [...(out.writes || []), ...(begun.writes || [])], work: [...(out.work || []), ...(begun.work || [])],
+    push: [...(out.push || []), ...(begun.push || [])] };
+}
+
 // branch.sync reported.
 function synced(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext): Outcome<PState> {
   const sync = s.data.sync!;
@@ -1366,6 +1439,12 @@ function synced(s: Live, e: Event<any>, f: Facts, ctx: TransitionContext): Outco
     else if (CHECK_SYNCS.has(sync.reason)) {
       writes.push({ type: 'fixedCheckRelease', sessionId: d.sessionId, head: sync.claimHead, prevHead: sync.prev.fixedHead ?? null, prevKeys: sync.prev.fixedKeys || [] });
     }
+  }
+  // #6546: a GitHub-checks sync that pushed nothing (level with main by now,
+  // conflicting, or it could not run) spends nothing: the next refusal may
+  // ask again once main has moved.
+  if (sync.reason === GITHUB_CHECKS_SYNC && (NOTHING_RAN.has(outcome) || outcome === 'level' || outcome === 'conflict_skipped')) {
+    d = { ...d, githubChecksSync: null };
   }
   if (sync.reason === 'conflict') {
     const reasons = outcome === 'unresolvable' ? ['unresolvable'] : outcome === 'over_budget' ? ['budget'] : [];
@@ -1992,7 +2071,11 @@ const WRITES = {
             imported_pr_head_sha = CASE WHEN $3 = 'imported' THEN $1 ELSE imported_pr_head_sha END,
             ${invalidateHeadMoveSql('$1', { fixParam: '$5' })},
             stale_notified_at = NULL,
-            approval_epoch = approval_epoch + CASE WHEN $4::boolean THEN 0 ELSE 1 END
+            approval_epoch = approval_epoch + CASE WHEN $4::boolean THEN 0 ELSE 1 END,
+            -- #6546: GitHub held the merge of the head this one replaced; that
+            -- says nothing about the new head, which GitHub checks anew.
+            integration_block_reasons = CASE WHEN integration_block_reasons IS NULL THEN NULL
+              ELSE integration_block_reasons - 'github_busy' - 'github_refused' - 'github_checks' - 'github_checks_failing' END
       WHERE id = $2`, [w.to, w.sessionId, w.column, !!w.keepVotes, !!w.fixOnly]),
   approvalsCleared: async (tx: Tx, w: any) => tx.query(
     'UPDATE chat_sessions SET approval_epoch = approval_epoch + 1 WHERE id = $1', [w.sessionId]),
@@ -2029,7 +2112,7 @@ const WRITES = {
   // alone; the queue's laneReasons rewrite leaves them alone.
   mergeHeld: async (tx: Tx, w: any) => tx.query(
     `UPDATE chat_sessions
-        SET integration_block_reasons = (COALESCE(integration_block_reasons, '[]'::jsonb) - 'github_busy' - 'github_refused')
+        SET integration_block_reasons = (COALESCE(integration_block_reasons, '[]'::jsonb) - 'github_busy' - 'github_refused' - 'github_checks' - 'github_checks_failing')
               || jsonb_build_array($2::text)
       WHERE id = $1`, [w.sessionId, w.reason]),
   // The once-records of the platform's own syncs, written with the sync.

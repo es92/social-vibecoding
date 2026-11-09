@@ -120,6 +120,34 @@ test('an agent\'s submission waits for its author\'s own yes, which counts', { t
     assert.deepEqual(await gates(byAgent, sam), [true, true, true]);
   });
 
+  await t.test('#6477: an author who takes their vote back has no yes for proposing, until a new version', async () => {
+    await reconcile({ preset: 'two_yeses' });
+    const hers = await proposal(sam);
+    const before = await governance.governedGate(pool, club.id, { kind: 'pr', id: hers });
+    assert.equal(before.qualifiedYes, 1, 'proposing counts as her yes');
+    // The retraction's own write (routes/votes.js retractVote stamps the epoch).
+    await pool.query(
+      'UPDATE chat_sessions SET author_yes_withdrawn_epoch = approval_epoch WHERE id = $1', [hers]
+    );
+    const after = await governance.governedGate(pool, club.id, { kind: 'pr', id: hers });
+    assert.equal(after.qualifiedYes, 0, 'taking the vote back takes the proposing yes with it');
+    // Every read agrees: the serializers' batch read and the machine's own.
+    const gov = await governance.getGovernance(pool, club.id);
+    const ctx = await governance.rulesContext(pool, club.id, gov, 'pr', [hers]);
+    const listed = governance.computeGate(gov, ctx.facts.membersActive, 0, 0, null, null,
+      governance.rulesGateOpts(ctx, hers, sam.id, null));
+    const machine = await readPrGate(pool, {
+      sessionId: hers, appId: club.id, openedAt: null, explicitApproval: false, explicitReason: null, authorId: sam.id, now: new Date(),
+    });
+    assert.equal(listed.qualifiedYes, 0);
+    assert.equal(machine.qualifiedYes, 0);
+    assert.deepEqual(await gates(hers, sam), [false, false, false]);
+    // A new version is proposing it again.
+    await pool.query('UPDATE chat_sessions SET approval_epoch = approval_epoch + 1 WHERE id = $1', [hers]);
+    assert.equal((await governance.governedGate(pool, club.id, { kind: 'pr', id: hers })).qualifiedYes, 1);
+    await pool.query(`UPDATE chat_sessions SET status = 'closed' WHERE id = $1`, [hers]);
+  });
+
   await t.test('Needs you and the digest ask the author of an agent\'s submission for their yes', async () => {
     await pool.query(`UPDATE chat_sessions SET status = 'closed' WHERE app_id = $1`, [club.id]);
     const owed = async (who) => {

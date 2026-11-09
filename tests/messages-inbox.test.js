@@ -473,6 +473,13 @@ test('#name is a channel only when the viewer has one; #123 stays an issue and P
   assert.equal(segs.map((s) => s.value || '').join('').includes('#todo'), true, 'an unknown #word is left as text');
   assert.deepEqual(channels.tokenizeRefs('x#general', known), [{ type: 'text', value: 'x#general' }],
     'not inside a word');
+  assert.deepEqual(channels.tokenizeRefs('thanks @homeroombot', known), [
+    { type: 'text', value: 'thanks ' },
+    { type: 'mention', name: 'homeroombot' },
+  ], 'the no-space bot handle is one mention');
+  assert.equal(channels.isBotMention('HomeroomBot'), true);
+  assert.equal(channels.isBotMention('homeroombot'), true);
+  assert.equal(channels.isBotMention('homeroombotx'), false);
 });
 
 test('the app chat chips the same channels, as a link and not as a drawer ref', () => {

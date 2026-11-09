@@ -1035,6 +1035,10 @@
     "text": "This week on {{project}}",
     "description": "First line of the weekly summary notification for one project. {{project}} is the project's name."
   },
+  "row.weekly.ready": {
+    "text": "Your weekly digest is ready",
+    "description": "First line of the one weekly notification that covers all of the viewer's projects. Tapping it opens the This week page. What happened is on the line below."
+  },
   "row.weekly.labelUnnamed": {
     "text": "This week on the app",
     "description": "First line of the weekly summary notification when the project's name is not known."

@@ -153,6 +153,10 @@ test('the Friday row counts the week; the vote row quotes the line; the merge ro
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '1:1' })), '1 change went live · 1 change is waiting for approval');
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: '0:0' })), 'Nothing landed this week');
   assert.equal(subjectOf(controller()._rowView({ ...ROW, kind: 'weekly_digest', detail: null })), 'Nothing landed this week');
+  // #6371: one row covers every project and opens This week.
+  const digest = controller()._rowView({ ...ROW, kind: 'weekly_digest', appName: null, detail: 'w:2:5:1' });
+  assert.equal(digest.label, 'Your weekly digest is ready');
+  assert.equal(subjectOf(digest), '5 changes went live · 1 change is waiting for approval');
 
   const no = controller()._rowView({ ...ROW, kind: 'proposal_vote', detail: 'no', voteReason: ' The new colors clash on mobile. ' });
   assert.equal(no.label, 'Voted no');

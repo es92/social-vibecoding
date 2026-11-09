@@ -41,7 +41,7 @@ test('one person: first mile, found and came back, possibly lost, failures, Chal
                         communities_onboarded_at, tour_done_at, getting_started_seen)
      VALUES ('mia', 'x', TRUE, '2026-10-01T09:30:00Z', '2026-10-01T09:20:00Z', '2026-10-01T09:40:00Z',
              '2026-10-01T09:45:00Z', '{"join_answer":"joined","tour_ended":"skip","tour_step":1}') RETURNING id`)).id;
-  await pool.query("INSERT INTO waitlist_signups (email, released_at, linked_user_id) VALUES ('mia@example.test', '2026-10-01T09:00:00Z', $1)", [mia]);
+  await pool.query("INSERT INTO waitlist_signups (email, submitted_at, released_at, linked_user_id) VALUES ('mia@example.test', '2026-10-01T09:00:00Z', '2026-10-01T09:00:00Z', $1)", [mia]);
   const app = async (slug, by) => (await one(
     "INSERT INTO apps (name, slug, created_by, status) VALUES ($1, $1, $2, 'running') RETURNING id", [slug, by])).id;
   const runClub = await app('run-club', host);
@@ -80,9 +80,22 @@ test('one person: first mile, found and came back, possibly lost, failures, Chal
     `INSERT INTO user_activities (user_id, season_event_id, activity_type, activity_at, challenge_id, points, source)
      VALUES ($1, $2, 'challenge', '2026-10-01T10:05:00Z', $3, 500, 'challenge_scorer')`, [mia, event, ch]);
 
+  // Where she came from (#6540): the invite link she opened first, and the
+  // waitlist landing. Only hosts and tags.
+  await pool.query(
+    `INSERT INTO community_invite_opens (maker_id, app_id, user_id, referrer_host, via, opened_at)
+     VALUES ($1, $2, $3, 'discord.com', 'copied', '2026-10-01T08:50:00Z')`, [host, runClub, mia]);
+  await pool.query(
+    `UPDATE waitlist_signups SET referrer_host = 'none', utm_source = 'x',
+            utm_campaign = 'launch', ref = 'post-1' WHERE linked_user_id = $1`, [mia]);
+
   const p = await journey.person(pool, { userId: mia, now });
   assert.equal(p.name, 'mia');
   assert.equal(p.cohort, '2026-10-01');
+  assert.deepEqual(p.cameFrom, {
+    invite: { referrerHost: 'discord.com', via: 'copied', project: 'run-club', at: '2026-10-01T08:50:00.000Z' },
+    waitlist: { referrerHost: 'none', utmSource: 'x', utmCampaign: 'launch', ref: 'post-1', at: '2026-10-01T09:00:00.000Z' },
+  });
   assert.equal(p.firstMile.furthest, 'first_act');
   assert.deepEqual(p.firstMile.tour, { ended: 'skip', step: 1, at: new Date('2026-10-01T09:45:00Z') });
   assert.deepEqual(p.found.map((f) => [f.slug, f.how, f.stayed]), [['run-club', 'handed', true], ['tally', null, false]],
@@ -99,4 +112,26 @@ test('one person: first mile, found and came back, possibly lost, failures, Chal
   assert.deepEqual(p.challenges.credits.map((c) => [c.title, c.firstChallenge]), [['Try an app', true]]);
   assert.deepEqual(p.navigation, { recorded: true });
   assert.equal(await journey.person(pool, { userId: 999999, now }), null);
+});
+
+test('cohortSources counts each person once, by the earlier way in, and prefers utm_source (#6540)', () => {
+  const at = (iso) => new Date(iso).toISOString();
+  const invite = (referrerHost, when) => ({ referrerHost, via: 'copied', project: 'Pixel Garden', at: at(when) });
+  const wait = (referrerHost, utmSource, when) => ({ referrerHost, utmSource, utmCampaign: null, ref: null, at: at(when) });
+  const people = [
+    // Both records: the invite came first, so it is her way in.
+    { cameFrom: { invite: invite('discord.com', '2026-11-01T10:00:00Z'), waitlist: wait('t.co', null, '2026-11-01T12:00:00Z') } },
+    { cameFrom: { invite: invite('none', '2026-11-01T10:00:00Z'), waitlist: null } },
+    // The waitlist came first, and its utm_source is the word shown.
+    { cameFrom: { invite: invite('discord.com', '2026-11-02T10:00:00Z'), waitlist: wait('t.co', 'x', '2026-11-01T09:00:00Z') } },
+    { cameFrom: { invite: invite('discord.com', '2026-11-01T10:00:00Z'), waitlist: null } },
+    { cameFrom: { invite: null, waitlist: null } },
+  ];
+  assert.deepEqual(journey.cohortSources(people), [
+    { way: 'invite', from: 'discord.com', people: 2 },
+    { way: 'invite', from: 'none', people: 1 },
+    { way: 'unknown', from: null, people: 1 },
+    { way: 'waitlist', from: 'x', people: 1 },
+  ]);
+  assert.deepEqual(journey.cohortSources([]), []);
 });

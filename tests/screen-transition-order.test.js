@@ -53,7 +53,7 @@ const nativeJs = fs.readFileSync(
 // #agent-session-screen (#2779) is a root with the same navigate/exit pair:
 // one conversation with the Mayor at #agent/<id>.
 const SCREEN_ROOTS = ['app-view', 'home-screen',
-  'workshop-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
+  'workshop-screen', 'weekly-digest-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
   'settings-screen', 'messages-screen', 'agent-session-screen',
   'ai-screen'];
 

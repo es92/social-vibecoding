@@ -303,11 +303,16 @@ export function cardProjectWords(object: Pick<SharedObjectCard, 'type' | 'appSlu
   return translate('messages:object.fromProject', { project });
 }
 
-export function ObjectCard({ object, compact = false, inboxOnly = false }: {
+export function ObjectCard({ object, compact = false, inboxOnly = false, onOpen }: {
   object: SharedObjectCard;
   compact?: boolean;
   /** Drawn in an app's discussion: see `recordObjectOrigin`. */
   inboxOnly?: boolean;
+  /**
+   * #6248: what pressing a card with no `href` does (a draft offered for
+   * filing): it becomes a button with the › every openable card shows.
+   */
+  onOpen?: () => void;
 }) {
   const t = useMessages('messages');
   const home = useContext(CardHomeContext);
@@ -331,12 +336,13 @@ export function ObjectCard({ object, compact = false, inboxOnly = false }: {
           </div>
         ) : null}
       </div>
-      {object.href ? <span aria-hidden="true" className="text-zinc-500 dark:text-zinc-400">›</span> : null}
+      {object.href || onOpen ? <span aria-hidden="true" className="text-zinc-500 dark:text-zinc-400">›</span> : null}
     </>
   );
   return object.href ? (
     <a href={object.href} className="messages-object-card" target={object.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer" onClick={(event) => recordObjectOrigin(event, object.href as string, inboxOnly)}>{body}</a>
-  ) : <div className="messages-object-card">{body}</div>;
+  ) : onOpen ? <button type="button" className="messages-object-card w-full text-start" onClick={onOpen}>{body}</button>
+    : <div className="messages-object-card">{body}</div>;
 }
 
 export function fileSize(bytes: number): string {

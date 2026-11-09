@@ -10,7 +10,10 @@
  *                                             arrow to the thread
  */
 
-import { closeDetail, openDetail, useDetail, detailLayout as layoutOf, THREE_COLUMNS } from './detail';
+import { closeDetail, openDetail, useDetail, detailLayout as layoutOf, THREE_COLUMNS, type DetailDraftCopy } from './detail';
+
+/** What the message says about a draft, shown until the saved row is read. */
+export type PreviewDraftCopy = DetailDraftCopy;
 
 export type PreviewLayout = 'three' | 'halves' | 'full';
 
@@ -24,6 +27,19 @@ export function previewLayout({ phone, three }: { phone: boolean; three: boolean
 /** Open the preview of the design in thread `rootId` of the chat `conversationId`, at `version` (null: the newest). */
 export function openPreview(at: { conversationId: number; rootId: number; version?: number | null; from?: string | null }): void {
   openDetail({ kind: 'design', ref: { conversationId: at?.conversationId, rootId: at?.rootId }, version: at?.version ?? null, from: at?.from ?? null });
+}
+
+/**
+ * #6248: open the preview of a request draft the bot offered to file. It is
+ * read only: the card keeps File it and Not now. Off the bot's tab it goes
+ * there first, to the thread the draft was said in (or Main).
+ */
+export function openDraftPreview(at: { conversationId: number; rootId: number | null; actionId: number; copy?: PreviewDraftCopy }): void {
+  openDetail({
+    kind: 'draft',
+    ref: { conversationId: at?.conversationId, rootId: at?.rootId ?? undefined, actionId: at?.actionId },
+    payload: at?.copy ? { draft: at.copy } : undefined,
+  });
 }
 
 /** Close the preview. */

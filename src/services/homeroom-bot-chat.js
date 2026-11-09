@@ -78,9 +78,10 @@
 
 const log = require('./logger');
 
-// "@homeroom_bot" and the display form "@Homeroom bot" are both the bot.
-const BOT_MENTION_RE = /(^|[^\w])@(homeroom_bot\b|homeroom\s+bot\b)/i;
-const BOT_MENTION_ALL_RE = /(^|[^\w])@(?:homeroom_bot\b|homeroom\s+bot\b)[,:]?\s*/gi;
+// "@homeroom_bot", "@homeroombot" and the display form "@Homeroom bot" are
+// all the bot.
+const BOT_MENTION_RE = /(^|[^\w])@(homeroom_bot\b|homeroombot\b|homeroom\s+bot\b)/i;
+const BOT_MENTION_ALL_RE = /(^|[^\w])@(?:homeroom_bot\b|homeroombot\b|homeroom\s+bot\b)[,:]?\s*/gi;
 // Filings one person may make from chats in an hour.
 const FILINGS_PER_HOUR = 10;
 const MAX_TITLE = 120;

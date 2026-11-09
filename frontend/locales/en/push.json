@@ -559,6 +559,10 @@
     "text": "This week on {{app}}",
     "description": "Phone notification title: the Friday summary of a project. {{app}} is a project's name."
   },
+  "weeklyDigest.title.ready": {
+    "text": "Your weekly digest is ready",
+    "description": "Phone notification title: the one Friday summary that covers all of the viewer's projects. What happened is under it."
+  },
   "weeklyDigest.title.plain": {
     "text": "This week",
     "description": "Phone notification title: the Friday summary."

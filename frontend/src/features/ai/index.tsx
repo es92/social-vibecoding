@@ -470,6 +470,10 @@ export function AiScreen(): ReactNode {
   const detailHere = !!detail && !!botId && (detail.kind === 'design'
     ? detail.ref.conversationId === botId && openRoot === detail.ref.rootId
       && (phone ? level === 1 : docked && !panel.open)
+    : detail.kind === 'draft'
+    // #6248: a request draft is read beside the thread it was said in, or Main.
+    ? detail.ref.conversationId === botId && (openRoot ?? null) === (detail.ref.rootId ?? null)
+      && (phone ? level === 1 : docked && !panel.open)
     : !!column && (column.at === 'page' || column.at === 'thread'));
   // With a preview beside the thread both edges are handles (#6359), each
   // the width of the column after it, the list taking what is left. In three
@@ -527,7 +531,8 @@ export function AiScreen(): ReactNode {
   useEffect(() => {
     if (!visible || !botId || !detail) return;
     if (detail.kind === 'design' && openRoot && openRoot !== detail.ref.rootId) closeDetail();
-    if (detail.kind !== 'design' && !detailHere) closeDetail();
+    if (detail.kind === 'draft' && openRoot && openRoot !== detail.ref.rootId) closeDetail();
+    if (detail.kind !== 'design' && detail.kind !== 'draft' && !detailHere) closeDetail();
   }, [visible, botId, detail, openRoot, detailHere]);
   // The tab pressed (the page's own address, from a thread's): the list
   // comes back, and the detail goes.
@@ -1020,7 +1025,7 @@ export function AiScreen(): ReactNode {
           id="ai-preview-pane"
           className="ai-preview-pane"
           data-ai-preview-pane={layout}
-          aria-label={t('messages:design.pane.label')}
+          aria-label={detail.kind === 'draft' ? t('messages:draft.pane.label') : t('messages:design.pane.label')}
         >
           {/* The thread | preview edge, a handle too (#6359): it sets the
               preview's own width, and the list takes what is left. */}

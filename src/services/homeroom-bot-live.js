@@ -1769,9 +1769,83 @@ async function notePlanRows(pool, runIds, note, { ws = null } = {}) {
         thread: { type: row.thread_type, ref: Number(row.thread_ref) },
       });
     }
+    // #6535: once its plan stops waiting and starts building, an overlap
+    // question asked before that point has been overtaken: its buttons go.
+    if (note === 'building') {
+      for (const row of rows) {
+        if (row.thread_type !== 'issue') continue;
+        await retireOverlapOffers(pool, {
+          appId: Number(row.app_id), issueNumber: Number(row.thread_ref),
+          beforeMessageId: Number(row.id), deps: { ws },
+        });
+      }
+    }
     return rows.length;
   } catch (err) {
     log.warn('homeroom-bot-live', 'Could not say what became of a plan on its request', { runs: ids, note, err: err.message });
+    return 0;
+  }
+}
+
+/**
+ * #6535: once a request's plan stops waiting and starts building, an open
+ * "This overlaps #N" question asked before that point is no longer a choice
+ * worth making: the build has gone ahead. Its message keeps its words and
+ * its card, and loses its three buttons, as an answered offer does; the
+ * row behind it is expired so a tap from a screen that has not drawn again
+ * records nothing. Nothing is posted on either request and no ordering is
+ * recorded. Never throws; resolves how many questions closed.
+ */
+async function retireOverlapOffers(pool, { appId, issueNumber, beforeMessageId, deps = {} } = {}) {
+  const app = Number(appId);
+  const issue = Number(issueNumber);
+  const before = Number(beforeMessageId);
+  if (!Number.isSafeInteger(app) || app <= 0
+    || !Number.isSafeInteger(issue) || issue <= 0
+    || !Number.isSafeInteger(before) || before <= 0) return 0;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE chat_messages
+          SET metadata = jsonb_set(
+                jsonb_set(
+                  jsonb_set(metadata, '{homeroomBot,offer,status}', '"expired"'::jsonb, true),
+                  '{homeroomBot,actions}', '[]'::jsonb, true),
+                '{homeroomBot,othersActions}', '[]'::jsonb, true)
+        WHERE app_id = $1 AND thread_type = 'issue' AND thread_ref = $2 AND id < $3
+          AND metadata->'homeroomBot'->'offer'->>'kind' = 'overlap'
+          AND metadata->'homeroomBot'->'offer'->>'status' = 'open'
+        RETURNING id, metadata, thread_type, thread_ref,
+                  metadata->'homeroomBot'->'offer'->>'id' AS offer_id`,
+      [app, issue, before],
+    );
+    const offerIds = [...new Set(rows
+      .map((row) => Number(row.offer_id))
+      .filter((id) => Number.isSafeInteger(id) && id > 0))];
+    if (offerIds.length) {
+      await pool.query(
+        `UPDATE bot_cards SET status = 'expired'
+          WHERE place = 'thread' AND id = ANY($1::int[]) AND status = 'open'`,
+        [offerIds],
+      );
+      await pool.query(
+        `UPDATE homeroom_bot_voice_offers SET status = 'expired'
+          WHERE id = ANY($1::int[]) AND status = 'open'`,
+        [offerIds],
+      );
+    }
+    const sock = deps.ws || require('./ws');
+    for (const row of rows) {
+      if (typeof sock?.broadcast !== 'function') break;
+      sock.broadcast(app, {
+        type: 'chat_message_updated', id: Number(row.id), metadata: row.metadata,
+        thread: { type: row.thread_type, ref: Number(row.thread_ref) },
+      });
+    }
+    return rows.length;
+  } catch (err) {
+    log.warn('homeroom-bot-live', 'Could not close an overlap question once its build started', {
+      appId: app, issueNumber: issue, beforeMessageId: before, err: err.message,
+    });
     return 0;
   }
 }
@@ -2395,6 +2469,13 @@ async function post({
     if (message?.id != null && !messageSentBefore) {
       await require('./homeroom-bot-voice').retireThreadSuggestions(pool, {
         appId: app.id, thread: { type: 'issue', ref: issueNumber }, keepMessageId: Number(message.id), deps: { ws },
+      });
+    }
+    // #6535: the card that says its plan is building also overtakes an
+    // overlap question the bot asked in this thread before it.
+    if (message?.id != null && threadMessage?.metadata?.specShare?.botNote === 'building') {
+      await retireOverlapOffers(pool, {
+        appId: app.id, issueNumber, beforeMessageId: Number(message.id), deps: { ws },
       });
     }
   }
@@ -5989,6 +6070,7 @@ module.exports = {
   shareSpecVersion,
   notePlanRows,
   PLAN_ROW_ENDINGS,
+  retireOverlapOffers,
   postSpecOnProposal,
   revisedSpecCommentText,
   postRevisedSpecComment,

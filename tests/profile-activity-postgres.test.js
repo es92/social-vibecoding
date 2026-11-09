@@ -82,6 +82,81 @@ test('the week against the full PostgreSQL schema', { timeout: 180000 }, async (
   assert.equal(nobody.totalSeconds, 0);
   assert.equal(nobody.appsOpened, 0);
 
+  // ── The week's accomplishments (#6464): live changes and challenges ────
+  //
+  // The same seven UTC days: a merge still going live, a headless auto
+  // session, an older merge and somebody else's row are all out.
+  const merged = (appId, by, at, { headless = false, status = 'merged' } = {}) => pool.query(
+    `INSERT INTO chat_sessions (user_id, app_id, status, is_headless, merged_at, live_at)
+     VALUES ($1, $2, $3, $4, $5::timestamptz, $5::timestamptz)`,
+    [by, appId, status, headless, at]);
+  await merged(notes, me, `${dayAgo(0)}T01:00:00Z`);
+  await merged(runs, me, `${dayAgo(6)}T23:00:00Z`); // the week's first day
+  await merged(notes, me, `${dayAgo(0)}T02:00:00Z`); // a second in the same app
+  await merged(chess, me, `${dayAgo(7)}T23:59:59Z`); // a second too old
+  await merged(chess, me, `${dayAgo(1)}T00:00:00Z`, { headless: true }); // never authored
+  await merged(notes, someone, `${dayAgo(1)}T00:00:00Z`); // somebody else
+  // Merged but not live: a row the merge machine inserted and has not put
+  // into production yet. The insert trigger makes an ordinary merged row
+  // live, and only the machine's writer marker keeps it dark.
+  const dark = await pool.connect();
+  try {
+    await dark.query('BEGIN');
+    await dark.query("SET LOCAL app.wf_writer = 'transition'");
+    await dark.query(
+      `INSERT INTO chat_sessions (user_id, app_id, status, is_headless, merged_at, live_at)
+       VALUES ($1, $2, 'merged', FALSE, $3::timestamptz, NULL)`,
+      [me, chess, `${dayAgo(1)}T00:00:00Z`]);
+    await dark.query('COMMIT');
+  } finally {
+    dark.release();
+  }
+
+  const weekMerged = profile.shapeWeek(
+    (await pool.query(profile.SUMMARY_WEEK_MERGED_SQL, [me])).rows[0],
+    (await pool.query(profile.SUMMARY_WEEK_APPS_SQL, [me])).rows,
+    0,
+  );
+  assert.equal(weekMerged.merged, 3, 'the three live merges in the window, nobody else\'s');
+  assert.deepEqual(weekMerged.apps, [{ slug: 'notes', name: 'notes' }, { slug: 'runs', name: 'runs' }],
+    'one entry per app, most recently merged first');
+  const nobodyMerged = profile.shapeWeek(
+    (await pool.query(profile.SUMMARY_WEEK_MERGED_SQL, [await user('activity_no_merges')])).rows[0],
+    [],
+    0,
+  );
+  assert.deepEqual(nobodyMerged, { merged: 0, apps: [], challengesDone: 0 });
+
+  // Challenges: two are done, but only one's latest credit fell in the week.
+  const { rows: [season] } = await pool.query(
+    `INSERT INTO seasons (name, starts_at, ends_at, is_active)
+     VALUES ('Activity season', NOW() - INTERVAL '30 days', NOW() + INTERVAL '30 days', TRUE) RETURNING id`);
+  const { rows: [event] } = await pool.query(
+    `INSERT INTO season_events (name, starts_at, ends_at, is_active, scoring_formula, season_id, type)
+     VALUES ('Activity event', NOW() - INTERVAL '30 days', NOW() + INTERVAL '30 days', TRUE, '{}'::jsonb, $1, 'season')
+     RETURNING id`, [season.id]);
+  const addChallenge = async () => {
+    const { rows: [template] } = await pool.query(
+      `INSERT INTO challenge_templates (category, goal, task, reward)
+       VALUES ('PERSISTENT', 'Do a thing', 'Do it.', '10') RETURNING id`);
+    const { rows: [challenge] } = await pool.query(
+      `INSERT INTO challenges (season_event_id, challenge_template_id) VALUES ($1, $2) RETURNING id`,
+      [event.id, template.id]);
+    return challenge.id;
+  };
+  const credit = (challengeId, n) => pool.query(
+    `INSERT INTO user_activities (user_id, season_event_id, activity_type, points, activity_at, challenge_id)
+     VALUES ($1, $2, 'challenge_completion', 10, $3::timestamptz, $4)`,
+    [me, event.id, `${dayAgo(n)}T12:00:00Z`, challengeId]);
+  await credit(await addChallenge(), 2);
+  await credit(await addChallenge(), 8); // done, but not this week
+
+  assert.equal(await profile.readChallengesDoneSince(pool, me, season.id), 1,
+    'the latest credit, not the completion total');
+  const totals = await profile.readChallengeTotals(pool, me, season.id);
+  assert.equal(totals.done, 2, 'both are still done in the season');
+  assert.equal(totals.total, 2);
+
   // A tiny table prefers a scan, so ask whether the index CAN serve the read.
   const client = await pool.connect();
   try {

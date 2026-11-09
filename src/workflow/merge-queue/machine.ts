@@ -28,6 +28,7 @@ import type { Check, DomainWrite, Event, Json, Machine, MessageRequest, Outcome,
 import { NO_FACTS, readFacts } from './facts.ts';
 import type { Candidate, Facts } from './facts.ts';
 import { forceWaivesChecks } from '../rules/merge-claim.ts';
+import { createPrProposedNotifications } from '../rules/proposal-notifications.ts';
 
 export const MACHINE = 'merge-queue';
 export const appKey = (appId: number) => `app:${appId}`;
@@ -108,16 +109,39 @@ export function admission(c: Candidate, now: number): { admit: boolean; reason: 
     return { admit: false, reason: 'unresolvable' };
   }
   if (c.backoffUntil > now) return { admit: false, reason: 'sync_backoff' };
-  if (c.unmergeable === 'checks_failing' || c.unmergeable === 'checks_error') return { admit: false, reason: c.unmergeable };
+  // #6531: a conflict in a mechanical file (the timing baseline, the schema
+  // manifest) is settled by Homeroom itself, whatever the resolution state,
+  // and spends nothing.
+  if (!c.githubConflict && c.conflictFiles.length && c.conflictFiles.every((p) => MECHANICAL_PATHS.has(p))) {
+    return { admit: true, reason: 'mechanical' };
+  }
+  // A stale verdict (checks that failed or could not run) was measured
+  // against an older main, and a conflicting head gets no fresh automatic
+  // run (services/check-admission.js): the lane resolves it anyway and the
+  // new head gets its own full checks run. So it no longer refuses here;
+  // it is written as the author's lane reason only once the free resolution
+  // has been spent (below).
+  const stale = c.unmergeable === 'checks_failing' || c.unmergeable === 'checks_error';
   if ((c.approved || c.forced) && !c.unmergeable) return { admit: true, reason: 'approved' };
+  // A stale verdict does not block the free resolution before the vote.
   if (!c.resolutionSpent) return { admit: true, reason: 'first_conflict' };
+  // The group said yes and the free resolution is spent: the lane still
+  // resolves the conflict, and the new head gets its own full checks run.
+  if (c.approved && stale) return { admit: true, reason: 'approved' };
+  if (stale) return { admit: false, reason: c.unmergeable! };
   return { admit: false, reason: c.approved ? (c.unmergeable || 'lock') : 'awaiting_approval' };
 }
+// The paths whose conflict the platform settles mechanically (worker/run-cc.sh
+// takes main's timing file, and scripts/record-schema-migration.js rebuilds
+// the manifest): a conflict only in these never costs the group a yes.
+export const MECHANICAL_PATHS: ReadonlySet<string> = new Set([
+  'tests/baselines/test-durations.json',
+  'src/db/migrations/manifest.json',
+]);
 // The block reasons the conflict lane owns on a row (the card's "who acts").
-// 'checks_failing' and 'checks_error': it spends no resolution on a head
-// whose checks fail, and the card said "the platform will resolve it"
-// regardless: on 19 Oct 2026, 33 of the 35 conflicting proposals in review
-// were such heads, some there since September, never asked to resolve.
+// 'checks_failing' and 'checks_error': written now only after the free
+// pre-vote resolution has been spent, when the checks still fail on a head
+// nobody else will move (the bot fixes its own; a person's change is theirs).
 const LANE_REASONS: ReadonlySet<string> = new Set(['awaiting_approval', 'unresolvable', 'fork_head', 'checks_failing', 'checks_error']);
 
 const free = (c: Candidate) => c.state === 'in_review' && !c.busy;
@@ -187,13 +211,15 @@ function pick(d: Data, f: Facts, ctx: TransitionContext): Outcome<QState> {
     if (verdict?.admit) admitted.push({ c, reason: verdict.reason });
   }
   if (!data.resolution && directWaiting === 0 && admitted.length) {
-    admitted.sort((a, b) => (Number(b.reason === 'approved') - Number(a.reason === 'approved')) || compare(a.c, b.c));
+    const rank = (r: string) => (r === 'mechanical' ? 2 : r === 'approved' ? 1 : 0);
+    admitted.sort((a, b) => (rank(b.reason) - rank(a.reason)) || compare(a.c, b.c));
     const next = admitted.find((x) => free(x.c) && !tried.has(`sync:${triedKey(x.c)}`));
     if (next) {
       const n = data.n + 1;
       data = { ...data, n, resolution: { n, sessionId: next.c.id }, tried: [...data.tried, `sync:${triedKey(next.c)}`] };
       messages.push(toProposal(data, next.c.id, 'SyncRequested', {
         reason: 'conflict', queueN: n, approved: next.reason === 'approved', githubConflict: next.c.githubConflict,
+        mechanical: next.reason === 'mechanical',
       }));
     }
   }
@@ -313,11 +339,22 @@ export function mergeQueue(): Machine<QState, Facts> {
     transitions: { [NONE]: create, idle: table('idle'), working: table('working') } as any,
     writes: {
       // The card's "who acts" on a conflicting head (services/merge-requirements.js
-      // integrationStep reads it): a description, decided by nothing.
-      laneReasons: async (tx: Tx, w: any) => tx.query(
-        `UPDATE chat_sessions SET integration_block_reasons = $2::jsonb
-          WHERE id = $1 AND status = 'promoted' AND integration_block_reasons IS DISTINCT FROM $2::jsonb`,
-        [w.sessionId, JSON.stringify(w.reasons || [])]),
+      // integrationStep reads it): a description, decided by nothing. A head
+      // that has just become vote-ready gets its "new change to vote on"
+      // notice here (#6531): the queue is what learns it first.
+      laneReasons: async (tx: Tx, w: any) => {
+        const { rows: [before] } = await tx.query(
+          'SELECT integration_block_reasons, user_id, app_id FROM chat_sessions WHERE id = $1', [w.sessionId]);
+        await tx.query(
+          `UPDATE chat_sessions SET integration_block_reasons = $2::jsonb
+            WHERE id = $1 AND status = 'promoted' AND integration_block_reasons IS DISTINCT FROM $2::jsonb`,
+          [w.sessionId, JSON.stringify(w.reasons || [])]);
+        const was = Array.isArray(before?.integration_block_reasons) ? before.integration_block_reasons.map(String) : [];
+        const now = (w.reasons || []).map(String);
+        if (now.includes('awaiting_approval') && !was.includes('awaiting_approval') && before) {
+          await createPrProposedNotifications(tx, { appId: Number(before.app_id), sessionId: w.sessionId, proposerId: before.user_id ?? null });
+        }
+      },
     },
     reply: async (tx, event, after) => (after.name === NONE ? null : { state: after.name }),
   });

@@ -11,6 +11,7 @@ import { useEffect, useRef, type RefObject } from 'react';
  */
 
 import type { AnchorRect } from './anchor-popover';
+import { nearAny } from './dismiss-edge';
 
 /** The part of a DOMRect `placeUnderAnchor` places from. */
 export function anchorRectOf(el: Element): AnchorRect {
@@ -60,10 +61,27 @@ export function useAnchoredDismiss(
     const shut = () => closeRef.current();
     const within = (t: EventTarget | null) => !!t && (t as Node).nodeType === 1
       && insideRef.current.some((ref) => ref.current?.contains(t as Node));
+    const nearInside = (x: number, y: number) =>
+      nearAny(x, y, insideRef.current.map((ref) => ref.current));
+    // Where the press that led to a click began. A click on the dimmed area
+    // after a press inside the panel (a drag, a selection) must not close it;
+    // neither must a press or a click within a finger's width of the panel's
+    // edge (#6475).
+    let pressedOutside: boolean | null = null;
+    const onPointerDown = (ev: PointerEvent) => {
+      pressedOutside = !within(ev.target) && !nearInside(ev.clientX, ev.clientY);
+    };
     const anchorAt = () => insideRef.current[0]?.current?.getBoundingClientRect() || null;
     const start = anchorAt();
     const onDoc = (ev: Event) => {
+      const startedOutside = pressedOutside;
+      pressedOutside = null;
       if (within(ev.target)) return;
+      // A press that began inside (or at the edge of) the anchor and panel is
+      // not an outside press, however the click landed.
+      if (startedOutside === false) return;
+      const me = ev as MouseEvent;
+      if (nearInside(me.clientX, me.clientY)) return;
       shut();
     };
     const onKey = (ev: KeyboardEvent) => {
@@ -79,11 +97,13 @@ export function useAnchoredDismiss(
         && Math.abs(now.left - start.left) <= ANCHOR_SCROLL_SLOP) return;
       shut();
     };
+    document.addEventListener('pointerdown', onPointerDown, true);
     document.addEventListener('click', onDoc, true);
     document.addEventListener('keydown', onKey);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', shut);
     return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('click', onDoc, true);
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll, true);

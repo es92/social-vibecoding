@@ -163,6 +163,12 @@ export interface NeedItem {
    * says what it waits on instead of Vote.
    */
   waitingOn?: string[];
+  /**
+   * #6531: a conflicting change that only a yes can move. Its Vote row names
+   * the conflict ("Homeroom resolves it once you approve"), so it does not
+   * read as a plain vote.
+   */
+  conflictOnYes?: boolean;
   /** #6389: the coding tool the change was made in, such as `claude-code`. */
   agent?: string | null;
   /** #6262: the thread its page is, and how many messages in it are new. */
@@ -601,6 +607,8 @@ export function needsYou(needs: NeedItem[] | null, work: AiWork | null): WorkRow
     // its fix still owed. It keeps its row because you are the one to act,
     // and says what it waits on in place of Vote.
     const waiting = item.waitingOn && item.waitingOn.length ? waitingRow(item.waitingOn) : null;
+    // #6531: a conflicting change only a yes can move says so on its Vote row.
+    const conflicted = item.kind === 'proposal' && item.conflictOnYes === true;
     rows.push({
       key: `need:${item.kind}:${item.id}`,
       title: (item.kind === 'ballot' && item.ballot?.title) || item.title || '',
@@ -608,11 +616,15 @@ export function needsYou(needs: NeedItem[] | null, work: AiWork | null): WorkRow
       who: 'all',
       // A vote on a change of Homeroom bot's, where a request of yours waits
       // for one of its slots: deciding it lets that request be built.
-      sub: waiting
-        ? { id: waiting.sub, values: where(app, shownNumber(item)) }
-        : app && held.has(app.slug) && holdsSlot(item)
-          ? { id: 'messages:ai.row.voteFreesSlot', values: where(app, shownNumber(item)) }
-          : whereLine(app, shownNumber(item)),
+      sub: conflicted
+        ? { id: 'messages:ai.row.voteConflict', values: where(app, shownNumber(item)) }
+        : waiting
+          ? { id: waiting.sub, values: where(app, shownNumber(item)) }
+          : app && held.has(app.slug) && holdsSlot(item)
+            ? { id: 'messages:ai.row.voteFreesSlot', values: where(app, shownNumber(item)) }
+            : whereLine(app, shownNumber(item)),
+      // A phone shows it under the title where nothing hovers.
+      ...(conflicted ? { why: { id: 'messages:ai.why.voteConflict' } } : {}),
       pill: waiting
         ? { id: waiting.pill }
         : item.kind === 'proposal' && item.approve === true

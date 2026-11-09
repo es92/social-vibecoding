@@ -94,6 +94,11 @@
  * like anyone's, once they tap Yes on it (29 Oct 2026: "they should just have
  * to manually do it, not have it auto-done by the connector").
  *
+ * An author who TOOK THEIR VOTE BACK on this version has no yes for
+ * proposing (`authorWithdrew`, chat_sessions.author_yes_withdrawn_epoch
+ * matching the current epoch): they said no to counting it. A new version
+ * (an epoch bump) counts proposing as their yes again.
+ *
  * ── Changes to who decides ─────────────────────────────────────────────
  *
  * A change to who can see the project, its admins, its groups or this rule
@@ -602,6 +607,9 @@ export interface EvalContext {
   // A coding agent submitted the change (see the header): the author's yes
   // counts once they tap it, not for proposing.
   madeByAgent?: boolean;
+  // The author took their own vote back on this version (see the header):
+  // proposing is not their yes again until they vote or a new version lands.
+  authorWithdrew?: boolean;
   openedAt: unknown;
   now: unknown;
   noTimers: boolean;
@@ -662,7 +670,8 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): RuleResult {
   // coding agent put it up for them.
   const counted = rule.kind !== 'majority';
   let authorYes = false;
-  if (counted && ctx.voters && !ctx.authorIsBot && !ctx.madeByAgent && authorIn(rule.group, tally, ctx.authorId)
+  if (counted && ctx.voters && !ctx.authorIsBot && !ctx.madeByAgent && !ctx.authorWithdrew
+    && authorIn(rule.group, tally, ctx.authorId)
     && !ctx.voters.yes.has(ctx.authorId!) && !ctx.voters.no.has(ctx.authorId!)) {
     yes += 1;
     authorYes = true;

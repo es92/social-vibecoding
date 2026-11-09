@@ -263,7 +263,7 @@ export function trackLook(track: Pick<BotTrack, 'work' | 'busy'>): { tone: Tone;
       if (code === 'claimed') return { tone: 'ended', icon: UserIcon, spin: false };
       if (HELD_LINES.has(code)) return { tone: 'held', icon: ClockIcon, spin: false };
       if (WAITING_LINES.has(code)) return { tone: 'working', icon: ClockIcon, spin: false };
-      return { tone: 'working', icon: SpinnerArcIcon, spin: !!track.busy || stage === 'building' };
+      return { tone: 'working', icon: SpinnerArcIcon, spin: !!track.busy };
   }
 }
 

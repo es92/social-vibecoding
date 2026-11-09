@@ -688,8 +688,15 @@ test('#6234: both reads of a change carry it, and the Homeroom bot page keeps it
   const ws = require('../src/services/work-state');
   const fixing = ws.fromStage({ stage: 'fixing' }, {});
   assert.deepEqual([fixing.stage, fixing.line, ws.placeFor(fixing, { own: true })], ['building', { code: 'fixing' }, 'next']);
+  // #6545: a fix waiting its turn is Checking with its failing tests, not a
+  // change ready to vote on.
   const queued = ws.fromStage({ stage: 'fix_queued' }, {});
-  assert.deepEqual([queued.stage, queued.line, ws.placeFor(queued, { own: true })], ['up_for_vote', { code: 'update_queued' }, 'waiting']);
+  assert.deepEqual([queued.stage, queued.line, ws.placeFor(queued, { own: true })], ['checking', { code: 'checks_failing' }, 'waiting']);
+  const counted = ws.fromStage({ stage: 'fix_queued' }, { failed_checks: 4 });
+  assert.deepEqual([counted.stage, counted.line], ['checking', { code: 'checks_failing', failing: 4 }]);
+  // An update queued on a passing change still holds its vote.
+  const followUp = ws.fromStage({ stage: 'followup_queued' }, {});
+  assert.deepEqual([followUp.stage, followUp.line], ['up_for_vote', { code: 'update_queued' }]);
   assert.equal(require('../src/services/homeroom-bot-track').STEP_OF_STAGE[fixing.stage], 'build', 'its track lights Build');
 });
 

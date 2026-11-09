@@ -433,6 +433,8 @@ export interface TranscriptMessage {
   botOffer?: BotOfferView | null;
   /** 3 Nov 2026: the suggested replies under Homeroom bot's message in a thread. */
   botSuggest?: BotSuggestView | null;
+  /** #6533: the pictures under Homeroom bot's reply in a change's thread. */
+  botGallery?: Record<string, unknown> | null;
   /**
    * #4455: a system row that announces the preview build, from its metadata:
    * `started` (a change's page leaves it out: its Testing card says so) or

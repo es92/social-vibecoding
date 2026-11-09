@@ -455,8 +455,13 @@ async function followMerges(db, thread) {
 // `viewer` may read, by issue-proposal-ref.js isNavigable's rule: proposed
 // work is public, a live chat only its owner's until they share it. A
 // request's page reads its changes' replies with this.
+//
+// #6488: `promoted_at` (set when the change went up for a vote, never
+// cleared) keeps that work readable once it is closed or reopened: a
+// proposal's discussion was public, and a close or a reopen does not make
+// it history only its author may read. Status alone missed both.
 const visibleChangeSql = (s, viewer) => `(${s}.status IN ('promoted', 'merging', 'merged')
-       OR ${s}.shared_at IS NOT NULL OR ${s}.user_id = ${viewer})`;
+       OR ${s}.promoted_at IS NOT NULL OR ${s}.shared_at IS NOT NULL OR ${s}.user_id = ${viewer})`;
 
 // #6139: a change not yet up for a vote that has finished building (an SQL
 // expression over chat_sessions as `cs`): its checks passed on its current
@@ -490,7 +495,7 @@ const CHANGE_READY_SQL = `(cs.status IN ('active', 'paused')
 // its page is where they are read.
 const ITEMS_SQL = `
 SELECT 'request' AS type, r.id::bigint AS id, r.number, r.title, r.state AS status,
-       NULL::int AS user_id, NULL::timestamptz AS shared_at, r.created_at,
+       NULL::int AS user_id, NULL::timestamptz AS shared_at, NULL::timestamptz AS promoted_at, r.created_at,
        ((SELECT COUNT(*) FROM chat_messages m
          WHERE m.thread_id = $1 AND m.thread_type = 'issue' AND m.thread_ref = r.number
            AND m.msg_type = 'message' AND m.deleted_at IS NULL)
@@ -514,7 +519,7 @@ SELECT 'request' AS type, r.id::bigint AS id, r.number, r.title, r.state AS stat
 UNION ALL
 SELECT 'change', cs.id::bigint, cs.pr_number,
        COALESCE(NULLIF(cs.pr_title, ''), NULLIF(cs.proposed_pr_title, ''), NULLIF(cs.session_title, ''), NULLIF(cs.branch_name, '')),
-       cs.status, cs.user_id, cs.shared_at, cs.created_at,
+       cs.status, cs.user_id, cs.shared_at, cs.promoted_at, cs.created_at,
        (SELECT COUNT(*) FROM chat_messages m
          WHERE m.thread_id = $1 AND m.thread_type = 'session' AND m.thread_ref = cs.id
            AND m.msg_type = 'message' AND m.deleted_at IS NULL)::int,
@@ -552,7 +557,7 @@ SELECT 'change', cs.id::bigint, cs.pr_number,
    AND NOT ${planRecordSql('cs')}
 UNION ALL
 SELECT CASE WHEN i.kind = 'close_issue' THEN 'close' ELSE 'decision' END, i.id::bigint, NULL::int,
-       i.title, i.status, i.created_by, NULL::timestamptz, i.created_at,
+       i.title, i.status, i.created_by, NULL::timestamptz, NULL::timestamptz, i.created_at,
        (SELECT COUNT(*) FROM chat_messages m
          WHERE m.thread_id = $1 AND m.thread_type = 'governance' AND m.thread_ref = i.id
            AND m.msg_type = 'message' AND m.deleted_at IS NULL)::int,
@@ -707,6 +712,26 @@ async function threadPage(db, { thread, viewerId = null, owner = null, repo = nu
     }
     items.push(item);
   }
+  // #6420: which of this thread's changes a requester has answered "This
+  // doesn't close it" to, so the change's "Also closes" line can say so.
+  // One read over the changes this page draws.
+  const changeIds = items.filter((i) => i.type === 'change').map((i) => i.id);
+  if (changeIds.length) {
+    const { rows: disputed } = await db.query(
+      `SELECT session_id, request_number FROM change_request_claims
+        WHERE session_id = ANY($1::int[]) AND disputed_at IS NOT NULL`,
+      [changeIds]
+    );
+    const byChange = new Map();
+    for (const row of disputed) {
+      const key = Number(row.session_id);
+      if (!byChange.has(key)) byChange.set(key, []);
+      byChange.get(key).push(Number(row.request_number));
+    }
+    for (const item of items) {
+      if (item.type === 'change') item.notConfirmed = (byChange.get(item.id) || []).sort((a, b) => a - b);
+    }
+  }
   const number = thread.number == null ? null : Number(thread.number);
   // #6406: a change whose plan has a newer version on the request says so
   // beside its plan line ("Built from v1 ... v2 is newer"). Read once.
@@ -787,17 +812,39 @@ async function threadPage(db, { thread, viewerId = null, owner = null, repo = nu
 // thread, each with the request whose page it is on.
 const ELSEWHERE_SQL = `
 SELECT cs.id, cs.pr_number, COALESCE(NULLIF(cs.pr_title, ''), NULLIF(cs.proposed_pr_title, ''), NULLIF(cs.session_title, '')) AS title,
+       cs.pr_summary_md, cs.user_id AS builder_id, rq.created_by AS requester_id,
+       (c.disputed_at IS NOT NULL) AS disputed,
        t.number AS home, n.number AS request
   FROM chat_sessions cs
   JOIN threads t ON t.id = cs.thread_id
   JOIN LATERAL unnest(COALESCE(cs.linked_issues, '{}'::int[])) AS n(number) ON n.number = ANY($3::int[])
+  JOIN requests rq ON rq.app_id = cs.app_id AND rq.number = n.number
+  LEFT JOIN change_request_claims c ON c.session_id = cs.id AND c.request_number = n.number
  WHERE cs.app_id = $1 AND cs.thread_id <> $2 AND cs.is_headless = FALSE
    AND cs.status IN ('active', 'paused', 'promoted', 'merging', 'merged')
    AND ${visibleChangeSql('cs', '$4')}
    AND t.number IS NOT NULL
    AND EXISTS (SELECT 1 FROM requests r WHERE r.thread_id = t.id AND r.number = t.number)
- ORDER BY cs.id
+ ORDER BY cs.id, n.number
  LIMIT 20`;
+
+// #6420: the first sentence of the change's plain-language summary, with
+// markdown's marks stripped. The card shows it under the title; a blank
+// summary leaves the title alone.
+function firstSentence(md) {
+  const text = String(md || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s{0,3}(#{1,6}|>|[-*+]|\d+[.)])\s+/gm, '')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return null;
+  const sentence = text.match(/^.*?[.!?](?:\s|$)/);
+  return (sentence ? sentence[0] : text).trim().slice(0, 200);
+}
 
 async function changesElsewhere(db, { thread, numbers, viewerId = null }) {
   const wanted = (numbers || []).map(Number).filter((n) => Number.isInteger(n) && n > 0);
@@ -808,12 +855,22 @@ async function changesElsewhere(db, { thread, numbers, viewerId = null }) {
   for (const row of rows) {
     if (seen.has(Number(row.id))) continue;
     seen.add(Number(row.id));
+    const requesterId = row.requester_id == null ? null : Number(row.requester_id);
+    const builderId = row.builder_id == null ? null : Number(row.builder_id);
+    const mine = viewerId != null && requesterId != null && requesterId === Number(viewerId);
+    const disputed = row.disputed === true;
     out.push({
       id: Number(row.id),
       number: row.pr_number == null ? null : Number(row.pr_number),
       title: row.title || null,
+      summary: firstSentence(row.pr_summary_md),
       on: Number(row.home),
       request: Number(row.request),
+      disputed,
+      mine,
+      // Only the requester is asked, and not when the change is their own:
+      // the notice still shows, but there is nothing to answer.
+      ask: mine && requesterId !== builderId && !disputed,
     });
   }
   return out;
@@ -830,7 +887,7 @@ async function requestHome(db, { appId, sessionId, viewerId = null }) {
   const id = Number(sessionId);
   if (!appId || !Number.isSafeInteger(id) || id <= 0) return null;
   const { rows } = await db.query(
-    `SELECT id, status, user_id, shared_at, thread_id FROM chat_sessions
+    `SELECT id, status, user_id, shared_at, promoted_at, thread_id FROM chat_sessions
       WHERE id = $1 AND app_id = $2 AND is_headless = FALSE AND thread_id IS NOT NULL`,
     [id, appId]
   );

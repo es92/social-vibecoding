@@ -96,7 +96,9 @@
 #        command (never by CC; abort if it refuses); what is left stays
 #        in the working tree with its markers, for CC with a
 #        resolution-only prompt, then sanity-check no markers
-#        remain; commit + push if clean, abort if not
+#        remain and that every file the merge touched still parses
+#        (#6536: one more CC turn if not, then abort); commit + push
+#        if clean, abort if not
 #         - resolved   = CC fixed it, push succeeded
 #         - conflict   = CC failed; merge aborted, branch unchanged
 #   Sync turns intentionally don't refresh CC's --resume session id —
@@ -297,6 +299,44 @@ if [ "$MODE" = "sync" ]; then
   # the time we emit. Empty for a clean merge.
   CONFLICT_FILES_CSV=""
 
+  # #6536: a resolution that leaves a file that does not parse is not pushed.
+  # The reply names the files, like leftover conflict markers do, and the
+  # merge is aborted with the branch unchanged.
+  sync_add_conflict_file() {
+    case ",$CONFLICT_FILES_CSV," in
+      *",$1,"*) ;;
+      *) CONFLICT_FILES_CSV="${CONFLICT_FILES_CSV:+$CONFLICT_FILES_CSV,}$1" ;;
+    esac
+  }
+  sync_abort_conflict() {
+    echo "__USERNODE_WARN__ $1"
+    git merge --abort 2>&1 || echo "__USERNODE_WARN__ merge --abort failed"
+    AHEAD=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)
+    BEHIND=$(git rev-list --count "HEAD..origin/main" 2>/dev/null || echo 0)
+    SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
+    echo "__USERNODE_RESULT__ cc_exit=$CC_EXIT ahead=$AHEAD behind=$BEHIND sha=$SHA push_ok=0 mode=sync sync_result=conflict conflict_files=$CONFLICT_FILES_CSV"
+    exit 0
+  }
+  # Every file the merge touched or the model edited, NUL-separated for
+  # names with spaces.
+  SYNC_PARSE_LIST_FILE=""
+  sync_parse_list() {
+    SYNC_PARSE_LIST_FILE=$(mktemp "${TMPDIR:-/tmp}/usernode-sync-parse.XXXXXX") || return 1
+    { git diff --name-only -z --diff-filter=d HEAD 2>/dev/null
+      git ls-files -z --others --exclude-standard 2>/dev/null; } > "$SYNC_PARSE_LIST_FILE"
+    printf '%s' "$SYNC_PARSE_LIST_FILE"
+  }
+  sync_parse_run() {
+    SYNC_PARSE_LIST_PATH=$(sync_parse_list) || return 2
+    SYNC_PARSE_OUT=$(xargs -0 -r node "$(dirname "$0")/sync-parse-check.js" < "$SYNC_PARSE_LIST_PATH" 2>/dev/null)
+    SYNC_PARSE_STATUS=$?
+    rm -f "$SYNC_PARSE_LIST_PATH"
+    return "$SYNC_PARSE_STATUS"
+  }
+  sync_parse_files_from_output() {
+    printf '%s\n' "$1" | sed -n 's/^\(.*\):[0-9][0-9]*:[0-9][0-9]*: .*/\1/p' | sort -u | tr '\n' ' '
+  }
+
   echo "__USERNODE_PHASE__ sync_merge"
   # `git merge origin/main` produces a merge commit on clean success
   # and leaves the tree dirty on conflict. We let it fail-non-zero
@@ -312,6 +352,19 @@ if [ "$MODE" = "sync" ]; then
     CONFLICT_FILES_CSV=$(git diff --name-only --diff-filter=U 2>/dev/null | paste -sd, - | sed 's/,$//')
     CC_EXIT=0
     COMMIT_MESSAGE=""
+
+    # The timing baseline is rewritten by every bot build, so two changes
+    # almost always collide on it. It is not worth a resolution: take main's
+    # copy (#6531). During a merge, "theirs" is main.
+    TIMING_BASELINE="tests/baselines/test-durations.json"
+    if git diff --name-only --diff-filter=U 2>/dev/null | grep -qxF "$TIMING_BASELINE"; then
+      if git checkout --theirs -- "$TIMING_BASELINE" 2>&1; then
+        git add "$TIMING_BASELINE"
+        COMMIT_MESSAGE="Merge origin/main via Homeroom sync (mechanical files)"
+      else
+        echo "__USERNODE_WARN__ could not take main's timing baseline"
+      fi
+    fi
 
     # A schema migration history is regenerated, never merged by hand
     # (docs/database/schema-migrations.md): main's history exactly as main
@@ -361,13 +414,38 @@ Do not run git commands. I will commit and push for you after you finish editing
       # legitimate markdown setext h2 underline and would false-positive
       # any spec/README that uses that style.
       if grep -rlE --exclude-dir='.git' '^(<<<<<<<|>>>>>>>)( |$)' . 2>/dev/null | grep -q .; then
-        echo "__USERNODE_WARN__ CC left conflict markers; aborting merge"
-        git merge --abort 2>&1 || echo "__USERNODE_WARN__ merge --abort failed"
-        AHEAD=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)
-        BEHIND=$(git rev-list --count "HEAD..origin/main" 2>/dev/null || echo 0)
-        SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
-        echo "__USERNODE_RESULT__ cc_exit=$CC_EXIT ahead=$AHEAD behind=$BEHIND sha=$SHA push_ok=0 mode=sync sync_result=conflict conflict_files=$CONFLICT_FILES_CSV"
-        exit 0
+        sync_abort_conflict "CC left conflict markers; aborting merge"
+      fi
+
+      # #6536: the tree the model resolved must at least parse. A dropped
+      # comment opener once shipped that way: the build then failed with
+      # nothing saying the sync had broken it. The model gets one more turn
+      # with the errors; if the files still do not parse, nothing is pushed
+      # and the same conflict result names them.
+      echo "__USERNODE_PHASE__ sync_parse_check"
+      if ! sync_parse_run; then
+        SYNC_PARSE_FILES=$(sync_parse_files_from_output "$SYNC_PARSE_OUT")
+        echo "__USERNODE_PHASE__ sync_parse_fix_cc"
+        SYNC_FIX_PROMPT="Your conflict resolution left files that do not parse. The tree cannot be built as it stands.
+
+$SYNC_PARSE_OUT
+
+Fix only what stopped each file parsing, preserving the intent of both sides of the conflict. Do not run git commands. I will commit and push for you after you finish editing files."
+
+        claude --print --dangerously-skip-permissions --verbose \
+          --model "$MODEL" --output-format stream-json -p "$SYNC_FIX_PROMPT"
+        CC_EXIT=$?
+
+        if grep -rlE --exclude-dir='.git' '^(<<<<<<<|>>>>>>>)( |$)' . 2>/dev/null | grep -q .; then
+          for f in $SYNC_PARSE_FILES; do sync_add_conflict_file "$f"; done
+          sync_abort_conflict "CC left conflict markers; aborting merge"
+        fi
+
+        if ! sync_parse_run; then
+          SYNC_PARSE_FILES=$(sync_parse_files_from_output "$SYNC_PARSE_OUT")
+          for f in $SYNC_PARSE_FILES; do sync_add_conflict_file "$f"; done
+          sync_abort_conflict "resolved tree does not parse: $SYNC_PARSE_FILES; aborting merge"
+        fi
       fi
     fi
 

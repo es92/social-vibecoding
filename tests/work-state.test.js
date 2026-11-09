@@ -147,23 +147,43 @@ test('a checking change words its wait: about N min left, or waiting to sync wit
   assert.equal(ws.deriveChange({
     status: 'promoted', check_state: 'pending', check_phase: 'queued', checks_at: ago(1), checks_estimate: estimate,
   }, { now: NOW }).line, null);
-  // Checks deferred until it merges cleanly, or a recorded conflict: sync.
+  // Checks deferred until it merges cleanly, or a recorded conflict the lane
+  // is resolving: "Syncing with main" (#6531).
   const deferred = ws.deriveChange({
     status: 'promoted', check_state: 'pending', check_phase: 'deferred', checks_estimate: estimate,
   }, { now: NOW });
-  assert.deepEqual([deferred.stage, deferred.line], ['checking', { code: 'sync_wait' }]);
-  assert.equal(ws.lineSays(deferred), 'Waiting to sync with main');
-  for (const extra of [{ merge_conflict_state: 'conflict' }, { merge_conflict_state: 'failed' }, { integration_merges_clean: false }]) {
+  assert.deepEqual([deferred.stage, deferred.line], ['checking', { code: 'syncing' }]);
+  assert.equal(ws.stageSays(deferred), 'Syncing with main');
+  assert.equal(ws.lineSays(deferred), null, 'the stage word carries it; no second line');
+  for (const extra of [{ merge_conflict_state: 'conflict' }, { integration_merges_clean: false }]) {
     assert.deepEqual(ws.deriveChange({ status: 'promoted', check_state: 'pending', ...extra }, { now: NOW }).line,
-      { code: 'sync_wait' });
+      { code: 'syncing' });
   }
+  assert.deepEqual(ws.deriveChange({ status: 'promoted', check_state: 'pending', integration_merges_clean: false,
+    integration_block_reasons: ['integrating'] }, { now: NOW }).line, { code: 'syncing' });
+  // #6531: a conflict only a yes can move is up for a vote, with its line.
+  const onYes = ws.deriveChange({
+    status: 'promoted', check_state: 'passing', integration_merges_clean: false,
+    integration_block_reasons: ['awaiting_approval'],
+  }, { now: NOW });
+  assert.deepEqual([onYes.stage, onYes.line], ['up_for_vote', { code: 'conflict_on_yes' }]);
+  assert.equal(ws.lineSays(onYes), 'Conflicts with main: Homeroom resolves it once you approve');
   // A passing change that has since stopped merging cleanly moves back to
   // waiting, and is not up for a vote.
-  const moved = ws.deriveChange({ status: 'promoted', check_state: 'passing', merge_conflict_state: 'conflict' }, { now: NOW });
-  assert.deepEqual([moved.stage, moved.line], ['checking', { code: 'sync_wait' }]);
-  // Failing checks stay failing, not a sync wait: the fix is what is owed.
-  const failed = ws.deriveChange({ status: 'promoted', check_state: 'failing', merge_conflict_state: 'conflict' }, { now: NOW });
+  const moved = ws.deriveChange({ status: 'promoted', check_state: 'passing',
+    integration_merges_clean: false, integration_block_reasons: ['integrating'] }, { now: NOW });
+  assert.deepEqual([moved.stage, moved.line], ['checking', { code: 'syncing' }]);
+  // A conflict the platform gave up on is its author's.
+  assert.deepEqual(ws.deriveChange({ status: 'promoted', check_state: 'pending', integration_merges_clean: false,
+    integration_block_reasons: ['unresolvable'] }, { now: NOW }).line, { code: 'sync_wait' });
+  // Failing checks after the free resolution was spent stay failing: the fix
+  // is what is owed, not a sync.
+  const failed = ws.deriveChange({ status: 'promoted', check_state: 'failing', merge_conflict_state: 'conflict',
+    integration_block_reasons: ['checks_failing'] }, { now: NOW });
   assert.deepEqual(failed.line, { code: 'checks_failing' });
+  // ...but while the lane is catching that stale verdict up, it is syncing.
+  assert.deepEqual(ws.deriveChange({ status: 'promoted', check_state: 'failing', integration_merges_clean: false,
+    integration_block_reasons: ['integrating'] }, { now: NOW }).line, { code: 'syncing' });
 });
 
 test('the new wait words are the catalog\'s, keyed by the same entries', () => {
@@ -171,6 +191,8 @@ test('the new wait words are the catalog\'s, keyed by the same entries', () => {
   assert.equal(ws.WORDS['work.line.checksRunning_one'], core['work.line.checksRunning_one'].text);
   assert.equal(ws.WORDS['work.line.checksRunning_other'], core['work.line.checksRunning_other'].text);
   assert.equal(ws.WORDS['work.line.syncWait'], core['work.line.syncWait'].text);
+  assert.equal(ws.WORDS['work.stage.syncing'], core['work.stage.syncing'].text);
+  assert.equal(ws.WORDS['work.line.conflictOnYes'], core['work.line.conflictOnYes'].text);
 });
 
 test('#6528: a passing change reads Checking until its before & after shots settle, then rings ready', () => {

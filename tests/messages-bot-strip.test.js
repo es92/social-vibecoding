@@ -473,7 +473,8 @@ test('every open row wears a badge: amber with what to do, blue when up for a vo
     track(at('stopped', { reason: 'build_failed' })),
     track(at('stopped', { reason: 'fix_stopped' })),
     track(at('up_for_vote'), { step: 'vote' }),
-    track(at('building'), { step: 'build' }),
+    track(at('building'), { step: 'build', busy: true }),
+    track(at('building', { line: { code: 'queued', place: 3 } }), { step: 'build', busy: false }),
     track(at('building', { line: { code: 'held_waiting' } }), { held: { limit: 'slots', position: 1, until: null } }),
     track(at('reading', { line: { code: 'queued', place: 2 } })),
   ), NOW);
@@ -485,8 +486,9 @@ test('every open row wears a badge: amber with what to do, blue when up for a vo
   const glyphs = new Set(model.needs.map(badge));
   assert.equal(glyphs.size, 5, 'the glyph says what to do: answer, add detail, decide, start it again, look at its tests');
   assert.match(badge(model.ready[0]), /bg-violet-100 text-violet-700[^"]*" aria-hidden="true" data-bot-badge="ready"/);
-  const [building, held, queued] = model.progress;
+  const [building, queuedBuild, held, queued] = model.progress;
   assert.match(badge(building), /bg-zinc-200\/80 text-zinc-600[^"]*" aria-hidden="true" data-bot-badge="progress"><svg [^>]*class="h-3\.5 w-3\.5 animate-spin \[animation-duration:2\.4s\]"/);
+  assert.doesNotMatch(badge(queuedBuild), /animate-spin/, 'a build waiting its turn is still, never turning');
   assert.match(badge(held), /bg-zinc-200\/80 text-amber-600[^"]*" aria-hidden="true" data-bot-badge="progress">/, 'a hold is waiting, never finished');
   assert.doesNotMatch(badge(held), /animate-spin/, 'and never turning');
   assert.doesNotMatch(badge(queued), /animate-spin/, 'nobody is at it yet');

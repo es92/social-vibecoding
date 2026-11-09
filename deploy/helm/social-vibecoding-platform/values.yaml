@@ -292,6 +292,8 @@ config:
     mode: shadow
     kinds: ""
     bot: "on"
+    # File only Homeroom security requests while other kinds stay in shadow.
+    securityAudit: "on"
   workerCpus: "2"
   captureMemory: 6g
   captureCpus: "8"

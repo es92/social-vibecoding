@@ -279,14 +279,19 @@
     // it again on its own, and the tooltip says when. Amber, no spinner:
     // waiting, not working, and the reader has nothing to do.
     var held = served.indexOf('github_busy') !== -1 ? 'github_busy'
-      : served.indexOf('github_refused') !== -1 ? 'github_refused' : null;
+      : served.indexOf('github_refused') !== -1 ? 'github_refused'
+        // #6546: its required GitHub checks are still running, or are being
+        // run again on today's main.
+        : served.indexOf('github_checks') !== -1 ? 'github_checks' : null;
     if (status === 'promoted' && held) {
       var until = integ && integ.heldUntil ? Date.parse(integ.heldUntil) : NaN;
       var soon = !Number.isFinite(until) || until <= Date.now();
       var time = soon ? null : new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       var title = held === 'github_busy'
         ? t(soon ? 'session:merge.title.githubBusySoon' : 'session:merge.title.githubBusy', { time: time })
-        : t(soon ? 'session:merge.title.githubRefusedSoon' : 'session:merge.title.githubRefused', { time: time });
+        : held === 'github_checks'
+          ? t(soon ? 'session:merge.title.githubChecksSoon' : 'session:merge.title.githubChecks', { time: time })
+          : t(soon ? 'session:merge.title.githubRefusedSoon' : 'session:merge.title.githubRefused', { time: time });
       return descriptor('merge_held', t('session:merge.status.waitingOnGithub'), 'amber', false, {
         votes: votes, title: title,
       });

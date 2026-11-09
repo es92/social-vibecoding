@@ -1112,3 +1112,53 @@ test('the main_healthy gate carries "Resume merges" for an admin, and for nobody
   // Never on any other gate, whatever its state.
   assert.equal(admin._requirementAction({ key: 'checks', state: 'blocked', actor: 'author' }, { isAdmin: true }), null);
 });
+
+// ── #6505: a vote already decided ───────────────────────────────────────
+//
+// Once the yes votes a change's rule asks for are in, there is nothing left
+// to press: the Vote button goes (#6505). This is the predicate every site
+// reads, and the Votes card's line, which must not promise "unless someone
+// objects" while offering no way to object.
+
+test('#6505: _votesDecided is true at the rule\'s tally, and false while a vote can still change it', () => {
+  const AppView = makeAppView();
+  // Counting down at its majority: decided, though the clock runs.
+  assert.equal(AppView._votesDecided(PR({
+    yes_count: 3, votes_required: 3, merge_window_ends_at: hoursAhead(2),
+  })), true);
+  // Approvals mode: the pill's majority is its own n.
+  assert.equal(AppView._votesDecided(PR({ yes_count: 2, approvals_required: 2 })), true);
+  // Leads but below its majority: not decided.
+  assert.equal(AppView._votesDecided(PR({
+    yes_count: 1, votes_required: 3, merge_window_ends_at: hoursAhead(2),
+  })), false);
+  // Being voted down, or contested: a vote can still change the ending.
+  assert.equal(AppView._votesDecided(PR({
+    yes_count: 3, votes_required: 3, rejection_armed: true, reject_window_ends_at: hoursAhead(2),
+  })), false);
+  assert.equal(AppView._votesDecided(PR({ yes_count: 3, votes_required: 3, contested: true })), false);
+  // The member floor: the yes it waits on is still missing.
+  assert.equal(AppView._votesDecided(PR({
+    yes_count: 3, votes_required: 3,
+    requires_explicit_approval: true, needs_other_member_yes: true, other_member_yes_count: 0,
+  })), false);
+  // Nothing to decide outside a promoted change.
+  assert.equal(AppView._votesDecided(PR({ status: 'merged', yes_count: 3, votes_required: 3 })), false);
+  assert.equal(AppView._votesDecided(PR({ first_version: true, votes_required: 0 })), false);
+});
+
+test('#6505: a decided countdown\'s Votes card drops "unless someone objects"', () => {
+  const AppView = makeAppView();
+  const decided = AppView._changeVotesView(PR({
+    yes_count: 3, votes_required: 3, check_state: 'passing', merge_window_ends_at: hoursAhead(2),
+  }), null);
+  const text = decided.note.join(' ');
+  assert.match(text, /It goes live when the countdown ends\./);
+  assert.doesNotMatch(text, /unless someone objects/);
+
+  // Short of its majority, the countdown still invites an objection.
+  const open = AppView._changeVotesView(PR({
+    yes_count: 1, votes_required: 3, check_state: 'passing', merge_window_ends_at: hoursAhead(2),
+  }), null);
+  assert.match(open.note.join(' '), /unless someone objects/);
+});

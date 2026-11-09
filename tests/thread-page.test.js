@@ -292,6 +292,14 @@ test('the bar\'s pill says where the request\'s work stands', () => {
   assert.equal(requestPill(layoutOf([{ ...close, target: 7 }]), null).key, 'close');
   assert.equal(requestPill(layoutOf([{ ...review, state: 'underway' }]), null).tone, 'progress');
   assert.equal(requestPill(layoutOf([]), 'building').key, 'building', 'the bot building it');
+  assert.equal(requestPill(layoutOf([]), 'ready_to_build').key, 'ready_to_build', 'ready, and waiting its turn');
+  assert.equal(requestPill(layoutOf([]), 'ready_to_build').spinner, undefined, 'a waiting build does not turn');
+  assert.equal(requestPill(layoutOf([]), 'ready_to_build').tone, 'neutral', 'the plain tone of Ready for a vote');
+  assert.equal(
+    requestPill(layoutOf([{ ...review, state: 'underway', ready: false }]), 'ready_to_build').key,
+    'building',
+    'a change underway still wins over a queued build',
+  );
   assert.equal(requestPill(layoutOf([{ ...review, state: 'merged', liveAt: '2026-11-03T10:00:00.000Z' }]), null).tone, 'ok');
   assert.equal(message('project:topic.thread.pill.choosing'), 'Pick one');
 });
@@ -352,8 +360,12 @@ test('#6139: a change that finished building reads as ready, with no spinner, an
 
 test('the request\'s changes are drawn from their own pages\' reads, and the ballot lives with them', () => {
   const src = read('frontend/src/features/dev-board/topic/thread-changes.tsx');
-  assert.match(src, /readChangeDetail\(\{ id: item\.id, status: item\.status \}, false, abort\.signal\)/, 'read as its own page reads it');
-  assert.match(src, /const built = av\._topicViewFor\('proposal', row\);/);
+  assert.match(src, /readChangeDetail\(\{ id: item\.id, status: item\.status \}, false, abort\.signal, \{ fresh \}\)/, 'read as its own page reads it, past the cache when its status moved or a vote bumped it');
+  assert.match(src, /const built = av\._topicViewFor\('proposal', row\);/, 'built as its own page builds it');
+  // #6477: the ballot re-reads its changes after a pick, fresh, so the figure
+  // follows the recount and not the saved copy the vote moved past.
+  assert.match(src, /const views = useChangeViews\(options, revision\);/, 'the ballot hands its own bump to the reads');
+  assert.match(src, /const bumped = seenTick\.current !== tick;/, 'and only a bump is a fresh re-read');
   // 1 Nov 2026: folded under a ballot, without its own Vote (thread-one-page.test.js).
   assert.match(src, /<ChangeGates id=\{item\.id\} card=\{view\.card\} v=\{view\.v\} ballot=\{ballot\} closes=\{closesList\(item\)\} \/>/, 'its own page\'s two cards');
   assert.match(src, /changeDetailAsk\(\(event as CustomEvent\)\.detail, item\.id\)/, 'and it moves when its page would');

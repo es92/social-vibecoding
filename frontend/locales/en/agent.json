@@ -1135,6 +1135,10 @@
     "text": "View change",
     "description": "Link on a change's preview card in an agent session (the preview is a test build of the app with the change in it) once the change is in a vote or released: opens the change's page. \"change\" is a noun."
   },
+  "session.preview.vote": {
+    "text": "Vote",
+    "description": "Filled button on a change's preview card in an agent session while the change is up for the community's vote: a verb, opens the change's page at its Votes card."
+  },
   "session.preview.openDraft": {
     "text": "Open draft change",
     "description": "Link on a change's preview card in an agent session (the preview is a test build of the app with the change in it) while the change is still a draft: opens the change's page. \"Open\" is a verb, \"change\" a noun."

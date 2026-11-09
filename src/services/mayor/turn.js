@@ -1453,6 +1453,8 @@ async function runMayorTurn(ctx, deps) {
               [merged, session.id]
             );
             session.linked_issues = merged;
+            // #6420: the requests it newly names hear the claim once.
+            await require('../change-claims').announce(pool, { sessionId: Number(session.id) });
             // The issue list derives its "In progress" chip from
             // linked_issues, so tell every open Dev panel to refetch —
             // the chip appears while this dispatch is still running.

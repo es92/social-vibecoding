@@ -129,6 +129,7 @@
       "services | uses src/services/db-manager.js:databaseExists": "reads whether an attempt's preview database is still there, for the retirement to close",
       "services | uses src/services/db-manager.js:dropDatabase": "drops an attempt's preview database (strict), outside the template chain and the coordinator",
       "services | uses src/services/deploy-failure.js:bootFailureIsInfrastructure": "whether a failed build or boot is the platform's, from the error (pure): decides who is told",
+      "services | uses src/services/deploy-failure.js:firstBuildError": "the first error line and the log up to it, read from a failed build's own log for the check row and the bot's fix turn (pure, reads only the error it is given): keeps nothing",
       "services | uses src/services/docker.js:execFileAsync": "removes an attempt's checkout directory (rm -rf) after it is retired",
       "services | uses src/services/docker.js:inspectContainer": "reads the attempt number on a Docker preview's container (local development and tests), so nothing that serves is retired",
       "services | uses src/services/docker.js:STAGING_STOP_GRACE_SEC": "a preview's short stop grace in seconds, a constant (pure), passed when retiring a Docker preview",

@@ -65,6 +65,21 @@ function startServer(userId = 5) {
 
 const ATT_ID = 'c'.repeat(32);
 
+// #6534: POST /messages takes attachment_ids. Its handler is the socket's
+// own handleMessage, stubbed here so the route's own contract is what is
+// pinned.
+function startJsonServer(userId = 5) {
+  const app = express();
+  app.use(express.json());
+  app.use((req, _res, next) => { req.user = { id: userId, username: 'alice' }; next(); });
+  app.use(chatRoutes({}));
+  return new Promise((resolve) => {
+    const server = app.listen(0, () => resolve(server));
+  });
+}
+
+const wsId = require.resolve('../src/services/ws');
+
 function urlFor(server, path) {
   return `http://127.0.0.1:${server.address().port}${path}`;
 }
@@ -391,5 +406,87 @@ test('/view 404s for any non-html kind', async () => {
     } finally {
       server.close();
     }
+  }
+});
+
+// ── #6534: POST /messages carries attachment_ids ─────────────────────
+
+function withStubbedHandleMessage(fn) {
+  const real = require.cache[wsId];
+  const calls = [];
+  let answer = null;
+  require.cache[wsId] = {
+    id: wsId, filename: wsId, loaded: true, paths: [],
+    exports: {
+      handleMessage: async (_pool, client, msg) => {
+        calls.push({ client, msg });
+        return answer || {
+          ok: true,
+          message: {
+            id: 12, userId: client.user.id, username: 'alice', content: msg.content,
+            msgType: 'message', metadata: {}, thread: msg.thread || null,
+            createdAt: new Date(), postedVia: 'agent',
+          },
+        };
+      },
+      TOPIC_CLOSED_MESSAGE: 'This topic is closed.',
+    },
+  };
+  return { calls, setAnswer: (a) => { answer = a; }, restore: () => { if (real) require.cache[wsId] = real; else delete require.cache[wsId]; } };
+}
+
+test('POST /messages accepts attachment_ids and passes them to the one chat handler', async () => {
+  accessGrants = { view: { id: 7 }, collab: { id: 7 } };
+  poolQueryHandler = async (sql) => (isGateLookup(sql) ? { rows: [gateRow(true)] } : { rows: [] });
+  const ws = withStubbedHandleMessage();
+  const server = await startJsonServer();
+  try {
+    const res = await fetch(urlFor(server, '/api/apps/demo/messages'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: '', attachment_ids: [ATT_ID] }),
+    });
+    assert.equal(res.status, 201);
+    assert.equal(ws.calls.length, 1);
+    assert.deepEqual(ws.calls[0].msg.attachmentIds, [ATT_ID]);
+    assert.equal(ws.calls[0].msg.content, '', 'an attachments-only message has empty content');
+  } finally {
+    ws.restore();
+    server.close();
+  }
+});
+
+test('POST /messages refuses malformed ids and the handler\'s own refusals', async () => {
+  accessGrants = { view: { id: 7 }, collab: { id: 7 } };
+  poolQueryHandler = async (sql) => (isGateLookup(sql) ? { rows: [gateRow(true)] } : { rows: [] });
+  const ws = withStubbedHandleMessage();
+  const server = await startJsonServer();
+  try {
+    const bad = await fetch(urlFor(server, '/api/apps/demo/messages'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'x', attachment_ids: ['nope'] }),
+    });
+    assert.equal(bad.status, 400);
+    assert.equal(ws.calls.length, 0, 'nothing reached the handler');
+
+    const empty = await fetch(urlFor(server, '/api/apps/demo/messages'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: '   ' }),
+    });
+    assert.equal(empty.status, 400);
+
+    ws.setAnswer({ ok: false, code: 'attachment_not_owned' });
+    const notOwned = await fetch(urlFor(server, '/api/apps/demo/messages'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: 'x', attachment_ids: [ATT_ID] }),
+    });
+    assert.equal(notOwned.status, 400);
+    assert.match((await notOwned.json()).error, /not yours to attach/);
+  } finally {
+    ws.restore();
+    server.close();
   }
 });

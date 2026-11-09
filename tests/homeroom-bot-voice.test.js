@@ -56,6 +56,7 @@ test('each place has its own switch, on unless an admin turns it off, and nothin
 test('a mention of the bot is its handle or its name', () => {
   assert.equal(voice.mentionsBot('@Homeroom bot can you sort it?'), true);
   assert.equal(voice.mentionsBot('hey @homeroom_bot'), true);
+  assert.equal(voice.mentionsBot('@homeroombot can you sort it?'), true);
   assert.equal(voice.mentionsBot('the homeroom bot did it'), false);
 });
 
@@ -70,7 +71,7 @@ test('words a DM or a chat passed on are not answered twice', () => {
 // ── The gate, on a pool that answers what it asks ────────────────────────
 
 function gatePool({ quoteOf = null, change = null, posts = [], asks = [], before = null, open = null,
-  lastBot = null, previous = null, run = [], follows = null, requested = false } = {}) {
+  lastBot = null, previous = null, run = [], follows = null, requested = false, lastSpeaker = null } = {}) {
   const asked = [];
   return {
     asked,
@@ -79,7 +80,9 @@ function gatePool({ quoteOf = null, change = null, posts = [], asks = [], before
       asked.push(s);
       if (/SELECT user_id FROM chat_messages WHERE id = \$1/.test(s)) return { rows: quoteOf == null ? [] : [{ user_id: quoteOf }] };
       if (/SELECT created_at FROM chat_messages/.test(s)) return { rows: lastBot ? [{ created_at: lastBot }] : [] };
-      if (/SELECT m\.user_id, m\.created_at FROM chat_messages m[\s\S]*m\.thread_type = 'issue'/.test(s)) return { rows: follows ? [follows] : [] };
+      // #6539: the thread the place sits in is a parameter, request or change alike.
+      if (/SELECT m\.id, m\.user_id, m\.created_at FROM chat_messages m[\s\S]*m\.thread_type = \$4/.test(s)) return { rows: follows ? [follows] : [] };
+      if (/SELECT speaker_id FROM homeroom_bot_voice_turns/.test(s)) return { rows: lastSpeaker == null ? [] : [{ speaker_id: lastSpeaker }] };
       if (/SELECT user_id FROM chat_messages\s+WHERE app_id/.test(s)) return { rows: previous ? [{ user_id: previous }] : [] };
       if (/m\.posted_via, u\.is_synthetic/.test(s)) return { rows: run };
       if (/FROM homeroom_bot_change_asks WHERE message_id/.test(s)) return { rows: asks.includes(Number(params[0])) ? [{ '?column?': 1 }] : [] };
@@ -270,6 +273,37 @@ test('#6311: the requester or an admin writing after the bot\'s post in a reques
     { speak: false, why: 'answers_question' });
 });
 
+// #6539: on a change's thread, a message straight after the bot's own post is
+// to the bot when it comes from the person that post answered, the change's
+// author or a project admin, within the window requests and reply threads
+// already use. Anybody else's still needs an @.
+test('#6539: on a change, the answered person, the author or an admin writing straight after the bot is answered', async () => {
+  const place = { type: 'session', ref: 70 };
+  const recent = { id: 49, user_id: BOT.id, created_at: new Date(Date.now() - 5 * 60 * 1000) };
+  const theirs = { id: 70, app_id: 9, user_id: 5, status: 'active', is_headless: false };
+  const g = (over = {}, { who = EVAN, app = APP } = {}) => voice.gate(
+    gatePool({ change: theirs, ...over }),
+    { app, place, row: msg(), bot: BOT, settings: LIVE, speaker: who, deps: deps() },
+  );
+  // The person the bot's newest finished turn was answering.
+  assert.deepEqual(await g({ follows: recent, lastSpeaker: EVAN.id }), { speak: true, why: 'followed' });
+  // The change's author.
+  assert.deepEqual(await g({ follows: recent }, { who: { ...EVAN, id: 5 } }), { speak: true, why: 'followed' });
+  // A project admin (the app's creator; canManageApp).
+  assert.deepEqual(await g({ follows: recent }, { who: { ...EVAN, id: 7 }, app: { ...APP, id: 91, created_by: 7 } }),
+    { speak: true, why: 'followed' });
+  // Somebody else writing right after the bot, for example a reviewer answering the author.
+  assert.deepEqual(await g({ follows: recent, lastSpeaker: EVAN.id }, { who: { ...EVAN, id: 6 } }),
+    { speak: false, why: 'not_addressed' });
+  // Too long after the bot's post.
+  assert.deepEqual(await g({ follows: { ...recent, created_at: new Date(Date.now() - 31 * 60 * 1000) }, lastSpeaker: EVAN.id }),
+    { speak: false, why: 'not_addressed' });
+  // The message before this one is not the bot's: somebody wrote in between.
+  assert.deepEqual(await g({ follows: { ...recent, user_id: 5 }, lastSpeaker: EVAN.id }), { speak: false, why: 'not_addressed' });
+  // Words already passed on as an ask are the follow-up's, not answered twice.
+  assert.deepEqual(await g({ follows: recent, lastSpeaker: EVAN.id, asks: [50] }), { speak: false, why: 'queued_as_ask' });
+});
+
 // 6 Nov 2026 (#6395): a plain "Go ahead" on a request, from the person the
 // bot's last note named, is answered with no @ and no Reply, a day after the
 // note. Anybody else's, a long message, or one after a question note is not.
@@ -307,15 +341,19 @@ const names = (tools) => tools.map((t) => t.function.name);
 
 test('each place gets the tools that fit it, and nothing that acts without a tap', () => {
   assert.deepEqual(names(voice.toolsFor({ type: 'session', ref: 1 }, { ownChange: true })),
-    ['reply', 'stay_quiet', 'update_change', 'update_change_description', 'let_try_again', 'offer_withdraw', 'tell_me_when', 'request_detail', 'read_message', 'list_source', 'read_source']);
+    ['reply', 'stay_quiet', 'attach_files', 'update_change', 'update_change_description', 'let_try_again', 'offer_withdraw', 'tell_me_when', 'request_detail', 'read_message', 'list_source', 'read_source', 'show_change', 'list_change_files']);
   assert.deepEqual(names(voice.toolsFor({ type: 'session', ref: 1 }, { ownChange: false })),
-    ['reply', 'stay_quiet', 'request_detail', 'read_message', 'list_source', 'read_source'], 'somebody else\'s change: answer only');
+    ['reply', 'stay_quiet', 'attach_files', 'request_detail', 'read_message', 'list_source', 'read_source', 'show_change', 'list_change_files'], 'somebody else\'s change: answer only');
   assert.deepEqual(names(voice.toolsFor({ type: 'issue', ref: 1 }, { requestChange: false })),
-    ['reply', 'stay_quiet', 'tell_me_when', 'start_request', 'offer_close_request', 'offer_copy_request', 'request_detail', 'read_message', 'list_source', 'read_source']);
+    ['reply', 'stay_quiet', 'attach_files', 'tell_me_when', 'start_request', 'offer_close_request', 'offer_copy_request', 'request_detail', 'read_message', 'list_source', 'read_source', 'show_change', 'list_change_files']);
+  // #6534: pictures it makes itself are offered where the asker may pay for them.
+  assert.ok(names(voice.toolsFor({ type: 'issue', ref: 1 }, { picturesAllowed: true })).includes('make_pictures'));
+  assert.ok(!names(voice.toolsFor({ type: 'chat', ref: null }, { picturesAllowed: true })).includes('make_pictures'),
+    'a channel is not a place for pictures it made');
   // Papote #3: under its plan waiting for Build it, a change to the plan is asked for here.
   const planned = voice.toolsFor({ type: 'issue', ref: 1 }, { planWaiting: true });
   assert.deepEqual(names(planned),
-    ['reply', 'stay_quiet', 'tell_me_when', 'start_request', 'change_plan', 'offer_close_request', 'offer_copy_request', 'request_detail', 'read_message', 'list_source', 'read_source']);
+    ['reply', 'stay_quiet', 'attach_files', 'tell_me_when', 'start_request', 'change_plan', 'offer_close_request', 'offer_copy_request', 'request_detail', 'read_message', 'list_source', 'read_source', 'show_change', 'list_change_files']);
   // #6264: a request's change may not exist yet, and the promise is about
   // the request then, so it is offered on the request too.
   assert.ok(names(voice.toolsFor({ type: 'issue', ref: 1 }, { requestChange: false })).includes('tell_me_when'));
@@ -899,4 +937,72 @@ test("a request's report names it by its number, linked where a chat can tap it"
     '[#15](https://app.test/#app/ear-trainer/dev/issues/15)');
   assert.equal(voice.requestMd('app.test', 'a b/c', '7'),
     '[#7](https://app.test/#app/a%20b%2Fc/dev/issues/7)', 'the slug is encoded and the number is a number');
+});
+
+// ── #6534: pictures and files under a reply in a thread ────────────────
+
+const PNG = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.alloc(40, 1),
+]);
+
+function pictureCtx(queries = []) {
+  const fakePictures = {
+    normalizeAsk: () => ({ prompt: 'an empty inbox', purpose: 'app', variants: [null] }),
+    guard: () => null,
+    generate: async () => ({ ok: true, images: [{ id: 'a'.repeat(32), letter: 'A', variant: null }], left: 3 }),
+    galleryCard: ({ images }) => ({
+      type: 'gallery',
+      images: images.map((im) => ({ ...im, label: `Option ${im.letter}`, letter: im.letter, width: 512, height: 512 })),
+    }),
+    imageBytes: async () => PNG,
+  };
+  const pool = {
+    query: async (sql, params) => {
+      queries.push({ sql, params });
+      if (sql.includes('FROM homeroom_bot_picture_images')) {
+        return { rows: [{ id: 'a'.repeat(32), content_type: 'image/png', object_key: 'k', bytes: PNG.length }] };
+      }
+      if (sql.includes('COALESCE(SUM(size_bytes)')) return { rows: [{ total: '0' }] };
+      if (sql.includes('INSERT INTO chat_message_attachments')) return { rows: [] };
+      throw new Error(`unstubbed query: ${sql.slice(0, 60)}`);
+    },
+  };
+  return {
+    pool,
+    ctx: {
+      app: { id: 5 }, place: { type: 'issue', ref: 12 }, user: { id: 7, username: 'ada' },
+      bot: { id: 9 }, settings: {}, config: {}, attached: [], change: null, requestChange: null,
+      deps: { pictures: { botPictures: fakePictures } },
+    },
+  };
+}
+
+test('#6534: make_pictures in a thread stores its pictures under the reply, with no gallery card', async () => {
+  const { pool, ctx } = pictureCtx();
+  const out = await voice.runTool(pool, ctx, 'make_pictures', { prompt: 'an empty inbox', count: 1 });
+  assert.equal(out.ok, true, JSON.stringify(out));
+  assert.equal(out.attached, 1);
+  assert.equal(out.shown, undefined, 'the gallery card stays in the bot\'s own chat');
+  assert.equal(ctx.card, null, 'no card is drawn here');
+  assert.deepEqual(ctx.attached.map((a) => a.filename), ['Option A.png']);
+  assert.equal(ctx.attached[0].kind, 'image');
+});
+
+test('#6534: an HTML comparison is self-contained, and a stored one is an html attachment', async () => {
+  const { pool, ctx } = pictureCtx();
+  const refused = await voice.runTool(pool, ctx, 'attach_files', {
+    comparison: { title: 'Before and after', html: '<img src="https://example.com/x.png">' },
+  });
+  assert.match(refused.error, /may not load anything from another address/);
+
+  const stored = await voice.runTool(pool, ctx, 'attach_files', {
+    comparison: { title: 'Before and after', html: '<html><body><p>Before</p><p>After</p></body></html>' },
+  });
+  assert.equal(stored.ok, true, JSON.stringify(stored));
+  assert.equal(ctx.attached[0].kind, 'html');
+  assert.match(ctx.attached[0].filename, /^Before-and-after.*\.html$/);
+
+  const both = await voice.runTool(pool, ctx, 'attach_files', { shots: true, design: 'mine' });
+  assert.match(both.error, /one thing per call/);
 });

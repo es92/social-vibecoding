@@ -877,6 +877,13 @@
       "expectSelector": "#profile-screen:not(.hidden) #profile-identity-card:has(#profile-edit-btn) + #profile-stats:not(:has([data-profile-stat=\"kudos\"])) > [data-profile-stat=\"merged\"] + [data-profile-stat=\"challenges\"]"
     },
     {
+      "id": "profile.week-share",
+      "name": "Me: This week shows the week's live changes and Share opens the card that chooses which figures to send (#6464)",
+      "path": "/?demo=1#profile",
+      "expectText": "time in apps",
+      "expectSelector": "#profile-screen:not(.hidden) #profile-activity:has(#profile-activity-share)"
+    },
+    {
       "id": "profile.feedback-list",
       "name": "Me: Your work leads, then Rewards (Challenges & standings; Kudos is parked, #5249); Account holds Friends and App slots; the feedback challenge's card lists what you sent with its status (#3186, UI overhaul, navigation review)",
       "path": "/?demo=1#profile?feedback",
@@ -894,7 +901,7 @@
       "name": "Me: Your work's rows open the Homeroom bot tab's History on Changes and Requests, the Your feedback sheet, and History on Votes",
       "path": "/?demo=1#profile",
       "expectText": "Your work",
-      "expectSelector": "#profile-screen:not(.hidden) #profile-work #profile-row-proposals[href=\"#homeroom-bot/history?kind=change\"] + #profile-row-feedback[href=\"#homeroom-bot/history?kind=request\"] + #profile-row-feedback-history[href=\"#profile?feedback\"] + #profile-row-votes[href=\"#homeroom-bot/history?kind=vote\"]"
+      "expectSelector": "#profile-row-proposals[href=\"#homeroom-bot/history?kind=change\"]+#profile-row-feedback[href=\"#homeroom-bot/history?kind=request\"]+#profile-row-feedback-history[href=\"#profile?feedback\"]+#profile-row-votes[href=\"#homeroom-bot/history?kind=vote\"]"
     },
     {
       "name": "The retired History address opens the Challenges tab, and the tabs are Challenges and Standings",
@@ -4405,7 +4412,7 @@
     {
       "name": "Unread notification rows read source, bold subject, muted preview",
       "path": "/?shot=notifications&demo=1",
-      "expectSelector": "#notifications-sheet[data-open]:has(.notifications-row-slot > [data-notif-id=\"990211\"] + button[data-notification-clear=\"990211\"][aria-label=\"Clear notification\"]) .notifications-row .text-xs + .text-sm.font-semibold"
+      "expectSelector": "#notifications-sheet[data-open]:has(.notifications-row-slot > [data-notif-id=\"990211\"] + button[data-notification-clear=\"990211\"][aria-label=\"Clear notification\"]) [data-notif-id=\"990211\"] .text-xs + .text-sm.font-semibold"
     },
     {
       "name": "The sign-in screen stands on the wallpaper as a card form with a filled Log in pill",
@@ -5079,6 +5086,19 @@
         "frontend/src/features/ai/model.ts",
         "frontend/src/features/ai/lists.tsx",
         "frontend/locales/en/messages.json"
+      ]
+    },
+    {
+      "name": "#6371: This week lists each project's week the weekly digest opens",
+      "path": "/?demo=1#week",
+      "expectSelector": "#weekly-digest-screen:not(.hidden) [data-weekly-digest-pane]",
+      "expectText": "Staging demo app",
+      "id": "weekly-digest-page",
+      "visual": true,
+      "impact": [
+        "frontend/src/features/weekly-digest/index.tsx",
+        "frontend/locales/en/weekly-digest.json",
+        "src/routes/weekly-digest.js"
       ]
     }
   ],

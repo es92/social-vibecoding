@@ -412,10 +412,11 @@ test('a person\'s mention links to their page on the fallback path; the viewer\'
 
 test('Homeroom bot\'s mention stays text (no person page) on both paths', () => {
   const { renderWithMentions, decorateMentionsAndRefs, document } = loadGroupChat();
-  for (const out of [renderWithMentions('ask @Homeroom bot and @homeroom_bot'),
-    (() => { const p = el(document, 'p', 'ask @Homeroom bot and @homeroom_bot'); decorateMentionsAndRefs(p); return p.innerHTML; })()]) {
+  for (const out of [renderWithMentions('ask @Homeroom bot and @homeroom_bot and @homeroombot'),
+    (() => { const p = el(document, 'p', 'ask @Homeroom bot and @homeroom_bot and @homeroombot'); decorateMentionsAndRefs(p); return p.innerHTML; })()]) {
     assert.match(out, /<span class="gc-mention">@Homeroom bot<\/span>/);
     assert.match(out, /<span class="gc-mention">@homeroom_bot<\/span>/);
+    assert.match(out, /<span class="gc-mention">@homeroombot<\/span>/);
     assert.doesNotMatch(out, /leaderboard\/users/, 'the bot is never a link');
   }
 });

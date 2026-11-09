@@ -11420,6 +11420,9 @@ async function sweep(config, pool, { deps = {} } = {}) {
   await each('flakyChecks', () => flakyChecks(deps).sweep(pool, config, { deps }));
   // #6264: a promise about a change that never came is dropped quietly.
   await each('followupsExpired', () => require('./thread-followups').expireOld(pool));
+  // #6420: a change that names requests it closes tells them once, including
+  // the links set when the change was made or that became visible later.
+  await each('claimsAnnounced', () => require('./change-claims').announce(pool, { appId: null }));
   return out;
 }
 

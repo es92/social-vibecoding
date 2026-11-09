@@ -1,3 +1,16 @@
+# #6536's sync parse gate runs esbuild (worker/sync-parse-check.js). npm's
+# prebuilt esbuild binaries carry the Go they were built with (0.25.12, the
+# frontend's pin: Go 1.23.12), whose standard library the release's image
+# scan flags as new in this image, which blocked every release on 9 Nov 2026.
+# So the gate's esbuild is compiled here from the same version's source with
+# a patched Go, and only that one binary reaches the image below.
+ARG ESBUILD_VERSION=0.25.12
+FROM golang:1.27.3-bookworm AS esbuild-build
+ARG ESBUILD_VERSION
+RUN CGO_ENABLED=0 GOTOOLCHAIN=local GOBIN=/out \
+    go install -trimpath "github.com/evanw/esbuild/cmd/esbuild@v${ESBUILD_VERSION}" \
+  && test "$(/out/esbuild --version)" = "${ESBUILD_VERSION}"
+
 FROM node:22.23.4-bookworm-slim
 # Pin npm and replace its affected Undici bundle until npm ships the patch.
 RUN npm install --global npm@11.21.1 undici@6.29.1 \
@@ -135,6 +148,14 @@ RUN install -d -m 700 /var/lib/usernode-codex-bootstrap \
   && chmod 444 /usr/local/share/usernode-codex-bundled-models.json \
   && rm -rf /var/lib/usernode-codex-bootstrap
 
+# #6536: the sync parse gate transforms .ts/.tsx/.jsx with the esbuild the
+# frontend pins, so it works even when the checkout's own packages are not
+# installed. worker/sync-parse-check.js uses the checkout's
+# frontend/node_modules/esbuild first, then runs this binary as a command
+# (built from source in the esbuild-build stage above). No ESBUILD_BINARY_PATH:
+# every other esbuild in a turn keeps its own binary.
+COPY --from=esbuild-build /out/esbuild /usr/local/bin/esbuild
+
 # ── Optional in-loop browser (build-mode turns only) ───────────────────
 # The Playwright MCP server + a matching Chromium give the build-mode
 # agent first-class browser_navigate / browser_console / screenshot
@@ -190,6 +211,9 @@ COPY claude-openrouter-request.js /usr/local/bin/claude-openrouter-request.js
 # run-cc.sh asks it whether a Homeroom bot turn failed although claude
 # exited 0 (DISCARD_FAILED_TURN); the platform reads the same definition.
 COPY agent-api-failure.js /usr/local/bin/agent-api-failure.js
+# #6536: run-cc.sh's sync mode runs this over a Claude-resolved merge before
+# it commits, so no tree that does not parse is ever pushed.
+COPY sync-parse-check.js /usr/local/bin/sync-parse-check.js
 # The Homeroom bot's build turns (STOP_GUARD=1): run-cc.sh installs it as a
 # Claude Code Stop hook that sends the agent back to work when it tries to end
 # a turn that has changed nothing.

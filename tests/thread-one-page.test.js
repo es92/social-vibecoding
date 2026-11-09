@@ -321,17 +321,33 @@ test('D5: a change folded under its ballot has no Vote of its own', () => {
   assert.match(src, /querySelector<HTMLElement>\('\[data-change-gate="ballot"\]'\)/, 'a door to one of them lands on the ballot');
 });
 
-test('D4: a change for this request on another request\'s page is one line that says where', () => {
+test('D4: a change for this request on another request\'s page is a card that names it', () => {
   const { elsewhereFor } = loadTsx(`${TOPIC}/thread-model.ts`);
-  const elsewhere = [{ id: 91, number: 12, title: 'Pin it', on: 10, request: 11 }, { id: 92, number: 13, title: 'x', on: 11, request: 11 }];
+  const elsewhere = [
+    { id: 91, number: 12, title: 'Pin it', summary: 'Pin one message.', on: 10, request: 11, ask: true, mine: true, disputed: false },
+    { id: 92, number: 13, title: 'x', on: 11, request: 11 },
+  ];
   assert.deepEqual(JSON.parse(JSON.stringify(elsewhereFor(thread([], { elsewhere }), 11))), [elsewhere[0]], 'not one on this very page');
   assert.deepEqual(JSON.parse(JSON.stringify(elsewhereFor(thread([]), 11))), []);
   const html = renderComponent(`${TOPIC}/thread-changes.tsx`, 'ThreadChanges', {
     slug: 'club', data: thread([{ ...request, number: 11 }], { elsewhere }), number: 11, changes: [], close: null, onChanged: () => {},
   });
   assert.match(html, /data-thread-elsewhere="1"/);
-  assert.match(html, /Change #12 for this request is on <a [^>]*data-thread-elsewhere-on="10"[^>]*>#10<\/a>/);
-  assert.equal(message('project:topic.thread.page.elsewhereUnnumbered', { on: 10 }), 'A change for this request is on <0>#10</0>');
+  assert.match(html, /<a [^>]*data-thread-elsewhere-on="10"[^>]*>Change #12<\/a> says it closes this/);
+  assert.match(html, /Pin it/, 'the change\'s title');
+  assert.match(html, /Pin one message\./, 'its one-line summary');
+  assert.match(html, /data-thread-elsewhere-dispute="91"[^>]*>This doesn(?:'|&#x27;)t close it<\/button>/, 'the requester can answer it');
+  const answered = renderComponent(`${TOPIC}/thread-changes.tsx`, 'ThreadChanges', {
+    slug: 'club',
+    data: thread([{ ...request, number: 11 }], {
+      elsewhere: [{ ...elsewhere[0], ask: false, disputed: true }],
+    }),
+    number: 11, changes: [], close: null, onChanged: () => {},
+  });
+  assert.doesNotMatch(answered, />This doesn(?:'|&#x27;)t close it<\/button>/, 'no button once answered');
+  assert.match(answered, /You said this doesn(?:'|&#x27;)t close it/, 'the requester reads their answer back');
+  assert.equal(message('project:topic.thread.page.claimsUnnumbered'), '<0>A change</0> says it closes this');
+  assert.equal(message('project:topic.thread.page.claimNotConfirmed'), '(not confirmed)');
 });
 
 // #6224: a change for several requests lives on its first one's page, so its

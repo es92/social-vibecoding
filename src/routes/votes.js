@@ -655,7 +655,7 @@ function stagingMockProposals(viewer) {
           index: -3,
           name: 'Repo unit suite (npm test) passes', path: 'package.json', status: 'fail',
           advisory: false, consoleErrors: [],
-          failureReason: 'tests/kudos-totals.test.js (1): kudos totals survive a rename | # tests 20913 | # pass 20912 | # fail 1 | # cancelled 0',
+          failureReason: 'tests/kudos-totals.test.js (3): kudos totals survive a rename | # tests 20913 | # pass 20910 | # fail 3 | # cancelled 0',
           failureDetails: [
             {
               file: 'tests/kudos-totals.test.js',
@@ -672,6 +672,26 @@ function stagingMockProposals(viewer) {
                 '  — stdout just before the failure —',
                 'renaming @mara → @mara-renamed: kudos rows moved 3',
                 'recount after rename: total=42 (expected 41)',
+              ].join('\n'),
+            }, {
+              file: 'tests/kudos-totals.test.js',
+              test: 'the kudos figure hides when a rename removes every row',
+              excerpt: [
+                "  location: '/tmp/tmp.fixture/tests/kudos-totals.test.js:104:1'",
+                "  error: 'expected 0 to equal null',",
+                "  code: 'ERR_ASSERTION',",
+                '  stack: |',
+                '      AssertionError [ERR_ASSERTION]: expected 0 to equal null',
+              ].join('\n'),
+            }, {
+              file: 'tests/kudos-totals.test.js',
+              test: 'a rename keeps the leaderboard order',
+              excerpt: [
+                "  location: '/tmp/tmp.fixture/tests/kudos-totals.test.js:141:1'",
+                "  error: 'expected [ 3, 2, 1 ] to deeply equal [ 3, 1, 2 ]',",
+                "  code: 'ERR_ASSERTION',",
+                '  stack: |',
+                '      AssertionError [ERR_ASSERTION]: expected [ 3, 2, 1 ] to deeply equal [ 3, 1, 2 ]',
               ].join('\n'),
             },
           ],
@@ -1106,7 +1126,7 @@ function stagingMockProposals(viewer) {
     {
       ...mk(9000043, 900143,
         '[Mock] Imported-preview test: preview failed to build — unavailable chip + retry',
-        2, 1, 0, 1, { required: 2 }),
+        2, 1, 0, 1, { required: 3 }),
       source: 'imported',
       imported_pr_author: 'octo-contributor',
       staging_url: null,
@@ -2499,9 +2519,20 @@ async function retractVote({ pool, sessionId, userId, expectedEpoch = null }) {
         WHERE pv.session_id = $1 AND pv.user_id = $2
           AND cs.id = pv.session_id
           AND pv.approval_epoch = cs.approval_epoch
-        RETURNING pv.vote, pv.reason`,
+        RETURNING pv.vote, pv.reason, cs.user_id AS author_id`,
       [sessionId, userId]
     );
+    // #6477: the author took their own vote back on this version, so proposing
+    // stops counting as their yes (governance-rules.ts). Only the author's own
+    // retraction marks it, and a later vote or a new version (an epoch bump)
+    // makes the stamp stale on its own.
+    if (removed && parseInt(removed.author_id, 10) === userId) {
+      await client.query(
+        `UPDATE chat_sessions SET author_yes_withdrawn_epoch = approval_epoch
+          WHERE id = $1 AND user_id = $2`,
+        [sessionId, userId]
+      );
+    }
     // Whoever asked the bot for this change reads their card again, so it
     // names who it waits on now (no "approved it" line: there is no vote).
     if (removed) {
@@ -6522,6 +6553,24 @@ function refusalKind(err, pr) {
   return 'blocked';
 }
 
+/**
+ * Pure (#6546): what a `blocked` refusal says about GitHub's required status
+ * checks (main's branch protection), from GitHub's own words: 'pending' while
+ * they are still running or have not reported ("3 of 6 required status
+ * checks are in progress", "… is expected"), 'failing' once any failed ("3 of
+ * 7 required status checks have not succeeded: 1 expected and 2 failing"),
+ * null for a refusal about anything else. A count that only says "have not
+ * succeeded" is read as failing: nothing in it says they are still running.
+ */
+function githubChecksOf(message) {
+  const msg = String(message || '').toLowerCase();
+  if (!/required status checks?\b/.test(msg)) return null;
+  if (/\bfail(?:ing|ed|ure)?\b|\berror(?:ed)?\b|\bcancell?ed\b|\btimed out\b/.test(msg)) return 'failing';
+  if (/in progress|\bexpected\b|\bpending\b|\bqueued\b|\bwaiting\b/.test(msg)) return 'pending';
+  if (/have not succeeded|has not succeeded/.test(msg)) return 'failing';
+  return null;
+}
+
 // The GitHub half of a merge (the proposal machine's `merge.attempt` work):
 // GitHub is asked to merge the pull request at exactly `head`, and the answer
 // is one named outcome:
@@ -6588,6 +6637,11 @@ async function attemptMerge(config, pool, sessionId, {
     const kind = refusalKind(err, pr);
     const said = String((err && err.message) || '').slice(0, 300);
     const owner_ = session.user_id ? `<@${session.user_id}>` : 'the session owner';
+    // #6546: GitHub's required checks (main's branch protection), told apart
+    // from any other plain refusal. Both are tried again on the queue's clock
+    // (proposal machine REFUSAL_RETRY_MS); a failing one is also brought up
+    // to date with main once, which runs them again on today's main.
+    const githubChecks = kind === 'blocked' ? githubChecksOf(said) : null;
     const message = kind === 'conflict'
       ? `${label} hit a conflict with main during a merge attempt. Homeroom resolves it automatically when it can; if it can't, ${owner_} can run "Sync with main" from the session's dev-chat.`
       : kind === 'draft'
@@ -6596,8 +6650,12 @@ async function attemptMerge(config, pool, sessionId, {
           ? `${label} wasn't merged on this attempt: main moved while GitHub was merging it. It is tried again.`
           : kind === 'github_busy'
             ? `${label} wasn't merged yet: GitHub said a merge of it was already in progress. It is tried again in a few minutes.`
-            : `${label} wasn't merged: GitHub refused it (${said || 'no reason given'}). It is tried again when its commit, main or its votes change.`;
-    return { outcome: 'refused', kind, message, githubMessage: said || null };
+            : githubChecks === 'pending'
+              ? `${label} wasn't merged yet: GitHub's required checks on it are still running. Homeroom tries again every few minutes and merges it once they pass.`
+              : githubChecks === 'failing'
+                ? `${label} wasn't merged: GitHub's required checks on it failed (${said}). Homeroom brings it up to date with main once, which runs them again, and tries again every few minutes.`
+                : `${label} wasn't merged: GitHub refused it (${said || 'no reason given'}). It is tried again in a few minutes.`;
+    return { outcome: 'refused', kind, message, githubMessage: said || null, ...(githubChecks ? { githubChecks } : {}) };
   };
   const unanswered = (err) => !err || !Number.isInteger(err.status) || err.status >= 500 || err.status === 429;
   // The branch an import's merge went into, when that is not main (the
@@ -7124,6 +7182,7 @@ module.exports = {
   evaluateMergeGate,
   attemptMerge,
   refusalKind,
+  githubChecksOf,
   createRevertPR,
   checkAndOpenRevert,
   // Focused revision-safety tests exercise the reconciliation without

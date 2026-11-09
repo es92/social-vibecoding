@@ -92,7 +92,9 @@ const GATE_SQL = `
          ${adminNoAtSql('cs')} AS admin_no_at,
          ${approverNoAtSql('cs')} AS approver_no_at,
          COALESCE((SELECT u.is_synthetic FROM users u WHERE u.id = $3::int), FALSE) AS author_is_bot,
-         (cs.external_agent IS NOT NULL) AS made_by_agent
+         (cs.external_agent IS NOT NULL) AS made_by_agent,
+         (cs.author_yes_withdrawn_epoch IS NOT NULL
+          AND cs.author_yes_withdrawn_epoch IS NOT DISTINCT FROM cs.approval_epoch) AS author_withdrew
     FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id
    WHERE cs.id = $1 AND a.id = $2`;
 
@@ -130,6 +132,7 @@ export async function readPrGate(db: Queryable, g: PrGateInputs): Promise<Govern
       explicitApproval: g.explicitApproval, explicitReason: g.explicitApproval ? g.explicitReason : null,
       authorId: g.authorId, voters, authorIsBot: g.authorId != null && r.author_is_bot === true,
       madeByAgent: r.made_by_agent === true,
+      authorWithdrew: r.author_withdrew === true,
       rulesFacts: facts, memberCount: facts.memberCount, firstVersion,
       adminNoAt: r.admin_no_at ?? null,
     });

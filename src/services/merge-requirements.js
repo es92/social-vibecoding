@@ -284,8 +284,10 @@ function integrationStep(session) {
         note: `conflicts with main${files}; the platform resolves it once the group approves`,
       };
     }
-    // The conflict lane resolves no head whose checks fail or could not run
-    // (merge-queue admission): those come first, then the platform's merge.
+    // 'checks_failing' / 'checks_error' are written only after the conflict
+    // lane's free pre-vote resolution has been spent (#6531): the lane
+    // resolves a conflicting head with a stale verdict first, and these
+    // mean its checks still fail on the new head.
     if (has('checks_failing')) {
       return {
         state: 'blocked', actor: 'author',

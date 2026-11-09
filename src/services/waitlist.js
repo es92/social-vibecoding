@@ -69,7 +69,7 @@ function parseEmailList(text) {
 // this flag plus the existing row's confirmed_at is what picks the
 // branch. The capability token is the part that did NOT widen: a
 // re-join still gets null, whatever else the response says.
-async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode = null }) {
+async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode = null, source = null }) {
   const moreToken = crypto.randomBytes(24).toString('hex');
   const stored = answers
     ? { _version: ANSWERS_VERSION, ...answers }
@@ -87,6 +87,18 @@ async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode
     if (rows[0]) invitedBy = rows[0].id;
   }
 
+  // A `ref` that is a referral code is already carried as the referral, so
+  // it is not stored a second time as a source tag (#6540).
+  let ref = source?.ref || null;
+  if (ref) {
+    if (ref === inviteCode) ref = null;
+    else {
+      const { rows: known } = await pool.query(
+        'SELECT 1 FROM waitlist_signups WHERE invite_code = $1', [ref]);
+      if (known[0]) ref = null;
+    }
+  }
+
   // Attribution rides on the INSERT, so ON CONFLICT DO NOTHING already
   // means an existing row can never be re-parented by someone
   // re-submitting with a different code. There is deliberately no
@@ -99,15 +111,18 @@ async function joinWaitlist(pool, { email, ip = null, answers = null, inviteCode
   // block without a second round trip. ON CONFLICT DO NOTHING returns no
   // row, which is still exactly how a re-join is detected.
   const { rows } = await pool.query(
-    `INSERT INTO waitlist_signups (email, ip, answers, more_token, invited_by, project_invite_id)
+    `INSERT INTO waitlist_signups (email, ip, answers, more_token, invited_by, project_invite_id,
+                                   referrer_host, utm_source, utm_campaign, ref)
      VALUES ($1, $2, $3, $4, $5,
        (SELECT id FROM app_email_invites
          WHERE email = $1::varchar AND claimed_at IS NULL
          ORDER BY created_at ASC, id ASC
-         LIMIT 1))
+         LIMIT 1),
+       $6, $7, $8, $9)
      ON CONFLICT (email) DO NOTHING
      RETURNING submitted_at`,
-    [email, ip, stored ? JSON.stringify(stored) : null, moreToken, invitedBy]
+    [email, ip, stored ? JSON.stringify(stored) : null, moreToken, invitedBy,
+      source?.referrerHost ?? null, source?.utmSource ?? null, source?.utmCampaign ?? null, ref]
   );
   const created = rows.length > 0;
   return {

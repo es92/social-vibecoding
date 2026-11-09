@@ -127,7 +127,10 @@ export const Feedback = {
   // replaces it with its own state setter (`_preview = setPreview`), the same
   // split as `_open`; the thumbnails built below call it on a tap.
   _preview: (_item = null) => {},
-  /** @returns {{ text: string, title: string, images: Blob[], bounty: boolean, target: 'app' | 'platform' | null }} */
+  /**
+   * @returns {{ text: string, title: string, images: Blob[], bounty: boolean,
+   *   target: 'app' | 'platform' | null, appSlug?: string, appName?: string }}
+   */
   _takeDraft: () => ({ text: '', title: '', images: [], bounty: false, target: null }),
 };
 
@@ -567,6 +570,11 @@ export function init() {
     // from the mounted iframe. Computed on each modal open; the "Include
     // app state" row shows only while this holds AND the target is 'app'.
     let stateAvailable = false;
+    // #6485: the app the "This app" option stands for — the one the request
+    // will be filed on. Captured when the person picks it (or when a comment
+    // hands its app over), not read from whatever app is mounted at submit,
+    // so moving between screens never retargets a request.
+    let targetApp = null; // { slug, name } | null
     const stateRow = document.getElementById('feedback-state-row');
     const stateCheckbox = document.getElementById('feedback-state-checkbox');
     // #964: the opt-in kudos-bounty row. Unlike the state row this shows for
@@ -778,6 +786,7 @@ export function init() {
       feedbackTargetAppSub?.classList.toggle('hidden', !named);
     };
     const applyTargetAvailability = (canTargetApp, appData) => {
+      targetApp = canTargetApp ? { slug: App.currentApp, name: appData?.name || '' } : null;
       if (canTargetApp) {
         labelAppTarget(appData);
         setAppTargetEnabled(true);
@@ -793,14 +802,38 @@ export function init() {
         setFeedbackTarget('platform');
       }
     };
+    // #6485: take the app a comment (or a returned draft) brought with it as
+    // this open's destination, whatever app is mounted. The slug is what the
+    // request is filed on, so it is checked before it becomes one; the name
+    // is only for the option's own label, and falls back to the address.
+    const APP_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+    const adoptTargetApp = (slug, name) => {
+      if (typeof slug !== 'string' || !APP_SLUG_RE.test(slug)) return;
+      targetApp = { slug, name: name || '' };
+      const shown = typeof AppView !== 'undefined' && AppView.appData && AppView.appData.slug === slug
+        ? AppView.appData.name
+        : '';
+      labelAppTarget({ name: name || shown || slug });
+      setAppTargetEnabled(true);
+      setAwaitingTarget(false);
+      // #685: the state to collect is the mounted app's own, so it can only
+      // travel with a request filed on that app.
+      if (slug !== App.currentApp) {
+        stateAvailable = false;
+        stateRow.classList.add('hidden');
+      }
+      setFeedbackTarget('app');
+    };
     // #2707: a destination that comes back with a returned draft is the
     // person's OWN earlier pick, not a default — handing it back is not an
     // accidental preselection, and re-asking for a decision they already
     // made would quietly lose it. It still wins over the open app's default
     // (#5992). 'platform' is restored as well as 'app': dropping it would
     // leave a rescued draft pointing somewhere other than the person chose.
-    const restoreChosenTarget = (target) => {
-      if (target === 'app' && !feedbackTargetApp.disabled) setFeedbackTarget('app');
+    // #6485: with a slug, the app itself comes back, not the one open now.
+    const restoreChosenTarget = (target, slug, name) => {
+      if (target === 'app' && slug) adoptTargetApp(slug, name);
+      else if (target === 'app' && !feedbackTargetApp.disabled) setFeedbackTarget('app');
       else if (target === 'platform') setFeedbackTarget('platform');
     };
 
@@ -1029,6 +1062,9 @@ export function init() {
           title,
           titleDirty,
           target: feedbackTarget,
+          // #6485: the app the person picked, so it comes back with the words.
+          ...(feedbackTarget === 'app' && targetApp
+            ? { appSlug: targetApp.slug, appName: targetApp.name } : {}),
           savedAt: Date.now(),
         }));
       } catch { /* private mode or quota — the words are still on screen */ }
@@ -2060,7 +2096,7 @@ export function init() {
           const p = failed.payload || {};
           feedbackText.value = p.description || '';
           if (p.title) { feedbackTitle.value = p.title; titleDirty = true; }
-          restoreChosenTarget(p.target);
+          restoreChosenTarget(p.target, p.appSlug, p.appName);
           showFeedbackNotice(failed.lastError
             ? t('dialogs:feedback.queue.rejectedReason', { reason: failed.lastError })
             : t('dialogs:feedback.queue.rejected'), true);
@@ -2338,7 +2374,9 @@ export function init() {
         // typed or edited (titleDirty) is always sent verbatim.
         const customTitle = feedbackTitle.value.trim();
         if (customTitle && (titleDirty || text === lastGeneratedFor)) body.title = customTitle;
-        if (target === 'app') body.appSlug = App.currentApp;
+        // #6485: the app the person picked when they picked it, not whatever
+        // app happens to be mounted now.
+        if (target === 'app') body.appSlug = targetApp?.slug || App.currentApp;
         // #5048: a private request goes to Homeroom alone. It never takes
         // the outbox or /api/feedback, both of which file a public GitHub
         // issue, and nothing attached goes with it.
@@ -2402,6 +2440,7 @@ export function init() {
         // timeout) files without state with a non-blocking notice.
         let stateNotice = '';
         const wantState = stateAvailable && target === 'app'
+          && body.appSlug === App.currentApp
           && !stateRow.classList.contains('hidden') && stateCheckbox.checked;
         if (wantState && typeof AppView !== 'undefined'
             && typeof AppView.collectIssueState === 'function') {
@@ -2486,7 +2525,7 @@ export function init() {
                 : t('dialogs:feedback.bounty.failed');
             }
           }
-          const appName = AppView?.appData?.name || '';
+          const appName = targetApp?.name || '';
           // The confirmation's heading (no full stop) and the status line's
           // sentence are two messages, each whole, for each place it can go.
           const postedTo = target === 'app'
@@ -2694,7 +2733,10 @@ export function init() {
       // #4635 retired the card). That press was the choice #2707 asks for,
       // and #5992 makes the open app the default anyway; this stays as the
       // explicit form, applied only when "This app" is really there.
-      if (opts.target === 'app' && canTargetApp) setFeedbackTarget('app');
+      // #6485: a comment hands over the app the person picked; it comes
+      // first, so it is taken even with no app tab open behind it.
+      if (opts.target === 'app' && opts.appSlug) adoptTargetApp(opts.appSlug, opts.appName);
+      else if (opts.target === 'app' && canTargetApp) setFeedbackTarget('app');
       // The experimental C comment (features/comment-pin/) hands itself over
       // here when it cannot post on its own (offline, the server failing):
       // its words, its screenshot and the destination the person already
@@ -2758,7 +2800,7 @@ export function init() {
           const p = failed.payload || {};
           feedbackText.value = p.description || '';
           if (p.title) { feedbackTitle.value = p.title; titleDirty = true; }
-          restoreChosenTarget(p.target);
+          restoreChosenTarget(p.target, p.appSlug, p.appName);
           feedbackStatus.textContent = failed.lastError
             ? t('dialogs:feedback.queue.rejectedReason', { reason: failed.lastError })
             : t('dialogs:feedback.queue.rejected');
@@ -2782,7 +2824,7 @@ export function init() {
             feedbackTitle.value = rescued.title;
             titleDirty = rescued.titleDirty !== false;
           }
-          restoreChosenTarget(rescued.target);
+          restoreChosenTarget(rescued.target, rescued.appSlug, rescued.appName);
           showFeedbackNotice(t('dialogs:feedback.screenshot.lost'), false);
           queueLineText = '';
         }
@@ -2906,6 +2948,9 @@ export function init() {
         images: screenshots.map((shot) => shot.blob).filter(Boolean),
         bounty: !!(bountyCheckbox.checked && !bountyCheckbox.disabled),
         target: chosen,
+        // #6485: the app the option stood for, so comment mode files on it
+        // even with no app tab open.
+        ...(chosen === 'app' && targetApp ? { appSlug: targetApp.slug, appName: targetApp.name } : {}),
       };
       if (!feedbackText.readOnly) {
         feedbackText.value = '';

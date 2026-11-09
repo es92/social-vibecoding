@@ -127,10 +127,14 @@ test('the buttons sit where Share link sat: after the note, before the status an
 });
 
 test('Copy link copies the note and the link, then does what a share does', () => {
-  const { inviteText } = loadTsx(COPY);
+  const { inviteText, withVia } = loadTsx(COPY);
   assert.equal(inviteText('Come try it with me!', 'https://h.test/invite/abc'), 'Come try it with me! https://h.test/invite/abc');
   assert.equal(inviteText('  Read with us  ', 'https://h.test/invite/abc'), 'Read with us https://h.test/invite/abc');
   assert.equal(inviteText('   ', 'https://h.test/invite/abc'), 'https://h.test/invite/abc', 'no note: the link alone');
+  // #6540: the link carries how it went out, and nothing else changes.
+  assert.equal(withVia('https://h.test/invite/abc', 'copied'), 'https://h.test/invite/abc?via=copied');
+  assert.equal(withVia('https://h.test/invite/abc?via=shared', 'shared'), 'https://h.test/invite/abc?via=shared');
+  assert.equal(withVia('not a url', 'copied'), 'not a url', 'an address it cannot parse is left alone');
 
   const src = read(MADE);
   // One "it went out" for both: said on the sheet, the note kept, posted
@@ -145,11 +149,12 @@ test('Copy link copies the note and the link, then does what a share does', () =
   assert.match(share, /await sent\('shared'\);/);
   assert.match(share, /await sent\('copied'\);/);
   assert.match(copy, /await sent\('copied'\);/);
-  // The share sheet's own fallback copies the same text.
-  assert.match(share, /const outcome = await copyText\(inviteText\(note, url\)\);/);
+  // The share sheet's own fallback copies the same text, tagged as a copy.
+  assert.match(share, /const outcome = await copyText\(inviteText\(note, withVia\(url, 'copied'\)\)\);/);
+  assert.match(share, /url: withVia\(url, 'shared'\)/);
   // The copy is started before the press awaits anything: a link already made
   // is copied as it is; one still to make goes in as a promise.
-  assert.match(copy, /setBusy\(true\); setError\(null\);\s+try \{\s+const ready = linkRef\.current;\s+const outcome = await copyText\(ready \? inviteText\(note, ready\)\s+: link\(\)\.then\(\(url\) => \(url \? inviteText\(note, url\) : null\)\)\);/);
+  assert.match(copy, /const outcome = await copyText\(ready \? inviteText\(note, withVia\(ready, 'copied'\)\)\s+: link\(\)\.then\(\(url\) => \(url \? inviteText\(note, withVia\(url, 'copied'\)\) : null\)\)\);/);
   assert.equal((copy.match(/await /g) || []).length, 2, 'the copy, then the share\'s steps: nothing awaited before the copy, and no pause before the sheet says so');
   // Said on the sheet, which stays: "✓ Copied" on the button for a moment.
   assert.match(copy, /setCopied\(Date\.now\(\)\);\s+await sent\('copied'\);/);

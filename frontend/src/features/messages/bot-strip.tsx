@@ -302,7 +302,7 @@ export function OpenState({ row }: { row: StripRow }) {
   // waiting, never turning.
   if (row.track.held) return <StatusBadge tone="held" icon={ClockIcon} data="progress" />;
   // Turning only while the bot works on it this minute.
-  const spin = row.track.busy || work.stage === 'building';
+  const spin = !!row.track.busy;
   return <StatusBadge tone="working" icon={SpinnerArcIcon} spin={spin} data="progress" />;
 }
 

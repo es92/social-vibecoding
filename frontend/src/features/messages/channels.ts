@@ -131,7 +131,7 @@ export function personHref(username: string): string {
 /** #4029: whether `@name` names Homeroom bot, which has no person page. */
 export function isBotMention(name: string): boolean {
   const key = String(name || '').toLowerCase();
-  return key === 'homeroom bot' || key === 'homeroom_bot';
+  return key === 'homeroom bot' || key === 'homeroom_bot' || key === 'homeroombot';
 }
 
 /**

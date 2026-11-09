@@ -620,3 +620,45 @@ test('waitlist options: the never-public fields are still absent', async () => {
     assert.equal('discovery_detail_labels' in body, false);
   } finally { await srv.close(); }
 });
+
+test('a waitlist join stores where the landing page sent them, a host only (#6540)', async () => {
+  const calls = [];
+  const pool = {
+    query: async (sql, params = []) => {
+      const s = String(sql);
+      calls.push({ sql: s, params });
+      if (/INSERT INTO waitlist_signups/.test(s)) return { rows: [{ submitted_at: '2026-11-09T10:00:00Z' }] };
+      if (/FROM waitlist_signups WHERE invite_code/.test(s)) return { rows: [] };
+      throw new Error(`unhandled mock SQL: ${s.slice(0, 90)}`);
+    },
+  };
+  const srv = await startTestServer(pool, {});
+  const join = (body) => fetch(`${srv.baseUrl}/api/public/waitlist`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }).then((r) => r.json());
+  try {
+    // A full URL is kept as its host, never its path or query.
+    await join({ email: 'ada@example.com', referrer_host: 'https://discord.com/channels/12?secret=1',
+      utm_source: 'x', utm_campaign: 'launch', ref: 'post-1' });
+    const first = calls.find((c) => /INSERT INTO waitlist_signups/.test(c.sql));
+    assert.deepEqual(first.params.slice(5), ['discord.com', 'x', 'launch', 'post-1']);
+
+    // Present but empty: looked for, none given, never a blank field.
+    calls.length = 0;
+    await join({ email: 'bo@example.com', referrer_host: '' });
+    const none = calls.find((c) => /INSERT INTO waitlist_signups/.test(c.sql));
+    assert.deepEqual(none.params.slice(5), ['none', null, null, null]);
+
+    // Absent: not recorded at all.
+    calls.length = 0;
+    await join({ email: 'cy@example.com' });
+    const absent = calls.find((c) => /INSERT INTO waitlist_signups/.test(c.sql));
+    assert.deepEqual(absent.params.slice(5), [null, null, null, null]);
+
+    // A tag that fails its pattern is dropped, not stored.
+    calls.length = 0;
+    await join({ email: 'di@example.com', utm_source: 'two words', utm_campaign: 'a/b', ref: '<script>' });
+    const bad = calls.find((c) => /INSERT INTO waitlist_signups/.test(c.sql));
+    assert.deepEqual(bad.params.slice(5), [null, null, null, null]);
+  } finally { await srv.close(); }
+});

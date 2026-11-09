@@ -237,6 +237,31 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
     }
   });
 
+  // #6533: one email picture under Homeroom bot's reply in a change's thread,
+  // as JSON (never text/html): the client draws it in a sandboxed frame only.
+  router.get('/api/apps/:slug/proposals/:sessionId/pictures/:pictureId', async (req, res) => {
+    const id = sessionId(req.params.sessionId);
+    if (!id) return res.status(404).json({ error: 'Picture not found' });
+    try {
+      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view');
+      if (!ctx) return res.status(404).json({ error: 'Picture not found' });
+      const pictures = require('../services/change-pictures');
+      const row = await pictures.pictureForSession(pool, { sessionId: id, appId: ctx.app.id, pictureId: req.params.pictureId });
+      if (!row) return res.status(404).json({ error: 'Picture not found' });
+      const body = await pictures.pictureBody(pool, config, row);
+      if (!body) return res.status(404).json({ error: 'Picture not found' });
+      res.set({
+        'Cache-Control': 'private, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+        Vary: 'Cookie, Authorization',
+      });
+      return res.json(body);
+    } catch (err) {
+      log.error('shots', 'A change picture read failed', { sessionId: id, err: err.message });
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   router.get('/api/apps/:slug/proposals/:sessionId/shots/:artifactId', async (req, res) => {
     const id = sessionId(req.params.sessionId);
     if (!config.shots?.present || !id || !ARTIFACT_ID_RE.test(String(req.params.artifactId || ''))) {
@@ -261,6 +286,7 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
             AND s.shots_run_id = r.id
             AND s.shots_state = 'verified' AND r.state = 'verified'
             AND r.head_sha = COALESCE(
+                  s.shots_detail->>'headSha',
                   CASE WHEN s.source = 'imported'
                     THEN s.imported_pr_head_sha
                     ELSE s.reviewed_head_sha

@@ -83,6 +83,9 @@ function makeAppView({ search = '' } = {}) {
     pr_url: 'https://github.com/acme/app/pull/1540',
     status: 'promoted', username: 'evan', created_at: at(1), promoted_at: at(1), last_message_at: at(1),
     linked_issues: [], my_vote: null, votes_for: 3, votes_against: 1, yes_count: 3, no_count: 1,
+    // More yeses still needed, so the row keeps its Vote button (#6505: a
+    // decided change draws none).
+    votes_required: 5,
     checks_state: 'success', checks_total: 412, checks_passed: 412, message_count: 5,
   }];
   AppView._govProposals = [];
@@ -1759,7 +1762,15 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // counts, the audience chips) with it. Its page check now follows
   // #communities to Home and finds the Needs you tile there; the two Needs
   // you checks follow the page to #needs. 729 leaves 151 slots.
-  checkCap.assertPinned(DAPP.tests.length, 729);
+  // 729 → 730: +1 (#6371) the This week page the weekly digest's Friday row
+  // opens is an address of its own (/?demo=1#week), so it has no check to
+  // fold into. 730 leaves 150 slots.
+  // 730 → 731: +1 (#6464) Me › This week gains changes live and challenges
+  // done, and its Share button opens the card that chooses which figures to
+  // send. The profile screen is an existing route, but the card's share
+  // control has a declared check of its own because the figures it offers
+  // are the point of the request; 731 leaves 149 slots.
+  checkCap.assertPinned(DAPP.tests.length, 731);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

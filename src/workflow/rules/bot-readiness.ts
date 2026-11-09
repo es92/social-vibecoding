@@ -151,7 +151,18 @@ export function failureReason(row: Row | null | undefined): string {
   return first ? String(first.message) : '';
 }
 
-export interface Failing { name: string; path: string | null; reason: string }
+export interface Failing {
+  name: string; path: string | null; reason: string;
+  // #6536: the failed preview build's own first error, as the check row
+  // stored it. Written into the fix turn's prompt; `previewBuild` says the
+  // failure is the build, not a check that did not pass.
+  previewBuild?: boolean;
+  buildExcerpt?: string | null;
+}
+
+// How much of a failed build's log the fix turn is shown. The row stores up
+// to 40 lines ending at the first error (src/services/deploy-failure.js).
+export const BUILD_EXCERPT_CHARS = 4000;
 
 // The checks that block the proposal, from its stored `test_results`: a row
 // that did not pass and is not advisory (the merge gate's own rule).
@@ -163,6 +174,9 @@ export function failingChecks(testResults: unknown): { failing: Failing[]; total
       name: clipText(r.name || r.path || 'unnamed check', 200),
       path: r.path ? clipText(r.path, 200) : null,
       reason: clipText(failureReason(r), FAILING_REASON_CHARS),
+      ...(r.previewBuild
+        ? { previewBuild: true, buildExcerpt: clipText(r.buildExcerpt, BUILD_EXCERPT_CHARS) || null }
+        : {}),
     }));
   return { failing, total: rows.length };
 }
@@ -180,7 +194,11 @@ export function checksDue(row: Row | null | undefined): Due | null {
   const head = String(row.reviewed_head_sha || '').toLowerCase();
   if (!head || row.looked) return null;
   const onHead = String(row.checks_commit_sha || '').toLowerCase() === head;
-  const { failing, total } = onHead && row.check_state === 'failing'
+  // #6536: a preview build that failed with its own error is a check row on
+  // an 'error' verdict (src/workflow/preview/machine.ts), and it is due the
+  // same fix a failing check is.
+  const buildBroken = Array.isArray(row.test_results) && row.test_results.some((r: Row) => r && r.previewBuild);
+  const { failing, total } = onHead && (row.check_state === 'failing' || (row.check_state === 'error' && buildBroken))
     ? failingChecks(row.test_results)
     : { failing: [] as Failing[], total: Array.isArray(row.test_results) ? row.test_results.length : 0 };
   const broken = SETTLED_CHECKS.has(row.check_state) ? brokenOnHead(row, row.reviewed_head_sha) : [];

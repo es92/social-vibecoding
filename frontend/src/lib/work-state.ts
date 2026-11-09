@@ -115,6 +115,10 @@ const LINE_WORDS: Record<string, string> = {
   update_queued: 'core:work.line.updateQueued',
   checks_failing: 'core:work.line.checksFailing',
   sync_wait: 'core:work.line.syncWait',
+  conflict_on_yes: 'core:work.line.conflictOnYes',
+  github_checks: 'core:work.line.githubChecks',
+  github_checks_failing: 'core:work.line.githubChecksFailing',
+  github_wait: 'core:work.line.githubWait',
   first_version: 'core:work.line.firstVersion',
   planning_with_you: 'core:work.line.planningWithYou',
   waiting: 'core:work.line.waiting',
@@ -137,6 +141,9 @@ export function stageWords(state: WorkState, { yours = true }: { yours?: boolean
   // The same stages in plainer words: nobody has started on it yet, or it is
   // read and waits its turn to be built.
   const code = state.line?.code || '';
+  // #6531: a conflicting change the lane is catching up says "Syncing with
+  // main" in its stage word, not "Checking".
+  if (state.stage === 'checking' && code === 'syncing') return { id: 'core:work.stage.syncing' };
   if (state.stage === 'reading' && NOT_STARTED.has(code)) return { id: 'core:work.stage.notStarted' };
   if (state.stage === 'building' && READY.has(code)) return { id: 'core:work.stage.readyToBuild' };
   return { id: STAGE_WORDS[state.stage] || STAGE_WORDS.reading };

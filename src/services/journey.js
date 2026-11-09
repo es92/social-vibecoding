@@ -624,6 +624,127 @@ function mailEngagement(row) {
   return { tracked: true, opened, clicked, note: clicked ? 'clicked the link' : opened ? 'opened' : 'no open seen' };
 }
 
+// ── Where people came from ─────────────────────────────────────────────
+//
+// #6540: the first invite link a person opened, and the waitlist row they
+// signed up on. Both are hosts and short tags only; a full URL is never
+// stored. A null value means nothing was recorded (a row from before this
+// change, or a client that did not send it). 'none' means the source was
+// looked for and none was given, which Journey says as "no referrer".
+//
+// The records already follow the person (community_invite_opens.user_id,
+// waitlist_signups.linked_user_id), so nothing is copied onto the account.
+
+const CAME_FROM_INVITES_SQL = `SELECT o.user_id, o.referrer_host, o.via, o.opened_at, ap.name AS project
+    FROM community_invite_opens o
+    JOIN apps ap ON ap.id = o.app_id
+   WHERE o.user_id = ANY($1::int[])
+   ORDER BY o.opened_at, o.id`;
+
+// A sign-up is read by the account it was linked to, and, for a person who
+// has no account yet, by the sign-up's own id.
+const CAME_FROM_WAITLIST_SQL = `SELECT w.id, w.linked_user_id, w.referrer_host, w.utm_source,
+         w.utm_campaign, w.ref, w.submitted_at
+    FROM waitlist_signups w
+   WHERE w.linked_user_id = ANY($1::int[]) OR w.id = ANY($2::bigint[])
+   ORDER BY w.submitted_at, w.id`;
+
+function inviteCameFrom(row) {
+  return {
+    referrerHost: row.referrer_host == null ? null : String(row.referrer_host),
+    via: row.via == null ? null : String(row.via),
+    project: row.project || null,
+    at: new Date(row.opened_at).toISOString(),
+  };
+}
+
+function waitlistCameFrom(row) {
+  return {
+    referrerHost: row.referrer_host == null ? null : String(row.referrer_host),
+    utmSource: row.utm_source == null ? null : String(row.utm_source),
+    utmCampaign: row.utm_campaign == null ? null : String(row.utm_campaign),
+    ref: row.ref == null ? null : String(row.ref),
+    at: new Date(row.submitted_at).toISOString(),
+  };
+}
+
+/**
+ * The invite and waitlist records for a set of people, each keyed so one
+ * person is read once: the earliest invite open per account, and a waitlist
+ * row by the account it was linked to and by its own id.
+ */
+async function cameFromFor(pool, { userIds = [], signupIds = [] } = {}) {
+  const ids = (userIds || []).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0);
+  const signups = (signupIds || []).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0);
+  const records = { invites: new Map(), waitlistsByUser: new Map(), waitlistsBySignup: new Map() };
+  if (!ids.length && !signups.length) return records;
+  const [{ rows: inviteRows }, { rows: waitlistRows }] = await Promise.all([
+    ids.length ? pool.query(CAME_FROM_INVITES_SQL, [ids]) : Promise.resolve({ rows: [] }),
+    pool.query(CAME_FROM_WAITLIST_SQL, [ids, signups]),
+  ]);
+  for (const row of inviteRows) {
+    const id = Number(row.user_id);
+    if (!records.invites.has(id)) records.invites.set(id, inviteCameFrom(row));
+  }
+  for (const row of waitlistRows) {
+    const rowId = Number(row.id);
+    if (!records.waitlistsBySignup.has(rowId)) records.waitlistsBySignup.set(rowId, waitlistCameFrom(row));
+    if (row.linked_user_id != null) {
+      const id = Number(row.linked_user_id);
+      if (!records.waitlistsByUser.has(id)) records.waitlistsByUser.set(id, waitlistCameFrom(row));
+    }
+  }
+  return records;
+}
+
+/** One person's two records, from cameFromFor's maps: either may be null. */
+function cameFromOf(records, { userId = null, signupId = null } = {}) {
+  const invite = userId != null ? records.invites.get(Number(userId)) || null : null;
+  const waitlist = (userId != null ? records.waitlistsByUser.get(Number(userId)) : null)
+    || (signupId != null ? records.waitlistsBySignup.get(Number(signupId)) : null)
+    || null;
+  return { invite, waitlist };
+}
+
+/** The word a waitlist record's source starts with: utm_source, then host, then ref. */
+function waitlistSource(waitlist) {
+  return waitlist ? (waitlist.utmSource || waitlist.referrerHost || waitlist.ref || null) : null;
+}
+
+/**
+ * Which of a person's two records came first, and where that one says they
+ * came from. `unknown` is nobody recorded at all.
+ */
+function cameFromWay(cameFrom) {
+  const invite = cameFrom?.invite || null;
+  const waitlist = cameFrom?.waitlist || null;
+  if (!invite && !waitlist) return { way: 'unknown', from: null };
+  if (invite && waitlist) {
+    const byInvite = new Date(invite.at).getTime() <= new Date(waitlist.at).getTime();
+    return byInvite ? { way: 'invite', from: invite.referrerHost } : { way: 'waitlist', from: waitlistSource(waitlist) };
+  }
+  return invite ? { way: 'invite', from: invite.referrerHost } : { way: 'waitlist', from: waitlistSource(waitlist) };
+}
+
+/**
+ * A cohort's people, counted once each by where they came from: the earlier
+ * of their two records. Sorted most people first. 'none' is kept as is; a
+ * null `from` is "not recorded".
+ */
+function cohortSources(people) {
+  const counts = new Map();
+  for (const person of people || []) {
+    const { way, from } = cameFromWay(person?.cameFrom || {});
+    const key = `${way}|${from == null ? '' : from}`;
+    const row = counts.get(key) || { way, from: from == null ? null : from, people: 0 };
+    row.people += 1;
+    counts.set(key, row);
+  }
+  return [...counts.values()].sort((a, b) => b.people - a.people
+    || a.way.localeCompare(b.way)
+    || String(a.from || '').localeCompare(String(b.from || '')));
+}
+
 function firstMilePerson(row, now) {
   const mile = firstMileSteps(row, now);
   const mail = mailEngagement(row);
@@ -709,8 +830,13 @@ async function firstMile(pool, { day, now = new Date(), leftOutIds = [] } = {}) 
     ? await pool.query(FIRST_MILE_OTHER_WAY_SQL, [NEWCOMER_DAYS, now, ...params])
     : await pool.query(FIRST_MILE_ADMITTED_SQL, [day, now, ...params]);
   const season = result.rows.some(cardWasShown) ? await fetchCurrentSeason(pool) : null;
+  const cameFromRecords = await cameFromFor(pool, {
+    userIds: result.rows.map((r) => r.user_id).filter((v) => v != null),
+    signupIds: result.rows.map((r) => r.signup_id).filter((v) => v != null),
+  });
   const people = await Promise.all(result.rows.map(async (row) => ({
     ...firstMilePerson(row, now),
+    cameFrom: cameFromOf(cameFromRecords, { userId: row.user_id, signupId: row.signup_id }),
     onboard: await onboardFor(pool, row, season ? season.id : null),
   })));
   const tracked = people.filter((p) => p.mail);
@@ -718,6 +844,7 @@ async function firstMile(pool, { day, now = new Date(), leftOutIds = [] } = {}) 
     cohort: day,
     people,
     steps: firstMileCounts(people),
+    sources: cohortSources(people),
     mail: tracked.length ? {
       tracked: tracked.length,
       opened: tracked.filter((p) => p.mail.opened).length,
@@ -1474,12 +1601,13 @@ async function person(pool, { userId, now = new Date() } = {}) {
   const to = new Date(now);
   const from = since ? new Date(Math.min(new Date(since).getTime(), to.getTime() - NEWCOMER_DAYS * DAY_MS))
     : new Date(to.getTime() - NEWCOMER_DAYS * DAY_MS);
-  const [{ byPerson, leftOut }, apps, challenges, made, moments] = await Promise.all([
+  const [{ byPerson, leftOut }, apps, challenges, made, moments, cameFromRecords] = await Promise.all([
     visitsFor(pool, { userIds: [id], from, to }),
     pool.query(PERSON_APPS_SQL, [id, from, to]),
     pool.query(PERSON_CHALLENGES_SQL, [id, from, to]),
     pool.query(PERSON_MADE_SQL, [id]),
     pool.query(PERSON_MOMENTS_SQL, [id]),
+    cameFromFor(pool, { userIds: [id] }),
   ]);
   const visits = byPerson.get(id) || [];
   const steps = visits.flatMap((v) => v.steps);
@@ -1519,6 +1647,7 @@ async function person(pool, { userId, now = new Date() } = {}) {
     name: row.username,
     cohort: row.released_at ? isoDay(row.released_at) : null,
     firstMile: mile,
+    cameFrom: cameFromOf(cameFromRecords, { userId: id, signupId: row.signup_id }),
     found,
     cameBackTo,
     usedOftenNotOnHome: appRows.filter((a) => a.daysUsed >= 3 && !a.onHome).map((a) => ({ slug: a.slug, name: a.name, days: a.daysUsed })),
@@ -2734,6 +2863,7 @@ module.exports = {
   inviteFunnelReading,
   firstMileCounts,
   firstMileSteps,
+  cohortSources,
   followedMail,
   mailEngagement,
   groupLifecycle,

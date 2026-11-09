@@ -213,11 +213,19 @@ const DENIED_COLUMNS = {
     'build_retry', // why a first version's first try failed, which can quote its build agent's last message
     'build_checkpoint', // where a build is between its steps, with its build agent's last message
   ],
+  community_invite_opens: [
+    'referrer_host', // where the visitor came from (#6540): kept off the debug view
+    'via',           // the invite link's copied/shared tag (#6540)
+  ],
   waitlist_signups: [
     'ip',         // submitter IP — same treatment as users.waitlist_ip
     'more_token', // stage-2 survey capability — editing rights over the signup's answers
     'invite_code', // shareable capability — anyone holding it is attributed as this signup's invitee
     'project_invite_id', // which private app_email_invites row (project, inviter) brought this address in
+    'referrer_host',  // where the sign-up came from (#6540)
+    'utm_source',     // the landing URL's utm_source (#6540)
+    'utm_campaign',   // the landing URL's utm_campaign (#6540)
+    'ref',            // the landing URL's ref (#6540)
   ],
 };
 

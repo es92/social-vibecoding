@@ -156,6 +156,8 @@ async function loadSession(pool, sessionId) {
 const TRIGGERS = new Map([
   ['person', 'manual'], ['resume', 'resume_autosync'], ['conflict', 'merge_queue'], ['boot_failure', 'boot_failure'],
   ['fixed_check', 'fixed_on_main'], ['bot_fix', 'bot_fix'], ['bot_handoff', 'bot_handoff'],
+  // #6546: an approved change GitHub refused over failed required checks.
+  ['github_checks', 'github_checks'],
   // A stacked import whose parent landed, moved onto main (rules/pr-base.ts).
   ['parent_merged', 'parent_merged'],
 ]);

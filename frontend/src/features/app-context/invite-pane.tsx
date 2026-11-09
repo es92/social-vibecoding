@@ -68,6 +68,7 @@ import {
 } from './invite-data';
 import { useMessages } from '../../lib/i18n/react';
 import { t } from '../../lib/i18n/runtime';
+import { withVia } from '../first-session/copy-invite';
 import { daysUntil } from './invite-model';
 import { NotifyAsk } from '../notify-ask/notify-ask';
 
@@ -278,7 +279,7 @@ export function InvitePane({ slug, label, unnamed = false }: { slug: string | nu
   const copy = async () => {
     if (!url || !current) return;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(withVia(url, 'copied'));
       noteSent(current);
       setCopied(true);
       setSentOut(true);
@@ -290,7 +291,7 @@ export function InvitePane({ slug, label, unnamed = false }: { slug: string | nu
   const share = async () => {
     if (!url || typeof navigator.share !== 'function') return;
     try {
-      await navigator.share({ title: unnamed ? t('agent:appContext.invite.shareTitleUnnamed') : t('agent:appContext.invite.shareTitle', { project: label }), url });
+      await navigator.share({ title: unnamed ? t('agent:appContext.invite.shareTitleUnnamed') : t('agent:appContext.invite.shareTitle', { project: label }), url: withVia(url, 'shared') });
       if (current) noteSent(current);
       setSentOut(true);
     } catch { /* dismissed */ }

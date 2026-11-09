@@ -164,6 +164,16 @@ test('a cohort by admit date: one row per person, the furthest step, and where e
     await track('cy@example.test', [['clicked', 'scanner_or_prefetch', `${D}T09:00:09Z`]]);
 
     const leftOutIds = [qa];
+    // Where the cohort came from (#6540): ana opened an invite link first and
+    // also has waitlist tags; the others have no source recorded.
+    const { rows: [project] } = await pool.query(
+      "INSERT INTO apps (name, slug, created_by, status) VALUES ('Pixel Garden', 'pixel-garden', $1, 'running') RETURNING id", [ana]);
+    await pool.query(
+      `INSERT INTO community_invite_opens (maker_id, app_id, user_id, referrer_host, via, opened_at)
+       VALUES ($1, $2, $3, 'discord.com', 'copied', '${D}T08:50:00Z')`, [host, project.id, ana]);
+    await pool.query(
+      `UPDATE waitlist_signups SET referrer_host = 't.co', utm_source = 'x',
+              utm_campaign = 'launch', ref = 'post-1' WHERE linked_user_id = $1`, [ana]);
     const list = await journey.cohorts(pool, { now, leftOutIds });
     assert.deepEqual(list.cohorts, [
       { day: '2026-09-26', admitted: 1, withAccount: 0 },
@@ -189,6 +199,18 @@ test('a cohort by admit date: one row per person, the furthest step, and where e
     assert.equal(by.dee.stuckReason, 'Join screen shown, not answered');
     assert.equal(by.dee.failedAttempts, 1);
     assert.equal(by.dee.repeatedTaps, 1);
+    // Each person's two records, and the cohort's count of where it came
+    // from: the earlier way in wins, and an unrecorded source is not 'none'.
+    assert.equal(by.ana.cameFrom.invite.referrerHost, 'discord.com');
+    assert.equal(by.ana.cameFrom.invite.via, 'copied');
+    assert.equal(by.ana.cameFrom.invite.project, 'Pixel Garden');
+    assert.equal(by.ana.cameFrom.waitlist.utmSource, 'x');
+    assert.equal(by.ana.cameFrom.waitlist.utmCampaign, 'launch');
+    assert.equal(by['ben@example.test'].cameFrom.invite, null);
+    assert.deepEqual(mile.sources, [
+      { way: 'waitlist', from: null, people: 3 },
+      { way: 'invite', from: 'discord.com', people: 1 },
+    ]);
 
     // The onboard column: the tour plus the season's First challenges, x of n.
     assert.deepEqual(by.ana.onboard, { shown: true, done: 2, total: 3, complete: false },

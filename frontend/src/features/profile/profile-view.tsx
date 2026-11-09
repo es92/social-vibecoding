@@ -42,6 +42,7 @@ import { FeedbackSheet } from './feedback-sheet';
 import { FriendsSheet } from './friends-sheet';
 import { ProfileEditSheet } from './profile-edit-sheet';
 import { PublicProfileCard } from './public-profile-card';
+import { WeekShareSheet } from './week-share-sheet';
 
 /** The round picture, or the initial-in-a-circle fallback — the idiom the rest
  *  of the app already uses for people. */
@@ -191,9 +192,14 @@ interface ActivityDay {
 
 interface ActivityCardView {
   empty: boolean;
+  canShare?: boolean;
   time?: string | null;
   apps?: string | null;
   appsLabel?: string;
+  merged?: string | null;
+  mergedLabel?: string | null;
+  challenges?: string | null;
+  challengesLabel?: string | null;
   days?: ActivityDay[];
 }
 
@@ -204,11 +210,28 @@ const ACTIVITY_PLOT_PX = 64;
 
 /** "This week" (#5626): your own time in apps, day by day. One series, so the
  *  title names it and there is no legend. Each day's words are in its `title`
- *  and for a screen reader; the busiest day's figure gives the bars a scale. */
+ *  and for a screen reader; the busiest day's figure gives the bars a scale.
+ *  #6464 adds the week's live changes and completed challenges, and the Share
+ *  action that opens ./week-share-sheet.tsx. */
 function ActivityCard({ activity }: { activity: ActivityCardView | null }): ReactNode {
   const t = useMessages('profile');
   if (!activity) return null;
-  const title = <h2 className="text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{t('profile:activity.title')}</h2>;
+  const title = (
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{t('profile:activity.title')}</h2>
+      {activity.canShare ? (
+        <Button
+          id="profile-activity-share"
+          variant="neutral"
+          size="sm"
+          ink="neutral"
+          onClick={() => Profile.showWeekShare()}
+        >
+          {t('profile:activity.share')}
+        </Button>
+      ) : null}
+    </div>
+  );
   if (activity.empty) {
     return (
       <section id="profile-activity" className={`rounded-2xl ${PLANE_FILL} p-4 mb-2`}>
@@ -221,7 +244,7 @@ function ActivityCard({ activity }: { activity: ActivityCardView | null }): Reac
   return (
     <section id="profile-activity" className={`rounded-2xl ${PLANE_FILL} p-4 mb-2`}>
       {title}
-      <div className="mt-2 flex gap-6">
+      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2">
         {activity.time ? (
           <div>
             <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{activity.time}</div>
@@ -232,6 +255,18 @@ function ActivityCard({ activity }: { activity: ActivityCardView | null }): Reac
           <div>
             <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{activity.apps}</div>
             <div className="text-[0.8125rem] text-zinc-500 dark:text-zinc-400">{activity.appsLabel}</div>
+          </div>
+        ) : null}
+        {activity.merged ? (
+          <div>
+            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{activity.merged}</div>
+            <div className="text-[0.8125rem] text-zinc-500 dark:text-zinc-400">{activity.mergedLabel}</div>
+          </div>
+        ) : null}
+        {activity.challenges ? (
+          <div>
+            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{activity.challenges}</div>
+            <div className="text-[0.8125rem] text-zinc-500 dark:text-zinc-400">{activity.challengesLabel}</div>
           </div>
         ) : null}
       </div>
@@ -435,6 +470,10 @@ export function ProfileRoot(): ReactNode {
       {/* #6446: the App allowance card, opened by the App slots row when no
           slot is free. */}
       {state.appSlotsOpen ? <AppSlotsSheet /> : null}
+      {/* #6464: "Share your week", opened by the This week card's Share. */}
+      {state.weekShareOpen ? (
+        <WeekShareSheet items={view.weekShare.items} link={view.weekShare.link} />
+      ) : null}
       {/*
           Two columns from lg (the navigation review): who you are on the
           left, with your Account group under it; Your work and Rewards on

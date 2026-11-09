@@ -387,3 +387,13 @@ test('an opening that failed opens on what went wrong', async () => {
   assert.match(html, /Join Notes to invite people to it\./);
   assert.doesNotMatch(html, /data-invite-loading/);
 });
+
+// #6540: the pane's Copy and Share tag the link with how it went out, so a
+// chat app that names no referrer still leaves a trace. The field in the pane
+// stays the bare link.
+test('Copy and Share on the invite pane add a short via tag to the link', () => {
+  const src = read('frontend/src/features/app-context/invite-pane.tsx');
+  assert.match(src, /navigator\.clipboard\.writeText\(withVia\(url, 'copied'\)\)/);
+  assert.match(src, /url: withVia\(url, 'shared'\)/);
+  assert.match(src, /value=\{url\}/, 'the link shown in the box is unchanged');
+});

@@ -23,7 +23,7 @@ import { BotThanksCard, isThanksMessage } from './bot-thanks-card';
 import { BotReadyCard, isReadyMessage } from './bot-ready';
 import { alsoInChat, botRequestNames, botThreadLabel, threadsAllowed, type ChangeBlock } from './bot-shared';
 import { openRequestPage, requestPageOf } from './request-page';
-import { BotHeadWords, botHead, isHeadCard } from './bot-head-card';
+import { BotHeadWords, botHead, draftPreviewOf, isHeadCard } from './bot-head-card';
 import { DesignVersionCard, designVersionOf } from './design-card';
 import { BotRichCard, botCardOf } from './bot-cards';
 import { BotLookedLine } from './bot-looked';
@@ -42,7 +42,7 @@ import { downloadLabel, downloadableImages, saveImages, useCanSaveImage } from '
 import { rememberReaction, useRecentReactions } from '../message-actions/recents';
 import { ThreadSummaryChip } from '../message-actions/thread-summary';
 import { useDismiss } from '../message-actions/use-dismiss';
-import { TranslateNote, useTranslate } from './translate';
+import { TranslateNote, observeAutoTranslate, useTranslate, worthAsking } from './translate';
 
 /*
  * A CONVERSATION HAS SIDES (#5680). A direct message and a group chat — the
@@ -179,14 +179,30 @@ export const MessageRow = memo(function MessageRow({
 }) {
   const t = useMessages('messages');
   const mine = Number(typeof window !== 'undefined' ? window.App?.user?.id : 0) === message.sender.id;
-  // #6081: someone else's words can be read in the reader's language. Asked
-  // for on a tap from the ⋯ menu; never on a page load. Only what a person
-  // wrote: the bot's cards and the platform's notices are not translated.
+  // #6081: someone else's words can be read in the reader's language. A
+  // request's words are asked for only on a tap; a chat's ask for themselves
+  // when they come into view (#6525). Only what a person wrote: the bot's
+  // cards and the platform's notices are not translated.
   const canTranslate = !mine && !message.sender.bot && !message.system
     && !!message.content && !message.deleted && !message.moderated;
+  // #6525: a message that is still on its way (or failed) is not translated
+  // yet, and one with no words of its own — emoji, a link, a name — is not
+  // worth a request. A signed-out reader of a public channel is not either.
+  const autoTranslate = canTranslate
+    && !message.pending && !message.queued && !message.failed
+    && typeof window !== 'undefined' && !!window.App?.user && worthAsking(message.content);
   const translation = useTranslate(message.content ? [message.content] : [], {
     enabled: canTranslate,
+    auto: autoTranslate,
   });
+  const article = useRef<HTMLElement>(null);
+  const { askAuto } = translation;
+  // #6525: the first time the row is (nearly) on screen, ask for its words.
+  useEffect(() => {
+    const el = article.current;
+    if (!el || !autoTranslate) return undefined;
+    return observeAutoTranslate(el, askAuto);
+  }, [autoTranslate, askAuto]);
   // #4655: in a direct message people are named bare ("ada", not "@ada") in
   // the Block and Report labels; group chats and channels keep the @ there.
   // The author line, a quote and the sheet's header name them bare in every
@@ -396,12 +412,17 @@ export const MessageRow = memo(function MessageRow({
   // #6151: a design filed as a request says what happens to it next, after
   // its line, in the reader's language (./bot-track.tsx filedNextLine).
   const filedNext = botMeta(message)?.kind === 'design_filed' ? filedNextLine(botMeta(message)?.filedNext) : null;
+  // #6248: a request draft Homeroom bot offered to file, still waiting, has
+  // its card open a read-only preview beside the chat (./request-draft-pane.tsx).
+  const draft = botChat && kind === 'direct'
+    ? draftPreviewOf(head, botMeta(message), message.threadRootId, message.conversationId || conversationId)
+    : null;
   // Task 2020: a bot answer laid out is drawn in place of its words, which
   // stay its fallback (./bot-html.tsx).
   const richHtml = head ? null : botReplyHtml(message);
   const markdown = <MessageMarkdown content={message.content} channels={channels} appSlug={botMeta(message)?.appSlug} requestColors={!!botMeta(message)} />;
   const words = !message.content ? null : head
-    ? <BotHeadWords head={head} objects={message.objects} channels={channels} />
+    ? <BotHeadWords head={head} objects={message.objects} channels={channels} draft={draft} />
     : richHtml ? <BotHtmlReply html={richHtml} fallback={markdown} /> : markdown;
 
   // #5680: which rows have a side. A DM and a group do; a channel does not
@@ -598,7 +619,7 @@ export const MessageRow = memo(function MessageRow({
   const blockAttrs = block ? { 'data-bot-block': block.key, 'data-bot-block-part': block.part } : {};
 
   return (
-    <article id={`messages-message-${message.id}`} data-message-id={message.id} className={`messages-message group ${sided ? 'messages-message-bubble ' : ''}${grouped ? 'messages-message-grouped' : ''}${blockClass} ${stateClasses}`} {...blockAttrs} {...longPress}>
+    <article ref={article} id={`messages-message-${message.id}`} data-message-id={message.id} className={`messages-message group ${sided ? 'messages-message-bubble ' : ''}${grouped ? 'messages-message-grouped' : ''}${blockClass} ${stateClasses}`} {...blockAttrs} {...longPress}>
       {/* #5680: your own message is already on its side — the tint and the
           right edge say whose it is — so it needs no face, as ChatMessageRow
           draws a turn (`from="me"`) in the general chat. A channel row keeps

@@ -94,6 +94,17 @@ test('the request profile hears a plain Go ahead right after a followed post', (
   assert.ok(speaks.indexOf('go_ahead_reply') < speaks.indexOf('addressed_or_stop'));
 });
 
+// #6539: a change's thread hears the follow-up straight after the bot's post,
+// after the words already passed on as an ask and the bot's own change, and
+// before the silence that needs an @.
+test('the change profile hears a follow-up after the bot\'s post, before the silence', () => {
+  const speaks = profiles.profileOf('change').speaks;
+  assert.equal(speaks[speaks.indexOf('followed_change_post') - 1], 'own_change');
+  assert.equal(speaks[speaks.indexOf('followed_change_post') + 1], 'addressed');
+  assert.ok(speaks.indexOf('not_queued_as_ask') < speaks.indexOf('followed_change_post'));
+  assert.ok(!profiles.profileOf('request').speaks.includes('followed_change_post'), 'a request keeps its own rule');
+});
+
 test('the surfaces\' limits are their profiles\'', () => {
   const mayor = require('../src/services/homeroom-bot-mayor');
   const voice = require('../src/services/homeroom-bot-voice');
@@ -107,6 +118,27 @@ test('the surfaces\' limits are their profiles\'', () => {
   ]) {
     assert.match(read(file), new RegExp(`const MAX_ROUNDS = ${name}\\.rounds;`), file);
   }
+});
+
+// #6358: a design turn gets four times the room and twice the retry, and three
+// minutes a step, so a long page is drawn to the end. Chat is unchanged.
+test('#6358: a design turn draws a whole screen within its budget', () => {
+  assert.deepEqual(
+    [profiles.DESIGN_LIMITS.rounds, profiles.DESIGN_LIMITS.outputTokens, profiles.DESIGN_LIMITS.retryOutputTokens,
+      profiles.DESIGN_LIMITS.requestTimeoutMs],
+    [12, 16000, 32000, 180_000],
+  );
+  assert.deepEqual(
+    [profiles.CHAT_LIMITS.outputTokens, profiles.CHAT_LIMITS.retryOutputTokens, profiles.CHAT_LIMITS.requestTimeoutMs],
+    [8000, 16000, 90_000],
+  );
+  const design = require('../src/services/design-bot');
+  assert.equal(design.DESIGN_OUTPUT_TOKENS, 16000);
+  assert.equal(design.DESIGN_RETRY_OUTPUT_TOKENS, 32000);
+  assert.equal(design.DESIGN_REQUEST_TIMEOUT_MS, 180_000);
+  const src = read('src/services/design-bot.js');
+  assert.match(src, /retryOutputTokens: DESIGN_RETRY_OUTPUT_TOKENS,/);
+  assert.match(src, /timeoutMs: DESIGN_REQUEST_TIMEOUT_MS,/);
 });
 
 test('the one entry runs each kind on its surface, and the callers use it', async () => {

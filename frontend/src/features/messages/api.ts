@@ -1298,6 +1298,30 @@ export async function decideBotAction(actionId: number, choice: string, answers?
   return { label: text(pick(data, 'label')) || null };
 }
 
+/** #6248: a drafted request, as it will be filed: its whole description, its project and the line it ends with. */
+export interface RequestDraft {
+  title: string;
+  details: string;
+  app: { slug: string; name: string };
+  footer: string;
+}
+
+/**
+ * #6248: the saved draft an offer waits on, for the pane that previews it
+ * before it is filed. The message clips a long description; this reads the
+ * row's own words. 404 once it is decided, or is not the viewer's.
+ */
+export async function readRequestDraft(actionId: number): Promise<RequestDraft> {
+  const data = record(await request<unknown>(`/api/conversations/homeroom-bot/actions/${actionId}/draft`));
+  const app = record(pick(data, 'app'));
+  return {
+    title: text(pick(data, 'title')),
+    details: text(pick(data, 'details')),
+    app: { slug: text(pick(app, 'slug')), name: text(pick(app, 'name')) },
+    footer: text(pick(data, 'footer')),
+  };
+}
+
 /**
  * Run six: whether the signed-in person is told when their first version of
  * `slug` is ready and live (on from Make it), and turning it on or off.

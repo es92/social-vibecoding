@@ -444,7 +444,12 @@ export function loadCommunities(force = false): Promise<void> {
       const [appsRes, countsRes] = await Promise.all([
         // Joined rows only (#5023), the ones kept below.
         fetch(`/api/apps?scope=joined${q.replace('?', '&')}`, { credentials: 'same-origin' }),
-        fetch(`/api/workshop/counts${q}`, { credentials: 'same-origin' }).catch(() => null),
+        // A refresh asks for the current numbers, never the copy the service
+        // worker saved (request 6500); an unforced read keeps its own cache.
+        fetch(`/api/workshop/counts${q}`, {
+          credentials: 'same-origin',
+          ...(force ? { cache: 'no-cache' as const } : {}),
+        }).catch(() => null),
       ]);
       if (!appsRes.ok) return;
       const body = await appsRes.json();

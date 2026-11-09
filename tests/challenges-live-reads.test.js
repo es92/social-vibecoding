@@ -294,6 +294,9 @@ test('a fresh forced read queued behind one in flight stays fresh', async () => 
 
 test('Home\'s pull reads the block again, fresh, past its minute', () => {
   const pull = APP_JS.slice(APP_JS.indexOf('_wirePullToRefresh() {'), APP_JS.indexOf('const browse = document.getElementById(\'browse-screen\')'));
-  assert.match(pull, /Promise\.all\(\[\s*window\.HomePanels\?\.ensureLoaded\?\.\(\{ force: true, fresh: true \}\),\s*Home\.load\(\),/,
+  // Request 6500 adds the tiles' vote-count read to the same Promise.all; the
+  // block's forced read and Home.load() still compose it, and the spinner
+  // still waits for them.
+  assert.match(pull, /Promise\.all\(\[\s*window\.HomePanels\?\.ensureLoaded\?\.\(\{ force: true, fresh: true \}\),\s*(?:window\.UsernodeReact\?\.homePins\?\.refresh\?\.\(\{ force: true \}\),\s*)?Home\.load\(\),/,
     'and the pull waits for that read, so the spinner stops on the new numbers');
 });

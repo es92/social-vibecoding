@@ -50,10 +50,11 @@ const STANDARD_LAYOUT_HTML = `<!doctype html><html><body style="${BODY_STYLE}">`
 // ── The seeds ──────────────────────────────────────────────────────────
 
 // The waitlist reminders' shared parts. Each reads as a short note from Evan:
-// left-aligned paragraphs (REMINDER_P), and the admit mail's button centred
-// in a table of its own, which signs in an account or starts a new one.
+// left-aligned paragraphs (REMINDER_P), and the admit mail's button, which
+// signs in an account or starts a new one, left-aligned with them in a table
+// of its own (Drea, on 6508).
 const REMINDER_P = '<p style="margin:0 0 12px;font-size:16px;line-height:24px;color:#1c1c1e">';
-const REMINDER_BUTTON = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="text-align:center">'
+const REMINDER_BUTTON = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr><td style="text-align:left">'
   + '<p style="margin:8px 0 20px"><a href="{{url}}" style="display:inline-block;padding:12px 28px;border-radius:999px;background:#0a6ee0;color:#ffffff;font-size:16px;font-weight:650;text-decoration:none">'
   + '{{#if hasAccount}}Sign in{{else}}Get started{{/if}}</a></p></td></tr></table>';
 const REMINDER_TEXT_BUTTON = '{{#if hasAccount}}Sign in:{{else}}Get started:{{/if}}\n{{url}}\n\n';

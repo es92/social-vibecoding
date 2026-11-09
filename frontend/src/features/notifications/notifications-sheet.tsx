@@ -112,7 +112,7 @@ import { Chip, ChipRail } from '@/components/ui/chip';
 import { SectionHeader } from '@/components/ui/grouped-list';
 import { IconTile } from '@/components/ui/icon-tile';
 import {
-  BookmarkIcon, BookmarkSolidIcon, ChevronDownIcon, ChevronUpIcon, SearchIcon, XIcon,
+  BookmarkIcon, BookmarkSolidIcon, ChevronDownIcon, ChevronUpIcon, NewspaperIcon, SearchIcon, XIcon,
 } from '@/components/ui/icons';
 
 import { UserAvatar, swatchFor } from '../messages/format';
@@ -184,6 +184,8 @@ type ScreenRowView = NotificationRowView & {
   needsYou?: boolean;
   /** #5929: where an unread row stands (rowView): its label is drawn as this tone's chip. */
   tone?: RowTone;
+  /** #6371: a row whose tile is a shell line icon rather than a glyph. */
+  lineIcon?: 'newspaper';
   /** #5877: that project's icon, so its bot row wears the project's tile. */
   appIconUrl?: string | null;
   appIconEmoji?: string | null;
@@ -280,7 +282,9 @@ export function AvatarChip({ view }: { view: ScreenRowView }): ReactNode {
   }
   return (
     <IconTile size="sm" aria-hidden="true" className="text-base">
-      {view.icon || initial}
+      {view.lineIcon === 'newspaper'
+        ? <NewspaperIcon className="h-5 w-5" />
+        : (view.icon || initial)}
     </IconTile>
   );
 }

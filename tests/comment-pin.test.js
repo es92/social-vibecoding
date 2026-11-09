@@ -1340,6 +1340,9 @@ test('handing over opens the dialog with the words, the pictures, the pin, the t
   assert.deepEqual(got, {
     target: 'app',
     description: 'Make the Join   button\nbigger',
+    // #6485: the app the person picked travels with the words, so the form
+    // files there even with no app tab open behind it.
+    appSlug: 'demo',
     screenshots: [{ blob, pins: [{ x: 0.25, y: 0.5, n: null, note: 'Make the Join button bigger' }] }, { blob: imageA }, { blob: imageB }],
     title: 'Bigger Join button',
     bounty: true,
@@ -1357,6 +1360,25 @@ test('handing over opens the dialog with the words, the pictures, the pin, the t
   // The form sends the pins beside the pictures it was handed with.
   assert.match(fc, /const pinned = screenshots\.filter\(\(shot\) => shot\.id && shot\.pins && shot\.pins\.length\)\s*\.flatMap\(/);
   assert.match(fc, /if \(pinned\.length\) body\.screenshotPins = pinned;/);
+});
+
+// #6485: the destination the person picked is the app the form files on, so
+// the hand-over carries the app itself — its address and the name the box
+// showed — and the form's own row names that app.
+test('the hand-over carries the picked app, and only when the app is the destination', () => {
+  assert.deepEqual(post.handOverOptions({ ...base, appName: 'Inbox' }), {
+    target: 'app',
+    description: 'Make it bigger',
+    appSlug: 'demo',
+    appName: 'Inbox',
+    screenshots: [{ blob }],
+  });
+  assert.deepEqual(post.handOverOptions({ ...base, target: 'platform', appName: 'Inbox' }), {
+    target: 'platform',
+    description: 'Make it bigger',
+    screenshots: [{ blob }],
+  }, 'Homeroom takes no app with it');
+  assert.equal(post.handOverOptions({ ...base, appSlug: null }).appSlug, undefined, 'nor an app with no address');
 });
 
 // ── 2b. The pin as data (#4482) ───────────────────────────────────────

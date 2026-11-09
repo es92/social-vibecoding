@@ -382,6 +382,42 @@ test('the Homeroom bot\'s change machine against the full PostgreSQL schema', { 
     assert.deepEqual(calls(WORK.ready).map((c) => c.key), ['ready:1']);
   });
 
+  await t.test('B-build: a preview build that failed with its own error is a fix the bot takes (#6536)', async () => {
+    reset();
+    const BUILD_ROW = {
+      name: 'Preview build', path: null, status: 'fail', previewBuild: true,
+      failureReason: 'The preview build failed: frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+      buildExcerpt: 'vite v5.4.21 building for production...\n✗ Build failed in 1.2s\nerror during build:\n'
+        + 'frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+    };
+    const followup = require('../src/services/homeroom-bot-followup');
+    const s = await change();
+    await tell(s, 'Proposed');
+    await verdict(s, 'error', [BUILD_ROW]);
+    work.answer.set(WORK.fix, { queued: true });
+    await tell(s, 'PreviewStopped', { head: s.head });
+    assert.equal(calls(WORK.fix).length, 1, 'the build error is a fix it takes');
+    assert.equal((await inst(s)).state, 'with_the_bot');
+
+    // The fix turn is shown the build's own error.
+    const { rows: [r] } = await pool.query('SELECT * FROM chat_sessions WHERE id = $1', [s.id]);
+    const due = followup.checksDue(r);
+    assert.ok(due);
+    assert.equal(due.failing[0].previewBuild, true);
+    assert.match(due.failing[0].buildExcerpt, /index\.tsx:104:1/);
+    const prompt = followup.checksFixPrompt({ seed: 'Build this request', failing: due.failing, total: due.total });
+    assert.match(prompt, /The preview build failed, so no check could run/);
+    assert.match(prompt, /index\.tsx:104:1: ERROR: Unexpected "\*\*"/);
+
+    // A build failure with no error line is not a fix: it is told as today.
+    const quiet = await change();
+    await tell(quiet, 'Proposed');
+    await verdict(quiet, 'error', []);
+    await tell(quiet, 'PreviewStopped', { head: quiet.head });
+    assert.equal(calls(WORK.fix).length, 1, 'nothing was asked of the bot');
+    assert.equal(calls(WORK.stopped).length, 1, 'it is told its preview will not start');
+  });
+
   await t.test('B-off: a bot that is off takes no round, and nobody hears anything (as on [main])', async () => {
     reset();
     const s = await change();

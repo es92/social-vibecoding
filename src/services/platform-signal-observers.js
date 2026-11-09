@@ -458,6 +458,7 @@ const OBSERVERS = Object.freeze([
   { kinds: ['limit'], run: limitsFull },
   { kinds: ['project_deploys'], run: projectDeploys },
   { kinds: ['alerting_silent'], run: alertingSilent },
+  { kinds: ['security', 'security_audit'], run: lazy('security-audit') },
   { kinds: ['server_errors'], run: lazy('server-errors') },
   { kinds: ['client_errors'], run: lazy('client-errors') },
   { kinds: ['session_fence_public', 'invite_pitch_failed'], run: lazy('session-fences') },
@@ -479,8 +480,10 @@ async function observeAll(pool, { now = Date.now(), observers = OBSERVERS } = {}
   for (const o of observers) {
     try {
       const found = await o.run(pool, { now });
-      items.push(...found);
-      for (const k of o.kinds) ok.add(k);
+      // An incomplete audit can report discoveries without confirming that
+      // any old finding has gone away. Older observers return just an array.
+      items.push(...(Array.isArray(found) ? found : found.items));
+      for (const k of o.kinds) if (Array.isArray(found) || found.ok.has(k)) ok.add(k);
     } catch (err) {
       log.warn('platform-signals', 'An observer could not look', { kinds: o.kinds, err: err.message });
     }

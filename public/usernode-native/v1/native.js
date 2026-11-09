@@ -400,19 +400,34 @@
   // layers agree about how long a ghost can arrive late.
   var GHOST_CLICK_MS = 450;
 
+  // How far outside a surface's edge a press or click still counts as ON it
+  // (#6475). A tap on the card's padding near its edge can be retargeted to
+  // the backdrop behind it, and a finger is wider than the point a mouse
+  // reports. The platform's React layer keeps the same number in
+  // frontend/src/lib/dismiss-edge.ts, which this file cannot import;
+  // tests/native-kit.test.js keeps the two equal.
+  var DISMISS_EDGE_PX = 8;
+
   // Whether a backdrop `click` is a real dismissal.
-  // input: { pressed: bool, elapsedMs: number } — `pressed` is true when a
-  // pointerdown/touchstart landed on the backdrop itself first (see
-  // onBackdropDismiss: the ghost sequence is compatibility MOUSE events
+  // input: { pressed, elapsedMs, pointerClick, nearSurface } — `pressed` is
+  // true when a pointerdown/touchstart landed on the backdrop itself first
+  // (see onBackdropDismiss: the ghost sequence is compatibility MOUSE events
   // synthesized from a touch that landed elsewhere, so it never brings
-  // one), `elapsedMs` is the age of the presentation.
+  // one), `elapsedMs` is the age of the presentation, `nearSurface` is true
+  // when the press or click point fell on the surface or within
+  // DISMISS_EDGE_PX of its edge, and `pointerClick` is true for a click a
+  // pointer produced (`detail > 0`) rather than a programmatic one.
   //
-  // Only the un-pressed click inside the window is a ghost. That keeps a
-  // deliberate early backdrop tap instant, and keeps a programmatic
-  // backdrop.click() working once the window has passed.
+  // A near-surface point is never a dismissal, however it reached the
+  // backdrop. Then only the un-pressed click inside the window is a ghost.
+  // That keeps a deliberate early backdrop tap instant, keeps a
+  // programmatic backdrop.click() working once the window has passed, and
+  // refuses a real pointer click that started inside the surface.
   function decideBackdropDismiss(input) {
     if (!input) return true;
+    if (input.nearSurface) return false;
     if (input.pressed) return true;
+    if (input.pointerClick) return false;
     return input.elapsedMs >= GHOST_CLICK_MS;
   }
 
@@ -1010,6 +1025,7 @@
     SHEET_PULL_SLOP: SHEET_PULL_SLOP,
     holdsSheetPull: holdsSheetPull,
     GHOST_CLICK_MS: GHOST_CLICK_MS,
+    DISMISS_EDGE_PX: DISMISS_EDGE_PX,
     decideBackdropDismiss: decideBackdropDismiss,
     remeasuredSheetY: remeasuredSheetY,
     KB_MIN_INSET: KB_MIN_INSET,
@@ -3966,10 +3982,57 @@
   // except on the one class of browser that has no pointer events and no
   // touch at all, where it is the only signal there is and cannot be a
   // ghost.
-  function onBackdropDismiss(backdrop, dismiss) {
+  //
+  // `surface` is the presented card, sheet, panel or action sheet. A press
+  // or click on it, or within DISMISS_EDGE_PX of its edge, never dismisses:
+  // the browser can retarget a near-edge tap to the backdrop, and the press
+  // must not be lost with what was typed (#6475).
+  function onBackdropDismiss(backdrop, dismiss, surface) {
     var openedAt = Date.now();
     var pressed = false;
-    function press() { pressed = true; }
+    var pressX = 0;
+    var pressY = 0;
+    function pointOf(e) {
+      if (!e) return null;
+      if (typeof e.clientX === 'number' && (e.clientX !== 0 || e.clientY !== 0)) {
+        return { x: e.clientX, y: e.clientY };
+      }
+      var touch = e.touches && e.touches[0];
+      if (touch) return { x: touch.clientX, y: touch.clientY };
+      return null;
+    }
+    function press(e) {
+      pressed = true;
+      var p = pointOf(e);
+      pressX = p ? p.x : 0;
+      pressY = p ? p.y : 0;
+    }
+    function clearPress() {
+      pressed = false;
+      pressX = 0;
+      pressY = 0;
+    }
+    // A point at (0, 0) is a synthetic click's "no point", not a position in
+    // the page's corner: it skips the geometry test rather than counting.
+    function nearSurface(p) {
+      if (!p || (p.x === 0 && p.y === 0)) return false;
+      if (!surface || typeof surface.getBoundingClientRect !== 'function') return false;
+      var r = surface.getBoundingClientRect();
+      return p.x >= r.left - DISMISS_EDGE_PX && p.x <= r.right + DISMISS_EDGE_PX &&
+        p.y >= r.top - DISMISS_EDGE_PX && p.y <= r.bottom + DISMISS_EDGE_PX;
+    }
+    // A press anywhere other than the backdrop since the last click means the
+    // press did not begin on it. Without this, one earlier backdrop press
+    // made every later backdrop click count. The listener removes itself once
+    // its backdrop has left the document.
+    function onDocPointerDown(e) {
+      if (!backdrop.isConnected) {
+        document.removeEventListener('pointerdown', onDocPointerDown, true);
+        return;
+      }
+      if (e.target !== backdrop) clearPress();
+    }
+    document.addEventListener('pointerdown', onDocPointerDown, true);
     backdrop.addEventListener('pointerdown', press);
     backdrop.addEventListener('touchstart', press, { passive: true });
     if (typeof window.PointerEvent === 'undefined' &&
@@ -3977,10 +4040,19 @@
       backdrop.addEventListener('mousedown', press);
     }
     backdrop.addEventListener('click', function (e) {
-      if (decideBackdropDismiss({
+      var click = pointOf(e);
+      var near = nearSurface(click) ||
+        nearSurface(pressed ? { x: pressX, y: pressY } : null);
+      var pointerClick = typeof e.detail === 'number' && e.detail > 0;
+      var answer = decideBackdropDismiss({
         pressed: pressed,
         elapsedMs: Date.now() - openedAt,
-      })) {
+        pointerClick: pointerClick,
+        nearSurface: near,
+      });
+      // Each click consumes the press that led to it.
+      clearPress();
+      if (answer) {
         dismiss();
         return;
       }
@@ -4056,7 +4128,7 @@
       springTo(height, velocity || 0, teardown);
     }
 
-    onBackdropDismiss(backdrop, function () { dismiss(0); });
+    onBackdropDismiss(backdrop, function () { dismiss(0); }, sheet);
 
     // A LIST INSIDE THE SHEET. A host that lets its sheet pan (the
     // platform's `touch-action: pan-y` sheets, so a list in one scrolls)
@@ -4544,7 +4616,7 @@
       });
     }
 
-    if (dismissible) onBackdropDismiss(backdrop, function () { dismiss(); });
+    if (dismissible) onBackdropDismiss(backdrop, function () { dismiss(); }, card);
 
     return { el: card, dismiss: dismiss };
   }
@@ -4657,7 +4729,7 @@
       springTo(width, teardown);
     }
 
-    onBackdropDismiss(backdrop, function () { dismiss(); });
+    onBackdropDismiss(backdrop, function () { dismiss(); }, panel);
 
     // Rotation / viewport resize changes --un-panel-width, which feeds the
     // backdrop denominator and the exit travel.
@@ -4868,7 +4940,7 @@
         springTo(height, 0, finishSettle);
       }
 
-      onBackdropDismiss(backdrop, function () { settle(null); });
+      onBackdropDismiss(backdrop, function () { settle(null); }, wrap);
 
       // A MOVE TO ANOTHER ADDRESS CLOSES IT, as a Cancel would (audit D01,
       // 2 Nov 2026). Back, a swipe back or a link written under it left the

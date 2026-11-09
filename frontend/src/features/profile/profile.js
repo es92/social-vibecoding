@@ -255,6 +255,7 @@ const Profile = {
     Profile._dismissFeedback();
     Profile._dismissFriends();
     Profile._dismissAppSlots();
+    Profile._dismissWeekShare();
     Profile._render();
   },
 
@@ -776,6 +777,31 @@ const Profile = {
     Profile._releaseAppSlots = null;
     if (release) release({ navigating: true });
     if (profileStore.get().appSlotsOpen) profileStore.set({ appSlotsOpen: false });
+  },
+
+  // ── Share your week, as a card over Me (#6464) ─────────────────────
+  //
+  // The This week card's Share opens this: the same figures it shows, each
+  // with a switch, and the device's share menu or a clipboard copy. Nothing
+  // is recorded and no points are awarded; Back closes it, as it closes the
+  // App slots card.
+  _releaseWeekShare: null,
+
+  showWeekShare() {
+    if (profileStore.get().weekShareOpen) return;
+    profileStore.set({ weekShareOpen: true });
+    Profile._releaseWeekShare = pushDismissible(() => {
+      Profile._releaseWeekShare = null;
+      Profile._dismissWeekShare();
+      return true;
+    });
+  },
+
+  _dismissWeekShare() {
+    const release = Profile._releaseWeekShare;
+    Profile._releaseWeekShare = null;
+    if (release) release({ navigating: true });
+    if (profileStore.get().weekShareOpen) profileStore.set({ weekShareOpen: false });
   },
 
   _maybeOpenAppSlots() {

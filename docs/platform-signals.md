@@ -21,6 +21,7 @@ Set in the chart's `config.platformSignals` values
 | `mode` | `PLATFORM_SIGNALS` | `shadow` (default): keep the rows the topic pages and figures read, file nothing. `file`: file requests. `off`: nothing. Staging is `off` unless set. |
 | `kinds` | `PLATFORM_SIGNALS_KINDS` | Comma list of the kinds allowed to file; empty for all. |
 | `bot` | `PLATFORM_SIGNALS_BOT` | `off` leaves every request to people. |
+| `securityAudit` | `PLATFORM_SIGNALS_SECURITY_AUDIT` | Chart default `on`: file only `security` and `security_audit` while production is in shadow mode. Global off, staging and the kind allowlist still apply. |
 
 Rollout: a week in `shadow`, checking that each kind's fingerprints are
 stable (under 20 new a day) and that the week's incidents all have a row;
@@ -39,6 +40,12 @@ then `file`.
 | `project_deploys` | `apps.last_failure`, 3+ projects at one step in a day | bot |
 | `alert` | Alertmanager (pushed) | infra; bot for Homeroom's own deployments |
 | `alerting_silent` | no Watchdog heartbeat for 2 hours | infra |
+| `security` | trusted daily Homeroom security-audit artifact | bot when a fix is published, otherwise a person |
+| `security_audit` | failed, incomplete, missing or stale daily audit | a person |
+
+Security requests are native Homeroom requests. The observer reuses this clock,
+table, deduplication and bot queue; CI publishes data without issue-write or
+production credentials. See [dependency regressions and security alerts](security/regression-gates-and-alerts.md).
 
 ## Connecting Alertmanager (infra repo)
 

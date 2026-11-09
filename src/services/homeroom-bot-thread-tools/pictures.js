@@ -141,4 +141,4 @@ async function run(pool, ctx, name, args) {
   }
 }
 
-module.exports = { TOOL, tools, run, promptLines, makePictures };
+module.exports = { TOOL, tools, run, promptLines, offered, makePictures };

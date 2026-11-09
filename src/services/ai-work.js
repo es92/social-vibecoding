@@ -165,7 +165,13 @@ SELECT t.id, t.app_id, mine.own, t.number, t.kind, t.title AS thread_title, t.st
            -- not finish: that is nobody's to fix.
            (cs.check_state = 'failing'
             OR (cs.staging_url IS NULL AND cs.check_state = 'error' AND cs.check_error_detail IS NOT NULL)
-            OR cs.merge_conflict_state = 'failed') AS needs_fix,
+            OR cs.merge_conflict_state = 'failed'
+            -- #6531: a conflict only its author (or the bot) can now move,
+            -- after the conflict lane's free resolution was spent.
+            OR cs.integration_block_reasons ?| array['unresolvable','fork_head','checks_failing','checks_error']
+            -- #6546: GitHub's required checks failed again after Homeroom ran
+            -- them on today's main.
+            OR cs.integration_block_reasons ? 'github_checks_failing') AS needs_fix,
            -- #6282: 'running' while a turn updates it, 'queued' while an
            -- ask waits its turn, and what was asked, for the row's words.
            ${updateComingSql('cs')} AS update_coming,
@@ -448,12 +454,17 @@ function fallbackState(row) {
       status: row.change_status, check_state: row.check_state, promoted_at: row.promoted_at,
       merged_at: row.merged_at, live_at: row.live_at, last_activity_at: row.last_activity_at,
     });
-    // #6282: an update on its way holds the vote (work-state.js derive says the same).
+    // #6282: an update on its way holds the vote (work-state.js derive says
+    // the same). #6545: a queued one holds only a vote, never a change still
+    // checking (a fix waiting its turn).
     if (row.update_coming && row.change_status === 'promoted') {
       const since = iso(row.last_activity_at || row.promoted_at);
-      return row.update_coming === 'running'
-        ? { stage: 'building', why: null, reason: null, line: { code: 'revising' }, since }
-        : { stage: 'up_for_vote', why: null, reason: null, line: { code: 'update_queued' }, since };
+      if (row.update_coming === 'running') {
+        return { stage: 'building', why: null, reason: null, line: { code: 'revising' }, since };
+      }
+      if (change.stage === 'up_for_vote') {
+        return { stage: 'up_for_vote', why: null, reason: null, line: { code: 'update_queued' }, since };
+      }
     }
     return change;
   }

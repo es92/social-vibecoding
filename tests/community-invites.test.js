@@ -528,3 +528,41 @@ test(`a live link's landing is "Made for you"; the pitch stays in the document, 
   assert.match(card, /\{t\('auth:invite\.join', \{ project: project\.name \}\)\}/);
   assert.equal(message('auth:invite.join', { project: 'Game Corner' }), 'Join Game Corner');
 });
+
+test('an invite landing keeps where they came from: a host and a tag, in a one-hour cookie (#6540)', () => {
+  const activity = require('../src/services/invite-activity');
+  const arrival = require('../src/services/arrival-source');
+  const cookies = [];
+  const req = { secure: false, headers: {}, cookies: {} };
+  const res = { cookie: (name, value, opts) => cookies.push({ name, value, opts }) };
+
+  activity.setSourceCookie(req, res, { referrerHost: 'discord.com', via: 'copied' });
+  assert.deepEqual(cookies[0], {
+    name: 'hr_iv_src',
+    value: 'discord.com|copied',
+    opts: { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 60 * 60 * 1000, path: '/' },
+  });
+  // The page's own API reads carry the cookie, so the open is counted with it.
+  assert.deepEqual(activity.sourceFrom({ cookies: { hr_iv_src: 'discord.com|copied' } }),
+    { referrerHost: 'discord.com', via: 'copied' });
+
+  // Looked for and none given: 'none', explicitly, not a blank field.
+  activity.setSourceCookie(req, res, { referrerHost: 'none', via: null });
+  assert.equal(cookies[1].value, 'none|');
+  assert.deepEqual(activity.sourceFrom({ cookies: { hr_iv_src: 'none|' } }),
+    { referrerHost: 'none', via: null });
+
+  // A forged tag is dropped; a cookie that cannot name a host is no source.
+  activity.setSourceCookie(req, res, { referrerHost: 't.co', via: 'evil <script>' });
+  assert.equal(cookies[2].value, 't.co|');
+  assert.equal(activity.sourceFrom({ cookies: { hr_iv_src: '|' } }), null);
+
+  // The page reads the Referer's host and the link's via, and leaves an
+  // existing cookie alone when the referrer is Homeroom itself (a reload).
+  const src = read('src/routes/community-invites.js');
+  assert.match(src, /const referrerHost = arrivalSource\.hostOf\(req\.get\('referer'\)\);/);
+  assert.match(src, /if \(!referrerHost \|\| referrerHost !== ownHost\) \{/);
+  assert.match(src, /via: arrivalSource\.cleanVia\(req\.query\.via\)/);
+  assert.match(src, /const source = inviteActivity\.sourceFrom\(req\);/);
+  assert.equal(arrival.hostOf('https://app.example/invite/abc'), arrival.hostOf('app.example'), 'same-origin is the same host');
+});

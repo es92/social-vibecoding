@@ -70,6 +70,11 @@ export type NeedsFeedItem = {
    * it waits on.
    */
   waitingOn?: string[];
+  /**
+   * #6531: a conflicting change only a yes can move. Its row says so, as the
+   * Homeroom bot tab's Vote row does.
+   */
+  conflictOnYes?: boolean;
   /** #6389: the coding tool the change was made in, such as `claude-code`. */
   agent?: string | null;
   /**
@@ -225,7 +230,9 @@ export function reelRows(
         attrs,
         icon: null,
         title: { text: item.title || (change ? translate('communities:reel.fallbackTitle.change') : translate('communities:reel.fallbackTitle.decision')), title: '' },
-        meta: [],
+        // #6531: a conflicting change only a yes can move names the conflict
+        // here, as the Homeroom bot tab's Vote row does.
+        meta: change && item.conflictOnYes ? [{ t: 'text', s: translate('core:work.line.conflictOnYes') }] : [],
         pill: null,
         linked: [],
         badges: [],

@@ -25,9 +25,11 @@ CREATE TABLE IF NOT EXISTS invite_nudges (
 
 COMMENT ON TABLE invite_nudges IS 'staging:private';
 
--- The nudge's Not now is a bot card like any other offer in the chat.
+-- The nudge's Not now is a bot card like any other offer in the chat. The
+-- list is the one before it (change-pictures: run_shots, post_pictures_plan)
+-- with invite_friends added.
 ALTER TABLE bot_cards DROP CONSTRAINT IF EXISTS bot_cards_kind_check;
 ALTER TABLE bot_cards ADD CONSTRAINT bot_cards_kind_check
   CHECK (kind IN ('file_request', 'withdraw_proposal', 'build_plan', 'move_request', 'close_request', 'post_reply',
                   'post_design', 'copy_request', 'file_many', 'withdraw_change', 'try_again', 'overlap',
-                  'invite_friends'));
+                  'run_shots', 'post_pictures_plan', 'invite_friends'));

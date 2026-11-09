@@ -232,8 +232,12 @@ test('an infrastructure boot failure blocks the merge but does not nudge the aut
   const fn = src.slice(src.indexOf('async prepareFailed('));
   const body = fn.slice(0, fn.indexOf('\n  },\n') + 5);
   // Still recorded as 'error' with the detail: the proposal stays blocked
-  // and the card still says why. Only the nudge is skipped.
-  assert.match(body, /state: 'error', results: \[\]/);
+  // and the card still says why. Only the nudge is skipped. #6536 gave that
+  // verdict the build's own first error as a result row when there is one; an
+  // infrastructure failure printed no build error, so it still stores none.
+  assert.match(body, /state: 'error', results/);
+  assert.match(body, /const buildError = w\.buildError && w\.buildError\.excerpt \? w\.buildError : null;/,
+    'only a build error of its own becomes a row');
   const guard = body.indexOf('if (!stored || w.infrastructure) return;');
   assert.ok(guard > 0, 'the early return must exist');
   assert.ok(guard > body.indexOf('store.storeChecks('), 'the verdict is written first');

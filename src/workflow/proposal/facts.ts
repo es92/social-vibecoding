@@ -108,6 +108,8 @@ export interface Row {
   fixedCheckSyncKeys: string[];
   integrationHead: string | null;
   integrationMain: string | null;
+  // #6546: how far behind main the mirror last measured it (null: never).
+  integrationBehindBy: number | null;
   integrationResolvedEpoch: number | null;
   forkHead: boolean;
   // An import's base on GitHub as last read, and the open change whose branch
@@ -178,7 +180,7 @@ async function readRow(tx: Tx, sessionId: number, ownOperation: string | null): 
             cs.created_at, cs.stale_notified_at, cs.last_activity_at, cs.archived_at, cs.cc_purged, cs.linked_issues, cs.agent_session_id,
             cs.requires_explicit_approval, cs.explicit_approval_reason, cs.merge_attempt_at,
             cs.check_state, cs.checks_commit_sha, cs.boot_failure_sync_head, cs.fixed_check_sync_head, cs.fixed_check_sync_keys,
-            cs.integration_head_sha, cs.integration_main_sha, cs.integration_resolved_epoch, cs.imported_pr_head_repo,
+            cs.integration_head_sha, cs.integration_main_sha, cs.integration_behind_by, cs.integration_resolved_epoch, cs.imported_pr_head_repo,
             cs.imported_pr_base_ref, cs.waits_for_session_id,
             (SELECT w.status FROM chat_sessions w WHERE w.id = cs.waits_for_session_id) AS waits_for_status,
             (cs.shots_state IS NOT NULL OR cs.shots_detail IS NOT NULL
@@ -228,6 +230,7 @@ async function readRow(tx: Tx, sessionId: number, ownOperation: string | null): 
     bootFailureSyncHead: sha(r.boot_failure_sync_head), fixedCheckSyncHead: sha(r.fixed_check_sync_head),
     fixedCheckSyncKeys: Array.isArray(r.fixed_check_sync_keys) ? r.fixed_check_sync_keys.map(String) : [],
     integrationHead: sha(r.integration_head_sha), integrationMain: sha(r.integration_main_sha),
+    integrationBehindBy: r.integration_behind_by == null ? null : Number(r.integration_behind_by),
     integrationResolvedEpoch: r.integration_resolved_epoch == null ? null : Number(r.integration_resolved_epoch),
     forkHead: imported && forkOf(r),
     baseRef: r.imported_pr_base_ref ?? null,

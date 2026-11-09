@@ -53,6 +53,22 @@ export function inviteText(note: string, url: string): string {
 }
 
 /**
+ * The link with its short `via` tag (#6540): how it went out. A chat app
+ * that names no referrer still leaves this, so the invite landing can say
+ * whether the link was copied or shared. The address is unchanged when it
+ * cannot be parsed.
+ */
+export function withVia(url: string, via: 'copied' | 'shared'): string {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set('via', via);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+/**
  * Put `text` on the clipboard. Call it in the press, before anything is
  * awaited: a string is written at once, and a promise is handed to the
  * clipboard there and then.

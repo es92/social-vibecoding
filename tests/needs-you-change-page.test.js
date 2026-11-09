@@ -588,6 +588,53 @@ test('a failed run says what went wrong in plain words, and offers its author Fi
   assert.ok(!text.includes('dev-ledger-explain-source'), 'no reading of the output yet');
 });
 
+// #6491: a failed check opens on the error that failed it, and everything it
+// collected besides sits behind one closed fold. The app's own tests lead
+// with the first failing test, folding the rest.
+test('#6491: a failed check leads with its error and folds the rest of the output', () => {
+  const own = context({ id: 7, username: 'maya' });
+  const NOISY = {
+    ...FAILED,
+    test_results: [{
+      name: 'The settings page shows the Save button', path: '/settings', status: 'fail',
+      failureReason: 'Expected .settings-save to be visible, but it was not found',
+      consoleErrors: [
+        { kind: 'console', message: 'TypeError: Cannot read properties of undefined', source: 'app.js:412' },
+        { kind: 'console', message: 'Failed to load resource: 404', source: '/api/settings' },
+      ],
+    }, {
+      ...UNIT_ROW,
+      failureDetails: [
+        { file: 'tests/settings.test.js', test: 'saving settings keeps the chosen theme', excerpt: "  location: 'tests/settings.test.js:42:1'\n  error: \"expected 'dark' to equal 'light'\"" },
+        { file: 'tests/settings.test.js', test: 'the Save button is disabled until something changes', excerpt: "  location: 'tests/settings.test.js:77:1'\n  error: 'expected true to be false'" },
+        { file: 'tests/list.test.js', test: 'the settings list renders every option', excerpt: "  location: 'tests/list.test.js:19:1'\n  error: 'expected 4 items, got 3'" },
+      ],
+    }],
+  };
+  const { details } = render(own, NOISY);
+  const text = unescape(details);
+
+  // The declared check: the reason and its page lead; the console messages
+  // and the test printouts sit behind one closed "Show the full output".
+  const full = message('project:topic.check.showFullOutput');
+  const reasonAt = text.indexOf('Expected .settings-save to be visible, but it was not found');
+  const foldAt = text.indexOf('dev-ledger-why-full');
+  assert.ok(reasonAt >= 0, 'the reason is in the body');
+  assert.ok(foldAt > reasonAt, 'the fold comes after the reason');
+  assert.match(text, new RegExp(`<details class="dev-ledger-why dev-ledger-why-full"><summary class="dev-ledger-check-line"><span class="dev-ledger-check-open">${full}</span></summary><div class="dev-ledger-why-body"><ul class="dev-ledger-why-errors">`));
+  assert.ok(text.indexOf('TypeError: Cannot read properties of undefined') > foldAt, 'console errors are inside the fold');
+  assert.ok(!/<details class="dev-ledger-why dev-ledger-why-full" open/.test(text), 'the full output starts closed');
+
+  // The app's own tests: the first failing test only, the other two folded.
+  const row = text.slice(text.indexOf('data-check-unit=""'), text.indexOf('</li>', text.indexOf('dev-ledger-unit-output')));
+  assert.match(row, new RegExp(`<div class="dev-ledger-unit-k">${message('project:topic.check.unit.testsThatFailed', { count: 3 })}</div><ul class="dev-ledger-unit-tests"><li><span class="dev-ledger-unit-test">saving settings keeps the chosen theme</span>`));
+  assert.ok(!row.slice(0, row.indexOf('dev-ledger-unit-more')).includes('the Save button is disabled until something changes'), 'only the first test is shown before the fold');
+  const more = message('project:topic.check.unit.showMore', { count: 2 });
+  assert.match(row, new RegExp(`<details class="dev-ledger-why dev-ledger-unit-more"><summary class="dev-ledger-check-line"><span class="dev-ledger-check-open">${more}</span></summary><ul class="dev-ledger-unit-tests">`));
+  assert.ok(row.includes('the Save button is disabled until something changes'), 'the other failing tests are still there');
+  assert.ok(row.includes('the settings list renders every option'), 'and the last one too');
+});
+
 test('a unit suite that stopped before any test ran says what it reported', () => {
   const own = context({ id: 7, username: 'maya' });
   const EARLY = {

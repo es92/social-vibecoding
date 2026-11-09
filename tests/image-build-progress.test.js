@@ -429,10 +429,11 @@ test('the finished image step names its phases so a slow build says where the ti
   assert.match(read('public/css/app.css'), /\.dev-ledger-build-detail \{/);
 });
 
-test('the platform image ships both the CLI and buildx from the upstream Go security rebuild', () => {
+test('the standalone image keeps the Docker CLI and pins the patched Buildx binary', () => {
   const source = read('Dockerfile');
   assert.match(source, /FROM docker:29\.9\.2-cli AS docker-tools/);
+  assert.match(source, /FROM docker\/buildx-bin:0\.39\.0-rc1@sha256:a765b549a3ac9bc905152f4387c2f03763930a9b08020b9c3eae1c9d3290f559 AS buildx-tools/);
   assert.match(source, /COPY --from=docker-tools \/usr\/local\/bin\/docker \/usr\/local\/bin\/docker/);
-  assert.match(source, /COPY --from=docker-tools \/usr\/local\/libexec\/docker\/cli-plugins\/docker-buildx/);
+  assert.match(source, /COPY --from=buildx-tools \/buildx \/usr\/local\/libexec\/docker\/cli-plugins\/docker-buildx/);
   assert.doesNotMatch(source, /^RUN apk add[^\n]*docker-cli/m, 'do not also ship the older Go binaries');
 });

@@ -1,0 +1,62 @@
+{
+  "title": {
+    "text": "This week",
+    "description": "The name of the page listing what happened in the viewer's projects over the last seven days, in the platform header."
+  },
+  "loading": {
+    "text": "Loading your week",
+    "description": "What a screen reader hears while the This week page is still loading its projects."
+  },
+  "range": {
+    "text": "{{from}} to {{to}}",
+    "description": "The dates the This week page covers, at the top of the page. {{from}} and {{to}} are short dates such as 2 Nov."
+  },
+  "wentLiveCount_one": {
+    "text": "{{count}} change went live",
+    "description": "On the This week page, the summary line. {{count}} is how many changes went live in the viewer's projects this week."
+  },
+  "wentLiveCount_other": {
+    "text": "{{count}} changes went live",
+    "description": "On the This week page, the summary line. {{count}} is how many changes went live in the viewer's projects this week."
+  },
+  "inProjects_one": {
+    "text": "in {{count}} project",
+    "description": "On the This week page, after the count of changes: how many projects they were in. {{count}} is that number of projects."
+  },
+  "inProjects_other": {
+    "text": "in {{count}} projects",
+    "description": "On the This week page, after the count of changes: how many projects they were in. {{count}} is that number of projects."
+  },
+  "wentLive": {
+    "text": "Went live {{day}}",
+    "description": "The grey line under a change on the This week page that went live. {{day}} is a short weekday such as Fri."
+  },
+  "upForVote": {
+    "text": "Up for a vote",
+    "description": "The grey line under a change on the This week page that is still being voted on."
+  },
+  "vote": {
+    "text": "Vote",
+    "description": "The small blue pill on a change on the This week page that the viewer has not voted on yet."
+  },
+  "more_one": {
+    "text": "{{count}} more in the Workshop",
+    "description": "The last line of a project's card on the This week page, opening its Workshop. {{count}} is how many more changes the week holds than the card lists."
+  },
+  "more_other": {
+    "text": "{{count}} more in the Workshop",
+    "description": "The last line of a project's card on the This week page, opening its Workshop. {{count}} is how many more changes the week holds than the card lists."
+  },
+  "empty": {
+    "text": "Nothing went live in your projects this week.",
+    "description": "What the This week page says when none of the viewer's projects had a change or an open vote in the last seven days."
+  },
+  "error": {
+    "text": "Could not load your week. Try again.",
+    "description": "What the This week page says when its projects could not be read."
+  },
+  "retry": {
+    "text": "Try again",
+    "description": "The button under that error that reads the This week page again."
+  }
+}

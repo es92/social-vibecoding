@@ -2503,6 +2503,18 @@
     "text": "Show the test output",
     "description": "Link-like label that unfolds the raw output the app's failing tests printed, in a change's list of checks. It is technical text for whoever fixes the tests."
   },
+  "topic.check.showFullOutput": {
+    "text": "Show the full output",
+    "description": "Link-like label that unfolds everything a failed automated check recorded besides its error line (console messages and test printouts), in a change's list of checks. The error line itself is already shown above it."
+  },
+  "topic.check.unit.showMore_one": {
+    "text": "Show {{count}} more failing test",
+    "description": "Link-like label that unfolds the other failing tests in the \"The app's own tests\" row of a change's list of checks, when exactly one more test failed. {{count}} is that number, always 1."
+  },
+  "topic.check.unit.showMore_other": {
+    "text": "Show {{count}} more failing tests",
+    "description": "Link-like label that unfolds the other failing tests in the \"The app's own tests\" row of a change's list of checks. {{count}} is how many tests are folded away; the first failing test is already shown above it."
+  },
   "topic.checks.explain.title": {
     "text": "What went wrong",
     "description": "Small heading over a plain explanation of why a change's automated checks failed, in its list of checks."
@@ -6099,13 +6111,29 @@
     "text": "Expand",
     "description": "Button beside the small before and after pictures on a change's section of its request's page: opens the before and after viewer over the page, at nearly the window's size. The same word the viewer's own Expand button uses."
   },
-  "topic.thread.page.elsewhere": {
-    "text": "Change #{{number}} for this request is on <0>#{{on}}</0>",
-    "description": "Line on a request's page when a change that would close it lives on another request's page (a change for several requests is shown on the first one's). {{number}} is the change's number; {{on}} is the other request's number, and <0></0> links to that request's page, at the change."
+  "topic.thread.page.claims": {
+    "text": "<0>Change #{{number}}</0> says it closes this",
+    "description": "Small line over the card on a request's page for a change that lives on another request's page and lists this request among the ones it closes. {{number}} is the change's number; <0></0> links to the change where it lives."
   },
-  "topic.thread.page.elsewhereUnnumbered": {
-    "text": "A change for this request is on <0>#{{on}}</0>",
-    "description": "Line on a request's page when a change that would close it, and has no number yet, lives on another request's page (a change for several requests is shown on the first one's). {{on}} is the other request's number, and <0></0> links to that request's page, at the change."
+  "topic.thread.page.claimsUnnumbered": {
+    "text": "<0>A change</0> says it closes this",
+    "description": "Small line over the card on a request's page for a change that has no number yet, lives on another request's page, and lists this request among the ones it closes. <0></0> links to the change where it lives."
+  },
+  "topic.thread.page.claimDispute": {
+    "text": "This doesn't close it",
+    "description": "Button on the card for a change that says it closes the viewer's request. Only the request's requester sees it. Pressing it records their disagreement and posts a line in the change's discussion; it does not unlink the request."
+  },
+  "topic.thread.page.claimDisputed": {
+    "text": "You said this doesn't close it",
+    "description": "Line in place of the \"This doesn't close it\" button on the card for a change that says it closes the viewer's request, after the requester pressed it. Shown only to the requester."
+  },
+  "topic.thread.page.claimNotConfirmed": {
+    "text": "(not confirmed)",
+    "description": "After another request's number under a change that closes it, when that request's requester answered \"This doesn't close it\": the change still lists it, but the requester says the change does not close it."
+  },
+  "topic.thread.page.claimDisputeFailed": {
+    "text": "Couldn't save that. Try again.",
+    "description": "Error line under the \"This doesn't close it\" button when recording the requester's answer failed."
   },
   "topic.thread.page.alsoCloses": {
     "text": "Also closes <0>{{numbers}}</0>",
@@ -6251,6 +6279,10 @@
     "text": "Being built",
     "description": "Status pill beside a request's number in its page's header: a change for it is being built."
   },
+  "topic.thread.pill.readyToBuild": {
+    "text": "Ready to build",
+    "description": "Status pill beside a request's number in its page's header: Homeroom bot is ready to build the change for it and the build waits its turn, so nothing is being built yet."
+  },
   "topic.thread.pill.live": {
     "text": "Live",
     "description": "Status pill beside a request's number in its page's header: a change built for it went live."
@@ -6271,9 +6303,9 @@
     "text": "{{by}} · PR {{number}}",
     "description": "Second line of one competing change's row on a request's page, on a project whose code is on GitHub (a change's number is written PR, never #): who built it and the change's number."
   },
-  "topic.thread.page.elsewherePr": {
-    "text": "Change PR {{number}} for this request is on <0>#{{on}}</0>",
-    "description": "Line on a request's page when a change that would close it lives on another request's page, on a project whose code is on GitHub (a change's number is written PR, never #). {{number}} is the change's number; {{on}} is the other request's number, and <0></0> links to that request's page, at the change."
+  "topic.thread.page.claimsPr": {
+    "text": "<0>Change PR {{number}}</0> says it closes this",
+    "description": "Small line over the card on a request's page for a change that lives on another request's page and lists this request among the ones it closes, on a project whose code is on GitHub (a change's number is written PR, never #). {{number}} is the change's number; <0></0> links to the change where it lives."
   },
   "topic.request.stream.onChangePr": {
     "text": "on change PR {{number}}",

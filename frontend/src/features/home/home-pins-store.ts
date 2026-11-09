@@ -14,9 +14,19 @@
  * Read once the shell knows who is signed in, and again whenever a join or a
  * leave lands (Home.MEMBERSHIP_EVENT): joining pins the community on the
  * server, so the list is read back rather than guessed.
+ *
+ * AND READ AGAIN ON EVERY REFRESH OF HOME (request 6500): `refreshHomePins`
+ * re-runs this read and the community scope's own, so a vote that went up
+ * while the tab was open puts its number on the tiles without a hard reload.
+ * `loadHomePins` queues one more read behind a running one, the way
+ * `Home.load` does, so a refresh never ends on an answer older than itself.
+ * The counts read asks the network for the current numbers (no-cache): a
+ * copy the service worker saved is what left the number stuck. A counts read
+ * that fails keeps the numbers already on screen instead of zeroing them.
  */
 import { createStore } from '../../lib/plain-store.js';
 import { keepDevicePins, takeDevicePins } from '../guest/device-pins';
+import { loadCommunities } from '../workshop/community-scope';
 
 export interface HomePin {
   slug: string;
@@ -47,38 +57,78 @@ const INITIAL: HomePinsState = { ready: false, pins: [], joined: [], owed: {} };
 
 export const homePinsStore = createStore<HomePinsState>(INITIAL);
 
-async function readJson(url: string): Promise<any> {
-  const res = await fetch(url, { credentials: 'same-origin' });
+async function readJson(url: string, init?: RequestInit): Promise<any> {
+  const res = await fetch(url, { credentials: 'same-origin', ...init });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-let loading: Promise<void> | null = null;
+/** The tiles' numbers from one counts answer. */
+function owedFrom(countsBody: any): Record<string, number> {
+  const owed: Record<string, number> = {};
+  for (const [slug, c] of Object.entries(countsBody?.counts || {}) as Array<[string, any]>) {
+    owed[slug] = c && !c.unchosen ? Math.max(0, Number(c.needs) || 0) : 0;
+  }
+  return owed;
+}
 
-/** Read all three. Quiet on failure: the grid keeps what it had. */
+let loading: Promise<void> | null = null;
+let queued: Promise<void> | null = null;
+
+/**
+ * Read all three. Quiet on failure: the grid keeps what it had.
+ *
+ * A call that lands while a read is running queues exactly ONE more read
+ * behind it, shared by every caller in that window (the same shape as
+ * `Home.load`): a refresh must never end on the answer it was queued to
+ * replace.
+ */
 export function loadHomePins(): Promise<void> {
-  if (loading) return loading;
-  loading = (async () => {
-    try {
-      const [pinsBody, appsBody, countsBody] = await Promise.all([
-        readJson('/api/me/home-pins'),
-        readJson('/api/apps?scope=joined').catch(() => ({ apps: [] })),
-        readJson('/api/workshop/counts').catch(() => ({ counts: {} })),
-      ]);
-      const joined = (Array.isArray(appsBody?.apps) ? appsBody.apps : [])
-        .filter((a: any) => a && a.slug && a.is_member && !a.demo);
-      const owed: Record<string, number> = {};
-      for (const [slug, c] of Object.entries(countsBody?.counts || {}) as Array<[string, any]>) {
-        owed[slug] = c && !c.unchosen ? Math.max(0, Number(c.needs) || 0) : 0;
-      }
-      homePinsStore.set({ ready: true, pins: Array.isArray(pinsBody?.pins) ? pinsBody.pins : [], joined, owed });
-    } catch {
-      homePinsStore.set({ ready: true });
-    } finally {
-      loading = null;
+  if (loading) {
+    if (!queued) {
+      const rerun = () => { queued = null; return loadHomePins(); };
+      queued = loading.then(rerun, rerun);
     }
-  })();
-  return loading;
+    return queued;
+  }
+  const run = readAll();
+  loading = run;
+  const settle = () => { if (loading === run) loading = null; };
+  run.then(settle, settle);
+  return run;
+}
+
+async function readAll(): Promise<void> {
+  try {
+    const [pinsBody, appsBody, countsBody] = await Promise.all([
+      readJson('/api/me/home-pins'),
+      readJson('/api/apps?scope=joined').catch(() => ({ apps: [] })),
+      // The current numbers, never the worker's saved copy (request 6500).
+      readJson('/api/workshop/counts', { credentials: 'same-origin', cache: 'no-cache' }).catch(() => null),
+    ]);
+    const joined = (Array.isArray(appsBody?.apps) ? appsBody.apps : [])
+      .filter((a: any) => a && a.slug && a.is_member && !a.demo);
+    // A counts read that failed says nothing about the votes, so the tiles
+    // keep the numbers they already had rather than dropping to zero.
+    const owed = countsBody ? owedFrom(countsBody) : homePinsStore.get().owed;
+    homePinsStore.set({ ready: true, pins: Array.isArray(pinsBody?.pins) ? pinsBody.pins : [], joined, owed });
+  } catch {
+    homePinsStore.set({ ready: true });
+  }
+}
+
+/**
+ * Re-read what Home's tiles count (request 6500): the pins, the joined
+ * communities and the votes waiting (`loadHomePins`), and the community
+ * scope's list and counts (`loadCommunities`), which fills the switcher, the
+ * sidebar and the Needs you total. Every path back to Home and every pull to
+ * refresh calls it; a pull passes `{ force: true }`, which skips the scope's
+ * thirty-second wait and asks the server rather than a saved copy. Signed
+ * out it does nothing.
+ */
+export async function refreshHomePins({ force = false }: { force?: boolean } = {}): Promise<void> {
+  if (typeof window === 'undefined' || !(window as any).App?.user) return;
+  await Promise.all([loadHomePins(), loadCommunities(force)]);
 }
 
 function toast(text: string) {
@@ -165,8 +215,14 @@ export function wireHomePins(moveMessage?: (count: number) => string): () => voi
   };
   document.addEventListener('sv:membership-changed', reload);
   document.addEventListener('sv:session', reload);
+  // The legacy screens reach the refresh through the bridge, as they reach
+  // every island: Home._loadOnce and app.js's Home pull (request 6500).
+  const host = window as unknown as { UsernodeReact?: Record<string, unknown> };
+  (host.UsernodeReact ||= {}).homePins = { refresh: refreshHomePins };
   return () => {
     document.removeEventListener('sv:membership-changed', reload);
     document.removeEventListener('sv:session', reload);
+    const bridge = (window as unknown as { UsernodeReact?: Record<string, unknown> }).UsernodeReact;
+    if (bridge?.homePins) delete bridge.homePins;
   };
 }

@@ -104,6 +104,7 @@ import {
 } from './transcript-store';
 import { MergedTopicCard } from '../dev-board/workshop/merged-topic-card';
 import { FileManyRows, picksOf, type FileManyRow } from '../messages/bot-cards/file-many';
+import { ChangePictures } from '../messages/bot-cards/gallery';
 
 function controller(): any {
   return (typeof window !== 'undefined' ? (window as any).GroupChat : null) || null;
@@ -957,6 +958,8 @@ export const MessageRow = memo(function MessageRow({ msg, grouped = false, surfa
           {msg.voteRef ? (seeVote
             ? <VoteLine sessionId={seeVote.sessionId} number={seeVote.number} title={seeVote.title} />
             : <VoteCard msg={msg} />) : null}
+          {/* #6533: what a change looks like under Homeroom bot's reply. */}
+          {msg.botGallery ? <ChangePictures card={msg.botGallery} /> : null}
           {/* #4238: Homeroom bot's first-version line opens the app. */}
           {msg.openApp ? (
             <Button

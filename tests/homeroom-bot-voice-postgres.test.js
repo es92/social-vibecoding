@@ -1276,6 +1276,102 @@ test('retireThreadSuggestions closes only older open sets in the same thread', {
   await voice.retireThreadSuggestions(pool, { appId: app.id, thread: { type: 'issue', ref: 7 }, keepMessageId: 0, deps: {} });
 });
 
+// #6535: a plan that starts building overtakes an overlap question asked in
+// the same request before it. The question keeps its words and loses its
+// buttons; other offers, a question asked later, and another request's
+// question keep theirs. A plan that is replaced instead closes nothing.
+test('#6535: a plan that starts building closes the overlap question before it', { timeout: 120000 }, async (t) => {
+  const pool = await openDatabase(t);
+  if (!pool) return;
+  const live = require('../src/services/homeroom-bot-live');
+  const { rows: [app] } = await pool.query(
+    "INSERT INTO apps (name, slug) VALUES ('Overlap plan demo', 'overlap-plan-demo') RETURNING id",
+  );
+  const insert = async (ref, meta, { msgType = 'message', content = 'the bot said something' } = {}) => (await pool.query(
+    `INSERT INTO chat_messages (app_id, user_id, content, msg_type, thread_type, thread_ref, metadata)
+     VALUES ($1, NULL, $2, $3, 'issue', $4, $5) RETURNING id`,
+    [app.id, content, msgType, ref, JSON.stringify(meta)],
+  )).rows[0].id;
+  const card = async (kind) => (await pool.query(
+    `INSERT INTO bot_cards (place, app_id, kind, args) VALUES ('thread', $1, $2, '{}') RETURNING id`,
+    [app.id, kind],
+  )).rows[0].id;
+  const overlapMeta = (id, status = 'open') => ({
+    homeroomBot: {
+      kind: 'voice',
+      offer: { id, kind: 'overlap', status },
+      actions: [
+        { id: 'yes', label: 'Build #6533 first', style: 'primary', type: 'prompt' },
+        { id: 'first', label: 'Build this one first', style: 'secondary', type: 'prompt' },
+        { id: 'no', label: 'Keep separate', style: 'secondary', type: 'prompt' },
+      ],
+    },
+  });
+  const fileItMeta = (id) => ({
+    homeroomBot: {
+      kind: 'voice',
+      offer: { id, kind: 'file_request', status: 'open' },
+      actions: [{ id: 'yes', label: 'File it', style: 'primary', type: 'prompt' }],
+    },
+  });
+  const plan = async (ref) => {
+    const { rows: [run] } = await pool.query(
+      `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict) VALUES ($1, $2, 'live', 'ready') RETURNING id`,
+      [app.id, ref],
+    );
+    const row = await insert(ref, { specShare: { sessionId: 1, version: 1, botNote: 'waiting' } }, {
+      msgType: 'spec_share', content: '📋 Plan v1. Nothing is built yet. Waiting for @evan to say Build it.',
+    });
+    await pool.query(
+      `INSERT INTO homeroom_bot_posts (app_id, issue_number, run_id, kind, thread_message_id)
+       VALUES ($1, $2, $3, 'plan', $4)`,
+      [app.id, ref, run.id, row],
+    );
+    return { runId: Number(run.id), row: Number(row) };
+  };
+  const metaOf = async (id) => (await pool.query('SELECT metadata FROM chat_messages WHERE id = $1', [id])).rows[0].metadata;
+  const statusOf = async (id) => (await pool.query('SELECT status FROM bot_cards WHERE id = $1', [id])).rows[0].status;
+
+  const oldCard = await card('overlap');
+  const old = await insert(7, overlapMeta(oldCard));
+  const fileCard = await card('file_request');
+  const file = await insert(7, fileItMeta(fileCard));
+  const planned = await plan(7);
+  // Asked after the plan row (higher id): it is not overtaken.
+  const newCard = await card('overlap');
+  const newer = await insert(7, overlapMeta(newCard));
+  // Another request's question, older than this plan's row: untouched.
+  const otherCard = await card('overlap');
+  const elsewhere = await insert(12, overlapMeta(otherCard));
+
+  const frames = [];
+  const ws = { broadcast(appId, frame) { frames.push({ appId, frame }); } };
+  assert.equal(await live.notePlanRows(pool, [planned.runId], 'building', { ws }), 1);
+
+  const closed = await metaOf(old);
+  assert.deepEqual(closed.homeroomBot.actions, [], 'the three buttons go');
+  assert.deepEqual(closed.homeroomBot.othersActions, []);
+  assert.equal(closed.homeroomBot.offer.status, 'expired');
+  assert.equal(await statusOf(oldCard), 'expired', 'a tap from a screen that has not drawn again does nothing');
+  assert.deepEqual((await metaOf(file)).homeroomBot.actions.map((a) => a.id), ['yes'], 'File it keeps its button');
+  assert.equal(await statusOf(fileCard), 'open');
+  assert.equal((await metaOf(newer)).homeroomBot.offer.status, 'open', 'asked after the plan row');
+  assert.deepEqual((await metaOf(newer)).homeroomBot.actions.length, 3);
+  assert.equal((await metaOf(elsewhere)).homeroomBot.offer.status, 'open', 'another request is untouched');
+  assert.equal(await statusOf(otherCard), 'open');
+  assert.deepEqual(frames.filter((f) => f.frame.type === 'chat_message_updated' && f.frame.id === old)
+    .map((f) => f.frame.thread), [{ type: 'issue', ref: 7 }], 'everybody reading hears it once');
+
+  // A plan replaced instead of built leaves the question open.
+  const replacedCard = await card('overlap');
+  const replaced = await insert(7, overlapMeta(replacedCard));
+  const again = await plan(7);
+  assert.equal(await live.notePlanRows(pool, [again.runId], 'replaced', { ws }), 1);
+  assert.equal((await metaOf(replaced)).homeroomBot.offer.status, 'open');
+  assert.equal(await statusOf(replacedCard), 'open');
+  assert.equal((await metaOf(replaced)).homeroomBot.actions.length, 3);
+});
+
 // #6391: the queries say() runs for a thread's two button sets, on the real
 // schema: the Go ahead a waiting note leaves behind (its newest open set is
 // found, its people join the reply's) and the older sets' retirement, which
@@ -1349,4 +1445,84 @@ test('say() carries a waiting note\'s Go ahead and retires both sets on the real
   assert.equal(retired.homeroomBot.suggest.status, 'closed');
   assert.deepEqual(retired.homeroomBot.actions, []);
   assert.deepEqual(retired.homeroomBot.othersActions, []);
+});
+
+// #6539: on a change's thread, a message written straight after the bot's own
+// post is to the bot when it comes from the person that post answered, the
+// change's author or a project admin, within the window requests already use.
+// The gate's reads are real here: the thread's last message and the newest
+// finished turn's speaker.
+test('#6539: a change-thread follow-up is answered for the answered person and the author', { timeout: 120000 }, async (t) => {
+  const pool = await openDatabase(t);
+  if (!pool) return;
+
+  const mkUser = async (name, { synthetic = false } = {}) => (await pool.query(
+    `INSERT INTO users (username, password, has_platform_access, is_synthetic)
+     VALUES ($1, 'x', TRUE, $2) RETURNING id, username`,
+    [name, synthetic],
+  )).rows[0];
+  const bot = await mkUser('homeroom_bot', { synthetic: true });
+  const evan = await mkUser('evan_follows');
+  const drea = await mkUser('drea_follows');
+  const sam = await mkUser('sam_follows');
+  const { rows: [inserted] } = await pool.query(
+    `INSERT INTO apps (name, slug, status, created_by, repo_url, view_visibility, collab_visibility)
+     VALUES ('Follow ups', 'follow-ups', 'running', $1, 'https://github.com/usernode-bot/follow-ups', 'public', 'public')
+     RETURNING id`,
+    [evan.id],
+  );
+  const { rows: [app] } = await pool.query('SELECT * FROM apps WHERE id = $1', [inserted.id]);
+  // Somebody else's change, under way: neither the bot's own nor up for a vote.
+  const { rows: [change] } = await pool.query(
+    `INSERT INTO chat_sessions (app_id, user_id, branch_name, status, session_title)
+     VALUES ($1, $2, 'dev/follow-ups', 'active', 'Follow ups') RETURNING id`,
+    [app.id, drea.id],
+  );
+  const place = { type: 'session', ref: change.id };
+  const settings = { mode: 'live', voiceSession: true, voiceIssue: true, voiceChat: true, pausedApps: [] };
+  const speakerOf = (u) => ({ id: Number(u.id), username: u.username, isSynthetic: false, hasPlatformAccess: true });
+  const say = async (who, content, thread) => {
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO chat_messages (app_id, user_id, content, msg_type, metadata, thread_type, thread_ref)
+       VALUES ($1, $2, $3, 'message', '{}', $4, $5) RETURNING id`,
+      [app.id, who.id, content, thread?.type || null, thread?.ref ?? null],
+    );
+    return row.id;
+  };
+  const rowOf = async (id) => (await pool.query('SELECT * FROM chat_messages WHERE id = $1', [id])).rows[0];
+  // A finished turn, as a turn that answered `person` leaves one.
+  const turnBy = async (person) => {
+    await pool.query(
+      `INSERT INTO homeroom_bot_voice_turns (app_id, place_type, place_ref, place_key, trigger, speaker_id, turn_key, finished_at)
+       VALUES ($1, 'session', $2, $3, 'message', $4, $5, NOW())`,
+      [app.id, Number(change.id), `${app.id}:session:${change.id}`, person.id, `follow-${Date.now()}-${Math.random()}`],
+    );
+  };
+  const gate = (row, speaker) => voice.gate(pool, {
+    app, place, row, bot, settings, speaker: speakerOf(speaker), deps: {},
+  });
+
+  // The bot answers Evan; Evan writes straight back with no @.
+  const botPost = await say(bot, 'Here they are, re-rendered at full width.', place);
+  await turnBy(evan);
+  const evanFollowUp = await say(evan, 'Can you draw them as illustrations instead?', place);
+  assert.deepEqual(await gate(await rowOf(evanFollowUp), evan), { speak: true, why: 'followed' });
+
+  // The change's author, straight after the bot's post, is answered too.
+  const botAgain = await say(bot, 'Sure, here are the three emails drawn as illustrations.', place);
+  const dreaAfter = await say(drea, 'and can it be wider?', place);
+  assert.deepEqual(await gate(await rowOf(dreaAfter), drea), { speak: true, why: 'followed' });
+
+  // Somebody else writing right after the bot's post needs an @.
+  const samAfter = await say(sam, 'Looks fine to me.', place);
+  assert.deepEqual(await gate(await rowOf(samAfter), sam), { speak: false, why: 'not_addressed' });
+
+  // A bot post older than the window is not followed.
+  await pool.query("UPDATE chat_messages SET created_at = NOW() - INTERVAL '31 minutes' WHERE id = $1", [botAgain]);
+  assert.deepEqual(await gate(await rowOf(samAfter), drea), { speak: false, why: 'not_addressed' });
+
+  // A mention still works, for anyone.
+  const tag = await say(sam, '@Homeroom bot can you check this?', place);
+  assert.deepEqual(await gate(await rowOf(tag), sam), { speak: true, why: 'mentioned' });
+  assert.ok(botPost, 'the bot posted in the change\'s discussion');
 });

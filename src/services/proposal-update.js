@@ -1263,6 +1263,11 @@ async function updateLinkedIssues({
   pool, gh, session, owner, repo, addIssues, removeIssues,
 }) {
   const stored = await storeLinkedIssues({ pool, session, addIssues, removeIssues });
+  if (stored.changed) {
+    // #6420: a newly named request hears the claim once. Best effort, and
+    // after the row is stored: announcing must never fail the update.
+    await require('./change-claims').announce(pool, { sessionId: Number(session.id) });
+  }
   const projected = await projectLinkedIssues({ pool, gh, session, owner, repo, addIssues, removeIssues });
   return { ...stored, ...projected };
 }
@@ -2145,7 +2150,7 @@ function sessionParts(ctx) {
   };
 }
 
-async function settleActiveSession({ config, pool, session, sessionId, headSha, parts }) {
+async function settleActiveSession({ config, pool, session, sessionId, headSha, parts, via = null }) {
   const { pipeline } = parts;
   const { beginHandoffPipeline, startHandoffPipeline, OWNED_SOURCE_SQL } = pipeline;
 
@@ -2169,11 +2174,11 @@ async function settleActiveSession({ config, pool, session, sessionId, headSha, 
     // proposal gone up for a vote gets its reviewed head reconciled, never
     // the paused tail (which cleared a promoted proposal's verdict).
     const { rows: [now] = [] } = await pool.query('SELECT status FROM chat_sessions WHERE id = $1', [sessionId]);
-    if (now?.status === 'paused') await settlePausedSession({ pool, session, sessionId, headSha, parts });
+    if (now?.status === 'paused') await settlePausedSession({ pool, session, sessionId, headSha, parts, via });
     else if (now?.status === 'promoted' || now?.status === 'merging') {
       const votes = parts.votes || require('../routes/votes');
       const reconciled = await votes.reconcileNativeReviewedHead({
-        config, pool, session: { ...session, status: now.status }, fresh: true, notify: true, madeBy: 'homeroom',
+        config, pool, session: { ...session, status: now.status }, fresh: true, notify: true, madeBy: via === 'bot' ? 'bot' : 'homeroom',
       }).catch((err) => {
         log.error('proposal-update', 'head-move reconciliation failed after a successful push', { sessionId, err: err.message });
         return null;
@@ -2183,7 +2188,7 @@ async function settleActiveSession({ config, pool, session, sessionId, headSha, 
     return { rebuilding: false };
   }
 
-  await recordChangesReadyCard({ pool, session, sessionId, headSha });
+  await recordChangesReadyCard({ pool, session, sessionId, headSha, via });
 
   const app = {
     id: session.app_id,
@@ -2219,7 +2224,7 @@ async function settleActiveSession({ config, pool, session, sessionId, headSha, 
 // verdict was about, and the resume path compares it against the branch head
 // to decide that a re-check is owed. Null it here and the session comes back
 // looking like it had never been checked at all.
-async function settlePausedSession({ pool, session, sessionId, headSha, parts }) {
+async function settlePausedSession({ pool, session, sessionId, headSha, parts, via = null }) {
   const { lifecycle: sessionLifecycle, pushSessionUpdate } = parts;
   // No verdict for the current code: the preview machine clears it (NULL
   // check_state, not a 'pending' no run will resolve; it blocks merge, which
@@ -2232,7 +2237,7 @@ async function settlePausedSession({ pool, session, sessionId, headSha, parts })
   await require('./preview-workflow').clear({ session: { ...session, id: sessionId }, reason: 'paused-update' })
     .catch((err) => log.warn('proposal-update', 'could not clear the stale verdict', { sessionId, err: err.message }));
 
-  await recordChangesReadyCard({ pool, session, sessionId, headSha });
+  await recordChangesReadyCard({ pool, session, sessionId, headSha, via });
 
   // Best effort: a leaked container is retried by the stale-preview sweeper
   // through the same chokepoint, and a teardown failure must not be reported
@@ -2252,6 +2257,50 @@ async function settlePausedSession({ pool, session, sessionId, headSha, parts })
   }
 }
 
+/**
+ * #6537: a commit Homeroom itself pushed onto a change's own branch (the
+ * Homeroom bot's update of a change its author made in Claude Code or Codex,
+ * homeroom-bot-takeover.js) settles the way a landed update does, by the
+ * status the change has NOW: an active session's preview is rebuilt on it, a
+ * paused one forgets the verdict that described the old commit, a proposal up
+ * for a vote has its reviewed head moved (its votes cleared unless the move
+ * keeps them) and an imported one is synced from its pull request. Never
+ * throws: the push already landed. Resolves { tail, rebuilding }.
+ */
+async function settleLandedHead({ config, pool, session, headSha, via = 'bot', ctx = null }) {
+  const parts = sessionParts(ctx);
+  const sessionId = Number(session && session.id);
+  try {
+    const now = (await reloadSession(pool, sessionId)) || session;
+    if (now.source === 'imported') {
+      const synced = await ((ctx && ctx.prImportSync) || require('./pr-import-sync')).syncImportedProposal({ config, pool, session: now });
+      return { tail: 'imported', rebuilding: synced === 'updated' };
+    }
+    if (now.status === 'promoted' || now.status === 'merging') {
+      const votes = parts.votes || require('../routes/votes');
+      const reconciled = await votes.reconcileNativeReviewedHead({
+        config, pool, session: now, fresh: true, notify: true, madeBy: via === 'bot' ? 'bot' : 'homeroom',
+      });
+      return {
+        tail: 'proposal',
+        rebuilding: !!(reconciled && reconciled.updated && reconciled.changed !== false && reconciled.checksCarry !== true),
+      };
+    }
+    if (now.status === 'active') {
+      const settled = await settleActiveSession({ config, pool, session: now, sessionId, headSha, parts, via });
+      return { tail: 'active', rebuilding: !!settled.rebuilding };
+    }
+    if (now.status === 'paused') {
+      await settlePausedSession({ pool, session: now, sessionId, headSha, parts, via });
+      return { tail: 'paused', rebuilding: false };
+    }
+    return { tail: 'none', rebuilding: false };
+  } catch (err) {
+    log.error('proposal-update', 'could not settle a commit Homeroom pushed onto a change', { sessionId, err: err.message });
+    return { tail: 'failed', rebuilding: false };
+  }
+}
+
 // Every platform path that lands a reviewable commit into a session persists
 // a `changesReady: true` system row — the marker the dev chat renders as the
 // "Changes ready" card, which carries the Preview / Test / **Propose to
@@ -2263,15 +2312,17 @@ async function settlePausedSession({ pool, session, sessionId, headSha, parts })
 // neither — leaving its owner with no way to put the change up for a vote at
 // all (session 3401). Best-effort: the push already landed, so a failed
 // insert is logged, never fatal.
-async function recordChangesReadyCard({ pool, session, sessionId, headSha }) {
+async function recordChangesReadyCard({ pool, session, sessionId, headSha, via = null }) {
   const sha8 = SHA_RE.test(String(headSha || '')) ? String(headSha).slice(0, 8) : null;
+  // #6537: an update the Homeroom bot made on its author's ask says so.
+  const from = via === 'bot' ? 'from Homeroom bot' : 'from your coding agent';
   await pool.query(
     `INSERT INTO chat_session_messages (session_id, role, content, metadata)
      VALUES ($1, 'system', $2, $3)`,
     [sessionId,
       sha8
-        ? `Changes ready: commit ${sha8} arrived from your coding agent.`
-        : 'Changes ready: an update arrived from your coding agent.',
+        ? `Changes ready: commit ${sha8} arrived ${from}.`
+        : `Changes ready: an update arrived ${from}.`,
       JSON.stringify({
         changesReady: true,
         externalUpdate: true,
@@ -2608,6 +2659,8 @@ module.exports = {
   visibleChangesSubmissionFields,
   shotsNextStep,
   reconcileManagedCommitUpload,
+  // #6537: a commit the Homeroom bot pushed onto a change's own branch.
+  settleLandedHead,
   // The request-linking half of an update (#1310), unit-tested directly.
   applyLinkedIssues,
   // #3344's author summary, likewise.

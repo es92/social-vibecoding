@@ -58,7 +58,13 @@ const DESIGN_LIMITS = Object.freeze({
   rounds: 12,
   drawByRound: 8,
   readUntilRound: 7,
-  outputTokens: 4096,
+  // #6358: a long screen (a recipe home) is drawn to the end. A step gets
+  // four times the room it had (4096), a draw cut off at its limit is asked
+  // again with twice that, and a step may take three minutes instead of a
+  // minute and a half. Room that is not written is not paid for.
+  outputTokens: 16000,
+  retryOutputTokens: 32000,
+  requestTimeoutMs: 180_000,
   history: 16,
   replyChars: 1500,
   editsPerCall: 16,
@@ -103,7 +109,7 @@ const PROFILES = Object.freeze({
   }),
   request: profile('request', {
     surface: 'thread', scope: 'thread', prompt: 'request', places: ['issue'], limits: THREAD_LIMITS,
-    tools: Object.freeze([...THREAD_TOOLS, 'get_spec', 'start_request', 'offer_close_request', 'offer_copy_request', 'offer_withdraw', 'change_plan']),
+    tools: Object.freeze([...THREAD_TOOLS, 'get_spec', 'start_request', 'offer_close_request', 'offer_copy_request', 'offer_withdraw', 'change_plan', 'make_pictures', 'attach_files', 'show_change', 'list_change_files']),
     // Words passed on as a change are the follow-up's; the bot's own change
     // up for a vote answers anyone; the requester or an admin straight after
     // a post of the bot's is answering it; else only a mention or a reply,
@@ -115,8 +121,8 @@ const PROFILES = Object.freeze({
     // #6389: the change's author (or its request's requester, once it is
     // abandoned) may ask the bot to make its own version of a change made
     // outside Homeroom.
-    tools: Object.freeze([...THREAD_TOOLS, 'get_spec', 'offer_withdraw', 'make_own_version']),
-    speaks: Object.freeze([...THREAD_CHECKS, 'not_queued_as_ask', 'own_change', 'addressed']),
+    tools: Object.freeze([...THREAD_TOOLS, 'get_spec', 'offer_withdraw', 'make_own_version', 'make_pictures', 'attach_files', 'show_change', 'list_change_files']),
+    speaks: Object.freeze([...THREAD_CHECKS, 'not_queued_as_ask', 'own_change', 'followed_change_post', 'addressed']),
   }),
   channel: profile('channel', {
     surface: 'thread', scope: 'thread', prompt: 'channel', places: ['chat', 'category'], limits: THREAD_LIMITS,
@@ -125,7 +131,7 @@ const PROFILES = Object.freeze({
   }),
   reply: profile('reply', {
     surface: 'thread', scope: 'thread', prompt: 'reply', places: ['message'], limits: THREAD_LIMITS,
-    tools: Object.freeze([...THREAD_TOOLS, 'offer_request', 'offer_close_request']),
+    tools: Object.freeze([...THREAD_TOOLS, 'offer_request', 'offer_close_request', 'make_pictures', 'attach_files']),
     speaks: Object.freeze([...THREAD_CHECKS, 'addressed', 'continued']),
   }),
 });

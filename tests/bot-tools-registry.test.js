@@ -43,9 +43,20 @@ test('list_source and read_source say what each scope knows', () => {
   assert.deepEqual(designRead.function.parameters.required, ['path']);
   const [threadList, threadRead] = tools.toolsFor(['list_source', 'read_source'], 'thread');
   assert.deepEqual(threadList.function.parameters, {
-    type: 'object', properties: { dir: { type: 'string' }, match: { type: 'string' } }, required: [], additionalProperties: false,
+    type: 'object',
+    properties: {
+      dir: { type: 'string' },
+      match: { type: 'string' },
+      at: {
+        type: 'string', enum: ['main', 'today', 'with_change'],
+        description: 'Which version: main (the project today), today (the change\'s starting point), or with_change (the change\'s newest version). main unless asked; today and with_change need a change here.',
+      },
+    },
+    required: [],
+    additionalProperties: false,
   }, 'the thread\'s project, never an argument');
-  assert.deepEqual(Object.keys(threadRead.function.parameters.properties), ['path', 'fromLine']);
+  assert.deepEqual(Object.keys(threadRead.function.parameters.properties), ['path', 'fromLine', 'at']);
+  assert.ok(tools.toolsFor(['list_change_files'], 'thread')[0].function.name === 'list_change_files');
 });
 
 test('a call runs the one handler with the project its scope gives', async () => {

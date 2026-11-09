@@ -15,8 +15,12 @@ import type { ReactNode } from 'react';
 
 import { DetailPaneShots } from './shots';
 import { DesignPane } from '../messages/design-pane';
+import { RequestDraftPane } from '../messages/request-draft-pane';
 import { SpecPanelView } from '../group-chat/spec-panel';
 import { closeDetail, useDetailState, type DetailLayout } from '../ai/detail';
+
+/** #6248: a draft preview with no copy of its own (it always carries one). */
+const EMPTY_DRAFT_COPY = { title: '', project: '', details: '', appSlug: null };
 
 export function DetailPane({ layout }: { layout: DetailLayout }): ReactNode {
   const state = useDetailState();
@@ -30,6 +34,17 @@ export function DetailPane({ layout }: { layout: DetailLayout }): ReactNode {
         view="preview"
         onView={() => {}}
         version={entry.version}
+        seq={entry.seq}
+        onClose={closeDetail}
+        closeAs={layout === 'full' ? 'back' : 'close'}
+      />
+    );
+  }
+  if (entry.kind === 'draft') {
+    return (
+      <RequestDraftPane
+        actionId={entry.ref.actionId!}
+        copy={entry.payload?.draft || EMPTY_DRAFT_COPY}
         seq={entry.seq}
         onClose={closeDetail}
         closeAs={layout === 'full' ? 'back' : 'close'}

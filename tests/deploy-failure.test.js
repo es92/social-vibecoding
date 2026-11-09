@@ -185,3 +185,58 @@ test('a new repository GitHub refused for going too fast is said in words; other
   const elsewhere = deployFailure.record(Object.assign(new Error('secondary rate limit'), {}), { stage: 'other' });
   assert.equal(elsewhere.reason, 'secondary rate limit');
 });
+
+// #6536: PR 6256 sat with no preview build from 4 Nov because a sync broke a
+// .tsx file's comment and every build failed with only "BackoffLimitExceeded".
+// The Pod log had the real error; the checks never read it.
+test('a failed build says its own first error, with the file and line', () => {
+  const err = new Error('BuildKit Job bk-10 failed: BackoffLimitExceeded');
+  err.buildFailed = true;
+  err.buildLog = [
+    'vite v5.4.21 building for production...',
+    'transforming...',
+    '✓ 1482 modules transformed.',
+    '✗ Build failed in 1.2s',
+    'error during build:',
+    'frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+    '    at failureErrorWithLog (/app/node_modules/esbuild/lib/main.js:1472:15)',
+  ].join('\n');
+
+  const build = deployFailure.firstBuildError(err);
+  assert.equal(build.line, 'frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"',
+    'the specific file:line:col line wins over Vite\'s heading');
+  assert.match(build.excerpt, /error during build:/);
+  assert.match(build.excerpt, /index\.tsx:104:1/);
+  assert.doesNotMatch(build.excerpt, /failureErrorWithLog/, 'the stack after the error is not kept');
+
+  assert.equal(deployFailure.summarizeBootFailure(err),
+    'The preview build failed: frontend/src/features/ai/index.tsx:104:1: ERROR: Unexpected "**"');
+});
+
+test('a failed build\'s log is scrubbed before it is kept', () => {
+  const err = new Error('build failed');
+  err.buildFailed = true;
+  err.buildLog = 'ERROR: unable to push with token ghp_abcdefghijklmnopqrstuvwxyz0123456789';
+  const build = deployFailure.firstBuildError(err);
+  assert.ok(build);
+  assert.doesNotMatch(build.line, /ghp_abcdefghijklmnopqrstuvwxyz0123456789/);
+  assert.doesNotMatch(build.excerpt, /ghp_abcdefghijklmnopqrstuvwxyz0123456789/);
+  assert.match(build.line, /\*{4}/);
+});
+
+test('a timed-out build, or a log with no error line, keeps the reason it had', () => {
+  const timedOut = new Error('Command failed');
+  timedOut.buildFailed = true;
+  timedOut.killed = true;
+  timedOut.buildLog = 'Step 3/9 : RUN npm ci';
+  assert.equal(deployFailure.firstBuildError(timedOut), null);
+  const killed = deployFailure.classify(timedOut);
+  assert.equal(killed.reason, 'Build timed out after 5 minutes');
+
+  const quiet = new Error('Job bk-10 failed: BackoffLimitExceeded');
+  quiet.buildFailed = true;
+  quiet.buildLog = 'Step 1/4 : FROM node:22\nStep 2/4 : RUN npm ci';
+  assert.equal(deployFailure.firstBuildError(quiet), null);
+  assert.equal(deployFailure.summarizeBootFailure(quiet), 'Job bk-10 failed: BackoffLimitExceeded');
+});
+

@@ -50,7 +50,7 @@ const JOURNEY_SCREENS = Object.freeze(new Set([
 // since One Home (#6361) retired Discover's screen and the Communities list;
 // `needs` is the page left of the latter.
 const NAV_SCREENS = Object.freeze(new Set([
-  'home', 'discover', 'communities', 'needs', 'challenges', 'profile', 'my_proposals',
+  'home', 'discover', 'communities', 'needs', 'weekly_digest', 'challenges', 'profile', 'my_proposals',
   'settings', 'messages', 'assistant', 'agent_session', 'ai', 'app', 'project',
   'username_sheet', 'terms_sheet', 'join_sheet', 'tour',
 ]));

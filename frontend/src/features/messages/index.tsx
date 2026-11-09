@@ -47,6 +47,7 @@ import { RequestTag, stripGroups, summaryParts } from './bot-strip';
 import { useTrackOf } from './bot-track';
 import { asksInChat, BotNewsLine, foldBotNews, isBotNews, newsStatusOf, SettledRun, type SettledRunItem } from './bot-news-line';
 import { isPlusThreadOpener, isRequestNews, requestKey } from './bot-request';
+import { firstRowInView, scrollCorrection, type MeasuredRow, type SavedPlace } from './list-place';
 import { ThreadDoneMenu } from './private-thread-done';
 import { MessageComposer } from './composer';
 import { WelcomeBack } from './welcome-back';
@@ -248,11 +249,13 @@ function GroupFaces({ conversation }: { conversation: Pick<ConversationSummary, 
   return <UserAvatar user={null} title={conversation.title} size="lg" shape="square" />;
 }
 
-const ConversationRow = memo(function ConversationRow({ conversation, active, preview = null }: {
+const ConversationRow = memo(function ConversationRow({ conversation, active, preview = null, rowKey }: {
   conversation: ConversationSummary;
   active: boolean;
   /** 16 Oct 2026: the Homeroom bot's row says what waits on you, not its last message. */
   preview?: string | null;
+  /** #6508: the inbox entry's key, so the list can hold its place across a re-sort. */
+  rowKey?: string;
 }) {
   const t = useMessages('messages');
   const peer = directPerson(conversation);
@@ -289,6 +292,7 @@ const ConversationRow = memo(function ConversationRow({ conversation, active, pr
       }}
       className={`messages-conversation-row ${conversation.homeroomBot ? 'messages-bot-row' : ''} ${active ? 'messages-conversation-active' : ''}`}
       aria-current={active ? 'page' : undefined}
+      data-inbox-row={rowKey}
     >
       {conversation.kind === 'group' && !invited
         ? <GroupFaces conversation={conversation} />
@@ -463,11 +467,17 @@ function inboxSessionView(session: SessionRowView): SessionRowView {
   };
 }
 
-const AgentSessionRow = memo(function AgentSessionRow({ session, active }: { session: SessionRowView; active: boolean }) {
+const AgentSessionRow = memo(function AgentSessionRow({ session, active, rowKey }: {
+  session: SessionRowView;
+  active: boolean;
+  /** #6508: the inbox entry's key (see ConversationRow). */
+  rowKey?: string;
+}) {
   return (
     <div
       className={`messages-inbox-session ${active ? 'messages-inbox-session-active' : ''}`}
       data-inbox-session={session.key}
+      data-inbox-row={rowKey}
       aria-current={active ? 'page' : undefined}
     >
       <SessionRow session={session} showApp onNavigate={() => {}} tile={<ChangeTile session={session} />} />
@@ -721,6 +731,20 @@ function ConversationRowSkeleton() {
   );
 }
 
+/**
+ * #6508: the selector for one row's key. A key is built from a numeric id, an
+ * agent-session key or a Mayor session's id (./inbox.ts), and an agent
+ * session's key can hold characters a selector would read as syntax, so it is
+ * escaped where `CSS.escape` exists (every browser that draws the shell) and
+ * quoted with its own quotes and backslashes escaped where it does not.
+ */
+function keyedRow(key: string): string {
+  const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? CSS.escape(key)
+    : key.replace(/["\\\n\r\f]/g, (ch) => `\\${ch}`);
+  return `[data-inbox-row="${escaped}"]`;
+}
+
 function ConversationList({ drawer = false }: {
   /** The phone's drawer holds the screen (./phone-drawer.tsx): the list stays drawn beside a conversation. */
   drawer?: boolean;
@@ -914,6 +938,60 @@ function ConversationList({ drawer = false }: {
   // last look shows where it now belongs; a query hides the toggle, because
   // search covers the open chats only.
   const showArchivedToggle = mounted && !!agentChatsShown && !snap.folded.includes('agents') && !searching;
+
+  // #6508: the list keeps its place while it updates live (./list-place.ts).
+  // The row at the top of what the reader sees is noted on every scroll, and
+  // a live re-sort puts that same row back where it was. At the very top
+  // nothing is held, so new rows arrive there as they always have; the
+  // browser's own anchoring is switched off for this scroller in app.css,
+  // because it was the one dragging the list with a row that had moved.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const anchor = useRef<SavedPlace | null>(null);
+  const readAnchor = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop <= 0) { anchor.current = null; return; }
+    const box = el.getBoundingClientRect();
+    const rows: MeasuredRow[] = [];
+    for (const node of Array.from(el.querySelectorAll<HTMLElement>('[data-inbox-row]'))) {
+      const key = node.dataset.inboxRow;
+      if (!key) continue;
+      const rect = node.getBoundingClientRect();
+      rows.push({ key, top: rect.top - box.top, bottom: rect.bottom - box.top });
+    }
+    anchor.current = firstRowInView(rows, 0);
+  }, []);
+  // The reader changing the list (a search, a fold, older or archived chats)
+  // drops the held place: that is them moving the list, not it moving itself.
+  const listShape = `${deferredQuery}\u0000${snap.folded.join(',')}\u0000${agentsExpanded}\u0000${archivedOpen}`;
+  const lastShape = useRef(listShape);
+  useIsomorphicLayoutEffect(() => {
+    if (lastShape.current === listShape) return;
+    lastShape.current = listShape;
+    anchor.current = null;
+  }, [listShape]);
+  // After a commit that changes the order (a live re-sort, or the bot's line
+  // changing its row's height), put the saved row back at its offset. The
+  // scroll event our own write fires records the same row again, so this
+  // settles in one step rather than looping.
+  const orderKey = `${found.map((entry) => entry.key).join('|')}\u0000${botLine || ''}`;
+  useIsomorphicLayoutEffect(() => {
+    const el = scrollRef.current;
+    const saved = anchor.current;
+    // A list the layout has taken off screen (the phone's drawer behind an
+    // open conversation, the column beside a spec pane) measures every row at
+    // zero; correcting there would move it while nobody can see it.
+    if (!el || !saved || !el.clientHeight) return;
+    const box = el.getBoundingClientRect();
+    let row: Element | null = null;
+    try {
+      row = el.querySelector(keyedRow(saved.key));
+    } catch { row = null; }
+    const nowTop = row ? row.getBoundingClientRect().top - box.top : null;
+    const delta = scrollCorrection(saved, nowTop, 0);
+    if (delta) el.scrollTop += delta;
+  }, [orderKey]);
+
   const archivedToggle = showArchivedToggle ? (
     <button
       key="show-archived"
@@ -964,6 +1042,8 @@ function ConversationList({ drawer = false }: {
       <div
         className="messages-list-scroll platform-safe-scroll"
         data-page-bounce=""
+        ref={scrollRef}
+        onScroll={readAnchor}
         onClick={(e) => {
           if (e.target === e.currentTarget && snap.route.conversationId) openConversation(null);
         }}
@@ -1069,6 +1149,7 @@ function ConversationList({ drawer = false }: {
             conversation={conversation}
             active={snap.route.conversationId === conversation.id}
             preview={conversation.homeroomBot ? botLine : null}
+            rowKey={entry.key}
           />
         )
         : null;
@@ -1076,13 +1157,13 @@ function ConversationList({ drawer = false }: {
     if (entry.kind === 'session') {
       const session = bySession.get(entry.key.slice('session:'.length));
       return session
-        ? <AgentSessionRow key={entry.key} session={session} active={open?.kind === 'session' && open.id === session.id} />
+        ? <AgentSessionRow key={entry.key} session={session} active={open?.kind === 'session' && open.id === session.id} rowKey={entry.key} />
         : null;
     }
     if (entry.kind === 'mayor') {
       const session = byMayor.get(entry.key.slice('mayor:'.length));
       return session
-        ? <MayorSessionRow key={entry.key} session={session} active={open?.kind === 'agent' && open.id === session.id} />
+        ? <MayorSessionRow key={entry.key} session={session} active={open?.kind === 'agent' && open.id === session.id} rowKey={entry.key} />
         : null;
     }
     return null;
@@ -1649,7 +1730,12 @@ const ACTIVITY_SAID: Record<'working' | 'done', string> = {
   done: 'messages:agent.row.activity.done',
 };
 
-const MayorSessionRow = memo(function MayorSessionRow({ session, active }: { session: MayorSession; active: boolean }) {
+const MayorSessionRow = memo(function MayorSessionRow({ session, active, rowKey }: {
+  session: MayorSession;
+  active: boolean;
+  /** #6508: the inbox entry's key (see ConversationRow); the archived list passes none. */
+  rowKey?: string;
+}) {
   const t = useMessages('messages');
   // Subscribed: changeRowWords reads where the change stands from the agent catalog.
   useMessages('agent');
@@ -1672,6 +1758,7 @@ const MayorSessionRow = memo(function MayorSessionRow({ session, active }: { ses
     <a
       href={href}
       data-inbox-agent-session={session.id}
+      data-inbox-row={rowKey}
       className={`messages-conversation-row ${active ? 'messages-conversation-active' : ''}`}
       aria-current={active ? 'page' : undefined}
       onClick={(event) => {

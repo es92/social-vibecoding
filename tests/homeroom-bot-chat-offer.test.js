@@ -31,6 +31,7 @@ const DSN = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
 const botChat = require('../src/services/homeroom-bot-chat');
+const mayor = require('../src/services/homeroom-bot-mayor');
 
 test('WP-C: the offer card, and the line under a first request', () => {
   const { BotRequestCardView, cardWords } = loadTsx('frontend/src/features/group-chat/bot-request.tsx');
@@ -338,5 +339,33 @@ test('WP-C: offers against the full PostgreSQL schema', { timeout: 180000 }, asy
     assert.equal(await botChat.takeOfferRead(pool, vet.id, 900103), false, 'everybody\'s hour is spent');
     await pool.query(`UPDATE homeroom_bot_offer_reads SET read_at = NOW() - INTERVAL '61 minutes'`);
     assert.equal(await botChat.takeOfferRead(pool, vet.id, 900104), true, 'a new hour');
+  });
+
+  // #6248: the preview beside the chat reads the saved draft, not the
+  // message's 1200-character clip, and only its own person's open one.
+  await t.test('readDraft reads the viewer\'s own open file_request in full, and nothing else', async () => {
+    const long = `${'week by week. '.repeat(120)}and an ending past the clip`;
+    assert.ok(long.length > 1200);
+    const { rows: [action] } = await pool.query(
+      `INSERT INTO homeroom_bot_dm_actions (user_id, app_id, kind, title, details)
+       VALUES ($1, $2, 'file_request', 'Add a search box', $3) RETURNING id`,
+      [sam.id, app.id, long]);
+    const mine = await mayor.readDraft(pool, { user: { id: sam.id, username: 'sam' }, actionId: action.id });
+    assert.equal(mine.ok, true);
+    assert.equal(mine.title, 'Add a search box');
+    assert.equal(mine.details, long, 'the whole saved description');
+    assert.deepEqual(mine.app, { slug: 'run-club', name: 'Run Club' });
+    assert.equal(mine.footer, 'Filed from sam\'s chat with Homeroom bot.');
+    assert.equal((await mayor.readDraft(pool, { user: { id: maya.id, username: 'maya' }, actionId: action.id })).ok, false,
+      'somebody else\'s draft');
+    await pool.query(`UPDATE homeroom_bot_dm_actions SET status = 'done' WHERE id = $1`, [action.id]);
+    assert.equal((await mayor.readDraft(pool, { user: { id: sam.id, username: 'sam' }, actionId: action.id })).ok, false,
+      'a decided draft');
+    const { rows: [other] } = await pool.query(
+      `INSERT INTO homeroom_bot_dm_actions (user_id, app_id, kind, title, details)
+       VALUES ($1, $2, 'post_reply', 'Post this', 'words') RETURNING id`,
+      [sam.id, app.id]);
+    assert.equal((await mayor.readDraft(pool, { user: { id: sam.id, username: 'sam' }, actionId: other.id })).ok, false,
+      'not a file_request');
   });
 });
