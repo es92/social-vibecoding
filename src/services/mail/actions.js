@@ -187,11 +187,6 @@ const REMINDER_PLACEHOLDERS = {
   unsubscribeUrl: link('One-click link that stops these reminders'),
   hasUnsubscribeUrl: flag('True when the stop link is present', 'unsubscribeUrl'),
 };
-const REMINDER_SAMPLE = {
-  url: 'https://app.onhomeroom.com/?signup=1', hasAccount: false, signInLink: true,
-  signInExpiresAt: '2026-11-13T10:00:00.000Z', releasedAt: '2026-11-06T09:00:00.000Z', now: '2026-11-09T09:00:00.000Z',
-  unsubscribeUrl: 'https://app.onhomeroom.com/mail/reminders/stop?w=1&t=sample',
-};
 function reminderValues(payload) {
   const unsubscribeUrl = url(payload.unsubscribeUrl);
   const linkUntil = linkUntilOf(payload);
@@ -315,7 +310,13 @@ const ACTIONS = {
     placeholders: REMINDER_PLACEHOLDERS,
     required: BOTH('url', 'unsubscribeUrl'),
     englishOnly: false,
-    sample: REMINDER_SAMPLE,
+    // Plain literals, not a shared constant: services/mail/seed-reader.js reads
+    // a change's samples as text and follows no references (#6533).
+    sample: {
+      url: 'https://app.onhomeroom.com/?signup=1', hasAccount: false, signInLink: true,
+      signInExpiresAt: '2026-11-13T10:00:00.000Z', releasedAt: '2026-11-06T09:00:00.000Z', now: '2026-11-09T09:00:00.000Z',
+      unsubscribeUrl: 'https://app.onhomeroom.com/mail/reminders/stop?w=1&t=sample',
+    },
     values: reminderValues,
     headers: activityHeaders,
   },
@@ -325,7 +326,11 @@ const ACTIONS = {
     placeholders: REMINDER_PLACEHOLDERS,
     required: BOTH('url'),
     englishOnly: false,
-    sample: { ...REMINDER_SAMPLE, releasedAt: '2026-11-01T09:00:00.000Z', replyTo: 'support@usernodelabs.org' },
+    sample: {
+      url: 'https://app.onhomeroom.com/?signup=1', hasAccount: false, signInLink: true,
+      signInExpiresAt: '2026-11-13T10:00:00.000Z', releasedAt: '2026-11-01T09:00:00.000Z', now: '2026-11-09T09:00:00.000Z',
+      unsubscribeUrl: 'https://app.onhomeroom.com/mail/reminders/stop?w=1&t=sample', replyTo: 'support@usernodelabs.org',
+    },
     values: reminderValues,
     headers: activityHeaders,
     // A reply to the last one reaches a person (config.js mailReplyTo).

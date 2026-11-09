@@ -188,7 +188,8 @@ test('the invite-nudge clock: a run every ten minutes, and one item per person',
   // The card kind is allowed in the store, and the marker is once a project.
   const migration = read('src/db/migrations/invite-nudges.sql');
   assert.match(migration, /UNIQUE \(user_id, app_id\)/);
-  assert.match(migration, /'overlap',\s+'invite_friends'\)\);/);
+  assert.match(migration, /'overlap',\s+'run_shots', 'post_pictures_plan', 'invite_friends'\)\);/,
+    'invite_friends added to the list before it (change-pictures\' run_shots and post_pictures_plan kept)');
   assert.match(migration, /COMMENT ON TABLE invite_nudges IS 'staging:private';/);
   const manifest = JSON.parse(read('src/db/migrations/manifest.json'));
   assert.ok(JSON.stringify(manifest).includes('"invite-nudges"'));
