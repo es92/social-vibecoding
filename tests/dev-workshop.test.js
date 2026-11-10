@@ -5226,7 +5226,14 @@ test('10 Nov 2026: somebody who has made nothing here is asked who should build,
   const src = read(FIRST);
   assert.match(src, /const empty = desk\.ready && desk\.needs \+ desk\.progress \+ desk\.waiting === 0;/);
   assert.match(src, /if \(!slug \|\| !empty \|\| closed \|\| readOnly\) return undefined;/, 'History is asked only when the desk is empty, the card open, and a change theirs to start');
-  assert.match(src, /fetch\(`\/api\/ai\/history\?project=\$\{encodeURIComponent\(slug\)\}/);
+  assert.match(src, /fetch\(`\/api\/ai\/history\?project=\$\{encodeURIComponent\(slug\)\}`, \{ credentials: 'same-origin' \}\)/);
+  // A staging preview's ?demo=1 lists sample projects, never the one on
+  // screen, so they cannot say somebody made nothing here: Your work stays,
+  // as two declared checks of the demo's Workshop expect (dapp.json).
+  assert.match(src, /new URLSearchParams\(window\.location\.search\)\.get\('demo'\) === '1'\) return Promise\.resolve\(null\);\n\s+const read = fetch\(/, 'asked before anything is read');
+  const DAPP_CHECKS = JSON.parse(read('dapp.json')).tests;
+  assert.ok(DAPP_CHECKS.some((check) => /\?demo=1&ws=workshop#app\//.test(check.path) && /\[data-ws-dashboard\] \+ \[data-ws-desk\]/.test(check.expectSelector || '')),
+    'the demo Workshop\'s Your work has a declared check');
   assert.match(src, /return \{ show: !closed && !readOnly && firstChangeFor\(desk, made\), close \};/);
   assert.match(read('frontend/src/features/dev-board/workshop/your-work.tsx'),
     /const first = useFirstChange\(slug, useDesk\(slug\)\);\n\s+if \(first\.show\) return <FirstChangeCard slug=\{slug\} onClose=\{first\.close\} \/>;/);

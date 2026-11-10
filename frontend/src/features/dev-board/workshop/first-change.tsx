@@ -23,7 +23,9 @@
  * them (../../ai/desk.ts) and its History has nothing they made here (GET
  * /api/ai/history?project=<slug>; a vote is taking part, not making). When
  * either read is missing, or History has more pages than the one read, the
- * card stays away: Your work is the safe answer. Not for somebody who may
+ * card stays away: Your work is the safe answer. It stays away on a staging
+ * preview's `?demo=1` too, whose lists are sample projects' and not the one
+ * on screen (readMade). Not for somebody who may
  * not start a change here, as the hub's start-here card is not
  * (improveStore.readOnly).
  *
@@ -75,8 +77,12 @@ const kept = new Map<string, { at: number; read: Promise<MadeRead | null> }>();
 export function readMade(slug: string, now = Date.now()): Promise<MadeRead | null> {
   const had = kept.get(slug);
   if (had && now - had.at < KEEP_MS) return had.read;
-  const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
-  const read = fetch(`/api/ai/history?project=${encodeURIComponent(slug)}${demo ? '&demo=1' : ''}`, { credentials: 'same-origin' })
+  // A staging preview's `?demo=1` answers the desk's lists and History with
+  // its own sample projects (routes/ai-work.js demoWork, demoHistory), never
+  // the project on screen. They say nothing about it, so nothing is asked
+  // and the card stays away: Your work, as the demo has always drawn it.
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') return Promise.resolve(null);
+  const read = fetch(`/api/ai/history?project=${encodeURIComponent(slug)}`, { credentials: 'same-origin' })
     .then(async (res) => {
       if (!res.ok) return null;
       const data = await res.json() as { rows?: unknown; next?: unknown };
