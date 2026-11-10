@@ -204,6 +204,52 @@ export function botTabFromMessages(href: string | null | undefined, botId: numbe
   return botTabAddress(at);
 }
 
+// ── A new thread, already set (10 Nov 2026) ─────────────────────────────
+
+/** Who a new thread is for (../messages/thread-builder.tsx Builder), as an address says it. */
+export const BOT_NEW_BUILDERS = ['homeroom', 'claude-code', 'chatgpt'] as const;
+export type BotNewBuilder = (typeof BOT_NEW_BUILDERS)[number];
+
+/** What a new thread opens already set to: the project it is for, and who works on it. */
+export interface BotNew {
+  project: string | null;
+  builder: BotNewBuilder;
+}
+
+/** An app slug as the platform mints them (../../lib/claude-code-link.ts). */
+const NEW_SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+/** Pure: a new thread's settings with anything the platform would not mint taken out. */
+export function cleanNew(fresh: { project?: unknown; builder?: unknown } | null | undefined): BotNew {
+  const project = typeof fresh?.project === 'string' && NEW_SLUG.test(fresh.project) ? fresh.project : null;
+  const builder = (BOT_NEW_BUILDERS as readonly unknown[]).includes(fresh?.builder) ? fresh!.builder as BotNewBuilder : 'homeroom';
+  return { project, builder };
+}
+
+/**
+ * Pure: the address that opens the tab on a new thread with Homeroom bot's
+ * "+" pressed for you, `#homeroom-bot/new`, with `project=<slug>` and
+ * `with=<builder>` when a door names them (a project's Workshop asking a
+ * newcomer who should build, ../dev-board/workshop/first-change.tsx).
+ */
+export function botNewAddress(fresh: Partial<BotNew> | null | undefined): string {
+  const { project, builder } = cleanNew(fresh);
+  const query = new URLSearchParams();
+  if (project) query.set('project', project);
+  if (builder !== 'homeroom') query.set('with', builder);
+  const said = query.toString();
+  return said ? `${BOT_TAB}/new?${said}` : `${BOT_TAB}/new`;
+}
+
+/** Pure: what a `#homeroom-bot/new…` address sets a new thread to, or null for any other address. */
+export function botNewAt(hash: string | null | undefined): BotNew | null {
+  const [path, query = ''] = String(hash || '').replace(/^#/, '').split('?');
+  const parts = path.split('/');
+  if ((parts[0] !== 'homeroom-bot' && parts[0] !== 'ai') || parts[1] !== 'new' || parts.length !== 2) return null;
+  const said = new URLSearchParams(query);
+  return cleanNew({ project: said.get('project'), builder: said.get('with') });
+}
+
 // ── Which conversation is the bot's ─────────────────────────────────────
 
 let botConversation: number | null = null;
@@ -227,7 +273,7 @@ export function isBotChatRoute(route: string | null | undefined, botId: number |
 
 // ── Where the router asked the tab to go ────────────────────────────────
 
-let asked: { at: BotAt | null; item: BotItem | null; close?: boolean; seq: number } | null = null;
+let asked: { at: BotAt | null; item: BotItem | null; close?: boolean; fresh?: BotNew; seq: number } | null = null;
 let seq = 0;
 const listeners = new Set<() => void>();
 
@@ -254,8 +300,15 @@ export function askBotItem(item: Partial<BotItem> | null | undefined): void {
   listeners.forEach((fn) => fn());
 }
 
+/** The router's half, for a new thread already set (`#homeroom-bot/new…`; the page takes it once). */
+export function askBotNew(fresh: Partial<BotNew> | null | undefined): void {
+  seq += 1;
+  asked = { at: null, item: null, fresh: cleanNew(fresh), seq };
+  listeners.forEach((fn) => fn());
+}
+
 /** What the router last asked, with its count, so a page takes each ask once. */
-export function useBotTabAsk(): { at: BotAt | null; item: BotItem | null; close?: boolean; seq: number } | null {
+export function useBotTabAsk(): { at: BotAt | null; item: BotItem | null; close?: boolean; fresh?: BotNew; seq: number } | null {
   return useSyncExternalStore(
     (fn) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
     () => asked,
@@ -281,5 +334,5 @@ export function goBotAddress(href: string): void {
 
 if (typeof window !== 'undefined') {
   const host = ((window as any).UsernodeReact ||= {});
-  host.ai = { ...(host.ai || {}), openAt: askBotTab, openItem: (hash: string) => { const item = botItemAt(hash); if (item) askBotItem(item); }, closeColumn: askBotClose, botTabFromMessages: (href: string) => botTabFromMessages(href, botConversation) };
+  host.ai = { ...(host.ai || {}), openAt: askBotTab, openItem: (hash: string) => { const item = botItemAt(hash); if (item) askBotItem(item); }, closeColumn: askBotClose, openNew: (hash: string) => { const fresh = botNewAt(hash); if (fresh) askBotNew(fresh); }, botTabFromMessages: (href: string) => botTabFromMessages(href, botConversation) };
 }

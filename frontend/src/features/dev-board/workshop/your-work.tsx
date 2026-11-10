@@ -15,6 +15,10 @@
  * It replaced the Workshop's Waiting on you, Your work and Up next, and the
  * Hub's Your work row, which counted from the board's own buckets.
  *
+ * 10 Nov 2026: for somebody who has made nothing on the project yet, the
+ * Workshop's card asks who should build instead (./first-change.tsx), until
+ * they close it or make something.
+ *
  * An anchor, so the browser's own ways to open a link work on it. The first
  * render is the prerender's: the title and nothing else until the lists are
  * read (an effect).
@@ -28,6 +32,7 @@ import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { deskLine, deskWords, useDesk } from '../../ai/desk';
 import { projectTabAddress } from '../../ai/filter-address';
 import { BOT_AVATAR } from '../../messages/format';
+import { FirstChangeCard, useFirstChange } from './first-change';
 
 export function YourWorkRow({ slug, name, className = '', ...hooks }: {
   slug: string;
@@ -68,6 +73,10 @@ export function YourWorkRow({ slug, name, className = '', ...hooks }: {
 
 /** The Workshop's Your work: the row, in a card of its own, under Overview. */
 export function YourWorkCard({ slug, name }: { slug: string; name: string }): ReactNode {
+  // The desk is read once for every row on screen (../../ai/desk.ts), so
+  // asking here as well as in the row costs no second read.
+  const first = useFirstChange(slug, useDesk(slug));
+  if (first.show) return <FirstChangeCard slug={slug} onClose={first.close} />;
   return (
     <section className="dev-ws-strip dev-ws-desk" data-ws-desk="">
       <YourWorkRow slug={slug} name={name} className="rounded-[14px] px-1 py-2" />

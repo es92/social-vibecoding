@@ -37,8 +37,13 @@ export const HUB_DISMISSED_KEY = 'hubDismissed:v1';
 /** How many projects one account's record keeps, newest first. */
 export const HUB_DISMISSED_MAX = 200;
 
-/** The cards that can be closed: Share it, What do you want to change?, and a version's Update card for one update. */
-export type HubCard = 'share' | 'start' | `update:${string}`;
+/**
+ * The cards that can be closed: Share it, What do you want to change?, a
+ * version's Update card for one update, and (10 Nov 2026) the Workshop's
+ * "Make your first change here" (./first-change.tsx), which is not on the
+ * hub but closes the same way.
+ */
+export type HubCard = 'share' | 'start' | 'first' | `update:${string}`;
 
 /** By project, then by card: when it was closed. */
 type ClosedMap = Record<string, Partial<Record<HubCard, number>>>;

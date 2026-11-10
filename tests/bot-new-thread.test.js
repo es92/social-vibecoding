@@ -20,6 +20,11 @@
 //   6. Its box is the conversation composer's card, piece for piece.
 //   7. 1 Nov 2026: a design start says to describe the screen, and Homeroom
 //      bot draws it: no screen to pick.
+//   8. 10 Nov 2026: a second chip says who works on it (thread-builder.tsx).
+//      Homeroom bot is the default and its send is untouched. With Claude
+//      Code or ChatGPT nothing is sent here: the send opens the product with
+//      the person's own words in the link, and until Homeroom's connector is
+//      connected there the steps to add it take the thread's place.
 //
 // Run with: node --test tests/bot-new-thread.test.js
 
@@ -224,7 +229,117 @@ test('a design start says to describe the screen, and Homeroom bot draws it: no 
   assert.equal(message('messages:newThread.draws'), 'Describe the screen and Homeroom bot draws it.');
   const src = read(NEW_THREAD);
   assert.match(src, /const drawing = begun\?\.kind === 'design';/);
-  assert.match(src, /\{drawing \? <p className="messages-composer-hint" data-bot-new-thread-draws="">\{t\('messages:newThread\.draws'\)\}<\/p> : null\}/);
+  // 10 Nov 2026: only while Homeroom bot works on it. Claude Code and ChatGPT draw nothing here.
+  assert.match(src, /\{drawing && !own \? <p className="messages-composer-hint" data-bot-new-thread-draws="">\{t\('messages:newThread\.draws'\)\}<\/p> : null\}/);
   assert.doesNotMatch(src, /startScreenPick|pickScreen|<Button/, 'the screen picker retired');
   assert.throws(() => message('messages:newThread.pickScreen'));
+});
+
+const BUILDER = 'frontend/src/features/messages/thread-builder.tsx';
+
+test('who works on it: Homeroom bot by default, on a chip beside the project\'s, and nothing is read to draw it', () => {
+  const { mod, calls } = load();
+  const html = renderToHtml(createElement(mod.NewThreadPanel, { conversationId: 7 }));
+  assert.deepEqual(calls, [], 'the connections are not read until the picker is opened');
+  const chip = html.match(/<button type="button" class="messages-project-chip" data-bot-new-thread-builder="homeroom"[^>]*>[\s\S]*?<\/button>/);
+  assert.ok(chip, 'the builder chip is the project chip\'s own class');
+  assert.match(chip[0], /aria-haspopup="dialog" aria-expanded="false"/);
+  assert.doesNotMatch(chip[0], /data-picked/, 'tinted only for a pick of the person\'s own');
+  assert.match(chip[0], new RegExp(escapeRe(message('messages:newThread.builder.homeroom.name'))));
+  assert.ok(html.indexOf('data-bot-new-thread-project=""') < html.indexOf('data-bot-new-thread-builder="homeroom"'), 'after the project\'s chip');
+  // Homeroom bot's thread is as it was: its own words under the title, its send, no steps.
+  assert.match(html, new RegExp(escapeRe(message('messages:newThread.sub'))));
+  assert.match(html, /data-bot-new-thread-send=""/);
+  assert.doesNotMatch(html, /data-bot-new-thread-open=|data-bot-new-thread-handoff|data-bot-builder-setup|data-bot-new-thread-setup/);
+  assert.doesNotMatch(html, /id="bot-builder-picker"/, 'the picker is not drawn until it is opened');
+  const src = read(NEW_THREAD);
+  assert.match(src, /const \[builder, setBuilder\] = useState<Builder>\(\(\) => preset\?\.builder \|\| 'homeroom'\);/, 'Homeroom bot, unless the door that opened it named another (ai-screen.test.js)');
+  const bar = src.slice(src.indexOf('<div className="messages-project-row">'), src.indexOf('<div className="messages-composer-card">'));
+  assert.match(bar, /<ProjectChip[\s\S]*?\/>\n\s+<BuilderChip/, 'both chips float over the card, in one row');
+  assert.match(bar, /if \(!pickingBuilder && links\.phase !== 'ready' && links\.phase !== 'loading'\) void links\.load\(\);/, 'read on the first open');
+  assert.match(read('public/css/app.css'), /\.messages-project-row \{ display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; \}/);
+});
+
+test('which products are connected is read off the names Settings sorts its cards by', () => {
+  const builder = loadTsx(BUILDER, { stubs: { './api': {} } });
+  const plain = (value) => JSON.parse(JSON.stringify(value));
+  assert.deepEqual([...builder.BUILDERS], ['homeroom', 'claude-code', 'chatgpt']);
+  assert.deepEqual(plain(builder.connectedBuilders([])), { 'claude-code': false, chatgpt: false });
+  assert.deepEqual(plain(builder.connectedBuilders([{ clientName: 'Claude', live: true }])), { 'claude-code': true, chatgpt: false });
+  assert.deepEqual(plain(builder.connectedBuilders([{ clientName: 'ChatGPT', live: true }])), { 'claude-code': false, chatgpt: true });
+  assert.deepEqual(plain(builder.connectedBuilders([{ clientName: 'Claude', live: false }])), { 'claude-code': false, chatgpt: false }, 'a sign-in that ran out is not a connection');
+  assert.deepEqual(plain(builder.connectedBuilders([{ clientName: 'Codex CLI (OpenAI)', live: true }])), { 'claude-code': false, chatgpt: false }, 'Codex is its own client, not the ChatGPT chat');
+  assert.deepEqual(plain(builder.connectedBuilders([{ clientName: 'Some other agent', live: true }])), { 'claude-code': false, chatgpt: false });
+  // The list is Settings' own, read through the same-origin door, and Settings' demo flag rides along.
+  const api = read('frontend/src/features/messages/api.ts');
+  assert.match(api, /const path = flag\.startsWith\('connectors-'\) \? `\/api\/me\/connectors\?demo=\$\{encodeURIComponent\(flag\)\}` : '\/api\/me\/connectors';/);
+  assert.match(api, /live: pick\(one, 'status'\) !== 'expired'/);
+  assert.match(read('src/routes/mcp-remote.js'), /router\.get\('\/api\/me\/connectors', userRate,/);
+  assert.equal(renderToHtml(createElement(builder.BuilderPicker, {
+    open: false, builder: 'homeroom', anchor: null, onPick() {}, onClose() {},
+    links: { phase: 'idle', connected: { 'claude-code': false, chatgpt: false }, load: async () => null },
+  })), '', 'nothing until it is opened');
+});
+
+test('a pick of the person\'s own opens the product with their own words in the link, and makes nothing here', () => {
+  const builder = loadTsx(BUILDER, { stubs: { './api': {} } });
+  const words = 'I want to add a feature for reminders';
+  const prompt = builder.builderPrompt(`  ${words}  `, 'run-club-1a2b3c');
+  assert.ok(prompt.startsWith(`${words}\n\n`), 'their words first, as typed');
+  assert.match(prompt, /Use the Homeroom connector for this, on the Homeroom app `run-club-1a2b3c`\./);
+  assert.match(prompt, /submit_work so it goes to the group for a vote\.$/);
+  const any = builder.builderPrompt(words, null);
+  assert.match(any, /find the project with list_apps,/, 'no project picked: the agent finds it');
+  assert.doesNotMatch(builder.builderPrompt(words, 'Not A Slug!'), /Not A Slug/, 'only a slug the platform would mint is named');
+  const claude = builder.builderLink('claude-code', words, 'run-club-1a2b3c');
+  assert.ok(claude.startsWith('https://claude.ai/code?prompt='), 'the address "Open in Claude Code" uses');
+  assert.equal(decodeURIComponent(claude.slice('https://claude.ai/code?prompt='.length)), prompt);
+  const chatgpt = builder.builderLink('chatgpt', words, null);
+  assert.ok(chatgpt.startsWith('https://chatgpt.com/?q='), 'the address Settings\' "Ask ChatGPT to guide you" uses');
+  assert.equal(decodeURIComponent(chatgpt.slice('https://chatgpt.com/?q='.length)), any);
+  assert.match(read('frontend/src/features/settings/settings.js'), /\['connector-open-chatgpt', 'https:\/\/chatgpt\.com\/\?q='\]/);
+  assert.equal(builder.builderLink('claude-code', '   ', null), null, 'no words, no link');
+  assert.equal(builder.builderLink('claude-code', 'x'.repeat(builder.HANDOFF_MAX + 1), null), null, 'an address has a length');
+  assert.ok(builder.builderLink('claude-code', 'x'.repeat(builder.HANDOFF_MAX), null));
+  // In the panel, the hand-off comes before anything is made, and Homeroom bot's send is the one pinned above.
+  const src = read(NEW_THREAD);
+  assert.match(src, /if \(busy \|\| dictating \|\| uploading \|\| \(!content && !attachments\.length\)\) return;\n\s+if \(own\) \{ handOff\(content\); return; \}\n\s+setBusy\(true\);/);
+  const handOff = src.slice(src.indexOf('const handOff = '), src.indexOf('const send = '));
+  assert.doesNotMatch(handOff, /startBotThread|sendMessage/, 'no thread and no message in Homeroom');
+  assert.match(handOff, /const link = builderLink\(own, content, project \|\| null\);/);
+  assert.match(handOff, /const tab = window\.open\(link, '_blank'\);\n\s+if \(!tab\) \{ setError\(t\('messages:newThread\.builder\.blocked'\)\); return; \}\n\s+try \{ tab\.opener = null; \}/, 'a blocked tab keeps the words and says so');
+  assert.match(handOff, /if \(attachments\.length\) \{ setError\(t\('messages:newThread\.builder\.files', \{ builder: ownName \}\)\); return; \}/, 'files cannot ride a link');
+  assert.match(src, /className="messages-send messages-send-open"[^\n]*data-bot-new-thread-open=\{own\}>\n\s+<span>\{t\('messages:newThread\.builder\.openShort'\)\}<\/span>\n\s+<ArrowTopRightOnSquareIcon aria-hidden="true" \/>/, 'it says Open, beside the leaving-arrow');
+  assert.match(src, /\{own \? <p className="messages-composer-hint" data-bot-new-thread-handoff="">\{t\('messages:newThread\.builder\.handoff', \{ builder: ownName \}\)\}<\/p> : null\}/);
+  assert.equal(message('messages:newThread.builder.placeholder'), 'Your prompt');
+});
+
+test('until its connector is there, the steps to add it take the thread\'s place', () => {
+  const builder = loadTsx(BUILDER, { stubs: { './api': {} } });
+  const { message: settingsText } = require('./lib/platform-i18n');
+  const steps = (key, extra) => renderToHtml(createElement(builder.BuilderSetup, {
+    builder: key, checking: false, missed: false, onCheck() {}, onUseBot() {}, ...extra,
+  }));
+  const claude = steps('claude-code');
+  assert.match(claude, /^<div class="messages-builder-setup" data-bot-builder-setup="claude-code">/);
+  assert.match(claude, new RegExp(escapeRe(settingsText('settings:connectors.claudeSteps.open.title'))), 'Settings\' own walkthrough, not a second copy');
+  assert.match(claude, /data-connector-setup-url="1"/, 'the MCP server URL, with its Copy');
+  assert.match(claude, /data-bot-builder-check=""/);
+  assert.match(claude, /data-bot-builder-use-bot=""/);
+  assert.doesNotMatch(claude, /data-bot-builder-missed/);
+  assert.doesNotMatch(claude, /data-connector-step-tick/, 'no ticks: those are Settings\'');
+  const chatgpt = steps('chatgpt', { missed: true });
+  assert.match(chatgpt, new RegExp(escapeRe(settingsText('settings:connectors.chatgptSteps.directory.title'))));
+  assert.match(chatgpt, /role="status"[^>]*data-bot-builder-missed=""/, 'Check again found nothing: said, not silent');
+  const src = read(NEW_THREAD);
+  assert.match(src, /const setup = !!own && links\.phase === 'ready' && !links\.connected\[own\];/, 'only once the list was read and has no connection for it');
+  assert.match(src, /data-bot-new-thread-setup=\{setup \? builder : undefined\}/);
+  assert.match(src, /onUseBot=\{\(\) => \{ setBuilder\('homeroom'\); setMissed\(false\); toField\(\); \}\}/);
+  assert.match(src, /setMissed\(!!own && !\(found && found\[own\]\)\);/);
+  // The starts and the box stay mounted behind the steps, so what was typed is kept.
+  const css = read('public/css/app.css');
+  assert.match(css, /\.messages-reply-pane\[data-bot-new-thread-setup\] > \.messages-thread-scroll,\n\.messages-reply-pane\[data-bot-new-thread-setup\] > \.messages-composer \{ display: none; \}/);
+  const walkthrough = read(BUILDER);
+  assert.match(walkthrough, /import \{ ChatgptSetupSteps, ClaudeSetupSteps \} from '\.\.\/settings\/connector-setup-steps';/);
+  assert.match(walkthrough, /import \{ ConnectorUrl \} from '\.\.\/dev-chat\/connector-setup-inline';/);
 });

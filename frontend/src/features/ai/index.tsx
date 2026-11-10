@@ -674,6 +674,18 @@ export function AiScreen(): ReactNode {
     else if (ask.item) openItem(ask.item);
     else if (ask.at) showAt(ask.at);
   }, [ask, visible, wide, phone]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 10 Nov 2026: `#homeroom-bot/new…` is the "+" pressed for you, with the
+  // project and who works on it already set when the address names them
+  // (./door.ts botNewAt). It opens beside the chat, so it has a count of its
+  // own to wait on until the page knows which chat that is.
+  const freshTaken = useRef(0);
+  useEffect(() => {
+    if (!ask?.fresh || ask.seq === freshTaken.current || !visible || !(wide || phone) || !botId) return;
+    freshTaken.current = ask.seq;
+    how.current = 'row';
+    openBlank();
+    startNewThread(botId, ask.fresh);
+  }, [ask, visible, wide, phone, botId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openMain = () => {
     if (!(wide || phone)) { go(botTabAddress(null)); return; }

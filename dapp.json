@@ -4968,6 +4968,12 @@
       "expectText": "Staging demo app"
     },
     {
+      "name": "#homeroom-bot/new is Homeroom bot's plus pressed for you: a new thread already set to who works on it, here your own Claude Code, whose send opens Claude Code instead of messaging the bot",
+      "path": "/?demo=1#homeroom-bot/new?with=claude-code",
+      "expectSelector": "[data-bot-new-thread-pane][data-bot-new-thread-own=\"claude-code\"]:has([data-bot-new-thread-builder=\"claude-code\"][data-picked]) [data-bot-new-thread-open=\"claude-code\"]",
+      "expectText": "Open hands this to Claude Code"
+    },
+    {
       "name": "A request Homeroom bot is building says where it is on its own page, as its thread in the chat does: its status word and try, where it is and why, and the five steps with the one it is on lit (16 Oct 2026)",
       "path": "/?demo=1#app/usernode-2d5619/dev/issues/900018",
       "expectSelector": "#gc-thread-head .dev-request-root .dev-request-track[data-request-track=building] [data-bot-track=building]:has([data-bot-track-bar=building] [data-bot-track-step=build][data-state=now]) [data-bot-activity-eyebrow]",

@@ -48,7 +48,7 @@ import { matchRows } from '../workshop/sections';
 
 const WIDE = '(min-width: 768px)';
 
-function useWide(): boolean {
+export function useWide(): boolean {
   const [wide, setWide] = useState(() => {
     try { return window.matchMedia(WIDE).matches; } catch { return false; }
   });

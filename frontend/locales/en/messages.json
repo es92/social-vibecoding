@@ -4007,6 +4007,110 @@
     "text": "Loading your projects…",
     "description": "In the project picker of a new thread while the projects you are in are read."
   },
+  "newThread.builder.chip": {
+    "text": "Works on it: {{builder}}",
+    "description": "Accessible name and tooltip of the second chip over the message box of a new thread, beside the project chip: who works on the thread. {{builder}} is Homeroom bot, Claude Code or ChatGPT."
+  },
+  "newThread.builder.title": {
+    "text": "Who works on it?",
+    "description": "Title of the sheet a phone opens from the builder chip of a new thread, where the person picks Homeroom bot, Claude Code or ChatGPT."
+  },
+  "newThread.builder.label": {
+    "text": "Works on it",
+    "description": "Small heading of the menu a wide window opens from the builder chip of a new thread, over the rows Homeroom bot, Claude Code and ChatGPT."
+  },
+  "newThread.builder.note": {
+    "text": "Homeroom bot builds here. Claude Code and ChatGPT build on a plan you already pay for. Whichever you pick, a change goes to the group for a vote.",
+    "description": "Under the three rows of a new thread's builder picker: what the choice means."
+  },
+  "newThread.builder.homeroom.name": {
+    "text": "Homeroom bot",
+    "description": "The first row of a new thread's builder picker, and the builder chip while it is picked: Homeroom's own bot."
+  },
+  "newThread.builder.homeroom.sub": {
+    "text": "Builds here, on your weekly credits",
+    "description": "Under \"Homeroom bot\" in a new thread's builder picker: it builds inside Homeroom and its work is paid from the person's weekly credits."
+  },
+  "newThread.builder.own": {
+    "text": "On your own {{product}} plan",
+    "description": "Under \"Claude Code\" or \"ChatGPT\" in a new thread's builder picker. {{product}} is Claude or ChatGPT, the subscription the person already pays for."
+  },
+  "newThread.builder.ownConnected": {
+    "text": "On your own {{product}} plan · Connected",
+    "description": "Under \"Claude Code\" or \"ChatGPT\" in a new thread's builder picker once Homeroom's connector is connected in that product. {{product}} is Claude or ChatGPT."
+  },
+  "newThread.builder.setUp": {
+    "text": "Set up",
+    "description": "A small pill on the Claude Code or ChatGPT row of a new thread's builder picker while Homeroom's connector is not connected in that product yet: picking the row shows the steps to add it."
+  },
+  "newThread.builder.sub": {
+    "text": "With {{builder}}, on your {{product}} plan",
+    "description": "Under the title of a new thread while Claude Code or ChatGPT is picked to work on it, in place of \"With Homeroom bot, only you can see it\". {{builder}} is Claude Code or ChatGPT; {{product}} is Claude or ChatGPT."
+  },
+  "newThread.builder.handoff": {
+    "text": "Open hands this to {{builder}} in a new tab. The conversation continues there.",
+    "description": "Over the message box of a new thread while Claude Code or ChatGPT is picked: pressing Open does not send a message in Homeroom, it opens that product in a new browser tab with the box's words in it. \"Open\" is the button's label."
+  },
+  "newThread.builder.placeholder": {
+    "text": "Your prompt",
+    "description": "Placeholder of the message box of a new thread while Claude Code or ChatGPT is picked: what is typed is handed to that product, not sent to Homeroom bot."
+  },
+  "newThread.builder.placeholderLabel": {
+    "text": "Your prompt for {{builder}}",
+    "description": "Accessible name of the message box of a new thread while Claude Code or ChatGPT is picked. {{builder}} is Claude Code or ChatGPT."
+  },
+  "newThread.builder.open": {
+    "text": "Open in {{builder}}",
+    "description": "Accessible name of the button that takes the send button's place in a new thread while Claude Code or ChatGPT is picked: it opens that product in a new tab with the box's words in it."
+  },
+  "newThread.builder.openShort": {
+    "text": "Open",
+    "description": "The visible label of the button that takes the send button's place in a new thread while Claude Code or ChatGPT is picked, beside an arrow that leaves the page."
+  },
+  "newThread.builder.files": {
+    "text": "Files can’t be handed to {{builder}}. Remove them, or pick Homeroom bot.",
+    "description": "Error under the message box of a new thread when files are attached and Claude Code or ChatGPT is picked: only the typed words can be handed over."
+  },
+  "newThread.builder.tooLong": {
+    "text": "That is too long to hand over in a link. Shorten it to {{max}} characters, or pick Homeroom bot.",
+    "description": "Error under the message box of a new thread when the words are too long to hand to Claude Code or ChatGPT. {{max}} is a number of characters."
+  },
+  "newThread.builder.blocked": {
+    "text": "Your browser blocked the new tab. Allow pop-ups for this site, then press Open again.",
+    "description": "Error under the message box of a new thread when the browser refused to open Claude Code or ChatGPT in a new tab."
+  },
+  "newThread.builder.setup.title": {
+    "text": "Connect {{builder}}",
+    "description": "Title of a new thread while the steps to connect Claude Code or ChatGPT to Homeroom are shown in its place."
+  },
+  "newThread.builder.setup.sub": {
+    "text": "A few minutes, once per account",
+    "description": "Under \"Connect Claude Code\" or \"Connect ChatGPT\" in a new thread: how long adding Homeroom's connector takes, and that it is done once for each Claude or ChatGPT account."
+  },
+  "newThread.builder.setup.lead": {
+    "text": "{{builder}} reaches your projects through the Homeroom connector in {{product}}. There is no password or key: you approve it on a Homeroom page.",
+    "description": "First line of the steps a new thread shows when Claude Code or ChatGPT is picked and Homeroom's connector is not connected. {{builder}} is Claude Code or ChatGPT; {{product}} is Claude or ChatGPT."
+  },
+  "newThread.builder.setup.url": {
+    "text": "Your MCP server URL",
+    "description": "Small label over the copyable address of Homeroom's connector, in the steps a new thread shows to connect Claude Code or ChatGPT."
+  },
+  "newThread.builder.setup.startNew": {
+    "text": "A connector you just added is only picked up by a new {{product}} conversation, so one you already had open will not see it.",
+    "description": "Under the connector steps in a new thread. {{product}} is Claude or ChatGPT."
+  },
+  "newThread.builder.setup.check": {
+    "text": "I’ve added it. Check again",
+    "description": "The main button under the connector steps in a new thread: Homeroom looks again for the connection and, when it is there, shows the thread."
+  },
+  "newThread.builder.setup.missed": {
+    "text": "Homeroom does not see a {{product}} connection yet. Finish the steps, then check again.",
+    "description": "Shown over the buttons under the connector steps in a new thread after Check again found no connection. {{product}} is Claude or ChatGPT."
+  },
+  "newThread.builder.setup.useBot": {
+    "text": "Use Homeroom bot instead",
+    "description": "The second button under the connector steps in a new thread: go back to the thread with Homeroom bot working on it."
+  },
   "design.pane.showPreview": {
     "text": "Preview",
     "description": "On a phone, in a design thread's header: switches from the thread to the design's preview."

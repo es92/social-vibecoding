@@ -28,6 +28,13 @@
  * and names the thread's line in Main by it. A design start says Homeroom
  * bot draws the screen (services/design-bot.js write_screen), over the box.
  *
+ * 10 Nov 2026: a second chip beside the project's says who works on it
+ * (./thread-builder.tsx): Homeroom bot, as above, or the person's own Claude
+ * Code or ChatGPT. For one of those nothing is sent here and no thread is
+ * made: the send opens the product in a new tab with the box's words in it,
+ * and until its connector is there the steps to add it take the thread's
+ * place.
+ *
  * The box is the conversation composer's card (./composer.tsx), drawn with
  * the same pieces: the "+" and its Attach files row, the field, dictation
  * (../dictation/speak-button.tsx) and the accent send disc.
@@ -36,7 +43,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 
 import { ChatComposerBar } from '@/components/ui/chat';
-import { AppWindowIcon, ArrowUpIcon, ChatIcon, FlagIcon, PaperClipIcon, PencilSquareIcon, PlusIcon, SparklesIcon, XIcon } from '@/components/ui/icons';
+import { AppWindowIcon, ArrowTopRightOnSquareIcon, ArrowUpIcon, ChatIcon, FlagIcon, PaperClipIcon, PencilSquareIcon, PlusIcon, SparklesIcon, XIcon } from '@/components/ui/icons';
 import { useComposerKeyboard } from '../../lib/composer-keyboard';
 import { RichMessage, useMessages } from '../../lib/i18n/react';
 import { useAutoGrow } from '../../lib/use-auto-grow';
@@ -47,7 +54,11 @@ import * as api from './api';
 import { closeThread, openThread } from './store';
 import { BOT_AVATAR, fileSize } from './format';
 import type { MessageAttachment } from './types';
+import { loadCommunities } from '../workshop/community-scope';
 import { ProjectChip, ProjectPicker } from './project-picker';
+import {
+  BUILDER_NAME, BUILDER_PRODUCT, BuilderChip, BuilderPicker, BuilderSetup, HANDOFF_MAX, builderLink, useBuilderConnections, type Builder,
+} from './thread-builder';
 
 export type ChangeKind = 'any' | 'fix' | 'add' | 'design';
 export const CHANGE_KINDS: readonly ChangeKind[] = ['any', 'fix', 'add', 'design'];
@@ -97,10 +108,26 @@ let blankIn: number | null = null;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((fn) => fn());
 
-/** Open a blank thread beside the bot chat `conversationId` (closing a thread open there). */
-export function startNewThread(conversationId: number): void {
+/** What a blank thread opens already set to, when its door named them (../ai/door.ts botNewAddress). */
+export interface NewThreadPreset {
+  project: string | null;
+  builder: Builder;
+}
+// The last door's settings, and how many doors have named any: a thread
+// already open takes a later door's too.
+let preset: NewThreadPreset | null = null;
+let presetTurn = 0;
+
+/**
+ * Open a blank thread beside the bot chat `conversationId` (closing a thread
+ * open there). The "+" opens it on Any project and Homeroom bot; a door that
+ * names a project or who works on it passes them as `fresh`.
+ */
+export function startNewThread(conversationId: number, fresh?: NewThreadPreset | null): void {
   if (!conversationId) return;
   closeThread();
+  preset = fresh || null;
+  if (fresh) presetTurn += 1;
   blankIn = conversationId;
   notify();
 }
@@ -163,7 +190,7 @@ export function NewThreadButton({ conversationId, className, onOpen }: {
 /** The blank thread itself, in a thread pane's place. */
 export function NewThreadPanel({ conversationId }: { conversationId: number }): ReactNode {
   const t = useMessages('messages');
-  const [project, setProject] = useState('');
+  const [project, setProject] = useState(() => preset?.project || '');
   const [picking, setPicking] = useState(false);
   const [words, setWords] = useState('');
   const [busy, setBusy] = useState(false);
@@ -180,6 +207,16 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
   const addRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const chipRef = useRef<HTMLButtonElement | null>(null);
+  // Who works on it: Homeroom bot, or the person's own Claude Code or ChatGPT.
+  const [builder, setBuilder] = useState<Builder>(() => preset?.builder || 'homeroom');
+  const [pickingBuilder, setPickingBuilder] = useState(false);
+  const [missed, setMissed] = useState(false);
+  const builderChipRef = useRef<HTMLButtonElement | null>(null);
+  const links = useBuilderConnections();
+  const own = builder === 'homeroom' ? null : builder;
+  const ownName = own ? BUILDER_NAME[own] : '';
+  // Its connector is known to be missing: the steps take the thread's place.
+  const setup = !!own && links.phase === 'ready' && !links.connected[own];
   // The kit's keyboard avoidance, as a thread's own scroller has it.
   const scroller = useRef<HTMLDivElement>(null);
   useComposerKeyboard(scroller);
@@ -188,6 +225,42 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
   const starts = NEW_THREAD_STARTS.map((start) => ({ ...start, text: t(start.text) }));
   const begun = startOf(words, starts);
   const drawing = begun?.kind === 'design';
+
+  // A door named the project or who works on it while this thread was
+  // already open: it takes them too. The first render read them above.
+  const turn = useSyncExternalStore(
+    (fn) => { listeners.add(fn); return () => { listeners.delete(fn); }; },
+    () => presetTurn,
+    () => 0,
+  );
+  const turnTaken = useRef(turn);
+  useEffect(() => {
+    if (turn === turnTaken.current || !preset) return;
+    turnTaken.current = turn;
+    setProject(preset.project || '');
+    setBuilder(preset.builder);
+    setMissed(false);
+  }, [turn]);
+
+  // A door named the project: the chip says its name once the communities
+  // you are in are known, which the picker would otherwise read on opening.
+  useEffect(() => {
+    if (project) void loadCommunities();
+  }, [project]);
+
+  // Their own Claude Code or ChatGPT is picked, by the picker or by a door:
+  // whether its connector is there is read once it matters.
+  useEffect(() => {
+    if (own && links.phase === 'idle') void links.load();
+  }, [own, links.phase, links.load]);
+
+  // Back from Claude or ChatGPT in another tab, with the steps up: look again.
+  useEffect(() => {
+    if (!setup) return undefined;
+    const again = () => { void links.load(); };
+    window.addEventListener('focus', again);
+    return () => window.removeEventListener('focus', again);
+  }, [setup, links.load]);
 
   /** Attach a drop's, a paste's or a pick's files: stage them against the cap, then upload each. */
   const addFiles = async (files: File[]) => {
@@ -247,10 +320,35 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
     chipRef.current?.focus({ preventScroll: true });
   }, []);
 
+  const closeBuilderPicker = useCallback(() => {
+    setPickingBuilder(false);
+    builderChipRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  /** Check again, under the steps: read the connections, and say so when this product's is still not there. */
+  const checkAgain = async () => {
+    const found = await links.load();
+    setMissed(!!own && !(found && found[own]));
+  };
+
+  /** The person's words, handed to their own Claude Code or ChatGPT in a new tab. Nothing is made here. */
+  const handOff = (content: string) => {
+    if (!own) return;
+    if (attachments.length) { setError(t('messages:newThread.builder.files', { builder: ownName })); return; }
+    const link = builderLink(own, content, project || null);
+    if (!link) { setError(t('messages:newThread.builder.tooLong', { max: HANDOFF_MAX })); return; }
+    const tab = window.open(link, '_blank');
+    if (!tab) { setError(t('messages:newThread.builder.blocked')); return; }
+    try { tab.opener = null; } catch { /* another origin already */ }
+    setError(null);
+    closeNewThread();
+  };
+
   const send = async (event?: FormEvent) => {
     event?.preventDefault();
     const content = words.trim();
     if (busy || dictating || uploading || (!content && !attachments.length)) return;
+    if (own) { handOff(content); return; }
     setBusy(true);
     setError(null);
     try {
@@ -270,16 +368,33 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
   const nearLimit = words.length > 7600;
 
   return (
-    <aside className="messages-reply-pane platform-kb-column dc-lift dc-lift-session" aria-label={t('messages:newThread.title')} data-bot-new-thread-pane="">
+    <aside className="messages-reply-pane platform-kb-column dc-lift dc-lift-session" aria-label={t('messages:newThread.title')} data-bot-new-thread-pane="" data-bot-new-thread-own={own || undefined} data-bot-new-thread-setup={setup ? builder : undefined}>
       <header className="messages-thread-header">
         <div className="min-w-0 flex-1">
-          <div className="messages-thread-name">{t('messages:newThread.title')}</div>
-          <div className="messages-thread-sub">{t('messages:newThread.sub')}</div>
+          <div className="messages-thread-name">{setup ? t('messages:newThread.builder.setup.title', { builder: ownName }) : t('messages:newThread.title')}</div>
+          <div className="messages-thread-sub">
+            {setup
+              ? t('messages:newThread.builder.setup.sub')
+              : own ? t('messages:newThread.builder.sub', { builder: ownName, product: BUILDER_PRODUCT[own] }) : t('messages:newThread.sub')}
+          </div>
         </div>
         <button type="button" className="messages-thread-action" aria-label={t('messages:newThread.close')} title={t('messages:newThread.close')} onClick={() => closeNewThread()}>
           <XIcon aria-hidden="true" />
         </button>
       </header>
+      {/* Claude Code or ChatGPT picked, and Homeroom's connector is not in it
+          yet: the steps to add it, where the starts and the box go. Those two
+          stay mounted behind it (app.css hides them), so what was typed is
+          still there once it is connected. */}
+      {setup && own ? (
+        <BuilderSetup
+          builder={own}
+          checking={links.phase === 'loading'}
+          missed={missed}
+          onCheck={() => { void checkAgain(); }}
+          onUseBot={() => { setBuilder('homeroom'); setMissed(false); toField(); }}
+        />
+      ) : null}
       {/* A thread's foot, as every chat's (@/components/ui/chat, "A chat's
           foot"), with no typing line: nobody else is in a thread that does
           not exist yet. The starts sit in the middle of it, where the first
@@ -312,13 +427,26 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
         </div>
       </div>
       <ChatComposerBar as="form" className={`messages-composer messages-composer-thread${drop.dragging ? ' messages-composer-dragging' : ''}`} onSubmit={(e) => { void send(e); }} {...drop.handlers}>
-        {drawing ? <p className="messages-composer-hint" data-bot-new-thread-draws="">{t('messages:newThread.draws')}</p> : null}
+        {drawing && !own ? <p className="messages-composer-hint" data-bot-new-thread-draws="">{t('messages:newThread.draws')}</p> : null}
+        {own ? <p className="messages-composer-hint" data-bot-new-thread-handoff="">{t('messages:newThread.builder.handoff', { builder: ownName })}</p> : null}
         {/* The project it is for, floating over the box rather than in its card. */}
         <div className="messages-project-row">
           <ProjectChip
             slug={project || null}
             open={picking}
-            onOpen={(el) => { chipRef.current = el; setAddOpen(false); setPicking((open) => !open); }}
+            onOpen={(el) => { chipRef.current = el; setAddOpen(false); setPickingBuilder(false); setPicking((open) => !open); }}
+          />
+          <BuilderChip
+            builder={builder}
+            open={pickingBuilder}
+            onOpen={(el) => {
+              builderChipRef.current = el;
+              setAddOpen(false);
+              setPicking(false);
+              // Which products are connected is read here, the first time it is asked.
+              if (!pickingBuilder && links.phase !== 'ready' && links.phase !== 'loading') void links.load();
+              setPickingBuilder((open) => !open);
+            }}
           />
         </div>
         <ProjectPicker
@@ -327,6 +455,14 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
           anchor={chipRef.current}
           onPick={(slug) => { setProject(slug || ''); setPicking(false); toField(); }}
           onClose={closePicker}
+        />
+        <BuilderPicker
+          open={pickingBuilder}
+          builder={builder}
+          links={links}
+          anchor={builderChipRef.current}
+          onPick={(next) => { setBuilder(next); setMissed(false); setError(null); setPickingBuilder(false); toField(); }}
+          onClose={closeBuilderPicker}
         />
         {/* The conversation composer's card (./composer.tsx), piece for piece. */}
         <div className="messages-composer-card">
@@ -368,8 +504,8 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
               value={words}
               rows={1}
               maxLength={8000}
-              placeholder={t('messages:newThread.placeholder')}
-              aria-label={t('messages:newThread.placeholder')}
+              placeholder={own ? t('messages:newThread.builder.placeholder') : t('messages:newThread.placeholder')}
+              aria-label={own ? t('messages:newThread.builder.placeholderLabel', { builder: ownName }) : t('messages:newThread.placeholder')}
               onChange={(e) => setWords(e.currentTarget.value)}
               onPaste={(e) => { const files = [...e.clipboardData.files]; if (files.length) { e.preventDefault(); void addFiles(files); } }}
               onKeyDown={(e) => {
@@ -377,9 +513,17 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
               }}
             />
             <SpeakButton scope="messages:new-thread" getText={() => inputRef.current?.value || ''} onText={setWords} maxLength={8000} onBusyChange={setDictating} disabled={busy} />
-            <button type="submit" className="messages-send" onMouseDown={(event) => event.preventDefault()} disabled={busy || dictating || uploading > 0 || (!words.trim() && !attachments.length)} aria-label={t('messages:composer.send')} data-bot-new-thread-send="">
-              <ArrowUpIcon aria-hidden="true" />
-            </button>
+            {own ? (
+              // Not a send: it opens the product, so it says Open and wears the leaving-arrow.
+              <button type="submit" className="messages-send messages-send-open" onMouseDown={(event) => event.preventDefault()} disabled={dictating || links.phase === 'loading' || !words.trim()} aria-label={t('messages:newThread.builder.open', { builder: ownName })} data-bot-new-thread-open={own}>
+                <span>{t('messages:newThread.builder.openShort')}</span>
+                <ArrowTopRightOnSquareIcon aria-hidden="true" />
+              </button>
+            ) : (
+              <button type="submit" className="messages-send" onMouseDown={(event) => event.preventDefault()} disabled={busy || dictating || uploading > 0 || (!words.trim() && !attachments.length)} aria-label={t('messages:composer.send')} data-bot-new-thread-send="">
+                <ArrowUpIcon aria-hidden="true" />
+              </button>
+            )}
           </div>
           {error ? <p role="alert" className="mt-1 text-xs text-red-700 dark:text-red-400">{error}</p> : null}
           <div className="messages-composer-count mt-1 px-1 flex justify-end h-[15px]" data-near-limit={nearLimit ? '' : undefined} aria-hidden={!words.length}><span className={`text-[10px] leading-[15px] ${nearLimit ? 'text-amber-800 dark:text-amber-300' : 'text-zinc-500 dark:text-zinc-400'}`}>{words.length ? `${words.length}/8000` : ''}</span></div>

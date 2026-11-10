@@ -771,6 +771,34 @@
     "text": "Nothing of yours here right now.",
     "description": "The Your work row on a project's Workshop tab (a card of its own under Overview): how much of the person's own work there is in this project, opening the Homeroom bot tab (the platform's own assistant, whose page lists everything of theirs) narrowed to this project. The row's second line when none of the person's work is under way or waiting in this project."
   },
+  "workshop.first.title": {
+    "text": "Make your first change here",
+    "description": "Title of a card on a project's Workshop page, shown to a member who has not made a request or a change on that project yet. It takes the place of the \"Your work\" card."
+  },
+  "workshop.first.text": {
+    "text": "Pick who does the building. Whatever it makes goes to the group for a vote.",
+    "description": "Under \"Make your first change here\" on a project's Workshop page, over three rows: Homeroom bot, Claude Code and ChatGPT."
+  },
+  "workshop.first.label": {
+    "text": "Who builds it",
+    "description": "Accessible name of the group of three rows (Homeroom bot, Claude Code, ChatGPT) in the \"Make your first change here\" card on a project's Workshop page."
+  },
+  "workshop.first.homeroom.name": {
+    "text": "Homeroom bot",
+    "description": "First row of the \"Make your first change here\" card on a project's Workshop page: Homeroom's own bot."
+  },
+  "workshop.first.homeroom.sub": {
+    "text": "Say what you want. It builds it here.",
+    "description": "Under \"Homeroom bot\" in the \"Make your first change here\" card on a project's Workshop page."
+  },
+  "workshop.first.own": {
+    "text": "On your own {{product}} plan",
+    "description": "Under \"Claude Code\" or \"ChatGPT\" in the \"Make your first change here\" card on a project's Workshop page. {{product}} is Claude or ChatGPT, the subscription the person already pays for."
+  },
+  "workshop.first.setUp": {
+    "text": "Set up",
+    "description": "A small pill on the Claude Code or ChatGPT row of the \"Make your first change here\" card while Homeroom's connector is not connected in that product yet: opening the row shows the steps to add it."
+  },
   "hub.workshop.sub": {
     "text": "What happened, and every item",
     "description": "The Workshop row of a project's Hub (For you): opens the project's Workshop, which shows what happened week by week and All items, the whole board. Not the person's own work, which has its own card on the Workshop tab (Your work)."

@@ -67,9 +67,10 @@ function ui(): any {
  * The server URL with its own Copy, above the steps that say to paste it.
  * Same control as Settings' #connector-url row and the own-tools guide's
  * code blocks — a read-only field rather than a <pre>, because on a phone
- * this is the one value somebody may need to select by hand.
+ * this is the one value somebody may need to select by hand. A new thread's
+ * setup steps draw the same field (../messages/thread-builder.tsx).
  */
-function ConnectorUrl({ url }: { url: string }) {
+export function ConnectorUrl({ url }: { url: string }) {
   const t = useMessages('devchat');
   // What the last press came to; the label is read from it when it renders.
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');

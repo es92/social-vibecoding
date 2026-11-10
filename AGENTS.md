@@ -274,6 +274,15 @@ is no replay plan to write and nothing to verify locally.
   from Main, answering what was said there, or from a request's page or a
   captured screen keeps its line in Main, which is the way to its row in the
   list. Main also holds what you said there, even when a thread grew from it.
+  The "+" also has an address, `#homeroom-bot/new`, which may name the
+  project and who works on the thread (`?project=<slug>&with=claude-code` or
+  `chatgpt`; `features/ai/door.ts` `botNewAddress`). Who works on it is a
+  second chip beside the project's (`features/messages/thread-builder.tsx`):
+  Homeroom bot, or the person's own Claude Code or ChatGPT, for which nothing
+  is sent or made here. The send opens that product with the person's own
+  words in the link, after the connector steps when it has no connection. A
+  project's Workshop offers the same three to somebody who has made nothing
+  there yet, in Your work's place (`dev-board/workshop/first-change.tsx`).
   **Home is the one page of apps and communities, signed in or out (One
   Home, #6361).** Its sections are **Pinned apps** (`app_favorites`: a tile
   opens the app; hidden until the first pin), **Pinned communities**

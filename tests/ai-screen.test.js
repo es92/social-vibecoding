@@ -2196,3 +2196,31 @@ test('#6389: Needs you says what your own change waits on instead of Vote', () =
   assert.deepEqual(plain(plainVote.pill), { id: 'messages:ai.pill.vote' });
   assert.equal(whyOf(plainVote), null);
 });
+
+test('10 Nov 2026: `#homeroom-bot/new` is the "+" pressed for you, and may name the project and who works on it', () => {
+  const door = loadTsx('frontend/src/features/ai/door.ts');
+  const plain = (v) => JSON.parse(JSON.stringify(v));
+  assert.equal(door.botNewAddress(null), '#homeroom-bot/new');
+  assert.equal(door.botNewAddress({ project: 'run-club-1a2b3c', builder: 'claude-code' }), '#homeroom-bot/new?project=run-club-1a2b3c&with=claude-code');
+  assert.equal(door.botNewAddress({ project: 'run-club-1a2b3c', builder: 'homeroom' }), '#homeroom-bot/new?project=run-club-1a2b3c', 'Homeroom bot is the default and is not said');
+  assert.equal(door.botNewAddress({ project: 'Not A Slug!', builder: 'someone-else' }), '#homeroom-bot/new', 'only a slug the platform mints and a builder it knows');
+  assert.deepEqual(plain(door.botNewAt('#homeroom-bot/new?project=run-club-1a2b3c&with=chatgpt')), { project: 'run-club-1a2b3c', builder: 'chatgpt' });
+  assert.deepEqual(plain(door.botNewAt('#homeroom-bot/new')), { project: null, builder: 'homeroom' });
+  assert.deepEqual(plain(door.botNewAt('#homeroom-bot/new?project=..%2Fx&with=root')), { project: null, builder: 'homeroom' }, 'an address is anybody\'s to write');
+  assert.equal(door.botNewAt('#homeroom-bot/main'), null);
+  assert.equal(door.botNewAt('#homeroom-bot/new/extra'), null);
+  assert.equal(door.botTabAt('#homeroom-bot/new?project=run-club-1a2b3c'), null, 'not a place in the chat');
+  assert.deepEqual([...door.BOT_NEW_BUILDERS], [...loadTsx('frontend/src/features/messages/thread-builder.tsx', { stubs: { './api': {} } }).BUILDERS], 'the builders a thread knows');
+  // The router hands the address to the page, which takes it once the chat it opens beside is known.
+  const app = read('public/js/app.js');
+  assert.match(app, /if \(parts\[1\] === 'new'\) \{\s+window\.UsernodeReact\?\.ai\?\.openNew\?\.\('#' \+ parts\.join\('\/'\) \+ \(fragQuery \? '\?' \+ fragQuery : ''\)\);\s+\}/);
+  const doorSrc = read('frontend/src/features/ai/door.ts');
+  assert.match(doorSrc, /openNew: \(hash: string\) => \{ const fresh = botNewAt\(hash\); if \(fresh\) askBotNew\(fresh\); \}/);
+  const src = read('frontend/src/features/ai/index.tsx');
+  assert.match(src, /if \(!ask\?\.fresh \|\| ask\.seq === freshTaken\.current \|\| !visible \|\| !\(wide \|\| phone\) \|\| !botId\) return;\n\s+freshTaken\.current = ask\.seq;/, 'it waits for the chat, and is not marked taken until then');
+  assert.match(src, /openBlank\(\);\n\s+startNewThread\(botId, ask\.fresh\);/, 'the same two halves the "+" runs, with what the address named');
+  const thread = read('frontend/src/features/messages/new-thread.tsx');
+  assert.match(thread, /export function startNewThread\(conversationId: number, fresh\?: NewThreadPreset \| null\): void \{\n\s+if \(!conversationId\) return;\n\s+closeThread\(\);\n\s+preset = fresh \|\| null;/, 'the "+" itself clears what an earlier door named');
+  assert.match(thread, /const \[project, setProject\] = useState\(\(\) => preset\?\.project \|\| ''\);/);
+  assert.match(thread, /const \[builder, setBuilder\] = useState<Builder>\(\(\) => preset\?\.builder \|\| 'homeroom'\);/);
+});

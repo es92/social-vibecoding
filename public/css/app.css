@@ -20448,7 +20448,7 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
    card, not a row inside it, which opens the "Your communities" rows
    (project-picker.tsx). A project picked tints it in its community's colour,
    as the switcher tints the row you are on. */
-.messages-project-row { display: flex; padding-bottom: 8px; }
+.messages-project-row { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
 .messages-project-chip {
   display: inline-flex;
   align-items: center;
@@ -20499,6 +20499,39 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
 @media (prefers-reduced-motion: reduce) {
   .messages-start,
   .messages-project-chip { transition: none; }
+}
+/* WHO WORKS ON IT (10 Nov 2026, thread-builder.tsx). The second chip in the
+   row above is the project chip's own class, tinted in the accent once the
+   person's own Claude Code or ChatGPT is picked. Then the send is not a send:
+   it opens the product in a new tab, so the disc widens into a pill that
+   says Open beside the leaving-arrow. */
+.messages-send.messages-send-open {
+  width: auto;
+  gap: 4px;
+  padding-inline: 14px 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.messages-send.messages-send-open svg { width: 18px; height: 18px; stroke-width: 2; }
+/* Files cannot ride a link, so the box's "+" (Attach files) is not offered
+   while the thread is for the person's own Claude Code or ChatGPT; a file
+   dropped or pasted all the same is refused in words when Open is pressed. */
+.messages-reply-pane[data-bot-new-thread-own] .messages-composer-add { display: none; }
+/* Its connector is not there yet: the steps to add one take the place of the
+   starts and the box, which stay mounted behind them so what was typed is
+   kept. One column that scrolls, its two buttons at its end. */
+.messages-reply-pane[data-bot-new-thread-setup] > .messages-thread-scroll,
+.messages-reply-pane[data-bot-new-thread-setup] > .messages-composer { display: none; }
+.messages-builder-setup {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Clear of the phone's tab bar or home strip, whichever is taller, as
+     `.platform-safe-bar` clears a composer, and 16px over it. */
+  padding: 8px 16px calc(16px + max(var(--platform-tabs-h, 0px), var(--platform-safe-bottom, 0px)));
 }
 /* A PROJECT'S OWN CHANNEL'S REPLY THREAD, IN PLACE TOO (#3653). The pane
    Messages opens beside an app channel (AppReplyThreadPane) opens beside the

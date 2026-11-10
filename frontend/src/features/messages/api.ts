@@ -908,6 +908,26 @@ export async function startBotThread(input: { project: string | null; kind: stri
   return { conversationId: strictId(pick(data, 'conversationId')) || 0, rootId };
 }
 
+/**
+ * The chat products this account has connected Homeroom to, as Settings ›
+ * Connectors lists them, for a new thread's "who works on it"
+ * (./thread-builder.tsx). Each is the name its client chose and whether its
+ * sign-in still holds. A staging copy has none unless the page carries one of
+ * Settings' own `?demo=connectors-…` flags, which rides along here the way it
+ * does there (`?demo=1` already rides on every read, in `request`).
+ */
+export async function listConnectors(): Promise<Array<{ clientName: string; live: boolean }>> {
+  let flag = '';
+  try { flag = new URLSearchParams(window.location.search).get('demo') || ''; } catch { flag = ''; }
+  const path = flag.startsWith('connectors-') ? `/api/me/connectors?demo=${encodeURIComponent(flag)}` : '/api/me/connectors';
+  const data = record(await request<unknown>(path, { cache: 'no-store' }));
+  const rows = pick(data, 'connectors');
+  return (Array.isArray(rows) ? rows : []).map((row) => {
+    const one = record(row);
+    return { clientName: text(pick(one, 'client_name')), live: pick(one, 'status') !== 'expired' };
+  });
+}
+
 /** Open a design thread for a captured screen: where it is, to open it. */
 export async function startDesign(capture: DesignCapture): Promise<{ conversationId: number; rootId: number; href: string }> {
   const data = record(await request<unknown>(DESIGNS, { method: 'POST', body: JSON.stringify(capture) }));

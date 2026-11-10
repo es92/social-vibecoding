@@ -5957,6 +5957,13 @@ const App = {
             focusMessageId: at.focusMessageId || null,
           });
         }
+        // 10 Nov 2026: `new` is the bot's "+" pressed for you, a blank thread
+        // that may come already set (`?project=<slug>&with=<builder>`,
+        // features/ai/door.ts botNewAt): a project's Workshop asking a
+        // newcomer who should build.
+        if (parts[1] === 'new') {
+          window.UsernodeReact?.ai?.openNew?.('#' + parts.join('/') + (fragQuery ? '?' + fragQuery : ''));
+        }
         return;
       }
       // On a phone an agent session opens in Messages, as the second level

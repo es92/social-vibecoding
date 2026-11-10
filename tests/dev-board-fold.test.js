@@ -1767,7 +1767,12 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // send. The profile screen is an existing route, but the card's share
   // control has a declared check of its own because the figures it offers
   // are the point of the request; 731 leaves 149 slots.
-  checkCap.assertPinned(DAPP.tests.length, 731);
+  // 731 → 732: +1 (10 Nov 2026, who works on a new thread) Homeroom bot's
+  // "+" has an address of its own, #homeroom-bot/new, that may name the
+  // project and who works on the thread, so it has no check to fold into:
+  // the one check opens it set to Claude Code and finds the builder chip
+  // picked and the Open that takes the send's place. 732 leaves 148 slots.
+  checkCap.assertPinned(DAPP.tests.length, 732);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

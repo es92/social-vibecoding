@@ -5189,6 +5189,51 @@ test('#2182, 5 Nov 2026: a signed-in viewer\'s Your work is one row under Overvi
   assert.equal(AppView._workshopView().mine.bot, true);
 });
 
+test('10 Nov 2026: somebody who has made nothing here is asked who should build, in Your work\'s place', () => {
+  const FIRST = 'frontend/src/features/dev-board/workshop/first-change.tsx';
+  const first = loadTsx(FIRST, { stubs: { '../../messages/api': { listConnectors: () => new Promise(() => {}) } } });
+  const desk = (over = {}) => ({ ready: true, needs: 0, progress: 0, waiting: 0, first: null, ...over });
+  const none = { rows: [], next: null };
+  assert.equal(first.firstChangeFor(desk(), none), true, 'nothing of theirs now, and nothing before');
+  assert.equal(first.firstChangeFor(desk(), { rows: [{ kind: 'vote' }, { kind: 'vote' }], next: null }), true, 'a vote is taking part, not making');
+  assert.equal(first.firstChangeFor(desk(), { rows: [{ kind: 'request' }], next: null }), false, 'a request of theirs, once');
+  assert.equal(first.firstChangeFor(desk(), { rows: [{ kind: 'change' }], next: null }), false);
+  assert.equal(first.firstChangeFor(desk(), { rows: [{ kind: 'solo' }], next: null }), false, 'a private thread about the project counts');
+  assert.equal(first.firstChangeFor(desk(), { rows: [{ kind: 'vote' }], next: '2026-10-01T00:00:00.000Z' }), false, 'more History than was read: not called empty');
+  assert.equal(first.firstChangeFor(desk({ progress: 1 }), none), false, 'something of theirs is being built');
+  assert.equal(first.firstChangeFor(desk({ waiting: 1 }), none), false);
+  assert.equal(first.firstChangeFor(desk({ needs: 1 }), none), false, 'something asks for them: Your work says what');
+  assert.equal(first.firstChangeFor(desk({ ready: false }), none), false, 'the desk unread');
+  assert.equal(first.firstChangeFor(desk(), null), false, 'History unread, or its read failed: Your work is the safe answer');
+
+  const html = renderToHtml(createElement(first.FirstChangeCard, { slug: 'demo-app', onClose() {} }));
+  assert.match(html, /<section class="dev-ws-strip dev-ws-first" data-ws-first-change="">/, 'a card of the Workshop\'s own');
+  assert.match(html, new RegExp(`<span class="dev-ws-head-title">${message('project:workshop.first.title')}</span>`));
+  assert.match(html, /data-ws-card-close="first"/, 'closed for good, like the hub\'s cards');
+  const rows = [...html.matchAll(/<a [^>]*href="([^"]+)"[^>]*data-ws-first-builder="([^"]+)"/g)].map((m) => [m[2], m[1].replace(/&amp;/g, '&')]);
+  assert.deepEqual(rows, [
+    ['homeroom', '#homeroom-bot/new?project=demo-app'],
+    ['claude-code', '#homeroom-bot/new?project=demo-app&with=claude-code'],
+    ['chatgpt', '#homeroom-bot/new?project=demo-app&with=chatgpt'],
+  ], 'three links, each to a new thread set to this project and that builder');
+  assert.doesNotMatch(html, /data-ws-first-setup/, 'no Set up until the connections are read');
+  for (const id of ['project:workshop.first.text', 'project:workshop.first.homeroom.sub']) {
+    assert.ok(html.includes(message(id)), id);
+  }
+  assert.ok(html.includes(message('project:workshop.first.own', { product: 'Claude' })));
+  assert.ok(html.includes(message('project:workshop.first.own', { product: 'ChatGPT' })));
+
+  const src = read(FIRST);
+  assert.match(src, /const empty = desk\.ready && desk\.needs \+ desk\.progress \+ desk\.waiting === 0;/);
+  assert.match(src, /if \(!slug \|\| !empty \|\| closed \|\| readOnly\) return undefined;/, 'History is asked only when the desk is empty, the card open, and a change theirs to start');
+  assert.match(src, /fetch\(`\/api\/ai\/history\?project=\$\{encodeURIComponent\(slug\)\}/);
+  assert.match(src, /return \{ show: !closed && !readOnly && firstChangeFor\(desk, made\), close \};/);
+  assert.match(read('frontend/src/features/dev-board/workshop/your-work.tsx'),
+    /const first = useFirstChange\(slug, useDesk\(slug\)\);\n\s+if \(first\.show\) return <FirstChangeCard slug=\{slug\} onClose=\{first\.close\} \/>;/);
+  assert.match(read('frontend/src/features/dev-board/workshop/hub-dismissed.ts'), /export type HubCard = 'share' \| 'start' \| 'first' \| `update:\$\{string\}`;/);
+  assert.match(read('src/routes/ai-work.js'), /router\.get\('\/api\/ai\/history', async \(req, res\) => \{/);
+});
+
 test('#2182: a guest has no Your work to be told about', () => {
   const AppView = makeAppView({ App: { user: null, currentApp: 'demo-app', currentSubTab: 'forum' } });
   seed(AppView);
