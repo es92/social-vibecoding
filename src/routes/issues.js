@@ -579,11 +579,17 @@ function stagingMockGovernance() {
       { required: 2, windowEndsAt: hoursAhead(36) }),
     // #2086: an open featured-illustration proposal, so the card's preview
     // (proposed image beside the current one) is reviewable via ?demo=1 on
-    // an empty staging DB. The image is a shipped static asset rather than
-    // an app-illustrations id, which the empty DB could not serve.
+    // an empty staging DB. The images are shipped static assets rather than
+    // app-illustrations ids, which the empty DB could not serve. It also
+    // proposes an animated preview, a made-up "Sample recipe helper" loop
+    // (public/illustrations/card-previews/), whose first frame is the
+    // proposed picture, so the vote's loop player is reviewable too.
     mk(9100077, 'featured_illustration', '[Mock] Change the featured illustration',
       {
-        proposed: { url: '/icons/v3/icon-512.png', darkUrl: null, zoom: 1.2, x: 10, y: -5, tint: 'teal' },
+        proposed: {
+          url: '/illustrations/card-previews/sample.png', darkUrl: null, zoom: 1, x: 0, y: 0, tint: 'yellow',
+          preview: { url: '/illustrations/card-previews/sample.mp4', type: 'video/mp4' },
+        },
         current: { url: '/icons/v3/icon-192.png', darkUrl: null, zoom: 1, x: 0, y: 0 },
         remove: false,
       }, 5, 1, 0,

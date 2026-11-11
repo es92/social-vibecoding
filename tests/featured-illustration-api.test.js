@@ -46,8 +46,13 @@ const query = async (sql, p) => {
     return { rows: [row] };
   }
   if (sql.includes('INSERT INTO app_illustration_proposals')) {
-    state.images.push({ issue_id: p[0], app_id: p[1], id: p[2], content_type: p[3], data: p[4], dark_id: p[5], dark_content_type: p[6], dark_data: p[7] });
+    state.images.push({ issue_id: p[0], app_id: p[1], id: p[2], content_type: p[3], data: p[4], dark_id: p[5], dark_content_type: p[6], dark_data: p[7],
+      preview_id: p[8], preview_content_type: p[9], preview_data: p[10] });
     return { rows: [] };
+  }
+  if (sql.startsWith('SELECT preview_content_type AS content_type')) {
+    const row = state.images.find(r => r.preview_id && r.preview_id === p[0]);
+    return { rows: row ? [{ content_type: row.preview_content_type, data: row.preview_data }] : [] };
   }
   if (sql.startsWith('SELECT content_type, data FROM app_illustrations')) {
     for (const row of state.images) {
@@ -116,6 +121,7 @@ async function withServer(fn) {
   const request = (path, method = 'GET', body, type = 'application/json') => fetch(origin + path, {
     method, headers: { 'Content-Type': type }, body: body == null ? undefined : type === 'application/json' ? JSON.stringify(body) : body,
   });
+  request.raw = (path, init) => fetch(origin + path, init);
   try { await fn(request); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 }
 
@@ -274,3 +280,69 @@ test('the pair proposes one complete record: new bytes wait with it, kept images
     assert.equal(state.appWrites, 0);
   });
 });
+
+// A card's preview loop (#card-previews): an MP4 or WebM of at most 1.5 MB,
+// carried by the same proposal as the picture and served, byte ranges and
+// all, from /app-previews/<id>.
+test('a preview loop rides with the picture: proposed, kept, dropped, refused, and served in ranges', async () => {
+  const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(200, 7)]);
+  const mov = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypqt  '), Buffer.alloc(200, 7)]);
+  const huge = Buffer.concat([mp4, Buffer.alloc(1536 * 1024, 1)]);
+  const put = (request, body) => request(endpoint, 'PUT', JSON.stringify(body), 'application/octet-stream');
+  const art = { url: '/app-illustrations/' + 'a'.repeat(32), darkUrl: null, zoom: 1, x: 0, y: 0 };
+  reset(art);
+  await withServer(async (request) => {
+    // A loop with no picture under it is refused: it plays over the picture.
+    reset(null);
+    assert.equal((await put(request, { zoom: 1, x: 0, y: 0, preview: mp4.toString('base64') })).status, 409);
+    reset(art);
+    for (const bad of [mov, huge, png, Buffer.from('not a video at all, really')]) {
+      const res = await put(request, { zoom: 1, x: 0, y: 0, preview: bad.toString('base64') });
+      assert.equal(res.status, 400, 'only an MP4 or WebM of at most 1.5 MB');
+      assert.match((await res.json()).error, /MP4 or WebM preview of at most 1\.5 MB/);
+    }
+    assert.equal(state.issues.length, 0);
+    let response = await put(request, { zoom: 1, x: 0, y: 0, preview: mp4.toString('base64') });
+    assert.equal(response.status, 201);
+    const proposed = state.issues[0].payload.proposed;
+    assert.equal(proposed.url, art.url, 'the picture under it is kept');
+    assert.equal(proposed.preview.type, 'video/mp4');
+    assert.match(proposed.preview.url, /^\/app-previews\/[a-f0-9]{32}$/);
+    assert.deepEqual(state.images[0].preview_data, mp4, 'the bytes wait with the proposal');
+    assert.equal(state.appWrites, 0);
+    // Served whole, and in the ranges a video element asks for.
+    response = await request(proposed.preview.url);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'video/mp4');
+    assert.equal(response.headers.get('accept-ranges'), 'bytes');
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), mp4);
+    const ranged = await fetchRange(request, proposed.preview.url, 'bytes=0-1');
+    assert.equal(ranged.status, 206);
+    assert.equal(ranged.headers.get('content-range'), `bytes 0-1/${mp4.length}`);
+    assert.deepEqual(Buffer.from(await ranged.arrayBuffer()), mp4.subarray(0, 2));
+    assert.equal((await fetchRange(request, proposed.preview.url, `bytes=${mp4.length}-`)).status, 416);
+    assert.equal((await request('/app-previews/' + 'f'.repeat(32))).status, 404);
+    assert.equal((await request('/app-previews/nope')).status, 404);
+
+    // A card that plays one keeps it through a new picture, a reframe and a
+    // dark picture; null drops it; a record without one carries no key.
+    const withLoop = { ...art, preview: { url: '/app-previews/' + 'b'.repeat(32), type: 'video/mp4' } };
+    reset(withLoop);
+    await put(request, { zoom: 1, x: 0, y: 0, light: png.toString('base64') });
+    assert.deepEqual(state.issues[0].payload.proposed.preview, withLoop.preview);
+    reset(withLoop);
+    response = await request(endpoint, 'PATCH', { zoom: 1.2, x: 0, y: 0, tint: 'teal' });
+    assert.deepEqual(state.issues[0].payload.proposed.preview, withLoop.preview);
+    reset(withLoop);
+    await put(request, { zoom: 1, x: 0, y: 0, preview: null });
+    assert.ok(!('preview' in state.issues[0].payload.proposed), 'null drops the loop');
+    reset(art);
+    await put(request, { zoom: 1, x: 0, y: 0, light: png.toString('base64') });
+    assert.ok(!('preview' in state.issues[0].payload.proposed), 'no loop, no key');
+  });
+});
+
+/** A GET with a Range header, against the suite's own server. */
+async function fetchRange(request, url, range) {
+  return request.raw(url, { headers: { Range: range } });
+}

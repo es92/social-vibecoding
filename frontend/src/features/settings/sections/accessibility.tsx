@@ -1,5 +1,6 @@
 /**
- * Settings → Accessibility: text size and high contrast (#3969).
+ * Settings → Accessibility: text size and high contrast (#3969), and
+ * whether project cards play their animated previews.
  *
  * A page of one part, right after Appearance in Preferences, so the two
  * reading controls are visible without opening Appearance first. It follows
@@ -28,6 +29,7 @@ import { useCallback, useState } from 'react';
 import { SectionHeading } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 
+import { onPreviewsPref, previewsOn, setPreviewsOn } from '../../../lib/card-previews';
 import { useMessages } from '../../../lib/i18n/react';
 import { useIsomorphicLayoutEffect, useWindowEvent } from '../../../lib/legacy-dom';
 import { radioGroupKeys } from '../../../lib/radio-group';
@@ -148,6 +150,50 @@ function HighContrastRow() {
   );
 }
 
+/**
+ * "Play previews": a project card's short, silent loop plays when you point
+ * at the card, or on a phone for the card you stop on
+ * (../../../lib/card-previews.ts). On by default, kept on this device, and
+ * never playing anyway under reduced motion or Data Saver. Like the switch
+ * above it, the first render is off and storage is read in an effect, so the
+ * prerendered markup matches.
+ */
+function CardPreviewsRow() {
+  const t = useMessages('settings');
+  const [on, setOn] = useState(false);
+
+  const sync = useCallback(() => setOn(previewsOn()), []);
+
+  useIsomorphicLayoutEffect(() => {
+    sync();
+    return onPreviewsPref(sync);
+  }, [sync]);
+
+  useWindowEvent('usernode:settings-section', sync);
+
+  return (
+    <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+      <label className="flex items-center gap-2 cursor-pointer select-none">
+        <Switch
+          id="settings-card-previews"
+          checked={on}
+          onChange={(e) => {
+            const next = e.currentTarget.checked;
+            setPreviewsOn(next);
+            setOn(next);
+          }}
+        />
+        <span className="text-sm text-zinc-800 dark:text-zinc-200">
+          {t('settings:accessibility.previews.label')}
+        </span>
+      </label>
+      <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2 leading-relaxed">
+        {t('settings:accessibility.previews.description')}
+      </p>
+    </div>
+  );
+}
+
 export function AccessibilitySection() {
   const t = useMessages('settings');
   return (
@@ -160,6 +206,7 @@ export function AccessibilitySection() {
           <TextSizeControl />
         </div>
         <HighContrastRow />
+        <CardPreviewsRow />
       </div>
     </div>
   );

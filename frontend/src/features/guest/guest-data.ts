@@ -25,6 +25,8 @@ export interface GuestApp extends PublicApp {
   icon_color?: string | null;
   illustration_url?: string | null;
   illustration_dark_url?: string | null;
+  /** The card's animated preview, a short silent loop over the picture (./card-preview.tsx). */
+  preview_url?: string | null;
   active_users?: number;
   member_count?: number;
   open_votes?: number;

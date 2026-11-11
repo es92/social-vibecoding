@@ -21816,9 +21816,12 @@ const AppView = {
   // link: the URL is API-supplied and only ever an <img> source.
   _illustrationExtraSpec(issue) {
     const p = (issue && issue.payload) || {};
+    // `preview` is the card's animated loop, when the record carries one:
+    // its URL only ever becomes a <video> source, never a link.
     const pick = (rec) => (rec && rec.url
       ? { url: String(rec.url), darkUrl: rec.darkUrl ? String(rec.darkUrl) : null,
-        tint: rec.tint != null ? rec.tint : null }
+        tint: rec.tint != null ? rec.tint : null,
+        previewUrl: rec.preview && typeof rec.preview.url === 'string' ? String(rec.preview.url) : null }
       : null);
     return {
       t: 'illustration',

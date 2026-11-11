@@ -64,6 +64,7 @@ import { devicePinsStore, loadDevicePins, toggleDevicePin } from './device-pins'
 import { useCommunityColor } from '../../lib/community-color';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { cardCover, morph, projectHero } from './card-morph';
+import { CardPreview } from './card-preview';
 import {
   type GuestApp,
   MIN_PEOPLE,
@@ -167,6 +168,8 @@ export function ProjectLink({ slug, children, ...rest }: { slug: string; childre
  * on its colour, lit from the top left, with a blurred copy of the icon
  * glowing behind it in its own colours. The people pill sits in its lower
  * left and, under a pointer or keyboard focus, an arrow in its lower right.
+ * A picture may carry an animated preview (`preview_url`), which plays over
+ * it under the rules in ./card-preview.tsx; the pills stay on top.
  */
 function CardCover({ app, eager }: { app: GuestApp; eager: boolean }) {
   const t = useMessages('auth');
@@ -196,6 +199,7 @@ function CardCover({ app, eager }: { app: GuestApp; eager: boolean }) {
               className="absolute inset-0 hidden h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100 dark:block"
             />
           ) : null}
+          {app.preview_url ? <CardPreview src={app.preview_url} /> : null}
         </>
       ) : (
         <>

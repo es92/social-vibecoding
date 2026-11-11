@@ -2279,9 +2279,9 @@
       "expectText": "Proposed"
     },
     {
-      "name": "An illustration proposal's discussion page carries the same preview (#2086)",
+      "name": "An illustration proposal's discussion page carries the same preview (#2086), with its proposed preview loop",
       "path": "/?demo=1#app/usernode-2d5619/dev/governance/9100077",
-      "expectSelector": "#gc-thread-head [data-gov-root='9100077'] [data-illustration-preview] [data-illustration-side='current'] img[alt]",
+      "expectSelector": "#gc-thread-head [data-gov-root='9100077'] [data-illustration-preview] [data-illustration-side='preview'] video[aria-label]",
       "expectText": "Change the featured illustration"
     },
     {

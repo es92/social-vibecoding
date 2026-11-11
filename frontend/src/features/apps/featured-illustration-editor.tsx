@@ -26,6 +26,8 @@ type ProposalLink = { id: number; href: string };
 // that the sliders are gone.
 const KEY_PAN = 3;
 const KEY_ZOOM = 1.08;
+// routes/app-illustrations.js MAX_PREVIEW_BYTES: the most a card's loop may be.
+const MAX_PREVIEW_BYTES = 1536 * 1024;
 
 export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose: () => void }) {
   const t = useMessages('discover');
@@ -39,6 +41,10 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
   const [art, setArt] = useState<Art | null>(null);
   const pendingBlob = useRef<Blob | null>(null);
   const pendingDark = useRef<Blob | null>(null);
+  // The card's preview loop: undefined keeps the card's own, null drops it,
+  // a file replaces it.
+  const pendingPreview = useRef<Blob | null | undefined>(undefined);
+  const loopFile = useRef<HTMLInputElement>(null);
   const uploadTheme = useRef<'light' | 'dark'>('light');
   const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light');
   const [loading, setLoading] = useState(true);
@@ -68,6 +74,10 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
     const url = art?.url;
     return () => { if (url?.startsWith('blob:')) URL.revokeObjectURL(url); };
   }, [art?.url]);
+  useEffect(() => {
+    const url = art?.preview?.url;
+    return () => { if (url?.startsWith('blob:')) URL.revokeObjectURL(url); };
+  }, [art?.preview?.url]);
   useEffect(() => {
     const url = art?.darkUrl;
     return () => { if (url?.startsWith('blob:')) URL.revokeObjectURL(url); };
@@ -132,6 +142,19 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
     } catch (err) { if (current === generation.current) setError((err as Error).message); }
     finally { if (current === generation.current) setBusy(false); }
   };
+  // A preview loop is checked here as the server checks it (an MP4 or
+  // WebM of at most 1.5 MB), so a wrong file is said before Save.
+  const choosePreview = (chosen?: File) => {
+    if (!chosen) return;
+    if (!/^video\/(mp4|webm)$/.test(chosen.type) || chosen.size > MAX_PREVIEW_BYTES) {
+      setError(t('discover:illustration.preview.invalid'));
+      return;
+    }
+    setError('');
+    pendingPreview.current = chosen;
+    const url = URL.createObjectURL(chosen);
+    setArt(a => a ? { ...a, preview: { url, type: chosen.type } } : a);
+  };
   const save = async () => {
     if (busy || loading) return;
     setBusy(true); setError('');
@@ -147,7 +170,9 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       const res = await fetch(endpoint, { method: art ? 'PUT' : 'DELETE',
         headers: { 'Content-Type': 'application/octet-stream' },
         body: art ? JSON.stringify({ ...framing, light: await encode(pendingBlob.current),
-          dark: art.darkUrl ? await encode(pendingDark.current) : null }) : undefined });
+          dark: art.darkUrl ? await encode(pendingDark.current) : null,
+          ...(pendingPreview.current === undefined ? {}
+            : { preview: pendingPreview.current ? await encode(pendingPreview.current) : null }) }) : undefined });
       const data = await res.json();
       if (!res.ok) {
         // 409 carries the card already waiting; keep it on screen with the
@@ -230,8 +255,16 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
           <DiscoverCard tile={tile} preview previewTheme={previewTheme} />
         </div>
       </div>
+      {art?.preview?.url ? (
+        // The loop the card will play, still until it is played here.
+        <video data-illustration-preview-loop src={art.preview.url} poster={art.url} controls muted loop playsInline preload="none"
+          aria-label={t('discover:illustration.preview.player')}
+          className="block w-full max-w-[320px] mx-auto mb-4 aspect-[16/10] rounded-xl bg-zinc-100 object-cover dark:bg-zinc-800" />
+      ) : null}
       <input ref={file} name="featured-illustration" type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
         aria-label={t('discover:illustration.upload.fileLabel')} onChange={e => { void chooseFile(e.target.files?.[0]); e.target.value = ''; }} />
+      <input ref={loopFile} name="featured-illustration-preview" type="file" accept="video/mp4,video/webm" className="hidden"
+        aria-label={t('discover:illustration.preview.fileLabel')} onChange={e => { choosePreview(e.target.files?.[0]); e.target.value = ''; }} />
       <fieldset disabled={busy || loading || !!sent} className="flex flex-col gap-3">
         <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => { uploadTheme.current = 'light'; file.current?.click(); }}>{art ? t('discover:illustration.upload.replaceLight') : t('discover:illustration.upload.light')}</Button>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('discover:illustration.upload.formats')}</p>
@@ -243,6 +276,12 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
           {art.darkUrl ? <Button type="button" variant="neutral" ink="muted"
             onClick={() => { pendingDark.current = null; setArt({ ...art, darkUrl: null }); }}>{t('discover:illustration.upload.useLightInBoth')}</Button> : null}
           <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('discover:illustration.upload.sameDimensions')}</p>
+          <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => loopFile.current?.click()}>
+            {art.preview ? t('discover:illustration.preview.replace') : t('discover:illustration.preview.add')}
+          </Button>
+          {art.preview ? <Button type="button" variant="neutral" ink="muted"
+            onClick={() => { pendingPreview.current = null; setArt({ ...art, preview: null }); }}>{t('discover:illustration.preview.remove')}</Button> : null}
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('discover:illustration.preview.formats')}</p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             <RichMessage
               id="discover:illustration.framingHelp"
@@ -278,7 +317,7 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
           </div>
           <div className="flex gap-3">
             <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => setArt({ ...art, ...DEFAULT_FRAME })}>{t('discover:illustration.resetPosition')}</Button>
-            <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => { setArt(null); pendingBlob.current = null; pendingDark.current = null; }}>{t('discover:illustration.useAppIcon')}</Button>
+            <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => { setArt(null); pendingBlob.current = null; pendingDark.current = null; pendingPreview.current = undefined; }}>{t('discover:illustration.useAppIcon')}</Button>
           </div>
         </> : null}
       </fieldset>

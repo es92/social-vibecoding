@@ -285,6 +285,11 @@
       "id": "feedback-reports-thread",
       "sha256": "e9d2b9b8a140ceac2577b17f5940b7fec9d96f4aec3f99c5bda3b36ca5dba6e5",
       "schemaSha256": "8a7b5f32fc635f5c938941cc92dd1b66d5d167b88529e1ae688a5316f9f2c7cc"
+    },
+    {
+      "id": "card-preview-loops",
+      "sha256": "a9ba17ce7df04ba5b43c8fc899b5f605dc37a4f2016b9500b7c9099d45fb0ed6",
+      "schemaSha256": "dd501b2988c25744c0d23560c2ab3aa69e8c2ecb8031deab3db75f29cde28428"
     }
   ]
 }

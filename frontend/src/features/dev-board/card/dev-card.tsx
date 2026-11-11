@@ -1425,10 +1425,31 @@ export function IllustrationPreviewRow({ x }: { x: Extract<ExtraSpec, { t: 'illu
       )}
     </figure>
   );
+  // The proposed animated preview, when the proposal brings one the card
+  // does not already play: a still player beside the two pictures, starting
+  // only when someone presses play (its poster is the proposed picture).
+  const loop = x.proposed && x.proposed.previewUrl && x.proposed.previewUrl !== (x.current && x.current.previewUrl)
+    ? x.proposed.previewUrl : null;
   return (
     <div className="mt-2 flex gap-3 px-0.5" data-illustration-preview="1">
       {side(t('project:card.illustration.current'), 'current', x.current)}
       {side(t('project:card.illustration.proposed'), 'proposed', x.proposed)}
+      {loop && x.proposed ? (
+        <figure className="m-0 flex min-w-0 flex-1 flex-col gap-1" data-illustration-side="preview">
+          <figcaption className="text-[0.65rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t('project:card.illustration.preview')}</figcaption>
+          <video
+            src={loop}
+            poster={x.proposed.url}
+            controls
+            muted
+            loop
+            playsInline
+            preload="none"
+            aria-label={t('project:card.illustration.previewLabel')}
+            className="block aspect-[16/10] w-full rounded-lg border border-zinc-200 bg-zinc-100 object-cover dark:border-zinc-700 dark:bg-zinc-800"
+          />
+        </figure>
+      ) : null}
     </div>
   );
 }

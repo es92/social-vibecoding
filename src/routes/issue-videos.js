@@ -2,6 +2,7 @@
 
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
+const { sendRange } = require('./byte-range');
 const log = require('../services/logger');
 
 // Issue-video serving (#3940) — sibling of /issue-images/:id (see
@@ -39,38 +40,7 @@ function issueVideoRoutes(config) {
       res.set('Content-Type', rows[0].content_type || 'application/octet-stream');
       res.set('X-Content-Type-Options', 'nosniff');
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
-      res.set('Accept-Ranges', 'bytes');
-
-      const data = rows[0].data;
-      const total = data.length;
-      const range = req.headers.range;
-      if (!range) {
-        res.set('Content-Length', String(total));
-        return res.send(data);
-      }
-      const match = /^bytes=(\d*)-(\d*)$/.exec(String(range));
-      const start = match && match[1] !== '' ? parseInt(match[1], 10) : null;
-      const end = match && match[2] !== '' ? parseInt(match[2], 10) : null;
-      // Malformed or unsatisfiable (start past the end): say so, per the
-      // Range spec, rather than silently answering 200.
-      if (!match || (start === null && end === null) || (start !== null && start >= total)) {
-        res.set('Content-Range', `bytes */${total}`);
-        return res.status(416).end();
-      }
-      let first = 0;
-      let last = total - 1;
-      if (start === null) {
-        // bytes=-N: the final N bytes.
-        first = Math.max(0, total - end);
-      } else {
-        first = start;
-        if (end !== null) last = Math.min(end, total - 1);
-      }
-      const body = data.subarray(first, last + 1);
-      res.status(206);
-      res.set('Content-Range', `bytes ${first}-${last}/${total}`);
-      res.set('Content-Length', String(body.length));
-      return res.send(body);
+      return sendRange(req, res, rows[0].data);
     } catch (err) {
       log.error('issue-videos', 'Failed to serve issue video', { id, err: err.message });
       res.status(500).end();

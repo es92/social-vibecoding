@@ -5,6 +5,9 @@
 import type { Queryable } from './db.ts';
 
 export const IMAGE_PATH = '/app-illustrations/';
+// A card's animated preview (#card-previews): a short loop of the real app,
+// part of the same record (`preview: { url, type }`) and of the same vote.
+export const PREVIEW_PATH = '/app-previews/';
 
 /** The image id a stored illustration url names, or null for anything else. */
 export function imageIdFromUrl(url: unknown): string | null {
@@ -13,7 +16,23 @@ export function imageIdFromUrl(url: unknown): string | null {
   return /^[a-f0-9]{32}$/.test(id) ? id : null;
 }
 
-interface Proposed { url?: string; darkUrl?: string | null; [k: string]: unknown }
+/** The loop id a stored preview url names, or null for anything else. */
+export function previewIdFromUrl(url: unknown): string | null {
+  if (typeof url !== 'string' || !url.startsWith(PREVIEW_PATH)) return null;
+  const id = url.slice(PREVIEW_PATH.length);
+  return /^[a-f0-9]{32}$/.test(id) ? id : null;
+}
+
+/** The loop a record names, as its id; null when it has none. Throws on a preview that names no loop. */
+function recordPreviewId(proposed: Proposed): string | null {
+  const preview = proposed.preview;
+  if (preview == null) return null;
+  const id = previewIdFromUrl(preview && typeof preview === 'object' ? (preview as { url?: unknown }).url : null);
+  if (!id) throw new Error('The proposed preview names no loop');
+  return id;
+}
+
+interface Proposed { url?: string; darkUrl?: string | null; preview?: { url?: string; type?: string } | null; [k: string]: unknown }
 interface Payload { proposed?: Proposed | null }
 
 // Why applyProposal would throw for this record, or null when it would not:
@@ -25,14 +44,18 @@ export async function missingProposalImage(client: Queryable, appId: number, pay
   const lightId = imageIdFromUrl(proposed.url);
   const darkId = proposed.darkUrl ? imageIdFromUrl(proposed.darkUrl) : null;
   if (!lightId || (proposed.darkUrl && !darkId)) return 'no_image';
+  let previewId: string | null;
+  try { previewId = recordPreviewId(proposed); } catch { return 'no_image'; }
   const { rows } = await client.query(
-    `SELECT id, dark_id FROM app_illustration_proposals WHERE issue_id = $1
+    `SELECT id, dark_id, preview_id FROM app_illustration_proposals WHERE issue_id = $1
      UNION ALL
-     SELECT id, dark_id FROM app_illustrations WHERE app_id = $2`,
+     SELECT id, dark_id, preview_id FROM app_illustrations WHERE app_id = $2`,
     [issueId, appId]
   );
   const known = new Set(rows.flatMap((r) => [r.id, r.dark_id]).filter(Boolean));
-  return known.has(lightId) && (!darkId || known.has(darkId)) ? null : 'image_unavailable';
+  const loops = new Set(rows.map((r) => r.preview_id).filter(Boolean));
+  return known.has(lightId) && (!darkId || known.has(darkId)) && (!previewId || loops.has(previewId))
+    ? null : 'image_unavailable';
 }
 
 /**
@@ -59,6 +82,7 @@ export async function applyProposal(client: Queryable, appId: number, payload: P
   if (!lightId || (proposed.darkUrl && !darkId)) {
     throw new Error('The proposed illustration names no image');
   }
+  const previewId = recordPreviewId(proposed);
   const { rows: pendingRows } = await client.query(
     'SELECT * FROM app_illustration_proposals WHERE issue_id = $1', [issueId]
   );
@@ -79,17 +103,28 @@ export async function applyProposal(client: Queryable, appId: number, payload: P
   if (!light || (darkId && !dark)) {
     throw new Error('The proposed image is no longer available');
   }
+  // The loop, by the same rule: the proposal's own when it is new, the
+  // app's when the proposal kept it.
+  let preview: { id: string; contentType: string; data: unknown } | null = null;
+  if (previewId) {
+    const row = sources.find((r) => r.preview_id === previewId);
+    if (!row) throw new Error('The proposed preview is no longer available');
+    preview = { id: previewId, contentType: row.preview_content_type, data: row.preview_data };
+  }
   // The pending row goes first: its ids are UNIQUE in that table only, but
   // reading it before the upsert keeps the bytes in hand either way.
   await client.query('DELETE FROM app_illustration_proposals WHERE issue_id = $1', [issueId]);
   await client.query(
-    `INSERT INTO app_illustrations (app_id, id, content_type, data, dark_id, dark_content_type, dark_data)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO app_illustrations (app_id, id, content_type, data, dark_id, dark_content_type, dark_data,
+       preview_id, preview_content_type, preview_data)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      ON CONFLICT (app_id) DO UPDATE SET id = EXCLUDED.id, content_type = EXCLUDED.content_type,
        data = EXCLUDED.data, dark_id = EXCLUDED.dark_id, dark_content_type = EXCLUDED.dark_content_type,
-       dark_data = EXCLUDED.dark_data`,
+       dark_data = EXCLUDED.dark_data, preview_id = EXCLUDED.preview_id,
+       preview_content_type = EXCLUDED.preview_content_type, preview_data = EXCLUDED.preview_data`,
     [appId, light.id, light.contentType, light.data,
-      dark ? dark.id : null, dark ? dark.contentType : null, dark ? dark.data : null]
+      dark ? dark.id : null, dark ? dark.contentType : null, dark ? dark.data : null,
+      preview ? preview.id : null, preview ? preview.contentType : null, preview ? preview.data : null]
   );
   await client.query(
     'UPDATE apps SET featured_illustration = $2::jsonb WHERE id = $1',

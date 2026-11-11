@@ -62,7 +62,7 @@ export interface DiscoverTileView {
    * existed. An absent `tint` means the slug's own hash, which is what every
    * card without an illustration wears.
    */
-  illustration?: { url: string; darkUrl?: string | null; zoom: number; x: number; y: number; tint?: string | number | null } | null;
+  illustration?: { url: string; darkUrl?: string | null; zoom: number; x: number; y: number; tint?: string | number | null; preview?: { url: string; type?: string } | null } | null;
   /**
    * The app's own one-line description, from its manifest — null when it
    * declares none, which is most apps. The card draws nothing in its place.

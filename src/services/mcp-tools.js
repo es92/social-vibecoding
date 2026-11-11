@@ -4005,6 +4005,7 @@ function registerTools(server, ctx) {
     const ILLUSTRATION_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,99}$/;
     // routes/app-illustrations.js validateImage: the most one picture may be.
     const ILLUSTRATION_MAX_BYTES = 1024 * 1024;
+    const { MAX_PREVIEW_BYTES: ILLUSTRATION_PREVIEW_MAX_BYTES } = require('../routes/app-illustrations');
     const { TONES: ILLUSTRATION_TONES } = require('../routes/app-illustrations');
     const illustrationPath = (slug) => `/api/apps/${slug}/featured-illustration`;
     const absolute = (p) => (typeof p === 'string' && p.startsWith('/app-illustrations/') ? `${origin}${p}` : null);
@@ -4015,6 +4016,8 @@ function registerTools(server, ctx) {
       x: typeof f.x === 'number' ? f.x : null,
       y: typeof f.y === 'number' ? f.y : null,
       tint: typeof f.tint === 'string' && ILLUSTRATION_TONES.includes(f.tint) ? f.tint : null,
+      // The card's preview loop, when it has one (propose_featured_illustration's previewUploadId).
+      previewUrl: f.preview && typeof f.preview.url === 'string' && f.preview.url.startsWith('/app-previews/') ? `${origin}${f.preview.url}` : null,
     } : null);
     const proposalOut = (p) => (p && typeof p === 'object' && Number.isInteger(p.id) ? {
       id: p.id,
@@ -4034,7 +4037,7 @@ function registerTools(server, ctx) {
 
     server.registerTool('get_featured_illustration', {
       title: 'Featured illustration: the card picture',
-      description: 'The picture on a project\'s card in Discover, Home\'s Discover rail and the signed-out landing, as its Featured illustration editor shows it: the light image, the dark one if it has one, how it is framed (zoom, x, y) and its card colour (tint), or null when the card draws the project\'s icon instead. `pending` is the change to it that is waiting for the group\'s vote, if one is. Only people who may manage the project can read it: its creator, its admins and full platform admins.',
+      description: 'The picture on a project\'s card in Discover, Home\'s Discover rail and the signed-out landing, as its Featured illustration editor shows it: the light image, the dark one if it has one, how it is framed (zoom, x, y), its card colour (tint) and its animated preview loop (previewUrl, or null), or null when the card draws the project\'s icon instead. `pending` is the change to it that is waiting for the group\'s vote, if one is. Only people who may manage the project can read it: its creator, its admins and full platform admins.',
       inputSchema: {
         slug: z.string().min(1).max(100),
       },
@@ -4061,7 +4064,7 @@ function registerTools(server, ctx) {
 
     server.registerTool('propose_featured_illustration', {
       title: 'Featured illustration: propose a new card picture',
-      description: `Propose a new picture for a project's card in Discover, Home's Discover rail and the signed-out landing, as its Featured illustration editor's Save does. It does not change the card: it opens a vote in the project's group, and the picture changes when the vote passes; \`proposal\` links to it. Send each picture first with prepare_upload (kind "screenshot"), then pass the uploadIds here: \`lightUploadId\` for the light theme, and \`darkUploadId\` for the dark one, or null to drop the dark picture. Each must be a PNG or JPEG under 1 MB; a square about 1024 px, with its subject centred, fits every card (the landing crops it to 16:10 around the centre). Leave out a picture to keep the one the card has. \`zoom\` (0.5 to 3), \`x\` and \`y\` (-100 to 100) frame it, and keep the card's current framing when left out (1, 0, 0 for a card with none); \`tint\` is the card colour, one of ${ILLUSTRATION_TONES.join(', ')}. Only the project's creator, its admins and full platform admins may propose one, and only one change can wait for a vote at a time.`,
+      description: `Propose a new picture for a project's card in Discover, Home's Discover rail and the signed-out landing, as its Featured illustration editor's Save does. It does not change the card: it opens a vote in the project's group, and the picture changes when the vote passes; \`proposal\` links to it. Send each picture first with prepare_upload (kind "screenshot"), then pass the uploadIds here: \`lightUploadId\` for the light theme, and \`darkUploadId\` for the dark one, or null to drop the dark picture. Each must be a PNG or JPEG under 1 MB; a square about 1024 px, with its subject centred, fits every card (the landing crops it to 16:10 around the centre). Leave out a picture to keep the one the card has. \`zoom\` (0.5 to 3), \`x\` and \`y\` (-100 to 100) frame it, and keep the card's current framing when left out (1, 0, 0 for a card with none); \`tint\` is the card colour, one of ${ILLUSTRATION_TONES.join(', ')}. \`previewUploadId\` adds the card's animated preview, a short silent loop of the real app that plays over the picture when somebody points at the card (or, on a phone, for the card most in view): send it with prepare_upload (kind "video"), an MP4 or WebM of 5 to 8 seconds, 16:10, at most 1.5 MB, showing only demo content; null drops the card's loop, and leaving it out keeps it. Only the project's creator, its admins and full platform admins may propose one, and only one change can wait for a vote at a time.`,
       inputSchema: {
         slug: z.string().min(1).max(100),
         lightUploadId: z.number().int().positive().optional().describe('The uploadId prepare_upload (kind "screenshot") answered with for the light picture.'),
@@ -4070,16 +4073,17 @@ function registerTools(server, ctx) {
         x: z.number().min(-100).max(100).optional(),
         y: z.number().min(-100).max(100).optional(),
         tint: z.enum(ILLUSTRATION_TONES).optional().describe('The card colour behind the picture.'),
+        previewUploadId: z.number().int().positive().nullable().optional().describe('The uploadId prepare_upload (kind "video") answered with for the card\'s preview loop, or null to drop the loop the card has.'),
       },
       outputSchema: { slug: z.string(), proposal: z.any(), nextStep: z.string() },
       annotations: writeAnnotations,
-    }, async ({ slug, lightUploadId, darkUploadId, zoom, x, y, tint }) => {
+    }, async ({ slug, lightUploadId, darkUploadId, zoom, x, y, tint, previewUploadId }) => {
       const guard = scopeGuard(WRITE_SCOPE);
       if (guard) return guard;
       const s = String(slug || '').trim();
       if (!ILLUSTRATION_SLUG_RE.test(s)) return toolError('invalid_request', 'slug is not an app slug. Nothing was changed.');
-      if (lightUploadId == null && darkUploadId === undefined && zoom === undefined && x === undefined && y === undefined && tint === undefined) {
-        return toolError('invalid_request', 'Pass a lightUploadId, a darkUploadId, or new framing or tint: there is nothing to propose. Nothing was changed.');
+      if (lightUploadId == null && darkUploadId === undefined && zoom === undefined && x === undefined && y === undefined && tint === undefined && previewUploadId === undefined) {
+        return toolError('invalid_request', 'Pass a lightUploadId, a darkUploadId, a previewUploadId, or new framing or tint: there is nothing to propose. Nothing was changed.');
       }
       if (lightUploadId != null && darkUploadId != null && lightUploadId === darkUploadId) {
         return toolError('invalid_request', 'lightUploadId and darkUploadId name the same upload: send each picture with its own prepare_upload command. Nothing was changed.');
@@ -4109,6 +4113,16 @@ function registerTools(server, ctx) {
         if (!dark.ok) return toolError(dark.code, `${dark.message} Nothing was changed.`);
         body.dark = dark.base64;
       }
+      // The loop, read back for its owner and held to the card's limit.
+      if (previewUploadId === null) body.preview = null;
+      else if (previewUploadId !== undefined) {
+        const taken = await connectorUploads.takeVideo(pool, { userId: user.id, uploadId: previewUploadId, field: 'previewUploadId' });
+        if (!taken.ok) return toolError(taken.code, `${taken.message} Nothing was changed.`);
+        if (taken.data.length > ILLUSTRATION_PREVIEW_MAX_BYTES) {
+          return toolError('invalid_images', `The preview is ${Math.round(taken.data.length / 1024)} KB, and a card's preview must be at most 1.5 MB. Make it shorter or smaller and send it again. Nothing was changed.`);
+        }
+        body.preview = taken.data.toString('base64');
+      }
       // Framing the call leaves out keeps the card's own, as the editor does.
       let current = null;
       if (zoom === undefined || x === undefined || y === undefined) {
@@ -4126,7 +4140,7 @@ function registerTools(server, ctx) {
       if (!r.ok) return illustrationRefusal(r);
       // Proposed, so the uploads are done with. Their pictures now travel in
       // the proposal; the unlinked copies are swept with every other one.
-      const used = [lightUploadId, darkUploadId].filter((id) => id != null);
+      const used = [lightUploadId, darkUploadId, previewUploadId].filter((id) => id != null);
       if (used.length) await connectorUploads.consumeUploads(pool, { userId: user.id, uploadIds: used });
       return toolResult({
         slug: s,

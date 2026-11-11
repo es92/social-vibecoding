@@ -28,6 +28,9 @@ const BASE = 'http://platform.internal';
 const LIGHT = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(64, 1)]);
 const DARK = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.alloc(64, 2)]);
 const HUGE = Buffer.alloc(1024 * 1024 + 1, 3);
+// A preview loop: an MP4's `ftyp` box, and one past the 1.5 MB limit.
+const LOOP = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(64, 4)]);
+const HUGE_LOOP = Buffer.concat([LOOP, Buffer.alloc(1536 * 1024, 5)]);
 
 // Uploads 81 and 82 hold the two pictures, 83 one too big for a card, 84 is
 // a plan and 85 was never sent.
@@ -37,6 +40,8 @@ const UPLOADS = {
   83: { kind: 'screenshot', stored: true, media_id: 'c3'.repeat(16), data: HUGE },
   84: { kind: 'plan', stored: true },
   85: { kind: 'screenshot', stored: false },
+  86: { kind: 'video', stored: true, media_id: 'e5'.repeat(16), data: LOOP },
+  87: { kind: 'video', stored: true, media_id: 'f6'.repeat(16), data: HUGE_LOOP },
 };
 
 function fakePool(queries) {
@@ -54,6 +59,11 @@ function fakePool(queries) {
         assert.match(sql, /user_id = \$2 AND issue_number IS NULL/, 'only the caller\'s own unlinked picture');
         const data = Number(params[1]) === 7 ? byMedia.get(params[0]) : null;
         return { rows: data ? [{ data }] : [] };
+      }
+      if (sql.includes('FROM issue_videos')) {
+        assert.match(sql, /user_id = \$2 AND issue_number IS NULL/, 'only the caller\'s own unlinked video');
+        const data = Number(params[1]) === 7 ? byMedia.get(params[0]) : null;
+        return { rows: data ? [{ data, content_type: 'video/mp4' }] : [] };
       }
       if (sql.includes('DELETE FROM connector_uploads WHERE id = ANY')) return { rows: [] };
       throw new Error(`unstubbed query: ${sql.slice(0, 80)}`);
@@ -124,7 +134,7 @@ test('get_featured_illustration shows the card\'s picture, framing and any pendi
   assert.deepEqual(c.calls.map((x) => `${x.method} ${x.pathname}`), ['GET /api/apps/patch-741877/featured-illustration']);
   const s = out.structuredContent;
   assert.deepEqual(s.illustration, {
-    url: `${ORIGIN}/app-illustrations/${'d'.repeat(32)}`, darkUrl: null, zoom: 1.4, x: -10, y: 20, tint: 'mint',
+    url: `${ORIGIN}/app-illustrations/${'d'.repeat(32)}`, darkUrl: null, zoom: 1.4, x: -10, y: 20, tint: 'mint', previewUrl: null,
   });
   assert.deepEqual(s.pending, { id: 900, url: `${ORIGIN}/#app/patch-741877/dev/governance/900` });
   assert.match(s.nextStep, /already up for the group's vote/);
@@ -228,4 +238,33 @@ test('the charter says a proposal is a vote, one at a time, and only for a pictu
   assert.match(section.text, /opens a vote in the project's group/);
   assert.match(section.text, /Only one change to a project's picture can wait for a vote at a time/);
   assert.match(section.text, /Propose a picture only when the person has chosen it\./);
+});
+
+test('a preview loop goes up as a video upload: sent with the PUT, held to 1.5 MB, null drops it', async (t) => {
+  const c = connector(t, { respond: answers() });
+  const out = await c.handlers.get('propose_featured_illustration')({ slug: 'patch-741877', previewUploadId: 86 });
+  assert.equal(out.isError, undefined, JSON.stringify(out.structuredContent));
+  assert.deepEqual(c.calls.at(-1).body, { preview: LOOP.toString('base64'), zoom: 1.4, x: -10, y: 20 });
+  const used = c.queries.find((q) => q.sql.includes('DELETE FROM connector_uploads WHERE id = ANY'));
+  assert.deepEqual(used.params, [[86], 7]);
+
+  const big = connector(t, { respond: answers() });
+  const refused = await big.handlers.get('propose_featured_illustration')({ slug: 'patch-741877', previewUploadId: 87 });
+  assert.equal(refused.isError, true);
+  assert.match(refused.content[0].text, /at most 1\.5 MB/);
+  assert.deepEqual(big.calls.filter((x) => x.method === 'PUT'), [], 'nothing is sent');
+
+  const wrongKind = connector(t, { respond: answers() });
+  const notVideo = await wrongKind.handlers.get('propose_featured_illustration')({ slug: 'patch-741877', previewUploadId: 81 });
+  assert.equal(notVideo.isError, true);
+  assert.match(notVideo.content[0].text, /takes a video/);
+
+  const drop = connector(t, { respond: answers() });
+  await drop.handlers.get('propose_featured_illustration')({ slug: 'patch-741877', previewUploadId: null });
+  assert.deepEqual(drop.calls.at(-1).body, { preview: null, zoom: 1.4, x: -10, y: 20 });
+  // The read names the loop, at its full address.
+  const read = connector(t, { respond: () => ({ body: { illustration: { ...CURRENT.illustration, preview: { url: `/app-previews/${'a'.repeat(32)}`, type: 'video/mp4' } }, pending: null } }) });
+  const got = await read.handlers.get('get_featured_illustration')({ slug: 'patch-741877' });
+  assert.equal(got.structuredContent.illustration.previewUrl, `${ORIGIN}/app-previews/${'a'.repeat(32)}`);
+  assert.match(c.specs.get('propose_featured_illustration').description, /previewUploadId/);
 });

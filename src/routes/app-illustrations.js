@@ -2,7 +2,8 @@ const express = require('express');
 const { getPool } = require('../db/pool');
 const { getAppForUser, NON_SECRET_APP_COLUMNS } = require('../services/app-access');
 const { canManageApp } = require('../services/app-admins');
-const { sniffImageType } = require('../services/attachments');
+const { sniffImageType, sniffVideoType } = require('../services/attachments');
+const { sendRange } = require('./byte-range');
 const log = require('../services/logger');
 const { attachmentUploadLimiter } = require('../middleware/rate-limits');
 const proposals = require('../services/illustration-proposals');
@@ -46,6 +47,15 @@ function validateImage(data) {
   const type = sniffImageType(data);
   return ['image/png', 'image/jpeg', 'image/webp'].includes(type) ? type : null;
 }
+// A card's animated preview: a short silent loop of the real app, told by
+// its first bytes like every upload here (MP4 or WebM, never MOV), and small
+// enough that a card on a phone can afford it.
+const MAX_PREVIEW_BYTES = 1536 * 1024;
+function validatePreview(data) {
+  if (!Buffer.isBuffer(data) || !data.length || data.length > MAX_PREVIEW_BYTES) return null;
+  const type = sniffVideoType(data);
+  return ['video/mp4', 'video/webm'].includes(type) ? type : null;
+}
 function illustrationImageRoutes(config) {
   const router = express.Router();
   const pool = getPool(config);
@@ -66,6 +76,22 @@ function illustrationImageRoutes(config) {
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
       return res.send(rows[0].data);
     } catch (err) { log.error('illustrations', 'Image read failed', { err: err.message }); return res.status(500).end(); }
+  });
+  // A card's preview loop, published or still waiting on its vote, by the
+  // same rule as the pictures above. A video element asks for byte ranges
+  // (Safari before it plays at all), so they are answered (byte-range.js).
+  router.get('/app-previews/:id', async (req, res) => {
+    if (!/^[a-f0-9]{32}$/.test(req.params.id)) return res.status(404).end();
+    try {
+      const { rows } = await pool.query(`SELECT preview_content_type AS content_type, preview_data AS data FROM app_illustrations WHERE preview_id = $1
+        UNION ALL SELECT preview_content_type AS content_type, preview_data AS data FROM app_illustration_proposals WHERE preview_id = $1`,
+      [req.params.id]);
+      if (!rows.length || !rows[0].data) return res.status(404).end();
+      res.set('Content-Type', rows[0].content_type);
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return sendRange(req, res, rows[0].data);
+    } catch (err) { log.error('illustrations', 'Preview read failed', { err: err.message }); return res.status(500).end(); }
   });
   return router;
 }
@@ -127,19 +153,26 @@ function illustrationRoutes(config) {
     await propose(req, res, next, { url: proposals.imageUrl(id), ...framing },
       { light: { id, contentType, data: req.body } });
   });
-  // Both variants and their shared framing travel in one proposal.
-  // Raw JSON avoids the shell's smaller general-purpose JSON body limit.
-  router.put(path, attachmentUploadLimiter, express.raw({ type: 'application/octet-stream', limit: '3mb' }), async (req, res, next) => {
+  // Both variants and their shared framing travel in one proposal, and the
+  // card's preview loop with them. Raw JSON avoids the shell's smaller
+  // general-purpose JSON body limit: two pictures and a loop, in base64.
+  router.put(path, attachmentUploadLimiter, express.raw({ type: 'application/octet-stream', limit: '6mb' }), async (req, res, next) => {
     let body;
     try { body = JSON.parse(req.body.toString('utf8')); } catch { return res.status(400).json({ error: 'Could not read the illustration pair.' }); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ error: 'Could not read the illustration pair.' });
     const framing = parseFraming(body);
-    const decode = value => typeof value === 'string' && value.length <= 1398104 && value.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(value) ? Buffer.from(value, 'base64') : null;
+    const decode = (value, max = 1398104) => typeof value === 'string' && value.length <= max && value.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(value) ? Buffer.from(value, 'base64') : null;
     const light = body.light === undefined ? null : decode(body.light);
     const dark = body.dark === undefined || body.dark === null ? null : decode(body.dark);
     if (!framing || (body.light !== undefined && !validateImage(light)) ||
         (body.dark !== undefined && body.dark !== null && !validateImage(dark))) {
       return res.status(400).json({ error: 'Choose PNG, JPEG or WebP images under 1 MB and valid shared framing.' });
+    }
+    // The loop: undefined keeps the card's own, null drops it.
+    const loop = body.preview === undefined || body.preview === null ? null : decode(body.preview, Math.ceil(MAX_PREVIEW_BYTES / 3) * 4);
+    const loopType = loop ? validatePreview(loop) : null;
+    if (body.preview !== undefined && body.preview !== null && !loopType) {
+      return res.status(400).json({ error: 'Choose an MP4 or WebM preview of at most 1.5 MB.' });
     }
     const current = req.illustrationApp.featured_illustration || null;
     // A dark image or a reframe on its own needs a light image to sit under
@@ -148,18 +181,25 @@ function illustrationRoutes(config) {
     if (!light && !current?.url) return res.status(409).json({ error: 'Upload a light image first.' });
     const lightId = light ? proposals.newImageId() : null;
     const darkId = dark ? proposals.newImageId() : null;
+    const previewId = loop ? proposals.newImageId() : null;
     // The same merge the direct write performed: the current record under
     // the new framing, then whichever urls this save replaces. A dark left
-    // undefined keeps the current dark image; null drops it.
+    // undefined keeps the current dark image; null drops it. The preview
+    // follows the same rule, and a record without one carries no key.
+    const { preview: currentPreview, ...kept } = current || {};
+    const preview = body.preview === undefined ? (currentPreview || null)
+      : loop ? { url: proposals.previewUrl(previewId), type: loopType } : null;
     const proposed = {
-      ...(current || {}),
+      ...kept,
       ...framing,
       url: light ? proposals.imageUrl(lightId) : current.url,
       darkUrl: body.dark === undefined ? (current?.darkUrl || null) : dark ? proposals.imageUrl(darkId) : null,
+      ...(preview ? { preview } : {}),
     };
     await propose(req, res, next, proposed, {
       light: light ? { id: lightId, contentType: validateImage(light), data: light } : null,
       dark: dark ? { id: darkId, contentType: validateImage(dark), data: dark } : null,
+      preview: loop ? { id: previewId, contentType: loopType, data: loop } : null,
     });
   });
   router.patch(path, async (req, res, next) => {
@@ -176,4 +216,4 @@ function illustrationRoutes(config) {
   });
   return router;
 }
-module.exports = { illustrationRoutes, illustrationImageRoutes, parseFraming, validateImage, TONES, LEGACY_TINTS };
+module.exports = { illustrationRoutes, illustrationImageRoutes, parseFraming, validateImage, validatePreview, MAX_PREVIEW_BYTES, TONES, LEGACY_TINTS };

@@ -347,6 +347,24 @@ async function takeImage(pool, { userId, uploadId, field }) {
   return { ok: true, uploadId: taken.uploadId, data };
 }
 
+// An uploaded video, read back for its owner: { ok, uploadId, data,
+// contentType } or a refusal. The connector's card preview loop
+// (propose_featured_illustration's previewUploadId) reads it this way.
+async function takeVideo(pool, { userId, uploadId, field }) {
+  const taken = await takeUpload(pool, { userId, uploadId, kind: 'video', field });
+  if (!taken.ok) return taken;
+  const { rows } = await pool.query(
+    `SELECT data, content_type FROM issue_videos
+      WHERE id = $1 AND user_id = $2 AND issue_number IS NULL`,
+    [taken.mediaId, userId]
+  );
+  const data = rows && rows[0] && Buffer.isBuffer(rows[0].data) ? rows[0].data : null;
+  if (!data) {
+    return fail('upload_not_found', `Upload ${taken.uploadId}'s video is gone. Ask prepare_upload for a new command and send it again.`);
+  }
+  return { ok: true, uploadId: taken.uploadId, data, contentType: rows[0].content_type };
+}
+
 // After a call that used them: the rows are done with. A video's or a
 // screenshot's file stays, linked to its request. Never fatal; the sweep
 // removes anything left over.
@@ -384,6 +402,7 @@ module.exports = {
   authenticateUpload,
   storeUpload,
   takeUpload,
+  takeVideo,
   takeImage,
   consumeUploads,
 };

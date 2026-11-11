@@ -1463,6 +1463,14 @@
     "text": "Darker text and clearer lines, in light and dark.",
     "description": "Explanation under the High contrast switch in Settings > Accessibility."
   },
+  "accessibility.previews.label": {
+    "text": "Play previews on project cards",
+    "description": "Label of a switch in Settings, Accessibility: whether project cards play their short, silent preview clips."
+  },
+  "accessibility.previews.description": {
+    "text": "A project's card plays a short, silent clip of the project when you point at it, or on a phone for the card you stop on. Turn this off to see still pictures only. Clips never play when your device is set to reduce motion or save data.",
+    "description": "Explanation under the Play previews switch in Settings, Accessibility."
+  },
   "privacy.whoCanMessage.title": {
     "text": "Who can message or invite me",
     "description": "Heading of the first setting on the Settings > Privacy page, and the accessible name of its two choices. It decides who may start a direct message with you or invite you to a group chat or a project."

@@ -29,6 +29,8 @@ export interface GovernancePicture {
   x?: number;
   y?: number;
   tint?: string | null;
+  /** The card's animated preview loop, as the record stores it. */
+  preview?: { url?: string; type?: string } | null;
 }
 
 export type GovernanceContent =
@@ -114,6 +116,12 @@ export function outcomeLine(outcome: GovernanceOutcome): string | null {
   return null;
 }
 
+/** A stored picture record with its loop's URL beside it, as the preview row reads it. Pure. */
+function withPreviewUrl(rec: GovernancePicture): GovernancePicture & { previewUrl: string | null } {
+  const url = rec.preview && typeof rec.preview.url === 'string' ? rec.preview.url : null;
+  return { ...rec, previewUrl: url };
+}
+
 /** What the root post says it does, in the kind's own words. Pure. */
 export function governanceContent(row: any, appName = ''): GovernanceContent {
   const p = (row && row.payload) || {};
@@ -130,8 +138,8 @@ export function governanceContent(row: any, appName = ''): GovernanceContent {
     case 'featured_illustration':
       return {
         kind: 'illustration',
-        current: p.current && p.current.url ? p.current : null,
-        proposed: p.proposed && p.proposed.url ? p.proposed : null,
+        current: p.current && p.current.url ? withPreviewUrl(p.current) : null,
+        proposed: p.proposed && p.proposed.url ? withPreviewUrl(p.proposed) : null,
         remove: p.remove === true,
       };
     default:

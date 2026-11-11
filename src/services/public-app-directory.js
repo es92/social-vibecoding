@@ -107,6 +107,10 @@ function shapeApp(app, contributorRows, includeWallets) {
     illustration_url: app.illustration_id ? `/app-illustrations/${app.illustration_id}` : null,
     illustration_dark_url: app.illustration_id && app.illustration_dark_id
       ? `/app-illustrations/${app.illustration_dark_id}` : null,
+    // The card's animated preview, a short silent loop that plays over the
+    // picture (frontend/src/features/guest/card-preview.tsx), only ever with
+    // a picture under it.
+    preview_url: app.illustration_id && app.preview_id ? `/app-previews/${app.preview_id}` : null,
     member_count: parseInt(app.member_count, 10) || 0,
     open_votes: parseInt(app.open_votes, 10) || 0,
     merged_count: parseInt(app.merged_count, 10) || 0,
@@ -139,6 +143,7 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
               (fa.app_id IS NOT NULL) AS featured, fa.sort_order AS featured_order,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.id END AS illustration_id,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.dark_id END AS illustration_dark_id,
+              CASE WHEN a.featured_illustration IS NOT NULL THEN ill.preview_id END AS preview_id,
               COALESCE(cmc.cnt, 0) AS member_count,
               COALESCE(dev.open_votes, 0) AS open_votes,
               COALESCE(dev.merged_count, 0) AS merged_count,

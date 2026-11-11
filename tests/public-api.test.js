@@ -72,6 +72,7 @@ const APPS = [
     description: '  A shared   todo list,\nshaped together.  ', category: 'Tools',
     featured: true, featured_order: 2,
     illustration_id: 'abcabcabcabcabcabcabcabcabcabcab', illustration_dark_id: null,
+    preview_id: 'cdecdecdecdecdecdecdecdecdecdecd',
     member_count: '12', open_votes: '3', last_merged_at: '2026-06-09T00:00:00.000Z',
   },
   {
@@ -297,6 +298,9 @@ test('apps list: the guest Discover card fields', async () => {
     assert.equal(one.illustration_url, '/app-illustrations/abcabcabcabcabcabcabcabcabcabcab');
     assert.equal(one.illustration_dark_url, null);
     assert.equal(two.illustration_url, null);
+    // Its animated preview loop, only ever with a picture under it.
+    assert.equal(one.preview_url, '/app-previews/cdecdecdecdecdecdecdecdecdecdecd');
+    assert.equal(two.preview_url, null);
     assert.equal(one.icon_color, '#2e6660');
     // Counts arrive as numbers.
     assert.equal(one.member_count, 12);

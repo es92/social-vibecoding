@@ -4303,6 +4303,14 @@
     "text": "Proposed",
     "description": "Small caption over the right thumbnail on a featured-illustration proposal's card: the illustration the proposal would put in its place."
   },
+  "card.illustration.preview": {
+    "text": "Preview loop",
+    "description": "Caption over the short silent clip a card-picture vote proposes, beside the Current and Proposed pictures."
+  },
+  "card.illustration.previewLabel": {
+    "text": "The proposed preview loop",
+    "description": "Accessible name of the video player for the short silent clip a card-picture vote proposes."
+  },
   "card.claims.label": {
     "text": "Claims:",
     "description": "Label before the list of members who have claimed a request (said they are working on it), shown to admins on the request's page. A plural noun; keep the colon."

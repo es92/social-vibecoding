@@ -159,6 +159,34 @@
     "text": "Use images with the same dimensions. Framing and colour are shared across both themes.",
     "description": "Small note in the featured illustration editor about the light and dark pictures."
   },
+  "illustration.preview.add": {
+    "text": "Add preview loop",
+    "description": "Button in the featured illustration editor: choose a short, silent video clip of the app that plays over the card's picture."
+  },
+  "illustration.preview.replace": {
+    "text": "Replace preview loop",
+    "description": "Button in the featured illustration editor: choose a different short video clip to play over the card's picture."
+  },
+  "illustration.preview.remove": {
+    "text": "Remove preview loop",
+    "description": "Button in the featured illustration editor: drop the card's short video clip, so the card shows its picture only."
+  },
+  "illustration.preview.formats": {
+    "text": "MP4 or WebM, 5 to 8 seconds, up to 1.5 MB, showing made-up content only. It plays over the picture when someone points at the card.",
+    "description": "Small note under the preview loop buttons in the featured illustration editor. Keep the format names."
+  },
+  "illustration.preview.fileLabel": {
+    "text": "Upload preview loop",
+    "description": "Accessible name of the hidden video file chooser in the featured illustration editor."
+  },
+  "illustration.preview.player": {
+    "text": "Preview loop",
+    "description": "Accessible name of the video player that shows the card's preview loop in the featured illustration editor."
+  },
+  "illustration.preview.invalid": {
+    "text": "Choose an MP4 or WebM of at most 1.5 MB.",
+    "description": "Error in the featured illustration editor when the chosen preview loop is the wrong kind of file or too large."
+  },
   "illustration.cardColour": {
     "text": "Card colour",
     "description": "Label, and accessible name, of the row of colour swatches in the featured illustration editor: the background colour of the app's card."

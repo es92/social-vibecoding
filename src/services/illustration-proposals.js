@@ -18,7 +18,9 @@
 //     remove:   boolean }
 //
 // where an illustration is the same record `apps.featured_illustration`
-// holds ({ url, darkUrl, zoom, x, y, tint }). `proposed` is COMPLETE, not a
+// holds ({ url, darkUrl, zoom, x, y, tint, preview? }, where `preview` is
+// the card's animated loop, { url: '/app-previews/<id>', type }, absent when
+// it has none). `proposed` is COMPLETE, not a
 // diff: a framing-only change carries the current image URLs, a light-only
 // upload carries the current darkUrl, so the apply is one write of the
 // record as proposed. The bytes behind a NEW url wait in
@@ -38,7 +40,7 @@ const { sendSystemMessage, pushIssueUpdate } = require('./ws');
 const illustrations = require('../workflow/rules/illustrations.ts');
 
 const KIND = 'featured_illustration';
-const { IMAGE_PATH, imageIdFromUrl } = illustrations;
+const { IMAGE_PATH, PREVIEW_PATH, imageIdFromUrl, previewIdFromUrl } = illustrations;
 
 function newImageId() {
   return crypto.randomBytes(16).toString('hex');
@@ -46,6 +48,10 @@ function newImageId() {
 
 function imageUrl(id) {
   return `${IMAGE_PATH}${id}`;
+}
+
+function previewUrl(id) {
+  return `${PREVIEW_PATH}${id}`;
 }
 
 /** The card's route, the same one shared-objects.js builds for a governance row. */
@@ -79,7 +85,8 @@ class PendingProposalError extends Error {
 /**
  * Open the proposal. `proposed` is the complete illustration record the app
  * would wear (null to remove it); `images` carries the bytes behind any NEW
- * url in it as { light: { id, contentType, data } | null, dark: ... }.
+ * url in it as { light: { id, contentType, data } | null, dark: ...,
+ * preview: ... } (`preview` the card's loop, under `proposed.preview.url`).
  *
  * Throws PendingProposalError when one is already open on the app. The
  * read below answers the common case with the open card to link to; the
@@ -112,14 +119,17 @@ async function createProposal(pool, { app, user, proposed, images = {} }) {
     issue = rows[0];
     const light = images.light || null;
     const dark = images.dark || null;
-    if (light || dark) {
+    const preview = images.preview || null;
+    if (light || dark || preview) {
       await client.query(
         `INSERT INTO app_illustration_proposals
-           (issue_id, app_id, id, content_type, data, dark_id, dark_content_type, dark_data)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           (issue_id, app_id, id, content_type, data, dark_id, dark_content_type, dark_data,
+            preview_id, preview_content_type, preview_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [issue.id, app.id,
           light ? light.id : null, light ? light.contentType : null, light ? light.data : null,
-          dark ? dark.id : null, dark ? dark.contentType : null, dark ? dark.data : null]
+          dark ? dark.id : null, dark ? dark.contentType : null, dark ? dark.data : null,
+          preview ? preview.id : null, preview ? preview.contentType : null, preview ? preview.data : null]
       );
     }
     await client.query('COMMIT');
@@ -155,10 +165,13 @@ async function createProposal(pool, { app, user, proposed, images = {} }) {
 module.exports = {
   KIND,
   IMAGE_PATH,
+  PREVIEW_PATH,
   PendingProposalError,
   newImageId,
   imageUrl,
+  previewUrl,
   imageIdFromUrl,
+  previewIdFromUrl,
   governanceHref,
   proposalLink,
   findOpenProposal,

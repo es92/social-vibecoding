@@ -274,6 +274,8 @@ export interface IllustrationPreviewSpec {
   url: string;
   darkUrl: string | null;
   tint: string | number | null;
+  /** The card's animated preview loop, when it has one. */
+  previewUrl?: string | null;
 }
 
 export type ExtraSpec =
