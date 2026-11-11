@@ -264,6 +264,11 @@ test('the Settings picker is offered to everyone, with Auto and the shipped lang
   assert.match(read('frontend/src/features/settings/sections/language.tsx'),
     /shippedLanguages\.map\(\(\{ tag, name \}\) => \(/, 'the options are the config, not a second list');
   assert.equal(shipped[0], 'en', 'English always ships, and comes first');
+  // #6511: the cache translates Homeroom's own screens, so the intro may not
+  // say they are English only; it says why a language may be missing instead.
+  const intro = message('settings:language.intro');
+  assert.doesNotMatch(intro, /English/, 'the intro does not claim the screens are English only');
+  assert.match(intro, /listed once enough of Homeroom has been translated/);
   // A locale saved when the picker listed more stays visible and changeable.
   const start = js.indexOf('    _renderLanguageSection() {');
   const fn = js.slice(start, start + 900);

@@ -4370,6 +4370,29 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       if (channel && places.generalMuted(placesPayload)) {
         channel = { ...channel, unread_count: 0, muted: true };
       }
+      // THE PROJECT CARD'S PICTURE (workshop/community-card.tsx, for somebody
+      // who has not joined): the featured illustration its group voted in,
+      // its dark twin and its preview loop, the same three the public
+      // directory serves (public-app-directory.js shapeApp). Best-effort: a
+      // read that fails is the icon on the project's colour.
+      let cover = null;
+      try {
+        const { rows: art } = await pool.query(
+          `SELECT ill.id, ill.dark_id, ill.preview_id
+             FROM apps a JOIN app_illustrations ill ON ill.app_id = a.id
+            WHERE a.id = $1 AND a.featured_illustration IS NOT NULL`,
+          [app.id]
+        );
+        if (art[0] && art[0].id) {
+          cover = {
+            illustration_url: `/app-illustrations/${art[0].id}`,
+            illustration_dark_url: art[0].dark_id ? `/app-illustrations/${art[0].dark_id}` : null,
+            preview_url: art[0].preview_id ? `/app-previews/${art[0].preview_id}` : null,
+          };
+        }
+      } catch (err) {
+        log.warn('apps', 'Could not read the picture for the hub', { slug: app.slug, message: err.message });
+      }
       // Versions (services/version-links.js). Best-effort, like the reads
       // above: one that fails is no line, never a failed hub.
       const versionFields = await versionLinks.communityFields(pool, app).catch((err) => {
@@ -4381,6 +4404,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
         name: app.name,
         // What the app is, for the page's hero (above).
         description,
+        cover,
         invite_link: inviteLink,
         invite_summary: inviteSummary,
         // Since when the app itself has been live, for Recently live's card

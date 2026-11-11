@@ -260,6 +260,10 @@ async function migrate(config) {
   await seedStagingLandingDirectory(pool);
   // After both: it tags their demo apps with a type.
   await seedStagingAppCategories(pool);
+  // #6585: the kinds the directory works out for three fake public projects,
+  // so Home's kind chips have Money, Health & fitness and Food & drink to
+  // show on a fresh staging copy (which has no model key and no rows).
+  await seedStagingInferredCategories(pool);
   await seedStagingFailedApp(pool, config);
   await seedStagingForkLineage(pool, config);
   // After the fork fixtures: it switches one of them into demo mode.
@@ -9001,6 +9005,85 @@ async function seedStagingAppCategories(pool) {
     log.info('db', 'Staging app categories seeded');
   } catch (err) {
     log.warn('db', 'Staging app categories seeding failed', { message: err.message });
+  }
+}
+
+// #6585: Home's kind chips show the kinds projects have. A fresh staging copy
+// has no app_inferred_categories rows and no helper-model key, so three
+// obviously fake public projects are seeded with the description the kind was
+// worked out from, and their rows: one food, one money (with the template's
+// starting `other` in its snapshot, to show that being sorted) and one
+// health. The source description is exactly what public-app-directory.js
+// compares against, so the rows count. Display data on fake apps only;
+// idempotent on every boot. Strictly a no-op outside staging.
+//
+// The ids sit in the 90015x range, clear of every other 900xxx fixture. They
+// must not be 900110-900112: those belong to the quiet, vote-card and notes
+// demo apps, which are seeded later, and an app row taken here would make
+// their ON CONFLICT DO NOTHING skip them.
+async function seedStagingInferredCategories(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    const OWNER_ID = 900100;
+    const fixtures = [
+      {
+        id: 900150, name: '[Mock] Recipe box', slug: 'staging-landing-recipes',
+        description: 'Recipes from what is in the fridge, shared with the people you cook for.',
+        category: null, inferred: 'food', emoji: '🍲',
+      },
+      {
+        id: 900151, name: '[Mock] Bill splitter', slug: 'staging-landing-bills',
+        description: 'Split the bills for a shared house and keep a simple budget.',
+        category: 'other', inferred: 'money', emoji: '💸',
+      },
+      {
+        id: 900152, name: '[Mock] Run club', slug: 'staging-landing-runs',
+        description: 'Log your runs and keep a streak with your running club.',
+        category: null, inferred: 'health', emoji: '🏃',
+      },
+    ];
+    // Self-heal a copy that booted the first version of this seed: it wrote
+    // these three apps at 900110-900112, before the quiet, vote-card and
+    // notes fixtures had their ids. Delete only rows carrying both that id
+    // and this seed's slug, so no real fixture can match; the inferred rows
+    // go with them (ON DELETE CASCADE), and each seed below makes its app
+    // again.
+    await pool.query(
+      `DELETE FROM apps
+        WHERE (id, slug) IN ((900110, 'staging-landing-recipes'),
+                             (900111, 'staging-landing-bills'),
+                             (900112, 'staging-landing-runs'))`
+    ).catch((err) => {
+      // Never let the cleanup stop the fixtures below: the three chips are
+      // what the landing check needs, and a fresh copy has nothing to delete.
+      log.warn('db', 'Staging inferred app-category cleanup failed', { message: err.message });
+    });
+    for (const f of fixtures) {
+      await pool.query(
+        `INSERT INTO apps
+           (id, name, slug, status, view_visibility, created_by, manifest_snapshot,
+            icon_emoji, last_deploy_at, anon_shell, anon_shell_checked_at)
+         VALUES ($1, $2, $3, 'running', 'public', $4, $5::jsonb,
+                 $6, NOW() - INTERVAL '2 days', 'public', NOW() + INTERVAL '1 year')
+         ON CONFLICT (id) DO NOTHING`,
+        [f.id, f.name, f.slug, OWNER_ID, JSON.stringify({
+          secrets: [], description: f.description, ...(f.category ? { category: f.category } : {}),
+        }), f.emoji]
+      );
+      await pool.query(
+        `INSERT INTO app_inferred_categories (app_id, category, source_description, model, inferred_at)
+         VALUES ($1, $2, $3, 'staging-seed', NOW())
+         ON CONFLICT (app_id) DO UPDATE
+           SET category = EXCLUDED.category,
+               source_description = EXCLUDED.source_description,
+               model = EXCLUDED.model,
+               inferred_at = NOW()`,
+        [f.id, f.inferred, f.description]
+      );
+    }
+    log.info('db', 'Staging inferred app categories seeded');
+  } catch (err) {
+    log.warn('db', 'Staging inferred app categories seeding failed', { message: err.message });
   }
 }
 

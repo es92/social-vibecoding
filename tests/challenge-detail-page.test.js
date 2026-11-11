@@ -4,12 +4,13 @@
 // the platform header, which is its nav bar (the chevron up to the grid and
 // the word "Challenge", set by the controller). Since the Semi design
 // (2026-10-16) it holds, in this order: the title, its points, the artwork,
-// the rail, the action and "What counts" — no category eyebrow, deadline,
-// task line, description, Scoring or participants. The render half asserts
-// that order and the parts it is made of; the source half asserts what makes
-// it a level rather than an overlay — in flow, the grid and the screen's own
-// tabs and event bar stepping aside, and no back control of its own —
-// because none of that shows in static markup. The artwork well is drawn
+// the rail, the organiser's task line, the action and "What counts" — no
+// category eyebrow, deadline, description, Scoring or participants. The task
+// line came back (#6592): it says what to do to start and finish. The render
+// half asserts that order and the parts it is made of; the source half asserts
+// what makes it a level rather than an overlay — in flow, the grid and the
+// screen's own tabs and event bar stepping aside, and no back control of its
+// own — because none of that shows in static markup. The artwork well is drawn
 // only for an illustration the registry resolves: a built-in, or an upload on
 // its payload tone.
 //
@@ -63,16 +64,16 @@ test('the page reads: title, points, artwork, rail, action, What counts', () => 
     'no back control of its own: the platform header carries the way back');
 });
 
-test('the page leaves out the eyebrow, time, task, description, Scoring and participants', () => {
+test('the page leaves out the eyebrow, time, description, Scoring and participants', () => {
   // Handed every field the page used to draw, it draws none of them.
   const html = render({
     ...VIEW, eyebrow: 'ONBOARDING', deadline: '3d left', ends: 'ends Mon 12 Oct, 02:00', cadence: 'next count 9:37',
-    task: 'Up to 2,000 pts a week on-device.', description: 'Run a node that produces blocks.',
+    description: 'Run a node that produces blocks.',
     scoring: 'Points scale with the blocks you produce.', participants: 'Participants · 34',
     pointsTotal: '12,800 pts between them', moreLabel: 'Show all 34 →',
     entries: { kind: 'list', hasMore: true, rows: [{ key: '1|0', userId: 1, name: 'Iso Nakamura', nonPodium: false, points: '2,000 pts' }] },
   });
-  for (const gone of ['ONBOARDING', '3d left', 'ends Mon', 'next count', 'Up to 2,000', 'Run a node', 'Scoring',
+  for (const gone of ['ONBOARDING', '3d left', 'ends Mon', 'next count', 'Run a node', 'Scoring',
     'Participants', 'between them', 'Iso Nakamura', 'tc-se-breakdown-more', 'tc-se-entry', 'uppercase']) {
     assert.ok(!html.includes(gone), `no ${gone}`);
   }
@@ -80,6 +81,26 @@ test('the page leaves out the eyebrow, time, task, description, Scoring and part
     'openUserProfile', 'EYEBROW']) {
     assert.ok(!src.includes(gone), `${gone} is gone from the pane`);
   }
+});
+
+test('the task line sits under the rail, before the action and What counts (#6592)', () => {
+  const task = 'Open any app somebody else made and use it for 10 minutes in total.';
+  const html = render({ ...VIEW, task });
+  const at = html.indexOf('<p class="text-sm text-zinc-600 dark:text-zinc-400" data-challenge-task="true">');
+  assert.ok(at !== -1, 'the task is plain prose, with no heading and no box');
+  const rail = html.indexOf('role="progressbar"');
+  const cta = html.indexOf('href="https://example.com/node"');
+  const counts = html.indexOf('>What counts<');
+  assert.ok(at > rail, 'after the progress rail');
+  assert.ok(at < cta, 'before the action');
+  assert.ok(at < counts, 'before What counts');
+  assert.ok(html.includes(`>${task}<`), 'the organiser’s words exactly as written');
+});
+
+test('a page with no task draws no task line', () => {
+  const html = render({ ...VIEW, task: null });
+  assert.doesNotMatch(html, /data-challenge-task/);
+  assert.doesNotMatch(render(VIEW), /data-challenge-task/, 'and a descriptor without the field behaves the same');
 });
 
 test('the parts: the points line and clean rail at page size, a full-width action', () => {

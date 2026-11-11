@@ -27,6 +27,7 @@ const deployFailure = require('./deploy-failure');
 const { getTemplateFiles, getConnectorScaffoldFiles, getCanonicalRepoFile } = require('./template');
 const appTemplates = require('./app-templates');
 const appSketch = require('./app-sketch');
+const appCategory = require('./app-category');
 const creationTiming = require('./app-creation-timing');
 const starterImages = require('./starter-images');
 const repoQueue = require('./repo-create-queue');
@@ -79,10 +80,10 @@ function templateOf(row) {
 // The starter's files for a project, the card in them when it has one
 // (design/sketch.json, its emoji as dapp.json's icon, its tagline as the
 // description it lacks). The same row and card give the same files.
-function starterFiles(row, { repoUrl = null, sketch = null } = {}) {
+function starterFiles(row, { repoUrl = null, sketch = null, category = null } = {}) {
   return getTemplateFiles(row.name, row.slug, null, repoUrl, {
     governance: governanceOf(row), description: descriptionOf(row) || appSketch.taglineOf(sketch),
-    template: templateOf(row), sketch,
+    template: templateOf(row), sketch, category,
   });
 }
 
@@ -130,9 +131,18 @@ async function setUp(config, pool, appId, ctx) {
       return true;
     }))).then((done) => { reportPhase(appId, row.slug, 'repository'); return done; });
     const repository = (async () => {
-      const sketch = fork || row.repo_url ? null : await steps.once('card', () => timing.time('card', () => appSketch.drawFor(pool, appId)));
+      const fresh = !fork && !row.repo_url;
+      const sketch = fresh ? await steps.once('card', () => timing.time('card', () => appSketch.drawFor(pool, appId))) : null;
+      // The kind its idea suggests, worked out from the same words the card
+      // is (#6585). Stored, so a resumed setup writes the same files; without
+      // a model it is Other and the directory's sweep sorts it later.
+      const category = fresh
+        ? await steps.once('category', () => appCategory.forNewProject(
+          pool, row, descriptionOf(row) || appSketch.taglineOf(sketch) || ''
+        ))
+        : null;
       return steps.once('repository', () => timing.time('repository', () => part('repo',
-        () => (fork ? copyFork(config, pool, row) : row.repo_url ? scaffoldImport(row) : seedStarter(config, pool, row, sketch, ctx)))));
+        () => (fork ? copyFork(config, pool, row) : row.repo_url ? scaffoldImport(row) : seedStarter(config, pool, row, sketch, ctx, category)))));
     })();
     // Both settle before a failure is reported, so nothing of this attempt
     // runs on after it; a database that failed is reported first.
@@ -159,14 +169,14 @@ async function setUp(config, pool, appId, ctx) {
 // and a refusal for GitHub's secondary limit waits and tries again
 // (services/repo-create-queue.js). A try after a refused push finds its
 // repository there, and adopts it.
-async function seedStarter(config, pool, row, sketch, ctx) {
+async function seedStarter(config, pool, row, sketch, ctx, category = null) {
   if (!github.isEnabled()) return { sha: null, repoUrl: null, offer: null };
   try {
     // A ready-made made as a version of its original (POST /api/apps wrote
     // the link; services/originals.js sourceFor says what to copy, or that
     // it is made as before).
     const source = await originals.sourceFor(config, pool, row);
-    if (source) return await seedVersion(config, pool, row, sketch, ctx, source);
+    if (source) return await seedVersion(config, pool, row, sketch, ctx, source, category);
     const botUsername = await github.getBotUsername();
     const made = await repoQueue.withRetries(pool, async () => {
       // adoptExisting: a try after one that died between GitHub's create and
@@ -179,7 +189,7 @@ async function seedStarter(config, pool, row, sketch, ctx) {
       // repoUrl makes the template name this repo as the app's canonical one
       // (.claude/homeroom-canonical-repo, read by the freshness check). No
       // database URL: none goes into a repository.
-      const files = starterFiles(row, { repoUrl, sketch });
+      const files = starterFiles(row, { repoUrl, sketch, category });
       // An adopted repository's head is read, never guessed: a read that fails
       // fails the setup (Retry makes it again), rather than push the commit
       // twice.
@@ -227,7 +237,7 @@ async function seedStarter(config, pool, row, sketch, ctx) {
 // original's image for this ready-made, built ahead (services/starter-
 // images.js), is the one its first deploy runs. `template` stays set, and
 // `template_version` is left empty: the lineage says which revision it is.
-async function seedVersion(config, pool, row, sketch, ctx, source) {
+async function seedVersion(config, pool, row, sketch, ctx, source, category = null) {
   const template = templateOf(row);
   const message = originals.versionMessage(row.name, source.original);
   if (!source.committed) await lineage.writeUpstream(pool, row.id, { syncedSha: source.sha });
@@ -239,7 +249,7 @@ async function seedVersion(config, pool, row, sketch, ctx, source) {
     });
     const repoUrl = repo.html_url;
     const files = source.tree
-      ? originals.versionFiles(source.tree, starterFiles(row, { repoUrl, sketch }), {
+      ? originals.versionFiles(source.tree, starterFiles(row, { repoUrl, sketch, category }), {
         name: row.name, templateId: template, originalTemplate: source.original ? source.original.template : null,
       })
       : null;

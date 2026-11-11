@@ -395,9 +395,11 @@ const minutesBetween = (fromIso: string | null, toMs: number): number | null => 
  * card, bar and grey line. Its one job is to say what the merge still waits
  * on, so it carries the last try and the next one, counted from the viewer's
  * own clock (a timer every MERGE_TICK_MS, started only in an effect so the
- * first render matches what the view holds). A wait of MERGE_WAIT_LONG_MS or
- * more turns amber and says how long and what to do; GitHub's checks failing
- * again is red, with no times and no button.
+ * first render matches what the view holds) — except while GitHub's required
+ * checks are still running (#6593), where those tries are bookkeeping and
+ * only the note and the wait's length are said. A wait of MERGE_WAIT_LONG_MS
+ * or more turns amber and says how long and what to do; GitHub's checks
+ * failing again is red, with no times and no button.
  */
 export function MergeCard({ g, id }: { g: ChangeMergeView; id: number | null }): ReactNode {
   const t = useMessages('project');
@@ -418,12 +420,15 @@ export function MergeCard({ g, id }: { g: ChangeMergeView; id: number | null }):
   const long = wait?.since ? waitedMin != null && waitedMin * 60000 >= MERGE_WAIT_LONG_MS : false;
   const note = [...g.note];
   if (long) note.push(t('project:topic.change.gate.merge.long', { minutes: waitedMin ?? 0 }));
-  if (held && wait?.triedAt) {
+  // #6593: GitHub building and scanning the release images is a normal wait,
+  // not a failed try. Homeroom's own tries are bookkeeping, so this hold
+  // says nothing about them; a busy or refused merge still does.
+  if (held && g.hold !== 'github_checks' && wait?.triedAt) {
     note.push(triedMin == null || triedMin < 1
       ? t('project:topic.change.gate.merge.triedJustNow')
       : t(triedMin === 1 ? 'project:topic.change.gate.merge.tried_one' : 'project:topic.change.gate.merge.tried_other', { count: triedMin }));
   }
-  if (held) {
+  if (held && g.hold !== 'github_checks') {
     note.push(nextMin == null
       ? t('project:topic.change.gate.merge.nextNow')
       : t(nextMin === 1 ? 'project:topic.change.gate.merge.next_one' : 'project:topic.change.gate.merge.next_other', { count: nextMin }));

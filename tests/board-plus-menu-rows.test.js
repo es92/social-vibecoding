@@ -67,9 +67,10 @@ test('every action row has a glyph, and every glyph is decoration', () => {
   // see & change it", which opens the sheet that sets both who can see it and
   // how its changes are approved. 18 Oct 2026: Pin to sidebar, a member's,
   // after "Import a pull request". One Home (#6361): the two Home pins, the
-  // app's and the community's, before it.
-  assert.equal(rows.length, 21,
-    'new-change, issue, import-pr, home-app, home-community, pin, settings, who-decides, leave, app-settings, domain, featured-illustration, members x2, rename, topics, secrets, updates, suggest-back, fork x2');
+  // app's and the community's, before it. 11 Nov 2026: See what visitors
+  // see, first, on a public project's hub.
+  assert.equal(rows.length, 22,
+    'visitor-view, new-change, issue, import-pr, home-app, home-community, pin, settings, who-decides, leave, app-settings, domain, featured-illustration, members x2, rename, topics, secrets, updates, suggest-back, fork x2');
   const icons = menu.match(/icon=\{<([A-Za-z]+Icon) className=\{PLUS_ICON_CLS\} aria-hidden="true" \/>\}/g) || [];
   assert.equal(icons.length, rows.length, 'one glyph per row, all aria-hidden');
   // No <button data-plus> survives outside the shared shell — a hand-written
@@ -135,4 +136,26 @@ test('the secrets row keeps its legacy-owned state leaf inside the title', () =>
   assert.match(row, /data-plus-title/);
   assert.match(row, /id="dc-secrets-state"/);
   assert.ok(row.indexOf('data-plus-title') < row.indexOf('id="dc-secrets-state"'));
+});
+
+// ── See what visitors see (the hand-off of 11 Nov 2026) ──────────────────
+
+test('See what visitors see leads the menu on a member\'s public project, plain, and opens the visitor\'s page over the hub', () => {
+  const menu = FRAME.slice(FRAME.indexOf('id="dev-plus-menu"'));
+  assert.ok(menu.indexOf('data-plus="visitor-view"') > 0, 'the row is there');
+  assert.ok(menu.indexOf('data-plus="visitor-view"') < menu.indexOf('data-plus="issue"'), 'first, ahead of Suggest an improvement');
+  const row = menu.slice(menu.indexOf('{visitorView ? ('), menu.indexOf('data-plus="issue"'));
+  assert.match(row, /<PlusRow\s+data-plus="visitor-view"\s+icon=\{<EyeIcon className=\{PLUS_ICON_CLS\} aria-hidden="true" \/>\}/);
+  assert.doesNotMatch(row, /^\s+lit$/m, 'plain: Suggest an improvement stays the one lit row');
+  assert.match(row, /onClick=\{\(\) => \{ callAppView\('_closePlusMenu'\); setVisiting\(true\); \}\}/);
+  // With it above, Suggest an improvement takes the divider.
+  assert.match(menu, /data-plus="issue"\s+lit[\s\S]*?dividerCls=\{visitorView \? PLUS_ROW_DIVIDER_CLS : ''\}/);
+  // The page, portalled like the menu's other sheets.
+  assert.match(FRAME, /\{visiting && visitorView \? createPortal\(<VisitorView key=\{visitorView\.slug\} slug=\{visitorView\.slug\} onClose=\{\(\) => setVisiting\(false\)\} \/>, document\.body\) : null\}/);
+  // A member's, on a public project: a private one has no page for
+  // visitors, and the platform's own is not in the public directory.
+  const workshop = fs.readFileSync(path.join(ROOT, 'frontend/src/features/dev-board/workshop/workshop.tsx'), 'utf8');
+  assert.match(workshop, /visitorView=\{!actions\.selfHosted && community\?\.is_member && community\.audience === 'open' \? \{ slug \} : null\}/);
+  assert.equal(message('project:menu.visitorView.title'), 'See what visitors see');
+  assert.equal(message('project:menu.visitorView.sub'), "The page before joining: the preview, the featured illustration and what's up for a vote");
 });

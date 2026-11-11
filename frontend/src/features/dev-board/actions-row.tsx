@@ -56,7 +56,7 @@ import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 
 import {
-  AppWindowIcon, ArrowPathIcon, ArrowRightIcon, BookmarkIcon, BookmarkSolidIcon, ArrowUpTrayIcon, ChevronLeftIcon, ChevronRightIcon, CogIcon, EllipsisHorizontalIcon, GitHubIcon, GlobeIcon, HashIcon, HomeIcon, KeyIcon, LightBulbIcon, LockIcon,
+  AppWindowIcon, ArrowPathIcon, ArrowRightIcon, BookmarkIcon, BookmarkSolidIcon, ArrowUpTrayIcon, ChevronLeftIcon, ChevronRightIcon, CogIcon, EllipsisHorizontalIcon, EyeIcon, GitHubIcon, GlobeIcon, HashIcon, HomeIcon, KeyIcon, LightBulbIcon, LockIcon,
   PencilSparklesIcon, PencilSquareIcon, UserGroupIcon,
 } from '@/components/ui/icons';
 
@@ -66,6 +66,7 @@ import { Improve } from '../improve/improve-controller.js';
 import { FeaturedIllustrationEditor } from '../apps/featured-illustration-editor';
 import { SuggestBackDialog, suggestBackTarget, versionOfApp } from './suggest-back-dialog';
 import { UpdatesSheet } from '../versions/updates-sheet';
+import { VisitorView } from '../guest/visitor-view';
 
 export interface DevActionsRowProps {
   illustrationApp?: any;
@@ -115,6 +116,20 @@ export interface DevActionsRowProps {
   homeApp?: { pinned: boolean; onToggle: () => void } | null;
   /** ONE HOME (#6361): pin this COMMUNITY to Home (its tile opens this hub). */
   homeCommunity?: { pinned: boolean; onToggle: () => void } | null;
+  /**
+   * SEE WHAT VISITORS SEE (the hand-off of 11 Nov 2026): the menu's first
+   * row, on a public project's hub, opening its signed-out page for the
+   * member, read only (../guest/visitor-view.tsx). Null leaves it out:
+   * a private project has no page for visitors, and the platform's own is
+   * not in the public directory.
+   */
+  visitorView?: { slug: string } | null;
+  /**
+   * Drawn on the project card (workshop/community-card.tsx, for somebody who
+   * has not joined): the ⋯ is the card's 52px round glass button beside
+   * Open app and Join.
+   */
+  onCard?: boolean;
 }
 
 /**
@@ -142,6 +157,8 @@ const PLUS_TITLE_CLS = 'block text-sm font-medium text-zinc-800 dark:text-zinc-2
 /** The ⋯ in the hero: Invite's pill fill (`pillNeutral`), as a circle. */
 const HERO_BTN_CLS = 'dev-ws-plus-btn dev-ws-plus-btn-hero un-touch-target '
   + 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100';
+/** The ⋯ on the project card: its round glass button, on the project's colour. */
+const CARD_BTN_CLS = 'dev-ws-plus-btn dev-ws-plus-btn-card un-touch-target bg-white/15 hover:bg-white/25 text-white';
 const PLUS_SUB_CLS = 'block text-xs text-zinc-500 dark:text-zinc-400';
 /** The menu's one lit row, Suggest an improvement (the owner, 8 Oct 2026):
     the accent's tint behind it and its title bold. Every other row stays plain. */
@@ -255,9 +272,12 @@ export function DevPlusMenu({
   pin = null,
   homeApp = null,
   homeCommunity = null,
+  visitorView = null,
+  onCard = false,
 }: DevActionsRowProps): ReactNode {
   const t = useMessages('project');
   const [editingIllustration, setEditingIllustration] = useState(false);
+  const [visiting, setVisiting] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [updating, setUpdating] = useState(false);
   useEffect(() => {
@@ -304,6 +324,7 @@ export function DevPlusMenu({
   {editingIllustration && illustrationApp ? createPortal(<FeaturedIllustrationEditor key={illustrationApp.slug} app={illustrationApp} onClose={() => setEditingIllustration(false)} />, document.body) : null}
   {suggesting && suggestTarget && illustrationApp ? createPortal(<SuggestBackDialog key={illustrationApp.slug} slug={illustrationApp.slug} copyName={illustrationApp.name || illustrationApp.slug} original={suggestTarget} onClose={() => setSuggesting(false)} />, document.body) : null}
   {updating && versionOf && illustrationApp ? createPortal(<UpdatesSheet key={illustrationApp.slug} slug={illustrationApp.slug} original={versionOf} onClose={() => setUpdating(false)} />, document.body) : null}
+  {visiting && visitorView ? createPortal(<VisitorView key={visitorView.slug} slug={visitorView.slug} onClose={() => setVisiting(false)} />, document.body) : null}
     {/*
         The wrapper is the menu's containing block (`.dev-ws-plus` is
         `position: relative` in app.css). Hidden outright for a read-only
@@ -317,7 +338,7 @@ export function DevPlusMenu({
         aria-haspopup="true"
         aria-expanded="false"
         aria-label={plusLabel}
-        className={inHero ? HERO_BTN_CLS : 'dev-ws-plus-btn un-touch-target'}
+        className={onCard ? CARD_BTN_CLS : inHero ? HERO_BTN_CLS : 'dev-ws-plus-btn un-touch-target'}
         title={plusLabel}
       >
         {/* A ⋯, not a "+": on the hub the button sits in the hero beside
@@ -361,6 +382,19 @@ export function DevPlusMenu({
                 the ⋯'s now. The Homeroom menu's own action
                 (Improve.startSession), which keeps its row there too.
             */}
+            {/* SEE WHAT VISITORS SEE (the hand-off of 11 Nov 2026), first:
+                this project's signed-out page, for the member, read only,
+                with the way back to the hub on it. Plain, not lit: Suggest
+                an improvement stays the menu's one lit row. */}
+            {visitorView ? (
+              <PlusRow
+                data-plus="visitor-view"
+                icon={<EyeIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
+                title={t('project:menu.visitorView.title')}
+                sub={t('project:menu.visitorView.sub')}
+                onClick={() => { callAppView('_closePlusMenu'); setVisiting(true); }}
+              />
+            ) : null}
             {/* B8: Suggest an improvement leads (it goes to Homeroom bot,
                 or to the group as a request); building it yourself is
                 second. */}
@@ -370,6 +404,7 @@ export function DevPlusMenu({
               icon={<LightBulbIcon className={PLUS_ICON_CLS} aria-hidden="true" />}
               title={t('project:menu.suggest.title')}
               sub={t('project:menu.suggest.sub')}
+              dividerCls={visitorView ? PLUS_ROW_DIVIDER_CLS : ''}
             />
             <PlusRow
               data-plus="new-change"

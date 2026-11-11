@@ -195,21 +195,6 @@ function useChangeViews(items: ThreadItem[], tick = 0): Array<ChangeView | null>
   }), [items, rows]);
 }
 
-/**
- * Whether the gate counts the viewer's own change as their Yes without a
- * vote (governance-rules.ts: proposing counts as a yes on the counted
- * rules), read off its proposal row: Two yeses and Open floor count every
- * person's change; You or the group counts the creator's. Anything else
- * (Group vote, a project's own rules) is not assumed: the viewer taps. Nor
- * is a change a coding agent submitted for them (`external_agent`): its
- * author taps Yes on it like anyone else.
- */
-export function authorCounts(item: ThreadItem, row: any): boolean {
-  if (!item.mine || item.byBot || item.myVote || !row || row.external_agent || row.approval_mode !== 'rules') return false;
-  if (row.approval_preset === 'two_yeses' || row.approval_preset === 'open_floor') return true;
-  return row.approval_preset === 'you_or_the_group' && !!row.creator_yes;
-}
-
 /** What a change's own page counts toward its rule, and needs. */
 function tally(row: any): { yes: number; need: number } {
   const yes = Number(row?.qualified_yes_count ?? row?.yes_count) || 0;
@@ -861,8 +846,7 @@ export function Competing({ slug, data, anchor, options, close, onChanged, plans
   // A door to one of these changes (./votes-in-view.ts) lands on the ballot,
   // where it is voted on.
   useBallotInView(options, box);
-  const counts = new Set(options.filter((o, i) => authorCounts(o, views[i]?.row)).map((o) => o.id));
-  const ballot: Ballot | null = ballotOf(data, counts, anchor);
+  const ballot: Ballot | null = ballotOf(data, anchor);
   if (!ballot) return null;
   const toggle = (id: number) => setOpen((was) => {
     const next = new Set(was);
@@ -887,7 +871,7 @@ export function Competing({ slug, data, anchor, options, close, onChanged, plans
     const wasFocused = !!from && document.activeElement === from;
     setBusy(true);
     try {
-      for (const v of ballotVotes(ballot, pick, counts)) {
+      for (const v of ballotVotes(ballot, pick)) {
         if (v.kind === 'close') await av.castIssueVote?.(v.issueId, 'up', { reason: null });
         else if (v.vote === null) await av.retractVote?.(v.sessionId, v.epoch);
         else await av.castVote?.(v.sessionId, v.vote, v.epoch, { reason: null });
@@ -1295,7 +1279,7 @@ export function ThreadChanges({ slug, data, number, changes, close, onChanged, p
   const anchor = [number];
   // Who counts as whose pick is settled inside the ballot, from each change's
   // own read; which changes compete is not, so ask without it.
-  const ballot = ballotOf(data, new Set(), anchor);
+  const ballot = ballotOf(data, anchor);
   const competing = ballot ? new Set(ballot.options.map((o) => o.id)) : new Set<number>();
   const rest = changes.filter((c) => !competing.has(c.id));
   const closeAlone = close && !(ballot && ballot.close && ballot.close.id === close.id) ? close : null;

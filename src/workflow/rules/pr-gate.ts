@@ -76,8 +76,7 @@ export const approverNoAtSql = (cs: string): string => `(SELECT MAX(pv.created_a
 // proposal: the governance columns and rules, the app meta the electorate
 // needs, what a project's own rules read (creator, community size, admins),
 // the counted votes on the current epoch, whether the change is the
-// project's first version, whether its author is an account the platform
-// runs, and when an admin and an approver last voted No.
+// project's first version, and when an admin and an approver last voted No.
 const GATE_SQL = `
   SELECT a.approver_policy, a.approvals_required, a.governance_rules, a.self_hosted, a.collab_visibility, a.created_by,
          (SELECT COUNT(*)::int FROM community_members m WHERE m.community_id = a.community_id) AS member_count,
@@ -90,11 +89,7 @@ const GATE_SQL = `
              AND pv.approval_epoch = cs.approval_epoch) AS votes,
          ${firstVersionSql('cs')} AS first_version,
          ${adminNoAtSql('cs')} AS admin_no_at,
-         ${approverNoAtSql('cs')} AS approver_no_at,
-         COALESCE((SELECT u.is_synthetic FROM users u WHERE u.id = $3::int), FALSE) AS author_is_bot,
-         (cs.external_agent IS NOT NULL) AS made_by_agent,
-         (cs.author_yes_withdrawn_epoch IS NOT NULL
-          AND cs.author_yes_withdrawn_epoch IS NOT DISTINCT FROM cs.approval_epoch) AS author_withdrew
+         ${approverNoAtSql('cs')} AS approver_no_at
     FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id
    WHERE cs.id = $1 AND a.id = $2`;
 
@@ -104,7 +99,7 @@ const GATE_SQL = `
  * proposal or its app is gone.
  */
 export async function readPrGate(db: Queryable, g: PrGateInputs): Promise<GovernedGate | null> {
-  const { rows: [r] } = await db.query(GATE_SQL, [g.sessionId, g.appId, g.authorId]);
+  const { rows: [r] } = await db.query(GATE_SQL, [g.sessionId, g.appId]);
   if (!r) return null;
   const gov = governanceFromRow(r);
   const meta = appMetaFromRow(r);
@@ -130,9 +125,7 @@ export async function readPrGate(db: Queryable, g: PrGateInputs): Promise<Govern
     };
     return computeGate(gov, facts.membersActive, voters.yes.size, voters.no.size, opened, now, {
       explicitApproval: g.explicitApproval, explicitReason: g.explicitApproval ? g.explicitReason : null,
-      authorId: g.authorId, voters, authorIsBot: g.authorId != null && r.author_is_bot === true,
-      madeByAgent: r.made_by_agent === true,
-      authorWithdrew: r.author_withdrew === true,
+      authorId: g.authorId, voters,
       rulesFacts: facts, memberCount: facts.memberCount, firstVersion,
       adminNoAt: r.admin_no_at ?? null,
     });

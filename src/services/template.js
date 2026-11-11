@@ -7,6 +7,10 @@ const repoRef = require('./repo-ref');
 // `dependencies` in services/app-templates.js), with their lockfile entries.
 const extraPackages = require('../templates/node-app/extra-packages.json');
 const appTemplates = require('./app-templates');
+// From services/app-categories.js, which requires nothing: this module is
+// loaded by scripts/security-starter.js with only the starter's packages
+// installed, so it must not reach app-manifest.js's server dependencies.
+const { APP_CATEGORIES } = require('./app-categories');
 const { WORDS_PATH } = require('./upstream-lineage');
 
 // Forwarder snippet injected into every scaffolded app's public/index.html.
@@ -702,7 +706,12 @@ ${withLive ? '    changes.close();\n' : ''}    server.close(() => {});
 // Discover and the project's page show) and the first sentence of
 // CLAUDE.md's About section, so the coding agent starts from the same
 // intent. Absent, both stay as they were.
-function getTemplateFiles(appName, slug, dbUrl, repoUrl = null, { governance = null, description = null, template = null, sketch = null, iconEmoji = null } = {}) {
+//
+// `category` is the kind the first plan implies (services/app-category.js),
+// so a new project starts in the right chip instead of always Other. A game
+// starter is still a game; anything not one of APP_CATEGORIES writes the
+// starting `other`, as callers outside the create flow always get.
+function getTemplateFiles(appName, slug, dbUrl, repoUrl = null, { governance = null, description = null, template = null, sketch = null, iconEmoji = null, category = null } = {}) {
   const canonicalRepoFile = getCanonicalRepoFile(repoUrl);
   // `template` is the create screen's starter (services/app-templates.js).
   // Absent or `empty` writes exactly what every new app always got; a
@@ -1166,11 +1175,14 @@ value = "build"
       content: JSON.stringify(
         {
           ...(about ? { description: about } : {}),
-          // What kind of app it is, for Discover's "Filter by type" chips
-          // (#3962; app-manifest.js APP_CATEGORIES has the set). A game
-          // starter is a game; anything else starts as `other`, a line the
-          // group changes by proposal once it knows what it is making.
-          category: starter && starter.kind === 'game' ? 'games' : 'other',
+          // What kind of app it is, for the kind chips (#3962, #6585;
+          // app-categories.js APP_CATEGORIES has the set). A game starter is a
+          // game; otherwise the kind the first plan implies, and `other` only
+          // when nothing fits. The group changes it by proposal like any
+          // other line.
+          category: starter && starter.kind === 'game'
+            ? 'games'
+            : (APP_CATEGORIES.includes(category) ? category : 'other'),
           // A starter's tile icon, else the first session card's, and the
           // checks a starter's first proposal runs. The empty starter ships
           // an empty `tests` array, so the key its checks go under is there

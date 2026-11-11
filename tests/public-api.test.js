@@ -69,7 +69,7 @@ const APPS = [
     created_at: '2026-06-01T00:00:00.000Z', last_deploy_at: '2026-06-10T00:00:00.000Z',
     icon_emoji: '🎯', icon_image_id: null, anon_shell: 'public', active_users: '5',
     guest_shell: 'public', icon_color: '#2e6660',
-    description: '  A shared   todo list,\nshaped together.  ', category: 'Tools',
+    description: '  A shared   todo list,\nshaped together.  ', category: 'Tools', inferred_category: 'money',
     featured: true, featured_order: 2,
     illustration_id: 'abcabcabcabcabcabcabcabcabcabcab', illustration_dark_id: null,
     preview_id: 'cdecdecdecdecdecdecdecdecdecdecd',
@@ -92,7 +92,7 @@ const APPS = [
     created_at: '2026-06-03T00:00:00.000Z', last_deploy_at: '2026-06-08T00:00:00.000Z',
     icon_emoji: null, icon_image_id: null, anon_shell: 'unknown', active_users: '0',
     guest_shell: 'gated', icon_color: null,
-    description: 'x'.repeat(260), category: null,
+    description: 'x'.repeat(260), category: null, inferred_category: 'food',
     featured: false, featured_order: null,
     illustration_id: null, illustration_dark_id: null,
     member_count: '2', open_votes: '0', last_merged_at: null,
@@ -140,6 +140,10 @@ function makeMockPool() {
     }
     if (/FROM chat_sessions cs/i.test(s) && /status = 'merged'/.test(s)) {
       return { rows: params[0] === 1 ? MERGED.map((r) => ({ ...r })) : [] };
+    }
+    // The week's people and the month's changes, as numbers (communities.js activityCounts).
+    if (/AS active_week/.test(s) && /AS shipped_month/.test(s)) {
+      return { rows: [{ active_week: params[0] === 1 ? 14 : 0, shipped_month: params[0] === 1 ? 9 : 0 }] };
     }
     if (/SELECT repo_url FROM apps WHERE id = \$1/i.test(s)) {
       return { rows: [{ repo_url: 'https://github.com/usernode-bot/app-one' }] };
@@ -311,6 +315,22 @@ test('apps list: the guest Discover card fields', async () => {
   } finally { await srv.close(); }
 });
 
+test('apps list: a kind the group did not choose is the one worked out from the description', async () => {
+  const pool = makeMockPool();
+  const srv = await startTestServer(pool);
+  try {
+    const { body } = await get(srv.baseUrl, '/api/public/apps');
+    const one = body.apps.find((a) => a.slug === 'app-one');
+    const three = body.apps.find((a) => a.slug === 'app-three');
+    assert.equal(one.category, 'tools', 'a kind the group chose always wins');
+    assert.equal(three.category, 'food', 'no chosen kind: the inferred one stands in');
+    const list = pool.calls.find((c) => /last_deploy_at DESC NULLS LAST/.test(c.sql));
+    assert.match(list.sql, /LEFT JOIN app_inferred_categories ic/);
+    assert.match(list.sql, /ic\.source_description = COALESCE\(a\.manifest_snapshot->>'description', ''\)/,
+      'the stored kind counts only while the description it came from still matches');
+  } finally { await srv.close(); }
+});
+
 test('apps list: guest_ready reads both probes, and the guest one only where guests exist', () => {
   const { guestReady } = require('../src/services/public-app-directory');
   // Open to anybody: ready whether or not the app host has guests.
@@ -343,6 +363,10 @@ test('overview: the card, the votes with plain summaries and tallies, and the ch
     }]);
     assert.equal(body.merged[0].title, 'Swipe to archive');
     assert.equal(body.merged[0].summary, 'Swipe a done task away.');
+    // Its after still where anybody may see it: none here.
+    assert.equal(body.merged[0].picture, null);
+    // How many took part this week and went live this month: numbers, never who.
+    assert.deepEqual(body.activity, { active_week: 14, merged_month: 9 });
     // GitHub is not configured in the test process: the open requests are
     // unknown, which the page shows as nothing rather than "none".
     assert.equal(body.requests, null);

@@ -91,7 +91,7 @@ test('#4894: a rule that treats every change alike says how it plays out once, f
   const member = { isCreator: false, creator: 'evan' };
   const own = 'Live when any one of its rules passes. Their own yes counts toward the rules they’re in.';
   const anyone = {
-    two_yeses: 'Live once one more person says yes.',
+    two_yeses: 'Live once two people say yes. Its maker’s yes can be one of them.',
     open_floor: 'Their own yes is enough. Live once its checks pass.',
     group_vote: 'Live when most active members say yes, or after a wait if nobody objects.',
   };

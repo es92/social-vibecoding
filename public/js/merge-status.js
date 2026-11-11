@@ -290,7 +290,8 @@
       var title = held === 'github_busy'
         ? t(soon ? 'session:merge.title.githubBusySoon' : 'session:merge.title.githubBusy', { time: time })
         : held === 'github_checks'
-          ? t(soon ? 'session:merge.title.githubChecksSoon' : 'session:merge.title.githubChecks', { time: time })
+          // #6593: what GitHub is doing, not when Homeroom asks again.
+          ? t('session:merge.title.githubChecks')
           : t(soon ? 'session:merge.title.githubRefusedSoon' : 'session:merge.title.githubRefused', { time: time });
       return descriptor('merge_held', t('session:merge.status.waitingOnGithub'), 'amber', false, {
         votes: votes, title: title,

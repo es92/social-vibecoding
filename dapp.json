@@ -1130,6 +1130,12 @@
       "expectText": "Re-run checks"
     },
     {
+      "name": "#6593: an approved change held on GitHub's required checks says GitHub is building and scanning the release images, not that a try failed",
+      "path": "/#app/usernode-2d5619/dev/changes/900099",
+      "expectSelector": "[data-change-gate=\"merge\"] .dev-change-gate-note",
+      "expectText": "building and scanning the release images"
+    },
+    {
       "name": "#4455: one row under the summary: \"Built for\", then the request as a chip with its number bold and its title after it",
       "path": "/?demo=1#app/usernode-2d5619/dev/proposals/9000013",
       "expectSelector": "#gc-thread-head .dev-change-root .dev-request-ask ~ .dev-change-addresses > .dev-change-chips > .dev-change-chips-lead + .dev-change-chips-first > a.dev-ws-chip.dev-topic-issue[href*=\"/dev/issues/900017\"] > b + span",
@@ -3740,7 +3746,7 @@
     {
       "name": "Challenge detail page is reachable by deep link and draws its rail (?shot=challenge-detail)",
       "path": "/?shot=challenge-detail#leaderboard/challenges",
-      "expectSelector": "#tc-se-detail-overlay:not(.hidden) #tc-se-detail-panel [role=progressbar][aria-valuetext]"
+      "expectSelector": "#tc-se-detail-overlay:not(.hidden) #tc-se-detail-panel:has([role=progressbar][aria-valuetext]):has([data-challenge-task])"
     },
     {
       "name": "Imported proposal mid-build shows the Preview building pill (#866, #2585)",
@@ -5022,11 +5028,11 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Signed out, 3 loads: the landing shows its story or pitch, with its project cards led by Featured's row, with no Pin or Join on a card (#6433), and not \"could not load\" (#6003, #6015)",
+      "name": "Signed out, 3 loads: the landing shows its story or pitch, with its project cards led by Featured's row, with no Pin or Join on a card (#6433), a kind chip for every kind a project has incl. Money, Health & fitness and Food & drink (#6585), and not \"could not load\" (#6003, #6015)",
       "path": "/?shot=anon#landing",
       "repeat": 3,
       "persona": "guest",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-home-join-featured] [data-guest-featured]):not(:has([data-home-pin],[data-home-join],[data-guest-card-footer],[data-guest-suggested-app],[data-guest-retry])) :is([data-landing-story] h1, div:not(.hidden) > h1)",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has([data-home-join-featured] [data-guest-featured]):has([data-home-join-kind=\"money\"]):has([data-home-join-kind=\"health\"]):has([data-home-join-kind=\"food\"]):not(:has([data-home-pin],[data-home-join],[data-guest-card-footer],[data-guest-suggested-app],[data-guest-retry])) :is([data-landing-story] h1, div:not(.hidden) > h1)",
       "allowConsoleErrors": true
     },
     {
@@ -5045,10 +5051,10 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Signed out: a public project's page loads (#6003), with Pin beside Join, unpressed (One Home, #6361: it pins to this device's Home)",
+      "name": "Signed out: a public project's page loads (#6003) under the signed-out site's own bar, as one page with no tabs: the project card with Join then Share, and no Pin (the hand-off of 11 Nov 2026; #6433)",
       "path": "/app/staging-landing-open?shot=anon",
       "persona": "guest",
-      "expectSelector": "#auth-landing-screen:not(.hidden) [data-guest-project=\"staging-landing-open\"] [data-guest-join-project] + button[data-guest-pin-project][aria-pressed=\"false\"]",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header[data-guest-top] [data-landing-sign-in]:not(.hidden)) [data-guest-project=\"staging-landing-open\"]:not(:has([data-guest-pin-project], [data-guest-tab])) [data-guest-project-band] [data-project-card-actions] > [data-guest-join-project] + button[data-guest-share]",
       "allowConsoleErrors": true
     },
     {

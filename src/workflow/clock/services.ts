@@ -919,6 +919,14 @@ export const JOBS: readonly Job[] = Object.freeze([
       run: (ctx: WorkContext, { pool }: JobDeps) => legacy('services/workshop-themes').sweepApp({ pool, appId: Number(ctx.input.input?.appId) }),
     },
   },
+  {
+    // #6585: the kind each public project is sorted under when its group
+    // never chose one (services/app-category.js sweep). Twenty-five every ten
+    // minutes fills a fresh directory in about an hour, then reworks only a
+    // description that changed, or a failed answer a day old.
+    name: 'app-category-infer', everyMs: 10 * MIN, newestOnly: true,
+    run: (_ctx: WorkContext, { pool }: JobDeps) => legacy('services/app-category').sweep(pool),
+  },
 ] as Job[]);
 
 export const JOB_NAMES: ReadonlySet<string> = new Set(JOBS.map((j) => j.name));

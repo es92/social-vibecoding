@@ -42,14 +42,13 @@ function preset(key) {
   return govFor(rules.parseRulesBlock({ preset: key }));
 }
 
-function gate(gov, { yes = [], no = [], author = MAYA, f = facts(), explicitApproval = false, reason, openedAt = OPENED, now = NOW, authorWithdrew = false } = {}) {
+function gate(gov, { yes = [], no = [], author = MAYA, f = facts(), explicitApproval = false, reason, openedAt = OPENED, now = NOW } = {}) {
   return governance.computeGate(gov, f.membersActive, yes.length, no.length, openedAt, now, {
     voters: { yes: new Set(yes), no: new Set(no) },
     rulesFacts: f,
     authorId: author,
     memberCount: f.memberCount,
     explicitApproval,
-    authorWithdrew,
     ...(reason !== undefined ? { explicitReason: reason } : {}),
   });
 }
@@ -147,8 +146,11 @@ test('new projects start on You or the group', () => {
 
 // ── You or the group ──────────────────────────────────────────────────
 
-test('You or the group: the creator’s own change goes live on proposing it', () => {
-  const g = gate(preset('you_or_the_group'), { author: EVAN });
+test('You or the group: the creator’s own change goes live on their tap, not on proposing it', () => {
+  const proposed = gate(preset('you_or_the_group'), { author: EVAN });
+  assert.equal(proposed.mergeable, false, 'proposing is not a yes (11 Nov 2026)');
+  assert.equal(proposed.creatorYes, false);
+  const g = gate(preset('you_or_the_group'), { author: EVAN, yes: [EVAN] });
   assert.equal(g.mode, 'rules');
   assert.equal(g.preset, 'you_or_the_group');
   assert.equal(g.mergeable, true);
@@ -217,66 +219,68 @@ test('a project with no creator (the platform’s own) never passes a creator ru
 
 // ── Two yeses ─────────────────────────────────────────────────────────
 
-test('Two yeses: whoever makes it, plus one more', () => {
+test('Two yeses: two taps, the author’s among them if they want', () => {
   assert.equal(gate(preset('two_yeses'), { author: MAYA }).mergeable, false);
-  const g = gate(preset('two_yeses'), { author: MAYA, yes: [SNAIT] });
+  assert.equal(gate(preset('two_yeses'), { author: MAYA, yes: [SNAIT] }).mergeable, false, 'proposing is not the first');
+  const g = gate(preset('two_yeses'), { author: MAYA, yes: [MAYA, SNAIT] });
   assert.equal(g.mergeable, true);
   assert.equal(g.qualifiedYes, 2);
   assert.equal(g.required, 2);
 });
 
-test('Two yeses: the author’s own vote does not count twice', () => {
+test('Two yeses: the author’s own tap is one of the two', () => {
   assert.equal(gate(preset('two_yeses'), { author: MAYA, yes: [MAYA] }).mergeable, false);
 });
 
-test('Two yeses: alone in the project, your yes is enough', () => {
-  const g = gate(preset('two_yeses'), { author: EVAN, f: facts({ memberCount: 1, membersActive: 1 }) });
+test('Two yeses: alone in the project, your tap is enough', () => {
+  const alone = facts({ memberCount: 1, membersActive: 1 });
+  assert.equal(gate(preset('two_yeses'), { author: EVAN, f: alone }).mergeable, false);
+  const g = gate(preset('two_yeses'), { author: EVAN, yes: [EVAN], f: alone });
   assert.equal(g.mergeable, true);
   assert.equal(g.required, 1);
 });
 
-// ── #6477: an author who took their vote back ─────────────────────────
+// ── Proposing is not a yes (11 Nov 2026) ──────────────────────────────
 
 function evalCtx(over = {}) {
   return {
     facts: facts(), voters: { yes: new Set(), no: new Set() }, counts: { yes: 0, no: 0 },
-    authorId: MAYA, openedAt: OPENED, now: NOW, noTimers: false, memberFloor: null,
+    openedAt: OPENED, now: NOW, noTimers: false, memberFloor: null,
     mergeGate: governance.mergeGate, applyNoTimerMerge: governance.applyNoTimerMerge,
     atLeastGate: governance.atLeastGate, ...over,
   };
 }
 
-test('#6477: an author who took their vote back has no yes for proposing', () => {
-  const rule = { group: 'members', kind: 'atLeast', n: 2 };
-  const proposing = rules.evaluateRule(rule, evalCtx());
-  assert.equal(proposing.yes, 1, 'proposing counts as their yes');
-  assert.equal(proposing.authorYes, true);
-  const withdrew = rules.evaluateRule(rule, evalCtx({ authorWithdrew: true }));
-  assert.equal(withdrew.yes, 0);
-  assert.equal(withdrew.authorYes, false, 'and the card stops saying it counts as their yes');
-  // Their own cast yes still counts, as it does for anyone.
-  assert.equal(rules.evaluateRule(rule, evalCtx({ voters: { yes: new Set([MAYA]), no: new Set() }, authorWithdrew: true })).yes, 1);
+test('no counted rule takes proposing as a yes; a cast yes counts', () => {
+  for (const rule of [
+    { group: 'members', kind: 'atLeast', n: 2 },
+    { group: 'members', kind: 'percentOfEveryone', n: 50 },
+    { group: 'members', kind: 'percentOfActive', n: 50 },
+    { group: 'creator', kind: 'atLeast', n: 1 },
+  ]) {
+    const proposed = rules.evaluateRule(rule, evalCtx());
+    assert.equal(proposed.yes, 0, `${rule.group} ${rule.kind}`);
+    assert.equal('authorYes' in proposed, false, 'nor is there an author yes to show');
+    assert.equal(rules.evaluateRule(rule, evalCtx({ voters: { yes: new Set([rule.group === 'creator' ? EVAN : MAYA]), no: new Set() } })).yes, 1);
+  }
 });
 
-test('#6477: a share of the group gives no yes for proposing after a withdrawal', () => {
-  const rule = { group: 'members', kind: 'percentOfEveryone', n: 50 };
-  assert.equal(rules.evaluateRule(rule, evalCtx()).yes, 1);
-  assert.equal(rules.evaluateRule(rule, evalCtx({ authorWithdrew: true })).yes, 0);
-});
-
-test('#6477: the gate’s figure and the creator’s yes follow the withdrawal', () => {
-  const g = gate(preset('two_yeses'), { author: MAYA, authorWithdrew: true });
+test('the gate’s figure and the creator’s yes are the votes cast', () => {
+  const g = gate(preset('two_yeses'), { author: MAYA });
   assert.equal(g.qualifiedYes, 0);
   assert.equal(g.mergeable, false);
-  const own = gate(preset('you_or_the_group'), { author: EVAN, authorWithdrew: true });
+  const own = gate(preset('you_or_the_group'), { author: EVAN });
   assert.equal(own.creatorYes, false);
   assert.equal(own.qualifiedYes, 0, 'and nothing else has been cast on it');
+  assert.equal('authorYes' in (own.shownRule || {}), false);
 });
 
 // ── Open floor and Group vote ─────────────────────────────────────────
 
-test('Open floor: any member’s change goes live on proposing it', () => {
-  assert.equal(gate(preset('open_floor'), { author: SNAIT }).mergeable, true);
+test('Open floor: any member’s change goes live on any member’s tap, its author’s too', () => {
+  assert.equal(gate(preset('open_floor'), { author: SNAIT }).mergeable, false);
+  assert.equal(gate(preset('open_floor'), { author: SNAIT, yes: [SNAIT] }).mergeable, true);
+  assert.equal(gate(preset('open_floor'), { author: SNAIT, yes: [ANA] }).mergeable, true);
 });
 
 test('Group vote counts votes as cast: proposing alone is not a yes', () => {
@@ -320,12 +324,14 @@ test('a group with nobody in it never passes', () => {
 
 test('shares of everyone and of the active, rounded up and at least one', () => {
   const everyone = { preset: null, groups: [], rules: [{ group: 'members', kind: 'percentOfEveryone', n: 60 }] };
-  // 60% of 4 members is 2.4: three yeses, the author's among them.
-  assert.equal(gate(govFor(everyone), { author: MAYA, yes: [SNAIT] }).mergeable, false);
-  assert.equal(gate(govFor(everyone), { author: MAYA, yes: [SNAIT, ANA] }).mergeable, true);
+  // 60% of 4 members is 2.4: three yeses, the author's tap among them if
+  // they give it (proposing is none).
+  assert.equal(gate(govFor(everyone), { author: MAYA, yes: [SNAIT, ANA] }).mergeable, false);
+  assert.equal(gate(govFor(everyone), { author: MAYA, yes: [MAYA, SNAIT, ANA] }).mergeable, true);
   const active = { preset: null, groups: [], rules: [{ group: 'members', kind: 'percentOfActive', n: 50 }] };
   const f = facts({ membersActive: 2 });
-  assert.equal(gate(govFor(active), { author: MAYA, f }).mergeable, true);
+  assert.equal(gate(govFor(active), { author: MAYA, f }).mergeable, false);
+  assert.equal(gate(govFor(active), { author: MAYA, yes: [MAYA], f }).mergeable, true);
 });
 
 test('any one rule passing is enough', () => {
@@ -337,7 +343,8 @@ test('any one rule passing is enough', () => {
   const f = facts({ adminIds: [ANA] });
   assert.equal(gate(govFor(value), { author: MAYA, yes: [SNAIT], f }).mergeable, false);
   assert.equal(gate(govFor(value), { author: MAYA, yes: [ANA], f }).passedBy.group, 'admins');
-  assert.equal(gate(govFor(value), { author: MAYA, yes: [SNAIT, EVAN], f }).passedBy.group, 'members');
+  assert.equal(gate(govFor(value), { author: MAYA, yes: [SNAIT, EVAN], f }).mergeable, false, 'two of three');
+  assert.equal(gate(govFor(value), { author: MAYA, yes: [SNAIT, EVAN, MAYA], f }).passedBy.group, 'members');
 });
 
 // ── A minimum on a majority or a share ────────────────────────────────
@@ -442,11 +449,11 @@ test('a change the group votes down under a minimum still closes on schedule', (
   for (const k of ['rejectionArmed', 'rejectionEndsAt', 'rejectable']) assert.deepEqual(g[k], plain[k], k);
 });
 
-test('a share with a minimum counts the author’s yes toward both', () => {
+test('a share with a minimum counts the yeses cast toward both', () => {
   // Half of four members is two; the minimum of three is the bar.
   const gov = withMinimum({ group: 'members', percentOfEveryone: 50, minimum: 3 });
-  assert.equal(gate(gov, { author: MAYA, yes: [SNAIT] }).mergeable, false);
-  const g = gate(gov, { author: MAYA, yes: [SNAIT, ANA] });
+  assert.equal(gate(gov, { author: MAYA, yes: [SNAIT, ANA] }).mergeable, false, 'proposing is not the third');
+  const g = gate(gov, { author: MAYA, yes: [MAYA, SNAIT, ANA] });
   assert.equal(g.mergeable, true);
   assert.equal(g.rules[0].need, 3);
 });
@@ -470,8 +477,9 @@ test('who decides goes by You or the group whatever the project picked', () => {
   assert.equal(gate(preset('open_floor'), { author: MAYA, yes: [EVAN], explicitApproval: true, reason: 'visibility' }).mergeable, true);
 });
 
-test('who decides: the creator changes the rule alone', () => {
-  const g = gate(preset('group_vote'), { author: EVAN, explicitApproval: true, reason: 'governance' });
+test('who decides: the creator changes the rule alone, with their tap', () => {
+  assert.equal(gate(preset('group_vote'), { author: EVAN, explicitApproval: true, reason: 'governance' }).mergeable, false);
+  const g = gate(preset('group_vote'), { author: EVAN, yes: [EVAN], explicitApproval: true, reason: 'governance' });
   assert.equal(g.mergeable, true);
   assert.equal(g.passedBy.group, 'creator');
 });
@@ -502,7 +510,7 @@ test('who decides: the group’s side needs a yes from someone besides the autho
 });
 
 test('a change to the keys follows the project’s own rule, clocks off', () => {
-  const g = gate(preset('two_yeses'), { author: MAYA, yes: [SNAIT], explicitApproval: true, reason: 'secrets' });
+  const g = gate(preset('two_yeses'), { author: MAYA, yes: [MAYA, SNAIT], explicitApproval: true, reason: 'secrets' });
   assert.equal(g.whoDecides, false);
   assert.equal(g.mergeable, true);
   const vote = gate(preset('group_vote'), {

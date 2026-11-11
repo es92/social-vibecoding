@@ -1965,9 +1965,9 @@
     {
       "source": "src/services/shots-public.js",
       "kind": "runtime-expression",
-      "fingerprint": "4e2eeb1379f378d39be7",
+      "fingerprint": "a2ab91727c9d261b8fff",
       "count": 1,
-      "preview": "stillsSql(OPEN_SCOPE)"
+      "preview": "stillsSql(live ? MERGED_SCOPE : OPEN_SCOPE)"
     },
     {
       "source": "src/services/shots-public.js",

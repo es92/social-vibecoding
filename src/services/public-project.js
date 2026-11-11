@@ -13,7 +13,11 @@
 //     counted tally (the tallies every vote card shows), never who voted,
 //     and its before & after pictures where they may be shown to anybody
 //     (services/shots-public.js);
-//   * the last few changes voted in and live;
+//   * the last few changes voted in and live, each with its after picture
+//     where it may be shown to anybody (the same rules, services/
+//     shots-public.js);
+//   * how many people took part this week and how many changes went live in
+//     the last thirty days, as numbers (communities.js activityCounts);
 //   * the titles of its open requests, read from its repository's public
 //     issues, never a body or who filed it.
 //
@@ -27,10 +31,13 @@ const log = require('./logger');
 const { listPublicApps, publicChangeTitle } = require('./public-app-directory');
 const { countedVotePredicateSql } = require('./pr-vote-revision');
 const { publicStillsFor, publicStillUrl } = require('./shots-public');
+const { activityCounts } = require('./communities');
 const repoRef = require('./repo-ref');
 
-const VOTES_MAX = 10;
-const MERGED_MAX = 5;
+// The page shows two of each and folds the rest behind "See all", which
+// opens the rest of these in place.
+const VOTES_MAX = 20;
+const MERGED_MAX = 12;
 const REQUESTS_MAX = 8;
 const SUMMARY_MAX = 240;
 
@@ -123,9 +130,15 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
     ),
     pool.query('SELECT repo_url FROM apps WHERE id = $1', [app.id]),
   ]);
-  const [requests, stills] = await Promise.all([
+  const [requests, stills, liveStills, counts] = await Promise.all([
     openRequests(repo.rows[0] && repo.rows[0].repo_url, gh),
     publicStillsFor(pool, votes.rows.map((r) => r.id)),
+    publicStillsFor(pool, merged.rows.map((r) => r.id), { live: true }),
+    // Numbers only, never who; a read that fails says nothing rather than zero.
+    activityCounts(pool, app.id).catch((err) => {
+      log.warn('public-project', 'Activity counts could not be read', { slug: app.slug, err: err.message });
+      return null;
+    }),
   ]);
   const pictures = (id) => {
     const pair = stills.get(Number(id));
@@ -136,9 +149,16 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
     };
   };
 
+  const livePicture = (id) => {
+    const pair = liveStills.get(Number(id));
+    return pair ? publicStillUrl(app.slug, id, pair.after) : null;
+  };
+
   const { contributors, ...card } = app;
   return {
     app: { ...card, builders: (contributors || []).length },
+    // How many took part this week, how many changes went live this month.
+    activity: counts ? { active_week: counts.active_week, merged_month: counts.shipped_month } : null,
     votes: votes.rows.map((r) => ({
       id: r.id,
       pr_number: r.pr_number,
@@ -155,6 +175,7 @@ async function loadProjectOverview(pool, slug, { gh = github } = {}) {
       title: publicChangeTitle(r.title),
       summary: plainSummary(r.pr_summary_md),
       merged_at: r.merged_at || null,
+      picture: livePicture(r.id),
     })),
     requests,
   };

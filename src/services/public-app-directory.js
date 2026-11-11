@@ -70,6 +70,16 @@ function categoryOf(raw) {
   return APP_CATEGORIES.includes(key) ? key : null;
 }
 
+// The kind the directory sorts an app under (#6585). A kind its group chose
+// in dapp.json wins; `other` and a missing line are not a choice, so the kind
+// worked out from the name and description stands in (services/app-category.js),
+// and only an app with neither stays `other` (or null).
+function directoryCategory(raw, inferred) {
+  const chosen = categoryOf(raw);
+  if (chosen && chosen !== 'other') return chosen;
+  return categoryOf(inferred) || chosen;
+}
+
 function shapeApp(app, contributorRows, includeWallets) {
   return {
     id: app.id,
@@ -100,7 +110,7 @@ function shapeApp(app, contributorRows, includeWallets) {
     // last of them. Everything here is what a signed-in non-member already
     // reads on Discover and the project's own pages.
     description: descriptionOf(app.description),
-    category: categoryOf(app.category),
+    category: directoryCategory(app.category, app.inferred_category),
     featured: Boolean(app.featured),
     featured_order: app.featured_order == null ? null : Number(app.featured_order),
     icon_color: app.icon_color || null,
@@ -140,6 +150,7 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
               a.icon_emoji, a.icon_image_id, a.icon_color, a.anon_shell, a.guest_shell,
               a.manifest_snapshot->>'description' AS description,
               a.manifest_snapshot->>'category' AS category,
+              ic.category AS inferred_category,
               (fa.app_id IS NOT NULL) AS featured, fa.sort_order AS featured_order,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.id END AS illustration_id,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.dark_id END AS illustration_dark_id,
@@ -163,6 +174,9 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
              )
            GROUP BY a1.app_id
          ) au ON au.app_id = a.id
+         LEFT JOIN app_inferred_categories ic
+                ON ic.app_id = a.id
+               AND ic.source_description = COALESCE(a.manifest_snapshot->>'description', '')
          LEFT JOIN featured_apps fa ON fa.app_id = a.id
          LEFT JOIN app_illustrations ill ON ill.app_id = a.id
          LEFT JOIN (
@@ -208,5 +222,7 @@ module.exports = {
   guestReady,
   descriptionOf,
   publicChangeTitle,
+  categoryOf,
+  directoryCategory,
   HIDDEN_APP_STATUSES,
 };

@@ -214,6 +214,12 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
   // count glyphs are the same pair the app's own Workshop tab uses, which is
   // the point: the number on a row and the pane it counts wear one mark.
   const expected = [
+    // ── The project card's preview loop (11 Nov 2026) ───────────────────
+    //
+    // PauseIcon is drawn only once a loop plays, after the island mounts
+    // (features/guest/project-card.tsx), so it never prerenders.
+    'M9 6.5v11',
+    'M15 6.5v11',
     // ── One Home (#6361) retired Discover's screen and its tab ──────────
     //
     // The rail's Discover tab drew CompassIcon (two paths) in the static

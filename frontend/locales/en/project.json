@@ -1795,6 +1795,18 @@
     "text": "{{count}} votes you skipped are still open",
     "description": "Line on the Needs you card of a project's Hub when every proposal waiting for this person's vote is one they already swiped past without voting: how many of those can still be voted on."
   },
+  "hub.needs.upForVote": {
+    "text": "Up for a vote",
+    "description": "Title of the first row of For you on a project's hub, for somebody signed in who has not joined the community: opens the changes up for a vote."
+  },
+  "hub.needs.upForVoteCount_one": {
+    "text": "{{count}} change up for a vote",
+    "description": "Screen-reader words for the count beside \"Up for a vote\" on a project's hub, for somebody who has not joined."
+  },
+  "hub.needs.upForVoteCount_other": {
+    "text": "{{count}} changes up for a vote",
+    "description": "Screen-reader words for the count beside \"Up for a vote\" on a project's hub, for somebody who has not joined."
+  },
   "hub.needs.joinToVote": {
     "text": "Join to vote on these.",
     "description": "Note under the Needs you card of a project's Hub for a person who is not a member of the community: they must join it before they can vote on the proposals. \"These\" are the proposals."
@@ -1898,6 +1910,22 @@
   "hub.recent.going": {
     "text": "Going live now",
     "description": "Line under a change's title in Recently live on a project's Hub, for a change that has merged and is still on its way to the live app, when there is no maker to name."
+  },
+  "hub.recent.morePill_one": {
+    "text": "+{{count}}",
+    "description": "Small badge leading the last row of Recently live on a project's hub: how many more changes went live this month than the pictures above show."
+  },
+  "hub.recent.morePill_other": {
+    "text": "+{{count}}",
+    "description": "Small badge leading the last row of Recently live on a project's hub: how many more changes went live this month than the pictures above show."
+  },
+  "hub.recent.moreThisMonth_one": {
+    "text": "{{count}} more live this month",
+    "description": "Last row of Recently live on a project's hub, after the pictures of the latest changes: how many more went live in the last thirty days. Opens the Workshop."
+  },
+  "hub.recent.moreThisMonth_other": {
+    "text": "{{count}} more live this month",
+    "description": "Last row of Recently live on a project's hub, after the pictures of the latest changes: how many more went live in the last thirty days. Opens the Workshop."
   },
   "hub.recent.own.today": {
     "text": "Live since today",
@@ -4498,6 +4526,34 @@
   "menu.button.manage": {
     "text": "Suggest an improvement, import a PR or manage this app",
     "description": "Tooltip and accessible name of the round ⋯ button on a project's page, for someone who can take part. It opens the project's menu of actions and settings. PR is a GitHub pull request."
+  },
+  "menu.visitorView.title": {
+    "text": "See what visitors see",
+    "description": "First row of a project hub's ⋯ menu, for a member of a public project: opens the project's page as somebody signed out sees it."
+  },
+  "menu.visitorView.sub": {
+    "text": "The page before joining: the preview, the featured illustration and what's up for a vote",
+    "description": "Line under \"See what visitors see\" in a project hub's ⋯ menu: what that page shows. The featured illustration is the picture the group voted in for the project's card."
+  },
+  "visitorView.title": {
+    "text": "What visitors see",
+    "description": "Bar over a member's preview of their project's signed-out page, opened from \"See what visitors see\" in the hub's ⋯ menu. Also the preview's accessible name."
+  },
+  "visitorView.sub": {
+    "text": "The project's page for somebody who isn't signed in",
+    "description": "Second line of the bar over a member's preview of their project's signed-out page."
+  },
+  "visitorView.back": {
+    "text": "Back to hub",
+    "description": "Button on the bar over a member's preview of their project's signed-out page: closes it and returns to the project's hub."
+  },
+  "visitorView.inert": {
+    "text": "Visitors are asked to sign in here",
+    "description": "Toast when a member presses Join, Vote, Sign in or another button in the preview of their project's signed-out page: the button does nothing for them, and this says what a visitor would get."
+  },
+  "visitorView.unavailable": {
+    "text": "This project has no page for visitors. Only public projects do.",
+    "description": "Shown in a member's preview of their project's signed-out page when the project is not in the public directory."
   },
   "menu.suggest.title": {
     "text": "Suggest an improvement",

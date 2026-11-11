@@ -741,6 +741,13 @@ export interface ChangeGateView {
  */
 export type ChangeMergeView = ChangeGateView & {
   wait?: { triedAt: string | null; retryAt: string | null; since: string | null } | null;
+  /**
+   * #6593: which hold this card is about, so the card knows whether the
+   * tries are news. `github_checks` is GitHub still building and scanning
+   * the release images: Homeroom's own tries say nothing a reader needs, so
+   * the card leaves them out. `github_wait` (busy or refused) keeps them.
+   */
+  hold?: 'github_checks' | 'github_wait' | 'failing' | 'merging';
 };
 
 /** #4455: what a change's page says about the change itself, as the thread's root post. */

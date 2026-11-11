@@ -291,7 +291,8 @@ test('a message row hangs the same vote card a vote row does, and no module-fill
 
 test('the hub\'s activity counts people only', () => {
   const src = read('src/services/communities.js');
-  const fn = src.slice(src.indexOf('async function activitySummary'), src.indexOf('const ACTIVE_PEOPLE_SHOWN'));
+  // The week's count is activityCounts', which the hub and a visitor's page share.
+  const fn = src.slice(src.indexOf('async function activityCounts'), src.indexOf('const ACTIVE_PEOPLE_SHOWN'));
   const joins = fn.match(/JOIN users u ON u\.id = (?:w|who)\.user_id AND u\.is_synthetic IS NOT TRUE/g) || [];
   assert.equal(joins.length, 3, 'the fourteen-day trend, the week\'s count and the people it names');
 });

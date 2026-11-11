@@ -165,7 +165,7 @@ test('a create names its own new repository', () => {
   const creator = read('src/services/app-creator.js');
   // No database URL (#4895): none goes into a repository, and the database
   // is made beside the repository rather than before it.
-  assert.match(creator, /const repoUrl = repo\.html_url;[\s\S]{0,400}const files = starterFiles\(row, \{ repoUrl, sketch \}\);/,
+  assert.match(creator, /const repoUrl = repo\.html_url;[\s\S]{0,400}const files = starterFiles\(row, \{ repoUrl, sketch, category \}\);/,
     'the GitHub create passes the repository it just made');
   assert.match(creator, /return getTemplateFiles\(row\.name, row\.slug, null, repoUrl, \{/);
 });

@@ -107,10 +107,10 @@ test('a percentage shows only under a percentage rule, as a share of its people'
 });
 
 test('the row names the rule the card counts for, and its electorate', () => {
-  const gate = (rulesList, active, voters, authorId = null) => rules.evaluateRules({
+  const gate = (rulesList, active, voters) => rules.evaluateRules({
     value: { rules: rulesList },
     facts: { creatorId: 1, memberCount: 10, membersActive: active, adminIds: [], groups: new Map(), activeIds: null },
-    voters, counts: { yes: 0, no: 0 }, authorId, openedAt: null, now: null, noTimers: false, memberFloor: null,
+    voters, counts: { yes: 0, no: 0 }, openedAt: null, now: null, noTimers: false, memberFloor: null,
     mergeGate: () => ({ required: 2, mergeable: false, thresholdMet: false }),
     applyNoTimerMerge: (g) => g,
     atLeastGate: (need) => ({ required: need, mergeable: false, thresholdMet: false }),
@@ -119,9 +119,10 @@ test('the row names the rule the card counts for, and its electorate', () => {
   assert.equal(gate([{ group: 'members', kind: 'percentOfActive', n: 50 }], 4, none).shown.electorate, 4);
   assert.equal(gate([{ group: 'members', kind: 'percentOfEveryone', n: 50 }], 4, none).shown.electorate, 10);
   assert.equal(gate([{ group: 'members', kind: 'majority', n: null }], 4, none).shown.electorate, 4);
-  assert.equal(gate([{ group: 'members', kind: 'atLeast', n: 2 }], 4, none, 5).shown.authorYes, true);
-  assert.deepEqual(governance.ruleRowFields({ mode: 'rules', shownRule: { kind: 'atLeast', n: 1, electorate: 1, authorYes: false } }).approval_rule,
-    { kind: 'atLeast', n: 1, electorate: 1, authorYes: false });
+  // Proposing is no yes (11 Nov 2026), so the rule says nothing about one.
+  assert.equal('authorYes' in gate([{ group: 'members', kind: 'atLeast', n: 2 }], 4, none).shown, false);
+  assert.deepEqual(governance.ruleRowFields({ mode: 'rules', shownRule: { kind: 'atLeast', n: 1, electorate: 1 } }).approval_rule,
+    { kind: 'atLeast', n: 1, electorate: 1 });
   assert.deepEqual(governance.ruleRowFields({ mode: 'default' }), {});
 });
 
@@ -155,11 +156,12 @@ test('the viewer reads their own vote, or that it is wanted', () => {
   assert.equal(fact(facts(ro, {}), 'mine'), null);
 });
 
-test('a proposer whose proposing counts is not told they have not voted', () => {
+test('a proposer is asked for their vote like anyone: proposing is not a yes', () => {
   const av = appView();
-  const rule = { kind: 'atLeast', n: 2, electorate: 4, authorYes: true };
-  assert.equal(fact(facts(av, { approval_mode: 'rules', approval_rule: rule, user_id: 42 }), 'mine').text,
-    message('changes:page.votes.facts.yourProposal'));
+  const rule = { kind: 'atLeast', n: 2, electorate: 4 };
+  const own = fact(facts(av, { approval_mode: 'rules', approval_rule: rule, user_id: 42 }), 'mine');
+  assert.equal(own.ask, true);
+  assert.equal(own.text, message('changes:page.votes.facts.notVoted'));
   assert.equal(fact(facts(av, { approval_mode: 'rules', approval_rule: rule }), 'mine').ask, true);
 });
 

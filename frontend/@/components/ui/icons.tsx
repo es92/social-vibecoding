@@ -509,6 +509,9 @@ export const PlayIcon = stroked(
   'PlayIcon',
   'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z',
 );
+// The project card's preview loop, paused (features/guest/project-card.tsx):
+// two bars, PlayIcon's partner on the same button.
+export const PauseIcon = stroked('PauseIcon', ['M9 6.5v11', 'M15 6.5v11']);
 export const ChevronUpIcon = stroked('ChevronUpIcon', 'M5 15l7-7 7 7');
 // The before/after slider's Before side (features/review-flow/compare.tsx):
 // a clock turning back. Its After side is SparklesIcon.

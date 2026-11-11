@@ -1,8 +1,9 @@
 'use strict';
 
-// 29 Oct 2026, against the real schema: a change a coding agent submitted
-// for its author (chat_sessions.external_agent) waits for its author to tap
-// Yes, and that tap counts. tests/agent-submission-yes.test.js holds the
+// 11 Nov 2026, against the real schema: proposing is never a yes. A change,
+// whether its author made it on Homeroom or a coding agent submitted it for
+// them (chat_sessions.external_agent, the first case, 29 Oct 2026), waits
+// for a tap, and its author's tap counts. tests/agent-submission-yes.test.js holds the
 // rule; this holds the reads it rests on: the gate every merge decision
 // takes (governance.js governedGate), the serializers' batch read
 // (rulesContext), the workflow machine's own read (rules/pr-gate.ts
@@ -34,7 +35,7 @@ const { readPrGate } = require('../src/workflow/rules/pr-gate.ts');
 const { COUNTS_SQL } = require('../src/routes/workshop-overview');
 const { PENDING_SQL } = require('../src/services/vote-digest');
 
-test('an agent\'s submission waits for its author\'s own yes, which counts', { timeout: 180000 }, async (t) => {
+test('a change waits for its author\'s own yes, which counts, however it was made', { timeout: 180000 }, async (t) => {
   const admin = new Pool({ connectionString: DSN, connectionTimeoutMillis: 10000 });
   try { await admin.query('SELECT 1'); } catch (err) {
     await admin.end();
@@ -101,10 +102,12 @@ test('an agent\'s submission waits for its author\'s own yes, which counts', { t
     return [direct.mergeable, listed.mergeable, machine.mergeable];
   };
 
-  await t.test('Open floor: proposing through the connector is not a yes; the author\'s tap is', async () => {
+  await t.test('Open floor: proposing is not a yes, on Homeroom or through the connector; the author\'s tap is', async () => {
     await reconcile({ preset: 'open_floor' });
     const byHand = await proposal(sam);
-    assert.deepEqual(await gates(byHand, sam), [true, true, true], 'proposing on Homeroom is still their yes');
+    assert.deepEqual(await gates(byHand, sam), [false, false, false], 'proposing on Homeroom is not their yes either');
+    await vote(byHand, sam);
+    assert.deepEqual(await gates(byHand, sam), [true, true, true]);
     const byAgent = await proposal(sam, 'claude-code');
     assert.deepEqual(await gates(byAgent, sam), [false, false, false], 'every read waits for a tap');
     await vote(byAgent, sam);
@@ -120,35 +123,7 @@ test('an agent\'s submission waits for its author\'s own yes, which counts', { t
     assert.deepEqual(await gates(byAgent, sam), [true, true, true]);
   });
 
-  await t.test('#6477: an author who takes their vote back has no yes for proposing, until a new version', async () => {
-    await reconcile({ preset: 'two_yeses' });
-    const hers = await proposal(sam);
-    const before = await governance.governedGate(pool, club.id, { kind: 'pr', id: hers });
-    assert.equal(before.qualifiedYes, 1, 'proposing counts as her yes');
-    // The retraction's own write (routes/votes.js retractVote stamps the epoch).
-    await pool.query(
-      'UPDATE chat_sessions SET author_yes_withdrawn_epoch = approval_epoch WHERE id = $1', [hers]
-    );
-    const after = await governance.governedGate(pool, club.id, { kind: 'pr', id: hers });
-    assert.equal(after.qualifiedYes, 0, 'taking the vote back takes the proposing yes with it');
-    // Every read agrees: the serializers' batch read and the machine's own.
-    const gov = await governance.getGovernance(pool, club.id);
-    const ctx = await governance.rulesContext(pool, club.id, gov, 'pr', [hers]);
-    const listed = governance.computeGate(gov, ctx.facts.membersActive, 0, 0, null, null,
-      governance.rulesGateOpts(ctx, hers, sam.id, null));
-    const machine = await readPrGate(pool, {
-      sessionId: hers, appId: club.id, openedAt: null, explicitApproval: false, explicitReason: null, authorId: sam.id, now: new Date(),
-    });
-    assert.equal(listed.qualifiedYes, 0);
-    assert.equal(machine.qualifiedYes, 0);
-    assert.deepEqual(await gates(hers, sam), [false, false, false]);
-    // A new version is proposing it again.
-    await pool.query('UPDATE chat_sessions SET approval_epoch = approval_epoch + 1 WHERE id = $1', [hers]);
-    assert.equal((await governance.governedGate(pool, club.id, { kind: 'pr', id: hers })).qualifiedYes, 1);
-    await pool.query(`UPDATE chat_sessions SET status = 'closed' WHERE id = $1`, [hers]);
-  });
-
-  await t.test('Needs you and the digest ask the author of an agent\'s submission for their yes', async () => {
+  await t.test('Needs you and the digest ask a change\'s author for their yes', async () => {
     await pool.query(`UPDATE chat_sessions SET status = 'closed' WHERE app_id = $1`, [club.id]);
     const owed = async (who) => {
       const { rows } = await pool.query(COUNTS_SQL, [who.id, false, false]);
@@ -157,13 +132,13 @@ test('an agent\'s submission waits for its author\'s own yes, which counts', { t
     };
     const digest = async (who) => (await pool.query(PENDING_SQL, ['24'])).rows.find((r) => r.user_id === who.id);
     const byHand = await proposal(sam);
-    assert.equal(await owed(sam), 0, 'their own change made on Homeroom is not owed by them');
-    assert.equal(await digest(sam), undefined);
+    assert.equal(await owed(sam), 1, 'their own change made on Homeroom is owed by them');
+    assert.equal(Number((await digest(sam)).pending), 1);
     assert.equal(await owed(kim), 1);
     await pool.query(`UPDATE chat_sessions SET status = 'closed' WHERE id = $1`, [byHand]);
 
     const byAgent = await proposal(sam, 'claude-code');
-    assert.equal(await owed(sam), 1, 'one an agent submitted for them is');
+    assert.equal(await owed(sam), 1, 'as is one an agent submitted for them');
     assert.equal(Number((await digest(sam)).pending), 1, 'and their digest counts it');
     await vote(byAgent, sam);
     assert.equal(await owed(sam), 0, 'until they vote on it');

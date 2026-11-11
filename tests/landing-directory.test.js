@@ -110,10 +110,13 @@ test('the bar swaps the wordmark for the open app\'s name, or a project page\'s,
   assert.match(back.slice(0, 400), /hiddenLast\(\s*\n?\s*!showBack/,
     'the back button is what an open app or a project page toggles');
   // Discover opened from the story inside the Homeroom app takes a back too
-  // (to the story), and keeps the wordmark.
-  assert.match(tsx, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
+  // (to the story), and keeps the wordmark. A public project's page keeps
+  // the signed-out site's own bar, the wordmark with Sign in and Sign up
+  // (the hand-off of 11 Nov 2026); its way back is its All communities chip,
+  // and its name is the tab's title alone.
+  assert.match(tsx, /const showBack = !!openApp \|\| appDiscover;/);
   assert.match(tsx, /const headerTitle = openApp \? openApp\.name \|\| openApp\.slug : guestProject \? guestProject\.name : LANDING_TITLE;/);
-  assert.match(tsx, /\{openApp \|\| guestProject \? headerTitle : <Wordmark/,
+  assert.match(tsx, /\{openApp \? headerTitle : <Wordmark/,
     'the mark gives way to the app name — it never draws over it');
   // The element's class string does NOT move with that swap: it is the same
   // box either way, and a conditional className would rewrite the attribute

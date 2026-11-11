@@ -63,41 +63,25 @@
  * "Most active people in All members say yes, over time, and at least 10 of
  * them": the rule passes when its measure does AND the yeses reach the
  * minimum, on the quiet wait too, so silence alone never ships a change in a
- * small group. The minimum counts the yeses its own rule counts (votes as
- * cast on majority, proposing included on a percentage; below) and is never
+ * small group. The minimum counts the yeses as they are cast and is never
  * more than the group has, so a group that shrinks never makes the rule
  * impossible. An atLeast rule takes none: it is one already.
  *
  * Only yeses count toward a rule; a No still does what it always did on the
  * majority rule (raises the bar, arms the takedown clock).
  *
- * PROPOSING COUNTS AS A YES on the counted rules (atLeast and the two
- * percentages): a person who opens a change is saying yes to it, so the
- * author's yes is counted unless they voted No. That is what makes Two yeses
- * "whoever makes it, plus one more", Open floor "any member's yes, even their
- * own" and You or the group "you ship on your own". The majority rule counts
- * votes as they are cast, so Group vote is today's default to the vote.
- *
- * Only a PERSON's proposing is a yes. A change Homeroom bot made from
- * somebody's suggestion has the bot as its author (an account the platform
- * runs, users.is_synthetic; `authorIsBot`), and nobody has said yes to it
- * yet: on every rule it needs a person's yes like any other vote (13 Oct
- * 2026, D2: on Open floor the bot's change used to go live as soon as its
- * checks passed, with nobody asked). The one change that skips the vote is a
- * project's first version, and that is the gate's rule, not this one
- * (governance-gate.ts applyFirstVersion).
- *
- * Only proposing ON HOMEROOM is a yes. A change a coding agent submitted for
- * its author (through the connector, or a local agent's hand-off:
- * chat_sessions.external_agent; `madeByAgent`) was put up for a vote by the
- * agent, not by the person tapping anything here. Its author's yes counts
- * like anyone's, once they tap Yes on it (29 Oct 2026: "they should just have
- * to manually do it, not have it auto-done by the connector").
- *
- * An author who TOOK THEIR VOTE BACK on this version has no yes for
- * proposing (`authorWithdrew`, chat_sessions.author_yes_withdrawn_epoch
- * matching the current epoch): they said no to counting it. A new version
- * (an epoch bump) counts proposing as their yes again.
+ * PROPOSING IS NOT A YES (11 Nov 2026), on any rule, for any change: a code
+ * change or a governance vote (a card picture, a rename, closing a request,
+ * a key, a move, a campaign), opened on Homeroom or by a coding agent
+ * through the connector. Its author's yes counts once they tap Yes, like
+ * anyone's. Every rule counts the votes people cast, nothing else, so Two
+ * yeses is the author's tap plus one more, Open floor any member's tap, and
+ * You or the group the creator's tap. Until then proposing counted on the
+ * counted rules (atLeast and the two percentages), and a card picture filed
+ * through the connector applied the moment it was filed, with nobody having
+ * pressed anything ("Submitting anything shouldn't count as a yes"). The one
+ * change that skips the vote is a project's first version, and that is the
+ * gate's rule, not this one (governance-gate.ts applyFirstVersion).
  *
  * ── Changes to who decides ─────────────────────────────────────────────
  *
@@ -589,27 +573,10 @@ function groupTally(group: string, { facts, voters, counts }: Pick<EvalContext, 
   };
 }
 
-/** Whether the author belongs to the group, for the counted yes. */
-function authorIn(group: string, tally: Tally, authorId: number | null): boolean {
-  if (authorId == null) return false;
-  if (group === 'members') return true;
-  return !!tally.ids && tally.ids.includes(authorId);
-}
-
 export interface EvalContext {
   facts: RulesFacts;
   voters: Voters | null;
   counts: { yes: number; no: number };
-  authorId: number | null;
-  // The author is an account the platform runs (Homeroom bot): proposing is
-  // not a person's yes, so it counts for nothing (see the header).
-  authorIsBot?: boolean;
-  // A coding agent submitted the change (see the header): the author's yes
-  // counts once they tap it, not for proposing.
-  madeByAgent?: boolean;
-  // The author took their own vote back on this version (see the header):
-  // proposing is not their yes again until they vote or a new version lands.
-  authorWithdrew?: boolean;
   openedAt: unknown;
   now: unknown;
   noTimers: boolean;
@@ -621,7 +588,7 @@ export interface EvalContext {
 
 export interface RuleResult {
   group: string; kind: Measure; n: number | null; size: number; yes: number; no: number;
-  authorYes: boolean; empty: boolean; known: boolean;
+  empty: boolean; known: boolean;
   // How many people this rule counts: the group, or its active people where
   // the rule's measure reads them. Said on the Votes card, never decided by.
   electorate: number;
@@ -655,7 +622,7 @@ function underMinimum(gate: Gate, yes: number, minNeed: number): Gate {
 }
 
 /**
- * Evaluate one rule. `ctx`: { facts, voters, counts, authorId, openedAt,
+ * Evaluate one rule. `ctx`: { facts, voters, counts, openedAt,
  * now, noTimers, memberFloor (null | { applies, met }), mergeGate,
  * applyNoTimerMerge }. Returns the rule's own status:
  *   { group, kind, n, size, yes, no, need, passed, empty, gate, min, minNeed }
@@ -664,27 +631,16 @@ function underMinimum(gate: Gate, yes: number, minNeed: number): Gate {
  */
 export function evaluateRule(rule: Rule, ctx: EvalContext): RuleResult {
   const tally = groupTally(rule.group, ctx);
-  let yes = tally.yes;
-  // Proposing counts as a yes on the counted rules (see the header), unless
-  // the author voted No, or already said yes, or is not a person, or a
-  // coding agent put it up for them.
-  const counted = rule.kind !== 'majority';
-  let authorYes = false;
-  if (counted && ctx.voters && !ctx.authorIsBot && !ctx.madeByAgent && !ctx.authorWithdrew
-    && authorIn(rule.group, tally, ctx.authorId)
-    && !ctx.voters.yes.has(ctx.authorId!) && !ctx.voters.no.has(ctx.authorId!)) {
-    yes += 1;
-    authorYes = true;
-  }
-  // The minimum counts the yeses its own rule counts: votes as cast on the
-  // majority rule, proposing included on a percentage. Capped at the group's
-  // size like atLeast, so a shrinking group never makes it impossible.
+  const yes = tally.yes;
+  // The minimum counts the yeses as cast (proposing is none: see the
+  // header). Capped at the group's size like atLeast, so a shrinking group
+  // never makes it impossible.
   const min = rule.kind !== 'atLeast' && rule.min != null ? rule.min : null;
   const minNeed = min != null ? Math.min(min, Math.max(tally.size, 1)) : null;
   const readsActive = rule.kind === 'percentOfActive' || (rule.kind === 'majority' && rule.group === 'members');
   const base = {
     group: rule.group, kind: rule.kind, n: rule.n, size: tally.size, yes, no: tally.no,
-    authorYes, empty: tally.size === 0, known: tally.known, min, minNeed,
+    empty: tally.size === 0, known: tally.known, min, minNeed,
     electorate: readsActive ? Math.max(tally.active, 1) : tally.size,
   };
   if (tally.size === 0 && rule.group !== 'members') {
@@ -716,7 +672,7 @@ export function evaluateRule(rule: Rule, ctx: EvalContext): RuleResult {
  *
  * `opts`:
  *   value          { rules } (the app's, or WHO_DECIDES for a change to who decides)
- *   facts, voters, counts, authorId, openedAt, now
+ *   facts, voters, counts, openedAt, now
  *   noTimers       the explicit-approval modifier: no quiet wait, no window
  *   memberFloor    the floor for the majority rules of a flagged proposal
  *   mergeGate, applyNoTimerMerge, atLeastGate   governance.js's own

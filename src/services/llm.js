@@ -676,6 +676,10 @@ const HELPER_TIME_LIMIT_MS = Object.freeze({
   // The sketch card waits up to 15s for its model (app-sketch.js
   // MODEL_WAIT_MS); Haiku gets what is left.
   app_sketch: 8000,
+  // One key from a catalog of nine, for sorting a project the directory
+  // cannot place (services/app-category.js). Nobody is waiting on the sweep;
+  // a new project waits at most 6s for it.
+  app_category: 5000,
   // A first version's plan at Make it (first-version-plan.js): its maker
   // waits on the made screen for its questions, while the project is set
   // up (about 40 seconds), and it is a longer answer than the card's.
@@ -2260,6 +2264,32 @@ async function generateAppSketch({ system, user, schema, model = HELPER_MODEL, m
   return { text, usage: resp.usage, model: served };
 }
 
+// Which kind of app a project is (services/app-category.js owns the prompt
+// and the parse): one key from APP_CATEGORIES, for sorting a project whose
+// group never chose one. One helper call; hands back the reply's text, the
+// key's JSON whichever model answered. THROWS with no key or on a provider
+// error; the caller leaves the project as it was.
+async function inferAppCategory({ system, user, schema, maxTokens = 60, telemetryContext }) {
+  // The helper model's own key can answer through GLM without the main
+  // client; `helperMessage` throws by itself when neither can.
+  const activeClient = client;
+  const { response: resp, model: served } = await helperMessage({
+    helper: 'app_category',
+    activeClient,
+    model: HELPER_MODEL,
+    params: {
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: String(user || '') }],
+    },
+    schema,
+    telemetryContext,
+    defaults: { backend: 'helper', component: 'app_category' },
+  });
+  const text = (resp.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  return { text, usage: resp.usage, model: served };
+}
+
 // A new project's first version's plan, at Make it (services/first-version-
 // plan.js owns the prompt, the plan's schema and the parse): what the
 // triage of its first request would plan, from the description alone, so
@@ -3759,6 +3789,7 @@ async function reviewContentRules({ system, diff, telemetryContext, apiKey }) {
 module.exports = {
   init, isEnabled, getSystemPrompt, streamChat, estimateCostCents,
   generatePrMetadata, parsePrMetadataText, generateSessionTitle, generateShortDescription, generateRevisedDescription, generateAppSketch,
+  inferAppCategory,
   generateChecksExplanation, CHECKS_EXPLANATION_MAX,
   generateFirstVersionPlan, generateFirstLook,
   reviewContentRules,

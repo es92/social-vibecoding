@@ -18721,6 +18721,9 @@ body:has(#ai-screen:not(.hidden)) #ai-screen[data-ai-preview="three"] #ai-main-d
    grey the sidebar's "2 unread" beside it wears, where the accent made the
    same messages read as a vote owed (audit N04, 1 Nov 2026). */
 .dev-ws-foryou-pill[data-ws-channel-unread] { background: var(--text-faint, #8e8e93); }
+/* For somebody not in the community, Up for a vote's count says how many,
+   not how many wait on them: the accent's light tint, not its fill. */
+.dev-ws-foryou-pill.dev-ws-foryou-pill-light { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
 .dev-ws-foryou-count { flex: none; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 .dev-ws-foryou-handle { font-weight: 500; color: var(--text-muted); }
 /* The Discussion row's last line: the message gives way, the time stays
@@ -18732,6 +18735,27 @@ body:has(#ai-screen:not(.hidden)) #ai-screen[data-ai-preview="three"] #ai-main-d
    change: its after shot (or a plain tile), its title, who and when. A row
    that scrolls sideways on a phone, three across on a wide window. */
 .dev-ws-strip.dev-ws-recent { padding: 14px 0; }
+/* Recently live's last row: how many more went live this month, opening the
+   Workshop (hub-cards.tsx RecentlyLive). A door in the accent, under the
+   pictures, the width of the card. */
+.dev-ws-recent-more {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px;
+  margin-top: 12px; margin-bottom: -14px; padding: 8px 14px; box-sizing: border-box;
+  border: 0; border-radius: 0 0 22px 22px; cursor: pointer; text-align: start;
+  background: transparent; color: var(--accent);
+  box-shadow: inset 0 1px 0 var(--app-sheet-line);
+  -webkit-tap-highlight-color: transparent;
+}
+.dev-ws-recent-more-n {
+  flex: none; min-width: 56px; height: 32px; padding: 0 8px; box-sizing: border-box;
+  display: inline-grid; place-items: center; border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent);
+  font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.dev-ws-recent-more-words { flex: 1; min-width: 0; font-size: 15px; font-weight: 650; }
+@media (hover: hover) {
+  .dev-ws-recent-more:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+}
 .dev-ws-recent-list {
   list-style: none; margin: 0; padding: 0 14px;
   display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity;
@@ -19501,6 +19525,43 @@ button.dev-ws-recent-card {
   .dev-ws-join-pop { animation: dev-ws-join-pop-in .18s ease-out both; transform-origin: calc(100% - 32px) 0; }
 }
 @keyframes dev-ws-join-pop-in { from { opacity: 0; transform: translateY(-4px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* ── The project card (features/guest/project-card.tsx) ────────────────
+   The hub's hero for somebody signed in who has not joined: the project's
+   colour, its picture, and Open app · Join · ⋯ in one row of 50px buttons
+   (52px from 768px). Join is the hub's own (its popup hangs under it, in
+   the page's ink rather than the card's white), and the ⋯ is the hero's
+   menu on a round glass button. The card lifts over what follows while
+   either is open. Under it, the people card: the hero's faces, ringed in
+   the card's white. */
+.dev-ws-project-card .dev-ws-join-anchor { margin-inline-start: 0; }
+.dev-ws-project-card .dev-ws-join-pop {
+  color: var(--text-primary);
+  /* Join is mid-row here, not at the row's end: the popup hangs centred
+     under it, so on a phone it stays on the screen. */
+  inset-inline-end: auto; inset-inline-start: 50%;
+  margin-inline-start: calc(min(300px, var(--platform-float-w) - 56px) / -2);
+  transform-origin: 50% 0;
+}
+.dev-ws-project-card .dev-ws-join-pop::before { inset-inline-end: auto; inset-inline-start: calc(50% - 7px); }
+.dev-ws-project-card:has(#dev-plus-menu:not(.hidden)) { position: relative; z-index: 5; }
+.dev-ws-plus-btn.dev-ws-plus-btn-card { width: 50px; height: 50px; }
+.dev-ws-plus-btn.dev-ws-plus-btn-card .dev-ws-plus-glyph { width: 22px; height: 22px; }
+.dev-ws-plus-btn.dev-ws-plus-btn-card[aria-expanded="true"] { background: rgba(255, 255, 255, .3); box-shadow: none; }
+@media (min-width: 768px) {
+  .dev-ws-plus-btn.dev-ws-plus-btn-card { width: 52px; height: 52px; }
+}
+[data-ws-people-card] .dev-ws-hero-face { box-shadow: 0 0 0 2px #fff; }
+.dark [data-ws-people-card] .dev-ws-hero-face { box-shadow: 0 0 0 2px #18181b; }
+/* Who it is for, in the card's corner: the audience's name in the row
+   title's ink, the count muted, "Public community · 91 members". */
+[data-ws-people-card] .dev-ws-hero-count { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+[data-ws-people-card] .dev-ws-hero-audience b { color: var(--text-primary); }
+/* A phone keeps "34 active this week" on one line beside the faces. */
+@media (max-width: 767px) {
+  [data-ws-people-card] .dev-ws-hero-active { gap: 10px; }
+  [data-ws-people-card] .dev-ws-hero-active .dev-ws-hero-face { width: 30px; height: 30px; margin-inline-end: -10px; font-size: 12px; }
+}
 
 /* ── The project page's hero (community-card.tsx) ──────────────────────
    On the ground, not in a card: who is here and who it is for, what it is,

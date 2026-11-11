@@ -87,6 +87,8 @@ import { hubShot, hubShotPayload } from './hub-shot';
 import { useHubDismissed } from './hub-dismissed';
 import { changeHref } from '../../../lib/change-href';
 import type { ApprovalPayload } from '../../who-decides/model';
+import { CARD_JOIN_SIZE, CARD_OPEN_BTN, PeopleCard, ProjectCard, type ProjectCover } from '../../guest/project-card';
+import type { GuestApp } from '../../guest/guest-data';
 
 type Audience = 'open' | 'invited' | 'solo';
 
@@ -190,6 +192,10 @@ export type CommunityPayload = {
   /** dapp.json's one-line description, or the first sentence of the
       description it was made from when dapp.json has none yet. */
   description?: string | null;
+  /** The picture its group voted in for its card, and its preview loop
+      (routes/apps.js): the project card's, for somebody who has not
+      joined. Null without one. */
+  cover?: ProjectCover | null;
   /** #4045: the viewer has a live invite link for a project that is still
       just theirs. Only ever true for a member, on a Just you project. The
       hub says "Just you so far" whatever it says (15 Oct 2026): a link out
@@ -929,8 +935,10 @@ export function CommunityCard({ slug, name, iconUrl = null, iconEmoji = null, me
   iconUrl?: string | null;
   iconEmoji?: string | null;
   /** The ⋯ and its menu (../actions-row.tsx DevPlusMenu), last on the
-      members row. The page renders it so its props stay the page's. */
-  menu?: ReactNode;
+      members row. The page renders it so its props stay the page's; as a
+      function it is told where it is drawn: the hero, or the project card
+      for somebody who has not joined (one node either way). */
+  menu?: ReactNode | ((place: 'hero' | 'card') => ReactNode);
   /** Whether "Open app" leads the actions (#3367): every project but the
       platform's own, which is the page you are on. */
   canOpenApp?: boolean;
@@ -952,6 +960,7 @@ export function CommunityCard({ slug, name, iconUrl = null, iconEmoji = null, me
   const popRef = useRef<HTMLDivElement | null>(null);
 
   const load = () => reloadCommunity(slug);
+  const menuFor = (place: 'hero' | 'card'): ReactNode => (typeof menu === 'function' ? menu(place) : menu);
 
   // THE ANCHOR. While this card shows a Join button, the question for this
   // app is asked here. `visible` is what stops a card on a screen that is
@@ -1018,7 +1027,7 @@ export function CommunityCard({ slug, name, iconUrl = null, iconEmoji = null, me
   if (!data) {
     return (openApp || menu) ? (
       <section className="dev-ws-hero" data-ws-community-pending="">
-        <div className="dev-ws-hero-row"><div className="dev-ws-hero-actions">{openApp}{menu}</div></div>
+        <div className="dev-ws-hero-row"><div className="dev-ws-hero-actions">{openApp}{menuFor('hero')}</div></div>
       </section>
     ) : null;
   }
@@ -1160,6 +1169,81 @@ export function CommunityCard({ slug, name, iconUrl = null, iconEmoji = null, me
   // there, so not here too.
   const appButton = data.first_version ? null : openApp;
 
+  // STILL DECIDING (the hand-off of 11 Nov 2026): signed in, not in it, and
+  // not opened from an invite link (which leads with who invited them). The
+  // hero is the project card, the one the signed-out page leads with: its
+  // picture, its name and what it is, then Open app, Join and the ⋯ (the
+  // same Join, popup and all, and the same menu). Who is around is a card
+  // of its own under it: this week's faces and names, which a signed-in
+  // viewer already reads on the hub, and who it is for. Once they join, the
+  // hero is the hub's own again.
+  if (!data.is_member && !invited) {
+    const cardApp: GuestApp = { slug, name: displayName, icon_url: iconUrl, icon_emoji: iconEmoji };
+    const count = Number(data.member_count) || 0;
+    return (
+      <div
+        ref={cardRef as Ref<HTMLDivElement>}
+        className="dev-ws-project-card flex flex-col gap-2.5 md:gap-3.5"
+        data-ws-community=""
+        data-ws-project-card=""
+        data-audience={data.audience}
+        style={asking ? { position: 'relative', zIndex: 5 } : undefined}
+      >
+        <ProjectCard
+          place="hub"
+          app={cardApp}
+          cover={data.cover}
+          color="var(--community-tint, #2a2e34)"
+          description={data.description}
+          actions={(
+            <>
+              {canOpenApp && !data.first_version ? (
+                <button
+                  type="button"
+                  className={CARD_OPEN_BTN}
+                  data-ws-community-open-app=""
+                  onClick={() => { (window as any).App?.openAppTab?.(slug, 'app'); }}
+                >
+                  {t('project:communityCard.openApp')}
+                </button>
+              ) : null}
+              <span className="dev-ws-join-anchor">
+                <Button
+                  ref={joinRef}
+                  type="button"
+                  variant="pillAccent"
+                  size="none"
+                  ink="solid"
+                  className={CARD_JOIN_SIZE}
+                  data-ws-community-join=""
+                  aria-haspopup="dialog"
+                  aria-expanded={!!asking}
+                  disabled={busy && !asking}
+                  onClick={() => { void join(); }}
+                >
+                  {t('project:communityCard.join.button')}
+                </Button>
+                {popup}
+              </span>
+              {menuFor('card')}
+            </>
+          )}
+        />
+        <PeopleCard
+          data-ws-people-card=""
+          // Zero says nothing: with nobody in it yet, who it is for alone.
+          audience={count > 0 ? <HeroCount count={count} audience={data.audience} audienceLabel={data.audience_label} /> : (
+            <span className="dev-ws-hero-count" data-ws-members-cell="members">
+              <AudienceLabel audience={data.audience}>{data.audience_label}</AudienceLabel>
+            </span>
+          )}
+        >
+          {others ? <HeroActive activity={data.activity} /> : null}
+        </PeopleCard>
+      </div>
+    );
+  }
+
   return (
     <section
       ref={cardRef}
@@ -1209,7 +1293,7 @@ export function CommunityCard({ slug, name, iconUrl = null, iconEmoji = null, me
             {t('project:communityCard.invite.button')}
           </Button>
         ) : null}
-        {menu}
+        {menuFor('hero')}
       </div>
       {membership ? <span className="dev-ws-hero-member">{membership}</span> : null}
       </div>

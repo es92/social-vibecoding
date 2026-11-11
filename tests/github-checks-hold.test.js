@@ -275,14 +275,29 @@ test('work state: the bot\'s own change at its vote step reads the same', () => 
   assert.match(vote, /const hold = githubHold\(row\);\s*if \(hold\) return state\(hold\.stage, \{ since, line: \{ code: hold\.code \} \}\);/);
 });
 
+test('#6593: the page read asks GitHub for the count only while the checks are running', () => {
+  const src = read('src/routes/votes.js');
+  assert.match(src, /require\('\.\.\/services\/github-checks-progress'\)/);
+  assert.match(src, /held\.indexOf\('github_checks'\) !== -1 && held\.indexOf\('github_checks_failing'\) === -1/,
+    'a failed run is the failing card\'s to say: no read is made');
+  assert.match(src, /headSha: proposal\.integration\.headSha \|\| proposal\.reviewed_head_sha/);
+});
+
 test('the change page: its badge, its status title and the Merging card say the same', () => {
   const changes = JSON.parse(read('frontend/locales/en/changes.json'));
   const session = JSON.parse(read('frontend/locales/en/session.json'));
-  for (const key of ['badge.reason.githubChecks.label', 'badge.reason.githubChecks.detail', 'badge.reason.githubChecks.detailSoon',
+  for (const key of ['badge.reason.githubChecks.label', 'badge.reason.githubChecks.detail',
     'badge.reason.githubChecksFailing.label', 'badge.reason.githubChecksFailing.detail']) {
     assert.ok(changes[key] && changes[key].text && changes[key].description, key);
   }
-  for (const key of ['merge.title.githubChecks', 'merge.title.githubChecksSoon']) assert.ok(session[key] && session[key].text, key);
+  // #6593: the still-running tooltip names what GitHub is doing, with no
+  // retry time, and the "soon" variant is gone.
+  assert.equal(changes['badge.reason.githubChecks.detail'].text,
+    'GitHub is building and scanning the release images for this change, which usually takes about 6 minutes. It merges as soon as they pass.');
+  assert.equal(changes['badge.reason.githubChecks.detailSoon'], undefined);
+  assert.equal(session['merge.title.githubChecks'].text,
+    'GitHub is building and scanning the release images for this change, which usually takes about 6 minutes. It merges as soon as they pass.');
+  assert.equal(session['merge.title.githubChecksSoon'], undefined);
   const view = read('public/js/app-view.js');
   assert.match(view, /served\.includes\('github_checks'\)/);
   assert.match(view, /served\.includes\('github_checks_failing'\)/);

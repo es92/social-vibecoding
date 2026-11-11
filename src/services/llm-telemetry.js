@@ -57,6 +57,9 @@ const COMPONENTS = new Set([
   // helperMessage), each named so its speed and fallback rate read on their own.
   'short_description',
   'app_sketch',
+  // The kind the public directory sorts a project under when its group chose
+  // none (services/app-category.js).
+  'app_category',
   // A first version's plan at Make it (services/first-version-plan.js).
   'first_version_plan',
   // And its early first look, drawn from that plan (services/first-version-early-look.js).
@@ -1220,7 +1223,7 @@ function collectionComponent(value, fallback = null) {
 // the same counts, times and costs the ledger already holds.
 const HELPER_CALL_COMPONENTS = Object.freeze([
   'issue_title', 'quick_replies', 'short_description', 'chat_ask', 'workshop_ask',
-  'app_sketch', 'first_version_plan', 'first_version_look', 'session_title',
+  'app_sketch', 'app_category', 'first_version_plan', 'first_version_look', 'session_title',
   'progress_estimate', 'challenge_grade', 'challenge_grade_feedback', 'challenge_grade_proposal',
   'report_summary', 'content_review', 'small_change', 'checks_explanation',
 ]);

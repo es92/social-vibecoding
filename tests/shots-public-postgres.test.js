@@ -135,6 +135,27 @@ test('public before & after stills against the full PostgreSQL schema', { timeou
     assert.equal(await publicStillBytes(pool, { slug: pub.slug, changeId: unsafe.id, artifactId: unsafe.ids['head:focus:phone'] }), null);
   });
 
+  await t.test('a change voted in and live: its after still, for the visitor\'s page, and never its before', async () => {
+    // `merged` was inserted as merged, which the schema reads as live
+    // (chat_sessions_inserted_merged_live): only the merge machine makes a
+    // merged change that is not live yet. So it is the live change here.
+    const got = await publicStillsFor(pool, [merged.id, good.id, unsafe.id, moved.id], { live: true });
+    assert.deepEqual(got.get(merged.id), { slug: pub.slug, before: merged.ids['base:focus:phone'], after: merged.ids['head:focus:phone'] });
+    // One up for a vote is not live; the same rules hold otherwise.
+    assert.equal(got.has(good.id), false);
+    assert.equal(got.has(unsafe.id), false);
+    assert.equal(got.has(moved.id), false);
+    // Its after still is served, never its before.
+    assert.ok(await publicStillBytes(pool, { slug: pub.slug, changeId: merged.id, artifactId: merged.ids['head:focus:phone'] }));
+    assert.equal(await publicStillBytes(pool, { slug: pub.slug, changeId: merged.id, artifactId: merged.ids['base:focus:phone'] }), null);
+    assert.equal(await publicStillBytes(pool, { slug: 'another', changeId: merged.id, artifactId: merged.ids['head:focus:phone'] }), null);
+    const overview = await loadProjectOverview(pool, pub.slug, { gh: { isEnabled: () => false } });
+    const row = overview.merged.find((m) => m.id === merged.id);
+    assert.equal(row.picture, publicStillUrl(pub.slug, merged.id, merged.ids['head:focus:phone']));
+    assert.equal(typeof overview.activity.merged_month, 'number');
+    assert.equal(typeof overview.activity.active_week, 'number');
+  });
+
   await t.test('the project page\'s overview carries the addresses, and nothing for a change without', async () => {
     const overview = await loadProjectOverview(pool, pub.slug, { gh: { isEnabled: () => false } });
     const byId = new Map(overview.votes.map((v) => [v.id, v]));

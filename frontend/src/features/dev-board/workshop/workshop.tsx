@@ -4120,7 +4120,9 @@ export function DevWorkshop(): ReactNode {
           // opens Needs you at its first card when votes are already
           // waiting on the new member, and otherwise stays on this hub.
           onJoinedByInvite={() => { if (owesVote(v.queue)) openTab('needs'); }}
-          menu={(
+          // The hero's ⋯, or the project card's for somebody who has not
+          // joined (./community-card.tsx): the same one node either way.
+          menu={(place) => (
             <DevPlusMenu
               illustrationApp={actions.illustrationApp}
               canManageIllustration={actions.canManageIllustration}
@@ -4129,6 +4131,10 @@ export function DevWorkshop(): ReactNode {
               canCollaborate={actions.canCollaborate}
               showsMembers={actions.showsMembers}
               inHero
+              onCard={place === 'card'}
+              // SEE WHAT VISITORS SEE (11 Nov 2026): a member's, on a public
+              // project; the platform's own has no page for visitors.
+              visitorView={!actions.selfHosted && community?.is_member && community.audience === 'open' ? { slug } : null}
               // #4666: who can see it and how its changes are approved, one
               // row and one sheet (features/dialogs/who-decides.tsx), for
               // whoever may propose it. It took "Make it public" and "Make it
@@ -4254,7 +4260,7 @@ export function DevWorkshop(): ReactNode {
           last update went down. Nothing on a project nobody has made a
           version of. See ./hub-cards.tsx FromVersionsCard. */}
       {slug ? <FromVersionsCard slug={slug} data={community} /> : null}
-      {slug ? <RecentlyLive slug={slug} rows={v.recentLive} onAll={() => openTab('workshop')} own={ownLive} ident={recentIdent} /> : null}
+      {slug ? <RecentlyLive slug={slug} rows={v.recentLive} onAll={() => openTab('workshop')} own={ownLive} ident={recentIdent} month={community?.activity?.shipped_month} /> : null}
       {/* Start a new change was the hub's last line; it is the hero's ⋯
           now (../actions-row.tsx), as well as the Homeroom menu's. */}
       </>

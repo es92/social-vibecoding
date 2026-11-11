@@ -12,7 +12,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { renderComponent } = require('./lib/render-tsx');
-const { message } = require('./lib/platform-i18n');
+const { message, englishPlatformI18n } = require('./lib/platform-i18n');
 
 const HEAD = 'frontend/src/features/dev-board/topic/change-head.tsx';
 const NOW = Date.parse('2026-11-10T20:30:00Z');
@@ -40,26 +40,31 @@ const held = (over = {}) => ({
   segments: [{ weight: 1, pct: 60, state: 'moving' }],
   label: message('changes:page.merge.label.githubChecks'),
   note: [message('changes:page.merge.note.githubChecks')],
+  hold: 'github_checks',
   wait: { triedAt: ago(2), retryAt: ahead(3), since: ago(2) },
   ...over,
 });
 
-test('the Merging card names the wait and counts the last try and the next one', () => {
+test('the Merging card says GitHub is building and scanning the release images, and not how a try went', () => {
   const html = render(held());
   assert.match(html, /data-change-gate="merge"/);
   assert.match(html, /Merging/);
   assert.match(html, /Waiting on GitHub's checks/);
-  assert.match(html, /Tried 2 min ago\./);
-  assert.match(html, /Trying again in about 3 min\./);
+  assert.match(html, /building and scanning the release images/);
+  assert.match(html, /about 6 minutes/);
+  assert.doesNotMatch(html, /Tried |Trying again/);
   assert.match(html, /data-tone="muted"/);
 });
 
-test('under a minute reads just now, and a retry that has come round reads now', () => {
-  const just = render(held({ wait: { triedAt: ago(0), retryAt: ahead(4), since: ago(0) } }));
-  assert.match(just, /Tried just now\./);
-  const now = render(held({ wait: { triedAt: ago(4), retryAt: new Date(NOW - 1000).toISOString(), since: ago(4) } }));
-  assert.match(now, /Trying again now\./);
-  assert.doesNotMatch(now, /Trying again in about/);
+test('a busy or refused GitHub hold still counts the last try and the next one', () => {
+  const html = render(held({
+    figure: message('changes:page.merge.figure.githubWait'),
+    label: message('changes:page.merge.label.githubWait'),
+    note: [message('changes:page.merge.note.githubWait')],
+    hold: 'github_wait',
+  }));
+  assert.match(html, /Tried 2 min ago\./);
+  assert.match(html, /Trying again in about 3 min\./);
 });
 
 test('a long wait is called out at about 30 minutes, and not before', () => {
@@ -82,7 +87,7 @@ test('while the merge is under way it reads Merging now on a moving bar, with no
     tone: 'muted', done: false,
     segments: [{ weight: 1, pct: 60, state: 'moving' }],
     label: message('changes:page.merge.label.merging'),
-    note: [], wait: null,
+    note: [], wait: null, hold: 'merging',
   });
   assert.match(html, /data-change-gate="merge"/);
   assert.match(html, /data-tone="muted"/);
@@ -100,6 +105,7 @@ test("GitHub's checks failing is red, names no times, and offers no button", () 
     segments: [{ weight: 1, pct: 100, state: 'bad' }],
     label: message('changes:page.merge.label.failing'),
     note: [message('changes:page.merge.note.failing')],
+    hold: 'failing',
   });
   assert.match(html, /GitHub's checks failed/);
   assert.match(html, /data-tone="bad"/);
@@ -137,8 +143,8 @@ test('the card is the same card as Votes and Tested, with a name and a bar', () 
   const project = require('../frontend/locales/en/project.json');
   for (const key of ['page.merge.name', 'page.merge.figure.githubChecks', 'page.merge.figure.githubWait',
     'page.merge.figure.failing', 'page.merge.figure.merging', 'page.merge.note.githubChecks',
-    'page.merge.note.githubWait', 'page.merge.note.failing', 'page.testing.figure.passedHomeroom',
-    'page.testing.label.passedHomeroom']) {
+    'page.merge.note.githubChecksProgress', 'page.merge.note.githubWait', 'page.merge.note.failing',
+    'page.testing.figure.passedHomeroom', 'page.testing.label.passedHomeroom']) {
     assert.ok(changes[key] && changes[key].text && changes[key].description, key);
   }
   for (const key of ['topic.change.gate.merge.tried_one', 'topic.change.gate.merge.tried_other',
@@ -147,4 +153,61 @@ test('the card is the same card as Votes and Tested, with a name and a bar', () 
     'topic.change.gate.merge.longFigure', 'topic.change.gate.merge.long']) {
     assert.ok(project[key] && project[key].text && project[key].description, key);
   }
+});
+
+// `_changeMergeView` builds the card's view from a row (public/js/app-view.js).
+function appView() {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const vm = require('node:vm');
+  const root = path.join(__dirname, '..');
+  const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+  const c = {
+    console, App: { user: { id: 42, username: 'maya' }, currentApp: 'usernode-2d5619', currentTab: 'dev' },
+    relTime: () => 'just now',
+    document: { getElementById: () => null, querySelector: () => null, addEventListener() {} },
+    localStorage: { getItem: () => null }, addEventListener() {},
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    location: { search: '', hash: '' }, URLSearchParams,
+    PlatformI18n: englishPlatformI18n(),
+  };
+  c.window = c;
+  vm.createContext(c);
+  for (const p of ['public/js/merge-status.js', 'public/js/app-view.js']) vm.runInContext(read(p), c);
+  vm.runInContext('globalThis.av = AppView', c);
+  return c.av;
+}
+
+const mergeRow = (over = {}) => ({
+  status: 'promoted',
+  integration: { blockReasons: ['github_checks'], heldAt: ago(2), heldUntil: ahead(3), heldSince: ago(2) },
+  ...over,
+});
+
+test('the view says which hold it is, and draws the count only for a valid pair', () => {
+  const av = appView();
+  const view = av._changeMergeView(mergeRow());
+  assert.equal(view.hold, 'github_checks');
+  assert.equal(view.note.length, 1, 'no count when GitHub would not answer');
+
+  const counted = av._changeMergeView(mergeRow({
+    integration: { blockReasons: ['github_checks'], githubChecks: { done: 7, total: 10 } },
+  }));
+  assert.equal(counted.note[counted.note.length - 1], "GitHub's checks: 7 of 10 done.");
+
+  for (const bad of [{ done: 7, total: 0 }, { done: 11, total: 10 }, { done: -1, total: 10 },
+    { done: 1.5, total: 10 }, { done: '7', total: 10 }, null]) {
+    const bare = av._changeMergeView(mergeRow({
+      integration: { blockReasons: ['github_checks'], githubChecks: bad },
+    }));
+    assert.equal(bare.note.length, 1, JSON.stringify(bad));
+  }
+
+  assert.equal(av._changeMergeView(mergeRow({
+    integration: { blockReasons: ['github_busy'] },
+  })).hold, 'github_wait');
+  assert.equal(av._changeMergeView(mergeRow({
+    integration: { blockReasons: ['github_checks_failing'] },
+  })).hold, 'failing');
+  assert.equal(av._changeMergeView({ status: 'merging' }).hold, 'merging');
 });

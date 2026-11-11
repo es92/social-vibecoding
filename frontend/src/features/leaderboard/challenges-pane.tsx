@@ -158,6 +158,9 @@ type BlockProductionView =
 type DetailView = {
   key: string;
   goal: string;
+  // The organiser's what-to-do line (#6592), under the rail: what to do to
+  // start and finish. Null when the challenge has none, so no line is drawn.
+  task?: string | null;
   // The points under the title: earned (emerald), so far, or on offer.
   amount: { text: string; earned: boolean } | null;
   // #3253/#3248: under the points, what the scoring rule counts (a proposal
@@ -597,13 +600,14 @@ function ArtworkWell({ slug, tone }: { slug: string | null; tone: string | null 
 // The page, below the platform header that carries the way back: the title,
 // its points ("500 pts", "320 pts so far", emerald once earned) and what the
 // rule counts, then a line on what points are for whenever points show, the
-// artwork well, the clean rail, the action, then "What
-// counts". The Semi design (2026-10-16) left out the category eyebrow, the
-// deadline and the time of the next count, the task line, the description,
-// Scoring and the participants list (with the profile overlay it opened):
-// the card's title says what to do and "What counts" says how it is counted.
-// The board's "Next: …" hint under the action is deliberately absent (owner
-// decision).
+// artwork well, the clean rail, the organiser's task line, the action, then
+// "What counts". The Semi design (2026-10-16) left out the category eyebrow,
+// the deadline and the time of the next count, the description, Scoring and
+// the participants list (with the profile overlay it opened); the task line it
+// left out too is back (#6592), because it is what tells people how to start
+// and finish. The card's title says what the challenge is and "What counts"
+// says how it is counted. The board's "Next: …" hint under the action is
+// deliberately absent (owner decision).
 export function DetailPage({ view }: { view: DetailView }): ReactNode {
   const t = useMessages('leaderboard');
   return (
@@ -627,6 +631,10 @@ export function DetailPage({ view }: { view: DetailView }): ReactNode {
         name={view.goal}
         counted={view.counted}
       />
+      {/* #6592: the organiser's one-line task — what to do to start and
+          finish — right under the rail. It is their own words, so no heading
+          and no label: the same plain prose the notes below it use. */}
+      {view.task ? <p className={PROSE} data-challenge-task>{view.task}</p> : null}
       {/* #3650: what makes an invite count, in plain words, right under the
           rail that shows the count. */}
       {view.invitesNote ? <p className={PROSE}>{view.invitesNote}</p> : null}

@@ -62,24 +62,23 @@ test('a change shows its element shots when both sides have one, else its whole 
 test('the guest project page draws a change\'s before and after, labelled, only when it has them', () => {
   const app = { slug: 'game-corner', name: 'Game Corner' };
   const vote = { id: 7, pr_number: 1, title: 'Add the badge', summary: null, yes: 2, no: 0 };
-  const props = (pictures) => ({ vote: { ...vote, pictures }, app, onIntent() {} });
-  const html = renderComponent('frontend/src/features/guest/guest-project.tsx', 'VoteCard',
+  const props = (pictures) => ({ vote: { ...vote, pictures }, app, onBack() {}, onIntent() {} });
+  // Opened from Up for a vote (guest-project.tsx GuestChange): Before over
+  // After, a slider between them, each labelled.
+  const html = renderComponent('frontend/src/features/guest/guest-project.tsx', 'GuestChange',
     props({ before: '/api/public/apps/game-corner/changes/7/stills/b', after: '/api/public/apps/game-corner/changes/7/stills/a' }));
-  assert.match(html, /data-guest-vote-pictures=""/);
-  assert.match(html, /<img src="\/api\/public\/apps\/game-corner\/changes\/7\/stills\/b"[^>]*>.*<figcaption[^>]*>Before<\/figcaption>/);
-  assert.match(html, /<img src="\/api\/public\/apps\/game-corner\/changes\/7\/stills\/a"[^>]*>.*<figcaption[^>]*>After<\/figcaption>/);
+  assert.match(html, /data-guest-change-compare=""/);
+  assert.match(html, /<img src="\/api\/public\/apps\/game-corner\/changes\/7\/stills\/a" alt="After"/);
+  assert.match(html, /<img src="\/api\/public\/apps\/game-corner\/changes\/7\/stills\/b" alt="Before"/);
+  assert.match(html, />Before<\/span>[\s\S]*>After<\/span>/);
   assert.equal(message('auth:guest.project.before'), 'Before');
-  // A still starts cropped to fill from its top; one wider than the 4:3
-  // frame is shown whole once it loads (#5851), never zoomed past its edges.
-  assert.match(html, /data-guest-vote-fit="cover"[^>]*class="h-full w-full object-cover object-top"/);
-  const card = read('frontend/src/features/guest/guest-project.tsx');
-  assert.match(card, /const isWide = !!h && w \/ h > 4 \/ 3;/);
-  assert.match(card, /wide\[side\] \? 'object-contain' : 'object-cover object-top'/);
-  const afterOnly = renderComponent('frontend/src/features/guest/guest-project.tsx', 'VoteCard', props({ before: null, after: '/x' }));
-  assert.doesNotMatch(afterOnly, />Before</);
-  assert.match(afterOnly, /grid-cols-1/);
-  const none = renderComponent('frontend/src/features/guest/guest-project.tsx', 'VoteCard', props(null));
-  assert.doesNotMatch(none, /data-guest-vote-pictures/);
+  // Shown whole, never zoomed past its edges (#5851).
+  assert.match(html, /stills\/a" alt="After" draggable="false" class="absolute inset-0 h-full w-full object-contain"/);
+  const afterOnly = renderComponent('frontend/src/features/guest/guest-project.tsx', 'GuestChange', props({ before: null, after: '/x' }));
+  assert.doesNotMatch(afterOnly, /alt="Before"|data-guest-change-slider/);
+  assert.match(afterOnly, /<img src="\/x" alt="After"/);
+  const none = renderComponent('frontend/src/features/guest/guest-project.tsx', 'GuestChange', props(null));
+  assert.doesNotMatch(none, /data-guest-change-compare/);
   // The overview's addresses, from the public route only.
   assert.match(read('src/routes/public-api.js'), /router\.get\('\/api\/public\/apps\/:slug\/changes\/:id\/stills\/:artifactId', publicProjectReadLimiter,/);
 });

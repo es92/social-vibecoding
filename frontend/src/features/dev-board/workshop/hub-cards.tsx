@@ -544,15 +544,43 @@ const OWED_TILE = 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-
  * have not seen. The row stays while any vote is owed, seen or not: with
  * nothing new it says how many skipped ones are still open instead.
  */
-function NeedsRow({ queue, slug, canPost, onOpen }: {
+function NeedsRow({ queue, slug, canPost, onOpen, outsider = false }: {
   queue: DevWorkshopView['queue'];
   slug: string;
   canPost: boolean;
   onOpen: () => void;
+  /**
+   * Signed in but not in the community (the hand-off of 11 Nov 2026): the
+   * votes are not theirs to cast yet, so the door is "Up for a vote · Join
+   * to vote on these." with how many as a light pill, not "Needs you".
+   */
+  outsider?: boolean;
 }): ReactNode {
   const t = useMessages('project');
   useNeedsSeen();
   const votes = queue.filter((row) => row.kind === 'vote');
+  if (outsider) {
+    return (
+      <div className="dev-ws-foryou-item" data-ws-hub-needs="" data-ws-hub-needs-votes={String(votes.length)} data-ws-hub-needs-outsider="">
+        <ListRow
+          as="button"
+          inset="none"
+          className="dev-ws-foryou-row"
+          data-ws-hub-needs-open=""
+          onClick={onOpen}
+          leading={<IconTile size="xs" className={OWED_TILE}><BallotIcon aria-hidden="true" /></IconTile>}
+          title={t('project:hub.needs.upForVote')}
+          subtitle={<span data-ws-hub-needs-join="">{t('project:hub.needs.joinToVote')}</span>}
+          trailing={(
+            <span className="dev-ws-foryou-pill dev-ws-foryou-pill-light" data-ws-hub-needs-count="">
+              <span aria-hidden="true">{votes.length}</span>
+              <span className="sr-only">{t('project:hub.needs.upForVoteCount', { count: votes.length })}</span>
+            </span>
+          )}
+        />
+      </div>
+    );
+  }
   const fresh = votes.filter((row) => !isNeedsSeen(slug, needsRowKey(row)));
   const skipped = votes.length - fresh.length;
   const first = fresh.find((row) => row.t === 'card') || null;
@@ -618,9 +646,11 @@ function WorkshopRow({ onOpen }: { onOpen: () => void }): ReactNode {
  * 2026): the room is there from the first day, for the people an invite
  * brings. No row without a channel this viewer may talk in.
  */
-function DiscussionRow({ data, onOpen }: {
+function DiscussionRow({ data, onOpen, outsider = false }: {
   data: CommunityPayload | null;
   onOpen: () => void;
+  /** Not in the community: nothing in the room is theirs to catch up on, so no unread pill. */
+  outsider?: boolean;
 }): ReactNode {
   const t = useMessages('project');
   const channel = data?.channel;
@@ -631,7 +661,7 @@ function DiscussionRow({ data, onOpen }: {
   if (!recent.length && channel.last_at) recent.push({ content: channel.last_message || '', by: channel.last_by, at: channel.last_at });
   const words = (m: { content: string | null }) => String(m.content || '').replace(/\s+/g, ' ').trim();
   const last = [...recent].reverse().find((m) => words(m)) || recent[recent.length - 1] || null;
-  const unread = Number(channel.unread_count) || 0;
+  const unread = outsider ? 0 : Number(channel.unread_count) || 0;
   const line = last ? words(last) : '';
   const ago = last && last.at ? agoStamp(last.at).text : '';
   const sub = last ? (
@@ -726,16 +756,18 @@ export function ForYouCard({
   // not; a visitor has no work to be told about.
   const work = !!mine?.viewer;
   const talk = !!(data && data.channel);
+  // Signed in and not in it: the votes are the group's, the room theirs to read.
+  const outsider = !!data && !data.is_member;
   if (!needs && !work && !talk) return null;
   return (
     <section className="dev-ws-hub-section" data-ws-hub-for-you="" aria-labelledby={headId}>
       <SectionHeader id={headId} className={HUB_HEAD}>{t('project:hub.forYou.title')}</SectionHeader>
       <div className="dev-ws-strip dev-ws-foryou">
         {owes
-          ? <NeedsRow queue={queue} slug={slug} canPost={canPost} onOpen={onNeeds} />
+          ? <NeedsRow queue={queue} slug={slug} canPost={canPost} onOpen={onNeeds} outsider={outsider} />
           : <NothingToVote unclaimed={claims} onOpen={onWork} alone={alone} />}
         {work ? <WorkshopRow onOpen={onWork} /> : null}
-        <DiscussionRow data={data} onOpen={onDiscussion} />
+        <DiscussionRow data={data} onOpen={onDiscussion} outsider={outsider} />
       </div>
     </section>
   );
@@ -968,10 +1000,16 @@ function openApp(slug: string): void {
  * version Homeroom bot is still building (the page leaves `own` out), is
  * not live yet.
  */
-export function RecentlyLive({ slug, rows, onAll, own = null, ident = null }: {
+export function RecentlyLive({ slug, rows, onAll, own = null, ident = null, month = 0 }: {
   slug: string;
   rows: DevWorkshopView['recentLive'];
   onAll: () => void;
+  /**
+   * How many changes went live in the last thirty days (GET .../community
+   * `activity.shipped_month`): the section ends "36 more live this month",
+   * those less the ones it shows, opening the Workshop. Nothing at zero.
+   */
+  month?: number | null;
   /** The app itself, drawn while `rows` is empty. */
   own?: RecentOwn | null;
   /**
@@ -984,6 +1022,7 @@ export function RecentlyLive({ slug, rows, onAll, own = null, ident = null }: {
   const headId = useId();
   const list = (rows || []).slice(0, RECENT_LIVE_SHOWN);
   const self = !list.length && own && own.since ? liveSinceLine(own.since) : '';
+  const more = list.length ? Math.max(0, (Number(month) || 0) - list.length) : 0;
   if (!slug || (!list.length && !self)) return null;
   const app = own ? { slug, name: own.name, icon_url: own.iconUrl || null, icon_emoji: own.iconEmoji || null } : null;
   const tile = ident ? { slug, name: ident.name, icon_url: ident.iconUrl || null, icon_emoji: ident.iconEmoji || null } : null;
@@ -1052,6 +1091,13 @@ export function RecentlyLive({ slug, rows, onAll, own = null, ident = null }: {
             );
           })}
         </ul>
+        {more ? (
+          <button type="button" className="dev-ws-recent-more" data-ws-recent-more={String(more)} onClick={onAll}>
+            <span className="dev-ws-recent-more-n" aria-hidden="true">{t('project:hub.recent.morePill', { count: more })}</span>
+            <span className="dev-ws-recent-more-words">{t('project:hub.recent.moreThisMonth', { count: more })}</span>
+            <ChevronRightIcon className="w-4 h-4" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </section>
   );

@@ -539,14 +539,14 @@ test('a finished challenge the viewer scored on says what they earned', () => {
     'the points alone: the card draws them in emerald, and the word "Earned" is gone');
 });
 
-test('the task line is on neither the card nor the page, and nothing is a tooltip', () => {
+test('the task line is only on the page, and nothing is a tooltip', () => {
   const ch = [{ id: 1, completed: false, card_preview: { goal: 'Try apps', task: 'Open three apps from the directory and use each one' } }];
   const { pane, store } = loadPane({ challenges: ch, eventId: 900500 });
   pane._renderGrid();
   assert.equal(store.get().grid.groups[0].cards[0].task, undefined, 'the card is title, points and rail only');
   pane._openIdx(0);
-  assert.equal(store.get().detail.task, undefined,
-    'the page’s title says what to do, and What counts says how it is counted (the Semi design)');
+  assert.equal(store.get().detail.task, 'Open three apps from the directory and use each one',
+    'the page says in the organiser’s own words what to do to start and finish (#6592)');
   const paneSrc = require('node:fs').readFileSync(
     require('node:path').join(root, 'frontend/src/features/leaderboard/challenges-pane.tsx'), 'utf8');
   // `<SectionHeading title=…/>` and `<ListRow title=…/>` are kit PROPS, not
@@ -558,6 +558,13 @@ test('the task line is on neither the card nor the page, and nothing is a toolti
   const noHeadings = paneSrc.replace(/<(SectionHeading|ListRow)[\s\S]*?\/>/g, '');
   assert.doesNotMatch(noHeadings, /(?<![A-Za-z])title=\{/,
     'a phone has no hover: nothing on this screen may live only in a title attribute');
+});
+
+test('a blank task is null, so the page adds no line', () => {
+  const blank = [{ id: 1, completed: false, card_preview: { goal: 'Try apps', task: '   ' } }];
+  const { pane, store } = loadPane({ challenges: blank, eventId: 900500 });
+  pane._openIdx(0);
+  assert.equal(store.get().detail.task, null, 'whitespace-only is no task at all');
 });
 
 test('per-viewer progress on the public row drives the rail, blocks included', () => {
@@ -819,7 +826,7 @@ test('the page descriptor: title, points, artwork, a clean rail, the action and 
   assert.equal(d.requirements, 'A node reachable all week.', 'the requirements, under What counts');
   assert.deepEqual([d.state, d.stateLabel, d.fill, d.counted], ['new', 'Not started', 0, false]);
   assert.deepEqual({ ...d.amount }, { text: '2000 pts', earned: false }, 'nothing scored yet: the reward on offer');
-  for (const retired of ['eyebrow', 'deadline', 'ends', 'cadence', 'task', 'description', 'scoring', 'participants',
+  for (const retired of ['eyebrow', 'deadline', 'ends', 'cadence', 'description', 'scoring', 'participants',
     'pointsTotal', 'moreLabel', 'entries', 'label', 'mineNote', 'rewardLogic', 'totals', 'chip']) {
     assert.equal(retired in d, false, `${retired} retired from the descriptor`);
   }

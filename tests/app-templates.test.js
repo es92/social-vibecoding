@@ -181,7 +181,7 @@ test('app-creator scaffolds from the row, and a deleted starter\'s row retries a
   assert.match(creator, /function templateOf\(row\) \{\s*const t = row\?\.template;\s*return typeof t === 'string' && appTemplates\.isTemplate\(t\) \? t : appTemplates\.DEFAULT_TEMPLATE;/);
   // The starter's files come from the row (starterFiles), for the setup's
   // first commit and for a deploy without GitHub alike.
-  assert.match(creator, /function starterFiles\(row, \{ repoUrl = null, sketch = null \} = \{\}\) \{[\s\S]{0,300}template: templateOf\(row\), sketch,/);
+  assert.match(creator, /function starterFiles\(row, \{ repoUrl = null, sketch = null, category = null \} = \{\}\) \{[\s\S]{0,300}template: templateOf\(row\), sketch, category,/);
   // What templateOf answers for a project made from a starter before they went.
   for (const id of DELETED) assert.equal(appTemplates.isTemplate(id), false, id);
 });

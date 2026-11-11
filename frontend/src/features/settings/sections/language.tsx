@@ -11,10 +11,14 @@ import { shippedLanguages } from '../../../lib/i18n/runtime';
  * settings.js saves on change, through the language runtime, which also pushes
  * `usernode:locale-changed` into any open app iframe.
  *
- * The choices are Auto and the shipped languages (frontend/locales/config.json):
- * English only, today. A locale saved when this picker listed more, or through
- * the API, is added as an option by Settings._renderLanguageSection, so it
- * stays visible and changeable rather than reading as "Auto".
+ * The choices are Auto and the languages this build's catalogs ship (English
+ * alone when none is committed), then the ones the server's translation cache
+ * covers well enough (GET /api/languages, `minimumCoverage` in
+ * frontend/locales/config.json), which Settings._appendLiveLanguages adds once
+ * they arrive. A locale saved when this picker listed more, or through the
+ * API, is added as an option by Settings._renderLanguageSection, so it stays
+ * visible and changeable rather than reading as "Auto". The intro says so
+ * (#6511): it once said Homeroom's screens were English only.
  *
  * #settings-locale is a dapp.json anchor and settings.js reads/writes its
  * `.value`, so it stays a native `<select>` — see @/components/ui/select.

@@ -1632,12 +1632,15 @@ export function LandingScreen() {
     byId('auth-landing-scroll')?.scrollTo?.(0, 0);
     if (document.documentElement.dataset.browserScroller) window.scrollTo(0, 0);
   }, [shownSlug]);
-  // The bar's back button: out of the open app, else from a project's page
-  // to Discover.
-  const showBack = !!openApp || !!guestProject || appDiscover;
-  // The guest Discover's own bar: the wordmark at the left edge of the
-  // column, Sign in and Sign up at its right, a hairline under it. A
-  // project's page or an open app keeps the centred title and its back.
+  // The bar's back button: out of the open app, or from Discover in the app
+  // back to the story. A project's page keeps the signed-out site's own bar
+  // (the hand-off of 11 Nov 2026: "Maybe we shouldn't replace the header for
+  // signed out users?"); its way back is the page's All communities chip,
+  // which runs `onBack` below.
+  const showBack = !!openApp || appDiscover;
+  // The guest pages' own bar: the wordmark at the left edge of the column,
+  // Sign in and Sign up at its right, a hairline under it, on Home and on a
+  // project's page alike. An open app keeps the centred title and its back.
   const guestTop = guestPages && !showBack && !gate;
   const onBack = useCallback(() => {
     if (st.openSlug) { live.current.closeLandingApp(); return; }
@@ -1742,7 +1745,7 @@ export function LandingScreen() {
           id="landing-header-title"
           className="flex-1 min-w-0 px-10 text-lg font-bold pointer-events-none truncate text-center [[data-guest-top]_&]:px-0 [[data-guest-top]_&]:text-start"
         >
-          {openApp || guestProject ? headerTitle : <Wordmark className="h-7 w-auto inline-block align-middle text-zinc-950 dark:text-white" title={LANDING_TITLE} />}
+          {openApp ? headerTitle : <Wordmark className="h-7 w-auto inline-block align-middle text-zinc-950 dark:text-white" title={LANDING_TITLE} />}
         </div>
         {/*
             The trailing 28px, mirroring the lead box so the label sits on the
@@ -2270,6 +2273,7 @@ export function LandingScreen() {
               onIntent={askFor}
               onOpenInside={(app) => { void live.current.openLandingApp(app); }}
               onShare={shareProject}
+              onAllCommunities={onBack}
             />
           ) : null}
           {/* The same page in the one frame, ahead of the standard one, which

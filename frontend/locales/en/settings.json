@@ -4,8 +4,8 @@
     "description": "Heading of the Language section in Settings, where the person picks the language Homeroom is shown in. \"Language\" is a noun."
   },
   "language.intro": {
-    "text": "Homeroom's own screens are in English for now. Apps on Homeroom use this as their default language, and may offer their own override.",
-    "description": "Explanation under the Language heading in Settings: what choosing a language does today."
+    "text": "The language Homeroom's screens are shown in. A language is listed once enough of Homeroom has been translated into it. Apps on Homeroom use your choice as their default, and some let you pick another in their own settings.",
+    "description": "Explanation under the Language heading in Settings: what choosing a language does, why a language may not be listed yet, and that apps follow it unless they offer their own choice."
   },
   "language.auto": {
     "text": "Auto: use device language",

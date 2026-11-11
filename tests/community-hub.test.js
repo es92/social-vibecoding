@@ -132,12 +132,14 @@ test('a project page is its places, Hub, Needs you, Workshop and #general, with 
   // project nobody else is in; the same from a project's first day.
   assert.match(hub, /queue=\{v\.queue\}\s+unclaimed=\{v\.dashboard \? v\.dashboard\.unclaimed : 0\}\s+mine=\{v\.mine\}\s+alone=\{alone\}/);
   assert.doesNotMatch(LANDER, /first_week|weekOne|hubWorkEmpty|workEmpty/, 'no first week of its own');
-  assert.match(read(HUB), /\{owes\s*\? <NeedsRow queue=\{queue\} slug=\{slug\} canPost=\{canPost\} onOpen=\{onNeeds\} \/>\s*: <NothingToVote unclaimed=\{claims\} onOpen=\{onWork\} alone=\{alone\} \/>\}/,
+  // For somebody signed in who has not joined, the same row says "Up for a
+  // vote · Join to vote on these." (the hand-off of 11 Nov 2026, `outsider`).
+  assert.match(read(HUB), /\{owes\s*\? <NeedsRow queue=\{queue\} slug=\{slug\} canPost=\{canPost\} onOpen=\{onNeeds\} outsider=\{outsider\} \/>\s*: <NothingToVote unclaimed=\{claims\} onOpen=\{onWork\} alone=\{alone\} \/>\}/,
     'Needs you only while a vote is owed; one quiet line in its place otherwise, naming the open requests nobody has picked up as the way to the Workshop (Needs you is votes alone)');
   assert.match(read(HUB), /const claims = Math\.max\(0, Number\(unclaimed\) \|\| 0\);/, 'the requests are the view model\'s unclaimed count, not queue rows');
   // Each row is a door to its place.
   assert.match(hub, /onNeeds=\{\(\) => openTab\('needs'\)\}\s+onWork=\{\(\) => openTab\('workshop'\)\}\s+onDiscussion=\{\(\) => openTab\('discussion'\)\}/);
-  assert.match(hub, /<RecentlyLive slug=\{slug\} rows=\{v\.recentLive\} onAll=\{\(\) => openTab\('workshop'\)\} own=\{ownLive\} ident=\{recentIdent\} \/>/, 'All in Workshop is the Workshop place');
+  assert.match(hub, /<RecentlyLive slug=\{slug\} rows=\{v\.recentLive\} onAll=\{\(\) => openTab\('workshop'\)\} own=\{ownLive\} ident=\{recentIdent\} month=\{community\?\.activity\?\.shipped_month\} \/>/, 'All in Workshop is the Workshop place, and so is "N more live this month"');
   const { ForYouCard } = loadTsx(HUB);
   const quiet = renderToHtml(createElement(ForYouCard, {
     slug: 'garden', queue: [], mine: null, alone: true,

@@ -88,8 +88,17 @@ test('search reads the name and the description; a kind narrows to its apps', ()
 
 test('the kinds are the ones the directory has, in the manifest\'s order, and nothing for Other alone', () => {
   const { presentCategories, CATEGORIES } = loadTsx(DATA);
-  assert.deepEqual([...CATEGORIES], ['games', 'social', 'tools', 'learning', 'creative', 'other']);
+  assert.deepEqual([...CATEGORIES], [
+    'games', 'social', 'tools', 'learning', 'creative', 'money', 'health', 'food', 'other',
+  ]);
   assert.deepEqual(presentCategories(APPS), ['games', 'tools']);
+  assert.deepEqual(
+    presentCategories([
+      { category: 'food' }, { category: 'games' }, { category: 'money' }, { category: 'other' },
+    ]),
+    ['games', 'money', 'food', 'other'],
+    'a chip for every kind with a project, in the platform\'s order'
+  );
   assert.deepEqual(presentCategories([{ category: 'other' }, { category: null }]), []);
   // The same list app-manifest.js accepts, which the server validates against.
   const { APP_CATEGORIES } = require('../src/services/app-manifest');
@@ -112,7 +121,8 @@ test('Try it where it can open here: the viewer anywhere, the app\'s own address
   // A signed-in waitlisted account can open every project here, inside the
   // viewer (the pinned-app tiles); the project page asks the same question.
   assert.match(read(DISCOVER), /<TryLink app=\{app\} className="flex min-w-0 flex-col items-center gap-1\.5 no-underline" onOpenInside=\{open\} inside=\{signedIn\}>/);
-  assert.match(read(PROJECT), /\{signedIn \|\| canTryHere\(app, inHomeroomApp\(\)\) \? \(\s+<TryLink\s+app=\{app\}\s+inside=\{signedIn\}/);
+  assert.match(read(PROJECT), /const canTry = signedIn \|\| canTryHere\(app, inHomeroomApp\(\)\);/);
+  assert.match(read(PROJECT), /\{canTry \? \(\s+<TryLink app=\{app\} inside=\{signedIn \|\| preview\} onOpenInside=\{onOpenInside\} className=\{CARD_OPEN_BTN\}>/);
   const { inHomeroomApp } = loadTsx(DATA);
   assert.equal(inHomeroomApp(), false, 'a server render is never the app');
 });
@@ -496,8 +506,12 @@ test('the card grows into its project\'s page and back: a view transition with o
     globalThis.document = saved.document;
     globalThis.window = saved.window;
   }
-  // Discover and the landing's back both use it; the band's picture is its target.
-  assert.match(read(PROJECT), /<GuestCover app=\{app\} hero className="aspect-\[16\/10\] min-w-0 flex-\[1_1_420px\] rounded-2xl" \/>/);
+  // Discover and the page's All communities chip both use it; the project
+  // card's picture is its target (./project-card.tsx, on the guest page).
+  const card = read('frontend/src/features/guest/project-card.tsx');
+  assert.match(card, /data-project-preview="" data-guest-hero=\{hero \? '' : undefined\}/);
+  assert.match(card, /<ProjectPreview app=\{app\} cover=\{cover\} hero=\{place === 'guest'\} \/>/);
+  assert.match(read(PROJECT), /<ProjectCard\s+place="guest"[\s\S]*?data-guest-project-band=""/);
   assert.match(read(LANDING), /morph\(projectHero\(slug\), \(\) => \{ location\.hash = to; \}, \(\) => cardCover\(slug\)\);/);
   assert.match(read('public/css/app.css'), /::view-transition-group\(guest-hero\) \{\s+animation-duration: 0\.4s;/);
 });
@@ -543,42 +557,106 @@ test('while the directory loads, placeholders; when it cannot be read, a line an
 
 const projectProps = (app) => ({ app, primaryClass: 'pill', onIntent() {}, onOpenInside() {}, onShare() {} });
 
-test('a project page: its colour band, Try it where the app has a view for visitors, and Join', () => {
+test('a project page: All communities, the project card in its colour with Open <name>, Join and Share, and no Pin or tabs', () => {
   const html = renderComponent(PROJECT, 'GuestProject', projectProps(APPS[0]));
   assert.match(html, /data-guest-project="game-corner"/);
-  assert.match(html, /<h1[^>]*>Game Corner<\/h1>/);
-  assert.match(html, /<a href="https:\/\/game-corner\.example" data-guest-try="game-corner"/);
-  assert.doesNotMatch(html, /data-guest-use=/);
+  assert.match(html, /<button type="button" data-guest-all-communities=""[^>]*><svg[^>]*>[\s\S]*?<\/svg>All communities<\/button>/);
+  assert.match(html, /<section data-project-card="guest" data-guest-project-band=""/);
+  assert.match(html, /<h1 data-project-card-name=""[^>]*>Game Corner<\/h1>/);
+  assert.match(html, /<p data-project-card-description=""[^>]*>Classic games, fresh every day\.<\/p>/);
+  // Open, by name, where the app has a view for somebody with no account.
+  assert.match(html, /<a href="https:\/\/game-corner\.example" data-guest-try="game-corner"[^>]*><span class="truncate">Open Game Corner<\/span><\/a>/);
+  assert.equal(message('auth:guest.project.openNamed', { project: 'Game Corner' }), 'Open Game Corner');
+  assert.doesNotMatch(html, /data-guest-use=|data-guest-needs-account=/);
   assert.match(html, /data-guest-join-project=""/);
+  assert.match(html, new RegExp(`data-guest-share="" aria-label="${message('auth:guest.project.share')}"`));
+  // #6433 asked for Pin to go from the signed-out page; the tabs went with
+  // the rebuild (the hand-off of 11 Nov 2026).
+  assert.doesNotMatch(html, /data-guest-pin-project|role="tablist"|data-guest-tab=|data-guest-members-only/);
+  // Who is around: numbers only, from the minimums. Its members now; the
+  // week's count comes with the overview.
   const words = text(html);
   assert.ok(words.includes(message('auth:guest.project.audience')));
-  assert.ok(words.includes(message('auth:guest.project.builders_other', { count: 3 })));
-  assert.ok(words.includes(message('auth:guest.project.active_other', { count: 43 })));
-  // The hub starts on what is happening, with the directory's own count of
-  // changes up for a vote until the overview arrives.
-  assert.ok(words.includes(message('auth:guest.project.votesOpen_other', { count: 7 })));
-  // The chat is for members: never a line of it here.
-  assert.match(html, /data-guest-members-only=""/);
-  assert.ok(words.includes(message('auth:guest.project.chatMembers')));
+  assert.ok(words.includes('· 87 members'));
+  assert.doesNotMatch(html, /data-guest-people-active/);
+  // Made together: a game is played, and the sentence without a count
+  // before the month's is known.
+  assert.ok(words.includes(message('auth:guest.project.madeByPlayers')));
+  assert.ok(words.includes(message('auth:guest.project.madeHow')));
+  assert.match(html, /data-guest-made-join=""[^>]*>Join to vote and suggest</);
 });
 
-test('a project page\'s band shows counts from the cards\' minimums, and a votes link opens it on the Workshop', () => {
-  const small = FACT_APPS[1];
-  const html = renderComponent(PROJECT, 'GuestProject', projectProps(small));
-  const band = text(html.slice(html.indexOf('data-guest-project-band'), html.indexOf('role="tablist"')));
-  assert.ok(band.includes(message('auth:guest.card.week_other', { count: 4 })), 'what changed this week');
-  assert.ok(!band.includes(message('auth:guest.project.builders_one', { count: 1 })), 'not "Built by 1 person"');
-  assert.ok(!band.some((w) => /used it lately/.test(w)), 'not 3 people active');
-  // A card's votes line asks for the Workshop (?ws=workshop): the page opens there.
-  const workshop = renderComponent(PROJECT, 'GuestProject', { ...projectProps(APPS[0]), startOnWorkshop: true });
-  assert.match(workshop, /aria-selected="true" data-guest-tab="workshop"/);
-  assert.match(read(LANDING), /startOnWorkshop=\{!!deepLink && linksToWorkshop\(deepLink\.target\)\}/);
+test('a project page reads its overview: counts from the minimums, What it\'s like from three pictures, two changes then the rest, what went live this month', () => {
+  const pic = (id) => `/api/public/apps/game-corner/changes/${id}/stills/a${id}`;
+  const lately = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const overview = (over = {}) => ({
+    app: { ...APPS[0], builders: 3, open_votes: 13 },
+    activity: { active_week: 34, merged_month: 39 },
+    votes: [1, 2, 3].map((id) => ({
+      id, pr_number: id, title: `Change ${id}`, summary: `What change ${id} does.`, yes: 10 + id, no: 0,
+      pictures: id === 1 ? { before: pic(100), after: pic(101) } : null,
+    })),
+    merged: [11, 12, 13, 14].map((id) => ({ id, title: `Live ${id}`, summary: null, merged_at: lately, picture: pic(id) })),
+    requests: null,
+    ...over,
+  });
+  const page = (o) => renderComponent(PROJECT, 'GuestProject', { ...projectProps(o.app), initialOverview: o });
+  const html = page(overview());
+  const words = text(html);
+  assert.ok(words.includes(message('auth:guest.project.activeWeek_other', { count: 34 })));
+  // What it's like: the after pictures of what went live, with their titles.
+  assert.equal([...html.matchAll(/data-guest-like-item="/g)].length, 4);
+  assert.ok(words.includes(message('auth:guest.project.whatItsLike')));
+  assert.ok(words.includes(message('auth:guest.project.madeHowMonth_other', { count: 39 })));
+  // Up for a vote · 13: two rows, then the rest, which See all opens in place.
+  assert.ok(words.includes(message('auth:guest.project.upForVoteCount_other', { count: 13 })));
+  assert.equal([...html.matchAll(/<div data-guest-vote="/g)].length, 2);
+  assert.match(html, /data-guest-votes-all=""[^>]*>See all 13</);
+  assert.match(html, /<button type="button" data-guest-votes-more=""[^>]*>[\s\S]*?11 more up for a vote/);
+  // A row: its small picture with Before · After when it has both, its
+  // title and line, its tally and Vote; the row opens the change.
+  assert.match(html, /<div data-guest-vote="1"[^>]*><button type="button" data-guest-vote-open=""/);
+  assert.match(html, new RegExp(`src="${pic(101)}"[\\s\\S]*?${message('auth:guest.project.beforeAfter')}`));
+  assert.ok(words.includes(message('auth:guest.project.yes_other', { count: 11 })));
+  assert.match(html, /data-guest-vote-btn=""[^>]*>Vote</);
+  // Recently live: three rows and how many more went live this month.
+  assert.equal([...html.matchAll(/data-guest-merged="/g)].length, 3);
+  assert.match(html, /data-guest-live-more=""[\s\S]*?36 more live this month/);
+  assert.doesNotMatch(html, /username|Homeroom bot/, 'no names');
+  // Under the minimums a count says nothing; under three pictures, no strip;
+  // with nothing this month, no count sentence and no more row.
+  const quiet = page(overview({
+    activity: { active_week: 4, merged_month: 0 },
+    merged: overview().merged.slice(0, 2),
+    app: { ...APPS[0], member_count: 12, builders: 1, open_votes: 3 },
+  }));
+  assert.doesNotMatch(quiet, /data-guest-people|data-guest-like=|data-guest-live-more/);
+  assert.ok(text(quiet).includes(message('auth:guest.project.madeHow')));
 });
 
-test('an app with no view for visitors yet: Sign in to use it, in Try it\'s place', () => {
+test('an app with no view for visitors yet: Sign up to open, with a line saying it needs a free account', () => {
   const html = renderComponent(PROJECT, 'GuestProject', projectProps(APPS[1]));
   assert.doesNotMatch(html, /data-guest-try=/);
-  assert.match(html, /data-guest-use=""[^>]*>Sign in to use it</);
+  assert.match(html, /data-guest-use=""[^>]*><span class="truncate">Sign up to open<\/span>/);
+  assert.match(html, /data-guest-needs-account=""[^>]*>Todo List needs a free account to use\.</);
+  // A game says "to play".
+  const game = renderComponent(PROJECT, 'GuestProject', projectProps({ ...APPS[1], category: 'games' }));
+  assert.match(game, /needs a free account to play\.</);
+});
+
+test('a change opened from Up for a vote: its title, its before and after with a slider, the tally and Join to vote', () => {
+  const vote = { id: 7, pr_number: 1, title: 'Smooth tiles', summary: 'Tiles glide.', yes: 8, no: 0, pictures: { before: '/b', after: '/a' } };
+  const html = renderComponent(PROJECT, 'GuestChange', { vote, app: APPS[0], onBack() {}, onIntent() {} });
+  assert.match(html, /data-guest-change-back="" aria-label="Back to Game Corner"/);
+  assert.match(html, /<h2[^>]*>Smooth tiles<\/h2>/);
+  assert.match(html, /<img src="\/a" alt="After"/);
+  assert.match(html, /<img src="\/b" alt="Before"[^>]*style="clip-path:inset\(0 50% 0 0\)"/);
+  assert.match(html, /<input type="range"[^>]*data-guest-change-slider=""/);
+  assert.ok(text(html).includes(message('auth:guest.project.change.tally', { yes: 8, no: 0 })));
+  assert.match(html, /data-guest-change-join=""[^>]*>Join to vote</);
+  // Without pictures, the words alone.
+  const bare = renderComponent(PROJECT, 'GuestChange', { vote: { ...vote, pictures: null }, app: APPS[0], onBack() {}, onIntent() {} });
+  assert.doesNotMatch(bare, /data-guest-change-compare|data-guest-change-slider/);
 });
 
 test('the overview it reads carries no names, and the page draws none', () => {
@@ -655,8 +733,10 @@ test('inside the Homeroom app the full story stays the front door, with Look aro
   assert.match(src, /\{storyFront \? \(\s+<Story [^>]*onStart=\{\(\) => setSheet\('start'\)\} onSignIn=\{\(\) => setSheet\('signin'\)\} lookAround \/>/);
   // Discover opened from it has a back, and the back returns to the story.
   assert.match(src, /const appDiscover = storyOn && inApp && discoverLink;/);
-  assert.match(src, /const showBack = !!openApp \|\| !!guestProject \|\| appDiscover;/);
+  assert.match(src, /const showBack = !!openApp \|\| appDiscover;/);
   assert.match(src, /const to = appDiscover && !guestProject \? '#landing' : '#apps';/);
+  // A project's page keeps the guest bar; its chip runs the same way back.
+  assert.match(src, /onAllCommunities=\{onBack\}/);
   // The full story keeps Continue and its email line, then the way to look
   // around: a link to #apps.
   const html = renderComponent(STORY, 'Story', { primaryClass: 'pill', onStart() {}, onSignIn() {}, lookAround: true });
@@ -697,9 +777,9 @@ test('an account on the waitlist looks around: its card over Discover, every pub
   assert.match(html, /data-guest-try="todo-list"/, 'even an app that needs an account');
   assert.doesNotMatch(html, /data-guest-use=|data-guest-join-project=|data-guest-chat-join=/);
   assert.ok(text(html).includes(message('auth:guest.project.joinLater')));
-  const vote = renderComponent(PROJECT, 'VoteCard', { vote: { id: 1, title: 'A', summary: null, yes: 1, no: 0 }, app: APPS[1], onIntent() {}, signedIn: true });
+  const vote = renderComponent(PROJECT, 'GuestChange', { vote: { id: 1, title: 'A', summary: null, yes: 1, no: 0 }, app: APPS[1], onBack() {}, onIntent() {}, signedIn: true });
   assert.match(vote, /data-guest-vote-later=""/);
-  assert.doesNotMatch(vote, /data-guest-vote-btn/);
+  assert.doesNotMatch(vote, /data-guest-change-join|data-guest-vote-btn/);
   // The waiting room leads there.
   assert.match(read('frontend/src/features/auth/waiting.tsx'), /<a\s+href="#apps"\s+data-waiting-look-around=""/);
 });
@@ -824,4 +904,43 @@ test('guest directory searches belong to their history entry and preserve other 
   assert.match(src, /useState\(''\)/, 'first render remains the empty prerender');
   assert.match(src, /addEventListener\('popstate', restore\)/);
   assert.match(src, /replaceState\(withGuestSearch\(window.history.state, value\), ''\)/);
+});
+
+// ─── project-card.tsx and visitor-view.tsx ───────────────────────
+
+test('the project card\'s picture: the still first, a loop only after mount and only where previews may play, with a pause and its label', () => {
+  const CARD_TSX = 'frontend/src/features/guest/project-card.tsx';
+  const still = renderComponent(CARD_TSX, 'ProjectPreview', { app: APPS[0], cover: { illustration_url: '/still', preview_url: '/loop' } });
+  assert.match(still, /<img src="\/still"/);
+  assert.doesNotMatch(still, /<video|data-project-preview-pause/, 'no video in the first render (no hydration mismatch, nothing fetched)');
+  // Without a picture, the icon on the project's colour.
+  const bare = renderComponent(CARD_TSX, 'ProjectPreview', { app: APPS[0], cover: null });
+  assert.match(bare, /class="app-icon-tile[^"]*w-20 h-20/);
+  const src = read(CARD_TSX);
+  // Reduced motion, Data Saver and "Play previews" off all leave the still
+  // (lib/card-previews.ts previewsAllowed), and a loop that fails is never
+  // asked for again.
+  assert.match(src, /setCanPlay\(!!src && previewsAllowed\(\) && !previewFailed\(src\)\)/);
+  assert.match(src, /onError=\{\(\) => \{ markPreviewFailed\(src\); setCanPlay\(false\); \}\}/);
+  assert.match(src, /aria-label=\{paused \? t\('auth:guest\.project\.card\.play'\) : t\('auth:guest\.project\.card\.pause'\)\}/);
+  assert.equal(message('auth:guest.project.card.previewLabel'), 'Preview of the real app');
+  // Buttons on a phone are 50px; 52px from 768px.
+  assert.match(src, /export const CARD_OPEN_BTN = 'flex h-\[50px\][^']* md:h-\[52px\]/);
+});
+
+test('See what visitors see: the visitor\'s own page under a bar with the way back, read only', () => {
+  const VIEW = 'frontend/src/features/guest/visitor-view.tsx';
+  const html = renderComponent(VIEW, 'VisitorView', { slug: 'game-corner', onClose() {} });
+  assert.match(html, /^<div data-visitor-view="game-corner" role="dialog" aria-modal="true" aria-label="What visitors see"/);
+  assert.match(html, /data-visitor-view-back=""[^>]*>Back to hub</);
+  // The signed-out site's bar: the wordmark, Sign in and Sign up.
+  assert.ok(text(html).includes(message('auth:guest.header.signIn')));
+  assert.ok(text(html).includes(message('auth:guest.header.signUp')));
+  assert.match(html, /data-visitor-view-state="loading"/);
+  const src = read(VIEW);
+  // The same public overview a visitor's browser reads, drawn by the same page.
+  assert.match(src, /fetchOverview\(slug\)/);
+  assert.match(src, /<GuestProject\s+app=\{overview\.app\}\s+initialOverview=\{overview\}\s+preview\s+onIntent=\{inert\}\s+onOpenInside=\{open\}\s+onShare=\{inert\}\s+onAllCommunities=\{inert\}/);
+  assert.match(src, /if \(e\.key === 'Escape'\) onClose\(\);/);
+  assert.equal(message('project:visitorView.inert'), 'Visitors are asked to sign in here');
 });

@@ -1772,7 +1772,11 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // project and who works on the thread, so it has no check to fold into:
   // the one check opens it set to Claude Code and finds the builder chip
   // picked and the Open that takes the send's place. 732 leaves 148 slots.
-  checkCap.assertPinned(DAPP.tests.length, 732);
+  // 732 → 733: +1 (#6593) an approved change held on GitHub's required checks
+  // says GitHub is building and scanning the release images and how many of
+  // its checks are done, on the change page's own route; no existing declared
+  // check reads that state. 733 leaves 147 slots.
+  checkCap.assertPinned(DAPP.tests.length, 733);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

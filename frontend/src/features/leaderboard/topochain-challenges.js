@@ -1573,10 +1573,16 @@ const TopochainChallenges = {
 
     // The Semi design (2026-10-16): the title, the points, the artwork, the
     // rail, the action and "What counts" — no category eyebrow, deadline,
-    // task line, description, Scoring or participants.
+    // description, Scoring or participants. The organiser's task line is back
+    // on the page (#6592): it is the one sentence saying what to do to start
+    // and finish, which the page left people guessing at. Cards keep it out.
     return {
       key: str(challenge.id),
       goal: str(cp.goal || ''),
+      // The organiser's own what-to-do line, as stored (an override already
+      // resolved server-side into card_preview.task). Null when blank, so a
+      // challenge without one draws no extra line.
+      task: cp.task && str(cp.task).trim() ? str(cp.task).trim() : null,
       amount,
       // Under the points: what the rule counts, when the requirements cannot
       // say it (a proposal counts once it is put to the vote; nothing past a

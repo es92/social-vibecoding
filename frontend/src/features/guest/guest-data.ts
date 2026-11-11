@@ -63,10 +63,17 @@ export interface GuestMerged {
   title: string | null;
   summary: string | null;
   merged_at: string | null;
+  /** Its after picture, where anybody may see it (src/services/shots-public.js); else null. */
+  picture?: string | null;
 }
 
 export interface GuestOverview {
   app: GuestApp & { builders: number };
+  /**
+   * How many took part this week and how many changes went live in the last
+   * thirty days: numbers, never who. Null when they could not be read.
+   */
+  activity?: { active_week: number; merged_month: number } | null;
   votes: GuestVote[];
   merged: GuestMerged[];
   requests: { total: number; more: boolean; items: { number: number; title: string }[] } | null;
@@ -90,10 +97,13 @@ export type GuestSort = (typeof SORTS)[number];
 
 /**
  * The kinds of app, in app-manifest.js APP_CATEGORIES order (the same list
- * Discover's type chips use, features/apps/browse.js CATEGORIES). Only the
- * kinds some app in the directory has get a chip (presentCategories).
+ * the kind chips use, features/home/communities-to-join.tsx; tests/
+ * guest-discover.test.js pins the two together). Only the kinds some app in
+ * the directory has get a chip (presentCategories).
  */
-export const CATEGORIES = ['games', 'social', 'tools', 'learning', 'creative', 'other'] as const;
+export const CATEGORIES = [
+  'games', 'social', 'tools', 'learning', 'creative', 'money', 'health', 'food', 'other',
+] as const;
 
 /** How many people built it: the directory's contributors, counted. */
 export function buildersOf(app: GuestApp): number {

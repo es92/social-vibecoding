@@ -559,6 +559,38 @@ async function generalChannelSummary(pool, userId) {
   };
 }
 
+// How many people did something here this week and how many changes went
+// live in the last thirty days, as numbers alone: the hub's people row reads
+// them with the names below, and a visitor's page (services/public-project.js)
+// reads them without any name.
+async function activityCounts(pool, appId) {
+  const { rows } = await pool.query(
+    `SELECT
+       (SELECT COUNT(DISTINCT who.user_id)::int FROM (
+          SELECT m.user_id FROM chat_messages m
+           WHERE m.app_id = $1 AND m.user_id IS NOT NULL
+             AND m.created_at > NOW() - INTERVAL '7 days'
+          UNION
+          SELECT s.user_id FROM chat_sessions s
+           WHERE s.app_id = $1 AND s.user_id IS NOT NULL
+             AND s.created_at > NOW() - INTERVAL '7 days'
+          UNION
+          SELECT v.user_id FROM pr_votes v
+            JOIN chat_sessions s ON s.id = v.session_id
+           WHERE s.app_id = $1 AND v.user_id IS NOT NULL
+             AND v.created_at > NOW() - INTERVAL '7 days'
+        ) who JOIN users u ON u.id = who.user_id AND u.is_synthetic IS NOT TRUE) AS active_week,
+       (SELECT COUNT(*)::int FROM chat_sessions s
+         WHERE s.app_id = $1 AND s.status = 'merged'
+           AND COALESCE(s.merged_at, s.created_at) > NOW() - INTERVAL '30 days') AS shipped_month`,
+    [appId]
+  );
+  return {
+    active_week: rows[0]?.active_week || 0,
+    shipped_month: rows[0]?.shipped_month || 0,
+  };
+}
+
 // The hub's people row: how many people did something here this week (said
 // something in the channel, started a change, or voted on one) and up to
 // five of them by name; also each of the last fourteen days, and how many
@@ -591,27 +623,7 @@ async function activitySummary(pool, appId) {
       ORDER BY d.day`,
     [appId]
   );
-  const { rows } = await pool.query(
-    `SELECT
-       (SELECT COUNT(DISTINCT who.user_id)::int FROM (
-          SELECT m.user_id FROM chat_messages m
-           WHERE m.app_id = $1 AND m.user_id IS NOT NULL
-             AND m.created_at > NOW() - INTERVAL '7 days'
-          UNION
-          SELECT s.user_id FROM chat_sessions s
-           WHERE s.app_id = $1 AND s.user_id IS NOT NULL
-             AND s.created_at > NOW() - INTERVAL '7 days'
-          UNION
-          SELECT v.user_id FROM pr_votes v
-            JOIN chat_sessions s ON s.id = v.session_id
-           WHERE s.app_id = $1 AND v.user_id IS NOT NULL
-             AND v.created_at > NOW() - INTERVAL '7 days'
-        ) who JOIN users u ON u.id = who.user_id AND u.is_synthetic IS NOT TRUE) AS active_week,
-       (SELECT COUNT(*)::int FROM chat_sessions s
-         WHERE s.app_id = $1 AND s.status = 'merged'
-           AND COALESCE(s.merged_at, s.created_at) > NOW() - INTERVAL '30 days') AS shipped_month`,
-    [appId]
-  );
+  const counts = await activityCounts(pool, appId);
   // WHO, BY NAME: the hub's faces row ("evan, talha, zura and 35 more"),
   // up to five of the people the week's count counts, the most recently
   // active first. The same three kinds of taking part over the same seven
@@ -639,8 +651,7 @@ async function activitySummary(pool, appId) {
     [appId, ACTIVE_PEOPLE_SHOWN]
   );
   return {
-    active_week: rows[0]?.active_week || 0,
-    shipped_month: rows[0]?.shipped_month || 0,
+    ...counts,
     daily: days.map((d) => ({ day: d.day, n: d.n })),
     active_people: people.map((p) => ({ id: p.id, username: p.username, display_name: p.display_name || null })),
   };
@@ -718,6 +729,7 @@ module.exports = {
   channelSummary,
   generalChannelSummary,
   activitySummary,
+  activityCounts,
   generalNeedsJoin,
   channelArchived,
   CHANNEL_MOVED,

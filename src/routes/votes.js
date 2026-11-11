@@ -2519,20 +2519,9 @@ async function retractVote({ pool, sessionId, userId, expectedEpoch = null }) {
         WHERE pv.session_id = $1 AND pv.user_id = $2
           AND cs.id = pv.session_id
           AND pv.approval_epoch = cs.approval_epoch
-        RETURNING pv.vote, pv.reason, cs.user_id AS author_id`,
+        RETURNING pv.vote, pv.reason`,
       [sessionId, userId]
     );
-    // #6477: the author took their own vote back on this version, so proposing
-    // stops counting as their yes (governance-rules.ts). Only the author's own
-    // retraction marks it, and a later vote or a new version (an epoch bump)
-    // makes the stamp stale on its own.
-    if (removed && parseInt(removed.author_id, 10) === userId) {
-      await client.query(
-        `UPDATE chat_sessions SET author_yes_withdrawn_epoch = approval_epoch
-          WHERE id = $1 AND user_id = $2`,
-        [sessionId, userId]
-      );
-    }
     // Whoever asked the bot for this change reads their card again, so it
     // names who it waits on now (no "approved it" line: there is no vote).
     if (removed) {
@@ -2777,6 +2766,18 @@ function mergedRowSelect() {
            rv.pr_number as revert_pr_number,
            rv.pr_url    as revert_pr_url,
            rv.status    as revert_status,
+           -- #6593: the integration record and the held-merge times, so the
+           -- change page's own read carries what its Merging card and its
+           -- step list read (the page re-renders from this read, and a read
+           -- without them replaced the board row's copy with nothing).
+           cs.integration_measured_at, cs.integration_head_sha, cs.integration_main_sha,
+           cs.integration_base_sha, cs.integration_behind_by, cs.integration_ahead_by,
+           cs.integration_merges_clean, cs.integration_conflict_paths,
+           cs.integration_merged_tree, cs.integration_checks_base_current,
+           cs.integration_block_reasons, cs.integration_error,
+           ${require('../services/integration').HELD_UNTIL_SQL} AS merge_held_until,
+           ${require('../services/integration').HELD_AT_SQL} AS merge_held_at,
+           ${require('../services/integration').HELD_SINCE_SQL} AS merge_held_since,
            -- An admin's force merge (services/merge-requirements.js
            -- FORCE_SQL): the change page reads its own row from here, so its
            -- Votes card can say the force skips the vote, and the force an
@@ -5362,6 +5363,28 @@ function voteRoutes(config) {
           app_main_check_confirming: mainCheck.confirming,
           app_main_check_failing_test: mainCheck.failingTest,
         });
+      }
+
+      // #6593: while GitHub's required checks hold the merge, the page's own
+      // read carries them and, when GitHub lets Homeroom read them, how many
+      // of the required checks are done. Always written on a promoted row, so
+      // a response merged into the board's held row replaces a stale value
+      // rather than leaving one behind.
+      if (proposal && (proposal.status === 'promoted' || proposal.status === 'merging')) {
+        const integrationSvc = require('../services/integration');
+        proposal.integration = integrationSvc.readIntegration(proposal);
+        proposal.integration.githubChecks = null;
+        const held = proposal.integration.blockReasons;
+        // Failed checks are the failing card's to say; no read is made for
+        // them, even when a still-running reason is recorded beside them.
+        if (proposal.status === 'promoted'
+          && held.indexOf('github_checks') !== -1 && held.indexOf('github_checks_failing') === -1) {
+          proposal.integration.githubChecks = await require('../services/github-checks-progress')
+            .readProgress({
+              repoUrl: gatedApp.repo_url,
+              headSha: proposal.integration.headSha || proposal.reviewed_head_sha,
+            });
+        }
       }
 
       // Staging demo mode (?demo=1): the mock merged/promoted rows aren't in

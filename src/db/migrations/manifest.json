@@ -290,6 +290,11 @@
       "id": "card-preview-loops",
       "sha256": "a9ba17ce7df04ba5b43c8fc899b5f605dc37a4f2016b9500b7c9099d45fb0ed6",
       "schemaSha256": "dd501b2988c25744c0d23560c2ab3aa69e8c2ecb8031deab3db75f29cde28428"
+    },
+    {
+      "id": "app-inferred-categories",
+      "sha256": "4514f6d7424e0356b702bbf9a29ed6e3bfa2667a5511ea217030f4b3f9e71507",
+      "schemaSha256": "ac3199877069149ff6adf3926e80d5b8755b026598b60100c194517ec84b1aaf"
     }
   ]
 }

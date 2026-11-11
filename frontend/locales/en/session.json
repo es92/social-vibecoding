@@ -116,12 +116,8 @@
     "description": "Tooltip on the \"Waiting on GitHub\" status badge of a proposal whose merge GitHub refused for a reason nobody has to act on, when the next try's time has passed or was not recorded. \"Homeroom\" is the name of the platform and stays as it is."
   },
   "merge.title.githubChecks": {
-    "text": "GitHub's required checks on this change are still running, or are being run again on today's main. Homeroom tries again at {{time}}.",
-    "description": "Tooltip on the \"Waiting on GitHub\" status badge of a proposal whose merge waits for the required checks GitHub runs on it. {{time}} is a clock time such as 10:45, shown in the viewer's own time zone. \"Homeroom\" is the name of the platform and stays as it is. \"GitHub\" is a product name and stays as it is."
-  },
-  "merge.title.githubChecksSoon": {
-    "text": "GitHub's required checks on this change are still running, or are being run again on today's main. Homeroom tries again in a few minutes.",
-    "description": "Tooltip on the \"Waiting on GitHub\" status badge of a proposal whose merge waits for the required checks GitHub runs on it, when the next try's time has passed or was not recorded. \"Homeroom\" is the name of the platform and stays as it is. \"GitHub\" is a product name and stays as it is."
+    "text": "GitHub is building and scanning the release images for this change, which usually takes about 6 minutes. It merges as soon as they pass.",
+    "description": "Tooltip on the \"Waiting on GitHub\" status badge of a proposal whose merge waits for the required checks GitHub runs on it. \"GitHub\" is a product name and stays as it is."
   },
   "merge.status.goingLive": {
     "text": "Going live…",
