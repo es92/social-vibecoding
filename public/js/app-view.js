@@ -21816,11 +21816,9 @@ const AppView = {
   // link: the URL is API-supplied and only ever an <img> source.
   _illustrationExtraSpec(issue) {
     const p = (issue && issue.payload) || {};
-    // `shape` 'still' marks a 16:10 card still, which the preview draws
-    // whole as the cards do (frontend/src/lib/illustration-shape.ts).
     const pick = (rec) => (rec && rec.url
       ? { url: String(rec.url), darkUrl: rec.darkUrl ? String(rec.darkUrl) : null,
-        tint: rec.tint != null ? rec.tint : null, shape: rec.shape === 'still' ? 'still' : null }
+        tint: rec.tint != null ? rec.tint : null }
       : null);
     return {
       t: 'illustration',

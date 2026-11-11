@@ -297,10 +297,6 @@ test('apps list: the guest Discover card fields', async () => {
     assert.equal(one.illustration_url, '/app-illustrations/abcabcabcabcabcabcabcabcabcabcab');
     assert.equal(one.illustration_dark_url, null);
     assert.equal(two.illustration_url, null);
-    // Its shape: a picture with no `shape` on its record is the square the
-    // card crops; no picture, no shape (a card still is 'still').
-    assert.equal(one.illustration_shape, 'square');
-    assert.equal(two.illustration_shape, null);
     assert.equal(one.icon_color, '#2e6660');
     // Counts arrive as numbers.
     assert.equal(one.member_count, 12);

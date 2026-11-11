@@ -159,10 +159,6 @@
     "text": "Use images with the same dimensions. Framing and colour are shared across both themes.",
     "description": "Small note in the featured illustration editor about the light and dark pictures."
   },
-  "illustration.stillNote": {
-    "text": "This picture is a 16:10 still, the card's own shape, so every card shows it whole and it has no framing.",
-    "description": "Small note in the featured illustration editor, in place of the framing help, when the picture is a card still: a wide picture of the app being used, exactly the card's shape. \"Still\" is a noun: a single picture taken from the app."
-  },
   "illustration.cardColour": {
     "text": "Card colour",
     "description": "Label, and accessible name, of the row of colour swatches in the featured illustration editor: the background colour of the app's card."

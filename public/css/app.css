@@ -27860,8 +27860,6 @@ html[data-skin] .fr-bp{font-size:12px;color:var(--fr-faint);font-weight:600}
 html[data-skin] .fr-fcard{flex:0 0 208px;display:flex;flex-direction:column;color:inherit;text-decoration:none}
 html[data-skin] .fr-fcover{display:grid;place-items:center;aspect-ratio:16/10;background:var(--fr-sunk);overflow:hidden}
 html[data-skin] .fr-fcover img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
-/* A card still (lib/illustration-shape.ts) is the cover's own 16:10, drawn whole. */
-html[data-skin] .fr-fcover.fr-still img{object-fit:contain;object-position:center}
 html[data-skin] .fr-fcover img.fr-moon{display:none}
 html[data-skin].dark .fr-fcover img.fr-moon{display:block}
 html[data-skin].dark .fr-fcover img.fr-sun:has(+ img.fr-moon){display:none}

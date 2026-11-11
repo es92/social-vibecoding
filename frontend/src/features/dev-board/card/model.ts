@@ -274,8 +274,6 @@ export interface IllustrationPreviewSpec {
   url: string;
   darkUrl: string | null;
   tint: string | number | null;
-  /** 'still': a 16:10 card still, drawn whole (lib/illustration-shape.ts); absent for a square the card crops. */
-  shape?: 'still' | null;
 }
 
 export type ExtraSpec =

@@ -124,8 +124,7 @@ function illustrationRoutes(config) {
     if (!framing || !contentType) return res.status(400).json({ error: 'Choose a PNG, JPEG or WebP under 1 MB, a card colour from the set, and valid image framing.' });
     const id = proposals.newImageId();
     // A single upload proposes the light image on its own, as it always did.
-    // A 16:10 one is a card still, drawn whole and never framed (withShape).
-    await propose(req, res, next, proposals.withShape({ url: proposals.imageUrl(id), ...framing }, proposals.shapeOf(req.body)),
+    await propose(req, res, next, { url: proposals.imageUrl(id), ...framing },
       { light: { id, contentType, data: req.body } });
   });
   // Both variants and their shared framing travel in one proposal.
@@ -147,25 +146,17 @@ function illustrationRoutes(config) {
     // it, and the only one in hand is the app's current record: a proposal
     // that is still open does not count, and there is at most one anyway.
     if (!light && !current?.url) return res.status(409).json({ error: 'Upload a light image first.' });
-    // The pair is one shape: both squares the card crops, or both 16:10
-    // stills it draws whole (illustration-proposals.js shapeOf). A kept image
-    // keeps the shape the card already wears.
-    const shape = light ? proposals.shapeOf(light) : proposals.recordShape(current);
-    const keptDark = body.dark === undefined && !!current?.darkUrl;
-    if ((dark && proposals.shapeOf(dark) !== shape) || (light && keptDark && proposals.recordShape(current) !== shape)) {
-      return res.status(400).json({ error: 'The light and dark pictures must be the same shape: both square, or both 16:10 stills. Send a dark picture of the same shape, or none.' });
-    }
     const lightId = light ? proposals.newImageId() : null;
     const darkId = dark ? proposals.newImageId() : null;
     // The same merge the direct write performed: the current record under
     // the new framing, then whichever urls this save replaces. A dark left
     // undefined keeps the current dark image; null drops it.
-    const proposed = proposals.withShape({
+    const proposed = {
       ...(current || {}),
       ...framing,
       url: light ? proposals.imageUrl(lightId) : current.url,
       darkUrl: body.dark === undefined ? (current?.darkUrl || null) : dark ? proposals.imageUrl(darkId) : null,
-    }, shape);
+    };
     await propose(req, res, next, proposed, {
       light: light ? { id: lightId, contentType: validateImage(light), data: light } : null,
       dark: dark ? { id: darkId, contentType: validateImage(dark), data: dark } : null,
@@ -176,9 +167,7 @@ function illustrationRoutes(config) {
     if (!framing) return res.status(400).json({ error: 'Choose valid image framing and a card colour from the set.' });
     const current = req.illustrationApp.featured_illustration || null;
     if (!current) return res.status(409).json({ error: 'The illustration was removed. Upload an image again.' });
-    // A still keeps its shape and its whole-picture framing: only its card
-    // colour can change here.
-    await propose(req, res, next, proposals.withShape({ ...current, ...framing }, proposals.recordShape(current)), {});
+    await propose(req, res, next, { ...current, ...framing }, {});
   });
   router.delete(path, async (req, res, next) => {
     // Nothing to remove means nothing to vote on.

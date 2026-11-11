@@ -103,8 +103,6 @@ type DirectoryApp = {
   /** The featured illustration, and its dark twin (src/services/public-app-directory.js). */
   illustration_url?: string | null;
   illustration_dark_url?: string | null;
-  /** 'still' when the picture is a 16:10 card still, drawn whole (lib/illustration-shape.ts). */
-  illustration_shape?: 'still' | 'square' | null;
   member_count?: number | null;
   /** The platform features it (an admin's pick), in `featured_order`. */
   featured?: boolean;
@@ -481,7 +479,6 @@ export function HomeFrame({ initialFeed = null, initialQuestions = null, initial
                 onClick={(event) => openHub(event, a.slug)}
                 cover={a.illustration_url}
                 darkCover={a.illustration_dark_url}
-                still={a.illustration_shape === 'still'}
                 tile={<Tile size={56} name={a.name || a.slug} src={a.icon_url} emoji={a.icon_emoji} color={a.icon_color} />}
                 title={a.name || a.slug}
                 line={a.description || undefined}

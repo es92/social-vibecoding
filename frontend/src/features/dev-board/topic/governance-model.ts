@@ -29,8 +29,6 @@ export interface GovernancePicture {
   x?: number;
   y?: number;
   tint?: string | null;
-  /** 'still': a 16:10 card still, drawn whole (lib/illustration-shape.ts). */
-  shape?: 'still' | null;
 }
 
 export type GovernanceContent =

@@ -139,11 +139,8 @@ test('the editor keeps the framing helpers as its only clamp, and the card cover
   assert.match(editor, /from '\.\.\/\.\.\/lib\/illustration-framing'/);
   assert.ok(!/input type="range"|type="range"/.test(editor), 'no slider markup left in the source');
   // touch-action must be denied on the surface or a phone drag scrolls the
-  // dialog instead of panning the art. `framable` is `interactive` less a
-  // card still, which is drawn whole and has nothing to pan
-  // (lib/illustration-shape.ts).
-  assert.match(editor, /const framable = interactive && !isStill\(art\);/);
-  assert.match(editor, /touchAction: framable \? 'none'/);
+  // dialog instead of panning the art.
+  assert.match(editor, /touchAction: interactive \? 'none'/);
   // And selection suppressed, or a drag across the card leaves the app name
   // and blurb under it highlighted — very visible on touch.
   assert.match(editor, /userSelect: 'none'/);

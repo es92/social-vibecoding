@@ -443,13 +443,11 @@ export function ChallengeCard({ href, onClick, art, icon, title, line, state, la
  * its tile large on the cover; its name, one sentence, who is there, and
  * the row's one word.
  */
-export function PicCard({ href, onClick, cover, darkCover, still = false, tile, title, line, meta, word }: {
+export function PicCard({ href, onClick, cover, darkCover, tile, title, line, meta, word }: {
   href: string;
   onClick?: (event: React.MouseEvent<HTMLElement>) => void;
   cover?: string | null;
   darkCover?: string | null;
-  /** The cover is a card still, the cover's own 16:10, drawn whole rather than cropped. */
-  still?: boolean;
   tile?: React.ReactNode;
   title: React.ReactNode;
   line?: React.ReactNode;
@@ -458,7 +456,7 @@ export function PicCard({ href, onClick, cover, darkCover, still = false, tile, 
 }) {
   return (
     <a className={k('card', 'fcard')} href={href} onClick={onClick}>
-      <span className={k('fcover', cover && still && 'still')}>
+      <span className={k('fcover')}>
         {cover ? <img src={cover} alt="" loading="lazy" className={k('sun')} /> : tile}
         {cover && darkCover ? <img src={darkCover} alt="" loading="lazy" className={k('moon')} /> : null}
       </span>

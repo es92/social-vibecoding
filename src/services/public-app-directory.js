@@ -107,10 +107,6 @@ function shapeApp(app, contributorRows, includeWallets) {
     illustration_url: app.illustration_id ? `/app-illustrations/${app.illustration_id}` : null,
     illustration_dark_url: app.illustration_id && app.illustration_dark_id
       ? `/app-illustrations/${app.illustration_dark_id}` : null,
-    // 'still' when the picture is a 16:10 card still the card draws whole
-    // (services/card-still.js), 'square' when it is a picture the card
-    // crops, null with no picture.
-    illustration_shape: app.illustration_id ? (app.illustration_shape === 'still' ? 'still' : 'square') : null,
     member_count: parseInt(app.member_count, 10) || 0,
     open_votes: parseInt(app.open_votes, 10) || 0,
     merged_count: parseInt(app.merged_count, 10) || 0,
@@ -143,7 +139,6 @@ async function listPublicApps(pool, { includeWallets = true, slug = null } = {})
               (fa.app_id IS NOT NULL) AS featured, fa.sort_order AS featured_order,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.id END AS illustration_id,
               CASE WHEN a.featured_illustration IS NOT NULL THEN ill.dark_id END AS illustration_dark_id,
-              a.featured_illustration->>'shape' AS illustration_shape,
               COALESCE(cmc.cnt, 0) AS member_count,
               COALESCE(dev.open_votes, 0) AS open_votes,
               COALESCE(dev.merged_count, 0) AS merged_count,

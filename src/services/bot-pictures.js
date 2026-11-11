@@ -30,14 +30,6 @@
 //            (GET /api/conversations/homeroom-bot/pictures/:id). A message's
 //            card carries ids, addresses, sizes and labels, never bytes.
 //
-// A CARD STILL is the one mode that is not drawn (makeCardStill, the bot's
-// `make_card_still`): a project's card picture made from a real screenshot of
-// it, showing the moment it is used. The screenshot is composited over the
-// card's colour at the card's 16:10 (card-still.js) and is never sent to the
-// model, so the app's words on it are its own; the model may draw only the
-// scene around it, from words (STILL_SCENE_LINE). It lands in a gallery like
-// any picture and is proposed from there the same way.
-//
 // From a gallery card (homeroom-bot-cards/gallery.js) a picture is proposed
 // as a project's featured picture (the card picture's governance vote,
 // illustration-proposals.js, only for those who may: app-admins.js
@@ -228,30 +220,14 @@ const PURPOSE_LINES = Object.freeze({
 });
 
 /**
- * A card still's scene (makeCardStill): the ground the project's REAL screen
- * is laid on, drawn for "the moment of use" rather than an object that names
- * the topic. The screen itself is never drawn and never sent: its words come
- * from the screenshot, pasted in afterwards (card-still.js), so the model is
- * told to leave the middle plain and to draw no interface and no words.
- */
-const STILL_SCENE_LINE = 'It is the background of a project\'s card still in Discover. The project\'s real screen is pasted'
-  + ' into the middle of it afterwards, covering about 70% of its width and 72% of its height, so the picture shows the'
-  + ' moment somebody uses the project, around that screen: hands, a desk, a kitchen, a room, light, in a soft illustrated'
-  + ' style. Keep the middle a calm, plain area of one soft colour for the screen to sit on, and put everything you draw'
-  + ' at the edges. Draw no screen, no phone or laptop display, no interface, no buttons, and no words, letters or numbers'
-  + ' anywhere: the project\'s own words come from its real screen.';
-
-/**
  * Pure: the whole prompt one picture is drawn from: the content rules
  * first, then what it is for and how it looks, then their words, marked as
  * theirs. `fromImage` the picture is a variant (or more like) of one sent
- * with it. `still` it is a card still's scene (STILL_SCENE_LINE) rather than
- * a picture for its purpose.
+ * with it.
  */
-function promptFor({ prompt, aspect = 'square', variant = null, letter = 'A', count = 1, purpose = 'other', fromImage = null, still = false }) {
+function promptFor({ prompt, aspect = 'square', variant = null, letter = 'A', count = 1, purpose = 'other', fromImage = null }) {
   const lines = [CONTENT_RULES, ''];
-  if (still) lines.push(STILL_SCENE_LINE);
-  else if (PURPOSE_LINES[purpose]) lines.push(PURPOSE_LINES[purpose]);
+  if (PURPOSE_LINES[purpose]) lines.push(PURPOSE_LINES[purpose]);
   lines.push(`Shape: ${aspect === 'wide' ? 'wide (16:9)' : aspect === 'tall' ? 'tall (9:16)' : 'square'}.`);
   if (fromImage === 'variant') {
     lines.push('The picture sent with this is the light version. Draw the same picture for a dark theme: keep its subject,'
@@ -443,7 +419,6 @@ async function drawAll(ask, { model, apiKey, baseUrl, origin, fetchImpl, like = 
         apiKey, baseUrl, origin, model, aspect: ask.aspect, fetchImpl, sourceImage: source,
         prompt: promptFor({
           prompt: ask.prompt, aspect: ask.aspect, variant, letter, count: ask.count, purpose: ask.purpose, fromImage,
-          still: ask.still === true,
         }),
       });
       costUsd += res.costUsd;
@@ -494,7 +469,7 @@ async function picturesThisWeek(pool, userId) {
  */
 async function storePictures(pool, store, {
   payerId = null, conversationId = null, sessionId = null, appId = null, purpose = 'other', prompt, model,
-  costUsd = null, error = null, made = [], billed = null,
+  costUsd = null, error = null, made = [],
 }) {
   const media = require('./media-store');
   const client = await pool.connect();
@@ -504,12 +479,8 @@ async function storePictures(pool, store, {
       `INSERT INTO homeroom_bot_pictures
          (payer_user_id, conversation_id, session_id, app_id, purpose, prompt, model, images, cost_usd, error)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-      // `images` counts toward the weekly picture cap: what the model drew.
-      // A card still's composites (makeCardStill) are kept here too, so the
-      // gallery can show them, but they pass `billed: 0`: no model drew them.
       [payerId, conversationId, sessionId, appId, purpose, clip(prompt, STORED_PROMPT_CHARS) || '(none)',
-        clip(model, 255), billed == null ? made.length : Math.max(0, Math.floor(Number(billed) || 0)),
-        costUsd == null ? null : Math.round(costUsd * 1e6) / 1e6, error ? clip(error, 200) : null],
+        clip(model, 255), made.length, costUsd == null ? null : Math.round(costUsd * 1e6) / 1e6, error ? clip(error, 200) : null],
     );
     const keys = made.length ? await media.putMany(client, store, made.map((m) => ({ data: m.data, contentType: m.contentType }))) : [];
     const images = [];
@@ -772,20 +743,14 @@ async function featurePicture(pool, config, { user, card, image, dark = null, de
   const light = await read(image);
   if (!light) return { ok: false, status: 413, error: 'That picture could not be made small enough for a card picture (under 1 MB).' };
   const darkPicture = dark ? await read(dark) : null;
-  // A 16:10 card still (makeCardStill's) is drawn whole by every card; its
-  // dark twin has to be one too (illustration-proposals.js shapeOf).
-  const shape = proposals.shapeOf(light.data);
-  if (darkPicture && proposals.shapeOf(darkPicture.data) !== shape) {
-    return { ok: false, status: 400, error: 'The light and dark pictures are not the same shape, so they cannot be one card picture.' };
-  }
   const current = app.featured_illustration || null;
   // A new picture starts unframed; the card colour it had stays.
-  const proposed = proposals.withShape({
+  const proposed = {
     ...(current && current.tint !== undefined ? { tint: current.tint } : {}),
     zoom: 1, x: 0, y: 0,
     url: proposals.imageUrl(light.id),
     darkUrl: darkPicture ? proposals.imageUrl(darkPicture.id) : null,
-  }, shape);
+  };
   try {
     const issue = await proposals.createProposal(pool, { app, user, proposed, images: { light, dark: darkPicture } });
     return { ok: true, proposal: proposals.proposalLink(app, issue), app: { slug: app.slug, name: app.name || app.slug } };
@@ -851,138 +816,6 @@ async function designPictures(pool, threadId) {
   if (!threadId) return [];
   const { rows: [row] } = await pool.query('SELECT pictures FROM design_threads WHERE private_thread_id = $1', [Number(threadId)]);
   return Array.isArray(row?.pictures) ? row.pictures.filter((p) => p && ID_RE.test(String(p.id || ''))) : [];
-}
-
-// ── A card still ─────────────────────────────────────────────────────────
-
-/** A card still's label in the gallery's stored prompt. */
-const STILL_LABEL = 'Card still from a screenshot';
-/** What a still's composite is recorded as made by, when no model drew a scene. */
-const STILL_COMPOSITE = 'card-still';
-const STILL_MOMENT_CHARS = 300;
-
-/**
- * Pure: make_card_still's arguments, checked: { focus, moment, tone } or
- * { error } in words the model can act on. `focus` is the part of the
- * screenshot that matters, each side a fraction of it (0..1).
- */
-function normalizeStillAsk(args = {}, tones = []) {
-  let focus = null;
-  if (args.focus != null) {
-    const f = args.focus;
-    const keys = ['x', 'y', 'width', 'height'];
-    if (typeof f !== 'object' || Array.isArray(f) || keys.some((k) => !Number.isFinite(Number(f[k])))) {
-      return { error: 'focus is { x, y, width, height }, each a fraction of the screenshot from 0 to 1.' };
-    }
-    const [x, y, width, height] = keys.map((k) => Number(f[k]));
-    if (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > 1.001 || y + height > 1.001) {
-      return { error: 'focus must sit inside the screenshot: x + width and y + height are at most 1.' };
-    }
-    focus = { x, y, width, height };
-  }
-  const moment = args.moment == null ? '' : clip(args.moment, STILL_MOMENT_CHARS);
-  if (moment && moment.length < 3) return { error: 'moment is a sentence about the scene around the screen, or leave it out.' };
-  const tone = args.tone == null || args.tone === '' ? null : String(args.tone);
-  if (tone && !tones.includes(tone)) return { error: `tone is one of ${tones.join(', ')}.` };
-  return { focus, moment: moment || null, tone };
-}
-
-/**
- * The scene a still is laid on, from the image model, light and its dark
- * twin: { ok, light, dark, costUsd, left } with each picture's bytes, or a
- * refusal. Billed as any picture is (generate). Its prompt is the moment in
- * words only (STILL_SCENE_LINE): the screenshot is never sent.
- */
-async function drawStillScene(pool, config, { payerId, moment, conversationId = null, app = null, settings = null, deps = {} }) {
-  const ask = { prompt: moment, count: 1, variants: ['light', 'dark'], aspect: 'wide', purpose: 'featured', like: null, still: true };
-  const made = await generate(pool, config, { payerId, ask, conversationId, app, settings, deps });
-  if (!made.ok) return made;
-  const bytes = async (variant) => {
-    const im = made.images.find((i) => i.variant === variant);
-    if (!im) return null;
-    const { rows: [row] } = await pool.query(`${IMAGE_SQL} WHERE i.id = $1`, [im.id]);
-    return row ? imageBytes(config, row, deps) : null;
-  };
-  return { ok: true, light: await bytes('light'), dark: await bytes('dark'), costUsd: made.costUsd, left: made.left, model: made.model };
-}
-
-/**
- * A card still for a project, from a real screenshot of it: the part that
- * matters (`focus`) laid over the card's colour, 16:10, and its dark twin,
- * kept as a gallery's two pictures (A · light, A · dark) so they can be
- * proposed as the card picture from there (featurePicture), which goes to
- * the project's vote like any card picture.
- *
- * The screenshot's pixels are COMPOSITED (card-still.js); they are never
- * sent to the image model, so the app's words on the still are its real
- * words. With `moment` the image model draws a scene around the screen from
- * those words alone (drawStillScene), billed as two pictures; without it
- * nothing is drawn and nothing is charged.
- *
- * Resolves { ok, pictureId, images, scene, costUsd, left } or { ok: false,
- * status, error } in words the person can be told.
- */
-async function makeCardStill(pool, config, {
-  payerId, app, screenshot, darkScreenshot = null, focus = null, moment = null, tone = null,
-  conversationId = null, settings = null, deps = {},
-}) {
-  const still = deps.cardStill || require('./card-still');
-  if (!payerId) return { ok: false, status: 402, error: 'Nobody\'s building time pays for this, so no still was made.' };
-  if (!app?.id) return { ok: false, status: 400, error: 'Say which project the still is for.' };
-  // The screenshot is read first: a refusal for it costs nothing.
-  try {
-    still.decodePng(screenshot);
-    if (darkScreenshot) still.decodePng(darkScreenshot, 'dark screenshot');
-  } catch (err) {
-    return { ok: false, status: 422, error: `${err.message} A still is made from a PNG screenshot of the app (most devices save screenshots as PNGs). Nothing was made.` };
-  }
-  if (moment) {
-    const found = guard(moment);
-    if (found) return { ok: false, status: 422, error: refusalText(found), rule: found.rule };
-  }
-  const store = deps.store !== undefined ? deps.store : require('./media-store').getStore(config);
-  if (!store) return { ok: false, status: 503, error: 'Pictures can\'t be kept on this copy of Homeroom, so no still was made.' };
-  let scenes = null;
-  let costUsd = 0;
-  let left = null;
-  let model = STILL_COMPOSITE;
-  if (moment) {
-    const scene = await drawStillScene(pool, config, { payerId, moment, conversationId, app, settings, deps });
-    if (!scene.ok) return scene;
-    scenes = { light: scene.light, dark: scene.dark };
-    costUsd = scene.costUsd;
-    left = scene.left;
-    model = `${STILL_COMPOSITE} on ${scene.model}`;
-  }
-  const startedMs = Date.now();
-  let pair;
-  try {
-    pair = await (deps.composePair || still.composePairAsync)({
-      screenshot, darkScreenshot, focus, tone, color: app.icon_color || null, scenes,
-    });
-  } catch (err) {
-    log.warn('bot-pictures', 'A card still could not be made', { appId: app.id, code: err.code, err: err.message });
-    return { ok: false, status: 422, error: `The still could not be made: ${err.message} Nothing was made.` };
-  }
-  const made = [
-    { letter: 'A', variant: 'light', contentType: pair.light.contentType, data: pair.light.data },
-    { letter: 'A', variant: 'dark', contentType: pair.dark.contentType, data: pair.dark.data },
-  ];
-  let kept;
-  try {
-    // Kept as a gallery's pictures, purpose `featured`. Its scene, when it
-    // has one, was billed on its own row by generate(); the composites
-    // themselves count for nothing (`billed: 0`).
-    kept = await storePictures(pool, store, {
-      payerId: Number(payerId), conversationId: conversationId ? Number(conversationId) : null, appId: Number(app.id),
-      purpose: 'featured', prompt: moment ? `${STILL_LABEL}: ${moment}` : STILL_LABEL, model, costUsd: 0, made, billed: 0,
-    });
-  } catch (err) {
-    log.warn('bot-pictures', 'Could not keep the card still made', { appId: app.id, err: err.message });
-    return { ok: false, status: 503, error: 'The still was made but could not be kept just now. Try again in a minute.' };
-  }
-  log.info('bot-pictures', 'Made a card still', { userId: payerId, appId: app.id, scene: !!moment, ms: Date.now() - startedMs });
-  return { ok: true, pictureId: kept.pictureId, images: kept.images, scene: !!moment, costUsd, left };
 }
 
 // ── A build's picture (usernode-image) ───────────────────────────────────
@@ -1073,8 +906,4 @@ module.exports = {
   designPictures,
   sessionPayer,
   generateForSession,
-  STILL_SCENE_LINE,
-  normalizeStillAsk,
-  drawStillScene,
-  makeCardStill,
 };

@@ -14,7 +14,6 @@ import { type KeyboardEvent, useState } from 'react';
 import { CheckIcon, PlusWideIcon } from '@/components/ui/icons';
 
 import { clampFrame } from '../../../lib/illustration-framing';
-import { isStill } from '../../../lib/illustration-shape';
 
 import type { IconView } from '../grid-store';
 import { useMessages } from '../../../lib/i18n/react';
@@ -73,12 +72,8 @@ function IllustrationArt({ tile }: { tile: DiscoverTileView }) {
   // so a zoom under 1 or an offset past the cover limit would open a gutter
   // of tint along one edge. The editor cannot produce one; the API's framing
   // range is wider than the editor's, so the card does not assume it.
-  // A card still is never framed: it is drawn whole (DiscoverCard gives its
-  // block the still's own 16:10).
   const frame = clampFrame(art);
-  const style = isStill(art)
-    ? { objectFit: 'contain' as const }
-    : { transform: `translate(${frame.x}%, ${frame.y}%) scale(${frame.zoom})` };
+  const style = { transform: `translate(${frame.x}%, ${frame.y}%) scale(${frame.zoom})` };
   const hasDark = !!art.darkUrl && !darkFailed;
   return <>
     <img src={art.url} alt="" draggable={false}
@@ -137,14 +132,7 @@ export function DiscoverCard({ tile, preview = false, previewTheme }: { tile: Di
         onKeyDown: activateOnKey,
       })}
     >
-      <div
-        className="home-discover-art relative"
-        // A card still is shown at the cards' own 16:10, whole, as Discover,
-        // Home and the landing draw it; a square keeps the block it is
-        // framed against.
-        style={isStill(tile.illustration) ? { height: 'auto', aspectRatio: '16 / 10' } : undefined}
-        data-illustration-shape={tile.illustration ? (isStill(tile.illustration) ? 'still' : 'square') : undefined}
-      >
+      <div className="home-discover-art relative">
         <IllustrationArt key={`${tile.illustration?.url}:${tile.illustration?.darkUrl}`} tile={tile} />
         <button
           type="button"

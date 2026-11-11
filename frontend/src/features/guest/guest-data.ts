@@ -25,8 +25,6 @@ export interface GuestApp extends PublicApp {
   icon_color?: string | null;
   illustration_url?: string | null;
   illustration_dark_url?: string | null;
-  /** 'still': a 16:10 card still, drawn whole; 'square': a picture the card crops (lib/illustration-shape.ts). */
-  illustration_shape?: 'still' | 'square' | null;
   active_users?: number;
   member_count?: number;
   open_votes?: number;

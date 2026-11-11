@@ -40,72 +40,18 @@ const TOOL = Object.freeze({
   },
 });
 
-// The card colours a still may be laid on (routes/app-illustrations.js TONES).
-const STILL_TONES = Object.freeze(['cream', 'yellow', 'orange', 'coral', 'pink', 'purple',
-  'indigo', 'blue', 'teal', 'mint', 'sage', 'gray']);
-
-// A card still: a project's card picture made from a real screenshot of it
-// (services/bot-pictures.js makeCardStill). Offered on its own rather than
-// as a mode of make_pictures because nothing in it is drawn unless a scene
-// is asked for: the screenshot is laid on the card's colour as it is.
-const STILL_TOOL = Object.freeze({
-  type: 'function',
-  function: {
-    name: 'make_card_still',
-    description: 'Make a project\'s card picture from a real screenshot of it that they attached here: the moment the project '
-      + 'is used (what goes in and what comes out), laid on the card\'s colour at the card\'s own 16:10, in light and dark. The '
-      + 'screenshot is used as it is, never redrawn, so its words stay the app\'s own. Shown as a gallery under your reply, from '
-      + 'which it can be proposed as the card picture. Free, unless a scene around the screen is asked for (moment), which counts '
-      + 'as two pictures.',
-    parameters: {
-      type: 'object',
-      properties: {
-        project: { type: 'string', description: 'The project it is for, by name.' },
-        screenshot: { type: 'string', description: 'The id of the screenshot they attached in this chat (a PNG of the app at the moment it is used).' },
-        dark_screenshot: { type: 'string', description: 'The id of a screenshot of the same screen in a dark theme, when they attached one, for the dark picture.' },
-        focus: {
-          type: 'object',
-          description: 'The part of the screenshot that matters, so it reads on a small card: the ask and the answer, two or three '
-            + 'things. Each a fraction of the screenshot from 0 to 1. Leave it out to use the whole screenshot.',
-          properties: { x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' } },
-          required: ['x', 'y', 'width', 'height'],
-          additionalProperties: false,
-        },
-        tone: { type: 'string', enum: STILL_TONES, description: 'The card colour behind the screen. Leave it out to use the project\'s own colour.' },
-        moment: { type: 'string', description: 'Only when they ask for one: a scene drawn around the screen, in plain words (hands on a kitchen counter, a desk by a window). No words in it.' },
-      },
-      required: ['project', 'screenshot'],
-      additionalProperties: false,
-    },
-  },
-});
-
 function offered(ctx) {
   return !!ctx?.user?.id && !ctx.user.isSynthetic && ctx.settings?.mode !== 'off'
     && Number(ctx.settings?.pictureWeeklyCap ?? 1) !== 0;
 }
 
-/** A still is offered wherever a person is talking with the bot: it costs nothing without a scene. */
-function stillOffered(ctx) {
-  return !!ctx?.user?.id && !ctx.user.isSynthetic && ctx.settings?.mode !== 'off' && !!ctx.conversationId;
-}
-
 function tools(ctx) {
-  return [...(offered(ctx) ? [TOOL] : []), ...(stillOffered(ctx) ? [STILL_TOOL] : [])];
+  return offered(ctx) ? [TOOL] : [];
 }
 
 function promptLines(ctx) {
-  const still = stillOffered(ctx) ? [
-    '- Make a project\'s card still (make_card_still) when they want its card to show what using it is like and they',
-    '  attached a screenshot of it here: pass the screenshot\'s id, and a focus on the part that matters (the ask and the',
-    '  answer) when you can see the picture. It is laid on the card\'s colour as it is, never redrawn, and shown as a',
-    '  gallery they can propose from. Without a screenshot, ask them for one: a PNG of the app at the moment it is used,',
-    '  with made-up demo content only, never a real person\'s messages or data. A scene around it (moment) only when',
-    '  they ask, since it counts as two pictures.',
-  ] : [];
-  if (!offered(ctx)) return still;
+  if (!offered(ctx)) return [];
   return [
-    ...still,
     '- Make pictures with an outside picture model (make_pictures): up to 4 options (A to D), in light and dark when they',
     '  need both, for a project\'s card picture, for its app, for a design, or anything else they ask for. They are shown',
     '  as a gallery under your reply, which they tap to propose one as the card picture (only where they may), to use one in',
@@ -185,82 +131,7 @@ async function makePictures(pool, ctx, args) {
   };
 }
 
-/**
- * One of the person's own pictures in this chat, by its attachment id:
- * { data, contentType } or { error }. Only a picture they attached here, on
- * a message still standing, as offer_request's attachmentIds are read.
- */
-async function ownScreenshot(pool, ctx, id, what = 'screenshot') {
-  const want = String(id ?? '').trim();
-  if (!want) return { error: `Say which picture they attached is the ${what} (its id). Nothing was made.` };
-  const { rows: [row] } = await pool.query(
-    `SELECT a.content_type, a.data FROM conversation_message_attachments a
-       JOIN conversation_messages m ON m.id = a.message_id
-      WHERE a.id = $1 AND a.kind = 'image' AND a.conversation_id = $2 AND a.user_id = $3
-        AND m.deleted_at IS NULL AND m.moderation_hidden_at IS NULL`,
-    [want, Number(ctx.conversationId), Number(ctx.user.id)],
-  );
-  if (!row || !Buffer.isBuffer(row.data)) {
-    return { error: `${want} is not a picture they attached in this chat. Pass the id of their own ${what}. Nothing was made.` };
-  }
-  return { data: row.data, contentType: row.content_type };
-}
-
-async function makeCardStill(pool, ctx, args) {
-  const deps = ctx.deps?.pictures || {};
-  const p = pictures(deps);
-  const ask = p.normalizeStillAsk(args, STILL_TONES);
-  if (ask.error) return { ok: false, error: `${ask.error} Nothing was made.` };
-  const m = mayor(ctx.deps);
-  const app = typeof args.project === 'string' && args.project.trim() ? await m.findApp(pool, args.project) : null;
-  if (!app || !(await m.canView(pool, app, ctx.user))) {
-    return { ok: false, error: 'There is no project by that name that they can see. Check the name with my_projects. Nothing was made.' };
-  }
-  const shot = await ownScreenshot(pool, ctx, args.screenshot);
-  if (shot.error) return { ok: false, error: shot.error };
-  let darkShot = null;
-  if (args.dark_screenshot) {
-    darkShot = await ownScreenshot(pool, ctx, args.dark_screenshot, 'dark screenshot');
-    if (darkShot.error) return { ok: false, error: darkShot.error };
-  }
-  // The card colour: the one asked for, else the one its picture already
-  // wears, else (null) the project's own colour.
-  const worn = app.featured_illustration && typeof app.featured_illustration.tint === 'string' ? app.featured_illustration.tint : null;
-  const made = await p.makeCardStill(pool, ctx.config, {
-    payerId: ctx.user.id, app, screenshot: shot.data, darkScreenshot: darkShot ? darkShot.data : null,
-    focus: ask.focus, moment: ask.moment, tone: ask.tone || (STILL_TONES.includes(worn) ? worn : null),
-    conversationId: ctx.conversationId, settings: ctx.settings, deps,
-  });
-  if (!made.ok) return { ok: false, error: made.error };
-  const canFeature = await (deps.appAdmins || require('../app-admins')).canManageApp(pool, app, ctx.user).catch(() => false);
-  ctx.card = p.galleryCard({
-    prompt: `Card still of ${app.name || app.slug}`, images: made.images, variants: ['light', 'dark'], purpose: 'featured',
-    canFeature, project: { slug: app.slug, name: app.name || app.slug },
-  });
-  ctx.looked = Array.isArray(ctx.looked) ? ctx.looked : [];
-  ctx.looked.push({ what: made.scene ? 'Made a card still, with a scene from the picture model' : 'Made a card still from their screenshot' });
-  ctx.pictures = { made: made.images.length };
-  return {
-    ok: true,
-    made: made.images.length,
-    labels: ctx.card.images.map((im) => im.label),
-    shown: 'As a gallery under your reply: the still in light and dark. Say in a sentence that it is their screenshot on the card\'s colour; you cannot see it.',
-    ...(made.left != null ? { picturesLeftThisWeek: made.left } : { cost: 'Nothing: no picture model was used.' }),
-    ...(canFeature
-      ? { canFeature: 'They may propose it as the project\'s card picture from the gallery; the project\'s group votes on it.' }
-      : { canFeature: 'Only the project\'s creator and its admins can propose it as the card picture; they can share it with them.' }),
-  };
-}
-
 async function run(pool, ctx, name, args) {
-  if (name === 'make_card_still') {
-    try {
-      return await makeCardStill(pool, ctx, args || {});
-    } catch (err) {
-      log.warn('homeroom-bot-pictures', 'make_card_still failed', { userId: ctx?.user?.id, err: err.message });
-      return { ok: false, error: 'The still could not be made just now. Try again in a minute.' };
-    }
-  }
   if (name !== 'make_pictures') return undefined;
   try {
     return await makePictures(pool, ctx, args || {});
@@ -270,4 +141,4 @@ async function run(pool, ctx, name, args) {
   }
 }
 
-module.exports = { TOOL, STILL_TOOL, STILL_TONES, tools, run, promptLines, offered, stillOffered, makePictures, makeCardStill };
+module.exports = { TOOL, tools, run, promptLines, offered, makePictures };

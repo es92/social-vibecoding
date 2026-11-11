@@ -18,8 +18,7 @@
 //     remove:   boolean }
 //
 // where an illustration is the same record `apps.featured_illustration`
-// holds ({ url, darkUrl, zoom, x, y, tint, shape? }; `shape: 'still'` marks
-// a 16:10 card still, see shapeOf below). `proposed` is COMPLETE, not a
+// holds ({ url, darkUrl, zoom, x, y, tint }). `proposed` is COMPLETE, not a
 // diff: a framing-only change carries the current image URLs, a light-only
 // upload carries the current darkUrl, so the apply is one write of the
 // record as proposed. The bytes behind a NEW url wait in
@@ -43,39 +42,6 @@ const { IMAGE_PATH, imageIdFromUrl } = illustrations;
 
 function newImageId() {
   return crypto.randomBytes(16).toString('hex');
-}
-
-// A card still (services/card-still.js) is a picture at the card's own 16:10,
-// drawn whole by every card; any other picture is the square the card crops.
-// The record says which (`shape: 'still'`, absent for a square), worked out
-// HERE from the image's own bytes rather than taken from a caller, so a still
-// is whatever is 16:10 however it arrived: the editor, the connector, or a
-// gallery's "Propose as the card picture".
-const STILL = 'still';
-
-/** Pure: 'still' when `data` is a 16:10 card still, else null (a picture the card crops). */
-function shapeOf(data) {
-  if (!Buffer.isBuffer(data)) return null;
-  const { imageSize } = require('./bot-pictures');
-  const { isStillSize } = require('./card-still');
-  const size = imageSize(data, require('./attachments').sniffImageType(data));
-  return size && isStillSize(size.width, size.height) ? STILL : null;
-}
-
-/** Pure: the shape a stored record has: 'still', or null for a square (and for no record). */
-function recordShape(record) {
-  return record && record.shape === STILL ? STILL : null;
-}
-
-/**
- * Pure: `record` wearing `shape`. A still carries `shape: 'still'` and the
- * default framing, since it is drawn whole and a zoom or offset would crop
- * it; a square carries no shape key at all, as every record did before.
- */
-function withShape(record, shape) {
-  if (!record) return record;
-  const { shape: _dropped, ...rest } = record;
-  return shape === STILL ? { ...rest, zoom: 1, x: 0, y: 0, shape: STILL } : rest;
 }
 
 function imageUrl(id) {
@@ -190,10 +156,6 @@ module.exports = {
   KIND,
   IMAGE_PATH,
   PendingProposalError,
-  STILL,
-  shapeOf,
-  recordShape,
-  withShape,
   newImageId,
   imageUrl,
   imageIdFromUrl,

@@ -579,14 +579,11 @@ function stagingMockGovernance() {
       { required: 2, windowEndsAt: hoursAhead(36) }),
     // #2086: an open featured-illustration proposal, so the card's preview
     // (proposed image beside the current one) is reviewable via ?demo=1 on
-    // an empty staging DB. The images are shipped static assets rather than
-    // app-illustrations ids, which the empty DB could not serve. The proposed
-    // one is a card still (services/card-still.js), made from a made-up
-    // "Sample recipe helper" screen, so the preview shows a 16:10 still
-    // whole beside the square picture the card crops today.
+    // an empty staging DB. The image is a shipped static asset rather than
+    // an app-illustrations id, which the empty DB could not serve.
     mk(9100077, 'featured_illustration', '[Mock] Change the featured illustration',
       {
-        proposed: { url: '/illustrations/card-stills/sample.png', darkUrl: null, zoom: 1, x: 0, y: 0, tint: 'yellow', shape: 'still' },
+        proposed: { url: '/icons/v3/icon-512.png', darkUrl: null, zoom: 1.2, x: 10, y: -5, tint: 'teal' },
         current: { url: '/icons/v3/icon-192.png', darkUrl: null, zoom: 1, x: 0, y: 0 },
         remove: false,
       }, 5, 1, 0,

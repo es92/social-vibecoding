@@ -60,7 +60,6 @@ import { clampPopoverHeight, placeUnderAnchor } from '../../../lib/anchor-popove
 import { anchorRectOf, useAnchoredDismiss } from '../../../lib/popover-dismiss';
 import { linkAttrs } from '../../../lib/repo-link.js';
 import { cardTintClass } from '../../home/panels/ui';
-import { isStill } from '../../../lib/illustration-shape';
 import type { NoChoice } from '../../review-flow/vote-sheet';
 import { aiEnabledStore, cardNowStore, voteSendingStore } from './cards-store';
 import { liveTally } from './fold';
@@ -1402,12 +1401,6 @@ function RequirementsRow({ x }: { x: Extract<ExtraSpec, { t: 'requirements' }> }
  * words, because the empty state (the app icon shows instead) is a real
  * outcome a voter is deciding on, not a missing picture.
  */
-/**
- * The two pictures of a card-picture vote, side by side, each in the cards'
- * own 16:10 box and drawn the way the cards draw it: a square picture
- * cropped to the box, a card still (lib/illustration-shape.ts) whole. So a
- * new still is seen beside the current picture as Discover would show both.
- */
 export function IllustrationPreviewRow({ x }: { x: Extract<ExtraSpec, { t: 'illustration' }> }): ReactNode {
   const t = useMessages('project');
   const side = (label: string, which: 'current' | 'proposed', art: typeof x.proposed) => (
@@ -1415,19 +1408,18 @@ export function IllustrationPreviewRow({ x }: { x: Extract<ExtraSpec, { t: 'illu
       <figcaption className="text-[0.65rem] uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</figcaption>
       {art ? (
         <div
-          data-illustration-shape={isStill(art) ? 'still' : 'square'}
-          className={`${cardTintClass(art.tint) || ''} aspect-[16/10] overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700`}
+          className={`${cardTintClass(art.tint) || ''} overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700`}
           style={{ background: cardTintClass(art.tint) ? 'var(--tone-50)' : undefined }}
         >
           <img
             src={art.url}
             alt={which === 'proposed' ? t('project:card.illustration.altProposed') : t('project:card.illustration.altCurrent')}
             loading="lazy"
-            className={`block h-full w-full ${isStill(art) ? 'object-contain' : 'object-cover'}`}
+            className="block h-24 w-full object-cover"
           />
         </div>
       ) : (
-        <div className="flex aspect-[16/10] items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[0.7rem] text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+        <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-[0.7rem] text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
           {which === 'proposed' && x.remove ? t('project:card.illustration.removed') : t('project:card.illustration.none')}
         </div>
       )}

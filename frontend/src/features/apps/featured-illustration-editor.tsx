@@ -10,7 +10,6 @@ import { prepareIllustration } from '../../lib/prepare-illustration';
 import {
   DEFAULT_FRAME, centreOf, clampFrame, panFrame, spreadOf, wheelZoomFactor, zoomFrame,
 } from '../../lib/illustration-framing';
-import { isStill, isStillSize } from '../../lib/illustration-shape';
 
 type Art = NonNullable<DiscoverTileView['illustration']>;
 /** The governance card a save opened, or the one already waiting (#2086). */
@@ -27,16 +26,6 @@ type ProposalLink = { id: number; href: string };
 // that the sliders are gone.
 const KEY_PAN = 3;
 const KEY_ZOOM = 1.08;
-
-/** A picture's pixel size, read from its object URL. */
-function pictureSize(url: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => resolve({ width: 0, height: 0 });
-    img.src = url;
-  });
-}
 
 export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose: () => void }) {
   const t = useMessages('discover');
@@ -90,9 +79,6 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
     return () => { if (adoption) adoption.release(); };
   }, []);
   const interactive = !!art && !busy && !loading && !sent;
-  // A card still (lib/illustration-shape.ts) is drawn whole at the card's
-  // own 16:10, so there is nothing to frame: the gestures stand down for it.
-  const framable = interactive && !isStill(art);
   // The art block, not the whole card: the name and blurb below it are not a
   // framing surface, and its box is what every gesture is measured against.
   const artRect = () => {
@@ -103,7 +89,7 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
   // cannot preventDefault — without which a zoom scrolls the dialog too.
   useEffect(() => {
     const el = surface.current;
-    if (!el || !framable) return undefined;
+    if (!el || !interactive) return undefined;
     const onWheel = (event: WheelEvent) => {
       const rect = artRect();
       if (!rect || event.clientY > rect.bottom) return;
@@ -113,14 +99,14 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [framable]);
-  useEffect(() => { if (!framable) { pointers.current.clear(); setDragging(false); } }, [framable]);
+  }, [interactive]);
+  useEffect(() => { if (!interactive) { pointers.current.clear(); setDragging(false); } }, [interactive]);
   const endPointer = (id: number) => {
     pointers.current.delete(id);
     if (!pointers.current.size) setDragging(false);
   };
   const nudge = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!framable || !art) return;
+    if (!interactive || !art) return;
     const pan = { ArrowLeft: [-KEY_PAN, 0], ArrowRight: [KEY_PAN, 0], ArrowUp: [0, -KEY_PAN], ArrowDown: [0, KEY_PAN] }[event.key];
     const zoom = event.key === '+' || event.key === '=' ? KEY_ZOOM : event.key === '-' || event.key === '_' ? 1 / KEY_ZOOM : 0;
     if (!pan && !zoom) return;
@@ -139,16 +125,8 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
         pendingDark.current = prepared;
         setArt(a => a ? { ...a, darkUrl: url } : null);
       } else {
-        // A 16:10 picture is a card still: shown whole, never framed. The
-        // server decides the same from the bytes when it is proposed.
-        const size = await pictureSize(url);
-        if (current !== generation.current) { URL.revokeObjectURL(url); return; }
-        const still = isStillSize(size.width, size.height);
         pendingBlob.current = prepared;
-        setArt(a => {
-          const next = a ? { ...a, url } : { url, ...DEFAULT_FRAME, tint: null };
-          return still ? { ...next, ...DEFAULT_FRAME, shape: 'still' as const } : { ...next, shape: null };
-        });
+        setArt(a => a ? { ...a, url } : { url, ...DEFAULT_FRAME, tint: null });
       }
       setPreviewTheme(uploadTheme.current);
     } catch (err) { if (current === generation.current) setError((err as Error).message); }
@@ -208,16 +186,16 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
       <div className="flex justify-center mb-4">
         <div ref={surface} data-framing-surface={art ? 'true' : 'false'} role="group"
           aria-label={t('discover:illustration.framingLabel')}
-          tabIndex={framable ? 0 : -1}
+          tabIndex={interactive ? 0 : -1}
           className="rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
           // touchAction so a pan is a pan and not a page scroll; userSelect
           // because otherwise a drag across the card selects the name and
           // blurb under it, which on touch leaves them highlighted blue.
-          style={{ touchAction: framable ? 'none' : 'auto', userSelect: 'none', WebkitUserSelect: 'none',
-            cursor: !framable ? 'default' : dragging ? 'grabbing' : 'grab' }}
+          style={{ touchAction: interactive ? 'none' : 'auto', userSelect: 'none', WebkitUserSelect: 'none',
+            cursor: !interactive ? 'default' : dragging ? 'grabbing' : 'grab' }}
           onKeyDown={nudge}
           onPointerDown={event => {
-            if (!framable) return;
+            if (!interactive) return;
             const rect = artRect();
             if (!rect || event.clientY > rect.bottom) return;
             event.currentTarget.setPointerCapture(event.pointerId);
@@ -265,17 +243,13 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
           {art.darkUrl ? <Button type="button" variant="neutral" ink="muted"
             onClick={() => { pendingDark.current = null; setArt({ ...art, darkUrl: null }); }}>{t('discover:illustration.upload.useLightInBoth')}</Button> : null}
           <p className="text-xs text-zinc-500 dark:text-zinc-400">{t('discover:illustration.upload.sameDimensions')}</p>
-          {isStill(art) ? (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400" data-illustration-still-note>{t('discover:illustration.stillNote')}</p>
-          ) : (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              <RichMessage
-                id="discover:illustration.framingHelp"
-                values={{ percent: Math.round(art.zoom * 100) }}
-                components={[<span data-zoom-readout />]}
-              />
-            </p>
-          )}
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <RichMessage
+              id="discover:illustration.framingHelp"
+              values={{ percent: Math.round(art.zoom * 100) }}
+              components={[<span data-zoom-readout />]}
+            />
+          </p>
           {/*
               The twelve tone-50 colours, and nothing else: no hex field and
               no colour input, because the point is a card that belongs to the
@@ -303,7 +277,7 @@ export function FeaturedIllustrationEditor({ app, onClose }: { app: any; onClose
             })}
           </div>
           <div className="flex gap-3">
-            {isStill(art) ? null : <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => setArt({ ...art, ...DEFAULT_FRAME })}>{t('discover:illustration.resetPosition')}</Button>}
+            <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => setArt({ ...art, ...DEFAULT_FRAME })}>{t('discover:illustration.resetPosition')}</Button>
             <Button type="button" variant="neutral" ink="muted" className="min-h-[44px]" onClick={() => { setArt(null); pendingBlob.current = null; pendingDark.current = null; }}>{t('discover:illustration.useAppIcon')}</Button>
           </div>
         </> : null}

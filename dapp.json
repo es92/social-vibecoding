@@ -2273,9 +2273,9 @@
       "expectText": "Request #900011"
     },
     {
-      "name": "An illustration proposal card previews the proposed image beside the current one (#2086), a card still whole",
+      "name": "An illustration proposal card previews the proposed image beside the current one (#2086)",
       "path": "/?demo=1&cards=open#app/usernode-2d5619/board",
-      "expectSelector": "[data-gov-row='9100077'] [data-illustration-preview] [data-illustration-side='proposed'] [data-illustration-shape='still'] img[alt]",
+      "expectSelector": "[data-gov-row='9100077'] [data-illustration-preview] [data-illustration-side='proposed'] img[alt]",
       "expectText": "Proposed"
     },
     {
