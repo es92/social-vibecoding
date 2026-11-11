@@ -394,6 +394,8 @@ const RETIRED_IDS = {
 
 // Ids a conversion chunk deliberately added, each with the reason.
 const ADDED_IDS = {
+  // ── Card preview loops: Settings > Accessibility ───────────────────
+  'settings-card-previews': 'The Play previews switch in Settings > Accessibility (features/settings/sections/accessibility.tsx): whether project cards play their short, silent preview loops (lib/card-previews.ts). Ships off in the prerender and reads the device setting in an effect, like #settings-high-contrast beside it.',
   // ── #6371: This week, the page the weekly digest opens ─────────────
   'weekly-digest-screen': 'This week (frontend/src/features/weekly-digest/index.tsx, #week): what each project did in the last seven days, which the Friday "Your weekly digest is ready" row opens. Ships hidden and empty; the read runs from its controller\'s open(), so the prerender and the first client render agree. App.REACT_SCREEN_IDS lists it, as it lists #workshop-screen.',
   // ── One Home (#6361): Home's sections for communities ─────────────
