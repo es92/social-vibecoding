@@ -258,7 +258,8 @@ test('the digest gap is under a day, so an hourly sweep cannot skip one', () => 
 test('the digest counts only proposals the reader can actually act on', () => {
   const sql = voteDigest.PENDING_SQL.replace(/\s+/g, ' ');
   assert.match(sql, /cs\.status = 'promoted'/, 'only open proposals');
-  assert.match(sql, /s\.user_id IS DISTINCT FROM p\.author_id/, 'never your own');
+  assert.doesNotMatch(sql, /s\.user_id IS DISTINCT FROM p\.author_id/,
+    'your own too: proposing is not your yes, and your tap is (11 Nov 2026)');
   assert.match(sql, /FROM pr_votes v/, 'never one you already voted on');
   assert.match(sql, /kind = 'vote_digest'/, 'and not if you had one recently');
 });
