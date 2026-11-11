@@ -263,7 +263,7 @@ test('make_pictures: offered to a person while the bot is on, its words in the p
   const mayor = require('../src/services/homeroom-bot-mayor');
   const said = 'I have put two pictures of a pear in this thread.';
   assert.deepEqual(await mayor.claimProblems(null, { ...ctx, appIds: new Set() }, said), []);
-  assert.deepEqual((await mayor.claimProblems(null, { ...on, appIds: new Set() }, said)).map((p) => p.kind), ['posted']);
+  assert.deepEqual((await mayor.claimProblems({ query: async () => ({ rows: [] }) }, { ...on, appIds: new Set() }, said)).map((p) => p.kind), ['posted']);
 });
 
 test('gallery taps: feature only where the card allows it, use and add to the design, an unknown picture', async () => {

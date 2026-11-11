@@ -878,3 +878,11 @@ test('#6199: the run opens on the change that decides, and a filter holds only i
   assert.equal(openOn('advisory').id, 42, 'the advisory filter holds only the advisory change');
   assert.equal(shaped.filter((it) => it.advisory).length, 1, 'the advisory mark survives to the flow');
 });
+
+test('a long URL or word wraps in the change line and its card instead of running off the side', () => {
+  const css = read('public/css/app.css');
+  // The card under the bar: the description in full, wrapped at any point.
+  assert.match(css, /\n\.rf-desc-text \{[^}]*white-space: pre-line; overflow-wrap: anywhere; \}/);
+  // The line keeps its two-line clamp; a long run wraps inside it and ends in the ellipsis.
+  assert.match(css, /\n\.rf-claim \{ display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; \}/);
+});

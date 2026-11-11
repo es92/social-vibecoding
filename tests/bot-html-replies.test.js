@@ -152,7 +152,8 @@ test('a claim in the laid-out copy is checked like one in the words, and a cut d
   await turn.run;
   assert.equal(turn.sent.length, 1);
   assert.equal('html' in turn.sent[0].metadata, false, 'the copy would still say what the words no longer do');
-  assert.match(turn.sent[0].content, /I haven't filed anything for that yet/);
+  // #6583: a record-backed claim is cut with no fixed "I haven't…" line.
+  assert.doesNotMatch(turn.sent[0].content, /I haven't filed anything/);
 
   // Put right on the second pass: the copy goes.
   const fixed = botTurn(scripted([

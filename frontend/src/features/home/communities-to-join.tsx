@@ -13,13 +13,16 @@
  * featured, in their order (featured_order), in the same wrapping grid as
  * the rest (#6434): the first group of the section, of the chosen kind, and
  * left out while a search is typed (its matches are the grid, featured
- * first). Then the rest under "More communities" when a kind other than All
- * is chosen; with All chosen the rest simply follow Featured, no heading
- * between them (#6470). The most used first; more load as the reader reaches
- * the end (an IntersectionObserver on the last card's
- * sentinel, inside Home's own scroller), with two placeholder cards while
- * they come. The directory is GET /api/public/apps, which answers every
- * public project at once today, so "more" pages through it here.
+ * first). Then the full list under "All communities" whenever Featured is
+ * shown, under All or a chosen kind (#6584): every community of the kind,
+ * the featured ones again where their use places them, most used first, so
+ * the heading tells the rest apart from Featured and All is literally all.
+ * No heading while searching, or with nothing featured: then there is one
+ * grid. More load as the reader reaches the end (an IntersectionObserver on
+ * the last card's sentinel, inside Home's own scroller), with two
+ * placeholder cards while they come. The directory is
+ * GET /api/public/apps, which answers every public project at once today,
+ * so "more" pages through it here.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -65,12 +68,12 @@ export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, que
   const kinds = useMemo(() => presentCategories(pool), [pool]);
   const featured = useMemo(() => (query ? [] : featuredApps(pool).filter((a) => !kind || a.category === kind)), [pool, kind, query]);
   const list = useMemo(() => {
-    const lead = new Set(featured.map((a) => a.slug));
-    return joinOrder(pool)
-      .filter((a) => !lead.has(a.slug))
+    // Searching keeps the join order (featured first); otherwise this is the
+    // full list, most used first, the featured ones included (#6584).
+    return (query ? joinOrder(pool) : sortApps(pool, 'trending'))
       .filter((a) => !kind || a.category === kind)
       .filter((a) => matchesQuery(query, a.name, a.slug, a.description));
-  }, [pool, featured, kind, query]);
+  }, [pool, kind, query]);
   useEffect(() => { setShown(JOIN_PAGE); }, [kind, query]);
   const more = list.length > shown;
 
@@ -163,11 +166,10 @@ export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, que
         </div>
       ) : list.length ? (
         <>
-        {/* Featured above, so a chosen kind's rest get a heading of their
-            own: without it they read as more of Featured (#6434). With All
-            chosen every card follows Featured with no heading (#6470). A
-            search leaves Featured out, and then there is one grid too. */}
-        {kind && featured.length ? <h3 className={`${SMALL_CAPS_LABEL} px-1 pb-2`} data-home-join-rest="">{t('home:join.more')}</h3> : null}
+        {/* Featured above, so the full list gets a heading of its own:
+            without it every card reads as featured (#6434, #6584). A search
+            leaves Featured out, and then there is one grid with no heading. */}
+        {featured.length ? <h3 className={`${SMALL_CAPS_LABEL} px-1 pb-2`} data-home-join-rest="">{t('home:join.all')}</h3> : null}
         <div className={`${CARD_GRID} px-1`}>
           {list.slice(0, shown).map((app, i) => (
             <Card

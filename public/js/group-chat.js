@@ -1452,7 +1452,7 @@ const GroupChat = {
   _botOfferView(meta) {
     const bot = meta && meta.homeroomBot;
     if (!bot || bot.kind !== 'voice' || !bot.offer || typeof bot.offer !== 'object') return null;
-    const status = ['open', 'deciding', 'done', 'declined', 'failed'].includes(bot.offer.status) ? bot.offer.status : null;
+    const status = ['open', 'deciding', 'done', 'declined', 'failed', 'gone', 'expired'].includes(bot.offer.status) ? bot.offer.status : null;
     if (!status) return null;
     const me = window.App && App.user ? Number(App.user.id) : null;
     const actions = (Array.isArray(bot.actions) ? bot.actions : [])
@@ -1518,19 +1518,24 @@ const GroupChat = {
   },
 
   // Yes or No under one of Homeroom bot's offers. The buttons go when the
-  // room hears it was decided (`chat_message_updated`); a refusal is said.
+  // room hears it was decided (`chat_message_updated`); #6582: a refusal is
+  // returned for the buttons to say in place, not toasted away.
   async decideBotOffer(messageId, choice, rows) {
     const slug = GroupChat.appSlug;
-    if (!slug || !messageId || (choice !== 'yes' && choice !== 'no' && choice !== 'first')) return;
+    const no = (error, gone = false) => ({ ok: false, error, gone });
+    if (!slug || !messageId || (choice !== 'yes' && choice !== 'no' && choice !== 'first')) return no(null);
+    const failed = () => PlatformI18n.t('chat:group.botOffer.failed');
     try {
       const res = await fetch(`/api/apps/${encodeURIComponent(slug)}/messages/${Number(messageId)}/bot-offer`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ choice, ...(Array.isArray(rows) ? { rows } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok && !data.said && window.PlatformUI) PlatformUI.toast(PlatformI18n.errorText(data) || PlatformI18n.t('chat:group.botOffer.failed'));
+      if (res.ok) return { ok: true, error: null, gone: false };
+      // A `said` line already tells the room what happened: the buttons say nothing more.
+      return no(data.said ? null : (PlatformI18n.errorText(data) || failed()), res.status === 410);
     } catch {
-      if (window.PlatformUI) PlatformUI.toast(PlatformI18n.t('chat:group.botOffer.failed'));
+      return no(failed());
     }
   },
 

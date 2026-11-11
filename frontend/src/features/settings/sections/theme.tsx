@@ -40,6 +40,7 @@ import { Switch } from '@/components/ui/switch';
 
 import { useMessages } from '../../../lib/i18n/react';
 import { useIsomorphicLayoutEffect, useWindowEvent } from '../../../lib/legacy-dom';
+import { radioGroupKeys } from '../../../lib/radio-group';
 
 // Order of the three segments in the DOM.
 const THEME_MODES = ['light', 'dark', 'system'] as const;
@@ -101,12 +102,15 @@ function ThemeControl() {
     },
     [sync],
   );
+  // One tab stop, and the arrow keys move the pick (#6510).
+  const keys = radioGroupKeys(THEME_MODES, mode, choose);
 
   return (
     <div
       id="drawer-theme-track"
       role="radiogroup"
       aria-label={t('settings:theme.controlName')}
+      onKeyDown={keys.onKeyDown}
       className="relative flex p-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-xs font-medium"
     >
       {THEME_MODES.map((m) => (
@@ -115,6 +119,7 @@ function ThemeControl() {
           type="button"
           role="radio"
           aria-checked={mode === m ? 'true' : 'false'}
+          tabIndex={keys.tabIndex(m)}
           data-theme-mode={m}
           className={mode === m ? `${THEME_SEG_CLASS} theme-seg-active` : THEME_SEG_CLASS}
           onClick={() => choose(m)}

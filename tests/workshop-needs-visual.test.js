@@ -206,3 +206,17 @@ test('#5039: the caption\'s words sit on a solid panel of the card\'s own colour
   assert.match(CSS, /\n\.dev-ws-item:not\(\[data-ws-picture="none"\]\) > \.dev-ws-item-caption \{\n  padding: 10px 12px; border-radius: 16px;\n  background: var\(--dc-sheet-solid\);\n  box-shadow: inset 0 0 0 1px var\(--app-sheet-line\);\n\}/);
   assert.ok(!CSS.slice(CSS.indexOf('.dev-ws-item:not([data-ws-picture="none"]) > .dev-ws-item-caption'), CSS.indexOf('.dev-ws-item[data-ws-picture="none"] > .dev-ws-item-caption > :first-child')).includes('rgba(20, 23, 31'), 'no dark glass panel');
 });
+
+test('a long URL or word in a card\'s title or its changes wraps instead of widening the caption', () => {
+  const rule = (sel) => {
+    const m = new RegExp(`\\n${sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`).exec(CSS);
+    assert.ok(m, `rule ${sel}`);
+    return m[1];
+  };
+  assert.match(rule('.dev-ws-item-title'), /overflow-wrap: anywhere;/, 'an opened title wraps rather than running over the rail');
+  // The change rows sit in a grid column and are flex rows: both the row and
+  // its words may shrink, and the words wrap at any point.
+  assert.match(rule('.dev-ws-shot-change'), /min-width: 0;/);
+  assert.match(rule('.dev-ws-shot-change > :not(.dev-ws-shot-n)'), /^ min-width: 0; overflow-wrap: anywhere; $/);
+  assert.match(WORKSHOP, /<li key=\{c\.n\} className="dev-ws-shot-change">\s*<span className="dev-ws-shot-n">\{c\.n\}<\/span>\s*<span>\{c\.text\}<\/span>/, 'the words are the row\'s only other child');
+});

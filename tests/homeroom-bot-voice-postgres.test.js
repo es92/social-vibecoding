@@ -635,6 +635,77 @@ test('the voice on the real schema', { timeout: 180000 }, async (t) => {
     assert.ok(broadcasts.some((f) => f.type === 'chat_message_updated' && f.id === sent[0].id));
   });
 
+  await t.test('#6582: a close offer never linked to its note is still decided through the note\'s own id', async () => {
+    sent.length = 0;
+    const offer = await voice.threadOffer(pool, {
+      app, kind: 'close_request', forUserId: null, args: { issueNumber: 12, title: 'Blue header' },
+    });
+    const note = await say(homeroomBot, 'Already works.', { type: 'issue', ref: 12 }, { homeroomBot: offer.metadata });
+    // The link write was lost: the offer is untied, and its note names it.
+    const { rows: [before] } = await pool.query('SELECT chat_message_id FROM bot_cards WHERE id = $1', [offer.id]);
+    assert.equal(before.chat_message_id, null);
+    const tapped = [];
+    const replies = { async tapVoiceOffer(args) { tapped.push(args); return { ok: true }; } };
+    const out = await voice.decideOffer(pool, {}, { app, user: sam, messageId: note, choice: 'yes', deps: { replies } });
+    assert.equal(out.ok, true);
+    assert.deepEqual(tapped, [{ appId: app.id, offerId: offer.id, messageId: note, userId: sam.id, choice: 'yes' }]);
+    const { rows: [after] } = await pool.query('SELECT chat_message_id FROM bot_cards WHERE id = $1', [offer.id]);
+    assert.equal(Number(after.chat_message_id), note, 'tied through the id the note names');
+  });
+
+  await t.test('#6582: an offer named from another project, or made for another request, is refused and the note marked gone', async () => {
+    broadcasts.length = 0;
+    const replies = { async tapVoiceOffer() { throw new Error('never decided'); } };
+    const { rows: [elsewhere] } = await pool.query(
+      `INSERT INTO apps (name, slug, status, created_by, repo_url, view_visibility, collab_visibility)
+       VALUES ('Other', 'other-project', 'running', $1, 'https://github.com/usernode-bot/other', 'public', 'public') RETURNING id`,
+      [evan.id],
+    );
+    // Another project's offer, named by this project's note.
+    const foreign = await voice.threadOffer(pool, { app: { id: elsewhere.id }, kind: 'close_request', args: { issueNumber: 12 } });
+    const foreignNote = await say(homeroomBot, 'Already works.', { type: 'issue', ref: 12 }, { homeroomBot: foreign.metadata });
+    const refused = await voice.decideOffer(pool, {}, { app, user: sam, messageId: foreignNote, choice: 'yes', deps: { replies, ws } });
+    assert.deepEqual([refused.ok, refused.status], [false, 410]);
+    const { rows: [gone] } = await pool.query('SELECT metadata FROM chat_messages WHERE id = $1', [foreignNote]);
+    assert.equal(gone.metadata.homeroomBot.offer.status, 'gone');
+    assert.deepEqual(gone.metadata.homeroomBot.actions, [], 'the buttons go for everybody');
+    assert.ok(broadcasts.some((f) => f.type === 'chat_message_updated' && f.id === foreignNote));
+
+    // This project's offer, but made for another request.
+    const wrongRequest = await voice.threadOffer(pool, { app, kind: 'close_request', args: { issueNumber: 13 } });
+    const otherNote = await say(homeroomBot, 'Already works.', { type: 'issue', ref: 12 }, { homeroomBot: wrongRequest.metadata });
+    const refusedToo = await voice.decideOffer(pool, {}, { app, user: sam, messageId: otherNote, choice: 'yes', deps: { replies, ws } });
+    assert.deepEqual([refusedToo.ok, refusedToo.status], [false, 410]);
+    const { rows: [otherGone] } = await pool.query('SELECT metadata FROM chat_messages WHERE id = $1', [otherNote]);
+    assert.equal(otherGone.metadata.homeroomBot.offer.status, 'gone');
+  });
+
+  await t.test('#6582: a note whose offer row was deleted shows no live buttons', async () => {
+    sent.length = 0;
+    const offer = await voice.threadOffer(pool, { app, kind: 'close_request', args: { issueNumber: 12 } });
+    const note = await say(homeroomBot, 'Already works.', { type: 'issue', ref: 12 }, { homeroomBot: offer.metadata });
+    await pool.query('DELETE FROM bot_cards WHERE id = $1', [offer.id]);
+    const out = await voice.decideOffer(pool, {}, { app, user: sam, messageId: note, choice: 'yes', deps: { replies: {}, ws } });
+    assert.deepEqual([out.ok, out.status], [false, 410]);
+    assert.equal(out.error, 'That offer is no longer available.');
+    const { rows: [row] } = await pool.query('SELECT metadata FROM chat_messages WHERE id = $1', [note]);
+    assert.equal(row.metadata.homeroomBot.offer.status, 'gone');
+    assert.deepEqual(row.metadata.homeroomBot.actions, []);
+  });
+
+  await t.test('#6582: posting a note ties its offer to the message in the same step', async () => {
+    const offer = await voice.threadOffer(pool, { app, kind: 'close_request', forUserId: null, args: { issueNumber: 12 } });
+    const github = { async createIssueComment() { return { id: 9001, created_at: new Date().toISOString() }; } };
+    const out = await require('../src/services/homeroom-bot-live').post({
+      pool, github, ws, app, repo: { owner: 'o', repo: 'r' }, issueNumber: 12, kind: 'person', text: 'Already works.',
+      sender: homeroomBot, senderId: homeroomBot.id,
+      metadata: { homeroomBot: { kind: 'voice', ...offer.metadata } },
+    });
+    assert.ok(out.messageId);
+    const { rows: [row] } = await pool.query('SELECT chat_message_id FROM bot_cards WHERE id = $1', [offer.id]);
+    assert.equal(Number(row.chat_message_id), Number(out.messageId));
+  });
+
   await t.test('a tap on Propose to close reports the vote with the request\'s link', async () => {
     sent.length = 0;
     const id = await say(sam, '@Homeroom bot #12 is done, close it');

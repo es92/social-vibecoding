@@ -522,7 +522,8 @@ test('#6376: the thread voice keeps a sentence about Monday', async () => {
   assert.equal(voice.stripUnreadClaims(mayor.stripClaims(text, problems), problems), text);
   // A made-up project is still cut; the sentence about when it starts stays.
   const madeUp = 'The draft for Community Components is ready. It will start this request on Monday when it resets.';
-  const found = await mayor.claimProblems({ query: async () => ({ rows: [] }) }, { user: { id: 1 }, appIds: new Set(), offer: null }, madeUp);
+  const found = await mayor.claimProblems({ query: async () => ({ rows: [] }) },
+    { user: { id: 1 }, appIds: new Set(), offer: null, knownProjects: new Set(['community tier lists']) }, madeUp);
   assert.deepEqual(found.map((p) => p.kind), ['unknown_project']);
   assert.equal(voice.stripUnreadClaims(mayor.stripClaims(madeUp, found), found),
     'It will start this request on Monday when it resets.\n\n(I can\'t find a project called "Community Components".)');

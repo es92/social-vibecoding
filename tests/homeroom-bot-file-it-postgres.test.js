@@ -178,7 +178,7 @@ test('the File it promise is kept, or not promised at all', { timeout: 180000 },
     const note = seen[1].messages[seen[1].messages.length - 1];
     assert.equal(note.role, 'user');
     assert.match(note.content, /^\[Homeroom check, not from them: your reply says a drafted request with File it is under it\./);
-    assert.match(note.content, /you did not call offer_request in this turn/);
+    assert.match(note.content, /no draft is open in this conversation, so nothing is under it/);
     assert.match(note.content, /Call offer_request now with the project, title and details/);
     // The reply goes out as the offer's confirm card.
     assert.ok(sent.messageId);

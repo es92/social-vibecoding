@@ -7734,10 +7734,29 @@ async function actOnVerdict({
     });
   };
   // The note it went under was posted, or it was not and the offer goes.
+  // #6582: the message id comes from the step's own result, or, for a result
+  // stored before that carried it, from the post row it made. The offer is
+  // dropped only when the post made no message at all, or when the message
+  // names a different offer (a cached post from an earlier attempt).
   const settleThreadOffer = async (offer, posted) => {
     if (!offer) return;
-    if (posted?.messageId) await voiceModule(deps).tieThreadOffer(pool, offer.id, posted.messageId);
-    else await voiceModule(deps).dropThreadOffer(pool, offer.id);
+    const voice = voiceModule(deps);
+    let messageId = posted?.messageId ? Number(posted.messageId) : null;
+    if (!messageId && posted?.postId) {
+      const { rows: [row] } = await pool.query(
+        'SELECT thread_message_id FROM homeroom_bot_posts WHERE id = $1', [Number(posted.postId)],
+      ).catch(() => ({ rows: [] }));
+      if (row?.thread_message_id) messageId = Number(row.thread_message_id);
+    }
+    if (!messageId) return voice.dropThreadOffer(pool, offer.id);
+    const { rows: [message] } = await pool.query(
+      'SELECT metadata FROM chat_messages WHERE id = $1', [messageId],
+    ).catch(() => ({ rows: [] }));
+    const named = Number(message?.metadata?.homeroomBot?.offer?.id);
+    if (Number.isSafeInteger(named) && named > 0 && named !== Number(offer.id)) {
+      return voice.dropThreadOffer(pool, offer.id);
+    }
+    await voice.tieThreadOffer(pool, offer.id, messageId);
   };
   if (!gate.speak) {
     log.info('homeroom-bot', 'Live note not repeated: nobody addressed the bot', {
@@ -11036,7 +11055,7 @@ async function postOnce(look, kind, post) {
   if (!look?.steps?.active) return post();
   return look.once(`post:${kind}`, async () => {
     const p = await post();
-    return p ? { githubCreatedAt: p.githubCreatedAt || null, postId: p.postId ?? null, posted: true } : null;
+    return p ? { githubCreatedAt: p.githubCreatedAt || null, postId: p.postId ?? null, messageId: p.messageId ?? null, posted: true } : null;
   });
 }
 

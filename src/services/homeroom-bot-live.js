@@ -2525,6 +2525,23 @@ async function post({
       });
     }
   }
+  // #6582: an offer written before its note (a verdict's Propose to close) is
+  // linked to the message in this same step, so the note never shows buttons
+  // whose offer decideOffer cannot find. Tried twice; a failure is logged and
+  // the post kept, because a tap falls back to the offer id the note names.
+  const offeredId = Number(metadata?.homeroomBot?.offer?.id);
+  if (message?.id != null && Number.isSafeInteger(offeredId) && offeredId > 0) {
+    const voiceSvc = require('./homeroom-bot-voice');
+    try {
+      await voiceSvc.tieOffer(pool, offeredId, message.id);
+    } catch {
+      await voiceSvc.tieOffer(pool, offeredId, message.id).catch((err) => {
+        log.warn('homeroom-bot', 'Could not tie an offer to its note (a tap falls back to its id)', {
+          app: app.slug, issueNumber, messageId: Number(message.id), offerId: offeredId, err: err.message,
+        });
+      });
+    }
+  }
   // A system message fires no mention notifications of its own, so the
   // mention row is written here, as the "needs a conversation" prompt does
   // (conversation-prompt.js). Only for the people it tags: the content

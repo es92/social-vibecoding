@@ -1746,6 +1746,7 @@ async function closeThread(pool, ctx) {
 const CLAIMS = Object.freeze([
   {
     kind: 'no_control',
+    proof: 'never',
     re: NO_CONTROL_CLAIM,
     backed: () => false,
     said: 'tells them to do something there is no control for, or says you cannot close this thread',
@@ -1753,27 +1754,31 @@ const CLAIMS = Object.freeze([
   },
   {
     kind: 'filed',
+    proof: 'records',
     // "Filed: …" opening a line, "I filed …", or "I opened / created a
     // request". A draft or an offer is not a filing, and a proposal the bot
     // opened is a different thing. Nor is a report to the team (`reported`
     // below): "I've filed a report".
     re: /(?:^|\n)\s*\**filed\b|\bI(?:'ve| have)?(?: just| now)? (?:filed|logged|submitted)\b(?!(?: (?:it|this|that) to the (?:Homeroom )?team| (?:a|an|the|your|that|this|my) (?:\w+ ){0,2}(?:report|problem)))|\bI(?:'ve| have)?(?: just| now)? (?:opened|created|added) (?:a |an |the |that |this |your )?(?:new )?(?:request|issue)\b/i,
-    // Only a tap on File it files a request; a model turn never does.
-    backed: () => false,
+    // #6583: a card this conversation filed earlier, or their own requester
+    // row for a number the reply names, is a record of a real filing.
+    backed: (ctx) => !!(ctx.stored?.filed || ctx.stored?.earlier?.filed),
     said: 'says a request was filed',
     instead: 'I haven\'t filed anything for that yet. Tell me what you want filed and I\'ll draft it for you to confirm.',
   },
   {
     kind: 'drafted',
+    proof: 'records',
     // #4605: "A File it button will appear under this message", "tap File
     // it", "you'll see File it below", "I've drafted the request". A draft
-    // exists only when offer_request made one this turn, so a reply that says
-    // one is there with nothing behind it leaves the person nothing to tap
-    // (Drea, twice, on Rilo). Not a filing: `filed` above needs "I filed".
+    // exists only when offer_request made one this turn, or when one is still
+    // open in this conversation, so a reply that says one is there with
+    // nothing behind it leaves the person nothing to tap (Drea, twice, on
+    // Rilo). Not a filing: `filed` above needs "I filed".
     re: /\bFile it\b[^.!?\n]{0,80}\b(?:appear|show(?:s|n)? up|below|under (?:this|my|the|that) (?:message|reply))|\b(?:tap|press|click|hit|use)\s+(?:the\s+)?\**["“]?File it\b|\b(?:you(?:'ll| will| should)? see|there(?:'s| is| will be))\b[^.!?\n]{0,60}\bFile it\b|\bI(?:'ve| have)?(?: just| now)? (?:drafted|prepared|written up|put together)\b[^.!?\n]{0,60}\b(?:request|draft)\b|\b(?:draft|drafted request)\b[^.!?\n]{0,40}\b(?:below|under (?:this|my|the) (?:message|reply))\b/i,
-    // Any offer this turn made backs the reply; the check does not look at
-    // what kind of offer it was.
-    backed: (ctx) => !!ctx.offer,
+    // Any offer this turn made backs the reply; a draft still open in the
+    // conversation backs it too, whatever its age.
+    backed: (ctx) => !!(ctx.offer || ctx.stored?.openDraft),
     said: 'says a drafted request with File it is under it',
     // #6307: they have already said what they want; asking them again reads
     // as though nothing they wrote was heard.
@@ -1781,10 +1786,15 @@ const CLAIMS = Object.freeze([
   },
   {
     kind: 'posted',
+    proof: 'records',
     re: /\bI(?:'ve| have)?(?: just| now)? (?:posted|added|put|passed|left|sent|shared)\b[^.!?\n]{0,80}\b(?:discussion|comment|request|proposal|board|issue|thread)\b/i,
     // P8: pictures make_pictures put under this reply ("I've put them in this thread").
     // Homeroom bot parity (P5): a note sent to a running build (add_to_build).
-    backed: (ctx) => !!(ctx.posted || ctx.revised || ctx.commented || ctx.pictures || ctx.steered),
+    // #6583: an earlier message of the bot's in this conversation that says
+    // it posted is a record too. A filing of a request is not a posting of a
+    // comment on that request, so `stored.filed` does not back this.
+    backed: (ctx) => !!(ctx.posted || ctx.revised || ctx.commented || ctx.pictures || ctx.steered
+      || ctx.stored?.earlier?.posted),
     said: 'says something was posted',
     instead: 'I haven\'t posted that anywhere yet.',
   },
@@ -1793,6 +1803,7 @@ const CLAIMS = Object.freeze([
     // nothing was stored under it. In a project's thread only what was stored
     // as an attachment counts; in the bot's own chat the gallery card does.
     kind: 'posted_pictures',
+    proof: 'turn',
     re: /\bhere (?:are|is) the (?:pictures|shots|stills|designs?)\b|\bI(?:'ve| have)(?: just| now)? (?:attached|posted|added|put up) (?:the |your |two |three |four )?(?:pictures?|shots?|stills|designs?|before and after)\b|\battached below\b/i,
     backed: (ctx) => !!(ctx.attached?.length || (!ctx.place && ctx.pictures?.made)),
     said: 'says pictures or a design were posted',
@@ -1800,60 +1811,91 @@ const CLAIMS = Object.freeze([
   },
   {
     kind: 'started',
+    proof: 'records',
     re: /\bI(?:'m| am)\s+(?:now\s+)?(?:starting|working on (?:it|that|this|#\d+)|building (?:it|that|this|#\d+)|on it)\b|\bI(?:'ve| have)\s+started\b|\bI(?:'ll| will) (?:start(?: on)?|look at|pick up) (?:it|that|this|#\d+) (?:now|right away|right now)\b/i,
     // Homeroom bot parity (P4): reads a batch queued this turn (work_through).
-    backed: (ctx) => !!(ctx.started || ctx.posted || ctx.revised || ctx.commented || ctx.workBusy || ctx.batchQueued),
+    // #6583: a request's stored track that is being read, planned, built or
+    // going live is started, whether this turn touched it or not.
+    backed: (ctx) => !!(ctx.started || ctx.posted || ctx.revised || ctx.commented || ctx.workBusy || ctx.batchQueued
+      || ctx.stored?.busy),
     said: 'says you started work on something',
     instead: 'I haven\'t started on it yet.',
   },
   {
     kind: 'revised',
+    proof: 'records',
     re: /\bI(?:'ve| have)?(?: just| now)? (?:revised|changed|updated|reworked) (?:the |your |its |that |this )?(?:proposal|it)\b/i,
-    backed: (ctx) => !!ctx.recentRevision,
+    backed: (ctx) => !!(ctx.recentRevision || ctx.described || ctx.stored?.earlier?.revised),
     said: 'says a proposal was changed',
     instead: 'I haven\'t changed the proposal yet.',
   },
   {
     kind: 'withdrew',
+    proof: 'records',
     // "I withdrew / closed the duplicate proposal", "the proposal has been
     // withdrawn". #6566: a bare passive is about anything ("the window has
     // been withdrawn"); only one that names a proposal, PR or #N counts.
     re: /\bI(?:'ve| have)?(?: just| now| already)? (?:withdrawn|withdrew|closed|cancell?ed|taken down|took down) (?:the |your |its |that |this |my |both |one of the |a )?(?:duplicate |extra |second |other |old |older )?(?:proposals?|duplicates?|PRs?|pull requests?)\b|\b(?:(?:the|your|this|that|my|its) )?(?:duplicate )?(?:proposals?|PRs?|pull requests?)\s+(?:(?:has|have) been|was) withdrawn\b|\b#\d+\s+(?:(?:has|have) been|was) withdrawn\b/i,
-    backed: (ctx) => !!ctx.withdrew,
+    backed: (ctx) => !!(ctx.withdrew || ctx.stored?.earlier?.withdrew),
     said: 'says a proposal was withdrawn',
     instead: 'I haven\'t withdrawn anything.',
   },
   {
     kind: 'moved',
-    // #4239: a request is moved only by its Move it to Homeroom tap. #6566:
-    // a passive sentence counts only when it names what was moved.
-    re: /\bI(?:'ve| have)?(?: just| now| already)? moved (?:it|this|that|the request|your request|#\d+)\b|\b(?:(?:the|your|this|that) request(?: #\d+)?|#\d+)\s+(?:(?:has|have) been|was) moved\b/i,
+    proof: 'never',
+    // #4239: a request is moved only by its Move it to Homeroom tap. #6583:
+    // "it was moved" is a fact about the request (moved_status); only "I
+    // moved it" is a claim of an action the bot never takes.
+    re: /\bI(?:'ve| have)?(?: just| now| already)? moved (?:it|this|that|the request|your request|#\d+)\b/i,
     backed: () => false,
     said: 'says a request was moved',
     instead: 'I haven\'t moved it yet.',
   },
   {
+    kind: 'moved_status',
+    proof: 'records',
+    // #6583: a passive sentence about a request being moved is checked
+    // against the request, not cut as an action the bot took.
+    re: /\b(?:(?:the|your|this|that) request(?: #\d+)?|#\d+)\s+(?:(?:has|have) been|was) moved\b/i,
+    backed: (ctx) => !!ctx.stored?.movedStatus,
+    said: 'says a request was moved',
+  },
+  {
     kind: 'closed_request',
+    proof: 'never',
     // #4525: a request closes only when its group votes for it, so the bot
     // never closes one: an offer only opens the vote. #6566: "after the app
-    // has been closed for a while" is not a claim; a passive sentence counts
-    // only when it names a request or #N.
-    re: /\bI(?:'ve| have)?(?: just| now| already)? closed (?:it|this|that|the request|your request|#\d+)\b|\b(?:(?:the|your|this|that) request(?: #\d+)?|#\d+)\s+(?:(?:has|have) been|was|is (?:now )?)\s*closed\b/i,
+    // has been closed for a while" is not a claim. #6583: only "I closed it"
+    // stays here; the passive fact is `closed_status` below.
+    re: /\bI(?:'ve| have)?(?: just| now| already)? closed (?:it|this|that|the request|your request|#\d+)\b/i,
     backed: () => false,
     said: 'says a request was closed',
     instead: 'I haven\'t closed it. Its group decides that by a vote.',
   },
   {
+    kind: 'closed_status',
+    proof: 'records',
+    // #6583: "Request #14 is closed", "the request was closed" is a fact to
+    // check against the request's state, not an action.
+    re: /\b(?:(?:the|your|this|that) request(?: #\d+)?|#\d+)\s+(?:(?:has|have) been|was|is (?:now )?)\s*closed\b/i,
+    backed: (ctx) => !!ctx.stored?.closedStatus,
+    said: 'says a request was closed',
+  },
+  {
     kind: 'reported',
+    proof: 'records',
     // "I've told the team", "I've reported it to the admins", "the team has
     // been told".
     re: /\bI(?:'ve| have)?(?: just| now| already)? (?:told|let|notified|alerted|informed|reported (?:it |this |that )?to|passed (?:it |this |that )?(?:on |along )?to|sent (?:it |this |that |a report |your report )?to|raised (?:it |this |that )?with|flagged (?:it |this |that )?(?:to|with|for)) (?:the )?(?:Homeroom )?(?:team|admins?|developers?|devs|staff)\b|\bI(?:'ve| have)?(?: just| now)? (?:filed|sent|made|submitted) (?:a|your|the) (?:bug |problem )?report\b|\bthe (?:Homeroom )?(?:team|admins?|developers?)(?: has| have|'s)? (?:been |now )?(?:told|notified|alerted|informed|made aware)\b/i,
-    backed: (ctx) => !!ctx.reported,
+    // #6583: a report already on file for them, or one this conversation
+    // says went to the team, is a record too.
+    backed: (ctx) => !!(ctx.reported || ctx.stored?.reported || ctx.stored?.earlier?.reported),
     said: 'says the team was told',
     instead: 'I haven\'t told the team yet.',
   },
   {
     kind: 'drawing',
+    proof: 'turn',
     // 1 Nov 2026: "Drawing it now from the app's own markup and styles." was
     // the whole answer, and nothing was drawn: only draw_screen hands a
     // screen to the designer. "I'm drawing", "I'll draw it", "rendering it
@@ -1865,6 +1907,7 @@ const CLAIMS = Object.freeze([
   },
   {
     kind: 'promised',
+    proof: 'turn',
     // "I'll look into it", "I'll follow up", "let me sort that out", "I'll
     // get back to you": nothing brings the bot back to it later.
     re: /\b(?:I(?:'ll| will|'m going to| am going to)|let me|we(?:'ll| will))\s+(?:(?:now|also|then|definitely|personally|quickly|go and|try to|make sure to|be sure to)\s+)*(?:follow(?:ing)?[ -]up|look(?:ing)? into|sort(?:ing)? (?:\w+ ){0,2}out|investigate|dig into|get back to|check into|chase (?:\w+ ){0,2}up|escalate)\b/i,
@@ -1878,13 +1921,15 @@ const CLAIMS = Object.freeze([
   },
   {
     kind: 'report_back',
+    proof: 'turn',
     // Homeroom bot parity (P3): "I'll post what I find here", "I'll let you
     // know what it turns up", "I'll report back": only a look this turn
-    // started, still running, posts anything here later.
+    // started, still running, posts anything here later. #6583: a request
+    // started this turn posts its news to the DM, so its start counts too.
     re: /\b(?:I(?:'ll| will|'m going to| am going to)|we(?:'ll| will))\s+(?:(?:then|also|soon|just)\s+)?(?:post|share|send|report|tell you|let you know|come back|update you|write)\b[^.!?\n]{0,60}?(?:\bwhat (?:I|it|they|we|the helper) (?:finds?|turns? up|comes? up)\b|\b(?:the |my |its )?findings\b|\b(?:the |its )?results?\b|\bback\b|\bwhen (?:it|I|the look|the helper)(?:'s| is|'m| am)? (?:done|finished|back)\b)/i,
     // #6264: a promise stored by tell_me_when is kept by the change's own
     // moment, which posts it here.
-    backed: (ctx) => !!(ctx.lookRunning || ctx.followedUp),
+    backed: (ctx) => !!(ctx.lookRunning || ctx.followedUp || ctx.started || ctx.batchQueued),
     said: 'says it will post findings here later',
     instead: 'Nothing I started is still looking into it, so nothing will be posted here later.',
   },
@@ -1893,17 +1938,38 @@ const CLAIMS = Object.freeze([
 /**
  * The request numbers `text` names ("#14", "request #14"), less those of a
  * proposal, pull request or change ("proposal #6011", "PR #12",
- * "Change #6002"; request-mentions.js).
+ * "Change #6002"; request-mentions.js). #6583: only a #N used as a request
+ * counts, so a colour ("#222") or a ranking ("#1 priority") is not one.
  */
 function requestNumbers(text) {
   const out = new Set();
-  const re = /(^|[^\w&/#])#(\d{1,7})\b/g;
+  const String_ = String(text || '');
+  const re = /#(\d{1,7})\b/g;
   let m;
-  while ((m = re.exec(String(text || ''))) !== null) {
-    if (labelledAsPullRequest(text, m.index + m[1].length)) continue;
-    out.add(Number(m[2]));
+  while ((m = re.exec(String_)) !== null) {
+    const at = m.index;
+    // A number written as part of a word or an entity ("x#9", "&#39;").
+    if (at > 0 && /[\w&/#]/.test(String_[at - 1])) continue;
+    if (labelledAsPullRequest(String_, at)) continue;
+    const before = String_.slice(Math.max(0, at - 100), at);
+    const after = String_.slice(at + m[0].length, at + m[0].length + 48);
+    if (!usedAsRequest(before, after)) continue;
+    out.add(Number(m[1]));
   }
   return [...out];
+}
+
+/**
+ * Pure: does the `#N` between `before` and `after` read as a request in a
+ * reply, rather than a colour or a ranking (#6583)? A request number is the
+ * usual case; these are the contexts that make it something else.
+ */
+function usedAsRequest(before, after) {
+  // "Use #222 for the header", "the colour #222".
+  if (/\b(?:use|using|colour|color|hex|shade|background)\s*$/i.test(before)) return false;
+  // "#1 priority", "#3 on the list".
+  if (/^\s*(?:priority|(?:on|in|of)\s+(?:the|your|that)\s+list)\b/i.test(after)) return false;
+  return true;
 }
 
 /**
@@ -2059,19 +2125,33 @@ function isTimePhrase(name) {
   return !words.length || PROJECT_TIME_WORDS.has(words[0]);
 }
 
-/** Pure: the project names `text` gives as a draft's or a request's, once each. */
+/**
+ * Pure: the project names `text` gives as a draft's or a request's, once
+ * each, as { name, labelled } (#6583: `labelled` is a name plainly given as
+ * a project, which may be checked even when it is not a garble).
+ */
 function projectMentions(text) {
   const out = [];
+  const seen = new Set();
+  const add = (name, labelled) => {
+    // "on Rilo I drafted" gives "Rilo I": a trailing pronoun is not part of a name.
+    const clean = String(name).trim().replace(/[.,;:]+$/, '').replace(/\s+(?:I|A)$/, '');
+    if (!clean || PROJECT_NAME_STOPWORDS.has(squashWords(clean)) || isTimePhrase(clean)) return;
+    const key = squashWords(clean);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ name: clean, labelled });
+  };
   for (const sentence of String(text || '').split(/(?<=[.!?\n])\s+|\n+/)) {
     if (!PROJECT_MENTION_ANCHOR.test(sentence)) continue;
-    for (const m of sentence.matchAll(PROJECT_NAME_AFTER)) out.push(m[1] || m[2]);
+    // #6583: "the X project", "project called X", "projects" plainly names
+    // what it says is a project.
+    const plainly = /\bprojects?\b/i.test(sentence);
+    for (const m of sentence.matchAll(PROJECT_NAME_AFTER)) add(m[1] || m[2], plainly);
     // "Next after this is \"Block World\"" says a project without the word draft.
-    if (/\bprojects?\b/i.test(sentence)) for (const m of sentence.matchAll(QUOTED_NAME)) out.push(m[1]);
+    if (plainly) for (const m of sentence.matchAll(QUOTED_NAME)) add(m[1], true);
   }
-  return [...new Set(out
-    // #6376: "Pageberry." is Pageberry; a dot inside a name (Node.js) stays.
-    .map((n) => String(n).trim().replace(/[.,;:]+$/, ''))
-    .filter((n) => n && !PROJECT_NAME_STOPWORDS.has(squashWords(n)) && !isTimePhrase(n)))];
+  return out;
 }
 
 /** Note a project a tool returned this turn, so a reply naming another one is caught. */
@@ -2090,6 +2170,33 @@ function noteKnownProjects(ctx, result) {
     if (p && typeof p === 'object') add(p.projectName || p.name, p.project || p.slug);
   }
 }
+
+/** The projects this person can see: theirs, their requests' and their pins'. */
+async function personProjectNames(pool, ctx) {
+  const known = new Set();
+  if (!ctx?.user?.id) return known;
+  const add = (name, slug) => {
+    for (const value of [name, slug]) {
+      const key = squashWords(value);
+      if (key) known.add(key);
+    }
+  };
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.name, a.slug FROM apps a JOIN community_members m ON m.community_id = a.community_id WHERE m.user_id = $1
+       UNION
+       SELECT a.name, a.slug FROM apps a JOIN homeroom_bot_requesters r ON r.app_id = a.id WHERE r.user_id = $1
+       UNION
+       SELECT a.name, a.slug FROM apps a JOIN app_favorites f ON f.app_id = a.id WHERE f.user_id = $1`,
+      [ctx.user.id],
+    );
+    for (const row of rows) add(row.name, row.slug);
+  } catch (err) {
+    log.warn('homeroom-bot-mayor', 'Could not read the projects a reply may name', { err: err.message });
+  }
+  return known;
+}
+
 
 /**
  * #6581: note every request number a tool returned this turn (request_detail,
@@ -2124,7 +2231,7 @@ function noteKnownRequests(ctx, result) {
   walk(result, 0);
 }
 
-/** The projects this turn's tools returned, as squashed names and short names. */
+/** The projects this turn's tools returned and this person can see, squashed. */
 async function knownProjectNames(pool, ctx) {
   const known = new Set(ctx?.knownProjects || []);
   const add = (name, slug) => {
@@ -2134,6 +2241,7 @@ async function knownProjectNames(pool, ctx) {
     }
   };
   add(ctx?.offer?.app?.name, ctx?.offer?.app?.slug);
+  add(ctx?.app?.name, ctx?.app?.slug);
   const ids = [...(ctx?.appIds || [])].map(Number).filter((id) => Number.isInteger(id) && id > 0);
   if (ids.length) {
     try {
@@ -2143,6 +2251,11 @@ async function knownProjectNames(pool, ctx) {
       log.warn('homeroom-bot-mayor', 'Could not check the projects a reply names', { err: err.message });
     }
   }
+  // #6583: a person's own projects back a true mention ("Ear Trainer", "Rilo")
+  // even when no tool returned one this turn.
+  try {
+    for (const key of await personProjectNames(pool, ctx)) known.add(key);
+  } catch { /* the names read above are enough */ }
   return known;
 }
 
@@ -2163,12 +2276,37 @@ function namesReturnedProject(known, name) {
   return false;
 }
 
-/** The project names among `names` that no tool returned this turn. */
+/**
+ * Pure: is `name` a garbled version of a project they have (#6583)? It shares
+ * its first word with one, but is not a prefix of it, so "Community
+ * Components" beside "Community Tier Lists" is a garble.
+ */
+function looksLikeKnownProject(known, name) {
+  const key = squashWords(name);
+  const first = key.split(' ')[0];
+  if (!first) return false;
+  for (const candidate of known) {
+    if (candidate.split(' ')[0] !== first) continue;
+    if (candidate === key || candidate.startsWith(`${key} `)) continue;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * The project names among `names` that no tool returned and this person does
+ * not have, and that are shown to be a project: a garble of one of theirs, or
+ * a name plainly given as a project (#6583). Plain capitalised words after
+ * "for"/"on" are left alone.
+ */
 async function unknownProjects(pool, ctx, text) {
-  const names = projectMentions(text);
-  if (!names.length) return [];
+  const mentions = projectMentions(text);
+  if (!mentions.length) return [];
   const known = await knownProjectNames(pool, ctx);
-  return names.filter((name) => !namesReturnedProject(known, name));
+  return mentions
+    .filter((m) => !namesReturnedProject(known, m.name))
+    .filter((m) => m.labelled || looksLikeKnownProject(known, m.name))
+    .map((m) => m.name);
 }
 
 /**
@@ -2184,10 +2322,180 @@ function receiptPhrases(ctx) {
 }
 
 /**
+ * #6583: where a reply's own bot_cards live, so a draft, a filing or a move
+ * recorded there counts whatever its age. Null when the turn names no place
+ * and no conversation (no card can belong to it).
+ */
+function cardScope(ctx) {
+  if (ctx?.conversationId) {
+    return {
+      where: "a.place = 'dm' AND a.user_id = $1 AND a.conversation_id = $2",
+      params: [ctx.user.id, ctx.conversationId],
+    };
+  }
+  const appId = Number(ctx?.app?.id || ctx?.place?.appId);
+  const place = ctx?.place;
+  if (!appId || !place) return null;
+  const user = ctx?.user?.id ? Number(ctx.user.id) : null;
+  const who = user ? ' AND (a.user_id IS NULL OR a.user_id = $2)' : '';
+  const whoParam = user ? [user] : [];
+  if (['issue', 'message', 'category'].includes(place.type)) {
+    return {
+      where: `a.place = 'thread' AND a.app_id = $1 AND EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.id = a.chat_message_id AND cm.thread_type = $${user ? 3 : 2} AND cm.thread_ref = $${user ? 4 : 3})${who}`,
+      params: [appId, ...whoParam, place.type, Number(place.ref)],
+    };
+  }
+  return {
+    where: `a.place = 'thread' AND a.app_id = $1 AND EXISTS (SELECT 1 FROM chat_messages cm WHERE cm.id = a.chat_message_id AND cm.thread_type IS NULL)${who}`,
+    params: [appId, ...whoParam],
+  };
+}
+
+/** The cards in `ctx`'s place matching `where` and `params`. */
+async function cardsInScope(pool, ctx, where, params = []) {
+  const scope = cardScope(ctx);
+  if (!scope) return [];
+  const { rows } = await pool.query(
+    `SELECT a.id, a.kind, a.status, a.issue_number FROM bot_cards a WHERE ${scope.where} AND ${where}`,
+    [...scope.params, ...params],
+  );
+  return rows.map((row) => ({ kind: row.kind, status: row.status, issueNumber: row.issue_number == null ? null : Number(row.issue_number) }));
+}
+
+/**
+ * #6583: what the bot's records show about a reply's claims, read once per
+ * reply text (`ctx.stored`). `read` is true only when every read it needed
+ * succeeded; a failed read leaves the sentence in place. `earlier` is the
+ * bot's own earlier words in this conversation, checked with no new query.
+ */
+async function storedClaimFacts(pool, ctx, body, numbers) {
+  const text = String(body || '');
+  if (ctx.stored && ctx.stored.text === text) return ctx.stored;
+  const facts = {
+    text, read: true, filed: false, openDraft: false, busy: false, reported: false,
+    closed: new Set(), moved: new Set(), closedStatus: false, movedStatus: false, earlier: {},
+  };
+  const earlierText = String(ctx.earlierBotText || '');
+  const earlierNumbers = new Set(requestNumbers(earlierText));
+  // #6583: an earlier message only backs the same kind of claim, and when
+  // this reply names a request, the earlier words must name it too: an old
+  // "Filed." does not back a new claim about #99.
+  const sameRequest = !numbers.length || numbers.some((n) => earlierNumbers.has(n));
+  for (const claim of CLAIMS) {
+    if (claim.proof === 'records') facts.earlier[claim.kind] = sameRequest && claim.re.test(earlierText);
+  }
+  const fail = (what, err) => {
+    facts.read = false;
+    log.warn('homeroom-bot-mayor', `Could not read the records for a reply's ${what} claim`, { err: err?.message || String(err) });
+  };
+  const appIds = [...new Set([
+    ...[...(ctx.appIds || [])].map(Number), Number(ctx.app?.id), Number(ctx.place?.appId),
+  ].filter((id) => Number.isInteger(id) && id > 0))];
+  const place = ctx.place || null;
+  const requestNumber = Number(place?.type === 'issue' ? place.ref
+    : (ctx.change?.linked_issues?.[0] || ctx.requestChange?.linked_issues?.[0])) || null;
+  const asked = [...new Set([...numbers, requestNumber].filter((n) => Number.isInteger(n) && n > 0))];
+
+  // Cards this place or conversation holds: a draft still open, a filing, a move.
+  try {
+    const open = await cardsInScope(pool, ctx, "a.kind = 'file_request' AND a.status = 'open'");
+    facts.openDraft = open.length > 0;
+    const doneFilings = await cardsInScope(pool, ctx, "a.kind = 'file_request' AND a.status = 'done' AND a.issue_number IS NOT NULL");
+    const doneMoves = await cardsInScope(pool, ctx, "a.kind = 'move_request' AND a.status = 'done' AND a.issue_number IS NOT NULL");
+    if (numbers.length) {
+      facts.filed = doneFilings.some((c) => c.issueNumber != null && numbers.includes(c.issueNumber));
+    } else {
+      facts.filed = doneFilings.length > 0;
+    }
+    for (const card of doneMoves) if (card.issueNumber != null) facts.moved.add(card.issueNumber);
+  } catch (err) {
+    fail('draft, filing or move', err);
+  }
+  // Their own requester rows back a filing they name.
+  if (numbers.length && !facts.filed) {
+    try {
+      const { rows } = await pool.query(
+        'SELECT issue_number FROM homeroom_bot_requesters WHERE user_id = $1 AND issue_number = ANY($2::int[])',
+        [ctx.user.id, numbers],
+      );
+      facts.filed = rows.some((row) => row.issue_number != null && numbers.includes(Number(row.issue_number)));
+    } catch (err) {
+      fail('filed request', err);
+    }
+  }
+  // A request's stored state, by the numbers it names.
+  if (asked.length) {
+    try {
+      const filter = appIds.length ? ' AND app_id = ANY($1::int[])' : '';
+      const params = appIds.length ? [appIds, asked] : [asked];
+      const nParam = appIds.length ? '$2' : '$1';
+      const { rows } = await pool.query(
+        `SELECT github_issue_number AS n FROM issues
+          WHERE kind = 'general' AND status = 'closed'${filter} AND github_issue_number = ANY(${nParam}::int[])
+         UNION
+         SELECT issue_number AS n FROM homeroom_bot_closed_requests
+          WHERE closed_at IS NOT NULL${filter} AND issue_number = ANY(${nParam}::int[])`,
+        params,
+      );
+      for (const row of rows) if (row.n != null) facts.closed.add(Number(row.n));
+    } catch (err) {
+      fail('closed request', err);
+    }
+  }
+  // Reports already on file for them, named by the reply or from the last week.
+  try {
+    const { rows } = await pool.query(
+      `SELECT issue_number, created_at FROM feedback_reports
+        WHERE user_id = $1 AND (issue_number = ANY($2::int[]) OR created_at > NOW() - INTERVAL '7 days')`,
+      [ctx.user.id, numbers],
+    );
+    const named = rows.some((row) => row.issue_number != null && numbers.includes(Number(row.issue_number)));
+    const recent = rows.some((row) => !!row.created_at);
+    facts.reported = named || recent;
+  } catch (err) {
+    fail('report to the team', err);
+  }
+  // A request already being read, planned, built or going live is started.
+  const trackApp = Number(ctx.app?.id) || appIds[0];
+  if (trackApp && asked.length) {
+    try {
+      const track = ctx.deps?.track || require('./homeroom-bot-track');
+      const tracks = await track.tracksForRequests(pool, { appId: trackApp, numbers: asked, deps: ctx.deps || {} });
+      const live = new Set(['reading', 'planning', 'building', 'going_live']);
+      facts.busy = [...tracks.values()].some((t) => live.has(t?.work?.stage));
+    } catch (err) {
+      fail('started work', err);
+    }
+  }
+  // A status sentence with no number can only be checked in a request's own
+  // thread; elsewhere it is kept.
+  const statusNumbersIn = (kind) => {
+    const found = new Set();
+    const claim = CLAIMS.find((c) => c.kind === kind);
+    if (!claim) return found;
+    for (const sentence of text.split(/(?<=[.!?\n])\s+|\n+/)) {
+      if (!claim.re.test(sentence)) continue;
+      for (const n of requestNumbers(sentence)) found.add(n);
+    }
+    return found;
+  };
+  const closedNamed = statusNumbersIn('closed_status');
+  const movedNamed = statusNumbersIn('moved_status');
+  facts.closedStatus = closedNamed.size
+    ? [...closedNamed].every((n) => facts.closed.has(n))
+    : (requestNumber ? facts.closed.has(requestNumber) : true);
+  facts.movedStatus = movedNamed.size
+    ? [...movedNamed].every((n) => facts.moved.has(n))
+    : (requestNumber ? facts.moved.has(requestNumber) : true);
+  ctx.stored = facts;
+  return facts;
+}
+
+/**
  * Pure apart from the request lookup: what `text` claims that this turn did
- * not do, as [{ kind, said }], plus { kind: 'unknown', numbers } for request
- * numbers that do not exist and { kind: 'unknown_project', names } for
- * projects no tool returned. Empty when it is all true.
+ * not do, as [{ kind, said, proof }], plus { kind: 'unknown', numbers } for
+ * request numbers that do not exist and { kind: 'unknown_project', names }
+ * for projects no tool returned. Empty when it is all true.
  */
 async function claimProblems(pool, ctx, text) {
   // Read as it would be sent: a leading note is taken off first.
@@ -2196,12 +2504,26 @@ async function claimProblems(pool, ctx, text) {
   // #6566: the report's own receipt is true, so it is not read as a claim.
   const receipt = receiptPhrases(ctx);
   const claimBody = receipt ? body.replace(receipt, ' ') : body;
-  const out = CLAIMS.filter((c) => c.re.test(claimBody) && !c.backed(ctx)).map((c) => ({ kind: c.kind, said: c.said }));
+  // #6583: a claim backed by this turn's flags needs no read. One that is not
+  // asks the records before it is called false.
+  const numbers = requestNumbers(body);
+  const unmatched = CLAIMS.filter((c) => c.re.test(claimBody) && !c.backed(ctx));
+  let stored = null;
+  if (unmatched.some((c) => c.proof === 'records')) {
+    stored = await storedClaimFacts(pool, ctx, body, numbers);
+    if (!stored.read) {
+      // A read that failed proves nothing: keep every record-backed sentence.
+      stored = { ...stored, read: false };
+    }
+  }
+  const out = CLAIMS
+    .filter((c) => c.re.test(claimBody) && !c.backed(ctx) && !stored?.earlier?.[c.kind])
+    .filter((c) => c.proof !== 'records' || !!stored?.read)
+    .map((c) => ({ kind: c.kind, said: c.said, proof: c.proof }));
   try {
     // #6566: the report just filed is a real request on Homeroom's board.
     const filed = Number(ctx?.reported?.number);
-    const numbers = requestNumbers(body).filter((n) => !(Number.isInteger(filed) && n === filed));
-    const missing = await unknownRequests(pool, ctx, numbers);
+    const missing = await unknownRequests(pool, ctx, numbers.filter((n) => !(Number.isInteger(filed) && n === filed)));
     if (missing.length) out.push({ kind: 'unknown', numbers: missing, said: `names ${missing.map((n) => `request #${n}`).join(' and ')}, which no project of theirs has` });
   } catch (err) {
     log.warn('homeroom-bot-mayor', 'Could not check the requests a reply names', { err: err.message });
@@ -2215,34 +2537,61 @@ async function claimProblems(pool, ctx, text) {
   return out;
 }
 
-/** The note a reply that claimed too much is asked again with. */
-function checkNote(problems) {
+/**
+ * The note a reply that claimed too much is asked again with. `tools` is the
+ * set of tool names offered where the reply is written; a tool is named only
+ * when that place has it (#6583).
+ */
+function checkNote(problems, { tools = null } = {}) {
+  const offered = (name) => tools == null || tools.has(name);
+  const names = (...list) => list.filter(offered);
   const list = problems.map((p) => p.said).join('; and it ');
+  const canDo = [
+    offered('offer_request') ? 'offer_request drafts a request for them to file' : null,
+    offered('comment_on_request') ? 'comment_on_request posts on a request' : null,
+    offered('start_request') ? 'start_request starts one' : null,
+    offered('revise_proposal') ? 'revise_proposal changes your proposal' : null,
+    offered('withdraw_proposal') ? 'withdraw_proposal withdraws one of your proposals' : null,
+    offered('report_problem') ? 'report_problem tells the Homeroom team' : null,
+  ].filter(Boolean);
   // #6581: a number Homeroom cannot find yet is not a thing that did not
   // happen. When that is all that is wrong, the note never says the turn did
   // nothing and never lists the doing-tools: it asks the model to check the
   // number and keep it if a tool returns it.
   const onlyUnknown = problems.length > 0 && problems.every((p) => p.kind === 'unknown' || p.kind === 'unknown_project');
   const unknownNumbers = problems.find((p) => p.kind === 'unknown')?.numbers || [];
-  const unknownTail = unknownNumbers.length
-    ? ` Homeroom could not find ${unknownNumbers.map((n) => `request #${n}`).join(' or ')} in its records yet: check it with request_detail (or get_request), and if a tool returns it, keep the number. If not, drop the sentence that names it. Never retract an earlier action in this conversation: something you filed earlier stays filed, so do not apologise for it or offer to file it again.`
+  const lookupTools = names('request_detail', 'get_request');
+  const lookup = lookupTools.length
+    ? `${lookupTools[0]}${lookupTools[1] ? ` (or ${lookupTools[1]})` : ''}`
     : '';
+  const keepIt = 'and if a tool returns it, keep the number. If not, drop the sentence that names it.'
+    + ' Never retract an earlier action in this conversation: something you filed earlier stays filed, so do not apologise for it or offer to file it again.';
+  const found = unknownNumbers.map((n) => `request #${n}`).join(' or ');
+  // #6583: a note whose only reason is an unfound number asks for a lookup and
+  // never says anything did not happen.
+  const unknownTail = !unknownNumbers.length
+    ? ''
+    : onlyUnknown
+      ? ` Look the number up${lookup ? ` with ${lookup}` : ''}, ${keepIt}`
+      : ` Homeroom could not find ${found} in its records yet: check it${lookup ? ` with ${lookup}` : ''}, ${keepIt}`;
+  const numberTools = names('my_work', 'request_detail', 'list_requests');
   const unknown = unknownNumbers.length
-    ? (onlyUnknown ? unknownTail : ` Check request numbers with my_work, request_detail or list_requests.${unknownTail}`)
+    ? (onlyUnknown || !numberTools.length ? unknownTail : ` Check request numbers with ${numberTools.slice(0, -1).join(', ')}${numberTools.length > 1 ? ' or ' : ''}${numberTools[numberTools.length - 1]}.${unknownTail}`)
     : '';
   // #6307: a project named that no tool returned (a garbled name, a guessed one).
+  const projectTools = names('my_work', 'list_requests');
   const unknownProject = problems.some((p) => p.kind === 'unknown_project')
-    ? ' A project you name must be one a tool returned in this turn, spelled exactly as it returned it: never guess or abbreviate a name. Drop the sentence naming any other project.'
+    ? ` Look the project up${projectTools.length ? ` (${projectTools.join(', ')})` : ''} and write its name as the tool returns it; never guess or abbreviate a name. Drop the sentence naming any other project.`
     : '';
-  // #11 (WP3): a promise to come back later has no tool that keeps it.
   const promised = problems.some((p) => p.kind === 'promised')
-    ? ' Never promise to look into something or come back to it later: say what you cannot do from here, and what they can do (leave it, vote No on the proposal, comment on the request, or use Send feedback), or offer report_problem.'
+    ? ' Never promise to look into something or come back to it later: say what you cannot do from here, and what they can do (leave it, vote No on the proposal, comment on the request, or use Send feedback)'
+      + (offered('report_problem') ? ', or offer report_problem.' : '.')
     : '';
   // #4605: a draft promised with no offer behind it. The second pass drafts
   // it; refused, the promise is cut (stripClaims) rather than sent again.
   // #6307: it drafts it now, and says one line about it, never its words.
   const drafted = problems.some((p) => p.kind === 'drafted')
-    ? ' Your reply says a draft with File it and Not now is under it, but you did not call offer_request in this turn, so nothing is under it. Call offer_request now with the project, title and details; if it is refused, say why plainly and do not mention File it. Then reply with one short line about the draft at most: the card under it shows its title and words, so never write them in your reply.'
+    ? ` Your reply says a draft with File it and Not now is under it, but no draft is open in this conversation, so nothing is under it.${offered('offer_request') ? ' Call offer_request now with the project, title and details; if it is refused, say why plainly and do not mention File it.' : ' Do not mention File it.'} Then reply with one short line about the draft at most: the card under it shows its title and words, so never write them in your reply.`
     : '';
   // 1 Nov 2026: a screen said to be drawing with no draw_screen behind it.
   const drawing = problems.some((p) => p.kind === 'drawing')
@@ -2252,18 +2601,24 @@ function checkNote(problems) {
   const noControl = problems.some((p) => p.kind === 'no_control')
     ? ' There is no such control on their side: to finish this private thread, call close_thread.'
     : '';
+  const canDoLine = canDo.length
+    ? `If they want it done now, call the tool that does it: ${canDo.join(', ')}.`
+    : '';
   const lead = onlyUnknown
     ? `[Homeroom check, not from them: your reply ${list}.`
-    : `[Homeroom check, not from them: your reply ${list}.`
-      + ' No tool you called in this turn did that.'
-      + ' If it happened earlier and the tools show it, say when. If they want it done now, call the tool that does it:'
-      + ' offer_request drafts a request for them to file, comment_on_request posts on a request, start_request starts'
-      + ' one, revise_proposal changes your proposal, withdraw_proposal withdraws one of your proposals, report_problem'
-      + ' tells the Homeroom team. Otherwise say plainly that it has not been done.';
+    : [
+      `[Homeroom check, not from them: your reply ${list}.`,
+      // #6581: what this turn did is not the whole record; #6583: the note
+      // never tells the model to say the thing was not done.
+      'No tool you called in this turn did that.',
+      'If it happened earlier and the records show it, say when.',
+      canDoLine,
+      'If you cannot confirm it with a lookup, leave that sentence out.',
+    ].filter(Boolean).join(' ');
   return [
     lead,
     `${promised}${drafted}${drawing}${noControl}${unknown}${unknownProject} Then call reply again.]`,
-  ].join(' ').replace(/\s+/g, ' ').trim();
+  ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // #6307: what a reply says about a draft, when the draft it promised was not
@@ -2288,8 +2643,8 @@ function stripClaims(text, problems, ctx = null) {
     if (receipt && receipt.test(sentence)) return true;
     if (res.some((c) => c.re.test(sentence))) return false;
     if (kinds.has('drafted') && DRAFT_PROMISE_RE.test(sentence)) return false;
-    if (unknownProjectNames.length && projectMentions(sentence).some((n) => {
-      const key = squashWords(n);
+    if (unknownProjectNames.length && projectMentions(sentence).some((mention) => {
+      const key = squashWords(mention.name);
       return key && unknownProjectNames.some((u) => u === key || u.startsWith(`${key} `) || key.startsWith(`${u} `));
     })) return false;
     return true;
@@ -2324,7 +2679,13 @@ function stripClaims(text, problems, ctx = null) {
     }
     return out;
   }).filter(Boolean).join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
-  const lines = res.map((c) => c.instead);
+  // #6583: only a claim the bot can never do, or one only this turn could
+  // have done, keeps a fixed line. A record-backed claim proven false is cut
+  // with no "I haven't…" line; `drafted` keeps its line because no card is
+  // open anywhere, so there really is nothing to tap.
+  const proofOf = (kind) => problems.find((p) => p.kind === kind)?.proof
+    || CLAIMS.find((c) => c.kind === kind)?.proof || 'never';
+  const lines = res.filter((c) => proofOf(c.kind) !== 'records' || c.kind === 'drafted').map((c) => c.instead);
   if (kept.replace(/[^\w]/g, '').length >= 20) lines.push(kept);
   const unknown = problems.find((p) => p.kind === 'unknown');
   if (unknown) {
@@ -2341,10 +2702,12 @@ function stripClaims(text, problems, ctx = null) {
   return lines.join('\n\n');
 }
 
-// #3772: a typed "file it" or "yes" with no draft waiting.
-const NO_OFFER_NOTE = '[Homeroom: their newest message reads like a decision on a draft request, but no draft is '
-  + 'waiting for them, so nothing has been filed. If they want something filed, call offer_request so they can tap '
-  + 'File it under it, and never say it was filed.]';
+// #3772: a typed "file it" or "yes" with no draft waiting. #6583: it no
+// longer asserts that nothing was filed, because an older draft or a filing
+// just made may be exactly what they mean.
+const NO_OFFER_NOTE = '[Homeroom: their newest message reads like a decision on a draft request, but no draft from the last '
+  + 'hour is open to decide. If they want something filed, call offer_request so they can tap File it under it, and do '
+  + 'not say it was filed unless a tool shows it.]';
 
 // ── A turn that stopped on what it would do next (1 Nov 2026) ──────────────
 //
@@ -4393,6 +4756,15 @@ async function answer(pool, config, { bot, user, settings, conversationId, messa
         ...(about ? [{ role: 'system', content: about }] : []),
         ...history,
       ];
+      // #6583: the bot's own earlier words in this conversation are a record
+      // the claim check may read, with no further query.
+      ctx.conversationId = conversationId;
+      ctx.earlierBotText = history
+        .filter((m) => m.role === 'assistant')
+        .map((m) => (typeof m.content === 'string' ? m.content
+          : Array.isArray(m.content) ? m.content.map((part) => part?.text || '').join(' ') : ''))
+        .join('\n');
+      ctx.toolNames = new Set(tools.map((tool) => tool?.function?.name).filter(Boolean));
       // #3772: a message that reads as a decision on a draft that is not
       // waiting (typed "file it" with nothing to file) is said to the model,
       // so it drafts one rather than answering as if it had filed it.
@@ -4527,9 +4899,9 @@ async function answer(pool, config, { bot, user, settings, conversationId, messa
           userId: user.id, messageId: message.id, kinds: problems.map((p) => p.kind),
         });
         const first = ctx.reply ? { ...ctx.reply } : { text: finalText, cards: [] };
-        messages.push({ role: 'user', content: checkNote(problems) });
-        // #6581: no words were shown, so the second pass's answer is simply
-        // the one that is sent.
+        messages.push({ role: 'user', content: checkNote(problems, { tools: ctx.toolNames }) });
+        // P1, #6581: the next pass writes the answer again; no words are on
+        // the card to replace, only the step it named.
         ctx.reply = null;
         finalText = '';
         // #6307: the first pass's words beside its calls go too, so the second
@@ -5474,8 +5846,22 @@ async function decideTyped(pool, config, { bot, user, settings, conversationId, 
   const open = decision.kind ? found.filter((a) => (a.kind || 'file_request') === decision.kind) : found;
   if (open.length !== 1) {
     // Two drafts open: which one is meant is the model's to ask. "File it"
-    // with nothing to file is said to the model as such.
-    return open.length || decision.kind !== 'file_request' ? null : { decisionWithoutOffer: true };
+    // with nothing filed yet is said to the model as such.
+    if (open.length || decision.kind !== 'file_request') return null;
+    // #6583: an older open draft, or one decided in the last ten minutes, is
+    // what they mean; the model answers from the conversation rather than
+    // being told no draft exists.
+    try {
+      const { rows: older } = await pool.query(
+        `SELECT id FROM bot_cards
+          WHERE user_id = $1 AND conversation_id = $2 AND kind = 'file_request'
+            AND (status = 'open' OR (status = 'done' AND decided_at > NOW() - INTERVAL '10 minutes'))
+          LIMIT 1`,
+        [user.id, conversationId],
+      );
+      if (older.length) return null;
+    } catch { /* the check falls back to the note it made before */ }
+    return { decisionWithoutOffer: true };
   }
   const action = open[0];
   if (decision.plain) {
@@ -7495,6 +7881,7 @@ module.exports = {
   claimProblems,
   checkNote,
   stripClaims,
+  unknownRequests,
   projectMentions,
   noteKnownProjects,
   // #6581: the requests a turn's tools returned, and the ones this thread knows.

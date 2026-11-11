@@ -1412,9 +1412,23 @@
     {
       "source": "src/services/homeroom-bot-mayor.js",
       "kind": "structural-template",
+      "fingerprint": "06643ba7b1cb8f91eecf",
+      "count": 1,
+      "preview": "`SELECT github_issue_number AS n FROM issues WHERE kind = 'general' AND status = 'closed'${filter} AND github_issue_number = ANY(${nParam}::int[]) UNION SELECT "
+    },
+    {
+      "source": "src/services/homeroom-bot-mayor.js",
+      "kind": "structural-template",
       "fingerprint": "7c68d039fac8e1650efb",
       "count": 1,
       "preview": "`SELECT ${require('./app-access').nonSecretAppColumnList()} FROM apps WHERE id = $1`"
+    },
+    {
+      "source": "src/services/homeroom-bot-mayor.js",
+      "kind": "structural-template",
+      "fingerprint": "83bb072f4ad3f576a7e4",
+      "count": 1,
+      "preview": "`SELECT a.id, a.kind, a.status, a.issue_number FROM bot_cards a WHERE ${scope.where} AND ${where}`"
     },
     {
       "source": "src/services/homeroom-bot-mayor.js",

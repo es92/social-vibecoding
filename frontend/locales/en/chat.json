@@ -1405,6 +1405,14 @@
   },
   "group.botOffer.failed": {
     "text": "That didn’t work just now.",
-    "description": "Toast when pressing Yes or No under one of Homeroom bot's offers in a chat could not be sent, and the server gave no reason of its own."
+    "description": "The line under the buttons when pressing Yes or No under one of Homeroom bot's offers in a chat could not be sent, and the server gave no reason of its own."
+  },
+  "group.botOffer.gone": {
+    "text": "This offer is no longer available.",
+    "description": "Where an offer's buttons were, under Homeroom bot's message in a chat, once the offer behind them no longer exists."
+  },
+  "group.botOffer.goneClose": {
+    "text": "This offer is no longer available. You can still propose closing it from the request’s ⋯ menu.",
+    "description": "Where an \"already works\" note's Propose to close buttons were, once the offer behind them no longer exists; the request's ⋯ menu still has its own Propose to close."
   }
 }

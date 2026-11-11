@@ -89,7 +89,9 @@ const WITHDRAWN_NOTE = `Asked to close: ${REASON} Tap Propose to close below to 
 
 // ── The note, with its database stubbed ──────────────────────────────────
 
-async function noteFor(parsed, { openVotes = [], last = null, posted = { messageId: 500 }, relook = false } = {}) {
+async function noteFor(parsed, {
+  openVotes = [], last = null, posted = { messageId: 500 }, relook = false, postRow = null, messageMeta = null,
+} = {}) {
   const says = [];
   const queries = [];
   const pool = {
@@ -98,6 +100,9 @@ async function noteFor(parsed, { openVotes = [], last = null, posted = { message
       queries.push({ sql: s, params });
       if (/INSERT INTO bot_cards/.test(s)) return { rows: [{ id: 77 }] };
       if (/kind = 'close_issue'/.test(s)) return { rows: openVotes };
+      // #6582: the post row an older step result left, and the note's own metadata.
+      if (/SELECT thread_message_id FROM homeroom_bot_posts/.test(s)) return { rows: postRow ? [postRow] : [] };
+      if (/SELECT metadata FROM chat_messages/.test(s)) return { rows: messageMeta ? [messageMeta] : [] };
       return { rows: [] };
     },
   };
@@ -239,6 +244,24 @@ test('a person note that is not done offers no close', async () => {
   const { says, offers } = await noteFor({ verdict: 'person', done: false });
   assert.match(says[0].homeroomText, /a person needs to decide/);
   assert.equal(offers.length, 0);
+});
+
+// #6582: a step result stored before it carried the message id still ties the
+// offer, through the post row that names the message it made.
+test('a stored step result without a message id ties its offer through the post row', async () => {
+  const { queries } = await noteFor({ verdict: 'person' }, { posted: { postId: 901 }, postRow: { thread_message_id: 502 } });
+  const tie = queries.find((q) => /UPDATE bot_cards SET chat_message_id/.test(q.sql));
+  assert.ok(tie, 'the offer is tied, not dropped');
+  assert.deepEqual(tie.params, [77, 502]);
+  assert.ok(!queries.some((q) => /DELETE FROM bot_cards/.test(q.sql)));
+});
+
+test('the note names a different offer than the one this post made: it is dropped, never re-pointed', async () => {
+  const { queries } = await noteFor({ verdict: 'person' }, {
+    posted: { messageId: 500 }, messageMeta: { metadata: { homeroomBot: { offer: { id: 999 } } } },
+  });
+  assert.ok(queries.some((q) => /DELETE FROM bot_cards/.test(q.sql)), 'the offer this post did not use goes');
+  assert.ok(!queries.some((q) => /UPDATE bot_cards SET chat_message_id/.test(q.sql)), 'and is not tied to that note');
 });
 
 test('the triage counts a requester or decider saying it works as done', () => {

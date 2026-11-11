@@ -1806,11 +1806,13 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     assert.match(card.content, /Note colours\n\nFiled\. I'll look at it now\. How it goes shows on its page\.$/);
     assert.equal((await read(offered)).metadata.homeroomBot.status, 'answered');
 
-    // Nothing waiting now: a typed "file it" is said to the model as such.
+    // #6583: a draft decided done moments ago is what a typed "file it" may
+    // mean, so the model reads the conversation instead of being told there
+    // is no draft.
     const none = await say('file it');
-    assert.deepEqual(
+    assert.equal(
       await mayor.decideTyped(pool, CONFIG, { bot, user: ada, settings, conversationId: opened.conversationId, message: none, deps: {} }),
-      { decisionWithoutOffer: true },
+      null,
     );
     const seen = [];
     await mayor.runDmTurn(pool, CONFIG, {
@@ -1862,8 +1864,7 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
       [['reply', { text: 'Filed: **Note board** request #99: Note colours.' }]],
     ]));
     assert.equal((await read(stubborn)).content,
-      'I haven\'t filed anything for that yet. Tell me what you want filed and I\'ll draft it for you to confirm.\n\n'
-      + '(I can\'t find request #99 on your projects.)');
+      '(I can\'t find request #99 on your projects.)');
     // A true answer passes untouched, in one pass.
     const fine = [];
     await turn('what is #5?', scripted([[['reply', { text: 'Request #5 is Pin notes, up for a vote.' }]]], fine));
@@ -1885,8 +1886,11 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
       },
     ]);
     const sent = await turn('add to the share request that it should be by link', chat);
+    // #6583: a record-backed claim proven false is cut with no fixed line; the
+    // second pass's own words are kept.
     assert.equal((await read(sent)).content,
-      'I haven\'t posted that anywhere yet.\n\n**Note board** · request #6:\n\n'
+      'This chat is private. Want me to post this on the public discussion of request #6, as you?\n\n'
+      + '**Note board** · request #6:\n\n'
       + '> add to the share request that it should be by link\n> \n'
       + '> (Sent in a chat with Homeroom bot. What they asked to add, as Homeroom bot understood it: Share by link, not by email.)');
     assert.equal(threadPosts.length, 0, 'nothing is public before the tap');
@@ -2191,9 +2195,11 @@ test('the Homeroom bot DM, read by a model, against the full PostgreSQL schema',
     // "File it" typed is no decision on it; "Withdraw it" tapped is.
     await pool.query(`UPDATE bot_cards SET status = 'declined' WHERE user_id = $1 AND kind = 'file_request' AND status = 'open'`, [ada.id]);
     const typed = await say('file it');
-    assert.deepEqual(
+    // #6583: a filing decided in the last ten minutes is what "File it" may
+    // mean, so the model answers from the conversation.
+    assert.equal(
       await mayor.decideTyped(pool, CONFIG, { bot, user: ada, settings, conversationId: opened.conversationId, message: typed, deps: { sessionLifecycle } }),
-      { decisionWithoutOffer: true },
+      null,
     );
     assert.deepEqual(archives, []);
     const tap = await say('Withdraw it', { reply_to_id: offered.messageId });

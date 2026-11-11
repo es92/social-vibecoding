@@ -116,8 +116,11 @@ function controller(): any {
  * person it was offered to (GroupChat._botOfferView says who). A tap is sent once (GroupChat.decideBotOffer);
  * the buttons then go for everybody when the room hears it was decided.
  */
-function BotOfferButtons({ id, offer }: { id: number | null; offer: BotOfferView }) {
+export function BotOfferButtons({ id, offer }: { id: number | null; offer: BotOfferView }) {
   const [busy, setBusy] = useState(false);
+  // #6582: a refused tap says why, in a line under the buttons (the side
+  // panel beside Homeroom bot's page included), and is cleared by the next tap.
+  const [error, setError] = useState<string | null>(null);
   // #6305: a many-project offer's rows, ticked here and sent with the tap.
   const rows = (offer.rows || []) as unknown as FileManyRow[];
   const [ticked, setTicked] = useState<boolean[]>(() => rows.map((r) => r.ticked));
@@ -128,9 +131,11 @@ function BotOfferButtons({ id, offer }: { id: number | null; offer: BotOfferView
   // #6211: an overlap note's three choices include `first` (this one first).
   const decide = async (choice: 'yes' | 'no' | 'first') => {
     if (busy) return;
+    setError(null);
     setBusy(true);
     try {
-      await controller()?.decideBotOffer?.(id, choice, many ? picks : undefined);
+      const result = await controller()?.decideBotOffer?.(id, choice, many ? picks : undefined);
+      if (result && result.ok === false && result.error) setError(String(result.error));
     } finally {
       setBusy(false);
     }
@@ -165,6 +170,11 @@ function BotOfferButtons({ id, offer }: { id: number | null; offer: BotOfferView
           </Button>
         ))}
       </div>
+      {error ? (
+        <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400" role="status" data-gc-bot-offer-error="">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -976,6 +986,12 @@ export const MessageRow = memo(function MessageRow({ msg, grouped = false, surfa
           {/* Homeroom bot's offer in a thread: its buttons, for the person it was offered to. */}
           {msg.botOffer && msg.botOffer.forMe && msg.botOffer.status === 'open' && msg.botOffer.actions.length ? (
             <BotOfferButtons id={msg.id} offer={msg.botOffer} />
+          ) : null}
+          {/* #6582: the offer behind these buttons is gone for good: a line in their place. */}
+          {msg.botOffer && msg.botOffer.forMe && msg.botOffer.status === 'gone' ? (
+            <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400" role="status" data-gc-bot-offer-gone="">
+              {t(msg.botOffer.kind === 'close_request' ? 'chat:group.botOffer.goneClose' : 'chat:group.botOffer.gone')}
+            </p>
           ) : null}
           {/* 3 Nov 2026: suggested replies under Homeroom bot's message in a
               thread — only while it is the newest comment (#6519). */}

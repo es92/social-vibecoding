@@ -1835,6 +1835,11 @@ async function converse(pool, cfg, { app, place, bot, settings, messages, fresh,
     attached: [],
     revised: false, recentRevision: false, started: null, commented: null, posted: null, withdrew: null, reported: null,
     workBusy: false, triggerMessage: last.message,
+    // #6583: the bot's own earlier messages here are a record the claim check
+    // may read, and the tools this place offers are the only ones a check
+    // note may name.
+    earlierBotText: messages.filter((m) => Number(m.user_id) === Number(bot.id)).map((m) => String(m.content || '')).join('\n'),
+    toolNames: new Set(tools.map((tool) => tool?.function?.name).filter(Boolean)),
     // #6263: the changes this turn read (get_change) and whether it already
     // reworded one. What is not read is never described.
     readChanges: new Set(), described: false,
@@ -1992,7 +1997,7 @@ async function converse(pool, cfg, { app, place, bot, settings, messages, fresh,
       t.failures.push(`claims:${problems.map((p) => p.kind).join('+')}`.slice(0, 80));
       msgs.push({
         role: 'user',
-        content: `${mayor.checkNote(problems)}${problems.some((p) => p.kind === 'unread_description') ? UNREAD_DESCRIPTION_NOTE : ''}`,
+        content: `${mayor.checkNote(problems, { tools: ctx.toolNames })}${problems.some((p) => p.kind === 'unread_description') ? UNREAD_DESCRIPTION_NOTE : ''}`,
       });
       ctx.reply = null;
       finalText = '';
@@ -2021,7 +2026,7 @@ async function converse(pool, cfg, { app, place, bot, settings, messages, fresh,
   // Task 2020 follow-up: the words as the reply wrote them, before anything below changes them.
   const asWritten = finalReply?.text ? text : null;
   if (text && ctx.checkedProblems?.length) {
-    text = stripUnreadClaims(mayor.stripClaims(text, ctx.checkedProblems), ctx.checkedProblems);
+    text = stripUnreadClaims(mayor.stripClaims(text, ctx.checkedProblems, ctx), ctx.checkedProblems);
   }
   // A turn that queued a change or made an offer did neither yet.
   if (text && (ctx.revised || ctx.offer)) text = notDoneYet(text);
@@ -2744,10 +2749,19 @@ async function threadOffer(pool, { app, kind, forUserId, args = {} }) {
   }
 }
 
-/** #6311: tie a thread offer to the note's message, so decideOffer finds it. */
+/**
+ * #6311: tie a thread offer to the note's message, so decideOffer finds it.
+ * #6582: tried twice before it is only logged, and still never throws
+ * (homeroom-bot-overlap.js relies on that): a tap falls back to the offer id
+ * the note's own metadata names.
+ */
 async function tieThreadOffer(pool, offerId, messageId) {
-  await tieOffer(pool, offerId, messageId)
-    .catch((err) => log.warn('homeroom-bot-voice', 'Could not tie an offer to its note', { offerId, messageId, err: err.message }));
+  try {
+    await tieOffer(pool, offerId, messageId);
+  } catch {
+    await tieOffer(pool, offerId, messageId)
+      .catch((err) => log.warn('homeroom-bot-voice', 'Could not tie an offer to its note', { offerId, messageId, err: err.message }));
+  }
 }
 
 /** #6311: the note could not be posted: its offer is dropped. */
@@ -2996,11 +3010,41 @@ async function decideOffer(pool, config, { app, user: viewer, messageId, choice,
   if (choice === 'yes' && Array.isArray(rows) && !rows.length) {
     return { ok: false, status: 400, error: 'Tick at least one project.' };
   }
-  const { rows: [offer] } = await pool.query(
+  const { rows: [found] } = await pool.query(
     `SELECT o.id, o.kind, o.status, o.expires_at <= NOW() AS expired FROM ${OFFERS_SQL} o
       WHERE o.message_id = $1 AND o.app_id = $2 ORDER BY o.id DESC LIMIT 1`, [Number(messageId), app.id],
   );
-  if (!offer) return { ok: false, status: 404, error: 'Nothing to decide here.' };
+  let offer = found;
+  // #6582: the note names its own offer in its metadata, so a tap still finds
+  // it when the offer was never linked to the message (a lost link write).
+  // Only an offer of this project's, made for this note, is taken.
+  if (!offer) {
+    const { rows: [message] } = await pool.query(
+      'SELECT id, thread_type, thread_ref, metadata FROM chat_messages WHERE id = $1 AND app_id = $2',
+      [Number(messageId), app.id],
+    );
+    const namedId = Number(message?.metadata?.homeroomBot?.offer?.id);
+    if (message && Number.isSafeInteger(namedId) && namedId > 0) {
+      const { rows: [named] } = await pool.query(
+        `SELECT o.id, o.kind, o.status, o.message_id, o.args, o.expires_at <= NOW() AS expired FROM ${OFFERS_SQL} o
+          WHERE o.id = $1 AND o.app_id = $2 ORDER BY o.store LIMIT 1`,
+        [namedId, app.id],
+      );
+      const sameRequest = message.thread_type !== 'issue'
+        || Number(named?.args?.issueNumber) === Number(message.thread_ref);
+      const forThisMessage = named && (named.message_id == null || Number(named.message_id) === Number(message.id));
+      if (forThisMessage && sameRequest) {
+        // The machine reads an offer through its message: tie it first.
+        await tieOffer(pool, named.id, message.id);
+        offer = named;
+      } else {
+        // The note names an offer that is lost: its buttons go, for good.
+        await markOfferMessage(pool, { app, messageId: Number(message.id), status: 'gone', deps });
+        return { ok: false, status: 410, error: 'That offer is no longer available.' };
+      }
+    }
+    if (!offer) return { ok: false, status: 404, error: 'Nothing to decide here.' };
+  }
   // #6211: an overlap's third choice, and only an overlap's.
   if (choice === 'first' && offer.kind !== 'overlap') return { ok: false, status: 400, error: 'choice must be yes or no' };
   // 14 days and it is no longer an offer: its buttons go.
@@ -3778,6 +3822,7 @@ module.exports = {
   quoteOf,
   offerActions,
   threadOffer,
+  tieOffer,
   tieThreadOffer,
   dropThreadOffer,
   say,
