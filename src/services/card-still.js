@@ -128,30 +128,21 @@ function isStillSize(width, height) {
 
 // ── Reading a screenshot ─────────────────────────────────────────────────
 
-/**
- * Whether `data` is a PNG a still can be made from, from its header alone
- * (cheap: nothing is inflated). Throws CardStillError with the reason.
- */
-function checkPng(data, what = 'screenshot') {
+/** A PNG's pixels: { width, height, data } (RGBA). Throws CardStillError. */
+function decodePng(data, what = 'screenshot') {
   if (!Buffer.isBuffer(data) || !data.length) throw new CardStillError('empty', `The ${what} is empty.`);
   const type = sniffImageType(data);
   if (type !== 'image/png') {
     throw new CardStillError('png_only', `The ${what} must be a PNG${type ? ` (this one is ${type.replace('image/', '').toUpperCase()})` : ''}.`);
   }
-  if (data.length < 24) throw new CardStillError('unreadable', `The ${what} could not be read as a PNG.`);
-  // The header's size, so a huge image is refused before it is inflated.
-  const w = data.readUInt32BE(16);
-  const h = data.readUInt32BE(20);
-  if (!w || !h) throw new CardStillError('unreadable', `The ${what} could not be read as a PNG.`);
-  if (w > MAX_SCREENSHOT_SIDE || h > MAX_SCREENSHOT_SIDE || w * h > MAX_SCREENSHOT_PIXELS) {
-    throw new CardStillError('too_big', `The ${what} is ${w}×${h}; send one no bigger than a 4K screen.`);
+  // The header's size first, so a huge image is refused before it is inflated.
+  if (data.length >= 24) {
+    const w = data.readUInt32BE(16);
+    const h = data.readUInt32BE(20);
+    if (w > MAX_SCREENSHOT_SIDE || h > MAX_SCREENSHOT_SIDE || w * h > MAX_SCREENSHOT_PIXELS) {
+      throw new CardStillError('too_big', `The ${what} is ${w}×${h}; send one no bigger than a 4K screen.`);
+    }
   }
-  return { width: w, height: h };
-}
-
-/** A PNG's pixels: { width, height, data } (RGBA). Throws CardStillError. */
-function decodePng(data, what = 'screenshot') {
-  checkPng(data, what);
   try {
     const png = PNG.sync.read(data);
     return { width: png.width, height: png.height, data: png.data };
@@ -482,7 +473,6 @@ module.exports = {
   CardStillError,
   backdrop,
   isStillSize,
-  checkPng,
   decodePng,
   focusBox,
   resample,

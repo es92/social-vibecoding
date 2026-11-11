@@ -931,8 +931,8 @@ async function makeCardStill(pool, config, {
   if (!app?.id) return { ok: false, status: 400, error: 'Say which project the still is for.' };
   // The screenshot is read first: a refusal for it costs nothing.
   try {
-    still.checkPng(screenshot);
-    if (darkScreenshot) still.checkPng(darkScreenshot, 'dark screenshot');
+    still.decodePng(screenshot);
+    if (darkScreenshot) still.decodePng(darkScreenshot, 'dark screenshot');
   } catch (err) {
     return { ok: false, status: 422, error: `${err.message} A still is made from a PNG screenshot of the app (most devices save screenshots as PNGs). Nothing was made.` };
   }

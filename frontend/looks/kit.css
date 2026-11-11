@@ -176,8 +176,6 @@
 .phone .fcard{flex-basis:184px}
 .fcover{display:grid;place-items:center;aspect-ratio:16/10;background:var(--sunk);overflow:hidden}
 .fcover img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
-/* A card still (lib/illustration-shape.ts) is the cover's own 16:10, drawn whole. */
-.fcover.still img{object-fit:contain;object-position:center}
 .fcover img.moon{display:none}
 .dark .fcover img.moon{display:block}
 .dark .fcover img.sun:has(+ img.moon){display:none}
