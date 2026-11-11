@@ -119,7 +119,7 @@ test('the first version skips the vote; the bot\'s later changes wait for a pers
 
   const club = await project('club-votes-fv', [ada, sam, kim]);
 
-  await t.test('D2: on Open floor the bot\'s change needs a member\'s yes; a person\'s own does not', async () => {
+  await t.test('D2: on Open floor the bot\'s change needs a member\'s yes, as a person\'s own does', async () => {
     await reconcile(club, { preset: 'open_floor' });
     const bots = await proposal(club, bot);
     await run(club, 7, bots);
@@ -127,12 +127,14 @@ test('the first version skips the vote; the bot\'s later changes wait for a pers
     assert.equal(waiting.mode, 'rules');
     assert.equal(waiting.mergeable, false, 'the bot proposing it is nobody\'s yes');
     assert.equal((await listed(club, bots, bot)).mergeable, false, 'and the lists say the same');
-    assert.deepEqual([...(await governance.botAuthoredBatch(pool, 'pr', [bots]))], [bots]);
     await vote(bots, kim);
     assert.equal((await gate(club, bots)).mergeable, true, 'any member\'s yes lets it in');
 
     const hers = await proposal(club, sam);
-    assert.equal((await gate(club, hers)).mergeable, true, 'a person proposing is their yes');
+    assert.equal((await gate(club, hers)).mergeable, false, 'a person proposing is not their yes (11 Nov 2026)');
+    assert.equal((await listed(club, hers, sam)).mergeable, false);
+    await vote(hers, sam);
+    assert.equal((await gate(club, hers)).mergeable, true, 'their tap is');
     assert.equal((await listed(club, hers, sam)).mergeable, true);
   });
 

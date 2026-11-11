@@ -348,61 +348,6 @@ async function proposalAuthorId(pool, kind, id) {
   return Number.isFinite(n) ? n : null;
 }
 
-// Whether an author is an account the platform runs (users.is_synthetic:
-// Homeroom bot), whose proposing is nobody's yes on a rules project
-// (governance-rules.ts). A failed read answers true: the stricter reading,
-// which asks a person's yes of a change rather than counting one nobody gave.
-async function authorIsBot(pool, authorId) {
-  const id = parseInt(authorId, 10);
-  if (!Number.isFinite(id)) return false;
-  try {
-    const res = await pool.query('SELECT is_synthetic FROM users WHERE id = $1', [id]);
-    return !!(res && res.rows && res.rows[0] && res.rows[0].is_synthetic === true);
-  } catch (err) {
-    log.warn('governance', 'Could not read whether a proposal\'s author is a person; counting no yes for it', { authorId: id, err: err.message });
-    return true;
-  }
-}
-
-// Whether a coding agent submitted the change for its author (chat_sessions.
-// external_agent: the connector's submit_work, or a local agent's hand-off).
-// Its author's proposing is not their yes until they tap it on Homeroom
-// (governance-rules.ts). Only a change has one; a request never does. A
-// failed read answers true, the stricter reading, as authorIsBot's does.
-async function madeByAgent(pool, kind, id) {
-  const n = parseInt(id, 10);
-  if (kind === 'issue' || !Number.isFinite(n)) return false;
-  try {
-    const res = await pool.query('SELECT external_agent FROM chat_sessions WHERE id = $1', [n]);
-    return !!(res && res.rows && res.rows[0] && res.rows[0].external_agent);
-  } catch (err) {
-    log.warn('governance', 'Could not read whether a coding agent submitted a proposal; counting no author yes for it', { id: n, err: err.message });
-    return true;
-  }
-}
-
-// Whether the author took their own vote back on the change's current version
-// (chat_sessions.author_yes_withdrawn_epoch: routes/votes.js retractVote), so
-// proposing is not their yes again (governance-rules.ts). Only a change has
-// one; a request never does. A failed read answers false: the count stays as
-// today's rather than taking away a yes nobody is shown to have lost.
-async function authorWithdrew(pool, kind, id) {
-  const n = parseInt(id, 10);
-  if (kind === 'issue' || !Number.isFinite(n)) return false;
-  try {
-    const res = await pool.query(
-      `SELECT (author_yes_withdrawn_epoch IS NOT DISTINCT FROM approval_epoch
-               AND author_yes_withdrawn_epoch IS NOT NULL) AS withdrew
-         FROM chat_sessions WHERE id = $1`,
-      [n]
-    );
-    return !!(res && res.rows && res.rows[0] && res.rows[0].withdrew === true);
-  } catch (err) {
-    log.warn('governance', 'Could not read whether a proposal\'s author took their vote back; counting proposing as their yes', { id: n, err: err.message });
-    return false;
-  }
-}
-
 // Electorate resolution: who counts, and how many of them there are
 // (src/workflow/rules/electorate.ts). Exposed for serializers that
 // batch-count many rows. `appMeta` ({ selfHosted, collabPrivate }) is passed
@@ -543,69 +488,6 @@ async function voterSetsBatch(pool, kind, ids) {
   return out;
 }
 
-// The proposals of `ids` whose author is an account the platform runs
-// (Homeroom bot): a Set of ids. Their proposing is nobody's yes on a rules
-// project. A failed read counts every one as the bot's (authorIsBot above).
-async function botAuthoredBatch(pool, kind, ids) {
-  const list = (ids || []).map((id) => parseInt(id, 10)).filter(Number.isFinite);
-  if (!list.length) return new Set();
-  try {
-    const res = kind === 'issue'
-      ? await pool.query(
-        `SELECT i.id FROM issues i JOIN users u ON u.id = i.created_by
-          WHERE i.id = ANY($1::int[]) AND u.is_synthetic = TRUE`,
-        [list]
-      )
-      : await pool.query(
-        `SELECT cs.id FROM chat_sessions cs JOIN users u ON u.id = cs.user_id
-          WHERE cs.id = ANY($1::int[]) AND u.is_synthetic = TRUE`,
-        [list]
-      );
-    return new Set(((res && res.rows) || []).map((r) => parseInt(r.id, 10)));
-  } catch (err) {
-    log.warn('governance', 'Could not read which proposals Homeroom bot made; counting no author yes for any', { err: err.message });
-    return new Set(list);
-  }
-}
-
-// The changes of `ids` a coding agent submitted (madeByAgent above): a Set
-// of ids. A failed read counts every one as an agent's.
-async function agentMadeBatch(pool, kind, ids) {
-  const list = (ids || []).map((id) => parseInt(id, 10)).filter(Number.isFinite);
-  if (kind === 'issue' || !list.length) return new Set();
-  try {
-    const res = await pool.query(
-      `SELECT id FROM chat_sessions WHERE id = ANY($1::int[]) AND external_agent IS NOT NULL`,
-      [list]
-    );
-    return new Set(((res && res.rows) || []).map((r) => parseInt(r.id, 10)));
-  } catch (err) {
-    log.warn('governance', 'Could not read which proposals a coding agent submitted; counting no author yes for any', { err: err.message });
-    return new Set(list);
-  }
-}
-
-// The changes of `ids` whose author took their own vote back on the current
-// version (authorWithdrew above): a Set of ids. A failed read counts none, so
-// proposing keeps counting as the author's yes.
-async function authorWithdrewBatch(pool, kind, ids) {
-  const list = (ids || []).map((id) => parseInt(id, 10)).filter(Number.isFinite);
-  if (kind === 'issue' || !list.length) return new Set();
-  try {
-    const res = await pool.query(
-      `SELECT id FROM chat_sessions
-        WHERE id = ANY($1::int[])
-          AND author_yes_withdrawn_epoch IS NOT NULL
-          AND author_yes_withdrawn_epoch IS NOT DISTINCT FROM approval_epoch`,
-      [list]
-    );
-    return new Set(((res && res.rows) || []).map((r) => parseInt(r.id, 10)));
-  } catch (err) {
-    log.warn('governance', 'Could not read which proposals\' authors took their vote back; counting proposing as their yes', { err: err.message });
-    return new Set();
-  }
-}
-
 /**
  * For a serializer that batch-counts many proposals on ONE app: what
  * computeGate needs to answer a rules project's gate, read once. Null for a
@@ -614,14 +496,11 @@ async function authorWithdrewBatch(pool, kind, ids) {
  */
 async function rulesContext(pool, appId, gov, kind, ids) {
   if (!gov || !gov.rules) return null;
-  const [facts, voters, botAuthored, agentMade, withdrew] = await Promise.all([
+  const [facts, voters] = await Promise.all([
     rulesFacts(pool, appId, gov),
     voterSetsBatch(pool, kind, ids),
-    botAuthoredBatch(pool, kind, ids),
-    agentMadeBatch(pool, kind, ids),
-    authorWithdrewBatch(pool, kind, ids),
   ]);
-  return { facts, voters, botAuthored, agentMade, withdrew };
+  return { facts, voters };
 }
 
 /** The computeGate options for one proposal out of a rulesContext. */
@@ -631,9 +510,6 @@ function rulesGateOpts(ctx, id, authorId, explicitReason) {
     rulesFacts: ctx.facts,
     voters: ctx.voters.get(parseInt(id, 10)) || { yes: new Set(), no: new Set() },
     authorId: authorId ?? null,
-    authorIsBot: !!(ctx.botAuthored && ctx.botAuthored.has(parseInt(id, 10))),
-    madeByAgent: !!(ctx.agentMade && ctx.agentMade.has(parseInt(id, 10))),
-    authorWithdrew: !!(ctx.withdrew && ctx.withdrew.has(parseInt(id, 10))),
     memberCount: ctx.facts.memberCount,
     ...(explicitReason !== undefined ? { explicitReason } : {}),
   };
@@ -698,25 +574,19 @@ async function governedGate(pool, appId, {
     ? !!firstVersion
     : (kind === 'pr' ? await isFirstVersion(pool, id) : false);
   if (gov.rules) {
-    // #4666: a rules project reads who voted and what its groups are; the
-    // author always, because proposing counts as their yes, whether they
-    // are a person, because only a person's proposing does, and whether a
-    // coding agent put it up for them, because then it does not either.
-    const [facts, voters, author, byAgent, withdrew] = await Promise.all([
+    // #4666: a rules project reads who voted and what its groups are, and
+    // the author for the member floor (a yes from someone else). Proposing
+    // is never the author's yes (governance-rules.ts).
+    const [facts, voters, author] = await Promise.all([
       rulesFacts(pool, appId, gov, { fresh }),
       voterSets(pool, kind, id),
       authorId !== undefined ? authorId : proposalAuthorId(pool, kind, id),
-      madeByAgent(pool, kind, id),
-      authorWithdrew(pool, kind, id),
     ]);
     const reason = explicitApproval
       ? (explicitReason !== undefined ? explicitReason : await storedExplicitReason(pool, kind, id))
       : null;
     return computeGate(gov, facts.membersActive, voters.yes.size, voters.no.size, openedAt, now, {
       explicitApproval, explicitReason: reason, authorId: author, voters,
-      authorIsBot: author != null ? await authorIsBot(pool, author) : false,
-      madeByAgent: byAgent,
-      authorWithdrew: withdrew,
       rulesFacts: facts, memberCount: facts.memberCount,
       firstVersion: first,
     });
@@ -854,12 +724,6 @@ module.exports = {
   voterSetsBatch,
   rulesContext,
   rulesGateOpts,
-  botAuthoredBatch,
-  agentMadeBatch,
-  authorIsBot,
-  madeByAgent,
-  authorWithdrew,
-  authorWithdrewBatch,
   firstVersionSql,
   isFirstVersion,
   applyFirstVersion: gateRules.applyFirstVersion,

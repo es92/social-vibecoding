@@ -5352,7 +5352,7 @@ test('#1933: the declared check reads the chip off a demo issue card on the boar
 
 // ─── #2227: your own governance proposal is your work too ─────────────
 
-test('a propose-to-close you opened yourself is not owed a vote from you', () => {
+test('a propose-to-close you opened yourself is owed a vote from you too', () => {
   const AppView = makeAppView();
   seed(AppView);
   // Three rows in review: a code proposal of mine, a governance
@@ -5370,14 +5370,14 @@ test('a propose-to-close you opened yourself is not owed a vote from you', () =>
       created_at: at(2), last_message_at: at(2), up_count: 0, down_count: 0, my_vote: null },
   ];
   const v = AppView._workshopView();
-  // A propose-to-close you opened is not owed a vote from you — the same
-  // de-dup the code proposal gets, since "waiting on you" asks whether you
-  // have voted, not whose it is. (It was also "What you are working on"'s;
-  // your work is the Homeroom bot tab's now, 5 Nov 2026.)
-  assert.ok(!plain(v.votes.rows).some((r) => r.key.includes('gov:71')),
-    'your own governance proposal is not also owed a vote from you');
+  // 11 Nov 2026: opening a decision is not your yes (governance-rules.ts),
+  // so a propose-to-close you opened is owed your vote like anyone's, as is
+  // your own code proposal: "waiting on you" asks whether you have voted,
+  // not whose it is.
+  assert.ok(plain(v.votes.rows).some((r) => r.key.includes('gov:71')),
+    'your own governance proposal is owed a vote from you');
   assert.ok(plain(v.votes.rows).some((r) => r.key.includes('gov:72')),
-    'but somebody else’s still is');
+    'and somebody else’s still is');
 });
 
 test('the tab strip and the head pin as one band (#2339 follow-up)', () => {

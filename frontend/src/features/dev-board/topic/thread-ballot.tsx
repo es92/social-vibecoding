@@ -30,7 +30,7 @@ export function ThreadBallot({ slug, data, here, onChanged }: {
   const own = here.type === 'change' ? data.items.find((i) => i.type === 'change' && i.id === here.id) : null;
   const anchor = own ? (own.closes || []) : [];
   if (here.type === 'change' && !anchor.length) return null;
-  const ballot = ballotOf(data, new Set(), anchor);
+  const ballot = ballotOf(data, anchor);
   if (!ballot) return null;
   return (
     <Competing key={ballot.options.map((o) => o.id).join(',')} slug={slug} data={data} anchor={anchor}

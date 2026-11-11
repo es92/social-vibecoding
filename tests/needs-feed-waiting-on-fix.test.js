@@ -1,8 +1,9 @@
 'use strict';
 
-// #6389: a change the viewer made through a coding agent, whose votes are in
-// but whose tests fail or which conflicts with main, waits on their fix. The
-// Needs you row says what it waits on instead of Vote.
+// #6389: a change the viewer made, whose votes are in but whose tests fail or
+// which conflicts with main, waits on their fix. The Needs you row says what
+// it waits on instead of Vote. First for a change a coding agent submitted;
+// every change since proposing stopped being its author's yes (11 Nov 2026).
 //
 // Run with: node --test tests/needs-feed-waiting-on-fix.test.js
 
@@ -30,7 +31,8 @@ test('#6389: waitingOnFix names tests failing, then a conflict, once the vote is
 test('#6389: while the gate is not met the row is still a Vote', () => {
   assert.equal(overview.waitingOnFix(row({ yes: 0, check_state: 'failing' }), 42), null);
   assert.equal(overview.waitingOnFix(row({ check_state: 'failing' }), 7), null, 'somebody else\'s change');
-  assert.equal(overview.waitingOnFix(row({ external_agent: null, check_state: 'failing' }), 42), null, 'made on Homeroom');
+  assert.deepEqual(overview.waitingOnFix(row({ external_agent: null, check_state: 'failing' }), 42), ['checks'],
+    'one made on Homeroom waits on its fix the same way');
 });
 
 test('#6389: an explicit approval needs a Yes from another member', () => {
@@ -41,7 +43,8 @@ test('#6389: an explicit approval needs a Yes from another member', () => {
 
 test('#6389: with its votes in and nothing left to fix, the row leaves Needs you', () => {
   const met = row();
-  assert.equal(overview.authorAgentGateMet(met, 42), true);
+  assert.equal(overview.authorGateMet(met, 42), true);
+  assert.equal(overview.authorGateMet({ ...met, external_agent: null }, 42), true, 'made on Homeroom too');
   assert.equal(overview.waitingOnFix(met, 42), null, 'nothing is left for them to fix');
 });
 

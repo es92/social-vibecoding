@@ -8887,10 +8887,6 @@
     "text": "You voted no.",
     "description": "Line on the Votes card of a change's page: the viewer's own current vote is No."
   },
-  "page.votes.facts.yourProposal": {
-    "text": "Proposing it counts as your yes.",
-    "description": "Line on the Votes card of a change the viewer proposed, on a project whose rule counts proposing a change as a Yes from its author, who has not voted themselves."
-  },
   "page.votes.facts.notVoted": {
     "text": "You haven’t voted.",
     "description": "Line on the Votes card of a change's page: the viewer can vote on this change and has not."

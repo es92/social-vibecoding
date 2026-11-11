@@ -119,7 +119,7 @@ SELECT t.id, t.app_id, mine.own, t.number, t.kind, t.title AS thread_title, t.st
        req.id AS request_id, req.title AS request_title, req.state AS request_state, req.updated_at AS request_at,
        ch.id AS change_id, ch.pr_number, ch.status AS change_status, ch.user_id AS change_user,
        ch.title AS change_title, ch.promoted_at, ch.merged_at, ch.live_at, ch.last_activity_at,
-       ch.voted, ch.my_vote, ch.by_agent, ch.check_state, ch.needs_fix,
+       ch.voted, ch.my_vote, ch.check_state, ch.needs_fix,
        -- #6282: an update on its way holds the vote the change would ask for.
        ch.update_coming, ch.update_ask,
        dec.id AS decision_id, dec.status AS decision_status, dec.mine AS decision_mine, dec.my_vote AS decision_vote,
@@ -157,7 +157,6 @@ SELECT t.id, t.app_id, mine.own, t.number, t.kind, t.title AS thread_title, t.st
              WHERE v.session_id = cs.id AND v.user_id = $1
                AND v.approval_epoch IS NOT DISTINCT FROM cs.approval_epoch
              LIMIT 1) AS my_vote,
-           (cs.external_agent IS NOT NULL) AS by_agent,
            -- Waits on its author for a fix, as the Workshop's Waiting on you
            -- read it (AppView._workshopNeedsFix): its checks failed, its
            -- preview did not build, or a merge attempt hit a conflict that
@@ -383,9 +382,9 @@ function standing(row, viewerId, now = new Date(), botId = null, work = null, vi
     || (state.requesterId != null && Number(state.requesterId) === Number(viewerId));
   // The bot's question is the Needs you feed's Answer.
   if (decides && state.stage === 'waiting_for_you' && state.why === 'question') return null;
-  // Owed by everyone but its author, and by its author too when a coding
-  // agent submitted it for them: their yes is a tap (governance-rules.ts).
-  const wouldVote = !row.voted && (!theirs || row.by_agent);
+  // Owed by everyone, its author included: proposing is never their yes,
+  // and their tap is (governance-rules.ts).
+  const wouldVote = !row.voted;
   // #6282: an update on its way holds the vote. It is listed for its own
   // people and for the ones who would have been asked to vote; somebody who
   // already voted and only wrote in it gets no row.

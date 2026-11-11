@@ -101,7 +101,9 @@ test('a project’s rules, stored by the reconcile and read by the gate', { time
     const mine = await proposal(evan);
     const own = await gate(mine);
     assert.equal(own.mode, 'rules');
-    assert.equal(own.mergeable, true, 'the creator’s own change goes live on proposing it');
+    assert.equal(own.mergeable, false, 'proposing is not the creator’s yes (11 Nov 2026)');
+    await vote(mine, evan, 'yes');
+    assert.equal((await gate(mine)).mergeable, true, 'their tap is');
 
     const hers = await proposal(maya);
     assert.equal((await gate(hers)).mergeable, false);
@@ -138,9 +140,11 @@ test('a project’s rules, stored by the reconcile and read by the gate', { time
     await vote(his, snait, 'yes');
     assert.equal((await gate(his)).mergeable, true);
 
-    // Proposing counts as a yes from a lifeguard who makes the change.
+    // A lifeguard who makes the change says yes with a tap, not by proposing.
     const hers = await proposal(maya);
     await vote(hers, snait, 'yes');
+    assert.equal((await gate(hers)).mergeable, false);
+    await vote(hers, maya, 'yes');
     assert.equal((await gate(hers)).mergeable, true);
 
     const described = await governance.describeApproval(pool, app.id, await governance.getGovernance(pool, app.id));

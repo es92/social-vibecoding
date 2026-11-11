@@ -8264,7 +8264,7 @@ const AppView = {
       }).format(new Date(pill.countdown));
       facts.push({ key: 'ends', text: PlatformI18n.t('changes:page.votes.facts.ends', { when }) });
     }
-    const mine = AppView._myVoteFact(item, rule, updateComing);
+    const mine = AppView._myVoteFact(item, updateComing);
     if (mine) facts.push(mine);
     return facts;
   },
@@ -8272,15 +8272,11 @@ const AppView = {
   // The viewer's own line on the Votes card, or null when there is nothing
   // true to say: no account, a read-only admin, or a yes from an earlier
   // version, which the card's note already words.
-  _myVoteFact(item, rule, updateComing) {
+  _myVoteFact(item, updateComing) {
     if (!App.user || AppView.readOnly) return null;
     if (item.my_vote === 'yes') return { key: 'mine', text: PlatformI18n.t('changes:page.votes.facts.youSaidYes') };
     if (item.my_vote === 'no') return { key: 'mine', text: PlatformI18n.t('changes:page.votes.facts.youSaidNo') };
     if (item.my_vote || item.my_prior_vote) return null;
-    // The counted rules take proposing as the author's yes (governance-rules.ts).
-    if (rule && rule.authorYes && Number(item.user_id) === Number(App.user.id)) {
-      return { key: 'mine', text: PlatformI18n.t('changes:page.votes.facts.yourProposal') };
-    }
     // While an update is on its way the card asks for no vote.
     if (updateComing) return null;
     return { key: 'mine', ask: true, text: PlatformI18n.t('changes:page.votes.facts.notVoted') };
@@ -14122,28 +14118,17 @@ const AppView = {
     // Unfiltered on purpose: a vote owed is owed whatever the board is
     // narrowed to. Same predicate as the filter bar's "Waiting on you".
     //
-    // Minus your own work: your own promoted proposal satisfies "waiting on
-    // you" (the predicate asks whether you have voted, not whose it is).
-    //
-    // V01 (audit, 2 Nov 2026): minus what the viewer AUTHORED, not minus
-    // everything in Your work. Your work also holds the change Homeroom bot
-    // built from the viewer's own request (#4538), and their vote on it is
-    // still owed: the Communities feed counts it (OWED_PROPOSALS_WHERE in
-    // src/routes/workshop-overview.js), so leaving it out here had the Hub
-    // say "Nothing more to vote on" and Needs you "All caught up" while
-    // Communities said "1 vote waiting on you". This is the server's rule:
-    // your own change is not owed, unless a coding agent submitted it for
-    // you (#6006, it waits on your yes), and nor is a decision you opened.
-    // The pane that drew both strips one under the other is gone, so the
-    // same change in Your work and in Needs you is two questions, not a
-    // duplicate.
-    const authoredByMe = (x) => meId != null && (x.kind === 'proposal'
-      ? String(x.item.user_id) === String(meId) && !x.item.external_agent
-      : x.kind === 'gov' && String(x.item.created_by) === String(meId));
-    const notMine = (x) => !authoredByMe(x);
+    // Your own work too (11 Nov 2026): proposing a change or opening a
+    // decision is never your yes (governance-rules.ts), so a vote on it is
+    // owed by you like anyone else. This is the server's rule
+    // (OWED_PROPOSALS_WHERE and OWED_GOVERNANCE_WHERE in
+    // src/routes/workshop-overview.js); a Hub that left it out said "Nothing
+    // more to vote on" while Communities said "1 vote waiting on you" (V01,
+    // 2 Nov 2026). The same change in Your work and in Needs you is two
+    // questions, not a duplicate.
     const owed = [];
     for (const x of buckets.inReview) {
-      if (notMine(x) && AppView._devCardMatches(x.kind, x.item, { needsVote: true })) owed.push(x);
+      if (AppView._devCardMatches(x.kind, x.item, { needsVote: true })) owed.push(x);
     }
     // The plain-language summary a voter reads (`pr_summary_md`), carried on
     // the row: the Needs-you deck leads with it, because the card's title is
@@ -14202,7 +14187,7 @@ const AppView = {
     // denominator behind the ring. `needsVote` above is the same population
     // minus the ones they have already answered, so `total - count` is what
     // they have done and the ring can state progress instead of a debt.
-    const votable = buckets.inReview.filter((x) => notMine(x) && (x.kind === 'proposal'
+    const votable = buckets.inReview.filter((x) => (x.kind === 'proposal'
       ? x.item.status === 'promoted'
       : true));
     const votes = {

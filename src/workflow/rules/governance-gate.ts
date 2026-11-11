@@ -618,7 +618,7 @@ export interface GovernedGate extends Gate {
   passedBy?: { group: string; kind: string; n: number | null } | null;
   // #3800: the rule the proposal's yeses are counted against (evaluateRules'
   // `shown`), for the Votes card. Null while its group cannot be answered.
-  shownRule?: { kind: string; n: number | null; electorate: number; authorYes: boolean } | null;
+  shownRule?: { kind: string; n: number | null; electorate: number } | null;
   rules?: Array<{ group: string; kind: string; n: number | null; size: number; yes: number; need: number | null; passed: boolean; empty: boolean; min?: number }>;
   // Set (true) only when the first-version rule let it through
   // (applyFirstVersion); absent otherwise.
@@ -647,19 +647,9 @@ export interface GateOpts {
   // author, and the app facts its rules read (governance.js rulesFacts).
   explicitReason?: string | null;
   voters?: { yes: Iterable<number> | Set<number>; no: Iterable<number> | Set<number> } | null;
+  // The author, for the member floor only (a yes from someone else).
+  // Proposing is never a yes (governance-rules.ts, "PROPOSING IS NOT A YES").
   authorId?: Count;
-  // The author is an account the platform runs (users.is_synthetic: Homeroom
-  // bot). On a rules project proposing is a person's yes; the bot's is none
-  // (governance-rules.ts, "Only a PERSON's proposing is a yes").
-  authorIsBot?: boolean;
-  // A coding agent submitted the change for its author (chat_sessions.
-  // external_agent): proposing is not their yes until they tap it
-  // (governance-rules.ts, "Only proposing ON HOMEROOM is a yes").
-  madeByAgent?: boolean;
-  // The author took their own vote back on this version
-  // (chat_sessions.author_yes_withdrawn_epoch): proposing is not their yes
-  // again until they vote or a new version lands (governance-rules.ts).
-  authorWithdrew?: boolean;
   rulesFacts?: RulesFacts | null;
   // The change is its project's first version (services/first-version-
   // rule.js): applyFirstVersion below.
@@ -731,9 +721,7 @@ export function applyFirstVersion<G extends Gate>(gate: G, { explicitApproval = 
 // `opts.adminNoAt` arms a week-long takedown from an admin's lone No
 // (applyAdminNo above), and `opts.approverNoAt` a shorter one from an
 // approver's (applyApproverNo), before the first-version rule clears every rejection
-// field. A rules project's "Yes" is the counted voters, when it has them: its
-// author's implicit proposing-yes is not a cast Yes and does not stop the
-// clock.
+// field. A rules project's "Yes" is the counted voters, when it has them.
 export function computeGate(
   gov: Governance, active: Count, yesCount: Count, noCount: Count, openedAt: Instant, now: Instant,
   opts: GateOpts = {},
@@ -821,9 +809,6 @@ export function computeRulesGate(
   } : null;
   const authorId = opts.authorId != null && Number.isFinite(int(opts.authorId))
     ? int(opts.authorId) : null;
-  const authorIsBot = !!opts.authorIsBot;
-  const madeByAgent = !!opts.madeByAgent;
-  const authorWithdrew = !!opts.authorWithdrew;
   // The member floor on the majority rules of a flagged proposal: a yes from
   // someone other than its author, once the community has more than one member.
   let floor: Floor | null = null;
@@ -838,10 +823,6 @@ export function computeRulesGate(
     facts: { ...facts, membersActive },
     voters,
     counts: { yes: Math.max(int(yesCount) || 0, 0), no: Math.max(int(noCount) || 0, 0) },
-    authorId,
-    authorIsBot,
-    madeByAgent,
-    authorWithdrew,
     openedAt,
     now,
     noTimers: explicitApproval,
@@ -851,9 +832,8 @@ export function computeRulesGate(
     atLeastGate: (n, yes, no, opened, at) => atLeastGate(n, yes, no, opened, at, {}, rules.oppositionWindowMs),
   });
   const { gate, owner, shown, results, passedBy } = evaluated;
-  const creatorYes = !!(facts.creatorId && voters
-    && (voters.yes.has(facts.creatorId)
-      || (authorId === facts.creatorId && !authorIsBot && !madeByAgent && !authorWithdrew && !voters.no.has(facts.creatorId))));
+  // Only a Yes the creator cast: proposing is none (governance-rules.ts).
+  const creatorYes = !!(facts.creatorId && voters && voters.yes.has(facts.creatorId));
   return {
     ...gate,
     policy: 'anyone',
@@ -872,7 +852,7 @@ export function computeRulesGate(
     partial: evaluated.partial,
     passedBy: passedBy ? { group: passedBy.group, kind: passedBy.kind, n: passedBy.n } : null,
     shownRule: shown.known
-      ? { kind: shown.kind, n: shown.n, electorate: shown.electorate, authorYes: shown.authorYes } : null,
+      ? { kind: shown.kind, n: shown.n, electorate: shown.electorate } : null,
     rules: results.map((r) => ({
       group: r.group, kind: r.kind, n: r.n, size: r.size, yes: r.yes, need: r.need,
       passed: r.passed, empty: r.empty,

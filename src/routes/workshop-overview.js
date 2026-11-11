@@ -178,12 +178,11 @@ const BALLOT_THREAD_SQL = (cs) => `${cs}.thread_id IS NOT NULL AND cardinality($
          EXISTS (SELECT 1 FROM chat_sessions rb WHERE ${RIVAL_SQL(cs, 'rb')})
       OR EXISTS (SELECT 1 FROM issues cb WHERE ${RIVAL_CLOSE_SQL(cs, 'cb')}))`;
 
-// A change is owed by everyone but its author, and by its author too when a
-// coding agent submitted it for them (`external_agent`): proposing that way
-// is not their yes, and their tap is (governance-rules.ts). Nor is it their
-// pick on a ballot.
+// A change is owed by everyone, its author included: proposing is never
+// their yes, and their tap is (governance-rules.ts, 11 Nov 2026; a change a
+// coding agent submitted was the first, #6006). Nor is it their pick on a
+// ballot.
 const OWED_PROPOSALS_WHERE = `cs.status = 'promoted'
-       AND (cs.user_id IS DISTINCT FROM $1 OR cs.external_agent IS NOT NULL)
        AND NOT EXISTS (
          SELECT 1 FROM pr_votes pv
           WHERE pv.session_id = cs.id
@@ -218,18 +217,18 @@ const OWED_PROPOSALS_WHERE = `cs.status = 'promoted'
        AND NOT (${BALLOT_THREAD_SQL('cs')} AND (
              EXISTS (SELECT 1 FROM chat_sessions rv
                       WHERE ${RIVAL_SQL('cs', 'rv')}
-                        AND (rv.id < cs.id OR (rv.user_id = $1 AND rv.external_agent IS NULL)
+                        AND (rv.id < cs.id
                              OR EXISTS (SELECT 1 FROM pr_votes pb
                                          WHERE pb.session_id = rv.id AND pb.user_id = $1
                                            AND ${currentVotePredicateSql('pb', 'rv')})))
           OR EXISTS (SELECT 1 FROM issues cv
                       WHERE ${RIVAL_CLOSE_SQL('cs', 'cv')}
-                        AND (cv.created_by = $1
-                             OR EXISTS (SELECT 1 FROM issue_votes ib WHERE ib.issue_id = cv.id AND ib.user_id = $1)))))`;
+                        AND EXISTS (SELECT 1 FROM issue_votes ib WHERE ib.issue_id = cv.id AND ib.user_id = $1))))`;
 
+// A decision is owed by everyone too, whoever opened it: opening it is not
+// their yes (governance-rules.ts).
 const OWED_GOVERNANCE_WHERE = `i.status = 'open'
        AND ${governanceKindsSql('i')}
-       AND i.created_by IS DISTINCT FROM $1
        AND NOT EXISTS (
          SELECT 1 FROM issue_votes iv
           WHERE iv.issue_id = i.id AND iv.user_id = $1
@@ -786,11 +785,11 @@ async function owedByCommunity(pool, userId, { showSelfHosted = false, isAdmin =
 async function withVotesRequired(pool, rows, viewerId = null) {
   const byApp = new Map();
   for (const row of rows) {
-    // #6389: a row the viewer made through a coding agent needs the same
-    // count, so a met vote can be told from one still owed.
-    const authorsAgent = viewerId != null && row.external_agent
+    // #6389: a row that is the viewer's own change needs the same count, so
+    // a met vote can be told from one still owed.
+    const authors = viewerId != null && row.kind === 'proposal'
       && Number(row.author_id) === Number(viewerId);
-    if (row.solo !== true && !authorsAgent) continue;
+    if (row.solo !== true && !authors) continue;
     if (!byApp.has(row.app_id)) byApp.set(row.app_id, []);
     byApp.get(row.app_id).push(row);
   }
@@ -809,13 +808,14 @@ async function withVotesRequired(pool, rows, viewerId = null) {
 }
 
 /**
- * #6389: whether a change the viewer made through a coding agent has the
- * votes it needs, so the row is waiting on their fix rather than on a Vote.
- * The same facts the change's Votes card reads: the gate's Yes count, and,
- * where an explicit approval is flagged, a Yes from another member.
+ * #6389: whether a change the viewer made has the votes it needs, so the row
+ * is waiting on their fix rather than on a Vote. The same facts the change's
+ * Votes card reads: the gate's Yes count, and, where an explicit approval is
+ * flagged, a Yes from another member. First for a change a coding agent
+ * submitted; every change since proposing stopped being a yes.
  */
-function authorAgentGateMet(row, viewerId) {
-  if (row.kind !== 'proposal' || !row.external_agent) return false;
+function authorGateMet(row, viewerId) {
+  if (row.kind !== 'proposal') return false;
   if (viewerId == null || Number(row.author_id) !== Number(viewerId)) return false;
   const needed = parseInt(row.votes_required, 10);
   if (!Number.isFinite(needed)) return false;
@@ -825,13 +825,12 @@ function authorAgentGateMet(row, viewerId) {
 }
 
 /**
- * #6389: what a change the viewer made through a coding agent waits on once
- * its vote is in, in the order the page says it: `'checks'`, then
- * `'conflict'`. Null while the gate is not met (the row stays a Vote) and
- * when nothing is left for them to fix.
+ * #6389: what a change the viewer made waits on once its vote is in, in the
+ * order the page says it: `'checks'`, then `'conflict'`. Null while the gate
+ * is not met (the row stays a Vote) and when nothing is left for them to fix.
  */
 function waitingOnFix(row, viewerId) {
-  if (!authorAgentGateMet(row, viewerId)) return null;
+  if (!authorGateMet(row, viewerId)) return null;
   const reasons = [];
   if (row.check_state === 'failing') reasons.push('checks');
   if (row.mergeability === 'conflict'
@@ -1083,9 +1082,9 @@ function shapeNeedsFeed(rows, { inThreads = false } = {}) {
     yes: row.yes == null ? null : Number(row.yes),
     no: row.no == null ? null : Number(row.no),
     ...(approvedAlone(row) ? { approve: true } : {}),
-    // #6389: the viewer's own change, made through a coding agent, whose
-    // votes are in and which waits on their fix. The row says what it waits
-    // on instead of Vote, and names the tool it was made in.
+    // #6389: the viewer's own change whose votes are in and which waits on
+    // their fix. The row says what it waits on instead of Vote, and names the
+    // tool it was made in when a coding agent made it.
     ...(row.kind === 'proposal' && Array.isArray(row.waiting_on) && row.waiting_on.length
       ? { waitingOn: row.waiting_on, agent: row.external_agent || null } : {}),
     // #5365: only when set — an unmarked row carries no flag at all, so the
@@ -1131,11 +1130,11 @@ async function needsFeedFor(pool, { user, showSelfHosted = false, inThreads = fa
   await withPictures(pool, rows, { shotsPresent, viewer: user });
   await withViewerDecides(pool, rows, user.id);
   const voted = await withVotesRequired(pool, rows, user.id);
-  // #6389: a row that is the viewer's own change made through a coding
-  // agent says what it waits on once its vote is in, and leaves Needs you
-  // when nothing is left for them to fix (only testing is running).
+  // #6389: a row that is the viewer's own change says what it waits on once
+  // its vote is in, and leaves Needs you when nothing is left for them to
+  // fix (only testing is running).
   for (const row of voted) row.waiting_on = waitingOnFix(row, user.id);
-  const kept = voted.filter((row) => !(authorAgentGateMet(row, user.id) && !row.waiting_on));
+  const kept = voted.filter((row) => !(authorGateMet(row, user.id) && !row.waiting_on));
   const items = decidingFirst(shapeNeedsFeed(kept, { inThreads }));
   if (!inThreads) return items;
   // #6262: how many messages in each item's thread are new to the viewer.
@@ -1445,7 +1444,7 @@ module.exports = {
   LIVE_FEED_SQL, LIVE_FEED_MAX, shapeLiveFeed,
   workshopOverviewRoutes, demoNeedsVoteRoutes, withDemoCounts, DEMO_COUNTS, COUNTS_SQL,
   withDemoItems, DEMO_ITEMS, ITEMS_SQL, ITEMS_PER_APP, ITEMS_TOTAL, groupItems,
-  NEEDS_FEED_SQL, NEEDS_FEED_IN_THREADS_SQL, NEEDS_FEED_MAX, needsFeedFor, BOT_QUESTIONS_SQL, BOT_QUESTIONS_MAX, shapeNeedsFeed, withVotesRequired, waitingOnFix, authorAgentGateMet, withViewerDecides, decidingFirst,
+  NEEDS_FEED_SQL, NEEDS_FEED_IN_THREADS_SQL, NEEDS_FEED_MAX, needsFeedFor, BOT_QUESTIONS_SQL, BOT_QUESTIONS_MAX, shapeNeedsFeed, withVotesRequired, waitingOnFix, authorGateMet, withViewerDecides, decidingFirst,
   withPictures, withCodeMissing, pictureFields, decisionFacts, DEMO_NEEDS_FEED, withDemoNeedsFeed,
   isDemoNeedsProposal,
   OWED_BY_COMMUNITY_SQL, owedByCommunity,

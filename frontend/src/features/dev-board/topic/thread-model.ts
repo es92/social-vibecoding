@@ -402,12 +402,9 @@ export function threadLayout(payload: ThreadPayload | null, here: ThreadHere | n
  * clears only that change's), and the first to pass its project's approval
  * rule goes in and closes the rest.
  *
- * Proposing counts as a yes (governance-rules.ts): on a project whose rule
- * counts yeses, a change's author is counted for it unless they voted No, so
- * the ballot shows their own change as their pick. `authorCounts` names the
- * changes whose author that is true of for this viewer (read off each
- * change's own proposal: its rule, and its author a person, not the bot).
- * Null when there is no ballot. Pure.
+ * The pick is only what the viewer voted: proposing a change is never its
+ * author's yes (governance-rules.ts), so their own change is not their pick
+ * until they choose it. Null when there is no ballot. Pure.
  */
 export interface Ballot {
   options: ThreadItem[];
@@ -416,15 +413,13 @@ export interface Ballot {
   pick: number | 'neither' | 'close' | null;
 }
 
-/** A change's vote as the gate counts it for the viewer: their own, or their authorship. */
-function counted(o: ThreadItem, authorCounts: ReadonlySet<number>): 'yes' | 'no' | null {
-  if (o.myVote) return o.myVote;
-  return o.mine && authorCounts.has(o.id) ? 'yes' : null;
+/** A change's vote as the gate counts it for the viewer: the one they cast. */
+function counted(o: ThreadItem): 'yes' | 'no' | null {
+  return o.myVote || null;
 }
 
 export function ballotOf(
   payload: ThreadPayload | null,
-  authorCounts: ReadonlySet<number> = new Set(),
   anchor: readonly number[] | null = null,
 ): Ballot | null {
   if (!payload) return null;
@@ -435,7 +430,7 @@ export function ballotOf(
   const options = payload.items.filter((i) => i.type === 'change' && i.state === 'review' && closesHere(i));
   const close = payload.items.find((i) => i.type === 'close' && i.status === 'open' && i.target != null && on.has(Number(i.target))) || null;
   if (options.length < (close ? 1 : 2)) return null;
-  const votes = options.map((o) => counted(o, authorCounts));
+  const votes = options.map((o) => counted(o));
   const yes = options.filter((_, i) => votes[i] === 'yes');
   const pick = close && close.myVote === 'yes' && !yes.length ? 'close'
     : yes.length === 1 ? yes[0].id
@@ -449,21 +444,18 @@ export type BallotVote =
 
 /**
  * The votes a pick casts. A change: Yes on it, and its Yes taken back from
- * every other (a No would count against it). The viewer's own change, which
- * counts as their Yes without a vote, takes a No to stop counting. Neither,
- * or Close it: No on every change, and Close it is Yes on the close. Only
- * what changes is cast; a close's Yes is taken back by voting it again (the
- * server's toggle). Pure.
+ * every other (a No would count against it). Neither, or Close it: No on
+ * every change, and Close it is Yes on the close. Only what changes is cast;
+ * a close's Yes is taken back by voting it again (the server's toggle). Pure.
  */
-export function ballotVotes(ballot: Ballot, pick: number | 'neither' | 'close', authorCounts: ReadonlySet<number> = new Set()): BallotVote[] {
+export function ballotVotes(ballot: Ballot, pick: number | 'neither' | 'close'): BallotVote[] {
   const out: BallotVote[] = [];
   for (const o of ballot.options) {
-    const now = counted(o, authorCounts);
-    const implicit = !o.myVote && now === 'yes';
+    const now = counted(o);
     let want: 'yes' | 'no' | null;
     if (pick === 'neither' || pick === 'close') want = 'no';
     else if (o.id === pick) want = 'yes';
-    else want = now === 'yes' ? (implicit ? 'no' : null) : now;
+    else want = now === 'yes' ? null : now;
     if (want === now) continue;
     out.push({ kind: 'change', sessionId: o.id, vote: want, epoch: o.epoch ?? null });
   }

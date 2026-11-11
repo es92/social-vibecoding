@@ -2976,20 +2976,20 @@
     "description": "The same preset's name as everyone but its creator reads it. {{creator}} is the creator's username."
   },
   "whoDecides.preset.you_or_the_group.line": {
-    "text": "You ship on your own. Others need you or most of the group.",
-    "description": "Line under the You or the group preset, for the creator."
+    "text": "Your yes ships any change. So does a yes from most of the group.",
+    "description": "Line under the You or the group preset, for the creator: a change goes live once the creator says yes (proposing a change is not a yes; the creator taps Yes on their own changes too), or once most of the group says yes."
   },
   "whoDecides.preset.you_or_the_group.lineOther": {
-    "text": "{{creator}} ships on their own. Others need {{creator}} or most of the group.",
+    "text": "A yes from {{creator}} ships any change. So does a yes from most of the group.",
     "description": "Line under the same preset for anyone but the creator. {{creator}} is the creator's username."
   },
   "whoDecides.preset.two_yeses.name": {
     "text": "Two yeses",
-    "description": "Preset name: a change goes live once two people say yes, whoever made it and one more."
+    "description": "Preset name: a change goes live once any two people say yes; whoever made it may be one of them."
   },
   "whoDecides.preset.two_yeses.line": {
-    "text": "Whoever makes it, plus one more. While it’s just you, yours is enough.",
-    "description": "Line under the Two yeses preset on the Who can see & change it sheet, where a project's visibility and approval rule are set: a change goes live with a yes from whoever made it plus one other person; a project of one needs only that person's yes."
+    "text": "Any two people say yes, whoever made it among them. While it’s just you, your yes is enough.",
+    "description": "Line under the Two yeses preset on the Who can see & change it sheet, where a project's visibility and approval rule are set: a change goes live once two people tap Yes, and the person who made it may be one of them (making it is not a yes); a project of one needs only that person's yes."
   },
   "whoDecides.preset.open_floor.name": {
     "text": "Open floor",
@@ -3040,8 +3040,8 @@
     "description": "You or the group, for a change someone else makes, when the reader is not the creator."
   },
   "whoDecides.plays.two_yeses.anyone": {
-    "text": "Live once one more person says yes.",
-    "description": "Two yeses, under the row Anyone makes a change: one yes besides that of the person who made the change puts it live."
+    "text": "Live once two people say yes. Its maker’s yes can be one of them.",
+    "description": "Two yeses, under the row Anyone makes a change: two people tapping Yes put it live, and the person who made the change may be one of them (making it is not a yes)."
   },
   "whoDecides.plays.open_floor.anyone": {
     "text": "Their own yes is enough. Live once its checks pass.",

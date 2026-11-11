@@ -35,7 +35,7 @@ function stub(id, exports) {
 
 // A proposal up for a vote at epoch 2, with the viewer's current Yes on it.
 function makePool({ status = 'promoted', epoch = 2, vote = { vote: 'yes', epoch: 2 }, missing = false, author = 9 } = {}) {
-  const state = { status, epoch, vote, missing, author, told: [], withdrew: null };
+  const state = { status, epoch, vote, missing, author, told: [] };
   const log = [];
   const sessionRow = () => ({
     id: 7, app_id: 5, user_id: 9, status: state.status, pr_number: 26, pr_title: 'Dark mode',
@@ -51,20 +51,13 @@ function makePool({ status = 'promoted', epoch = 2, vote = { vote: 'yes', epoch:
       if (/FROM chat_sessions WHERE id = \$1 FOR UPDATE/.test(text)) {
         return { rows: state.missing ? [] : [{ status: state.status, approval_epoch: state.epoch, user_id: state.author }] };
       }
-      if (/UPDATE chat_sessions SET author_yes_withdrawn_epoch/.test(text)) {
-        assert.deepEqual(params, [7, 3], 'the caller\'s own row, and no one else\'s');
-        assert.match(text, /user_id = \$2/, 'only the author marks it');
-        state.withdrew = state.epoch;
-        return { rows: [], rowCount: 1 };
-      }
       if (/DELETE FROM pr_votes/.test(text)) {
         assert.deepEqual(params, [7, 3], 'only the caller\'s own vote on this change');
         assert.match(text, /pv\.approval_epoch = cs\.approval_epoch/, 'only the vote that counts now');
         const v = state.vote;
         if (!v || v.epoch !== state.epoch) return { rows: [], rowCount: 0 };
         state.vote = null;
-        assert.match(text, /cs\.user_id AS author_id/, 'the row says whose change it is');
-        return { rows: [{ vote: v.vote, reason: v.reason || null, author_id: state.author }], rowCount: 1 };
+        return { rows: [{ vote: v.vote, reason: v.reason || null }], rowCount: 1 };
       }
       if (/INSERT INTO wf_events/.test(text)) {
         state.told.push({ text, params });
@@ -242,34 +235,17 @@ test('a Yes whose ready cards were not settled answers without readyReopened', a
   });
 });
 
-// ── 1b. #6477: the author's own retraction ────────────────────────────
+// ── 1b. The author's own retraction ───────────────────────────────────
 
-test('#6477: the author taking their vote back marks this version, so proposing is no longer their yes', async () => {
+test('the author taking their own vote back removes that vote and nothing more', async () => {
+  // Proposing is never a yes (governance-rules.ts, 11 Nov 2026), so there is
+  // no proposing yes to switch off: the stamp #6477 wrote is gone.
   const pool = makePool({ author: 3 });
   await withServer(pool, {}, async (ctx) => {
     const r = await ctx.retract({ expectedEpoch: 2 });
     assert.equal(r.status, 200);
-    assert.equal(pool.state.withdrew, 2, 'the current approval epoch is stamped, in the same transaction');
-    assert.ok(pool.log.includes('UPDATE chat_sessions SET'), 'the stamp is written in the same transaction');
-  });
-});
-
-test('#6477: someone else taking a vote back does not mark the author’s proposing yes', async () => {
-  const pool = makePool({ author: 9 });
-  await withServer(pool, {}, async (ctx) => {
-    const r = await ctx.retract({ expectedEpoch: 2 });
-    assert.equal(r.status, 200);
-    assert.equal(pool.state.withdrew, null);
-    assert.ok(!pool.log.includes('UPDATE chat_sessions SET'));
-  });
-});
-
-test('#6477: a refused retraction leaves the author’s proposing yes alone', async () => {
-  const pool = makePool({ author: 3, status: 'merging' });
-  await withServer(pool, {}, async (ctx) => {
-    const r = await ctx.retract({ expectedEpoch: 2 });
-    assert.equal(r.status, 409);
-    assert.equal(pool.state.withdrew, null);
+    assert.equal(pool.state.vote, null);
+    assert.ok(!pool.log.includes('UPDATE chat_sessions SET'), 'nothing is stamped on the change');
   });
 });
 

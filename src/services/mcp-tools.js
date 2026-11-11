@@ -4145,7 +4145,9 @@ function registerTools(server, ctx) {
       return toolResult({
         slug: s,
         proposal: proposalOut(r.body && r.body.proposal),
-        nextStep: 'Up for the project\'s vote: the card keeps its current picture until the vote passes. Share `proposal` with the group; get_featured_illustration shows it as pending meanwhile.',
+        // Proposing is never its author's yes (governance-rules.ts), so say
+        // where theirs is cast, as submit_work does.
+        nextStep: 'Up for the project\'s vote: the card keeps its current picture until the vote passes. Proposing it is not a vote: tell the user their own yes counts once they tap Yes on it on Homeroom. Share `proposal` with the group; get_featured_illustration shows it as pending meanwhile.',
       });
     });
   }
@@ -6788,8 +6790,8 @@ function registerTools(server, ctx) {
       nextStep: 'It is now up for a vote'
         + `${proposalRef(result.proposalId, result.prNumber) ? ` as ${proposalRef(result.proposalId, result.prNumber)}` : ''}. `
         + 'Checks and the staging preview build automatically — use get_proposal to follow it. It merges when the group approves it.'
-        // 29 Oct 2026: a coding agent's submission is not its author's yes
-        // (governance-rules.ts, `madeByAgent`), so say where theirs is cast.
+        // Submitting is never its author's yes (governance-rules.ts,
+        // "PROPOSING IS NOT A YES"), so say where theirs is cast.
         + ' Submitting it is not a vote: tell the user their own yes counts once they tap Yes on it on Homeroom.'
         + testingRouteNote(testing, false)
         + await unlinkedRequestsNote(result),

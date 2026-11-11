@@ -190,7 +190,7 @@ test('competing changes are one ballot; a pick is votes, cast only where they ch
   assert.equal(ballotOf(payload([request, a, { ...b, closes: [] }])), null, 'a change that closes nothing is on no ballot');
   assert.equal(ballotOf(payload([request, a, { ...b, closes: [12] }])), null, 'nor one that closes another request');
   assert.deepEqual(ballotOf(payload([request, a, b, { ...b, id: 53, closes: [12] }])).options.map((o) => o.id), [51, 52]);
-  assert.equal(ballotOf(payload([request, a, { ...b, closes: [12] }]), new Set(), [12]), null, 'drawn for the requests a page is about');
+  assert.equal(ballotOf(payload([request, a, { ...b, closes: [12] }]), [12]), null, 'drawn for the requests a page is about');
   // A waiting move says what it does and when.
   const lines = moveLines({ id: 1, kind: 'merge', state: 'pending', input: { intoNumber: 12 }, deadline: new Date(Date.now() + 23.2 * 3600000).toISOString(), agreed: [], governanceId: null });
   assert.equal(`${words(lines.what)}. ${words(lines.when)}`, 'Proposed: merge into #12. Happens in 24 hours unless someone objects');
@@ -257,27 +257,19 @@ test('a change and a vote to close compete; Close it stands in for Neither', () 
   assert.equal(message('project:topic.thread.ballot.close'), 'Close it');
 });
 
-test('proposing counts as your yes on the ballot where the gate counts it', () => {
+test('your own change is not your pick on the ballot until you make it (proposing is not a yes)', () => {
   const { ballotOf, ballotVotes } = loadTsx(MODEL);
-  const { authorCounts } = loadTsx('frontend/src/features/dev-board/topic/thread-changes.tsx');
   const plain = (v) => JSON.parse(JSON.stringify(v));
   const mine = { type: 'change', id: 51, number: 8, title: 'Mine', status: 'promoted', state: 'review', replies: 0, epoch: 2, myVote: null, mine: true, closes: [7] };
   const theirs = { type: 'change', id: 52, number: 9, title: 'Theirs', status: 'promoted', state: 'review', replies: 0, epoch: 1, myVote: null, closes: [7] };
-  // The rule decides (governance-rules.ts): Two yeses and Open floor count a person's change.
-  assert.equal(authorCounts(mine, { approval_mode: 'rules', approval_preset: 'two_yeses' }), true);
-  assert.equal(authorCounts(mine, { approval_mode: 'rules', approval_preset: 'open_floor' }), true);
-  assert.equal(authorCounts(mine, { approval_mode: 'rules', approval_preset: 'you_or_the_group', creator_yes: true }), true);
-  assert.equal(authorCounts(mine, { approval_mode: 'rules', approval_preset: 'group_vote' }), false, 'Group vote counts votes as cast');
-  assert.equal(authorCounts({ ...mine, byBot: true }, { approval_mode: 'rules', approval_preset: 'open_floor' }), false, 'the bot\'s change is nobody\'s yes');
-  assert.equal(authorCounts(theirs, { approval_mode: 'rules', approval_preset: 'open_floor' }), false);
-  const counts = new Set([51]);
-  const ballot = ballotOf(payload([request, mine, theirs]), counts);
-  assert.equal(ballot.pick, 51, 'their own change is their pick');
-  assert.deepEqual(plain(ballotVotes(ballot, 51, counts)), [], 'nothing to cast: proposing was the yes');
-  assert.deepEqual(plain(ballotVotes(ballot, 52, counts)), [
-    { kind: 'change', sessionId: 51, vote: 'no', epoch: 2 }, { kind: 'change', sessionId: 52, vote: 'yes', epoch: 1 },
-  ], 'picking another takes a No to stop their own change counting');
-  assert.equal(ballotOf(payload([request, mine, theirs])).pick, null, 'without the rule it is no pick');
+  const ballot = ballotOf(payload([request, mine, theirs]));
+  assert.equal(ballot.pick, null, 'proposing it picked nothing (governance-rules.ts)');
+  assert.deepEqual(plain(ballotVotes(ballot, 51)), [{ kind: 'change', sessionId: 51, vote: 'yes', epoch: 2 }],
+    'picking your own casts its yes');
+  assert.deepEqual(plain(ballotVotes(ballot, 52)), [{ kind: 'change', sessionId: 52, vote: 'yes', epoch: 1 }],
+    'picking another needs no No on your own: it never counted');
+  const chosen = ballotOf(payload([request, { ...mine, myVote: 'yes' }, theirs]));
+  assert.equal(chosen.pick, 51, 'once you vote it, it is your pick');
 });
 
 test('the bar\'s pill says where the request\'s work stands', () => {

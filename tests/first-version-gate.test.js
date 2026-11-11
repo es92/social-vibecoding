@@ -9,8 +9,9 @@
 //       services/governance.js governedGate and every serializer through
 //       services/first-version-rule.js);
 //   D2  every LATER change Homeroom bot makes needs a person's yes: the
-//       bot proposing it is nobody's yes, on every rule
-//       (src/workflow/rules/governance-rules.ts, `authorIsBot`).
+//       bot proposing it is nobody's yes, on every rule. Since 11 Nov 2026
+//       nobody's proposing is (src/workflow/rules/governance-rules.ts,
+//       "PROPOSING IS NOT A YES"), so a person's change asks the same tap.
 //
 // tests/governance-rules-postgres.test.js runs both against the real schema.
 //
@@ -43,14 +44,13 @@ const COLUMNS = { approverPolicy: 'anyone', approvalsRequired: null, rules: null
 const preset = (key) => ({ approverPolicy: 'anyone', approvalsRequired: null, rules: rules.parseRulesBlock({ preset: key }) });
 
 function gate(gov, {
-  yes = [], no = [], author = BOT, bot = author === BOT, f = facts(), firstVersion, explicitApproval = false, reason,
+  yes = [], no = [], author = BOT, f = facts(), firstVersion, explicitApproval = false, reason,
   openedAt = OPENED,
 } = {}) {
   return governance.computeGate(gov, f.membersActive, yes.length, no.length, openedAt, NOW, {
     voters: { yes: new Set(yes), no: new Set(no) },
     rulesFacts: f,
     authorId: author,
-    authorIsBot: bot,
     memberCount: f.memberCount,
     explicitApproval,
     ...(reason !== undefined ? { explicitReason: reason } : {}),
@@ -134,8 +134,9 @@ test('D2: Open floor, the bot proposing is nobody\'s yes; one member\'s yes lets
   for (const who of [ADA, SAM, KIM]) {
     assert.equal(gate(preset('open_floor'), { yes: [who] }).mergeable, true, `@${who}'s yes`);
   }
-  // A person's own change is still their yes.
-  assert.equal(gate(preset('open_floor'), { author: SAM }).mergeable, true);
+  // Nor is a person's own change, until they tap it (11 Nov 2026).
+  assert.equal(gate(preset('open_floor'), { author: SAM }).mergeable, false);
+  assert.equal(gate(preset('open_floor'), { author: SAM, yes: [SAM] }).mergeable, true);
 });
 
 test('D2: Two yeses from the bot means two yeses from people', () => {
@@ -143,8 +144,9 @@ test('D2: Two yeses from the bot means two yeses from people', () => {
   const g = gate(preset('two_yeses'), { yes: [SAM, KIM] });
   assert.equal(g.mergeable, true);
   assert.equal(g.qualifiedYes, 2);
-  // A person's change: whoever makes it, plus one more, as before.
-  assert.equal(gate(preset('two_yeses'), { author: SAM, yes: [KIM] }).mergeable, true);
+  // A person's change: two taps as well, theirs among them if they want.
+  assert.equal(gate(preset('two_yeses'), { author: SAM, yes: [KIM] }).mergeable, false);
+  assert.equal(gate(preset('two_yeses'), { author: SAM, yes: [SAM, KIM] }).mergeable, true);
 });
 
 test('D2: You or the group, the creator\'s yes or the group\'s, never the bot\'s', () => {
@@ -180,7 +182,7 @@ test('D2: Group vote and the columns count votes as cast, so the bot changes not
   const bot = gate(preset('group_vote'), { openedAt: new Date(NOW - 30 * DAY).toISOString() });
   assert.equal(bot.mergeable, false);
   assert.equal(bot.lazyArmed, false, 'no yes, so no quiet wait either');
-  const person = gate(preset('group_vote'), { author: SAM, bot: false, openedAt: new Date(NOW - 30 * DAY).toISOString() });
+  const person = gate(preset('group_vote'), { author: SAM, openedAt: new Date(NOW - 30 * DAY).toISOString() });
   assert.equal(person.mergeable, false, 'a person\'s change needs a vote there too');
 });
 
@@ -191,44 +193,11 @@ test('D2: only the first version skips it', () => {
 
 // ── The reads behind the rule ────────────────────────────────────────
 
-test('rulesGateOpts says which of a batch the bot made', () => {
-  const ctx = {
-    facts: facts(), voters: new Map(), botAuthored: new Set([7]),
-  };
-  assert.equal(governance.rulesGateOpts(ctx, 7, BOT, null).authorIsBot, true);
-  assert.equal(governance.rulesGateOpts(ctx, '7', BOT, null).authorIsBot, true);
-  assert.equal(governance.rulesGateOpts(ctx, 8, SAM, null).authorIsBot, false);
-  // A context from before it was read counts every author as a person.
-  assert.equal(governance.rulesGateOpts({ facts: facts(), voters: new Map() }, 7, BOT, null).authorIsBot, false);
-});
-
-test('botAuthoredBatch reads the authors of the batch once, and a failed read counts nobody\'s yes', async () => {
-  const seen = [];
-  const pool = {
-    async query(sql, params) {
-      seen.push({ sql, params });
-      return { rows: [{ id: 7 }] };
-    },
-  };
-  assert.deepEqual([...await governance.botAuthoredBatch(pool, 'pr', [7, 8])], [7]);
-  assert.match(seen[0].sql, /FROM chat_sessions cs JOIN users u ON u\.id = cs\.user_id/);
-  assert.match(seen[0].sql, /u\.is_synthetic = TRUE/);
-  assert.deepEqual(seen[0].params, [[7, 8]]);
-  await governance.botAuthoredBatch(pool, 'issue', [5]);
-  assert.match(seen[1].sql, /FROM issues i JOIN users u ON u\.id = i\.created_by/);
-  assert.equal((await governance.botAuthoredBatch(pool, 'pr', [])).size, 0);
-  assert.equal(seen.length, 2, 'an empty batch reads nothing');
-  const broken = { async query() { throw new Error('down'); } };
-  assert.deepEqual([...await governance.botAuthoredBatch(broken, 'pr', [7, 8])], [7, 8]);
-});
-
-test('authorIsBot reads users.is_synthetic; a failed read counts no yes', async () => {
-  const pool = (row) => ({ async query(sql, params) { assert.match(sql, /SELECT is_synthetic FROM users WHERE id = \$1/); assert.deepEqual(params, [5]); return { rows: row ? [row] : [] }; } });
-  assert.equal(await governance.authorIsBot(pool({ is_synthetic: true }), 5), true);
-  assert.equal(await governance.authorIsBot(pool({ is_synthetic: false }), 5), false);
-  assert.equal(await governance.authorIsBot(pool(null), 5), false, 'a deleted account is nobody, not the bot');
-  assert.equal(await governance.authorIsBot({ async query() { throw new Error('down'); } }, 5), true);
-  assert.equal(await governance.authorIsBot({ async query() { throw new Error('unused'); } }, null), false);
+test('nothing reads whether the author is the bot: nobody\'s proposing is a yes', () => {
+  const ctx = { facts: facts(), voters: new Map() };
+  assert.equal('authorIsBot' in governance.rulesGateOpts(ctx, 7, BOT, null), false);
+  assert.equal(typeof governance.botAuthoredBatch, 'undefined');
+  assert.equal(typeof governance.authorIsBot, 'undefined');
 });
 
 test('firstVersionSql: the run that built it, its request the description\'s, nothing for it live yet', () => {
@@ -257,10 +226,11 @@ test('isFirstVersion: one read, and a failed one sends the change to the vote', 
 });
 
 // governedGate, the path checkAndMerge and the ready card take: it reads
-// whether the change is a first version and, on a rules project, whether
-// its author is a person and whether a coding agent submitted it for them
+// whether the change is a first version and, on a rules project, who voted
+// and who its author is (for the member floor). It never asks whether the
+// author is a person or used a coding agent: proposing is nobody's yes
 // (tests/agent-submission-yes.test.js).
-function scripted({ rulesRow, votes = [], author = BOT, synthetic = true, first = false, agent = null } = {}) {
+function scripted({ rulesRow, votes = [], author = BOT, first = false } = {}) {
   const seen = [];
   return {
     seen,
@@ -274,8 +244,6 @@ function scripted({ rulesRow, votes = [], author = BOT, synthetic = true, first 
       if (/AS first_version FROM chat_sessions cs/.test(sql)) return { rows: [{ first_version: first }] };
       if (/FROM pr_votes/.test(sql) && /SELECT user_id, vote/.test(sql)) return { rows: votes };
       if (/SELECT user_id AS author_id FROM chat_sessions/.test(sql)) return { rows: [{ author_id: author }] };
-      if (/SELECT is_synthetic FROM users/.test(sql)) return { rows: [{ is_synthetic: synthetic }] };
-      if (/SELECT external_agent FROM chat_sessions/.test(sql)) return { rows: [{ external_agent: agent }] };
       if (/COUNT\(DISTINCT a.user_id\)/.test(sql)) return { rows: [{ cnt: 3, invited_floor: 2 }] };
       if (/SELECT self_hosted, collab_visibility FROM apps/.test(sql)) return { rows: [{ self_hosted: false, collab_visibility: 'private' }] };
       if (/SELECT COUNT\(\*\) as cnt FROM pr_votes/.test(sql)) return { rows: [{ cnt: 0 }] };
@@ -286,27 +254,25 @@ function scripted({ rulesRow, votes = [], author = BOT, synthetic = true, first 
 
 const OPEN_FLOOR_ROW = { preset: 'open_floor', groups: [], rules: [{ group: 'members', kind: 'atLeast', n: 1 }] };
 
-test('governedGate: the bot\'s change on Open floor waits for a person; a person\'s does not', async () => {
+test('governedGate: on Open floor every change waits for a person\'s tap, the bot\'s or a person\'s', async () => {
   governance.invalidateGovernance(951);
   const bot = scripted({ rulesRow: OPEN_FLOOR_ROW });
   const g = await governance.governedGate(bot, 951, { kind: 'pr', id: 70, openedAt: OPENED, now: NOW });
   assert.equal(g.mode, 'rules');
   assert.equal(g.mergeable, false);
-  assert.ok(bot.seen.some((sql) => /SELECT is_synthetic FROM users/.test(sql)), 'it asks whether the author is a person');
+  assert.ok(!bot.seen.some((sql) => /is_synthetic|external_agent/.test(sql)), 'it asks nothing about who proposed it');
 
   governance.invalidateGovernance(952);
   const voted = scripted({ rulesRow: OPEN_FLOOR_ROW, votes: [{ user_id: SAM, vote: 'yes' }] });
   assert.equal((await governance.governedGate(voted, 952, { kind: 'pr', id: 71, openedAt: OPENED, now: NOW })).mergeable, true);
 
   governance.invalidateGovernance(953);
-  const person = scripted({ rulesRow: OPEN_FLOOR_ROW, author: SAM, synthetic: false });
-  assert.equal((await governance.governedGate(person, 953, { kind: 'pr', id: 72, openedAt: OPENED, now: NOW })).mergeable, true);
-  assert.ok(person.seen.some((sql) => /SELECT external_agent FROM chat_sessions/.test(sql)), 'and whether an agent submitted it');
+  const person = scripted({ rulesRow: OPEN_FLOOR_ROW, author: SAM });
+  assert.equal((await governance.governedGate(person, 953, { kind: 'pr', id: 72, openedAt: OPENED, now: NOW })).mergeable, false);
 
-  // A person's change a coding agent submitted waits for their own tap.
   governance.invalidateGovernance(958);
-  const agent = scripted({ rulesRow: OPEN_FLOOR_ROW, author: SAM, synthetic: false, agent: 'claude-code' });
-  assert.equal((await governance.governedGate(agent, 958, { kind: 'pr', id: 75, openedAt: OPENED, now: NOW })).mergeable, false);
+  const tapped = scripted({ rulesRow: OPEN_FLOOR_ROW, author: SAM, votes: [{ user_id: SAM, vote: 'yes' }] });
+  assert.equal((await governance.governedGate(tapped, 958, { kind: 'pr', id: 75, openedAt: OPENED, now: NOW })).mergeable, true);
 });
 
 test('governedGate: a first version goes live with no votes, read off the change unless the caller says', async () => {

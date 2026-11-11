@@ -98,11 +98,11 @@ test('"needs" is the votes owed, on the lander\'s own predicate', () => {
     /merging/,
     'a proposal already merging is not a vote anybody still owes',
   );
-  // And it is not yours: the lander's `notMine` takes your own promoted
-  // proposal out of this pane even though it satisfies "waiting on you",
-  // because "What you are working on" has already claimed it.
-  assert.match(sql, /cs\.user_id IS DISTINCT FROM \$1/);
-  assert.match(sql, /i\.created_by IS DISTINCT FROM \$1/);
+  // And yours too (11 Nov 2026): proposing a change or opening a decision
+  // is not your yes (governance-rules.ts), so your own is owed your vote
+  // like anyone's, as the lander counts it.
+  assert.doesNotMatch(/owed_proposals AS \(([\s\S]*?)\n  \),/.exec(sql)[1], /cs\.user_id IS DISTINCT FROM \$1/);
+  assert.doesNotMatch(sql, /i\.created_by IS DISTINCT FROM \$1/);
   // Governance votes live in their own table and carry no epoch.
   assert.match(sql, /FROM issue_votes iv[\s\S]*?iv\.issue_id = i\.id AND iv\.user_id = \$1/);
 });
@@ -187,7 +187,10 @@ test('every predicate names the viewer, and the route refuses one it has not got
   // close and close vote) and one for the bot's questions; 5 Nov 2026, three
   // there (OWED_QUESTIONS_FROM: the chat's open ones, the stored states that
   // wait on the viewer's answer, and the chat's again so neither repeats).
-  assert.equal((sql.match(/\$1/g) || []).length, 16,
+  // 11 Nov 2026 took four away: nothing is owed less for being the
+  // viewer's own (their change, a rival or a close vote of theirs, a
+  // decision they opened), since proposing is not their yes.
+  assert.equal((sql.match(/\$1/g) || []).length, 12,
     'the viewer appears in every CTE predicate and in the collaborator join');
 
   // The refusal itself, driven rather than grepped: `getPool` is called once

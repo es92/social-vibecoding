@@ -2519,20 +2519,9 @@ async function retractVote({ pool, sessionId, userId, expectedEpoch = null }) {
         WHERE pv.session_id = $1 AND pv.user_id = $2
           AND cs.id = pv.session_id
           AND pv.approval_epoch = cs.approval_epoch
-        RETURNING pv.vote, pv.reason, cs.user_id AS author_id`,
+        RETURNING pv.vote, pv.reason`,
       [sessionId, userId]
     );
-    // #6477: the author took their own vote back on this version, so proposing
-    // stops counting as their yes (governance-rules.ts). Only the author's own
-    // retraction marks it, and a later vote or a new version (an epoch bump)
-    // makes the stamp stale on its own.
-    if (removed && parseInt(removed.author_id, 10) === userId) {
-      await client.query(
-        `UPDATE chat_sessions SET author_yes_withdrawn_epoch = approval_epoch
-          WHERE id = $1 AND user_id = $2`,
-        [sessionId, userId]
-      );
-    }
     // Whoever asked the bot for this change reads their card again, so it
     // names who it waits on now (no "approved it" line: there is no vote).
     if (removed) {
