@@ -151,9 +151,10 @@ function outsideBothLooks() {
   const css = read('public', 'css', 'app.css');
   const before = css.slice(0, css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT'));
   const a = before.indexOf("/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES");
-  const b = before.indexOf('/* looks:begin');
-  assert.ok(a > 0 && b > a, 'the signed-out pages\' look sits before the looks\' section');
-  return before.slice(0, a) + before.slice(b);
+  const end = "/* the website's look on the signed-out pages: end */";
+  const b = before.indexOf(end);
+  assert.ok(a > 0 && b > a, 'the signed-out pages\' look is one block between its two marks');
+  return before.slice(0, a) + before.slice(b + end.length);
 }
 
 function lookBlock() {
