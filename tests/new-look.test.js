@@ -144,6 +144,18 @@ test('the switch copy is English source with descriptions', () => {
 // ── The app.css rules ────────────────────────────────────────────────────
 
 // The new look's block: from its heading to the end of the sheet.
+// The sheet before the new look, less the one other block that may name its
+// faces: the website's look on the signed-out pages, every rule of which is
+// under #auth-landing-screen (tests/guest-discover.test.js holds that).
+function outsideBothLooks() {
+  const css = read('public', 'css', 'app.css');
+  const before = css.slice(0, css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT'));
+  const a = before.indexOf("/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES");
+  const b = before.indexOf('/* looks:begin');
+  assert.ok(a > 0 && b > a, 'the signed-out pages\' look sits before the looks\' section');
+  return before.slice(0, a) + before.slice(b);
+}
+
 function lookBlock() {
   const css = read('public', 'css', 'app.css');
   const at = css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT');
@@ -184,10 +196,13 @@ test('Geist loads from our own origin by an absolute path, and only for the new 
   const block = lookBlock();
   assert.match(block, /@font-face\s*\{[^}]*font-family:\s*'Geist'[^}]*url\('\/fonts\/geist\/Geist-Variable\.woff2'\)/,
     'the face points at the self-hosted file by an absolute, same-origin path');
-  const css = read('public', 'css', 'app.css');
-  const before = css.slice(0, css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT'));
-  // Nothing else names the family (the Brand kit look, which also set it, was retired on 12 Nov 2026).
-  assert.ok(!/Geist/.test(before), 'nothing outside the new look names Geist');
+  // Nothing else names the family (the Brand kit look, which also set it, was
+  // retired on 12 Nov 2026), but for the signed-out pages (13 Nov 2026): the
+  // guest Discover and the page about private communities are drawn in the
+  // website's look, in these same faces, by rules under #auth-landing-screen
+  // only. So a signed-in browser without the new look still never matches a
+  // rule that names Geist, and never downloads the file.
+  assert.ok(!/Geist/.test(outsideBothLooks()), 'nothing outside the new look and the signed-out pages\' look names Geist');
 });
 
 test('/fonts/ is a public static prefix, like /vendor/', () => {
@@ -217,9 +232,8 @@ test('Geist Mono and Young Serif load from our own origin, with their licences b
     const licence = path.join(ROOT, 'public', path.dirname(file), 'LICENSE.txt');
     assert.match(fs.readFileSync(licence, 'utf8'), /SIL Open Font License/, `the OFL travels with ${family}`);
   }
-  const css = read('public', 'css', 'app.css');
-  const before = css.slice(0, css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT'));
-  assert.ok(!/Young Serif/.test(before), 'nothing outside the new look names Young Serif');
+  // …nor Young Serif, the signed-out pages' look apart (see Geist, above).
+  assert.ok(!/Young Serif/.test(outsideBothLooks()), 'nothing outside the new look and the signed-out pages\' look names Young Serif');
 });
 
 test("a community's header keeps its own colour in the new look", () => {

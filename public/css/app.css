@@ -29609,6 +29609,177 @@ html[data-skin]:where(:not([data-skin="brand"])) #notifications-sheet .notificat
 html[data-skin]:where(:not([data-skin="brand"])) #notifications-sheet .notifications-card .un-swipe > div:not(.un-swipe-tray) { background: linear-gradient(var(--fr-surface), var(--fr-surface)), var(--fr-solid, var(--fr-ground)); box-shadow: inset 0 0 0 1px var(--fr-line); }
 html[data-skin]:where(:not([data-skin="brand"])) #notifications-sheet .notifications-row:not(:last-child)::after { background: var(--fr-line2); }
 
+/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES (13 Nov 2026) ────────────
+   The guest Discover (its story and its list) and the page about private
+   communities are a visitor's next click after onhomeroom.com, so they are
+   drawn in that site's own look: a sky band with a white window in it,
+   serif headlines, sun pills on an ink outline, outlined cards, and bands
+   of colour down the page. The app's own look starts once somebody is in.
+
+   The two components that are only ever drawn here
+   (frontend/src/features/auth/story.tsx's short story and
+   ../guest/guest-communities.tsx) spell every colour as one of the
+   variables below. The pieces they share with the signed-in app (the bar's
+   button, the search, the chips, the cards) keep their classes and are
+   repainted from here, by their own hooks, under #auth-landing-screen only.
+
+   The dark shell gets the same drawing on its own ground: the second rule
+   moves the variables and nothing else. Sun keeps its ink words in both.
+   Young Serif and Geist are the faces the new look (the last block of this
+   sheet) declares; a browser downloads them only where a rule that names
+   them matches, which is now the new look and these two pages
+   (tests/new-look.test.js). This block sits before the looks' generated
+   section, which must stay directly before the new look's. */
+#auth-landing-screen {
+  --site-serif: 'Young Serif', Georgia, 'Times New Roman', serif;
+  --site-sans: 'Geist', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --site-ink: #121a0e;
+  --site-muted: #41483c;
+  --site-label: #565c53;
+  --site-line: #121a0e;
+  --site-sky: #2a8ce1;
+  --site-ground: #fffeea;
+  --site-panel: #ffffff;
+  --site-sun: #ffee6f;
+  --site-sun-lit: #fff4a0;
+  --site-sun-pale: #fff6ac;
+  --site-sun-deep: #f9e869;
+  --site-window: #fbfab3;
+  --site-leaf: #96b885;
+  --site-leaf-pale: #eaf2e6;
+  --site-sky-pale: #cfe6ff;
+  --site-mint: #d9ecd0;
+  --site-on-sun: #121a0e;
+  --site-chosen: #121a0e;
+  --site-chosen-ink: #fffeea;
+}
+.dark #auth-landing-screen {
+  --site-ink: #f4f4f5;
+  --site-muted: #a1a1aa;
+  --site-label: #a1a1aa;
+  --site-line: rgba(255, 255, 255, 0.34);
+  --site-sky: transparent;
+  --site-ground: transparent;
+  --site-panel: #18181b;
+  --site-sun-pale: transparent;
+  --site-sun-deep: #2b2a1c;
+  --site-window: #232326;
+  --site-leaf: #1b2618;
+  --site-leaf-pale: #26331f;
+  --site-sky-pale: #1c2733;
+  --site-mint: #26331f;
+  --site-chosen: #f4f4f5;
+  --site-chosen-ink: #18181b;
+}
+/* One colour edge to edge, around content that keeps the column's width:
+   the band's own fill, let out to both sides as a border image (a flat
+   one-colour image with an outset; it is paint only, so the scroller gains
+   no width). Not a spread shadow: this sheet keeps every shadow bounded
+   (tests/kit-surfaces-frost.test.js). A component names the colour
+   (`[--band:var(--site-sky)]`). */
+#auth-landing-screen .site-band {
+  background-color: var(--band);
+  border-image: conic-gradient(var(--band) 0 0) fill 0 / 0 / 0 100vw;
+}
+/* The ground under the two pages is the site's cream, flat: the washes of
+   the app's wallpaper are the app's. The bar's faked glass follows it. Not
+   under a look (html[data-skin]), which paints its own ground and draws the
+   landing in its own frame. */
+html:not(.dark):not([data-skin]) #auth-landing-screen:has(:is([data-guest-discover], [data-guest-groups])) {
+  background: var(--site-ground);
+}
+html:not(.dark):not([data-skin]) #auth-landing-screen:has(:is([data-guest-discover], [data-guest-groups])) #landing-header {
+  --fake-glass-tint: var(--site-ground);
+}
+/* Words on the two pages are the site's sans. */
+#auth-landing-screen :is([data-guest-discover], [data-guest-groups]) {
+  font-family: var(--site-sans);
+}
+/* DO THIS is a sun pill on an ink outline: the bar's button on every
+   signed-out page, and the page's own. The primitive's classes stay
+   (tests/shell-primitive-adoption.test.js); its fill is repainted. */
+#auth-landing-screen #landing-header [data-landing-sign-up],
+#auth-landing-screen [data-guest-groups] .bg-violet-600 {
+  background-color: var(--site-sun);
+  color: var(--site-on-sun);
+  font-family: var(--site-sans);
+  box-shadow: inset 0 0 0 1px var(--site-line), 0 2px 0 var(--site-line);
+}
+#auth-landing-screen #landing-header [data-landing-sign-up]:hover,
+#auth-landing-screen [data-guest-groups] .bg-violet-600:hover {
+  background-color: var(--site-sun-lit);
+}
+#auth-landing-screen #landing-header [data-landing-sign-in] {
+  font-family: var(--site-sans);
+}
+/* THE LIST. Its heading is a title in the serif, not a label over a card;
+   the search and the chips are outlined, the chosen chip is ink; a card is
+   a white face on an ink outline with its name in the serif. */
+#auth-landing-screen [data-guest-discover] [data-home-join-section] > .home-area-label > span:first-child {
+  font-family: var(--site-serif);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--site-ink);
+}
+@media (min-width: 768px) {
+  #auth-landing-screen [data-guest-discover] [data-home-join-section] > .home-area-label > span:first-child {
+    font-size: 34px;
+    line-height: 40px;
+  }
+}
+#auth-landing-screen [data-guest-discover] :is([data-guest-search-open], [data-home-join-kind]) {
+  background-color: var(--site-panel);
+  color: var(--site-ink);
+  box-shadow: inset 0 0 0 1px var(--site-line);
+}
+#auth-landing-screen [data-guest-discover] [data-guest-search-open] {
+  box-shadow: inset 0 0 0 1px var(--site-line), 0 2px 0 var(--site-line);
+}
+#auth-landing-screen [data-guest-discover] [data-home-join-kind][aria-pressed="true"] {
+  background-color: var(--site-chosen);
+  color: var(--site-chosen-ink);
+}
+#auth-landing-screen [data-guest-discover] label:has(> [data-guest-search]) {
+  background-color: var(--site-panel);
+  box-shadow: inset 0 0 0 1px var(--site-line);
+}
+/* The field has its own × (which also puts it away), so the browser's
+   clear button beside it was a second one doing half the job. */
+#auth-landing-screen [data-guest-discover] [data-guest-search]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+#auth-landing-screen [data-guest-discover] :is(#guest-join-featured-label, [data-home-join-rest]) {
+  color: var(--site-label);
+  font-weight: 500;
+}
+#auth-landing-screen [data-guest-discover] :is([data-guest-card], [data-guest-featured]) {
+  border: 1px solid var(--site-line);
+  border-radius: 14px;
+  background-color: var(--site-panel);
+  box-shadow: 0 2px 0 var(--site-line);
+}
+#auth-landing-screen [data-guest-discover] :is([data-guest-card], [data-guest-featured]) > span:last-child {
+  border-top: 1px solid var(--site-line);
+}
+#auth-landing-screen [data-guest-discover] [data-guest-card-link] {
+  font-family: var(--site-serif);
+  font-size: 19px;
+  line-height: 23px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--site-ink);
+}
+#auth-landing-screen [data-guest-discover] [data-guest-card-link]::after {
+  border-radius: 14px;
+}
+#auth-landing-screen [data-guest-discover] [data-guest-card-about] {
+  color: var(--site-muted);
+}
+
 /* looks:begin ── THE FRAME'S KIT AND ITS LOOKS ──────────────────────────────────────
    GENERATED by scripts/build-looks-css.js from frontend/looks/ (kit.css, one
    file per look, looks.json). Do not edit between the two marks: change a
@@ -30715,172 +30886,6 @@ html[data-skin="sunrise"][data-skin] .fr-tb.fr-on{border-radius:14px}
 html[data-skin="sunrise"][data-skin] .fr-barline{border-bottom:0}
 }
 /* looks:end */
-
-/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES (13 Nov 2026) ────────────
-   The guest Discover (its story and its list) and the page about private
-   communities are a visitor's next click after onhomeroom.com, so they are
-   drawn in that site's own look: a sky band with a white window in it,
-   serif headlines, sun pills on an ink outline, outlined cards, and bands
-   of colour down the page. The app's own look starts once somebody is in.
-
-   The two components that are only ever drawn here
-   (frontend/src/features/auth/story.tsx's short story and
-   ../guest/guest-communities.tsx) spell every colour as one of the
-   variables below. The pieces they share with the signed-in app (the bar's
-   button, the search, the chips, the cards) keep their classes and are
-   repainted from here, by their own hooks, under #auth-landing-screen only.
-
-   The dark shell gets the same drawing on its own ground: the second rule
-   moves the variables and nothing else. Sun keeps its ink words in both.
-   Young Serif and Geist are the faces the new look below already declares;
-   a browser downloads them only where a rule that names them matches. */
-#auth-landing-screen {
-  --site-serif: 'Young Serif', Georgia, 'Times New Roman', serif;
-  --site-sans: 'Geist', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --site-ink: #121a0e;
-  --site-muted: #41483c;
-  --site-label: #565c53;
-  --site-line: #121a0e;
-  --site-sky: #2a8ce1;
-  --site-ground: #fffeea;
-  --site-panel: #ffffff;
-  --site-sun: #ffee6f;
-  --site-sun-lit: #fff4a0;
-  --site-sun-pale: #fff6ac;
-  --site-sun-deep: #f9e869;
-  --site-window: #fbfab3;
-  --site-leaf: #96b885;
-  --site-leaf-pale: #eaf2e6;
-  --site-sky-pale: #cfe6ff;
-  --site-mint: #d9ecd0;
-  --site-on-sun: #121a0e;
-  --site-chosen: #121a0e;
-  --site-chosen-ink: #fffeea;
-}
-.dark #auth-landing-screen {
-  --site-ink: #f4f4f5;
-  --site-muted: #a1a1aa;
-  --site-label: #a1a1aa;
-  --site-line: rgba(255, 255, 255, 0.34);
-  --site-sky: transparent;
-  --site-ground: transparent;
-  --site-panel: #18181b;
-  --site-sun-pale: transparent;
-  --site-sun-deep: #2b2a1c;
-  --site-window: #232326;
-  --site-leaf: #1b2618;
-  --site-leaf-pale: #26331f;
-  --site-sky-pale: #1c2733;
-  --site-mint: #26331f;
-  --site-chosen: #f4f4f5;
-  --site-chosen-ink: #18181b;
-}
-/* One colour edge to edge, around content that keeps the column's width:
-   the band is painted by a spread shadow, cut back to the band's own height.
-   A component names the colour (`[--band:var(--site-sky)]`). */
-#auth-landing-screen .site-band {
-  background-color: var(--band);
-  box-shadow: 0 0 0 100vmax var(--band);
-  clip-path: inset(0 -100vmax);
-}
-/* The ground under the two pages is the site's cream, flat: the washes of
-   the app's wallpaper are the app's. The bar's faked glass follows it. Not
-   under a look (html[data-skin]), which paints its own ground and draws the
-   landing in its own frame. */
-html:not(.dark):not([data-skin]) #auth-landing-screen:has(:is([data-guest-discover], [data-guest-groups])) {
-  background: var(--site-ground);
-}
-html:not(.dark):not([data-skin]) #auth-landing-screen:has(:is([data-guest-discover], [data-guest-groups])) #landing-header {
-  --fake-glass-tint: var(--site-ground);
-}
-/* Words on the two pages are the site's sans. */
-#auth-landing-screen :is([data-guest-discover], [data-guest-groups]) {
-  font-family: var(--site-sans);
-}
-/* DO THIS is a sun pill on an ink outline: the bar's button on every
-   signed-out page, and the page's own. The primitive's classes stay
-   (tests/shell-primitive-adoption.test.js); its fill is repainted. */
-#auth-landing-screen #landing-header [data-landing-sign-up],
-#auth-landing-screen [data-guest-groups] .bg-violet-600 {
-  background-color: var(--site-sun);
-  color: var(--site-on-sun);
-  font-family: var(--site-sans);
-  box-shadow: inset 0 0 0 1px var(--site-line), 0 2px 0 var(--site-line);
-}
-#auth-landing-screen #landing-header [data-landing-sign-up]:hover,
-#auth-landing-screen [data-guest-groups] .bg-violet-600:hover {
-  background-color: var(--site-sun-lit);
-}
-#auth-landing-screen #landing-header [data-landing-sign-in] {
-  font-family: var(--site-sans);
-}
-/* THE LIST. Its heading is a title in the serif, not a label over a card;
-   the search and the chips are outlined, the chosen chip is ink; a card is
-   a white face on an ink outline with its name in the serif. */
-#auth-landing-screen [data-guest-discover] [data-home-join-section] > .home-area-label > span:first-child {
-  font-family: var(--site-serif);
-  font-size: 28px;
-  line-height: 34px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  text-transform: none;
-  color: var(--site-ink);
-}
-@media (min-width: 768px) {
-  #auth-landing-screen [data-guest-discover] [data-home-join-section] > .home-area-label > span:first-child {
-    font-size: 34px;
-    line-height: 40px;
-  }
-}
-#auth-landing-screen [data-guest-discover] :is([data-guest-search-open], [data-home-join-kind]) {
-  background-color: var(--site-panel);
-  color: var(--site-ink);
-  box-shadow: inset 0 0 0 1px var(--site-line);
-}
-#auth-landing-screen [data-guest-discover] [data-guest-search-open] {
-  box-shadow: inset 0 0 0 1px var(--site-line), 0 2px 0 var(--site-line);
-}
-#auth-landing-screen [data-guest-discover] [data-home-join-kind][aria-pressed="true"] {
-  background-color: var(--site-chosen);
-  color: var(--site-chosen-ink);
-}
-#auth-landing-screen [data-guest-discover] label:has(> [data-guest-search]) {
-  background-color: var(--site-panel);
-  box-shadow: inset 0 0 0 1px var(--site-line);
-}
-/* The field has its own × (which also puts it away), so the browser's
-   clear button beside it was a second one doing half the job. */
-#auth-landing-screen [data-guest-discover] [data-guest-search]::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  display: none;
-}
-#auth-landing-screen [data-guest-discover] :is(#guest-join-featured-label, [data-home-join-rest]) {
-  color: var(--site-label);
-  font-weight: 500;
-}
-#auth-landing-screen [data-guest-discover] :is([data-guest-card], [data-guest-featured]) {
-  border: 1px solid var(--site-line);
-  border-radius: 14px;
-  background-color: var(--site-panel);
-  box-shadow: 0 2px 0 var(--site-line);
-}
-#auth-landing-screen [data-guest-discover] :is([data-guest-card], [data-guest-featured]) > span:last-child {
-  border-top: 1px solid var(--site-line);
-}
-#auth-landing-screen [data-guest-discover] [data-guest-card-link] {
-  font-family: var(--site-serif);
-  font-size: 19px;
-  line-height: 23px;
-  font-weight: 400;
-  letter-spacing: -0.005em;
-  color: var(--site-ink);
-}
-#auth-landing-screen [data-guest-discover] [data-guest-card-link]::after {
-  border-radius: 14px;
-}
-#auth-landing-screen [data-guest-discover] [data-guest-card-about] {
-  color: var(--site-muted);
-}
 
 /* ── THE NEW LOOK, AN EXPERIMENT (Settings › Experimental, off by default) ──
    Every rule here is scoped to html[data-skin="brand"], which the head's

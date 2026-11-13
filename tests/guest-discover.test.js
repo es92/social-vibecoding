@@ -1070,9 +1070,15 @@ test('See what visitors see: the visitor\'s own page under a bar with the way ba
 test('the list wears the website\'s look signed out only: repainted by its own hooks under the landing, its classes left alone', () => {
   const css = read('public/css/app.css');
   const a = css.indexOf("/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES");
-  const b = css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT');
-  assert.ok(a > 0 && b > a, 'the block sits before the new look, which is appended last on purpose');
+  // Before the looks' generated section, which has to stay directly before
+  // the new look's block (tests/looks-css.test.js), itself appended last.
+  const b = css.indexOf('/* looks:begin');
+  assert.ok(a > 0 && b > a && b < css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT'), 'the block sits before the looks and the new look');
   const block = css.slice(a, b);
+  // A band's colour runs edge to edge as a border image let out to the
+  // sides, never as a viewport-sized shadow (tests/kit-surfaces-frost.test.js).
+  assert.match(block, /#auth-landing-screen \.site-band \{\s+background-color: var\(--band\);\s+border-image: conic-gradient\(var\(--band\) 0 0\) fill 0 \/ 0 \/ 0 100vw;\s+\}/);
+  assert.doesNotMatch(block, /box-shadow:[^;]*100v/);
   // Every rule of the block is under the landing's root (or names it), so
   // the same chips and cards on the signed-in Home are untouched.
   const selectors = [...block.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|\})\s*([^{}@]+)\{/g)].map((m) => m[2].trim()).filter(Boolean);
