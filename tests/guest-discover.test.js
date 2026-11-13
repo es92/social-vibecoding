@@ -702,12 +702,30 @@ test('the short story heads Discover: the headline, the Wikipedia line, three nu
   assert.equal(message('auth:guest.hero.start'), 'Want to get started? Try any of the apps below, or make an account to make your own app.');
   // The three points, numbered because they are a sequence: each title, and
   // its line from md only, so a phone keeps the apps near the first screen.
-  assert.match(html, /<ol data-landing-story-points="" class="mt-4 flex flex-col gap-2\.5 md:mt-5 md:gap-3">/);
+  assert.match(html, /<ol data-landing-story-points="" class="mt-4 flex flex-col gap-2\.5 md:mt-6 md:gap-3\.5">/);
   assert.equal([...html.matchAll(/<li /g)].length, 3);
-  assert.equal([...html.matchAll(/class="hidden text-sm leading-5 text-zinc-500 md:block dark:text-zinc-400"/g)].length, 3);
+  assert.equal([...html.matchAll(/class="hidden text-\[15px\] leading-\[21px\] text-\[color:var\(--site-muted\)\] md:block"/g)].length, 3);
   // The numerals are for the eye; the list says the order to a screen reader.
   assert.equal([...html.matchAll(/aria-hidden="true">[123]<\/span>/g)].length, 3);
   assert.match(html, /data-landing-story="" data-landing-story-compact=""/);
+  // DRAWN IN THE WEBSITE'S LOOK (13 Nov 2026): a sky band edge to edge, a
+  // white window in it opened by a strip of three dots, the headline and the
+  // points' titles in the site's serif, sun discs for the numerals. Every
+  // colour is one of the look's variables (public/css/app.css), so the short
+  // story names no colour of the app's palette and no dark class.
+  assert.match(html, /<div data-landing-story="" data-landing-story-compact="" class="site-band \[--band:var\(--site-sky\)\] [^"]*"><div data-landing-story-window="" class="border border-\[color:var\(--site-line\)\] bg-\[var\(--site-panel\)\]"><div class="[^"]*" aria-hidden="true">(?:<span class="[^"]*"><\/span>){3}<\/div>/);
+  assert.match(html, /<h1 class="font-\[family-name:var\(--site-serif\)\] font-normal [^"]*">The app library anyone can edit\.<\/h1>/);
+  assert.equal([...html.matchAll(/<span class="flex h-7 w-7 [^"]*bg-\[var\(--site-sun\)\][^"]*text-\[color:var\(--site-on-sun\)\]" aria-hidden="true">/g)].length, 3);
+  {
+    const src = read(STORY);
+    const compact = src.slice(src.indexOf('if (compact) {'), src.indexOf('const s = fitStyle(fit);'));
+    assert.doesNotMatch(compact, /\b(?:text|bg|border|shadow)-(?:zinc|violet|white|black)\b/);
+    assert.doesNotMatch(compact, /\bdark:/);
+    const css = read('public/css/app.css');
+    for (const name of new Set([...compact.matchAll(/var\((--site-[a-z-]+)\)/g)].map((m) => m[1]))) {
+      assert.match(css, new RegExp(`#auth-landing-screen \\{[^}]*${name}:`), `${name} is declared`);
+    }
+  }
   // "Welcome to Homeroom" is a wide screen's: on a phone the wordmark is
   // directly above the headline.
   assert.match(html, /<div class="[^"]* hidden md:block">Welcome to Homeroom<\/div><h1 /);
@@ -725,9 +743,9 @@ test('the short story heads Discover: the headline, the Wikipedia line, three nu
   assert.equal(loadTsx(STORY).COMMUNITIES_PATH, '/communities');
   // Beside the words from md: the picture, then the door as a card. No
   // figures until the directory's read has brought them.
-  assert.match(html, /<div class="hidden w-\[320px\] shrink-0 flex-col items-center gap-3 md:flex"><img src="\/brand\/people\.png"/);
+  assert.match(html, /<div class="hidden w-\[320px\] shrink-0 flex-col items-center gap-3\.5 md:flex"><img src="\/brand\/people\.png"/);
   assert.ok(html.indexOf('<h1') < html.lastIndexOf('/brand/people.png'), 'the words first, the picture after');
-  assert.match(html, /<a href="\/communities" data-landing-story-private="" class="w-full rounded-\[20px\] bg-white [^"]* no-underline">/);
+  assert.match(html, /<a href="\/communities" data-landing-story-private="" class="flex w-full items-center [^"]* no-underline [^"]*">/);
   assert.doesNotMatch(html, /data-landing-story-month/);
   assert.doesNotMatch(html, new RegExp(message('auth:guest.hero.month.title')));
 
@@ -736,8 +754,10 @@ test('the short story heads Discover: the headline, the Wikipedia line, three nu
   // from md; on a phone one line under the Wikipedia line.
   const lived = renderComponent(STORY, 'Story', { compact: true, primaryClass: 'pill', onStart() {}, month: { changes: 1409, contributors: 87 } });
   assert.equal([...lived.matchAll(/data-landing-story-month=""/g)].length, 2);
-  assert.match(lived, /<p data-landing-story-month="" class="[^"]*\bmd:hidden\b[^"]*"><span>This month<\/span><span><strong class="font-bold [^"]*">1,409<\/strong> changes<\/span><span><strong class="font-bold [^"]*">87<\/strong> contributors<\/span><\/p>/);
-  assert.match(lived, /<div class="text-\[15px\] leading-5 font-\[650\] [^"]*">This month<\/div><div class="mt-1\.5 grid grid-cols-2 gap-4"><p class="[^"]*"><strong class="block text-\[28px\] leading-8 font-extrabold [^"]*">1,409<\/strong> changes<\/p><p class="[^"]*"><strong class="block text-\[28px\] leading-8 font-extrabold [^"]*">87<\/strong> contributors<\/p><\/div>/);
+  assert.match(lived, /<p data-landing-story-month="" class="[^"]*\bmd:hidden\b[^"]*"><span>This month<\/span><span><strong class="font-semibold [^"]*">1,409<\/strong> changes<\/span><span><strong class="font-semibold [^"]*">87<\/strong> contributors<\/span><\/p>/);
+  // …drawn as one of the site's little windows: a sun strip with its three
+  // dots and the title, the two figures in the serif under it.
+  assert.match(lived, /<div data-landing-story-month="" class="w-full border [^"]*"><div class="[^"]*bg-\[var\(--site-sun\)\][^"]*"><span class="flex gap-1" aria-hidden="true">(?:<span class="[^"]*"><\/span>){3}<\/span>This month<\/div><div class="grid grid-cols-2"><p class="[^"]*"><strong class="block font-\[family-name:var\(--site-serif\)\] [^"]*">1,409<\/strong> changes<\/p><p class="[^"]*\bborder-s\b[^"]*"><strong class="block font-\[family-name:var\(--site-serif\)\] [^"]*">87<\/strong> contributors<\/p><\/div><\/div>/);
   // One of each is said in the singular.
   const one = renderComponent(STORY, 'Story', { compact: true, primaryClass: 'pill', onStart() {}, month: { changes: 1, contributors: 1 } });
   assert.match(one, />1<\/strong> change<\/span>/);
@@ -1045,4 +1065,49 @@ test('See what visitors see: the visitor\'s own page under a bar with the way ba
   assert.match(src, /<GuestProject\s+app=\{overview\.app\}\s+initialOverview=\{overview\}\s+preview\s+onIntent=\{inert\}\s+onOpenInside=\{open\}\s+onShare=\{inert\}\s+onAllCommunities=\{inert\}/);
   assert.match(src, /if \(e\.key === 'Escape'\) onClose\(\);/);
   assert.equal(message('project:visitorView.inert'), 'Visitors are asked to sign in here');
+});
+
+test('the list wears the website\'s look signed out only: repainted by its own hooks under the landing, its classes left alone', () => {
+  const css = read('public/css/app.css');
+  const a = css.indexOf("/* ── THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES");
+  const b = css.indexOf('/* ── THE NEW LOOK, AN EXPERIMENT');
+  assert.ok(a > 0 && b > a, 'the block sits before the new look, which is appended last on purpose');
+  const block = css.slice(a, b);
+  // Every rule of the block is under the landing's root (or names it), so
+  // the same chips and cards on the signed-in Home are untouched.
+  const selectors = [...block.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/(^|\})\s*([^{}@]+)\{/g)].map((m) => m[2].trim()).filter(Boolean);
+  assert.ok(selectors.length > 15);
+  for (const selector of selectors) {
+    // Split a selector list on its own commas, not on those inside :is().
+    let depth = 0;
+    let part = '';
+    const parts = [];
+    for (const ch of selector) {
+      if (ch === '(') depth += 1;
+      if (ch === ')') depth -= 1;
+      if (ch === ',' && depth === 0) { parts.push(part); part = ''; } else part += ch;
+    }
+    parts.push(part);
+    for (const one of parts) assert.match(one, /#auth-landing-screen/, one.trim());
+  }
+  // The heading is a title in the serif; the search and the chips are
+  // outlined and the chosen chip is ink; a card is a white face on an ink
+  // outline with its name in the serif.
+  assert.match(block, /\[data-home-join-section\] > \.home-area-label > span:first-child \{\s+font-family: var\(--site-serif\);/);
+  assert.match(block, /:is\(\[data-guest-search-open\], \[data-home-join-kind\]\) \{\s+background-color: var\(--site-panel\);\s+color: var\(--site-ink\);\s+box-shadow: inset 0 0 0 1px var\(--site-line\);/);
+  assert.match(block, /\[data-home-join-kind\]\[aria-pressed="true"\] \{\s+background-color: var\(--site-chosen\);\s+color: var\(--site-chosen-ink\);/);
+  assert.match(block, /:is\(\[data-guest-card\], \[data-guest-featured\]\) \{\s+border: 1px solid var\(--site-line\);\s+border-radius: 14px;/);
+  assert.match(block, /\[data-guest-card-link\] \{\s+font-family: var\(--site-serif\);/);
+  // The bar's button is a sun pill with ink words on every signed-out page.
+  assert.match(block, /#auth-landing-screen #landing-header \[data-landing-sign-up\],\s+#auth-landing-screen \[data-guest-groups\] \.bg-violet-600 \{\s+background-color: var\(--site-sun\);\s+color: var\(--site-on-sun\);/);
+  // The hooks it paints by are the components' own, and the shared
+  // components carry no class of the look.
+  const discover = read(DISCOVER);
+  for (const hook of ['data-guest-search-open', 'data-guest-search=', 'data-guest-card=', 'data-guest-featured=', 'data-guest-card-link', 'data-guest-card-about']) assert.ok(discover.includes(hook), hook);
+  const join = read('frontend/src/features/home/communities-to-join.tsx');
+  for (const hook of ['data-home-join-section', 'data-home-join-kind', 'guest-join-featured-label', 'data-home-join-rest']) assert.ok(join.includes(hook), hook);
+  assert.doesNotMatch(join, /--site-/);
+  // The faces it names are the ones the stylesheet already declares.
+  assert.match(css, /@font-face \{\s+font-family: 'Young Serif';/);
+  assert.match(css, /@font-face \{\s+font-family: 'Geist';/);
 });

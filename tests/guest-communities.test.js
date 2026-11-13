@@ -12,6 +12,8 @@
 //     and notes itself as where a sign-up came from;
 //   - its address: the landing draws it at that pathname in the guest
 //     Discover's place, and a visitor with no account may open it.
+//   - its look: the website's, spelled only as that look's variables, so the
+//     dark shell follows from one rule of the stylesheet.
 //
 // Run with: node --test tests/guest-communities.test.js
 
@@ -44,7 +46,7 @@ test('the page, top to bottom: who it is for, how it works, who decides, private
     'An app for your group, made by your group.',
     message('auth:guest.groups.lead'),
     'Join the waitlist',
-    'Want it open to everyone instead?', 'Make a public app', '.',
+    "Curious what's possible?", 'See the public apps people have built', '.',
     'Made for groups like yours',
     'Friend groups', message('auth:guest.groups.for.friends.body'),
     'School clubs and classes', message('auth:guest.groups.for.school.body'),
@@ -54,9 +56,9 @@ test('the page, top to bottom: who it is for, how it works, who decides, private
     'Towns and cities', message('auth:guest.groups.for.towns.body'),
     'How it works',
     message('auth:guest.groups.how.sub'),
-    '1', 'Say what you need', message('auth:guest.groups.how.say.body'),
-    '2', 'Invite your people', message('auth:guest.groups.how.invite.body'),
-    '3', 'Change it together', message('auth:guest.groups.how.change.body'),
+    '01', 'Say what you need', message('auth:guest.groups.how.say.body'),
+    '02', 'Invite your people', message('auth:guest.groups.how.invite.body'),
+    '03', 'Change it together', message('auth:guest.groups.how.change.body'),
     'You choose who decides',
     message('auth:guest.groups.decides.lead'),
     'Anyone can suggest changes', 'Describe it. A coding agent builds it.',
@@ -115,7 +117,9 @@ test('one way in, which says what it does and notes where the sign-up came from'
   assert.equal([...waiting.matchAll(/<button /g)].length, 2);
   assert.deepEqual([...waiting.matchAll(/<a [^>]*href="([^"]+)"/g)].map((m) => m[1]), ['/', '/', '/']);
   assert.match(waiting, /<a href="\/" data-guest-groups-back="" class="[^"]*">/);
-  assert.match(waiting, /<a href="\/" data-guest-groups-public="" class="[^"]*">Make a public app<\/a>/);
+  // The line under the first button points at the apps people have built:
+  // somebody deciding whether to bring a group wants to see one first.
+  assert.match(waiting, /<a href="\/" data-guest-groups-public="" class="[^"]*">See the public apps people have built<\/a>/);
   const src = read(PAGE);
   assert.match(src, /const start = \(\) => \{ noteSignUpFrom\('groups'\); onStart\(\); \};/);
   assert.match(src, /const startLabel = waitlist \? t\('auth:guest\.hero\.joinWaitlist'\) : t\('auth:guest\.groups\.start'\);/);
@@ -154,4 +158,40 @@ test('its address: the landing draws it at /communities in Discover\'s place, an
   assert.equal(isSpaDocumentPath('/communities/anything'), false);
   assert.equal(isSpaDocumentPath('/community'), false);
   assert.equal(isSpaDocumentPath('/dashboard'), false);
+});
+
+test('drawn in the website\'s look: bands and windows, every colour a variable of that look', () => {
+  const html = render();
+  const src = read(PAGE);
+  // A sky band with a window for the headline, then the site's green, pale
+  // sun and sun bands down the page; the two sections between sit on the
+  // page's own cream ground.
+  assert.deepEqual([...html.matchAll(/site-band \[--band:var\(--site-([a-z-]+)\)\]/g)].map((m) => m[1]), ['sky', 'leaf', 'sun-pale', 'sun-deep']);
+  // Two windows, each opened by a strip of three dots: the headline's, and
+  // the approval rules'.
+  assert.equal([...html.matchAll(/bg-\[#e8452e\]/g)].length, 2);
+  // Headings in the site's serif: the headline, four of the five section
+  // headings (How it works is the small label over its line, which takes
+  // the serif instead), and the closing band's.
+  assert.match(html, /<h1 class="[^"]*font-\[family-name:var\(--site-serif\)\][^"]*">An app for your group, made by your group\.<\/h1>/);
+  assert.match(html, /<h2 class="[^"]*uppercase[^"]*">How it works<\/h2><p class="[^"]*font-\[family-name:var\(--site-serif\)\][^"]*">From one sentence/);
+  // The first button is the shell's primitive, which the stylesheet repaints
+  // as a sun pill under this page; the closing band's is a white pill.
+  assert.match(html, /<button [^>]*data-guest-groups-start=""[^>]*class="[^"]*bg-violet-600[^"]*"/);
+  const css = read('public/css/app.css');
+  assert.match(css, /#auth-landing-screen \[data-guest-groups\] \.bg-violet-600 \{\s+background-color: var\(--site-sun\);\s+color: var\(--site-on-sun\);/);
+  // No colour of the app's own palette and no dark class: the look's
+  // variables are the only inks, and the dark shell moves them in one rule.
+  assert.doesNotMatch(src, /\b(?:text|bg|border|shadow)-(?:zinc|violet|white|black)\b/);
+  assert.doesNotMatch(src, /\bdark:/);
+  for (const name of new Set([...src.matchAll(/var\((--site-[a-z-]+)\)/g)].map((m) => m[1]))) {
+    assert.match(css, new RegExp(`#auth-landing-screen \\{[^}]*${name}:`), `${name} is declared for the light shell`);
+  }
+  const dark = css.match(/\.dark #auth-landing-screen \{[^}]*\}/);
+  assert.ok(dark, 'the dark shell moves the look\'s variables in one rule');
+  for (const name of ['--site-ink', '--site-muted', '--site-line', '--site-sky', '--site-panel', '--site-leaf', '--site-sun-pale', '--site-sun-deep', '--site-sky-pale', '--site-mint']) {
+    assert.ok(dark[0].includes(`${name}:`), `${name} has a dark value`);
+  }
+  // Sun keeps its ink words in the dark shell too.
+  assert.doesNotMatch(dark[0], /--site-sun:|--site-on-sun:/);
 });

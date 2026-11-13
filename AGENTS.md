@@ -696,6 +696,23 @@ carry most of them.
 - **At most one pill on a list row.** Use `AppPills limit={1}`. Pass the
   heading's own words to a row's label so the row does not repeat them.
 
+- **The signed-out pages wear the website's look, not the shell's (13 Nov
+  2026).** The guest Discover (its short story and its list) and the page
+  about private communities are a visitor's next click after onhomeroom.com,
+  so they are drawn as that site is: a sky band with a white window in it,
+  serif headlines (Young Serif, the stand-in the new look already ships),
+  sun pills on an ink outline, outlined cards, and bands of colour down the
+  page. `public/css/app.css` ("THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES")
+  declares that look's variables on `#auth-landing-screen` and moves them for
+  the dark shell in one rule. The two components drawn only there
+  (`features/auth/story.tsx`'s short story, `features/guest/guest-communities.tsx`)
+  spell every colour as one of those variables and name no `dark:` class; the
+  pieces shared with the signed-in app (the bar's button, the search, the
+  chips, the cards) keep their classes and are repainted from that block by
+  their own hooks. Everything a member sees once signed in keeps the rules
+  above. `tests/guest-discover.test.js` and `tests/guest-communities.test.js`
+  hold it.
+
 Tests pin the literals where they live (`tests/section-heading-primitives`,
 `tests/nav-tab-bar`, `tests/workshop-screen`), so a change to one of these is
 a change to the rule. Make it here as well.

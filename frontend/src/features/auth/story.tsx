@@ -55,15 +55,25 @@ export const SMALL_CAPS = 'text-[12px] leading-4 font-bold uppercase tracking-[0
 // isSpaDocumentPath lets a visitor with no account open it).
 export const COMMUNITIES_PATH = '/communities';
 
+// THE SHORT STORY IS DRAWN IN THE WEBSITE'S LOOK (13 Nov 2026): it is a
+// visitor's next click after onhomeroom.com, so it is that site's sky band
+// with a white window in it, serif headlines and sun on an ink outline.
+// Every colour here is a variable of public/css/app.css's "THE WEBSITE'S LOOK
+// ON THE SIGNED-OUT PAGES", which the dark shell moves; nothing below names a
+// dark class of its own.
+const SITE_SERIF = 'font-[family-name:var(--site-serif)] font-normal';
+// The small label over a headline, as the site sets "Currently in early testing".
+const SITE_LABEL = 'text-[13px] leading-[18px] uppercase tracking-[0.04em] text-[color:var(--site-label)]';
+// A link inside a sentence: ink, underlined (the site has no second accent).
+const SITE_LINK = 'font-semibold text-[color:var(--site-ink)] underline decoration-1 underline-offset-[3px] un-touch-target';
+// One of the three dots a window's strip carries.
+const WINDOW_DOT = 'h-2 w-2 rounded-full border border-[color:var(--site-line)] md:h-2.5 md:w-2.5';
+
 // The short story's headline. On a phone it leads the page, the welcome label
 // being a wide screen's; under a greeted address (`welcomeEmail`) the label
 // shows on a phone too, so the headline keeps its room above there as well.
-const HERO_HEADLINE = 'text-[26px] leading-[31px] md:mt-2 md:text-[34px] md:leading-[40px] font-extrabold text-balance';
-const HERO_HEADLINE_AFTER = 'mt-2 text-[26px] leading-[31px] md:text-[34px] md:leading-[40px] font-extrabold text-balance';
-
-// The two cards beside the short story: the guest Discover's own card face
-// (../guest/guest-discover.tsx Card), so they sit on the page as the apps do.
-const SIDE_CARD = 'w-full rounded-[20px] bg-white shadow-[inset_0_0_0_1px_var(--app-sheet-line),0_1px_2px_rgba(0,0,0,0.05),0_10px_22px_-12px_rgba(0,0,0,0.22)] dark:bg-zinc-900';
+const HERO_HEADLINE = `${SITE_SERIF} text-[28px] leading-[32px] tracking-[-0.01em] text-[color:var(--site-ink)] text-balance md:mt-2.5 md:text-[46px] md:leading-[50px]`;
+const HERO_HEADLINE_AFTER = `mt-2 ${SITE_SERIF} text-[28px] leading-[32px] tracking-[-0.01em] text-[color:var(--site-ink)] text-balance md:text-[46px] md:leading-[50px]`;
 
 // THE STORY SHRINKS TO FIT ITS SCREEN (Evan, 10 Oct 2026, iPhone Safari): on
 // a phone shorter than the story, Get started fell below the fold, under
@@ -291,72 +301,88 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
       { id: 'auth:guest.hero.month.contributors', count: month.contributors },
     ] : [];
     return (
-      <div ref={storyRef} data-landing-story="" data-landing-story-compact="" className="px-4 pt-5 md:pt-8 flex items-center gap-10">
-        <div className="flex min-w-0 flex-1 flex-col items-start text-start">
-          <div className={welcomeEmail ? SMALL_CAPS : `${SMALL_CAPS} hidden md:block`}>{t('auth:story.welcome')}</div>
-          {welcomeEmail ? (
-            <div data-landing-story-email="" className="mt-1 max-w-full text-[15px] leading-5 font-semibold text-zinc-700 dark:text-zinc-300 [overflow-wrap:anywhere]">{welcomeEmail}</div>
-          ) : null}
-          <h1 className={welcomeEmail ? HERO_HEADLINE_AFTER : HERO_HEADLINE}>
-            {t('auth:guest.hero.headline')}
-          </h1>
-          <p className="mt-2 text-[17px] leading-[23px] md:text-xl md:leading-[26px] font-semibold text-zinc-600 dark:text-zinc-300 text-balance">{t('auth:guest.hero.sub')}</p>
-          {month ? (
-            <p data-landing-story-month="" className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[15px] leading-5 text-zinc-500 md:hidden dark:text-zinc-400">
-              <span>{t('auth:guest.hero.month.title')}</span>
-              {figures.map((f) => (
-                <span key={f.id}>
-                  <RichMessage id={f.id} values={{ count: f.count, total: f.count.toLocaleString() }} components={[<strong className="font-bold text-zinc-900 dark:text-zinc-100" />]} />
-                </span>
-              ))}
-            </p>
-          ) : null}
-          <ol data-landing-story-points="" className="mt-4 flex flex-col gap-2.5 md:mt-5 md:gap-3">
-            {points.map((p, i) => (
-              <li key={p.title} className="flex min-w-0 items-center gap-2.5 md:items-start md:gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-50 text-sm font-bold text-violet-700 dark:bg-violet-950 dark:text-violet-300" aria-hidden="true">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 md:pt-[3px]">
-                  <span className="block text-[15px] leading-5 font-semibold text-zinc-900 md:text-base md:leading-[22px] dark:text-zinc-100">{p.title}</span>
-                  <span className="hidden text-sm leading-5 text-zinc-500 md:block dark:text-zinc-400">{p.body}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p data-landing-story-next="" className="mt-4 hidden text-[15px] leading-5 text-zinc-500 md:mt-5 md:block dark:text-zinc-400">{t('auth:guest.hero.start')}</p>
-          <p data-landing-story-next="" className="mt-4 text-[15px] leading-5 text-zinc-500 md:hidden dark:text-zinc-400">
-            <RichMessage id="auth:guest.hero.startShort" components={[<a href={COMMUNITIES_PATH} data-landing-story-private="" className={STORY_LINK} />]} />
-          </p>
-        </div>
-        <div className="hidden w-[320px] shrink-0 flex-col items-center gap-3 md:flex">
-          <img
-            src="/brand/people.png"
-            alt=""
-            width={816}
-            height={612}
-            draggable={false}
-            className="mb-0.5 h-auto w-[176px] shrink-0"
-          />
-          {month ? (
-            <div data-landing-story-month="" className={`${SIDE_CARD} px-4 pt-3 pb-3.5`}>
-              <div className="text-[15px] leading-5 font-[650] text-zinc-900 dark:text-zinc-100">{t('auth:guest.hero.month.title')}</div>
-              <div className="mt-1.5 grid grid-cols-2 gap-4">
-                {figures.map((f) => (
-                  <p key={f.id} className="min-w-0 text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400">
-                    <RichMessage id={f.id} values={{ count: f.count, total: f.count.toLocaleString() }} components={[<strong className="block text-[28px] leading-8 font-extrabold text-zinc-900 dark:text-zinc-100" />]} />
-                  </p>
+      <div ref={storyRef} data-landing-story="" data-landing-story-compact="" className="site-band [--band:var(--site-sky)] px-3 pt-3 pb-4 md:px-4 md:pt-6 md:pb-8">
+        <div data-landing-story-window="" className="border border-[color:var(--site-line)] bg-[var(--site-panel)]">
+          <div className="flex h-6 items-center gap-1.5 border-b border-[color:var(--site-line)] px-2.5 md:h-8 md:px-3" aria-hidden="true">
+            <span className={`${WINDOW_DOT} bg-[#e8452e]`} />
+            <span className={`${WINDOW_DOT} bg-[#f2a531]`} />
+            <span className={`${WINDOW_DOT} bg-[#3cc23c]`} />
+          </div>
+          <div className="flex items-center gap-10 px-4 pt-4 pb-5 md:px-10 md:py-8">
+            <div className="flex min-w-0 flex-1 flex-col items-start text-start">
+              <div className={welcomeEmail ? SITE_LABEL : `${SITE_LABEL} hidden md:block`}>{t('auth:story.welcome')}</div>
+              {welcomeEmail ? (
+                <div data-landing-story-email="" className="mt-1 max-w-full text-[15px] leading-5 font-semibold text-[color:var(--site-muted)] [overflow-wrap:anywhere]">{welcomeEmail}</div>
+              ) : null}
+              <h1 className={welcomeEmail ? HERO_HEADLINE_AFTER : HERO_HEADLINE}>
+                {t('auth:guest.hero.headline')}
+              </h1>
+              <p className="mt-2 text-[17px] leading-[23px] text-[color:var(--site-muted)] text-balance md:mt-3 md:text-xl md:leading-[27px]">{t('auth:guest.hero.sub')}</p>
+              {month ? (
+                <p data-landing-story-month="" className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[15px] leading-5 text-[color:var(--site-muted)] md:hidden">
+                  <span>{t('auth:guest.hero.month.title')}</span>
+                  {figures.map((f) => (
+                    <span key={f.id}>
+                      <RichMessage id={f.id} values={{ count: f.count, total: f.count.toLocaleString() }} components={[<strong className="font-semibold text-[color:var(--site-ink)]" />]} />
+                    </span>
+                  ))}
+                </p>
+              ) : null}
+              <ol data-landing-story-points="" className="mt-4 flex flex-col gap-2.5 md:mt-6 md:gap-3.5">
+                {points.map((p, i) => (
+                  <li key={p.title} className="flex min-w-0 items-center gap-2.5 md:items-start md:gap-3.5">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[color:var(--site-line)] bg-[var(--site-sun)] text-sm font-semibold text-[color:var(--site-on-sun)]" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block ${SITE_SERIF} text-[17px] leading-[22px] text-[color:var(--site-ink)] md:text-[21px] md:leading-[27px]`}>{p.title}</span>
+                      <span className="hidden text-[15px] leading-[21px] text-[color:var(--site-muted)] md:block">{p.body}</span>
+                    </span>
+                  </li>
                 ))}
-              </div>
+              </ol>
+              <p data-landing-story-next="" className="mt-4 hidden text-[15px] leading-[21px] text-[color:var(--site-muted)] md:mt-6 md:block">{t('auth:guest.hero.start')}</p>
+              <p data-landing-story-next="" className="mt-4 text-[15px] leading-[21px] text-[color:var(--site-muted)] md:hidden">
+                <RichMessage id="auth:guest.hero.startShort" components={[<a href={COMMUNITIES_PATH} data-landing-story-private="" className={SITE_LINK} />]} />
+              </p>
             </div>
-          ) : null}
-          <a href={COMMUNITIES_PATH} data-landing-story-private="" className={`${SIDE_CARD} flex items-center gap-2.5 py-3 ps-4 pe-3 no-underline`}>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] leading-5 font-[650] text-zinc-900 dark:text-zinc-100">{t('auth:guest.hero.private.title')}</span>
-              <span className="mt-0.5 block text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.hero.private.body')}</span>
-            </span>
-            <ChevronRightIcon className="h-5 w-5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-          </a>
+            <div className="hidden w-[320px] shrink-0 flex-col items-center gap-3.5 md:flex">
+              <img
+                src="/brand/people.png"
+                alt=""
+                width={816}
+                height={612}
+                draggable={false}
+                className="h-auto w-[190px] shrink-0"
+              />
+              {month ? (
+                <div data-landing-story-month="" className="w-full border border-[color:var(--site-line)] bg-[var(--site-window)]">
+                  <div className="flex h-7 items-center gap-2 border-b border-[color:var(--site-line)] bg-[var(--site-sun)] px-2.5 text-[13px] leading-[18px] font-semibold text-[color:var(--site-on-sun)]">
+                    <span className="flex gap-1" aria-hidden="true">
+                      <span className="h-2 w-2 rounded-full border border-[color:var(--site-on-sun)] bg-[#e8452e]" />
+                      <span className="h-2 w-2 rounded-full border border-[color:var(--site-on-sun)] bg-[#f2a531]" />
+                      <span className="h-2 w-2 rounded-full border border-[color:var(--site-on-sun)] bg-[#3cc23c]" />
+                    </span>
+                    {t('auth:guest.hero.month.title')}
+                  </div>
+                  <div className="grid grid-cols-2">
+                    {figures.map((f, i) => (
+                      <p key={f.id} className={i ? 'min-w-0 border-s border-[color:var(--site-line)] px-4 pt-2.5 pb-3 text-[13px] leading-[18px] text-[color:var(--site-muted)]' : 'min-w-0 px-4 pt-2.5 pb-3 text-[13px] leading-[18px] text-[color:var(--site-muted)]'}>
+                        <RichMessage id={f.id} values={{ count: f.count, total: f.count.toLocaleString() }} components={[<strong className={`block ${SITE_SERIF} text-[34px] leading-[38px] tracking-[-0.02em] text-[color:var(--site-ink)]`} />]} />
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <a href={COMMUNITIES_PATH} data-landing-story-private="" className="flex w-full items-center gap-2.5 rounded-xl border border-[color:var(--site-line)] bg-[var(--site-panel)] py-3 ps-4 pe-3 no-underline shadow-[0_2px_0_var(--site-line)]">
+                <span className="min-w-0 flex-1">
+                  <span className={`block ${SITE_SERIF} text-[19px] leading-6 text-[color:var(--site-ink)]`}>{t('auth:guest.hero.private.title')}</span>
+                  <span className="mt-0.5 block text-[13px] leading-[18px] text-[color:var(--site-muted)]">{t('auth:guest.hero.private.body')}</span>
+                </span>
+                <ChevronRightIcon className="h-5 w-5 shrink-0 text-[color:var(--site-ink)]" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );
