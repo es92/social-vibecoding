@@ -164,8 +164,8 @@ test('the band draws nothing on a phone, and keeps the box it is measured by', (
   assert.match(CSS, phone, 'the band paints nothing and takes no taps');
   assert.match(CSS, /\.dev-ws-placebar \.dev-ws-tabtrack \{ height: 0; overflow: hidden; \}/,
     'the row it held is collapsed, the h2 with it, in the DOM still');
-  assert.match(CSS, /\.dev-ws-placebar \.dev-ws-places-btn \{ display: none; \}/,
-    'the band\'s button is hidden, scoped to the bar');
+  assert.doesNotMatch(CSS, /\.dev-ws-placebar \.dev-ws-places-btn/,
+    'the bar draws no button to hide (#6671)');
   // The box survives: the margin and the padding the pinned head and the
   // pull to refresh are measured against are untouched.
   assert.match(CSS, /^\.dev-ws-tabs\.dev-ws-band \{\s*margin: -18px -4px 0;/m);

@@ -3546,8 +3546,8 @@ export function DevWorkshop(): ReactNode {
   // rather than inserted under its figures after (polish board #13).
   useEffect(() => { warmBotSlots(v.slug); }, [v.slug]);
 
-  // #4417: THE PLACES TRAY (./places-tray.tsx), the list behind the place
-  // bar's button, and a swipe from the left edge on a phone. It shuts when
+  // #4417: THE PLACES TRAY (./places-tray.tsx), the list behind the merged
+  // header's button, and a swipe from the left edge on a phone. It shuts when
   // the place or the project changes under it (a door, Back), and a press on
   // a place in it shuts it as a navigating close, so the Back claim it took
   // cannot undo the entry the press pushes. The close itself is the open
@@ -3557,7 +3557,6 @@ export function DevWorkshop(): ReactNode {
   const [trayOpen, setTrayOpen] = useState(false);
   const [trayShown, setTrayShown] = useState(false);
   const trayNav = useRef(false);
-  const placesBtn = useRef<HTMLButtonElement | null>(null);
   const trayId = useId();
   const placesInColumn = useMediaFlag(PLACES_COLUMN_QUERY);
   useEffect(() => { setTrayOpen(false); }, [tab, v.slug, placesInColumn]);
@@ -3591,8 +3590,8 @@ export function DevWorkshop(): ReactNode {
     if (v.slug && !v.loading) publishPlace(v.slug, tab, owed, unreadElsewhere, trayOpen);
   }, [v.slug, v.loading, tab, owed, unreadElsewhere, trayOpen]);
   // #4703: the merged header's places button (place-bar.tsx HeaderPlace)
-  // presses the same toggle the bar's button does, published here so the
-  // header need not own the tray.
+  // opens this page's tray, published here so the header need not own it.
+  // It is the only places button: the place bar draws none (#6671).
   const trayToggleRef = useRef(() => {});
   trayToggleRef.current = () => { trayNav.current = false; setTrayOpen((open) => !open); };
   useEffect(() => {
@@ -3656,8 +3655,8 @@ export function DevWorkshop(): ReactNode {
   /* ── The place bar, the tray behind it, and on All items its back bar ──
      #4417: the four tabs are gone; the project's places are one list (Hub,
      Needs you, Workshop, then its channels: ./project-places.tsx). On a
-     phone it is a tray behind the place bar's button, the bar naming where
-     you are (./place-bar.tsx); on a wide window it is nested under the
+     phone it is a tray behind the merged header's button, the bar naming
+     where you are (./place-bar.tsx); on a wide window it is nested under the
      community's row in the sidebar (../../nav/rail-communities.tsx) and the
      bar is the page's title row. Under the bar, All items leads with its way back to
      the Workshop it is a page of.
@@ -3681,15 +3680,8 @@ export function DevWorkshop(): ReactNode {
   };
   const band = (
     <PlaceBar
-      name={projectName}
       place={tab}
-      owed={owed}
-      unread={unreadElsewhere}
-      open={trayOpen}
-      trayId={trayId}
-      onToggle={() => { trayNav.current = false; setTrayOpen((open) => !open); }}
       barRef={setBar}
-      buttonRef={placesBtn}
     />
   );
   const tray = trayOpen || trayShown ? (
@@ -3699,15 +3691,12 @@ export function DevWorkshop(): ReactNode {
       onClose={() => { trayNav.current = false; setTrayOpen(false); }}
       closing={!trayOpen}
       onClosed={() => setTrayShown(false)}
-      // #4703: focus returns to the button that opened the tray — the merged
-      // header's on a phone, the bar's own on a wide window — whichever is
-      // connected and visible (the band's button is display:none under 768px,
-      // so its offsetParent is null there).
+      // #4703: focus returns to the button that opened the tray, the merged
+      // header's, when it is connected and visible. The bar draws no button
+      // of its own (#6671), so nothing else can have opened it.
       returnTo={() => {
         const header = trayButton();
-        if (header && header.isConnected && header.offsetParent) return header;
-        const bar = placesBtn.current;
-        return bar && bar.isConnected && bar.offsetParent ? bar : null;
+        return header && header.isConnected && header.offsetParent ? header : null;
       }}
       navigating={() => trayNav.current}
     >

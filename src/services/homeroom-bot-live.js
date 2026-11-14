@@ -237,9 +237,8 @@ function personText({ reason, platform = false, project = null, done = false, wi
     return `Homeroom bot was asked to close this: ${reasonSentence(reason)}\n\n`
       + 'Anyone in the project can propose to close it, or reply here to keep it going.';
   }
-  // 6 Nov 2026 (#6395): a go-ahead cannot settle this one (credentials,
-  // auth, billing, permissions, operator work outside the app, a database
-  // change that is not append-only, or too big for one build), so the copy
+  // 6 Nov 2026 (#6395): a go-ahead cannot settle this one (operator work
+  // outside the app, or a database change that is not append-only), so the copy
   // names no Go ahead and leads with the part it can build.
   if (goAheadDecides === false) {
     return `I don't build changes like this myself, even with a go-ahead: ${reasonSentence(reason)} `

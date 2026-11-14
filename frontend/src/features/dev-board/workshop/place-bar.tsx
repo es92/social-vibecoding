@@ -2,19 +2,17 @@
  * #4417: THE PLACE BAR, where the four tabs were.
  *
  * On a phone, one bar under the header in the community's colour
- * (`--community-tint`), continuing it, as the band of tabs did: the tray's
- * button (./places-tray.tsx), then the name of the place you are on, with a
- * # for a channel —
+ * (`--community-tint`), continuing it, as the band of tabs did: the name of
+ * the place you are on, with a # for a channel —
  *
- *   [▤•]  # homeroom-bot
+ *   # homeroom-bot
  *
- * The button says whether the tray is open (`aria-expanded`), and carries a
- * dot, with an `sr-only` phrase, while something in the project waits for
- * you: votes owed, or unread in a channel you are not reading.
+ * The tray's button is the merged header's (HeaderPlace below); the bar
+ * itself only says where you are, and has no action of its own.
  *
  * On a wide window the list is nested under the community's row in the
  * sidebar (../../nav/rail-communities.tsx), so the bar is the page's title
- * row that names the place, in the page's own ink, with no button (app.css).
+ * row that names the place, in the page's own ink (app.css).
  *
  * It keeps the band's box (`.dev-ws-tabs.dev-ws-band` > `.dev-ws-tabtrack`,
  * `data-ws-band`): it is what pins under the header, and what the pinned
@@ -42,10 +40,9 @@ export function waitingPhrase(owed: number, unread: number): string | null {
 }
 
 /**
- * The tray's button, the one thing the bar and the merged header share
- * (#4703): the same class strings, the same aria, the dot and its sr-only
- * phrase. The bar renders it unchanged; the header renders it with an extra
- * class (app.css sizes it to the header's 28px row there).
+ * The tray's button, which the merged header draws (#4703): its class
+ * strings, its aria, the dot and its sr-only phrase. The header renders it
+ * with an extra class (app.css sizes it to the header's 28px row there).
  */
 export function PlacesButton({ name, open, trayId, waiting, onToggle, buttonRef, className }: {
   /** The project's name: the button is "<name>'s places". */
@@ -103,11 +100,11 @@ export function usePhoneHeader(): boolean {
 
 /**
  * #4703: THE MERGED HEADER'S PLACES BUTTON. On a phone, while a project page
- * for this project is mounted, the platform header opens the same tray the
- * place bar's button does: the page owns the tray (workshop.tsx) and
- * published the toggle here; the header only draws the button and calls it.
- * The band's own button is hidden on a phone (app.css), so this is the one
- * a person sees.
+ * for this project is mounted, the platform header opens the project's
+ * places tray: the page owns the tray (workshop.tsx) and published the
+ * toggle here; the header only draws the button and calls it. The place bar
+ * no longer draws one of its own (#6671), so this is the only places button
+ * beside the header's sidebar toggle.
  *
  * It also asks #5168's question: is the app view the screen on show? The
  * header carries this button on every route, and a project page stays
@@ -162,25 +159,14 @@ export function HeaderPlaceName({ slug }: { slug: string | null }): ReactNode {
   );
 }
 
-export function PlaceBar({ name, place, owed, unread, open, trayId, onToggle, barRef, buttonRef }: {
-  /** The project's name: the button is "<name>'s places". */
-  name: string;
+export function PlaceBar({ place, barRef }: {
   place: PlaceKey;
-  owed: number;
-  /** Unread across the project's channels, less the one on screen. */
-  unread: number;
-  open: boolean;
-  trayId: string;
-  onToggle: () => void;
   barRef?: (el: HTMLElement | null) => void;
-  buttonRef?: Ref<HTMLButtonElement>;
 }): ReactNode {
   const handle = placeHandle(place);
-  const waiting = waitingPhrase(owed, unread);
   return (
     <div ref={barRef} className="dev-ws-tabs dev-ws-band dev-ws-placebar" data-ws-band="" data-place-bar={place}>
       <div className="dev-ws-tabtrack">
-        <PlacesButton name={name} open={open} trayId={trayId} waiting={waiting} onToggle={onToggle} buttonRef={buttonRef} />
         <h2 className="dev-ws-place-title" data-place-title="">
           {handle ? <span className="dev-ws-place-title-hash">#</span> : null}
           {handle || placeName(place)}

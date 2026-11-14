@@ -39,8 +39,8 @@ test('the triage prompt asks only about the two blockers, and decides the rest',
     /Anything where the default you would suggest is what the request most plausibly meant\./,
   ]) assert.match(prompt, notAQuestion);
   assert.match(prompt, /If you cannot fill both honestly, it is not a question: decide it\./);
-  assert.match(prompt, /a new integration or service, a feature that spans apps, an architecture choice\. The group decides those; do not turn them into a question\./,
-    'product direction is a person\'s call, not a question to the reporter');
+  assert.match(prompt, /A design decision or a decision about the product's direction \(a new integration or service, an architecture choice\) is not `person`: it is `ready` and `complicated`, planned with `choices`\./,
+    'product direction is planned with choices for its requester, not left for a person');
   assert.match(prompt, /"blocker": "user_facing" \| "impossible"/);
   assert.match(prompt, /"why_default_fails"/);
   assert.match(prompt, /"assumptions": \[/);
@@ -197,7 +197,7 @@ test('triage sends a request for an explanation to a person, and still builds a 
   assert.match(ready, /- It asks for a change to the app\. A request that only asks for an explanation or a write-up \("why does X happen\?", "look into Y and report back"\) names nothing to build: the answer is a reply for a person, not a commit, so it is `person`\./);
   assert.match(ready, /A bug report \("X is broken", "X shows the wrong thing"\) is not this: it asks for X to be fixed\./);
   const person = prompt.slice(prompt.indexOf('4. `person`'), prompt.indexOf('Also state, whatever the verdict:'));
-  assert.match(person, /So does a request that asks only for an explanation or an investigation\./);
+  assert.match(person, /A request that asks only for an explanation or an investigation is `person`\./);
 });
 
 test('a BLOCKED spec builds nothing and says why; a spec that merely mentions it builds', async () => {

@@ -132,8 +132,9 @@ test('the pages: the inbox\'s list beside a conversation, the list as the page w
   assert.doesNotMatch(all, /data-workshop-results/, 'no second list for a search');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(bar, /if \(key === 'workshop' && sidebarRows\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'workshop-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);/);
-  // The places button has nothing to open beside the docked sidebar.
-  assert.match(css, /body:has\(#platform-tabs:not\(\.hidden\):not\(\.platform-tabs-peek\):not\(\.platform-tabs-folded\)\) \.dev-ws-places-btn \{\n    display: none;\n  \}/);
+  // The bar draws no places button of its own (#6671), so there is none to
+  // hide beside the docked sidebar.
+  assert.doesNotMatch(css, /body:has\(#platform-tabs:not\(\.hidden\):not\(\.platform-tabs-peek\):not\(\.platform-tabs-folded\)\) \.dev-ws-places-btn \{\n    display: none;\n  \}/);
 });
 
 test('the look: one indent a level, one unbroken line, the parent unfilled; AI a sparkle', () => {

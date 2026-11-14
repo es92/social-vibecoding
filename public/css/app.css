@@ -20302,9 +20302,8 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
 .dev-ws-places-group + .dev-ws-places-group .dev-ws-places-head { padding-top: 12px; }
 .dev-ws-places-foot { margin-top: auto; padding-top: 12px; }
 
-/* THE PLACE BAR (place-bar.tsx): the band's box, one row: the tray's
-   button, then the place's name. On a phone it is the band, in the
-   community's colour; its 44px button sits at the band's left edge. */
+/* THE PLACE BAR (place-bar.tsx): the band's box, one row: the place's
+   name. On a phone it is the band, in the community's colour. */
 .dev-ws-placebar .dev-ws-tabtrack {
   display: flex; align-items: center; gap: 4px; min-width: 0; height: 44px;
 }
@@ -20331,10 +20330,6 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
 .dev-ws-place-title-hash { margin-inline-end: 3px; opacity: 0.6; }
 @media (min-width: 768px) {
   .dev-ws-placebar .dev-ws-tabtrack { height: 52px; }
-  .dev-ws-places-btn { color: var(--text-muted); margin-inline-start: -10px; }
-  .dev-ws-places-btn:focus-visible { outline-color: var(--accent); }
-  @media (hover: hover) { .dev-ws-places-btn:hover { background: var(--bg-secondary); color: var(--text-primary); } }
-  .dev-ws-places-dot { background: var(--text-muted); box-shadow: 0 0 0 2px var(--bg-primary); }
   .dev-ws-place-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
   /* ON THE HUB THE HERO IS THE PAGE'S HEADING (audit P02, 1 Nov 2026): its
      name is the one large heading, so "Hub" above it is the band's quiet
@@ -20347,8 +20342,8 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
    platform header, and the second coloured row is gone. The band keeps its
    box — the margin, the padding and the 18px tuck the pinned head and the
    pull to refresh are measured against — but it paints nothing and takes no
-   taps: its track is collapsed to nothing, the h2 stays in the DOM for
-   screen readers and the declared checks, and the band's button is hidden.
+   taps: its track is collapsed to nothing, and the h2 stays in the DOM for
+   screen readers and the declared checks.
    The header draws its own button (place-bar.tsx HeaderPlace), 28px like the
    header's other controls, and the place's name beside the switcher as a
    small quiet tag (below); the tint they sit on and the dot's ring are the
@@ -20364,7 +20359,6 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
 @media (max-width: 767.98px) {
   .dev-ws-tabs.dev-ws-band { background: none; pointer-events: none; }
   .dev-ws-placebar .dev-ws-tabtrack { height: 0; overflow: hidden; }
-  .dev-ws-placebar .dev-ws-places-btn { display: none; }
   #platform-header .header-places-btn { width: 28px; height: 28px; margin-inline-start: 0; }
   #platform-header .header-places-btn .dev-ws-places-dot { top: 1px; inset-inline-end: 0; }
   #platform-header:has(.header-place-name) #header-title-name > svg {
@@ -25625,12 +25619,6 @@ html.un-android #back-btn > #back-icon-arrow:not(.hidden) + .back-icon-android {
     background: transparent;
     color: var(--text-primary);
     font-weight: 650;
-  }
-  /* The places are in the sidebar, so the place bar's button to the tray has
-     nothing to open beside it. Folded, the sidebar is away and the button
-     is the way to the places again. */
-  body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek):not(.platform-tabs-folded)) .dev-ws-places-btn {
-    display: none;
   }
 
   /* ── MESSAGES ON A DESKTOP: THE LIST AS THE PAGE ─────────────────────

@@ -5,7 +5,7 @@
 // The four tabs (Hub · Discussion · Needs you · Workshop) became one list:
 // Hub, Needs you and Workshop, a line, then Channels (#general) and Topics,
 // each a group under its heading. On a phone it is the drawer's middle
-// level, or a tray behind the place bar's button; from 768px it is nested
+// level, or a tray behind the merged header's button; from 768px it is nested
 // under the community's row in the sidebar (tests/desktop-sidebar-nested.test.js),
 // with the project's App row first (tests/desktop-sidebar-apps.test.js).
 // These pin the list, the bar and the tray,
@@ -132,20 +132,16 @@ test('the tray\'s list ends with Switch community; the column\'s does not', () =
   assert.doesNotMatch(list({}), /Switch community/);
 });
 
-test('the place bar: the tray\'s button, a dot while something waits, then the place\'s name', () => {
+test('the place bar names the place and nothing else: the header holds the places button', () => {
   const { PlaceBar, waitingPhrase } = loadTsx(BAR);
-  const bar = (props) => renderToHtml(createElement(PlaceBar, {
-    name: 'Homeroom', place: 'c:homeroom-bot', owed: 29, unread: 4, open: false, trayId: 'tray-1', onToggle: () => {}, ...props,
-  }));
+  const bar = (props) => renderToHtml(createElement(PlaceBar, { place: 'c:homeroom-bot', ...props }));
   const html = bar({});
   assert.match(html, /^<div class="dev-ws-tabs dev-ws-band dev-ws-placebar" data-ws-band="" data-place-bar="c:homeroom-bot"><div class="dev-ws-tabtrack">/,
     'the band\'s box, which pins and is measured');
-  assert.match(html, /<button type="button" class="dev-ws-places-btn" data-places-btn="" aria-label="Homeroom&#x27;s places" aria-expanded="false">/);
-  assert.match(html, /<span class="dev-ws-places-dot" data-places-waiting="" aria-hidden="true"><\/span><span class="sr-only"> \(29 to vote, 4 unread\)<\/span><\/button>/);
   assert.match(html, /<h2 class="dev-ws-place-title" data-place-title=""><span class="dev-ws-place-title-hash">#<\/span>homeroom-bot<\/h2>/,
     'a channel by its handle, with a #');
-  assert.match(bar({ open: true }), /aria-expanded="true" aria-controls="tray-1"/);
-  assert.doesNotMatch(bar({ owed: 0, unread: 0 }), /data-places-waiting/, 'nothing waiting, no dot');
+  assert.doesNotMatch(html, /data-places-btn/, 'the places button is the header\'s alone (#6671)');
+  assert.doesNotMatch(html, /data-places-waiting/, 'and the dot rides that button');
   assert.match(bar({ place: 'all' }), /data-place-title="">Workshop<\/h2>/, 'All items is the Workshop\'s page');
   assert.match(bar({ place: 'needs' }), /data-place-title="">Needs you<\/h2>/);
   assert.equal(waitingPhrase(0, 2), '2 unread');

@@ -5788,9 +5788,8 @@ async function startRequest(pool, ctx, args) {
     [app.id, n],
   );
   // 6 Nov 2026 (#6395): the last look left it for a person, and its read says
-  // a go-ahead cannot settle it (credentials, auth, billing, permissions,
-  // operator work outside the app, a non-append-only database change, or too
-  // big for one build). Queueing would only read it to the same answer.
+  // a go-ahead cannot settle it (operator work outside the app, or a
+  // non-append-only database change). Queueing would only read it to the same answer.
   if (lastLook[0]?.verdict === 'person' && lastLook[0].go_ahead_decides === false) {
     return {
       ok: false,

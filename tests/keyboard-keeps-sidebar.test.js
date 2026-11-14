@@ -41,7 +41,6 @@ test('from 768px the rail keeps its column and the page keeps its place with the
     'body.rail-pinned:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek):not(.platform-tabs-folded)) #app-view {',
     'body:has(#platform-tabs:not(.hidden):not(.platform-tabs-folded)) #platform-header {',
     'body:has(#platform-tabs:not(.hidden):not(.platform-tabs-route-hidden)) .platform-sidebar-toggle {',
-    'body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek):not(.platform-tabs-folded)) .dev-ws-places-btn {',
   ]) {
     assert.ok(CSS.includes(`\n  ${selector}`), selector);
     assert.ok(!CSS.includes(`html:not(.un-kb) ${selector}`), `no keyboard guard on ${selector}`);

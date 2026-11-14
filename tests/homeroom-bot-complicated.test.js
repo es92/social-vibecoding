@@ -106,7 +106,7 @@ test('the triage prompt says what counts as complicated, leaning towards buildin
   assert.match(md, /- adds a new screen or a new kind of thing to the app \(a leaderboard, sign-up, a new tab\);/);
   assert.match(md, /- changes how people get around the app, or what it stores;/);
   assert.match(md, /- could reasonably be done two quite different ways, so a quick look first saves a wasted build;/);
-  assert.match(md, /- is large: several screens at once, or more than about a day's work for a person\./);
+  assert.match(md, /- is large: several screens at once, or the first part of a request too big for one build;/);
   assert.match(flat, /Copy changes, fixes, small tweaks and requests that spell out exactly what to do are never complicated\./);
   // #5224: the plan's lines stay short, one point each, in the requester's words.
   assert.match(md, /"plan": \["a first version or complicated change: 3 to 5 short lines, one point each, at most 60 characters, what people will see or do"\]/);

@@ -1805,7 +1805,11 @@ test('runTriage: the request comes first; the platform reference follows, small,
   // overlaps, and offer its requester the choice. The board itself is only
   // added when the project has other open requests, so this read (no board)
   // carries the rule alone.
-  assert.ok(prompt.length < 28400, `a triage prompt stays small: ${prompt.length} chars`);
+  // 14 Nov 2026: what the bot builds by itself (about 370 more): a large
+  // request is planned as its first part, a design or product decision is
+  // planned with choices, and sign-in, billing, permissions and credentials
+  // code waits only for a go-ahead.
+  assert.ok(prompt.length < 28800, `a triage prompt stays small: ${prompt.length} chars`);
   // The last thing the model reads is the one format parseVerdict accepts.
   assert.match(prompt, /END YOUR REPLY WITH EXACTLY ONE fenced JSON block in this format, and nothing after it:\n\{"verdict": "question" \| "empty" \| "ready" \| "person", "determined": true \| false, "missing_fact": "\.\.\.", "question": "\.\.\.", "default": "\.\.\.", "build_note": "\.\.\.", "reason": "\.\.\.", "first_step": "\.\.\.", "go_ahead": true \| false\}$/);
 });
@@ -2355,8 +2359,8 @@ test('#3772: on a project of one, the person who asked decides what the group wo
   assert.match(note, /^==== WHO DECIDES ON THIS PROJECT ====/);
   assert.match(note, /@evan asked for this, and is the only member of this project/);
   assert.match(note, /is a `question` to them, not `person`/);
-  assert.match(note, /the choice that needs no approval \(for example the browser's built-in way\) first/);
-  assert.match(note, /auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`/);
+  assert.match(note, /give `answers` they can tap: "Go ahead" first, then "Leave it"/);
+  assert.match(note, /Database changes that are not append-only, and operator work outside this app, are still `person`, with `go_ahead` false/);
   const prompt = bot.triagePromptFor({ seed: 'SEED', issueNumber: 13, decider: { requester: 'evan', members: 1, requesterDecides: true } });
   assert.ok(prompt.indexOf('WHO DECIDES') > prompt.indexOf('SEED') && prompt.indexOf('WHO DECIDES') < prompt.indexOf('PLATFORM REFERENCE'));
   assert.doesNotMatch(bot.triagePromptFor({ seed: 'SEED', issueNumber: 13 }), /WHO DECIDES/, 'unchanged without it, as the benchmark replays');
@@ -2405,7 +2409,7 @@ test('on a project with more people, its creator and admins decide what gets bui
   assert.match(named, /@evan asked for this\. On this project @ann \(who made it\) and @bo \(an admin\) decide what gets built; the group still votes on every change\./);
   assert.match(named, /is `person`, and its `reason` says it waits for @ann or @bo to say go ahead in this request's discussion\./);
   assert.match(named, /When the request's discussion shows @ann or @bo choosing .* that criterion is decided: judge the rest as usual\. A go-ahead from anyone else, @evan included, does not decide it\./);
-  assert.match(named, /auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`/);
+  assert.match(named, /Database changes that are not append-only, and operator work outside this app, are still `person`, with `go_ahead` false/);
   assert.match(bot.deciderNote({ requester: 'evan', members: 2, requesterDecides: false, deciders: [{ username: 'ann', role: 'creator' }] }),
     /On this project @ann \(who made it\) decides what gets built;/);
   assert.doesNotMatch(named, /\u2014/);

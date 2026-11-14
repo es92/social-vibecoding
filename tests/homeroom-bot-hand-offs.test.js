@@ -38,7 +38,7 @@ test('#6252: a go-ahead from the person the note named is decided in the read, a
   assert.match(note, /^==== A GO-AHEAD FROM THEIR CHAT ====/);
   assert.match(note, /@evan, who your last note on this request named, said to go ahead in their private chat with you just now\./);
   assert.match(note, /is decided: judge the rest as usual\. Do not return `person` for it again\./);
-  assert.match(note, /Changes to auth, billing, permissions or credentials, and database changes that are not append-only, are still `person`, with `go_ahead` false; `reason` says what kind of change this is in plain words, that you do not build it yourself even with a go-ahead, and that a person has to build it \(for example with a coding agent\)\./);
+  assert.match(note, /Database changes that are not append-only are still `person`, with `go_ahead` false; `reason` says what kind of change this is in plain words, that you do not build it yourself even with a go-ahead, and that a person has to build it \(for example with a coding agent\)\./);
   assert.match(note, /It never names the person who gave the go-ahead or anybody who said it in the third person, and never says somebody has to approve it\./);
   // #6430: the same go-ahead typed in the request's own discussion.
   const inThread = bot.goAheadNote({ by: 'evan', where: 'thread' });

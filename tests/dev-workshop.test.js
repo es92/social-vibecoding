@@ -3738,7 +3738,7 @@ test('the band in the community\'s colour is the place bar, not the old pill: no
   assert.doesNotMatch(WORKSHOP, /useTabMarker|data-ws-tab-marker|role="tablist" aria-label="Workshop sections"|ProjectBand/);
   assert.ok(!fs.existsSync(path.join(__dirname, '..', 'frontend/src/features/dev-board/workshop/project-band.tsx')),
     'the four tabs are retired');
-  assert.match(WORKSHOP, /<PlaceBar\s+name=\{projectName\}\s+place=\{tab\}\s+owed=\{owed\}/);
+  assert.match(WORKSHOP, /<PlaceBar\s+place=\{tab\}/);
   assert.ok(!/dev-ws-pagebar/.test(WORKSHOP),
     'All items has no back bar of its own: its way back is in its pinned head (#4486)');
   const bar = read('frontend/src/features/dev-board/workshop/place-bar.tsx');
