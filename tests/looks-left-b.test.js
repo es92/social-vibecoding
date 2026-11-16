@@ -95,35 +95,28 @@ test('Standings: the first read, a failed read and a board with no table are the
 // ── Messages' list (what lane M left) ──────────────────────────────────
 const LIST = 'frontend/src/features/messages/frame-list.tsx';
 const inboxRow = (key, title, over) => ({
-  key, lead: null, title, line: 'Homeroom · Ready', time: null, timeTitle: null, fresh: null, status: null, active: false,
+  key, lead: null, title, line: 'hello', time: null, timeTitle: null, fresh: null, active: false,
   href: `#messages/${key}`, onClick() {}, ...over,
 });
 const inbox = (over) => renderComponent(LIST, 'MessagesFrameList', {
   people: [inboxRow('4', 'evan', { time: '4d ago' })],
-  agents: [
-    inboxRow('s1', 'Simplify the admin console', { status: { text: 'Ready', kind: 'ok' }, unseen: { said: 'Unread', session: 5616 } }),
-    inboxRow('s2', 'Sign-in: one way in', { status: { text: 'Ready', kind: 'ok' } }),
-  ],
-  tab: 'agents', onTab() {}, query: '', onQuery() {}, onNew() {},
+  query: '', onQuery() {}, onNew() {},
   state: { loading: false, error: null, onRetry() {}, offline: false, empty: false, onStart() {}, searched: null },
   ...over,
 }, { cache: false });
 
-test('Messages: a change in flight with news not seen yet ends in the dot the standard row ends in', () => {
-  const html = inbox();
-  assert.match(html, /<span class="fr-pill fr-ok" data-kind="ok">Ready<\/span><span role="img" aria-label="Unread" data-inbox-unseen="" data-session-unread="5616"><\/span>/, 'after its state, said in words, with the notifications store\'s own hook');
-  assert.equal((html.match(/data-inbox-unseen/g) || []).length, 1, 'only the row that has news');
+// 16 Nov 2026: Agents left Messages, and with it the changes in flight the
+// kit list drew under its second tab: their state pill, their unseen dot and
+// the "2 working" beside the tab's name.
+test('Messages: under a look the list is conversations alone, with no change row, dot or Agents tab', () => {
+  const html = inbox({ unread: 3 });
+  assert.match(html, /<nav class="fr-tabs"><button type="button" class="fr-tab fr-on" aria-pressed="true">People<span class="fr-n">3<\/span><\/button><\/nav>/,
+    'People is the one tab, with the unread count the standard heading carries');
+  assert.doesNotMatch(html, /Agents|working|data-inbox-unseen|data-session-unread/);
   const pane = read('frontend/src/features/messages/index.tsx');
-  assert.match(pane, /const \{ sessionUnreadIds \} = useStoreState\(notificationsStore\) as \{ sessionUnreadIds: number\[\] \};/, 'read from the store the standard row reads');
-  assert.match(pane, /unseen: sessionUnreadIds\.includes\(sn\.id\) \? \{ said: translate\('agent:menu\.row\.unread'\), session: sn\.id \} : null,/, 'in the standard row\'s words');
-  assert.ok(css.includes('html[data-skin] [data-messages-frame-list] [data-inbox-unseen] { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fr-acc); }'));
-});
-
-test('Messages: the Agents tab says how many are working, as the standard heading does; none working says nothing', () => {
-  assert.match(inbox({ working: '2 working' }), /<button type="button" class="fr-tab fr-on" aria-pressed="true">Agents<span class="fr-pill fr-mini" data-kind="none">2 working<\/span><\/button>/, 'a small grey word, not a count that asks for you');
-  assert.match(inbox(), /<button type="button" class="fr-tab fr-on" aria-pressed="true">Agents<\/button>/);
-  const pane = read('frontend/src/features/messages/index.tsx');
-  assert.match(pane, /working=\{asides\.agents\.text\}/, 'the standard heading\'s own aside');
+  assert.doesNotMatch(pane, /sessionUnreadIds|notificationsStore|asides\.agents/, 'nothing reads a change\'s news or work any more');
+  assert.doesNotMatch(read(LIST), /unseen|status\?: \{/, 'a row has no state pill or dot to draw');
+  assert.ok(!css.includes('[data-inbox-unseen]'), 'and the dot has no rule left');
 });
 
 test('Messages: under a look the pane keeps its place across a live re-sort and offers Oldest chats', () => {
@@ -134,7 +127,7 @@ test('Messages: under a look the pane keeps its place across a live re-sort and 
   assert.match(pane, /const nodes = el\.querySelectorAll<HTMLElement>\('\[data-inbox-row\]'\);\n\s+for \(const node of Array\.from\(nodes\)\) \{\n\s+const key = node\.dataset\.inboxRow;/, 'one reader for both lists');
   assert.match(pane, /row = el\.querySelector\(keyedRow\(saved\.key\)\);/, 'and one correction');
   assert.match(read('frontend/src/features/messages/frame-list.tsx'), /<Row\n\s+\/\/ [^\n]+\n\s+data-inbox-row=\{row\.key\}/);
-  assert.match(pane, /\\u0000\$\{frame \? frameTab : ''\}`;/, 'the other tab is the reader moving the list: the held place is dropped');
+  assert.match(pane, /const listShape = deferredQuery;/, 'a search is the reader moving the list: the held place is dropped');
   const branch = pane.slice(pane.indexOf('  if (frame) {\n    const me = Number'), pane.indexOf("aria-label={t('messages:inbox.listName')}"));
   assert.match(branch, /ref=\{scrollRef as RefObject<HTMLElement \| null>\}\n\s+onScroll=\{readAnchor\}/, 'the pane is the scroller under a look');
   assert.match(branch, /<InboxToEnd scroller=\{scrollRef\} \/>\n\s+<\/section>/, 'Oldest chats is the product\'s own button');

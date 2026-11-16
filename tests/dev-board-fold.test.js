@@ -1793,8 +1793,8 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // leaves 165 slots.
   // 715 → 706: −9 (16 Nov 2026) Messages lists conversations alone: the
   // eight checks of its Agents rows (changes and work orders in flight) and
-  // the Agents fold went with the section; "no filter strip, nothing folds"
-  // joined messages.inbox. 706 leaves 174 slots.
+  // the Agents fold went with the section; "nothing folds" joined
+  // messages.inbox. 706 leaves 174 slots.
   checkCap.assertPinned(DAPP.tests.length, 706);
 });
 

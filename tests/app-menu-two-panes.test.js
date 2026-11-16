@@ -198,8 +198,8 @@ test('a platform screen is named by the bar, and says it once', () => {
     'and certainly not with a muted section label');
   assert.ok(!messages.includes('messages-list-title'),
     'Messages\' own title row went with it — a search took the space');
-  // What each screen DOES say is the thing the bar cannot. Messages: which
-  // of three kinds of message. The Workshop says which workshop with a scope
+  // What each screen DOES say is the thing the bar cannot. Messages: what
+  // its rows are. The Workshop says which workshop with a scope
   // chip: #2759 took it off while the screen was only the list of your apps,
   // and #3051 brought it back as "All apps" over the list it scopes, with
   // the votes owed across it as one Needs you row. One Home (#6361) left
@@ -207,9 +207,9 @@ test('a platform screen is named by the bar, and says it once', () => {
   assert.doesNotMatch(workshop, /AllAppsScope/,
     'the all-apps screen\'s "All" is the bar\'s own title now (#852), not a chip under it');
   assert.match(workshop, /<div data-workshop-pane="needs">/);
-  // Messages says which of three kinds each conversation is by its
-  // section's heading (Homeroom bot, Agents, People; 16 Oct 2026).
-  assert.match(messages, /<SectionHead section=\{section\}/);
+  // Messages says what its rows are by its heading: People (16 Oct 2026),
+  // the one section since Agents left the list (16 Nov 2026).
+  assert.match(messages, /<PeopleHead aside=\{unreadAside\} \/>/);
 });
 
 test('the desktop rail un-centres the header title', () => {

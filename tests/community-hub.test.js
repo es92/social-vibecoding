@@ -338,7 +338,7 @@ test('Recently live: the last three changes that went live, as pictures that ope
   assert.match(av, /WORKSHOP_RECENT_LIVE_MAX: 3,/);
 });
 
-test('an open channel lights Communities and hangs off its hub; Messages lists people and agents', () => {
+test('an open channel lights Communities and hangs off its hub; Messages lists people', () => {
   assert.match(STORE, /export function channelHub\(\): string \| null \{\s*[\s\S]{0,120}if \(state\.route\.appSlug\) return `#app\/\$\{encodeURIComponent\(state\.route\.appSlug\)\}\/dev\/hub`;/);
   assert.match(STORE, /if \(!row \|\| row\.kind !== 'channel'\) return null;/, '#general is the channel among the conversations');
   assert.match(STORE, /navStore\.set\(\{ tab: hub \? 'workshop' : 'messages' \}\);/);
@@ -350,9 +350,9 @@ test('an open channel lights Communities and hangs off its hub; Messages lists p
   const inbox = read('frontend/src/features/messages/inbox.ts');
   assert.match(inbox, /if \(item\.kind === 'channel' \|\| item\.homeroomBot\) continue;/,
     'channels are on their hubs, and the bot\'s chat is the AI tab (#6019)');
-  assert.match(inbox, /agents\.sort\(byClock\);\n\s+people\.sort\(byClock\);/);
-  // Agents and People, each in the order things happened.
-  assert.match(inbox, /return \[\.\.\.agents, \.\.\.people\];/);
+  // People, in the order things happened (Agents left the list, 16 Nov 2026).
+  assert.match(inbox, /people\.sort\(byClock\);\n\s+return people;/);
+  assert.doesNotMatch(inbox, /agents/, 'no second list to put first');
 });
 
 test('#general needs the Homeroom community to post in; Homeroom\'s old channel takes no post', () => {

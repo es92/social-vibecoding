@@ -3006,9 +3006,9 @@
     },
     {
       "id": "messages.inbox",
-      "name": "Messages lists People alone: no Agents, no Channels, no fold or filter strip, and the oldest-chats shortcut at the list foot (#6501)",
+      "name": "Messages lists People alone: no Agents or Channels, nothing folds, and Oldest chats at the list foot (#6501)",
       "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden):not(:has(#messages-filters)):not(:has([data-inbox-fold])):has([data-inbox-to-end] button) .messages-list-scroll:not(:has([data-inbox-card=\"channels\"])):not(:has([data-inbox-card=\"agents\"])) > h3.messages-section-head[data-inbox-section=\"people\"] + .messages-section-card[data-inbox-card=\"people\"]",
+      "expectSelector": "#messages-screen:not(.hidden):not(:has([data-inbox-fold])):has([data-inbox-to-end] button) .messages-list-scroll > h3.messages-section-head[data-inbox-section=\"people\"]:first-child + .messages-section-card[data-inbox-card=\"people\"]:last-child",
       "visual": true,
       "impact": [
         "frontend/src/features/messages/**",
