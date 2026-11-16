@@ -1,16 +1,4 @@
 {
-  "session.changeStatus.waitingForApproval": {
-    "text": "Waiting for approval",
-    "description": "State of a code change, in the small pill on a change's row in Messages and the Homeroom menu: it is up for the community's vote."
-  },
-  "session.changeStatus.goingLive": {
-    "text": "Going live",
-    "description": "State of a code change, in the small pill on a change's row in Messages and the Homeroom menu: it was approved and is being released."
-  },
-  "session.changeStatus.live": {
-    "text": "Live",
-    "description": "State of a code change, in the small pill on a change's row in Messages and the Homeroom menu: it has been released; an adjective."
-  },
   "menu.suggestImprovement": {
     "text": "Suggest an improvement",
     "description": "The one button at the top of the Homeroom menu (the sheet opened from the Homeroom mark): opens the dialog for sending a suggestion or bug report about the app on screen."
@@ -46,70 +34,6 @@
   "menu.update.appBuildingUnnamed": {
     "text": "An update to this app is on its way.",
     "description": "The same note as menu.update.appBuilding, when the app's name is not known yet: a new version of the app on screen is being deployed."
-  },
-  "menu.row.state.working": {
-    "text": "Working",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the coding agent is working on this change right now."
-  },
-  "menu.row.state.handedOff": {
-    "text": "Handed off",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the work was handed to a coding tool on the person's own machine, so Homeroom cannot see its progress."
-  },
-  "menu.row.state.needsYou": {
-    "text": "Needs you",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the agent is waiting for the person's answer."
-  },
-  "menu.row.state.ready": {
-    "text": "Ready",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the agent is idle and the change is ready for the person to continue."
-  },
-  "menu.row.state.testing": {
-    "text": "Testing",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the change is up for a vote and its automated checks are running against the preview."
-  },
-  "menu.row.state.checksFailing_one": {
-    "text": "Checks failing · {{count}}",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu, when exactly one of the change's automated checks failed. {{count}} is that number."
-  },
-  "menu.row.state.checksFailing_other": {
-    "text": "Checks failing · {{count}}",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu, when more than one of the change's automated checks failed."
-  },
-  "menu.row.state.checksFailingPlain": {
-    "text": "Checks failing",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu, when the payload carries no count: the change's automated checks failed."
-  },
-  "menu.row.state.checksError": {
-    "text": "Checks couldn't run",
-    "description": "State pill on a row of the person's changes in progress, in the Homeroom menu: the change's automated checks errored before giving a verdict."
-  },
-  "menu.row.unread": {
-    "text": "Unread activity",
-    "description": "Accessible name of the small dot on a row of the person's changes in progress, in the Homeroom menu: something happened on that change that the person has not seen."
-  },
-  "menu.row.status.working": {
-    "text": "Working…",
-    "description": "Status word in the small grey caption under the title of a change in progress, in the Homeroom menu and the app menu: the coding agent is working on it right now."
-  },
-  "menu.row.status.needsYou": {
-    "text": "Needs you",
-    "description": "Status word in the small grey caption under the title of a change in progress, in the Homeroom menu and the app menu: the agent is waiting for the person's answer."
-  },
-  "menu.row.status.handedOff": {
-    "text": "Handed off",
-    "description": "Status word in the small grey caption under the title of a change in progress, in the Homeroom menu and the app menu: the work was handed to a coding tool on the person's own machine and it is not known which one."
-  },
-  "menu.row.caption": {
-    "text": "{{app}} · {{status}}",
-    "description": "Small grey caption under the title of a change in progress, in the Homeroom menu's list of changes on other apps: which app the change belongs to, then where it stands. {{app}} is the app's name; {{status}} is a short status already worded (\"Working…\", \"Needs you\", \"Handed off\") or the name of the coding tool that holds the work (Claude Code, Codex). Keep the middle dot between them."
-  },
-  "menu.row.sessionFallback": {
-    "text": "Session #{{number}}",
-    "description": "Title of a change in progress in the Homeroom menu when it has no title, pull request or branch name. \"Session\" is a working session with the coding agent; {{number}} is its number."
-  },
-  "menu.row.workOrderFallback": {
-    "text": "Work order #{{number}}",
-    "description": "Title, in the Homeroom menu, of work handed to a coding tool on the person's own machine when it has no title. A work order is that hand-off; {{number}} is its number."
   },
   "topicBack.messages": {
     "text": "Messages",

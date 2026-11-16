@@ -106,31 +106,11 @@ test('Home reads the public directory only while it is the screen on show', () =
   assert.match(frame, /\}, \[pins\.ready, attempt, shown\]\);/);
 });
 
-// With Messages open and a turn in flight, every pushed state change re-read
-// the whole session list: a request a second.
-test('the session list reloads at most once every few seconds while state changes stream in', async (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+// The session list Improve re-read while Messages or the bell was open, at
+// most once every few seconds (#6591), went with its last surface, Messages'
+// Agents section (16 Nov 2026): nothing re-reads it at all now.
+test('nothing reloads the retired session list while state changes stream in', () => {
   const src = read('frontend/src/features/improve/improve-controller.js');
-  const at = src.indexOf('  RELOAD_MIN_GAP_MS: 4000,');
-  assert.ok(at > 0);
-  const body = src.slice(at, src.indexOf('\n  },\n', src.indexOf('  _reloadSoon() {')) + 5);
-  let open = true;
-  let loads = 0;
-  const Improve = new Function('notificationsSheetStore', `const Improve = {\n${body}\n  _messagesOnScreen() { return false; },\n  loadSessions() { this.count(); },\n}; return Improve;`)(
-    { get: () => ({ open }) },
-  );
-  Improve.count = () => { loads += 1; };
-  t.mock.timers.tick(10_000);
-  Improve._reloadSoon();
-  assert.equal(loads, 1, 'the first change after a quiet spell reloads at once');
-  for (let i = 0; i < 3; i++) { t.mock.timers.tick(1000); Improve._reloadSoon(); }
-  assert.equal(loads, 1, 'changes a second apart wait');
-  t.mock.timers.tick(1000);
-  assert.equal(loads, 2, 'and the last one is kept: one reload when the gap is up');
-  t.mock.timers.tick(1000);
-  Improve._reloadSoon();
-  open = false;
-  t.mock.timers.tick(4000);
-  assert.equal(loads, 2, 'a surface that closed while it waited reads nothing');
-  assert.match(src, /Improve\._messagesOnScreen\(\)\) \{\n\s+Improve\._reloadSoon\(\);/, 'the state-change path goes through it');
+  assert.doesNotMatch(src, /_reloadSoon|loadSessions|_messagesOnScreen|RELOAD_MIN_GAP_MS/);
+  assert.match(src, /onSessionStateChanged\(\) \{\n\s+Improve\.refreshWorking\(\);\n\s+\},/, 'a state change moves the mark\'s cue alone');
 });

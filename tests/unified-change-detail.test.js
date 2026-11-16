@@ -449,19 +449,18 @@ test('server-side change link producers use the same detail route', () => {
   }
 });
 
-test('an Improve session row opens the full change route, never the workspace link', () => {
+test('no declared check expects an Improve session row, or the workspace link', () => {
   // #5289 checked the mixed work-order/session fixture on the Messages
-  // screen's Agents list. That list left Messages (16 Nov 2026) and no shell
-  // screen draws the row now, so no declared check can open it; the address
-  // a row carries is pinned where the controller builds it.
+  // screen's Agents list. That list left Messages (16 Nov 2026), and the
+  // Improve controller's rows went with their last surface, so no check can
+  // open them.
   const manifest = JSON.parse(fs.readFileSync('dapp.json', 'utf8'));
   assert.deepEqual(manifest.tests.filter((item) => /data-improve-row/.test(item.expectSelector || '')).map((item) => item.name), [],
     'no check selects a row nothing draws');
   assert.deepEqual(manifest.tests.filter((item) => /\/dev\/sessions\//.test(item.expectSelector || '')).map((item) => item.name), [],
     'and none expects the workspace link');
   const controller = fs.readFileSync('frontend/src/features/improve/improve-controller.js', 'utf8');
-  assert.match(controller, /href: `#app\/\$\{session\.app_slug\}\/dev\/proposals\/\$\{session\.id\}`,/, 'a session row opens the change\'s page');
-  assert.doesNotMatch(controller, /\/dev\/sessions\//, 'never the workspace');
+  assert.doesNotMatch(controller, /\/dev\/sessions\//, 'the controller links nothing to the workspace');
 });
 
 test('the same detail URL resolves native/imported underway work and changes lifecycle after promotion', () => {

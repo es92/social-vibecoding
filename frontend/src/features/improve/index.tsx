@@ -29,9 +29,9 @@ export function ImproveIsland() {
   // a registered sheet and lib/sheet-controller.js owns the key for it, which
   // is the seam this hand-rolled listener was working around.
 
-  // #1038's live session store drives the panel's session rows: a turn that
+  // #1038's live session store drives the mark's working cue: a turn that
   // starts or finishes in this tab, another tab, or on another device moves
-  // them without a refetch. Subscribed from the island rather than at module
+  // it without a refetch. Subscribed from the island rather than at module
   // scope because `window.SessionState` is installed by a classic script that
   // runs before the bundle but after it is imported.
   useEffect(() => {

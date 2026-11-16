@@ -375,12 +375,12 @@ test('Messages draws no change in flight, and reads nothing from the Improve sto
   assert.doesNotMatch(SCREEN, /useMessages\('agent'\)/, 'nor the words a change in flight is said in');
   assert.doesNotMatch(read('frontend/src/features/messages/inbox.ts'), /sessions\??:|'session'|ChangeInFlight/, 'the merge takes conversations alone');
   assert.doesNotMatch(STORE, /sessions:/, 'and this store holds no copy of that list');
-  // What the Improve store's rows still are, where they are drawn: the
-  // project's own tile, and the change's page.
-  assert.match(read('frontend/src/features/improve/session-row.tsx'), /\{tile \|\| <AppTile session=\{session\} \/>\}/,
-    'the Improve row keeps the app\'s tile');
-  assert.match(read('frontend/src/features/improve/improve-controller.js'),
-    /href: `#app\/\$\{session\.app_slug\}\/dev\/proposals\/\$\{session\.id\}`,/, 'a row opens the change\'s page');
+  // Messages was the Improve store's list's last surface, so the list and
+  // its row went too (tests/improve-work-order-rows.test.js).
+  assert.equal(fs.existsSync(path.join(ROOT, 'frontend/src/features/improve/session-row.tsx')), false,
+    'the change row has no surface left');
+  assert.doesNotMatch(read('frontend/src/features/improve/improve-store.js'), /^\s+(sessions|otherSessions|sessionsLoaded|loadingSessions): /m,
+    'nor does the store hold the list');
   // Their styles left with them.
   const css = read('public/css/app.css');
   for (const rule of ['.messages-inbox-session', '.messages-inbox-change-tile', '.messages-inbox-older', '.messages-section-toggle', '.messages-section-chevron', '.messages-section-aside-ask', '[data-inbox-unseen]']) {

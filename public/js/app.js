@@ -4213,13 +4213,14 @@ const App = {
     if (wait <= 0) run();
     else App._homeLiveTimer = setTimeout(run, wait);
   },
-  // Is this one of the viewer's own sessions, or a row on the page they are
-  // looking at? A checks event is broadcast to everyone on the platform, and
-  // only these are worth re-reading anything for.
+  // Is this a row on the page the viewer is looking at? A checks event is
+  // broadcast to everyone on the platform, and only these are worth
+  // re-reading anything for. It also asked the Improve controller's list of
+  // the viewer's own changes until that list went with its last surface,
+  // Messages' Agents section (16 Nov 2026).
   _sessionIsMine(sessionId) {
     const id = Number(sessionId);
     if (!Number.isFinite(id)) return false;
-    if (window.Improve && Array.isArray(Improve._all) && Improve._all.some((s) => s && Number(s.id) === id)) return true;
     return typeof AppView !== 'undefined' && !!AppView.holdsSession && AppView.holdsSession(id);
   },
 

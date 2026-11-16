@@ -1,8 +1,10 @@
-// The declared-check ceiling, stated once for the three suites that guard it.
+// The declared-check ceiling, stated once for the suites that guard it.
 //
 // tests/dev-board-fold.test.js pins dapp.json's exact size, and
-// tests/improve-session-spinner.test.js and tests/proposal-tests-manifest.test.js
-// hold it 20 slots under MAX_DECLARED_TESTS (services/app-manifest.js). On
+// tests/proposal-tests-manifest.test.js holds it 20 slots under
+// MAX_DECLARED_TESTS (services/app-manifest.js). A second floor guard lived
+// in tests/improve-session-spinner.test.js until that suite went with the
+// Improve session rows (16 Nov 2026). On
 // change 4868 main stood exactly at that floor, the proposal's two checks
 // broke all three at once, and their messages disagreed: the exact pin
 // printed only `812 !== 811`, one floor guard called raising the cap a
@@ -101,8 +103,7 @@ function pinMessage(declared, pinned, ceiling) {
     left >= FLOOR
       ? `At ${declared} the manifest is ${left} slots under MAX_DECLARED_TESTS ${ceiling}, clear of the ${FLOOR}-slot floor.`
       : `At ${declared} it is ${left} slots under MAX_DECLARED_TESTS ${ceiling}, past the ${FLOOR}-slot floor, `
-        + 'so the floor guards in tests/improve-session-spinner.test.js and '
-        + `tests/proposal-tests-manifest.test.js fail too. ${REMEDY}`,
+        + `so the floor guard in tests/proposal-tests-manifest.test.js fails too. ${REMEDY}`,
   ].filter(Boolean).join('\n');
 }
 

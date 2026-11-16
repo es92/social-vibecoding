@@ -13,7 +13,7 @@
 // menu keeps its row): the same method, Improve.startSession, from both.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { englishPlatformI18n, message } = require('./lib/platform-i18n');
+const { message } = require('./lib/platform-i18n');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -332,24 +332,12 @@ function improveHarness(currentApp = 'demo') {
   };
   sandbox.window = sandbox;
   vm.createContext(sandbox);
-  // The one surface still listing these sessions. Flip `sheet.open` in a
-  // test that needs the reload gate open; it is the notifications sheet's
-  // flag, not the Improve panel's — that panel retired (#2718 review).
-  const sheet = { open: false };
+  // THE CONTROLLER PRESENTS NOTHING NOW (#2718 review): `open()` forwards to
+  // the app-context sheet. Nor does it list sessions (16 Nov 2026), so it no
+  // longer imports the words, the icons or the bell's open flag the list
+  // needed: the store and the shell snapshot are all it reads.
   runModules(sandbox, [['improve-controller.js', CONTROLLER]], {
     imports: {
-      // The module reads its words through the language runtime: the real one, in English.
-      '../../lib/i18n/runtime': englishPlatformI18n(),
-      '../apps/app-card.js': { iconViewFor() {} },
-      // THE CONTROLLER PRESENTS NOTHING NOW (#2718 review). It adopted the
-      // Improve panel's root through lib/kit-surface and swept the other
-      // sheets through lib/sheet-controller; the panel retired, `open()`
-      // forwards to the app-context sheet, and both stubs went with it. What
-      // it does import is the notifications sheet's own open flag — the one
-      // surface still listing these sessions, and the gate on reloading them.
-      '../notifications/notifications-sheet-store.js': {
-        notificationsSheetStore: { get: () => sheet, subscribe: () => () => {} },
-      },
       './improve-store.js': { improveStore: store },
       '../../lib/shell-snapshot': { saveShellSnapshot() {} },
     },

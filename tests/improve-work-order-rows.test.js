@@ -23,6 +23,13 @@
 //   4. A shared task is excluded, or one piece of work appears twice under
 //      two names.
 //
+// 16 Nov 2026: the CLIENT rows are retired. The Improve controller's list of
+// the viewer's changes and work orders lost its last surface, Messages'
+// Agents section, and went with it (session-row.tsx, the controller's
+// loadSessions and its rows). What stays pinned here is the server half,
+// which GET /api/me/active-sessions still serves: points 1 and 4, the
+// title, and #1948's filter.
+//
 // Run with: node --test tests/improve-work-order-rows.test.js
 
 const test = require('node:test');
@@ -34,14 +41,7 @@ const svc = require('../src/services/external-agent-tasks');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 const ROUTE = read('src/routes/sessions.js');
-const CONTROLLER = read('frontend/src/features/improve/improve-controller.js');
-// The rows render in the hamburger DRAWER via the extracted SessionRow
-// (Streamlined Concept) — the Improve panel slimmed to its two actions, and
-// the board's drawer is the app's own surface.
-const ROW_TSX = read('frontend/src/features/improve/session-row.tsx');
-// The surface that RENDERS the rows. It was the Improve panel, and the panel
-// retired (#2718 review): the sessions are the notifications sheet's Agents
-// tab, which is the one place that maps them to <SessionRow>.
+// The bell: it listed these rows once (#2815) and does not now (#5289).
 const SHEET_TSX = read('frontend/src/features/notifications/notifications-sheet.tsx');
 const SERVICE = read('src/services/external-agent-tasks.js');
 
@@ -133,43 +133,6 @@ test('work orders ride the call the panel already makes', () => {
     'the panel makes exactly one call here; a second round trip is not needed');
 });
 
-test('the session lists are fetched before the panel is opened', () => {
-  // THE LIST USED TO SNAP IN. `loadSessions()` ran only from `open()`, so the
-  // panel presented with `sessionsLoaded` false — its placeholder — and the
-  // real rows landed a round trip later, on top of a sheet that had already
-  // finished animating in.
-  //
-  // Nothing about the request needs the panel: GET /api/me/active-sessions is
-  // per-USER, and `_rebucket()` is what splits its answer into "this app" and
-  // "everything else". So it is made as soon as there IS a target, which is
-  // also the moment the button that opens the panel appears.
-  assert.match(CONTROLLER, /Improve\.prefetchSessions\(\);/,
-    'setTarget starts it');
-  const fn = CONTROLLER.slice(CONTROLLER.indexOf('  prefetchSessions() {'));
-  const body = fn.slice(0, fn.indexOf('\n  },'));
-  assert.match(body, /if \(Improve\._prefetched\) return;/,
-    'ONCE — a viewer hopping between apps re-buckets the same payload, and '
-    + 'a fetch per hop would be a request for a surface nobody has opened');
-  assert.match(body, /state\.sessionsLoaded \|\| state\.loadingSessions/,
-    'never on top of a load that has happened or is happening');
-  assert.match(body, /\.catch\(\(\) => \{\}\)/,
-    'fire-and-forget: a preload that fails must not break a target publish');
-  // THE REFRESH IS THE PUSH'S NOW, not `open()`'s. `open()` loaded the list
-  // again on the way in, which was the second half of this: prefetch draws
-  // it, the open refreshes it. The Improve panel retired (#2718 review) and
-  // `open()` is a forward to the surface's own controller, so the refresh
-  // moved to where it was always more accurate — `onSessionStateChanged`,
-  // driven by SessionState's tick and gated on that surface being up.
-  const changed = CONTROLLER.slice(CONTROLLER.indexOf('  onSessionStateChanged() {'));
-  assert.match(changed.slice(0, changed.indexOf('\n  },')),
-    /notificationsSheetStore\.get\(\)\.open \|\| Improve\._messagesOnScreen\(\)\) \{\s*Improve\._reloadSoon\(\);/,
-    'and it refreshes a list that is already on screen rather than drawing one');
-  // …and `loadSessions` only raises the placeholder when nothing has ever
-  // loaded, which is what makes the refresh invisible.
-  assert.match(CONTROLLER,
-    /if \(!improveStore\.get\(\)\.sessionsLoaded\) improveStore\.set\(\{ loadingSessions: true \}\)/);
-});
-
 test('a work order is NOT counted against the session budget', () => {
   const handler = ROUTE.slice(ROUTE.indexOf("router.get('/api/me/active-sessions'"));
   const body = handler.slice(0, handler.indexOf('\n  });'));
@@ -203,79 +166,13 @@ test('the staging fixture exists, because the real table is staging:private', ()
 
 // ── The rows ───────────────────────────────────────────────────────────
 
-test('a work order row points at its request, not at a session page', () => {
-  const fn = CONTROLLER.slice(
-    CONTROLLER.indexOf('function taskToRow('),
-    CONTROLLER.indexOf('\n}', CONTROLLER.indexOf('function taskToRow('))
-  );
-  assert.match(fn, /dev\/issues\/\$\{task\.issue_number\}/,
-    'there is no transcript to open — the request is the honest destination');
-  // prepare_work accepts a bare brief with no request behind it.
-  assert.match(fn, /: `#app\/\$\{task\.app_slug\}\/dev`/, 'and a fallback for one without');
-  assert.match(fn, /busy: false/,
-    'the agent runs where the platform cannot see it; a spinner would be invented');
-  assert.match(fn, /kind: 'task'/);
-  // #5289: Messages' agents list sorts and ages a row on lastActivityAt; a
-  // work order without one sorted last and stayed behind "N older chats".
-  assert.match(fn, /lastActivityAt: task\.created_at/,
-    'a work order carries the clock the Messages inbox reads');
-});
-
-test('the two kinds cannot collide on a React key', () => {
-  // Session ids and work-order ids come from unrelated sequences, so `id`
-  // alone repeats across kinds and React reuses the wrong node.
-  assert.match(CONTROLLER, /key: `s\$\{session\.id\}`/);
-  assert.match(CONTROLLER, /key: `t\$\{task\.id\}`/);
-  // #5289: the bell no longer lists sessions (its Messages filter, where
-  // #2815 had put them, is gone), so no notification shares a list with one.
+test('no client surface draws the rows any more (16 Nov 2026)', () => {
+  // The row component and the controller's rows went with Messages' Agents
+  // section, their last surface; the bell had stopped listing them (#5289).
+  assert.equal(fs.existsSync(path.join(__dirname, '..', 'frontend/src/features/improve/session-row.tsx')), false);
+  const controller = read('frontend/src/features/improve/improve-controller.js');
+  assert.doesNotMatch(controller, /taskToRow|externalTasks|fetch\(`\/api\/me\/active-sessions/, 'the controller neither fetches nor builds them');
   assert.doesNotMatch(SHEET_TSX, /<SessionRow|key=\{session\.id\}/);
-});
-
-test('the row renders the destination it was given', () => {
-  // The component used to build `#app/<slug>/dev/sessions/<id>` from the row.
-  // Every task row would have gone to a session page that does not exist.
-  assert.match(ROW_TSX, /href=\{session\.href\}/);
-  assert.doesNotMatch(ROW_TSX, /href=\{`#app\/\$\{session\.appSlug\}\/dev\/sessions/);
-});
-
-test('ordering compares times, not ids from two different tables', () => {
-  const fn = CONTROLLER.slice(CONTROLLER.indexOf('  _rebucket() {'));
-  const body = fn.slice(0, fn.indexOf('\n  },'));
-  assert.match(body, /Number\(b\.busy\) - Number\(a\.busy\) \|\| b\.sortAt - a\.sortAt/);
-  // `b.id - a.id` was a recency proxy that only held while every row came
-  // from one table. Mixed, it sorts by which table a row came from.
-  assert.doesNotMatch(body, /b\.id - a\.id/);
-  // Both kinds land in the same two buckets by the same app rule, so a
-  // viewer looks in one place for "what of mine is in flight here".
-  assert.match(body, /Improve\._tasks/);
-});
-
-test('an unparseable timestamp sorts last rather than poisoning the sort', () => {
-  // NaN in a comparator makes the whole ordering arbitrary, not just one row.
-  assert.match(CONTROLLER, /Number\.isFinite\(t\) \? t : 0/);
-});
-
-test('a server without the field contributes no rows instead of throwing', () => {
-  const fn = CONTROLLER.slice(CONTROLLER.indexOf('  async loadSessions()'));
-  const body = fn.slice(0, fn.indexOf('\n  },'));
-  assert.match(body, /Array\.isArray\(data\.externalTasks\) \? data\.externalTasks : \[\]/);
-});
-
-// ── The seam it leaves for #1405 ───────────────────────────────────────
-
-test('the row says "Needs you" from a wired value, and the status seam stays', () => {
-  // statusLabel mapped awaiting_input / needs_input to "Needs you" as the
-  // seam for #1405's notify_awaiting_input, recorded so the next change would
-  // wire a value rather than invent a display path. #1959 was that change:
-  // the caption and the pill now read ONE predicate, awaitsInput, fed by the
-  // `awaiting_input` verdict /api/me/active-sessions ships — and the two
-  // status values live inside it, so a row arriving in that state still
-  // reads right.
-  const label = CONTROLLER.slice(CONTROLLER.indexOf('function statusLabel('));
-  assert.match(label.slice(0, 400), /awaitsInput\(session\)/);
-  const pred = CONTROLLER.slice(CONTROLLER.indexOf('function awaitsInput('));
-  assert.match(pred.slice(0, 400), /awaiting_input === true/);
-  assert.match(pred.slice(0, 400), /awaiting_input|needs_input/);
 });
 
 test('the service, not the route, owns the external_agent_tasks query', () => {

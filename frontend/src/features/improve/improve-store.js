@@ -23,8 +23,8 @@
  * ── The initial value is the prerender ─────────────────────────────────
  *
  * `frontend/scripts/build-shell.mjs` renders the island in Node from exactly
- * these values, so they have to describe the CLOSED, EMPTY panel: no target, no
- * sessions, nothing loaded. Anything that fetches does so from an effect or a
+ * these values, so they have to describe the CLOSED, EMPTY panel: no target,
+ * nothing loaded. Anything that fetches does so from an effect or a
  * controller call, never from render — a first render that disagrees with the
  * prerendered document is a hydration mismatch, and a console error on any
  * route fails proposal checks.
@@ -149,42 +149,6 @@ export function topicWorkshopHref(route) {
 }
 
 /**
- * One row in the panel's list. TWO KINDS share this shape (#1417):
- *
- *   'session'  a chat_sessions row — a change. Opens the change's page.
- *   'task'     an OPEN connector work order: work handed to a coding agent
- *              running on the user's own machine. It has no change page
- *              yet, so it points at the request it was prepared from instead.
- *
- * They are one shape because they answer one question ("what of mine is in
- * flight?"), and one list because splitting them would ask the reader to
- * know which mechanism produced their work before they can find it. `href`
- * is what keeps them honest: each kind names its own destination rather than
- * the panel inferring one from an id that means different things.
- *
- * @typedef {object} ImproveSession
- * @property {string} key         Unique across both kinds; ids are not.
- * @property {'session'|'task'} kind
- * @property {number} id
- * @property {string} appSlug
- * @property {string} appName
- * @property {{kind:'image',src:string}|{kind:'emoji',emoji:string}|{kind:'letter',letter:string}} icon
- *   The app's artwork for the row's leading tile, in the shape
- *   AppCard.iconViewFor publishes. Resolved by the controller from the two
- *   `app_icon_*` columns both list endpoints carry, so the row renders a fact
- *   rather than deciding one; a letter from the app's name is the fallback.
- * @property {string} title
- * @property {string} href        Where the row goes when clicked.
- * @property {string|null} status Display label ("Working…", "Paused"), or null.
- * @property {boolean} busy       An AI turn is in flight right now.
- * @property {boolean} awaitingInput
- *   The session is waiting on the user (#1959): answer chips still up, or a
- *   finished spec with open Questions. Never true while busy; never true
- *   for a task. The pill reads "Needs you" from it.
- * @property {number} sortAt      Recency, ms since epoch. Mixed-kind ordering.
- */
-
-/**
  * @typedef {object} ImproveState
  * @property {'app'|'platform'|null} target
  * @property {string|null} slug
@@ -203,10 +167,6 @@ export function topicWorkshopHref(route) {
  * @property {boolean} canReport
  * @property {string|null} topicOrigin
  * @property {'app'|'dev'|'other'} tab
- * @property {ImproveSession[]} sessions
- * @property {ImproveSession[]} otherSessions
- * @property {boolean} loadingSessions
- * @property {boolean} sessionsLoaded
  * @property {boolean} working
  * @property {'idle'|'deploying'|'downloading'|'ready'|'failed'} versionState
  *   Every value Improve.setVersionState() can publish. It read
@@ -300,14 +260,9 @@ const INITIAL = {
   canShare: false,
   /** Report eligibility from the app API; unknown targets cannot be reported. */
   canReport: false,
-  /** Active sessions belonging to `slug`. */
-  sessions: [],
-  /** Active sessions on every OTHER app — the overflow area. */
-  otherSessions: [],
-  /** True while /api/me/active-sessions is in flight for the first time. */
-  loadingSessions: false,
-  /** True once a session load has resolved at least once. */
-  sessionsLoaded: false,
+  // `sessions`, `otherSessions`, `loadingSessions` and `sessionsLoaded` held
+  // the cross-app list of the viewer's changes in flight. Its last surface,
+  // Messages' Agents section, went on 16 Nov 2026, and the list with it.
 
   // ── The indicators the store carries with the panel shut ─────────────
   //
@@ -317,9 +272,8 @@ const INITIAL = {
   // renders them — the same reason #feedback-queue-dot goes through the
   // visibility store rather than being toggled by id.
   //
-  // Neither is derived from `sessions` below, deliberately: that array is
-  // only loaded while the panel is OPEN, and both of these have to be true
-  // when it is shut. They come from sources that run at boot instead —
+  // Neither was ever derived from a loaded session list: both have to be
+  // true with nothing open. They come from sources that run at boot instead —
   // SessionState's live entries and the platform version pill.
   //
   // There used to be a third and a fourth, `sessionUnread` / `sessionDone`:
