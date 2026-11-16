@@ -1296,8 +1296,9 @@ function sessionRoutes(config) {
   //   merging/merged rows (bounded to the recent window in the WHERE), and
   //   those count none of active/promoted/paused — a merged change holds no
   //   slot — while `total` stays every row returned. The only opt-in caller
-  //   is the Improve controller, whose rows show the change's lifecycle; the
-  //   dev tab's fetch sends no flag.
+  //   was the Improve controller, whose rows showed the change's lifecycle,
+  //   until Messages' Agents section went (16 Nov 2026); no screen sends it
+  //   now, and the dev tab's fetch sends no flag.
   //   "caps" carries the DENOMINATORS for that header — the viewer's own
   //   effective per-user ceilings ({ activeSessions, promotedSessions }),
   //   which are higher for full platform admins (services/session-caps.js).
