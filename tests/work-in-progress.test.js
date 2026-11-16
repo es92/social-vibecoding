@@ -58,11 +58,14 @@ test('the mark\'s menu lists no agent entries (#4729)', () => {
   assert.throws(() => message('agent:appContext.agentChats.showMore'));
 });
 
-test('Messages and the bell list paused sessions, and a change\'s row opens its page', () => {
+test('no list filters paused work out or says "Paused"; the Improve list that did is gone', () => {
+  // Messages and the bell listed the Improve controller's session rows,
+  // paused ones included, until that list lost its last surface (16 Nov
+  // 2026); the controller builds no row now.
   const improve = read('frontend/src/features/improve/improve-controller.js');
   assert.doesNotMatch(improve, /isParked/, 'no list filters paused work out');
   assert.doesNotMatch(improve, /return 'Paused'/, 'and no row says "Paused"');
-  assert.match(improve, /href: `#app\/\$\{session\.app_slug\}\/dev\/proposals\/\$\{session\.id\}`/);
+  assert.doesNotMatch(improve, /function toRow\(|href: `#app\/\$\{session/, 'the controller builds no session row');
 });
 
 test('"paused" is shown nowhere, and nobody is asked to pause or resume anything', () => {

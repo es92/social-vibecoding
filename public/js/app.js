@@ -3888,8 +3888,8 @@ const App = {
         if (data.checkState !== 'pending') {
           App._liveRefresh('checks', data.sessionId, { home: App._sessionIsMine(data.sessionId) });
         } else if (App._sessionIsMine(data.sessionId)) {
-          // A run starting on your own work: the drawer's row says so. The
-          // row itself was patched above.
+          // A run starting on a change the open page shows: its row was
+          // patched above; Home and the mark follow.
           App._liveRefresh('checks', null, { home: true, dev: false });
         }
       }
