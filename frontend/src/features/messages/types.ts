@@ -905,7 +905,7 @@ export interface DiscussionContext {
   iconEmoji: string | null;
 }
 
-import type { AppDiscussion, InboxSection } from './inbox';
+import type { AppDiscussion } from './inbox';
 
 export interface MessagesSnapshot {
   route: MessagesRoute;
@@ -948,11 +948,6 @@ export interface MessagesSnapshot {
    */
   discussionContext: DiscussionContext | null;
   discussionError: string | null;
-  /**
-   * The list's sections folded away from their headings (16 Oct 2026):
-   * Agents, People, or both. Remembered per device; the bot's never folds.
-   */
-  folded: InboxSection[];
   /**
    * #2387: the reply thread open beside the conversation, or null. Its own
    * page of messages, loaded from `/threads/<root>`, so a thread never pushes

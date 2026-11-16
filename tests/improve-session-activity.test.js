@@ -130,31 +130,13 @@ test('the tile still shows the app, and is no longer a positioning context', () 
 
 // ── The declared checks follow the markup ──────────────────────────────
 
-test('the two mock rows are the rendered evidence, with one check per row', () => {
-  // #5289: the rows are checked on the Messages screen's agents list, by
-  // their inbox slot, since the bell's Messages filter went. Other checks
-  // read the same slot for other things; these are the two on the dot.
-  const at = (id) => MANIFEST.tests.filter((t) =>
-    (t.expectSelector || '').includes(`[data-inbox-session="s${id}"]`)
-    && (t.expectSelector || '').includes(':not(:has(.h-3.w-3.rounded-full))'));
-
-  const idle = at('990101');
-  assert.equal(idle.length, 1, 'one check owns the idle mock row');
-  assert.match(idle[0].expectSelector, /:not\(:has\(\.h-3\.w-3\.rounded-full\)\)/,
-    'retargeted to pin the absence: a badge coming back turns this red');
-  assert.equal(idle[0].expectText, '[Mock] Your in-progress session',
-    'without giving up what it already asserted');
-
-  const busy = at('990102');
-  assert.equal(busy.length, 1, 'one check owns the busy mock row');
-  assert.match(busy[0].expectSelector, /:not\(:has\(\.h-3\.w-3\.rounded-full\)\)/);
-  assert.match(busy[0].expectSelector, /\.dc-status-spinner-arc$/,
-    'the arc is still what it selects — #1597\'s check, narrowed');
-
-  // Both RETARGET: each mock row is owned by exactly one check (asserted
-  // above), so the change added no slot. The manifest's total is pinned in
-  // ONE place, tests/dev-board-fold.test.js, with its changelog; a second
-  // literal here went stale the moment other work landed beside this one
-  // (616 on the branch, 621 on main the day it merged) and turned the whole
-  // suite red for every proposal that followed.
+test('the mock rows left the declared checks with Messages\' Agents list (16 Nov 2026)', () => {
+  // #5289 checked the two mock rows on the Messages screen's Agents list, by
+  // their inbox slot, once the bell's Messages filter went. Messages lists
+  // conversations alone now, so no shell screen draws this row and no check
+  // can open it: the badge's absence is pinned by the renders above, not by
+  // a declared check that would select nothing. The manifest's total is
+  // pinned in ONE place, tests/dev-board-fold.test.js, with its changelog.
+  const onMessages = MANIFEST.tests.filter((t) => /\[data-inbox-session|\[data-improve-row/.test(t.expectSelector || ''));
+  assert.deepEqual(onMessages.map((t) => t.name), [], 'no check selects the retired Messages slot or its row');
 });

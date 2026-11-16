@@ -9,14 +9,13 @@ import {
   ChatStatusLine, JumpToLatestButton, NewMessagesBanner, NewMessagesDivider, TranscriptOverlay, groupsWithPrevious,
 } from '@/components/ui/chat';
 import {
-  ArrowsPointingInIcon, ArrowsPointingOutIcon, ChatIcon, ChevronDownIcon, ChevronLeftIcon, EllipsisHorizontalIcon, LockIcon, PencilSparklesIcon,
+  ArrowsPointingInIcon, ArrowsPointingOutIcon, ChatIcon, ChevronLeftIcon, EllipsisHorizontalIcon, LockIcon,
   PlusIcon, SearchIcon, UserGroupIcon, XIcon,
 } from '@/components/ui/icons';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { placeUnderAnchor, type AnchorRect } from '../../lib/anchor-popover';
 import { cardRunLabel, cardRunStarts } from '../../lib/card-runs';
 import { useComposerKeyboard } from '../../lib/composer-keyboard';
-import { useCommunityColor } from '../../lib/community-color';
 import { dirSign, ownDirection } from '../../lib/i18n/direction';
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
@@ -83,8 +82,6 @@ import {
   setUserBlocked,
   selectConversation,
   setListCollapsed,
-  setSectionFolded,
-  FOLDABLE,
   scopeKey,
   syncChrome,
   followPlatformSlug,
@@ -105,14 +102,10 @@ import { generalHubBack, openChannelHub, usePlatformSlug } from './channel-hub';
 import { ThreadActivityCard } from '../message-actions/thread-activity';
 import { isFrameSkin, useLiveSkin, useSkin } from '../../lib/skin';
 import { useFramePage } from '../frame/frame-page-store';
-import { Av as KitAv, Lead as KitLead } from '@/components/ui/kit';
+import { Av as KitAv } from '@/components/ui/kit';
 import { NewMessageSheet } from './frame-new';
-import { MessagesFrameList, type FrameInboxRow, type FrameInboxTab } from './frame-list';
-import { Improve } from '../improve/improve-controller.js';
-import { improveStore } from '../improve/improve-store.js';
-import { notificationsStore } from '../notifications/notifications-store.js';
-import { SessionRow, sessionRowState, type SessionRowView } from '../improve/session-row';
-import { INBOX_QUERY_MAX, INBOX_SECTIONS, agentAsksForYou, buildInbox, savedInboxQuery, shownInSection, type AppDiscussion, type InboxSection } from './inbox';
+import { MessagesFrameList, type FrameInboxRow } from './frame-list';
+import { INBOX_QUERY_MAX, buildInbox, savedInboxQuery, type AppDiscussion } from './inbox';
 import { useSidebarRows } from '../nav/sidebar-rows';
 import type { ConversationDetail, ConversationMessage, ConversationSummary, DiscussionMessage } from './types';
 
@@ -139,8 +132,10 @@ import type { ConversationDetail, ConversationMessage, ConversationSummary, Disc
  * bubbles so that a chat reads the same whichever section it sits in.
  * ./message-row.tsx draws it.
  *
- * The LIST is Discord's too: the chats (people and agents) on top, newest
- * first, then the channels — #general and one per app you are a member of.
+ * The LIST is the conversations with people, newest first, under one
+ * People heading (./inbox.ts). The channels are drawn on their
+ * communities' hubs, and changes in flight on the Homeroom bot tab, the
+ * Homeroom menu and each project's Workshop.
  */
 
 function openDialog(name: 'messagesCreate' | 'messagesMembers' | 'messagesShare', payload?: unknown) {
@@ -408,59 +403,6 @@ const AppChannelRow = memo(function AppChannelRow({ discussion, active }: { disc
 });
 
 /**
- * A change in flight, as a row of this inbox (#2770, #2772), listed under
- * Agents.
- *
- * ── The same row, from the same list ──────────────────────────────────
- *
- * The bell's Agents tab already draws these, with ../improve/session-row.tsx
- * from the Improve store's own list (`sessions` + `otherSessions`, one
- * fetch of /api/me/active-sessions). So this reads that store and draws that
- * row: a second copy of the list would drift, and a second row would let a
- * change's Working / Ready state say two things in two places.
- *
- * ── Where the row goes ────────────────────────────────────────────────
- *
- * Where the store's row goes: the change's own page, as the bell links it,
- * and a work order's own destination. Never a pane of this screen.
- */
-const ChangeRow = memo(function ChangeRow({ session, rowKey }: {
-  session: SessionRowView;
-  /** #6508: the inbox entry's key (see ConversationRow). */
-  rowKey?: string;
-}) {
-  return (
-    <div
-      className="messages-inbox-session"
-      data-inbox-session={session.key}
-      data-inbox-row={rowKey}
-    >
-      <SessionRow session={session} showApp onNavigate={() => {}} tile={<ChangeTile session={session} />} />
-    </div>
-  );
-});
-
-/**
- * A change in flight's tile in Agents (16 Oct 2026): an agent's pencil in
- * its project's colour, not the project's own icon. Homeroom's icon is the
- * bot's face, so a change to Homeroom drawn with it read as a second bot
- * beside the bot's own row. The row still names the project on a phone.
- */
-function ChangeTile({ session }: { session: SessionRowView }) {
-  const { icon } = session;
-  const color = useCommunityColor({
-    key: session.appSlug || session.appName,
-    iconUrl: icon.kind === 'image' ? icon.src : null,
-    iconEmoji: icon.kind === 'emoji' ? icon.emoji : null,
-  });
-  return (
-    <span className="messages-inbox-change-tile" style={{ '--change-ink': color } as CSSProperties} aria-hidden="true">
-      <PencilSparklesIcon />
-    </span>
-  );
-}
-
-/**
  * What the "+" can start, in the order the popover lists them: the
  * conversations with people. A new chat with Homeroom bot starts on its own
  * tab.
@@ -575,47 +517,18 @@ function NewMessageButton() {
   );
 }
 
-/** The heading over each section of the list (16 Oct 2026). */
-const SECTION_LABELS: Record<InboxSection, string> = {
-  agents: 'messages:inbox.section.agents',
-  people: 'messages:inbox.section.people',
-};
-
 /**
- * A section's heading (16 Oct 2026): its name in small caps, and what in it
- * asks for you ("1 working", "3 unread"), which stays when it is folded.
- * Agents folds from the heading itself, a button the width of the list, and
- * keeps the Homeroom bot's row folded. People does not fold: it is the
- * list's last section, so folding it saved no scrolling.
+ * The list's heading (16 Oct 2026): People in small caps, and how many
+ * messages from people are unread ("3 unread"). It was the second of two
+ * headings until Agents left the list (16 Nov 2026), and it stays: it says
+ * what the rows are, and carries the count. It does not fold.
  */
-function SectionHead({ section, folded, aside, ask = false }: {
-  section: InboxSection;
-  folded: boolean;
-  aside: string | null;
-  ask?: boolean;
-}) {
+function PeopleHead({ aside }: { aside: string | null }) {
   const t = useMessages('messages');
-  const words = (
-    <>
-      <span className="messages-section-name">{t(SECTION_LABELS[section])}</span>
-      {aside ? <span className={`messages-section-aside ${ask ? 'messages-section-aside-ask' : ''}`}>{aside}</span> : null}
-    </>
-  );
-  if (!FOLDABLE.includes(section)) {
-    return <h3 className="messages-section-head" data-inbox-section={section}>{words}</h3>;
-  }
   return (
-    <h3 className="messages-section-head" data-inbox-section={section}>
-      <button
-        type="button"
-        className="messages-section-toggle"
-        data-inbox-fold={section}
-        aria-expanded={!folded}
-        onClick={() => setSectionFolded(section, !folded)}
-      >
-        {words}
-        <ChevronDownIcon className={`messages-section-chevron ${folded ? '-rotate-90' : ''}`} aria-hidden="true" />
-      </button>
+    <h3 className="messages-section-head" data-inbox-section="people">
+      <span className="messages-section-name">{t('messages:inbox.section.people')}</span>
+      {aside ? <span className="messages-section-aside">{aside}</span> : null}
     </h3>
   );
 }
@@ -680,11 +593,10 @@ function ConversationRowSkeleton() {
 }
 
 /**
- * #6508: the selector for one row's key. A key is built from a numeric id or
- * a change's key (./inbox.ts), and a change's key can hold characters a
- * selector would read as syntax, so it is
- * escaped where `CSS.escape` exists (every browser that draws the shell) and
- * quoted with its own quotes and backslashes escaped where it does not.
+ * #6508: the selector for one row's key (./inbox.ts), escaped where
+ * `CSS.escape` exists (every browser that draws the shell) and quoted with
+ * its own quotes and backslashes escaped where it does not, so no key can
+ * break the selector.
  */
 function keyedRow(key: string): string {
   const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
@@ -701,16 +613,13 @@ function ConversationList({ drawer = false }: {
   const snap = useMessagesSnapshot();
   // A look of the one frame draws the list with the kit (./frame-list.tsx),
   // from the same conversations and presses. Read after mount (lib/skin.ts
-  // says why). The agent catalog is the words a change in flight is said in.
+  // says why).
   const frame = isFrameSkin(useSkin());
-  const [frameTab, setFrameTab] = useState<FrameInboxTab>('people');
   const [frameNew, setFrameNew] = useState(false);
-  useMessages('agent');
-  // The search: REMEMBERED PER DEVICE SINCE #5459, AND STILL NOT IN THE STORE. A daily
-  // voter narrows the list to the changes waiting on them, leaves to vote,
-  // and comes back: the query now survives that, kept in localStorage
-  // (`usernode:messages-query`, ./inbox.ts) the way the folded sections are,
-  // so the visit starts narrowed the way the last one ended. It is kept out
+  // The search: REMEMBERED PER DEVICE SINCE #5459, AND STILL NOT IN THE STORE. A
+  // person narrows the list, leaves, and comes back: the query survives
+  // that, kept in localStorage (`usernode:messages-query`, ./inbox.ts), so
+  // the visit starts narrowed the way the last one ended. It is kept out
   // of the store because nothing else reads what was typed here — and the
   // field itself is where the reason rows are missing shows, so a restored
   // query never hides rows with nothing on screen saying why. The value is
@@ -744,33 +653,14 @@ function ConversationList({ drawer = false }: {
   // once, and the rows follow in a render React can interrupt with the next
   // one, so typing a word into a long inbox does not wait on it per letter.
   const deferredQuery = useDeferredValue(query);
-  // The viewer's changes in flight (#2770) — see ChangeRow. AFTER
-  // MOUNT ONLY: app.js can have filled the Improve store before this island
-  // hydrates, and rows the prerendered document did not have are a hydration
-  // mismatch on every route. The first client render therefore matches the
-  // prerender, and the rows arrive one commit later.
-  const improve = useStoreState(improveStore) as {
-    sessions?: SessionRowView[];
-    otherSessions?: SessionRowView[];
-  };
-  // A change in flight with news not seen yet: the standard row reads this
-  // itself (features/improve/session-row.tsx); the kit row is told.
-  const { sessionUnreadIds } = useStoreState(notificationsStore) as { sessionUnreadIds: number[] };
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  // Memoised on the store's own arrays: a new array per render is every
-  // memo()'d row drawn again.
-  const sessions = useMemo<SessionRowView[]>(() => (mounted
-    ? [...(improve.sessions || []), ...(improve.otherSessions || [])]
-    : []), [mounted, improve.sessions, improve.otherSessions]);
   // Built once per change to what it is built from, not once per keystroke
   // in the search box or per publish of a store this list does not draw.
   const inbox = useMemo(() => buildInbox({
     conversations: snap.conversations,
-    sessions,
-  }), [snap.conversations, sessions]);
+  }), [snap.conversations]);
   const byConversation = useMemo(() => new Map(snap.conversations.map((item) => [String(item.id), item])), [snap.conversations]);
-  const bySession = useMemo(() => new Map(sessions.map((item) => [item.key, item])), [sessions]);
 
   const q = deferredQuery.trim().toLowerCase();
   const matches = (entry: { kind: string; key: string }) => {
@@ -783,23 +673,14 @@ function ConversationList({ drawer = false }: {
         || inboxMatches(peer?.username, q)
         || inboxMatches(peer?.displayName, q);
     }
-    if (entry.kind === 'session') {
-      const c = bySession.get(entry.key.slice('session:'.length));
-      return !!c && (inboxMatches(c.title, q) || inboxMatches(c.appName, q));
-    }
     return false;
   };
   const searching = !!q;
   const found = inbox.filter(matches);
-  // The conversation that is open. A change's row opens its page, never a
-  // pane here, so it is never the open one.
+  // The conversation that is open.
   const isOpen = (entry: { kind: string; key: string }) => (
     entry.kind === 'person' && snap.route.conversationId === Number(entry.key.slice('person:'.length))
   );
-  // An agent row that asks for you is never behind "N older changes": a
-  // change waiting on you ("Needs you") or an agent at work.
-  // (./inbox.ts agentAsksForYou, #5693).
-  const asksForYou = (entry: { kind: string; key: string }) => agentAsksForYou(entry, bySession);
 
   // 16 Oct 2026: what the Homeroom bot's row says. What waits on you and
   // what it is doing ("1 needs you · 2 in progress", ./bot-strip.tsx
@@ -818,21 +699,14 @@ function ConversationList({ drawer = false }: {
     return parts.length ? parts.slice(0, 2).map((part) => part.text).join(' · ') : null;
   }, [botWork.work]);
 
-  // What each section's heading says: agents at work, and the messages from
-  // people you have not read. A zero says nothing. Unread is new to read,
-  // grey like every unread count since #18 (19 Oct 2026 polish board); the
-  // accent is for what waits on you.
-  const working = sessions.filter((item) => item.busy).length;
+  // What the heading says: the messages from people you have not read. A
+  // zero says nothing. Unread is new to read, grey like every unread count
+  // since #18 (19 Oct 2026 polish board); the accent is for what waits on
+  // you.
   const unreadFromPeople = snap.conversations
     .filter((item) => !item.homeroomBot && item.kind !== 'channel')
     .reduce((sum, item) => sum + Math.max(0, Number(item.unreadCount) || 0), 0);
-  const asides: Record<InboxSection, { text: string | null; ask: boolean }> = {
-    agents: { text: working ? t('messages:inbox.section.working', { count: working }) : null, ask: false },
-    people: { text: unreadFromPeople ? t('messages:inbox.section.unread', { count: unreadFromPeople }) : null, ask: false },
-  };
-  // Agents shows its week until "N older changes" (./inbox.ts
-  // shownInSection). Not remembered: the next visit starts on the week.
-  const [agentsExpanded, setAgentsExpanded] = useState(false);
+  const unreadAside = unreadFromPeople ? t('messages:inbox.section.unread', { count: unreadFromPeople }) : null;
 
   // #6508: the list keeps its place while it updates live (./list-place.ts).
   // The row at the top of what the reader sees is noted on every scroll, and
@@ -858,10 +732,9 @@ function ConversationList({ drawer = false }: {
     }
     anchor.current = firstRowInView(rows, 0);
   }, []);
-  // The reader changing the list (a search, a fold, older changes, the other
-  // tab under a look) drops the held place: that is them moving the list,
-  // not it moving itself.
-  const listShape = `${deferredQuery}\u0000${snap.folded.join(',')}\u0000${agentsExpanded}\u0000${frame ? frameTab : ''}`;
+  // The reader changing the list (a search) drops the held place: that is
+  // them moving the list, not it moving itself.
+  const listShape = deferredQuery;
   const lastShape = useRef(listShape);
   useIsomorphicLayoutEffect(() => {
     if (lastShape.current === listShape) return;
@@ -936,36 +809,9 @@ function ConversationList({ drawer = false }: {
           },
         };
       }
-      if (entry.kind === 'session') {
-        const sn = bySession.get(entry.key.slice('session:'.length));
-        if (!sn) return null;
-        // A change in flight, as SessionRow says it: the project and what
-        // the controller knows, then when, and its state as the one pill.
-        const stamp = agoStamp(sn.lastActivityAt);
-        const caption = sn.appName && sn.status
-          ? translate('agent:menu.row.caption', { app: sn.appName, status: sn.status })
-          : sn.appName || sn.status || '';
-        const state = sessionRowState(sn);
-        return {
-          key: entry.key,
-          lead: <KitLead icon="wand" />,
-          title: sn.title,
-          line: dotText([caption, stamp.text]),
-          status: { text: state.label, kind: state.kind },
-          unseen: sessionUnreadIds.includes(sn.id) ? { said: translate('agent:menu.row.unread'), session: sn.id } : null,
-          active,
-          href: sn.href,
-          onClick: () => {},
-        };
-      }
       return null;
     };
     const rowsOf = (entries: Array<{ kind: string; key: string }>) => entries.map(frameRow).filter((row): row is FrameInboxRow => !!row);
-    // The two sections are the two tabs; Agents folds by the standard
-    // list's own rule (./inbox.ts shownInSection), People shows every row.
-    const peopleEntries = found.filter((entry) => entry.section === 'people');
-    const agentEntries = found.filter((entry) => entry.section === 'agents');
-    const fold = shownInSection('agents', agentEntries, { expanded: agentsExpanded, searching, keep: asksForYou });
     return (
       <section
         className={`messages-list-pane ${drawer ? 'flex' : snap.route.conversationId || snap.route.appSlug ? 'hidden md:flex' : 'flex'}`}
@@ -977,16 +823,8 @@ function ConversationList({ drawer = false }: {
         onScroll={readAnchor}
       >
         <MessagesFrameList
-          people={rowsOf(peopleEntries)}
-          agents={rowsOf(fold.shown)}
-          older={fold.older}
-          olderRows={rowsOf(fold.olderShown)}
-          olderOpen={agentsExpanded}
-          onOlder={() => setAgentsExpanded(!agentsExpanded)}
+          people={rowsOf(found)}
           unread={unreadFromPeople}
-          working={asides.agents.text}
-          tab={frameTab}
-          onTab={setFrameTab}
           query={query}
           onQuery={changeQuery}
           onNew={() => setFrameNew(true)}
@@ -1076,48 +914,20 @@ function ConversationList({ drawer = false }: {
         {!snap.loadingList && !snap.error && snap.listLoaded && inbox.length && !found.length
           ? <div id="messages-search-empty" className="messages-state"><p>{t('messages:inbox.searchEmpty', { query: deferredQuery.trim() })}</p></div>
           : null}
-        {/* TWO SECTIONS, EACH HEADED (16 Oct 2026): Agents, then People
-            (./inbox.ts). Each section's rows
-            sit in a card under its heading, the grouped list's label-over-
-            card shape; on a desktop the column draws them as the Communities
-            column draws its places (app.css). Agents folds from its heading,
-            which keeps its count folded, and keeps a pinned row; a search
-            opens it. Agents shows at most five from its week, and the rest
-            behind "N older changes": a quiet link in the titles' column,
-            not a chevron, so it never reads as a third heading. Pressed, it
-            stays where it is and the older changes open below it. */}
-        {INBOX_SECTIONS.map((section) => {
-          const entries = found.filter((entry) => entry.section === section);
-          const folded = !searching && FOLDABLE.includes(section) && snap.folded.includes(section);
-          const { shown, older, olderShown } = shownInSection(section, entries, {
-            expanded: agentsExpanded, searching, folded, keep: asksForYou,
-          });
-          if (!entries.length) return null;
-          const more = older > 0 ? (
-            <button
-              key="agents-older"
-              type="button"
-              className="messages-inbox-older"
-              data-inbox-more="agents"
-              aria-expanded={agentsExpanded}
-              onClick={() => setAgentsExpanded(!agentsExpanded)}
-            >
-              {agentsExpanded ? t('messages:inbox.older.hide') : t('messages:inbox.older.show', { count: older })}
-            </button>
-          ) : null;
-          return (
-            <Fragment key={section}>
-              <SectionHead section={section} folded={folded} aside={asides[section].text} ask={asides[section].ask} />
-              {shown.length || more ? (
-                <div className="messages-section-card" data-inbox-card={section}>
-                  {shown.map(inboxRow)}
-                  {more}
-                  {olderShown.map(inboxRow)}
-                </div>
-              ) : null}
-            </Fragment>
-          );
-        })}
+        {/* PEOPLE, HEADED (16 Oct 2026): the rows sit in a card under their
+            heading, the grouped list's label-over-card shape; on a desktop
+            the column draws them as the Communities column draws its places
+            (app.css). The list's one section since Agents left it (16 Nov
+            2026): the heading still says what the rows are, and how many
+            messages in them are unread. */}
+        {found.length ? (
+          <>
+            <PeopleHead aside={unreadAside} />
+            <div className="messages-section-card" data-inbox-card="people">
+              {found.map(inboxRow)}
+            </div>
+          </>
+        ) : null}
       </div>
       <InboxToEnd scroller={scrollRef} />
     </section>
@@ -1136,12 +946,6 @@ function ConversationList({ drawer = false }: {
             rowKey={entry.key}
           />
         )
-        : null;
-    }
-    if (entry.kind === 'session') {
-      const session = bySession.get(entry.key.slice('session:'.length));
-      return session
-        ? <ChangeRow key={entry.key} session={session} rowKey={entry.key} />
         : null;
     }
     return null;
@@ -1487,9 +1291,8 @@ export function dayLabel(message: ConversationMessage, now: Date = new Date(Date
  * spec side panel, the drafts and the attachment wiring are all
  * public/js/group-chat.js and features/group-chat/. That is one surface
  * with one owner, and re-implementing it here would be a second copy of a
- * thing that is loaded, merged and invalidated elsewhere — the same reason
- * the changes in flight are read from the Improve store rather than copied
- * into this one. So this renders a HOST and asks the owner to fill it.
+ * thing that is loaded, merged and invalidated elsewhere. So this renders a
+ * HOST and asks the owner to fill it.
  *
  * ── The app travels with the mount ────────────────────────────────────
  *
@@ -2830,18 +2633,6 @@ export function MessagesScreen() {
   const designView = useDesignView();
   useVisibilityHiddenClass(screenRef, 'messages-screen', false);
   useEffect(() => initializeMessagesStore(), []);
-  // THE CHANGES HALF OF THIS INBOX ASKS FOR ITSELF (#2770). The Improve store's list
-  // is prefetched once per page when an app target is published, which a
-  // viewer who lands on Messages first may not have had — and a list read
-  // once at boot is stale by the time the inbox is opened. So opening
-  // Messages reads it again; while it stays open, Improve's own
-  // onSessionStateChanged keeps it fresh (it asks whether Messages is on
-  // screen). Signed-in only: the endpoint is per-user, and a 401 in the
-  // network log is a console error on the route.
-  useEffect(() => {
-    if (!snap.route.open || !window.App?.user) return;
-    void Promise.resolve(Improve.loadSessions()).catch(() => {});
-  }, [snap.route.open]);
   // #3407: and again when #general's hub becomes known (store.ts).
   useEffect(() => followPlatformSlug(), []);
   useEffect(() => { if (snap.route.open) syncChrome(); },
@@ -2856,7 +2647,7 @@ export function MessagesScreen() {
   // there: it is the only thing to show.
   const chatOpen = !!(snap.route.conversationId || snap.route.appSlug);
   // A CHANNEL OPENS FULL WIDTH. It is its community's room, reached from the
-  // community's hub, and the list beside it is people and agents — a column
+  // community's hub, and the list beside it is people — a column
   // of other things beside a room that is not in it. So there is no list
   // for it to sit beside, whatever the full-width preference says.
   const channelOpen = !!snap.route.appSlug

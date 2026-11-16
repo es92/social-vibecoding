@@ -111,7 +111,7 @@ test('the open reply thread lights its chip through a prop, read on every render
 
 test('the inbox rows are memo()\'d and the list filters on the deferred query', () => {
   const src = read('frontend/src/features/messages/index.tsx');
-  for (const name of ['ConversationRow', 'GeneralChannelRow', 'AppChannelRow', 'ChangeRow']) {
+  for (const name of ['ConversationRow', 'GeneralChannelRow', 'AppChannelRow']) {
     assert.match(src, new RegExp(`^const ${name} = memo\\(function ${name}\\(`, 'm'), `${name} is memo()'d`);
   }
   const list = src.slice(src.indexOf('function ConversationList('));

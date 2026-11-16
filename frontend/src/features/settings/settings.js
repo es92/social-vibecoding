@@ -483,8 +483,8 @@
 
     // #5997: where this device remembers the menu's pins and folds, each a
     // comma list of keys (page keys in pinned order; group keys, the catalog
-    // id's last segment). Per device, like Messages' folded sections
-    // (usernode:messages-folded): a convenience, not an account setting.
+    // id's last segment). Per device, like Messages' search
+    // (usernode:messages-query): a convenience, not an account setting.
     PINNED_KEY: 'usernode:settings-pinned',
     // #6136: the setup steps a person has ticked, on this device, by account:
     // { "<user id>": { "chatgpt": [1, 2] } }. A convenience, like the two keys

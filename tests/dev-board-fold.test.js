@@ -1791,7 +1791,11 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // 717 → 715: −2 (15 Nov 2026) the restart-recovery and interrupted-reply
   // pill fixtures (#786) went with the session Mayor's quick replies. 715
   // leaves 165 slots.
-  checkCap.assertPinned(DAPP.tests.length, 715);
+  // 715 → 706: −9 (16 Nov 2026) Messages lists conversations alone: the
+  // eight checks of its Agents rows (changes and work orders in flight) and
+  // the Agents fold went with the section; "no filter strip, nothing folds"
+  // joined messages.inbox. 706 leaves 174 slots.
+  checkCap.assertPinned(DAPP.tests.length, 706);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

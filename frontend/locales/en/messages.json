@@ -3119,45 +3119,21 @@
     "text": "Start a new conversation",
     "description": "Accessible name of the menu opened by the + button above the conversation list."
   },
-  "inbox.section.agents": {
-    "text": "Agents",
-    "description": "Small-caps heading over the Messages list section that holds the viewer's changes in flight, each being built by an AI agent. It is a button that folds the section away and opens it again."
-  },
   "inbox.section.people": {
     "text": "People",
-    "description": "Small-caps heading over the last section of the Messages list, under Agents, and over the same rows in the sidebar: the viewer's direct messages and group chats with people. It does not fold."
-  },
-  "inbox.section.working_one": {
-    "text": "{{count}} working",
-    "description": "Beside the Agents heading in the Messages list, also while the section is folded: how many of the viewer's changes an agent is working on right now. {{count}} is that number."
-  },
-  "inbox.section.working_other": {
-    "text": "{{count}} working",
-    "description": "Beside the Agents heading in the Messages list, also while the section is folded: how many of the viewer's changes an agent is working on right now. {{count}} is that number."
+    "description": "Small-caps heading over the Messages list: the viewer's direct messages and group chats with people. Under one of the frame's looks it is the list's one tab."
   },
   "inbox.section.unread_one": {
     "text": "{{count}} unread",
-    "description": "Beside the People heading in the Messages list, in the accent colour, also while the section is folded: how many messages from people the viewer has not read. {{count}} is that number."
+    "description": "Beside the People heading in the Messages list: how many messages from people the viewer has not read. {{count}} is that number."
   },
   "inbox.section.unread_other": {
     "text": "{{count}} unread",
-    "description": "Beside the People heading in the Messages list, in the accent colour, also while the section is folded: how many messages from people the viewer has not read. {{count}} is that number."
+    "description": "Beside the People heading in the Messages list: how many messages from people the viewer has not read. {{count}} is that number."
   },
   "inbox.loading": {
     "text": "Loading conversations",
     "description": "Accessible label of the placeholder rows shown while the conversation list loads."
-  },
-  "inbox.older.show_one": {
-    "text": "{{count}} older change",
-    "description": "Quiet link at the foot of the Agents section in Messages: shows the change in flight that nothing has happened to in the last seven days. \"Change\" is a noun. {{count}} is how many there are."
-  },
-  "inbox.older.show_other": {
-    "text": "{{count}} older changes",
-    "description": "Quiet link at the foot of the Agents section in Messages: shows the changes in flight that nothing has happened to in the last seven days. \"Changes\" is a noun. {{count}} is how many there are."
-  },
-  "inbox.older.hide": {
-    "text": "Hide older changes",
-    "description": "Quiet link at the foot of the Agents section in Messages, once the older changes are shown: folds them away again. \"Changes\" is a noun."
   },
   "inbox.listName": {
     "text": "Conversations",
@@ -5837,11 +5813,7 @@
   },
   "frame.inbox.none": {
     "text": "Nothing here yet.",
-    "description": "Messages when the interface is drawn in one of the frame's looks (an admin's preview in Settings > Experimental). Said in place of the list when the chosen tab holds no conversation."
-  },
-  "frame.inbox.agentsPurpose": {
-    "text": "Changes your agents are building.",
-    "description": "Messages when the interface is drawn in one of the frame's looks (an admin's preview in Settings > Experimental). The one sentence under the page's title while the Agents tab is chosen: the tab lists the person's changes in flight."
+    "description": "Messages when the interface is drawn in one of the frame's looks (an admin's preview in Settings > Experimental). Said in place of the list when it holds no conversation and none has been read yet."
   },
   "bot.offer.expired": {
     "text": "This offer has expired.",

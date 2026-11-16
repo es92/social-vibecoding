@@ -14,7 +14,7 @@ import { botDraftsChanged, resyncBotDrafts } from './bot-drafts';
 import { WORK_CHANGED_EVENT, inMainStream, openAppTarget, threadsAllowed } from './bot-shared';
 import { channelDirectory, normalizeHandle, type ChannelRef } from './channels';
 import { platformHubServed, platformSlug, subscribePlatformSlug } from './channel-hub';
-import { type AppDiscussion, type InboxSection } from './inbox';
+import { type AppDiscussion } from './inbox';
 import { MAX_UNSENT, messagesOutbox, type PendingSend, type UnsentState } from './outbox';
 import { carryToNewChat } from './new-chat-carry';
 import { openRequestPage, requestPage, requestPageOf, type RequestPage } from './request-page';
@@ -143,7 +143,6 @@ let state: InternalState = {
   discussionsLoaded: false,
   discussionContext: null,
   discussionError: null,
-  folded: [],
   thread: null,
   nextAfter: null,
   listCollapsed: false,
@@ -386,32 +385,6 @@ function errorMessage(error: unknown, fallback: string): string {
  */
 function unreachable(error: unknown): boolean {
   return !(error instanceof api.MessagesApiError);
-}
-
-/** The sections that can fold from their headings: the bot's never does. */
-/**
- * The sections that fold from their heading: Agents alone. People is the
- * list's last section, so folding it saved no scrolling (16 Oct 2026).
- */
-export const FOLDABLE: ReadonlyArray<InboxSection> = ['agents'];
-
-/** Pure: the folded sections a saved value names, ignoring anything else. */
-export function savedFolded(raw: string | null | undefined): InboxSection[] {
-  const names = String(raw || '').split(',');
-  return FOLDABLE.filter((section) => names.includes(section));
-}
-
-/**
- * Fold a section of the list away from its heading, or open it again (16
- * Oct 2026), remembered per device. Presentation, so not in the route; a
- * fresh device starts with everything open.
- */
-export function setSectionFolded(section: InboxSection, folded: boolean): void {
-  if (!FOLDABLE.includes(section)) return;
-  const next = FOLDABLE.filter((name) => (name === section ? folded : state.folded.includes(name)));
-  if (next.length === state.folded.length && next.every((name) => state.folded.includes(name))) return;
-  try { localStorage.setItem('usernode:messages-folded', next.join(',')); } catch { /* storage unavailable */ }
-  publish({ folded: next });
 }
 
 /**
@@ -3483,17 +3456,14 @@ export function initializeMessagesStore(): () => void {
   if (window.App?.user) void loadAppDiscussions({ join: true });
   if (window.App?.user) void restoreUnsent();
   // #2387 / #2967: the two layout preferences, read after mount so the first
-  // render matches the prerendered shell. The folded sections are the third,
-  // remembered the same way.
+  // render matches the prerendered shell.
   let listCollapsed = false;
   let showMoreChannels = false;
-  let folded: InboxSection[] = [];
   try {
     listCollapsed = localStorage.getItem('usernode:messages-list-collapsed') === '1';
     showMoreChannels = localStorage.getItem('usernode:messages-more-channels') === '1';
-    folded = savedFolded(localStorage.getItem('usernode:messages-folded'));
   } catch { /* storage unavailable */ }
-  publish({ online: navigator.onLine, demo: browserDemo(), listCollapsed, showMoreChannels, folded });
+  publish({ online: navigator.onLine, demo: browserDemo(), listCollapsed, showMoreChannels });
   return () => {
     window.removeEventListener('online', onOnline);
     window.removeEventListener('offline', onOffline);

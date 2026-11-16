@@ -960,17 +960,6 @@
       "expectText": "Whole-season standings"
     },
     {
-      "name": "A change row in Messages' agents shows its title, and an idle row wears no status dot (#971, #1946, #5289)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session=\"s990101\"] a[data-improve-row=\"session\"]:not(:has(.h-3.w-3.rounded-full))",
-      "expectText": "[Mock] Your in-progress session"
-    },
-    {
-      "name": "A busy change row in Messages spins the standard arc, and nothing else (#1038, #1597, #1947, #5289)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session=\"s990102\"] a[data-improve-row=\"session\"]:not(:has(.h-3.w-3.rounded-full)) .dc-status-spinner-arc"
-    },
-    {
       "name": "Send Feedback: no kudos bounty (#964, #5249), up to three images (#3027), video (#3940) behind one paperclip (#4127)",
       "path": "/?shot=feedback",
       "expectSelector": "#feedback-form:has(#feedback-screenshot-count:not(.hidden)):has(#feedback-attach-btn:not(.hidden,:disabled)+.hidden>#feedback-video-btn:not(.hidden)) #feedback-bounty-row.hidden #feedback-bounty-checkbox:not(:checked)",
@@ -3017,9 +3006,9 @@
     },
     {
       "id": "messages.inbox",
-      "name": "Messages has Agents and People, no Channels, and the oldest-chats shortcut at the list foot (#6501)",
+      "name": "Messages lists People alone: no Agents, no Channels, no fold or filter strip, and the oldest-chats shortcut at the list foot (#6501)",
       "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden):has([data-inbox-to-end] button) .messages-list-scroll:not(:has([data-inbox-card=\"channels\"])) > h3.messages-section-head[data-inbox-section=\"people\"] + .messages-section-card[data-inbox-card=\"people\"]",
+      "expectSelector": "#messages-screen:not(.hidden):not(:has(#messages-filters)):not(:has([data-inbox-fold])):has([data-inbox-to-end] button) .messages-list-scroll:not(:has([data-inbox-card=\"channels\"])):not(:has([data-inbox-card=\"agents\"])) > h3.messages-section-head[data-inbox-section=\"people\"] + .messages-section-card[data-inbox-card=\"people\"]",
       "visual": true,
       "impact": [
         "frontend/src/features/messages/**",
@@ -3027,11 +3016,6 @@
         "src/routes/conversations.js",
         "src/services/conversations.js"
       ]
-    },
-    {
-      "name": "Agents' heading is the button that folds its section, open to start; People, the last section, does not fold; and there is no filter strip",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden):not(:has(#messages-filters)):not(:has([data-inbox-fold=\"people\"])) h3.messages-section-head[data-inbox-section=\"agents\"] > button.messages-section-toggle[data-inbox-fold=\"agents\"][aria-expanded=\"true\"]"
     },
     {
       "name": "#2778: new message is a plus beside the search, and it opens a menu rather than a dialog",
@@ -4291,21 +4275,6 @@
       "expectSelector": "body.bg-zinc-100"
     },
     {
-      "name": "A connector work order is listed with the agents on the Messages screen (#1417, #2815, #5289)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session] [data-improve-row=\"task\"]"
-    },
-    {
-      "name": "The work-order row points at its request, not a session page (#1417)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-improve-row=\"task\"][href$=\"/dev/issues/900002\"]"
-    },
-    {
-      "name": "Real sessions still render beside it in Messages (#1417, #5289)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden):has([data-improve-row=\"task\"]) [data-inbox-session] a[data-improve-row=\"session\"][href*=\"/dev/proposals/\"]"
-    },
-    {
       "name": "Dark mode pins by deep link and paints the launcher on the inverted ground",
       "path": "/?shot=dark",
       "expectSelector": "html.dark #home-screen:not(.hidden)"
@@ -4469,11 +4438,6 @@
       "expectSelector": "#notifications-sheet[data-open] [data-notif-id=\"990209\"] time[title]"
     },
     {
-      "name": "#1808: a change row's age is its own element with the full instant in title",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session] [data-improve-row] time[title]"
-    },
-    {
       "name": "#1808: an admin log line keeps its seconds and gains the day once it is not today's",
       "path": "/?demo=1#admin/status",
       "expectSelector": "#admin-status-root #admin-status-events time[title]"
@@ -4608,11 +4572,6 @@
       "path": "/#app/usernode-2d5619/dev/sessions/new",
       "expectSelector": "body:has(#messages-screen.hidden) #ai-screen:not(.hidden) #ai-main-pane[data-ai-column=new] [data-bot-new-thread-pane]:has([data-bot-new-thread-project=\"usernode-2d5619\"]) [data-bot-new-thread-start]",
       "expectText": "What do you want to do?"
-    },
-    {
-      "name": "#2772: a change in progress is listed in Messages under Agents, and opens the change's page (agent chats retired, 15 Nov 2026)",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session=\"s990101\"] a[data-improve-row=\"session\"][href$=\"/dev/proposals/990101\"]"
     },
     {
       "name": "Waitlist connect callback shows a status page, not the home page, and says when a link has expired",
@@ -4789,12 +4748,6 @@
       "name": "An open channel belongs to its community (#3653): its old address opens the project page under the Communities tab, with no back button of the room's own",
       "path": "/?demo=1#messages/app/staging-demo-app",
       "expectSelector": "body:has(#platform-tabs #platform-tab-workshop[aria-current=\"page\"]):has(#platform-header a#back-btn.hidden) #app-view:not(.hidden) .dev-ws[data-ws-tab=\"discussion\"][data-ws-slug=\"staging-demo-app\"]"
-    },
-    {
-      "name": "QA 2026-09-24 Q29: a change waiting on you says \"Needs you\" in its Messages row, short enough to leave the title room",
-      "path": "/?demo=1#messages",
-      "expectSelector": "#messages-screen:not(.hidden) [data-inbox-session=\"s990101\"] a[data-improve-row=\"session\"] > span.inline-flex.rounded-full",
-      "expectText": "Needs you"
     },
     {
       "name": "QA 2026-09-24 Q14: a group invitation's header reads \"Invitation pending\", not a member count the invitee is not shown",

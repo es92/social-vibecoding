@@ -167,7 +167,7 @@ test('include_merged=1 admits recent merging/merged rows behind the $4 gate', as
       'include_merged=1 clears the merged gate only');
     assert.match(q.sql, /\$4::boolean AND cs\.status IN \('merging', 'merged'\)/);
     // Bounded to the recent window, on the merge time when there is one —
-    // the same week AGENTS_RECENT_DAYS shows in the client's agents list.
+    // seven days, the week Messages' Agents list showed while it listed them.
     assert.match(q.sql,
       /COALESCE\(cs\.merged_at, cs\.created_at\) >= now\(\) - interval '7 days'/);
   } finally {

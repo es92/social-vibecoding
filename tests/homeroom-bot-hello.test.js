@@ -66,18 +66,18 @@ test('B5: every place Messages names the bot names it, with an AI badge beside i
   assert.match(read('frontend/src/features/messages/store.ts'), /state\.active\.peer\.displayName/, 'the typing line');
 });
 
-test('B5, #6019: the bot\'s DM is the AI tab, not a row of Messages, and a search keeps the sections', () => {
+test('B5, #6019: the bot\'s DM is the AI tab, not a row of Messages, and a search narrows the one list', () => {
   const { buildInbox } = loadTsx('frontend/src/features/messages/inbox.ts');
   const conversations = [
     { id: 1, lastActivityAt: '2026-10-04T10:00:00Z', kind: 'direct' },
     { id: 2, lastActivityAt: '2026-10-01T10:00:00Z', kind: 'direct', homeroomBot: true },
     { id: 3, lastActivityAt: '2026-10-03T10:00:00Z', kind: 'direct' },
   ];
-  const merged = buildInbox({ conversations, agents: [] });
+  const merged = buildInbox({ conversations });
   assert.deepEqual(merged.map((e) => e.key), ['person:1', 'person:3']);
-  assert.deepEqual(merged.map((e) => e.section), ['people', 'people']);
-  // 16 Oct 2026: a search narrows each section rather than mixing them on
-  // one clock.
+  assert.deepEqual(merged.map((e) => e.kind), ['person', 'person'], 'both people, under People');
+  // A search narrows the list it is given; since 16 Nov 2026 that is
+  // People alone.
   assert.match(read('frontend/src/features/messages/index.tsx'), /const found = inbox\.filter\(matches\);/);
 });
 

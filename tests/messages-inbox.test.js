@@ -11,12 +11,12 @@
 //
 // Five things are pinned, and each is a way one list becomes three stacked:
 //
-//   1. ONE CLOCK PER SECTION, newest first.
+//   1. ONE CLOCK, newest first.
 //   2. A ROW WITH NO TIMESTAMP SORTS LAST. "We do not know when" is not
 //      "just now".
-//   3. CHANGES ARE NOT COPIED into this store: they are the Improve store's.
-//      A second copy of a list loaded and invalidated elsewhere is a copy
-//      that drifts.
+//   3. CHANGES ARE NOT LISTED HERE (16 Nov 2026): Messages reads nothing
+//      from the Improve store. The changes in flight are listed on the
+//      Homeroom bot tab, the Homeroom menu and each project's Workshop.
 //   4. THE DISCUSSIONS READ FAILS QUIETLY. Conversations are this screen's
 //      reason to exist; a second request must not be able to blank it.
 //   5. MEMBERSHIP, NOT VISIBILITY. A public app you have never joined is
@@ -28,12 +28,11 @@
 // #2783 sectioned the list the way Discord does: the chats, then the
 // CHANNELS — #general, then one per app the viewer is a member of.
 //
-// 16 Oct 2026: the channels live on their hubs now, and the one clock is
-// sections, each on its own: Agents (the changes in flight), then People.
-// One clock had put every agent turning above the people, so a person was
-// easily three screens down. The filter chips went with it: the headings
-// say which is which. Agents shows at most five from its week and the rest
-// behind "N older changes", and only Agents folds.
+// 16 Oct 2026: the channels live on their hubs now, and the one clock was
+// split into two headed sections: Agents (the changes in flight), then
+// People. The filter chips went with it. 16 Nov 2026: Agents left Messages,
+// so the list is People alone, under its heading, on one clock, and nothing
+// folds.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -53,40 +52,38 @@ const inbox = loadTsx('frontend/src/features/messages/inbox.ts');
 
 const at = (iso) => iso;
 
-test('two sections in a fixed order, each on its own clock; the channels are not listed here: they live on their hubs', () => {
+test('one list on one clock; the channels are not listed here: they live on their hubs', () => {
   const merged = inbox.buildInbox({
     conversations: [
       { id: 1, lastActivityAt: at('2026-01-02T00:00:00Z') },
       { id: 9, kind: 'channel', lastActivityAt: at('2026-01-09T00:00:00Z') },
+      { id: 4, lastActivityAt: at('2026-01-05T00:00:00Z') },
     ],
-    discussions: [
-      { slug: 'quiet', lastAt: null },
-      { slug: 'notes', lastAt: at('2026-01-03T00:00:00Z') },
-    ],
-    sessions: [{ key: 's5', lastActivityAt: at('2026-01-01T00:00:00Z') }],
-    filter: 'all',
   });
-  // Messages is people and agents. #general is the Homeroom community's
-  // channel and each app's channel is its own community's, drawn on the
-  // hub (features/dev-board/workshop/hub-cards.tsx), so neither is a row.
-  // Agents before People, whatever the clock says between them.
-  assert.deepEqual(merged.map((e) => e.key), ['session:s5', 'person:1']);
-  assert.deepEqual(merged.map((e) => e.section), ['agents', 'people']);
+  // Messages is people. #general is the Homeroom community's channel and
+  // each app's channel is its own community's, drawn on the hub
+  // (features/dev-board/workshop/hub-cards.tsx), so neither is a row.
+  assert.deepEqual(merged.map((e) => e.key), ['person:4', 'person:1']);
+  assert.deepEqual(merged.map((e) => e.kind), ['person', 'person']);
 });
 
-test('a row with no timestamp sorts last in its section, not first', () => {
+test('a row with no timestamp sorts last, not first', () => {
   const merged = inbox.buildInbox({
-    conversations: [{ id: 1, lastActivityAt: at('2020-01-01T00:00:00Z') }],
-    sessions: [{ key: 's1', lastActivityAt: null }, { key: 's2', lastActivityAt: at('2019-01-01T00:00:00Z') }],
+    conversations: [
+      { id: 1, lastActivityAt: null },
+      { id: 2, lastActivityAt: at('2019-01-01T00:00:00Z') },
+      { id: 3, lastActivityAt: at('2020-01-01T00:00:00Z') },
+    ],
   });
-  assert.deepEqual(merged.map((e) => e.key), ['session:s2', 'session:s1', 'person:1']);
+  assert.deepEqual(merged.map((e) => e.key), ['person:3', 'person:2', 'person:1']);
 });
 
-test('the sections are Agents and People, and there are no filter chips', () => {
-  assert.deepEqual([...inbox.INBOX_SECTIONS], ['agents', 'people']);
-  assert.deepEqual(inbox.INBOX_SECTIONS.map((section) => message(`messages:inbox.section.${section}`)),
-    ['Agents', 'People'], 'audit C02: it holds group chats too, so it is not headed "Direct messages"');
-  assert.equal(inbox.INBOX_FILTERS, undefined, 'the chips went: the headings say which is which');
+test('one heading, People, and there are no filter chips and no Agents', () => {
+  assert.equal(inbox.INBOX_SECTIONS, undefined, 'one section: there is no list of them');
+  assert.equal(message('messages:inbox.section.people'), 'People',
+    'audit C02: it holds group chats too, so it is not headed "Direct messages"');
+  assert.throws(() => message('messages:inbox.section.agents'), 'Agents is no heading of Messages any more');
+  assert.equal(inbox.INBOX_FILTERS, undefined, 'the chips went: the heading says what the rows are');
   assert.equal(inbox.admits, undefined);
   assert.doesNotMatch(SCREEN, /InboxFilters|setFilter|messages-filter/);
   const people = inbox.buildInbox({
@@ -100,11 +97,9 @@ test('#6019: the Homeroom bot\'s DM is the AI tab, not a row of Messages', () =>
     { id: 1, lastActivityAt: at('2026-01-02T00:00:00Z') },
     { id: 2, kind: 'direct', homeroomBot: true, lastActivityAt: at('2026-01-01T00:00:00Z') },
   ];
-  const sessions = [{ key: 's7', lastActivityAt: at('2026-01-03T00:00:00Z') }];
-  const merged = inbox.buildInbox({ conversations, sessions });
-  assert.deepEqual(merged.map((e) => e.key), ['session:s7', 'person:1'], 'its row left the list');
-  assert.deepEqual(merged.map((e) => e.section), ['agents', 'people']);
-  assert.deepEqual(merged.map((e) => !!e.pinned), [false, false], 'nothing is pinned now');
+  const merged = inbox.buildInbox({ conversations });
+  assert.deepEqual(merged.map((e) => e.key), ['person:1'], 'its row left the list');
+  assert.deepEqual(merged.map((e) => Object.keys(e).sort()), [['at', 'key', 'kind']], 'no section and nothing pinned');
   assert.match(SCREEN, /conversations: snap\.conversations,/, 'the screen hands the merge the summaries that carry the mark');
 });
 
@@ -267,71 +262,43 @@ test('the search and the plus ship in the prerendered document; the filter row i
   assert.ok(!HTML.includes('data-inbox-section'), 'the sections draw once the rows arrive, after mount');
 });
 
-test('one row shape per kind, under two headed sections; Agents shows its pinned row, then five from its week', () => {
-  assert.match(SCREEN, /const ChangeRow = memo\(function ChangeRow/);
+test('one row shape, under one People heading; nothing folds and nothing waits behind "older"', () => {
+  assert.doesNotMatch(SCREEN, /ChangeRow|ChangeTile|SessionRow/, 'a change has no row in Messages any more');
   assert.doesNotMatch(SCREEN, /MayorSessionRow/, 'an agent chat has no row any more');
   assert.doesNotMatch(SCREEN, /<KindPill kind="app" \/>/, 'a section heading says it once');
-  assert.match(SCREEN, /const SECTION_LABELS: Record<InboxSection, string> = \{\s*agents: 'messages:inbox\.section\.agents',\s*people: 'messages:inbox\.section\.people',\s*\};/);
-  assert.match(SCREEN, /\{INBOX_SECTIONS\.map\(\(section\) => \{/, 'every section, in order');
-  assert.match(SCREEN, /<SectionHead section=\{section\} folded=\{folded\} aside=\{asides\[section\]\.text\} ask=\{asides\[section\]\.ask\} \/>/);
-  assert.match(SCREEN, /<div className="messages-section-card" data-inbox-card=\{section\}>/,
-    'each section\'s rows in a card of their own, so the last row of a section drops its separator');
-  // Agents folds from its heading; People is the list's last section and
-  // has a plain heading, its unread count and no fold.
-  const head = SCREEN.slice(SCREEN.indexOf('function SectionHead'));
+  assert.doesNotMatch(SCREEN, /SECTION_LABELS|INBOX_SECTIONS|shownInSection|agentAsksForYou|agentsExpanded/);
+  assert.doesNotMatch(SCREEN, /data-inbox-session|data-inbox-fold|data-inbox-more|messages-inbox-older|messages-section-toggle/);
+  for (const name of ['shownInSection', 'sectionRuns', 'agentAsksForYou', 'AGENTS_SHOWN', 'AGENTS_RECENT_DAYS']) {
+    assert.equal(inbox[name], undefined, `${name} went with Agents`);
+  }
+  // The heading: People in small caps and the unread count, never a fold.
+  const head = SCREEN.slice(SCREEN.indexOf('function PeopleHead'));
   const fn = head.slice(0, head.indexOf('\n}\n'));
-  assert.match(fn, /if \(!FOLDABLE\.includes\(section\)\) \{\s*return <h3 className="messages-section-head" data-inbox-section=\{section\}>\{words\}<\/h3>;/);
-  assert.match(fn, /data-inbox-fold=\{section\}\s*aria-expanded=\{!folded\}\s*onClick=\{\(\) => setSectionFolded\(section, !folded\)\}/);
-  // A search opens Agents and shows every match.
-  assert.match(SCREEN, /const folded = !searching && FOLDABLE\.includes\(section\) && snap\.folded\.includes\(section\);/);
-  assert.match(SCREEN, /expanded: agentsExpanded, searching, folded, keep: asksForYou,/);
-  // #5289: an open work order is kept too (it is listed nowhere else).
-  assert.match(SCREEN, /const asksForYou = \(entry: \{ kind: string; key: string \}\) => agentAsksForYou\(entry, bySession\);/);
-
-  const NOW = Date.parse('2026-10-16T12:00:00Z');
-  const daysAgo = (d) => new Date(NOW - d * 24 * 60 * 60 * 1000).toISOString();
-  const e = (key, at, extra = {}) => ({ key, section: 'agents', kind: 'session', at, ...extra });
-  const bot = e('bot', daysAgo(30), { kind: 'person', pinned: true });
-  const week = ['a', 'b', 'c', 'd', 'e', 'f'].map((k, i) => e(k, daysAgo(i * 0.5)));
-  const old = [e('g', daysAgo(8)), e('h', daysAgo(20)), e('n', null)];
-  const agents = [bot, ...week, ...old];
-  const shown = (opts = {}) => {
-    const r = inbox.shownInSection('agents', agents, { now: NOW, ...opts });
-    return [r.shown.map((x) => x.key), r.older, r.olderShown.map((x) => x.key)];
-  };
-  assert.equal(inbox.AGENTS_SHOWN, 5);
-  assert.equal(inbox.AGENTS_RECENT_DAYS, 7);
-  assert.deepEqual(shown(), [['bot', 'a', 'b', 'c', 'd', 'e'], 4, []],
-    'the bot whatever its age and taking none of the five, then the five newest of the week; the sixth, the older and the clockless wait');
-  assert.deepEqual(shown({ expanded: true }), [['bot', 'a', 'b', 'c', 'd', 'e'], 4, ['f', 'g', 'h', 'n']],
-    'the link opens the rest under it, and still counts them so it can fold them again');
-  assert.deepEqual(shown({ openKey: 'h' })[0], ['bot', 'a', 'b', 'c', 'd', 'e', 'h'], 'the open one wherever it sits');
-  assert.deepEqual(shown({ keep: (x) => x.key === 'g' || x.key === 'f' })[0], ['bot', 'a', 'b', 'c', 'd', 'e', 'f', 'g'],
-    'and whatever asks for you, past the five and past the week: nothing waiting on you is folded away');
-  const quiet = inbox.shownInSection('agents', [bot, ...old], { now: NOW });
-  assert.deepEqual([quiet.shown.map((x) => x.key), quiet.older], [['bot'], 3], 'a quiet week is the bot and the link, never an empty heading');
-  assert.deepEqual(inbox.shownInSection('agents', agents, { now: NOW, folded: true }).shown.map((x) => x.key), ['bot'],
-    'folded, Agents keeps the bot');
-  const search = inbox.shownInSection('agents', agents, { now: NOW, searching: true });
-  assert.deepEqual([search.shown.length, search.older], [agents.length, 0], 'a search shows every match');
-  assert.deepEqual(inbox.shownInSection('people', old, { now: NOW }).shown.length, old.length, 'People shows all of them');
-  assert.deepEqual(inbox.sectionRuns([bot, e('a', null), e('p', null, { section: 'people' })])
-    .map((r) => [r.section, r.entries.length]), [['agents', 2], ['people', 1]]);
-
-  // The link: muted words in the titles' column, no chevron; pressed it
-  // stays where it is and the rest open under it.
-  assert.match(SCREEN, /className="messages-inbox-older"\s*data-inbox-more="agents"\s*aria-expanded=\{agentsExpanded\}/);
-  assert.match(SCREEN, /\{agentsExpanded \? t\('messages:inbox\.older\.hide'\) : t\('messages:inbox\.older\.show', \{ count: older \}\)\}/);
-  assert.match(SCREEN, /\{shown\.map\(inboxRow\)\}\s*\{more\}\s*\{olderShown\.map\(inboxRow\)\}/);
-  assert.equal(message('messages:inbox.older.show', { count: 1 }), '1 older change');
-  assert.equal(message('messages:inbox.older.show', { count: 13 }), '13 older changes');
-  assert.equal(message('messages:inbox.older.hide'), 'Hide older changes');
+  assert.match(fn, /<h3 className="messages-section-head" data-inbox-section="people">\s*<span className="messages-section-name">\{t\('messages:inbox\.section\.people'\)\}<\/span>\s*\{aside \? <span className="messages-section-aside">\{aside\}<\/span> : null\}\s*<\/h3>/);
+  assert.doesNotMatch(fn, /<button|onClick/, 'the heading is no button: nothing folds');
+  // The rows, in a card under it, once there are any to show.
+  assert.match(SCREEN, /\{found\.length \? \(\s*<>\s*<PeopleHead aside=\{unreadAside\} \/>\s*<div className="messages-section-card" data-inbox-card="people">\s*\{found\.map\(inboxRow\)\}\s*<\/div>/,
+    'the rows in a card of their own, so the last row drops its separator');
+  for (const id of ['messages:inbox.older.show_one', 'messages:inbox.older.show_other', 'messages:inbox.older.hide']) {
+    assert.throws(() => message(id), `${id} went with the Agents fold`);
+  }
   const conversationRow = SCREEN.slice(SCREEN.indexOf('function ConversationRow'), SCREEN.indexOf('const GeneralChannelRow = memo('));
   assert.doesNotMatch(conversationRow, /KindPill/,
     'a person gets none: they are the majority, and a pill on every row says nothing');
 });
 
-test('the bot\'s row says what waits on you, and the headings say what in them asks for you', () => {
+test('nothing folds, so nothing about folding is remembered (16 Nov 2026)', () => {
+  // Agents folded from its heading and the device remembered it
+  // (usernode:messages-folded). People never folded, so with Agents gone
+  // the store keeps no folded sections at all.
+  assert.doesNotMatch(STORE, /usernode:messages-folded|setSectionFolded|savedFolded|FOLDABLE|folded:/,
+    'the folded sections are neither read nor written');
+  assert.doesNotMatch(STORE, /usernode:messages-filter/, 'nor the retired filter');
+  assert.match(STORE, /publish\(\{ online: navigator\.onLine, demo: browserDemo\(\), listCollapsed, showMoreChannels \}\)/,
+    'the two layout preferences still arrive after mount, so the first paint matches the prerendered shell');
+});
+
+test('the bot\'s row says what waits on you, and the heading counts what is unread', () => {
   // Its chat's own activity bar words, from the same store, once it has read.
   assert.match(SCREEN, /const parts = summaryParts\(stripGroups\(botWork\.work\)\);/);
   assert.match(SCREEN, /return parts\.length \? parts\.slice\(0, 2\)\.map\(\(part\) => part\.text\)\.join\(' · '\) : null;/);
@@ -345,10 +312,11 @@ test('the bot\'s row says what waits on you, and the headings say what in them a
   // own line (`preview`) still leads the fallback the DM rows draw.
   assert.match(SCREEN, /: groupPreview \?\? \(ownDirection\(preview \|\| conversation\.latestSummary \|\| ''\) \|\| t\('messages:inbox\.noMessages'\)\)/,
     'its last message until then — the bot\'s own line first, then a group\'s sender-prefixed one');
-  assert.equal(message('messages:inbox.section.working', { count: 1 }), '1 working');
+  assert.throws(() => message('messages:inbox.section.working', { count: 1 }), 'no Agents heading to say "1 working"');
   assert.equal(message('messages:inbox.section.unread', { count: 3 }), '3 unread');
-  assert.match(SCREEN, /people: \{ text: unreadFromPeople \? t\('messages:inbox\.section\.unread', \{ count: unreadFromPeople \}\) : null, ask: false \},/,
-    'a zero says nothing, and the people count is grey: new to read, not waiting on you (#18)');
+  assert.match(SCREEN, /const unreadAside = unreadFromPeople \? t\('messages:inbox\.section\.unread', \{ count: unreadFromPeople \}\) : null;/,
+    'a zero says nothing');
+  assert.doesNotMatch(SCREEN, /messages-section-aside-ask/, 'and the people count is grey: new to read, not waiting on you (#18)');
 });
 
 test('#5393: a group row shows its members\' faces and names the person who spoke last', () => {
@@ -398,59 +366,26 @@ test('on a desktop with nothing open the list is the page, and a place lit in th
   assert.match(css, /\.platform-rail-nest :is\(\.dev-ws-place, \.platform-rail-sub\)\[aria-current="page"\] \{\n    background: var\(--lit-tint\);\n    color: var\(--lit-ink\);/);
 });
 
-test('a change in flight in Agents wears a pencil in its project\'s colour, not the project\'s icon', () => {
-  // Homeroom's icon is the bot's face: with the bot first in Agents, a
-  // change to Homeroom drawn with it read as a second bot.
-  assert.match(SCREEN, /<SessionRow session=\{session\} showApp onNavigate=\{\(\) => \{\}\} tile=\{<ChangeTile session=\{session\} \/>\} \/>/);
-  const tile = SCREEN.slice(SCREEN.indexOf('function ChangeTile'), SCREEN.indexOf('function ChangeTile') + 900);
-  assert.match(tile, /const color = useCommunityColor\(\{/);
-  assert.match(tile, /style=\{\{ '--change-ink': color \} as CSSProperties\} aria-hidden="true"/);
-  assert.match(tile, /<PencilSparklesIcon \/>/);
+test('Messages draws no change in flight, and reads nothing from the Improve store (16 Nov 2026)', () => {
+  // The changes are listed on the Homeroom bot tab, the Homeroom menu and
+  // each project's Workshop; Messages is conversations alone.
+  assert.doesNotMatch(SCREEN, /improveStore|improve-store|improve-controller|session-row|Improve\.loadSessions/,
+    'neither the store nor its load nor its row');
+  assert.doesNotMatch(SCREEN, /notificationsStore|sessionUnreadIds/, 'nor the news marks a change row carried');
+  assert.doesNotMatch(SCREEN, /useMessages\('agent'\)/, 'nor the words a change in flight is said in');
+  assert.doesNotMatch(read('frontend/src/features/messages/inbox.ts'), /sessions\??:|'session'|ChangeInFlight/, 'the merge takes conversations alone');
+  assert.doesNotMatch(STORE, /sessions:/, 'and this store holds no copy of that list');
+  // What the Improve store's rows still are, where they are drawn: the
+  // project's own tile, and the change's page.
   assert.match(read('frontend/src/features/improve/session-row.tsx'), /\{tile \|\| <AppTile session=\{session\} \/>\}/,
-    'the Improve panel keeps the app\'s tile');
-  assert.match(read('public/css/app.css'),
-    /\.messages-inbox-change-tile \{[^}]*color: var\(--change-ink, var\(--text-muted\)\);\s*background: color-mix\(in srgb, var\(--change-ink, var\(--text-muted\)\) 14%, transparent\);/);
-});
-
-test('a change in flight lines up with the conversation rows on the cards (#5378)', () => {
-  // The bell's row brings Tailwind's own spacing; Messages' wrapper gives it
-  // the conversation row's padding, gap and type, so its tile shares the
-  // avatars' edge and its title their 74px column.
-  const css = read('public/css/app.css');
-  assert.match(css, /\n\.messages-inbox-session > a \{ min-height: 66px; gap: 14px; padding: 13px 16px; \}/);
-  assert.match(css, /\n\.messages-inbox-session > a > \.min-w-0 > :first-child \{ font-size: 15px; font-weight: 650; line-height: 20px; \}/);
-  assert.match(css, /\n\.messages-inbox-session > a > \.min-w-0 > :first-child \+ \* \{ margin-top: 2px; font-size: 13px; line-height: 18px; \}/);
-  const at = css.indexOf('.messages-inbox-change-tile {');
-  assert.match(css.slice(at, css.indexOf('}', at)), /width: 44px;\s*height: 44px;\s*border-radius: 12px;/, 'the avatars\' 44px');
-});
-
-// ── A change is an agent conversation (#2770, #2772) ────────────────────
-
-test('a change sorts on the Agents clock and files under Agents', () => {
-  const merged = inbox.buildInbox({
-    conversations: [{ id: 1, lastActivityAt: at('2026-01-02T00:00:00Z') }],
-    sessions: [
-      { key: 's4', lastActivityAt: at('2026-01-01T00:00:00Z') },
-      { key: 's7', lastActivityAt: at('2026-01-03T00:00:00Z') },
-    ],
-  });
-  assert.deepEqual(merged.map((e) => e.key), ['session:s7', 'session:s4', 'person:1']);
-  assert.deepEqual(merged.map((e) => e.section), ['agents', 'agents', 'people']);
-});
-
-test('changes are read from the Improve store and drawn by SessionRow', () => {
-  assert.match(SCREEN, /useStoreState\(improveStore\)/, 'one list, the Improve store’s');
-  assert.match(SCREEN, /<SessionRow\b/, 'drawn by the same row the bell’s Messages tab uses for agents');
-  const list = SCREEN.slice(SCREEN.indexOf('function ConversationList'));
-  const body = list.slice(0, list.indexOf('\n}\n'));
-  assert.match(body, /const sessions = useMemo<SessionRowView\[\]>\(\(\) => \(mounted\s*\?/,
-    'after mount only, so the first client render matches the prerender');
-  // The row opens the change's page, at the address the Improve store gave it.
-  assert.match(SCREEN, /<SessionRow session=\{session\} showApp onNavigate=\{\(\) => \{\}\} tile=\{<ChangeTile session=\{session\} \/>\} \/>/,
-    'the row is drawn with the session as the store has it');
+    'the Improve row keeps the app\'s tile');
   assert.match(read('frontend/src/features/improve/improve-controller.js'),
     /href: `#app\/\$\{session\.app_slug\}\/dev\/proposals\/\$\{session\.id\}`,/, 'a row opens the change\'s page');
-  assert.doesNotMatch(STORE, /sessions:/, 'and this store holds no second copy of that list');
+  // Their styles left with them.
+  const css = read('public/css/app.css');
+  for (const rule of ['.messages-inbox-session', '.messages-inbox-change-tile', '.messages-inbox-older', '.messages-section-toggle', '.messages-section-chevron', '.messages-section-aside-ask', '[data-inbox-unseen]']) {
+    assert.ok(!css.includes(rule), `${rule} has no rule left`);
+  }
 });
 
 // ── Channels as things a message can name (#2783) ─────────────────────

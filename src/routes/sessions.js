@@ -1296,8 +1296,8 @@ function sessionRoutes(config) {
   //   merging/merged rows (bounded to the recent window in the WHERE), and
   //   those count none of active/promoted/paused — a merged change holds no
   //   slot — while `total` stays every row returned. The only opt-in caller
-  //   is the Improve controller (Messages/bell agent rows), whose rows show
-  //   the change's lifecycle; the dev tab's fetch sends no flag.
+  //   is the Improve controller, whose rows show the change's lifecycle; the
+  //   dev tab's fetch sends no flag.
   //   "caps" carries the DENOMINATORS for that header — the viewer's own
   //   effective per-user ceilings ({ activeSessions, promotedSessions }),
   //   which are higher for full platform admins (services/session-caps.js).
@@ -1318,12 +1318,12 @@ function sessionRoutes(config) {
       // lists leave them out by default; the connector's proposal views opt
       // back in with include_settings=1, alongside include_imported above.
       const includeSettings = req.query.include_settings === '1';
-      // #6042: merged and merging changes ride along so a Messages row can
+      // #6042: merged and merging changes ride along so a change's row can
       // say Live instead of vanishing the moment its change merges. Bounded
-      // to the recent window in the WHERE clause (the same week the agents
-      // list shows, AGENTS_RECENT_DAYS in features/messages/inbox.ts), and
-      // never counted against the viewer's session caps — see the totals
-      // reducer below. The dev tab's own fetch sends no flag and sees none.
+      // to the recent window in the WHERE clause (seven days, the week
+      // Messages' Agents list showed while it listed changes), and never
+      // counted against the viewer's session caps — see the totals reducer
+      // below. The dev tab's own fetch sends no flag and sees none.
       const includeMerged = req.query.include_merged === '1';
       // #6410: a plan a person posted is a planning record with no branch
       // (request-specs.js), not a conversation with an agent. No agent runs

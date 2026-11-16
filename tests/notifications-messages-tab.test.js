@@ -161,6 +161,7 @@ test('declared checks follow the agent rows to Messages and keep a collapsed row
   for (const check of messageChecks) assert.equal(check.path, '/?shot=notifications-all&demo=1', check.name);
   assert.match(FE_SRC, /shot !== 'notifications-all'\) return;/, 'the All link opens the sheet');
   assert.match(SHEET_SRC, /if \(shot === 'notifications-all'\) setTab\('all'\);/, 'and the sheet lands on All');
-  assert.ok(has('#messages-screen:not(.hidden) [data-improve-row="task"][href$="/dev/issues/900002"]'),
-    'the work-order row is checked where it lives now');
+  // The work-order row was checked on Messages' Agents list until that list
+  // left Messages (16 Nov 2026); no check selects it on the bell either.
+  assert.ok(!has('[data-improve-row'), 'no check selects a change or work-order row');
 });

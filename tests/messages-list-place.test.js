@@ -75,10 +75,11 @@ test('scrollCorrection moves the scroller by how far the held row travelled', ()
 });
 
 test('the list rows carry their inbox key', () => {
-  // Every live row kind (a conversation, a change) renders the key it was given.
-  assert.equal((LIST.match(/data-inbox-row=\{rowKey\}/g) || []).length, 2);
-  // `inboxRow` is the one place that passes it, for both kinds.
-  assert.equal((LIST.match(/rowKey=\{entry\.key\}/g) || []).length, 2);
+  // The one live row kind, a conversation, renders the key it was given (a
+  // change in flight was the second until Agents left Messages, 16 Nov 2026).
+  assert.equal((LIST.match(/data-inbox-row=\{rowKey\}/g) || []).length, 1);
+  // `inboxRow` is the one place that passes it.
+  assert.equal((LIST.match(/rowKey=\{entry\.key\}/g) || []).length, 1);
 });
 
 test('the scroller notes the row it shows and corrects after an order change', () => {
@@ -91,7 +92,7 @@ test('the scroller notes the row it shows and corrects after an order change', (
   assert.ok(LIST.includes('el.scrollTop += delta'));
   // At the very top nothing is held, so new rows show there.
   assert.ok(LIST.includes('if (el.scrollTop <= 0) { anchor.current = null; return; }'));
-  // The reader moving the list (search, fold, older, archived) drops the hold.
+  // The reader moving the list (a search) drops the hold.
   assert.ok(LIST.includes('lastShape.current === listShape'));
 });
 

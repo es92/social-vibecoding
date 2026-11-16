@@ -152,24 +152,20 @@ test('the pill lays its two children out like the platform\'s other one', () => 
 
 // ── The declared check follows the markup ──────────────────────────────
 
-test('the busy-row check selects the arc, and no check was added', () => {
+test('the busy-row check left with Messages\' Agents list, and the manifest keeps its floor', () => {
   // The SURFACE moved and the check moved with it (#2718 review): these rows
   // were the Improve panel's, and with the panel retired they were the
   // notifications sheet's Agents tab; #2815 folded that tab into the bell's
-  // Messages filter, and #5289 took that filter out: the rows are checked on
-  // the Messages screen's agents list now, where they had been drawn all
-  // along. The row, the mock and the arc are unchanged, which is why this
-  // still asserts one check owning one mock row.
+  // Messages filter, and #5289 took that filter out, so the busy row was
+  // checked on the Messages screen's Agents list. That list left Messages
+  // (16 Nov 2026) and no shell screen draws the row now, so its check went
+  // with it: the arc is pinned by the renders above.
   const busy = MANIFEST.tests.filter((t) =>
     /\[data-inbox-session="s990102"\]/.test(t.expectSelector || ''));
-  assert.equal(busy.length, 1, 'one check owns the busy mock row');
-  assert.match(busy[0].expectSelector, /\.dc-status-spinner-arc$/,
-    'retargeted with the markup — .animate-pulse now matches nothing there');
-  assert.equal(busy[0].path, '/?demo=1#messages');
+  assert.equal(busy.length, 0, 'no check selects the retired Messages slot');
+  assert.ok(!MANIFEST.tests.some((t) => /\.animate-pulse/.test(t.expectSelector || '') && /data-improve-row/.test(t.expectSelector || '')),
+    'and none came back on the pulse the arc replaced');
 
-  // …and it RETARGETS rather than adds, which is what the equality above
-  // pins: one check owns the busy mock row, before and after.
-  //
   // This used to be `MANIFEST.tests.length <= 459` — the manifest's size on
   // the day #1597 was written, standing in for "near the ceiling, so add
   // nothing". An absolute count cannot say "THIS change adds none": every

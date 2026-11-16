@@ -2,32 +2,27 @@
  * The Messages list in the one frame, version 2 (the tour's s15 and s20):
  * the first tour's layout holding the list the standard look draws.
  *
- * The page's head (Messages, one sentence, New message), People and Agents
- * as the page's tabs, the product's search under them, then the tab's
- * conversations as the kit's one row in one card. The standard list's two
- * sections are the two tabs; everything inside a section is as it is there:
- * a group's member count after its name, "N new" or the time, a change's
- * project and where it stands, and this week's changes with the older ones
- * behind "N older changes". What the list says when it is offline, failed,
- * loading, empty or searched to nothing is the product's sentence.
+ * The page's head (Messages, one sentence, New message), People as the
+ * page's tab, the product's search under it, then the conversations as the
+ * kit's one row in one card. The standard list's People section is the
+ * tab, and everything inside it is as it is there: a group's member count
+ * after its name, and "N new" or the time. Agents was the second tab until
+ * it left Messages (16 Nov 2026). What the list says when it is offline,
+ * failed, loading, empty or searched to nothing is the product's sentence.
  *
  * Presentational. The list pane (./index.tsx ConversationList) builds each
- * row from the conversations, changes and words it already has, folds
- * Agents with the standard list's own rule, and hands the result here in
- * place of its own rows while the device's look is one of the frame's.
- * Nothing is read, searched, folded or opened in this file.
+ * row from the conversations and words it already has, and hands the result
+ * here in place of its own rows while the device's look is one of the
+ * frame's. Nothing is read, searched or opened in this file.
  */
 import type { MouseEvent, ReactNode } from 'react';
 
 import { Btn, Card, Frame, Head, Icon, Note, Pill, Row, Search, Sec, Tabs, k } from '@/components/ui/kit';
-import type { PillKind } from '@/components/ui/kit';
 import { useMessages } from '../../lib/i18n/react';
-
-export type FrameInboxTab = 'people' | 'agents';
 
 export interface FrameInboxRow {
   key: string;
-  /** The picture: a person, a group, or a change's glyph (kit Av or Lead). */
+  /** The picture: a person or a group (kit Av). */
   lead: ReactNode;
   title: string;
   /** One small word after the name: "AI" on a bot's direct message. */
@@ -40,10 +35,6 @@ export interface FrameInboxRow {
   timeTitle?: string | null;
   /** New since the viewer last looked, in words ("2 new"); the row then ends in the blue pill. */
   fresh?: string | null;
-  /** Where an agent's work stands, as one word; drawn when nothing is new. */
-  status?: { text: string; kind: PillKind } | null;
-  /** A change in flight with news not seen yet (the standard row's dot): the words a screen reader hears, and the session it marks. */
-  unseen?: { said: string; session: number | string } | null;
   active: boolean;
   href: string;
   onClick: (event: MouseEvent<HTMLElement>) => void;
@@ -66,15 +57,6 @@ export interface FrameInboxState {
   searched: string | null;
 }
 
-/** The centred link inside a card that opens more of it in place, and says whether it has. */
-function Fold({ open, onClick, children, ...data }: { open: boolean; onClick: () => void; children: ReactNode } & Record<`data-${string}`, string>) {
-  return (
-    <button type="button" className={k('row', 'sm', 'showall')} aria-expanded={open} onClick={onClick} {...data}>
-      <span className={k('tx')}><span className={k('t')}>{children}</span></span>
-    </button>
-  );
-}
-
 function InboxRow({ row }: { row: FrameInboxRow }) {
   return (
     <Row
@@ -94,35 +76,18 @@ function InboxRow({ row }: { row: FrameInboxRow }) {
       line={row.line || undefined}
       right={row.fresh
         ? <Pill kind="act">{row.fresh}</Pill>
-        : row.status ? (
-          <>
-            <Pill kind={row.status.kind}>{row.status.text}</Pill>
-            {/* News not seen yet: the standard row's dot, after its state (features/improve/session-row.tsx). */}
-            {row.unseen ? <span role="img" aria-label={row.unseen.said} data-inbox-unseen="" data-session-unread={row.unseen.session} /> : null}
-          </>
-        ) : row.time ? <span className={k('meta')} title={row.timeTitle || undefined}>{row.time}</span> : null}
+        : row.time ? <span className={k('meta')} title={row.timeTitle || undefined}>{row.time}</span> : null}
       on={row.active}
     />
   );
 }
 
 export function MessagesFrameList({
-  people, agents, older = 0, olderRows = [], olderOpen = false, onOlder, unread = 0, working = null, tab, onTab, query, onQuery, onNew, state,
+  people, unread = 0, query, onQuery, onNew, state,
 }: {
   people: FrameInboxRow[];
-  /** Agents, as the standard list shows it: this week's changes, and any that asks for you. */
-  agents: FrameInboxRow[];
-  /** How many more are behind "N older changes", and those rows once it is pressed. */
-  older?: number;
-  olderRows?: FrameInboxRow[];
-  olderOpen?: boolean;
-  onOlder?: () => void;
   /** Messages from people not read yet: the People tab's count. */
   unread?: number;
-  /** Agents at work, as the standard heading says it ("2 working"); null when none is. */
-  working?: string | null;
-  tab: FrameInboxTab;
-  onTab: (next: FrameInboxTab) => void;
   query: string;
   onQuery: (next: string) => void;
   onNew: () => void;
@@ -130,29 +95,23 @@ export function MessagesFrameList({
 }) {
   const t = useMessages('messages');
   const tc = useMessages('core');
-  const onAgents = tab === 'agents';
-  const shown = onAgents ? agents : people;
-  const has = shown.length > 0 || (onAgents && older > 0);
+  const has = people.length > 0;
   const placeholder = t('messages:inbox.searchPlaceholder');
   const label = t('messages:inbox.searchLabel');
   return (
-    <Frame className="fr-pane" data-messages-frame-list="" data-inbox-tab={tab}>
+    <Frame className="fr-pane" data-messages-frame-list="">
       <div className={k('scroll')}>
         <Head
           title={tc('core:tabs.messages')}
-          purpose={onAgents ? t('messages:frame.inbox.agentsPurpose') : t('messages:frame.inbox.purpose')}
+          purpose={t('messages:frame.inbox.purpose')}
           acts={<Btn icon="edit" onClick={onNew}>{t('messages:inbox.new.button')}</Btn>}
         />
+        {/* The standard list's People heading, as the kit says one: the tab, with the unread count. */}
         <Tabs
-          tabs={[
-            { key: 'people', label: t('messages:inbox.section.people'), count: unread },
-            // "2 working" is not a count that asks for you: a small grey word after the name, as on the standard heading.
-            { key: 'agents', label: working ? <>{t('messages:inbox.section.agents')}<Pill mini>{working}</Pill></> : t('messages:inbox.section.agents') },
-          ]}
-          current={tab}
-          onPick={(key) => onTab(key as FrameInboxTab)}
+          tabs={[{ key: 'people', label: t('messages:inbox.section.people'), count: unread }]}
+          current="people"
         />
-        {/* Under the tabs at every width: the pane is 520px, too narrow for a field at the tabs' end. */}
+        {/* Under the tab at every width: the pane is 520px, too narrow for a field at the tabs' end. */}
         <Search value={query} onChange={onQuery} placeholder={placeholder} label={label} />
         <div className={k('stack')}>
           {state.offline ? <Note tone="wait">{t('messages:inbox.offline')}</Note> : null}
@@ -168,13 +127,7 @@ export function MessagesFrameList({
           {has ? (
             <Sec>
               <Card>
-                {shown.map((row) => <InboxRow key={row.key} row={row} />)}
-                {onAgents && older > 0 ? (
-                  <Fold open={olderOpen} onClick={() => onOlder?.()} data-inbox-more="agents">
-                    {olderOpen ? t('messages:inbox.older.hide') : t('messages:inbox.older.show', { count: older })}
-                  </Fold>
-                ) : null}
-                {onAgents ? olderRows.map((row) => <InboxRow key={row.key} row={row} />) : null}
+                {people.map((row) => <InboxRow key={row.key} row={row} />)}
               </Card>
             </Sec>
           ) : null}

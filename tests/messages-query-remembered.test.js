@@ -2,12 +2,12 @@
 
 // The Messages list's search is remembered per device (#5459).
 //
-// A daily voter narrows the list to the changes waiting on them, leaves to
-// vote, and comes back: until now the search was gone and every row was
-// back. The query is kept in localStorage (`usernode:messages-query`), the
-// way the folded sections are (`tests/messages-folded-remembered.test.js`),
-// and read after mount — the filter chips #4783 remembered were removed with
-// the section split (16 Oct 2026), and the search is the only filter left.
+// A daily voter narrowed the list to the changes waiting on them (while
+// Messages listed changes), left to vote, and came back: the search was
+// gone and every row was back. The query is kept in localStorage
+// (`usernode:messages-query`) and read after mount — the filter chips #4783
+// remembered were removed with the section split (16 Oct 2026), and the
+// search is the only filter left.
 //
 // The same three things are pinned, each a way the remembering quietly comes
 // undone:
