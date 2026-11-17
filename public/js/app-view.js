@@ -6546,6 +6546,10 @@ const AppView = {
       summary: issue.summary && typeof issue.summary.text === 'string' && issue.summary.text.trim()
         ? { text: issue.summary.text.trim(), basis: ['plan', 'change', 'changes'].includes(issue.summary.basis) ? issue.summary.basis : 'plan' }
         : null,
+      // While Homeroom bot writes it, the card holds a spinner in its place
+      // rather than the asker's whole words; the write's end is announced
+      // and this row read again (app.js `request_summary`).
+      summaryWriting: !!(issue.summary && issue.summary.writing === true),
       titleEditing: canEditTitle && AppView._editingIssueTitle === n ? { issue: n, initial: issue.title || '' } : null,
       bodyHtml: words.text.trim() ? AppView._issueBodyHtml({ body: words.text }) : '',
       bodyMarkdown: words.text,

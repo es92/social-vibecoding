@@ -13,10 +13,18 @@
 // gathers what the summary is written from, names it with a hash, and
 // compares that with the stored row (request_summaries). A match is
 // returned as it is. Anything else starts one write in the background and
-// returns what the row already held, so no reader waits on a model and the
-// next read shows the new words. One writer holds the row at a time, on any
-// process (`generating_until`); a write that failed is not tried again for
-// RETRY_MS.
+// returns what the row already held, so the read never waits on a model.
+// One writer holds the row at a time, on any process (`generating_until`);
+// a write that failed is not tried again for RETRY_MS.
+//
+// While a write is under way the read says so (`writing`), and the page
+// holds a spinner where the summary will be rather than the asker's whole
+// words (request-head.tsx). The write's end, written or failed, is announced
+// on the socket (`request_summary`, ws.pushRequestSummary), and the request
+// open on any page re-reads its row then (app.js), so the words arrive as
+// soon as they exist instead of on whatever read comes next. The model call
+// has a waited-on helper's time limit (llm.js HELPER_TIME_LIMIT_MS), so it
+// is a few seconds.
 //
 // What it is written from is only what every member of the project can
 // already read: the request's title and words, the newest plan SHARED with
@@ -124,9 +132,12 @@ async function visibleChanges(pool, appId, number) {
   }));
 }
 
+// `writing`: a writer holds the row now, on this process or another. Read
+// off the database's clock, as `claim` sets the hold.
 async function readRow(pool, appId, number) {
   const { rows } = await pool.query(
-    `SELECT input_key, summary, basis, failed_at, generating_until
+    `SELECT input_key, summary, basis, failed_at, generating_until,
+            (generating_until IS NOT NULL AND generating_until > NOW()) AS writing
        FROM request_summaries WHERE app_id = $1 AND issue_number = $2`,
     [appId, number]
   );
@@ -172,7 +183,20 @@ function llm() {
   return require('./llm');
 }
 
-async function generate(pool, appId, number, inputs, key, basis, deps = {}) {
+// The write ended, with words or without: a page waiting on it reads again.
+// Only the project and the request's number travel, to whoever may view the
+// project; the words are read through the request's own route.
+function announce(appId, slug, number, deps = {}) {
+  if (!slug) return;
+  try {
+    const push = deps.announce || ((data) => require('./ws').pushRequestSummary(data));
+    push({ appId, appSlug: slug, issueNumber: Number(number) });
+  } catch (err) {
+    log.warn('request-summary', 'Request summary was not announced', { appId, number, err: err.message });
+  }
+}
+
+async function generate(pool, appId, slug, number, inputs, key, basis, deps = {}) {
   const ask = deps.generate || ((args) => llm().generateRequestSummary(args));
   try {
     const out = await ask({
@@ -184,19 +208,24 @@ async function generate(pool, appId, number, inputs, key, basis, deps = {}) {
     log.warn('request-summary', 'Request summary was not written', { appId, number, err: err.message });
     await write(pool, appId, number, { key, failed: true }).catch(() => {});
   }
+  announce(appId, slug, number, deps);
 }
 
 /**
  * The summary a request's page shows: `{ text, basis }`, or null when the
- * asker's own words are all there is, or nothing is written yet. Never
- * throws and never waits on a model: a read that fails is a page without a
- * summary. `issue` is the request as the route read it (title, body);
- * `asker` its asker's username.
+ * asker's own words are all there is, or nothing is written and nothing is
+ * being written. While a write is under way it is
+ * `{ text, basis, writing: true }`, `text` being the summary the row held
+ * before (null for a first one): the page waits for the new words then.
+ * Never throws and never waits on a model: a read that fails is a page
+ * without a summary. `issue` is the request as the route read it (title,
+ * body); `asker` its asker's username; `slug` the project's, which the
+ * write's announcement names.
  *
- * `deps.generate` and `deps.enabled` are for tests; `deps.wait` makes the
- * call wait for the write it started.
+ * `deps.generate`, `deps.enabled` and `deps.announce` are for tests;
+ * `deps.wait` makes the call wait for the write it started.
  */
-async function forRequest(pool, { appId, number, issue, asker = null }, deps = {}) {
+async function forRequest(pool, { appId, slug = null, number, issue, asker = null }, deps = {}) {
   try {
     if (!pool || !appId || !(Number(number) > 0) || !issue) return null;
     const [plan, changes] = await Promise.all([
@@ -211,15 +240,20 @@ async function forRequest(pool, { appId, number, issue, asker = null }, deps = {
     const shown = row && row.summary ? { text: row.summary, basis: row.basis || basis } : null;
     if (row && row.input_key === key && row.summary) return shown;
     const enabled = deps.enabled != null ? deps.enabled : llm().isEnabled();
+    let writing = !!(row && row.writing);
     if (enabled && await claim(pool, appId, number, key)) {
-      const work = generate(pool, appId, number, inputs, key, basis, deps);
+      const work = generate(pool, appId, slug, number, inputs, key, basis, deps);
       if (deps.wait) {
         await work;
         const fresh = await readRow(pool, appId, number);
         return fresh && fresh.summary ? { text: fresh.summary, basis: fresh.basis || basis } : shown;
       }
       work.catch(() => {});
+      writing = true;
     }
+    // This read's write or another reader's: the page holds its place for
+    // the words, and the write's announcement brings them.
+    if (writing) return { text: shown ? shown.text : null, basis: shown ? shown.basis : basis, writing: true };
     return shown;
   } catch (err) {
     log.warn('request-summary', 'Request summary read failed', { appId, number, err: err.message });

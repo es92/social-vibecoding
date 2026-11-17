@@ -27278,6 +27278,15 @@ html.in-side-panel.side-panel-beside-ai .dev-thread-kicker { display: none; }
 .dev-thread-card .dev-request-ask { margin-top: 6px; padding-inline: 0; border-inline-start: 0; }
 .dev-thread-card .dev-request-ask-text { font-size: 15.5px; line-height: 24px; max-width: 70ch; }
 .dev-thread-by { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 12.5px; line-height: 18px; color: var(--text-muted); }
+/* Where Homeroom bot's summary will be while it is written (request-head.tsx
+   SummaryWait): one muted line after the in-flight arc, holding three of the
+   summary's lines so the card does not jump when the words land. */
+.dev-thread-summary-wait {
+  margin: 6px 0 0; min-height: 72px;
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 14.5px; line-height: 24px; color: var(--text-muted);
+}
+.dev-thread-summary-wait > .dc-status-spinner-arc { flex: none; margin: 6px 1px 0; }
 .dev-thread-by-glyph { flex: none; width: 14px; height: 14px; }
 
 /* The foot: where it stands, once, and the action. */

@@ -3469,6 +3469,13 @@ const App = {
           case 'issue_update':
             App.handleIssueUpdate(data);
             break;
+          case 'request_summary':
+            // Homeroom bot's summary of a request was written, or its write
+            // ended (services/request-summary.js): the request open on screen
+            // re-reads its row, where the words are. No list moved, so the
+            // board does not re-read (`dev: false`).
+            App._liveRefresh('issue', null, { appSlug: data.appSlug, issueNumber: data.issueNumber, dev: false });
+            break;
           case 'workshop_update':
             App.handleWorkshopUpdate(data);
             break;

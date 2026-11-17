@@ -137,6 +137,45 @@ function summaryWords(text: string): string {
 }
 
 /**
+ * How long the card holds a spinner for a first summary before it shows the
+ * asker's words after all. The write takes a few seconds (llm.js
+ * HELPER_TIME_LIMIT_MS) and its end is announced on the socket, which reads
+ * the row again; this is for an announcement that never comes (the socket
+ * was down, or the writer stopped). Not a poll: nothing is read when it ends.
+ */
+export const SUMMARY_WAIT_MS = 15000;
+
+/** Whether the card is still waiting for a summary being written: true while `writing`, until SUMMARY_WAIT_MS. */
+function useSummaryWait(writing: boolean, number: number): boolean {
+  const [gaveUp, setGaveUp] = useState<number | null>(null);
+  useEffect(() => {
+    if (!writing) {
+      setGaveUp(null);
+      return undefined;
+    }
+    const timer = setTimeout(() => setGaveUp(number), SUMMARY_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [writing, number]);
+  return writing && gaveUp !== number;
+}
+
+/**
+ * Where Homeroom bot's summary will be, while it is written: the spinner the
+ * screenshots' wait has, and one line. It holds about the summary's height,
+ * so the card does not jump when the words land. The asker's own words are
+ * the timeline's first step meanwhile, as they are once the summary is in.
+ */
+function SummaryWait(): ReactNode {
+  const t = useMessages('project');
+  return (
+    <p className="dev-thread-summary-wait" data-thread-summary-wait="" role="status">
+      <span className="dc-status-spinner-arc" aria-hidden="true"></span>
+      <span>{t('project:topic.card.summaryWriting')}</span>
+    </p>
+  );
+}
+
+/**
  * The sheet's header: what this is, the category, and everything else
  * behind ⋯. #6019: where the request's work stands rides beside its number,
  * as a change's status pill rides beside "Change #N" (./change-head.tsx
@@ -690,6 +729,10 @@ export function RequestHead({ r }: { r: RequestView }): ReactNode {
   // still opens whole. Plain text, drawn as paragraphs.
   const summary = !frame && r.summary?.text ? r.summary : null;
   const summaryHtml = useMemo(() => (summary ? summaryWords(summary.text) : ''), [summary]);
+  // A first summary being written: a spinner holds its place, rather than
+  // the asker's whole words for the few seconds it takes. A summary that is
+  // being rewritten keeps showing the one it had.
+  const summaryWaiting = useSummaryWait(!frame && !summary && !!r.summaryWriting, r.number);
   // ⋯ "Edit request" asks for the editor by event, as a change page's
   // "Edit description" does: the menu's row is a closure in AppView.
   useEffect(() => {
@@ -918,7 +961,7 @@ export function RequestHead({ r }: { r: RequestView }): ReactNode {
           {editing ? <RequestEditor r={r} onClose={() => setEditing(false)} /> : (
             // Homeroom bot's summary stands in for the asker's words, which
             // the timeline's first step opens whole.
-            summary ? <RequestWords html={summaryHtml} /> : (
+            summary ? <RequestWords html={summaryHtml} /> : summaryWaiting ? <SummaryWait /> : (
             <RequestWords
               html={bodyHtml}
               translate={!canTranslate || editing || (translation.state !== 'idle' && translation.state !== 'pending') ? null : (
@@ -936,7 +979,7 @@ export function RequestHead({ r }: { r: RequestView }): ReactNode {
             )
           )}
           {cardLook && !editing && summary ? <WordsBy who="bot" basis={summary.basis} />
-            : cardLook && !editing && (r.bodyMarkdown?.trim() || r.bodyHtml) ? <WordsBy who="asker" name={r.asker || null} /> : null}
+            : cardLook && !editing && !summaryWaiting && (r.bodyMarkdown?.trim() || r.bodyHtml) ? <WordsBy who="asker" name={r.asker || null} /> : null}
           {/* #6680: the viewer's own design thread, linked under the request's
               words (right after "Filed from a design thread…"), which opens it
               in the Homeroom bot column. Nobody else's read carries it, so no

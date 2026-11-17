@@ -468,6 +468,38 @@ test('a request with a summary shows it on the card, says what it was written fr
   assert.match(av, /summary: issue\.summary && typeof issue\.summary\.text === 'string' && issue\.summary\.text\.trim\(\)/);
 });
 
+test('a first summary being written holds a spinner on the card, not the asker\'s whole words, for a bounded wait', () => {
+  const { renderComponent } = require('./lib/render-tsx');
+  const view = (over = {}) => ({
+    number: 4417, category: null, menuKey: '', asker: 'maya', askedAt: null, askedTime: '', askedTitle: '',
+    title: 'Dark mode switch', titleEditing: null, bodyHtml: '<div class="dev-issue-body"><p>Settings is three taps away.</p></div>',
+    bodyMarkdown: 'Settings is three taps away.',
+    editor: { issue: 4417, markdown: '', source: null, canEdit: false },
+    status: { stage: 'spec', lead: null, note: null, fine: null, action: null, closed: null },
+    ...over,
+  });
+  const waiting = renderComponent(REQUEST, 'RequestHead', { r: view({ summary: null, summaryWriting: true }) });
+  assert.match(waiting, /<p class="dev-thread-summary-wait" data-thread-summary-wait="" role="status"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span><span>Homeroom bot is writing a summary…<\/span><\/p>/);
+  assert.doesNotMatch(waiting, /Settings is three taps away\./, 'the asker\'s words wait on the timeline\'s first step');
+  assert.doesNotMatch(waiting, /data-thread-by=/, 'nobody is credited with words that are not there yet');
+  // A summary being rewritten keeps the one it had: no spinner over words.
+  const rewriting = renderComponent(REQUEST, 'RequestHead', { r: view({ summary: { text: 'maya asked for a switch.', basis: 'plan' }, summaryWriting: true }) });
+  assert.match(rewriting, /<p>maya asked for a switch\.<\/p>/);
+  assert.doesNotMatch(rewriting, /data-thread-summary-wait/);
+  assert.equal(message('project:topic.card.summaryWriting'), 'Homeroom bot is writing a summary…');
+  // Bounded: an announcement that never comes gives the asker's words back.
+  const request = read(REQUEST);
+  assert.match(request, /export const SUMMARY_WAIT_MS = 15000;/);
+  assert.match(request, /const summaryWaiting = useSummaryWait\(!frame && !summary && !!r\.summaryWriting, r\.number\);/);
+  assert.match(request, /const timer = setTimeout\(\(\) => setGaveUp\(number\), SUMMARY_WAIT_MS\);/);
+  assert.match(request, /summary \? <RequestWords html=\{summaryHtml\} \/> : summaryWaiting \? <SummaryWait \/> : \(/);
+  // The view reads it off the request's read; the server says `writing`.
+  const av = read('public/js/app-view.js');
+  assert.match(av, /summaryWriting: !!\(issue\.summary && issue\.summary\.writing === true\),/);
+  const css = read('public/css/app.css');
+  assert.match(css, /\.dev-thread-summary-wait \{\n  margin: 6px 0 0; min-height: 72px;/, 'it holds the summary\'s place, so the card does not jump');
+});
+
 test('the card\'s picture is the viewer read as one picture: After first, tiles for its screens, the legend beside them', () => {
   const change = read(CHANGE);
   assert.match(change, /if \(auto && after\) after\.checked = true;/, 'it starts on After, not side by side');

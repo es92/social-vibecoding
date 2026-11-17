@@ -64,7 +64,10 @@ function fakePool({ plan = null, changes = [] } = {}) {
     if (/FROM chat_sessions cs/.test(sql)) {
       return { rows: state.changes.map((c) => ({ id: c.id, pr_title: c.title, pr_summary_md: c.summary, status: c.merged ? 'merged' : 'promoted', username: c.by })) };
     }
-    if (/^SELECT input_key/.test(sql.trim())) return { rows: state.row ? [state.row] : [] };
+    if (/^SELECT input_key/.test(sql.trim())) {
+      assert.match(sql, /\(generating_until IS NOT NULL AND generating_until > NOW\(\)\) AS writing/);
+      return { rows: state.row ? [{ ...state.row, writing: !!(state.row.generating_until && state.row.generating_until > Date.now()) }] : [] };
+    }
     if (/^INSERT INTO request_summaries/.test(sql.trim())) {
       const key = args[2];
       const held = state.row && state.row.generating_until && state.row.generating_until > Date.now();
@@ -111,18 +114,69 @@ test('written once for what it draws on, reused while that stands, written again
   assert.equal(calls, 2);
 });
 
-test('a reader never waits: the write runs behind the read, which returns what was there', async () => {
+test('a reader never waits: the write runs behind the read, which says it is being written', async () => {
   const pool = fakePool({ plan: 'A moon button.' });
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   const first = await ask(pool, { enabled: true, generate: async () => { await gate; return { summary: 'Written later.' }; } });
-  assert.equal(first, null, 'nothing was written yet, so the page shows the asker\'s words');
+  assert.deepEqual(first, { text: null, basis: 'plan', writing: true }, 'nothing was written yet: the page holds a spinner for it');
   const second = await ask(pool, { enabled: true, generate: async () => { assert.fail('one writer at a time'); } });
-  assert.equal(second, null);
+  assert.deepEqual(second, { text: null, basis: 'plan', writing: true }, 'another reader sees the same write under way');
   release();
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(await ask(pool, { enabled: true, generate: async () => { assert.fail('it is current'); } }), { text: 'Written later.', basis: 'plan' });
+});
+
+test('a summary being rewritten keeps the words it had, and says a new one is coming', async () => {
+  const pool = fakePool({ plan: 'A moon button.' });
+  assert.deepEqual(await ask(pool, { enabled: true, wait: true, generate: async () => ({ summary: 'The plan.' }) }), { text: 'The plan.', basis: 'plan' });
+  pool.state.changes = [change()];
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  assert.deepEqual(
+    await ask(pool, { enabled: true, generate: async () => { await gate; return { summary: 'The change.' }; } }),
+    { text: 'The plan.', basis: 'plan', writing: true },
+    'the old words, credited to what they were written from'
+  );
+  release();
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(await ask(pool, { enabled: true }), { text: 'The change.', basis: 'change' });
+});
+
+test('the write\'s end is announced for the project, written or not, so a waiting page reads again', async () => {
+  const told = [];
+  const announce = (data) => told.push(data);
+  const garden = (pool, deps) => summary.forRequest(pool, { appId: 7, slug: 'garden', number: 12, issue, asker: 'maya' }, { announce, ...deps });
+  const pool = fakePool({ plan: 'A moon button.' });
+  await garden(pool, { enabled: true, wait: true, generate: async () => ({ summary: 'Written.' }) });
+  assert.deepEqual(told, [{ appId: 7, appSlug: 'garden', issueNumber: 12 }], 'only the project and the number travel');
+  await garden(pool, { enabled: true, wait: true, generate: async () => assert.fail('it is current') });
+  assert.equal(told.length, 1, 'a summary that was current wrote nothing, so says nothing');
+  pool.state.plan = 'A moon button, v2.';
+  await garden(pool, { enabled: true, wait: true, generate: async () => { throw new Error('model down'); } });
+  assert.equal(told.length, 2, 'a failed write ends the wait too: the page shows the asker\'s words');
+  // Without the project's slug there is nobody to tell, and nothing is sent.
+  const quiet = fakePool({ plan: 'A moon button.' });
+  await summary.forRequest(quiet, { appId: 7, number: 12, issue, asker: 'maya' }, { announce, enabled: true, wait: true, generate: async () => ({ summary: 'x' }) });
+  assert.equal(told.length, 2);
+  // A broken announcement is not a broken write.
+  const loud = fakePool({ plan: 'A moon button.' });
+  assert.deepEqual(
+    await summary.forRequest(loud, { appId: 7, slug: 'garden', number: 12, issue, asker: 'maya' }, { announce: () => { throw new Error('socket down'); }, enabled: true, wait: true, generate: async () => ({ summary: 'Still written.' }) }),
+    { text: 'Still written.', basis: 'plan' }
+  );
+});
+
+test('the announcement is its own socket message, which re-reads the open request and not the board', () => {
+  const ws = read('src/services/ws.js');
+  const push = ws.slice(ws.indexOf('function pushRequestSummary'), ws.indexOf('// The Workshop\'s grouping for an app moved'));
+  assert.match(push, /broadcastGlobalScoped\(\{ type: 'request_summary', appSlug: data\.appSlug, issueNumber: data\.issueNumber \},\s+\{ appId: data\.appId, appSlug: data\.appSlug \}\);/, 'to whoever may view the project');
+  assert.doesNotMatch(push, /noteBoardChange/, 'no card moved');
+  assert.match(ws, /pushIssueUpdate, pushRequestSummary, pushBoardOrderUpdate,/);
+  const app = read('public/js/app.js');
+  assert.match(app, /case 'request_summary':[\s\S]*?App\._liveRefresh\('issue', null, \{ appSlug: data\.appSlug, issueNumber: data\.issueNumber, dev: false \}\);\s+break;/);
 });
 
 test('a write that fails keeps the summary it had, holds off, then tries again', async () => {
@@ -159,7 +213,7 @@ test('only what every member can read reaches the model: shared plans, and chang
 
 test('the model call: a helper of its own, told the text is material and never instructions', () => {
   const llm = require('../src/services/llm');
-  assert.equal(llm.HELPER_TIME_LIMIT_MS.request_summary, 12000);
+  assert.equal(llm.HELPER_TIME_LIMIT_MS.request_summary, 5000, 'somebody waits on it now, with a spinner');
   assert.equal(llm.REQUEST_SUMMARY_MAX, 600);
   assert.deepEqual(llm.REQUEST_SUMMARY_SCHEMA.required, ['summary']);
   const src = read('src/services/llm.js');
@@ -171,6 +225,6 @@ test('the model call: a helper of its own, told the text is material and never i
   assert.equal((telemetry.match(/'request_summary'/g) || []).length, 2, 'named in both of the telemetry\'s lists');
   // The page's read carries it, and a staging mock has a made-up one.
   const route = read('src/routes/issues.js');
-  assert.match(route, /const summary = issue === mock\s+\? stagingMockSummary\(number\)\s+: await require\('\.\.\/services\/request-summary'\)\.forRequest\(pool, \{ appId: app\.id, number, issue, asker: askerName \}\);/);
+  assert.match(route, /const summary = issue === mock\s+\? stagingMockSummary\(number\)\s+: await require\('\.\.\/services\/request-summary'\)\.forRequest\(pool, \{ appId: app\.id, slug: app\.slug, number, issue, asker: askerName \}\);/);
   assert.match(route, /if \(!IS_STAGING \|\| Number\(number\) !== 900003\) return null;/);
 });

@@ -550,6 +550,12 @@ export interface RequestView {
    * there is.
    */
   summary?: { text: string; basis: 'plan' | 'change' | 'changes' } | null;
+  /**
+   * Homeroom bot is writing the summary now (a first one, or a new one for
+   * what moved). With no summary yet the card holds a spinner where it will
+   * be; the write's end is announced on the socket and the row read again.
+   */
+  summaryWriting?: boolean;
   similar?: { number: number; title: string } | null;
   /**
    * #6680: the viewer's own private Homeroom bot thread that filed this

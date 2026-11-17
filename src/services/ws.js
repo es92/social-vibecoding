@@ -2579,6 +2579,15 @@ function pushIssueUpdate(data) {
   noteBoardChange(data);
 }
 
+// Homeroom bot's summary of a request was written, or its write ended
+// without one (services/request-summary.js): the request's page, open
+// anywhere, re-reads its own row (app.js). Not a board change: no list
+// moves, so nothing else re-reads. Only the project and the number travel.
+function pushRequestSummary(data) {
+  broadcastGlobalScoped({ type: 'request_summary', appSlug: data.appSlug, issueNumber: data.issueNumber },
+    { appId: data.appId, appSlug: data.appSlug });
+}
+
 // The Workshop's grouping for an app moved — cards were placed into
 // themes, or the themes were re-drafted (`stage`) — so every open Workshop
 // re-fetches GET /api/apps/:slug/workshop-themes. Same scoping as the
@@ -2756,4 +2765,4 @@ function pushConversationEvent(memberUserIds, payload, { excludeUserId = null, a
 
 const pushNotificationToUser = pushToUser;
 
-module.exports = { noteBoardChange, broadcastThreadSummary, connectedUserIds, disconnectUser, closeAllForRelease, attach, broadcast, _onBusMessage, _onBusListening, broadcastGlobal, broadcastSessionEvent, sessionEventAudience, SESSION_FANOUT_EVENTS, SLOW_CLIENT_MAX_BUFFERED, SLOW_CLIENT_RESUME_BUFFERED, _checkLaggingClients: checkLaggingClients, _sessionMetaCache: sessionMetaCache, broadcastGlobalScoped, broadcastToAdmins, sendSystemMessage, sendBotMessage, sendFirstVersionMessage, getOnlineUsers, pushAppStatusUpdate, pushAppCreationPhase, pushSessionUpdate, pushSessionState, sessionStateAudience, pushVoteUpdate, pushKudosUpdate, pushAppUpdate, pushIssueUpdate, pushBoardOrderUpdate, pushWorkshopUpdate, onBoardChange, pushToUser, pushConversationEvent, pushNotificationToUser, pushPlatformVersion, getReactionsForMessages, validateThread, TOPIC_CLOSED_MESSAGE, handleMessage, admitSocketFrame, SOCKET_RATE_BUDGETS, SOCKET_RATE_WINDOW_MS, MAX_CHAT_LEN };
+module.exports = { noteBoardChange, broadcastThreadSummary, connectedUserIds, disconnectUser, closeAllForRelease, attach, broadcast, _onBusMessage, _onBusListening, broadcastGlobal, broadcastSessionEvent, sessionEventAudience, SESSION_FANOUT_EVENTS, SLOW_CLIENT_MAX_BUFFERED, SLOW_CLIENT_RESUME_BUFFERED, _checkLaggingClients: checkLaggingClients, _sessionMetaCache: sessionMetaCache, broadcastGlobalScoped, broadcastToAdmins, sendSystemMessage, sendBotMessage, sendFirstVersionMessage, getOnlineUsers, pushAppStatusUpdate, pushAppCreationPhase, pushSessionUpdate, pushSessionState, sessionStateAudience, pushVoteUpdate, pushKudosUpdate, pushAppUpdate, pushIssueUpdate, pushRequestSummary, pushBoardOrderUpdate, pushWorkshopUpdate, onBoardChange, pushToUser, pushConversationEvent, pushNotificationToUser, pushPlatformVersion, getReactionsForMessages, validateThread, TOPIC_CLOSED_MESSAGE, handleMessage, admitSocketFrame, SOCKET_RATE_BUDGETS, SOCKET_RATE_WINDOW_MS, MAX_CHAT_LEN };

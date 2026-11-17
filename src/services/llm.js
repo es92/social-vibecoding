@@ -670,6 +670,11 @@ const HELPER_TIME_LIMIT_MS = Object.freeze({
   short_description: 5000,
   chat_ask: 5000,
   workshop_ask: 6000,
+  // The summary at the top of a request's page (services/request-summary.js):
+  // the page holds a spinner where it will be until it is written. It had
+  // 12s when nobody waited, and with Haiku behind that a summary could take
+  // half a minute; 5s keeps the whole wait under ten seconds.
+  request_summary: 5000,
   // The sketch card waits up to 15s for its model (app-sketch.js
   // MODEL_WAIT_MS); Haiku gets what is left.
   app_sketch: 8000,
@@ -684,9 +689,6 @@ const HELPER_TIME_LIMIT_MS = Object.freeze({
   // Nobody is waiting: the change's page shows the failure's own words until it answers
   // (services/checks-explanation.js).
   checks_explanation: 10000,
-  // Nobody is waiting: the request's page shows the asker's own words, or
-  // the summary it had, until this answers (services/request-summary.js).
-  request_summary: 12000,
   challenge_grade: 20000,
   report_summary: 25000,
   content_review: 30000,

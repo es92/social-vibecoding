@@ -3126,14 +3126,15 @@ function issueRoutes(config) {
       // The summary at the top of the page, once the request has a plan the
       // group can read or a change built for it (services/request-summary.js:
       // written in the background when what it draws on has moved, so this
-      // read never waits on it). A staging mock has a made-up one, so the
-      // card's summary can be seen on a preview.
+      // read never waits on it; `writing` while it is, and the write's end
+      // is announced for this project's slug). A staging mock has a made-up
+      // one, so the card's summary can be seen on a preview.
       const askerName = (creatorRows[0] && creatorRows[0].username)
         || creatorFromSourceLine(issue.body)
         || ghLogin;
       const summary = issue === mock
         ? stagingMockSummary(number)
-        : await require('../services/request-summary').forRequest(pool, { appId: app.id, number, issue, asker: askerName });
+        : await require('../services/request-summary').forRequest(pool, { appId: app.id, slug: app.slug, number, issue, asker: askerName });
 
       return res.json({
         issue: {

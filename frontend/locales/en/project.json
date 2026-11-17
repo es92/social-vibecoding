@@ -6787,6 +6787,10 @@
     "text": "Summary by Homeroom bot, from the request and its changes.",
     "description": "Small line under the summary on a request's page when Homeroom bot wrote it: who wrote it and what it was written from. Here two or more changes have been built for the request."
   },
+  "topic.card.summaryWriting": {
+    "text": "Homeroom bot is writing a summary…",
+    "description": "Shown with a spinner at the top of a request's page, where Homeroom bot's short summary of the request will appear, for the few seconds the bot takes to write it. The request's own words are one press away meanwhile."
+  },
   "topic.card.layer.close": {
     "text": "Close",
     "description": "Accessible name of the × button, and of the dimmed area behind, on the panel that opens over a thread's card when a step of the \"How it got here\" timeline is pressed: closes the panel."
