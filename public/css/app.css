@@ -25142,10 +25142,13 @@ button.rf-claim-row:active .rf-claim { color: var(--rf-ink); }
 
 /* A request's own page, and the general chat: between a phone and the
    1024px dock the page and the detail share the room in halves instead
-   of the detail covering the page. */
+   of the detail covering the page. Only while the detail is open (18 Nov
+   2026): the slot carries its layout closed too, so the page in the
+   column beside Homeroom bot's list (876px wide in its own document) wore
+   the halves' edge down its side with nothing beside it. */
 @media (max-width: 1023px) and (min-width: 768px) {
-  .gc-tab-body:has(> #gc-spec-side-panel[data-detail="halves"]) > #dev-topic-thread,
-  .gc-tab-body:has(> #gc-spec-side-panel[data-detail="halves"]) > #gc-chat-pane,
+  .gc-tab-body:has(> #gc-spec-side-panel.gc-spec-side-panel-open[data-detail="halves"]) > #dev-topic-thread,
+  .gc-tab-body:has(> #gc-spec-side-panel.gc-spec-side-panel-open[data-detail="halves"]) > #gc-chat-pane,
   .gc-tab-body:has(> #gc-spec-side-panel[data-detail="halves"]) > #gc-spec-side-panel.gc-spec-side-panel-open {
     position: static;
     inset: auto;
@@ -29388,6 +29391,12 @@ html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side {
   box-shadow: none;
   border-radius: 0;
   overflow: visible;
+  /* The page keeps 12px inside the panel's box (room for the cards'
+     shadows), so the box reaches 12px further out on both sides: the cards
+     start one gap from the list and end the window's own margin from its
+     edge, as the sheet's own edges did. */
+  inset-inline-start: calc(var(--dev-ws-side-start) + var(--platform-gutter, 0px) + 24px + var(--dev-ws-side-list-w) + 32px - 12px);
+  inset-inline-end: 12px;
 }
 html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side:has(.dev-thread-card) > .dev-ws-side-bar { display: none; }
 html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side :is(.dev-ws-side-body, .dev-ws-side-page, .dev-request-sheet) { background: transparent !important; }
@@ -29402,6 +29411,18 @@ body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] {
   box-shadow: none;
 }
 body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] > .side-panel-head { display: none; }
+/* …and the page in it paints no ground of its own, so the bot page's own
+   shows through the frame: one surface under the list and the column, not
+   a second cream a shade off it with an edge where they meet. (The ID in
+   :has outranks the brand look's own body rule.) */
+html.in-side-panel.side-panel-beside-ai:has(#dev-topic-thread .dev-thread-card),
+html.in-side-panel.side-panel-beside-ai body:has(#dev-topic-thread .dev-thread-card) { background: transparent !important; }
+/* The column's grip in the middle of the gap the reader sees: the list
+   card keeps 16px from the line, the page's cards 12px, so the grip sits
+   2px towards the list. */
+body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] > .side-panel-divider {
+  inset-inline-end: calc(var(--divider-at, var(--side-panel-w)) - var(--divider-w) / 2 + 2px);
+}
 
 /* THE LINE BETWEEN TWO COLUMNS IS A HANDLE YOU CAN SEE UNDER THE POINTER
    (18 Nov 2026): the Workshop's list and its panel, the bot's list and its

@@ -36,12 +36,13 @@
  * open for the next screen to restore.
  */
 
-import { useEffect, useLayoutEffect, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ArrowRightIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../../lib/i18n/react';
+import { dirSign } from '../../../lib/i18n/direction';
 import { readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../../lib/split-drag';
 import { callAppView } from '../card/fold';
 import { DetailSlot } from '../../detail/detail-slot';
@@ -161,11 +162,41 @@ const LIST_DRAG: SplitDrag = {
   done: () => writeSplitWidth(LIST_W_KEY, listWidthNow()),
 };
 
+/**
+ * The grip stands in the middle of the gap the reader SEES: between the
+ * list's edge and the page's pill, not the panel's box (which keeps room for
+ * the cards' shadows inside it). Both edges are read off the screen, so it
+ * holds whatever the list's own insets are; it is placed again when the
+ * window changes and as the pointer comes to it, since the pill arrives a
+ * moment after the panel.
+ */
+function placeDivider(el: HTMLElement | null): void {
+  const panel = el?.parentElement;
+  const list = document.getElementById('dev-workshop');
+  if (!el || !panel || !list) return;
+  const p = panel.getBoundingClientRect();
+  const l = list.getBoundingClientRect();
+  const page = panel.querySelector<HTMLElement>('#gc-thread-bar .messages-thread-header, #gc-thread-head');
+  const c = page ? page.getBoundingClientRect() : p;
+  const rtl = dirSign() < 0;
+  const mid = rtl ? (l.left + c.right) / 2 : (l.right + c.left) / 2;
+  const fromStart = rtl ? p.right - mid : mid - p.left;
+  el.style.insetInlineStart = `${Math.round(fromStart - el.offsetWidth / 2)}px`;
+}
+
 function SideDivider(): ReactNode {
   const t = useMessages('agent');
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     applyListWidth(readSplitWidth(LIST_W_KEY, LIST_MIN));
     return () => applyListWidth(null);
+  }, []);
+  useLayoutEffect(() => {
+    const place = () => placeDivider(ref.current);
+    place();
+    const late = window.setTimeout(place, 600);
+    window.addEventListener('resize', place);
+    return () => { window.clearTimeout(late); window.removeEventListener('resize', place); };
   }, []);
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => startSplitDrag(e, LIST_DRAG);
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -184,6 +215,9 @@ function SideDivider(): ReactNode {
       title={t('agent:sidePanel.resizeTitle')}
       tabIndex={0}
       data-ws-side-divider=""
+      ref={ref}
+      onPointerEnter={() => placeDivider(ref.current)}
+      onFocus={() => placeDivider(ref.current)}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
       onDoubleClick={reset}
