@@ -1007,30 +1007,6 @@
     "text": "{{formatted}} active this week",
     "description": "Last line of a community's card on the Communities page (wide screens, in the brand look), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
   },
-  "communities.members_one": {
-    "text": "{{formatted}} member",
-    "description": "Line under a community's name on its card in Home's Pinned communities (wide screens), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
-  },
-  "communities.members_other": {
-    "text": "{{formatted}} members",
-    "description": "Line under a community's name on its card in Home's Pinned communities (wide screens), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
-  },
-  "communities.liveWeek_one": {
-    "text": "{{count}} change went live",
-    "description": "Small pill on a community's card in Home's Pinned communities (wide screens): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
-  },
-  "communities.liveWeek_other": {
-    "text": "{{count}} changes went live",
-    "description": "Small pill on a community's card in Home's Pinned communities (wide screens): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
-  },
-  "communities.activeWeek_one": {
-    "text": "{{formatted}} active this week",
-    "description": "Last line of a community's card in Home's Pinned communities (wide screens), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
-  },
-  "communities.activeWeek_other": {
-    "text": "{{formatted}} active this week",
-    "description": "Last line of a community's card in Home's Pinned communities (wide screens), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
-  },
   "join.heading": {
     "text": "Communities to join",
     "description": "Heading over the cards of public communities at the bottom of Home that the viewer has not joined."

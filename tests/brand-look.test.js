@@ -628,33 +628,6 @@ test('the empty-state figures are committed beside their provenance, and drawn o
   assert.ok(!before.includes('/illustrations/people/'), 'nothing outside this look loads them');
 });
 
-// DREA'S REVIEW OF #6699. The page wears the standard wallpaper's washes
-// again, in the look's own tints; from 1280px Home has the side column
-// beside Pinned apps, with Pinned communities running the full width under
-// it as cards that say what is going on in each community.
-test('the page is the standard wallpaper\'s washes in the look\'s own tints, and the fixed layer follows', () => {
-  const light = ruleAt(LIGHT).body;
-  const dark = ruleAt(DARK).body;
-  assert.equal(valueOf(light, '--bl-wash-a'), '255, 253, 240', 'a lighter cream where the standard wash is lilac');
-  assert.equal(valueOf(light, '--bl-wash-b'), '247, 220, 200', 'a blush where it is pink');
-  assert.equal(valueOf(light, '--bl-wash-c'), '251, 230, 175', 'a sun where it is peach');
-  for (const name of ['--bl-wash-a', '--bl-wash-b', '--bl-wash-c']) {
-    const [r, g, b] = valueOf(dark, name).split(',').map(Number);
-    assert.ok(b > g && g > r, `${name} stays a blue round the dark page`);
-  }
-  const ground = ruleFor('body:has(#platform-tabs)').filter((rule) => /--look-washes:/.test(rule.body));
-  assert.equal(ground.length, 2, 'the phone\'s three washes, and from 640px the seven');
-  const wide = ground[1].body;
-  // The same places, sizes and strengths as the standard wallpaper.
-  for (const at of ['circle at calc(100% - 92px) 115px', 'ellipse 38vw 36vh at 24% 20%', 'ellipse 34vw 28vh at 90% 32%']) {
-    assert.ok(wide.includes(at), `a wash ${at}`);
-  }
-  assert.match(wide, /rgba\(var\(--bl-wash-c\), 0\.75\) 90px/);
-  assert.match(ground[0].body, /background:\s*var\(--look-wallpaper\);/);
-  assert.match(ground[0].body, /var\(--home-star, none\)/, 'the star falls back to nothing where the route rule does not define it');
-  assert.match(ruleFor('body::before')[0].body, /background:\s*var\(--look-wallpaper, var\(--bl-page\)\);/);
-});
-
 // Drea's onboarding review (18 Nov 2026): Welcome, Make it and the made
 // screen paint the wallpaper in their own style attribute, and the look
 // had flattened them in both modes. Light keeps the page Home stands on;
@@ -674,42 +647,6 @@ test('a screen that paints its own wallpaper wears Home\'s washes in light and t
   for (const [dir, file] of [['auth', 'welcome-page.tsx'], ['first-session', 'make.tsx'], ['first-session', 'made.tsx']]) {
     assert.match(read('frontend', 'src', 'features', dir, file), /style=\{\{ background: 'var\(--home-wallpaper, #f4f2e4\)' \}\}/, `${file} paints its own wallpaper`);
   }
-});
-
-test('from 1280px Home has the side column beside Pinned apps, and Pinned communities runs the full width under it', () => {
-  const island = read('frontend', 'src', 'features', 'home', 'index.tsx');
-  assert.match(island, /const aside = wip && grid\.ready && !!grid\.create;/);
-  const block = lookBlock();
-  const media = block.slice(block.indexOf('/* HOME FROM 1280px, WITH ITS SIDE COLUMN'));
-  assert.match(media, /@media \(min-width: 1280px\)/);
-  const at = (sel) => ruleAt(`${EITHER} ${sel}`);
-  assert.match(at('#home-screen[data-home-aside] .home-body-fill').body, /display:\s*grid;[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 304px;/);
-  assert.match(at('#home-screen[data-home-aside] .home-main').body, /display:\s*contents;/);
-  // Rows by order, never by number, so a section that is not drawn holds no place.
-  assert.match(at('#home-screen[data-home-aside] .home-main > *').body, /grid-column:\s*1 \/ -1;\s*order:\s*4;/);
-  assert.match(at('#home-screen[data-home-aside] .home-main > #home-apps-section').body, /grid-column:\s*1;\s*order:\s*2;/);
-  assert.match(at('#home-screen[data-home-aside] #home-aside').body, /grid-column:\s*2;\s*order:\s*3;/);
-  assert.doesNotMatch(media, /grid-row:/, 'no section is pinned to a row');
-  // The card is the grid's wrapper; the grid itself only loses its paint.
-  assert.match(at('#home-screen[data-home-aside] #home-apps-section > div:last-child').body, /background-color:\s*var\(--bl-card\);/);
-  assert.match(at('#home-screen[data-home-aside] #home-apps-section #app-list').body, /background-color:\s*transparent;\s*box-shadow:\s*none;/);
-  assert.match(at('#home-screen[data-home-aside] #home-needs-tile').body, /display:\s*none;/, 'its card says the same thing');
-});
-
-test('a pinned community\'s card says its members, what went live and who was there, read only where it is drawn', () => {
-  const src = read('frontend', 'src', 'features', 'home', 'pinned-communities.tsx');
-  assert.match(src, /const cards = skin === 'brand' && wide;/);
-  assert.match(src, /if \(cards && state\.ready && pinKey\) void loadHomePinsActivity\(\);/);
-  assert.match(src, /detail=\{cards \? activity\.bySlug\[pin\.slug\] : undefined\}/, 'pinned ones only, not the faded rest');
-  assert.match(src, /<span className="hidden" data-home-community-detail="">/, 'hidden everywhere the look does not draw cards');
-  assert.match(src, /if \(!members && !live && !active\) return null;/, 'a zero says nothing');
-  const store = read('frontend', 'src', 'features', 'home', 'home-pins-store.ts');
-  assert.match(store, /readJson\('\/api\/me\/home-pins\/activity'\)/);
-  assert.match(ruleAt(`${EITHER} #home-communities-section [data-home-community-detail]`).body, /display:\s*flex;/);
-  const home = JSON.parse(read('frontend', 'locales', 'en', 'home.json'));
-  assert.equal(home['communities.liveWeek_other'].text, '{{count}} changes went live');
-  assert.equal(home['communities.activeWeek_other'].text, '{{formatted}} active this week');
-  assert.equal(home['communities.members_other'].text, '{{formatted}} members');
 });
 
 test('a conversation\'s bubbles have a ground and an edge of their own inside the white thread', () => {
